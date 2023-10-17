@@ -26,6 +26,7 @@
     "i18n": "WP_CLI_PHP_ARGS='-d memory_limit=2048M' ./vendor/bin/wp i18n make-pot ./ i18n/languages/$npm_package_name.pot --slug=$npm_package_name --domain=$npm_package_name --exclude=bin,data,node_modules,tests,vendor",
     "generate:category_attribute_json": "php bin/GenerateCategoryAttributeMapping.php",
     "lint:php": "vendor/bin/phpcs -p -s --colors",
+    "fix:php": "vendor/bin/phpcbf -w",
     "lint:php:summary": "vendor/bin/phpcs --colors --report=summary",
     "build:assets": "NODE_ENV=production wp-scripts build",
     "start": "wp-scripts start",
@@ -41,5 +42,9 @@
   "engines": {
     "node": ">=12.22 <=16",
     "npm": ">=6.14 <=8"
+  },
+  "dependencies": {
+    "antd": "^5.9.2",
+    "dayjs": "^1.11.9"
   }
 }
