@@ -374,8 +374,19 @@ class Advertise extends Abstract_Settings_Screen {
 	 */
 	private function can_try_experimental_view() {
 		$ad_acc_id = facebook_for_woocommerce()->get_connection_handler()->get_ad_account_id();
-		$int_val = intval($ad_acc_id);
-		return  ($int_val != 0) && (($int_val % 2) == 0);
+		$trimmed_val = trim($ad_acc_id);
+		
+		if (empty($trimmed_val)) {
+			return false;
+		}
+
+		$least_significant_digit = strrev($trimmed_val)[0];
+
+		if ($least_significant_digit < '0' || $least_significant_digit > '9') {
+			return false;
+		}
+
+		return intval($least_significant_digit) % 2 == 0;
 	}
 
 
