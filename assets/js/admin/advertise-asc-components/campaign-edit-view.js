@@ -1,172 +1,116 @@
 import { useState } from '@wordpress/element';
-import { Card, Col, Form, Input, InputNumber, Row, Select, Space, Switch, Tooltip } from 'antd';
-import { DollarOutlined, EditOutlined, GlobalOutlined, PoweroffOutlined, QuestionCircleFilled } from '@ant-design/icons'
+import { Icon, __experimentalNumberControl as NumberControl, Notice, __experimentalHeading as Heading, Flex, FlexItem, TextareaControl, Tooltip } from '@wordpress/components';
+import { edit, globe, helpFilled, currencyDollar } from '@wordpress/icons';
 import { CountryList } from './eligible-country-list'
+import CampaignToggle from './campaign-toggle'
+import CountrySelector from './country-selector'
 
-const ProspectingViewComponent = (props) => {
+const CampaignEditView = (props) => {
+
+    const title = props.isRetargeting ? 'Retargeting Campaign' : 'New Customers Campaign';
+    const subtitle = props.isRetargeting ? "Bring back visitors who visited your website and didn't complete their purchase" : "Reach out to potential new buyers for your products";
+    const [message, setMessage] = useState(props.message ?? "");
+    const [dailyBudget, setDailyBudget] = useState(props.dailyBudget ?? 0);
+    const [status, setStatus] = useState(props.currentStatus ?? false);
+    const [selectedCountries, setSelectedCountries] = useState(props.selectedCountries ?? []);
+
     const countryPairs = CountryList.map((c) => {
         return {
             key: Object.keys(c)[0],
             value: Object.values(c)[0]
         }
     });
-
-    const [selectedCountries, setSelectedCountries] = useState(props.selectedCountries);
-
     const availableOptions = countryPairs.filter(x => { return selectedCountries.indexOf(x) == -1; });
-    
+
     return (
-        <>
-            <p className='campaign-edit-view-header' style={{ margin: '10px 0 0 0', width: '250px' }}>
-                <GlobalOutlined className='campaign-edit-view-header' /> {' '} Country {' '} <Tooltip title="Countries where your campaign will be shown."><QuestionCircleFilled className='campaign-edit-view-header-tooltip' /></Tooltip>
-            </p>
-            <div className='transparent-background' style={{ width: '250px' }}>
-                <Form.Item
-                    className='zero-border-element transparent-background'
-                    style={{ width: '250px' }}
-                    label=''
-                    name='n1'
-                    initialValue={selectedCountries}
-                    rules={[
-                        {
-                            required: true,
-                            message: 'You should select at least one country',
-                        }
-                    ]}>
-                    <Select mode="multiple"
-                        maxTagCount={5}
-                        onChange={(c) => { 
-                            setSelectedCountries(c); 
-                            props.onCountryListChange(c);
+        <div>
+            <Heading level={3}>{title}</Heading>
+            <Heading level={4} variant={"muted"} weight={300}>{subtitle}</Heading>
+            {props.invalidInputMessage.length > 0 && (<Notice status="warning" isDismissible={false}><ul>{props.invalidInputMessage.map((msg) => { return <li>{msg}</li> })}</ul></Notice>)}
+            <Flex direction={['row']} gap={1} style={{alignItems: "start"}}>
+                <FlexItem style={{ width: "300px", maxWidth: "300px", width: "300px" }}>
+                    <p className='zero-border-element campaign-edit-view-header'>
+                        <Icon icon={currencyDollar} size={22} />
+                        {' '} Campaign Off/On {' '}
+                        <Tooltip text="Do you want your campaign to actively run? Make sure to select 'On'">
+                            <Icon icon={helpFilled} size={12} className='campaign-edit-view-header-tooltip' />
+                        </Tooltip>
+                    </p>
+                    <div className='zero-border-element' style={{ padding: '10px' }}>
+                        <CampaignToggle
+                            className='zero-border-element'
+                            checked={status}
+                            onChange={(new_value) => {
+                                setStatus(new_value);
+                                props.onStatusChange(new_value);
                             }}
-                        style={{ marginTop: 0, width: '100%', maxWidth: '200px', maxHeight: '180px', whiteSpace: 'nowrap', overflow: 'auto' }}
-                        options={availableOptions.map((item) => ({
-                            value: item['key'],
-                            label: item['value']
-                        }))} />
-                </Form.Item>
-            </div>
-        </>);
-};
-
-const CampaignEditView = (props) => {
-
-    const title = props.campaignType == 'retargeting' ? 'Retargeting Campaign' : 'New Customers Campaign';
-    const subtitle = props.campaignType == 'retargeting' ? "Bring back visitors who visited your website and didn't complete their purchase" : "Reach out to potential new buyers for your products";
-    const { TextArea } = Input;
-    const [message, setMessage] = useState(props.message);
-    const [dailyBudget, setDailyBudget] = useState(props.dailyBudget);
-    const [status, setStatus] = useState(props.currentStatus);
-    const minDailyBudget = parseFloat(props.minDailyBudget);
-    
-    return (
-        <Card>
-            <Row>
-                <Col>
-                    <h1 style={{ fontSize: "23px", fontWeight: 400, margin: 0, padding: "9px 0 4px", lineHeight: "1.3" }}>{title}</h1>
-                    <p style={{ marginTop: 0, marginBottom: '20px', color: "#949494", boxSizing: 'border-box' }}>{subtitle}</p>
-                </Col>
-                <Col></Col>
-            </Row>
-            <Row>
-                <Col>
-                </Col>
-                <Col>
-                    <Space direction='vertical'>
-                        <p className='zero-border-element campaign-edit-view-header'>
-                            <PoweroffOutlined className='campaign-edit-view-header' /> {' '} Campaign Off/On {' '} <Tooltip title="Do you want your campaign to actively run? Make sure to select 'On'"><QuestionCircleFilled className='campaign-edit-view-header-tooltip' /></Tooltip>
-                        </p>
-                        <div className='zero-border-element'>
-                            <Form.Item 
-                                className='zero-border-element'
-                                label=''
-                                name='n4'
-                                >
-                                <Switch
-                                    checked={status}
-                                    className='zero-border-element'
-                                    checkedChildren="On"
-                                    unCheckedChildren="Off"
-                                    onChange={(e) => { setStatus(e); props.onStatusChange(e);}}
-                                    />
-                            </Form.Item>
-                        </div>
-                        
-
-                        <p className='campaign-edit-view-header' style={{ margin: '10px 0 0 0' }}>
-                            <DollarOutlined className='campaign-edit-view-header' /> {' '} Daily Budget {' '} <Tooltip title="How much would you want to spend on a daily basis?"><QuestionCircleFilled className='campaign-edit-view-header-tooltip' />
-                            </Tooltip>
-                        </p>
-                        <div className='zero-border-element' style={{ width:'200px' }}>
-                            <Form.Item
-                                className='zero-border-element'
-                                label=''
-                                name='n2'
-                                initialValue={dailyBudget}
-                                rules={[
-                                    {
-                                        required: true,
-                                        message: 'Daily budget must be set',
-                                    },
-                                    {
-                                        message: 'Minimum allowed daily budget is ' + props.minDailyBudget + ' ' + props.currency,
-                                        validator: (_, value) => {
-                                            if (value && (parseFloat(value) < minDailyBudget)) {
-                                                return Promise.reject();
-                                            } else {
-                                                return Promise.resolve();
-                                            }
-                                        }
-                                    }
-                                ]}>
-                                <InputNumber
-                                    style={{
-                                        width: 200,
-                                        margin: 0
-                                    }}
-                                    key={1}
-                                    step="0.1"
-                                    onChange={(e) => { props.onDailyBudgetChange(e); setDailyBudget(e); }}
-                                    stringMode
-                                    addonAfter={props.currency}
-                                />
-                            </Form.Item>
-                        </div>
-                        {props.showCountry ? (
-                            <ProspectingViewComponent onCountryListChange={props.onCountryListChange} selectedCountries={props.selectedCountries} />
-                        ) : <></>}
-
-                    </Space>
-                </Col>
-                <Col style={{ marginLeft: "40px" }}>
-                    <Space direction='vertical'>
-                        <div className='zero-border-element' style={{ display: 'inline-block', margin: '4px 0 0 0' }}>
-                            <p className='zero-border-element campaign-edit-view-header' style={{ marginLeft: '10px;' }}>
-                                <EditOutlined className='campaign-edit-view-header' /> {' '} Customize your message <Tooltip title="The pitch for selling your products. Choose it wisely!"><QuestionCircleFilled className='campaign-edit-view-header-tooltip' /></Tooltip>
+                        />
+                    </div>
+                    <p className='campaign-edit-view-header'>
+                        <Icon icon={currencyDollar} size={22} /> {' '} Daily Budget {' '}
+                        <Tooltip text="How much would you want to spend on a daily basis?">
+                            <Icon icon={helpFilled} size={12} className='campaign-edit-view-header-tooltip' />
+                        </Tooltip>
+                    </p>
+                    <div className='zero-border-element'>
+                        <NumberControl
+                            className='zero-border-element'
+                            isDragEnabled={false}
+                            isShiftStepEnabled={false}
+                            onChange={(new_value) => {
+                                setDailyBudget(new_value);
+                                props.onDailyBudgetChange(new_value);
+                            }}
+                            prefix={props.currency}
+                            required={true}
+                            step="0.1"
+                            type={"number"}
+                            value={dailyBudget}
+                        />
+                    </div>
+                    {!props.isRetargeting && (
+                        <div>
+                            <p className='campaign-edit-view-header'>
+                                <Icon icon={globe} size={22} /> {' '} Country {' '} <Tooltip text="Countries where your campaign will be shown."><Icon icon={helpFilled} size={12} className='campaign-edit-view-header-tooltip' /></Tooltip>
                             </p>
-                            <p className='zero-border-element campaign-edit-secondary-header' >{'The carousel will show your products'}</p>
+                            <CountrySelector
+                                maxLength={5}
+                                options={availableOptions.map((item) => ({
+                                    key: item['key'],
+                                    label: item['value']
+                                }))}
+                                value={selectedCountries}
+                                onChange={(new_values) => {
+                                    setSelectedCountries(new_values);
+                                    props.onCountryListChange(new_values);
+                                }}
+                            />
                         </div>
-                        <div className='transparent-background campaign-edit-view-thumbnail-container'>
-                            <img className='campaign-edit-view-img' src={require('!!url-loader!./../../../images/woo_post1.png').default} />
-                            <Form.Item
-                                label=''
-                                name='n3'
-                                initialValue={message}
-                                rules={[
-                                    {
-                                        required: true,
-                                        message: 'Ad message must be set.',
-                                    }
-                                ]}>
-                                <TextArea className='campaign-edit-view-messagebox' compact={true} onChange={(e) => { props.onMessageChange(e.target.value); setMessage(e.target.value); }}></TextArea>
-                            </Form.Item>
-                            <img className='campaign-edit-view-img' style={{ marginRight: 0 }} src={require('!!url-loader!./../../../images/woo_post2.png').default} />
-                        </div>
-                    </Space>
-                </Col>
-            </Row>
-
-        </Card >
+                    )}
+                </FlexItem>
+                <FlexItem style={{ width: "300px", maxWidth: "300px", width: "300px" }}>
+                    <div className='zero-border-element' style={{ display: 'inline-block', margin: '4px 0 0 0' }}>
+                        <p className='zero-border-element campaign-edit-view-header'>
+                            <Icon icon={edit} size={22} /> {' '} Customize your message <Tooltip text="The pitch for selling your products. Choose it wisely!"><Icon icon={helpFilled} size={12} className='campaign-edit-view-header-tooltip' /></Tooltip>
+                        </p>
+                        <p className='zero-border-element campaign-edit-secondary-header' >{'The carousel will show your products'}</p>
+                    </div>
+                    <div className='transparent-background campaign-edit-view-thumbnail-container'>
+                        <img className='campaign-edit-view-img' src={require('!!url-loader!./../../../images/woo_post1.png').default} />
+                        <TextareaControl
+                            className='campaign-edit-view-messagebox'
+                            rows="2"
+                            onChange={(new_value) => {
+                                setMessage(new_value);
+                                props.onMessageChange(new_value);
+                            }}
+                            value={message}
+                        />
+                        <img className='campaign-edit-view-img' style={{ marginRight: 0 }} src={require('!!url-loader!./../../../images/woo_post2.png').default} />
+                    </div>
+                </FlexItem>
+            </Flex>
+        </div>
     );
 };
 

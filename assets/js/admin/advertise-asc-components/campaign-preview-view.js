@@ -1,8 +1,5 @@
 import { useState, useEffect } from '@wordpress/element';
-import { Card, Space, Spin, Typography } from 'antd';
-import { LoadingOutlined } from '@ant-design/icons'
-
-const { Title } = Typography;
+import { Flex, FlexItem, Spinner } from '@wordpress/components';
 
 function ExtractIFrame(iFrameText, onLoaded) {
     const urlStartIndex = iFrameText.indexOf("src") + 5;
@@ -26,10 +23,11 @@ const CampaignPreviewComponentView = (props) => {
     const iFrame = ExtractIFrame(props.text, () => { setLoading(false); });
 
     return (
-        <Spin spinning={loading}>
+        <>
+            {loading ? <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}><Spinner style={{ height: 'calc(4px * 5)', width: 'calc(4px * 5)' }} /></div> : <></>}
             {iFrame}
-        </Spin>
-    );
+        </>
+    )
 };
 
 const CampaignPreviewView = (props) => {
@@ -51,31 +49,21 @@ const CampaignPreviewView = (props) => {
             });
     }, [setResult]);
 
-    if (result && result["data"]) {
-        props.onSizeChange(750, 600);
-        return (
-            <Space direction='horizontal'>
-                <>
-                    {result["data"].map(function (o, i) {
-                        const iframe = (<CampaignPreviewComponentView text={o} />);
-                        return (i === result['data'].length - 1) ? iframe : (<div style={{ marginRight:'30px' }}>{iframe}</div>);
-                    })}
-                </>
-            </Space>
-        );
-    }
-    else {
-        props.onSizeChange(750, 600);
-        return (
-            <Card className='fb-asc-ads loading-preview-parent'>
-                <div className='fb-asc-ads loading-preview-container '>
-                    <div>
-                        <Title><LoadingOutlined /> Loading...</Title>
+    return (
+        <Flex direction={['row']}>
+            {result && result["data"] ? result["data"].map(function (o, i) {
+                return <FlexItem><CampaignPreviewComponentView text={o} /></FlexItem>;
+            }) : (
+                <FlexItem>
+                    <div className='fb-asc-ads loading-preview-parent'>
+                        <div className='fb-asc-ads loading-preview-container'>
+                            <Spinner style={{ height: 'calc(4px * 10)', width: 'calc(4px * 10)' }} />
+                        </div>
                     </div>
-                </div>
-            </Card>
-        );
-    };
+                </FlexItem>
+            )}
+        </Flex >
+    );
 };
 
 export default CampaignPreviewView;

@@ -15,7 +15,7 @@ function campaignCreationUILoader(rootElementId, props, reset) {
 function insightsUILoader(rootElementId, props) {
   const element = document.getElementById(rootElementId);
   if (element) {
-    const root = createRoot(element);
+    const root = createRoot(element);    
     root.render(
       createElement(InsightsView, {
         spend:props.spend,
