@@ -92,8 +92,8 @@
 }
 
 .fb-asc-ads .loading-preview-container {
-  width: 650px; 
-  height: 475px; 
+  width: 700px; 
+  height: 550px;
   align-items: center; 
   justify-content: center; 
   display: flex ;
@@ -168,6 +168,10 @@
 
 .fb-asc-ads .campaign-edit-view-header {
   color: #1d2327;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  margin: 10px 0 0 0;
 }
 
 .fb-asc-ads .campaign-edit-view-header-tooltip {
@@ -176,7 +180,7 @@
 }
 
 .fb-asc-ads .campaign-edit-view-messagebox {
-  width: 300px;
+  width: 290px;
   margin-left: 5px; 
   margin-right: 5px;
   resize: none;
