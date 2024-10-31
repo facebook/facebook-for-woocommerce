@@ -23,7 +23,7 @@ abstract class CampaignHandler {
     const STATUS_ACTIVE     = 'ACTIVE';
     const STATUS_PAUSED     = 'PAUSED';
     const STATUS_ARCHIVED   = 'ARCHIVED';
-    const ALL_PRODUCTS      = 'All products';
+    const ALL_PRODUCTS      = 'all products';
 
     protected $ad;
     protected $api;
@@ -791,7 +791,7 @@ abstract class CampaignHandler {
             $product_sets = $result->get_data();
 
             foreach ($product_sets as $product_set) {
-                if ($product_set['name'] == self::ALL_PRODUCTS) {
+                if (strtolower($product_set['name']) == self::ALL_PRODUCTS) {
                     return $product_set['id'];
                 }
             }
