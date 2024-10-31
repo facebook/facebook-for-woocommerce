@@ -145,7 +145,7 @@ class Retargeting extends CampaignHandler {
 
 		$properties = array(
 			'name'                  => $this->campaign_name,
-			'objective'             => 'PRODUCT_CATALOG_SALES',
+			'objective'             => 'OUTCOME_SALES',
 			'special_ad_categories' => array(),
 			'promoted_object'       => array(
 				'product_catalog_id' => $catalog_id,
@@ -219,7 +219,6 @@ class Retargeting extends CampaignHandler {
 		return array(
 			'age_max'                => 65,
 			'age_min'                => 18,
-			'targeting_optimization' => 'none',
 			'product_audience_specs' => array(
 				array(
 					'product_set_id' => $product_set_id,
