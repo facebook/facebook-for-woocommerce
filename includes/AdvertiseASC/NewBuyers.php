@@ -144,7 +144,7 @@ class NewBuyers extends CampaignHandler {
 		$message      = $data['ad_message'];
 		$countries    = $data['country'] ?? array();
 		$daily_budget = $data['daily_budget'];
-		$status       = ( 'true' === $props['state'] ) ? 1 : 0;
+		$status       = ( 'true' === $data['state'] ) ? 1 : 0;
 
 		$this->apply_creative_changes( $message );
 

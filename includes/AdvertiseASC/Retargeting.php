@@ -43,15 +43,13 @@ class Retargeting extends CampaignHandler {
 	 */
 	public function update_asc_campaign( $data ) {
 
-		$status           = ( 'true' === $props['state'] ) ? 1 : 0;
+		$status           = ( 'true' === $data['state'] ) ? 1 : 0;
 		$new_daily_budget = $data['daily_budget'];
 		$new_ad_message   = $data['ad_message'];
 		$this->apply_adset_changes( $new_daily_budget * 100 );
 		$this->apply_adcreative_changes( $new_ad_message );
-
-		if ( $status ) {
-			$this->set_ad_status( $status );
-		}
+		$this->set_ad_status( $status );
+		
 		return true;
 	}
 

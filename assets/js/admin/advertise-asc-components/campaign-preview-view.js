@@ -55,8 +55,8 @@ const CampaignPreviewView = (props) => {
                 return <FlexItem><CampaignPreviewComponentView text={o} /></FlexItem>;
             }) : (
                 <FlexItem>
-                    <div className='fb-asc-ads loading-preview-parent'>
-                        <div className='fb-asc-ads loading-preview-container'>
+                    <div className='fb-asc-ads loading-preview-parent default-view'>
+                        <div className='fb-asc-ads loading-preview-container default-view'>
                             <Spinner style={{ height: 'calc(4px * 10)', width: 'calc(4px * 10)' }} />
                         </div>
                     </div>

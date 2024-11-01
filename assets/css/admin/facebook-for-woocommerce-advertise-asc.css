@@ -7,6 +7,11 @@
   width: 1200px;
 }
 
+.fb-asc-ads .default-view {
+  width: 700px;
+  height: 550px;
+}
+
 .fb-asc-ads .top-pad {
   padding-top: 30px;
 }
@@ -66,7 +71,7 @@
 
 .fb-asc-ads .country-selector {
   margin-top: 0;
-  width: 100%; 
+  width: 100%;
   max-width: 200px;
   max-height: 150px;
   white-space: nowrap;
@@ -76,48 +81,44 @@
 .fb-asc-ads .preview-object-iframe {
   border: none;
   overflow: hidden;
-  width: 330px;
+  width: 345px;
   height: 550px;
 }
 
 .fb-asc-ads .preview-object-iframe-parent {
-  overflow: hidden; 
+  overflow: hidden;
   background: transparent;
 }
 
 .fb-asc-ads .loading-preview-parent {
-  width: 700px; 
-  height: 550px; 
   display: inline-block;
 }
 
 .fb-asc-ads .loading-preview-container {
-  width: 700px; 
-  height: 550px;
-  align-items: center; 
-  justify-content: center; 
-  display: flex ;
+  align-items: center;
+  justify-content: center;
+  display: flex;
 }
 
 .fb-asc-ads .navigation-footer-container {
-  background: transparent; 
+  background: transparent;
   min-width: 400px;
   width: 100%;
   height: 50px;
   position: relative;
 }
 
-.fb-asc-ads .navigation-footer-container .fit-to-left{
-  left:0;
+.fb-asc-ads .navigation-footer-container .fit-to-left {
+  left: 0;
 }
 
-.fb-asc-ads .navigation-footer-button{
+.fb-asc-ads .navigation-footer-button {
   position: absolute;
-  top:5px;
+  top: 5px;
 }
 
-.fb-asc-ads .navigation-footer-container .fit-to-right{
-  right:0;
+.fb-asc-ads .navigation-footer-container .fit-to-right {
+  right: 0;
 }
 
 .fb-asc-ads .main-ui-button:disabled {
@@ -132,15 +133,18 @@
   background: transparent;
 }
 
-.fb-asc-ads .funnel-table-header{
-  margin:0; padding:0;
+.fb-asc-ads .funnel-table-header {
+  margin: 0;
+  padding: 0;
   line-height: 10px;
+  display: grid;
+  place-items: center;
 }
 
-.fb-asc-ads .funnel-table-header label{
-  margin:0; 
-  padding:0; 
-  line-height:10px;
+.fb-asc-ads .funnel-table-header label {
+  margin: 0;
+  padding: 0;
+  line-height: 10px;
   font-size: 10px;
 }
 
@@ -172,6 +176,7 @@
   align-items: center;
   gap: 2px;
   margin: 10px 0 0 0;
+  padding-bottom: 5px;
 }
 
 .fb-asc-ads .campaign-edit-view-header-tooltip {
@@ -181,7 +186,7 @@
 
 .fb-asc-ads .campaign-edit-view-messagebox {
   width: 290px;
-  margin-left: 5px; 
+  margin-left: 5px;
   margin-right: 5px;
   resize: none;
 }
@@ -189,7 +194,7 @@
 .fb-asc-ads .campaign-edit-view-thumbnail-container {
   margin: 4px 0 0 0;
   position: relative;
-  border-color: #5a5a5a; 
+  border-color: #5a5a5a;
   border-width: 0.5px;
   border-style: solid;
   width: 100%;
