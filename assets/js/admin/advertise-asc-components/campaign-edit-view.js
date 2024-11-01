@@ -23,11 +23,11 @@ const CampaignEditView = (props) => {
     const availableOptions = countryPairs.filter(x => { return selectedCountries.indexOf(x) == -1; });
 
     return (
-        <div>
+        <div className="fb-asc-ads default-view">
             <Heading level={3}>{title}</Heading>
             <Heading level={4} variant={"muted"} weight={300}>{subtitle}</Heading>
             {props.invalidInputMessage.length > 0 && (<Notice status="warning" isDismissible={false}><ul>{props.invalidInputMessage.map((msg) => { return <li>{msg}</li> })}</ul></Notice>)}
-            <Flex direction={['row']} gap={1} style={{alignItems: "start"}}>
+            <Flex direction={['row']} gap={1} style={{ alignItems: "start" }}>
                 <FlexItem style={{ width: "300px", maxWidth: "300px", width: "300px" }}>
                     <p className='zero-border-element campaign-edit-view-header'>
                         <Icon icon={currencyDollar} size={22} />
@@ -36,7 +36,7 @@ const CampaignEditView = (props) => {
                             <Icon icon={helpFilled} size={12} className='campaign-edit-view-header-tooltip' />
                         </Tooltip>
                     </p>
-                    <div className='zero-border-element' style={{ padding: '10px' }}>
+                    <div className='zero-border-element'>
                         <CampaignToggle
                             className='zero-border-element'
                             checked={status}
@@ -89,9 +89,12 @@ const CampaignEditView = (props) => {
                     )}
                 </FlexItem>
                 <FlexItem style={{ width: "300px", maxWidth: "300px", width: "300px" }}>
-                    <div className='zero-border-element' style={{ display: 'inline-block', margin: '4px 0 0 0' }}>
-                        <p className='zero-border-element campaign-edit-view-header'>
-                            <Icon icon={edit} size={22} /> {' '} Customize your message <Tooltip text="The pitch for selling your products. Choose it wisely!"><Icon icon={helpFilled} size={12} className='campaign-edit-view-header-tooltip' /></Tooltip>
+                    <div className='zero-border-element'>
+                        <p className='campaign-edit-view-header'>
+                            <Icon icon={edit} size={22} /> {' '} Customize your message
+                            <Tooltip text="The pitch for selling your products. Choose it wisely!">
+                                <Icon icon={helpFilled} size={12} className='campaign-edit-view-header-tooltip' />
+                            </Tooltip>
                         </p>
                         <p className='zero-border-element campaign-edit-secondary-header' >{'The carousel will show your products'}</p>
                     </div>

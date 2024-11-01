@@ -4,7 +4,6 @@ import { helpFilled, warning } from '@wordpress/icons';
 import { CountryList } from './eligible-country-list'
 import CampaignPreviewView from './campaign-preview-view'
 import CampaignToggle from './campaign-toggle'
-import CountrySelector from './country-selector'
 
 function UpdateState(callback, errorCallback, campaignType, state) {
 
@@ -35,7 +34,7 @@ const FunnelComponentView = (props) => {
 
     const sum = props.reach + props.clicks + props.views + props.addToCarts + props.purchases;
     return (
-        <table class="bar-chart transparent-background">
+        <table class="bar-chart transparent-background" style={{ width: "400px", maxWidth: "400px", width: "400px" }}>
             <thead style={{ height: '90%' }}>
                 <th><div style={{ marginRight: '20px', width: '50px', height: 200.0 * (props.reach / sum) + 'px' }}></div></th>
                 <th><div style={{ marginRight: '20px', width: '50px', height: 200.0 * (props.clicks / sum) + 'px' }}></div></th>
@@ -46,11 +45,11 @@ const FunnelComponentView = (props) => {
             </thead>
             <tbody style={{ height: '10%' }}>
                 <tr>
-                    <td><div class="funnel-table-header" flex-direction='column'><label>Reach</label><label>{props.reach}</label></div></td>
-                    <td><div class="funnel-table-header" flex-direction='column'><label>Clicks</label><label>{props.clicks}</label></div></td>
-                    <td><div class="funnel-table-header" flex-direction='column'><label>Views</label><label>{props.views}</label></div></td>
-                    <td><div class="funnel-table-header" flex-direction='column'><label>Add to cart</label><label>{props.addToCarts}</label></div></td>
-                    <td><div class="funnel-table-header" flex-direction='column'><label>Purchase</label><label>{props.purchases}</label></div></td>
+                    <td><div class="funnel-table-header" flex-direction='column'><label>Reach</label> <label>{props.reach}</label></div></td>
+                    <td><div class="funnel-table-header" flex-direction='column'><label>Clicks</label> <label>{props.clicks}</label></div></td>
+                    <td><div class="funnel-table-header" flex-direction='column'><label>Views</label> <label>{props.views}</label></div></td>
+                    <td><div class="funnel-table-header" flex-direction='column'><label>Add to cart</label> <label>{props.addToCarts}</label></div></td>
+                    <td><div class="funnel-table-header" flex-direction='column'><label>Purchase</label> <label>{props.purchases}</label></div></td>
                     <td>
                         <Tooltip text="X-through rate, Cost per action"><Icon icon={helpFilled} size={12} style={{ fontSize: '75%', alignContent: 'center' }} className='campaign-edit-view-header-tooltip' /></Tooltip>
                     </td>
@@ -59,9 +58,6 @@ const FunnelComponentView = (props) => {
         </table>
     );
 }
-
-<Flex direction={['row']} className={"funnel-table-header"}><FlexItem>
-</FlexItem></Flex>
 
 const InsightsView = (props) => {
 
@@ -105,7 +101,7 @@ const InsightsView = (props) => {
                 <CardBody>
                     <Flex direction={['column']}>
                         <FlexItem>
-                            <Flex justify="" direction={['row']} gap={3}>
+                            <Flex direction={['row']} gap={3}>
                                 <FlexItem>
                                     <table style={{ textAlign: 'center', verticalAlign: 'top' }}>
                                         <thead >
@@ -127,11 +123,8 @@ const InsightsView = (props) => {
                                                 <td><p className='zero-border-element'>{props.spend} {props.currency}</p></td>
                                                 <td><p className='zero-border-element'>{props.dailyBudget} {props.currency}</p></td>
                                                 {props.campaignType == 'retargeting' ? (<></>) : (
-                                                    <td>
-                                                        <CountrySelector
-                                                            value={selectedCountries.map((item) => item['key'])}
-                                                            options={selectedCountries}
-                                                        />
+                                                    <td style={{ width: "200px", maxWidth: "200px", width: "200px" }}>
+                                                        {selectedCountries.map((item) => item['label']).join(', ')}
                                                     </td>)}
                                             </tr>
                                         </tbody>
@@ -155,7 +148,7 @@ const InsightsView = (props) => {
                 </CardBody>
             </Card >
             {isModalOpen && (<Modal title="Ad Preview" onRequestClose={() => { setIsModalOpen(false); }} size={"large"}>
-                <CampaignPreviewView preview={true} campaignType={props.campaignType} onSizeChange={(w, h) => {
+                <CampaignPreviewView preview={true} campaignType={props.campaignType} width={width} height={height} onSizeChange={(w, h) => {
                     setWidth(w);
                     setHeight(h);
                 }} />

@@ -1,5 +1,5 @@
 import { useState } from '@wordpress/element';
-import { Button, Card, CardBody, CardHeader, CardFooter, Icon, Modal, TabPanel } from '@wordpress/components';
+import { Button, ButtonGroup, Card, CardBody, CardHeader, CardFooter, Icon, Modal, TabPanel } from '@wordpress/components';
 import { warning } from '@wordpress/icons';
 import CampaignEditView from './campaign-edit-view';
 import CampaignPreviewView from './campaign-preview-view'
@@ -76,6 +76,7 @@ const CampaignSetupView = (props) => {
             countryList: countryList,
             status: String(currentState),
         });
+        setPublishing(true);
 
         fetch(facebook_for_woocommerce_settings_advertise_asc.ajax_url + '?action=wc_facebook_advertise_asc_publish_changes', {
             method: 'post',
@@ -83,7 +84,7 @@ const CampaignSetupView = (props) => {
             body: requestData
         })
             .then((response) => response.json())
-            .then((data) => {                
+            .then((data) => {
                 if (!data['success']) {
                     openErrorModal(data['data']);
                 } else {
@@ -133,7 +134,7 @@ const CampaignSetupView = (props) => {
                 <CardHeader>
                     <TabPanel
                         orientation={"horizontal"}
-                        tabs={headers}
+                        tabs={headers}                        
                     />
                 </CardHeader>
                 <CardBody>
@@ -174,11 +175,19 @@ const CampaignSetupView = (props) => {
                                     onClick={() => props.onFinish()}
                                     variant="secondary">Cancel
                                 </Button>
-                                <Button
-                                    className='navigation-footer-button fit-to-right'
-                                    onClick={goToPreviewPage}
-                                    variant="primary" >Next
-                                </Button>
+                                <ButtonGroup className='navigation-footer-button fit-to-right'>
+                                    <Button
+                                        onClick={goToPreviewPage}
+                                        variant={props.isUpdate ? "secondary" : "primary"}>Preview
+                                    </Button>
+                                    {props.isUpdate ? (<Button
+                                        disabled={publishing}
+                                        isBusy={publishing}
+                                        onClick={publishChanges}
+                                        style={{ marginLeft: "10px" }}
+                                        variant="primary" >Publish Changes
+                                    </Button>) : (<></>)}
+                                </ButtonGroup>
                             </div>)
                             : (<div className='navigation-footer-container'>
                                 <Button
@@ -189,6 +198,7 @@ const CampaignSetupView = (props) => {
                                 <Button
                                     className='navigation-footer-button fit-to-right'
                                     disabled={publishing}
+                                    isBusy={publishing}                                    
                                     onClick={publishChanges}
                                     variant="primary">Publish Changes</Button>
                             </div>)
