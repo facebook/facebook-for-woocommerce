@@ -59,6 +59,8 @@ class WC_Facebook_Product_Feed {
 
 			\WC_Facebookcommerce_Utils::log( 'Product feed file generated' );
 
+			do_action('wc_facebook_feed_generation_completed');
+
 		} catch ( \Exception $exception ) {
 
 			\WC_Facebookcommerce_Utils::log( $exception->getMessage() );

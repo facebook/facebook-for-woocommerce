@@ -35,6 +35,8 @@ class GenerateProductFeed extends AbstractChainedJob {
 		$feed_handler = new \WC_Facebook_Product_Feed();
 		$feed_handler->rename_temporary_feed_file_to_final_feed_file();
 		facebook_for_woocommerce()->get_tracker()->save_batch_generation_time();
+
+		do_action('wc_facebook_feed_generation_completed');
 	}
 
 	/**
