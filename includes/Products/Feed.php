@@ -215,17 +215,19 @@ class Feed {
 		// Step 1 - Get feed ID if it is already available in local cache
 		$feed_id = facebook_for_woocommerce()->get_integration()->get_feed_id();
 		if ($feed_id !== null && $feed_id !== '') {
-			WC_Facebookcommerce_Utils::log( 'Feed: retrieve_integration_feed_id(): feed_id = '.$feed_id.', from local cache');
-
-			// TODO: Raman sugested to query if this feed ID is still available on Meta side
-			return $feed_id;
+			if ( self::validate_feed_exists($feed_id) ) {
+				WC_Facebookcommerce_Utils::log( 'Feed: retrieve_integration_feed_id(): feed_id = '.$feed_id.', from local cache.');
+				return $feed_id;
+			} else {
+				WC_Facebookcommerce_Utils::log( 'Feed: retrieve_integration_feed_id(): feed_id = '.$feed_id.', from local cache was invalidated.');
+			}
 		}
 
 		// Step 2 - Query feeds data from Meta and filter the right one
 		$feed_id = self::query_and_filter_integration_feed_id();
 		if ($feed_id !== null && $feed_id !== '') {
 			facebook_for_woocommerce()->get_integration()->update_feed_id($feed_id);
-			WC_Facebookcommerce_Utils::log( 'Feed: retrieve_integration_feed_id(): feed_id = '.$feed_id.', queried from Meta API.');
+			WC_Facebookcommerce_Utils::log( 'Feed: retrieve_integration_feed_id(): feed_id = '.$feed_id.', queried and filtered from Meta API.');
 			return $feed_id;
 		}
 
@@ -243,10 +245,34 @@ class Feed {
 	/**
 	 * TODO: description and signiture
 	 */
+	private function validate_feed_exists($feed_id) {
+		$catalog_id = facebook_for_woocommerce()->get_integration()->get_product_catalog_id();
+		if ( '' === $catalog_id ) {
+			throw new Error( 'No catalog ID' );
+		}
+		
+		try {
+			$feed_nodes = facebook_for_woocommerce()->get_api()->read_feeds( $catalog_id )->data;
+		} catch ( Exception $e ) {
+			$message = sprintf( 'There was an error trying to get feed nodes for catalog: %s', $e->getMessage() );
+			WC_Facebookcommerce_Utils::log( $message );
+			return '';
+		}
+
+		foreach ( $feed_nodes as $feed ) {
+			if ($feed['id'] == $feed_id) {
+				return true;
+			}
+		}
+
+		return false;
+	}
+
+	/**
+	 * TODO: description and signiture
+	 */
 	private function query_and_filter_integration_feed_id() {
 		$catalog_id = facebook_for_woocommerce()->get_integration()->get_product_catalog_id();
-
-		// No catalog id. Most probably means that we don't have a valid connection.
 		if ( '' === $catalog_id ) {
 			throw new Error( 'No catalog ID' );
 		}
