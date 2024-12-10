@@ -39,6 +39,8 @@ class Feed {
 	/** @var string the WordPress option name where the secret included in the feed URL is stored */
 	const OPTION_FEED_URL_SECRET = 'wc_facebook_feed_url_secret';
 
+	// TODO: add description
+	const FEED_NAME = 'Product Feed by Facebook for WooCommerce plugin. DO NOT DELETE.';
 
 	/**
 	 * Feed constructor.
@@ -189,9 +191,9 @@ class Feed {
 	 * TODO: description and signiture
 	 */
 	public function send_request_to_upload_feed() {
-		$feed_id = self::retrieve_integration_feed_id();
+		$feed_id = self::retrieve_or_create_integration_feed_id();
 		if ($feed_id === null || $feed_id === '') {
-			WC_Facebookcommerce_Utils::log( 'Feed: integration feed ID was not retrieved, feed will not be upload' );
+			WC_Facebookcommerce_Utils::log( 'Feed: integration feed ID is null or empty, feed will not be uploaded.' );
 			return;
 		}
 
@@ -202,14 +204,14 @@ class Feed {
 		try {
 			facebook_for_woocommerce()->get_api()->create_upload($feed_id, $data );
 		} catch ( Exception $exception ) {
-			facebook_for_woocommerce()->log( 'Could not send create feed upload request: ' . $exception->getMessage() );
+			facebook_for_woocommerce()->log( 'Could not send create feed upload via request: ' . $exception->getMessage() );
 		}
 	}
 
 	/**
 	 * TODO: description and signiture
 	 */
-	public function retrieve_integration_feed_id() {
+	public function retrieve_or_create_integration_feed_id() {
 		// Step 1 - Get feed ID if it is already available in local cache
 		$feed_id = facebook_for_woocommerce()->get_integration()->get_feed_id();
 		if ($feed_id !== null && $feed_id !== '') {
@@ -228,15 +230,20 @@ class Feed {
 		}
 
 		// Step 3 - Create a new feed
+		$feed_id = self::create_feed_id();
+		if ($feed_id !== null && $feed_id !== '') {
+			facebook_for_woocommerce()->get_integration()->update_feed_id($feed_id);
+			WC_Facebookcommerce_Utils::log( 'Feed: retrieve_integration_feed_id(): feed_id = '.$feed_id.', created a new feed via Meta API.');
+			return $feed_id;
+		}
 
-		// TODO: create a new feed in this case
 		return '';
 	}
 
 	/**
 	 * TODO: description and signiture
 	 */
-	public function query_and_filter_integration_feed_id() {
+	private function query_and_filter_integration_feed_id() {
 		$catalog_id = facebook_for_woocommerce()->get_integration()->get_product_catalog_id();
 
 		// No catalog id. Most probably means that we don't have a valid connection.
@@ -265,8 +272,9 @@ class Feed {
 				We need to detect which feed is the one that was created for Facebook for WooCommerce plugin usage.
 
 				We are detecting based on the name.
-				- Option 1 and 2. FBE creates a catalog with feed name '{catalog name} - Feed' or '{catalog name} – Feed' (short vs long dash)
-				- Option 3. Plugin used to create a feed name 'Initial product sync from WooCommerce. DO NOT DELETE.'
+				- Option 1. Plugin can create this feed name currently.
+				- Option 2 and 3. FBE creates a catalog with feed name '{catalog name} - Feed' or '{catalog name} – Feed' (short vs long dash)
+				- Option 4. Plugin used to create a feed name 'Initial product sync from WooCommerce. DO NOT DELETE.'
 			*/
 			foreach ( $feed_nodes as $feed ) {
 				try {
@@ -277,18 +285,40 @@ class Feed {
 					continue;
 				}
 
-				$woo_feed_name_option_1 = sprintf( '%s - Feed', $catalog['name'] );
-				$woo_feed_name_option_2 = sprintf( '%s – Feed', $catalog['name'] );
-				$woo_feed_name_option_3 = 'Initial product sync from WooCommerce. DO NOT DELETE.';
+				$woo_feed_name_option_1 = self::FEED_NAME;
+				$woo_feed_name_option_2 = sprintf( '%s - Feed', $catalog['name'] );
+				$woo_feed_name_option_3 = sprintf( '%s – Feed', $catalog['name'] );
+				$woo_feed_name_option_4 = 'Initial product sync from WooCommerce. DO NOT DELETE.';
 
 				if ( $feed_metadata['name'] === $woo_feed_name_option_1 ||
 					 $feed_metadata['name'] === $woo_feed_name_option_2 ||
-					 $feed_metadata['name'] === $woo_feed_name_option_3 ) {
+					 $feed_metadata['name'] === $woo_feed_name_option_3 ||
+					$feed_metadata['name'] === $woo_feed_name_option_4 ) {
 					return $feed['id'];
 				}
 			}
 		}
-		
+
+		return '';
+	}
+
+	private function create_feed_id() {
+		try {
+			$catalog_id = facebook_for_woocommerce()->get_integration()->get_product_catalog_id();
+			if ( '' === $catalog_id ) {
+				throw new Error( 'No catalog ID' );
+			}
+
+			$data = [
+				'name' => self::FEED_NAME,
+			];
+
+			$feed = facebook_for_woocommerce()->get_api()->create_feed( $catalog_id, $data );
+			return $feed['id'];
+		} catch ( Exception $exception ) {
+			facebook_for_woocommerce()->log( 'Could not create a feed: ' . $exception->getMessage() );
+		}
+
 		return '';
 	}
 

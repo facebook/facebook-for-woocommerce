@@ -515,6 +515,15 @@ class API extends Base {
 		return $this->perform_request( $request );
 	}
 
+	/**
+	 * TODO
+	 */
+	public function create_feed( string $product_catalog_id, array $data ) {
+		$request = new API\ProductCatalog\ProductFeeds\Create\Request( $product_catalog_id, $data );
+		$this->set_response_handler( API\ProductCatalog\ProductFeeds\Create\Response::class );
+		return $this->perform_request( $request );
+	}
+
 
 	/**
 	 * @param string $product_feed_upload_id
