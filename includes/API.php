@@ -516,7 +516,10 @@ class API extends Base {
 	}
 
 	/**
-	 * TODO
+	 * @param string $product_catalog_id Facebook Product Catalog ID.
+	 * @return Response
+	 * @throws ApiException
+	 * @throws API\Exceptions\Request_Limit_Reached
 	 */
 	public function create_feed( string $product_catalog_id, array $data ) {
 		$request = new API\ProductCatalog\ProductFeeds\Create\Request( $product_catalog_id, $data );
@@ -538,7 +541,10 @@ class API extends Base {
 	}
 
 	/**
-	 * TODO
+	 * @param string $product_feed_id Facebook Product Feed ID.
+	 * @return Response
+	 * @throws ApiException
+	 * @throws API\Exceptions\Request_Limit_Reached
 	 */
 	public function create_upload( string $product_feed_id, array $data ) {
 		$request = new API\ProductCatalog\ProductFeedUploads\Create\Request( $product_feed_id, $data );

@@ -39,7 +39,7 @@ class Feed {
 	/** @var string the WordPress option name where the secret included in the feed URL is stored */
 	const OPTION_FEED_URL_SECRET = 'wc_facebook_feed_url_secret';
 
-	// TODO: add description
+	/** @var string the feed name for creating a new feed by this plugin */
 	const FEED_NAME = 'Product Feed by Facebook for WooCommerce plugin. DO NOT DELETE.';
 
 	/**
@@ -180,7 +180,7 @@ class Feed {
 		 *
 		 * @param int $interval the frequency with which the product feed data is generated, in seconds. Defaults to every 15 minutes.
 		 */
-		$interval = apply_filters( 'wc_facebook_feed_generation_interval', HOUR_IN_SECONDS );
+		$interval = apply_filters( 'wc_facebook_feed_generation_interval', DAY_IN_SECONDS );
 		if ( ! as_next_scheduled_action( self::GENERATE_FEED_ACTION ) ) {
 			as_schedule_recurring_action( time(), max( 2, $interval ), self::GENERATE_FEED_ACTION, array(), facebook_for_woocommerce()->get_id_dasherized() );
 		}
@@ -188,7 +188,9 @@ class Feed {
 
 
 	/**
-	 * TODO: description and signiture
+	 * Sends request to Meta to start a one-time feed file upload session.
+	 *
+	 * @internal
 	 */
 	public function send_request_to_upload_feed() {
 		$feed_id = self::retrieve_or_create_integration_feed_id();
@@ -209,7 +211,11 @@ class Feed {
 	}
 
 	/**
-	 * TODO: description and signiture
+	 * Retrieves or creates an integration feed ID
+	 * 
+	 * @return		string the integration feed ID
+	 *
+	 * @internal
 	 */
 	public function retrieve_or_create_integration_feed_id() {
 		// Step 1 - Get feed ID if it is already available in local cache
@@ -243,7 +249,13 @@ class Feed {
 	}
 
 	/**
-	 * TODO: description and signiture
+	 * Validates that provided feed ID still exists on the Meta side
+	 *
+	 * @param 		string $feed_id the feed ID
+	 * 
+	 * @return		bool true if the feed ID is valid
+	 * 
+	 * @internal
 	 */
 	private function validate_feed_exists($feed_id) {
 		$catalog_id = facebook_for_woocommerce()->get_integration()->get_product_catalog_id();
@@ -269,7 +281,12 @@ class Feed {
 	}
 
 	/**
-	 * TODO: description and signiture
+	 * Queries existing feeds for the integration catalog and filters
+	 * the plugin integration feed ID
+	 * 
+	 * @return		string the integration feed ID
+	 * 
+	 * @internal
 	 */
 	private function query_and_filter_integration_feed_id() {
 		$catalog_id = facebook_for_woocommerce()->get_integration()->get_product_catalog_id();
@@ -328,6 +345,13 @@ class Feed {
 		return '';
 	}
 
+	/**
+	 * Makes a request to Meta to create a new feed
+	 * 
+	 * @return		string the integration feed ID
+	 * 
+	 * @internal
+	 */
 	private function create_feed_id() {
 		try {
 			$catalog_id = facebook_for_woocommerce()->get_integration()->get_product_catalog_id();
