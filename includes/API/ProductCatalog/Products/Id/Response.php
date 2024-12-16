@@ -10,7 +10,7 @@ defined( 'ABSPATH' ) || exit;
 /**
  * Response object for Product Catalog > Product Groups > Update Graph Api.
  *
- * @link https://developers.facebook.com/docs/marketing-api/reference/product-group/products/
+ * @link https://developers.facebook.com/docs/marketing-api/reference/product-catalog/products/
  * @property-read string id Either request was successful or not.
  * @property-read array product_group Product group data container containing facebook product group id
  *                                    e.g. product_group => [ id => <facebook product group id>]

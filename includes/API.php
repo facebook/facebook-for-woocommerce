@@ -439,12 +439,13 @@ class API extends Base {
 	 *
 	 * @param string $facebook_product_catalog_id
 	 * @param string $facebook_retailer_id
+	 * @param bool   $should_use_filter_endpoint Whether to use endpoint with the filter parameter.
 	 * @return API\Response|API\ProductCatalog\Products\Id\Response
 	 * @throws ApiException In case of network request error.
 	 * @throws API\Exceptions\Request_Limit_Reached
 	 */
-	public function get_product_facebook_ids( string $facebook_product_catalog_id, string $facebook_retailer_id ): API\ProductCatalog\Products\Id\Response {
-		$request = new API\ProductCatalog\Products\Id\Request( $facebook_product_catalog_id, $facebook_retailer_id );
+	public function get_product_facebook_ids( string $facebook_product_catalog_id, string $facebook_retailer_id, bool $should_use_filter_endpoint ): API\ProductCatalog\Products\Id\Response {
+		$request = new API\ProductCatalog\Products\Id\Request( $facebook_product_catalog_id, $facebook_retailer_id, $should_use_filter_endpoint );
 		$this->set_response_handler( API\ProductCatalog\Products\Id\Response::class );
 		return $this->perform_request( $request );
 	}
