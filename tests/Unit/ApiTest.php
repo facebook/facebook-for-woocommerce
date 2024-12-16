@@ -715,4 +715,63 @@ class ApiTest extends WP_UnitTestCase {
 			$response->data
 		);
 	}
+
+	/**
+	 * Tests create feed request to Facebook.
+	 *
+	 * @return void
+	 * @throws ApiException In case of network request error.
+	 */
+	public function test_create_feed_request() {
+		$facebook_product_catalog_id = '726635365295186';
+
+		$data = [
+			'name' => "Test feed name.",
+		];
+
+		$response = function( $result, $parsed_args, $url ) use ( $facebook_product_catalog_id ) {
+			$this->assertEquals( 'POST', $parsed_args['method'] );
+			$this->assertEquals( "{$this->endpoint}{$this->version}/{$facebook_product_catalog_id}/product_feeds", $url );
+			return [
+				'body'     => '{"id":"1068839467367301"}',
+				'response' => [
+					'code'    => 200,
+					'message' => 'OK',
+				],
+			];
+		};
+		add_filter( 'pre_http_request', $response, 10, 3 );
+
+		$response_feed = $this->api->create_feed( $facebook_product_catalog_id, $data );
+
+		$this->assertEquals( '1068839467367301', $response_feed['id'] );
+	}
+
+	/**
+	 * Tests create feed upload request to Facebook.
+	 *
+	 * @return void
+	 * @throws ApiException In case of network request error.
+	 */
+	public function test_create_upload_request() {
+		$product_feed_id = '1068839467367301';
+
+		$data = [
+			'url' => 'http://example.com/?wc-api=wc_facebook_get_feed_data&secret=c4b8c3c46145aac6519e3f8a28bc86f2',
+		];
+
+		$response = function( $result, $parsed_args, $url ) use ( $product_feed_id ) {
+			$this->assertEquals( 'POST', $parsed_args['method'] );
+			$this->assertEquals( "{$this->endpoint}{$this->version}/{$product_feed_id}/uploads", $url );
+			return [
+				'response' => [
+					'code'    => 200,
+					'message' => 'OK',
+				],
+			];
+		};
+		add_filter( 'pre_http_request', $response, 10, 3 );
+
+		$this->api->create_upload( $product_feed_id, $data );
+	}
 }
