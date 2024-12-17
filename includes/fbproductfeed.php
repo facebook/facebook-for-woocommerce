@@ -375,7 +375,7 @@ class WC_Facebook_Product_Feed {
 		return 'id,title,description,image_link,link,product_type,' .
 		'brand,price,availability,item_group_id,checkout_url,' .
 		'additional_image_link,sale_price_effective_date,sale_price,condition,' .
-		'visibility,gender,color,size,pattern,google_product_category,default_product,variant,gtin,quantity_to_sell_on_facebook,woo_product_id' . PHP_EOL;
+		'visibility,gender,color,size,pattern,google_product_category,default_product,variant,gtin,quantity_to_sell_on_facebook' . PHP_EOL;
 	}
 
 
@@ -523,8 +523,7 @@ class WC_Facebook_Product_Feed {
 		static::get_value_from_product_data( $product_data, 'default_product' ) . ',' .
 		static::get_value_from_product_data( $product_data, 'variant' ) . ',' .
 		static::get_value_from_product_data( $product_data, 'gtin' ) . ',' .
-		static::get_value_from_product_data( $product_data, 'quantity_to_sell_on_facebook' ) . ',' .
-		static::get_value_from_product_data( $product_data, 'woo_product_id' ) . PHP_EOL;
+		static::get_value_from_product_data( $product_data, 'quantity_to_sell_on_facebook' ) . PHP_EOL;
 	}
 
 	private static function format_additional_image_url( $product_image_urls ) {

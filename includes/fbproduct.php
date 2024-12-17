@@ -918,11 +918,6 @@ class WC_Facebook_Product {
 			mb_strtolower( $product_data['description'] );
 		}
 
-		// Set feed specific data
-		if ( self::PRODUCT_PREP_TYPE_FEED === $type_to_prepare_for ) {
-			$product_data['woo_product_id'] = $this->woo_product->get_id();
-		}
-
 		/**
 			* Filters the generated product data.
 			*
