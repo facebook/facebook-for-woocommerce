@@ -501,7 +501,7 @@ class WC_Facebook_Product_Feed {
 		static::format_string_for_feed( static::get_value_from_product_data( $product_data, 'description' ) ) . ',' .
 		static::get_value_from_product_data( $product_data, 'image_url' ) . ',' .
 		static::get_value_from_product_data( $product_data, 'url' ) . ',' .
-		static::format_string_for_feed( static::get_value_from_product_data( $product_data, 'category' ) ) . ',' .
+		static::format_string_for_feed( static::get_value_from_product_data( $product_data, 'product_type' ) ) . ',' .
 		static::format_string_for_feed( static::get_value_from_product_data( $product_data, 'brand' ) ) . ',' .
 		static::format_price_for_feed(
 			static::get_value_from_product_data( $product_data, 'price', 0 ),

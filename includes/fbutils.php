@@ -229,8 +229,7 @@ if ( ! class_exists( 'WC_Facebookcommerce_Utils' ) ) :
 				)
 			);
 			$content_category_slice = array_slice( $content_category, -1 );
-			$categories             =
-			empty( $content_category ) ? '""' : implode( ', ', $content_category );
+			$categories = empty( $content_category ) ? '""' : implode( ', ', $content_category );
 			return array(
 				'name'       => array_pop( $content_category_slice ),
 				'categories' => $categories,
