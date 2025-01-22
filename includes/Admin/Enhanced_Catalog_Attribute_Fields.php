@@ -47,7 +47,7 @@ class Enhanced_Catalog_Attribute_Fields {
 	 */
 	private $category_handler;
 
-	public function __construct( $page_type, \WP_Term $term = null, \WC_Product $product = null ) {
+	public function __construct( $page_type, ?\WP_Term $term = null, ?\WC_Product $product = null ) {
 		$this->page_type        = $page_type;
 		$this->term             = $term;
 		$this->product          = $product;
