@@ -233,25 +233,6 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 				include_once 'includes/fbutils.php';
 			}
 
-			// Display an info banner for eligible pixel and user.
-			if ( $this->get_external_merchant_settings_id()
-			&& $this->get_facebook_pixel_id()
-			&& $this->get_pixel_install_time() ) {
-				$should_query_tip =
-				WC_Facebookcommerce_Utils::check_time_cap(
-					get_option( 'fb_info_banner_last_query_time', '' ),
-					self::FB_TIP_QUERY
-				);
-				$last_tip_info    = WC_Facebookcommerce_Utils::get_cached_best_tip();
-
-				if ( $should_query_tip || $last_tip_info ) {
-					if ( ! class_exists( 'WC_Facebookcommerce_Info_Banner' ) ) {
-						include_once 'includes/fbinfobanner.php';
-					}
-					WC_Facebookcommerce_Info_Banner::get_instance( $this->get_external_merchant_settings_id(), $should_query_tip );
-				}
-			}
-
 			if ( ! $this->get_pixel_install_time() && $this->get_facebook_pixel_id() ) {
 				$this->update_pixel_install_time( time() );
 			}
@@ -665,27 +646,6 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 	 * Load DIA specific JS Data
 	 */
 	public function load_assets() {
-		$ajax_data = [
-			'nonce' => wp_create_nonce( 'wc_facebook_infobanner_jsx' ),
-		];
-		// load banner assets
-		wp_enqueue_script(
-			'wc_facebook_infobanner_jsx',
-			$this->facebook_for_woocommerce->get_asset_build_dir_url() . '/admin/infobanner.js',
-			[],
-			\WC_Facebookcommerce::PLUGIN_VERSION
-		);
-		wp_localize_script( 'wc_facebook_infobanner_jsx', 'wc_facebook_infobanner_jsx', $ajax_data );
-		wp_enqueue_style(
-			'wc_facebook_infobanner_css',
-			plugins_url(
-				'/assets/css/facebook-infobanner.css',
-				__FILE__
-			),
-			[],
-			\WC_Facebookcommerce::PLUGIN_VERSION
-		);
-
 		if ( ! $this->facebook_for_woocommerce->is_plugin_settings() ) {
 			return;
 		}
@@ -703,7 +663,6 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 					pixelId: '<?php echo $this->get_facebook_pixel_id() ? esc_js( $this->get_facebook_pixel_id() ) : ''; ?>',
 					advanced_matching_supported: true
 				},
-				diaSettingId: '<?php echo $this->get_external_merchant_settings_id() ? esc_js( $this->get_external_merchant_settings_id() ) : ''; ?>',
 				store: {
 					baseUrl: window.location.protocol + '//' + window.location.host,
 					baseCurrency:'<?php echo esc_js( WC_Admin_Settings::get_option( 'woocommerce_currency' ) ); ?>',
