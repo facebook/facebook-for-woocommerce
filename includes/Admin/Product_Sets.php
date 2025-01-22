@@ -51,6 +51,14 @@ class Product_Sets {
 	 */
 	protected $categories_field = '';
 
+	/**
+	 * Tags field name.
+	 *
+	 * @since x.x.x
+	 *
+	 * @var string
+	 */
+	protected $tags_field = '';
 
 	/**
 	 * Handler constructor.
@@ -59,6 +67,8 @@ class Product_Sets {
 	 */
 	public function __construct() {
 		$this->categories_field = \WC_Facebookcommerce::PRODUCT_SET_META;
+		$this->tags_field       = \WC_Facebookcommerce::PRODUCT_SET_TAGS_META;
+
 		// add taxonomy custom field
 		add_action( 'fb_product_set_add_form_fields', array( $this, 'category_field_on_new' ) );
 		add_action( 'fb_product_set_edit_form', array( $this, 'category_field_on_edit' ) );
@@ -75,9 +85,15 @@ class Product_Sets {
 	 */
 	public function category_field_on_new() {
 		?>
+		<!-- The Category Field -->
 		<div class="form-field">
 			<?php $this->get_field_label(); ?>
 			<?php $this->get_field(); ?>
+		</div>
+		<!-- The Tag Field -->
+		<div class="form-field">
+			<?php $this->get_tag_field_label(); ?>
+			<?php $this->get_tag_field(); ?>
 		</div>
 		<?php
 	}
@@ -100,11 +116,14 @@ class Product_Sets {
 					<th scope="row"><?php $this->get_field_label(); ?></th>
 					<td><?php $this->get_field( $term_id ); ?></td>
 				</tr>
+				<tr class="form-field product-tags-wrap">
+					<th scope="row"><?php $this->get_tag_field_label(); ?></th>
+					<td><?php $this->get_tag_field( $term_id ); ?></td>
+				</tr>
 			</tbody>
 		</table>
 		<?php
 	}
-
 
 	/**
 	 * Saves custom field data
@@ -125,6 +144,12 @@ class Product_Sets {
 			);
 		}
 		update_term_meta( $term_id, $this->categories_field, $wc_product_cats );
+
+		$wc_product_tags = '';
+		if ( isset( $_POST[ $this->tags_field ] ) && ! empty( $_POST[ $this->tags_field ] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Missing
+			$wc_product_tags = array_map( 'absint', (array) wp_unslash( $_POST[ $this->tags_field ] ) ); // phpcs:ignore WordPress.Security.NonceVerification.Missing
+		}
+		update_term_meta( $term_id, $this->tags_field, $wc_product_tags );
 	}
 
 
@@ -139,6 +164,16 @@ class Product_Sets {
 		<?php
 	}
 
+	/**
+	 * Outputs the tag field label.
+	 *
+	 * @since x.x.x
+	 */
+	protected function get_tag_field_label() {
+		?>
+		<label for="<?php echo esc_attr( $this->tags_field ); ?>"><?php echo esc_html__( 'WC Product Tags', 'facebook-for-woocommerce' ); ?></label>
+		<?php
+	}
 
 	/**
 	 * Return field HTML
@@ -171,6 +206,35 @@ class Product_Sets {
 		<?php endforeach; ?>
 		</select>
 		<p class="description"><?php echo esc_html__( 'Map Facebook Product Set to WC Product Categories', 'facebook-for-woocommerce' ); ?>.</p>
+		<?php
+	}
+
+	/**
+	 * Outputs the tag field HTML.
+	 *
+	 * @since x.x.x
+	 *
+	 * @param int $term_id The Term ID that is editing.
+	 */
+	protected function get_tag_field( $term_id = '' ) {
+		$saved_items  = get_term_meta( $term_id, $this->tags_field, true );
+		$product_tags = get_terms( 'product_tag', array( 'hide_empty' => 0 ) );
+		?>
+		<div class="select2 updating-message"><p></p></div>
+		<select
+		id="<?php echo esc_attr( $this->tags_field ); ?>"
+		name="<?php echo esc_attr( $this->tags_field ); ?>[]"
+		multiple="multiple"
+		disabled="disabled"
+		class="select2 wc-facebook product_tags"
+		style="display:none;"
+		>
+		<?php foreach ( $product_tags as $product_tag ) : ?>
+			<?php $selected = ( is_array( $saved_items ) && in_array( $product_tag->term_id, $saved_items, true ) ) ? ' selected="selected"' : ''; ?>
+			<option value="<?php echo esc_attr( $product_tag->term_id ); ?>" <?php echo esc_attr( $selected ); ?>><?php echo esc_attr( $product_tag->name ); ?></option>
+		<?php endforeach; ?>
+		</select>
+		<p class="description"><?php echo esc_html__( 'Map Facebook Product Set to WC Product Tags', 'facebook-for-woocommerce' ); ?>.</p>
 		<?php
 	}
 }

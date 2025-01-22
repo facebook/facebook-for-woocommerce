@@ -42,6 +42,9 @@ class WC_Facebookcommerce extends WooCommerce\Facebook\Framework\Plugin {
 	/** @var string the product set categories meta name */
 	const PRODUCT_SET_META = '_wc_facebook_product_cats';
 
+	/** @var string the product set tags meta name */
+	const PRODUCT_SET_TAGS_META = '_wc_facebook_product_tags';
+
 	/** @var string the plugin user agent name to use for HTTP calls within User-Agent header */
 	const PLUGIN_USER_AGENT_NAME = 'Facebook-for-WooCommerce';
 
