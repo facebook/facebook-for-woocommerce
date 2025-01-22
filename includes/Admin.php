@@ -1228,7 +1228,7 @@ class Admin {
 						'teeny'        => true,
 						'quicktags'    => false,
 						'tinymce'      => array(
-							'toolbar1' => 'formatselect,bold,italic,bullist,numlist,blockquote,alignleft,aligncenter,alignright,link,wp_more,spellchecker,fullscreen',
+							'toolbar1' => 'bold,italic,bullist,spellchecker,fullscreen',
 						),
 					)
 				);
@@ -1363,26 +1363,6 @@ class Admin {
 			)
 		);
 
-		echo '<div class="wp-editor-wrap">';
-		echo '<label for="' . esc_attr(\WC_Facebookcommerce_Integration::FB_PRODUCT_DESCRIPTION) . '">' . 
-			 esc_html__( 'Facebook Description', 'facebook-for-woocommerce' ) . 
-			 '</label>';
-		wp_editor(
-			$rich_text_description,
-			\WC_Facebookcommerce_Integration::FB_PRODUCT_DESCRIPTION,
-			array(
-				'textarea_name' => \WC_Facebookcommerce_Integration::FB_PRODUCT_DESCRIPTION,
-				'textarea_rows' => 10,
-				'media_buttons' => true,
-				'teeny'        => true,
-				'quicktags'    => false,
-				'tinymce'      => array(
-					'toolbar1' => 'formatselect,bold,italic,bullist,numlist,blockquote,alignleft,aligncenter,alignright,link,wp_more,spellchecker,fullscreen',
-				),
-			)
-		);
-		echo '</div>';
-
 		woocommerce_wp_radio(
 			array(
 				'id'            => "variable_fb_product_image_source$index",
@@ -1481,6 +1461,9 @@ class Admin {
 			Products::set_product_visibility( $variation, self::SYNC_MODE_SYNC_AND_HIDE !== $sync_mode );
 			$posted_param = 'variable_' . \WC_Facebookcommerce_Integration::FB_PRODUCT_DESCRIPTION;
 			$description  = isset( $_POST[ $posted_param ][ $index ] ) ? sanitize_text_field( wp_unslash( $_POST[ $posted_param ][ $index ] ) ) : null;
+			$posted_param = 'variable_' . \WC_Facebookcommerce_Integration::FB_RICH_TEXT_DESCRIPTION;
+			// $rich_text_description  = isset( $_POST[ $posted_param ][ $index ] ) ? sanitize_text_field( wp_unslash( $_POST[ $posted_param ][ $index ] ) ) : null;
+			$rich_text_description  = 'Nene';
 			$posted_param = 'variable_fb_product_image_source';
 			$image_source = isset( $_POST[ $posted_param ][ $index ] ) ? sanitize_key( wp_unslash( $_POST[ $posted_param ][ $index ] ) ) : '';
 			$posted_param = 'variable_' . \WC_Facebook_Product::FB_PRODUCT_IMAGE;
@@ -1488,6 +1471,7 @@ class Admin {
 			$posted_param = 'variable_' . \WC_Facebook_Product::FB_PRODUCT_PRICE;
 			$price        = isset( $_POST[ $posted_param ][ $index ] ) ? wc_format_decimal( wc_clean( wp_unslash( $_POST[ $posted_param ][ $index ] ) ) ) : '';
 			$variation->update_meta_data( \WC_Facebookcommerce_Integration::FB_PRODUCT_DESCRIPTION, $description );
+			$variation->update_meta_data( 'rich_text_description', $rich_text_description );
 			$variation->update_meta_data( Products::PRODUCT_IMAGE_SOURCE_META_KEY, $image_source );
 			$variation->update_meta_data( \WC_Facebook_Product::FB_PRODUCT_IMAGE, $image_url );
 			$variation->update_meta_data( \WC_Facebook_Product::FB_PRODUCT_PRICE, $price );
