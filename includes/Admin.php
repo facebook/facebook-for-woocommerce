@@ -1298,6 +1298,21 @@ class Admin {
 				);
 				?>
 			</div>
+			
+			<div class='options_group show_if_variable'>
+				<?php
+					woocommerce_wp_text_input(
+						array(
+							'id'    => \WC_Facebook_Product::FB_BRAND,
+							'label' => __( 'Brand', 'facebook-for-woocommerce' ),
+							'value' => $fb_brand,
+							'class' => 'enable-if-sync-enabled',
+						)
+					);
+				?>
+			</div>
+
+			
 			<?php
 			$commerce_handler = facebook_for_woocommerce()->get_commerce_handler();
 			?>
@@ -1350,6 +1365,8 @@ class Admin {
 		$price        = $this->get_product_variation_meta( $variation, \WC_Facebook_Product::FB_PRODUCT_PRICE, $parent );
 		$image_url    = $this->get_product_variation_meta( $variation, \WC_Facebook_Product::FB_PRODUCT_IMAGE, $parent );
 		$image_source = $variation->get_meta( Products::PRODUCT_IMAGE_SOURCE_META_KEY );
+		// $fb_brand     = get_post_meta( $post->ID, \WC_Facebook_Product::FB_BRAND, true ) ? get_post_meta( $post->ID, \WC_Facebook_Product::FB_BRAND, true ) : get_post_meta( $post->ID, '_wc_facebook_enhanced_catalog_attributes_brand', true );
+		$fb_mpn    	  = $this->get_product_variation_meta( $variation, \WC_Facebook_Product::FB_MPN, $parent );
 
 		if ( $sync_enabled ) {
 			$sync_mode = $is_visible ? self::SYNC_MODE_SYNC_AND_SHOW : self::SYNC_MODE_SYNC_AND_HIDE;
@@ -1437,6 +1454,17 @@ class Admin {
 				'wrapper_class' => 'form-row form-full',
 			)
 		);
+
+		woocommerce_wp_text_input(
+			array(
+				'id'            => sprintf( 'variable_%s%s', \WC_Facebook_Product::FB_MPN, $index ),
+				'name'          => sprintf( "variable_%s[$index]", \WC_Facebook_Product::FB_MPN ),
+				'label' => __( 'Manufacturer Parts Number (MPN)', 'facebook-for-woocommerce' ),
+				'value' => $fb_mpn,
+				'class' => 'enable-if-sync-enabled',
+			)
+		);
+
 	}
 
 
@@ -1488,6 +1516,8 @@ class Admin {
 			Products::set_product_visibility( $variation, self::SYNC_MODE_SYNC_AND_HIDE !== $sync_mode );
 			$posted_param = 'variable_' . \WC_Facebookcommerce_Integration::FB_PRODUCT_DESCRIPTION;
 			$description  = isset( $_POST[ $posted_param ][ $index ] ) ? sanitize_text_field( wp_unslash( $_POST[ $posted_param ][ $index ] ) ) : null;
+			$posted_param = 'variable_' . \WC_Facebook_Product::FB_MPN;
+			$fb_mpn  = isset( $_POST[ $posted_param ][ $index ] ) ? sanitize_text_field( wp_unslash( $_POST[ $posted_param ][ $index ] ) ) : null;
 			$posted_param = 'variable_fb_product_image_source';
 			$image_source = isset( $_POST[ $posted_param ][ $index ] ) ? sanitize_key( wp_unslash( $_POST[ $posted_param ][ $index ] ) ) : '';
 			$posted_param = 'variable_' . \WC_Facebook_Product::FB_PRODUCT_IMAGE;
@@ -1496,6 +1526,7 @@ class Admin {
 			$price        = isset( $_POST[ $posted_param ][ $index ] ) ? wc_format_decimal( wc_clean( wp_unslash( $_POST[ $posted_param ][ $index ] ) ) ) : '';
 			$variation->update_meta_data( \WC_Facebookcommerce_Integration::FB_PRODUCT_DESCRIPTION, $description );
 			$variation->update_meta_data( Products::PRODUCT_IMAGE_SOURCE_META_KEY, $image_source );
+			$variation->update_meta_data( \WC_Facebook_Product::FB_MPN, $fb_mpn );
 			$variation->update_meta_data( \WC_Facebook_Product::FB_PRODUCT_IMAGE, $image_url );
 			$variation->update_meta_data( \WC_Facebook_Product::FB_PRODUCT_PRICE, $price );
 			$variation->save_meta_data();
