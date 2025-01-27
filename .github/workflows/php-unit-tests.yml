@@ -33,6 +33,9 @@ jobs:
         php: [7.4, 8.3]
         wp-version: [5.7, 6.6, 6.7]
         wc-version: [9.5.0, 9.6.0]
+        exclude:
+          - wp-version: 5.7
+            php: 8.3
 
     steps:
       - name: Install SVN
