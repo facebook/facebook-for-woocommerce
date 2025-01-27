@@ -908,7 +908,6 @@ class WC_Facebook_Product {
 		$matched_attributes = array_filter(
 			$all_attributes,
 			function( $attribute ) use ( $sanitized_keys ) {
-				// Check if $attribute is an array and has the 'key' index
 				if ( is_array( $attribute ) && isset( $attribute['key'] ) ) {
 					return in_array( $attribute['key'], $sanitized_keys );
 				}
@@ -949,7 +948,7 @@ class WC_Facebook_Product {
 		foreach ( $variant_names as $original_variant_name ) {
 
 			// Ensure that the attribute exists before accessing it
-			if ( ! isset( $attributes[ $original_variant_name ] ) ) {
+			if ( !isset( $attributes[ $original_variant_name ] ) ) {
 				continue; // Skip if the attribute is not set
 			}
 
