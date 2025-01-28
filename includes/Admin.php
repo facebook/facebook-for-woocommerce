@@ -1303,7 +1303,7 @@ class Admin {
 				<?php
 					woocommerce_wp_text_input(
 						array(
-							'id'    => \WC_Facebook_Product::FB_BRAND,
+							'id'    => \WC_Facebook_Product::FB_VARIABLE_BRAND,
 							'label' => __( 'Brand', 'facebook-for-woocommerce' ),
 							'value' => $fb_brand,
 							'class' => 'enable-if-sync-enabled',

@@ -37,6 +37,7 @@ class WC_Facebook_Product {
 	const FB_VISIBILITY          = 'fb_visibility';
 	const FB_REMOVE_FROM_SYNC    = 'fb_remove_from_sync';
 	const FB_BRAND               = 'fb_brand';
+	const FB_VARIABLE_BRAND      = 'fb_variable_brand';
 	const FB_MPN              	 = 'fb_mpn';
 
 	const MIN_DATE_1 = '1970-01-29';
