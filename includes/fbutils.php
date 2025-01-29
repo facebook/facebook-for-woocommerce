@@ -542,6 +542,17 @@ if ( ! class_exists( 'WC_Facebookcommerce_Utils' ) ) :
 			return ( self::$store_name ) ? ( self::$store_name ) : 'A Store Has No Name';
 		}
 
+		public static function get_store_url() {
+			$url = get_site_url();
+			if ( $url ) {
+				return $url;
+			}
+			$url = gethostname();
+			if ( $url ) {
+				return $url;
+			}
+			return "Not Found.";
+		}
 
 		/**
 		 * Get visible name for variant attribute rather than the slug

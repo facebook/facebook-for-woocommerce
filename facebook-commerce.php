@@ -59,6 +59,12 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 	/** @var string the facebook page ID setting ID */
 	const SETTING_FACEBOOK_PAGE_ID = 'wc_facebook_page_id';
 
+	/** @var string the entry that holds the settings for Advertise ASC. it is in Json format. */
+	const SETTING_ADVERTISE_ASC_INFORMATION = 'wc_facebook_advertise_asc_info';
+
+	/** @var string the entry that holds the status for Advertise ASC. */
+	const SETTING_ADVERTISE_ASC_STATUS = 'wc_facebook_advertise_asc_status';
+
 	/** @var string the facebook pixel ID setting ID */
 	const SETTING_FACEBOOK_PIXEL_ID = 'wc_facebook_pixel_id';
 
@@ -1569,6 +1575,7 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 				);
 			}
 		} catch ( ApiException $e ) {
+
 			$message = sprintf( 'There was an error trying to create/update a product set: %s', $e->getMessage() );
 			WC_Facebookcommerce_Utils::log( $message );
 		}
@@ -1897,15 +1904,14 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 			$product_data = $woo_product->prepare_product();
 
 			$feed_item = [
-				'title'        => strip_tags( $product_data['name'] ),
-				'availability' => $woo_product->is_in_stock() ? 'in stock' :
-				'out of stock',
-				'description'  => strip_tags( $product_data['description'] ),
-				'id'           => $product_data['retailer_id'],
-				'image_link'   => $product_data['image_url'],
-				'brand'        => Helper::str_truncate( wp_strip_all_tags( WC_Facebookcommerce_Utils::get_store_name() ), 100 ),
-				'link'         => $product_data['url'],
-				'price'        => $product_data['price'] . ' ' . get_woocommerce_currency(),
+				'title'          => strip_tags( $product_data['name'] ),
+				'availability'   => $woo_product->is_in_stock() ? 'in stock' : 'out of stock',
+				'description'    => strip_tags( $product_data['description'] ),
+				'id'             => $product_data['retailer_id'],
+				'image_link'     => $product_data['image_url'],
+				'brand'          => Helper::str_truncate( wp_strip_all_tags( WC_Facebookcommerce_Utils::get_store_name() ), 100 ),
+				'link'           => $product_data['url'],
+				'price'        	 => $product_data['price'] . ' ' . get_woocommerce_currency(),
 			];
 			array_push( $items, $feed_item );
 		}
@@ -2210,6 +2216,42 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 		wp_reset_postdata();
 
 		return true;
+
+	}
+
+	/**
+	 * Updates the DB with the new data for the Advertise ASC entry
+	 *
+	 * @since x.x.x
+	 *
+	 * @param string $data
+	 * @return bool
+	 */
+	public function update_advertise_asc_saved_data( $data ) {
+		return update_option ( self::SETTING_ADVERTISE_ASC_INFORMATION, $data );
+	}
+
+	/**
+	 * Updates the DB with the new data for the Advertise ASC entry. The input can be an array, which then is transformed to an encoded json string
+	 *
+	 * @since x.x.x
+	 *
+	 * @param array $data
+	 */
+	public function update_advertise_asc_information( $data ){
+		$encoded_data = wp_json_encode( $data );
+		$this->update_advertise_asc_saved_data( $encoded_data );
+	}
+
+	/**
+	 * Updates the status for Advertise ASC campaign eligibility.
+	 *
+	 * @since x.x.x
+	 *
+	 * @param array $new_status
+	 */
+	public function set_advertise_asc_status( $new_status ) {
+		update_option ( self::SETTING_ADVERTISE_ASC_STATUS, $new_status );
 	}
 
 	/**
@@ -2223,6 +2265,44 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 	}
 
 	/** Getter methods ************************************************************************************************/
+
+	/**
+	 * Gets the plain Advertise ASC data from the DB.
+	 *
+	 * @since x.x.x
+	 *
+	 * @return string
+	 */
+	public function get_advertise_asc_saved_data() {
+		return get_option (self::SETTING_ADVERTISE_ASC_INFORMATION, '');
+	}
+
+	/**
+	 * Gets the saved status for Advertise ASC campaign eligibility.
+	 *
+	 * @since x.x.x
+	 *
+	 * @param array $data
+	 */
+	public function get_advertise_asc_status() {
+		return get_option ( self::SETTING_ADVERTISE_ASC_STATUS, '' );
+	}
+
+	/**
+	 * Gets the json-decoded array of the Advertise ASC information stored in DB.
+	 *
+	 * @since x.x.x
+	 *
+	 * @return mixed
+	 */
+	public function get_advertise_asc_information() {
+		$json = $this->get_advertise_asc_saved_data();
+		if ( $json ) {
+			return json_decode( $json, true );
+		} else {
+			return array();
+		}
+	}
 
 	/**
 	 * Gets the product catalog ID.

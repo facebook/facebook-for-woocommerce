@@ -12,6 +12,8 @@ const jQueryUIAdminFileNames = [
 	'products-admin',
 	'settings-commerce',
 	'settings-sync',
+	'settings-advertise-asc',
+	'advertise-asc-ui',
 ];
 
 const jQueryUIAdminFileEntries = {};

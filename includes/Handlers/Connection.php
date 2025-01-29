@@ -329,6 +329,7 @@ class Connection {
 				wp_safe_redirect( $this->get_commerce_connect_url() );
 				exit;
 			}
+			facebook_for_woocommerce()->get_integration()->set_advertise_asc_status( '' );
 			facebook_for_woocommerce()->get_message_handler()->add_message( __( 'Connection successful!', 'facebook-for-woocommerce' ) );
 			wp_safe_redirect( facebook_for_woocommerce()->get_advertise_tab_url() );
 			exit;
@@ -422,6 +423,7 @@ class Connection {
 		update_option( \WC_Facebookcommerce_Integration::SETTING_FACEBOOK_PAGE_ID, '' );
 		update_option( \WC_Facebookcommerce_Integration::SETTING_FACEBOOK_PIXEL_ID, '' );
 		facebook_for_woocommerce()->get_integration()->update_product_catalog_id( '' );
+		facebook_for_woocommerce()->get_integration()->update_advertise_asc_saved_data( '' );
 	}
 
 
