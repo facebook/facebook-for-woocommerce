@@ -1107,9 +1107,11 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 			return;
 		}
 
+		$should_use_filter_endpoint = ($woo_product->woo_product->get_date_created() == $woo_product->woo_product->get_date_modified());
+
 		// Check if product group has been published to FB. If not, it's new.
 		// If yes, loop through variants and see if product items are published.
-		$fb_product_group_id = $this->get_product_fbid( self::FB_PRODUCT_GROUP_ID, $wp_id, $woo_product );
+		$fb_product_group_id = $this->get_product_fbid( self::FB_PRODUCT_GROUP_ID, $wp_id, $woo_product, $should_use_filter_endpoint );
 		if ( $fb_product_group_id ) {
 			$woo_product->fb_visibility = Products::is_product_visible( $woo_product->woo_product );
 			$this->update_product_group( $woo_product );
@@ -1152,9 +1154,11 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 			return;
 		}
 
+		$should_use_filter_endpoint = ($woo_product->woo_product->get_date_created() == $woo_product->woo_product->get_date_modified());
+
 		// Check if this product has already been published to FB.
 		// If not, it's new!
-		$fb_product_item_id = $this->get_product_fbid( self::FB_PRODUCT_ITEM_ID, $wp_id, $woo_product );
+		$fb_product_item_id = $this->get_product_fbid( self::FB_PRODUCT_ITEM_ID, $wp_id, $woo_product, $should_use_filter_endpoint );
 
 		if ( $fb_product_item_id ) {
 			$woo_product->fb_visibility = Products::is_product_visible( $woo_product->woo_product );
@@ -2917,10 +2921,11 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 	 *
 	 * @param string                   $fbid_type ID type (group or item)
 	 * @param int                      $wp_id post ID
+	 * @param bool                     $should_use_filter_endpoint Whether to use endpoint with the filter parameter.
 	 * @param WC_Facebook_Product|null $woo_product product
 	 * @return string facebook product id or an empty string
 	 */
-	public function get_product_fbid( string $fbid_type, int $wp_id, $woo_product = null ) {
+	public function get_product_fbid( string $fbid_type, int $wp_id, $woo_product = null, bool $should_use_filter_endpoint = false ) {
 		$fb_id = WC_Facebookcommerce_Utils::get_fbid_post_meta( $wp_id, $fbid_type );
 		if ( $fb_id ) {
 			return $fb_id;
@@ -2935,10 +2940,21 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 		$fb_retailer_id = WC_Facebookcommerce_Utils::get_fb_retailer_id( $woo_product );
 
 		try {
-			$facebook_ids = $this->facebook_for_woocommerce->get_api()->get_product_facebook_ids(
+			$response = $this->facebook_for_woocommerce->get_api()->get_product_facebook_ids(
 				$this->get_product_catalog_id(),
-				$fb_retailer_id
+				$fb_retailer_id,
+				$should_use_filter_endpoint
 			);
+
+			if ( $should_use_filter_endpoint ) {
+				if ( empty( $response->data ) || empty( $response->data[0] ) ) {
+					return null;
+				}
+
+				$facebook_ids = $response->data[0];
+			} else {
+				$facebook_ids = $response;
+			}
 
 			if ( $facebook_ids->id ) {
 				$fb_id = $fbid_type == self::FB_PRODUCT_GROUP_ID
