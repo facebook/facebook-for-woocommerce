@@ -316,9 +316,9 @@ class Lifecycle extends Framework\Lifecycle {
 		/**
 		 * Since 2.5.0 the feed generation interval is increased to 24h.
 		 * Update procedure just needs to remove all current actions.
-		 * The Feed class will reschedule new generation with proper cadence.
+		 * The ProductFeed class will reschedule new generation with proper cadence.
 		 */
-		as_unschedule_all_actions( Products\Feed::GENERATE_FEED_ACTION );
+		as_unschedule_all_actions( Products\ProductFeed::GENERATE_FEED_ACTION );
 	}
 
 	/**

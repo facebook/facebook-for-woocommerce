@@ -13,7 +13,7 @@ defined( 'ABSPATH' ) || exit;
 
 use WooCommerce\Facebook\Framework\Plugin\Exception as PluginException;
 use WooCommerce\Facebook\Products;
-use WooCommerce\Facebook\Products\Feed;
+use WooCommerce\Facebook\Products\ProductFeed;
 use WooCommerce\Facebook\Framework\Api\Exception as ApiException;
 
 
@@ -26,11 +26,7 @@ class WC_Facebook_Product_Feed {
 	/** @var string product catalog feed file directory inside the uploads folder */
 	const UPLOADS_DIRECTORY              = 'facebook_for_woocommerce';
 	const FILE_NAME                      = 'product_catalog_%s.csv';
-	const FACEBOOK_CATALOG_FEED_FILENAME = 'fae_product_catalog.csv';
 	const FB_ADDITIONAL_IMAGES_FOR_FEED  = 5;
-	const FEED_NAME                      = 'Initial product sync from WooCommerce. DO NOT DELETE.';
-	const FB_PRODUCT_GROUP_ID            = 'fb_product_group_id';
-	const FB_VISIBILITY                  = 'fb_visibility';
 
 	private $has_default_product_count = 0;
 	private $no_default_product_count  = 0;
@@ -134,7 +130,7 @@ class WC_Facebook_Product_Feed {
 	 */
 	public function get_file_name() {
 
-		$file_name = sprintf( self::FILE_NAME, wp_hash( Feed::get_feed_secret() ) );
+		$file_name = sprintf( self::FILE_NAME, wp_hash( ProductFeed::get_feed_secret() ) );
 
 		/**
 		 * Filters the product catalog feed file name.
@@ -156,7 +152,7 @@ class WC_Facebook_Product_Feed {
 	 */
 	public function get_temp_file_name() {
 
-		$file_name = sprintf( self::FILE_NAME, 'temp_' . wp_hash( Feed::get_feed_secret() ) );
+		$file_name = sprintf( self::FILE_NAME, 'temp_' . wp_hash( ProductFeed::get_feed_secret() ) );
 
 		/**
 		 * Filters the product catalog temporary feed file name.

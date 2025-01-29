@@ -5,29 +5,6 @@ declare(strict_types=1);
 class fbproductTest extends WP_UnitTestCase {
 	private $parent_fb_product;
 
-	/** @var \WC_Product_Simple */
-	protected $product;
-
-	/** @var \WC_Facebook_Product */
-	protected $fb_product;
-
-	public function setUp(): void {
-		parent::setUp();
-
-		// creating a simple product
-		$this->product = new \WC_Product_Simple();
-		$this->product->set_name('Test Product');
-		$this->product->set_regular_price('10');
-		$this->product->save();
-
-		$this->fb_product = new WC_Facebook_Product($this->product);
-	}
-
-	public function tearDown(): void {
-		parent::tearDown();
-		$this->product->delete(true);
-	}
-
 	/**
 	 * Test it gets description from post meta.
 	 * @return void
@@ -527,7 +504,7 @@ class fbproductTest extends WP_UnitTestCase {
 			$this->assertEquals($product_data[$key], $value);
 		}
 	}
-  
+
     public function test_prepare_product_with_default_fields() {
         // test when no fb specific fields are set
         $product_data = $this->fb_product->prepare_product();

@@ -6,6 +6,7 @@ namespace WooCommerce\Facebook\Jobs;
 use Automattic\WooCommerce\ActionSchedulerJobFramework\Utilities\BatchQueryOffset;
 use Exception;
 use WC_Facebookcommerce;
+use WooCommerce\Facebook\Feed\FeedGenerator;
 
 defined( 'ABSPATH' ) || exit;
 
@@ -14,7 +15,7 @@ defined( 'ABSPATH' ) || exit;
  *
  * @since 2.5.0
  */
-class GenerateProductFeed extends AbstractChainedJob {
+class GenerateProductFeed extends FeedGenerator {
 
 	use BatchQueryOffset, LoggingTrait;
 
@@ -35,6 +36,8 @@ class GenerateProductFeed extends AbstractChainedJob {
 		$feed_handler = new \WC_Facebook_Product_Feed();
 		$feed_handler->rename_temporary_feed_file_to_final_feed_file();
 		facebook_for_woocommerce()->get_tracker()->save_batch_generation_time();
+
+		do_action('wc_facebook_feed_generation_completed');
 	}
 
 	/**
@@ -118,7 +121,7 @@ class GenerateProductFeed extends AbstractChainedJob {
 	 * @return string
 	 */
 	public function get_name(): string {
-		return 'generate_feed';
+		return 'generate_product_feed';
 	}
 
 	/**

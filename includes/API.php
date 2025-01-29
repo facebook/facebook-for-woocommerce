@@ -505,14 +505,28 @@ class API extends Base {
 
 
 	/**
-	 * @param string $product_feed_id Facebook Product Feed ID.
+	 * @param string $product_feed_id Facebook Product ProductFeed ID.
+	 *
 	 * @return Response
 	 * @throws ApiException
 	 * @throws API\Exceptions\Request_Limit_Reached
+	 * Todo: update to read_product_feed or refactor how we specify which feed
 	 */
 	public function read_feed( string $product_feed_id ) {
 		$request = new API\ProductCatalog\ProductFeeds\Read\Request( $product_feed_id );
 		$this->set_response_handler( API\ProductCatalog\ProductFeeds\Read\Response::class );
+		return $this->perform_request( $request );
+	}
+
+	/**
+	 * @param string $product_catalog_id Facebook Product Catalog ID.
+	 * @return Response
+	 * @throws ApiException
+	 * @throws API\Exceptions\Request_Limit_Reached
+	 */
+	public function create_feed( string $product_catalog_id, array $data ) {
+		$request = new API\ProductCatalog\ProductFeeds\Create\Request( $product_catalog_id, $data );
+		$this->set_response_handler( API\ProductCatalog\ProductFeeds\Create\Response::class );
 		return $this->perform_request( $request );
 	}
 
@@ -526,6 +540,18 @@ class API extends Base {
 	public function read_upload( string $product_feed_upload_id ) {
 		$request = new API\ProductCatalog\ProductFeedUploads\Read\Request( $product_feed_upload_id );
 		$this->set_response_handler( API\ProductCatalog\ProductFeedUploads\Read\Response::class );
+		return $this->perform_request( $request );
+	}
+
+	/**
+	 * @param string $product_feed_id Facebook Product Feed ID.
+	 * @return Response
+	 * @throws ApiException
+	 * @throws API\Exceptions\Request_Limit_Reached
+	 */
+	public function create_upload( string $product_feed_id, array $data ) {
+		$request = new API\ProductCatalog\ProductFeedUploads\Create\Request( $product_feed_id, $data );
+		$this->set_response_handler( API\ProductCatalog\ProductFeedUploads\Create\Response::class );
 		return $this->perform_request( $request );
 	}
 

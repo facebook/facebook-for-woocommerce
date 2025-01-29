@@ -15,7 +15,7 @@ use WooCommerce\Facebook\Framework\Api\Exception as ApiException;
 use WooCommerce\Facebook\Framework\Helper;
 use WooCommerce\Facebook\Framework\Plugin\Exception as PluginException;
 use WooCommerce\Facebook\Products;
-use WooCommerce\Facebook\Products\Feed;
+use WooCommerce\Facebook\Products\ProductFeed;
 use WooCommerce\Facebook\Products\Sync;
 
 defined( 'ABSPATH' ) || exit;
@@ -662,7 +662,10 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 	}
 
 	/**
-	 * Load DIA specific JS Data
+	 * Loads and enqueues JavaScript and CSS assets for the Facebook for WooCommerce plugin for use on the frontend.
+	 * @return void
+	 * @since 1.10.0
+	 *
 	 */
 	public function load_assets() {
 		$ajax_data = [
@@ -720,7 +723,7 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 					format: 'csv'
 				},
 				feedPrepared: {
-					feedUrl: '<?php echo esc_url_raw( Feed::get_feed_data_url() ); ?>',
+					feedUrl: '<?php echo esc_url_raw( ProductFeed::get_feed_data_url() ); ?>',
 					feedPingUrl: '',
 					feedMigrated: <?php echo $this->is_feed_migrated() ? 'true' : 'false'; ?>,
 					samples: <?php echo $this->get_sample_product_feed(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
@@ -1654,7 +1657,7 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 	}
 
 	/**
-	 * Check Feed Upload Status (FBE v2.0)
+	 * Check ProductFeed Upload Status (FBE v2.0)
 	 * TODO: When migrating to FBE v2.0, remove above function and rename
 	 * below function to ajax_check_feed_upload_status()
 	 **/
@@ -2058,7 +2061,7 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 	/**
 	 * Syncs Facebook products using the GraphAPI.
 	 *
-	 * It can either use a Feed upload or update each product individually based on the selecetd method.
+	 * It can either use a ProductFeed upload or update each product individually based on the selected method.
 	 * Ends the request sending a JSON response indicating success or failure.
 	 *
 	 * @since 1.10.2
@@ -2621,7 +2624,7 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 	/**
  	 * Return true if (legacy) feed generation is enabled.
  	 *
- 	 * Feed generation for product sync is enabled by default, and generally recommended.
+	 * ProductFeed generation for product sync is enabled by default, and generally recommended.
  	 * Large stores, or stores running on shared hosting (low resources) may have issues
  	 * with feed generation. This option allows those stores to disable generation to
  	 * work around the issue.
@@ -2630,9 +2633,9 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
  	 * implemented, which should work well for all stores. This option will not disable
  	 * the new improved implementation.
  	 *
- 	 * @since 2.5.0
- 	 *
  	 * @return bool
+	 * @since 2.5.0
+	 *
  	 */
  	public function is_legacy_feed_file_generation_enabled() {
  		return 'yes' === get_option( self::OPTION_LEGACY_FEED_FILE_GENERATION_ENABLED, 'yes' );

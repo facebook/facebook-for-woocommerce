@@ -11,13 +11,13 @@ use WC_Facebookcommerce_Utils;
 use WooCommerce\Facebook\API\Exceptions\Request_Limit_Reached;
 use WooCommerce\Facebook\API\Response;
 use WooCommerce\Facebook\Framework\Api\Exception as ApiException;
-use WooCommerce\Facebook\Products\Feed;
+use WooCommerce\Facebook\Products\ProductFeed;
 use WooCommerce\Facebook\Utilities\Heartbeat;
 
 /**
  * A class responsible detecting feed configuration.
  */
-class FeedConfigurationDetection {
+class ProductFeedConfigurationDetectorForTracker implements FeedConfigurationDetectorForTracker {
 
 	/**
 	 * Constructor.
@@ -46,10 +46,17 @@ class FeedConfigurationDetection {
 	}
 
 	/**
-	 * Get config settings for feed-based sync for WooCommerce Tracker.
+	 * Retrieves configuration settings for feed-based synchronization for WooCommerce Tracker.
 	 *
-	 * @throws Error Catalog id missing.
+	 * This method gathers various settings related to the feed and data about recent uploads.
+	 * It formats them into an array of key-value pairs and returns this array.
+	 * If no catalog ID is found or no feed nodes are available, it throws an error.
+	 * The method also determines the most relevant feed configuration and collects detailed metadata
+	 * about the most recent feed upload.
+	 *
 	 * @return array Key-value array of various configuration settings.
+	 * @throws \Error If the catalog ID is missing or no feed nodes are available.
+	 * @since 2.6.0
 	 */
 	private function get_data_source_feed_tracker_info() {
 		$integration         = facebook_for_woocommerce()->get_integration();
@@ -171,7 +178,7 @@ class FeedConfigurationDetection {
 			// True if the feed upload url (Facebook side) matches the feed endpoint URL and secret.
 			// If it doesn't match, it's likely it's unused.
 			$upload['url-matches-site-endpoint'] = wc_bool_to_string(
-				Feed::get_feed_data_url() === $upload_metadata['url']
+				ProductFeed::get_feed_data_url() === $upload_metadata['url']
 			);
 
 			$info['active-feed']['latest-upload'] = $upload;
@@ -183,10 +190,10 @@ class FeedConfigurationDetection {
 	/**
 	 * Given catalog id this function fetches all feed configurations defined for this catalog.
 	 *
-	 * @throws Error Feed configurations fetch was not successful.
-	 * @param String                        $catalog_id Facebook Catalog ID.
+	 * @param String $catalog_id Facebook Catalog ID.
 	 *
 	 * @return array Array of feed configurations.
+	 * @throws Error ProductFeed configurations fetch was not successful.
 	 */
 
 	/**

@@ -63,7 +63,7 @@ class WC_Facebookcommerce extends WooCommerce\Facebook\Framework\Plugin {
 	/** @var WooCommerce\Facebook\AJAX Ajax handler instance */
 	private $ajax;
 
-	/** @var WooCommerce\Facebook\Products\Feed product feed handler */
+	/** @var WooCommerce\Facebook\Products\ProductFeed product feed handler */
 	private $product_feed;
 
 	/** @var Background_Handle_Virtual_Products_Variations instance */
@@ -105,7 +105,7 @@ class WC_Facebookcommerce extends WooCommerce\Facebook\Framework\Plugin {
 	/** @var WooCommerce\Facebook\ExternalVersionUpdate */
 	private $external_version_update;
 
-	/** @var WooCommerce\Facebook\Feed\FeedConfigurationDetection instance. */
+	/** @var WooCommerce\Facebook\Feed\ProductFeedConfigurationDetector instance. */
 	private $configuration_detection;
 
 	/** @var WooCommerce\Facebook\Products\FBCategories instance. */
@@ -184,11 +184,11 @@ class WC_Facebookcommerce extends WooCommerce\Facebook\Framework\Plugin {
 			$this->heartbeat = new Heartbeat( WC()->queue() );
 			$this->heartbeat->init();
 
-			$this->product_feed              = new WooCommerce\Facebook\Products\Feed();
+			$this->product_feed            = new WooCommerce\Facebook\Products\ProductFeed( "product" );
 			$this->products_stock_handler    = new WooCommerce\Facebook\Products\Stock();
 			$this->products_sync_handler     = new WooCommerce\Facebook\Products\Sync();
 			$this->sync_background_handler   = new WooCommerce\Facebook\Products\Sync\Background();
-			$this->configuration_detection   = new WooCommerce\Facebook\Feed\FeedConfigurationDetection();
+			$this->configuration_detection = new WooCommerce\Facebook\Feed\ProductFeedConfigurationDetectorForTracker();
 			$this->product_sets_sync_handler = new WooCommerce\Facebook\ProductSets\Sync();
 			$this->commerce_handler          = new WooCommerce\Facebook\Commerce();
 			$this->fb_categories             = new WooCommerce\Facebook\Products\FBCategories();

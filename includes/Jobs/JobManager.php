@@ -40,7 +40,7 @@ class JobManager {
 	public function init() {
 		$action_scheduler_proxy = new ActionScheduler();
 
-		$this->generate_product_feed_job = new GenerateProductFeed( $action_scheduler_proxy );
+		$this->generate_product_feed_job = new GenerateProductFeed( $action_scheduler_proxy, new \WC_Facebook_Product_Feed() );
 		$this->generate_product_feed_job->init();
 
 		$this->cleanup_skyverge_job_options = new CleanupSkyvergeFrameworkJobOptions();
