@@ -31,6 +31,10 @@ class Advertise extends Abstract_Settings_Screen {
 	 * @since 2.2.0
 	 */
 	public function __construct() {
+		add_action('init', [$this, 'initHook']);
+	}
+
+	public function initHook(): void {
 		$this->id    = self::ID;
 		$this->label             = __( 'Advertise', 'facebook-for-woocommerce' );
 		$this->title             = __( 'Advertise', 'facebook-for-woocommerce' );
