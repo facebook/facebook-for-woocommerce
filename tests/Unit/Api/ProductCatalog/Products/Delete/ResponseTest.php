@@ -2,7 +2,7 @@
 
 declare( strict_types=1 );
 
-namespace API\ProductCatalog\Products\Delete;
+namespace Api\ProductCatalog\Products\Delete;
 
 use WooCommerce;
 use WP_UnitTestCase;
