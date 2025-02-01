@@ -15,7 +15,7 @@ defined( 'ABSPATH' ) || exit;
 use WooCommerce\Facebook\API\FBE\Installation;
 
 /**
- * FBE installation API read request object.
+ * FBE installation API delete request object.
  *
  * @since 2.0.0
  */

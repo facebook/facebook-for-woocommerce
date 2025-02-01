@@ -382,8 +382,8 @@ class Connection {
 		}
 		try {
 			$external_business_id = $this->get_external_business_id();
-			if ( null !== $external_business_id ) {
-				$response = facebook_for_woocommerce()->get_api()->delete_mbe_connection((string) $external_business_id);
+			if ( null != $external_business_id ) {
+				$response = facebook_for_woocommerce()->get_api()->delete_mbe_connection((string) $external_business_id );
 				facebook_for_woocommerce()->get_message_handler()->add_message( __( 'Disconnection successful.', 'facebook-for-woocommerce' ) );
 
 				$body = wp_remote_retrieve_body( $response );
