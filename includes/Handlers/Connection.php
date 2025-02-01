@@ -389,6 +389,7 @@ class Connection {
 				$body = wp_remote_retrieve_body( $response );
 				$body = json_decode( $body, true );
 				if ( ! is_array( $body ) || empty( $body['data'] ) || 200 !== (int) wp_remote_retrieve_response_code( $response ) ) {
+					facebook_for_woocommerce()->log( 'Disconnection successful.' );
 					facebook_for_woocommerce()->log( print_r( $body, true ) );
 					throw new ApiException(
 						sprintf(wp_remote_retrieve_response_message( $response ))
