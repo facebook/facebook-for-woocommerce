@@ -381,11 +381,20 @@ class Connection {
 			wp_die( esc_html__( 'You do not have permission to uninstall Facebook Business Extension.', 'facebook-for-woocommerce' ) );
 		}
 		try {
-			$response = facebook_for_woocommerce()->get_api()->get_user();
-			$id       = $response->get_id();
-			if ( null !== $id ) {
-				$response = facebook_for_woocommerce()->get_api()->delete_user_permission( (string) $id , 'manage_business_extension' );
+			$external_business_id = $this->get_external_business_id();
+			if ( null != $external_business_id ) {
+				$response = facebook_for_woocommerce()->get_api()->delete_mbe_connection((string) $external_business_id );
 				facebook_for_woocommerce()->get_message_handler()->add_message( __( 'Disconnection successful.', 'facebook-for-woocommerce' ) );
+
+				$body = wp_remote_retrieve_body( $response );
+				$body = json_decode( $body, true );
+				if ( ! is_array( $body ) || empty( $body['data'] ) || 200 !== (int) wp_remote_retrieve_response_code( $response ) ) {
+					facebook_for_woocommerce()->log( 'Disconnection successful.' );
+					facebook_for_woocommerce()->log( print_r( $body, true ) );
+					throw new ApiException(
+						sprintf(wp_remote_retrieve_response_message( $response ))
+					);
+				}
 			} else {
 				facebook_for_woocommerce()->log( 'User id not found for the disconnection procedure, connection will be reset.' );
 			}

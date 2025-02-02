@@ -172,13 +172,13 @@ class ApiTest extends WP_UnitTestCase {
 	 * @return void
 	 * @throws ApiException In case of failed request.
 	 */
-	public function test_delete_user_permission_deletes_user_permission_request() {
-		$user_id    = '111189594891749';
-		$permission = 'manage_business_extension';
+	public function test_delete_mbe_connection_deletes_user_permission_request() {
+		$external_business_id = 'wordpress-facebook-62c3f1add134a';
 
-		$response = function( $result, $parsed_args, $url ) use ( $user_id, $permission ) {
+		$response = function( $result, $parsed_args, $url ) use ( $external_business_id ) {
 			$this->assertEquals( 'DELETE', $parsed_args['method'] );
-			$this->assertEquals( "{$this->endpoint}{$this->version}/{$user_id}/permissions/{$permission}", $url );
+			$this->assertEquals( "{$this->endpoint}{$this->version}/fbe_business/fbe_installs", $url );
+			$this->assertEquals( '{"fbe_external_business_id":"wordpress-facebook-62c3f1add134a"}', $parsed_args['body'] );
 			return [
 				'body'     => '{"success":true}',
 				'response' => [
@@ -189,7 +189,7 @@ class ApiTest extends WP_UnitTestCase {
 		};
 		add_filter( 'pre_http_request', $response, 10, 3 );
 
-		$response = $this->api->delete_user_permission( $user_id, $permission );
+		$response = $this->api->delete_mbe_connection( $external_business_id );
 
 		$this->assertTrue( $response->success );
 	}

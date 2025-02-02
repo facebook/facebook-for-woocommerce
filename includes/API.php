@@ -250,18 +250,17 @@ class API extends Base {
 
 
 	/**
-	 * Deletes user API permission.
+	 * Deletes FBE/MBE connection API.
 	 *
 	 * This is their form of "revoke".
 	 *
-	 * @param string $user_id user ID. Defaults to the currently authenticated user
-	 * @param string $permission permission to delete
-	 * @return API\Response|API\User\Permissions\Delete\Response
+	 * @param string $external_business_id external business ID
+	 * @return API\Response|API\FBE\Installation\Delete\Response
 	 * @throws ApiException
 	 */
-	public function delete_user_permission( string $user_id, string $permission ): API\User\Permissions\Delete\Response {
-		$request = new API\User\Permissions\Delete\Request( $user_id, $permission );
-		$this->set_response_handler( API\User\Permissions\Delete\Response::class );
+	public function delete_mbe_connection( string $external_business_id): API\FBE\Installation\Delete\Response {
+		$request = new API\FBE\Installation\Delete\Request( $external_business_id);
+		$this->set_response_handler( API\FBE\Installation\Delete\Response::class );
 		return $this->perform_request( $request );
 	}
 
