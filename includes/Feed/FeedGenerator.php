@@ -32,11 +32,10 @@ class FeedGenerator extends AbstractChainedJob {
 	 * FeedGenerator constructor.
 	 *
 	 * @param ActionSchedulerInterface $action_scheduler The action scheduler instance.
-	 * @param WC_Facebook_Product_Feed $feed_handler The feed handler instance.
 	 */
-	public function __construct( ActionSchedulerInterface $action_scheduler, WC_Facebook_Product_Feed $feed_handler ) {
+	public function __construct( ActionSchedulerInterface $action_scheduler ) {
 		parent::__construct( $action_scheduler );
-		$this->feed_handler = $feed_handler;
+		$this->feed_handler = new WC_Facebook_Product_Feed();
 	}
 
 	/**
