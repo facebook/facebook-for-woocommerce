@@ -3,6 +3,7 @@
 namespace WooCommerce\Facebook\Jobs;
 
 use Automattic\WooCommerce\ActionSchedulerJobFramework\Proxies\ActionScheduler;
+use WooCommerce\Facebook\Feed\FeedGeneratorFactory;
 
 defined( 'ABSPATH' ) || exit;
 
@@ -34,6 +35,12 @@ class JobManager {
 	public $delete_all_products;
 
 	/**
+	 * Publicly accessible instance to get the correct generator
+	 * @var FeedGeneratorFactory
+	 */
+	public FeedGeneratorFactory $generator_factory;
+
+	/**
 	 * Instantiate and init all jobs for the plugin.
 	 */
 	public function init() {
@@ -41,6 +48,9 @@ class JobManager {
 
 		$this->generate_product_feed_job = new GenerateProductFeed( $action_scheduler_proxy );
 		$this->generate_product_feed_job->init();
+
+		// Creates all the feed generators except for product
+		$this->generator_factory = new FeedGeneratorFactory( $action_scheduler_proxy );
 
 		$this->cleanup_skyverge_job_options = new CleanupSkyvergeFrameworkJobOptions();
 		$this->cleanup_skyverge_job_options->init();
