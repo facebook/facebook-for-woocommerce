@@ -39,7 +39,15 @@ class PromotionsFeed extends AbstractFeed {
 	 * The method ensures that the feed is regenerated based on the defined schedule.
 	 */
 	public function regenerate_feed() {
-		// TODO: Implement regenerate_feed() method.
+		// Maybe use new ( experimental ), feed generation framework.
+		if ( facebook_for_woocommerce()->get_integration()->is_new_style_feed_generation_enabled() ) {
+			$generate_factory = facebook_for_woocommerce()->job_manager->generator_factory;
+			$generator        = $generate_factory->get_feed_generator( 'PromotionsFeedGenerator' );
+			$generator->queue_start();
+		} else {
+			$feed_handler = new \WC_Facebook_Product_Feed();
+			$feed_handler->generate_feed();
+		}
 	}
 
 	/**
