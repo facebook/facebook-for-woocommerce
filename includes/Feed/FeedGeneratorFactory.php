@@ -31,15 +31,15 @@ class FeedGeneratorFactory {
 	 * @param ActionScheduler $scheduler The action scheduler instance.
 	 */
 	public function __construct( ActionScheduler $scheduler ) {
-		// Will refactor this as more feeds are added.
-		$data_stream_name = FeedType::PROMOTIONS;
-		$feed_writer      = new CsvFeedFileWriter( $data_stream_name );
+		foreach ( FeedType::get_feed_types() as $data_stream_name ) {
+			$feed_writer = FeedType::get_feed_file_writer( $data_stream_name );
 
-		$feed_handler              = new PromotionsFeedHandler( $feed_writer );
-		$promotions_feed_generator = new PromotionsFeedGenerator( $scheduler, $feed_handler );
+			$feed_handler              = new PromotionsFeedHandler( $feed_writer );
+			$promotions_feed_generator = new PromotionsFeedGenerator( $scheduler, $feed_handler );
 
-		$promotions_feed_generator->init();
-		$this->feed_generators[ $data_stream_name ] = $promotions_feed_generator;
+			$promotions_feed_generator->init();
+			$this->feed_generators[ $data_stream_name ] = $promotions_feed_generator;
+		}
 	}
 
 	/**
