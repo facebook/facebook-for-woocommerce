@@ -12,6 +12,7 @@ namespace WooCommerce\Facebook\Promotions;
 defined( 'ABSPATH' ) || exit;
 
 use WooCommerce\Facebook\Feed\AbstractFeed;
+use WooCommerce\Facebook\Feed\CsvFeedFileWriter;
 
 /**
  * Promotions Feed class
@@ -22,6 +23,18 @@ use WooCommerce\Facebook\Feed\AbstractFeed;
  * @since 1.11.0
  */
 class PromotionsFeed extends AbstractFeed {
+
+	/**
+	 * Constructor.
+	 */
+	public function __construct() {
+		$data_stream_name     = 'Promotions';
+		$generator_factory    = facebook_for_woocommerce()->job_manager->generator_factory;
+		$this->feed_generator = $generator_factory->get_feed_generator( 'PromotionsFeedGenerator' );
+		$this->feed_handler   = new PromotionsFeedHandler( new CsvFeedFileWriter( $data_stream_name ) );
+		parent::__construct( $data_stream_name );
+	}
+
 	/**
 	 * Schedules the recurring feed generation.
 	 *
@@ -40,12 +53,9 @@ class PromotionsFeed extends AbstractFeed {
 	public function regenerate_feed() {
 		// Maybe use new ( experimental ), feed generation framework.
 		if ( facebook_for_woocommerce()->get_integration()->is_new_style_feed_generation_enabled() ) {
-			$generate_factory = facebook_for_woocommerce()->job_manager->generator_factory;
-			$generator        = $generate_factory->get_feed_generator( 'PromotionsFeedGenerator' );
-			$generator->queue_start();
+			$this->feed_generator->queue_start();
 		} else {
-			$feed_handler = new \WC_Facebook_Product_Feed();
-			$feed_handler->generate_feed();
+			$this->feed_handler->generate_feed_file();
 		}
 	}
 

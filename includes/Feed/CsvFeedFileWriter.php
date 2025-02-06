@@ -18,7 +18,7 @@ defined( 'ABSPATH' ) || exit;
  * To be used by the feed handler to write its updates to its feed file.
  * To be used by any feed handler whose feed requires a csv file.
  */
-class CsvFeedFileWriter {
+class CsvFeedFileWriter implements FeedFileWriter {
 	/**
 	 * Use the feed name to distinguish which folder to write to.
 	 *
