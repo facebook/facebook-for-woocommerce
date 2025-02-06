@@ -5,8 +5,6 @@ namespace WooCommerce\Facebook\Feed;
 defined( 'ABSPATH' ) || exit;
 
 use Automattic\WooCommerce\ActionSchedulerJobFramework\Proxies\ActionScheduler;
-use WooCommerce\Facebook\Feed\FeedType;
-use WooCommerce\Facebook\Feed\CsvFeedFileWriter;
 use WooCommerce\Facebook\Promotions\PromotionsFeedGenerator;
 use WooCommerce\Facebook\Promotions\PromotionsFeedHandler;
 
@@ -33,11 +31,15 @@ class FeedGeneratorFactory {
 	 * @param ActionScheduler $scheduler The action scheduler instance.
 	 */
 	public function __construct( ActionScheduler $scheduler ) {
-		$feed_writer               = new CsvFeedFileWriter( FeedType::PROMOTIONS );
+		// Will refactor this as more feeds are added.
+		$data_stream_name = FeedType::PROMOTIONS;
+		$feed_writer      = new CsvFeedFileWriter( $data_stream_name );
+
 		$feed_handler              = new PromotionsFeedHandler( $feed_writer );
 		$promotions_feed_generator = new PromotionsFeedGenerator( $scheduler, $feed_handler );
+
 		$promotions_feed_generator->init();
-		$this->feed_generators[ FeedType::PROMOTIONS ] = $promotions_feed_generator;
+		$this->feed_generators[ $data_stream_name ] = $promotions_feed_generator;
 	}
 
 	/**
@@ -45,7 +47,7 @@ class FeedGeneratorFactory {
 	 *
 	 * @param string $feed_gen_class_name The class name of the feed generator.
 	 *
-	 * @return \WooCommerce\Facebook\Feed\FeedGenerator
+	 * @return FeedGenerator
 	 */
 	public function get_feed_generator( string $feed_gen_class_name ): FeedGenerator {
 		return $this->feed_generators[ $feed_gen_class_name ];
