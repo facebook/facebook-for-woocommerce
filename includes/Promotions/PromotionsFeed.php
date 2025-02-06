@@ -14,6 +14,7 @@ defined( 'ABSPATH' ) || exit;
 use WooCommerce\Facebook\Feed\AbstractFeed;
 use WooCommerce\Facebook\Feed\CsvFeedFileWriter;
 use WooCommerce\Facebook\Feed\FeedType;
+use WooCommerce\Facebook\Utilities\Heartbeat;
 
 /**
  * Promotions Feed class
@@ -33,6 +34,8 @@ class PromotionsFeed extends AbstractFeed {
 		$generator_factory    = facebook_for_woocommerce()->job_manager->generator_factory;
 		$this->feed_generator = $generator_factory->get_feed_generator( $data_stream_name );
 		$this->feed_handler   = new PromotionsFeedHandler( new CsvFeedFileWriter( $data_stream_name ) );
+		// The daily heartbeat is guess for now, can change as needed.
+		$this->feed_info_to_tracker = new PromotionsFeedInfoToTracker( Heartbeat::DAILY );
 		parent::__construct( $data_stream_name );
 	}
 
