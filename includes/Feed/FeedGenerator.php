@@ -20,22 +20,21 @@ use WooCommerce\Facebook\Jobs\AbstractChainedJob;
  * @since 2.5.0
  */
 class FeedGenerator extends AbstractChainedJob {
-	// TODO: replace with generic feed_handler class.
 	/**
 	 * The feed handler instance for the given feed.
 	 *
-	 * @var WC_Facebook_Product_Feed.
+	 * @var FeedHandler
 	 */
-	protected WC_Facebook_Product_Feed $feed_handler;
+	protected FeedHandler $feed_handler;
 
 	/**
 	 * FeedGenerator constructor.
 	 *
 	 * @param ActionSchedulerInterface $action_scheduler The action scheduler instance.
 	 */
-	public function __construct( ActionSchedulerInterface $action_scheduler ) {
+	public function __construct( ActionSchedulerInterface $action_scheduler, FeedHandler $feed_handler ) {
 		parent::__construct( $action_scheduler );
-		$this->feed_handler = new WC_Facebook_Product_Feed();
+		$this->feed_handler = $feed_handler;
 	}
 
 	/**
