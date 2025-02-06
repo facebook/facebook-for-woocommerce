@@ -74,6 +74,13 @@ abstract class AbstractFeed {
 	protected FeedHandler $feed_handler;
 
 	/**
+	 * The feed info to tracker instance for the given feed.
+	 *
+	 * @var FeedInfoToTracker
+	 */
+	protected FeedInfoToTracker $feed_info_to_tracker;
+
+	/**
 	 * Constructor.
 	 *
 	 * Initializes the feed with the given data stream name and adds the necessary hooks.
