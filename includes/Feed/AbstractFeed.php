@@ -38,6 +38,19 @@ abstract class AbstractFeed {
 	/** The feed name for creating a new feed by this plugin. Modify in extending class. */
 	const FEED_NAME = ' by Facebook for WooCommerce plugin. DO NOT DELETE.';
 
+	/**
+	 * The feed ID for the given feed.
+	 *
+	 * @var string
+	 */
+	protected string $feed_id;
+
+	/**
+	 * The upload ID for the given feed.
+	 *
+	 * @var string
+	 */
+	protected string $upload_id;
 
 	/**
 	 * The name of the data stream to be synced via this feed.
@@ -56,10 +69,9 @@ abstract class AbstractFeed {
 	/**
 	 * The feed handler instance for the given feed.
 	 *
-	 * @var \WC_Facebook_Product_Feed
-	 * Todo: replace with generic feed_handler class
+	 * @var FeedHandler
 	 */
-	protected \WC_Facebook_Product_Feed $feed_handler;
+	protected FeedHandler $feed_handler;
 
 	/**
 	 * Constructor.
@@ -113,6 +125,24 @@ abstract class AbstractFeed {
 	abstract public function handle_feed_data_request();
 
 	/**
+	 * Feed id to be used in upload
+	 *
+	 * @return string
+	 */
+	public function get_feed_id(): string {
+		return $this->feed_id;
+	}
+
+	/**
+	 * Upload id to be used in upload
+	 *
+	 * @return string
+	 */
+	public function get_upload_id(): string {
+		return $this->upload_id;
+	}
+
+	/**
 	 * Gets the URL for retrieving the product feed data.
 	 *
 	 * This method must be implemented by the concrete feed class.
@@ -137,7 +167,7 @@ abstract class AbstractFeed {
 	 *
 	 * @return string The modified action name.
 	 */
-	private static function modify_action_name( string $feed_name ): string {
+	protected static function modify_action_name( string $feed_name ): string {
 		return $feed_name . self::$data_stream_name;
 	}
 }

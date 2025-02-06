@@ -22,7 +22,6 @@ use WooCommerce\Facebook\Feed\AbstractFeed;
  * @since 1.11.0
  */
 class PromotionsFeed extends AbstractFeed {
-
 	/**
 	 * Schedules the recurring feed generation.
 	 *
