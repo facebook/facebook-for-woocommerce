@@ -6,7 +6,6 @@ defined( 'ABSPATH' ) || exit;
 
 use Automattic\WooCommerce\ActionSchedulerJobFramework\Proxies\ActionSchedulerInterface;
 use Exception;
-use WC_Facebook_Product_Feed;
 use WC_Facebookcommerce;
 use WooCommerce\Facebook\Jobs\AbstractChainedJob;
 
