@@ -13,6 +13,7 @@ defined( 'ABSPATH' ) || exit;
 
 use WooCommerce\Facebook\Feed\AbstractFeed;
 use WooCommerce\Facebook\Feed\CsvFeedFileWriter;
+use WooCommerce\Facebook\Feed\FeedType;
 
 /**
  * Promotions Feed class
@@ -28,7 +29,7 @@ class PromotionsFeed extends AbstractFeed {
 	 * Constructor.
 	 */
 	public function __construct() {
-		$data_stream_name     = 'Promotions';
+		$data_stream_name = FeedType::PROMOTIONS;
 		$generator_factory    = facebook_for_woocommerce()->job_manager->generator_factory;
 		$this->feed_generator = $generator_factory->get_feed_generator( 'PromotionsFeedGenerator' );
 		$this->feed_handler   = new PromotionsFeedHandler( new CsvFeedFileWriter( $data_stream_name ) );
