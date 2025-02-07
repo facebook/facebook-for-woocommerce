@@ -373,17 +373,10 @@ class WC_Facebook_Product {
         }
     }
 
-	public function set_product_video_urls( $video_urls ) {
-		 $attachment_id_array = explode(',', $video_urls);
-        // Remove any empty values
-        $attachment_id_array = array_filter($attachment_id_array);
-        // Trim each ID to remove any whitespace
-        $attachment_id_array = array_map('trim', $attachment_id_array);
-        $video_urls = array_map(function($attachment_id) {
-            return wp_get_attachment_url($attachment_id);
-        }, $attachment_id_array);
-        // Filter out any false values (in case an ID doesn't correspond to a valid attachment)
-        $video_urls = array_filter($video_urls);
+	public function set_product_video_urls( $attachment_ids ) {
+		$video_urls = array_filter(array_map(function($id) {
+            return trim(wp_get_attachment_url($id));
+        }, explode(',', $attachment_ids)));
         update_post_meta(
             $this->id,
             self::FB_PRODUCT_VIDEO,
