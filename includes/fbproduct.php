@@ -362,16 +362,27 @@ class WC_Facebook_Product {
 		);
 	}
 
-	public function set_product_image( $image ) {
-		if ( $image !== null && strlen( $image ) !== 0 ) {
-			$image = WC_Facebookcommerce_Utils::clean_string( $image );
-			$image = WC_Facebookcommerce_Utils::make_url( $image );
-			update_post_meta(
-				$this->id,
-				self::FB_PRODUCT_IMAGE,
-				$image
-			);
-		}
+    public function set_product_image( $image ) {
+        if ( $image !== null && strlen( $image ) !== 0 ) {
+            $image = WC_Facebookcommerce_Utils::clean_string( $image );
+            $image = WC_Facebookcommerce_Utils::make_url( $image );
+            update_post_meta(
+                $this->id,
+                self::FB_PRODUCT_IMAGE,
+                $image
+            );
+        }
+    }
+
+	public function set_product_video_urls( $attachment_ids ) {
+		$video_urls = array_filter(array_map(function($id) {
+            return trim(wp_get_attachment_url($id));
+        }, explode(',', $attachment_ids)));
+        update_post_meta(
+            $this->id,
+            self::FB_PRODUCT_VIDEO,
+            $video_urls
+        );
 	}
 
 	public function set_rich_text_description( $rich_text_description ) {
