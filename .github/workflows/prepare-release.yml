@@ -35,7 +35,7 @@ jobs:
           type: ${{ github.event.inputs.type }}
           wp-version: ${{ github.event.inputs.wp-version }}
           wc-version: ${{ github.event.inputs.wc-version }}
-          main-branch: "trunk"
+          main-branch: "main"
           post-steps: |
             ### After deploy
             1. [ ] Confirm the release deployed correctly to [WPORG](https://wordpress.org/plugins/facebook-for-woocommerce/).
