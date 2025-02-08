@@ -1,7 +1,7 @@
 <?php
 declare( strict_types=1 );
 
-namespace WooCommerce\Facebook\API\GenericFeedUploads\Create;
+namespace WooCommerce\Facebook\API\CommonFeedUploads\Create;
 
 use WooCommerce\Facebook\API\Request as ApiRequest;
 

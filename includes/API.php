@@ -13,6 +13,7 @@ namespace WooCommerce\Facebook;
 
 defined( 'ABSPATH' ) or exit;
 
+use WooCommerce\Facebook\API\Exceptions\Request_Limit_Reached;
 use WooCommerce\Facebook\API\Request;
 use WooCommerce\Facebook\API\Response;
 use WooCommerce\Facebook\Events\Event;
@@ -549,6 +550,21 @@ class API extends Base {
 	public function create_upload( string $product_feed_id, array $data ) {
 		$request = new API\ProductCatalog\ProductFeedUploads\Create\Request( $product_feed_id, $data );
 		$this->set_response_handler( API\ProductCatalog\ProductFeedUploads\Create\Response::class );
+		return $this->perform_request( $request );
+	}
+
+	/**
+	 * @param string $cpi_id The commerce partner integration id.
+	 * @param array $data The json body for the Generic Feed Upload endpoint.
+	 *
+	 * @return Response
+	 * @throws Request_Limit_Reached
+	 * @throws ApiException
+	 */
+	public function create_common_upload( string $cpi_id, array $data ): Response {
+		$request = new API\CommonFeedUploads\Create\Request( $cpi_id, $data );
+		$this->set_response_handler( API\CommonFeedUploads\Create\Response::class );
+
 		return $this->perform_request( $request );
 	}
 
