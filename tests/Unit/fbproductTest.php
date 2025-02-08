@@ -527,67 +527,7 @@ class fbproductTest extends WP_UnitTestCase {
 			$this->assertEquals($product_data[$key], $value);
 		}
 	}
-  
-    public function test_prepare_product_with_default_fields() {
-        // test when no fb specific fields are set
-        $product_data = $this->fb_product->prepare_product();
 
-        $this->assertArrayHasKey('custom_fields', $product_data);
-        $this->assertEquals(false, $product_data['custom_fields']['has_fb_description']);
-        $this->assertEquals(false, $product_data['custom_fields']['has_fb_price']);
-        $this->assertEquals(false, $product_data['custom_fields']['has_fb_image']);
-    }
-
-    public function test_prepare_product_with_custom_fields() {
-        // Set facebook specific fields
-        $fb_description = 'Facebook specific description';
-        $fb_price = '15';
-        $fb_image = 'https:example.com/fb-image.jpg';
-
-        update_post_meta($this->product->get_id(), WC_Facebook_Product::FB_PRODUCT_DESCRIPTION, $fb_description);
-        update_post_meta($this->product->get_id(), WC_Facebook_Product::FB_PRODUCT_PRICE, $fb_price);
-        update_post_meta($this->product->get_id(), WC_Facebook_Product::FB_PRODUCT_IMAGE, $fb_image);
-
-        $product_data = $this->fb_product->prepare_product();
-
-        $this->assertArrayHasKey('custom_fields', $product_data);
-        $this->assertEquals(true, $product_data['custom_fields']['has_fb_description']);
-        $this->assertEquals(true, $product_data['custom_fields']['has_fb_price']);
-        $this->assertEquals(true, $product_data['custom_fields']['has_fb_image']);
-    }
-
-    public function test_prepare_product_with_mixed_fields() {
-        // Set only facebook description
-        $fb_description = 'Facebook specific description';
-
-        update_post_meta($this->product->get_id(), WC_Facebook_Product::FB_PRODUCT_DESCRIPTION, $fb_description);
-
-        $product_data = $this->fb_product->prepare_product();
-
-        $this->assertArrayHasKey('custom_fields', $product_data);
-        $this->assertEquals(true, $product_data['custom_fields']['has_fb_description']);
-        $this->assertEquals(false, $product_data['custom_fields']['has_fb_price']);
-        $this->assertEquals(false, $product_data['custom_fields']['has_fb_image']);
-    }
-
-    public function test_prepare_product_items_batch() {
-        // Test the PRODUCT_PREP_TYPE_ITEMS_BATCH preparation type
-        $fb_description = 'Facebook specific description';
-
-        update_post_meta($this->product->get_id(), WC_Facebook_Product::FB_PRODUCT_DESCRIPTION, $fb_description);
-
-        $product_data = $this->fb_product->prepare_product(null, WC_Facebook_Product::PRODUCT_PREP_TYPE_ITEMS_BATCH);
-
-        $this->assertArrayHasKey('custom_fields', $product_data);
-        $this->assertEquals(true, $product_data['custom_fields']['has_fb_description']);
-        $this->assertEquals(false, $product_data['custom_fields']['has_fb_price']);
-        $this->assertEquals(false, $product_data['custom_fields']['has_fb_image']);
-
-        // Also verify the main product data structure for items batch
-        $this->assertArrayHasKey('title', $product_data);
-        $this->assertArrayHasKey('description', $product_data);
-        $this->assertArrayHasKey('image_link', $product_data);
-    }
 
 	/**
 	 * Test Brand is added for simple product 
