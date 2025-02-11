@@ -77,8 +77,8 @@
 	-webkit-box-orient: vertical;
 	-webkit-line-clamp: 2;
 	white-space: normal;
-	line-height: 1.2em; /* Adjust line height as needed */
-	max-height: 2.4em; /* 2 lines * line-height */
+	line-height: 1.2em;
+	max-height: 2.4em;
 }
 
 #woocommerce-product-data #fb_product_video_selected_thumbnails p.video-thumbnail a.remove-video {
