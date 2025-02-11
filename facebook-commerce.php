@@ -135,7 +135,7 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 	public const FB_PRODUCT_GROUP_ID    = 'fb_product_group_id';
 	public const FB_PRODUCT_ITEM_ID     = 'fb_product_item_id';
 	public const FB_PRODUCT_DESCRIPTION = 'fb_product_description';
-
+	public const FB_RICH_TEXT_DESCRIPTION = 'fb_rich_text_description';
 	/** @var string the API flag to set a product as visible in the Facebook shop */
 	public const FB_SHOP_PRODUCT_VISIBLE = 'published';
 
@@ -868,8 +868,9 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 		// phpcs:disable WordPress.Security.NonceVerification.Missing
 		if ( isset( $_POST[ self::FB_PRODUCT_DESCRIPTION ] ) ) {
 			$woo_product->set_description( sanitize_text_field( wp_unslash( $_POST[ self::FB_PRODUCT_DESCRIPTION ] ) ) );
+			$woo_product->set_rich_text_description( $_POST[ self::FB_PRODUCT_DESCRIPTION ] );
 		}
-
+		
 		if ( isset( $_POST[ WC_Facebook_Product::FB_PRODUCT_PRICE ] ) ) {
 			$woo_product->set_price( sanitize_text_field( wp_unslash( $_POST[ WC_Facebook_Product::FB_PRODUCT_PRICE ] ) ) );
 		}

@@ -1236,7 +1236,7 @@ class Admin {
 		$is_visible   = ( $visibility = get_post_meta( $post->ID, Products::VISIBILITY_META_KEY, true ) ) ? wc_string_to_bool( $visibility ) : true;
 		$product 	  = wc_get_product( $post );
 
-		$description  = get_post_meta( $post->ID, \WC_Facebookcommerce_Integration::FB_PRODUCT_DESCRIPTION, true );
+		$rich_text_description  = get_post_meta( $post->ID, \WC_Facebookcommerce_Integration::FB_RICH_TEXT_DESCRIPTION, true );
 		$price        = get_post_meta( $post->ID, \WC_Facebook_Product::FB_PRODUCT_PRICE, true );
 		$image_source = get_post_meta( $post->ID, Products::PRODUCT_IMAGE_SOURCE_META_KEY, true );
 		$image        = get_post_meta( $post->ID, \WC_Facebook_Product::FB_PRODUCT_IMAGE, true );
@@ -1271,18 +1271,26 @@ class Admin {
 					)
 				);
 
-				woocommerce_wp_textarea_input(
+				echo '<div class="wp-editor-wrap">';
+				echo '<label for="' . esc_attr(\WC_Facebookcommerce_Integration::FB_PRODUCT_DESCRIPTION) . '">' . 
+					 esc_html__( 'Facebook Description', 'facebook-for-woocommerce' ) . 
+					 '</label>';
+				wp_editor(
+					$rich_text_description,
+					\WC_Facebookcommerce_Integration::FB_PRODUCT_DESCRIPTION,
 					array(
-						'id'          => \WC_Facebookcommerce_Integration::FB_PRODUCT_DESCRIPTION,
-						'label'       => __( 'Facebook Description', 'facebook-for-woocommerce' ),
-						'desc_tip'    => true,
-						'description' => __( 'Custom (plain-text only) description for product on Facebook. If blank, product description will be used. If product description is blank, shortname will be used.', 'facebook-for-woocommerce' ),
-						'cols'        => 40,
-						'rows'        => 20,
-						'value'       => $description,
-						'class'       => 'short enable-if-sync-enabled',
+						'id'      => 'wc_facebook_sync_mode',
+						'textarea_name' => \WC_Facebookcommerce_Integration::FB_PRODUCT_DESCRIPTION,
+						'textarea_rows' => 10,
+						'media_buttons' => true,
+						'teeny'        => true,
+						'quicktags'    => false,
+						'tinymce'      => array(
+							'toolbar1' => 'bold,italic,bullist,spellchecker,fullscreen',
+						),
 					)
 				);
+				echo '</div>';
 
 				woocommerce_wp_radio(
 					array(
@@ -1406,8 +1414,7 @@ class Admin {
 
 		$sync_enabled = 'no' !== $this->get_product_variation_meta( $variation, Products::SYNC_ENABLED_META_KEY, $parent );
 		$is_visible   = ( $visibility = $this->get_product_variation_meta( $variation, Products::VISIBILITY_META_KEY, $parent ) ) ? wc_string_to_bool( $visibility ) : true;
-
-		$description  = $this->get_product_variation_meta( $variation, \WC_Facebookcommerce_Integration::FB_PRODUCT_DESCRIPTION, $parent );
+		$description  = $this->get_product_variation_meta( $variation, \WC_Facebookcommerce_Integration::FB_PRODUCT_DESCRIPTION, $parent );		
 		$price        = $this->get_product_variation_meta( $variation, \WC_Facebook_Product::FB_PRODUCT_PRICE, $parent );
 		$image_url    = $this->get_product_variation_meta( $variation, \WC_Facebook_Product::FB_PRODUCT_IMAGE, $parent );
 		$image_source = $variation->get_meta( Products::PRODUCT_IMAGE_SOURCE_META_KEY );
@@ -1572,6 +1579,7 @@ class Admin {
 			$posted_param = 'variable_' . \WC_Facebook_Product::FB_PRODUCT_PRICE;
 			$price        = isset( $_POST[ $posted_param ][ $index ] ) ? wc_format_decimal( wc_clean( wp_unslash( $_POST[ $posted_param ][ $index ] ) ) ) : '';
 			$variation->update_meta_data( \WC_Facebookcommerce_Integration::FB_PRODUCT_DESCRIPTION, $description );
+			$variation->update_meta_data( \WC_Facebookcommerce_Integration::FB_RICH_TEXT_DESCRIPTION, $description );
 			$variation->update_meta_data( Products::PRODUCT_IMAGE_SOURCE_META_KEY, $image_source );
 			$variation->update_meta_data( \WC_Facebook_Product::FB_MPN, $fb_mpn );
 			$variation->update_meta_data( \WC_Facebook_Product::FB_PRODUCT_IMAGE, $image_url );

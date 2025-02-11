@@ -18,6 +18,36 @@
 	padding-bottom: 0;
 }
 
+
+/* Ensure proper spacing between fields */
+#facebook_options .options_group {
+    padding: 0;
+    border-top: 1px solid #fff;
+    border-bottom: 1px solid #eee;
+}
+
+
+.woocommerce_variable_attributes .wp-editor-wrap label {
+    float: left;
+    width: 150px;
+    padding: 0;
+    color: #666;
+    font-size: 12px;
+    font-weight: 600;
+    line-height: 24px;
+}
+
+/* Ensure editor area has proper height */
+.wp-editor-area {
+    min-height: 100px;
+	color: #000000
+}
+
+/* Match WooCommerce field hover states */
+#facebook_options .wp-editor-container:hover {
+    border-color: #666;
+}
+
 /* add padding-top for first radio button in variation fields */
 #woocommerce-product-data .woocommerce_variation .fb-product-image-source-field .wc-radios li:first-child {
 	padding-top: 10px;
@@ -110,4 +140,29 @@
 /* adjusts widths of the products table, same as WooCommerce categories and tags */
 .column-facebook_sync {
 	width: 11% !important;
+}
+
+.woocommerce_options_panel .wp-editor-container {
+    margin-left: 162px;
+    width: calc(100% - 182px);
+    max-width: 550px;
+}
+
+.woocommerce_options_panel .wp-editor-tabs {
+    margin-left: 162px;
+    max-width: 550px;
+}
+
+/* Ensure the label aligns properly */
+.woocommerce_options_panel label[for="fb_product_description"] {
+    float: left;
+    width: 150px;
+    padding: 0;
+    margin: 0 0 0 12px;
+}
+
+/* Ensure the wp-editor-wrap takes full width */
+.wp-editor-wrap {
+    width: 100%;
+    max-width: 100%;
 }
