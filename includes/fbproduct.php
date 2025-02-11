@@ -724,8 +724,6 @@ class WC_Facebook_Product {
 		$categories =
 		WC_Facebookcommerce_Utils::get_product_categories( $id );
 
-		$custom_fields = $this->get_facebook_specific_fields();
-
 		if ( self::PRODUCT_PREP_TYPE_ITEMS_BATCH === $type_to_prepare_for ) {
 			$product_data = array(
 				'title'                 => WC_Facebookcommerce_Utils::clean_string( $this->get_title() ),
@@ -740,7 +738,6 @@ class WC_Facebook_Product {
 				'price'                 => $this->get_fb_price( true ),
 				'availability'          => $this->is_in_stock() ? 'in stock' : 'out of stock',
 				'visibility'            => Products::is_product_visible( $this->woo_product ) ? \WC_Facebookcommerce_Integration::FB_SHOP_PRODUCT_VISIBLE : \WC_Facebookcommerce_Integration::FB_SHOP_PRODUCT_HIDDEN,
-				'custom_fields'			=> $custom_fields
 			);
 			$product_data   = $this->add_sale_price( $product_data, true );
 			$gpc_field_name = 'google_product_category';
@@ -772,8 +769,7 @@ class WC_Facebook_Product {
 				'price'                 => $this->get_fb_price(),
 				'currency'              => get_woocommerce_currency(),
 				'availability'          => $this->is_in_stock() ? 'in stock' : 'out of stock',
-				'visibility'            => Products::is_product_visible( $this->woo_product ) ? \WC_Facebookcommerce_Integration::FB_SHOP_PRODUCT_VISIBLE : \WC_Facebookcommerce_Integration::FB_SHOP_PRODUCT_HIDDEN,
-				'custom_fields'			=> $custom_fields
+				'visibility'            => Products::is_product_visible( $this->woo_product ) ? \WC_Facebookcommerce_Integration::FB_SHOP_PRODUCT_VISIBLE : \WC_Facebookcommerce_Integration::FB_SHOP_PRODUCT_HIDDEN
 			);
 
 			if ( self::PRODUCT_PREP_TYPE_NORMAL !== $type_to_prepare_for && ! empty( $video_urls ) ) {
@@ -1137,19 +1133,6 @@ class WC_Facebook_Product {
 		}//end try
 
 		return $final_variants;
-	}
-
-	/**
-	 * Returns information about which fields are using Facebook-specific values.
-	 *
-	 * @return array
-	 */
-	private function get_facebook_specific_fields(): array {
-		return array(
-			'has_fb_description' => (bool) get_post_meta($this->id, self::FB_PRODUCT_DESCRIPTION, true),
-			'has_fb_price'       => (bool) get_post_meta($this->id, self::FB_PRODUCT_PRICE, true),
-			'has_fb_image'       => (bool) get_post_meta($this->id, self::FB_PRODUCT_IMAGE, true)
-		);
 	}
 
 }
