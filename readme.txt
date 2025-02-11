@@ -3,7 +3,7 @@ Contributors: facebook, automattic, woothemes
 Tags: facebook, woocommerce, marketing, product catalog feed, pixel
 Requires at least: 5.6
 Tested up to: 6.7
-Stable tag: 3.3.2
+Stable tag: 3.3.3
 Requires PHP: 7.4
 MySQL: 5.6 or greater
 License: GPLv2 or later
@@ -39,6 +39,10 @@ When opening a bug on GitHub, please give us as many details as possible.
 * Current version of Facebook-for-WooCommerce, WooCommerce, Wordpress, PHP
 
 == Changelog ==
+
+= 3.3.3 - 2025-02-06 = 
+* Fix - Use of recommended delete connection endpoint over delete permission endpoint by atuld123 in #2844
+* Add - Expose Brand & MPN to Woocommerce UI by @devbodaghe in #2842
 
 = 3.3.2 - 2025-01-21 =
 * Fix - a bug that arose from reliance on the plugin version compatibility tag by @vinkmeta in #2856
