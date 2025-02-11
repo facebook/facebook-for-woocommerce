@@ -94,11 +94,6 @@ class WC_Facebook_Product {
 	 */
 	public $fb_visibility;
 
-	/**
-	 * @var string Product rich text description.
-	 */
-	public $rich_text_description;
-
 	public function __construct( $wpid, $parent_product = null ) {
 
 		if ( $wpid instanceof WC_Product ) {
@@ -247,7 +242,7 @@ class WC_Facebook_Product {
 		 * @param string $size The image size. e.g. 'full', 'medium', 'thumbnail'.
 		 */
 		$image_size               = apply_filters( 'facebook_for_woocommerce_fb_product_image_size', 'full' );
-		$product_image_url        = wp_get_attachment_image_url( $this->woo_product->get_image_id(), $image_size ); ;
+		$product_image_url        = wp_get_attachment_image_url( $this->woo_product->get_image_id(), $image_size );
 		$parent_product_image_url = null;
 		$custom_image_url         = $this->woo_product->get_meta( self::FB_PRODUCT_IMAGE );
 
@@ -358,9 +353,7 @@ class WC_Facebook_Product {
 	}
 
 	public function set_description( $description ) {
-		$description          = stripslashes(
-			WC_Facebookcommerce_Utils::clean_string( $description )
-		);
+		$description          = stripslashes( WC_Facebookcommerce_Utils::clean_string( $description ) );
 		$this->fb_description = $description;
 		update_post_meta(
 			$this->id,
@@ -391,7 +384,7 @@ class WC_Facebook_Product {
 			$rich_text_description
 		);
 	}
-
+	
 	public function set_product_video_urls( $attachment_ids ) {
 		$video_urls = array_filter(array_map(function($id) {
             return trim(wp_get_attachment_url($id));
@@ -494,7 +487,7 @@ class WC_Facebook_Product {
 	}
 
 	public function set_use_parent_image( $setting ) {
-		$this->fb_use_parent_image = ( $setting == 'yes' );
+		$this->fb_use_parent_image = ( $setting === 'yes' );
 		update_post_meta(
 			$this->id,
 			self::FB_VARIANT_IMAGE,
