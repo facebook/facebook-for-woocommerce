@@ -22,24 +22,67 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  get-versions:
+    runs-on: ubuntu-latest
+    outputs:
+      wp-versions: ${{ steps.fetch-wp.outputs.versions }}
+      wc-versions: ${{ steps.fetch-wc.outputs.versions }}
+    steps:
+      - id: fetch-wp
+        run: |
+          # Get last two stable versions
+          VERSIONS=$(curl -s "https://api.wordpress.org/core/version-check/1.7/" | \
+            jq -r '.offers[].version' | \
+            grep -E '^[0-9]+\.[0-9]+\.[0-9]+$' | \
+            awk -F. '!seen[$1"."$2]++' | \
+            sort -V | \
+            tail -n 2 | \
+            jq -R -s -c 'split("\n")[:-1]')
+
+          VERSIONS=$(jq -nc --argjson versions "$VERSIONS" '["5.7.12"] + $versions')
+
+          echo "versions=${VERSIONS}" >> "$GITHUB_OUTPUT"
+
+      - id: fetch-wc
+        run: |
+          # Get last two stable versions
+          VERSIONS=$(curl -s "https://api.github.com/repos/woocommerce/woocommerce/releases" | \
+            jq -r '.[] | select(.prerelease == false) | .tag_name' | \
+            grep -E '^[0-9]+\.[0-9]+\.[0-9]+$' | \
+            awk -F. '!seen[$1"."$2]++' | \
+            sort -V | \
+            tail -n 2 | \
+            jq -R -s -c 'split("\n")[:-1]')
+
+          echo "versions=${VERSIONS}" >> "$GITHUB_OUTPUT"
+
   UnitTests:
+    needs: get-versions
     name: PHP unit tests - PHP ${{ matrix.php }}, WP ${{ matrix.wp-version }}, WC ${{ matrix.wc-version }}
     runs-on: ubuntu-latest
     env:
       WP_CORE_DIR: "/tmp/wordpress/src"
       WP_TESTS_DIR: "/tmp/wordpress/tests/phpunit"
+
     strategy:
       matrix:
-        php: [7.4, 8.3]
-        wp-version: [5.7, 6.6, 6.7]
-        wc-version: [9.6.0, 9.7,0]
+        php: [7.4, 8.0, 8.1, 8.2, 8.3]
+        wp-version: ${{ fromJson(needs.get-versions.outputs.wp-versions) }}
+        wc-version: ${{ fromJson(needs.get-versions.outputs.wc-versions) }}
+        exclude:
+          - wp-version: 5.7.12
+            php: 8.1
+          - wp-version: 5.7.12
+            php: 8.2
+          - wp-version: 5.7.12
+            php: 8.3
 
     steps:
       - name: Install SVN
         run: sudo apt-get install subversion -y
 
       - name: Checkout repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Prepare PHP
         uses: woocommerce/grow/prepare-php@actions-v1
