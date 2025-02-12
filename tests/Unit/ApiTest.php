@@ -772,6 +772,7 @@ class ApiTest extends WP_UnitTestCase {
 		};
 		add_filter( 'pre_http_request', $response, 10, 3 );
 
-		$this->api->create_upload( $product_feed_id, $data );
+		$response = $this->api->create_upload( $product_feed_id, $data );
+		$this->assertFalse( $response->has_api_error() );
 	}
 }
