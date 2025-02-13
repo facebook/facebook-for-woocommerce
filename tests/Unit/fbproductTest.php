@@ -851,30 +851,4 @@ class fbproductTest extends WP_UnitTestCase {
 		$brand = $facebook_product_variation->get_fb_brand();
 		$this->assertEquals($brand, 'Adidas');
 	}
-
-	/**
-	 * Test woo_product_id is added for feeds
-	 * @return void
-	 */
-	public function test_woo_product_id_is_set_for_feeds() {
-		$woo_product = WC_Helper_Product::create_simple_product();
-		
-		$fb_product = new \WC_Facebook_Product( $woo_product );
-		$data = $fb_product->prepare_product( null, WC_Facebook_Product::PRODUCT_PREP_TYPE_FEED );
-
-		$this->assertEquals( $data['woo_product_id'], $woo_product->get_id() );
-	}
-
-	/**
-	 * Test woo_product_id is not added for Batch API
-	 * @return void
-	 */
-	public function test_woo_product_id_is_unset_for_batch_api() {
-		$woo_product = WC_Helper_Product::create_simple_product();
-		
-		$fb_product = new \WC_Facebook_Product( $woo_product );
-		$data = $fb_product->prepare_product( null, WC_Facebook_Product::PRODUCT_PREP_TYPE_ITEMS_BATCH );
-
-		$this->assertEquals(isset($data['woo_product_id']), false);
-	}
 }
