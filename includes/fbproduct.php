@@ -820,7 +820,6 @@ class WC_Facebook_Product {
 					'custom_fields'			=> $custom_fields,
 			);
 			$product_data   = $this->add_sale_price( $product_data, true );
-			$gpc_field_name = 'google_product_category';
 			if ( ! empty( $video_urls ) ) {
 				$product_data['video'] = $video_urls;
 			}
@@ -858,12 +857,11 @@ class WC_Facebook_Product {
 				$product_data['video'] = $video_urls;
 			}
 			$product_data   = $this->add_sale_price( $product_data );
-			$gpc_field_name = 'category';
 		}//end if
 
 		$google_product_category = Products::get_google_product_category_id( $this->woo_product );
 		if ( $google_product_category ) {
-			$product_data[ $gpc_field_name ] = $google_product_category;
+			$product_data[ 'google_product_category' ] = $google_product_category;
 		}
 
 		// Currently only items batch and feed support enhanced catalog fields
@@ -912,7 +910,7 @@ class WC_Facebook_Product {
 		if ( self::PRODUCT_PREP_TYPE_FEED !== $type_to_prepare_for ) {
 			$this->prepare_variants_for_item( $product_data );
 		} elseif (
-		WC_Facebookcommerce_Utils::is_all_caps( $product_data['description'] )
+			WC_Facebookcommerce_Utils::is_all_caps( $product_data['description'] )
 		) {
 			$product_data['description'] =
 			mb_strtolower( $product_data['description'] );

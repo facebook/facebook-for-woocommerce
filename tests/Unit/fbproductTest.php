@@ -522,7 +522,7 @@ class fbproductTest extends WP_UnitTestCase {
 			$facebook_product->get_id(),
 			\WC_Facebook_Product::PRODUCT_PREP_TYPE_FEED
 		);
-		$this->assertEquals($product_data['category'], 173);
+		$this->assertEquals($product_data['google_product_category'], $category_id);
 		foreach ($expected_attributes as $key => $value) {
 			$this->assertEquals($product_data[$key], $value);
 		}
