@@ -667,6 +667,130 @@ jQuery( document ).ready( function( $ ) {
 		// toggle Sell on Instagram checkbox on page load
 		toggleFacebookSellOnInstagramSetting( isProductReadyForCommerce(), facebookSettingsPanel );
 
+		// fb product video support
+		const $openMediaButton = $('#open_media_library');
+		const $selectedVideoThumbnailsContainer = $('#fb_product_video_selected_thumbnails');
+		const $hiddenInputField = $('#fb_product_video');
+		let productGalleryFrame;
+		let attachmentIds = $hiddenInputField.val() ? $hiddenInputField.val().split(',').map(Number) : [];
+
+		/**
+		 * Updates the hidden input field with the current list of attachment IDs.
+		 */
+		function updateHiddenInputField() {
+			$hiddenInputField.val(attachmentIds.join(','));
+		}
+
+		/**
+		 * Creates a video thumbnail element for the given attachment.
+		 *
+		 * @param {Object} attachment The attachment object containing video details.
+		 * @returns {jQuery} The jQuery element representing the video thumbnail.
+		 */
+		function createVideoThumbnail(attachment) {
+			const $videoThumbnail = $('<p>', { class: 'form-field video-thumbnail' });
+			const $img = $('<img>', { src: attachment.icon });
+			const $videoUrl = $('<span>', { text: attachment.url, 'data-attachment-id': attachment.id });
+			const $removeButton = $('<a>', { href: '#', text: 'Remove', class: 'remove-video'});
+
+			$removeButton.on('click', function (event) {
+				event.preventDefault();
+				removeVideoThumbnail(attachment.id, $videoThumbnail);
+			});
+
+			$videoThumbnail.append($img, $videoUrl, $removeButton);
+			return $videoThumbnail;
+		}
+
+		/**
+		 * Removes a video thumbnail and updates the list of attachment IDs.
+		 *
+		 * @param {Number} attachmentId The ID of the attachment to remove.
+		 * @param {jQuery} $videoThumbnail The jQuery element representing the video thumbnail to remove.
+		 */
+		function removeVideoThumbnail(attachmentId, $videoThumbnail) {
+			attachmentIds = attachmentIds.filter(id => id !== attachmentId);
+			updateHiddenInputField();
+			$videoThumbnail.remove();
+		}
+
+		/**
+		 * Handles the selection of media items from the media library.
+		 *
+		 * @param {Object} selection The selection object containing the chosen media items.
+		 */
+		function handleMediaSelection(selection) {
+			const selectedAttachmentIds = selection.map(attachment => attachment.id);
+			const removedIds = attachmentIds.filter(id => !selectedAttachmentIds.includes(id));
+			const newIds = selectedAttachmentIds.filter(id => !attachmentIds.includes(id));
+
+			// Remove unselected video thumbnails
+			$selectedVideoThumbnailsContainer.find('.form-field').each(function () {
+				const $videoThumbnail = $(this);
+				const videoAttachmentId = parseInt($videoThumbnail.find('span').data('attachment-id'), 10);
+				if (removedIds.includes(videoAttachmentId)) {
+					removeVideoThumbnail(videoAttachmentId, $videoThumbnail);
+				}
+			});
+
+			// Add new video thumbnails
+			selection.each(function (attachment) {
+				attachment = attachment.toJSON();
+				// Validate that the attachment is a video
+				if (newIds.includes(attachment.id) && attachment.mime && attachment.mime.startsWith('video/')) {
+					const $videoThumbnail = createVideoThumbnail(attachment);
+					$selectedVideoThumbnailsContainer.append($videoThumbnail);
+					attachmentIds.push(attachment.id);
+				} else if (!attachment.mime.startsWith('video/')) {
+					alert('Please select a valid video file.');
+				}
+			});
+
+			updateHiddenInputField();
+		}
+
+		// Event handler for opening the media library
+		$openMediaButton.on('click', function (e) {
+			e.preventDefault();
+			if (productGalleryFrame) {
+				productGalleryFrame.open();
+				return;
+			}
+
+			productGalleryFrame = wp.media({
+				title: 'Select videos',
+				button: { text: 'Save' },
+				library: { type: 'video' },
+				multiple: true
+			});
+
+			// Pre-select previously selected attachments
+			productGalleryFrame.on('open', function () {
+				const selection = productGalleryFrame.state().get('selection');
+				attachmentIds.forEach(function (id) {
+					const attachment = wp.media.attachment(id);
+					attachment.fetch();
+					selection.add(attachment ? [attachment] : []);
+				});
+			});
+
+			// Handle selection of media
+			productGalleryFrame.on('select', function () {
+				const selection = productGalleryFrame.state().get('selection');
+				handleMediaSelection(selection);
+			});
+
+			productGalleryFrame.open();
+		});
+
+		// Event handler for removing video thumbnails
+		$selectedVideoThumbnailsContainer.on('click', '.remove-video', function (event) {
+			event.preventDefault();
+			const $button = $(this);
+			const attachmentId = $button.data('attachment-id');
+			removeVideoThumbnail(attachmentId, $button.closest('.form-field'));
+		});
+
 	}
 
 

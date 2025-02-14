@@ -30,9 +30,11 @@ class WC_Facebook_Product {
 
 	// Should match facebook-commerce.php while we migrate that code over
 	// to this object.
+
 	const FB_PRODUCT_DESCRIPTION   = 'fb_product_description';
 	const FB_PRODUCT_PRICE         = 'fb_product_price';
 	const FB_PRODUCT_IMAGE         = 'fb_product_image';
+    const FB_PRODUCT_VIDEO         = 'fb_product_video';
 	const FB_VARIANT_IMAGE         = 'fb_image';
 	const FB_VISIBILITY            = 'fb_visibility';
 	const FB_REMOVE_FROM_SYNC      = 'fb_remove_from_sync';
@@ -299,20 +301,33 @@ class WC_Facebook_Product {
 		$video_urls = array();
 
 		$attached_videos = get_attached_media( 'video', $this->id );
-		if ( empty( $attached_videos ) ) {
-			return $video_urls;
-		}
-		foreach ( $attached_videos as $video ) {
-			$url = wp_get_attachment_url( $video->ID );
-			if ( $url ) {
-				array_push(
-					$video_urls,
-					array(
-						'url' => $url,
-					)
-				);
-			}
-		}
+
+        $custom_video_urls = $this->woo_product->get_meta( self::FB_PRODUCT_VIDEO );
+
+        if ( empty( $attached_videos ) && empty( $custom_video_urls ) ) {
+            return $video_urls;
+        }
+
+        // Add custom video URLs to the list
+        if (!empty($custom_video_urls) && is_array($custom_video_urls)) {
+            foreach ($custom_video_urls as $custom_url) {
+                $custom_url = trim($custom_url);
+                if (!empty($custom_url)) {
+                    $video_urls[] = array('url' => $custom_url);
+                }
+            }
+        }
+
+        // Add attached video URLs to the list, excluding duplicates from custom video URLs
+        if (!empty($attached_videos)) {
+            $custom_video_url_set = array_flip(array_column($video_urls, 'url'));
+            foreach ($attached_videos as $video) {
+                $url = wp_get_attachment_url($video->ID);
+                if ($url && !isset($custom_video_url_set[$url])) {
+                    $video_urls[] = array('url' => $url);
+                }
+            }
+        }
 
 		return $video_urls;
 	}
@@ -365,6 +380,17 @@ class WC_Facebook_Product {
 				$image
 			);
 		}
+	}
+	
+	public function set_product_video_urls( $attachment_ids ) {
+		$video_urls = array_filter(array_map(function($id) {
+            return trim(wp_get_attachment_url($id));
+        }, explode(',', $attachment_ids)));
+        update_post_meta(
+            $this->id,
+            self::FB_PRODUCT_VIDEO,
+            $video_urls
+        );
 	}
 
 	public function set_rich_text_description( $rich_text_description ) {

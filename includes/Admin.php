@@ -1164,6 +1164,61 @@ class Admin {
 		return $tabs;
 	}
 
+    /**
+     * Outputs the form field for Facebook Product Videos with a description tip.
+     *
+     * @param array $video_urls Array of video URLs.
+     */
+    private function render_facebook_product_video_field( $video_urls ) {
+        $attachment_ids = [];
+
+        // Output the form field for Facebook Product Videos with a description tip
+        ?>
+        <p class="form-field fb_product_video_field">
+            <label for="fb_product_video"><?php esc_html_e( 'Facebook Product Video', 'facebook-for-woocommerce' ); ?></label>
+            <button type="button" class="button" id="open_media_library" name="fb_product_video"><?php esc_html_e( 'Choose', 'facebook-for-woocommerce' ); ?></button>
+            <span class="woocommerce-help-tip" data-tip="<?php esc_attr_e( 'Choose the product video that should be synced to the Facebook catalog and displayed for this product.', 'facebook-for-woocommerce' ); ?>" tabindex="0"></span>
+        </p>
+        <div id="fb_product_video_selected_thumbnails">
+        <?php
+
+        if ( ! empty( $video_urls ) ) {
+            foreach ( $video_urls as $video_url ) {
+                $attachment_id = attachment_url_to_postid( $video_url );
+                if ( $attachment_id ) {
+                    $attachment_ids[] = $attachment_id;
+                    // Get the video thumbnail URL
+                    $thumbnail_url = wp_get_attachment_image_url( $attachment_id, 'thumbnail' );
+                    if ( ! $thumbnail_url ) {
+                        // Fallback to a default icon if no thumbnail is available
+                        $thumbnail_url = esc_url( wp_mime_type_icon( 'video' ) );
+                    }
+                    // Escape URLs and attributes
+                    $video_url_escaped = esc_url( $video_url );
+                    $attachment_id_escaped = esc_attr( $attachment_id );
+                    ?>
+                    <p class="form-field video-thumbnail">
+                        <img src="<?php echo esc_url( $thumbnail_url ); ?>">
+                        <span data-attachment-id="<?php echo $attachment_id_escaped; ?>"><?php echo $video_url_escaped; ?></span>
+                        <a href="#" class="remove-video" data-attachment-id="<?php echo $attachment_id_escaped; ?>"><?php esc_html_e( 'Remove', 'facebook-for-woocommerce' ); ?></a>
+                    </p>
+                    <?php
+                }
+            }
+        }
+        ?>
+        </div>
+
+        <?php
+        // hidden input to store attachment IDs
+        woocommerce_wp_hidden_input(
+            [
+                'id'   => \WC_Facebook_Product::FB_PRODUCT_VIDEO,
+                'name' => \WC_Facebook_Product::FB_PRODUCT_VIDEO,
+                'value' => esc_attr( implode( ',', $attachment_ids ) ), // Store attachment IDs
+            ]
+        );
+    }
 
 	/**
 	 * Adds content to the new Facebook tab on the Product edit page.
@@ -1185,6 +1240,7 @@ class Admin {
 		$price        = get_post_meta( $post->ID, \WC_Facebook_Product::FB_PRODUCT_PRICE, true );
 		$image_source = get_post_meta( $post->ID, Products::PRODUCT_IMAGE_SOURCE_META_KEY, true );
 		$image        = get_post_meta( $post->ID, \WC_Facebook_Product::FB_PRODUCT_IMAGE, true );
+        $video_urls   = get_post_meta( $post->ID, \WC_Facebook_Product::FB_PRODUCT_VIDEO, true );
 		$fb_brand     = get_post_meta( $post->ID, \WC_Facebook_Product::FB_BRAND, true ) ? get_post_meta( $post->ID, \WC_Facebook_Product::FB_BRAND, true ) : get_post_meta( $post->ID, '_wc_facebook_enhanced_catalog_attributes_brand', true );
 		$fb_mpn       = get_post_meta( $post->ID, \WC_Facebook_Product::FB_MPN, true );
 
@@ -1262,6 +1318,8 @@ class Admin {
 						'description'   => __( 'Please enter an absolute URL (e.g. https://domain.com/image.jpg).', 'facebook-for-woocommerce' ),
 					)
 				);
+
+                $this->render_facebook_product_video_field( $video_urls );
 
 				woocommerce_wp_text_input(
 					array(
@@ -1516,6 +1574,8 @@ class Admin {
 			$image_source = isset( $_POST[ $posted_param ][ $index ] ) ? sanitize_key( wp_unslash( $_POST[ $posted_param ][ $index ] ) ) : '';
 			$posted_param = 'variable_' . \WC_Facebook_Product::FB_PRODUCT_IMAGE;
 			$image_url    = isset( $_POST[ $posted_param ][ $index ] ) ? esc_url_raw( wp_unslash( $_POST[ $posted_param ][ $index ] ) ) : null;
+            $posted_param = 'variable_' . \WC_Facebook_Product::FB_PRODUCT_VIDEO;
+            $video_urls   = isset( $_POST[ $posted_param ][ $index ] ) ? esc_url_raw( wp_unslash( $_POST[ $posted_param ][ $index ] ) ) : [];
 			$posted_param = 'variable_' . \WC_Facebook_Product::FB_PRODUCT_PRICE;
 			$price        = isset( $_POST[ $posted_param ][ $index ] ) ? wc_format_decimal( wc_clean( wp_unslash( $_POST[ $posted_param ][ $index ] ) ) ) : '';
 			$variation->update_meta_data( \WC_Facebookcommerce_Integration::FB_PRODUCT_DESCRIPTION, $description );
@@ -1523,6 +1583,7 @@ class Admin {
 			$variation->update_meta_data( Products::PRODUCT_IMAGE_SOURCE_META_KEY, $image_source );
 			$variation->update_meta_data( \WC_Facebook_Product::FB_MPN, $fb_mpn );
 			$variation->update_meta_data( \WC_Facebook_Product::FB_PRODUCT_IMAGE, $image_url );
+            $variation->update_meta_data( \WC_Facebook_Product::FB_PRODUCT_VIDEO, $video_urls );
 			$variation->update_meta_data( \WC_Facebook_Product::FB_PRODUCT_PRICE, $price );
 			$variation->save_meta_data();
 		} else {

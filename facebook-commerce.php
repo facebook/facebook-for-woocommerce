@@ -884,6 +884,11 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 			$woo_product->set_product_image( sanitize_text_field( wp_unslash( $_POST[ WC_Facebook_Product::FB_PRODUCT_IMAGE ] ) ) );
 		}
 
+		if ( isset( $_POST[ WC_Facebook_Product::FB_PRODUCT_VIDEO ] ) ) {
+			$attachment_ids = sanitize_text_field( wp_unslash( $_POST[ WC_Facebook_Product::FB_PRODUCT_VIDEO ] ) );
+			$woo_product->set_product_video_urls( $attachment_ids );
+		}
+
 		if ( isset( $_POST[ WC_Facebook_Product::FB_BRAND ] ) ) {
 			$woo_product->set_fb_brand( sanitize_text_field( wp_unslash( $_POST[ WC_Facebook_Product::FB_BRAND ] ) ) );
 		}

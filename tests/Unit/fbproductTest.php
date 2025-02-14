@@ -556,6 +556,24 @@ class fbproductTest extends WP_UnitTestCase {
         $this->assertEquals(true, $product_data['custom_fields']['has_fb_image']);
     }
 
+	public function test_prepare_product_with_video_field() {
+		// Set facebook specific fields
+		$video_urls = [
+			'https://example.com/video1.mp4',
+			'https://example.com/video2.mp4',
+		];
+
+		$expected_video_urls = array_map(function($url) {
+			return ['url' => $url];
+		}, $video_urls);
+
+		update_post_meta($this->product->get_id(), WC_Facebook_Product::FB_PRODUCT_VIDEO, $video_urls);
+		$product_data = $this->fb_product->prepare_product(null, WC_Facebook_Product::PRODUCT_PREP_TYPE_ITEMS_BATCH);
+		
+		$this->assertArrayHasKey('video', $product_data);
+		$this->assertEquals($expected_video_urls, $product_data['video']);
+	}
+
     public function test_prepare_product_with_mixed_fields() {
         // Set only facebook description
         $fb_description = 'Facebook specific description';
