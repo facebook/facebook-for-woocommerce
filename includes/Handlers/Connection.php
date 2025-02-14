@@ -324,11 +324,6 @@ class Connection {
 			}
 			update_option( 'wc_facebook_has_connected_fbe_2', 'yes' );
 			update_option( 'wc_facebook_has_authorized_pages_read_engagement', 'yes' );
-			// redirect to the Commerce onboarding if directed to do so
-			if ( ! empty( Helper::get_requested_value( 'connect_commerce' ) ) ) {
-				wp_safe_redirect( $this->get_commerce_connect_url() );
-				exit;
-			}
 			facebook_for_woocommerce()->get_message_handler()->add_message( __( 'Connection successful!', 'facebook-for-woocommerce' ) );
 			wp_safe_redirect( facebook_for_woocommerce()->get_advertise_tab_url() );
 			exit;
@@ -888,9 +883,6 @@ class Connection {
 	 */
 	public function get_connect_parameters( $connect_commerce = false ) {
 		$state = $this->get_redirect_url();
-		if ( $connect_commerce ) {
-			$state = add_query_arg( 'connect_commerce', true, $state );
-		}
 
 		/**
 		 * Filters the connection parameters.
@@ -909,7 +901,7 @@ class Connection {
 				'display'       => 'page',
 				'response_type' => 'code',
 				'scope'         => implode( ',', $this->get_scopes() ),
-				'extras'        => json_encode( $this->get_connect_parameters_extras() ),
+				'extras'        => json_encode( $this->get_connect_parameters_extras( $connect_commerce ) ),
 			)
 		);
 	}
@@ -924,7 +916,7 @@ class Connection {
 	 *
 	 * @return array associative array (to be converted to JSON encoded for connection purposes)
 	 */
-	private function get_connect_parameters_extras() {
+	private function get_connect_parameters_extras( $connect_commerce = false ) {
 		$parameters = array(
 			'setup'           => array(
 				'external_business_id' => $this->get_external_business_id(),
@@ -944,6 +936,15 @@ class Connection {
 		if ( $external_merchant_settings_id = facebook_for_woocommerce()->get_integration()->get_external_merchant_settings_id() ) {
 			$parameters['setup']['merchant_settings_id'] = $external_merchant_settings_id;
 		}
+
+		if ($connect_commerce) {
+        $parameters['setup']['channel'] = 'COMMERCE';
+        $parameters['setup']['external_client_metadata'] = [
+            'commerce_partner_seller_platform_type' => 'UNKNOWN',
+            'feature_set_eligibility' => 'SHOP_FIRST',
+        ];
+    }
+
 		return $parameters;
 	}
 
