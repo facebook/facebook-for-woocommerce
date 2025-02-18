@@ -32,26 +32,6 @@ abstract class AbstractFeed {
 	/** The action slug for triggering file upload */
 	const FEED_GEN_COMPLETE_ACTION = 'wc_facebook_feed_generation_completed_';
 
-	/** The WordPress option name where the secret included in the feed URL is stored */
-	const OPTION_FEED_URL_SECRET = 'wc_facebook_feed_url_secret_';
-
-	/** The feed name for creating a new feed by this plugin. Modify in extending class. */
-	const FEED_NAME = ' by Facebook for WooCommerce plugin. DO NOT DELETE.';
-
-	/**
-	 * The feed ID for the given feed.
-	 *
-	 * @var string
-	 */
-	protected string $feed_id;
-
-	/**
-	 * The upload ID for the given feed.
-	 *
-	 * @var string
-	 */
-	protected string $upload_id;
-
 	/**
 	 * The name of the data stream to be synced via this feed.
 	 *
@@ -74,29 +54,25 @@ abstract class AbstractFeed {
 	protected FeedHandler $feed_handler;
 
 	/**
-	 * The feed info to tracker instance for the given feed.
-	 *
-	 * @var FeedInfoToTracker
-	 */
-	protected FeedInfoToTracker $feed_info_to_tracker;
-
-	/**
 	 * Constructor.
 	 *
 	 * Initializes the feed with the given data stream name and adds the necessary hooks.
 	 *
 	 * @param string $data_stream_name The name of the data stream.
+	 * @param string $heartbeat The heartbeat interval for the feed generation.
 	 */
-	public function __construct( string $data_stream_name ) {
+	public function __construct( string $data_stream_name, string $heartbeat ) {
 		self::$data_stream_name = $data_stream_name;
-		$this->add_hooks();
+		$this->add_hooks( $heartbeat );
 	}
 
 	/**
 	 * Adds the necessary hooks for feed generation and data request handling.
+	 *
+	 * @param string $heartbeat The heartbeat interval for the feed generation.
 	 */
-	private function add_hooks() {
-		add_action( Heartbeat::HOURLY, $this->schedule_feed_generation() );
+	private function add_hooks( string $heartbeat ) {
+		add_action( $heartbeat, $this->schedule_feed_generation() );
 		add_action( self::modify_action_name( self::GENERATE_FEED_ACTION ), $this->regenerate_feed() );
 		add_action( self::modify_action_name( self::FEED_GEN_COMPLETE_ACTION ), $this->send_request_to_upload_feed() );
 		add_action( 'woocommerce_api_' . self::modify_action_name( self::REQUEST_FEED_ACTION ), $this->handle_feed_data_request() );
@@ -130,24 +106,6 @@ abstract class AbstractFeed {
 	 * This method must be implemented by the concrete feed class.
 	 */
 	abstract public function handle_feed_data_request();
-
-	/**
-	 * Feed id to be used in upload
-	 *
-	 * @return string
-	 */
-	public function get_feed_id(): string {
-		return $this->feed_id;
-	}
-
-	/**
-	 * Upload id to be used in upload
-	 *
-	 * @return string
-	 */
-	public function get_upload_id(): string {
-		return $this->upload_id;
-	}
 
 	/**
 	 * Gets the URL for retrieving the product feed data.
