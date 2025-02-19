@@ -107,6 +107,12 @@ abstract class AbstractFeed {
 	 */
 	abstract public function handle_feed_data_request();
 
+	/** Schedules the feed generation immediately, ignoring the interval.
+	 *
+	 * This method must be implemented by the concrete feed class.
+	 */
+	abstract public function schedule_feed_generation_immediately();
+
 	/**
 	 * Gets the URL for retrieving the product feed data.
 	 *

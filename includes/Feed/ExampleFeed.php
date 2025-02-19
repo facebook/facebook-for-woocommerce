@@ -80,6 +80,13 @@ class ExampleFeed extends AbstractFeed {
 	}
 
 	/**
+	 * Allows an admin to schedule the feed generation immediately.
+	 */
+	public function schedule_feed_generation_immediately() {
+		// TODO: Implement schedule_feed_generation_immediately() method.
+	}
+
+	/**
 	 * Gets the URL for retrieving the feed data.
 	 *
 	 * This method must be implemented by the concrete feed class.
