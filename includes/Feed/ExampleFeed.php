@@ -20,12 +20,14 @@ use WooCommerce\Facebook\Utilities\Heartbeat;
  * Extends Abstract Feed class to handle example feed requests and generation for Facebook integration.
  *
  * @package WooCommerce\Facebook\Feed
- * * Todo: add since
+ * @since 3.5.0
  */
 class ExampleFeed extends AbstractFeed {
 
 	/**
 	 * Constructor.
+	 *
+	 * @since 3.5.0
 	 */
 	public function __construct() {
 		$data_stream_name     = FeedManager::EXAMPLE;
@@ -41,16 +43,17 @@ class ExampleFeed extends AbstractFeed {
 	 * Schedules the recurring feed generation.
 	 *
 	 * This method must be implemented by the concrete feed class, usually by providing a recurring interval
+	 *
+	 * @since 3.5.0
 	 */
 	public function schedule_feed_generation() {
 		// TODO: Implement schedule_feed_generation() method.
 	}
 
 	/**
-	 * Regenerates the example feed.
+	 * Regenerates the example feed based on the defined schedule.
 	 *
-	 * This method is responsible for initiating the regeneration of the example feed.
-	 * The method ensures that the feed is regenerated based on the defined schedule.
+	 * @since 3.5.0
 	 */
 	public function regenerate_feed() {
 		// Maybe use new ( experimental ), feed generation framework.
@@ -63,8 +66,9 @@ class ExampleFeed extends AbstractFeed {
 
 	/**
 	 * Trigger the upload flow
-	 *
 	 * Once feed regenerated, trigger upload via create_upload API and trigger the action for handling the upload
+	 *
+	 * @since 3.5.0
 	 */
 	public function send_request_to_upload_feed() {
 		// TODO: Implement send_request_to_upload_feed() method.
@@ -74,6 +78,8 @@ class ExampleFeed extends AbstractFeed {
 	 * Handles the feed data request.
 	 *
 	 * This method must be implemented by the concrete feed class.
+	 *
+	 * @since 3.5.0
 	 */
 	public function handle_feed_data_request() {
 		// TODO: Implement handle_feed_data_request() method.
@@ -81,6 +87,8 @@ class ExampleFeed extends AbstractFeed {
 
 	/**
 	 * Allows an admin to schedule the feed generation immediately.
+	 *
+	 * @since 3.5.0
 	 */
 	public function schedule_feed_generation_immediately() {
 		// TODO: Implement schedule_feed_generation_immediately() method.
@@ -92,6 +100,7 @@ class ExampleFeed extends AbstractFeed {
 	 * This method must be implemented by the concrete feed class.
 	 *
 	 * @return string The URL for retrieving the feed data.
+	 * @since 3.5.0
 	 */
 	public static function get_feed_data_url(): string {
 		// TODO: Implement get_feed_data_url() method.
@@ -104,6 +113,7 @@ class ExampleFeed extends AbstractFeed {
 	 * This method must be implemented by the concrete feed class.
 	 *
 	 * @return string The secret value for the ExampleFeed URL.
+	 * @since 3.5.0
 	 */
 	public static function get_feed_secret(): string {
 		// TODO: Implement get_feed_secret() method.

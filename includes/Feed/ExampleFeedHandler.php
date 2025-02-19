@@ -18,13 +18,14 @@ defined( 'ABSPATH' ) || exit;
  * Extends the FeedHandler interface to handle example feed file generation.
  *
  * @package WooCommerce\Facebook\ProductFeed
- * * Todo: add since
+ * @since 3.5.0
  */
 class ExampleFeedHandler implements FeedHandler {
 	/**
 	 * The feed writer instance for the given feed.
 	 *
 	 * @var FeedFileWriter
+	 * @since 3.5.0
 	 */
 	private FeedFileWriter $feed_writer;
 
@@ -32,6 +33,7 @@ class ExampleFeedHandler implements FeedHandler {
 	 * Constructor.
 	 *
 	 * @param FeedFileWriter $feed_writer An instance of csv feed writer.
+	 * @since 3.5.0
 	 */
 	public function __construct( FeedFileWriter $feed_writer ) {
 		$this->feed_writer = $feed_writer;
@@ -41,6 +43,7 @@ class ExampleFeedHandler implements FeedHandler {
 	 * Generate the feed file.
 	 *
 	 * This method is responsible for generating a feed file.
+	 * @since 3.5.0
 	 */
 	public function generate_feed_file() {
 		// TODO: Implement generate_feed_file() method.

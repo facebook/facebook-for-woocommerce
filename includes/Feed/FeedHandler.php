@@ -14,10 +14,9 @@ defined( 'ABSPATH' ) || exit;
 
 interface FeedHandler {
 	/**
-	 * Generate the feed file.
+	 * Responsible for generating a feed file.
 	 *
-	 * This method is responsible for generating a feed file.
-	 *   Todo: add since
+	 * @since 3.5.0
 	 */
 	public function generate_feed_file();
 }

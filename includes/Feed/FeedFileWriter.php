@@ -15,13 +15,15 @@ defined( 'ABSPATH' ) || exit;
 interface FeedFileWriter {
 	/**
 	 * Write the feed file.
+	 *
+	 * @since 3.5.0
 	 */
 	public function write_feed_file();
 
 	/**
 	 * Creates files in the catalog feed directory to prevent directory listing and hotlinking.
 	 *
-	 * * Todo: add since
+	 * @since 3.5.0
 	 */
 	public function create_files_to_protect_feed_directory();
 
@@ -29,7 +31,7 @@ interface FeedFileWriter {
 	 * Gets the feed file path of given feed.
 	 *
 	 * @return string
-	 * * Todo: add since
+	 * @since 3.5.0
 	 */
 	public function get_file_path(): string;
 
@@ -38,7 +40,7 @@ interface FeedFileWriter {
 	 * Gets the temporary feed file path.
 	 *
 	 * @return string
-	 * * Todo: add since
+	 * @since 3.5.0
 	 */
 	public function get_temp_file_path(): string;
 
@@ -46,7 +48,7 @@ interface FeedFileWriter {
 	 * Gets the feed file directory.
 	 *
 	 * @return string
-	 * * Todo: add since
+	 * @since 3.5.0
 	 */
 	public function get_file_directory(): string;
 
@@ -55,7 +57,7 @@ interface FeedFileWriter {
 	 * Gets the feed file name.
 	 *
 	 * @return string
-	 * * Todo: add since
+	 * @since 3.5.0
 	 */
 	public function get_file_name(): string;
 
@@ -65,7 +67,7 @@ interface FeedFileWriter {
 	 * @param string $secret The secret to use for the temporary file name.
 	 *
 	 * @return string
-	 * * Todo: add since
+	 * @since 3.5.0
 	 */
 	public function get_temp_file_name( string $secret ): string;
 }

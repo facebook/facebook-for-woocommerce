@@ -21,7 +21,7 @@ use WooCommerce\Facebook\Utilities\Heartbeat;
  * This class defines the structure and common methods that must be implemented by any concrete feed class.
  *
  * @package WooCommerce\Facebook\ProductFeed
- * * Todo: add since.
+ * @since 3.5.0
  */
 abstract class AbstractFeed {
 	/** The action callback for generating a feed */
@@ -36,6 +36,7 @@ abstract class AbstractFeed {
 	 * The name of the data stream to be synced via this feed.
 	 *
 	 * @var string
+	 * @since 3.5.0
 	 */
 	private static string $data_stream_name;
 
@@ -43,6 +44,7 @@ abstract class AbstractFeed {
 	 * The feed generator instance for the given feed.
 	 *
 	 * @var FeedGenerator
+	 * @since 3.5.0
 	 */
 	protected FeedGenerator $feed_generator;
 
@@ -50,6 +52,7 @@ abstract class AbstractFeed {
 	 * The feed handler instance for the given feed.
 	 *
 	 * @var FeedHandler
+	 * @since 3.5.0
 	 */
 	protected FeedHandler $feed_handler;
 
@@ -60,6 +63,7 @@ abstract class AbstractFeed {
 	 *
 	 * @param string $data_stream_name The name of the data stream.
 	 * @param string $heartbeat The heartbeat interval for the feed generation.
+	 * @since 3.5.0
 	 */
 	public function __construct( string $data_stream_name, string $heartbeat ) {
 		self::$data_stream_name = $data_stream_name;
@@ -70,6 +74,7 @@ abstract class AbstractFeed {
 	 * Adds the necessary hooks for feed generation and data request handling.
 	 *
 	 * @param string $heartbeat The heartbeat interval for the feed generation.
+	 * @since 3.5.0
 	 */
 	private function add_hooks( string $heartbeat ) {
 		add_action( $heartbeat, $this->schedule_feed_generation() );
@@ -82,6 +87,8 @@ abstract class AbstractFeed {
 	 * Schedules the recurring feed generation.
 	 *
 	 * This method must be implemented by the concrete feed class, usually by providing a recurring interval
+	 *
+	 * @since 3.5.0
 	 */
 	abstract public function schedule_feed_generation();
 
@@ -90,6 +97,8 @@ abstract class AbstractFeed {
 	 *
 	 * This method is responsible for initiating the regeneration of the product feed.
 	 * The method ensures that the feed is regenerated based on the defined schedule.
+	 *
+	 * @since 3.5.0
 	 */
 	abstract public function regenerate_feed();
 
@@ -97,6 +106,8 @@ abstract class AbstractFeed {
 	 * Trigger the upload flow
 	 *
 	 * Once feed regenerated, trigger upload via create_upload API and trigger the action for handling the upload
+	 *
+	 * @since 3.5.0
 	 */
 	abstract public function send_request_to_upload_feed();
 
@@ -104,12 +115,16 @@ abstract class AbstractFeed {
 	 * Handles the feed data request.
 	 *
 	 * This method must be implemented by the concrete feed class.
+	 *
+	 * @since 3.5.0
 	 */
 	abstract public function handle_feed_data_request();
 
 	/** Schedules the feed generation immediately, ignoring the interval.
 	 *
 	 * This method must be implemented by the concrete feed class.
+	 *
+	 * @since 3.5.0
 	 */
 	abstract public function schedule_feed_generation_immediately();
 
@@ -119,6 +134,7 @@ abstract class AbstractFeed {
 	 * This method must be implemented by the concrete feed class.
 	 *
 	 * @return string The URL for retrieving the product feed data.
+	 * @since 3.5.0
 	 */
 	abstract public static function get_feed_data_url(): string;
 
@@ -128,6 +144,7 @@ abstract class AbstractFeed {
 	 * This method must be implemented by the concrete feed class.
 	 *
 	 * @return string The secret value for the ProductFeed URL.
+	 * @since 3.5.0
 	 */
 	abstract public static function get_feed_secret(): string;
 
@@ -137,6 +154,7 @@ abstract class AbstractFeed {
 	 * @param string $feed_name The base feed name.
 	 *
 	 * @return string The modified action name.
+	 * @since 3.5.0
 	 */
 	protected static function modify_action_name( string $feed_name ): string {
 		return $feed_name . self::$data_stream_name;

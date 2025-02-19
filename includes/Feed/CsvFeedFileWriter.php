@@ -15,14 +15,16 @@ defined( 'ABSPATH' ) || exit;
 /**
  *
  * CsvFeedFileWriter class
- * To be used by the feed handler to write its updates to its feed file.
  * To be used by any feed handler whose feed requires a csv file.
+ *
+ * @since 3.5.0
  */
 class CsvFeedFileWriter implements FeedFileWriter {
 	/**
 	 * Use the feed name to distinguish which folder to write to.
 	 *
 	 * @var string
+	 * @since 3.5.0
 	 */
 	private $feed_name;
 
@@ -30,6 +32,7 @@ class CsvFeedFileWriter implements FeedFileWriter {
 	 * Constructor.
 	 *
 	 * @param string $feed_name The name of the feed.
+	 * @since 3.5.0
 	 */
 	public function __construct( string $feed_name ) {
 		$this->feed_name = $feed_name;
@@ -39,6 +42,7 @@ class CsvFeedFileWriter implements FeedFileWriter {
 	 * Write the feed file.
 	 *
 	 * @return void
+	 * @since 3.5.0
 	 */
 	public function write_feed_file() {
 		// TODO: Implement write_feed_file() method.
@@ -46,7 +50,8 @@ class CsvFeedFileWriter implements FeedFileWriter {
 
 	/**
 	 * Creates files in the given feed directory to prevent directory listing and hotlinking.
-	 * Todo: add since
+	 *
+	 * @since 3.5.0
 	 */
 	public function create_files_to_protect_feed_directory() {
 	}
@@ -55,7 +60,7 @@ class CsvFeedFileWriter implements FeedFileWriter {
 	 * Gets the feed file path of given feed.
 	 *
 	 * @return string
-	 * * Todo: add since
+	 * @since 3.5.0
 	 */
 	public function get_file_path(): string {
 		return '';
@@ -66,7 +71,7 @@ class CsvFeedFileWriter implements FeedFileWriter {
 	 * Gets the temporary feed file path.
 	 *
 	 * @return string
-	 * * Todo: add since
+	 * @since 3.5.0
 	 */
 	public function get_temp_file_path(): string {
 		return '';
@@ -76,7 +81,7 @@ class CsvFeedFileWriter implements FeedFileWriter {
 	 * Gets the feed file directory.
 	 *
 	 * @return string
-	 * * Todo: add since
+	 * @since 3.5.0
 	 */
 	public function get_file_directory(): string {
 		return '';
@@ -87,7 +92,7 @@ class CsvFeedFileWriter implements FeedFileWriter {
 	 * Gets the feed file name.
 	 *
 	 * @return string
-	 * * Todo: add since
+	 * @since 3.5.0
 	 */
 	public function get_file_name(): string {
 		return '';
@@ -99,7 +104,7 @@ class CsvFeedFileWriter implements FeedFileWriter {
 	 * @param string $secret The secret used to generate the file name.
 	 *
 	 * @return string
-	 * * Todo: add since
+	 * @since 3.5.0
 	 */
 	public function get_temp_file_name( string $secret ): string {
 		return $secret;
