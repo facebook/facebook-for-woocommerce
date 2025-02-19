@@ -17,6 +17,7 @@ class Request extends ApiRequest {
 	 *
 	 * @param string $cpi_id Commerce Partner Integration ID.
 	 * @param array $data Feed Metadata for File Update Post endpoint.
+	 *  Todo: add since
 	 */
 	public function __construct( string $cpi_id, array $data ) {
 		parent::__construct( $cpi_id . '/file_update', 'POST' );

@@ -20,7 +20,7 @@ use WooCommerce\Facebook\Utilities\Heartbeat;
  * Extends Abstract Feed class to handle example feed requests and generation for Facebook integration.
  *
  * @package WooCommerce\Facebook\Feed
- * @since 1.11.0
+ * * Todo: add since
  */
 class ExampleFeed extends AbstractFeed {
 

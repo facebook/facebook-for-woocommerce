@@ -10,7 +10,7 @@ defined( 'ABSPATH' ) || exit;
  * This class generates the feed as a batch job.
  *
  * @package WooCommerce\Facebook\Feed
- * @since 2.5.0
+ * * Todo: add since
  */
 class ExampleFeedGenerator extends FeedGenerator {
 	/**

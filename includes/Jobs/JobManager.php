@@ -3,7 +3,6 @@
 namespace WooCommerce\Facebook\Jobs;
 
 use Automattic\WooCommerce\ActionSchedulerJobFramework\Proxies\ActionScheduler;
-use WooCommerce\Facebook\Feed\FeedGeneratorFactory;
 
 defined( 'ABSPATH' ) || exit;
 

@@ -17,6 +17,7 @@ interface FeedHandler {
 	 * Generate the feed file.
 	 *
 	 * This method is responsible for generating a feed file.
+	 *   Todo: add since
 	 */
 	public function generate_feed_file();
 }

@@ -18,7 +18,7 @@ defined( 'ABSPATH' ) || exit;
  * Extends the FeedHandler interface to handle example feed file generation.
  *
  * @package WooCommerce\Facebook\ProductFeed
- * @since 1.11.0
+ * * Todo: add since
  */
 class ExampleFeedHandler implements FeedHandler {
 	/**

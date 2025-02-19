@@ -21,7 +21,7 @@ use WooCommerce\Facebook\Utilities\Heartbeat;
  * This class defines the structure and common methods that must be implemented by any concrete feed class.
  *
  * @package WooCommerce\Facebook\ProductFeed
- * @since 1.11.0
+ * * Todo: add since.
  */
 abstract class AbstractFeed {
 	/** The action callback for generating a feed */

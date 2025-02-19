@@ -16,7 +16,7 @@ use WooCommerce\Facebook\Jobs\AbstractChainedJob;
  * It extends the AbstractChainedJob class to utilize the Action Scheduler framework for batch processing.
  *
  * @package WooCommerce\Facebook\Feed
- * @since 2.5.0
+ * * Todo: add since
  */
 class FeedGenerator extends AbstractChainedJob {
 	/**
@@ -30,6 +30,7 @@ class FeedGenerator extends AbstractChainedJob {
 	 * FeedGenerator constructor.
 	 *
 	 * @param ActionSchedulerInterface $action_scheduler The action scheduler instance.
+	 * @param FeedHandler $feed_handler The feed handler instance.
 	 */
 	public function __construct( ActionSchedulerInterface $action_scheduler, FeedHandler $feed_handler ) {
 		parent::__construct( $action_scheduler );
@@ -71,9 +72,7 @@ class FeedGenerator extends AbstractChainedJob {
 	 *
 	 * @param array $items The items of the current batch, probably compiled as an object.
 	 * @param array $args The args for the job.
-	 *
-	 * @throws Exception On error. The failure will be logged by Action Scheduler and the job chain will stop.
-	 * @since 1.1.0
+	 * Todo: add since.
 	 */
 	protected function process_items( array $items, array $args ) {
 	}

@@ -46,8 +46,7 @@ class CsvFeedFileWriter implements FeedFileWriter {
 
 	/**
 	 * Creates files in the given feed directory to prevent directory listing and hotlinking.
-	 *
-	 * @since 1.11.0
+	 * Todo: add since
 	 */
 	public function create_files_to_protect_feed_directory() {
 	}
@@ -56,7 +55,7 @@ class CsvFeedFileWriter implements FeedFileWriter {
 	 * Gets the feed file path of given feed.
 	 *
 	 * @return string
-	 * @since 1.11.0
+	 * * Todo: add since
 	 */
 	public function get_file_path(): string {
 		return '';
@@ -67,7 +66,7 @@ class CsvFeedFileWriter implements FeedFileWriter {
 	 * Gets the temporary feed file path.
 	 *
 	 * @return string
-	 * @since 1.11.3
+	 * * Todo: add since
 	 */
 	public function get_temp_file_path(): string {
 		return '';
@@ -77,7 +76,7 @@ class CsvFeedFileWriter implements FeedFileWriter {
 	 * Gets the feed file directory.
 	 *
 	 * @return string
-	 * @since 1.11.0
+	 * * Todo: add since
 	 */
 	public function get_file_directory(): string {
 		return '';
@@ -88,7 +87,7 @@ class CsvFeedFileWriter implements FeedFileWriter {
 	 * Gets the feed file name.
 	 *
 	 * @return string
-	 * @since 1.11.0
+	 * * Todo: add since
 	 */
 	public function get_file_name(): string {
 		return '';
@@ -100,7 +99,7 @@ class CsvFeedFileWriter implements FeedFileWriter {
 	 * @param string $secret The secret used to generate the file name.
 	 *
 	 * @return string
-	 * @since 1.11.3
+	 * * Todo: add since
 	 */
 	public function get_temp_file_name( string $secret ): string {
 		return $secret;

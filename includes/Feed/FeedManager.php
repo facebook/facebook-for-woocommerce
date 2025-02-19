@@ -7,6 +7,7 @@ use WooCommerce\Facebook\Utilities\Heartbeat;
 /**
  * Responsible for creating and managing feeds.
  * Global manipulations of the feed such as updating feed and upload ID to be made through this class.
+ *  Todo: add since
  */
 class FeedManager {
 	const EXAMPLE = 'example';
