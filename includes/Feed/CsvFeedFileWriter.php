@@ -45,11 +45,11 @@ class CsvFeedFileWriter implements FeedFileWriter {
 	}
 
 	/**
-	 * Creates files in the catalog feed directory to prevent directory listing and hotlinking.
+	 * Creates files in the given feed directory to prevent directory listing and hotlinking.
 	 *
 	 * @since 1.11.0
 	 */
-	public function create_files_to_protect_product_feed_directory() {
+	public function create_files_to_protect_feed_directory() {
 	}
 
 	/**

@@ -23,7 +23,7 @@ interface FeedFileWriter {
 	 *
 	 * @since 1.11.0
 	 */
-	public function create_files_to_protect_product_feed_directory();
+	public function create_files_to_protect_feed_directory();
 
 	/**
 	 * Gets the feed file path of given feed.
