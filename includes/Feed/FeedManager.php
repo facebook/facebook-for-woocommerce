@@ -7,6 +7,7 @@ use WooCommerce\Facebook\Utilities\Heartbeat;
 /**
  * Responsible for creating and managing feeds.
  * Global manipulations of the feed such as updating feed and upload ID to be made through this class.
+ *
  * @since 3.5.0
  */
 class FeedManager {
@@ -75,7 +76,7 @@ class FeedManager {
 	 * @param string $data_stream_name The name of the data stream.
 	 *
 	 * @return FeedFileWriter
-	 * @throws \InvalidArgumentException If the data stream doesn't correspond to a FeedType
+	 * @throws \InvalidArgumentException If the data stream doesn't correspond to a FeedType.
 	 * @since 3.5.0
 	 */
 	public static function get_feed_file_writer( string $data_stream_name ): FeedFileWriter {

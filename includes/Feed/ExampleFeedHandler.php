@@ -17,7 +17,7 @@ defined( 'ABSPATH' ) || exit;
  *
  * Extends the FeedHandler interface to handle example feed file generation.
  *
- * @package WooCommerce\Facebook\ProductFeed
+ * @package WooCommerce\Facebook\Feed
  * @since 3.5.0
  */
 class ExampleFeedHandler implements FeedHandler {
@@ -43,6 +43,7 @@ class ExampleFeedHandler implements FeedHandler {
 	 * Generate the feed file.
 	 *
 	 * This method is responsible for generating a feed file.
+	 *
 	 * @since 3.5.0
 	 */
 	public function generate_feed_file() {

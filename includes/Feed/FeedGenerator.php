@@ -122,6 +122,6 @@ class FeedGenerator extends AbstractChainedJob {
 	 * @since 3.5.0
 	 */
 	protected function get_batch_size(): int {
-		return - 1;
+		return -1;
 	}
 }

@@ -12,22 +12,19 @@ namespace WooCommerce\Facebook\Feed;
 
 defined( 'ABSPATH' ) || exit;
 
-use WooCommerce\Facebook\Utilities\Heartbeat;
-
 /**
  * Abstract class AbstractFeed
  *
- * Provides the base functionality for handling product feed requests and generation for Facebook integration.
+ * Provides the base functionality for handling Metadata feed requests and generation for Facebook integration.
  * This class defines the structure and common methods that must be implemented by any concrete feed class.
  *
- * @package WooCommerce\Facebook\ProductFeed
+ * @package WooCommerce\Facebook\Feed
  * @since 3.5.0
  */
 abstract class AbstractFeed {
 	/** The action callback for generating a feed */
 	const GENERATE_FEED_ACTION = 'wc_facebook_regenerate_feed_';
-
-	/** The action slug for getting the product feed */
+	/** The action slug for getting the feed */
 	const REQUEST_FEED_ACTION = 'wc_facebook_get_feed_data_';
 	/** The action slug for triggering file upload */
 	const FEED_GEN_COMPLETE_ACTION = 'wc_facebook_feed_generation_completed_';
@@ -93,9 +90,13 @@ abstract class AbstractFeed {
 	abstract public function schedule_feed_generation();
 
 	/**
-	 * Regenerates the product feed.
+	 * Schedules the feed generation immediately, ignoring the interval.
 	 *
-	 * This method is responsible for initiating the regeneration of the product feed.
+	 * @since 3.5.0
+	 */
+	abstract public function schedule_feed_generation_immediately();
+
+	/**
 	 * The method ensures that the feed is regenerated based on the defined schedule.
 	 *
 	 * @since 3.5.0
@@ -103,8 +104,6 @@ abstract class AbstractFeed {
 	abstract public function regenerate_feed();
 
 	/**
-	 * Trigger the upload flow
-	 *
 	 * Once feed regenerated, trigger upload via create_upload API and trigger the action for handling the upload
 	 *
 	 * @since 3.5.0
@@ -114,36 +113,22 @@ abstract class AbstractFeed {
 	/**
 	 * Handles the feed data request.
 	 *
-	 * This method must be implemented by the concrete feed class.
-	 *
 	 * @since 3.5.0
 	 */
 	abstract public function handle_feed_data_request();
 
-	/** Schedules the feed generation immediately, ignoring the interval.
-	 *
-	 * This method must be implemented by the concrete feed class.
-	 *
-	 * @since 3.5.0
-	 */
-	abstract public function schedule_feed_generation_immediately();
-
 	/**
-	 * Gets the URL for retrieving the product feed data.
+	 * Gets the URL for retrieving the feed data.
 	 *
-	 * This method must be implemented by the concrete feed class.
-	 *
-	 * @return string The URL for retrieving the product feed data.
+	 * @return string The URL for retrieving the feed data.
 	 * @since 3.5.0
 	 */
 	abstract public static function get_feed_data_url(): string;
 
 	/**
-	 * Gets the secret value that should be included in the ProductFeed URL.
+	 * Gets the secret value/ token that should be included in the feed URL.
 	 *
-	 * This method must be implemented by the concrete feed class.
-	 *
-	 * @return string The secret value for the ProductFeed URL.
+	 * @return string The secret value for the feed URL.
 	 * @since 3.5.0
 	 */
 	abstract public static function get_feed_secret(): string;

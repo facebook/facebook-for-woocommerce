@@ -51,6 +51,15 @@ class ExampleFeed extends AbstractFeed {
 	}
 
 	/**
+	 * Allows an admin to schedule the feed generation immediately.
+	 *
+	 * @since 3.5.0
+	 */
+	public function schedule_feed_generation_immediately() {
+		// TODO: Implement schedule_feed_generation_immediately() method.
+	}
+
+	/**
 	 * Regenerates the example feed based on the defined schedule.
 	 *
 	 * @since 3.5.0
@@ -83,15 +92,6 @@ class ExampleFeed extends AbstractFeed {
 	 */
 	public function handle_feed_data_request() {
 		// TODO: Implement handle_feed_data_request() method.
-	}
-
-	/**
-	 * Allows an admin to schedule the feed generation immediately.
-	 *
-	 * @since 3.5.0
-	 */
-	public function schedule_feed_generation_immediately() {
-		// TODO: Implement schedule_feed_generation_immediately() method.
 	}
 
 	/**
