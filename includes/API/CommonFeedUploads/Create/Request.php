@@ -16,11 +16,11 @@ class Request extends ApiRequest {
 	 * Constructs the request.
 	 *
 	 * @param string $cpi_id Commerce Partner Integration ID.
-	 * @param array $data Feed Metadata for File Update Post endpoint.
-	 *  Todo: add since
+	 * @param array  $data Feed Metadata for File Update Post endpoint.
+	 * @since 3.5.0
 	 */
-	public function __construct( string $cpi_id, array $data ) {
-		parent::__construct( $cpi_id . '/file_update', 'POST' );
+	public function __construct( array $data ) {
+		parent::__construct( '24316596247984028/file_update', 'POST' );
 		parent::set_data( $data );
 	}
 }

@@ -28,6 +28,8 @@ abstract class AbstractFeed {
 	const REQUEST_FEED_ACTION = 'wc_facebook_get_feed_data_';
 	/** The action slug for triggering file upload */
 	const FEED_GEN_COMPLETE_ACTION = 'wc_facebook_feed_generation_completed_';
+	/**  The commerce partner integration ID used in GraphPartnerIntegrationFileUpdatePost call */
+	const COMMERCE_PARTNER_INTEGRATION_ID = '24316596247984028';
 
 	/**
 	 * The name of the data stream to be synced via this feed.
@@ -136,12 +138,35 @@ abstract class AbstractFeed {
 	/**
 	 * Modifies the action name by appending the data stream name.
 	 *
-	 * @param string $feed_name The base feed name.
+	 * @param string $action_name The base feed name.
 	 *
 	 * @return string The modified action name.
 	 * @since 3.5.0
 	 */
-	protected static function modify_action_name( string $feed_name ): string {
-		return $feed_name . self::$data_stream_name;
+	protected static function modify_action_name( string $action_name ): string {
+		return $action_name . self::$data_stream_name;
+	}
+
+	/**
+	 * Checks whether fpassthru has been disabled in PHP.
+	 *
+	 * Helper method, do not open to public.
+	 *
+	 * @since 3.5.0
+	 *
+	 * @return bool
+	 */
+	protected static function is_fpassthru_disabled(): bool {
+		$disabled = false;
+		if ( function_exists( 'ini_get' ) ) {
+			// phpcs:ignore
+			$disabled_functions = @ini_get( 'disable_functions' );
+
+			$disabled =
+				is_string( $disabled_functions ) &&
+				//phpcs:ignore
+				in_array( 'fpassthru', explode( ',', $disabled_functions ), false );
+		}
+		return $disabled;
 	}
 }

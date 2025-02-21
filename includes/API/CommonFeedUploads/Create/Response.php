@@ -9,6 +9,6 @@ defined( 'ABSPATH' ) || exit;
 
 /**
  * Response object for Common Feed Upload
- *  Todo: add since
+ * @since 3.5.0
  */
 class Response extends ApiResponse {}
