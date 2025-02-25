@@ -49,7 +49,7 @@ class Retargeting extends CampaignHandler {
 		$this->apply_adset_changes( $new_daily_budget * 100 );
 		$this->apply_adcreative_changes( $new_ad_message );
 		$this->set_ad_status( $status );
-		
+
 		return true;
 	}
 
