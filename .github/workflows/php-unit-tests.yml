@@ -24,8 +24,6 @@ jobs:
             tail -n 2 | \
             jq -R -s -c 'split("\n")[:-1]')
 
-          VERSIONS=$(jq -nc --argjson versions "$VERSIONS" '["5.7.12"] + $versions')
-
           echo "versions=${VERSIONS}" >> "$GITHUB_OUTPUT"
 
       - id: fetch-wc
@@ -54,13 +52,6 @@ jobs:
         php: [7.4, 8.0, 8.1, 8.2, 8.3]
         wp-version: ${{ fromJson(needs.get-versions.outputs.wp-versions) }}
         wc-version: ${{ fromJson(needs.get-versions.outputs.wc-versions) }}
-        exclude:
-          - wp-version: 5.7.12
-            php: 8.1
-          - wp-version: 5.7.12
-            php: 8.2
-          - wp-version: 5.7.12
-            php: 8.3
 
     steps:
       - name: Install SVN
