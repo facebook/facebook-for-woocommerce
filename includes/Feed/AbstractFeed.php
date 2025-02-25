@@ -125,7 +125,7 @@ abstract class AbstractFeed {
 	 * @return string The URL for retrieving the feed data.
 	 * @since 3.5.0
 	 */
-	abstract public static function get_feed_data_url(): string;
+	abstract public function get_feed_data_url(): string;
 
 	/**
 	 * Gets the secret value/ token that should be included in the feed URL.
@@ -133,7 +133,7 @@ abstract class AbstractFeed {
 	 * @return string The secret value for the feed URL.
 	 * @since 3.5.0
 	 */
-	abstract public static function get_feed_secret(): string;
+	abstract public function get_feed_secret(): string;
 
 	/**
 	 * Modifies the action name by appending the data stream name.
@@ -143,30 +143,7 @@ abstract class AbstractFeed {
 	 * @return string The modified action name.
 	 * @since 3.5.0
 	 */
-	protected static function modify_action_name( string $action_name ): string {
+	public static function modify_action_name( string $action_name ): string {
 		return $action_name . self::$data_stream_name;
-	}
-
-	/**
-	 * Checks whether fpassthru has been disabled in PHP.
-	 *
-	 * Helper method, do not open to public.
-	 *
-	 * @since 3.5.0
-	 *
-	 * @return bool
-	 */
-	protected static function is_fpassthru_disabled(): bool {
-		$disabled = false;
-		if ( function_exists( 'ini_get' ) ) {
-			// phpcs:ignore
-			$disabled_functions = @ini_get( 'disable_functions' );
-
-			$disabled =
-				is_string( $disabled_functions ) &&
-				//phpcs:ignore
-				in_array( 'fpassthru', explode( ',', $disabled_functions ), false );
-		}
-		return $disabled;
 	}
 }

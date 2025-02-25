@@ -64,10 +64,16 @@ interface FeedFileWriter {
 	/**
 	 * Gets the temporary feed file name.
 	 *
-	 * @param string $secret The secret to use for the temporary file name.
-	 *
 	 * @return string
 	 * @since 3.5.0
 	 */
-	public function get_temp_file_name( string $secret ): string;
+	public function get_temp_file_name(): string;
+
+	/**
+	 * Prepare a fresh empty temporary feed file with the header row.
+	 *
+	 * @return resource A file pointer resource.
+	 * @since 3.5.0
+	 */
+	public function prepare_temporary_feed_file();
 }

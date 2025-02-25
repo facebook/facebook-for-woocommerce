@@ -71,31 +71,14 @@ class FeedManager {
 	}
 
 	/**
-	 * Get the feed file writer for the given data stream name.
-	 *
-	 * @param string $data_stream_name The name of the data stream.
-	 *
-	 * @return FeedFileWriter
-	 * @throws \InvalidArgumentException If the data stream doesn't correspond to a FeedType.
-	 * @since 3.5.0
-	 */
-	public static function get_feed_file_writer( string $data_stream_name ): FeedFileWriter {
-		switch ( $data_stream_name ) {
-			case self::EXAMPLE:
-				return new CsvFeedFileWriter( $data_stream_name );
-			default:
-				throw new \InvalidArgumentException( 'Invalid data stream name' );
-		}
-	}
-
-	/**
 	 * Get the feed instance for the given feed type.
 	 *
 	 * @param string $feed_type the specific feed in question.
-	 * @return AbstractFeed
+	 * @return string
 	 * @since 3.5.0
 	 */
-	public function get_feed_instance( string $feed_type ): AbstractFeed {
-		return $this->feed_instances[ $feed_type ];
+	public function get_feed_secret( string $feed_type ): string {
+		$instance = $this->feed_instances[ $feed_type ];
+		return $instance->get_feed_secret();
 	}
 }

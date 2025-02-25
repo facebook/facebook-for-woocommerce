@@ -36,13 +36,17 @@ class ExampleFeed extends AbstractFeed {
 	 * @since 3.5.0
 	 */
 	public function __construct() {
-		$data_stream_name     = FeedManager::EXAMPLE;
-		$this->feed_handler   = new ExampleFeedHandler( new CsvFeedFileWriter( $data_stream_name ) );
+		// Using the headers for ratings and reviews for this proof of concept.
+		$header = 'aggregator,store.name,store.id,store.store_urls,review_id,rating,title,content,created_at,' .
+			'incentivized,has_verified_purchase,language,reviewer.name,reviewer.is_anonymous,product.name,product.url,' .
+			'product.image_urls,product.product_identifiers.skus,country' . PHP_EOL;
+
+		$this->feed_handler   = new ExampleFeedHandler( new CsvFeedFileWriter( FeedManager::EXAMPLE, $header ) );
 		$scheduler            = new ActionScheduler();
 		$this->feed_generator = new ExampleFeedGenerator( $scheduler, $this->feed_handler );
 		$this->feed_generator->init();
 
-		parent::__construct( $data_stream_name, Heartbeat::HOURLY );
+		parent::__construct( FeedManager::EXAMPLE, Heartbeat::HOURLY );
 	}
 
 	/**
@@ -168,7 +172,7 @@ class ExampleFeed extends AbstractFeed {
 
 			// fpassthru might be disabled in some hosts (like Flywheel).
 			// phpcs:ignore
-			if ( $this->is_fpassthru_disabled() || ! @fpassthru( $file ) ) {
+			if ( \WC_Facebookcommerce_Utils::is_fpassthru_disabled() || ! @fpassthru( $file ) ) {
 				\WC_Facebookcommerce_Utils::log( 'ExampleFeed: fpassthru is disabled: getting file contents' );
 				//phpcs:ignore
 				$contents = @stream_get_contents( $file );
@@ -192,7 +196,7 @@ class ExampleFeed extends AbstractFeed {
 	 * @since 3.5.0
 	 * @return string
 	 */
-	public static function get_feed_data_url(): string {
+	public function get_feed_data_url(): string {
 		$query_args = array(
 			'wc-api' => self::modify_action_name( self::REQUEST_FEED_ACTION ),
 			'secret' => self::get_feed_secret(),
@@ -209,7 +213,7 @@ class ExampleFeed extends AbstractFeed {
 	 * @since 3.5.0
 	 * @return string
 	 */
-	public static function get_feed_secret(): string {
+	public function get_feed_secret(): string {
 		$secret = get_option( self::OPTION_FEED_URL_SECRET, '' );
 		if ( ! $secret ) {
 			$secret = wp_hash( 'example-feed-' . time() );

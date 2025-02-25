@@ -19,4 +19,11 @@ interface FeedHandler {
 	 * @since 3.5.0
 	 */
 	public function generate_feed_file();
+
+	/**
+	 * Get the feed file writer instance.
+	 *
+	 * @return FeedFileWriter
+	 */
+	public function get_feed_writer(): FeedFileWriter;
 }

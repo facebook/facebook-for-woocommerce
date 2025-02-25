@@ -70,7 +70,7 @@ class WC_Facebookcommerce extends WooCommerce\Facebook\Framework\Plugin {
 	private $product_feed;
 
 	/** @var WooCommerce\Facebook\Feed\FeedManager Entrypoint and creates all other feeds */
-	private $feed_manager;
+	public $feed_manager;
 
 	/** @var Background_Handle_Virtual_Products_Variations instance */
 	protected $background_handle_virtual_products_variations;

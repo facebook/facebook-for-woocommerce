@@ -2,7 +2,10 @@
 
 namespace WooCommerce\Facebook\Feed;
 
+use Automattic\WooCommerce\ActionSchedulerJobFramework\Proxies\ActionSchedulerInterface;
+use Automattic\WooCommerce\ActionSchedulerJobFramework\Utilities\BatchQueryOffset;
 use WC_Facebookcommerce;
+use WooCommerce\Facebook\Jobs\LoggingTrait;
 
 defined( 'ABSPATH' ) || exit;
 
@@ -16,21 +19,50 @@ defined( 'ABSPATH' ) || exit;
  */
 class ExampleFeedGenerator extends FeedGenerator {
 	/**
+	 * Used to interact with the directory system.
+	 *
+	 * @var FeedFileWriter $feed_writer
+	 */
+	private FeedFileWriter $feed_writer;
+
+	/**
+	 * Constructor for this instance.
+	 *
+	 * @param ActionSchedulerInterface $action_scheduler Global scheduler.
+	 * @param FeedHandler              $feed_handler The feed handler instance for this feed.
+	 */
+	public function __construct( ActionSchedulerInterface $action_scheduler, FeedHandler $feed_handler ) {
+		parent::__construct( $action_scheduler, $feed_handler );
+		$this->feed_writer = $feed_handler->get_feed_writer();
+	}
+
+	/**
 	 * Handles the start of the feed generation process.
 	 *
 	 * @inheritdoc
 	 * @since 3.5.0
 	 */
 	protected function handle_start() {
+		$this->feed_writer->create_files_to_protect_feed_directory();
+		$this->feed_writer->prepare_temporary_feed_file();
 	}
 
 	/**
 	 * Handles the end of the feed generation process.
 	 *
 	 * @inheritdoc
+	 * @throw PluginException If the temporary file cannot be promoted.
 	 * @since 3.5.0
 	 */
 	protected function handle_end() {
+		$this->feed_writer->promote_temp_file();
+
+		/**
+		 * Trigger upload from ExampleFeed instance
+		 *
+		 * @since 3.5.0
+		 */
+		do_action( ExampleFeed::modify_action_name( ExampleFeed::FEED_GEN_COMPLETE_ACTION ) );
 	}
 
 	/**
@@ -76,18 +108,7 @@ class ExampleFeedGenerator extends FeedGenerator {
 	 * @since 3.5.0
 	 */
 	public function get_name(): string {
-		return '';
-	}
-
-	/**
-	 * Gets the plugin name associated with the feed generator.
-	 *
-	 * @return string The plugin name.
-	 * @inheritdoc
-	 * @since 3.5.0
-	 */
-	public function get_plugin_name(): string {
-		return WC_Facebookcommerce::PLUGIN_ID;
+		return self::class;
 	}
 
 	/**
@@ -97,6 +118,6 @@ class ExampleFeedGenerator extends FeedGenerator {
 	 * @inheritdoc
 	 */
 	protected function get_batch_size(): int {
-		return -1;
+		return 15;
 	}
 }

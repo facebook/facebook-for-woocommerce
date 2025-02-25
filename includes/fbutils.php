@@ -864,10 +864,10 @@ if ( ! class_exists( 'WC_Facebookcommerce_Utils' ) ) :
 		public static function logExceptionImmediatelyToMeta(Throwable $error, array $context = []) {
 			/**
 			 * WIP: This is a dummy function to send exception logs to Meta.
-			 * $context is an array of data that will be sent to Meta, includes commerce_merchant_settings_id, 
+			 * $context is an array of data that will be sent to Meta, includes commerce_merchant_settings_id,
 			 * catalog_id, order_id, promotion_id, flow_name, flow_step, extra_data and etc.
 			 */
-			
+
 			// TODO: Implement enqueue logging to Meta function.
 			$response = null;
 
@@ -880,14 +880,34 @@ if ( ! class_exists( 'WC_Facebookcommerce_Utils' ) ) :
 		public static function logTelemetryToMeta(string $message, array $context = []) {
 			/**
 			 * WIP: This is a dummy function to send telemetry logs to Meta.
-			 * $context is an array of data that will be sent to Meta, includes commerce_merchant_settings_id, 
+			 * $context is an array of data that will be sent to Meta, includes commerce_merchant_settings_id,
 			 * catalog_id, order_id, promotion_id, flow_name, flow_step, extra_data and etc.
 			 */
-			
+
 			// TODO: Implement push logging request to global message queue function.
 			$response = null;
-			
+
 			 return $response;
+		}
+
+		/**
+		 * Checks whether fpassthru has been disabled in PHP.
+		 *
+		 * @since 3.5.0
+		 * @return bool
+		 */
+		public static function is_fpassthru_disabled(): bool {
+			$disabled = false;
+			if ( function_exists( 'ini_get' ) ) {
+				// phpcs:ignore
+				$disabled_functions = @ini_get( 'disable_functions' );
+
+				$disabled =
+					is_string( $disabled_functions ) &&
+					//phpcs:ignore
+					in_array( 'fpassthru', explode( ',', $disabled_functions ), false );
+			}
+			return $disabled;
 		}
 
 	}
