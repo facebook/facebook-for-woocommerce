@@ -1,5 +1,4 @@
 <?php
-// phpcs:ignoreFile
 /**
  * Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
  *
@@ -22,18 +21,28 @@ if ( ! class_exists( 'WC_Facebook_Product_Feed_Test' ) ) :
 	 */
 	class WC_Facebook_Product_Feed_Test_Mock extends WC_Facebook_Product_Feed {
 
+		/** @var int|null Product post ID for testing */
 		public static $product_post_wpid = null;
 
-		// Return test product post id.
-		// Don't mess up actual products.
+		/**
+		 * Return test product post id.
+		 * Don't mess up actual products.
+		 *
+		 * @return int|null Product post ID
+		 */
 		public function get_product_wpid() {
 			return self::$product_post_wpid;
 		}
 
-		// Log progress in local log file for testing.
-		// Not to overwhelm DB log to track important signals.
-		public function log_feed_progress( $msg, $object = array() ) {
-			$msg = empty( $object ) ? $msg : $msg . json_encode( $object );
+		/**
+		 * Log progress in local log file for testing.
+		 * Not to overwhelm DB log to track important signals.
+		 *
+		 * @param string $msg  Message to log
+		 * @param array  $data Optional data to include in the log
+		 */
+		public function log_feed_progress( $msg, $data = array() ) {
+			$msg = empty( $data ) ? $msg : $msg . wp_json_encode( $data );
 			WC_Facebookcommerce_Utils::log( 'Test - ' . $msg );
 		}
 	}
