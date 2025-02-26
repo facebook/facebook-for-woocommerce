@@ -1,0 +1,202 @@
+name: AI Generate PHP Unit Tests
+
+on:
+  workflow_dispatch:  # Manual trigger
+  schedule:
+    - cron: '0 */6 * * *'  # Run every 6 hours
+  push:
+    paths:
+      - '**.php'
+      - 'composer.*'
+    branches:
+      - trunk
+      - main
+      - develop
+
+jobs:
+  generate-ai-tests:
+    name: Generate AI-Powered Unit Tests
+    runs-on: ubuntu-latest
+    if: github.event_name != 'push' || !contains(github.event.head_commit.message, 'Add AI generated tests')
+    strategy:
+      matrix:
+        php: ['7.4', '8.0', '8.1', '8.2', '8.3']
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          tools: phpunit, phpcov
+          coverage: xdebug
+
+      - name: Install dependencies
+        run: composer install
+
+      - name: Generate coverage report
+        run: |
+          mkdir -p coverage
+          vendor/bin/phpunit --coverage-html coverage --coverage-clover coverage.xml
+
+      - name: Setup Python for Llama
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+
+      - name: Install Llama CPP Python
+        run: |
+          pip install llama-cpp-python
+          pip install requests
+
+      - name: Download Llama Model
+        run: |
+          mkdir -p models
+          curl -L https://huggingface.co/TheBloke/CodeLlama-7B-GGUF/resolve/main/codellama-7b.Q4_K_M.gguf -o models/codellama.gguf
+
+      - name: Generate AI Tests
+        run: |
+          cat > generate_ai_tests.py << 'EOF'
+          import sys
+          from llama_cpp import Llama
+          import json
+          import os
+          from xml.etree import ElementTree
+          
+          def load_llama():
+              return Llama(
+                  model_path="models/codellama.gguf",
+                  n_ctx=4096,
+                  n_threads=4
+              )
+          
+          def generate_test_case(llm, class_name, method_name, method_code):
+              prompt = f"""
+              Generate a PHPUnit test case for the following PHP method:
+              
+              Class: {class_name}
+              Method: {method_name}
+              Code: {method_code}
+              
+              Create a test that:
+              1. Sets up necessary mocks and test data
+              2. Tests main functionality
+              3. Tests edge cases
+              4. Follows PHPUnit best practices
+              
+              Return only the test method code without any class declaration.
+              """
+              
+              response = llm.create_completion(
+                  prompt,
+                  max_tokens=1000,
+                  temperature=0.2,
+                  stop=["class", "?>"],
+              )
+              
+              return response['choices'][0]['text'].strip()
+          
+          def analyze_and_generate():
+              llm = load_llama()
+              
+              tree = ElementTree.parse('coverage.xml')
+              root = tree.getroot()
+              
+              generated_files = []
+              
+              for class_elem in root.findall(".//class"):
+                  metrics = class_elem.find('metrics')
+                  coverage = float(metrics.get('coveredelements')) / float(metrics.get('elements')) * 100
+                  
+                  if coverage < 80:
+                      class_name = class_elem.get('name')
+                      file_name = class_elem.get('filename')
+                      
+                      # Use PHP's Reflection to get method details
+                      php_code = f"""
+                      <?php
+                      require 'vendor/autoload.php';
+                      $reflection = new ReflectionClass('{class_name}');
+                      $methods = $reflection->getMethods(ReflectionMethod::IS_PUBLIC);
+                      $result = [];
+                      foreach ($methods as $method) {{
+                          if (!$method->isConstructor()) {{
+                              $result[] = [
+                                  'name' => $method->getName(),
+                                  'code' => file_get_contents($method->getFileName(), false, null, 
+                                          $method->getStartLine() - 1, 
+                                          $method->getEndLine() - $method->getStartLine() + 1)
+                              ];
+                          }}
+                      }}
+                      echo json_encode($result);
+                      """
+                      
+                      with open('temp_reflection.php', 'w') as f:
+                          f.write(php_code)
+                      
+                      methods_data = json.loads(os.popen('php temp_reflection.php').read())
+                      
+                      test_file = f"tests/Unit/{os.path.basename(file_name)[:-4]}Test.php"
+                      os.makedirs(os.path.dirname(test_file), exist_ok=True)
+                      
+                      test_content = f"""<?php
+          namespace Facebook\WooCommerce\Tests\Unit;
+          
+          use PHPUnit\Framework\TestCase;
+          use {class_name};
+          
+          class {os.path.basename(file_name)[:-4]}Test extends TestCase
+          {{
+          """
+                      
+                      for method in methods_data:
+                          test_case = generate_test_case(
+                              llm, 
+                              class_name, 
+                              method['name'], 
+                              method['code']
+                          )
+                          test_content += f"\n{test_case}\n"
+                      
+                      test_content += "}\n"
+                      
+                      with open(test_file, 'w') as f:
+                          f.write(test_content)
+                      
+                      generated_files.append(test_file)
+              
+              return generated_files
+          
+          if __name__ == "__main__":
+              files = analyze_and_generate()
+              print("\n".join(files))
+          EOF
+          
+          python generate_ai_tests.py > generated_files.txt
+
+      - name: Create Pull Request
+        uses: peter-evans/create-pull-request@v5
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          commit-message: "test: Add AI generated unit tests"
+          title: "Add AI generated unit tests (PHP ${{ matrix.php }})"
+          body: |
+            This PR adds AI-generated unit tests using Llama Code model.
+            
+            Generated test files:
+            ```
+            $(cat generated_files.txt)
+            ```
+            
+            These tests were generated using code analysis and AI assistance.
+            Please review the generated test cases and adjust as needed.
+          branch: feature/ai-generated-tests-${{ matrix.php }}
+          base: trunk
+          labels: |
+            automated
+            tests
+            ai-generated
+            needs-review 
