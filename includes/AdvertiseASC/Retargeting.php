@@ -127,8 +127,8 @@ class Retargeting extends CampaignHandler {
 			),
 		);
 
-		if ( $this->instagram_actor_id ) {
-			$properties['object_story_spec']['instagram_actor_id'] = $this->instagram_actor_id;
+		if ( $this->instagram_user_id ) {
+			$properties['object_story_spec']['instagram_user_id'] = $this->instagram_user_id;
 		}
 
 		return $properties;
