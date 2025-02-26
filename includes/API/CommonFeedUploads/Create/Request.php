@@ -1,4 +1,13 @@
 <?php
+/**
+ * Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
+ *
+ * This source code is licensed under the license found in the
+ * LICENSE file in the root directory of this source tree.
+ *
+ * @package FacebookCommerce
+ */
+
 declare( strict_types=1 );
 
 namespace WooCommerce\Facebook\API\CommonFeedUploads\Create;
@@ -19,8 +28,8 @@ class Request extends ApiRequest {
 	 * @param array  $data Feed Metadata for File Update Post endpoint.
 	 * @since 3.5.0
 	 */
-	public function __construct( array $data ) {
-		parent::__construct( '24316596247984028/file_update', 'POST' );
+	public function __construct( string $cpi_id, array $data ) {
+		parent::__construct( "/{$cpi_id}/file_update", 'POST' );
 		parent::set_data( $data );
 	}
 }

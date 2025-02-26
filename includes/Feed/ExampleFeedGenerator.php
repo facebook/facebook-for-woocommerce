@@ -3,9 +3,6 @@
 namespace WooCommerce\Facebook\Feed;
 
 use Automattic\WooCommerce\ActionSchedulerJobFramework\Proxies\ActionSchedulerInterface;
-use Automattic\WooCommerce\ActionSchedulerJobFramework\Utilities\BatchQueryOffset;
-use WC_Facebookcommerce;
-use WooCommerce\Facebook\Jobs\LoggingTrait;
 
 defined( 'ABSPATH' ) || exit;
 
@@ -51,7 +48,6 @@ class ExampleFeedGenerator extends FeedGenerator {
 	 * Handles the end of the feed generation process.
 	 *
 	 * @inheritdoc
-	 * @throw PluginException If the temporary file cannot be promoted.
 	 * @since 3.5.0
 	 */
 	protected function handle_end() {
@@ -62,7 +58,7 @@ class ExampleFeedGenerator extends FeedGenerator {
 		 *
 		 * @since 3.5.0
 		 */
-		do_action( ExampleFeed::modify_action_name( ExampleFeed::FEED_GEN_COMPLETE_ACTION ) );
+		do_action( ExampleFeed::modify_action_name( AbstractFeed::FEED_GEN_COMPLETE_ACTION ) );
 	}
 
 	/**
@@ -75,7 +71,33 @@ class ExampleFeedGenerator extends FeedGenerator {
 	 * @since 3.5.0
 	 */
 	protected function get_items_for_batch( int $batch_number, array $args ): array {
-		return array();
+		// Complete implementation would do a query based on $batch_number and get_batch_size().
+		// Example below.
+		/**
+		 * $product_ids = $wpdb->get_col(
+			$wpdb->prepare(
+				"SELECT post.ID
+				FROM {$wpdb->posts} as post
+				LEFT JOIN {$wpdb->posts} as parent ON post.post_parent = parent.ID
+				WHERE
+					( post.post_type = 'product_variation' AND parent.post_status = 'publish' )
+				OR
+					( post.post_type = 'product' AND post.post_status = 'publish' )
+				ORDER BY post.ID ASC
+				LIMIT %d OFFSET %d",
+				$this->get_batch_size(),
+				$this->get_query_offset( $batch_number )
+			)
+		);
+		*/
+
+		// For proof of concept, we will just return the review id for batch 1
+		// In parent classes, batch number starts with 1.
+		if ( 1 === $batch_number ) {
+			return array( 2, 3, 4 );
+		} else {
+			return array();
+		}
 	}
 
 	/**
@@ -87,6 +109,16 @@ class ExampleFeedGenerator extends FeedGenerator {
 	 * @since 3.5.0
 	 */
 	protected function process_items( array $items, array $args ) {
+		// phpcs:ignore -- Using fopen to match existing implementation.
+		$temp_feed_file = fopen( $this->feed_writer->get_temp_file_path(), 'a' );
+		// True override of write_feed_file would probably take an array of item ids or item objects
+		// For poc, will just write to the temp feed file.
+		$this->feed_writer->write_temp_feed_file();
+
+		if ( is_resource( $temp_feed_file ) ) {
+			//phpcs:ignore -- Using fclose to match existing implementation.
+			fclose( $temp_feed_file );
+		}
 	}
 
 	/**
@@ -98,6 +130,8 @@ class ExampleFeedGenerator extends FeedGenerator {
 	 * @since 3.5.0
 	 */
 	protected function process_item( $item, array $args ) {
+		// Needed to satisfy the class inheritance
+		// Because of the i/o opening and closing original feed implementation foregoes this method.
 	}
 
 	/**
@@ -118,6 +152,6 @@ class ExampleFeedGenerator extends FeedGenerator {
 	 * @inheritdoc
 	 */
 	protected function get_batch_size(): int {
-		return 15;
+		return 1;
 	}
 }

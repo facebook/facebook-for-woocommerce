@@ -117,9 +117,10 @@ class ExampleFeed extends AbstractFeed {
 		);
 
 		try {
+			$cpi_id = facebook_for_woocommerce()->get_integration()->get_commerce_partner_integration_id();
 			facebook_for_woocommerce()
 				->get_api()
-				->create_common_upload( self::COMMERCE_PARTNER_INTEGRATION_ID, $data );
+				->create_common_upload( $cpi_id, $data );
 		} catch ( Exception $e ) {
 			// Log the error and continue.
 			facebook_for_woocommerce()->log( 'Failed to create example feed upload request: ' . $e->getMessage() );

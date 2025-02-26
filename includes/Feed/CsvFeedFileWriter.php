@@ -10,6 +10,7 @@
 
 namespace WooCommerce\Facebook\Feed;
 
+use WC_Facebookcommerce_Utils;
 use WooCommerce\Facebook\Framework\Plugin\Exception as PluginException;
 
 defined( 'ABSPATH' ) || exit;
@@ -22,11 +23,11 @@ defined( 'ABSPATH' ) || exit;
  * @since 3.5.0
  */
 class CsvFeedFileWriter implements FeedFileWriter {
-	/** Product catalog feed file directory inside the uploads folder  @var string*/
-	const UPLOADS_DIRECTORY = 'facebook_for_woocommerce';
+	/** Feed file directory inside the uploads folder  @var string*/
+	const UPLOADS_DIRECTORY = 'facebook_for_woocommerce/%s';
 
 	/** Feed file name @var string*/
-	const FILE_NAME = '%s_catalog_%s.csv';
+	const FILE_NAME = '%s_feed_%s.csv';
 
 	/**
 	 * Use the feed name to distinguish which folder to write to.
@@ -39,10 +40,20 @@ class CsvFeedFileWriter implements FeedFileWriter {
 	/**
 	 * Header row for the feed file.
 	 *
-	 * @var array
+	 * @var string
 	 * @since 3.5.0
 	 */
 	private string $header_row;
+
+	/**
+	 * Data to write to feed file
+	 *
+	 * @var string
+	 * @since 3.5.0
+	 */
+	private string $csv_data = "\"magento\",\"Default Store View\",\"1413745412827209\",\"['http://35.91.150.25/']\",\"2\",\"5\",\"Great product\",\"Very happy with this purchase. Would buy again.\",\"2025-01-09 18:30:43\",\"John Doe\",\"\",\"Baseball\",\"http://35.91.150.25/catalog/product/view/id/12/s/baseball/\",\"['/b/a/baseball.jpg']\",\"['Baseball']\",\n" .
+								"\"magento\",\"Default Store View\",\"1413745412827209\",\"['http://35.91.150.25/']\",\"3\",\"1\",\"Don't recommend \",\"Unusable after just a couple games. Expected better. Would not recommend.\",\"2025-01-09 19:56:37\",\"Tim Cook\",\"\",\"Baseball\",\"http://35.91.150.25/catalog/product/view/id/12/s/baseball/\",\"['/b/a/baseball.jpg']\",\"['Baseball']\",\n" .
+								"\"magento\",\"Default Store View\",\"1413745412827209\",\"['http://35.91.150.25/']\",\"4\",\"4\",\"Overall satisfied\",\"Could have been better but overall satisfied with my purchase.\",\"2025-01-15 23:04:29\",\"Tom Manning\",\"\",\"Baseball\",\"http://35.91.150.25/catalog/product/view/id/12/s/baseball/\",\"['/b/a/baseball.jpg']\",\"['Baseball']\",\n";
 
 	/**
 	 * Constructor.
@@ -63,15 +74,83 @@ class CsvFeedFileWriter implements FeedFileWriter {
 	 * @since 3.5.0
 	 */
 	public function write_feed_file() {
-		// TODO: Implement write_feed_file() method.
+		try {
+			// if not temporary, we are writing the whole file in the original flow, not in the generator.
+			// Step 1: Prepare the temporary empty feed file with header row.
+			$temp_feed_file = $this->prepare_temporary_feed_file();
+
+			// Step 2: Write products feed into the temporary feed file.
+			$this->write_temp_feed_file();
+
+			// Step 3: Rename temporary feed file to final feed file.
+			$this->promote_temp_file();
+		} catch ( PluginException $e ) {
+			WC_Facebookcommerce_Utils::log( wp_json_encode( $e->getMessage() ) );
+			// Close the temporary file.
+			if ( ! empty( $temp_feed_file ) && is_resource( $temp_feed_file ) ) {
+				fclose( $temp_feed_file ); //phpcs:ignore
+			}
+
+			// Delete the temporary file.
+			if ( ! empty( $temp_file_path ) && file_exists( $temp_file_path ) ) {
+				unlink( $temp_file_path ); //phpcs:ignore
+			}
+		}
 	}
 
 	/**
-	 * Creates files in the given feed directory to prevent directory listing and hotlinking.
+	 * Write the feed data to the temporary feed file.
+	 *
+	 * @since 3.5.0
+	 */
+	public function write_temp_feed_file() {
+		/**
+		 * Real implementation would get the necessary objects and turn them into a row to write to feed file.
+		 * For POC, will just write to temp file.
+		 */
+		//phpcs:ignore -- current product feed does not use Wordpress file i/o functions
+		$temp_feed_file = fopen( $this->get_temp_file_path(), 'a' );
+		if ( ! empty( $this->get_temp_file_path() ) ) {
+			fwrite( $temp_feed_file, $this->csv_data ); //phpcs:ignore
+		}
+
+		if ( ! empty( $temp_feed_file ) ) {
+			fclose( $temp_feed_file ); //phpcs:ignore
+		}
+	}
+
+	/**
+	 * Creates files in the feed directory to prevent directory listing and hotlinking.
 	 *
 	 * @since 3.5.0
 	 */
 	public function create_files_to_protect_feed_directory() {
+		$feed_directory = trailingslashit( $this->get_file_directory() );
+
+		$files = array(
+			array(
+				'base'    => $feed_directory,
+				'file'    => 'index.html',
+				'content' => '',
+			),
+			array(
+				'base'    => $feed_directory,
+				'file'    => '.htaccess',
+				'content' => 'deny from all',
+			),
+		);
+
+		foreach ( $files as $file ) {
+
+			if ( wp_mkdir_p( $file['base'] ) && ! file_exists( trailingslashit( $file['base'] ) . $file['file'] ) ) {
+				// phpcs:ignore -- current product feed does not use Wordpress file i/o functions
+				$file_handle = @fopen( trailingslashit( $file['base'] ) . $file['file'], 'w' );
+				if ( $file_handle ) {
+					fwrite( $file_handle, $file['content'] ); //phpcs:ignore
+					fclose( $file_handle ); //phpcs:ignore
+				}
+			}
+		}
 	}
 
 	/**
@@ -103,7 +182,7 @@ class CsvFeedFileWriter implements FeedFileWriter {
 	 */
 	public function get_file_directory(): string {
 		$uploads_directory = wp_upload_dir( null, false );
-		return trailingslashit( $uploads_directory['basedir'] ) . self::UPLOADS_DIRECTORY;
+		return trailingslashit( $uploads_directory['basedir'] ) . sprintf( self::UPLOADS_DIRECTORY, $this->feed_name );
 	}
 
 

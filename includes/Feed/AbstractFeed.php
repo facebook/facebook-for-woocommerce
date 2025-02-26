@@ -28,8 +28,6 @@ abstract class AbstractFeed {
 	const REQUEST_FEED_ACTION = 'wc_facebook_get_feed_data_';
 	/** The action slug for triggering file upload */
 	const FEED_GEN_COMPLETE_ACTION = 'wc_facebook_feed_generation_completed_';
-	/**  The commerce partner integration ID used in GraphPartnerIntegrationFileUpdatePost call */
-	const COMMERCE_PARTNER_INTEGRATION_ID = '24316596247984028';
 
 	/**
 	 * The name of the data stream to be synced via this feed.

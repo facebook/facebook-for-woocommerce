@@ -76,4 +76,18 @@ interface FeedFileWriter {
 	 * @since 3.5.0
 	 */
 	public function prepare_temporary_feed_file();
+
+	/**
+	 * Promote the temporary feed file to the final feed file.
+	 *
+	 * @since 3.5.0
+	 */
+	public function promote_temp_file();
+
+	/**
+	 * Write to the temp feed file.
+	 *
+	 * @since 3.5.0
+	 */
+	public function write_temp_feed_file();
 }

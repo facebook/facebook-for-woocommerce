@@ -870,7 +870,7 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 			$woo_product->set_description( sanitize_text_field( wp_unslash( $_POST[ self::FB_PRODUCT_DESCRIPTION ] ) ) );
 			$woo_product->set_rich_text_description( $_POST[ self::FB_PRODUCT_DESCRIPTION ] );
 		}
-		
+
 		if ( isset( $_POST[ WC_Facebook_Product::FB_PRODUCT_PRICE ] ) ) {
 			$woo_product->set_price( sanitize_text_field( wp_unslash( $_POST[ WC_Facebook_Product::FB_PRODUCT_PRICE ] ) ) );
 		}
@@ -2432,6 +2432,17 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 		 * @param \WC_Facebookcommerce_Integration $integration the integration instance
 		 */
 		return (string) apply_filters( 'wc_facebook_pixel_id', get_option( self::SETTING_FACEBOOK_PIXEL_ID, '' ), $this );
+	}
+
+	/**
+	 * Retrieve the commerce partner integration ID used in GraphPartnerIntegrationFileUpdatePost call
+	 * Hard coded for now. Update once Mice settings are available.
+	 *
+	 * @return string
+	 * @since 3.5.0
+	 */
+	public function get_commerce_partner_integration_id(): string {
+		return '24316596247984028';
 	}
 
 	/**

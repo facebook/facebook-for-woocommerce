@@ -47,7 +47,7 @@ class ExampleFeedHandler implements FeedHandler {
 	 * @since 3.5.0
 	 */
 	public function generate_feed_file() {
-		// TODO: Implement generate_feed_file() method.
+		$this->feed_writer->write_feed_file();
 	}
 
 	/**
