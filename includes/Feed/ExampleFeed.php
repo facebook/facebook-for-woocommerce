@@ -133,6 +133,7 @@ class ExampleFeed extends AbstractFeed {
 	 * The above WooC Legacy REST API will trigger the handle_feed_data_request method
 	 * See LegacyRequestApiStub.php for more details
 	 *
+	 * @throws PluginException If file issue comes up.
 	 * @since 3.5.0
 	 */
 	public function handle_feed_data_request() {
