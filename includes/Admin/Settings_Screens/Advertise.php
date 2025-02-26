@@ -19,7 +19,7 @@ use WooCommerce\Facebook\Admin\Abstract_Settings_Screen;
 use WooCommerce\Facebook\Framework\Plugin\Exception as PluginException;
 use WooCommerce\Facebook\AdvertiseASC\AscNotSupportedException;
 use WooCommerce\Facebook\AdvertiseASC\NonDiscriminationNotAcceptedException;
-use WooCommerce\Facebook\AdvertiseASC\InstagramActorIdNotFoundException;
+use WooCommerce\Facebook\AdvertiseASC\InstagramUserIdNotFoundException;
 use WooCommerce\Facebook\AdvertiseASC\InvalidPaymentInformationException;
 use WooCommerce\Facebook\AdvertiseASC\LWIeUserException;
 /**
@@ -472,14 +472,18 @@ class Advertise extends Abstract_Settings_Screen {
 				<li><?php echo $this->get_escaped_translation( "3. Go back to this screen and refresh it. It may take a few minutes before we can see the updated settings." ); ?></li>
 			</ul>
 			<?php
-		} catch ( InstagramActorIdNotFoundException $iaif ) {
+		} catch ( InstagramUserIdNotFoundException $iaif ) {
 			
 			\WC_Facebookcommerce_Utils::log( $iaif->getMessage() );
 			$this->remove_rendered_when_exception_happened();
-		
+			$page_id = facebook_for_woocommerce()->get_integration()->get_facebook_page_id();
 			?>
 			<div class='fb-asc-ads'>
-				<h2 style='margin: 5px 0;'><?php echo $this->get_escaped_translation( "You need to use a page that has an instagram account connected to it." ); ?></h2>
+				<h2 style='margin: 5px 0;'><?php echo $this->get_escaped_translation( "Your connected Page ( " . $page_id . " ) does not have an instagram account connected to it." ); ?></h2>
+				<h2 style='margin: 5px 0;'><?php echo $this->get_escaped_translation( "You can fix this issue in either of the following ways: " ); ?></h2>
+				<h2 style='margin: 5px 0;'><?php echo $this->get_escaped_translation( "1. To connect an instagram account to your currently onboarded page." ); ?></h2>
+				<h3 class="zero-border-element secondary-header-color"><?php echo $this->get_escaped_translation( "Here is how: https://www.facebook.com/business/help/898752960195806" ); ?></h2>
+				<h2 style='margin: 5px 0;'><?php echo $this->get_escaped_translation( "2. Or, to use a page that has an instagram account already connected to it." ); ?></h2>
 				<h3 class="zero-border-element secondary-header-color"><?php echo $this->get_escaped_translation( "This requires re-connecting through Meta Business Extension." ); ?></h2>
 				<h4><?php echo $this->get_escaped_translation( "Here's how:" ); ?></h3>
 				<ul>

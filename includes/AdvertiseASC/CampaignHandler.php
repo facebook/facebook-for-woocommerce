@@ -16,7 +16,7 @@ defined('ABSPATH') || exit;
 use WooCommerce\Facebook\Framework\Api\Exception as ApiException;
 use WooCommerce\Facebook\Framework\Api\Exception as PluginException;
 use WooCommerce\Facebook\AdvertiseASC\InvalidPaymentInformationException;
-use WooCommerce\Facebook\AdvertiseASC\InstagramActorIdNotFoundException;
+use WooCommerce\Facebook\AdvertiseASC\InstagramUserIdNotFoundException;
 
 abstract class CampaignHandler {
 
@@ -43,7 +43,7 @@ abstract class CampaignHandler {
     protected $min_daily_budget;
     protected $ad_creative_name;
     protected $facebook_page_id;
-    protected $instagram_actor_id;
+    protected $instagram_user_id;
     protected $product_catalog_id;
     protected $default_product_set;
 
@@ -85,7 +85,7 @@ abstract class CampaignHandler {
             throw new PluginException($message);
         }
 
-        $this->instagram_actor_id = $this->get_instagram_actor_id($this->facebook_page_id);
+        $this->instagram_user_id = $this->get_instagram_user_id($this->facebook_page_id);
     }
 
     abstract public function get_campaign_type(): string;
@@ -120,7 +120,7 @@ abstract class CampaignHandler {
      * @return string
      * @throws PluginException
      */
-    public function get_instagram_actor_id($page_id) {   
+    public function get_instagram_user_id($page_id) {   
         try {
             $accounts_data = $this->get_current_user_associated_accounts();
 
@@ -137,7 +137,7 @@ abstract class CampaignHandler {
 
                         if (!$instagram_accounts['data']) {
 
-                            throw new InstagramActorIdNotFoundException();
+                            throw new InstagramUserIdNotFoundException();
                         }
                     }
 
@@ -145,7 +145,7 @@ abstract class CampaignHandler {
                 }
             }
 
-            throw new InstagramActorIdNotFoundException();
+            throw new InstagramUserIdNotFoundException();
 
         } catch (ApiException $e) {
             $message = sprintf('There was an error trying to get the instagram account id for this user. message: %s', $e->getMessage());
