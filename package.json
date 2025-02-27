@@ -11,10 +11,6 @@
   "bugs": {
     "url": "https://wordpress.org/support/plugin/facebook-for-woocommerce"
   },
-  "devDependencies": {
-    "@wordpress/env": "^9.10.0",
-    "@wordpress/scripts": "^14.0.0"
-  },
   "scripts": {
     "prearchive": "rm -rf vendor && composer install --no-dev && composer dump-autoload -o",
     "archive": "composer archive --file=$npm_package_name --format=zip",
@@ -38,8 +34,9 @@
     ],
     "use_gh_release_notes": true
   },
-  "engines": {
-    "node": ">=12.22 <=16",
-    "npm": ">=6.14 <=8"
+  "devDependencies": {
+    "@wordpress/env": "^10.18.0",
+    "@wordpress/icons": "^10.18.0",
+    "@wordpress/scripts": "^30.11.0"
   }
 }
