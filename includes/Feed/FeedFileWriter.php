@@ -21,6 +21,13 @@ interface FeedFileWriter {
 	public function write_feed_file();
 
 	/**
+	 * Create feed directory.
+	 *
+	 * @since 3.5.0
+	 */
+	public function create_feed_directory();
+
+	/**
 	 * Creates files in the catalog feed directory to prevent directory listing and hotlinking.
 	 *
 	 * @since 3.5.0

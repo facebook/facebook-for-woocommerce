@@ -75,7 +75,9 @@ class CsvFeedFileWriter implements FeedFileWriter {
 	 */
 	public function write_feed_file() {
 		try {
-			// if not temporary, we are writing the whole file in the original flow, not in the generator.
+			$this->create_feed_directory();
+			$this->create_files_to_protect_feed_directory();
+
 			// Step 1: Prepare the temporary empty feed file with header row.
 			$temp_feed_file = $this->prepare_temporary_feed_file();
 
@@ -95,6 +97,20 @@ class CsvFeedFileWriter implements FeedFileWriter {
 			if ( ! empty( $temp_file_path ) && file_exists( $temp_file_path ) ) {
 				unlink( $temp_file_path ); //phpcs:ignore
 			}
+		}
+	}
+
+	/**
+	 * Generates the product catalog feed file.
+	 *
+	 * @throws PluginException If the directory could not be created.
+	 * @since 3.5.0
+	 */
+	public function create_feed_directory() {
+		$directory_created = wp_mkdir_p( $this->get_file_directory() );
+		if ( ! $directory_created ) {
+			//phpcs:ignore -- Escaping function for translated string not available in this context
+			throw new PluginException( __( 'Could not create product catalog feed directory', 'facebook-for-woocommerce' ), 500 );
 		}
 	}
 

@@ -48,6 +48,12 @@ class ExampleFeedHandler implements FeedHandler {
 	 */
 	public function generate_feed_file() {
 		$this->feed_writer->write_feed_file();
+		/**
+		 * Trigger upload from ExampleFeed instance
+		 *
+		 * @since 3.5.0
+		 */
+		do_action( ExampleFeed::modify_action_name( AbstractFeed::FEED_GEN_COMPLETE_ACTION ) );
 	}
 
 	/**
