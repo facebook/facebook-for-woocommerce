@@ -12,8 +12,9 @@
     "url": "https://wordpress.org/support/plugin/facebook-for-woocommerce"
   },
   "devDependencies": {
-    "@wordpress/env": "^9.10.0",
-    "@wordpress/scripts": "^14.0.0",
+    "@wordpress/env": "^10.18.0",
+    "@wordpress/icons": "^10.18.0",
+    "@wordpress/scripts": "^30.11.0",
     "jest": "^29.7.0",
     "jest-environment-jsdom": "^29.7.0",
     "jquery": "^3.7.1",
