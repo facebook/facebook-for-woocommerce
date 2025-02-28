@@ -1,5 +1,4 @@
 <?php
-// phpcs:ignoreFile
 
 namespace WooCommerce\Facebook\Feed;
 
@@ -183,22 +182,15 @@ class FeedConfigurationDetection {
 	/**
 	 * Given catalog id this function fetches all feed configurations defined for this catalog.
 	 *
-	 * @throws Error Feed configurations fetch was not successful.
-	 * @param String                        $catalog_id Facebook Catalog ID.
-	 *
+	 * @param string $product_catalog_id Facebook Catalog ID.
 	 * @return array Array of feed configurations.
-	 */
-
-	/**
-	 * @param string $product_catalog_id
-	 *
-	 * @return array Facebook Product Feeds.
-	 * @throws Request_Limit_Reached
-	 * @throws ApiException
+	 * @throws Request_Limit_Reached When API request limit is reached.
+	 * @throws ApiException When there is an error in the API request.
+	 * @throws Error Feed configurations fetch was not successful.
 	 */
 	private function get_feed_nodes_for_catalog( string $product_catalog_id ) {
 		try {
-			$response = facebook_for_woocommerce()->get_api()->read_feeds($product_catalog_id);
+			$response = facebook_for_woocommerce()->get_api()->read_feeds( $product_catalog_id );
 		} catch ( \Exception $e ) {
 			$message = sprintf( 'There was an error trying to get feed nodes for catalog: %s', $e->getMessage() );
 			facebook_for_woocommerce()->log( $message );
@@ -213,8 +205,8 @@ class FeedConfigurationDetection {
 	 * @param string $feed_id Facebook Product Feed ID.
 	 *
 	 * @return Response
-	 * @throws Request_Limit_Reached
-	 * @throws ApiException
+	 * @throws Request_Limit_Reached When API request limit is reached.
+	 * @throws ApiException When there is an error in the API request.
 	 */
 	private function get_feed_metadata( string $feed_id ) {
 		return facebook_for_woocommerce()->get_api()->read_feed( $feed_id );
@@ -230,7 +222,7 @@ class FeedConfigurationDetection {
 	 */
 	private function get_feed_upload_metadata( $upload_id ) {
 		try {
-			$response = facebook_for_woocommerce()->get_api()->read_upload($upload_id);
+			$response = facebook_for_woocommerce()->get_api()->read_upload( $upload_id );
 		} catch ( \Exception $e ) {
 			$message = sprintf( 'There was an error trying to get feed upload metadata: %s', $e->getMessage() );
 			facebook_for_woocommerce()->log( $message );
@@ -238,5 +230,4 @@ class FeedConfigurationDetection {
 		}
 		return $response;
 	}
-
 }
