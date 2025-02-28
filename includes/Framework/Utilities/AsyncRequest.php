@@ -1,15 +1,14 @@
 <?php
-// phpcs:ignoreFile
 /**
  * Facebook for WooCommerce.
  */
 
 namespace WooCommerce\Facebook\Framework\Utilities;
 
-defined( 'ABSPATH' ) or exit;
+defined( 'ABSPATH' ) || exit;
 
 /**
- * SkyVerge Wordpress Async Request class
+ * SkyVerge WordPress Async Request class
  *
  * Based on the incredible work by deliciousbrains - most of the code is from
  * here: https://github.com/A5hleyRich/wp-background-processing
@@ -36,6 +35,15 @@ abstract class AsyncRequest {
 	/** @var array request data */
 	protected $data = [];
 
+	/** @var array query arguments */
+	protected $query_args;
+
+	/** @var string query URL */
+	protected $query_url;
+
+	/** @var array request arguments */
+	protected $request_args;
+
 
 	/**
 	 * Initiate a new async request
@@ -45,7 +53,7 @@ abstract class AsyncRequest {
 	public function __construct() {
 		$this->identifier = $this->prefix . '_' . $this->action;
 
-		add_action( 'wp_ajax_' . $this->identifier,        array( $this, 'maybe_handle' ) );
+		add_action( 'wp_ajax_' . $this->identifier, array( $this, 'maybe_handle' ) );
 		add_action( 'wp_ajax_nopriv_' . $this->identifier, array( $this, 'maybe_handle' ) );
 	}
 
@@ -87,6 +95,7 @@ abstract class AsyncRequest {
 	 */
 	protected function get_query_args() {
 
+		// Check if a child class has defined this property for custom query args
 		if ( property_exists( $this, 'query_args' ) ) {
 			return $this->query_args;
 		}
@@ -106,6 +115,7 @@ abstract class AsyncRequest {
 	 */
 	protected function get_query_url() {
 
+		// Check if a child class has defined this property for a custom URL
 		if ( property_exists( $this, 'query_url' ) ) {
 			return $this->query_url;
 		}
@@ -124,6 +134,7 @@ abstract class AsyncRequest {
 	 */
 	protected function get_request_args() {
 
+		// Check if a child class has defined this property for custom request args
 		if ( property_exists( $this, 'request_args' ) ) {
 			return $this->request_args;
 		}
@@ -142,6 +153,7 @@ abstract class AsyncRequest {
 	 * Maybe handle
 	 *
 	 * Check for correct nonce and pass to handler.
+	 *
 	 * @since 4.4.0
 	 */
 	public function maybe_handle() {

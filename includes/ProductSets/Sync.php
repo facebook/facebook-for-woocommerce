@@ -76,7 +76,7 @@ class Sync {
 	 *
 	 * @var string
 	 */
-	protected static $prev_product_name = "";
+	protected static $prev_product_name = '';
 
 	/**
 	 * Product's Product Set New List
@@ -94,7 +94,7 @@ class Sync {
 	 *
 	 * @var string
 	 */
-	protected static $new_product_name = "";
+	protected static $new_product_name = '';
 
 	/**
 	 * Categories field name
@@ -255,7 +255,7 @@ class Sync {
 	 * @param int $term_id Term ID.
 	 */
 	public function fb_product_set_hook_before( $term_id ) {
-		self::$prev_product_cat = get_term_meta( $term_id, $this->categories_field, true );
+		self::$prev_product_cat  = get_term_meta( $term_id, $this->categories_field, true );
 		self::$prev_product_name = get_term( $term_id )->name;
 	}
 
@@ -268,7 +268,7 @@ class Sync {
 	 * @param int $term_id Term ID.
 	 */
 	public function fb_product_set_hook_after( $term_id ) {
-		self::$new_product_cat = get_term_meta( $term_id, $this->categories_field, true );
+		self::$new_product_cat  = get_term_meta( $term_id, $this->categories_field, true );
 		self::$new_product_name = get_term( $term_id )->name;
 		if ( ! empty( $this->get_all_diff( 'product_cat' ) ) || self::$prev_product_name !== self::$new_product_name ) {
 			$this->maybe_sync_product_set( $term_id );
@@ -464,6 +464,4 @@ class Sync {
 
 		return array_merge( $removed, $added );
 	}
-
-
 }
