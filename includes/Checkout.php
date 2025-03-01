@@ -72,11 +72,11 @@ class Checkout {
 	 *
 	 * @since 3.3.0
 	 */
-	public function load_checkout_permalink_template() {
+	public function load_checkout_permalink_template($template) {
 		if ( get_query_var( 'fb_checkout' ) ) {
 			WC()->cart->empty_cart();
-
 			$products_param = get_query_var( 'products' );
+
 			if ( $products_param ) {
 				$products = explode( ',', $products_param );
 
@@ -108,6 +108,8 @@ class Checkout {
 				}
 			}
 		}
+
+		return $template;
 	}
 
 	/**
