@@ -25,6 +25,7 @@ class Checkout {
 	 * @since 3.3.0
 	 */
 	public function __construct() {
+		// add the necessary action and filter hooks
 		$this->add_hooks();
 	}
 
@@ -34,11 +35,19 @@ class Checkout {
 	 * @since 3.3.0
 	 */
 	public function add_hooks() {
+		// add the rewrite rule for the checkout permalink
 		add_action( 'init', array( $this, 'add_checkout_permalink_rewrite_rule' ) );
+
+		// add the query var for the checkout permalink
 		add_filter( 'query_vars', array( $this, 'add_checkout_permalink_query_var' ) );
+
+		// load the checkout permalink template
 		add_filter( 'template_include', array( $this, 'load_checkout_permalink_template' ) );
 
+		// flush rewrite rules when plugin is activated
 		register_activation_hook( __FILE__, array( $this, 'flush_rewrite_rules_on_activation' ) );
+
+		// flush rewrite rules when plugin is deactivated
 		register_deactivation_hook( __FILE__, array( $this, 'flush_rewrite_rules_on_deactivation' ) );
 	}
 
@@ -60,8 +69,13 @@ class Checkout {
 	 * @return array
 	 */
 	public function add_checkout_permalink_query_var( $vars ) {
+		// Add 'fb_checkout' as a query var
 		$vars[] = 'fb_checkout';
+
+		// Add 'products' as a query var
 		$vars[] = 'products';
+
+		// Add 'coupon' as a query var
 		$vars[] = 'coupon';
 
 		return $vars;
@@ -77,39 +91,37 @@ class Checkout {
 	 */
 	public function load_checkout_permalink_template( $template ) {
 		if ( get_query_var( 'fb_checkout' ) ) {
+			// Clear the WooCommerce cart
 			WC()->cart->empty_cart();
 			$products_param = get_query_var( 'products' );
 
 			if ( $products_param ) {
+				// Split multiple products by comma
 				$products = explode( ',', $products_param );
 
 				foreach ( $products as $product ) {
+					// Parse each product ID and quantity
 					list($product_id, $quantity) = explode( ':', $product );
 
+					// Validate and add the product to the cart
 					if ( is_numeric( $product_id ) && is_numeric( $quantity ) && $quantity > 0 ) {
 						WC()->cart->add_to_cart( $product_id, $quantity );
 					}
 				}
 			}
 
+			// Get the 'coupon' query parameter
 			$coupon_code = get_query_var( 'coupon' );
+
 			if ( $coupon_code ) {
+				// Apply the coupon to the cart
 				WC()->cart->apply_coupon( sanitize_text_field( $coupon_code ) );
 			}
 
-			$checkout_page_id = wc_get_page_id( 'checkout' );
-			if ( $checkout_page_id > 0 ) {
-				$checkout_page = get_post( $checkout_page_id );
-				if ( $checkout_page ) {
-					setup_postdata( $checkout_page );
-					get_header();
-					echo wp_kses_post( apply_filters( 'the_content', $checkout_page->post_content ) );
-					get_footer();
-					wp_reset_postdata();
+			// Use a custom template file
+			include plugin_dir_path( __FILE__ ) . 'Templates/CheckoutTemplate.php';
 
-					exit;
-				}
-			}
+			exit;
 		}
 
 		return $template;
