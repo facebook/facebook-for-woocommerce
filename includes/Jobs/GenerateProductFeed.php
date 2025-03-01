@@ -1,6 +1,4 @@
 <?php
-// phpcs:ignoreFile
-
 namespace WooCommerce\Facebook\Jobs;
 
 use Automattic\WooCommerce\ActionSchedulerJobFramework\Utilities\BatchQueryOffset;
@@ -16,7 +14,8 @@ defined( 'ABSPATH' ) || exit;
  */
 class GenerateProductFeed extends AbstractChainedJob {
 
-	use BatchQueryOffset, LoggingTrait;
+	use BatchQueryOffset;
+	use LoggingTrait;
 
 	/**
 	 * Called before starting the job.
@@ -36,7 +35,7 @@ class GenerateProductFeed extends AbstractChainedJob {
 		$feed_handler->rename_temporary_feed_file_to_final_feed_file();
 		facebook_for_woocommerce()->get_tracker()->save_batch_generation_time();
 
-		do_action('wc_facebook_feed_generation_completed');
+		do_action( 'wc_facebook_feed_generation_completed' );
 	}
 
 	/**
@@ -72,7 +71,7 @@ class GenerateProductFeed extends AbstractChainedJob {
 		return array_map( 'intval', $product_ids );
 	}
 
-/**
+	/**
 	 * Processes a batch of items.
 	 *
 	 * @since 1.1.0
@@ -85,6 +84,7 @@ class GenerateProductFeed extends AbstractChainedJob {
 	protected function process_items( array $items, array $args ) {
 		// Grab start time.
 		$start_time = microtime( true );
+
 		/*
 		 * Pre-fetch full product objects.
 		 * Variable products will be filtered out here since we don't need them for the feed. It's important to not
@@ -111,6 +111,9 @@ class GenerateProductFeed extends AbstractChainedJob {
 	/**
 	 * Empty function to satisfy parent class requirements.
 	 * We don't use it because we are processing the whole batch at once in process_items.
+	 *
+	 * @param mixed $item The item to process.
+	 * @param array $args The args for the job.
 	 */
 	protected function process_item( $item, array $args ) {}
 
@@ -140,5 +143,4 @@ class GenerateProductFeed extends AbstractChainedJob {
 	protected function get_batch_size(): int {
 		return 15;
 	}
-
 }

@@ -1,5 +1,4 @@
 <?php
-// phpcs:ignoreFile
 /**
  * Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
  *
@@ -11,7 +10,7 @@
 
 namespace WooCommerce\Facebook\Events;
 
-defined( 'ABSPATH' ) or exit;
+defined( 'ABSPATH' ) || exit;
 
 /**
  * Base Automatic advanced matching settings object
@@ -121,7 +120,7 @@ class AAMSettings {
 	 * Sets the enable automatic matching flag
 	 *
 	 * @since 2.0.3
-	 *
+	 * @param bool $enable_automatic_matching Whether automatic matching is enabled
 	 * @return AAMSettings
 	 */
 	public function set_enable_automatic_matching( $enable_automatic_matching ) {
@@ -133,7 +132,7 @@ class AAMSettings {
 	 * Sets the enabled automatic matching fields flag
 	 *
 	 * @since 2.0.3
-	 *
+	 * @param string[] $enabled_automatic_matching_fields Array of enabled matching fields
 	 * @return AAMSettings
 	 */
 	public function set_enabled_automatic_matching_fields( $enabled_automatic_matching_fields ) {
@@ -145,7 +144,7 @@ class AAMSettings {
 	 * Sets the pixel id
 	 *
 	 * @since 2.0.3
-	 *
+	 * @param string $pixel_id The Facebook pixel ID
 	 * @return AAMSettings
 	 */
 	public function set_pixel_id( $pixel_id ) {

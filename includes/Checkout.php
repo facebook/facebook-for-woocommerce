@@ -85,13 +85,14 @@ class Checkout {
 	 * Loads the checkout permalink template.
 	 *
 	 * @since 3.3.0
+	 *
+	 * @param string $template
+	 * @return string
 	 */
-	public function load_checkout_permalink_template() {
+	public function load_checkout_permalink_template( $template ) {
 		if ( get_query_var( 'fb_checkout' ) ) {
 			// Clear the WooCommerce cart
 			WC()->cart->empty_cart();
-
-			// Get the 'products' query parameter
 			$products_param = get_query_var( 'products' );
 
 			if ( $products_param ) {
@@ -122,6 +123,8 @@ class Checkout {
 
 			exit;
 		}
+
+		return $template;
 	}
 
 	/**
