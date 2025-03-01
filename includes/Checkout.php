@@ -71,8 +71,11 @@ class Checkout {
 	 * Loads the checkout permalink template.
 	 *
 	 * @since 3.3.0
+	 *
+	 * @param string $template
+	 * @return string
 	 */
-	public function load_checkout_permalink_template($template) {
+	public function load_checkout_permalink_template( $template ) {
 		if ( get_query_var( 'fb_checkout' ) ) {
 			WC()->cart->empty_cart();
 			$products_param = get_query_var( 'products' );
