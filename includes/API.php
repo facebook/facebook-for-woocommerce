@@ -436,14 +436,16 @@ class API extends Base {
 	/**
 	 * Returns product Facebook ID and Facebook Group ID.
 	 *
-	 * @param string $facebook_product_catalog_id
-	 * @param string $facebook_retailer_id
+	 * @param string                   $facebook_product_catalog_id
+	 * @param string                   $facebook_retailer_id
+	 * @param WC_Facebook_Product|null $woo_product product
+	 * @param bool                     $is_call_before_sync Flag indicating if call is made before syncing products to Facebook.
 	 * @return API\Response|API\ProductCatalog\Products\Id\Response
 	 * @throws ApiException In case of network request error.
 	 * @throws API\Exceptions\Request_Limit_Reached
 	 */
-	public function get_product_facebook_ids( string $facebook_product_catalog_id, string $facebook_retailer_id ): API\ProductCatalog\Products\Id\Response {
-		$request = new API\ProductCatalog\Products\Id\Request( $facebook_product_catalog_id, $facebook_retailer_id );
+	public function get_product_facebook_ids( string $facebook_product_catalog_id, string $facebook_retailer_id, $woo_product, bool $is_call_before_sync ): API\ProductCatalog\Products\Id\Response {
+		$request = new API\ProductCatalog\Products\Id\Request( $facebook_product_catalog_id, $facebook_retailer_id, $woo_product, $is_call_before_sync );
 		$this->set_response_handler( API\ProductCatalog\Products\Id\Response::class );
 		return $this->perform_request( $request );
 	}

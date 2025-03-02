@@ -1135,9 +1135,11 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 			return;
 		}
 
+		$is_call_before_sync = true;
+
 		// Check if product group has been published to FB. If not, it's new.
 		// If yes, loop through variants and see if product items are published.
-		$fb_product_group_id = $this->get_product_fbid( self::FB_PRODUCT_GROUP_ID, $wp_id, $woo_product );
+		$fb_product_group_id = $this->get_product_fbid( self::FB_PRODUCT_GROUP_ID, $wp_id, $woo_product, $is_call_before_sync );
 		if ( $fb_product_group_id ) {
 			$woo_product->fb_visibility = Products::is_product_visible( $woo_product->woo_product );
 			$this->update_product_group( $woo_product );
@@ -1180,9 +1182,11 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 			return;
 		}
 
+		$is_call_before_sync = true;
+
 		// Check if this product has already been published to FB.
 		// If not, it's new!
-		$fb_product_item_id = $this->get_product_fbid( self::FB_PRODUCT_ITEM_ID, $wp_id, $woo_product );
+		$fb_product_item_id = $this->get_product_fbid( self::FB_PRODUCT_ITEM_ID, $wp_id, $woo_product, $is_call_before_sync );
 
 		if ( $fb_product_item_id ) {
 			$woo_product->fb_visibility = Products::is_product_visible( $woo_product->woo_product );
@@ -2945,10 +2949,11 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 	 *
 	 * @param string                   $fbid_type ID type (group or item)
 	 * @param int                      $wp_id post ID
+	 * @param bool                     $is_call_before_sync Flag indicating if call is made before syncing products to Facebook.
 	 * @param WC_Facebook_Product|null $woo_product product
 	 * @return string facebook product id or an empty string
 	 */
-	public function get_product_fbid( string $fbid_type, int $wp_id, $woo_product = null ) {
+	public function get_product_fbid( string $fbid_type, int $wp_id, $woo_product = null, bool $is_call_before_sync = false ) {
 		$fb_id = WC_Facebookcommerce_Utils::get_fbid_post_meta( $wp_id, $fbid_type );
 		if ( $fb_id ) {
 			return $fb_id;
@@ -2963,17 +2968,24 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 		$fb_retailer_id = WC_Facebookcommerce_Utils::get_fb_retailer_id( $woo_product );
 
 		try {
-			$facebook_ids = $this->facebook_for_woocommerce->get_api()->get_product_facebook_ids(
+			$response = $this->facebook_for_woocommerce->get_api()->get_product_facebook_ids(
 				$this->get_product_catalog_id(),
-				$fb_retailer_id
+				$fb_retailer_id,
+				$woo_product,
+				$is_call_before_sync,
 			);
 
-			if ( $facebook_ids->id ) {
+			if ( $response->data && $response->data[0] && $response->data[0]['id'] ) {
 				$fb_id = $fbid_type == self::FB_PRODUCT_GROUP_ID
-					? $facebook_ids->get_facebook_product_group_id()
-					: $facebook_ids->id;
+					? $response->data[0]['product_group']['id']
+					: $response->data[0]['id'];
 				update_post_meta( $wp_id, $fbid_type, $fb_id );
-
+				return $fb_id;
+			} elseif ( $response->id ) {
+				$fb_id = $fbid_type == self::FB_PRODUCT_GROUP_ID
+					? $response->get_facebook_product_group_id()
+					: $response->id;
+				update_post_meta( $wp_id, $fbid_type, $fb_id );
 				return $fb_id;
 			}
 		} catch ( Exception $e ) {

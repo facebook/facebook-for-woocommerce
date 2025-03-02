@@ -3288,4 +3288,49 @@ class WCFacebookCommerceIntegrationTest extends WP_UnitTestCase {
 		$this->assertEquals( 'product-id', $facebook_product_id );
 		$this->assertEquals( 'product-id', get_post_meta( $product->get_id(), WC_Facebookcommerce_Integration::FB_PRODUCT_ITEM_ID, true ) );
 	}
+
+	/**
+	 * Tests get product facebook id calls facebook graph api with the endpoint with filter to get id and updates
+	 * post meta item id value.
+	 *
+	 * @return void
+	 */
+	public function test_get_product_fbid_calls_facebook_and_sets_post_meta_value_for_item_id_with_filter_endpoint() {
+		add_option( WC_Facebookcommerce_Integration::OPTION_PRODUCT_CATALOG_ID, '1122334455' );
+
+		$product        = WC_Helper_Product::create_simple_product();
+		$fb_retailer_id = WC_Facebookcommerce_Utils::get_fb_retailer_id( new WC_Facebook_Product( $product->get_id() ) );
+
+		$this->api->expects( $this->once() )
+			->method( 'get_product_facebook_ids' )
+			->with( '1122334455', $fb_retailer_id )
+			->willReturn( new API\ProductCatalog\Products\Id\Response( '{"data":[{"id":"product-id","product_group":{"id":"product-group-id"}}]}' ) );
+
+		$facebook_product_id = $this->integration->get_product_fbid( WC_Facebookcommerce_Integration::FB_PRODUCT_ITEM_ID, $product->get_id() );
+
+		$this->assertEquals( 'product-id', $facebook_product_id );
+		$this->assertEquals( 'product-id', get_post_meta( $product->get_id(), WC_Facebookcommerce_Integration::FB_PRODUCT_ITEM_ID, true ) );
+	}
+
+		/**
+	 * Tests get product facebook id calls facebook graph api with the endpoint with filter to find that the item doesn't exist.
+	 *
+	 * @return void
+	 */
+	public function test_get_product_fbid_calls_facebook_and_sets_post_meta_value_for_item_id_with_filter_endpoint_empty_data() {
+		add_option( WC_Facebookcommerce_Integration::OPTION_PRODUCT_CATALOG_ID, '1122334455' );
+
+		$product        = WC_Helper_Product::create_simple_product();
+		$fb_retailer_id = WC_Facebookcommerce_Utils::get_fb_retailer_id( new WC_Facebook_Product( $product->get_id() ) );
+
+		$this->api->expects( $this->once() )
+			->method( 'get_product_facebook_ids' )
+			->with( '1122334455', $fb_retailer_id )
+			->willReturn( new API\ProductCatalog\Products\Id\Response( '{"data":[]}' ) );
+
+		$facebook_product_id = $this->integration->get_product_fbid( WC_Facebookcommerce_Integration::FB_PRODUCT_ITEM_ID, $product->get_id() );
+
+		$this->assertEquals( null, $facebook_product_id );
+		$this->assertEquals( null, get_post_meta( $product->get_id(), WC_Facebookcommerce_Integration::FB_PRODUCT_ITEM_ID, true ) );
+	}
 }
