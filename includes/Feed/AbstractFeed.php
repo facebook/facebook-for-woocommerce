@@ -30,10 +30,8 @@ abstract class AbstractFeed {
 	const FEED_GEN_COMPLETE_ACTION = 'wc_facebook_feed_generation_completed_';
 
 	/** Schedule feed generation on some interval hook name for children classes. */
-	const SCHEDULE_LATER_CALL_BACK = 'schedule_feed_generation';
+	const SCHEDULE_CALL_BACK = 'schedule_feed_generation';
 	/** Schedule an immediate file generator on the scheduler hook name. For testing mostly. */
-	const SCHEDULE_IMMEDIATE_CALL_BACK = 'schedule_feed_generation_immediately';
-	/** Make a new file for upload hook name for children classes. */
 	const REGENERATE_CALL_BACK = 'regenerate_feed';
 	/** Make upload call to Meta hook name for children classes. */
 	const UPLOAD_CALL_BACK = 'send_request_to_upload_feed';
@@ -67,13 +65,6 @@ abstract class AbstractFeed {
 	 * @since 3.5.0
 	 */
 	abstract public function schedule_feed_generation();
-
-	/**
-	 * Schedules the feed generation immediately, ignoring the interval.
-	 *
-	 * @since 3.5.0
-	 */
-	abstract public function schedule_feed_generation_immediately();
 
 	/**
 	 * The method ensures that the feed is regenerated based on the defined schedule.

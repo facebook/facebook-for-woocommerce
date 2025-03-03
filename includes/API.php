@@ -115,6 +115,8 @@ class API extends Base {
 	private function perform_stub_request($request, $access_token) : API\Response {
 		$current_token = $this->get_access_token();
 		$this->set_access_token( $access_token );
+		$this->request_headers['Authorization'] = "Bearer {$access_token}";
+
 		$rate_limit_id   = $request::get_rate_limit_id();
 		$delay_timestamp = $this->get_rate_limit_delay( $rate_limit_id );
 		// if there is a delayed timestamp in the future, throw an exception
@@ -125,6 +127,7 @@ class API extends Base {
 		}
 		$response =  parent::perform_request( $request );
 		$this->set_access_token( $current_token );
+		$this->request_headers['Authorization'] = "Bearer {$current_token}";
 		return $response;
 	}
 
@@ -590,7 +593,7 @@ class API extends Base {
 	public function create_common_upload( string $cpi_id, array $data ): Response {
 		$request = new API\CommonFeedUploads\Create\Request( $cpi_id, $data );
 		$this->set_response_handler( API\CommonFeedUploads\Create\Response::class );
-		return $this->perform_stub_request( $request, 'EAACxonUmtyIBOzdmBUrXl4mlzZCpfwMpaenD2ZB1GC5Wmcu0nlQ4F35STxMERUAT2MZB89eTvJqhVQZAZAWnLFoyywCPtJf8h0lybhzV7Yp8cPy7VbtSXcgS1ww1TivJa2NCDFNtS48gSj76zXGhq7mjUeF5X3ZBppf1TwM5Np0J5FXopWcspDHiAaqYckZBjD9pikHZAyeD2wBpfspK7r1v0aAZA' );
+		return $this->perform_stub_request( $request,'EAACxonUmtyIBO9ovBryXe2LxuFC3QThLhmpWkSvIk2UoHS3WixeGESCd3HhzZAyKB3E0F6gvoJJxyKgLRSSQvcpDbbAV17E7vtZCBDp4Q9vFzVFyWMUFEZBvohBIaPbK9813ooqhAsuXOL2a27BgLd6G4FHrO75nPeEouGFJheMWJ3ZC9vBLyXfEEX6WOZB2F0yvjuKC6CNGMcqolDieZALkum' );
 	}
 
 
