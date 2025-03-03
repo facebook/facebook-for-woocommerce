@@ -52,8 +52,8 @@ class CsvFeedFileWriter implements FeedFileWriter {
 	 * @since 3.5.0
 	 */
 	private string $csv_data = "\"magento\",\"Default Store View\",\"1413745412827209\",\"['http://35.91.150.25/']\",\"2\",\"5\",\"Great product\",\"Very happy with this purchase. Would buy again.\",\"2025-01-09 18:30:43\",\"John Doe\",\"\",\"Baseball\",\"http://35.91.150.25/catalog/product/view/id/12/s/baseball/\",\"['/b/a/baseball.jpg']\",\"['Baseball']\",\"US\"\n" .
-	                           "\"magento\",\"Default Store View\",\"1413745412827209\",\"['http://35.91.150.25/']\",\"3\",\"1\",\"Don't recommend \",\"Unusable after just a couple games. Expected better. Would not recommend.\",\"2025-01-09 19:56:37\",\"Tim Cook\",\"\",\"Baseball\",\"http://35.91.150.25/catalog/product/view/id/12/s/baseball/\",\"['/b/a/baseball.jpg']\",\"['Baseball']\",\"US\"\n" .
-	                           "\"magento\",\"Default Store View\",\"1413745412827209\",\"['http://35.91.150.25/']\",\"4\",\"4\",\"Overall satisfied\",\"Could have been better but overall satisfied with my purchase.\",\"2025-01-15 23:04:29\",\"Tom Manning\",\"\",\"Baseball\",\"http://35.91.150.25/catalog/product/view/id/12/s/baseball/\",\"['/b/a/baseball.jpg']\",\"['Baseball']\",\"US\"\n";
+		"\"magento\",\"Default Store View\",\"1413745412827209\",\"['http://35.91.150.25/']\",\"3\",\"1\",\"Don't recommend \",\"Unusable after just a couple games. Expected better. Would not recommend.\",\"2025-01-09 19:56:37\",\"Tim Cook\",\"\",\"Baseball\",\"http://35.91.150.25/catalog/product/view/id/12/s/baseball/\",\"['/b/a/baseball.jpg']\",\"['Baseball']\",\"US\"\n" .
+		"\"magento\",\"Default Store View\",\"1413745412827209\",\"['http://35.91.150.25/']\",\"4\",\"4\",\"Overall satisfied\",\"Could have been better but overall satisfied with my purchase.\",\"2025-01-15 23:04:29\",\"Tom Manning\",\"\",\"Baseball\",\"http://35.91.150.25/catalog/product/view/id/12/s/baseball/\",\"['/b/a/baseball.jpg']\",\"['Baseball']\",\"US\"\n";
 
 	/**
 	 * Constructor.
