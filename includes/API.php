@@ -105,7 +105,7 @@ class API extends Base {
 	/**
 	 * Using this to perform a hard coded API request for proof of concept
 	 * Current use case: hitting GraphPartnerIntegrationFileUpdatePost with a Magento Store for POC
-	 * Consider keeping: It will be useful to have the ability to hit the API from local without configuring new shop and getting permissions
+	 * Consider keeping: For testing, good to have the ability to hit an API from local without configuring new shop and getting permissions for each dev
 	 * @param $request
 	 * @param $access_token
 	 * @return Response
@@ -593,7 +593,8 @@ class API extends Base {
 	public function create_common_upload( string $cpi_id, array $data ): Response {
 		$request = new API\CommonFeedUploads\Create\Request( $cpi_id, $data );
 		$this->set_response_handler( API\CommonFeedUploads\Create\Response::class );
-		return $this->perform_stub_request( $request,'EAACxonUmtyIBO9ovBryXe2LxuFC3QThLhmpWkSvIk2UoHS3WixeGESCd3HhzZAyKB3E0F6gvoJJxyKgLRSSQvcpDbbAV17E7vtZCBDp4Q9vFzVFyWMUFEZBvohBIaPbK9813ooqhAsuXOL2a27BgLd6G4FHrO75nPeEouGFJheMWJ3ZC9vBLyXfEEX6WOZB2F0yvjuKC6CNGMcqolDieZALkum' );
+		// For POC testing, use perform_stub_request with auth token of shop that can hit the endpoint
+		return $this->perform_request( $request);
 	}
 
 
