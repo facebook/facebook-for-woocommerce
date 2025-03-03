@@ -40,6 +40,7 @@ class ExampleFeedGenerator extends FeedGenerator {
 	 * @since 3.5.0
 	 */
 	protected function handle_start() {
+		// Create directory if not available and then the files to protect the directory.
 		$this->feed_writer->create_files_to_protect_feed_directory();
 		$this->feed_writer->prepare_temporary_feed_file();
 	}

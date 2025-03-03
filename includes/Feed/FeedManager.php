@@ -10,8 +10,6 @@
 
 namespace WooCommerce\Facebook\Feed;
 
-use WooCommerce\Facebook\Utilities\Heartbeat;
-
 /**
  * Responsible for creating and managing feeds.
  * Global manipulations of the feed such as updating feed and upload ID to be made through this class.
@@ -62,7 +60,7 @@ class FeedManager {
 	private function create_feed( string $data_stream_name ): AbstractFeed {
 		switch ( $data_stream_name ) {
 			case self::EXAMPLE:
-				return new ExampleFeed( $data_stream_name, Heartbeat::HOURLY );
+				return new ExampleFeed();
 			default:
 				throw new \InvalidArgumentException( 'Invalid data stream name' );
 		}

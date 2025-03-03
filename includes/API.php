@@ -102,6 +102,35 @@ class API extends Base {
 		return parent::perform_request( $request );
 	}
 
+	/**
+	 * Using this to perform a hard coded API request for proof of concept
+	 * Current use case: hitting GraphPartnerIntegrationFileUpdatePost with a Magento Store for POC
+	 * Consider keeping: It will be useful to have the ability to hit the API from local without configuring new shop and getting permissions
+	 * @param $request
+	 * @param $access_token
+	 * @return Response
+	 * @throws Framework\Plugin\Exception
+	 * @throws Request_Limit_Reached
+	 */
+	private function perform_stub_request($request, $access_token) : API\Response {
+		$current_token = $this->get_access_token();
+		$this->set_access_token( $access_token );
+		$this->request_headers['Authorization'] = "Bearer {$access_token}";
+
+		$rate_limit_id   = $request::get_rate_limit_id();
+		$delay_timestamp = $this->get_rate_limit_delay( $rate_limit_id );
+		// if there is a delayed timestamp in the future, throw an exception
+		if ( $delay_timestamp >= time() ) {
+			$this->handle_throttled_request( $rate_limit_id, $delay_timestamp );
+		} else {
+			$this->set_rate_limit_delay( $rate_limit_id, 0 );
+		}
+		$response =  parent::perform_request( $request );
+		$this->set_access_token( $current_token );
+		$this->request_headers['Authorization'] = "Bearer {$current_token}";
+		return $response;
+	}
+
 
 	/**
 	 * Validates a response after it has been parsed and instantiated.
@@ -564,8 +593,7 @@ class API extends Base {
 	public function create_common_upload( string $cpi_id, array $data ): Response {
 		$request = new API\CommonFeedUploads\Create\Request( $cpi_id, $data );
 		$this->set_response_handler( API\CommonFeedUploads\Create\Response::class );
-
-		return $this->perform_request( $request );
+		return $this->perform_stub_request( $request,'EAACxonUmtyIBO9ovBryXe2LxuFC3QThLhmpWkSvIk2UoHS3WixeGESCd3HhzZAyKB3E0F6gvoJJxyKgLRSSQvcpDbbAV17E7vtZCBDp4Q9vFzVFyWMUFEZBvohBIaPbK9813ooqhAsuXOL2a27BgLd6G4FHrO75nPeEouGFJheMWJ3ZC9vBLyXfEEX6WOZB2F0yvjuKC6CNGMcqolDieZALkum' );
 	}
 
 

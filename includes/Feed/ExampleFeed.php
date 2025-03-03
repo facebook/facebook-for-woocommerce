@@ -30,23 +30,42 @@ class ExampleFeed extends AbstractFeed {
 	const EXAMPLE_FEED_INTERVAL  = 'wc_facebook_example_feed_generation_interval';
 	const OPTION_FEED_URL_SECRET = 'wc_facebook_example_feed_url_secret';
 
+	/** Name of datafeed for modifying action names.
+	 *
+	 * @var string
+	 */
+	private string $data_stream_name;
+
 	/**
 	 * Constructor.
 	 *
 	 * @since 3.5.0
 	 */
 	public function __construct() {
+		$this->data_stream_name = FeedManager::EXAMPLE;
 		// Using the headers for ratings and reviews for this proof of concept.
 		$header = 'aggregator,store.name,store.id,store.store_urls,review_id,rating,title,content,created_at,' .
-			'incentivized,has_verified_purchase,language,reviewer.name,reviewer.is_anonymous,product.name,product.url,' .
-			'product.image_urls,product.product_identifiers.skus,country' . PHP_EOL;
+		          'reviewer.name,reviewer.reviewerID,product.name,product.url,' .
+		          'product.image_urls,product.product_identifiers.skus,country' . PHP_EOL;
 
-		$this->feed_handler   = new ExampleFeedHandler( new CsvFeedFileWriter( FeedManager::EXAMPLE, $header ) );
+		$this->feed_handler   = new ExampleFeedHandler( new CsvFeedFileWriter( $this->data_stream_name, $header ) );
 		$scheduler            = new ActionScheduler();
 		$this->feed_generator = new ExampleFeedGenerator( $scheduler, $this->feed_handler );
 		$this->feed_generator->init();
+		$this->add_hooks( Heartbeat::HOURLY );
+	}
 
-		parent::__construct( FeedManager::EXAMPLE, Heartbeat::HOURLY );
+	/**
+	 * Adds the necessary hooks for feed generation and data request handling.
+	 *
+	 * @param string $heartbeat The heartbeat interval for the feed generation.
+	 * @since 3.5.0
+	 */
+	protected function add_hooks( string $heartbeat ) {
+		add_action( $heartbeat, array( $this, self::SCHEDULE_CALL_BACK ) );
+		add_action( self::modify_action_name( self::GENERATE_FEED_ACTION ), array( $this, self::REGENERATE_CALL_BACK ) );
+		add_action( self::modify_action_name( self::FEED_GEN_COMPLETE_ACTION ), array( $this, self::UPLOAD_CALL_BACK ) );
+		add_action( self::LEGACY_API_PREFIX . self::modify_action_name( self::REQUEST_FEED_ACTION ), array( $this, self::STREAM_CALL_BACK ) );
 	}
 
 	/**
@@ -55,7 +74,7 @@ class ExampleFeed extends AbstractFeed {
 	 *
 	 * @since 3.5.0
 	 */
-	public function schedule_feed_generation() {
+	public function schedule_feed_generation(): void {
 		/**
 		 * Filter the interval for generating the example feed.
 		 *
@@ -71,20 +90,8 @@ class ExampleFeed extends AbstractFeed {
 				max( 2, $interval ),
 				$schedule_action_hook_name,
 				array(),
-				facebook_for_woocommerce()->get_id_dasherized()
+				\WC_Facebookcommerce::instance()->get_id_dasherized()
 			);
-		}
-	}
-
-	/**
-	 * Allows an admin to schedule the feed generation immediately.
-	 *
-	 * @since 3.5.0
-	 */
-	public function schedule_feed_generation_immediately() {
-		$schedule_action_hook_name = self::modify_action_name( self::GENERATE_FEED_ACTION );
-		if ( ! as_next_scheduled_action( $schedule_action_hook_name ) ) {
-			$this->regenerate_feed();
 		}
 	}
 
@@ -93,9 +100,9 @@ class ExampleFeed extends AbstractFeed {
 	 *
 	 * @since 3.5.0
 	 */
-	public function regenerate_feed() {
+	public function regenerate_feed(): void {
 		// Maybe use new ( experimental ), feed generation framework.
-		if ( facebook_for_woocommerce()->get_integration()->is_new_style_feed_generation_enabled() ) {
+		if ( \WC_Facebookcommerce::instance()->get_integration()->is_new_style_feed_generation_enabled() ) {
 			$this->feed_generator->queue_start();
 		} else {
 			$this->feed_handler->generate_feed_file();
@@ -109,7 +116,8 @@ class ExampleFeed extends AbstractFeed {
 	 *
 	 * @since 3.5.0
 	 */
-	public function send_request_to_upload_feed() {
+	public function send_request_to_upload_feed(): void {
+		// For POC, replace URL with a remote hosted url that is running this code
 		$data = array(
 			'url'         => self::get_feed_data_url(),
 			'feed_type'   => 'PRODUCT_RATINGS_AND_REVIEWS',
@@ -117,13 +125,13 @@ class ExampleFeed extends AbstractFeed {
 		);
 
 		try {
-			$cpi_id = facebook_for_woocommerce()->get_integration()->get_commerce_partner_integration_id();
-			facebook_for_woocommerce()
+			$cpi_id = \WC_Facebookcommerce::instance()->get_integration()->get_commerce_partner_integration_id();
+			\WC_Facebookcommerce::instance()
 				->get_api()
 				->create_common_upload( $cpi_id, $data );
 		} catch ( Exception $e ) {
 			// Log the error and continue.
-			facebook_for_woocommerce()->log( 'Failed to create example feed upload request: ' . $e->getMessage() );
+			\WC_Facebookcommerce::instance()->log( 'Failed to create example feed upload request: ' . $e->getMessage() );
 		}
 	}
 
@@ -133,9 +141,10 @@ class ExampleFeed extends AbstractFeed {
 	 * The above WooC Legacy REST API will trigger the handle_feed_data_request method
 	 * See LegacyRequestApiStub.php for more details
 	 *
+	 * @throws PluginException If file issue comes up.
 	 * @since 3.5.0
 	 */
-	public function handle_feed_data_request() {
+	public function handle_feed_data_request(): void {
 		\WC_Facebookcommerce_Utils::log( 'ExampleFeed: Meta is requesting feed file.' );
 
 		$file_path = $this->feed_handler->get_feed_writer()->get_file_path();
@@ -198,11 +207,12 @@ class ExampleFeed extends AbstractFeed {
 	 * @return string
 	 */
 	public function get_feed_data_url(): string {
-		$query_args = array(
-			'wc-api' => self::modify_action_name( self::REQUEST_FEED_ACTION ),
-			'secret' => self::get_feed_secret(),
-		);
-		// phpcs:ignore
+		 $query_args = array(
+		 'wc-api' => self::modify_action_name( self::REQUEST_FEED_ACTION ),
+		 'secret' => self::get_feed_secret(),
+		 );
+
+		 // phpcs:ignore
 		// nosemgrep: audit.php.wp.security.xss.query-arg
 		return add_query_arg( $query_args, home_url( '/' ) );
 	}
@@ -222,5 +232,17 @@ class ExampleFeed extends AbstractFeed {
 		}
 
 		return $secret;
+	}
+
+	/**
+	 * Modifies the action name by appending the data stream name.
+	 *
+	 * @param string $action_name The name of the hook.
+	 * @return string The modified action name.
+	 * @since 3.5.0
+	 */
+	public static function modify_action_name( string $action_name ): string {
+		$name = FeedManager::EXAMPLE;
+		return "{$action_name}{$name}";
 	}
 }
