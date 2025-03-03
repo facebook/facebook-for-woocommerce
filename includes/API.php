@@ -576,7 +576,7 @@ class API extends Base {
 	 * @throws ApiException
 	 * @throws API\Exceptions\Request_Limit_Reached
 	 */
-	public function create_upload( string $product_feed_id, array $data ) {
+	public function create_product_feed_upload( string $product_feed_id, array $data ) {
 		$request = new API\ProductCatalog\ProductFeedUploads\Create\Request( $product_feed_id, $data );
 		$this->set_response_handler( API\ProductCatalog\ProductFeedUploads\Create\Response::class );
 		return $this->perform_request( $request );
@@ -590,7 +590,7 @@ class API extends Base {
 	 * @throws Request_Limit_Reached
 	 * @throws ApiException
 	 */
-	public function create_common_upload( string $cpi_id, array $data ): Response {
+	public function create_common_data_feed_upload( string $cpi_id, array $data ): Response {
 		$request = new API\CommonFeedUploads\Create\Request( $cpi_id, $data );
 		$this->set_response_handler( API\CommonFeedUploads\Create\Response::class );
 		// For POC testing, use perform_stub_request with auth token of shop that can hit the endpoint

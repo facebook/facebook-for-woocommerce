@@ -772,7 +772,7 @@ class ApiTest extends WP_UnitTestCase {
 		};
 		add_filter( 'pre_http_request', $response, 10, 3 );
 
-		$response = $this->api->create_upload( $product_feed_id, $data );
+		$response = $this->api->create_product_feed_upload( $product_feed_id, $data );
 		$this->assertFalse( $response->has_api_error() );
 	}
 
@@ -803,7 +803,7 @@ class ApiTest extends WP_UnitTestCase {
 		};
 		add_filter( 'pre_http_request', $response, 10, 3 );
 
-		$response = $this->api->create_common_upload( $cpi, $data );
+		$response = $this->api->create_common_data_feed_upload( $cpi, $data );
 		$this->assertFalse( $response->has_api_error() );
 	}
 }

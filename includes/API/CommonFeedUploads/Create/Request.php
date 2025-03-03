@@ -20,6 +20,7 @@ defined( 'ABSPATH' ) || exit;
  * Request object for the Common Feed Upload.
  */
 class Request extends ApiRequest {
+	const CPI_ENDPOINT = 'file_update';
 
 	/**
 	 * Constructs the request.
@@ -29,7 +30,8 @@ class Request extends ApiRequest {
 	 * @since 3.5.0
 	 */
 	public function __construct( string $cpi_id, array $data ) {
-		parent::__construct( "/{$cpi_id}/file_update", 'POST' );
+		$endpoint = self::CPI_ENDPOINT;
+		parent::__construct( "/{$cpi_id}/{$endpoint}", 'POST' );
 		parent::set_data( $data );
 	}
 }

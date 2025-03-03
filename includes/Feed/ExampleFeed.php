@@ -128,7 +128,7 @@ class ExampleFeed extends AbstractFeed {
 			$cpi_id = \WC_Facebookcommerce::instance()->get_integration()->get_commerce_partner_integration_id();
 			\WC_Facebookcommerce::instance()
 				->get_api()
-				->create_common_upload( $cpi_id, $data );
+				->create_common_data_feed_upload( $cpi_id, $data );
 		} catch ( Exception $e ) {
 			// Log the error and continue.
 			\WC_Facebookcommerce::instance()->log( 'Failed to create example feed upload request: ' . $e->getMessage() );

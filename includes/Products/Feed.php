@@ -204,7 +204,7 @@ class Feed {
 		];
 
 		try {
-			facebook_for_woocommerce()->get_api()->create_upload( $feed_id, $data );
+			facebook_for_woocommerce()->get_api()->create_product_feed_upload( $feed_id, $data );
 		} catch ( Exception $exception ) {
 			facebook_for_woocommerce()->log( 'Failed to create feed upload request: ' . $exception->getMessage() );
 		}
