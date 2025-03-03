@@ -45,8 +45,8 @@ class ExampleFeed extends AbstractFeed {
 		$this->data_stream_name = FeedManager::EXAMPLE;
 		// Using the headers for ratings and reviews for this proof of concept.
 		$header = 'aggregator,store.name,store.id,store.store_urls,review_id,rating,title,content,created_at,' .
-		          'reviewer.name,reviewer.reviewerID,product.name,product.url,' .
-		          'product.image_urls,product.product_identifiers.skus,country' . PHP_EOL;
+			'reviewer.name,reviewer.reviewerID,product.name,product.url,' .
+			'product.image_urls,product.product_identifiers.skus,country' . PHP_EOL;
 
 		$this->feed_handler   = new ExampleFeedHandler( new CsvFeedFileWriter( $this->data_stream_name, $header ) );
 		$scheduler            = new ActionScheduler();
@@ -207,10 +207,10 @@ class ExampleFeed extends AbstractFeed {
 	 * @return string
 	 */
 	public function get_feed_data_url(): string {
-		 $query_args = array(
-		 'wc-api' => self::modify_action_name( self::REQUEST_FEED_ACTION ),
-		 'secret' => self::get_feed_secret(),
-		 );
+		$query_args = array(
+			'wc-api' => self::modify_action_name( self::REQUEST_FEED_ACTION ),
+			'secret' => self::get_feed_secret(),
+		);
 
 		 // phpcs:ignore
 		// nosemgrep: audit.php.wp.security.xss.query-arg
