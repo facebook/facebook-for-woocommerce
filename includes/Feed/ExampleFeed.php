@@ -45,8 +45,8 @@ class ExampleFeed extends AbstractFeed {
 		$this->data_stream_name = FeedManager::EXAMPLE;
 		// Using the headers for ratings and reviews for this proof of concept.
 		$header = 'aggregator,store.name,store.id,store.store_urls,review_id,rating,title,content,created_at,' .
-			'incentivized,has_verified_purchase,language,reviewer.name,reviewer.is_anonymous,product.name,product.url,' .
-			'product.image_urls,product.product_identifiers.skus,country' . PHP_EOL;
+		          'reviewer.name,reviewer.reviewerID,product.name,product.url,' .
+		          'product.image_urls,product.product_identifiers.skus,country' . PHP_EOL;
 
 		$this->feed_handler   = new ExampleFeedHandler( new CsvFeedFileWriter( $this->data_stream_name, $header ) );
 		$scheduler            = new ActionScheduler();
@@ -62,11 +62,10 @@ class ExampleFeed extends AbstractFeed {
 	 * @since 3.5.0
 	 */
 	protected function add_hooks( string $heartbeat ) {
-		add_action( $heartbeat, array( $this, self::SCHEDULE_IMMEDIATE_CALL_BACK ) );
+		add_action( $heartbeat, array( $this, self::SCHEDULE_CALL_BACK ) );
 		add_action( self::modify_action_name( self::GENERATE_FEED_ACTION ), array( $this, self::REGENERATE_CALL_BACK ) );
 		add_action( self::modify_action_name( self::FEED_GEN_COMPLETE_ACTION ), array( $this, self::UPLOAD_CALL_BACK ) );
 		add_action( self::LEGACY_API_PREFIX . self::modify_action_name( self::REQUEST_FEED_ACTION ), array( $this, self::STREAM_CALL_BACK ) );
-		add_action( 'schedule_immediate_example_file', array( $this, 'schedule_feed_generation_immediately' ) );
 	}
 
 	/**
@@ -75,7 +74,7 @@ class ExampleFeed extends AbstractFeed {
 	 *
 	 * @since 3.5.0
 	 */
-	public function schedule_feed_generation() {
+	public function schedule_feed_generation(): void {
 		/**
 		 * Filter the interval for generating the example feed.
 		 *
@@ -97,27 +96,11 @@ class ExampleFeed extends AbstractFeed {
 	}
 
 	/**
-	 * Allows an admin to schedule the feed generation immediately.
-	 *
-	 * @since 3.5.0
-	 */
-	public function schedule_feed_generation_immediately() {
-		$schedule_action_hook_name = self::modify_action_name( self::GENERATE_FEED_ACTION );
-		as_schedule_recurring_action(
-			time(),
-			600,
-			$schedule_action_hook_name,
-			array(),
-			\WC_Facebookcommerce::instance()->get_id_dasherized()
-		);
-	}
-
-	/**
 	 * Regenerates the example feed based on the defined schedule.
 	 *
 	 * @since 3.5.0
 	 */
-	public function regenerate_feed() {
+	public function regenerate_feed(): void {
 		// Maybe use new ( experimental ), feed generation framework.
 		if ( \WC_Facebookcommerce::instance()->get_integration()->is_new_style_feed_generation_enabled() ) {
 			$this->feed_generator->queue_start();
@@ -133,7 +116,8 @@ class ExampleFeed extends AbstractFeed {
 	 *
 	 * @since 3.5.0
 	 */
-	public function send_request_to_upload_feed() {
+	public function send_request_to_upload_feed(): void {
+		// For POC, replace URL with a remote hosted url that is running this code
 		$data = array(
 			'url'         => self::get_feed_data_url(),
 			'feed_type'   => 'PRODUCT_RATINGS_AND_REVIEWS',
@@ -160,7 +144,7 @@ class ExampleFeed extends AbstractFeed {
 	 * @throws PluginException If file issue comes up.
 	 * @since 3.5.0
 	 */
-	public function handle_feed_data_request() {
+	public function handle_feed_data_request(): void {
 		\WC_Facebookcommerce_Utils::log( 'ExampleFeed: Meta is requesting feed file.' );
 
 		$file_path = $this->feed_handler->get_feed_writer()->get_file_path();
@@ -223,11 +207,12 @@ class ExampleFeed extends AbstractFeed {
 	 * @return string
 	 */
 	public function get_feed_data_url(): string {
-		$query_args = array(
-			'wc-api' => self::modify_action_name( self::REQUEST_FEED_ACTION ),
-			'secret' => self::get_feed_secret(),
-		);
-		// phpcs:ignore
+		 $query_args = array(
+		 'wc-api' => self::modify_action_name( self::REQUEST_FEED_ACTION ),
+		 'secret' => self::get_feed_secret(),
+		 );
+
+		 // phpcs:ignore
 		// nosemgrep: audit.php.wp.security.xss.query-arg
 		return add_query_arg( $query_args, home_url( '/' ) );
 	}
@@ -240,15 +225,13 @@ class ExampleFeed extends AbstractFeed {
 	 * @return string
 	 */
 	public function get_feed_secret(): string {
-		/* //phpcs:ignore
 		$secret = get_option( self::OPTION_FEED_URL_SECRET, '' );
 		if ( ! $secret ) {
 			$secret = wp_hash( 'example-feed-' . time() );
 			update_option( self::OPTION_FEED_URL_SECRET, $secret );
 		}
 
-		return $secret;*/
-		return 'secret';
+		return $secret;
 	}
 
 	/**
