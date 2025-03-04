@@ -306,7 +306,11 @@ class Connection extends Abstract_Settings_Screen {
 				<?php else : ?>
 
 					<a href="<?php echo esc_url( facebook_for_woocommerce()->get_connection_handler()->get_connect_url() ); ?>" class="button button-primary">
-						<?php esc_html_e( 'Get Started', 'facebook-for-woocommerce' ); ?>
+						<?php esc_html_e( 'Get Started with Ads', 'facebook-for-woocommerce' ); ?>
+					</a>
+
+					<a href="<?php echo esc_url( facebook_for_woocommerce()->get_connection_handler()->get_connect_url(true) ); ?>" class="button button-primary">
+						<?php esc_html_e( 'Get Started with Shop and Ads', 'facebook-for-woocommerce' ); ?>
 					</a>
 
 				<?php endif; ?>
