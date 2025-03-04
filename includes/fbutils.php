@@ -858,6 +858,38 @@ if ( ! class_exists( 'WC_Facebookcommerce_Utils' ) ) :
 			return self::normalize_product_data_for_items_batch( $data );
 		}
 
+		/**
+		 * Utility function for sending exception logs to Meta.
+		 */
+		public static function logExceptionImmediatelyToMeta(Throwable $error, array $context = []) {
+			/**
+			 * WIP: This is a dummy function to send exception logs to Meta.
+			 * $context is an array of data that will be sent to Meta, includes commerce_merchant_settings_id, 
+			 * catalog_id, order_id, promotion_id, flow_name, flow_step, extra_data and etc.
+			 */
+			
+			// TODO: Implement enqueue logging to Meta function.
+			$response = null;
+
+			 return $response;
+		}
+
+		/**
+		 * Utility function for sending telemetry logs to Meta.
+		 */
+		public static function logTelemetryToMeta(string $message, array $context = []) {
+			/**
+			 * WIP: This is a dummy function to send telemetry logs to Meta.
+			 * $context is an array of data that will be sent to Meta, includes commerce_merchant_settings_id, 
+			 * catalog_id, order_id, promotion_id, flow_name, flow_step, extra_data and etc.
+			 */
+			
+			// TODO: Implement push logging request to global message queue function.
+			$response = null;
+			
+			 return $response;
+		}
+
 	}
 
 endif;
