@@ -792,6 +792,7 @@ class Admin {
 	 *
 	 * @param array $query_vars
 	 * @return array
+	 * @todo Figure out if meta_query is slow and can be replaced with faster query
 	 */
 	private function add_query_vars_to_find_visible_products( array $query_vars ) {
 		$visibility_meta_query = array( // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_query
