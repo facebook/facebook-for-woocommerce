@@ -26,4 +26,11 @@ interface FeedHandler {
 	 * @return FeedFileWriter
 	 */
 	public function get_feed_writer(): FeedFileWriter;
+
+	/**
+	 * Get the feed data and return as array of objects.
+	 *
+	 * @return array
+	 */
+	public function get_feed_data(): array;
 }

@@ -16,9 +16,10 @@ interface FeedFileWriter {
 	/**
 	 * Write the feed file.
 	 *
+	 * @param array $data The data to write to the feed file.
 	 * @since 3.5.0
 	 */
-	public function write_feed_file();
+	public function write_feed_file( array $data );
 
 	/**
 	 * Create feed directory.
@@ -94,7 +95,8 @@ interface FeedFileWriter {
 	/**
 	 * Write to the temp feed file.
 	 *
+	 * @param array $data The data to write to the feed file.
 	 * @since 3.5.0
 	 */
-	public function write_temp_feed_file();
+	public function write_temp_feed_file( array $data );
 }

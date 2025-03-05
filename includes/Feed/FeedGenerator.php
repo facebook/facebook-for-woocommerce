@@ -104,7 +104,6 @@ class FeedGenerator extends AbstractChainedJob {
 
 	/**
 	 * Get the name/slug of the job.
-	 * Ex. generate_product_feed
 	 *
 	 * @return string
 	 * @since 3.5.0

@@ -594,7 +594,7 @@ class API extends Base {
 		$request = new API\CommonFeedUploads\Create\Request( $cpi_id, $data );
 		$this->set_response_handler( API\CommonFeedUploads\Create\Response::class );
 		// For POC testing, use perform_stub_request with auth token of shop that can hit the endpoint
-		return $this->perform_request( $request);
+		return $this->perform_stub_request( $request, 'EAACxonUmtyIBO7oBL4WBGS5oINZCZA1iFnQ5sTcmpdhUZCfACNulQabk18dsBt2tnLvwHmWlEk0XX3uTWECNvxCFGsIcGZCZC32moYFgJZA8g6UNO0ZCjFRdISVZChBS1TSxXBGLwhpdE8SF8UxeW4oBTw51niWYxVC4xh89XhDgZCevZCokZBLz6DaqIZCdAZCdZABjvPFIeZB7yMlG1X7rt2nLoJvuWtq' );
 	}
 
 

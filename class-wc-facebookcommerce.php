@@ -191,7 +191,7 @@ class WC_Facebookcommerce extends WooCommerce\Facebook\Framework\Plugin {
 			$this->heartbeat->init();
 
 			// Leave feed manger out for now as will just make example feed. Use for dogfooding.
-			//$this->feed_manager              = new WooCommerce\Facebook\Feed\FeedManager();
+			$this->feed_manager              = new WooCommerce\Facebook\Feed\FeedManager();
 			$this->checkout           		 = new WooCommerce\Facebook\Checkout();
 			$this->product_feed              = new WooCommerce\Facebook\Products\Feed();
 			$this->products_stock_handler    = new WooCommerce\Facebook\Products\Stock();
