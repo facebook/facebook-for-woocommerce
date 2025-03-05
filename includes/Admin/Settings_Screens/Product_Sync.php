@@ -49,48 +49,11 @@ class Product_Sync extends Abstract_Settings_Screen {
 	 */
 	public function initHook(): void {
 		$this->id                = self::ID;
-		$this->label             = __( 'Product sync@Wei', 'facebook-for-woocommerce' );
+		set_transient( 'global_telemetry_message_queue_test', [], HOUR_IN_SECONDS );
+		$logs = get_transient( 'global_telemetry_message_queue_test' );
+		$this->label             = __( 'Product sync@Wei' . count( $logs ), 'facebook-for-woocommerce' );
 		$this->title             = __( 'Product sync', 'facebook-for-woocommerce' );
 		$this->documentation_url = 'https://woocommerce.com/document/facebook-for-woocommerce/#product-sync-settings';
-
-		set_transient('test_data', 'test scheduled event', HOUR_IN_SECONDS);
-
-		add_filter( 'cron_schedules', array( $this, 'my_custom_cron_schedules' ) );
-		add_action( 'my_minute_event', array( $this, 'my_minute_event_function' ) );
-
-		
-			wp_schedule_event( time(), 'hourly',  'my_minute_event' );
-
-		do_action( 'my_minute_event' );
-	}
-
-	/**
-	 * Add a custom cron schedule for every minute.
-	 *
-	 * @internal
-	 *
-	 * @since 2.0.0
-	 */
-	public function my_custom_cron_schedules( $schedules ) {
-    	if ( ! isset( $schedules['every_minute'] ) ) {
-        	$schedules['every_minute'] = array(
-            	'interval' => 60, // 60 seconds = 1 minute
-            	'display'  => __( 'Every Minute' ),
-        	);
-    	}
-    	return $schedules;
-	}
-
-	/**
-	 * Function that runs every minute.
-	 *
-	 * @internal
-	 *
-	 * @since 2.0.0
-	 */
-	public function my_minute_event_function() {
-		$label_name = get_transient( 'test_data' );
-		$this->label             = __( $label_name, 'facebook-for-woocommerce' );
 	}
 
 	/**
