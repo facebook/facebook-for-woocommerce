@@ -87,6 +87,8 @@ abstract class AsyncRequest {
 
 		// Check if a child class has defined this property for custom query args
 		if ( property_exists( $this, 'query_args' ) ) {
+			// Dynamic property; not defined in the parent class, and not a true lint error
+			// phpcs:ignore 
 			return $this->query_args;
 		}
 
@@ -107,6 +109,8 @@ abstract class AsyncRequest {
 
 		// Check if a child class has defined this property for a custom URL
 		if ( property_exists( $this, 'query_url' ) ) {
+			// Dynamic property; not defined in the parent class, and not a true lint error
+			// phpcs:ignore 
 			return $this->query_url;
 		}
 
@@ -126,6 +130,8 @@ abstract class AsyncRequest {
 
 		// Check if a child class has defined this property for custom request args
 		if ( property_exists( $this, 'request_args' ) ) {
+			// Dynamic property; not defined in the parent class, and not a true lint error
+			// phpcs:ignore 
 			return $this->request_args;
 		}
 
