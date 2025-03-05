@@ -190,7 +190,7 @@ class WC_Facebookcommerce extends WooCommerce\Facebook\Framework\Plugin {
 			$this->heartbeat = new Heartbeat( WC()->queue() );
 			$this->heartbeat->init();
 
-			$this->feed_manager = new WooCommerce\Facebook\Feed\FeedManager();
+			$this->feed_manager              = new WooCommerce\Facebook\Feed\FeedManager();
 			$this->checkout           		 = new WooCommerce\Facebook\Checkout();
 			$this->product_feed              = new WooCommerce\Facebook\Products\Feed();
 			$this->products_stock_handler    = new WooCommerce\Facebook\Products\Stock();

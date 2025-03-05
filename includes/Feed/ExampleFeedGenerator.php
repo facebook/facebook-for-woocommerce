@@ -59,7 +59,7 @@ class ExampleFeedGenerator extends FeedGenerator {
 		 *
 		 * @since 3.5.0
 		 */
-		do_action( ExampleFeed::modify_action_name( AbstractFeed::FEED_GEN_COMPLETE_ACTION ) );
+		do_action( AbstractFeed::FEED_GEN_COMPLETE_ACTION . FeedManager::EXAMPLE );
 	}
 
 	/**
@@ -95,7 +95,64 @@ class ExampleFeedGenerator extends FeedGenerator {
 		// For proof of concept, we will just return the review id for batch 1
 		// In parent classes, batch number starts with 1.
 		if ( 1 === $batch_number ) {
-			return array( 2, 3, 4 );
+			$obj_1 = [
+				'aggregator'                       => 'magento',
+				'store.name'                       => 'Default Store View',
+				'store.id'                         => '1413745412827209',
+				'store.store_urls'                 => "['http://35.91.150.25/']",
+				'review_id'                        => '2',
+				'rating'                           => '5',
+				'title'                            => 'Great product',
+				'content'                          => 'Very happy with this purchase. Would buy again.',
+				'created_at'                       => '2025-01-09 18:30:43',
+				'reviewer.name'                    => 'John Doe',
+				'reviewer.reviewerID'              => '1',
+				'product.name'                     => 'Baseball',
+				'product.url'                      => 'http://35.91.150.25/catalog/product/view/id/12/s/baseball/',
+				'product.image_urls'               => "['/b/a/baseball.jpg']",
+				'product.product_identifiers.skus' => "['Baseball']",
+				'country'                          => 'US',
+			];
+
+			$obj_2 = [
+				'aggregator'                       => 'magento',
+				'store.name'                       => 'Default Store View',
+				'store.id'                         => '1413745412827209',
+				'store.store_urls'                 => "['http://35.91.150.25/']",
+				'review_id'                        => '3',
+				'rating'                           => '1',
+				'title'                            => "Don't recommend",
+				'content'                          => 'Unusable after just a couple games. Expected better. Would not recommend.',
+				'created_at'                       => '2025-01-09 19:56:37',
+				'reviewer.name'                    => 'Tim Cook',
+				'reviewer.reviewerID'              => '2',
+				'product.name'                     => 'Baseball',
+				'product.url'                      => 'http://35.91.150.25/catalog/product/view/id/12/s/baseball/',
+				'product.image_urls'               => "['/b/a/baseball.jpg']",
+				'product.product_identifiers.skus' => "['Baseball']",
+				'country'                          => 'US',
+			];
+
+			$obj_3 = [
+				'aggregator'                       => 'magento',
+				'store.name'                       => 'Default Store View',
+				'store.id'                         => '1413745412827209',
+				'store.store_urls'                 => "['http://35.91.150.25/']",
+				'review_id'                        => '4',
+				'rating'                           => '4',
+				'title'                            => 'Overall satisfied',
+				'content'                          => 'Could have been better but overall satisfied with my purchase.',
+				'created_at'                       => '2025-01-15 23:04:29',
+				'reviewer.name'                    => 'Tom Manning',
+				'reviewer.reviewerID'              => '3',
+				'product.name'                     => 'Baseball',
+				'product.url'                      => 'http://35.91.150.25/catalog/product/view/id/12/s/baseball/',
+				'product.image_urls'               => "['/b/a/baseball.jpg']",
+				'product.product_identifiers.skus' => "['Baseball']",
+				'country'                          => 'US',
+			];
+
+			return array( $obj_1, $obj_2, $obj_3 );
 		} else {
 			return array();
 		}
@@ -110,16 +167,7 @@ class ExampleFeedGenerator extends FeedGenerator {
 	 * @since 3.5.0
 	 */
 	protected function process_items( array $items, array $args ) {
-		// phpcs:ignore -- Using fopen to match existing implementation.
-		$temp_feed_file = fopen( $this->feed_writer->get_temp_file_path(), 'a' );
-		// True override of write_feed_file would probably take an array of item ids or item objects
-		// For poc, will just write to the temp feed file.
-		$this->feed_writer->write_temp_feed_file();
-
-		if ( is_resource( $temp_feed_file ) ) {
-			//phpcs:ignore -- Using fclose to match existing implementation.
-			fclose( $temp_feed_file );
-		}
+		$this->feed_writer->write_temp_feed_file( $items );
 	}
 
 	/**
@@ -132,7 +180,8 @@ class ExampleFeedGenerator extends FeedGenerator {
 	 */
 	protected function process_item( $item, array $args ) {
 		// Needed to satisfy the class inheritance
-		// Because of the i/o opening and closing original feed implementation foregoes this method.
+		// Because of the i/o opening and closing original feed implementation foregoes this method;
+		// It is more efficient to write each batch out and per object processing is done in write_feed_file().
 	}
 
 	/**

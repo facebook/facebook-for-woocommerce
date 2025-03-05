@@ -10,6 +10,10 @@
 
 namespace WooCommerce\Facebook\Feed;
 
+use WooCommerce\Facebook\Framework\Api\Exception;
+use WooCommerce\Facebook\Framework\Helper;
+use WooCommerce\Facebook\Framework\Plugin\Exception as PluginException;
+
 defined( 'ABSPATH' ) || exit;
 
 /**
@@ -39,6 +43,8 @@ abstract class AbstractFeed {
 	const STREAM_CALL_BACK = 'handle_feed_data_request';
 	/** Hook prefix for Legacy REST API hook name */
 	const LEGACY_API_PREFIX = 'woocommerce_api_';
+	/** @var string the WordPress option name where the secret included in the feed URL is stored */
+	const OPTION_FEED_URL_SECRET = 'wc_facebook_feed_url_secret_';
 
 
 	/**
@@ -58,57 +64,192 @@ abstract class AbstractFeed {
 	protected FeedHandler $feed_handler;
 
 	/**
+	 * The name of the data feed.
+	 *
+	 * @var string
+	 */
+	protected string $data_stream_name;
+
+	/**
+	 * The option name for the feed URL secret.
+	 *
+	 * @var string
+	 */
+	protected string $feed_url_secret_option_name;
+
+	/**
+	 * The type of feed as per the endpoint requirements.
+	 *
+	 * @var string
+	 */
+	protected string $feed_type;
+
+	/**
+	 * The interval in seconds for the feed generation.
+	 *
+	 * @var int
+	 */
+	protected int $gen_feed_interval;
+
+	/**
 	 * Schedules the recurring feed generation.
 	 *
 	 * This method must be implemented by the concrete feed class, usually by providing a recurring interval
 	 *
 	 * @since 3.5.0
 	 */
-	abstract public function schedule_feed_generation();
+	public function schedule_feed_generation(): void {
+		$schedule_action_hook_name = self::GENERATE_FEED_ACTION . $this->data_stream_name;
+		if ( ! as_next_scheduled_action( $schedule_action_hook_name ) ) {
+			as_schedule_recurring_action(
+				time(),
+				$this->gen_feed_interval,
+				$schedule_action_hook_name,
+				array(),
+				facebook_for_woocommerce()->get_id_dasherized()
+			);
+		}
+	}
 
 	/**
-	 * The method ensures that the feed is regenerated based on the defined schedule.
+	 * Regenerates the example feed based on the defined schedule.
 	 *
 	 * @since 3.5.0
 	 */
-	abstract public function regenerate_feed();
+	public function regenerate_feed(): void {
+		// Maybe use new ( experimental ), feed generation framework.
+		if ( \WC_Facebookcommerce::instance()->get_integration()->is_new_style_feed_generation_enabled() ) {
+			$this->feed_generator->queue_start();
+		} else {
+			$this->feed_handler->generate_feed_file();
+		}
+	}
 
 	/**
-	 * Once feed regenerated, trigger upload via create_upload API and trigger the action for handling the upload
+	 * Trigger the upload flow
+	 * Once feed regenerated, trigger upload via create_upload API
+	 * This will hit the url defined in the class and trigger the handle streaming file
 	 *
 	 * @since 3.5.0
 	 */
-	abstract public function send_request_to_upload_feed();
+	public function send_request_to_upload_feed(): void {
+		$name = $this->data_stream_name;
+		$data = array(
+			'url'         => self::get_feed_data_url(),
+			'feed_type'   => $this->feed_type,
+			'update_type' => 'CREATE',
+		);
+
+		try {
+			$cpi_id = \WC_Facebookcommerce::instance()->get_integration()->get_commerce_partner_integration_id();
+			facebook_for_woocommerce()->
+				get_api()->
+				create_common_data_feed_upload( $cpi_id, $data );
+		} catch ( Exception $e ) {
+			// Log the error and continue.
+			\WC_Facebookcommerce_Utils::log( "{$name} feed: Failed to create feed upload request: " . $e->getMessage() );
+		}
+	}
 
 	/**
-	 * Handles the feed data request.
+	 * Gets the URL for retrieving the feed data using legacy WooCommerce REST API.
+	 * Sample url:
+	 * https://your-site-url.com/?wc-api=wc_facebook_get_feed_data_example&secret=your_generated_secret
 	 *
 	 * @since 3.5.0
+	 * @return string
 	 */
-	abstract public function handle_feed_data_request();
+	public function get_feed_data_url(): string {
+		$query_args = array(
+			'wc-api' => self::REQUEST_FEED_ACTION . $this->data_stream_name,
+			'secret' => self::get_feed_secret(),
+		);
+
+		// phpcs:ignore
+		// nosemgrep: audit.php.wp.security.xss.query-arg
+		return add_query_arg( $query_args, home_url( '/' ) );
+	}
+
 
 	/**
-	 * Gets the URL for retrieving the feed data.
+	 * Gets the secret value that should be included in the legacy WooCommerce REST API URL.
 	 *
-	 * @return string The URL for retrieving the feed data.
 	 * @since 3.5.0
+	 * @return string
 	 */
-	abstract public function get_feed_data_url(): string;
+	public function get_feed_secret(): string {
+/*		$secret = get_option( $this->feed_url_secret_option_name, '' );
+		if ( ! $secret ) {
+			$secret = wp_hash( 'example-feed-' . time() );
+			update_option( $this->feed_url_secret_option_name, $secret );
+		}
+
+		return $secret;*/
+		return 'secret';
+	}
 
 	/**
-	 * Gets the secret value/ token that should be included in the feed URL.
+	 * Callback function that streams the feed file to the GraphPartnerIntegrationFileUpdatePost
+	 * Ex: https://your-site-url.com/?wc-api=wc_facebook_get_feed_data_example&secret=your_generated_secret
+	 * The above WooC Legacy REST API will trigger the handle_feed_data_request method
+	 * See LegacyRequestApiStub.php for more details
 	 *
-	 * @return string The secret value for the feed URL.
+	 * @throws PluginException If file issue comes up.
 	 * @since 3.5.0
 	 */
-	abstract public function get_feed_secret(): string;
+	public function handle_feed_data_request(): void {
+		$name = $this->data_stream_name;
+		\WC_Facebookcommerce_Utils::log( "{$name} feed: Meta is requesting feed file." );
 
-	/**
-	 * Modifies the action name by appending the data stream name.
-	 *
-	 * @param string $action_name The name of the hook.
-	 * @return string The modified action name.
-	 * @since 3.5.0
-	 */
-	abstract public static function modify_action_name( string $action_name ): string;
+		$file_path = $this->feed_handler->get_feed_writer()->get_file_path();
+
+		// regenerate if the file doesn't exist.
+		if ( ! file_exists( $file_path ) ) {
+			$this->feed_handler->generate_feed_file();
+		}
+
+		try {
+			// bail early if the feed secret is not included or is not valid.
+			if ( self::get_feed_secret() !== Helper::get_requested_value( 'secret' ) ) {
+				throw new PluginException( "{$name} feed: Invalid secret provided.", 401 );
+			}
+
+			// bail early if the file can't be read.
+			if ( ! is_readable( $file_path ) ) {
+
+				throw new PluginException( "{$name}: File at path ' . $file_path . ' is not readable.", 404 );
+			}
+
+			// set the download headers.
+			header( 'Content-Type: text/csv; charset=utf-8' );
+			header( 'Content-Description: File Transfer' );
+			header( 'Content-Disposition: attachment; filename="' . basename( $file_path ) . '"' );
+			header( 'Expires: 0' );
+			header( 'Cache-Control: must-revalidate, post-check=0, pre-check=0' );
+			header( 'Pragma: public' );
+			header( 'Content-Length:' . filesize( $file_path ) );
+
+			// phpcs:ignore
+			$file = @fopen( $file_path, 'rb' );
+			if ( ! $file ) {
+				throw new PluginException( "{$name} feed: Could not open feed file.", 500 );
+			}
+
+			// fpassthru might be disabled in some hosts (like Flywheel).
+			// phpcs:ignore
+			if ( \WC_Facebookcommerce_Utils::is_fpassthru_disabled() || ! @fpassthru( $file ) ) {
+				\WC_Facebookcommerce_Utils::log( "{$name} feed: fpassthru is disabled: getting file contents" );
+				//phpcs:ignore
+				$contents = @stream_get_contents( $file );
+				if ( ! $contents ) {
+					throw new PluginException( 'Could not get feed file contents.', 500 );
+				}
+				echo $contents; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+			}
+		} catch ( \Exception $exception ) {
+			\WC_Facebookcommerce_Utils::log( "{$name} feed: Could not serve feed. " . $exception->getMessage() . ' (' . $exception->getCode() . ')' );
+			status_header( $exception->getCode() );
+		}
+		exit;
+	}
 }

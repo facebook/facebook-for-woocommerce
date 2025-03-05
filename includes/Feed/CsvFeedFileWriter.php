@@ -46,16 +46,6 @@ class CsvFeedFileWriter implements FeedFileWriter {
 	private string $header_row;
 
 	/**
-	 * Data to write to feed file
-	 *
-	 * @var string
-	 * @since 3.5.0
-	 */
-	private string $csv_data = "\"magento\",\"Default Store View\",\"1413745412827209\",\"['http://35.91.150.25/']\",\"2\",\"5\",\"Great product\",\"Very happy with this purchase. Would buy again.\",\"2025-01-09 18:30:43\",\"John Doe\",\"\",\"Baseball\",\"http://35.91.150.25/catalog/product/view/id/12/s/baseball/\",\"['/b/a/baseball.jpg']\",\"['Baseball']\",\"US\"\n" .
-		"\"magento\",\"Default Store View\",\"1413745412827209\",\"['http://35.91.150.25/']\",\"3\",\"1\",\"Don't recommend \",\"Unusable after just a couple games. Expected better. Would not recommend.\",\"2025-01-09 19:56:37\",\"Tim Cook\",\"\",\"Baseball\",\"http://35.91.150.25/catalog/product/view/id/12/s/baseball/\",\"['/b/a/baseball.jpg']\",\"['Baseball']\",\"US\"\n" .
-		"\"magento\",\"Default Store View\",\"1413745412827209\",\"['http://35.91.150.25/']\",\"4\",\"4\",\"Overall satisfied\",\"Could have been better but overall satisfied with my purchase.\",\"2025-01-15 23:04:29\",\"Tom Manning\",\"\",\"Baseball\",\"http://35.91.150.25/catalog/product/view/id/12/s/baseball/\",\"['/b/a/baseball.jpg']\",\"['Baseball']\",\"US\"\n";
-
-	/**
 	 * Constructor.
 	 *
 	 * @param string $feed_name The name of the feed.
@@ -70,10 +60,11 @@ class CsvFeedFileWriter implements FeedFileWriter {
 	/**
 	 * Write the feed file.
 	 *
+	 * @param array $data The data to write to the feed file.
 	 * @return void
 	 * @since 3.5.0
 	 */
-	public function write_feed_file() {
+	public function write_feed_file( array $data ): void {
 		try {
 			$this->create_feed_directory();
 			$this->create_files_to_protect_feed_directory();
@@ -81,8 +72,8 @@ class CsvFeedFileWriter implements FeedFileWriter {
 			// Step 1: Prepare the temporary empty feed file with header row.
 			$temp_feed_file = $this->prepare_temporary_feed_file();
 
-			// Step 2: Write products feed into the temporary feed file.
-			$this->write_temp_feed_file();
+			// Step 2: Write feed into the temporary feed file.
+			$this->write_temp_feed_file( $data );
 
 			// Step 3: Rename temporary feed file to final feed file.
 			$this->promote_temp_file();
@@ -101,33 +92,44 @@ class CsvFeedFileWriter implements FeedFileWriter {
 	}
 
 	/**
-	 * Generates the product catalog feed file.
+	 * Generates the feed file.
 	 *
 	 * @throws PluginException If the directory could not be created.
 	 * @since 3.5.0
 	 */
-	public function create_feed_directory() {
-		$directory_created = wp_mkdir_p( $this->get_file_directory() );
+	public function create_feed_directory(): void {
+		$file_directory    = $this->get_file_directory();
+		$directory_created = wp_mkdir_p( $file_directory );
 		if ( ! $directory_created ) {
 			//phpcs:ignore -- Escaping function for translated string not available in this context
-			throw new PluginException( __( 'Could not create product catalog feed directory', 'facebook-for-woocommerce' ), 500 );
+			throw new PluginException( __( "Could not create feed directory at {$file_directory}", 'facebook-for-woocommerce' ), 500 );
 		}
 	}
 
 	/**
 	 * Write the feed data to the temporary feed file.
 	 *
+	 * @param array $data The data to write to the feed file.
 	 * @since 3.5.0
 	 */
-	public function write_temp_feed_file() {
-		/**
-		 * Real implementation would get the necessary objects and turn them into a row to write to feed file.
-		 * For POC, will just write to temp file.
-		 */
-		//phpcs:ignore -- current product feed does not use Wordpress file i/o functions
+	public function write_temp_feed_file( array $data ): void {
+		//phpcs:ignore -- use php file i/o functions
 		$temp_feed_file = fopen( $this->get_temp_file_path(), 'a' );
 		if ( ! empty( $this->get_temp_file_path() ) ) {
-			fwrite( $temp_feed_file, $this->csv_data ); //phpcs:ignore
+			// Turn headers into an array of string accessors
+			$accessors = str_getcsv( $this->header_row );
+			// For each object, turn into a csv row via accessors
+			foreach ( $data as $obj ) {
+				$line = '';
+				foreach ( $accessors as $accessor ) {
+					$val   = $obj[ $accessor ];
+					$line .= "{$val},";
+				}
+
+				$line  = rtrim( $line, ',' );
+				$line .= PHP_EOL;
+				fwrite( $temp_feed_file, $line ); //phpcs:ignore
+			}
 		}
 
 		if ( ! empty( $temp_feed_file ) ) {
@@ -140,7 +142,7 @@ class CsvFeedFileWriter implements FeedFileWriter {
 	 *
 	 * @since 3.5.0
 	 */
-	public function create_files_to_protect_feed_directory() {
+	public function create_files_to_protect_feed_directory(): void {
 		$feed_directory = trailingslashit( $this->get_file_directory() );
 
 		$files = array(
@@ -159,7 +161,7 @@ class CsvFeedFileWriter implements FeedFileWriter {
 		foreach ( $files as $file ) {
 
 			if ( wp_mkdir_p( $file['base'] ) && ! file_exists( trailingslashit( $file['base'] ) . $file['file'] ) ) {
-				// phpcs:ignore -- current product feed does not use Wordpress file i/o functions
+				// phpcs:ignore -- use php file i/o functions
 				$file_handle = @fopen( trailingslashit( $file['base'] ) . $file['file'], 'w' );
 				if ( $file_handle ) {
 					fwrite( $file_handle, $file['content'] ); //phpcs:ignore
@@ -210,7 +212,7 @@ class CsvFeedFileWriter implements FeedFileWriter {
 	 */
 	public function get_file_name(): string {
 		$feed_secret = facebook_for_woocommerce()->feed_manager->get_feed_secret( $this->feed_name );
-		return sprintf( self::FILE_NAME, $this->feed_name, wp_hash( $feed_secret ) );
+		return sprintf( self::FILE_NAME, $this->feed_name, $feed_secret );
 	}
 
 	/**
@@ -233,26 +235,26 @@ class CsvFeedFileWriter implements FeedFileWriter {
 	 */
 	public function prepare_temporary_feed_file() {
 		$temp_file_path = $this->get_temp_file_path();
-		//phpcs:ignore -- current product feed does not use Wordpress file i/o functions
+		//phpcs:ignore -- use php file i/o functions
 		$temp_feed_file = @fopen( $temp_file_path, 'w' );
 
 		// Check if we can open the temporary feed file.
 		// phpcs:ignore
 		if ( false === $temp_feed_file || ! is_writable( $temp_file_path ) ) {
 			// phpcs:ignore -- Escaping function for translated string not available in this context
-			throw new PluginException( __( 'Could not open feed file for writing.', 'facebook-for-woocommerce' ), 500 );
+			throw new PluginException( __( "Could not open file {$temp_file_path} for writing.", 'facebook-for-woocommerce' ), 500 );
 		}
 
 		$file_path = $this->get_file_path();
 
 		// Check if we will be able to write to the final feed file.
-		//phpcs:ignore -- current product feed does not use Wordpress file i/o functions
+		//phpcs:ignore -- use php file i/o functions
 		if ( file_exists( $file_path ) && ! is_writable( $file_path ) ) {
 			// phpcs:ignore -- Escaping function for translated string not available in this context
-			throw new PluginException( __( 'Could not open the product catalog feed file for writing', 'facebook-for-woocommerce' ), 500 );
+			throw new PluginException( __( "Could not open file {$file_path} for writing.", 'facebook-for-woocommerce' ), 500 );
 		}
 
-		//phpcs:ignore -- current product feed does not use Wordpress file i/o functions
+		//phpcs:ignore -- use php file i/o functions
 		fwrite( $temp_feed_file, $this->header_row);
 		return $temp_feed_file;
 	}
@@ -264,17 +266,17 @@ class CsvFeedFileWriter implements FeedFileWriter {
 	 * @since 3.5.0
 	 * @throws PluginException If the temporary feed file could not be renamed.
 	 */
-	public function promote_temp_file() {
+	public function promote_temp_file(): void {
 		$file_path      = $this->get_file_path();
 		$temp_file_path = $this->get_temp_file_path();
 		if ( ! empty( $temp_file_path ) && ! empty( $file_path ) ) {
 
-			// phpcs:ignore -- current product feed does not use Wordpress file i/o functions
+			// phpcs:ignore -- use php file i/o functions
 			$renamed = rename( $temp_file_path, $file_path );
 
 			if ( empty( $renamed ) ) {
 				// phpcs:ignore -- Escaping function for translated string not available in this context
-				throw new PluginException( __( 'Could not rename the product catalog feed file', 'facebook-for-woocommerce' ), 500 );
+				throw new PluginException( __( "Could not promote temp file: {$temp_file_path}", 'facebook-for-woocommerce' ), 500 );
 			}
 		}
 	}
