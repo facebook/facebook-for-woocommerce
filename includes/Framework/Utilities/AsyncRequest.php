@@ -35,16 +35,6 @@ abstract class AsyncRequest {
 	/** @var array request data */
 	protected $data = [];
 
-	/** @var array query arguments */
-	protected $query_args;
-
-	/** @var string query URL */
-	protected $query_url;
-
-	/** @var array request arguments */
-	protected $request_args;
-
-
 	/**
 	 * Initiate a new async request
 	 *
