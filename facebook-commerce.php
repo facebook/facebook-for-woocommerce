@@ -2435,17 +2435,6 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 	}
 
 	/**
-	 * Retrieve the commerce partner integration ID used in GraphPartnerIntegrationFileUpdatePost call
-	 * Hard coded for now. Update once Mice settings are available.
-	 *
-	 * @return string
-	 * @since 3.5.0
-	 */
-	public function get_commerce_partner_integration_id(): string {
-		return '24316596247984028';
-	}
-
-	/**
 	 * Gets the IDs of the categories to be excluded from sync.
 	 *
 	 * @since 1.10.0

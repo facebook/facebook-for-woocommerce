@@ -110,6 +110,8 @@ abstract class AbstractFeed {
 
 	/**
 	 * Regenerates the example feed based on the defined schedule.
+	 * New style feed will use the FeedGenerator to queue the feed generation. Use for batched feed generation.
+	 * Old style feed will use the FeedHandler to generate the feed file. Use if batch not needed or new style not enabled.
 	 *
 	 * @since 3.5.0
 	 */
@@ -138,7 +140,7 @@ abstract class AbstractFeed {
 		);
 
 		try {
-			$cpi_id = \WC_Facebookcommerce::instance()->get_integration()->get_commerce_partner_integration_id();
+			$cpi_id = get_option( 'wc_facebook_commerce_partner_integration_id', '' );
 			facebook_for_woocommerce()->
 				get_api()->
 				create_common_data_feed_upload( $cpi_id, $data );
@@ -212,7 +214,6 @@ abstract class AbstractFeed {
 
 			// bail early if the file can't be read.
 			if ( ! is_readable( $file_path ) ) {
-
 				throw new PluginException( "{$name}: File at path ' . $file_path . ' is not readable.", 404 );
 			}
 
