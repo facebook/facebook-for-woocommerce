@@ -28,41 +28,62 @@ use WooCommerce\Facebook\Jobs\AbstractChainedJob;
  */
 class FeedGenerator extends AbstractChainedJob {
 	/**
-	 * The feed handler instance for the given feed.
+	 * The feed writer instance for the given feed.
 	 *
-	 * @var FeedHandler
+	 * @var FeedFileWriter
 	 * @since 3.5.0
 	 */
-	protected FeedHandler $feed_handler;
+	protected FeedFileWriter $feed_writer;
+
+	/**
+	 * The name of the data feed.
+	 *
+	 * @var string
+	 * @since 3.5.0
+	 */
+	protected string $feed_name;
 
 	/**
 	 * FeedGenerator constructor.
 	 *
 	 * @param ActionSchedulerInterface $action_scheduler The action scheduler instance.
-	 * @param FeedHandler              $feed_handler The feed handler instance.
+	 * @param FeedFileWriter           $feed_writer The feed handler instance.
+	 * @param string                   $feed_name The name of the feed.
 	 * @since 3.5.0
 	 */
-	public function __construct( ActionSchedulerInterface $action_scheduler, FeedHandler $feed_handler ) {
+	public function __construct( ActionSchedulerInterface $action_scheduler, FeedFileWriter $feed_writer, string $feed_name ) {
 		parent::__construct( $action_scheduler );
-		$this->feed_handler = $feed_handler;
+		$this->feed_writer = $feed_writer;
+		$this->feed_name   = $feed_name;
 	}
 
 	/**
-	 * Called before starting the job.
-	 * Override for specific data stream.
+	 * Handles the start of the feed generation process.
 	 *
+	 * @inheritdoc
 	 * @since 3.5.0
 	 */
-	protected function handle_start() {
+	protected function handle_start(): void {
+		// Create directory if not available and then the files to protect the directory.
+		$this->feed_writer->create_files_to_protect_feed_directory();
+		$this->feed_writer->prepare_temporary_feed_file();
 	}
 
 	/**
-	 * Called after the finishing the job.
-	 * Override for specific data stream.
+	 * Handles the end of the feed generation process.
 	 *
+	 * @inheritdoc
 	 * @since 3.5.0
 	 */
-	protected function handle_end() {
+	protected function handle_end(): void {
+		$this->feed_writer->promote_temp_file();
+
+		/**
+		 * Trigger upload from ExampleFeed instance
+		 *
+		 * @since 3.5.0
+		 */
+		do_action( AbstractFeed::FEED_GEN_COMPLETE_ACTION . $this->feed_name );
 	}
 
 	/**
@@ -84,11 +105,13 @@ class FeedGenerator extends AbstractChainedJob {
 	/**
 	 * Processes a batch of items.
 	 *
-	 * @param array $items The items of the current batch, probably compiled as an object.
-	 * @param array $args The args for the job.
+	 * @param array $items The items to process.
+	 * @param array $args Additional arguments.
+	 * @inheritdoc
 	 * @since 3.5.0
 	 */
-	protected function process_items( array $items, array $args ) {
+	protected function process_items( array $items, array $args ): void {
+		$this->feed_writer->write_temp_feed_file( $items );
 	}
 
 	/**
@@ -109,7 +132,7 @@ class FeedGenerator extends AbstractChainedJob {
 	 * @since 3.5.0
 	 */
 	public function get_name(): string {
-		return '';
+		return $this->feed_name . '_feed_generator';
 	}
 
 	/**
@@ -129,6 +152,6 @@ class FeedGenerator extends AbstractChainedJob {
 	 * @since 3.5.0
 	 */
 	protected function get_batch_size(): int {
-		return -1;
+		return 1;
 	}
 }

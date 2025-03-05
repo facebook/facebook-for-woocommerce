@@ -44,7 +44,7 @@ class ExampleFeed extends AbstractFeed {
 
 		$this->feed_handler   = new ExampleFeedHandler( new CsvFeedFileWriter( $this->data_stream_name, self::EXAMPLE_FEED_HEADER ) );
 		$scheduler            = new ActionScheduler();
-		$this->feed_generator = new ExampleFeedGenerator( $scheduler, $this->feed_handler );
+		$this->feed_generator = new ExampleFeedGenerator( $scheduler, $this->feed_handler->get_feed_writer(), $this->data_stream_name );
 		$this->feed_generator->init();
 		$this->add_hooks( Heartbeat::HOURLY );
 	}
