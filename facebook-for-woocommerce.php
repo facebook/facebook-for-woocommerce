@@ -377,6 +377,7 @@ class WC_Facebook_Loader {
 		}
 
 		// $label_name = get_transient( 'test_data' );
+	}
 }
 
 // fire it up!
