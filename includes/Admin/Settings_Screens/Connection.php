@@ -27,9 +27,9 @@ class Connection extends Abstract_Settings_Screen {
 	/**
 	 * Determines if we should use enhanced onboarding.
 	 *
+	 * @return bool
 	 * @since 2.0.0
 	 *
-	 * @return bool
 	 */
 	protected function use_enhanced_onboarding() {
 		return facebook_for_woocommerce()->get_integration()->use_enhanced_onboarding();
@@ -47,6 +47,12 @@ class Connection extends Abstract_Settings_Screen {
 
 		// Add action to enqueue the message handler script
 		add_action( 'admin_footer', array( $this, 'render_message_handler' ) );
+
+		add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_admin_scripts' ) );
+	}
+
+	public function enqueue_admin_scripts() {
+		wp_enqueue_script( 'wp-api' );
 	}
 
 	/**
@@ -72,7 +78,7 @@ class Connection extends Abstract_Settings_Screen {
 		if ( get_transient( 'wc_facebook_connection_failed' ) ) {
 
 			$message = sprintf(
-				/* translators: Placeholders: %1$s - <strong> tag, %2$s - </strong> tag, %3$s - <a> tag, %4$s - </a> tag, %5$s - <a> tag, %6$s - </a> tag */
+			/* translators: Placeholders: %1$s - <strong> tag, %2$s - </strong> tag, %3$s - <a> tag, %4$s - </a> tag, %5$s - <a> tag, %6$s - </a> tag */
 				__( '%1$sHeads up!%2$s It looks like there was a problem with reconnecting your site to Facebook. Please %3$sclick here%4$s to try again, or %5$sget in touch with our support team%6$s for assistance.', 'facebook-for-woocommerce' ),
 				'<strong>',
 				'</strong>',
@@ -121,6 +127,7 @@ class Connection extends Abstract_Settings_Screen {
 		// Check if we should render iframe
 		if ( $this->use_enhanced_onboarding() ) {
 			$this->render_facebook_iframe();
+
 			return;
 		}
 
@@ -208,58 +215,58 @@ class Connection extends Abstract_Settings_Screen {
 		<table class="form-table">
 			<tbody>
 
-				<?php
-				foreach ( $static_items as $id => $item ) :
+			<?php
+			foreach ( $static_items as $id => $item ) :
 
-					$item = wp_parse_args(
-						$item,
-						array(
-							'label' => '',
-							'value' => '',
-							'url'   => '',
-						)
-					);
+				$item = wp_parse_args(
+					$item,
+					array(
+						'label' => '',
+						'value' => '',
+						'url'   => '',
+					)
+				);
 
-					?>
+				?>
 
-					<tr valign="top" class="wc-facebook-connected-<?php echo esc_attr( $id ); ?>">
+				<tr valign="top" class="wc-facebook-connected-<?php echo esc_attr( $id ); ?>">
 
-						<th scope="row" class="titledesc">
-							<?php echo esc_html( $item['label'] ); ?>
-						</th>
+					<th scope="row" class="titledesc">
+						<?php echo esc_html( $item['label'] ); ?>
+					</th>
 
-						<td class="forminp">
+					<td class="forminp">
 
-							<?php if ( $item['url'] ) : ?>
+						<?php if ( $item['url'] ) : ?>
 
-								<a href="<?php echo esc_url( $item['url'] ); ?>" target="_blank">
-
-									<?php echo esc_html( $item['value'] ); ?>
-
-									<span
-										class="dashicons dashicons-external"
-										style="margin-right: 8px; vertical-align: bottom; text-decoration: none;"></span>
-
-								</a>
-
-							<?php elseif ( is_numeric( $item['value'] ) ) : ?>
-
-								<code><?php echo esc_html( $item['value'] ); ?></code>
-
-							<?php elseif ( ! empty( $item['value'] ) ) : ?>
+							<a href="<?php echo esc_url( $item['url'] ); ?>" target="_blank">
 
 								<?php echo esc_html( $item['value'] ); ?>
 
-							<?php else : ?>
+								<span
+									class="dashicons dashicons-external"
+									style="margin-right: 8px; vertical-align: bottom; text-decoration: none;"></span>
 
-								<?php echo '-'; ?>
+							</a>
 
-							<?php endif; ?>
+						<?php elseif ( is_numeric( $item['value'] ) ) : ?>
 
-						</td>
-					</tr>
+							<code><?php echo esc_html( $item['value'] ); ?></code>
 
-				<?php endforeach; ?>
+						<?php elseif ( ! empty( $item['value'] ) ) : ?>
+
+							<?php echo esc_html( $item['value'] ); ?>
+
+						<?php else : ?>
+
+							<?php echo '-'; ?>
+
+						<?php endif; ?>
+
+					</td>
+				</tr>
+
+			<?php endforeach; ?>
 
 			</tbody>
 		</table>
@@ -311,9 +318,10 @@ class Connection extends Abstract_Settings_Screen {
 	/**
 	 * Renders the legacy Facebook CTA box.
 	 *
+	 * @param bool $is_connected whether the plugin is connected
+	 *
 	 * @since 2.0.0
 	 *
-	 * @param bool $is_connected whether the plugin is connected
 	 */
 	private function render_facebook_box( $is_connected ) {
 		if ( $is_connected ) {
@@ -341,7 +349,8 @@ class Connection extends Abstract_Settings_Screen {
 			</ul>
 			<div class="actions">
 				<?php if ( $is_connected ) : ?>
-					<a href="<?php echo esc_url( facebook_for_woocommerce()->get_connection_handler()->get_disconnect_url() ); ?>" class="button button-primary uninstall" onclick="return confirmDialog();">
+					<a href="<?php echo esc_url( facebook_for_woocommerce()->get_connection_handler()->get_disconnect_url() ); ?>"
+					   class="button button-primary uninstall" onclick="return confirmDialog();">
 						<?php esc_html_e( 'Disconnect', 'facebook-for-woocommerce' ); ?>
 					</a>
 					<script>
@@ -350,7 +359,8 @@ class Connection extends Abstract_Settings_Screen {
 						}
 					</script>
 				<?php else : ?>
-					<a href="<?php echo esc_url( facebook_for_woocommerce()->get_connection_handler()->get_connect_url() ); ?>" class="button button-primary">
+					<a href="<?php echo esc_url( facebook_for_woocommerce()->get_connection_handler()->get_connect_url() ); ?>"
+					   class="button button-primary">
 						<?php esc_html_e( 'Get Started', 'facebook-for-woocommerce' ); ?>
 					</a>
 				<?php endif; ?>
@@ -377,7 +387,11 @@ class Connection extends Abstract_Settings_Screen {
 		}
 		?>
 		<script type="text/javascript">
-			window.addEventListener('message', function(event) {
+			document.addEventListener('DOMContentLoaded', () => {
+				console.log('update_fb_settings url: ' + wpApiSettings.root + 'wc-facebook/v1/update_fb_settings');
+				// rest of your code...
+			});
+			window.addEventListener('message', function (event) {
 				const message = event.data;
 				const messageEvent = message.event;
 
@@ -397,7 +411,7 @@ class Connection extends Abstract_Settings_Screen {
 						installed_features: message.installed_features
 					};
 
-					fetch('/wp-json/wc-facebook/v1/update_fb_settings', {
+					fetch(wpApiSettings.root + 'wc-facebook/v1/update_fb_settings', {
 						method: 'POST',
 						credentials: 'same-origin',
 						headers: {
@@ -406,17 +420,17 @@ class Connection extends Abstract_Settings_Screen {
 						},
 						body: JSON.stringify(requestBody)
 					})
-					.then(response => response.json())
-					.then(data => {
-						if (data.success) {
-							window.location.reload();
-						} else {
-							console.error('Error updating Facebook settings:', data);
-						}
-					})
-					.catch(error => {
-						console.error('Error during settings update:', error);
-					});
+						.then(response => response.json())
+						.then(data => {
+							if (data.success) {
+								window.location.reload();
+							} else {
+								console.error('Error updating Facebook settings:', data);
+							}
+						})
+						.catch(error => {
+							console.error('Error during settings update:', error);
+						});
 				}
 
 				if (messageEvent === 'CommerceExtension::RESIZE') {
@@ -427,7 +441,7 @@ class Connection extends Abstract_Settings_Screen {
 				}
 
 				if (messageEvent === 'CommerceExtension::UNINSTALL') {
-					fetch('/wp-json/wc-facebook/v1/uninstall', {
+					fetch(wpApiSettings.root + 'wc-facebook/v1/uninstall', {
 						method: 'POST',
 						credentials: 'same-origin',
 						headers: {
@@ -435,16 +449,16 @@ class Connection extends Abstract_Settings_Screen {
 							'X-WP-Nonce': '<?php echo esc_js( wp_create_nonce( 'wp_rest' ) ); ?>'
 						}
 					})
-					.then(response => response.json())
-					.then(data => {
-						if (data.success) {
+						.then(response => response.json())
+						.then(data => {
+							if (data.success) {
+								window.location.reload();
+							}
+						})
+						.catch(error => {
+							console.error('Error during uninstall:', error);
 							window.location.reload();
-						}
-					})
-					.catch(error => {
-						console.error('Error during uninstall:', error);
-						window.location.reload();
-					});
+						});
 				}
 			}, false);
 		</script>
@@ -455,9 +469,9 @@ class Connection extends Abstract_Settings_Screen {
 	/**
 	 * Gets the screen settings.
 	 *
+	 * @return array
 	 * @since 2.0.0
 	 *
-	 * @return array
 	 */
 	public function get_settings() {
 
