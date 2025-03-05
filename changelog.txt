@@ -1,5 +1,10 @@
 *** Facebook for WooCommerce Changelog ***
 
+= 3.4.2 - 2025-03-05 =
+* Add - Update the readme.md file and added notification for ownership transfer #2910 & #2916
+* Dev - Items batch request and response tests by @nrostrow-meta in #2917
+* Dev - Improvements to phpcs by @sol-loup in #2897 & #2901
+
 = 3.4.1 - 2025-02-27 = 
 * Tweak - Removed custom field definitions by @devbodaghe in #2876
 * Dev - Improved readability of function prepare_product() in fbproduct.php by @mshymon in #2889
