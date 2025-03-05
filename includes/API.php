@@ -103,36 +103,6 @@ class API extends Base {
 	}
 
 	/**
-	 * Using this to perform a hard coded API request for proof of concept
-	 * Current use case: hitting GraphPartnerIntegrationFileUpdatePost with a Magento Store for POC
-	 * Consider keeping: For testing, good to have the ability to hit an API from local without configuring new shop and getting permissions for each dev
-	 * @param $request
-	 * @param $access_token
-	 * @return Response
-	 * @throws Framework\Plugin\Exception
-	 * @throws Request_Limit_Reached
-	 */
-	private function perform_stub_request($request, $access_token) : API\Response {
-		$current_token = $this->get_access_token();
-		$this->set_access_token( $access_token );
-		$this->request_headers['Authorization'] = "Bearer {$access_token}";
-
-		$rate_limit_id   = $request::get_rate_limit_id();
-		$delay_timestamp = $this->get_rate_limit_delay( $rate_limit_id );
-		// if there is a delayed timestamp in the future, throw an exception
-		if ( $delay_timestamp >= time() ) {
-			$this->handle_throttled_request( $rate_limit_id, $delay_timestamp );
-		} else {
-			$this->set_rate_limit_delay( $rate_limit_id, 0 );
-		}
-		$response =  parent::perform_request( $request );
-		$this->set_access_token( $current_token );
-		$this->request_headers['Authorization'] = "Bearer {$current_token}";
-		return $response;
-	}
-
-
-	/**
 	 * Validates a response after it has been parsed and instantiated.
 	 *
 	 * Throws an exception if a rate limit or general API error is included in the response.
@@ -576,7 +546,7 @@ class API extends Base {
 	 * @throws ApiException
 	 * @throws API\Exceptions\Request_Limit_Reached
 	 */
-	public function create_product_feed_upload( string $product_feed_id, array $data ) {
+	public function create_product_feed_upload( string $product_feed_id, array $data ): Response {
 		$request = new API\ProductCatalog\ProductFeedUploads\Create\Request( $product_feed_id, $data );
 		$this->set_response_handler( API\ProductCatalog\ProductFeedUploads\Create\Response::class );
 		return $this->perform_request( $request );
@@ -593,8 +563,7 @@ class API extends Base {
 	public function create_common_data_feed_upload( string $cpi_id, array $data ): Response {
 		$request = new API\CommonFeedUploads\Create\Request( $cpi_id, $data );
 		$this->set_response_handler( API\CommonFeedUploads\Create\Response::class );
-		// For POC testing, use perform_stub_request with auth token of shop that can hit the endpoint
-		return $this->perform_stub_request( $request, 'EAACxonUmtyIBO4FIt1wXKF511sXHIbsWeWMUZB2qyaaQksZBqTvp44qpyEYjwrXJGSaZC0aizYyCKlFmbbOlFsbbpZBgybXm4gNVNzGfyx1ZARsiOprMrQe3GB9euDXl1LqBXZA5ZCA7TZCHVGDRQeAlTuWMZCgfCk3MwfniG0c85fW12LOXUCRZBGHkgwPpy2ona5R8Bv89OMKjMEV9oABfXiNMVOKwZDZD' );
+		return $this->perform_request( $request );
 	}
 
 

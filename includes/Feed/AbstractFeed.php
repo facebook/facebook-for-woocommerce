@@ -20,7 +20,6 @@ defined( 'ABSPATH' ) || exit;
  * Abstract class AbstractFeed
  *
  * Provides the base functionality for handling Metadata feed requests and generation for Facebook integration.
- * This class defines the structure and common methods that must be implemented by any concrete feed class.
  *
  * @package WooCommerce\Facebook\Feed
  * @since 3.5.0
@@ -94,8 +93,6 @@ abstract class AbstractFeed {
 	/**
 	 * Schedules the recurring feed generation.
 	 *
-	 * This method must be implemented by the concrete feed class, usually by providing a recurring interval
-	 *
 	 * @since 3.5.0
 	 */
 	public function schedule_feed_generation(): void {
@@ -128,7 +125,7 @@ abstract class AbstractFeed {
 	/**
 	 * Trigger the upload flow
 	 * Once feed regenerated, trigger upload via create_upload API
-	 * This will hit the url defined in the class and trigger the handle streaming file
+	 * This will hit the url defined in the class and trigger handle_feed_data_request
 	 *
 	 * @since 3.5.0
 	 */
@@ -178,14 +175,13 @@ abstract class AbstractFeed {
 	 * @return string
 	 */
 	public function get_feed_secret(): string {
-/*		$secret = get_option( $this->feed_url_secret_option_name, '' );
+		$secret = get_option( $this->feed_url_secret_option_name, '' );
 		if ( ! $secret ) {
 			$secret = wp_hash( 'example-feed-' . time() );
 			update_option( $this->feed_url_secret_option_name, $secret );
 		}
 
-		return $secret;*/
-		return 'secret';
+		return $secret;
 	}
 
 	/**

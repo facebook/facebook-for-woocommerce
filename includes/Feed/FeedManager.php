@@ -13,12 +13,11 @@ namespace WooCommerce\Facebook\Feed;
 /**
  * Responsible for creating and managing feeds.
  * Global manipulations of the feed such as updating feed and upload ID to be made through this class.
+ * Add feed type names as constant strings here.
  *
  * @since 3.5.0
  */
 class FeedManager {
-	const EXAMPLE = 'example';
-
 	/**
 	 * The list of feed types as named strings.
 	 *
@@ -53,17 +52,13 @@ class FeedManager {
 	 *
 	 * @param string $data_stream_name The name of the data stream.
 	 *
+	 * phpcs:ignore -- Method to be implemented when new feed types are added.
 	 * @return AbstractFeed The created feed instance derived from AbstractFeed.
 	 * @throws \InvalidArgumentException If the data stream doesn't correspond to a FeedType.
 	 * @since 3.5.0
 	 */
 	private function create_feed( string $data_stream_name ): AbstractFeed {
-		switch ( $data_stream_name ) {
-			case self::EXAMPLE:
-				return new ExampleFeed();
-			default:
-				throw new \InvalidArgumentException( 'Invalid data stream name' );
-		}
+		throw new \InvalidArgumentException( "Invalid feed type {$data_stream_name}" );
 	}
 
 	/**
@@ -73,7 +68,7 @@ class FeedManager {
 	 * @since 3.5.0
 	 */
 	public static function get_feed_types(): array {
-		return array( self::EXAMPLE );
+		return array();
 	}
 
 	/**
