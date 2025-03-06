@@ -870,7 +870,7 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 			$woo_product->set_description( sanitize_text_field( wp_unslash( $_POST[ self::FB_PRODUCT_DESCRIPTION ] ) ) );
 			$woo_product->set_rich_text_description( $_POST[ self::FB_PRODUCT_DESCRIPTION ] );
 		}
-		
+
 		if ( isset( $_POST[ WC_Facebook_Product::FB_PRODUCT_PRICE ] ) ) {
 			$woo_product->set_price( sanitize_text_field( wp_unslash( $_POST[ WC_Facebook_Product::FB_PRODUCT_PRICE ] ) ) );
 		}

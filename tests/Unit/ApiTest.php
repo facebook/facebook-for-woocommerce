@@ -772,7 +772,38 @@ class ApiTest extends WP_UnitTestCase {
 		};
 		add_filter( 'pre_http_request', $response, 10, 3 );
 
-		$response = $this->api->create_upload( $product_feed_id, $data );
+		$response = $this->api->create_product_feed_upload( $product_feed_id, $data );
+		$this->assertFalse( $response->has_api_error() );
+	}
+
+	/**
+	 * Tests create common upload feed request to Facebook.
+	 *
+	 * @return void
+	 * @throws ApiException In case of network request error.
+	 */
+	public function test_create_common_upload_request() {
+		$cpi = '24316596247984028';
+
+		$data = array(
+			'url'         => 'http://example.com/?wc-api=wc_facebook_get_feed_data_example&secret=c4b8c3c46145aac6519e3f8a28bc86f2',
+			'feed_type'   => 'PRODUCT_RATINGS_AND_REVIEWS',
+			'update_type' => 'CREATE',
+		);
+
+		$response = function( $result, $parsed_args, $url ) use ( $cpi ) {
+			$this->assertEquals( 'POST', $parsed_args['method'] );
+			$this->assertEquals( "{$this->endpoint}{$this->version}/{$cpi}/file_update", $url );
+			return [
+				'response' => [
+					'code'    => 200,
+					'message' => 'OK',
+				],
+			];
+		};
+		add_filter( 'pre_http_request', $response, 10, 3 );
+
+		$response = $this->api->create_common_data_feed_upload( $cpi, $data );
 		$this->assertFalse( $response->has_api_error() );
 	}
 }
