@@ -9,11 +9,6 @@
 	margin-bottom: 20px;
 }
 
-#facebook-commerce-iframe {
-	width: 100%;
-	min-height: calc(100vh - 200px);
-}
-
 #wc-facebook-connection-box .logo {
 	width: 40px;
 	height: 40px;

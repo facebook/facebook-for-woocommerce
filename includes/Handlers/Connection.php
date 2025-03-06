@@ -951,7 +951,7 @@ class Connection {
 	/**
 	 * Gets the configured timezone string using values accepted by Facebook
 	 *
-	 * @since 2.0.0
+	 * @since 2.5.0
 	 *
 	 * @return string
 	 */
