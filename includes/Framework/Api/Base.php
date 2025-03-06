@@ -79,10 +79,6 @@ abstract class Base {
 		$this->request = $request;
 		$start_time    = microtime( true );
 
-		// If this API requires TLS v1.2, force it.
-		if ( $this->require_tls_1_2() ) {
-			add_action( 'http_api_curl', array( $this, 'set_tls_1_2_request' ), 10, 3 );
-		}
 		// Perform the request.
 		$response = $this->do_remote_request( $this->get_request_uri(), $this->get_request_args() );
 		// Calculate request duration.
