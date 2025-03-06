@@ -1,21 +1,8 @@
 name: PHP Unit Tests
 
 on:
-  push:
-    branches:
-      - trunk
-      - develop
-    paths:
-      - "**.php"
-      - composer.json
-      - composer.lock
-      - .github/workflows/php-unit-tests.yml
-  pull_request:
-    paths:
-      - "**.php"
-      - composer.json
-      - composer.lock
-      - .github/workflows/php-unit-tests.yml
+  pull_request: { }
+  # run on all PRs
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -30,9 +17,9 @@ jobs:
       WP_TESTS_DIR: "/tmp/wordpress/tests/phpunit"
     strategy:
       matrix:
-        php: [7.4, 8.3]
-        wp-version: [latest]
-        wc-version: [latest]
+        php: [ 7.4, 8.3 ]
+        wp-version: [ latest ]
+        wc-version: [ latest ]
 
     steps:
       - name: Install SVN
