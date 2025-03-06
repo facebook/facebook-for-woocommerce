@@ -29,7 +29,6 @@ class Connection extends Abstract_Settings_Screen {
 	 *
 	 * @return bool
 	 * @since 2.0.0
-	 *
 	 */
 	protected function use_enhanced_onboarding() {
 		return facebook_for_woocommerce()->get_integration()->use_enhanced_onboarding();
@@ -51,8 +50,15 @@ class Connection extends Abstract_Settings_Screen {
 		add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_admin_scripts' ) );
 	}
 
+	/**
+	 * Enqueues the wp-api script only on the connection settings page.
+	 *
+	 * @since 2.0.0
+	 */
 	public function enqueue_admin_scripts() {
-		wp_enqueue_script( 'wp-api' );
+		if ( $this->is_current_screen_page() ) {
+			wp_enqueue_script( 'wp-api' );
+		}
 	}
 
 	/**
@@ -321,7 +327,6 @@ class Connection extends Abstract_Settings_Screen {
 	 * @param bool $is_connected whether the plugin is connected
 	 *
 	 * @since 2.0.0
-	 *
 	 */
 	private function render_facebook_box( $is_connected ) {
 		if ( $is_connected ) {
@@ -350,7 +355,7 @@ class Connection extends Abstract_Settings_Screen {
 			<div class="actions">
 				<?php if ( $is_connected ) : ?>
 					<a href="<?php echo esc_url( facebook_for_woocommerce()->get_connection_handler()->get_disconnect_url() ); ?>"
-					   class="button button-primary uninstall" onclick="return confirmDialog();">
+						class="button button-primary uninstall" onclick="return confirmDialog();">
 						<?php esc_html_e( 'Disconnect', 'facebook-for-woocommerce' ); ?>
 					</a>
 					<script>
@@ -360,7 +365,7 @@ class Connection extends Abstract_Settings_Screen {
 					</script>
 				<?php else : ?>
 					<a href="<?php echo esc_url( facebook_for_woocommerce()->get_connection_handler()->get_connect_url() ); ?>"
-					   class="button button-primary">
+						class="button button-primary">
 						<?php esc_html_e( 'Get Started', 'facebook-for-woocommerce' ); ?>
 					</a>
 				<?php endif; ?>
@@ -387,10 +392,6 @@ class Connection extends Abstract_Settings_Screen {
 		}
 		?>
 		<script type="text/javascript">
-			document.addEventListener('DOMContentLoaded', () => {
-				console.log('update_fb_settings url: ' + wpApiSettings.root + 'wc-facebook/v1/update_fb_settings');
-				// rest of your code...
-			});
 			window.addEventListener('message', function (event) {
 				const message = event.data;
 				const messageEvent = message.event;
@@ -471,7 +472,6 @@ class Connection extends Abstract_Settings_Screen {
 	 *
 	 * @return array
 	 * @since 2.0.0
-	 *
 	 */
 	public function get_settings() {
 

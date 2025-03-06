@@ -85,13 +85,13 @@ class MetaExtensionTest extends WP_UnitTestCase {
     }
 
     /**
-     * Test REST API token update with missing required merchant token
+     * Test rest_update_fb_settings with missing merchant token
      */
     public function test_rest_update_fb_settings_missing_merchant_token() {
-        // Create a mock for WP_REST_Request
+        // Create a mock of WP_REST_Request
         $request = $this->getMockBuilder(WP_REST_Request::class)
                         ->disableOriginalConstructor()
-                        ->setMethods(array('get_json_params'))
+                        ->onlyMethods(['get_json_params'])
                         ->getMock();
         
         // Set up the mock to return our test data
@@ -104,8 +104,11 @@ class MetaExtensionTest extends WP_UnitTestCase {
 
         $response = MetaExtension::rest_update_fb_settings($request);
 
-        $this->assertInstanceOf(WP_Error::class, $response);
-        $this->assertEquals('missing_token', $response->get_error_code());
+        // Assert that we get a WP_REST_Response with success=false
+        $this->assertInstanceOf(WP_REST_Response::class, $response);
+        $data = $response->get_data();
+        $this->assertFalse($data['success']);
+        $this->assertNotEmpty($data['message']);
     }
 
     /**

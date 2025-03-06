@@ -92,21 +92,22 @@ class ConnectionTest extends TestCase {
     }
 
     /**
-     * Test that render_message_handler generates correct JavaScript
+     * Test that render_message_handler outputs the expected JavaScript
      */
     public function test_render_message_handler() {
-        // Mock is_current_screen_page to return true
+        // Create a mock of the Connection class
         $connection_mock = $this->getMockBuilder(Connection::class)
             ->onlyMethods(['is_current_screen_page', 'use_enhanced_onboarding'])
             ->getMock();
-        
+
+        // Configure the mock to return true for is_current_screen_page
         $connection_mock->method('is_current_screen_page')
             ->willReturn(true);
             
+        // Configure the mock to return true for use_enhanced_onboarding
         $connection_mock->method('use_enhanced_onboarding')
             ->willReturn(true);
-
-        // Start output buffering
+        
         ob_start();
         
         // Call the method
@@ -120,8 +121,8 @@ class ConnectionTest extends TestCase {
         $this->assertStringContainsString('CommerceExtension::RESIZE', $output);
         $this->assertStringContainsString('CommerceExtension::UNINSTALL', $output);
         
-        // Assert fetch request setup
-        $this->assertStringContainsString('fetch(\'/wp-json/wc-facebook/v1/update_fb_settings\'', $output);
+        // Assert fetch request setup - check for wpApiSettings.root instead of hardcoded path
+        $this->assertStringContainsString('fetch(wpApiSettings.root + \'wc-facebook/v1/update_fb_settings\'', $output);
         $this->assertStringContainsString('method: \'POST\'', $output);
         $this->assertStringContainsString('credentials: \'same-origin\'', $output);
     }
