@@ -12,6 +12,7 @@ namespace WooCommerce\Facebook\Admin;
 
 use WooCommerce\Facebook\Framework\Helper;
 use WooCommerce\Facebook\Framework\Plugin\Exception as PluginException;
+use WC_Facebookcommerce_Utils;
 
 defined( 'ABSPATH' ) || exit;
 
@@ -114,6 +115,7 @@ abstract class Abstract_Settings_Screen {
 	 */
 	public function save() {
 		woocommerce_update_options( $this->get_settings() );
+		WC_Facebookcommerce_Utils::logTelemetryToMeta( 'Save changes' );
 	}
 
 

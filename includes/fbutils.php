@@ -884,10 +884,11 @@ if ( ! class_exists( 'WC_Facebookcommerce_Utils' ) ) :
 			 * catalog_id, order_id, promotion_id, flow_name, flow_step, extra_data and etc.
 			 */
 			
-			// TODO: Implement push logging request to global message queue function.
-			$response = null;
-			
-			 return $response;
+			// Push logging request to global message queue function.
+			$context['extra_data'] = ['message' => $message];
+			$logs = get_transient( 'global_telemetry_message_queue' );
+			$logs[] = $context;
+			set_transient( 'global_telemetry_message_queue', $logs, HOUR_IN_SECONDS );
 		}
 
 	}

@@ -92,7 +92,7 @@ class WC_Facebook_Loader {
 
 		add_filter( 'cron_schedules', array( $this, 'minute_cron_schedules' ) );
 
-		add_action( 'my_minute_event', array( $this, 'process_telemetry_logs_batch' ) );
+		add_action( 'telemetry_logs_cron_handler', array( $this, 'process_telemetry_logs_batch' ) );
 
 		add_action( 'admin_init', array( $this, 'check_environment' ) );
 
@@ -200,21 +200,9 @@ class WC_Facebook_Loader {
 	 * @since 1.10.0
 	 */
 	public function check_environment() {
-		// if ( get_transient( 'global_telemetry_message_queue_test' ) === false ) {
-		// 	set_transient( 'global_telemetry_message_queue_test', [], HOUR_IN_SECONDS );
-		// } else {
-		// 	$logs = get_transient( 'global_telemetry_message_queue_test' );
-		// 	$logs[] = 'test';
-		// 	set_transient( 'global_telemetry_message_queue_test', $logs, HOUR_IN_SECONDS );
-		// }
-
-		// wp_clear_scheduled_hook( 'my_minute_event' );
-		wp_schedule_event( time(), 'hourly', 'my_minute_event');
-		// wp_die( print_r( $scheduled, true ) );
-		// // if ( ! wp_next_scheduled( 'my_minute_event' ) ) {
-		// 	wp_schedule_event( time(), 'hourly', 'my_minute_event' );
-		// }
-		// as_enqueue_async_action( 'my_minute_event' );
+		if ( ! wp_next_scheduled( 'telemetry_logs_cron_handler' ) ) {
+			wp_schedule_event( time(), 'per_minute', 'telemetry_logs_cron_handler' );
+		}
 
 		if ( ! $this->is_environment_compatible() && is_plugin_active( plugin_basename( __FILE__ ) ) ) {
 
@@ -350,7 +338,7 @@ class WC_Facebook_Loader {
 	public function minute_cron_schedules( $schedules ) {
 		$schedules['per_minute'] = array(
 			'interval' => 60,
-			'display'  => __( 'One Minute' )
+			'display'  => __( 'One Minute' ),
 		);
 
 		return $schedules;
@@ -364,19 +352,14 @@ class WC_Facebook_Loader {
 	 * @since 3.4.1
 	 */
 	public function process_telemetry_logs_batch() {
-		wp_die( print_r( 'test', true ) );
-		if ( get_transient( 'global_telemetry_message_queue_test' ) === false ) {
-			set_transient( 'global_telemetry_message_queue_test', [], HOUR_IN_SECONDS );
-		} else {
-			$logs   = get_transient( 'global_telemetry_message_queue_test' );
-			$logs[] = 'test';
-			set_transient( 'global_telemetry_message_queue_test', $logs, HOUR_IN_SECONDS );
-			if ( count( $logs ) > 4 ) {
-				wp_die( print_r( count( $logs ), true ) );
-			}
+		if ( get_transient( 'global_telemetry_message_queue' ) !== false ) {
+			$logs   = get_transient( 'global_telemetry_message_queue' );
+			// TODO: Replace send batch logging request to Meta function.
+			// error_log will only log when WP_DEBUG is true, so it won't affect the production environment.
+			error_log( wp_json_encode( $logs ) );
 		}
 
-		// $label_name = get_transient( 'test_data' );
+		set_transient( 'global_telemetry_message_queue', [], HOUR_IN_SECONDS );
 	}
 }
 
