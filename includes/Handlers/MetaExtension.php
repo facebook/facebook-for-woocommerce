@@ -12,7 +12,6 @@ namespace WooCommerce\Facebook\Handlers;
 
 defined( 'ABSPATH' ) || exit;
 
-use WooCommerce\Facebook\Handlers\Connection;
 use WP_REST_Request;
 use WP_REST_Response;
 use WP_Error;
@@ -467,7 +466,7 @@ class MetaExtension {
 				'access_client_token'      => self::CLIENT_TOKEN,
 				'business_vertical'        => 'ECOMMERCE',
 				'channel'                  => 'COMMERCE',
-				'app_id'                   => Connection::CLIENT_ID,
+				'app_id'                   => facebook_for_woocommerce()->get_connection_handler()->get_client_id(),
 				'business_name'            => rawurlencode( $connection_handler->get_business_name() ),
 				'currency'                 => get_woocommerce_currency(),
 				'timezone'                 => $connection_handler->get_timezone_string(),

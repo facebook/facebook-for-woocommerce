@@ -25,16 +25,6 @@ class Connection extends Abstract_Settings_Screen {
 	const ID = 'connection';
 
 	/**
-	 * Determines if we should use enhanced onboarding.
-	 *
-	 * @return bool
-	 * @since 2.0.0
-	 */
-	protected function use_enhanced_onboarding() {
-		return facebook_for_woocommerce()->get_integration()->use_enhanced_onboarding();
-	}
-
-	/**
 	 * Connection constructor.
 	 */
 	public function __construct() {
@@ -53,7 +43,7 @@ class Connection extends Abstract_Settings_Screen {
 	/**
 	 * Enqueues the wp-api script only on the connection settings page.
 	 *
-	 * @since 2.0.0
+	 * @internal
 	 */
 	public function enqueue_admin_scripts() {
 		if ( $this->is_current_screen_page() ) {
@@ -70,6 +60,14 @@ class Connection extends Abstract_Settings_Screen {
 		$this->title = __( 'Connection', 'facebook-for-woocommerce' );
 	}
 
+	/**
+	 * Determines if we should use enhanced onboarding.
+	 *
+	 * @return bool
+	 */
+	protected function use_enhanced_onboarding() {
+		return facebook_for_woocommerce()->get_integration()->use_enhanced_onboarding();
+	}
 
 	/**
 	 * Adds admin notices.
@@ -111,8 +109,6 @@ class Connection extends Abstract_Settings_Screen {
 	 * Enqueue the assets.
 	 *
 	 * @internal
-	 *
-	 * @since 2.0.0
 	 */
 	public function enqueue_assets() {
 
@@ -162,7 +158,7 @@ class Connection extends Abstract_Settings_Screen {
 		 * TODO: add pixel & ad account API retrieval when we gain the ads_management permission
 		 * TODO: add the page name and link when we gain the manage_pages permission
 		 */
-		$static_items = $this->use_enhanced_onboarding() ? array() : array(
+		$static_items = array(
 			'page'                          => array(
 				'label' => __( 'Page', 'facebook-for-woocommerce' ),
 				'value' => facebook_for_woocommerce()->get_integration()->get_facebook_page_id(),
@@ -284,8 +280,6 @@ class Connection extends Abstract_Settings_Screen {
 
 	/**
 	 * Renders the appropriate Facebook iframe based on connection status.
-	 *
-	 * @since 2.0.0
 	 */
 	private function render_facebook_iframe() {
 		$connection            = facebook_for_woocommerce()->get_connection_handler();
@@ -400,7 +394,7 @@ class Connection extends Abstract_Settings_Screen {
 					const requestBody = {
 						access_token: message.access_token,
 						merchant_access_token: message.access_token,
-						page_access_token: '',
+						page_access_token: message.access_token,
 						product_catalog_id: message.catalog_id,
 						pixel_id: message.pixel_id,
 						page_id: message.page_id,
