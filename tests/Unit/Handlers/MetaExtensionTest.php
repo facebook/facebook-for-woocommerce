@@ -38,11 +38,12 @@ class MetaExtensionTest extends WP_UnitTestCase {
         $plugin = facebook_for_woocommerce();
         
         $url = MetaExtension::generate_iframe_splash_url(true, $plugin, 'test_business_id');
+        $handler = facebook_for_woocommerce()->get_connection_handler();
 
         // Assert URL contains expected parameters
         $this->assertStringContainsString('access_client_token=' . MetaExtension::CLIENT_TOKEN, $url);
         $this->assertStringContainsString('app_id=', $url);
-        $this->assertStringContainsString('business_name=' . urlencode(MetaExtension::BUSINESS_NAME), $url);
+        $this->assertStringContainsString('business_name=' . rawurlencode($handler->get_business_name()), $url);
         $this->assertStringContainsString('external_business_id=test_business_id', $url);
         $this->assertStringContainsString('installed=1', $url);
         $this->assertStringContainsString('external_client_metadata=', $url);

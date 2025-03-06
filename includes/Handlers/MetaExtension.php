@@ -25,13 +25,11 @@ use WP_Error;
 class MetaExtension {
 
 	/** @var string Client token */
-	const CLIENT_TOKEN = '195311308289826|52dcd04d6c7ed113121b5eb4be23b4a7';
+	const CLIENT_TOKEN = '474166926521348|92e978eb27baf47f9df578b48d430a2e';
 	const APP_ID       = '474166926521348';
-	/** @var string Business name */
-	const BUSINESS_NAME = 'WooCommerce';
 
 	/** @var string API version */
-	const API_VERSION = 'v18.0';
+	const API_VERSION = 'v22.0';
 
 	/** @var string Commerce Hub base URL */
 	const COMMERCE_HUB_URL = 'https://www.commercepartnerhub.com/';
@@ -422,13 +420,15 @@ class MetaExtension {
 	 * @param string $external_business_id External business ID.
 	 * @return string
 	 */
-	public static function generate_iframe_splash_url( $is_connected, $plugin, $external_business_id ) {
+	public static function generate_iframe_splash_url( $is_connected, $plugin, $external_business_id ): string {
+		$connection_handler       = facebook_for_woocommerce()->get_connection_handler();
 		$external_client_metadata = array(
-			'shop_domain'                           => wc_get_page_permalink( 'shop' ) ? wc_get_page_permalink( 'shop' ) : \home_url(),
+			'shop_domain'                           => wc_get_page_permalink( 'shop' ),
 			'admin_url'                             => admin_url(),
 			'client_version'                        => $plugin->get_version(),
 			'commerce_partner_seller_platform_type' => 'SELF_SERVE_PLATFORM',
 			'country_code'                          => WC()->countries->get_base_country(),
+			'platform_store_id'                     => get_current_blog_id(),
 		);
 		return add_query_arg(
 			array(
@@ -436,9 +436,9 @@ class MetaExtension {
 				'business_vertical'        => 'ECOMMERCE',
 				'channel'                  => 'COMMERCE',
 				'app_id'                   => Connection::CLIENT_ID,
-				'business_name'            => self::BUSINESS_NAME,
+				'business_name'            => rawurlencode( $connection_handler->get_business_name() ),
 				'currency'                 => get_woocommerce_currency(),
-				'timezone'                 => 'America/Los_Angeles',
+				'timezone'                 => $connection_handler->get_timezone_string(),
 				'external_business_id'     => $external_business_id,
 				'installed'                => $is_connected,
 				'external_client_metadata' => rawurlencode( wp_json_encode( $external_client_metadata ) ),
