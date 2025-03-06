@@ -860,7 +860,7 @@ if ( ! class_exists( 'WC_Facebookcommerce_Utils' ) ) :
 
 		/**
 		 * Utility function for sending exception logs to Meta.
-     * @since 3.5.0
+		 * @since 3.5.0
 		 */
 		public static function logExceptionImmediatelyToMeta(Throwable $error, array $context = []) {
 			/**
@@ -877,7 +877,7 @@ if ( ! class_exists( 'WC_Facebookcommerce_Utils' ) ) :
 
 		/**
 		 * Utility function for sending telemetry logs to Meta.
-     * @since 3.5.0
+		 * @since 3.5.0
 		 */
 		public static function logTelemetryToMeta(string $message, array $context = []) {
 			/**
