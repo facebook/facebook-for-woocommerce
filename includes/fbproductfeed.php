@@ -202,6 +202,7 @@ class WC_Facebook_Product_Feed {
 
 	/**
 	 * Creates files in the catalog feed directory to prevent directory listing and hotlinking.
+	 * Will create directory if not already available
 	 *
 	 * @since 1.11.0
 	 */

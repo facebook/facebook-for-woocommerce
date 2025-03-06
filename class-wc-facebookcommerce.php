@@ -69,6 +69,9 @@ class WC_Facebookcommerce extends WooCommerce\Facebook\Framework\Plugin {
 	/** @var WooCommerce\Facebook\Products\Feed product feed handler */
 	private $product_feed;
 
+	/** @var WooCommerce\Facebook\Feed\FeedManager Entrypoint and creates all other feeds */
+	public $feed_manager;
+
 	/** @var Background_Handle_Virtual_Products_Variations instance */
 	protected $background_handle_virtual_products_variations;
 
@@ -187,7 +190,8 @@ class WC_Facebookcommerce extends WooCommerce\Facebook\Framework\Plugin {
 			$this->heartbeat = new Heartbeat( WC()->queue() );
 			$this->heartbeat->init();
 
-			$this->checkout           			 = new WooCommerce\Facebook\Checkout();
+			$this->feed_manager              = new WooCommerce\Facebook\Feed\FeedManager();
+			$this->checkout           		 = new WooCommerce\Facebook\Checkout();
 			$this->product_feed              = new WooCommerce\Facebook\Products\Feed();
 			$this->products_stock_handler    = new WooCommerce\Facebook\Products\Stock();
 			$this->products_sync_handler     = new WooCommerce\Facebook\Products\Sync();
