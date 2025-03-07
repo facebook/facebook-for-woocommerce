@@ -311,7 +311,7 @@ class Connection extends Abstract_Settings_Screen {
 			height="800"
 			frameborder="0"
 			style="background: transparent;"
-			id=""></iframe>
+			id="facebook-commerce-iframe"></iframe>
 		<?php
 	}
 
