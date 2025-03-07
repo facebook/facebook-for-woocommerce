@@ -37,6 +37,11 @@ class Heartbeat {
 	protected $daily_cron_name = 'facebook_for_woocommerce_daily_heartbeat_cron';
 
 	/**
+	 * @var string
+	 */
+	public $telemetry_logs_cron_name = 'facebook_for_woocommerce_telemetry_logs_cron';
+
+	/**
 	 * @var WC_Queue_Interface
 	 */
 	protected $queue;
@@ -72,6 +77,9 @@ class Heartbeat {
 		}
 		if ( ! wp_next_scheduled( $this->daily_cron_name ) ) {
 			wp_schedule_event( time(), 'daily', $this->daily_cron_name );
+		}
+		if ( ! wp_next_scheduled( $this->telemetry_logs_cron_name ) ) {
+			wp_schedule_event( time(), 'per_minute', $this->telemetry_logs_cron_name );
 		}
 	}
 

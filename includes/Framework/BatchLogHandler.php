@@ -11,6 +11,7 @@
 namespace WooCommerce\Facebook\Framework;
 
 use WC_Facebookcommerce_Utils;
+use WooCommerce\Facebook\Utilities\Heartbeat;
 
 defined( 'ABSPATH' ) || exit;
 
@@ -28,11 +29,7 @@ class BatchLogHandler {
 	 * @since 3.5.0
 	 */
 	public function __construct() {
-		add_action( 'telemetry_logs_cron_handler', array( $this, 'process_telemetry_logs_batch' ) );
-
-		if ( ! wp_next_scheduled( 'telemetry_logs_cron_handler' ) ) {
-			wp_schedule_event( time(), 'per_minute', 'telemetry_logs_cron_handler' );
-		}
+		add_action( Heartbeat::$telemetry_logs_cron_name, array( $this, 'process_telemetry_logs_batch' ) );
 	}
 
 	/**
