@@ -54,6 +54,7 @@ class Heartbeat {
 	 * Add hooks.
 	 */
 	public function init() {
+		add_filter( 'cron_schedules', array( $this, 'minute_cron_schedules' ) );
 		add_action( 'init', array( $this, 'schedule_cron_events' ) );
 		add_action( $this->hourly_cron_name, array( $this, 'schedule_hourly_action' ) );
 		add_action( $this->daily_cron_name, array( $this, 'schedule_daily_action' ) );
@@ -72,6 +73,24 @@ class Heartbeat {
 		if ( ! wp_next_scheduled( $this->daily_cron_name ) ) {
 			wp_schedule_event( time(), 'daily', $this->daily_cron_name );
 		}
+	}
+
+	/**
+	 * Function that add a defination of interval for cron job
+	 *
+	 * @param string $schedules pluin system data
+	 *
+	 * @since 3.5.0
+	 *
+	 * @internal
+	 */
+	public function minute_cron_schedules( $schedules ) {
+		$schedules['per_minute'] = array(
+			'interval' => 60,
+			'display'  => __( 'One Minute', 'facebook-for-woocommerce' ),
+		);
+
+		return $schedules;
 	}
 
 	/**

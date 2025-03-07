@@ -28,31 +28,11 @@ class BatchLogHandler {
 	 * @since 3.5.0
 	 */
 	public function __construct() {
-		add_filter( 'cron_schedules', array( $this, 'minute_cron_schedules' ) );
-
 		add_action( 'telemetry_logs_cron_handler', array( $this, 'process_telemetry_logs_batch' ) );
 
 		if ( ! wp_next_scheduled( 'telemetry_logs_cron_handler' ) ) {
 			wp_schedule_event( time(), 'per_minute', 'telemetry_logs_cron_handler' );
 		}
-	}
-
-	/**
-	 * Function that add a defination of interval for cron job
-	 *
-	 * @param string $schedules pluin system data
-	 *
-	 * @since 3.5.0
-	 *
-	 * @internal
-	 */
-	public function minute_cron_schedules( $schedules ) {
-		$schedules['per_minute'] = array(
-			'interval' => 60,
-			'display'  => __( 'One Minute', 'facebook-for-woocommerce' ),
-		);
-
-		return $schedules;
 	}
 
 	/**
