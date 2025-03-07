@@ -208,7 +208,7 @@ class Admin {
 					facebook_for_woocommerce()->get_asset_build_dir_url() . '/admin/product-sets-admin.js',
 					[ 'jquery', 'select2' ],
 					\WC_Facebookcommerce::PLUGIN_VERSION,
-					false
+					true
 				);
 
 				wp_localize_script(
