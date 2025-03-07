@@ -90,10 +90,6 @@ class WC_Facebook_Loader {
 
 		register_activation_hook( __FILE__, array( $this, 'activation_check' ) );
 
-		add_filter( 'cron_schedules', array( $this, 'minute_cron_schedules' ) );
-
-		add_action( 'telemetry_logs_cron_handler', array( $this, 'process_telemetry_logs_batch' ) );
-
 		add_action( 'admin_init', array( $this, 'check_environment' ) );
 
 		add_action( 'admin_notices', array( $this, 'admin_notices' ), 15 );
@@ -200,9 +196,6 @@ class WC_Facebook_Loader {
 	 * @since 1.10.0
 	 */
 	public function check_environment() {
-		if ( ! wp_next_scheduled( 'telemetry_logs_cron_handler' ) ) {
-			wp_schedule_event( time(), 'per_minute', 'telemetry_logs_cron_handler' );
-		}
 
 		if ( ! $this->is_environment_compatible() && is_plugin_active( plugin_basename( __FILE__ ) ) ) {
 
@@ -323,42 +316,6 @@ class WC_Facebook_Loader {
 		}
 
 		return self::$instance;
-	}
-
-	/**
-	 * Function that add a defination of interval for cron job
-	 *
-	 * @param string $schedules pluin system data
-	 *
-	 * @since 3.4.1
-	 *
-	 * @internal
-	 */
-	public function minute_cron_schedules( $schedules ) {
-		$schedules['per_minute'] = array(
-			'interval' => 60,
-			'display'  => __( 'One Minute', 'facebook-for-woocommerce' ),
-		);
-
-		return $schedules;
-	}
-
-	/**
-	 * Function that runs every minute.
-	 *
-	 * @internal
-	 *
-	 * @since 3.4.1
-	 */
-	public function process_telemetry_logs_batch() {
-		if ( get_transient( 'global_telemetry_message_queue' ) !== false ) {
-			$logs = get_transient( 'global_telemetry_message_queue' );
-			// TODO: Replace send batch logging request to Meta function.
-			// error_log will only log when WP_DEBUG is true, so it won't affect the production environment.
-			error_log( wp_json_encode( $logs ) );
-		}
-
-		set_transient( 'global_telemetry_message_queue', [], HOUR_IN_SECONDS );
 	}
 }
 
