@@ -39,7 +39,7 @@ class Heartbeat {
 	/**
 	 * @var string
 	 */
-	public $telemetry_logs_cron_name = 'facebook_for_woocommerce_telemetry_logs_cron';
+	public static $telemetry_logs_cron_name = 'facebook_for_woocommerce_telemetry_logs_cron';
 
 	/**
 	 * @var WC_Queue_Interface
@@ -59,7 +59,7 @@ class Heartbeat {
 	 * Add hooks.
 	 */
 	public function init() {
-		add_filter( 'cron_schedules', array( $this, 'minute_cron_schedules' ) );
+		add_filter( 'cron_schedules', array( $this, 'five_minutes_cron_schedules' ) );
 		add_action( 'init', array( $this, 'schedule_cron_events' ) );
 		add_action( $this->hourly_cron_name, array( $this, 'schedule_hourly_action' ) );
 		add_action( $this->daily_cron_name, array( $this, 'schedule_daily_action' ) );
@@ -78,8 +78,8 @@ class Heartbeat {
 		if ( ! wp_next_scheduled( $this->daily_cron_name ) ) {
 			wp_schedule_event( time(), 'daily', $this->daily_cron_name );
 		}
-		if ( ! wp_next_scheduled( $this->telemetry_logs_cron_name ) ) {
-			wp_schedule_event( time(), 'per_minute', $this->telemetry_logs_cron_name );
+		if ( ! wp_next_scheduled( self::$telemetry_logs_cron_name ) ) {
+			wp_schedule_event( time(), 'five_minutes', self::$telemetry_logs_cron_name );
 		}
 	}
 
@@ -92,10 +92,10 @@ class Heartbeat {
 	 *
 	 * @internal
 	 */
-	public function minute_cron_schedules( $schedules ) {
-		$schedules['per_minute'] = array(
-			'interval' => 60,
-			'display'  => __( 'One Minute', 'facebook-for-woocommerce' ),
+	public function five_minutes_cron_schedules( $schedules ) {
+		$schedules['five_minutes'] = array(
+			'interval' => 300,
+			'display'  => __( 'Five Minutes', 'facebook-for-woocommerce' ),
 		);
 
 		return $schedules;
