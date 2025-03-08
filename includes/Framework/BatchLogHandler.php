@@ -29,7 +29,7 @@ class BatchLogHandler {
 	 * @since 3.5.0
 	 */
 	public function __construct() {
-		add_action( Heartbeat::$telemetry_logs_cron_name, array( $this, 'process_telemetry_logs_batch' ) );
+		add_action( Heartbeat::EVERY_5_MINUTES, array( $this, 'process_telemetry_logs_batch' ) );
 	}
 
 	/**
