@@ -18,7 +18,7 @@ namespace WooCommerce\Facebook\Feed;
  * @since 3.5.0
  */
 class FeedManager {
-	const PROMOTIONS_FEED = 'promotions_feed';
+	const PROMOTIONS = 'promotions';
 
 	/**
 	 * The map of feed types to their instances.
@@ -50,7 +50,7 @@ class FeedManager {
 	 * @since 3.5.0
 	 */
 	private function create_feed( string $data_stream_name ): AbstractFeed {
-		if ( self::PROMOTIONS_FEED === $data_stream_name ) {
+		if ( self::PROMOTIONS === $data_stream_name ) {
 			return new PromotionsFeed();
 		}
 		throw new \InvalidArgumentException( "Invalid feed type {$data_stream_name}" );
@@ -63,7 +63,7 @@ class FeedManager {
 	 * @since 3.5.0
 	 */
 	public static function get_active_feed_types(): array {
-		return array( self::PROMOTIONS_FEED );
+		return array( self::PROMOTIONS );
 	}
 
 	/**

@@ -13,6 +13,7 @@ namespace WooCommerce\Facebook\Feed;
 use WooCommerce\Facebook\Framework\Api\Exception;
 use WooCommerce\Facebook\Framework\Helper;
 use WooCommerce\Facebook\Framework\Plugin\Exception as PluginException;
+use WooCommerce\Facebook\Utilities\Heartbeat;
 
 defined( 'ABSPATH' ) || exit;
 
@@ -70,13 +71,6 @@ abstract class AbstractFeed {
 	protected string $data_stream_name;
 
 	/**
-	 * The option name for the feed URL secret.
-	 *
-	 * @var string
-	 */
-	protected string $feed_url_secret_option_name;
-
-	/**
 	 * The type of feed as per the endpoint requirements.
 	 *
 	 * @var string
@@ -89,6 +83,43 @@ abstract class AbstractFeed {
 	 * @var int
 	 */
 	protected int $gen_feed_interval;
+
+	/**
+	 * Initialize feed properties.
+	 *
+	 * @param string      $data_stream_name              The data stream name.
+	 * @param string      $feed_type                     The feed type.
+	 * @param int         $gen_feed_interval             The feed generation interval in seconds.
+	 * @param FeedHandler $feed_handler The feed handler instance.
+	 */
+	protected function init( string $data_stream_name, string $feed_type, int $gen_feed_interval, FeedHandler $feed_handler ): void {
+		$this->data_stream_name  = $data_stream_name;
+		$this->feed_type         = $feed_type;
+		$this->gen_feed_interval = $gen_feed_interval;
+		$this->feed_handler      = $feed_handler;
+
+		$this->add_hooks( Heartbeat::HOURLY );
+	}
+
+	/**
+	 * Adds the necessary hooks for feed generation and data request handling.
+	 *
+	 * @param string $heartbeat How often to check that the feed generation is scheduled.
+	 *
+	 * @since 3.5.0
+	 */
+	protected function add_hooks( string $heartbeat ): void {
+		add_action( $heartbeat, array( $this, self::SCHEDULE_CALL_BACK ) );
+		add_action( self::GENERATE_FEED_ACTION . $this->data_stream_name, array( $this, self::REGENERATE_CALL_BACK ) );
+		add_action( self::FEED_GEN_COMPLETE_ACTION . $this->data_stream_name, array( $this, self::UPLOAD_CALL_BACK ) );
+		add_action(
+			self::LEGACY_API_PREFIX . self::REQUEST_FEED_ACTION . $this->data_stream_name,
+			array(
+				$this,
+				self::STREAM_CALL_BACK,
+			)
+		);
+	}
 
 	/**
 	 * Schedules the recurring feed generation.
@@ -177,10 +208,12 @@ abstract class AbstractFeed {
 	 * @return string
 	 */
 	public function get_feed_secret(): string {
-		$secret = get_option( $this->feed_url_secret_option_name, '' );
+		$secret_option_name = self::OPTION_FEED_URL_SECRET . $this->data_stream_name;
+
+		$secret = get_option( $secret_option_name, '' );
 		if ( ! $secret ) {
 			$secret = wp_hash( 'example-feed-' . time() );
-			update_option( $this->feed_url_secret_option_name, $secret );
+			update_option( $secret_option_name, $secret );
 		}
 
 		return $secret;
@@ -201,7 +234,7 @@ abstract class AbstractFeed {
 
 		$file_path = $this->feed_handler->get_feed_writer()->get_file_path();
 
-		// regenerate if the file doesn't exist.
+		// regenerate if the file doesn't exist using the legacy flow.
 		if ( ! file_exists( $file_path ) ) {
 			$this->feed_handler->generate_feed_file();
 		}
