@@ -48,6 +48,14 @@ abstract class AbstractFeed {
 
 
 	/**
+	 * The feed writer instance for the given feed.
+	 *
+	 * @var FeedFileWriter
+	 * @since 3.5.0
+	 */
+	protected FeedFileWriter $feed_writer;
+
+	/**
 	 * The feed generator instance for the given feed.
 	 *
 	 * @var FeedGenerator
@@ -87,17 +95,22 @@ abstract class AbstractFeed {
 	/**
 	 * Initialize feed properties.
 	 *
-	 * @param string      $data_stream_name              The data stream name.
-	 * @param string      $feed_type                     The feed type.
-	 * @param int         $gen_feed_interval             The feed generation interval in seconds.
-	 * @param FeedHandler $feed_handler The feed handler instance.
+	 * @param string         $data_stream_name              The data stream name.
+	 * @param string         $feed_type                     The feed type.
+	 * @param int            $gen_feed_interval             The feed generation interval in seconds.
+	 * @param FeedFileWriter $feed_writer The feed file writer instance.
+	 * @param FeedHandler    $feed_handler The feed handler instance.
+	 * @param FeedGenerator  $feed_generator The feed generator instance.
 	 */
-	protected function init( string $data_stream_name, string $feed_type, int $gen_feed_interval, FeedHandler $feed_handler ): void {
+	protected function init( string $data_stream_name, string $feed_type, int $gen_feed_interval, FeedFileWriter $feed_writer, FeedHandler $feed_handler, FeedGenerator $feed_generator ): void {
 		$this->data_stream_name  = $data_stream_name;
 		$this->feed_type         = $feed_type;
 		$this->gen_feed_interval = $gen_feed_interval;
+		$this->feed_writer       = $feed_writer;
 		$this->feed_handler      = $feed_handler;
+		$this->feed_generator    = $feed_generator;
 
+		$this->feed_generator->init();
 		$this->add_hooks( Heartbeat::HOURLY );
 	}
 
@@ -232,7 +245,7 @@ abstract class AbstractFeed {
 		$name = $this->data_stream_name;
 		\WC_Facebookcommerce_Utils::log( "{$name} feed: Meta is requesting feed file." );
 
-		$file_path = $this->feed_handler->get_feed_writer()->get_file_path();
+		$file_path = $this->feed_writer->get_file_path();
 
 		// regenerate if the file doesn't exist using the legacy flow.
 		if ( ! file_exists( $file_path ) ) {

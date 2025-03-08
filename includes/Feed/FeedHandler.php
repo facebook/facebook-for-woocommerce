@@ -21,13 +21,6 @@ interface FeedHandler {
 	public function generate_feed_file();
 
 	/**
-	 * Get the feed file writer instance.
-	 *
-	 * @return FeedFileWriter
-	 */
-	public function get_feed_writer(): FeedFileWriter;
-
-	/**
 	 * Get the feed data and return as array of objects.
 	 *
 	 * @return array

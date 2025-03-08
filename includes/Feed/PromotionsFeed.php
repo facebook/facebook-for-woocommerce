@@ -12,9 +12,7 @@ namespace WooCommerce\Facebook\Feed;
 
 defined( 'ABSPATH' ) || exit;
 
-use WooCommerce\Facebook\Feed\AbstractFeed;
-use WooCommerce\Facebook\Utilities\Heartbeat;
-
+use Automattic\WooCommerce\ActionSchedulerJobFramework\Proxies\ActionScheduler;
 
 /**
  * Promotions Feed Class
@@ -37,25 +35,20 @@ class PromotionsFeed extends AbstractFeed {
 		$data_stream_name  = FeedManager::PROMOTIONS;
 		$gen_feed_interval = DAY_IN_SECONDS;
 		$feed_type         = 'PROMOTIONS'; // CatalogPartnerPlatformFileFeedType
-		$file_writer       = new CsvFeedFileWriter( $data_stream_name, self::PROMOTIONS_FEED_HEADER );
-		$feed_handler      = new PromotionsFeedHandler( $file_writer );
+
+		$file_writer  = new CsvFeedFileWriter( $data_stream_name, self::PROMOTIONS_FEED_HEADER );
+		$feed_handler = new PromotionsFeedHandler( $file_writer );
+
+		$scheduler      = new ActionScheduler();
+		$feed_generator = new PromotionsFeedGenerator( $scheduler, $file_writer, $data_stream_name );
 
 		$this->init(
 			$data_stream_name,
 			$feed_type,
 			$gen_feed_interval,
-			$feed_handler
+			$file_writer,
+			$feed_handler,
+			$feed_generator,
 		);
-	}
-
-	/**
-	 * Regenerates the ratings and reviews feed based on the defined schedule.
-	 * Override to only use the FeedHandler to generate the feed file as batch is not needed.
-	 *
-	 * @since 3.5.0
-	 * @override
-	 */
-	public function regenerate_feed(): void {
-		$this->feed_handler->generate_feed_file();
 	}
 }

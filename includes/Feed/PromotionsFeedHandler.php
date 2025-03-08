@@ -13,7 +13,7 @@ namespace WooCommerce\Facebook\Feed;
 defined( 'ABSPATH' ) || exit;
 
 /**
- * Promotions Feed Handler Class
+ * Promotions Feed Handler Class. This file is responsible for the old-style feed generation for promotions
  *
  * @package WooCommerce\Facebook\Feed
  * @since 3.5.0
@@ -56,17 +56,8 @@ class PromotionsFeedHandler implements FeedHandler {
 	}
 
 	/**
-	 * Get the feed file writer instance.
-	 *
-	 * @return FeedFileWriter
-	 * @since 3.5.0
-	 */
-	public function get_feed_writer(): FeedFileWriter {
-		return $this->feed_writer;
-	}
-
-	/**
 	 * Get the feed data and return as array of objects.
+	 * Array contents should match headers in PromotionsFeed::PROMOTIONS_FEED_HEADER
 	 *
 	 * @return array
 	 * @since 3.5.0
