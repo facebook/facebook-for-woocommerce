@@ -18,13 +18,7 @@ namespace WooCommerce\Facebook\Feed;
  * @since 3.5.0
  */
 class FeedManager {
-	/**
-	 * The list of feed types as named strings.
-	 *
-	 * @var array<string> The list of feed types as named strings.
-	 * @since 3.5.0
-	 */
-	private array $feed_types;
+	const PROMOTIONS_FEED = 'promotions_feed';
 
 	/**
 	 * The map of feed types to their instances.
@@ -41,8 +35,7 @@ class FeedManager {
 	 * @since 3.5.0
 	 */
 	public function __construct() {
-		$this->feed_types = $this->get_feed_types();
-		foreach ( $this->feed_types as $feed_type ) {
+		foreach ( $this->get_active_feed_types() as $feed_type ) {
 			$this->feed_instances[ $feed_type ] = $this->create_feed( $feed_type );
 		}
 	}
@@ -52,12 +45,14 @@ class FeedManager {
 	 *
 	 * @param string $data_stream_name The name of the data stream.
 	 *
-	 * phpcs:ignore -- Method to be implemented when new feed types are added.
 	 * @return AbstractFeed The created feed instance derived from AbstractFeed.
 	 * @throws \InvalidArgumentException If the data stream doesn't correspond to a FeedType.
 	 * @since 3.5.0
 	 */
 	private function create_feed( string $data_stream_name ): AbstractFeed {
+		if ( self::PROMOTIONS_FEED === $data_stream_name ) {
+			return new PromotionsFeed();
+		}
 		throw new \InvalidArgumentException( "Invalid feed type {$data_stream_name}" );
 	}
 
@@ -67,8 +62,8 @@ class FeedManager {
 	 * @return array
 	 * @since 3.5.0
 	 */
-	public static function get_feed_types(): array {
-		return array();
+	public static function get_active_feed_types(): array {
+		return array( self::PROMOTIONS_FEED );
 	}
 
 	/**
