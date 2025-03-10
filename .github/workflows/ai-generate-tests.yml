@@ -98,6 +98,12 @@ jobs:
           result=$(python3 ./bin/generate_llama_tests.py "${{ steps.analyze.outputs.file_path }}" "${{ steps.analyze.outputs.class_name }}")
           echo "test_info=$result" >> $GITHUB_OUTPUT
 
+      - name: Cleanup temporary files
+        run: |
+          rm -f analyze_coverage.php
+          rm -rf reports/
+          rm -rf models/
+
       - name: Create Pull Request
         uses: peter-evans/create-pull-request@v5
         with:
