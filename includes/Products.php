@@ -77,18 +77,11 @@ class Products {
 		$enabled = wc_bool_to_string( $enabled );
 		foreach ( $products as $product ) {
 			if ( $product instanceof \WC_Product ) {
-				if ( $product->is_type( 'variable' ) ) {
-					foreach ( $product->get_children() as $variation ) {
-						$product_variation = wc_get_product( $variation );
-						if ( $product_variation instanceof \WC_Product ) {
-							$product_variation->update_meta_data( self::SYNC_ENABLED_META_KEY, $enabled );
-							$product_variation->save_meta_data();
-						}
-					}
-				} else {
-					$product->update_meta_data( self::SYNC_ENABLED_META_KEY, $enabled );
-					$product->save_meta_data();
-				}
+
+				// Updating the base product level sync only
+				$product->update_meta_data( self::SYNC_ENABLED_META_KEY, $enabled );
+				$product->save_meta_data();
+			
 
 				// Remove excluded product from FB.
 				if ( "no" === $enabled && self::product_should_be_deleted( $product ) ) {
