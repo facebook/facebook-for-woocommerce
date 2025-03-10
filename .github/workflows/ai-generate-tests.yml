@@ -81,69 +81,38 @@ jobs:
           }
           
           if (\$class_to_test) {
-              // Set GitHub outputs
               echo \"class_name={$class_to_test['class']}\" >> \$GITHUB_OUTPUT;
+              echo \"file_path={$class_to_test['file']}\" >> \$GITHUB_OUTPUT;
               echo \"coverage={$class_to_test['coverage']}\" >> \$GITHUB_OUTPUT;
-              
-              \$reflection = new ReflectionClass(\$class_to_test['class']);
-              \$methods = \$reflection->getMethods(ReflectionMethod::IS_PUBLIC);
-              
-              \$testFile = 'tests/Unit/' . str_replace('.php', 'Test.php', basename(\$class_to_test['file']));
-              \$testClass = basename(\$class_to_test['class']) . 'Test';
-              
-              if (!file_exists(dirname(\$testFile))) {
-                  mkdir(dirname(\$testFile), 0777, true);
-              }
-              
-              \$template = '<?php
-          namespace Facebook\WooCommerce\Tests\Unit;
-          
-          use PHPUnit\Framework\TestCase;
-          use ' . \$class_to_test['class'] . ';
-          
-          class ' . \$testClass . ' extends TestCase
-          {';
-              
-              foreach (\$methods as \$method) {
-                  if (!\$method->isConstructor()) {
-                      \$template .= '
-              public function test' . ucfirst(\$method->getName()) . '()
-              {
-                  \$this->markTestIncomplete(\'Auto-generated test for ' . \$method->getName() . '\');
-              }';
-                  }
-              }
-              
-              \$template .= '
-          }';
-              
-              file_put_contents(\$testFile, \$template);
-              echo \"Generated test file: {\$testFile}\\n\";
-              echo \"Class coverage: {\$class_to_test['coverage']}%\\n\";
-              echo \"Class name: {\$class_to_test['class']}\\n\";
           } else {
               echo \"No classes found with coverage below 80%\\n\";
               exit(78);  # Skip PR creation if no classes need testing
-          }" > generate_tests.php
+          }" > analyze_coverage.php
           
-          php generate_tests.php > test_files.txt
+          php analyze_coverage.php
+
+      - name: Generate AI Tests
+        id: generate_tests
+        run: |
+          chmod +x ./bin/generate_llama_tests.py
+          result=$(python3 ./bin/generate_llama_tests.py "${{ steps.analyze.outputs.file_path }}" "${{ steps.analyze.outputs.class_name }}")
+          echo "test_info=$result" >> $GITHUB_OUTPUT
 
       - name: Create Pull Request
         uses: peter-evans/create-pull-request@v5
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          commit-message: "test: Add generated unit tests for ${{ steps.analyze.outputs.class_name }}"
-          title: "Add unit tests for class with ${{ steps.analyze.outputs.coverage }}% coverage"
+          commit-message: "test: Add AI-generated unit tests for ${{ steps.analyze.outputs.class_name }}"
+          title: "Add AI-generated unit tests for class with ${{ steps.analyze.outputs.coverage }}% coverage"
           body: |
-            This PR adds automatically generated unit test stubs for the class with the lowest coverage.
+            This PR adds AI-generated unit tests using CodeLlama for the class with the lowest coverage.
             
-            Generated test files:
-            ```
-            $(cat test_files.txt)
-            ```
+            Class: `${{ steps.analyze.outputs.class_name }}`
+            Current Coverage: ${{ steps.analyze.outputs.coverage }}%
             
-            Please review and implement the actual test assertions for these generated test methods.
-          branch: feature/generate-unit-tests-single-class
+            The tests were generated using the CodeLlama model and include assertions and different test scenarios.
+            Please review the generated tests and adjust them as needed.
+          branch: feature/ai-generate-unit-tests
           base: main
           labels: |
             automated
