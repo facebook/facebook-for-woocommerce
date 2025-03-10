@@ -71,6 +71,7 @@ class RatingsAndReviewsFeed extends AbstractFeed {
 	 * @since 3.5.0
 	 */
 	public function regenerate_feed(): void {
+		// $this->feed_generator->queue_start();
 		$this->feed_handler->generate_feed_file();
 	}
 }

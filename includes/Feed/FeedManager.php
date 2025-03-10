@@ -19,13 +19,6 @@ namespace WooCommerce\Facebook\Feed;
  */
 class FeedManager {
 	const RATINGS_AND_REVIEWS = 'ratings_and_reviews';
-	/**
-	 * The list of feed types as named strings.
-	 *
-	 * @var array<string> The list of feed types as named strings.
-	 * @since 3.5.0
-	 */
-	private array $feed_types;
 
 	/**
 	 * The map of feed types to their instances.
@@ -42,8 +35,7 @@ class FeedManager {
 	 * @since 3.5.0
 	 */
 	public function __construct() {
-		$this->feed_types = $this->get_feed_types();
-		foreach ( $this->feed_types as $feed_type ) {
+		foreach ( $this->get_active_feed_types() as $feed_type ) {
 			$this->feed_instances[ $feed_type ] = $this->create_feed( $feed_type );
 		}
 	}
@@ -74,7 +66,7 @@ class FeedManager {
 	 * @return array
 	 * @since 3.5.0
 	 */
-	public static function get_feed_types(): array {
+	public static function get_active_feed_types(): array {
 		return array( self::RATINGS_AND_REVIEWS );
 	}
 
