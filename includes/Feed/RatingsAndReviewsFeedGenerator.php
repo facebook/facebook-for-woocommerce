@@ -69,7 +69,7 @@ class RatingsAndReviewsFeedGenerator extends FeedGenerator {
 				'store.storeUrls'                 => "['" . implode( "','", $store_urls ) . "']",
 				'review_id'                       => $comment->comment_ID,
 				'rating'                          => intval( $rating ),
-				'title'                           => 'Review',
+				'title'                           => null,
 				'content'                         => $comment->comment_content,
 				'created_at'                      => $comment->comment_date,
 				'reviewer.name'                   => $comment->comment_author,
