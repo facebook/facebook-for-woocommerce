@@ -1,0 +1,120 @@
+name: AI Generate PHP Unit Tests
+
+on:
+  workflow_dispatch:  # Manual trigger only
+
+jobs:
+  generate-ai-tests:
+    name: Generate AI-Powered Unit Tests
+    runs-on: ubuntu-latest
+    env:
+      WP_CORE_DIR: "/tmp/wordpress/src"
+      WP_TESTS_DIR: "/tmp/wordpress/tests/phpunit"
+    
+    steps:
+      - name: Install SVN
+        run: sudo apt-get install subversion -y
+
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Setup PHP
+        uses: woocommerce/grow/prepare-php@actions-v1
+        with:
+          php-version: '8.2'
+
+      - name: Prepare MySQL
+        uses: woocommerce/grow/prepare-mysql@actions-v1
+
+      - name: Install WP tests
+        run: |
+          chmod +x ./bin/install-wp-tests.sh
+          ./bin/install-wp-tests.sh wordpress_test root root localhost latest latest
+
+      - name: Install dependencies
+        run: composer install
+
+      - name: Generate coverage report
+        run: |
+          mkdir -p reports/coverage
+          vendor/bin/phpunit --coverage-html reports/coverage --coverage-clover reports/coverage.xml
+
+      - name: Setup Python for Llama
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+
+      - name: Install Llama CPP Python
+        run: |
+          pip install llama-cpp-python
+          pip install requests
+
+      - name: Download Llama Model
+        run: |
+          mkdir -p models
+          curl -L https://huggingface.co/TheBloke/CodeLlama-7B-GGUF/resolve/main/codellama-7b.Q4_K_M.gguf -o models/codellama.gguf
+
+      - name: Analyze untested classes
+        id: analyze
+        run: |
+          echo "<?php
+          require 'vendor/autoload.php';
+          
+          \$xml = new SimpleXMLElement(file_get_contents('reports/coverage.xml'));
+          \$lowest_coverage = null;
+          \$class_to_test = null;
+          
+          foreach (\$xml->xpath('//class') as \$class) {
+              \$metrics = \$class->metrics;
+              \$elements = (float)\$metrics['elements'];
+              if (\$elements > 0) {
+                  \$coverage = (float)\$metrics['coveredelements'] / \$elements * 100;
+                  if (\$coverage < 80 && (\$lowest_coverage === null || \$coverage < \$lowest_coverage)) {
+                      \$lowest_coverage = \$coverage;
+                      \$class_to_test = [
+                          'class' => (string)\$class['name'],
+                          'file' => (string)\$class['filename'],
+                          'coverage' => round(\$coverage, 2)
+                      ];
+                  }
+              }
+          }
+          
+          if (\$class_to_test) {
+              echo \"class_name={$class_to_test['class']}\" >> \$GITHUB_OUTPUT;
+              echo \"file_path={$class_to_test['file']}\" >> \$GITHUB_OUTPUT;
+              echo \"coverage={$class_to_test['coverage']}\" >> \$GITHUB_OUTPUT;
+          } else {
+              echo \"No classes found with coverage below 80%\\n\";
+              exit(78);  # Skip PR creation if no classes need testing
+          }" > analyze_coverage.php
+          
+          php analyze_coverage.php
+
+      - name: Generate AI Tests
+        id: generate_tests
+        run: |
+          chmod +x ./bin/generate_llama_tests.py
+          result=$(python3 ./bin/generate_llama_tests.py "${{ steps.analyze.outputs.file_path }}" "${{ steps.analyze.outputs.class_name }}")
+          echo "test_info=$result" >> $GITHUB_OUTPUT
+
+      - name: Create Pull Request
+        uses: peter-evans/create-pull-request@v5
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          commit-message: "test: Add AI-generated unit tests for ${{ steps.analyze.outputs.class_name }}"
+          title: "Add AI-generated unit tests for class with ${{ steps.analyze.outputs.coverage }}% coverage"
+          body: |
+            This PR adds AI-generated unit tests using CodeLlama for the class with the lowest coverage.
+            
+            Class: `${{ steps.analyze.outputs.class_name }}`
+            Current Coverage: ${{ steps.analyze.outputs.coverage }}%
+            
+            The tests were generated using the CodeLlama model and include assertions and different test scenarios.
+            Please review the generated tests and adjust them as needed.
+          branch: feature/ai-generate-unit-tests
+          base: main
+          labels: |
+            automated
+            tests
+            needs-review 
