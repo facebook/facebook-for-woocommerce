@@ -42,8 +42,10 @@ class RatingsAndReviewsFeed extends AbstractFeed {
 		$this->feed_type                   = 'PRODUCT_RATINGS_AND_REVIEWS';
 		$this->feed_url_secret_option_name = self::OPTION_FEED_URL_SECRET . $this->data_stream_name;
 
-		$this->feed_handler = new RatingsAndReviewsFeedHandler( new CsvFeedFileWriter( $this->data_stream_name, self::RATINGS_AND_REVIEWS_FEED_HEADER ) );
-		$scheduler          = new ActionScheduler();
+		$this->feed_handler   = new RatingsAndReviewsFeedHandler( new CsvFeedFileWriter( $this->data_stream_name, self::RATINGS_AND_REVIEWS_FEED_HEADER ) );
+		$scheduler            = new ActionScheduler();
+		$this->feed_generator = new RatingsAndReviewsFeedGenerator( $scheduler, $this->feed_handler->get_feed_writer(), $this->data_stream_name );
+		$this->feed_generator->init();
 		$this->add_hooks( Heartbeat::HOURLY );
 	}
 
@@ -71,7 +73,7 @@ class RatingsAndReviewsFeed extends AbstractFeed {
 	 * @since 3.5.0
 	 */
 	public function regenerate_feed(): void {
-		// $this->feed_generator->queue_start();
-		$this->feed_handler->generate_feed_file();
+		$this->feed_generator->queue_start();
+		// $this->feed_handler->generate_feed_file();
 	}
 }

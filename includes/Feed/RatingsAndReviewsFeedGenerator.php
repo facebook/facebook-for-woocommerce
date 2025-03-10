@@ -50,6 +50,9 @@ class RatingsAndReviewsFeedGenerator extends FeedGenerator {
 			}
 
 			$rating = get_comment_meta( $comment->comment_ID, 'rating', true );
+			if ( null === $rating ) {
+				continue;
+			}
 
 			$reviewer_id           = $comment->user_id;
 			$reviewer_is_anonymous = '0' === $reviewer_id ? 'true' : 'false';
@@ -92,5 +95,6 @@ class RatingsAndReviewsFeedGenerator extends FeedGenerator {
 	 */
 	protected function get_batch_size(): int {
 		return 1;
+		// return 100;
 	}
 }

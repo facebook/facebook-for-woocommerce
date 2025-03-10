@@ -92,6 +92,9 @@ class RatingsAndReviewsFeedHandler implements FeedHandler {
 			}
 
 			$rating = get_comment_meta( $comment->comment_ID, 'rating', true );
+			if ( null === $rating ) {
+				continue;
+			}
 
 			$reviewer_id           = $comment->user_id;
 			$reviewer_is_anonymous = '0' === $reviewer_id ? 'true' : 'false';
