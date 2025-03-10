@@ -225,7 +225,7 @@ abstract class AbstractFeed {
 
 		$secret = get_option( $secret_option_name, '' );
 		if ( ! $secret ) {
-			$secret = wp_hash( 'example-feed-' . time() );
+			$secret = wp_hash( 'example-feed-' . time() ); // TODO is there a default secret we can use
 			update_option( $secret_option_name, $secret );
 		}
 
