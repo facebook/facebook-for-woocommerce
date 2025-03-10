@@ -817,22 +817,23 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 				}
 				$this->delete_fb_product( $delete_product );
 			}
+		}
+		
+		if ( $sync_enabled ) {
+			Products::enable_sync_for_products( [ $product ] );
+			Products::set_product_visibility( $product, Admin::SYNC_MODE_SYNC_AND_HIDE !== $sync_mode );
+			$this->save_product_settings( $product );
 		} else {
-			if ( $sync_enabled ) {
-				Products::enable_sync_for_products( [ $product ] );
-				Products::set_product_visibility( $product, Admin::SYNC_MODE_SYNC_AND_HIDE !== $sync_mode );
-				$this->save_product_settings( $product );
-			} else {
-				// if previously enabled, add a notice on the next page load
-				if ( Products::is_sync_enabled_for_product( $product ) ) {
-					Admin::add_product_disabled_sync_notice();
-				}
-				Products::disable_sync_for_products( [ $product ] );
-				if ( in_array( $wp_id, $products_to_delete_from_facebook, true ) ) {
-					$this->delete_fb_product( $product );
-				}
+			// if previously enabled, add a notice on the next page load
+			if ( Products::is_sync_enabled_for_product( $product ) ) {
+				Admin::add_product_disabled_sync_notice();
+			}
+			Products::disable_sync_for_products( [ $product ] );
+			if ( in_array( $wp_id, $products_to_delete_from_facebook, true ) ) {
+				$this->delete_fb_product( $product );
 			}
 		}
+		
 		if ( $sync_enabled ) {
 			Admin\Products::save_commerce_fields( $product );
 			switch ( $product->get_type() ) {
