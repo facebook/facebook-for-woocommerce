@@ -1,7 +1,7 @@
 <?php
 declare( strict_types=1 );
 
-namespace WooCommerce\Facebook\API\MetaLog\Error;
+namespace WooCommerce\Facebook\API\MetaLog;
 
 use WooCommerce\Facebook\API\Request as ApiRequest;
 

@@ -26,16 +26,6 @@ class ErrorLogHandler {
 	const META_LOG_API = 'facebook_for_woocommerce_log_api';
 
 	/**
-	 * Plugin version.
-	 */
-	const PLUGIN_VERSION = \WC_Facebookcommerce::VERSION;
-
-	/**
-	 * @var string
-	 */
-	public static $ems = null;
-
-	/**
 	 * Constructs a new ErrorLog handler.
 	 *
 	 * @since 3.5.0
