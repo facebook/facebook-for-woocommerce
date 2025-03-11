@@ -169,5 +169,6 @@ class ConnectionTest extends TestCase {
         // Check that the iframe is rendered
         $this->assertStringContainsString('<iframe', $output);
         $this->assertStringContainsString('frameborder="0"', $output);
+        $this->assertStringContainsString('id="facebook-commerce-iframe"', $output);
     }
 } 
