@@ -96,6 +96,9 @@ class WC_Facebookcommerce extends WooCommerce\Facebook\Framework\Plugin {
 	/** @var WooCommerce\Facebook\Handlers\WebHook webhook handler */
 	private $webhook_handler;
 
+	/** @var WooCommerce\Facebook\Handlers\WebHook webhook handler */
+	private $checkout_handler;
+
 	/** @var WooCommerce\Facebook\Commerce commerce handler */
 	private $commerce_handler;
 
@@ -222,6 +225,7 @@ class WC_Facebookcommerce extends WooCommerce\Facebook\Framework\Plugin {
 			$this->connection_handler = new WooCommerce\Facebook\Handlers\Connection( $this );
 			new WooCommerce\Facebook\Handlers\MetaExtension();
 			$this->webhook_handler    = new WooCommerce\Facebook\Handlers\WebHook( $this );
+			$this->checkout_handler   = new WooCommerce\Facebook\Handlers\Checkout( $this );
 			$this->tracker            = new WooCommerce\Facebook\Utilities\Tracker();
 
 			// Init jobs
