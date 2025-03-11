@@ -220,6 +220,7 @@ class WC_Facebookcommerce extends WooCommerce\Facebook\Framework\Plugin {
 			}
 
 			$this->connection_handler = new WooCommerce\Facebook\Handlers\Connection( $this );
+			new WooCommerce\Facebook\Handlers\MetaExtension();
 			$this->webhook_handler    = new WooCommerce\Facebook\Handlers\WebHook( $this );
 			$this->tracker            = new WooCommerce\Facebook\Utilities\Tracker();
 

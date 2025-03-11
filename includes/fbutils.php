@@ -860,6 +860,7 @@ if ( ! class_exists( 'WC_Facebookcommerce_Utils' ) ) :
 
 		/**
 		 * Utility function for sending exception logs to Meta.
+		 * @since 3.5.0
 		 */
 		public static function logExceptionImmediatelyToMeta(Throwable $error, array $context = []) {
 			/**
@@ -876,6 +877,7 @@ if ( ! class_exists( 'WC_Facebookcommerce_Utils' ) ) :
 
 		/**
 		 * Utility function for sending telemetry logs to Meta.
+		 * @since 3.5.0
 		 */
 		public static function logTelemetryToMeta(string $message, array $context = []) {
 			/**
@@ -883,11 +885,12 @@ if ( ! class_exists( 'WC_Facebookcommerce_Utils' ) ) :
 			 * $context is an array of data that will be sent to Meta, includes commerce_merchant_settings_id,
 			 * catalog_id, order_id, promotion_id, flow_name, flow_step, extra_data and etc.
 			 */
-
-			// TODO: Implement push logging request to global message queue function.
-			$response = null;
-
-			 return $response;
+			
+			// Push logging request to global message queue function.
+			$context['extra_data'] = ['message' => $message];
+			$logs = get_transient( 'global_telemetry_message_queue' );
+			$logs[] = $context;
+			set_transient( 'global_telemetry_message_queue', $logs, HOUR_IN_SECONDS );
 		}
 
 		/**
