@@ -861,6 +861,11 @@ if ( ! class_exists( 'WC_Facebookcommerce_Utils' ) ) :
 		/**
 		 * Utility function for sending exception logs to Meta.
 		 * @since 3.5.0
+		 * 
+		 * @param Throwable $error error object
+		 * @param array $context context example: ['catalog_id' => '1234567890', 'order_id' => '1234567890', 
+		 * 		'promotion_id' => '1234567890', 'flow_name' => 'checkout', 'flow_step' => 'verification', 
+		 * 		'extra_data' => ['dictionary type' => 'any data that is not fall into our pre-defined format.']
 		 */
 		public static function logExceptionImmediatelyToMeta(Throwable $error, array $context = []) {
 			$extra_data = self::getContextData($context, 'extra_data', []);
@@ -874,7 +879,7 @@ if ( ! class_exists( 'WC_Facebookcommerce_Utils' ) ) :
 				'exception_message' => $error->getMessage(),
 				'exception_trace' => $error->getTraceAsString(),
 				'exception_code' => $error->getCode(),
-				'exception_class' => self::getContextData($context, 'exception_class'),
+				'exception_class' => get_class($error),
 				'catalog_id' => self::getContextData($context, 'catalog_id'),
 				'order_id' => self::getContextData($context, 'order_id'),
 				'promotion_id' => self::getContextData($context, 'promotion_id'),
@@ -887,7 +892,6 @@ if ( ! class_exists( 'WC_Facebookcommerce_Utils' ) ) :
 			
 			// Check if Action Scheduler is available
 			if ( function_exists( 'as_enqueue_async_action' ) ) {
-				error_log( 'request_data' );
 				as_enqueue_async_action( 'facebook_for_woocommerce_log_api', array( $request_data ) );
 			} else {
 				// Handle the absence of the Action Scheduler
