@@ -66,6 +66,9 @@ abstract class Plugin {
 	/** @var AdminNoticeHandler the admin notice handler class */
 	private $admin_notice_handler;
 
+	/** @var BatchLogHandler the batch log handler class */
+	private $batch_log_handler;
+
 
 	/**
 	 * Initialize the plugin.
@@ -118,6 +121,9 @@ abstract class Plugin {
 
 		// add the action & filter hooks
 		$this->add_hooks();
+
+		// build the batch log handler instance
+		$this->init_batch_log_handler();
 	}
 
 
@@ -174,6 +180,15 @@ abstract class Plugin {
 	 */
 	protected function init_lifecycle_handler() {
 		$this->lifecycle_handler = new \WooCommerce\Facebook\Lifecycle( $this );
+	}
+
+	/**
+	 * Builds the batch log handler instance.
+	 *
+	 * @since 3.5.0
+	 */
+	protected function init_batch_log_handler() {
+		$this->batch_log_handler = new BatchLogHandler();
 	}
 
 
