@@ -1277,72 +1277,72 @@ class Admin {
 					)
 				);
 
-			echo '<div class="wp-editor-wrap">';
-			echo '<label for="' . esc_attr( \WC_Facebookcommerce_Integration::FB_PRODUCT_DESCRIPTION ) . '">' .
+				echo '<div class="wp-editor-wrap">';
+				echo '<label for="' . esc_attr( \WC_Facebookcommerce_Integration::FB_PRODUCT_DESCRIPTION ) . '">' .
 				esc_html__( 'Facebook Description', 'facebook-for-woocommerce' ) .
 				'</label>';
-			wp_editor(
-				$rich_text_description,
-				\WC_Facebookcommerce_Integration::FB_PRODUCT_DESCRIPTION,
-				array(
-					'id'            => 'wc_facebook_sync_mode',
-					'textarea_name' => \WC_Facebookcommerce_Integration::FB_PRODUCT_DESCRIPTION,
-					'textarea_rows' => 10,
-					'media_buttons' => true,
-					'teeny'         => true,
-					'quicktags'     => false,
-					'tinymce'       => array(
-						'toolbar1' => 'bold,italic,bullist,spellchecker,fullscreen',
-					),
-				)
-			);
-			echo '</div>';
+				wp_editor(
+					$rich_text_description,
+					\WC_Facebookcommerce_Integration::FB_PRODUCT_DESCRIPTION,
+					array(
+						'id'            => 'wc_facebook_sync_mode',
+						'textarea_name' => \WC_Facebookcommerce_Integration::FB_PRODUCT_DESCRIPTION,
+						'textarea_rows' => 10,
+						'media_buttons' => true,
+						'teeny'         => true,
+						'quicktags'     => false,
+						'tinymce'       => array(
+							'toolbar1' => 'bold,italic,bullist,spellchecker,fullscreen',
+						),
+					)
+				);
+				echo '</div>';
 
-			woocommerce_wp_radio(
-				array(
-					'id'            => 'fb_product_image_source',
-					'label'         => __( 'Facebook Product Image', 'facebook-for-woocommerce' ),
-					'desc_tip'      => true,
-					'description'   => __( 'Choose the product image that should be synced to the Facebook catalog and displayed for this product.', 'facebook-for-woocommerce' ),
-					'options'       => array(
-						Products::PRODUCT_IMAGE_SOURCE_PRODUCT => __( 'Use WooCommerce image', 'facebook-for-woocommerce' ),
-						Products::PRODUCT_IMAGE_SOURCE_CUSTOM  => __( 'Use custom image', 'facebook-for-woocommerce' ),
-					),
-					'value'         => $image_source ? $image_source : Products::PRODUCT_IMAGE_SOURCE_PRODUCT,
-					'class'         => 'short enable-if-sync-enabled js-fb-product-image-source',
-					'wrapper_class' => 'fb-product-image-source-field',
-				)
-			);
+				woocommerce_wp_radio(
+					array(
+						'id'            => 'fb_product_image_source',
+						'label'         => __( 'Facebook Product Image', 'facebook-for-woocommerce' ),
+						'desc_tip'      => true,
+						'description'   => __( 'Choose the product image that should be synced to the Facebook catalog and displayed for this product.', 'facebook-for-woocommerce' ),
+						'options'       => array(
+							Products::PRODUCT_IMAGE_SOURCE_PRODUCT => __( 'Use WooCommerce image', 'facebook-for-woocommerce' ),
+							Products::PRODUCT_IMAGE_SOURCE_CUSTOM  => __( 'Use custom image', 'facebook-for-woocommerce' ),
+						),
+						'value'         => $image_source ? $image_source : Products::PRODUCT_IMAGE_SOURCE_PRODUCT,
+						'class'         => 'short enable-if-sync-enabled js-fb-product-image-source',
+						'wrapper_class' => 'fb-product-image-source-field',
+					)
+				);
 
-			woocommerce_wp_text_input(
-				array(
-					'id'          => \WC_Facebook_Product::FB_PRODUCT_IMAGE,
-					'label'       => __( 'Custom Image URL', 'facebook-for-woocommerce' ),
-					'value'       => $image,
-					'class'       => sprintf( 'enable-if-sync-enabled product-image-source-field show-if-product-image-source-%s', Products::PRODUCT_IMAGE_SOURCE_CUSTOM ),
-					'desc_tip'    => true,
-					'description' => __( 'Please enter an absolute URL (e.g. https://domain.com/image.jpg).', 'facebook-for-woocommerce' ),
-				)
-			);
+				woocommerce_wp_text_input(
+					array(
+						'id'          => \WC_Facebook_Product::FB_PRODUCT_IMAGE,
+						'label'       => __( 'Custom Image URL', 'facebook-for-woocommerce' ),
+						'value'       => $image,
+						'class'       => sprintf( 'enable-if-sync-enabled product-image-source-field show-if-product-image-source-%s', Products::PRODUCT_IMAGE_SOURCE_CUSTOM ),
+						'desc_tip'    => true,
+						'description' => __( 'Please enter an absolute URL (e.g. https://domain.com/image.jpg).', 'facebook-for-woocommerce' ),
+					)
+				);
 
 				$this->render_facebook_product_video_field( $video_urls );
 
-			woocommerce_wp_text_input(
-				array(
-					'id'          => \WC_Facebook_Product::FB_PRODUCT_PRICE,
-					'label'       => sprintf(
-					/* translators: Placeholders %1$s - WC currency symbol */
-						__( 'Facebook Price (%1$s)', 'facebook-for-woocommerce' ),
-						get_woocommerce_currency_symbol()
-					),
-					'desc_tip'    => true,
-					'description' => __( 'Custom price for product on Facebook. Please enter in monetary decimal (.) format without thousand separators and currency symbols. If blank, product price will be used.', 'facebook-for-woocommerce' ),
-					'cols'        => 40,
-					'rows'        => 60,
-					'value'       => $price,
-					'class'       => 'enable-if-sync-enabled',
-				)
-			);
+				woocommerce_wp_text_input(
+					array(
+						'id'          => \WC_Facebook_Product::FB_PRODUCT_PRICE,
+						'label'       => sprintf(
+						/* translators: Placeholders %1$s - WC currency symbol */
+							__( 'Facebook Price (%1$s)', 'facebook-for-woocommerce' ),
+							get_woocommerce_currency_symbol()
+						),
+						'desc_tip'    => true,
+						'description' => __( 'Custom price for product on Facebook. Please enter in monetary decimal (.) format without thousand separators and currency symbols. If blank, product price will be used.', 'facebook-for-woocommerce' ),
+						'cols'        => 40,
+						'rows'        => 60,
+						'value'       => $price,
+						'class'       => 'enable-if-sync-enabled',
+					)
+				);
 
 				woocommerce_wp_text_input(
 					array(
@@ -1368,7 +1368,7 @@ class Admin {
 						'value' => '',
 					)
 				);
-		?>
+				?>
 			</div>
 			
 			<div class='options_group show_if_variable'>
@@ -1451,22 +1451,22 @@ class Admin {
 			)
 		);
 
-		if ($variation->get_id() && $description) {	
-		woocommerce_wp_textarea_input(
-			array(
-				'id'            => sprintf( 'variable_%s%s', \WC_Facebookcommerce_Integration::FB_PRODUCT_DESCRIPTION, $index ),
-				'name'          => sprintf( "variable_%s[$index]", \WC_Facebookcommerce_Integration::FB_PRODUCT_DESCRIPTION ),
-				'label'         => __( 'Facebook Description', 'facebook-for-woocommerce' ),
-				'desc_tip'      => true,
-				'description'   => __( 'Custom (plain-text only) description for product on Facebook. If blank, product description will be used. If product description is blank, shortname will be used.', 'facebook-for-woocommerce' ),
-				'cols'          => 40,
-				'rows'          => 5,
-				'value'         => $description,
-				'class'         => 'enable-if-sync-enabled',
-				'wrapper_class' => 'form-row form-row-full',
-			)
-		);
-		}	
+		if ( $variation->get_id() && $description ) {
+			woocommerce_wp_textarea_input(
+				array(
+					'id'            => sprintf( 'variable_%s%s', \WC_Facebookcommerce_Integration::FB_PRODUCT_DESCRIPTION, $index ),
+					'name'          => sprintf( "variable_%s[$index]", \WC_Facebookcommerce_Integration::FB_PRODUCT_DESCRIPTION ),
+					'label'         => __( 'Facebook Description', 'facebook-for-woocommerce' ),
+					'desc_tip'      => true,
+					'description'   => __( 'Custom (plain-text only) description for product on Facebook. If blank, product description will be used. If product description is blank, shortname will be used.', 'facebook-for-woocommerce' ),
+					'cols'          => 40,
+					'rows'          => 5,
+					'value'         => $description,
+					'class'         => 'enable-if-sync-enabled',
+					'wrapper_class' => 'form-row form-row-full',
+				)
+			);
+		}
 
 		woocommerce_wp_radio(
 			array(
@@ -1480,7 +1480,7 @@ class Admin {
 					Products::PRODUCT_IMAGE_SOURCE_PARENT_PRODUCT => __( 'Use parent image', 'facebook-for-woocommerce' ),
 					Products::PRODUCT_IMAGE_SOURCE_CUSTOM  => __( 'Use custom image', 'facebook-for-woocommerce' ),
 				),
-				'value'         => $image_source ?: Products::PRODUCT_IMAGE_SOURCE_PRODUCT,
+				'value'         => $image_source ? $image_source : Products::PRODUCT_IMAGE_SOURCE_PRODUCT,
 				'class'         => 'enable-if-sync-enabled js-fb-product-image-source',
 				'wrapper_class' => 'fb-product-image-source-field',
 			)
