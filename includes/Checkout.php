@@ -103,9 +103,40 @@ class Checkout {
 					// Parse each product ID and quantity
 					list($product_id, $quantity) = explode( ':', $product );
 
+					// Parse the product ID. The input is sent in the Retailer ID format (see get_fb_retailer_id())
+					// The Retailer ID format is: {product_sku}_{product_id}, so we need to extract the product_id
+					if ( false !== strpos( $product_id, '_' ) ) {
+						$parts      = explode( '_', $product_id );
+						$product_id = end( $parts );
+					}
+
 					// Validate and add the product to the cart
 					if ( is_numeric( $product_id ) && is_numeric( $quantity ) && $quantity > 0 ) {
-						WC()->cart->add_to_cart( $product_id, $quantity );
+						try {
+							WC()->cart->add_to_cart( $product_id, $quantity );
+						} catch ( \Exception $e ) {
+							\WC_Facebookcommerce_Utils::logExceptionImmediatelyToMeta(
+								$e,
+								array(
+									'flow_name'       => 'checkout',
+									'incoming_params' => array(
+										'products_param' => $products_param,
+										'product_id'     => $product_id,
+									),
+								)
+							);
+						}
+					} else {
+						\WC_Facebookcommerce_Utils::logTelemetryToMeta(
+							'Failed to add product to cart',
+							array(
+								'flow_name'       => 'checkout',
+								'incoming_params' => array(
+									'products_param' => $products_param,
+									'product_id'     => $product_id,
+								),
+							)
+						);
 					}
 				}
 			}
