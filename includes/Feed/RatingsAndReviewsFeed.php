@@ -65,15 +65,4 @@ class RatingsAndReviewsFeed extends AbstractFeed {
 			self::STREAM_CALL_BACK
 		) );
 	}
-
-	/**
-	 * Regenerates the ratings and reviews feed based on the defined schedule.
-	 * Use the FeedHandler to generate the feed file as batch is not needed here.
-	 *
-	 * @since 3.5.0
-	 */
-	public function regenerate_feed(): void {
-		$this->feed_generator->queue_start();
-		// $this->feed_handler->generate_feed_file();
-	}
 }
