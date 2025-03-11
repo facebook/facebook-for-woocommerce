@@ -158,6 +158,15 @@ class Product_Categories {
 		return __( 'Facebook catalogs now support category specific fields, to make best use of them you need to select a category. WooCommerce uses the Google taxonomy as it is the most widely accepted form of categorisation. If no Google product category is chosen, the WooCommerce product category will be used instead.', 'facebook-for-woocommerce' );
 	}
 
+	/**
+	 * Returns the text that explains why certain fields should be inputed for ad performance
+	 *
+	 * @return string the explanation text
+	 */
+	public static function get_catalog_explanation_text() {
+		return __( 'To optimize ad performance, we recommend providing these additional product attributes in WooCommerce. Updates made here will be overwritten with attributes provided in WooCommerce.', 'facebook-for-woocommerce' );
+	}
+
 
 	/**
 	 * Renders the Google product category field markup for the edit form.
