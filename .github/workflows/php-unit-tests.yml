@@ -1,8 +1,6 @@
 name: PHP Unit Tests
 
-on:
-  pull_request: { }
-  # run on all PRs
+on: [ push, pull_request ] # Run on all pushes and PRs
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
