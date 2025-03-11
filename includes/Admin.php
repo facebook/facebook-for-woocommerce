@@ -1315,8 +1315,6 @@ class Admin {
 			<div class='options_group hide_if_variable'>
 				<?php
 
-				// Only show deprecation notice if any of the deprecated fields exist
-				if ( $post->ID && ( $fb_product_description || $image || $price ) ) {
 					?>
 					<div class="notice notice-warning inline is-dismissible" style="margin-top: 1px !important;">
 						<p>
@@ -1342,8 +1340,7 @@ class Admin {
 						});
 					</script>
 					<?php
-				}
-
+					
 				woocommerce_wp_select(
 					array(
 						'id'          => 'wc_facebook_sync_mode',
