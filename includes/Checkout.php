@@ -97,19 +97,23 @@ class Checkout {
 				WC()->cart->apply_coupon( sanitize_text_field( $coupon_code ) );
 			}
 
-			$checkout_page_id = wc_get_page_id( 'checkout' );
-			if ( $checkout_page_id > 0 ) {
-				$checkout_page = get_post( $checkout_page_id );
-				if ( $checkout_page ) {
-					setup_postdata( $checkout_page );
-					get_header();
-					echo wp_kses_post( apply_filters( 'the_content', $checkout_page->post_content ) );
-					get_footer();
-					wp_reset_postdata();
-
-					exit;
-				}
-			}
+			$checkout_url = wc_get_checkout_url();
+			echo '<style>
+                body, html {
+                    margin: 0;
+                    padding: 0;
+                    height: 100%;
+                    overflow: hidden;
+                }
+                iframe {
+                    width: 100%;
+                    height: 100vh;
+                    border: none;
+                    display: block;
+                }
+              </style>';
+			echo '<iframe src="' . esc_url( $checkout_url ) . '"></iframe>';
+			exit;
 		}
 
 		return $template;
