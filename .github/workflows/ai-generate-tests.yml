@@ -10,7 +10,7 @@ concurrency:
 jobs:
   generate-ai-tests:
     name: Generate AI-Powered Unit Tests
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     env:
       WP_CORE_DIR: "/tmp/wordpress/src"
       WP_TESTS_DIR: "/tmp/wordpress/tests/phpunit"
