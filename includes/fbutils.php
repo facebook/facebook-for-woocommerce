@@ -863,16 +863,36 @@ if ( ! class_exists( 'WC_Facebookcommerce_Utils' ) ) :
 		 * @since 3.5.0
 		 */
 		public static function logExceptionImmediatelyToMeta(Throwable $error, array $context = []) {
-			/**
-			 * WIP: This is a dummy function to send exception logs to Meta.
-			 * $context is an array of data that will be sent to Meta, includes commerce_merchant_settings_id,
-			 * catalog_id, order_id, promotion_id, flow_name, flow_step, extra_data and etc.
-			 */
+			$extra_data = self::getContextData($context, 'extra_data', []);
+			$extra_data['plugin_version'] = self::PLUGIN_VERSION;
+			$extra_data['php_version']    = phpversion();
 
-			// TODO: Implement enqueue logging to Meta function.
-			$response = null;
-
-			 return $response;
+			$request_data = [
+				'event' => 'error_log',
+				'event_type' => self::getContextData($context, 'event_type'),
+				'commerce_merchant_settings_id' => self::getContextData($context, 'commerce_merchant_settings_id', self::$ems),
+				'exception_message' => $error->getMessage(),
+				'exception_trace' => $error->getTraceAsString(),
+				'exception_code' => $error->getCode(),
+				'exception_class' => self::getContextData($context, 'exception_class'),
+				'catalog_id' => self::getContextData($context, 'catalog_id'),
+				'order_id' => self::getContextData($context, 'order_id'),
+				'promotion_id' => self::getContextData($context, 'promotion_id'),
+				'flow_name' => self::getContextData($context, 'flow_name'),
+				'flow_step' => self::getContextData($context, 'flow_step'),
+				'incoming_params' => self::getContextData($context, 'incoming_params'),
+				'seller_platform_app_version' => self::getContextData($context, 'seller_platform_app_version'),
+				'extra_data' => $extra_data,
+			];
+			
+			// Check if Action Scheduler is available
+			if ( function_exists( 'as_enqueue_async_action' ) ) {
+				error_log( 'request_data' );
+				as_enqueue_async_action( 'facebook_for_woocommerce_log_api', array( $request_data ) );
+			} else {
+				// Handle the absence of the Action Scheduler
+				self::log( 'Action Scheduler is not available.' );
+			}
 		}
 
 		/**
@@ -911,6 +931,19 @@ if ( ! class_exists( 'WC_Facebookcommerce_Utils' ) ) :
 					in_array( 'fpassthru', explode( ',', $disabled_functions ), false );
 			}
 			return $disabled;
+		}
+
+		 /**
+		 * Gets a value from the context array, or a default if the key is not set
+		 *
+		 * @param array $context
+		 * @param string $key
+		 * @param mixed $default
+		 * @return mixed
+		 */
+		private static function getContextData(array $context, string $key, $default = null)
+		{
+			return $context[$key] ?? $default;
 		}
 
 	}

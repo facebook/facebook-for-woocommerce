@@ -593,8 +593,8 @@ class API extends Base {
 		return $this->perform_request( $request );
 	}
 
-	public function log_to_meta() {
-		$request = new API\MetaLog\Error\Request( ['event' => 'wc_test_log'] );
+	public function log_to_meta( $context) {
+		$request = new API\MetaLog\Error\Request( $context );
 		$this->set_response_handler( API\MetaLog\Error\Response::class );
 		return $this->perform_request( $request );
 	}
