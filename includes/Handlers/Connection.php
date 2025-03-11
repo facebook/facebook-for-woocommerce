@@ -951,11 +951,11 @@ class Connection {
 	/**
 	 * Gets the configured timezone string using values accepted by Facebook
 	 *
-	 * @since 2.0.0
+	 * @since 2.5.0
 	 *
 	 * @return string
 	 */
-	private function get_timezone_string() {
+	public function get_timezone_string() {
 		$timezone = wc_timezone_string();
 		// convert +05:30 and +05:00 into Etc/GMT+5 - we ignore the minutes because Facebook does not allow minute offsets
 		if ( preg_match( '/([+-])(\d{2}):\d{2}/', $timezone, $matches ) ) {
