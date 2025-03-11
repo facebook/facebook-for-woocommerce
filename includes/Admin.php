@@ -1252,36 +1252,6 @@ class Admin {
 		<div id='facebook_options' class='panel woocommerce_options_panel'>
 			<div class='options_group hide_if_variable'>
 				<?php
-
-				// Only show deprecation notice if any of the deprecated fields exist
-				if ( $post->ID && ( $fb_product_description || $image || $price ) ) {
-					?>
-					<div class="notice notice-warning inline is-dismissible" style="margin-top: 1px !important;">
-						<p>
-							<?php
-							printf(
-								/* translators: Placeholders %1$s - opening strong tag, %2$s - closing strong tag */
-								esc_html__( '%1$sHeads up!%2$s Facebook Description, Custom Image URL, and Facebook Price fields are no longer supported and will be removed in a future update. These fields will not affect your product listings on Facebook.', 'facebook-for-woocommerce' ),
-								'<strong>',
-								'</strong>'
-							);
-							?>
-						</p>
-						<button type="button" class="notice-dismiss">
-							<span class="screen-reader-text"><?php esc_html_e( 'Dismiss this notice.', 'facebook-for-woocommerce' ); ?></span>
-						</button>
-					</div>
-					<script type="text/javascript">
-						jQuery(document).ready(function($) {
-							$('.notice.is-dismissible').on('click', '.notice-dismiss', function(e) {
-								e.preventDefault();
-								$(this).closest('.notice').fadeOut();
-							});
-						});
-					</script>
-					<?php
-				}
-
 				woocommerce_wp_select(
 					array(
 						'id'          => 'wc_facebook_sync_mode',
@@ -1297,8 +1267,6 @@ class Admin {
 					)
 				);
 
-				// Check if this is an existing product with a Facebook description
-		if ( $post->ID && $fb_product_description ) {
 			echo '<div class="wp-editor-wrap">';
 			echo '<label for="' . esc_attr( \WC_Facebookcommerce_Integration::FB_PRODUCT_DESCRIPTION ) . '">' .
 				esc_html__( 'Facebook Description', 'facebook-for-woocommerce' ) .
@@ -1319,8 +1287,7 @@ class Admin {
 				)
 			);
 			echo '</div>';
-		}
-		if ( $post->ID && $image ) {
+
 			woocommerce_wp_radio(
 				array(
 					'id'            => 'fb_product_image_source',
@@ -1347,11 +1314,9 @@ class Admin {
 					'description' => __( 'Please enter an absolute URL (e.g. https://domain.com/image.jpg).', 'facebook-for-woocommerce' ),
 				)
 			);
-		}
 
 				$this->render_facebook_product_video_field( $video_urls );
 
-		if ( $post->ID && $price ) {
 			woocommerce_wp_text_input(
 				array(
 					'id'          => \WC_Facebook_Product::FB_PRODUCT_PRICE,
@@ -1368,7 +1333,6 @@ class Admin {
 					'class'       => 'enable-if-sync-enabled',
 				)
 			);
-		}
 
 				woocommerce_wp_text_input(
 					array(
@@ -1458,36 +1422,6 @@ class Admin {
 			$sync_mode = self::SYNC_MODE_SYNC_DISABLED;
 		}
 
-		// Only show deprecation notice if any of the deprecated fields exist
-		if ($variation->get_id() && ($description || $image_url || $price)) {
-			?>
-			<div class="notice notice-info inline is-dismissible" style="background-color: #f8f9fa; border-left-color: #72777c; margin: 15px 0;">
-				<p>
-					<?php 
-					echo sprintf(
-						/* translators: Placeholders %1$s - opening strong tag, %2$s - closing strong tag */
-						esc_html__( '%1$sHeads up!%2$s Facebook Description, Custom Image URL, and Facebook Price fields are no longer supported and will be removed in a future update. These fields will not affect your product listings on Facebook.', 'facebook-for-woocommerce' ),
-						'<strong>',
-						'</strong>'
-					); 
-					?>
-				</p>
-				<button type="button" class="notice-dismiss">
-					<span class="screen-reader-text"><?php esc_html_e('Dismiss this notice.', 'facebook-for-woocommerce'); ?></span>
-				</button>
-			</div>
-			<script type="text/javascript">
-				jQuery(document).ready(function($) {
-					$('.notice.is-dismissible').on('click', '.notice-dismiss', function(e) {
-						e.preventDefault();
-						$(this).closest('.notice').fadeOut();
-					});
-				});
-			</script>
-			<?php
-		}
-
-		// Always show the sync mode selector
 		woocommerce_wp_select(
 			array(
 				'id'            => "variable_facebook_sync_mode$index",
@@ -1523,7 +1457,6 @@ class Admin {
 		);
 		}	
 
-		if ($variation->get_id() && $image_url) {
 		woocommerce_wp_radio(
 			array(
 				'id'            => "variable_fb_product_image_source$index",
@@ -1554,9 +1487,7 @@ class Admin {
 				'description'   => __( 'Please enter an absolute URL (e.g. https://domain.com/image.jpg).', 'facebook-for-woocommerce' ),
 			)
 		);
-		}
 
-		if ($variation->get_id() && $price) {
 		woocommerce_wp_text_input(
 			array(
 				'id'            => sprintf( 'variable_%s%s', \WC_Facebook_Product::FB_PRODUCT_PRICE, $index ),
@@ -1573,7 +1504,6 @@ class Admin {
 				'wrapper_class' => 'form-row form-full',
 			)
 		);
-		}
 
 		woocommerce_wp_text_input(
 			array(
