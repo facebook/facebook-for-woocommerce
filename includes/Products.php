@@ -266,6 +266,17 @@ class Products {
 			return false;
 		}
 		$product->update_meta_data( self::VISIBILITY_META_KEY, wc_bool_to_string( $visibility ) );
+
+		// Updating visibility for the all variable products
+		if ( $product->is_type( 'variable' ) ) {
+			foreach ( $product->get_children() as $variation ) {
+				$product_variation = wc_get_product( $variation );
+				if ( $product_variation instanceof \WC_Product ) {
+					$product_variation->update_meta_data( self::VISIBILITY_META_KEY, wc_bool_to_string($visibility));
+					$product_variation->save_meta_data();
+				}
+			}
+		} 
 		$product->save_meta_data();
 		self::$products_visibility[ $product->get_id() ] = $visibility;
 		return true;
