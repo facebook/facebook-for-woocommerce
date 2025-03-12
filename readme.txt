@@ -60,12 +60,6 @@ When opening a bug on GitHub, please give us as many details as possible.
 = 3.3.3 - 2025-02-06 = 
 * Fix - Use of recommended delete connection endpoint over delete permission endpoint by atuld123 in #2844
 * Add - Expose Brand & MPN to Woocommerce UI by @devbodaghe in #2842
-= 3.3.4 - 2025-02-11 =
-* Fix - Fixing the issue with version number
-
-= 3.3.3 - 2025-02-06 = 
-* Fix - Use of recommended delete connection endpoint over delete permission endpoint by atuld123 in #2844
-* Add - Expose Brand & MPN to Woocommerce UI by @devbodaghe in #2842
 
 = 3.3.2 - 2025-01-21 =
 * Fix - a bug that arose from reliance on the plugin version compatibility tag by @vinkmeta in #2856
