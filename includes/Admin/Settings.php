@@ -13,6 +13,7 @@ namespace WooCommerce\Facebook\Admin;
 use Automattic\WooCommerce\Admin\Features\Features as WooAdminFeatures;
 use WooCommerce\Facebook\Admin\Settings_Screens;
 use WooCommerce\Facebook\Admin\Settings_Screens\Connection;
+use WooCommerce\Facebook\Admin\Settings_Screens\Whatsapp_Utility;
 use WooCommerce\Facebook\Framework\Helper;
 use WooCommerce\Facebook\Framework\Plugin\Exception as PluginException;
 
@@ -37,6 +38,9 @@ class Settings {
 
 	/** @var Abstract_Settings_Screen[] */
 	private $screens;
+
+	/** @var flag to check if whatsapp utility is enabled, this is just a boolean for now, will implement a flagging mechanism */
+	const WHATSAPP_UTILITY_FEATURE_FLAG = true;
 
 	/**
 	 * Settings constructor.
@@ -72,6 +76,11 @@ class Settings {
 			Settings_Screens\Product_Sync::ID => new Settings_Screens\Product_Sync(),
 			Settings_Screens\Product_Sets::ID => new Settings_Screens\Product_Sets(),
 		);
+
+		if ( self::WHATSAPP_UTILITY_FEATURE_FLAG ) {
+			$whatsapp_utility_screens = [ Settings_Screens\Whatsapp_Utility::ID => new Settings_Screens\Whatsapp_Utility() ];
+			$last                     = array_merge( $last, $whatsapp_utility_screens );
+		}
 
 		return array_merge( array_merge( $first, $screens ), $last );
 	}
