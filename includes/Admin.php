@@ -2030,7 +2030,7 @@ class Admin {
 			$normalized_attr_name = strtolower( $attribute->get_name() );
 
 			// Special handling for color/colour
-			if ( $normalized_attr_name === 'color' || $normalized_attr_name === 'colour' ) {
+			if ( 'color' === $normalized_attr_name || 'colour' === $normalized_attr_name ) {
 				$meta_key   = \WC_Facebook_Product::FB_COLOR;
 				$field_name = 'color';
 			} else {
