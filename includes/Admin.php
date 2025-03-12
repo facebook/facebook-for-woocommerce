@@ -1440,16 +1440,19 @@ class Admin {
 			<?php
 				woocommerce_wp_text_input(
 					array(
-						'id'    => \WC_Facebook_Product::FB_MPN,
-						'label' => __( 'Manufacturer Part Number (MPN)', 'facebook-for-woocommerce' ),
-						'value' => $fb_mpn,
-						'class' => 'enable-if-sync-enabled',
+						'id'          => \WC_Facebook_Product::FB_MPN,
+						'name'        => \WC_Facebook_Product::FB_MPN,
+						'label'       => __( 'Manufacturer Part Number (MPN)', 'facebook-for-woocommerce' ),
+						'value'       => $fb_mpn,
+						'class'       => 'enable-if-sync-enabled',
+						'desc_tip'    => true,
 					)
 				);
-				
+
 				woocommerce_wp_text_input(
 					array(
 						'id'    => \WC_Facebook_Product::FB_BRAND,
+						'name'  => \WC_Facebook_Product::FB_BRAND,
 						'label' => __( 'Brand', 'facebook-for-woocommerce' ),
 						'value' => $fb_brand,
 						'class' => 'enable-if-sync-enabled',
@@ -1481,6 +1484,7 @@ class Admin {
 						'label'       => __( 'Size', 'facebook-for-woocommerce' ),
 						'desc_tip'    => true,
 						'description' => __( 'Size of the product item', 'facebook-for-woocommerce' ),
+						'name'  => \WC_Facebook_Product::FB_SIZE,
 						'cols'        => 40,
 						'rows'        => 60,
 						'value'       => $fb_size,
@@ -1546,6 +1550,7 @@ class Admin {
 						'label'       => __( 'Material', 'facebook-for-woocommerce' ),
 						'desc_tip'    => true,
 						'description' => __( 'Material of the product item', 'facebook-for-woocommerce' ),
+						'name'        => \WC_Facebook_Product::FB_MATERIAL,
 						'cols'        => 40,
 						'rows'        => 60,
 						'value'       => $fb_material,
@@ -1559,6 +1564,7 @@ class Admin {
 						'label'       => __( 'Pattern', 'facebook-for-woocommerce' ),
 						'desc_tip'    => true,
 						'description' => __( 'Pattern of the product item', 'facebook-for-woocommerce' ),
+						'name'        => \WC_Facebook_Product::FB_PATTERN,
 						'cols'        => 40,
 						'rows'        => 60,
 						'value'       => $fb_pattern,
@@ -2021,24 +2027,24 @@ class Admin {
 		];
 
 		// First, check which fields should be cleared
-		foreach ($attribute_map as $attribute_name => $meta_key) {
-			$attribute_exists = false;
-			foreach ($attributes as $attribute) {
-				$normalized_attr_name = strtolower($attribute->get_name());
-				if ($normalized_attr_name === $attribute_name || 
-					($meta_key === \WC_Facebook_Product::FB_COLOR && 
-					 ($normalized_attr_name === 'color' || $normalized_attr_name === 'colour'))) {
-					$attribute_exists = true;
-					break;
-				}
-			}
+		// foreach ($attribute_map as $attribute_name => $meta_key) {
+		// 	$attribute_exists = false;
+		// 	foreach ($attributes as $attribute) {
+		// 		$normalized_attr_name = strtolower($attribute->get_name());
+		// 		if ($normalized_attr_name === $attribute_name || 
+		// 			($meta_key === \WC_Facebook_Product::FB_COLOR && 
+		// 			 ($normalized_attr_name === 'color' || $normalized_attr_name === 'colour'))) {
+		// 			$attribute_exists = true;
+		// 			break;
+		// 		}
+		// 	}
 			
-			if (!$attribute_exists && !isset($facebook_fields[array_search($meta_key, $attribute_map)])) {
-				delete_post_meta($product_id, $meta_key);
-				$field_name = ($meta_key === \WC_Facebook_Product::FB_COLOR) ? 'color' : $attribute_name;
-				$facebook_fields[$field_name] = '';
-			}
-		}
+		// 	if (!$attribute_exists && !isset($facebook_fields[array_search($meta_key, $attribute_map)])) {
+		// 		delete_post_meta($product_id, $meta_key);
+		// 		$field_name = ($meta_key === \WC_Facebook_Product::FB_COLOR) ? 'color' : $attribute_name;
+		// 		$facebook_fields[$field_name] = '';
+		// 	}
+		// }
 
 		// Then process existing attributes
 		foreach ($attributes as $attribute) {
