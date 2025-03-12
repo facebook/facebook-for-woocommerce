@@ -27,8 +27,8 @@ jobs:
           cache: 'npm'
 
       - name: Install dependencies
-        run: npm ci --no-optional
-        
+        run: npm ci --no-optional --no-platform
+
       - name: Verify Node and npm versions
         run: |
           node --version
