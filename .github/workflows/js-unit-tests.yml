@@ -27,12 +27,32 @@ jobs:
           node-version: ${{ matrix.node }}
           cache: 'npm'
 
+      - name: Prepare package.json for Linux
+        id: prepare
+        run: |
+          # Create a .npmrc file to ignore fsevents
+          echo "optional=false" > .npmrc
+          echo "omit=optional" >> .npmrc
+          
+          # Create a backup of the original package.json
+          cp package.json package.json.bak
+          
+          # Remove fsevents from package.json if it exists
+          if grep -q "fsevents" package.json; then
+            # Use jq to remove fsevents from dependencies and devDependencies
+            jq 'del(.dependencies.fsevents) | del(.devDependencies.fsevents) | del(.optionalDependencies.fsevents)' package.json > package.json.tmp
+            mv package.json.tmp package.json
+          fi
+          
+          echo "Package.json prepared for Linux environment"
+
       - name: Install dependencies
         id: install
         continue-on-error: true
         run: |
-          # Try to install dependencies, but continue even if it fails
-          npm install --legacy-peer-deps || echo "::warning::Dependency installation failed, tests may be skipped"
+          # Try to install dependencies with multiple fallback options
+          npm install --no-optional || npm install --legacy-peer-deps --no-optional || npm ci --no-optional || echo "::warning::Dependency installation failed, tests may be skipped"
+          
           # Check if node_modules exists and has content
           if [ -d "node_modules" ] && [ "$(ls -A node_modules)" ]; then
             echo "dependencies_installed=true" >> $GITHUB_OUTPUT
@@ -52,4 +72,12 @@ jobs:
 
       - name: Skip tests notification
         if: steps.install.outputs.dependencies_installed != 'true'
-        run: echo "::warning::Skipping tests due to dependency installation issues" 
+        run: echo "::warning::Skipping tests due to dependency installation issues"
+        
+      - name: Restore original package.json
+        if: always()
+        run: |
+          if [ -f package.json.bak ]; then
+            mv package.json.bak package.json
+            rm -f .npmrc
+          fi 
