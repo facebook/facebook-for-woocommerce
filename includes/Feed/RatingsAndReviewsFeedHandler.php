@@ -15,63 +15,27 @@ defined( 'ABSPATH' ) || exit;
 /**
  * Ratings and Reviews Feed Handler class
  *
- * Extends the FeedHandler interface to handle ratings and reviews feed file generation.
+ * Extends the AbstractFeedHandler class to handle ratings and reviews feed file generation.
  *
  * @package WooCommerce\Facebook\Feed
  * @since 3.5.0
  */
-class RatingsAndReviewsFeedHandler implements FeedHandler {
-	/**
-	 * The feed writer instance for the given feed.
-	 *
-	 * @var FeedFileWriter
-	 * @since 3.5.0
-	 */
-	private FeedFileWriter $feed_writer;
+class RatingsAndReviewsFeedHandler extends AbstractFeedHandler {
 
 	/**
 	 * Constructor.
 	 *
-	 * @param FeedFileWriter $feed_writer An instance of csv feed writer.
-	 *
-	 * @since 3.5.0
+	 * @param FeedFileWriter $feed_writer An instance of the CSV feed file writer.
 	 */
 	public function __construct( FeedFileWriter $feed_writer ) {
 		$this->feed_writer = $feed_writer;
+		$this->feed_type   = FeedManager::RATINGS_AND_REVIEWS;
 	}
 
 	/**
-	 * Generate the feed file.
-	 *
-	 * This method is responsible for generating a feed file.
-	 *
-	 * @since 3.5.0
-	 */
-	public function generate_feed_file(): void {
-		$this->feed_writer->write_feed_file( $this->get_feed_data() );
-		/**
-		 * Trigger upload from RatingsAndReviewsFeed instance
-		 *
-		 * @since 3.5.0
-		 */
-		do_action( AbstractFeed::FEED_GEN_COMPLETE_ACTION . FeedManager::RATINGS_AND_REVIEWS );
-	}
-
-	/**
-	 * Get the feed file writer instance.
-	 *
-	 * @return FeedFileWriter
-	 * @since 3.5.0
-	 */
-	public function get_feed_writer(): FeedFileWriter {
-		return $this->feed_writer;
-	}
-
-	/**
-	 * Get the feed data and return as array of objects.
+	 * Get the feed data and return as an array.
 	 *
 	 * @return array
-	 * @since 3.5.0
 	 */
 	public function get_feed_data(): array {
 		$query_args = array(

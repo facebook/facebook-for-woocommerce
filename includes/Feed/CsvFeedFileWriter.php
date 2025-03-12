@@ -110,7 +110,7 @@ class CsvFeedFileWriter implements FeedFileWriter {
 			// Step 3: Rename temporary feed file to final feed file.
 			$this->promote_temp_file();
 		} catch ( PluginException $e ) {
-			WC_Facebookcommerce_Utils::log( wp_json_encode( $e->getMessage() ) );
+			WC_Facebookcommerce_Utils::logExceptionImmediatelyToMeta( $e );
 			// Close the temporary file if it is still open.
 			if ( ! empty( $temp_feed_file ) && is_resource( $temp_feed_file ) ) {
 				fclose( $temp_feed_file ); // phpcs:ignore
