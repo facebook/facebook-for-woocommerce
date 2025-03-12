@@ -60,9 +60,6 @@ class RatingsAndReviewsFeed extends AbstractFeed {
 		add_action( $heartbeat, array( $this, self::SCHEDULE_CALL_BACK ) );
 		add_action( self::GENERATE_FEED_ACTION . $this->data_stream_name, array( $this, self::REGENERATE_CALL_BACK ) );
 		add_action( self::FEED_GEN_COMPLETE_ACTION . $this->data_stream_name, array( $this, self::UPLOAD_CALL_BACK ) );
-		add_action( self::LEGACY_API_PREFIX . self::REQUEST_FEED_ACTION . $this->data_stream_name, array(
-			$this,
-			self::STREAM_CALL_BACK
-		) );
+		add_action( self::LEGACY_API_PREFIX . self::REQUEST_FEED_ACTION . $this->data_stream_name, array( $this, self::STREAM_CALL_BACK ) );
 	}
 }
