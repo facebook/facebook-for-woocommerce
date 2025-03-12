@@ -1295,13 +1295,13 @@ class Admin {
 		$video_urls            = get_post_meta( $post->ID, \WC_Facebook_Product::FB_PRODUCT_VIDEO, true );
 		$fb_brand              = get_post_meta( $post->ID, \WC_Facebook_Product::FB_BRAND, true ) ? get_post_meta( $post->ID, \WC_Facebook_Product::FB_BRAND, true ) : get_post_meta( $post->ID, '_wc_facebook_enhanced_catalog_attributes_brand', true );
 		$fb_mpn                = get_post_meta( $post->ID, \WC_Facebook_Product::FB_MPN, true );
-		$fb_condition             = get_post_meta( $post->ID, \WC_Facebook_Product::FB_PRODUCT_CONDITION, true );
-		$fb_age_group            = get_post_meta( $post->ID, \WC_Facebook_Product::FB_AGE_GROUP, true ) ?: get_post_meta( $post->ID, '_wc_facebook_enhanced_catalog_attributes_age_group', true );
-		$fb_gender               = get_post_meta( $post->ID, \WC_Facebook_Product::FB_GENDER, true ) ?: get_post_meta( $post->ID, '_wc_facebook_enhanced_catalog_attributes_gender', true );
-		$fb_size                 = get_post_meta( $post->ID, \WC_Facebook_Product::FB_SIZE, true ) ?: get_post_meta( $post->ID, '_wc_facebook_enhanced_catalog_attributes_size', true );
-		$fb_color                = get_post_meta( $post->ID, \WC_Facebook_Product::FB_COLOR, true ) ?: get_post_meta( $post->ID, '_wc_facebook_enhanced_catalog_attributes_color', true );
-		$fb_material             = get_post_meta( $post->ID, \WC_Facebook_Product::FB_MATERIAL, true ) ?: get_post_meta( $post->ID, '_wc_facebook_enhanced_catalog_attributes_material', true );
-		$fb_pattern              = get_post_meta( $post->ID, \WC_Facebook_Product::FB_PATTERN, true ) ?: get_post_meta( $post->ID, '_wc_facebook_enhanced_catalog_attributes_pattern', true );
+		$fb_condition          = get_post_meta( $post->ID, \WC_Facebook_Product::FB_PRODUCT_CONDITION, true );
+		$fb_age_group          = get_post_meta( $post->ID, \WC_Facebook_Product::FB_AGE_GROUP, true ) ?: get_post_meta( $post->ID, '_wc_facebook_enhanced_catalog_attributes_age_group', true );
+		$fb_gender             = get_post_meta( $post->ID, \WC_Facebook_Product::FB_GENDER, true ) ?: get_post_meta( $post->ID, '_wc_facebook_enhanced_catalog_attributes_gender', true );
+		$fb_size               = get_post_meta( $post->ID, \WC_Facebook_Product::FB_SIZE, true ) ?: get_post_meta( $post->ID, '_wc_facebook_enhanced_catalog_attributes_size', true );
+		$fb_color              = get_post_meta( $post->ID, \WC_Facebook_Product::FB_COLOR, true ) ?: get_post_meta( $post->ID, '_wc_facebook_enhanced_catalog_attributes_color', true );
+		$fb_material           = get_post_meta( $post->ID, \WC_Facebook_Product::FB_MATERIAL, true ) ?: get_post_meta( $post->ID, '_wc_facebook_enhanced_catalog_attributes_material', true );
+		$fb_pattern            = get_post_meta( $post->ID, \WC_Facebook_Product::FB_PATTERN, true ) ?: get_post_meta( $post->ID, '_wc_facebook_enhanced_catalog_attributes_pattern', true );
 
 		if ( $sync_enabled ) {
 			$sync_mode = $is_visible ? self::SYNC_MODE_SYNC_AND_SHOW : self::SYNC_MODE_SYNC_AND_HIDE;
@@ -1413,14 +1413,14 @@ class Admin {
 						'value' => '',
 					)
 				);
-		?>
+				?>
 			</div>
 			
 			<div class='wc_facebook_commerce_fields'>
 				<p class="text-heading">
-					<span><?php echo esc_html(\WooCommerce\Facebook\Admin\Product_Categories::get_catalog_explanation_text());?></span>
+					<span><?php echo esc_html( \WooCommerce\Facebook\Admin\Product_Categories::get_catalog_explanation_text() ); ?></span>
 					<a href="#" class="go-to-attributes-link" style="text-decoration: underline; cursor: pointer;">
-						<?php echo esc_html__('Go to attributes', 'facebook-for-woocommerce' ); ?>
+						<?php echo esc_html__( 'Go to attributes', 'facebook-for-woocommerce' ); ?>
 					</a>
 				</p>
 			</div>
@@ -1440,22 +1440,22 @@ class Admin {
 			<?php
 				woocommerce_wp_text_input(
 					array(
-						'id'          => \WC_Facebook_Product::FB_MPN,
-						'name'        => \WC_Facebook_Product::FB_MPN,
-						'label'       => __( 'Manufacturer Part Number (MPN)', 'facebook-for-woocommerce' ),
-						'value'       => $fb_mpn,
-						'class'       => 'enable-if-sync-enabled',
-						'desc_tip'    => true,
+						'id'       => \WC_Facebook_Product::FB_MPN,
+						'name'     => \WC_Facebook_Product::FB_MPN,
+						'label'    => __( 'Manufacturer Part Number (MPN)', 'facebook-for-woocommerce' ),
+						'value'    => $fb_mpn,
+						'class'    => 'enable-if-sync-enabled',
+						'desc_tip' => true,
 					)
 				);
 
 				woocommerce_wp_text_input(
 					array(
-						'id'    => \WC_Facebook_Product::FB_BRAND,
-						'name'  => \WC_Facebook_Product::FB_BRAND,
-						'label' => __( 'Brand', 'facebook-for-woocommerce' ),
-						'value' => $fb_brand,
-						'class' => 'enable-if-sync-enabled',
+						'id'          => \WC_Facebook_Product::FB_BRAND,
+						'name'        => \WC_Facebook_Product::FB_BRAND,
+						'label'       => __( 'Brand', 'facebook-for-woocommerce' ),
+						'value'       => $fb_brand,
+						'class'       => 'enable-if-sync-enabled',
 						'desc_tip'    => true,
 						'description' => __( 'Brand name of the item', 'facebook-for-woocommerce' ),
 					)
@@ -1463,8 +1463,8 @@ class Admin {
 
 				woocommerce_wp_select(
 					array(
-						'id'              => \WC_Facebook_Product::FB_PRODUCT_CONDITION,
-						'name'          => \WC_Facebook_Product::FB_PRODUCT_CONDITION,
+						'id'          => \WC_Facebook_Product::FB_PRODUCT_CONDITION,
+						'name'        => \WC_Facebook_Product::FB_PRODUCT_CONDITION,
 						'label'       => __( 'Condition', 'facebook-for-woocommerce' ),
 						'options'     => array(
 							''                          => __( 'Select', 'facebook-for-woocommerce' ),
@@ -1484,18 +1484,18 @@ class Admin {
 						'label'       => __( 'Size', 'facebook-for-woocommerce' ),
 						'desc_tip'    => true,
 						'description' => __( 'Size of the product item', 'facebook-for-woocommerce' ),
-						'name'  => \WC_Facebook_Product::FB_SIZE,
+						'name'        => \WC_Facebook_Product::FB_SIZE,
 						'cols'        => 40,
 						'rows'        => 60,
 						'value'       => $fb_size,
 						'class'       => 'enable-if-sync-enabled',
 					)
 				);
- 
+
 				woocommerce_wp_text_input(
 					array(
 						'id'          => \WC_Facebook_Product::FB_COLOR,
-						'name'          => \WC_Facebook_Product::FB_COLOR,
+						'name'        => \WC_Facebook_Product::FB_COLOR,
 						'label'       => __( 'Color', 'facebook-for-woocommerce' ),
 						'desc_tip'    => true,
 						'description' => __( 'Color of the product item', 'facebook-for-woocommerce' ),
@@ -1508,8 +1508,8 @@ class Admin {
 
 				woocommerce_wp_select(
 					array(
-						'id'          => \WC_Facebook_Product::FB_AGE_GROUP, 
-						'name'        => \WC_Facebook_Product::FB_AGE_GROUP, 
+						'id'          => \WC_Facebook_Product::FB_AGE_GROUP,
+						'name'        => \WC_Facebook_Product::FB_AGE_GROUP,
 						'label'       => __( 'Age Group', 'facebook-for-woocommerce' ),
 						'options'     => array(
 							''                       => __( 'Select', 'facebook-for-woocommerce' ),
@@ -1529,8 +1529,8 @@ class Admin {
 
 				woocommerce_wp_select(
 					array(
-						'id'          => \WC_Facebook_Product::FB_GENDER, 
-						'name'    => \WC_Facebook_Product::FB_GENDER, 
+						'id'          => \WC_Facebook_Product::FB_GENDER,
+						'name'        => \WC_Facebook_Product::FB_GENDER,
 						'label'       => __( 'Gender', 'facebook-for-woocommerce' ),
 						'options'     => array(
 							''                  => __( 'Select', 'facebook-for-woocommerce' ),
@@ -1571,7 +1571,7 @@ class Admin {
 						'class'       => 'enable-if-sync-enabled',
 					)
 				);
-				
+
 			?>
 
 			<div class='wc-facebook-commerce-options-group options_group google_product_catgory'>
@@ -1642,8 +1642,8 @@ class Admin {
 							self::SYNC_MODE_SYNC_DISABLED => __( 'Do not sync', 'facebook-for-woocommerce' ),
 						),
 						'value'         => $sync_mode,
-						'desc_tip'        => true,
-						'description'     => __( 'Choose whether to sync this product to Facebook and, if synced, whether it should be visible in the catalog.', 'facebook-for-woocommerce' ),
+						'desc_tip'      => true,
+						'description'   => __( 'Choose whether to sync this product to Facebook and, if synced, whether it should be visible in the catalog.', 'facebook-for-woocommerce' ),
 						'class'         => 'js-variable-fb-sync-toggle',
 						'wrapper_class' => 'form-row form-row-full',
 					)
@@ -1662,67 +1662,67 @@ class Admin {
 					)
 				);
 
-		woocommerce_wp_radio(
-			array(
-				'id'            => "variable_fb_product_image_source$index",
-				'name'          => "variable_fb_product_image_source[$index]",
-				'label'         => __( 'Facebook Product Image', 'facebook-for-woocommerce' ),
-				'desc_tip'      => true,
-				'description'   => __( 'Choose the product image that should be synced to the Facebook catalog and displayed for this product.', 'facebook-for-woocommerce' ),
-				'options'       => array(
-					Products::PRODUCT_IMAGE_SOURCE_PRODUCT => __( 'Use variation image', 'facebook-for-woocommerce' ),
-					Products::PRODUCT_IMAGE_SOURCE_PARENT_PRODUCT => __( 'Use parent image', 'facebook-for-woocommerce' ),
-					Products::PRODUCT_IMAGE_SOURCE_CUSTOM  => __( 'Use custom image', 'facebook-for-woocommerce' ),
-				),
-				'value'         => $image_source ? $image_source : Products::PRODUCT_IMAGE_SOURCE_PRODUCT,
-				'class'         => 'enable-if-sync-enabled js-fb-product-image-source',
-				'wrapper_class' => 'fb-product-image-source-field',
-			)
-		);
+				woocommerce_wp_radio(
+					array(
+						'id'            => "variable_fb_product_image_source$index",
+						'name'          => "variable_fb_product_image_source[$index]",
+						'label'         => __( 'Facebook Product Image', 'facebook-for-woocommerce' ),
+						'desc_tip'      => true,
+						'description'   => __( 'Choose the product image that should be synced to the Facebook catalog and displayed for this product.', 'facebook-for-woocommerce' ),
+						'options'       => array(
+							Products::PRODUCT_IMAGE_SOURCE_PRODUCT => __( 'Use variation image', 'facebook-for-woocommerce' ),
+							Products::PRODUCT_IMAGE_SOURCE_PARENT_PRODUCT => __( 'Use parent image', 'facebook-for-woocommerce' ),
+							Products::PRODUCT_IMAGE_SOURCE_CUSTOM  => __( 'Use custom image', 'facebook-for-woocommerce' ),
+						),
+						'value'         => $image_source ? $image_source : Products::PRODUCT_IMAGE_SOURCE_PRODUCT,
+						'class'         => 'enable-if-sync-enabled js-fb-product-image-source',
+						'wrapper_class' => 'fb-product-image-source-field',
+					)
+				);
 
-		woocommerce_wp_text_input(
-			array(
-				'id'            => sprintf( 'variable_%s%s', \WC_Facebook_Product::FB_PRODUCT_IMAGE, $index ),
-				'name'          => sprintf( "variable_%s[$index]", \WC_Facebook_Product::FB_PRODUCT_IMAGE ),
-				'label'         => __( 'Custom Image URL', 'facebook-for-woocommerce' ),
-				'value'         => $image_url,
-				'class'         => sprintf( 'enable-if-sync-enabled product-image-source-field show-if-product-image-source-%s', Products::PRODUCT_IMAGE_SOURCE_CUSTOM ),
-				'wrapper_class' => 'form-row form-row-full',
-				'desc_tip'      => true,
-				'description'   => __( 'Please enter an absolute URL (e.g. https://domain.com/image.jpg).', 'facebook-for-woocommerce' ),
-			)
-		);
+				woocommerce_wp_text_input(
+					array(
+						'id'            => sprintf( 'variable_%s%s', \WC_Facebook_Product::FB_PRODUCT_IMAGE, $index ),
+						'name'          => sprintf( "variable_%s[$index]", \WC_Facebook_Product::FB_PRODUCT_IMAGE ),
+						'label'         => __( 'Custom Image URL', 'facebook-for-woocommerce' ),
+						'value'         => $image_url,
+						'class'         => sprintf( 'enable-if-sync-enabled product-image-source-field show-if-product-image-source-%s', Products::PRODUCT_IMAGE_SOURCE_CUSTOM ),
+						'wrapper_class' => 'form-row form-row-full',
+						'desc_tip'      => true,
+						'description'   => __( 'Please enter an absolute URL (e.g. https://domain.com/image.jpg).', 'facebook-for-woocommerce' ),
+					)
+				);
 
-		woocommerce_wp_text_input(
-			array(
-				'id'            => sprintf( 'variable_%s%s', \WC_Facebook_Product::FB_PRODUCT_PRICE, $index ),
-				'name'          => sprintf( "variable_%s[$index]", \WC_Facebook_Product::FB_PRODUCT_PRICE ),
-				'label'         => sprintf(
-				/* translators: Placeholders %1$s - WC currency symbol */
-					__( 'Facebook Price (%1$s)', 'facebook-for-woocommerce' ),
-					get_woocommerce_currency_symbol()
-				),
-				'desc_tip'      => true,
-				'description'   => __( 'Custom price for product on Facebook. Please enter in monetary decimal (.) format without thousand separators and currency symbols. If blank, product price will be used.', 'facebook-for-woocommerce' ),
-				'value'         => wc_format_decimal( $price ),
-				'class'         => 'enable-if-sync-enabled',
-				'wrapper_class' => 'form-row form-full',
-			)
-		);
+				woocommerce_wp_text_input(
+					array(
+						'id'            => sprintf( 'variable_%s%s', \WC_Facebook_Product::FB_PRODUCT_PRICE, $index ),
+						'name'          => sprintf( "variable_%s[$index]", \WC_Facebook_Product::FB_PRODUCT_PRICE ),
+						'label'         => sprintf(
+						/* translators: Placeholders %1$s - WC currency symbol */
+							__( 'Facebook Price (%1$s)', 'facebook-for-woocommerce' ),
+							get_woocommerce_currency_symbol()
+						),
+						'desc_tip'      => true,
+						'description'   => __( 'Custom price for product on Facebook. Please enter in monetary decimal (.) format without thousand separators and currency symbols. If blank, product price will be used.', 'facebook-for-woocommerce' ),
+						'value'         => wc_format_decimal( $price ),
+						'class'         => 'enable-if-sync-enabled',
+						'wrapper_class' => 'form-row form-full',
+					)
+				);
 
-		woocommerce_wp_text_input(
-			array(
-				'id'    => sprintf( 'variable_%s%s', \WC_Facebook_Product::FB_MPN, $index ),
-				'name'  => sprintf( "variable_%s[$index]", \WC_Facebook_Product::FB_MPN ),
-				'label' => __( 'Manufacturer Parts Number (MPN)', 'facebook-for-woocommerce' ),
-				'desc_tip'      => true,
-				'description'   => __( 'Manufacturer Parts Number' ),
-				'value'         => wc_format_decimal( $fb_mpn ),
-				'class'         => 'enable-if-sync-enabled',
-				'wrapper_class' => 'form-row form-full',
-			)
-		);
-			?>
+				woocommerce_wp_text_input(
+					array(
+						'id'            => sprintf( 'variable_%s%s', \WC_Facebook_Product::FB_MPN, $index ),
+						'name'          => sprintf( "variable_%s[$index]", \WC_Facebook_Product::FB_MPN ),
+						'label'         => __( 'Manufacturer Parts Number (MPN)', 'facebook-for-woocommerce' ),
+						'desc_tip'      => true,
+						'description'   => __( 'Manufacturer Parts Number' ),
+						'value'         => wc_format_decimal( $fb_mpn ),
+						'class'         => 'enable-if-sync-enabled',
+						'wrapper_class' => 'form-row form-full',
+					)
+				);
+				?>
 			</div>
 		</div>
 
@@ -1800,7 +1800,7 @@ class Admin {
 			$posted_param = 'variable_' . \WC_Facebookcommerce_Integration::FB_PRODUCT_DESCRIPTION;
 			$description  = isset( $_POST[ $posted_param ][ $index ] ) ? sanitize_text_field( wp_unslash( $_POST[ $posted_param ][ $index ] ) ) : null;
 			$posted_param = 'variable_' . \WC_Facebook_Product::FB_MPN;
-			$fb_mpn       	  = isset( $_POST[ $posted_param ][ $index ] ) ? sanitize_text_field( wp_unslash( $_POST[ $posted_param ][ $index ] ) ) : null;
+			$fb_mpn       = isset( $_POST[ $posted_param ][ $index ] ) ? sanitize_text_field( wp_unslash( $_POST[ $posted_param ][ $index ] ) ) : null;
 			$posted_param = 'variable_fb_product_image_source';
 			$image_source = isset( $_POST[ $posted_param ][ $index ] ) ? sanitize_key( wp_unslash( $_POST[ $posted_param ][ $index ] ) ) : '';
 			$posted_param = 'variable_' . \WC_Facebook_Product::FB_PRODUCT_IMAGE;
@@ -1865,7 +1865,7 @@ class Admin {
 
 	public function add_tab_switch_script() {
 		global $post;
-		if (!$post || get_post_type($post) !== 'product') {
+		if ( ! $post || get_post_type( $post ) !== 'product' ) {
 			return;
 		}
 		?>
@@ -1894,19 +1894,19 @@ class Admin {
 						type: 'POST',
 						data: {
 							action: 'sync_facebook_attributes',
-							product_id: <?php echo esc_js($post->ID); ?>,
-							nonce: '<?php echo wp_create_nonce('sync_facebook_attributes'); ?>'
+							product_id: <?php echo esc_js( $post->ID ); ?>,
+							nonce: '<?php echo wp_create_nonce( 'sync_facebook_attributes' ); ?>'
 						},
 						success: function(response) {
 							if (response.success) {
 								// Array of fields to potentially update
 								var fields = {
-									'material': '<?php echo \WC_Facebook_Product::FB_MATERIAL ?>',
-									'color': '<?php echo \WC_Facebook_Product::FB_COLOR ?>',
-									'size': '<?php echo \WC_Facebook_Product::FB_SIZE ?>',
-									'pattern': '<?php echo \WC_Facebook_Product::FB_PATTERN ?>',
-									'brand': '<?php echo \WC_Facebook_Product::FB_BRAND ?>',
-									'mpn': '<?php echo \WC_Facebook_Product::FB_MPN ?>',
+									'material': '<?php echo \WC_Facebook_Product::FB_MATERIAL; ?>',
+									'color': '<?php echo \WC_Facebook_Product::FB_COLOR; ?>',
+									'size': '<?php echo \WC_Facebook_Product::FB_SIZE; ?>',
+									'pattern': '<?php echo \WC_Facebook_Product::FB_PATTERN; ?>',
+									'brand': '<?php echo \WC_Facebook_Product::FB_BRAND; ?>',
+									'mpn': '<?php echo \WC_Facebook_Product::FB_MPN; ?>',
 								};
 
 								// Loop through each field
@@ -1948,7 +1948,7 @@ class Admin {
 										}
 										
 										// Reset the badge state
-										 syncedBadgeState[key] = false;
+										syncedBadgeState[key] = false;
 									}
 								});
 							}
@@ -2005,7 +2005,7 @@ class Admin {
 			});
 		</script>
 		<?php
-	}	
+	}
 
 	public function sync_product_attributes( $product_id ) {
 		$product = wc_get_product( $product_id );
@@ -2013,7 +2013,7 @@ class Admin {
 			return [];
 		}
 
-		$attributes = $product->get_attributes();
+		$attributes      = $product->get_attributes();
 		$facebook_fields = [];
 
 		$attribute_map = [
@@ -2027,38 +2027,38 @@ class Admin {
 		];
 
 		// Then process existing attributes
-		foreach ($attributes as $attribute) {
-			$normalized_attr_name = strtolower($attribute->get_name());
-			
+		foreach ( $attributes as $attribute ) {
+			$normalized_attr_name = strtolower( $attribute->get_name() );
+
 			// Special handling for color/colour
-			if ($normalized_attr_name === 'color' || $normalized_attr_name === 'colour') {
-				$meta_key = \WC_Facebook_Product::FB_COLOR;
+			if ( $normalized_attr_name === 'color' || $normalized_attr_name === 'colour' ) {
+				$meta_key   = \WC_Facebook_Product::FB_COLOR;
 				$field_name = 'color';
 			} else {
-				$meta_key = $attribute_map[$normalized_attr_name] ?? null;
+				$meta_key   = $attribute_map[ $normalized_attr_name ] ?? null;
 				$field_name = $normalized_attr_name;
 			}
-			
-			if ($meta_key) {
+
+			if ( $meta_key ) {
 				$values = [];
 
-				if ($attribute->is_taxonomy()) {
+				if ( $attribute->is_taxonomy() ) {
 					$terms = $attribute->get_terms();
-					if ($terms) {
-						$values = wp_list_pluck($terms, 'name');
+					if ( $terms ) {
+						$values = wp_list_pluck( $terms, 'name' );
 					}
 				} else {
 					$values = $attribute->get_options();
 				}
-				
-				if (!empty($values)) {
+
+				if ( ! empty( $values ) ) {
 					// Join multiple values with a pipe character and spaces
-					$joined_values = implode(' | ', $values);
-					$facebook_fields[$field_name] = $joined_values;
-					update_post_meta($product_id, $meta_key, $joined_values);
+					$joined_values                  = implode( ' | ', $values );
+					$facebook_fields[ $field_name ] = $joined_values;
+					update_post_meta( $product_id, $meta_key, $joined_values );
 				} else {
-					delete_post_meta($product_id, $meta_key);
-					$facebook_fields[$field_name] = '';
+					delete_post_meta( $product_id, $meta_key );
+					$facebook_fields[ $field_name ] = '';
 				}
 			}
 		}

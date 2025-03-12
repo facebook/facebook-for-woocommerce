@@ -87,7 +87,7 @@ class Enhanced_Catalog_Attribute_Fields {
 	}
 	public function render( $category_id ) {
 		$all_attributes = (array) $this->category_handler->get_attributes_with_fallback_to_parent_category( $category_id );
-		
+
 		$all_attributes_with_values = array_map(
 			function ( $attribute ) use ( $category_id ) {
 				return array_merge( $attribute, array( 'value' => $this->get_value( $attribute['key'], $category_id ) ) );
@@ -101,7 +101,7 @@ class Enhanced_Catalog_Attribute_Fields {
 				return $attr['recommended'];
 			}
 		);
-		$optional_attributes        = array_filter(
+		$optional_attributes    = array_filter(
 			$all_attributes_with_values,
 			function ( $attr ) {
 				return ! $attr['recommended'];
@@ -144,19 +144,21 @@ class Enhanced_Catalog_Attribute_Fields {
 		}
 
 		// Check if we have any naturally recommended attributes before the fallback
-		$has_natural_recommendations = !empty(array_filter(
-			$all_attributes_with_values,
-			function ( $attr ) {
-				return $attr['recommended'];
-			}
-		));
+		$has_natural_recommendations = ! empty(
+			array_filter(
+				$all_attributes_with_values,
+				function ( $attr ) {
+					return $attr['recommended'];
+				}
+			)
+		);
 
 		array_multisort( $priority, SORT_DESC, $recommended_attributes );
 		$selector_value      = $this->get_value( self::OPTIONAL_SELECTOR_KEY, $category_id );
 		$is_showing_optional = 'on' === $selector_value;
 
 		// Only show the selector if we have natural recommendations
-		if ($has_natural_recommendations) {
+		if ( $has_natural_recommendations ) {
 			$this->render_selector_checkbox( $is_showing_optional );
 		}
 
