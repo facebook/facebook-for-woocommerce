@@ -955,7 +955,7 @@ if ( ! class_exists( 'WC_Facebookcommerce_Utils' ) ) :
 		}
 
 		/**
-		 * Helper log function for debugging. 
+		 * Saves errors or messages to WordPress debug log (wp-content/debug.log)
 		 * Only logs if debug mode is enabled and WP_DEBUG and WP_DEBUG_LOG are true in wp-config.php.
 		 */
 		public static function logWithDebugModeEnabled( $message ) {
