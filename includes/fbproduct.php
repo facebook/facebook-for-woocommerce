@@ -1014,7 +1014,7 @@ class WC_Facebook_Product {
 		);
 
 		// If empty and this is a variation, get the parent mpn
-		if ( empty( $fb_size ) && $this->is_type( 'variation' ) ) {
+		if ( empty( $fb_mpn ) && $this->is_type( 'variation' ) ) {
 			$parent_id = $this->get_parent_id();
 			if ( $parent_id ) {
 				$fb_mpn = get_post_meta( $parent_id, self::FB_MPN, true );

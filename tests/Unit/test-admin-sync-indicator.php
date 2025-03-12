@@ -78,17 +78,27 @@ class Test_Admin_Sync_Indicator extends WP_Ajax_UnitTestCase {
         $this->product->set_attributes($attributes);
         $this->product->save();
 
+        // Initial sync - verify material is present
         $synced_fields = $this->admin->sync_product_attributes($this->product->get_id());
+        $this->assertArrayHasKey('material', $synced_fields);
+        $this->assertEquals('cotton', $synced_fields['material']);
+        
+        // Store the initial meta value
+        $initial_meta = get_post_meta($this->product->get_id(), \WC_Facebook_Product::FB_MATERIAL, true);
 
         // Then remove the attribute
         $this->product->set_attributes([]);
         $this->product->save();
 
+        // Sync again after removal
         $synced_fields = $this->admin->sync_product_attributes($this->product->get_id());
 
-        $this->assertArrayHasKey('material', $synced_fields);
-        $this->assertEquals('', $synced_fields['material']);
-        $this->assertEmpty(get_post_meta($this->product->get_id(), \WC_Facebook_Product::FB_MATERIAL, true));
+        // After removal:
+        // 1. The field should not be present in synced fields array
+        $this->assertArrayNotHasKey('material', $synced_fields);
+        
+        // 2. The meta value should remain unchanged in the database
+        $this->assertEquals($initial_meta, get_post_meta($this->product->get_id(), \WC_Facebook_Product::FB_MATERIAL, true));
     }
 
     /**
