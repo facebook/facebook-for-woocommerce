@@ -227,8 +227,7 @@ class Admin {
 						'i18n' => array(
 							'top_level_dropdown_placeholder' => __( 'Search main categories...', 'facebook-for-woocommerce' ),
 							'second_level_empty_dropdown_placeholder' => __( 'Choose a main category first', 'facebook-for-woocommerce' ),
-							'general_dropdown_placeholder' => __( 'Choose a category', 'facebook-for-woocommerce' ),
-							'general_dropdown_placeholder' => __( 'Choose a category', 'facebook-for-woocommerce' ),
+							'dropdown_placeholder' => __( 'Choose a category', 'facebook-for-woocommerce' ),
 						),
 					)
 				);
@@ -1296,12 +1295,12 @@ class Admin {
 		$fb_brand              = get_post_meta( $post->ID, \WC_Facebook_Product::FB_BRAND, true ) ? get_post_meta( $post->ID, \WC_Facebook_Product::FB_BRAND, true ) : get_post_meta( $post->ID, '_wc_facebook_enhanced_catalog_attributes_brand', true );
 		$fb_mpn                = get_post_meta( $post->ID, \WC_Facebook_Product::FB_MPN, true );
 		$fb_condition          = get_post_meta( $post->ID, \WC_Facebook_Product::FB_PRODUCT_CONDITION, true );
-		$fb_age_group          = get_post_meta( $post->ID, \WC_Facebook_Product::FB_AGE_GROUP, true ) ?: get_post_meta( $post->ID, '_wc_facebook_enhanced_catalog_attributes_age_group', true );
-		$fb_gender             = get_post_meta( $post->ID, \WC_Facebook_Product::FB_GENDER, true ) ?: get_post_meta( $post->ID, '_wc_facebook_enhanced_catalog_attributes_gender', true );
-		$fb_size               = get_post_meta( $post->ID, \WC_Facebook_Product::FB_SIZE, true ) ?: get_post_meta( $post->ID, '_wc_facebook_enhanced_catalog_attributes_size', true );
-		$fb_color              = get_post_meta( $post->ID, \WC_Facebook_Product::FB_COLOR, true ) ?: get_post_meta( $post->ID, '_wc_facebook_enhanced_catalog_attributes_color', true );
-		$fb_material           = get_post_meta( $post->ID, \WC_Facebook_Product::FB_MATERIAL, true ) ?: get_post_meta( $post->ID, '_wc_facebook_enhanced_catalog_attributes_material', true );
-		$fb_pattern            = get_post_meta( $post->ID, \WC_Facebook_Product::FB_PATTERN, true ) ?: get_post_meta( $post->ID, '_wc_facebook_enhanced_catalog_attributes_pattern', true );
+		$fb_age_group          = get_post_meta( $post->ID, \WC_Facebook_Product::FB_AGE_GROUP, true ) ? get_post_meta( $post->ID, \WC_Facebook_Product::FB_AGE_GROUP, true ) : get_post_meta( $post->ID, '_wc_facebook_enhanced_catalog_attributes_age_group', true );
+		$fb_gender             = get_post_meta( $post->ID, \WC_Facebook_Product::FB_GENDER, true ) ? get_post_meta( $post->ID, \WC_Facebook_Product::FB_GENDER, true ) : get_post_meta( $post->ID, '_wc_facebook_enhanced_catalog_attributes_gender', true );
+		$fb_size               = get_post_meta( $post->ID, \WC_Facebook_Product::FB_SIZE, true ) ? get_post_meta( $post->ID, \WC_Facebook_Product::FB_SIZE, true ) : get_post_meta( $post->ID, '_wc_facebook_enhanced_catalog_attributes_size', true );
+		$fb_color              = get_post_meta( $post->ID, \WC_Facebook_Product::FB_COLOR, true ) ? get_post_meta( $post->ID, \WC_Facebook_Product::FB_COLOR, true ) : get_post_meta( $post->ID, '_wc_facebook_enhanced_catalog_attributes_color', true );
+		$fb_material           = get_post_meta( $post->ID, \WC_Facebook_Product::FB_MATERIAL, true ) ? get_post_meta( $post->ID, \WC_Facebook_Product::FB_MATERIAL, true ) : get_post_meta( $post->ID, '_wc_facebook_enhanced_catalog_attributes_material', true );
+		$fb_pattern            = get_post_meta( $post->ID, \WC_Facebook_Product::FB_PATTERN, true ) ? get_post_meta( $post->ID, \WC_Facebook_Product::FB_PATTERN, true ) : get_post_meta( $post->ID, '_wc_facebook_enhanced_catalog_attributes_pattern', true );
 
 		if ( $sync_enabled ) {
 			$sync_mode = $is_visible ? self::SYNC_MODE_SYNC_AND_SHOW : self::SYNC_MODE_SYNC_AND_HIDE;
@@ -1361,7 +1360,7 @@ class Admin {
 							Products::PRODUCT_IMAGE_SOURCE_PRODUCT => __( 'Use WooCommerce image', 'facebook-for-woocommerce' ),
 							Products::PRODUCT_IMAGE_SOURCE_CUSTOM  => __( 'Use custom image', 'facebook-for-woocommerce' ),
 						),
-						'value'         => $image_source ?: Products::PRODUCT_IMAGE_SOURCE_PRODUCT,
+						'value'         => $image_source ? $image_source : Products::PRODUCT_IMAGE_SOURCE_PRODUCT,
 						'class'         => 'short enable-if-sync-enabled js-fb-product-image-source',
 						'wrapper_class' => 'fb-product-image-source-field',
 					)
@@ -1716,7 +1715,7 @@ class Admin {
 						'name'          => sprintf( "variable_%s[$index]", \WC_Facebook_Product::FB_MPN ),
 						'label'         => __( 'Manufacturer Parts Number (MPN)', 'facebook-for-woocommerce' ),
 						'desc_tip'      => true,
-						'description'   => __( 'Manufacturer Parts Number' ),
+						'description'   => __( 'Manufacturer Parts Number', 'facebook-for-woocommerce' ),
 						'value'         => wc_format_decimal( $fb_mpn ),
 						'class'         => 'enable-if-sync-enabled',
 						'wrapper_class' => 'form-row form-full',
@@ -1895,18 +1894,18 @@ class Admin {
 						data: {
 							action: 'sync_facebook_attributes',
 							product_id: <?php echo esc_js( $post->ID ); ?>,
-							nonce: '<?php echo wp_create_nonce( 'sync_facebook_attributes' ); ?>'
+							nonce: '<?php echo esc_js( wp_create_nonce( 'sync_facebook_attributes' ) ); ?>'
 						},
 						success: function(response) {
 							if (response.success) {
 								// Array of fields to potentially update
 								var fields = {
-									'material': '<?php echo \WC_Facebook_Product::FB_MATERIAL; ?>',
-									'color': '<?php echo \WC_Facebook_Product::FB_COLOR; ?>',
-									'size': '<?php echo \WC_Facebook_Product::FB_SIZE; ?>',
-									'pattern': '<?php echo \WC_Facebook_Product::FB_PATTERN; ?>',
-									'brand': '<?php echo \WC_Facebook_Product::FB_BRAND; ?>',
-									'mpn': '<?php echo \WC_Facebook_Product::FB_MPN; ?>',
+									'material': '<?php echo esc_js( \WC_Facebook_Product::FB_MATERIAL ); ?>',
+									'color': '<?php echo esc_js( \WC_Facebook_Product::FB_COLOR ); ?>',
+									'size': '<?php echo esc_js( \WC_Facebook_Product::FB_SIZE ); ?>',
+									'pattern': '<?php echo esc_js( \WC_Facebook_Product::FB_PATTERN ); ?>',
+									'brand': '<?php echo esc_js( \WC_Facebook_Product::FB_BRAND ); ?>',
+									'mpn': '<?php echo esc_js( \WC_Facebook_Product::FB_MPN ); ?>',
 								};
 
 								// Loop through each field
@@ -1942,8 +1941,8 @@ class Admin {
 											
 											// Reset synced state
 											syncedFields[key] = false;
-										} else if (!$field.val() && manualValues[key]) {
-											// Restore manual value if field is empty
+										} else if (manualValues[key] && !$field.val()) {
+											// Restore manual value if field is empty (fixed Yoda condition)
 											$field.val(manualValues[key]);
 										}
 										
