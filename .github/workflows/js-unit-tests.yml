@@ -10,6 +10,8 @@ jobs:
   JSUnitTests:
     name: JavaScript unit tests - Node ${{ matrix.node }}
     runs-on: ubuntu-latest
+    env:
+      NODE_ENV: test
     strategy:
       matrix:
         node: [16]  # Using Node 16 as specified in package.json engine requirements
@@ -25,7 +27,15 @@ jobs:
           cache: 'npm'
 
       - name: Install dependencies
-        run: npm ci
+        run: npm ci --no-optional
+        
+      - name: Verify Node and npm versions
+        run: |
+          node --version
+          npm --version
+          
+      - name: List installed packages
+        run: npm list --depth=0
 
       - name: Run JavaScript unit tests
         run: npm run test:js 
