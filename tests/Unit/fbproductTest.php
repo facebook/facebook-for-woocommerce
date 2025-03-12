@@ -826,7 +826,7 @@ class fbproductTest extends \WooCommerce\Facebook\Tests\Unit\AbstractWPUnitTestW
 		$fb_product = new \WC_Facebook_Product( $woo_variation, new \WC_Facebook_Product( $woo_product ) );
 		$data = $fb_product->prepare_product();
 
-		$this->assertEquals( $data['mpn'], '987654321' );
+		$this->assertEquals('987654321', $data['mpn']);
 	}
 
 	/**
