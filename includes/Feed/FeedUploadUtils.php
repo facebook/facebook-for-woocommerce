@@ -32,7 +32,7 @@ class FeedUploadUtils {
 				}
 
 				$rating = get_comment_meta( $comment->comment_ID, 'rating', true );
-				if ( null === $rating ) {
+				if ( ! is_numeric( $rating ) ) {
 					continue;
 				}
 
