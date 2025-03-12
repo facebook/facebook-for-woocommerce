@@ -2026,26 +2026,6 @@ class Admin {
 			'mpn'      => \WC_Facebook_Product::FB_MPN,
 		];
 
-		// First, check which fields should be cleared
-		// foreach ($attribute_map as $attribute_name => $meta_key) {
-		// 	$attribute_exists = false;
-		// 	foreach ($attributes as $attribute) {
-		// 		$normalized_attr_name = strtolower($attribute->get_name());
-		// 		if ($normalized_attr_name === $attribute_name || 
-		// 			($meta_key === \WC_Facebook_Product::FB_COLOR && 
-		// 			 ($normalized_attr_name === 'color' || $normalized_attr_name === 'colour'))) {
-		// 			$attribute_exists = true;
-		// 			break;
-		// 		}
-		// 	}
-			
-		// 	if (!$attribute_exists && !isset($facebook_fields[array_search($meta_key, $attribute_map)])) {
-		// 		delete_post_meta($product_id, $meta_key);
-		// 		$field_name = ($meta_key === \WC_Facebook_Product::FB_COLOR) ? 'color' : $attribute_name;
-		// 		$facebook_fields[$field_name] = '';
-		// 	}
-		// }
-
 		// Then process existing attributes
 		foreach ($attributes as $attribute) {
 			$normalized_attr_name = strtolower($attribute->get_name());
