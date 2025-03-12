@@ -952,6 +952,14 @@ class WC_Facebook_Product {
 			true
 		);
 
+		// If empty and this is a variation, get the parent color
+		if ( empty( $fb_color ) && $this->is_type( 'variation' ) ) {
+			$parent_id = $this->get_parent_id();
+			if ( $parent_id ) {
+				$fb_color = get_post_meta( $parent_id, self::FB_COLOR, true );
+			}
+		}
+
 		return mb_substr(WC_Facebookcommerce_Utils::clean_string($fb_color), 0, 200);
 	}
 
@@ -1005,6 +1013,14 @@ class WC_Facebook_Product {
 			true
 		);
 
+		// If empty and this is a variation, get the parent mpn
+		if ( empty( $fb_size ) && $this->is_type( 'variation' ) ) {
+			$parent_id = $this->get_parent_id();
+			if ( $parent_id ) {
+				$fb_mpn = get_post_meta( $parent_id, self::FB_MPN, true );
+			}
+		}
+
 		return WC_Facebookcommerce_Utils::clean_string( $fb_mpn );
 	}
 
@@ -1027,12 +1043,20 @@ class WC_Facebook_Product {
 			}
 		}
 
-		// Get color directly from post meta
+		// Get pattern directly from post meta
 		$fb_pattern = get_post_meta(
 			$this->id,
 			self::FB_PATTERN,
 			true
 		);
+
+		// If empty and this is a variation, get the parent pattern
+		if ( empty( $fb_pattern ) && $this->is_type( 'variation' ) ) {
+			$parent_id = $this->get_parent_id();
+			if ( $parent_id ) {
+				$fb_pattern = get_post_meta( $parent_id, self::FB_PATTERN, true );
+			}
+		}
 
 		return mb_substr( WC_Facebookcommerce_Utils::clean_string( $fb_pattern ), 0, 200 );
 	}
@@ -1164,6 +1188,7 @@ class WC_Facebook_Product {
 		$product_data[ 'condition' ] = $this->get_fb_condition();
 		$product_data[ 'size' ] = $this->get_fb_size();
 		$product_data[ 'color' ] = $this->get_fb_color();
+		$product_data[ 'mpn' ] = $this->get_fb_mpn();
 		$product_data[ 'pattern' ] = Helper::str_truncate( $this->get_fb_pattern(), 100 );
 		$product_data[ 'age_group' ] = $this->get_fb_age_group();
 		$product_data[ 'gender' ] = $this->get_fb_gender();
