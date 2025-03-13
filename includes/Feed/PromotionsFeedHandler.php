@@ -63,12 +63,12 @@ class PromotionsFeedHandler implements FeedHandler {
 	 * @since 3.5.0
 	 */
 	public function get_feed_data(): array {
-		$promos_data = array();
-
-		$promos_data[] = array(
-			'retailer_id' => '99',
-			'title'       => '10% Off',
+		$query_args = array(
+			'post_type'      => 'shop_coupon',
+			'post_status'    => 'publish',
+			'posts_per_page' => - 1, // retrieve all items
 		);
-		return $promos_data;
+
+		return PromotionsFeedUtils::get_coupons_data( $query_args );
 	}
 }

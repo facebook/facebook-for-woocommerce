@@ -31,37 +31,29 @@ class PromotionsFeedGenerator extends FeedGenerator {
 	 * @since 3.5.0
 	 */
 	protected function get_items_for_batch( int $batch_number, array $args ): array {
-		// Complete implementation would do a query based on $batch_number and get_batch_size().
-		// Example below.
-		/**
-		 * $product_ids = $wpdb->get_col(
-		$wpdb->prepare(
-		"SELECT post.ID
-		FROM {$wpdb->posts} as post
-		LEFT JOIN {$wpdb->posts} as parent ON post.post_parent = parent.ID
-		WHERE
-		( post.post_type = 'product_variation' AND parent.post_status = 'publish' )
-		OR
-		( post.post_type = 'product' AND post.post_status = 'publish' )
-		ORDER BY post.ID ASC
-		LIMIT %d OFFSET %d",
-		$this->get_batch_size(),
-		$this->get_query_offset( $batch_number )
-		)
+		$batch_number = max( 1, $batch_number );
+		$batch_size   = $this->get_batch_size();
+		$offset       = ( $batch_number - 1 ) * $batch_size;
+
+		$query_args = array(
+			'post_type'      => 'shop_coupon',
+			'post_status'    => 'publish',
+			'posts_per_page' => $batch_size,
+			'offset'         => $offset,
+			'order'          => 'ASC',
+			'orderby'        => 'ID',
 		);
-		 */
 
-		// For proof of concept, we will just return the review id for batch 1
-		// In parent classes, batch number starts with 1.
-		if ( 1 === $batch_number ) {
-			$obj_1 = [
-				'retailer_id' => '99',
-				'title'       => '10% Off',
-			];
+		return PromotionsFeedUtils::get_coupons_data( $query_args );
+	}
 
-			return array( $obj_1 );
-		} else {
-			return array();
-		}
+	/**
+	 * Get the job's batch size.
+	 *
+	 * @return int
+	 * @since 3.5.0
+	 */
+	protected function get_batch_size(): int {
+		return 100;
 	}
 }
