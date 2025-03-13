@@ -6,12 +6,12 @@
 namespace WooCommerce\Facebook\Tests\Unit\Handlers;
 
 use WooCommerce\Facebook\Handlers\MetaExtension;
-use PHPUnit\Framework\TestCase;
+use WP_UnitTestCase;
 
 /**
  * The Meta Extension unit test class.
  */
-class MetaExtensionTest extends TestCase {
+class MetaExtensionTest extends \WP_UnitTestCase {
 
     /**
      * Instance of the MetaExtension class that we are testing.
