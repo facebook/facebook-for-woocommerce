@@ -39,6 +39,9 @@ When opening a bug on GitHub, please give us as many details as possible.
 * Current version of Facebook-for-WooCommerce, WooCommerce, Wordpress, PHP
 
 == Changelog ==
+= 3.4.2 - 2025-03-13 =
+* Tweak - Update README.md - Added noification for ownership transfer by @SayanPandey in #2910 and #2916
+
 = 3.4.1 - 2025-02-27 = 
 * Tweak - Removed custom field definitions by @devbodaghe in #2876
 * Dev - Improved readability of function prepare_product() in fbproduct.php by @mshymon in #2889
@@ -69,7 +72,3 @@ When opening a bug on GitHub, please give us as many details as possible.
 * Tweak - Add custom fields to product data structure by @devbodaghe in #2836
 * Fix - Multiple issues with Fixed FB Attribute Syncing by @vinkmeta in #2860
 
-= 3.3.1 - 2024-12-06 = 
-* Fix - Sale price effective date by @vinkmeta in #2809
-* Fix - Sync stock quantity when available by @mshymon in #2811
-* Fix - Sync product GTIN when available by @mshymon in #2810
