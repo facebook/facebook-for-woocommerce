@@ -19,6 +19,7 @@ namespace WooCommerce\Facebook\Feed;
  */
 class FeedManager {
 	const PROMOTIONS = 'promotions';
+	const RATINGS_AND_REVIEWS = 'ratings_and_reviews';
 
 	/**
 	 * The map of feed types to their instances.
@@ -50,10 +51,14 @@ class FeedManager {
 	 * @since 3.5.0
 	 */
 	private function create_feed( string $data_stream_name ): AbstractFeed {
-		if ( self::PROMOTIONS === $data_stream_name ) {
-			return new PromotionsFeed();
+		switch ( $data_stream_name ) {
+			case self::PROMOTIONS:
+				return new PromotionsFeed();
+			case self::RATINGS_AND_REVIEWS:
+				return new RatingsAndReviewsFeed();
+			default:
+				throw new \InvalidArgumentException( "Invalid feed type {$data_stream_name}" );
 		}
-		throw new \InvalidArgumentException( "Invalid feed type {$data_stream_name}" );
 	}
 
 	/**
@@ -63,18 +68,20 @@ class FeedManager {
 	 * @since 3.5.0
 	 */
 	public static function get_active_feed_types(): array {
-		return array( self::PROMOTIONS );
+		return array( self::PROMOTIONS, self::RATINGS_AND_REVIEWS );
 	}
 
 	/**
 	 * Get the feed instance for the given feed type.
 	 *
 	 * @param string $feed_type the specific feed in question.
+	 *
 	 * @return string
 	 * @since 3.5.0
 	 */
 	public function get_feed_secret( string $feed_type ): string {
 		$instance = $this->feed_instances[ $feed_type ];
+
 		return $instance->get_feed_secret();
 	}
 }

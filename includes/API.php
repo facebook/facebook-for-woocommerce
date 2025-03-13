@@ -593,6 +593,12 @@ class API extends Base {
 		return $this->perform_request( $request );
 	}
 
+	public function log_to_meta( $context) {
+		$request = new API\MetaLog\Request( $context );
+		$this->set_response_handler( API\MetaLog\Response::class );
+		return $this->perform_request( $request );
+	}
+
 	/**
 	 * Sends Pixel events.
 	 *
