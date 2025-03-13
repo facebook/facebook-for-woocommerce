@@ -58,6 +58,9 @@ class MetaExtensionTest extends TestCase {
         $business_id = '123456789';
         $expected_url = 'https://www.facebook.com/commerce/app/management/123456789/';
         
+        // Store the original filter callbacks
+        $original_filters = $GLOBALS['wp_filter']['pre_http_request']->callbacks ?? [];
+        
         // Mock the API response using WordPress filters
         add_filter('pre_http_request', function($pre, $r, $url) use ($business_id, $expected_url) {
             // Only intercept calls to the Facebook API
@@ -78,7 +81,12 @@ class MetaExtensionTest extends TestCase {
             }
             return $pre;
         }, 10, 3);
+        
         $url = MetaExtension::generate_iframe_management_url($business_id);
+        
+        // Restore original filters
+        $GLOBALS['wp_filter']['pre_http_request']->callbacks = $original_filters;
+        
         $this->assertEquals($expected_url, $url);
     }
 }
