@@ -12,12 +12,6 @@ namespace WooCommerce\Facebook\Feed;
 defined( 'ABSPATH' ) || exit;
 
 use Automattic\WooCommerce\ActionSchedulerJobFramework\Proxies\ActionScheduler;
-use WooCommerce\Facebook\Feed\AbstractFeed;
-use WooCommerce\Facebook\Feed\CsvFeedFileWriter;
-use WooCommerce\Facebook\Feed\RatingsAndReviewsFeedHandler;
-use WooCommerce\Facebook\Feed\FeedManager;
-use WooCommerce\Facebook\Framework\Api\Exception;
-use WooCommerce\Facebook\Utilities\Heartbeat;
 
 /**
  * Ratings and Reviews Feed class
@@ -37,29 +31,22 @@ class RatingsAndReviewsFeed extends AbstractFeed {
 	 * @since 3.5.0
 	 */
 	public function __construct() {
-		$this->data_stream_name            = FeedManager::RATINGS_AND_REVIEWS;
-		$this->gen_feed_interval           = WEEK_IN_SECONDS;
-		$this->feed_type                   = 'PRODUCT_RATINGS_AND_REVIEWS';
-		$this->feed_url_secret_option_name = self::OPTION_FEED_URL_SECRET . $this->data_stream_name;
+		$data_stream_name  = FeedManager::RATINGS_AND_REVIEWS;
+		$gen_feed_interval = WEEK_IN_SECONDS;
+		$feed_type         = 'PRODUCT_RATINGS_AND_REVIEWS';
 
-		$this->feed_handler   = new RatingsAndReviewsFeedHandler( new CsvFeedFileWriter( $this->data_stream_name, self::RATINGS_AND_REVIEWS_FEED_HEADER ) );
-		$scheduler            = new ActionScheduler();
-		$this->feed_generator = new RatingsAndReviewsFeedGenerator( $scheduler, $this->feed_handler->get_feed_writer(), $this->data_stream_name );
-		$this->feed_generator->init();
-		$this->add_hooks( Heartbeat::HOURLY );
-	}
+		$file_writer    = new CsvFeedFileWriter( $data_stream_name, self::RATINGS_AND_REVIEWS_FEED_HEADER );
+		$feed_handler   = new RatingsAndReviewsFeedHandler( $file_writer );
+		$scheduler      = new ActionScheduler();
+		$feed_generator = new RatingsAndReviewsFeedGenerator( $scheduler, $file_writer, $data_stream_name );
 
-	/**
-	 * Adds the necessary hooks for feed generation and data request handling.
-	 *
-	 * @param string $heartbeat The heartbeat interval for the feed generation.
-	 *
-	 * @since 3.5.0
-	 */
-	protected function add_hooks( string $heartbeat ): void {
-		add_action( $heartbeat, array( $this, self::SCHEDULE_CALL_BACK ) );
-		add_action( self::GENERATE_FEED_ACTION . $this->data_stream_name, array( $this, self::REGENERATE_CALL_BACK ) );
-		add_action( self::FEED_GEN_COMPLETE_ACTION . $this->data_stream_name, array( $this, self::UPLOAD_CALL_BACK ) );
-		add_action( self::LEGACY_API_PREFIX . self::REQUEST_FEED_ACTION . $this->data_stream_name, array( $this, self::STREAM_CALL_BACK ) );
+		$this->init(
+			$data_stream_name,
+			$feed_type,
+			$gen_feed_interval,
+			$file_writer,
+			$feed_handler,
+			$feed_generator,
+		);
 	}
 }

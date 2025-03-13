@@ -18,41 +18,16 @@ defined( 'ABSPATH' ) || exit;
  * @package WooCommerce\Facebook\Feed
  * @since 3.5.0
  */
-class PromotionsFeedHandler implements FeedHandler {
-	/**
-	 * The feed writer instance for the given feed.
-	 *
-	 * @var FeedFileWriter
-	 * @since 3.5.0
-	 */
-	private FeedFileWriter $feed_writer;
+class PromotionsFeedHandler extends AbstractFeedHandler {
 
 	/**
 	 * Constructor.
 	 *
-	 * @param FeedFileWriter $feed_writer An instance of csv feed writer.
-	 *
-	 * @since 3.5.0
+	 * @param FeedFileWriter $feed_writer An instance of the CSV feed file writer.
 	 */
 	public function __construct( FeedFileWriter $feed_writer ) {
 		$this->feed_writer = $feed_writer;
-	}
-
-	/**
-	 * Generate the feed file.
-	 *
-	 * This method is responsible for generating a feed file.
-	 *
-	 * @since 3.5.0
-	 */
-	public function generate_feed_file(): void {
-		$this->feed_writer->write_feed_file( $this->get_feed_data() );
-		/**
-		 * Trigger upload from RatingsAndReviewsFeed instance
-		 *
-		 * @since 3.5.0
-		 */
-		do_action( AbstractFeed::FEED_GEN_COMPLETE_ACTION . FeedManager::PROMOTIONS );
+		$this->feed_type   = FeedManager::PROMOTIONS;
 	}
 
 	/**

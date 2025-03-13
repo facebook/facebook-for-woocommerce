@@ -95,14 +95,14 @@ abstract class AbstractFeed {
 	/**
 	 * Initialize feed properties.
 	 *
-	 * @param string         $data_stream_name              The data stream name.
-	 * @param string         $feed_type                     The feed type.
-	 * @param int            $gen_feed_interval             The feed generation interval in seconds.
-	 * @param FeedFileWriter $feed_writer The feed file writer instance.
-	 * @param FeedHandler    $feed_handler The feed handler instance.
-	 * @param FeedGenerator  $feed_generator The feed generator instance.
+	 * @param string              $data_stream_name              The data stream name.
+	 * @param string              $feed_type                     The feed type.
+	 * @param int                 $gen_feed_interval             The feed generation interval in seconds.
+	 * @param FeedFileWriter      $feed_writer The feed file writer instance.
+	 * @param AbstractFeedHandler $feed_handler The feed handler instance.
+	 * @param FeedGenerator       $feed_generator The feed generator instance.
 	 */
-	protected function init( string $data_stream_name, string $feed_type, int $gen_feed_interval, FeedFileWriter $feed_writer, FeedHandler $feed_handler, FeedGenerator $feed_generator ): void {
+	protected function init( string $data_stream_name, string $feed_type, int $gen_feed_interval, FeedFileWriter $feed_writer, AbstractFeedHandler $feed_handler, FeedGenerator $feed_generator ): void {
 		$this->data_stream_name  = $data_stream_name;
 		$this->feed_type         = $feed_type;
 		$this->gen_feed_interval = $gen_feed_interval;
