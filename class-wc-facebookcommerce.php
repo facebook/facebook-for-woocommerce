@@ -219,6 +219,7 @@ class WC_Facebookcommerce extends WooCommerce\Facebook\Framework\Plugin {
 				$this->background_remove_duplicate_visibility_meta = new Background_Remove_Duplicate_Visibility_Meta();
 			}
 
+			new WooCommerce\Facebook\API\REST\InitializeRestAPI();
 			$this->connection_handler = new WooCommerce\Facebook\Handlers\Connection( $this );
 			new WooCommerce\Facebook\Handlers\MetaExtension();
 			$this->webhook_handler    = new WooCommerce\Facebook\Handlers\WebHook( $this );

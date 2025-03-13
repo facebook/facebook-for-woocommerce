@@ -41,7 +41,7 @@ class Connection extends Abstract_Settings_Screen {
 	}
 
 	/**
-	 * Enqueues the wp-api script only on the connection settings page.
+	 * Enqueues the wp-api script and the Facebook REST API JavaScript client.
 	 *
 	 * @internal
 	 */
@@ -50,7 +50,6 @@ class Connection extends Abstract_Settings_Screen {
 			wp_enqueue_script( 'wp-api' );
 		}
 	}
-
 	/**
 	 * Initializes this settings page's properties.
 	 */
@@ -374,22 +373,25 @@ class Connection extends Abstract_Settings_Screen {
 	 * @since 2.0.0
 	 */
 	public function render_message_handler() {
-		if ( ! $this->is_current_screen_page() ) {
+		if ( ! $this->is_current_screen_page() || ! $this->use_enhanced_onboarding() ) {
 			return;
 		}
+		// Add the inline script as a dependent script
+		wp_add_inline_script( 'facebook-for-woocommerce-rest-api-factory', $this->generate_inline_enhanced_onboarding_script(), 'after' );
+	}
 
-		// Check if we have a merchant access token
-		$merchant_access_token = get_option( 'wc_facebook_merchant_access_token', '' );
+	public function generate_inline_enhanced_onboarding_script() {
+		// Generate a fresh nonce for this request
+		$nonce = wp_json_encode( wp_create_nonce( 'wp_rest' ) );
 
-		if ( ! $this->use_enhanced_onboarding() ) {
-			return;
-		}
-		?>
-		<script type="text/javascript">
-			window.addEventListener('message', function (event) {
+		// Create the inline script with HEREDOC syntax for better JS readability
+		return <<<JAVASCRIPT
+			const fbAPI = FacebookWooCommerceAPIFactory({$nonce});
+			
+			window.addEventListener('message', function(event) {
 				const message = event.data;
 				const messageEvent = message.event;
-
+				
 				if (messageEvent === 'CommerceExtension::INSTALL' && message.success) {
 					const requestBody = {
 						access_token: message.access_token,
@@ -406,24 +408,15 @@ class Connection extends Abstract_Settings_Screen {
 						installed_features: message.installed_features
 					};
 
-					fetch(wpApiSettings.root + 'wc-facebook/v1/update_fb_settings', {
-						method: 'POST',
-						credentials: 'same-origin',
-						headers: {
-							'Content-Type': 'application/json',
-							'X-WP-Nonce': '<?php echo esc_js( wp_create_nonce( 'wp_rest' ) ); ?>'
-						},
-						body: JSON.stringify(requestBody)
-					})
-						.then(response => response.json())
-						.then(data => {
-							if (data.success) {
+					fbAPI.updateSettings(requestBody)
+						.then(function(response) {
+							if (response.success) {
 								window.location.reload();
 							} else {
-								console.error('Error updating Facebook settings:', data);
+								console.error('Error updating Facebook settings:', response);
 							}
 						})
-						.catch(error => {
+						.catch(function(error) {
 							console.error('Error during settings update:', error);
 						});
 				}
@@ -436,28 +429,19 @@ class Connection extends Abstract_Settings_Screen {
 				}
 
 				if (messageEvent === 'CommerceExtension::UNINSTALL') {
-					fetch(wpApiSettings.root + 'wc-facebook/v1/uninstall', {
-						method: 'POST',
-						credentials: 'same-origin',
-						headers: {
-							'Content-Type': 'application/json',
-							'X-WP-Nonce': '<?php echo esc_js( wp_create_nonce( 'wp_rest' ) ); ?>'
-						}
-					})
-						.then(response => response.json())
-						.then(data => {
-							if (data.success) {
+					fbAPI.uninstallSettings()
+						.then(function(response) {
+							if (response.success) {
 								window.location.reload();
 							}
 						})
-						.catch(error => {
+						.catch(function(error) {
 							console.error('Error during uninstall:', error);
 							window.location.reload();
 						});
 				}
-			}, false);
-		</script>
-		<?php
+			});
+		JAVASCRIPT;
 	}
 
 
