@@ -44,7 +44,7 @@ class BatchLogHandler extends LogHandlerBase {
 			$logs        = get_transient( 'global_telemetry_message_queue' );
 			$raw_context = [
 				'event'      => 'telemetry_log',
-				'extra_data' => $logs,
+				'extra_data' => [ 'batch_logs' => wp_json_encode( $logs ) ],
 			];
 			$context     = self::prefill_log_context( $raw_context );
 
