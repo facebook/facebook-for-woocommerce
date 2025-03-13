@@ -796,6 +796,7 @@ class Connection {
 		return get_option( self::OPTION_COMMERCE_MERCHANT_SETTINGS_ID, '' );
 	}
 
+
 	/**
 	 * Gets Commerce Partner Integration ID value.
 	 *
