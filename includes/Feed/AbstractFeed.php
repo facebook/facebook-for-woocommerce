@@ -57,10 +57,10 @@ abstract class AbstractFeed {
 	/**
 	 * The feed handler instance for the given feed.
 	 *
-	 * @var FeedHandler
+	 * @var AbstractFeedHandler
 	 * @since 3.5.0
 	 */
-	protected FeedHandler $feed_handler;
+	protected AbstractFeedHandler $feed_handler;
 
 	/**
 	 * The name of the data feed.
@@ -142,8 +142,8 @@ abstract class AbstractFeed {
 		try {
 			$cpi_id = get_option( 'wc_facebook_commerce_partner_integration_id', '' );
 			facebook_for_woocommerce()->
-				get_api()->
-				create_common_data_feed_upload( $cpi_id, $data );
+			get_api()->
+			create_common_data_feed_upload( $cpi_id, $data );
 		} catch ( Exception $e ) {
 			// Log the error and continue.
 			\WC_Facebookcommerce_Utils::log( "{$name} feed: Failed to create feed upload request: " . $e->getMessage() );
@@ -155,8 +155,8 @@ abstract class AbstractFeed {
 	 * Sample url:
 	 * https://your-site-url.com/?wc-api=wc_facebook_get_feed_data_example&secret=your_generated_secret
 	 *
-	 * @since 3.5.0
 	 * @return string
+	 * @since 3.5.0
 	 */
 	public function get_feed_data_url(): string {
 		$query_args = array(
@@ -173,8 +173,8 @@ abstract class AbstractFeed {
 	/**
 	 * Gets the secret value that should be included in the legacy WooCommerce REST API URL.
 	 *
-	 * @since 3.5.0
 	 * @return string
+	 * @since 3.5.0
 	 */
 	public function get_feed_secret(): string {
 		$secret = get_option( $this->feed_url_secret_option_name, '' );

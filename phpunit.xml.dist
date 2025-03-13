@@ -20,6 +20,12 @@
 	<coverage>
 		<include>
 			<directory>includes</directory>
+			<file>./class-wc-facebookcommerce.php</file>
+			<file>./facebook-commerce-events-tracker.php</file>
+			<file>./facebook-commerce-pixel-event.php</file>
+			<file>./facebook-commerce.php</file>
+			<file>./facebook-config-warmer.php</file>
+			<file>./facebook-for-woocommerce.php</file>
 		</include>
 	</coverage>
 </phpunit>

@@ -69,6 +69,8 @@ abstract class Plugin {
 	/** @var BatchLogHandler the batch log handler class */
 	private $batch_log_handler;
 
+	/** @var ErrorLogHandler the error log handler class */
+	private $error_log_handler;
 
 	/**
 	 * Initialize the plugin.
@@ -124,6 +126,9 @@ abstract class Plugin {
 
 		// build the batch log handler instance
 		$this->init_batch_log_handler();
+
+		// build the error log handler instance
+		$this->init_error_log_handler();
 	}
 
 
@@ -190,7 +195,15 @@ abstract class Plugin {
 	protected function init_batch_log_handler() {
 		$this->batch_log_handler = new BatchLogHandler();
 	}
-
+	
+	/**
+	 * Builds the error log handler instance.
+	 *
+	 * @since 3.5.0
+	 */
+	protected function init_error_log_handler() {
+		$this->error_log_handler = new ErrorLogHandler();
+	}
 
 	/**
 	 * Adds the action & filter hooks.

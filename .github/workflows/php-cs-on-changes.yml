@@ -1,10 +1,8 @@
 name: PHP Coding Standards - PR Changed Files
 
 on:
-  pull_request:
-    paths:
-      - "**.php"
-      - .github/workflows/php-cs-on-changes.yml
+  pull_request: { }
+  # run on all PRs
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -16,7 +14,7 @@ jobs:
     timeout-minutes: 15
     strategy:
       matrix:
-        php: [7.4, 8.3]
+        php: [ 7.4, 8.3 ]
     name: Code sniff (PHP ${{ matrix.php }}, WP Latest)
     permissions:
       contents: read
@@ -45,3 +43,7 @@ jobs:
       - name: Run PHPCS
         if: steps.changed-files.outputs.any_changed == 'true'
         run: vendor/bin/phpcs-changed --warning-severity=0 -s --git --git-base ${{ github.event.pull_request.base.sha }} ${{ steps.changed-files.outputs.all_changed_files }}
+
+      - name: Skip PHPCS - No PHP Files Updated
+        if: steps.changed-files.outputs.any_changed != 'true'
+        run: echo "No PHP files changed; skipping PHPCS checks."

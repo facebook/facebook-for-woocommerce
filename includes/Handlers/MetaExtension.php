@@ -459,7 +459,7 @@ class MetaExtension {
 	public static function generate_iframe_splash_url( $is_connected, $plugin, $external_business_id ): string {
 		$connection_handler       = facebook_for_woocommerce()->get_connection_handler();
 		$external_client_metadata = array(
-			'shop_domain'                           => wc_get_page_permalink( 'shop' ),
+			'shop_domain'                           => site_url( '/' ),
 			'admin_url'                             => admin_url(),
 			'client_version'                        => $plugin->get_version(),
 			'commerce_partner_seller_platform_type' => 'SELF_SERVE_PLATFORM',
