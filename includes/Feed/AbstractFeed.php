@@ -33,14 +33,6 @@ abstract class AbstractFeed {
 	/** The action slug for triggering file upload */
 	const FEED_GEN_COMPLETE_ACTION = 'wc_facebook_feed_generation_completed_';
 
-	/** Schedule feed generation on some interval hook name for children classes. */
-	const SCHEDULE_CALL_BACK = 'schedule_feed_generation';
-	/** Schedule an immediate file generator on the scheduler hook name. For testing mostly. */
-	const REGENERATE_CALL_BACK = 'regenerate_feed';
-	/** Make upload call to Meta hook name for children classes. */
-	const UPLOAD_CALL_BACK = 'send_request_to_upload_feed';
-	/** Stream file to upload endpoint hook name for children classes. */
-	const STREAM_CALL_BACK = 'handle_feed_data_request';
 	/** Hook prefix for Legacy REST API hook name */
 	const LEGACY_API_PREFIX = 'woocommerce_api_';
 	/** @var string the WordPress option name where the secret included in the feed URL is stored */
@@ -122,14 +114,14 @@ abstract class AbstractFeed {
 	 * @since 3.5.0
 	 */
 	protected function add_hooks( string $heartbeat ): void {
-		add_action( $heartbeat, array( $this, self::SCHEDULE_CALL_BACK ) );
-		add_action( self::GENERATE_FEED_ACTION . $this->data_stream_name, array( $this, self::REGENERATE_CALL_BACK ) );
-		add_action( self::FEED_GEN_COMPLETE_ACTION . $this->data_stream_name, array( $this, self::UPLOAD_CALL_BACK ) );
+		add_action( $heartbeat, array( $this, 'schedule_feed_generation' ) );
+		add_action( self::GENERATE_FEED_ACTION . $this->data_stream_name, array( $this, 'regenerate_feed' ) );
+		add_action( self::FEED_GEN_COMPLETE_ACTION . $this->data_stream_name, array( $this, 'send_request_to_upload_feed' ) );
 		add_action(
 			self::LEGACY_API_PREFIX . self::REQUEST_FEED_ACTION . $this->data_stream_name,
 			array(
 				$this,
-				self::STREAM_CALL_BACK,
+				'handle_feed_data_request',
 			)
 		);
 	}
@@ -141,6 +133,7 @@ abstract class AbstractFeed {
 	 */
 	public function schedule_feed_generation(): void {
 		$schedule_action_hook_name = self::GENERATE_FEED_ACTION . $this->data_stream_name;
+		error_log( 'scheduling feed generation for: ' . $this->data_stream_name );
 		if ( ! as_next_scheduled_action( $schedule_action_hook_name ) ) {
 			as_schedule_recurring_action(
 				time(),
@@ -160,6 +153,7 @@ abstract class AbstractFeed {
 	 * @since 3.5.0
 	 */
 	public function regenerate_feed(): void {
+		error_log( 'regenerating feed for: ' . $this->data_stream_name );
 		// Maybe use new ( experimental ), feed generation framework.
 		if ( \WC_Facebookcommerce::instance()->get_integration()->is_new_style_feed_generation_enabled() ) {
 			$this->feed_generator->queue_start();
@@ -177,6 +171,7 @@ abstract class AbstractFeed {
 	 */
 	public function send_request_to_upload_feed(): void {
 		$name = $this->data_stream_name;
+		error_log( 'sending request to upload feed for: ' . $this->data_stream_name );
 		$data = array(
 			'url'         => self::get_feed_data_url(),
 			'feed_type'   => $this->feed_type,
