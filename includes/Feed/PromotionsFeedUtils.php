@@ -71,6 +71,7 @@ class PromotionsFeedUtils {
 			}
 
 			// Map target selection
+			// TODO check for product exclusions?
 			if ( empty( $coupon->get_product_ids() ) && empty( $coupon->get_product_categories() ) ) {
 				// Coupon applies to all products.
 				$target_selection = 'ALL_CATALOG_PRODUCTS';
@@ -78,19 +79,28 @@ class PromotionsFeedUtils {
 				$target_selection = 'SPECIFIC_PRODUCTS';
 			}
 
-			// Get product IDs the coupon applies to.
-			$target_product_retailer_ids = array();
-			foreach ( $coupon->get_product_ids() as $product_id ) {
-				$product                       = new \WC_Product( $product_id );
-				$fb_retailer_id                = \WC_Facebookcommerce_Utils::get_fb_retailer_id( $product );
-				$target_product_retailer_ids[] = $fb_retailer_id;
-			}
-			// TODO needed?
-			// if ( 0 === count( $target_product_retailer_ids ) ) {
-			// $target_product_retailer_ids = '';
-			// }
+			// Determine target product mapping
+			$target_product_set_retailer_ids = '';
+			$target_product_retailer_ids     = '';
+			$target_filter                   = '';
 
-			$target_product_set_retailer_ids = $coupon->get_product_categories();
+			if ( 'SPECIFIC_PRODUCTS' === $target_selection ) {
+				// TODO check for product exclusions?
+				if ( ! empty( $coupon->get_product_ids() ) && ! empty( $coupon->get_product_categories() ) ) {
+					// TODO build target_filter
+					$target_filter = 'TODO';
+				} elseif ( ! empty( $coupon->get_product_ids() ) ) {
+					// Get product Retailer IDs the coupon applies to.
+					$target_product_retailer_ids = array();
+					foreach ( $coupon->get_product_ids() as $product_id ) {
+						$product                       = new \WC_Product( $product_id );
+						$fb_retailer_id                = \WC_Facebookcommerce_Utils::get_fb_retailer_id( $product );
+						$target_product_retailer_ids[] = $fb_retailer_id;
+					}
+				} elseif ( ! empty( $coupon->get_product_categories() ) ) {
+					$target_product_set_retailer_ids = $coupon->get_product_categories();
+				}
+			}
 
 			// TODO need to worry about Individual use only flag?
 			// TODO allowed and excluded brands -- can it be supported by target filter and do we sync them?
@@ -111,7 +121,7 @@ class PromotionsFeedUtils {
 				'end_date_time'                           => $end_date_time,
 				'coupon_codes'                            => array( $coupon->get_code() ),
 				'public_coupon_code'                      => '', // TODO allow configuration of public coupons
-				'target_filter'                           => '', // TODO build target filter if there are excluded products
+				'target_filter'                           => $target_filter,
 				'target_product_retailer_ids'             => $target_product_retailer_ids,
 				'target_product_group_retailer_ids'       => '', // Concept does not exist in Woo
 				'target_product_set_retailer_ids'         => $target_product_set_retailer_ids,
@@ -122,9 +132,9 @@ class PromotionsFeedUtils {
 				'redemption_limit_per_seller'             => $coupon->get_usage_limit(),
 				'target_quantity'                         => '', // Concept does not exist in Woo
 				'prerequisite_filter'                     => '', // Concept does not exist in Woo
-				'prerequisite_product_retailer_ids'       => array(), // Concept does not exist in Woo
-				'prerequisite_product_group_retailer_ids' => array(), // Concept does not exist in Woo
-				'prerequisite_product_set_retailer_ids'   => array(), // Concept does not exist in Woo
+				'prerequisite_product_retailer_ids'       => '', // Concept does not exist in Woo
+				'prerequisite_product_group_retailer_ids' => '', // Concept does not exist in Woo
+				'prerequisite_product_set_retailer_ids'   => '', // Concept does not exist in Woo
 				'exclude_sale_priced_products'            => $coupon->get_exclude_sale_items(),
 			);
 
