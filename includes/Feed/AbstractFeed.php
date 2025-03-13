@@ -153,7 +153,6 @@ abstract class AbstractFeed {
 	 * @since 3.5.0
 	 */
 	public function regenerate_feed(): void {
-		error_log( 'regenerating feed for: ' . $this->data_stream_name );
 		// Maybe use new ( experimental ), feed generation framework.
 		if ( \WC_Facebookcommerce::instance()->get_integration()->is_new_style_feed_generation_enabled() ) {
 			$this->feed_generator->queue_start();
