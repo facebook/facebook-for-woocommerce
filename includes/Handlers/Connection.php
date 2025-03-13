@@ -97,6 +97,9 @@ class Connection {
 	/** @var string the Commerce merchant settings ID option name */
 	const OPTION_COMMERCE_MERCHANT_SETTINGS_ID = 'wc_facebook_commerce_merchant_settings_id';
 
+	/** @var string the Commerce Partner Integration ID option name */
+	const OPTION_COMMERCE_PARTNER_INTEGRATION_ID = 'wc_facebook_commerce_partner_integration_id';
+
 	/** @var string|null the generated external merchant settings ID */
 	private $external_business_id;
 
@@ -791,6 +794,17 @@ class Connection {
 	 */
 	public function get_commerce_merchant_settings_id() {
 		return get_option( self::OPTION_COMMERCE_MERCHANT_SETTINGS_ID, '' );
+	}
+
+	/**
+	 * Gets Commerce Partner Integration ID value.
+	 *
+	 * @since 3.5.0
+	 *
+	 * @return string
+	 */
+	public function get_commerce_partner_integration_id() {
+		return get_option( self::OPTION_COMMERCE_PARTNER_INTEGRATION_ID, '' );
 	}
 
 

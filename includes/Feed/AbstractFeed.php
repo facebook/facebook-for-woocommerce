@@ -96,6 +96,12 @@ abstract class AbstractFeed {
 	 * @since 3.5.0
 	 */
 	public function schedule_feed_generation(): void {
+		// If the Commerce Partner Integration ID isn't set then don't schedule feed generation
+		$cpi_id = facebook_for_woocommerce()->get_connection_handler()->get_commerce_partner_integration_id();
+		if ( '' === $cpi_id ) {
+			return;
+		}
+
 		$schedule_action_hook_name = self::GENERATE_FEED_ACTION . $this->data_stream_name;
 		if ( ! as_next_scheduled_action( $schedule_action_hook_name ) ) {
 			as_schedule_recurring_action(
@@ -116,8 +122,13 @@ abstract class AbstractFeed {
 	 * @since 3.5.0
 	 */
 	public function regenerate_feed(): void {
-		// Maybe use new ( experimental ), feed generation framework.
-		if ( \WC_Facebookcommerce::instance()->get_integration()->is_new_style_feed_generation_enabled() ) {
+		// If the Commerce Partner Integration ID isn't set then don't generate the feed
+		$cpi_id = facebook_for_woocommerce()->get_connection_handler()->get_commerce_partner_integration_id();
+		if ( '' === $cpi_id ) {
+			return;
+		}
+
+		if ( facebook_for_woocommerce()->get_integration()->is_new_style_feed_generation_enabled() ) {
 			$this->feed_generator->queue_start();
 		} else {
 			$this->feed_handler->generate_feed_file();
