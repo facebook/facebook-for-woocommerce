@@ -46,7 +46,7 @@ class ErrorLogHandler extends LogHandlerBase {
 	 * @since 3.5.0
 	 */
 	public function process_error_log( $raw_context ) {
-		$context = self::prefill_log_context( $raw_context );
+		$context = self::set_core_log_context( $raw_context );
 		facebook_for_woocommerce()->get_api()->log_to_meta( $context );
 		WC_Facebookcommerce_Utils::logWithDebugModeEnabled( 'Error log: ' . wp_json_encode( $context ) );
 	}
@@ -66,19 +66,18 @@ class ErrorLogHandler extends LogHandlerBase {
 		$extra_data['php_version'] = phpversion();
 
 		$request_data = [
-			'event'                           => 'error_log',
-			'event_type'                      => WC_Facebookcommerce_Utils::getContextData( $context, 'event_type' ),
-			'commerce_partner_integration_id' => WC_Facebookcommerce_Utils::getContextData( $context, 'commerce_partner_integration_id' ),
-			'exception_message'               => $error->getMessage(),
-			'exception_trace'                 => $error->getTraceAsString(),
-			'exception_code'                  => $error->getCode(),
-			'exception_class'                 => get_class( $error ),
-			'order_id'                        => WC_Facebookcommerce_Utils::getContextData( $context, 'order_id' ),
-			'promotion_id'                    => WC_Facebookcommerce_Utils::getContextData( $context, 'promotion_id' ),
-			'flow_name'                       => WC_Facebookcommerce_Utils::getContextData( $context, 'flow_name' ),
-			'flow_step'                       => WC_Facebookcommerce_Utils::getContextData( $context, 'flow_step' ),
-			'incoming_params'                 => WC_Facebookcommerce_Utils::getContextData( $context, 'incoming_params' ),
-			'extra_data'                      => $extra_data,
+			'event'             => 'error_log',
+			'event_type'        => WC_Facebookcommerce_Utils::getContextData( $context, 'event_type' ),
+			'exception_message' => $error->getMessage(),
+			'exception_trace'   => $error->getTraceAsString(),
+			'exception_code'    => $error->getCode(),
+			'exception_class'   => get_class( $error ),
+			'order_id'          => WC_Facebookcommerce_Utils::getContextData( $context, 'order_id' ),
+			'promotion_id'      => WC_Facebookcommerce_Utils::getContextData( $context, 'promotion_id' ),
+			'flow_name'         => WC_Facebookcommerce_Utils::getContextData( $context, 'flow_name' ),
+			'flow_step'         => WC_Facebookcommerce_Utils::getContextData( $context, 'flow_step' ),
+			'incoming_params'   => WC_Facebookcommerce_Utils::getContextData( $context, 'incoming_params' ),
+			'extra_data'        => $extra_data,
 		];
 
 		// Check if Action Scheduler is available

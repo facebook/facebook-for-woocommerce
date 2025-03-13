@@ -33,7 +33,7 @@ class BatchLogHandler extends LogHandlerBase {
 	}
 
 	/**
-	 * Function that runs every minute.
+	 * Function that runs every five minutes.
 	 *
 	 * @internal
 	 *
@@ -43,10 +43,10 @@ class BatchLogHandler extends LogHandlerBase {
 		if ( get_transient( 'global_telemetry_message_queue' ) !== false && ! empty( get_transient( 'global_telemetry_message_queue' ) ) ) {
 			$logs        = get_transient( 'global_telemetry_message_queue' );
 			$raw_context = [
-				'event'      => 'telemetry_log',
-				'extra_data' => [ 'batch_logs' => wp_json_encode( $logs ) ],
+				'event'      => 'persist_meta_telemetry_logs',
+				'extra_data' => [ 'telemetry_logs' => wp_json_encode( $logs ) ],
 			];
-			$context     = self::prefill_log_context( $raw_context );
+			$context     = self::set_core_log_context( $raw_context );
 
 			facebook_for_woocommerce()->get_api()->log_to_meta( $context );
 			WC_Facebookcommerce_Utils::logWithDebugModeEnabled( 'Telemetry logs: ' . wp_json_encode( $context ) );
