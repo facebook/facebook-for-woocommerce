@@ -130,21 +130,35 @@ class Checkout {
 			}
 
 			$checkout_url = wc_get_checkout_url();
-			echo '<style>
-                body, html {
-                    margin: 0;
-                    padding: 0;
-                    height: 100%;
-                    overflow: hidden;
-                }
-                iframe {
-                    width: 100%;
-                    height: 100vh;
-                    border: none;
-                    display: block;
-                }
-              </style>';
-			echo '<iframe src="' . esc_url( $checkout_url ) . '"></iframe>';
+			echo '<!DOCTYPE html>
+				<html lang="en">
+				<head>
+						<meta charset="UTF-8">
+						<meta name="viewport" content="width=device-width, initial-scale=1">
+						<title>Checkout</title>
+						<style>
+								body, html {
+										margin: 0;
+										padding: 0;
+										height: 100%;
+										overflow: hidden;
+								}
+								iframe {
+										width: 100%;
+										height: 100vh;
+										border: none;
+										display: block;
+										max-width: 100%;
+										max-height: 100%;
+										box-sizing: border-box;
+								}
+						</style>
+				</head>
+				<body>
+						<iframe src="' . esc_url( $checkout_url ) . '"></iframe>
+				</body>
+				</html>';
+
 			exit;
 		}
 
