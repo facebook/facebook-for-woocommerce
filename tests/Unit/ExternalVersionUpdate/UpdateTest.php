@@ -27,12 +27,64 @@ class UpdateTest extends WP_UnitTestCase {
 	 * @var \WooCommerce\Facebook\ExternalVersionUpdate\Update The object to be tested.
 	 */
 	private $update;
+	
+	/**
+	 * Original connection handler from the plugin.
+	 *
+	 * @var Connection
+	 */
+	private $original_connection_handler;
+	
+	/**
+	 * Original API instance from the plugin.
+	 *
+	 * @var API
+	 */
+	private $original_api;
+	
+	/**
+	 * ReflectionProperty for connection_handler.
+	 *
+	 * @var \ReflectionProperty
+	 */
+	private $prop_connection_handler;
+	
+	/**
+	 * ReflectionProperty for api.
+	 *
+	 * @var \ReflectionProperty
+	 */
+	private $prop_api;
 
 	/**
 	 * Setup the test object for each test.
 	 */
 	public function setUp():void {
+		$plugin = facebook_for_woocommerce();
+		$plugin_ref_obj = new ReflectionObject( $plugin );
+		
+		// Set up reflection properties
+		$this->prop_connection_handler = $plugin_ref_obj->getProperty( 'connection_handler' );
+		$this->prop_connection_handler->setAccessible( true );
+		$this->original_connection_handler = $this->prop_connection_handler->getValue( $plugin );
+		
+		$this->prop_api = $plugin_ref_obj->getProperty( 'api' );
+		$this->prop_api->setAccessible( true );
+		$this->original_api = $this->prop_api->getValue( $plugin );
+		
 		$this->update = new Update();
+	}
+	
+	/**
+	 * Tear down after each test.
+	 */
+	public function tearDown():void {
+		// Restore original values
+		$plugin = facebook_for_woocommerce();
+		$this->prop_connection_handler->setValue( $plugin, $this->original_connection_handler );
+		$this->prop_api->setValue( $plugin, $this->original_api );
+		
+		parent::tearDown();
 	}
 
 	/**

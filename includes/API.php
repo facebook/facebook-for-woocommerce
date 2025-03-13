@@ -686,4 +686,19 @@ class API extends Base {
 	protected function get_plugin() {
 		return facebook_for_woocommerce();
 	}
+
+	/**
+	 * Reads business extension data.
+	 *
+	 * @param string $access_token the access token
+	 * @param string $external_business_id the external business ID
+	 * @return API\FBE\Business\Read\Response
+	 * @throws ApiException
+	 * @throws API\Exceptions\Request_Limit_Reached
+	 */
+	public function read_business_extension( string $access_token, string $external_business_id ): API\FBE\Business\Read\Response {
+		$request = new API\FBE\Business\Read\Request( $access_token, $external_business_id );
+		$this->set_response_handler( API\FBE\Business\Read\Response::class );
+		return $this->perform_request( $request );
+	}
 }
