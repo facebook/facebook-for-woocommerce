@@ -86,8 +86,40 @@ class Checkout {
 				foreach ( $products as $product ) {
 					list($product_id, $quantity) = explode( ':', $product );
 
+					// Parse the product ID. The input is sent in the Retailer ID format (see get_fb_retailer_id())
+					// The Retailer ID format is: {product_sku}_{product_id}, so we need to extract the product_id
+					if ( false !== strpos( $product_id, '_' ) ) {
+						$parts      = explode( '_', $product_id );
+						$product_id = end( $parts );
+					}
+
+					// Validate and add the product to the cart
 					if ( is_numeric( $product_id ) && is_numeric( $quantity ) && $quantity > 0 ) {
-						WC()->cart->add_to_cart( $product_id, $quantity );
+						try {
+							WC()->cart->add_to_cart( $product_id, $quantity );
+						} catch ( \Exception $e ) {
+							\WC_Facebookcommerce_Utils::logExceptionImmediatelyToMeta(
+								$e,
+								array(
+									'flow_name'       => 'checkout',
+									'incoming_params' => array(
+										'products_param' => $products_param,
+										'product_id'     => $product_id,
+									),
+								)
+							);
+						}
+					} else {
+						\WC_Facebookcommerce_Utils::logTelemetryToMeta(
+							'Failed to add product to cart',
+							array(
+								'flow_name'       => 'checkout',
+								'incoming_params' => array(
+									'products_param' => $products_param,
+									'product_id'     => $product_id,
+								),
+							)
+						);
 					}
 				}
 			}
@@ -98,21 +130,35 @@ class Checkout {
 			}
 
 			$checkout_url = wc_get_checkout_url();
-			echo '<style>
-                body, html {
-                    margin: 0;
-                    padding: 0;
-                    height: 100%;
-                    overflow: hidden;
-                }
-                iframe {
-                    width: 100%;
-                    height: 100vh;
-                    border: none;
-                    display: block;
-                }
-              </style>';
-			echo '<iframe src="' . esc_url( $checkout_url ) . '"></iframe>';
+			echo '<!DOCTYPE html>
+				<html lang="en">
+				<head>
+						<meta charset="UTF-8">
+						<meta name="viewport" content="width=device-width, initial-scale=1">
+						<title>Checkout</title>
+						<style>
+								body, html {
+										margin: 0;
+										padding: 0;
+										height: 100%;
+										overflow: hidden;
+								}
+								iframe {
+										width: 100%;
+										height: 100vh;
+										border: none;
+										display: block;
+										max-width: 100%;
+										max-height: 100%;
+										box-sizing: border-box;
+								}
+						</style>
+				</head>
+				<body>
+						<iframe src="' . esc_url( $checkout_url ) . '"></iframe>
+				</body>
+				</html>';
+
 			exit;
 		}
 

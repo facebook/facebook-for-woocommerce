@@ -897,8 +897,10 @@ if ( ! class_exists( 'WC_Facebookcommerce_Utils' ) ) :
 				as_enqueue_async_action( 'facebook_for_woocommerce_log_api', array( $request_data ) );
 			} else {
 				// Handle the absence of the Action Scheduler
-				self::log( 'Action Scheduler is not available.' );
+				self::logWithDebugModeEnabled( 'Action Scheduler is not available.' );
 			}
+
+			self::logWithDebugModeEnabled( 'Request data: ' . json_encode( $request_data ) );
 		}
 
 		/**
@@ -950,6 +952,26 @@ if ( ! class_exists( 'WC_Facebookcommerce_Utils' ) ) :
 		private static function getContextData(array $context, string $key, $default = null)
 		{
 			return $context[$key] ?? $default;
+		}
+
+		/**
+		 * Saves errors or messages to WordPress debug log (wp-content/debug.log)
+		 * Only logs if debug mode is enabled and WP_DEBUG and WP_DEBUG_LOG are true in wp-config.php.
+		 */
+		public static function logWithDebugModeEnabled( $message ) {
+
+			// if this file is being included outside the plugin, or the plugin setting is disabled
+			if ( ! function_exists( 'facebook_for_woocommerce' ) || ! facebook_for_woocommerce()->get_integration()->is_debug_mode_enabled() ) {
+				return;
+			}
+
+			if ( is_array( $message ) || is_object( $message ) ) {
+				$message = json_encode( $message );
+			} else {
+				$message = sanitize_textarea_field( $message );
+			}
+
+			error_log( $message );
 		}
 
 	}
