@@ -133,7 +133,6 @@ abstract class AbstractFeed {
 	 */
 	public function schedule_feed_generation(): void {
 		$schedule_action_hook_name = self::GENERATE_FEED_ACTION . $this->data_stream_name;
-		error_log( 'scheduling feed generation for: ' . $this->data_stream_name );
 		if ( ! as_next_scheduled_action( $schedule_action_hook_name ) ) {
 			as_schedule_recurring_action(
 				time(),
@@ -170,7 +169,6 @@ abstract class AbstractFeed {
 	 */
 	public function send_request_to_upload_feed(): void {
 		$name = $this->data_stream_name;
-		error_log( 'sending request to upload feed for: ' . $this->data_stream_name );
 		$data = array(
 			'url'         => self::get_feed_data_url(),
 			'feed_type'   => $this->feed_type,

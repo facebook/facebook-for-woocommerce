@@ -38,13 +38,12 @@ class PromotionsFeedHandler extends AbstractFeedHandler {
 	 * @since 3.5.0
 	 */
 	public function get_feed_data(): array {
-		error_log( 'starting promotions feed handler' );
 		$query_args = array(
 			'post_type'      => 'shop_coupon',
 			'post_status'    => 'publish',
 			'posts_per_page' => - 1, // retrieve all items
 		);
 
-		return PromotionsFeedUtils::get_coupons_data( $query_args );
+		return FeedUploadUtils::get_coupons_data( $query_args );
 	}
 }

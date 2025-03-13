@@ -31,7 +31,6 @@ class PromotionsFeedGenerator extends FeedGenerator {
 	 * @since 3.5.0
 	 */
 	protected function get_items_for_batch( int $batch_number, array $args ): array {
-		error_log( 'starting promotions feed generator batch ' . $batch_number );
 		$batch_number = max( 1, $batch_number );
 		$batch_size   = $this->get_batch_size();
 		$offset       = ( $batch_number - 1 ) * $batch_size;
@@ -45,7 +44,7 @@ class PromotionsFeedGenerator extends FeedGenerator {
 			'orderby'        => 'ID',
 		);
 
-		return PromotionsFeedUtils::get_coupons_data( $query_args );
+		return FeedUploadUtils::get_coupons_data( $query_args );
 	}
 
 	/**
