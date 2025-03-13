@@ -869,7 +869,7 @@ if ( ! class_exists( 'WC_Facebookcommerce_Utils' ) ) :
 		 * 		'extra_data' => ['dictionary type' => 'any data that is not fall into our pre-defined format.']
 		 */
 		public static function logExceptionImmediatelyToMeta(Throwable $error, array $context = []) {
-			ErrorLogHandler::log_expcetion_to_meta($error, $context);
+			ErrorLogHandler::log_exception_to_meta($error, $context);
 		}
 
 		/**

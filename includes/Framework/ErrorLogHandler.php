@@ -29,11 +29,6 @@ class ErrorLogHandler extends LogHandlerBase {
 	const META_LOG_API = 'facebook_for_woocommerce_log_api';
 
 	/**
-	 * Plugin version.
-	 */
-	const PLUGIN_VERSION = \WC_Facebookcommerce::VERSION;
-
-	/**
 	 * Constructs a new ErrorLog handler.
 	 *
 	 * @since 3.5.0
@@ -66,7 +61,7 @@ class ErrorLogHandler extends LogHandlerBase {
 	 *      'promotion_id' => '1234567890', 'flow_name' => 'checkout', 'flow_step' => 'verification',
 	 *      'extra_data' => ['dictionary type' => 'any data that is not fall into our pre-defined format.']
 	 */
-	public static function log_expcetion_to_meta( Throwable $error, array $context = [] ) {
+	public static function log_exception_to_meta( Throwable $error, array $context = [] ) {
 		$extra_data                = WC_Facebookcommerce_Utils::getContextData( $context, 'extra_data', [] );
 		$extra_data['php_version'] = phpversion();
 
