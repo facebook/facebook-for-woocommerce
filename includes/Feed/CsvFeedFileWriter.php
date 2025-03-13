@@ -163,7 +163,10 @@ class CsvFeedFileWriter implements FeedFileWriter {
 		foreach ( $data as $obj ) {
 			$row = [];
 			foreach ( $accessors as $accessor ) {
-				$row[] = $obj[ $accessor ] ?? '';
+				// Map each field in the row to ensure proper string conversion
+				$value = $obj[ $accessor ] ?? '';
+				$row[] = wp_json_encode( $value );
+
 			}
 			if ( fputcsv( $temp_feed_file, $row, $this->delimiter, $this->enclosure, $this->escape_char ) === false ) {
 				throw new PluginException( 'Failed to write a CSV data row.', 500 );
