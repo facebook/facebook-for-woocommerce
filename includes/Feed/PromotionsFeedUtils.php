@@ -8,9 +8,6 @@
  * @package FacebookCommerce
  */
 
-
-
-
 namespace WooCommerce\Facebook\Feed;
 
 use WC_Coupon;
