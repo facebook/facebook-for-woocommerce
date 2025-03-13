@@ -594,6 +594,7 @@ class API extends Base {
 	}
 
 	public function log_to_meta( $context) {
+		error_log( 'log to meta' );
 		$request = new API\MetaLog\Request( $context );
 		$this->set_response_handler( API\MetaLog\Response::class );
 		return $this->perform_request( $request );

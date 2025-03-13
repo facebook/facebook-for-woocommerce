@@ -21,7 +21,7 @@ defined( 'ABSPATH' ) || exit;
  *
  * @since 3.5.0
  */
-class ErrorLogHandler {
+class ErrorLogHandler extends LogHandlerBase {
 
 	/**
 	 * Hook name for Meta Log API.
@@ -53,7 +53,7 @@ class ErrorLogHandler {
 	public function process_error_log( $raw_context ) {
 		$context = self::prefill_log_context( $raw_context );
 		facebook_for_woocommerce()->get_api()->log_to_meta( $context );
-		WC_Facebookcommerce_Utils::logWithDebugModeEnabled( 'Request data: ' . wp_json_encode( $context ) );
+		WC_Facebookcommerce_Utils::logWithDebugModeEnabled( 'Error log: ' . wp_json_encode( $context ) );
 	}
 
 	/**
@@ -83,7 +83,6 @@ class ErrorLogHandler {
 			'flow_name'                       => WC_Facebookcommerce_Utils::getContextData( $context, 'flow_name' ),
 			'flow_step'                       => WC_Facebookcommerce_Utils::getContextData( $context, 'flow_step' ),
 			'incoming_params'                 => WC_Facebookcommerce_Utils::getContextData( $context, 'incoming_params' ),
-			'seller_platform_app_version'     => WC_Facebookcommerce_Utils::PLUGIN_VERSION,
 			'extra_data'                      => $extra_data,
 		];
 
@@ -94,24 +93,5 @@ class ErrorLogHandler {
 			// Handle the absence of the Action Scheduler
 			WC_Facebookcommerce_Utils::logWithDebugModeEnabled( 'Action Scheduler is not available.' );
 		}
-	}
-
-	/**
-	 * Prefill the log context with basic information.
-	 *
-	 * @since 3.5.0
-	 *
-	 * @param array $context log context
-	 */
-	public static function prefill_log_context( array $context ) {
-		$request_data = [
-			'commerce_merchant_settings_id' => facebook_for_woocommerce()->get_connection_handler()->get_commerce_merchant_settings_id(),
-			'external_business_id'          => facebook_for_woocommerce()->get_connection_handler()->get_external_business_id(),
-			'catalog_id'                    => facebook_for_woocommerce()->get_integration()->get_product_catalog_id(),
-			'page_id'                       => facebook_for_woocommerce()->get_integration()->get_facebook_page_id(),
-			'pixel_id'                      => facebook_for_woocommerce()->get_integration()->get_facebook_pixel_id(),
-		];
-
-		return array_merge( $request_data, $context );
 	}
 }

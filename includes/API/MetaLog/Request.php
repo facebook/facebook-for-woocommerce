@@ -16,6 +16,7 @@ class Request extends ApiRequest {
 	 * @param array $context log data
 	 */
 	public function __construct( $context ) {
+		error_log( 'api request' );
 		parent::__construct( '/commerce_seller_logs', 'POST' );
 		$data = $context;
 		parent::set_data( $data );

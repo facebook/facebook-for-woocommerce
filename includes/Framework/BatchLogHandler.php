@@ -21,7 +21,7 @@ defined( 'ABSPATH' ) || exit;
  *
  * @since 3.5.0
  */
-class BatchLogHandler {
+class BatchLogHandler extends LogHandlerBase {
 
 	/**
 	 * Constructs a new BatchLog handler.
@@ -40,11 +40,16 @@ class BatchLogHandler {
 	 * @since 3.5.0
 	 */
 	public function process_telemetry_logs_batch() {
-		if ( get_transient( 'global_telemetry_message_queue' ) !== false ) {
-			$logs = get_transient( 'global_telemetry_message_queue' );
+		if ( get_transient( 'global_telemetry_message_queue' ) !== false && ! empty( get_transient( 'global_telemetry_message_queue' ) ) ) {
+			$logs        = get_transient( 'global_telemetry_message_queue' );
+			$raw_context = [
+				'event'      => 'telemetry_log',
+				'extra_data' => $logs,
+			];
+			$context     = self::prefill_log_context( $raw_context );
 
-			// TODO: Replace with send batch logging request to Meta function.
-			WC_Facebookcommerce_Utils::log( wp_json_encode( $logs ) );
+			facebook_for_woocommerce()->get_api()->log_to_meta( $context );
+			WC_Facebookcommerce_Utils::logWithDebugModeEnabled( 'Telemetry logs: ' . wp_json_encode( $context ) );
 		}
 
 		set_transient( 'global_telemetry_message_queue', [], HOUR_IN_SECONDS );
