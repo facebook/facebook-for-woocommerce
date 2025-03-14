@@ -480,9 +480,7 @@ class Admin {
 		}
 
 		if ( $should_sync ) {
-			
 			esc_html_e( 'Synced', 'facebook-for-woocommerce' );
-
 		} else {
 			esc_html_e( 'Not synced', 'facebook-for-woocommerce' );
 			if ( ! empty( $no_sync_reason ) ) {
