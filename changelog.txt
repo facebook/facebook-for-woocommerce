@@ -1,5 +1,8 @@
 *** Facebook for WooCommerce Changelog ***
 
+= 3.4.2 - 2025-03-13 =
+* Tweak - Update README.md - Added noification for ownership transfer by @SayanPandey in #2910 and #2916
+
 = 3.4.1 - 2025-02-27 = 
 * Tweak - Removed custom field definitions by @devbodaghe in #2876
 * Dev - Improved readability of function prepare_product() in fbproduct.php by @mshymon in #2889
@@ -14,13 +17,6 @@
 
 = 3.3.5 - 2025-02-12 = 
 * Add - Rich Text Description to Woo Product Sync with Meta by devbodaghe in #2843
-
-= 3.3.4 - 2025-02-11 =
-* Fix - Fixing the issue with version number
-
-= 3.3.3 - 2025-02-06 = 
-* Fix - Use of recommended delete connection endpoint over delete permission endpoint by atuld123 in #2844
-* Add - Expose Brand & MPN to Woocommerce UI by @devbodaghe in #2842
 
 = 3.3.4 - 2025-02-11 =
 * Fix - Fixing the issue with version number

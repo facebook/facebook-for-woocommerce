@@ -3,7 +3,7 @@ Contributors: facebook, automattic, woothemes
 Tags: facebook, woocommerce, marketing, product catalog feed, pixel
 Requires at least: 5.6
 Tested up to: 6.7
-Stable tag: 3.4.1
+Stable tag: 3.4.2
 Requires PHP: 7.4
 MySQL: 5.6 or greater
 License: GPLv2 or later
@@ -39,6 +39,9 @@ When opening a bug on GitHub, please give us as many details as possible.
 * Current version of Facebook-for-WooCommerce, WooCommerce, Wordpress, PHP
 
 == Changelog ==
+= 3.4.2 - 2025-03-13 =
+* Tweak - Update README.md - Added noification for ownership transfer by @SayanPandey in #2910 and #2916
+
 = 3.4.1 - 2025-02-27 = 
 * Tweak - Removed custom field definitions by @devbodaghe in #2876
 * Dev - Improved readability of function prepare_product() in fbproduct.php by @mshymon in #2889
@@ -60,12 +63,6 @@ When opening a bug on GitHub, please give us as many details as possible.
 = 3.3.3 - 2025-02-06 = 
 * Fix - Use of recommended delete connection endpoint over delete permission endpoint by atuld123 in #2844
 * Add - Expose Brand & MPN to Woocommerce UI by @devbodaghe in #2842
-= 3.3.4 - 2025-02-11 =
-* Fix - Fixing the issue with version number
-
-= 3.3.3 - 2025-02-06 = 
-* Fix - Use of recommended delete connection endpoint over delete permission endpoint by atuld123 in #2844
-* Add - Expose Brand & MPN to Woocommerce UI by @devbodaghe in #2842
 
 = 3.3.2 - 2025-01-21 =
 * Fix - a bug that arose from reliance on the plugin version compatibility tag by @vinkmeta in #2856
@@ -74,8 +71,3 @@ When opening a bug on GitHub, please give us as many details as possible.
 * Tweak - Removed sell on Instagram by @mshymon in #2854
 * Tweak - Add custom fields to product data structure by @devbodaghe in #2836
 * Fix - Multiple issues with Fixed FB Attribute Syncing by @vinkmeta in #2860
-
-= 3.3.1 - 2024-12-06 = 
-* Fix - Sale price effective date by @vinkmeta in #2809
-* Fix - Sync stock quantity when available by @mshymon in #2811
-* Fix - Sync product GTIN when available by @mshymon in #2810

@@ -1,8 +1,16 @@
-# Facebook for WooCommerce
+# Facebook for WooCommerce is now an official plugin from Meta.
 
 [![PHP Coding Standards](https://github.com/woocommerce/facebook-for-woocommerce/actions/workflows/php-cs-on-changes.yml/badge.svg)](https://github.com/woocommerce/facebook-for-woocommerce/actions/workflows/php-coding-standards.yml)
 
-This is the development repository for the Facebook for WooCommerce plugin.
+**We're excited to announce that the plugin is now owned by Meta, and we invite the developer community to join us in shaping its future through contributions.**
+
+Grow your business on Facebook and Instagram. Easily promote your products and target accurately using powerful sales and marketing tools. Reach new customers and drive traffic to your website with seamless ad experiences, from discovery to conversion. Automatically sync your eligible products to your Meta catalog, so you can easily create ads right where your customers are.
+- Help drive better ad performance by setting up a conversion pixel
+- Easily set up your ads with a one-time account connection
+- Sell from one inventory that automatically syncs to your catalog used for ads
+
+
+### This is the development repository for the Facebook for WooCommerce plugin.
 
 - [WooCommerce.com product page](https://woocommerce.com/products/facebook/)
 - [WordPress.org plugin page](https://wordpress.org/plugins/facebook-for-woocommerce/)
