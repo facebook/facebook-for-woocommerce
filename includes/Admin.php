@@ -446,7 +446,7 @@ class Admin {
 	 * @return array
 	 */
 	public function add_product_list_table_columns( $columns ) {
-		$columns['facebook_sync'] = __( 'Facebook sync', 'facebook-for-woocommerce' );
+		$columns['facebook_sync'] = __( 'Synced to Meta catalog', 'facebook-for-woocommerce' );
 		return $columns;
 	}
 
@@ -480,13 +480,11 @@ class Admin {
 		}
 
 		if ( $should_sync ) {
-			if ( Products::is_product_visible( $product ) ) {
-				esc_html_e( 'Sync and show', 'facebook-for-woocommerce' );
-			} else {
-				esc_html_e( 'Sync and hide', 'facebook-for-woocommerce' );
-			}
+			
+			esc_html_e( 'Synced', 'facebook-for-woocommerce' );
+
 		} else {
-			esc_html_e( 'Do not sync', 'facebook-for-woocommerce' );
+			esc_html_e( 'Not synced', 'facebook-for-woocommerce' );
 			if ( ! empty( $no_sync_reason ) ) {
 				echo wc_help_tip( $no_sync_reason );
 			}
@@ -541,8 +539,8 @@ class Admin {
 			<span class="input-text-wrap">
 				<select class="facebook_bulk_sync_options" name="facebook_bulk_sync_options">
 				<option value=""> <?php esc_html_e( '— No Change —', 'facebook-for-woocommerce' ); ?></option>;
-				<option value="<?php echo esc_attr( self::BULK_SYNC_MODE_INCLUDE ); ?>" <?php selected( $choice, self::BULK_SYNC_MODE_INCLUDE ); ?>><?php esc_html_e( 'Synced', 'facebook-for-woocommerce' ); ?></option>
-				<option value="<?php echo esc_attr( self::BULK_SYNC_MODE_EXCLUDE ); ?>" <?php selected( $choice, self::BULK_SYNC_MODE_EXCLUDE ); ?>><?php esc_html_e( 'Not synced', 'facebook-for-woocommerce' ); ?></option>
+				<option value="<?php echo esc_attr( self::BULK_SYNC_MODE_INCLUDE ); ?>" <?php selected( $choice, self::BULK_SYNC_MODE_INCLUDE ); ?>><?php esc_html_e( 'Sync', 'facebook-for-woocommerce' ); ?></option>
+				<option value="<?php echo esc_attr( self::BULK_SYNC_MODE_EXCLUDE ); ?>" <?php selected( $choice, self::BULK_SYNC_MODE_EXCLUDE ); ?>><?php esc_html_e( 'Do not sync', 'facebook-for-woocommerce' ); ?></option>
 				</select>
 			</span>
 		</label>
