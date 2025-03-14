@@ -41,15 +41,41 @@ class BatchLogHandler extends LogHandlerBase {
 	 */
 	public function process_telemetry_logs_batch() {
 		if ( get_transient( 'global_telemetry_message_queue' ) !== false && ! empty( get_transient( 'global_telemetry_message_queue' ) ) ) {
-			$logs        = get_transient( 'global_telemetry_message_queue' );
-			$raw_context = [
-				'event'      => 'persist_meta_telemetry_logs',
-				'extra_data' => [ 'telemetry_logs' => wp_json_encode( $logs ) ],
-			];
-			$context     = self::set_core_log_context( $raw_context );
+			$logs         = get_transient( 'global_telemetry_message_queue' );
+			$chunked_logs = array_chunk( $logs, 20 );
 
-			facebook_for_woocommerce()->get_api()->log_to_meta( $context );
-			WC_Facebookcommerce_Utils::logWithDebugModeEnabled( 'Telemetry logs: ' . wp_json_encode( $context ) );
+			$chunked_failed_logs = array_map(
+				function ( $logs_chunk ) {
+					$raw_context = [
+						'event'      => 'persist_meta_telemetry_logs',
+						'extra_data' => [ 'telemetry_logs' => wp_json_encode( $logs_chunk ) ],
+					];
+					$context     = self::set_core_log_context( $raw_context );
+
+					try {
+						$response = facebook_for_woocommerce()->get_api()->log_to_meta( $context );
+						if ( $response->success ) {
+							WC_Facebookcommerce_Utils::logWithDebugModeEnabled( 'Telemetry logs: ' . wp_json_encode( $context ) );
+						} else {
+							WC_Facebookcommerce_Utils::logWithDebugModeEnabled( 'Bad response from log_to_meta request' );
+							return $logs_chunk;
+						}
+
+						return [];
+					} catch ( \Exception $e ) {
+						WC_Facebookcommerce_Utils::logWithDebugModeEnabled( 'Error persisting telemetry logs: ' . $e->getMessage() );
+						return $logs_chunk;
+					}
+				},
+				$chunked_logs
+			);
+
+			$failed_logs = array_merge( ...$chunked_failed_logs );
+
+			if ( ! empty( $failed_logs ) ) {
+				set_transient( 'global_telemetry_message_queue', $failed_logs, HOUR_IN_SECONDS );
+				return;
+			}
 		}
 
 		set_transient( 'global_telemetry_message_queue', [], HOUR_IN_SECONDS );
