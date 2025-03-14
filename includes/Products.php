@@ -91,7 +91,7 @@ class Products {
 				}
 
 				// Remove excluded product from FB.
-				if ( "no" === $enabled && self::product_should_be_deleted( $product ) ) {
+				if ( "no" === $enabled ) {
 					facebook_for_woocommerce()->get_integration()->delete_fb_product( $product );
 				}
 
