@@ -525,7 +525,7 @@ class Admin {
 	 *
 	 * @internal
 	 */
-	function add_facebook_sync_bulk_edit_dropdown_at_bottom() {
+	public function add_facebook_sync_bulk_edit_dropdown_at_bottom() {
 		global $typenow;
 
 		if ( 'product' !== $typenow ) {
@@ -537,7 +537,7 @@ class Admin {
 
 		?>
 		<label>
-			<span class="title"><?php esc_html_e( 'Sync to Meta catalog', 'woocommerce' ); ?></span>
+			<span class="title"><?php esc_html_e( 'Sync to Meta catalog', 'facebook-for-woocommerce' ); ?></span>
 			<span class="input-text-wrap">
 				<select class="facebook_bulk_sync_options" name="facebook_bulk_sync_options">
 				<option value=""> <?php esc_html_e( '— No Change —', 'facebook-for-woocommerce' ); ?></option>;
@@ -891,11 +891,11 @@ class Admin {
 
 	/**
 	 * Handles a Facebook product sync bulk action.
+	 * Called every time for a product
 	 *
 	 * @internal
 	 *
-	 * @param string $redirect admin URL used by WordPress to redirect after performing the bulk action
-	 * @return string
+	 * @param string $product_edit the product metadata that is being edited.
 	 */
 	public function handle_custom_bulk_sync( $product_edit ) {
 
@@ -906,9 +906,10 @@ class Admin {
 			$enabling_sync_virtual_products = [];
 			/** @var \WC_Product_Variation[] $enabling_sync_virtual_variations virtual variations that are being included */
 			$enabling_sync_virtual_variations = [];
-
+			/** @var \WC_Product $product to store the product meta data */
 			$product = wc_get_product( $product_edit );
-					if ( $product ) {
+
+			if ( $product ) {
 				if ( $this::BULK_SYNC_MODE_INCLUDE === $sync_mode ) {
 					if ( $product->is_virtual() && ! Products::is_sync_enabled_for_product( $product ) ) {
 						$enabling_sync_virtual_products[ $product->get_id() ] = $product;
