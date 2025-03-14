@@ -49,9 +49,6 @@ jQuery(document).ready(function () {
 		}
 	}
 
-	$('#new-buyers-create-campaign-img').prop('src', require('!!url-loader!./../../images/prospecting.png').default);
-	$('#retargeting-create-campaign-img').prop('src', require('!!url-loader!./../../images/retargeting.png').default);
-
 	function addCampaignSetupHooks() {
 
 		const campaignCreationHook = (campaignType) => {
@@ -77,7 +74,7 @@ jQuery(document).ready(function () {
 				currency: $("#" + viewItemsIdPrefix + "currency-" + campaignType).val(),
 				status: $("#" + viewItemsIdPrefix + "ad-status-" + campaignType).val(),
 			});
-			
+
 		};
 
 		campaignCreationHook(ascTypeRetargeting);

@@ -346,17 +346,14 @@ class Advertise extends Abstract_Settings_Screen {
 			<div class="main-ui-container">
 				<div style="width: auto;">
 					<div class="main-ui-container-item">
-						<img id="<?php echo $type?>-create-campaign-img" style="width:50px;height:50px;"/>
-					</div>
-					<div class="main-ui-container-item">
 						<p class="main-ui-header"><?php echo $title?></p>
-					</div>
-					<div class="main-ui-container-item">
-						<button class='button button-large' id='<?php echo $type?>-create-campaign-btn' disabled>Get Started</button>
 					</div>
 					<div class="main-ui-container-item">
 						<p style="line-height: 10px;"><?php echo $subtitle_row1?></p>
 						<p style="line-height: 10px;"><?php echo $subtitle_row2?></p>
+					</div>
+					<div class="main-ui-container-item">
+						<button class='components-button is-primary button button-large' id='<?php echo $type?>-create-campaign-btn' disabled>Get Started</button>
 					</div>
 				</div>
 			</div>
