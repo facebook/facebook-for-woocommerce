@@ -149,25 +149,35 @@
 }
 
 .fb-asc-ads .main-ui-container {
-  font-family: "Gill Sans", "Gill Sans MT", Calibri, "Trebuchet MS",
-    sans-serif;
   display: flex;
-  overflow: hidden;
-  align-items: center;
-  border: 1px solid black;
   width: 500px;
   height: 300px;
-  border-radius: 5px;
-  margin: 0 0 20px 0;
+  margin: 0 0 20px;
   padding: 0;
-  justify-content: center;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: center;
+  overflow: hidden;
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.1);
+  border-radius: 4px;
+  background-color: #fff;
+  font-family: "Gill Sans", "Gill Sans MT", Calibri, "Trebuchet MS", sans-serif;
 }
 
 .fb-asc-ads .main-ui-container-item {
-  padding: 0;
-  margin: 20px;
-  line-height: 10px;
-  text-align: center;
+  box-sizing: border-box;
+  width: 100%;
+  padding: 1.5em;
+  line-height: 1.5;
+}
+
+.fb-asc-ads .main-ui-container-item-heading {
+  border-bottom: 1px solid #e5e5e5;
+}
+
+.fb-asc-ads .main-ui-container-item-cta {
+  text-align: right;
+  border-top: 1px solid #e5e5e5;
 }
 
 .fb-asc-ads .campaign-edit-view-header {
