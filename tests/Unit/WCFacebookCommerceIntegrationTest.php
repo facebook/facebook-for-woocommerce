@@ -16,7 +16,7 @@ use WooCommerce\Facebook\Framework\AdminMessageHandler;
 /**
  * Unit tests for Facebook Graph API calls.
  */
-class WCFacebookCommerceIntegrationTest extends WP_UnitTestCase {
+class WCFacebookCommerceIntegrationTest extends \WooCommerce\Facebook\Tests\Unit\AbstractWPUnitTestWithSafeFiltering {
 
 	/**
 	 * @var WC_Facebookcommerce
@@ -151,7 +151,7 @@ class WCFacebookCommerceIntegrationTest extends WP_UnitTestCase {
 			self::$default_options
 		);
 
-		add_filter(
+		$this->add_filter_with_safe_teardown(
 			'wc_facebook_pixel_id',
 			function ( $wc_facebook_pixel_id ) {
 				return '998877665544332211';
@@ -189,7 +189,7 @@ class WCFacebookCommerceIntegrationTest extends WP_UnitTestCase {
 			self::$default_options
 		);
 
-		add_filter(
+		$this->add_filter_with_safe_teardown(
 			'wc_facebook_is_advanced_matching_enabled',
 			function ( $use_pii ) {
 				return false;
@@ -329,7 +329,7 @@ class WCFacebookCommerceIntegrationTest extends WP_UnitTestCase {
 			->with( $facebook_product_group_id )
 			->willReturn( $facebook_response );
 
-		add_filter(
+		$this->add_filter_with_safe_teardown(
 			'wc_facebook_fb_retailer_id',
 			function ( $retailer_id ) {
 				return $retailer_id . '_modified';
@@ -368,7 +368,7 @@ class WCFacebookCommerceIntegrationTest extends WP_UnitTestCase {
 	 * @return void
 	 */
 	public function test_get_product_count_returns_product_count_with_filters() {
-		add_filter(
+		$this->add_filter_with_safe_teardown(
 			'wp_count_posts',
 			function( $counts ) {
 				$counts->publish = 21;
@@ -402,7 +402,7 @@ class WCFacebookCommerceIntegrationTest extends WP_UnitTestCase {
 	 * @return void
 	 */
 	public function test_allow_full_batch_api_sync_uses_block_full_batch_api_sync_filter() {
-		add_filter(
+		$this->add_filter_with_safe_teardown(
 			'facebook_for_woocommerce_block_full_batch_api_sync',
 			function ( bool $status ) {
 				return true;
@@ -425,7 +425,7 @@ class WCFacebookCommerceIntegrationTest extends WP_UnitTestCase {
 	public function test_allow_full_batch_api_sync_uses_allow_full_batch_api_sync_filter() {
 		$this->markTestSkipped( 'Some problems with phpunit polyfills notices handling.' );
 
-		add_filter(
+		$this->add_filter_with_safe_teardown(
 			'facebook_for_woocommerce_allow_full_batch_api_sync',
 			function ( bool $status ) {
 				return false;
@@ -556,7 +556,7 @@ class WCFacebookCommerceIntegrationTest extends WP_UnitTestCase {
 		// Verify Facebook-specific fields were saved
 		$facebook_product_to_update = new WC_Facebook_Product( $product_to_update->get_id() );
 		$updated_product_data = $facebook_product_to_update->prepare_product(null, \WC_Facebook_Product::PRODUCT_PREP_TYPE_ITEMS_BATCH );
-		
+
 		$this->assertEquals( 'Facebook product description.', get_post_meta( $facebook_product_to_update->get_id(), WC_Facebook_Product::FB_PRODUCT_DESCRIPTION, true ) );
 		$this->assertEquals( 'Facebook product description.', get_post_meta( $facebook_product_to_update->get_id(), WC_Facebook_Product::FB_RICH_TEXT_DESCRIPTION, true ) );
 
@@ -1953,7 +1953,7 @@ class WCFacebookCommerceIntegrationTest extends WP_UnitTestCase {
 	 */
 	public function test_get_product_catalog_id_returns_product_catalog_from_initialised_property_using_no_filter() {
 		$this->integration->product_catalog_id = '123123123123123123';
-		remove_all_filters( 'wc_facebook_product_catalog_id' );
+		$this->teardown_callback_category_safely( 'wc_facebook_product_catalog_id' );
 
 		$product_catalog_id = $this->integration->get_product_catalog_id();
 
@@ -1968,7 +1968,7 @@ class WCFacebookCommerceIntegrationTest extends WP_UnitTestCase {
 	public function test_get_product_catalog_id_returns_product_catalog_from_options_using_no_filter() {
 		$this->integration->product_catalog_id = null;
 		add_option( WC_Facebookcommerce_Integration::OPTION_PRODUCT_CATALOG_ID, '321321321321321321' );
-		remove_all_filters( 'wc_facebook_product_catalog_id' );
+		$this->teardown_callback_category_safely( 'wc_facebook_product_catalog_id' );
 
 		$product_catalog_id = $this->integration->get_product_catalog_id();
 
@@ -1982,7 +1982,7 @@ class WCFacebookCommerceIntegrationTest extends WP_UnitTestCase {
 	 * @return void
 	 */
 	public function test_get_product_catalog_id_returns_product_catalog_with_filter() {
-		add_filter(
+		$this->add_filter_with_safe_teardown(
 			'wc_facebook_product_catalog_id',
 			function ( $product_catalog_id ) {
 				return '3213-2132-1321-3213-2132';
@@ -2001,7 +2001,7 @@ class WCFacebookCommerceIntegrationTest extends WP_UnitTestCase {
 	 */
 	public function test_get_external_merchant_settings_id_returns_settings_id_from_initialised_property_using_no_filter() {
 		$this->integration->external_merchant_settings_id = '123123123123123123';
-		remove_all_filters( 'wc_facebook_external_merchant_settings_id' );
+		$this->teardown_callback_category_safely( 'wc_facebook_external_merchant_settings_id' );
 
 		$external_merchant_settings_id = $this->integration->get_external_merchant_settings_id();
 
@@ -2016,7 +2016,7 @@ class WCFacebookCommerceIntegrationTest extends WP_UnitTestCase {
 	public function test_get_external_merchant_settings_id_returns_settings_id_from_options_using_no_filter() {
 		$this->integration->external_merchant_settings_id = null;
 		add_option( WC_Facebookcommerce_Integration::OPTION_EXTERNAL_MERCHANT_SETTINGS_ID, '321321321321321321' );
-		remove_all_filters( 'wc_facebook_external_merchant_settings_id' );
+		$this->teardown_callback_category_safely( 'wc_facebook_external_merchant_settings_id' );
 
 		$external_merchant_settings_id = $this->integration->get_external_merchant_settings_id();
 
@@ -2030,7 +2030,7 @@ class WCFacebookCommerceIntegrationTest extends WP_UnitTestCase {
 	 * @return void
 	 */
 	public function test_get_external_merchant_settings_id_returns_settings_id_with_filter() {
-		add_filter(
+		$this->add_filter_with_safe_teardown(
 			'wc_facebook_external_merchant_settings_id',
 			function ( $external_merchant_settings_id ) {
 				return '3213-2132-1321-3213-2132';
@@ -2049,7 +2049,7 @@ class WCFacebookCommerceIntegrationTest extends WP_UnitTestCase {
 	 */
 	public function test_get_feed_id_returns_id_from_initialised_property_using_no_filter() {
 		$this->integration->feed_id = '123123123123123123';
-		remove_all_filters( 'wc_facebook_feed_id' );
+		$this->teardown_callback_category_safely( 'wc_facebook_feed_id' );
 
 		$feed_id = $this->integration->get_feed_id();
 
@@ -2064,7 +2064,7 @@ class WCFacebookCommerceIntegrationTest extends WP_UnitTestCase {
 	public function test_get_feed_id_returns_id_from_options_using_no_filter() {
 		$this->integration->feed_id = null;
 		add_option( WC_Facebookcommerce_Integration::OPTION_FEED_ID, '321321321321321321' );
-		remove_all_filters( 'wc_facebook_feed_id' );
+		$this->teardown_callback_category_safely( 'wc_facebook_feed_id' );
 
 		$feed_id = $this->integration->get_feed_id();
 
@@ -2078,7 +2078,7 @@ class WCFacebookCommerceIntegrationTest extends WP_UnitTestCase {
 	 * @return void
 	 */
 	public function test_get_feed_id_returns_id_with_filter() {
-		add_filter(
+		$this->add_filter_with_safe_teardown(
 			'wc_facebook_feed_id',
 			function ( $feed_id ) {
 				return '3213-2132-1321-3213-2132';
@@ -2097,7 +2097,7 @@ class WCFacebookCommerceIntegrationTest extends WP_UnitTestCase {
 	 */
 	public function test_get_upload_id_returns_id_from_options_using_no_filter() {
 		add_option( WC_Facebookcommerce_Integration::OPTION_UPLOAD_ID, '321321321321321321' );
-		remove_all_filters( 'wc_facebook_upload_id' );
+		$this->teardown_callback_category_safely( 'wc_facebook_upload_id' );
 
 		$upload_id = $this->integration->get_upload_id();
 
@@ -2110,7 +2110,7 @@ class WCFacebookCommerceIntegrationTest extends WP_UnitTestCase {
 	 * @return void
 	 */
 	public function test_get_upload_id_returns_id_with_filter() {
-		add_filter(
+		$this->add_filter_with_safe_teardown(
 			'wc_facebook_upload_id',
 			function ( $upload_id ) {
 				return '3213-2132-1321-3213-2132';
@@ -2129,7 +2129,7 @@ class WCFacebookCommerceIntegrationTest extends WP_UnitTestCase {
 	 */
 	public function test_get_pixel_install_time_returns_id_from_initialised_property_using_no_filter() {
 		$this->integration->pixel_install_time = '123123123123123123';
-		remove_all_filters( 'wc_facebook_pixel_install_time' );
+		$this->teardown_callback_category_safely( 'wc_facebook_pixel_install_time' );
 
 		$pixel_install_time = $this->integration->get_pixel_install_time();
 
@@ -2144,7 +2144,7 @@ class WCFacebookCommerceIntegrationTest extends WP_UnitTestCase {
 	public function test_get_pixel_install_time_returns_id_from_options_using_no_filter() {
 		$this->integration->pixel_install_time = null;
 		add_option( WC_Facebookcommerce_Integration::OPTION_PIXEL_INSTALL_TIME, '321321321321321321' );
-		remove_all_filters( 'wc_facebook_pixel_install_time' );
+		$this->teardown_callback_category_safely( 'wc_facebook_pixel_install_time' );
 
 		$pixel_install_time = $this->integration->get_pixel_install_time();
 
@@ -2158,7 +2158,7 @@ class WCFacebookCommerceIntegrationTest extends WP_UnitTestCase {
 	 * @return void
 	 */
 	public function test_get_pixel_install_time_returns_id_with_filter() {
-		add_filter(
+		$this->add_filter_with_safe_teardown(
 			'wc_facebook_pixel_install_time',
 			function ( $pixel_install_time ) {
 				return '321321321321';
@@ -2179,7 +2179,7 @@ class WCFacebookCommerceIntegrationTest extends WP_UnitTestCase {
 		$this->markTestSkipped( 'get_js_sdk_version method is called in constructor which makes it impossible to test it in isolation w/o refactoring the constructor.' );
 
 		add_option( WC_Facebookcommerce_Integration::OPTION_JS_SDK_VERSION, 'v1.0.0' );
-		remove_all_filters( 'wc_facebook_js_sdk_version' );
+		$this->teardown_callback_category_safely( 'wc_facebook_js_sdk_version' );
 
 		$js_sdk_version = $this->integration->get_js_sdk_version();
 
@@ -2194,7 +2194,7 @@ class WCFacebookCommerceIntegrationTest extends WP_UnitTestCase {
 	public function test_get_js_sdk_version_returns_id_with_filter() {
 		$this->markTestSkipped( 'get_js_sdk_version method is called in constructor which makes it impossible to test it in isolation w/o refactoring the constructor.' );
 
-		add_filter(
+		$this->add_filter_with_safe_teardown(
 			'wc_facebook_js_sdk_version',
 			function ( $js_sdk_version ) {
 				return 'v2.0.0';
@@ -2212,7 +2212,7 @@ class WCFacebookCommerceIntegrationTest extends WP_UnitTestCase {
 	 * @return void
 	 */
 	public function test_get_facebook_page_id_no_filters() {
-		remove_all_filters( 'wc_facebook_page_id' );
+		$this->teardown_callback_category_safely( 'wc_facebook_page_id' );
 		add_option( WC_Facebookcommerce_Integration::SETTING_FACEBOOK_PAGE_ID, '222333111444555666777' );
 
 		$facebook_page_id = $this->integration->get_facebook_page_id();
@@ -2226,7 +2226,7 @@ class WCFacebookCommerceIntegrationTest extends WP_UnitTestCase {
 	 * @return void
 	 */
 	public function test_get_facebook_page_id_with_filter() {
-		add_filter(
+		$this->add_filter_with_safe_teardown(
 			'wc_facebook_page_id',
 			function ( $facebook_page_id ) {
 				return '444333222111999888777666555';
@@ -2244,7 +2244,7 @@ class WCFacebookCommerceIntegrationTest extends WP_UnitTestCase {
 	 * @return void
 	 */
 	public function test_get_facebook_pixel_id_no_filters() {
-		remove_all_filters( 'wc_facebook_pixel_id' );
+		$this->teardown_callback_category_safely( 'wc_facebook_pixel_id' );
 		add_option( WC_Facebookcommerce_Integration::SETTING_FACEBOOK_PIXEL_ID, '222333111444555666777' );
 
 		$facebook_pixel_id = $this->integration->get_facebook_pixel_id();
@@ -2258,7 +2258,7 @@ class WCFacebookCommerceIntegrationTest extends WP_UnitTestCase {
 	 * @return void
 	 */
 	public function test_get_facebook_pixel_id_with_filter() {
-		add_filter(
+		$this->add_filter_with_safe_teardown(
 			'wc_facebook_pixel_id',
 			function ( $facebook_pixel_id ) {
 				return '444333222111999888777666555';
@@ -2276,7 +2276,7 @@ class WCFacebookCommerceIntegrationTest extends WP_UnitTestCase {
 	 * @return void
 	 */
 	public function test_get_excluded_product_category_ids_no_filter_no_option() {
-		remove_all_filters( 'wc_facebook_excluded_product_category_ids' );
+		$this->teardown_callback_category_safely( 'wc_facebook_excluded_product_category_ids' );
 		delete_option( WC_Facebookcommerce_Integration::SETTING_EXCLUDED_PRODUCT_CATEGORY_IDS );
 
 		$categories = $this->integration->get_excluded_product_category_ids();
@@ -2290,7 +2290,7 @@ class WCFacebookCommerceIntegrationTest extends WP_UnitTestCase {
 	 * @return void
 	 */
 	public function test_get_excluded_product_category_ids_no_filter() {
-		remove_all_filters( 'wc_facebook_excluded_product_category_ids' );
+		$this->teardown_callback_category_safely( 'wc_facebook_excluded_product_category_ids' );
 		add_option(
 			WC_Facebookcommerce_Integration::SETTING_EXCLUDED_PRODUCT_CATEGORY_IDS,
 			[ 121, 221, 321, 421, 521, 621 ]
@@ -2307,7 +2307,7 @@ class WCFacebookCommerceIntegrationTest extends WP_UnitTestCase {
 	 * @return void
 	 */
 	public function test_get_excluded_product_category_ids_with_filter() {
-		add_filter(
+		$this->add_filter_with_safe_teardown(
 			'wc_facebook_excluded_product_category_ids',
 			function ( $ids ) {
 				return [ 111, 222, 333 ];
@@ -2330,7 +2330,7 @@ class WCFacebookCommerceIntegrationTest extends WP_UnitTestCase {
 	 * @return void
 	 */
 	public function test_get_excluded_product_tag_ids_no_filter_no_option() {
-		remove_all_filters( 'wc_facebook_excluded_product_tag_ids' );
+		$this->teardown_callback_category_safely( 'wc_facebook_excluded_product_tag_ids' );
 		delete_option( WC_Facebookcommerce_Integration::SETTING_EXCLUDED_PRODUCT_TAG_IDS );
 
 		$tags = $this->integration->get_excluded_product_tag_ids();
@@ -2344,7 +2344,7 @@ class WCFacebookCommerceIntegrationTest extends WP_UnitTestCase {
 	 * @return void
 	 */
 	public function test_get_excluded_product_tag_ids_no_filter() {
-		remove_all_filters( 'wc_facebook_excluded_product_tag_ids' );
+		$this->teardown_callback_category_safely( 'wc_facebook_excluded_product_tag_ids' );
 		add_option(
 			WC_Facebookcommerce_Integration::SETTING_EXCLUDED_PRODUCT_TAG_IDS,
 			[ 121, 221, 321, 421, 521, 621 ]
@@ -2361,7 +2361,7 @@ class WCFacebookCommerceIntegrationTest extends WP_UnitTestCase {
 	 * @return void
 	 */
 	public function test_get_excluded_product_tag_ids_with_filter() {
-		add_filter(
+		$this->add_filter_with_safe_teardown(
 			'wc_facebook_excluded_product_tag_ids',
 			function ( $ids ) {
 				return [ 111, 222, 333 ];
@@ -2377,6 +2377,7 @@ class WCFacebookCommerceIntegrationTest extends WP_UnitTestCase {
 
 		$this->assertEquals( [ 111, 222, 333 ], $tags );
 	}
+
 
 
 	/**
@@ -2595,7 +2596,7 @@ class WCFacebookCommerceIntegrationTest extends WP_UnitTestCase {
 	 * @return void
 	 */
 	public function test_is_advanced_matching_enabled_no_filter() {
-		remove_all_filters( 'wc_facebook_is_advanced_matching_enabled' );
+		$this->teardown_callback_category_safely( 'wc_facebook_is_advanced_matching_enabled' );
 
 		$output = $this->integration->is_advanced_matching_enabled();
 
@@ -2608,7 +2609,7 @@ class WCFacebookCommerceIntegrationTest extends WP_UnitTestCase {
 	 * @return void
 	 */
 	public function test_is_advanced_matching_enabled_with_filter() {
-		add_filter(
+		$this->add_filter_with_safe_teardown(
 			'wc_facebook_is_advanced_matching_enabled',
 			function ( $is_enabled ) {
 				return false;
@@ -2626,7 +2627,7 @@ class WCFacebookCommerceIntegrationTest extends WP_UnitTestCase {
 	 * @return void
 	 */
 	public function test_is_product_sync_enabled_no_filter_no_option() {
-		remove_all_filters( 'wc_facebook_is_product_sync_enabled' );
+		$this->teardown_callback_category_safely( 'wc_facebook_is_product_sync_enabled' );
 		delete_option( WC_Facebookcommerce_Integration::SETTING_ENABLE_PRODUCT_SYNC );
 
 		$result = $this->integration->is_product_sync_enabled();
@@ -2640,7 +2641,7 @@ class WCFacebookCommerceIntegrationTest extends WP_UnitTestCase {
 	 * @return void
 	 */
 	public function test_is_product_sync_enabled_no_filter() {
-		remove_all_filters( 'wc_facebook_is_product_sync_enabled' );
+		$this->teardown_callback_category_safely( 'wc_facebook_is_product_sync_enabled' );
 		add_option(
 			WC_Facebookcommerce_Integration::SETTING_ENABLE_PRODUCT_SYNC,
 			'no'
@@ -2657,7 +2658,7 @@ class WCFacebookCommerceIntegrationTest extends WP_UnitTestCase {
 	 * @return void
 	 */
 	public function test_is_product_sync_enabled_with_filter() {
-		add_filter(
+		$this->add_filter_with_safe_teardown(
 			'wc_facebook_is_product_sync_enabled',
 			function ( $is_enabled ) {
 				return false;
@@ -2708,7 +2709,7 @@ class WCFacebookCommerceIntegrationTest extends WP_UnitTestCase {
 	 * @return void
 	 */
 	public function test_is_debug_mode_enabled_returns_default_value() {
-		remove_all_filters( 'wc_facebook_is_debug_mode_enabled' );
+		$this->teardown_callback_category_safely( 'wc_facebook_is_debug_mode_enabled' );
 		delete_option( WC_Facebookcommerce_Integration::SETTING_ENABLE_DEBUG_MODE );
 
 		$result = $this->integration->is_debug_mode_enabled();
@@ -2722,7 +2723,7 @@ class WCFacebookCommerceIntegrationTest extends WP_UnitTestCase {
 	 * @return void
 	 */
 	public function test_is_debug_mode_enabled_returns_option_value() {
-		remove_all_filters( 'wc_facebook_is_debug_mode_enabled' );
+		$this->teardown_callback_category_safely( 'wc_facebook_is_debug_mode_enabled' );
 		add_option(
 			WC_Facebookcommerce_Integration::SETTING_ENABLE_DEBUG_MODE,
 			'yes'
@@ -2739,7 +2740,7 @@ class WCFacebookCommerceIntegrationTest extends WP_UnitTestCase {
 	 * @return void
 	 */
 	public function test_is_debug_mode_enabled_with_filter() {
-		add_filter(
+		$this->add_filter_with_safe_teardown(
 			'wc_facebook_is_debug_mode_enabled',
 			function ( $is_enabled ) {
 				return false;

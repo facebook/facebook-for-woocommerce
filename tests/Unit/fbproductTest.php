@@ -2,7 +2,7 @@
 declare(strict_types=1);
 
 
-class fbproductTest extends WP_UnitTestCase {
+class fbproductTest extends \WooCommerce\Facebook\Tests\Unit\AbstractWPUnitTestWithSafeFiltering {
 	private $parent_fb_product;
 
 	/** @var \WC_Product_Simple */
@@ -104,18 +104,18 @@ class fbproductTest extends WP_UnitTestCase {
 		$facebook_product = new \WC_Facebook_Product( $product );
 		$facebook_product->set_description( 'fb description' );
 
-		add_filter( 'facebook_for_woocommerce_fb_product_description', function( $description ) {
+		$filter = $this->add_filter_with_safe_teardown( 'facebook_for_woocommerce_fb_product_description', function( $description ) {
 			return 'filtered description';
 		});
 
 		$description = $facebook_product->get_fb_description();
 		$this->assertEquals( $description, 'filtered description' );
 
-		remove_all_filters( 'facebook_for_woocommerce_fb_product_description' );
+		// Remove the filter early
+		$filter->teardown_safely_immediately();
 
 		$description = $facebook_product->get_fb_description();
 		$this->assertEquals( $description, 'fb description' );
-
 	}
 
 	/**
@@ -653,15 +653,16 @@ class fbproductTest extends WP_UnitTestCase {
 		$this->assertEquals('<p>short description test</p>', $description);
 
 		// Test 7: Applies filters
-		add_filter('facebook_for_woocommerce_fb_rich_text_description', function($description) {
+		$filter = $this->add_filter_with_safe_teardown('facebook_for_woocommerce_fb_rich_text_description', function($description) {
 			return '<p>filtered description</p>';
 		});
 		
 		$description = $facebook_product->get_rich_text_description();
 		$this->assertEquals('<p>filtered description</p>', $description);
 		
-		// Cleanup
-		remove_all_filters('facebook_for_woocommerce_fb_rich_text_description');
+		// Remove the filter early
+		$filter->teardown_safely_immediately();
+		
 		delete_option(WC_Facebookcommerce_Integration::SETTING_PRODUCT_DESCRIPTION_MODE);
 	}
 
