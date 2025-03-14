@@ -99,8 +99,8 @@ class Admin {
 		add_filter( 'request', array( $this, 'filter_products_by_sync_enabled' ) );
 
 		// add bulk actions to manage products sync
-		add_action('woocommerce_product_bulk_edit_end', array($this,'add_facebook_sync_bulk_edit_dropdown_at_bottom'));
-		add_action( 'woocommerce_product_bulk_edit_save', array($this,'handle_custom_bulk_sync'), 10, 1 );
+		add_action( 'woocommerce_product_bulk_edit_end', array( $this, 'add_facebook_sync_bulk_edit_dropdown_at_bottom' ) );
+		add_action( 'woocommerce_product_bulk_edit_save', array( $this, 'handle_custom_bulk_sync' ), 10, 1 );
 
 		// add Product data tab
 		add_filter( 'woocommerce_product_data_tabs', array( $this, 'add_product_settings_tab' ) );
@@ -524,9 +524,7 @@ class Admin {
 	 * Adds a dropdown input to Include or Exclude product in Facebook Bulk Sync.
 	 *
 	 * @internal
-	 *
 	 */
-
 	function add_facebook_sync_bulk_edit_dropdown_at_bottom() {
 		global $typenow;
 
@@ -539,11 +537,12 @@ class Admin {
 
 		?>
 		<label>
-			<span class="title"><?php esc_html_e( 'Facebook sync', 'woocommerce' ); ?></span>
+			<span class="title"><?php esc_html_e( 'Sync to Meta catalog', 'woocommerce' ); ?></span>
 			<span class="input-text-wrap">
 				<select class="facebook_bulk_sync_options" name="facebook_bulk_sync_options">
-				<option value="<?php echo esc_attr( self::BULK_SYNC_MODE_INCLUDE ); ?>" <?php selected( $choice, self::BULK_SYNC_MODE_INCLUDE ); ?>><?php esc_html_e( 'Include', 'facebook-for-woocommerce' ); ?></option>
-				<option value="<?php echo esc_attr( self::BULK_SYNC_MODE_EXCLUDE ); ?>" <?php selected( $choice, self::BULK_SYNC_MODE_EXCLUDE ); ?>><?php esc_html_e( 'Exclude', 'facebook-for-woocommerce' ); ?></option>
+				<option value=""> <?php esc_html_e( '— No Change —', 'facebook-for-woocommerce' ); ?></option>;
+				<option value="<?php echo esc_attr( self::BULK_SYNC_MODE_INCLUDE ); ?>" <?php selected( $choice, self::BULK_SYNC_MODE_INCLUDE ); ?>><?php esc_html_e( 'Synced', 'facebook-for-woocommerce' ); ?></option>
+				<option value="<?php echo esc_attr( self::BULK_SYNC_MODE_EXCLUDE ); ?>" <?php selected( $choice, self::BULK_SYNC_MODE_EXCLUDE ); ?>><?php esc_html_e( 'Not synced', 'facebook-for-woocommerce' ); ?></option>
 				</select>
 			</span>
 		</label>
@@ -895,7 +894,6 @@ class Admin {
 	 *
 	 * @internal
 	 *
-	 *
 	 * @param string $redirect admin URL used by WordPress to redirect after performing the bulk action
 	 * @return string
 	 */
@@ -903,7 +901,7 @@ class Admin {
 
 		$sync_mode = isset( $_GET['facebook_bulk_sync_options'] ) ? (string) sanitize_text_field( wp_unslash( $_GET['facebook_bulk_sync_options'] ) ) : null;
 
-		if ($sync_mode) {
+		if ( $sync_mode ) {
 			/** @var \WC_Product[] $enabling_sync_virtual_products virtual products that are being included */
 			$enabling_sync_virtual_products = [];
 			/** @var \WC_Product_Variation[] $enabling_sync_virtual_variations virtual variations that are being included */
@@ -950,13 +948,13 @@ class Admin {
 
 			$products[] = $product;
 
-			if ( $this::BULK_SYNC_MODE_INCLUDE == $sync_mode ) {
+			if ( $this::BULK_SYNC_MODE_INCLUDE === $sync_mode ) {
 
 				Products::enable_sync_for_products( $products );
 
 				$this->resync_products( $products );
 
-			} elseif ( $this::BULK_SYNC_MODE_EXCLUDE == $sync_mode ) {
+			} elseif ( $this::BULK_SYNC_MODE_EXCLUDE === $sync_mode ) {
 
 				Products::disable_sync_for_products( $products );
 
