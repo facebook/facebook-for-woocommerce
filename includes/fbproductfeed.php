@@ -525,7 +525,7 @@ class WC_Facebook_Product_Feed {
 		'new' . ',' .
 		static::get_value_from_product_data( $product_data, 'visibility' ) . ',' .
 		static::get_value_from_product_data( $product_data, 'gender' ) . ',' .
-		static::get_value_from_product_data( $product_data, 'color' ) . ',' .
+		static::format_string_for_feed(static::get_value_from_product_data( $product_data, 'color' )) . ',' .
 		static::get_value_from_product_data( $product_data, 'size' ) . ',' .
 		static::get_value_from_product_data( $product_data, 'pattern' ) . ',' .
 		static::get_value_from_product_data( $product_data, 'google_product_category' ) . ',' .
