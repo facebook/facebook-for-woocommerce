@@ -87,7 +87,7 @@ class Advertise extends Abstract_Settings_Screen {
 	 * @since x.x.x
 	 *
 	 */
-	public function add_frontend_hooks(){
+	public function add_frontend_hooks() {
 
 		wp_enqueue_script(
 			'wc_facebook_metabox_jsx',
@@ -147,7 +147,7 @@ class Advertise extends Abstract_Settings_Screen {
 		?>
 		<script>
 			window.fbAsyncInit = function() {
-				
+
 				FB.init( {
 					appId            : '<?php echo esc_js( $connection_handler->get_client_id() ); ?>',
 					autoLogAppEvents : true,
@@ -360,12 +360,12 @@ class Advertise extends Abstract_Settings_Screen {
 					</div>
 				</div>
 			</div>
-		<?php 
+		<?php
 		}
 	}
 
 
-	/** 
+	/**
 	 * Checks whether the tool can show the experimental view or not
 	 *
 	 * @since x.x.x
@@ -375,7 +375,7 @@ class Advertise extends Abstract_Settings_Screen {
 	private function can_try_experimental_view() {
 		$ad_acc_id = facebook_for_woocommerce()->get_connection_handler()->get_ad_account_id();
 		$trimmed_val = trim($ad_acc_id);
-		
+
 		if (empty($trimmed_val)) {
 			return false;
 		}
@@ -390,7 +390,7 @@ class Advertise extends Abstract_Settings_Screen {
 	}
 
 
-	/** 
+	/**
 	 * Creates the translated text including a link
 	 *
 	 * @since x.x.x
@@ -398,7 +398,7 @@ class Advertise extends Abstract_Settings_Screen {
 	 * @param string $link. The link url
 	 * @param string $link_text. The text for the link
 	 * @param string $rest_of_text. Any text that should come after the link
-	 * 
+	 *
 	 * @return bool
 	 */
 	private function translate_with_link( $pretext, $link, $link_text, $rest_of_text ) {
@@ -414,13 +414,13 @@ class Advertise extends Abstract_Settings_Screen {
 	 * @return string
 	 */
 	private function try_render_experimental_view() {
-		
+
 		try {
 			?>
 			<div class="fb-asc-ads">
 				<div id='overlay-view-ui' class='hidden_view'>
 					<div id='asc-overlay-root'></div>
-				</div>	
+				</div>
 				<div id='base-view-row'>
 					<table>
 						<tr>
@@ -444,8 +444,6 @@ class Advertise extends Abstract_Settings_Screen {
 				array('react', 'react-dom' ),
 				\WC_Facebookcommerce::PLUGIN_VERSION
 			);
-
-
 		} catch ( AscNotSupportedException $e ) {
 
 			facebook_for_woocommerce()->get_integration()->set_advertise_asc_status( self::STATUS_DISABLED );
@@ -473,7 +471,7 @@ class Advertise extends Abstract_Settings_Screen {
 			</ul>
 			<?php
 		} catch ( InstagramUserIdNotFoundException $iaif ) {
-			
+
 			\WC_Facebookcommerce_Utils::log( $iaif->getMessage() );
 			$this->remove_rendered_when_exception_happened();
 			$page_id = facebook_for_woocommerce()->get_integration()->get_facebook_page_id();
@@ -523,12 +521,12 @@ class Advertise extends Abstract_Settings_Screen {
 			<?php
 
 		} catch ( \Throwable $pe ) {
-			
+
 			\WC_Facebookcommerce_Utils::log( $pe->getMessage() );
 			$this->remove_rendered_when_exception_happened();
-			
+
 			$ad_account_id = facebook_for_woocommerce()->get_connection_handler()->get_ad_account_id();
-			
+
 			$subject = $ad_account_id . '_' . 'PluginException';
 			$body = 'message: ' . $pe->getMessage() . '  stack-trace: ' . $pe->getTraceAsString();
 			$body = urlencode($body);
@@ -536,16 +534,16 @@ class Advertise extends Abstract_Settings_Screen {
 			?>
 			<h2><?php echo $this->translate_with_link( "An unexpected error happened.", $link, "Click here", " to mail us the bug report." ); ?></h2>
 			<?php
-			
+
 		}
 	}
 
 
-	/** 
+	/**
 	 * Closes the open html tags in case of an exception.
 	 *
 	 * @since x.x.x
-	 * 
+	 *
 	 */
 	private function remove_rendered_when_exception_happened() {
 
