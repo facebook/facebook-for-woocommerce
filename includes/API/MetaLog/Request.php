@@ -8,7 +8,7 @@ use WooCommerce\Facebook\API\Request as ApiRequest;
 defined( 'ABSPATH' ) || exit;
 
 /**
- * Request object for MetaLog > Error Graph Api.
+ * Request object for MetaLog Graph Api.
  */
 class Request extends ApiRequest {
 
