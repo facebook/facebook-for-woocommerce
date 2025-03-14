@@ -52,4 +52,21 @@ class Request extends Configuration\Request {
 				),
 		);
 	}
+
+	/**
+	 * Sets the external client metadata for logging
+	 *
+	 * @since 3.4.1
+	 *
+	 * @param array $metadata map of metadata to include. Example: array ('version_id' => '0.0.0', 'is_multisite' => True)
+	 *
+	 * @return void
+	 */
+	public function set_external_client_metadata( array $metadata ) {
+		$this->data['business_config'] = array(
+			'external_client' => $metadata,
+		);
+
+		is_multisite();
+	}
 }
