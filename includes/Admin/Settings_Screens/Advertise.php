@@ -77,7 +77,7 @@ class Advertise extends Abstract_Settings_Screen {
 	private function add_hooks() {
 		add_action( 'admin_head', array( $this, 'output_scripts' ) );
 		add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_assets' ) );
-		add_action( 'init', array( $this, 'add_frontend_hooks' ) );
+		add_action( 'admin_enqueue_scripts', array( $this, 'add_frontend_hooks' ) );
 	}
 
 
