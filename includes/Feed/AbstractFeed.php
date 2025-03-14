@@ -96,9 +96,7 @@ abstract class AbstractFeed {
 	 * @since 3.5.0
 	 */
 	public function schedule_feed_generation(): void {
-		// If the Commerce Partner Integration ID isn't set then don't schedule feed generation
-		$cpi_id = facebook_for_woocommerce()->get_connection_handler()->get_commerce_partner_integration_id();
-		if ( '' === $cpi_id ) {
+		if ( $this->should_skip_feed() ) {
 			return;
 		}
 
@@ -122,9 +120,7 @@ abstract class AbstractFeed {
 	 * @since 3.5.0
 	 */
 	public function regenerate_feed(): void {
-		// If the Commerce Partner Integration ID isn't set then don't generate the feed
-		$cpi_id = facebook_for_woocommerce()->get_connection_handler()->get_commerce_partner_integration_id();
-		if ( '' === $cpi_id ) {
+		if ( $this->should_skip_feed() ) {
 			return;
 		}
 
@@ -133,6 +129,19 @@ abstract class AbstractFeed {
 		} else {
 			$this->feed_handler->generate_feed_file();
 		}
+	}
+
+	/**
+	 * The feed should be skipped if there isn't a Commerce Partner Integration ID set as the ID is required for
+	 * calls to the GraphCommercePartnerIntegrationFileUpdatePost endpoint.
+	 * Overwrite this function if your feed upload uses a different endpoint with different requirements.
+	 *
+	 * @since 3.5.0
+	 */
+	public function should_skip_feed(): bool {
+		$cpi_id = facebook_for_woocommerce()->get_connection_handler()->get_commerce_partner_integration_id();
+
+		return empty( $cpi_id );
 	}
 
 	/**
