@@ -126,8 +126,11 @@ class FeedUploadUtils {
 			}
 
 			// Map target selection
-			// TODO check for product exclusions?
-			if ( empty( $coupon->get_product_ids() ) && empty( $coupon->get_product_categories() ) ) {
+			if ( empty( $coupon->get_product_ids() )
+				&& empty( $coupon->get_product_categories() )
+				&& empty( $coupon->get_excluded_product_ids() )
+				&& empty( $coupon->get_excluded_product_categories() )
+			) {
 				// Coupon applies to all products.
 				$target_selection = 'ALL_CATALOG_PRODUCTS';
 			} else {
@@ -140,21 +143,22 @@ class FeedUploadUtils {
 			$target_filter                   = '';
 
 			if ( 'SPECIFIC_PRODUCTS' === $target_selection ) {
-				// TODO check for product exclusions?
-				if ( ! empty( $coupon->get_product_ids() ) && ! empty( $coupon->get_product_categories() ) ) {
-					// TODO build target_filter
-					$target_filter = 'TODO';
-				} elseif ( ! empty( $coupon->get_product_ids() ) ) {
-					// Get product Retailer IDs the coupon applies to.
-					$target_product_retailer_ids = array();
-					foreach ( $coupon->get_product_ids() as $product_id ) {
-						$product                       = new \WC_Product( $product_id );
-						$fb_retailer_id                = \WC_Facebookcommerce_Utils::get_fb_retailer_id( $product );
-						$target_product_retailer_ids[] = $fb_retailer_id;
-					}
-				} elseif ( ! empty( $coupon->get_product_categories() ) ) {
-					$target_product_set_retailer_ids = $coupon->get_product_categories();
-				}
+				$target_filter = self::get_target_filter( $coupon->get_product_ids(), $coupon->get_excluded_product_ids() );
+
+				// TODO do we even need to set these two values if we just always create a filter?
+				// if ( ! empty( $coupon->get_product_ids() ) && ! empty( $coupon->get_product_categories() ) ) {
+					// build target filter
+				// } elseif ( ! empty( $coupon->get_product_ids() ) ) {
+				// Get product Retailer IDs the coupon applies to.
+				// $target_product_retailer_ids = array();
+				// foreach ( $coupon->get_product_ids() as $product_id ) {
+				// $product                       = new \WC_Product( $product_id );
+				// $fb_retailer_id                = \WC_Facebookcommerce_Utils::get_fb_retailer_id( $product );
+				// $target_product_retailer_ids[] = $fb_retailer_id;
+				// }
+				// } elseif ( ! empty( $coupon->get_product_categories() ) ) {
+				// $target_product_set_retailer_ids = $coupon->get_product_categories();
+				// }
 			}
 
 			// TODO need to worry about Individual use only flag?
@@ -209,5 +213,54 @@ class FeedUploadUtils {
 		 * - product and category exclusions are set (unless we map them to target filter)
 		 */
 		return true;
+	}
+
+	private static function get_target_filter(
+		array $included_product_ids,
+		array $excluded_product_ids
+		// TODO product sets, excluded product sets
+	): string {
+		$filter_parts = [];
+
+		// Build an "or" clause for included product IDs, if provided.
+		if ( ! empty( $included_product_ids ) ) {
+			$included       = array_map(
+				function ( $product_id ) {
+					$product        = new \WC_Product( $product_id );
+					$fb_retailer_id = \WC_Facebookcommerce_Utils::get_fb_retailer_id( $product );
+					return [ 'retailer_id' => [ 'eq' => $fb_retailer_id ] ];
+				},
+				$included_product_ids
+			);
+			$filter_parts[] = [ 'or' => $included ];
+		}
+
+		// Build an "or" clause for excluded product IDs, if provided.
+		if ( ! empty( $excluded_product_ids ) ) {
+			$excluded       = array_map(
+				function ( $product_id ) {
+					$product        = new \WC_Product( $product_id );
+					$fb_retailer_id = \WC_Facebookcommerce_Utils::get_fb_retailer_id( $product );
+					return [ 'retailer_id' => [ 'neq' => $fb_retailer_id ] ];
+				},
+				$excluded_product_ids
+			);
+			$filter_parts[] = [ 'or' => $excluded ];
+		}
+
+		// Combine the filter parts:
+		// - If both parts are present, wrap them in an "and" clause.
+		// - If only one part exists, use it directly.
+		if ( count( $filter_parts ) > 1 ) {
+			$final_filter = [ 'and' => $filter_parts ];
+		} elseif ( count( $filter_parts ) === 1 ) {
+			$final_filter = $filter_parts[0];
+		} else {
+			return '';
+		}
+
+		// Return the JSON representation.
+		// Should look like {"and":[{"or":[{"retailer_id":{"eq":"retailer_id_1"}},{"retailer_id":{"eq":"retailer_id_2"}}]},{"or":[{"retailer_id":{"neq":"retailer_id_3"}},{"retailer_id":{"neq":"retailer_id_4"}}]}]}
+		return wp_json_encode( $final_filter );
 	}
 }
