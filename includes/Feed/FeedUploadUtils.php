@@ -235,28 +235,18 @@ class FeedUploadUtils {
 	): string {
 		$filter_parts = [];
 
-		// Build an "or" clause for included product IDs, if provided.
-		if ( ! empty( $included_product_category_ids ) ) {
-			$included_product_ids_from_category = self::get_product_ids_from_categories( $included_product_category_ids );
-			$included_product_ids               = array_unique( array_merge( $included_product_ids, $included_product_ids_from_category ) );
-		}
+		$included_products = self::get_products( $included_product_ids, $included_product_category_ids );
+		$excluded_products = self::get_products( $excluded_product_ids, $excluded_product_category_ids );
 
-		if ( ! empty( $included_product_ids ) ) {
+		if ( ! empty( $included_products ) ) {
 			// "is product x or is product y"
-			$included       = self::build_product_id_filter( $included_product_ids, 'eq' );
+			$included       = self::build_retailer_id_filter( $included_products, 'eq' );
 			$filter_parts[] = [ 'or' => $included ];
 		}
-
-		// Build an "or" clause for excluded product IDs, if provided.
-		if ( ! empty( $excluded_product_category_ids ) ) {
-			$excluded_product_ids_from_category = self::get_product_ids_from_categories( $excluded_product_category_ids );
-			$excluded_product_ids               = array_unique( array_merge( $excluded_product_ids, $excluded_product_ids_from_category ) );
-		}
-
-		if ( ! empty( $excluded_product_ids ) ) {
-			// "not product x and not product y"
-			$excluded       = self::build_product_id_filter( $excluded_product_ids, 'neq' );
-			$filter_parts[] = [ 'and' => $excluded ];
+		if ( ! empty( $excluded_products ) ) {
+			// "is not product x and is not product y"
+			$included       = self::build_retailer_id_filter( $included_products, 'neq' );
+			$filter_parts[] = [ 'and' => $included ];
 		}
 
 		// Combine the filter parts:
@@ -278,39 +268,35 @@ class FeedUploadUtils {
 		return wp_json_encode( $final_filter );
 	}
 
-	private static function build_product_id_filter( array $product_ids, string $operator ): array {
+	private static function build_retailer_id_filter( array $products, string $operator ): array {
 		return array_map(
-			function ( $product_id ) use ( $operator ) {
-				$product        = new \WC_Product( $product_id );
+			function ( $product ) use ( $operator ) {
 				$fb_retailer_id = \WC_Facebookcommerce_Utils::get_fb_retailer_id( $product );
 				return [ 'retailer_id' => [ $operator => $fb_retailer_id ] ];
 			},
-			$product_ids
+			$products
 		);
 	}
 
-	private static function get_product_ids_from_categories( array $included_category_ids ): array {
-		$all_product_ids = [];
+	private static function get_products( array $product_ids, array $product_category_ids ): array {
+		$products = [];
 
-		// Load products for each category.
-		foreach ( $included_category_ids as $category_id ) {
-			$args     = [
-				'status'    => 'publish',
-				'limit'     => -1,
-				'tax_query' => [ // TODO slow
-					[
-						'taxonomy' => 'product_cat',
-						'field'    => 'term_id',
-						'terms'    => $category_id,
-					],
-				],
-			];
-			$products = wc_get_products( $args );
-			foreach ( $products as $product ) {
-				$all_product_ids[] = $product->get_id();
-			}
+		if ( ! empty( $product_ids ) ) {
+			$products = wc_get_products(
+				array(
+					'include' => $product_ids,
+				)
+			);
 		}
-		// Remove duplicate IDs.
-		return array_unique( $all_product_ids );
+		if ( ! empty( $product_category_ids ) ) {
+			$products_from_categories = wc_get_products(
+				array(
+					'product_category_id' => $product_category_ids,
+				)
+			);
+			$products                 = array_unique( array_merge( $products, $products_from_categories ) );
+		}
+
+		return $products;
 	}
 }
