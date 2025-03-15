@@ -54,6 +54,6 @@ class PromotionsFeedGenerator extends FeedGenerator {
 	 * @since 3.5.0
 	 */
 	protected function get_batch_size(): int {
-		return 100;
+		return 25;
 	}
 }

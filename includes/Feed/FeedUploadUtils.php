@@ -93,16 +93,22 @@ class FeedUploadUtils {
 					// Map discount type and amount
 					$woo_discount_type = $coupon->get_discount_type();
 					$percent_off       = '';
-					$fixed_amount_off  = ''; // TODO append currency?
+					$fixed_amount_off  = '';
 
 					if ( 'percent' === $woo_discount_type ) {
 						$value_type  = 'PERCENTAGE';
 						$percent_off = $coupon->get_amount();
 					} elseif ( in_array( $woo_discount_type, array( 'fixed_cart', 'fixed_product' ), true ) ) {
 						$value_type       = 'FIXED_AMOUNT';
-						$fixed_amount_off = $coupon->get_amount();
+						$fixed_amount_off = $coupon->get_amount(); // TODO currency?
 					} else {
-						// TODO log -- this is likely a plugin coupon
+						\WC_Facebookcommerce_Utils::logTelemetryToMeta(
+							'Unknown discount type encountered during feed processing',
+							array(
+								'promotion_id' => $coupon_post->ID,
+								'extra_data'   => array( 'discount_type' => $woo_discount_type ),
+							)
+						);
 						continue;
 					}
 
@@ -149,24 +155,7 @@ class FeedUploadUtils {
 							$coupon->get_product_categories(),
 							$coupon->get_excluded_product_categories()
 						);
-
-						// TODO do we even need to set these two values if we just always create a filter?
-						// if ( ! empty( $coupon->get_product_ids() ) && ! empty( $coupon->get_product_categories() ) ) {
-						// build target filter
-						// } elseif ( ! empty( $coupon->get_product_ids() ) ) {
-						// Get product Retailer IDs the coupon applies to.
-						// $target_product_retailer_ids = array();
-						// foreach ( $coupon->get_product_ids() as $product_id ) {
-						// $product                       = new \WC_Product( $product_id );
-						// $fb_retailer_id                = \WC_Facebookcommerce_Utils::get_fb_retailer_id( $product );
-						// $target_product_retailer_ids[] = $fb_retailer_id;
-						// }
-						// } elseif ( ! empty( $coupon->get_product_categories() ) ) {
-						// $target_product_set_retailer_ids = $coupon->get_product_categories();
-						// }
 					}
-
-					// TODO need to worry about Individual use only flag?
 
 					// Build the mapped coupon data array.
 					$data = array(
@@ -175,54 +164,53 @@ class FeedUploadUtils {
 						'value_type'                      => $value_type,
 						'percent_off'                     => $percent_off,
 						'fixed_amount_off'                => $fixed_amount_off,
-						'application_type'                => 'BUYER_APPLIED',
-						// Woo only supports buyer applied coupons
+						'application_type'                => 'BUYER_APPLIED', // coupon code ==> buyer_applied
 						'target_type'                     => $target_type,
-						'target_shipping_option_types'    => '',
-						// Not needed for offsite checkout
+						'target_shipping_option_types'    => '', // Not needed for offsite checkout
 						'target_granularity'              => $target_granularity,
 						'target_selection'                => $target_selection,
 						'start_date_time'                 => $start_date_time,
 						'end_date_time'                   => $end_date_time,
 						'coupon_codes'                    => array( $coupon->get_code() ),
-						'public_coupon_code'              => '',
-						// TODO allow configuration of public coupons
+						'public_coupon_code'              => '', // TODO allow public coupons
 						'target_filter'                   => $target_filter,
 						'target_product_retailer_ids'     => $target_product_retailer_ids,
-						'target_product_group_retailer_ids' => '',
-						// Concept does not exist in Woo
+						'target_product_group_retailer_ids' => '', // Concept does not exist in Woo
 						'target_product_set_retailer_ids' => $target_product_set_retailer_ids,
 						'redeem_limit_per_user'           => $coupon->get_usage_limit_per_user(),
-						'min_subtotal'                    => $coupon->get_minimum_amount(),
-						// TODO needs currency?
-						'min_quantity'                    => '',
-						// Concept does not exist in Woo
-						'offer_terms'                     => '',
-						// TODO link to T&C page?
+						'min_subtotal'                    => $coupon->get_minimum_amount(), // TODO currency?
+						'min_quantity'                    => '', // Concept does not exist in Woo
+						'offer_terms'                     => '', // TODO link to T&C page?
 						'redemption_limit_per_seller'     => $coupon->get_usage_limit(),
-						'target_quantity'                 => '',
-						// Concept does not exist in Woo
-						'prerequisite_filter'             => '',
-						// Concept does not exist in Woo
-						'prerequisite_product_retailer_ids' => '',
-						// Concept does not exist in Woo
-						'prerequisite_product_group_retailer_ids' => '',
-						// Concept does not exist in Woo
-						'prerequisite_product_set_retailer_ids' => '',
-						// Concept does not exist in Woo
+						'target_quantity'                 => '', // Concept does not exist in Woo
+						'prerequisite_filter'             => '', // Concept does not exist in Woo
+						'prerequisite_product_retailer_ids' => '', // Concept does not exist in Woo
+						'prerequisite_product_group_retailer_ids' => '', // Concept does not exist in Woo
+						'prerequisite_product_set_retailer_ids' => '', // Concept does not exist in Woo
 						'exclude_sale_priced_products'    => $coupon->get_exclude_sale_items(),
 					);
 
 					$coupons_data[] = $data;
 				} catch ( \Exception $e ) {
-					error_log( 'exception while trying to process coupon ' . $coupon_post->post_title . $e->getMessage() );
+					\WC_Facebookcommerce_Utils::logTelemetryToMeta(
+						'Exception while trying to get coupon data for feed',
+						array(
+							'promotion_id'      => $coupon_post->ID,
+							'exception_message' => $e->getMessage(),
+						)
+					);
 					continue;
 				}
 			}
 
 			return $coupons_data;
 		} catch ( \Exception $e ) {
-			error_log( ' exception while processing coupon feed: ' . $e->getMessage() );
+			\WC_Facebookcommerce_Utils::logTelemetryToMeta(
+				'Exception while trying to process promotion feed',
+				array(
+					'exception_message' => $e->getMessage(),
+				)
+			);
 			return array();
 		}
 	}
@@ -282,8 +270,11 @@ class FeedUploadUtils {
 			return '';
 		}
 
-		// Return the JSON representation of the filter.
-		// Should look like {"and":[{"or":[{"retailer_id":{"eq":"retailer_id_1"}},{"retailer_id":{"eq":"retailer_id_2"}}]},{"and":[{"retailer_id":{"neq":"retailer_id_3"}},{"retailer_id":{"neq":"retailer_id_4"}}]}]}
+		// Return the JSON representation. It should look something like:
+		// {"and":[
+		// {"or":[{"retailer_id":{"eq":"retailer_id_1"}},{"retailer_id":{"eq":"retailer_id_2"}}]},
+		// {"and":[{"retailer_id":{"neq":"retailer_id_3"}},{"retailer_id":{"neq":"retailer_id_4"}}]}
+		// ]}
 		return wp_json_encode( $final_filter );
 	}
 
@@ -301,7 +292,7 @@ class FeedUploadUtils {
 	private static function get_product_ids_from_categories( array $included_category_ids ): array {
 		$all_product_ids = [];
 
-		// Load products for each category. TODO may be slow
+		// Load products for each category.
 		foreach ( $included_category_ids as $category_id ) {
 			$args     = [
 				'status'    => 'publish',
