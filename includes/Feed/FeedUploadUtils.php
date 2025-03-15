@@ -162,7 +162,6 @@ class FeedUploadUtils {
 			}
 
 			// TODO need to worry about Individual use only flag?
-			// TODO allowed and excluded brands -- can it be supported by target filter and do we sync them?
 
 			// Build the mapped coupon data array.
 			$data = array(
@@ -210,41 +209,38 @@ class FeedUploadUtils {
 		 * - Maximum Spend is set
 		 * - Allowed Emails are set
 		 * - limit_usage_to_x_items is set
-		 * - product and category exclusions are set (unless we map them to target filter)
+		 * - allowed and excluded brands are set?
 		 */
 		return true;
 	}
 
 	private static function get_target_filter(
 		array $included_product_ids,
-		array $excluded_product_ids
-		// TODO product sets, excluded product sets
+		array $excluded_product_ids,
+		array $included_product_category_ids,
+		array $excluded_product_category_ids
 	): string {
 		$filter_parts = [];
 
 		// Build an "or" clause for included product IDs, if provided.
+		if ( ! empty( $included_product_category_ids ) ) {
+			$included_product_ids_from_category = self::get_product_ids_from_categories( $included_product_category_ids );
+			$included_product_ids               = array_unique( array_merge( $included_product_ids, $included_product_ids_from_category ) );
+		}
+
 		if ( ! empty( $included_product_ids ) ) {
-			$included       = array_map(
-				function ( $product_id ) {
-					$product        = new \WC_Product( $product_id );
-					$fb_retailer_id = \WC_Facebookcommerce_Utils::get_fb_retailer_id( $product );
-					return [ 'retailer_id' => [ 'eq' => $fb_retailer_id ] ];
-				},
-				$included_product_ids
-			);
+			$included       = self::build_product_id_filter( $included_product_ids, 'eq' );
 			$filter_parts[] = [ 'or' => $included ];
 		}
 
 		// Build an "or" clause for excluded product IDs, if provided.
+		if ( ! empty( $excluded_product_category_ids ) ) {
+			$excluded_product_ids_from_category = self::get_product_ids_from_categories( $excluded_product_category_ids );
+			$excluded_product_ids               = array_unique( array_merge( $excluded_product_ids, $excluded_product_ids_from_category ) );
+		}
+
 		if ( ! empty( $excluded_product_ids ) ) {
-			$excluded       = array_map(
-				function ( $product_id ) {
-					$product        = new \WC_Product( $product_id );
-					$fb_retailer_id = \WC_Facebookcommerce_Utils::get_fb_retailer_id( $product );
-					return [ 'retailer_id' => [ 'neq' => $fb_retailer_id ] ];
-				},
-				$excluded_product_ids
-			);
+			$excluded       = self::build_product_id_filter( $excluded_product_ids, 'neq' );
 			$filter_parts[] = [ 'or' => $excluded ];
 		}
 
@@ -262,5 +258,35 @@ class FeedUploadUtils {
 		// Return the JSON representation.
 		// Should look like {"and":[{"or":[{"retailer_id":{"eq":"retailer_id_1"}},{"retailer_id":{"eq":"retailer_id_2"}}]},{"or":[{"retailer_id":{"neq":"retailer_id_3"}},{"retailer_id":{"neq":"retailer_id_4"}}]}]}
 		return wp_json_encode( $final_filter );
+	}
+
+	private static function build_product_id_filter( array $product_ids, string $operator ): array {
+		return array_map(
+			function ( $product_id ) use ( $operator ) {
+				$product        = new \WC_Product( $product_id );
+				$fb_retailer_id = \WC_Facebookcommerce_Utils::get_fb_retailer_id( $product );
+				return [ 'retailer_id' => [ $operator => $fb_retailer_id ] ];
+			},
+			$product_ids
+		);
+	}
+
+	private static function get_product_ids_from_categories( array $included_category_ids ): array {
+		$all_product_ids = [];
+
+		// Load products for each category. TODO may be slow
+		foreach ( $included_category_ids as $category_id ) {
+			$args     = [
+				'status'   => 'publish',
+				'limit'    => -1,
+				'category' => [ $category_id ],
+			];
+			$products = wc_get_products( $args );
+			foreach ( $products as $product ) {
+				$all_product_ids[] = $product->get_id();
+			}
+		}
+		// Remove duplicate IDs.
+		return array_unique( $all_product_ids );
 	}
 }
