@@ -76,130 +76,155 @@ class FeedUploadUtils {
 	}
 
 	public static function get_coupons_data( array $query_args ): array {
-		// TODO surround with try/catch
-		$coupon_posts = get_posts( $query_args );
-		$coupons_data = array();
+		try {
+			$coupon_posts = get_posts( $query_args );
+			$coupons_data = array();
 
-		// Loop through each coupon post and map the necessary fields.
-		foreach ( $coupon_posts as $coupon_post ) {
-			if ( ! self::is_valid_coupon( $coupon_post ) ) {
-				continue;
+			// Loop through each coupon post and map the necessary fields.
+			foreach ( $coupon_posts as $coupon_post ) {
+				if ( ! self::is_valid_coupon( $coupon_post ) ) {
+					continue;
+				}
+
+				try {
+					// Create a coupon object using the coupon code.
+					$coupon = new WC_Coupon( $coupon_post->post_title );
+
+					// Map discount type and amount
+					$woo_discount_type = $coupon->get_discount_type();
+					$percent_off       = '';
+					$fixed_amount_off  = ''; // TODO append currency?
+
+					if ( 'percent' === $woo_discount_type ) {
+						$value_type  = 'PERCENTAGE';
+						$percent_off = $coupon->get_amount();
+					} elseif ( in_array( $woo_discount_type, array( 'fixed_cart', 'fixed_product' ), true ) ) {
+						$value_type       = 'FIXED_AMOUNT';
+						$fixed_amount_off = $coupon->get_amount();
+					} else {
+						// TODO log -- this is likely a plugin coupon
+						continue;
+					}
+
+					// Map start and end dates (if available)
+					$start_date_time = $coupon->get_date_created() ? (string) $coupon->get_date_created()->getTimestamp() : $coupon_post->post_date;
+					$end_date_time   = $coupon->get_date_expires() ? (string) $coupon->get_date_expires()->getTimestamp() : '';
+
+					// Map target type
+					$is_free_shipping = $coupon->get_free_shipping();
+					if ( $is_free_shipping ) {
+						$target_type = 'SHIPPING';
+					} else {
+						$target_type = 'LINE_ITEM';
+					}
+
+					// Map target granularity
+					if ( $is_free_shipping || 'fixed_cart' === $woo_discount_type ) {
+						$target_granularity = 'ORDER_LEVEL';
+					} else {
+						$target_granularity = 'ITEM_LEVEL';
+					}
+
+					// Map target selection
+					if ( empty( $coupon->get_product_ids() )
+						&& empty( $coupon->get_product_categories() )
+						&& empty( $coupon->get_excluded_product_ids() )
+						&& empty( $coupon->get_excluded_product_categories() )
+					) {
+						// Coupon applies to all products.
+						$target_selection = 'ALL_CATALOG_PRODUCTS';
+					} else {
+						$target_selection = 'SPECIFIC_PRODUCTS';
+					}
+
+					// Determine target product mapping
+					$target_product_set_retailer_ids = '';
+					$target_product_retailer_ids     = '';
+					$target_filter                   = '';
+
+					if ( 'SPECIFIC_PRODUCTS' === $target_selection ) {
+						$target_filter = self::get_target_filter(
+							$coupon->get_product_ids(),
+							$coupon->get_excluded_product_ids(),
+							$coupon->get_product_categories(),
+							$coupon->get_excluded_product_categories()
+						);
+
+						// TODO do we even need to set these two values if we just always create a filter?
+						// if ( ! empty( $coupon->get_product_ids() ) && ! empty( $coupon->get_product_categories() ) ) {
+						// build target filter
+						// } elseif ( ! empty( $coupon->get_product_ids() ) ) {
+						// Get product Retailer IDs the coupon applies to.
+						// $target_product_retailer_ids = array();
+						// foreach ( $coupon->get_product_ids() as $product_id ) {
+						// $product                       = new \WC_Product( $product_id );
+						// $fb_retailer_id                = \WC_Facebookcommerce_Utils::get_fb_retailer_id( $product );
+						// $target_product_retailer_ids[] = $fb_retailer_id;
+						// }
+						// } elseif ( ! empty( $coupon->get_product_categories() ) ) {
+						// $target_product_set_retailer_ids = $coupon->get_product_categories();
+						// }
+					}
+
+					// TODO need to worry about Individual use only flag?
+
+					// Build the mapped coupon data array.
+					$data = array(
+						'offer_id'                        => $coupon->get_id(),
+						'title'                           => $coupon->get_code(),
+						'value_type'                      => $value_type,
+						'percent_off'                     => $percent_off,
+						'fixed_amount_off'                => $fixed_amount_off,
+						'application_type'                => 'BUYER_APPLIED',
+						// Woo only supports buyer applied coupons
+						'target_type'                     => $target_type,
+						'target_shipping_option_types'    => '',
+						// Not needed for offsite checkout
+						'target_granularity'              => $target_granularity,
+						'target_selection'                => $target_selection,
+						'start_date_time'                 => $start_date_time,
+						'end_date_time'                   => $end_date_time,
+						'coupon_codes'                    => array( $coupon->get_code() ),
+						'public_coupon_code'              => '',
+						// TODO allow configuration of public coupons
+						'target_filter'                   => $target_filter,
+						'target_product_retailer_ids'     => $target_product_retailer_ids,
+						'target_product_group_retailer_ids' => '',
+						// Concept does not exist in Woo
+						'target_product_set_retailer_ids' => $target_product_set_retailer_ids,
+						'redeem_limit_per_user'           => $coupon->get_usage_limit_per_user(),
+						'min_subtotal'                    => $coupon->get_minimum_amount(),
+						// TODO needs currency?
+						'min_quantity'                    => '',
+						// Concept does not exist in Woo
+						'offer_terms'                     => '',
+						// TODO link to T&C page?
+						'redemption_limit_per_seller'     => $coupon->get_usage_limit(),
+						'target_quantity'                 => '',
+						// Concept does not exist in Woo
+						'prerequisite_filter'             => '',
+						// Concept does not exist in Woo
+						'prerequisite_product_retailer_ids' => '',
+						// Concept does not exist in Woo
+						'prerequisite_product_group_retailer_ids' => '',
+						// Concept does not exist in Woo
+						'prerequisite_product_set_retailer_ids' => '',
+						// Concept does not exist in Woo
+						'exclude_sale_priced_products'    => $coupon->get_exclude_sale_items(),
+					);
+
+					$coupons_data[] = $data;
+				} catch ( \Exception $e ) {
+					error_log( 'exception while trying to process coupon ' . $coupon_post->post_title . $e->getMessage() );
+					continue;
+				}
 			}
 
-			// TODO surround with try/catch
-			// Create a coupon object using the coupon code.
-			$coupon = new WC_Coupon( $coupon_post->post_title );
-
-			// Map discount type and amount
-			$woo_discount_type = $coupon->get_discount_type();
-			$percent_off       = '';
-			$fixed_amount_off  = ''; // TODO append currency?
-
-			if ( 'percent' === $woo_discount_type ) {
-				$value_type  = 'PERCENTAGE';
-				$percent_off = $coupon->get_amount();
-			} elseif ( in_array( $woo_discount_type, array( 'fixed_cart', 'fixed_product' ), true ) ) {
-				$value_type       = 'FIXED_AMOUNT';
-				$fixed_amount_off = $coupon->get_amount();
-			} else {
-				// TODO log -- this is likely a plugin coupon
-				continue;
-			}
-
-			// Map start and end dates (if available)
-			$start_date_time = $coupon->get_date_created() ? (string) $coupon->get_date_created()->getTimestamp() : $coupon_post->post_date;
-			$end_date_time   = $coupon->get_date_expires() ? (string) $coupon->get_date_expires()->getTimestamp() : '';
-
-			// Map target type
-			$is_free_shipping = $coupon->get_free_shipping();
-			if ( $is_free_shipping ) {
-				$target_type = 'SHIPPING';
-			} else {
-				$target_type = 'LINE_ITEM';
-			}
-
-			// Map target granularity
-			if ( $is_free_shipping || 'fixed_cart' === $woo_discount_type ) {
-				$target_granularity = 'ORDER_LEVEL';
-			} else {
-				$target_granularity = 'ITEM_LEVEL';
-			}
-
-			// Map target selection
-			if ( empty( $coupon->get_product_ids() )
-				&& empty( $coupon->get_product_categories() )
-				&& empty( $coupon->get_excluded_product_ids() )
-				&& empty( $coupon->get_excluded_product_categories() )
-			) {
-				// Coupon applies to all products.
-				$target_selection = 'ALL_CATALOG_PRODUCTS';
-			} else {
-				$target_selection = 'SPECIFIC_PRODUCTS';
-			}
-
-			// Determine target product mapping
-			$target_product_set_retailer_ids = '';
-			$target_product_retailer_ids     = '';
-			$target_filter                   = '';
-
-			if ( 'SPECIFIC_PRODUCTS' === $target_selection ) {
-				$target_filter = self::get_target_filter( $coupon->get_product_ids(), $coupon->get_excluded_product_ids() );
-
-				// TODO do we even need to set these two values if we just always create a filter?
-				// if ( ! empty( $coupon->get_product_ids() ) && ! empty( $coupon->get_product_categories() ) ) {
-					// build target filter
-				// } elseif ( ! empty( $coupon->get_product_ids() ) ) {
-				// Get product Retailer IDs the coupon applies to.
-				// $target_product_retailer_ids = array();
-				// foreach ( $coupon->get_product_ids() as $product_id ) {
-				// $product                       = new \WC_Product( $product_id );
-				// $fb_retailer_id                = \WC_Facebookcommerce_Utils::get_fb_retailer_id( $product );
-				// $target_product_retailer_ids[] = $fb_retailer_id;
-				// }
-				// } elseif ( ! empty( $coupon->get_product_categories() ) ) {
-				// $target_product_set_retailer_ids = $coupon->get_product_categories();
-				// }
-			}
-
-			// TODO need to worry about Individual use only flag?
-
-			// Build the mapped coupon data array.
-			$data = array(
-				'offer_id'                                => $coupon->get_id(),
-				'title'                                   => $coupon->get_code(),
-				'value_type'                              => $value_type,
-				'percent_off'                             => $percent_off,
-				'fixed_amount_off'                        => $fixed_amount_off,
-				'application_type'                        => 'BUYER_APPLIED', // Woo only supports buyer applied coupons
-				'target_type'                             => $target_type,
-				'target_shipping_option_types'            => '', // Not needed for offsite checkout
-				'target_granularity'                      => $target_granularity,
-				'target_selection'                        => $target_selection,
-				'start_date_time'                         => $start_date_time,
-				'end_date_time'                           => $end_date_time,
-				'coupon_codes'                            => array( $coupon->get_code() ),
-				'public_coupon_code'                      => '', // TODO allow configuration of public coupons
-				'target_filter'                           => $target_filter,
-				'target_product_retailer_ids'             => $target_product_retailer_ids,
-				'target_product_group_retailer_ids'       => '', // Concept does not exist in Woo
-				'target_product_set_retailer_ids'         => $target_product_set_retailer_ids,
-				'redeem_limit_per_user'                   => $coupon->get_usage_limit_per_user(),
-				'min_subtotal'                            => $coupon->get_minimum_amount(), // TODO needs currency?
-				'min_quantity'                            => '', // Concept does not exist in Woo
-				'offer_terms'                             => '', // TODO link to T&C page?
-				'redemption_limit_per_seller'             => $coupon->get_usage_limit(),
-				'target_quantity'                         => '', // Concept does not exist in Woo
-				'prerequisite_filter'                     => '', // Concept does not exist in Woo
-				'prerequisite_product_retailer_ids'       => '', // Concept does not exist in Woo
-				'prerequisite_product_group_retailer_ids' => '', // Concept does not exist in Woo
-				'prerequisite_product_set_retailer_ids'   => '', // Concept does not exist in Woo
-				'exclude_sale_priced_products'            => $coupon->get_exclude_sale_items(),
-			);
-
-			$coupons_data[] = $data;
+			return $coupons_data;
+		} catch ( \Exception $e ) {
+			error_log( ' exception while processing coupon feed: ' . $e->getMessage() );
+			return array();
 		}
-
-		return $coupons_data;
 	}
 
 	private static function is_valid_coupon( $coupon_post ): bool {
@@ -229,6 +254,7 @@ class FeedUploadUtils {
 		}
 
 		if ( ! empty( $included_product_ids ) ) {
+			// "is product x or is product y"
 			$included       = self::build_product_id_filter( $included_product_ids, 'eq' );
 			$filter_parts[] = [ 'or' => $included ];
 		}
@@ -240,8 +266,9 @@ class FeedUploadUtils {
 		}
 
 		if ( ! empty( $excluded_product_ids ) ) {
+			// "not product x and not product y"
 			$excluded       = self::build_product_id_filter( $excluded_product_ids, 'neq' );
-			$filter_parts[] = [ 'or' => $excluded ];
+			$filter_parts[] = [ 'and' => $excluded ];
 		}
 
 		// Combine the filter parts:
@@ -255,8 +282,8 @@ class FeedUploadUtils {
 			return '';
 		}
 
-		// Return the JSON representation.
-		// Should look like {"and":[{"or":[{"retailer_id":{"eq":"retailer_id_1"}},{"retailer_id":{"eq":"retailer_id_2"}}]},{"or":[{"retailer_id":{"neq":"retailer_id_3"}},{"retailer_id":{"neq":"retailer_id_4"}}]}]}
+		// Return the JSON representation of the filter.
+		// Should look like {"and":[{"or":[{"retailer_id":{"eq":"retailer_id_1"}},{"retailer_id":{"eq":"retailer_id_2"}}]},{"and":[{"retailer_id":{"neq":"retailer_id_3"}},{"retailer_id":{"neq":"retailer_id_4"}}]}]}
 		return wp_json_encode( $final_filter );
 	}
 
@@ -277,9 +304,15 @@ class FeedUploadUtils {
 		// Load products for each category. TODO may be slow
 		foreach ( $included_category_ids as $category_id ) {
 			$args     = [
-				'status'   => 'publish',
-				'limit'    => -1,
-				'category' => [ $category_id ],
+				'status'    => 'publish',
+				'limit'     => -1,
+				'tax_query' => [ // TODO slow
+					[
+						'taxonomy' => 'product_cat',
+						'field'    => 'term_id',
+						'terms'    => $category_id,
+					],
+				],
 			];
 			$products = wc_get_products( $args );
 			foreach ( $products as $product ) {
