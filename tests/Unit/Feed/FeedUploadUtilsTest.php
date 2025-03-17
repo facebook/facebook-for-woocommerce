@@ -405,7 +405,6 @@ class FeedUploadUtilsTest extends WP_UnitTestCase {
 			'end_date_time'                         => '',
 			'coupon_codes'                          => ['coupon-incl-excl'],                // coupon_codes as an array containing the title
 			'public_coupon_code'                    => '',
-			// Here we expect a non-empty target filter due to product and category restrictions.
 			'target_filter'                         => '{"and":[{"or":[{"retailer_id":{"eq":"product-sku-1_'.$product1->get_id().'"}},{"retailer_id":{"eq":"product-sku-2_'.$product2->get_id().'"}}]},{"and":[{"retailer_id":{"neq":"product-sku-3_'.$product3->get_id().'"}}]}]}',
 			'target_product_retailer_ids'           => '',
 			'target_product_group_retailer_ids'     => '',
@@ -427,12 +426,116 @@ class FeedUploadUtilsTest extends WP_UnitTestCase {
 		$this->assertEquals( $expected_coupon, $coupon_data, 'Coupon feed data with included/excluded restrictions does not match expected data structure.' );
 	}
 
-	public function test_get_coupons_data_invalid_coupon() {
-		// Create a coupon that fails validity for multiple reasons:
-		// - No coupon code (empty post_title)
-		// - Both free_shipping enabled and a discount amount provided
-		// - Has email restrictions
-		// - Has both included and excluded product brand restrictions.
+	public function test_get_coupons_data_coupon_with_included_excluded_categories() {
+		// Create product categories.
+		$included_cat = self::factory()->term->create([
+			'taxonomy' => 'product_cat',
+			'name'     => 'Included Category',
+		]);
+		$excluded_cat = self::factory()->term->create([
+			'taxonomy' => 'product_cat',
+			'name'     => 'Excluded Category',
+		]);
+
+		// Create products and assign them to categories.
+		$product1 = new WC_Product_Simple();
+		$product1->set_name('Product In Included Category 1');
+		$product1->set_slug('product-in-included-cat-1');
+		$product1->set_status('publish');
+		$product1->set_sku('product-sku-1');
+		$product1->set_category_ids([ $included_cat ]);
+		$product1->save();
+		$prod_id1 = $product1->get_id();
+
+		$product2 = new WC_Product_Simple();
+		$product2->set_name('Product In Included Category 2');
+		$product2->set_slug('product-in-included-cat-2');
+		$product2->set_status('publish');
+		$product2->set_sku('product-sku-2');
+		$product2->set_category_ids([ $included_cat ]);
+		$product2->save();
+		$prod_id2 = $product2->get_id();
+
+		$product3 = new WC_Product_Simple();
+		$product3->set_name('Product In Excluded Category');
+		$product3->set_slug('product-in-excluded-cat');
+		$product3->set_status('publish');
+		$product3->set_sku('product-sku-3');
+		$product3->set_category_ids([ $excluded_cat ]);
+		$product3->save();
+		$prod_id3 = $product3->get_id();
+
+		// Create a coupon that restricts by category.
+		$coupon_id = self::factory()->post->create([
+			'post_type'   => 'shop_coupon',
+			'post_status' => 'publish',
+			'post_title'  => 'COUPON-CAT-ONLY',
+		]);
+		// Set coupon meta for a percentage discount.
+		update_post_meta( $coupon_id, 'discount_type', 'percent' );
+		update_post_meta( $coupon_id, 'coupon_amount', '15' ); // 15% discount
+		update_post_meta( $coupon_id, 'free_shipping', 'no' );
+		update_post_meta( $coupon_id, 'usage_limit', '' );
+		update_post_meta( $coupon_id, 'limit_usage_to_x_items', '' );
+		update_post_meta( $coupon_id, 'maximum_amount', '' );
+		update_post_meta( $coupon_id, 'email_restrictions', array() );
+		// Instead of setting product_ids, set category restrictions.
+		update_post_meta( $coupon_id, 'product_categories', [ $included_cat ] );
+		update_post_meta( $coupon_id, 'exclude_product_categories', [ $excluded_cat ] );
+
+		$query_args = [
+			'post_type'      => 'shop_coupon',
+			'post_status'    => 'publish',
+			'posts_per_page' => -1,
+		];
+
+		$result = \WooCommerce\Facebook\Feed\FeedUploadUtils::get_coupons_data( $query_args );
+		$this->assertCount( 1, $result, 'Should have returned one coupon in the feed data.' );
+		$coupon_data = $result[0];
+
+		// Expected target_filter:
+		// The get_target_filter() function pulls products via wc_get_products() based on the category IDs.
+		// It should return products from the included category (product1 and product2) and products from the excluded category (product3).
+		// The expected JSON string (assuming WC_Facebookcommerce_Utils::get_fb_retailer_id returns "<sku>_<id>") is:
+		$expected_target_filter = '{"and":[{"or":[{"retailer_id":{"eq":"' . $product1->get_sku() . '_' . $prod_id1 . '"}},{"retailer_id":{"eq":"' . $product2->get_sku() . '_' . $prod_id2 . '"}}]},{"and":[{"retailer_id":{"neq":"' . $product3->get_sku() . '_' . $prod_id3 . '"}}]}]}';
+
+		// Build the expected coupon shape.
+		$expected_coupon = [
+			'offer_id'                              => $coupon_id,                           // coupon ID as an integer
+			'title'                                 => 'coupon-cat-only',                   // lowercased coupon post title
+			'value_type'                            => 'PERCENTAGE',
+			'percent_off'                           => '15',                                // as a string
+			'fixed_amount_off'                      => '',                                  // empty string output
+			'application_type'                      => 'BUYER_APPLIED',
+			'target_type'                           => 'LINE_ITEM',
+			'target_granularity'                    => 'ITEM_LEVEL',
+			'target_selection'                      => 'SPECIFIC_PRODUCTS',
+			'start_date_time'                       => $coupon_data['start_date_time'],     // generated start date/time
+			'end_date_time'                         => '',
+			'coupon_codes'                          => ['coupon-cat-only'],                 // coupon_codes as an array containing the code
+			'public_coupon_code'                    => '',
+			'target_filter'                         => $expected_target_filter,
+			'target_product_retailer_ids'           => '',
+			'target_product_group_retailer_ids'     => '',
+			'target_product_set_retailer_ids'       => '',
+			'redeem_limit_per_user'                 => 0,
+			'min_subtotal'                          => '',
+			'min_quantity'                          => '',
+			'offer_terms'                           => '',
+			'redemption_limit_per_seller'           => 0,
+			'target_quantity'                       => '',
+			'prerequisite_filter'                   => '',
+			'prerequisite_product_retailer_ids'     => '',
+			'prerequisite_product_group_retailer_ids' => '',
+			'prerequisite_product_set_retailer_ids'   => '',
+			'exclude_sale_priced_products'          => false,
+			'target_shipping_option_types'          => '',
+		];
+
+		$this->assertEquals( $expected_coupon, $coupon_data, 'Coupon feed data with included/excluded category restrictions does not match expected data structure.' );
+	}
+
+	public function test_get_coupons_data_invalid_coupon_both_amount_and_free_ship() {
 		$coupon_id = self::factory()->post->create([
 			'post_type'   => 'shop_coupon',
 			'post_status' => 'publish',
