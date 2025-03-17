@@ -150,34 +150,64 @@
 
 .fb-asc-ads .main-ui-container {
   display: flex;
-  width: 500px;
-  height: 300px;
-  margin: 0 0 20px;
-  padding: 0;
+  width: 650px;
+  min-height: 260px;
+  margin: 0 0 16px;
+  padding: 24px 20px;
   flex-direction: column;
   justify-content: space-between;
   align-items: center;
   overflow: hidden;
   box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.1);
-  border-radius: 4px;
+  border-radius: 5px;
   background-color: #fff;
+  color: #1C2B33;
   font-family: "Gill Sans", "Gill Sans MT", Calibri, "Trebuchet MS", sans-serif;
 }
 
 .fb-asc-ads .main-ui-container-item {
   box-sizing: border-box;
   width: 100%;
-  padding: 1.5em;
-  line-height: 1.5;
 }
 
-.fb-asc-ads .main-ui-container-item-heading {
-  border-bottom: 1px solid #e5e5e5;
+.fb-asc-ads .main-ui-container-item-content {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.fb-asc-ads .main-ui-container-item-content-icon {
+	display: inline-block;
+	width: 16px;
+	margin-right: 10px;
+}
+
+.fb-asc-ads .main-ui-container-item-content-title {
+	font-size: 16px;
+	margin: 2px 0 0;
+	padding: 0;
+}
+
+.fb-asc-ads .main-ui-container-item-content p {
+  flex-basis: 85%;
+  margin: 0;
+  padding: 0;
+  font-size: 14px;
+  color: #1C2B3360;
 }
 
 .fb-asc-ads .main-ui-container-item-cta {
-  text-align: right;
-  border-top: 1px solid #e5e5e5;
+  margin: 34px 0 0;
+}
+
+.fb-asc-ads #new-buyers-create-campaign-btn,
+.fb-asc-ads #retargeting-create-campaign-btn {
+  font-size: 18px;
+  line-height: 1;
+  color: #1C2B33;
+  background: transparent;
+  border-color: #C4CCD4;
 }
 
 .fb-asc-ads .campaign-edit-view-header {
@@ -230,9 +260,15 @@
 
 .fb-asc-ads .main-ui-header {
   font-weight: 600;
-  font-size: 20px;
-  line-height: 30px;
-  margin: 0;
+  font-size: 18px;
+  margin: 0 0 2px;
+  padding: 0;
+}
+
+.fb-asc-ads .main-ui-subheader {
+  width: 85%;
+  font-size: 16px;
+  margin: 0 0 26px;
   padding: 0;
 }
 
