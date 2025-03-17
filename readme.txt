@@ -3,7 +3,7 @@ Contributors: facebook, automattic, woothemes
 Tags: facebook, woocommerce, marketing, product catalog feed, pixel
 Requires at least: 5.6
 Tested up to: 6.7
-Stable tag: 3.4.2
+Stable tag: 3.4.3
 Requires PHP: 7.4
 MySQL: 5.6 or greater
 License: GPLv2 or later
@@ -39,6 +39,14 @@ When opening a bug on GitHub, please give us as many details as possible.
 * Current version of Facebook-for-WooCommerce, WooCommerce, Wordpress, PHP
 
 == Changelog ==
+= 3.4.3 - 2025-03-19 =
+* Add - Items batch request and response tests by @nrostrow-meta in #2917
+* Tweak - Always run PHP-based github workflows by @carterbuce in #2926
+* Fix - feed upload error "feed_column_count_mismatch" when product has multiple colors separated by a comma by @mshymon in #2947
+* Tweak - Updated Pull Request Template by @vinkmeta in #2948
+* Dev - Improved readability of function prepare_product() in fbproduct.php by @mshymon in #2889
+* Tweak - Enabled PHPUnit code coverage report generation by @carterbuce in #2893
+
 = 3.4.2 - 2025-03-13 =
 * Tweak - Update README.md - Added noification for ownership transfer by @SayanPandey in #2910 and #2916
 
@@ -63,11 +71,3 @@ When opening a bug on GitHub, please give us as many details as possible.
 = 3.3.3 - 2025-02-06 = 
 * Fix - Use of recommended delete connection endpoint over delete permission endpoint by atuld123 in #2844
 * Add - Expose Brand & MPN to Woocommerce UI by @devbodaghe in #2842
-
-= 3.3.2 - 2025-01-21 =
-* Fix - a bug that arose from reliance on the plugin version compatibility tag by @vinkmeta in #2856
-* Fix - Update catalog link in connections tab to point to Catalog by @devbodaghe in #2848
-* Fix - Product URL links now point to items tab by @vinkmeta in #2852
-* Tweak - Removed sell on Instagram by @mshymon in #2854
-* Tweak - Add custom fields to product data structure by @devbodaghe in #2836
-* Fix - Multiple issues with Fixed FB Attribute Syncing by @vinkmeta in #2860
