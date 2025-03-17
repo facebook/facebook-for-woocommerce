@@ -46,22 +46,27 @@ class BatchLogHandler extends LogHandlerBase {
 
 			$chunked_failed_logs = array_map(
 				function ( $logs_chunk ) {
-					$raw_context = [
+					$logs_chunk_with_core_context = array_map(
+						function ( $log ) {
+							return self::set_core_log_context( $log );
+						},
+						$logs_chunk
+					);
+
+					$context = [
 						'event'      => 'persist_meta_telemetry_logs',
-						'extra_data' => [ 'telemetry_logs' => wp_json_encode( $logs_chunk ) ],
+						'extra_data' => [ 'telemetry_logs' => wp_json_encode( $logs_chunk_with_core_context ) ],
 					];
-					$context     = self::set_core_log_context( $raw_context );
 
 					try {
 						$response = facebook_for_woocommerce()->get_api()->log_to_meta( $context );
 						if ( $response->success ) {
 							WC_Facebookcommerce_Utils::logWithDebugModeEnabled( 'Telemetry logs: ' . wp_json_encode( $context ) );
+							return [];
 						} else {
 							WC_Facebookcommerce_Utils::logWithDebugModeEnabled( 'Bad response from log_to_meta request' );
 							return $logs_chunk;
 						}
-
-						return [];
 					} catch ( \Exception $e ) {
 						WC_Facebookcommerce_Utils::logWithDebugModeEnabled( 'Error persisting telemetry logs: ' . $e->getMessage() );
 						return $logs_chunk;

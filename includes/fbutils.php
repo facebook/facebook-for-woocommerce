@@ -883,7 +883,6 @@ if ( ! class_exists( 'WC_Facebookcommerce_Utils' ) ) :
 
 			// Push logging request to global message queue function.
 			$logs = get_transient( 'global_telemetry_message_queue' );
-			$context['chunk_id'] = count($logs) + 1;
 			$logs[] = $context;
 			set_transient( 'global_telemetry_message_queue', $logs, HOUR_IN_SECONDS );
 		}
