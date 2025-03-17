@@ -1,5 +1,4 @@
 <?php
-// phpcs:ignoreFile
 /**
  * Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
  *
@@ -22,7 +21,8 @@ defined( 'ABSPATH' ) || exit;
  */
 class FBCategories {
 
-	private $keys_to_exclude = ['brand' => true];
+	/** @var array Keys to exclude from attribute processing */
+	private $keys_to_exclude = [ 'brand' => true ];
 
 	/**
 	 * Fetches the attribute from a category using attribute key.

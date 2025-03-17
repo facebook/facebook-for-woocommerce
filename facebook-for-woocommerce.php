@@ -1,5 +1,4 @@
 <?php
-// phpcs:ignoreFile
 /**
  * Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
  *
@@ -33,7 +32,7 @@ defined( 'ABSPATH' ) || exit;
 // HPOS compatibility declaration.
 add_action(
 	'before_woocommerce_init',
-	function() {
+	function () {
 		if ( class_exists( FeaturesUtil::class ) ) {
 			FeaturesUtil::declare_compatibility( 'custom_order_tables', plugin_basename( __FILE__ ), true );
 		}
@@ -318,8 +317,6 @@ class WC_Facebook_Loader {
 
 		return self::$instance;
 	}
-
-
 }
 
 // fire it up!

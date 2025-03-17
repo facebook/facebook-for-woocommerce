@@ -858,6 +858,122 @@ if ( ! class_exists( 'WC_Facebookcommerce_Utils' ) ) :
 			return self::normalize_product_data_for_items_batch( $data );
 		}
 
+		/**
+		 * Utility function for sending exception logs to Meta.
+		 * @since 3.5.0
+		 * 
+		 * @param Throwable $error error object
+		 * @param array $context context example: ['catalog_id' => '1234567890', 'order_id' => '1234567890', 
+		 * 		'promotion_id' => '1234567890', 'flow_name' => 'checkout', 'flow_step' => 'verification', 
+		 * 		'extra_data' => ['dictionary type' => 'any data that is not fall into our pre-defined format.']
+		 */
+		public static function logExceptionImmediatelyToMeta(Throwable $error, array $context = []) {
+			$extra_data = self::getContextData($context, 'extra_data', []);
+			$extra_data['php_version']    = phpversion();
+
+			$request_data = [
+				'event' => 'error_log',
+				'event_type' => self::getContextData($context, 'event_type'),
+				'commerce_merchant_settings_id' => self::getContextData($context, 'commerce_merchant_settings_id', self::$ems),
+				'commerce_partner_integration_id' => self::getContextData($context, 'commerce_partner_integration_id'),
+				'exception_message' => $error->getMessage(),
+				'exception_trace' => $error->getTraceAsString(),
+				'exception_code' => $error->getCode(),
+				'exception_class' => get_class($error),
+				'external_business_id' => self::getContextData($context, 'external_business_id'),
+				'catalog_id' => self::getContextData($context, 'catalog_id'),
+				'order_id' => self::getContextData($context, 'order_id'),
+				'page_id' => self::getContextData($context, 'page_id'),
+				'promotion_id' => self::getContextData($context, 'promotion_id'),
+				'flow_name' => self::getContextData($context, 'flow_name'),
+				'flow_step' => self::getContextData($context, 'flow_step'),
+				'incoming_params' => self::getContextData($context, 'incoming_params'),
+				'seller_platform_app_version' => self::PLUGIN_VERSION,
+				'extra_data' => $extra_data,
+			];
+			
+			// Check if Action Scheduler is available
+			if ( function_exists( 'as_enqueue_async_action' ) ) {
+				as_enqueue_async_action( 'facebook_for_woocommerce_log_api', array( $request_data ) );
+			} else {
+				// Handle the absence of the Action Scheduler
+				self::logWithDebugModeEnabled( 'Action Scheduler is not available.' );
+			}
+
+			self::logWithDebugModeEnabled( 'Request data: ' . json_encode( $request_data ) );
+		}
+
+		/**
+		 * Utility function for sending telemetry logs to Meta.
+		 * @since 3.5.0
+		 */
+		public static function logTelemetryToMeta(string $message, array $context = []) {
+			/**
+			 * WIP: This is a dummy function to send telemetry logs to Meta.
+			 * $context is an array of data that will be sent to Meta, includes commerce_merchant_settings_id,
+			 * catalog_id, order_id, promotion_id, flow_name, flow_step, extra_data and etc.
+			 */
+			
+			// Push logging request to global message queue function.
+			$context['extra_data'] = ['message' => $message];
+			$logs = get_transient( 'global_telemetry_message_queue' );
+			$logs[] = $context;
+			set_transient( 'global_telemetry_message_queue', $logs, HOUR_IN_SECONDS );
+		}
+
+		/**
+		 * Checks whether fpassthru has been disabled in PHP.
+		 *
+		 * @since 3.5.0
+		 * @return bool
+		 */
+		public static function is_fpassthru_disabled(): bool {
+			$disabled = false;
+			if ( function_exists( 'ini_get' ) ) {
+				// phpcs:ignore
+				$disabled_functions = @ini_get( 'disable_functions' );
+
+				$disabled =
+					is_string( $disabled_functions ) &&
+					//phpcs:ignore
+					in_array( 'fpassthru', explode( ',', $disabled_functions ), false );
+			}
+			return $disabled;
+		}
+
+		 /**
+		 * Gets a value from the context array, or a default if the key is not set
+		 *
+		 * @param array $context
+		 * @param string $key
+		 * @param mixed $default
+		 * @return mixed
+		 */
+		private static function getContextData(array $context, string $key, $default = null)
+		{
+			return $context[$key] ?? $default;
+		}
+
+		/**
+		 * Saves errors or messages to WordPress debug log (wp-content/debug.log)
+		 * Only logs if debug mode is enabled and WP_DEBUG and WP_DEBUG_LOG are true in wp-config.php.
+		 */
+		public static function logWithDebugModeEnabled( $message ) {
+
+			// if this file is being included outside the plugin, or the plugin setting is disabled
+			if ( ! function_exists( 'facebook_for_woocommerce' ) || ! facebook_for_woocommerce()->get_integration()->is_debug_mode_enabled() ) {
+				return;
+			}
+
+			if ( is_array( $message ) || is_object( $message ) ) {
+				$message = json_encode( $message );
+			} else {
+				$message = sanitize_textarea_field( $message );
+			}
+
+			error_log( $message );
+		}
+
 	}
 
 endif;
