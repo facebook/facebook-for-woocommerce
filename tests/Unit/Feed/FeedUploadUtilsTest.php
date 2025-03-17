@@ -263,12 +263,13 @@ class FeedUploadUtilsTest extends WP_UnitTestCase {
 
 	public function test_get_coupons_data_valid_coupon_with_target_product() {
 		// Create a target product.
-		$product_id = self::factory()->post->create([
-			'post_type'   => 'product',
-			'post_status' => 'publish',
-			'post_title'  => 'Target Product',
-		]);
-		update_post_meta( $product_id, '_sku', 'product-sku-1' );
+		$product1 = new WC_Product_Simple();
+		$product1->set_name('Included Product 1');
+		$product1->set_slug('included-product-1');
+		$product1->set_status('publish');
+		$product1->set_sku('product-sku-1');
+		$product1->save();
+		$included_product1 = $product1->get_id();
 
 		// Create a coupon with a valid coupon code.
 		$coupon_id = self::factory()->post->create([
@@ -284,7 +285,7 @@ class FeedUploadUtilsTest extends WP_UnitTestCase {
 		update_post_meta( $coupon_id, 'limit_usage_to_x_items', '' );
 		update_post_meta( $coupon_id, 'maximum_amount', '' );
 		update_post_meta( $coupon_id, 'email_restrictions', array() );
-		update_post_meta( $coupon_id, 'product_ids', array( $product_id ) );
+		update_post_meta( $coupon_id, 'product_ids', array( $product1->get_id() ) );
 
 		$query_args = [
 			'post_type'      => 'shop_coupon',
@@ -313,7 +314,7 @@ class FeedUploadUtilsTest extends WP_UnitTestCase {
 			'end_date_time'                         => '',
 			'coupon_codes'                          => ['coupon-code-1'],
 			'public_coupon_code'                    => '',
-			'target_filter'                         => '',
+			'target_filter'                         => '{"or":[{"retailer_id":{"eq":"product-sku-1_'.$product1->get_id().'"}}]}',
 			'target_product_retailer_ids'           => '',
 			'target_product_group_retailer_ids'     => '',
 			'target_product_set_retailer_ids'       => '',
@@ -333,5 +334,126 @@ class FeedUploadUtilsTest extends WP_UnitTestCase {
 
 		// Assert that the coupon data exactly matches the expected shape.
 		$this->assertEquals( $expected_coupon, $coupon_data, 'Coupon feed data does not match expected data structure.' );
+	}
+
+	public function test_get_coupons_data_coupon_with_included_excluded_products() {
+		// Create products for inclusion and exclusion.
+		$product1 = new WC_Product_Simple();
+		$product1->set_name('Included Product 1');
+		$product1->set_slug('included-product-1');
+		$product1->set_status('publish');
+		$product1->set_sku('product-sku-1');
+		$product1->save();
+		$included_product1 = $product1->get_id();
+
+		$product2 = new WC_Product_Simple();
+		$product2->set_name('Included Product 2');
+		$product2->set_slug('included-product-2');
+		$product2->set_status('publish');
+		$product2->set_sku('product-sku-2');
+		$product2->save();
+		$included_product2 = $product2->get_id();
+
+		$product3 = new WC_Product_Simple();
+		$product3->set_name('Excluded Product');
+		$product3->set_slug('excluded-product');
+		$product3->set_status('publish');
+		$product3->set_sku('product-sku-3');
+		$product3->save();
+		$excluded_product = $product3->get_id();
+
+		// Create a coupon with both included and excluded product and category restrictions.
+		$coupon_id = self::factory()->post->create([
+			'post_type'   => 'shop_coupon',
+			'post_status' => 'publish',
+			'post_title'  => 'COUPON-INCL-EXCL',
+		]);
+		// Set coupon meta so that it is valid with a percentage discount.
+		update_post_meta( $coupon_id, 'discount_type', 'percent' );
+		update_post_meta( $coupon_id, 'coupon_amount', '20' ); // 20% discount
+		update_post_meta( $coupon_id, 'free_shipping', 'no' );
+		update_post_meta( $coupon_id, 'usage_limit', '' );
+		update_post_meta( $coupon_id, 'limit_usage_to_x_items', '' );
+		update_post_meta( $coupon_id, 'maximum_amount', '' );
+		update_post_meta( $coupon_id, 'email_restrictions', array() );
+		// Set product restrictions.
+		update_post_meta( $coupon_id, 'product_ids', array( $included_product1, $included_product2 ) );
+		update_post_meta( $coupon_id, 'exclude_product_ids', array( $excluded_product ) );
+
+		$query_args = [
+			'post_type'      => 'shop_coupon',
+			'post_status'    => 'publish',
+			'posts_per_page' => -1,
+		];
+
+		$result = \WooCommerce\Facebook\Feed\FeedUploadUtils::get_coupons_data( $query_args );
+		$this->assertCount( 1, $result, 'Should have returned one coupon in the feed data.' );
+		$coupon_data = $result[0];
+
+		// Build the expected coupon shape.
+		$expected_coupon = [
+			'offer_id'                              => $coupon_id,                          // coupon ID as an integer
+			'title'                                 => 'coupon-incl-excl',                  // lowercased coupon post title
+			'value_type'                            => 'PERCENTAGE',
+			'percent_off'                           => '20',                                // as a string
+			'fixed_amount_off'                      => '',                                  // empty string output
+			'application_type'                      => 'BUYER_APPLIED',
+			'target_type'                           => 'LINE_ITEM',
+			'target_granularity'                    => 'ITEM_LEVEL',
+			'target_selection'                      => 'SPECIFIC_PRODUCTS',
+			'start_date_time'                       => $coupon_data['start_date_time'],     // use the generated start date/time
+			'end_date_time'                         => '',
+			'coupon_codes'                          => ['coupon-incl-excl'],                // coupon_codes as an array containing the title
+			'public_coupon_code'                    => '',
+			// Here we expect a non-empty target filter due to product and category restrictions.
+			'target_filter'                         => '{"and":[{"or":[{"retailer_id":{"eq":"product-sku-1_'.$product1->get_id().'"}},{"retailer_id":{"eq":"product-sku-2_'.$product2->get_id().'"}}]},{"and":[{"retailer_id":{"neq":"product-sku-3_'.$product3->get_id().'"}}]}]}',
+			'target_product_retailer_ids'           => '',
+			'target_product_group_retailer_ids'     => '',
+			'target_product_set_retailer_ids'       => '',
+			'redeem_limit_per_user'                 => 0,
+			'min_subtotal'                          => '',
+			'min_quantity'                          => '',
+			'offer_terms'                           => '',
+			'redemption_limit_per_seller'           => 0,
+			'target_quantity'                       => '',
+			'prerequisite_filter'                   => '',
+			'prerequisite_product_retailer_ids'     => '',
+			'prerequisite_product_group_retailer_ids' => '',
+			'prerequisite_product_set_retailer_ids'   => '',
+			'exclude_sale_priced_products'          => false,
+			'target_shipping_option_types'          => '',
+		];
+
+		$this->assertEquals( $expected_coupon, $coupon_data, 'Coupon feed data with included/excluded restrictions does not match expected data structure.' );
+	}
+
+	public function test_get_coupons_data_invalid_coupon() {
+		// Create a coupon that fails validity for multiple reasons:
+		// - No coupon code (empty post_title)
+		// - Both free_shipping enabled and a discount amount provided
+		// - Has email restrictions
+		// - Has both included and excluded product brand restrictions.
+		$coupon_id = self::factory()->post->create([
+			'post_type'   => 'shop_coupon',
+			'post_status' => 'publish',
+			'post_title'  => '',  // No code provided
+		]);
+		update_post_meta( $coupon_id, 'discount_type', 'percent' );
+		update_post_meta( $coupon_id, 'coupon_amount', '10' );
+		update_post_meta( $coupon_id, 'free_shipping', 'yes' );  // Conflicting: free shipping + amount
+		update_post_meta( $coupon_id, 'email_restrictions', array( 'test@example.com' ) );
+		update_post_meta( $coupon_id, 'product_brands', array( 'brand1' ) );
+		update_post_meta( $coupon_id, 'exclude_product_brands', array( 'brand2' ) );
+
+		$query_args = [
+			'post_type'      => 'shop_coupon',
+			'post_status'    => 'publish',
+			'posts_per_page' => -1,
+		];
+
+		$result = \WooCommerce\Facebook\Feed\FeedUploadUtils::get_coupons_data( $query_args );
+
+		// Expect that the coupon is filtered out as invalid and thus not included in the feed.
+		$this->assertEmpty( $result, 'Expected no coupon to be returned for an invalid coupon configuration.' );
 	}
 }
