@@ -71,6 +71,10 @@ class BatchLogHandler extends LogHandlerBase {
 			);
 
 			$failed_logs = array_merge( ...$chunked_failed_logs );
+			// Only keep the latest 100 failed logs, in case too much memory got eaten up on the host
+			if ( count( $failed_logs ) > 100 ) {
+				$failed_logs = array_slice( $failed_logs, -100 );
+			}
 
 			if ( ! empty( $failed_logs ) ) {
 				set_transient( 'global_telemetry_message_queue', $failed_logs, HOUR_IN_SECONDS );
