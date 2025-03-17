@@ -559,4 +559,126 @@ class FeedUploadUtilsTest extends WP_UnitTestCase {
 		// Expect that the coupon is filtered out as invalid and thus not included in the feed.
 		$this->assertEmpty( $result, 'Expected no coupon to be returned for an invalid coupon configuration.' );
 	}
+
+	public function test_get_coupons_data_invalid_coupon_missing_code() {
+		// Create a coupon with an empty code.
+		$coupon_id = self::factory()->post->create([
+			'post_type'   => 'shop_coupon',
+			'post_status' => 'publish',
+			'post_title'  => '', // Missing code
+		]);
+		update_post_meta($coupon_id, 'discount_type', 'percent');
+		update_post_meta($coupon_id, 'coupon_amount', '10');
+		$query_args = [
+			'post_type'      => 'shop_coupon',
+			'post_status'    => 'publish',
+			'posts_per_page' => -1,
+		];
+		$result = \WooCommerce\Facebook\Feed\FeedUploadUtils::get_coupons_data($query_args);
+		$this->assertEmpty($result, 'Expected coupon to be invalid if coupon code is missing.');
+	}
+
+	public function test_get_coupons_data_invalid_coupon_maximum_spend_set() {
+		// Create a coupon with a valid code but a maximum spend set.
+		$coupon_id = self::factory()->post->create([
+			'post_type'   => 'shop_coupon',
+			'post_status' => 'publish',
+			'post_title'  => 'VALIDCODE',
+		]);
+		update_post_meta($coupon_id, 'discount_type', 'percent');
+		update_post_meta($coupon_id, 'coupon_amount', '10');
+		// Set maximum spend (should be zero to be valid).
+		update_post_meta($coupon_id, 'maximum_amount', '50');
+		$query_args = [
+			'post_type'      => 'shop_coupon',
+			'post_status'    => 'publish',
+			'posts_per_page' => -1,
+		];
+		$result = \WooCommerce\Facebook\Feed\FeedUploadUtils::get_coupons_data($query_args);
+		$this->assertEmpty($result, 'Expected coupon to be invalid if maximum spend is set.');
+	}
+
+	public function test_get_coupons_data_invalid_coupon_allowed_emails_set() {
+		// Create a coupon with allowed emails specified.
+		$coupon_id = self::factory()->post->create([
+			'post_type'   => 'shop_coupon',
+			'post_status' => 'publish',
+			'post_title'  => 'VALIDCODE',
+		]);
+		update_post_meta($coupon_id, 'discount_type', 'percent');
+		update_post_meta($coupon_id, 'coupon_amount', '10');
+		// Set allowed emails (should be empty to be valid).
+		$coupon = new WC_Coupon( $coupon_id );
+		$coupon->set_email_restrictions(['test@example.com']);
+		$coupon->save();
+
+		$query_args = [
+			'post_type'      => 'shop_coupon',
+			'post_status'    => 'publish',
+			'posts_per_page' => -1,
+		];
+
+		$result = \WooCommerce\Facebook\Feed\FeedUploadUtils::get_coupons_data($query_args);
+		$this->assertEmpty($result, 'Expected coupon to be invalid if allowed emails are set.');
+	}
+
+	public function test_get_coupons_data_invalid_coupon_limit_usage_set() {
+		// Create a coupon with a limit_usage_to_x_items value set.
+		$coupon_id = self::factory()->post->create([
+			'post_type'   => 'shop_coupon',
+			'post_status' => 'publish',
+			'post_title'  => 'VALIDCODE',
+		]);
+		update_post_meta($coupon_id, 'discount_type', 'percent');
+		update_post_meta($coupon_id, 'coupon_amount', '10');
+		// Set limit_usage_to_x_items to a positive value.
+		update_post_meta($coupon_id, 'limit_usage_to_x_items', '5');
+		$query_args = [
+			'post_type'      => 'shop_coupon',
+			'post_status'    => 'publish',
+			'posts_per_page' => -1,
+		];
+		$result = \WooCommerce\Facebook\Feed\FeedUploadUtils::get_coupons_data($query_args);
+		$this->assertEmpty($result, 'Expected coupon to be invalid if limit_usage_to_x_items is set.');
+	}
+
+	public function test_get_coupons_data_invalid_coupon_brand_targeting() {
+		// Create a coupon that uses product brand targeting.
+		$coupon_id = self::factory()->post->create([
+			'post_type'   => 'shop_coupon',
+			'post_status' => 'publish',
+			'post_title'  => 'VALIDCODE',
+		]);
+		update_post_meta($coupon_id, 'discount_type', 'percent');
+		update_post_meta($coupon_id, 'coupon_amount', '10');
+		// Set product_brands meta so that it is non-empty.
+		update_post_meta($coupon_id, 'product_brands', ['brand1']);
+		$query_args = [
+			'post_type'      => 'shop_coupon',
+			'post_status'    => 'publish',
+			'posts_per_page' => -1,
+		];
+		$result = \WooCommerce\Facebook\Feed\FeedUploadUtils::get_coupons_data($query_args);
+		$this->assertEmpty($result, 'Expected coupon to be invalid if product_brands targeting is used.');
+	}
+
+	public function test_get_coupons_data_invalid_coupon_excluded_brand_targeting() {
+		// Create a coupon that uses excluded product brand targeting.
+		$coupon_id = self::factory()->post->create([
+			'post_type'   => 'shop_coupon',
+			'post_status' => 'publish',
+			'post_title'  => 'VALIDCODE',
+		]);
+		update_post_meta($coupon_id, 'discount_type', 'percent');
+		update_post_meta($coupon_id, 'coupon_amount', '10');
+		// Set exclude_product_brands meta so that it is non-empty.
+		update_post_meta($coupon_id, 'exclude_product_brands', ['brand2']);
+		$query_args = [
+			'post_type'      => 'shop_coupon',
+			'post_status'    => 'publish',
+			'posts_per_page' => -1,
+		];
+		$result = \WooCommerce\Facebook\Feed\FeedUploadUtils::get_coupons_data($query_args);
+		$this->assertEmpty($result, 'Expected coupon to be invalid if excluded product_brands targeting is used.');
+	}
 }
