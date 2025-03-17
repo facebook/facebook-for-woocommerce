@@ -13,6 +13,7 @@ namespace WooCommerce\Facebook\AdvertiseASC;
 
 defined('ABSPATH') || exit;
 
+use WooCommerce\Facebook\API;
 use WooCommerce\Facebook\Framework\Api\Exception as ApiException;
 use WooCommerce\Facebook\Framework\Api\Exception as PluginException;
 use WooCommerce\Facebook\AdvertiseASC\InvalidPaymentInformationException;
@@ -852,15 +853,9 @@ abstract class CampaignHandler {
      */
     private function get_instagram_accounts($page_id, $page_access_token) {
 
-        $current_access_token = $this->api->get_access_token();
-
-        try {
-            $this->api->set_access_token($page_access_token);
-            $result = $this->api->get_with_generic_request($page_id, 'instagram_accounts');
-            return $result->response_data['instagram_accounts'];
-        } finally {
-            $this->api->set_access_token($current_access_token);
-        }
+        $page_api = new API($page_access_token);
+        $result = $page_api->get_with_generic_request($page_id, 'instagram_accounts');
+        return $result->response_data['instagram_accounts'];
     }
 
     /**
