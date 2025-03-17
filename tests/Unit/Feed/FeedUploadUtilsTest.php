@@ -260,4 +260,78 @@ class FeedUploadUtilsTest extends WP_UnitTestCase {
 		$result = \WooCommerce\Facebook\Feed\FeedUploadUtils::get_ratings_and_reviews_data( [] );
 		$this->assertEmpty( $result, 'Expected no review for comment with invalid product.' );
 	}
+
+	public function test_get_coupons_data_valid_coupon_with_target_product() {
+		// Create a target product.
+		$product_id = self::factory()->post->create([
+			'post_type'   => 'product',
+			'post_status' => 'publish',
+			'post_title'  => 'Target Product',
+		]);
+		update_post_meta( $product_id, '_sku', 'product-sku-1' );
+
+		// Create a coupon with a valid coupon code.
+		$coupon_id = self::factory()->post->create([
+			'post_type'   => 'shop_coupon',
+			'post_status' => 'publish',
+			'post_title'  => 'COUPON-CODE-1',
+		]);
+		// Set coupon meta so that it is valid and a percentage discount.
+		update_post_meta( $coupon_id, 'discount_type', 'percent' );
+		update_post_meta( $coupon_id, 'coupon_amount', '15' ); // 15% discount
+		update_post_meta( $coupon_id, 'free_shipping', 'no' );
+		update_post_meta( $coupon_id, 'usage_limit', '' );
+		update_post_meta( $coupon_id, 'limit_usage_to_x_items', '' );
+		update_post_meta( $coupon_id, 'maximum_amount', '' );
+		update_post_meta( $coupon_id, 'email_restrictions', array() );
+		update_post_meta( $coupon_id, 'product_ids', array( $product_id ) );
+
+		$query_args = [
+			'post_type'      => 'shop_coupon',
+			'post_status'    => 'publish',
+			'posts_per_page' => -1, // retrieve all items
+		];
+
+		$result = \WooCommerce\Facebook\Feed\FeedUploadUtils::get_coupons_data( $query_args );
+
+		// Verify that one coupon is returned.
+		$this->assertCount( 1, $result, 'Should have returned one coupon in the feed data.' );
+		$coupon_data = $result[0];
+
+		// Build the expected coupon shape according to how FeedUploadUtils outputs the data.
+		$expected_coupon = [
+			'offer_id'                              => $coupon_id,              // coupon ID as an integer
+			'title'                                 => 'coupon-code-1',         // lowercased coupon post title
+			'value_type'                            => 'PERCENTAGE',
+			'percent_off'                           => '15',                    // as a string
+			'fixed_amount_off'                      => '',                      // empty string output
+			'application_type'                      => 'BUYER_APPLIED',
+			'target_type'                           => 'LINE_ITEM',
+			'target_granularity'                    => 'ITEM_LEVEL',
+			'target_selection'                      => 'SPECIFIC_PRODUCTS',
+			'start_date_time'                       => $coupon_data['start_date_time'], // use the output from the coupon post date/time
+			'end_date_time'                         => '',
+			'coupon_codes'                          => ['coupon-code-1'],
+			'public_coupon_code'                    => '',
+			'target_filter'                         => '',
+			'target_product_retailer_ids'           => '',
+			'target_product_group_retailer_ids'     => '',
+			'target_product_set_retailer_ids'       => '',
+			'redeem_limit_per_user'                 => 0,
+			'min_subtotal'                          => '',
+			'min_quantity'                          => '',
+			'offer_terms'                           => '',
+			'redemption_limit_per_seller'           => 0,
+			'target_quantity'                       => '',
+			'prerequisite_filter'                   => '',
+			'prerequisite_product_retailer_ids'     => '',
+			'prerequisite_product_group_retailer_ids' => '',
+			'prerequisite_product_set_retailer_ids'   => '',
+			'exclude_sale_priced_products'          => false,
+			'target_shipping_option_types'          => '',
+		];
+
+		// Assert that the coupon data exactly matches the expected shape.
+		$this->assertEquals( $expected_coupon, $coupon_data, 'Coupon feed data does not match expected data structure.' );
+	}
 }

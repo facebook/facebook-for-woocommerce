@@ -82,14 +82,14 @@ class FeedUploadUtils {
 
 			// Loop through each coupon post and map the necessary fields.
 			foreach ( $coupon_posts as $coupon_post ) {
-				if ( ! self::is_valid_coupon( $coupon_post ) ) {
+				// Create a coupon object using the coupon code.
+				$coupon = new WC_Coupon( $coupon_post->post_title );
+
+				if ( ! self::is_valid_coupon( $coupon ) ) {
 					continue;
 				}
 
 				try {
-					// Create a coupon object using the coupon code.
-					$coupon = new WC_Coupon( $coupon_post->post_title );
-
 					// Map discount type and amount
 					$woo_discount_type = $coupon->get_discount_type();
 					$percent_off       = '';
@@ -215,15 +215,44 @@ class FeedUploadUtils {
 		}
 	}
 
-	private static function is_valid_coupon( $coupon_post ): bool {
+	private static function is_valid_coupon( WC_Coupon $coupon ): bool {
 		/**
-		 * Need to return false when:
+		 * Fields not supported by Meta:
 		 * - coupon gives both a discount and free shipping
 		 * - Maximum Spend is set
 		 * - Allowed Emails are set
 		 * - limit_usage_to_x_items is set
-		 * - allowed and excluded brands are set?
+		 * - missing coupon code
+		 * - coupon uses brand targeting
 		 */
+		if ( '' === $coupon->get_code() ) {
+			return false;
+		}
+		if ( $coupon->get_free_shipping() && $coupon->get_amount() > 0 ) {
+			return false;
+		}
+		if ( $coupon->get_maximum_amount() > 0 ) {
+			return false;
+		}
+		if ( count( $coupon->get_email_restrictions() ) > 0 ) {
+			return false;
+		}
+		if ( ( $coupon->get_limit_usage_to_x_items() ?? 0 ) > 0 ) {
+			return false;
+		}
+
+		$brands       = $coupon->get_meta( 'product_brands' );
+		$brands_count = is_countable( $brands ) ? count( $brands ) : ( ! empty( $brands ) ? 1 : 0 );
+		if ( $brands_count > 0 ) {
+			return false;
+		}
+
+		$exclude_brands       = $coupon->get_meta( 'exclude_product_brands' );
+		$exclude_brands_count = is_countable( $exclude_brands ) ? count( $exclude_brands ) : ( ! empty( $exclude_brands ) ? 1 : 0 );
+		if ( $exclude_brands_count > 0 ) {
+			return false;
+		}
+
 		return true;
 	}
 
@@ -245,8 +274,8 @@ class FeedUploadUtils {
 		}
 		if ( ! empty( $excluded_products ) ) {
 			// "is not product x and is not product y"
-			$included       = self::build_retailer_id_filter( $included_products, 'neq' );
-			$filter_parts[] = [ 'and' => $included ];
+			$excluded       = self::build_retailer_id_filter( $excluded_products, 'neq' );
+			$filter_parts[] = [ 'and' => $excluded ];
 		}
 
 		// Combine the filter parts:
@@ -288,6 +317,10 @@ class FeedUploadUtils {
 				)
 			);
 		}
+
+		// TODO when confident in category syncing, we can use target_product_set_retailer_ids instead of
+		// extracting products from the categories to use in the target filter. This current logic
+		// may result in the target filter field being too large for Meta to ingest.
 		if ( ! empty( $product_category_ids ) ) {
 			$products_from_categories = wc_get_products(
 				array(
