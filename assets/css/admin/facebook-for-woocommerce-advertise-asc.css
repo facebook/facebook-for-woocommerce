@@ -162,7 +162,7 @@
   border-radius: 5px;
   background-color: #fff;
   color: #1C2B33;
-  font-family: Optimistic Display, system-ui, sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
 }
 
 .fb-asc-ads .main-ui-container-item {
