@@ -14,11 +14,11 @@ namespace WooCommerce\Facebook\Handlers;
 defined( 'ABSPATH' ) or exit;
 
 /**
- * The WebHook handler.
+ * The Whatsapp WebHook handler from Meta Hosted Connectbridge.
  *
  * @since 2.3.0
  */
-class WebHook {
+class Whatsapp_Webhook {
 
 	/** @var string auth page ID */
 	const WEBHOOK_PAGE_ID = 'wc-facebook-webhook';
@@ -31,7 +31,7 @@ class WebHook {
 	 * @since 2.3.0
 	 */
 	public function __construct( \WC_Facebookcommerce $plugin ) {
-		add_action( 'rest_api_init', array( $this, 'init_webhook_endpoint' ) );
+		add_action( 'rest_api_init', array( $this, 'init_whatsapp_webhook_endpoint' ) );
 	}
 
 
@@ -40,15 +40,14 @@ class WebHook {
 	 *
 	 * @since 2.3.0
 	 */
-	public function init_webhook_endpoint() {
+	public function init_whatsapp_webhook_endpoint() {
 		register_rest_route(
 			'wc-facebook/v1',
-			'webhook',
+			'whatsapp_webhook',
 			array(
 				array(
 					'methods'             => array( 'GET', 'POST' ),
 					'callback'            => array( $this, 'webhook_callback' ),
-					'permission_callback' => '__return_true',
 				),
 			)
 		);
@@ -82,7 +81,8 @@ class WebHook {
 		if ( empty( $request_body ) ) {
 			return new \WP_REST_Response( null, 204 );
 		}
-		do_action( 'fbe_webhook', $request_body );
+    error_log("in here");
+		// add do_action to perform when webhook received
 		return new \WP_REST_Response( null, 200 );
 	}
 }

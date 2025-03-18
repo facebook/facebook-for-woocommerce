@@ -342,6 +342,7 @@ if ( ! class_exists( 'WC_Facebookcommerce_Utils' ) ) :
 		 */
 		public static function get_user_info( $aam_settings ) {
 			$current_user = wp_get_current_user();
+			error_log( 'current user id: ' . $current_user->ID );
 			if ( 0 === $current_user->ID || $aam_settings == null || ! $aam_settings->get_enable_automatic_matching() ) {
 				// User not logged in or pixel not configured with automatic advance matching
 				return [];
