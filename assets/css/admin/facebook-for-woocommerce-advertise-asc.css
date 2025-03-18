@@ -162,7 +162,7 @@
   border-radius: 5px;
   background-color: #fff;
   color: #1C2B33;
-  font-family: "Gill Sans", "Gill Sans MT", Calibri, "Trebuchet MS", sans-serif;
+  font-family: Optimistic Display, system-ui, sans-serif;
 }
 
 .fb-asc-ads .main-ui-container-item {
@@ -184,7 +184,7 @@
 }
 
 .fb-asc-ads .main-ui-container-item-content-title {
-	font-size: 16px;
+	font-size: 14px;
 	margin: 2px 0 0;
 	padding: 0;
 }
@@ -193,7 +193,7 @@
   flex-basis: 85%;
   margin: 0;
   padding: 0;
-  font-size: 14px;
+  font-size: 12px;
   color: #1C2B3360;
 }
 
@@ -203,7 +203,7 @@
 
 .fb-asc-ads #new-buyers-create-campaign-btn,
 .fb-asc-ads #retargeting-create-campaign-btn {
-  font-size: 18px;
+  font-size: 16px;
   line-height: 1;
   color: #1C2B33;
   background: transparent;
@@ -260,14 +260,14 @@
 
 .fb-asc-ads .main-ui-header {
   font-weight: 600;
-  font-size: 18px;
+  font-size: 16px;
   margin: 0 0 2px;
   padding: 0;
 }
 
 .fb-asc-ads .main-ui-subheader {
   width: 85%;
-  font-size: 16px;
+  font-size: 14px;
   margin: 0 0 26px;
   padding: 0;
 }
