@@ -1,44 +1,40 @@
-### Changes proposed in this Pull Request:
+## Description
 
-<!-- You can erase any parts of this template not applicable to your Pull Request. -->
+Please include a summary of the changes and the related issue. 
+Please also include relevant motivation and context. 
+List any dependencies that are required for this change.
 
-Closes # .
+### Type of change
 
-_Replace this with a good description of your changes & reasoning._
+Please delete options that are not relevant.
 
-- [ ] Do the changed files pass `phpcs` checks? Please remove `phpcs:ignore` comments in changed files and fix any issues, or delete if not practical.
-
-### Screenshots:
-
-<!--- Optional --->
-
-
-### Detailed test instructions:
-<!-- Add detailed instructions for how to test that this PR fixes the issue and confirm that it doesn't break any other features :) -->
-
-1. 
-2. 
-3. 
+- [ ] Bug fix (non-breaking change which fixes an issue)
+- [ ] New feature (non-breaking change which adds functionality)
+- [ ] Breaking change (fix or feature that would cause existing functionality to not work as expected)
 
 
-### Additional details:
+## Screenshots
+Please provide screenshots or snapshots of the system/state both before and after implementing the changes, if appropriate
+### Before
 
-<!--
-Optional.
-Enter a summary of all changes in this Pull Request, which will be added to the changelog if accepted.
-Each line should start with change type prefix`(Fix|Add|…) - `, for example:
-> Break - A change breaking previous API or functionality.
-> Add - A new feature, function or functionality was added.
-> Update - Big changes to something that wasn't broken.
-> Fix - Took care of something that wasn't working.
-> Tweak - Small change, that isn't actually very important.
-> Dev - Developer-facing only change.
-> Doc - Updated customer or developer facing documentation
+### After
 
-If you remove the "Changelog entry" header, the Pull Request title will be used as the changelog entry.
 
-Add the `changelog: none` label if no changelog entry is needed.
--->
-### Changelog entry
+## Test instructions
 
->
+Please describe the tests that you ran to verify your changes. 
+Provide instructions so we can reproduce. 
+Please also list any relevant details for your test configuration.
+
+
+## Checklist
+
+- [ ] I followed general Pull Request best practices. Meta employees to follow this [wiki]([url](https://fburl.com/wiki/2cgfduwc))
+- [ ] I have commented my code, particularly in hard-to-understand areas
+- [ ] I have added tests and all the new and existing unit tests pass locally with my changes
+- [ ] I have completed dogfooding and QA testing, or I have conducted thorough due diligence to ensure that it does not break existing functionality.
+
+
+## Changelog entry
+
+One liner entry to be surfaced in changelog.txt
