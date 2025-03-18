@@ -178,7 +178,7 @@
 }
 
 .fb-asc-ads .main-ui-container-item-content-icon {
-	display: inline-block;
+	display: flex;
 	width: 16px;
 	margin-right: 10px;
 }
@@ -198,7 +198,7 @@
 }
 
 .fb-asc-ads .main-ui-container-item-cta {
-  margin: 34px 0 0;
+  margin: 26px 0 0;
 }
 
 .fb-asc-ads #new-buyers-create-campaign-btn,
