@@ -451,7 +451,7 @@ class Advertise extends Abstract_Settings_Screen {
 
 									',
 										'title' => 'Reach new customers',
-										'description' => 'Lorem ipsum dolor sit amet, consectetur adipiscing elit.'
+										'description' => 'Find who you want to connect with during your campaign.'
 									],
 								  );
 
@@ -478,11 +478,11 @@ class Advertise extends Abstract_Settings_Screen {
 
 									',
 										'title' => 'Access catalogue creative options',
-										'description' => 'Lorem ipsum dolor sit amet, consectetur adipiscing elit.'
+										'description' => "Automatically show people the formats and creative they're most likely to respond to."
 									],
 								);
 
-								$this->render_dashboard(self::ASC_CAMPAIGN_TYPE_RETARGETING, "Engage Your Website Visitors", "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.", $retargeting_content); ?>
+								$this->render_dashboard(self::ASC_CAMPAIGN_TYPE_RETARGETING, "Engage Your Website Visitors", "Bring back visitors who visited your website and didn't complete their purchase using Advantage+ Catalog (DPA).", $retargeting_content); ?>
 							</td>
 						</tr>
 					</table>
