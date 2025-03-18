@@ -132,12 +132,10 @@ abstract class CampaignHandler {
 
                     $instagram_accounts = $this->get_instagram_accounts($page_id, $access_token);
 
-                    if (!$instagram_accounts['data']) {
-
+                    if (empty($instagram_accounts['data'])) {
                         $instagram_accounts = $this->get_page_backed_instagram_accounts($page_id, $access_token);
 
-                        if (!$instagram_accounts['data']) {
-
+                        if (empty($instagram_accounts['data'])) {
                             throw new InstagramUserIdNotFoundException();
                         }
                     }
@@ -855,7 +853,12 @@ abstract class CampaignHandler {
 
         $page_api = new API($page_access_token);
         $result = $page_api->get_with_generic_request($page_id, 'instagram_accounts');
-        return $result->response_data['instagram_accounts'];
+
+        if (isset($result->response_data['instagram_accounts'])) {
+            return $result->response_data['instagram_accounts'];
+        }
+
+        return [];
     }
 
     /**
@@ -870,7 +873,12 @@ abstract class CampaignHandler {
 
         $page_api = new API($page_access_token);
         $result = $page_api->get_with_generic_request($page_id, 'page_backed_instagram_accounts');
-        return $result->response_data['page_backed_instagram_accounts'];
+
+        if (isset($result->response_data['page_backed_instagram_accounts'])) {
+            return $result->response_data['page_backed_instagram_accounts'];
+        }
+
+        return [];
     }
 
     /**
