@@ -106,7 +106,7 @@ abstract class CampaignHandler {
         if ( ! $this->is_running() ) {
 
             $min = $this->get_allowed_min_daily_budget();
-            
+
             return strval($min * 1.2);
         }
 
@@ -121,7 +121,7 @@ abstract class CampaignHandler {
      * @return string
      * @throws PluginException
      */
-    public function get_instagram_user_id($page_id) {   
+    public function get_instagram_user_id($page_id) {
         try {
             $accounts_data = $this->get_current_user_associated_accounts();
 
@@ -176,7 +176,7 @@ abstract class CampaignHandler {
     }
 
     /**
-     * Generates an ad preview with a message in a specified format. 
+     * Generates an ad preview with a message in a specified format.
      *
      * @since x.x.x
      * @param string @message The message to be shown on the ad.
@@ -427,7 +427,7 @@ abstract class CampaignHandler {
             if ( ! $this->adcreative['status']) {
                 $this->load($info['campaign_id'], $info['adset_id'], $info['ad_id'], $info['adcreative_id']);
             }
-            
+
             if (
                 $this->adcreative['status'] == self::STATUS_ARCHIVED ||
                 $this->campaign['status']   == self::STATUS_ARCHIVED ||
