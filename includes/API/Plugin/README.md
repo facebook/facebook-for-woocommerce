@@ -16,10 +16,10 @@ The REST API is built on these key components:
 ### 1. Create Request Class
 
 ```php
-namespace WooCommerce\Facebook\API\REST\YourFeature\YourAction;
+namespace WooCommerce\Facebook\API\Plugin\YourFeature\YourAction;
 
-use WooCommerce\Facebook\API\REST\Request as RESTRequest;
-use WooCommerce\Facebook\API\REST\Traits\JS_Exposable;
+use WooCommerce\Facebook\API\Plugin\Request as RESTRequest;
+use WooCommerce\Facebook\API\Plugin\Traits\JS_Exposable;
 
 class Request extends RESTRequest {
     use JS_Exposable;
@@ -88,10 +88,10 @@ class Request extends RESTRequest {
 ### 2. Create Handler Class
 
 ```php
-namespace WooCommerce\Facebook\API\REST\YourFeature;
+namespace WooCommerce\Facebook\API\Plugin\YourFeature;
 
-use WooCommerce\Facebook\API\REST\AbstractRESTEndpoint;
-use WooCommerce\Facebook\API\REST\YourFeature\YourAction\Request as YourActionRequest;
+use WooCommerce\Facebook\API\Plugin\AbstractRESTEndpoint;
+use WooCommerce\Facebook\API\Plugin\YourFeature\YourAction\Request as YourActionRequest;
 
 class Handler extends AbstractRESTEndpoint {
     /**
@@ -165,9 +165,9 @@ class Controller {
 
     /** @var array JS-enabled request classes */
     const JS_ENABLED_REQUESTS = [
-        'WooCommerce\Facebook\API\REST\Settings\Update\Request',
-        'WooCommerce\Facebook\API\REST\Settings\Uninstall\Request',
-        'WooCommerce\Facebook\API\REST\YourFeature\YourAction\Request', // Add your request here
+        'WooCommerce\Facebook\API\Plugin\Settings\Update\Request',
+        'WooCommerce\Facebook\API\Plugin\Settings\Uninstall\Request',
+        'WooCommerce\Facebook\API\Plugin\YourFeature\YourAction\Request', // Add your request here
     ];
     
     // Rest of the class...

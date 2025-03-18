@@ -8,7 +8,7 @@
  * @package FacebookCommerce
  */
 
-namespace WooCommerce\Facebook\API\REST;
+namespace WooCommerce\Facebook\API\Plugin;
 
 defined( 'ABSPATH' ) || exit;
 
@@ -32,8 +32,8 @@ class Controller {
 
 	/** @var array JS-enabled request classes */
 	const JS_ENABLED_REQUESTS = [
-		'WooCommerce\Facebook\API\REST\Settings\Update\Request',
-		'WooCommerce\Facebook\API\REST\Settings\Uninstall\Request',
+		'WooCommerce\Facebook\API\Plugin\Settings\Update\Request',
+		'WooCommerce\Facebook\API\Plugin\Settings\Uninstall\Request',
 		// Add other JS-enabled request classes here
 	];
 

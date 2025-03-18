@@ -8,11 +8,11 @@
  * @package FacebookCommerce
  */
 
-namespace WooCommerce\Facebook\API\REST\Settings;
+namespace WooCommerce\Facebook\API\Plugin\Settings;
 
-use WooCommerce\Facebook\API\REST\AbstractRESTEndpoint;
-use WooCommerce\Facebook\API\REST\Settings\Update\Request as UpdateRequest;
-use WooCommerce\Facebook\API\REST\Settings\Uninstall\Request as UninstallRequest;
+use WooCommerce\Facebook\API\Plugin\AbstractRESTEndpoint;
+use WooCommerce\Facebook\API\Plugin\Settings\Update\Request as UpdateRequest;
+use WooCommerce\Facebook\API\Plugin\Settings\Uninstall\Request as UninstallRequest;
 
 defined( 'ABSPATH' ) || exit;
 

@@ -5,7 +5,7 @@
  * @package FacebookCommerce
  */
 
-namespace WooCommerce\Facebook\API\REST;
+namespace WooCommerce\Facebook\API\Plugin;
 
 defined( 'ABSPATH' ) || exit;
 
@@ -34,7 +34,7 @@ class InitializeRestAPI {
 	 * @since 3.5.0
 	 */
 	private function init_rest_api_framework() {
-		new \WooCommerce\Facebook\API\REST\Controller();
+		new \WooCommerce\Facebook\API\Plugin\Controller();
 	}
 
 	/**

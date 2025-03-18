@@ -8,10 +8,10 @@
  * @package FacebookCommerce
  */
 
-namespace WooCommerce\Facebook\API\REST\Settings\Update;
+namespace WooCommerce\Facebook\API\Plugin\Settings\Update;
 
-use WooCommerce\Facebook\API\REST\Request as RESTRequest;
-use WooCommerce\Facebook\API\REST\Traits\JS_Exposable;
+use WooCommerce\Facebook\API\Plugin\Request as RESTRequest;
+use WooCommerce\Facebook\API\Plugin\Traits\JS_Exposable;
 
 defined( 'ABSPATH' ) || exit;
 

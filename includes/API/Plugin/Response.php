@@ -8,7 +8,7 @@
  * @package FacebookCommerce
  */
 
-namespace WooCommerce\Facebook\API\REST;
+namespace WooCommerce\Facebook\API\Plugin;
 
 defined( 'ABSPATH' ) || exit;
 
