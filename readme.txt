@@ -3,7 +3,7 @@ Contributors: facebook, automattic, woothemes
 Tags: facebook, woocommerce, marketing, product catalog feed, pixel
 Requires at least: 5.6
 Tested up to: 6.7
-Stable tag: 3.3.5
+Stable tag: 3.4.2
 Requires PHP: 7.4
 MySQL: 5.6 or greater
 License: GPLv2 or later
@@ -39,109 +39,7 @@ When opening a bug on GitHub, please give us as many details as possible.
 * Current version of Facebook-for-WooCommerce, WooCommerce, Wordpress, PHP
 
 == Changelog ==
-= 3.3.5 - 2025-02-12 = 
-* Add - Rich Text Description to Woo Product Sync with Meta by devbodaghe in #2843
 
-= 3.3.4 - 2025-02-11 =
-* Fix - Fixing the issue with version number
+= 3.4.X 2025-XX-XX =
 
-= 3.3.3 - 2025-02-06 = 
-* Fix - Use of recommended delete connection endpoint over delete permission endpoint by atuld123 in #2844
-* Add - Expose Brand & MPN to Woocommerce UI by @devbodaghe in #2842
-= 3.3.4 - 2025-02-11 =
-* Fix - Fixing the issue with version number
-
-= 3.3.3 - 2025-02-06 = 
-* Fix - Use of recommended delete connection endpoint over delete permission endpoint by atuld123 in #2844
-* Add - Expose Brand & MPN to Woocommerce UI by @devbodaghe in #2842
-
-= 3.3.2 - 2025-01-21 =
-* Fix - a bug that arose from reliance on the plugin version compatibility tag by @vinkmeta in #2856
-* Fix - Update catalog link in connections tab to point to Catalog by @devbodaghe in #2848
-* Fix - Product URL links now point to items tab by @vinkmeta in #2852
-* Tweak - Removed sell on Instagram by @mshymon in #2854
-* Tweak - Add custom fields to product data structure by @devbodaghe in #2836
-* Fix - Multiple issues with Fixed FB Attribute Syncing by @vinkmeta in #2860
-
-= 3.3.1 - 2024-12-06 = 
-* Fix - Sale price effective date by @vinkmeta in #2809
-* Fix - Sync stock quantity when available by @mshymon in #2811
-* Fix - Sync product GTIN when available by @mshymon in #2810
-
-= 3.3.0 - 2024-11-07 =
-* Add - Extension navigation tabs on Product Sets screens.
-* Tweak - Tooltips, config labels, documentation links.
-* Tweak - WC 9.4 compatibility.
-* Tweak - WP 6.7 compatibility.
-
-= 3.2.10 - 2024-09-30 =
-* Update -  Remove Marketing Products Sets menu entry.
-
-= 3.2.9 - 2024-09-12 =
-* Break - Removes WooCommerce navigation items.
-* Tweak - WC 9.3 compatibility.
-
-= 3.2.8 - 2024-09-03 =
-* Update - Access Token retrieval procedure.
-* Update - Use get_title() for content_name to match catalog name.
-
-= 3.2.7 - 2024-08-13 =
-* Dev - Updated `phpcs` ruleset.
-* Fix - Update failing due to undefined constant error in Lifecycle.
-* Tweak - WC 9.2 compatibility.
-
-= 3.2.6 - 2024-07-23 =
-* Add - Filter facebook_for_woocommerce_fb_product_description.
-* Fix - Remove deprecated FILTER_SANITIZE_STRING usage.
-* Tweak - Align PHP require version to composer.json.
-
-= 3.2.5 - 2024-07-10 =
-* Tweak - WC 9.1 compatibility.
-* Tweak - WP 6.6 compatibility.
-
-= 3.2.4 - 2024-06-13 =
-* Dev - Adds support for wp-env.
-* Tweak - Fully remove Facebook Messenger code references.
-* Tweak - WC 9.0 compatibility.
-
-= 3.2.3 - 2024-05-28 =
-* Add - Versioning and compatibility checks to implement support policy.
-* Fix - Errors and warnings while generating pot file.
-* Tweak - Bump Marketing API version to v20.0.
-* Tweak - Remove hidden files from build archive.
-
-= 3.2.2 - 2024-05-14 =
-* Fix - Incorrect alert for Product Sets without excluded categories.
-* Tweak - WC 8.9 compatibility.
-
-= 3.2.1 - 2024-05-07 =
-* Fix - Defer only AddToCart events if applicable.
-* Fix - Direct upgrade path from < 3.1.13 to ≥ 3.2.0.
-* Tweak - Adds WooCommerce as a dependency to the plugin header.
-* Tweak - Revert to WooCommerce.com domain.
-
-= 3.2.0 - 2024-05-01 =
-* Tweak - PHP8.3 to GitHub PHPCS and Unit Tests workflows.
-* Update - Remove the sunsetted Messenger Chat feature.
-
-= 3.1.15 - 2024-04-16 =
-* Tweak - Replace the middleware URL from connect.woocommerce.com to api.woocommerce.com/integrations.
-* Tweak - Test environment setup to resolve notice.
-
-= 3.1.14 - 2024-04-03 =
-* Fix - Remove facebook_messenger_deprecation_warning notice on deactivation.
-* Tweak - Insert pixel-event-placeholder element via vanilla JS.
-* Tweak - WC 8.8 compatibility.
-
-= 3.1.13 - 2024-03-27 =
-* Add - Messenger feature deprecation notices.
-
-= 3.1.12 - 2024-03-19 =
-* Tweak - Check if condition is set before setting a default value.
-* Tweak - Updates readme.txt to meet WordPress requirements.
-
-= 3.1.11 - 2024-03-12 =
-* Fix - Add video syncs to fbproduct.
-* Fix - Deprecation warnings with PHP 8.2.
-* Tweak - WC 8.7 compatibility.
-* Tweak - WP 6.5 compatibility.
+[See changelog for all versions](https://raw.githubusercontent.com/facebook/facebook-for-woocommerce/refs/heads/main/changelog.txt).

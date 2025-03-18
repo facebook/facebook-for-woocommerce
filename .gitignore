@@ -42,3 +42,6 @@ wp-config.php
 
 # IDE files
 .vscode/*
+
+# Code coverage report
+/reports

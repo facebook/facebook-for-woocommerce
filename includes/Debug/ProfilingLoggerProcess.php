@@ -1,5 +1,4 @@
 <?php
-// phpcs:ignoreFile
 
 namespace WooCommerce\Facebook\Debug;
 
@@ -51,5 +50,4 @@ class ProfilingLoggerProcess {
 	public function get_time_used() {
 		return $this->stop_time - $this->start_time;
 	}
-
 }

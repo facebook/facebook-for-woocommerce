@@ -1,5 +1,4 @@
 <?php
-// phpcs:ignoreFile
 /**
  * Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
  *
@@ -11,7 +10,7 @@
 
 namespace WooCommerce\Facebook;
 
-defined( 'ABSPATH' ) or exit;
+defined( 'ABSPATH' ) || exit;
 
 /**
  * Base handler for Commerce-specific functionality.
@@ -28,7 +27,7 @@ class Commerce {
 	/**
 	 * Gets the plugin-level fallback Google product category ID.
 	 *
-	 * This will be used when the category or product-level settings don’t override it.
+	 * This will be used when the category or product-level settings don't override it.
 	 *
 	 * @since 2.1.0
 	 *
@@ -61,5 +60,4 @@ class Commerce {
 
 		update_option( self::OPTION_GOOGLE_PRODUCT_CATEGORY_ID, is_string( $id ) ? $id : '' );
 	}
-
 }

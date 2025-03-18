@@ -1,6 +1,4 @@
 <?php
-// phpcs:ignoreFile
-
 namespace WooCommerce\Facebook\Debug;
 
 defined( 'ABSPATH' ) || exit;
@@ -101,5 +99,4 @@ class ProfilingLogger {
 	protected function log( $message ) {
 		wc_get_logger()->log( 'debug', $message, array( 'source' => 'facebook_for_woocommerce_profiling' ) );
 	}
-
 }
