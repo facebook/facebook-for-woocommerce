@@ -17,7 +17,7 @@ defined( 'ABSPATH' ) || exit;
  *
  * Provides common functionality for handling and validating REST API requests.
  *
- * @since 2.3.5
+ * @since 3.5.0
  */
 abstract class Request {
 
@@ -30,7 +30,7 @@ abstract class Request {
 	/**
 	 * Constructor.
 	 *
-	 * @since 2.3.5
+	 * @since 3.5.0
 	 *
 	 * @param \WP_REST_Request $request The WordPress REST request object.
 	 */
@@ -42,7 +42,7 @@ abstract class Request {
 	/**
 	 * Parse and validate the request data.
 	 *
-	 * @since 2.3.5
+	 * @since 3.5.0
 	 *
 	 * @return void
 	 */
@@ -61,7 +61,7 @@ abstract class Request {
 	/**
 	 * Sanitize request data.
 	 *
-	 * @since 2.3.5
+	 * @since 3.5.0
 	 *
 	 * @param array $data Raw request data.
 	 * @return array Sanitized data.
@@ -83,7 +83,7 @@ abstract class Request {
 	/**
 	 * Sanitize a single value.
 	 *
-	 * @since 2.3.5
+	 * @since 3.5.0
 	 *
 	 * @param mixed $value Value to sanitize.
 	 * @return mixed Sanitized value.
@@ -103,7 +103,7 @@ abstract class Request {
 	/**
 	 * Get a value from the request data.
 	 *
-	 * @since 2.3.5
+	 * @since 3.5.0
 	 *
 	 * @param string $key     The key to retrieve.
 	 * @param mixed  $default Default value if key doesn't exist.
@@ -116,7 +116,7 @@ abstract class Request {
 	/**
 	 * Get all request data.
 	 *
-	 * @since 2.3.5
+	 * @since 3.5.0
 	 *
 	 * @return array
 	 */
@@ -127,7 +127,7 @@ abstract class Request {
 	/**
 	 * Validate the request.
 	 *
-	 * @since 2.3.5
+	 * @since 3.5.0
 	 *
 	 * @return true|\WP_Error True if valid, WP_Error otherwise.
 	 */

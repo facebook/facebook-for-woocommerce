@@ -17,7 +17,7 @@ defined( 'ABSPATH' ) || exit;
  *
  * Handles registration of all REST API endpoints.
  *
- * @since 2.3.5
+ * @since 3.5.0
  */
 class Controller {
 
@@ -43,7 +43,7 @@ class Controller {
 	/**
 	 * Constructor.
 	 *
-	 * @since 2.3.5
+	 * @since 3.5.0
 	 */
 	public function __construct() {
 		add_action( 'rest_api_init', [ $this, 'register_routes' ] );
@@ -52,7 +52,7 @@ class Controller {
 	/**
 	 * Registers all REST API routes.
 	 *
-	 * @since 2.3.5
+	 * @since 3.5.0
 	 */
 	public function register_routes() {
 		// Register all endpoint handlers
@@ -69,7 +69,7 @@ class Controller {
 	/**
 	 * Registers all endpoint handlers.
 	 *
-	 * @since 2.3.5
+	 * @since 3.5.0
 	 */
 	private function register_endpoint_handlers() {
 		self::$endpoint_handlers = [];
@@ -82,7 +82,7 @@ class Controller {
 		/**
 		 * Filter the REST API endpoint handlers.
 		 *
-		 * @since 2.3.5
+		 * @since 3.5.0
 		 *
 		 * @param array $endpoint_handlers Array of endpoint handler instances
 		 */
@@ -92,7 +92,7 @@ class Controller {
 	/**
 	 * Gets the API namespace.
 	 *
-	 * @since 2.3.5
+	 * @since 3.5.0
 	 *
 	 * @return string
 	 */
@@ -103,7 +103,7 @@ class Controller {
 	/**
 	 * Gets all JS-enabled request classes.
 	 *
-	 * @since 3.0.0
+	 * @since 3.5.0
 	 *
 	 * @return array
 	 */

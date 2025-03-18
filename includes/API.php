@@ -269,11 +269,31 @@ class API extends Base {
 	 * Gets the business configuration.
 	 *
 	 * @param string $external_business_id external business ID
+	 * @param string $access_token Optional access token to use for this request. If not provided, will use the instance token.
+	 * @param array $fields Optional. Fields to request from the API. Default empty array returns all fields.
 	 * @return API\Response|API\FBE\Configuration\Read\Response
 	 * @throws ApiException
 	 */
-	public function get_business_configuration( $external_business_id ) {
+	public function get_business_configuration( $external_business_id, $access_token = '', $fields = [] ) {
 		$request = new API\FBE\Configuration\Request( $external_business_id, 'GET' );
+		
+		$params = [];
+		
+		// Use provided access token or fall back to the instance token
+		if ( ! empty( $access_token ) ) {
+			$params['access_token'] = $access_token;
+		}
+		
+		// Add fields parameter if specified
+		if ( ! empty( $fields ) ) {
+			$params['fields'] = is_array( $fields ) ? implode( ',', $fields ) : $fields;
+		}
+		
+		// Set parameters if we have any
+		if ( ! empty( $params ) ) {
+			$request->set_params( $params );
+		}
+		
 		$this->set_response_handler( API\FBE\Configuration\Read\Response::class );
 		return $this->perform_request( $request );
 	}
@@ -685,20 +705,5 @@ class API extends Base {
 	 */
 	protected function get_plugin() {
 		return facebook_for_woocommerce();
-	}
-
-	/**
-	 * Reads business extension data.
-	 *
-	 * @param string $access_token the access token
-	 * @param string $external_business_id the external business ID
-	 * @return API\FBE\Business\Read\Response
-	 * @throws ApiException
-	 * @throws API\Exceptions\Request_Limit_Reached
-	 */
-	public function read_business_extension( string $access_token, string $external_business_id ): API\FBE\Business\Read\Response {
-		$request = new API\FBE\Business\Read\Request( $access_token, $external_business_id );
-		$this->set_response_handler( API\FBE\Business\Read\Response::class );
-		return $this->perform_request( $request );
 	}
 }

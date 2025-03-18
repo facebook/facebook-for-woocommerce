@@ -10,17 +10,17 @@ namespace WooCommerce\Facebook\API\REST;
 defined( 'ABSPATH' ) || exit;
 
 /**
- * Class to initialize the REST API functionality. Generates the JS request API template consumed by @facebook-for-woocommerce-rest-api-factory.js
+ * Class to initialize the REST API functionality. Generates the JS request API template consumed by @connection-api-client.js
  * and initializes the REST API Framework Controller.
  *
- * @since 3.0.0
+ * @since 3.5.0
  */
 class InitializeRestAPI {
 
 	/**
 	 * Constructor.
 	 *
-	 * @since 3.0.0
+	 * @since 3.5.0
 	 */
 	public function __construct() {
 		// Register hooks
@@ -31,7 +31,7 @@ class InitializeRestAPI {
 	/**
 	 * Initialize the Controller handler.
 	 *
-	 * @since 3.0.0
+	 * @since 3.5.0
 	 */
 	private function init_rest_api_framework() {
 		new \WooCommerce\Facebook\API\REST\Controller();
@@ -40,7 +40,7 @@ class InitializeRestAPI {
 	/**
 	 * Check if the REST framework should be generated.
 	 *
-	 * @since 3.0.0
+	 * @since 3.5.0
 	 *
 	 * @return bool
 	 */
@@ -54,14 +54,14 @@ class InitializeRestAPI {
 	/**
 	 * Get the API definitions.
 	 *
-	 * @since 3.0.0
+	 * @since 3.5.0
 	 *
 	 * @return array
 	 */
 	public function get_api_definitions() {
 		wp_enqueue_script(
-			'facebook-for-woocommerce-rest-api-factory',
-			facebook_for_woocommerce()->get_plugin_url() . '/assets/js/admin/facebook-for-woocommerce-rest-api-factory.js',
+			'connection-api-client',
+			facebook_for_woocommerce()->get_plugin_url() . '/assets/js/admin/connection-api-client.js',
 			[ 'jquery' ],
 			\WC_Facebookcommerce::VERSION,
 			true // Important: Load in footer
@@ -106,7 +106,7 @@ class InitializeRestAPI {
 	/**
 	 * Enqueue and localize the API JavaScript.
 	 *
-	 * @since 3.0.0
+	 * @since 3.5.0
 	 *
 	 * @return void
 	 */
@@ -117,7 +117,7 @@ class InitializeRestAPI {
 		$api_definitions = $this->get_api_definitions();
 		// Localize the script with API data
 		wp_localize_script(
-			'facebook-for-woocommerce-rest-api-factory',
+			'connection-api-client',
 			'fb_api_data',
 			[
 				'api_url'   => rest_url( Controller::API_NAMESPACE . '/' ),

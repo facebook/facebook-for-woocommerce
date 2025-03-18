@@ -17,14 +17,14 @@ defined( 'ABSPATH' ) || exit;
  *
  * Provides common functionality for all REST API endpoints.
  *
- * @since 2.3.5
+ * @since 3.5.0
  */
 abstract class AbstractRESTEndpoint {
 
 	/**
 	 * Register routes for this endpoint.
 	 *
-	 * @since 2.3.5
+	 * @since 3.5.0
 	 *
 	 * @return void
 	 */
@@ -33,7 +33,7 @@ abstract class AbstractRESTEndpoint {
 	/**
 	 * Check if the current user has permission to access this endpoint.
 	 *
-	 * @since 2.3.5
+	 * @since 3.5.0
 	 *
 	 * @return bool
 	 */
@@ -44,7 +44,7 @@ abstract class AbstractRESTEndpoint {
 	/**
 	 * Get the REST API namespace.
 	 *
-	 * @since 2.3.5
+	 * @since 3.5.0
 	 *
 	 * @return string
 	 */
@@ -55,7 +55,7 @@ abstract class AbstractRESTEndpoint {
 	/**
 	 * Format a successful response.
 	 *
-	 * @since 2.3.5
+	 * @since 3.5.0
 	 *
 	 * @param mixed $data Response data.
 	 * @param int   $status HTTP status code.
@@ -74,7 +74,7 @@ abstract class AbstractRESTEndpoint {
 	/**
 	 * Format an error response.
 	 *
-	 * @since 2.3.5
+	 * @since 3.5.0
 	 *
 	 * @param string $message Error message.
 	 * @param int    $status HTTP status code.

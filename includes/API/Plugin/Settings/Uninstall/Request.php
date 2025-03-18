@@ -18,7 +18,7 @@ defined( 'ABSPATH' ) || exit;
 /**
  * Settings Uninstall REST API Request.
  *
- * @since 2.3.5
+ * @since 3.5.0
  */
 class Request extends RESTRequest {
 
@@ -73,7 +73,7 @@ class Request extends RESTRequest {
 	/**
 	 * Validate the request.
 	 *
-	 * @since 2.3.5
+	 * @since 3.5.0
 	 *
 	 * @return true|\WP_Error True if valid, WP_Error otherwise.
 	 */

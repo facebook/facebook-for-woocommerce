@@ -110,10 +110,16 @@ class MetaExtension {
 		}
 
 		try {
-			$response = facebook_for_woocommerce()->get_api()->read_business_extension( $access_token, $external_business_id );
-			if ( $response->has_commerce_extension_uri() ) {
-				return $response->get_commerce_extension_uri();
+			$response = facebook_for_woocommerce()->get_api()->get_business_configuration(
+				$external_business_id,
+				$access_token,
+				[ 'commerce_extension' ]
+			);
+			$uri      = $response->get_commerce_extension_uri();
+			if ( empty( $uri ) ) {
+				throw new \Exception( 'Commerce extension URI not found' );
 			}
+			return $response->get_commerce_extension_uri();
 		} catch ( \Exception $e ) {
 			facebook_for_woocommerce()->log( 'Facebook Commerce Extension URL Error: ' . $e->getMessage() );
 		}

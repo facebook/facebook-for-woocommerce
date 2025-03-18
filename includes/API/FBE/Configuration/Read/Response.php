@@ -27,6 +27,15 @@ class Response extends API\Response {
 	 * @return boolean
 	 */
 	public function is_ig_cta_enabled(): bool {
-		return (bool) $this->response_data['ig_cta']['enabled'];
+		return (bool) $this->response_data['ig_cta']['enabled'] ?? false;
+	}
+
+	/**
+	 * Gets the commerce extension URI.
+	 *
+	 * @return string Commerce extension URI or empty string if not available.
+	 */
+	public function get_commerce_extension_uri(): string {
+		return $this->response_data['commerce_extension'] ?? '';
 	}
 }

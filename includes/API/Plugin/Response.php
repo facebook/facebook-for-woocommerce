@@ -17,7 +17,7 @@ defined( 'ABSPATH' ) || exit;
  *
  * Provides common functionality for handling REST API responses.
  *
- * @since 2.3.5
+ * @since 3.5.0
  */
 class Response {
 
@@ -36,7 +36,7 @@ class Response {
 	/**
 	 * Constructor.
 	 *
-	 * @since 2.3.5
+	 * @since 3.5.0
 	 *
 	 * @param mixed $data Response data.
 	 */
@@ -47,7 +47,7 @@ class Response {
 	/**
 	 * Set the response as an error.
 	 *
-	 * @since 2.3.5
+	 * @since 3.5.0
 	 *
 	 * @param string $message Error message.
 	 * @param int    $status_code HTTP status code.
@@ -64,7 +64,7 @@ class Response {
 	/**
 	 * Set the response data.
 	 *
-	 * @since 2.3.5
+	 * @since 3.5.0
 	 *
 	 * @param mixed $data Response data.
 	 * @return self
@@ -78,7 +78,7 @@ class Response {
 	/**
 	 * Set the HTTP status code.
 	 *
-	 * @since 2.3.5
+	 * @since 3.5.0
 	 *
 	 * @param int $status_code HTTP status code.
 	 * @return self
@@ -92,7 +92,7 @@ class Response {
 	/**
 	 * Get the response as a WP_REST_Response object.
 	 *
-	 * @since 2.3.5
+	 * @since 3.5.0
 	 *
 	 * @return \WP_REST_Response
 	 */
@@ -115,7 +115,7 @@ class Response {
 	/**
 	 * Create a success response.
 	 *
-	 * @since 2.3.5
+	 * @since 3.5.0
 	 *
 	 * @param mixed $data Response data.
 	 * @param int   $status_code HTTP status code.
@@ -131,7 +131,7 @@ class Response {
 	/**
 	 * Create an error response.
 	 *
-	 * @since 2.3.5
+	 * @since 3.5.0
 	 *
 	 * @param string $message Error message.
 	 * @param int    $status_code HTTP status code.

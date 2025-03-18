@@ -19,7 +19,6 @@
      * @param {string} nonce The WordPress REST API nonce
      * @return {Object} API client instance
      */
-    window.foo = 'bar';
     window.FacebookWooCommerceAPIFactory = function (nonce) {
         // Create a new API client instance
         const apiClient = {

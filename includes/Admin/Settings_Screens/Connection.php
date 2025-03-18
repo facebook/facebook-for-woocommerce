@@ -73,7 +73,7 @@ class Connection extends Abstract_Settings_Screen {
 	 *
 	 * @internal
 	 *
-	 * @since 2.0.0
+	 * @since 3.5.0
 	 */
 	public function add_notices() {
 
@@ -122,7 +122,7 @@ class Connection extends Abstract_Settings_Screen {
 	/**
 	 * Renders the screen.
 	 *
-	 * @since 2.0.0
+	 * @since 3.5.0
 	 */
 	public function render() {
 		// Check if we should render iframe
@@ -319,7 +319,7 @@ class Connection extends Abstract_Settings_Screen {
 	 *
 	 * @param bool $is_connected whether the plugin is connected
 	 *
-	 * @since 2.0.0
+	 * @since 3.5.0
 	 */
 	private function render_facebook_box( $is_connected ) {
 		if ( $is_connected ) {
@@ -370,14 +370,14 @@ class Connection extends Abstract_Settings_Screen {
 	/**
 	 * Renders the message handler script in the footer.
 	 *
-	 * @since 2.0.0
+	 * @since 3.5.0
 	 */
 	public function render_message_handler() {
 		if ( ! $this->is_current_screen_page() || ! $this->use_enhanced_onboarding() ) {
 			return;
 		}
 		// Add the inline script as a dependent script
-		wp_add_inline_script( 'facebook-for-woocommerce-rest-api-factory', $this->generate_inline_enhanced_onboarding_script(), 'after' );
+		wp_add_inline_script( 'connection-api-client', $this->generate_inline_enhanced_onboarding_script(), 'after' );
 	}
 
 	public function generate_inline_enhanced_onboarding_script() {
@@ -449,7 +449,7 @@ class Connection extends Abstract_Settings_Screen {
 	 * Gets the screen settings.
 	 *
 	 * @return array
-	 * @since 2.0.0
+	 * @since 3.5.0
 	 */
 	public function get_settings() {
 

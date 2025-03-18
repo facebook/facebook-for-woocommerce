@@ -19,14 +19,14 @@ defined( 'ABSPATH' ) || exit;
 /**
  * Settings REST API endpoint handler.
  *
- * @since 2.3.5
+ * @since 3.5.0
  */
 class Handler extends AbstractRESTEndpoint {
 
 	/**
 	 * Register routes for this endpoint.
 	 *
-	 * @since 2.3.5
+	 * @since 3.5.0
 	 *
 	 * @return void
 	 */
@@ -55,7 +55,7 @@ class Handler extends AbstractRESTEndpoint {
 	/**
 	 * Handle the update settings request.
 	 *
-	 * @since 2.3.5
+	 * @since 3.5.0
 	 * @http_method POST
 	 * @description Update Facebook settings
 	 *
@@ -97,7 +97,7 @@ class Handler extends AbstractRESTEndpoint {
 	/**
 	 * Handle the uninstall request.
 	 *
-	 * @since 2.3.5
+	 * @since 3.5.0
 	 * @http_method POST
 	 * @description Uninstall Facebook integration
 	 *
@@ -135,7 +135,7 @@ class Handler extends AbstractRESTEndpoint {
 	/**
 	 * Maps request parameters to WooCommerce options.
 	 *
-	 * @since 2.3.5
+	 * @since 3.5.0
 	 *
 	 * @param array $params Request parameters.
 	 * @return array Mapped options.
@@ -189,7 +189,7 @@ class Handler extends AbstractRESTEndpoint {
 	/**
 	 * Updates Facebook settings options.
 	 *
-	 * @since 2.3.5
+	 * @since 3.5.0
 	 *
 	 * @param array $settings Array of settings to update.
 	 * @return void
@@ -205,7 +205,7 @@ class Handler extends AbstractRESTEndpoint {
 	/**
 	 * Updates connection status flags.
 	 *
-	 * @since 2.3.5
+	 * @since 3.5.0
 	 *
 	 * @param array $params Request parameters.
 	 * @return void
@@ -224,7 +224,7 @@ class Handler extends AbstractRESTEndpoint {
 	/**
 	 * Clears all integration options.
 	 *
-	 * @since 2.3.5
+	 * @since 3.5.0
 	 *
 	 * @return void
 	 */
