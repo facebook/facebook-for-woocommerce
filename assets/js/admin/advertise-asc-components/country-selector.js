@@ -41,8 +41,11 @@ const CountrySelector = (props) => {
                 return mapLabelToKey.get(value) ? true : false;
             }}
             __experimentalShowHowTo={false}
+			__experimentalAutoSelectFirstMatch
+		 	__experimentalExpandOnFocus
+  			__nextHasNoMarginBottom
             {...props}
-            label={""}
+            label={props.label ? props.label : ""}
             onChange={(nextValue) => {
                 const new_values = nextValue.map((val) => mapLabelToKey.get(val) || "");
                 setValue(nextValue);
