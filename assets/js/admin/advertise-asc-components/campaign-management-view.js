@@ -1,5 +1,5 @@
 import { useState } from '@wordpress/element';
-import { Button, ButtonGroup, Card, CardBody, CardHeader, CardFooter, Icon, Modal, TabPanel } from '@wordpress/components';
+import { Button, ButtonGroup, Icon, Modal, TabPanel } from '@wordpress/components';
 import { warning } from '@wordpress/icons';
 import CampaignEditView from './campaign-edit-view';
 import CampaignPreviewView from './campaign-preview-view'
@@ -130,14 +130,15 @@ const CampaignSetupView = (props) => {
 
     return (
         <>
-            <Card>
-                <CardHeader>
+            <div className='campaign-management-wrapper'>
+                <div>
                     <TabPanel
                         orientation={"horizontal"}
                         tabs={headers}                        
                     />
-                </CardHeader>
-                <CardBody>
+                </div>
+
+                <div className='campaign-management-body'>
                     {activeKey == 0 ? (
                         <div direction='vertical'>
                             <CampaignEditView
@@ -165,17 +166,18 @@ const CampaignSetupView = (props) => {
                             />
                         </div>
                     )}
-                </CardBody>
-                <CardFooter>
+                </div>
+
+                <div className='campaign-management-button-wrapper'>
                     {
                         activeKey == 0
                             ? (<div className='navigation-footer-container'>
                                 <Button
-                                    className='navigation-footer-button fit-to-left'
+                                    className='navigation-footer-button'
                                     onClick={() => props.onFinish()}
                                     variant="secondary">Cancel
                                 </Button>
-                                <ButtonGroup className='navigation-footer-button fit-to-right'>
+                                <ButtonGroup className='navigation-footer-button'>
                                     <Button
                                         onClick={goToPreviewPage}
                                         variant={props.isUpdate ? "secondary" : "primary"}>Preview
@@ -191,20 +193,21 @@ const CampaignSetupView = (props) => {
                             </div>)
                             : (<div className='navigation-footer-container'>
                                 <Button
-                                    className='navigation-footer-button fit-to-left'
+                                    className='navigation-footer-button'
                                     disabled={publishing}
                                     onClick={goToEditCampaignPage}
                                     variant="secondary">Back</Button>
                                 <Button
-                                    className='navigation-footer-button fit-to-right'
+                                    className='navigation-footer-button'
                                     disabled={publishing}
                                     isBusy={publishing}                                    
                                     onClick={publishChanges}
                                     variant="primary">Publish Changes</Button>
                             </div>)
                     }
-                </CardFooter>
-            </Card >
+                </div>
+            </div>
+
             {errorMessage && (
                 <Modal icon={<Icon icon={warning} />} title={"Error"} onRequestClose={closeErrorModal} size={"small"}>
                     <p>{errorMessage}</p>
