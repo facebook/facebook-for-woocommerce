@@ -539,7 +539,7 @@ class FeedUploadUtilsTest extends WP_UnitTestCase {
 		$coupon_id = self::factory()->post->create([
 			'post_type'   => 'shop_coupon',
 			'post_status' => 'publish',
-			'post_title'  => '',  // No code provided
+			'post_title'  => 'VALIDCODE',
 		]);
 		update_post_meta( $coupon_id, 'discount_type', 'percent' );
 		update_post_meta( $coupon_id, 'coupon_amount', '10' );

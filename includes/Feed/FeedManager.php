@@ -18,7 +18,7 @@ namespace WooCommerce\Facebook\Feed;
  * @since 3.5.0
  */
 class FeedManager {
-	const PROMOTIONS = 'promotions';
+	const PROMOTIONS          = 'promotions';
 	const RATINGS_AND_REVIEWS = 'ratings_and_reviews';
 
 	/**

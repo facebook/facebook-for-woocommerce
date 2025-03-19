@@ -64,61 +64,32 @@ abstract class AbstractFeed {
 	protected AbstractFeedHandler $feed_handler;
 
 	/**
-	 * The name of the data feed.
-	 *
-	 * @var string
-	 */
-	protected string $data_stream_name;
-
-	/**
-	 * The type of feed as per the endpoint requirements.
-	 *
-	 * @var string
-	 */
-	protected string $feed_type;
-
-	/**
-	 * The interval in seconds for the feed generation.
-	 *
-	 * @var int
-	 */
-	protected int $gen_feed_interval;
-
-	/**
 	 * Initialize feed properties.
 	 *
-	 * @param string              $data_stream_name              The data stream name.
-	 * @param string              $feed_type                     The feed type.
-	 * @param int                 $gen_feed_interval             The feed generation interval in seconds.
 	 * @param FeedFileWriter      $feed_writer The feed file writer instance.
 	 * @param AbstractFeedHandler $feed_handler The feed handler instance.
 	 * @param FeedGenerator       $feed_generator The feed generator instance.
 	 */
-	protected function init( string $data_stream_name, string $feed_type, int $gen_feed_interval, FeedFileWriter $feed_writer, AbstractFeedHandler $feed_handler, FeedGenerator $feed_generator ): void {
-		$this->data_stream_name  = $data_stream_name;
-		$this->feed_type         = $feed_type;
-		$this->gen_feed_interval = $gen_feed_interval;
-		$this->feed_writer       = $feed_writer;
-		$this->feed_handler      = $feed_handler;
-		$this->feed_generator    = $feed_generator;
+	protected function init( FeedFileWriter $feed_writer, AbstractFeedHandler $feed_handler, FeedGenerator $feed_generator ): void {
+		$this->feed_writer    = $feed_writer;
+		$this->feed_handler   = $feed_handler;
+		$this->feed_generator = $feed_generator;
 
 		$this->feed_generator->init();
-		$this->add_hooks( Heartbeat::HOURLY );
+		$this->add_hooks();
 	}
 
 	/**
 	 * Adds the necessary hooks for feed generation and data request handling.
 	 *
-	 * @param string $heartbeat How often to check that the feed generation is scheduled.
-	 *
 	 * @since 3.5.0
 	 */
-	protected function add_hooks( string $heartbeat ): void {
-		add_action( $heartbeat, array( $this, 'schedule_feed_generation' ) );
-		add_action( self::GENERATE_FEED_ACTION . $this->data_stream_name, array( $this, 'regenerate_feed' ) );
-		add_action( self::FEED_GEN_COMPLETE_ACTION . $this->data_stream_name, array( $this, 'send_request_to_upload_feed' ) );
+	protected function add_hooks(): void {
+		add_action( static::get_feed_gen_scheduling_interval(), array( $this, 'schedule_feed_generation' ) );
+		add_action( self::GENERATE_FEED_ACTION . static::get_data_stream_name(), array( $this, 'regenerate_feed' ) );
+		add_action( self::FEED_GEN_COMPLETE_ACTION . static::get_data_stream_name(), array( $this, 'send_request_to_upload_feed' ) );
 		add_action(
-			self::LEGACY_API_PREFIX . self::REQUEST_FEED_ACTION . $this->data_stream_name,
+			self::LEGACY_API_PREFIX . self::REQUEST_FEED_ACTION . static::get_data_stream_name(),
 			array(
 				$this,
 				'handle_feed_data_request',
@@ -132,11 +103,11 @@ abstract class AbstractFeed {
 	 * @since 3.5.0
 	 */
 	public function schedule_feed_generation(): void {
-		$schedule_action_hook_name = self::GENERATE_FEED_ACTION . $this->data_stream_name;
+		$schedule_action_hook_name = self::GENERATE_FEED_ACTION . static::get_data_stream_name();
 		if ( ! as_next_scheduled_action( $schedule_action_hook_name ) ) {
 			as_schedule_recurring_action(
 				time(),
-				$this->gen_feed_interval,
+				static::get_feed_gen_interval(),
 				$schedule_action_hook_name,
 				array(),
 				facebook_for_woocommerce()->get_id_dasherized()
@@ -168,10 +139,10 @@ abstract class AbstractFeed {
 	 * @since 3.5.0
 	 */
 	public function send_request_to_upload_feed(): void {
-		$name = $this->data_stream_name;
+		$name = static::get_data_stream_name();
 		$data = array(
 			'url'         => self::get_feed_data_url(),
-			'feed_type'   => $this->feed_type,
+			'feed_type'   => static::get_feed_type(),
 			'update_type' => 'CREATE',
 		);
 
@@ -196,7 +167,7 @@ abstract class AbstractFeed {
 	 */
 	public function get_feed_data_url(): string {
 		$query_args = array(
-			'wc-api' => self::REQUEST_FEED_ACTION . $this->data_stream_name,
+			'wc-api' => self::REQUEST_FEED_ACTION . static::get_data_stream_name(),
 			'secret' => self::get_feed_secret(),
 		);
 
@@ -213,7 +184,7 @@ abstract class AbstractFeed {
 	 * @since 3.5.0
 	 */
 	public function get_feed_secret(): string {
-		$secret_option_name = self::OPTION_FEED_URL_SECRET . $this->data_stream_name;
+		$secret_option_name = self::OPTION_FEED_URL_SECRET . static::get_data_stream_name();
 
 		$secret = get_option( $secret_option_name, '' );
 		if ( ! $secret ) {
@@ -234,7 +205,7 @@ abstract class AbstractFeed {
 	 * @since 3.5.0
 	 */
 	public function handle_feed_data_request(): void {
-		$name = $this->data_stream_name;
+		$name = static::get_data_stream_name();
 		\WC_Facebookcommerce_Utils::log( "{$name} feed: Meta is requesting feed file." );
 
 		$file_path = $this->feed_writer->get_file_path();
@@ -286,5 +257,37 @@ abstract class AbstractFeed {
 			status_header( $exception->getCode() );
 		}
 		exit;
+	}
+
+	/**
+	 * Get the data stream name for the given feed.
+	 *
+	 * @return string
+	 */
+	abstract protected static function get_data_stream_name(): string;
+
+	/**
+	 * Get the Meta feed type. Must match CatalogPartnerPlatformFileFeedType
+	 *
+	 * @return string
+	 */
+	abstract protected static function get_feed_type(): string;
+
+	/**
+	 * Get the feed generation interval. Must be longer than the heartbeat.
+	 *
+	 * @return int
+	 */
+	protected static function get_feed_gen_interval(): int {
+		return DAY_IN_SECONDS;
+	}
+
+	/**
+	 * Get the Heartbeat interval to ensure that feed gen is scheduled. Must be shorter than the feed gen interval.
+	 *
+	 * @return string Heartbeat constant value
+	 */
+	protected static function get_feed_gen_scheduling_interval(): string {
+		return Heartbeat::HOURLY;
 	}
 }

@@ -18,6 +18,17 @@ use WC_Coupon;
  * @since 3.5.0
  */
 class FeedUploadUtils {
+	const VALUE_TYPE_PERCENTAGE              = 'PERCENTAGE';
+	const VALUE_TYPE_FIXED_AMOUNT            = 'FIXED_AMOUNT';
+	const TARGET_TYPE_SHIPPING               = 'SHIPPING';
+	const TARGET_TYPE_LINE_ITEM              = 'LINE_ITEM';
+	const TARGET_GRANULARITY_ORDER_LEVEL     = 'ORDER_LEVEL';
+	const TARGET_GRANULARITY_ITEM_LEVEL      = 'ITEM_LEVEL';
+	const TARGET_SELECTION_ENTIRE_CATALOG    = 'ALL_CATALOG_PRODUCTS';
+	const TARGET_SELECTION_SPECIFIC_PRODUCTS = 'SPECIFIC_PRODUCTS';
+	const APPLICATION_TYPE_BUYER_APPLIED     = 'BUYER_APPLIED';
+	const PROMO_SYNC_LOGGING_FLOW_NAME       = 'Promotion feed sync';
+
 	public static function get_ratings_and_reviews_data( array $query_args ): array {
 		$comments     = get_comments( $query_args );
 		$reviews_data = array();
@@ -96,10 +107,10 @@ class FeedUploadUtils {
 					$fixed_amount_off  = '';
 
 					if ( 'percent' === $woo_discount_type ) {
-						$value_type  = 'PERCENTAGE';
+						$value_type  = self::VALUE_TYPE_PERCENTAGE;
 						$percent_off = $coupon->get_amount();
 					} elseif ( in_array( $woo_discount_type, array( 'fixed_cart', 'fixed_product' ), true ) ) {
-						$value_type       = 'FIXED_AMOUNT';
+						$value_type       = self::VALUE_TYPE_FIXED_AMOUNT;
 						$fixed_amount_off = $coupon->get_amount(); // TODO currency?
 					} else {
 						\WC_Facebookcommerce_Utils::logTelemetryToMeta(
@@ -107,6 +118,8 @@ class FeedUploadUtils {
 							array(
 								'promotion_id' => $coupon_post->ID,
 								'extra_data'   => array( 'discount_type' => $woo_discount_type ),
+								'flow_name'    => self::PROMO_SYNC_LOGGING_FLOW_NAME,
+								'flow_step'    => 'Map discount type',
 							)
 						);
 						continue;
@@ -116,19 +129,20 @@ class FeedUploadUtils {
 					$start_date_time = $coupon->get_date_created() ? (string) $coupon->get_date_created()->getTimestamp() : $coupon_post->post_date;
 					$end_date_time   = $coupon->get_date_expires() ? (string) $coupon->get_date_expires()->getTimestamp() : '';
 
-					// Map target type
+					// Map target type. Coupons that apply both a discount and free shipping are already
+					// filtered out in is_valid_coupon
 					$is_free_shipping = $coupon->get_free_shipping();
 					if ( $is_free_shipping ) {
-						$target_type = 'SHIPPING';
+						$target_type = self::TARGET_TYPE_SHIPPING;
 					} else {
-						$target_type = 'LINE_ITEM';
+						$target_type = self::TARGET_TYPE_LINE_ITEM;
 					}
 
 					// Map target granularity
 					if ( $is_free_shipping || 'fixed_cart' === $woo_discount_type ) {
-						$target_granularity = 'ORDER_LEVEL';
+						$target_granularity = self::TARGET_GRANULARITY_ORDER_LEVEL;
 					} else {
-						$target_granularity = 'ITEM_LEVEL';
+						$target_granularity = self::TARGET_GRANULARITY_ITEM_LEVEL;
 					}
 
 					// Map target selection
@@ -138,9 +152,9 @@ class FeedUploadUtils {
 						&& empty( $coupon->get_excluded_product_categories() )
 					) {
 						// Coupon applies to all products.
-						$target_selection = 'ALL_CATALOG_PRODUCTS';
+						$target_selection = self::TARGET_SELECTION_ENTIRE_CATALOG;
 					} else {
-						$target_selection = 'SPECIFIC_PRODUCTS';
+						$target_selection = self::TARGET_SELECTION_SPECIFIC_PRODUCTS;
 					}
 
 					// Determine target product mapping
@@ -148,7 +162,7 @@ class FeedUploadUtils {
 					$target_product_retailer_ids     = '';
 					$target_filter                   = '';
 
-					if ( 'SPECIFIC_PRODUCTS' === $target_selection ) {
+					if ( self::TARGET_SELECTION_SPECIFIC_PRODUCTS === $target_selection ) {
 						$target_filter = self::get_target_filter(
 							$coupon->get_product_ids(),
 							$coupon->get_excluded_product_ids(),
@@ -164,7 +178,7 @@ class FeedUploadUtils {
 						'value_type'                      => $value_type,
 						'percent_off'                     => $percent_off,
 						'fixed_amount_off'                => $fixed_amount_off,
-						'application_type'                => 'BUYER_APPLIED', // coupon code ==> buyer_applied
+						'application_type'                => self::APPLICATION_TYPE_BUYER_APPLIED,
 						'target_type'                     => $target_type,
 						'target_shipping_option_types'    => '', // Not needed for offsite checkout
 						'target_granularity'              => $target_granularity,
@@ -197,6 +211,9 @@ class FeedUploadUtils {
 						array(
 							'promotion_id'      => $coupon_post->ID,
 							'exception_message' => $e->getMessage(),
+							'extra_data'        => [ 'query_args' => wp_json_encode( $query_args ) ],
+							'flow_name'         => self::PROMO_SYNC_LOGGING_FLOW_NAME,
+							'flow_step'         => 'Map coupon data',
 						)
 					);
 					continue;
@@ -205,13 +222,12 @@ class FeedUploadUtils {
 
 			return $coupons_data;
 		} catch ( \Exception $e ) {
-			\WC_Facebookcommerce_Utils::logTelemetryToMeta(
-				'Exception while trying to process promotion feed',
-				array(
-					'exception_message' => $e->getMessage(),
-				)
+			\WC_Facebookcommerce_Utils::logExceptionImmediatelyToMeta( $e );
+			return array(
+				'flow_name'  => self::PROMO_SYNC_LOGGING_FLOW_NAME,
+				'flow_step'  => 'Get coupon data',
+				'extra_data' => [ 'query_args' => wp_json_encode( $query_args ) ],
 			);
-			return array();
 		}
 	}
 
@@ -225,7 +241,7 @@ class FeedUploadUtils {
 		 * - missing coupon code
 		 * - coupon uses brand targeting
 		 */
-		if ( '' === $coupon->get_code() ) {
+		if ( empty( $coupon->get_code() ) ) {
 			return false;
 		}
 		if ( $coupon->get_free_shipping() && $coupon->get_amount() > 0 ) {
