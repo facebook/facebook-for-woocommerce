@@ -267,7 +267,7 @@ abstract class AbstractFeed {
 	abstract protected static function get_data_stream_name(): string;
 
 	/**
-	 * Get the Meta feed type. Must match CatalogPartnerPlatformFileFeedType
+	 * Get the data feed type.
 	 *
 	 * @return string
 	 */
