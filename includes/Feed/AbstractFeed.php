@@ -160,7 +160,7 @@ abstract class AbstractFeed {
 		);
 
 		try {
-			$cpi_id = get_option( 'wc_facebook_commerce_partner_integration_id', '' );
+			$cpi_id = facebook_for_woocommerce()->get_connection_handler()->get_commerce_partner_integration_id();
 			facebook_for_woocommerce()->
 			get_api()->
 			create_common_data_feed_upload( $cpi_id, $data );
