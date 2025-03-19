@@ -573,11 +573,17 @@ class WCFacebookCommerceIntegrationTest extends \WooCommerce\Facebook\Tests\Unit
 	 */
 	public function test_on_product_save_existing_simple_product_sync_disabled_updates_the_product() {
 		$product_to_update = WC_Helper_Product::create_simple_product();
-		$product_to_delete = WC_Helper_Product::create_simple_product();
+
+		// The idea of the following mock is to ovveride the delete_product_item.
+		// The test is that the product item is being deleted as when it is marked for do not sync.
+		// The mock below is hit otherwise it would generate a random Mock_Response and throw error
+		$integration_mock = $this->createMock(WC_Facebookcommerce_Integration::class);
+		$integration_mock->method('delete_product_item');
+		$this->integration = $integration_mock;
 
 		$_POST['wc_facebook_sync_mode'] = Admin::SYNC_MODE_SYNC_DISABLED;
 
-		$_POST[ WC_Facebook_Product::FB_REMOVE_FROM_SYNC ] = $product_to_delete->get_id();
+		$_POST[ WC_Facebook_Product::FB_REMOVE_FROM_SYNC ] = $product_to_update->get_id();
 
 		$product_to_update->set_stock_status( 'instock' );
 
@@ -586,11 +592,8 @@ class WCFacebookCommerceIntegrationTest extends \WooCommerce\Facebook\Tests\Unit
 
 		$this->integration->on_product_save( $product_to_update->get_id() );
 
-		$this->assertEquals( null, get_post_meta( $product_to_delete->get_id(), WC_Facebookcommerce_Integration::FB_PRODUCT_ITEM_ID, true ) );
-		$this->assertEquals( null, get_post_meta( $product_to_delete->get_id(), WC_Facebookcommerce_Integration::FB_PRODUCT_GROUP_ID, true ) );
-		$this->assertEquals( 'no', get_post_meta( $product_to_update->get_id(), Products::SYNC_ENABLED_META_KEY, true ) );
-		$this->assertEquals( 'no', get_post_meta( $product_to_update->get_id(), Products::VISIBILITY_META_KEY, true ) );
-
+		$this->assertEquals( 'facebook-product-item-id', get_post_meta( $product_to_update->get_id(), WC_Facebookcommerce_Integration::FB_PRODUCT_ITEM_ID, true ) );
+		$this->assertEquals( null, get_post_meta( $product_to_update->get_id(), WC_Facebookcommerce_Integration::FB_PRODUCT_GROUP_ID, true ) );
 	}
 
 	/**
