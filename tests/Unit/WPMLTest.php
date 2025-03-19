@@ -1,6 +1,6 @@
 <?php
 
-class WPMLTest extends WP_UnitTestCase {
+class WPMLTest extends \WooCommerce\Facebook\Tests\Unit\AbstractWPUnitTestWithSafeFiltering {
 
 	/** @var int $fake_product_id */
 	private $fake_product_id = 1;
@@ -15,7 +15,8 @@ class WPMLTest extends WP_UnitTestCase {
 	public function tear_down() {
 		WC_Facebook_WPML_Injector::$settings     = null;
 		WC_Facebook_WPML_Injector::$default_lang = null;
-		remove_all_filters( 'wpml_post_language_details' );
+		// No need to manually remove filters, parent tearDown will handle it
+		parent::tear_down();
 	}
 
 	public function test_should_hide_product_when_wpml_filter_not_applied() {
@@ -23,7 +24,7 @@ class WPMLTest extends WP_UnitTestCase {
 	}
 
 	public function test_product_hidden_when_wpml_filter_returns_wp_error() {
-		add_filter(
+		$filter = $this->add_filter_with_safe_teardown(
 			'wpml_post_language_details',
 			function() {
 				return new WP_Error();
@@ -36,7 +37,7 @@ class WPMLTest extends WP_UnitTestCase {
 	public function test_product_hidden_no_settings_and_not_default() {
 		WC_Facebook_WPML_Injector::$default_lang = 'en_US';
 
-		add_filter(
+		$filter = $this->add_filter_with_safe_teardown(
 			'wpml_post_language_details',
 			function() {
 				return [
@@ -50,7 +51,7 @@ class WPMLTest extends WP_UnitTestCase {
 
 	public function test_product_not_hidden_no_settings_and_default() {
 		WC_Facebook_WPML_Injector::$default_lang = 'en_US';
-		add_filter(
+		$filter = $this->add_filter_with_safe_teardown(
 			'wpml_post_language_details',
 			function() {
 				return [
@@ -67,7 +68,7 @@ class WPMLTest extends WP_UnitTestCase {
 			'fr_FR' => FB_WPML_Language_Status::HIDDEN,
 		];
 
-		add_filter(
+		$filter = $this->add_filter_with_safe_teardown(
 			'wpml_post_language_details',
 			function() {
 				return [
@@ -84,7 +85,7 @@ class WPMLTest extends WP_UnitTestCase {
 			'fr_FR' => FB_WPML_Language_Status::VISIBLE,
 		];
 
-		add_filter(
+		$filter = $this->add_filter_with_safe_teardown(
 			'wpml_post_language_details',
 			function() {
 				return [

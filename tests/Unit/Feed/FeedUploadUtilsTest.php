@@ -14,7 +14,7 @@ require_once __DIR__ . '/../../../includes/Feed/FeedUploadUtils.php';
  *
  * Sets up environment to test various logic in FeedUploadUtils
  */
-class FeedUploadUtilsTest extends WP_UnitTestCase {
+class FeedUploadUtilsTest extends \WooCommerce\Facebook\Tests\Unit\AbstractWPUnitTestWithSafeFiltering {
 
 	/** @var int Shop page ID */
 	protected static $shop_page_id;
@@ -27,9 +27,10 @@ class FeedUploadUtilsTest extends WP_UnitTestCase {
 		parent::setUp();
 
 		// Force a pretty permalink structure.
-		add_filter( 'pre_option_permalink_structure', function () {
+		$this->add_filter_with_safe_teardown('pre_option_permalink_structure', function () {
 			return '/%postname%/';
-		} );
+		});
+		
 		update_option( 'permalink_structure', '/%postname%/' );
 		global $wp_rewrite;
 		if ( ! ( $wp_rewrite instanceof WP_Rewrite ) ) {
@@ -56,21 +57,18 @@ class FeedUploadUtilsTest extends WP_UnitTestCase {
 		flush_rewrite_rules();
 
 		// Add high–priority filters to force URLs.
-		add_filter( 'woocommerce_get_page_permalink', [ $this, 'forceShopPermalink' ], 9999, 2 );
-		add_filter( 'get_permalink', [ $this, 'forceGetPermalink' ], 9999, 2 );
-		add_filter( 'post_type_link', [ $this, 'forcePostTypeLink' ], 9999, 3 );
-		add_filter( 'woocommerce_product_get_permalink', [ $this, 'forceProductPermalink' ], 9999, 2 );
+		$this->add_filter_with_safe_teardown('woocommerce_get_page_permalink', [ $this, 'forceShopPermalink' ], 9999, 2);
+		$this->add_filter_with_safe_teardown('get_permalink', [ $this, 'forceGetPermalink' ], 9999, 2);
+		$this->add_filter_with_safe_teardown('post_type_link', [ $this, 'forcePostTypeLink' ], 9999, 3);
+		$this->add_filter_with_safe_teardown('woocommerce_product_get_permalink', [ $this, 'forceProductPermalink' ], 9999, 2);
 	}
 
 	/**
 	 * Clean up filters and rewrite rules.
 	 */
 	public function tearDown(): void {
-		remove_filter( 'woocommerce_get_page_permalink', [ $this, 'forceShopPermalink' ], 9999 );
-		remove_filter( 'get_permalink', [ $this, 'forceGetPermalink' ], 9999 );
-		remove_filter( 'post_type_link', [ $this, 'forcePostTypeLink' ], 9999 );
-		remove_filter( 'woocommerce_product_get_permalink', [ $this, 'forceProductPermalink' ], 9999 );
 		flush_rewrite_rules();
+		// No need to manually remove filters, parent tearDown will handle it
 		parent::tearDown();
 	}
 
