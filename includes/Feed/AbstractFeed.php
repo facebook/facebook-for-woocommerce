@@ -268,6 +268,14 @@ abstract class AbstractFeed {
 
 	/**
 	 * Get the data feed type.
+	 * Supported values:
+	 * PROMOTIONS
+	 * SHIPPING_PROFILES
+	 * PRODUCTS
+	 * PRODUCT_SETS
+	 * ORDERS
+	 * NAVIGATION_MENU
+	 * PRODUCT_RATINGS_AND_REVIEWS
 	 *
 	 * @return string
 	 */

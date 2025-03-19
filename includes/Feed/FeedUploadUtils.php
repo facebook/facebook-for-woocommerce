@@ -86,6 +86,13 @@ class FeedUploadUtils {
 		return $reviews_data;
 	}
 
+	/**
+	 * Query for coupons and map them to Meta format.
+	 *
+	 * @param array $query_args arguments for the get_posts() call
+	 *
+	 * @throws \Exception If an error occurs during fetching coupons.
+	 */
 	public static function get_coupons_data( array $query_args ): array {
 		try {
 			$coupon_posts = get_posts( $query_args );
@@ -209,11 +216,13 @@ class FeedUploadUtils {
 					\WC_Facebookcommerce_Utils::logTelemetryToMeta(
 						'Exception while trying to get coupon data for feed',
 						array(
-							'promotion_id'      => $coupon_post->ID,
-							'exception_message' => $e->getMessage(),
-							'extra_data'        => [ 'query_args' => wp_json_encode( $query_args ) ],
-							'flow_name'         => self::PROMO_SYNC_LOGGING_FLOW_NAME,
-							'flow_step'         => 'map_coupon_data',
+							'promotion_id' => $coupon_post->ID,
+							'extra_data'   => [
+								'exception_message' => $e->getMessage(),
+								'query_args'        => wp_json_encode( $query_args ),
+							],
+							'flow_name'    => self::PROMO_SYNC_LOGGING_FLOW_NAME,
+							'flow_step'    => 'map_coupon_data',
 						)
 					);
 					continue;
@@ -222,12 +231,15 @@ class FeedUploadUtils {
 
 			return $coupons_data;
 		} catch ( \Exception $e ) {
-			\WC_Facebookcommerce_Utils::logExceptionImmediatelyToMeta( $e );
-			return array(
-				'event'      => self::PROMO_SYNC_LOGGING_FLOW_NAME,
-				'event_type' => 'get_coupon_data',
-				'extra_data' => [ 'query_args' => wp_json_encode( $query_args ) ],
+			\WC_Facebookcommerce_Utils::logExceptionImmediatelyToMeta(
+				$e,
+				array(
+					'event'      => self::PROMO_SYNC_LOGGING_FLOW_NAME,
+					'event_type' => 'get_coupon_data',
+					'extra_data' => [ 'query_args' => wp_json_encode( $query_args ) ],
+				)
 			);
+			throw $e;
 		}
 	}
 
@@ -330,6 +342,8 @@ class FeedUploadUtils {
 			$products = wc_get_products(
 				array(
 					'include' => $product_ids,
+					'orderby' => 'ID',
+					'order'   => 'ASC',
 				)
 			);
 		}
@@ -341,6 +355,8 @@ class FeedUploadUtils {
 			$products_from_categories = wc_get_products(
 				array(
 					'product_category_id' => $product_category_ids,
+					'orderby'             => 'ID',
+					'order'               => 'ASC',
 				)
 			);
 			$products                 = array_unique( array_merge( $products, $products_from_categories ) );

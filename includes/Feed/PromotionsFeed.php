@@ -59,6 +59,6 @@ class PromotionsFeed extends AbstractFeed {
 	}
 
 	protected static function get_feed_gen_scheduling_interval(): string {
-		return Heartbeat::EVERY_5_MINUTES;
+		return Heartbeat::HOURLY;
 	}
 }
