@@ -27,7 +27,7 @@ class FeedUploadUtils {
 	const TARGET_SELECTION_ENTIRE_CATALOG    = 'ALL_CATALOG_PRODUCTS';
 	const TARGET_SELECTION_SPECIFIC_PRODUCTS = 'SPECIFIC_PRODUCTS';
 	const APPLICATION_TYPE_BUYER_APPLIED     = 'BUYER_APPLIED';
-	const PROMO_SYNC_LOGGING_FLOW_NAME       = 'Promotion feed sync';
+	const PROMO_SYNC_LOGGING_FLOW_NAME       = 'promotion_feed_sync';
 
 	public static function get_ratings_and_reviews_data( array $query_args ): array {
 		$comments     = get_comments( $query_args );
@@ -111,7 +111,7 @@ class FeedUploadUtils {
 						$percent_off = $coupon->get_amount();
 					} elseif ( in_array( $woo_discount_type, array( 'fixed_cart', 'fixed_product' ), true ) ) {
 						$value_type       = self::VALUE_TYPE_FIXED_AMOUNT;
-						$fixed_amount_off = $coupon->get_amount(); // TODO currency?
+						$fixed_amount_off = $coupon->get_amount(); // TODO we may want to pass in optional currency code for multinational support
 					} else {
 						\WC_Facebookcommerce_Utils::logTelemetryToMeta(
 							'Unknown discount type encountered during feed processing',
@@ -119,7 +119,7 @@ class FeedUploadUtils {
 								'promotion_id' => $coupon_post->ID,
 								'extra_data'   => array( 'discount_type' => $woo_discount_type ),
 								'flow_name'    => self::PROMO_SYNC_LOGGING_FLOW_NAME,
-								'flow_step'    => 'Map discount type',
+								'flow_step'    => 'map_discount_type',
 							)
 						);
 						continue;
@@ -192,7 +192,7 @@ class FeedUploadUtils {
 						'target_product_group_retailer_ids' => '', // Concept does not exist in Woo
 						'target_product_set_retailer_ids' => $target_product_set_retailer_ids,
 						'redeem_limit_per_user'           => $coupon->get_usage_limit_per_user(),
-						'min_subtotal'                    => $coupon->get_minimum_amount(), // TODO currency?
+						'min_subtotal'                    => $coupon->get_minimum_amount(), // TODO we may want to pass in optional currency code for multinational support
 						'min_quantity'                    => '', // Concept does not exist in Woo
 						'offer_terms'                     => '', // TODO link to T&C page?
 						'redemption_limit_per_seller'     => $coupon->get_usage_limit(),
@@ -213,7 +213,7 @@ class FeedUploadUtils {
 							'exception_message' => $e->getMessage(),
 							'extra_data'        => [ 'query_args' => wp_json_encode( $query_args ) ],
 							'flow_name'         => self::PROMO_SYNC_LOGGING_FLOW_NAME,
-							'flow_step'         => 'Map coupon data',
+							'flow_step'         => 'map_coupon_data',
 						)
 					);
 					continue;
@@ -224,8 +224,8 @@ class FeedUploadUtils {
 		} catch ( \Exception $e ) {
 			\WC_Facebookcommerce_Utils::logExceptionImmediatelyToMeta( $e );
 			return array(
-				'flow_name'  => self::PROMO_SYNC_LOGGING_FLOW_NAME,
-				'flow_step'  => 'Get coupon data',
+				'event'      => self::PROMO_SYNC_LOGGING_FLOW_NAME,
+				'event_type' => 'get_coupon_data',
 				'extra_data' => [ 'query_args' => wp_json_encode( $query_args ) ],
 			);
 		}

@@ -13,6 +13,7 @@ namespace WooCommerce\Facebook\Feed;
 defined( 'ABSPATH' ) || exit;
 
 use Automattic\WooCommerce\ActionSchedulerJobFramework\Proxies\ActionScheduler;
+use WooCommerce\Facebook\Utilities\Heartbeat;
 
 /**
  * Promotions Feed Class
@@ -51,5 +52,13 @@ class PromotionsFeed extends AbstractFeed {
 
 	protected static function get_data_stream_name(): string {
 		return FeedManager::PROMOTIONS;
+	}
+
+	protected static function get_feed_gen_interval(): int {
+		return HOUR_IN_SECONDS;
+	}
+
+	protected static function get_feed_gen_scheduling_interval(): string {
+		return Heartbeat::EVERY_5_MINUTES;
 	}
 }

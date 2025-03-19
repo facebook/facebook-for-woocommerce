@@ -51,4 +51,8 @@ class RatingsAndReviewsFeed extends AbstractFeed {
 	protected static function get_data_stream_name(): string {
 		return FeedManager::RATINGS_AND_REVIEWS;
 	}
+
+	protected static function get_feed_gen_interval(): int {
+		return WEEK_IN_SECONDS;
+	}
 }
