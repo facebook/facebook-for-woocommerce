@@ -80,8 +80,6 @@ class ErrorLogHandler extends LogHandlerBase {
 			'exception_class'   => get_class( $error ),
 			'order_id'          => WC_Facebookcommerce_Utils::getContextData( $context, 'order_id' ),
 			'promotion_id'      => WC_Facebookcommerce_Utils::getContextData( $context, 'promotion_id' ),
-			'flow_name'         => WC_Facebookcommerce_Utils::getContextData( $context, 'flow_name' ),
-			'flow_step'         => WC_Facebookcommerce_Utils::getContextData( $context, 'flow_step' ),
 			'incoming_params'   => WC_Facebookcommerce_Utils::getContextData( $context, 'incoming_params' ),
 			'extra_data'        => $extra_data,
 		];
