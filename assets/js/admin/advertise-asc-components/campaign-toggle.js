@@ -12,6 +12,7 @@ const CampaignToggle = (props) => {
                 setIsChecked(state);
                 props?.onChange(state);
             }}
+			label={props.label ? props.label : ""}
         />
     );
 };
