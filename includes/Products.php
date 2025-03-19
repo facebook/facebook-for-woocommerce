@@ -221,7 +221,7 @@ class Products {
 	 * @return bool
 	 */
 	public static function product_should_be_deleted( \WC_Product $product ) {
-		return ( 'yes' === get_option( 'woocommerce_hide_out_of_stock_items' ) && ! $product->is_in_stock() ) || ! facebook_for_woocommerce()->get_product_sync_validator( $product )->passes_product_terms_check();
+		return ! facebook_for_woocommerce()->get_product_sync_validator( $product )->passes_product_terms_check();
 	}
 
 

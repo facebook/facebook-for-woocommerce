@@ -8,6 +8,6 @@ use WooCommerce\Facebook\API\Response as ApiResponse;
 defined( 'ABSPATH' ) || exit;
 
 /**
- * Response object for MetaLog > Error Graph Api.
+ * Response object for MetaLog Graph Api.
  */
 class Response extends ApiResponse {}

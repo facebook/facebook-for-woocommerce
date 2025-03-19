@@ -909,13 +909,13 @@ class WCFacebookCommerceIntegrationTest extends \WooCommerce\Facebook\Tests\Unit
 
 		add_post_meta( $product->get_id(), WC_Facebookcommerce_Integration::FB_PRODUCT_ITEM_ID, 'facebook-product-item-id' );
 
-		$this->api->expects( $this->once() )
+		$this->api->expects( $this->never() )
 			->method( 'delete_product_item' )
 			->with( 'facebook-product-item-id' );
 
 		$result = $this->integration->delete_on_out_of_stock( $product->get_id(), $product );
 
-		$this->assertTrue( $result );
+		$this->assertFalse( $result );
 	}
 
 	/**

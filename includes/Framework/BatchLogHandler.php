@@ -21,7 +21,7 @@ defined( 'ABSPATH' ) || exit;
  *
  * @since 3.5.0
  */
-class BatchLogHandler {
+class BatchLogHandler extends LogHandlerBase {
 
 	/**
 	 * Constructs a new BatchLog handler.
@@ -33,18 +33,58 @@ class BatchLogHandler {
 	}
 
 	/**
-	 * Function that runs every minute.
+	 * Function that runs every five minutes.
 	 *
 	 * @internal
 	 *
 	 * @since 3.5.0
 	 */
 	public function process_telemetry_logs_batch() {
-		if ( get_transient( 'global_telemetry_message_queue' ) !== false ) {
-			$logs = get_transient( 'global_telemetry_message_queue' );
+		if ( get_transient( 'global_telemetry_message_queue' ) !== false && ! empty( get_transient( 'global_telemetry_message_queue' ) ) ) {
+			$logs         = get_transient( 'global_telemetry_message_queue' );
+			$chunked_logs = array_chunk( $logs, 20 );
 
-			// TODO: Replace with send batch logging request to Meta function.
-			WC_Facebookcommerce_Utils::log( wp_json_encode( $logs ) );
+			$chunked_failed_logs = array_map(
+				function ( $logs_chunk ) {
+					$logs_chunk_with_core_context = array_map(
+						function ( $log ) {
+							return self::set_core_log_context( $log );
+						},
+						$logs_chunk
+					);
+
+					$context = [
+						'event'      => 'persist_meta_telemetry_logs',
+						'extra_data' => [ 'telemetry_logs' => wp_json_encode( $logs_chunk_with_core_context ) ],
+					];
+
+					try {
+						$response = facebook_for_woocommerce()->get_api()->log_to_meta( $context );
+						if ( $response->success ) {
+							WC_Facebookcommerce_Utils::logWithDebugModeEnabled( 'Telemetry logs: ' . wp_json_encode( $context ) );
+							return [];
+						} else {
+							WC_Facebookcommerce_Utils::logWithDebugModeEnabled( 'Bad response from log_to_meta request' );
+							return $logs_chunk;
+						}
+					} catch ( \Exception $e ) {
+						WC_Facebookcommerce_Utils::logWithDebugModeEnabled( 'Error persisting telemetry logs: ' . $e->getMessage() );
+						return $logs_chunk;
+					}
+				},
+				$chunked_logs
+			);
+
+			$failed_logs = array_merge( ...$chunked_failed_logs );
+			// Only keep the latest 100 failed logs, in case too much memory got eaten up on the host
+			if ( count( $failed_logs ) > 100 ) {
+				$failed_logs = array_slice( $failed_logs, -100 );
+			}
+
+			if ( ! empty( $failed_logs ) ) {
+				set_transient( 'global_telemetry_message_queue', $failed_logs, HOUR_IN_SECONDS );
+				return;
+			}
 		}
 
 		set_transient( 'global_telemetry_message_queue', [], HOUR_IN_SECONDS );
