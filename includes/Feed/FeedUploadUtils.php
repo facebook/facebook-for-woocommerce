@@ -21,7 +21,7 @@ class FeedUploadUtils {
 		$reviews_data = array();
 
 		$store_name = get_bloginfo( 'name' );
-		$store_id   = facebook_for_woocommerce()->get_connection_handler()->get_commerce_partner_integration_id();
+		$store_id   = facebook_for_woocommerce()->get_connection_handler()->get_commerce_merchant_settings_id();
 		$store_urls = [ wc_get_page_permalink( 'shop' ) ];
 
 		foreach ( $comments as $comment ) {
