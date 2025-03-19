@@ -124,19 +124,6 @@
   margin: 126px 0 0;
 }
 
-.fb-asc-ads .navigation-footer-container .fit-to-left {
-  left: 0;
-}
-
-.fb-asc-ads .navigation-footer-button {
-  position: absolute;
-  top: 5px;
-}
-
-.fb-asc-ads .navigation-footer-container .fit-to-right {
-  right: 0;
-}
-
 .fb-asc-ads .main-ui-button:disabled {
   border: 1px solid #999999;
   background-color: #cccccc;
