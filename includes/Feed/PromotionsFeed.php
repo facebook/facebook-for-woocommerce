@@ -28,7 +28,7 @@ class PromotionsFeed extends AbstractFeed {
 	const PROMOTIONS_FEED_HEADER = 'offer_id,title,value_type,percent_off,fixed_amount_off,application_type,target_type,target_shipipng_option_types,target_granularity,target_selection,start_date_time,end_date_time,coupon_codes,public_coupon_code,target_filter,target_product_retailer_ids,target_product_group_retailer_ids,target_product_set_retailer_ids,redeem_limit_per_user,min_subtotal,min_quantity,offer_terms,redemption_limit_per_seller,target_quantity,prerequisite_filter,prerequisite_product_retailer_ids,prerequisite_product_group_retailer_ids,prerequisite_product_set_retailer_ids,exclude_sale_priced_products' . PHP_EOL;
 
 	/**
-	 * Constructor.
+	 * Constructor for promotions feed.
 	 *
 	 * @since 3.5.0
 	 */
