@@ -35,28 +35,10 @@ class Request extends Configuration\Request {
 		$this->data['fbe_external_business_id'] = $external_business_id;
 	}
 
-
-	/**
-	 * Sets the plugin version for configuration update request.
-	 *
-	 * @since 3.0.10
-	 *
-	 * @param string $plugin_version current plugin version.
-	 */
-	public function set_plugin_version( string $plugin_version ) {
-
-		$this->data['business_config'] = array(
-			'external_client' =>
-				array(
-					'version_id' => "$plugin_version",
-				),
-		);
-	}
-
 	/**
 	 * Sets the external client metadata for logging
 	 *
-	 * @since 3.4.1
+	 * @since 3.4.4
 	 *
 	 * @param array $metadata map of metadata to include. Example: array ('version_id' => '0.0.0', 'is_multisite' => True)
 	 *

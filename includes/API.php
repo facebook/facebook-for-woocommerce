@@ -286,7 +286,6 @@ class API extends Base {
 	 *
 	 * @return Response|API\FBE\Configuration\Update\Response
 	 * @throws ApiException
-	 * @throws Request_Limit_Reached
 	 */
 	public function update_plugin_version_configuration( string $external_business_id, string $plugin_version ): API\FBE\Configuration\Update\Response {
 		$request = new API\FBE\Configuration\Update\Request( $external_business_id );
