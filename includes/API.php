@@ -269,11 +269,31 @@ class API extends Base {
 	 * Gets the business configuration.
 	 *
 	 * @param string $external_business_id external business ID
+	 * @param string $access_token Optional access token to use for this request. If not provided, will use the instance token.
+	 * @param array $fields Optional. Fields to request from the API. Default empty array returns all fields.
 	 * @return API\Response|API\FBE\Configuration\Read\Response
 	 * @throws ApiException
 	 */
-	public function get_business_configuration( $external_business_id ) {
+	public function get_business_configuration( $external_business_id, $access_token = '', $fields = [] ) {
 		$request = new API\FBE\Configuration\Request( $external_business_id, 'GET' );
+		
+		$params = [];
+		
+		// Use provided access token or fall back to the instance token
+		if ( ! empty( $access_token ) ) {
+			$params['access_token'] = $access_token;
+		}
+		
+		// Add fields parameter if specified
+		if ( ! empty( $fields ) ) {
+			$params['fields'] = is_array( $fields ) ? implode( ',', $fields ) : $fields;
+		}
+		
+		// Set parameters if we have any
+		if ( ! empty( $params ) ) {
+			$request->set_params( $params );
+		}
+		
 		$this->set_response_handler( API\FBE\Configuration\Read\Response::class );
 		return $this->perform_request( $request );
 	}

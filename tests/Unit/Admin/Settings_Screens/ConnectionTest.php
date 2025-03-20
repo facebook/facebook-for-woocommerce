@@ -108,12 +108,8 @@ class ConnectionTest extends TestCase {
         $connection_mock->method('use_enhanced_onboarding')
             ->willReturn(true);
         
-        ob_start();
-        
         // Call the method
-        $connection_mock->render_message_handler();
-        
-        $output = ob_get_clean();
+        $output = $connection_mock->generate_inline_enhanced_onboarding_script();
 
         // Assert JavaScript event listeners and handlers
         $this->assertStringContainsString('window.addEventListener(\'message\'', $output);
@@ -122,9 +118,8 @@ class ConnectionTest extends TestCase {
         $this->assertStringContainsString('CommerceExtension::UNINSTALL', $output);
         
         // Assert fetch request setup - check for wpApiSettings.root instead of hardcoded path
-        $this->assertStringContainsString('fetch(wpApiSettings.root + \'wc-facebook/v1/update_fb_settings\'', $output);
-        $this->assertStringContainsString('method: \'POST\'', $output);
-        $this->assertStringContainsString('credentials: \'same-origin\'', $output);
+        $this->assertStringContainsString('GeneratePluginAPIClient', $output);
+        $this->assertStringContainsString('fbAPI.updateSettings', $output);
     }
 
     /**
