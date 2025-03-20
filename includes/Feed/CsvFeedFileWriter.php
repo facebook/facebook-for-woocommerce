@@ -163,7 +163,10 @@ class CsvFeedFileWriter implements FeedFileWriter {
 		foreach ( $data as $obj ) {
 			$row = [];
 			foreach ( $accessors as $accessor ) {
-				$row[] = $obj[ $accessor ] ?? '';
+				// Map each field in the row to ensure proper string conversion
+				$value = $obj[ $accessor ] ?? '';
+				$row[] = $this->format_field( $value );
+
 			}
 			if ( fputcsv( $temp_feed_file, $row, $this->delimiter, $this->enclosure, $this->escape_char ) === false ) {
 				throw new PluginException( 'Failed to write a CSV data row.', 500 );
@@ -173,6 +176,14 @@ class CsvFeedFileWriter implements FeedFileWriter {
 		// phpcs:ignore -- use php file i/o functions
 		fclose( $temp_feed_file );
 	}
+
+	protected function format_field( $value ) {
+		if ( is_array( $value ) || is_object( $value ) ) {
+			return wp_json_encode( $value );
+		}
+		return $value;
+	}
+
 
 	/**
 	 * Creates files in the feed directory to prevent directory listing and hotlinking.
