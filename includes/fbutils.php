@@ -864,9 +864,7 @@ if ( ! class_exists( 'WC_Facebookcommerce_Utils' ) ) :
 		 * @since 3.5.0
 		 * 
 		 * @param Throwable $error error object
-		 * @param array $context context example: ['catalog_id' => '1234567890', 'order_id' => '1234567890', 
-		 * 		'promotion_id' => '1234567890', 'flow_name' => 'checkout', 'flow_step' => 'verification', 
-		 * 		'extra_data' => ['dictionary type' => 'any data that is not fall into our pre-defined format.']
+		 * @param array $context wiki: https://www.internalfb.com/wiki/Commerce_Platform/Teams/3P_Ecosystems_(3PE)/3rd_Party_platforms/Woo_Commerce/How_To_Use_WooCommerce_Side_Logging/
 		 */
 		public static function logExceptionImmediatelyToMeta(Throwable $error, array $context = []) {
 			ErrorLogHandler::log_exception_to_meta($error, $context);
@@ -875,6 +873,9 @@ if ( ! class_exists( 'WC_Facebookcommerce_Utils' ) ) :
 		/**
 		 * Utility function for sending telemetry logs to Meta.
 		 * @since 3.5.0
+		 * 
+		 * @param string $message
+		 * @param array $context wiki: https://www.internalfb.com/wiki/Commerce_Platform/Teams/3P_Ecosystems_(3PE)/3rd_Party_platforms/Woo_Commerce/How_To_Use_WooCommerce_Side_Logging/
 		 */
 		public static function logTelemetryToMeta(string $message, array $context = []) {
 			$extra_data = self::getContextData( $context, 'extra_data', [] );

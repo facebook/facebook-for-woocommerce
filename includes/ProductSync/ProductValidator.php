@@ -133,7 +133,6 @@ class ProductValidator {
 	public function validate() {
 		$this->validate_sync_enabled_globally();
 		$this->validate_product_status();
-		$this->validate_product_stock_status();
 		$this->validate_product_sync_field();
 		$this->validate_product_price();
 		$this->validate_product_visibility();
@@ -151,7 +150,6 @@ class ProductValidator {
 	 */
 	public function validate_but_skip_status_check() {
 		$this->validate_sync_enabled_globally();
-		$this->validate_product_stock_status();
 		$this->validate_product_sync_field();
 		$this->validate_product_price();
 		$this->validate_product_visibility();
@@ -168,7 +166,6 @@ class ProductValidator {
 	 */
 	public function validate_but_skip_sync_field() {
 		$this->validate_sync_enabled_globally();
-		$this->validate_product_stock_status();
 		$this->validate_product_price();
 		$this->validate_product_visibility();
 		$this->validate_product_terms();
@@ -265,17 +262,6 @@ class ProductValidator {
 
 		if ( 'publish' !== $product->get_status() ) {
 			throw new ProductExcludedException( __( 'Product is not published.', 'facebook-for-woocommerce' ) );
-		}
-	}
-
-	/**
-	 * Check whether the product should be excluded due to being out of stock.
-	 *
-	 * @throws ProductExcludedException If product should not be synced.
-	 */
-	protected function validate_product_stock_status() {
-		if ( 'yes' === get_option( 'woocommerce_hide_out_of_stock_items' ) && ! $this->product->is_in_stock() ) {
-			throw new ProductExcludedException( __( 'Product must be in stock.', 'facebook-for-woocommerce' ) );
 		}
 	}
 
