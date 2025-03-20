@@ -580,7 +580,7 @@ class Advertise extends Abstract_Settings_Screen {
 			$subject = $ad_account_id . '_' . 'PluginException';
 			$body = 'message: ' . $pe->getMessage() . '  stack-trace: ' . $pe->getTraceAsString();
 			$body = urlencode($body);
-			$link = 'mailto:woofeedback@meta.com?subject=' . $subject . '&body=' . $body;
+			$link = 'mailto:woosupport@meta.com?subject=' . $subject . '&body=' . $body;
 			?>
 			<h2><?php echo $this->translate_with_link( "An unexpected error happened.", $link, "Click here", " to mail us the bug report." ); ?></h2>
 			<?php
