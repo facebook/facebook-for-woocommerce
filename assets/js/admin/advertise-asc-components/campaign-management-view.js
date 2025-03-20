@@ -168,14 +168,18 @@ const CampaignSetupView = (props) => {
 
 				{activeKey == 0 && (
 					<p className="campaign-management-info-section">
-						<Icon icon={info} size={22} />
-						Learn more about Advantage Shopping+{" "}
-						<a
-							href="https://www.facebook.com/business/help/1362234537597370"
-							target="_blank"
-						>
-							here.
-						</a>
+						{props.campaignType != RETARGETING_CAMPAIGN_TYPE && (
+							<>
+								<Icon icon={info} size={22} />
+								Learn more about Advantage Shopping+{" "}
+								<a
+									href="https://www.facebook.com/business/help/1362234537597370"
+									target="_blank"
+								>
+									here.
+								</a>
+							</>
+						)}
 					</p>
 				)}
                 <div className='campaign-management-button-wrapper'>
