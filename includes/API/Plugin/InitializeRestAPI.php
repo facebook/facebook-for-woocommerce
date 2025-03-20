@@ -60,8 +60,8 @@ class InitializeRestAPI {
 	 */
 	public function get_api_definitions() {
 		wp_enqueue_script(
-			'connection-api-client',
-			facebook_for_woocommerce()->get_plugin_url() . '/assets/js/admin/connection-api-client.js',
+			'plugin-api-client',
+			facebook_for_woocommerce()->get_plugin_url() . '/assets/js/admin/plugin-api-client.js',
 			[ 'jquery' ],
 			\WC_Facebookcommerce::VERSION,
 			true // Important: Load in footer
@@ -117,7 +117,7 @@ class InitializeRestAPI {
 		$api_definitions = $this->get_api_definitions();
 		// Localize the script with API data
 		wp_localize_script(
-			'connection-api-client',
+			'plugin-api-client',
 			'fb_api_data',
 			[
 				'api_url'   => rest_url( Controller::API_NAMESPACE . '/' ),

@@ -377,7 +377,7 @@ class Connection extends Abstract_Settings_Screen {
 			return;
 		}
 		// Add the inline script as a dependent script
-		wp_add_inline_script( 'connection-api-client', $this->generate_inline_enhanced_onboarding_script(), 'after' );
+		wp_add_inline_script( 'plugin-api-client', $this->generate_inline_enhanced_onboarding_script(), 'after' );
 	}
 
 	public function generate_inline_enhanced_onboarding_script() {
@@ -386,8 +386,7 @@ class Connection extends Abstract_Settings_Screen {
 
 		// Create the inline script with HEREDOC syntax for better JS readability
 		return <<<JAVASCRIPT
-			const fbAPI = FacebookWooCommerceAPIFactory({$nonce});
-			
+			const fbAPI = GeneratePluginAPIClient({$nonce});
 			window.addEventListener('message', function(event) {
 				const message = event.data;
 				const messageEvent = message.event;

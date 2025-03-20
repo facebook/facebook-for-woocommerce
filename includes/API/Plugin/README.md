@@ -182,8 +182,8 @@ First, make sure the API script is loaded on your page:
 
 ```php
 wp_enqueue_script(
-    'connection-api-client',
-    facebook_for_woocommerce()->get_plugin_url() . '/assets/js/admin/connection-api-client.js',
+    'plugin-api-client',
+    facebook_for_woocommerce()->get_plugin_url() . '/assets/js/admin/plugin-api-client.js',
     ['jquery'],
     \WC_Facebookcommerce::VERSION,
     true

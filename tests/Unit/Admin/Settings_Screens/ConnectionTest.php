@@ -118,7 +118,7 @@ class ConnectionTest extends TestCase {
         $this->assertStringContainsString('CommerceExtension::UNINSTALL', $output);
         
         // Assert fetch request setup - check for wpApiSettings.root instead of hardcoded path
-        $this->assertStringContainsString('FacebookWooCommerceAPIFactory', $output);
+        $this->assertStringContainsString('GeneratePluginAPIClient', $output);
         $this->assertStringContainsString('fbAPI.updateSettings', $output);
     }
 
