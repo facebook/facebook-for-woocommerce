@@ -17,7 +17,7 @@ use WP_Error;
 /**
  * Handles Meta Commerce Extension functionality and configuration.
  *
- * @since 2.5.2
+ * @since 3.5.0
  */
 class MetaExtension {
 
@@ -64,7 +64,7 @@ class MetaExtension {
 	 * @param string $external_business_id External business ID.
 	 *
 	 * @return string
-	 * @since 2.5.2
+	 * @since 3.5.0
 	 */
 	public static function generate_iframe_splash_url( $is_connected, $plugin, $external_business_id ): string {
 		$connection_handler       = facebook_for_woocommerce()->get_connection_handler();
@@ -100,7 +100,7 @@ class MetaExtension {
 	 * @param string $external_business_id External business ID.
 	 *
 	 * @return string
-	 * @since 2.5.2
+	 * @since 3.5.0
 	 */
 	public static function generate_iframe_management_url( $external_business_id ) {
 		$access_token = get_option( self::OPTION_ACCESS_TOKEN, '' );

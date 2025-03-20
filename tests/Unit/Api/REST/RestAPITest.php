@@ -3,11 +3,11 @@
  * Unit tests for REST API functionality.
  */
 
-namespace WooCommerce\Facebook\Tests\Unit\API\REST;
+namespace WooCommerce\Facebook\Tests\Unit\API\Plugin;
 
-use WooCommerce\Facebook\API\REST\InitializeRestAPI;
-use WooCommerce\Facebook\API\REST\Settings\Handler;
-use WooCommerce\Facebook\API\REST\Settings\Update\Request as UpdateRequest;
+use WooCommerce\Facebook\API\Plugin\InitializeRestAPI;
+use WooCommerce\Facebook\API\Plugin\Settings\Handler;
+use WooCommerce\Facebook\API\Plugin\Settings\Update\Request as UpdateRequest;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -15,11 +15,6 @@ use PHPUnit\Framework\TestCase;
  */
 class RestAPITest extends TestCase {
 
-    /**
-     * Mock plugin instance
-     */
-    private $mock_plugin;
-    
     /**
      * Test REST API routes are registered
      */
@@ -190,7 +185,7 @@ class RestAPITest extends TestCase {
             $reflection = new \ReflectionClass($class);
             $traits = $reflection->getTraitNames();
             
-            if (in_array('WooCommerce\\Facebook\\API\\REST\\Traits\\JS_Exposable', $traits)) {
+            if (in_array('WooCommerce\\Facebook\\API\\Plugin\\Traits\\JS_Exposable', $traits)) {
                 // Skip abstract classes
                 if ($reflection->isAbstract()) {
                     continue;

@@ -36,6 +36,6 @@ class Response extends API\Response {
 	 * @return string Commerce extension URI or empty string if not available.
 	 */
 	public function get_commerce_extension_uri(): string {
-		return $this->response_data['commerce_extension'] ?? '';
+		return $this->response_data['commerce_extension']['uri'] ?? '';
 	}
 }
