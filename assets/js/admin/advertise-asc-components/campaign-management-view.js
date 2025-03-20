@@ -1,6 +1,6 @@
 import { useState } from '@wordpress/element';
 import { Button, ButtonGroup, Icon, Modal, TabPanel } from '@wordpress/components';
-import { warning } from '@wordpress/icons';
+import { warning, info } from '@wordpress/icons';
 import CampaignEditView from './campaign-edit-view';
 import CampaignPreviewView from './campaign-preview-view'
 
@@ -131,12 +131,10 @@ const CampaignSetupView = (props) => {
     return (
         <>
             <div className='campaign-management-wrapper'>
-                <div>
-                    <TabPanel
-                        orientation={"horizontal"}
-                        tabs={headers}                        
-                    />
-                </div>
+				<TabPanel
+					orientation={"horizontal"}
+					tabs={headers}                        
+				/>
 
                 <div className='campaign-management-body'>
                     {activeKey == 0 ? (
@@ -168,6 +166,18 @@ const CampaignSetupView = (props) => {
                     )}
                 </div>
 
+				{activeKey == 0 && (
+					<p className="campaign-management-info-section">
+						<Icon icon={info} size={22} />
+						Learn more about Advantage Shopping+{" "}
+						<a
+							href="https://www.facebook.com/business/help/1362234537597370"
+							target="_blank"
+						>
+							here.
+						</a>
+					</p>
+				)}
                 <div className='campaign-management-button-wrapper'>
                     {
                         activeKey == 0
