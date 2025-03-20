@@ -3,6 +3,23 @@
   padding: 0;
 }
 
+.fb-asc-ads .components-tab-panel__tabs {
+  display: flex;
+  gap: 10px;
+  padding: 10px 0;
+  border-bottom: solid 1px #F0F2F5;
+}
+  
+.fb-asc-ads .components-tab-panel__tabs button {
+  height: 30px;
+  border-radius: 3px;
+  background-color: #F0F2F550;
+}
+
+.fb-asc-ads .components-tab-panel__tabs button[aria-selected="true"] {
+  background-color: #F0F2F5;
+}
+
 .fb-asc-ads .components-panel,
 .fb-asc-ads .components-panel__body {
   margin: 0;
@@ -13,7 +30,7 @@
 
 .fb-asc-ads .campaign-management-wrapper {
   margin: 0 0 16px;
-  padding: 24px 20px;
+  padding: 0 24px 20px;
   background-color: white;
   border-radius: 6px;
   box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.1);
@@ -116,12 +133,27 @@
   display: flex;
 }
 
+.fb-asc-ads .campaign-management-info-section {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+  margin: 56px 0 0;
+  padding-bottom: 4px;
+  fill: #1C2B3360;
+  color: #1C2B3360;
+}
+
 .fb-asc-ads .navigation-footer-container {
   display: flex;
   align-items: center;
   justify-content: end;
   gap: 12px;
-  margin: 126px 0 0;
+  padding-top: 10px;
+  border-top: solid 1px #F0F2F5;
+}
+
+.fb-asc-ads .campaign-management-button-wrapper button {
+  border-radius: 3px;
 }
 
 .fb-asc-ads .main-ui-button:disabled {
@@ -351,6 +383,7 @@
 
 .fb-asc-ads.edit-view {
   color: #1C2B33;
+  padding-top: 10px;
 }
 
 .fb-asc-ads.edit-view .components-form-token-field__input-container,
