@@ -95,7 +95,7 @@ const CampaignEditView = (props) => {
 				<div className='transparent-background campaign-edit-view-thumbnail-container'>
 					<TextareaControl
 						className='campaign-edit-view-messagebox'
-						rows="5"
+						rows="4"
 						onChange={(new_value) => {
 							setMessage(new_value);
 							props.onMessageChange(new_value);
