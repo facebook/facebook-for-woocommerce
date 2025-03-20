@@ -24,7 +24,29 @@ const CampaignPreviewComponentView = (props) => {
 
     return (
         <>
-            {loading ? <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}><Spinner style={{ height: 'calc(4px * 5)', width: 'calc(4px * 5)' }} /></div> : <></>}
+			{loading ? (
+				<div
+					style={{
+						display: "flex",
+						justifyContent: "center",
+						alignItems: "center",
+						position: "absolute",
+						top: "50%",
+						left: "50%",
+						transform: "translate(-50%, -50%)",
+					}}
+				>
+					<Spinner
+						style={{
+							height: "calc(4px * 5)",
+							width: "calc(4px * 5)",
+						}}
+					/>
+				</div>
+			) : (
+				<></>
+			)}
+			
             {iFrame}
         </>
     )
