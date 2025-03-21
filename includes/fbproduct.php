@@ -22,6 +22,53 @@ defined( 'ABSPATH' ) || exit;
  * Custom FB Product proxy class
  */
 class WC_Facebook_Product {
+
+
+	/**
+	 * Product-related constants used for form rendering.
+	 * These constants are used in the admin interface for product settings forms.
+	 * The actual product data handling uses the same constants defined in WC_Facebook_Product.
+	 */
+
+	/** @var string the "new" condition */
+	const CONDITION_NEW = 'new';
+
+	/** @var string the "used" condition */
+	const CONDITION_USED = 'used';
+
+	/** @var string the "refurbished" condition */
+	const CONDITION_REFURBISHED = 'refurbished';
+
+	/** @var string the "adult" age group */
+	const AGE_GROUP_ADULT = 'adult';
+
+	/** @var string the "all ages" age group */
+	const AGE_GROUP_ALL_AGES = 'all ages';
+
+	/** @var string the "teen" age group */
+	const AGE_GROUP_TEEN = 'teen';
+
+	/** @var string the "kids" age group */
+	const AGE_GROUP_KIDS = 'kids';
+
+	/** @var string the "toddler" age group */
+	const AGE_GROUP_TODDLER = 'toddler';
+
+	/** @var string the "infant" age group */
+	const AGE_GROUP_INFANT = 'infant';
+
+	/** @var string the "newborn" age group */
+	const AGE_GROUP_NEWBORN = 'newborn';
+
+	/** @var string the "male" gender */
+	const GENDER_MALE = 'male';
+
+	/** @var string the "female" gender */
+	const GENDER_FEMALE = 'female';
+
+	/** @var string the "unisex" gender */
+	const GENDER_UNISEX = 'unisex';
+
 	// Used for the background sync
 	const PRODUCT_PREP_TYPE_ITEMS_BATCH = 'items_batch';
 	// Used for the background feed upload
@@ -426,132 +473,55 @@ class WC_Facebook_Product {
 			$fb_brand
 		);
 	}
-	
-	
-	public function set_fb_material( $fb_material ) {
-		$fb_brand = stripslashes(
-			WC_Facebookcommerce_Utils::clean_string( $fb_material )
+
+	/**
+	 * Utility method to set basic Facebook product attributes
+	 * 
+	 * @param string $key The meta key to store the value under
+	 * @param string $value The value to store
+	 * @return void
+	 */
+	private function set_fb_attribute($key, $value) {
+		$value = stripslashes(
+			WC_Facebookcommerce_Utils::clean_string($value)
 		);
 		update_post_meta(
 			$this->id,
-			self::FB_MATERIAL,
-			$fb_material
+			$key,
+			$value
 		);
+	}
+		
+	public function set_fb_material( $fb_material ) {
+		$this->set_fb_attribute(self::FB_MATERIAL, $fb_material);
 	}
 	
 	public function set_fb_pattern( $fb_pattern ) {
-		$fb_brand = stripslashes(
-			WC_Facebookcommerce_Utils::clean_string( $fb_pattern )
-		);
-		update_post_meta(
-			$this->id,
-			self::FB_PATTERN,
-			$fb_pattern
-		);
+		$this->set_fb_attribute(self::FB_PATTERN, $fb_pattern);
 	}
 
 	public function set_fb_mpn( $fb_mpn ) {
-		$fb_mpn = stripslashes(
-			WC_Facebookcommerce_Utils::clean_string( $fb_mpn )
-		);
-		update_post_meta(
-			$this->id,
-			self::FB_MPN,
-			$fb_mpn
-		);
+		$this->set_fb_attribute(self::FB_MPN, $fb_mpn);
 	}
 
-	public function set_fb_condition( $condition ) {
-		$condition = stripslashes(
-			WC_Facebookcommerce_Utils::clean_string( $condition )
-		);
-			update_post_meta(
-				$this->id,
-				self::FB_PRODUCT_CONDITION,
-				$condition
-			);
+	public function set_fb_condition( $fb_condition ) {
+		$this->set_fb_attribute(self::FB_PRODUCT_CONDITION, $fb_condition);
 	}
 
-
-	public function set_fb_age_group( $age_group ) {
-		$age_group = stripslashes(
-			WC_Facebookcommerce_Utils::clean_string( $age_group )
-		);
-
-		update_post_meta(
-			$this->id,
-			self::FB_AGE_GROUP,
-			$age_group
-		);
-
+	public function set_fb_age_group( $fb_age_group ) {
+		$this->set_fb_attribute(self::FB_AGE_GROUP, $fb_age_group);
 	}
 	
-	public function set_fb_gender( $gender ) {
-		$gender = stripslashes(
-			WC_Facebookcommerce_Utils::clean_string( $gender )
-		);
-		update_post_meta(
-			$this->id,
-			self::FB_GENDER,
-			$gender
-		);
-	}
-	
-	public function set_color( $color ) {
-		$color = stripslashes(
-			WC_Facebookcommerce_Utils::clean_string( $color )
-		);
-			update_post_meta(
-				$this->id,
-				self::FB_COLOR,
-				$color
-			);
-	}
-
-	public function set_pattern( $pattern ) {
-		$pattern = stripslashes(
-			WC_Facebookcommerce_Utils::clean_string( $pattern )
-		);
-			update_post_meta(
-				$this->id,
-				self::FB_PATTERN,
-				$pattern
-			);
-	}
-
-	public function set_material( $material ) {
-		$material = stripslashes(
-			WC_Facebookcommerce_Utils::clean_string( $material )
-		);
-			update_post_meta(
-				$this->id,
-				self::FB_MATERIAL,
-				$material
-			);
+	public function set_fb_gender( $fb_gender ) {
+		$this->set_fb_attribute(self::FB_GENDER, $fb_gender);
 	}
 
 	public function set_fb_color( $fb_color ) {
-		$gender = stripslashes(
-			WC_Facebookcommerce_Utils::clean_string( $fb_color )
-		);
-		update_post_meta(
-			$this->id,
-			self::FB_COLOR,
-			$fb_color
-		);
+		$this->set_fb_attribute(self::FB_COLOR, $fb_color);
 	}
 
-
-	public function set_fb_size( $size ) {
-		$size = stripslashes(
-			WC_Facebookcommerce_Utils::clean_string( $size )
-		);
-		update_post_meta(
-			$this->id,
-			self::FB_SIZE,
-			$size
-		);
-
+	public function set_fb_size( $fb_size ) {
+		$this->set_fb_attribute(self::FB_SIZE, $fb_size);
 	}
 
 	public function set_price( $price ) {
@@ -847,7 +817,7 @@ class WC_Facebook_Product {
 			}
 		}
 
-		return WC_Facebookcommerce_Utils::clean_string( $fb_condition ) ?: Admin::CONDITION_NEW;
+		return WC_Facebookcommerce_Utils::clean_string( $fb_condition ) ?: self::CONDITION_NEW;
 	}
 
 

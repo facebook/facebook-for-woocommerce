@@ -856,16 +856,12 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 	}
 
 	/**
-	 * Saves the submitted Facebook settings for a variable product.
+	 * Saves Facebook product attributes from POST data.
 	 *
-	 * @param \WC_Product $product The variable product object.
+	 * @param WC_Facebook_Product $woo_product The Facebook product object
 	 */
-	private function save_variable_product_settings( WC_Product $product ) {
-		$woo_product = new WC_Facebook_Product( $product->get_id() );
-		if ( isset( $_POST[ WC_Facebook_Product::FB_VARIABLE_BRAND ] ) ) {
-			$woo_product->set_fb_brand( sanitize_text_field( wp_unslash( $_POST[ WC_Facebook_Product::FB_VARIABLE_BRAND ] ) ) );
-		}
-
+	private function save_facebook_product_attributes( $woo_product ) {
+		// phpcs:disable WordPress.Security.NonceVerification.Missing
 		if ( isset( $_POST[ WC_Facebook_Product::FB_BRAND ] ) ) {
 			$woo_product->set_fb_brand( sanitize_text_field( wp_unslash( $_POST[ WC_Facebook_Product::FB_BRAND ] ) ) );
 		}
@@ -901,6 +897,17 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 		if ( isset( $_POST[ WC_Facebook_Product::FB_PRODUCT_CONDITION ] ) ) {
 			$woo_product->set_fb_condition( sanitize_text_field( wp_unslash( $_POST[ WC_Facebook_Product::FB_PRODUCT_CONDITION ] ) ) );
 		}
+		// phpcs:enable WordPress.Security.NonceVerification.Missing
+	}
+
+	/**
+	 * Saves the submitted Facebook settings for a variable product.
+	 *
+	 * @param \WC_Product $product The variable product object.
+	 */
+	private function save_variable_product_settings( $product ) {
+		$woo_product = new WC_Facebook_Product( $product->get_id() );
+		$this->save_facebook_product_attributes( $woo_product );
 	}
 
 	/**
@@ -938,58 +945,7 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 			$woo_product->set_product_video_urls( $attachment_ids );
 		}
 
-		if ( isset( $_POST[ WC_Facebook_Product::FB_BRAND ] ) ) {
-			$woo_product->set_fb_brand( sanitize_text_field( wp_unslash( $_POST[ WC_Facebook_Product::FB_BRAND ] ) ) );
-		}
-
-		if ( isset( $_POST[ WC_Facebook_Product::FB_MPN ] ) ) {
-			$woo_product->set_fb_mpn( sanitize_text_field( wp_unslash( $_POST[ WC_Facebook_Product::FB_MPN ] ) ) );
-		}
-
-		if ( isset( $_POST[ WC_Facebook_Product::FB_PRODUCT_CONDITION ] ) ) {
-			$woo_product->set_fb_condition( sanitize_text_field( wp_unslash( $_POST[ WC_Facebook_Product::FB_PRODUCT_CONDITION ] ) ) );
-		}
-
-		if ( isset( $_POST[ WC_Facebook_Product::FB_AGE_GROUP ] ) ) {
-			$woo_product->set_fb_age_group( sanitize_text_field( wp_unslash( $_POST[ WC_Facebook_Product::FB_AGE_GROUP ] ) ) );
-		}
-		
-		if ( isset( $_POST[ WC_Facebook_Product::FB_SIZE ] ) ) {
-			$woo_product->set_fb_size( sanitize_text_field( wp_unslash( $_POST[ WC_Facebook_Product::FB_SIZE ] ) ) );
-		}
-		
-		if ( isset( $_POST[ WC_Facebook_Product::FB_COLOR ] ) ) {
-			$woo_product->set_fb_color( sanitize_text_field( wp_unslash( $_POST[ WC_Facebook_Product::FB_COLOR ] ) ) );
-		}
-		
-		if ( isset( $_POST[ WC_Facebook_Product::FB_MATERIAL ] ) ) {
-			$woo_product->set_fb_material( sanitize_text_field( wp_unslash( $_POST[ WC_Facebook_Product::FB_MATERIAL ] ) ) );
-		}
-		
-		if ( isset( $_POST[ WC_Facebook_Product::FB_PATTERN ] ) ) {
-			$woo_product->set_fb_pattern( sanitize_text_field( wp_unslash( $_POST[ WC_Facebook_Product::FB_PATTERN ] ) ) );
-		}
-
-		if ( isset( $_POST[ WC_Facebook_Product::FB_GENDER ] ) ) {
-			$woo_product->set_fb_gender( sanitize_text_field( wp_unslash( $_POST[ WC_Facebook_Product::FB_GENDER ] ) ) );
-		}
-
-		if ( isset( $_POST[ WC_Facebook_Product::FB_SIZE ] ) ) {
-			$woo_product->set_size( sanitize_text_field( wp_unslash( $_POST[ WC_Facebook_Product::FB_SIZE ] ) ) );
-		}
-
-		if ( isset( $_POST[ WC_Facebook_Product::FB_COLOR ] ) ) {
-			$woo_product->set_color( sanitize_text_field( wp_unslash( $_POST[ WC_Facebook_Product::FB_COLOR ] ) ) );
-		}
-
-		if ( isset( $_POST[ WC_Facebook_Product::FB_MATERIAL ] ) ) {
-			$woo_product->set_material( sanitize_text_field( wp_unslash( $_POST[ WC_Facebook_Product::FB_MATERIAL ] ) ) );
-		}
-
-		if ( isset( $_POST[ WC_Facebook_Product::FB_PATTERN ] ) ) {
-			$woo_product->set_pattern( sanitize_text_field( wp_unslash( $_POST[ WC_Facebook_Product::FB_PATTERN ] ) ) );
-		}
-		// phpcs:enable WordPress.Security.NonceVerification.Missing
+		$this->save_facebook_product_attributes( $woo_product );
 	}
 
 	/**
