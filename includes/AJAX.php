@@ -14,6 +14,7 @@ namespace WooCommerce\Facebook;
 use WooCommerce\Facebook\Framework\Helper;
 use WooCommerce\Facebook\AdvertiseASC\NewBuyers;
 use WooCommerce\Facebook\AdvertiseASC\Retargeting;
+use WooCommerce\Facebook\AdvertiseASC\AccountIsPostPaidException;
 use WooCommerce\Facebook\Admin\Settings_Screens\Product_Sync;
 use WooCommerce\Facebook\Framework\Plugin\Exception as PluginException;
 
@@ -145,7 +146,9 @@ class AJAX {
 
 			wp_send_json_error( $e->getMessage() );
 
-		} 
+		} catch ( AccountIsPostPaidException $aip ) {
+			wp_send_json_error ("AIP", 400);
+		}
 	}
 
 	public function update_ad_status() {
