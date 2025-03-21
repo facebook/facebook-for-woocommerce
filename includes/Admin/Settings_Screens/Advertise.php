@@ -16,7 +16,6 @@ defined( 'ABSPATH' ) or exit;
 use WooCommerce\Facebook\API;
 use WooCommerce\Facebook\Locale;
 use WooCommerce\Facebook\Admin\Abstract_Settings_Screen;
-use WooCommerce\Facebook\Framework\Plugin\Exception as PluginException;
 use WooCommerce\Facebook\AdvertiseASC\AccountIsPostPaidException;
 use WooCommerce\Facebook\AdvertiseASC\AscNotSupportedException;
 use WooCommerce\Facebook\AdvertiseASC\NonDiscriminationNotAcceptedException;

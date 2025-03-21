@@ -93,7 +93,8 @@ const CampaignSetupView = (props) => {
                 setPublishing(false);
             })
             .catch((err) => {
-                openErrorModal(err.mes);
+                // openErrorModal(err.mes);
+                throw err.mes;
             });
     };
 
