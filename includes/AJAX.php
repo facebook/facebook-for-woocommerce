@@ -141,12 +141,11 @@ class AJAX {
 		    }
 			wp_send_json_success( $result );
 
-		}
-		catch ( PluginException $e ) {
+		} catch ( PluginException $e ) {
 
 			wp_send_json_error( $e->getMessage() );
 
-		}
+		} 
 	}
 
 	public function update_ad_status() {

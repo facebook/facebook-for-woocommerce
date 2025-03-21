@@ -70,6 +70,7 @@ class NewBuyers extends CampaignHandler {
 	 *
 	 * @since x.x.x
 	 * @param mixed $props is an object with values for: state, daily budget, country list, and ad message.
+	 * @throws AccountIsPostPaidException In case the account needs to be prepaid.
 	 * @throws AscNotSupportedException In case ASC campaign creation is not supported.
 	 * @throws NonDiscriminationNotAcceptedException In case Non-Discrimination agreement is not accepted in AdsManager.
 	 * @throws PluginException If there was any unexpected errors from APIs.
@@ -112,7 +113,11 @@ class NewBuyers extends CampaignHandler {
 
 			$message = $this->get_escaped_translation( 'An exception happened trying to setup the New Buyers campaign objects for the first time. ' . $e->getMessage() );
 			\WC_Facebookcommerce_Utils::log( $message );
-			if ( str_contains( $e->getMessage(), 'non-discrimination' ) ) {
+			
+			if ( str_contains( $e->getMessage(), 'Update payment method' ) && !$this->is_account_prepaid() ) {
+				throw new AccountIsPostPaidException();
+			}
+			else if ( str_contains( $e->getMessage(), 'non-discrimination' ) ) {
 				throw new NonDiscriminationNotAcceptedException();
 			} else {
 				throw new PluginException( $message );

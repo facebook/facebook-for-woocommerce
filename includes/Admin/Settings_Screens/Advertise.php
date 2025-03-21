@@ -17,6 +17,7 @@ use WooCommerce\Facebook\API;
 use WooCommerce\Facebook\Locale;
 use WooCommerce\Facebook\Admin\Abstract_Settings_Screen;
 use WooCommerce\Facebook\Framework\Plugin\Exception as PluginException;
+use WooCommerce\Facebook\AdvertiseASC\AccountIsPostPaidException;
 use WooCommerce\Facebook\AdvertiseASC\AscNotSupportedException;
 use WooCommerce\Facebook\AdvertiseASC\NonDiscriminationNotAcceptedException;
 use WooCommerce\Facebook\AdvertiseASC\InstagramUserIdNotFoundException;
@@ -502,7 +503,13 @@ class Advertise extends Abstract_Settings_Screen {
 				window.location.reload();
 			</script>
 			<?php
-
+		} catch ( AccountIsPostPaidException $aippe ){
+			\WC_Facebookcommerce_Utils::log( $aippe->getMessage() );
+			$this->remove_rendered_when_exception_happened();
+			$ad_acc_id = facebook_for_woocommerce()->get_connection_handler()->get_ad_account_id();
+			?>
+			<h2><?php echo $this->get_escaped_translation( "PREPAID" ); ?></h2>
+			<?php
 		} catch ( InvalidPaymentInformationException $ipie ) {
 
 			\WC_Facebookcommerce_Utils::log( $ipie->getMessage() );
