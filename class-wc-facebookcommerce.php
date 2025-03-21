@@ -96,6 +96,9 @@ class WC_Facebookcommerce extends WooCommerce\Facebook\Framework\Plugin {
 	/** @var WooCommerce\Facebook\Handlers\WebHook webhook handler */
 	private $webhook_handler;
 
+	/** @var WooCommerce\Facebook\Handlers\Whatsapp_WebHook whatsapp webhook handler */
+	private $whatsapp_webhook_handler;
+
 	/** @var WooCommerce\Facebook\Commerce commerce handler */
 	private $commerce_handler;
 
@@ -189,7 +192,6 @@ class WC_Facebookcommerce extends WooCommerce\Facebook\Framework\Plugin {
 
 			$this->heartbeat = new Heartbeat( WC()->queue() );
 			$this->heartbeat->init();
-
 			$this->feed_manager              = new WooCommerce\Facebook\Feed\FeedManager();
 			$this->checkout           		 = new WooCommerce\Facebook\Checkout();
 			$this->product_feed              = new WooCommerce\Facebook\Products\Feed();
@@ -219,10 +221,11 @@ class WC_Facebookcommerce extends WooCommerce\Facebook\Framework\Plugin {
 				$this->background_remove_duplicate_visibility_meta = new Background_Remove_Duplicate_Visibility_Meta();
 			}
 
-			$this->connection_handler = new WooCommerce\Facebook\Handlers\Connection( $this );
+			$this->connection_handler 			= new WooCommerce\Facebook\Handlers\Connection( $this );
 			new WooCommerce\Facebook\Handlers\MetaExtension();
-			$this->webhook_handler    = new WooCommerce\Facebook\Handlers\WebHook( $this );
-			$this->tracker            = new WooCommerce\Facebook\Utilities\Tracker();
+			$this->webhook_handler   				= new WooCommerce\Facebook\Handlers\WebHook( $this );
+			$this->whatsapp_webhook_handler = new WooCommerce\Facebook\Handlers\Whatsapp_Webhook( $this );
+			$this->tracker            			= new WooCommerce\Facebook\Utilities\Tracker();
 
 			// Init jobs
 			$this->job_manager = new WooCommerce\Facebook\Jobs\JobManager();
