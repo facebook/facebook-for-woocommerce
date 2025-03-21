@@ -180,6 +180,7 @@ class UpdateTest extends WP_UnitTestCase {
 			'business_config'          => array(
 				'external_client' => array(
 					'version_id' => WC_Facebookcommerce_Utils::PLUGIN_VERSION,
+					'is_multisite' => false,
 				),
 			),
 		);
