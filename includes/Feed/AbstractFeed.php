@@ -171,9 +171,17 @@ abstract class AbstractFeed {
 			facebook_for_woocommerce()->
 			get_api()->
 			create_common_data_feed_upload( $cpi_id, $data );
-		} catch ( Exception $e ) {
-			// Log the error and continue.
-			\WC_Facebookcommerce_Utils::log( "{$name} feed: Failed to create feed upload request: " . $e->getMessage() );
+		} catch ( Exception $exception ) {
+			\WC_Facebookcommerce_Utils::logExceptionImmediatelyToMeta(
+				$exception,
+				[
+					'event'      => 'feed_upload',
+					'event_type' => 'send_request_to_upload_feed',
+					'extra_data' => [
+						'feed_type' => $name,
+					],
+				]
+			);
 		}
 	}
 
@@ -264,16 +272,25 @@ abstract class AbstractFeed {
 			// fpassthru might be disabled in some hosts (like Flywheel).
 			// phpcs:ignore
 			if ( \WC_Facebookcommerce_Utils::is_fpassthru_disabled() || ! @fpassthru( $file ) ) {
-				\WC_Facebookcommerce_Utils::log( "{$name} feed: fpassthru is disabled: getting file contents" );
+				\WC_Facebookcommerce_Utils::log( "{$name} feed: fpassthru is disabled: getting file contents." );
 				//phpcs:ignore
 				$contents = @stream_get_contents( $file );
 				if ( ! $contents ) {
-					throw new PluginException( 'Could not get feed file contents.', 500 );
+					throw new PluginException( "{$name} feed: Could not get feed file contents.", 500 );
 				}
 				echo $contents; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
 			}
 		} catch ( \Exception $exception ) {
-			\WC_Facebookcommerce_Utils::log( "{$name} feed: Could not serve feed. " . $exception->getMessage() . ' (' . $exception->getCode() . ')' );
+			\WC_Facebookcommerce_Utils::logExceptionImmediatelyToMeta(
+				$exception,
+				[
+					'event'      => 'feed_upload',
+					'event_type' => 'handle_feed_data_request',
+					'extra_data' => [
+						'feed_type' => $name,
+					],
+				]
+			);
 			status_header( $exception->getCode() );
 		}
 		exit;

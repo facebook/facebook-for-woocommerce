@@ -18,72 +18,97 @@ use WC_Coupon;
  * @since 3.5.0
  */
 class FeedUploadUtils {
-	const VALUE_TYPE_PERCENTAGE              = 'PERCENTAGE';
-	const VALUE_TYPE_FIXED_AMOUNT            = 'FIXED_AMOUNT';
-	const TARGET_TYPE_SHIPPING               = 'SHIPPING';
-	const TARGET_TYPE_LINE_ITEM              = 'LINE_ITEM';
-	const TARGET_GRANULARITY_ORDER_LEVEL     = 'ORDER_LEVEL';
-	const TARGET_GRANULARITY_ITEM_LEVEL      = 'ITEM_LEVEL';
-	const TARGET_SELECTION_ENTIRE_CATALOG    = 'ALL_CATALOG_PRODUCTS';
-	const TARGET_SELECTION_SPECIFIC_PRODUCTS = 'SPECIFIC_PRODUCTS';
-	const APPLICATION_TYPE_BUYER_APPLIED     = 'BUYER_APPLIED';
-	const PROMO_SYNC_LOGGING_FLOW_NAME       = 'promotion_feed_sync';
+	const VALUE_TYPE_PERCENTAGE                      = 'PERCENTAGE';
+	const VALUE_TYPE_FIXED_AMOUNT                    = 'FIXED_AMOUNT';
+	const TARGET_TYPE_SHIPPING                       = 'SHIPPING';
+	const TARGET_TYPE_LINE_ITEM                      = 'LINE_ITEM';
+	const TARGET_GRANULARITY_ORDER_LEVEL             = 'ORDER_LEVEL';
+	const TARGET_GRANULARITY_ITEM_LEVEL              = 'ITEM_LEVEL';
+	const TARGET_SELECTION_ENTIRE_CATALOG            = 'ALL_CATALOG_PRODUCTS';
+	const TARGET_SELECTION_SPECIFIC_PRODUCTS         = 'SPECIFIC_PRODUCTS';
+	const APPLICATION_TYPE_BUYER_APPLIED             = 'BUYER_APPLIED';
+	const PROMO_SYNC_LOGGING_FLOW_NAME               = 'promotion_feed_sync';
+	const RATINGS_AND_REVIEWS_SYNC_LOGGING_FLOW_NAME = 'ratings_and_reviews_feed_sync';
 
 	public static function get_ratings_and_reviews_data( array $query_args ): array {
-		$comments     = get_comments( $query_args );
-		$reviews_data = array();
+		try {
+			$comments     = get_comments( $query_args );
+			$reviews_data = array();
 
-		$store_name = get_bloginfo( 'name' );
-		$store_id   = facebook_for_woocommerce()->get_connection_handler()->get_commerce_merchant_settings_id();
-		$store_urls = [ wc_get_page_permalink( 'shop' ) ];
+			$store_name = get_bloginfo( 'name' );
+			$store_id   = facebook_for_woocommerce()->get_connection_handler()->get_commerce_merchant_settings_id();
+			$store_urls = [ wc_get_page_permalink( 'shop' ) ];
 
-		foreach ( $comments as $comment ) {
-			try {
-				$post_type = get_post_type( $comment->comment_post_ID );
-				if ( 'product' !== $post_type ) {
+			foreach ( $comments as $comment ) {
+				try {
+					$post_type = get_post_type( $comment->comment_post_ID );
+					if ( 'product' !== $post_type ) {
+						continue;
+					}
+
+					$rating = get_comment_meta( $comment->comment_ID, 'rating', true );
+					if ( ! is_numeric( $rating ) ) {
+						continue;
+					}
+
+					$reviewer_id = $comment->user_id;
+					// If reviewer_id is 0 then the reviewer is a logged-out user
+					$reviewer_is_anonymous = '0' === $reviewer_id ? 'true' : 'false';
+
+					$product = wc_get_product( $comment->comment_post_ID );
+					if ( null === $product ) {
+						continue;
+					}
+					$product_name = $product->get_name();
+					$product_url  = $product->get_permalink();
+					$product_skus = [ $product->get_sku() ];
+
+					$reviews_data[] = array(
+						'aggregator'                      => 'woocommerce',
+						'store.name'                      => $store_name,
+						'store.id'                        => $store_id,
+						'store.storeUrls'                 => "['" . implode( "','", $store_urls ) . "']",
+						'review_id'                       => $comment->comment_ID,
+						'rating'                          => intval( $rating ),
+						'title'                           => null,
+						'content'                         => $comment->comment_content,
+						'created_at'                      => $comment->comment_date,
+						'reviewer.name'                   => $comment->comment_author,
+						'reviewer.reviewerID'             => $reviewer_id,
+						'reviewer.isAnonymous'            => $reviewer_is_anonymous,
+						'product.name'                    => $product_name,
+						'product.url'                     => $product_url,
+						'product.productIdentifiers.skus' => "['" . implode( "','", $product_skus ) . "']",
+					);
+				} catch ( \Exception $e ) {
+					\WC_Facebookcommerce_Utils::logTelemetryToMeta(
+						'Exception while trying to map product review data for feed',
+						array(
+							'flow_name'  => self::RATINGS_AND_REVIEWS_SYNC_LOGGING_FLOW_NAME,
+							'flow_step'  => 'map_ratings_and_reviews_data',
+							'extra_data' => [
+								'exception_message' => $e->getMessage(),
+							],
+						)
+					);
 					continue;
 				}
-
-				$rating = get_comment_meta( $comment->comment_ID, 'rating', true );
-				if ( ! is_numeric( $rating ) ) {
-					continue;
-				}
-
-				$reviewer_id = $comment->user_id;
-				// If reviewer_id is 0 then the reviewer is a logged-out user
-				$reviewer_is_anonymous = '0' === $reviewer_id ? 'true' : 'false';
-
-				$product = wc_get_product( $comment->comment_post_ID );
-				if ( null === $product ) {
-					continue;
-				}
-				$product_name = $product->get_name();
-				$product_url  = $product->get_permalink();
-				$product_skus = [ $product->get_sku() ];
-
-				$reviews_data[] = array(
-					'aggregator'                      => 'woocommerce',
-					'store.name'                      => $store_name,
-					'store.id'                        => $store_id,
-					'store.storeUrls'                 => "['" . implode( "','", $store_urls ) . "']",
-					'review_id'                       => $comment->comment_ID,
-					'rating'                          => intval( $rating ),
-					'title'                           => null,
-					'content'                         => $comment->comment_content,
-					'created_at'                      => $comment->comment_date,
-					'reviewer.name'                   => $comment->comment_author,
-					'reviewer.reviewerID'             => $reviewer_id,
-					'reviewer.isAnonymous'            => $reviewer_is_anonymous,
-					'product.name'                    => $product_name,
-					'product.url'                     => $product_url,
-					'product.productIdentifiers.skus' => "['" . implode( "','", $product_skus ) . "']",
-				);
-			} catch ( \Exception $e ) {
-				continue;
 			}
-		}
 
-		return $reviews_data;
+			return $reviews_data;
+		} catch ( \Exception $exception ) {
+			\WC_Facebookcommerce_Utils::logExceptionImmediatelyToMeta(
+				$exception,
+				[
+					'event'      => self::RATINGS_AND_REVIEWS_SYNC_LOGGING_FLOW_NAME,
+					'event_type' => 'get_ratings_and_reviews_data',
+					'extra_data' => [
+						'query_args' => wp_json_encode( $query_args ),
+					],
+				]
+			);
+			throw $exception;
+		}
 	}
 
 	/**
@@ -124,7 +149,7 @@ class FeedUploadUtils {
 							'Unknown discount type encountered during feed processing',
 							array(
 								'promotion_id' => $coupon_post->ID,
-								'extra_data'   => array( 'discount_type' => $woo_discount_type ),
+								'extra_data'   => [ 'discount_type' => $woo_discount_type ],
 								'flow_name'    => self::PROMO_SYNC_LOGGING_FLOW_NAME,
 								'flow_step'    => 'map_discount_type',
 							)
