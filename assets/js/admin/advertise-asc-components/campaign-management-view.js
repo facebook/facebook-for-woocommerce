@@ -86,7 +86,8 @@ const CampaignSetupView = (props) => {
             .then((response) => response.json())
             .then((data) => {
                 if (!data['success']) {
-                    openErrorModal(data['data']);
+                    throw "ERRORRORROROR";
+                    //openErrorModal(data['data']);
                 } else {
                     props.onFinish();
                 }
