@@ -488,6 +488,17 @@ abstract class CampaignHandler {
         }
     }
 
+    /**
+     * Returns a bool indicating whether the account is prepaid or not. This is to understand if the user can create ASC ads or not
+     *
+     * @since x.x.x
+     * @return bool
+     */
+    protected function is_account_prepaid(){
+        $result = $this->api->get_with_generic_request('act_' . $this->ad_account_id, 'is_prepay_account');
+        return $result->response_data['is_prepay_account'];        
+    }
+
     protected function create_campaign($campaign_props) {
 
         $result = $this->api->create_campaign($this->ad_account_id, $campaign_props);
