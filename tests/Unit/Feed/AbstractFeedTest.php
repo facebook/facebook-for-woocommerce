@@ -1,0 +1,68 @@
+<?php
+/**
+ * Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
+ *
+ * This source code is licensed under the license found in the
+ * LICENSE file in the root directory of this source tree.
+ *
+ * @package FacebookCommerce
+ */
+
+namespace WooCommerce\Facebook\Feed;
+
+use WP_UnitTestCase;
+
+class TestFeed extends AbstractFeed {
+	public function __construct(FeedFileWriter $file_writer, AbstractFeedHandler $feed_handler, FeedGenerator $feed_generator) {
+		$this->init(
+			$file_writer,
+			$feed_handler,
+			$feed_generator,
+		);
+	}
+
+	protected static function get_data_stream_name(): string {
+		return 'test';
+	}
+
+	protected static function get_feed_type(): string {
+		return 'TEST_FEED';
+	}
+
+	protected static function get_feed_gen_interval(): int {
+		return HOUR_IN_SECONDS;
+	}
+}
+
+class AbstractFeedTest extends WP_UnitTestCase {
+	/**
+	 * The test feed class.
+	 *
+	 * @var AbstractFeed
+	 * @since 3.5.0
+	 */
+	protected AbstractFeed $feed;
+
+	public function setUp(): void {
+		parent::setUp();
+		$file_writer    = $this->createMock( FeedFileWriter::class );
+		$feed_handler   = $this->createMock( AbstractFeedHandler::class );
+		$feed_generator = $this->createMock( FeedGenerator::class );
+		$this->feed = new TestFeed($file_writer, $feed_handler, $feed_generator);
+	}
+
+	public function testShouldSkipFeed() {
+		update_option( 'wc_facebook_commerce_partner_integration_id', '1841465350002849' );
+		$this->assertFalse( $this->feed->should_skip_feed(), 'Feed should not be skipped when CPI ID is not empty.' );
+		update_option( 'wc_facebook_commerce_partner_integration_id', '' );
+		$this->assertTrue( $this->feed->should_skip_feed(), 'Feed should be skipped when CPI ID is empty.' );
+	}
+
+	public function testGetFeedSecret() {
+		$secret_option_name = 'wc_facebook_feed_url_secret_test';
+		$this->assertEmpty(get_option($secret_option_name, ''), 'Secret should not be set yet.');
+		$secret = $this->feed->get_feed_secret();
+		$this->assertNotEmpty($secret, 'When secret is not set yet one should be generated.');
+		$this->assertEquals($secret, get_option($secret_option_name, ''), 'Secret should be set.');
+	}
+}
