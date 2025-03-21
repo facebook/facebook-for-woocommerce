@@ -41,48 +41,6 @@ class Admin {
 	/** @var Product_Sets the product set admin handler. */
 	protected $product_sets;
 
-	/** @var string the "new" condition */
-	const CONDITION_NEW = 'new';
-
-	/** @var string the "used" condition */
-	const CONDITION_USED = 'used';
-
-	/** @var string the "refurbished" condition */
-	const CONDITION_REFURBISHED = 'refurbished';
-
-	/** @var string the "adult" age group */
-	const AGE_GROUP_ADULT = 'adult';
-
-	/** @var string the "all ages" age group */
-	const AGE_GROUP_ALL_AGES = 'all ages';
-
-	/** @var string the "teen" age group */
-	const AGE_GROUP_TEEN = 'teen';
-
-	/** @var string the "kids" age group */
-	const AGE_GROUP_KIDS = 'kids';
-
-	/** @var string the "toddler" age group */
-	const AGE_GROUP_TODDLER = 'toddler';
-
-	/** @var string the "infant" age group */
-	const AGE_GROUP_INFANT = 'infant';
-
-	/** @var string the "newborn" age group */
-	const AGE_GROUP_NEWBORN = 'newborn';
-
-	/** @var string the "male" gender */
-	const GENDER_MALE = 'male';
-
-	/** @var string the "female" gender */
-	const GENDER_FEMALE = 'female';
-
-	/** @var string the "unisex" gender */
-	const GENDER_UNISEX = 'unisex';
-
-
-
-
 	/**
 	 * Admin constructor.
 	 *
@@ -1467,9 +1425,9 @@ class Admin {
 						'label'       => __( 'Condition', 'facebook-for-woocommerce' ),
 						'options'     => array(
 							''                          => __( 'Select', 'facebook-for-woocommerce' ),
-							self::CONDITION_NEW         => __( 'New', 'facebook-for-woocommerce' ),
-							self::CONDITION_REFURBISHED => __( 'Refurbished', 'facebook-for-woocommerce' ),
-							self::CONDITION_USED        => __( 'Used', 'facebook-for-woocommerce' ),
+							\WC_Facebook_Product::CONDITION_NEW         => __( 'New', 'facebook-for-woocommerce' ),
+							\WC_Facebook_Product::CONDITION_REFURBISHED => __( 'Refurbished', 'facebook-for-woocommerce' ),
+							\WC_Facebook_Product::CONDITION_USED        => __( 'Used', 'facebook-for-woocommerce' ),
 						),
 						'value'       => $fb_condition,
 						'desc_tip'    => true,
@@ -1512,13 +1470,13 @@ class Admin {
 						'label'       => __( 'Age Group', 'facebook-for-woocommerce' ),
 						'options'     => array(
 							''                       => __( 'Select', 'facebook-for-woocommerce' ),
-							self::AGE_GROUP_ADULT    => __( 'Adult', 'facebook-for-woocommerce' ),
-							self::AGE_GROUP_ALL_AGES => __( 'All Ages', 'facebook-for-woocommerce' ),
-							self::AGE_GROUP_TEEN     => __( 'Teen', 'facebook-for-woocommerce' ),
-							self::AGE_GROUP_KIDS     => __( 'Kids', 'facebook-for-woocommerce' ),
-							self::AGE_GROUP_TODDLER  => __( 'Toddler', 'facebook-for-woocommerce' ),
-							self::AGE_GROUP_INFANT   => __( 'Infant', 'facebook-for-woocommerce' ),
-							self::AGE_GROUP_NEWBORN  => __( 'Newborn', 'facebook-for-woocommerce' ),
+							\WC_Facebook_Product::AGE_GROUP_ADULT    => __( 'Adult', 'facebook-for-woocommerce' ),
+							\WC_Facebook_Product::AGE_GROUP_ALL_AGES => __( 'All Ages', 'facebook-for-woocommerce' ),
+							\WC_Facebook_Product::AGE_GROUP_TEEN     => __( 'Teen', 'facebook-for-woocommerce' ),
+							\WC_Facebook_Product::AGE_GROUP_KIDS     => __( 'Kids', 'facebook-for-woocommerce' ),
+							\WC_Facebook_Product::AGE_GROUP_TODDLER  => __( 'Toddler', 'facebook-for-woocommerce' ),
+							\WC_Facebook_Product::AGE_GROUP_INFANT   => __( 'Infant', 'facebook-for-woocommerce' ),
+							\WC_Facebook_Product::AGE_GROUP_NEWBORN  => __( 'Newborn', 'facebook-for-woocommerce' ),
 						),
 						'value'       => $fb_age_group,
 						'desc_tip'    => true,
@@ -1533,9 +1491,9 @@ class Admin {
 						'label'       => __( 'Gender', 'facebook-for-woocommerce' ),
 						'options'     => array(
 							''                  => __( 'Select', 'facebook-for-woocommerce' ),
-							self::GENDER_FEMALE => __( 'Female', 'facebook-for-woocommerce' ),
-							self::GENDER_MALE   => __( 'Male', 'facebook-for-woocommerce' ),
-							self::GENDER_UNISEX => __( 'Unisex', 'facebook-for-woocommerce' ),
+							\WC_Facebook_Product::GENDER_FEMALE => __( 'Female', 'facebook-for-woocommerce' ),
+							\WC_Facebook_Product::GENDER_MALE   => __( 'Male', 'facebook-for-woocommerce' ),
+							\WC_Facebook_Product::GENDER_UNISEX => __( 'Unisex', 'facebook-for-woocommerce' ),
 						),
 						'value'       => $fb_gender,
 						'desc_tip'    => true,

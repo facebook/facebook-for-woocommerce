@@ -14,7 +14,7 @@ class Test_Admin_Sync_Indicator extends WP_Ajax_UnitTestCase {
         
         $this->admin = new \WooCommerce\Facebook\Admin();
         
-        // Create a test product using WC_Product_Simple
+        // Create a test product
         $this->product = new \WC_Product_Simple();
         $this->product->set_name('Test Product');
         $this->product->set_regular_price('10');
@@ -47,6 +47,10 @@ class Test_Admin_Sync_Indicator extends WP_Ajax_UnitTestCase {
         $this->assertArrayHasKey('color', $synced_fields);
         $this->assertEquals('blue', $synced_fields['color']);
         $this->assertEquals('blue', get_post_meta($this->product->get_id(), \WC_Facebook_Product::FB_COLOR, true));
+        
+        $this->assertArrayHasKey('size', $synced_fields);
+        $this->assertEquals('large', $synced_fields['size']);
+        $this->assertEquals('large', get_post_meta($this->product->get_id(), \WC_Facebook_Product::FB_SIZE, true));
     }
 
     /**
@@ -84,7 +88,7 @@ class Test_Admin_Sync_Indicator extends WP_Ajax_UnitTestCase {
         $this->assertEquals('cotton', $synced_fields['material']);
         
         // Store the initial meta value
-        $initial_meta = get_post_meta($this->product->get_id(), \WC_Facebook_Product::FB_MATERIAL, true);
+        $initial_material_meta = get_post_meta($this->product->get_id(), \WC_Facebook_Product::FB_MATERIAL, true);
 
         // Then remove the attribute
         $this->product->set_attributes([]);
@@ -98,7 +102,7 @@ class Test_Admin_Sync_Indicator extends WP_Ajax_UnitTestCase {
         $this->assertArrayNotHasKey('material', $synced_fields);
         
         // 2. The meta value should remain unchanged in the database
-        $this->assertEquals($initial_meta, get_post_meta($this->product->get_id(), \WC_Facebook_Product::FB_MATERIAL, true));
+        $this->assertEquals($initial_material_meta, get_post_meta($this->product->get_id(), \WC_Facebook_Product::FB_MATERIAL, true));
     }
 
     /**
