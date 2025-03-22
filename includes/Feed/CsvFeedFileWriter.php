@@ -116,7 +116,7 @@ class CsvFeedFileWriter implements FeedFileWriter {
 					'event'      => 'feed_upload',
 					'event_type' => 'csv_write_feed_file',
 					'extra_data' => [
-						'feed_type' => $this->feed_name,
+						'feed_name' => $this->feed_name,
 					],
 				]
 			);
