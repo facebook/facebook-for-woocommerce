@@ -11,6 +11,7 @@
 namespace WooCommerce\Facebook\Feed;
 
 use WP_UnitTestCase;
+use WooCommerce\Facebook\Utilities\Heartbeat;
 
 class TestFeed extends AbstractFeed {
 	public function __construct(FeedFileWriter $file_writer, AbstractFeedHandler $feed_handler, FeedGenerator $feed_generator) {
@@ -31,6 +32,10 @@ class TestFeed extends AbstractFeed {
 
 	protected static function get_feed_gen_interval(): int {
 		return HOUR_IN_SECONDS;
+	}
+
+	protected static function get_feed_gen_scheduling_interval(): string {
+		return Heartbeat::EVERY_5_MINUTES;
 	}
 }
 
@@ -64,5 +69,41 @@ class AbstractFeedTest extends WP_UnitTestCase {
 		$secret = $this->feed->get_feed_secret();
 		$this->assertNotEmpty($secret, 'When secret is not set yet one should be generated.');
 		$this->assertEquals($secret, get_option($secret_option_name, ''), 'Secret should be set.');
+	}
+
+	public function testGetDataStreamName() {
+		$reflection = new \ReflectionClass($this->feed);
+		$method = $reflection->getMethod('get_data_stream_name');
+		$method->setAccessible(true);
+
+		$data_stream_name = $method->invoke($this->feed);
+		$this->assertEquals('test', $data_stream_name, 'The data stream name should be "test".');
+	}
+
+	public function testGetFeedType() {
+		$reflection = new \ReflectionClass($this->feed);
+		$method = $reflection->getMethod('get_feed_type');
+		$method->setAccessible(true);
+
+		$feed_type = $method->invoke($this->feed);
+		$this->assertEquals('TEST_FEED', $feed_type, 'The feed type should be "TEST_FEED".');
+	}
+
+	public function testGetFeedGenInterval() {
+		$reflection = new \ReflectionClass($this->feed);
+		$method = $reflection->getMethod('get_feed_gen_interval');
+		$method->setAccessible(true);
+
+		$feed_gen_interval = $method->invoke($this->feed);
+		$this->assertEquals(HOUR_IN_SECONDS, $feed_gen_interval, 'The feed gen interval should be HOUR_IN_SECONDS.');
+	}
+
+	public function testGetFeedGenSchedulingInterval() {
+		$reflection = new \ReflectionClass($this->feed);
+		$method = $reflection->getMethod('get_feed_gen_scheduling_interval');
+		$method->setAccessible(true);
+
+		$feed_gen_interval = $method->invoke($this->feed);
+		$this->assertEquals(Heartbeat::EVERY_5_MINUTES, $feed_gen_interval, 'The feed gen scheduling interval should be Heartbeat::EVERY_5_MINUTES.');
 	}
 }
