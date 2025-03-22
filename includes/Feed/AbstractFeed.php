@@ -179,6 +179,7 @@ abstract class AbstractFeed {
 					'event_type' => 'send_request_to_upload_feed',
 					'extra_data' => [
 						'feed_name' => $name,
+						'data'      => wp_json_encode( $data ),
 					],
 				]
 			);
@@ -288,6 +289,7 @@ abstract class AbstractFeed {
 					'event_type' => 'handle_feed_data_request',
 					'extra_data' => [
 						'feed_name' => $name,
+						'file_path' => $file_path,
 					],
 				]
 			);
