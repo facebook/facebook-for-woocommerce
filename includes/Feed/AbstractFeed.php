@@ -178,7 +178,7 @@ abstract class AbstractFeed {
 					'event'      => 'feed_upload',
 					'event_type' => 'send_request_to_upload_feed',
 					'extra_data' => [
-						'feed_type' => $name,
+						'feed_name' => $name,
 					],
 				]
 			);
