@@ -103,7 +103,7 @@ class AbstractFeedTest extends WP_UnitTestCase {
 		$method = $reflection->getMethod('get_feed_gen_scheduling_interval');
 		$method->setAccessible(true);
 
-		$feed_gen_interval = $method->invoke($this->feed);
-		$this->assertEquals(Heartbeat::EVERY_5_MINUTES, $feed_gen_interval, 'The feed gen scheduling interval should be Heartbeat::EVERY_5_MINUTES.');
+		$feed_gen_scheduling_interval = $method->invoke($this->feed);
+		$this->assertEquals(Heartbeat::EVERY_5_MINUTES, $feed_gen_scheduling_interval, 'The feed gen scheduling interval should be Heartbeat::EVERY_5_MINUTES.');
 	}
 }
