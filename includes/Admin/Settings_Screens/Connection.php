@@ -460,6 +460,15 @@ class Connection extends Abstract_Settings_Screen {
 			),
 
 			array(
+				'id'       => \WC_Facebookcommerce_Integration::SETTING_ENABLE_META_DIAGNOSIS,
+				'title'    => __( 'Enable meta diagnosis', 'facebook-for-woocommerce' ),
+				'type'     => 'checkbox',
+				'desc'     => __( 'Upload events to Meta', 'facebook-for-woocommerce' ),
+				'desc_tip' => sprintf( __( 'Allow Meta to monitor your error log and help fix issues. Personally identifiable information will not be collected.', 'facebook-for-woocommerce' ) ),
+				'default'  => 'yes',
+			),
+
+			array(
 				'id'       => \WC_Facebookcommerce_Integration::SETTING_ENABLE_DEBUG_MODE,
 				'title'    => __( 'Enable debug mode', 'facebook-for-woocommerce' ),
 				'type'     => 'checkbox',

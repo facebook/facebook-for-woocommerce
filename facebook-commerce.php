@@ -87,6 +87,9 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 	/** @var string the scheduled resync offset setting ID */
 	const SETTING_SCHEDULED_RESYNC_OFFSET = 'scheduled_resync_offset';
 
+	/** @var string the "meta diagnosis" setting ID */
+	const SETTING_ENABLE_META_DIAGNOSIS = 'wc_facebook_enable_meta_diagnosis';
+
 	/** @var string the "debug mode" setting ID */
 	const SETTING_ENABLE_DEBUG_MODE = 'wc_facebook_enable_debug_mode';
 
@@ -2739,6 +2742,17 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 	 */
 	public function is_legacy_feed_file_generation_enabled() {
 		return 'yes' === get_option( self::OPTION_LEGACY_FEED_FILE_GENERATION_ENABLED, 'yes' );
+	}
+
+	/**
+	 * Determines whether meta diagnosis is enabled.
+	 *
+	 * @return bool
+	 * @since 3.4.4
+	 *
+	 */
+	public function is_meta_diagnosis_enabled() {
+		return (bool) apply_filters('yes' === get_option( self::SETTING_ENABLE_META_DIAGNOSIS ), $this );
 	}
 
 	/**
