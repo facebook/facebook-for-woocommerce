@@ -147,7 +147,9 @@ class AJAX {
 			wp_send_json_error( $e->getMessage() );
 
 		} catch ( AccountIsPostPaidException $aip ) {
-			wp_send_json_error ("AIP", 400);
+
+			wp_send_json_error( $aip->getMessage() );
+			
 		}
 	}
 

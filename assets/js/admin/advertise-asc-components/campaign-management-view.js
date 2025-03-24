@@ -86,16 +86,14 @@ const CampaignSetupView = (props) => {
             .then((response) => response.json())
             .then((data) => {
                 if (!data['success']) {
-                    throw "ERRORRORROROR";
-                    //openErrorModal(data['data']);
+                    openErrorModal(data['data']);
                 } else {
                     props.onFinish();
                 }
                 setPublishing(false);
             })
             .catch((err) => {
-                // openErrorModal(err.mes);
-                throw err.mes;
+                openErrorModal(err.mes);
             });
     };
 
