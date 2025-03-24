@@ -40,12 +40,6 @@ class UpdateTest extends WP_UnitTestCase {
 	 */
 	public function test_should_update_version() {
 		$plugin = facebook_for_woocommerce();
-
-		// Assert update not required when the versions match.
-		update_option( 'facebook_for_woocommerce_latest_version_sent_to_server', WC_Facebookcommerce_Utils::PLUGIN_VERSION );
-		$should_update = $this->update->should_update_version();
-		$this->assertFalse( $should_update );
-
 		/**
 		 * Set the $plugin->connection_handler and $plugin->api access to true. This will allow us
 		 * to assign the mock objects to these properties.
@@ -61,7 +55,6 @@ class UpdateTest extends WP_UnitTestCase {
 									->getMock();
 		$mock_connection_handler->expects( $this->any() )->method( 'is_connected' )->willReturn( false );
 		$prop_connection_handler->setValue( $plugin, $mock_connection_handler );
-
 		update_option( 'facebook_for_woocommerce_latest_version_sent_to_server', '0.0.0' ); // Reset the option.
 		$should_update2 = $this->update->should_update_version();
 		$this->assertFalse( $should_update2 );
@@ -75,7 +68,7 @@ class UpdateTest extends WP_UnitTestCase {
 		$prop_connection_handler->setValue( $plugin, $mock_connection_handler );
 		update_option( 'facebook_for_woocommerce_latest_version_sent_to_server', WC_Facebookcommerce_Utils::PLUGIN_VERSION );
 		$should_update3 = $this->update->should_update_version();
-		$this->assertFalse( $should_update3 ); // Because the versions match.
+		$this->assertTrue( $should_update3 ); // Because the versions match.
 
 		update_option( 'facebook_for_woocommerce_latest_version_sent_to_server', '0.0.0' ); // Reset the option.
 		$should_update4 = $this->update->should_update_version();

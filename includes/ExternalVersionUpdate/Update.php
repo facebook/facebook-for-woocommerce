@@ -35,7 +35,7 @@ class Update {
 	 * @since 3.0.10
 	 */
 	public function __construct() {
-		add_action( Heartbeat::HOURLY, array( $this, 'maybe_update_external_plugin_version' ) );
+		add_action( Heartbeat::DAILY, array( $this, 'maybe_update_external_plugin_version' ) );
 	}
 
 	/**
@@ -59,13 +59,6 @@ class Update {
 	 * @return bool
 	 */
 	public function should_update_version() {
-		$latest_version_sent = get_option( self::LATEST_VERSION_SENT, '0.0.0' );
-
-		if ( WC_Facebookcommerce_Utils::PLUGIN_VERSION === $latest_version_sent ) {
-			// Up to date. Nothing to do.
-			return false;
-		}
-
 		$plugin = facebook_for_woocommerce();
 
 		if ( ! $plugin->get_connection_handler()->is_connected() ) {
