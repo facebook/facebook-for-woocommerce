@@ -117,6 +117,9 @@ class WC_Facebookcommerce extends WooCommerce\Facebook\Framework\Plugin {
 	/** @var WooCommerce\Facebook\Products\FBCategories instance. */
 	private $fb_categories;
 
+	/** @var WooCommerce\Facebook\DiscountManagementAPI */
+	private $discount_management_api;
+
 	/**
 	 * The Debug tools instance.
 	 *
@@ -201,6 +204,7 @@ class WC_Facebookcommerce extends WooCommerce\Facebook\Framework\Plugin {
 			$this->commerce_handler          = new WooCommerce\Facebook\Commerce();
 			$this->fb_categories             = new WooCommerce\Facebook\Products\FBCategories();
 			$this->external_version_update   = new WooCommerce\Facebook\ExternalVersionUpdate\Update();
+			$this->discount_management_api = new WooCommerce\Facebook\DiscountManagementApi();
 
 			if ( wp_doing_ajax() ) {
 				$this->ajax = new WooCommerce\Facebook\AJAX();
