@@ -171,7 +171,7 @@ abstract class AbstractFeed {
 			facebook_for_woocommerce()->
 			get_api()->
 			create_common_data_feed_upload( $cpi_id, $data );
-		} catch ( Exception $exception ) {
+		} catch ( \Exception $exception ) {
 			\WC_Facebookcommerce_Utils::logExceptionImmediatelyToMeta(
 				$exception,
 				[
