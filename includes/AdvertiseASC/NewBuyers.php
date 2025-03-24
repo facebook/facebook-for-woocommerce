@@ -104,7 +104,7 @@ class NewBuyers extends CampaignHandler {
 		}
 
 		try {
-			$daily_budget = 10;
+			$daily_budget = 15;
 			$this->adset      = $this->setup_adset( $this->facebook_pixel_id, $this->campaign['id'], $daily_budget * 100, $country_list );
 			$this->ad         = $this->setup_ad( $this->adset['id'], $this->ad_name, $this->facebook_page_id, $ad_message, $this->default_product_set, $this->store_url );
 			$this->adcreative = $this->fetch_adcreative( $this->ad['adcreatives']['data'][0]['id'] );
