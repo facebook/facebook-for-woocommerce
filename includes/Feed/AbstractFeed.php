@@ -146,9 +146,11 @@ abstract class AbstractFeed {
 	 * @since 3.5.0
 	 */
 	public function should_skip_feed(): bool {
-		$cpi_id = facebook_for_woocommerce()->get_connection_handler()->get_commerce_partner_integration_id();
+		$connection_handler = facebook_for_woocommerce()->get_connection_handler();
+		$cpi_id             = $connection_handler->get_commerce_partner_integration_id();
+		$cms_id             = $connection_handler->get_commerce_merchant_settings_id();
 
-		return empty( $cpi_id );
+		return empty( $cpi_id ) || empty( $cms_id );
 	}
 
 	/**

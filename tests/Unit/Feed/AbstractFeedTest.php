@@ -58,9 +58,17 @@ class AbstractFeedTest extends WP_UnitTestCase {
 
 	public function testShouldSkipFeed() {
 		update_option( 'wc_facebook_commerce_partner_integration_id', '1841465350002849' );
-		$this->assertFalse( $this->feed->should_skip_feed(), 'Feed should not be skipped when CPI ID is not empty.' );
+		update_option( 'wc_facebook_commerce_merchant_settings_id', '1352794439398752' );
+		$this->assertFalse( $this->feed->should_skip_feed(), 'Feed should not be skipped when CPI ID and CMS ID are set.' );
 		update_option( 'wc_facebook_commerce_partner_integration_id', '' );
+		update_option( 'wc_facebook_commerce_merchant_settings_id', '1352794439398752' );
 		$this->assertTrue( $this->feed->should_skip_feed(), 'Feed should be skipped when CPI ID is empty.' );
+		update_option( 'wc_facebook_commerce_partner_integration_id', '1841465350002849' );
+		update_option( 'wc_facebook_commerce_merchant_settings_id', '' );
+		$this->assertTrue( $this->feed->should_skip_feed(), 'Feed should be skipped when CMS ID is empty.' );
+		update_option( 'wc_facebook_commerce_partner_integration_id', '' );
+		update_option( 'wc_facebook_commerce_merchant_settings_id', '' );
+		$this->assertTrue( $this->feed->should_skip_feed(), 'Feed should be skipped when both CPI ID and CMS ID are empty.' );
 	}
 
 	public function testGetFeedSecret() {
