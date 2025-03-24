@@ -2752,7 +2752,7 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 	 *
 	 */
 	public function is_meta_diagnosis_enabled() {
-		return (bool) apply_filters('yes' === get_option( self::SETTING_ENABLE_META_DIAGNOSIS ), $this );
+		return (bool) ( 'yes' === get_option( self::SETTING_ENABLE_META_DIAGNOSIS ) );
 	}
 
 	/**
