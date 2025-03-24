@@ -103,6 +103,10 @@ abstract class AbstractFeed {
 	 * @since 3.5.0
 	 */
 	public function schedule_feed_generation(): void {
+		if ( $this->should_skip_feed() ) {
+			return;
+		}
+
 		$schedule_action_hook_name = self::GENERATE_FEED_ACTION . static::get_data_stream_name();
 		if ( ! as_next_scheduled_action( $schedule_action_hook_name ) ) {
 			as_schedule_recurring_action(
@@ -123,12 +127,30 @@ abstract class AbstractFeed {
 	 * @since 3.5.0
 	 */
 	public function regenerate_feed(): void {
-		// Maybe use new ( experimental ), feed generation framework.
-		if ( \WC_Facebookcommerce::instance()->get_integration()->is_new_style_feed_generation_enabled() ) {
+		if ( $this->should_skip_feed() ) {
+			return;
+		}
+
+		if ( facebook_for_woocommerce()->get_integration()->is_new_style_feed_generation_enabled() ) {
 			$this->feed_generator->queue_start();
 		} else {
 			$this->feed_handler->generate_feed_file();
 		}
+	}
+
+	/**
+	 * The feed should be skipped if there isn't a Commerce Partner Integration ID set as the ID is required for
+	 * calls to the GraphCommercePartnerIntegrationFileUpdatePost endpoint.
+	 * Overwrite this function if your feed upload uses a different endpoint with different requirements.
+	 *
+	 * @since 3.5.0
+	 */
+	public function should_skip_feed(): bool {
+		$connection_handler = facebook_for_woocommerce()->get_connection_handler();
+		$cpi_id             = $connection_handler->get_commerce_partner_integration_id();
+		$cms_id             = $connection_handler->get_commerce_merchant_settings_id();
+
+		return empty( $cpi_id ) || empty( $cms_id );
 	}
 
 	/**
@@ -147,13 +169,22 @@ abstract class AbstractFeed {
 		);
 
 		try {
-			$cpi_id = get_option( 'wc_facebook_commerce_partner_integration_id', '' );
+			$cpi_id = facebook_for_woocommerce()->get_connection_handler()->get_commerce_partner_integration_id();
 			facebook_for_woocommerce()->
 			get_api()->
 			create_common_data_feed_upload( $cpi_id, $data );
-		} catch ( Exception $e ) {
-			// Log the error and continue.
-			\WC_Facebookcommerce_Utils::log( "{$name} feed: Failed to create feed upload request: " . $e->getMessage() );
+		} catch ( \Exception $exception ) {
+			\WC_Facebookcommerce_Utils::logExceptionImmediatelyToMeta(
+				$exception,
+				[
+					'event'      => 'feed_upload',
+					'event_type' => 'send_request_to_upload_feed',
+					'extra_data' => [
+						'feed_name' => $name,
+						'data'      => wp_json_encode( $data ),
+					],
+				]
+			);
 		}
 	}
 
@@ -244,16 +275,26 @@ abstract class AbstractFeed {
 			// fpassthru might be disabled in some hosts (like Flywheel).
 			// phpcs:ignore
 			if ( \WC_Facebookcommerce_Utils::is_fpassthru_disabled() || ! @fpassthru( $file ) ) {
-				\WC_Facebookcommerce_Utils::log( "{$name} feed: fpassthru is disabled: getting file contents" );
+				\WC_Facebookcommerce_Utils::log( "{$name} feed: fpassthru is disabled: getting file contents." );
 				//phpcs:ignore
 				$contents = @stream_get_contents( $file );
 				if ( ! $contents ) {
-					throw new PluginException( 'Could not get feed file contents.', 500 );
+					throw new PluginException( "{$name} feed: Could not get feed file contents.", 500 );
 				}
 				echo $contents; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
 			}
 		} catch ( \Exception $exception ) {
-			\WC_Facebookcommerce_Utils::log( "{$name} feed: Could not serve feed. " . $exception->getMessage() . ' (' . $exception->getCode() . ')' );
+			\WC_Facebookcommerce_Utils::logExceptionImmediatelyToMeta(
+				$exception,
+				[
+					'event'      => 'feed_upload',
+					'event_type' => 'handle_feed_data_request',
+					'extra_data' => [
+						'feed_name' => $name,
+						'file_path' => $file_path,
+					],
+				]
+			);
 			status_header( $exception->getCode() );
 		}
 		exit;

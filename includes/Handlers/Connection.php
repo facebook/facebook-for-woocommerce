@@ -99,7 +99,7 @@ class Connection {
 
 	/** @var string the Commerce Partner Integration ID option name */
 	const OPTION_COMMERCE_PARTNER_INTEGRATION_ID = 'wc_facebook_commerce_partner_integration_id';
-	
+
 	/** @var string|null the generated external merchant settings ID */
 	private $external_business_id;
 
