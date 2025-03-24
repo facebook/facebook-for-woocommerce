@@ -1,5 +1,13 @@
 *** Facebook for WooCommerce Changelog ***
 
+= 3.4.3 - 2025-03-19 =
+* Add - Items batch request and response tests by @nrostrow-meta in #2917
+* Tweak - Always run PHP-based github workflows by @carterbuce in #2926
+* Fix - feed upload error "feed_column_count_mismatch" when product has multiple colors separated by a comma by @mshymon in #2947
+* Tweak - Updated Pull Request Template by @vinkmeta in #2948
+* Dev - Improved readability of function prepare_product() in fbproduct.php by @mshymon in #2889
+* Tweak - Enabled PHPUnit code coverage report generation by @carterbuce in #2893
+
 = 3.4.2 - 2025-03-13 =
 * Tweak - Update README.md - Added noification for ownership transfer by @SayanPandey in #2910 and #2916
 
