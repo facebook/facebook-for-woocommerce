@@ -871,21 +871,21 @@ if ( ! class_exists( 'WC_Facebookcommerce_Utils' ) ) :
 		}
 
 		/**
-		 * Utility function for sending telemetry logs to Meta.
+		 * Utility function for sending logs to Meta.
 		 * @since 3.5.0
 		 * 
 		 * @param string $message
 		 * @param array $context wiki: https://www.internalfb.com/wiki/Commerce_Platform/Teams/3P_Ecosystems_(3PE)/3rd_Party_platforms/Woo_Commerce/How_To_Use_WooCommerce_Side_Logging/
 		 */
-		public static function logTelemetryToMeta(string $message, array $context = []) {
+		public static function logToMeta(string $message, array $context = []) {
 			$extra_data = self::getContextData( $context, 'extra_data', [] );
 			$extra_data['message'] = $message;
 			$context['extra_data'] = $extra_data;
 
 			// Push logging request to global message queue function.
-			$logs = get_transient( 'global_telemetry_message_queue' );
+			$logs = get_transient( 'global_logging_message_queue' );
 			$logs[] = $context;
-			set_transient( 'global_telemetry_message_queue', $logs, HOUR_IN_SECONDS );
+			set_transient( 'global_logging_message_queue', $logs, HOUR_IN_SECONDS );
 		}
 
 		/**

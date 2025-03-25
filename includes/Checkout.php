@@ -110,7 +110,7 @@ class Checkout {
 							);
 						}
 					} else {
-						\WC_Facebookcommerce_Utils::logTelemetryToMeta(
+						\WC_Facebookcommerce_Utils::logToMeta(
 							'Failed to add product to cart',
 							array(
 								'flow_name'       => 'checkout',
