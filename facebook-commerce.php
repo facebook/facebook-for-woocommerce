@@ -3121,7 +3121,6 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 	 * Determines if the enhanced onboarding (iframe) should be used.
 	 *
 	 * @return bool
-	 * @internal
 	 *
 	 */
 	public function use_enhanced_onboarding() {
