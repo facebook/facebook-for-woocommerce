@@ -14,7 +14,6 @@ require_once __DIR__ . '/fbutils.php';
 use WooCommerce\Facebook\Framework\Plugin\Compatibility;
 use WooCommerce\Facebook\Framework\Helper;
 use WooCommerce\Facebook\Products;
-use WooCommerce\Facebook\Admin;
 
 defined( 'ABSPATH' ) || exit;
 
