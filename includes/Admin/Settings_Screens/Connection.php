@@ -476,7 +476,7 @@ class Connection extends Abstract_Settings_Screen {
 				'id'       => \WC_Facebookcommerce_Integration::SETTING_ENABLE_META_DIAGNOSIS,
 				'title'    => __( 'Enable meta diagnosis', 'facebook-for-woocommerce' ),
 				'type'     => 'checkbox',
-				'desc'     => __( 'Upload events to Meta', 'facebook-for-woocommerce' ),
+				'desc'     => __( 'Upload plugin events to Meta', 'facebook-for-woocommerce' ),
 				'desc_tip' => sprintf( __( 'Allow Meta to monitor your error log and help fix issues. Personally identifiable information will not be collected.', 'facebook-for-woocommerce' ) ),
 				'default'  => 'yes',
 			),
