@@ -268,10 +268,12 @@
     content: "\f175";
 }
 
-.woocommerce_options_panel select,
-.woocommerce_options_panel input[type="text"],
-.woocommerce_options_panel input[type="number"],
-.woocommerce_options_panel input[type="email"],
-.woocommerce_options_panel input[type="url"] {
-	font-size: 12px !important;
+.woocommerce_options_panel {
+    input[type="text"],
+    input[type="number"],
+    input[type="email"],
+    input[type="url"],
+    select {
+        font-size: 12px !important;
+    }
 }

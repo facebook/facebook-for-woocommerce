@@ -821,6 +821,18 @@ class WC_Facebook_Product {
 
 
 	public function get_fb_age_group() {
+		// If this is a variation, get its specific age group value
+		if ($this->is_type('variation')) {
+			$attributes = $this->woo_product->get_attributes();
+			
+			foreach ($attributes as $key => $value) {
+				$attr_key = strtolower($key);
+				if ($attr_key === 'age_group') {
+					return WC_Facebookcommerce_Utils::clean_string($value);
+				}
+			}
+		}
+
 		// Get age group directly from post meta
 		$fb_age_group = get_post_meta(
 			$this->id,
@@ -828,7 +840,7 @@ class WC_Facebook_Product {
 			true
 		);
 
-		// If empty and this is a variation, get the parent condition
+		// If empty and this is a variation, get the parent age group
 		if ( empty( $fb_age_group ) && $this->is_type( 'variation' ) ) {
 			$parent_id = $this->get_parent_id();
 			if ( $parent_id ) {
@@ -840,6 +852,18 @@ class WC_Facebook_Product {
 	}
 
 	public function get_fb_gender() {
+		// If this is a variation, get its specific gender value
+		if ($this->is_type('variation')) {
+			$attributes = $this->woo_product->get_attributes();
+			
+			foreach ($attributes as $key => $value) {
+				$attr_key = strtolower($key);
+				if ($attr_key === 'gender') {
+					return WC_Facebookcommerce_Utils::clean_string($value);
+				}
+			}
+		}
+
 		// Get gender directly from post meta
 		$fb_gender = get_post_meta(
 			$this->id,

@@ -143,7 +143,7 @@ class Enhanced_Catalog_Attribute_Fields {
 			$priority[ $key ] = $recommended_attributes[ $key ]['priority'];
 		}
 
-		$should_render_checkbox = ! empty($recommended_attributes);
+		$should_render_checkbox = ! empty( $recommended_attributes );
 
 		array_multisort( $priority, SORT_DESC, $recommended_attributes );
 		$selector_value      = $this->get_value( self::OPTIONAL_SELECTOR_KEY, $category_id );
