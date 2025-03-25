@@ -991,4 +991,40 @@ class fbproductTest extends \WooCommerce\Facebook\Tests\Unit\AbstractWPUnitTestW
 			}
 		}
 	}
+
+	/**
+	 * Test set_fb_attribute functionality
+	 */
+	public function test_set_fb_attribute() {
+		$product = WC_Helper_Product::create_simple_product();
+		$fb_product = new WC_Facebook_Product($product->get_id());
+
+		// Test basic attribute setting
+		$fb_product->set_fb_color('red');
+		$this->assertEquals('red', get_post_meta($product->get_id(), WC_Facebook_Product::FB_COLOR, true));
+
+		// Test string cleaning (strips HTML by default)
+		$test_value = '<p>red</p>';
+
+		$fb_product->set_fb_color($test_value);
+		$stored_value = get_post_meta($product->get_id(), WC_Facebook_Product::FB_COLOR, true);
+		$this->assertEquals('red', $stored_value, 'set_fb_color should store HTML-stripped value');
+
+		// Test multiple attributes
+		$fb_product->set_fb_size('large');
+		$this->assertEquals('large', get_post_meta($product->get_id(), WC_Facebook_Product::FB_SIZE, true));
+
+		// Test empty value
+		$fb_product->set_fb_color('');
+		$this->assertEquals('', get_post_meta($product->get_id(), WC_Facebook_Product::FB_COLOR, true));
+
+		// Test long string
+		$long_string = str_repeat('a', 250);
+		$fb_product->set_fb_color($long_string);
+		$this->assertEquals($long_string, get_post_meta($product->get_id(), WC_Facebook_Product::FB_COLOR, true));
+
+		// Test Unicode characters
+		$fb_product->set_fb_color('红色');
+		$this->assertEquals('红色', get_post_meta($product->get_id(), WC_Facebook_Product::FB_COLOR, true));
+	}
 }
