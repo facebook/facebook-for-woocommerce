@@ -113,11 +113,10 @@ class NewBuyers extends CampaignHandler {
 
 			$message = $this->get_escaped_translation( 'An exception happened trying to setup the New Buyers campaign objects for the first time. ' . $e->getMessage() );
 			\WC_Facebookcommerce_Utils::log( $message );
-			
-			if ( str_contains( $e->getMessage(), 'Update payment method' ) && !$this->is_account_prepaid() ) {
+
+			if ( str_contains( $e->getMessage(), 'Update payment method' ) && ! $this->is_account_prepaid() ) {
 				throw new AccountIsPostPaidException();
-			}
-			else if ( str_contains( $e->getMessage(), 'non-discrimination' ) ) {
+			} elseif ( str_contains( $e->getMessage(), 'non-discrimination' ) ) {
 				throw new NonDiscriminationNotAcceptedException();
 			} else {
 				throw new PluginException( $message );
