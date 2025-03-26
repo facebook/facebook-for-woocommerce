@@ -62,22 +62,18 @@ class Settings {
 	 * @since 3.0.7
 	 */
 	private function build_menu_item_array( bool $is_connected ): array {
-		if ( facebook_for_woocommerce()->get_integration()->use_enhanced_onboarding() ) {
-			return [ Settings_Screens\Connection::ID => new Settings_Screens\Connection() ];
-		} else {
-			$advertise  = [ Settings_Screens\Advertise::ID => new Settings_Screens\Advertise() ];
-			$connection = [ Settings_Screens\Connection::ID => new Settings_Screens\Connection() ];
+		$advertise  = [ Settings_Screens\Advertise::ID => new Settings_Screens\Advertise() ];
+		$connection = [ Settings_Screens\Connection::ID => new Settings_Screens\Connection() ];
 
-			$first = ( $is_connected ) ? $advertise : $connection;
-			$last  = ( $is_connected ) ? $connection : $advertise;
+		$first = ( $is_connected ) ? $advertise : $connection;
+		$last  = ( $is_connected ) ? $connection : $advertise;
 
-			$screens = array(
-				Settings_Screens\Product_Sync::ID => new Settings_Screens\Product_Sync(),
-				Settings_Screens\Product_Sets::ID => new Settings_Screens\Product_Sets(),
-			);
+		$screens = array(
+			Settings_Screens\Product_Sync::ID => new Settings_Screens\Product_Sync(),
+			Settings_Screens\Product_Sets::ID => new Settings_Screens\Product_Sets(),
+		);
 
-			return array_merge( array_merge( $first, $screens ), $last );
-		}
+		return array_merge( array_merge( $first, $screens ), $last );
 	}
 
 	/**
