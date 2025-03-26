@@ -60,6 +60,9 @@ class WC_Facebookcommerce extends WooCommerce\Facebook\Framework\Plugin {
 	/** @var WooCommerce\Facebook\Admin\Settings */
 	private $admin_settings;
 
+	/** @var WooCommerce\Facebook\Admin\Enhanced_Settings */
+	private $admin_enhanced_settings;
+
 	/** @var WooCommerce\Facebook\AJAX Ajax handler instance */
 	private $ajax;
 
@@ -238,7 +241,11 @@ class WC_Facebookcommerce extends WooCommerce\Facebook\Framework\Plugin {
 
 			// load admin handlers, before admin_init
 			if ( is_admin() ) {
-				$this->admin_settings = new WooCommerce\Facebook\Admin\Settings( $this->connection_handler->is_connected() );
+				if ($this->get_integration()->use_enhanced_onboarding()) {
+					$this->admin_enhanced_settings = new WooCommerce\Facebook\Admin\Enhanced_Settings( $this->connection_handler->is_connected() );
+				} else {
+					$this->admin_settings = new WooCommerce\Facebook\Admin\Settings( $this->connection_handler->is_connected() );
+				}
 			}
 		}
 	}
