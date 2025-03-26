@@ -131,11 +131,7 @@ abstract class AbstractFeed {
 			return;
 		}
 
-		if ( facebook_for_woocommerce()->get_integration()->is_new_style_feed_generation_enabled() ) {
-			$this->feed_generator->queue_start();
-		} else {
-			$this->feed_handler->generate_feed_file();
-		}
+		$this->feed_generator->queue_start();
 	}
 
 	/**
