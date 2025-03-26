@@ -145,42 +145,44 @@ class Handler extends AbstractRESTEndpoint {
 
 		// Map access tokens
 		if ( ! empty( $params['access_token'] ) ) {
-			$options['wc_facebook_access_token'] = $params['access_token'];
+			$options[\WC_Facebookcommerce_Integration::OPTION_ACCESS_TOKEN] = $params['access_token'];
+		}
+
+		if ( ! empty( $params['commerce_merchant_settings_id'] ) ) {
+			$options[\WC_Facebookcommerce_Integration::OPTION_COMMERCE_MERCHANT_SETTINGS_ID] = $params['commerce_merchant_settings_id'];
+		}
+
+		if ( ! empty( $params['commerce_partner_integration_id'] ) ) {
+			$options[\WC_Facebookcommerce_Integration::OPTION_COMMERCE_PARTNER_INTEGRATION_ID] = $params['commerce_partner_integration_id'];
+		}
+
+		if ( ! empty( $params['installed_features'] ) ) {
+			$options[\WC_Facebookcommerce_Integration::OPTION_INSTALLED_FEATURES] = $params['installed_features'];
 		}
 
 		if ( ! empty( $params['merchant_access_token'] ) ) {
-			$options['wc_facebook_merchant_access_token'] = $params['merchant_access_token'];
+			$options[\WC_Facebookcommerce_Integration::OPTION_MERCHANT_ACCESS_TOKEN] = $params['merchant_access_token'];
 		}
 
 		if ( ! empty( $params['page_access_token'] ) ) {
-			$options['wc_facebook_page_access_token'] = $params['page_access_token'];
-		}
-
-		// Map IDs
-		if ( ! empty( $params['product_catalog_id'] ) ) {
-			$options['wc_facebook_catalog_id'] = $params['product_catalog_id'];
-		}
-
-		if ( ! empty( $params['pixel_id'] ) ) {
-			$options['wc_facebook_pixel_id'] = $params['pixel_id'];
-			update_option( \WC_Facebookcommerce_Integration::SETTING_FACEBOOK_PIXEL_ID, $params['pixel_id'] );
+			$options[\WC_Facebookcommerce_Integration::OPTION_PAGE_ACCESS_TOKEN] = $params['page_access_token'];
 		}
 
 		if ( ! empty( $params['page_id'] ) ) {
 			update_option( \WC_Facebookcommerce_Integration::SETTING_FACEBOOK_PAGE_ID, $params['page_id'] );
 		}
 
-		if ( ! empty( $params['commerce_partner_integration_id'] ) ) {
-			$options['wc_facebook_commerce_partner_integration_id'] = $params['commerce_partner_integration_id'];
+		if ( ! empty( $params['pixel_id'] ) ) {
+			$options[\WC_Facebookcommerce_Integration::SETTING_FACEBOOK_PIXEL_ID] = $params['pixel_id'];
+			update_option( \WC_Facebookcommerce_Integration::SETTING_FACEBOOK_PIXEL_ID, $params['pixel_id'] );
 		}
 
-		// Map profiles and features
+		if ( ! empty( $params['product_catalog_id'] ) ) {
+			$options[\WC_Facebookcommerce_Integration::OPTION_PRODUCT_CATALOG_ID] = $params['product_catalog_id'];
+		}
+
 		if ( ! empty( $params['profiles'] ) ) {
-			$options['wc_facebook_profiles'] = $params['profiles'];
-		}
-
-		if ( ! empty( $params['installed_features'] ) ) {
-			$options['wc_facebook_installed_features'] = $params['installed_features'];
+			$options[\WC_Facebookcommerce_Integration::OPTION_PROFILES] = $params['profiles'];
 		}
 
 		return $options;
@@ -230,17 +232,17 @@ class Handler extends AbstractRESTEndpoint {
 	 */
 	private function clear_integration_options() {
 		$options = [
-			'wc_facebook_access_token',
-			'wc_facebook_merchant_access_token',
-			'wc_facebook_page_access_token',
-			'wc_facebook_catalog_id',
-			'wc_facebook_pixel_id',
-			'wc_facebook_commerce_partner_integration_id',
-			'wc_facebook_profiles',
-			'wc_facebook_installed_features',
-			'wc_facebook_has_connected_fbe_2',
-			'wc_facebook_has_authorized_pages_read_engagement',
-			'wc_facebook_enable_messenger',
+			\WC_Facebookcommerce_Integration::OPTION_ACCESS_TOKEN,
+			\WC_Facebookcommerce_Integration::OPTION_COMMERCE_MERCHANT_SETTINGS_ID,
+			\WC_Facebookcommerce_Integration::OPTION_COMMERCE_PARTNER_INTEGRATION_ID,
+			\WC_Facebookcommerce_Integration::OPTION_ENABLE_MESSENGER,
+			\WC_Facebookcommerce_Integration::OPTION_HAS_AUTHORIZED_PAGES_READ_ENGAGEMENT,
+			\WC_Facebookcommerce_Integration::OPTION_HAS_CONNECTED_FBE_2,
+			\WC_Facebookcommerce_Integration::OPTION_INSTALLED_FEATURES,
+			\WC_Facebookcommerce_Integration::OPTION_MERCHANT_ACCESS_TOKEN,
+			\WC_Facebookcommerce_Integration::OPTION_PAGE_ACCESS_TOKEN,
+			\WC_Facebookcommerce_Integration::OPTION_PRODUCT_CATALOG_ID,
+			\WC_Facebookcommerce_Integration::OPTION_PROFILES,
 			\WC_Facebookcommerce_Integration::SETTING_FACEBOOK_PAGE_ID,
 			\WC_Facebookcommerce_Integration::SETTING_FACEBOOK_PIXEL_ID,
 		];
