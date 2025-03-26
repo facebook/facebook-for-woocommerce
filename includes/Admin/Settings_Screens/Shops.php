@@ -149,7 +149,7 @@ class Shops extends Abstract_Settings_Screen {
 		?>
 	<div style="display: flex; justify-content: center; max-width: 1200px; margin: 0 auto;">
 		<iframe
-		id="facebook-commerce-iframe"
+		id="facebook-commerce-iframe-enhanced"
 		src="<?php echo esc_url( $iframe_url ); ?>"
 		></iframe>
 	</div>

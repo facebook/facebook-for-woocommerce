@@ -79,6 +79,11 @@
 
 #facebook-commerce-iframe {
 	width: 100%;
+	min-height: calc(100vh - 200px);
+}
+
+#facebook-commerce-iframe-enhanced {
+	width: 100%;
 	max-width: 1100px;
 	min-height: calc(100vh - 200px);
 	background: transparent;

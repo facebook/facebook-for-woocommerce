@@ -108,6 +108,6 @@ class ShopsTest extends TestCase {
 
         // Check that the iframe is rendered
         $this->assertStringContainsString('<iframe', $output);
-        $this->assertStringContainsString('id="facebook-commerce-iframe"', $output);
+        $this->assertStringContainsString('id="facebook-commerce-iframe-enhanced"', $output);
     }
 }
