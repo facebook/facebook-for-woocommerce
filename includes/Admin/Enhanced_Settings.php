@@ -32,15 +32,28 @@ class Enhanced_Settings {
 	private $screens;
 
 	/**
+	 * TODO: Remove these hookds once catalog changes are complete
+	 *
+	 * @var string
+	 */
+	const SUBMENU_PAGE_ID = 'edit-tags.php?taxonomy=fb_product_set&post_type=product';
+
+	/**
 	 * Enhanced settings constructor.
 	 *
 	 * @since 3.5.0
+	 *
+	 * @param bool $is_connected
 	 */
-	public function __construct() {
-		$this->screens = $this->build_menu_item_array();
+	public function __construct( bool $is_connected ) {
+		$this->screens = $this->build_menu_item_array( $is_connected );
 
 		add_action( 'admin_menu', array( $this, 'add_menu_item' ) );
 		add_action( 'wp_loaded', array( $this, 'save' ) );
+
+		// TODO: Remove these hookds once catalog changes are complete
+		add_filter( 'parent_file', array( $this, 'set_parent_and_submenu_file' ) );
+		add_action( 'all_admin_notices', array( $this, 'add_tabs_to_product_sets_taxonomy' ) );
 	}
 
 	/**
@@ -48,10 +61,23 @@ class Enhanced_Settings {
 	 *
 	 * @since 3.5.0
 	 *
+	 * @param bool $is_connected is Facebook connected
 	 * @return array
 	 */
-	private function build_menu_item_array(): array {
+	private function build_menu_item_array( bool $is_connected ): array {
+		if ( $is_connected ) {
+			// TODO: Add Utility messaging tab
+			// TODO: Remove Product sync and Product sets tab once catalog changes are complete
+			return array(
+				Settings_Screens\Shops::ID        => new Settings_Screens\Shops(),
+				Settings_Screens\Advertise::ID    => new Settings_Screens\Advertise(),
+				Settings_Screens\Product_Sync::ID => new Settings_Screens\Product_Sync(),
+				Settings_Screens\Product_Sets::ID => new Settings_Screens\Product_Sets(),
+			);
+		} else {
+			// TODO: Add Utility messaging tab
 			return [ Settings_Screens\Shops::ID => new Settings_Screens\Shops() ];
+		}
 	}
 
 	/**
@@ -125,6 +151,12 @@ class Enhanced_Settings {
 					case Shops::ID:
 						$crumbs[] = __( 'Shops', 'facebook-for-woocommerce' );
 						break;
+					case Settings_Screens\Product_Sync::ID:
+						$crumbs[] = __( 'Product sync', 'facebook-for-woocommerce' );
+						break;
+					case Settings_Screens\Advertise::ID:
+						$crumbs[] = __( 'Advertise', 'facebook-for-woocommerce' );
+						break;
 				}
 			}
 			wc_admin_connect_page(
@@ -137,7 +169,6 @@ class Enhanced_Settings {
 			);
 		}
 	}
-
 
 	/**
 	 * Renders the settings page.
@@ -198,7 +229,6 @@ class Enhanced_Settings {
 		return $current_tab;
 	}
 
-
 	/**
 	 * Saves the settings page.
 	 *
@@ -237,7 +267,6 @@ class Enhanced_Settings {
 		}
 	}
 
-
 	/**
 	 * Gets a settings screen object based on ID.
 	 *
@@ -251,7 +280,6 @@ class Enhanced_Settings {
 
 		return ! empty( $screens[ $screen_id ] ) && $screens[ $screen_id ] instanceof Abstract_Settings_Screen ? $screens[ $screen_id ] : null;
 	}
-
 
 	/**
 	 * Gets the available screens.
@@ -280,7 +308,6 @@ class Enhanced_Settings {
 		return $screens;
 	}
 
-
 	/**
 	 * Gets the tabs.
 	 *
@@ -303,5 +330,77 @@ class Enhanced_Settings {
 		 * @param array $tabs
 		 */
 		return (array) apply_filters( 'wc_facebook_admin_settings_tabs', $tabs, $this );
+	}
+
+		/**
+		 * TODO: Remove this function once catalog changes are complete
+		 *
+		 * Set the parent and submenu file while accessing Facebook Product Sets in the marketing menu.
+		 *
+		 * @since 3.5.0
+		 *
+		 * @param string $parent_file
+		 * @return string
+		 */
+	public function set_parent_and_submenu_file( $parent_file ) {
+		global $pagenow, $submenu_file;
+
+		$root_menu_item = $this->root_menu_item();
+
+		if ( 'edit-tags.php' === $pagenow || 'term.php' === $pagenow ) {
+			if ( isset( $_GET['taxonomy'] ) && 'fb_product_set' === $_GET['taxonomy'] ) { //phpcs:ignore WordPress.Security.NonceVerification.Recommended
+				$parent_file  = $root_menu_item;
+				$submenu_file = self::PAGE_ID; //phpcs:ignore WordPress.WP.GlobalVariablesOverride.Prohibited
+			}
+		}
+
+		return $parent_file;
+	}
+
+	/**
+	 * TODO: Remove this function once catalog changes are complete
+	 *
+	 * Add the Facebook for WooCommerce tabs to the Facebook Product Set taxonomy page.
+	 * Renders the tabs (hidden by default) at the stop of the page,
+	 * then moves them to the correct DOM location with JavaScript and displays them.
+	 *
+	 * @since 3.3.0
+	 */
+	public function add_tabs_to_product_sets_taxonomy() {
+
+		// Only load this on the edit-tags.php page
+		$screen                  = get_current_screen();
+		$is_taxonomy_list_page   = 'edit-tags' === $screen->base;
+		$is_taxonomy_term_page   = 'term' === $screen->base;
+		$is_taxonomy_page        = $is_taxonomy_list_page || $is_taxonomy_term_page;
+		$is_product_set_taxonomy = 'fb_product_set' === $screen->taxonomy && $is_taxonomy_page;
+
+		if ( $is_product_set_taxonomy ) {
+			$this->render_tabs( Settings_Screens\Product_Sets::ID );
+			?>
+				<style>
+					.facebook-for-woocommerce-tabs {
+						margin: 30px 20px 0 20px;
+					}
+					#wpbody-content > .wrap > h1 {
+						font-size: 1.3em;
+						font-weight: 600;
+					}
+
+					@media (max-width: 782px) {
+						.facebook-for-woocommerce-tabs {
+								padding-top: 19px;
+								margin-bottom: -1px;
+						}
+						.edit-tags-php .facebook-for-woocommerce-tabs {
+							clear: both;
+							padding-top: 0;
+							position: relative;
+							top: -10px;
+							margin-bottom: -11px;
+						}
+				</style>
+			<?php
+		}
 	}
 }
