@@ -108,6 +108,33 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 	/** @var string custom taxonomy Facebook Product Set ID */
 	const FB_PRODUCT_SET_ID = 'fb_product_set_id';
 
+	/** @var string the WordPress option name where the access token is stored */
+	const OPTION_ACCESS_TOKEN = 'wc_facebook_access_token';
+
+	/** @var string the WordPress option name where the merchant access token is stored */
+	const OPTION_MERCHANT_ACCESS_TOKEN = 'wc_facebook_merchant_access_token';
+
+	/** @var string the WordPress option name where the commerce merchant settings ID is stored */
+	const OPTION_COMMERCE_MERCHANT_SETTINGS_ID = 'wc_facebook_commerce_merchant_settings_id';
+
+	/** @var string the WordPress option name where the commerce partner integration ID is stored */
+	const OPTION_COMMERCE_PARTNER_INTEGRATION_ID = 'wc_facebook_commerce_partner_integration_id';
+
+	/** @var string the WordPress option name where the profiles are stored */
+	const OPTION_PROFILES = 'wc_facebook_profiles';
+
+	/** @var string the WordPress option name where the installed features are stored */
+	const OPTION_INSTALLED_FEATURES = 'wc_facebook_installed_features';
+
+	/** @var string the WordPress option name where the FBE 2 connection status is stored */
+	const OPTION_HAS_CONNECTED_FBE_2 = 'wc_facebook_has_connected_fbe_2';
+
+	/** @var string the WordPress option name where the pages read engagement authorization status is stored */
+	const OPTION_HAS_AUTHORIZED_PAGES_READ_ENGAGEMENT = 'wc_facebook_has_authorized_pages_read_engagement';
+
+	/** @var string the WordPress option name where the messenger chat status is stored */
+	const OPTION_ENABLE_MESSENGER = 'wc_facebook_enable_messenger';	
+
 	/** @var string|null the configured product catalog ID */
 	public $product_catalog_id;
 
