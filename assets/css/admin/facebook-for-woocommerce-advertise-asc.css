@@ -1,0 +1,488 @@
+.fb-asc-ads {
+  margin: 0;
+  padding: 0;
+}
+
+.fb-asc-ads .components-tab-panel__tabs {
+  display: flex;
+  gap: 10px;
+  padding: 10px 0;
+  border-bottom: solid 1px #F0F2F5;
+}
+  
+.fb-asc-ads .components-tab-panel__tabs button {
+  height: 30px;
+  border-radius: 3px;
+  background-color: #F0F2F550;
+}
+
+.fb-asc-ads .components-tab-panel__tabs button[aria-selected="true"] {
+  background-color: #F0F2F5;
+}
+
+.fb-asc-ads .components-panel,
+.fb-asc-ads .components-panel__body {
+  margin: 0;
+  padding: 0;
+  background: transparent;
+  border: none;
+}
+
+.fb-asc-ads .campaign-management-wrapper {
+  margin: 0 0 16px;
+  padding: 0 24px 20px;
+  background-color: white;
+  border-radius: 6px;
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.1);
+}
+
+.fb-asc-ads .campaign-management-body .components-flex-item {
+  position: relative;
+}
+
+.fb-asc-ads .default-view-table {
+  width: 1200px;
+}
+
+.fb-asc-ads .default-view {
+  width: 650px;
+  min-height: 260px;
+}
+
+.fb-asc-ads .top-pad {
+  padding-top: 30px;
+}
+
+.fb-asc-ads .default-view-table th {
+  text-align: left;
+  font-weight: 400;
+}
+
+.fb-asc-ads .default-view-table td {
+  text-align: left;
+  vertical-align: top;
+  padding-top: 0px;
+  padding-right: 10px;
+}
+
+.fb-asc-ads .horizontal-align {
+  display: flex;
+  align-items: center;
+}
+
+.fb-asc-ads .round {
+  border-radius: 20% 20% 20% / 60%;
+}
+
+.fb-asc-ads .main-ui-button {
+  background-color: #b4d0a1;
+  font-weight: 600;
+  border-radius: 10px;
+  border: 1px solid black;
+  padding: 15px;
+}
+
+.fb-asc-ads .main-ui-button:hover {
+  background-color: #f4d0a1;
+}
+
+.fb-asc-ads .main-ui-button:active {
+  background-color: #f8b277;
+  color: gray;
+}
+
+.fb-asc-ads .insights-header {
+  margin: '0 20px';
+  padding: 0;
+}
+
+.fb-asc-ads .zero-border-element {
+  margin: 0;
+  padding: 0;
+}
+
+.fb-asc-ads .edit-view-topic {
+  margin: 0;
+  padding: 0;
+}
+
+.fb-asc-ads .country-selector {
+  margin-top: 0;
+  width: 100%;
+  max-width: 200px;
+  max-height: 150px;
+  white-space: nowrap;
+  overflow: auto;
+}
+
+.fb-asc-ads .preview-object-iframe {
+  border: none;
+  overflow: hidden;
+  width: 345px;
+  height: 550px;
+}
+
+.fb-asc-ads .preview-object-iframe-parent {
+  overflow: hidden;
+  background: transparent;
+}
+
+.fb-asc-ads .loading-preview-parent {
+  display: inline-block;
+}
+
+.fb-asc-ads .loading-preview-container {
+  align-items: center;
+  justify-content: center;
+  display: flex;
+}
+
+.fb-asc-ads .campaign-management-info-section {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+  margin: 56px 0 0;
+  padding-bottom: 4px;
+  fill: #1C2B3360;
+  color: #1C2B3360;
+}
+
+.fb-asc-ads .navigation-footer-container {
+  display: flex;
+  align-items: center;
+  justify-content: end;
+  gap: 12px;
+  padding-top: 10px;
+  border-top: solid 1px #F0F2F5;
+}
+
+.fb-asc-ads .campaign-management-button-wrapper button {
+  border-radius: 3px !important;
+}
+
+.fb-asc-ads .main-ui-button:disabled {
+  border: 1px solid #999999;
+  background-color: #cccccc;
+  color: #666666;
+  opacity: 0.5;
+  box-shadow: none;
+}
+
+.fb-asc-ads .transparent-background {
+  background: transparent;
+}
+
+.fb-asc-ads .funnel-table-header {
+  margin: 0;
+  padding: 0;
+  line-height: 10px;
+  display: grid;
+  place-items: center;
+}
+
+.fb-asc-ads .funnel-table-header label {
+  margin: 0;
+  padding: 0;
+  line-height: 10px;
+  font-size: 10px;
+}
+
+.fb-asc-ads .main-ui-container {
+  display: flex;
+  width: 650px;
+  min-height: 260px;
+  margin: 0 0 16px;
+  padding: 24px 20px;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: center;
+  overflow: hidden;
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.1);
+  border-radius: 5px;
+  background-color: #fff;
+  color: #1C2B33;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+}
+
+.fb-asc-ads .main-ui-container-item {
+  box-sizing: border-box;
+  width: 100%;
+}
+
+.fb-asc-ads .main-ui-container-item-content {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.fb-asc-ads .main-ui-container-item-content-icon {
+	display: flex;
+	width: 16px;
+	margin-right: 10px;
+}
+
+.fb-asc-ads .main-ui-container-item-content-title {
+	font-size: 14px;
+	margin: 2px 0 0;
+	padding: 0;
+}
+
+.fb-asc-ads .main-ui-container-item-content p {
+  flex-basis: 85%;
+  margin: 0;
+  padding: 0;
+  font-size: 12px;
+  color: #1C2B3360;
+}
+
+.fb-asc-ads .main-ui-container-item-cta {
+  margin: 26px 0 0;
+}
+
+.fb-asc-ads #new-buyers-create-campaign-btn,
+.fb-asc-ads #retargeting-create-campaign-btn {
+  font-size: 16px;
+  line-height: 1;
+  color: #1C2B33;
+  background: transparent;
+  border-color: #C4CCD4;
+}
+
+.fb-asc-ads .campaign-edit-view-header {
+  color: #1d2327;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  margin: 10px 0 0 0;
+  padding-bottom: 5px;
+}
+
+.fb-asc-ads .campaign-edit-view-header-tooltip {
+  font-size: 75%;
+  align-content: center;
+}
+
+.fb-asc-ads .campaign-edit-view-messagebox {
+  resize: none;
+}
+
+.fb-asc-ads .campaign-edit-secondary-header {
+  color: #949494;
+  font-size: 75%;
+}
+
+.fb-asc-ads .secondary-header-color {
+  color: #949494;
+}
+
+.fb-asc-ads .campaign-edit-view-img {
+  display: block;
+  margin-left: 0;
+  margin-bottom: 5px;
+  width: 300px;
+  margin-top: 20px;
+}
+
+.fb-asc-ads .main-ui-header,
+.fb-asc-ads .edit-view-title {
+  font-weight: 600;
+  font-size: 16px;
+  margin: 0 0 2px;
+  padding: 0;
+}
+
+.fb-asc-ads .main-ui-subheader,
+.fb-asc-ads .edit-view-subtitle {
+  width: 85%;
+  font-size: 14px;
+  margin: 0 0 26px;
+  padding: 0;
+}
+
+.fb-asc-ads .round:before {
+  border-radius: 80%;
+}
+
+.fb-asc-ads .bar-chart {
+  width: 100%;
+}
+
+.fb-asc-ads .bar-chart thead {
+  height: 90%;
+}
+
+.fb-asc-ads .bar-chart tbody {
+  height: 10%;
+}
+
+.fb-asc-ads .bar-chart tbody label {
+  white-space: pre-wrap;
+}
+
+.fb-asc-ads .bar-chart th {
+  vertical-align: bottom;
+}
+
+.fb-asc-ads .bar-chart th div {
+  width: 70%;
+  position: relative;
+  left: 15%;
+  text-align: center;
+  background-color: #2271b1;
+}
+
+.fb-asc-ads .bar-chart td {
+  text-align: center;
+}
+
+.fb-asc-ads .waiting-window {
+  height: 100%;
+  width: 100%;
+  text-align: center;
+}
+
+.hidden_view {
+  display: none !important;
+}
+
+.fb-asc-ads iframe {
+  border: 0;
+  width: 100%;
+  height: 550px;
+  margin: 10px;
+  border: none;
+  overflow: hidden;
+}
+
+.fb-asc-ads .error {
+  font-size: x-small;
+  color: red;
+}
+
+.fb-asc-ads .busy-indicator {
+  background-image: linear-gradient(90deg, rgba(9, 137, 163, 1) 0%, rgba(9, 137, 163, 1) 8%, rgba(9, 137, 163, 1) 44%, rgba(255, 255, 255, 1) 50%, rgba(9, 137, 163, 1) 56%, rgba(9, 137, 163, 1) 83%, rgba(9, 137, 163, 1) 90%, rgba(9, 137, 163, 1) 96%);
+  transition: 0.5s;
+  bottom: 0px;
+  height: 5px;
+  width: 100%;
+  background-size: 200%;
+  border-radius: 50px;
+  display: flex;
+  position: relative;
+  animation: busy-indicator-animation 2s infinite linear;
+}
+
+.fb-asc-ads .busy-indicator:after {
+  content: "";
+  position: absolute;
+  z-index: 1;
+  border-radius: 10%;
+  left: 0;
+  pointer-events: none;
+  background-image: radial-gradient(ellipse at 50%, rgba(255, 255, 255, 0) 85%, rgba(255, 255, 255, 1) 95%);
+  width: 100%;
+  height: 100%;
+}
+
+.fb-asc-ads.edit-view {
+  color: #1C2B33;
+  padding-top: 10px;
+}
+
+.fb-asc-ads.edit-view .components-form-token-field__input-container,
+.fb-asc-ads.edit-view .components-textarea-control__input,
+.fb-asc-ads.edit-view .components-input-control__input {
+  padding: 6px 12px !important;
+  border-radius: 3px;
+  border: 1px solid #C4CCD4 !important;
+  color: #1C2B33;
+}
+
+.fb-asc-ads.edit-view .components-form-token-field__input-container {
+  width: auto;
+}
+
+.fb-asc-ads.edit-view .components-input-control__backdrop {
+  border: none !important;
+  padding: 0;
+}
+
+.fb-asc-ads.edit-view .edit-view-input-wrapper {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 32px;
+}
+
+.fb-asc-ads.edit-view label,
+.fb-asc-ads.edit-view label.components-input-control__label {
+  font-weight: 600;
+  font-size: 14px;
+  line-height: 1;
+  margin: 0 0 8px;
+  padding: 0;
+  text-transform: none;
+  color: #1C2B33;
+}
+
+.fb-asc-ads.edit-view .edit-view-toggle {
+  margin-bottom: 20px;
+}
+
+.fb-asc-ads.edit-view .edit-view-toggle .components-flex {
+  align-items: center;
+  flex-direction: row-reverse;
+  justify-content: space-between;
+}
+
+.fb-asc-ads.edit-view .edit-view-toggle p,
+.fb-asc-ads.edit-view .edit-view-input-wrapper p {
+  max-width: 380px;
+  color: #1C2B3360;
+  font-size: 12px;
+}
+
+.fb-asc-ads.edit-view .edit-view-input-wrapper p {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 8px 0 20px;
+  fill: #1C2B3360;
+}
+
+.fb-asc-ads.edit-view .edit-view-number-control .components-input-base {
+  gap: 0;
+}
+
+.fb-asc-ads.edit-view .edit-view-number-control .components-input-base .components-input-control__prefix {
+  display: flex;
+  align-items: center;
+  height: 30px;
+  border-radius: 3px;
+  padding: 0 12px;
+  background: #F0F2F5;
+  margin-right: 10px;
+}
+
+.fb-asc-ads.edit-view .components-form-token-field .components-form-token-field__input-container .components-flex {
+  padding: 0 !important;
+}
+
+.fb-asc-ads.edit-view .components-form-token-field__token-text,
+.fb-asc-ads.edit-view .components-form-token-field__remove-token {
+  background: #F0F2F5;
+}
+
+@keyframes busy-indicator-animation {
+  0% {
+    background-position: right;
+  }
+
+  50% {
+    background-position: left;
+  }
+
+  100% {
+    background-position: right;
+  }
+}

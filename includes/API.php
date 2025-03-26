@@ -34,7 +34,7 @@ class API extends Base {
 
 	public const GRAPH_API_URL = 'https://graph.facebook.com/';
 
-	public const API_VERSION = 'v20.0';
+	public const API_VERSION = 'v22.0';
 
 	/** @var string URI used for the request */
 	protected $request_uri = self::GRAPH_API_URL . self::API_VERSION;
@@ -80,6 +80,7 @@ class API extends Base {
 	 */
 	public function set_access_token( $access_token ) {
 		$this->access_token = $access_token;
+		$this->request_headers[ 'Authorization' ] = "Bearer {$access_token}";
 	}
 
 
@@ -232,6 +233,273 @@ class API extends Base {
 		$request = new API\Catalog\Request( $catalog_id );
 		$this->set_response_handler( API\Catalog\Response::class );
 		return $this->perform_request( $request );
+	}
+
+
+	/**
+	 * Gets the Product Sets in a Catalog from the Marketing Api.
+	 *
+	 * @param string $product_catalog_id Facebook catalog id.
+	 * @return API\ProductCatalog\ProductSets\Read\Response
+	 * @throws ApiException
+	 */
+	public function get_product_sets( $product_catalog_id ): API\ProductCatalog\ProductSets\Read\Response {
+		$request = new API\ProductCatalog\ProductSets\Read\Request( $product_catalog_id );
+		$this->set_response_handler( API\ProductCatalog\ProductSets\Read\Response::class );
+		return $this->perform_request( $request );
+	}
+
+
+	/**
+	 * Gets the Ad Preview for a specific Ad, in the given format.
+	 *
+	 * @link https://developers.facebook.com/docs/marketing-api/generatepreview/v15.0
+	 *
+	 * @param string $ad_id Facebook Ad id.
+	 * @param string $ad_format Facebook Ad Format.
+	 * @return API\Ad\Preview\Response
+	 * @throws ApiException
+	 */
+	public function get_ad_previews( $ad_id, $ad_format ): API\Ad\Preview\Response {
+		$request = new API\Ad\Preview\Request( $ad_id, $ad_format );
+		$this->set_response_handler( API\Ad\Preview\Response::class );
+		$response = $this->perform_request( $request );
+		$this->do_post_parse_response_validation();
+		return $response;
+	}
+
+
+	public function generate_ad_preview( $account_id, $ad_format, $creative_spec ): API\Ad\Preview\Generation\Response {
+		$request = new API\Ad\Preview\Generation\Request( $account_id, $ad_format, $creative_spec );
+		$this->set_response_handler( API\Ad\Preview\Generation\Response::class );
+		$response = $this->perform_request( $request );
+		$this->do_post_parse_response_validation();
+		return $response;
+	}
+
+
+	/**
+	 * Creates a GET request to the path provided. If there are fields, this method will append those fields to the end of the path
+	 *
+	 * @param string $path Url for the GET to be executed
+	 * @param string $fields Requested fields to be returned
+	 * @return API\Ad\Response
+	 * @throws ApiException
+	 */
+	public function get_with_generic_request( $path, $fields ): API\Response {
+		$request_string = '/'.$path;
+		if ( $fields ) {
+			$request_string .= '?fields='.$fields;
+		}
+		$request = new API\Request( $request_string, 'GET' );
+		$this->set_response_handler( API\Response::class );
+		$response = $this->perform_request( $request );
+		$this->do_post_parse_response_validation();
+		return $response;
+	}
+
+
+	/**
+	 * Gets the Ad Account currency from the Marketing Api
+	 *
+	 * @param string $ad_account_id Facebook Ad Account Id.
+	 * @return API\AdAccount\Currency\Response
+	 * @throws ApiException
+	 */
+	public function get_currency( $ad_account_id ): API\AdAccount\Currency\Response {
+		$request = new API\AdAccount\Currency\Request( $ad_account_id );
+		$this->set_response_handler( API\AdAccount\Currency\Response::class );
+		$response = $this->perform_request( $request );
+		$this->do_post_parse_response_validation();
+		return $response;
+	}
+
+
+	/**
+	 * Gets the insights for the campaign from the Marketing Api.
+	 *
+	 * @link https://developers.facebook.com/docs/marketing-api/reference/ad-campaign-group/insights/
+	 *
+	 * @param string $campaign_id Facebook Ad Campaign Id.
+	 * @return API\Insights\Response
+	 * @throws ApiException
+	 */
+	public function get_insights( $campaign_id ): API\Insights\Response {
+		$request = new API\Insights\Request( $campaign_id );
+		$this->set_response_handler( API\Insights\Response::class );
+		$response = $this->perform_request( $request );
+		$this->do_post_parse_response_validation();
+		return $response;
+	}
+
+
+	/**
+	 * Creates an Ad Campaign for the given Ad Account, using the provided data.
+	 *
+	 * @link https://developers.facebook.com/docs/marketing-api/reference/ad-campaign-group#Creating
+	 *
+	 * @param string $account_id Facebook Ad Account Id.
+	 * @param array $data Facebook Ad Campaign properties
+	 * @return API\Campaign\Response
+	 * @throws ApiException
+	 */
+	public function create_campaign( $account_id, $data ): API\Campaign\Response {
+
+		$request = new API\Campaign\Create\Request( $account_id, $data );
+		$this->set_response_handler( API\Campaign\Response::class );
+		$response = $this->perform_request( $request );
+		$this->do_post_parse_response_validation();
+		return $response;
+
+	}
+
+
+	/**
+	 * Creates an Adset for the given Ad Account, using the provided data.
+	 *
+	 * @link https://developers.facebook.com/docs/marketing-api/reference/ad-campaign#Creating
+	 *
+	 * @param string $account_id Facebook Ad Account Id.
+	 * @param array $data Facebook Adset properties
+	 * @return API\Adset\Create\Response
+	 * @throws ApiException
+	 */
+	public function create_adset( $account_id, $data ): API\Adset\Create\Response {
+		$request = new API\Adset\Create\Request( $account_id, $data );
+		$this->set_response_handler( API\Adset\Create\Response::class );
+		$response = $this->perform_request( $request );
+		$this->do_post_parse_response_validation();
+		return $response;
+	}
+
+
+	/**
+	 * Creates an Ad for the given Ad Account, using the provided data.
+	 *
+	 * @link https://developers.facebook.com/docs/marketing-api/reference/adgroup#Creating
+	 *
+	 * @param string $account_id Facebook Ad Account Id.
+	 * @param array $data Facebook Ad properties
+	 * @return API\Ad\Create\Response
+	 * @throws ApiException
+	 */
+	public function create_ad( $account_id, $data): API\Ad\Create\Response {
+		$request = new API\Ad\Create\Request( $account_id, $data );
+		$this->set_response_handler( API\Ad\Create\Response::class );
+		$response = $this->perform_request( $request );
+		$this->do_post_parse_response_validation();
+		return $response;
+	}
+
+
+	/**
+	 * Creates an Adcreative for the given Ad Account, using the provided data.
+	 *
+	 * @link https://developers.facebook.com/docs/marketing-api/reference/ad-creative#Creating
+	 *
+	 * @param string $account_id Facebook Ad Account Id.
+	 * @param array $data Facebook Adcreative properties
+	 * @return API\Response
+	 * @throws ApiException
+	 */
+	public function create_adcreative( $account_id, $data ): API\Response {
+		$request = new API\AdCreative\Create\Request( $account_id, $data );
+		$this->set_response_handler( API\Response::class );
+		$response = $this->perform_request( $request );
+		$this->do_post_parse_response_validation();
+		return $response;
+	}
+
+
+	/**
+	 * Updates an Ad Campaign using the provided data.
+	 *
+	 * @link https://developers.facebook.com/docs/marketing-api/reference/ad-campaign-group#Updating
+	 *
+	 * @param string $campaign_id Facebook Ad Campaign Id.
+	 * @param array $properties Facebook Ad Campaign properties that need to be updated
+	 * @return API\Campaign\Response
+	 * @throws ApiException
+	 */
+	public function update_campaign( $campaign_id, $properties ): API\Campaign\Response {
+		$request = new API\Campaign\Update\Request( $campaign_id, $properties );
+		$this->set_response_handler( API\Campaign\Response::class );
+		$response = $this->perform_request( $request );
+		$this->do_post_parse_response_validation();
+		return $response;
+	}
+
+
+	/**
+	 * Updates an Adset using the provided data.
+	 *
+	 * @link https://developers.facebook.com/docs/marketing-api/reference/ad-campaign#Updating
+	 *
+	 * @param string $adset_id Facebook Adset Id.
+	 * @param array $properties Facebook Adset properties that need to be updated
+	 * @return API\Adset\Update\Response
+	 * @throws ApiException
+	 */
+	public function update_adset( $adset_id, $properties ): API\Adset\Update\Response {
+		$request = new API\Adset\Update\Request( $adset_id, $properties );
+		$this->set_response_handler( API\Adset\Update\Response::class );
+		$response = $this->perform_request( $request );
+		$this->do_post_parse_response_validation();
+		return $response;
+	}
+
+
+	/**
+	 * Updates an Adcreative using the provided data.
+	 *
+	 * @link https://developers.facebook.com/docs/marketing-api/reference/ad-creative#Updating
+	 *
+	 * @param string $adcreative_id Facebook Adcreative Id.
+	 * @param array $properties Facebook Adcreative properties that need to be updated
+	 * @return API\AdCreative\Response
+	 * @throws ApiException
+	 */
+	public function update_adcreative( $adcreative_id, $properties ): API\Response {
+		$request = new API\AdCreative\Update\Request( $adcreative_id, $properties );
+		$this->set_response_handler( API\Response::class );
+		$response = $this->perform_request( $request );
+		$this->do_post_parse_response_validation();
+		return $response;
+	}
+
+
+	/**
+	 * Updates an Ad using the provided data.
+	 *
+	 * @link https://developers.facebook.com/docs/marketing-api/reference/adgroup#Updating
+	 *
+	 * @param string $ad_id Facebook Ad Id.
+	 * @param array $properties Facebook Ad properties that need to be updated
+	 * @return API\Ad\Create\Response
+	 * @throws ApiException
+	 */
+	public function update_ad( $ad_id, $properties ): API\Ad\Create\Response {
+		$request = new API\Ad\Update\Request( $ad_id, $properties );
+		$this->set_response_handler( API\Ad\Create\Response::class );
+		$response = $this->perform_request( $request );
+		$this->do_post_parse_response_validation();
+		return $response;
+	}
+
+
+	/**
+	 * Deletes an item using the Marketing Api
+	 *
+	 * @param string $id Facebook Id.
+	 * @return API\Response
+	 * @throws ApiException
+	 */
+	public function delete_item( $id ): API\Response {
+		$request = new API\Request( '/'.$id, 'DELETE' );
+		$this->set_response_handler( API\Response::class );
+		$response = $this->perform_request( $request );
+		$this->do_post_parse_response_validation();
+		return $response;
 	}
 
 
