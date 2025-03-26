@@ -27,8 +27,8 @@ class Shops extends Abstract_Settings_Screen {
 
 	/**
 	 * Shops constructor.
-   *
-   * @since 3.5.0
+	 *
+	 * @since 3.5.0
 	 */
 	public function __construct() {
 		add_action( 'init', array( $this, 'initHook' ) );
@@ -41,8 +41,8 @@ class Shops extends Abstract_Settings_Screen {
 	/**
 	 * Enqueues the wp-api script and the Facebook REST API JavaScript client.
 	 *
-   * @since 3.5.0
-   *
+	 * @since 3.5.0
+	 *
 	 * @internal
 	 */
 	public function enqueue_admin_scripts() {
@@ -53,8 +53,8 @@ class Shops extends Abstract_Settings_Screen {
 
 	/**
 	 * Initializes this settings page's properties.
-   *
-   * @since 3.5.0
+	 *
+	 * @since 3.5.0
 	 */
 	public function initHook(): void {
 		$this->id    = self::ID;
@@ -66,8 +66,8 @@ class Shops extends Abstract_Settings_Screen {
 	 * Adds admin notices.
 	 *
 	 * @since 3.5.0
-   *
-   * @internal
+	 *
+	 * @internal
 	 */
 	public function add_notices() {
 		if ( get_transient( 'wc_facebook_connection_failed' ) ) {
@@ -98,8 +98,8 @@ class Shops extends Abstract_Settings_Screen {
 	/**
 	 * Enqueues the assets.
 	 *
-   * @since 3.5.0
-   *
+	 * @since 3.5.0
+	 *
 	 * @internal
 	 */
 	public function enqueue_assets() {
@@ -122,8 +122,8 @@ class Shops extends Abstract_Settings_Screen {
 
 	/**
 	 * Renders the appropriate Facebook iframe based on connection status.
-   *
-   * @since 3.5.0
+	 *
+	 * @since 3.5.0
 	 */
 	private function render_facebook_iframe() {
 		$connection            = facebook_for_woocommerce()->get_connection_handler();
@@ -169,12 +169,12 @@ class Shops extends Abstract_Settings_Screen {
 		wp_add_inline_script( 'plugin-api-client', $this->generate_inline_enhanced_onboarding_script(), 'after' );
 	}
 
-  /**
+	/**
 	 * Generates the inline script for the enhanced onboarding flow.
 	 *
 	 * @since 3.5.0
-   *
-   * @return string
+	 *
+	 * @return string
 	 */
 	public function generate_inline_enhanced_onboarding_script() {
 		// Generate a fresh nonce for this request
@@ -244,8 +244,8 @@ class Shops extends Abstract_Settings_Screen {
 	 * Gets the screen settings.
 	 *
 	 * @since 3.5.0
-   *
-   * @return array
+	 *
+	 * @return array
 	 */
 	public function get_settings() {
 
