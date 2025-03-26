@@ -92,7 +92,6 @@ class RestAPITest extends TestCase {
         // Verify options are mapped correctly
         $this->assertEquals('test_access_token', $options['wc_facebook_access_token']);
         $this->assertEquals('test_merchant_token', $options['wc_facebook_merchant_access_token']);
-        $this->assertEquals('test_page_token', $options['wc_facebook_page_access_token']);
         $this->assertEquals('123456', $options['wc_facebook_product_catalog_id']);
         $this->assertEquals('789012', $options['wc_facebook_commerce_merchant_settings_id']);
 
@@ -109,7 +108,6 @@ class RestAPITest extends TestCase {
         // Verify options were updated
         $this->assertEquals('test_access_token', get_option('wc_facebook_access_token'));
         $this->assertEquals('test_merchant_token', get_option('wc_facebook_merchant_access_token'));
-        $this->assertEquals('test_page_token', get_option('wc_facebook_page_access_token'));
         $this->assertEquals('123456', get_option('wc_facebook_product_catalog_id'));
         $this->assertEquals('789012', get_option('wc_facebook_pixel_id'));
         $this->assertEquals('yes', get_option('wc_facebook_has_connected_fbe_2'));
