@@ -74,7 +74,7 @@ class FeedManager {
 	/**
 	 * Get specific feed instance.
 	 *
-	 * @param string $feed_type The name of the feed type instance to fetch.ge
+	 * @param string $feed_type The name of the feed type instance to fetch.
 	 *
 	 * @return AbstractFeed
 	 * @throws \InvalidArgumentException If the feed_type isn't set.
