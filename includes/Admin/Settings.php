@@ -62,7 +62,7 @@ class Settings {
 	 * @since 3.0.7
 	 */
 	private function build_menu_item_array( bool $is_connected ): array {
-		if (facebook_for_woocommerce()->get_integration()->use_enhanced_onboarding()) {
+		if ( facebook_for_woocommerce()->get_integration()->use_enhanced_onboarding() ) {
 			return [ Settings_Screens\Connection::ID => new Settings_Screens\Connection() ];
 		} else {
 			$advertise  = [ Settings_Screens\Advertise::ID => new Settings_Screens\Advertise() ];

@@ -34,7 +34,7 @@ class Enhanced_Settings {
 	/**
 	 * Enhanced settings constructor.
 	 *
-   * @since 3.5.0
+	 * @since 3.5.0
 	 */
 	public function __construct() {
 		$this->screens = $this->build_menu_item_array();
@@ -46,8 +46,8 @@ class Enhanced_Settings {
 	/**
 	 * Arranges the tabs.
 	 *
-   * @since 3.5.0
-   *
+	 * @since 3.5.0
+	 *
 	 * @return array
 	 */
 	private function build_menu_item_array(): array {
@@ -79,7 +79,7 @@ class Enhanced_Settings {
 	 * Gets the root menu item.
 	 *
 	 * @since 3.5.0
-   *
+	 *
 	 * @return string
 	 */
 	public function root_menu_item() {
@@ -94,7 +94,7 @@ class Enhanced_Settings {
 	 * Checks if marketing feature is enabled.
 	 *
 	 * @since 3.5.0
-   *
+	 *
 	 * @return bool
 	 */
 	public function is_marketing_enabled() {

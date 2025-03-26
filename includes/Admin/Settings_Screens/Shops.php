@@ -135,30 +135,13 @@ class Shops extends Abstract_Settings_Screen {
 		}
 
 		?>
-  <div class="facebook-commerce-iframe-container">
-    <iframe
-      src="<?php echo esc_url( $iframe_url ); ?>"
-      width="100%"
-      frameborder="0"
-      style="background: transparent;"
-      id="facebook-commerce-iframe"></iframe>
-  </div>
-  <style>
-    .facebook-commerce-iframe-container {
-      position: relative;
-      padding-bottom: 56.25%; /* default aspect ratio */
-      height: 0;
-      overflow: hidden;
-    }
-    .facebook-commerce-iframe-container iframe {
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-    }
-  </style>
-  <?php
+	<div style="display: flex; justify-content: center; max-width: 1200px; margin: 0 auto;">
+		<iframe
+		id="facebook-commerce-iframe"
+		src="<?php echo esc_url( $iframe_url ); ?>"
+		></iframe>
+	</div>
+		<?php
 	}
 
 	/**
@@ -167,10 +150,10 @@ class Shops extends Abstract_Settings_Screen {
 	 * @since 3.5.0
 	 */
 	public function render_message_handler() {
-		if ( ! $this->is_current_screen_page() || ! $this->use_enhanced_onboarding() ) {
+		if ( ! $this->is_current_screen_page() ) {
 			return;
 		}
-		// Add the inline script as a dependent script
+
 		wp_add_inline_script( 'plugin-api-client', $this->generate_inline_enhanced_onboarding_script(), 'after' );
 	}
 
