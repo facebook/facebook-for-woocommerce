@@ -10,9 +10,13 @@ use WooCommerce\Facebook\Admin\Settings_Screens\Shops;
  * @package WooCommerce\Facebook\Tests\Unit\Admin\Settings_Screens
  */
 class ShopsTest extends TestCase {
+
     /** @var Shops */
     private $shops;
 
+    /**
+     * Set up the test environment
+     */
     protected function setUp(): void {
         parent::setUp();
         $this->shops = new Shops();
@@ -39,6 +43,11 @@ class ShopsTest extends TestCase {
      * Test that render method calls render_facebook_iframe when enhanced onboarding is enabled
      */
     public function test_render_facebook_box_iframe() {
+        // Create a mock of the Shops class
+        $shops = $this->getMockBuilder(Connection::class)
+            ->getMock();
+
+        // Start output buffering to capture the render output
         ob_start();
         $shops->render();
         $output = ob_get_clean();
@@ -80,6 +89,7 @@ class ShopsTest extends TestCase {
      * Test that render_message_handler doesn't output when not on current screen
      */
     public function test_render_message_handler_not_current_screen() {
+        // Create a mock of the Shops class
         $shops_mock = $this->getMockBuilder(Shops::class)
             ->onlyMethods(['is_current_screen_page'])
             ->getMock();
@@ -87,10 +97,12 @@ class ShopsTest extends TestCase {
         $shops_mock->method('is_current_screen_page')
             ->willReturn(false);
 
+        // Start output buffering to capture the render output
         ob_start();
         $shops_mock->render_message_handler();
         $output = ob_get_clean();
 
+        // Assert that no output is generated
         $this->assertEmpty($output);
     }
 
@@ -98,10 +110,14 @@ class ShopsTest extends TestCase {
      * Test that the management URL is used when merchant token exists
      */
     public function test_renders_management_url_based_on_merchant_token() {
+        // Create a mock of the Shops class
+        $shops = $this->getMockBuilder(Connection::class)
+            ->getMock();
+
         // Set up the merchant token
         update_option('wc_facebook_merchant_access_token', 'test_token');
 
-        // Use output buffering to capture the iframe HTML
+        // Start output buffering to capture the render output
         ob_start();
         $this->invoke_method($shops, 'render_facebook_iframe');
         $output = ob_get_clean();
