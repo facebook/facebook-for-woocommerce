@@ -26,15 +26,15 @@ class ShopsTest extends \WP_UnitTestCase {
      */
     public function testEnqueueAssetsWhenNotOnPage(): void {
         // Mock is_current_screen_page to return false
-        $shop = $this->getMockBuilder(Shop::class)
+        $shops = $this->getMockBuilder(Shops::class)
             ->onlyMethods(['is_current_screen_page'])
             ->getMock();
 
-        $shop->method('is_current_screen_page')
+        $shops->method('is_current_screen_page')
             ->willReturn(false);
 
         // No styles should be enqueued
-        $shop->enqueue_assets();
+        $shops->enqueue_assets();
 
         $this->assertFalse(wp_style_is('wc-facebook-admin-connection-settings'));
     }

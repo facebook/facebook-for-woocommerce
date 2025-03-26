@@ -44,7 +44,7 @@ class ShopsTest extends TestCase {
      */
     public function test_render_facebook_box_iframe() {
         // Create a mock of the Shops class
-        $shops = $this->getMockBuilder(Connection::class)
+        $shops = $this->getMockBuilder(Shops::class)
             ->getMock();
 
         // Start output buffering to capture the render output
@@ -111,7 +111,7 @@ class ShopsTest extends TestCase {
      */
     public function test_renders_management_url_based_on_merchant_token() {
         // Create a mock of the Shops class
-        $shops = $this->getMockBuilder(Connection::class)
+        $shops = $this->getMockBuilder(Shops::class)
             ->getMock();
 
         // Set up the merchant token
