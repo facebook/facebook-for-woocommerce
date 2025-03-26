@@ -3124,7 +3124,7 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 	 *
 	 */
 	public function use_enhanced_onboarding() {
-		return false;
+		return true;
 	}
 
 }
