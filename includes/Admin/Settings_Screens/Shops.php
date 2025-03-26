@@ -217,7 +217,7 @@ class Shops extends Abstract_Settings_Screen {
 				}
 
 				if (messageEvent === 'CommerceExtension::RESIZE') {
-					const iframe = document.getElementById('facebook-commerce-iframe');
+					const iframe = document.getElementById('facebook-commerce-iframe-enhanced');
 					if (iframe && message.height) {
 						iframe.height = message.height;
 					}
