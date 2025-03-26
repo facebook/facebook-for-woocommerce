@@ -29,7 +29,7 @@ class BatchLogHandler extends LogHandlerBase {
 	 * @since 3.5.0
 	 */
 	public function __construct() {
-		add_action( Heartbeat::EVERY_5_MINUTES, array( $this, 'process_telemetry_logs_batch' ) );
+		add_action( Heartbeat::EVERY_5_MINUTES, array( $this, 'process_logs_batch' ) );
 	}
 
 	/**
@@ -39,9 +39,9 @@ class BatchLogHandler extends LogHandlerBase {
 	 *
 	 * @since 3.5.0
 	 */
-	public function process_telemetry_logs_batch() {
-		if ( get_transient( 'global_telemetry_message_queue' ) !== false && ! empty( get_transient( 'global_telemetry_message_queue' ) ) ) {
-			$logs         = get_transient( 'global_telemetry_message_queue' );
+	public function process_logs_batch() {
+		if ( get_transient( 'global_logging_message_queue' ) !== false && ! empty( get_transient( 'global_logging_message_queue' ) ) ) {
+			$logs         = get_transient( 'global_logging_message_queue' );
 			$chunked_logs = array_chunk( $logs, 20 );
 
 			$chunked_failed_logs = array_map(
@@ -54,21 +54,21 @@ class BatchLogHandler extends LogHandlerBase {
 					);
 
 					$context = [
-						'event'      => 'persist_meta_telemetry_logs',
-						'extra_data' => [ 'telemetry_logs' => wp_json_encode( $logs_chunk_with_core_context ) ],
+						'event'      => 'persist_meta_logs',
+						'extra_data' => [ 'meta_logs' => wp_json_encode( $logs_chunk_with_core_context ) ],
 					];
 
 					try {
 						$response = facebook_for_woocommerce()->get_api()->log_to_meta( $context );
 						if ( $response->success ) {
-							WC_Facebookcommerce_Utils::logWithDebugModeEnabled( 'Telemetry logs: ' . wp_json_encode( $context ) );
+							WC_Facebookcommerce_Utils::logWithDebugModeEnabled( 'Meta logs: ' . wp_json_encode( $context ) );
 							return [];
 						} else {
 							WC_Facebookcommerce_Utils::logWithDebugModeEnabled( 'Bad response from log_to_meta request' );
 							return $logs_chunk;
 						}
 					} catch ( \Exception $e ) {
-						WC_Facebookcommerce_Utils::logWithDebugModeEnabled( 'Error persisting telemetry logs: ' . $e->getMessage() );
+						WC_Facebookcommerce_Utils::logWithDebugModeEnabled( 'Error persisting meta logs: ' . $e->getMessage() );
 						return $logs_chunk;
 					}
 				},
@@ -82,11 +82,11 @@ class BatchLogHandler extends LogHandlerBase {
 			}
 
 			if ( ! empty( $failed_logs ) ) {
-				set_transient( 'global_telemetry_message_queue', $failed_logs, HOUR_IN_SECONDS );
+				set_transient( 'global_logging_message_queue', $failed_logs, HOUR_IN_SECONDS );
 				return;
 			}
 		}
 
-		set_transient( 'global_telemetry_message_queue', [], HOUR_IN_SECONDS );
+		set_transient( 'global_logging_message_queue', [], HOUR_IN_SECONDS );
 	}
 }

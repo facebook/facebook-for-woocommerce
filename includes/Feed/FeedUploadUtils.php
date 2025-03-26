@@ -81,7 +81,7 @@ class FeedUploadUtils {
 						'product.productIdentifiers.skus' => "['" . implode( "','", $product_skus ) . "']",
 					);
 				} catch ( \Exception $e ) {
-					\WC_Facebookcommerce_Utils::logTelemetryToMeta(
+					\WC_Facebookcommerce_Utils::logToMeta(
 						'Exception while trying to map product review data for feed',
 						array(
 							'flow_name'  => self::RATINGS_AND_REVIEWS_SYNC_LOGGING_FLOW_NAME,
@@ -145,7 +145,7 @@ class FeedUploadUtils {
 						$value_type       = self::VALUE_TYPE_FIXED_AMOUNT;
 						$fixed_amount_off = $coupon->get_amount(); // TODO we may want to pass in optional currency code for multinational support
 					} else {
-						\WC_Facebookcommerce_Utils::logTelemetryToMeta(
+						\WC_Facebookcommerce_Utils::logToMeta(
 							'Unknown discount type encountered during feed processing',
 							array(
 								'promotion_id' => $coupon_post->ID,
@@ -238,7 +238,7 @@ class FeedUploadUtils {
 
 					$coupons_data[] = $data;
 				} catch ( \Exception $e ) {
-					\WC_Facebookcommerce_Utils::logTelemetryToMeta(
+					\WC_Facebookcommerce_Utils::logToMeta(
 						'Exception while trying to get coupon data for feed',
 						array(
 							'promotion_id' => $coupon_post->ID,
