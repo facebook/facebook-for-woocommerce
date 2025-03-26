@@ -35,7 +35,7 @@ class RestAPITest extends TestCase {
             $this->markTestSkipped('Handler class not found');
             return;
         }
-        
+
         // Mock the update_option function
         if (!function_exists('update_option')) {
             function update_option($option, $value) {
@@ -47,7 +47,7 @@ class RestAPITest extends TestCase {
                 return true;
             }
         }
-        
+
         // Mock the get_option function
         if (!function_exists('get_option')) {
             function get_option($option, $default = false) {
@@ -58,17 +58,17 @@ class RestAPITest extends TestCase {
                 return isset($wp_options[$option]) ? $wp_options[$option] : $default;
             }
         }
-        
+
         // Mock the wc_bool_to_string function
         if (!function_exists('wc_bool_to_string')) {
             function wc_bool_to_string($bool) {
                 return $bool ? 'yes' : 'no';
             }
         }
-        
+
         // Create a handler instance
         $handler = new Handler();
-        
+
         // Create test data
         $test_data = [
             'merchant_access_token' => 'test_merchant_token',
@@ -80,32 +80,32 @@ class RestAPITest extends TestCase {
             'commerce_merchant_settings_id' => '789012',
             'commerce_partner_integration_id' => '12311344'
         ];
-        
+
         // Use reflection to access private methods
         $reflection = new \ReflectionClass(Handler::class);
-        
+
         // Test map_params_to_options
         $map_params_method = $reflection->getMethod('map_params_to_options');
         $map_params_method->setAccessible(true);
         $options = $map_params_method->invokeArgs($handler, [$test_data]);
-        
+
         // Verify options are mapped correctly
         $this->assertEquals('test_access_token', $options['wc_facebook_access_token']);
         $this->assertEquals('test_merchant_token', $options['wc_facebook_merchant_access_token']);
         $this->assertEquals('test_page_token', $options['wc_facebook_page_access_token']);
         $this->assertEquals('123456', $options['wc_facebook_product_catalog_id']);
         $this->assertEquals('789012', $options['wc_facebook_commerce_merchant_settings_id']);
-        
+
         // Test update_settings
         $update_settings_method = $reflection->getMethod('update_settings');
         $update_settings_method->setAccessible(true);
         $update_settings_method->invokeArgs($handler, [$options]);
-        
+
         // Test update_connection_status
         $update_connection_method = $reflection->getMethod('update_connection_status');
         $update_connection_method->setAccessible(true);
         $update_connection_method->invokeArgs($handler, [$test_data]);
-        
+
         // Verify options were updated
         $this->assertEquals('test_access_token', get_option('wc_facebook_access_token'));
         $this->assertEquals('test_merchant_token', get_option('wc_facebook_merchant_access_token'));
@@ -126,29 +126,29 @@ class RestAPITest extends TestCase {
             $this->markTestSkipped('UpdateRequest class not found');
             return;
         }
-        
+
         // Create a mock WP_REST_Request
         $request = $this->createMock('WP_REST_Request');
-        
+
         // Set up the mock to return our test data
         $request->method('get_json_params')
             ->willReturn([
                 'access_token' => 'test_access_token',
                 // Missing merchant_access_token
             ]);
-        
+
         $request->method('get_params')
             ->willReturn([
                 'access_token' => 'test_access_token',
                 // Missing merchant_access_token
             ]);
-        
+
         // Create an UpdateRequest instance
         $update_request = new UpdateRequest($request);
-        
+
         // Test the validate method
         $validation_result = $update_request->validate();
-        
+
         // Check that validation fails with the expected error
         $this->assertInstanceOf('WP_Error', $validation_result);
         $this->assertEquals('missing_merchant_token', $validation_result->get_error_code());
@@ -159,48 +159,48 @@ class RestAPITest extends TestCase {
      * Test JS API definitions match classes using JS_Exposable trait
      */
     public function test_js_exposable_classes_match_api_definitions() {
-        
+
         // Create a partial mock of InitializeRestAPI
         $initializeRestAPI = $this->getMockBuilder(InitializeRestAPI::class)
                                   ->onlyMethods(['should_generate_rest_framework'])
                                   ->getMock();
-        
+
         // Force should_generate_rest_framework to return true
         $initializeRestAPI->method('should_generate_rest_framework')
                          ->willReturn(true);
-        
+
         // Get API definitions
         $api_definitions = $initializeRestAPI->get_api_definitions();
-        
+
         // Find all classes using the JS_Exposable trait
         $js_exposable_classes = [];
-        
+
         // Get all declared classes
         $all_classes = get_declared_classes();
-        
+
         foreach ($all_classes as $class) {
             // Skip if not in the WooCommerce\Facebook namespace
             if (strpos($class, 'WooCommerce\\Facebook\\') !== 0) {
                 continue;
             }
-            
+
             // Use reflection to check if class uses the JS_Exposable trait
             $reflection = new \ReflectionClass($class);
             $traits = $reflection->getTraitNames();
-            
+
             if (in_array('WooCommerce\\Facebook\\API\\Plugin\\Traits\\JS_Exposable', $traits)) {
                 // Skip abstract classes
                 if ($reflection->isAbstract()) {
                     continue;
                 }
-                
+
                 try {
                     // Create a mock WP_REST_Request for constructor
                     $request = $this->createMock('WP_REST_Request');
-                    
+
                     // Instantiate the class
                     $instance = new $class($request);
-                    
+
                     // Get the JS function name
                     if (method_exists($instance, 'get_js_function_name')) {
                         $function_name = $instance->get_js_function_name();
@@ -212,17 +212,17 @@ class RestAPITest extends TestCase {
                 }
             }
         }
-        
+
         // Verify each API definition has a corresponding class
         foreach ($api_definitions as $function_name => $definition) {
-            $this->assertArrayHasKey($function_name, $js_exposable_classes, 
+            $this->assertArrayHasKey($function_name, $js_exposable_classes,
                 "API definition '$function_name' has no corresponding JS_Exposable class");
         }
-        
+
         // Verify each JS exposable class has a corresponding API definition
         foreach ($js_exposable_classes as $function_name => $class) {
-            $this->assertArrayHasKey($function_name, $api_definitions, 
+            $this->assertArrayHasKey($function_name, $api_definitions,
                 "JS_Exposable class '$class' with function name '$function_name' has no corresponding API definition");
         }
     }
-} 
+}
