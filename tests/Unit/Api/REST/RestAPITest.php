@@ -76,7 +76,9 @@ class RestAPITest extends TestCase {
             'page_access_token' => 'test_page_token',
             'product_catalog_id' => '123456',
             'pixel_id' => '789012',
-            'msger_chat' => 'yes'
+            'msger_chat' => 'yes',
+            'commerce_merchant_settings_id' => '789012',
+            'commerce_partner_integration_id' => '12311344'
         ];
         
         // Use reflection to access private methods
@@ -91,7 +93,8 @@ class RestAPITest extends TestCase {
         $this->assertEquals('test_access_token', $options['wc_facebook_access_token']);
         $this->assertEquals('test_merchant_token', $options['wc_facebook_merchant_access_token']);
         $this->assertEquals('test_page_token', $options['wc_facebook_page_access_token']);
-        $this->assertEquals('123456', $options['wc_facebook_catalog_id']);
+        $this->assertEquals('123456', $options['wc_facebook_product_catalog_id']);
+        $this->assertEquals('789012', $options['wc_facebook_commerce_merchant_settings_id']);
         
         // Test update_settings
         $update_settings_method = $reflection->getMethod('update_settings');
@@ -107,7 +110,7 @@ class RestAPITest extends TestCase {
         $this->assertEquals('test_access_token', get_option('wc_facebook_access_token'));
         $this->assertEquals('test_merchant_token', get_option('wc_facebook_merchant_access_token'));
         $this->assertEquals('test_page_token', get_option('wc_facebook_page_access_token'));
-        $this->assertEquals('123456', get_option('wc_facebook_catalog_id'));
+        $this->assertEquals('123456', get_option('wc_facebook_product_catalog_id'));
         $this->assertEquals('789012', get_option('wc_facebook_pixel_id'));
         $this->assertEquals('yes', get_option('wc_facebook_has_connected_fbe_2'));
         $this->assertEquals('yes', get_option('wc_facebook_has_authorized_pages_read_engagement'));
