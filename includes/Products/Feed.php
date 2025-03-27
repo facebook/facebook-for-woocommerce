@@ -1,5 +1,4 @@
 <?php
-// phpcs:ignoreFile
 /**
  * Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
  *
@@ -69,7 +68,7 @@ class Feed {
 		add_action( 'woocommerce_api_' . self::REQUEST_FEED_ACTION, array( $this, 'handle_feed_data_request' ) );
 
 		// Send request for feed one time upload after feed file generated
- 		add_action( 'wc_facebook_feed_generation_completed', array( $this, 'send_request_to_upload_feed' ) );
+		add_action( 'wc_facebook_feed_generation_completed', array( $this, 'send_request_to_upload_feed' ) );
 	}
 
 
@@ -79,6 +78,7 @@ class Feed {
 	 * @internal
 	 *
 	 * @since 1.11.0
+	 * @throws PluginException If the feed secret is invalid, file is not readable, or other errors occur.
 	 */
 	public function handle_feed_data_request() {
 		\WC_Facebookcommerce_Utils::log( 'Facebook is requesting the product feed.' );
@@ -200,7 +200,7 @@ class Feed {
 		}
 
 		$data = [
-			'url' => Feed::get_feed_data_url(),
+			'url' => self::get_feed_data_url(),
 		];
 
 		try {
@@ -212,8 +212,8 @@ class Feed {
 
 	/**
 	 * Retrieves or creates an integration feed ID
-	 * 
-	 * @return		string the integration feed ID
+	 *
+	 * @return      string the integration feed ID
 	 *
 	 * @internal
 	 */
@@ -221,27 +221,27 @@ class Feed {
 		// Step 1 - Get feed ID if it is already available in local cache
 		$feed_id = facebook_for_woocommerce()->get_integration()->get_feed_id();
 		if ( $feed_id ) {
-			if ( self::validate_feed_exists($feed_id) ) {
-				WC_Facebookcommerce_Utils::log( 'Feed: feed_id = '.$feed_id.', from local cache was validated.');
+			if ( self::validate_feed_exists( $feed_id ) ) {
+				WC_Facebookcommerce_Utils::log( 'Feed: feed_id = ' . $feed_id . ', from local cache was validated.' );
 				return $feed_id;
 			} else {
-				WC_Facebookcommerce_Utils::log( 'Feed: feed_id = '.$feed_id.', from local cache was invalidated.');
+				WC_Facebookcommerce_Utils::log( 'Feed: feed_id = ' . $feed_id . ', from local cache was invalidated.' );
 			}
 		}
 
 		// Step 2 - Query feeds data from Meta and filter the right one
 		$feed_id = self::query_and_filter_integration_feed_id();
 		if ( $feed_id ) {
-			facebook_for_woocommerce()->get_integration()->update_feed_id($feed_id);
-			WC_Facebookcommerce_Utils::log( 'Feed: feed_id = '.$feed_id.', queried and filtered from Meta API.');
+			facebook_for_woocommerce()->get_integration()->update_feed_id( $feed_id );
+			WC_Facebookcommerce_Utils::log( 'Feed: feed_id = ' . $feed_id . ', queried and filtered from Meta API.' );
 			return $feed_id;
 		}
 
 		// Step 3 - Create a new feed
 		$feed_id = self::create_feed_id();
 		if ( $feed_id ) {
-			facebook_for_woocommerce()->get_integration()->update_feed_id($feed_id);
-			WC_Facebookcommerce_Utils::log( 'Feed: feed_id = '.$feed_id.', created a new feed via Meta API.');
+			facebook_for_woocommerce()->get_integration()->update_feed_id( $feed_id );
+			WC_Facebookcommerce_Utils::log( 'Feed: feed_id = ' . $feed_id . ', created a new feed via Meta API.' );
 			return $feed_id;
 		}
 
@@ -251,13 +251,14 @@ class Feed {
 	/**
 	 * Validates that provided feed ID still exists on the Meta side
 	 *
-	 * @param 		string $feed_id the feed ID
-	 * 
-	 * @return		bool true if the feed ID is valid
-	 * 
+	 * @param       string $feed_id the feed ID
+	 *
+	 * @return      bool true if the feed ID is valid
+	 *
 	 * @internal
+	 * @throws Exception|Error If there is an error getting feed nodes or if no catalog ID is available.
 	 */
-	private function validate_feed_exists($feed_id) {
+	private function validate_feed_exists( $feed_id ) {
 		try {
 			$catalog_id = facebook_for_woocommerce()->get_integration()->get_product_catalog_id();
 			if ( '' === $catalog_id ) {
@@ -271,7 +272,7 @@ class Feed {
 		}
 
 		foreach ( $feed_nodes as $feed ) {
-			if ($feed['id'] == $feed_id) {
+			if ( $feed['id'] == $feed_id ) {
 				return true;
 			}
 		}
@@ -282,10 +283,11 @@ class Feed {
 	/**
 	 * Queries existing feeds for the integration catalog and filters
 	 * the plugin integration feed ID
-	 * 
-	 * @return		string the integration feed ID
-	 * 
+	 *
+	 * @return      string the integration feed ID
+	 *
 	 * @internal
+	 * @throws Exception|Error If there is an error getting feed nodes, catalog, or if no catalog ID is available.
 	 */
 	private function query_and_filter_integration_feed_id() {
 		try {
@@ -303,7 +305,7 @@ class Feed {
 		if ( empty( $feed_nodes ) ) {
 			return '';
 		}
-			
+
 		try {
 			$catalog = facebook_for_woocommerce()->get_api()->get_catalog( $catalog_id );
 		} catch ( Exception $e ) {
@@ -346,10 +348,11 @@ class Feed {
 
 	/**
 	 * Makes a request to Meta to create a new feed
-	 * 
-	 * @return		string the integration feed ID
-	 * 
+	 *
+	 * @return      string the integration feed ID
+	 *
 	 * @internal
+	 * @throws Exception|Error If there is an error creating the feed or if no catalog ID is available.
 	 */
 	private function create_feed_id() {
 		try {
@@ -385,7 +388,7 @@ class Feed {
 		$disabled = false;
 		if ( function_exists( 'ini_get' ) ) {
 			$disabled_functions = @ini_get( 'disable_functions' );
-			$disabled = is_string( $disabled_functions ) && in_array( 'fpassthru', explode( ',', $disabled_functions ), false );
+			$disabled           = is_string( $disabled_functions ) && in_array( 'fpassthru', explode( ',', $disabled_functions ), false );
 		}
 		return $disabled;
 	}

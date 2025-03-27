@@ -1,5 +1,4 @@
 <?php
-// phpcs:ignoreFile
 /**
  * Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
  *
@@ -11,7 +10,7 @@
  * Description: Grow your business on Facebook! Use this official plugin to help sell more of your products using Facebook. After completing the setup, you'll be ready to create ads that promote your products and you can also create a shop section on your Page where customers can browse your products on Facebook.
  * Author: Facebook
  * Author URI: https://www.facebook.com/
- * Version: 3.4.3
+ * Version: 3.4.4
  * Requires at least: 5.6
  * Requires PHP: 7.4
  * Text Domain: facebook-for-woocommerce
@@ -33,7 +32,7 @@ defined( 'ABSPATH' ) || exit;
 // HPOS compatibility declaration.
 add_action(
 	'before_woocommerce_init',
-	function() {
+	function () {
 		if ( class_exists( FeaturesUtil::class ) ) {
 			FeaturesUtil::declare_compatibility( 'custom_order_tables', plugin_basename( __FILE__ ), true );
 		}
@@ -49,7 +48,7 @@ class WC_Facebook_Loader {
 	/**
 	 * @var string the plugin version. This must be in the main plugin file to be automatically bumped by Woorelease.
 	 */
-	const PLUGIN_VERSION = '3.4.3'; // WRCS: DEFINED_VERSION.
+	const PLUGIN_VERSION = '3.4.4'; // WRCS: DEFINED_VERSION.
 
 	// Minimum PHP version required by this plugin.
 	const MINIMUM_PHP_VERSION = '7.4.0';
@@ -318,8 +317,6 @@ class WC_Facebook_Loader {
 
 		return self::$instance;
 	}
-
-
 }
 
 // fire it up!

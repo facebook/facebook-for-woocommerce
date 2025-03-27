@@ -1,5 +1,4 @@
 <?php
-// phpcs:ignoreFile
 
 namespace WooCommerce\Facebook\Utilities;
 
@@ -91,6 +90,4 @@ class Heartbeat {
 	public function schedule_daily_action() {
 		$this->queue->add( self::DAILY );
 	}
-
-
 }

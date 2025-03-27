@@ -1,5 +1,4 @@
 <?php
-// phpcs:ignoreFile
 
 namespace WooCommerce\Facebook\Jobs;
 
@@ -36,5 +35,4 @@ abstract class AbstractChainedJob extends FrameworkAbstractChainedJob {
 
 		$logger->stop( $process_name );
 	}
-
 }

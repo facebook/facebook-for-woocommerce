@@ -283,12 +283,18 @@ class API extends Base {
 	 *
 	 * @param string $external_business_id external business ID
 	 * @param string $plugin_version The plugin version.
-	 * @return API\Response|API\FBE\Configuration\Update\Response
-	 * @throws WooCommerce\Facebook\Framework\Api\Exception
+	 *
+	 * @return Response|API\FBE\Configuration\Update\Response
+	 * @throws ApiException
 	 */
 	public function update_plugin_version_configuration( string $external_business_id, string $plugin_version ): API\FBE\Configuration\Update\Response {
 		$request = new API\FBE\Configuration\Update\Request( $external_business_id );
-		$request->set_plugin_version( $plugin_version );
+		$request->set_external_client_metadata(
+			array(
+				'version_id' => $plugin_version,
+				'is_multisite'   => is_multisite(),
+			)
+		);
 		$this->set_response_handler( API\FBE\Configuration\Update\Response::class );
 		return $this->perform_request( $request );
 	}

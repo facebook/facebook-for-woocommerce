@@ -832,6 +832,7 @@ class WC_Facebook_Product {
 		$product_data[ 'availability' ] = $this->is_in_stock() ? 'in stock' : 'out of stock';
 		$product_data[ 'visibility' ] = Products::is_product_visible( $this->woo_product ) ? \WC_Facebookcommerce_Integration::FB_SHOP_PRODUCT_VISIBLE : \WC_Facebookcommerce_Integration::FB_SHOP_PRODUCT_HIDDEN;
 		$product_data[ 'retailer_id' ] = $retailer_id;
+		$product_data[ 'external_variant_id' ] = $this->get_id();
 
 		if ( self::PRODUCT_PREP_TYPE_ITEMS_BATCH === $type_to_prepare_for ) {
 			$product_data['title'] = WC_Facebookcommerce_Utils::clean_string( $this->get_title() );
