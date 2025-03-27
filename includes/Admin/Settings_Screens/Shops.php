@@ -94,7 +94,6 @@ class Shops extends Abstract_Settings_Screen {
 		}
 	}
 
-
 	/**
 	 * Enqueues the assets.
 	 *
@@ -109,7 +108,6 @@ class Shops extends Abstract_Settings_Screen {
 
 		wp_enqueue_style( 'wc-facebook-admin-connection-settings', facebook_for_woocommerce()->get_plugin_url() . '/assets/css/admin/facebook-for-woocommerce-connection.css', array(), \WC_Facebookcommerce::VERSION );
 	}
-
 
 	/**
 	 * Renders the screen.
@@ -154,6 +152,160 @@ class Shops extends Abstract_Settings_Screen {
 		></iframe>
 	</div>
 		<?php
+
+		if ( $is_connected ) {
+			$this->render_troubleshooting_button_and_drawer();
+		}
+	}
+
+	private function render_troubleshooting_button_and_drawer() {
+		?>
+	<!-- Toggle Button -->
+	<div class="centered-container">
+		<button id="toggle-troubleshooting-drawer" class="drawer-toggle-button">
+			Troubleshooting
+			<span id="caret" class="caret"></span>
+		</button>
+	</div>
+
+	<!-- Drawer -->
+	<div id="troubleshooting-drawer" class="settings-drawer" style="display: none;">
+		<div class="settings-drawer-content">
+			<?php parent::render(); ?>
+		</div>
+	</div>
+
+	<style>
+		.centered-container {
+			display: flex;
+			justify-content: center;
+			align-items: center;
+			width: 100%;
+			margin-top: 20px;
+		}
+
+		.drawer-toggle-button {
+			width: 100%;
+			max-width: 1100px;
+			background-color: #fff;
+			border: 1px solid #ccc;
+			padding: 10px 20px;
+			text-align: left;
+			cursor: pointer;
+			font-size: 16px;
+			font-weight: 600;
+			position: relative;
+			display: flex;
+			justify-content: space-between;
+			align-items: center;
+			margin-bottom: 20px;
+						box-sizing: border-box;
+		}
+
+		.drawer-toggle-button:hover {
+			background-color: #f9f9f9;
+		}
+
+		.caret {
+			width: 0;
+			height: 0;
+			border-left: 5px solid transparent;
+			border-right: 5px solid transparent;
+			border-top: 5px solid #000;
+			transition: transform 0.3s ease;
+		}
+
+		.settings-drawer {
+			width: 100%;
+			max-width: 1100px;
+			background-color: #fff;
+			border-bottom: 1px solid #ccc;
+						border-right: 1px solid #ccc;
+						border-left: 1px solid #ccc;
+			overflow: hidden;
+			transition: max-height 0.3s ease, margin-bottom 0.3s ease;
+			max-height: 0;
+			margin: 0 auto;
+						box-sizing: border-box;
+		}
+
+		.settings-drawer-content {
+			padding: 20px;
+			padding-bottom: 0;
+		}
+	</style>
+
+	<script>
+		document.getElementById('toggle-troubleshooting-drawer').addEventListener('click', function() {
+			var drawer = document.getElementById('troubleshooting-drawer');
+			var caret = document.getElementById('caret');
+			var button = document.getElementById('toggle-troubleshooting-drawer');
+
+			if (drawer.style.maxHeight === '0px' || drawer.style.maxHeight === '') {
+				drawer.style.display = 'block';
+				drawer.style.maxHeight = drawer.scrollHeight + 'px';
+				caret.style.transform = 'rotate(180deg)';
+				drawer.style.marginBottom = '20px';
+				button.style.marginBottom = '0';
+			} else {
+				drawer.style.maxHeight = '0';
+				setTimeout(function() {
+					drawer.style.display = 'none';
+				}, 300);
+				caret.style.transform = 'rotate(0deg)';
+				drawer.style.marginBottom = '0';
+				button.style.marginBottom = '20px';
+			}
+		});
+	</script>
+		<?php
+	}
+
+	/**
+	 * Gets the screen settings.
+	 *
+	 * @return array
+	 * @since 3.5.0
+	 */
+	public function get_settings() {
+		return array(
+			array(
+				//phpcs:ignore WordPress.WP.I18n.NoEmptyStrings
+				'title' => __( '', 'facebook-for-woocommerce' ),
+				'type'  => 'title',
+			),
+
+			array(
+				'id'       => \WC_Facebookcommerce_Integration::SETTING_ENABLE_META_DIAGNOSIS,
+				'title'    => __( 'Upload plugin events to Meta', 'facebook-for-woocommerce' ),
+				'type'     => 'checkbox',
+				'desc'     => __( 'Enable', 'facebook-for-woocommerce' ),
+				'desc_tip' => sprintf( __( 'Allow Meta to monitor your logs and help fix issues. Personally identifiable information will not be collected.', 'facebook-for-woocommerce' ) ),
+				'default'  => 'yes',
+			),
+
+			array(
+				'id'       => \WC_Facebookcommerce_Integration::SETTING_ENABLE_DEBUG_MODE,
+				'title'    => __( 'Log plugin events to your computer for debugging', 'facebook-for-woocommerce' ),
+				'type'     => 'checkbox',
+				'desc'     => __( 'Enable', 'facebook-for-woocommerce' ),
+				/* translators: %s URL to the documentation page. */
+				'desc_tip' => sprintf( __( 'Only enable this if you are experiencing problems with the plugin. <a href="%s" target="_blank">Learn more</a>.', 'facebook-for-woocommerce' ), 'https://woocommerce.com/document/facebook-for-woocommerce/#debug-tools' ),
+				'default'  => 'no',
+			),
+
+			array(
+				'id'       => \WC_Facebookcommerce_Integration::SETTING_ENABLE_NEW_STYLE_FEED_GENERATOR,
+				'title'    => __( '[Experimental] Use new, memory improved, feed generation process', 'facebook-for-woocommerce' ),
+				'type'     => 'checkbox',
+				'desc'     => __( 'Enable', 'facebook-for-woocommerce' ),
+				/* translators: %s URL to the documentation page. */
+				'desc_tip' => sprintf( __( 'This is an experimental feature in testing phase. Only enable this if you are experiencing problems with feed generation. <a href="%s" target="_blank">Learn more</a>.', 'facebook-for-woocommerce' ), 'https://woocommerce.com/document/facebook-for-woocommerce/#feed-generation' ),
+				'default'  => 'no',
+			),
+
+			array( 'type' => 'sectionend' ),
+		);
 	}
 
 	/**
@@ -237,45 +389,5 @@ class Shops extends Abstract_Settings_Screen {
 				}
 			});
 		JAVASCRIPT;
-	}
-
-
-	/**
-	 * Gets the screen settings.
-	 *
-	 * @since 3.5.0
-	 *
-	 * @return array
-	 */
-	public function get_settings() {
-
-		return array(
-
-			array(
-				'title' => __( 'Debug', 'facebook-for-woocommerce' ),
-				'type'  => 'title',
-			),
-
-			array(
-				'id'       => \WC_Facebookcommerce_Integration::SETTING_ENABLE_DEBUG_MODE,
-				'title'    => __( 'Enable debug mode', 'facebook-for-woocommerce' ),
-				'type'     => 'checkbox',
-				'desc'     => __( 'Log plugin events for debugging.', 'facebook-for-woocommerce' ),
-				/* translators: %s URL to the documentation page. */
-				'desc_tip' => sprintf( __( 'Only enable this if you are experiencing problems with the plugin. <a href="%s" target="_blank">Learn more</a>.', 'facebook-for-woocommerce' ), 'https://woocommerce.com/document/facebook-for-woocommerce/#debug-tools' ),
-				'default'  => 'no',
-			),
-
-			array(
-				'id'       => \WC_Facebookcommerce_Integration::SETTING_ENABLE_NEW_STYLE_FEED_GENERATOR,
-				'title'    => __( 'Experimental! Enable new style feed generation', 'facebook-for-woocommerce' ),
-				'type'     => 'checkbox',
-				'desc'     => __( 'Use new, memory improved, feed generation process.', 'facebook-for-woocommerce' ),
-				/* translators: %s URL to the documentation page. */
-				'desc_tip' => sprintf( __( 'This is an experimental feature in testing phase. Only enable this if you are experiencing problems with feed generation. <a href="%s" target="_blank">Learn more</a>.', 'facebook-for-woocommerce' ), 'https://woocommerce.com/document/facebook-for-woocommerce/#feed-generation' ),
-				'default'  => 'no',
-			),
-			array( 'type' => 'sectionend' ),
-		);
 	}
 }
