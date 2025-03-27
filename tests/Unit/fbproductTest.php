@@ -865,4 +865,34 @@ class fbproductTest extends \WooCommerce\Facebook\Tests\Unit\AbstractWPUnitTestW
 		$brand = $facebook_product_variation->get_fb_brand();
 		$this->assertEquals($brand, 'Adidas');
 	}
+
+	/**
+	 * Test external_update_time is populated
+	 * @return void
+	 */
+	public function test_external_update_time_set() {
+		$woo_product = WC_Helper_Product::create_simple_product();
+
+		$timestamp = time();
+		$woo_product->set_date_modified($timestamp);
+
+		$fb_product = new \WC_Facebook_Product( $woo_product );
+		$data = $fb_product->prepare_product();
+
+		$this->assertEquals( $data['external_update_time'], $timestamp);
+	}
+
+	/**
+	 * Test external_update_time is not populated
+	 * @return void
+	 */
+	public function test_external_update_time_unset() {
+		$woo_product = WC_Helper_Product::create_simple_product();
+		$woo_product->set_date_modified(null);
+
+		$fb_product = new \WC_Facebook_Product( $woo_product );
+		$data = $fb_product->prepare_product();
+
+		$this->assertEquals(isset($data['external_update_time']), false);
+	}
 }

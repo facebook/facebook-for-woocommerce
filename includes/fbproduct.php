@@ -896,6 +896,10 @@ class WC_Facebook_Product {
 			$product_data['gtin'] = $gtin;
 		}
 
+		if ( $date_modified = $this->woo_product->get_date_modified() ) {
+			$product_data[ 'external_update_time' ] = $date_modified->getTimestamp();
+		}
+
 		// Only use checkout URLs if they exist.
 		$checkout_url = $this->build_checkout_url( $product_url );
 		if ( $checkout_url ) {
