@@ -132,9 +132,9 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 
 
 	// TODO probably some of these meta keys need to be moved to Facebook\Products {FN 2020-01-13}.
-	public const FB_PRODUCT_GROUP_ID    = 'fb_product_group_id';
-	public const FB_PRODUCT_ITEM_ID     = 'fb_product_item_id';
-	public const FB_PRODUCT_DESCRIPTION = 'fb_product_description';
+	public const FB_PRODUCT_GROUP_ID      = 'fb_product_group_id';
+	public const FB_PRODUCT_ITEM_ID       = 'fb_product_item_id';
+	public const FB_PRODUCT_DESCRIPTION   = 'fb_product_description';
 	public const FB_RICH_TEXT_DESCRIPTION = 'fb_rich_text_description';
 	/** @var string the API flag to set a product as visible in the Facebook shop */
 	public const FB_SHOP_PRODUCT_VISIBLE = 'published';
@@ -715,7 +715,7 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 				},
 				feed: {
 					totalVisibleProducts: '<?php echo esc_js( $this->get_product_count() ); ?>',
-					hasClientSideFeedUpload: '<?php echo esc_js( ! ! $this->get_feed_id() ); ?>',
+					hasClientSideFeedUpload: '<?php echo esc_js( (bool) $this->get_feed_id() ); ?>',
 					enabled: true,
 					format: 'csv'
 				},
@@ -805,20 +805,18 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 				}
 				$this->delete_fb_product( $delete_product );
 			}
-		} else {
-			if ( $sync_enabled ) {
+		} elseif ( $sync_enabled ) {
 				Products::enable_sync_for_products( [ $product ] );
 				Products::set_product_visibility( $product, Admin::SYNC_MODE_SYNC_AND_HIDE !== $sync_mode );
 				$this->save_product_settings( $product );
-			} else {
-				// if previously enabled, add a notice on the next page load
-				if ( Products::is_sync_enabled_for_product( $product ) ) {
-					Admin::add_product_disabled_sync_notice();
-				}
-				Products::disable_sync_for_products( [ $product ] );
-				if ( in_array( $wp_id, $products_to_delete_from_facebook, true ) ) {
-					$this->delete_fb_product( $product );
-				}
+		} else {
+			// if previously enabled, add a notice on the next page load
+			if ( Products::is_sync_enabled_for_product( $product ) ) {
+				Admin::add_product_disabled_sync_notice();
+			}
+			Products::disable_sync_for_products( [ $product ] );
+			if ( in_array( $wp_id, $products_to_delete_from_facebook, true ) ) {
+				$this->delete_fb_product( $product );
 			}
 		}
 		if ( $sync_enabled ) {
@@ -843,16 +841,58 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 	}
 
 	/**
-	* Saves the submitted Facebook settings for a variable product.
-	*
-	*
-	* @param \WC_Product $product The variable product object.
-	*/
-	private function save_variable_product_settings( WC_Product $product ) {
-		$woo_product = new WC_Facebook_Product( $product->get_id() );
-		if ( isset( $_POST[ WC_Facebook_Product::FB_VARIABLE_BRAND ] ) ) {
-			$woo_product->set_fb_brand( sanitize_text_field( wp_unslash( $_POST[ WC_Facebook_Product::FB_VARIABLE_BRAND ] ) ) );
+	 * Saves Facebook product attributes from POST data.
+	 *
+	 * @param WC_Facebook_Product $woo_product The Facebook product object
+	 */
+	private function save_facebook_product_attributes( $woo_product ) {
+		// phpcs:disable WordPress.Security.NonceVerification.Missing
+		if ( isset( $_POST[ WC_Facebook_Product::FB_BRAND ] ) ) {
+			$woo_product->set_fb_brand( sanitize_text_field( wp_unslash( $_POST[ WC_Facebook_Product::FB_BRAND ] ) ) );
 		}
+
+		if ( isset( $_POST[ WC_Facebook_Product::FB_MPN ] ) ) {
+			$woo_product->set_fb_mpn( sanitize_text_field( wp_unslash( $_POST[ WC_Facebook_Product::FB_MPN ] ) ) );
+		}
+
+		if ( isset( $_POST[ WC_Facebook_Product::FB_SIZE ] ) ) {
+			$woo_product->set_fb_size( sanitize_text_field( wp_unslash( $_POST[ WC_Facebook_Product::FB_SIZE ] ) ) );
+		}
+		
+		if ( isset( $_POST[ WC_Facebook_Product::FB_COLOR ] ) ) {
+			$woo_product->set_fb_color( sanitize_text_field( wp_unslash( $_POST[ WC_Facebook_Product::FB_COLOR ] ) ) );
+		}
+		
+		if ( isset( $_POST[ WC_Facebook_Product::FB_MATERIAL ] ) ) {
+			$woo_product->set_fb_material( sanitize_text_field( wp_unslash( $_POST[ WC_Facebook_Product::FB_MATERIAL ] ) ) );
+		}
+		
+		if ( isset( $_POST[ WC_Facebook_Product::FB_PATTERN ] ) ) {
+			$woo_product->set_fb_pattern( sanitize_text_field( wp_unslash( $_POST[ WC_Facebook_Product::FB_PATTERN ] ) ) );
+		}
+		
+		if ( isset( $_POST[ WC_Facebook_Product::FB_AGE_GROUP ] ) ) {
+			$woo_product->set_fb_age_group( sanitize_text_field( wp_unslash( $_POST[ WC_Facebook_Product::FB_AGE_GROUP ] ) ) );
+		}
+		
+		if ( isset( $_POST[ WC_Facebook_Product::FB_GENDER ] ) ) {
+			$woo_product->set_fb_gender( sanitize_text_field( wp_unslash( $_POST[ WC_Facebook_Product::FB_GENDER ] ) ) );
+		}
+		
+		if ( isset( $_POST[ WC_Facebook_Product::FB_PRODUCT_CONDITION ] ) ) {
+			$woo_product->set_fb_condition( sanitize_text_field( wp_unslash( $_POST[ WC_Facebook_Product::FB_PRODUCT_CONDITION ] ) ) );
+		}
+		// phpcs:enable WordPress.Security.NonceVerification.Missing
+	}
+
+	/**
+	 * Saves the submitted Facebook settings for a variable product.
+	 *
+	 * @param \WC_Product $product The variable product object.
+	 */
+	private function save_variable_product_settings( $product ) {
+		$woo_product = new WC_Facebook_Product( $product->get_id() );
+		$this->save_facebook_product_attributes( $woo_product );
 	}
 
 	/**
@@ -889,14 +929,7 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 			$woo_product->set_product_video_urls( $attachment_ids );
 		}
 
-		if ( isset( $_POST[ WC_Facebook_Product::FB_BRAND ] ) ) {
-			$woo_product->set_fb_brand( sanitize_text_field( wp_unslash( $_POST[ WC_Facebook_Product::FB_BRAND ] ) ) );
-		}
-
-		if ( isset( $_POST[ WC_Facebook_Product::FB_MPN ] ) ) {
-			$woo_product->set_fb_mpn( sanitize_text_field( wp_unslash( $_POST[ WC_Facebook_Product::FB_MPN ] ) ) );
-		}
-		// phpcs:enable WordPress.Security.NonceVerification.Missing
+		$this->save_facebook_product_attributes( $woo_product );
 	}
 
 	/**
@@ -921,7 +954,7 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 		 */
 		// phpcs:ignore WordPress.Security.NonceVerification.Missing
 		if ( ( ! wp_doing_ajax() || ! isset( $_POST['action'] ) || 'ajax_delete_fb_product' !== $_POST['action'] )
-			 && ! Products::published_product_should_be_synced( $product ) && ! $product->is_type( 'variable' ) ) {
+			&& ! Products::published_product_should_be_synced( $product ) && ! $product->is_type( 'variable' ) ) {
 			return;
 		}
 
@@ -1070,8 +1103,7 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 			return;
 		}
 
-		$this->on_product_delete ( $post->ID );
-
+		$this->on_product_delete( $post->ID );
 	}
 
 
@@ -1629,7 +1661,7 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 	 *  - product_item_id : if exists, means product was created else not and don't display
 	 *  - should_sync: Don't display if the product is not supposed to be synced.
 	 *
-	 * @param WP_Post $post Wordpress Post
+	 * @param WP_Post $post WordPress Post
 	 * @return void
 	 */
 	public function display_batch_api_completed( $post ) {
@@ -2223,7 +2255,7 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 				);
 
 				$this->on_product_publish( $post_id );
-				$count++;
+				++$count;
 			}
 			WC_Facebookcommerce_Utils::log( 'Synced ' . $count . ' products' );
 			$this->remove_sticky_message();
@@ -2647,24 +2679,35 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 	}
 
 	/**
- 	 * Return true if (legacy) feed generation is enabled.
- 	 *
- 	 * Feed generation for product sync is enabled by default, and generally recommended.
- 	 * Large stores, or stores running on shared hosting (low resources) may have issues
- 	 * with feed generation. This option allows those stores to disable generation to
- 	 * work around the issue.
- 	 *
- 	 * Note - this is temporary. In a future release, an improved feed system will be
- 	 * implemented, which should work well for all stores. This option will not disable
- 	 * the new improved implementation.
- 	 *
- 	 * @since 2.5.0
- 	 *
- 	 * @return bool
- 	 */
- 	public function is_legacy_feed_file_generation_enabled() {
- 		return 'yes' === get_option( self::OPTION_LEGACY_FEED_FILE_GENERATION_ENABLED, 'yes' );
- 	}
+	 * Return true if (legacy) feed generation is enabled.
+	 *
+	 * Feed generation for product sync is enabled by default, and generally recommended.
+	 * Large stores, or stores running on shared hosting (low resources) may have issues
+	 * with feed generation. This option allows those stores to disable generation to
+	 * work around the issue.
+	 *
+	 * Note - this is temporary. In a future release, an improved feed system will be
+	 * implemented, which should work well for all stores. This option will not disable
+	 * the new improved implementation.
+	 *
+	 * @since 2.5.0
+	 *
+	 * @return bool
+	 */
+	public function is_legacy_feed_file_generation_enabled() {
+		return 'yes' === get_option( self::OPTION_LEGACY_FEED_FILE_GENERATION_ENABLED, 'yes' );
+	}
+
+	/**
+	 * Determines whether meta diagnosis is enabled.
+	 *
+	 * @return bool
+	 * @since 3.4.4
+	 *
+	 */
+	public function is_meta_diagnosis_enabled() {
+		return (bool) ( 'yes' === get_option( self::SETTING_ENABLE_META_DIAGNOSIS ) );
+	}
 
 	/**
 	 * Determines whether debug mode is enabled.
@@ -2900,7 +2943,7 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 			$fb_product_item_id = $this->get_product_fbid( self::FB_PRODUCT_ITEM_ID, $product->get_id() );
 			if ( ! $fb_product_item_id ) {
 				\WC_Facebookcommerce_Utils::fblog( $fb_product_item_id . " doesn't exist but underwent a visibility transform.", [], true );
-				 return;
+				return;
 			}
 			try {
 				$set_visibility = $this->facebook_for_woocommerce->get_api()->update_product_item( $fb_product_item_id, [ 'visibility' => $visibility ] );
