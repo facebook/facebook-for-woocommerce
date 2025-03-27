@@ -153,113 +153,113 @@ class Shops extends Abstract_Settings_Screen {
 	</div>
 		<?php
 
-    if ($is_connected) {
-        $this->render_troubleshooting_button_and_drawer();
-    }
+		if ( $is_connected ) {
+			$this->render_troubleshooting_button_and_drawer();
+		}
 	}
 
 	private function render_troubleshooting_button_and_drawer() {
-    ?>
-    <!-- Toggle Button -->
-    <div class="centered-container">
-        <button id="toggle-troubleshooting-drawer" class="drawer-toggle-button">
-            Troubleshooting
-            <span id="caret" class="caret"></span>
-        </button>
-    </div>
+		?>
+	<!-- Toggle Button -->
+	<div class="centered-container">
+		<button id="toggle-troubleshooting-drawer" class="drawer-toggle-button">
+			Troubleshooting
+			<span id="caret" class="caret"></span>
+		</button>
+	</div>
 
-    <!-- Drawer -->
-    <div id="troubleshooting-drawer" class="settings-drawer" style="display: none;">
-        <div class="settings-drawer-content">
-            <?php parent::render(); ?>
-        </div>
-    </div>
+	<!-- Drawer -->
+	<div id="troubleshooting-drawer" class="settings-drawer" style="display: none;">
+		<div class="settings-drawer-content">
+			<?php parent::render(); ?>
+		</div>
+	</div>
 
-    <style>
-        .centered-container {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            width: 100%;
-            margin-top: 20px;
-        }
+	<style>
+		.centered-container {
+			display: flex;
+			justify-content: center;
+			align-items: center;
+			width: 100%;
+			margin-top: 20px;
+		}
 
-        .drawer-toggle-button {
-            width: 100%;
-            max-width: 1100px;
-            background-color: #fff;
-            border: 1px solid #ccc;
-            padding: 10px 20px;
-            text-align: left;
-            cursor: pointer;
-            font-size: 16px;
-            font-weight: 600;
-            position: relative;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 20px;
+		.drawer-toggle-button {
+			width: 100%;
+			max-width: 1100px;
+			background-color: #fff;
+			border: 1px solid #ccc;
+			padding: 10px 20px;
+			text-align: left;
+			cursor: pointer;
+			font-size: 16px;
+			font-weight: 600;
+			position: relative;
+			display: flex;
+			justify-content: space-between;
+			align-items: center;
+			margin-bottom: 20px;
 						box-sizing: border-box;
-        }
+		}
 
-        .drawer-toggle-button:hover {
-            background-color: #f9f9f9;
-        }
+		.drawer-toggle-button:hover {
+			background-color: #f9f9f9;
+		}
 
-        .caret {
-            width: 0;
-            height: 0;
-            border-left: 5px solid transparent;
-            border-right: 5px solid transparent;
-            border-top: 5px solid #000;
-            transition: transform 0.3s ease;
-        }
+		.caret {
+			width: 0;
+			height: 0;
+			border-left: 5px solid transparent;
+			border-right: 5px solid transparent;
+			border-top: 5px solid #000;
+			transition: transform 0.3s ease;
+		}
 
-        .settings-drawer {
-            width: 100%;
-            max-width: 1100px;
-            background-color: #fff;
-            border-bottom: 1px solid #ccc;
+		.settings-drawer {
+			width: 100%;
+			max-width: 1100px;
+			background-color: #fff;
+			border-bottom: 1px solid #ccc;
 						border-right: 1px solid #ccc;
 						border-left: 1px solid #ccc;
-            overflow: hidden;
-            transition: max-height 0.3s ease, margin-bottom 0.3s ease;
-            max-height: 0;
-            margin: 0 auto;
+			overflow: hidden;
+			transition: max-height 0.3s ease, margin-bottom 0.3s ease;
+			max-height: 0;
+			margin: 0 auto;
 						box-sizing: border-box;
-        }
+		}
 
-        .settings-drawer-content {
-            padding: 20px;
-            padding-bottom: 0;
-        }
-    </style>
+		.settings-drawer-content {
+			padding: 20px;
+			padding-bottom: 0;
+		}
+	</style>
 
-    <script>
-        document.getElementById('toggle-troubleshooting-drawer').addEventListener('click', function() {
-            var drawer = document.getElementById('troubleshooting-drawer');
-            var caret = document.getElementById('caret');
-            var button = document.getElementById('toggle-troubleshooting-drawer');
+	<script>
+		document.getElementById('toggle-troubleshooting-drawer').addEventListener('click', function() {
+			var drawer = document.getElementById('troubleshooting-drawer');
+			var caret = document.getElementById('caret');
+			var button = document.getElementById('toggle-troubleshooting-drawer');
 
-            if (drawer.style.maxHeight === '0px' || drawer.style.maxHeight === '') {
-                drawer.style.display = 'block';
-                drawer.style.maxHeight = drawer.scrollHeight + 'px';
-                caret.style.transform = 'rotate(180deg)';
-                drawer.style.marginBottom = '20px';
-                button.style.marginBottom = '0';
-            } else {
-                drawer.style.maxHeight = '0';
-                setTimeout(function() {
-                    drawer.style.display = 'none';
-                }, 300);
-                caret.style.transform = 'rotate(0deg)';
-                drawer.style.marginBottom = '0';
-                button.style.marginBottom = '20px';
-            }
-        });
-    </script>
-    <?php
-}
+			if (drawer.style.maxHeight === '0px' || drawer.style.maxHeight === '') {
+				drawer.style.display = 'block';
+				drawer.style.maxHeight = drawer.scrollHeight + 'px';
+				caret.style.transform = 'rotate(180deg)';
+				drawer.style.marginBottom = '20px';
+				button.style.marginBottom = '0';
+			} else {
+				drawer.style.maxHeight = '0';
+				setTimeout(function() {
+					drawer.style.display = 'none';
+				}, 300);
+				caret.style.transform = 'rotate(0deg)';
+				drawer.style.marginBottom = '0';
+				button.style.marginBottom = '20px';
+			}
+		});
+	</script>
+		<?php
+	}
 
 	/**
 	 * Gets the screen settings.
@@ -269,8 +269,8 @@ class Shops extends Abstract_Settings_Screen {
 	 */
 	public function get_settings() {
 		return array(
-
 			array(
+				//phpcs:ignore WordPress.WP.I18n.NonSingularStringLiteralText
 				'title' => __( '', 'facebook-for-woocommerce' ),
 				'type'  => 'title',
 			),
