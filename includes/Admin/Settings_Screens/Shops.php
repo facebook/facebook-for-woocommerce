@@ -199,6 +199,7 @@ class Shops extends Abstract_Settings_Screen {
             justify-content: space-between;
             align-items: center;
             margin-bottom: 20px;
+						box-sizing: border-box;
         }
 
         .drawer-toggle-button:hover {
@@ -218,11 +219,14 @@ class Shops extends Abstract_Settings_Screen {
             width: 100%;
             max-width: 1100px;
             background-color: #fff;
-            border: 1px solid #ccc;
+            border-bottom: 1px solid #ccc;
+						border-right: 1px solid #ccc;
+						border-left: 1px solid #ccc;
             overflow: hidden;
             transition: max-height 0.3s ease, margin-bottom 0.3s ease;
             max-height: 0;
             margin: 0 auto;
+						box-sizing: border-box;
         }
 
         .settings-drawer-content {
@@ -273,18 +277,18 @@ class Shops extends Abstract_Settings_Screen {
 
 			array(
 				'id'       => \WC_Facebookcommerce_Integration::SETTING_ENABLE_META_DIAGNOSIS,
-				'title'    => __( 'Enable meta diagnosis', 'facebook-for-woocommerce' ),
+				'title'    => __( 'Upload plugin events to Meta', 'facebook-for-woocommerce' ),
 				'type'     => 'checkbox',
-				'desc'     => __( 'Upload plugin events to Meta', 'facebook-for-woocommerce' ),
+				'desc'     => __( 'Enable', 'facebook-for-woocommerce' ),
 				'desc_tip' => sprintf( __( 'Allow Meta to monitor your logs and help fix issues. Personally identifiable information will not be collected.', 'facebook-for-woocommerce' ) ),
 				'default'  => 'yes',
 			),
 
 			array(
 				'id'       => \WC_Facebookcommerce_Integration::SETTING_ENABLE_DEBUG_MODE,
-				'title'    => __( 'Enable debug mode', 'facebook-for-woocommerce' ),
+				'title'    => __( 'Log plugin events to your computer for debugging', 'facebook-for-woocommerce' ),
 				'type'     => 'checkbox',
-				'desc'     => __( 'Log plugin events for debugging.', 'facebook-for-woocommerce' ),
+				'desc'     => __( 'Enable', 'facebook-for-woocommerce' ),
 				/* translators: %s URL to the documentation page. */
 				'desc_tip' => sprintf( __( 'Only enable this if you are experiencing problems with the plugin. <a href="%s" target="_blank">Learn more</a>.', 'facebook-for-woocommerce' ), 'https://woocommerce.com/document/facebook-for-woocommerce/#debug-tools' ),
 				'default'  => 'no',
@@ -292,9 +296,9 @@ class Shops extends Abstract_Settings_Screen {
 
 			array(
 				'id'       => \WC_Facebookcommerce_Integration::SETTING_ENABLE_NEW_STYLE_FEED_GENERATOR,
-				'title'    => __( 'Experimental! Enable new style feed generation', 'facebook-for-woocommerce' ),
+				'title'    => __( '[Experimental] Use new, memory improved, feed generation process', 'facebook-for-woocommerce' ),
 				'type'     => 'checkbox',
-				'desc'     => __( 'Use new, memory improved, feed generation process.', 'facebook-for-woocommerce' ),
+				'desc'     => __( 'Enable', 'facebook-for-woocommerce' ),
 				/* translators: %s URL to the documentation page. */
 				'desc_tip' => sprintf( __( 'This is an experimental feature in testing phase. Only enable this if you are experiencing problems with feed generation. <a href="%s" target="_blank">Learn more</a>.', 'facebook-for-woocommerce' ), 'https://woocommerce.com/document/facebook-for-woocommerce/#feed-generation' ),
 				'default'  => 'no',
