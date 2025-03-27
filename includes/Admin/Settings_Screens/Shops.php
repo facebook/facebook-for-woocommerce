@@ -270,7 +270,7 @@ class Shops extends Abstract_Settings_Screen {
 	public function get_settings() {
 		return array(
 			array(
-				//phpcs:ignore WordPress.WP.I18n.NonSingularStringLiteralText
+				//phpcs:ignore WordPress.WP.I18n.NoEmptyStrings
 				'title' => __( '', 'facebook-for-woocommerce' ),
 				'type'  => 'title',
 			),
