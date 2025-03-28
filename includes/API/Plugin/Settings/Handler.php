@@ -75,15 +75,15 @@ class Handler extends AbstractRESTEndpoint {
 				);
 			}
 
+			// Maybe trigger products sync and/or metadata feed uploads
+			$this->maybe_trigger_feed_uploads( $request_data );
+
 			// Map parameters to options and update settings
 			$options = $this->map_params_to_options( $request_data );
 			$this->update_settings( $options );
 
 			// Update connection status flags
 			$this->update_connection_status( $request_data );
-
-			// trigger products sync or meta feed uploads
-			$this->maybe_trigger_feed_uploads( $request_data );
 
 			return $this->success_response(
 				[
@@ -262,7 +262,7 @@ class Handler extends AbstractRESTEndpoint {
 	private function maybe_trigger_feed_uploads( $params ) {
 		// Only sync products if catalog id has been updated.
 		try {
-			if ( ! empty( $params['product_catalog_id'] ) && get_option( \WC_Facebookcommerce_Integration::OPTION_PRODUCT_CATALOG_ID, '' ) !== $params['product_catalog_id'] ) {
+			if ( ! empty( $params['product_catalog_id'] ) && facebook_for_woocommerce()->get_integration()->get_product_catalog_id() !== $params['product_catalog_id'] ) {
 				// Allow opt-out of full batch-API sync, for example if store has a large number of products.
 				if ( facebook_for_woocommerce()->get_integration()->allow_full_batch_api_sync() ) {
 					facebook_for_woocommerce()->get_products_sync_handler()->create_or_update_all_products();
@@ -275,7 +275,7 @@ class Handler extends AbstractRESTEndpoint {
 				$exception,
 				[
 					'event'      => 'product_sync',
-					'event_type' => 'send_request_to_sync_products',
+					'event_type' => 'sync_products_after_settings_update',
 					'extra_data' => [
 						'message' => 'failed sync products during the update settings request.',
 					],
