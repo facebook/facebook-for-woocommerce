@@ -141,7 +141,7 @@ class Shops extends Abstract_Settings_Screen {
 	public function render() {
 		$is_connected = facebook_for_woocommerce()->get_connection_handler()->is_connected();
 
-		$this->render_facebook_iframe( $is_connected );
+		$this->render_facebook_iframe();
 
 		if ( $is_connected ) {
 			$this->render_troubleshooting_button_and_drawer();
@@ -155,8 +155,9 @@ class Shops extends Abstract_Settings_Screen {
 	 *
 	 * @param bool $is_connected
 	 */
-	private function render_facebook_iframe( bool $is_connected ) {
+	private function render_facebook_iframe() {
 		$connection            = facebook_for_woocommerce()->get_connection_handler();
+		$is_connected          = $connection->is_connected();
 		$merchant_access_token = get_option( 'wc_facebook_merchant_access_token', '' );
 
 		if ( ! empty( $merchant_access_token ) && $is_connected ) {

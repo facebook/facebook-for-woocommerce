@@ -119,7 +119,7 @@ class ShopsTest extends TestCase {
 
         // Start output buffering to capture the render output
         ob_start();
-        $this->invoke_method($shops, 'render_facebook_iframe', array(true));
+        $this->invoke_method($shops, 'render_facebook_iframe');
         $output = ob_get_clean();
 
         // Check that the iframe is rendered
