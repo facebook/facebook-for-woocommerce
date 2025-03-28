@@ -99,12 +99,6 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 	/** @var string request headers in the debug log */
 	const SETTING_REQUEST_HEADERS_IN_DEBUG_MODE = 'wc_facebook_request_headers_in_debug_log';
 
-	/** @var string the standard product description mode name */
-	const PRODUCT_DESCRIPTION_MODE_STANDARD = 'standard';
-
-	/** @var string the short product description mode name */
-	const PRODUCT_DESCRIPTION_MODE_SHORT = 'short';
-
 	/** @var string custom taxonomy Facebook Product Set ID */
 	const FB_PRODUCT_SET_ID = 'fb_product_set_id';
 
@@ -2598,37 +2592,6 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 		 *
 		 */
 		return (array) apply_filters( 'wc_facebook_excluded_product_tag_ids', get_option( self::SETTING_EXCLUDED_PRODUCT_TAG_IDS, [] ), $this );
-	}
-
-	/**
-	 * Gets the configured product description mode.
-	 *
-	 * @return string
-	 * @since 1.10.0
-	 *
-	 */
-	public function get_product_description_mode() {
-		/**
-		 * Filters the configured product description mode.
-		 *
-		 * @param string $mode the configured product description mode
-		 * @param \WC_Facebookcommerce_Integration $integration the integration instance
-		 *
-		 * @since 1.10.0
-		 *
-		 */
-		$mode = (string) apply_filters( 'wc_facebook_product_description_mode', get_option( self::SETTING_PRODUCT_DESCRIPTION_MODE, self::PRODUCT_DESCRIPTION_MODE_STANDARD ), $this );
-
-		$valid_modes = [
-			self::PRODUCT_DESCRIPTION_MODE_STANDARD,
-			self::PRODUCT_DESCRIPTION_MODE_SHORT,
-		];
-
-		if ( ! in_array( $mode, $valid_modes, true ) ) {
-			$mode = self::PRODUCT_DESCRIPTION_MODE_STANDARD;
-		}
-
-		return $mode;
 	}
 
 	/** Setter methods ************************************************************************************************/
