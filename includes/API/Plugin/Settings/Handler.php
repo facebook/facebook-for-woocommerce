@@ -81,6 +81,13 @@ class Handler extends AbstractRESTEndpoint {
 			// Update connection status flags
 			$this->update_connection_status( $request->get_data() );
 
+			// Allow opt-out of full batch-API sync, for example if store has a large number of products.
+			if ( facebook_for_woocommerce()->get_integration()->allow_full_batch_api_sync() ) {
+				facebook_for_woocommerce()->get_products_sync_handler()->create_or_update_all_products();
+			} else {
+				\WC_Facebookcommerce_Utils::logToMeta( 'Initial full product sync disabled by filter hook `facebook_for_woocommerce_allow_full_batch_api_sync`' );
+			}
+
 			return $this->success_response(
 				[
 					'message' => __( 'Facebook settings updated successfully', 'facebook-for-woocommerce' ),
