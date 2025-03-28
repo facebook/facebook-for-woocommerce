@@ -60,28 +60,6 @@ class Connection extends Abstract_Settings_Screen {
 	}
 
 	/**
-	 * Determines if we should use enhanced onboarding.
-	 *
-	 * @return bool
-	 */
-	protected function use_enhanced_onboarding() {
-		// First check if the integration has enabled enhanced onboarding
-		$integration = facebook_for_woocommerce()->get_integration();
-		if ( ! $integration->use_enhanced_onboarding() ) {
-			return false;
-		}
-
-		// No connection, new user returns true
-		$connection_handler              = facebook_for_woocommerce()->get_connection_handler();
-		$commerce_partner_integration_id = $connection_handler->get_commerce_partner_integration_id();
-
-		if ( ! $connection_handler->is_connected() || ! empty( $commerce_partner_integration_id ) ) {
-			return true;
-		}
-		return false;
-	}
-
-	/**
 	 * Adds admin notices.
 	 *
 	 * @internal
@@ -139,7 +117,7 @@ class Connection extends Abstract_Settings_Screen {
 	 */
 	public function render() {
 		// Check if we should render iframe
-		if ( $this->use_enhanced_onboarding() ) {
+		if ( facebook_for_woocommerce()->get_integration()->use_enhanced_onboarding() ) {
 			$this->render_facebook_iframe();
 
 			return;
@@ -386,7 +364,7 @@ class Connection extends Abstract_Settings_Screen {
 	 * @since 3.5.0
 	 */
 	public function render_message_handler() {
-		if ( ! $this->is_current_screen_page() || ! $this->use_enhanced_onboarding() ) {
+		if ( ! $this->is_current_screen_page() || ! facebook_for_woocommerce()->get_integration()->use_enhanced_onboarding() ) {
 			return;
 		}
 		// Add the inline script as a dependent script
