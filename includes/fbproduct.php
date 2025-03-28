@@ -657,6 +657,71 @@ class WC_Facebook_Product {
 	}
 
 	/**
+	 * Get the short description for a product.
+	 *
+	 * This function retrieves the short product description, following the same
+	 * fallback pattern as the main description.
+	 *
+	 * @return string The short description for the product.
+	 */
+	public function get_fb_short_description() {
+		$short_description = '';
+
+		if ( $this->fb_description ) {
+			$short_description = $this->fb_description;
+		}
+
+		if ( empty( $short_description ) ) {
+			// Try to get short description from post meta
+			$short_description = get_post_meta(
+				$this->id,
+				self::FB_PRODUCT_DESCRIPTION,
+				true
+			);
+		}
+
+		// Check if the product type is a variation and no short description is found yet
+		if ( empty( $short_description ) && WC_Facebookcommerce_Utils::is_variation_type( $this->woo_product->get_type() ) ) {
+			$short_description = WC_Facebookcommerce_Utils::clean_string( $this->woo_product->get_short_description() );
+
+			// Fallback to main short description
+			if ( empty( $short_description ) && $this->main_description ) {
+				$short_description = $this->main_description;
+			}
+		}
+
+		// If no short description is found from meta or variation, get from post
+		if ( empty( $short_description ) ) {
+			$post         = $this->get_post_data();
+			$post_content = WC_Facebookcommerce_Utils::clean_string( $post->post_content );
+			$post_excerpt = WC_Facebookcommerce_Utils::clean_string( $post->post_excerpt );
+			$post_title   = WC_Facebookcommerce_Utils::clean_string( $post->post_title );
+
+			// Prioritize excerpt, then content, then title
+			if ( ! empty( $post_excerpt ) ) {
+				$short_description = $post_excerpt;
+			}
+
+			if ( empty( $short_description ) && ! empty( $post_content ) ) {
+				$short_description = $post_content;
+			}
+
+			if ( empty( $short_description ) ) {
+				$short_description = $post_title;
+			}
+		}
+		/**
+		 * Filters the FB product short description.
+		 *
+		 * @since 3.2.6
+		 *
+		 * @param string  $short_description Facebook product short description.
+		 * @param int     $id                WooCommerce Product ID.
+		 */
+		return apply_filters( 'facebook_for_woocommerce_fb_product_short_description', $short_description, $this->id );
+	}
+
+	/**
 	 * Get the rich text description for a product.
 	 *
 	 * This function retrieves the rich text product description, prioritizing Facebook
@@ -687,7 +752,7 @@ class WC_Facebook_Product {
 		}
 
 		// For variable products, we want to use the rich text description of the variant.
-		// If that's not available, fall back to the main (parent) product's rich text description.
+		// If that's not available, fall back to the main (parent) product's rich text description as a fallback
 		if ( empty( $rich_text_description ) && WC_Facebookcommerce_Utils::is_variation_type( $this->woo_product->get_type() ) ) {
 			$rich_text_description = WC_Facebookcommerce_Utils::clean_string( $this->woo_product->get_description(), false );
 
@@ -1170,6 +1235,7 @@ class WC_Facebook_Product {
 		
 		$product_data = array();
 		$product_data[ 'description' ] = $this->get_fb_description();
+		$product_data[ 'short_description' ] = $this->get_fb_short_description();
 		$product_data[ 'rich_text_description' ] = $this->get_rich_text_description();
 		$product_data[ 'product_type' ] = $categories['categories'];
 		$product_data[ 'brand' ] = Helper::str_truncate( $this->get_fb_brand(), 100 );
