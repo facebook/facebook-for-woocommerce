@@ -526,7 +526,6 @@ class WCFacebookCommerceIntegrationTest extends \WooCommerce\Facebook\Tests\Unit
 		/* Data coming from _POST data. */
 		$facebook_product_data['description']				 = 'Facebook product description.';
 		$facebook_product_data['rich_text_description']		 = 'Facebook product description.';
-		// $facebook_product_data['short_description']			 = 'Facebook product description.';
 		$facebook_product_data['price']                      = '199 USD';
 		$facebook_product_data['google_product_category']    = 1718;
 
