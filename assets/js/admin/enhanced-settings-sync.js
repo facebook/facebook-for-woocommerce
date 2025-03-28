@@ -1,0 +1,76 @@
+/**
+ * Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
+ *
+ * This source code is licensed under the license found in the
+ * LICENSE file in the root directory of this source tree.
+ *
+ * @package FacebookCommerce
+ */
+
+jQuery(document).ready(function($) {
+    /**
+     * Handle the sync products button click event
+     *
+     * @since 3.5.0
+     *
+     * @param {object} event
+     */
+    $('#wc-facebook-enhanced-settings-sync-products').click(function(event) {
+        event.preventDefault();
+        var button = $(this);
+
+        button.html('Syncing...');
+        button.prop('disabled', true);
+
+        var data = {
+            action: "wc_facebook_sync_products",
+            nonce: wc_facebook_enhanced_settings_sync.sync_products_nonce
+        };
+
+        $.post(wc_facebook_enhanced_settings_sync.ajax_url, data, function(response) {
+            if (response.success) {
+                button.html('Sync completed');
+                button.prop('disabled', true); // Disable the button after success
+            } else {
+                button.html('Sync failed');
+                button.prop('disabled', false); // Re-enable the button if failed
+            }
+        }).fail(function() {
+            button.html('Sync failed');
+            button.prop('disabled', false);
+        });
+    });
+
+    /**
+     * Handle the sync coupons button click event
+     *
+     * @since 3.5.0
+     *
+     * @param {object} event
+     */
+    $('#wc-facebook-enhanced-settings-sync-coupons').click(function(event) {
+        event.preventDefault();
+        var button = $(this);
+
+        button.html('Syncing...');
+        button.prop('disabled', true);
+
+        var data = {
+            action: "wc_facebook_sync_coupons",
+            nonce: wc_facebook_enhanced_settings_sync.sync_coupons_nonce
+        };
+
+        $.post(wc_facebook_enhanced_settings_sync.ajax_url, data, function(response) {
+            if (response.success) {
+                button.html('Sync completed');
+                button.prop('disabled', true); // Disable the button after success
+            } else {
+                button.html('Sync failed');
+                button.prop('disabled', false); // Re-enable the button if failed
+            }
+        }).fail(function() {
+            button.html('Sync failed');
+            button.prop('disabled', false);
+        });
+    });
+});
