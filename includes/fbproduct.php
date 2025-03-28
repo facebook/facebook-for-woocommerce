@@ -78,6 +78,7 @@ class WC_Facebook_Product {
 	// Should match facebook-commerce.php while we migrate that code over
 	// to this object.
 	const FB_PRODUCT_DESCRIPTION   = 'fb_product_description';
+	const FB_SHORT_DESCRIPTION     = 'fb_product_short_description';
 	const FB_PRODUCT_PRICE         = 'fb_product_price';
 	const FB_SIZE                  = 'fb_size';
 	const FB_COLOR                 = 'fb_color';
@@ -673,61 +674,32 @@ class WC_Facebook_Product {
 	/**
 	 * Get the short description for a product.
 	 *
-	 * This function retrieves the short product description, following the same
-	 * fallback pattern as the main description.
+	 * This function retrieves the short product description, but unlike the main description
+	 * it should only use values specifically set for short description.
 	 *
 	 * @return string The short description for the product.
 	 */
 	public function get_fb_short_description() {
 		$short_description = '';
 
-		if ( $this->fb_description ) {
-			$short_description = $this->fb_description;
-		}
-
-		if ( empty( $short_description ) ) {
-			// Try to get short description from post meta
-			$short_description = get_post_meta(
-				$this->id,
-				self::FB_PRODUCT_DESCRIPTION,
-				true
-			);
-		}
-
-		// Check if the product type is a variation and no short description is found yet
+		// For variable products, check if the variation has a short description
 		if ( empty( $short_description ) && WC_Facebookcommerce_Utils::is_variation_type( $this->woo_product->get_type() ) ) {
 			$short_description = WC_Facebookcommerce_Utils::clean_string( $this->woo_product->get_short_description() );
-
-			// Fallback to main short description
-			if ( empty( $short_description ) && $this->main_description ) {
-				$short_description = $this->main_description;
-			}
 		}
 
-		// If no short description is found from meta or variation, get from post
+		// Use the product's short description (excerpt) from WooCommerce
 		if ( empty( $short_description ) ) {
-			$post         = $this->get_post_data();
-			$post_content = WC_Facebookcommerce_Utils::clean_string( $post->post_content );
+			$post = $this->get_post_data();
 			$post_excerpt = WC_Facebookcommerce_Utils::clean_string( $post->post_excerpt );
-			$post_title   = WC_Facebookcommerce_Utils::clean_string( $post->post_title );
-
-			// Prioritize excerpt, then content, then title
+			
 			if ( ! empty( $post_excerpt ) ) {
 				$short_description = $post_excerpt;
 			}
-
-			if ( empty( $short_description ) && ! empty( $post_content ) ) {
-				$short_description = $post_content;
-			}
-
-			if ( empty( $short_description ) ) {
-				$short_description = $post_title;
-			}
 		}
+
 		/**
 		 * Filters the FB product short description.
 		 *
-		 * @since 3.2.6
 		 *
 		 * @param string  $short_description Facebook product short description.
 		 * @param int     $id                WooCommerce Product ID.
@@ -1307,7 +1279,7 @@ class WC_Facebook_Product {
 
 		$google_product_category = Products::get_google_product_category_id( $this->woo_product );
 		if ( $google_product_category ) {
-			$product_data['google_product_category'] = $google_product_category;
+			$product_data['google_product_category'] = (int) $google_product_category;
 		}
 
 		// Currently only items batch and feed support enhanced catalog fields
