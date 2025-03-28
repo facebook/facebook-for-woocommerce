@@ -951,11 +951,6 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 			$woo_product->set_rich_text_description( $_POST[ self::FB_PRODUCT_DESCRIPTION ] );
 		}
 
-		// Save Short Description
-		if ( isset( $_POST[ WC_Facebook_Product::FB_SHORT_DESCRIPTION ] ) ) {
-			$woo_product->set_short_description( sanitize_text_field( wp_unslash( $_POST[ WC_Facebook_Product::FB_SHORT_DESCRIPTION ] ) ) );
-		}
-
 		if ( isset( $_POST[ WC_Facebook_Product::FB_PRODUCT_PRICE ] ) ) {
 			$woo_product->set_price( sanitize_text_field( wp_unslash( $_POST[ WC_Facebook_Product::FB_PRODUCT_PRICE ] ) ) );
 		}
