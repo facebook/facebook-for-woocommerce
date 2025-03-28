@@ -149,10 +149,6 @@ class Lifecycle extends Framework\Lifecycle {
 			$new_settings[ \WC_Facebookcommerce_Integration::SETTING_ENABLE_PRODUCT_SYNC ] = $product_sync_enabled ? 'yes' : 'no';
 		}
 
-		if ( ! isset( $new_settings[ \WC_Facebookcommerce_Integration::SETTING_PRODUCT_DESCRIPTION_MODE ] ) ) {
-			$new_settings[ \WC_Facebookcommerce_Integration::SETTING_PRODUCT_DESCRIPTION_MODE ] = ! empty( get_option( 'fb_sync_short_description', 0 ) ) ? \WC_Facebookcommerce_Integration::PRODUCT_DESCRIPTION_MODE_SHORT : \WC_Facebookcommerce_Integration::PRODUCT_DESCRIPTION_MODE_STANDARD;
-		}
-
 		if ( ! isset( $new_settings[ \WC_Facebookcommerce_Integration::SETTING_SCHEDULED_RESYNC_OFFSET ] ) ) {
 			$autosync_time = get_option( 'woocommerce_fb_autosync_time' );
 			$parsed_time   = ! empty( $autosync_time ) ? strtotime( $autosync_time ) : false;
@@ -219,7 +215,6 @@ class Lifecycle extends Framework\Lifecycle {
 				'enable_product_sync'           => \WC_Facebookcommerce_Integration::SETTING_ENABLE_PRODUCT_SYNC,
 				'excluded_product_category_ids' => \WC_Facebookcommerce_Integration::SETTING_EXCLUDED_PRODUCT_CATEGORY_IDS,
 				'excluded_product_tag_ids'      => \WC_Facebookcommerce_Integration::SETTING_EXCLUDED_PRODUCT_TAG_IDS,
-				'product_description_mode'      => \WC_Facebookcommerce_Integration::SETTING_PRODUCT_DESCRIPTION_MODE,
 				'enable_messenger'              => self::SETTING_ENABLE_MESSENGER,
 				'messenger_locale'              => self::SETTING_MESSENGER_LOCALE,
 				'messenger_greeting'            => self::SETTING_MESSENGER_GREETING,

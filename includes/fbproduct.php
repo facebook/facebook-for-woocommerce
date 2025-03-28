@@ -78,6 +78,7 @@ class WC_Facebook_Product {
 	// Should match facebook-commerce.php while we migrate that code over
 	// to this object.
 	const FB_PRODUCT_DESCRIPTION   = 'fb_product_description';
+	const FB_SHORT_DESCRIPTION     = 'fb_product_short_description';
 	const FB_PRODUCT_PRICE         = 'fb_product_price';
 	const FB_SIZE                  = 'fb_size';
 	const FB_COLOR                 = 'fb_color';
@@ -139,11 +140,6 @@ class WC_Facebook_Product {
 	private $main_description;
 
 	/**
-	 * @var bool  Sync short description.
-	 */
-	private $sync_short_description;
-
-	/**
 	 * @var bool Product visibility on Facebook.
 	 */
 	public $fb_visibility;
@@ -167,7 +163,6 @@ class WC_Facebook_Product {
 		$this->gallery_urls           = null;
 		$this->fb_use_parent_image    = null;
 		$this->main_description       = '';
-		$this->sync_short_description = \WC_Facebookcommerce_Integration::PRODUCT_DESCRIPTION_MODE_SHORT === facebook_for_woocommerce()->get_integration()->get_product_description_mode();
 		$this->rich_text_description  = '';
 
 		if ( $meta = get_post_meta( $this->id, self::FB_VISIBILITY, true ) ) {
@@ -196,7 +191,7 @@ class WC_Facebook_Product {
 	 */
 	public function __get( $key ) {
 		// Add warning for private properties.
-		if ( in_array( $key, array( 'fb_description', 'gallery_urls', 'fb_use_parent_image', 'main_description', 'sync_short_description' ), true ) ) {
+		if ( in_array( $key, array( 'fb_description', 'gallery_urls', 'fb_use_parent_image', 'main_description' ), true ) ) {
 			/* translators: %s property name. */
 			_doing_it_wrong( __FUNCTION__, sprintf( esc_html__( 'The %s property is private and should not be accessed outside its class.', 'facebook-for-woocommerce' ), esc_html( $key ) ), '3.0.32' );
 			return $this->$key;
@@ -637,7 +632,7 @@ class WC_Facebook_Product {
 				$description = $post_content;
 			}
 
-			if ( $this->sync_short_description || ( empty( $description ) && ! empty( $post_excerpt ) ) ) {
+			if ( empty( $description ) && ! empty( $post_excerpt ) ) {
 				$description = $post_excerpt;
 			}
 
@@ -654,6 +649,47 @@ class WC_Facebook_Product {
 		 * @param int     $id          WooCommerce Product ID.
 		 */
 		return apply_filters( 'facebook_for_woocommerce_fb_product_description', $description, $this->id );
+	}
+
+	/**
+	 * Get the short description for a product.
+	 *
+	 * This function retrieves the short product description, but unlike the main description
+	 * it should only use values specifically set for short description.
+	 *
+	 * @return string The short description for the product.
+	 */
+	public function get_fb_short_description() {
+		$short_description = '';
+
+		// For variations, inherit the short description from the parent product
+		if (WC_Facebookcommerce_Utils::is_variation_type($this->woo_product->get_type())) {
+			// Get the parent product
+			$parent_id = $this->woo_product->get_parent_id();
+			if ($parent_id) {
+				$parent_post = get_post($parent_id);
+				if ($parent_post && !empty($parent_post->post_excerpt)) {
+					$short_description = WC_Facebookcommerce_Utils::clean_string($parent_post->post_excerpt);
+				}
+			}
+			return apply_filters('facebook_for_woocommerce_fb_product_short_description', $short_description, $this->id);
+		}
+
+		// Use the product's short description (excerpt) from WooCommerce
+		$post = $this->get_post_data();
+		$post_excerpt = WC_Facebookcommerce_Utils::clean_string($post->post_excerpt);
+		
+		if (!empty($post_excerpt)) {
+			$short_description = $post_excerpt;
+		}
+
+		/**
+		 * Filters the FB product short description.
+		 *
+		 * @param string  $short_description Facebook product short description.
+		 * @param int     $id                WooCommerce Product ID.
+		 */
+		return apply_filters('facebook_for_woocommerce_fb_product_short_description', $short_description, $this->id);
 	}
 
 	/**
@@ -707,7 +743,7 @@ class WC_Facebook_Product {
 				$rich_text_description = $post_content;
 			}
 
-			if ( $this->sync_short_description || ( empty( $rich_text_description ) && ! empty( $post_excerpt ) ) ) {
+			if ( empty( $rich_text_description ) && ! empty( $post_excerpt ) ) {
 				$rich_text_description = $post_excerpt;
 			}
 		}
@@ -1170,6 +1206,7 @@ class WC_Facebook_Product {
 		
 		$product_data = array();
 		$product_data[ 'description' ] = $this->get_fb_description();
+		$product_data[ 'short_description' ] = $this->get_fb_short_description();
 		$product_data[ 'rich_text_description' ] = $this->get_rich_text_description();
 		$product_data[ 'product_type' ] = $categories['categories'];
 		$product_data[ 'brand' ] = Helper::str_truncate( $this->get_fb_brand(), 100 );
@@ -1226,7 +1263,7 @@ class WC_Facebook_Product {
 
 		$google_product_category = Products::get_google_product_category_id( $this->woo_product );
 		if ( $google_product_category ) {
-			$product_data['google_product_category'] = $google_product_category;
+			$product_data['google_product_category'] = (int) $google_product_category;
 		}
 
 		// Currently only items batch and feed support enhanced catalog fields
