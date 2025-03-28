@@ -668,29 +668,34 @@ class WC_Facebook_Product {
 	public function get_fb_short_description() {
 		$short_description = '';
 
-		// For variable products, check if the variation has a short description
-		if ( empty( $short_description ) && WC_Facebookcommerce_Utils::is_variation_type( $this->woo_product->get_type() ) ) {
-			$short_description = WC_Facebookcommerce_Utils::clean_string( $this->woo_product->get_short_description() );
+		// For variations, inherit the short description from the parent product
+		if (WC_Facebookcommerce_Utils::is_variation_type($this->woo_product->get_type())) {
+			// Get the parent product
+			$parent_id = $this->woo_product->get_parent_id();
+			if ($parent_id) {
+				$parent_post = get_post($parent_id);
+				if ($parent_post && !empty($parent_post->post_excerpt)) {
+					$short_description = WC_Facebookcommerce_Utils::clean_string($parent_post->post_excerpt);
+				}
+			}
+			return apply_filters('facebook_for_woocommerce_fb_product_short_description', $short_description, $this->id);
 		}
 
 		// Use the product's short description (excerpt) from WooCommerce
-		if ( empty( $short_description ) ) {
-			$post = $this->get_post_data();
-			$post_excerpt = WC_Facebookcommerce_Utils::clean_string( $post->post_excerpt );
-			
-			if ( ! empty( $post_excerpt ) ) {
-				$short_description = $post_excerpt;
-			}
+		$post = $this->get_post_data();
+		$post_excerpt = WC_Facebookcommerce_Utils::clean_string($post->post_excerpt);
+		
+		if (!empty($post_excerpt)) {
+			$short_description = $post_excerpt;
 		}
 
 		/**
 		 * Filters the FB product short description.
 		 *
-		 *
 		 * @param string  $short_description Facebook product short description.
 		 * @param int     $id                WooCommerce Product ID.
 		 */
-		return apply_filters( 'facebook_for_woocommerce_fb_product_short_description', $short_description, $this->id );
+		return apply_filters('facebook_for_woocommerce_fb_product_short_description', $short_description, $this->id);
 	}
 
 	/**
