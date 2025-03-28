@@ -152,8 +152,6 @@ class Shops extends Abstract_Settings_Screen {
 	 * Renders the appropriate Facebook iframe based on connection status.
 	 *
 	 * @since 3.5.0
-	 *
-	 * @param bool $is_connected
 	 */
 	private function render_facebook_iframe() {
 		$connection            = facebook_for_woocommerce()->get_connection_handler();
