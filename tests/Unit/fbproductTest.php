@@ -1070,7 +1070,7 @@ class fbproductTest extends \WooCommerce\Facebook\Tests\Unit\AbstractWPUnitTestW
 		$variable_product->set_short_description('parent short description');
 		$variable_product->save();
 		
-		// Even if we try to set a short description on the variation (which normally doesn't work in WooCommerce UI)
+		// Even if we try to set a short description on the variation (which we dont have functionality for in WooCommerce UI)
 		$variation->set_short_description('variation short description - should be ignored');
 		$variation->save();
 		
