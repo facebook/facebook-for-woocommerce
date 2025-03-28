@@ -65,6 +65,7 @@ class Handler extends AbstractRESTEndpoint {
 	public function handle_update( \WP_REST_Request $wp_request ) {
 		try {
 			$request           = new UpdateRequest( $wp_request );
+			$request_data      = $request->get_data();
 			$validation_result = $request->validate();
 
 			if ( is_wp_error( $validation_result ) ) {
@@ -75,17 +76,20 @@ class Handler extends AbstractRESTEndpoint {
 			}
 
 			// Map parameters to options and update settings
-			$options = $this->map_params_to_options( $request->get_data() );
+			$options = $this->map_params_to_options( $request_data );
 			$this->update_settings( $options );
 
 			// Update connection status flags
-			$this->update_connection_status( $request->get_data() );
+			$this->update_connection_status( $request_data );
 
-			// Allow opt-out of full batch-API sync, for example if store has a large number of products.
-			if ( facebook_for_woocommerce()->get_integration()->allow_full_batch_api_sync() ) {
-				facebook_for_woocommerce()->get_products_sync_handler()->create_or_update_all_products();
-			} else {
-				\WC_Facebookcommerce_Utils::logToMeta( 'Initial full product sync disabled by filter hook `facebook_for_woocommerce_allow_full_batch_api_sync`' );
+			// Only sync products if catalog id has been updated.
+			if ( ! empty( $request_data['product_catalog_id'] ) ) {
+				// Allow opt-out of full batch-API sync, for example if store has a large number of products.
+				if ( facebook_for_woocommerce()->get_integration()->allow_full_batch_api_sync() ) {
+					facebook_for_woocommerce()->get_products_sync_handler()->create_or_update_all_products();
+				} else {
+					\WC_Facebookcommerce_Utils::logToMeta( 'Initial full product sync disabled by filter hook `facebook_for_woocommerce_allow_full_batch_api_sync`' );
+				}
 			}
 
 			return $this->success_response(
