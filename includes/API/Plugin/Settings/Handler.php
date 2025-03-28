@@ -82,15 +82,8 @@ class Handler extends AbstractRESTEndpoint {
 			// Update connection status flags
 			$this->update_connection_status( $request_data );
 
-			// Only sync products if catalog id has been updated.
-			if ( ! empty( $request_data['product_catalog_id'] ) ) {
-				// Allow opt-out of full batch-API sync, for example if store has a large number of products.
-				if ( facebook_for_woocommerce()->get_integration()->allow_full_batch_api_sync() ) {
-					facebook_for_woocommerce()->get_products_sync_handler()->create_or_update_all_products();
-				} else {
-					\WC_Facebookcommerce_Utils::logToMeta( 'Initial full product sync disabled by filter hook `facebook_for_woocommerce_allow_full_batch_api_sync`' );
-				}
-			}
+			// trigger products sync or meta feed uploads
+			$this->maybe_trigger_feed_uploads( $request_data );
 
 			return $this->success_response(
 				[
@@ -255,6 +248,39 @@ class Handler extends AbstractRESTEndpoint {
 
 		foreach ( $options as $option ) {
 			delete_option( $option );
+		}
+	}
+
+	/**
+	 * Triggers products sync if catalog id is being set to a different value.
+	 *
+	 * @since 3.5.0
+	 *
+	 * @param array $params Request parameters.
+	 * @return void
+	 */
+	private function maybe_trigger_feed_uploads( $params ) {
+		// Only sync products if catalog id has been updated.
+		try {
+			if ( ! empty( $params['product_catalog_id'] ) && get_option( \WC_Facebookcommerce_Integration::OPTION_PRODUCT_CATALOG_ID, '' ) !== $params['product_catalog_id'] ) {
+				// Allow opt-out of full batch-API sync, for example if store has a large number of products.
+				if ( facebook_for_woocommerce()->get_integration()->allow_full_batch_api_sync() ) {
+					facebook_for_woocommerce()->get_products_sync_handler()->create_or_update_all_products();
+				} else {
+					\WC_Facebookcommerce_Utils::logToMeta( 'Initial full product sync disabled by filter hook `facebook_for_woocommerce_allow_full_batch_api_sync`' );
+				}
+			}
+		} catch ( \Exception $exception ) {
+			\WC_Facebookcommerce_Utils::logExceptionImmediatelyToMeta(
+				$exception,
+				[
+					'event'      => 'product_sync',
+					'event_type' => 'send_request_to_sync_products',
+					'extra_data' => [
+						'message' => 'failed sync products during the update settings request.',
+					],
+				]
+			);
 		}
 	}
 }
