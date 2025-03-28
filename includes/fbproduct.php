@@ -766,7 +766,7 @@ class WC_Facebook_Product {
 		}
 
 		// For variable products, we want to use the rich text description of the variant.
-		// If that's not available, fall back to the main (parent) product's rich text description as a fallback
+		// If that's not available, fall back to the main (parent) product's rich text description.
 		if ( empty( $rich_text_description ) && WC_Facebookcommerce_Utils::is_variation_type( $this->woo_product->get_type() ) ) {
 			$rich_text_description = WC_Facebookcommerce_Utils::clean_string( $this->woo_product->get_description(), false );
 
