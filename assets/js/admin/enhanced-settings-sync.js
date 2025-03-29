@@ -30,10 +30,10 @@ jQuery(document).ready(function($) {
         $.post(wc_facebook_enhanced_settings_sync.ajax_url, data, function(response) {
             if (response.success) {
                 button.html('Sync completed');
-                button.prop('disabled', true); // Disable the button after success
+                button.prop('disabled', false);
             } else {
                 button.html('Sync failed');
-                button.prop('disabled', false); // Re-enable the button if failed
+                button.prop('disabled', false);
             }
         }).fail(function() {
             button.html('Sync failed');
@@ -63,10 +63,10 @@ jQuery(document).ready(function($) {
         $.post(wc_facebook_enhanced_settings_sync.ajax_url, data, function(response) {
             if (response.success) {
                 button.html('Sync completed');
-                button.prop('disabled', true); // Disable the button after success
+                button.prop('disabled', false);
             } else {
                 button.html('Sync failed');
-                button.prop('disabled', false); // Re-enable the button if failed
+                button.prop('disabled', false);
             }
         }).fail(function() {
             button.html('Sync failed');
