@@ -240,7 +240,7 @@ class WC_Facebookcommerce extends WooCommerce\Facebook\Framework\Plugin {
 				if ($this->use_enhanced_onboarding()) {
 					$this->admin_enhanced_settings = new WooCommerce\Facebook\Admin\Enhanced_Settings( $this->connection_handler->is_connected() );
 				} else {
-					$this->admin_settings = new WooCommerce\Facebook\Admin\Settings( $this->connection_handler->is_connected() );
+					$this->admin_settings = new WooCommerce\Facebook\Admin\Settings( $this, $this->connection_handler->is_connected() );
 				}
 			}
 		}
@@ -867,7 +867,7 @@ class WC_Facebookcommerce extends WooCommerce\Facebook\Framework\Plugin {
 	 * @return bool
 	 *
 	 */
-	public function use_enhanced_onboarding() {
+	public function use_enhanced_onboarding(): bool {
 		$connection_handler              = $this->get_connection_handler();
 		$commerce_partner_integration_id = $connection_handler->get_commerce_partner_integration_id();
 

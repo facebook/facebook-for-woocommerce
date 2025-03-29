@@ -19,7 +19,7 @@ use WooCommerce\Facebook\Framework\Api\Exception as ApiException;
  * The Connection settings screen object.
  */
 class Connection extends Abstract_Settings_Screen {
-	/** @var \WC_Facebookcommerce */
+	/** @var \WC_Facebookcommerce facebook_for_woocommerce() instance */
 	protected $plugin;
 
 	/** @var string screen ID */
@@ -27,9 +27,11 @@ class Connection extends Abstract_Settings_Screen {
 
 	/**
 	 * Connection constructor.
+	 *
+	 * @param \WC_Facebookcommerce $plugin facebook_for_woocommerce() instance
 	 */
-	public function __construct( $plugin = null ) {
-		$this->plugin = $plugin ?? facebook_for_woocommerce();
+	public function __construct( $plugin ) {
+		$this->plugin = $plugin;
 
 		add_action( 'init', array( $this, 'initHook' ) );
 
