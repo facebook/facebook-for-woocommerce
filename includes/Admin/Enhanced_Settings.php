@@ -141,30 +141,12 @@ class Enhanced_Settings {
 	 */
 	private function connect_to_enhanced_admin( $screen_id ) {
 		if ( is_callable( 'wc_admin_connect_page' ) ) {
-			$crumbs = array(
-				__( 'Facebook for WooCommerce', 'facebook-for-woocommerce' ),
-			);
-			//phpcs:ignore WordPress.Security.NonceVerification.Recommended
-			if ( ! empty( $_GET['tab'] ) ) {
-				//phpcs:ignore WordPress.Security.NonceVerification.Recommended
-				switch ( $_GET['tab'] ) {
-					case Shops::ID:
-						$crumbs[] = __( 'Shops', 'facebook-for-woocommerce' );
-						break;
-					case Settings_Screens\Product_Sync::ID:
-						$crumbs[] = __( 'Product sync', 'facebook-for-woocommerce' );
-						break;
-					case Settings_Screens\Advertise::ID:
-						$crumbs[] = __( 'Advertise', 'facebook-for-woocommerce' );
-						break;
-				}
-			}
 			wc_admin_connect_page(
 				array(
 					'id'        => self::PAGE_ID,
 					'screen_id' => $screen_id,
 					'path'      => add_query_arg( 'page', self::PAGE_ID, 'admin.php' ),
-					'title'     => $crumbs,
+					'title'     => [ __( 'Facebook for WooCommerce', 'facebook-for-woocommerce' ) ],
 				)
 			);
 		}
