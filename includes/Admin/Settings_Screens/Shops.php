@@ -25,6 +25,12 @@ class Shops extends Abstract_Settings_Screen {
 	/** @var string */
 	const ID = 'shops';
 
+	/** @var string */
+	const ACTION_SYNC_PRODUCTS = 'wc_facebook_sync_products';
+
+	/** @var string */
+	const ACTION_SYNC_COUPONS = 'wc_facebook_sync_coupons';
+
 	/**
 	 * Shops constructor.
 	 *
@@ -107,6 +113,24 @@ class Shops extends Abstract_Settings_Screen {
 		}
 
 		wp_enqueue_style( 'wc-facebook-admin-connection-settings', facebook_for_woocommerce()->get_plugin_url() . '/assets/css/admin/facebook-for-woocommerce-connection.css', array(), \WC_Facebookcommerce::VERSION );
+
+		wp_enqueue_script(
+			'wc-facebook-enhanced-settings-sync',
+			facebook_for_woocommerce()->get_asset_build_dir_url() . '/admin/enhanced-settings-sync.js',
+			array( 'jquery' ),
+			\WC_Facebookcommerce::PLUGIN_VERSION,
+			true
+		);
+
+		wp_localize_script(
+			'wc-facebook-enhanced-settings-sync',
+			'wc_facebook_enhanced_settings_sync',
+			array(
+				'ajax_url'            => admin_url( 'admin-ajax.php' ),
+				'sync_products_nonce' => wp_create_nonce( self::ACTION_SYNC_PRODUCTS ),
+				'sync_coupons_nonce'  => wp_create_nonce( self::ACTION_SYNC_COUPONS ),
+			)
+		);
 	}
 
 	/**
@@ -115,7 +139,13 @@ class Shops extends Abstract_Settings_Screen {
 	 * @since 3.5.0
 	 */
 	public function render() {
+		$is_connected = facebook_for_woocommerce()->get_connection_handler()->is_connected();
+
 		$this->render_facebook_iframe();
+
+		if ( $is_connected ) {
+			$this->render_troubleshooting_button_and_drawer();
+		}
 	}
 
 	/**
@@ -147,17 +177,18 @@ class Shops extends Abstract_Settings_Screen {
 		?>
 	<div style="display: flex; justify-content: center; max-width: 1200px; margin: 0 auto;">
 		<iframe
-		id="facebook-commerce-iframe-enhanced"
-		src="<?php echo esc_url( $iframe_url ); ?>"
-		></iframe>
+			id="facebook-commerce-iframe-enhanced"
+			src="<?php echo esc_url( $iframe_url ); ?>"
+			></iframe>
 	</div>
 		<?php
-
-		if ( $is_connected ) {
-			$this->render_troubleshooting_button_and_drawer();
-		}
 	}
 
+	/**
+	 * Renders the troubleshooting button and drawer.
+	 *
+	 * @since 3.5.0
+	 */
 	private function render_troubleshooting_button_and_drawer() {
 		?>
 	<!-- Toggle Button -->
@@ -171,6 +202,42 @@ class Shops extends Abstract_Settings_Screen {
 	<!-- Drawer -->
 	<div id="troubleshooting-drawer" class="settings-drawer" style="display: none;">
 		<div class="settings-drawer-content">
+			<table class="form-table">
+				<tbody>
+					<tr valign="top" class="wc-facebook-connected-sample">
+						<th scope="row" class="titledesc">
+							Product data sync
+						</th>
+						<td class="forminp">
+							<button
+								id="wc-facebook-enhanced-settings-sync-products"
+								class="button"
+								type="button">
+								<?php esc_html_e( 'Sync now', 'facebook-for-woocommerce' ); ?>
+							</button>
+							<p id="product-sync-description" class="sync-description">
+								Manually sync your products from WooCommerce to your shop. It may take a couple of minutes for the changes to populate.
+							</p>
+						</td>
+					</tr>
+					<tr valign="top" class="wc-facebook-connected-sample">
+						<th scope="row" class="titledesc">
+							Coupon codes sync
+						</th>
+						<td class="forminp">
+							<button
+								id="wc-facebook-enhanced-settings-sync-coupons"
+								class="button"
+								type="button">
+								<?php esc_html_e( 'Sync now', 'facebook-for-woocommerce' ); ?>
+							</button>
+							<p id="coupon-sync-description" class="sync-description">
+								Manually sync your coupons from WooCommerce to your shop. It may take a couple of minutes for the changes to populate.
+							</p>
+						</td>
+					</tr>
+				</tbody>
+			</table>
 			<?php parent::render(); ?>
 		</div>
 	</div>
@@ -199,7 +266,7 @@ class Shops extends Abstract_Settings_Screen {
 			justify-content: space-between;
 			align-items: center;
 			margin-bottom: 20px;
-						box-sizing: border-box;
+			box-sizing: border-box;
 		}
 
 		.drawer-toggle-button:hover {
@@ -220,22 +287,34 @@ class Shops extends Abstract_Settings_Screen {
 			max-width: 1100px;
 			background-color: #fff;
 			border-bottom: 1px solid #ccc;
-						border-right: 1px solid #ccc;
-						border-left: 1px solid #ccc;
+			border-right: 1px solid #ccc;
+			border-left: 1px solid #ccc;
 			overflow: hidden;
 			transition: max-height 0.3s ease, margin-bottom 0.3s ease;
 			max-height: 0;
 			margin: 0 auto;
-						box-sizing: border-box;
+			box-sizing: border-box;
 		}
 
 		.settings-drawer-content {
 			padding: 20px;
 			padding-bottom: 0;
 		}
+
+		.button:disabled {
+			background-color: #f1f1f1;
+			cursor: not-allowed;
+		}
+
+		.sync-description {
+			font-size: 12px;
+			color: #666;
+			padding-top: 8px;
+		}
 	</style>
 
 	<script>
+		// Toggle drawer visibility
 		document.getElementById('toggle-troubleshooting-drawer').addEventListener('click', function() {
 			var drawer = document.getElementById('troubleshooting-drawer');
 			var caret = document.getElementById('caret');
