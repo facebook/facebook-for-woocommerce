@@ -19,7 +19,8 @@ use WooCommerce\Facebook\Framework\Api\Exception as ApiException;
  * The Connection settings screen object.
  */
 class Connection extends Abstract_Settings_Screen {
-
+	/** @var \WC_Facebookcommerce */
+	protected $plugin;
 
 	/** @var string screen ID */
 	const ID = 'connection';
@@ -27,7 +28,9 @@ class Connection extends Abstract_Settings_Screen {
 	/**
 	 * Connection constructor.
 	 */
-	public function __construct() {
+	public function __construct( $plugin = null ) {
+		$this->plugin = $plugin ?? facebook_for_woocommerce();
+
 		add_action( 'init', array( $this, 'initHook' ) );
 
 		add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_assets' ) );
@@ -76,13 +79,13 @@ class Connection extends Abstract_Settings_Screen {
 				__( '%1$sHeads up!%2$s It looks like there was a problem with reconnecting your site to Facebook. Please %3$sclick here%4$s to try again, or %5$sget in touch with our support team%6$s for assistance.', 'facebook-for-woocommerce' ),
 				'<strong>',
 				'</strong>',
-				'<a href="' . esc_url( facebook_for_woocommerce()->get_connection_handler()->get_connect_url() ) . '">',
+				'<a href="' . esc_url( $this->plugin->get_connection_handler()->get_connect_url() ) . '">',
 				'</a>',
-				'<a href="' . esc_url( facebook_for_woocommerce()->get_support_url() ) . '" target="_blank">',
+				'<a href="' . esc_url( $this->plugin->get_support_url() ) . '" target="_blank">',
 				'</a>'
 			);
 
-			facebook_for_woocommerce()->get_admin_notice_handler()->add_admin_notice(
+			$this->plugin->get_admin_notice_handler()->add_admin_notice(
 				$message,
 				'wc_facebook_connection_failed',
 				array(
@@ -106,7 +109,7 @@ class Connection extends Abstract_Settings_Screen {
 			return;
 		}
 
-		wp_enqueue_style( 'wc-facebook-admin-connection-settings', facebook_for_woocommerce()->get_plugin_url() . '/assets/css/admin/facebook-for-woocommerce-connection.css', array(), \WC_Facebookcommerce::VERSION );
+		wp_enqueue_style( 'wc-facebook-admin-connection-settings', $this->plugin->get_plugin_url() . '/assets/css/admin/facebook-for-woocommerce-connection.css', array(), \WC_Facebookcommerce::VERSION );
 	}
 
 
@@ -117,13 +120,13 @@ class Connection extends Abstract_Settings_Screen {
 	 */
 	public function render() {
 		// Check if we should render iframe
-		if ( facebook_for_woocommerce()->get_integration()->use_enhanced_onboarding() ) {
+		if ( $this->plugin->use_enhanced_onboarding() ) {
 			$this->render_facebook_iframe();
 
 			return;
 		}
 
-		$is_connected = facebook_for_woocommerce()->get_connection_handler()->is_connected();
+		$is_connected = $this->plugin->get_connection_handler()->is_connected();
 
 		// always render the CTA box
 		$this->render_facebook_box( $is_connected );
@@ -151,32 +154,32 @@ class Connection extends Abstract_Settings_Screen {
 		$static_items = array(
 			'page'                          => array(
 				'label' => __( 'Page', 'facebook-for-woocommerce' ),
-				'value' => facebook_for_woocommerce()->get_integration()->get_facebook_page_id(),
+				'value' => $this->plugin->get_integration()->get_facebook_page_id(),
 			),
 			'pixel'                         => array(
 				'label' => __( 'Pixel', 'facebook-for-woocommerce' ),
-				'value' => facebook_for_woocommerce()->get_integration()->get_facebook_pixel_id(),
+				'value' => $this->plugin->get_integration()->get_facebook_pixel_id(),
 			),
 			'catalog'                       => array(
 				'label' => __( 'Catalog', 'facebook-for-woocommerce' ),
-				'value' => facebook_for_woocommerce()->get_integration()->get_product_catalog_id(),
+				'value' => $this->plugin->get_integration()->get_product_catalog_id(),
 				'url'   => 'https://facebook.com/products',
 			),
 			'business-manager'              => array(
 				'label' => __( 'Business Manager account', 'facebook-for-woocommerce' ),
-				'value' => facebook_for_woocommerce()->get_connection_handler()->get_business_manager_id(),
+				'value' => $this->plugin->get_connection_handler()->get_business_manager_id(),
 			),
 			'ad-account'                    => array(
 				'label' => __( 'Ad Manager account', 'facebook-for-woocommerce' ),
-				'value' => facebook_for_woocommerce()->get_connection_handler()->get_ad_account_id(),
+				'value' => $this->plugin->get_connection_handler()->get_ad_account_id(),
 			),
 			'instagram-business-id'         => array(
 				'label' => __( 'Instagram Business ID', 'facebook-for-woocommerce' ),
-				'value' => facebook_for_woocommerce()->get_connection_handler()->get_instagram_business_id(),
+				'value' => $this->plugin->get_connection_handler()->get_instagram_business_id(),
 			),
 			'commerce-merchant-settings-id' => array(
 				'label' => __( 'Commerce Merchant Settings ID', 'facebook-for-woocommerce' ),
-				'value' => facebook_for_woocommerce()->get_connection_handler()->get_commerce_merchant_settings_id(),
+				'value' => $this->plugin->get_connection_handler()->get_commerce_merchant_settings_id(),
 			),
 		);
 
@@ -185,14 +188,14 @@ class Connection extends Abstract_Settings_Screen {
 		if ( ! empty( $catalog_id ) ) {
 			$static_items['catalog']['url'] = "https://www.facebook.com/commerce/catalogs/{$catalog_id}/products/";
 			try {
-				$response = facebook_for_woocommerce()->get_api()->get_catalog( $catalog_id );
+				$response = $this->plugin->get_api()->get_catalog( $catalog_id );
 				$name     = $response->name ?? '';
 				if ( $name ) {
 					$static_items['catalog']['value'] = $name;
 				}
 			} catch ( ApiException $exception ) {
 				// Log the exception with additional information
-				facebook_for_woocommerce()->log(
+				$this->plugin->log(
 					sprintf(
 						'Connection failed for catalog %s: %s ',
 						$catalog_id,
@@ -272,7 +275,7 @@ class Connection extends Abstract_Settings_Screen {
 	 * Renders the appropriate Facebook iframe based on connection status.
 	 */
 	private function render_facebook_iframe() {
-		$connection            = facebook_for_woocommerce()->get_connection_handler();
+		$connection            = $this->plugin->get_connection_handler();
 		$is_connected          = $connection->is_connected();
 		$merchant_access_token = get_option( 'wc_facebook_merchant_access_token', '' );
 
@@ -338,7 +341,7 @@ class Connection extends Abstract_Settings_Screen {
 			</ul>
 			<div class="actions">
 				<?php if ( $is_connected ) : ?>
-					<a href="<?php echo esc_url( facebook_for_woocommerce()->get_connection_handler()->get_disconnect_url() ); ?>"
+					<a href="<?php echo esc_url( $this->plugin->get_connection_handler()->get_disconnect_url() ); ?>"
 						class="button button-primary uninstall" onclick="return confirmDialog();">
 						<?php esc_html_e( 'Disconnect', 'facebook-for-woocommerce' ); ?>
 					</a>
@@ -348,7 +351,7 @@ class Connection extends Abstract_Settings_Screen {
 						}
 					</script>
 				<?php else : ?>
-					<a href="<?php echo esc_url( facebook_for_woocommerce()->get_connection_handler()->get_connect_url() ); ?>"
+					<a href="<?php echo esc_url( $this->plugin->get_connection_handler()->get_connect_url() ); ?>"
 						class="button button-primary">
 						<?php esc_html_e( 'Get Started', 'facebook-for-woocommerce' ); ?>
 					</a>
@@ -364,7 +367,7 @@ class Connection extends Abstract_Settings_Screen {
 	 * @since 3.5.0
 	 */
 	public function render_message_handler() {
-		if ( ! $this->is_current_screen_page() || ! facebook_for_woocommerce()->get_integration()->use_enhanced_onboarding() ) {
+		if ( ! $this->is_current_screen_page() || ! $this->plugin->use_enhanced_onboarding() ) {
 			return;
 		}
 		// Add the inline script as a dependent script

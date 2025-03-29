@@ -237,7 +237,7 @@ class WC_Facebookcommerce extends WooCommerce\Facebook\Framework\Plugin {
 
 			// load admin handlers, before admin_init
 			if ( is_admin() ) {
-				if ($this->get_integration()->use_enhanced_onboarding()) {
+				if ($this->use_enhanced_onboarding()) {
 					$this->admin_enhanced_settings = new WooCommerce\Facebook\Admin\Enhanced_Settings( $this->connection_handler->is_connected() );
 				} else {
 					$this->admin_settings = new WooCommerce\Facebook\Admin\Settings( $this->connection_handler->is_connected() );
@@ -860,8 +860,24 @@ class WC_Facebookcommerce extends WooCommerce\Facebook\Framework\Plugin {
 		}
 		return $current_screen_id;
 	}
-}
 
+	/**
+	 * Determines if the enhanced onboarding (iframe) should be used.
+	 *
+	 * @return bool
+	 *
+	 */
+	public function use_enhanced_onboarding() {
+		$connection_handler              = $this->get_connection_handler();
+		$commerce_partner_integration_id = $connection_handler->get_commerce_partner_integration_id();
+
+		// If current connection is using the non-enhanced flow, don't show the new experience
+		if ( $connection_handler->is_connected() && empty( $commerce_partner_integration_id ) ) {
+			return false;
+		}
+		return false;
+	}
+}
 
 /**
  * Gets the Facebook for WooCommerce plugin instance.

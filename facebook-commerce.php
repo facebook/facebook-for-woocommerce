@@ -3174,21 +3174,4 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 		wp_die();
 	}
 
-	/**
-	 * Determines if the enhanced onboarding (iframe) should be used.
-	 *
-	 * @return bool
-	 *
-	 */
-	public function use_enhanced_onboarding() {
-		$connection_handler              = facebook_for_woocommerce()->get_connection_handler();
-		$commerce_partner_integration_id = $connection_handler->get_commerce_partner_integration_id();
-
-		// If current connection is using the non-enhanced flow, don't show the new experience
-		if ( $connection_handler->is_connected() && empty( $commerce_partner_integration_id ) ) {
-			return false;
-		}
-		return true;
-	}
-
 }
