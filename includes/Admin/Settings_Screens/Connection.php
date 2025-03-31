@@ -485,7 +485,7 @@ class Connection extends Abstract_Settings_Screen {
 				'id'       => \WC_Facebookcommerce_Integration::SETTING_ENABLE_DEBUG_MODE,
 				'title'    => __( 'Enable debug mode', 'facebook-for-woocommerce' ),
 				'type'     => 'checkbox',
-				'desc'     => __( 'Log plugin events to your computer for debugging.', 'facebook-for-woocommerce' ),
+				'desc'     => __( 'Log plugin events for debugging.', 'facebook-for-woocommerce' ),
 				/* translators: %s URL to the documentation page. */
 				'desc_tip' => sprintf( __( 'Only enable this if you are experiencing problems with the plugin. <a href="%s" target="_blank">Learn more</a>.', 'facebook-for-woocommerce' ), 'https://woocommerce.com/document/facebook-for-woocommerce/#debug-tools' ),
 				'default'  => 'no',
