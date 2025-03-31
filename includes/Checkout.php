@@ -126,7 +126,19 @@ class Checkout {
 
 			$coupon_code = get_query_var( 'coupon' );
 			if ( $coupon_code ) {
-				WC()->cart->apply_coupon( sanitize_text_field( $coupon_code ) );
+				try {
+					WC()->cart->apply_coupon( sanitize_text_field( $coupon_code ) );
+				} catch ( \Exception $e ) {
+							\WC_Facebookcommerce_Utils::logExceptionImmediatelyToMeta(
+								$e,
+								array(
+									'flow_name'       => 'checkout',
+									'incoming_params' => array(
+										'coupon_param' => $coupon_code,
+									),
+								)
+							);
+				}
 			}
 
 			$checkout_url = wc_get_checkout_url();
