@@ -97,6 +97,9 @@ class Connection {
 	/** @var string the Commerce merchant settings ID option name */
 	const OPTION_COMMERCE_MERCHANT_SETTINGS_ID = 'wc_facebook_commerce_merchant_settings_id';
 
+	/** @var string the Commerce Partner Integration ID option name */
+	const OPTION_COMMERCE_PARTNER_INTEGRATION_ID = 'wc_facebook_commerce_partner_integration_id';
+
 	/** @var string|null the generated external merchant settings ID */
 	private $external_business_id;
 
@@ -795,6 +798,18 @@ class Connection {
 
 
 	/**
+	 * Gets Commerce Partner Integration ID value.
+	 *
+	 * @since 3.5.0
+	 *
+	 * @return string
+	 */
+	public function get_commerce_partner_integration_id() {
+		return get_option( self::OPTION_COMMERCE_PARTNER_INTEGRATION_ID, '' );
+	}
+
+
+	/**
 	 * Gets the proxy URL.
 	 *
 	 * @since 2.0.0
@@ -951,11 +966,11 @@ class Connection {
 	/**
 	 * Gets the configured timezone string using values accepted by Facebook
 	 *
-	 * @since 2.0.0
+	 * @since 2.5.0
 	 *
 	 * @return string
 	 */
-	private function get_timezone_string() {
+	public function get_timezone_string() {
 		$timezone = wc_timezone_string();
 		// convert +05:30 and +05:00 into Etc/GMT+5 - we ignore the minutes because Facebook does not allow minute offsets
 		if ( preg_match( '/([+-])(\d{2}):\d{2}/', $timezone, $matches ) ) {

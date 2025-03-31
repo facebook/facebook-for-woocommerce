@@ -60,11 +60,20 @@ class WC_Facebookcommerce extends WooCommerce\Facebook\Framework\Plugin {
 	/** @var WooCommerce\Facebook\Admin\Settings */
 	private $admin_settings;
 
+	/** @var WooCommerce\Facebook\Admin\Enhanced_Settings */
+	private $admin_enhanced_settings;
+
 	/** @var WooCommerce\Facebook\AJAX Ajax handler instance */
 	private $ajax;
 
+	/** @var WooCommerce\Facebook\Checkout */
+	private $checkout;
+
 	/** @var WooCommerce\Facebook\Products\Feed product feed handler */
 	private $product_feed;
+
+	/** @var WooCommerce\Facebook\Feed\FeedManager Entrypoint and creates all other feeds */
+	public $feed_manager;
 
 	/** @var Background_Handle_Virtual_Products_Variations instance */
 	protected $background_handle_virtual_products_variations;
@@ -184,6 +193,8 @@ class WC_Facebookcommerce extends WooCommerce\Facebook\Framework\Plugin {
 			$this->heartbeat = new Heartbeat( WC()->queue() );
 			$this->heartbeat->init();
 
+			$this->feed_manager              = new WooCommerce\Facebook\Feed\FeedManager();
+			$this->checkout           		 = new WooCommerce\Facebook\Checkout();
 			$this->product_feed              = new WooCommerce\Facebook\Products\Feed();
 			$this->products_stock_handler    = new WooCommerce\Facebook\Products\Stock();
 			$this->products_sync_handler     = new WooCommerce\Facebook\Products\Sync();
@@ -211,7 +222,9 @@ class WC_Facebookcommerce extends WooCommerce\Facebook\Framework\Plugin {
 				$this->background_remove_duplicate_visibility_meta = new Background_Remove_Duplicate_Visibility_Meta();
 			}
 
+			new WooCommerce\Facebook\API\Plugin\InitializeRestAPI();
 			$this->connection_handler = new WooCommerce\Facebook\Handlers\Connection( $this );
+			new WooCommerce\Facebook\Handlers\MetaExtension();
 			$this->webhook_handler    = new WooCommerce\Facebook\Handlers\WebHook( $this );
 			$this->tracker            = new WooCommerce\Facebook\Utilities\Tracker();
 
@@ -224,7 +237,11 @@ class WC_Facebookcommerce extends WooCommerce\Facebook\Framework\Plugin {
 
 			// load admin handlers, before admin_init
 			if ( is_admin() ) {
-				$this->admin_settings = new WooCommerce\Facebook\Admin\Settings( $this->connection_handler->is_connected() );
+				if ($this->get_integration()->use_enhanced_onboarding()) {
+					$this->admin_enhanced_settings = new WooCommerce\Facebook\Admin\Enhanced_Settings( $this->connection_handler->is_connected() );
+				} else {
+					$this->admin_settings = new WooCommerce\Facebook\Admin\Settings( $this->connection_handler->is_connected() );
+				}
 			}
 		}
 	}
