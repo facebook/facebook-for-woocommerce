@@ -77,9 +77,9 @@ class Handler extends AbstractRESTEndpoint {
 
 			// Check if we should trigger product sync and/or metadata feed uploads for this update
 			// Only trigger product sync if catalog id is being updated
-			$should_trigger_product_sync = ! empty( $params['product_catalog_id'] ) && facebook_for_woocommerce()->get_integration()->get_product_catalog_id() !== $params['product_catalog_id'];
+			$should_trigger_product_sync = ! empty( $request_data['product_catalog_id'] ) && facebook_for_woocommerce()->get_integration()->get_product_catalog_id() !== $request_data['product_catalog_id'];
 			// Only trigger metadata feed uploads if CPI id is being updated
-			$should_trigger_metadata_feed_uploads = ! empty( $params['commerce_partner_integration_id'] ) && facebook_for_woocommerce()->get_connection_handler()->get_commerce_partner_integration_id() !== $params['commerce_partner_integration_id'];
+			$should_trigger_metadata_feed_uploads = ! empty( $request_data['commerce_partner_integration_id'] ) && facebook_for_woocommerce()->get_connection_handler()->get_commerce_partner_integration_id() !== $request_data['commerce_partner_integration_id'];
 
 			// Map parameters to options and update settings
 			$options = $this->map_params_to_options( $request_data );
