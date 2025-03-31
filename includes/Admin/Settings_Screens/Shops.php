@@ -356,18 +356,18 @@ class Shops extends Abstract_Settings_Screen {
 
 			array(
 				'id'       => \WC_Facebookcommerce_Integration::SETTING_ENABLE_META_DIAGNOSIS,
-				'title'    => __( 'Upload plugin events to Meta', 'facebook-for-woocommerce' ),
+				'title'    => __( 'Enable meta diagnosis', 'facebook-for-woocommerce' ),
 				'type'     => 'checkbox',
-				'desc'     => __( 'Enable', 'facebook-for-woocommerce' ),
-				'desc_tip' => sprintf( __( 'Allow Meta to monitor your logs and help fix issues. Personally identifiable information will not be collected.', 'facebook-for-woocommerce' ) ),
+				'desc'     => __( 'Upload plugin events to Meta', 'facebook-for-woocommerce' ),
+				'desc_tip' => sprintf( __( 'Allow Meta to monitor event and error logs to help fix issues.', 'facebook-for-woocommerce' ) ),
 				'default'  => 'yes',
 			),
 
 			array(
 				'id'       => \WC_Facebookcommerce_Integration::SETTING_ENABLE_DEBUG_MODE,
-				'title'    => __( 'Log plugin events to your computer for debugging', 'facebook-for-woocommerce' ),
+				'title'    => __( 'Enable debug mode', 'facebook-for-woocommerce' ),
 				'type'     => 'checkbox',
-				'desc'     => __( 'Enable', 'facebook-for-woocommerce' ),
+				'desc'     => __( 'Log plugin events to your computer for debugging.', 'facebook-for-woocommerce' ),
 				/* translators: %s URL to the documentation page. */
 				'desc_tip' => sprintf( __( 'Only enable this if you are experiencing problems with the plugin. <a href="%s" target="_blank">Learn more</a>.', 'facebook-for-woocommerce' ), 'https://woocommerce.com/document/facebook-for-woocommerce/#debug-tools' ),
 				'default'  => 'no',
