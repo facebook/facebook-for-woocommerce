@@ -163,9 +163,13 @@ class FeedUploadUtils {
 
 					// Map target type. Coupons that apply both a discount and free shipping are already
 					// filtered out in is_valid_coupon
-					$is_free_shipping = $coupon->get_free_shipping();
+					$is_free_shipping        = $coupon->get_free_shipping();
+					$target_shipping_options = '';
 					if ( $is_free_shipping ) {
-						$target_type = self::TARGET_TYPE_SHIPPING;
+						$target_type             = self::TARGET_TYPE_SHIPPING;
+						$value_type              = self::VALUE_TYPE_PERCENTAGE;
+						$percent_off             = '100'; // 100% off shipping
+						$target_shipping_options = [ 'STANDARD' ]; // options are STANDARD, RUSH, EXPEDITED, TWO_DAY
 					} else {
 						$target_type = self::TARGET_TYPE_LINE_ITEM;
 					}
@@ -212,7 +216,7 @@ class FeedUploadUtils {
 						'fixed_amount_off'                => $fixed_amount_off,
 						'application_type'                => self::APPLICATION_TYPE_BUYER_APPLIED,
 						'target_type'                     => $target_type,
-						'target_shipping_option_types'    => '', // Not needed for offsite checkout
+						'target_shipping_option_types'    => $target_shipping_options,
 						'target_granularity'              => $target_granularity,
 						'target_selection'                => $target_selection,
 						'start_date_time'                 => $start_date_time,
