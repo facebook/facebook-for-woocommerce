@@ -169,6 +169,16 @@ class Feed {
 		$store_allows_feed = $configured_ok && $integration->is_legacy_feed_file_generation_enabled();
 		if ( ! $store_allows_sync || ! $store_allows_feed ) {
 			as_unschedule_all_actions( self::GENERATE_FEED_ACTION );
+
+			$message = '';
+			if ( ! $configured_ok ) {
+				$message = 'Integration not configured.';
+			} elseif ( ! $store_allows_feed ) {
+				$message = 'Store does not allow feed.';
+			} elseif ( ! $store_allows_sync ) {
+				$message = 'Store does not allow sync.';
+			}
+			WC_Facebookcommerce_Utils::log( sprintf( 'Product feed scheduling failed: %s', $message ) );
 			return;
 		}
 
