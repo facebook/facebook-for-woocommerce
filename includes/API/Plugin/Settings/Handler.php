@@ -253,6 +253,7 @@ class Handler extends AbstractRESTEndpoint {
 
 	/**
 	 * Triggers products sync if catalog id is being set to a different value.
+	 * Triggers metadata feed uploads if CPI id is being set to a different value.
 	 *
 	 * @since 3.5.0
 	 *
@@ -277,7 +278,24 @@ class Handler extends AbstractRESTEndpoint {
 					'event'      => 'product_sync',
 					'event_type' => 'sync_products_after_settings_update',
 					'extra_data' => [
-						'message' => 'failed sync products during the update settings request.',
+						'params' => wp_json_encode( $params ),
+					],
+				]
+			);
+		}
+		// Only trigger metadata feed uploads if commerce partner integration id has been updated.
+		try {
+			if ( ! empty( $params['commerce_partner_integration_id'] ) && facebook_for_woocommerce()->get_connection_handler()->get_commerce_partner_integration_id() !== $params['commerce_partner_integration_id'] ) {
+				facebook_for_woocommerce()->feed_manager->run_all_feed_uploads();
+			}
+		} catch ( \Exception $exception ) {
+			\WC_Facebookcommerce_Utils::logExceptionImmediatelyToMeta(
+				$exception,
+				[
+					'event'      => 'feed_upload',
+					'event_type' => 'trigger_feed_uploads_after_settings_update',
+					'extra_data' => [
+						'params' => wp_json_encode( $params ),
 					],
 				]
 			);
