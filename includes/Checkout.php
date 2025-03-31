@@ -101,8 +101,9 @@ class Checkout {
 							\WC_Facebookcommerce_Utils::logExceptionImmediatelyToMeta(
 								$e,
 								array(
-									'flow_name'       => 'checkout',
-									'incoming_params' => array(
+									'flow_name'  => 'checkout',
+									'flow_step'  => 'add_product_to_cart',
+									'extra_data' => array(
 										'products_param' => $products_param,
 										'product_id'     => $product_id,
 									),
@@ -113,8 +114,9 @@ class Checkout {
 						\WC_Facebookcommerce_Utils::logToMeta(
 							'Failed to add product to cart',
 							array(
-								'flow_name'       => 'checkout',
-								'incoming_params' => array(
+								'flow_name'  => 'checkout',
+								'flow_step'  => 'add_product_to_cart',
+								'extra_data' => array(
 									'products_param' => $products_param,
 									'product_id'     => $product_id,
 								),
@@ -132,9 +134,10 @@ class Checkout {
 							\WC_Facebookcommerce_Utils::logExceptionImmediatelyToMeta(
 								$e,
 								array(
-									'flow_name'       => 'checkout',
-									'incoming_params' => array(
-										'coupon_param' => $coupon_code,
+									'flow_name'  => 'checkout',
+									'flow_step'  => 'apply_coupon_code',
+									'extra_data' => array(
+										'coupon_code' => $coupon_code,
 									),
 								)
 							);
