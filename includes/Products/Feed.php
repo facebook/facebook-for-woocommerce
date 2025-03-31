@@ -263,7 +263,6 @@ class Feed {
 			return '';
 		}
 
-
 		/*
 			We need to detect which feed is the one that was created for Facebook for WooCommerce plugin usage.
 
@@ -280,8 +279,8 @@ class Feed {
 				continue;
 			}
 
-			if ( $feed_metadata['name'] === self::FEED_NAME ||
-				$feed_metadata['name'] === 'Initial product sync from WooCommerce. DO NOT DELETE.' ) {
+			if ( self::FEED_NAME === $feed_metadata['name'] ||
+				'Initial product sync from WooCommerce. DO NOT DELETE.' === $feed_metadata['name'] ) {
 				return $feed['id'];
 			}
 		}
