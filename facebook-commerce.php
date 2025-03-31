@@ -133,7 +133,7 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 	const OPTION_HAS_AUTHORIZED_PAGES_READ_ENGAGEMENT = 'wc_facebook_has_authorized_pages_read_engagement';
 
 	/** @var string the WordPress option name where the messenger chat status is stored */
-	const OPTION_ENABLE_MESSENGER = 'wc_facebook_enable_messenger';	
+	const OPTION_ENABLE_MESSENGER = 'wc_facebook_enable_messenger';
 
 	/** @var string|null the configured product catalog ID */
 	public $product_catalog_id;
@@ -900,27 +900,27 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 		if ( isset( $_POST[ WC_Facebook_Product::FB_SIZE ] ) ) {
 			$woo_product->set_fb_size( sanitize_text_field( wp_unslash( $_POST[ WC_Facebook_Product::FB_SIZE ] ) ) );
 		}
-		
+
 		if ( isset( $_POST[ WC_Facebook_Product::FB_COLOR ] ) ) {
 			$woo_product->set_fb_color( sanitize_text_field( wp_unslash( $_POST[ WC_Facebook_Product::FB_COLOR ] ) ) );
 		}
-		
+
 		if ( isset( $_POST[ WC_Facebook_Product::FB_MATERIAL ] ) ) {
 			$woo_product->set_fb_material( sanitize_text_field( wp_unslash( $_POST[ WC_Facebook_Product::FB_MATERIAL ] ) ) );
 		}
-		
+
 		if ( isset( $_POST[ WC_Facebook_Product::FB_PATTERN ] ) ) {
 			$woo_product->set_fb_pattern( sanitize_text_field( wp_unslash( $_POST[ WC_Facebook_Product::FB_PATTERN ] ) ) );
 		}
-		
+
 		if ( isset( $_POST[ WC_Facebook_Product::FB_AGE_GROUP ] ) ) {
 			$woo_product->set_fb_age_group( sanitize_text_field( wp_unslash( $_POST[ WC_Facebook_Product::FB_AGE_GROUP ] ) ) );
 		}
-		
+
 		if ( isset( $_POST[ WC_Facebook_Product::FB_GENDER ] ) ) {
 			$woo_product->set_fb_gender( sanitize_text_field( wp_unslash( $_POST[ WC_Facebook_Product::FB_GENDER ] ) ) );
 		}
-		
+
 		if ( isset( $_POST[ WC_Facebook_Product::FB_PRODUCT_CONDITION ] ) ) {
 			$woo_product->set_fb_condition( sanitize_text_field( wp_unslash( $_POST[ WC_Facebook_Product::FB_PRODUCT_CONDITION ] ) ) );
 		}
