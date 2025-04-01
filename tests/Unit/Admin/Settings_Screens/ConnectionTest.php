@@ -43,6 +43,11 @@ class ConnectionTest extends TestCase {
             ->method('use_enhanced_onboarding')
             ->willReturn(true);
 
+        // Override the facebook_for_woocommerce method to return the mock
+	    add_filter('wc_facebook_instance', function() use ( $fb_for_wc ) {
+	        return $fb_for_wc;
+	    });
+
         // Start output buffering to capture the render output
 	    $connection = new Connection($fb_for_wc);
         ob_start();
@@ -68,6 +73,11 @@ class ConnectionTest extends TestCase {
 		$fb_for_wc->expects($this->once())
 		          ->method('use_enhanced_onboarding')
 		          ->willReturn(false);
+
+		// Override the facebook_for_woocommerce method to return the mock
+		add_filter('wc_facebook_instance', function() use ( $fb_for_wc ) {
+			return $fb_for_wc;
+		});
 
 		// Start output buffering to capture the render output
 		$connection = new Connection($fb_for_wc);

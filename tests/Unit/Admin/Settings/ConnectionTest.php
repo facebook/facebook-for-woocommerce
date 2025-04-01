@@ -16,7 +16,6 @@ class ConnectionTest extends \WP_UnitTestCase {
     public function testEnqueueAssetsWhenNotOnPage(): void {
         // Mock is_current_screen_page to return false
         $connection = $this->getMockBuilder(Connection::class)
-	        ->setConstructorArgs([facebook_for_woocommerce()])
             ->onlyMethods(['is_current_screen_page'])
             ->getMock();
 

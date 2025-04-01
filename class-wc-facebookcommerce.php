@@ -240,7 +240,7 @@ class WC_Facebookcommerce extends WooCommerce\Facebook\Framework\Plugin {
 				if ($this->use_enhanced_onboarding()) {
 					$this->admin_enhanced_settings = new WooCommerce\Facebook\Admin\Enhanced_Settings( $this->connection_handler->is_connected() );
 				} else {
-					$this->admin_settings = new WooCommerce\Facebook\Admin\Settings( $this, $this->connection_handler->is_connected() );
+					$this->admin_settings = new WooCommerce\Facebook\Admin\Settings( $this->connection_handler->is_connected() );
 				}
 			}
 		}
@@ -887,5 +887,5 @@ class WC_Facebookcommerce extends WooCommerce\Facebook\Framework\Plugin {
  * @return \WC_Facebookcommerce instance of the plugin
  */
 function facebook_for_woocommerce() {
-	return \WC_Facebookcommerce::instance();
+	return apply_filters('wc_facebook_instance', \WC_Facebookcommerce::instance());
 }
