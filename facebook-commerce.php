@@ -3174,14 +3174,4 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 		wp_die();
 	}
 
-	/**
-	 * Determines if the enhanced onboarding (iframe) should be used.
-	 *
-	 * @return bool
-	 *
-	 */
-	public function use_enhanced_onboarding() {
-		return false;
-	}
-
 }

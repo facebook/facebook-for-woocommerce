@@ -130,7 +130,7 @@ abstract class Abstract_Settings_Screen {
 		}
 		// assume we are on the Connection tab by default because the link under Marketing doesn't include the tab query arg
 		$connection_handler      = facebook_for_woocommerce()->get_connection_handler();
-		$use_enhanced_onboarding = facebook_for_woocommerce()->get_integration()->use_enhanced_onboarding();
+		$use_enhanced_onboarding = facebook_for_woocommerce()->use_enhanced_onboarding();
 		$default_tab             = $use_enhanced_onboarding ? 'shops' : ( $connection_handler->is_connected() ? 'advertise' : 'connection' );
 		$tab                     = Helper::get_requested_value( 'tab', $default_tab );
 
