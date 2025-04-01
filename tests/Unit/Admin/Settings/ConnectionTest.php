@@ -10,7 +10,7 @@ class ConnectionTest extends \WP_UnitTestCase {
 
     protected function setUp(): void {
         parent::setUp();
-        $this->connection = new Connection(facebook_for_woocommerce());
+        $this->connection = new Connection();
     }
 
     public function testEnqueueAssetsWhenNotOnPage(): void {

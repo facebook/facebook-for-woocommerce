@@ -49,7 +49,7 @@ class ConnectionTest extends TestCase {
 	    });
 
         // Start output buffering to capture the render output
-	    $connection = new Connection($fb_for_wc);
+	    $connection = new Connection();
         ob_start();
         $connection->render();
         $output = ob_get_clean();
@@ -80,7 +80,7 @@ class ConnectionTest extends TestCase {
 		});
 
 		// Start output buffering to capture the render output
-		$connection = new Connection($fb_for_wc);
+		$connection = new Connection();
 		ob_start();
 		$connection->render();
 		$output = ob_get_clean();
@@ -97,7 +97,6 @@ class ConnectionTest extends TestCase {
     public function test_render_message_handler() {
         // Create a mock of the Connection class
         $connection_mock = $this->getMockBuilder(Connection::class)
-	        ->setConstructorArgs([facebook_for_woocommerce()])
             ->onlyMethods(['is_current_screen_page'])
             ->getMock();
 
@@ -124,7 +123,6 @@ class ConnectionTest extends TestCase {
      */
     public function test_render_message_handler_not_current_screen() {
         $connection_mock = $this->getMockBuilder(Connection::class)
-	        ->setConstructorArgs([facebook_for_woocommerce()])
 	        ->onlyMethods(['is_current_screen_page'])
             ->getMock();
 
@@ -142,7 +140,7 @@ class ConnectionTest extends TestCase {
      * Test that the management URL is used when merchant token exists
      */
     public function test_renders_management_url_based_on_merchant_token() {
-		$connection = new Connection(facebook_for_woocommerce());
+		$connection = new Connection();
 
         // Set up the merchant token
         update_option('wc_facebook_merchant_access_token', 'test_token');
