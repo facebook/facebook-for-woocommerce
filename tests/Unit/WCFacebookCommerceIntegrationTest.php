@@ -574,7 +574,7 @@ class WCFacebookCommerceIntegrationTest extends \WooCommerce\Facebook\Tests\Unit
 	public function test_on_product_save_existing_simple_product_sync_disabled_updates_the_product() {
 		$product_to_update = WC_Helper_Product::create_simple_product();
 
-		// The idea of the following mock is to ovveride the delete_product_item.
+		// The idea of the following mock is to overide the delete_product_item.
 		// The test is that the product item is being deleted as when it is marked for do not sync.
 		// The mock below is hit otherwise it would generate a random Mock_Response and throw error
 		$integration_mock = $this->createMock(WC_Facebookcommerce_Integration::class);
