@@ -62,7 +62,7 @@ class Handler extends AbstractRESTEndpoint {
 	 * @param \WP_REST_Request $wp_request The WordPress request object.
 	 * @return \WP_REST_Response
 	 */
-	public function handle_update( \WP_REST_Request $wp_request ) {
+	public function handle_update( \WP_REST_Request $wp_request ): \WP_REST_Response {
 		try {
 			$request           = new UpdateRequest( $wp_request );
 			$request_data      = $request->get_data();
@@ -75,8 +75,11 @@ class Handler extends AbstractRESTEndpoint {
 				);
 			}
 
-			// Maybe trigger products sync and/or metadata feed uploads
-			$this->maybe_trigger_feed_uploads( $request_data );
+			// Check if we should trigger product sync and/or metadata feed uploads for this update
+			// Only trigger product sync if catalog id is being updated
+			$should_trigger_product_sync = ! empty( $request_data['product_catalog_id'] ) && facebook_for_woocommerce()->get_integration()->get_product_catalog_id() !== $request_data['product_catalog_id'];
+			// Only trigger metadata feed uploads if CPI id is being updated
+			$should_trigger_metadata_feed_uploads = ! empty( $request_data['commerce_partner_integration_id'] ) && facebook_for_woocommerce()->get_connection_handler()->get_commerce_partner_integration_id() !== $request_data['commerce_partner_integration_id'];
 
 			// Map parameters to options and update settings
 			$options = $this->map_params_to_options( $request_data );
@@ -84,6 +87,9 @@ class Handler extends AbstractRESTEndpoint {
 
 			// Update connection status flags
 			$this->update_connection_status( $request_data );
+
+			// Maybe trigger products sync and/or metadata feed uploads
+			$this->maybe_trigger_feed_uploads( $should_trigger_product_sync, $should_trigger_metadata_feed_uploads, $request_data );
 
 			return $this->success_response(
 				[
@@ -108,7 +114,7 @@ class Handler extends AbstractRESTEndpoint {
 	 * @param \WP_REST_Request $wp_request The WordPress request object.
 	 * @return \WP_REST_Response
 	 */
-	public function handle_uninstall( \WP_REST_Request $wp_request ) {
+	public function handle_uninstall( \WP_REST_Request $wp_request ): \WP_REST_Response {
 		try {
 			$request           = new UninstallRequest( $wp_request );
 			$validation_result = $request->validate();
@@ -144,7 +150,7 @@ class Handler extends AbstractRESTEndpoint {
 	 * @param array $params Request parameters.
 	 * @return array Mapped options.
 	 */
-	private function map_params_to_options( $params ) {
+	private function map_params_to_options( array $params ): array {
 		$options = [];
 
 		// Map access tokens
@@ -196,7 +202,7 @@ class Handler extends AbstractRESTEndpoint {
 	 * @param array $settings Array of settings to update.
 	 * @return void
 	 */
-	private function update_settings( $settings ) {
+	private function update_settings( array $settings ) {
 		foreach ( $settings as $key => $value ) {
 			if ( ! empty( $key ) ) {
 				update_option( $key, $value );
@@ -212,7 +218,7 @@ class Handler extends AbstractRESTEndpoint {
 	 * @param array $params Request parameters.
 	 * @return void
 	 */
-	private function update_connection_status( $params ) {
+	private function update_connection_status( array $params ) {
 		// Set the connection is complete
 		update_option( 'wc_facebook_has_connected_fbe_2', 'yes' );
 		update_option( 'wc_facebook_has_authorized_pages_read_engagement', 'yes' );
@@ -253,16 +259,18 @@ class Handler extends AbstractRESTEndpoint {
 
 	/**
 	 * Triggers products sync if catalog id is being set to a different value.
+	 * Triggers metadata feed uploads if CPI id is being set to a different value.
 	 *
 	 * @since 3.5.0
 	 *
-	 * @param array $params Request parameters.
+	 * @param bool  $should_trigger_product_sync
+	 * @param bool  $should_trigger_metadata_feed_uploads
+	 * @param array $params
 	 * @return void
 	 */
-	private function maybe_trigger_feed_uploads( $params ) {
-		// Only sync products if catalog id has been updated.
+	private function maybe_trigger_feed_uploads( bool $should_trigger_product_sync, bool $should_trigger_metadata_feed_uploads, array $params ) {
 		try {
-			if ( ! empty( $params['product_catalog_id'] ) && facebook_for_woocommerce()->get_integration()->get_product_catalog_id() !== $params['product_catalog_id'] ) {
+			if ( $should_trigger_product_sync ) {
 				// Allow opt-out of full batch-API sync, for example if store has a large number of products.
 				if ( facebook_for_woocommerce()->get_integration()->allow_full_batch_api_sync() ) {
 					facebook_for_woocommerce()->get_products_sync_handler()->create_or_update_all_products();
@@ -277,7 +285,23 @@ class Handler extends AbstractRESTEndpoint {
 					'event'      => 'product_sync',
 					'event_type' => 'sync_products_after_settings_update',
 					'extra_data' => [
-						'message' => 'failed sync products during the update settings request.',
+						'params' => wp_json_encode( $params ),
+					],
+				]
+			);
+		}
+		try {
+			if ( $should_trigger_metadata_feed_uploads ) {
+				facebook_for_woocommerce()->feed_manager->run_all_feed_uploads();
+			}
+		} catch ( \Exception $exception ) {
+			\WC_Facebookcommerce_Utils::logExceptionImmediatelyToMeta(
+				$exception,
+				[
+					'event'      => 'feed_upload',
+					'event_type' => 'trigger_feed_uploads_after_settings_update',
+					'extra_data' => [
+						'params' => wp_json_encode( $params ),
 					],
 				]
 			);

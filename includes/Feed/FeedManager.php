@@ -88,6 +88,18 @@ class FeedManager {
 	}
 
 	/**
+	 * Run all feed uploads.
+	 *
+	 * @return void
+	 * @since 3.5.0
+	 */
+	public function run_all_feed_uploads(): void {
+		foreach ( $this->feed_instances as $feed_type ) {
+			$feed_type->regenerate_feed();
+		}
+	}
+
+	/**
 	 * Get the feed instance for the given feed type.
 	 *
 	 * @param string $feed_type the specific feed in question.
