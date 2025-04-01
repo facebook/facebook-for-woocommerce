@@ -55,7 +55,7 @@ class ShopsTest extends TestCase {
         // Since we can't directly test the private render_facebook_iframe method,
         // we'll verify that the render method doesn't output the legacy Facebook box
         // when enhanced onboarding is enabled
-        $this->assertStringNotContainsString('wc-facebook-shops-box', $output);
+        $this->assertStringNotContainsString('wc-facebook-connection-box', $output);
     }
 
     /**

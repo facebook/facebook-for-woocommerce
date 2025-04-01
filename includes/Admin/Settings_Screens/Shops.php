@@ -112,7 +112,7 @@ class Shops extends Abstract_Settings_Screen {
 			return;
 		}
 
-		wp_enqueue_style( 'wc-facebook-admin-connection-settings', facebook_for_woocommerce()->get_plugin_url() . '/assets/css/admin/facebook-for-woocommerce-connection.css', array(), \WC_Facebookcommerce::VERSION );
+		wp_enqueue_style( 'wc-facebook-admin-shops-settings', facebook_for_woocommerce()->get_plugin_url() . '/assets/css/admin/facebook-for-woocommerce-shops.css', array(), \WC_Facebookcommerce::VERSION );
 
 		wp_enqueue_script(
 			'wc-facebook-enhanced-settings-sync',
@@ -191,7 +191,6 @@ class Shops extends Abstract_Settings_Screen {
 	 */
 	private function render_troubleshooting_button_and_drawer() {
 		?>
-	<!-- Toggle Button -->
 	<div class="centered-container">
 		<button id="toggle-troubleshooting-drawer" class="drawer-toggle-button">
 			Troubleshooting
@@ -199,12 +198,11 @@ class Shops extends Abstract_Settings_Screen {
 		</button>
 	</div>
 
-	<!-- Drawer -->
 	<div id="troubleshooting-drawer" class="settings-drawer" style="display: none;">
 		<div class="settings-drawer-content">
 			<table class="form-table">
 				<tbody>
-					<tr valign="top" class="wc-facebook-connected-sample">
+					<tr valign="top" class="wc-facebook-shops-sample">
 						<th scope="row" class="titledesc">
 							Product data sync
 						</th>
@@ -220,7 +218,7 @@ class Shops extends Abstract_Settings_Screen {
 							</p>
 						</td>
 					</tr>
-					<tr valign="top" class="wc-facebook-connected-sample">
+					<tr valign="top" class="wc-facebook-shops-sample">
 						<th scope="row" class="titledesc">
 							Coupon codes sync
 						</th>
@@ -242,79 +240,7 @@ class Shops extends Abstract_Settings_Screen {
 		</div>
 	</div>
 
-	<style>
-		.centered-container {
-			display: flex;
-			justify-content: center;
-			align-items: center;
-			width: 100%;
-			margin-top: 20px;
-		}
-
-		.drawer-toggle-button {
-			width: 100%;
-			max-width: 1100px;
-			background-color: #fff;
-			border: 1px solid #ccc;
-			padding: 10px 20px;
-			text-align: left;
-			cursor: pointer;
-			font-size: 16px;
-			font-weight: 600;
-			position: relative;
-			display: flex;
-			justify-content: space-between;
-			align-items: center;
-			margin-bottom: 20px;
-			box-sizing: border-box;
-		}
-
-		.drawer-toggle-button:hover {
-			background-color: #f9f9f9;
-		}
-
-		.caret {
-			width: 0;
-			height: 0;
-			border-left: 5px solid transparent;
-			border-right: 5px solid transparent;
-			border-top: 5px solid #000;
-			transition: transform 0.3s ease;
-		}
-
-		.settings-drawer {
-			width: 100%;
-			max-width: 1100px;
-			background-color: #fff;
-			border-bottom: 1px solid #ccc;
-			border-right: 1px solid #ccc;
-			border-left: 1px solid #ccc;
-			overflow: hidden;
-			transition: max-height 0.3s ease, margin-bottom 0.3s ease;
-			max-height: 0;
-			margin: 0 auto;
-			box-sizing: border-box;
-		}
-
-		.settings-drawer-content {
-			padding: 20px;
-			padding-bottom: 0;
-		}
-
-		.button:disabled {
-			background-color: #f1f1f1;
-			cursor: not-allowed;
-		}
-
-		.sync-description {
-			font-size: 12px;
-			color: #666;
-			padding-top: 8px;
-		}
-	</style>
-
 	<script>
-		// Toggle drawer visibility
 		document.getElementById('toggle-troubleshooting-drawer').addEventListener('click', function() {
 			var drawer = document.getElementById('troubleshooting-drawer');
 			var caret = document.getElementById('caret');
