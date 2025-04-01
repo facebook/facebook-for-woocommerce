@@ -182,6 +182,7 @@ class Feed {
 				sprintf( 'Product feed scheduling failed: %s', $message ),
 				array(
 					'flow_name' => 'product_feed',
+					'flow_step' => 'schedule_feed_generation',
 				)
 			);
 			return;
