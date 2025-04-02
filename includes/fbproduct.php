@@ -1316,6 +1316,10 @@ class WC_Facebook_Product {
 
 		$all_attributes = $category_handler->get_attributes_with_fallback_to_parent_category( $google_category_id );
 
+		if( empty( $all_attributes )){
+			return $product_data;
+		}
+
 		foreach ( $all_attributes as $attribute ) {
 			$value            = Products::get_enhanced_catalog_attribute( $attribute['key'], $this->woo_product );
 			$convert_to_array = (
