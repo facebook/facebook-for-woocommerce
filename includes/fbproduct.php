@@ -1316,7 +1316,7 @@ class WC_Facebook_Product {
 
 		$all_attributes = $category_handler->get_attributes_with_fallback_to_parent_category( $google_category_id );
 
-		if( empty( $all_attributes )){
+		if ( empty( $all_attributes )){
 			return $product_data;
 		}
 
