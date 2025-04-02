@@ -36,7 +36,7 @@ class ShopsTest extends \WP_UnitTestCase {
         // No styles should be enqueued
         $shops->enqueue_assets();
 
-        $this->assertFalse(wp_style_is('wc-facebook-admin-connection-settings'));
+        $this->assertFalse(wp_style_is('wc-facebook-admin-shops-settings'));
     }
 
     /**
