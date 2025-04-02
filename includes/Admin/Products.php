@@ -43,9 +43,6 @@ class Products {
 	public static function render_google_product_category_fields_and_enhanced_attributes( \WC_Product $product ) {
 		?>
 		<div class='wc_facebook_commerce_fields'>
-			<p class="form-field">
-				<span><?php echo esc_html( Product_Categories::get_enhanced_catalog_explanation_text() ); ?></span>
-			</p>
 			<?php Enhanced_Catalog_Attribute_Fields::render_hidden_input_can_show_attributes(); ?>
 			<?php self::render_google_product_category_fields( $product ); ?>
 			<?php
@@ -76,40 +73,13 @@ class Products {
 		?>
 			<p class="form-field wc-facebook-enhanced-catalog-attribute-row">
 				<label for="<?php echo esc_attr( Enhanced_Catalog_Attribute_Fields::FIELD_ENHANCED_CATALOG_ATTRIBUTES_ID ); ?>">
-					<?php echo esc_html( self::render_enhanced_catalog_attributes_title() ); ?>
-					<?php self::render_enhanced_catalog_attributes_tooltip(); ?>
 				</label>
 			</p>
 			<?php $enhanced_attribute_fields->render( $category_id ); ?>
 		<?php
 	}
 
-	/**
-	 * Renders the common tooltip markup.
-	 *
-	 * @internal
-	 *
-	 * @since 2.1.0
-	 */
-	public static function render_enhanced_catalog_attributes_tooltip() {
-		$tooltip_text = __( 'Select values for enhanced attributes for this product', 'facebook-for-woocommerce' );
-		?>
-			<span class="woocommerce-help-tip" data-tip="<?php echo esc_attr( $tooltip_text ); ?>"></span>
-		<?php
-	}
 
-	/**
-	 * Gets the common field title.
-	 *
-	 * @internal
-	 *
-	 * @since 2.1.0
-	 *
-	 * @return string
-	 */
-	public static function render_enhanced_catalog_attributes_title() {
-		return __( 'Category Specific Attributes', 'facebook-for-woocommerce' );
-	}
 
 	/**
 	 * Renders the Google product category fields.

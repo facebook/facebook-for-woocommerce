@@ -19,8 +19,6 @@ use WooCommerce\Facebook\Framework\Api\Exception as ApiException;
  * The Connection settings screen object.
  */
 class Connection extends Abstract_Settings_Screen {
-
-
 	/** @var string screen ID */
 	const ID = 'connection';
 
@@ -41,7 +39,7 @@ class Connection extends Abstract_Settings_Screen {
 	}
 
 	/**
-	 * Enqueues the wp-api script only on the connection settings page.
+	 * Enqueues the wp-api script and the Facebook REST API JavaScript client.
 	 *
 	 * @internal
 	 */
@@ -50,7 +48,6 @@ class Connection extends Abstract_Settings_Screen {
 			wp_enqueue_script( 'wp-api' );
 		}
 	}
-
 	/**
 	 * Initializes this settings page's properties.
 	 */
@@ -61,20 +58,11 @@ class Connection extends Abstract_Settings_Screen {
 	}
 
 	/**
-	 * Determines if we should use enhanced onboarding.
-	 *
-	 * @return bool
-	 */
-	protected function use_enhanced_onboarding() {
-		return facebook_for_woocommerce()->get_integration()->use_enhanced_onboarding();
-	}
-
-	/**
 	 * Adds admin notices.
 	 *
 	 * @internal
 	 *
-	 * @since 2.0.0
+	 * @since 3.5.0
 	 */
 	public function add_notices() {
 
@@ -123,11 +111,11 @@ class Connection extends Abstract_Settings_Screen {
 	/**
 	 * Renders the screen.
 	 *
-	 * @since 2.0.0
+	 * @since 3.5.0
 	 */
 	public function render() {
 		// Check if we should render iframe
-		if ( $this->use_enhanced_onboarding() ) {
+		if ( facebook_for_woocommerce()->use_enhanced_onboarding() ) {
 			$this->render_facebook_iframe();
 
 			return;
@@ -320,7 +308,7 @@ class Connection extends Abstract_Settings_Screen {
 	 *
 	 * @param bool $is_connected whether the plugin is connected
 	 *
-	 * @since 2.0.0
+	 * @since 3.5.0
 	 */
 	private function render_facebook_box( $is_connected ) {
 		if ( $is_connected ) {
@@ -371,22 +359,24 @@ class Connection extends Abstract_Settings_Screen {
 	/**
 	 * Renders the message handler script in the footer.
 	 *
-	 * @since 2.0.0
+	 * @since 3.5.0
 	 */
 	public function render_message_handler() {
-		if ( ! $this->is_current_screen_page() ) {
+		if ( ! $this->is_current_screen_page() || ! facebook_for_woocommerce()->use_enhanced_onboarding() ) {
 			return;
 		}
+		// Add the inline script as a dependent script
+		wp_add_inline_script( 'plugin-api-client', $this->generate_inline_enhanced_onboarding_script(), 'after' );
+	}
 
-		// Check if we have a merchant access token
-		$merchant_access_token = get_option( 'wc_facebook_merchant_access_token', '' );
+	public function generate_inline_enhanced_onboarding_script() {
+		// Generate a fresh nonce for this request
+		$nonce = wp_json_encode( wp_create_nonce( 'wp_rest' ) );
 
-		if ( ! $this->use_enhanced_onboarding() ) {
-			return;
-		}
-		?>
-		<script type="text/javascript">
-			window.addEventListener('message', function (event) {
+		// Create the inline script with HEREDOC syntax for better JS readability
+		return <<<JAVASCRIPT
+			const fbAPI = GeneratePluginAPIClient({$nonce});
+			window.addEventListener('message', function(event) {
 				const message = event.data;
 				const messageEvent = message.event;
 
@@ -406,24 +396,15 @@ class Connection extends Abstract_Settings_Screen {
 						installed_features: message.installed_features
 					};
 
-					fetch(wpApiSettings.root + 'wc-facebook/v1/update_fb_settings', {
-						method: 'POST',
-						credentials: 'same-origin',
-						headers: {
-							'Content-Type': 'application/json',
-							'X-WP-Nonce': '<?php echo esc_js( wp_create_nonce( 'wp_rest' ) ); ?>'
-						},
-						body: JSON.stringify(requestBody)
-					})
-						.then(response => response.json())
-						.then(data => {
-							if (data.success) {
+					fbAPI.updateSettings(requestBody)
+						.then(function(response) {
+							if (response.success) {
 								window.location.reload();
 							} else {
-								console.error('Error updating Facebook settings:', data);
+								console.error('Error updating Facebook settings:', response);
 							}
 						})
-						.catch(error => {
+						.catch(function(error) {
 							console.error('Error during settings update:', error);
 						});
 				}
@@ -436,28 +417,19 @@ class Connection extends Abstract_Settings_Screen {
 				}
 
 				if (messageEvent === 'CommerceExtension::UNINSTALL') {
-					fetch(wpApiSettings.root + 'wc-facebook/v1/uninstall', {
-						method: 'POST',
-						credentials: 'same-origin',
-						headers: {
-							'Content-Type': 'application/json',
-							'X-WP-Nonce': '<?php echo esc_js( wp_create_nonce( 'wp_rest' ) ); ?>'
-						}
-					})
-						.then(response => response.json())
-						.then(data => {
-							if (data.success) {
+					fbAPI.uninstallSettings()
+						.then(function(response) {
+							if (response.success) {
 								window.location.reload();
 							}
 						})
-						.catch(error => {
+						.catch(function(error) {
 							console.error('Error during uninstall:', error);
 							window.location.reload();
 						});
 				}
-			}, false);
-		</script>
-		<?php
+			});
+		JAVASCRIPT;
 	}
 
 
@@ -465,7 +437,7 @@ class Connection extends Abstract_Settings_Screen {
 	 * Gets the screen settings.
 	 *
 	 * @return array
-	 * @since 2.0.0
+	 * @since 3.5.0
 	 */
 	public function get_settings() {
 
@@ -474,6 +446,15 @@ class Connection extends Abstract_Settings_Screen {
 			array(
 				'title' => __( 'Debug', 'facebook-for-woocommerce' ),
 				'type'  => 'title',
+			),
+
+			array(
+				'id'       => \WC_Facebookcommerce_Integration::SETTING_ENABLE_META_DIAGNOSIS,
+				'title'    => __( 'Enable meta diagnosis', 'facebook-for-woocommerce' ),
+				'type'     => 'checkbox',
+				'desc'     => __( 'Upload plugin events to Meta', 'facebook-for-woocommerce' ),
+				'desc_tip' => sprintf( __( 'Allow Meta to monitor your logs and help fix issues. Personally identifiable information will not be collected.', 'facebook-for-woocommerce' ) ),
+				'default'  => 'yes',
 			),
 
 			array(
