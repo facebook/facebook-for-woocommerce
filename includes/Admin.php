@@ -33,10 +33,10 @@ class Admin {
 	const SYNC_MODE_SYNC_DISABLED = 'sync_disabled';
 
 	/** @var string the "include" sync mode for bulk edit */
-	const BULK_SYNC_MODE_INCLUDE = 'include';
+	const INCLUDE_FACEBOOK_SYNC = 'fb_sync_enabled';
 
 	/** @var string the "exclude" sync mode for bulk edit */
-	const BULK_SYNC_MODE_EXCLUDE = 'exclude';
+	const EXCLUDE_FACEBOOK_SYNC = 'fb_sync_disabled';
 
 	/** @var Product_Categories the product category admin handler */
 	protected $product_categories;
@@ -537,8 +537,8 @@ class Admin {
 			<span class="input-text-wrap">
 				<select class="facebook_bulk_sync_options" name="facebook_bulk_sync_options">
 				<option value=""> <?php esc_html_e( '— No Change —', 'facebook-for-woocommerce' ); ?></option>;
-				<option value="<?php echo esc_attr( self::BULK_SYNC_MODE_INCLUDE ); ?>" <?php selected( $choice, self::BULK_SYNC_MODE_INCLUDE ); ?>><?php esc_html_e( 'Sync', 'facebook-for-woocommerce' ); ?></option>
-				<option value="<?php echo esc_attr( self::BULK_SYNC_MODE_EXCLUDE ); ?>" <?php selected( $choice, self::BULK_SYNC_MODE_EXCLUDE ); ?>><?php esc_html_e( 'Do not sync', 'facebook-for-woocommerce' ); ?></option>
+				<option value="<?php echo esc_attr( self::INCLUDE_FACEBOOK_SYNC ); ?>" <?php selected( $choice, self::INCLUDE_FACEBOOK_SYNC ); ?>><?php esc_html_e( 'Sync', 'facebook-for-woocommerce' ); ?></option>
+				<option value="<?php echo esc_attr( self::EXCLUDE_FACEBOOK_SYNC ); ?>" <?php selected( $choice, self::EXCLUDE_FACEBOOK_SYNC ); ?>><?php esc_html_e( 'Do not sync', 'facebook-for-woocommerce' ); ?></option>
 				</select>
 			</span>
 		</label>
@@ -906,7 +906,7 @@ class Admin {
 			$product = wc_get_product( $product_edit );
 
 			if ( $product ) {
-				if ( $this::BULK_SYNC_MODE_INCLUDE === $sync_mode ) {
+				if ( $this::INCLUDE_FACEBOOK_SYNC === $sync_mode ) {
 					if ( $product->is_virtual() && ! Products::is_sync_enabled_for_product( $product ) ) {
 						$enabling_sync_virtual_products[ $product->get_id() ] = $product;
 					} elseif ( $product->is_type( 'variable' ) ) {
@@ -945,13 +945,13 @@ class Admin {
 
 			$products[] = $product;
 
-			if ( $this::BULK_SYNC_MODE_INCLUDE === $sync_mode ) {
+			if ( $this::INCLUDE_FACEBOOK_SYNC === $sync_mode ) {
 
 				Products::enable_sync_for_products( $products );
 
 				$this->resync_products( $products );
 
-			} elseif ( $this::BULK_SYNC_MODE_EXCLUDE === $sync_mode ) {
+			} elseif ( $this::EXCLUDE_FACEBOOK_SYNC === $sync_mode ) {
 
 				Products::disable_sync_for_products( $products );
 
