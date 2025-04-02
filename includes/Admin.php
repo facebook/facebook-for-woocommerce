@@ -563,7 +563,7 @@ class Admin {
 	public function filter_products_by_sync_enabled( $query_vars ) {
 		$valid_values = array(
 			self::INCLUDE_FACEBOOK_SYNC,
-			self::EXCLUDE_FACEBOOK_SYNC
+			self::EXCLUDE_FACEBOOK_SYNC,
 		);
 
 		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
@@ -585,7 +585,7 @@ class Admin {
 				 * The below query will not only check for sync enabled but also sync do not exist -> as query happens on WP products,
 				 * Reason: We need to check if a product has variation and if they are synced or not
 				 * Future plans: When product level sync comes through this should be handled more gracefully as we will only check at product level
-				 *  */ 
+				 *  */
 				// when checking for products with sync enabled we need to check both "yes" and meta not set, this requires adding an "OR" clause
 				$query_vars = $this->add_query_vars_to_find_products_with_sync_enabled( $query_vars );
 				// since we record enabled status and visibility on child variations, we need to query variable products found for their children to exclude them from query results
@@ -615,15 +615,15 @@ class Admin {
 
 				/**
 				 * Now removing all `Not Synced` products from the found products
-				 * Reason: This is required even if we have mentioned $query_vars['post__not_in'], 
-				 * the preference of $query_vars['post__in'] is higher and will be overriden 
+				 * Reason: This is required even if we have mentioned $query_vars['post__not_in'],
+				 * the preference of $query_vars['post__in'] is higher and will be overriden
 				 * at the end of this function.
-				 *  */ 
-				$found_ids = array_diff($found_ids, $exclude_products);
+				 *  */
+				$found_ids = array_diff( $found_ids, $exclude_products );
 
 				/**
 				 * For the same reason, we also need to include variable products with hidden children
-				 *  */ 
+				 *  */
 				$include_products  = [];
 				$hidden_variations = get_posts(
 					array(
@@ -640,7 +640,7 @@ class Admin {
 				foreach ( $hidden_variations as $variation_post ) {
 					$variable_product = wc_get_product( $variation_post->post_parent );
 					// we need this check because we only want products with ALL variations hidden
-					if ( $variable_product instanceof \WC_Product && Products::is_sync_enabled_for_product( $variable_product )) {
+					if ( $variable_product instanceof \WC_Product && Products::is_sync_enabled_for_product( $variable_product ) ) {
 						$include_products[] = $variable_product->get_id();
 					}
 				}
