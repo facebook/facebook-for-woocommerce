@@ -98,7 +98,7 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 		private function add_hooks() {
 
 			// inject Pixel
-			add_action( 'wp_head', array( $this, 'inject_base_pixel' ) );
+			add_action( 'wp_head', array( $this, 'inject_base_pixel' ), 1 );
 			add_action( 'wp_footer', array( $this, 'inject_base_pixel_noscript' ) );
 
 			// ViewContent for individual products
