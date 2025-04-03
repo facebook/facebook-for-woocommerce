@@ -45,5 +45,6 @@ When opening a bug on GitHub, please give us as many details as possible.
 * Fix - for 'PHP Warning: Undefined variable $fb_product_parent' by @mshymon in #2976
 * Fix - Updated logic to choose/create the feed for product sync by @mshymon in #2989
 * Add - Facebook Product Data Tab Enhancement by @devbodaghe in #2938
+* Fix - PHP Warning for empty attributes by @vinkmeta in #3001
 
 [See changelog for all versions](https://raw.githubusercontent.com/facebook/facebook-for-woocommerce/refs/heads/main/changelog.txt).
