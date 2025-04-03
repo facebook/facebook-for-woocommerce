@@ -853,9 +853,6 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 				$this->save_product_settings( $product );
 		} else {
 			// if previously enabled, add a notice on the next page load
-			if ( Products::is_sync_enabled_for_product( $product ) ) {
-				Admin::add_product_disabled_sync_notice();
-			}
 			Products::disable_sync_for_products( [ $product ] );
 			if ( in_array( $wp_id, $products_to_delete_from_facebook, true ) ) {
 				$this->delete_fb_product( $product );
