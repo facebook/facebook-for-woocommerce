@@ -536,7 +536,13 @@ abstract class Plugin {
 		if ( ! is_object( $this->logger ) ) {
 			$this->logger = new \WC_Logger();
 		}
-		$this->logger->add( $log_id, $message );
+		$this->logger->log(
+			\WC_Log_Levels::NOTICE,
+			$message,
+			array(
+				'source'  => $log_id,
+			)
+		);
 	}
 
 
