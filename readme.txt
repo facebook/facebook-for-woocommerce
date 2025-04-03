@@ -3,7 +3,7 @@ Contributors: facebook, automattic, woothemes
 Tags: facebook, woocommerce, marketing, product catalog feed, pixel
 Requires at least: 5.6
 Tested up to: 6.7
-Stable tag: 3.4.4
+Stable tag: 3.4.5
 Requires PHP: 7.4
 MySQL: 5.6 or greater
 License: GPLv2 or later
@@ -40,18 +40,11 @@ When opening a bug on GitHub, please give us as many details as possible.
 
 == Changelog ==
 
-= 3.4.4 - 2025-03-26 =
-* Add - Create tests for ProductFeedUploads create endpoint by @ajello-meta in #2902
-* Add - Create tests for ProductFeedUploads read endpoint by @ajello-meta in #2903
-* Tweak - Remove phpcs:ignoreFile annotation + Enable code coverage report generation with phpunit by @sol-loup in #2897 and #2901
-* Fix - Restores the original dynamic property behavior in the AsyncRequest class by @sol-loup in #2921
-* Tweak - Changing APP to PLUGIN on README.MD by @SayanPandey in #2916
-* Tweak - Update README.md - Added noification for ownership transfer by @SayanPandey in #2910
-* Tweak - Added is_multisite logging to the update_plugin_version_configuration request by @carterbuce in #2955
-* Tweak - Add woo_commerce_retailer_id to products API request by @crisojog in #2958
-* Tweak - Syncing plugin version info by @vinkmeta in #2960
-* Fix - sync products out of stock to meta despite visibility config by @francorisso in #2952
-* Fix - Update woo_commerce_retailer_id to existing field external_variant_id by @crisojog in #2963
-* Tweak - Update readme.txt by @vinkmeta in #2949
+= 3.4.5 - 2025-04-01 =
+* Tweak - Add new product field external_update_time to measure product update latency by @mshymon in #2973
+* Fix - for 'PHP Warning: Undefined variable $fb_product_parent' by @mshymon in #2976
+* Fix - Updated logic to choose/create the feed for product sync by @mshymon in #2989
+* Add - Facebook Product Data Tab Enhancement by @devbodaghe in #2938
+* Fix - PHP Warning for empty attributes by @vinkmeta in #3001
 
 [See changelog for all versions](https://raw.githubusercontent.com/facebook/facebook-for-woocommerce/refs/heads/main/changelog.txt).
