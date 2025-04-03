@@ -925,7 +925,7 @@ if ( ! class_exists( 'WC_Facebookcommerce_Utils' ) ) :
 		 * Saves errors or messages to WooCommerce (WP admin page:WooCommerce->Status)
 		 * Only logs if debug mode is enabled
 		 */
-		public static function logWithDebugModeEnabled( $message ) {
+		public static function logWithDebugModeEnabled( $message, $level = null ) {
 
 			// if this file is being included outside the plugin, or the plugin setting is disabled
 			if ( ! function_exists( 'facebook_for_woocommerce' ) || ! facebook_for_woocommerce()->get_integration()->is_debug_mode_enabled() ) {
@@ -938,7 +938,7 @@ if ( ! class_exists( 'WC_Facebookcommerce_Utils' ) ) :
 				$message = sanitize_textarea_field( $message );
 			}
 
-			facebook_for_woocommerce()->log( $message );
+			facebook_for_woocommerce()->log( $message, null, $level );
 		}
 
 	}

@@ -528,16 +528,20 @@ abstract class Plugin {
 	 * @since 2.0.0
 	 * @param string $message error or message to save to log
 	 * @param string $log_id optional log id to segment the files by, defaults to plugin id
+	 * @param string $level optional log level represents log's tag, defaults to notice
 	 */
-	public function log( $message, $log_id = null ) {
+	public function log( $message, $log_id = null, $level = null ) {
 		if ( is_null( $log_id ) ) {
 			$log_id = $this->get_id();
+		}
+		if ( is_null( $level ) ) {
+			$level = \WC_Log_Levels::NOTICE;
 		}
 		if ( ! is_object( $this->logger ) ) {
 			$this->logger = new \WC_Logger();
 		}
 		$this->logger->log(
-			\WC_Log_Levels::NOTICE,
+			$level,
 			$message,
 			array(
 				'source'  => $log_id,
