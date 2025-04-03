@@ -169,6 +169,22 @@ class Feed {
 		$store_allows_feed = $configured_ok && $integration->is_legacy_feed_file_generation_enabled();
 		if ( ! $store_allows_sync || ! $store_allows_feed ) {
 			as_unschedule_all_actions( self::GENERATE_FEED_ACTION );
+
+			$message = '';
+			if ( ! $configured_ok ) {
+				$message = 'Integration not configured.';
+			} elseif ( ! $store_allows_feed ) {
+				$message = 'Store does not allow feed.';
+			} elseif ( ! $store_allows_sync ) {
+				$message = 'Store does not allow sync.';
+			}
+			WC_Facebookcommerce_Utils::logToMeta(
+				sprintf( 'Product feed scheduling failed: %s', $message ),
+				array(
+					'flow_name' => 'product_feed',
+					'flow_step' => 'schedule_feed_generation',
+				)
+			);
 			return;
 		}
 
@@ -204,7 +220,7 @@ class Feed {
 		];
 
 		try {
-			facebook_for_woocommerce()->get_api()->create_upload( $feed_id, $data );
+			facebook_for_woocommerce()->get_api()->create_product_feed_upload( $feed_id, $data );
 		} catch ( Exception $exception ) {
 			facebook_for_woocommerce()->log( 'Failed to create feed upload request: ' . $exception->getMessage() );
 		}

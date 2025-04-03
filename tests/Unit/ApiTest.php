@@ -7,7 +7,7 @@ use WooCommerce\Facebook\Framework\Api\Exception as ApiException;
 /**
  * Api unit test clas.
  */
-class ApiTest extends WP_UnitTestCase {
+class ApiTest extends \WooCommerce\Facebook\Tests\Unit\AbstractWPUnitTestWithSafeFiltering {
 
 	/**
 	 * Facebook Graph API endpoint.
@@ -54,7 +54,7 @@ class ApiTest extends WP_UnitTestCase {
 				],
 			];
 		};
-		add_filter( 'pre_http_request', $response, 10, 3 );
+		$this->add_filter_with_safe_teardown( 'pre_http_request', $response, 10, 3 );
 
 		$response = $this->api->get_catalog( '726635365295186' );
 
@@ -78,7 +78,7 @@ class ApiTest extends WP_UnitTestCase {
 			$this->assertEquals( "{$this->endpoint}{$this->version}/726635365295186?fields=name", $url );
 			return new WP_Error( 007, 'WP Error Message' );
 		};
-		add_filter( 'pre_http_request', $response, 10, 3 );
+		$this->add_filter_with_safe_teardown( 'pre_http_request', $response, 10, 3 );
 
 		$this->api->get_catalog( '726635365295186' );
 	}
@@ -103,7 +103,7 @@ class ApiTest extends WP_UnitTestCase {
 				],
 			];
 		};
-		add_filter( 'pre_http_request', $response, 10, 3 );
+		$this->add_filter_with_safe_teardown( 'pre_http_request', $response, 10, 3 );
 
 		$response = $this->api->get_installation_ids( $external_business_id );
 
@@ -130,7 +130,7 @@ class ApiTest extends WP_UnitTestCase {
 				],
 			];
 		};
-		add_filter( 'pre_http_request', $response, 10, 3 );
+		$this->add_filter_with_safe_teardown( 'pre_http_request', $response, 10, 3 );
 
 		$response = $this->api->get_catalog( $catalog_id );
 
@@ -158,7 +158,7 @@ class ApiTest extends WP_UnitTestCase {
 				],
 			];
 		};
-		add_filter( 'pre_http_request', $response, 10, 3 );
+		$this->add_filter_with_safe_teardown( 'pre_http_request', $response, 10, 3 );
 
 		$response = $this->api->get_user( $user_id );
 
@@ -187,7 +187,7 @@ class ApiTest extends WP_UnitTestCase {
 				],
 			];
 		};
-		add_filter( 'pre_http_request', $response, 10, 3 );
+		$this->add_filter_with_safe_teardown( 'pre_http_request', $response, 10, 3 );
 
 		$response = $this->api->delete_mbe_connection( $external_business_id );
 
@@ -214,7 +214,7 @@ class ApiTest extends WP_UnitTestCase {
 				],
 			];
 		};
-		add_filter( 'pre_http_request', $response, 10, 3 );
+		$this->add_filter_with_safe_teardown( 'pre_http_request', $response, 10, 3 );
 
 		$response = $this->api->get_business_configuration( $external_business_id );
 
@@ -267,7 +267,7 @@ class ApiTest extends WP_UnitTestCase {
 				],
 			];
 		};
-		add_filter( 'pre_http_request', $response, 10, 3 );
+		$this->add_filter_with_safe_teardown( 'pre_http_request', $response, 10, 3 );
 
 		$response = $this->api->send_item_updates( $facebook_catalog_id, $requests );
 
@@ -313,7 +313,7 @@ class ApiTest extends WP_UnitTestCase {
 				],
 			];
 		};
-		add_filter( 'pre_http_request', $response, 10, 3 );
+		$this->add_filter_with_safe_teardown( 'pre_http_request', $response, 10, 3 );
 
 		$response = $this->api->create_product_group( $facebook_product_catalog_id, $data );
 
@@ -355,7 +355,7 @@ class ApiTest extends WP_UnitTestCase {
 				],
 			];
 		};
-		add_filter( 'pre_http_request', $response, 10, 3 );
+		$this->add_filter_with_safe_teardown( 'pre_http_request', $response, 10, 3 );
 
 		$response = $this->api->update_product_group( $facebook_product_group_id, $data );
 
@@ -382,7 +382,7 @@ class ApiTest extends WP_UnitTestCase {
 				],
 			];
 		};
-		add_filter( 'pre_http_request', $response, 10, 3 );
+		$this->add_filter_with_safe_teardown( 'pre_http_request', $response, 10, 3 );
 
 		$response = $this->api->delete_product_group( $facebook_product_group_id );
 
@@ -410,7 +410,7 @@ class ApiTest extends WP_UnitTestCase {
 				],
 			];
 		};
-		add_filter( 'pre_http_request', $response, 10, 3 );
+		$this->add_filter_with_safe_teardown( 'pre_http_request', $response, 10, 3 );
 
 		$response = $this->api->get_product_group_products( $facebook_product_group_id, $limit );
 
@@ -473,7 +473,7 @@ class ApiTest extends WP_UnitTestCase {
 				],
 			];
 		};
-		add_filter( 'pre_http_request', $response, 10, 3 );
+		$this->add_filter_with_safe_teardown( 'pre_http_request', $response, 10, 3 );
 
 		$response = $this->api->create_product_item( $facebook_product_group_id, $data );
 
@@ -520,7 +520,7 @@ class ApiTest extends WP_UnitTestCase {
 				],
 			];
 		};
-		add_filter( 'pre_http_request', $response, 10, 3 );
+		$this->add_filter_with_safe_teardown( 'pre_http_request', $response, 10, 3 );
 
 		$response = $this->api->update_product_item( $facebook_product_id, $data );
 
@@ -552,7 +552,7 @@ class ApiTest extends WP_UnitTestCase {
 				],
 			];
 		};
-		add_filter( 'pre_http_request', $response, 10, 3 );
+		$this->add_filter_with_safe_teardown( 'pre_http_request', $response, 10, 3 );
 
 		$response = $this->api->get_product_facebook_ids( $facebook_product_catalog_id, $facebook_product_retailer_id );
 
@@ -580,7 +580,7 @@ class ApiTest extends WP_UnitTestCase {
 				],
 			];
 		};
-		add_filter( 'pre_http_request', $response, 10, 3 );
+		$this->add_filter_with_safe_teardown( 'pre_http_request', $response, 10, 3 );
 
 		$response = $this->api->delete_product_item( $facebook_product_id );
 
@@ -613,7 +613,7 @@ class ApiTest extends WP_UnitTestCase {
 				],
 			];
 		};
-		add_filter( 'pre_http_request', $response, 10, 3 );
+		$this->add_filter_with_safe_teardown( 'pre_http_request', $response, 10, 3 );
 
 		$response = $this->api->create_product_set_item( $facebook_product_catalog_id, $data );
 
@@ -646,7 +646,7 @@ class ApiTest extends WP_UnitTestCase {
 				],
 			];
 		};
-		add_filter( 'pre_http_request', $response, 10, 3 );
+		$this->add_filter_with_safe_teardown( 'pre_http_request', $response, 10, 3 );
 
 		$response = $this->api->update_product_set_item( $facebook_product_set_id, $data );
 
@@ -673,7 +673,7 @@ class ApiTest extends WP_UnitTestCase {
 				],
 			];
 		};
-		add_filter( 'pre_http_request', $response, 10, 3 );
+		$this->add_filter_with_safe_teardown( 'pre_http_request', $response, 10, 3 );
 
 		$response = $this->api->delete_product_set_item( $facebook_product_set_id, true );
 
@@ -700,7 +700,7 @@ class ApiTest extends WP_UnitTestCase {
 				],
 			];
 		};
-		add_filter( 'pre_http_request', $response, 10, 3 );
+		$this->add_filter_with_safe_teardown( 'pre_http_request', $response, 10, 3 );
 
 		$response = $this->api->read_feeds( $facebook_product_catalog_id );
 
@@ -740,7 +740,7 @@ class ApiTest extends WP_UnitTestCase {
 				],
 			];
 		};
-		add_filter( 'pre_http_request', $response, 10, 3 );
+		$this->add_filter_with_safe_teardown( 'pre_http_request', $response, 10, 3 );
 
 		$response_feed = $this->api->create_feed( $facebook_product_catalog_id, $data );
 
@@ -770,9 +770,40 @@ class ApiTest extends WP_UnitTestCase {
 				],
 			];
 		};
-		add_filter( 'pre_http_request', $response, 10, 3 );
+		$this->add_filter_with_safe_teardown( 'pre_http_request', $response, 10, 3 );
 
-		$response = $this->api->create_upload( $product_feed_id, $data );
+		$response = $this->api->create_product_feed_upload( $product_feed_id, $data );
+		$this->assertFalse( $response->has_api_error() );
+	}
+
+	/**
+	 * Tests create common upload feed request to Facebook.
+	 *
+	 * @return void
+	 * @throws ApiException In case of network request error.
+	 */
+	public function test_create_common_upload_request() {
+		$cpi = '24316596247984028';
+
+		$data = array(
+			'url'         => 'http://example.com/?wc-api=wc_facebook_get_feed_data_example&secret=c4b8c3c46145aac6519e3f8a28bc86f2',
+			'feed_type'   => 'PRODUCT_RATINGS_AND_REVIEWS',
+			'update_type' => 'CREATE',
+		);
+
+		$response = function( $result, $parsed_args, $url ) use ( $cpi ) {
+			$this->assertEquals( 'POST', $parsed_args['method'] );
+			$this->assertEquals( "{$this->endpoint}{$this->version}/{$cpi}/file_update", $url );
+			return [
+				'response' => [
+					'code'    => 200,
+					'message' => 'OK',
+				],
+			];
+		};
+		$this->add_filter_with_safe_teardown( 'pre_http_request', $response, 10, 3 );
+
+		$response = $this->api->create_common_data_feed_upload( $cpi, $data );
 		$this->assertFalse( $response->has_api_error() );
 	}
 }

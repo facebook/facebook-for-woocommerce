@@ -14,6 +14,7 @@ defined( 'ABSPATH' ) || exit;
 use WooCommerce\Facebook\Events\AAMSettings;
 use WooCommerce\Facebook\Events\Normalizer;
 use WooCommerce\Facebook\Framework\Api\Exception as ApiException;
+use WooCommerce\Facebook\Framework\ErrorLogHandler;
 use WooCommerce\Facebook\Products\Sync;
 
 if ( ! class_exists( 'WC_Facebookcommerce_Utils' ) ) :
@@ -856,6 +857,88 @@ if ( ! class_exists( 'WC_Facebookcommerce_Utils' ) ) :
 			$data['item_group_id'] = \WC_Facebookcommerce_Utils::get_fb_retailer_id( $parent_product );
 
 			return self::normalize_product_data_for_items_batch( $data );
+		}
+
+		/**
+		 * Utility function for sending exception logs to Meta.
+		 * @since 3.5.0
+		 * 
+		 * @param Throwable $error error object
+		 * @param array $context wiki: https://www.internalfb.com/wiki/Commerce_Platform/Teams/3P_Ecosystems_(3PE)/3rd_Party_platforms/Woo_Commerce/How_To_Use_WooCommerce_Side_Logging/
+		 */
+		public static function logExceptionImmediatelyToMeta(Throwable $error, array $context = []) {
+			ErrorLogHandler::log_exception_to_meta($error, $context);
+		}
+
+		/**
+		 * Utility function for sending logs to Meta.
+		 * @since 3.5.0
+		 * 
+		 * @param string $message
+		 * @param array $context wiki: https://www.internalfb.com/wiki/Commerce_Platform/Teams/3P_Ecosystems_(3PE)/3rd_Party_platforms/Woo_Commerce/How_To_Use_WooCommerce_Side_Logging/
+		 */
+		public static function logToMeta(string $message, array $context = []) {
+			$extra_data = self::getContextData( $context, 'extra_data', [] );
+			$extra_data['message'] = $message;
+			$context['extra_data'] = $extra_data;
+
+			// Push logging request to global message queue function.
+			$logs = get_transient( 'global_logging_message_queue' );
+			$logs[] = $context;
+			set_transient( 'global_logging_message_queue', $logs, HOUR_IN_SECONDS );
+		}
+
+		/**
+		 * Checks whether fpassthru has been disabled in PHP.
+		 *
+		 * @since 3.5.0
+		 * @return bool
+		 */
+		public static function is_fpassthru_disabled(): bool {
+			$disabled = false;
+			if ( function_exists( 'ini_get' ) ) {
+				// phpcs:ignore
+				$disabled_functions = @ini_get( 'disable_functions' );
+
+				$disabled =
+					is_string( $disabled_functions ) &&
+					//phpcs:ignore
+					in_array( 'fpassthru', explode( ',', $disabled_functions ), false );
+			}
+			return $disabled;
+		}
+
+		 /**
+		 * Gets a value from the context array, or a default if the key is not set
+		 *
+		 * @param array $context
+		 * @param string $key
+		 * @param mixed $default
+		 * @return mixed
+		 */
+		public static function getContextData(array $context, string $key, $default = null)
+		{
+			return $context[$key] ?? $default;
+		}
+
+		/**
+		 * Saves errors or messages to WordPress debug log (wp-content/debug.log)
+		 * Only logs if debug mode is enabled and WP_DEBUG and WP_DEBUG_LOG are true in wp-config.php.
+		 */
+		public static function logWithDebugModeEnabled( $message ) {
+
+			// if this file is being included outside the plugin, or the plugin setting is disabled
+			if ( ! function_exists( 'facebook_for_woocommerce' ) || ! facebook_for_woocommerce()->get_integration()->is_debug_mode_enabled() ) {
+				return;
+			}
+
+			if ( is_array( $message ) || is_object( $message ) ) {
+				$message = json_encode( $message );
+			} else {
+				$message = sanitize_textarea_field( $message );
+			}
+
+			error_log( $message );
 		}
 
 	}

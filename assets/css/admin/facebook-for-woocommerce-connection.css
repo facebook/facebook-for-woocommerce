@@ -76,3 +76,12 @@
 #wc-facebook-connection-box .uninstall {
 	vertical-align: middle;
 }
+
+#facebook-commerce-iframe {
+	width: 100%;
+	min-height: calc(100vh - 200px);
+}
+
+.woocommerce-embed-page #wpbody-content {
+	padding-bottom: 0;
+}

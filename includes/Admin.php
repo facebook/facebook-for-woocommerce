@@ -1,5 +1,4 @@
 <?php
-// phpcs:ignoreFile
 /**
  * Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
  *
@@ -15,7 +14,7 @@ use WooCommerce\Facebook\Admin\Enhanced_Catalog_Attribute_Fields;
 use WooCommerce\Facebook\Framework\Helper;
 use Automattic\WooCommerce\Utilities\OrderUtil;
 
-defined( 'ABSPATH' ) or exit;
+defined( 'ABSPATH' ) || exit;
 
 /**
  * Admin handler.
@@ -166,7 +165,8 @@ class Admin {
 					'facebook-for-woocommerce-modal',
 					facebook_for_woocommerce()->get_asset_build_dir_url() . '/admin/modal.js',
 					array( 'jquery', 'wc-backbone-modal', 'jquery-blockui' ),
-					\WC_Facebookcommerce::PLUGIN_VERSION
+					\WC_Facebookcommerce::PLUGIN_VERSION,
+					false
 				);
 
 				// enqueue google product category select
@@ -174,7 +174,8 @@ class Admin {
 					'wc-facebook-google-product-category-fields',
 					facebook_for_woocommerce()->get_asset_build_dir_url() . '/admin/google-product-category-fields.js',
 					array( 'jquery' ),
-					\WC_Facebookcommerce::PLUGIN_VERSION
+					\WC_Facebookcommerce::PLUGIN_VERSION,
+					false
 				);
 
 				wp_localize_script(
@@ -235,7 +236,8 @@ class Admin {
 					'facebook-for-woocommerce-products-admin',
 					facebook_for_woocommerce()->get_asset_build_dir_url() . '/admin/products-admin.js',
 					[ 'jquery', 'wc-backbone-modal', 'jquery-blockui', 'facebook-for-woocommerce-modal' ],
-					\WC_Facebookcommerce::PLUGIN_VERSION
+					\WC_Facebookcommerce::PLUGIN_VERSION,
+					false
 				);
 				wp_localize_script(
 					'facebook-for-woocommerce-products-admin',
@@ -357,7 +359,7 @@ class Admin {
 		<button
 			id="btn-ok"
 			class="button button-large button-primary"
-		><?php esc_html_e( 'Close', 'facebook-for-woocomerce' ); ?></button>
+		><?php esc_html_e( 'Close', 'facebook-for-woocommerce' ); ?></button>
 		<?php
 		return ob_get_clean();
 	}
@@ -403,15 +405,15 @@ class Admin {
 		<button
 			id="btn-ok"
 			class="button button-large button-primary"
-		><?php esc_html_e( 'Remove from sync only', 'facebook-for-woocomerce' ); ?></button>
+		><?php esc_html_e( 'Remove from sync only', 'facebook-for-woocommerce' ); ?></button>
 
 		<button
 			class="button button-large button-delete button-product-removed-from-sync-delete"
-		><?php esc_html_e( 'Remove from sync and delete', 'facebook-for-woocomerce' ); ?></button>
+		><?php esc_html_e( 'Remove from sync and delete', 'facebook-for-woocommerce' ); ?></button>
 
 		<button
 			class="button button-large button-product-removed-from-sync-cancel"
-		><?php esc_html_e( 'Cancel', 'facebook-for-woocomerce' ); ?></button>
+		><?php esc_html_e( 'Cancel', 'facebook-for-woocommerce' ); ?></button>
 		<?php
 		return ob_get_clean();
 	}
@@ -538,7 +540,7 @@ class Admin {
 			if ( ! empty( $query_vars['meta_query'] ) ) {
 				$query_vars['meta_query']['relation'] = 'AND';
 			} else {
-				$query_vars['meta_query'] = [];
+				$query_vars['meta_query'] = []; // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_query
 			}
 
 			if ( self::SYNC_MODE_SYNC_AND_SHOW === $filter_value ) {
@@ -608,7 +610,7 @@ class Admin {
 					array(
 						'limit'      => -1,
 						'post_type'  => 'product_variation',
-						'meta_query' => array(
+						'meta_query' => array( // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_query
 							'key'   => Products::VISIBILITY_META_KEY,
 							'value' => 'no',
 						),
@@ -642,7 +644,7 @@ class Admin {
 						'fields'     => 'ids',
 						'limit'      => -1,
 						'post_type'  => 'product',
-						'meta_query' => array(
+						'meta_query' => array( // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_query
 							array(
 								'key'   => Products::SYNC_ENABLED_META_KEY,
 								'value' => 'no',
@@ -657,7 +659,7 @@ class Admin {
 					array(
 						'limit'      => -1,
 						'post_type'  => 'product_variation',
-						'meta_query' => array(
+						'meta_query' => array( // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_query
 							array(
 								'key'   => Products::SYNC_ENABLED_META_KEY,
 								'value' => 'no',
@@ -686,7 +688,7 @@ class Admin {
 
 				// remove sync enabled and visibility meta queries
 				if ( ! empty( $original_meta_query ) ) {
-					$query_vars['meta_query'] = $original_meta_query;
+					$query_vars['meta_query'] = $original_meta_query; // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_query
 				} else {
 					unset( $query_vars['meta_query'] );
 				}
@@ -710,7 +712,7 @@ class Admin {
 	 * @return array
 	 */
 	private function add_query_vars_to_find_products_with_sync_enabled( array $query_vars ) {
-		$meta_query = array(
+		$meta_query = array( // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_query
 			'relation' => 'OR',
 			array(
 				'key'   => Products::SYNC_ENABLED_META_KEY,
@@ -723,10 +725,10 @@ class Admin {
 		);
 
 		if ( empty( $query_vars['meta_query'] ) ) {
-			$query_vars['meta_query'] = $meta_query;
+			$query_vars['meta_query'] = $meta_query; // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_query
 		} elseif ( is_array( $query_vars['meta_query'] ) ) {
 			$original_meta_query      = $query_vars['meta_query'];
-			$query_vars['meta_query'] = array(
+			$query_vars['meta_query'] = array( // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_query
 				'relation' => 'AND',
 				$original_meta_query,
 				$meta_query,
@@ -776,7 +778,7 @@ class Admin {
 			}
 
 			if ( $tax_query && empty( $query_vars['tax_query'] ) ) {
-				$query_vars['tax_query'] = $tax_query;
+				$query_vars['tax_query'] = $tax_query; // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_tax_query
 			} elseif ( $tax_query && is_array( $query_vars ) ) {
 				$query_vars['tax_query'][] = $tax_query;
 			}
@@ -793,9 +795,10 @@ class Admin {
 	 *
 	 * @param array $query_vars
 	 * @return array
+	 * @todo Figure out if meta_query is slow and can be replaced with faster query
 	 */
 	private function add_query_vars_to_find_visible_products( array $query_vars ) {
-		$visibility_meta_query = array(
+		$visibility_meta_query = array( // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_query
 			'relation' => 'OR',
 			array(
 				'key'   => Products::VISIBILITY_META_KEY,
@@ -808,10 +811,10 @@ class Admin {
 		);
 
 		if ( empty( $query_vars['meta_query'] ) ) {
-			$query_vars['meta_query'] = $visibility_meta_query;
+			$query_vars['meta_query'] = $visibility_meta_query; // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_query
 		} elseif ( is_array( $query_vars['meta_query'] ) ) {
 			$enabled_meta_query       = $query_vars['meta_query'];
-			$query_vars['meta_query'] = array(
+			$query_vars['meta_query'] = array( // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_query
 				'relation' => 'AND',
 				$enabled_meta_query,
 				$visibility_meta_query,
@@ -831,16 +834,16 @@ class Admin {
 	 * @return array
 	 */
 	private function add_query_vars_to_find_hidden_products( array $query_vars ) {
-		$visibility_meta_query = array(
+		$visibility_meta_query = array( // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_query
 			'key'   => Products::VISIBILITY_META_KEY,
 			'value' => 'no',
 		);
 
 		if ( empty( $query_vars['meta_query'] ) ) {
-			$query_vars['meta_query'] = $visibility_meta_query;
+			$query_vars['meta_query'] = $visibility_meta_query; // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_query
 		} elseif ( is_array( $query_vars['meta_query'] ) ) {
 			$enabled_meta_query       = $query_vars['meta_query'];
-			$query_vars['meta_query'] = array(
+			$query_vars['meta_query'] = array( // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_query
 				'relation' => 'AND',
 				$enabled_meta_query,
 				$visibility_meta_query,
@@ -900,7 +903,8 @@ class Admin {
 				/** @var \WC_Product_Variation[] $enabling_sync_virtual_variations virtual variations that are being included */
 				$enabling_sync_virtual_variations = [];
 				foreach ( $product_ids as $product_id ) {
-					if ( $product = wc_get_product( $product_id ) ) {
+					$product = wc_get_product( $product_id );
+					if ( $product ) {
 						$products[] = $product;
 						if ( 'facebook_include' === $action ) {
 							if ( $product->is_virtual() && ! Products::is_sync_enabled_for_product( $product ) ) {
@@ -964,7 +968,7 @@ class Admin {
 	 *
 	 * @since 2.0.0
 	 *
-	 * @param \WC_Product $products
+	 * @param \WC_Product[] $products Array of product objects to resync
 	 */
 	private function resync_products( array $products ) {
 
@@ -1016,7 +1020,8 @@ class Admin {
 		$transient_name = 'wc_' . facebook_for_woocommerce()->get_id() . '_show_product_disabled_sync_notice_' . get_current_user_id();
 		$message_id     = 'wc-' . facebook_for_woocommerce()->get_id_dasherized() . '-product-disabled-sync';
 
-		if ( ( $count = get_transient( $transient_name ) ) && ( Helper::is_current_screen( 'edit-product' ) || Helper::is_current_screen( 'product' ) ) ) {
+		$count = get_transient( $transient_name );
+		if ( $count && ( Helper::is_current_screen( 'edit-product' ) || Helper::is_current_screen( 'product' ) ) ) {
 
 			$message = sprintf(
 				/* translators: Placeholders: %1$s - <strong> tag, %2$s - </strong> tag, %3$s - <a> tag, %4$s - <a> tag */
@@ -1056,7 +1061,8 @@ class Admin {
 		$show_notice_transient_name       = 'wc_' . facebook_for_woocommerce()->get_id() . '_enabling_virtual_products_sync_show_notice_' . get_current_user_id();
 		$affected_products_transient_name = 'wc_' . facebook_for_woocommerce()->get_id() . '_enabling_virtual_products_sync_affected_products_' . get_current_user_id();
 
-		if ( Helper::is_current_screen( 'edit-product' ) && get_transient( $show_notice_transient_name ) && ( $affected_products = get_transient( $affected_products_transient_name ) ) ) {
+		$affected_products = get_transient( $affected_products_transient_name );
+		if ( Helper::is_current_screen( 'edit-product' ) && get_transient( $show_notice_transient_name ) && $affected_products ) {
 
 			$message = sprintf(
 				esc_html(
@@ -1103,10 +1109,13 @@ class Admin {
 
 		$transient_name = 'wc_' . facebook_for_woocommerce()->get_id() . '_enabling_virtual_products_sync_affected_products_' . get_current_user_id();
 
-		if ( isset( $_GET['facebook_show_affected_products'] ) && Helper::is_current_screen( 'edit-product' ) && $affected_products = get_transient( $transient_name ) ) {
+		$affected_products = get_transient( $transient_name );
+		// phpcs:disable WordPress.Security.NonceVerification.Recommended
+		if ( isset( $_GET['facebook_show_affected_products'] ) && Helper::is_current_screen( 'edit-product' ) && $affected_products ) {
 
 			$query_vars['post__in'] = $affected_products;
 		}
+		// phpcs:enable WordPress.Security.NonceVerification.Recommended
 
 		return $query_vars;
 	}
@@ -1199,8 +1208,8 @@ class Admin {
 					?>
 					<p class="form-field video-thumbnail">
 						<img src="<?php echo esc_url( $thumbnail_url ); ?>">
-						<span data-attachment-id="<?php echo $attachment_id_escaped; ?>"><?php echo $video_url_escaped; ?></span>
-						<a href="#" class="remove-video" data-attachment-id="<?php echo $attachment_id_escaped; ?>"><?php esc_html_e( 'Remove', 'facebook-for-woocommerce' ); ?></a>
+						<span data-attachment-id="<?php echo esc_attr( $attachment_id_escaped ); ?>"><?php echo esc_html( $video_url_escaped ); ?></span>
+						<a href="#" class="remove-video" data-attachment-id="<?php echo esc_attr( $attachment_id_escaped ); ?>"><?php esc_html_e( 'Remove', 'facebook-for-woocommerce' ); ?></a>
 					</p>
 					<?php
 				}
@@ -1232,7 +1241,8 @@ class Admin {
 
 		// all products have sync enabled unless explicitly disabled
 		$sync_enabled = 'no' !== get_post_meta( $post->ID, Products::SYNC_ENABLED_META_KEY, true );
-		$is_visible   = ( $visibility = get_post_meta( $post->ID, Products::VISIBILITY_META_KEY, true ) ) ? wc_string_to_bool( $visibility ) : true;
+		$visibility   = get_post_meta( $post->ID, Products::VISIBILITY_META_KEY, true );
+		$is_visible   = $visibility ? wc_string_to_bool( $visibility ) : true;
 		$product      = wc_get_product( $post );
 
 		$rich_text_description = get_post_meta( $post->ID, \WC_Facebookcommerce_Integration::FB_RICH_TEXT_DESCRIPTION, true );
@@ -1298,51 +1308,51 @@ class Admin {
 				);
 				echo '</div>';
 
-			woocommerce_wp_radio(
-				array(
-					'id'            => 'fb_product_image_source',
-					'label'         => __( 'Facebook Product Image', 'facebook-for-woocommerce' ),
-					'desc_tip'      => true,
-					'description'   => __( 'Choose the product image that should be synced to the Facebook catalog and displayed for this product.', 'facebook-for-woocommerce' ),
-					'options'       => array(
-						Products::PRODUCT_IMAGE_SOURCE_PRODUCT => __( 'Use WooCommerce image', 'facebook-for-woocommerce' ),
-						Products::PRODUCT_IMAGE_SOURCE_CUSTOM  => __( 'Use custom image', 'facebook-for-woocommerce' ),
-					),
-					'value'         => $image_source ?: Products::PRODUCT_IMAGE_SOURCE_PRODUCT,
-					'class'         => 'short enable-if-sync-enabled js-fb-product-image-source',
-					'wrapper_class' => 'fb-product-image-source-field',
-				)
-			);
+				woocommerce_wp_radio(
+					array(
+						'id'            => 'fb_product_image_source',
+						'label'         => __( 'Facebook Product Image', 'facebook-for-woocommerce' ),
+						'desc_tip'      => true,
+						'description'   => __( 'Choose the product image that should be synced to the Facebook catalog and displayed for this product.', 'facebook-for-woocommerce' ),
+						'options'       => array(
+							Products::PRODUCT_IMAGE_SOURCE_PRODUCT => __( 'Use WooCommerce image', 'facebook-for-woocommerce' ),
+							Products::PRODUCT_IMAGE_SOURCE_CUSTOM  => __( 'Use custom image', 'facebook-for-woocommerce' ),
+						),
+						'value'         => $image_source ? $image_source : Products::PRODUCT_IMAGE_SOURCE_PRODUCT,
+						'class'         => 'short enable-if-sync-enabled js-fb-product-image-source',
+						'wrapper_class' => 'fb-product-image-source-field',
+					)
+				);
 
-			woocommerce_wp_text_input(
-				array(
-					'id'          => \WC_Facebook_Product::FB_PRODUCT_IMAGE,
-					'label'       => __( 'Custom Image URL', 'facebook-for-woocommerce' ),
-					'value'       => $image,
-					'class'       => sprintf( 'enable-if-sync-enabled product-image-source-field show-if-product-image-source-%s', Products::PRODUCT_IMAGE_SOURCE_CUSTOM ),
-					'desc_tip'    => true,
-					'description' => __( 'Please enter an absolute URL (e.g. https://domain.com/image.jpg).', 'facebook-for-woocommerce' ),
-				)
-			);
+				woocommerce_wp_text_input(
+					array(
+						'id'          => \WC_Facebook_Product::FB_PRODUCT_IMAGE,
+						'label'       => __( 'Custom Image URL', 'facebook-for-woocommerce' ),
+						'value'       => $image,
+						'class'       => sprintf( 'enable-if-sync-enabled product-image-source-field show-if-product-image-source-%s', Products::PRODUCT_IMAGE_SOURCE_CUSTOM ),
+						'desc_tip'    => true,
+						'description' => __( 'Please enter an absolute URL (e.g. https://domain.com/image.jpg).', 'facebook-for-woocommerce' ),
+					)
+				);
 
 				$this->render_facebook_product_video_field( $video_urls );
 
-			woocommerce_wp_text_input(
-				array(
-					'id'          => \WC_Facebook_Product::FB_PRODUCT_PRICE,
-					'label'       => sprintf(
-					/* translators: Placeholders %1$s - WC currency symbol */
-						__( 'Facebook Price (%1$s)', 'facebook-for-woocommerce' ),
-						get_woocommerce_currency_symbol()
-					),
-					'desc_tip'    => true,
-					'description' => __( 'Custom price for product on Facebook. Please enter in monetary decimal (.) format without thousand separators and currency symbols. If blank, product price will be used.', 'facebook-for-woocommerce' ),
-					'cols'        => 40,
-					'rows'        => 60,
-					'value'       => $price,
-					'class'       => 'enable-if-sync-enabled',
-				)
-			);
+				woocommerce_wp_text_input(
+					array(
+						'id'          => \WC_Facebook_Product::FB_PRODUCT_PRICE,
+						'label'       => sprintf(
+						/* translators: Placeholders %1$s - WC currency symbol */
+							__( 'Facebook Price (%1$s)', 'facebook-for-woocommerce' ),
+							get_woocommerce_currency_symbol()
+						),
+						'desc_tip'    => true,
+						'description' => __( 'Custom price for product on Facebook. Please enter in monetary decimal (.) format without thousand separators and currency symbols. If blank, product price will be used.', 'facebook-for-woocommerce' ),
+						'cols'        => 40,
+						'rows'        => 60,
+						'value'       => $price,
+						'class'       => 'enable-if-sync-enabled',
+					)
+				);
 
 				woocommerce_wp_hidden_input(
 					array(
@@ -1545,7 +1555,8 @@ class Admin {
 
 		// Get variation meta values
 		$sync_enabled = 'no' !== $this->get_product_variation_meta( $variation, Products::SYNC_ENABLED_META_KEY, $parent );
-		$is_visible   = ( $visibility = $this->get_product_variation_meta( $variation, Products::VISIBILITY_META_KEY, $parent ) ) ? wc_string_to_bool( $visibility ) : true;
+		$visibility   = $this->get_product_variation_meta( $variation, Products::VISIBILITY_META_KEY, $parent );
+		$is_visible   = $visibility ? wc_string_to_bool( $visibility ) : true;
 		$description  = $this->get_product_variation_meta( $variation, \WC_Facebookcommerce_Integration::FB_PRODUCT_DESCRIPTION, $parent );
 		$price        = $this->get_product_variation_meta( $variation, \WC_Facebook_Product::FB_PRODUCT_PRICE, $parent );
 		$image_url    = $this->get_product_variation_meta( $variation, \WC_Facebook_Product::FB_PRODUCT_IMAGE, $parent );
@@ -1696,13 +1707,13 @@ class Admin {
 	 *
 	 * @param \WC_Product_Variation $variation the product variation
 	 * @param string                $key the name of the meta to retrieve
-	 * @param \WC_Product           $parent the parent product
+	 * @param \WC_Product           $parent_product the parent product
 	 * @return mixed
 	 */
-	private function get_product_variation_meta( $variation, $key, $parent ) {
+	private function get_product_variation_meta( $variation, $key, $parent_product ) {
 		$value = $variation->get_meta( $key );
-		if ( '' === $value && $parent instanceof \WC_Product ) {
-			$value = $parent->get_meta( $key );
+		if ( '' === $value && $parent_product instanceof \WC_Product ) {
+			$value = $parent_product->get_meta( $key );
 		}
 		return $value;
 	}
@@ -1723,13 +1734,13 @@ class Admin {
 		if ( ! $variation instanceof \WC_Product_Variation ) {
 			return;
 		}
+		// phpcs:disable WordPress.Security.NonceVerification.Missing
 		$sync_mode    = isset( $_POST['variable_facebook_sync_mode'][ $index ] ) ? wc_clean( wp_unslash( $_POST['variable_facebook_sync_mode'][ $index ] ) ) : self::SYNC_MODE_SYNC_DISABLED;
 		$sync_enabled = self::SYNC_MODE_SYNC_DISABLED !== $sync_mode;
 		if ( self::SYNC_MODE_SYNC_AND_SHOW === $sync_mode && $variation->is_virtual() ) {
 			// force to Sync and hide
 			$sync_mode = self::SYNC_MODE_SYNC_AND_HIDE;
 		}
-		// phpcs:disable WordPress.Security.NonceVerification.Missing
 		if ( $sync_enabled ) {
 			Products::enable_sync_for_products( array( $variation ) );
 			Products::set_product_visibility( $variation, self::SYNC_MODE_SYNC_AND_HIDE !== $sync_mode );

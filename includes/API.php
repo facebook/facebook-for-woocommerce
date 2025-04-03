@@ -13,6 +13,7 @@ namespace WooCommerce\Facebook;
 
 defined( 'ABSPATH' ) or exit;
 
+use WooCommerce\Facebook\API\Exceptions\Request_Limit_Reached;
 use WooCommerce\Facebook\API\Request;
 use WooCommerce\Facebook\API\Response;
 use WooCommerce\Facebook\Events\Event;
@@ -100,7 +101,6 @@ class API extends Base {
 		}
 		return parent::perform_request( $request );
 	}
-
 
 	/**
 	 * Validates a response after it has been parsed and instantiated.
@@ -269,11 +269,31 @@ class API extends Base {
 	 * Gets the business configuration.
 	 *
 	 * @param string $external_business_id external business ID
+	 * @param string $access_token Optional access token to use for this request. If not provided, will use the instance token.
+	 * @param array $fields Optional. Fields to request from the API. Default empty array returns all fields.
 	 * @return API\Response|API\FBE\Configuration\Read\Response
 	 * @throws ApiException
 	 */
-	public function get_business_configuration( $external_business_id ) {
+	public function get_business_configuration( $external_business_id, $access_token = '', $fields = [] ) {
 		$request = new API\FBE\Configuration\Request( $external_business_id, 'GET' );
+		
+		$params = [];
+		
+		// Use provided access token or fall back to the instance token
+		if ( ! empty( $access_token ) ) {
+			$params['access_token'] = $access_token;
+		}
+		
+		// Add fields parameter if specified
+		if ( ! empty( $fields ) ) {
+			$params['fields'] = is_array( $fields ) ? implode( ',', $fields ) : $fields;
+		}
+		
+		// Set parameters if we have any
+		if ( ! empty( $params ) ) {
+			$request->set_params( $params );
+		}
+		
 		$this->set_response_handler( API\FBE\Configuration\Read\Response::class );
 		return $this->perform_request( $request );
 	}
@@ -552,9 +572,23 @@ class API extends Base {
 	 * @throws ApiException
 	 * @throws API\Exceptions\Request_Limit_Reached
 	 */
-	public function create_upload( string $product_feed_id, array $data ) {
+	public function create_product_feed_upload( string $product_feed_id, array $data ): Response {
 		$request = new API\ProductCatalog\ProductFeedUploads\Create\Request( $product_feed_id, $data );
 		$this->set_response_handler( API\ProductCatalog\ProductFeedUploads\Create\Response::class );
+		return $this->perform_request( $request );
+	}
+
+	/**
+	 * @param string $cpi_id The commerce partner integration id.
+	 * @param array $data The json body for the Generic Feed Upload endpoint.
+	 *
+	 * @return Response
+	 * @throws Request_Limit_Reached
+	 * @throws ApiException
+	 */
+	public function create_common_data_feed_upload( string $cpi_id, array $data ): Response {
+		$request = new API\CommonFeedUploads\Create\Request( $cpi_id, $data );
+		$this->set_response_handler( API\CommonFeedUploads\Create\Response::class );
 		return $this->perform_request( $request );
 	}
 
@@ -582,6 +616,15 @@ class API extends Base {
 	public function log( $facebook_external_merchant_settings_id, $message, $error ) {
 		$request = new API\Log\Create\Request( $facebook_external_merchant_settings_id, $message, $error );
 		$this->set_response_handler( API\Log\Create\Response::class );
+		return $this->perform_request( $request );
+	}
+
+	public function log_to_meta( $context) {
+		if(!facebook_for_woocommerce()->get_integration()->is_meta_diagnosis_enabled()) {
+			return;
+		}
+		$request = new API\MetaLog\Request( $context );
+		$this->set_response_handler( API\MetaLog\Response::class );
 		return $this->perform_request( $request );
 	}
 
