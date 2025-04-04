@@ -34,7 +34,7 @@ class Connection {
 	const OAUTH_URL = 'https://facebook.com/dialog/oauth';
 
 	/** @var string WooCommerce connection proxy URL */
-	const PROXY_URL = 'https://api.woocommerce.com/integrations/v2/auth/facebook/';
+	const PROXY_URL = 'https://www.my-od.commercepartnerhub.com/connect_bridge/oauth_redirect_handler/'; // 'https://api.woocommerce.com/integrations/v2/auth/facebook/';
 
 	const PROXY_TOKEN_EXCHANGE_URL = 'https://api.woocommerce.com/integrations/v2/exchange/facebook/';
 
@@ -187,6 +187,28 @@ class Connection {
 
 	}
 
+	private function update_system_user_access_token( ) {
+		$business_manager_id = $this->get_business_manager_id();
+
+		$scope = implode( ',', $this->get_scopes() );
+
+		$external_business_id = $this->get_external_business_id();
+
+		$response = $this->get_plugin()->get_api()->get_system_user_access_token( $business_manager_id, $external_business_id, self::CLIENT_ID, $scope );
+
+		$system_user_access_token = sanitize_text_field( $response->get_system_user_access_token() );
+
+		if ( $system_user_access_token ) {
+			$this->update_access_token( $system_user_access_token );
+		}
+		else
+		{
+			$this->get_plugin()->log( 'Could not get system user access token. ' );
+			throw new ApiException( 'Could not get system user access token. ' );
+		}
+
+	}
+
 
 	/**
 	 * Retrieves and stores the connected installation data.
@@ -260,6 +282,22 @@ class Connection {
 				throw new ConnectApiException( $error_code );
 			}
 
+			$facebook_access_token = ! empty( $_GET['access_token'] ) ? wc_clean( wp_unslash( $_GET['access_token'] ) ) : '';
+			if ( empty( $facebook_access_token ) ) {
+				throw new ApiException( 'Access token is missing' );
+			}
+
+			//Step1 : update temp token
+			$this->update_access_token( $facebook_access_token );
+
+			//Step2 : get installation data
+			$this->update_installation_data();
+
+			//Step3 : get system user access token
+			$this->update_system_user_access_token();
+
+
+			/*
 			$facebook_auth_code = $_GET['code'] ?? '';
 			if ( empty( $facebook_auth_code ) ) {
 				throw new ApiException( 'Facebook auth code is missing.' );
@@ -317,7 +355,8 @@ class Connection {
 			$this->update_access_token( $system_user_access_token );
 			$this->update_merchant_access_token( $merchant_access_token );
 			$this->update_system_user_id( $system_user_id );
-			$this->update_installation_data();
+			*/
+			// TODO $this->update_installation_data();
 			// Allow opt-out of full batch-API sync, for example if store has a large number of products.
 			if ( facebook_for_woocommerce()->get_integration()->allow_full_batch_api_sync() ) {
 				facebook_for_woocommerce()->get_products_sync_handler()->create_or_update_all_products();
@@ -878,6 +917,7 @@ class Connection {
 				'external_business_id' => $this->get_external_business_id(),
 				'nonce'                => wp_create_nonce( self::ACTION_CONNECT ),
 				'type'                 => self::AUTH_TYPE_STANDARD,
+				'client_id'            => $this->get_client_id(),
 			),
 			home_url( '/' )
 		);
@@ -922,7 +962,7 @@ class Connection {
 				'redirect_uri'  => $this->get_proxy_url(),
 				'state'         => $state,
 				'display'       => 'page',
-				'response_type' => 'code',
+				'response_type' => 'token',
 				'scope'         => implode( ',', $this->get_scopes() ),
 				'extras'        => json_encode( $this->get_connect_parameters_extras() ),
 			)
