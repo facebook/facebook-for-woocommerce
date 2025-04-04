@@ -50,6 +50,25 @@ class Whatsapp_Webhook {
 		);
 	}
 
+	/**
+	 * Updates Facebook settings options.
+	 *
+	 * @param array $settings Array of settings to update.
+	 *
+	 * @return bool
+	 * @internal
+	 */
+	private static function update_settings( $settings ) {
+		$updated = array();
+		foreach ( $settings as $key => $value ) {
+			if ( ! empty( $key ) ) {
+				$updated[ $key ] = update_option( $key, $value );
+			}
+		}
+		// if any of setting updates failed, return false
+		return ! in_array( false, $updated, true );
+	}
+
 
 
 	/**
@@ -63,9 +82,42 @@ class Whatsapp_Webhook {
 	 */
 	public function whatsapp_webhook_callback( \WP_REST_Request $request ) {
 		$request_params = $request->get_query_params();
-		// Note: The log statements will be removed in follow up PRs. This is just added to verify the whatsapp webhook is called successfully.
-		wc_get_logger()->error( 'Webhook is called successfully', $request_params );
-		// TODO: Validate the request and store the data(business_id,waba_id,access_token) received in the WooCommerce DB
+		$waba_id        = sanitize_text_field( $request_params['waba_id'] );
+		$access_token   = sanitize_text_field( $request_params['access_token'] );
+		$business_id    = sanitize_text_field( $request_params['business_id'] );
+		// TODO: Request authentication
+
+		if ( empty( $waba_id ) || empty( $access_token ) || empty( $business_id ) ) {
+			return new \WP_REST_Response( null, 400 );
+		}
+
+		wc_get_logger()->info(
+			sprintf(
+						/* translators: %d user ID. */
+				__( 'Whatsapp Account WebHook Event received. WABA ID: %1$s, Business ID: %2$s ', 'facebook-for-woocommerce' ),
+				$waba_id,
+				$business_id
+			)
+		);
+
+		$options_setting_fields = array(
+			'wc_facebook_wa_integration_waba_id'           => $waba_id,
+			'wc_facebook_wa_integration_bisu_access_token' => $access_token,
+			'wc_facebook_wa_integration_business_id'       => $business_id,
+		);
+
+		$result = self::update_settings( $options_setting_fields );
+
+		// TODO: add validation for wp_options table update
+		wc_get_logger()->info(
+			sprintf(
+						/* translators: %d $waba_id, %d $business_id. */
+				__( 'Whatsapp Integration Setting Fields stored successfully in wp_options. wc_facebook_wa_integration_waba_id: %1$s, wc_facebook_wa_integration_business_id: %2$s ', 'facebook-for-woocommerce' ),
+				$waba_id,
+				$business_id
+			)
+		);
+
 		return new \WP_REST_Response( null, 200 );
 	}
 }
