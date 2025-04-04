@@ -63,6 +63,17 @@ class Whatsapp_Utility extends Abstract_Settings_Screen {
 			array( 'jquery', 'jquery-blockui', 'jquery-tiptip', 'wc-enhanced-select' ),
 			\WC_Facebookcommerce::PLUGIN_VERSION
 		);
+		wp_localize_script(
+			'facebook-for-woocommerce-connect-whatsapp',
+			'facebook_for_woocommerce_whatsapp_onboarding_progress',
+			array(
+				'ajax_url' => admin_url( 'admin-ajax.php' ),
+				'nonce'    => wp_create_nonce( 'facebook-for-wc-whatsapp-onboarding-progress-nonce' ),
+				'i18n'     => array(
+					'result' => true,
+				),
+			)
+		);
 	}
 
 
