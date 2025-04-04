@@ -31,6 +31,9 @@ class Shops extends Abstract_Settings_Screen {
 	/** @var string */
 	const ACTION_SYNC_COUPONS = 'wc_facebook_sync_coupons';
 
+	/** @var string */
+	const ACTION_SYNC_RATINGS_AND_REVIEWS = 'wc_facebook_sync_ratings_and_reviews';
+
 	/**
 	 * Shops constructor.
 	 *
@@ -126,9 +129,10 @@ class Shops extends Abstract_Settings_Screen {
 			'wc-facebook-enhanced-settings-sync',
 			'wc_facebook_enhanced_settings_sync',
 			array(
-				'ajax_url'            => admin_url( 'admin-ajax.php' ),
-				'sync_products_nonce' => wp_create_nonce( self::ACTION_SYNC_PRODUCTS ),
-				'sync_coupons_nonce'  => wp_create_nonce( self::ACTION_SYNC_COUPONS ),
+				'ajax_url'                       => admin_url( 'admin-ajax.php' ),
+				'sync_products_nonce'            => wp_create_nonce( self::ACTION_SYNC_PRODUCTS ),
+				'sync_coupons_nonce'             => wp_create_nonce( self::ACTION_SYNC_COUPONS ),
+				'sync_ratings_and_reviews_nonce' => wp_create_nonce( self::ACTION_SYNC_RATINGS_AND_REVIEWS ),
 			)
 		);
 	}
@@ -231,6 +235,22 @@ class Shops extends Abstract_Settings_Screen {
 							</button>
 							<p id="coupon-sync-description" class="sync-description">
 								Manually sync your coupons from WooCommerce to your shop. It may take a couple of minutes for the changes to populate.
+							</p>
+						</td>
+					</tr>
+					<tr valign="top" class="wc-facebook-shops-sample">
+						<th scope="row" class="titledesc">
+							Ratings and reviews sync
+						</th>
+						<td class="forminp">
+							<button
+								id="wc-facebook-enhanced-settings-sync-ratings-and-reviews"
+								class="button"
+								type="button">
+								<?php esc_html_e( 'Sync now', 'facebook-for-woocommerce' ); ?>
+							</button>
+							<p id="coupon-sync-description" class="sync-description">
+								Manually sync your ratings and reviews from WooCommerce to your shop. It may take up to 24 hours for the changes to populate.
 							</p>
 						</td>
 					</tr>

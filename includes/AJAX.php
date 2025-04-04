@@ -45,6 +45,9 @@ class AJAX {
 		// sync all coupons via AJAX
 		add_action( 'wp_ajax_wc_facebook_sync_coupons', array( $this, 'sync_coupons' ) );
 
+		// sync all ratings and reviews via AJAX
+		add_action( 'wp_ajax_wc_facebook_sync_ratings_and_reviews', array( $this, 'sync_ratings_and_reviews' ) );
+
 		// get the current sync status
 		add_action( 'wp_ajax_wc_facebook_get_sync_status', array( $this, 'get_sync_status' ) );
 
@@ -117,13 +120,13 @@ class AJAX {
 		}
 	}
 
-		/**
-		 * Syncs all coupons via AJAX.
-		 *
-		 * @internal
-		 *
-		 * @since 3.5.0
-		 */
+	/**
+	 * Syncs all coupons via AJAX.
+	 *
+	 * @internal
+	 *
+	 * @since 3.5.0
+	 */
 	public function sync_coupons() {
 		check_admin_referer( Shops::ACTION_SYNC_COUPONS, 'nonce' );
 
@@ -135,6 +138,23 @@ class AJAX {
 		}
 	}
 
+	/**
+	 * Syncs all ratings and reviews via AJAX.
+	 *
+	 * @internal
+	 *
+	 * @since 3.5.0
+	 */
+	public function sync_ratings_and_reviews() {
+		check_admin_referer( Shops::ACTION_SYNC_RATINGS_AND_REVIEWS, 'nonce' );
+
+		try {
+			facebook_for_woocommerce()->feed_manager->get_feed_instance( 'ratings_and_reviews' )->regenerate_feed();
+			wp_send_json_success();
+		} catch ( \Exception $exception ) {
+			wp_send_json_error( $exception->getMessage() );
+		}
+	}
 
 	/**
 	 * Gets the current sync status.
