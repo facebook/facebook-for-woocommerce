@@ -1,5 +1,12 @@
 *** Facebook for WooCommerce Changelog ***
 
+= 3.4.5 - 2025-04-01 =
+* Tweak - Add new product field external_update_time to measure product update latency by @mshymon in #2973
+* Fix - for 'PHP Warning: Undefined variable $fb_product_parent' by @mshymon in #2976
+* Fix - Updated logic to choose/create the feed for product sync by @mshymon in #2989
+* Add - Facebook Product Data Tab Enhancement by @devbodaghe in #2938
+* Fix - PHP Warning for empty attributes by @vinkmeta in #3001
+
 = 3.4.4 - 2025-03-26 =
 * Add - Create tests for ProductFeedUploads create endpoint by @ajello-meta in #2902
 * Add - Create tests for ProductFeedUploads read endpoint by @ajello-meta in #2903
