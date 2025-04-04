@@ -1187,6 +1187,7 @@ class WC_Facebook_Product {
 		$product_data[ 'gender' ] = $this->get_fb_gender();
 		$product_data[ 'material' ] = Helper::str_truncate( $this->get_fb_material(), 100 );
 		$product_data[ 'pattern' ] = Helper::str_truncate( $this->get_fb_pattern(), 100 );
+		$product_data[ 'woo_product_type' ] = $this->get_type();
 
 		if ( self::PRODUCT_PREP_TYPE_ITEMS_BATCH === $type_to_prepare_for ) {
 			$product_data['title'] = WC_Facebookcommerce_Utils::clean_string( $this->get_title() );
