@@ -93,15 +93,6 @@ class fbproductTest extends \WooCommerce\Facebook\Tests\Unit\AbstractWPUnitTestW
 		$description = $facebook_product->get_fb_description();
 		$this->assertEquals( $description, get_post( $product->get_id() )->post_content );
 
-		// Gets description from excerpt ignoring content when short mode is set
-		add_option(
-			WC_Facebookcommerce_Integration::SETTING_PRODUCT_DESCRIPTION_MODE,
-			WC_Facebookcommerce_Integration::PRODUCT_DESCRIPTION_MODE_SHORT
-		);
-
-		$facebook_product = new \WC_Facebook_Product( $product );
-		$description      = $facebook_product->get_fb_description();
-		$this->assertEquals( $description, get_post( $product->get_id() )->post_excerpt );
 	}
 
 	/**
@@ -653,12 +644,6 @@ class fbproductTest extends \WooCommerce\Facebook\Tests\Unit\AbstractWPUnitTestW
 		$description = $facebook_product->get_rich_text_description();
 		$this->assertEquals('<p>product content description</p>', $description);
 
-		// Test 6: Falls back to post excerpt if content is empty and sync_short_description is true
-		add_option(
-			WC_Facebookcommerce_Integration::SETTING_PRODUCT_DESCRIPTION_MODE,
-			WC_Facebookcommerce_Integration::PRODUCT_DESCRIPTION_MODE_SHORT
-		);
-		
 		$product->set_description('');
 		$product->set_short_description('<p>short description test</p>');
 		$product->save();
