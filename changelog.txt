@@ -1,5 +1,9 @@
 *** Facebook for WooCommerce Changelog ***
 
+= 3.4.6 - 2025-04-04 =
+* Fix - Product availability syncing by @vinkmeta in #3010
+* Fix - Product attribute sort error which prevented product edits in certain scenarios by @iodic in #3012
+
 = 3.4.5 - 2025-04-01 =
 * Tweak - Add new product field external_update_time to measure product update latency by @mshymon in #2973
 * Fix - for 'PHP Warning: Undefined variable $fb_product_parent' by @mshymon in #2976

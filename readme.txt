@@ -3,7 +3,7 @@ Contributors: facebook, automattic, woothemes
 Tags: facebook, woocommerce, marketing, product catalog feed, pixel
 Requires at least: 5.6
 Tested up to: 6.7
-Stable tag: 3.4.5
+Stable tag: 3.4.6
 Requires PHP: 7.4
 MySQL: 5.6 or greater
 License: GPLv2 or later
@@ -39,6 +39,10 @@ When opening a bug on GitHub, please give us as many details as possible.
 * Current version of Facebook-for-WooCommerce, WooCommerce, Wordpress, PHP
 
 == Changelog ==
+
+= 3.4.6 - 2025-04-04 =
+* Fix - Product availability syncing by @vinkmeta in #3010
+* Fix - Product attribute sort error which prevented product edits in certain scenarios by @iodic in #3012
 
 = 3.4.5 - 2025-04-01 =
 * Tweak - Add new product field external_update_time to measure product update latency by @mshymon in #2973
