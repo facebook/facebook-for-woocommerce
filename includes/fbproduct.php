@@ -1189,6 +1189,9 @@ class WC_Facebook_Product {
 		$product_data[ 'pattern' ] = Helper::str_truncate( $this->get_fb_pattern(), 100 );
 		$product_data[ 'woo_product_type' ] = $this->get_type();
 
+		//To get WSP metric
+		$product_data[ 'is_wsp' ] = true;
+
 		if ( self::PRODUCT_PREP_TYPE_ITEMS_BATCH === $type_to_prepare_for ) {
 			$product_data['title'] = WC_Facebookcommerce_Utils::clean_string( $this->get_title() );
 			$product_data['image_link'] = $image_urls[0];
