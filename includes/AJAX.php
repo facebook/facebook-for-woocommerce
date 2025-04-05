@@ -48,6 +48,9 @@ class AJAX {
 		// get the current sync status
 		add_action( 'wp_ajax_wc_facebook_get_sync_status', array( $this, 'get_sync_status' ) );
 
+		// check the status of whatsapp onboarding and update the progress
+		add_action( 'wp_ajax_wc_facebook_whatsapp_onboarding_progress_check', array( $this, 'whatsapp_onboarding_progress_check' ) );
+
 		// search a product's attributes for the given term
 		add_action( 'wp_ajax_' . self::ACTION_SEARCH_PRODUCT_ATTRIBUTES, array( $this, 'admin_search_product_attributes' ) );
 	}
@@ -166,6 +169,23 @@ class AJAX {
 		}
 
 		wp_send_json_success( $remaining_products );
+	}
+
+	/**
+	 * Checks if the onboarding for whatsapp is complete once business has initiated onboarding.
+	 *
+	 * @internal
+	 *
+	 * @since 1.10.0
+	 */
+	public function whatsapp_onboarding_progress_check() {
+		if ( ! check_ajax_referer( 'facebook-for-wc-whatsapp-onboarding-progress-nonce', 'nonce', false ) ) {
+			wp_send_json_error( 'Invalid security token sent.' );
+		}
+		if ( get_option( 'wc_facebook_wa_integration_waba_id', '' ) !== '' ) { // TODO: Do a detailed check of all the required fields
+			wp_send_json_success();
+		}
+		wp_send_json_error( 'WhatsApp onboarding is not complete' );
 	}
 
 
