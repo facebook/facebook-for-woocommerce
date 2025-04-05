@@ -161,6 +161,9 @@ class AJAX {
 
 
 	public function whatsapp_consent_collection_enable() {
+		if ( ! check_ajax_referer( 'facebook-for-wc-whatsapp-consent-nonce', 'nonce', false ) ) {
+    	wp_send_json_error( 'Invalid security token sent.' );
+		}
 		if(get_option('wc_facebook_whatsapp_consent_collection_setting_status') !== 'enabled') {
 			update_option('wc_facebook_whatsapp_consent_collection_setting_status', 'enabled');
 		}
