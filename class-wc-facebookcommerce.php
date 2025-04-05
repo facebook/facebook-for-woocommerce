@@ -169,6 +169,7 @@ class WC_Facebookcommerce extends WooCommerce\Facebook\Framework\Plugin {
 		add_action( 'init', array( $this, 'get_integration' ) );
 		add_action( 'init', array( $this, 'register_custom_taxonomy' ) );
 		add_action( 'add_meta_boxes_product', array( $this, 'remove_product_fb_product_set_metabox' ), 50 );
+		add_action( 'woocommerce_init', array($this, 'add_whatsapp_consent_checkout_fields'));
 		add_filter( 'fb_product_set_row_actions', array( $this, 'product_set_links' ) );
 		add_filter( 'manage_edit-fb_product_set_columns', array( $this, 'manage_fb_product_set_columns' ) );
 
@@ -854,6 +855,30 @@ class WC_Facebookcommerce extends WooCommerce\Facebook\Framework\Plugin {
 			$current_screen_id = $current_screen->id;
 		}
 		return $current_screen_id;
+	}
+
+	/**
+	* Add checkout fields to collect whatsapp consent if consent collection is enabled
+	*
+	* @since 2.3.0
+	*
+	* @param array $fields
+	*
+	* @return array
+	*/
+	function add_whatsapp_consent_checkout_fields($fields) {
+		if (get_option('wc_facebook_whatsapp_consent_collection_setting_status', 'disabled') === 'enabled') {
+			woocommerce_register_additional_checkout_field(
+					array(
+						'id'       => 'wc_facebook/whatsapp_consent_checkbox', // id = namespace/field_name
+						'label'    => esc_html('Get order updates on Whatsapp'),
+						'location' => 'address',
+						'type'     => 'checkbox',
+						'optionalLabel' => esc_html('Get order updates on Whatsapp')
+					)
+				);
+		}
+		return $fields;
 	}
 }
 

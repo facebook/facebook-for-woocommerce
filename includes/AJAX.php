@@ -46,6 +46,9 @@ class AJAX {
 		// get the current sync status
 		add_action( 'wp_ajax_wc_facebook_get_sync_status', array( $this, 'get_sync_status' ) );
 
+		// update the wp_options with wc_facebook_whatsapp_consent_collection_setting_status to enabled
+		add_action( 'wp_ajax_wc_facebook_whatsapp_consent_collection_enable', array( $this, 'whatsapp_consent_collection_enable' ) );
+
 		// search a product's attributes for the given term
 		add_action( 'wp_ajax_' . self::ACTION_SEARCH_PRODUCT_ATTRIBUTES, array( $this, 'admin_search_product_attributes' ) );
 	}
@@ -154,6 +157,17 @@ class AJAX {
 		}
 
 		wp_send_json_success( $remaining_products );
+	}
+
+
+	public function whatsapp_consent_collection_enable() {
+		if ( ! check_ajax_referer( 'facebook-for-wc-whatsapp-consent-nonce', 'nonce', false ) ) {
+    	wp_send_json_error( 'Invalid security token sent.' );
+		}
+		if(get_option('wc_facebook_whatsapp_consent_collection_setting_status') !== 'enabled') {
+			update_option('wc_facebook_whatsapp_consent_collection_setting_status', 'enabled');
+		}
+		wp_send_json_success();
 	}
 
 
