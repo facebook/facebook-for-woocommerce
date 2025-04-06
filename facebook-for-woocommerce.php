@@ -232,10 +232,10 @@ class WC_Facebook_Loader {
 	 * @param string $class   The css class for the notice.
 	 * @param string $message The notice message.
 	 */
-	private function add_admin_notice( $slug, $class, $message ) {
+	private function add_admin_notice( $slug, $cls, $message ) {
 
 		$this->notices[ $slug ] = array(
-			'class'   => $class,
+			'class'   => $cls,
 			'message' => $message,
 		);
 	}
