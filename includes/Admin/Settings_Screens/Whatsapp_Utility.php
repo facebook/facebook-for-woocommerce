@@ -69,7 +69,7 @@ class Whatsapp_Utility extends Abstract_Settings_Screen {
 			array(
 				'ajax_url' => admin_url( 'admin-ajax.php' ),
 				'nonce'    => wp_create_nonce( 'facebook-for-wc-whatsapp-onboarding-progress-nonce' ),
-        'i18n'     => array(
+				'i18n'     => array(
 					'result' => true,
 				),
 			)
