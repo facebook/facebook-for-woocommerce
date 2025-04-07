@@ -32,6 +32,12 @@ class Admin {
 	/** @var string the "sync disabled" sync mode slug */
 	const SYNC_MODE_SYNC_DISABLED = 'sync_disabled';
 
+	/** @var string the "fb_sync_enabled" sync mode slug */
+	const INCLUDE_FACEBOOK_SYNC = 'fb_sync_enabled';
+
+	/** @var string the "fb_sync_disabled" sync mode slug */
+	const EXCLUDE_FACEBOOK_SYNC = 'fb_sync_disabled';
+
 	/** @var string the "include" sync mode for bulk edit */
 	const BULK_EDIT_SYNC = 'bulk_edit_sync';
 
@@ -507,10 +513,9 @@ class Admin {
 		$choice = isset( $_GET['fb_sync_enabled'] ) ? (string) sanitize_text_field( wp_unslash( $_GET['fb_sync_enabled'] ) ) : '';
 		?>
 		<select name="fb_sync_enabled">
-			<option value="" <?php selected( $choice, '' ); ?>><?php esc_html_e( 'Filter by Facebook sync setting', 'facebook-for-woocommerce' ); ?></option>
-			<option value="<?php echo esc_attr( self::SYNC_MODE_SYNC_AND_SHOW ); ?>" <?php selected( $choice, self::SYNC_MODE_SYNC_AND_SHOW ); ?>><?php esc_html_e( 'Sync and show', 'facebook-for-woocommerce' ); ?></option>
-			<option value="<?php echo esc_attr( self::SYNC_MODE_SYNC_AND_HIDE ); ?>" <?php selected( $choice, self::SYNC_MODE_SYNC_AND_HIDE ); ?>><?php esc_html_e( 'Sync and hide', 'facebook-for-woocommerce' ); ?></option>
-			<option value="<?php echo esc_attr( self::SYNC_MODE_SYNC_DISABLED ); ?>" <?php selected( $choice, self::SYNC_MODE_SYNC_DISABLED ); ?>><?php esc_html_e( 'Do not sync', 'facebook-for-woocommerce' ); ?></option>
+			<option value="" <?php selected( $choice, '' ); ?>><?php esc_html_e( 'Filter by synced to meta', 'facebook-for-woocommerce' ); ?></option>
+			<option value="<?php echo esc_attr( self::INCLUDE_FACEBOOK_SYNC ); ?>" <?php selected( $choice, self::INCLUDE_FACEBOOK_SYNC ); ?>><?php esc_html_e( 'Synced', 'facebook-for-woocommerce' ); ?></option>
+			<option value="<?php echo esc_attr( self::EXCLUDE_FACEBOOK_SYNC ); ?>" <?php selected( $choice, self::EXCLUDE_FACEBOOK_SYNC ); ?>><?php esc_html_e( 'Not synced', 'facebook-for-woocommerce' ); ?></option>
 		</select>
 		<?php
 	}
@@ -557,9 +562,8 @@ class Admin {
 	 */
 	public function filter_products_by_sync_enabled( $query_vars ) {
 		$valid_values = array(
-			self::SYNC_MODE_SYNC_AND_SHOW,
-			self::SYNC_MODE_SYNC_AND_HIDE,
-			self::SYNC_MODE_SYNC_DISABLED,
+			self::INCLUDE_FACEBOOK_SYNC,
+			self::EXCLUDE_FACEBOOK_SYNC,
 		);
 
 		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
@@ -575,11 +579,15 @@ class Admin {
 				$query_vars['meta_query'] = []; // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_query
 			}
 
-			if ( self::SYNC_MODE_SYNC_AND_SHOW === $filter_value ) {
+			if ( self::INCLUDE_FACEBOOK_SYNC === $filter_value ) {
+				/**
+				 * #TODO: T219937738 (sayanpandey): Change the functionality when product level sync appears
+				 * The below query will not only check for sync enabled but also sync do not exist -> as query happens on WP products,
+				 * Reason: We need to check if a product has variation and if they are synced or not
+				 * Future plans: When product level sync comes through this should be handled more gracefully as we will only check at product level
+				 *  */
 				// when checking for products with sync enabled we need to check both "yes" and meta not set, this requires adding an "OR" clause
 				$query_vars = $this->add_query_vars_to_find_products_with_sync_enabled( $query_vars );
-				// only get visible products (both "yes" and meta not set)
-				$query_vars = $this->add_query_vars_to_find_visible_products( $query_vars );
 				// since we record enabled status and visibility on child variations, we need to query variable products found for their children to exclude them from query results
 				$exclude_products = [];
 				$found_ids        = get_posts( array_merge( $query_vars, array( 'fields' => 'ids' ) ) );
@@ -592,38 +600,7 @@ class Admin {
 				);
 				/** @var \WC_Product[] $found_products */
 				foreach ( $found_products as $product ) {
-					if ( ! Products::is_sync_enabled_for_product( $product )
-						|| ! Products::is_product_visible( $product ) ) {
-						$exclude_products[] = $product->get_id();
-					}
-				}
-
-				if ( ! empty( $exclude_products ) ) {
-					if ( ! empty( $query_vars['post__not_in'] ) ) {
-						$query_vars['post__not_in'] = array_merge( $query_vars['post__not_in'], $exclude_products );
-					} else {
-						$query_vars['post__not_in'] = $exclude_products;
-					}
-				}
-			} elseif ( self::SYNC_MODE_SYNC_AND_HIDE === $filter_value ) {
-				// when checking for products with sync enabled we need to check both "yes" and meta not set, this requires adding an "OR" clause
-				$query_vars = $this->add_query_vars_to_find_products_with_sync_enabled( $query_vars );
-				// only get hidden products
-				$query_vars = $this->add_query_vars_to_find_hidden_products( $query_vars );
-				// since we record enabled status and visibility on child variations, we need to query variable products found for their children to exclude them from query results
-				$exclude_products = [];
-				$found_ids        = get_posts( array_merge( $query_vars, array( 'fields' => 'ids' ) ) );
-				$found_products   = empty( $found_ids ) ? [] : wc_get_products(
-					array(
-						'limit'   => -1,
-						'type'    => 'variable',
-						'include' => $found_ids,
-					)
-				);
-				/** @var \WC_Product[] $found_products */
-				foreach ( $found_products as $product ) {
-					if ( ! Products::is_sync_enabled_for_product( $product )
-						|| Products::is_product_visible( $product ) ) {
+					if ( ! Products::is_sync_enabled_for_product( $product ) ) {
 						$exclude_products[] = $product->get_id();
 					}
 				}
@@ -636,7 +613,17 @@ class Admin {
 					}
 				}
 
-				// for the same reason, we also need to include variable products with hidden children
+				/**
+				 * Now removing all `Not Synced` products from the found products
+				 * Reason: This is required even if we have mentioned $query_vars['post__not_in'],
+				 * the preference of $query_vars['post__in'] is higher and will be overriden
+				 * at the end of this function.
+				 *  */
+				$found_ids = array_diff( $found_ids, $exclude_products );
+
+				/**
+				 * For the same reason, we also need to include variable products with hidden children
+				 *  */
 				$include_products  = [];
 				$hidden_variations = get_posts(
 					array(
@@ -653,13 +640,12 @@ class Admin {
 				foreach ( $hidden_variations as $variation_post ) {
 					$variable_product = wc_get_product( $variation_post->post_parent );
 					// we need this check because we only want products with ALL variations hidden
-					if ( $variable_product instanceof \WC_Product && Products::is_sync_enabled_for_product( $variable_product )
-						&& ! Products::is_product_visible( $variable_product ) ) {
+					if ( $variable_product instanceof \WC_Product && Products::is_sync_enabled_for_product( $variable_product ) ) {
 						$include_products[] = $variable_product->get_id();
 					}
 				}
 			} else {
-				// self::SYNC_MODE_SYNC_DISABLED
+				// self::EXCLUDE_FACEBOOK_SYNC
 				// products to be included in the QUERY, not in the sync
 				$include_products        = [];
 				$found_ids               = [];
@@ -819,71 +805,22 @@ class Admin {
 		return $query_vars;
 	}
 
-
 	/**
-	 * Adds query vars to limit the results to visible products.
+	 * Adds bulk actions in the products edit screen.
 	 *
-	 * @since 2.0.0
+	 * @internal
 	 *
-	 * @param array $query_vars
-	 * @return array
-	 * @todo Figure out if meta_query is slow and can be replaced with faster query
-	 */
-	private function add_query_vars_to_find_visible_products( array $query_vars ) {
-		$visibility_meta_query = array( // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_query
-			'relation' => 'OR',
-			array(
-				'key'   => Products::VISIBILITY_META_KEY,
-				'value' => 'yes',
-			),
-			array(
-				'key'     => Products::VISIBILITY_META_KEY,
-				'compare' => 'NOT EXISTS',
-			),
-		);
-
-		if ( empty( $query_vars['meta_query'] ) ) {
-			$query_vars['meta_query'] = $visibility_meta_query; // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_query
-		} elseif ( is_array( $query_vars['meta_query'] ) ) {
-			$enabled_meta_query       = $query_vars['meta_query'];
-			$query_vars['meta_query'] = array( // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_query
-				'relation' => 'AND',
-				$enabled_meta_query,
-				$visibility_meta_query,
-			);
-		}
-
-		return $query_vars;
-	}
-
-
-	/**
-	 * Adds query vars to limit the results to hidden products.
+	 * @since 1.10.0
 	 *
-	 * @since 2.0.0
-	 *
-	 * @param array $query_vars
+	 * @param array $bulk_actions array of bulk action keys and labels
 	 * @return array
 	 */
-	private function add_query_vars_to_find_hidden_products( array $query_vars ) {
-		$visibility_meta_query = array( // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_query
-			'key'   => Products::VISIBILITY_META_KEY,
-			'value' => 'no',
-		);
-
-		if ( empty( $query_vars['meta_query'] ) ) {
-			$query_vars['meta_query'] = $visibility_meta_query; // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_query
-		} elseif ( is_array( $query_vars['meta_query'] ) ) {
-			$enabled_meta_query       = $query_vars['meta_query'];
-			$query_vars['meta_query'] = array( // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_query
-				'relation' => 'AND',
-				$enabled_meta_query,
-				$visibility_meta_query,
-			);
-		}
-
-		return $query_vars;
+	public function add_products_sync_bulk_actions( $bulk_actions ) {
+		$bulk_actions['facebook_include'] = __( 'Include in Facebook sync', 'facebook-for-woocommerce' );
+		$bulk_actions['facebook_exclude'] = __( 'Exclude from Facebook sync', 'facebook-for-woocommerce' );
+		return $bulk_actions;
 	}
+
 
 	/**
 	 * Handles a Facebook product sync bulk action.
