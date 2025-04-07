@@ -70,9 +70,10 @@ class Whatsapp_Webhook {
 	}
 
 	/**
-	 * Authenticates Whatsapp Webhook using the SHA1 pf the external business ID and BISU token
+	 * Authenticates Whatsapp Webhook using the SHA1 of the external business ID and BISU token
 	 *
-	 * @param string $auth_key, string $bisu_token
+	 * @param string $auth_key the auth key received in the webhook
+	 * @param string $bisu_token the BISU token received in the webhook
 	 *
 	 * @return bool
 	 * @internal
@@ -110,7 +111,7 @@ class Whatsapp_Webhook {
 		// authentication is done via auth_key using sha_1 hash mac of BISU token and external business ID stored in woo DB
 		$authentication_result = self::authenticate_request( $auth_key, $bisu_token );
 
-		if ( $authentication_result === false ) {
+		if ( false === $authentication_result ) {
 			wc_get_logger()->info(
 				sprintf(
 					__( 'Authentication Failure on received Whatsapp Webhook', 'facebook-for-woocommerce' ),
@@ -150,7 +151,7 @@ class Whatsapp_Webhook {
 
 		$result = self::update_settings( $options_setting_fields );
 
-		if ( $result === false ) {
+		if ( false === $result ) {
 			wc_get_logger()->info(
 				sprintf(
 						/* translators: %d $waba_id, %d $business_id. */
