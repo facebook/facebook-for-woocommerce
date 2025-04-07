@@ -18,6 +18,10 @@ class Response extends API\Response {
 	 * @return boolean
 	 */
 	public function is_ig_shopping_enabled(): bool {
+
+		if ( empty( $this->response_data['ig_shopping'] ) ) {
+			return false;
+		}
 		return (bool) $this->response_data['ig_shopping']['enabled'] ?? false;
 	}
 
@@ -27,6 +31,23 @@ class Response extends API\Response {
 	 * @return boolean
 	 */
 	public function is_ig_cta_enabled(): bool {
-		return (bool) $this->response_data['ig_cta']['enabled'];
+
+		if ( empty( $this->response_data['ig_cta'] ) ) {
+			return false;
+		}
+		return (bool) $this->response_data['ig_cta']['enabled'] ?? false;
+	}
+
+	/**
+	 * Gets the commerce extension URI.
+	 *
+	 * @return string Commerce extension URI or empty string if not available.
+	 */
+	public function get_commerce_extension_uri(): string {
+
+		if ( empty( $this->response_data['commerce_extension'] ) ) {
+			return '';
+		}
+		return $this->response_data['commerce_extension']['uri'] ?? '';
 	}
 }
