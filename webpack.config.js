@@ -14,6 +14,7 @@ const jQueryUIAdminFileNames = [
 	'settings-sync',
 	'enhanced-settings-sync',
     'whatsapp-connection',
+    'whatsapp-consent',
 ];
 
 const jQueryUIAdminFileEntries = {};
