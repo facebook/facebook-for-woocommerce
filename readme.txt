@@ -13,6 +13,7 @@ Get the Official Facebook for WooCommerce plugin for powerful ways to help grow 
 
 == Description ==
 
+
 This is the official Facebook for WooCommerce plugin that connects your WooCommerce website to Facebook. With this plugin, you can install the Facebook pixel, and upload your online store catalog, enabling you to easily run dynamic ads.
 
 
