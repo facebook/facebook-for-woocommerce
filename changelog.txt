@@ -14,6 +14,7 @@
 * Fix - Update woo_commerce_retailer_id to existing field external_variant_id by @crisojog in #2963
 * Tweak - Update readme.txt by @vinkmeta in #2949
 
+
 = 3.4.3 - 2025-03-19 =
 * Add - Items batch request and response tests by @nrostrow-meta in #2917
 * Tweak - Always run PHP-based github workflows by @carterbuce in #2926
