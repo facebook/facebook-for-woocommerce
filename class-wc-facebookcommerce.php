@@ -889,7 +889,6 @@ class WC_Facebookcommerce extends WooCommerce\Facebook\Framework\Plugin {
 		}
 		return $fields;
 	}
-}
 
 	/**
 	 * Determines if the enhanced onboarding (iframe) should be used.
