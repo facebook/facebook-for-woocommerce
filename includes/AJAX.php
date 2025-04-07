@@ -51,6 +51,9 @@ class AJAX {
 		// check the status of whatsapp onboarding and update the progress
 		add_action( 'wp_ajax_wc_facebook_whatsapp_onboarding_progress_check', array( $this, 'whatsapp_onboarding_progress_check' ) );
 
+		// update the wp_options with wc_facebook_whatsapp_consent_collection_setting_status to enabled
+		add_action( 'wp_ajax_wc_facebook_whatsapp_consent_collection_enable', array( $this, 'whatsapp_consent_collection_enable' ) );
+
 		// search a product's attributes for the given term
 		add_action( 'wp_ajax_' . self::ACTION_SEARCH_PRODUCT_ATTRIBUTES, array( $this, 'admin_search_product_attributes' ) );
 	}
@@ -186,6 +189,17 @@ class AJAX {
 			wp_send_json_success();
 		}
 		wp_send_json_error( 'WhatsApp onboarding is not complete' );
+	}
+
+
+	public function whatsapp_consent_collection_enable() {
+		if ( ! check_ajax_referer( 'facebook-for-wc-whatsapp-consent-nonce', 'nonce', false ) ) {
+			wp_send_json_error( 'Invalid security token sent.' );
+		}
+		if ( get_option( 'wc_facebook_whatsapp_consent_collection_setting_status' ) !== 'enabled' ) {
+			update_option( 'wc_facebook_whatsapp_consent_collection_setting_status', 'enabled' );
+		}
+		wp_send_json_success();
 	}
 
 

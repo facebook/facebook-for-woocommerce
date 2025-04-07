@@ -69,6 +69,23 @@ class Whatsapp_Utility extends Abstract_Settings_Screen {
 			array(
 				'ajax_url' => admin_url( 'admin-ajax.php' ),
 				'nonce'    => wp_create_nonce( 'facebook-for-wc-whatsapp-onboarding-progress-nonce' ),
+        'i18n'     => array(
+					'result' => true,
+				),
+			)
+		);
+		wp_enqueue_script(
+			'facebook-for-woocommerce-whatsapp-consent',
+			facebook_for_woocommerce()->get_asset_build_dir_url() . '/admin/whatsapp-consent.js',
+			array( 'jquery', 'jquery-blockui', 'jquery-tiptip', 'wc-enhanced-select' ),
+			\WC_Facebookcommerce::PLUGIN_VERSION
+		);
+		wp_localize_script(
+			'facebook-for-woocommerce-whatsapp-consent',
+			'facebook_for_woocommerce_whatsapp_consent',
+			array(
+				'ajax_url' => admin_url( 'admin-ajax.php' ),
+				'nonce'    => wp_create_nonce( 'facebook-for-wc-whatsapp-consent-nonce' ),
 				'i18n'     => array(
 					'result' => true,
 				),
@@ -85,14 +102,72 @@ class Whatsapp_Utility extends Abstract_Settings_Screen {
 	public function render() {
 
 		?>
+
 	<div class="onboarding-card">
+	<div class="card-item">
+	<h1><b><?php esc_html_e( 'Send Updates to customers on WhatsApp', 'facebook-for-woocommerce' ); ?></b></h1>
+		<?php esc_html_e( 'Send important updates and notifications directly to customers through WhatsApp.', 'facebook-for-woocommerce' ); ?>
+	</div>
+	<div class="divider"></div>
+	<div class="card-item">
 	<h2><?php esc_html_e( 'Get started with WhatsApp utility messages', 'facebook-for-woocommerce' ); ?></h2>
 	<p><?php esc_html_e( 'Connect your WhatsApp Business Account to start sending utility messages.', 'facebook-for-woocommerce' ); ?></p>
+	<div class="whatsapp-onboarding-button">
 	<a
 			id="woocommerce-whatsapp-connection"
-			class="connect-button"
+			class="button button-primary"
 			href="#"
 		><?php esc_html_e( 'Connect Whatsapp Account', 'facebook-for-woocommerce' ); ?></a>
+	</div>
+	</div>
+	<div class="divider"></div>
+	<div class="card-item">
+	<h2>Collect phone numbers at checkout</h2>
+	<p>To collect phone numbers, a checkbox will be added to your store’s checkout page. This lets customers sign up to receive your messages. You can preview what this looks like in your checkout page preview.</p>
+		<p>This will allow you to send messages to your customers on WhatsApp.</p>
+		<div class="whatsapp-onboarding-button">
+		<a
+			class="button button-primary"
+			id="wc-whatsapp-collect-consent"
+			href="#"
+		><?php esc_html_e( 'Collect', 'facebook-for-woocommerce' ); ?></a>
+		</div>
+	</div>
+	<div class="divider"></div>
+	<div class="card-item">
+		<h2>Add a payment method</h2>
+		<p>Confirm your payment method in Billings & payments.
+				<a
+					href="#"
+					id="wc-whatsapp-about-pricing"
+				><?php esc_html_e( 'About pricing', 'facebook-for-woocommerce' ); ?>
+				</a>
+
+			</p>
+			<div class="add-payment-section">
+				<div class="review-payment-block">
+					<div class="review-payment-content">
+					Add a payment method
+					</div>
+						<div class="add-payment-button">
+							<a
+								class="button button-primary"
+								id="wc-whatsapp-add-payment"
+								href="#"
+								><?php esc_html_e( 'Add', 'facebook-for-woocommerce' ); ?>
+							</a>
+						</div>
+				</div>
+				<div class="whatsapp-onboarding-button">
+					<a
+						class="button button-primary"
+						id="wc-whatsapp-onboarding-finish"
+						href="#"
+					><?php esc_html_e( 'Finish', 'facebook-for-woocommerce' ); ?></a>
+				</div>
+			</div>
+
+		</div>
 	</div>
 		<?php
 
