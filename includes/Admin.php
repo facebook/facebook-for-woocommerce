@@ -1515,6 +1515,7 @@ class Admin {
 		$image_source = $variation->get_meta( Products::PRODUCT_IMAGE_SOURCE_META_KEY );
 		$fb_mpn       = $this->get_product_variation_meta( $variation, \WC_Facebook_Product::FB_MPN, $parent );
 
+		$has_fb_specific_variation_fields = !empty($description) || !empty($image_url) || !empty($price);
 		if ( $sync_enabled ) {
 			$sync_mode = $is_visible ? self::SYNC_MODE_SYNC_AND_SHOW : self::SYNC_MODE_SYNC_AND_HIDE;
 		} else {
@@ -1531,8 +1532,8 @@ class Admin {
 			<div class="wc-metabox-content" style="display: none;">
 				<?php
 
-				// Only show deprecation notice if any of the deprecated fields exist
-		if ( $variation->get_id() && ( $description || $image_url || $price ) ) {
+		// Only show deprecation notice if any of the deprecated fields exist
+		if ( $variation->get_id() && ($has_fb_specific_variation_fields) ) {
 			?>
 			<div class="notice notice-info inline is-dismissible" style="background-color: #f8f9fa; border-left-color: #72777c; margin: 15px 0;">
 				<p>
@@ -1578,7 +1579,7 @@ class Admin {
 					)
 				);
 
-				if ( $variation->get_id() && $description ) {
+				if ( $variation->get_id() && $has_fb_specific_variation_fields ) {
 						woocommerce_wp_textarea_input(
 							array(
 								'id'            => sprintf( 'variable_%s%s', \WC_Facebookcommerce_Integration::FB_PRODUCT_DESCRIPTION, $index ),
@@ -1593,7 +1594,7 @@ class Admin {
 						);
 				}
 
-				if ( $variation->get_id() && $image_url ) {
+				if ( $variation->get_id() && $has_fb_specific_variation_fields ) {
 					woocommerce_wp_radio(
 						array(
 							'id'            => "variable_fb_product_image_source$index",
@@ -1612,6 +1613,7 @@ class Admin {
 						)
 					);
 
+					if ( $variation->get_id() && $has_fb_specific_variation_fields ) {
 						woocommerce_wp_text_input(
 							array(
 								'id'            => sprintf( 'variable_%s%s', \WC_Facebook_Product::FB_PRODUCT_IMAGE, $index ),
@@ -1624,8 +1626,9 @@ class Admin {
 								'description'   => __( 'Please enter an absolute URL (e.g. https://domain.com/image.jpg).', 'facebook-for-woocommerce' ),
 							)
 						);
+					}
 
-					if ( $variation->get_id() && $price ) {
+					if ( $variation->get_id() && $has_fb_specific_variation_fields ) {
 						woocommerce_wp_text_input(
 							array(
 								'id'            => sprintf( 'variable_%s%s', \WC_Facebook_Product::FB_PRODUCT_PRICE, $index ),
