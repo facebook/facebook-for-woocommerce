@@ -37,3 +37,12 @@
 .whatsapp-onboarding-button {
     text-align: right;
 }
+.event-config {
+    padding: 20px;
+    display: flex;
+    flex-direction: row;
+}
+.event-config-manage-button {
+    padding: 20px;
+    margin-left: auto;
+}
