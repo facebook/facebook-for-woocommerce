@@ -91,7 +91,7 @@ class Products {
 				}
 
 				// Remove excluded product from FB.
-				if ( "no" === $enabled && self::product_should_be_deleted( $product ) ) {
+				if ( "no" === $enabled ) {
 					facebook_for_woocommerce()->get_integration()->delete_fb_product( $product );
 				}
 
@@ -288,6 +288,10 @@ class Products {
 	 * @return bool
 	 */
 	public static function is_product_visible( \WC_Product $product ) {
+		if ( 'yes' === get_option( 'woocommerce_hide_out_of_stock_items' ) && ! $product->is_in_stock() ) {
+			self::$products_visibility[ $product->get_id() ] = false;
+			return false;
+		}
 		// accounts for a legacy bool value, current should be (string) 'yes' or (string) 'no'
 		if ( ! isset( self::$products_visibility[ $product->get_id() ] ) ) {
 			if ( $product->is_type( 'variable' ) ) {

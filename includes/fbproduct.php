@@ -102,6 +102,20 @@ class WC_Facebook_Product {
 	const MAX_TIME   = 'T23:59+00:00';
 	const MIN_TIME   = 'T00:00+00:00';
 
+  /**
+	 * Maximum length of product description.
+	 *
+	 * @var int
+	 */
+	public const MAX_DESCRIPTION_LENGTH = 5000;
+
+	/**
+	 * Maximum length of product title.
+	 *
+	 * @var int
+	 */
+	public const MAX_TITLE_LENGTH = 150;
+
 	static $use_checkout_url = array(
 		'simple'    => 1,
 		'variable'  => 1,
@@ -1169,7 +1183,7 @@ class WC_Facebook_Product {
 		$categories = WC_Facebookcommerce_Utils::get_product_categories( $id );
 		
 		$product_data = array();
-		$product_data[ 'description' ] = $this->get_fb_description();
+		$product_data[ 'description' ] = Helper::str_truncate( $this->get_fb_description(), self::MAX_DESCRIPTION_LENGTH );
 		$product_data[ 'rich_text_description' ] = $this->get_rich_text_description();
 		$product_data[ 'product_type' ] = $categories['categories'];
 		$product_data[ 'brand' ] = Helper::str_truncate( $this->get_fb_brand(), 100 );
@@ -1187,9 +1201,10 @@ class WC_Facebook_Product {
 		$product_data[ 'gender' ] = $this->get_fb_gender();
 		$product_data[ 'material' ] = Helper::str_truncate( $this->get_fb_material(), 100 );
 		$product_data[ 'pattern' ] = Helper::str_truncate( $this->get_fb_pattern(), 100 );
+		$product_data[ 'woo_product_type' ] = $this->get_type();
 
 		if ( self::PRODUCT_PREP_TYPE_ITEMS_BATCH === $type_to_prepare_for ) {
-			$product_data['title'] = WC_Facebookcommerce_Utils::clean_string( $this->get_title() );
+			$product_data['title'] = Helper::str_truncate( WC_Facebookcommerce_Utils::clean_string( $this->get_title() ), self::MAX_TITLE_LENGTH );
 			$product_data['image_link'] = $image_urls[0];
 			$product_data['additional_image_link'] = $this->get_additional_image_urls( $image_urls );
 			$product_data['link'] = $product_url;
