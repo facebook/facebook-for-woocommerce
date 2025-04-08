@@ -1192,8 +1192,8 @@ class Admin {
 				// Only show deprecation notice if any of the deprecated fields exist
 				if ( $post->ID && ( $fb_product_description || $image || $price ) ) {
 					?>
-					<div class="notice notice-warning inline is-dismissible" style="padding: 1px; margin: 10px 10px 0;">
-						<p>
+					<div class="notice notice-warning inline is-dismissible" style="padding: 1px 12px; margin: 10px 10px 0; border-left: 4px solid #dba617; background-color: #fff;">
+						<p style="margin: 8px 0;">
 							<strong><?php esc_html_e( 'Some attributes are no longer supported', 'facebook-for-woocommerce' ); ?></strong><br/>
 							<?php esc_html_e( 'Facebook Description, Custom Image URL, and Facebook Price are no longer supported and have been removed. This update will not affect your ads or shops on Meta.', 'facebook-for-woocommerce' ); ?>
 						</p>
@@ -1528,8 +1528,8 @@ class Admin {
 				// Show deprecation notice only if deprecated fields have values
 				if ( $variation->get_id() && $has_fb_specific_variation_fields ) {
 					?>
-			<div class="notice notice-warning inline is-dismissible" style="padding: 1px; margin: 10px 10px 0;">
-				<p>
+			<div class="notice notice-warning inline is-dismissible" style="padding: 1px 12px; margin: 10px 10px 0; border-left: 4px solid #dba617; background-color: #fff;">
+				<p style="margin: 8px 0;">
 					<strong><?php esc_html_e( 'Some attributes are no longer supported', 'facebook-for-woocommerce' ); ?></strong><br/>
 					<?php esc_html_e( 'Facebook Description, Custom Image URL, and Facebook Price are no longer supported and have been removed. This update will not affect your ads or shops on Meta.', 'facebook-for-woocommerce' ); ?>
 				</p>
