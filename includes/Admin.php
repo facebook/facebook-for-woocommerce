@@ -1192,16 +1192,10 @@ class Admin {
 				// Only show deprecation notice if any of the deprecated fields exist
 				if ( $post->ID && ( $fb_product_description || $image || $price ) ) {
 					?>
-					<div class="notice notice-warning inline is-dismissible" style="margin-top: 1px !important;">
+					<div class="notice notice-warning inline is-dismissible" style="padding: 1px; margin: 10px 10px 0;">
 						<p>
-							<?php
-							printf(
-								/* translators: Placeholders %1$s - opening strong tag, %2$s - closing strong tag */
-								esc_html__( '%1$sHeads up!%2$s Facebook Description, Custom Image URL, and Facebook Price fields are no longer supported and will be removed in a future update. These fields will not affect your product listings on Facebook.', 'facebook-for-woocommerce' ),
-								'<strong>',
-								'</strong>'
-							);
-							?>
+							<strong><?php esc_html_e( 'Some attributes are no longer supported', 'facebook-for-woocommerce' ); ?></strong><br/>
+							<?php esc_html_e( 'Facebook Description, Custom Image URL, and Facebook Price are no longer supported and have been removed. This update will not affect your ads or shops on Meta.', 'facebook-for-woocommerce' ); ?>
 						</p>
 						<button type="button" class="notice-dismiss">
 							<span class="screen-reader-text"><?php esc_html_e( 'Dismiss this notice.', 'facebook-for-woocommerce' ); ?></span>
@@ -1534,16 +1528,10 @@ class Admin {
 				// Show deprecation notice only if deprecated fields have values
 				if ( $variation->get_id() && $has_fb_specific_variation_fields ) {
 					?>
-			<div class="notice notice-info inline is-dismissible" style="background-color: #f8f9fa; border-left-color: #72777c; margin: 15px 0;">
+			<div class="notice notice-warning inline is-dismissible" style="padding: 1px; margin: 10px 10px 0;">
 				<p>
-					<?php
-					printf(
-						/* translators: Placeholders %1$s - opening strong tag, %2$s - closing strong tag */
-						esc_html__( '%1$sHeads up!%2$s Facebook Description, Custom Image URL, and Facebook Price fields are no longer supported and will be removed in a future update. These fields will not affect your product listings on Facebook.', 'facebook-for-woocommerce' ),
-						'<strong>',
-						'</strong>'
-					);
-					?>
+					<strong><?php esc_html_e( 'Some attributes are no longer supported', 'facebook-for-woocommerce' ); ?></strong><br/>
+					<?php esc_html_e( 'Facebook Description, Custom Image URL, and Facebook Price are no longer supported and have been removed. This update will not affect your ads or shops on Meta.', 'facebook-for-woocommerce' ); ?>
 				</p>
 				<button type="button" class="notice-dismiss">
 					<span class="screen-reader-text"><?php esc_html_e( 'Dismiss this notice.', 'facebook-for-woocommerce' ); ?></span>
