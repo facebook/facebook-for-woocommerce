@@ -1261,7 +1261,7 @@ class Admin {
 						Products::PRODUCT_IMAGE_SOURCE_PRODUCT => __( 'Use WooCommerce image', 'facebook-for-woocommerce' ),
 						Products::PRODUCT_IMAGE_SOURCE_CUSTOM  => __( 'Use custom image', 'facebook-for-woocommerce' ),
 					),
-					'value'         => $image_source ?: Products::PRODUCT_IMAGE_SOURCE_PRODUCT,
+					'value'         => $image_source ? $image_source : Products::PRODUCT_IMAGE_SOURCE_PRODUCT,
 					'class'         => 'short enable-if-sync-enabled js-fb-product-image-source',
 					'wrapper_class' => 'fb-product-image-source-field',
 				)
@@ -1596,7 +1596,7 @@ class Admin {
 							Products::PRODUCT_IMAGE_SOURCE_PARENT_PRODUCT => __( 'Use parent image', 'facebook-for-woocommerce' ),
 							Products::PRODUCT_IMAGE_SOURCE_CUSTOM  => __( 'Use custom image', 'facebook-for-woocommerce' ),
 						),
-						'value'         => $image_source ?: Products::PRODUCT_IMAGE_SOURCE_PRODUCT,
+						'value'         => $image_source ? $image_source : Products::PRODUCT_IMAGE_SOURCE_PRODUCT,
 						'class'         => 'enable-if-sync-enabled js-fb-product-image-source',
 						'wrapper_class' => 'fb-product-image-source-field',
 					)
