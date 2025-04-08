@@ -86,7 +86,7 @@ class FeedConfigurationDetection {
 				$metadata = $this->get_feed_metadata( $feed['id'] );
 			} catch ( Exception $e ) {
 				$message = sprintf( 'There was an error trying to get feed metadata: %s', $e->getMessage() );
-				WC_Facebookcommerce_Utils::log( $message );
+				WC_Facebookcommerce_Utils::logWithDebugModeEnabled( $message );
 				continue;
 			}
 

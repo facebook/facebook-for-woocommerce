@@ -81,7 +81,7 @@ class Feed {
 	 * @throws PluginException If the feed secret is invalid, file is not readable, or other errors occur.
 	 */
 	public function handle_feed_data_request() {
-		\WC_Facebookcommerce_Utils::log( 'Facebook is requesting the product feed.' );
+		\WC_Facebookcommerce_Utils::logWithDebugModeEnabled( 'Facebook is requesting the product feed.' );
 		facebook_for_woocommerce()->get_tracker()->track_feed_file_requested();
 
 		$feed_handler = new \WC_Facebook_Product_Feed();
@@ -119,7 +119,7 @@ class Feed {
 
 			// fpassthru might be disabled in some hosts (like Flywheel)
 			if ( $this->is_fpassthru_disabled() || ! @fpassthru( $file ) ) {
-				\WC_Facebookcommerce_Utils::log( 'fpassthru is disabled: getting file contents' );
+				\WC_Facebookcommerce_Utils::logWithDebugModeEnabled( 'fpassthru is disabled: getting file contents' );
 				$contents = @stream_get_contents( $file );
 				if ( ! $contents ) {
 					throw new PluginException( 'Could not get feed file contents.', 500 );
@@ -127,7 +127,7 @@ class Feed {
 				echo $contents; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
 			}
 		} catch ( \Exception $exception ) {
-			\WC_Facebookcommerce_Utils::log( 'Could not serve product feed. ' . $exception->getMessage() . ' (' . $exception->getCode() . ')' );
+			\WC_Facebookcommerce_Utils::logWithDebugModeEnabled( 'Could not serve product feed. ' . $exception->getMessage() . ' (' . $exception->getCode() . ')' );
 			status_header( $exception->getCode() );
 		}
 		exit;
@@ -211,7 +211,7 @@ class Feed {
 	public function send_request_to_upload_feed() {
 		$feed_id = self::retrieve_or_create_integration_feed_id();
 		if ( empty( $feed_id ) ) {
-			WC_Facebookcommerce_Utils::log( 'Feed: integration feed ID is null or empty, feed will not be uploaded.' );
+			WC_Facebookcommerce_Utils::logWithDebugModeEnabled( 'Feed: integration feed ID is null or empty, feed will not be uploaded.' );
 			return;
 		}
 
@@ -238,7 +238,7 @@ class Feed {
 		$feed_id = self::request_and_filter_integration_feed_id();
 		if ( $feed_id ) {
 			facebook_for_woocommerce()->get_integration()->update_feed_id( $feed_id );
-			WC_Facebookcommerce_Utils::log( 'Feed: feed_id = ' . $feed_id . ', queried and selected from Meta API.' );
+			WC_Facebookcommerce_Utils::logWithDebugModeEnabled( 'Feed: feed_id = ' . $feed_id . ', queried and selected from Meta API.' );
 			return $feed_id;
 		}
 
@@ -246,7 +246,7 @@ class Feed {
 		$feed_id = self::create_feed_id();
 		if ( $feed_id ) {
 			facebook_for_woocommerce()->get_integration()->update_feed_id( $feed_id );
-			WC_Facebookcommerce_Utils::log( 'Feed: feed_id = ' . $feed_id . ', created a new feed via Meta API.' );
+			WC_Facebookcommerce_Utils::logWithDebugModeEnabled( 'Feed: feed_id = ' . $feed_id . ', created a new feed via Meta API.' );
 			return $feed_id;
 		}
 
@@ -271,7 +271,7 @@ class Feed {
 			$feed_nodes = facebook_for_woocommerce()->get_api()->read_feeds( $catalog_id )->data;
 		} catch ( Exception $e ) {
 			$message = sprintf( 'There was an error trying to get feed nodes for catalog: %s', $e->getMessage() );
-			WC_Facebookcommerce_Utils::log( $message );
+			WC_Facebookcommerce_Utils::logWithDebugModeEnabled( $message );
 			return '';
 		}
 
@@ -291,7 +291,7 @@ class Feed {
 				$feed_metadata = facebook_for_woocommerce()->get_api()->read_feed( $feed['id'] );
 			} catch ( Exception $e ) {
 				$message = sprintf( 'There was an error trying to get feed metadata: %s', $e->getMessage() );
-				WC_Facebookcommerce_Utils::log( $message );
+				WC_Facebookcommerce_Utils::logWithDebugModeEnabled( $message );
 				continue;
 			}
 
