@@ -151,7 +151,7 @@ class AdminTest extends TestCase {
         $this->admin->add_product_settings_tab_content();
         $content = ob_get_clean();
 
-        $this->assertStringContainsString('style="padding: 1px; margin: 10px 10px 0;"', $content);
+        $this->assertStringContainsString('style="padding: 1px 12px; margin: 10px 10px 0; border-left: 4px solid #dba617; background-color: #fff;"', $content);
     }
 
     /**
@@ -216,7 +216,7 @@ class AdminTest extends TestCase {
         $this->admin->add_product_variation_edit_fields(0, [], get_post($variation->get_id()));
         $content = ob_get_clean();
 
-        $this->assertStringContainsString('style="padding: 1px; margin: 10px 10px 0;"', $content);
+        $this->assertStringContainsString('style="padding: 1px 12px; margin: 10px 10px 0; border-left: 4px solid #dba617; background-color: #fff;"', $content);
 
         // Clean up
         $variation->delete(true);
