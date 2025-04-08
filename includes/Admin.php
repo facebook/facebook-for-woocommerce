@@ -1521,7 +1521,17 @@ class Admin {
 			$sync_mode = self::SYNC_MODE_SYNC_DISABLED;
 		}
 
-		// Only show deprecation notice if any of the deprecated fields exist
+		// Always show the sync mode selector
+		?>
+		<div class="facebook-metabox wc-metabox closed">
+			<h3>
+				<strong><?php esc_html_e( 'Facebook for WooCommerce', 'facebook-for-woocommerce' ); ?></strong>
+				<div class="handlediv" aria-label="<?php esc_attr_e( 'Click to toggle', 'facebook-for-woocommerce' ); ?>"></div>
+			</h3>
+			<div class="wc-metabox-content" style="display: none;">
+				<?php
+
+				// Only show deprecation notice if any of the deprecated fields exist
 		if ( $variation->get_id() && ( $description || $image_url || $price ) ) {
 			?>
 			<div class="notice notice-info inline is-dismissible" style="background-color: #f8f9fa; border-left-color: #72777c; margin: 15px 0;">
@@ -1549,16 +1559,6 @@ class Admin {
 			</script>
 			<?php
 		}
-
-		// Always show the sync mode selector
-		?>
-		<div class="facebook-metabox wc-metabox closed">
-			<h3>
-				<strong><?php esc_html_e( 'Facebook for WooCommerce', 'facebook-for-woocommerce' ); ?></strong>
-				<div class="handlediv" aria-label="<?php esc_attr_e( 'Click to toggle', 'facebook-for-woocommerce' ); ?>"></div>
-			</h3>
-			<div class="wc-metabox-content" style="display: none;">
-				<?php
 				// Sync Mode Select
 				woocommerce_wp_select(
 					array(
