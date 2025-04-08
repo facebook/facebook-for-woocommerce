@@ -21,10 +21,6 @@ use WooCommerce\Facebook\Framework\Api\Exception as ApiException;
  */
 class Whatsapp_Utility extends Abstract_Settings_Screen {
 
-
-	/** @var string screen ID */
-	const ID = 'whatsapp_utility';
-
 	/** @var flag to test Utility Messages Overview changes until check for integration config is implemented */
 	const WHATSAPP_UTILITY_MESSAGES_OVERVIEW_FLAG = false;
 
