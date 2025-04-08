@@ -442,10 +442,8 @@ if ( ! class_exists( 'WC_Facebookcommerce_Utils' ) ) :
 
 		public static function check_woo_ajax_permissions( $action_text, $die ) {
 			if ( ! current_user_can( 'manage_woocommerce' ) ) {
-				self::log(
-					'Non manage_woocommerce user attempting to' . $action_text . '!',
-					[],
-					true
+				self::logWithDebugModeEnabled(
+					'Non manage_woocommerce user attempting to' . $action_text . '!'
 				);
 				if ( $die ) {
 					wp_die();
@@ -488,25 +486,6 @@ if ( ! class_exists( 'WC_Facebookcommerce_Utils' ) ) :
 				'posts_per_page' => -1,
 			);
 			return get_posts( $args );
-		}
-
-		/**
-		 * Helper log function for debugging
-		 */
-		public static function log( $message ) {
-
-			// if this file is being included outside the plugin, or the plugin setting is disabled
-			if ( ! function_exists( 'facebook_for_woocommerce' ) || ! facebook_for_woocommerce()->get_integration()->is_debug_mode_enabled() ) {
-				return;
-			}
-
-			if ( is_array( $message ) || is_object( $message ) ) {
-				$message = json_encode( $message );
-			} else {
-				$message = sanitize_textarea_field( $message );
-			}
-
-			facebook_for_woocommerce()->log( $message );
 		}
 
 		// Return store name with sanitized apostrophe

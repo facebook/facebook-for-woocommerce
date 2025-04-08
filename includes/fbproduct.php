@@ -1487,7 +1487,7 @@ class WC_Facebook_Product {
 				}//end switch
 			} else {
 
-				\WC_Facebookcommerce_Utils::log( $product->get_id() . ': No options for ' . $original_variant_name );
+				\WC_Facebookcommerce_Utils::logWithDebugModeEnabled( $product->get_id() . ': No options for ' . $original_variant_name );
 				continue;
 			}//end if
 		}//end foreach
@@ -1540,7 +1540,7 @@ class WC_Facebook_Product {
 					$option_values = $variation_attributes[ $key ];
 				} else {
 					// skip variations without valid attribute options
-					\WC_Facebookcommerce_Utils::log( $product->get_id() . ': No options for ' . $name );
+					\WC_Facebookcommerce_Utils::logWithDebugModeEnabled( $product->get_id() . ': No options for ' . $name );
 					continue;
 				}
 

@@ -45,7 +45,7 @@ class WC_Facebook_Product_Feed {
 		$profiling_logger = facebook_for_woocommerce()->get_profiling_logger();
 		$profiling_logger->start( 'generate_feed' );
 
-		\WC_Facebookcommerce_Utils::log( 'Generating a fresh product feed file' );
+		\WC_Facebookcommerce_Utils::logWithDebugModeEnabled( 'Generating a fresh product feed file' );
 
 		try {
 
@@ -56,13 +56,13 @@ class WC_Facebook_Product_Feed {
 			$generation_time = microtime( true ) - $start_time;
 			facebook_for_woocommerce()->get_tracker()->track_feed_file_generation_time( $generation_time );
 
-			\WC_Facebookcommerce_Utils::log( 'Product feed file generated' );
+			\WC_Facebookcommerce_Utils::logWithDebugModeEnabled( 'Product feed file generated' );
 
 			do_action('wc_facebook_feed_generation_completed');
 
 		} catch ( \Exception $exception ) {
 
-			\WC_Facebookcommerce_Utils::log( $exception->getMessage() );
+			\WC_Facebookcommerce_Utils::logWithDebugModeEnabled( $exception->getMessage() );
 			// Feed generation failed - clear the generation time to track that there's an issue.
 			facebook_for_woocommerce()->get_tracker()->track_feed_file_generation_time( -1 );
 
@@ -262,7 +262,7 @@ class WC_Facebook_Product_Feed {
 
 		} catch ( Exception $e ) {
 
-			WC_Facebookcommerce_Utils::log( json_encode( $e->getMessage() ) );
+			WC_Facebookcommerce_Utils::logWithDebugModeEnabled( json_encode( $e->getMessage() ) );
 
 			$written = false;
 
@@ -641,6 +641,6 @@ class WC_Facebook_Product_Feed {
 	public function log_feed_progress( $msg, $object = array() ) {
 		WC_Facebookcommerce_Utils::fblog( $msg, $object );
 		$msg = empty( $object ) ? $msg : $msg . json_encode( $object );
-		WC_Facebookcommerce_Utils::log( $msg );
+		WC_Facebookcommerce_Utils::logWithDebugModeEnabled( $msg );
 	}
 }
