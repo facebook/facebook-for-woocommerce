@@ -1,5 +1,4 @@
 <?php
-
 /**
  * Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
  *
@@ -223,7 +222,6 @@ class Whatsapp_Utility extends Abstract_Settings_Screen {
 		</div>
 		<?php
 	}
-
 
 	/**
 	 * Gets the screen settings.
