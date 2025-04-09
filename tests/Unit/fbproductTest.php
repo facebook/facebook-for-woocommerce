@@ -905,14 +905,13 @@ class fbproductTest extends \WooCommerce\Facebook\Tests\Unit\AbstractWPUnitTestW
 					$term_ids[] = $term['term_id'];
 				}
 			}
-			
 			$attribute->set_options($term_ids);
-			$attribute->set_taxonomy(true);
+			$attribute->is_taxonomy(true);
 		} else {
 			// For custom attributes
 			$values = is_array($value) ? $value : [$value];
 			$attribute->set_options($values);
-			$attribute->set_taxonomy(false);
+			$attribute->is_taxonomy(false);
 		}
 		
 		$attribute->set_position(0);
@@ -1111,5 +1110,118 @@ class fbproductTest extends \WooCommerce\Facebook\Tests\Unit\AbstractWPUnitTestW
 		
 		// Remove the filter early
 		$filter->teardown_safely_immediately();
+	}
+
+	/**
+	 * Test get_unmapped_attributes with no attributes
+	 */
+	public function test_get_unmapped_attributes_no_attributes() {
+		$product = WC_Helper_Product::create_simple_product();
+		$facebook_product = new \WC_Facebook_Product($product);
+		
+		$unmapped_attributes = $facebook_product->get_unmapped_attributes();
+		$this->assertIsArray($unmapped_attributes);
+		$this->assertEmpty($unmapped_attributes);
+	}
+
+	/**
+	 * Test get_unmapped_attributes with only mapped attributes
+	 */
+	public function test_get_unmapped_attributes_only_mapped() {
+		$product = WC_Helper_Product::create_simple_product();
+		
+		// Add mapped attributes (size, color)
+		$attributes = array();
+		$attributes[] = $this->create_product_attribute('size', 'Large', false);
+		$attributes[] = $this->create_product_attribute('color', 'Blue', false);
+		$product->set_attributes($attributes);
+		$product->save();
+
+		$facebook_product = new \WC_Facebook_Product($product);
+		$unmapped_attributes = $facebook_product->get_unmapped_attributes();
+		
+		$this->assertIsArray($unmapped_attributes);
+		$this->assertEmpty($unmapped_attributes);
+	}
+
+	/**
+	 * Test get_unmapped_attributes with only unmapped attributes
+	 */
+	public function test_get_unmapped_attributes_only_unmapped() {
+		$product = WC_Helper_Product::create_simple_product();
+		
+		// Add unmapped attributes
+		$attributes = array();
+		$attributes[] = $this->create_product_attribute('weight', '2kg', false);
+		$attributes[] = $this->create_product_attribute('style', 'Modern', false);
+		$product->set_attributes($attributes);
+		$product->save();
+
+		$facebook_product = new \WC_Facebook_Product($product);
+		$unmapped_attributes = $facebook_product->get_unmapped_attributes();
+		
+		$this->assertIsArray($unmapped_attributes);
+		$this->assertCount(2, $unmapped_attributes);
+		
+		// Verify first unmapped attribute
+		$this->assertEquals('weight', $unmapped_attributes[0]['name']);
+		$this->assertEquals('2kg', $unmapped_attributes[0]['value']);
+		
+		// Verify second unmapped attribute
+		$this->assertEquals('style', $unmapped_attributes[1]['name']);
+		$this->assertEquals('Modern', $unmapped_attributes[1]['value']);
+	}
+
+	/**
+	 * Test get_unmapped_attributes with both mapped and unmapped attributes
+	 */
+	public function test_get_unmapped_attributes_mixed() {
+		$product = WC_Helper_Product::create_simple_product();
+		
+		// Add both mapped and unmapped attributes
+		$attributes = array();
+		$attributes[] = $this->create_product_attribute('size', 'Medium', false); // mapped
+		$attributes[] = $this->create_product_attribute('weight', '3kg', false); // unmapped
+		$attributes[] = $this->create_product_attribute('color', 'Red', false); // mapped
+		$attributes[] = $this->create_product_attribute('style', 'Classic', false); // unmapped
+		$product->set_attributes($attributes);
+		$product->save();
+
+		$facebook_product = new \WC_Facebook_Product($product);
+		$unmapped_attributes = $facebook_product->get_unmapped_attributes();
+		
+		$this->assertIsArray($unmapped_attributes);
+		$this->assertCount(2, $unmapped_attributes);
+		
+		// Verify only unmapped attributes are returned
+		$this->assertEquals('weight', $unmapped_attributes[0]['name']);
+		$this->assertEquals('3kg', $unmapped_attributes[0]['value']);
+		$this->assertEquals('style', $unmapped_attributes[1]['name']);
+		$this->assertEquals('Classic', $unmapped_attributes[1]['value']);
+	}
+
+	/**
+	 * Test get_unmapped_attributes with empty attribute values
+	 */
+	public function test_get_unmapped_attributes_empty_values() {
+		$product = WC_Helper_Product::create_simple_product();
+		
+		// Add attributes with empty values
+		$attributes = array();
+		$attributes[] = $this->create_product_attribute('weight', '', false); // empty unmapped
+		$attributes[] = $this->create_product_attribute('size', '', false); // empty mapped
+		$attributes[] = $this->create_product_attribute('style', 'Modern', false); // non-empty unmapped
+		$product->set_attributes($attributes);
+		$product->save();
+
+		$facebook_product = new \WC_Facebook_Product($product);
+		$unmapped_attributes = $facebook_product->get_unmapped_attributes();
+		
+		$this->assertIsArray($unmapped_attributes);
+		$this->assertCount(1, $unmapped_attributes);
+		
+		// Verify only non-empty unmapped attribute is returned
+		$this->assertEquals('style', $unmapped_attributes[0]['name']);
+		$this->assertEquals('Modern', $unmapped_attributes[0]['value']);
 	}
 }
