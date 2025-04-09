@@ -20,6 +20,10 @@ use WooCommerce\Facebook\Framework\Api\Exception as ApiException;
  */
 class Whatsapp_Utility extends Abstract_Settings_Screen {
 
+
+	/** @var string screen ID */
+	const ID = 'whatsapp_utility';
+
 	/** @var flag to test Utility Messages Overview changes until check for integration config is implemented */
 	const WHATSAPP_UTILITY_MESSAGES_OVERVIEW_FLAG = false;
 
@@ -37,8 +41,8 @@ class Whatsapp_Utility extends Abstract_Settings_Screen {
 	 */
 	public function initHook(): void {
 		$this->id    = self::ID;
-		$this->label = __( 'Utility messages', 'facebook-for-woocommerce' );
-		$this->title = __( 'Utility messages', 'facebook-for-woocommerce' );
+		$this->label = __( 'WhatsApp Utility', 'facebook-for-woocommerce' );
+		$this->title = __( 'WhatsApp Utility', 'facebook-for-woocommerce' );
 	}
 
 	/**
@@ -147,9 +151,10 @@ class Whatsapp_Utility extends Abstract_Settings_Screen {
 						</div>
 						<div class="add-payment-button">
 							<a
-								class="button"
+								class="button button-primary"
 								id="wc-whatsapp-add-payment"
-								href="#"><?php esc_html_e( 'Add', 'facebook-for-woocommerce' ); ?>
+								href="#"
+								><?php esc_html_e( 'Add', 'facebook-for-woocommerce' ); ?>
 							</a>
 						</div>
 					</div>
@@ -184,7 +189,7 @@ class Whatsapp_Utility extends Abstract_Settings_Screen {
 			<div class="card-item event-config">
 				<div>
 					<h3><b><?php esc_html_e( 'Order confirmation', 'facebook-for-woocommerce' ); ?></b></h3>
-					<p><?php esc_html_e( 'Send a confirmation to customers after they\'ve placed an order.' ); ?></p>
+					<p><?php esc_html_e( 'Send a confirmation to customers after they\'ve placed an order.', 'facebook-for-woocommerce' ); ?></p>
 				</div>
 				<div class="event-config-manage-button">
 					<a
@@ -197,7 +202,7 @@ class Whatsapp_Utility extends Abstract_Settings_Screen {
 			<div class="card-item event-config">
 				<div>
 					<h3><b><?php esc_html_e( 'Order shipped', 'facebook-for-woocommerce' ); ?></b></h3>
-					<p><?php esc_html_e( 'Send a confirmation to customers when their order is shipped.' ); ?></p>
+					<p><?php esc_html_e( 'Send a confirmation to customers when their order is shipped.', 'facebook-for-woocommerce' ); ?></p>
 				</div>
 				<div class="event-config-manage-button">
 					<a
@@ -210,7 +215,7 @@ class Whatsapp_Utility extends Abstract_Settings_Screen {
 			<div class="card-item event-config">
 				<div>
 					<h3><b><?php esc_html_e( 'Order refunded', 'facebook-for-woocommerce' ); ?></b></h3>
-					<p><?php esc_html_e( 'Send a confirmation to customers when an order is refunded.' ); ?></p>
+					<p><?php esc_html_e( 'Send a confirmation to customers when an order is refunded.', 'facebook-for-woocommerce' ); ?></p>
 				</div>
 				<div class="event-config-manage-button">
 					<a
