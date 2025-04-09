@@ -168,6 +168,64 @@ class WC_Facebook_Product {
 	 */
 	public $rich_text_description;
 
+	/** @var array Standard Facebook fields that WooCommerce attributes can map to */
+	private static $standard_facebook_fields = array(
+		'size' => array('size'),
+		'color' => array('color', 'colour'),
+		'pattern' => array('pattern'),
+		'material' => array('material'),
+		'gender' => array('gender'),
+		'age_group' => array('age_group')
+	);
+
+
+	/**
+	 * Check if a WooCommerce attribute maps to a standard Facebook field
+	 *
+	 * @param string $attribute_name The WooCommerce attribute name
+	 * @return bool|string False if not mapped, or the Facebook field name if mapped
+	 */
+	public function check_attribute_mapping($attribute_name) {
+		$sanitized_name = \WC_Facebookcommerce_Utils::sanitize_variant_name($attribute_name, false);
+		
+		foreach (self::$standard_facebook_fields as $fb_field => $possible_matches) {
+			foreach ($possible_matches as $match) {
+				if (stripos($sanitized_name, $match) !== false) {
+					return $fb_field;
+				}
+			}
+		}
+		
+		return false;
+	}
+
+	/**
+	 * Get all attributes that are not mapped to standard Facebook fields
+	 *
+	 * @return array Array of unmapped attributes with 'name' and 'value' keys
+	 */
+	public function get_unmapped_attributes() {
+		$unmapped_attributes = array();
+		$attributes = $this->woo_product->get_attributes();
+
+		foreach ($attributes as $attribute_name => $_) {
+			$value = $this->woo_product->get_attribute($attribute_name);
+			
+			if (!empty($value)) {
+				$mapped_field = $this->check_attribute_mapping($attribute_name);
+				
+				if ($mapped_field === false) {
+					$unmapped_attributes[] = array(
+						'name' => $attribute_name,
+						'value' => $value
+					);
+				}
+			}
+		}
+
+		return $unmapped_attributes;
+	}
+
 	public function __construct( $wpid, $parent_product = null ) {
 
 		if ( $wpid instanceof WC_Product ) {
@@ -1214,11 +1272,11 @@ class WC_Facebook_Product {
 	public function prepare_product( $retailer_id = null, $type_to_prepare_for = self::PRODUCT_PREP_TYPE_NORMAL ) {
 
 		if ( ! $retailer_id ) {
-			$retailer_id =
-			WC_Facebookcommerce_Utils::get_fb_retailer_id( $this );
+			$retailer_id = WC_Facebookcommerce_Utils::get_fb_retailer_id( $this );
 		}
-		$image_urls = $this->get_all_image_urls();
 
+		$image_urls = $this->get_all_image_urls();
+		
 		// Replace WordPress sanitization's ampersand with a real ampersand.
 		$product_url = str_replace(
 			'&amp%3B',
@@ -1247,13 +1305,12 @@ class WC_Facebook_Product {
 		$product_data[ 'condition' ] = $this->get_fb_condition();
 		$product_data[ 'size' ] = $this->get_fb_size();
 		$product_data[ 'color' ] = $this->get_fb_color();
-		$product_data[ 'mpn' ] = $this->get_fb_mpn();
 		$product_data[ 'pattern' ] = Helper::str_truncate( $this->get_fb_pattern(), 100 );
 		$product_data[ 'age_group' ] = $this->get_fb_age_group();
 		$product_data[ 'gender' ] = $this->get_fb_gender();
 		$product_data[ 'material' ] = Helper::str_truncate( $this->get_fb_material(), 100 );
-		$product_data[ 'pattern' ] = Helper::str_truncate( $this->get_fb_pattern(), 100 );
 		$product_data[ 'woo_product_type' ] = $this->get_type();
+		$product_data[ 'unmapped_attributes' ] = $this->get_unmapped_attributes();
 
 		if ( self::PRODUCT_PREP_TYPE_ITEMS_BATCH === $type_to_prepare_for ) {
 			$product_data['title'] = Helper::str_truncate( WC_Facebookcommerce_Utils::clean_string( $this->get_title() ), self::MAX_TITLE_LENGTH );
@@ -1425,17 +1482,14 @@ class WC_Facebook_Product {
 			array_keys( $product->get_attributes() )
 		);
 
-		$matched_attributes = array_filter(
+		return array_filter(
 			$all_attributes,
 			function ( $attribute ) use ( $sanitized_keys ) {
-				if ( is_array( $attribute ) && isset( $attribute['key'] ) ) {
-					return in_array( $attribute['key'], $sanitized_keys );
-				}
-				return false; // Return false if $attribute is not valid
+				return is_array( $attribute ) && 
+				       isset( $attribute['key'] ) && 
+				       in_array( $attribute['key'], $sanitized_keys );
 			}
 		);
-
-		return $matched_attributes;
 	}
 
 
