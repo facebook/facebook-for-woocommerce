@@ -1057,4 +1057,59 @@ class fbproductTest extends \WooCommerce\Facebook\Tests\Unit\AbstractWPUnitTestW
 
 		$this->assertEquals(isset($data['external_update_time']), false);
 	}
+
+		
+
+	/**
+	 * Tests for get_fb_short_description() method
+	 */
+	public function test_get_fb_short_description() {
+		// Test 1: Variation products should inherit parent's short description
+		$variable_product = WC_Helper_Product::create_variation_product();
+		$variation = wc_get_product($variable_product->get_children()[0]);
+		
+		// Set the parent product's short description
+		$variable_product->set_short_description('parent short description');
+		$variable_product->save();
+		
+		// Even if we try to set a short description on the variation (which we dont have functionality for in WooCommerce UI)
+		$variation->set_short_description('variation short description - should be ignored');
+		$variation->save();
+		
+		$parent_fb_product = new \WC_Facebook_Product($variable_product);
+		$facebook_product = new \WC_Facebook_Product($variation, $parent_fb_product);
+		$description = $facebook_product->get_fb_short_description();
+		
+		// Variations should inherit the parent product's short description
+		$this->assertEquals('parent short description', $description, 'Variations should inherit parent short description');
+		
+		// Test 2: Gets short description from post excerpt for simple products
+		$product = WC_Helper_Product::create_simple_product();
+		$product->set_short_description('product short description');
+		$product->save();
+		
+		$facebook_product = new \WC_Facebook_Product($product);
+		$description = $facebook_product->get_fb_short_description();
+		$this->assertEquals('product short description', $description);
+		
+		// Test 3: Returns empty string when no short description exists
+		$product = WC_Helper_Product::create_simple_product();
+		$product->set_short_description('');
+		$product->save();
+		
+		$facebook_product = new \WC_Facebook_Product($product);
+		$description = $facebook_product->get_fb_short_description();
+		$this->assertEquals('', $description);
+		
+		// Test 4: Applies filters
+		$filter = $this->add_filter_with_safe_teardown('facebook_for_woocommerce_fb_product_short_description', function($description, $id) {
+			return 'filtered short description for product ' . $id;
+		}, 10, 2);
+		
+		$description = $facebook_product->get_fb_short_description();
+		$this->assertEquals('filtered short description for product ' . $product->get_id(), $description);
+		
+		// Remove the filter early
+		$filter->teardown_safely_immediately();
+	}
 }
