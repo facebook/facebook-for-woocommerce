@@ -51,6 +51,9 @@ class AJAX {
 		// update the wp_options with wc_facebook_whatsapp_consent_collection_setting_status to enabled
 		add_action( 'wp_ajax_wc_facebook_whatsapp_consent_collection_enable', array( $this, 'whatsapp_consent_collection_enable' ) );
 
+		// fetch billing url info - waba id and business id
+		add_action( 'wp_ajax_wc_facebook_whatsapp_fetch_billing_url_info', array( $this, 'wc_facebook_whatsapp_fetch_billing_url_info') );
+
 		// search a product's attributes for the given term
 		add_action( 'wp_ajax_' . self::ACTION_SEARCH_PRODUCT_ATTRIBUTES, array( $this, 'admin_search_product_attributes' ) );
 	}
@@ -171,6 +174,33 @@ class AJAX {
 		wp_send_json_success( $remaining_products );
 	}
 
+	public function whatsapp_consent_collection_enable() {
+		if ( ! check_ajax_referer( 'facebook-for-wc-whatsapp-consent-nonce', 'nonce', false ) ) {
+			wp_send_json_error( 'Invalid security token sent.' );
+		}
+		if ( get_option( 'wc_facebook_whatsapp_consent_collection_setting_status' ) !== 'enabled' ) {
+			update_option( 'wc_facebook_whatsapp_consent_collection_setting_status', 'enabled' );
+		}
+		wp_send_json_success();
+	}
+
+	public function wc_facebook_whatsapp_fetch_billing_url_info() {
+		facebook_for_woocommerce()->log( 'Fetching billing url info' );
+		if ( ! check_ajax_referer( 'facebook-for-wc-whatsapp-billing-nonce', 'nonce', false ) ) {
+			wp_send_json_error( 'Invalid security token sent.' );
+		}
+
+		$waba_id     = get_option( 'wc_facebook_wa_integration_waba_id', null );
+		$business_id = get_option( 'wc_facebook_wa_integration_business_id', null );
+
+		if ( empty( $waba_id ) || empty( $business_id ) ) {
+			wp_send_json_error( 'Onboarding is not complete or has failed.' );
+		}
+
+		$response = array ( 'waba_id' => $waba_id, 'business_id' => $business_id, );
+
+		wp_send_json_success($response);
+	}
 
 	public function whatsapp_consent_collection_enable() {
 		if ( ! check_ajax_referer( 'facebook-for-wc-whatsapp-consent-nonce', 'nonce', false ) ) {
