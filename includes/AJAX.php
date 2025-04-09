@@ -174,16 +174,6 @@ class AJAX {
 		wp_send_json_success( $remaining_products );
 	}
 
-	public function whatsapp_consent_collection_enable() {
-		if ( ! check_ajax_referer( 'facebook-for-wc-whatsapp-consent-nonce', 'nonce', false ) ) {
-			wp_send_json_error( 'Invalid security token sent.' );
-		}
-		if ( get_option( 'wc_facebook_whatsapp_consent_collection_setting_status' ) !== 'enabled' ) {
-			update_option( 'wc_facebook_whatsapp_consent_collection_setting_status', 'enabled' );
-		}
-		wp_send_json_success();
-	}
-
 	public function wc_facebook_whatsapp_fetch_billing_url_info() {
 		facebook_for_woocommerce()->log( 'Fetching billing url info' );
 		if ( ! check_ajax_referer( 'facebook-for-wc-whatsapp-billing-nonce', 'nonce', false ) ) {
