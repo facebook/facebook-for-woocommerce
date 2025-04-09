@@ -154,11 +154,6 @@ class WC_Facebook_Product {
 	private $main_description;
 
 	/**
-	 * @var bool  Sync short description.
-	 */
-	private $sync_short_description;
-
-	/**
 	 * @var bool Product visibility on Facebook.
 	 */
 	public $fb_visibility;
@@ -240,7 +235,6 @@ class WC_Facebook_Product {
 		$this->gallery_urls           = null;
 		$this->fb_use_parent_image    = null;
 		$this->main_description       = '';
-		$this->sync_short_description = \WC_Facebookcommerce_Integration::PRODUCT_DESCRIPTION_MODE_SHORT === facebook_for_woocommerce()->get_integration()->get_product_description_mode();
 		$this->rich_text_description  = '';
 
 		if ( $meta = get_post_meta( $this->id, self::FB_VISIBILITY, true ) ) {
@@ -269,7 +263,7 @@ class WC_Facebook_Product {
 	 */
 	public function __get( $key ) {
 		// Add warning for private properties.
-		if ( in_array( $key, array( 'fb_description', 'gallery_urls', 'fb_use_parent_image', 'main_description', 'sync_short_description' ), true ) ) {
+		if ( in_array( $key, array( 'fb_description', 'gallery_urls', 'fb_use_parent_image', 'main_description' ), true ) ) {
 			/* translators: %s property name. */
 			_doing_it_wrong( __FUNCTION__, sprintf( esc_html__( 'The %s property is private and should not be accessed outside its class.', 'facebook-for-woocommerce' ), esc_html( $key ) ), '3.0.32' );
 			return $this->$key;
@@ -710,7 +704,7 @@ class WC_Facebook_Product {
 				$description = $post_content;
 			}
 
-			if ( $this->sync_short_description || ( empty( $description ) && ! empty( $post_excerpt ) ) ) {
+			if ( empty( $description ) && ! empty( $post_excerpt ) ) {
 				$description = $post_excerpt;
 			}
 
@@ -830,7 +824,7 @@ class WC_Facebook_Product {
 				$rich_text_description = $post_content;
 			}
 
-			if ( $this->sync_short_description || ( empty( $rich_text_description ) && ! empty( $post_excerpt ) ) ) {
+			if ( empty( $rich_text_description ) && ! empty( $post_excerpt ) ) {
 				$rich_text_description = $post_excerpt;
 			}
 		}
