@@ -52,7 +52,7 @@ class AJAX {
 		add_action( 'wp_ajax_wc_facebook_whatsapp_consent_collection_enable', array( $this, 'whatsapp_consent_collection_enable' ) );
 
 		// fetch billing url info - waba id and business id
-		add_action( 'wp_ajax_wc_facebook_whatsapp_fetch_billing_url_info', array( $this, 'wc_facebook_whatsapp_fetch_billing_url_info') );
+		add_action( 'wp_ajax_wc_facebook_whatsapp_fetch_billing_url_info', array( $this, 'wc_facebook_whatsapp_fetch_billing_url_info' ) );
 
 		// search a product's attributes for the given term
 		add_action( 'wp_ajax_' . self::ACTION_SEARCH_PRODUCT_ATTRIBUTES, array( $this, 'admin_search_product_attributes' ) );
@@ -197,9 +197,12 @@ class AJAX {
 			wp_send_json_error( 'Onboarding is not complete or has failed.' );
 		}
 
-		$response = array ( 'waba_id' => $waba_id, 'business_id' => $business_id, );
+		$response = array(
+			'waba_id'     => $waba_id,
+			'business_id' => $business_id,
+		);
 
-		wp_send_json_success($response);
+		wp_send_json_success( $response );
 	}
 
 	public function whatsapp_consent_collection_enable() {
