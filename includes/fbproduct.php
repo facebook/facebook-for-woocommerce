@@ -682,7 +682,7 @@ class WC_Facebook_Product {
 	public function get_fb_short_description() {
 		$short_description = '';
 
-		// For variations, inherit the short description from the parent product
+		// For variations, first try to get the short description from the parent product
 		if (WC_Facebookcommerce_Utils::is_variation_type($this->woo_product->get_type())) {
 			// Get the parent product
 			$parent_id = $this->woo_product->get_parent_id();
@@ -692,6 +692,15 @@ class WC_Facebook_Product {
 					$short_description = WC_Facebookcommerce_Utils::clean_string($parent_post->post_excerpt);
 				}
 			}
+			
+			// If no parent description found, try getting the variation's own excerpt
+			if (empty($short_description)) {
+				$post = $this->get_post_data();
+				if ($post && !empty($post->post_excerpt)) {
+					$short_description = WC_Facebookcommerce_Utils::clean_string($post->post_excerpt);
+				}
+			}
+			
 			return apply_filters('facebook_for_woocommerce_fb_product_short_description', $short_description, $this->id);
 		}
 
