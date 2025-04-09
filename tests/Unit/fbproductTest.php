@@ -93,15 +93,6 @@ class fbproductTest extends \WooCommerce\Facebook\Tests\Unit\AbstractWPUnitTestW
 		$description = $facebook_product->get_fb_description();
 		$this->assertEquals( $description, get_post( $product->get_id() )->post_content );
 
-		// Gets description from excerpt ignoring content when short mode is set
-		add_option(
-			WC_Facebookcommerce_Integration::SETTING_PRODUCT_DESCRIPTION_MODE,
-			WC_Facebookcommerce_Integration::PRODUCT_DESCRIPTION_MODE_SHORT
-		);
-
-		$facebook_product = new \WC_Facebook_Product( $product );
-		$description      = $facebook_product->get_fb_description();
-		$this->assertEquals( $description, get_post( $product->get_id() )->post_excerpt );
 	}
 
 	/**
@@ -653,12 +644,6 @@ class fbproductTest extends \WooCommerce\Facebook\Tests\Unit\AbstractWPUnitTestW
 		$description = $facebook_product->get_rich_text_description();
 		$this->assertEquals('<p>product content description</p>', $description);
 
-		// Test 6: Falls back to post excerpt if content is empty and sync_short_description is true
-		add_option(
-			WC_Facebookcommerce_Integration::SETTING_PRODUCT_DESCRIPTION_MODE,
-			WC_Facebookcommerce_Integration::PRODUCT_DESCRIPTION_MODE_SHORT
-		);
-		
 		$product->set_description('');
 		$product->set_short_description('<p>short description test</p>');
 		$product->save();
@@ -905,14 +890,13 @@ class fbproductTest extends \WooCommerce\Facebook\Tests\Unit\AbstractWPUnitTestW
 					$term_ids[] = $term['term_id'];
 				}
 			}
-			
 			$attribute->set_options($term_ids);
-			$attribute->set_taxonomy(true);
+			$attribute->is_taxonomy(true);
 		} else {
 			// For custom attributes
 			$values = is_array($value) ? $value : [$value];
 			$attribute->set_options($values);
-			$attribute->set_taxonomy(false);
+			$attribute->is_taxonomy(false);
 		}
 		
 		$attribute->set_position(0);
@@ -1056,5 +1040,173 @@ class fbproductTest extends \WooCommerce\Facebook\Tests\Unit\AbstractWPUnitTestW
 		$data = $fb_product->prepare_product();
 
 		$this->assertEquals(isset($data['external_update_time']), false);
+	}
+
+		
+
+	/**
+	 * Tests for get_fb_short_description() method
+	 */
+	public function test_get_fb_short_description() {
+		// Test 1: Variation products should inherit parent's short description
+		$variable_product = WC_Helper_Product::create_variation_product();
+		$variation = wc_get_product($variable_product->get_children()[0]);
+		
+		// Set the parent product's short description
+		$variable_product->set_short_description('parent short description');
+		$variable_product->save();
+		
+		// Even if we try to set a short description on the variation (which we dont have functionality for in WooCommerce UI)
+		$variation->set_short_description('variation short description - should be ignored');
+		$variation->save();
+		
+		$parent_fb_product = new \WC_Facebook_Product($variable_product);
+		$facebook_product = new \WC_Facebook_Product($variation, $parent_fb_product);
+		$description = $facebook_product->get_fb_short_description();
+		
+		// Variations should inherit the parent product's short description
+		$this->assertEquals('parent short description', $description, 'Variations should inherit parent short description');
+		
+		// Test 2: Gets short description from post excerpt for simple products
+		$product = WC_Helper_Product::create_simple_product();
+		$product->set_short_description('product short description');
+		$product->save();
+		
+		$facebook_product = new \WC_Facebook_Product($product);
+		$description = $facebook_product->get_fb_short_description();
+		$this->assertEquals('product short description', $description);
+		
+		// Test 3: Returns empty string when no short description exists
+		$product = WC_Helper_Product::create_simple_product();
+		$product->set_short_description('');
+		$product->save();
+		
+		$facebook_product = new \WC_Facebook_Product($product);
+		$description = $facebook_product->get_fb_short_description();
+		$this->assertEquals('', $description);
+		
+		// Test 4: Applies filters
+		$filter = $this->add_filter_with_safe_teardown('facebook_for_woocommerce_fb_product_short_description', function($description, $id) {
+			return 'filtered short description for product ' . $id;
+		}, 10, 2);
+		
+		$description = $facebook_product->get_fb_short_description();
+		$this->assertEquals('filtered short description for product ' . $product->get_id(), $description);
+		
+		// Remove the filter early
+		$filter->teardown_safely_immediately();
+	}
+
+	/**
+	 * Test get_unmapped_attributes with no attributes
+	 */
+	public function test_get_unmapped_attributes_no_attributes() {
+		$product = WC_Helper_Product::create_simple_product();
+		$facebook_product = new \WC_Facebook_Product($product);
+		
+		$unmapped_attributes = $facebook_product->get_unmapped_attributes();
+		$this->assertIsArray($unmapped_attributes);
+		$this->assertEmpty($unmapped_attributes);
+	}
+
+	/**
+	 * Test get_unmapped_attributes with only mapped attributes
+	 */
+	public function test_get_unmapped_attributes_only_mapped() {
+		$product = WC_Helper_Product::create_simple_product();
+		
+		// Add mapped attributes (size, color)
+		$attributes = array();
+		$attributes[] = $this->create_product_attribute('size', 'Large', false);
+		$attributes[] = $this->create_product_attribute('color', 'Blue', false);
+		$product->set_attributes($attributes);
+		$product->save();
+
+		$facebook_product = new \WC_Facebook_Product($product);
+		$unmapped_attributes = $facebook_product->get_unmapped_attributes();
+		
+		$this->assertIsArray($unmapped_attributes);
+		$this->assertEmpty($unmapped_attributes);
+	}
+
+	/**
+	 * Test get_unmapped_attributes with only unmapped attributes
+	 */
+	public function test_get_unmapped_attributes_only_unmapped() {
+		$product = WC_Helper_Product::create_simple_product();
+		
+		// Add unmapped attributes
+		$attributes = array();
+		$attributes[] = $this->create_product_attribute('weight', '2kg', false);
+		$attributes[] = $this->create_product_attribute('style', 'Modern', false);
+		$product->set_attributes($attributes);
+		$product->save();
+
+		$facebook_product = new \WC_Facebook_Product($product);
+		$unmapped_attributes = $facebook_product->get_unmapped_attributes();
+		
+		$this->assertIsArray($unmapped_attributes);
+		$this->assertCount(2, $unmapped_attributes);
+		
+		// Verify first unmapped attribute
+		$this->assertEquals('weight', $unmapped_attributes[0]['name']);
+		$this->assertEquals('2kg', $unmapped_attributes[0]['value']);
+		
+		// Verify second unmapped attribute
+		$this->assertEquals('style', $unmapped_attributes[1]['name']);
+		$this->assertEquals('Modern', $unmapped_attributes[1]['value']);
+	}
+
+	/**
+	 * Test get_unmapped_attributes with both mapped and unmapped attributes
+	 */
+	public function test_get_unmapped_attributes_mixed() {
+		$product = WC_Helper_Product::create_simple_product();
+		
+		// Add both mapped and unmapped attributes
+		$attributes = array();
+		$attributes[] = $this->create_product_attribute('size', 'Medium', false); // mapped
+		$attributes[] = $this->create_product_attribute('weight', '3kg', false); // unmapped
+		$attributes[] = $this->create_product_attribute('color', 'Red', false); // mapped
+		$attributes[] = $this->create_product_attribute('style', 'Classic', false); // unmapped
+		$product->set_attributes($attributes);
+		$product->save();
+
+		$facebook_product = new \WC_Facebook_Product($product);
+		$unmapped_attributes = $facebook_product->get_unmapped_attributes();
+		
+		$this->assertIsArray($unmapped_attributes);
+		$this->assertCount(2, $unmapped_attributes);
+		
+		// Verify only unmapped attributes are returned
+		$this->assertEquals('weight', $unmapped_attributes[0]['name']);
+		$this->assertEquals('3kg', $unmapped_attributes[0]['value']);
+		$this->assertEquals('style', $unmapped_attributes[1]['name']);
+		$this->assertEquals('Classic', $unmapped_attributes[1]['value']);
+	}
+
+	/**
+	 * Test get_unmapped_attributes with empty attribute values
+	 */
+	public function test_get_unmapped_attributes_empty_values() {
+		$product = WC_Helper_Product::create_simple_product();
+		
+		// Add attributes with empty values
+		$attributes = array();
+		$attributes[] = $this->create_product_attribute('weight', '', false); // empty unmapped
+		$attributes[] = $this->create_product_attribute('size', '', false); // empty mapped
+		$attributes[] = $this->create_product_attribute('style', 'Modern', false); // non-empty unmapped
+		$product->set_attributes($attributes);
+		$product->save();
+
+		$facebook_product = new \WC_Facebook_Product($product);
+		$unmapped_attributes = $facebook_product->get_unmapped_attributes();
+		
+		$this->assertIsArray($unmapped_attributes);
+		$this->assertCount(1, $unmapped_attributes);
+		
+		// Verify only non-empty unmapped attribute is returned
+		$this->assertEquals('style', $unmapped_attributes[0]['name']);
+		$this->assertEquals('Modern', $unmapped_attributes[0]['value']);
 	}
 }
