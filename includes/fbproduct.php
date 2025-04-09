@@ -1482,14 +1482,17 @@ class WC_Facebook_Product {
 			array_keys( $product->get_attributes() )
 		);
 
-		return array_filter(
+		$matched_attributes = array_filter(
 			$all_attributes,
 			function ( $attribute ) use ( $sanitized_keys ) {
-				return is_array( $attribute ) && 
-				       isset( $attribute['key'] ) && 
-				       in_array( $attribute['key'], $sanitized_keys );
+				if ( is_array( $attribute ) && isset( $attribute['key'] ) ) {
+					return in_array( $attribute['key'], $sanitized_keys );
+				}
+				return false; // Return false if $attribute is not valid
 			}
 		);
+
+		return $matched_attributes;
 	}
 
 

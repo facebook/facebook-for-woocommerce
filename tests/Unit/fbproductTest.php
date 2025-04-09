@@ -490,11 +490,13 @@ class fbproductTest extends \WooCommerce\Facebook\Tests\Unit\AbstractWPUnitTestW
 		$attributes = array();
 		$position = 0;
 		foreach ($woo_attributes as $key => $value) {
-			$attribute = $this->create_product_attribute(
-				$key,
-				$value,
-				is_numeric($key) // Assuming numeric keys are taxonomy terms
-			);
+			$attribute = new WC_Product_Attribute();
+			$attribute->set_id(0);
+			$attribute->set_name($key);
+			$attribute->set_options(array($value));
+			$attribute->set_position($position++);
+			$attribute->set_visible(1);
+			$attribute->set_variation(0);
 			$attributes[] = $attribute;
 		}
 		$product->set_attributes($attributes);
@@ -903,7 +905,6 @@ class fbproductTest extends \WooCommerce\Facebook\Tests\Unit\AbstractWPUnitTestW
 					$term_ids[] = $term['term_id'];
 				}
 			}
-			
 			$attribute->set_options($term_ids);
 			$attribute->is_taxonomy(true);
 		} else {
