@@ -7,11 +7,14 @@ namespace WooCommerce\Facebook\Tests\Handlers;
 
 use WooCommerce\Facebook\Handlers\MetaExtension;
 use WP_UnitTestCase;
+use WooCommerce\Facebook\Tests\SafelyUpdateOptionsTestTrait;
 
 /**
  * The Meta Extension unit test class.
  */
 class MetaExtensionTest extends \WP_UnitTestCase {
+
+    use SafelyUpdateOptionsTestTrait;
 
     /**
      * Instance of the MetaExtension class that we are testing.
@@ -48,7 +51,7 @@ class MetaExtensionTest extends \WP_UnitTestCase {
      * Test generate_iframe_management_url
      */
     public function test_generate_iframe_management_url() {
-        update_option( 'wc_facebook_access_token', 'test_merchant_token' );
+        $this->set_option_safely_only_for_this_test( 'wc_facebook_access_token', 'test_merchant_token' );
         
         // Test with empty business ID (should return empty string)
         $url = MetaExtension::generate_iframe_management_url('');

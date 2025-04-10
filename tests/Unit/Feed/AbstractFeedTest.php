@@ -12,6 +12,7 @@ namespace WooCommerce\Facebook\Feed;
 
 use WP_UnitTestCase;
 use WooCommerce\Facebook\Utilities\Heartbeat;
+use WooCommerce\Facebook\Tests\SafelyUpdateOptionsTestTrait;
 
 class TestFeed extends AbstractFeed {
 	public function __construct(FeedFileWriter $file_writer, AbstractFeedHandler $feed_handler, FeedGenerator $feed_generator) {
@@ -40,6 +41,9 @@ class TestFeed extends AbstractFeed {
 }
 
 class AbstractFeedTest extends WP_UnitTestCase {
+
+	use SafelyUpdateOptionsTestTrait;
+
 	/**
 	 * The test feed class.
 	 *
@@ -57,17 +61,17 @@ class AbstractFeedTest extends WP_UnitTestCase {
 	}
 
 	public function testShouldSkipFeed() {
-		update_option( 'wc_facebook_commerce_partner_integration_id', '1841465350002849' );
-		update_option( 'wc_facebook_commerce_merchant_settings_id', '1352794439398752' );
+		$this->set_option_safely_only_for_this_test( 'wc_facebook_commerce_partner_integration_id', '1841465350002849' );
+		$this->set_option_safely_only_for_this_test( 'wc_facebook_commerce_merchant_settings_id', '1352794439398752' );
 		$this->assertFalse( $this->feed->should_skip_feed(), 'Feed should not be skipped when CPI ID and CMS ID are set.' );
-		update_option( 'wc_facebook_commerce_partner_integration_id', '' );
-		update_option( 'wc_facebook_commerce_merchant_settings_id', '1352794439398752' );
+		$this->set_option_safely_only_for_this_test( 'wc_facebook_commerce_partner_integration_id', '' );
+		$this->set_option_safely_only_for_this_test( 'wc_facebook_commerce_merchant_settings_id', '1352794439398752' );
 		$this->assertTrue( $this->feed->should_skip_feed(), 'Feed should be skipped when CPI ID is empty.' );
-		update_option( 'wc_facebook_commerce_partner_integration_id', '1841465350002849' );
-		update_option( 'wc_facebook_commerce_merchant_settings_id', '' );
+		$this->set_option_safely_only_for_this_test( 'wc_facebook_commerce_partner_integration_id', '1841465350002849' );
+		$this->set_option_safely_only_for_this_test( 'wc_facebook_commerce_merchant_settings_id', '' );
 		$this->assertTrue( $this->feed->should_skip_feed(), 'Feed should be skipped when CMS ID is empty.' );
-		update_option( 'wc_facebook_commerce_partner_integration_id', '' );
-		update_option( 'wc_facebook_commerce_merchant_settings_id', '' );
+		$this->set_option_safely_only_for_this_test( 'wc_facebook_commerce_partner_integration_id', '' );
+		$this->set_option_safely_only_for_this_test( 'wc_facebook_commerce_merchant_settings_id', '' );
 		$this->assertTrue( $this->feed->should_skip_feed(), 'Feed should be skipped when both CPI ID and CMS ID are empty.' );
 	}
 
