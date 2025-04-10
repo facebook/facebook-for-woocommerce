@@ -1,7 +1,7 @@
 <?php
 declare( strict_types=1 );
 
-namespace WooCommerce\Facebook\Tests\Unit\Framework\Utilities;
+namespace WooCommerce\Facebook\Tests\Framework\Utilities;
 
 use WooCommerce\Facebook\Framework\Utilities\AsyncRequest;
 use WP_UnitTestCase;

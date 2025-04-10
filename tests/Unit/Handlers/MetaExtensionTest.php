@@ -3,7 +3,7 @@
  * Unit tests for Meta Extension handler.
  */
 
-namespace WooCommerce\Facebook\Tests\Unit\Handlers;
+namespace WooCommerce\Facebook\Tests\Handlers;
 
 use WooCommerce\Facebook\Handlers\MetaExtension;
 use WP_UnitTestCase;

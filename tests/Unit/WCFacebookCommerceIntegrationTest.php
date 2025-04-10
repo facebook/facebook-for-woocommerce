@@ -16,7 +16,7 @@ use WooCommerce\Facebook\Framework\AdminMessageHandler;
 /**
  * Unit tests for Facebook Graph API calls.
  */
-class WCFacebookCommerceIntegrationTest extends \WooCommerce\Facebook\Tests\Unit\AbstractWPUnitTestWithSafeFiltering {
+class WCFacebookCommerceIntegrationTest extends \WooCommerce\Facebook\Tests\AbstractWPUnitTestWithSafeFiltering {
 
 	/**
 	 * @var WC_Facebookcommerce
