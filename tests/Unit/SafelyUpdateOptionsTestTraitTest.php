@@ -56,8 +56,7 @@ class SafelyUpdateOptionsTestTraitTest extends AbstractWPUnitTestWithSafeFilteri
 	private function get_recorded_original_options(): array {
 		$reflection = new ReflectionClass( $this );
 		$originalOptionsProp = $reflection->getProperty('original_options');
-		// No need for setAccessible(true) if the test class uses the trait.
-		// $originalOptionsProp->setAccessible(true);
+		$originalOptionsProp->setAccessible(true);
 		return $originalOptionsProp->getValue( $this );
 	}
 
