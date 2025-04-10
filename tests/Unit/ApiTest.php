@@ -7,7 +7,7 @@ use WooCommerce\Facebook\Framework\Api\Exception as ApiException;
 /**
  * Api unit test clas.
  */
-class ApiTest extends \WooCommerce\Facebook\Tests\Unit\AbstractWPUnitTestWithSafeFiltering {
+class ApiTest extends \WooCommerce\Facebook\Tests\AbstractWPUnitTestWithSafeFiltering {
 
 	/**
 	 * Facebook Graph API endpoint.

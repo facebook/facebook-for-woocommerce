@@ -3,7 +3,7 @@
  * Abstract test case for unit tests.
  */
 
-namespace WooCommerce\Facebook\Tests\Unit;
+namespace WooCommerce\Facebook\Tests;
 
 use WP_UnitTestCase;
 
