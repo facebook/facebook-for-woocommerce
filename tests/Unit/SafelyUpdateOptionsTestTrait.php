@@ -65,7 +65,7 @@ trait SafelyUpdateOptionsTestTrait {
 	 * @param mixed  $value The new option value.
 	 * @return bool True if the value was updated, false otherwise.
 	 */
-	protected function set_option_safely_only_for_this_test( string $key, mixed $value ): bool {
+	protected function set_option_safely_only_for_this_test( string $key, $value ): bool {
 		if ( ! array_key_exists( $key, $this->original_options ) ) {
 			$current_value = get_option( $key, '__OPTION_DOES_NOT_EXIST__' ); // Use literal string
 			$this->original_options[ $key ] = $current_value;
