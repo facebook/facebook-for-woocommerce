@@ -15,9 +15,6 @@ class ConnectionTest extends TestCase {
 
 	use SafelyUpdateOptionsTestTrait;
 
-    /** @var Connection */
-    private $connection;
-
     /**
      * Helper method to invoke private/protected methods
      *
