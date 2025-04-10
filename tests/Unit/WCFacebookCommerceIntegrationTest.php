@@ -72,6 +72,8 @@ class WCFacebookCommerceIntegrationTest extends \WooCommerce\Facebook\Tests\Abst
 		/* Making sure no options are set before the test. */
 		delete_option( WC_Facebookcommerce_Pixel::SETTINGS_KEY );
 		delete_option( WC_Facebookcommerce_Integration::SETTING_FACEBOOK_PIXEL_ID );
+		// Needed to prevent error logs in tests.
+		WC_Facebookcommerce_Utils::$ems = 'dummy_ems_id';
 	}
 
 	/**
