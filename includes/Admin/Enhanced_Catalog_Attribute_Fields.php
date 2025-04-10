@@ -135,6 +135,7 @@ class Enhanced_Catalog_Attribute_Fields {
 			'default'        => 100,
 		);
 
+		$priority = array(); // Initialize priority array.
 		foreach ( $recommended_attributes as $key => $attribute ) {
 			$recommended_attributes[ $key ]['priority'] = 5; // Assign 5 initially to each attribute
 			if ( 'measurement' === $attribute['type'] ) {
@@ -145,7 +146,10 @@ class Enhanced_Catalog_Attribute_Fields {
 
 		$should_render_checkbox = ! empty( $recommended_attributes );
 
-		array_multisort( $priority, SORT_DESC, $recommended_attributes );
+		// Only sort if we have recommended attributes.
+		if ( ! empty( $priority ) ) {
+			array_multisort( $priority, SORT_DESC, $recommended_attributes );
+		}
 		$selector_value      = $this->get_value( self::OPTIONAL_SELECTOR_KEY, $category_id );
 		$is_showing_optional = 'on' === $selector_value;
 
