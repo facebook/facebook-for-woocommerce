@@ -170,7 +170,7 @@ abstract class AbstractFeed {
 			get_api()->
 			create_common_data_feed_upload( $cpi_id, $data );
 		} catch ( \Exception $exception ) {
-			\WC_Facebookcommerce_Utils::logExceptionImmediatelyToMeta(
+			\WC_Facebookcommerce_Utils::log_exception_immediately_to_meta(
 				$exception,
 				[
 					'event'      => 'feed_upload',
@@ -280,7 +280,7 @@ abstract class AbstractFeed {
 				echo $contents; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
 			}
 		} catch ( \Exception $exception ) {
-			\WC_Facebookcommerce_Utils::logExceptionImmediatelyToMeta(
+			\WC_Facebookcommerce_Utils::log_exception_immediately_to_meta(
 				$exception,
 				[
 					'event'      => 'feed_upload',

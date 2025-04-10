@@ -178,7 +178,7 @@ class Feed {
 			} elseif ( ! $store_allows_sync ) {
 				$message = 'Store does not allow sync.';
 			}
-			WC_Facebookcommerce_Utils::logToMeta(
+			WC_Facebookcommerce_Utils::log_to_meta(
 				sprintf( 'Product feed scheduling failed: %s', $message ),
 				array(
 					'flow_name' => 'product_feed',

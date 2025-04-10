@@ -50,12 +50,12 @@ class ErrorLogHandler extends LogHandlerBase {
 		try {
 			$response = facebook_for_woocommerce()->get_api()->log_to_meta( $context );
 			if ( $response->success ) {
-				WC_Facebookcommerce_Utils::logWithDebugModeEnabled( 'Error log: ' . wp_json_encode( $context ) );
+				WC_Facebookcommerce_Utils::log_with_debug_mode_enabled( 'Error log: ' . wp_json_encode( $context ) );
 			} else {
-				WC_Facebookcommerce_Utils::logWithDebugModeEnabled( 'Bad response from log_to_meta request' );
+				WC_Facebookcommerce_Utils::log_with_debug_mode_enabled( 'Bad response from log_to_meta request' );
 			}
 		} catch ( \Exception $e ) {
-			WC_Facebookcommerce_Utils::logWithDebugModeEnabled( 'Error persisting error logs: ' . $e->getMessage() );
+			WC_Facebookcommerce_Utils::log_with_debug_mode_enabled( 'Error persisting error logs: ' . $e->getMessage() );
 		}
 	}
 
@@ -68,19 +68,19 @@ class ErrorLogHandler extends LogHandlerBase {
 	 * @param array     $context wiki: https://www.internalfb.com/wiki/Commerce_Platform/Teams/3P_Ecosystems_(3PE)/3rd_Party_platforms/Woo_Commerce/How_To_Use_WooCommerce_Side_Logging/
 	 */
 	public static function log_exception_to_meta( Throwable $error, array $context = [] ) {
-		$extra_data                = WC_Facebookcommerce_Utils::getContextData( $context, 'extra_data', [] );
+		$extra_data                = WC_Facebookcommerce_Utils::get_context_data( $context, 'extra_data', [] );
 		$extra_data['php_version'] = phpversion();
 
 		$request_data = [
-			'event'             => WC_Facebookcommerce_Utils::getContextData( $context, 'event', 'error_log' ),
-			'event_type'        => WC_Facebookcommerce_Utils::getContextData( $context, 'event_type' ),
+			'event'             => WC_Facebookcommerce_Utils::get_context_data( $context, 'event', 'error_log' ),
+			'event_type'        => WC_Facebookcommerce_Utils::get_context_data( $context, 'event_type' ),
 			'exception_message' => $error->getMessage(),
 			'exception_trace'   => $error->getTraceAsString(),
 			'exception_code'    => $error->getCode(),
 			'exception_class'   => get_class( $error ),
-			'order_id'          => WC_Facebookcommerce_Utils::getContextData( $context, 'order_id' ),
-			'promotion_id'      => WC_Facebookcommerce_Utils::getContextData( $context, 'promotion_id' ),
-			'incoming_params'   => WC_Facebookcommerce_Utils::getContextData( $context, 'incoming_params' ),
+			'order_id'          => WC_Facebookcommerce_Utils::get_context_data( $context, 'order_id' ),
+			'promotion_id'      => WC_Facebookcommerce_Utils::get_context_data( $context, 'promotion_id' ),
+			'incoming_params'   => WC_Facebookcommerce_Utils::get_context_data( $context, 'incoming_params' ),
 			'extra_data'        => $extra_data,
 		];
 
@@ -89,7 +89,7 @@ class ErrorLogHandler extends LogHandlerBase {
 			as_enqueue_async_action( 'facebook_for_woocommerce_log_api', array( $request_data ) );
 		} else {
 			// Handle the absence of the Action Scheduler
-			WC_Facebookcommerce_Utils::logWithDebugModeEnabled( 'Action Scheduler is not available.' );
+			WC_Facebookcommerce_Utils::log_with_debug_mode_enabled( 'Action Scheduler is not available.' );
 		}
 	}
 }
