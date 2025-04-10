@@ -1099,6 +1099,14 @@ class WC_Facebook_Product {
 			true
 		);
 
+		// If empty and this is a variation, get the parent material
+		if ( empty( $fb_material ) && $this->is_type( 'variation' ) ) {
+			$parent_id = $this->get_parent_id();
+			if ( $parent_id ) {
+				$fb_material = get_post_meta( $parent_id, self::FB_MATERIAL, true );
+			}
+		}
+
 		return mb_substr(WC_Facebookcommerce_Utils::clean_string($fb_material), 0, 200);
 	}
 
