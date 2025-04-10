@@ -1,6 +1,6 @@
 <?php
 
-namespace WooCommerce\Facebook\Tests\Unit;
+namespace WooCommerce\Facebook\Tests\Admin\Settings;
 
 use WooCommerce\Facebook\Admin\Settings_Screens\Connection;
 

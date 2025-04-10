@@ -2,7 +2,7 @@
 declare(strict_types=1);
 
 
-class fbproductTest extends \WooCommerce\Facebook\Tests\Unit\AbstractWPUnitTestWithSafeFiltering {
+class fbproductTest extends \WooCommerce\Facebook\Tests\AbstractWPUnitTestWithSafeFiltering {
 	private $parent_fb_product;
 
 	/** @var \WC_Product_Simple */

@@ -3,7 +3,7 @@
  * Unit tests for REST API functionality.
  */
 
-namespace WooCommerce\Facebook\Tests\Unit\API\Plugin;
+namespace WooCommerce\Facebook\Tests\Api\REST;
 
 use WooCommerce\Facebook\API\Plugin\InitializeRestAPI;
 use WooCommerce\Facebook\API\Plugin\Settings\Handler;
