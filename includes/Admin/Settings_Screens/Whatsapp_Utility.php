@@ -39,8 +39,8 @@ class Whatsapp_Utility extends Abstract_Settings_Screen {
 	 */
 	public function initHook(): void {
 		$this->id    = self::ID;
-		$this->label = __( 'WhatsApp Utility', 'facebook-for-woocommerce' );
-		$this->title = __( 'Whatsapp Utility', 'facebook-for-woocommerce' );
+		$this->label = __( 'Utility messages', 'facebook-for-woocommerce' );
+		$this->title = __( 'Utility messages', 'facebook-for-woocommerce' );
 	}
 
 	/**
@@ -80,6 +80,23 @@ class Whatsapp_Utility extends Abstract_Settings_Screen {
 				),
 			)
 		);
+		wp_enqueue_script(
+			'facebook-for-woocommerce-whatsapp-billing',
+			facebook_for_woocommerce()->get_asset_build_dir_url() . '/admin/whatsapp-billing.js',
+			array( 'jquery', 'jquery-blockui', 'jquery-tiptip', 'wc-enhanced-select' ),
+			\WC_Facebookcommerce::PLUGIN_VERSION
+		);
+		wp_localize_script(
+			'facebook-for-woocommerce-whatsapp-billing',
+			'facebook_for_woocommerce_whatsapp_billing',
+			array(
+				'ajax_url' => admin_url( 'admin-ajax.php' ),
+				'nonce'    => wp_create_nonce( 'facebook-for-wc-whatsapp-billing-nonce' ),
+				'i18n'     => array(
+					'result' => true,
+				),
+			)
+		);
 	}
 
 
@@ -104,28 +121,28 @@ class Whatsapp_Utility extends Abstract_Settings_Screen {
 	<div class="whatsapp-onboarding-button">
 	<a
 			id="woocommerce-whatsapp-connection"
-			class="button button-primary"
+			class="button"
 			href="#"
 		><?php esc_html_e( 'Connect Whatsapp Account', 'facebook-for-woocommerce' ); ?></a>
 	</div>
 	</div>
 	<div class="divider"></div>
 	<div class="card-item">
-	<h2>Collect phone numbers at checkout</h2>
-	<p>To collect phone numbers, a checkbox will be added to your store’s checkout page. This lets customers sign up to receive your messages. You can preview what this looks like in your checkout page preview.</p>
-		<p>This will allow you to send messages to your customers on WhatsApp.</p>
+	<h2><?php esc_html_e( 'Collect phone numbers at checkout', 'facebook-for-woocommerce' ); ?></h2>
+	<p><?php esc_html_e( 'To collect phone numbers, a checkbox will be added to your store’s checkout page. This lets customers sign up to receive your messages. You can preview what this looks like in your checkout page preview.', 'facebook-for-woocommerce' ); ?></p>
+		<p><?php esc_html_e( 'This will allow you to send messages to your customers on WhatsApp.', 'facebook-for-woocommerce' ); ?></p>
 		<div class="whatsapp-onboarding-button">
 		<a
-			class="button button-primary"
+			class="button"
 			id="wc-whatsapp-collect-consent"
 			href="#"
-		><?php esc_html_e( 'Collect', 'facebook-for-woocommerce' ); ?></a>
+		><?php esc_html_e( 'Add', 'facebook-for-woocommerce' ); ?></a>
 		</div>
 	</div>
 	<div class="divider"></div>
 	<div class="card-item">
-		<h2>Add a payment method</h2>
-		<p>Confirm your payment method in Billings & payments.
+		<h2><?php esc_html_e( 'Add a payment method', 'facebook-for-woocommerce' ); ?></h2>
+		<p><?php esc_html_e( 'Confirm your payment method in Billings & payments.', 'facebook-for-woocommerce' ); ?>
 				<a
 					href="#"
 					id="wc-whatsapp-about-pricing"
@@ -136,11 +153,11 @@ class Whatsapp_Utility extends Abstract_Settings_Screen {
 			<div class="add-payment-section">
 				<div class="review-payment-block">
 					<div class="review-payment-content">
-					Add a payment method
+					<?php esc_html_e( 'Add a payment method', 'facebook-for-woocommerce' ); ?>
 					</div>
 						<div class="add-payment-button">
 							<a
-								class="button button-primary"
+								class="button"
 								id="wc-whatsapp-add-payment"
 								href="#"
 								><?php esc_html_e( 'Add', 'facebook-for-woocommerce' ); ?>
