@@ -12,11 +12,14 @@ use WooCommerce\Facebook\Handlers\Connection;
 use WooCommerce\Facebook\Products;
 use WooCommerce\Facebook\ProductSync\ProductValidator;
 use WooCommerce\Facebook\Framework\AdminMessageHandler;
+use WooCommerce\Facebook\Tests\SafelyUpdateOptionsTestTrait; // Add this line
 
 /**
  * Unit tests for Facebook Graph API calls.
  */
 class WCFacebookCommerceIntegrationTest extends \WooCommerce\Facebook\Tests\AbstractWPUnitTestWithSafeFiltering {
+
+	use SafelyUpdateOptionsTestTrait; // Add this line
 
 	/**
 	 * @var WC_Facebookcommerce
@@ -902,9 +905,11 @@ class WCFacebookCommerceIntegrationTest extends \WooCommerce\Facebook\Tests\Abst
 	 * @return void
 	 */
 	public function test_delete_on_out_of_stock_deletes_simple_product() {
-		$product = WC_Helper_Product::create_simple_product();
+		// Set WC option to hide out of stock items
+		$this->set_option_safely_only_for_this_test( 'woocommerce_hide_out_of_stock_items', 'yes' );
 
-		update_option( 'woocommerce_hide_out_of_stock_items', 'yes' );
+		// Create a simple product and set it to out of stock
+		$product = WC_Helper_Product::create_simple_product();
 		$product->set_stock_status( 'outofstock' );
 
 		add_post_meta( $product->get_id(), WC_Facebookcommerce_Integration::FB_PRODUCT_ITEM_ID, 'facebook-product-item-id' );
@@ -924,9 +929,11 @@ class WCFacebookCommerceIntegrationTest extends \WooCommerce\Facebook\Tests\Abst
 	 * @return void
 	 */
 	public function test_delete_on_out_of_stock_does_not_delete_simple_product_with_wc_settings_off() {
-		$product = WC_Helper_Product::create_simple_product();
+		// Set WC option to *not* hide out of stock items
+		$this->set_option_safely_only_for_this_test( 'woocommerce_hide_out_of_stock_items', 'no' );
 
-		update_option( 'woocommerce_hide_out_of_stock_items', 'no' );
+		// Create a simple product and set it to out of stock
+		$product = WC_Helper_Product::create_simple_product();
 		$product->set_stock_status( 'outofstock' );
 
 		$this->api->expects( $this->never() )
@@ -943,10 +950,11 @@ class WCFacebookCommerceIntegrationTest extends \WooCommerce\Facebook\Tests\Abst
 	 * @return void
 	 */
 	public function test_delete_on_out_of_stock_does_not_delete_in_stock_simple_product() {
-		$product = WC_Helper_Product::create_variation_product();
+		// Set WC option to hide out of stock items
+		$this->set_option_safely_only_for_this_test( 'woocommerce_hide_out_of_stock_items', 'yes' );
 
-		update_option( 'woocommerce_hide_out_of_stock_items', 'yes' );
-		$product->set_stock_status( 'instock' );
+		// Create a simple product and ensure it is in stock
+		$product = WC_Helper_Product::create_simple_product();
 
 		$this->api->expects( $this->never() )
 			->method( 'delete_product_item' );
@@ -973,7 +981,8 @@ class WCFacebookCommerceIntegrationTest extends \WooCommerce\Facebook\Tests\Abst
 			->method( 'get_product_sync_validator' )
 			->willReturn( $validator );
 
-		update_option( 'woocommerce_hide_out_of_stock_items', 'yes' );
+		// Set WC option to hide out of stock items
+		$this->set_option_safely_only_for_this_test( 'woocommerce_hide_out_of_stock_items', 'yes' );
 		$facebook_product->woo_product->set_stock_status( 'instock' );
 
 		add_post_meta( $product->get_id(), WC_Facebookcommerce_Integration::FB_PRODUCT_GROUP_ID, 'facebook-variable-product-group-item-id' );
@@ -1016,7 +1025,8 @@ class WCFacebookCommerceIntegrationTest extends \WooCommerce\Facebook\Tests\Abst
 			->method( 'get_product_sync_validator' )
 			->willReturn( $validator );
 
-		update_option( 'woocommerce_hide_out_of_stock_items', 'yes' );
+		// Set WC option to hide out of stock items
+		$this->set_option_safely_only_for_this_test( 'woocommerce_hide_out_of_stock_items', 'yes' );
 		$facebook_product->woo_product->set_stock_status( 'instock' );
 
 		add_post_meta( $product->get_id(), WC_Facebookcommerce_Integration::FB_PRODUCT_GROUP_ID, '' );
@@ -1059,7 +1069,8 @@ class WCFacebookCommerceIntegrationTest extends \WooCommerce\Facebook\Tests\Abst
 			->with( $facebook_product->woo_product )
 			->willReturn( $validator );
 
-		update_option( 'woocommerce_hide_out_of_stock_items', 'yes' );
+		// Set WC option to hide out of stock items
+		$this->set_option_safely_only_for_this_test( 'woocommerce_hide_out_of_stock_items', 'yes' );
 		$facebook_product->woo_product->set_stock_status( 'instock' );
 		add_post_meta( $product->get_id(), WC_Facebookcommerce_Integration::FB_PRODUCT_ITEM_ID, 'facebook-simple-product-item-id' );
 
@@ -1103,7 +1114,8 @@ class WCFacebookCommerceIntegrationTest extends \WooCommerce\Facebook\Tests\Abst
 			->with( $facebook_product->woo_product )
 			->willReturn( $validator );
 
-		update_option( 'woocommerce_hide_out_of_stock_items', 'yes' );
+		// Set WC option to hide out of stock items
+		$this->set_option_safely_only_for_this_test( 'woocommerce_hide_out_of_stock_items', 'yes' );
 		$facebook_product->woo_product->set_stock_status( 'instock' );
 		add_post_meta( $product->get_id(), WC_Facebookcommerce_Integration::FB_PRODUCT_ITEM_ID, '' );
 

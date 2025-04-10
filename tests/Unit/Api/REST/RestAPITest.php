@@ -9,11 +9,14 @@ use WooCommerce\Facebook\API\Plugin\InitializeRestAPI;
 use WooCommerce\Facebook\API\Plugin\Settings\Handler;
 use WooCommerce\Facebook\API\Plugin\Settings\Update\Request as UpdateRequest;
 use PHPUnit\Framework\TestCase;
+use WooCommerce\Facebook\Tests\SafelyUpdateOptionsTestTrait;
 
 /**
  * The REST API unit test class.
  */
 class RestAPITest extends TestCase {
+
+    use SafelyUpdateOptionsTestTrait;
 
     /**
      * Test REST API routes are registered
@@ -37,25 +40,21 @@ class RestAPITest extends TestCase {
         }
 
         // Mock the update_option function
-        if (!function_exists('update_option')) {
+        if (!function_exists('\Tests\Api\REST\update_option')) {
             function update_option($option, $value) {
-                global $wp_options;
-                if (!isset($wp_options)) {
-                    $wp_options = [];
-                }
-                $wp_options[$option] = $value;
+                global $test_instance;
+                $test_instance->set_option_safely_only_for_this_test($option, $value);
                 return true;
             }
         }
 
         // Mock the get_option function
-        if (!function_exists('get_option')) {
+        if (!function_exists('\Tests\Api\REST\get_option')) {
             function get_option($option, $default = false) {
-                global $wp_options;
-                if (!isset($wp_options)) {
-                    $wp_options = [];
-                }
-                return isset($wp_options[$option]) ? $wp_options[$option] : $default;
+                // We can't directly access the original values here easily,
+                // so we'll rely on the trait's teardown to restore state.
+                // For the test logic, we return the WP option directly.
+                return \get_option($option, $default);
             }
         }
 
@@ -65,6 +64,10 @@ class RestAPITest extends TestCase {
                 return $bool ? 'yes' : 'no';
             }
         }
+
+        // Set the global test instance for the mocked update_option
+        global $test_instance;
+        $test_instance = $this;
 
         // Create a handler instance
         $handler = new Handler();

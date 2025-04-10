@@ -3,6 +3,7 @@ namespace WooCommerce\Facebook\Tests\Admin\Settings_Screens;
 
 use PHPUnit\Framework\TestCase;
 use WooCommerce\Facebook\Admin\Settings_Screens\Shops;
+use WooCommerce\Facebook\Tests\SafelyUpdateOptionsTestTrait;
 
 /**
  * Class ShopsTest
@@ -10,6 +11,8 @@ use WooCommerce\Facebook\Admin\Settings_Screens\Shops;
  * @package WooCommerce\Facebook\Tests\Unit\Admin\Settings_Screens
  */
 class ShopsTest extends TestCase {
+
+    use SafelyUpdateOptionsTestTrait;
 
     /** @var Shops */
     private $shops;
@@ -115,7 +118,7 @@ class ShopsTest extends TestCase {
             ->getMock();
 
         // Set up the merchant token
-        update_option('wc_facebook_merchant_access_token', 'test_token');
+        $this->set_option_safely_only_for_this_test('wc_facebook_merchant_access_token', 'test_token');
 
         // Start output buffering to capture the render output
         ob_start();

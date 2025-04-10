@@ -9,12 +9,16 @@
 
 require_once __DIR__ . '/../../../includes/Feed/FeedUploadUtils.php';
 
+use WooCommerce\Facebook\Tests\SafelyUpdateOptionsTestTrait;
+
 /**
  * Class FeedUploadUtilsTest
  *
  * Sets up environment to test various logic in FeedUploadUtils
  */
 class FeedUploadUtilsTest extends \WooCommerce\Facebook\Tests\AbstractWPUnitTestWithSafeFiltering {
+
+	use SafelyUpdateOptionsTestTrait;
 
 	/** @var int Shop page ID */
 	protected static $shop_page_id;
@@ -31,7 +35,7 @@ class FeedUploadUtilsTest extends \WooCommerce\Facebook\Tests\AbstractWPUnitTest
 			return '/%postname%/';
 		});
 
-		update_option( 'permalink_structure', '/%postname%/' );
+		$this->set_option_safely_only_for_this_test( 'permalink_structure', '/%postname%/' );
 		global $wp_rewrite;
 		if ( ! ( $wp_rewrite instanceof WP_Rewrite ) ) {
 			$wp_rewrite = new WP_Rewrite();
@@ -41,10 +45,10 @@ class FeedUploadUtilsTest extends \WooCommerce\Facebook\Tests\AbstractWPUnitTest
 		flush_rewrite_rules();
 
 		// Set basic site options.
-		update_option( 'blogname', 'Test Store' );
-		update_option( 'wc_facebook_commerce_merchant_settings_id', '123456789' );
-		update_option( 'siteurl', 'https://example.com' );
-		update_option( 'home', 'https://example.com' );
+		$this->set_option_safely_only_for_this_test( 'blogname', 'Test Store' );
+		$this->set_option_safely_only_for_this_test( 'wc_facebook_commerce_merchant_settings_id', '123456789' );
+		$this->set_option_safely_only_for_this_test( 'siteurl', 'https://example.com' );
+		$this->set_option_safely_only_for_this_test( 'home', 'https://example.com' );
 
 		// Create and register the Shop page.
 		self::$shop_page_id = self::factory()->post->create( [
@@ -53,7 +57,7 @@ class FeedUploadUtilsTest extends \WooCommerce\Facebook\Tests\AbstractWPUnitTest
 			'post_title'  => 'Shop',
 			'post_name'   => 'shop'
 		] );
-		update_option( 'woocommerce_shop_page_id', self::$shop_page_id );
+		$this->set_option_safely_only_for_this_test( 'woocommerce_shop_page_id', self::$shop_page_id );
 		flush_rewrite_rules();
 
 		// Add high–priority filters to force URLs.

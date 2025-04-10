@@ -15,11 +15,14 @@ use WP_UnitTestCase;
 use ReflectionObject;
 use WC_Facebookcommerce_Utils;
 use WP_Error;
+use WooCommerce\Facebook\Tests\SafelyUpdateOptionsTestTrait;
 
 /**
  * The External version update unit test class.
  */
 class UpdateTest extends WP_UnitTestCase {
+
+	use SafelyUpdateOptionsTestTrait;
 
 	/**
 	 * Instance of the Update class that we are testing.
@@ -107,7 +110,7 @@ class UpdateTest extends WP_UnitTestCase {
 									->getMock();
 		$mock_connection_handler->expects( $this->any() )->method( 'is_connected' )->willReturn( false );
 		$prop_connection_handler->setValue( $plugin, $mock_connection_handler );
-		update_option( 'facebook_for_woocommerce_latest_version_sent_to_server', '0.0.0' ); // Reset the option.
+		$this->set_option_safely_only_for_this_test( 'facebook_for_woocommerce_latest_version_sent_to_server', '0.0.0' ); // Reset the option.
 		$should_update2 = $this->update->should_update_version();
 		$this->assertFalse( $should_update2 );
 
@@ -118,11 +121,11 @@ class UpdateTest extends WP_UnitTestCase {
 									->getMock();
 		$mock_connection_handler->expects( $this->any() )->method( 'is_connected' )->willReturn( true );
 		$prop_connection_handler->setValue( $plugin, $mock_connection_handler );
-		update_option( 'facebook_for_woocommerce_latest_version_sent_to_server', WC_Facebookcommerce_Utils::PLUGIN_VERSION );
+		$this->set_option_safely_only_for_this_test( 'facebook_for_woocommerce_latest_version_sent_to_server', WC_Facebookcommerce_Utils::PLUGIN_VERSION );
 		$should_update3 = $this->update->should_update_version();
 		$this->assertTrue( $should_update3 ); // Because the versions match.
 
-		update_option( 'facebook_for_woocommerce_latest_version_sent_to_server', '0.0.0' ); // Reset the option.
+		$this->set_option_safely_only_for_this_test( 'facebook_for_woocommerce_latest_version_sent_to_server', '0.0.0' ); // Reset the option.
 		$should_update4 = $this->update->should_update_version();
 		$this->assertTrue( $should_update4 );
 	}
@@ -198,7 +201,7 @@ class UpdateTest extends WP_UnitTestCase {
 		$prop_api->setValue( $plugin, $mock_api2 );
 
 		// Assert handling failed API response.
-		update_option( 'facebook_for_woocommerce_latest_version_sent_to_server', '0.0.0' ); // Reset the version to pass the should_update_version check.
+		$this->set_option_safely_only_for_this_test( 'facebook_for_woocommerce_latest_version_sent_to_server', '0.0.0' ); // Reset the version to pass the should_update_version check.
 		$updated3 = $this->update->maybe_update_external_plugin_version();
 		$this->assertFalse( $updated3 ); // API failed response is handled.
 		$this->assertNotEquals( WC_Facebookcommerce_Utils::PLUGIN_VERSION, get_option( 'facebook_for_woocommerce_latest_version_sent_to_server' ) ); // API failed response should not update the option.
@@ -209,7 +212,7 @@ class UpdateTest extends WP_UnitTestCase {
 		$prop_api->setValue( $plugin, $mock_api3 );
 
 		// Assert PluginException Handling.
-		update_option( 'facebook_for_woocommerce_latest_version_sent_to_server', '0.0.0' ); // Reset the version to pass the should_update_version check.
+		$this->set_option_safely_only_for_this_test( 'facebook_for_woocommerce_latest_version_sent_to_server', '0.0.0' ); // Reset the version to pass the should_update_version check.
 		$updated4 = $this->update->maybe_update_external_plugin_version();
 		$this->assertFalse( $updated4 ); // API failed response is handled.
 		$this->assertNotEquals( WC_Facebookcommerce_Utils::PLUGIN_VERSION, get_option( 'facebook_for_woocommerce_latest_version_sent_to_server' ) ); // API failed response should not update the option.
@@ -220,7 +223,7 @@ class UpdateTest extends WP_UnitTestCase {
 		$prop_api->setValue( $plugin, $mock_api4 );
 
 		// Assert ApiException Handling.
-		update_option( 'facebook_for_woocommerce_latest_version_sent_to_server', '0.0.0' ); // Reset the version to pass the should_update_version check.
+		$this->set_option_safely_only_for_this_test( 'facebook_for_woocommerce_latest_version_sent_to_server', '0.0.0' ); // Reset the version to pass the should_update_version check.
 		$updated5 = $this->update->maybe_update_external_plugin_version();
 		$this->assertFalse( $updated5 ); // API failed response is handled.
 		$this->assertNotEquals( WC_Facebookcommerce_Utils::PLUGIN_VERSION, get_option( 'facebook_for_woocommerce_latest_version_sent_to_server' ) ); // API failed response should not update the option.
