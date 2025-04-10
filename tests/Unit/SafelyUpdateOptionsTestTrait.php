@@ -22,7 +22,7 @@ trait SafelyUpdateOptionsTestTrait {
 	/**
 	 * A special value to indicate that an option did not exist before being set.
 	 */
-	private const OPTION_DOES_NOT_EXIST = '__OPTION_DOES_NOT_EXIST__';
+	// private const OPTION_DOES_NOT_EXIST = '__OPTION_DOES_NOT_EXIST__'; // Removed invalid constant
 
 	/**
 	 * Set up before each test.
@@ -46,7 +46,7 @@ trait SafelyUpdateOptionsTestTrait {
 	 */
 	protected function tear_down_options_safely_trait(): void {
 		foreach ( $this->original_options as $key => $original_value ) {
-			if ( self::OPTION_DOES_NOT_EXIST === $original_value ) {
+			if ( '__OPTION_DOES_NOT_EXIST__' === $original_value ) { // Use literal string
 				delete_option( $key );
 			} else {
 				update_option( $key, $original_value );
@@ -67,7 +67,7 @@ trait SafelyUpdateOptionsTestTrait {
 	 */
 	protected function set_option_safely_only_for_this_test( string $key, mixed $value ): bool {
 		if ( ! array_key_exists( $key, $this->original_options ) ) {
-			$current_value = get_option( $key, self::OPTION_DOES_NOT_EXIST );
+			$current_value = get_option( $key, '__OPTION_DOES_NOT_EXIST__' ); // Use literal string
 			$this->original_options[ $key ] = $current_value;
 		}
 
@@ -84,7 +84,7 @@ trait SafelyUpdateOptionsTestTrait {
 	 */
 	protected function remove_option_safely_only_for_this_test( string $key ): bool {
 		if ( ! array_key_exists( $key, $this->original_options ) ) {
-			$current_value = get_option( $key, self::OPTION_DOES_NOT_EXIST );
+			$current_value = get_option( $key, '__OPTION_DOES_NOT_EXIST__' ); // Use literal string
 			$this->original_options[ $key ] = $current_value;
 		}
 

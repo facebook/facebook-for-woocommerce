@@ -24,12 +24,6 @@ class SafelyUpdateOptionsTestTraitTest extends AbstractWPUnitTestWithSafeFilteri
 	private const TEST_OPTION_VALUE_NEW = 'new_trait_test_value';
 
 	/**
-	 * The private constant value used in the trait to mark non-existent options.
-	 * We need this value to verify the trait's internal recording mechanism via reflection.
-	 */
-	private const OPTION_DOES_NOT_EXIST_VALUE = '__OPTION_DOES_NOT_EXIST__';
-
-	/**
 	 * Ensure options are clean before each test method in this class.
 	 * This runs *after* the trait's @before method but before the test method.
 	 */
@@ -81,7 +75,7 @@ class SafelyUpdateOptionsTestTraitTest extends AbstractWPUnitTestWithSafeFilteri
 
 		$recorded_options = $this->get_recorded_original_options();
 		$this->assertArrayHasKey( self::TEST_OPTION_KEY_1, $recorded_options, 'Trait should have recorded the option key.' );
-		$this->assertEquals( self::OPTION_DOES_NOT_EXIST_VALUE, $recorded_options[ self::TEST_OPTION_KEY_1 ], 'Trait should record that the option did not exist.' );
+		$this->assertEquals( '__OPTION_DOES_NOT_EXIST__', $recorded_options[ self::TEST_OPTION_KEY_1 ], 'Trait should record that the option did not exist.' );
 		// Trait's @after hook will run and delete this option.
 	}
 
@@ -138,7 +132,7 @@ class SafelyUpdateOptionsTestTraitTest extends AbstractWPUnitTestWithSafeFilteri
 
 		$recorded_options = $this->get_recorded_original_options();
 		$this->assertArrayHasKey( self::TEST_OPTION_KEY_1, $recorded_options, 'Trait should have recorded the option key.' );
-		$this->assertEquals( self::OPTION_DOES_NOT_EXIST_VALUE, $recorded_options[ self::TEST_OPTION_KEY_1 ], 'Trait should record that the option did not exist.' );
+		$this->assertEquals( '__OPTION_DOES_NOT_EXIST__', $recorded_options[ self::TEST_OPTION_KEY_1 ], 'Trait should record that the option did not exist.' );
 		// Trait's @after hook will run and try to delete the option (no-op).
 	}
 
@@ -166,7 +160,7 @@ class SafelyUpdateOptionsTestTraitTest extends AbstractWPUnitTestWithSafeFilteri
 		$this->assertArrayHasKey( self::TEST_OPTION_KEY_1, $recorded_options );
 		$this->assertEquals( self::TEST_OPTION_VALUE_ORIGINAL, $recorded_options[ self::TEST_OPTION_KEY_1 ], 'Original value for key 1 should be recorded.' );
 		$this->assertArrayHasKey( self::TEST_OPTION_KEY_2, $recorded_options );
-		$this->assertEquals( self::OPTION_DOES_NOT_EXIST_VALUE, $recorded_options[ self::TEST_OPTION_KEY_2 ], 'Non-existence for key 2 should be recorded.' );
+		$this->assertEquals( '__OPTION_DOES_NOT_EXIST__', $recorded_options[ self::TEST_OPTION_KEY_2 ], 'Non-existence for key 2 should be recorded.' );
 		// Trait's @after hook will restore key1 and delete key2.
 	}
 
