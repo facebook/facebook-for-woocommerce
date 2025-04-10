@@ -305,18 +305,6 @@ class Product_Sync extends Abstract_Settings_Screen {
 			),
 
 			array(
-				'id'       => \WC_Facebookcommerce_Integration::SETTING_PRODUCT_DESCRIPTION_MODE,
-				'title'    => __( 'Product description sync', 'facebook-for-woocommerce' ),
-				'type'     => 'select',
-				'class'    => 'product-sync-field',
-				'desc_tip' => __( 'Choose which product description to display in the Facebook catalog.', 'facebook-for-woocommerce' ),
-				'default'  => \WC_Facebookcommerce_Integration::PRODUCT_DESCRIPTION_MODE_STANDARD,
-				'options'  => array(
-					\WC_Facebookcommerce_Integration::PRODUCT_DESCRIPTION_MODE_STANDARD => __( 'Standard description', 'facebook-for-woocommerce' ),
-					\WC_Facebookcommerce_Integration::PRODUCT_DESCRIPTION_MODE_SHORT    => __( 'Short description', 'facebook-for-woocommerce' ),
-				),
-			),
-			array(
 				'id'       => Commerce::OPTION_GOOGLE_PRODUCT_CATEGORY_ID,
 				'type'     => 'product_sync_google_product_categories',
 				'title'    => __( 'Default Google product category', 'facebook-for-woocommerce' ),

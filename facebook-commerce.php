@@ -99,12 +99,6 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 	/** @var string request headers in the debug log */
 	const SETTING_REQUEST_HEADERS_IN_DEBUG_MODE = 'wc_facebook_request_headers_in_debug_log';
 
-	/** @var string the standard product description mode name */
-	const PRODUCT_DESCRIPTION_MODE_STANDARD = 'standard';
-
-	/** @var string the short product description mode name */
-	const PRODUCT_DESCRIPTION_MODE_SHORT = 'short';
-
 	/** @var string custom taxonomy Facebook Product Set ID */
 	const FB_PRODUCT_SET_ID = 'fb_product_set_id';
 
@@ -630,7 +624,7 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 			} while ( $response = $this->facebook_for_woocommerce->get_api()->next( $response, 2 ) );
 		} catch ( ApiException $e ) {
 			$message = sprintf( 'There was an error trying to find the IDs for Product Items in the Product Group %s: %s', $product_group_id, $e->getMessage() );
-			WC_Facebookcommerce_Utils::log( $message );
+			WC_Facebookcommerce_Utils::logWithDebugModeEnabled( $message );
 		}
 
 		return $product_item_ids;
@@ -853,9 +847,6 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 				$this->save_product_settings( $product );
 		} else {
 			// if previously enabled, add a notice on the next page load
-			if ( Products::is_sync_enabled_for_product( $product ) ) {
-				Admin::add_product_disabled_sync_notice();
-			}
 			Products::disable_sync_for_products( [ $product ] );
 			if ( in_array( $wp_id, $products_to_delete_from_facebook, true ) ) {
 				$this->delete_fb_product( $product );
@@ -1370,7 +1361,7 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 			}
 		} catch ( ApiException $e ) {
 			$message = sprintf( 'There was an error trying to create the product group: %s', $e->getMessage() );
-			WC_Facebookcommerce_Utils::log( $message );
+			WC_Facebookcommerce_Utils::logWithDebugModeEnabled( $message );
 		}
 
 		return null;
@@ -1395,7 +1386,7 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 		$variants = $woo_product->prepare_variants_for_group();
 
 		if ( ! $variants ) {
-			WC_Facebookcommerce_Utils::log(
+			WC_Facebookcommerce_Utils::logWithDebugModeEnabled(
 				sprintf(
 				/* translators: %1$s is referring to facebook product group id. */
 					__(
@@ -1437,7 +1428,7 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 			}
 		} catch ( ApiException $e ) {
 			$message = sprintf( 'There was an error trying to update Product Group %s: %s', $fb_product_group_id, $e->getMessage() );
-			WC_Facebookcommerce_Utils::log( $message );
+			WC_Facebookcommerce_Utils::logWithDebugModeEnabled( $message );
 		}
 	}
 
@@ -1465,7 +1456,7 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 			}
 		} catch ( ApiException $e ) {
 			$message = sprintf( 'There was an error trying to create a product item: %s', $e->getMessage() );
-			WC_Facebookcommerce_Utils::log( $message );
+			WC_Facebookcommerce_Utils::logWithDebugModeEnabled( $message );
 		}
 
 		return '';
@@ -1495,7 +1486,7 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 			}
 		} catch ( ApiException $e ) {
 			$message = sprintf( 'There was an error trying to create a product item: %s', $e->getMessage() );
-			WC_Facebookcommerce_Utils::log( $message );
+			WC_Facebookcommerce_Utils::logWithDebugModeEnabled( $message );
 		}
 
 		return '';
@@ -1629,7 +1620,7 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 			}
 		} catch ( ApiException $e ) {
 			$message = sprintf( 'There was an error trying to update a product item: %s', $e->getMessage() );
-			WC_Facebookcommerce_Utils::log( $message );
+			WC_Facebookcommerce_Utils::logWithDebugModeEnabled( $message );
 		}
 	}
 
@@ -1663,7 +1654,7 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 			}
 		} catch ( ApiException $e ) {
 			$message = sprintf( 'There was an error trying to update a product item: %s', $e->getMessage() );
-			WC_Facebookcommerce_Utils::log( $message );
+			WC_Facebookcommerce_Utils::logWithDebugModeEnabled( $message );
 		}
 	}
 
@@ -1697,7 +1688,7 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 			}
 		} catch ( ApiException $e ) {
 			$message = sprintf( 'There was an error trying to create/update a product set: %s', $e->getMessage() );
-			WC_Facebookcommerce_Utils::log( $message );
+			WC_Facebookcommerce_Utils::logWithDebugModeEnabled( $message );
 		}
 	}
 
@@ -1716,7 +1707,7 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 			$this->facebook_for_woocommerce->get_api()->delete_product_set_item( $fb_product_set_id, $allow_live_deletion );
 		} catch ( ApiException $e ) {
 			$message = sprintf( 'There was an error trying to delete a product set item: %s', $e->getMessage() );
-			WC_Facebookcommerce_Utils::log( $message );
+			WC_Facebookcommerce_Utils::logWithDebugModeEnabled( $message );
 		}
 	}
 
@@ -1912,7 +1903,7 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 	 * @return void
 	 */
 	public function display_error_message( string $msg ): void {
-		WC_Facebookcommerce_Utils::log( $msg );
+		WC_Facebookcommerce_Utils::logWithDebugModeEnabled( $msg );
 		set_transient( 'facebook_plugin_api_error', $msg, self::FB_MESSAGE_DISPLAY_TIME );
 	}
 
@@ -2075,7 +2066,7 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 	 **/
 	public function reset_all_products() {
 		if ( ! is_admin() ) {
-			WC_Facebookcommerce_Utils::log(
+			WC_Facebookcommerce_Utils::logWithDebugModeEnabled(
 				'Not resetting any FBIDs from products,
         must call reset from admin context.'
 			);
@@ -2084,7 +2075,7 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 		}
 
 		// Include draft products (omit 'post_status' => 'publish')
-		WC_Facebookcommerce_Utils::log( 'Removing FBIDs from all products' );
+		WC_Facebookcommerce_Utils::logWithDebugModeEnabled( 'Removing FBIDs from all products' );
 
 		$post_ids = get_posts(
 			[
@@ -2111,7 +2102,7 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 		$post_ids = array_merge( $post_ids, $children );
 		$this->delete_post_meta_loop( $post_ids );
 
-		WC_Facebookcommerce_Utils::log( 'Product FBIDs deleted' );
+		WC_Facebookcommerce_Utils::logWithDebugModeEnabled( 'Product FBIDs deleted' );
 
 		return true;
 	}
@@ -2130,7 +2121,7 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 
 		$this->delete_post_meta_loop( $products );
 
-		WC_Facebookcommerce_Utils::log( 'Deleted FB Metadata for product ' . $wp_id );
+		WC_Facebookcommerce_Utils::logWithDebugModeEnabled( 'Deleted FB Metadata for product ' . $wp_id );
 	}
 
 	/**
@@ -2239,12 +2230,12 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 	 */
 	private function sync_facebook_products_using_background_processor() {
 		if ( ! $this->is_product_sync_enabled() ) {
-			WC_Facebookcommerce_Utils::log( 'Sync to Facebook is disabled' );
+			WC_Facebookcommerce_Utils::logWithDebugModeEnabled( 'Sync to Facebook is disabled' );
 			throw new PluginException( __( 'Product sync is disabled.', 'facebook-for-woocommerce' ) );
 		}
 
 		if ( ! $this->is_configured() || ! $this->get_product_catalog_id() ) {
-			WC_Facebookcommerce_Utils::log( sprintf( 'Not syncing, the plugin is not configured or the Catalog ID is missing' ) );
+			WC_Facebookcommerce_Utils::logWithDebugModeEnabled( sprintf( 'Not syncing, the plugin is not configured or the Catalog ID is missing' ) );
 			throw new PluginException( __( 'The plugin is not configured or the Catalog ID is missing.', 'facebook-for-woocommerce' ) );
 		}
 
@@ -2259,7 +2250,7 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 		}
 
 		if ( $currently_syncing ) {
-			WC_Facebookcommerce_Utils::log( 'Not syncing again, sync already in progress' );
+			WC_Facebookcommerce_Utils::logWithDebugModeEnabled( 'Not syncing again, sync already in progress' );
 			WC_Facebookcommerce_Utils::fblog(
 				'Tried to sync during an in-progress sync!',
 				[],
@@ -2272,10 +2263,10 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 			$catalog = $this->facebook_for_woocommerce->get_api()->get_catalog( $this->get_product_catalog_id() );
 		} catch ( ApiException $e ) {
 			$message = sprintf( 'There was an error trying to delete a product set item: %s', $e->getMessage() );
-			WC_Facebookcommerce_Utils::log( $message );
+			WC_Facebookcommerce_Utils::logWithDebugModeEnabled( $message );
 		}
 		if ( $catalog->id ) {
-			WC_Facebookcommerce_Utils::log( 'Not syncing, invalid product catalog!' );
+			WC_Facebookcommerce_Utils::logWithDebugModeEnabled( 'Not syncing, invalid product catalog!' );
 			WC_Facebookcommerce_Utils::fblog(
 				'Tried to sync with an invalid product catalog!',
 				[],
@@ -2309,9 +2300,9 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 			set_transient( self::FB_SYNC_IN_PROGRESS, true, self::FB_SYNC_TIMEOUT );
 			set_transient( self::FB_SYNC_REMAINING, (int) $total );
 			$this->display_info_message( $starting_message );
-			WC_Facebookcommerce_Utils::log( $starting_message );
+			WC_Facebookcommerce_Utils::logWithDebugModeEnabled( $starting_message );
 			foreach ( $post_ids as $post_id ) {
-				WC_Facebookcommerce_Utils::log( 'Pushing post to queue: ' . $post_id );
+				WC_Facebookcommerce_Utils::logWithDebugModeEnabled( 'Pushing post to queue: ' . $post_id );
 				$this->background_processor->push_to_queue( $post_id );
 			}
 
@@ -2341,7 +2332,7 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 				$this->on_product_publish( $post_id );
 				++$count;
 			}
-			WC_Facebookcommerce_Utils::log( 'Synced ' . $count . ' products' );
+			WC_Facebookcommerce_Utils::logWithDebugModeEnabled( 'Synced ' . $count . ' products' );
 			$this->remove_sticky_message();
 			$this->display_info_message( 'Facebook product sync complete!' );
 			delete_transient( self::FB_SYNC_IN_PROGRESS );
@@ -2596,37 +2587,6 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 		 *
 		 */
 		return (array) apply_filters( 'wc_facebook_excluded_product_tag_ids', get_option( self::SETTING_EXCLUDED_PRODUCT_TAG_IDS, [] ), $this );
-	}
-
-	/**
-	 * Gets the configured product description mode.
-	 *
-	 * @return string
-	 * @since 1.10.0
-	 *
-	 */
-	public function get_product_description_mode() {
-		/**
-		 * Filters the configured product description mode.
-		 *
-		 * @param string $mode the configured product description mode
-		 * @param \WC_Facebookcommerce_Integration $integration the integration instance
-		 *
-		 * @since 1.10.0
-		 *
-		 */
-		$mode = (string) apply_filters( 'wc_facebook_product_description_mode', get_option( self::SETTING_PRODUCT_DESCRIPTION_MODE, self::PRODUCT_DESCRIPTION_MODE_STANDARD ), $this );
-
-		$valid_modes = [
-			self::PRODUCT_DESCRIPTION_MODE_STANDARD,
-			self::PRODUCT_DESCRIPTION_MODE_SHORT,
-		];
-
-		if ( ! in_array( $mode, $valid_modes, true ) ) {
-			$mode = self::PRODUCT_DESCRIPTION_MODE_STANDARD;
-		}
-
-		return $mode;
 	}
 
 	/** Setter methods ************************************************************************************************/
@@ -2965,10 +2925,10 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 		if ( $fb_product_item_id ) {
 			try {
 				$pi_result = $this->facebook_for_woocommerce->get_api()->delete_product_item( $fb_product_item_id );
-				WC_Facebookcommerce_Utils::log( $pi_result );
+				WC_Facebookcommerce_Utils::logWithDebugModeEnabled( $pi_result );
 			} catch ( ApiException $e ) {
 				$message = sprintf( 'There was an error trying to delete a product set item: %s', $e->getMessage() );
-				WC_Facebookcommerce_Utils::log( $message );
+				WC_Facebookcommerce_Utils::logWithDebugModeEnabled( $message );
 			}
 		}
 	}
@@ -2987,10 +2947,10 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 			// TODO: replace with a call to API::delete_product_group() {WV 2020-05-26}
 			try {
 				$pg_result = $this->facebook_for_woocommerce->get_api()->delete_product_group( $product_group_id );
-				WC_Facebookcommerce_Utils::log( $pg_result );
+				WC_Facebookcommerce_Utils::logWithDebugModeEnabled( $pg_result );
 			} catch ( ApiException $e ) {
 				$message = sprintf( 'There was an error trying to delete a product group: %s', $e->getMessage() );
-				WC_Facebookcommerce_Utils::log( $message );
+				WC_Facebookcommerce_Utils::logWithDebugModeEnabled( $message );
 			}
 		}
 	}
@@ -3063,7 +3023,7 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 				}
 			} catch ( ApiException $e ) {
 				$message = sprintf( 'There was an error trying to update product item: %s', $e->getMessage() );
-				WC_Facebookcommerce_Utils::log( $message );
+				WC_Facebookcommerce_Utils::logWithDebugModeEnabled( $message );
 			}
 		}
 	}
@@ -3134,7 +3094,7 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 			}
 		} catch ( Exception $e ) {
 			/* @TODO: Log exception. */
-			WC_Facebookcommerce_Utils::log( $e->getMessage() );
+			WC_Facebookcommerce_Utils::logWithDebugModeEnabled( $e->getMessage() );
 			$this->display_error_message(
 				sprintf(
 				/* translators: Placeholders %1$s - original error message from Facebook API */
@@ -3172,16 +3132,6 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 		delete_option( 'fb_test_pass' );
 		printf( json_encode( $response ) );
 		wp_die();
-	}
-
-	/**
-	 * Determines if the enhanced onboarding (iframe) should be used.
-	 *
-	 * @return bool
-	 *
-	 */
-	public function use_enhanced_onboarding() {
-		return false;
 	}
 
 }

@@ -233,7 +233,7 @@ abstract class AbstractFeed {
 	 */
 	public function handle_feed_data_request(): void {
 		$name = static::get_data_stream_name();
-		\WC_Facebookcommerce_Utils::log( "{$name} feed: Meta is requesting feed file." );
+		\WC_Facebookcommerce_Utils::logWithDebugModeEnabled( "{$name} feed: Meta is requesting feed file." );
 
 		$file_path = $this->feed_writer->get_file_path();
 
@@ -271,7 +271,7 @@ abstract class AbstractFeed {
 			// fpassthru might be disabled in some hosts (like Flywheel).
 			// phpcs:ignore
 			if ( \WC_Facebookcommerce_Utils::is_fpassthru_disabled() || ! @fpassthru( $file ) ) {
-				\WC_Facebookcommerce_Utils::log( "{$name} feed: fpassthru is disabled: getting file contents." );
+				\WC_Facebookcommerce_Utils::logWithDebugModeEnabled( "{$name} feed: fpassthru is disabled: getting file contents." );
 				//phpcs:ignore
 				$contents = @stream_get_contents( $file );
 				if ( ! $contents ) {

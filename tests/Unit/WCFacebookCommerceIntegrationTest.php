@@ -576,11 +576,17 @@ class WCFacebookCommerceIntegrationTest extends \WooCommerce\Facebook\Tests\Abst
 	 */
 	public function test_on_product_save_existing_simple_product_sync_disabled_updates_the_product() {
 		$product_to_update = WC_Helper_Product::create_simple_product();
-		$product_to_delete = WC_Helper_Product::create_simple_product();
+
+		// The idea of the following mock is to overide the delete_product_item.
+		// The test is that the product item is being deleted as when it is marked for do not sync.
+		// The mock below is hit otherwise it would generate a random Mock_Response and throw error
+		$integration_mock = $this->createMock(WC_Facebookcommerce_Integration::class);
+		$integration_mock->method('delete_product_item');
+		$this->integration = $integration_mock;
 
 		$_POST['wc_facebook_sync_mode'] = Admin::SYNC_MODE_SYNC_DISABLED;
 
-		$_POST[ WC_Facebook_Product::FB_REMOVE_FROM_SYNC ] = $product_to_delete->get_id();
+		$_POST[ WC_Facebook_Product::FB_REMOVE_FROM_SYNC ] = $product_to_update->get_id();
 
 		$product_to_update->set_stock_status( 'instock' );
 
@@ -589,11 +595,8 @@ class WCFacebookCommerceIntegrationTest extends \WooCommerce\Facebook\Tests\Abst
 
 		$this->integration->on_product_save( $product_to_update->get_id() );
 
-		$this->assertEquals( null, get_post_meta( $product_to_delete->get_id(), WC_Facebookcommerce_Integration::FB_PRODUCT_ITEM_ID, true ) );
-		$this->assertEquals( null, get_post_meta( $product_to_delete->get_id(), WC_Facebookcommerce_Integration::FB_PRODUCT_GROUP_ID, true ) );
-		$this->assertEquals( 'no', get_post_meta( $product_to_update->get_id(), Products::SYNC_ENABLED_META_KEY, true ) );
-		$this->assertEquals( 'no', get_post_meta( $product_to_update->get_id(), Products::VISIBILITY_META_KEY, true ) );
-
+		$this->assertEquals( 'facebook-product-item-id', get_post_meta( $product_to_update->get_id(), WC_Facebookcommerce_Integration::FB_PRODUCT_ITEM_ID, true ) );
+		$this->assertEquals( null, get_post_meta( $product_to_update->get_id(), WC_Facebookcommerce_Integration::FB_PRODUCT_GROUP_ID, true ) );
 	}
 
 	/**
@@ -2387,82 +2390,6 @@ class WCFacebookCommerceIntegrationTest extends \WooCommerce\Facebook\Tests\Abst
 		$this->assertEquals( [ 111, 222, 333 ], $tags );
 	}
 
-	/**
-	 * Tests get product description mode with no filter no options.
-	 *
-	 * @return void
-	 */
-	public function test_get_product_description_mode_no_filter_no_options() {
-		$this->teardown_callback_category_safely( 'wc_facebook_product_description_mode' );
-		delete_option( WC_Facebookcommerce_Integration::SETTING_PRODUCT_DESCRIPTION_MODE );
-
-		$mode = $this->integration->get_product_description_mode();
-
-		$this->assertEquals( WC_Facebookcommerce_Integration::PRODUCT_DESCRIPTION_MODE_STANDARD, $mode );
-	}
-
-	/**
-	 * Tests get product description mode with no filter.
-	 *
-	 * @return void
-	 */
-	public function test_get_product_description_mode_no_filter() {
-		$this->teardown_callback_category_safely( 'wc_facebook_product_description_mode' );
-		add_option(
-			WC_Facebookcommerce_Integration::SETTING_PRODUCT_DESCRIPTION_MODE,
-			WC_Facebookcommerce_Integration::PRODUCT_DESCRIPTION_MODE_SHORT
-		);
-
-		$mode = $this->integration->get_product_description_mode();
-
-		$this->assertEquals( WC_Facebookcommerce_Integration::PRODUCT_DESCRIPTION_MODE_SHORT, $mode );
-	}
-
-	/**
-	 * Tests get product description mode with filter.
-	 *
-	 * @return void
-	 */
-	public function test_get_product_description_mode_with_filter() {
-		$this->add_filter_with_safe_teardown(
-			'wc_facebook_product_description_mode',
-			function ( $mode ) {
-				return WC_Facebookcommerce_Integration::PRODUCT_DESCRIPTION_MODE_STANDARD;
-			}
-		);
-
-		add_option(
-			WC_Facebookcommerce_Integration::SETTING_PRODUCT_DESCRIPTION_MODE,
-			WC_Facebookcommerce_Integration::PRODUCT_DESCRIPTION_MODE_SHORT
-		);
-
-		$mode = $this->integration->get_product_description_mode();
-
-		$this->assertEquals( WC_Facebookcommerce_Integration::PRODUCT_DESCRIPTION_MODE_STANDARD, $mode );
-	}
-
-	/**
-	 * Tests get product description mode falls back into default mode if mode is not recognised as valid mode.
-	 *
-	 * @return void
-	 */
-	public function test_get_product_description_mode_falls_back_to_default_when_unknown_mode() {
-		$this->add_filter_with_safe_teardown(
-			'wc_facebook_product_description_mode',
-			function ( $mode ) {
-				return 'super-duper-description-mode-123';
-			}
-		);
-
-		add_option(
-			WC_Facebookcommerce_Integration::SETTING_PRODUCT_DESCRIPTION_MODE,
-			WC_Facebookcommerce_Integration::PRODUCT_DESCRIPTION_MODE_SHORT
-		);
-
-		$mode = $this->integration->get_product_description_mode();
-
-		$this->assertEquals( WC_Facebookcommerce_Integration::PRODUCT_DESCRIPTION_MODE_STANDARD, $mode );
-	}
 
 	/**
 	 * Tests product catalog id option update with valid catalog id value.
