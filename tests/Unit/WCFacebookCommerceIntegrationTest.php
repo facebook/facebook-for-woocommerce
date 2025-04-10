@@ -417,29 +417,6 @@ class WCFacebookCommerceIntegrationTest extends \WooCommerce\Facebook\Tests\Abst
 	}
 
 	/**
-	 * Tests default allow full batch api sync uses facebook_for_woocommerce_allow_full_batch_api_sync filter
-	 * to overwrite allowance status.
-	 *
-	 * @return void
-	 */
-	public function test_allow_full_batch_api_sync_uses_allow_full_batch_api_sync_filter() {
-		$this->markTestSkipped( 'Some problems with phpunit polyfills notices handling.' );
-
-		$this->add_filter_with_safe_teardown(
-			'facebook_for_woocommerce_allow_full_batch_api_sync',
-			function ( bool $status ) {
-				return false;
-			}
-		);
-
-		$status = $this->integration->allow_full_batch_api_sync();
-
-		$this->assertFalse( $status );
-		$this->assertFalse( has_filter( 'facebook_for_woocommerce_block_full_batch_api_sync' ) );
-		$this->assertTrue( has_filter( 'facebook_for_woocommerce_allow_full_batch_api_sync' ) );
-	}
-
-	/**
 	 * Tests plugin enqueues scripts and styles for non admin user for non plugin settings screens.
 	 *
 	 * @return void
@@ -2176,8 +2153,6 @@ class WCFacebookCommerceIntegrationTest extends \WooCommerce\Facebook\Tests\Abst
 	 * @return void
 	 */
 	public function test_get_js_sdk_version_returns_id_from_options_using_no_filter() {
-		$this->markTestSkipped( 'get_js_sdk_version method is called in constructor which makes it impossible to test it in isolation w/o refactoring the constructor.' );
-
 		add_option( WC_Facebookcommerce_Integration::OPTION_JS_SDK_VERSION, 'v1.0.0' );
 		$this->teardown_callback_category_safely( 'wc_facebook_js_sdk_version' );
 
@@ -2192,8 +2167,6 @@ class WCFacebookCommerceIntegrationTest extends \WooCommerce\Facebook\Tests\Abst
 	 * @return void
 	 */
 	public function test_get_js_sdk_version_returns_id_with_filter() {
-		$this->markTestSkipped( 'get_js_sdk_version method is called in constructor which makes it impossible to test it in isolation w/o refactoring the constructor.' );
-
 		$this->add_filter_with_safe_teardown(
 			'wc_facebook_js_sdk_version',
 			function ( $js_sdk_version ) {
