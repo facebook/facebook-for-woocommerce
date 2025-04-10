@@ -29,9 +29,10 @@
     margin-bottom: 10px;
 }
 .add-payment-button {
-    float: right;
+    text-align: right;
+    margin-bottom: 20px;
+    margin-left: 250px;
     margin-top: 20px;
-    margin-left: 400px;
 }
 .whatsapp-onboarding-button {
     text-align: right;
