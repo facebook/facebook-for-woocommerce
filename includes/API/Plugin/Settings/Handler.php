@@ -275,11 +275,11 @@ class Handler extends AbstractRESTEndpoint {
 				if ( facebook_for_woocommerce()->get_integration()->allow_full_batch_api_sync() ) {
 					facebook_for_woocommerce()->get_products_sync_handler()->create_or_update_all_products();
 				} else {
-					\WC_Facebookcommerce_Utils::logToMeta( 'Initial full product sync disabled by filter hook `facebook_for_woocommerce_allow_full_batch_api_sync`' );
+					\WC_Facebookcommerce_Utils::log_to_meta( 'Initial full product sync disabled by filter hook `facebook_for_woocommerce_allow_full_batch_api_sync`' );
 				}
 			}
 		} catch ( \Exception $exception ) {
-			\WC_Facebookcommerce_Utils::logExceptionImmediatelyToMeta(
+			\WC_Facebookcommerce_Utils::log_exception_immediately_to_meta(
 				$exception,
 				[
 					'event'      => 'product_sync',
@@ -295,7 +295,7 @@ class Handler extends AbstractRESTEndpoint {
 				facebook_for_woocommerce()->feed_manager->run_all_feed_uploads();
 			}
 		} catch ( \Exception $exception ) {
-			\WC_Facebookcommerce_Utils::logExceptionImmediatelyToMeta(
+			\WC_Facebookcommerce_Utils::log_exception_immediately_to_meta(
 				$exception,
 				[
 					'event'      => 'feed_upload',
