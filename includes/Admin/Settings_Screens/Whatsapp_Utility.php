@@ -41,7 +41,7 @@ class Whatsapp_Utility extends Abstract_Settings_Screen {
 	 */
 	public function initHook(): void {
 		$this->id    = self::ID;
-		$this->label = __( 'Utility messages', 'facebook-for-woocommerce' );
+		$this->label = __( 'Utility messages test', 'facebook-for-woocommerce' );
 		$this->title = __( 'Utility messages', 'facebook-for-woocommerce' );
 	}
 
