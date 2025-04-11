@@ -1,6 +1,6 @@
 === Facebook for WooCommerce ===
-Contributors: facebook, automattic, woothemes
-Tags: facebook, woocommerce, marketing, product catalog feed, pixel
+Contributors: facebook
+Tags: meta, facebook, conversions api, catalog sync, ads
 Requires at least: 5.6
 Tested up to: 6.7
 Stable tag: 3.4.4
