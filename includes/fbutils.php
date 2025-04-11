@@ -982,6 +982,7 @@ if ( ! class_exists( 'WC_Facebookcommerce_Utils' ) ) :
 		 * Only logs if debug mode is enabled and WP_DEBUG and WP_DEBUG_LOG are true in wp-config.php.
 		 *
 		 * @param string $message
+		 * @param string $level
 		 */
 		public static function log_with_debug_mode_enabled( $message, $level = null ) {
 			// if this file is being included outside the plugin, or the plugin setting is disabled

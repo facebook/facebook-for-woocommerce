@@ -114,7 +114,7 @@ class WC_Facebook_Product {
 	 */
 	const PRODUCT_PREP_TYPE_NORMAL = 'normal';
 
-  /**
+	/**
 	 * Maximum length of product description.
 	 *
 	 * @var int
@@ -179,12 +179,12 @@ class WC_Facebook_Product {
 
 	/** @var array Standard Facebook fields that WooCommerce attributes can map to */
 	private static $standard_facebook_fields = array(
-		'size' => array('size'),
-		'color' => array('color', 'colour'),
-		'pattern' => array('pattern'),
-		'material' => array('material'),
-		'gender' => array('gender'),
-		'age_group' => array('age_group')
+		'size'      => array( 'size' ),
+		'color'     => array( 'color', 'colour' ),
+		'pattern'   => array( 'pattern' ),
+		'material'  => array( 'material' ),
+		'gender'    => array( 'gender' ),
+		'age_group' => array( 'age_group' ),
 	);
 
 
@@ -194,12 +194,12 @@ class WC_Facebook_Product {
 	 * @param string $attribute_name The WooCommerce attribute name
 	 * @return bool|string False if not mapped, or the Facebook field name if mapped
 	 */
-	public function check_attribute_mapping($attribute_name) {
-		$sanitized_name = \WC_Facebookcommerce_Utils::sanitize_variant_name($attribute_name, false);
+	public function check_attribute_mapping( $attribute_name ) {
+		$sanitized_name = \WC_Facebookcommerce_Utils::sanitize_variant_name( $attribute_name, false );
 
-		foreach (self::$standard_facebook_fields as $fb_field => $possible_matches) {
-			foreach ($possible_matches as $match) {
-				if (stripos($sanitized_name, $match) !== false) {
+		foreach ( self::$standard_facebook_fields as $fb_field => $possible_matches ) {
+			foreach ( $possible_matches as $match ) {
+				if ( stripos( $sanitized_name, $match ) !== false ) {
 					return $fb_field;
 				}
 			}
@@ -215,18 +215,18 @@ class WC_Facebook_Product {
 	 */
 	public function get_unmapped_attributes() {
 		$unmapped_attributes = array();
-		$attributes = $this->woo_product->get_attributes();
+		$attributes          = $this->woo_product->get_attributes();
 
-		foreach ($attributes as $attribute_name => $_) {
-			$value = $this->woo_product->get_attribute($attribute_name);
+		foreach ( $attributes as $attribute_name => $_ ) {
+			$value = $this->woo_product->get_attribute( $attribute_name );
 
-			if (!empty($value)) {
-				$mapped_field = $this->check_attribute_mapping($attribute_name);
+			if ( ! empty( $value ) ) {
+				$mapped_field = $this->check_attribute_mapping( $attribute_name );
 
-				if ($mapped_field === false) {
+				if ( false === $mapped_field ) {
 					$unmapped_attributes[] = array(
-						'name' => $attribute_name,
-						'value' => $value
+						'name'  => $attribute_name,
+						'value' => $value,
 					);
 				}
 			}
@@ -866,32 +866,32 @@ class WC_Facebook_Product {
 		$short_description = '';
 
 		// For variations, first try to get the short description from the parent product
-		if (WC_Facebookcommerce_Utils::is_variation_type($this->woo_product->get_type())) {
+		if ( WC_Facebookcommerce_Utils::is_variation_type( $this->woo_product->get_type() ) ) {
 			// Get the parent product
 			$parent_id = $this->woo_product->get_parent_id();
-			if ($parent_id) {
-				$parent_post = get_post($parent_id);
-				if ($parent_post && !empty($parent_post->post_excerpt)) {
-					$short_description = WC_Facebookcommerce_Utils::clean_string($parent_post->post_excerpt);
+			if ( $parent_id ) {
+				$parent_post = get_post( $parent_id );
+				if ( $parent_post && ! empty( $parent_post->post_excerpt ) ) {
+					$short_description = WC_Facebookcommerce_Utils::clean_string( $parent_post->post_excerpt );
 				}
 			}
 
 			// If no parent description found, try getting the variation's own excerpt
-			if (empty($short_description)) {
+			if ( empty( $short_description ) ) {
 				$post = $this->get_post_data();
-				if ($post && !empty($post->post_excerpt)) {
-					$short_description = WC_Facebookcommerce_Utils::clean_string($post->post_excerpt);
+				if ( $post && ! empty( $post->post_excerpt ) ) {
+					$short_description = WC_Facebookcommerce_Utils::clean_string( $post->post_excerpt );
 				}
 			}
 
-			return apply_filters('facebook_for_woocommerce_fb_product_short_description', $short_description, $this->id);
+			return apply_filters( 'facebook_for_woocommerce_fb_product_short_description', $short_description, $this->id );
 		}
 
 		// Use the product's short description (excerpt) from WooCommerce
-		$post = $this->get_post_data();
-		$post_excerpt = WC_Facebookcommerce_Utils::clean_string($post->post_excerpt);
+		$post         = $this->get_post_data();
+		$post_excerpt = WC_Facebookcommerce_Utils::clean_string( $post->post_excerpt );
 
-		if (!empty($post_excerpt)) {
+		if ( ! empty( $post_excerpt ) ) {
 			$short_description = $post_excerpt;
 		}
 
@@ -901,7 +901,7 @@ class WC_Facebook_Product {
 		 * @param string  $short_description Facebook product short description.
 		 * @param int     $id                WooCommerce Product ID.
 		 */
-		return apply_filters('facebook_for_woocommerce_fb_product_short_description', $short_description, $this->id);
+		return apply_filters( 'facebook_for_woocommerce_fb_product_short_description', $short_description, $this->id );
 	}
 
 	/**
@@ -1269,7 +1269,7 @@ class WC_Facebook_Product {
 			}
 		}
 
-		return mb_substr(WC_Facebookcommerce_Utils::clean_string($fb_material), 0, 200);
+		return mb_substr( WC_Facebookcommerce_Utils::clean_string( $fb_material ), 0, 200 );
 	}
 
 	/**
@@ -1475,30 +1475,30 @@ class WC_Facebook_Product {
 
 		$categories = WC_Facebookcommerce_Utils::get_product_categories( $id );
 
-		$product_data = array();
-		$product_data[ 'description' ] = Helper::str_truncate( $this->get_fb_description(), self::MAX_DESCRIPTION_LENGTH );
-		$product_data[ 'short_description' ] = $this->get_fb_short_description();
-		$product_data[ 'rich_text_description' ] = $this->get_rich_text_description();
-		$product_data[ 'product_type' ] = $categories['categories'];
-		$product_data[ 'brand' ] = Helper::str_truncate( $this->get_fb_brand(), 100 );
-		$product_data[ 'mpn' ] = Helper::str_truncate( $this->get_fb_mpn(), 100 );
-		$product_data[ 'availability' ] = $this->is_in_stock() ? 'in stock' : 'out of stock';
-		$product_data[ 'visibility' ] = Products::is_product_visible( $this->woo_product ) ? \WC_Facebookcommerce_Integration::FB_SHOP_PRODUCT_VISIBLE : \WC_Facebookcommerce_Integration::FB_SHOP_PRODUCT_HIDDEN;
-		$product_data[ 'retailer_id' ] = $retailer_id;
-		$product_data[ 'external_variant_id' ] = $this->get_id();
-		$product_data[ 'condition' ] = $this->get_fb_condition();
-		$product_data[ 'size' ] = $this->get_fb_size();
-		$product_data[ 'color' ] = $this->get_fb_color();
-		$product_data[ 'pattern' ] = Helper::str_truncate( $this->get_fb_pattern(), 100 );
-		$product_data[ 'age_group' ] = $this->get_fb_age_group();
-		$product_data[ 'gender' ] = $this->get_fb_gender();
-		$product_data[ 'material' ] = Helper::str_truncate( $this->get_fb_material(), 100 );
-		$product_data[ 'woo_product_type' ] = $this->get_type();
-		$product_data[ 'unmapped_attributes' ] = $this->get_unmapped_attributes();
+		$product_data                          = array();
+		$product_data['description']           = Helper::str_truncate( $this->get_fb_description(), self::MAX_DESCRIPTION_LENGTH );
+		$product_data['short_description']     = $this->get_fb_short_description();
+		$product_data['rich_text_description'] = $this->get_rich_text_description();
+		$product_data['product_type']          = $categories['categories'];
+		$product_data['brand']                 = Helper::str_truncate( $this->get_fb_brand(), 100 );
+		$product_data['mpn']                   = Helper::str_truncate( $this->get_fb_mpn(), 100 );
+		$product_data['availability']          = $this->is_in_stock() ? 'in stock' : 'out of stock';
+		$product_data['visibility']            = Products::is_product_visible( $this->woo_product ) ? \WC_Facebookcommerce_Integration::FB_SHOP_PRODUCT_VISIBLE : \WC_Facebookcommerce_Integration::FB_SHOP_PRODUCT_HIDDEN;
+		$product_data['retailer_id']           = $retailer_id;
+		$product_data['external_variant_id']   = $this->get_id();
+		$product_data['condition']             = $this->get_fb_condition();
+		$product_data['size']                  = $this->get_fb_size();
+		$product_data['color']                 = $this->get_fb_color();
+		$product_data['pattern']               = Helper::str_truncate( $this->get_fb_pattern(), 100 );
+		$product_data['age_group']             = $this->get_fb_age_group();
+		$product_data['gender']                = $this->get_fb_gender();
+		$product_data['material']              = Helper::str_truncate( $this->get_fb_material(), 100 );
+		$product_data['woo_product_type']      = $this->get_type();
+		$product_data['unmapped_attributes']   = $this->get_unmapped_attributes();
 
 		if ( self::PRODUCT_PREP_TYPE_ITEMS_BATCH === $type_to_prepare_for ) {
-			$product_data['title'] = Helper::str_truncate( WC_Facebookcommerce_Utils::clean_string( $this->get_title() ), self::MAX_TITLE_LENGTH );
-			$product_data['image_link'] = $image_urls[0];
+			$product_data['title']                 = Helper::str_truncate( WC_Facebookcommerce_Utils::clean_string( $this->get_title() ), self::MAX_TITLE_LENGTH );
+			$product_data['image_link']            = $image_urls[0];
 			$product_data['additional_image_link'] = $this->get_additional_image_urls( $image_urls );
 			$product_data['link']                  = $product_url;
 			$product_data['price']                 = $this->get_fb_price( true );
