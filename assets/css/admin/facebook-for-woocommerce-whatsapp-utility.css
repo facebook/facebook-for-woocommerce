@@ -46,3 +46,21 @@
     padding: 20px;
     margin-left: auto;
 }
+.manage-event-template-block {
+    border: 1px solid #c4c3c3;
+    margin-bottom: 20px;
+}
+.manage-event-template-header {
+    position: relative;
+    display: block;
+    padding: 20px;
+    font-size: medium;
+}
+.manage-event-template-footer {
+    padding: 20px;
+    display: flex;
+    flex-direction: row-reverse;
+}
+.manage-event-button {
+    margin-left: 20px;
+}
