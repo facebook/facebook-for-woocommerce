@@ -17,7 +17,7 @@ jQuery( document ).ready( function( $ ) {
         updateProgress(0,1800000); // retry for 30 minutes
     });
 
-    function updateProgress(retryCount = 0, maxRetries = 1800000) {
+    function updateProgress(retryCount = 0, pollingTimeout = 1800000) {
         $.post( facebook_for_woocommerce_whatsapp_onboarding_progress.ajax_url, {
 			action: 'wc_facebook_whatsapp_onboarding_progress_check',
 			nonce:  facebook_for_woocommerce_whatsapp_onboarding_progress.nonce
@@ -28,12 +28,12 @@ jQuery( document ).ready( function( $ ) {
                 // TODO: if success, update the UI with the onboarding succeeded
 				console.log( 'success', response );
 			} else {
-                console.log('Failure. Checking again in 1 second:', response, ', retry attempt:', retryCount, 'maxRetries', maxRetries);
-                if(retryCount >= maxRetries) {
+                console.log('Failure. Checking again in 1 second:', response, ', retry attempt:', retryCount, 'pollingTimeout', pollingTimeout);
+                if(retryCount >= pollingTimeout) {
                     console.log('Max retries reached. Aborting.');
                     return;
                 }
-                setTimeout( updateProgress(retryCount+1, maxRetries), 1000 );
+                setTimeout( function() { updateProgress(retryCount + 1, pollingTimeout); }, 5000 );
             }
 		} );
 
