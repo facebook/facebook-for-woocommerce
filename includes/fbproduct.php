@@ -979,11 +979,11 @@ class WC_Facebook_Product {
 		if ( is_numeric( $sale_price ) && $sale_price > 0 ) {
 			$sale_start                =
 				$date_on_sale_from
-					? date_i18n( WC_DateTime::ATOM, $date->getOffsetTimestamp() )
+					? date_i18n( WC_DateTime::ATOM, $date_on_sale_from->getOffsetTimestamp() )
 					: self::MIN_DATE_1 . self::MIN_TIME;
 			$sale_end                  =
 				$date_on_sale_to
-					? date_i18n( WC_DateTime::ATOM, $date->getOffsetTimestamp() )
+					? date_i18n( WC_DateTime::ATOM, $date_on_sale_to->getOffsetTimestamp() )
 					: self::MAX_DATE . self::MAX_TIME;
 			$sale_price_effective_date =
 				( self::MIN_DATE_1 . self::MIN_TIME === $sale_start && self::MAX_DATE . self::MAX_TIME === $sale_end )
