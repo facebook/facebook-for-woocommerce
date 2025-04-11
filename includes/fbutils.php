@@ -457,10 +457,8 @@ if ( ! class_exists( 'WC_Facebookcommerce_Utils' ) ) :
 		 */
 		public static function check_woo_ajax_permissions( $action_text, $should_die ) {
 			if ( ! current_user_can( 'manage_woocommerce' ) ) {
-				self::log(
-					'Non manage_woocommerce user attempting to' . $action_text . '!',
-					[],
-					true
+				self::log_with_debug_mode_enabled(
+					'Non manage_woocommerce user attempting to' . $action_text . '!'
 				);
 
 				if ( $should_die ) {
@@ -510,26 +508,6 @@ if ( ! class_exists( 'WC_Facebookcommerce_Utils' ) ) :
 			);
 
 			return get_posts( $args );
-		}
-
-		/**
-		 * Helper log function for debugging.
-		 *
-		 * @param string $message
-		 */
-		public static function log( $message ) {
-			// if this file is being included outside the plugin, or the plugin setting is disabled
-			if ( ! function_exists( 'facebook_for_woocommerce' ) || ! facebook_for_woocommerce()->get_integration()->is_debug_mode_enabled() ) {
-				return;
-			}
-
-			if ( is_array( $message ) || is_object( $message ) ) {
-				$message = json_encode( $message );
-			} else {
-				$message = sanitize_textarea_field( $message );
-			}
-
-			facebook_for_woocommerce()->log( $message );
 		}
 
 		/**
@@ -999,13 +977,13 @@ if ( ! class_exists( 'WC_Facebookcommerce_Utils' ) ) :
 		}
 
 		/**
-		 * Saves errors or messages to WordPress debug log (wp-content/debug.log).
+		 * Saves errors or messages to WooCommerce (WP admin page:WooCommerce->Status).
 		 *
 		 * Only logs if debug mode is enabled and WP_DEBUG and WP_DEBUG_LOG are true in wp-config.php.
 		 *
 		 * @param string $message
 		 */
-		public static function log_with_debug_mode_enabled( $message ) {
+		public static function log_with_debug_mode_enabled( $message, $level = null ) {
 			// if this file is being included outside the plugin, or the plugin setting is disabled
 			if ( ! function_exists( 'facebook_for_woocommerce' ) || ! facebook_for_woocommerce()->get_integration()->is_debug_mode_enabled() ) {
 				return;
@@ -1017,7 +995,7 @@ if ( ! class_exists( 'WC_Facebookcommerce_Utils' ) ) :
 				$message = sanitize_textarea_field( $message );
 			}
 
-			error_log( $message );
+			facebook_for_woocommerce()->log( $message, null, $level );
 		}
 	}
 endif;

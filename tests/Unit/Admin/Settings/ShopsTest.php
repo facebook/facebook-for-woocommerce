@@ -1,5 +1,5 @@
 <?php
-namespace WooCommerce\Facebook\Tests\Unit\Admin\Settings;
+namespace WooCommerce\Facebook\Tests\Admin\Settings;
 
 use WooCommerce\Facebook\Admin\Settings_Screens\Shops;
 

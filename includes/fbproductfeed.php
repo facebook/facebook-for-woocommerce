@@ -42,7 +42,7 @@ class WC_Facebook_Product_Feed {
 		$profiling_logger = facebook_for_woocommerce()->get_profiling_logger();
 		$profiling_logger->start( 'generate_feed' );
 
-		\WC_Facebookcommerce_Utils::log( 'Generating a fresh product feed file' );
+		\WC_Facebookcommerce_Utils::log_with_debug_mode_enabled( 'Generating a fresh product feed file' );
 
 		try {
 			$start_time = microtime( true );
@@ -50,10 +50,10 @@ class WC_Facebook_Product_Feed {
 			$generation_time = microtime( true ) - $start_time;
 			facebook_for_woocommerce()->get_tracker()->track_feed_file_generation_time( $generation_time );
 
-			\WC_Facebookcommerce_Utils::log( 'Product feed file generated' );
+			\WC_Facebookcommerce_Utils::log_with_debug_mode_enabled( 'Product feed file generated' );
 			do_action( 'wc_facebook_feed_generation_completed' );
 		} catch ( \Exception $exception ) {
-			\WC_Facebookcommerce_Utils::log( $exception->getMessage() );
+			\WC_Facebookcommerce_Utils::log_with_debug_mode_enabled( $exception->getMessage() );
 			// Feed generation failed - clear the generation time to track that there's an issue.
 			facebook_for_woocommerce()->get_tracker()->track_feed_file_generation_time( -1 );
 		}
@@ -211,7 +211,7 @@ class WC_Facebook_Product_Feed {
 			$this->rename_temporary_feed_file_to_final_feed_file();
 			$written = true;
 		} catch ( Exception $e ) {
-			WC_Facebookcommerce_Utils::log( json_encode( $e->getMessage() ) );
+			WC_Facebookcommerce_Utils::log_with_debug_mode_enabled( json_encode( $e->getMessage() ) );
 			$written = false;
 
 			// Close the temporary file
@@ -607,6 +607,6 @@ class WC_Facebook_Product_Feed {
 	public function log_feed_progress( $msg, $object_array = array() ) {
 		WC_Facebookcommerce_Utils::fblog( $msg, $object_array );
 		$msg = empty( $object_array ) ? $msg : $msg . json_encode( $object_array );
-		WC_Facebookcommerce_Utils::log( $msg );
+		WC_Facebookcommerce_Utils::log_with_debug_mode_enabled( $msg );
 	}
 }

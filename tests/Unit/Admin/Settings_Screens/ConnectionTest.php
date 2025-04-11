@@ -1,5 +1,5 @@
 <?php
-namespace WooCommerce\Facebook\Tests\Unit\Admin\Settings_Screens;
+namespace WooCommerce\Facebook\Tests\Admin\Settings_Screens;
 
 use PHPUnit\Framework\TestCase;
 use WC_Facebookcommerce;
