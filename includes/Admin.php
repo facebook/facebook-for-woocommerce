@@ -1891,36 +1891,46 @@ class Admin {
 			'mpn'      => \WC_Facebook_Product::FB_MPN,
 		];
 
-		// Then process existing attributes
-		foreach ( $attributes as $attribute ) {
-			$normalized_attr_name = strtolower( $attribute->get_name() );
-
-			// Special handling for color/colour
-			if ( 'color' === $normalized_attr_name || 'colour' === $normalized_attr_name ) {
-				$meta_key   = \WC_Facebook_Product::FB_COLOR;
-				$field_name = 'color';
-			} else {
-				$meta_key   = $attribute_map[ $normalized_attr_name ] ?? null;
-				$field_name = $normalized_attr_name;
+		// Process all product attributes consistently
+		foreach ( $attributes as $attribute_name => $attribute ) {
+			// Get attribute data - works for both global and local attributes
+			$attr_name = $attribute->get_name();
+			$attr_label = wc_attribute_label($attr_name);
+			$normalized_attr_name = str_replace('pa_', '', strtolower($attr_name));
+			
+			// Check if this attribute maps to a Facebook field
+			$field_name = '';
+			foreach ( $attribute_map as $key => $meta_key ) {
+				if ( strpos( $normalized_attr_name, $key ) !== false || stripos( $attr_label, $key ) !== false ) {
+					$field_name = $key;
+					break;
+				}
 			}
 
-			if ( $meta_key ) {
+			if ( $field_name ) {
+				$meta_key = $attribute_map[ $field_name ];
 				$values = [];
 
+				// Handle taxonomy-based attributes (global attributes)
 				if ( $attribute->is_taxonomy() ) {
-					$terms = $attribute->get_terms();
-					if ( $terms ) {
-						$values = wp_list_pluck( $terms, 'name' );
+					$terms = wp_get_post_terms( $product->get_id(), $attr_name, ['fields' => 'names'] );
+					if ( ! is_wp_error( $terms ) && ! empty( $terms ) ) {
+						$values = $terms;
 					}
-				} else {
+				} 
+				// Handle custom/local attributes
+				else {
 					$values = $attribute->get_options();
 				}
 
 				if ( ! empty( $values ) ) {
-					// Join multiple values with a pipe character and spaces
-					$joined_values                  = implode( ' | ', $values );
-					$facebook_fields[ $field_name ] = $joined_values;
-					update_post_meta( $product_id, $meta_key, $joined_values );
+					// Clean the values
+					$values = array_map( 'wc_clean', $values );
+					
+					// Store ALL attributes as arrays to ensure consistency
+					// This ensures that Facebook gets all attributes in the correct format
+					$facebook_fields[ $field_name ] = $values;
+					update_post_meta( $product_id, $meta_key, $values );
 				} else {
 					delete_post_meta( $product_id, $meta_key );
 					$facebook_fields[ $field_name ] = '';
