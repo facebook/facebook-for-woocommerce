@@ -242,9 +242,6 @@ class WC_Facebook_Product {
 		$this->main_description      = '';
 		$this->rich_text_description = '';
 
-		$fb_product_description_mode  = facebook_for_woocommerce()->get_integration()->get_product_description_mode();
-		$this->sync_short_description = \WC_Facebookcommerce_Integration::PRODUCT_DESCRIPTION_MODE_SHORT === $fb_product_description_mode;
-
 		if ( $wpid instanceof WC_Product ) {
 			$this->id          = $wpid->get_id();
 			$this->woo_product = $wpid;
