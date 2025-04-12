@@ -1841,45 +1841,56 @@ class Admin {
 			$clean_name = str_replace('pa_', '', $raw_name);
 			$normalized_attr_name = strtolower($clean_name);
 
-			// Get the attribute label
+			// Get the actual display name/label of the attribute
 			$attribute_label = wc_attribute_label($raw_name);
 			$normalized_label = strtolower($attribute_label);
-
-			// Special handling for color/colour
-			if ( 'color' === $normalized_attr_name || 'colour' === $normalized_attr_name ) {
-				$meta_key   = \WC_Facebook_Product::FB_COLOR;
-				$field_name = 'color';
-			} else {
-				$meta_key   = $attribute_map[ $normalized_attr_name ] ?? null;
+			
+			// Find the target Facebook field for this attribute
+			$matched_facebook_field = null;
+			$field_name = null;
+			
+			// Try direct matching first
+			if (isset($attribute_map[$normalized_attr_name])) {
+				$matched_facebook_field = $attribute_map[$normalized_attr_name];
 				$field_name = $normalized_attr_name;
-
-				// If we didn't find a match on the attribute name, try the label
-				if ( ! $meta_key && isset($attribute_map[$normalized_label]) ) {
-					$meta_key = $attribute_map[$normalized_label];
-					$field_name = $normalized_label;
+			}
+			// Then try matching against the attribute label
+			else {
+				foreach ($attribute_map as $map_key => $map_value) {
+					// Check if attribute label contains one of our mappable attribute names
+					if (stripos($normalized_label, $map_key) !== false) {
+						$matched_facebook_field = $map_value;
+						$field_name = $map_key;
+						break;
+					}
 				}
 			}
 
-			if ( $meta_key ) {
+			// If we found a match, process the attribute values
+			if ($matched_facebook_field) {
 				$values = [];
 
-				if ( $attribute->is_taxonomy() ) {
+				if ($attribute->is_taxonomy()) {
 					$terms = $attribute->get_terms();
-					if ( $terms && !is_wp_error($terms) ) {
-						$values = wp_list_pluck( $terms, 'name' );
+					if ($terms && !is_wp_error($terms)) {
+						$values = wp_list_pluck($terms, 'name');
 					}
 				} else {
 					$values = $attribute->get_options();
 				}
 
-				if ( ! empty( $values ) ) {
+				if (!empty($values)) {
 					// Join multiple values with a pipe character and spaces
-					$joined_values                  = implode( ' | ', $values );
-					$facebook_fields[ $field_name ] = $joined_values;
-					update_post_meta( $product_id, $meta_key, $joined_values );
+					$joined_values = implode(' | ', $values);
+					// Convert 'colour' to 'color' in the output array's key for consistency
+					$output_field_name = ($field_name === 'colour') ? 'color' : $field_name;
+					$facebook_fields[$output_field_name] = $joined_values;
+					update_post_meta($product_id, $matched_facebook_field, $joined_values);
 				} else {
-					delete_post_meta( $product_id, $meta_key );
-					$facebook_fields[ $field_name ] = '';
+					delete_post_meta($product_id, $matched_facebook_field);
+					// Convert 'colour' to 'color' in the output array's key for consistency
+					$output_field_name = ($field_name === 'colour') ? 'color' : $field_name;
+					$facebook_fields[$output_field_name] = '';
 				}
 			}
 		}
