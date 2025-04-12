@@ -1893,7 +1893,13 @@ class Admin {
 
 		// Then process existing attributes
 		foreach ( $attributes as $attribute ) {
-			$normalized_attr_name = strtolower( $attribute->get_name() );
+			$raw_name = $attribute->get_name();
+			$clean_name = str_replace('pa_', '', $raw_name);
+			$normalized_attr_name = strtolower($clean_name);
+
+			// Get the attribute label
+			$attribute_label = wc_attribute_label($raw_name);
+			$normalized_label = strtolower($attribute_label);
 
 			// Special handling for color/colour
 			if ( 'color' === $normalized_attr_name || 'colour' === $normalized_attr_name ) {
@@ -1902,6 +1908,12 @@ class Admin {
 			} else {
 				$meta_key   = $attribute_map[ $normalized_attr_name ] ?? null;
 				$field_name = $normalized_attr_name;
+
+				// If we didn't find a match on the attribute name, try the label
+				if ( ! $meta_key && isset($attribute_map[$normalized_label]) ) {
+					$meta_key = $attribute_map[$normalized_label];
+					$field_name = $normalized_label;
+				}
 			}
 
 			if ( $meta_key ) {
@@ -1909,7 +1921,7 @@ class Admin {
 
 				if ( $attribute->is_taxonomy() ) {
 					$terms = $attribute->get_terms();
-					if ( $terms ) {
+					if ( $terms && !is_wp_error($terms) ) {
 						$values = wp_list_pluck( $terms, 'name' );
 					}
 				} else {
