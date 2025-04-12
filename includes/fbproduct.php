@@ -346,30 +346,9 @@ class WC_Facebook_Product {
 	 * @return bool
 	 */
 	private function is_bookable_product() {
-		// Check if the WooCommerce Bookings plugin is active
-		if ( ! facebook_for_woocommerce()->is_plugin_active( 'woocommerce-bookings.php' ) ) {
-			return false;
-		}
-		
-		// Check if necessary class exists
-		if ( ! class_exists( 'WC_Product_Booking' ) ) {
-			return false;
-		}
-		
-		// If the product is an instance of WC_Product_Booking, it's a booking product
-		if ( $this->woo_product instanceof WC_Product_Booking ) {
-			return true;
-		}
-		
-		// For additional compatibility, try to use the function if it exists
-		if ( function_exists( 'is_wc_booking_product' ) ) {
-			// Call the function dynamically
-			return call_user_func( 'is_wc_booking_product', $this );
-		}
-		
-		return false;
-	}
 
+		return facebook_for_woocommerce()->is_plugin_active( 'woocommerce-bookings.php' ) && class_exists( 'WC_Product_Booking' ) && is_callable( 'is_wc_booking_product' ) && is_wc_booking_product( $this );
+	}
 
 	/**
 	 * Gets a list of image URLs to use for this product in Facebook sync.
