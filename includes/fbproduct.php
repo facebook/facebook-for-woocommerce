@@ -756,7 +756,7 @@ class WC_Facebook_Product {
 			// If still no short description, check if main description is short enough
 			if (empty($short_description)) {
 				$main_description = WC_Facebookcommerce_Utils::clean_string($this->woo_product->get_description());
-				if (!empty($main_description) && strlen($main_description) < 50) {
+				if (!empty($main_description) && strlen($main_description) < 1000) {
 					$short_description = $main_description;
 				}
 			}
@@ -775,7 +775,7 @@ class WC_Facebook_Product {
 		// If no short description (excerpt) found, check if main description is short enough
 		if (empty($short_description)) {
 			$post_content = WC_Facebookcommerce_Utils::clean_string($post->post_content);
-			if (!empty($post_content) && strlen($post_content) < 50) {
+			if (!empty($post_content) && strlen($post_content) < 1000) {
 				$short_description = $post_content;
 			}
 		}
