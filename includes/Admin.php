@@ -776,9 +776,13 @@ class Admin {
 	 */
 	public function handle_products_sync_bulk_actions( $product_edit ) {
 
-		$sync_mode = isset( $_GET['facebook_bulk_sync_options'] ) ? (string) sanitize_text_field( wp_unslash( $_GET['facebook_bulk_sync_options'] ) ) : null;
+		// Step 1: First check if the nonce exists and verify it
+		if ( isset( $_GET['facebook_bulk_sync_nonce'] ) &&
+			wp_verify_nonce( sanitize_text_field( wp_unslash( $_GET['facebook_bulk_sync_nonce'] ) ), 'facebook_bulk_sync' )
+		) {
+			// Step 2: Only process the data if the nonce is valid
+			$sync_mode = isset( $_GET['facebook_bulk_sync_options'] ) ? (string) sanitize_text_field( wp_unslash( $_GET['facebook_bulk_sync_options'] ) ) : null;
 
-		if ( $sync_mode ) {
 			/** @var \WC_Product[] $enabling_sync_virtual_products virtual products that are being included */
 			$enabling_sync_virtual_products = [];
 			/** @var \WC_Product_Variation[] $enabling_sync_virtual_variations virtual variations that are being included */
@@ -837,7 +841,11 @@ class Admin {
 				Products::disable_sync_for_products( $products );
 
 			}
-		} //end if
+		} else {
+			// Either the nonce wasn't provided or it failed verification
+			// Handle this case as appropriate (e.g., showing an error message)
+			$sync_mode = null;
+		}
 	}
 
 	/**
@@ -1248,12 +1256,12 @@ class Admin {
 			<?php
 				woocommerce_wp_text_input(
 					array(
-						'id'       => \WC_Facebook_Product::FB_MPN,
-						'name'     => \WC_Facebook_Product::FB_MPN,
-						'label'    => __( 'Manufacturer Part Number (MPN)', 'facebook-for-woocommerce' ),
-						'value'    => $fb_mpn,
-						'class'    => 'enable-if-sync-enabled',
-						'desc_tip' => true,
+						'id'          => \WC_Facebook_Product::FB_MPN,
+						'name'        => \WC_Facebook_Product::FB_MPN,
+						'label'       => __( 'Manufacturer Part Number (MPN)', 'facebook-for-woocommerce' ),
+						'value'       => $fb_mpn,
+						'class'       => 'enable-if-sync-enabled',
+						'desc_tip'    => true,
 						'description' => __( 'Manufacturer Part Number (MPN) of the item', 'facebook-for-woocommerce' ),
 					)
 				);
@@ -1837,60 +1845,58 @@ class Admin {
 
 		// Then process existing attributes
 		foreach ( $attributes as $attribute ) {
-			$raw_name = $attribute->get_name();
-			$clean_name = str_replace('pa_', '', $raw_name);
-			$normalized_attr_name = strtolower($clean_name);
+			$raw_name             = $attribute->get_name();
+			$clean_name           = str_replace( 'pa_', '', $raw_name );
+			$normalized_attr_name = strtolower( $clean_name );
 
 			// Get the actual display name/label of the attribute
-			$attribute_label = wc_attribute_label($raw_name);
-			$normalized_label = strtolower($attribute_label);
-			
+			$attribute_label  = wc_attribute_label( $raw_name );
+			$normalized_label = strtolower( $attribute_label );
+
 			// Find the target Facebook field for this attribute
 			$matched_facebook_field = null;
-			$field_name = null;
-			
+			$field_name             = null;
+
 			// Try direct matching first
-			if (isset($attribute_map[$normalized_attr_name])) {
-				$matched_facebook_field = $attribute_map[$normalized_attr_name];
-				$field_name = $normalized_attr_name;
-			}
-			// Then try matching against the attribute label
-			else {
-				foreach ($attribute_map as $map_key => $map_value) {
+			if ( isset( $attribute_map[ $normalized_attr_name ] ) ) {
+				$matched_facebook_field = $attribute_map[ $normalized_attr_name ];
+				$field_name             = $normalized_attr_name;
+			} else { // Then try matching against the attribute label
+				foreach ( $attribute_map as $map_key => $map_value ) {
 					// Check if attribute label contains one of our mappable attribute names
-					if (stripos($normalized_label, $map_key) !== false) {
+					if ( stripos( $normalized_label, $map_key ) !== false ) {
 						$matched_facebook_field = $map_value;
-						$field_name = $map_key;
+						$field_name             = $map_key;
 						break;
 					}
 				}
 			}
 
 			// If we found a match, process the attribute values
-			if ($matched_facebook_field) {
+			if ( $matched_facebook_field ) {
 				$values = [];
 
-				if ($attribute->is_taxonomy()) {
+				if ( $attribute->is_taxonomy() ) {
 					$terms = $attribute->get_terms();
-					if ($terms && !is_wp_error($terms)) {
-						$values = wp_list_pluck($terms, 'name');
+					if ( $terms && ! is_wp_error( $terms ) ) {
+						$values = wp_list_pluck( $terms, 'name' );
 					}
 				} else {
 					$values = $attribute->get_options();
 				}
 
-				if (!empty($values)) {
+				if ( ! empty( $values ) ) {
 					// Join multiple values with a pipe character and spaces
-					$joined_values = implode(' | ', $values);
+					$joined_values = implode( ' | ', $values );
 					// Convert 'colour' to 'color' in the output array's key for consistency
-					$output_field_name = ($field_name === 'colour') ? 'color' : $field_name;
-					$facebook_fields[$output_field_name] = $joined_values;
-					update_post_meta($product_id, $matched_facebook_field, $joined_values);
+					$output_field_name                     = ( $field_name === 'colour' ) ? 'color' : $field_name;
+					$facebook_fields[ $output_field_name ] = $joined_values;
+					update_post_meta( $product_id, $matched_facebook_field, $joined_values );
 				} else {
-					delete_post_meta($product_id, $matched_facebook_field);
+					delete_post_meta( $product_id, $matched_facebook_field );
 					// Convert 'colour' to 'color' in the output array's key for consistency
-					$output_field_name = ($field_name === 'colour') ? 'color' : $field_name;
-					$facebook_fields[$output_field_name] = '';
+					$output_field_name                     = ( $field_name === 'colour' ) ? 'color' : $field_name;
+					$facebook_fields[ $output_field_name ] = '';
 				}
 			}
 		}
