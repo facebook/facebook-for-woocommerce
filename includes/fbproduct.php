@@ -182,7 +182,7 @@ class WC_Facebook_Product {
 	 */
 	public function check_attribute_mapping($attribute_name) {
 		$sanitized_name = \WC_Facebookcommerce_Utils::sanitize_variant_name($attribute_name, false);
-		
+
 		foreach (self::$standard_facebook_fields as $fb_field => $possible_matches) {
 			foreach ($possible_matches as $match) {
 				if (stripos($sanitized_name, $match) !== false) {
@@ -190,7 +190,7 @@ class WC_Facebook_Product {
 				}
 			}
 		}
-		
+
 		return false;
 	}
 
@@ -205,10 +205,10 @@ class WC_Facebook_Product {
 
 		foreach ($attributes as $attribute_name => $_) {
 			$value = $this->woo_product->get_attribute($attribute_name);
-			
+
 			if (!empty($value)) {
 				$mapped_field = $this->check_attribute_mapping($attribute_name);
-				
+
 				if ($mapped_field === false) {
 					$unmapped_attributes[] = array(
 						'name' => $attribute_name,
@@ -219,6 +219,25 @@ class WC_Facebook_Product {
 		}
 
 		return $unmapped_attributes;
+	}
+
+	/**
+	 * Get all attributes on the product that do not have a defined value. This can happen for variant products
+	 * that use the "Any" attribute selection
+	 *
+	 * @return array Array of undefined attribute names
+	 */
+	public function get_undefined_attributes() {
+		$undefined_attributes = array();
+		$attributes = $this->woo_product->get_attributes();
+
+		foreach ($attributes as $attribute_name => $attribute_value) {
+			if ( empty( $attribute_value ) ) {
+				$undefined_attributes[] = $attribute_name;
+			}
+		}
+
+		return $undefined_attributes;
 	}
 
 	public function __construct( $wpid, $parent_product = null ) {
@@ -542,7 +561,7 @@ class WC_Facebook_Product {
 
 	/**
 	 * Utility method to set basic Facebook product attributes
-	 * 
+	 *
 	 * @param string $key The meta key to store the value under
 	 * @param string $value The value to store
 	 * @return void
@@ -557,11 +576,11 @@ class WC_Facebook_Product {
 			$value
 		);
 	}
-		
+
 	public function set_fb_material( $fb_material ) {
 		$this->set_fb_attribute(self::FB_MATERIAL, $fb_material);
 	}
-	
+
 	public function set_fb_pattern( $fb_pattern ) {
 		$this->set_fb_attribute(self::FB_PATTERN, $fb_pattern);
 	}
@@ -577,7 +596,7 @@ class WC_Facebook_Product {
 	public function set_fb_age_group( $fb_age_group ) {
 		$this->set_fb_attribute(self::FB_AGE_GROUP, $fb_age_group);
 	}
-	
+
 	public function set_fb_gender( $fb_gender ) {
 		$this->set_fb_attribute(self::FB_GENDER, $fb_gender);
 	}
@@ -653,7 +672,7 @@ class WC_Facebook_Product {
 		if (empty($fb_brand)) {
 			$brand = get_post_meta($this->id, Products::ENHANCED_CATALOG_ATTRIBUTES_META_KEY_PREFIX . 'brand', true);
 			$brand_taxonomy = get_the_term_list($this->id, 'product_brand', '', ', ');
-			
+
 			if ($brand) {
 				$fb_brand = $brand;
 			} elseif (!is_wp_error($brand_taxonomy) && $brand_taxonomy) {
@@ -744,7 +763,7 @@ class WC_Facebook_Product {
 					$short_description = WC_Facebookcommerce_Utils::clean_string($parent_post->post_excerpt);
 				}
 			}
-			
+
 			// If no parent description found, try getting the variation's own excerpt
 			if (empty($short_description)) {
 				$post = $this->get_post_data();
@@ -752,14 +771,14 @@ class WC_Facebook_Product {
 					$short_description = WC_Facebookcommerce_Utils::clean_string($post->post_excerpt);
 				}
 			}
-			
+
 			return apply_filters('facebook_for_woocommerce_fb_product_short_description', $short_description, $this->id);
 		}
 
 		// Use the product's short description (excerpt) from WooCommerce
 		$post = $this->get_post_data();
 		$post_excerpt = WC_Facebookcommerce_Utils::clean_string($post->post_excerpt);
-		
+
 		if (!empty($post_excerpt)) {
 			$short_description = $post_excerpt;
 		}
@@ -941,7 +960,7 @@ class WC_Facebook_Product {
 		// If this is a variation, get its specific age group value
 		if ($this->is_type('variation')) {
 			$attributes = $this->woo_product->get_attributes();
-			
+
 			foreach ($attributes as $key => $value) {
 				$attr_key = strtolower($key);
 				if ($attr_key === 'age_group') {
@@ -972,7 +991,7 @@ class WC_Facebook_Product {
 		// If this is a variation, get its specific gender value
 		if ($this->is_type('variation')) {
 			$attributes = $this->woo_product->get_attributes();
-			
+
 			foreach ($attributes as $key => $value) {
 				$attr_key = strtolower($key);
 				if ($attr_key === 'gender') {
@@ -1009,7 +1028,7 @@ class WC_Facebook_Product {
 		// If this is a variation, get its specific size value
 		if ($this->is_type('variation')) {
 			$attributes = $this->woo_product->get_attributes();
-			
+
 			foreach ($attributes as $key => $value) {
 				$attr_key = strtolower($key);
 				if ($attr_key === 'size') {
@@ -1046,7 +1065,7 @@ class WC_Facebook_Product {
 		// If this is a variation, get its specific color value
 		if ($this->is_type('variation')) {
 			$attributes = $this->woo_product->get_attributes();
-			
+
 			foreach ($attributes as $key => $value) {
 				$attr_key = strtolower($key);
 				if ($attr_key === 'color' || $attr_key === 'colour') {
@@ -1082,7 +1101,7 @@ class WC_Facebook_Product {
 		// If this is a variation, get its specific material value
 		if ($this->is_type('variation')) {
 			$attributes = $this->woo_product->get_attributes();
-			
+
 			// Check for material attribute
 			foreach ($attributes as $key => $value) {
 				$attr_key = strtolower($key);
@@ -1114,7 +1133,7 @@ class WC_Facebook_Product {
 		// If this is a variation, get its specific mpn value
 		if ($this->is_type('variation')) {
 			$attributes = $this->woo_product->get_attributes();
-			
+
 			// Check for mpn attribute
 			foreach ($attributes as $key => $value) {
 				$attr_key = strtolower($key);
@@ -1151,7 +1170,7 @@ class WC_Facebook_Product {
 		// If this is a variation, get its specific material value
 		if ($this->is_type('variation')) {
 			$attributes = $this->woo_product->get_attributes();
-			
+
 			// Check for material attribute
 			foreach ($attributes as $key => $value) {
 				$attr_key = strtolower($key);
@@ -1278,7 +1297,7 @@ class WC_Facebook_Product {
 		}
 
 		$image_urls = $this->get_all_image_urls();
-		
+
 		// Replace WordPress sanitization's ampersand with a real ampersand.
 		$product_url = str_replace(
 			'&amp%3B',
@@ -1292,7 +1311,7 @@ class WC_Facebook_Product {
 		}
 
 		$categories = WC_Facebookcommerce_Utils::get_product_categories( $id );
-		
+
 		$product_data = array();
 		$product_data[ 'description' ] = Helper::str_truncate( $this->get_fb_description(), self::MAX_DESCRIPTION_LENGTH );
 		$product_data[ 'short_description' ] = $this->get_fb_short_description();
@@ -1312,6 +1331,7 @@ class WC_Facebook_Product {
 		$product_data[ 'gender' ] = $this->get_fb_gender();
 		$product_data[ 'material' ] = Helper::str_truncate( $this->get_fb_material(), 100 );
 		$product_data[ 'woo_product_type' ] = $this->get_type();
+		$product_data[ 'undefined_attributes'] = $this->get_undefined_attributes();
 		$product_data[ 'unmapped_attributes' ] = $this->get_unmapped_attributes();
 
 		if ( self::PRODUCT_PREP_TYPE_ITEMS_BATCH === $type_to_prepare_for ) {
@@ -1329,7 +1349,7 @@ class WC_Facebook_Product {
 			$product_data['url'] = $product_url;
 			$product_data['price']                 = $this->get_fb_price();
 			$product_data['currency']              = get_woocommerce_currency();
-			
+
 			/**
 			 * 'category' is a required field for creating a ProductItem object when posting to /{product_catalog_id}/products.
 			 * This field should have the Google product category for the item. Google product category is not a required field
@@ -1341,7 +1361,7 @@ class WC_Facebook_Product {
 			 * @see https://github.com/woocommerce/facebook-for-woocommerce/issues/2593
 			 */
 			$product_data['category'] = $categories['categories'];
-			
+
 			$product_data   = $this->add_sale_price( $product_data );
 		}//end if
 
