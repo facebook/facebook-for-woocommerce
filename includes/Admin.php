@@ -1889,13 +1889,13 @@ class Admin {
 					// Join multiple values with a pipe character and spaces
 					$joined_values = implode( ' | ', $values );
 					// Convert 'colour' to 'color' in the output array's key for consistency
-					$output_field_name                     = ( $field_name === 'colour' ) ? 'color' : $field_name;
+					$output_field_name                     = ( 'colour' === $field_name ) ? 'color' : $field_name;
 					$facebook_fields[ $output_field_name ] = $joined_values;
 					update_post_meta( $product_id, $matched_facebook_field, $joined_values );
 				} else {
 					delete_post_meta( $product_id, $matched_facebook_field );
 					// Convert 'colour' to 'color' in the output array's key for consistency
-					$output_field_name                     = ( $field_name === 'colour' ) ? 'color' : $field_name;
+					$output_field_name                     = ( 'colour' === $field_name ) ? 'color' : $field_name;
 					$facebook_fields[ $output_field_name ] = '';
 				}
 			}
