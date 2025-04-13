@@ -1691,6 +1691,30 @@ class Admin {
 		?>
 		<script type="text/javascript">
 			jQuery(document).ready(function($) {
+				// Add CSS for synced fields
+				$('head').append(`
+					<style>
+						.multi-value-display,
+						select.synced-attribute,
+						input.synced-attribute {
+							cursor: not-allowed !important;
+							color: rgba(44, 51, 56, .5) !important;
+							background-color: #f0f0f1 !important;
+						}
+						
+						/* Style for Select2 when parent select is synced */
+						select.synced-attribute + .select2-container .select2-selection {
+							cursor: not-allowed !important;
+							background-color: #f0f0f1 !important;
+							color: rgba(44, 51, 56, .5) !important;
+						}
+						
+						select.synced-attribute + .select2-container .select2-selection__rendered {
+							color: rgba(44, 51, 56, .5) !important;
+						}
+					</style>
+				`);
+				
 				// State object to track badge display status
 				var syncedBadgeState = {
 					material: false,
@@ -1856,15 +1880,16 @@ class Admin {
 															'height': '34px',
 															'margin': '0',
 															'padding': '0 8px',
-															'background-color': '#f8f8f8',
+															'background-color': '#f0f0f1',
 															'border': '1px solid #ddd',
 															'border-radius': '4px',
 															'box-sizing': 'border-box',
 															'font-size': '14px',
 															'line-height': '32px',
-															'color': '#555',
+															'color': 'rgba(44, 51, 56, .5)',
 															'display': 'inline-block',
-															'vertical-align': 'middle'
+															'vertical-align': 'middle',
+															'cursor': 'not-allowed'
 														})
 														.insertAfter($field);
 													
@@ -1882,6 +1907,11 @@ class Admin {
 												$field.val(syncedValue)
 													.prop('disabled', true)
 													.addClass('synced-attribute')
+													.css({
+														'cursor': 'not-allowed',
+														'background-color': '#f0f0f1',
+														'color': 'rgba(44, 51, 56, .5)'
+													})
 													.show();
 													
 												// Add the sync badge if it doesn't exist
@@ -1893,6 +1923,11 @@ class Admin {
 												$field.val(syncedValue)
 													.prop('disabled', true)
 													.addClass('synced-attribute')
+													.css({
+														'cursor': 'not-allowed',
+														'background-color': '#f0f0f1',
+														'color': 'rgba(44, 51, 56, .5)'
+													})
 													.show();
 													
 												// Add the sync badge if it doesn't exist
@@ -1905,6 +1940,11 @@ class Admin {
 											$field.val(syncedValue)
 												.prop('disabled', true)
 												.addClass('synced-attribute')
+												.css({
+													'cursor': 'not-allowed', 
+													'background-color': '#f0f0f1',
+													'color': 'rgba(44, 51, 56, .5)'
+												})
 												.show();
 											
 											// Add the sync badge if it doesn't exist
