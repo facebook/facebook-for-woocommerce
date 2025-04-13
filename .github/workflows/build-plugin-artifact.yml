@@ -43,22 +43,26 @@ jobs:
       
       - name: Upload to builds branch
         run: |
-          # Configure git
+          # Configure git with token-based authentication
           git config --global user.name "GitHub Actions"
           git config --global user.email "actions@github.com"
+          
+          # Set the remote URL with authentication token
+          git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git
           
           # Create a unique folder name based on PR number and commit hash
           FOLDER_NAME="pr-${{ github.event.pull_request.number }}-$(echo ${{ github.sha }} | cut -c1-7)"
           
-          # Checkout or create the builds branch
-          git fetch origin builds || true
-          git checkout builds || git checkout -b builds
+          # Create builds branch if it doesn't exist
+          git fetch origin || true
+          git checkout -b builds || true
+          git pull origin builds || true
           
           # Create folder for this build
           mkdir -p builds/$FOLDER_NAME
           
           # Copy the zip file and build info
-          cp facebook-for-woocommerce.zip builds/$FOLDER_NAME/
+          cp facebook-for-woocommerce.zip builds/$FOLDER_NAME/ || echo "Warning: Zip file not found"
           cp build-info.txt builds/$FOLDER_NAME/
           
           # Add, commit and push
