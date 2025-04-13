@@ -8,7 +8,6 @@ jobs:
   build-and-upload:
     runs-on: ubuntu-latest
     permissions:
-      pull-requests: read
       contents: read
     
     steps:
@@ -50,45 +49,57 @@ jobs:
           else
             echo "build_success=false" >> $GITHUB_OUTPUT
           fi
+          
+      - name: Create build info file
+        run: |
+          mkdir -p build-info
+          echo "# Plugin Build Information" > build-info/README.md
+          echo "" >> build-info/README.md
+          echo "- PR: #${{ github.event.pull_request.number }}" >> build-info/README.md
+          echo "- Commit: ${{ github.sha }}" >> build-info/README.md
+          echo "- Repository: ${{ github.repository }}" >> build-info/README.md
+          echo "- Workflow Run: [${{ github.run_id }}](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})" >> build-info/README.md
+          
+          if [[ "${{ steps.check_build.outputs.build_success }}" == "true" ]]; then
+            echo "- Status: ✅ Success" >> build-info/README.md
+            echo "- File Size: ${{ steps.check_build.outputs.filesize }}" >> build-info/README.md
+            
+            echo "## Download Instructions" >> build-info/README.md
+            echo "" >> build-info/README.md
+            echo "1. Go to [Actions Run #${{ github.run_id }}](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})" >> build-info/README.md
+            echo "2. Scroll to the bottom of the page" >> build-info/README.md
+            echo "3. Under 'Artifacts', download 'facebook-for-woocommerce'" >> build-info/README.md
+          else
+            echo "- Status: ❌ Failed" >> build-info/README.md
+            echo "" >> build-info/README.md
+            echo "Build failed. Please check the [workflow logs](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})." >> build-info/README.md
+          fi
       
-      - name: Find Comment
-        uses: peter-evans/find-comment@v2
-        id: find_comment
+      - name: Upload build info
+        uses: actions/upload-artifact@master
         with:
-          issue-number: ${{ github.event.pull_request.number }}
-          comment-author: 'github-actions[bot]'
-          body-includes: Plugin Build
+          name: build-info
+          path: build-info/
+      
+      - name: Generate workflow summary
+        run: |
+          echo "# 📦 Facebook for WooCommerce - Build Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "## Build Information" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- **PR:** [#${{ github.event.pull_request.number }}](https://github.com/${{ github.repository }}/pull/${{ github.event.pull_request.number }})" >> $GITHUB_STEP_SUMMARY
+          echo "- **Commit:** [\`${GITHUB_SHA:0:7}\`](https://github.com/${{ github.repository }}/commit/${{ github.sha }})" >> $GITHUB_STEP_SUMMARY
           
-      - name: Create Success Comment
-        if: steps.check_build.outputs.build_success == 'true'
-        uses: peter-evans/create-or-update-comment@v2
-        with:
-          comment-id: ${{ steps.find_comment.outputs.comment-id }}
-          issue-number: ${{ github.event.pull_request.number }}
-          body: |
-            ## 📦 Plugin Build Ready
-            
-            **Build Information:**
-            - PR: #${{ github.event.pull_request.number }}
-            - Commit: ${{ github.sha }}
-            - File Size: ${{ steps.check_build.outputs.filesize }}
-            - Build Date: ${{ github.event.pull_request.updated_at }}
-            
-            The latest built version of this plugin is ready. To download:
-            
-            1. [Go to the Actions run](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})
-            2. Scroll to the bottom and look for the "Artifacts" section
-            3. Download the "facebook-for-woocommerce" zip file
-          edit-mode: replace
-          
-      - name: Create Failure Comment
-        if: steps.check_build.outputs.build_success == 'false'
-        uses: peter-evans/create-or-update-comment@v2
-        with:
-          comment-id: ${{ steps.find_comment.outputs.comment-id }}
-          issue-number: ${{ github.event.pull_request.number }}
-          body: |
-            ## ❌ Plugin Build Failed
-            
-            The workflow tried to build the plugin but couldn't find the zip file.
-            Please check the [Actions logs](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}) for details. 
+          if [[ "${{ steps.check_build.outputs.build_success }}" == "true" ]]; then
+            echo "- **Status:** ✅ Build Successful" >> $GITHUB_STEP_SUMMARY
+            echo "- **Size:** ${{ steps.check_build.outputs.filesize }}" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "## Download Instructions" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "1. Scroll to the bottom of this page" >> $GITHUB_STEP_SUMMARY
+            echo "2. Look for the 'Artifacts' section" >> $GITHUB_STEP_SUMMARY
+            echo "3. Download the 'facebook-for-woocommerce' zip file" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "- **Status:** ❌ Build Failed" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "No plugin zip file was created. Please check the logs for more information." >> $GITHUB_STEP_SUMMARY 
