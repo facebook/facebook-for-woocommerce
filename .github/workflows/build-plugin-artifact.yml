@@ -35,7 +35,7 @@ jobs:
         run: npm run build
       
       - name: Upload artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v2
         with:
           name: facebook-for-woocommerce
           path: facebook-for-woocommerce.zip
@@ -43,7 +43,7 @@ jobs:
       
       - name: Get PR number
         id: pr
-        run: echo "::set-output name=number::${{ github.event.pull_request.number }}"
+        run: echo "number=${{ github.event.pull_request.number }}" >> $GITHUB_OUTPUT
         
       - name: Update PR description with download link
         uses: actions/github-script@v6
