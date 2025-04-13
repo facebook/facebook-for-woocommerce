@@ -8,7 +8,7 @@ jobs:
   build-and-upload:
     runs-on: ubuntu-latest
     permissions:
-      pull-requests: write
+      pull-requests: read
       contents: read
     
     steps:
@@ -51,96 +51,44 @@ jobs:
             echo "build_success=false" >> $GITHUB_OUTPUT
           fi
       
-      - name: Add PR comment - Success
+      - name: Find Comment
+        uses: peter-evans/find-comment@v2
+        id: find_comment
+        with:
+          issue-number: ${{ github.event.pull_request.number }}
+          comment-author: 'github-actions[bot]'
+          body-includes: Plugin Build
+          
+      - name: Create Success Comment
         if: steps.check_build.outputs.build_success == 'true'
-        uses: actions/github-script@v5
+        uses: peter-evans/create-or-update-comment@v2
         with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          script: |
-            const fileSize = '${{ steps.check_build.outputs.filesize }}';
-            const prNumber = context.issue.number;
-            const runUrl = `https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}`;
+          comment-id: ${{ steps.find_comment.outputs.comment-id }}
+          issue-number: ${{ github.event.pull_request.number }}
+          body: |
+            ## 📦 Plugin Build Ready
             
-            const commentBody = '## 📦 Plugin Build Ready\n\n' +
-              '**Build Information:**\n' +
-              `- PR: #${prNumber}\n` +
-              `- Commit: ${{ github.sha }}\n` +
-              `- File Size: ${fileSize}\n` +
-              `- Build Date: ${{ github.event.pull_request.updated_at }}\n\n` +
-              'The latest built version of this plugin is ready. To download:\n\n' +
-              `1. [Go to the Actions run](${runUrl})\n` +
-              '2. Scroll to the bottom and look for the "Artifacts" section\n' +
-              '3. Download the "facebook-for-woocommerce" zip file';
+            **Build Information:**
+            - PR: #${{ github.event.pull_request.number }}
+            - Commit: ${{ github.sha }}
+            - File Size: ${{ steps.check_build.outputs.filesize }}
+            - Build Date: ${{ github.event.pull_request.updated_at }}
             
-            // First, find comments that we've posted before
-            const { data: comments } = await github.rest.issues.listComments({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number: prNumber
-            });
+            The latest built version of this plugin is ready. To download:
             
-            const botComment = comments.find(comment => {
-              return comment.user.login === 'github-actions[bot]' && 
-                     comment.body.includes('Plugin Build Ready');
-            });
-            
-            if (botComment) {
-              // Update existing comment
-              await github.rest.issues.updateComment({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                comment_id: botComment.id,
-                body: commentBody
-              });
-            } else {
-              // Create new comment
-              await github.rest.issues.createComment({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                issue_number: prNumber,
-                body: commentBody
-              });
-            }
-      
-      - name: Add PR comment - Failure
+            1. [Go to the Actions run](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})
+            2. Scroll to the bottom and look for the "Artifacts" section
+            3. Download the "facebook-for-woocommerce" zip file
+          edit-mode: replace
+          
+      - name: Create Failure Comment
         if: steps.check_build.outputs.build_success == 'false'
-        uses: actions/github-script@v5
+        uses: peter-evans/create-or-update-comment@v2
         with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          script: |
-            const prNumber = context.issue.number;
-            const runUrl = `https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}`;
+          comment-id: ${{ steps.find_comment.outputs.comment-id }}
+          issue-number: ${{ github.event.pull_request.number }}
+          body: |
+            ## ❌ Plugin Build Failed
             
-            const commentBody = '## ❌ Plugin Build Failed\n\n' +
-              'The workflow tried to build the plugin but couldn\'t find the zip file.\n' +
-              `Please check the [Actions logs](${runUrl}) for details.`;
-            
-            // First, find comments that we've posted before
-            const { data: comments } = await github.rest.issues.listComments({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number: prNumber
-            });
-            
-            const botComment = comments.find(comment => {
-              return comment.user.login === 'github-actions[bot]' && 
-                     comment.body.includes('Plugin Build Failed');
-            });
-            
-            if (botComment) {
-              // Update existing comment
-              await github.rest.issues.updateComment({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                comment_id: botComment.id,
-                body: commentBody
-              });
-            } else {
-              // Create new comment
-              await github.rest.issues.createComment({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                issue_number: prNumber,
-                body: commentBody
-              });
-            } 
+            The workflow tried to build the plugin but couldn't find the zip file.
+            Please check the [Actions logs](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}) for details. 
