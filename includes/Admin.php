@@ -775,6 +775,11 @@ class Admin {
 	 * @param string $product_edit the product metadata that is being edited.
 	 */
 	public function handle_products_sync_bulk_actions( $product_edit ) {
+		$products = [];
+		// Add nonce verification
+		if ( ! isset( $_GET['_wpnonce'] ) || ! wp_verify_nonce( sanitize_key( $_GET['_wpnonce'] ), 'woocommerce-facebook-bulk-sync' ) ) {
+			return;
+		}
 
 		$sync_mode = isset( $_GET['facebook_bulk_sync_options'] ) ? (string) sanitize_text_field( wp_unslash( $_GET['facebook_bulk_sync_options'] ) ) : null;
 
@@ -1248,6 +1253,12 @@ class Admin {
 			<?php
 				woocommerce_wp_text_input(
 					array(
+						'id'          => \WC_Facebook_Product::FB_MPN,
+						'name'        => \WC_Facebook_Product::FB_MPN,
+						'label'       => __( 'Manufacturer Part Number (MPN)', 'facebook-for-woocommerce' ),
+						'value'       => $fb_mpn,
+						'class'       => 'enable-if-sync-enabled',
+						'desc_tip'    => true,
 						'id'          => \WC_Facebook_Product::FB_MPN,
 						'name'        => \WC_Facebook_Product::FB_MPN,
 						'label'       => __( 'Manufacturer Part Number (MPN)', 'facebook-for-woocommerce' ),
@@ -2170,6 +2181,13 @@ class Admin {
 			'pattern'   => \WC_Facebook_Product::FB_PATTERN,
 			'brand'     => \WC_Facebook_Product::FB_BRAND,
 			'mpn'       => \WC_Facebook_Product::FB_MPN,
+			'material'  => \WC_Facebook_Product::FB_MATERIAL,
+			'color'     => \WC_Facebook_Product::FB_COLOR,
+			'colour'    => \WC_Facebook_Product::FB_COLOR, // Add support for British spelling
+			'size'      => \WC_Facebook_Product::FB_SIZE,
+			'pattern'   => \WC_Facebook_Product::FB_PATTERN,
+			'brand'     => \WC_Facebook_Product::FB_BRAND,
+			'mpn'       => \WC_Facebook_Product::FB_MPN,
 			'age_group' => \WC_Facebook_Product::FB_AGE_GROUP,
 			'gender'    => \WC_Facebook_Product::FB_GENDER,
 			'condition' => \WC_Facebook_Product::FB_PRODUCT_CONDITION,
@@ -2187,6 +2205,7 @@ class Admin {
 				\WC_Facebook_Product::AGE_GROUP_NEWBORN,
 			],
 			'gender'    => [
+			'gender'    => [
 				\WC_Facebook_Product::GENDER_MALE,
 				\WC_Facebook_Product::GENDER_FEMALE,
 				\WC_Facebook_Product::GENDER_UNISEX,
@@ -2201,50 +2220,31 @@ class Admin {
 		// Then process existing attributes
 		foreach ( $attributes as $attribute ) {
 			// Remove 'pa_' prefix from taxonomy attributes and convert to lowercase
-			$raw_name = $attribute->get_name();
-			$clean_name = str_replace( 'pa_', '', $raw_name );
-			$normalized_attr_name = strtolower( $clean_name );
-			
-			// Get the actual display name/label of the attribute
-			$attribute_label = wc_attribute_label( $raw_name );
-			$normalized_label = strtolower( $attribute_label );
-			
+			$original_attr_name   = $attribute->get_name();
+			$normalized_attr_name = strtolower( str_replace( 'pa_', '', $original_attr_name ) );
+
 			// Further normalize by removing spaces and underscores for matching
 			$matching_attr_name = str_replace( [ '_', ' ' ], '', $normalized_attr_name );
-	
-			// Find the target Facebook field for this attribute
-			$matched_facebook_field = null;
-			$field_name = null;
-	
+
 			// Special handling for color/colour
 			if ( 'color' === $matching_attr_name || 'colour' === $matching_attr_name ) {
-				$matched_facebook_field = \WC_Facebook_Product::FB_COLOR;
+				$meta_key   = \WC_Facebook_Product::FB_COLOR;
 				$field_name = 'color';
-			} elseif ( 'agegroup' === $matching_attr_name ) { // Special handling for age group
-				$matched_facebook_field = \WC_Facebook_Product::FB_AGE_GROUP;
+			} elseif ( 'agegroup' === $matching_attr_name ) { // Special handling for age group (can be "age_group", "agegroup", "age group")
+				$meta_key   = \WC_Facebook_Product::FB_AGE_GROUP;
 				$field_name = 'age_group';
 			} else {
-				// Try direct matching first
-				if ( isset( $attribute_map[ $normalized_attr_name ] ) ) {
-					$matched_facebook_field = $attribute_map[ $normalized_attr_name ];
-					$field_name = $normalized_attr_name;
-				} else {
-					// Try to match against standard attribute names
-					foreach ( $attribute_map as $fb_attr_name => $fb_meta_key ) {
-						// Check for exact match with the attribute label
-						if ( $normalized_label === $fb_attr_name || 'pa_' . $fb_attr_name === $raw_name ) {
-							$matched_facebook_field = $fb_meta_key;
-							$field_name = $fb_attr_name;
-							break;
-						}
-						
-						// Also check with normalized matching (spaces and underscores removed)
-						$normalized_fb_attr = str_replace( [ '_', ' ' ], '', $fb_attr_name );
-						if ( $matching_attr_name === $normalized_fb_attr ) {
-							$matched_facebook_field = $fb_meta_key;
-							$field_name = $fb_attr_name;
-							break;
-						}
+				// Try to match against standard attribute names
+				$meta_key   = null;
+				$field_name = $normalized_attr_name;
+
+				foreach ( $attribute_map as $fb_attr_name => $fb_meta_key ) {
+					// Replace spaces and underscores in the map keys for matching
+					$normalized_fb_attr = str_replace( [ '_', ' ' ], '', $fb_attr_name );
+					if ( $matching_attr_name === $normalized_fb_attr ) {
+						$meta_key   = $fb_meta_key;
+						$field_name = $fb_attr_name;
+						break;
 					}
 				}
 			}
@@ -2268,35 +2268,36 @@ class Admin {
 					
 					// Check if this attribute is used for variations
 					$used_for_variations = $attribute->get_variation();
-	
+
 					// For dropdown attributes, validate against allowed values
 					if ( array_key_exists( $field_name, $dropdown_attrs ) ) {
 						$valid_values = [];
 						foreach ( $values as $value ) {
 							$normalized_value = strtolower( trim( $value ) );
-	
+
 							// Check if value matches any of the allowed values (case-insensitive)
 							foreach ( $dropdown_attrs[ $field_name ] as $allowed_value ) {
+								if ( strtolower( $allowed_value ) === $normalized_value ) {
 								if ( strtolower( $allowed_value ) === $normalized_value ) {
 									$valid_values[] = $allowed_value; // Use the correctly-cased allowed value
 									break;
 								}
 							}
 						}
-	
+
 						if ( ! empty( $valid_values ) ) {
-							$joined_values = implode( ' | ', $valid_values );
-							$facebook_fields[ $output_field_name ] = $joined_values;
-							update_post_meta( $product_id, $matched_facebook_field, $joined_values );
+							$joined_values                  = implode( ' | ', $valid_values );
+							$facebook_fields[ $field_name ] = $joined_values;
+							update_post_meta( $product_id, $meta_key, $joined_values );
 						} else {
 							delete_post_meta( $product_id, $matched_facebook_field );
 							$facebook_fields[ $output_field_name ] = '';
 						}
 					} else {
 						// Regular attributes - join multiple values with a pipe character and spaces
-						$joined_values = implode( ' | ', $values );
-						$facebook_fields[ $output_field_name ] = $joined_values;
-						update_post_meta( $product_id, $matched_facebook_field, $joined_values );
+						$joined_values                  = implode( ' | ', $values );
+						$facebook_fields[ $field_name ] = $joined_values;
+						update_post_meta( $product_id, $meta_key, $joined_values );
 					}
 				} else {
 					delete_post_meta( $product_id, $matched_facebook_field );
