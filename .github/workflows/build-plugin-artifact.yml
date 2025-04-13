@@ -51,33 +51,96 @@ jobs:
             echo "build_success=false" >> $GITHUB_OUTPUT
           fi
       
-      - name: Add success PR comment
+      - name: Add PR comment - Success
         if: steps.check_build.outputs.build_success == 'true'
-        uses: marocchino/sticky-pull-request-comment@v2
+        uses: actions/github-script@v5
         with:
-          header: build-artifact
-          message: |
-            ## 📦 Plugin Build Ready
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const fileSize = '${{ steps.check_build.outputs.filesize }}';
+            const prNumber = context.issue.number;
+            const runUrl = `https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}`;
             
-            **Build Information:**
-            - PR: #${{ github.event.pull_request.number }}
-            - Commit: ${{ github.sha }}
-            - File Size: ${{ steps.check_build.outputs.filesize }}
-            - Build Date: ${{ github.event.pull_request.updated_at }}
+            const commentBody = '## 📦 Plugin Build Ready\n\n' +
+              '**Build Information:**\n' +
+              `- PR: #${prNumber}\n` +
+              `- Commit: ${{ github.sha }}\n` +
+              `- File Size: ${fileSize}\n` +
+              `- Build Date: ${{ github.event.pull_request.updated_at }}\n\n` +
+              'The latest built version of this plugin is ready. To download:\n\n' +
+              `1. [Go to the Actions run](${runUrl})\n` +
+              '2. Scroll to the bottom and look for the "Artifacts" section\n' +
+              '3. Download the "facebook-for-woocommerce" zip file';
             
-            The latest built version of this plugin is ready. To download:
+            // First, find comments that we've posted before
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: prNumber
+            });
             
-            1. [Go to the Actions run](https://github.com/${{ github.repository_owner }}/${{ github.repository_name }}/actions/runs/${{ github.run_id }})
-            2. Scroll to the bottom and look for the "Artifacts" section
-            3. Download the "facebook-for-woocommerce" zip file
+            const botComment = comments.find(comment => {
+              return comment.user.login === 'github-actions[bot]' && 
+                     comment.body.includes('Plugin Build Ready');
+            });
             
-      - name: Add failure PR comment
+            if (botComment) {
+              // Update existing comment
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: botComment.id,
+                body: commentBody
+              });
+            } else {
+              // Create new comment
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: prNumber,
+                body: commentBody
+              });
+            }
+      
+      - name: Add PR comment - Failure
         if: steps.check_build.outputs.build_success == 'false'
-        uses: marocchino/sticky-pull-request-comment@v2
+        uses: actions/github-script@v5
         with:
-          header: build-artifact
-          message: |
-            ## ❌ Plugin Build Failed
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const prNumber = context.issue.number;
+            const runUrl = `https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}`;
             
-            The workflow tried to build the plugin but couldn't find the zip file.
-            Please check the [Actions logs](https://github.com/${{ github.repository_owner }}/${{ github.repository_name }}/actions/runs/${{ github.run_id }}) for details. 
+            const commentBody = '## ❌ Plugin Build Failed\n\n' +
+              'The workflow tried to build the plugin but couldn\'t find the zip file.\n' +
+              `Please check the [Actions logs](${runUrl}) for details.`;
+            
+            // First, find comments that we've posted before
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: prNumber
+            });
+            
+            const botComment = comments.find(comment => {
+              return comment.user.login === 'github-actions[bot]' && 
+                     comment.body.includes('Plugin Build Failed');
+            });
+            
+            if (botComment) {
+              // Update existing comment
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: botComment.id,
+                body: commentBody
+              });
+            } else {
+              // Create new comment
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: prNumber,
+                body: commentBody
+              });
+            } 
