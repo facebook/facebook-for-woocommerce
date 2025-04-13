@@ -100,6 +100,7 @@ class MetaExtension {
 	 * @param string $external_business_id External business ID.
 	 *
 	 * @return string
+	 * @throws \Exception If there is an error generating the URL.
 	 * @since 3.5.0
 	 */
 	public static function generate_iframe_management_url( $external_business_id ) {
