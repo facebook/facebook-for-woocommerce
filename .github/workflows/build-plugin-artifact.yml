@@ -5,7 +5,7 @@ on:
     types: [opened, synchronize, reopened]
 
 jobs:
-  build-and-upload:
+  build-and-notify:
     runs-on: ubuntu-latest
     permissions:
       pull-requests: write
@@ -34,8 +34,8 @@ jobs:
       - name: Build plugin
         run: npm run build
       
-      - name: Check if zip file exists
-        id: check_files
+      - name: Check build result
+        id: check_build
         run: |
           if [ -f "facebook-for-woocommerce.zip" ]; then
             echo "ZIP_EXISTS=true" >> $GITHUB_OUTPUT
@@ -44,42 +44,6 @@ jobs:
             echo "ZIP_EXISTS=false" >> $GITHUB_OUTPUT
           fi
       
-      - name: Create artifact directory
-        if: steps.check_files.outputs.ZIP_EXISTS == 'true'
-        run: |
-          # Create a unique name for this build
-          PR_NUMBER="${{ github.event.pull_request.number }}"
-          SHORT_SHA=$(echo ${{ github.sha }} | cut -c1-7)
-          BUILD_ID="pr-${PR_NUMBER}-${SHORT_SHA}"
-          
-          # Create a folder with build info
-          mkdir -p "${BUILD_ID}"
-          cp facebook-for-woocommerce.zip "${BUILD_ID}/"
-          
-          # Create an info file
-          cat << EOF > "${BUILD_ID}/build-info.txt"
-          Build ID: ${BUILD_ID}
-          PR: #${PR_NUMBER}
-          Commit: ${{ github.sha }}
-          Date: $(date)
-          EOF
-          
-          echo "BUILD_ID=${BUILD_ID}" >> $GITHUB_OUTPUT
-      
-      - name: Upload build as artifact
-        if: steps.check_files.outputs.ZIP_EXISTS == 'true'
-        uses: actions/upload-artifact@v1
-        with:
-          name: ${{ steps.check_files.outputs.BUILD_ID }}
-          path: ${{ steps.check_files.outputs.BUILD_ID }}
-      
-      - name: Get artifact download URL
-        if: steps.check_files.outputs.ZIP_EXISTS == 'true'
-        id: artifact_url
-        run: |
-          ARTIFACT_URL="https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
-          echo "ARTIFACT_URL=${ARTIFACT_URL}" >> $GITHUB_OUTPUT
-      
       - name: Add or update PR comment
         uses: actions/github-script@v5
         with:
@@ -87,10 +51,12 @@ jobs:
           script: |
             const prNumber = ${{ github.event.pull_request.number }};
             const sha = "${{ github.sha }}".substring(0, 7);
-            const zipExists = "${{ steps.check_files.outputs.ZIP_EXISTS }}" === "true";
-            const zipSize = "${{ steps.check_files.outputs.ZIP_SIZE }}";
-            const artifactUrl = "${{ steps.artifact_url.outputs.ARTIFACT_URL }}";
-            const buildId = "${{ steps.check_files.outputs.BUILD_ID }}";
+            const branch = "${{ github.head_ref }}";
+            const zipExists = "${{ steps.check_build.outputs.ZIP_EXISTS }}" === "true";
+            const zipSize = "${{ steps.check_build.outputs.ZIP_SIZE }}";
+            const buildDate = new Date().toISOString();
+            const runId = context.runId;
+            const repoUrl = `https://github.com/${context.repo.owner}/${context.repo.repo}`;
             
             // Find existing comment
             const { data: comments } = await github.rest.issues.listComments({
@@ -101,42 +67,41 @@ jobs:
             
             const buildBotComment = comments.find(comment => 
               comment.user.login === 'github-actions[bot]' && 
-              comment.body.includes('## 📦 Plugin Build')
+              comment.body.includes('Plugin Build Status')
             );
             
-            // Create comment body
-            let commentBody = `## 📦 Plugin Build - ${new Date().toISOString()}
-            
-            Build triggered by commit: \`${sha}\`
-            `;
+            let commentBody = `## 📦 Plugin Build Status\n\n` +
+              `**PR:** #${prNumber}\n` +
+              `**Commit:** ${sha}\n` +
+              `**Branch:** \`${branch}\`\n` +
+              `**Build Time:** ${buildDate}\n` +
+              `**Workflow Run:** [View Details](${repoUrl}/actions/runs/${runId})\n\n`;
             
             if (zipExists) {
-              commentBody += `
-              ✅ **Build successful** - Size: ${zipSize}
-              
-              ### Download Instructions
-              
-              1. Go to the [Actions tab](${artifactUrl})
-              2. Scroll down to the "Artifacts" section 
-              3. Download the "${buildId}" file
-              4. Extract the zip file
-              5. Inside you'll find the Facebook for WooCommerce plugin zip file
-              
-              > **Note:** You need to be logged in to GitHub to download the artifact
-              `;
+              commentBody += `### ✅ Build Successful\n` +
+                `Size: ${zipSize}\n\n` +
+                `### 🔽 Manual Download Process\n\n` +
+                `Due to GitHub workflow restrictions, the QA team should follow these steps to obtain the plugin:\n\n` +
+                `1. Notify an authorized team member that you need the plugin build from PR #${prNumber} (commit ${sha})\n` +
+                `2. They can download it for you directly from the runner or build it locally using these commands:\n\n` +
+                `\`\`\`bash\n` +
+                `git fetch origin pull/${prNumber}/head:pr-test\n` +
+                `git checkout pr-test\n` +
+                `npm install\n` +
+                `composer install\n` +
+                `npm run build\n` +
+                `# The zip file will be in the project root directory\n` +
+                `\`\`\`\n\n` +
+                `### 🔄 Automatic Builds\n\n` +
+                `For future PRs, consider setting up a dedicated build server that can host the artifacts and provide direct download links.\n`;
             } else {
-              commentBody += `
-              ❌ **Build failed** - No zip file produced
-              
-              Please check the [Actions tab](${artifactUrl}) for more details.
-              `;
+              commentBody += `### ❌ Build Failed\n\n` +
+                `The build process completed but did not produce the expected zip file.\n\n` +
+                `Please check the [workflow details](${repoUrl}/actions/runs/${runId}) for more information on what went wrong.\n`;
             }
             
-            // Add disclaimer
-            commentBody += `
-            
-            ---
-            *This comment was automatically generated by GitHub Actions.*`;
+            commentBody += `\n\n---\n` +
+              `*This comment was automatically generated by the build workflow at ${buildDate}*`;
             
             // Update or create comment
             if (buildBotComment) {
