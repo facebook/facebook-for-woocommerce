@@ -81,25 +81,5 @@ jobs:
           name: build-info
           path: build-info/
       
-      - name: Generate workflow summary
-        run: |
-          echo "# 📦 Facebook for WooCommerce - Build Summary" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "## Build Information" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "- **PR:** [#${{ github.event.pull_request.number }}](https://github.com/${{ github.repository }}/pull/${{ github.event.pull_request.number }})" >> $GITHUB_STEP_SUMMARY
-          echo "- **Commit:** [\`${GITHUB_SHA:0:7}\`](https://github.com/${{ github.repository }}/commit/${{ github.sha }})" >> $GITHUB_STEP_SUMMARY
-          
-          if [[ "${{ steps.check_build.outputs.build_success }}" == "true" ]]; then
-            echo "- **Status:** ✅ Build Successful" >> $GITHUB_STEP_SUMMARY
-            echo "- **Size:** ${{ steps.check_build.outputs.filesize }}" >> $GITHUB_STEP_SUMMARY
-            echo "" >> $GITHUB_STEP_SUMMARY
-            echo "## Download Instructions" >> $GITHUB_STEP_SUMMARY
-            echo "" >> $GITHUB_STEP_SUMMARY
-            echo "1. Scroll to the bottom of this page" >> $GITHUB_STEP_SUMMARY
-            echo "2. Look for the 'Artifacts' section" >> $GITHUB_STEP_SUMMARY
-            echo "3. Download the 'facebook-for-woocommerce' zip file" >> $GITHUB_STEP_SUMMARY
-          else
-            echo "- **Status:** ❌ Build Failed" >> $GITHUB_STEP_SUMMARY
-            echo "" >> $GITHUB_STEP_SUMMARY
-            echo "No plugin zip file was created. Please check the logs for more information." >> $GITHUB_STEP_SUMMARY 
+      - name: Create simple summary
+        run: echo "⬇️ Scroll to the bottom of this page and download the 'facebook-for-woocommerce' artifact to get the latest plugin build." > $GITHUB_STEP_SUMMARY 
