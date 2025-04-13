@@ -12,7 +12,7 @@ jobs:
       contents: read
     
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v2
       
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
@@ -21,32 +21,31 @@ jobs:
           tools: composer
       
       - name: Setup Node.js
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v2
         with:
           node-version: '16'
           cache: 'npm'
       
       - name: Install dependencies
         run: |
-          npm ci
+          npm ci || npm install
           composer install
       
       - name: Build plugin
         run: npm run build
       
       - name: Upload artifact
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v1
         with:
           name: facebook-for-woocommerce
           path: facebook-for-woocommerce.zip
-          retention-days: 30
       
       - name: Get PR number
         id: pr
         run: echo "number=${{ github.event.pull_request.number }}" >> $GITHUB_OUTPUT
         
       - name: Update PR description with download link
-        uses: actions/github-script@v6
+        uses: actions/github-script@v5
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
