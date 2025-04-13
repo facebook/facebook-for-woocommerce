@@ -34,95 +34,123 @@ jobs:
       - name: Build plugin
         run: npm run build
       
-      - name: Generate build info
-        id: build-info
+      - name: Check if zip file exists
+        id: check_files
         run: |
-          # Create a unique identifier for this build
-          BUILD_ID="pr-${{ github.event.pull_request.number }}-$(echo ${{ github.sha }} | cut -c1-7)"
-          echo "BUILD_ID=$BUILD_ID" >> $GITHUB_OUTPUT
-          echo "DATE=$(date)" >> $GITHUB_OUTPUT
-          
-          # Check if zip file exists
           if [ -f "facebook-for-woocommerce.zip" ]; then
-            ZIP_SIZE=$(du -h facebook-for-woocommerce.zip | cut -f1)
             echo "ZIP_EXISTS=true" >> $GITHUB_OUTPUT
-            echo "ZIP_SIZE=$ZIP_SIZE" >> $GITHUB_OUTPUT
+            echo "ZIP_SIZE=$(du -h facebook-for-woocommerce.zip | cut -f1)" >> $GITHUB_OUTPUT
           else
             echo "ZIP_EXISTS=false" >> $GITHUB_OUTPUT
           fi
       
-      - name: Generate download instructions
-        id: download-info
+      - name: Create artifact directory
+        if: steps.check_files.outputs.ZIP_EXISTS == 'true'
         run: |
-          cat << EOF > instructions.md
-          ## How to download this build manually:
+          # Create a unique name for this build
+          PR_NUMBER="${{ github.event.pull_request.number }}"
+          SHORT_SHA=$(echo ${{ github.sha }} | cut -c1-7)
+          BUILD_ID="pr-${PR_NUMBER}-${SHORT_SHA}"
           
-          1. Clone the repository:
-             \`\`\`
-             git clone https://github.com/${{ github.repository }}.git
-             cd $(basename ${{ github.repository }})
-             \`\`\`
+          # Create a folder with build info
+          mkdir -p "${BUILD_ID}"
+          cp facebook-for-woocommerce.zip "${BUILD_ID}/"
           
-          2. Checkout the PR branch:
-             \`\`\`
-             git fetch origin pull/${{ github.event.pull_request.number }}/head:pr-${{ github.event.pull_request.number }}
-             git checkout pr-${{ github.event.pull_request.number }}
-             \`\`\`
-          
-          3. Install dependencies and build:
-             \`\`\`
-             npm install
-             composer install
-             npm run build
-             \`\`\`
-          
-          4. The zip file will be created in the root directory.
+          # Create an info file
+          cat << EOF > "${BUILD_ID}/build-info.txt"
+          Build ID: ${BUILD_ID}
+          PR: #${PR_NUMBER}
+          Commit: ${{ github.sha }}
+          Date: $(date)
           EOF
           
-          INSTRUCTIONS="$(cat instructions.md)"
-          INSTRUCTIONS="${INSTRUCTIONS//'%'/'%25'}"
-          INSTRUCTIONS="${INSTRUCTIONS//$'\n'/'%0A'}"
-          INSTRUCTIONS="${INSTRUCTIONS//$'\r'/'%0D'}"
-          echo "INSTRUCTIONS=$INSTRUCTIONS" >> $GITHUB_OUTPUT
+          echo "BUILD_ID=${BUILD_ID}" >> $GITHUB_OUTPUT
       
-      - name: Update PR description
+      - name: Upload build as artifact
+        if: steps.check_files.outputs.ZIP_EXISTS == 'true'
+        uses: actions/upload-artifact@v1
+        with:
+          name: ${{ steps.check_files.outputs.BUILD_ID }}
+          path: ${{ steps.check_files.outputs.BUILD_ID }}
+      
+      - name: Get artifact download URL
+        if: steps.check_files.outputs.ZIP_EXISTS == 'true'
+        id: artifact_url
+        run: |
+          ARTIFACT_URL="https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          echo "ARTIFACT_URL=${ARTIFACT_URL}" >> $GITHUB_OUTPUT
+      
+      - name: Add or update PR comment
         uses: actions/github-script@v5
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
             const prNumber = ${{ github.event.pull_request.number }};
             const sha = "${{ github.sha }}".substring(0, 7);
-            const buildId = "${{ steps.build-info.outputs.BUILD_ID }}";
-            const buildDate = "${{ steps.build-info.outputs.DATE }}";
-            const zipExists = "${{ steps.build-info.outputs.ZIP_EXISTS }}" === "true";
-            const zipSize = "${{ steps.build-info.outputs.ZIP_SIZE }}";
-            const instructions = `${{ steps.download-info.outputs.INSTRUCTIONS }}`;
+            const zipExists = "${{ steps.check_files.outputs.ZIP_EXISTS }}" === "true";
+            const zipSize = "${{ steps.check_files.outputs.ZIP_SIZE }}";
+            const artifactUrl = "${{ steps.artifact_url.outputs.ARTIFACT_URL }}";
+            const buildId = "${{ steps.check_files.outputs.BUILD_ID }}";
             
-            const { data: pr } = await github.rest.pulls.get({
+            // Find existing comment
+            const { data: comments } = await github.rest.issues.listComments({
               owner: context.repo.owner,
               repo: context.repo.repo,
-              pull_number: prNumber
+              issue_number: prNumber
             });
             
-            // Create or update download section
-            let body = pr.body || '';
+            const buildBotComment = comments.find(comment => 
+              comment.user.login === 'github-actions[bot]' && 
+              comment.body.includes('## 📦 Plugin Build')
+            );
             
-            const buildStatus = zipExists 
-              ? `✅ Build successful - Size: ${zipSize}`
-              : `❌ Build failed - No zip file produced`;
+            // Create comment body
+            let commentBody = `## 📦 Plugin Build - ${new Date().toISOString()}
+            
+            Build triggered by commit: \`${sha}\`
+            `;
+            
+            if (zipExists) {
+              commentBody += `
+              ✅ **Build successful** - Size: ${zipSize}
               
-            const downloadSection = `\n\n## 📦 Plugin Build Status\n\nBuild ID: \`${buildId}\`\nCommit: \`${sha}\`\nDate: ${buildDate}\nStatus: ${buildStatus}\n\n### Build Instructions\n\n${instructions}\n\nLast updated: ${new Date().toISOString()}`;
-            
-            // Check if download section already exists and update it
-            if (body.includes('## 📦 Plugin Build Status')) {
-              body = body.replace(/## 📦 Plugin Build Status[\s\S]*?(?=##|$)/, downloadSection);
+              ### Download Instructions
+              
+              1. Go to the [Actions tab](${artifactUrl})
+              2. Scroll down to the "Artifacts" section 
+              3. Download the "${buildId}" file
+              4. Extract the zip file
+              5. Inside you'll find the Facebook for WooCommerce plugin zip file
+              
+              > **Note:** You need to be logged in to GitHub to download the artifact
+              `;
             } else {
-              body += downloadSection;
+              commentBody += `
+              ❌ **Build failed** - No zip file produced
+              
+              Please check the [Actions tab](${artifactUrl}) for more details.
+              `;
             }
             
-            await github.rest.pulls.update({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              pull_number: prNumber,
-              body: body
-            }); 
+            // Add disclaimer
+            commentBody += `
+            
+            ---
+            *This comment was automatically generated by GitHub Actions.*`;
+            
+            // Update or create comment
+            if (buildBotComment) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: buildBotComment.id,
+                body: commentBody
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: prNumber,
+                body: commentBody
+              });
+            } 
