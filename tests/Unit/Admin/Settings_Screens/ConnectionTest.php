@@ -4,6 +4,7 @@ namespace WooCommerce\Facebook\Tests\Admin\Settings_Screens;
 use PHPUnit\Framework\TestCase;
 use WC_Facebookcommerce;
 use WooCommerce\Facebook\Admin\Settings_Screens\Connection;
+use WooCommerce\Facebook\Tests\SafelyUpdateOptionsTestTrait;
 
 /**
  * Class ConnectionTest
@@ -11,6 +12,16 @@ use WooCommerce\Facebook\Admin\Settings_Screens\Connection;
  * @package WooCommerce\Facebook\Tests\Unit\Admin\Settings_Screens
  */
 class ConnectionTest extends TestCase {
+
+	use SafelyUpdateOptionsTestTrait;
+
+    /** @var Connection */
+    private $connection;
+
+    protected function setUp(): void {
+        parent::setUp();
+        $this->connection = new Connection();
+    }
 
     /**
      * Helper method to invoke private/protected methods
@@ -143,8 +154,8 @@ class ConnectionTest extends TestCase {
 		$connection = new Connection();
 
         // Set up the merchant token
-        update_option('wc_facebook_merchant_access_token', 'test_token');
-
+        $this->set_option_safely_only_for_this_test('wc_facebook_merchant_access_token', 'test_token');
+        
         // Use output buffering to capture the iframe HTML
         ob_start();
         $this->invoke_method($connection, 'render_facebook_iframe');

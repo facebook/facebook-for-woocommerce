@@ -1,7 +1,12 @@
 <?php
 declare( strict_types=1 );
 
+use WooCommerce\Facebook\Tests\SafelyUpdateOptionsTestTrait;
+
 class FacebookCommercePixelTest extends WP_UnitTestCase {
+
+	// Use the trait to manage options safely during tests.
+	use SafelyUpdateOptionsTestTrait;
 
 	/**
 	 * Unit tests for WC_Facebookcommerce_Pixel class.
@@ -36,7 +41,8 @@ class FacebookCommercePixelTest extends WP_UnitTestCase {
 
 		$expected_options = array_merge( $default_options, $existing_options );
 
-		update_option( WC_Facebookcommerce_Pixel::SETTINGS_KEY, $existing_options );
+		// Use the trait method to set the option for this test.
+		$this->set_option_safely_only_for_this_test( WC_Facebookcommerce_Pixel::SETTINGS_KEY, $existing_options );
 
 		$actual_options = WC_Facebookcommerce_Pixel::get_options();
 
@@ -44,7 +50,8 @@ class FacebookCommercePixelTest extends WP_UnitTestCase {
 	}
 
 	public function test_get_options_returns_default_options_when_options_are_not_an_array() {
-		update_option( WC_Facebookcommerce_Pixel::SETTINGS_KEY, 'not an array' );
+		// Use the trait method to set the option for this test.
+		$this->set_option_safely_only_for_this_test( WC_Facebookcommerce_Pixel::SETTINGS_KEY, 'not an array' );
 
 		$expected_options = array(
 			WC_Facebookcommerce_Pixel::PIXEL_ID_KEY     => '0',
