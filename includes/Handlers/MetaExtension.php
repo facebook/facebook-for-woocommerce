@@ -98,9 +98,8 @@ class MetaExtension {
 	 * Generates the Commerce Hub iframe management page URL.
 	 *
 	 * @param string $external_business_id External business ID.
-	 *
 	 * @return string
-	 * @since 3.5.0
+	 * @throws \Exception IF the Commerce Extension URI is not found.
 	 */
 	public static function generate_iframe_management_url( $external_business_id ) {
 		$access_token = get_option( self::OPTION_ACCESS_TOKEN, '' );

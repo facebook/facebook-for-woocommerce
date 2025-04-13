@@ -1304,12 +1304,12 @@ class Admin {
 			<?php
 				woocommerce_wp_text_input(
 					array(
-						'id'       => \WC_Facebook_Product::FB_MPN,
-						'name'     => \WC_Facebook_Product::FB_MPN,
-						'label'    => __( 'Manufacturer Part Number (MPN)', 'facebook-for-woocommerce' ),
-						'value'    => $fb_mpn,
-						'class'    => 'enable-if-sync-enabled',
-						'desc_tip' => true,
+						'id'          => \WC_Facebook_Product::FB_MPN,
+						'name'        => \WC_Facebook_Product::FB_MPN,
+						'label'       => __( 'Manufacturer Part Number (MPN)', 'facebook-for-woocommerce' ),
+						'value'       => $fb_mpn,
+						'class'       => 'enable-if-sync-enabled',
+						'desc_tip'    => true,
 						'description' => __( 'Manufacturer Part Number (MPN) of the item', 'facebook-for-woocommerce' ),
 					)
 				);
