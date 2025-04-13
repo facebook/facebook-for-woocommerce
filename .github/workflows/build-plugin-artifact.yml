@@ -9,6 +9,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
+      pull-requests: write  # This is needed for commenting on PRs
     
     steps:
       - uses: actions/checkout@v1
@@ -49,37 +50,57 @@ jobs:
           else
             echo "build_success=false" >> $GITHUB_OUTPUT
           fi
-          
-      - name: Create build info file
-        run: |
-          mkdir -p build-info
-          echo "# Plugin Build Information" > build-info/README.md
-          echo "" >> build-info/README.md
-          echo "- PR: #${{ github.event.pull_request.number }}" >> build-info/README.md
-          echo "- Commit: ${{ github.sha }}" >> build-info/README.md
-          echo "- Repository: ${{ github.repository }}" >> build-info/README.md
-          echo "- Workflow Run: [${{ github.run_id }}](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})" >> build-info/README.md
-          
-          if [[ "${{ steps.check_build.outputs.build_success }}" == "true" ]]; then
-            echo "- Status: ✅ Success" >> build-info/README.md
-            echo "- File Size: ${{ steps.check_build.outputs.filesize }}" >> build-info/README.md
-            
-            echo "## Download Instructions" >> build-info/README.md
-            echo "" >> build-info/README.md
-            echo "1. Go to [Actions Run #${{ github.run_id }}](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})" >> build-info/README.md
-            echo "2. Scroll to the bottom of the page" >> build-info/README.md
-            echo "3. Under 'Artifacts', download 'facebook-for-woocommerce'" >> build-info/README.md
-          else
-            echo "- Status: ❌ Failed" >> build-info/README.md
-            echo "" >> build-info/README.md
-            echo "Build failed. Please check the [workflow logs](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})." >> build-info/README.md
-          fi
-      
-      - name: Upload build info
-        uses: actions/upload-artifact@master
-        with:
-          name: build-info
-          path: build-info/
       
       - name: Create simple summary
-        run: echo "⬇️ Scroll to the bottom of this page and download the 'facebook-for-woocommerce' artifact to get the latest plugin build." > $GITHUB_STEP_SUMMARY 
+        run: echo "⬇️ Scroll to the bottom of this page and download the 'facebook-for-woocommerce' artifact to get the latest plugin build." > $GITHUB_STEP_SUMMARY
+        
+      - name: Add comment to PR (using GitHub API)
+        uses: actions/github-script@v6
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const prNumber = context.issue.number;
+            const runUrl = `https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
+            const commitSha = context.sha.substring(0, 7);
+            
+            let commentBody = "";
+            
+            if ("${{ steps.check_build.outputs.build_success }}" === "true") {
+              commentBody = `📦 **Plugin Build Ready**\n\nPR: #${prNumber}\nCommit: ${commitSha}\nSize: ${{ steps.check_build.outputs.filesize }}\n\n**Download:**\nGo to Actions tab → [This workflow run](${runUrl}) → Scroll to bottom → Download "facebook-for-woocommerce" artifact`;
+            } else {
+              commentBody = `❌ **Plugin Build Failed**\n\nPR: #${prNumber}\nCommit: ${commitSha}\n\n**Details:**\nThe build process did not produce a plugin zip file.\nPlease check the [workflow logs](${runUrl}) for more information.`;
+            }
+            
+            // List all comments in the PR
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: prNumber
+            });
+            
+            // Find our previous comment if it exists
+            const buildComment = comments.find(comment => {
+              return comment.user.login === 'github-actions[bot]' && 
+                    (comment.body.includes('Plugin Build Ready') || 
+                     comment.body.includes('Plugin Build Failed'));
+            });
+            
+            if (buildComment) {
+              // Update existing comment
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: buildComment.id,
+                body: commentBody
+              });
+              console.log("Updated existing comment");
+            } else {
+              // Create new comment
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: prNumber,
+                body: commentBody
+              });
+              console.log("Created new comment");
+            } 
