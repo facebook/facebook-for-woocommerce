@@ -1,0 +1,78 @@
+name: Build Plugin Artifact
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+jobs:
+  build-and-upload:
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+      contents: read
+    
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '7.4'
+          tools: composer
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '16'
+          cache: 'npm'
+      
+      - name: Install dependencies
+        run: |
+          npm ci
+          composer install
+      
+      - name: Build plugin
+        run: npm run build
+      
+      - name: Upload artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: facebook-for-woocommerce
+          path: facebook-for-woocommerce.zip
+          retention-days: 30
+      
+      - name: Get PR number
+        id: pr
+        run: echo "::set-output name=number::${{ github.event.pull_request.number }}"
+        
+      - name: Update PR description with download link
+        uses: actions/github-script@v6
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const prNumber = ${{ github.event.pull_request.number }};
+            const { data: pr } = await github.rest.pulls.get({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: prNumber
+            });
+            
+            const artifactUrl = `https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
+            
+            // Create or update download section
+            let body = pr.body || '';
+            const downloadSection = '\n\n## 📦 Plugin Download\n\nThe latest built version of this plugin is available as an artifact in the [Actions tab](' + artifactUrl + ').\n\nTo download:\n1. Click the link above\n2. Click on the "Artifacts" dropdown\n3. Download the "facebook-for-woocommerce" zip file';
+            
+            // Check if download section already exists and update it
+            if (body.includes('## 📦 Plugin Download')) {
+              body = body.replace(/## 📦 Plugin Download[\s\S]*?(?=##|$)/, downloadSection);
+            } else {
+              body += downloadSection;
+            }
+            
+            await github.rest.pulls.update({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: prNumber,
+              body: body
+            }); 
