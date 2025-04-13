@@ -5,7 +5,7 @@ on:
     types: [opened, synchronize, reopened]
 
 jobs:
-  build-and-notify:
+  build-and-upload:
     runs-on: ubuntu-latest
     permissions:
       pull-requests: write
@@ -34,88 +34,50 @@ jobs:
       - name: Build plugin
         run: npm run build
       
-      - name: Check build result
+      - name: Store built plugin
+        uses: actions/upload-artifact@master
+        continue-on-error: true
+        with:
+          name: facebook-for-woocommerce
+          path: facebook-for-woocommerce.zip
+          
+      - name: Check if build succeeded
         id: check_build
         run: |
           if [ -f "facebook-for-woocommerce.zip" ]; then
-            echo "ZIP_EXISTS=true" >> $GITHUB_OUTPUT
-            echo "ZIP_SIZE=$(du -h facebook-for-woocommerce.zip | cut -f1)" >> $GITHUB_OUTPUT
+            echo "build_success=true" >> $GITHUB_OUTPUT
+            echo "filesize=$(du -h facebook-for-woocommerce.zip | cut -f1)" >> $GITHUB_OUTPUT
           else
-            echo "ZIP_EXISTS=false" >> $GITHUB_OUTPUT
+            echo "build_success=false" >> $GITHUB_OUTPUT
           fi
       
-      - name: Add or update PR comment
-        uses: actions/github-script@v5
+      - name: Add success PR comment
+        if: steps.check_build.outputs.build_success == 'true'
+        uses: marocchino/sticky-pull-request-comment@v2
         with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          script: |
-            const prNumber = ${{ github.event.pull_request.number }};
-            const sha = "${{ github.sha }}".substring(0, 7);
-            const branch = "${{ github.head_ref }}";
-            const zipExists = "${{ steps.check_build.outputs.ZIP_EXISTS }}" === "true";
-            const zipSize = "${{ steps.check_build.outputs.ZIP_SIZE }}";
-            const buildDate = new Date().toISOString();
-            const runId = context.runId;
-            const repoUrl = `https://github.com/${context.repo.owner}/${context.repo.repo}`;
+          header: build-artifact
+          message: |
+            ## 📦 Plugin Build Ready
             
-            // Find existing comment
-            const { data: comments } = await github.rest.issues.listComments({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number: prNumber
-            });
+            **Build Information:**
+            - PR: #${{ github.event.pull_request.number }}
+            - Commit: ${{ github.sha }}
+            - File Size: ${{ steps.check_build.outputs.filesize }}
+            - Build Date: ${{ github.event.pull_request.updated_at }}
             
-            const buildBotComment = comments.find(comment => 
-              comment.user.login === 'github-actions[bot]' && 
-              comment.body.includes('Plugin Build Status')
-            );
+            The latest built version of this plugin is ready. To download:
             
-            let commentBody = `## 📦 Plugin Build Status\n\n` +
-              `**PR:** #${prNumber}\n` +
-              `**Commit:** ${sha}\n` +
-              `**Branch:** \`${branch}\`\n` +
-              `**Build Time:** ${buildDate}\n` +
-              `**Workflow Run:** [View Details](${repoUrl}/actions/runs/${runId})\n\n`;
+            1. [Go to the Actions run](https://github.com/${{ github.repository_owner }}/${{ github.repository_name }}/actions/runs/${{ github.run_id }})
+            2. Scroll to the bottom and look for the "Artifacts" section
+            3. Download the "facebook-for-woocommerce" zip file
             
-            if (zipExists) {
-              commentBody += `### ✅ Build Successful\n` +
-                `Size: ${zipSize}\n\n` +
-                `### 🔽 Manual Download Process\n\n` +
-                `Due to GitHub workflow restrictions, the QA team should follow these steps to obtain the plugin:\n\n` +
-                `1. Notify an authorized team member that you need the plugin build from PR #${prNumber} (commit ${sha})\n` +
-                `2. They can download it for you directly from the runner or build it locally using these commands:\n\n` +
-                `\`\`\`bash\n` +
-                `git fetch origin pull/${prNumber}/head:pr-test\n` +
-                `git checkout pr-test\n` +
-                `npm install\n` +
-                `composer install\n` +
-                `npm run build\n` +
-                `# The zip file will be in the project root directory\n` +
-                `\`\`\`\n\n` +
-                `### 🔄 Automatic Builds\n\n` +
-                `For future PRs, consider setting up a dedicated build server that can host the artifacts and provide direct download links.\n`;
-            } else {
-              commentBody += `### ❌ Build Failed\n\n` +
-                `The build process completed but did not produce the expected zip file.\n\n` +
-                `Please check the [workflow details](${repoUrl}/actions/runs/${runId}) for more information on what went wrong.\n`;
-            }
+      - name: Add failure PR comment
+        if: steps.check_build.outputs.build_success == 'false'
+        uses: marocchino/sticky-pull-request-comment@v2
+        with:
+          header: build-artifact
+          message: |
+            ## ❌ Plugin Build Failed
             
-            commentBody += `\n\n---\n` +
-              `*This comment was automatically generated by the build workflow at ${buildDate}*`;
-            
-            // Update or create comment
-            if (buildBotComment) {
-              await github.rest.issues.updateComment({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                comment_id: buildBotComment.id,
-                body: commentBody
-              });
-            } else {
-              await github.rest.issues.createComment({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                issue_number: prNumber,
-                body: commentBody
-              });
-            } 
+            The workflow tried to build the plugin but couldn't find the zip file.
+            Please check the [Actions logs](https://github.com/${{ github.repository_owner }}/${{ github.repository_name }}/actions/runs/${{ github.run_id }}) for details. 
