@@ -12,7 +12,7 @@ jobs:
       contents: read
     
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v1
       
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
