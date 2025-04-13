@@ -32,6 +32,7 @@ Please also list any relevant details for your test configuration.
 
 - [] I have commented my code, particularly in hard-to-understand areas.
 - [] I have confirmed that my changes do not introduce any new PHPCS warnings or errors. 
+- [] I have checked plugin debug logs that my changes do not introduce any new PHP warnings or FATAL errors. 
 - [] I followed general Pull Request best practices. Meta employees to follow this [wiki]([url](https://fburl.com/wiki/2cgfduwc)).
 - [] I have added tests (if necessary) and all the new and existing unit tests pass locally with my changes.
 - [] I have completed dogfooding and QA testing, or I have conducted thorough due diligence to ensure that it does not break existing functionality.
