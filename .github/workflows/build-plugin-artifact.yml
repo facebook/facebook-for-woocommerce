@@ -9,7 +9,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       pull-requests: write
-      contents: read
+      contents: write
     
     steps:
       - uses: actions/checkout@v1
@@ -34,33 +34,56 @@ jobs:
       - name: Build plugin
         run: npm run build
       
-      - name: Upload artifact
-        uses: actions/upload-artifact@v1
-        with:
-          name: facebook-for-woocommerce
-          path: facebook-for-woocommerce.zip
+      - name: Create build info
+        run: |
+          echo "Build created on $(date)" > build-info.txt
+          echo "PR: #${{ github.event.pull_request.number }}" >> build-info.txt
+          echo "Commit: ${{ github.sha }}" >> build-info.txt
+          echo "Branch: ${{ github.head_ref }}" >> build-info.txt
       
-      - name: Get PR number
-        id: pr
-        run: echo "number=${{ github.event.pull_request.number }}" >> $GITHUB_OUTPUT
-        
+      - name: Upload to builds branch
+        run: |
+          # Configure git
+          git config --global user.name "GitHub Actions"
+          git config --global user.email "actions@github.com"
+          
+          # Create a unique folder name based on PR number and commit hash
+          FOLDER_NAME="pr-${{ github.event.pull_request.number }}-$(echo ${{ github.sha }} | cut -c1-7)"
+          
+          # Checkout or create the builds branch
+          git fetch origin builds || true
+          git checkout builds || git checkout -b builds
+          
+          # Create folder for this build
+          mkdir -p builds/$FOLDER_NAME
+          
+          # Copy the zip file and build info
+          cp facebook-for-woocommerce.zip builds/$FOLDER_NAME/
+          cp build-info.txt builds/$FOLDER_NAME/
+          
+          # Add, commit and push
+          git add builds/$FOLDER_NAME
+          git commit -m "Build for PR #${{ github.event.pull_request.number }} - ${{ github.sha }}"
+          git push origin builds
+      
       - name: Update PR description with download link
         uses: actions/github-script@v5
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
             const prNumber = ${{ github.event.pull_request.number }};
+            const sha = "${{ github.sha }}".substring(0, 7);
             const { data: pr } = await github.rest.pulls.get({
               owner: context.repo.owner,
               repo: context.repo.repo,
               pull_number: prNumber
             });
             
-            const artifactUrl = `https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
+            const downloadUrl = `https://github.com/${context.repo.owner}/${context.repo.repo}/raw/builds/builds/pr-${prNumber}-${sha}/facebook-for-woocommerce.zip`;
             
             // Create or update download section
             let body = pr.body || '';
-            const downloadSection = '\n\n## 📦 Plugin Download\n\nThe latest built version of this plugin is available as an artifact in the [Actions tab](' + artifactUrl + ').\n\nTo download:\n1. Click the link above\n2. Click on the "Artifacts" dropdown\n3. Download the "facebook-for-woocommerce" zip file';
+            const downloadSection = `\n\n## 📦 Plugin Download\n\nThe latest built version of this plugin is available for download:\n\n[🔽 Download facebook-for-woocommerce.zip](${downloadUrl})\n\nBuild from PR #${prNumber}, commit ${sha}`;
             
             // Check if download section already exists and update it
             if (body.includes('## 📦 Plugin Download')) {
