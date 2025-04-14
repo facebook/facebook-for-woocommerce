@@ -284,6 +284,7 @@ class FeedUploadUtilsTest extends \WooCommerce\Facebook\Tests\AbstractWPUnitTest
 		update_post_meta( $coupon_id, 'maximum_amount', '' );
 		update_post_meta( $coupon_id, 'email_restrictions', array() );
 		update_post_meta( $coupon_id, 'product_ids', array( $product1->get_id() ) );
+		update_post_meta( $coupon_id, 'usage_count', 2 );
 
 		$query_args = [
 			'post_type'      => 'shop_coupon',
@@ -328,6 +329,7 @@ class FeedUploadUtilsTest extends \WooCommerce\Facebook\Tests\AbstractWPUnitTest
 			'prerequisite_product_set_retailer_ids'   => '',
 			'exclude_sale_priced_products'          => false,
 			'target_shipping_option_types'          => '',
+			'usage_count' => 2,
 		];
 
 		// Assert that the coupon data exactly matches the expected shape.
@@ -393,6 +395,7 @@ class FeedUploadUtilsTest extends \WooCommerce\Facebook\Tests\AbstractWPUnitTest
 			'prerequisite_product_set_retailer_ids'   => '',
 			'exclude_sale_priced_products'          => false,
 			'target_shipping_option_types'          => ['STANDARD'],
+			'usage_count' => 0,
 		];
 
 		// Assert that the coupon data exactly matches the expected shape.
@@ -484,6 +487,7 @@ class FeedUploadUtilsTest extends \WooCommerce\Facebook\Tests\AbstractWPUnitTest
 			'prerequisite_product_set_retailer_ids'   => '',
 			'exclude_sale_priced_products'          => false,
 			'target_shipping_option_types'          => '',
+			'usage_count' => 0,
 		];
 
 		$this->assertEquals( $expected_coupon, $coupon_data, 'Coupon feed data with included/excluded restrictions does not match expected data structure.' );
@@ -593,6 +597,7 @@ class FeedUploadUtilsTest extends \WooCommerce\Facebook\Tests\AbstractWPUnitTest
 			'prerequisite_product_set_retailer_ids'   => '',
 			'exclude_sale_priced_products'          => false,
 			'target_shipping_option_types'          => '',
+			'usage_count' => 0,
 		];
 
 		$this->assertEquals( $expected_coupon, $coupon_data, 'Coupon feed data with included/excluded category restrictions does not match expected data structure.' );
