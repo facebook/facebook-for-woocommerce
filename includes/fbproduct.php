@@ -753,6 +753,14 @@ class WC_Facebook_Product {
 				}
 			}
 			
+			// If still no short description, check if main description is short enough
+			if (empty($short_description)) {
+				$main_description = WC_Facebookcommerce_Utils::clean_string($this->woo_product->get_description());
+				if (!empty($main_description) && strlen($main_description) <= 1000) {
+					$short_description = $main_description;
+				}
+			}
+			
 			return apply_filters('facebook_for_woocommerce_fb_product_short_description', $short_description, $this->id);
 		}
 
@@ -762,6 +770,14 @@ class WC_Facebook_Product {
 		
 		if (!empty($post_excerpt)) {
 			$short_description = $post_excerpt;
+		}
+		
+		// If no short description (excerpt) found, check if main description is short enough
+		if (empty($short_description)) {
+			$post_content = WC_Facebookcommerce_Utils::clean_string($post->post_content);
+			if (!empty($post_content) && strlen($post_content) <= 1000) {
+				$short_description = $post_content;
+			}
 		}
 
 		/**
@@ -1098,6 +1114,14 @@ class WC_Facebook_Product {
 			self::FB_MATERIAL,
 			true
 		);
+
+		// If empty and this is a variation, get the parent material
+		if ( empty( $fb_material ) && $this->is_type( 'variation' ) ) {
+			$parent_id = $this->get_parent_id();
+			if ( $parent_id ) {
+				$fb_material = get_post_meta( $parent_id, self::FB_MATERIAL, true );
+			}
+		}
 
 		return mb_substr(WC_Facebookcommerce_Utils::clean_string($fb_material), 0, 200);
 	}
