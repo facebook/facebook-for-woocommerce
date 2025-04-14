@@ -9,12 +9,14 @@
 
 require_once __DIR__ . '/../../../includes/Feed/FeedUploadUtils.php';
 
+use WooCommerce\Facebook\Tests\AbstractWPUnitTestWithOptionIsolationAndSafeFiltering;
+
 /**
  * Class FeedUploadUtilsTest
  *
  * Sets up environment to test various logic in FeedUploadUtils
  */
-class FeedUploadUtilsTest extends \WooCommerce\Facebook\Tests\AbstractWPUnitTestWithSafeFiltering {
+class FeedUploadUtilsTest extends AbstractWPUnitTestWithOptionIsolationAndSafeFiltering {
 
 	/** @var int Shop page ID */
 	protected static $shop_page_id;

@@ -3,13 +3,14 @@ namespace WooCommerce\Facebook\Tests\Admin\Settings_Screens;
 
 use PHPUnit\Framework\TestCase;
 use WooCommerce\Facebook\Admin\Settings_Screens\Shops;
+use WooCommerce\Facebook\Tests\AbstractWPUnitTestWithOptionIsolationAndSafeFiltering;
 
 /**
  * Class ShopsTest
  *
  * @package WooCommerce\Facebook\Tests\Unit\Admin\Settings_Screens
  */
-class ShopsTest extends TestCase {
+class ShopsTest extends AbstractWPUnitTestWithOptionIsolationAndSafeFiltering {
 
     /** @var Shops */
     private $shops;
@@ -17,7 +18,7 @@ class ShopsTest extends TestCase {
     /**
      * Set up the test environment
      */
-    protected function setUp(): void {
+    public function setUp(): void {
         parent::setUp();
         $this->shops = new Shops();
     }
