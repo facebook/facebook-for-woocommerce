@@ -776,13 +776,9 @@ class Admin {
 	 */
 	public function handle_products_sync_bulk_actions( $product_edit ) {
 
-		// Step 1: First check if the nonce exists and verify it
-		if ( isset( $_GET['facebook_bulk_sync_nonce'] ) &&
-			wp_verify_nonce( sanitize_text_field( wp_unslash( $_GET['facebook_bulk_sync_nonce'] ) ), 'facebook_bulk_sync' )
-		) {
-			// Step 2: Only process the data if the nonce is valid
-			$sync_mode = isset( $_GET['facebook_bulk_sync_options'] ) ? (string) sanitize_text_field( wp_unslash( $_GET['facebook_bulk_sync_options'] ) ) : null;
+		$sync_mode = isset( $_GET['facebook_bulk_sync_options'] ) ? (string) sanitize_text_field( wp_unslash( $_GET['facebook_bulk_sync_options'] ) ) : null;
 
+		if ( $sync_mode ) {
 			/** @var \WC_Product[] $enabling_sync_virtual_products virtual products that are being included */
 			$enabling_sync_virtual_products = [];
 			/** @var \WC_Product_Variation[] $enabling_sync_virtual_variations virtual variations that are being included */
@@ -841,11 +837,7 @@ class Admin {
 				Products::disable_sync_for_products( $products );
 
 			}
-		} else {
-			// Either the nonce wasn't provided or it failed verification
-			// Handle this case as appropriate (e.g., showing an error message)
-			$sync_mode = null;
-		}
+		} //end if
 	}
 
 	/**
