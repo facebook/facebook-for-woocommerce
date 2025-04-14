@@ -540,8 +540,9 @@ class ApiTest extends \WooCommerce\Facebook\Tests\AbstractWPUnitTestWithSafeFilt
 		$response = function( $result, $parsed_args, $url ) use ( $facebook_product_catalog_id, $facebook_product_retailer_id ) {
 			$this->assertEquals( 'GET', $parsed_args['method'] );
 
-			$path = "catalog:{$facebook_product_catalog_id}:" . base64_encode( $facebook_product_retailer_id );
-			$path = "/{$path}/?fields=id,product_group{id}";
+			$filter = urlencode('{"retailer_id":{"eq":"' . $facebook_product_retailer_id . '"}}');
+			$fields = urlencode('id,product_group{id}');
+			$path = "/{$facebook_product_catalog_id}/products?filter={$filter}&fields={$fields}";
 
 			$this->assertEquals( "{$this->endpoint}{$this->version}{$path}", $url );
 			return [
@@ -554,10 +555,7 @@ class ApiTest extends \WooCommerce\Facebook\Tests\AbstractWPUnitTestWithSafeFilt
 		};
 		$this->add_filter_with_safe_teardown( 'pre_http_request', $response, 10, 3 );
 
-		$is_call_before_sync = false;
-		$product = WC_Helper_Product::create_simple_product();
-		$woo_product = new WC_Facebook_Product( $product );
-		$response = $this->api->get_product_facebook_ids( $facebook_product_catalog_id, $facebook_product_retailer_id, $woo_product, $is_call_before_sync );
+		$response = $this->api->get_product_facebook_ids( $facebook_product_catalog_id, $facebook_product_retailer_id );
 
 		$this->assertEquals( '8672727132741181', $response->id );
 		$this->assertEquals( '8672727046074523', $response->get_facebook_product_group_id() );
