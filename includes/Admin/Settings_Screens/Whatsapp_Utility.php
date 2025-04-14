@@ -14,12 +14,15 @@ defined( 'ABSPATH' ) || exit;
 
 use WooCommerce\Facebook\Admin\Abstract_Settings_Screen;
 use WooCommerce\Facebook\Framework\Api\Exception as ApiException;
+use WooCommerce\Facebook\Framework\Helper;
 
 /**
  * The Whatsapp Utility settings screen object.
  */
 class Whatsapp_Utility extends Abstract_Settings_Screen {
 
+	/** @var string page ID */
+	const PAGE_ID = 'wc-facebook';
 
 	/** @var string screen ID */
 	const ID = 'whatsapp_utility';
@@ -109,7 +112,12 @@ class Whatsapp_Utility extends Abstract_Settings_Screen {
 	 */
 	public function render() {
 		if ( self::WHATSAPP_UTILITY_MESSAGES_OVERVIEW_FLAG ) {
-			$this->render_utility_message_overview();
+			$view = $this->get_current_view();
+			if ( 'manage_event' === $view ) {
+				$this->render_manage_events_view();
+			} else {
+				$this->render_utility_message_overview();
+			}
 		} else {
 			$this->render_utility_message_onboarding();
 		}
@@ -200,7 +208,7 @@ class Whatsapp_Utility extends Abstract_Settings_Screen {
 		?>
 		<div class="onboarding-card">
 			<div class="card-item">
-				<h1><b><?php esc_html_e( 'Utility Messages', 'facebook-for-woocommerce' ); ?></b></h2>
+				<h1><b><?php esc_html_e( 'Utility Messages', 'facebook-for-woocommerce' ); ?></b></h1>
 					<p><?php esc_html_e( 'Manage which utility messages you want to send to customers. You can check performance of these messages in Whatsapp Manager.', 'facebook-for-woocommerce' ); ?>
 						<a
 							id="woocommerce-whatsapp-manager-insights"
@@ -217,7 +225,7 @@ class Whatsapp_Utility extends Abstract_Settings_Screen {
 					<a
 						id="woocommerce-whatsapp-manage-order-confirmation"
 						class="event-config-manage-button button"
-						href="#"><?php esc_html_e( 'Manage', 'facebook-for-woocommerce' ); ?></a>
+						href="<?php echo esc_html( admin_url( 'admin.php?page=' . self::PAGE_ID . '&tab=' . self::ID . '&view=manage_event' ) ); ?>"><?php esc_html_e( 'Manage', 'facebook-for-woocommerce' ); ?></a>
 				</div>
 			</div>
 			<div class="divider"></div>
@@ -248,6 +256,81 @@ class Whatsapp_Utility extends Abstract_Settings_Screen {
 			</div>
 		</div>
 		<?php
+	}
+
+	/**
+	 * Renders the view to manage WhatsApp Utility Events.
+	 */
+	public function render_manage_events_view() {
+		?>
+		<div class="onboarding-card">
+			<div class="card-item">
+				<h1><b><?php esc_html_e( 'Manage order confirmation message', 'facebook-for-woocommerce' ); ?></b></h1>
+				<p><?php esc_html_e( 'Send a confirmation to customers after they\'ve placed an order.', 'facebook-for-woocommerce' ); ?></p>
+			</div>
+			<div class="divider"></div>
+			<div class="card-item">
+				<p><b><?php esc_html_e( 'Select a language', 'facebook-for-woocommerce' ); ?></b></p>
+				<select id="manage-event-language">
+					<option value="en_US">English (US)</option>
+					<option value="en_UK">English (UK)</option>
+				</select>
+			</div>
+			<div class="card-item">
+				<div class="manage-event-template-block">
+					<div class="manage-event-template-header">
+						<input type="radio" name="template-status" value="on" />
+						<label for="template-status"><b><?php esc_html_e( 'Send order confirmation message', 'facebook-for-woocommerce' ); ?> </b></label>
+					</div>
+					<div class="divider"></div>
+					<div class="card-item">
+						<h4>[Header]</h4>
+						<h4>[Body]</h4>
+						<h4>[Call to Action]</h4>
+					</div>
+				</div>
+				<div class="manage-event-template-block">
+					<div class="manage-event-template-header">
+						<input type="radio" name="template-status" value="off" />
+						<label for="template-status"><b><?php esc_html_e( 'Turn off order confirmation', 'facebook-for-woocommerce' ); ?> </b></label>
+					</div>
+
+				</div>
+			</div>
+			<div class="card-item manage-event-template-footer">
+				<div class="manage-event-button">
+
+					<a
+						id="woocommerce-whatsapp-save-order-confirmation"
+						class="button button-primary"
+						href="#"><?php esc_html_e( 'Save', 'facebook-for-woocommerce' ); ?></a>
+				</div>
+				<div class="manage-event-button">
+
+					<a
+						id="woocommerce-whatsapp-cancel-order-confirmation"
+						class="button"
+						href="<?php echo esc_html( admin_url( 'admin.php?page=' . self::PAGE_ID . '&tab=' . self::ID ) ); ?>"><?php esc_html_e( 'Cancel', 'facebook-for-woocommerce' ); ?></a>
+				</div>
+
+			</div>
+
+
+		</div>
+		<?php
+	}
+
+	/**
+	 * Gets the current view
+	 * Note: Need to implement this method to satisfy the interface.
+	 *
+	 * @since 2.0.0
+	 *
+	 * @return array
+	 */
+	public function get_current_view() {
+		$current_view = Helper::get_requested_value( 'view' );
+		return $current_view;
 	}
 
 	/**
