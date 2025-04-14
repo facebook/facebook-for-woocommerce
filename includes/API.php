@@ -462,8 +462,8 @@ class API extends Base {
 	/**
 	 * Returns product Facebook ID and Facebook Group ID.
 	 *
-	 * @param string                   $facebook_product_catalog_id
-	 * @param string                   $facebook_retailer_id
+	 * @param string $facebook_product_catalog_id
+	 * @param string $facebook_retailer_id
 	 * @return API\Response|API\ProductCatalog\Products\Id\Response
 	 * @throws ApiException In case of network request error.
 	 * @throws API\Exceptions\Request_Limit_Reached

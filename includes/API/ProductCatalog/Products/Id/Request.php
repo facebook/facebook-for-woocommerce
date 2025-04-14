@@ -15,8 +15,8 @@ defined( 'ABSPATH' ) || exit;
 class Request extends ApiRequest {
 
 	/**
-	 * @param string                   $facebook_product_catalog_id Facebook Product Catalog ID.
-	 * @param string                   $facebook_product_retailer_id Facebook Product Retailer ID.
+	 * @param string $facebook_product_catalog_id Facebook Product Catalog ID.
+	 * @param string $facebook_product_retailer_id Facebook Product Retailer ID.
 	 */
 	public function __construct( string $facebook_product_catalog_id, string $facebook_product_retailer_id ) {
 
