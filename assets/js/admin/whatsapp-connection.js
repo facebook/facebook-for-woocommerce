@@ -10,11 +10,33 @@
 jQuery( document ).ready( function( $ ) {
     // handle the whatsapp connect button click should open hosted ES flow
 	$( '#woocommerce-whatsapp-connection' ).click( function( event ) {
-        // dummy values for app id and config id, will be replaced in upcoming diffs
-        const APP_ID = '18402284156271';
-        const CONFIG_ID = '17502287264684';
+        const APP_ID = '474166926521348'; // WOO_COMMERCE_APP_ID
+        const CONFIG_ID = '1237758981048330'; // WOO_COMMERCE_WHATSAPP_CONFIG_ID
         const HOSTED_ES_URL = `https://business.facebook.com/messaging/whatsapp/onboard/?app_id=${APP_ID}&config_id=${CONFIG_ID}`;
         window.open( HOSTED_ES_URL);
+        updateProgress(0,1800000); // retry for 30 minutes
     });
+
+    function updateProgress(retryCount = 0, pollingTimeout = 1800000) {
+        $.post( facebook_for_woocommerce_whatsapp_onboarding_progress.ajax_url, {
+			action: 'wc_facebook_whatsapp_onboarding_progress_check',
+			nonce:  facebook_for_woocommerce_whatsapp_onboarding_progress.nonce
+		}, function ( response ) {
+
+            // check if the response is success (i.e. onboarding is completed)
+            if ( response.success ) {
+                // TODO: if success, update the UI with the onboarding succeeded
+				console.log( 'success', response );
+			} else {
+                console.log('Failure. Checking again in 1 second:', response, ', retry attempt:', retryCount, 'pollingTimeout', pollingTimeout);
+                if(retryCount >= pollingTimeout) {
+                    console.log('Max retries reached. Aborting.');
+                    return;
+                }
+                setTimeout( function() { updateProgress(retryCount + 1, pollingTimeout); }, 5000 );
+            }
+		} );
+
+    }
 
 } );
