@@ -12,11 +12,12 @@ use WooCommerce\Facebook\Handlers\Connection;
 use WooCommerce\Facebook\Products;
 use WooCommerce\Facebook\ProductSync\ProductValidator;
 use WooCommerce\Facebook\Framework\AdminMessageHandler;
+use WooCommerce\Facebook\Tests\AbstractWPUnitTestWithOptionIsolationAndSafeFiltering;
 
 /**
  * Unit tests for Facebook Graph API calls.
  */
-class WCFacebookCommerceIntegrationTest extends \WooCommerce\Facebook\Tests\AbstractWPUnitTestWithSafeFiltering {
+class WCFacebookCommerceIntegrationTest extends \WooCommerce\Facebook\Tests\AbstractWPUnitTestWithOptionIsolationAndSafeFiltering {
 
 	/**
 	 * @var WC_Facebookcommerce
