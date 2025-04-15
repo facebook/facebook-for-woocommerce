@@ -797,6 +797,8 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 		 *
 		 * This may happen either when:
 		 * - WooCommerce signals a payment transaction complete (most gateways)
+		 * - The order status is changed through the Woo dashboard to Processing or Completed
+		 * - The Payment Completed event is fired, which happens in case of some external payment gateways.
 		 * - Customer reaches Thank You page skipping payment (for gateways that do not require payment, e.g. Cheque, BACS, Cash on delivery...)
 		 *
 		 * The method checks if the event was not triggered already avoiding a duplicate.
@@ -822,6 +824,7 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 				return;
 			}
 			
+			// Get the status of the order to ensure we track the actual purchases and not the ones that have a failed payment.
 			$order_state = $order->get_status();
 
 			// use a session flag to ensure this Purchase event is not tracked multiple times
