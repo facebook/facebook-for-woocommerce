@@ -299,16 +299,6 @@ class Shops extends Abstract_Settings_Screen {
 				'default'  => 'no',
 			),
 
-			array(
-				'id'       => \WC_Facebookcommerce_Integration::SETTING_ENABLE_NEW_STYLE_FEED_GENERATOR,
-				'title'    => __( '[Experimental] Use new, memory improved, feed generation process', 'facebook-for-woocommerce' ),
-				'type'     => 'checkbox',
-				'desc'     => __( 'Enable', 'facebook-for-woocommerce' ),
-				/* translators: %s URL to the documentation page. */
-				'desc_tip' => sprintf( __( 'This is an experimental feature in testing phase. Only enable this if you are experiencing problems with feed generation. <a href="%s" target="_blank">Learn more</a>.', 'facebook-for-woocommerce' ), 'https://woocommerce.com/document/facebook-for-woocommerce/#feed-generation' ),
-				'default'  => 'no',
-			),
-
 			array( 'type' => 'sectionend' ),
 		);
 	}
