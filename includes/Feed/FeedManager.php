@@ -20,6 +20,7 @@ namespace WooCommerce\Facebook\Feed;
 class FeedManager {
 	const PROMOTIONS          = 'promotions';
 	const RATINGS_AND_REVIEWS = 'ratings_and_reviews';
+	const SHIPPING_PROFILES   = 'shipping_profiles';
 
 	/**
 	 * The map of feed types to their instances.
