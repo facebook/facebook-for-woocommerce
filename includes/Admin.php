@@ -120,6 +120,11 @@ class Admin {
 		// add custom taxonomy for Product Sets
 		add_filter( 'gettext', array( $this, 'change_custom_taxonomy_tip' ), 20, 2 );
 		add_action( 'wp_ajax_sync_facebook_attributes', array( $this, 'ajax_sync_facebook_attributes' ) );
+
+		// automatically sync product attributes when a product is updated
+		add_action( 'woocommerce_update_product', array( $this, 'sync_product_attributes' ), 10, 1 );
+		add_action( 'woocommerce_update_product_variation', array( $this, 'sync_product_attributes' ), 10, 1 );
+		add_action( 'woocommerce_process_product_meta', array( $this, 'sync_product_attributes' ), 10, 1 );
 	}
 
 	/**
@@ -1248,12 +1253,12 @@ class Admin {
 			<?php
 				woocommerce_wp_text_input(
 					array(
-						'id'       => \WC_Facebook_Product::FB_MPN,
-						'name'     => \WC_Facebook_Product::FB_MPN,
-						'label'    => __( 'Manufacturer Part Number (MPN)', 'facebook-for-woocommerce' ),
-						'value'    => $fb_mpn,
-						'class'    => 'enable-if-sync-enabled',
-						'desc_tip' => true,
+						'id'          => \WC_Facebook_Product::FB_MPN,
+						'name'        => \WC_Facebook_Product::FB_MPN,
+						'label'       => __( 'Manufacturer Part Number (MPN)', 'facebook-for-woocommerce' ),
+						'value'       => $fb_mpn,
+						'class'       => 'enable-if-sync-enabled',
+						'desc_tip'    => true,
 						'description' => __( 'Manufacturer Part Number (MPN) of the item', 'facebook-for-woocommerce' ),
 					)
 				);
@@ -1869,6 +1874,16 @@ class Admin {
 					delete_post_meta( $product_id, $meta_key );
 					$facebook_fields[ $field_name ] = '';
 				}
+			}
+		}
+
+		// After syncing the attributes, update the product on Facebook if we're connected
+		$plugin = facebook_for_woocommerce();
+		if ( $plugin->get_connection_handler()->is_connected() && $plugin->get_integration()->get_product_catalog_id() ) {
+			// Determine if this is a product we should send to Facebook
+			if ( 'yes' !== get_post_meta( $product_id, \WC_Facebook_Product::FB_REMOVE_FROM_SYNC, true ) ) {
+				// Queue the product for sync with Facebook
+				facebook_for_woocommerce()->get_products_sync_handler()->create_or_update_products( array( $product_id ) );
 			}
 		}
 
