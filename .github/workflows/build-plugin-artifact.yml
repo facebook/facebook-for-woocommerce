@@ -84,9 +84,6 @@ jobs:
                 `Please check the [workflow logs](${runUrl}) for more information.`;
             }
             
-            // First try to detect if we're in a fork by checking the repository owner
-            const isMainRepo = context.repo.owner === 'facebook';
-            
             // Add build info to workflow summary regardless
             core.summary
               .addHeading(("${{ steps.check_build.outputs.build_success }}" === "true") ? 
@@ -94,20 +91,30 @@ jobs:
               .addRaw(commentBody)
               .write();
             
-            // Try to post comment if we think we have permissions
-            if (!isMainRepo) {
-              try {
-                await github.rest.issues.createComment({
-                  owner: context.repo.owner,
-                  repo: context.repo.repo,
-                  issue_number: prNumber,
-                  body: commentBody
-                });
-                console.log("Successfully posted comment on PR");
-              } catch (error) {
-                console.log("Note: Unable to post comment to PR. This is normal if this is a fork PR. Build information is available in the workflow summary.");
-              }
-            } else {
-              console.log("Skipping PR comment because this appears to be running on the main facebook repository where comment permissions may be restricted.");
-              console.log("Build information is available in the workflow summary.");
+            // Always try to post a comment, regardless of repository ownership
+            try {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: prNumber,
+                body: commentBody
+              });
+              console.log("Successfully posted comment on PR");
+            } catch (error) {
+              console.log("Unable to post comment to PR. Build information is still available in the workflow summary.");
+              console.log(`Error details: ${error.message}`);
+            }
+            
+            // Always try to post a comment
+            try {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: prNumber,
+                body: commentBody
+              });
+              console.log("Successfully posted comment on PR");
+            } catch (error) {
+              console.log("Unable to post comment to PR. Build information is still available in the workflow summary.");
+              console.log(`Error details: ${error.message}`);
             } 
