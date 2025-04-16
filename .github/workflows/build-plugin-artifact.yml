@@ -21,9 +21,10 @@ jobs:
           tools: composer
       
       - name: Setup Node.js
-        uses: actions/setup-node@v2
+        uses: actions/setup-node@v3
         with:
           node-version: '16'
+          cache-dependency-path: './package-lock.json'
           cache: 'npm'
       
       - name: Install dependencies
