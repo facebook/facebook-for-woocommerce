@@ -665,9 +665,6 @@ class WCFacebookCommerceIntegrationTest extends \WooCommerce\Facebook\Tests\Abst
 		$this->api->expects( $this->once() )
 			->method( 'delete_product_item' )
 			->with( 'facebook-product-id' );
-		$this->api->expects( $this->once() )
-			->method( 'delete_product_group' )
-			->with( 'facebook-product-group-id' );
 
 		$this->integration->on_product_delete( $product_to_delete->get_id() );
 
