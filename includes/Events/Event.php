@@ -116,6 +116,7 @@ class Event {
 				'client_user_agent' => $this->get_client_user_agent(),
 				'click_id'          => $this->get_click_id(),
 				'browser_id'        => $this->get_browser_id(),
+				'external_id'       => $this->get_external_id(),
 			)
 		);
 		// Country key is not the same in pixel and CAPI events, see:
@@ -275,6 +276,29 @@ class Event {
 	 */
 	protected function get_browser_id() {
 		return ! empty( $_COOKIE['_fbp'] ) ? wc_clean( wp_unslash( $_COOKIE['_fbp'] ) ) : '';
+	}
+
+	/**
+	 * Retrieves the external ID based on the session's customer ID.
+	 *
+	 * @since 2.0.0
+	 *
+	 * @return string The external ID if available, or an empty string otherwise.
+	 */
+	protected function get_external_id()
+	{
+		// Ensure the WooCommerce session exists and has the get_customer_id method
+		if (isset(WC()->session) && method_exists(WC()->session, 'get_customer_unique_id')) {
+			$customer_id = WC()->session->get_customer_unique_id();
+
+			// Return the customer ID as a string if it exists
+			if (! empty($customer_id)) {
+				return strval($customer_id);
+			}
+		}
+
+		// Return an empty string if no customer ID is available
+		return '';
 	}
 
 
