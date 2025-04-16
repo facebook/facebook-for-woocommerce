@@ -54,61 +54,44 @@ jobs:
       - name: Create simple summary
         run: echo "⬇️ Scroll to the bottom of this page and download the 'facebook-for-woocommerce' artifact to get the latest plugin build." > $GITHUB_STEP_SUMMARY
         
-      - name: Update PR description
+      - name: Post build info comment on PR
         uses: actions/github-script@v6
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
             // Get PR number from pull_request event
             const prNumber = context.payload.pull_request.number;
-            console.log(`Updating description for PR #${prNumber}`);
-            
-            // Get the current PR description
-            const { data: pr } = await github.rest.pulls.get({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              pull_number: prNumber
-            });
+            console.log(`Posting comment for PR #${prNumber}`);
             
             const runUrl = `https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
             const timestamp = new Date().toISOString();
             const commitSha = context.sha.substring(0, 7);
             
-            // Create build info section
-            let buildInfoSection = '';
+            // Create build info comment
+            let commentBody = '';
             if ("${{ steps.check_build.outputs.build_success }}" === "true") {
-              buildInfoSection = "## 📦 Latest Plugin Build\n\n" +
+              commentBody = "## 📦 Latest Plugin Build\n\n" +
                 `**Built at:** ${timestamp}\n` +
                 `**Commit:** ${commitSha}\n` +
                 `**Size:** ${{ steps.check_build.outputs.filesize }}\n\n` +
                 `**Download:** [Click here to download the plugin](${runUrl})\n\n` +
                 `_To download: Click the link above → Scroll to bottom → Download "facebook-for-woocommerce" artifact_`;
             } else {
-              buildInfoSection = "## ❌ Plugin Build Failed\n\n" +
+              commentBody = "## ❌ Plugin Build Failed\n\n" +
                 `**Attempted at:** ${timestamp}\n` +
                 `**Commit:** ${commitSha}\n\n` +
                 `Please check the [workflow logs](${runUrl}) for more information.`;
             }
             
-            // Update PR description
-            let body = pr.body || '';
-            
-            // Remove existing build section if it exists
-            body = body.replace(/## 📦 Latest Plugin Build[\s\S]*?(?=##|$)/g, '');
-            body = body.replace(/## ❌ Plugin Build Failed[\s\S]*?(?=##|$)/g, '');
-            
-            // Add new build section
-            body = body + '\n\n' + buildInfoSection;
-            
-            // Update the PR
+            // Post comment on the PR
             try {
-              await github.rest.pulls.update({
+              await github.rest.issues.createComment({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
-                pull_number: prNumber,
-                body: body
+                issue_number: prNumber,
+                body: commentBody
               });
-              console.log("Successfully updated PR description");
+              console.log("Successfully posted comment on PR");
             } catch (error) {
-              console.log("Error updating PR description:", error);
+              console.log("Error posting comment on PR:", error);
             } 
