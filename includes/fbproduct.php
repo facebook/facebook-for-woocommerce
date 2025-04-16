@@ -221,25 +221,6 @@ class WC_Facebook_Product {
 		return $unmapped_attributes;
 	}
 
-	/**
-	 * Get all attributes on the product that do not have a defined value. This can happen for variant products
-	 * that use the "Any" attribute selection
-	 *
-	 * @return array Array of undefined attribute names
-	 */
-	public function get_undefined_attributes() {
-		$undefined_attributes = array();
-		$attributes = $this->woo_product->get_attributes();
-
-		foreach ($attributes as $attribute_name => $attribute_value) {
-			if ( empty( $attribute_value ) ) {
-				$undefined_attributes[] = $attribute_name;
-			}
-		}
-
-		return $undefined_attributes;
-	}
-
 	public function __construct( $wpid, $parent_product = null ) {
 
 		if ( $wpid instanceof WC_Product ) {
@@ -1347,7 +1328,7 @@ class WC_Facebook_Product {
 		$product_data[ 'gender' ] = $this->get_fb_gender();
 		$product_data[ 'material' ] = Helper::str_truncate( $this->get_fb_material(), 100 );
 		$product_data[ 'woo_product_type' ] = $this->get_type();
-		$product_data[ 'undefined_attributes'] = $this->get_undefined_attributes();
+		$product_data[ 'attributes'] = $this->woo_product->get_attributes();
 		$product_data[ 'unmapped_attributes' ] = $this->get_unmapped_attributes();
 
 		if ( self::PRODUCT_PREP_TYPE_ITEMS_BATCH === $type_to_prepare_for ) {
