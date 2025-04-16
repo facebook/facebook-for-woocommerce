@@ -62,7 +62,7 @@ jobs:
           script: |
             // Get PR number from pull_request event
             const prNumber = context.payload.pull_request.number;
-            console.log(`Posting comment for PR #${prNumber}`);
+            console.log(`Preparing build info for PR #${prNumber}`);
             
             const runUrl = `https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
             const timestamp = new Date().toISOString();
@@ -84,15 +84,30 @@ jobs:
                 `Please check the [workflow logs](${runUrl}) for more information.`;
             }
             
-            // Post comment on the PR
-            try {
-              await github.rest.issues.createComment({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                issue_number: prNumber,
-                body: commentBody
-              });
-              console.log("Successfully posted comment on PR");
-            } catch (error) {
-              console.log("Error posting comment on PR:", error);
+            // First try to detect if we're in a fork by checking the repository owner
+            const isMainRepo = context.repo.owner === 'facebook';
+            
+            // Add build info to workflow summary regardless
+            core.summary
+              .addHeading(("${{ steps.check_build.outputs.build_success }}" === "true") ? 
+                "📦 Latest Plugin Build" : "❌ Plugin Build Failed")
+              .addRaw(commentBody)
+              .write();
+            
+            // Try to post comment if we think we have permissions
+            if (!isMainRepo) {
+              try {
+                await github.rest.issues.createComment({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: prNumber,
+                  body: commentBody
+                });
+                console.log("Successfully posted comment on PR");
+              } catch (error) {
+                console.log("Note: Unable to post comment to PR. This is normal if this is a fork PR. Build information is available in the workflow summary.");
+              }
+            } else {
+              console.log("Skipping PR comment because this appears to be running on the main facebook repository where comment permissions may be restricted.");
+              console.log("Build information is available in the workflow summary.");
             } 
