@@ -394,30 +394,6 @@ jQuery( document ).ready( function( $ ) {
 			$syncModeSelect.val( $syncModeSelect.attr( 'data-original-value') );
 		}
 
-
-		/**
-		 * Determines whether we should show the product removed from sync confirm modal.
-		 *
-		 * @since 2.3.0
-		 *
-		 * @param {jQuery} $syncModeSelect a jQuery object with one or more sync mode select elements
-		 * @return {boolean}
-		 */
-		function shouldShowProductRemovedFromSyncConfirmModal( $syncModeSelect ) {
-
-			let syncValuesStatus = $syncModeSelect.map( function ( index, selectElement ) {
-
-				let $syncMode     	   = $( selectElement );
-				let syncModeValue 	   = $syncMode.val();
-				let isProductPublished = !! facebook_for_woocommerce_products_admin.is_product_published;
-
-				return isProductPublished && 'sync_disabled' === syncModeValue && syncModeValue !== $syncMode.attr( 'data-original-value' );
-			} ).toArray();
-
-			return syncValuesStatus.indexOf( true ) > -1;
-		}
-
-
 		/**
 		 * Gets the target product ID based on the given sync select element.
 		 *
@@ -435,31 +411,6 @@ jQuery( document ).ready( function( $ ) {
 			// variable product
 			return $syncModeSelect.closest( '.woocommerce_variation' ).find( 'input[name^=variable_post_id]' ).val();
 		}
-
-
-		/**
-		 * Shows the product removed from sync confirm modal.
-		 *
-		 * @since 2.3.0
-		 *
-		 * @param {jQuery} $syncModeSelect a jQuery element object
-		 */
-		function showProductRemovedFromSyncConfirmModal( $syncModeSelect ) {
-
-			closeExistingModal();
-
-			$maybeRemoveFromSyncModeSelect = $syncModeSelect;
-			maybeRemoveFromSyncProductID   = getSyncTargetProductID( $syncModeSelect )
-
-			new $.WCBackboneModal.View( {
-				target: 'facebook-for-woocommerce-modal',
-				string: {
-					message: facebook_for_woocommerce_products_admin.product_removed_from_sync_confirm_modal_message,
-					buttons: facebook_for_woocommerce_products_admin.product_removed_from_sync_confirm_modal_buttons
-				}
-			} );
-		}
-
 
 		/**
 		 * Fills in product IDs to remove from Sync.
@@ -488,32 +439,7 @@ jQuery( document ).ready( function( $ ) {
 			populateRemoveFromSyncProductIDsField();
 		}
 
-		let $maybeRemoveFromSyncModeSelect = null;
-		let maybeRemoveFromSyncProductID = null;
 		let removeFromSyncProductIDs = [];
-
-		$( document.body ).on( 'click', 'button.button-product-removed-from-sync-delete', function () {
-
-			if ( maybeRemoveFromSyncProductID ) {
-
-				closeExistingModal();
-
-				removeFromSyncProductIDs.push( maybeRemoveFromSyncProductID );
-
-				populateRemoveFromSyncProductIDsField();
-			}
-		} )
-		.on( 'click', 'button.button-product-removed-from-sync-cancel', function () {
-
-			closeExistingModal();
-
-			if ( $maybeRemoveFromSyncModeSelect ) {
-				revertSyncModeToOriginalValue( $maybeRemoveFromSyncModeSelect );
-				$maybeRemoveFromSyncModeSelect = null;
-			}
-
-			populateRemoveFromSyncProductIDsField();
-		} );
 
 		// handle change events for the Sell on Instagram checkbox field
 		$( '#facebook_options #wc_facebook_commerce_enabled' ).on( 'change', function() {
@@ -556,10 +482,6 @@ jQuery( document ).ready( function( $ ) {
 			}
 
 			simpleProductSyncModeSelect.prop( 'original', simpleProductSyncModeSelect.val() );
-
-			if ( shouldShowProductRemovedFromSyncConfirmModal( simpleProductSyncModeSelect ) ) {
-				showProductRemovedFromSyncConfirmModal( simpleProductSyncModeSelect );
-			}
 
 		} ).trigger( 'change' );
 
@@ -606,10 +528,6 @@ jQuery( document ).ready( function( $ ) {
 			}
 
 			$syncModeSelect.prop( 'original', $syncModeSelect.val() );
-
-			if ( shouldShowProductRemovedFromSyncConfirmModal( $syncModeSelect ) ) {
-				showProductRemovedFromSyncConfirmModal( $syncModeSelect );
-			}
 		} );
 
 		$productData.on( 'woocommerce_variations_loaded', function () {

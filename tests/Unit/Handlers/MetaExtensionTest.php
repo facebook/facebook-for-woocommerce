@@ -3,15 +3,16 @@
  * Unit tests for Meta Extension handler.
  */
 
-namespace WooCommerce\Facebook\Tests\Unit\Handlers;
+namespace WooCommerce\Facebook\Tests\Handlers;
 
 use WooCommerce\Facebook\Handlers\MetaExtension;
 use WP_UnitTestCase;
+use WooCommerce\Facebook\Tests\AbstractWPUnitTestWithOptionIsolationAndSafeFiltering;
 
 /**
  * The Meta Extension unit test class.
  */
-class MetaExtensionTest extends \WP_UnitTestCase {
+class MetaExtensionTest extends AbstractWPUnitTestWithOptionIsolationAndSafeFiltering {
 
     /**
      * Instance of the MetaExtension class that we are testing.

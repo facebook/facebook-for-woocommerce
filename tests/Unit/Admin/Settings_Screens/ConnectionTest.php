@@ -1,16 +1,17 @@
 <?php
-namespace WooCommerce\Facebook\Tests\Unit\Admin\Settings_Screens;
+namespace WooCommerce\Facebook\Tests\Admin\Settings_Screens;
 
 use PHPUnit\Framework\TestCase;
 use WC_Facebookcommerce;
 use WooCommerce\Facebook\Admin\Settings_Screens\Connection;
+use WooCommerce\Facebook\Tests\AbstractWPUnitTestWithOptionIsolationAndSafeFiltering;
 
 /**
  * Class ConnectionTest
  *
  * @package WooCommerce\Facebook\Tests\Unit\Admin\Settings_Screens
  */
-class ConnectionTest extends TestCase {
+class ConnectionTest extends AbstractWPUnitTestWithOptionIsolationAndSafeFiltering {
 
     /**
      * Helper method to invoke private/protected methods
