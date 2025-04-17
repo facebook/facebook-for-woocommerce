@@ -334,9 +334,9 @@ class ProductValidator {
 		 * This validation will be used for product updates.
 		 * Hence we are only condidering the value of the parent and not the variation
 		 */
-		$sync_status = $this->product->get_meta( self::SYNC_ENABLED_META_KEY ) || "yes";
+		$sync_status = $this->product->get_meta( self::SYNC_ENABLED_META_KEY ) === 'yes';
 
-		if($sync_status === "yes"){
+		if( $sync_status ){
 			return;
 		}
 		else {
@@ -363,25 +363,20 @@ class ProductValidator {
 			throw new ProductExcludedException( __( 'Product excluded by wc_facebook_should_sync_product filter.', 'facebook-for-woocommerce' ) );
 		}
 
-		$sync_status = $this->product->get_meta( self::SYNC_ENABLED_META_KEY ) || "yes";
-
-		if($sync_status === "yes"){
-			if ( $this->product->is_type( 'variable' ) ) {
-				foreach ( $this->product->get_children() as $child_id ) {
-					$child_product = wc_get_product( $child_id );
-					if ( $child_product && 'no' !== $child_product->get_meta( self::SYNC_ENABLED_META_KEY ) ) {
-						// At least one product is "sync-enabled" so bail before exception.
-						return;
-					}
+		if ( $this->product->is_type( 'variable' ) ) {
+			foreach ( $this->product->get_children() as $child_id ) {
+				$child_product = wc_get_product( $child_id );
+				if ( $child_product && 'no' !== $child_product->get_meta( self::SYNC_ENABLED_META_KEY ) ) {
+					// At least one product is "sync-enabled" so bail before exception.
+					return;
 				}
-	
-				// Variable product has no variations with sync enabled so it shouldn't be synced.
-				throw $invalid_exception;
-			} 
-		}
-		elseif ( 'no' === $sync_status ) {
+			}
+
+			// Variable product has no variations with sync enabled so it shouldn't be synced.
 			throw $invalid_exception;
-		}	
+		} elseif ( 'no' === $this->product->get_meta( self::SYNC_ENABLED_META_KEY ) ) {
+				throw $invalid_exception;
+		}
 	}
 
 
