@@ -811,9 +811,6 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 				$this->save_product_settings( $product );
 		} else {
 			// if previously enabled, add a notice on the next page load
-			if ( Products::is_sync_enabled_for_product( $product ) ) {
-				Admin::add_product_disabled_sync_notice();
-			}
 			Products::disable_sync_for_products( [ $product ] );
 			if ( in_array( $wp_id, $products_to_delete_from_facebook, true ) ) {
 				$this->delete_fb_product( $product );
@@ -3006,17 +3003,22 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 		$fb_retailer_id = WC_Facebookcommerce_Utils::get_fb_retailer_id( $woo_product );
 
 		try {
-			$facebook_ids = $this->facebook_for_woocommerce->get_api()->get_product_facebook_ids(
+			$response = $this->facebook_for_woocommerce->get_api()->get_product_facebook_ids(
 				$this->get_product_catalog_id(),
 				$fb_retailer_id
 			);
 
-			if ( $facebook_ids->id ) {
+			if ( $response->data && $response->data[0] && $response->data[0]['id'] ) {
 				$fb_id = $fbid_type == self::FB_PRODUCT_GROUP_ID
-					? $facebook_ids->get_facebook_product_group_id()
-					: $facebook_ids->id;
+					? $response->data[0]['product_group']['id']
+					: $response->data[0]['id'];
 				update_post_meta( $wp_id, $fbid_type, $fb_id );
-
+				return $fb_id;
+			} elseif ( $response->id ) {
+				$fb_id = $fbid_type == self::FB_PRODUCT_GROUP_ID
+					? $response->get_facebook_product_group_id()
+					: $response->id;
+				update_post_meta( $wp_id, $fbid_type, $fb_id );
 				return $fb_id;
 			}
 		} catch ( Exception $e ) {
