@@ -101,6 +101,23 @@ class Whatsapp_Utility extends Abstract_Settings_Screen {
 			)
 		);
 		wp_enqueue_script(
+			'facebook-for-woocommerce-whatsapp-consent-remove',
+			facebook_for_woocommerce()->get_asset_build_dir_url() . '/admin/whatsapp-consent-remove.js',
+			array( 'jquery', 'jquery-blockui', 'jquery-tiptip', 'wc-enhanced-select' ),
+			\WC_Facebookcommerce::PLUGIN_VERSION
+		);
+		wp_localize_script(
+			'facebook-for-woocommerce-whatsapp-consent-remove',
+			'facebook_for_woocommerce_whatsapp_consent_remove',
+			array(
+				'ajax_url' => admin_url( 'admin-ajax.php' ),
+				'nonce'    => wp_create_nonce( 'facebook-for-wc-whatsapp-consent-disable-nonce' ),
+				'i18n'     => array(
+					'result' => true,
+				),
+			)
+		);
+		wp_enqueue_script(
 			'facebook-for-woocommerce-whatsapp-billing',
 			facebook_for_woocommerce()->get_asset_build_dir_url() . '/admin/whatsapp-billing.js',
 			array( 'jquery', 'jquery-blockui', 'jquery-tiptip', 'wc-enhanced-select' ),
@@ -275,32 +292,21 @@ class Whatsapp_Utility extends Abstract_Settings_Screen {
 					<h3><b><?php esc_html_e( 'Add WhatsApp option at checkout', 'facebook-for-woocommerce' ); ?></b></h3>
 					<p><?php esc_html_e( 'Adds a checkbox to your store\'s checkout page so customers can get updates. You can preview what this looks like in checkout preview.', 'facebook-for-woocommerce' ); ?></p>
 				</div>
-				<div class="event-config-options">
-					<label>
-						<input type="checkbox" checked>
-						<span class="checkbox-label"><?php esc_html_e( 'On', 'facebook-for-woocommerce' ); ?></span>
-					</label>
-					<a
-						id="woocommerce-whatsapp-consent-collection"
-						class="event-config-manage-button button"
-						href="#"><?php esc_html_e( 'Remove', 'facebook-for-woocommerce' ); ?></a>
-				</div>
 				<div class="divider"></div>
 			</div>
-			<!-- <div class="divider"></div>
+			<div class="divider"></div>
 			<div class="card-item event-config">
 				<div>
-					<h3><b><?php esc_html_e( 'Add WhatsApp option at checkout', 'facebook-for-woocommerce' ); ?></b></h3>
-					<p><?php esc_html_e( 'Adds a checkbox to your store\'s checkout page so customers can get updates. You can preview what this looks like in checkout preview.', 'facebook-for-woocommerce' ); ?></p>
+					<h4><b><?php esc_html_e( 'Checkbox', 'facebook-for-woocommerce' ); ?></b></h4>
+					<p><?php esc_html_e( 'Removing this means you won\'t be able to send messages to your customers.', 'facebook-for-woocommerce' ); ?></p>
 				</div>
 				<div class="event-config-manage-button">
-					<a
-						id="woocommerce-whatsapp-consent-collection"
-						class="event-config-manage-button button"
-						href="#"><?php esc_html_e( 'Add', 'facebook-for-woocommerce' ); ?></a>
+				<a
+					id="remove-button"
+					class="event-config-manage-button button"
+					href="#"><?php esc_html_e( 'Remove', 'facebook-for-woocommerce' ); ?></a>
 				</div>
-				<div class="divider"></div>
-			</div> -->
+			</div>
 		</div>
 		<?php
 	}
