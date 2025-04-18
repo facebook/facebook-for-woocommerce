@@ -13,13 +13,11 @@ jQuery( document ).ready( function( $ ) {
         // TODO: call the connect API to create configs and check payment
         // If error, show banner
         // If success, redirect to utility settings page
-        let url = window.location.href;
-            if (url.indexOf('?') > -1){
-               url += '&view=utility_settings'
-            } else {
-               url += '?view=utility_settings'
-            }
-            window.location.href = url;
-        });
+        let url = new URL(window.location.href);
+        let params = new URLSearchParams(url.search);
+        params.set('view', 'utility_settings');
+        url.search = params.toString();
+        window.location.href = url.toString();
+    });
 
 } );
