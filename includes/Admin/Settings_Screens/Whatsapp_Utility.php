@@ -113,6 +113,23 @@ class Whatsapp_Utility extends Abstract_Settings_Screen {
 				),
 			)
 		);
+		wp_enqueue_script(
+			'facebook-for-woocommerce-whatsapp-templates',
+			facebook_for_woocommerce()->get_asset_build_dir_url() . '/admin/whatsapp-templates.js',
+			array( 'jquery', 'jquery-blockui', 'jquery-tiptip', 'wc-enhanced-select' ),
+			\WC_Facebookcommerce::PLUGIN_VERSION
+		);
+		wp_localize_script(
+			'facebook-for-woocommerce-whatsapp-templates',
+			'facebook_for_woocommerce_whatsapp_templates',
+			array(
+				'ajax_url' => admin_url( 'admin-ajax.php' ),
+				'nonce'    => wp_create_nonce( 'facebook-for-wc-whatsapp-templates-nonce' ),
+				'i18n'     => array(
+					'result' => true,
+				),
+			)
+		);
 	}
 
 

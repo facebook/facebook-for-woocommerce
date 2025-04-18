@@ -12,7 +12,7 @@ jQuery( document ).ready( function( $ ) {
     $('#wc-whatsapp-add-payment').click(function(event) {
 
         $.post( facebook_for_woocommerce_whatsapp_billing.ajax_url, {
-			action: 'wc_facebook_whatsapp_fetch_billing_url_info',
+			action: 'wc_facebook_whatsapp_fetch_url_info',
 			nonce:  facebook_for_woocommerce_whatsapp_billing.nonce
 		}, function ( response ) {
             if ( response.success ) {
