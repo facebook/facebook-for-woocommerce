@@ -302,8 +302,8 @@ class Whatsapp_Utility extends Abstract_Settings_Screen {
 				</div>
 				<div class="event-config-manage-button">
 				<a
-					id="remove-button"
-					class="event-config-manage-button button"
+					id="wc-whatsapp-collect-consent-remove"
+					class="button"
 					href="#"><?php esc_html_e( 'Remove', 'facebook-for-woocommerce' ); ?></a>
 				</div>
 			</div>

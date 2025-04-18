@@ -11,9 +11,9 @@ jQuery( document ).ready( function( $ ) {
     // handle the whatsapp consent collect button click remove action.
 	$( '#wc-whatsapp-collect-consent-remove' ).click( function( event ) {
 
-        $.post( facebook_for_woocommerce_whatsapp_consent.ajax_url, {
+        $.post( facebook_for_woocommerce_whatsapp_consent_remove.ajax_url, {
 			action: 'wc_facebook_whatsapp_consent_collection_disable',
-			nonce:  facebook_for_woocommerce_whatsapp_consent_disable.nonce
+			nonce:  facebook_for_woocommerce_whatsapp_consent_remove.nonce
 		}, function ( response ) {
 
             if ( response.success ) {
