@@ -12,6 +12,7 @@ namespace WooCommerce\Facebook\Feed;
 
 use WP_UnitTestCase;
 use WooCommerce\Facebook\Utilities\Heartbeat;
+use WooCommerce\Facebook\Tests\AbstractWPUnitTestWithOptionIsolationAndSafeFiltering;
 
 class TestFeed extends AbstractFeed {
 	public function __construct(FeedFileWriter $file_writer, AbstractFeedHandler $feed_handler, FeedGenerator $feed_generator) {
@@ -39,7 +40,7 @@ class TestFeed extends AbstractFeed {
 	}
 }
 
-class AbstractFeedTest extends WP_UnitTestCase {
+class AbstractFeedTest extends AbstractWPUnitTestWithOptionIsolationAndSafeFiltering {
 	/**
 	 * The test feed class.
 	 *

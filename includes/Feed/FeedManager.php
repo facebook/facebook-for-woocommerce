@@ -72,6 +72,34 @@ class FeedManager {
 	}
 
 	/**
+	 * Get specific feed instance.
+	 *
+	 * @param string $feed_type The name of the feed type instance to fetch.
+	 *
+	 * @return AbstractFeed
+	 * @throws \InvalidArgumentException If the feed_type isn't set.
+	 * @since 3.5.0
+	 */
+	public function get_feed_instance( string $feed_type ): AbstractFeed {
+		if ( ! isset( $this->feed_instances[ $feed_type ] ) ) {
+			throw new \InvalidArgumentException( "Feed type {$feed_type} does not exist." );
+		}
+		return $this->feed_instances[ $feed_type ];
+	}
+
+	/**
+	 * Run all feed uploads.
+	 *
+	 * @return void
+	 * @since 3.5.0
+	 */
+	public function run_all_feed_uploads(): void {
+		foreach ( $this->feed_instances as $feed_type ) {
+			$feed_type->regenerate_feed();
+		}
+	}
+
+	/**
 	 * Get the feed instance for the given feed type.
 	 *
 	 * @param string $feed_type the specific feed in question.

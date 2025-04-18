@@ -1,19 +1,31 @@
 {
   "name": "facebook-for-woocommerce",
-  "version": "3.4.2",
+  "version": "3.4.4",
   "author": "Facebook",
   "homepage": "https://woocommerce.com/products/facebook/",
   "license": "GPL-2.0",
   "repository": {
     "type": "git",
-    "url": "https://github.com/facebookincubator/facebook-for-woocommerce"
+    "url": "git+https://github.com/facebookincubator/facebook-for-woocommerce.git"
   },
   "bugs": {
     "url": "https://wordpress.org/support/plugin/facebook-for-woocommerce"
   },
   "devDependencies": {
     "@wordpress/env": "^9.10.0",
-    "@wordpress/scripts": "^14.0.0"
+    "@wordpress/scripts": "^14.0.0",
+    "jest": "^29.7.0",
+    "jest-environment-jsdom": "^29.7.0",
+    "jquery": "^3.7.1",
+    "webpack": "^4.46.0",
+    "webpack-cli": "^3.3.12",
+    "babel-loader": "^8.2.2",
+    "css-loader": "^3.6.0",
+    "style-loader": "^2.0.0",
+    "file-loader": "^6.2.0",
+    "url-loader": "^3.0.0",
+    "mini-css-extract-plugin": "^0.9.0",
+    "clean-webpack-plugin": "^3.0.0"
   },
   "scripts": {
     "prearchive": "rm -rf vendor && composer install --no-dev && composer dump-autoload -o",
@@ -29,7 +41,8 @@
     "lint:php:summary": "vendor/bin/phpcs --colors --report=summary",
     "build:assets": "NODE_ENV=production wp-scripts build",
     "start": "wp-scripts start",
-    "test:php": "composer test-unit"
+    "test:php": "composer test-unit",
+    "test:js": "jest"
   },
   "woorelease": {
     "wp_org_slug": "facebook-for-woocommerce",
@@ -41,5 +54,13 @@
   "engines": {
     "node": ">=12.22 <=16",
     "npm": ">=6.14 <=8"
+  },
+  "description": "[![PHP Coding Standards](https://github.com/woocommerce/facebook-for-woocommerce/actions/workflows/php-cs-on-changes.yml/badge.svg)](https://github.com/woocommerce/facebook-for-woocommerce/actions/workflows/php-coding-standards.yml)",
+  "main": "webpack.config.js",
+  "directories": {
+    "test": "tests"
+  },
+  "jest": {
+    "testEnvironment": "jsdom"
   }
 }

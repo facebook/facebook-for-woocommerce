@@ -1,17 +1,16 @@
 <?php
-// phpcs:ignoreFile
 /**
  * Facebook for WooCommerce.
  */
 
 namespace WooCommerce\Facebook\Framework;
 
-defined( 'ABSPATH' ) or exit;
+defined( 'ABSPATH' ) || exit;
 
 /**
  * Admin Message Handler Class
  *
- * This class provides a reusable wordpress admin messaging facility for setting
+ * This class provides a reusable WordPress admin messaging facility for setting
  * and displaying messages and error messages across admin page requests without
  * resorting to passing the messages as query vars.
  *
@@ -34,10 +33,10 @@ defined( 'ABSPATH' ) or exit;
 class AdminMessageHandler {
 
 
-	/** transient message prefix */
+	/** Transient message prefix */
 	const MESSAGE_TRANSIENT_PREFIX = '_wp_admin_message_';
 
-	/** the message id GET name */
+	/** The message id GET name */
 	const MESSAGE_ID_GET_NAME = 'wpamhid';
 
 
@@ -106,10 +105,18 @@ class AdminMessageHandler {
 		$message_id_get_name = isset( $_GET[ self::MESSAGE_ID_GET_NAME ] ) ? wc_clean( wp_unslash( $_GET[ self::MESSAGE_ID_GET_NAME ] ) ) : false;
 		if ( $message_id_get_name && $this->get_message_id() == $message_id_get_name ) {
 			$memo = get_transient( self::MESSAGE_TRANSIENT_PREFIX . $message_id_get_name );
-			if ( isset( $memo['errors'] ) )   $this->errors   = $memo['errors'];
-			if ( isset( $memo['warnings'] ) ) $this->warnings = $memo['warnings'];
-			if ( isset( $memo['infos'] ) )    $this->infos    = $memo['infos'];
-			if ( isset( $memo['messages'] ) ) $this->messages = $memo['messages'];
+			if ( isset( $memo['errors'] ) ) {
+				$this->errors = $memo['errors'];
+			}
+			if ( isset( $memo['warnings'] ) ) {
+				$this->warnings = $memo['warnings'];
+			}
+			if ( isset( $memo['infos'] ) ) {
+				$this->infos = $memo['infos'];
+			}
+			if ( isset( $memo['messages'] ) ) {
+				$this->messages = $memo['messages'];
+			}
 			$this->clear_messages( $message_id_get_name );
 		}
 	}
@@ -179,7 +186,7 @@ class AdminMessageHandler {
 	 * @return int error message count
 	 */
 	public function error_count() {
-		return sizeof( $this->errors );
+		return count( $this->errors );
 	}
 
 
@@ -191,7 +198,7 @@ class AdminMessageHandler {
 	 * @return int warning message count
 	 */
 	public function warning_count() {
-		return sizeof( $this->warnings );
+		return count( $this->warnings );
 	}
 
 
@@ -203,7 +210,7 @@ class AdminMessageHandler {
 	 * @return int info message count
 	 */
 	public function info_count() {
-		return sizeof( $this->infos );
+		return count( $this->infos );
 	}
 
 
@@ -214,7 +221,7 @@ class AdminMessageHandler {
 	 * @return int message count
 	 */
 	public function message_count() {
-		return sizeof( $this->messages );
+		return count( $this->messages );
 	}
 
 
@@ -326,11 +333,14 @@ class AdminMessageHandler {
 	 * }
 	 */
 	public function show_messages( $params = [] ) {
-		$params = wp_parse_args( $params, array(
-			'capabilities' => array(
-				'manage_woocommerce',
-			),
-		) );
+		$params                  = wp_parse_args(
+			$params,
+			array(
+				'capabilities' => array(
+					'manage_woocommerce',
+				),
+			)
+		);
 		$check_user_capabilities = [];
 		// check if user has at least one capability that allows to see messages
 		foreach ( $params['capabilities'] as $capability ) {
@@ -361,11 +371,12 @@ class AdminMessageHandler {
 	 * Redirection hook which persists messages into session data.
 	 *
 	 * @since 1.0.0
-	 * @param string $location the URL to redirect to
-	 * @param int $status the http status
+	 * @param string $location  the URL to redirect to
+	 * @param int    $_status    the http status
 	 * @return string the URL to redirect to
 	 */
-	public function redirect( $location, $status ) {
+	// phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter
+	public function redirect( $location, $_status ) {
 		// add the admin message id param to the
 		if ( $this->set_messages() ) {
 			$location = add_query_arg( self::MESSAGE_ID_GET_NAME, $this->get_message_id(), $location );
@@ -383,7 +394,9 @@ class AdminMessageHandler {
 	 * @return string unique identifier
 	 */
 	protected function get_message_id() {
-		if ( ! isset( $this->message_id ) ) $this->message_id = __FILE__;
+		if ( ! isset( $this->message_id ) ) {
+			$this->message_id = __FILE__;
+		}
 		return wp_create_nonce( $this->message_id );
 	}
 }

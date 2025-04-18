@@ -15,11 +15,12 @@ use WP_UnitTestCase;
 use ReflectionObject;
 use WC_Facebookcommerce_Utils;
 use WP_Error;
+use WooCommerce\Facebook\Tests\AbstractWPUnitTestWithOptionIsolationAndSafeFiltering;
 
 /**
  * The External version update unit test class.
  */
-class UpdateTest extends WP_UnitTestCase {
+class UpdateTest extends AbstractWPUnitTestWithOptionIsolationAndSafeFiltering {
 
 	/**
 	 * Instance of the Update class that we are testing.

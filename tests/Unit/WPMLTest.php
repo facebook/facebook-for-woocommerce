@@ -1,6 +1,6 @@
 <?php
 
-class WPMLTest extends \WooCommerce\Facebook\Tests\Unit\AbstractWPUnitTestWithSafeFiltering {
+class WPMLTest extends \WooCommerce\Facebook\Tests\AbstractWPUnitTestWithSafeFiltering {
 
 	/** @var int $fake_product_id */
 	private $fake_product_id = 1;

@@ -89,7 +89,7 @@ class Update {
 			}
 			return update_option( self::LATEST_VERSION_SENT, WC_Facebookcommerce_Utils::PLUGIN_VERSION );
 		} catch ( Exception $e ) {
-			WC_Facebookcommerce_Utils::log( $e->getMessage() );
+			WC_Facebookcommerce_Utils::logWithDebugModeEnabled( $e->getMessage() );
 			// If the request fails, we should retry it in the next heartbeat.
 			return false;
 		}
