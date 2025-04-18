@@ -1,7 +1,9 @@
 <?php
 declare( strict_types=1 );
 
-class FacebookCommercePixelTest extends WP_UnitTestCase {
+use WooCommerce\Facebook\Tests\AbstractWPUnitTestWithOptionIsolationAndSafeFiltering;
+
+class FacebookCommercePixelTest extends AbstractWPUnitTestWithOptionIsolationAndSafeFiltering {
 
 	/**
 	 * Unit tests for WC_Facebookcommerce_Pixel class.

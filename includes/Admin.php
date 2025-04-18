@@ -267,8 +267,6 @@ class Admin {
 						'set_product_sync_bulk_action_prompt_nonce' => wp_create_nonce( 'set-product-sync-bulk-action-prompt' ),
 						'product_not_ready_modal_message' => $this->get_product_not_ready_modal_message(),
 						'product_not_ready_modal_buttons' => $this->get_product_not_ready_modal_buttons(),
-						'product_removed_from_sync_confirm_modal_message' => $this->get_product_removed_from_sync_confirm_modal_message(),
-						'product_removed_from_sync_confirm_modal_buttons' => $this->get_product_removed_from_sync_confirm_modal_buttons(),
 						'product_removed_from_sync_field_id' => '#' . \WC_Facebook_Product::FB_REMOVE_FROM_SYNC,
 						'i18n'                            => [
 							'missing_google_product_category_message' => __( 'Please enter a Google product category and at least one sub-category to sell this product on Instagram.', 'facebook-for-woocommerce' ),
@@ -377,60 +375,6 @@ class Admin {
 	}
 
 	/**
-	 * Gets the markup for the message used in the product removed from sync confirm modal.
-	 *
-	 * @internal
-	 *
-	 * @since 2.3.0
-	 *
-	 * @return string
-	 */
-	private function get_product_removed_from_sync_confirm_modal_message() {
-		ob_start();
-		?>
-		<p>
-		<?php
-		printf(
-			/* translators: Placeholders: %1$s - opening <a> link tag, %2$s - closing </a> link tag */
-			esc_html__( 'You\'re removing a product from the Facebook sync that is currently listed in your %1$sFacebook catalog%2$s. Would you like to delete the product from the Facebook catalog as well?', 'facebook-for-woocommerce' ),
-			'<a href="https://www.facebook.com/products" target="_blank">',
-			'</a>'
-		);
-		?>
-			</p>
-		<?php
-		return ob_get_clean();
-	}
-
-	/**
-	 * Gets the markup for the buttons used in the product removed from sync confirm modal.
-	 *
-	 * @internal
-	 *
-	 * @since 2.3.0
-	 *
-	 * @return string
-	 */
-	private function get_product_removed_from_sync_confirm_modal_buttons() {
-		ob_start();
-		?>
-		<button
-			id="btn-ok"
-			class="button button-large button-primary"
-		><?php esc_html_e( 'Remove from sync only', 'facebook-for-woocommerce' ); ?></button>
-
-		<button
-			class="button button-large button-delete button-product-removed-from-sync-delete"
-		><?php esc_html_e( 'Remove from sync and delete', 'facebook-for-woocommerce' ); ?></button>
-
-		<button
-			class="button button-large button-product-removed-from-sync-cancel"
-		><?php esc_html_e( 'Cancel', 'facebook-for-woocommerce' ); ?></button>
-		<?php
-		return ob_get_clean();
-	}
-
-	/**
 	 * Gets the product category admin handler instance.
 	 *
 	 * @since 2.1.0
@@ -513,7 +457,7 @@ class Admin {
 		$choice = isset( $_GET['fb_sync_enabled'] ) ? (string) sanitize_text_field( wp_unslash( $_GET['fb_sync_enabled'] ) ) : '';
 		?>
 		<select name="fb_sync_enabled">
-			<option value="" <?php selected( $choice, '' ); ?>><?php esc_html_e( 'Filter by synced to meta', 'facebook-for-woocommerce' ); ?></option>
+			<option value="" <?php selected( $choice, '' ); ?>><?php esc_html_e( 'Filter by synced to Meta', 'facebook-for-woocommerce' ); ?></option>
 			<option value="<?php echo esc_attr( self::INCLUDE_FACEBOOK_SYNC ); ?>" <?php selected( $choice, self::INCLUDE_FACEBOOK_SYNC ); ?>><?php esc_html_e( 'Synced', 'facebook-for-woocommerce' ); ?></option>
 			<option value="<?php echo esc_attr( self::EXCLUDE_FACEBOOK_SYNC ); ?>" <?php selected( $choice, self::EXCLUDE_FACEBOOK_SYNC ); ?>><?php esc_html_e( 'Not synced', 'facebook-for-woocommerce' ); ?></option>
 		</select>
