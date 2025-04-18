@@ -42,6 +42,11 @@
     display: flex;
     flex-direction: row;
 }
+.event-confi2g {
+    padding: 20px;
+    display: flex;
+    flex-direction: row;
+}
 .event-config-manage-button {
     padding: 20px;
     margin-left: auto;

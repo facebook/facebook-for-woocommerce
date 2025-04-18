@@ -52,8 +52,8 @@
     "use_gh_release_notes": true
   },
   "engines": {
-    "node": ">=12.22 <=16",
-    "npm": ">=6.14 <=8"
+    "node": ">=12.22",
+    "npm": ">=6.14"
   },
   "description": "[![PHP Coding Standards](https://github.com/woocommerce/facebook-for-woocommerce/actions/workflows/php-cs-on-changes.yml/badge.svg)](https://github.com/woocommerce/facebook-for-woocommerce/actions/workflows/php-coding-standards.yml)",
   "main": "webpack.config.js",
