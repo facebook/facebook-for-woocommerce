@@ -55,6 +55,8 @@ if ( ! class_exists( 'WC_Facebookcommerce_Utils' ) ) :
 
 		/**
 		 * Prints deferred events into page header.
+		 *
+		 * @since 3.1.6
 		 */
 		public static function print_deferred_events() {
 			$deferred_events = static::load_deferred_events();
