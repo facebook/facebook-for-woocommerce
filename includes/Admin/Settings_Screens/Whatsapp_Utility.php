@@ -27,8 +27,6 @@ class Whatsapp_Utility extends Abstract_Settings_Screen {
 	/** @var string screen ID */
 	const ID = 'whatsapp_utility';
 
-	/** @var flag to test Utility Messages Overview changes until check for integration config is implemented */
-	const WHATSAPP_UTILITY_MESSAGES_OVERVIEW_FLAG = false;
 
 	/**
 	 * Whatsapp Utility constructor.
@@ -113,6 +111,12 @@ class Whatsapp_Utility extends Abstract_Settings_Screen {
 				),
 			)
 		);
+		wp_enqueue_script(
+			'facebook-for-woocommerce-whatsapp-finish',
+			facebook_for_woocommerce()->get_asset_build_dir_url() . '/admin/whatsapp-finish.js',
+			array( 'jquery', 'jquery-blockui', 'jquery-tiptip', 'wc-enhanced-select' ),
+			\WC_Facebookcommerce::PLUGIN_VERSION
+		);
 	}
 
 
@@ -122,13 +126,11 @@ class Whatsapp_Utility extends Abstract_Settings_Screen {
 	 * @since 2.0.0
 	 */
 	public function render() {
-		if ( self::WHATSAPP_UTILITY_MESSAGES_OVERVIEW_FLAG ) {
 			$view = $this->get_current_view();
-			if ( 'manage_event' === $view ) {
-				$this->render_manage_events_view();
-			} else {
-				$this->render_utility_message_overview();
-			}
+		if ( 'utility_settings' === $view ) {
+			$this->render_utility_message_overview();
+		} elseif ( 'manage_event' === $view ) {
+			$this->render_manage_events_view();
 		} else {
 			$this->render_utility_message_onboarding();
 		}
@@ -321,7 +323,7 @@ class Whatsapp_Utility extends Abstract_Settings_Screen {
 					<a
 						id="woocommerce-whatsapp-cancel-order-confirmation"
 						class="button"
-						href="<?php echo esc_html( admin_url( 'admin.php?page=' . self::PAGE_ID . '&tab=' . self::ID ) ); ?>"><?php esc_html_e( 'Cancel', 'facebook-for-woocommerce' ); ?></a>
+						href="<?php echo esc_html( admin_url( 'admin.php?page=' . self::PAGE_ID . '&tab=' . self::ID . '&view=utility_settings' ) ); ?>"><?php esc_html_e( 'Cancel', 'facebook-for-woocommerce' ); ?></a>
 				</div>
 
 			</div>
