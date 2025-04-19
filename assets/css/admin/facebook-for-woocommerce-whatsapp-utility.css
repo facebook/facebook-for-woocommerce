@@ -46,6 +46,21 @@
     padding: 20px;
     margin-left: auto;
 }
+.event-config-status {
+    background-color: #ddd;
+    border: none;
+    color: black;
+    padding: 4px 10px;
+    text-align: center;
+    display: inline-block;
+    border-radius: 16px;
+    margin-left: 10px;
+    font-size: small;
+}
+.on-status {
+    background-color: rgb(182, 242, 93);
+    color: green;
+}
 .manage-event-template-block {
     border: 1px solid #c4c3c3;
     margin-bottom: 20px;
