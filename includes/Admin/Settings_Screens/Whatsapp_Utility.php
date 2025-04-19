@@ -219,7 +219,7 @@ class Whatsapp_Utility extends Abstract_Settings_Screen {
 		?>
 		<div class="onboarding-card">
 			<div class="card-item">
-				<h1><b><?php esc_html_e( 'Utility Messages', 'facebook-for-woocommerce' ); ?></b></h1>
+				<h1><?php esc_html_e( 'Utility Messages', 'facebook-for-woocommerce' ); ?></h1>
 					<p><?php esc_html_e( 'Manage which utility messages you want to send to customers. You can check performance of these messages in Whatsapp Manager.', 'facebook-for-woocommerce' ); ?>
 						<a
 							id="woocommerce-whatsapp-manager-insights"
@@ -229,12 +229,13 @@ class Whatsapp_Utility extends Abstract_Settings_Screen {
 			<div class="divider"></div>
 			<div class="card-item event-config">
 				<div>
-				<h3><b><?php esc_html_e( 'Order confirmation', 'facebook-for-woocommerce' ); ?></b>
-				<div class="event-config-status on-status">
-				<?php esc_html_e( 'On', 'facebook-for-woocommerce' ); ?>
-				</div>
-				</h3>
-				<p><?php esc_html_e( 'Send a confirmation to customers after they\'ve placed an order.', 'facebook-for-woocommerce' ); ?></p>
+					<div class="event-config-heading-container">
+						<h3><?php esc_html_e( 'Order confirmation', 'facebook-for-woocommerce' ); ?></h3>
+						<div class="event-config-status on-status">
+							<?php esc_html_e( 'On', 'facebook-for-woocommerce' ); ?>
+						</div>
+					</div>
+					<p><?php esc_html_e( 'Send a confirmation to customers after they\'ve placed an order.', 'facebook-for-woocommerce' ); ?></p>
 				</div>	
 				<div class="event-config-manage-button">
 					<a
@@ -246,11 +247,12 @@ class Whatsapp_Utility extends Abstract_Settings_Screen {
 			<div class="divider"></div>
 			<div class="card-item event-config">
 				<div>
-					<h3><b><?php esc_html_e( 'Order shipped', 'facebook-for-woocommerce' ); ?></b>
-					<div class="event-config-status">
-				<?php esc_html_e( 'Off', 'facebook-for-woocommerce' ); ?>
-				</div>
-				</h3>
+					<div class="event-config-heading-container">
+						<h3><?php esc_html_e( 'Order shipped', 'facebook-for-woocommerce' ); ?></h3>
+						<div class="event-config-status">
+							<?php esc_html_e( 'Off', 'facebook-for-woocommerce' ); ?>
+						</div>
+					</div>
 					<p><?php esc_html_e( 'Send a confirmation to customers when their order is shipped.', 'facebook-for-woocommerce' ); ?></p>
 				</div>
 				<div class="event-config-manage-button">
@@ -263,11 +265,12 @@ class Whatsapp_Utility extends Abstract_Settings_Screen {
 			<div class="divider"></div>
 			<div class="card-item event-config">
 				<div>
-					<h3><b><?php esc_html_e( 'Order refunded', 'facebook-for-woocommerce' ); ?></b>
-					<div class="event-config-status">
-				<?php esc_html_e( 'Off', 'facebook-for-woocommerce' ); ?>
-				</div>
-				</h3>
+					<div class="event-config-heading-container">
+						<h3><?php esc_html_e( 'Order refunded', 'facebook-for-woocommerce' ); ?></h3>
+						<div class="event-config-status">
+							<?php esc_html_e( 'Off', 'facebook-for-woocommerce' ); ?>
+						</div>
+					</div>
 					<p><?php esc_html_e( 'Send a confirmation to customers when an order is refunded.', 'facebook-for-woocommerce' ); ?></p>
 				</div>
 				<div class="event-config-manage-button">
