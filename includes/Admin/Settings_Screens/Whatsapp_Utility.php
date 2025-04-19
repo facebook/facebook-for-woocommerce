@@ -28,7 +28,7 @@ class Whatsapp_Utility extends Abstract_Settings_Screen {
 	const ID = 'whatsapp_utility';
 
 	/** @var flag to test Utility Messages Overview changes until check for integration config is implemented */
-	const WHATSAPP_UTILITY_MESSAGES_OVERVIEW_FLAG = false;
+	const WHATSAPP_UTILITY_MESSAGES_OVERVIEW_FLAG = true;
 
 	/**
 	 * Whatsapp Utility constructor.
@@ -229,9 +229,13 @@ class Whatsapp_Utility extends Abstract_Settings_Screen {
 			<div class="divider"></div>
 			<div class="card-item event-config">
 				<div>
-					<h3><b><?php esc_html_e( 'Order confirmation', 'facebook-for-woocommerce' ); ?></b></h3>
-					<p><?php esc_html_e( 'Send a confirmation to customers after they\'ve placed an order.', 'facebook-for-woocommerce' ); ?></p>
+				<h3><b><?php esc_html_e( 'Order confirmation', 'facebook-for-woocommerce' ); ?></b>
+				<div class="event-config-status on-status">
+				<?php esc_html_e( 'On', 'facebook-for-woocommerce' ); ?>
 				</div>
+				</h3>
+				<p><?php esc_html_e( 'Send a confirmation to customers after they\'ve placed an order.', 'facebook-for-woocommerce' ); ?></p>
+				</div>	
 				<div class="event-config-manage-button">
 					<a
 						id="woocommerce-whatsapp-manage-order-confirmation"
@@ -242,7 +246,11 @@ class Whatsapp_Utility extends Abstract_Settings_Screen {
 			<div class="divider"></div>
 			<div class="card-item event-config">
 				<div>
-					<h3><b><?php esc_html_e( 'Order shipped', 'facebook-for-woocommerce' ); ?></b></h3>
+					<h3><b><?php esc_html_e( 'Order shipped', 'facebook-for-woocommerce' ); ?></b>
+					<div class="event-config-status">
+				<?php esc_html_e( 'Off', 'facebook-for-woocommerce' ); ?>
+				</div>
+				</h3>
 					<p><?php esc_html_e( 'Send a confirmation to customers when their order is shipped.', 'facebook-for-woocommerce' ); ?></p>
 				</div>
 				<div class="event-config-manage-button">
@@ -255,7 +263,11 @@ class Whatsapp_Utility extends Abstract_Settings_Screen {
 			<div class="divider"></div>
 			<div class="card-item event-config">
 				<div>
-					<h3><b><?php esc_html_e( 'Order refunded', 'facebook-for-woocommerce' ); ?></b></h3>
+					<h3><b><?php esc_html_e( 'Order refunded', 'facebook-for-woocommerce' ); ?></b>
+					<div class="event-config-status">
+				<?php esc_html_e( 'Off', 'facebook-for-woocommerce' ); ?>
+				</div>
+				</h3>
 					<p><?php esc_html_e( 'Send a confirmation to customers when an order is refunded.', 'facebook-for-woocommerce' ); ?></p>
 				</div>
 				<div class="event-config-manage-button">
