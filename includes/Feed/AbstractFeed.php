@@ -253,8 +253,14 @@ abstract class AbstractFeed {
 				throw new PluginException( "{$name}: File at path ' . $file_path . ' is not readable.", 404 );
 			}
 
+			if ( $this->feed_writer instanceof JsonFeedFileWriter ) {
+				$content_type = 'Content-Type: application/json; charset=utf-8';
+			} else {
+				$content_type = 'Content-Type: text/csv; charset=utf-8';
+			}
+
 			// set the download headers.
-			header( 'Content-Type: text/csv; charset=utf-8' );
+			header( $content_type );
 			header( 'Content-Description: File Transfer' );
 			header( 'Content-Disposition: attachment; filename="' . basename( $file_path ) . '"' );
 			header( 'Expires: 0' );

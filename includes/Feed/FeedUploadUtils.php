@@ -111,6 +111,10 @@ class FeedUploadUtils {
 		}
 	}
 
+	public static function get_site_navigation_data(): array {
+		return [];
+	}
+
 	/**
 	 * Query for coupons and map them to Meta format.
 	 *

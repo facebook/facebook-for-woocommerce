@@ -13,14 +13,14 @@ namespace WooCommerce\Facebook\Feed;
 defined( 'ABSPATH' ) || exit;
 
 /**
- * Class RatingsAndReviewsFeedGenerator
+ * Site Navigation Feed Generator Class
  *
- * This class generates the feed as a batch job.
+ * Sit Navigation Feed Generator Class. This file is responsible for the new-style feed generation for site navigation
  *
  * @package WooCommerce\Facebook\Feed
  * @since 3.5.0
  */
-class RatingsAndReviewsFeedGenerator extends FeedGenerator {
+class SiteNavigationFeedGenerator extends FeedGenerator {
 	/**
 	 * Retrieves items for a specific batch.
 	 *
@@ -32,26 +32,6 @@ class RatingsAndReviewsFeedGenerator extends FeedGenerator {
 	 * @since 3.5.0
 	 */
 	protected function get_items_for_batch( int $batch_number, array $args ): array {
-		$batch_number = max( 1, $batch_number );
-		$batch_size   = $this->get_batch_size();
-		$offset       = ( $batch_number - 1 ) * $batch_size;
-
-		$query_args = array(
-			'number' => $batch_size,
-			'offset' => $offset,
-			'status' => 'approve',
-		);
-
-		return FeedUploadUtils::get_ratings_and_reviews_data( $query_args );
-	}
-
-	/**
-	 * Get the job's batch size.
-	 *
-	 * @return int
-	 * @since 3.5.0
-	 */
-	protected function get_batch_size(): int {
-		return 100;
+		return FeedUploadUtils::get_site_navigation_data();
 	}
 }
