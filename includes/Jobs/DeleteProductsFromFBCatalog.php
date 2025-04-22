@@ -75,11 +75,7 @@ class DeleteProductsFromFBCatalog extends AbstractChainedJob {
 		foreach ( $items as $product_id ) {
 			$product = wc_get_product( $product_id );
 			// check if variable product
-			if ( $product->is_type( 'variable' ) ) {
-				$integration->delete_product_group( $product_id );
-			} else {
-				$integration->delete_product_item( $product_id );
-			}
+			$integration->delete_product_item( $product_id );
 
 			// Reset product.
 			$integration->reset_single_product( $product_id );

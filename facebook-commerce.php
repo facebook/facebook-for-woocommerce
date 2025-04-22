@@ -1024,11 +1024,9 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 			}
 			// enqueue variations to be deleted in the background
 			$this->facebook_for_woocommerce->get_products_sync_handler()->delete_products( $retailer_ids );
-			$this->delete_product_group( $product_id );
 		} else {
 
 			$this->delete_product_item( $product_id );
-			$this->delete_product_group( $product_id );
 		}
 
 		// clear out both item and group IDs
@@ -2928,28 +2926,6 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 				WC_Facebookcommerce_Utils::logWithDebugModeEnabled( $pi_result );
 			} catch ( ApiException $e ) {
 				$message = sprintf( 'There was an error trying to delete a product set item: %s', $e->getMessage() );
-				WC_Facebookcommerce_Utils::logWithDebugModeEnabled( $message );
-			}
-		}
-	}
-
-	/**
-	 * Uses the Graph API to delete the Product Group associated with the given product.
-	 *
-	 * @param int $product_id product ID
-	 *
-	 * @since 2.0.0
-	 *
-	 */
-	public function delete_product_group( int $product_id ) {
-		$product_group_id = $this->get_product_fbid( self::FB_PRODUCT_GROUP_ID, $product_id );
-		if ( $product_group_id ) {
-			// TODO: replace with a call to API::delete_product_group() {WV 2020-05-26}
-			try {
-				$pg_result = $this->facebook_for_woocommerce->get_api()->delete_product_group( $product_group_id );
-				WC_Facebookcommerce_Utils::logWithDebugModeEnabled( $pg_result );
-			} catch ( ApiException $e ) {
-				$message = sprintf( 'There was an error trying to delete a product group: %s', $e->getMessage() );
 				WC_Facebookcommerce_Utils::logWithDebugModeEnabled( $message );
 			}
 		}
