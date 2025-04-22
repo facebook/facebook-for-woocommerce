@@ -457,7 +457,7 @@ class Admin {
 		$choice = isset( $_GET['fb_sync_enabled'] ) ? (string) sanitize_text_field( wp_unslash( $_GET['fb_sync_enabled'] ) ) : '';
 		?>
 		<select name="fb_sync_enabled">
-			<option value="" <?php selected( $choice, '' ); ?>><?php esc_html_e( 'Filter by synced to meta', 'facebook-for-woocommerce' ); ?></option>
+			<option value="" <?php selected( $choice, '' ); ?>><?php esc_html_e( 'Filter by synced to Meta', 'facebook-for-woocommerce' ); ?></option>
 			<option value="<?php echo esc_attr( self::INCLUDE_FACEBOOK_SYNC ); ?>" <?php selected( $choice, self::INCLUDE_FACEBOOK_SYNC ); ?>><?php esc_html_e( 'Synced', 'facebook-for-woocommerce' ); ?></option>
 			<option value="<?php echo esc_attr( self::EXCLUDE_FACEBOOK_SYNC ); ?>" <?php selected( $choice, self::EXCLUDE_FACEBOOK_SYNC ); ?>><?php esc_html_e( 'Not synced', 'facebook-for-woocommerce' ); ?></option>
 		</select>
