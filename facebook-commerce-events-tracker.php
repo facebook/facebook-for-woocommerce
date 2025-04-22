@@ -129,13 +129,13 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 			add_action( 'woocommerce_blocks_checkout_enqueue_data', array( $this, 'inject_initiate_checkout_event' ) );
 			
 			// Purchase and Subscribe events
-			add_action( 'woocommerce_order_status_processing', array( $this, 'inject_purchase_event' ) );
-			add_action( 'woocommerce_order_status_completed', array( $this, 'inject_purchase_event' ) );
-			add_action( 'woocommerce_process_shop_order_meta', array( $this, 'inject_purchase_event' ) );
-			add_action( 'woocommerce_payment_complete', array( $this, 'inject_purchase_event' ) );
 			add_action( 'woocommerce_new_order', array( $this, 'inject_purchase_event' ) );
-			add_action( 'woocommerce_checkout_update_order_meta', array( $this, 'inject_purchase_event' ) );
+			add_action( 'woocommerce_payment_complete', array( $this, 'inject_purchase_event' ), 10 );
+			add_action( 'woocommerce_checkout_update_order_meta', array( $this, 'inject_purchase_event' ), 20 );
 			add_action( 'woocommerce_thankyou', array( $this, 'inject_purchase_event' ), 40 );
+			add_action( 'woocommerce_order_status_processing', array( $this, 'inject_purchase_event' ), 50 );
+			add_action( 'woocommerce_order_status_completed', array( $this, 'inject_purchase_event' ), 50 );
+			add_action( 'woocommerce_process_shop_order_meta', array( $this, 'inject_purchase_event' ), 60 );
 
 			// Lead events through Contact Form 7
 			add_action( 'wpcf7_contact_form', array( $this, 'inject_lead_event_hook' ), 11 );
