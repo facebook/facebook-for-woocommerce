@@ -113,6 +113,23 @@ class Whatsapp_Utility extends Abstract_Settings_Screen {
 				),
 			)
 		);
+		wp_enqueue_script(
+			'facebook-for-woocommerce-whatsapp-events',
+			facebook_for_woocommerce()->get_asset_build_dir_url() . '/admin/whatsapp-events.js',
+			array( 'jquery', 'jquery-blockui', 'jquery-tiptip', 'wc-enhanced-select' ),
+			\WC_Facebookcommerce::PLUGIN_VERSION
+		);
+		wp_localize_script(
+			'facebook-for-woocommerce-whatsapp-events',
+			'facebook_for_woocommerce_whatsapp_events',
+			array(
+				'ajax_url' => admin_url( 'admin-ajax.php' ),
+				'nonce'    => wp_create_nonce( 'facebook-for-wc-whatsapp-events-nonce' ),
+				'i18n'     => array(
+					'result' => true,
+				),
+			)
+		);
 	}
 
 
@@ -236,7 +253,7 @@ class Whatsapp_Utility extends Abstract_Settings_Screen {
 					<a
 						id="woocommerce-whatsapp-manage-order-confirmation"
 						class="event-config-manage-button button"
-						href="<?php echo esc_html( admin_url( 'admin.php?page=' . self::PAGE_ID . '&tab=' . self::ID . '&view=manage_event' ) ); ?>"><?php esc_html_e( 'Manage', 'facebook-for-woocommerce' ); ?></a>
+						href="#"><?php esc_html_e( 'Manage', 'facebook-for-woocommerce' ); ?></a>
 				</div>
 			</div>
 			<div class="divider"></div>

@@ -14,6 +14,7 @@ use WooCommerce\Facebook\Framework\Helper;
 use WooCommerce\Facebook\Admin\Settings_Screens\Product_Sync;
 use WooCommerce\Facebook\Admin\Settings_Screens\Shops;
 use WooCommerce\Facebook\Framework\Plugin\Exception as PluginException;
+use WooCommerce\Facebook\Handlers\WhatsAppUtilityConnection;
 
 defined( 'ABSPATH' ) || exit;
 
@@ -56,6 +57,9 @@ class AJAX {
 
 		// fetch billing url info - waba id and business id
 		add_action( 'wp_ajax_wc_facebook_whatsapp_fetch_billing_url_info', array( $this, 'wc_facebook_whatsapp_fetch_billing_url_info' ) );
+
+		// fetch configured library template info
+		add_action( 'wp_ajax_wc_facebook_whatsapp_fetch_library_template_info', array( $this, 'whatsapp_fetch_library_template_info' ) );
 
 		// search a product's attributes for the given term
 		add_action( 'wp_ajax_' . self::ACTION_SEARCH_PRODUCT_ATTRIBUTES, array( $this, 'admin_search_product_attributes' ) );
@@ -232,6 +236,17 @@ class AJAX {
 		wp_send_json_success();
 	}
 
+	public function whatsapp_fetch_library_template_info() {
+		facebook_for_woocommerce()->log( 'Fetching library template data for whatsapp utility event' );
+		if ( ! check_ajax_referer( 'facebook-for-wc-whatsapp-events-nonce', 'nonce', false ) ) {
+			wp_send_json_error( 'Invalid security token sent.' );
+		}
+		$bisu_token = get_option( 'wc_facebook_wa_integration_bisu_access_token', null );
+		if ( empty( $bisu_token ) ) {
+			wp_send_json_error( 'Missing access token for Library template API call' );
+		}
+		WhatsAppUtilityConnection::get_template_library_content( $bisu_token );
+	}
 
 	/**
 	 * Maybe triggers a modal warning when the merchant toggles sync enabled status in bulk.
