@@ -831,7 +831,7 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 			$purchase_tracked_flag = '_wc_' . facebook_for_woocommerce()->get_id() . '_purchase_tracked_' . $order_id;
 
 			// Return if this Purchase event has already been tracked
-			if ( 'yes' === get_transient( $purchase_tracked_flag ) || $order->meta_exists( 'Meta_Purchase_Tracked' ) || ! in_array( $order_state, $valid_purchase_order_states ) ) {
+			if ( 'yes' === get_transient( $purchase_tracked_flag ) || $order->meta_exists( '_meta_purchase_tracked' ) || ! in_array( $order_state, $valid_purchase_order_states ) ) {
 				return;
 			}
 
@@ -839,7 +839,7 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 			set_transient( $purchase_tracked_flag, 'yes', 15 * MINUTE_IN_SECONDS );
 
 			// Set a flag to ensure this Purchase event is not going to be sent across different sessions
-			$order->add_meta_data( 'Meta_Purchase_Tracked', true, true );
+			$order->add_meta_data( '_meta_purchase_tracked', true, true );
 
 			// Save the metadata
 			$order->save();
