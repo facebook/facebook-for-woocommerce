@@ -887,6 +887,6 @@ class WC_Facebookcommerce extends WooCommerce\Facebook\Framework\Plugin {
  *
  * @return \WC_Facebookcommerce instance of the plugin
  */
-function facebook_for_woocommerce() {
+                                                                                                                                                                                                                                                                                     function facebook_for_woocommerce() {
 	return apply_filters('wc_facebook_instance', \WC_Facebookcommerce::instance());
 }
