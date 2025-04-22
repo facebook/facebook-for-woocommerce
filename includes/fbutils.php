@@ -952,6 +952,8 @@ if ( ! class_exists( 'WC_Facebookcommerce_Utils' ) ) :
 		/**
 		 * Utility function for sending logs to Meta.
 		 *
+		 * @since 3.5.0
+		 *
 		 * @param string $message
 		 * @param array  $context wiki: https://www.internalfb.com/wiki/Commerce_Platform/Teams/3P_Ecosystems_(3PE)/3rd_Party_platforms/Woo_Commerce/How_To_Use_WooCommerce_Side_Logging/
 		 */
