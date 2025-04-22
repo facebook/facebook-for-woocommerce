@@ -28,7 +28,7 @@ class Whatsapp_Utility extends Abstract_Settings_Screen {
 	const ID = 'whatsapp_utility';
 
 	/** @var flag to test Utility Messages Overview changes until check for integration config is implemented */
-	const WHATSAPP_UTILITY_MESSAGES_OVERVIEW_FLAG = false;
+	const WHATSAPP_UTILITY_MESSAGES_OVERVIEW_FLAG = true;
 
 	/**
 	 * Whatsapp Utility constructor.
@@ -264,6 +264,24 @@ class Whatsapp_Utility extends Abstract_Settings_Screen {
 						class="event-config-manage-button button"
 						href="#"><?php esc_html_e( 'Manage', 'facebook-for-woocommerce' ); ?></a>
 				</div>
+			</div>
+			<div class="divider"></div>
+			<div class="card-item event-config">
+				<div>
+					<h3><b><?php esc_html_e( 'Add WhatsApp option at checkout', 'facebook-for-woocommerce' ); ?></b></h3>
+					<p><?php esc_html_e( 'Adds a checkbox to your store\'s checkout page so customers can get updates. You can preview what this looks like in checkout preview.', 'facebook-for-woocommerce' ); ?></p>
+				</div>
+				<div class="event-config-options">
+					<label>
+						<input type="checkbox" checked>
+						<span class="checkbox-label"><?php esc_html_e( 'On', 'facebook-for-woocommerce' ); ?></span>
+					</label>
+					<a
+						id="woocommerce-whatsapp-consent-collection"
+						class="event-config-manage-button button"
+						href="#"><?php esc_html_e( 'Remove', 'facebook-for-woocommerce' ); ?></a>
+				</div>
+				<div class="divider"></div>
 			</div>
 		</div>
 		<?php
