@@ -1853,7 +1853,7 @@ class Admin {
 			if ( isset( $attribute_map[ $normalized_attr_name ] ) ) {
 				$matched_facebook_field = $attribute_map[ $normalized_attr_name ];
 				$field_name             = $normalized_attr_name;
-			} else { 
+			} else {
 				// Matching logic: Only match against exact label names, not partial matches
 				// We'll also accept 'pa_size' format for backward compatibility
 				foreach ( $attribute_map as $map_key => $map_value ) {
