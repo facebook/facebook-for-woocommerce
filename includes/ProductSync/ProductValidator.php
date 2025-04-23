@@ -329,22 +329,20 @@ class ProductValidator {
 			throw new ProductExcludedException( __( 'Product excluded by wc_facebook_should_sync_product filter.', 'facebook-for-woocommerce' ) );
 		}
 
-
 		/**
 		 * This validation will be used for product updates.
 		 * Hence we are only condidering the value of the parent and not the variation
 		 */
 		$sync_status = $this->product->get_meta( self::SYNC_ENABLED_META_KEY ) === 'yes';
 
-		if( $sync_status ){
+		if ( $sync_status ) {
 			return;
-		}
-		else {
+		} else {
 			throw $invalid_exception;
 		}
 	}
 
-		/**
+	/**
 	 * Validate if the product is excluded from at the "product level" (product meta value).
 	 *
 	 * @throws ProductExcludedException If product should not be synced.
