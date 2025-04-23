@@ -1724,12 +1724,15 @@ class WC_Facebook_Product {
 				else{
 					$variations = $parent_product->get_children(); 
 					$variation_visibility = false;
+
 					foreach ($variations as $variation_id) {
 						$variation = wc_get_product($variation_id);
 				
 						if ($variation) {
 							$variation_visibility = $variation_visibility || Products::is_product_visible($variation);
 						}
+
+						if ($variation_visibility) break;
 					}
 					$product_data[ 'visibility' ] = $variation_visibility ? \WC_Facebookcommerce_Integration::FB_SHOP_PRODUCT_VISIBLE : \WC_Facebookcommerce_Integration::FB_SHOP_PRODUCT_HIDDEN;
 					update_post_meta($parent_id,Products::VISIBILITY_META_KEY, $variation_visibility ? "yes" : "no");
