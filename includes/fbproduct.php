@@ -633,8 +633,7 @@ class WC_Facebook_Product {
 		$brand_values = $this->get_taxonomy_attribute_values('pa_brand');
 		
 		if ($brand_values) {
-			$joined_values = implode(' | ', $brand_values);
-			return $this->convert_pipe_separated_values($joined_values, $is_api_call);
+			return $this->process_attribute_values($brand_values, $is_api_call);
 		}
 		
 		// If this is a variation, first check for variation-specific brand
@@ -948,6 +947,13 @@ class WC_Facebook_Product {
 	}
 
 	public function get_fb_condition() {
+		// Check for taxonomy attributes for condition
+		$condition_values = $this->get_attribute_by_type('condition');
+		if ($condition_values) {
+			$condition = $this->process_attribute_values($condition_values);
+			return !empty($condition) ? $condition : self::CONDITION_NEW;
+		}
+		
 		// Get condition directly from post meta
 		$fb_condition = get_post_meta(
 			$this->id,
@@ -985,6 +991,12 @@ class WC_Facebook_Product {
 			}
 		}
 
+		// Check for taxonomy attributes
+		$age_group_values = $this->get_attribute_by_type('age_group');
+		if ($age_group_values) {
+			return $this->process_attribute_values($age_group_values);
+		}
+
 		// Get age group directly from post meta
 		$fb_age_group = get_post_meta(
 			$this->id,
@@ -1019,6 +1031,12 @@ class WC_Facebook_Product {
 					return WC_Facebookcommerce_Utils::clean_string($value);
 				}
 			}
+		}
+
+		// Check for taxonomy attributes
+		$gender_values = $this->get_attribute_by_type('gender');
+		if ($gender_values) {
+			return $this->process_attribute_values($gender_values);
 		}
 
 		// Get gender directly from post meta
@@ -1328,7 +1346,7 @@ class WC_Facebook_Product {
 	 * @param mixed $value The value to process
 	 * @return mixed The first value for simple products, original array for variations
 	 */
-	private function get_first_value_from_complex_type($value, $force_single = false) {
+	private function get_first_value_from_complex_type($value) {
 		// Only extract first value for simple products (not variations/variable)
 		if ($this->is_type('simple')) {
 			if (is_array($value)) {
@@ -1344,6 +1362,35 @@ class WC_Facebook_Product {
 	}
 
 	/**
+	 * Helper method to process attribute values consistently across different attribute types
+	 * Handles the logic of returning a single value for simple products and multiple values for variable products
+	 *
+	 * @param array $attribute_values Array of attribute values
+	 * @param bool $is_api_call Whether this is for API submission
+	 * @return string|array Processed attribute value(s)
+	 */
+	private function process_attribute_values($attribute_values, $is_api_call = false) {
+		if (!$attribute_values) {
+			return '';
+		}
+		
+		// For simple products, just take the first element
+		if ($this->is_type('simple')) {
+			if (is_array($attribute_values) && !empty($attribute_values)) {
+				$value = $attribute_values[0];
+				// Clean and truncate the value directly for simple products
+				return mb_substr(WC_Facebookcommerce_Utils::clean_string($value), 0, 200);
+			}
+		} else {
+			// For variable/variation products, keep all values
+			$joined_values = implode(' | ', $attribute_values);
+			return $this->convert_pipe_separated_values($joined_values, $is_api_call);
+		}
+		
+		return '';
+	}
+
+	/**
 	 * Gets the FB material value for the product.
 	 *
 	 * @param bool $is_api_call Whether this is for API submission
@@ -1354,8 +1401,7 @@ class WC_Facebook_Product {
 		$material_values = $this->get_attribute_by_type('material');
 		
 		if ($material_values) {
-			$joined_values = implode(' | ', $material_values);
-			return $this->convert_pipe_separated_values($joined_values, $is_api_call);
+			return $this->process_attribute_values($material_values, $is_api_call);
 		}
 
 		// Get material directly from post meta as fallback
@@ -1396,8 +1442,7 @@ class WC_Facebook_Product {
 		}
 		
 		if ($color_values) {
-			$joined_values = implode(' | ', $color_values);
-			return $this->convert_pipe_separated_values($joined_values, $is_api_call);
+			return $this->process_attribute_values($color_values, $is_api_call);
 		}
 
 		// Get color directly from post meta as fallback
@@ -1433,8 +1478,7 @@ class WC_Facebook_Product {
 		$size_values = $this->get_attribute_by_type('size');
 		
 		if ($size_values) {
-			$joined_values = implode(' | ', $size_values);
-			return $this->convert_pipe_separated_values($joined_values, $is_api_call);
+			return $this->process_attribute_values($size_values, $is_api_call);
 		}
 
 		// Get size directly from post meta as fallback
@@ -1470,8 +1514,7 @@ class WC_Facebook_Product {
 		$pattern_values = $this->get_attribute_by_type('pattern');
 		
 		if ($pattern_values) {
-			$joined_values = implode(' | ', $pattern_values);
-			return $this->convert_pipe_separated_values($joined_values, $is_api_call);
+			return $this->process_attribute_values($pattern_values, $is_api_call);
 		}
 
 		// Get pattern directly from post meta as fallback
@@ -2067,6 +2110,12 @@ class WC_Facebook_Product {
 	}
 
 	public function get_fb_mpn($is_api_call = false) {
+		// Check for taxonomy attribute for MPN
+		$mpn_values = $this->get_attribute_by_type('mpn');
+		if ($mpn_values) {
+			return $this->process_attribute_values($mpn_values, $is_api_call);
+		}
+		
 		// If this is a variation, get its specific mpn value
 		if ($this->is_type('variation')) {
 			$attributes = $this->woo_product->get_attributes();
