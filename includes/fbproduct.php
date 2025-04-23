@@ -1368,7 +1368,7 @@ class WC_Facebook_Product {
 
 		$google_product_category = Products::get_google_product_category_id( $this->woo_product );
 		if ( $google_product_category ) {
-			$product_data['google_product_category'] = (int) $google_product_category;
+			$product_data['google_product_category'] = $google_product_category;
 		}
 
 		// Currently only items batch and feed support enhanced catalog fields
