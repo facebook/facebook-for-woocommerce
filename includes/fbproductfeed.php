@@ -387,7 +387,7 @@ class WC_Facebook_Product_Feed {
 		'additional_image_link,sale_price_effective_date,sale_price,condition,' .
 		'visibility,gender,color,size,pattern,google_product_category,default_product,'.
 		'variant,gtin,quantity_to_sell_on_facebook,rich_text_description,external_update_time,'.
-		'external_variant_id'. PHP_EOL;
+		'external_variant_id,custom_fields'. PHP_EOL;
 	}
 
 
@@ -478,16 +478,16 @@ class WC_Facebook_Product_Feed {
 
 			// If this group has default variant value, log this product item
 			if ( isset( $parent_attribute_values['default_variant_id'] ) && ! empty( $parent_attribute_values['default_variant_id'] ) ) {
-				$this->has_default_product_count++;
+				$this->has_default_product_count ++;
 			} else {
-				$this->no_default_product_count++;
+				$this->no_default_product_count ++;
 			}
 		}
 
 		// log simple product
 		if ( ! isset( $product_data['default_product'] ) ) {
 
-			$this->no_default_product_count++;
+			$this->no_default_product_count ++;
 
 			$product_data['default_product'] = '';
 		}
@@ -509,36 +509,37 @@ class WC_Facebook_Product_Feed {
 		}
 
 		return $product_data['retailer_id'] . ',' .
-		static::format_string_for_feed( static::get_value_from_product_data( $product_data, 'name' ) ) . ',' .
-		static::format_string_for_feed( static::get_value_from_product_data( $product_data, 'description' ) ) . ',' .
-		static::get_value_from_product_data( $product_data, 'image_url' ) . ',' .
-		static::get_value_from_product_data( $product_data, 'url' ) . ',' .
-		static::format_string_for_feed( static::get_value_from_product_data( $product_data, 'product_type' ) ) . ',' .
-		static::format_string_for_feed( static::get_value_from_product_data( $product_data, 'brand' ) ) . ',' .
-		static::format_string_for_feed( static::format_price_for_feed(
-			static::get_value_from_product_data( $product_data, 'price', 0 ),
-			static::get_value_from_product_data( $product_data, 'currency' )
-		)) . ',' .
-		static::format_string_for_feed( static::get_value_from_product_data( $product_data, 'availability' ) ) . ',' .
-		$item_group_id . ',' .
-		static::get_value_from_product_data( $product_data, 'checkout_url' ) . ',' .
-		static::format_additional_image_url( static::get_value_from_product_data( $product_data, 'additional_image_urls' ) ) . ',' .
-		static::format_string_for_feed( $sale_price_effective_date ) . ',' .
-		static::format_string_for_feed( $sale_price ) . ',' .
-		'new' . ',' .
-		static::format_string_for_feed( static::get_value_from_product_data( $product_data, 'visibility' )) . ',' .
-		static::format_string_for_feed( static::get_value_from_product_data( $product_data, 'gender' )) . ',' .
-		static::format_string_for_feed( static::get_value_from_product_data( $product_data, 'color' )) . ',' .
-		static::format_string_for_feed( static::get_value_from_product_data( $product_data, 'size' )) . ',' .
-		static::format_string_for_feed( static::get_value_from_product_data( $product_data, 'pattern' )) . ',' .
-		static::format_string_for_feed( static::get_value_from_product_data( $product_data, 'google_product_category' )) . ',' .
-		static::format_string_for_feed( static::get_value_from_product_data( $product_data, 'default_product' )) . ',' .
-		static::format_string_for_feed( static::get_value_from_product_data( $product_data, 'variant' )) . ',' .
-		static::format_string_for_feed( static::get_value_from_product_data( $product_data, 'gtin' )) . ',' .
-		static::format_string_for_feed( static::get_value_from_product_data( $product_data, 'quantity_to_sell_on_facebook' )) . ',' .
-		static::format_string_for_feed( static::get_value_from_product_data( $product_data, 'rich_text_description' ) ) . ',' .
-		static::get_value_from_product_data( $product_data, 'external_update_time' ) . ',' .
-		static::get_value_from_product_data( $product_data, 'external_variant_id' ) . PHP_EOL;
+	       static::format_string_for_feed( static::get_value_from_product_data( $product_data, 'name' ) ) . ',' .
+	       static::format_string_for_feed( static::get_value_from_product_data( $product_data, 'description' ) ) . ',' .
+	       static::get_value_from_product_data( $product_data, 'image_url' ) . ',' .
+	       static::get_value_from_product_data( $product_data, 'url' ) . ',' .
+	       static::format_string_for_feed( static::get_value_from_product_data( $product_data, 'product_type' ) ) . ',' .
+	       static::format_string_for_feed( static::get_value_from_product_data( $product_data, 'brand' ) ) . ',' .
+	       static::format_string_for_feed( static::format_price_for_feed(
+		       static::get_value_from_product_data( $product_data, 'price', 0 ),
+		       static::get_value_from_product_data( $product_data, 'currency' )
+	       ) ) . ',' .
+	       static::format_string_for_feed( static::get_value_from_product_data( $product_data, 'availability' ) ) . ',' .
+	       $item_group_id . ',' .
+	       static::get_value_from_product_data( $product_data, 'checkout_url' ) . ',' .
+	       static::format_additional_image_url( static::get_value_from_product_data( $product_data, 'additional_image_urls' ) ) . ',' .
+	       static::format_string_for_feed( $sale_price_effective_date ) . ',' .
+	       static::format_string_for_feed( $sale_price ) . ',' .
+	       'new' . ',' .
+	       static::format_string_for_feed( static::get_value_from_product_data( $product_data, 'visibility' ) ) . ',' .
+	       static::format_string_for_feed( static::get_value_from_product_data( $product_data, 'gender' ) ) . ',' .
+	       static::format_string_for_feed( static::get_value_from_product_data( $product_data, 'color' ) ) . ',' .
+	       static::format_string_for_feed( static::get_value_from_product_data( $product_data, 'size' ) ) . ',' .
+	       static::format_string_for_feed( static::get_value_from_product_data( $product_data, 'pattern' ) ) . ',' .
+	       static::format_string_for_feed( static::get_value_from_product_data( $product_data, 'google_product_category' ) ) . ',' .
+	       static::format_string_for_feed( static::get_value_from_product_data( $product_data, 'default_product' ) ) . ',' .
+	       static::format_string_for_feed( static::get_value_from_product_data( $product_data, 'variant' ) ) . ',' .
+	       static::format_string_for_feed( static::get_value_from_product_data( $product_data, 'gtin' ) ) . ',' .
+	       static::format_string_for_feed( static::get_value_from_product_data( $product_data, 'quantity_to_sell_on_facebook' ) ) . ',' .
+	       static::format_string_for_feed( static::get_value_from_product_data( $product_data, 'rich_text_description' ) ) . ',' .
+	       static::get_value_from_product_data( $product_data, 'external_update_time' ) . ',' .
+	       static::get_value_from_product_data( $product_data, 'external_variant_id' ) . ',' .
+	       static::get_value_from_product_data( $product_data, 'custom_fields' ) . PHP_EOL;
 	}
 
 	private static function format_additional_image_url( $product_image_urls ) {
