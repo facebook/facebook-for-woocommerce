@@ -14,6 +14,7 @@ use WooCommerce\Facebook\Framework\Helper;
 use WooCommerce\Facebook\Admin\Settings_Screens\Product_Sync;
 use WooCommerce\Facebook\Admin\Settings_Screens\Shops;
 use WooCommerce\Facebook\Framework\Plugin\Exception as PluginException;
+use WooCommerce\Facebook\Handlers\WhatsAppUtilityConnection;
 
 defined( 'ABSPATH' ) || exit;
 
@@ -209,7 +210,7 @@ class AJAX {
 	}
 
 	/**
-	 * Get data for for finish onboaridng call and make api call.
+	 * Get data for for finish onboarding call and make api call.
 	 *
 	 * @internal
 	 *
@@ -232,45 +233,7 @@ class AJAX {
 			);
 			wp_send_json_error( 'Onboarding is not complete or has failed.' );
 		}
-		$this->wc_facebook_whatsapp_connect_utility_messages_call( $waba_id, $wacs_id, $external_business_id, $bisu_token );
-	}
-
-	private function wc_facebook_whatsapp_connect_utility_messages_call( $waba_id, $wacs_id, $external_business_id, $bisu_token ) {
-		$api_version  = 'v21.0/';
-		$base_url     = array( 'https://graph.facebook.com', $api_version, $waba_id, 'connect_utility_messages' );
-		$base_url     = esc_url( implode( '/', $base_url ) );
-		$query_params = array(
-			'external_integration_id' => $external_business_id,
-			'wacs_id'                 => $wacs_id,
-			'access_token'            => $bisu_token,
-		);
-		$base_url     = add_query_arg( $query_params, $base_url );
-		$options      = array(
-			'headers' => array(
-				'Authorization' => $access_token,
-			),
-			'body'    => array(),
-		);
-		$response     = wp_remote_post( $base_url, $options );
-		if ( is_wp_error( $response ) || wp_remote_retrieve_response_code( $response ) != 200 ) {
-			$error_data    = explode( "\n", wp_remote_retrieve_body( $response ) );
-			$error_message = $error_data[0];
-			wc_get_logger()->info(
-				sprintf(
-					/* translators: %s $error_message */
-					__( 'Finish Onboarding Button Click Failure %1$s ', 'facebook-for-woocommerce' ),
-					$error_message,
-				)
-			);
-			wp_send_json_error( $response, 'Finish Onboarding Success' );
-		} else {
-				wc_get_logger()->info(
-					sprintf(
-						__( 'Finish Onboarding Button Click Success!!!', 'facebook-for-woocommerce' )
-					)
-				);
-			wp_send_json_success( $response, 'Finish Onboarding Failure' );
-		}
+		WhatsAppUtilityConnection::wc_facebook_whatsapp_connect_utility_messages_call( $waba_id, $wacs_id, $external_business_id, $bisu_token );
 	}
 
 
