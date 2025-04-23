@@ -1322,17 +1322,25 @@ class WC_Facebook_Product {
 
 	/**
 	 * Utility method to get first value from a potential array or object
+	 * Only applies single value extraction for simple products, preserves arrays for variations
 	 * 
 	 * @param mixed $value The value to process
-	 * @return mixed The first value if array/object, original value otherwise
+	 * @param bool $force_single Whether to force returning a single value regardless of product type
+	 * @return mixed The first value if array/object for simple products, original value for variations
 	 */
-	private function get_first_value_from_complex_type($value) {
-		if (is_array($value)) {
-			return $value[0];
-		} elseif (is_object($value)) {
-			$vars = get_object_vars($value);
-			return !empty($vars) ? array_values($vars)[0] : '';
+	private function get_first_value_from_complex_type($value, $force_single = false) {
+		// For non-variation products or when forcing single value
+		if ((!$this->woo_product->is_type('variation') && !$this->woo_product->is_type('variable')) || $force_single) {
+			if (is_array($value)) {
+				// For simple products, just get the first value
+				return isset($value[0]) ? $value[0] : '';
+			} elseif (is_object($value)) {
+				$vars = get_object_vars($value);
+				return !empty($vars) ? array_values($vars)[0] : '';
+			}
 		}
+		
+		// For variations or non-array/object values, just return as is
 		return $value;
 	}
 
@@ -1618,9 +1626,19 @@ class WC_Facebook_Product {
 		$product_data[ 'retailer_id' ] = $retailer_id;
 		$product_data[ 'external_variant_id' ] = $this->get_id();
 		$product_data[ 'condition' ] = $this->get_fb_condition();
-		$product_data[ 'size' ] = $this->get_fb_size($for_api);
-		$product_data[ 'color' ] = $this->get_fb_color($for_api);
-		$product_data[ 'pattern' ] = Helper::str_truncate( $this->get_fb_pattern($for_api), 100 );
+		
+		// Process size, color, pattern, etc. with awareness of simple vs variable products
+		$size_value = $this->get_fb_size($for_api);
+		$product_data[ 'size' ] = $this->is_type('simple') && is_array($size_value) ? reset($size_value) : $size_value;
+		
+		$color_value = $this->get_fb_color($for_api);
+		$product_data[ 'color' ] = $this->is_type('simple') && is_array($color_value) ? reset($color_value) : $color_value;
+		
+		$pattern_value = $this->get_fb_pattern($for_api);
+		$product_data[ 'pattern' ] = $this->is_type('simple') && is_array($pattern_value) ? 
+			Helper::str_truncate(reset($pattern_value), 100) : 
+			Helper::str_truncate($pattern_value, 100);
+		
 		$product_data[ 'age_group' ] = $this->get_fb_age_group();
 		$product_data[ 'gender' ] = $this->get_fb_gender();
 		$product_data[ 'material' ] = Helper::str_truncate( $this->get_fb_material(), 100 );
