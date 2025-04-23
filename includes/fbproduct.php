@@ -625,16 +625,16 @@ class WC_Facebook_Product {
 	/**
 	 * Gets the FB brand value for the product.
 	 *
-	 * @param bool $for_api Whether this is for API submission
+	 * @param bool $is_api_call Whether this is for API submission
 	 * @return string|array String for UI display, array for API if pipe-separated
 	 */
-	public function get_fb_brand($for_api = false) {
+	public function get_fb_brand($is_api_call = false) {
 		// Check if we have a taxonomy attribute for brand
 		$brand_values = $this->get_taxonomy_attribute_values('pa_brand');
 		
 		if ($brand_values) {
 			$joined_values = implode(' | ', $brand_values);
-			return $this->convert_pipe_separated_values($joined_values, $for_api);
+			return $this->convert_pipe_separated_values($joined_values, $is_api_call);
 		}
 		
 		// If this is a variation, first check for variation-specific brand
@@ -677,7 +677,7 @@ class WC_Facebook_Product {
 		}
 
 		$clean_value = WC_Facebookcommerce_Utils::clean_string($fb_brand);
-		return $this->convert_pipe_separated_values($clean_value, $for_api);
+		return $this->convert_pipe_separated_values($clean_value, $is_api_call);
 	}
 
 	public function get_fb_description() {
@@ -1042,8 +1042,8 @@ class WC_Facebook_Product {
 		return WC_Facebookcommerce_Utils::clean_string( $fb_gender );
 	}
 
-	private function convert_pipe_separated_values($value, $for_api = false) {
-		if (!$for_api) {
+	private function convert_pipe_separated_values($value, $is_api_call = false) {
+		if (!$is_api_call) {
 			// Return as is for UI display
 			return $value;
 		}
@@ -1346,16 +1346,16 @@ class WC_Facebook_Product {
 	/**
 	 * Gets the FB material value for the product.
 	 *
-	 * @param bool $for_api Whether this is for API submission
+	 * @param bool $is_api_call Whether this is for API submission
 	 * @return string|array String for UI display, array for API if pipe-separated
 	 */
-	public function get_fb_material($for_api = false) {
+	public function get_fb_material($is_api_call = false) {
 		// Use generic attribute finder
 		$material_values = $this->get_attribute_by_type('material');
 		
 		if ($material_values) {
 			$joined_values = implode(' | ', $material_values);
-			return $this->convert_pipe_separated_values($joined_values, $for_api);
+			return $this->convert_pipe_separated_values($joined_values, $is_api_call);
 		}
 
 		// Get material directly from post meta as fallback
@@ -1377,16 +1377,16 @@ class WC_Facebook_Product {
 		$fb_material = $this->get_first_value_from_complex_type($fb_material);
 
 		$clean_value = mb_substr(WC_Facebookcommerce_Utils::clean_string($fb_material), 0, 200);
-		return $this->convert_pipe_separated_values($clean_value, $for_api);
+		return $this->convert_pipe_separated_values($clean_value, $is_api_call);
 	}
 
 	/**
 	 * Gets the FB color value for the product.
 	 *
-	 * @param bool $for_api Whether this is for API submission
+	 * @param bool $is_api_call Whether this is for API submission
 	 * @return string|array String for UI display, array for API if pipe-separated
 	 */
-	public function get_fb_color($for_api = false) {
+	public function get_fb_color($is_api_call = false) {
 		// Use generic attribute finder - try both color and colour
 		$color_values = $this->get_attribute_by_type('color');
 		
@@ -1397,7 +1397,7 @@ class WC_Facebook_Product {
 		
 		if ($color_values) {
 			$joined_values = implode(' | ', $color_values);
-			return $this->convert_pipe_separated_values($joined_values, $for_api);
+			return $this->convert_pipe_separated_values($joined_values, $is_api_call);
 		}
 
 		// Get color directly from post meta as fallback
@@ -1419,22 +1419,22 @@ class WC_Facebook_Product {
 		$fb_color = $this->get_first_value_from_complex_type($fb_color);
 
 		$clean_value = mb_substr(WC_Facebookcommerce_Utils::clean_string($fb_color), 0, 200);
-		return $this->convert_pipe_separated_values($clean_value, $for_api);
+		return $this->convert_pipe_separated_values($clean_value, $is_api_call);
 	}
 
 	/**
 	 * Gets the FB size value for the product.
 	 *
-	 * @param bool $for_api Whether this is for API submission
+	 * @param bool $is_api_call Whether this is for API submission
 	 * @return string|array String for UI display, array for API if pipe-separated
 	 */
-	public function get_fb_size($for_api = false) {
+	public function get_fb_size($is_api_call = false) {
 		// Use generic attribute finder
 		$size_values = $this->get_attribute_by_type('size');
 		
 		if ($size_values) {
 			$joined_values = implode(' | ', $size_values);
-			return $this->convert_pipe_separated_values($joined_values, $for_api);
+			return $this->convert_pipe_separated_values($joined_values, $is_api_call);
 		}
 
 		// Get size directly from post meta as fallback
@@ -1456,22 +1456,22 @@ class WC_Facebook_Product {
 		$fb_size = $this->get_first_value_from_complex_type($fb_size);
 
 		$clean_value = mb_substr(WC_Facebookcommerce_Utils::clean_string($fb_size), 0, 200);
-		return $this->convert_pipe_separated_values($clean_value, $for_api);
+		return $this->convert_pipe_separated_values($clean_value, $is_api_call);
 	}
 
 	/**
 	 * Gets the FB pattern value for the product.
 	 *
-	 * @param bool $for_api Whether this is for API submission
+	 * @param bool $is_api_call Whether this is for API submission
 	 * @return string|array String for UI display, array for API if pipe-separated
 	 */
-	public function get_fb_pattern($for_api = false) {
+	public function get_fb_pattern($is_api_call = false) {
 		// Use generic attribute finder
 		$pattern_values = $this->get_attribute_by_type('pattern');
 		
 		if ($pattern_values) {
 			$joined_values = implode(' | ', $pattern_values);
-			return $this->convert_pipe_separated_values($joined_values, $for_api);
+			return $this->convert_pipe_separated_values($joined_values, $is_api_call);
 		}
 
 		// Get pattern directly from post meta as fallback
@@ -1493,7 +1493,7 @@ class WC_Facebook_Product {
 		$fb_pattern = $this->get_first_value_from_complex_type($fb_pattern);
 
 		$clean_value = mb_substr(WC_Facebookcommerce_Utils::clean_string($fb_pattern), 0, 200);
-		return $this->convert_pipe_separated_values($clean_value, $for_api);
+		return $this->convert_pipe_separated_values($clean_value, $is_api_call);
 	}
 
 
@@ -1611,29 +1611,32 @@ class WC_Facebook_Product {
 		$categories = WC_Facebookcommerce_Utils::get_product_categories( $id );
 		
 		// Determine if this is an API call where we should convert pipe-separated values to arrays
-		$for_api = ($type_to_prepare_for === self::PRODUCT_PREP_TYPE_ITEMS_BATCH);
+		$is_api_call = ($type_to_prepare_for === self::PRODUCT_PREP_TYPE_ITEMS_BATCH);
 		
 		$product_data = array();
 		$product_data[ 'description' ] = Helper::str_truncate( $this->get_fb_description(), self::MAX_DESCRIPTION_LENGTH );
 		$product_data[ 'short_description' ] = $this->get_fb_short_description();
 		$product_data[ 'rich_text_description' ] = $this->get_rich_text_description();
 		$product_data[ 'product_type' ] = $categories['categories'];
-		$product_data[ 'brand' ] = Helper::str_truncate( $this->get_fb_brand($for_api), 100 );
-		$product_data[ 'mpn' ] = Helper::str_truncate( $this->get_fb_mpn($for_api), 100 );
+		$product_data[ 'brand' ] = Helper::str_truncate( $this->get_fb_brand($is_api_call), 100 );
+		$product_data[ 'mpn' ] = Helper::str_truncate( $this->get_fb_mpn($is_api_call), 100 );
 		$product_data[ 'availability' ] = $this->is_in_stock() ? 'in stock' : 'out of stock';
 		$product_data[ 'visibility' ] = Products::is_product_visible( $this->woo_product ) ? \WC_Facebookcommerce_Integration::FB_SHOP_PRODUCT_VISIBLE : \WC_Facebookcommerce_Integration::FB_SHOP_PRODUCT_HIDDEN;
 		$product_data[ 'retailer_id' ] = $retailer_id;
 		$product_data[ 'external_variant_id' ] = $this->get_id();
 		$product_data[ 'condition' ] = $this->get_fb_condition();
-		$product_data[ 'size' ] = $this->get_fb_size($for_api);
-		$product_data[ 'color' ] = $this->get_fb_color($for_api);
-		$product_data[ 'pattern' ] = Helper::str_truncate( $this->get_fb_pattern($for_api), 100 );
+		$product_data[ 'size' ] = $this->get_fb_size($is_api_call);
+		$product_data[ 'color' ] = $this->get_fb_color($is_api_call);
+		$product_data[ 'pattern' ] = Helper::str_truncate( $this->get_fb_pattern($is_api_call), 100 );
 		$product_data[ 'age_group' ] = $this->get_fb_age_group();
 		$product_data[ 'gender' ] = $this->get_fb_gender();
 		$product_data[ 'material' ] = Helper::str_truncate( $this->get_fb_material(), 100 );
 		// $product_data[ 'woo_product_type' ] = $this->get_type();
 		// $product_data[ 'unmapped_attributes' ] = $this->get_unmapped_attributes();
 		$product_data[ 'disabled_capabilities' ] = $this->get_disabled_capabilities();
+		$product_data[ 'material' ] = Helper::str_truncate( $this->get_fb_material($is_api_call), 100 );
+		$product_data[ 'woo_product_type' ] = $this->get_type();
+		$product_data[ 'unmapped_attributes' ] = $this->get_unmapped_attributes();
 
 		if ( self::PRODUCT_PREP_TYPE_ITEMS_BATCH === $type_to_prepare_for ) {
 			$product_data['title'] = Helper::str_truncate( WC_Facebookcommerce_Utils::clean_string( $this->get_title() ), self::MAX_TITLE_LENGTH );
@@ -2063,7 +2066,7 @@ class WC_Facebook_Product {
 		return array();
 	}
 
-	public function get_fb_mpn($for_api = false) {
+	public function get_fb_mpn($is_api_call = false) {
 		// If this is a variation, get its specific mpn value
 		if ($this->is_type('variation')) {
 			$attributes = $this->woo_product->get_attributes();
@@ -2074,7 +2077,7 @@ class WC_Facebook_Product {
 					// Extract first value from array or object for attribute
 					$value = $this->get_first_value_from_complex_type($value);
 					$clean_value = WC_Facebookcommerce_Utils::clean_string($value);
-					return $this->convert_pipe_separated_values($clean_value, $for_api);
+					return $this->convert_pipe_separated_values($clean_value, $is_api_call);
 				}
 			}
 		}
@@ -2098,7 +2101,7 @@ class WC_Facebook_Product {
 		$fb_mpn = $this->get_first_value_from_complex_type($fb_mpn);
 
 		$clean_value = WC_Facebookcommerce_Utils::clean_string($fb_mpn);
-		return $this->convert_pipe_separated_values($clean_value, $for_api);
+		return $this->convert_pipe_separated_values($clean_value, $is_api_call);
 	}
 
 }
