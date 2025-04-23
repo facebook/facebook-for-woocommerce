@@ -1327,9 +1327,7 @@ class WC_Facebook_Product {
 		$product_data[ 'age_group' ] = $this->get_fb_age_group();
 		$product_data[ 'gender' ] = $this->get_fb_gender();
 		$product_data[ 'material' ] = Helper::str_truncate( $this->get_fb_material(), 100 );
-		$product_data[ 'woo_product_type' ] = $this->get_type();
-		$product_data[ 'attributes'] = $this->woo_product->get_attributes();
-		$product_data[ 'unmapped_attributes' ] = $this->get_unmapped_attributes();
+		$product_data[ 'custom_fields' ] = $this->get_custom_fields();
 
 		if ( self::PRODUCT_PREP_TYPE_ITEMS_BATCH === $type_to_prepare_for ) {
 			$product_data['title'] = Helper::str_truncate( WC_Facebookcommerce_Utils::clean_string( $this->get_title() ), self::MAX_TITLE_LENGTH );
@@ -1729,6 +1727,30 @@ class WC_Facebook_Product {
 		}//end try
 
 		return $final_variants;
+	}
+
+	/**
+	 * Get a set of custom fields not present in the facebook product data type
+	 *
+	 * @return array
+	 */
+	private function get_custom_fields(): array {
+		$custom_fields = array();
+		$product_type = $this->woo_product->get_type();
+
+		$custom_fields[ 'woo_product_type' ] = $product_type;
+
+		// All attributes set on the item. For variable and simple products, this is a map of
+		// [string => WC_Product_Attribute]. For product variations, this is a map of [string => ?string]. For now,
+		// sending only for product variations as those can lead to issues with the checkout page.
+		if ($product_type == 'variation') {
+			$custom_fields['product_variation_attributes'] = $this->woo_product->get_attributes();
+		}
+
+		// attributes that are not mapped to standard Facebook fields
+		$custom_fields[ 'unmapped_attributes' ] = $this->get_unmapped_attributes();
+
+		return $custom_fields;
 	}
 
 }
