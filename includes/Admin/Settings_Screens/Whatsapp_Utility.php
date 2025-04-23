@@ -265,7 +265,6 @@ class Whatsapp_Utility extends Abstract_Settings_Screen {
 						href="#"><?php esc_html_e( 'Manage', 'facebook-for-woocommerce' ); ?></a>
 				</div>
 			</div>
-			<div class="divider"></div>
 
 		</div>
 		<div class="onboarding-card">
