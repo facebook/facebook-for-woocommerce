@@ -31,7 +31,10 @@ class WhatsAppUtilityConnection {
 	/**
 	 * Makes an API call to Whatsapp Utility Message Connect API
 	 *
-	 * @param string $waba_id, string $wacs_id, string $external_business_id, string $bisu_token
+	 * @param string $waba_id WABA ID
+	 * @param string $wacs_id WACS ID
+	 * @param string $external_business_id external business ID
+	 * @param string $bisu_token BISU token
 	 */
 	public static function wc_facebook_whatsapp_connect_utility_messages_call( $waba_id, $wacs_id, $external_business_id, $bisu_token ) {
 		$base_url     = array( self::GRAPH_API_BASE_URL, self::API_VERSION, $waba_id, 'connect_utility_messages' );
