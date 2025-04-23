@@ -110,7 +110,7 @@ class CsvFeedFileWriter implements FeedFileWriter {
 			// Step 3: Rename temporary feed file to final feed file.
 			$this->promote_temp_file();
 		} catch ( PluginException $exception ) {
-			\WC_Facebookcommerce_Utils::logExceptionImmediatelyToMeta(
+			\WC_Facebookcommerce_Utils::log_exception_immediately_to_meta(
 				$exception,
 				[
 					'event'      => 'feed_upload',

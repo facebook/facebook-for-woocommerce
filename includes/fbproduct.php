@@ -1327,8 +1327,8 @@ class WC_Facebook_Product {
 		$product_data[ 'age_group' ] = $this->get_fb_age_group();
 		$product_data[ 'gender' ] = $this->get_fb_gender();
 		$product_data[ 'material' ] = Helper::str_truncate( $this->get_fb_material(), 100 );
-		$product_data[ 'woo_product_type' ] = $this->get_type();
-		$product_data[ 'unmapped_attributes' ] = $this->get_unmapped_attributes();
+		// $product_data[ 'woo_product_type' ] = $this->get_type();
+		// $product_data[ 'unmapped_attributes' ] = $this->get_unmapped_attributes();
 		$product_data[ 'disabled_capabilities' ] = $this->get_disabled_capabilities();
 
 		if ( self::PRODUCT_PREP_TYPE_ITEMS_BATCH === $type_to_prepare_for ) {
@@ -1369,7 +1369,7 @@ class WC_Facebook_Product {
 
 		$google_product_category = Products::get_google_product_category_id( $this->woo_product );
 		if ( $google_product_category ) {
-			$product_data['google_product_category'] = (int) $google_product_category;
+			$product_data['google_product_category'] = $google_product_category;
 		}
 
 		// Currently only items batch and feed support enhanced catalog fields
@@ -1585,7 +1585,7 @@ class WC_Facebook_Product {
 				if ( \WC_Facebookcommerce_Utils::FB_VARIANT_GENDER === $new_name && ! isset( $product_data[ \WC_Facebookcommerce_Utils::FB_VARIANT_GENDER ] ) ) {
 
 					// If we can't validate the gender, this will be null.
-					$product_data[ $new_name ] = \WC_Facebookcommerce_Utils::validateGender( $option_values[0] );
+					$product_data[ $new_name ] = \WC_Facebookcommerce_Utils::validate_gender( $option_values[0] );
 				}
 
 				switch ( $new_name ) {
@@ -1615,7 +1615,7 @@ class WC_Facebook_Product {
 				}//end switch
 			} else {
 
-				\WC_Facebookcommerce_Utils::logWithDebugModeEnabled( $product->get_id() . ': No options for ' . $original_variant_name );
+				\WC_Facebookcommerce_Utils::log_with_debug_mode_enabled( $product->get_id() . ': No options for ' . $original_variant_name );
 				continue;
 			}//end if
 		}//end foreach
@@ -1668,7 +1668,7 @@ class WC_Facebook_Product {
 					$option_values = $variation_attributes[ $key ];
 				} else {
 					// skip variations without valid attribute options
-					\WC_Facebookcommerce_Utils::logWithDebugModeEnabled( $product->get_id() . ': No options for ' . $name );
+					\WC_Facebookcommerce_Utils::log_with_debug_mode_enabled( $product->get_id() . ': No options for ' . $name );
 					continue;
 				}
 
