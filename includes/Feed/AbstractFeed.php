@@ -170,7 +170,7 @@ abstract class AbstractFeed {
 			get_api()->
 			create_common_data_feed_upload( $cpi_id, $data );
 		} catch ( \Exception $exception ) {
-			\WC_Facebookcommerce_Utils::logExceptionImmediatelyToMeta(
+			\WC_Facebookcommerce_Utils::log_exception_immediately_to_meta(
 				$exception,
 				[
 					'event'      => 'feed_upload',
@@ -233,7 +233,7 @@ abstract class AbstractFeed {
 	 */
 	public function handle_feed_data_request(): void {
 		$name = static::get_data_stream_name();
-		\WC_Facebookcommerce_Utils::logWithDebugModeEnabled( "{$name} feed: Meta is requesting feed file." );
+		\WC_Facebookcommerce_Utils::log_with_debug_mode_enabled( "{$name} feed: Meta is requesting feed file." );
 
 		$file_path = $this->feed_writer->get_file_path();
 
@@ -277,7 +277,7 @@ abstract class AbstractFeed {
 			// fpassthru might be disabled in some hosts (like Flywheel).
 			// phpcs:ignore
 			if ( \WC_Facebookcommerce_Utils::is_fpassthru_disabled() || ! @fpassthru( $file ) ) {
-				\WC_Facebookcommerce_Utils::logWithDebugModeEnabled( "{$name} feed: fpassthru is disabled: getting file contents." );
+				\WC_Facebookcommerce_Utils::log_with_debug_mode_enabled( "{$name} feed: fpassthru is disabled: getting file contents." );
 				//phpcs:ignore
 				$contents = @stream_get_contents( $file );
 				if ( ! $contents ) {
@@ -286,7 +286,7 @@ abstract class AbstractFeed {
 				echo $contents; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
 			}
 		} catch ( \Exception $exception ) {
-			\WC_Facebookcommerce_Utils::logExceptionImmediatelyToMeta(
+			\WC_Facebookcommerce_Utils::log_exception_immediately_to_meta(
 				$exception,
 				[
 					'event'      => 'feed_upload',

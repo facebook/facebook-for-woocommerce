@@ -185,7 +185,7 @@ class WC_Facebookcommerce extends WooCommerce\Facebook\Framework\Plugin {
 			array( $this, 'force_user_agent_in_latin' )
 		);
 
-		if ( \WC_Facebookcommerce_Utils::isWoocommerceIntegration() ) {
+		if ( \WC_Facebookcommerce_Utils::is_woocommerce_integration() ) {
 			include_once 'facebook-commerce.php';
 
 			require_once __DIR__ . '/includes/fbproductfeed.php';
