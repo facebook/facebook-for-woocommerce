@@ -963,6 +963,9 @@ class WC_Facebook_Product {
 			}
 		}
 
+		// Extract first value from array or object
+		$fb_condition = $this->get_first_value_from_complex_type($fb_condition);
+
 		return WC_Facebookcommerce_Utils::clean_string( $fb_condition ) ?: self::CONDITION_NEW;
 	}
 
@@ -975,6 +978,8 @@ class WC_Facebook_Product {
 			foreach ($attributes as $key => $value) {
 				$attr_key = strtolower($key);
 				if ($attr_key === 'age_group') {
+					// Extract first value from array or object for attribute
+					$value = $this->get_first_value_from_complex_type($value);
 					return WC_Facebookcommerce_Utils::clean_string($value);
 				}
 			}
@@ -995,6 +1000,9 @@ class WC_Facebook_Product {
 			}
 		}
 
+		// Extract first value from array or object
+		$fb_age_group = $this->get_first_value_from_complex_type($fb_age_group);
+
 		return WC_Facebookcommerce_Utils::clean_string( $fb_age_group );
 	}
 
@@ -1006,6 +1014,8 @@ class WC_Facebook_Product {
 			foreach ($attributes as $key => $value) {
 				$attr_key = strtolower($key);
 				if ($attr_key === 'gender') {
+					// Extract first value from array or object for attribute
+					$value = $this->get_first_value_from_complex_type($value);
 					return WC_Facebookcommerce_Utils::clean_string($value);
 				}
 			}
@@ -1025,6 +1035,9 @@ class WC_Facebook_Product {
 				$fb_gender = get_post_meta( $parent_id, self::FB_GENDER, true );
 			}
 		}
+
+		// Extract first value from array or object
+		$fb_gender = $this->get_first_value_from_complex_type($fb_gender);
 
 		return WC_Facebookcommerce_Utils::clean_string( $fb_gender );
 	}
@@ -1308,6 +1321,22 @@ class WC_Facebook_Product {
 	}
 
 	/**
+	 * Utility method to get first value from a potential array or object
+	 * 
+	 * @param mixed $value The value to process
+	 * @return mixed The first value if array/object, original value otherwise
+	 */
+	private function get_first_value_from_complex_type($value) {
+		if (is_array($value)) {
+			return $value[0];
+		} elseif (is_object($value)) {
+			$vars = get_object_vars($value);
+			return !empty($vars) ? array_values($vars)[0] : '';
+		}
+		return $value;
+	}
+
+	/**
 	 * Gets the FB material value for the product.
 	 *
 	 * @param bool $for_api Whether this is for API submission
@@ -1336,6 +1365,9 @@ class WC_Facebook_Product {
 				$fb_material = get_post_meta( $parent_id, self::FB_MATERIAL, true );
 			}
 		}
+
+		// Extract first value from array or object
+		$fb_material = $this->get_first_value_from_complex_type($fb_material);
 
 		$clean_value = mb_substr(WC_Facebookcommerce_Utils::clean_string($fb_material), 0, 200);
 		return $this->convert_pipe_separated_values($clean_value, $for_api);
@@ -1376,6 +1408,9 @@ class WC_Facebook_Product {
 			}
 		}
 
+		// Extract first value from array or object
+		$fb_color = $this->get_first_value_from_complex_type($fb_color);
+
 		$clean_value = mb_substr(WC_Facebookcommerce_Utils::clean_string($fb_color), 0, 200);
 		return $this->convert_pipe_separated_values($clean_value, $for_api);
 	}
@@ -1410,7 +1445,10 @@ class WC_Facebook_Product {
 			}
 		}
 
-		$clean_value = mb_substr( WC_Facebookcommerce_Utils::clean_string( $fb_size ), 0, 200 );
+		// Extract first value from array or object
+		$fb_size = $this->get_first_value_from_complex_type($fb_size);
+
+		$clean_value = mb_substr(WC_Facebookcommerce_Utils::clean_string($fb_size), 0, 200);
 		return $this->convert_pipe_separated_values($clean_value, $for_api);
 	}
 
@@ -1444,7 +1482,10 @@ class WC_Facebook_Product {
 			}
 		}
 
-		$clean_value = mb_substr( WC_Facebookcommerce_Utils::clean_string( $fb_pattern ), 0, 200 );
+		// Extract first value from array or object
+		$fb_pattern = $this->get_first_value_from_complex_type($fb_pattern);
+
+		$clean_value = mb_substr(WC_Facebookcommerce_Utils::clean_string($fb_pattern), 0, 200);
 		return $this->convert_pipe_separated_values($clean_value, $for_api);
 	}
 
@@ -2020,11 +2061,12 @@ class WC_Facebook_Product {
 		if ($this->is_type('variation')) {
 			$attributes = $this->woo_product->get_attributes();
 			
-			// Check for mpn attribute
 			foreach ($attributes as $key => $value) {
 				$attr_key = strtolower($key);
 				if ($attr_key === 'mpn') {
-					$clean_value = mb_substr(WC_Facebookcommerce_Utils::clean_string($value), 0, 200);
+					// Extract first value from array or object for attribute
+					$value = $this->get_first_value_from_complex_type($value);
+					$clean_value = WC_Facebookcommerce_Utils::clean_string($value);
 					return $this->convert_pipe_separated_values($clean_value, $for_api);
 				}
 			}
@@ -2045,7 +2087,10 @@ class WC_Facebook_Product {
 			}
 		}
 
-		$clean_value = WC_Facebookcommerce_Utils::clean_string( $fb_mpn );
+		// Extract first value from array or object
+		$fb_mpn = $this->get_first_value_from_complex_type($fb_mpn);
+
+		$clean_value = WC_Facebookcommerce_Utils::clean_string($fb_mpn);
 		return $this->convert_pipe_separated_values($clean_value, $for_api);
 	}
 
