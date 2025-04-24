@@ -64,12 +64,12 @@
     margin-right: 20px; /* Add the right margin */
 }
 .notice-error {
-  background-color: #f7f7f7;
-  border: 1px solid #EF0000; /* Red border */
-  border-radius: 0; /* No curvature */
-  border-left-width: 5px; /* Thicker left border */
-  width: 100%; /* Take up full width */
+    background-color: #f7f7f7;
+    border: 1px solid #EF0000; /* Red border */
+    border-radius: 0; /* No curvature */
+    border-left-width: 5px; /* Thicker left border */
+    width: 100%; /* Take up full width */
 }
 .notice-error p {
-  margin: 5px;
+    margin: 5px;
 }
