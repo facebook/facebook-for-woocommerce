@@ -1,4 +1,5 @@
 <?php
+
 namespace WooCommerce\Facebook\API\CommerceIntegration\Configuration\Update;
 
 use WooCommerce\Facebook\API\Response as ApiResponse;
@@ -15,9 +16,8 @@ class Response extends ApiResponse {
 	/**
 	 * Returns whether the update request was successful.
 	 *
-	 * @since 3.5.0
-	 *
 	 * @return bool
+	 * @since 3.5.0
 	 */
 	public function is_successful(): bool {
 		return (bool) $this->success;
@@ -26,9 +26,8 @@ class Response extends ApiResponse {
 	/**
 	 * Returns the commerce partner integration ID.
 	 *
-	 * @since 3.5.0
-	 *
 	 * @return string
+	 * @since 3.5.0
 	 */
 	public function get_commerce_partner_integration_id(): string {
 		return $this->get_id() ?? '';

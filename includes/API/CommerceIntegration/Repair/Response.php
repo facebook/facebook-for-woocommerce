@@ -18,7 +18,6 @@ class Response extends ApiResponse {
 	 *
 	 * @return bool
 	 * @since 3.4.8
-	 *
 	 */
 	public function is_successful(): bool {
 		return (bool) $this->success;
@@ -29,7 +28,6 @@ class Response extends ApiResponse {
 	 *
 	 * @return string
 	 * @since 3.4.8
-	 *
 	 */
 	public function get_commerce_partner_integration_id(): string {
 		return $this->get_id() ?? '';
