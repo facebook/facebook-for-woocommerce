@@ -58,16 +58,13 @@
 .card-content-icon {
     display: flex;
 }
-
 .card-item {
-  padding: 20px;
-  justify-content: space-between;
+    padding: 20px;
+    justify-content: space-between;
+    display: flex;
 }
 .divider {
-  border-bottom: 1px solid #ccc;
-}
-.card-item {
-    display: flex;
+    border-bottom: 1px solid #ccc;
 }
 .review-payment-content {
     padding: 20px;
@@ -80,7 +77,7 @@
     top: 50%;
 }
 .card-content {
-    padding-right: 40px;
+    max-width: 94%;
 }
 .event-config {
     padding: 20px;
@@ -116,13 +113,13 @@
     margin-right: 20px; /* Add the right margin */
 }
 .notice-error {
-  background-color: #f7f7f7;
-  border: 1px solid #EF0000; /* Red border */
-  border-radius: 0; /* No curvature */
-  border-left-width: 5px; /* Thicker left border */
-  width: 100%; /* Take up full width */
+    background-color: #f7f7f7;
+    border: 1px solid #EF0000; /* Red border */
+    border-radius: 0; /* No curvature */
+    border-left-width: 5px; /* Thicker left border */
+    width: 100%; /* Take up full width */
 }
 .notice-error p {
-  margin: 5px;
+    margin: 5px;
 
 }
