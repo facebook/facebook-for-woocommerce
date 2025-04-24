@@ -56,5 +56,11 @@ When opening a bug on GitHub, please give us as many details as possible.
 * Fix - Add parent product material inheritance for variations by @devbodaghe in #3035
 * Fix - Tooltip Messages for Skirt Length and Sleeve Length by @devbodaghe in #3039
 * Fix - Typo in Admin.php by @SayanPandey in #3063
+* Add - Add separate short_description field to Facebook product data by @devbodaghe in #3029
+* Tweak - Sync short description remove dropdown by @devbodaghe in #3031
+* Tweak - Short Description Fallback by @devbodaghe in #3048
+* Fix - A problem where Purchase event was not firing if thankyou page was not shown or Purchase state updated through Woo dashboard by @vahidkay-meta in #3060
+* Tweak - Remove type casting for gpc to int by @devbodaghe in 3078
+* Tweak - Disable unmapped fields to batch api by @devbodaghe in #3079
 
 [See changelog for all versions](https://raw.githubusercontent.com/facebook/facebook-for-woocommerce/refs/heads/main/changelog.txt).
