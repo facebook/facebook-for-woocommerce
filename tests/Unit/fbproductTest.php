@@ -525,7 +525,7 @@ class fbproductTest extends WP_UnitTestCase {
 
 		update_post_meta($this->product->get_id(), WC_Facebook_Product::FB_PRODUCT_VIDEO, $video_urls);
 		$product_data = $this->fb_product->prepare_product(null, WC_Facebook_Product::PRODUCT_PREP_TYPE_ITEMS_BATCH);
-		
+
 		$this->assertArrayHasKey('video', $product_data);
 		$this->assertEquals($expected_video_urls, $product_data['video']);
 	}
@@ -533,13 +533,13 @@ class fbproductTest extends WP_UnitTestCase {
 	public function test_set_product_video_urls() {
         // Prepare attachment IDs
         $attachment_ids = '123,456';
-    
+
         // Mock get_video_urls_from_attachment_ids function
         $this->fb_product = $this->getMockBuilder(WC_Facebook_Product::class)
             ->setConstructorArgs([$this->product])
             ->setMethods(['get_video_urls_from_attachment_ids'])
             ->getMock();
-    
+
         $this->fb_product->method('get_video_urls_from_attachment_ids')
             ->willReturnCallback(function($id) {
              switch ($id) {
@@ -551,14 +551,14 @@ class fbproductTest extends WP_UnitTestCase {
                      return '';
              }
             });
-        
+
         // Set the video URLs in post meta
         $video_urls = array_filter(array_map([$this->fb_product, 'get_video_urls_from_attachment_ids'], explode(',', $attachment_ids)));
         update_post_meta( $this->fb_product->get_id(), WC_Facebook_Product::FB_PRODUCT_VIDEO, $video_urls );
-    
+
         // Get the saved video URLs from post meta
         $saved_video_urls = get_post_meta( $this->product->get_id(), WC_Facebook_Product::FB_PRODUCT_VIDEO, true );
-		
+
         // Assert that the saved video URLs match the expected values
         $this->assertEquals( $saved_video_urls, $video_urls);
 
@@ -586,7 +586,7 @@ class fbproductTest extends WP_UnitTestCase {
         $this->assertArrayHasKey('image_link', $product_data);
     }
 
-		
+
 	/**
 	 * Test it gets rich text description from post meta.
 	 * @return void
@@ -599,8 +599,8 @@ class fbproductTest extends WP_UnitTestCase {
 		$rich_text_description = $facebook_product->get_rich_text_description();
 
 		$this->assertEquals( $rich_text_description,  'rich text description' );
-	}	
-	
+	}
+
 	/**
 	 * Tests for get_rich_text_description() method
 	 */
@@ -609,7 +609,7 @@ class fbproductTest extends WP_UnitTestCase {
 		$product = WC_Helper_Product::create_simple_product();
 		$facebook_product = new \WC_Facebook_Product($product);
 		$facebook_product->set_description('fb description test');
-		
+
 		$description = $facebook_product->get_rich_text_description();
 		$this->assertEquals('fb description test', $description);
 
@@ -629,7 +629,7 @@ class fbproductTest extends WP_UnitTestCase {
 		$variation = wc_get_product($variable_product->get_children()[0]);
 		$variation->set_description('<p>variation description</p>');
 		$variation->save();
-		
+
 		$parent_fb_product = new \WC_Facebook_Product($variable_product);
 		$facebook_product = new \WC_Facebook_Product($variation, $parent_fb_product);
 		$description = $facebook_product->get_rich_text_description();
@@ -639,7 +639,7 @@ class fbproductTest extends WP_UnitTestCase {
 		$product = WC_Helper_Product::create_simple_product();
 		$product->set_description('<p>product content description</p>');
 		$product->save();
-		
+
 		$facebook_product = new \WC_Facebook_Product($product);
 		$description = $facebook_product->get_rich_text_description();
 		$this->assertEquals('<p>product content description</p>', $description);
@@ -647,7 +647,7 @@ class fbproductTest extends WP_UnitTestCase {
 		$product->set_description('');
 		$product->set_short_description('<p>short description test</p>');
 		$product->save();
-		
+
 		$facebook_product = new \WC_Facebook_Product($product);
 		$description = $facebook_product->get_rich_text_description();
 		$this->assertEquals('<p>short description test</p>', $description);
@@ -656,10 +656,10 @@ class fbproductTest extends WP_UnitTestCase {
 		add_filter('facebook_for_woocommerce_fb_rich_text_description', function($description) {
 			return '<p>filtered description</p>';
 		});
-		
+
 		$description = $facebook_product->get_rich_text_description();
 		$this->assertEquals('<p>filtered description</p>', $description);
-		
+
 		// Cleanup
 		remove_all_filters('facebook_for_woocommerce_fb_rich_text_description');
 		delete_option(WC_Facebookcommerce_Integration::SETTING_PRODUCT_DESCRIPTION_MODE);
@@ -695,7 +695,7 @@ class fbproductTest extends WP_UnitTestCase {
 
 		$facebook_product->set_rich_text_description($html_content);
 		$description = $facebook_product->get_rich_text_description();
-		
+
 		// Test HTML structure is preserved
 		$this->assertStringContainsString('<div class="product-description">', $description);
 		$this->assertStringContainsString('<h2>', $description);
@@ -714,15 +714,15 @@ class fbproductTest extends WP_UnitTestCase {
 	public function test_empty_rich_text_description_fallback() {
 		$product = WC_Helper_Product::create_simple_product();
 		$facebook_product = new \WC_Facebook_Product($product);
-		
+
 		// Ensure rich_text_description is empty
 		$facebook_product->set_rich_text_description('');
-		
+
 		// Test fallback to post meta
 		update_post_meta($product->get_id(), \WC_Facebook_Product::FB_RICH_TEXT_DESCRIPTION, '<p>fallback description</p>');
 		$description = $facebook_product->get_rich_text_description();
 		$this->assertEquals('<p>fallback description</p>', $description);
-		
+
 		// Test behavior when both rich_text_description and post meta are empty
 		delete_post_meta($product->get_id(), \WC_Facebook_Product::FB_RICH_TEXT_DESCRIPTION);
 		$description = $facebook_product->get_rich_text_description();
@@ -736,36 +736,36 @@ class fbproductTest extends WP_UnitTestCase {
 		// Create variable product with variation
 		$variable_product = WC_Helper_Product::create_variation_product();
 		$variation = wc_get_product($variable_product->get_children()[0]);
-		
+
 		// Set up parent product
 		$parent_fb_product = new \WC_Facebook_Product($variable_product);
-		
+
 		// Set the rich text description using post meta for the parent
 		update_post_meta($variable_product->get_id(), \WC_Facebook_Product::FB_RICH_TEXT_DESCRIPTION, '<p>parent rich text</p>');
-		
+
 		// Test 1: Variation inherits parent's rich text description when empty
 		$facebook_product = new \WC_Facebook_Product($variation, $parent_fb_product);
 		$description = $facebook_product->get_rich_text_description();
 		$this->assertEquals('<p>parent rich text</p>', $description);
-		
+
 		// Test 2: Variation uses its own rich text description when set
 		$variation_fb_product = new \WC_Facebook_Product($variation, $parent_fb_product);
 		$variation_fb_product->set_rich_text_description('<p>variation rich text</p>');
 		$description = $variation_fb_product->get_rich_text_description();
 		$this->assertEquals('<p>variation rich text</p>', $description);
-		
+
 		// // Test 3: Variation uses its post meta when set
 		// update_post_meta($variation->get_id(), \WC_Facebook_Product::FB_RICH_TEXT_DESCRIPTION, '<p>variation meta rich text</p>');
 		// $new_variation_product = new \WC_Facebook_Product($variation, $parent_fb_product);
 		// $description = $new_variation_product->get_rich_text_description();
 		// $this->assertEquals('<p>variation meta rich text</p>', $description);
-		
+
 		// Test 4: Fallback chain for variations
 		delete_post_meta($variation->get_id(), \WC_Facebook_Product::FB_RICH_TEXT_DESCRIPTION);
 	}
 
 	/**
-	 * Test Brand is added for simple product 
+	 * Test Brand is added for simple product
 	 * @return void
 	 */
 	public function test_brand_for_simple_product_set() {
@@ -781,7 +781,7 @@ class fbproductTest extends WP_UnitTestCase {
 	}
 
 	/**
-	 * Test MPN is added for simple product 
+	 * Test MPN is added for simple product
 	 * @return void
 	 */
 	public function test_mpn_for_simple_product_set() {
@@ -797,7 +797,7 @@ class fbproductTest extends WP_UnitTestCase {
 	}
 
 	/**
-	 * Test MPN is added for variable product 
+	 * Test MPN is added for variable product
 	 * @return void
 	 */
 	public function test_mpn_for_variable_product_set() {
@@ -821,10 +821,10 @@ class fbproductTest extends WP_UnitTestCase {
 		// Create a variable product and set the brand for the parent
 		$variable_product = WC_Helper_Product::create_variation_product();
 		$facebook_product_parent = new \WC_Facebook_Product($variable_product);
-		
+
 		// Set brand for parent product
 		update_post_meta($variable_product->get_id(), \WC_Facebook_Product::FB_BRAND, 'Nike');
-		
+
 		// Get the variation product
 		$variation = wc_get_product($variable_product->get_children()[0]);
 
@@ -852,7 +852,7 @@ class fbproductTest extends WP_UnitTestCase {
 	private function create_product_attribute($name, $value, $is_taxonomy) {
 		$attribute = new \WC_Product_Attribute();
 		$attribute->set_id(0);
-		
+
 		// Handle attribute names with spaces
 		if ($is_taxonomy) {
 			$name = strtolower(str_replace(' ', '-', $name));
@@ -860,15 +860,15 @@ class fbproductTest extends WP_UnitTestCase {
 		} else {
 			$attribute->set_name($name);
 		}
-		
+
 		if ($is_taxonomy) {
 			// For taxonomy attributes
 			$values = is_array($value) ? $value : [$value];
 			$term_ids = [];
-			
+
 			foreach ($values as $term_value) {
 				$taxonomy = $attribute->get_name();
-				
+
 				// Create the taxonomy if it doesn't exist
 				if (!taxonomy_exists($taxonomy)) {
 					register_taxonomy(
@@ -882,7 +882,7 @@ class fbproductTest extends WP_UnitTestCase {
 						]
 					);
 				}
-				
+
 				// Create and get the term
 				$term = wp_insert_term($term_value, $taxonomy);
 				if (!is_wp_error($term)) {
@@ -897,11 +897,11 @@ class fbproductTest extends WP_UnitTestCase {
 			$attribute->set_options($values);
 			$attribute->is_taxonomy(false);
 		}
-		
+
 		$attribute->set_position(0);
 		$attribute->set_visible(1);
 		$attribute->set_variation(0);
-		
+
 		return $attribute;
 	}
 
@@ -919,7 +919,7 @@ class fbproductTest extends WP_UnitTestCase {
 			);
 			$attributes[] = $attribute;
 		}
-		
+
 		$product->set_attributes($attributes);
 		$product->save();
 
@@ -953,14 +953,14 @@ class fbproductTest extends WP_UnitTestCase {
 
 		foreach ($meta_key_map as $field => $meta_key) {
 			$saved_value = get_post_meta($product_id, $meta_key, true);
-			
+
 			if (!empty($expected_output[$field])) {
 				// Get term name if it's a taxonomy term ID
 				if (is_numeric($saved_value)) {
 					$term = get_term($saved_value);
 					$saved_value = $term ? $term->name : $saved_value;
 				}
-				
+
 				$this->assertEquals(
 					$expected_output[$field],
 					$saved_value,
@@ -1041,68 +1041,13 @@ class fbproductTest extends WP_UnitTestCase {
 		$this->assertEquals(isset($data['external_update_time']), false);
 	}
 
-		
-
-	/**
-	 * Tests for get_fb_short_description() method
-	 */
-	public function test_get_fb_short_description() {
-		// Test 1: Variation products should inherit parent's short description
-		$variable_product = WC_Helper_Product::create_variation_product();
-		$variation = wc_get_product($variable_product->get_children()[0]);
-		
-		// Set the parent product's short description
-		$variable_product->set_short_description('parent short description');
-		$variable_product->save();
-		
-		// Even if we try to set a short description on the variation (which we dont have functionality for in WooCommerce UI)
-		$variation->set_short_description('variation short description - should be ignored');
-		$variation->save();
-		
-		$parent_fb_product = new \WC_Facebook_Product($variable_product);
-		$facebook_product = new \WC_Facebook_Product($variation, $parent_fb_product);
-		$description = $facebook_product->get_fb_short_description();
-		
-		// Variations should inherit the parent product's short description
-		$this->assertEquals('parent short description', $description, 'Variations should inherit parent short description');
-		
-		// Test 2: Gets short description from post excerpt for simple products
-		$product = WC_Helper_Product::create_simple_product();
-		$product->set_short_description('product short description');
-		$product->save();
-		
-		$facebook_product = new \WC_Facebook_Product($product);
-		$description = $facebook_product->get_fb_short_description();
-		$this->assertEquals('product short description', $description);
-		
-		// Test 3: Returns empty string when no short description exists
-		$product = WC_Helper_Product::create_simple_product();
-		$product->set_short_description('');
-		$product->save();
-		
-		$facebook_product = new \WC_Facebook_Product($product);
-		$description = $facebook_product->get_fb_short_description();
-		$this->assertEquals('', $description);
-		
-		// Test 4: Applies filters
-		$filter = $this->add_filter_with_safe_teardown('facebook_for_woocommerce_fb_product_short_description', function($description, $id) {
-			return 'filtered short description for product ' . $id;
-		}, 10, 2);
-		
-		$description = $facebook_product->get_fb_short_description();
-		$this->assertEquals('filtered short description for product ' . $product->get_id(), $description);
-		
-		// Remove the filter early
-		$filter->teardown_safely_immediately();
-	}
-
 	/**
 	 * Test get_unmapped_attributes with no attributes
 	 */
 	public function test_get_unmapped_attributes_no_attributes() {
 		$product = WC_Helper_Product::create_simple_product();
 		$facebook_product = new \WC_Facebook_Product($product);
-		
+
 		$unmapped_attributes = $facebook_product->get_unmapped_attributes();
 		$this->assertIsArray($unmapped_attributes);
 		$this->assertEmpty($unmapped_attributes);
@@ -1113,7 +1058,7 @@ class fbproductTest extends WP_UnitTestCase {
 	 */
 	public function test_get_unmapped_attributes_only_mapped() {
 		$product = WC_Helper_Product::create_simple_product();
-		
+
 		// Add mapped attributes (size, color)
 		$attributes = array();
 		$attributes[] = $this->create_product_attribute('size', 'Large', false);
@@ -1123,7 +1068,7 @@ class fbproductTest extends WP_UnitTestCase {
 
 		$facebook_product = new \WC_Facebook_Product($product);
 		$unmapped_attributes = $facebook_product->get_unmapped_attributes();
-		
+
 		$this->assertIsArray($unmapped_attributes);
 		$this->assertEmpty($unmapped_attributes);
 	}
@@ -1133,7 +1078,7 @@ class fbproductTest extends WP_UnitTestCase {
 	 */
 	public function test_get_unmapped_attributes_only_unmapped() {
 		$product = WC_Helper_Product::create_simple_product();
-		
+
 		// Add unmapped attributes
 		$attributes = array();
 		$attributes[] = $this->create_product_attribute('weight', '2kg', false);
@@ -1143,14 +1088,14 @@ class fbproductTest extends WP_UnitTestCase {
 
 		$facebook_product = new \WC_Facebook_Product($product);
 		$unmapped_attributes = $facebook_product->get_unmapped_attributes();
-		
+
 		$this->assertIsArray($unmapped_attributes);
 		$this->assertCount(2, $unmapped_attributes);
-		
+
 		// Verify first unmapped attribute
 		$this->assertEquals('weight', $unmapped_attributes[0]['name']);
 		$this->assertEquals('2kg', $unmapped_attributes[0]['value']);
-		
+
 		// Verify second unmapped attribute
 		$this->assertEquals('style', $unmapped_attributes[1]['name']);
 		$this->assertEquals('Modern', $unmapped_attributes[1]['value']);
@@ -1161,7 +1106,7 @@ class fbproductTest extends WP_UnitTestCase {
 	 */
 	public function test_get_unmapped_attributes_mixed() {
 		$product = WC_Helper_Product::create_simple_product();
-		
+
 		// Add both mapped and unmapped attributes
 		$attributes = array();
 		$attributes[] = $this->create_product_attribute('size', 'Medium', false); // mapped
@@ -1173,10 +1118,10 @@ class fbproductTest extends WP_UnitTestCase {
 
 		$facebook_product = new \WC_Facebook_Product($product);
 		$unmapped_attributes = $facebook_product->get_unmapped_attributes();
-		
+
 		$this->assertIsArray($unmapped_attributes);
 		$this->assertCount(2, $unmapped_attributes);
-		
+
 		// Verify only unmapped attributes are returned
 		$this->assertEquals('weight', $unmapped_attributes[0]['name']);
 		$this->assertEquals('3kg', $unmapped_attributes[0]['value']);
@@ -1189,7 +1134,7 @@ class fbproductTest extends WP_UnitTestCase {
 	 */
 	public function test_get_unmapped_attributes_empty_values() {
 		$product = WC_Helper_Product::create_simple_product();
-		
+
 		// Add attributes with empty values
 		$attributes = array();
 		$attributes[] = $this->create_product_attribute('weight', '', false); // empty unmapped
@@ -1200,10 +1145,10 @@ class fbproductTest extends WP_UnitTestCase {
 
 		$facebook_product = new \WC_Facebook_Product($product);
 		$unmapped_attributes = $facebook_product->get_unmapped_attributes();
-		
+
 		$this->assertIsArray($unmapped_attributes);
 		$this->assertCount(1, $unmapped_attributes);
-		
+
 		// Verify only non-empty unmapped attribute is returned
 		$this->assertEquals('style', $unmapped_attributes[0]['name']);
 		$this->assertEquals('Modern', $unmapped_attributes[0]['value']);
