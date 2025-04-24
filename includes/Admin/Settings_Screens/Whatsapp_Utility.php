@@ -182,7 +182,7 @@ class Whatsapp_Utility extends Abstract_Settings_Screen {
 	 */
 	public function render() {
 		$view = $this->get_current_view();
-		if ( true ) {
+		if ( 'utility_settings' === $view ) {
 			$this->render_utility_message_overview();
 		} elseif ( 'manage_event' === $view ) {
 			$this->render_manage_events_view();
