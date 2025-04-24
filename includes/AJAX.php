@@ -66,6 +66,9 @@ class AJAX {
 
 		// search a product's attributes for the given term
 		add_action( 'wp_ajax_' . self::ACTION_SEARCH_PRODUCT_ATTRIBUTES, array( $this, 'admin_search_product_attributes' ) );
+
+		// update the wp_options with wc_facebook_whatsapp_consent_collection_setting_status to disabled
+		add_action( 'wp_ajax_wc_facebook_whatsapp_consent_collection_disable', array( $this, 'whatsapp_consent_collection_disable' ) );
 	}
 
 
@@ -263,6 +266,16 @@ class AJAX {
 		}
 		if ( get_option( 'wc_facebook_whatsapp_consent_collection_setting_status' ) !== 'enabled' ) {
 			update_option( 'wc_facebook_whatsapp_consent_collection_setting_status', 'enabled' );
+		}
+		wp_send_json_success();
+	}
+
+	public function whatsapp_consent_collection_disable() {
+		if ( ! check_ajax_referer( 'facebook-for-wc-whatsapp-consent-disable-nonce', 'nonce', false ) ) {
+			wp_send_json_error( 'Invalid security token sent.' );
+		}
+		if ( get_option( 'wc_facebook_whatsapp_consent_collection_setting_status' ) !== 'disabled' ) {
+			update_option( 'wc_facebook_whatsapp_consent_collection_setting_status', 'disabled' );
 		}
 		wp_send_json_success();
 	}

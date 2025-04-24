@@ -144,6 +144,34 @@ class Whatsapp_Utility extends Abstract_Settings_Screen {
 				),
 			)
 		);
+		wp_enqueue_script(
+			'facebook-for-woocommerce-whatsapp-consent-remove',
+			facebook_for_woocommerce()->get_asset_build_dir_url() . '/admin/whatsapp-consent-remove.js',
+			array( 'jquery', 'jquery-blockui', 'jquery-tiptip', 'wc-enhanced-select' ),
+			\WC_Facebookcommerce::PLUGIN_VERSION
+		);
+		wp_localize_script(
+			'facebook-for-woocommerce-whatsapp-consent-remove',
+			'facebook_for_woocommerce_whatsapp_consent_remove',
+			array(
+				'ajax_url' => admin_url( 'admin-ajax.php' ),
+				'nonce'    => wp_create_nonce( 'facebook-for-wc-whatsapp-consent-disable-nonce' ),
+				'i18n'     => array(
+					'result' => true,
+				),
+			)
+		);
+		wp_localize_script(
+			'facebook-for-woocommerce-whatsapp-finish',
+			'facebook_for_woocommerce_whatsapp_finish',
+			array(
+				'ajax_url' => admin_url( 'admin-ajax.php' ),
+				'nonce'    => wp_create_nonce( 'facebook-for-wc-whatsapp-finish-nonce' ),
+				'i18n'     => array(
+					'result' => true,
+				),
+			)
+		);
 	}
 
 
@@ -346,8 +374,8 @@ class Whatsapp_Utility extends Abstract_Settings_Screen {
 					</div>
 					<div class="event-config-manage-button">
 					<a
-						id="remove-button"
-						class="event-config-manage-button button"
+						id="wc-whatsapp-collect-consent-remove"
+						class="button"
 						href="#"><?php esc_html_e( 'Remove', 'facebook-for-woocommerce' ); ?></a>
 					</div>
 				</div>
