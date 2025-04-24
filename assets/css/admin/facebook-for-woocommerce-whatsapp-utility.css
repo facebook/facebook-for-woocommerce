@@ -7,6 +7,58 @@
     margin-right: 400px;
     margin-top: 50px;
 }
+.custom-dashicon-check {
+    margin-top: 30px;
+    position: relative;
+    display: inline-block;
+    width: 26px; /* Set the size of the circle */
+    height: 26px; /* Set the size of the circle */
+    background-color: #1a805b; /* Fill the circle with green */
+    border-radius: 50%; /* Make it a circle */
+    margin-right: 10px;
+}
+.custom-dashicon-check::before {
+    content: '\f147'; /* Unicode for dashicons-yes-alt */
+    font-family: 'Dashicons';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-55%, -45%) scale(1.2); /* Center and slightly enlarge the checkmark */
+    font-size: 20px; /* Set the size of the checkmark */
+    color: white; /* Make the checkmark white */
+    text-shadow:
+        -4px 0 #1a805b,
+         4px 0 #1a805b,
+         0 -2px #1a805b,
+         0 2px #1a805b; /* Increase shadow offsets to thin the checkmark more */
+}
+
+.custom-dashicon-circle {
+    margin-top: 30px;
+    position: relative;
+    display: inline-block;
+    width: 20px; /* Set the size of the circle */
+    height: 20px; /* Set the size of the circle */
+    border-radius: 50%; /* Make it a circle */
+    margin-right: 10px;
+    border: 3px solid #222121ab;
+}
+.custom-dashicon-halfcircle {
+    margin-top: 30px;
+    position: relative;
+    display: inline-block;
+    width: 20px; /* Set the size of the circle */
+    height: 20px; /* Set the size of the circle */
+    border-radius: 50%; /* Make it a circle */
+    margin-right: 10px;
+    border: 3px solid #222121ab;
+    background-image: linear-gradient(to left, #222121ab 50%, transparent 50%);
+    background-clip: padding-box; /* Add this line */
+}
+.card-content-icon {
+    display: flex;
+}
+
 .card-item {
   padding: 20px;
   justify-content: space-between;

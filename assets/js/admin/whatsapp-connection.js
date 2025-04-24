@@ -8,6 +8,14 @@
  */
 
 jQuery( document ).ready( function( $ ) {
+    if (facebook_for_woocommerce_whatsapp_onboarding_progress.whatsapp_onboarding_complete) {
+        $('#wc-fb-whatsapp-connect-success').show();
+        $('#wc-fb-whatsapp-connect-inprogress').hide();
+      } else {
+        $('#wc-fb-whatsapp-connect-success').hide();
+        $('#wc-fb-whatsapp-connect-inprogress').show();
+      }
+
     // handle the whatsapp connect button click should open hosted ES flow
 	$( '#woocommerce-whatsapp-connection' ).click( function( event ) {
         const APP_ID = '474166926521348'; // WOO_COMMERCE_APP_ID
@@ -27,6 +35,8 @@ jQuery( document ).ready( function( $ ) {
             if ( response.success ) {
                 // TODO: if success, update the UI with the onboarding succeeded
 				console.log( 'success', response );
+                $('#wc-fb-whatsapp-connect-inprogress').remove();
+                $('#wc-fb-whatsapp-connect-success').show();
 			} else {
                 console.log('Failure. Checking again in 1 second:', response, ', retry attempt:', retryCount, 'pollingTimeout', pollingTimeout);
                 if(retryCount >= pollingTimeout) {
