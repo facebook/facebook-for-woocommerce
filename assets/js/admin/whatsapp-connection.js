@@ -40,8 +40,8 @@ jQuery( document ).ready( function( $ ) {
                 $connectInprogress.remove();
                 $connectSuccess.show();
                 // update the progress for collect consent step
-                $('#wc-fb-whatsapp-collect-consent-inprogress').show();
-                $('#wc-fb-whatsapp-collect-consent-notstarted').hide();
+                $('#wc-fb-whatsapp-consent-collection-inprogress').show();
+                $('#wc-fb-whatsapp-consent-collection-notstarted').hide();
 			} else {
                 console.log('Failure. Checking again in 1 second:', response, ', retry attempt:', retryCount, 'pollingTimeout', pollingTimeout);
                 if(retryCount >= pollingTimeout) {
