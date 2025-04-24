@@ -36,9 +36,13 @@ jQuery( document ).ready( function( $ ) {
 		}, function ( response ) {
             if ( response.success ) {
 				console.log( 'success', response );
+				// update the progress for collect consent step
 				$connectSuccess.show();
 				$connectInprogress.hide();
 				$connectNotstarted.hide();
+				// update the progress of billing step
+				$('#wc-fb-whatsapp-billing-inprogress').show();
+                $('#wc-fb-whatsapp-billing-notstarted').hide();
 			}
 		} );
 

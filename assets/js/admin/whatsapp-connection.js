@@ -8,12 +8,14 @@
  */
 
 jQuery( document ).ready( function( $ ) {
+    var $connectSuccess = $('#wc-fb-whatsapp-connect-success');
+    var $connectInprogress = $('#wc-fb-whatsapp-connect-inprogress');
     if (facebook_for_woocommerce_whatsapp_onboarding_progress.whatsapp_onboarding_complete) {
-        $('#wc-fb-whatsapp-connect-success').show();
-        $('#wc-fb-whatsapp-connect-inprogress').hide();
+        $connectSuccess.show();
+        $connectInprogress.hide();
     } else {
-        $('#wc-fb-whatsapp-connect-success').hide();
-        $('#wc-fb-whatsapp-connect-inprogress').show();
+        $connectSuccess.hide();
+        $connectInprogress.show();
     }
 
     // handle the whatsapp connect button click should open hosted ES flow
@@ -34,8 +36,12 @@ jQuery( document ).ready( function( $ ) {
             // check if the response is success (i.e. onboarding is completed)
             if ( response.success ) {
 				console.log( 'success', response );
-                $('#wc-fb-whatsapp-connect-inprogress').remove();
-                $('#wc-fb-whatsapp-connect-success').show();
+                // update the progress for connect whatsapp step
+                $connectInprogress.remove();
+                $connectSuccess.show();
+                // update the progress for collect consent step
+                $('#wc-fb-whatsapp-collect-consent-inprogress').show();
+                $('#wc-fb-whatsapp-collect-consent-notstarted').hide();
 			} else {
                 console.log('Failure. Checking again in 1 second:', response, ', retry attempt:', retryCount, 'pollingTimeout', pollingTimeout);
                 if(retryCount >= pollingTimeout) {
