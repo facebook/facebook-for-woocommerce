@@ -181,7 +181,7 @@ class Connection {
 			$this->update_installation_data();
 			$this->repair_or_update_commerce_integration_data();
 		} catch ( ApiException $exception ) {
-			$this->get_plugin()->log( 'Could not refresh installation data. ' . $exception->getMessage() );
+			$this->get_plugin()->log( 'Could not refresh installation data. ' . $exception->getMessage(), null, 'error'  );
 		}
 
 	}
@@ -210,7 +210,7 @@ class Connection {
 				);
 
 				if ( ! $response->is_successful() ) {
-					$this->get_plugin()->log( 'Failed to repair commerce integration.' );
+					$this->get_plugin()->log( 'Failed to repair commerce integration.', null, 'error' );
 					return;
 				}
 
@@ -238,7 +238,7 @@ class Connection {
 				);
 
 				if ( ! $update_response->is_successful() ) {
-					$this->get_plugin()->log( 'Failed to update commerce integration configuration.' );
+					$this->get_plugin()->log( 'Failed to update commerce integration configuration.', null, 'error' );
 					return;
 				}
 
@@ -246,7 +246,7 @@ class Connection {
 			}
 
 		} catch ( ApiException $exception ) {
-			$this->get_plugin()->log( 'Could not repair or update commerce integration data. ' . $exception->getMessage() );
+			$this->get_plugin()->log( 'Could not repair or update commerce integration data. ' . $exception->getMessage(), null, 'error'  );
 		}
 	}
 
