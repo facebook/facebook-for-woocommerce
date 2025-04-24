@@ -1515,7 +1515,7 @@ class Admin {
 						'value'         => wc_format_decimal( $price ),
 						'class'         => 'enable-if-sync-enabled',
 						'wrapper_class' => 'form-row form-full',
-					) 
+					)
 				);
 
 				woocommerce_wp_text_input(
