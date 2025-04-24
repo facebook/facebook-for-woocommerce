@@ -111,23 +111,6 @@ class Whatsapp_Utility extends Abstract_Settings_Screen {
 			)
 		);
 		wp_enqueue_script(
-			'facebook-for-woocommerce-whatsapp-finish',
-			facebook_for_woocommerce()->get_asset_build_dir_url() . '/admin/whatsapp-finish.js',
-			array( 'jquery', 'jquery-blockui', 'jquery-tiptip', 'wc-enhanced-select' ),
-			\WC_Facebookcommerce::PLUGIN_VERSION
-		);
-		wp_localize_script(
-			'facebook-for-woocommerce-whatsapp-finish',
-			'facebook_for_woocommerce_whatsapp_finish',
-			array(
-				'ajax_url' => admin_url( 'admin-ajax.php' ),
-				'nonce'    => wp_create_nonce( 'facebook-for-wc-whatsapp-finish-nonce' ),
-				'i18n'     => array(
-					'result' => true,
-				),
-			)
-		);
-		wp_enqueue_script(
 			'facebook-for-woocommerce-whatsapp-events',
 			facebook_for_woocommerce()->get_asset_build_dir_url() . '/admin/whatsapp-events.js',
 			array( 'jquery', 'jquery-blockui', 'jquery-tiptip', 'wc-enhanced-select' ),
@@ -139,6 +122,23 @@ class Whatsapp_Utility extends Abstract_Settings_Screen {
 			array(
 				'ajax_url' => admin_url( 'admin-ajax.php' ),
 				'nonce'    => wp_create_nonce( 'facebook-for-wc-whatsapp-events-nonce' ),
+				'i18n'     => array(
+					'result' => true,
+				),
+			)
+		);
+		wp_enqueue_script(
+			'facebook-for-woocommerce-whatsapp-finish',
+			facebook_for_woocommerce()->get_asset_build_dir_url() . '/admin/whatsapp-finish.js',
+			array( 'jquery', 'jquery-blockui', 'jquery-tiptip', 'wc-enhanced-select' ),
+			\WC_Facebookcommerce::PLUGIN_VERSION
+		);
+		wp_localize_script(
+			'facebook-for-woocommerce-whatsapp-finish',
+			'facebook_for_woocommerce_whatsapp_finish',
+			array(
+				'ajax_url' => admin_url( 'admin-ajax.php' ),
+				'nonce'    => wp_create_nonce( 'facebook-for-wc-whatsapp-finish-nonce' ),
 				'i18n'     => array(
 					'result' => true,
 				),
@@ -158,15 +158,9 @@ class Whatsapp_Utility extends Abstract_Settings_Screen {
 			$this->render_utility_message_overview();
 		} elseif ( 'manage_event' === $view ) {
 			$this->render_manage_events_view();
-		$view = $this->get_current_view();
-		if ( 'utility_settings' === $view ) {
-			$this->render_utility_message_overview();
-		} elseif ( 'manage_event' === $view ) {
-			$this->render_manage_events_view();
 		} else {
 			$this->render_utility_message_onboarding();
 		}
-
 		parent::render();
 	}
 
@@ -254,7 +248,6 @@ class Whatsapp_Utility extends Abstract_Settings_Screen {
 		<div class="onboarding-card">
 			<div class="card-item">
 				<h1><?php esc_html_e( 'Utility Messages', 'facebook-for-woocommerce' ); ?></h1>
-				<h1><?php esc_html_e( 'Utility Messages', 'facebook-for-woocommerce' ); ?></h1>
 					<p><?php esc_html_e( 'Manage which utility messages you want to send to customers. You can check performance of these messages in Whatsapp Manager.', 'facebook-for-woocommerce' ); ?>
 						<a
 							id="woocommerce-whatsapp-manager-insights"
@@ -283,7 +276,7 @@ class Whatsapp_Utility extends Abstract_Settings_Screen {
 					<a
 						id="woocommerce-whatsapp-manage-order-confirmation"
 						class="event-config-manage-button button"
-						href="<?php echo esc_html( admin_url( 'admin.php?page=' . self::PAGE_ID . '&tab=' . self::ID . '&view=manage_event' ) ); ?>"><?php esc_html_e( 'Manage', 'facebook-for-woocommerce' ); ?></a>
+						href="#"><?php esc_html_e( 'Manage', 'facebook-for-woocommerce' ); ?></a>
 				</div>
 			</div>
 			<div class="divider"></div>
@@ -415,7 +408,6 @@ class Whatsapp_Utility extends Abstract_Settings_Screen {
 					<a
 						id="woocommerce-whatsapp-cancel-order-confirmation"
 						class="button"
-						href="<?php echo esc_html( admin_url( 'admin.php?page=' . self::PAGE_ID . '&tab=' . self::ID . '&view=utility_settings' ) ); ?>"><?php esc_html_e( 'Cancel', 'facebook-for-woocommerce' ); ?></a>
 						href="<?php echo esc_html( admin_url( 'admin.php?page=' . self::PAGE_ID . '&tab=' . self::ID . '&view=utility_settings' ) ); ?>"><?php esc_html_e( 'Cancel', 'facebook-for-woocommerce' ); ?></a>
 				</div>
 

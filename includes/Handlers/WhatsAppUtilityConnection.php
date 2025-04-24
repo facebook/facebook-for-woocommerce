@@ -101,7 +101,7 @@ class WhatsAppUtilityConnection {
 			'body'    => array(),
 		);
 		$response     = wp_remote_post( $base_url, $options );
-		if ( is_wp_error( $response ) || wp_remote_retrieve_response_code( $response ) != 200 ) {
+		if ( is_wp_error( $response ) || 200 !== wp_remote_retrieve_response_code( $response ) ) {
 			$error_data    = explode( "\n", wp_remote_retrieve_body( $response ) );
 			$error_message = $error_data[0];
 			wc_get_logger()->info(

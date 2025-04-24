@@ -239,6 +239,7 @@ class AJAX {
 		WhatsAppUtilityConnection::wc_facebook_whatsapp_connect_utility_messages_call( $waba_id, $wacs_id, $external_business_id, $bisu_token );
 	}
 
+
 	/**
 	 * Checks if the onboarding for whatsapp is complete once business has initiated onboarding.
 	 *
