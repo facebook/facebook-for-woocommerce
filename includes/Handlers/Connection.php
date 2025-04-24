@@ -181,7 +181,6 @@ class Connection {
 			$this->update_installation_data();
 			$this->repair_or_update_commerce_integration_data();
 		} catch ( ApiException $exception ) {
-
 			$this->get_plugin()->log( 'Could not refresh installation data. ' . $exception->getMessage() );
 		}
 
@@ -210,17 +209,26 @@ class Connection {
 					$this->get_plugin()->get_version()
 				);
 
+				if ( ! $response->is_successful() ) {
+					$this->get_plugin()->log( 'Failed to repair commerce integration.' );
+					return;
+				}
+
 				// Store the new commerce integration ID
 				$new_commerce_integration_id = $response->get_commerce_partner_integration_id();
-				if ( $new_commerce_integration_id ) {
-					$this->update_commerce_partner_integration_id( $new_commerce_integration_id );
-					$commerce_integration_id = $new_commerce_integration_id;
+				if ( empty( $new_commerce_integration_id ) ) {
+					$this->get_plugin()->log( 'Failed to get commerce partner integration ID from repair response.', null, 'error' );
+					return;
 				}
+
+				$this->update_commerce_partner_integration_id( $new_commerce_integration_id );
+				$commerce_integration_id = $new_commerce_integration_id;
+				$this->get_plugin()->log( 'Successfully repaired commerce integration. New ID: ' . $commerce_integration_id );
 			}
 
 			// If we have a commerce integration ID, update the configuration
 			if ( ! empty( $commerce_integration_id ) ) {
-				$this->get_plugin()->get_api()->update_commerce_integration(
+				$update_response = $this->get_plugin()->get_api()->update_commerce_integration(
 					$commerce_integration_id,
 					$this->get_plugin()->get_version(),  // extension_version
 					admin_url(),                         // admin_url
@@ -228,6 +236,13 @@ class Connection {
 					$this->get_currency(),               // currency
 					$this->get_platform_store_id(),      // platform_store_id
 				);
+
+				if ( ! $update_response->is_successful() ) {
+					$this->get_plugin()->log( 'Failed to update commerce integration configuration.' );
+					return;
+				}
+
+				$this->get_plugin()->log( 'Successfully updated commerce integration configuration.' );
 			}
 
 		} catch ( ApiException $exception ) {

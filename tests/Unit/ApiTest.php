@@ -403,7 +403,7 @@ class ApiTest extends \WooCommerce\Facebook\Tests\AbstractWPUnitTestWithSafeFilt
 			$this->assertEquals( 'GET', $parsed_args['method'] );
 			$this->assertEquals( "{$this->endpoint}{$this->version}/{$facebook_product_group_id}/products?fields=id,retailer_id&limit={$limit}", $url );
 			return [
-				'body'     => '{"data":[{"id":"5678482592202667","retailer_id":"woo-vneck-tee-blue_107"},{"id":"5575513012507086","retailer_id":"woo-vneck-tee-green_106"},{"id":"5454083851373820","retailer_id":"woo-vneck-tee-red_105"}],"paging":{"cursors":{"before":"QVFIUmt2N3lKdWUycEM1c1ZA3eXF5YnJoeWxJZAFFMZAW1OVDZAieG4ycU5mMmV6NV9NY2syaWVxRnZAtRnpwOTVETVZANR21VTzUtZAXBLb25TcmNaaVpYTEYyMVJ3","after":"QVFIUmxJVmYwQUdmay1YUnRPdXROMjN5a3EyZAGhIVm1NX2VpVjBiMFRBMncxSjZAYWXowOVhYTjQ0VzY4X2tlQ2VIZAFNyT3ZARbk5LeWRPM242d2JFazZA4QVZA3"},"next":"https:\/\/graph.facebook.com\/' . $this->version . '\/5427299404026432\/products?fields=id\u00252Cretailer_id&limit=1000&after=QVFIUmxJVmYwQUdmay1YUnRPdXROMjN5a3EyZAGhIVm1NX2VpVjBiMFRBMncxSjZAYWXowOVhYTjQ0VzY4X2tlQ2VIZAFNyT3ZARbk5LeWRPM242d2JFazZA4QVZA3","previous":"https:\/\/graph.facebook.com\/' . $this->version . '\/5427299404026432\/products?fields=id\u00252Cretailer_id&limit=1000&before=QVFIUmt2N3lKdWUycEM1c1ZA3eXF5YnJoeWxJZAFFMZAW1OVDZAieG4ycU5mMmV6NV9NY2syaWVxRnZAtRnpwOTVETVZANR21VTzUtZAXBLb25TcmNaaVpYTEYyMVJ3"}}',
+				'body'     => '{"data":[{"id":"5678482592202667","retailer_id":"woo-vneck-tee-blue_107"},{"id":"5575513012507086","retailer_id":"woo-vneck-tee-green_106"},{"id":"5454083851373820","retailer_id":"woo-vneck-tee-red_105"}],"paging":{"cursors":{"before":"QVFIUmJybjEwNU81U29oZAXdmcXl2MEhBdWthLVhSUlhUcV9PLWtSR1RQVkJqTnlWVTRtQzRvTExRdjZAheDlsZA0JKYUkxaHJLOVZAqYmU2eVZAYQXJRNG5pRXp3","after":"QVFIUmJybjEwNU81U29oZAXdmcXl2MEhBdWthLVhSUlhUcV9PLWtSR1RQVkJqTnlWVTRtQzRvTExRdjZAheDlsZA0JKYUkxaHJLOVZAqYmU2eVZAYQXJRNG5pRXp3"}}}',
 				'response' => [
 					'code'    => 200,
 					'message' => 'OK',
@@ -893,5 +893,111 @@ class ApiTest extends \WooCommerce\Facebook\Tests\AbstractWPUnitTestWithSafeFilt
 
 		$response = $this->api->create_common_data_feed_upload( $cpi, $data );
 		$this->assertFalse( $response->has_api_error() );
+	}
+
+	/**
+	 * Tests repair commerce integration request to Facebook.
+	 *
+	 * @return void
+	 * @throws ApiException In case of network request error.
+	 */
+	public function test_repair_commerce_integration_request() {
+		$fbe_external_business_id = 'test-business-123';
+		$shop_domain = 'example.com';
+		$admin_url = 'https://example.com/wp-admin';
+		$extension_version = '3.0.0';
+
+		$response = function( $result, $parsed_args, $url ) use ( $fbe_external_business_id ) {
+			$this->assertEquals( 'POST', $parsed_args['method'] );
+			$this->assertEquals( "{$this->endpoint}{$this->version}/commerce_partner_integrations_repair", $url );
+			
+			// Parse the actual request body to compare properties regardless of order
+			$actual_body = json_decode($parsed_args['body'], true);
+			$expected_body = [
+				'fbe_external_business_id' => $fbe_external_business_id,
+				'shop_domain' => 'example.com',
+				'admin_url' => 'https://example.com/wp-admin',
+				'extension_version' => '3.0.0',
+				'commerce_partner_seller_platform_type' => 'SELF_SERVE_PLATFORM'
+			];
+			
+			$this->assertEquals($expected_body, $actual_body);
+			
+			return [
+				'body'     => '{"success":true}',
+				'response' => [
+					'code'    => 200,
+					'message' => 'OK',
+				],
+			];
+		};
+		$this->add_filter_with_safe_teardown( 'pre_http_request', $response, 10, 3 );
+
+		$response = $this->api->repair_commerce_integration(
+			$fbe_external_business_id,
+			$shop_domain,
+			$admin_url,
+			$extension_version
+		);
+
+		$this->assertTrue( $response->success );
+	}
+
+	/**
+	 * Tests update commerce integration request to Facebook.
+	 *
+	 * @return void
+	 * @throws ApiException In case of network request error.
+	 */
+	public function test_update_commerce_integration_request() {
+		$commerce_integration_id = 'test-integration-123';
+		$extension_version = '3.0.0';
+		$admin_url = 'https://example.com/wp-admin';
+		$country_code = 'US';
+		$currency = 'USD';
+		$platform_store_id = 'store-123';
+		$commerce_partner_seller_platform_type = 'SELF_SERVE';
+		$installation_status = 'ACCESS_TOKEN_DEPOSITED';
+
+		$response = function( $result, $parsed_args, $url ) use ( $commerce_integration_id ) {
+			$this->assertEquals( 'POST', $parsed_args['method'] );
+			$this->assertEquals( "{$this->endpoint}{$this->version}/{$commerce_integration_id}", $url );
+			
+			// Parse the actual request body to compare properties regardless of order
+			$actual_body = json_decode($parsed_args['body'], true);
+			$expected_body = [
+				'commerce_partner_seller_platform_type' => 'SELF_SERVE',
+				'installation_status' => 'ACCESS_TOKEN_DEPOSITED',
+				'extension_version' => '3.0.0',
+				'admin_url' => 'https://example.com/wp-admin',
+				'country_code' => 'US',
+				'currency' => 'USD',
+				'platform_store_id' => 'store-123'
+			];
+			
+			$this->assertEquals($expected_body, $actual_body);
+			
+			return [
+				'body'     => '{"success":true}',
+				'response' => [
+					'code'    => 200,
+					'message' => 'OK',
+				],
+			];
+		};
+		$this->add_filter_with_safe_teardown( 'pre_http_request', $response, 10, 3 );
+
+		$response = $this->api->update_commerce_integration(
+			$commerce_integration_id,
+			$extension_version,
+			$admin_url,
+			$country_code,
+			$currency,
+			$platform_store_id,
+			$commerce_partner_seller_platform_type,
+			$installation_status
+		);
+
+		$this->assertTrue( $response->success );
 	}
 }
