@@ -66,12 +66,14 @@ class Whatsapp_Utility extends Abstract_Settings_Screen {
 			array( 'jquery', 'jquery-blockui', 'jquery-tiptip', 'wc-enhanced-select' ),
 			\WC_Facebookcommerce::PLUGIN_VERSION
 		);
+		$whatsapp_connected = get_option('wc_facebook_wa_integration_waba_id', null) != null ;
 		wp_localize_script(
 			'facebook-for-woocommerce-connect-whatsapp',
 			'facebook_for_woocommerce_whatsapp_onboarding_progress',
 			array(
 				'ajax_url' => admin_url( 'admin-ajax.php' ),
 				'nonce'    => wp_create_nonce( 'facebook-for-wc-whatsapp-onboarding-progress-nonce' ),
+				'whatsapp_onboarding_complete' => $whatsapp_connected,
 				'i18n'     => array(
 					'result' => true,
 				),
@@ -167,9 +169,13 @@ class Whatsapp_Utility extends Abstract_Settings_Screen {
 		</div>
 		<div class="divider"></div>
 		<div class="card-item">
-			<div class="card-content">
-				<h2><?php esc_html_e( 'Connect your WhatApp Business account', 'facebook-for-woocommerce' ); ?></h2>
-				<p><?php esc_html_e( 'Allows WooCommerce to connect to your WhatsApp account. ', 'facebook-for-woocommerce' ); ?></p>
+			<div class="card-content-icon">
+				<div id="wc-fb-whatsapp-connect-success" class="custom-dashicon-check" style="display: none;"></div>
+				<div id="wc-fb-whatsapp-connect-inprogress" class="custom-dashicon-halfcircle"></div>
+				<div class="card-content">
+					<h2><?php esc_html_e( 'Connect your WhatApp Business account', 'facebook-for-woocommerce' ); ?></h2>
+					<p><?php esc_html_e( 'Allows WooCommerce to connect to your WhatsApp account. ', 'facebook-for-woocommerce' ); ?></p>
+				</div>
 			</div>
 			<div class="whatsapp-onboarding-button">
 				<a
@@ -181,9 +187,12 @@ class Whatsapp_Utility extends Abstract_Settings_Screen {
 		</div>
 		<div class="divider"></div>
 		<div class="card-item">
-			<div class="card-content">
-				<h2><?php esc_html_e( 'Add WhatsApp option at checkout', 'facebook-for-woocommerce' ); ?></h2>
-				<p><?php esc_html_e( 'Adds a checkbox to your store’s checkout page that lets customers request updates about their order on WhatsApp. This allows you to communicate with customers after they make a purchase. You can remove this anytime.', 'facebook-for-woocommerce' ); ?></p>
+		  <div class="card-content-icon">
+				<div id="wc-fb-whatsapp-consent-collection-notstarted" class="custom-dashicon-circle"></div>
+				<div class="card-content">
+					<h2><?php esc_html_e( 'Add WhatsApp option at checkout', 'facebook-for-woocommerce' ); ?></h2>
+					<p><?php esc_html_e( 'Adds a checkbox to your store’s checkout page that lets customers request updates about their order on WhatsApp. This allows you to communicate with customers after they make a purchase. You can remove this anytime.', 'facebook-for-woocommerce' ); ?></p>
+				</div>
 			</div>
 			<div class="whatsapp-onboarding-button">
 			<a
@@ -195,16 +204,19 @@ class Whatsapp_Utility extends Abstract_Settings_Screen {
 		</div>
 		<div class="divider"></div>
 		<div class="card-item">
-			<div class="card-content">
-				<h2><?php esc_html_e( 'Add a payment method', 'facebook-for-woocommerce' ); ?></h2>
-				<p><?php esc_html_e( 'Review and update your payment method in Billings & payments.', 'facebook-for-woocommerce' ); ?>
-					<a
-						href="https://developers.facebook.com/docs/whatsapp/pricing/#rate-cards"
-						id="wc-whatsapp-about-pricing"
-						target="_blank"
-					><?php esc_html_e( 'About pricing', 'facebook-for-woocommerce' ); ?>
-					</a>
-				</p>
+			<div class="card-content-icon">
+			  <div id="wc-fb-whatsapp-payment-notstarted" class="custom-dashicon-circle"></div>
+				<div class="card-content">
+					<h2><?php esc_html_e( 'Add a payment method', 'facebook-for-woocommerce' ); ?></h2>
+					<p><?php esc_html_e( 'Review and update your payment method in Billings & payments.', 'facebook-for-woocommerce' ); ?>
+						<a
+							href="https://developers.facebook.com/docs/whatsapp/pricing/#rate-cards"
+							id="wc-whatsapp-about-pricing"
+							target="_blank"
+						><?php esc_html_e( 'About pricing', 'facebook-for-woocommerce' ); ?>
+						</a>
+					</p>
+				</div>
 			</div>
 			<div class="whatsapp-onboarding-button">
 				<a
