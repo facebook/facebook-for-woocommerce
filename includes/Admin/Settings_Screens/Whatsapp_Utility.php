@@ -27,7 +27,6 @@ class Whatsapp_Utility extends Abstract_Settings_Screen {
 	/** @var string screen ID */
 	const ID = 'whatsapp_utility';
 
-
 	/**
 	 * Whatsapp Utility constructor.
 	 */
@@ -112,11 +111,29 @@ class Whatsapp_Utility extends Abstract_Settings_Screen {
 			)
 		);
 		wp_enqueue_script(
+			'facebook-for-woocommerce-whatsapp-events',
+			facebook_for_woocommerce()->get_asset_build_dir_url() . '/admin/whatsapp-events.js',
+			array( 'jquery', 'jquery-blockui', 'jquery-tiptip', 'wc-enhanced-select' ),
+			\WC_Facebookcommerce::PLUGIN_VERSION
+		);
+		wp_localize_script(
+			'facebook-for-woocommerce-whatsapp-events',
+			'facebook_for_woocommerce_whatsapp_events',
+			array(
+				'ajax_url' => admin_url( 'admin-ajax.php' ),
+				'nonce'    => wp_create_nonce( 'facebook-for-wc-whatsapp-events-nonce' ),
+				'i18n'     => array(
+					'result' => true,
+				),
+			)
+		);
+		wp_enqueue_script(
 			'facebook-for-woocommerce-whatsapp-finish',
 			facebook_for_woocommerce()->get_asset_build_dir_url() . '/admin/whatsapp-finish.js',
 			array( 'jquery', 'jquery-blockui', 'jquery-tiptip', 'wc-enhanced-select' ),
 			\WC_Facebookcommerce::PLUGIN_VERSION
 		);
+    
 			wp_localize_script(
 				'facebook-for-woocommerce-whatsapp-finish',
 				'facebook_for_woocommerce_whatsapp_finish',
@@ -145,6 +162,18 @@ class Whatsapp_Utility extends Abstract_Settings_Screen {
 					),
 				)
 			);
+    
+		wp_localize_script(
+			'facebook-for-woocommerce-whatsapp-finish',
+			'facebook_for_woocommerce_whatsapp_finish',
+			array(
+				'ajax_url' => admin_url( 'admin-ajax.php' ),
+				'nonce'    => wp_create_nonce( 'facebook-for-wc-whatsapp-finish-nonce' ),
+				'i18n'     => array(
+					'result' => true,
+				),
+			)
+		);
 	}
 
 
@@ -162,7 +191,6 @@ class Whatsapp_Utility extends Abstract_Settings_Screen {
 		} else {
 			$this->render_utility_message_onboarding();
 		}
-
 		parent::render();
 	}
 
@@ -249,7 +277,7 @@ class Whatsapp_Utility extends Abstract_Settings_Screen {
 		?>
 		<div class="onboarding-card">
 			<div class="card-item">
-				<h1><b><?php esc_html_e( 'Utility Messages', 'facebook-for-woocommerce' ); ?></b></h1>
+				<h1><?php esc_html_e( 'Utility Messages', 'facebook-for-woocommerce' ); ?></h1>
 					<p><?php esc_html_e( 'Manage which utility messages you want to send to customers. You can check performance of these messages in Whatsapp Manager.', 'facebook-for-woocommerce' ); ?>
 						<a
 							id="woocommerce-whatsapp-manager-insights"
@@ -259,20 +287,43 @@ class Whatsapp_Utility extends Abstract_Settings_Screen {
 			<div class="divider"></div>
 			<div class="card-item event-config">
 				<div>
-					<h3><b><?php esc_html_e( 'Order confirmation', 'facebook-for-woocommerce' ); ?></b></h3>
+					<div class="event-config-heading-container">
+						<h3><?php esc_html_e( 'Order confirmation', 'facebook-for-woocommerce' ); ?></h3>
+						<div class="event-config-status on-status">
+							<?php esc_html_e( 'On', 'facebook-for-woocommerce' ); ?>
+						</div>
+					</div>
+					<div class="event-config-heading-container">
+						<h3><?php esc_html_e( 'Order confirmation', 'facebook-for-woocommerce' ); ?></h3>
+						<div class="event-config-status on-status">
+							<?php esc_html_e( 'On', 'facebook-for-woocommerce' ); ?>
+						</div>
+					</div>
 					<p><?php esc_html_e( 'Send a confirmation to customers after they\'ve placed an order.', 'facebook-for-woocommerce' ); ?></p>
-				</div>
+				</div>	
+				</div>	
 				<div class="event-config-manage-button">
 					<a
 						id="woocommerce-whatsapp-manage-order-confirmation"
 						class="event-config-manage-button button"
-						href="<?php echo esc_html( admin_url( 'admin.php?page=' . self::PAGE_ID . '&tab=' . self::ID . '&view=manage_event' ) ); ?>"><?php esc_html_e( 'Manage', 'facebook-for-woocommerce' ); ?></a>
+						href="#"><?php esc_html_e( 'Manage', 'facebook-for-woocommerce' ); ?></a>
 				</div>
 			</div>
 			<div class="divider"></div>
 			<div class="card-item event-config">
 				<div>
-					<h3><b><?php esc_html_e( 'Order shipped', 'facebook-for-woocommerce' ); ?></b></h3>
+					<div class="event-config-heading-container">
+						<h3><?php esc_html_e( 'Order shipped', 'facebook-for-woocommerce' ); ?></h3>
+						<div class="event-config-status">
+							<?php esc_html_e( 'Off', 'facebook-for-woocommerce' ); ?>
+						</div>
+					</div>
+					<div class="event-config-heading-container">
+						<h3><?php esc_html_e( 'Order shipped', 'facebook-for-woocommerce' ); ?></h3>
+						<div class="event-config-status">
+							<?php esc_html_e( 'Off', 'facebook-for-woocommerce' ); ?>
+						</div>
+					</div>
 					<p><?php esc_html_e( 'Send a confirmation to customers when their order is shipped.', 'facebook-for-woocommerce' ); ?></p>
 				</div>
 				<div class="event-config-manage-button">
@@ -285,7 +336,18 @@ class Whatsapp_Utility extends Abstract_Settings_Screen {
 			<div class="divider"></div>
 			<div class="card-item event-config">
 				<div>
-					<h3><b><?php esc_html_e( 'Order refunded', 'facebook-for-woocommerce' ); ?></b></h3>
+					<div class="event-config-heading-container">
+						<h3><?php esc_html_e( 'Order refunded', 'facebook-for-woocommerce' ); ?></h3>
+						<div class="event-config-status">
+							<?php esc_html_e( 'Off', 'facebook-for-woocommerce' ); ?>
+						</div>
+					</div>
+					<div class="event-config-heading-container">
+						<h3><?php esc_html_e( 'Order refunded', 'facebook-for-woocommerce' ); ?></h3>
+						<div class="event-config-status">
+							<?php esc_html_e( 'Off', 'facebook-for-woocommerce' ); ?>
+						</div>
+					</div>
 					<p><?php esc_html_e( 'Send a confirmation to customers when an order is refunded.', 'facebook-for-woocommerce' ); ?></p>
 				</div>
 				<div class="event-config-manage-button">
