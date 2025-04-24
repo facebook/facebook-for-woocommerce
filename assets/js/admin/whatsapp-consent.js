@@ -8,23 +8,23 @@
  */
 
 jQuery( document ).ready( function( $ ) {
-	var $connectSuccess = $('#wc-fb-whatsapp-consent-collection-success');
-  	var $connectInprogress = $('#wc-fb-whatsapp-consent-collection-inprogress');
-  	var $connectNotstarted = $('#wc-fb-whatsapp-consent-collection-notstarted');
+	var $consentCollectSuccess = $('#wc-fb-whatsapp-consent-collection-success');
+  	var $consentCollectInprogress = $('#wc-fb-whatsapp-consent-collection-inprogress');
+  	var $consentCollectNotstarted = $('#wc-fb-whatsapp-consent-collection-notstarted');
 	if (facebook_for_woocommerce_whatsapp_consent.whatsapp_onboarding_complete) {
 		if (facebook_for_woocommerce_whatsapp_consent.consent_collection_enabled) {
-			$connectSuccess.show();
-			$connectInprogress.hide();
-			$connectNotstarted.hide();
+			$consentCollectSuccess.show();
+			$consentCollectInprogress.hide();
+			$consentCollectNotstarted.hide();
 		} else {
-			$connectSuccess.hide();
-			$connectInprogress.show();
-			$connectNotstarted.hide();
+			$consentCollectSuccess.hide();
+			$consentCollectInprogress.show();
+			$consentCollectNotstarted.hide();
 		}
     } else {
-			$connectSuccess.hide();
-			$connectInprogress.hide();
-			$connectNotstarted.show();
+			$consentCollectSuccess.hide();
+			$consentCollectInprogress.hide();
+			$consentCollectNotstarted.show();
     }
 
     // handle the whatsapp consent collect button click should save setting to wp_options table
@@ -37,12 +37,13 @@ jQuery( document ).ready( function( $ ) {
             if ( response.success ) {
 				console.log( 'success', response );
 				// update the progress for collect consent step
-				$connectSuccess.show();
-				$connectInprogress.hide();
-				$connectNotstarted.hide();
+				$consentCollectSuccess.show();
+				$consentCollectInprogress.hide();
+				$consentCollectNotstarted.hide();
 				// update the progress of billing step
 				$('#wc-fb-whatsapp-billing-inprogress').show();
                 $('#wc-fb-whatsapp-billing-notstarted').hide();
+
 			}
 		} );
 
