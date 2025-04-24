@@ -1677,9 +1677,6 @@ class WC_Facebook_Product {
 		// $product_data[ 'woo_product_type' ] = $this->get_type();
 		// $product_data[ 'unmapped_attributes' ] = $this->get_unmapped_attributes();
 		$product_data[ 'disabled_capabilities' ] = $this->get_disabled_capabilities();
-		$product_data[ 'material' ] = Helper::str_truncate( $this->get_fb_material($is_api_call), 100 );
-		$product_data[ 'woo_product_type' ] = $this->get_type();
-		$product_data[ 'unmapped_attributes' ] = $this->get_unmapped_attributes();
 
 		if ( self::PRODUCT_PREP_TYPE_ITEMS_BATCH === $type_to_prepare_for ) {
 			$product_data['title'] = Helper::str_truncate( WC_Facebookcommerce_Utils::clean_string( $this->get_title() ), self::MAX_TITLE_LENGTH );
