@@ -17,14 +17,14 @@ use WooCommerce\Facebook\API;
 /**
  * Commerce Integration Repair API request object.
  *
- * @since 2.0.0
+ * @since 3.4.8
  */
 class Request extends API\Request {
 
 	/**
 	 * API request constructor.
 	 *
-	 * @since 2.0.0
+	 * @since 3.4.8
 	 */
 	public function __construct() {
 		parent::__construct( '/commerce_integration_repair', 'POST' );

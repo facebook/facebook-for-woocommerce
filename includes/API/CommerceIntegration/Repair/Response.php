@@ -17,7 +17,7 @@ class Response extends ApiResponse {
 	 * Returns whether the repair request was successful.
 	 *
 	 * @return bool
-	 * @since 3.4.5
+	 * @since 3.4.8
 	 *
 	 */
 	public function is_successful(): bool {
@@ -28,7 +28,7 @@ class Response extends ApiResponse {
 	 * Returns the commerce partner integration ID.
 	 *
 	 * @return string
-	 * @since 3.4.5
+	 * @since 3.4.8
 	 *
 	 */
 	public function get_commerce_partner_integration_id(): string {

@@ -25,8 +25,9 @@ class RepairRequest extends API\Request {
 	 * @param string $shop_domain The domain of the WooCommerce site
 	 * @param string $admin_url The admin URL of the WooCommerce site
 	 * @param string $extension_version The version of the Facebook for WooCommerce extension
+	 * @param string $platform_type The type of the integration method
 	 */
-	public function __construct( $fbe_external_business_id, $shop_domain, $admin_url, $extension_version ) {
+	public function __construct( $fbe_external_business_id, $shop_domain, $admin_url, $extension_version, $platform_type = 'SELF_SERVE_PLATFORM' ) {
 		parent::__construct( '/commerce_partner_integrations_repair', 'POST' );
 
 		$data = array(
@@ -34,7 +35,7 @@ class RepairRequest extends API\Request {
 			'shop_domain'                           => $shop_domain,
 			'admin_url'                             => $admin_url,
 			'extension_version'                     => $extension_version,
-			'commerce_partner_seller_platform_type' => 'SELF_SERVE_PLATFORM',
+			'commerce_partner_seller_platform_type' => $platform_type,
 		);
 
 		$this->set_data( $data );
