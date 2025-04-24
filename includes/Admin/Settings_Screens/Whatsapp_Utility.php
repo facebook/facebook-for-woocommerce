@@ -27,9 +27,6 @@ class Whatsapp_Utility extends Abstract_Settings_Screen {
 	/** @var string screen ID */
 	const ID = 'whatsapp_utility';
 
-	/** @var flag to test Utility Messages Overview changes until check for integration config is implemented */
-	const WHATSAPP_UTILITY_MESSAGES_OVERVIEW_FLAG = true;
-
 	/**
 	 * Whatsapp Utility constructor.
 	 */
@@ -113,6 +110,23 @@ class Whatsapp_Utility extends Abstract_Settings_Screen {
 				),
 			)
 		);
+		wp_enqueue_script(
+			'facebook-for-woocommerce-whatsapp-finish',
+			facebook_for_woocommerce()->get_asset_build_dir_url() . '/admin/whatsapp-finish.js',
+			array( 'jquery', 'jquery-blockui', 'jquery-tiptip', 'wc-enhanced-select' ),
+			\WC_Facebookcommerce::PLUGIN_VERSION
+		);
+			wp_localize_script(
+				'facebook-for-woocommerce-whatsapp-finish',
+				'facebook_for_woocommerce_whatsapp_finish',
+				array(
+					'ajax_url' => admin_url( 'admin-ajax.php' ),
+					'nonce'    => wp_create_nonce( 'facebook-for-wc-whatsapp-finish-nonce' ),
+					'i18n'     => array(
+						'result' => true,
+					),
+				)
+			);
 	}
 
 
@@ -122,13 +136,11 @@ class Whatsapp_Utility extends Abstract_Settings_Screen {
 	 * @since 2.0.0
 	 */
 	public function render() {
-		if ( self::WHATSAPP_UTILITY_MESSAGES_OVERVIEW_FLAG ) {
-			$view = $this->get_current_view();
-			if ( 'manage_event' === $view ) {
-				$this->render_manage_events_view();
-			} else {
-				$this->render_utility_message_overview();
-			}
+		$view = $this->get_current_view();
+		if ( 'utility_settings' === $view ) {
+			$this->render_utility_message_overview();
+		} elseif ( 'manage_event' === $view ) {
+			$this->render_manage_events_view();
 		} else {
 			$this->render_utility_message_onboarding();
 		}
@@ -280,6 +292,31 @@ class Whatsapp_Utility extends Abstract_Settings_Screen {
 						href="#"><?php esc_html_e( 'Manage', 'facebook-for-woocommerce' ); ?></a>
 				</div>
 			</div>
+			<div class="divider"></div>
+
+		</div>
+		<div class="onboarding-card">
+			<div class="card-item event-config">
+					<div>
+						<h3><b><?php esc_html_e( 'Add WhatsApp option at checkout', 'facebook-for-woocommerce' ); ?></b></h3>
+						<p><?php esc_html_e( 'Adds a checkbox to your store\'s checkout page so customers can get updates. You can preview what this looks like in checkout preview.', 'facebook-for-woocommerce' ); ?></p>
+					</div>
+					<div class="divider"></div>
+				</div>
+				<div class="divider"></div>
+				<div class="card-item event-config">
+					<div>
+						<h4><b><?php esc_html_e( 'Checkbox', 'facebook-for-woocommerce' ); ?></b></h4>
+						<p><?php esc_html_e( 'Removing this means you won\'t be able to send messages to your customers.', 'facebook-for-woocommerce' ); ?></p>
+					</div>
+					<div class="event-config-manage-button">
+					<a
+						id="remove-button"
+						class="event-config-manage-button button"
+						href="#"><?php esc_html_e( 'Remove', 'facebook-for-woocommerce' ); ?></a>
+					</div>
+				</div>
+			</div>
 		</div>
 		<?php
 	}
@@ -336,7 +373,7 @@ class Whatsapp_Utility extends Abstract_Settings_Screen {
 					<a
 						id="woocommerce-whatsapp-cancel-order-confirmation"
 						class="button"
-						href="<?php echo esc_html( admin_url( 'admin.php?page=' . self::PAGE_ID . '&tab=' . self::ID ) ); ?>"><?php esc_html_e( 'Cancel', 'facebook-for-woocommerce' ); ?></a>
+						href="<?php echo esc_html( admin_url( 'admin.php?page=' . self::PAGE_ID . '&tab=' . self::ID . '&view=utility_settings' ) ); ?>"><?php esc_html_e( 'Cancel', 'facebook-for-woocommerce' ); ?></a>
 				</div>
 
 			</div>
