@@ -23,8 +23,27 @@ jQuery( document ).ready( function( $ ) {
                  url.search = params.toString();
                  window.location.href = url.toString();
 			} else {
-                // TODO: Handle error show error banner in UI
-                console.log(response);
+                var message;
+                const error = response.data;
+
+                switch (error) {
+                    case "Incorrect payment setup":
+                        message = facebook_for_woocommerce_whatsapp_finish.i18n.payment_setup_error;
+                        break;
+                    case "Onboarding is not complete or has failed.":
+                        message = facebook_for_woocommerce_whatsapp_finish.i18n.onboarding_incomplete_error;
+                        break;
+                    default:
+                        message = facebook_for_woocommerce_whatsapp_finish.i18n.generic_error;
+                }
+
+
+                const errorNoticeHtml = `
+                      <div class="notice-error">
+                        <p>${message}</p>
+                      </div>
+                    `;
+                $( '#payment-method-error-notice' ).html( errorNoticeHtml ).show();
             }
 		} );
     });

@@ -54,7 +54,9 @@ class WhatsAppUtilityConnection {
 		$response     = wp_remote_post( $base_url, $options );
 		if ( is_wp_error( $response ) || wp_remote_retrieve_response_code( $response ) != 200 ) {
 			$error_data    = explode( "\n", wp_remote_retrieve_body( $response ) );
-			$error_message = $error_data[0];
+			$error_object  = json_decode( $error_data[0] );
+			$error_message = $error_object->error->error_user_title;
+
 			wc_get_logger()->info(
 				sprintf(
 					/* translators: %s $error_message */
@@ -62,7 +64,7 @@ class WhatsAppUtilityConnection {
 					$error_message,
 				)
 			);
-			wp_send_json_error( $response, 'Finish Onboarding Failure' );
+			wp_send_json_error( $error_message, 'Finish Onboarding Failure' );
 		} else {
 				wc_get_logger()->info(
 					sprintf(
