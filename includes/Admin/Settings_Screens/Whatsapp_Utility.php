@@ -85,13 +85,16 @@ class Whatsapp_Utility extends Abstract_Settings_Screen {
 			array( 'jquery', 'jquery-blockui', 'jquery-tiptip', 'wc-enhanced-select' ),
 			\WC_Facebookcommerce::PLUGIN_VERSION
 		);
+		$consent_collection_enabled = get_option( 'wc_facebook_whatsapp_consent_collection_setting_status', null ) === 'enabled';
 		wp_localize_script(
 			'facebook-for-woocommerce-whatsapp-consent',
 			'facebook_for_woocommerce_whatsapp_consent',
 			array(
-				'ajax_url' => admin_url( 'admin-ajax.php' ),
-				'nonce'    => wp_create_nonce( 'facebook-for-wc-whatsapp-consent-nonce' ),
-				'i18n'     => array(
+				'ajax_url'                     => admin_url( 'admin-ajax.php' ),
+				'nonce'                        => wp_create_nonce( 'facebook-for-wc-whatsapp-consent-nonce' ),
+				'whatsapp_onboarding_complete' => $whatsapp_connected,
+				'consent_collection_enabled'   => $consent_collection_enabled,
+				'i18n'                         => array(
 					'result' => true,
 				),
 			)
@@ -188,7 +191,9 @@ class Whatsapp_Utility extends Abstract_Settings_Screen {
 		<div class="divider"></div>
 		<div class="card-item">
 			<div class="card-content-icon">
-				<div id="wc-fb-whatsapp-consent-collection-notstarted" class="custom-dashicon-circle"></div>
+				<div id="wc-fb-whatsapp-consent-collection-notstarted" class="custom-dashicon-circle" style="display: none;"></div>
+				<div id="wc-fb-whatsapp-consent-collection-success" class="custom-dashicon-check" style="display: none;"></div>
+				<div id="wc-fb-whatsapp-consent-collection-inprogress" class="custom-dashicon-halfcircle" style="display: none;" ></div>
 				<div class="card-content">
 					<h2><?php esc_html_e( 'Add WhatsApp option at checkout', 'facebook-for-woocommerce' ); ?></h2>
 					<p><?php esc_html_e( 'Adds a checkbox to your store’s checkout page that lets customers request updates about their order on WhatsApp. This allows you to communicate with customers after they make a purchase. You can remove this anytime.', 'facebook-for-woocommerce' ); ?></p>
