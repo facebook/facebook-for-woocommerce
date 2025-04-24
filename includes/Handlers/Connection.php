@@ -179,7 +179,7 @@ class Connection {
 		try {
 
 			$this->update_installation_data();
-
+			$this->repair_or_update_commerce_integration_data();
 		} catch ( ApiException $exception ) {
 
 			$this->get_plugin()->log( 'Could not refresh installation data. ' . $exception->getMessage() );
@@ -187,6 +187,89 @@ class Connection {
 
 	}
 
+	/**
+	 * Refreshes the client side info and configuration.
+	 *
+	 * @since 3.4.4
+	 */
+	public function repair_or_update_commerce_integration_data() {
+		// bail if not connected
+		if ( ! $this->is_connected() ) {
+			return;
+		}
+
+		try {
+			$commerce_integration_id = $this->get_commerce_partner_integration_id();
+
+			// If commerce integration ID doesn't exist, call repair endpoint
+			if ( empty( $commerce_integration_id ) ) {
+				$response = $this->get_plugin()->get_api()->repair_commerce_integration(
+					$this->get_external_business_id(),
+					$this->get_shop_domain(),
+					admin_url(),
+					$this->get_plugin()->get_version()
+				);
+
+				// Store the new commerce integration ID
+				$new_commerce_integration_id = $response->get_commerce_partner_integration_id();
+				if ( $new_commerce_integration_id ) {
+					$this->update_commerce_partner_integration_id( $new_commerce_integration_id );
+					$commerce_integration_id = $new_commerce_integration_id;
+				}
+			}
+
+			// If we have a commerce integration ID, update the configuration
+			if ( ! empty( $commerce_integration_id ) ) {
+				$this->get_plugin()->get_api()->update_commerce_integration(
+					$commerce_integration_id,
+					$this->get_plugin()->get_version(),  // extension_version
+					admin_url(),                         // admin_url
+					$this->get_country_code(),           // country_code
+					$this->get_currency(),               // currency
+					$this->get_platform_store_id(),      // platform_store_id
+				);
+			}
+
+		} catch ( ApiException $exception ) {
+			$this->get_plugin()->log( 'Could not repair or update commerce integration data. ' . $exception->getMessage() );
+		}
+	}
+
+	/**
+	 * Gets the shop domain.
+	 *
+	 * @return string
+	 */
+	private function get_shop_domain() {
+		return site_url( '/' );
+	}
+
+	/**
+	 * Gets the country code.
+	 *
+	 * @return string|null
+	 */
+	private function get_country_code() {
+		return WC()->countries->get_base_country();
+	}
+
+	/**
+	 * Gets the currency.
+	 *
+	 * @return string|null
+	 */
+	private function get_currency() {
+		return get_woocommerce_currency();
+	}
+
+	/**
+	 * Gets the platform store ID.
+	 *
+	 * @return int
+	 */
+	private function get_platform_store_id() {
+		return get_current_blog_id();
+	}
 
 	/**
 	 * Retrieves and stores the connected installation data.
@@ -1369,5 +1452,16 @@ class Connection {
 		}
 		wp_redirect( $redirect_url ); //phpcs:ignore WordPress.Security.SafeRedirect.wp_redirect_wp_redirect
 		exit;
+	}
+
+	/**
+	 * Stores the given Commerce Partner Integration ID.
+	 *
+	 * @since 3.5.0
+	 *
+	 * @param string $id the ID
+	 */
+	public function update_commerce_partner_integration_id( $id ) {
+		update_option( self::OPTION_COMMERCE_PARTNER_INTEGRATION_ID, $id );
 	}
 }
