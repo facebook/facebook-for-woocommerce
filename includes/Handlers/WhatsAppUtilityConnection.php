@@ -29,6 +29,55 @@ class WhatsAppUtilityConnection {
 
 
 	/**
+	 * Makes an API call to Template Library API
+	 *
+	 * @param string $bisu_token the BISU token received in the webhook
+	 */
+	public static function get_template_library_content( $bisu_token ) {
+		wc_get_logger()->info(
+			sprintf(
+				__( 'In Template Library Get API call ', 'facebook-for-woocommerce' ),
+			)
+		);
+		$base_url = array( self::GRAPH_API_BASE_URL, self::API_VERSION, 'message_template_library' );
+		$base_url = esc_url( implode( '/', $base_url ) );
+		$params   = array(
+			'name'         => 'order_management_4',
+			'language'     => 'en',
+			'access_token' => $bisu_token,
+		);
+		$url      = add_query_arg( $params, $base_url );
+		$options  = array(
+			'headers' => array(
+				'Authorization' => $bisu_token,
+			),
+			'body'    => array(),
+		);
+
+		$response    = wp_remote_request( $url, $options );
+		$status_code = wp_remote_retrieve_response_code( $response );
+		if ( is_wp_error( $response ) || 200 !== $status_code ) {
+			$error_data    = explode( "\n", wp_remote_retrieve_body( $response ) );
+			$error_message = $error_data[0];
+			wc_get_logger()->info(
+				sprintf(
+					/* translators: %s $error_message */
+					__( 'Template Library GET API call Failed %1$s ', 'facebook-for-woocommerce' ),
+					$error_message,
+				)
+			);
+			wp_send_json_error( $response, 'Template Library GET API call Failed' );
+		} else {
+			wc_get_logger()->info(
+				sprintf(
+					__( 'Template Library GET API call Succeeded', 'facebook-for-woocommerce' )
+				)
+			);
+			wp_send_json_success( $response, 'Finish Template Library API Call' );
+		}
+	}
+
+	/**
 	 * Makes an API call to Whatsapp Utility Message Connect API
 	 *
 	 * @param string $waba_id WABA ID
@@ -52,7 +101,7 @@ class WhatsAppUtilityConnection {
 			'body'    => array(),
 		);
 		$response     = wp_remote_post( $base_url, $options );
-		if ( is_wp_error( $response ) || wp_remote_retrieve_response_code( $response ) != 200 ) {
+		if ( is_wp_error( $response ) || 200 !== wp_remote_retrieve_response_code( $response ) ) {
 			$error_data    = explode( "\n", wp_remote_retrieve_body( $response ) );
 			$error_message = $error_data[0];
 			wc_get_logger()->info(
