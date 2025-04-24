@@ -1296,12 +1296,12 @@ class Admin {
 			<?php
 				woocommerce_wp_text_input(
 					array(
-						'id'       => \WC_Facebook_Product::FB_MPN,
-						'name'     => \WC_Facebook_Product::FB_MPN,
-						'label'    => __( 'Manufacturer Part Number (MPN)', 'facebook-for-woocommerce' ),
-						'value'    => $fb_mpn,
-						'class'    => 'enable-if-sync-enabled',
-						'desc_tip' => true,
+						'id'          => \WC_Facebook_Product::FB_MPN,
+						'name'        => \WC_Facebook_Product::FB_MPN,
+						'label'       => __( 'Manufacturer Part Number (MPN)', 'facebook-for-woocommerce' ),
+						'value'       => $fb_mpn,
+						'class'       => 'enable-if-sync-enabled',
+						'desc_tip'    => true,
 						'description' => __( 'Manufacturer Part Number (MPN) of the item', 'facebook-for-woocommerce' ),
 					)
 				);
@@ -1885,23 +1885,42 @@ class Admin {
 
 		// Then process existing attributes
 		foreach ( $attributes as $attribute ) {
-			$normalized_attr_name = strtolower( $attribute->get_name() );
+			$raw_name             = $attribute->get_name();
+			$clean_name           = str_replace( 'pa_', '', $raw_name );
+			$normalized_attr_name = strtolower( $clean_name );
 
-			// Special handling for color/colour
-			if ( 'color' === $normalized_attr_name || 'colour' === $normalized_attr_name ) {
-				$meta_key   = \WC_Facebook_Product::FB_COLOR;
-				$field_name = 'color';
+			// Get the actual display name/label of the attribute
+			$attribute_label  = wc_attribute_label( $raw_name );
+			$normalized_label = strtolower( $attribute_label );
+
+			// Find the target Facebook field for this attribute
+			$matched_facebook_field = null;
+			$field_name             = null;
+
+			// Try direct matching first
+			if ( isset( $attribute_map[ $normalized_attr_name ] ) ) {
+				$matched_facebook_field = $attribute_map[ $normalized_attr_name ];
+				$field_name             = $normalized_attr_name;
 			} else {
-				$meta_key   = $attribute_map[ $normalized_attr_name ] ?? null;
-				$field_name = $normalized_attr_name;
+				// Matching logic: Only match against exact label names, not partial matches
+				// We'll also accept 'pa_size' format for backward compatibility
+				foreach ( $attribute_map as $map_key => $map_value ) {
+					// Check for exact match with the attribute label
+					if ( $normalized_label === $map_key || 'pa_' . $map_key === $raw_name ) {
+						$matched_facebook_field = $map_value;
+						$field_name             = $map_key;
+						break;
+					}
+				}
 			}
 
-			if ( $meta_key ) {
+			// If we found a match, process the attribute values
+			if ( $matched_facebook_field ) {
 				$values = [];
 
 				if ( $attribute->is_taxonomy() ) {
 					$terms = $attribute->get_terms();
-					if ( $terms ) {
+					if ( $terms && ! is_wp_error( $terms ) ) {
 						$values = wp_list_pluck( $terms, 'name' );
 					}
 				} else {
@@ -1910,12 +1929,16 @@ class Admin {
 
 				if ( ! empty( $values ) ) {
 					// Join multiple values with a pipe character and spaces
-					$joined_values                  = implode( ' | ', $values );
-					$facebook_fields[ $field_name ] = $joined_values;
-					update_post_meta( $product_id, $meta_key, $joined_values );
+					$joined_values = implode( ' | ', $values );
+					// Convert 'colour' to 'color' in the output array's key for consistency
+					$output_field_name                     = ( 'colour' === $field_name ) ? 'color' : $field_name;
+					$facebook_fields[ $output_field_name ] = $joined_values;
+					update_post_meta( $product_id, $matched_facebook_field, $joined_values );
 				} else {
-					delete_post_meta( $product_id, $meta_key );
-					$facebook_fields[ $field_name ] = '';
+					delete_post_meta( $product_id, $matched_facebook_field );
+					// Convert 'colour' to 'color' in the output array's key for consistency
+					$output_field_name                     = ( 'colour' === $field_name ) ? 'color' : $field_name;
+					$facebook_fields[ $output_field_name ] = '';
 				}
 			}
 		}
