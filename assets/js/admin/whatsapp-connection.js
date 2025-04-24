@@ -11,10 +11,10 @@ jQuery( document ).ready( function( $ ) {
     if (facebook_for_woocommerce_whatsapp_onboarding_progress.whatsapp_onboarding_complete) {
         $('#wc-fb-whatsapp-connect-success').show();
         $('#wc-fb-whatsapp-connect-inprogress').hide();
-      } else {
+    } else {
         $('#wc-fb-whatsapp-connect-success').hide();
         $('#wc-fb-whatsapp-connect-inprogress').show();
-      }
+    }
 
     // handle the whatsapp connect button click should open hosted ES flow
 	$( '#woocommerce-whatsapp-connection' ).click( function( event ) {
@@ -33,7 +33,6 @@ jQuery( document ).ready( function( $ ) {
 
             // check if the response is success (i.e. onboarding is completed)
             if ( response.success ) {
-                // TODO: if success, update the UI with the onboarding succeeded
 				console.log( 'success', response );
                 $('#wc-fb-whatsapp-connect-inprogress').remove();
                 $('#wc-fb-whatsapp-connect-success').show();
