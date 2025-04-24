@@ -111,6 +111,7 @@ class Whatsapp_Utility extends Abstract_Settings_Screen {
 			array(
 				'ajax_url' => admin_url( 'admin-ajax.php' ),
 				'nonce'    => wp_create_nonce( 'facebook-for-wc-whatsapp-billing-nonce' ),
+				'consent_collection_enabled'   => $consent_collection_enabled,
 				'i18n'     => array(
 					'result' => true,
 				),
@@ -210,7 +211,8 @@ class Whatsapp_Utility extends Abstract_Settings_Screen {
 		<div class="divider"></div>
 		<div class="card-item">
 			<div class="card-content-icon">
-				<div id="wc-fb-whatsapp-payment-notstarted" class="custom-dashicon-circle"></div>
+				<div id="wc-fb-whatsapp-billing-notstarted" class="custom-dashicon-circle" style="display: none;"></div>
+				<div id="wc-fb-whatsapp-billing-inprogress" class="custom-dashicon-halfcircle" style="display: none;" ></div>
 				<div class="card-content">
 					<h2><?php esc_html_e( 'Add a payment method', 'facebook-for-woocommerce' ); ?></h2>
 					<p><?php esc_html_e( 'Review and update your payment method in Billings & payments.', 'facebook-for-woocommerce' ); ?>

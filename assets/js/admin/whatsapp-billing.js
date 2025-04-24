@@ -8,6 +8,16 @@
  */
 
 jQuery( document ).ready( function( $ ) {
+  	var $connectInprogress = $('#wc-fb-whatsapp-billing-inprogress');
+  	var $connectNotstarted = $('#wc-fb-whatsapp-billing-notstarted');
+		if (facebook_for_woocommerce_whatsapp_consent.consent_collection_enabled) {
+			$connectInprogress.show();
+			$connectNotstarted.hide();
+		} else {
+			$connectInprogress.hide();
+			$connectNotstarted.show();
+		}
+
     // handle the whatsapp add payment button click should open billing flow in Meta
     $('#wc-whatsapp-add-payment').click(function(event) {
 
