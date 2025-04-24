@@ -61,6 +61,9 @@ class AJAX {
 		// fetch configured library template info
 		add_action( 'wp_ajax_wc_facebook_whatsapp_fetch_library_template_info', array( $this, 'whatsapp_fetch_library_template_info' ) );
 
+    // action to fetch required info and make api call to meta to finish onboarding
+		add_action( 'wp_ajax_wc_facebook_whatsapp_finish_onboarding', array( $this, 'wc_facebook_whatsapp_finish_onboarding' ) );
+
 		// search a product's attributes for the given term
 		add_action( 'wp_ajax_' . self::ACTION_SEARCH_PRODUCT_ATTRIBUTES, array( $this, 'admin_search_product_attributes' ) );
 	}
@@ -208,6 +211,34 @@ class AJAX {
 
 		wp_send_json_success( $response );
 	}
+
+	/**
+	 * Get data for for finish onboarding call and make api call.
+	 *
+	 * @internal
+	 *
+	 * @since 1.10.0
+	 */
+	public function wc_facebook_whatsapp_finish_onboarding() {
+		facebook_for_woocommerce()->log( 'Fetching data to make connect onboarding call on finish button click' );
+		if ( ! check_ajax_referer( 'facebook-for-wc-whatsapp-finish-nonce', 'nonce', false ) ) {
+			wp_send_json_error( 'Invalid security token sent.' );
+		}
+		$external_business_id = get_option( 'wc_facebook_external_business_id', null );
+		$wacs_id              = get_option( 'wc_facebook_wa_integration_wacs_id', null );
+		$waba_id              = get_option( 'wc_facebook_wa_integration_waba_id', null );
+		$bisu_token           = get_option( 'wc_facebook_wa_integration_bisu_access_token', null );
+		if ( empty( $external_business_id ) || empty( $wacs_id ) || empty( $waba_id ) || empty( $bisu_token ) ) {
+			wc_get_logger()->info(
+				sprintf(
+					__( 'Onboarding is not complete or has failed.', 'facebook-for-woocommerce' ),
+				)
+			);
+			wp_send_json_error( 'Onboarding is not complete or has failed.' );
+		}
+		WhatsAppUtilityConnection::wc_facebook_whatsapp_connect_utility_messages_call( $waba_id, $wacs_id, $external_business_id, $bisu_token );
+	}
+
 
 	/**
 	 * Checks if the onboarding for whatsapp is complete once business has initiated onboarding.
