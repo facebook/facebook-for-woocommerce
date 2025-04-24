@@ -182,7 +182,7 @@ class Whatsapp_Utility extends Abstract_Settings_Screen {
 	 */
 	public function render() {
 		$view = $this->get_current_view();
-		if ( 'utility_settings' === $view ) {
+		if ( true ) {
 			$this->render_utility_message_overview();
 		} elseif ( 'manage_event' === $view ) {
 			$this->render_manage_events_view();
@@ -361,28 +361,26 @@ class Whatsapp_Utility extends Abstract_Settings_Screen {
 		<div class="onboarding-card">
 			<div class="card-item event-config">
 					<div>
-						<h3><b><?php esc_html_e( 'Add WhatsApp option at checkout', 'facebook-for-woocommerce' ); ?></b></h3>
-						<p><?php esc_html_e( 'Adds a checkbox to your store\'s checkout page so customers can get updates. You can preview what this looks like in checkout preview.', 'facebook-for-woocommerce' ); ?></p>
-					</div>
-					<div class="divider"></div>
-				</div>
-				<div class="divider"></div>
-				<div class="card-item event-config">
-					<div>
-						<h4><b><?php esc_html_e( 'Checkbox', 'facebook-for-woocommerce' ); ?></b></h4>
+						<div class="event-config-heading-container">
+							<h3><?php esc_html_e( 'Checkbox', 'facebook-for-woocommerce' ); ?></h3>
+							<div class="event-config-status on-status">
+								<?php esc_html_e( 'On', 'facebook-for-woocommerce' ); ?>
+							</div>
+						</div>
 						<p><?php esc_html_e( 'Removing this means you won\'t be able to send messages to your customers.', 'facebook-for-woocommerce' ); ?></p>
-					</div>
+					</div>	
+					</div>	
 					<div class="event-config-manage-button">
-					<a
-						id="wc-whatsapp-collect-consent-remove"
-						class="button"
-						href="#"><?php esc_html_e( 'Remove', 'facebook-for-woocommerce' ); ?></a>
+						<a
+							id="wc-whatsapp-collect-consent-remove"
+							class="event-config-manage-button button"
+							href="#"><?php esc_html_e( 'Remove', 'facebook-for-woocommerce' ); ?></a>
 					</div>
 				</div>
-			</div>
 		</div>
 		<?php
 	}
+
 
 	/**
 	 * Renders the view to manage WhatsApp Utility Events.
