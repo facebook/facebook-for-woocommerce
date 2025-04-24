@@ -7,20 +7,27 @@
  * @package FacebookCommerce
  */
 
-jQuery( document ).ready( function( $ ) {
-    // handle the whatsapp consent collect button click remove action.
-	$( '#wc-whatsapp-collect-consent-remove' ).click( function( event ) {
+jQuery(document).ready(function($) {
+    // Handle the WhatsApp consent collect button click remove action.
+    $('#wc-whatsapp-collect-consent-remove').click(function(event) {
+        event.preventDefault(); // Prevent the default action of the link.
 
-        $.post( facebook_for_woocommerce_whatsapp_consent_remove.ajax_url, {
-			action: 'wc_facebook_whatsapp_consent_collection_disable',
-			nonce:  facebook_for_woocommerce_whatsapp_consent_remove.nonce
-		}, function ( response ) {
+        var $button = $(this); // The clicked button
+        var $statusElement = $button.closest('.event-config').find('.event-config-status');
 
-            if ( response.success ) {
-				console.log( 'success', response ); 
-			}
-		} );
-
+        $.post(facebook_for_woocommerce_whatsapp_consent_remove.ajax_url, {
+            action: 'wc_facebook_whatsapp_consent_collection_disable',
+            nonce: facebook_for_woocommerce_whatsapp_consent_remove.nonce
+        }, function(response) {
+            if (response.success) {
+                // Change the status from "on-status" to "off-status" for the specific element.
+                $statusElement.removeClass('on-status').addClass('off-status');
+                // Update the text to "Off".
+                $statusElement.text('Off');
+				// Update button text to "Add".
+				$button.text('Add');
+				console.log('success', response);
+            }
+        });
     });
-
-} );
+});

@@ -342,13 +342,12 @@ class Whatsapp_Utility extends Abstract_Settings_Screen {
 			<div class="card-item event-config">
 					<div>
 						<div class="event-config-heading-container">
-							<h3><?php esc_html_e( 'Checkbox', 'facebook-for-woocommerce' ); ?></h3>
+							<h3><?php esc_html_e( 'Add WhatsApp option at checkout', 'facebook-for-woocommerce' ); ?></h3>
 							<div class="event-config-status on-status">
 								<?php esc_html_e( 'On', 'facebook-for-woocommerce' ); ?>
 							</div>
 						</div>
 						<p><?php esc_html_e( 'Removing this means you won\'t be able to send messages to your customers.', 'facebook-for-woocommerce' ); ?></p>
-					</div>	
 					</div>	
 					<div class="event-config-manage-button">
 						<a
