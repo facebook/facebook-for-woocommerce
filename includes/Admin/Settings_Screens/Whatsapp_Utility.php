@@ -123,8 +123,10 @@ class Whatsapp_Utility extends Abstract_Settings_Screen {
 				array(
 					'ajax_url' => admin_url( 'admin-ajax.php' ),
 					'nonce'    => wp_create_nonce( 'facebook-for-wc-whatsapp-finish-nonce' ),
-					'i18n'     => array(
-						'result' => true,
+					'i18n'     => array( // will generate i18 pot translation
+						'payment_setup_error'         => __( 'To proceed, add a payment method to make future purchases on your accounts.', 'facebook-for-woocommerce' ),
+						'onboarding_incomplete_error' => __( 'Whatsapp Business Account Onboarding is not complete or has failed.', 'facebook-for-woocommerce' ),
+						'generic_error'               => __( 'Something went wrong. Please try again.', 'facebook-for-woocommerce' ),
 					),
 				)
 			);
@@ -211,6 +213,9 @@ class Whatsapp_Utility extends Abstract_Settings_Screen {
 					href="#"
 				><?php esc_html_e( 'Review', 'facebook-for-woocommerce' ); ?></a>
 			</div>
+		</div>
+		<div class="error-notice-wrapper">
+			<div id="payment-method-error-notice" style="display: none;"></div>
 		</div>
 		<div class="divider"></div>
 		<div class="card-item">
