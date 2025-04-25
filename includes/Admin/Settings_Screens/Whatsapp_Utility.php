@@ -173,8 +173,8 @@ class Whatsapp_Utility extends Abstract_Settings_Screen {
 		<div class="divider"></div>
 		<div class="card-item">
 			<div class="card-content-icon">
-				<div id="wc-fb-whatsapp-connect-success" class="custom-dashicon-check" style="display: none;"></div>
-				<div id="wc-fb-whatsapp-connect-inprogress" class="custom-dashicon-halfcircle" style="display: none;" ></div>
+				<div id="wc-fb-whatsapp-connect-success" class="custom-dashicon-check fbwa-hidden-element"></div>
+				<div id="wc-fb-whatsapp-connect-inprogress" class="custom-dashicon-halfcircle fbwa-hidden-element"></div>
 				<div class="card-content">
 					<h2><?php esc_html_e( 'Connect your WhatApp Business account', 'facebook-for-woocommerce' ); ?></h2>
 					<p><?php esc_html_e( 'Allows WooCommerce to connect to your WhatsApp account. ', 'facebook-for-woocommerce' ); ?></p>
@@ -191,9 +191,9 @@ class Whatsapp_Utility extends Abstract_Settings_Screen {
 		<div class="divider"></div>
 		<div class="card-item">
 			<div class="card-content-icon">
-				<div id="wc-fb-whatsapp-consent-collection-notstarted" class="custom-dashicon-circle" style="display: none;"></div>
-				<div id="wc-fb-whatsapp-consent-collection-success" class="custom-dashicon-check" style="display: none;"></div>
-				<div id="wc-fb-whatsapp-consent-collection-inprogress" class="custom-dashicon-halfcircle" style="display: none;" ></div>
+				<div id="wc-fb-whatsapp-consent-collection-notstarted" class="custom-dashicon-circle fbwa-hidden-element"></div>
+				<div id="wc-fb-whatsapp-consent-collection-success" class="custom-dashicon-check fbwa-hidden-element"></div>
+				<div id="wc-fb-whatsapp-consent-collection-inprogress" class="custom-dashicon-halfcircle fbwa-hidden-element"></div>
 				<div class="card-content">
 					<h2><?php esc_html_e( 'Add WhatsApp option at checkout', 'facebook-for-woocommerce' ); ?></h2>
 					<p><?php esc_html_e( 'Adds a checkbox to your store’s checkout page that lets customers request updates about their order on WhatsApp. This allows you to communicate with customers after they make a purchase. You can remove this anytime.', 'facebook-for-woocommerce' ); ?></p>
@@ -232,7 +232,7 @@ class Whatsapp_Utility extends Abstract_Settings_Screen {
 			</div>
 		</div>
 		<div class="error-notice-wrapper">
-			<div id="payment-method-error-notice" style="display: none;"></div>
+			<div id="payment-method-error-notice fbwa-hidden-element"></div>
 		</div>
 		<div class="divider"></div>
 		<div class="card-item">

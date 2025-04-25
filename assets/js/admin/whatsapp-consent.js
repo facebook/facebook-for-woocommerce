@@ -9,22 +9,16 @@
 
 jQuery( document ).ready( function( $ ) {
 	var $consentCollectSuccess = $('#wc-fb-whatsapp-consent-collection-success');
-  	var $consentCollectInprogress = $('#wc-fb-whatsapp-consent-collection-inprogress');
-  	var $consentCollectNotstarted = $('#wc-fb-whatsapp-consent-collection-notstarted');
+  	var $consentCollectInProgress = $('#wc-fb-whatsapp-consent-collection-inprogress');
+  	var $consentCollectNotStarted = $('#wc-fb-whatsapp-consent-collection-notstarted');
 	if (facebook_for_woocommerce_whatsapp_consent.whatsapp_onboarding_complete) {
 		if (facebook_for_woocommerce_whatsapp_consent.consent_collection_enabled) {
-			$consentCollectSuccess.show();
-			$consentCollectInprogress.hide();
-			$consentCollectNotstarted.hide();
+			showConsentCollectionProgressIcon(true, false, false);
 		} else {
-			$consentCollectSuccess.hide();
-			$consentCollectInprogress.show();
-			$consentCollectNotstarted.hide();
+			showConsentCollectionProgressIcon(false, true, false);
 		}
     } else {
-			$consentCollectSuccess.hide();
-			$consentCollectInprogress.hide();
-			$consentCollectNotstarted.show();
+		showConsentCollectionProgressIcon(false, false, true);
     }
 
     // handle the whatsapp consent collect button click should save setting to wp_options table
@@ -36,12 +30,30 @@ jQuery( document ).ready( function( $ ) {
 		}, function ( response ) {
             if ( response.success ) {
 				console.log( 'success', response );
-				$consentCollectSuccess.show();
-				$consentCollectInprogress.hide();
-				$consentCollectNotstarted.hide();
+				showConsentCollectionProgressIcon(true, false, false);
 			}
 		} );
 
     });
+
+	function showConsentCollectionProgressIcon(success, inProgress, notStarted) {
+		if (success) {
+		  $consentCollectSuccess.show();
+		} else {
+		  $consentCollectSuccess.hide();
+		}
+
+		if (inProgress) {
+		  $consentCollectInProgress.show();
+		} else {
+		  $consentCollectInProgress.hide();
+		}
+
+		if (notStarted) {
+		  $consentCollectNotStarted.show();
+		} else {
+		  $consentCollectNotStarted.hide();
+		}
+	  }
 
 } );
