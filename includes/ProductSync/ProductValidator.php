@@ -111,31 +111,17 @@ class ProductValidator {
 		return null;
 	}
 
-	public function validate_base() {
-		$this->validate_sync_enabled_globally();
-		$this->validate_product_status();
-		$this->validate_product_visibility();
-		$this->validate_product_terms();
-	}
-
 	/**
 	 * Validate whether the product should be synced to Facebook.
 	 *
 	 * @throws ProductExcludedException If product should not be synced.
 	 */
 	public function validate() {
-		$this->validate_base();
+		$this->validate_sync_enabled_globally();
 		$this->validate_product_sync_field();
-	}
-
-	/**
-	 * Validate whether the product should be synced to Facebook for background jobs.
-	 *
-	 * @throws ProductExcludedException If product should not be synced.
-	 */
-	public function validate_background_jobs() {
-		$this->validate_base();
-		$this->validate_product_sync_field_for_background_jobs();
+		$this->validate_product_status();
+		$this->validate_product_visibility();
+		$this->validate_product_terms();
 	}
 
 	/**
@@ -323,38 +309,6 @@ class ProductValidator {
 	 * @throws ProductExcludedException If product should not be synced.
 	 */
 	protected function validate_product_sync_field() {
-		$invalid_exception = new ProductExcludedException( __( 'Sync disabled in product field.', 'facebook-for-woocommerce' ) );
-
-		/**
-		 * Filters whether a product should be synced to FB.
-		 *
-		 * @since 2.6.26
-		 *
-		 * @param WC_Product $product the product object.
-		 */
-		if ( ! apply_filters( 'wc_facebook_should_sync_product', true, $this->product ) ) {
-			throw new ProductExcludedException( __( 'Product excluded by wc_facebook_should_sync_product filter.', 'facebook-for-woocommerce' ) );
-		}
-
-		/**
-		 * This validation will be used for product updates.
-		 * Hence we are only condidering the value of the parent and not the variation
-		 */
-		$sync_status = $this->product->get_meta( self::SYNC_ENABLED_META_KEY ) === 'yes';
-
-		if ( $sync_status ) {
-			return;
-		} else {
-			throw $invalid_exception;
-		}
-	}
-
-	/**
-	 * Validate if the product is excluded from at the "product level" (product meta value).
-	 *
-	 * @throws ProductExcludedException If product should not be synced.
-	 */
-	protected function validate_product_sync_field_for_background_jobs() {
 		$invalid_exception = new ProductExcludedException( __( 'Sync disabled in product field.', 'facebook-for-woocommerce' ) );
 
 		/**
