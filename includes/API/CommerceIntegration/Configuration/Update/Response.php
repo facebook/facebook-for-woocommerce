@@ -27,7 +27,7 @@ class Response extends ApiResponse {
 	 * Returns the commerce partner integration ID.
 	 *
 	 * @return string
-	 * @since 3.5.0
+	 * @since 3.4.8
 	 */
 	public function get_commerce_partner_integration_id(): string {
 		return $this->get_id() ?? '';
