@@ -189,7 +189,7 @@ class Connection {
 	/**
 	 * Refreshes the client side info and configuration.
 	 *
-	 * @since 3.4.4
+	 * @since 3.4.8
 	 */
 	public function repair_or_update_commerce_integration_data() {
 		// bail if not connected
@@ -1472,7 +1472,7 @@ class Connection {
 	/**
 	 * Stores the given Commerce Partner Integration ID.
 	 *
-	 * @since 3.5.0
+	 * @since 3.4.
 	 *
 	 * @param string $id the ID
 	 */
