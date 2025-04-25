@@ -27,7 +27,6 @@ class Whatsapp_Utility extends Abstract_Settings_Screen {
 	/** @var string screen ID */
 	const ID = 'whatsapp_utility';
 
-
 	/**
 	 * Whatsapp Utility constructor.
 	 */
@@ -66,7 +65,8 @@ class Whatsapp_Utility extends Abstract_Settings_Screen {
 			array( 'jquery', 'jquery-blockui', 'jquery-tiptip', 'wc-enhanced-select' ),
 			\WC_Facebookcommerce::PLUGIN_VERSION
 		);
-		$whatsapp_connected = get_option( 'wc_facebook_wa_integration_waba_id', null ) != null;
+		$waba_id            = get_option( 'wc_facebook_wa_integration_waba_id', '' );
+		$whatsapp_connected = ! empty( $waba_id );
 		wp_localize_script(
 			'facebook-for-woocommerce-connect-whatsapp',
 			'facebook_for_woocommerce_whatsapp_onboarding_progress',
@@ -118,6 +118,23 @@ class Whatsapp_Utility extends Abstract_Settings_Screen {
 			)
 		);
 		wp_enqueue_script(
+			'facebook-for-woocommerce-whatsapp-events',
+			facebook_for_woocommerce()->get_asset_build_dir_url() . '/admin/whatsapp-events.js',
+			array( 'jquery', 'jquery-blockui', 'jquery-tiptip', 'wc-enhanced-select' ),
+			\WC_Facebookcommerce::PLUGIN_VERSION
+		);
+		wp_localize_script(
+			'facebook-for-woocommerce-whatsapp-events',
+			'facebook_for_woocommerce_whatsapp_events',
+			array(
+				'ajax_url' => admin_url( 'admin-ajax.php' ),
+				'nonce'    => wp_create_nonce( 'facebook-for-wc-whatsapp-events-nonce' ),
+				'i18n'     => array(
+					'result' => true,
+				),
+			)
+		);
+		wp_enqueue_script(
 			'facebook-for-woocommerce-whatsapp-finish',
 			facebook_for_woocommerce()->get_asset_build_dir_url() . '/admin/whatsapp-finish.js',
 			array( 'jquery', 'jquery-blockui', 'jquery-tiptip', 'wc-enhanced-select' ),
@@ -136,6 +153,23 @@ class Whatsapp_Utility extends Abstract_Settings_Screen {
 					),
 				)
 			);
+		wp_enqueue_script(
+			'facebook-for-woocommerce-whatsapp-consent-remove',
+			facebook_for_woocommerce()->get_asset_build_dir_url() . '/admin/whatsapp-consent-remove.js',
+			array( 'jquery', 'jquery-blockui', 'jquery-tiptip', 'wc-enhanced-select' ),
+			\WC_Facebookcommerce::PLUGIN_VERSION
+		);
+		wp_localize_script(
+			'facebook-for-woocommerce-whatsapp-consent-remove',
+			'facebook_for_woocommerce_whatsapp_consent_remove',
+			array(
+				'ajax_url' => admin_url( 'admin-ajax.php' ),
+				'nonce'    => wp_create_nonce( 'facebook-for-wc-whatsapp-consent-disable-nonce' ),
+				'i18n'     => array(
+					'result' => true,
+				),
+			)
+		);
 	}
 
 
@@ -153,7 +187,6 @@ class Whatsapp_Utility extends Abstract_Settings_Screen {
 		} else {
 			$this->render_utility_message_onboarding();
 		}
-
 		parent::render();
 	}
 
@@ -174,8 +207,8 @@ class Whatsapp_Utility extends Abstract_Settings_Screen {
 		<div class="divider"></div>
 		<div class="card-item">
 			<div class="card-content-icon">
-				<div id="wc-fb-whatsapp-connect-success" class="custom-dashicon-check" style="display: none;"></div>
-				<div id="wc-fb-whatsapp-connect-inprogress" class="custom-dashicon-halfcircle" style="display: none;" ></div>
+				<div id="wc-fb-whatsapp-connect-success" class="custom-dashicon-check fbwa-hidden-element"></div>
+				<div id="wc-fb-whatsapp-connect-inprogress" class="custom-dashicon-halfcircle fbwa-hidden-element"></div>
 				<div class="card-content">
 					<h2><?php esc_html_e( 'Connect your WhatApp Business account', 'facebook-for-woocommerce' ); ?></h2>
 					<p><?php esc_html_e( 'Allows WooCommerce to connect to your WhatsApp account. ', 'facebook-for-woocommerce' ); ?></p>
@@ -192,9 +225,9 @@ class Whatsapp_Utility extends Abstract_Settings_Screen {
 		<div class="divider"></div>
 		<div class="card-item">
 			<div class="card-content-icon">
-				<div id="wc-fb-whatsapp-consent-collection-notstarted" class="custom-dashicon-circle" style="display: none;"></div>
-				<div id="wc-fb-whatsapp-consent-collection-success" class="custom-dashicon-check" style="display: none;"></div>
-				<div id="wc-fb-whatsapp-consent-collection-inprogress" class="custom-dashicon-halfcircle" style="display: none;" ></div>
+				<div id="wc-fb-whatsapp-consent-collection-notstarted" class="custom-dashicon-circle fbwa-hidden-element"></div>
+				<div id="wc-fb-whatsapp-consent-collection-success" class="custom-dashicon-check fbwa-hidden-element"></div>
+				<div id="wc-fb-whatsapp-consent-collection-inprogress" class="custom-dashicon-halfcircle fbwa-hidden-element"></div>
 				<div class="card-content">
 					<h2><?php esc_html_e( 'Add WhatsApp option at checkout', 'facebook-for-woocommerce' ); ?></h2>
 					<p><?php esc_html_e( 'Adds a checkbox to your store’s checkout page that lets customers request updates about their order on WhatsApp. This allows you to communicate with customers after they make a purchase. You can remove this anytime.', 'facebook-for-woocommerce' ); ?></p>
@@ -234,7 +267,7 @@ class Whatsapp_Utility extends Abstract_Settings_Screen {
 			</div>
 		</div>
 		<div class="error-notice-wrapper">
-			<div id="payment-method-error-notice" style="display: none;"></div>
+			<div id="payment-method-error-notice fbwa-hidden-element"></div>
 		</div>
 		<div class="divider"></div>
 		<div class="card-item">
@@ -257,43 +290,58 @@ class Whatsapp_Utility extends Abstract_Settings_Screen {
 		?>
 		<div class="onboarding-card">
 			<div class="card-item">
-				<h1><b><?php esc_html_e( 'Utility Messages', 'facebook-for-woocommerce' ); ?></b></h1>
-					<p><?php esc_html_e( 'Manage which utility messages you want to send to customers. You can check performance of these messages in Whatsapp Manager.', 'facebook-for-woocommerce' ); ?>
-						<a
-							id="woocommerce-whatsapp-manager-insights"
-							href="#"><?php esc_html_e( 'View insights', 'facebook-for-woocommerce' ); ?></a>
-					</p>
+				<h1><?php esc_html_e( 'Utility Messages', 'facebook-for-woocommerce' ); ?></h1>
+				<p><?php esc_html_e( 'Manage which utility messages you want to send to customers. You can check performance of these messages in Whatsapp Manager.', 'facebook-for-woocommerce' ); ?>
+					<a
+						id="woocommerce-whatsapp-manager-insights"
+						href="#"><?php esc_html_e( 'View insights', 'facebook-for-woocommerce' ); ?></a>
+				</p>
 			</div>
 			<div class="divider"></div>
 			<div class="card-item event-config">
 				<div>
-					<h3><b><?php esc_html_e( 'Order confirmation', 'facebook-for-woocommerce' ); ?></b></h3>
+					<div class="event-config-heading-container">
+						<h3><?php esc_html_e( 'Order confirmation', 'facebook-for-woocommerce' ); ?></h3>
+						<div class="event-config-status on-status">
+							<?php esc_html_e( 'On', 'facebook-for-woocommerce' ); ?>
+						</div>
+					</div>
 					<p><?php esc_html_e( 'Send a confirmation to customers after they\'ve placed an order.', 'facebook-for-woocommerce' ); ?></p>
 				</div>
 				<div class="event-config-manage-button">
 					<a
 						id="woocommerce-whatsapp-manage-order-confirmation"
 						class="event-config-manage-button button"
-						href="<?php echo esc_html( admin_url( 'admin.php?page=' . self::PAGE_ID . '&tab=' . self::ID . '&view=manage_event' ) ); ?>"><?php esc_html_e( 'Manage', 'facebook-for-woocommerce' ); ?></a>
-				</div>
-			</div>
-			<div class="divider"></div>
-			<div class="card-item event-config">
-				<div>
-					<h3><b><?php esc_html_e( 'Order shipped', 'facebook-for-woocommerce' ); ?></b></h3>
-					<p><?php esc_html_e( 'Send a confirmation to customers when their order is shipped.', 'facebook-for-woocommerce' ); ?></p>
-				</div>
-				<div class="event-config-manage-button">
-					<a
-						id="woocommerce-whatsapp-manage-order-shipped"
-						class="button"
 						href="#"><?php esc_html_e( 'Manage', 'facebook-for-woocommerce' ); ?></a>
 				</div>
 			</div>
 			<div class="divider"></div>
 			<div class="card-item event-config">
 				<div>
-					<h3><b><?php esc_html_e( 'Order refunded', 'facebook-for-woocommerce' ); ?></b></h3>
+					<div class="event-config-heading-container">
+						<h3><?php esc_html_e( 'Order shipped', 'facebook-for-woocommerce' ); ?></h3>
+						<div class="event-config-status">
+							<?php esc_html_e( 'Off', 'facebook-for-woocommerce' ); ?>
+						</div>
+					</div>
+					<p><?php esc_html_e( 'Send a confirmation to customers when their order is shipped.', 'facebook-for-woocommerce' ); ?></p>
+				</div>
+				<div class="event-config-manage-button">
+					<a
+						id="woocommerce-whatsapp-manage-order-shipped"
+						class="event-config-manage-button button"
+						href="#"><?php esc_html_e( 'Manage', 'facebook-for-woocommerce' ); ?></a>
+				</div>
+			</div>
+			<div class="divider"></div>
+			<div class="card-item event-config">
+				<div>
+					<div class="event-config-heading-container">
+						<h3><?php esc_html_e( 'Order refunded', 'facebook-for-woocommerce' ); ?></h3>
+						<div class="event-config-status">
+							<?php esc_html_e( 'Off', 'facebook-for-woocommerce' ); ?>
+						</div>
+					</div>
 					<p><?php esc_html_e( 'Send a confirmation to customers when an order is refunded.', 'facebook-for-woocommerce' ); ?></p>
 				</div>
 				<div class="event-config-manage-button">
@@ -303,9 +351,31 @@ class Whatsapp_Utility extends Abstract_Settings_Screen {
 						href="#"><?php esc_html_e( 'Manage', 'facebook-for-woocommerce' ); ?></a>
 				</div>
 			</div>
+			<div class="divider"></div>
+		</div>
+		<div class="onboarding-card">
+			<div class="card-item event-config">
+					<div>
+						<div class="event-config-heading-container">
+							<h3><?php esc_html_e( 'Checkbox', 'facebook-for-woocommerce' ); ?></h3>
+							<div class="event-config-status on-status">
+								<?php esc_html_e( 'On', 'facebook-for-woocommerce' ); ?>
+							</div>
+						</div>
+						<p><?php esc_html_e( 'Removing this means you won\'t be able to send messages to your customers.', 'facebook-for-woocommerce' ); ?></p>
+					</div>
+					</div>
+					<div class="event-config-manage-button">
+						<a
+							id="wc-whatsapp-collect-consent-remove"
+							class="event-config-manage-button button"
+							href="#"><?php esc_html_e( 'Remove', 'facebook-for-woocommerce' ); ?></a>
+					</div>
+				</div>
 		</div>
 		<?php
 	}
+
 
 	/**
 	 * Renders the view to manage WhatsApp Utility Events.

@@ -28,9 +28,9 @@
     color: white; /* Make the checkmark white */
     text-shadow:
         -4px 0 #1a805b,
-         4px 0 #1a805b,
-         0 -2px #1a805b,
-         0 2px #1a805b; /* Increase shadow offsets to thin the checkmark more */
+        4px 0 #1a805b,
+        0 -2px #1a805b,
+        0 2px #1a805b; /* Increase shadow offsets to thin the checkmark more */
 }
 
 .custom-dashicon-circle {
@@ -84,9 +84,30 @@
     display: flex;
     flex-direction: row;
 }
+.event-config-heading-container {
+    display: flex;
+    flex-direction: row;
+}
 .event-config-manage-button {
     padding: 20px;
     margin-left: auto;
+}
+.event-config-status {
+    background-color: #FFFFFF;
+    border: 1px solid #9f9f9f;
+    color: #9f9f9f;
+    padding: 4px 10px;
+    text-align: center;
+    display: inline-block;
+    border-radius: 16px;
+    margin-left: 10px;
+    font-size: small;
+    align-self: center;
+}
+.on-status {
+    background-color: #00A32A;
+    color: #FFFFFF;
+    border:none;
 }
 .manage-event-template-block {
     border: 1px solid #c4c3c3;
@@ -121,5 +142,7 @@
 }
 .notice-error p {
     margin: 5px;
-
+}
+.fbwa-hidden-element {
+    display: none;
 }
