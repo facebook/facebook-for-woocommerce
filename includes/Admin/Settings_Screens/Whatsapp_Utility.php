@@ -65,7 +65,8 @@ class Whatsapp_Utility extends Abstract_Settings_Screen {
 			array( 'jquery', 'jquery-blockui', 'jquery-tiptip', 'wc-enhanced-select' ),
 			\WC_Facebookcommerce::PLUGIN_VERSION
 		);
-		$whatsapp_connected = get_option( 'wc_facebook_wa_integration_waba_id', null ) != null;
+		$waba_id            = get_option( 'wc_facebook_wa_integration_waba_id', '' );
+		$whatsapp_connected = ! empty( $waba_id );
 		wp_localize_script(
 			'facebook-for-woocommerce-connect-whatsapp',
 			'facebook_for_woocommerce_whatsapp_onboarding_progress',
@@ -355,8 +356,8 @@ class Whatsapp_Utility extends Abstract_Settings_Screen {
 							</div>
 						</div>
 						<p><?php esc_html_e( 'Removing this means you won\'t be able to send messages to your customers.', 'facebook-for-woocommerce' ); ?></p>
-					</div>	
-					</div>	
+					</div>
+					</div>
 					<div class="event-config-manage-button">
 						<a
 							id="wc-whatsapp-collect-consent-remove"

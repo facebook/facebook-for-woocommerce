@@ -28,9 +28,9 @@
     color: white; /* Make the checkmark white */
     text-shadow:
         -4px 0 #1a805b,
-         4px 0 #1a805b,
-         0 -2px #1a805b,
-         0 2px #1a805b; /* Increase shadow offsets to thin the checkmark more */
+        4px 0 #1a805b,
+        0 -2px #1a805b,
+        0 2px #1a805b; /* Increase shadow offsets to thin the checkmark more */
 }
 
 .custom-dashicon-circle {
