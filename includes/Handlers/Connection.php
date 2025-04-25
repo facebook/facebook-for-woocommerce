@@ -898,7 +898,7 @@ class Connection {
 	/**
 	 * Gets Commerce Partner Integration ID value.
 	 *
-	 * @since 3.5.0
+	 * @since 3.4.8
 	 *
 	 * @return string
 	 */
