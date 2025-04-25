@@ -85,3 +85,6 @@
 .manage-event-button {
     margin-left: 20px;
 }
+.fbwa-hidden-element {
+    display: none;
+}
