@@ -133,17 +133,19 @@ class Whatsapp_Utility extends Abstract_Settings_Screen {
 			array( 'jquery', 'jquery-blockui', 'jquery-tiptip', 'wc-enhanced-select' ),
 			\WC_Facebookcommerce::PLUGIN_VERSION
 		);
-		wp_localize_script(
-			'facebook-for-woocommerce-whatsapp-finish',
-			'facebook_for_woocommerce_whatsapp_finish',
-			array(
-				'ajax_url' => admin_url( 'admin-ajax.php' ),
-				'nonce'    => wp_create_nonce( 'facebook-for-wc-whatsapp-finish-nonce' ),
-				'i18n'     => array(
-					'result' => true,
-				),
-			)
-		);
+			wp_localize_script(
+				'facebook-for-woocommerce-whatsapp-finish',
+				'facebook_for_woocommerce_whatsapp_finish',
+				array(
+					'ajax_url' => admin_url( 'admin-ajax.php' ),
+					'nonce'    => wp_create_nonce( 'facebook-for-wc-whatsapp-finish-nonce' ),
+					'i18n'     => array( // will generate i18 pot translation
+						'payment_setup_error'         => __( 'To proceed, add a payment method to make future purchases on your accounts.', 'facebook-for-woocommerce' ),
+						'onboarding_incomplete_error' => __( 'Whatsapp Business Account Onboarding is not complete or has failed.', 'facebook-for-woocommerce' ),
+						'generic_error'               => __( 'Something went wrong. Please try again.', 'facebook-for-woocommerce' ),
+					),
+				)
+			);
 		wp_enqueue_script(
 			'facebook-for-woocommerce-whatsapp-consent-remove',
 			facebook_for_woocommerce()->get_asset_build_dir_url() . '/admin/whatsapp-consent-remove.js',
@@ -156,17 +158,6 @@ class Whatsapp_Utility extends Abstract_Settings_Screen {
 			array(
 				'ajax_url' => admin_url( 'admin-ajax.php' ),
 				'nonce'    => wp_create_nonce( 'facebook-for-wc-whatsapp-consent-disable-nonce' ),
-				'i18n'     => array(
-					'result' => true,
-				),
-			)
-		);
-		wp_localize_script(
-			'facebook-for-woocommerce-whatsapp-finish',
-			'facebook_for_woocommerce_whatsapp_finish',
-			array(
-				'ajax_url' => admin_url( 'admin-ajax.php' ),
-				'nonce'    => wp_create_nonce( 'facebook-for-wc-whatsapp-finish-nonce' ),
 				'i18n'     => array(
 					'result' => true,
 				),
@@ -200,69 +191,73 @@ class Whatsapp_Utility extends Abstract_Settings_Screen {
 		?>
 
 	<div class="onboarding-card">
-	<div class="card-item">
-	<h1><b><?php esc_html_e( 'Send Updates to customers on WhatsApp', 'facebook-for-woocommerce' ); ?></b></h1>
-		<?php esc_html_e( 'Send important updates and notifications directly to customers through WhatsApp.', 'facebook-for-woocommerce' ); ?>
-	</div>
-	<div class="divider"></div>
-	<div class="card-item">
-	<h2><?php esc_html_e( 'Get started with WhatsApp utility messages', 'facebook-for-woocommerce' ); ?></h2>
-	<p><?php esc_html_e( 'Connect your WhatsApp Business Account to start sending utility messages.', 'facebook-for-woocommerce' ); ?></p>
-	<div class="whatsapp-onboarding-button">
-	<a
-			id="woocommerce-whatsapp-connection"
-			class="button"
-			href="#"
-		><?php esc_html_e( 'Connect Whatsapp Account', 'facebook-for-woocommerce' ); ?></a>
-	</div>
-	</div>
-	<div class="divider"></div>
-	<div class="card-item">
-	<h2><?php esc_html_e( 'Collect phone numbers at checkout', 'facebook-for-woocommerce' ); ?></h2>
-	<p><?php esc_html_e( 'To collect phone numbers, a checkbox will be added to your store’s checkout page. This lets customers sign up to receive your messages. You can preview what this looks like in your checkout page preview.', 'facebook-for-woocommerce' ); ?></p>
-		<p><?php esc_html_e( 'This will allow you to send messages to your customers on WhatsApp.', 'facebook-for-woocommerce' ); ?></p>
-		<div class="whatsapp-onboarding-button">
-		<a
-			class="button"
-			id="wc-whatsapp-collect-consent"
-			href="#"
-		><?php esc_html_e( 'Add', 'facebook-for-woocommerce' ); ?></a>
-		</div>
-	</div>
-	<div class="divider"></div>
-	<div class="card-item">
-		<h2><?php esc_html_e( 'Add a payment method', 'facebook-for-woocommerce' ); ?></h2>
-		<p><?php esc_html_e( 'Confirm your payment method in Billings & payments.', 'facebook-for-woocommerce' ); ?>
-				<a
-					href="#"
-					id="wc-whatsapp-about-pricing"
-				><?php esc_html_e( 'About pricing', 'facebook-for-woocommerce' ); ?>
-				</a>
-
-			</p>
-			<div class="add-payment-section">
-				<div class="review-payment-block">
-					<div class="review-payment-content">
-					<?php esc_html_e( 'Add a payment method', 'facebook-for-woocommerce' ); ?>
-					</div>
-						<div class="add-payment-button">
-							<a
-								class="button"
-								id="wc-whatsapp-add-payment"
-								href="#"
-								><?php esc_html_e( 'Add', 'facebook-for-woocommerce' ); ?>
-							</a>
-						</div>
-				</div>
-				<div class="whatsapp-onboarding-button">
-					<a
-						class="button button-primary"
-						id="wc-whatsapp-onboarding-finish"
-						href="#"
-					><?php esc_html_e( 'Finish', 'facebook-for-woocommerce' ); ?></a>
-				</div>
+		<div class="card-item">
+			<div class="card-content">
+				<h1><?php esc_html_e( 'Send Updates to customers on WhatsApp', 'facebook-for-woocommerce' ); ?></h1>
+				<?php esc_html_e( 'Send important updates and notifications directly to customers on WhatsApp.', 'facebook-for-woocommerce' ); ?>
 			</div>
-
+		</div>
+		<div class="divider"></div>
+		<div class="card-item">
+			<div class="card-content">
+				<h2><?php esc_html_e( 'Connect your WhatApp Business account', 'facebook-for-woocommerce' ); ?></h2>
+				<p><?php esc_html_e( 'Allows WooCommerce to connect to your WhatsApp account. ', 'facebook-for-woocommerce' ); ?></p>
+			</div>
+			<div class="whatsapp-onboarding-button">
+				<a
+					id="woocommerce-whatsapp-connection"
+					class="button"
+					href="#"
+				><?php esc_html_e( 'Connect', 'facebook-for-woocommerce' ); ?></a>
+			</div>
+		</div>
+		<div class="divider"></div>
+		<div class="card-item">
+			<div class="card-content">
+				<h2><?php esc_html_e( 'Add WhatsApp option at checkout', 'facebook-for-woocommerce' ); ?></h2>
+				<p><?php esc_html_e( 'Adds a checkbox to your store’s checkout page that lets customers request updates about their order on WhatsApp. This allows you to communicate with customers after they make a purchase. You can remove this anytime.', 'facebook-for-woocommerce' ); ?></p>
+			</div>
+			<div class="whatsapp-onboarding-button">
+			<a
+				class="button"
+				id="wc-whatsapp-collect-consent"
+				href="#"
+			><?php esc_html_e( 'Add', 'facebook-for-woocommerce' ); ?></a>
+			</div>
+		</div>
+		<div class="divider"></div>
+		<div class="card-item">
+			<div class="card-content">
+				<h2><?php esc_html_e( 'Add a payment method', 'facebook-for-woocommerce' ); ?></h2>
+				<p><?php esc_html_e( 'Review and update your payment method in Billings & payments.', 'facebook-for-woocommerce' ); ?>
+					<a
+						href="https://developers.facebook.com/docs/whatsapp/pricing/#rate-cards"
+						id="wc-whatsapp-about-pricing"
+						target="_blank"
+					><?php esc_html_e( 'About pricing', 'facebook-for-woocommerce' ); ?>
+					</a>
+				</p>
+			</div>
+			<div class="whatsapp-onboarding-button">
+				<a
+					class="button"
+					id="wc-whatsapp-add-payment"
+					href="#"
+				><?php esc_html_e( 'Review', 'facebook-for-woocommerce' ); ?></a>
+			</div>
+		</div>
+		<div class="error-notice-wrapper">
+			<div id="payment-method-error-notice" style="display: none;"></div>
+		</div>
+		<div class="divider"></div>
+		<div class="card-item">
+			<div class="whatsapp-onboarding-button">
+				<a
+					class="button button-primary"
+					id="wc-whatsapp-onboarding-finish"
+					href="#"
+				><?php esc_html_e( 'Done', 'facebook-for-woocommerce' ); ?></a>
+			</div>
 		</div>
 	</div>
 		<?php

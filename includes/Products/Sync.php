@@ -1,5 +1,4 @@
 <?php
-// phpcs:ignoreFile
 /**
  * Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
  *
@@ -11,7 +10,7 @@
 
 namespace WooCommerce\Facebook\Products;
 
-defined( 'ABSPATH' ) or exit;
+defined( 'ABSPATH' ) || exit;
 
 /**
  * The product sync handler.
@@ -102,7 +101,7 @@ class Sync {
 	 *
 	 * @since 2.0.0
 	 *
-	 * @param int[] $retailer retailer IDs to delete
+	 * @param int[] $retailer_ids retailer IDs to delete
 	 */
 	public function delete_products( array $retailer_ids ) {
 
@@ -162,8 +161,8 @@ class Sync {
 	 *
 	 * @since 2.0.0
 	 *
-	 * @param $product_id
-	 * @return string
+	 * @param int|string $product_id product ID
+	 * @return string prefixed product index
 	 */
 	private function get_product_index( $product_id ) {
 
@@ -188,6 +187,4 @@ class Sync {
 
 		return ! empty( $jobs );
 	}
-
-
 }

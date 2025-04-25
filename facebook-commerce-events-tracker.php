@@ -105,8 +105,10 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 			add_action( 'woocommerce_after_single_product', array( $this, 'inject_view_content_event' ) );
 			add_action( 'woocommerce_after_single_product', array( $this, 'maybe_inject_search_event' ) );
 
+			// ViewCategory events
 			add_action( 'woocommerce_after_shop_loop', array( $this, 'inject_view_category_event' ) );
 
+			// Search events
 			add_action( 'pre_get_posts', array( $this, 'inject_search_event' ) );
 			add_filter( 'woocommerce_redirect_single_search_result', array( $this, 'maybe_add_product_search_event_to_session' ) );
 
@@ -122,23 +124,23 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 
 			// InitiateCheckout events
 			add_action( 'woocommerce_after_checkout_form', array( $this, 'inject_initiate_checkout_event' ) );
+
 			// InitiateCheckout events for checkout block.
 			add_action( 'woocommerce_blocks_checkout_enqueue_data', array( $this, 'inject_initiate_checkout_event' ) );
+			
 			// Purchase and Subscribe events
-			add_action( 'woocommerce_checkout_update_order_meta', array( $this, 'inject_purchase_event' ) );
+			add_action( 'woocommerce_new_order', array( $this, 'inject_purchase_event' ) );
+			add_action( 'woocommerce_payment_complete', array( $this, 'inject_purchase_event' ), 10 );
+			add_action( 'woocommerce_checkout_update_order_meta', array( $this, 'inject_purchase_event' ), 20 );
 			add_action( 'woocommerce_thankyou', array( $this, 'inject_purchase_event' ), 40 );
+			add_action( 'woocommerce_order_status_processing', array( $this, 'inject_purchase_event' ), 50 );
+			add_action( 'woocommerce_order_status_completed', array( $this, 'inject_purchase_event' ), 50 );
+			add_action( 'woocommerce_process_shop_order_meta', array( $this, 'inject_purchase_event' ), 60 );
 
-			// Checkout update order meta from the Checkout Block.
-			if ( version_compare( \Automattic\WooCommerce\Blocks\Package::get_version(), '7.2.0', '>=' ) ) {
-				add_action( 'woocommerce_store_api_checkout_update_order_meta', array( $this, 'inject_order_meta_event_for_checkout_block_flow' ), 10, 1 );
-			} elseif ( version_compare( \Automattic\WooCommerce\Blocks\Package::get_version(), '6.3.0', '>=' ) ) {
-				add_action( 'woocommerce_blocks_checkout_update_order_meta', array( $this, 'inject_order_meta_event_for_checkout_block_flow' ), 10, 1 );
-			} else {
-				add_action( '__experimental_woocommerce_blocks_checkout_update_order_meta', array( $this, 'inject_order_meta_event_for_checkout_block_flow' ), 10, 1 );
-			}
-
-			// TODO move this in some 3rd party plugin integrations handler at some point {FN 2020-03-20}
+			// Lead events through Contact Form 7
 			add_action( 'wpcf7_contact_form', array( $this, 'inject_lead_event_hook' ), 11 );
+
+			// Flush pending events on shutdown
 			add_action( 'shutdown', array( $this, 'send_pending_events' ) );
 		}
 
@@ -795,6 +797,8 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 		 *
 		 * This may happen either when:
 		 * - WooCommerce signals a payment transaction complete (most gateways)
+		 * - The order status is changed through the Woo dashboard to Processing or Completed
+		 * - The Payment Completed event is fired, which happens in case of some external payment gateways.
 		 * - Customer reaches Thank You page skipping payment (for gateways that do not require payment, e.g. Cheque, BACS, Cash on delivery...)
 		 *
 		 * The method checks if the event was not triggered already avoiding a duplicate.
@@ -808,7 +812,9 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 
 			$event_name = 'Purchase';
 
-			if ( ! $this->is_pixel_enabled() || $this->pixel->is_last_event( $event_name ) ) {
+			$valid_purchase_order_states = array( 'processing', 'completed' );
+
+			if ( ! $this->is_pixel_enabled() ) {
 				return;
 			}
 
@@ -817,23 +823,26 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 			if ( ! $order ) {
 				return;
 			}
+			
+			// Get the status of the order to ensure we track the actual purchases and not the ones that have a failed payment.
+			$order_state = $order->get_status();
 
-			// use a session flag to ensure an order is tracked with any payment method, also when the order is placed through AJAX
-			$order_placed_flag = '_wc_' . facebook_for_woocommerce()->get_id() . '_order_placed_' . $order_id;
-
-			// use a session flag to ensure a Purchase event is not tracked multiple times
+			// use a session flag to ensure this Purchase event is not tracked multiple times
 			$purchase_tracked_flag = '_wc_' . facebook_for_woocommerce()->get_id() . '_purchase_tracked_' . $order_id;
 
-			// when saving the order meta data: add a flag to mark the order tracked
-			if ( 'woocommerce_checkout_update_order_meta' === current_action() ) {
-				set_transient( $order_placed_flag, 'yes', 15 * MINUTE_IN_SECONDS );
+			// Return if this Purchase event has already been tracked
+			if ( 'yes' === get_transient( $purchase_tracked_flag ) || $order->meta_exists( '_meta_purchase_tracked' ) || ! in_array( $order_state, $valid_purchase_order_states ) ) {
 				return;
 			}
 
-			// bail if by the time we are on the thank you page the meta has not been set or we already tracked a Purchase event
-			if ( 'yes' !== get_transient( $order_placed_flag ) || 'yes' === get_transient( $purchase_tracked_flag ) ) {
-				return;
-			}
+			// Mark the order as tracked for the session
+			set_transient( $purchase_tracked_flag, 'yes', 15 * MINUTE_IN_SECONDS );
+
+			// Set a flag to ensure this Purchase event is not going to be sent across different sessions
+			$order->add_meta_data( '_meta_purchase_tracked', true, true );
+
+			// Save the metadata
+			$order->save();
 
 			$content_type  = 'product';
 			$contents      = array();
@@ -884,41 +893,6 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 			$this->pixel->inject_event( $event_name, $event_data );
 
 			$this->inject_subscribe_event( $order_id );
-
-			// mark the order as tracked
-			set_transient( $purchase_tracked_flag, 'yes', 15 * MINUTE_IN_SECONDS );
-
-		}
-
-		/**
-		 * Inject order meta gor WooCommerce Checkout Blocks flow.
-		 * The blocks flow does not trigger the woocommerce_checkout_update_order_meta so we can't rely on it.
-		 * The Checkout Block has its own hook that allows us to inject the meta at
-		 * the appropriate moment: woocommerce_store_api_checkout_update_order_meta.
-		 *
-		 * Note: __experimental_woocommerce_blocks_checkout_update_order_meta has been deprecated
-		 * as of WooCommerce Blocks 6.3.0
-		 *
-		 *  @since 2.6.6
-		 *
-		 *  @param WC_Order|int $the_order Order object or id.
-		 */
-		public function inject_order_meta_event_for_checkout_block_flow( $the_order ) {
-
-			$event_name = 'Purchase';
-
-			if ( ! $this->is_pixel_enabled() || $this->pixel->is_last_event( $event_name ) ) {
-				return;
-			}
-
-			$order = wc_get_order($the_order);
-
-			if ( ! $order ) {
-				return;
-			}
-
-			$order_placed_flag = '_wc_' . facebook_for_woocommerce()->get_id() . '_order_placed_' . $order->get_id();
-			set_transient( $order_placed_flag, 'yes', 15 * MINUTE_IN_SECONDS );
 
 		}
 

@@ -3,39 +3,32 @@
     border: 1px solid #ccc;
     border-radius: 10px;
     box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-    margin-left: 500px;
-    margin-right: 500px;
+    margin-left: 400px;
+    margin-right: 400px;
     margin-top: 50px;
 }
 .card-item {
   padding: 20px;
+  justify-content: space-between;
 }
 .divider {
   border-bottom: 1px solid #ccc;
 }
-.add-payment-section {
-    margin-bottom: 10px;
-    border-bottom: none;
-}
-.review-payment-block {
-    box-shadow: 0 0 10px rgba(165, 162, 162, 0.1);
-    border: 1px solid #c4c3c3;
-    border-radius: 10px;
-    margin-bottom: 10px;
+.card-item {
     display: flex;
 }
 .review-payment-content {
     padding: 20px;
     margin-bottom: 10px;
 }
-.add-payment-button {
-    text-align: right;
-    margin-bottom: 20px;
-    margin-left: 250px;
-    margin-top: 20px;
-}
 .whatsapp-onboarding-button {
-    text-align: right;
+    margin-top: 30px;
+    margin-left: auto;
+    position: relative;
+    top: 50%;
+}
+.card-content {
+    padding-right: 40px;
 }
 .event-config {
     padding: 20px;
@@ -87,4 +80,20 @@
 }
 .fbwa-hidden-element {
     display: none;
+}
+.error-notice-wrapper {
+    justify-content: left;
+    padding-left: 20px;
+    padding-bottom: 10px;
+    margin-right: 20px; /* Add the right margin */
+}
+.notice-error {
+    background-color: #f7f7f7;
+    border: 1px solid #EF0000; /* Red border */
+    border-radius: 0; /* No curvature */
+    border-left-width: 5px; /* Thicker left border */
+    width: 100%; /* Take up full width */
+}
+.notice-error p {
+    margin: 5px;
 }
