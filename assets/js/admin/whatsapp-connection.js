@@ -9,13 +9,13 @@
 
 jQuery( document ).ready( function( $ ) {
     var $connectSuccess = $('#wc-fb-whatsapp-connect-success');
-    var $connectInprogress = $('#wc-fb-whatsapp-connect-inprogress');
+    var $connectInProgress = $('#wc-fb-whatsapp-connect-inprogress');
     if (facebook_for_woocommerce_whatsapp_onboarding_progress.whatsapp_onboarding_complete) {
         $connectSuccess.show();
-        $connectInprogress.hide();
+        $connectInProgress.hide();
     } else {
         $connectSuccess.hide();
-        $connectInprogress.show();
+        $connectInProgress.show();
     }
 
     // handle the whatsapp connect button click should open hosted ES flow
@@ -37,7 +37,7 @@ jQuery( document ).ready( function( $ ) {
             if ( response.success ) {
 				console.log( 'success', response );
                 // update the progress for connect whatsapp step
-                $connectInprogress.remove();
+                $connectInProgress.remove();
                 $connectSuccess.show();
                 // update the progress for collect consent step
                 $('#wc-fb-whatsapp-consent-collection-inprogress').show();
