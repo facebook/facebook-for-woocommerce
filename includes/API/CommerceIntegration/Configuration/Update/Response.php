@@ -17,7 +17,7 @@ class Response extends ApiResponse {
 	 * Returns whether the update request was successful.
 	 *
 	 * @return bool
-	 * @since 3.5.0
+	 * @since 3.4.8
 	 */
 	public function is_successful(): bool {
 		return (bool) $this->success;

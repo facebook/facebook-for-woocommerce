@@ -717,25 +717,14 @@ class API extends Base {
 	 * @param string $shop_domain The domain of the WooCommerce site
 	 * @param string $admin_url The admin URL of the WooCommerce site
 	 * @param string $extension_version The version of the Facebook for WooCommerce extension
+	 *
 	 * @return API\Response|API\CommerceIntegration\Repair\Response
 	 * @throws ApiException
 	 */
-	public function repair_commerce_integration(string $fbe_external_business_id, string $shop_domain, string $admin_url, string $extension_version): API\CommerceIntegration\Repair\Response {
-		$request = new API\CommerceIntegration\Repair\RepairRequest($fbe_external_business_id, $shop_domain, $admin_url, $extension_version);
-		$this->set_response_handler(API\CommerceIntegration\Repair\Response::class);
-		
-		try {
-			$response = $this->perform_request($request);
-			if (defined('WP_DEBUG') && WP_DEBUG) {
-				error_log('Facebook Repair Response: ' . print_r($response, true));
-			}
-			return $response;
-		} catch (\Exception $e) {
-			if (defined('WP_DEBUG') && WP_DEBUG) {
-				error_log('Facebook Repair Error: ' . $e->getMessage());
-			}
-			throw $e;
-		}
+	public function repair_commerce_integration( string $fbe_external_business_id, string $shop_domain, string $admin_url, string $extension_version ): API\CommerceIntegration\Repair\Response {
+		$request = new API\CommerceIntegration\Repair\RepairRequest( $fbe_external_business_id, $shop_domain, $admin_url, $extension_version );
+		$this->set_response_handler( API\CommerceIntegration\Repair\Response::class );
+		return $this->perform_request( $request );
 	}
 
 	/**
