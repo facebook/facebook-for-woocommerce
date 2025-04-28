@@ -33,6 +33,18 @@ class Admin {
 	/** @var string the "sync disabled" sync mode slug */
 	const SYNC_MODE_SYNC_DISABLED = 'sync_disabled';
 
+	/** @var string the "fb_sync_enabled" sync mode slug */
+	const INCLUDE_FACEBOOK_SYNC = 'fb_sync_enabled';
+
+	/** @var string the "fb_sync_disabled" sync mode slug */
+	const EXCLUDE_FACEBOOK_SYNC = 'fb_sync_disabled';
+
+	/** @var string the "include" sync mode for bulk edit */
+	const BULK_EDIT_SYNC = 'bulk_edit_sync';
+
+	/** @var string the "exclude" sync mode for bulk edit */
+	const BULK_EDIT_DELETE = 'bulk_edit_delete';
+
 	/** @var Product_Categories the product category admin handler */
 	protected $product_categories;
 
@@ -94,8 +106,8 @@ class Admin {
 		add_filter( 'request', array( $this, 'filter_products_by_sync_enabled' ) );
 
 		// add bulk actions to manage products sync
-		add_filter( 'bulk_actions-edit-product', array( $this, 'add_products_sync_bulk_actions' ), 40 );
-		add_action( 'handle_bulk_actions-edit-product', array( $this, 'handle_products_sync_bulk_actions' ) );
+		add_action( 'woocommerce_product_bulk_edit_end', array( $this, 'add_facebook_sync_bulk_edit_dropdown_at_bottom' ) );
+		add_action( 'woocommerce_product_bulk_edit_save', array( $this, 'handle_products_sync_bulk_actions' ), 10, 1 );
 
 		// add Product data tab
 		add_filter( 'woocommerce_product_data_tabs', array( $this, 'add_product_settings_tab' ) );
@@ -438,7 +450,7 @@ class Admin {
 	 * @return array
 	 */
 	public function add_product_list_table_columns( $columns ) {
-		$columns['facebook_sync'] = __( 'Facebook sync', 'facebook-for-woocommerce' );
+		$columns['facebook_sync'] = __( 'Synced to Meta catalog', 'facebook-for-woocommerce' );
 		return $columns;
 	}
 
@@ -472,13 +484,9 @@ class Admin {
 		}
 
 		if ( $should_sync ) {
-			if ( Products::is_product_visible( $product ) ) {
-				esc_html_e( 'Sync and show', 'facebook-for-woocommerce' );
-			} else {
-				esc_html_e( 'Sync and hide', 'facebook-for-woocommerce' );
-			}
+			esc_html_e( 'Synced', 'facebook-for-woocommerce' );
 		} else {
-			esc_html_e( 'Do not sync', 'facebook-for-woocommerce' );
+			esc_html_e( 'Not synced', 'facebook-for-woocommerce' );
 			if ( ! empty( $no_sync_reason ) ) {
 				echo wc_help_tip( $no_sync_reason );
 			}
@@ -503,11 +511,40 @@ class Admin {
 		$choice = isset( $_GET['fb_sync_enabled'] ) ? (string) sanitize_text_field( wp_unslash( $_GET['fb_sync_enabled'] ) ) : '';
 		?>
 		<select name="fb_sync_enabled">
-			<option value="" <?php selected( $choice, '' ); ?>><?php esc_html_e( 'Filter by Facebook sync setting', 'facebook-for-woocommerce' ); ?></option>
-			<option value="<?php echo esc_attr( self::SYNC_MODE_SYNC_AND_SHOW ); ?>" <?php selected( $choice, self::SYNC_MODE_SYNC_AND_SHOW ); ?>><?php esc_html_e( 'Sync and show', 'facebook-for-woocommerce' ); ?></option>
-			<option value="<?php echo esc_attr( self::SYNC_MODE_SYNC_AND_HIDE ); ?>" <?php selected( $choice, self::SYNC_MODE_SYNC_AND_HIDE ); ?>><?php esc_html_e( 'Sync and hide', 'facebook-for-woocommerce' ); ?></option>
-			<option value="<?php echo esc_attr( self::SYNC_MODE_SYNC_DISABLED ); ?>" <?php selected( $choice, self::SYNC_MODE_SYNC_DISABLED ); ?>><?php esc_html_e( 'Do not sync', 'facebook-for-woocommerce' ); ?></option>
+			<option value="" <?php selected( $choice, '' ); ?>><?php esc_html_e( 'Filter by synced to Meta', 'facebook-for-woocommerce' ); ?></option>
+			<option value="<?php echo esc_attr( self::INCLUDE_FACEBOOK_SYNC ); ?>" <?php selected( $choice, self::INCLUDE_FACEBOOK_SYNC ); ?>><?php esc_html_e( 'Synced', 'facebook-for-woocommerce' ); ?></option>
+			<option value="<?php echo esc_attr( self::EXCLUDE_FACEBOOK_SYNC ); ?>" <?php selected( $choice, self::EXCLUDE_FACEBOOK_SYNC ); ?>><?php esc_html_e( 'Not synced', 'facebook-for-woocommerce' ); ?></option>
 		</select>
+		<?php
+	}
+
+
+	/**
+	 * Adds a dropdown input to Include or Exclude product in Facebook Bulk Sync.
+	 *
+	 * @internal
+	 */
+	public function add_facebook_sync_bulk_edit_dropdown_at_bottom() {
+		global $typenow;
+
+		if ( 'product' !== $typenow ) {
+			return;
+		}
+
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		$choice = isset( $_GET['facebook_bulk_sync_options'] ) ? (string) sanitize_text_field( wp_unslash( $_GET['facebook_bulk_sync_options'] ) ) : '';
+
+		?>
+		<label>
+			<span class="title"><?php esc_html_e( 'Sync to Meta catalog', 'facebook-for-woocommerce' ); ?></span>
+			<span class="input-text-wrap">
+				<select class="facebook_bulk_sync_options" name="facebook_bulk_sync_options">
+				<option value=""> <?php esc_html_e( '— No Change —', 'facebook-for-woocommerce' ); ?></option>;
+				<option value="<?php echo esc_attr( self::BULK_EDIT_SYNC ); ?>" <?php selected( $choice, self::BULK_EDIT_SYNC ); ?>><?php esc_html_e( 'Sync', 'facebook-for-woocommerce' ); ?></option>
+				<option value="<?php echo esc_attr( self::BULK_EDIT_DELETE ); ?>" <?php selected( $choice, self::BULK_EDIT_DELETE ); ?>><?php esc_html_e( 'Do not sync', 'facebook-for-woocommerce' ); ?></option>
+				</select>
+			</span>
+		</label>
 		<?php
 	}
 
@@ -523,9 +560,8 @@ class Admin {
 	 */
 	public function filter_products_by_sync_enabled( $query_vars ) {
 		$valid_values = array(
-			self::SYNC_MODE_SYNC_AND_SHOW,
-			self::SYNC_MODE_SYNC_AND_HIDE,
-			self::SYNC_MODE_SYNC_DISABLED,
+			self::INCLUDE_FACEBOOK_SYNC,
+			self::EXCLUDE_FACEBOOK_SYNC,
 		);
 
 		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
@@ -538,14 +574,18 @@ class Admin {
 			if ( ! empty( $query_vars['meta_query'] ) ) {
 				$query_vars['meta_query']['relation'] = 'AND';
 			} else {
-				$query_vars['meta_query'] = [];
+				$query_vars['meta_query'] = []; // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_query
 			}
 
-			if ( self::SYNC_MODE_SYNC_AND_SHOW === $filter_value ) {
+			if ( self::INCLUDE_FACEBOOK_SYNC === $filter_value ) {
+				/**
+				 * #TODO: T219937738 (sayanpandey): Change the functionality when product level sync appears
+				 * The below query will not only check for sync enabled but also sync do not exist -> as query happens on WP products,
+				 * Reason: We need to check if a product has variation and if they are synced or not
+				 * Future plans: When product level sync comes through this should be handled more gracefully as we will only check at product level
+				 *  */
 				// when checking for products with sync enabled we need to check both "yes" and meta not set, this requires adding an "OR" clause
 				$query_vars = $this->add_query_vars_to_find_products_with_sync_enabled( $query_vars );
-				// only get visible products (both "yes" and meta not set)
-				$query_vars = $this->add_query_vars_to_find_visible_products( $query_vars );
 				// since we record enabled status and visibility on child variations, we need to query variable products found for their children to exclude them from query results
 				$exclude_products = [];
 				$found_ids        = get_posts( array_merge( $query_vars, array( 'fields' => 'ids' ) ) );
@@ -558,38 +598,7 @@ class Admin {
 				);
 				/** @var \WC_Product[] $found_products */
 				foreach ( $found_products as $product ) {
-					if ( ! Products::is_sync_enabled_for_product( $product )
-						|| ! Products::is_product_visible( $product ) ) {
-						$exclude_products[] = $product->get_id();
-					}
-				}
-
-				if ( ! empty( $exclude_products ) ) {
-					if ( ! empty( $query_vars['post__not_in'] ) ) {
-						$query_vars['post__not_in'] = array_merge( $query_vars['post__not_in'], $exclude_products );
-					} else {
-						$query_vars['post__not_in'] = $exclude_products;
-					}
-				}
-			} elseif ( self::SYNC_MODE_SYNC_AND_HIDE === $filter_value ) {
-				// when checking for products with sync enabled we need to check both "yes" and meta not set, this requires adding an "OR" clause
-				$query_vars = $this->add_query_vars_to_find_products_with_sync_enabled( $query_vars );
-				// only get hidden products
-				$query_vars = $this->add_query_vars_to_find_hidden_products( $query_vars );
-				// since we record enabled status and visibility on child variations, we need to query variable products found for their children to exclude them from query results
-				$exclude_products = [];
-				$found_ids        = get_posts( array_merge( $query_vars, array( 'fields' => 'ids' ) ) );
-				$found_products   = empty( $found_ids ) ? [] : wc_get_products(
-					array(
-						'limit'   => -1,
-						'type'    => 'variable',
-						'include' => $found_ids,
-					)
-				);
-				/** @var \WC_Product[] $found_products */
-				foreach ( $found_products as $product ) {
-					if ( ! Products::is_sync_enabled_for_product( $product )
-						|| Products::is_product_visible( $product ) ) {
+					if ( ! Products::is_sync_enabled_for_product( $product ) ) {
 						$exclude_products[] = $product->get_id();
 					}
 				}
@@ -602,7 +611,17 @@ class Admin {
 					}
 				}
 
-				// for the same reason, we also need to include variable products with hidden children
+				/**
+				 * Now removing all `Not Synced` products from the found products
+				 * Reason: This is required even if we have mentioned $query_vars['post__not_in'],
+				 * the preference of $query_vars['post__in'] is higher and will be overriden
+				 * at the end of this function.
+				 *  */
+				$found_ids = array_diff( $found_ids, $exclude_products );
+
+				/**
+				 * For the same reason, we also need to include variable products with hidden children
+				 *  */
 				$include_products  = [];
 				$hidden_variations = get_posts(
 					array(
@@ -619,13 +638,12 @@ class Admin {
 				foreach ( $hidden_variations as $variation_post ) {
 					$variable_product = wc_get_product( $variation_post->post_parent );
 					// we need this check because we only want products with ALL variations hidden
-					if ( $variable_product instanceof \WC_Product && Products::is_sync_enabled_for_product( $variable_product )
-						&& ! Products::is_product_visible( $variable_product ) ) {
+					if ( $variable_product instanceof \WC_Product && Products::is_sync_enabled_for_product( $variable_product ) ) {
 						$include_products[] = $variable_product->get_id();
 					}
 				}
 			} else {
-				// self::SYNC_MODE_SYNC_DISABLED
+				// self::EXCLUDE_FACEBOOK_SYNC
 				// products to be included in the QUERY, not in the sync
 				$include_products        = [];
 				$found_ids               = [];
@@ -785,72 +803,6 @@ class Admin {
 		return $query_vars;
 	}
 
-
-	/**
-	 * Adds query vars to limit the results to visible products.
-	 *
-	 * @since 2.0.0
-	 *
-	 * @param array $query_vars
-	 * @return array
-	 */
-	private function add_query_vars_to_find_visible_products( array $query_vars ) {
-		$visibility_meta_query = array(
-			'relation' => 'OR',
-			array(
-				'key'   => Products::VISIBILITY_META_KEY,
-				'value' => 'yes',
-			),
-			array(
-				'key'     => Products::VISIBILITY_META_KEY,
-				'compare' => 'NOT EXISTS',
-			),
-		);
-
-		if ( empty( $query_vars['meta_query'] ) ) {
-			$query_vars['meta_query'] = $visibility_meta_query;
-		} elseif ( is_array( $query_vars['meta_query'] ) ) {
-			$enabled_meta_query       = $query_vars['meta_query'];
-			$query_vars['meta_query'] = array(
-				'relation' => 'AND',
-				$enabled_meta_query,
-				$visibility_meta_query,
-			);
-		}
-
-		return $query_vars;
-	}
-
-
-	/**
-	 * Adds query vars to limit the results to hidden products.
-	 *
-	 * @since 2.0.0
-	 *
-	 * @param array $query_vars
-	 * @return array
-	 */
-	private function add_query_vars_to_find_hidden_products( array $query_vars ) {
-		$visibility_meta_query = array(
-			'key'   => Products::VISIBILITY_META_KEY,
-			'value' => 'no',
-		);
-
-		if ( empty( $query_vars['meta_query'] ) ) {
-			$query_vars['meta_query'] = $visibility_meta_query;
-		} elseif ( is_array( $query_vars['meta_query'] ) ) {
-			$enabled_meta_query       = $query_vars['meta_query'];
-			$query_vars['meta_query'] = array(
-				'relation' => 'AND',
-				$enabled_meta_query,
-				$visibility_meta_query,
-			);
-		}
-
-		return $query_vars;
-	}
-
-
 	/**
 	 * Adds bulk actions in the products edit screen.
 	 *
@@ -870,94 +822,77 @@ class Admin {
 
 	/**
 	 * Handles a Facebook product sync bulk action.
+	 * Called every time for a product
 	 *
 	 * @internal
 	 *
-	 * @since 1.10.0
-	 *
-	 * @param string $redirect admin URL used by WordPress to redirect after performing the bulk action
-	 * @return string
+	 * @param string $product_edit the product metadata that is being edited.
 	 */
-	public function handle_products_sync_bulk_actions( $redirect ) {
+	public function handle_products_sync_bulk_actions( $product_edit ) {
 
-		// primary dropdown at the top of the list table
-		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
-		$action = isset( $_REQUEST['action'] ) && -1 !== (int) $_REQUEST['action'] ? sanitize_text_field( wp_unslash( $_REQUEST['action'] ) ) : null;
+		$sync_mode = isset( $_GET['facebook_bulk_sync_options'] ) ? (string) sanitize_text_field( wp_unslash( $_GET['facebook_bulk_sync_options'] ) ) : null;
 
-		// secondary dropdown at the bottom of the list table
-		if ( ! $action ) {
-			// phpcs:ignore WordPress.Security.NonceVerification.Recommended
-			$action = isset( $_REQUEST['action2'] ) && -1 !== (int) $_REQUEST['action2'] ? sanitize_text_field( wp_unslash( $_REQUEST['action2'] ) ) : null;
-		}
+		if ( $sync_mode ) {
+			/** @var \WC_Product[] $enabling_sync_virtual_products virtual products that are being included */
+			$enabling_sync_virtual_products = [];
+			/** @var \WC_Product_Variation[] $enabling_sync_virtual_variations virtual variations that are being included */
+			$enabling_sync_virtual_variations = [];
+			/** @var \WC_Product $product to store the product meta data */
+			$product = wc_get_product( $product_edit );
 
-		if ( $action && in_array( $action, array( 'facebook_include', 'facebook_exclude' ), true ) ) {
-			$products = [];
-			// phpcs:ignore WordPress.Security.NonceVerification.Recommended
-			$product_ids = isset( $_REQUEST['post'] ) && is_array( $_REQUEST['post'] ) ? array_map( 'absint', $_REQUEST['post'] ) : [];
-			if ( ! empty( $product_ids ) ) {
-				/** @var \WC_Product[] $enabling_sync_virtual_products virtual products that are being included */
-				$enabling_sync_virtual_products = [];
-				/** @var \WC_Product_Variation[] $enabling_sync_virtual_variations virtual variations that are being included */
-				$enabling_sync_virtual_variations = [];
-				foreach ( $product_ids as $product_id ) {
-					if ( $product = wc_get_product( $product_id ) ) {
-						$products[] = $product;
-						if ( 'facebook_include' === $action ) {
-							if ( $product->is_virtual() && ! Products::is_sync_enabled_for_product( $product ) ) {
-								$enabling_sync_virtual_products[ $product->get_id() ] = $product;
-							} elseif ( $product->is_type( 'variable' ) ) {
-									// collect the virtual variations
-								foreach ( $product->get_children() as $variation_id ) {
-									$variation = wc_get_product( $variation_id );
-									if ( $variation && $variation->is_virtual() && ! Products::is_sync_enabled_for_product( $variation ) ) {
-										$enabling_sync_virtual_products[ $product->get_id() ]     = $product;
-										$enabling_sync_virtual_variations[ $variation->get_id() ] = $variation;
-									}
-								}
-							}//end if
-						}//end if
-					}//end if
-				}//end foreach
-
-				if ( ! empty( $enabling_sync_virtual_products ) || ! empty( $enabling_sync_virtual_variations ) ) {
-					// display notice if enabling sync for virtual products or variations
-					set_transient( 'wc_' . facebook_for_woocommerce()->get_id() . '_enabling_virtual_products_sync_show_notice_' . get_current_user_id(), true, 15 * MINUTE_IN_SECONDS );
-					set_transient( 'wc_' . facebook_for_woocommerce()->get_id() . '_enabling_virtual_products_sync_affected_products_' . get_current_user_id(), array_keys( $enabling_sync_virtual_products ), 15 * MINUTE_IN_SECONDS );
-
-					// set visibility for virtual products
-					foreach ( $enabling_sync_virtual_products as $product ) {
-
-						// do not set visibility for variable products
-						if ( ! $product->is_type( 'variable' ) ) {
-							Products::set_product_visibility( $product, false );
+			if ( $product && $this::BULK_EDIT_SYNC === $sync_mode ) {
+				if ( $product->is_virtual() && ! Products::is_sync_enabled_for_product( $product ) ) {
+					$enabling_sync_virtual_products[ $product->get_id() ] = $product;
+				} elseif ( $product->is_type( 'variable' ) ) {
+						// collect the virtual variations
+					foreach ( $product->get_children() as $variation_id ) {
+						$variation = wc_get_product( $variation_id );
+						if ( $variation && $variation->is_virtual() && ! Products::is_sync_enabled_for_product( $variation ) ) {
+							$enabling_sync_virtual_variations[ $variation->get_id() ] = $variation;
 						}
-					}
-
-					// set visibility for virtual variations
-					foreach ( $enabling_sync_virtual_variations as $variation ) {
-
-						Products::set_product_visibility( $variation, false );
-					}
+					}//end foreach
+					if ( ! empty( $enabling_sync_virtual_variations ) ) {
+						$enabling_sync_virtual_products[ $product->get_id() ] = $product;
+					}//end if
 				}//end if
+			}//end if
 
-				if ( 'facebook_include' === $action ) {
+			if ( ! empty( $enabling_sync_virtual_products ) || ! empty( $enabling_sync_virtual_variations ) ) {
+				// display notice if enabling sync for virtual products or variations
+				set_transient( 'wc_' . facebook_for_woocommerce()->get_id() . '_enabling_virtual_products_sync_show_notice_' . get_current_user_id(), true, 15 * MINUTE_IN_SECONDS );
+				set_transient( 'wc_' . facebook_for_woocommerce()->get_id() . '_enabling_virtual_products_sync_affected_products_' . get_current_user_id(), array_keys( $enabling_sync_virtual_products ), 15 * MINUTE_IN_SECONDS );
 
-					Products::enable_sync_for_products( $products );
+				// set visibility for virtual products
+				foreach ( $enabling_sync_virtual_products as $product ) {
 
-					$this->resync_products( $products );
+					// do not set visibility for variable products
+					if ( ! $product->is_type( 'variable' ) ) {
+						Products::set_product_visibility( $product, false );
+					}
+				}
 
-				} elseif ( 'facebook_exclude' === $action ) {
+				// set visibility for virtual variations
+				foreach ( $enabling_sync_virtual_variations as $variation ) {
 
-					Products::disable_sync_for_products( $products );
-
-					self::add_product_disabled_sync_notice( count( $products ) );
+					Products::set_product_visibility( $variation, false );
 				}
 			}//end if
-		}//end if
 
-		return $redirect;
+			$products[] = $product;
+
+			if ( $this::BULK_EDIT_SYNC === $sync_mode ) {
+
+				Products::enable_sync_for_products( $products );
+
+				$this->resync_products( $products );
+
+			} elseif ( $this::BULK_EDIT_DELETE === $sync_mode ) {
+
+				Products::disable_sync_for_products( $products );
+
+			}
+		} //end if
 	}
-
 
 	/**
 	 * Re-syncs the given products.
@@ -989,22 +924,6 @@ class Admin {
 			}
 		}
 	}
-
-
-	/**
-	 * Adds a transient so an informational notice is displayed on the next page load.
-	 *
-	 * @since 2.0.0
-	 *
-	 * @param int $count number of products
-	 */
-	public static function add_product_disabled_sync_notice( $count = 1 ) {
-
-		if ( ! facebook_for_woocommerce()->get_admin_notice_handler()->is_notice_dismissed( 'wc-' . facebook_for_woocommerce()->get_id_dasherized() . '-product-disabled-sync' ) ) {
-			set_transient( 'wc_' . facebook_for_woocommerce()->get_id() . '_show_product_disabled_sync_notice_' . get_current_user_id(), $count, MINUTE_IN_SECONDS );
-		}
-	}
-
 
 	/**
 	 * Adds a message for after a product or set of products get excluded from sync.
@@ -1383,6 +1302,7 @@ class Admin {
 						'value'    => $fb_mpn,
 						'class'    => 'enable-if-sync-enabled',
 						'desc_tip' => true,
+						'description' => __( 'Manufacturer Part Number (MPN) of the item', 'facebook-for-woocommerce' ),
 					)
 				);
 
@@ -1653,7 +1573,7 @@ class Admin {
 						'label'         => __( 'Manufacturer Parts Number (MPN)', 'facebook-for-woocommerce' ),
 						'desc_tip'      => true,
 						'description'   => __( 'Manufacturer Parts Number', 'facebook-for-woocommerce' ),
-						'value'         => wc_format_decimal( $fb_mpn ),
+						'value'         => $fb_mpn,
 						'class'         => 'enable-if-sync-enabled',
 						'wrapper_class' => 'form-row form-full',
 					)
@@ -1742,7 +1662,7 @@ class Admin {
 			$posted_param = 'variable_' . \WC_Facebook_Product::FB_PRODUCT_IMAGE;
 			$image_url    = isset( $_POST[ $posted_param ][ $index ] ) ? esc_url_raw( wp_unslash( $_POST[ $posted_param ][ $index ] ) ) : null;
 			$posted_param = 'variable_' . \WC_Facebook_Product::FB_PRODUCT_CONDITION;
-			$image_url    = isset( $_POST[ $posted_param ][ $index ] ) ? esc_url_raw( wp_unslash( $_POST[ $posted_param ][ $index ] ) ) : null;
+			$condition    = isset( $_POST[ $posted_param ][ $index ] ) ? esc_url_raw( wp_unslash( $_POST[ $posted_param ][ $index ] ) ) : null;
 			$posted_param = 'variable_' . \WC_Facebook_Product::FB_PRODUCT_VIDEO;
 			$video_urls   = isset( $_POST[ $posted_param ][ $index ] ) ? esc_url_raw( wp_unslash( $_POST[ $posted_param ][ $index ] ) ) : [];
 			$posted_param = 'variable_' . \WC_Facebook_Product::FB_PRODUCT_PRICE;
@@ -1752,6 +1672,7 @@ class Admin {
 			$variation->update_meta_data( Products::PRODUCT_IMAGE_SOURCE_META_KEY, $image_source );
 			$variation->update_meta_data( \WC_Facebook_Product::FB_MPN, $fb_mpn );
 			$variation->update_meta_data( \WC_Facebook_Product::FB_PRODUCT_IMAGE, $image_url );
+			$variation->update_meta_data( \WC_Facebook_Product::FB_PRODUCT_CONDITION, $condition );
 			$variation->update_meta_data( \WC_Facebook_Product::FB_PRODUCT_VIDEO, $video_urls );
 			$variation->update_meta_data( \WC_Facebook_Product::FB_PRODUCT_PRICE, $price );
 			$variation->save_meta_data();
