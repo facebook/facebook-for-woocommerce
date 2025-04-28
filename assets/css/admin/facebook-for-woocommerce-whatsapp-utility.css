@@ -94,8 +94,7 @@
 .notice-error p {
     margin: 5px;
 }
-/* Modal styles */
-.custom-modal {
+.warning-custom-modal {
   display: none; /* Hidden by default */
   position: absolute;
   left: 0;
@@ -105,7 +104,7 @@
   background-color: rgba(0,0,0,0.4); /* Black with opacity */
 }
 /* Modal content */
-.modal-content {
+.warning-modal-content {
   background-color: #fefefe;
   margin: 25% auto;
   padding: 20px;
@@ -117,16 +116,16 @@
   box-shadow: 0 4px 8px rgba(0,0,0,0.1);
 }
 /* Modal body */
-.modal-body {
+.warning-modal-body {
   padding: 20px 0;
 }
 /* Modal footer */
-.modal-footer {
+.warning-modal-footer {
   padding: 10px 0;
   text-align: right;
 }
 /* Close button */
-.close {
+.warning-modal-close {
   color: #aaa;
   float: right;
   font-size: 28px;
@@ -136,6 +135,6 @@
   right: 0;
   top: 0;
 }
-.close:hover {
+.warning-modal-close:hover {
   color: #000;
 }

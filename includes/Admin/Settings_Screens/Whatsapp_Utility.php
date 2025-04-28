@@ -352,22 +352,19 @@ class Whatsapp_Utility extends Abstract_Settings_Screen {
 							href="#"><?php esc_html_e( 'Remove', 'facebook-for-woocommerce' ); ?></a>
 					</div>
 				</div>
-		<div id="warning-modal" class="custom-modal">
-   		<div class="modal-content">
-   		 <div class="modal-header">
-   		   <span class="close">&times;</span>
-   		   <h2><?php esc_html_e( 'Stop sending messages to customers ?', 'facebook-for-woocommerce' ); ?></h2>
-   		 </div>
-   		 <div class="modal-body">
-   		  	<?php esc_html_e( 'Removing this means customers won\'t be able to receive WhatsApp messages from your business. You\'ll remove the checkbox from your checkout page and stop collecting phone numbers from customers.', 'facebook-for-woocommerce' ); ?>
-   		 </div>
-   		 <div class="modal-footer">
-   		   <button id="modal-cancel" class="button">Cancel</button>
-   		   <button id="warning-modal-confirm" class="button button-primary">Confirm</button>
-   		 </div>
-  		</div>
-		</div>
-		</div>
+			</div>
+			<div id="wc-fb-warning-modal" class="warning-custom-modal">
+   			<div class="warning-modal-content">
+   			   <h2><?php esc_html_e( 'Stop sending messages to customers ?', 'facebook-for-woocommerce' ); ?></h2>
+   			 <div class="warning-modal-body">
+   			  	<?php esc_html_e( 'Removing this means customers won\'t be able to receive WhatsApp messages from your business. You\'ll remove the checkbox from your checkout page and stop collecting phone numbers from customers.', 'facebook-for-woocommerce' ); ?>
+   			 </div>
+   			 <div class="warning-modal-footer">
+   			   <button id="wc-fb-warning-modal-cancel" class="button">Cancel</button>
+   			   <button id="wc-fb-warning-modal-confirm" class="button button-primary">Confirm</button>
+   			 </div>
+  			</div>
+			</div>
 		</div>
 		<?php
 	}
@@ -409,25 +406,22 @@ class Whatsapp_Utility extends Abstract_Settings_Screen {
 						<input type="radio" name="template-status" value="off" />
 						<label for="template-status"><b><?php esc_html_e( 'Turn off order confirmation', 'facebook-for-woocommerce' ); ?> </b></label>
 					</div>
-
 				</div>
 			</div>
 			<div class="card-item manage-event-template-footer">
 				<div class="manage-event-button">
-
 					<a
 						id="woocommerce-whatsapp-save-order-confirmation"
 						class="button button-primary"
-						href="#"><?php esc_html_e( 'Save', 'facebook-for-woocommerce' ); ?></a>
+						href="#"><?php esc_html_e( 'Save', 'facebook-for-woocommerce' ); ?>
+					</a>
 				</div>
 				<div class="manage-event-button">
-
 					<a
 						id="woocommerce-whatsapp-cancel-order-confirmation"
 						class="button"
 						href="<?php echo esc_html( admin_url( 'admin.php?page=' . self::PAGE_ID . '&tab=' . self::ID . '&view=utility_settings' ) ); ?>"><?php esc_html_e( 'Cancel', 'facebook-for-woocommerce' ); ?></a>
 				</div>
-
 			</div>
 		</div>
 		<?php

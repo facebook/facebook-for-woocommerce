@@ -9,12 +9,11 @@
 
 jQuery( document ).ready( function( $ ) {
     // Get the modal and related elements
-    var modal = document.getElementById("warning-modal");
-    var closeBtn = modal.querySelector(".close");
-    var cancelBtn = document.getElementById("modal-cancel");
-    var confirmBtn = document.getElementById("warning-modal-confirm");
+    var modal = document.getElementById("wc-fb-warning-modal");
+    var cancelButton = document.getElementById("wc-fb-warning-modal-cancel");
+    var confirmButton = document.getElementById("wc-fb-warning-modal-confirm");
 
-    // Handle the whatsapp consent collect button click remove action
+    // On click of the remove button, show the warning modal
     $("#wc-whatsapp-collect-consent-remove").click(function(event) {
         // Show the modal
         modal.style.display = "block";
@@ -23,18 +22,13 @@ jQuery( document ).ready( function( $ ) {
         event.preventDefault();
     });
 
-    // Close modal when clicking the X
-    closeBtn.onclick = function() {
-        modal.style.display = "none";
-    };
-
     // Close modal when clicking the Cancel button
-    cancelBtn.onclick = function() {
+    cancelButton.onclick = function() {
         modal.style.display = "none";
     };
 
     // Handle confirm action
-    confirmBtn.onclick = function() {
+    confirmButton.onclick = function() {
         // Send the AJAX request to disable WhatsApp consent collection
         $.post(facebook_for_woocommerce_whatsapp_consent_remove.ajax_url, {
             action: 'wc_facebook_whatsapp_consent_collection_disable',
