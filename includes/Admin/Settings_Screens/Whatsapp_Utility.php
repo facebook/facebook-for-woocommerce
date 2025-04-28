@@ -269,7 +269,7 @@ class Whatsapp_Utility extends Abstract_Settings_Screen {
 			</div>
 		</div>
 		<div class="error-notice-wrapper">
-			<div id="payment-method-error-notice fbwa-hidden-element"></div>
+			<div id="payment-method-error-notice"></div>
 		</div>
 		<div class="divider"></div>
 		<div class="card-item">
