@@ -1,12 +1,11 @@
 <?php
-// phpcs:ignoreFile
 /**
  * Facebook for WooCommerce.
  */
 
 namespace WooCommerce\Facebook\Framework;
 
-defined( 'ABSPATH' ) or exit;
+defined( 'ABSPATH' ) || exit;
 
 /**
  * Plugin lifecycle handler.
@@ -203,12 +202,13 @@ class Lifecycle {
 			 */
 			$message = apply_filters(
 				'wc_' . $this->get_plugin()->get_id() . '_milestone_message',
-				$this->generate_milestone_notice_message( $message ), $id
+				$this->generate_milestone_notice_message( $message ),
+				$id
 			);
 			if ( $message ) {
 				$this->get_plugin()
 					->get_admin_notice_handler()
-					->add_admin_notice( $message, $id, array( 'always_show_on_settings' => false, ) );
+					->add_admin_notice( $message, $id, array( 'always_show_on_settings' => false ) );
 				// only display one notice at a time
 				break;
 			}
@@ -264,13 +264,15 @@ class Lifecycle {
 				__( 'Congratulations', 'facebook-for-woocommerce' ),
 				__( 'Hot dog', 'facebook-for-woocommerce' ),
 			);
-			$message = $exclamations[ array_rand( $exclamations ) ] . ', ' . esc_html( $custom_message ) . ' ';
-			$message .= sprintf(
+			$message      = $exclamations[ array_rand( $exclamations ) ] . ', ' . esc_html( $custom_message ) . ' ';
+			$message     .= sprintf(
 				/* translators: Placeholders: %1$s - plugin name, %2$s - <a> tag, %3$s - </a> tag, %4$s - <a> tag, %5$s - </a> tag */
 				__( 'Are you having a great experience with %1$s so far? Please consider %2$sleaving a review%3$s! If things aren\'t going quite as expected, we\'re happy to help -- please %4$sreach out to our support team%5$s.', 'facebook-for-woocommerce' ),
 				'<strong>' . esc_html( $this->get_plugin()->get_plugin_name() ) . '</strong>',
-				'<a href="' . esc_url( $this->get_plugin()->get_reviews_url() ) . '">', '</a>',
-				'<a href="' . esc_url( $this->get_plugin()->get_support_url() ) . '">', '</a>'
+				'<a href="' . esc_url( $this->get_plugin()->get_reviews_url() ) . '">',
+				'</a>',
+				'<a href="' . esc_url( $this->get_plugin()->get_support_url() ) . '">',
+				'</a>'
 			);
 		}
 		return $message;
@@ -310,13 +312,16 @@ class Lifecycle {
 	 * @since 5.4.0
 	 *
 	 * @param string $from_version version upgrading from
-	 * @param array $data extra data to add
+	 * @param array  $data extra data to add
 	 * @return false|int
 	 */
 	public function add_upgrade_event( $from_version, array $data = [] ) {
-		$data = array_merge( array(
-			'from_version' => $from_version,
-		), $data );
+		$data = array_merge(
+			array(
+				'from_version' => $from_version,
+			),
+			$data
+		);
 		return $this->store_event( 'upgrade', $data );
 	}
 
@@ -328,14 +333,17 @@ class Lifecycle {
 	 *
 	 * @param string $from_plugin plugin migrating from
 	 * @param string $from_version version migrating from
-	 * @param array $data extra data to add
+	 * @param array  $data extra data to add
 	 * @return false|int
 	 */
 	public function add_migrate_event( $from_plugin, $from_version = '', array $data = [] ) {
-		$data = array_merge( array(
-			'from_plugin'  => $from_plugin,
-			'from_version' => $from_version,
-		), $data );
+		$data = array_merge(
+			array(
+				'from_plugin'  => $from_plugin,
+				'from_version' => $from_version,
+			),
+			$data
+		);
 		return $this->store_event( 'migrate', $data );
 	}
 
@@ -350,14 +358,17 @@ class Lifecycle {
 	 * @since 5.4.0
 	 *
 	 * @param string $name lifecycle event name
-	 * @param array $data any extra data to store
+	 * @param array  $data any extra data to store
 	 * @return false|int
 	 */
 	public function store_event( $name, array $data = [] ) {
 		global $wpdb;
 		$history = $this->get_event_history();
-		$event = array(
+		$event   = array(
 			'name'    => wc_clean( $name ),
+			// We should investigate if there's a better way to get this value;
+			// however, for the interim, we'll keep the existing behavior unchanged.
+			// phpcs:ignore WordPress.DateTime.CurrentTimeTimestamp.Requested
 			'time'    => (int) current_time( 'timestamp' ),
 			'version' => wc_clean( $this->get_plugin()->get_version() ),
 		);
@@ -371,7 +382,7 @@ class Lifecycle {
 			$wpdb->options,
 			array(
 				'option_name'  => $this->get_event_history_option_name(),
-				'option_value' => json_encode( $history ),
+				'option_value' => wp_json_encode( $history ),
 				'autoload'     => 'no',
 			),
 			array(
@@ -394,11 +405,16 @@ class Lifecycle {
 	public function get_event_history() {
 		global $wpdb;
 		$history = [];
-		$results = $wpdb->get_var( $wpdb->prepare( "
+		$results = $wpdb->get_var(
+			$wpdb->prepare(
+				"
 			SELECT option_value
 			FROM {$wpdb->options}
 			WHERE option_name = %s
-		", $this->get_event_history_option_name() ) );
+		",
+				$this->get_event_history_option_name()
+			)
+		);
 		if ( $results ) {
 			$history = json_decode( $results, true );
 		}
