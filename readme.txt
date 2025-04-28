@@ -63,5 +63,6 @@ When opening a bug on GitHub, please give us as many details as possible.
 * Tweak - Remove type casting for gpc to int by @devbodaghe in 3078
 * Tweak - Disable unmapped fields to batch api by @devbodaghe in #3079
 * Fix - Product variation fields not saving correctly by @devbodaghe in #3090
+* Fix - Removed failing test due to merge conflicts @vinkmeta in #3103
 
 [See changelog for all versions](https://raw.githubusercontent.com/facebook/facebook-for-woocommerce/refs/heads/main/changelog.txt).

@@ -23,6 +23,7 @@
 * Tweak - Remove type casting for gpc to int by @devbodaghe in 3078
 * Tweak - Disable unmapped fields to batch api by @devbodaghe in #3079
 * Fix - Product variation fields not saving correctly by @devbodaghe in #3090
+* Fix - Removed failing test due to merge conflicts @vinkmeta in #3103
 
 = 3.4.6 - 2025-04-04 =
 * Fix - Product availability syncing by @vinkmeta in #3010
