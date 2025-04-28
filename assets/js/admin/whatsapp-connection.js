@@ -10,9 +10,13 @@
 jQuery( document ).ready( function( $ ) {
     var $connectSuccess = $('#wc-fb-whatsapp-connect-success');
     var $connectInProgress = $('#wc-fb-whatsapp-connect-inprogress');
+    var $connectSubcontent = $('#wc-fb-whatsapp-onboarding-subcontent');
+    var $connectButtonWrapper = $('#wc-fb-whatsapp-onboarding-button-wrapper');
     if (facebook_for_woocommerce_whatsapp_onboarding_progress.whatsapp_onboarding_complete) {
         $connectSuccess.show();
         $connectInProgress.hide();
+        $connectSubcontent.hide();
+        $connectButtonWrapper.hide();
     } else {
         $connectSuccess.hide();
         $connectInProgress.show();
@@ -39,9 +43,14 @@ jQuery( document ).ready( function( $ ) {
                 // update the progress for connect whatsapp step
                 $connectInProgress.remove();
                 $connectSuccess.show();
-                // update the progress for collect consent step
+                 // collapse whatsapp onboarding step subcontect and button on success
+                $connectSubcontent.hide();
+                $connectButtonWrapper.hide();
+                // update the progress for collect consent step and show button and subcontent
                 $('#wc-fb-whatsapp-consent-collection-inprogress').show();
                 $('#wc-fb-whatsapp-consent-collection-notstarted').hide();
+                $('#whatsapp-consent-subcontent').show();
+	            $('#whatsapp-consent-button-wrapper').show();
 			} else {
                 console.log('Failure. Checking again in 1 second:', response, ', retry attempt:', retryCount, 'pollingTimeout', pollingTimeout);
                 if(retryCount >= pollingTimeout) {
