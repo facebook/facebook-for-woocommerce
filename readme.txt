@@ -62,5 +62,6 @@ When opening a bug on GitHub, please give us as many details as possible.
 * Fix - A problem where Purchase event was not firing if thankyou page was not shown or Purchase state updated through Woo dashboard by @vahidkay-meta in #3060
 * Tweak - Remove type casting for gpc to int by @devbodaghe in 3078
 * Tweak - Disable unmapped fields to batch api by @devbodaghe in #3079
+* Fix - Product variation fields not saving correctly by @devbodaghe in #3090
 
 [See changelog for all versions](https://raw.githubusercontent.com/facebook/facebook-for-woocommerce/refs/heads/main/changelog.txt).
