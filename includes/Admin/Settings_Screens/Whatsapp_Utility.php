@@ -408,8 +408,10 @@ class Whatsapp_Utility extends Abstract_Settings_Screen {
 		?>
 		<div class="onboarding-card">
 			<div class="card-item">
-				<h1><b><?php esc_html_e( 'Manage order confirmation message', 'facebook-for-woocommerce' ); ?></b></h1>
-				<p><?php esc_html_e( 'Send a confirmation to customers after they\'ve placed an order.', 'facebook-for-woocommerce' ); ?></p>
+				<div class="card-content">
+					<h1><b><?php esc_html_e( 'Manage order confirmation message', 'facebook-for-woocommerce' ); ?></b></h1>
+					<p><?php esc_html_e( 'Send a confirmation to customers after they\'ve placed an order.', 'facebook-for-woocommerce' ); ?></p>
+				</div>
 			</div>
 			<div class="divider"></div>
 			<div class="card-item">
@@ -422,16 +424,16 @@ class Whatsapp_Utility extends Abstract_Settings_Screen {
 			<div class="card-item">
 				<div class="manage-event-template-block">
 					<div class="manage-event-template-header">
-						<input type="radio" name="template-status" value="on" />
-						<label for="template-status"><b><?php esc_html_e( 'Send order confirmation message', 'facebook-for-woocommerce' ); ?> </b></label>
+						<input type="radio" name="template-status" id="active-template-status" value="ACTIVE" checked="checked" />
+						<label for="active-template-status"><b><?php esc_html_e( 'Send order confirmation message', 'facebook-for-woocommerce' ); ?> </b></label>
 					</div>
 					<div class="divider"></div>
 					<div class="card-item fbwa-hidden-element" id="library-template-content"></div>
 				</div>
 				<div class="manage-event-template-block">
 					<div class="manage-event-template-header">
-						<input type="radio" name="template-status" value="off" />
-						<label for="template-status"><b><?php esc_html_e( 'Turn off order confirmation', 'facebook-for-woocommerce' ); ?> </b></label>
+						<input type="radio" name="template-status" id="inactive-template-status" value="INACTIVE" />
+						<label for="inactive-template-status"><b><?php esc_html_e( 'Turn off order confirmation', 'facebook-for-woocommerce' ); ?> </b></label>
 					</div>
 				</div>
 			</div>
