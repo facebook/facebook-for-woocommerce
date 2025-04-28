@@ -10,13 +10,17 @@
 jQuery( document ).ready( function( $ ) {
   	var $billingStepInProgress = $('#wc-fb-whatsapp-billing-inprogress');
   	var $billingStepNotStarted = $('#wc-fb-whatsapp-billing-notstarted');
-		if (facebook_for_woocommerce_whatsapp_consent.consent_collection_enabled) {
-			$billingStepInProgress.show();
-			$billingStepNotStarted.hide();
-		} else {
-			$billingStepInProgress.hide();
-			$billingStepNotStarted.show();
-		}
+	var $billingSubcontent = $('#wc-fb-whatsapp-billing-subcontent');
+	var $billingButtonWrapper = $('#wc-fb-whatsapp-billing-button-wrapper');
+	if (facebook_for_woocommerce_whatsapp_consent.consent_collection_enabled) {
+		$billingStepInProgress.show();
+		$billingStepNotStarted.hide();
+	} else {
+		$billingStepInProgress.hide();
+		$billingStepNotStarted.show();
+		$billingSubcontent.hide();
+		$billingButtonWrapper.hide()
+	}
 
     // handle the whatsapp add payment button click should open billing flow in Meta
     $('#wc-whatsapp-add-payment').click(function(event) {

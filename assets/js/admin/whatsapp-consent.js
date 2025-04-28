@@ -11,14 +11,20 @@ jQuery( document ).ready( function( $ ) {
 	var $consentCollectSuccess = $('#wc-fb-whatsapp-consent-collection-success');
   	var $consentCollectInProgress = $('#wc-fb-whatsapp-consent-collection-inprogress');
   	var $consentCollectNotStarted = $('#wc-fb-whatsapp-consent-collection-notstarted');
+	var $consentSubcontent = $('#wc-fb-whatsapp-consent-subcontent');
+	var $consentButtonWrapper = $('#wc-fb-whatsapp-consent-button-wrapper');
 	if (facebook_for_woocommerce_whatsapp_consent.whatsapp_onboarding_complete) {
 		if (facebook_for_woocommerce_whatsapp_consent.consent_collection_enabled) {
 			showConsentCollectionProgressIcon(true, false, false);
+			$consentSubcontent.hide();
+			$consentButtonWrapper.hide();
 		} else {
 			showConsentCollectionProgressIcon(false, true, false);
 		}
     } else {
 		showConsentCollectionProgressIcon(false, false, true);
+		$consentSubcontent.hide();
+		$consentButtonWrapper.hide();
     }
 
     // handle the whatsapp consent collect button click should save setting to wp_options table
@@ -30,11 +36,15 @@ jQuery( document ).ready( function( $ ) {
 		}, function ( response ) {
             if ( response.success ) {
 				console.log( 'success', response );
-				// update the progress for collect consent step
+				// update the progress for collect consent step and hide the button and subcontent
 				showConsentCollectionProgressIcon(true, false, false);
-				// update the progress of billing step
+				$consentSubcontent.hide();
+				$consentButtonWrapper.hide();
+				// update the progress of billing step and show the button and subcontent
 				$('#wc-fb-whatsapp-billing-inprogress').show();
                 $('#wc-fb-whatsapp-billing-notstarted').hide();
+				$('#wc-fb-whatsapp-billing-subcontent').show();
+				$('#wc-fb-whatsapp-billing-button-wrapper').show();
 			}
 		} );
 

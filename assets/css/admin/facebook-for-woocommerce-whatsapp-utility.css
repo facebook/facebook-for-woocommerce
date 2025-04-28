@@ -8,7 +8,6 @@
     margin-top: 50px;
 }
 .custom-dashicon-check {
-    margin-top: 30px;
     position: relative;
     display: inline-block;
     width: 26px; /* Set the size of the circle */
@@ -16,6 +15,8 @@
     background-color: #1a805b; /* Fill the circle with green */
     border-radius: 50%; /* Make it a circle */
     margin-right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
 }
 .custom-dashicon-check::before {
     content: '\f147'; /* Unicode for dashicons-yes-alt */
@@ -34,7 +35,6 @@
 }
 
 .custom-dashicon-circle {
-    margin-top: 30px;
     position: relative;
     display: inline-block;
     width: 20px; /* Set the size of the circle */
@@ -42,9 +42,10 @@
     border-radius: 50%; /* Make it a circle */
     margin-right: 10px;
     border: 3px solid #222121ab;
+    top: 50%;
+    transform: translateY(-50%);
 }
 .custom-dashicon-halfcircle {
-    margin-top: 30px;
     position: relative;
     display: inline-block;
     width: 20px; /* Set the size of the circle */
@@ -54,6 +55,8 @@
     border: 3px solid #222121ab;
     background-image: linear-gradient(to left, #222121ab 50%, transparent 50%);
     background-clip: padding-box; /* Add this line */
+    top: 50%;
+    transform: translateY(-50%);
 }
 .card-content-icon {
     display: flex;
