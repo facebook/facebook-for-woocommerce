@@ -359,14 +359,20 @@ class Whatsapp_Utility extends Abstract_Settings_Screen {
 			<div class="card-item event-config">
 					<div>
 						<div class="event-config-heading-container">
-							<h3><?php esc_html_e( 'Checkbox', 'facebook-for-woocommerce' ); ?></h3>
+							<h3><?php esc_html_e( 'Add WhatsApp option at checkout', 'facebook-for-woocommerce' ); ?></h3>
 							<div class="event-config-status on-status">
 								<?php esc_html_e( 'On', 'facebook-for-woocommerce' ); ?>
-							</div>
 						</div>
-						<p><?php esc_html_e( 'Removing this means you won\'t be able to send messages to your customers.', 'facebook-for-woocommerce' ); ?></p>
 					</div>
-					</div>
+					<span class="consent-update-card-subcontent">
+						<?php esc_html_e( 'Adds a checkbox to your store\'s checkout page that lets customers request updates about their order on WhatsApp. This allows you to communicate with customers after they make a purchase. You can preview what this looks like ', 'facebook-for-woocommerce' ); ?>
+						<a
+							href="<?php echo admin_url( 'post.php?post=' . get_option( 'woocommerce_checkout_page_id' ) . '&action=edit' ); ?>"
+							id="wc-whatsapp-checkout-preview"
+							target="_blank"
+						><?php esc_html_e( 'checkout preview.', 'facebook-for-woocommerce' ); ?>
+						</a>
+					</span>
 					<div class="event-config-manage-button">
 						<a
 							id="wc-whatsapp-collect-consent-remove"
