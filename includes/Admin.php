@@ -1932,7 +1932,7 @@ class Admin {
 													// Always add the sync badge after the multi-value display
 													// Only if it doesn't already exist
 													if ($multiDisplay.next('.sync-indicator').length === 0) {
-														$multiDisplay.after('<span class="sync-indicator wc-attributes-icon" data-tip="Synced from the Attributes tab. Multiple values are used for variations." style="margin-left: 4px;"><span class="sync-tooltip">Synced from the Attributes tab. Multiple values are used for variations.</span></span>');
+														$multiDisplay.after('<span class="sync-indicator wc-attributes-icon" data-tip="Synced from the Attributes tab." style="margin-left: 4px;"><span class="sync-tooltip">Synced from the Attributes tab.</span></span>');
 													}
 												} else {
 													// Update the existing multi-value display
