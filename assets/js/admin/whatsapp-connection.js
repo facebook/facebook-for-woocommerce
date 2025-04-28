@@ -49,8 +49,8 @@ jQuery( document ).ready( function( $ ) {
                 // update the progress for collect consent step and show button and subcontent
                 $('#wc-fb-whatsapp-consent-collection-inprogress').show();
                 $('#wc-fb-whatsapp-consent-collection-notstarted').hide();
-                $('#whatsapp-consent-subcontent').show();
-	            $('#whatsapp-consent-button-wrapper').show();
+                $('#wc-fb-whatsapp-consent-subcontent').show();
+	            $('#wc-fb-whatsapp-consent-button-wrapper').show();
 			} else {
                 console.log('Failure. Checking again in 1 second:', response, ', retry attempt:', retryCount, 'pollingTimeout', pollingTimeout);
                 if(retryCount >= pollingTimeout) {
