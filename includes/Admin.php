@@ -465,7 +465,6 @@ class Admin {
 	}
 
 	
-
 	/**
 	 * Adds a dropdown input to Include or Exclude product in Facebook Bulk Sync.
 	 *
