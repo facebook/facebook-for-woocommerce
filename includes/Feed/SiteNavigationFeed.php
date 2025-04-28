@@ -29,8 +29,7 @@ class SiteNavigationFeed extends AbstractFeed {
 	 * @since 3.5.0
 	 */
 	public function __construct() {
-		// Replace with new JSON file writer
-		$file_writer  = new CsvFeedFileWriter( self::get_data_stream_name(), '' );
+		$file_writer  = new JsonFeedFileWriter( self::get_data_stream_name(), '' );
 		$feed_handler = new SiteNavigationFeedHandler( $file_writer );
 
 		$scheduler      = new ActionScheduler();
@@ -52,7 +51,6 @@ class SiteNavigationFeed extends AbstractFeed {
 	}
 
 	protected static function get_feed_gen_interval(): int {
-		// Not sure what the cadence of this should be yet
 		return DAY_IN_SECONDS;
 	}
 }

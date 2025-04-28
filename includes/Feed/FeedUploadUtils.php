@@ -112,7 +112,9 @@ class FeedUploadUtils {
 	}
 
 	public static function get_site_navigation_data(): array {
-		return [];
+		$site_navigation_data   = array();
+		$site_navigation_data[] = [ 'Test site navigation JSON file writing' ];
+		return $site_navigation_data;
 	}
 
 	/**
