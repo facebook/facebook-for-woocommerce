@@ -1715,6 +1715,9 @@ class WC_Facebook_Product {
 			if( $parent_product ){
 				$parent_product_visibility =  $parent_product->get_meta( Products::VISIBILITY_META_KEY );
 
+				/**
+				 * If parent's visibility is already marked we know we should assign it to the child/variation as well
+				 */
 				if($parent_product_visibility === "yes"){
 					$product_data[ 'visibility' ] = \WC_Facebookcommerce_Integration::FB_SHOP_PRODUCT_VISIBLE;
 				}
@@ -1722,6 +1725,12 @@ class WC_Facebook_Product {
 					$product_data[ 'visibility' ] = \WC_Facebookcommerce_Integration::FB_SHOP_PRODUCT_HIDDEN;
 				}
 				else{
+					/**
+					 * If the visibility is empty,
+					 * We then check for the variation's visibility.
+					 * If even a single one is marked yes, we bail it out as published.
+					 * If all marked no we honor the visibility as hidden.
+					 */
 					$variations = $parent_product->get_children(); 
 					$variation_visibility = false;
 
@@ -1735,6 +1744,12 @@ class WC_Facebook_Product {
 						if ($variation_visibility) break;
 					}
 					$product_data[ 'visibility' ] = $variation_visibility ? \WC_Facebookcommerce_Integration::FB_SHOP_PRODUCT_VISIBLE : \WC_Facebookcommerce_Integration::FB_SHOP_PRODUCT_HIDDEN;
+					/**
+					 *  Since this function will be called again for other variations as well for the same parent product.
+					 *  We can now assign the visibility marker to the parent product
+					 *  That way it won't come to this block next time
+					 */
+	
 					update_post_meta($parent_id,Products::VISIBILITY_META_KEY, $variation_visibility ? "yes" : "no");
 				}
 			}
