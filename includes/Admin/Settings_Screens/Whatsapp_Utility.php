@@ -343,8 +343,8 @@ class Whatsapp_Utility extends Abstract_Settings_Screen {
 							</div>
 						</div>
 						<p><?php esc_html_e( 'Removing this means you won\'t be able to send messages to your customers.', 'facebook-for-woocommerce' ); ?></p>
-					</div>	
-					</div>	
+					</div>
+					</div>
 					<div class="event-config-manage-button">
 						<a
 							id="wc-whatsapp-collect-consent-remove"
@@ -352,6 +352,22 @@ class Whatsapp_Utility extends Abstract_Settings_Screen {
 							href="#"><?php esc_html_e( 'Remove', 'facebook-for-woocommerce' ); ?></a>
 					</div>
 				</div>
+		<div id="warning-modal" class="custom-modal">
+   		<div class="modal-content">
+   		 <div class="modal-header">
+   		   <span class="close">&times;</span>
+   		   <h2><?php esc_html_e( 'Stop sending messages to customers ?', 'facebook-for-woocommerce' ); ?></h2>
+   		 </div>
+   		 <div class="modal-body">
+   		  	<?php esc_html_e( 'Removing this means customers won\'t be able to receive WhatsApp messages from your business. You\'ll remove the checkbox from your checkout page and stop collecting phone numbers from customers.', 'facebook-for-woocommerce' ); ?>
+   		 </div>
+   		 <div class="modal-footer">
+   		   <button id="modal-cancel" class="button">Cancel</button>
+   		   <button id="warning-modal-confirm" class="button button-primary">Confirm</button>
+   		 </div>
+  		</div>
+		</div>
+		</div>
 		</div>
 		<?php
 	}
@@ -413,8 +429,6 @@ class Whatsapp_Utility extends Abstract_Settings_Screen {
 				</div>
 
 			</div>
-
-
 		</div>
 		<?php
 	}
