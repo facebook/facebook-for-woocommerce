@@ -130,7 +130,9 @@ abstract class AbstractFeed {
 			return;
 		}
 
-		$this->feed_generator->queue_start();
+		// Need to figure out how to get NavigationMenuFeedGenerator to work correctly
+		// $this->feed_generator->queue_start();
+		$this->feed_handler->generate_feed_file();
 	}
 
 	/**

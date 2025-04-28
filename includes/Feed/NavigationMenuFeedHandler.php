@@ -18,7 +18,7 @@ defined( 'ABSPATH' ) || exit;
  * @package WooCommerce\Facebook\Feed
  * @since 3.5.0
  */
-class SiteNavigationFeedHandler extends AbstractFeedHandler {
+class NavigationMenuFeedHandler extends AbstractFeedHandler {
 
 	/**
 	 * Constructor.
@@ -27,7 +27,7 @@ class SiteNavigationFeedHandler extends AbstractFeedHandler {
 	 */
 	public function __construct( AbstractFeedFileWriter $feed_writer ) {
 		$this->feed_writer = $feed_writer;
-		$this->feed_type   = FeedManager::SITE_NAVIGATION;
+		$this->feed_type   = FeedManager::NAVIGATION_MENU;
 	}
 
 	/**
@@ -37,6 +37,6 @@ class SiteNavigationFeedHandler extends AbstractFeedHandler {
 	 * @since 3.5.0
 	 */
 	public function get_feed_data(): array {
-		return FeedUploadUtils::get_site_navigation_data();
+		return FeedUploadUtils::get_navigation_menu_data();
 	}
 }

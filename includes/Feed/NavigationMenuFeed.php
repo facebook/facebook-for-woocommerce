@@ -15,25 +15,25 @@ defined( 'ABSPATH' ) || exit;
 use Automattic\WooCommerce\ActionSchedulerJobFramework\Proxies\ActionScheduler;
 
 /**
- * Site Navigation Feed Class
+ * Navigation Menu Feed Class
  *
- * Extends Abstract Feed class to handle site navigation feed requests and generation for Facebook integration.
+ * Extends Abstract Feed class to handle navigation menu feed requests and generation for Facebook integration.
  *
  * @package WooCommerce\Facebook\Feed
  * @since 3.5.0
  */
-class SiteNavigationFeed extends AbstractFeed {
+class NavigationMenuFeed extends AbstractFeed {
 	/**
-	 * Constructor for site navigation feed.
+	 * Constructor for navigation menu feed.
 	 *
 	 * @since 3.5.0
 	 */
 	public function __construct() {
 		$file_writer  = new JsonFeedFileWriter( self::get_data_stream_name(), '' );
-		$feed_handler = new SiteNavigationFeedHandler( $file_writer );
+		$feed_handler = new NavigationMenuFeedHandler( $file_writer );
 
 		$scheduler      = new ActionScheduler();
-		$feed_generator = new SiteNavigationFeedGenerator( $scheduler, $file_writer, self::get_data_stream_name() );
+		$feed_generator = new NavigationMenuFeedGenerator( $scheduler, $file_writer, self::get_data_stream_name() );
 
 		$this->init(
 			$file_writer,
@@ -43,11 +43,11 @@ class SiteNavigationFeed extends AbstractFeed {
 	}
 
 	protected static function get_feed_type(): string {
-		return 'SITE_NAVIGATION';
+		return 'NAVIGATION_MENU';
 	}
 
 	protected static function get_data_stream_name(): string {
-		return FeedManager::SITE_NAVIGATION;
+		return FeedManager::NAVIGATION_MENU;
 	}
 
 	protected static function get_feed_gen_interval(): int {
