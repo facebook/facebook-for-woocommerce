@@ -8,14 +8,37 @@
  */
 
 jQuery( document ).ready( function( $ ) {
-    // handle the manage event button click for order confirmation
-    $('#woocommerce-whatsapp-manage-order-confirmation').click(function(event) {
-        $.post( facebook_for_woocommerce_whatsapp_events.ajax_url, {
-			action: 'wc_facebook_whatsapp_fetch_library_template_info',
-			nonce:  facebook_for_woocommerce_whatsapp_events.nonce
-		}, function ( response ) {
-            // TODO: update UI components to prefill library template content
-            console.log(response);
-		} );
+    // update current view from utility settings to manage event when order confirmation button is clicked.
+    $('#woocommerce-whatsapp-manage-order-confirmation').click(function (event) {
+        let url = new URL(window.location.href);
+        let params = new URLSearchParams(url.search);
+        params.set('view', 'manage_event');
+        url.search = params.toString();
+        window.location.href = url.toString();
     });
-} );
+
+    // call template library get API to show message template header, body and button text configured for the event.
+    $("#library-template-content").load(facebook_for_woocommerce_whatsapp_events.ajax_url, function () {
+        $.post(facebook_for_woocommerce_whatsapp_events.ajax_url, {
+            action: 'wc_facebook_whatsapp_fetch_library_template_info',
+            nonce: facebook_for_woocommerce_whatsapp_events.nonce
+        }, function (response) {
+            if (response.success) {
+                const parsedData = JSON.parse(response.data);
+                const apiResponseData = parsedData.data[0];
+                // Parse template strings as HTML and extract text content to sanitize text
+                const header = $.parseHTML(apiResponseData.header)[0].textContent;
+                const body = $.parseHTML(apiResponseData.body)[0].textContent;
+                const button = $.parseHTML(apiResponseData.buttons[0].text)[0].textContent;
+                $('#library-template-content').html(`
+                    <h3>Header</h3>
+                    <p>${header}</p>
+                    <h3>Body</h3>
+                    <p>${body}</p>
+                    <h3>Call to action</h3>
+                    <p>${button}</p>
+                `).show();
+            }
+        });
+    });
+});

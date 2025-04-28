@@ -382,11 +382,7 @@ class Whatsapp_Utility extends Abstract_Settings_Screen {
 						<label for="template-status"><b><?php esc_html_e( 'Send order confirmation message', 'facebook-for-woocommerce' ); ?> </b></label>
 					</div>
 					<div class="divider"></div>
-					<div class="card-item">
-						<h4>[Header]</h4>
-						<h4>[Body]</h4>
-						<h4>[Call to Action]</h4>
-					</div>
+					<div class="card-item fbwa-hidden-element" id="library-template-content"></div>
 				</div>
 				<div class="manage-event-template-block">
 					<div class="manage-event-template-header">

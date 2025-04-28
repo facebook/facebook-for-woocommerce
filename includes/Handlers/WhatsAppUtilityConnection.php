@@ -56,14 +56,13 @@ class WhatsAppUtilityConnection {
 
 		$response    = wp_remote_request( $url, $options );
 		$status_code = wp_remote_retrieve_response_code( $response );
+		$data        = wp_remote_retrieve_body( $response );
 		if ( is_wp_error( $response ) || 200 !== $status_code ) {
-			$error_data    = explode( "\n", wp_remote_retrieve_body( $response ) );
-			$error_message = $error_data[0];
 			wc_get_logger()->info(
 				sprintf(
 					/* translators: %s $error_message */
 					__( 'Template Library GET API call Failed %1$s ', 'facebook-for-woocommerce' ),
-					$error_message,
+					$data,
 				)
 			);
 			wp_send_json_error( $response, 'Template Library GET API call Failed' );
@@ -73,7 +72,7 @@ class WhatsAppUtilityConnection {
 					__( 'Template Library GET API call Succeeded', 'facebook-for-woocommerce' )
 				)
 			);
-			wp_send_json_success( $response, 'Finish Template Library API Call' );
+			wp_send_json_success( $data, 'Finish Template Library API Call' );
 		}
 	}
 
