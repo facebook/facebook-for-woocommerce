@@ -85,13 +85,16 @@ class Whatsapp_Utility extends Abstract_Settings_Screen {
 			array( 'jquery', 'jquery-blockui', 'jquery-tiptip', 'wc-enhanced-select' ),
 			\WC_Facebookcommerce::PLUGIN_VERSION
 		);
+		$consent_collection_enabled = get_option( 'wc_facebook_whatsapp_consent_collection_setting_status', null ) === 'enabled';
 		wp_localize_script(
 			'facebook-for-woocommerce-whatsapp-consent',
 			'facebook_for_woocommerce_whatsapp_consent',
 			array(
-				'ajax_url' => admin_url( 'admin-ajax.php' ),
-				'nonce'    => wp_create_nonce( 'facebook-for-wc-whatsapp-consent-nonce' ),
-				'i18n'     => array(
+				'ajax_url'                     => admin_url( 'admin-ajax.php' ),
+				'nonce'                        => wp_create_nonce( 'facebook-for-wc-whatsapp-consent-nonce' ),
+				'whatsapp_onboarding_complete' => $whatsapp_connected,
+				'consent_collection_enabled'   => $consent_collection_enabled,
+				'i18n'                         => array(
 					'result' => true,
 				),
 			)
@@ -106,9 +109,10 @@ class Whatsapp_Utility extends Abstract_Settings_Screen {
 			'facebook-for-woocommerce-whatsapp-billing',
 			'facebook_for_woocommerce_whatsapp_billing',
 			array(
-				'ajax_url' => admin_url( 'admin-ajax.php' ),
-				'nonce'    => wp_create_nonce( 'facebook-for-wc-whatsapp-billing-nonce' ),
-				'i18n'     => array(
+				'ajax_url'                   => admin_url( 'admin-ajax.php' ),
+				'nonce'                      => wp_create_nonce( 'facebook-for-wc-whatsapp-billing-nonce' ),
+				'consent_collection_enabled' => $consent_collection_enabled,
+				'i18n'                       => array(
 					'result' => true,
 				),
 			)
@@ -203,14 +207,14 @@ class Whatsapp_Utility extends Abstract_Settings_Screen {
 		<div class="divider"></div>
 		<div class="card-item">
 			<div class="card-content-icon">
-				<div id="wc-fb-whatsapp-connect-success" class="custom-dashicon-check" style="display: none;"></div>
-				<div id="wc-fb-whatsapp-connect-inprogress" class="custom-dashicon-halfcircle" style="display: none;" ></div>
+				<div id="wc-fb-whatsapp-connect-success" class="custom-dashicon-check fbwa-hidden-element"></div>
+				<div id="wc-fb-whatsapp-connect-inprogress" class="custom-dashicon-halfcircle fbwa-hidden-element"></div>
 				<div class="card-content">
 					<h2><?php esc_html_e( 'Connect your WhatApp Business account', 'facebook-for-woocommerce' ); ?></h2>
-					<p><?php esc_html_e( 'Allows WooCommerce to connect to your WhatsApp account. ', 'facebook-for-woocommerce' ); ?></p>
+					<p id="wc-fb-whatsapp-onboarding-subcontent"><?php esc_html_e( 'Allows WooCommerce to connect to your WhatsApp account. ', 'facebook-for-woocommerce' ); ?></p>
 				</div>
 			</div>
-			<div class="whatsapp-onboarding-button">
+			<div id="wc-fb-whatsapp-onboarding-button-wrapper" class="whatsapp-onboarding-button">
 				<a
 					id="woocommerce-whatsapp-connection"
 					class="button"
@@ -221,13 +225,15 @@ class Whatsapp_Utility extends Abstract_Settings_Screen {
 		<div class="divider"></div>
 		<div class="card-item">
 			<div class="card-content-icon">
-				<div id="wc-fb-whatsapp-consent-collection-notstarted" class="custom-dashicon-circle"></div>
+				<div id="wc-fb-whatsapp-consent-collection-notstarted" class="custom-dashicon-circle fbwa-hidden-element"></div>
+				<div id="wc-fb-whatsapp-consent-collection-success" class="custom-dashicon-check fbwa-hidden-element"></div>
+				<div id="wc-fb-whatsapp-consent-collection-inprogress" class="custom-dashicon-halfcircle fbwa-hidden-element"></div>
 				<div class="card-content">
 					<h2><?php esc_html_e( 'Add WhatsApp option at checkout', 'facebook-for-woocommerce' ); ?></h2>
-					<p><?php esc_html_e( 'Adds a checkbox to your store’s checkout page that lets customers request updates about their order on WhatsApp. This allows you to communicate with customers after they make a purchase. You can remove this anytime.', 'facebook-for-woocommerce' ); ?></p>
+					<p id="wc-fb-whatsapp-consent-subcontent"><?php esc_html_e( 'Adds a checkbox to your store’s checkout page that lets customers request updates about their order on WhatsApp. This allows you to communicate with customers after they make a purchase. You can remove this anytime.', 'facebook-for-woocommerce' ); ?></p>
 				</div>
 			</div>
-			<div class="whatsapp-onboarding-button">
+			<div id="wc-fb-whatsapp-consent-button-wrapper" class="whatsapp-onboarding-button">
 			<a
 				class="button"
 				id="wc-whatsapp-collect-consent"
@@ -238,20 +244,23 @@ class Whatsapp_Utility extends Abstract_Settings_Screen {
 		<div class="divider"></div>
 		<div class="card-item">
 			<div class="card-content-icon">
-				<div id="wc-fb-whatsapp-payment-notstarted" class="custom-dashicon-circle"></div>
+				<div id="wc-fb-whatsapp-billing-notstarted" class="custom-dashicon-circle fbwa-hidden-element"></div>
+				<div id="wc-fb-whatsapp-billing-inprogress" class="custom-dashicon-halfcircle fbwa-hidden-element"></div>
 				<div class="card-content">
 					<h2><?php esc_html_e( 'Add a payment method', 'facebook-for-woocommerce' ); ?></h2>
-					<p><?php esc_html_e( 'Review and update your payment method in Billings & payments.', 'facebook-for-woocommerce' ); ?>
-						<a
-							href="https://developers.facebook.com/docs/whatsapp/pricing/#rate-cards"
-							id="wc-whatsapp-about-pricing"
-							target="_blank"
-						><?php esc_html_e( 'About pricing', 'facebook-for-woocommerce' ); ?>
-						</a>
-					</p>
+					<div id="wc-fb-whatsapp-billing-subcontent">
+						<p><?php esc_html_e( 'Review and update your payment method in Billings & payments.', 'facebook-for-woocommerce' ); ?>
+							<a
+								href="https://developers.facebook.com/docs/whatsapp/pricing/#rate-cards"
+								id="wc-whatsapp-about-pricing"
+								target="_blank"
+							><?php esc_html_e( 'About pricing', 'facebook-for-woocommerce' ); ?>
+							</a>
+						</p>
+					</div>
 				</div>
 			</div>
-			<div class="whatsapp-onboarding-button">
+			<div id="wc-fb-whatsapp-billing-button-wrapper" class="whatsapp-onboarding-button">
 				<a
 					class="button"
 					id="wc-whatsapp-add-payment"
@@ -260,7 +269,7 @@ class Whatsapp_Utility extends Abstract_Settings_Screen {
 			</div>
 		</div>
 		<div class="error-notice-wrapper">
-			<div id="payment-method-error-notice" style="display: none;"></div>
+			<div id="payment-method-error-notice fbwa-hidden-element"></div>
 		</div>
 		<div class="divider"></div>
 		<div class="card-item">
