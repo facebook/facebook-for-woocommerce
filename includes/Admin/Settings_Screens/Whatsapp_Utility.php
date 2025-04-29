@@ -367,7 +367,7 @@ class Whatsapp_Utility extends Abstract_Settings_Screen {
 					<span class="consent-update-card-subcontent">
 						<?php esc_html_e( 'Adds a checkbox to your store\'s checkout page that lets customers request updates about their order on WhatsApp. This allows you to communicate with customers after they make a purchase. You can preview what this looks like ', 'facebook-for-woocommerce' ); ?>
 						<a
-							href="<?php echo admin_url( 'post.php?post=' . get_option( 'woocommerce_checkout_page_id' ) . '&action=edit' ); ?>"
+							href="<?php echo esc_url( admin_url( 'post.php?post=' . get_option( 'woocommerce_checkout_page_id' ) . '&action=edit' ) ); ?>"
 							id="wc-whatsapp-checkout-preview"
 							target="_blank"
 						><?php esc_html_e( 'checkout preview.', 'facebook-for-woocommerce' ); ?>
