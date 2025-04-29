@@ -30,7 +30,7 @@ jQuery( document ).ready( function( $ ) {
     }
 
 
-    if(cancelButton) {
+    if(confirmButton) {
     // Handle confirm action
         confirmButton.onclick = function() {
             // Send the AJAX request to disable WhatsApp consent collection
