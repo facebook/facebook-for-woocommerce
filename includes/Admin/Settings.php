@@ -229,10 +229,10 @@ class Settings {
 		<nav class="nav-tab-wrapper woo-nav-tab-wrapper facebook-for-woocommerce-tabs">
 			<?php foreach ( $tabs as $id => $label ) : ?>
 				<?php $url = admin_url( 'admin.php?page=' . self::PAGE_ID . '&tab=' . esc_attr( $id ) ); ?>
-				<?php if ( $id === 'whatsapp_utility' ) : ?>
+				<?php if ( 'whatsapp_utility' === $id ) : ?>
 					<?php
 					$wa_onboarding_completion_setting = get_option( 'wc_facebook_wa_integration_onboarding_complete', '' );
-					if ( $wa_onboarding_completion_setting === 'true' ) {
+					if ( 'true' === $wa_onboarding_completion_setting ) {
 						$url .= '&view=utility_settings';
 					}
 					?>
