@@ -963,7 +963,10 @@ if ( ! class_exists( 'WC_Facebookcommerce_Utils' ) ) :
 			$context['extra_data'] = $extra_data;
 
 			// Push logging request to global message queue function.
-			$logs   = get_transient( 'global_logging_message_queue' );
+			$logs = get_transient( 'global_logging_message_queue' );
+			if ( ! $logs ) {
+				$logs = [];
+			}
 			$logs[] = $context;
 			set_transient( 'global_logging_message_queue', $logs, HOUR_IN_SECONDS );
 		}
