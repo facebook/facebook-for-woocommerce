@@ -357,11 +357,11 @@ class Whatsapp_Utility extends Abstract_Settings_Screen {
 		</div>
 		<div class="onboarding-card">
 			<div class="card-item event-config">
-					<div>
-						<div class="event-config-heading-container">
-							<h3><?php esc_html_e( 'Add WhatsApp option at checkout', 'facebook-for-woocommerce' ); ?></h3>
-							<div class="event-config-status on-status">
-								<?php esc_html_e( 'On', 'facebook-for-woocommerce' ); ?>
+				<div class="card-content">
+					<div class="event-config-heading-container">
+						<h1><?php esc_html_e( 'Add WhatsApp option at checkout', 'facebook-for-woocommerce' ); ?></h1>
+						<div class="event-config-status on-status">
+							<?php esc_html_e( 'On', 'facebook-for-woocommerce' ); ?>
 						</div>
 					</div>
 					<span class="consent-update-card-subcontent">
@@ -373,24 +373,25 @@ class Whatsapp_Utility extends Abstract_Settings_Screen {
 						><?php esc_html_e( 'checkout preview.', 'facebook-for-woocommerce' ); ?>
 						</a>
 					</span>
-					<div class="event-config-manage-button">
-						<a
-							id="wc-whatsapp-collect-consent-remove"
-							class="event-config-manage-button button"
-							href="#"><?php esc_html_e( 'Remove', 'facebook-for-woocommerce' ); ?></a>
-					</div>
+				</div>
+				<div class="event-config-manage-button">
+					<a
+						id="wc-whatsapp-collect-consent-remove"
+						class="event-config-manage-button button"
+						href="#"><?php esc_html_e( 'Remove', 'facebook-for-woocommerce' ); ?>
+					</a>
 				</div>
 			</div>
 			<div id="wc-fb-warning-modal" class="warning-custom-modal">
 				<div class="warning-modal-content">
 					<h2><?php esc_html_e( 'Stop sending messages to customers ?', 'facebook-for-woocommerce' ); ?></h2>
-				<div class="warning-modal-body">
-				<?php esc_html_e( 'Removing this means customers won\'t be able to receive WhatsApp messages from your business. You\'ll remove the checkbox from your checkout page and stop collecting phone numbers from customers.', 'facebook-for-woocommerce' ); ?>
+					<div class="warning-modal-body">
+						<?php esc_html_e( 'Removing this means customers won\'t be able to receive WhatsApp messages from your business. You\'ll remove the checkbox from your checkout page and stop collecting phone numbers from customers.', 'facebook-for-woocommerce' ); ?>
+					</div>
 				</div>
 				<div class="warning-modal-footer">
 					<button id="wc-fb-warning-modal-cancel" class="button"><?php esc_html_e( 'Cancel', 'facebook-for-woocommerce' ); ?></button>
 					<button id="wc-fb-warning-modal-confirm" class="button button-primary"><?php esc_html_e( 'Remove', 'facebook-for-woocommerce' ); ?></button>
-				</div>
 				</div>
 			</div>
 		</div>
