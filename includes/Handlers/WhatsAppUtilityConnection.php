@@ -103,7 +103,7 @@ class WhatsAppUtilityConnection {
 		if ( is_wp_error( $response ) || 200 !== wp_remote_retrieve_response_code( $response ) ) {
 			$error_data    = explode( "\n", wp_remote_retrieve_body( $response ) );
 			$error_object  = json_decode( $error_data[0] );
-			$error_message = $error_object->error->error_user_title;
+			$error_message = $error_object->error->error_user_title ?? $error_object->error->message ?? 'Something went wrong. Please try again later!';
 
 			wc_get_logger()->info(
 				sprintf(
