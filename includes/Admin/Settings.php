@@ -231,9 +231,8 @@ class Settings {
 				<?php $url = admin_url( 'admin.php?page=' . self::PAGE_ID . '&tab=' . esc_attr( $id ) ); ?>
 				<?php if ( $id === 'whatsapp_utility' ) : ?>
 					<?php
-					$onboarding_completion_setting = get_option( 'wc_facebook_wa_integration_onboarding_complete', '' );
-					$onboarding_completed          = ! empty( $onboarding_completion_setting );
-					if ( $onboarding_completed ) {
+					$wa_onboarding_completion_setting = get_option( 'wc_facebook_wa_integration_onboarding_complete', '' );
+					if ( $wa_onboarding_completion_setting === 'true' ) {
 						$url .= '&view=utility_settings';
 					}
 					?>
