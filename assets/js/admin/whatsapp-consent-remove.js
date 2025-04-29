@@ -22,27 +22,32 @@ jQuery( document ).ready( function( $ ) {
         event.preventDefault();
     });
 
-    // Close modal when clicking the Cancel button
-    cancelButton.onclick = function() {
-        modal.style.display = "none";
-    };
+    if(cancelButton) {
+        // Close modal when clicking the Cancel button
+        cancelButton.onclick = function() {
+            modal.style.display = "none";
+        };
+    }
 
+
+    if(cancelButton) {
     // Handle confirm action
-    confirmButton.onclick = function() {
-        // Send the AJAX request to disable WhatsApp consent collection
-        $.post(facebook_for_woocommerce_whatsapp_consent_remove.ajax_url, {
-            action: 'wc_facebook_whatsapp_consent_collection_disable',
-            nonce: facebook_for_woocommerce_whatsapp_consent_remove.nonce
-        }, function(response) {
-            if (response.success) {
-                console.log('success', response);
-                // You can add a redirect or page refresh here if needed
-            }
-        });
+        confirmButton.onclick = function() {
+            // Send the AJAX request to disable WhatsApp consent collection
+            $.post(facebook_for_woocommerce_whatsapp_consent_remove.ajax_url, {
+                action: 'wc_facebook_whatsapp_consent_collection_disable',
+                nonce: facebook_for_woocommerce_whatsapp_consent_remove.nonce
+            }, function(response) {
+                if (response.success) {
+                    console.log('success', response);
+                    // You can add a redirect or page refresh here if needed
+                }
+            });
 
-        // Close the modal
-        modal.style.display = "none";
-    };
+            // Close the modal
+            modal.style.display = "none";
+        };
+    }
 
     // Close modal when clicking outside of it
     window.onclick = function(event) {
