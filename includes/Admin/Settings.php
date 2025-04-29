@@ -228,19 +228,19 @@ class Settings {
 		?>
 		<nav class="nav-tab-wrapper woo-nav-tab-wrapper facebook-for-woocommerce-tabs">
 			<?php foreach ( $tabs as $id => $label ) : ?>
+				<?php $url = admin_url( 'admin.php?page=' . self::PAGE_ID . '&tab=' . esc_attr( $id ) ); ?>
 				<?php if ( $id === 'whatsapp_utility' ) : ?>
-          <?php
-            $onboarding_completion_setting = get_option( 'wc_facebook_wa_integration_onboarding_complete', '' );
-            $onboarding_completed = ! empty( $onboarding_completion_setting );
-            $whatsapp_utility_url = admin_url( 'admin.php?page=' . self::PAGE_ID . '&tab=' . esc_attr( $id ) );
-            if ( $onboarding_completed ) {
-                $whatsapp_utility_url .= '&view=utility_settings';
-            }
-          ?>
-          <a href="<?php echo esc_url( $whatsapp_utility_url ); ?>" class="nav-tab <?php echo $current_tab === $id ? 'nav-tab-active' : ''; ?>"><?php echo esc_html( $label ); ?></a>
-        <?php else : ?>
-          <a href="<?php echo esc_url( admin_url( 'admin.php?page=' . self::PAGE_ID . '&tab=' . esc_attr( $id ) ) ); ?>" class="nav-tab <?php echo $current_tab === $id ? 'nav-tab-active' : ''; ?>"><?php echo esc_html( $label ); ?></a>
-        <?php endif; ?>
+					<?php
+					$onboarding_completion_setting = get_option( 'wc_facebook_wa_integration_onboarding_complete', '' );
+					$onboarding_completed          = ! empty( $onboarding_completion_setting );
+					if ( $onboarding_completed ) {
+						$url .= '&view=utility_settings';
+					}
+					?>
+					<a href="<?php echo esc_url( $url ); ?>" class="nav-tab <?php echo $current_tab === $id ? 'nav-tab-active' : ''; ?>"><?php echo esc_html( $label ); ?></a>
+				<?php else : ?>
+					<a href="<?php echo esc_url( $url ); ?>" class="nav-tab <?php echo $current_tab === $id ? 'nav-tab-active' : ''; ?>"><?php echo esc_html( $label ); ?></a>
+				<?php endif; ?>
 			<?php endforeach; ?>
 		</nav>
 		<?php
