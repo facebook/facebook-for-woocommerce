@@ -292,12 +292,14 @@ class Whatsapp_Utility extends Abstract_Settings_Screen {
 		?>
 		<div class="onboarding-card">
 			<div class="card-item">
-				<h1><?php esc_html_e( 'Utility Messages', 'facebook-for-woocommerce' ); ?></h1>
-				<p><?php esc_html_e( 'Manage which utility messages you want to send to customers. You can check performance of these messages in Whatsapp Manager.', 'facebook-for-woocommerce' ); ?>
-					<a
-						id="woocommerce-whatsapp-manager-insights"
-						href="#"><?php esc_html_e( 'View insights', 'facebook-for-woocommerce' ); ?></a>
-				</p>
+				<div class="card-content">
+					<h1><?php esc_html_e( 'Utility Messages', 'facebook-for-woocommerce' ); ?></h1>
+					<p><?php esc_html_e( 'Manage which utility messages you want to send to customers. You can check performance of these messages in Whatsapp Manager.', 'facebook-for-woocommerce' ); ?>
+						<a
+							id="woocommerce-whatsapp-manager-insights"
+							href="#"><?php esc_html_e( 'View insights', 'facebook-for-woocommerce' ); ?></a>
+					</p>
+				</div>
 			</div>
 			<div class="divider"></div>
 			<div class="card-item event-config">
