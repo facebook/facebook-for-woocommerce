@@ -180,9 +180,7 @@ class Whatsapp_Utility extends Abstract_Settings_Screen {
 	 */
 	public function render() {
 		$view = $this->get_current_view();
-		$onboarding_completion_setting            = get_option( 'wc_facebook_wa_integration_onboarding_complete', '' ); //update to done button click confirmation, need to add a setting for onboarding complete
-		$onboarding_completed = ! empty( $onboarding_completion_setting );
-		if ( $onboarding_completed || 'utility_settings' === $view ) {
+		if ( 'utility_settings' === $view ) {
 			$this->render_utility_message_overview();
 		} elseif ( 'manage_event' === $view ) {
 			$this->render_manage_events_view();
