@@ -16,14 +16,14 @@ defined( 'ABSPATH' ) || exit;
 
 /**
  *
- * CsvFeedFileWriter class
- * To be used by any feed handler whose feed requires a csv file.
+ * JsonFeedFileWriter class
+ * To be used by any feed handler whose feed requires a json file.
  *
  * @since 3.5.0
  */
-class CsvFeedFileWriter extends AbstractFeedFileWriter {
+class JsonFeedFileWriter extends AbstractFeedFileWriter {
 	/** Feed file name @var string */
-	const FILE_NAME = '%s_feed_%s.csv';
+	const FILE_NAME = '%s_feed_%s.json';
 
 	/**
 	 * Write the feed data to the temporary feed file.
@@ -43,30 +43,15 @@ class CsvFeedFileWriter extends AbstractFeedFileWriter {
 			throw new PluginException( __( "Unable to open temporary file {$temp_file_path} for appending.", 'facebook-for-woocommerce' ), 500 );
 		}
 
-		// Convert the header row (CSV string) to an array to use as field accessors.
-		$accessors = str_getcsv( $this->header_row );
-
-		// Process and write each data row.
+		// Process and write the data.
 		foreach ( $data as $obj ) {
-			$row = [];
-			foreach ( $accessors as $accessor ) {
-				// Map each field in the row to ensure proper string conversion
-				$value = $obj[ $accessor ] ?? '';
-				$row[] = $this->format_field( $value );
-			}
-			if ( fputcsv( $temp_feed_file, $row, $this->delimiter, $this->enclosure, $this->escape_char ) === false ) {
-				throw new PluginException( 'Failed to write a CSV data row.', 500 );
+			// phpcs:ignore -- use php file i/o functions
+			if ( fwrite( $temp_feed_file, $obj ) === false ) {
+				throw new PluginException( 'Failed to write JSON data to the file.', 500 );
 			}
 		}
 
 		// phpcs:ignore -- use php file i/o functions
 		fclose( $temp_feed_file );
-	}
-
-	protected function format_field( $value ) {
-		if ( is_array( $value ) || is_object( $value ) ) {
-			return wp_json_encode( $value );
-		}
-		return $value;
 	}
 }

@@ -30,10 +30,10 @@ class FeedGenerator extends AbstractChainedJob {
 	/**
 	 * The feed writer instance for the given feed.
 	 *
-	 * @var FeedFileWriter
+	 * @var AbstractFeedFileWriter
 	 * @since 3.5.0
 	 */
-	protected FeedFileWriter $feed_writer;
+	protected AbstractFeedFileWriter $feed_writer;
 
 	/**
 	 * The name of the data feed.
@@ -47,11 +47,11 @@ class FeedGenerator extends AbstractChainedJob {
 	 * FeedGenerator constructor.
 	 *
 	 * @param ActionSchedulerInterface $action_scheduler The action scheduler instance.
-	 * @param FeedFileWriter           $feed_writer The feed handler instance.
+	 * @param AbstractFeedFileWriter   $feed_writer The feed handler instance.
 	 * @param string                   $feed_name The name of the feed.
 	 * @since 3.5.0
 	 */
-	public function __construct( ActionSchedulerInterface $action_scheduler, FeedFileWriter $feed_writer, string $feed_name ) {
+	public function __construct( ActionSchedulerInterface $action_scheduler, AbstractFeedFileWriter $feed_writer, string $feed_name ) {
 		parent::__construct( $action_scheduler );
 		$this->feed_writer = $feed_writer;
 		$this->feed_name   = $feed_name;

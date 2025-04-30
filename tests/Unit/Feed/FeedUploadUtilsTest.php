@@ -610,4 +610,6 @@ class FeedUploadUtilsTest extends FeedDataTestBase {
 		$result = \WooCommerce\Facebook\Feed\FeedUploadUtils::get_coupons_data($query_args);
 		$this->assertEmpty($result, 'Expected coupon to be invalid if excluded product_brands targeting is used.');
 	}
+
+	// Add test(s) for navigation menu feed upload logic
 }

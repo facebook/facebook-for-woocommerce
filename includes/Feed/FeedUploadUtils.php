@@ -30,6 +30,7 @@ class FeedUploadUtils {
 	const PROMO_SYNC_LOGGING_FLOW_NAME               = 'promotion_feed_sync';
 	const RATINGS_AND_REVIEWS_SYNC_LOGGING_FLOW_NAME = 'ratings_and_reviews_feed_sync';
 	const SHIPPING_PROFILES_SYNC_LOGGING_FLOW_NAME   = 'shipping_profiles_feed_sync';
+	const NAVIGATION_MENU_SYNC_LOGGING_FLOW_NAME     = 'navigation_menu_feed_sync';
 
 
 	public static function get_ratings_and_reviews_data( array $query_args ): array {
@@ -395,5 +396,22 @@ class FeedUploadUtils {
 		}
 
 		return $products;
+	}
+
+	public static function get_navigation_menu_data(): array {
+		try {
+			$navigation_menu_data   = array();
+			$navigation_menu_data[] = 'Test navigation menu JSON file writing';
+			return $navigation_menu_data;
+		} catch ( \Exception $e ) {
+			\WC_Facebookcommerce_Utils::log_exception_immediately_to_meta(
+				$e,
+				array(
+					'event'      => self::NAVIGATION_MENU_SYNC_LOGGING_FLOW_NAME,
+					'event_type' => 'get_navigation_menu_data',
+				)
+			);
+			throw $e;
+		}
 	}
 }

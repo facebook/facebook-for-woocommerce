@@ -15,7 +15,7 @@ defined( 'ABSPATH' ) || exit;
 /**
  * Promotions Feed Generator Class
  *
- * * Promotions Feed Generator Class. This file is responsible for the new-style feed generation for promotions
+ * Promotions Feed Generator Class. This file is responsible for the new-style feed generation for promotions
  *
  * @package WooCommerce\Facebook\Feed
  * @since 3.5.0
@@ -26,6 +26,7 @@ class PromotionsFeedGenerator extends FeedGenerator {
 	 *
 	 * @param int   $batch_number The batch number.
 	 * @param array $args Additional arguments.
+	 *
 	 * @return array The items for the batch. Format matches headers defined in PromotionsFeed::PROMOTIONS_FEED_HEADER
 	 * @inheritdoc
 	 * @since 3.5.0

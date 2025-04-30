@@ -13,37 +13,30 @@ namespace WooCommerce\Facebook\Feed;
 defined( 'ABSPATH' ) || exit;
 
 /**
- * Promotions Feed Handler Class. This file is responsible for the old-style feed generation for promotions
+ * Site Navigation Feed Handler Class. This file is responsible for the old-style feed generation for site navigation
  *
  * @package WooCommerce\Facebook\Feed
  * @since 3.5.0
  */
-class PromotionsFeedHandler extends AbstractFeedHandler {
+class NavigationMenuFeedHandler extends AbstractFeedHandler {
 
 	/**
 	 * Constructor.
 	 *
-	 * @param AbstractFeedFileWriter $feed_writer An instance of the CSV feed file writer.
+	 * @param AbstractFeedFileWriter $feed_writer An instance of the JSON feed file writer.
 	 */
 	public function __construct( AbstractFeedFileWriter $feed_writer ) {
 		$this->feed_writer = $feed_writer;
-		$this->feed_type   = FeedManager::PROMOTIONS;
+		$this->feed_type   = FeedManager::NAVIGATION_MENU;
 	}
 
 	/**
 	 * Get the feed data and return as array of objects.
-	 * Array contents should match headers in PromotionsFeed::PROMOTIONS_FEED_HEADER
 	 *
 	 * @return array
 	 * @since 3.5.0
 	 */
 	public function get_feed_data(): array {
-		$query_args = array(
-			'post_type'      => 'shop_coupon',
-			'post_status'    => 'publish',
-			'posts_per_page' => - 1, // retrieve all items
-		);
-
-		return FeedUploadUtils::get_coupons_data( $query_args );
+		return FeedUploadUtils::get_navigation_menu_data();
 	}
 }

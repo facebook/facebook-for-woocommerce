@@ -13,7 +13,6 @@ namespace WooCommerce\Facebook\Feed;
 defined( 'ABSPATH' ) || exit;
 
 use Automattic\WooCommerce\ActionSchedulerJobFramework\Proxies\ActionScheduler;
-use WooCommerce\Facebook\Utilities\Heartbeat;
 
 /**
  * Promotions Feed Class
