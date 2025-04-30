@@ -193,3 +193,34 @@
 .warning-modal-close:hover {
     color: #000;
 }
+.whatsapp-icon {
+    width: 40px;
+    height: 40px;
+    flex-shrink: 0; /* Prevents icon from shrinking */
+}
+.contact-info {
+    padding-left: 10px;
+    display: flex;
+    flex-direction: column;
+}
+.contact-info h3 {
+    margin: 0;
+    font-size: 1.1em;
+}
+.contact-info p {
+    margin: 0;
+    font-size: 1.1em;
+    color: #666;
+}
+.disconnect-footer-left {
+    display: flex;
+    padding: 10px;
+  }
+.disconnect-footer-right {
+    padding: 20px;
+    margin-left: auto;
+}
+.disconnect-footer {
+    display: flex;
+    position: relative;
+}

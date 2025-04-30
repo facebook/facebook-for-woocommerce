@@ -397,6 +397,44 @@ class Whatsapp_Utility extends Abstract_Settings_Screen {
 				</div>
 			</div>
 		</div>
+		<div class="onboarding-card">
+			<div class="card-item event-config">
+				<div class="card-content">
+					<div class="event-config-heading-container">
+						<h1><?php esc_html_e( 'Edit your profile', 'facebook-for-woocommerce' ); ?></h1>
+					</div>
+					<div class="consent-update-card-subcontent">
+						<?php esc_html_e( 'Edit your connected WhatsApp Business account on your WhatsApp Manager.', 'facebook-for-woocommerce' ); ?>
+					</div>
+				</div>
+			</div>
+			<div class="divider"></div>
+    	<!-- Left section: Icon and info -->
+			<div class="disconnect-footer">
+    		<div class="disconnect-footer-left">
+    		  <img src="<?php echo plugins_url('../../../assets/images/whatsapp_icon.png', __FILE__); ?>"
+    		       alt="WhatsApp Icon"
+    		       class="whatsapp-icon">
+    		  <div class="contact-info">
+    		    <h3><?php esc_html_e( '+1-234-456-789', 'facebook-for-woocommerce' ); ?></h3>
+    		    <p><?php esc_html_e( 'Waba Name', 'facebook-for-woocommerce' ); ?></p>
+    		  </div>
+    		</div>
+    		<!-- Right section: Buttons -->
+    		<div class="disconnect-footer-right">
+    		  <a id="wc-whatsapp-disconnect-button"
+    		     class="event-config-manage-button button"
+    		     href="#">
+    		    <?php esc_html_e( 'Disconnect', 'facebook-for-woocommerce' ); ?>
+    		  </a>
+    		  <a id="wc-whatsapp-disconnect-edit"
+    		     class="button button-primary"
+    		     href="#">
+    		    <?php esc_html_e( 'Edit', 'facebook-for-woocommerce' ); ?>
+    		  </a>
+    		</div>
+			</div>
+		</div>
 		<?php
 	}
 
