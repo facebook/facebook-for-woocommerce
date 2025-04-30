@@ -1770,28 +1770,43 @@ class Admin {
 							$field.find('option:first').prop('selected', true);
 						}
 						
-						// Make sure it's visible and enabled
-						$field.show().prop('disabled', false).removeClass('synced-attribute');
-						
-						// If this is a WooCommerce select2 field, reset the select2 as well
+						// Reset select2 if it's initialized
 						if ($field.hasClass('wc-enhanced-select') || $field.hasClass('select2-hidden-accessible')) {
 							try {
 								$field.select2('val', '');
+								// Also reset the select2 container styles
+								$field.next('.select2-container').find('.select2-selection').css({
+									'cursor': '',
+									'background-color': '',
+									'color': ''
+								});
 							} catch (e) {
-								// Ignore select2 errors, it might not be initialized
+								// Ignore select2 errors
 							}
 						}
-					} else {
-						// For text fields
-						$field.val('');
 					}
-					
-					// Remove any remaining custom styling
-					$field.css({
-						'background-color': '',
-						'color': '',
-						'border-color': ''
-					});
+
+					// Reset all styles and classes
+					$field
+						.val('')
+						.prop('disabled', false)
+						.removeClass('synced-attribute')
+						.css({
+							'cursor': '',
+							'background-color': '',
+							'color': '',
+							'border-color': '',
+							'opacity': ''
+						})
+						.show();
+
+					// Also reset any select2 container if it exists
+					if ($field.next('.select2-container').length) {
+						$field.next('.select2-container').css({
+							'cursor': '',
+							'opacity': ''
+						});
+					}
 				}
 
 				// Function to sync Facebook attributes
