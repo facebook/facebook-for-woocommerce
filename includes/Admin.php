@@ -449,7 +449,6 @@ class Admin {
 	public function add_products_by_sync_enabled_input_filter() {
 		global $typenow;
 
-		
 		if ( 'product' !== $typenow ) {
 			return;
 		}
