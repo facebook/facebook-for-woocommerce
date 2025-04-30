@@ -401,7 +401,28 @@ class FeedUploadUtils {
 	public static function get_navigation_menu_data(): array {
 		try {
 			$navigation_menu_data   = array();
-			$navigation_menu_data[] = 'Test navigation menu JSON file writing';
+			$test_data              = [
+				'navigation' => [
+					[
+						'items'               => [
+							[
+								'title'        => 'Best Sellers',
+								'resourceType' => 'collection',
+								'retailerID'   => 'best_sellers_collection_retailer_id',
+							],
+							[
+								'title'        => 'Best Hat',
+								'resourceType' => 'product',
+								'retailerID'   => 'tan_ball_cap_68',
+							],
+						],
+						'title'               => 'Test Root Title',
+						'partner_menu_handle' => 'Test Root Partner Menu Handle',
+						'partner_menu_id'     => '2',
+					],
+				],
+			];
+			$navigation_menu_data[] = $test_data;
 			return $navigation_menu_data;
 		} catch ( \Exception $e ) {
 			\WC_Facebookcommerce_Utils::log_exception_immediately_to_meta(

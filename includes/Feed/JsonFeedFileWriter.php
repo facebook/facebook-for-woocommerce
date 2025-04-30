@@ -46,7 +46,7 @@ class JsonFeedFileWriter extends AbstractFeedFileWriter {
 		// Process and write the data.
 		foreach ( $data as $obj ) {
 			// phpcs:ignore -- use php file i/o functions
-			if ( fwrite( $temp_feed_file, $obj ) === false ) {
+			if ( fwrite( $temp_feed_file, wp_json_encode( $obj ) ) === false ) {
 				throw new PluginException( 'Failed to write JSON data to the file.', 500 );
 			}
 		}
