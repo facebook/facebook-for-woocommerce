@@ -100,10 +100,10 @@ class WhatsAppUtilityConnection {
 			'body'    => array(),
 		);
 		$response     = wp_remote_post( $base_url, $options );
+		$response_body = explode( "\n", wp_remote_retrieve_body( $response ) );
+		$response_data = json_decode( $response_body[0] );
 		if ( is_wp_error( $response ) || 200 !== wp_remote_retrieve_response_code( $response ) ) {
-			$error_data    = explode( "\n", wp_remote_retrieve_body( $response ) );
-			$error_object  = json_decode( $error_data[0] );
-			$error_message = $error_object->error->error_user_title;
+			$error_message = $response_data->error->error_user_title;
 
 			wc_get_logger()->info(
 				sprintf(
@@ -114,12 +114,14 @@ class WhatsAppUtilityConnection {
 			);
 			wp_send_json_error( $error_message, 'Finish Onboarding Failure' );
 		} else {
+				$integration_config_id = $response_data->id;
 				wc_get_logger()->info(
 					sprintf(
-						__( 'Finish Onboarding Button Click Success!!!', 'facebook-for-woocommerce' )
+						__( 'Finish Onboarding Button Click Success. Integration ID: %1$s!!!', 'facebook-for-woocommerce' ),
+						$integration_config_id,
 					)
 				);
-			update_option( 'wc_facebook_wa_integration_onboarding_complete', 'true' );
+			update_option( 'wc_facebook_wa_integration_config_id', $integration_config_id );
 			wp_send_json_success( $response, 'Finish Onboarding Success' );
 		}
 	}
