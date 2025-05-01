@@ -14,6 +14,7 @@ use WooCommerce\Facebook\Framework\Helper;
 use WooCommerce\Facebook\Admin\Settings_Screens\Product_Sync;
 use WooCommerce\Facebook\Admin\Settings_Screens\Shops;
 use WooCommerce\Facebook\Framework\Plugin\Exception as PluginException;
+use WooCommerce\Facebook\Handlers\WhatsAppUtilityConnection;
 
 defined( 'ABSPATH' ) || exit;
 
@@ -57,8 +58,17 @@ class AJAX {
 		// fetch url info - waba id and business id
 		add_action( 'wp_ajax_wc_facebook_whatsapp_fetch_url_info', array( $this, 'wc_facebook_whatsapp_fetch_url_info' ) );
 
+		// action to fetch required info and make api call to meta to finish onboarding
+		add_action( 'wp_ajax_wc_facebook_whatsapp_finish_onboarding', array( $this, 'wc_facebook_whatsapp_finish_onboarding' ) );
+
+		// fetch configured library template info
+		add_action( 'wp_ajax_wc_facebook_whatsapp_fetch_library_template_info', array( $this, 'whatsapp_fetch_library_template_info' ) );
+
 		// search a product's attributes for the given term
 		add_action( 'wp_ajax_' . self::ACTION_SEARCH_PRODUCT_ATTRIBUTES, array( $this, 'admin_search_product_attributes' ) );
+
+		// update the wp_options with wc_facebook_whatsapp_consent_collection_setting_status to disabled
+		add_action( 'wp_ajax_wc_facebook_whatsapp_consent_collection_disable', array( $this, 'whatsapp_consent_collection_disable' ) );
 	}
 
 
@@ -206,6 +216,34 @@ class AJAX {
 	}
 
 	/**
+	 * Get data for for finish onboarding call and make api call.
+	 *
+	 * @internal
+	 *
+	 * @since 1.10.0
+	 */
+	public function wc_facebook_whatsapp_finish_onboarding() {
+		facebook_for_woocommerce()->log( 'Fetching data to make connect onboarding call on finish button click' );
+		if ( ! check_ajax_referer( 'facebook-for-wc-whatsapp-finish-nonce', 'nonce', false ) ) {
+			wp_send_json_error( 'Invalid security token sent.' );
+		}
+		$external_business_id = get_option( 'wc_facebook_external_business_id', null );
+		$wacs_id              = get_option( 'wc_facebook_wa_integration_wacs_id', null );
+		$waba_id              = get_option( 'wc_facebook_wa_integration_waba_id', null );
+		$bisu_token           = get_option( 'wc_facebook_wa_integration_bisu_access_token', null );
+		if ( empty( $external_business_id ) || empty( $wacs_id ) || empty( $waba_id ) || empty( $bisu_token ) ) {
+			wc_get_logger()->info(
+				sprintf(
+					__( 'Onboarding is not complete or has failed.', 'facebook-for-woocommerce' ),
+				)
+			);
+			wp_send_json_error( 'Onboarding is not complete or has failed.' );
+		}
+		WhatsAppUtilityConnection::wc_facebook_whatsapp_connect_utility_messages_call( $waba_id, $wacs_id, $external_business_id, $bisu_token );
+	}
+
+
+	/**
 	 * Checks if the onboarding for whatsapp is complete once business has initiated onboarding.
 	 *
 	 * @internal
@@ -232,6 +270,27 @@ class AJAX {
 		wp_send_json_success();
 	}
 
+	public function whatsapp_consent_collection_disable() {
+		if ( ! check_ajax_referer( 'facebook-for-wc-whatsapp-consent-disable-nonce', 'nonce', false ) ) {
+			wp_send_json_error( 'Invalid security token sent.' );
+		}
+		if ( get_option( 'wc_facebook_whatsapp_consent_collection_setting_status' ) !== 'disabled' ) {
+			update_option( 'wc_facebook_whatsapp_consent_collection_setting_status', 'disabled' );
+		}
+		wp_send_json_success();
+	}
+
+	public function whatsapp_fetch_library_template_info() {
+		facebook_for_woocommerce()->log( 'Fetching library template data for whatsapp utility event' );
+		if ( ! check_ajax_referer( 'facebook-for-wc-whatsapp-events-nonce', 'nonce', false ) ) {
+			wp_send_json_error( 'Invalid security token sent.' );
+		}
+		$bisu_token = get_option( 'wc_facebook_wa_integration_bisu_access_token', null );
+		if ( empty( $bisu_token ) ) {
+			wp_send_json_error( 'Missing access token for Library template API call' );
+		}
+		WhatsAppUtilityConnection::get_template_library_content( $bisu_token );
+	}
 	/**
 	 * Maybe triggers a modal warning when the merchant toggles sync enabled status in bulk.
 	 *

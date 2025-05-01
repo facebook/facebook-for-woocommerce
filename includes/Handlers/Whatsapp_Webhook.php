@@ -100,14 +100,14 @@ class Whatsapp_Webhook {
 	public function whatsapp_webhook_callback( \WP_REST_Request $request ) {
 		try {
 			$request_params           = $request->get_params();
-			$waba_id                  = sanitize_text_field( $request_params['waba_id'] );
-			$wacs_id                  = sanitize_text_field( $request_params['wacs_id'] );
-			$is_waba_payment_setup    = sanitize_text_field( $request_params['is_waba_payment_setup'] );
-			$waba_profile_picture_url = sanitize_text_field( $request_params['waba_profile_picture_url'] );
-			$bisu_token               = sanitize_text_field( $request_params['client_bisu_token'] );
-			$business_id              = sanitize_text_field( $request_params['client_business_id'] );
-			$wacs_phone_number        = sanitize_text_field( $request_params['wacs_phone_number'] );
-			$auth_key                 = sanitize_text_field( $request_params['auth_key'] );
+			$waba_id                  = sanitize_text_field( $request_params['wabaId'] );
+			$wacs_id                  = sanitize_text_field( $request_params['wacsId'] );
+			$is_waba_payment_setup    = sanitize_text_field( $request_params['isWabaPaymentSetup'] );
+			$waba_profile_picture_url = sanitize_text_field( $request_params['wabaProfilePictureUrl'] );
+			$bisu_token               = sanitize_text_field( $request_params['clientBisuToken'] );
+			$business_id              = sanitize_text_field( $request_params['clientBusinessId'] );
+			$wacs_phone_number        = sanitize_text_field( $request_params['wacsPhoneNumber'] );
+			$auth_key                 = sanitize_text_field( $request_params['authKey'] );
 
 			// authentication is done via auth_key using sha_1 hash mac of BISU token and external business ID stored in woo DB
 			$authentication_result = self::authenticate_request( $auth_key, $bisu_token );

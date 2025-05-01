@@ -189,7 +189,7 @@ class WC_Facebookcommerce extends WooCommerce\Facebook\Framework\Plugin {
 			array( $this, 'force_user_agent_in_latin' )
 		);
 
-		if ( \WC_Facebookcommerce_Utils::isWoocommerceIntegration() ) {
+		if ( \WC_Facebookcommerce_Utils::is_woocommerce_integration() ) {
 			include_once 'facebook-commerce.php';
 
 			require_once __DIR__ . '/includes/fbproductfeed.php';
@@ -345,15 +345,16 @@ class WC_Facebookcommerce extends WooCommerce\Facebook\Framework\Plugin {
 	 * @since 2.3.3
 	 * @param string $message error or message to save to log
 	 * @param string $log_id optional log id to segment the files by, defaults to plugin id
+	 * @param string $level optional log level represents log's tag
 	 */
-	public function log( $message, $log_id = null ) {
+	public function log( $message, $log_id = null, $level = null ) {
 		// Bail if site is connected and user has disabled logging.
 		// If site is disconnected, force-enable logging so merchant can diagnose connection issues.
 		if ( ( ! $this->get_integration() || ! $this->get_integration()->is_debug_mode_enabled() ) && $this->get_connection_handler()->is_connected() ) {
 			return;
 		}
 
-		parent::log( $message, $log_id );
+		parent::log( $message, $log_id, $level );
 	}
 
 	/**
