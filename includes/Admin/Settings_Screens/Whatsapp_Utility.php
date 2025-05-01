@@ -117,6 +117,9 @@ class Whatsapp_Utility extends Abstract_Settings_Screen {
 				),
 			)
 		);
+		$order_placed_event_config_id   = get_option( 'wc_facebook_wa_order_placed_event_config_id', '' );
+		$order_shipped_event_config_id  = get_option( 'wc_facebook_wa_order_shipped_event_config_id', '' );
+		$order_refunded_event_config_id = get_option( 'wc_facebook_wa_order_refunded_event_config_id', '' );
 		wp_enqueue_script(
 			'facebook-for-woocommerce-whatsapp-events',
 			facebook_for_woocommerce()->get_asset_build_dir_url() . '/admin/whatsapp-events.js',
@@ -127,9 +130,12 @@ class Whatsapp_Utility extends Abstract_Settings_Screen {
 			'facebook-for-woocommerce-whatsapp-events',
 			'facebook_for_woocommerce_whatsapp_events',
 			array(
-				'ajax_url' => admin_url( 'admin-ajax.php' ),
-				'nonce'    => wp_create_nonce( 'facebook-for-wc-whatsapp-events-nonce' ),
-				'i18n'     => array(
+				'ajax_url'               => admin_url( 'admin-ajax.php' ),
+				'nonce'                  => wp_create_nonce( 'facebook-for-wc-whatsapp-events-nonce' ),
+				'order_placed_enabled'   => ! empty( $order_placed_event_config_id ),
+				'order_shipped_enabled'  => ! empty( $order_shipped_event_config_id ),
+				'order_refunded_enabled' => ! empty( $order_refunded_event_config_id ),
+				'i18n'                   => array(
 					'result' => true,
 				),
 			)
@@ -306,8 +312,11 @@ class Whatsapp_Utility extends Abstract_Settings_Screen {
 				<div>
 					<div class="event-config-heading-container">
 						<h3><?php esc_html_e( 'Order confirmation', 'facebook-for-woocommerce' ); ?></h3>
-						<div class="event-config-status on-status">
+						<div class="event-config-status on-status fbwa-hidden-element" id="order-placed-active-status">
 							<?php esc_html_e( 'On', 'facebook-for-woocommerce' ); ?>
+						</div>
+						<div class="event-config-status fbwa-hidden-element" id="order-placed-inactive-status">
+							<?php esc_html_e( 'Off', 'facebook-for-woocommerce' ); ?>
 						</div>
 					</div>
 					<p><?php esc_html_e( 'Send a confirmation to customers after they\'ve placed an order.', 'facebook-for-woocommerce' ); ?></p>
@@ -324,7 +333,10 @@ class Whatsapp_Utility extends Abstract_Settings_Screen {
 				<div>
 					<div class="event-config-heading-container">
 						<h3><?php esc_html_e( 'Order shipped', 'facebook-for-woocommerce' ); ?></h3>
-						<div class="event-config-status">
+						<div class="event-config-status on-status fbwa-hidden-element" id="order-shipped-active-status">
+							<?php esc_html_e( 'On', 'facebook-for-woocommerce' ); ?>
+						</div>
+						<div class="event-config-status fbwa-hidden-element" id="order-shipped-inactive-status">
 							<?php esc_html_e( 'Off', 'facebook-for-woocommerce' ); ?>
 						</div>
 					</div>
@@ -342,7 +354,10 @@ class Whatsapp_Utility extends Abstract_Settings_Screen {
 				<div>
 					<div class="event-config-heading-container">
 						<h3><?php esc_html_e( 'Order refunded', 'facebook-for-woocommerce' ); ?></h3>
-						<div class="event-config-status">
+						<div class="event-config-status on-status fbwa-hidden-element" id="order-refunded-active-status">
+							<?php esc_html_e( 'On', 'facebook-for-woocommerce' ); ?>
+						</div>
+						<div class="event-config-status fbwa-hidden-element" id="order-refunded-inactive-status">
 							<?php esc_html_e( 'Off', 'facebook-for-woocommerce' ); ?>
 						</div>
 					</div>
