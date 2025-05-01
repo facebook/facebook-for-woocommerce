@@ -170,6 +170,23 @@ class Whatsapp_Utility extends Abstract_Settings_Screen {
 				),
 			)
 		);
+		wp_enqueue_script(
+			'facebook-for-woocommerce-whatsapp-templates',
+			facebook_for_woocommerce()->get_asset_build_dir_url() . '/admin/whatsapp-templates.js',
+			array( 'jquery', 'jquery-blockui', 'jquery-tiptip', 'wc-enhanced-select' ),
+			\WC_Facebookcommerce::PLUGIN_VERSION
+		);
+		wp_localize_script(
+			'facebook-for-woocommerce-whatsapp-templates',
+			'facebook_for_woocommerce_whatsapp_templates',
+			array(
+				'ajax_url' => admin_url( 'admin-ajax.php' ),
+				'nonce'    => wp_create_nonce( 'facebook-for-wc-whatsapp-templates-nonce' ),
+				'i18n'     => array(
+					'result' => true,
+				),
+			)
+		);
 	}
 
 
@@ -362,7 +379,7 @@ class Whatsapp_Utility extends Abstract_Settings_Screen {
 				<div class="card-content">
 					<div class="event-config-heading-container">
 						<h1><?php esc_html_e( 'Add WhatsApp option at checkout', 'facebook-for-woocommerce' ); ?></h1>
-						<div class="event-config-status on-status">
+						<div id="wc-whatsapp-collect-consent-status" class="event-config-status on-status">
 							<?php esc_html_e( 'On', 'facebook-for-woocommerce' ); ?>
 						</div>
 					</div>
@@ -376,11 +393,18 @@ class Whatsapp_Utility extends Abstract_Settings_Screen {
 						</a>
 					</span>
 				</div>
-				<div class="event-config-manage-button">
+				<div class="event-config-manage-button" id="wc-whatsapp-collect-consent-remove-container">
 					<a
 						id="wc-whatsapp-collect-consent-remove"
 						class="event-config-manage-button button"
 						href="#"><?php esc_html_e( 'Remove', 'facebook-for-woocommerce' ); ?>
+					</a>
+				</div>
+				<div class="event-config-manage-button fbwa-hidden-element" id="wc-whatsapp-collect-consent-add-container">
+					<a
+						id="wc-whatsapp-collect-consent-add"
+						class="event-config-manage-button button"
+						href="#"><?php esc_html_e( 'Add', 'facebook-for-woocommerce' ); ?>
 					</a>
 				</div>
 			</div>

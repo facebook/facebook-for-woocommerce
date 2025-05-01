@@ -55,8 +55,8 @@ class AJAX {
 		// update the wp_options with wc_facebook_whatsapp_consent_collection_setting_status to enabled
 		add_action( 'wp_ajax_wc_facebook_whatsapp_consent_collection_enable', array( $this, 'whatsapp_consent_collection_enable' ) );
 
-		// fetch billing url info - waba id and business id
-		add_action( 'wp_ajax_wc_facebook_whatsapp_fetch_billing_url_info', array( $this, 'wc_facebook_whatsapp_fetch_billing_url_info' ) );
+		// fetch url info - waba id and business id
+		add_action( 'wp_ajax_wc_facebook_whatsapp_fetch_url_info', array( $this, 'wc_facebook_whatsapp_fetch_url_info' ) );
 
 		// action to fetch required info and make api call to meta to finish onboarding
 		add_action( 'wp_ajax_wc_facebook_whatsapp_finish_onboarding', array( $this, 'wc_facebook_whatsapp_finish_onboarding' ) );
@@ -188,15 +188,15 @@ class AJAX {
 	}
 
 	/**
-	 * Get data for creating the billing hub url for whatsapp account.
+	 * Get data for creating the billing or whatsapp manager url for whatsapp account.
 	 *
 	 * @internal
 	 *
 	 * @since 1.10.0
 	 */
-	public function wc_facebook_whatsapp_fetch_billing_url_info() {
-		facebook_for_woocommerce()->log( 'Fetching billing url info' );
-		if ( ! check_ajax_referer( 'facebook-for-wc-whatsapp-billing-nonce', 'nonce', false ) ) {
+	public function wc_facebook_whatsapp_fetch_url_info() {
+		facebook_for_woocommerce()->log( 'Fetching url info for whatsapp pages' );
+		if ( ! check_ajax_referer( 'facebook-for-wc-whatsapp-billing-nonce', 'nonce', false ) && ! check_ajax_referer( 'facebook-for-wc-whatsapp-templates-nonce', 'nonce', false ) ) {
 			wp_send_json_error( 'Invalid security token sent.' );
 		}
 
@@ -291,7 +291,6 @@ class AJAX {
 		}
 		WhatsAppUtilityConnection::get_template_library_content( $bisu_token );
 	}
-
 	/**
 	 * Maybe triggers a modal warning when the merchant toggles sync enabled status in bulk.
 	 *

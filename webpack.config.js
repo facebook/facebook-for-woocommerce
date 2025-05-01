@@ -16,6 +16,7 @@ const jQueryUIAdminFileNames = [
     'whatsapp-billing',
     'whatsapp-connection',
     'whatsapp-consent',
+    'whatsapp-templates',
     'whatsapp-finish',
     'whatsapp-consent-remove',
     'whatsapp-events',
