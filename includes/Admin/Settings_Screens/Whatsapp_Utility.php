@@ -412,12 +412,16 @@ class Whatsapp_Utility extends Abstract_Settings_Screen {
 			<div class="disconnect-footer">
 				<!-- Left section: Icon and info -->
 			<div class="disconnect-footer-left">
-				<img src="<?php echo plugins_url( '../../../assets/images/whatsapp_icon.png', __FILE__ ); ?>"
+				<img src="<?php echo esc_url( plugins_url( '../../../assets/images/whatsapp_icon.png', __FILE__ ) ); ?>"
 					alt="WhatsApp Icon"
 					class="whatsapp-icon">
 				<div class="contact-info">
-				<h3><?php esc_html_e( get_option( 'wc_facebook_wa_integration_wacs_phone_number' ), 'facebook-for-woocommerce' ); ?></h3>
-				<p><?php esc_html_e( get_option( 'wc_facebook_wa_integration_waba_display_name' ), 'facebook-for-woocommerce' ); ?></p>
+					<?php
+						$wacs_phone_number             = get_option( 'wc_facebook_wa_integration_wacs_phone_number' );
+						$waba_display_name 						 = get_option( 'wc_facebook_wa_integration_waba_display_name' );
+					?>
+					<h3><?php esc_html_e( $wacs_phone_number, 'facebook-for-woocommerce' ); ?></h3>
+					<p><?php esc_html_e( $waba_display_name, 'facebook-for-woocommerce' ); ?></p>
 				</div>
 			</div>
 			<!-- Right section: Buttons -->
