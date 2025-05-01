@@ -889,8 +889,11 @@ class Admin {
 
 				Products::disable_sync_for_products( $products );
 
-			}
-		} //end if
+					self::add_product_disabled_sync_notice( count( $products ) );
+				}
+		}//end if
+
+		return $redirect;
 	}
 
 	/**
