@@ -411,28 +411,28 @@ class Whatsapp_Utility extends Abstract_Settings_Screen {
 			<div class="divider"></div>
 			<div class="disconnect-footer">
 				<!-- Left section: Icon and info -->
-    		<div class="disconnect-footer-left">
-    		  <img src="<?php echo plugins_url('../../../assets/images/whatsapp_icon.png', __FILE__); ?>"
-    		       alt="WhatsApp Icon"
-    		       class="whatsapp-icon">
-    		  <div class="contact-info">
-    		    <h3><?php esc_html_e( get_option( 'wc_facebook_wa_integration_wacs_phone_number' ), 'facebook-for-woocommerce' ); ?></h3>
-    		    <p><?php esc_html_e( get_option( 'wc_facebook_wa_integration_waba_display_name' ), 'facebook-for-woocommerce' ); ?></p>
-    		  </div>
-    		</div>
-    		<!-- Right section: Buttons -->
-    		<div class="disconnect-footer-right">
-    		  <a id="wc-whatsapp-disconnect-button"
-    		     class="event-config-manage-button button"
-    		     href="#">
-    		    <?php esc_html_e( 'Disconnect', 'facebook-for-woocommerce' ); ?>
-    		  </a>
-    		  <a id="wc-whatsapp-disconnect-edit"
-    		     class="button button-primary"
-    		     href="#">
-    		    <?php esc_html_e( 'Edit', 'facebook-for-woocommerce' ); ?>
-    		  </a>
-    		</div>
+			<div class="disconnect-footer-left">
+				<img src="<?php echo plugins_url( '../../../assets/images/whatsapp_icon.png', __FILE__ ); ?>"
+					alt="WhatsApp Icon"
+					class="whatsapp-icon">
+				<div class="contact-info">
+				<h3><?php esc_html_e( get_option( 'wc_facebook_wa_integration_wacs_phone_number' ), 'facebook-for-woocommerce' ); ?></h3>
+				<p><?php esc_html_e( get_option( 'wc_facebook_wa_integration_waba_display_name' ), 'facebook-for-woocommerce' ); ?></p>
+				</div>
+			</div>
+			<!-- Right section: Buttons -->
+			<div class="disconnect-footer-right">
+				<a id="wc-whatsapp-disconnect-button"
+				class="event-config-manage-button button"
+				href="#">
+				<?php esc_html_e( 'Disconnect', 'facebook-for-woocommerce' ); ?>
+				</a>
+				<a id="wc-whatsapp-disconnect-edit"
+				class="button button-primary"
+				href="#">
+				<?php esc_html_e( 'Edit', 'facebook-for-woocommerce' ); ?>
+				</a>
+			</div>
 			</div>
 		</div>
 		<?php
