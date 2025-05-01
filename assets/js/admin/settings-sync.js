@@ -245,7 +245,8 @@ jQuery( document ).ready( function( $ ) {
 		}
 
 		// set products sync status
-		$( '#sync_progress' ).show().html( message ).css( 'color', 'inherit' );
+		$('#sync_progress').show().html(DOMPurify.sanitize(message)).css('color', 'inherit');
+
 
 		facebook_for_woocommerce_settings_sync.sync_in_progress = true;
 	}
