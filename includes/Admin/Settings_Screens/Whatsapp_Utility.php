@@ -417,8 +417,8 @@ class Whatsapp_Utility extends Abstract_Settings_Screen {
 					class="whatsapp-icon">
 				<div class="contact-info">
 					<?php
-						$wacs_phone_number             = get_option( 'wc_facebook_wa_integration_wacs_phone_number' );
-						$waba_display_name 						 = get_option( 'wc_facebook_wa_integration_waba_display_name' );
+						$wacs_phone_number = get_option( 'wc_facebook_wa_integration_wacs_phone_number' );
+						$waba_display_name = get_option( 'wc_facebook_wa_integration_waba_display_name' );
 					?>
 					<h3><?php esc_html_e( $wacs_phone_number, 'facebook-for-woocommerce' ); ?></h3>
 					<p><?php esc_html_e( $waba_display_name, 'facebook-for-woocommerce' ); ?></p>
