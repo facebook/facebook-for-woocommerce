@@ -400,30 +400,26 @@ class FeedUploadUtils {
 
 	public static function get_navigation_menu_data(): array {
 		try {
-			$navigation_menu_data   = array();
-			$test_data              = [
-				'navigation' => [
-					[
-						'items'               => [
-							[
-								'title'        => 'Best Sellers',
-								'resourceType' => 'collection',
-								'retailerID'   => 'best_sellers_collection_retailer_id',
-							],
-							[
-								'title'        => 'Best Hat',
-								'resourceType' => 'product',
-								'retailerID'   => 'tan_ball_cap_68',
-							],
-						],
-						'title'               => 'Test Root Title',
-						'partner_menu_handle' => 'Test Root Partner Menu Handle',
-						'partner_menu_id'     => '2',
-					],
-				],
-			];
-			$navigation_menu_data[] = $test_data;
-			return $navigation_menu_data;
+			// Fetch all product categories
+			$args       = array(
+				'taxonomy'   => 'product_cat',
+				'orderby'    => 'name',
+				'order'      => 'ASC',
+				'hide_empty' => false, // Show all categories, even if they are empty
+			);
+			$categories = get_terms( $args );
+
+			$category_tree = self::build_category_tree( $categories );
+			return array(
+				'navigation' => array(
+					array(
+						'items'               => $category_tree,
+						'title'               => 'Product Categories',
+						'partner_menu_handle' => 'product_categories_menu',
+						'partner_menu_id'     => '1',
+					),
+				),
+			);
 		} catch ( \Exception $e ) {
 			\WC_Facebookcommerce_Utils::log_exception_immediately_to_meta(
 				$e,
@@ -434,5 +430,26 @@ class FeedUploadUtils {
 			);
 			throw $e;
 		}
+	}
+
+	private static function build_category_tree( $categories, $parent_id = 0 ): array {
+		$branch = array();
+
+		foreach ( $categories as $category ) {
+			if ( $category->parent === $parent_id ) {
+				$children      = self::build_category_tree( $categories, $category->term_id );
+				$category_data = array(
+					'title'        => $category->name,
+					'resourceType' => 'collection',
+					'retailerID'   => $category->term_id,
+				);
+				if ( ! empty( $children ) ) {
+					$category_data['items'] = $children;
+				}
+				$branch[] = $category_data;
+			}
+		}
+
+		return $branch;
 	}
 }

@@ -43,12 +43,9 @@ class JsonFeedFileWriter extends AbstractFeedFileWriter {
 			throw new PluginException( __( "Unable to open temporary file {$temp_file_path} for appending.", 'facebook-for-woocommerce' ), 500 );
 		}
 
-		// Process and write the data.
-		foreach ( $data as $obj ) {
-			// phpcs:ignore -- use php file i/o functions
-			if ( fwrite( $temp_feed_file, wp_json_encode( $obj ) ) === false ) {
-				throw new PluginException( 'Failed to write JSON data to the file.', 500 );
-			}
+		// phpcs:ignore -- use php file i/o functions
+		if ( fwrite( $temp_feed_file, wp_json_encode( $data ) ) === false ) {
+			throw new PluginException( 'Failed to write JSON data to the file.', 500 );
 		}
 
 		// phpcs:ignore -- use php file i/o functions
