@@ -611,8 +611,6 @@ class FeedUploadUtilsTest extends FeedDataTestBase {
 		$this->assertEmpty($result, 'Expected coupon to be invalid if excluded product_brands targeting is used.');
 	}
 
-	// ... existing code ...
-
 	public function test_get_navigation_menu_data() {
 		// Mock the get_terms function to return a set of categories.
 		$categories = [
