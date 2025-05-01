@@ -440,8 +440,8 @@ class Whatsapp_Utility extends Abstract_Settings_Screen {
 					alt="WhatsApp Icon"
 					class="whatsapp-icon">
 				<div class="contact-info">
-					<h3><?php echo get_option( 'wc_facebook_wa_integration_wacs_phone_number' ); ?></h3>
-					<p><?php echo get_option( 'wc_facebook_wa_integration_waba_display_name' ); ?></p>
+					<h3><?php echo esc_html( get_option( 'wc_facebook_wa_integration_wacs_phone_number' ) ); ?></h3>
+					<p><?php echo esc_html( get_option( 'wc_facebook_wa_integration_waba_display_name' ) ); ?></p>
 				</div>
 			</div>
 			<!-- Right section: Buttons -->
