@@ -117,6 +117,7 @@ class WhatsAppUtilityConnection {
 				$integration_config_id = $response_data->id;
 				wc_get_logger()->info(
 					sprintf(
+						/* translators: %s $integration_config_id */
 						__( 'Finish Onboarding Button Click Success. Integration ID: %1$s!!!', 'facebook-for-woocommerce' ),
 						$integration_config_id,
 					)
