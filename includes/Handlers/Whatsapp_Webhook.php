@@ -107,6 +107,7 @@ class Whatsapp_Webhook {
 			$bisu_token               = sanitize_text_field( $request_params['clientBisuToken'] );
 			$business_id              = sanitize_text_field( $request_params['clientBusinessId'] );
 			$wacs_phone_number        = sanitize_text_field( $request_params['wacsPhoneNumber'] );
+			$waba_display_name        = sanitize_text_field( $request_params['wabaDisplayName'] );
 			$auth_key                 = sanitize_text_field( $request_params['authKey'] );
 
 			// authentication is done via auth_key using sha_1 hash mac of BISU token and external business ID stored in woo DB
@@ -159,6 +160,7 @@ class Whatsapp_Webhook {
 				'wc_facebook_wa_integration_is_payment_setup' => $is_waba_payment_setup,
 				'wc_facebook_wa_integration_wacs_id'     => $wacs_id,
 				'wc_facebook_wa_integration_waba_profile_picture_url' => $waba_profile_picture_url,
+				'wc_facebook_wa_integration_waba_display_name' => $waba_display_name,
 
 			);
 
