@@ -611,5 +611,99 @@ class FeedUploadUtilsTest extends FeedDataTestBase {
 		$this->assertEmpty($result, 'Expected coupon to be invalid if excluded product_brands targeting is used.');
 	}
 
-	// Add test(s) for navigation menu feed upload logic
+	// ... existing code ...
+
+	public function test_get_navigation_menu_data() {
+		// Mock the get_terms function to return a set of categories.
+		$categories = [
+			(object) ['term_id' => 1, 'name' => 'Category 1', 'parent' => 0],
+			(object) ['term_id' => 2, 'name' => 'Category 2', 'parent' => 0],
+			(object) ['term_id' => 3, 'name' => 'Subcategory 1', 'parent' => 1],
+		];
+
+		// Mock the get_terms function to return the categories.
+		\WP_Mock::userFunction('get_terms', [
+			'args' => [
+				[
+					'taxonomy'   => 'product_cat',
+					'orderby'    => 'name',
+					'order'      => 'ASC',
+					'hide_empty' => false,
+				]
+			],
+			'return' => $categories,
+		]);
+
+		$navigation_menu_data = \WooCommerce\Facebook\Feed\FeedUploadUtils::get_navigation_menu_data();
+
+		$expected = [
+			'navigation' => [
+				[
+					'items' => [
+						[
+							'title' => 'Category 1',
+							'resourceType' => 'collection',
+							'retailerID' => 1,
+							'items' => [
+								[
+									'title' => 'Subcategory 1',
+									'resourceType' => 'collection',
+									'retailerID' => 3,
+								]
+							]
+						],
+						[
+							'title' => 'Category 2',
+							'resourceType' => 'collection',
+							'retailerID' => 2,
+						]
+					],
+					'title' => 'Product Categories',
+					'partner_menu_handle' => 'product_categories_menu',
+					'partner_menu_id' => '1',
+				]
+			]
+		];
+
+		$this->assertEquals($expected, $navigation_menu_data, 'Navigation menu data does not match expected structure.');
+	}
+
+	public function test_build_category_tree() {
+		// Mock categories
+		$categories = [
+			(object) ['term_id' => 1, 'name' => 'Category 1', 'parent' => 0],
+			(object) ['term_id' => 2, 'name' => 'Category 2', 'parent' => 0],
+			(object) ['term_id' => 3, 'name' => 'Subcategory 1', 'parent' => 1],
+		];
+
+		// Use reflection to access the private method
+		$reflection = new \ReflectionClass(\WooCommerce\Facebook\Feed\FeedUploadUtils::class);
+		$method = $reflection->getMethod('build_category_tree');
+		$method->setAccessible(true);
+
+		// Invoke the private method
+		$category_tree = $method->invokeArgs(null, [$categories]);
+
+		$expected = [
+			[
+				'title' => 'Category 1',
+				'resourceType' => 'collection',
+				'retailerID' => 1,
+				'items' => [
+					[
+						'title' => 'Subcategory 1',
+						'resourceType' => 'collection',
+						'retailerID' => 3,
+					]
+				]
+			],
+			[
+				'title' => 'Category 2',
+				'resourceType' => 'collection',
+				'retailerID' => 2,
+			]
+		];
+
+		$this->assertEquals($expected, $category_tree, 'Category tree does not match expected structure.');
+	}
 }
