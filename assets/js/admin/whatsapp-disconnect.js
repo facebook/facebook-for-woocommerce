@@ -18,8 +18,8 @@ jQuery( document ).ready( function( $ ) {
             if ( response.success ) {
                 var  business_id = response.data.business_id;
                 var asset_id = response.data.waba_id;
-                const EDIT_CONNECTION_URL = `https://business.facebook.com/latest/settings/whatsapp_account?business_id=${business_id}&selected_asset_id=${asset_id}&selected_asset_type=whatsapp-business-account&detail_view_tab=PARTNERS`;
-                window.open(EDIT_CONNECTION_URL);
+                const WHATSAPP_MANAGER_URL = `https://business.facebook.com/latest/whatsapp_manager/phone_numbers/?asset_id=${asset_id}&business_id=${business_id}`;
+                window.open(WHATSAPP_MANAGER_URL);
 			}
 		} );
     });
