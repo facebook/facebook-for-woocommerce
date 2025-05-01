@@ -85,21 +85,21 @@ class WhatsAppUtilityConnection {
 	 * @param string $bisu_token BISU token
 	 */
 	public static function wc_facebook_whatsapp_connect_utility_messages_call( $waba_id, $wacs_id, $external_business_id, $bisu_token ) {
-		$base_url     = array( self::GRAPH_API_BASE_URL, self::API_VERSION, $waba_id, 'connect_utility_messages' );
-		$base_url     = esc_url( implode( '/', $base_url ) );
-		$query_params = array(
+		$base_url      = array( self::GRAPH_API_BASE_URL, self::API_VERSION, $waba_id, 'connect_utility_messages' );
+		$base_url      = esc_url( implode( '/', $base_url ) );
+		$query_params  = array(
 			'external_integration_id' => $external_business_id,
 			'wacs_id'                 => $wacs_id,
 			'access_token'            => $bisu_token,
 		);
-		$base_url     = add_query_arg( $query_params, $base_url );
-		$options      = array(
+		$base_url      = add_query_arg( $query_params, $base_url );
+		$options       = array(
 			'headers' => array(
 				'Authorization' => $bisu_token,
 			),
 			'body'    => array(),
 		);
-		$response     = wp_remote_post( $base_url, $options );
+		$response      = wp_remote_post( $base_url, $options );
 		$response_body = explode( "\n", wp_remote_retrieve_body( $response ) );
 		$response_data = json_decode( $response_body[0] );
 		if ( is_wp_error( $response ) || 200 !== wp_remote_retrieve_response_code( $response ) ) {
