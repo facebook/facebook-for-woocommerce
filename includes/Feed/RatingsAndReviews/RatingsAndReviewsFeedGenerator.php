@@ -2,8 +2,6 @@
 
 namespace WooCommerce\Facebook\Feed;
 
-use Automattic\WooCommerce\ActionSchedulerJobFramework\Proxies\ActionSchedulerInterface;
-
 defined( 'ABSPATH' ) || exit;
 
 /**

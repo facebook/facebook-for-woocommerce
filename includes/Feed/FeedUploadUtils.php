@@ -29,6 +29,8 @@ class FeedUploadUtils {
 	const APPLICATION_TYPE_BUYER_APPLIED             = 'BUYER_APPLIED';
 	const PROMO_SYNC_LOGGING_FLOW_NAME               = 'promotion_feed_sync';
 	const RATINGS_AND_REVIEWS_SYNC_LOGGING_FLOW_NAME = 'ratings_and_reviews_feed_sync';
+	const SHIPPING_PROFILES_SYNC_LOGGING_FLOW_NAME   = 'shipping_profiles_feed_sync';
+
 
 	public static function get_ratings_and_reviews_data( array $query_args ): array {
 		try {
