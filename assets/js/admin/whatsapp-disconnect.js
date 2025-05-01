@@ -10,9 +10,9 @@
 jQuery( document ).ready( function( $ ) {
     // handle whatsapp disconnect widget edit link click should open business manager with whatsapp asset selected
 	$( '#wc-whatsapp-disconnect-edit' ).click( function( event ) {
-        $.post( facebook_for_woocommerce_whatsapp_templates.ajax_url, {
+        $.post( facebook_for_woocommerce_whatsapp_disconnect.ajax_url, {
 			action: 'wc_facebook_whatsapp_fetch_url_info',
-			nonce:  facebook_for_woocommerce_whatsapp_templates.nonce
+			nonce:  facebook_for_woocommerce_whatsapp_disconnect.nonce
 		}, function ( response ) {
             console.log(response);
             if ( response.success ) {
