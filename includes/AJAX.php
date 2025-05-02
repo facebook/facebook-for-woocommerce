@@ -64,6 +64,9 @@ class AJAX {
 		// fetch configured library template info
 		add_action( 'wp_ajax_wc_facebook_whatsapp_fetch_library_template_info', array( $this, 'whatsapp_fetch_library_template_info' ) );
 
+		// action to create or update utility event config info
+		add_action( 'wp_ajax_wc_facebook_whatsapp_upsert_event_config', array( $this, 'whatsapp_upsert_event_config' ) );
+
 		// search a product's attributes for the given term
 		add_action( 'wp_ajax_' . self::ACTION_SEARCH_PRODUCT_ATTRIBUTES, array( $this, 'admin_search_product_attributes' ) );
 
@@ -291,6 +294,33 @@ class AJAX {
 		}
 		WhatsAppUtilityConnection::get_template_library_content( $bisu_token );
 	}
+	/**
+	 * Creates or Updates WhatsApp Utility Event Configs
+	 *
+	 * @internal
+	 *
+	 * @since 1.10.0
+	 */
+	public function whatsapp_upsert_event_config() {
+		facebook_for_woocommerce()->log( 'Calling POST API to upsert whatsapp utility event' );
+		if ( ! check_ajax_referer( 'facebook-for-wc-whatsapp-events-nonce', 'nonce', false ) ) {
+			wp_send_json_error( 'Invalid security token sent.' );
+		}
+		// Get BISU token
+		$bisu_token = get_option( 'wc_facebook_wa_integration_bisu_access_token', null );
+		if ( empty( $bisu_token ) ) {
+			wp_send_json_error( 'Missing access token for Event Configs POST API call' );
+		}
+		// Get POST parameters from the request
+		$event    = isset( $_POST['event'] ) ? wc_clean( wp_unslash( $_POST['event'] ) ) : '';
+		$language = isset( $_POST['language'] ) ? wc_clean( wp_unslash( $_POST['language'] ) ) : '';
+		$status   = isset( $_POST['status'] ) ? wc_clean( wp_unslash( $_POST['status'] ) ) : '';
+		if ( empty( $event ) || empty( $language ) || empty( $status ) ) {
+			wp_send_json_error( 'Missing request parameters for Event Configs POST API call' );
+		}
+		WhatsAppUtilityConnection::post_whatsapp_utility_messages_event_configs_call( $event, $language, $status, $bisu_token );
+	}
+
 	/**
 	 * Maybe triggers a modal warning when the merchant toggles sync enabled status in bulk.
 	 *

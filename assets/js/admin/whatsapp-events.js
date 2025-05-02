@@ -41,4 +41,24 @@ jQuery( document ).ready( function( $ ) {
             }
         });
     });
+
+    $('#woocommerce-whatsapp-save-order-confirmation').click(function (event) {
+        var languageValue = $("#manage-event-language").val();
+        var statusValue = $('input[name="template-status"]:checked').val();
+        console.log('Save confirmation clicked: ', languageValue, statusValue);
+        $.post(facebook_for_woocommerce_whatsapp_events.ajax_url, {
+            action: 'wc_facebook_whatsapp_upsert_event_config',
+            nonce: facebook_for_woocommerce_whatsapp_events.nonce,
+            event: 'ORDER_PLACED',
+            language: languageValue,
+            status: statusValue
+        }, function (response) {
+            //TODO: Add Error Handling
+            let url = new URL(window.location.href);
+            let params = new URLSearchParams(url.search);
+            params.set('view', 'utility_settings');
+            url.search = params.toString();
+            window.location.href = url.toString();
+        });
+    });
 });
