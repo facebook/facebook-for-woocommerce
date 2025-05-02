@@ -97,25 +97,25 @@ class WhatsAppUtilityConnection {
 	 * @param string $bisu_token BISU token
 	 */
 	public static function wc_facebook_whatsapp_connect_utility_messages_call( $waba_id, $wacs_id, $external_business_id, $bisu_token ) {
-		$base_url     = array( self::GRAPH_API_BASE_URL, self::API_VERSION, $waba_id, 'connect_utility_messages' );
-		$base_url     = esc_url( implode( '/', $base_url ) );
-		$query_params = array(
+		$base_url      = array( self::GRAPH_API_BASE_URL, self::API_VERSION, $waba_id, 'connect_utility_messages' );
+		$base_url      = esc_url( implode( '/', $base_url ) );
+		$query_params  = array(
 			'external_integration_id' => $external_business_id,
 			'wacs_id'                 => $wacs_id,
 			'access_token'            => $bisu_token,
 		);
-		$base_url     = add_query_arg( $query_params, $base_url );
-		$options      = array(
+		$base_url      = add_query_arg( $query_params, $base_url );
+		$options       = array(
 			'headers' => array(
 				'Authorization' => $bisu_token,
 			),
 			'body'    => array(),
 		);
-		$response     = wp_remote_post( $base_url, $options );
+		$response      = wp_remote_post( $base_url, $options );
+		$response_body = explode( "\n", wp_remote_retrieve_body( $response ) );
+		$response_data = json_decode( $response_body[0] );
 		if ( is_wp_error( $response ) || 200 !== wp_remote_retrieve_response_code( $response ) ) {
-			$error_data    = explode( "\n", wp_remote_retrieve_body( $response ) );
-			$error_object  = json_decode( $error_data[0] );
-			$error_message = $error_object->error->error_user_title ?? $error_object->error->message ?? 'Something went wrong. Please try again later!';
+			$error_message = $response_data->error->error_user_title ?? $response_data->error->message ?? 'Something went wrong. Please try again later!';
 
 			wc_get_logger()->info(
 				sprintf(
@@ -126,11 +126,15 @@ class WhatsAppUtilityConnection {
 			);
 			wp_send_json_error( $error_message, 'Finish Onboarding Failure' );
 		} else {
+				$integration_config_id = $response_data->id;
 				wc_get_logger()->info(
 					sprintf(
-						__( 'Finish Onboarding Button Click Success!!!', 'facebook-for-woocommerce' )
+						/* translators: %s $integration_config_id */
+						__( 'Finish Onboarding Button Click Success. Integration ID: %1$s!!!', 'facebook-for-woocommerce' ),
+						$integration_config_id,
 					)
 				);
+			update_option( 'wc_facebook_wa_integration_config_id', $integration_config_id );
 			wp_send_json_success( $response, 'Finish Onboarding Success' );
 		}
 	}
