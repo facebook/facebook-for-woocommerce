@@ -31,7 +31,11 @@ jQuery( document ).ready( function( $ ) {
 			nonce:  facebook_for_woocommerce_whatsapp_disconnect.nonce
 		}, function ( response ) {
             if ( response.success ) {
-                // TODO: redirect to onboarding view
+                let url = new URL(window.location.href);
+                let params = new URLSearchParams(url.search);
+                params.delete('view');
+                url.search = params.toString();
+                window.location.href = url.toString();
                 console.log("Success!!!",response);
 			} else {
                 console.log("Disconnect Failure!!!",response);
