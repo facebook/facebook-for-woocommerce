@@ -159,11 +159,11 @@ class WhatsAppUtilityConnection {
 			);
 			wp_send_json_error( $error_message, 'Disconnect Whatsapp Failure' );
 		} else {
-				wc_get_logger()->info(
-					sprintf(
-						__( 'Whatsapp Disconnect API Call Success!!!', 'facebook-for-woocommerce' )
-					)
-				);
+			wc_get_logger()->info(
+				sprintf(
+					__( 'Whatsapp Disconnect API Call Success!!!', 'facebook-for-woocommerce' )
+				)
+			);
 
 			// delete all the whatsapp setting options in DB
 			$wa_settings = array(
@@ -180,6 +180,12 @@ class WhatsAppUtilityConnection {
 			);
 
 			self::wc_facebook_whatsapp_settings_delete( $wa_settings );
+
+			wc_get_logger()->info(
+				sprintf(
+					__( 'Whatsapp Settings Deletion Success!!!', 'facebook-for-woocommerce' )
+				)
+			);
 
 			wp_send_json_success( $response, 'Disconnect Whatsapp Success' );
 		}
