@@ -13,9 +13,6 @@ use WooCommerce\Facebook\API;
 class Request extends API\Request {
 	/**
 	 * API request constructor.
-	 *
-	 * @param string $external_business_id external business ID
-	 * @param string $method request method
 	 */
 	public function __construct() {
 		parent::__construct( '/fbe_business/fbe_rollout_switches', 'GET' );
