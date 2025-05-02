@@ -228,7 +228,18 @@ class Settings {
 		?>
 		<nav class="nav-tab-wrapper woo-nav-tab-wrapper facebook-for-woocommerce-tabs">
 			<?php foreach ( $tabs as $id => $label ) : ?>
-				<a href="<?php echo esc_html( admin_url( 'admin.php?page=' . self::PAGE_ID . '&tab=' . esc_attr( $id ) ) ); ?>" class="nav-tab <?php echo $current_tab === $id ? 'nav-tab-active' : ''; ?>"><?php echo esc_html( $label ); ?></a>
+				<?php $url = admin_url( 'admin.php?page=' . self::PAGE_ID . '&tab=' . esc_attr( $id ) ); ?>
+				<?php if ( 'whatsapp_utility' === $id ) : ?>
+					<?php
+					$wa_integration_config_id = get_option( 'wc_facebook_wa_integration_config_id', '' );
+					if ( ! empty( $wa_integration_config_id ) ) {
+						$url .= '&view=utility_settings';
+					}
+					?>
+					<a href="<?php echo esc_url( $url ); ?>" class="nav-tab <?php echo $current_tab === $id ? 'nav-tab-active' : ''; ?>"><?php echo esc_html( $label ); ?></a>
+				<?php else : ?>
+					<a href="<?php echo esc_url( $url ); ?>" class="nav-tab <?php echo $current_tab === $id ? 'nav-tab-active' : ''; ?>"><?php echo esc_html( $label ); ?></a>
+				<?php endif; ?>
 			<?php endforeach; ?>
 		</nav>
 		<?php

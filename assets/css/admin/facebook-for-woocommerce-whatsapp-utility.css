@@ -112,6 +112,13 @@
     color: #FFFFFF;
     border:none;
 }
+.manage-event-card-item {
+    padding: 20px;
+    justify-content: space-between;
+}
+.manage-event-selector {
+    min-width: 100%;
+}
 .manage-event-template-block {
     border: 1px solid #c4c3c3;
     margin-bottom: 20px;
@@ -126,6 +133,7 @@
     padding: 20px;
     display: flex;
     flex-direction: row-reverse;
+    justify-content: flex-start;
 }
 .manage-event-button {
     margin-left: 20px;

@@ -15,6 +15,7 @@ use WooCommerce\Facebook\Admin\Settings_Screens;
 use WooCommerce\Facebook\Admin\Settings_Screens\Shops;
 use WooCommerce\Facebook\Framework\Helper;
 use WooCommerce\Facebook\Framework\Plugin\Exception as PluginException;
+use WooCommerce\Facebook\Admin\Settings_Screens\Whatsapp_Utility;
 
 defined( 'ABSPATH' ) || exit;
 
@@ -37,6 +38,9 @@ class Enhanced_Settings {
 	 * @var string
 	 */
 	const SUBMENU_PAGE_ID = 'edit-tags.php?taxonomy=fb_product_set&post_type=product';
+
+	/** @var bool flag to check if whatsapp utility is enabled, this is just a boolean for now, will implement a flagging mechanism */
+	const WHATSAPP_UTILITY_FEATURE_FLAG = true;
 
 	/**
 	 * Enhanced settings constructor.
@@ -65,18 +69,24 @@ class Enhanced_Settings {
 	 * @return array
 	 */
 	private function build_menu_item_array( bool $is_connected ): array {
+
 		if ( $is_connected ) {
-			// TODO: Add Utility messaging tab
 			// TODO: Remove Product sync and Product sets tab once catalog changes are complete
-			return array(
+			$screens = array(
 				Settings_Screens\Shops::ID        => new Settings_Screens\Shops(),
 				Settings_Screens\Product_Sync::ID => new Settings_Screens\Product_Sync(),
 				Settings_Screens\Product_Sets::ID => new Settings_Screens\Product_Sets(),
 			);
 		} else {
-			// TODO: Add Utility messaging tab
-			return [ Settings_Screens\Shops::ID => new Settings_Screens\Shops() ];
+			$screens = [ Settings_Screens\Shops::ID => new Settings_Screens\Shops() ];
 		}
+
+		if ( self::WHATSAPP_UTILITY_FEATURE_FLAG ) {
+			$whatsapp_utility_screens = [ Settings_Screens\Whatsapp_Utility::ID => new Settings_Screens\Whatsapp_Utility() ];
+			$screens                  = array_merge( $screens, $whatsapp_utility_screens );
+		}
+
+		return $screens;
 	}
 
 	/**
@@ -186,7 +196,18 @@ class Enhanced_Settings {
 		?>
 		<nav class="nav-tab-wrapper woo-nav-tab-wrapper facebook-for-woocommerce-tabs">
 			<?php foreach ( $tabs as $id => $label ) : ?>
-				<a href="<?php echo esc_html( admin_url( 'admin.php?page=' . self::PAGE_ID . '&tab=' . esc_attr( $id ) ) ); ?>" class="nav-tab <?php echo $current_tab === $id ? 'nav-tab-active' : ''; ?>"><?php echo esc_html( $label ); ?></a>
+				<?php $url = admin_url( 'admin.php?page=' . self::PAGE_ID . '&tab=' . esc_attr( $id ) ); ?>
+				<?php if ( 'whatsapp_utility' === $id ) : ?>
+					<?php
+					$wa_onboarding_completion_setting = get_option( 'wc_facebook_wa_integration_onboarding_complete', '' );
+					if ( 'true' === $wa_onboarding_completion_setting ) {
+						$url .= '&view=utility_settings';
+					}
+					?>
+					<a href="<?php echo esc_url( $url ); ?>" class="nav-tab <?php echo $current_tab === $id ? 'nav-tab-active' : ''; ?>"><?php echo esc_html( $label ); ?></a>
+				<?php else : ?>
+					<a href="<?php echo esc_url( $url ); ?>" class="nav-tab <?php echo $current_tab === $id ? 'nav-tab-active' : ''; ?>"><?php echo esc_html( $label ); ?></a>
+				<?php endif; ?>
 			<?php endforeach; ?>
 		</nav>
 		<?php

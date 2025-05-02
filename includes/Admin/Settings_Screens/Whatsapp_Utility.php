@@ -486,35 +486,37 @@ class Whatsapp_Utility extends Abstract_Settings_Screen {
 	public function render_manage_events_view() {
 		?>
 		<div class="onboarding-card">
-			<div class="card-item">
-				<h1><b><?php esc_html_e( 'Manage order confirmation message', 'facebook-for-woocommerce' ); ?></b></h1>
-				<p><?php esc_html_e( 'Send a confirmation to customers after they\'ve placed an order.', 'facebook-for-woocommerce' ); ?></p>
+			<div class="manage-event-card-item">
+				<div class="card-content">
+					<h1><b><?php esc_html_e( 'Manage order confirmation message', 'facebook-for-woocommerce' ); ?></b></h1>
+					<p><?php esc_html_e( 'Send a confirmation to customers after they\'ve placed an order.', 'facebook-for-woocommerce' ); ?></p>
+				</div>
 			</div>
 			<div class="divider"></div>
-			<div class="card-item">
+			<div class="manage-event-card-item">
 				<p><b><?php esc_html_e( 'Select a language', 'facebook-for-woocommerce' ); ?></b></p>
-				<select id="manage-event-language">
+				<select id="manage-event-language" class="manage-event-selector">
 					<option value="en_US">English (US)</option>
 					<option value="en_UK">English (UK)</option>
 				</select>
 			</div>
-			<div class="card-item">
+			<div class="manage-event-card-item">
 				<div class="manage-event-template-block">
 					<div class="manage-event-template-header">
-						<input type="radio" name="template-status" value="on" />
-						<label for="template-status"><b><?php esc_html_e( 'Send order confirmation message', 'facebook-for-woocommerce' ); ?> </b></label>
+						<input type="radio" name="template-status" id="active-template-status" value="ACTIVE" checked="checked" />
+						<label for="active-template-status"><b><?php esc_html_e( 'Send order confirmation message', 'facebook-for-woocommerce' ); ?> </b></label>
 					</div>
 					<div class="divider"></div>
-					<div class="card-item fbwa-hidden-element" id="library-template-content"></div>
+					<div class="manage-event-card-item fbwa-hidden-element" id="library-template-content"></div>
 				</div>
 				<div class="manage-event-template-block">
 					<div class="manage-event-template-header">
-						<input type="radio" name="template-status" value="off" />
-						<label for="template-status"><b><?php esc_html_e( 'Turn off order confirmation', 'facebook-for-woocommerce' ); ?> </b></label>
+						<input type="radio" name="template-status" id="inactive-template-status" value="INACTIVE" />
+						<label for="inactive-template-status"><b><?php esc_html_e( 'Turn off order confirmation', 'facebook-for-woocommerce' ); ?> </b></label>
 					</div>
 				</div>
 			</div>
-			<div class="card-item manage-event-template-footer">
+			<div class="manage-event-card-item manage-event-template-footer">
 				<div class="manage-event-button">
 					<a
 						id="woocommerce-whatsapp-save-order-confirmation"

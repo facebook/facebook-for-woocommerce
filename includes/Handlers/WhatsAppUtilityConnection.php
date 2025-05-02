@@ -27,6 +27,16 @@ class WhatsAppUtilityConnection {
 	/** @var string Graph API base URL */
 	const GRAPH_API_BASE_URL = 'https://graph.facebook.com';
 
+	/** @var string Prefix for Whatsapp Utility Option Names */
+	const WA_UTILITY_OPTION_PREFIX = 'wc_facebook_wa';
+
+	/** @var array Mapping of Events to Template Library name */
+	const EVENT_TO_LIBRARY_TEMPLATE_MAPPING = array(
+		'ORDER_PLACED'   => 'order_management_4',
+		'ORDER_SHIPPED'  => 'shipment_confirmation_4',
+		'ORDER_REFUNDED' => 'refund_confirmation_1',
+	);
+
 
 	/**
 	 * Makes an API call to Template Library API
@@ -39,15 +49,17 @@ class WhatsAppUtilityConnection {
 				__( 'In Template Library Get API call ', 'facebook-for-woocommerce' ),
 			)
 		);
-		$base_url = array( self::GRAPH_API_BASE_URL, self::API_VERSION, 'message_template_library' );
-		$base_url = esc_url( implode( '/', $base_url ) );
-		$params   = array(
-			'name'         => 'order_management_4',
+		$base_url     = array( self::GRAPH_API_BASE_URL, self::API_VERSION, 'message_template_library' );
+		$base_url     = esc_url( implode( '/', $base_url ) );
+		$library_name = self::EVENT_TO_LIBRARY_TEMPLATE_MAPPING['ORDER_PLACED'];
+
+		$params  = array(
+			'name'         => $library_name,
 			'language'     => 'en',
 			'access_token' => $bisu_token,
 		);
-		$url      = add_query_arg( $params, $base_url );
-		$options  = array(
+		$url     = add_query_arg( $params, $base_url );
+		$options = array(
 			'headers' => array(
 				'Authorization' => $bisu_token,
 			),
@@ -85,25 +97,25 @@ class WhatsAppUtilityConnection {
 	 * @param string $bisu_token BISU token
 	 */
 	public static function wc_facebook_whatsapp_connect_utility_messages_call( $waba_id, $wacs_id, $external_business_id, $bisu_token ) {
-		$base_url     = array( self::GRAPH_API_BASE_URL, self::API_VERSION, $waba_id, 'connect_utility_messages' );
-		$base_url     = esc_url( implode( '/', $base_url ) );
-		$query_params = array(
+		$base_url      = array( self::GRAPH_API_BASE_URL, self::API_VERSION, $waba_id, 'connect_utility_messages' );
+		$base_url      = esc_url( implode( '/', $base_url ) );
+		$query_params  = array(
 			'external_integration_id' => $external_business_id,
 			'wacs_id'                 => $wacs_id,
 			'access_token'            => $bisu_token,
 		);
-		$base_url     = add_query_arg( $query_params, $base_url );
-		$options      = array(
+		$base_url      = add_query_arg( $query_params, $base_url );
+		$options       = array(
 			'headers' => array(
 				'Authorization' => $bisu_token,
 			),
 			'body'    => array(),
 		);
-		$response     = wp_remote_post( $base_url, $options );
+		$response      = wp_remote_post( $base_url, $options );
+		$response_body = explode( "\n", wp_remote_retrieve_body( $response ) );
+		$response_data = json_decode( $response_body[0] );
 		if ( is_wp_error( $response ) || 200 !== wp_remote_retrieve_response_code( $response ) ) {
-			$error_data    = explode( "\n", wp_remote_retrieve_body( $response ) );
-			$error_object  = json_decode( $error_data[0] );
-			$error_message = $error_object->error->error_user_title ?? $error_object->error->message ?? 'Something went wrong. Please try again later!';
+			$error_message = $response_data->error->error_user_title ?? $response_data->error->message ?? 'Something went wrong. Please try again later!';
 
 			wc_get_logger()->info(
 				sprintf(
@@ -114,11 +126,15 @@ class WhatsAppUtilityConnection {
 			);
 			wp_send_json_error( $error_message, 'Finish Onboarding Failure' );
 		} else {
+				$integration_config_id = $response_data->id;
 				wc_get_logger()->info(
 					sprintf(
-						__( 'Finish Onboarding Button Click Success!!!', 'facebook-for-woocommerce' )
+						/* translators: %s $integration_config_id */
+						__( 'Finish Onboarding Button Click Success. Integration ID: %1$s!!!', 'facebook-for-woocommerce' ),
+						$integration_config_id,
 					)
 				);
+			update_option( 'wc_facebook_wa_integration_config_id', $integration_config_id );
 			wp_send_json_success( $response, 'Finish Onboarding Success' );
 		}
 	}
@@ -194,6 +210,80 @@ class WhatsAppUtilityConnection {
 	public static function wc_facebook_whatsapp_settings_delete( $wa_settings ) {
 		foreach ( $wa_settings as $setting ) {
 			delete_option( $setting ); // this only deletes if option exists, no error on failure
+		}
+	}
+
+	/**
+	 * Makes an API call to Whatsapp Utility Event Configs Post API to create or update Event Configs
+	 *
+	 * @param string $event Order Management Event
+	 * @param string $language Language Code
+	 * @param string $status ACTIVE or INACTIVE
+	 * @param string $bisu_token the BISU token received in the webhook
+	 */
+	public static function post_whatsapp_utility_messages_event_configs_call( $event, $language, $status, $bisu_token ) {
+		// TODO: Update Harcoded Integration id to Option value
+		$integration_id = 1486573012315320;
+		$base_url       = array( self::GRAPH_API_BASE_URL, self::API_VERSION, $integration_id, 'event_configs' );
+		$base_url       = esc_url( implode( '/', $base_url ) );
+		// Order id is provided as the third positional parameter {{3}} for Order Confirmation, Order Shipped library templates and it is the fourth positional parameter {{4}} for Order Refunded template.
+		// Encoding the Parameter brackets as %7B so that they get encoded properly in the url
+		$param_str            = 'ORDER_REFUNDED' === $event ? '%7B%7B4%7B%7B' : '%7B%7B3%7B%7B';
+		$account_url          = get_permalink( get_option( 'woocommerce_myaccount_page_id' ) );
+		$view_orders_endpoint = get_option( 'woocommerce_myaccount_view_order_endpoint' );
+		$view_orders_base_url = esc_url( $account_url . $view_orders_endpoint );
+		$view_order_url       = esc_url( implode( '/', array( $view_orders_base_url, $param_str ) ) );
+		// Creating Example view orders url with order id: 12345
+		$view_order_example_url = esc_url( implode( '/', array( $view_orders_base_url, '12345' ) ) );
+
+		$query_params    = array(
+			'event'                          => $event,
+			'language'                       => $language,
+			'status'                         => $status,
+			'library_template_name'          => self::EVENT_TO_LIBRARY_TEMPLATE_MAPPING[ $event ],
+			'library_template_button_inputs' => "[{'type': 'URL', 'url': {'base_url': '" . $view_order_url . "', 'url_suffix_example': '" . $view_order_example_url . "'}}]",
+			'access_token'                   => $bisu_token,
+		);
+		$base_url        = add_query_arg( $query_params, $base_url );
+		$options         = array(
+			'headers' => array(
+				'Authorization' => $bisu_token,
+			),
+			'body'    => array(),
+		);
+		$response        = wp_remote_post( $base_url, $options );
+		$status_code     = wp_remote_retrieve_response_code( $response );
+		$data            = explode( "\n", wp_remote_retrieve_body( $response ) );
+		$response_object = json_decode( $data[0] );
+		if ( is_wp_error( $response ) || 200 !== $status_code ) {
+			$error_message = $response_object->error->error_user_title ?? $response_object->error->message ?? 'Something went wrong. Please try again later!';
+			wc_get_logger()->info(
+				sprintf(
+					/* translators: %s $error_message */
+					__( 'Event Configs Post API call Failed %1$s ', 'facebook-for-woocommerce' ),
+					$error_message,
+				)
+			);
+			wp_send_json_error( $response, 'Event Configs Post API call Failed' );
+		} else {
+			$option_name     = implode( '_', array( self::WA_UTILITY_OPTION_PREFIX, strtolower( $event ), 'event_config_id' ) );
+			$event_config_id = $response_object->id;
+			$event_status    = $response_object->status;
+			wc_get_logger()->info(
+				sprintf(
+					/* translators: %s $option_name  %s $event_config_id %s $event_status */
+					__( 'Event Configs Post API call Succeeded. Updating Option name: %1$s, Event Config id: %2$s, Event Status: %3$s', 'facebook-for-woocommerce' ),
+					$option_name,
+					$event_config_id,
+					$event_status,
+				)
+			);
+			if ( 'ACTIVE' === $event_status ) {
+				update_option( $option_name, $event_config_id );
+			} else {
+				update_option( $option_name, null );
+			}
+			wp_send_json_success( 'Event Configs Post API call Completed' );
 		}
 	}
 }
