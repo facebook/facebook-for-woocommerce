@@ -69,6 +69,9 @@ class AJAX {
 
 		// update the wp_options with wc_facebook_whatsapp_consent_collection_setting_status to disabled
 		add_action( 'wp_ajax_wc_facebook_whatsapp_consent_collection_disable', array( $this, 'whatsapp_consent_collection_disable' ) );
+
+		// disconnect whatsapp account from woocommcerce app
+		add_action( 'wp_ajax_wc_facebook_disconnect_whatsapp', array( $this, 'wc_facebook_disconnect_whatsapp' ) );
 	}
 
 
@@ -278,6 +281,27 @@ class AJAX {
 			update_option( 'wc_facebook_whatsapp_consent_collection_setting_status', 'disabled' );
 		}
 		wp_send_json_success();
+	}
+
+	/**
+	 * Disconnect Whatsapp from WooCommerce.
+	 *
+	 * @internal
+	 *
+	 * @since 1.10.0
+	 */
+	public function wc_facebook_disconnect_whatsapp() {
+		if ( ! check_ajax_referer( 'facebook-for-wc-whatsapp-disconnect-nonce', 'nonce', false ) ) {
+			wp_send_json_error( 'Invalid security token sent.' );
+		}
+
+		$integration_config_id = get_option( 'wc_facebook_wa_integration_config_id', null );
+		$bisu_token            = get_option( 'wc_facebook_wa_integration_bisu_access_token', null );
+		$waba_id               = get_option( 'wc_facebook_wa_integration_waba_id', null );
+		if ( empty( $integration_config_id ) || empty( $bisu_token ) || empty( $waba_id ) ) {
+			wp_send_json_error( 'Missing integration_config_id or bisu_token or waba_id for Disconnect API call' );
+		}
+		WhatsAppUtilityConnection::wc_facebook_disconnect_whatsapp( $waba_id, $integration_config_id, $bisu_token );
 	}
 
 	public function whatsapp_fetch_library_template_info() {
