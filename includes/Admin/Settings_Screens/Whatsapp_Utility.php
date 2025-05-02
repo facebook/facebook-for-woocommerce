@@ -434,7 +434,7 @@ class Whatsapp_Utility extends Abstract_Settings_Screen {
 			</div>
 			<div class="divider"></div>
 			<div class="disconnect-footer">
-				<!-- Left section: Icon and info -->
+			<!-- Left section: Icon and info -->
 			<div class="disconnect-footer-left">
 				<img src="<?php echo esc_url( plugins_url( '../../../assets/images/whatsapp_icon.png', __FILE__ ) ); ?>"
 					alt="WhatsApp Icon"
