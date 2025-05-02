@@ -23,4 +23,23 @@ jQuery( document ).ready( function( $ ) {
 			}
 		} );
     });
+
+    // handle whatsapp disconnect button click should disconnect whatsapp from woocommerce
+    $( '#wc-whatsapp-disconnect-button' ).click( function( event ) {
+        $.post( facebook_for_woocommerce_whatsapp_disconnect.ajax_url, {
+			action: 'wc_facebook_disconnect_whatsapp',
+			nonce:  facebook_for_woocommerce_whatsapp_disconnect.nonce
+		}, function ( response ) {
+            if ( response.success ) {
+                let url = new URL(window.location.href);
+                let params = new URLSearchParams(url.search);
+                params.delete('view');
+                url.search = params.toString();
+                window.location.href = url.toString();
+                console.log("Success!!!",response);
+			} else {
+                console.log("Disconnect Failure!!!",response);
+            }
+		} );
+    });
 } );

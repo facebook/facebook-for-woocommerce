@@ -122,4 +122,78 @@ class WhatsAppUtilityConnection {
 			wp_send_json_success( $response, 'Finish Onboarding Success' );
 		}
 	}
+
+	/**
+	 * Makes an API call to Whatsapp Utility Message Disconnect API and delete the options in DB
+	 *
+	 * @param string $waba_id WABA ID
+	 * @param string $integration_config_id whatsapp integration config ID
+	 * @param string $bisu_token BISU token
+	 */
+	public static function wc_facebook_disconnect_whatsapp( $waba_id, $integration_config_id, $bisu_token ) {
+		$base_url     = array( self::GRAPH_API_BASE_URL, self::API_VERSION, $waba_id, 'disconnect_utility_messages' );
+		$base_url     = esc_url( implode( '/', $base_url ) );
+		$query_params = array(
+			'integration_config_id' => $integration_config_id,
+			'access_token'          => $bisu_token,
+		);
+		$base_url     = add_query_arg( $query_params, $base_url );
+		$options      = array(
+			'headers' => array(
+				'Authorization' => $bisu_token,
+			),
+			'body'    => array(),
+		);
+		$response     = wp_remote_post( $base_url, $options );
+		if ( is_wp_error( $response ) || 200 !== wp_remote_retrieve_response_code( $response ) ) {
+			$error_data    = explode( "\n", wp_remote_retrieve_body( $response ) );
+			$error_object  = json_decode( $error_data[0] );
+			$error_message = $error_object->error->error_user_title ?? $error_object->error->message ?? 'Something went wrong. Please try again later!';
+
+			wc_get_logger()->info(
+				sprintf(
+					/* translators: %s $error_message */
+					__( 'Disconnect Whatsapp API Call Error: %1$s ', 'facebook-for-woocommerce' ),
+					$error_message,
+				)
+			);
+			wp_send_json_error( $error_message, 'Disconnect Whatsapp Failure' );
+		} else {
+			wc_get_logger()->info(
+				sprintf(
+					__( 'Whatsapp Disconnect API Call Success!!!', 'facebook-for-woocommerce' )
+				)
+			);
+
+			// delete all the whatsapp setting options in DB
+			$wa_settings = array(
+				'wc_facebook_wa_integration_waba_id',
+				'wc_facebook_wa_integration_bisu_access_token',
+				'wc_facebook_wa_integration_business_id',
+				'wc_facebook_wa_integration_wacs_phone_number',
+				'wc_facebook_wa_integration_is_payment_setup',
+				'wc_facebook_wa_integration_wacs_id',
+				'wc_facebook_wa_integration_waba_profile_picture_url',
+				'wc_facebook_wa_integration_waba_display_name',
+				'wc_facebook_whatsapp_consent_collection_setting_status',
+				'wc_facebook_wa_integration_config_id',
+			);
+
+			self::wc_facebook_whatsapp_settings_delete( $wa_settings );
+
+			wc_get_logger()->info(
+				sprintf(
+					__( 'Whatsapp Settings Deletion Success!!!', 'facebook-for-woocommerce' )
+				)
+			);
+
+			wp_send_json_success( $response, 'Disconnect Whatsapp Success' );
+		}
+	}
+
+	public static function wc_facebook_whatsapp_settings_delete( $wa_settings ) {
+		foreach ( $wa_settings as $setting ) {
+			delete_option( $setting ); // this only deletes if option exists, no error on failure
+		}
+	}
 }
