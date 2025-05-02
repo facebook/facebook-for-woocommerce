@@ -28,8 +28,6 @@ abstract class FeedDataTestBase extends AbstractWPUnitTestWithOptionIsolationAnd
 	public function setUp(): void {
 		parent::setUp();
 
-		\WP_Mock::setUp();
-
 		// Force a pretty permalink structure.
 		$this->add_filter_with_safe_teardown('pre_option_permalink_structure', function () {
 			return '/%postname%/';
@@ -72,7 +70,6 @@ abstract class FeedDataTestBase extends AbstractWPUnitTestWithOptionIsolationAnd
 	 */
 	public function tearDown(): void {
 		flush_rewrite_rules();
-		\WP_Mock::tearDown();
 		// No need to manually remove filters, parent tearDown will handle it
 		parent::tearDown();
 	}
