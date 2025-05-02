@@ -108,6 +108,7 @@ class RolloutSwitchesTest extends \WooCommerce\Facebook\Tests\Unit\AbstractWPUni
 				switch ($switch_name) {
 					case 'switch_a':
 					case 'switch_b':
+					case 'switch_d':
 						return true;
 					default:
 						return false;
@@ -118,11 +119,11 @@ class RolloutSwitchesTest extends \WooCommerce\Facebook\Tests\Unit\AbstractWPUni
 		// If the switch is not active -> FALSE (independent of the response being true)
 		$this->assertEquals( $switch_mock->is_switch_enabled("switch_c"), false );
 
-		// If the switch is active but not in the response -> TRUE
+		// If the feature is active and in the response -> response value
 		$this->assertEquals( $switch_mock->is_switch_enabled("switch_a"), true );
 		$this->assertEquals( $switch_mock->is_switch_enabled("switch_b"), false );
 		
-		// If the feature is active and in the response -> response value
-		$this->assertEquals( $switch_mock->is_switch_enabled("switch_d"), false );
+		// If the switch is active but not in the response -> TRUE
+		$this->assertEquals( $switch_mock->is_switch_enabled("switch_d"), true );
 	}
 }
