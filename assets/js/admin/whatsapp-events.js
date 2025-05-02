@@ -8,6 +8,42 @@
  */
 
 jQuery( document ).ready( function( $ ) {
+    // Set Event Status for Order Placed
+    var orderPlacedActiveStatus = $('#order-placed-active-status');
+    var orderPlacedInactiveStatus = $('#order-placed-inactive-status');
+    if(facebook_for_woocommerce_whatsapp_events.order_placed_enabled){
+        orderPlacedInactiveStatus.hide();
+        orderPlacedActiveStatus.show();
+    }
+    else {
+        orderPlacedActiveStatus.hide();
+        orderPlacedInactiveStatus.show();
+    }
+
+    // Set Event Status for Order Shipped
+    var orderShippedActiveStatus = $('#order-shipped-active-status');
+    var orderShippedInactiveStatus = $('#order-shipped-inactive-status');
+    if(facebook_for_woocommerce_whatsapp_events.order_shipped_enabled){
+        orderShippedInactiveStatus.hide();
+        orderShippedActiveStatus.show();
+    }
+    else {
+        orderShippedActiveStatus.hide();
+        orderShippedInactiveStatus.show();
+    }
+
+    // Set Event Status for Order Refunded
+    var orderRefundedActiveStatus = $('#order-refunded-active-status');
+    var orderRefundedInactiveStatus = $('#order-refunded-inactive-status');
+    if(facebook_for_woocommerce_whatsapp_events.order_refunded_enabled){
+        orderRefundedInactiveStatus.hide();
+        orderRefundedActiveStatus.show();
+    }
+    else {
+        orderRefundedActiveStatus.hide();
+        orderRefundedInactiveStatus.show();
+    }
+
     // update current view from utility settings to manage event when order confirmation button is clicked.
     $('#woocommerce-whatsapp-manage-order-confirmation').click(function (event) {
         let url = new URL(window.location.href);
