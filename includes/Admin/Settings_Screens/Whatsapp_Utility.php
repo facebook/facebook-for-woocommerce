@@ -187,6 +187,23 @@ class Whatsapp_Utility extends Abstract_Settings_Screen {
 				),
 			)
 		);
+		wp_enqueue_script(
+			'facebook-for-woocommerce-whatsapp-disconnect',
+			facebook_for_woocommerce()->get_asset_build_dir_url() . '/admin/whatsapp-disconnect.js',
+			array( 'jquery', 'jquery-blockui', 'jquery-tiptip', 'wc-enhanced-select' ),
+			\WC_Facebookcommerce::PLUGIN_VERSION
+		);
+		wp_localize_script(
+			'facebook-for-woocommerce-whatsapp-disconnect',
+			'facebook_for_woocommerce_whatsapp_disconnect',
+			array(
+				'ajax_url' => admin_url( 'admin-ajax.php' ),
+				'nonce'    => wp_create_nonce( 'facebook-for-wc-whatsapp-disconnect-nonce' ),
+				'i18n'     => array(
+					'result' => true,
+				),
+			)
+		);
 	}
 
 
@@ -419,6 +436,44 @@ class Whatsapp_Utility extends Abstract_Settings_Screen {
 						<button id="wc-fb-warning-modal-confirm" class="button button-primary"><?php esc_html_e( 'Remove', 'facebook-for-woocommerce' ); ?></button>
 					</div>
 				</div>
+			</div>
+		</div>
+		<div class="onboarding-card">
+			<div class="card-item event-config">
+				<div class="card-content">
+					<div class="event-config-heading-container">
+						<h1><?php esc_html_e( 'Edit your profile', 'facebook-for-woocommerce' ); ?></h1>
+					</div>
+					<div class="consent-update-card-subcontent">
+						<?php esc_html_e( 'Edit your connected WhatsApp Business account on your WhatsApp Manager.', 'facebook-for-woocommerce' ); ?>
+					</div>
+				</div>
+			</div>
+			<div class="divider"></div>
+			<div class="disconnect-footer">
+			<!-- Left section: Icon and info -->
+			<div class="disconnect-footer-left">
+				<img src="<?php echo esc_url( plugins_url( '../../../assets/images/whatsapp_icon.png', __FILE__ ) ); ?>"
+					alt="WhatsApp Icon"
+					class="whatsapp-icon">
+				<div class="contact-info">
+					<h3><?php echo esc_html( get_option( 'wc_facebook_wa_integration_wacs_phone_number' ) ); ?></h3>
+					<p><?php echo esc_html( get_option( 'wc_facebook_wa_integration_waba_display_name' ) ); ?></p>
+				</div>
+			</div>
+			<!-- Right section: Buttons -->
+			<div class="disconnect-footer-right">
+				<a id="wc-whatsapp-disconnect-button"
+				class="event-config-manage-button button"
+				href="#">
+				<?php esc_html_e( 'Disconnect', 'facebook-for-woocommerce' ); ?>
+				</a>
+				<a id="wc-whatsapp-disconnect-edit"
+				class="button button-primary"
+				href="#">
+				<?php esc_html_e( 'Edit', 'facebook-for-woocommerce' ); ?>
+				</a>
+			</div>
 			</div>
 		</div>
 		<?php
