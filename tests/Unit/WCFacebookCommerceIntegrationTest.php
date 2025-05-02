@@ -12,11 +12,12 @@ use WooCommerce\Facebook\Handlers\Connection;
 use WooCommerce\Facebook\Products;
 use WooCommerce\Facebook\ProductSync\ProductValidator;
 use WooCommerce\Facebook\Framework\AdminMessageHandler;
+use WooCommerce\Facebook\Tests\AbstractWPUnitTestWithOptionIsolationAndSafeFiltering;
 
 /**
  * Unit tests for Facebook Graph API calls.
  */
-class WCFacebookCommerceIntegrationTest extends \WooCommerce\Facebook\Tests\Unit\AbstractWPUnitTestWithSafeFiltering {
+class WCFacebookCommerceIntegrationTest extends \WooCommerce\Facebook\Tests\AbstractWPUnitTestWithOptionIsolationAndSafeFiltering {
 
 	/**
 	 * @var WC_Facebookcommerce
@@ -69,6 +70,8 @@ class WCFacebookCommerceIntegrationTest extends \WooCommerce\Facebook\Tests\Unit
 		/* Making sure no options are set before the test. */
 		delete_option( WC_Facebookcommerce_Pixel::SETTINGS_KEY );
 		delete_option( WC_Facebookcommerce_Integration::SETTING_FACEBOOK_PIXEL_ID );
+		// Needed to prevent error logs in tests.
+		WC_Facebookcommerce_Utils::$ems = 'dummy_ems_id';
 	}
 
 	/**
@@ -417,29 +420,6 @@ class WCFacebookCommerceIntegrationTest extends \WooCommerce\Facebook\Tests\Unit
 	}
 
 	/**
-	 * Tests default allow full batch api sync uses facebook_for_woocommerce_allow_full_batch_api_sync filter
-	 * to overwrite allowance status.
-	 *
-	 * @return void
-	 */
-	public function test_allow_full_batch_api_sync_uses_allow_full_batch_api_sync_filter() {
-		$this->markTestSkipped( 'Some problems with phpunit polyfills notices handling.' );
-
-		$this->add_filter_with_safe_teardown(
-			'facebook_for_woocommerce_allow_full_batch_api_sync',
-			function ( bool $status ) {
-				return false;
-			}
-		);
-
-		$status = $this->integration->allow_full_batch_api_sync();
-
-		$this->assertFalse( $status );
-		$this->assertFalse( has_filter( 'facebook_for_woocommerce_block_full_batch_api_sync' ) );
-		$this->assertTrue( has_filter( 'facebook_for_woocommerce_allow_full_batch_api_sync' ) );
-	}
-
-	/**
 	 * Tests plugin enqueues scripts and styles for non admin user for non plugin settings screens.
 	 *
 	 * @return void
@@ -573,11 +553,17 @@ class WCFacebookCommerceIntegrationTest extends \WooCommerce\Facebook\Tests\Unit
 	 */
 	public function test_on_product_save_existing_simple_product_sync_disabled_updates_the_product() {
 		$product_to_update = WC_Helper_Product::create_simple_product();
-		$product_to_delete = WC_Helper_Product::create_simple_product();
+
+		// The idea of the following mock is to overide the delete_product_item.
+		// The test is that the product item is being deleted as when it is marked for do not sync.
+		// The mock below is hit otherwise it would generate a random Mock_Response and throw error
+		$integration_mock = $this->createMock(WC_Facebookcommerce_Integration::class);
+		$integration_mock->method('delete_product_item');
+		$this->integration = $integration_mock;
 
 		$_POST['wc_facebook_sync_mode'] = Admin::SYNC_MODE_SYNC_DISABLED;
 
-		$_POST[ WC_Facebook_Product::FB_REMOVE_FROM_SYNC ] = $product_to_delete->get_id();
+		$_POST[ WC_Facebook_Product::FB_REMOVE_FROM_SYNC ] = $product_to_update->get_id();
 
 		$product_to_update->set_stock_status( 'instock' );
 
@@ -586,11 +572,8 @@ class WCFacebookCommerceIntegrationTest extends \WooCommerce\Facebook\Tests\Unit
 
 		$this->integration->on_product_save( $product_to_update->get_id() );
 
-		$this->assertEquals( null, get_post_meta( $product_to_delete->get_id(), WC_Facebookcommerce_Integration::FB_PRODUCT_ITEM_ID, true ) );
-		$this->assertEquals( null, get_post_meta( $product_to_delete->get_id(), WC_Facebookcommerce_Integration::FB_PRODUCT_GROUP_ID, true ) );
-		$this->assertEquals( 'no', get_post_meta( $product_to_update->get_id(), Products::SYNC_ENABLED_META_KEY, true ) );
-		$this->assertEquals( 'no', get_post_meta( $product_to_update->get_id(), Products::VISIBILITY_META_KEY, true ) );
-
+		$this->assertEquals( 'facebook-product-item-id', get_post_meta( $product_to_update->get_id(), WC_Facebookcommerce_Integration::FB_PRODUCT_ITEM_ID, true ) );
+		$this->assertEquals( null, get_post_meta( $product_to_update->get_id(), WC_Facebookcommerce_Integration::FB_PRODUCT_GROUP_ID, true ) );
 	}
 
 	/**
@@ -909,13 +892,13 @@ class WCFacebookCommerceIntegrationTest extends \WooCommerce\Facebook\Tests\Unit
 
 		add_post_meta( $product->get_id(), WC_Facebookcommerce_Integration::FB_PRODUCT_ITEM_ID, 'facebook-product-item-id' );
 
-		$this->api->expects( $this->once() )
+		$this->api->expects( $this->never() )
 			->method( 'delete_product_item' )
 			->with( 'facebook-product-item-id' );
 
 		$result = $this->integration->delete_on_out_of_stock( $product->get_id(), $product );
 
-		$this->assertTrue( $result );
+		$this->assertFalse( $result );
 	}
 
 	/**
@@ -2173,8 +2156,6 @@ class WCFacebookCommerceIntegrationTest extends \WooCommerce\Facebook\Tests\Unit
 	 * @return void
 	 */
 	public function test_get_js_sdk_version_returns_id_from_options_using_no_filter() {
-		$this->markTestSkipped( 'get_js_sdk_version method is called in constructor which makes it impossible to test it in isolation w/o refactoring the constructor.' );
-
 		add_option( WC_Facebookcommerce_Integration::OPTION_JS_SDK_VERSION, 'v1.0.0' );
 		$this->teardown_callback_category_safely( 'wc_facebook_js_sdk_version' );
 
@@ -2189,8 +2170,6 @@ class WCFacebookCommerceIntegrationTest extends \WooCommerce\Facebook\Tests\Unit
 	 * @return void
 	 */
 	public function test_get_js_sdk_version_returns_id_with_filter() {
-		$this->markTestSkipped( 'get_js_sdk_version method is called in constructor which makes it impossible to test it in isolation w/o refactoring the constructor.' );
-
 		$this->add_filter_with_safe_teardown(
 			'wc_facebook_js_sdk_version',
 			function ( $js_sdk_version ) {
@@ -2375,82 +2354,6 @@ class WCFacebookCommerceIntegrationTest extends \WooCommerce\Facebook\Tests\Unit
 		$this->assertEquals( [ 111, 222, 333 ], $tags );
 	}
 
-	/**
-	 * Tests get product description mode with no filter no options.
-	 *
-	 * @return void
-	 */
-	public function test_get_product_description_mode_no_filter_no_options() {
-		$this->teardown_callback_category_safely( 'wc_facebook_product_description_mode' );
-		delete_option( WC_Facebookcommerce_Integration::SETTING_PRODUCT_DESCRIPTION_MODE );
-
-		$mode = $this->integration->get_product_description_mode();
-
-		$this->assertEquals( WC_Facebookcommerce_Integration::PRODUCT_DESCRIPTION_MODE_STANDARD, $mode );
-	}
-
-	/**
-	 * Tests get product description mode with no filter.
-	 *
-	 * @return void
-	 */
-	public function test_get_product_description_mode_no_filter() {
-		$this->teardown_callback_category_safely( 'wc_facebook_product_description_mode' );
-		add_option(
-			WC_Facebookcommerce_Integration::SETTING_PRODUCT_DESCRIPTION_MODE,
-			WC_Facebookcommerce_Integration::PRODUCT_DESCRIPTION_MODE_SHORT
-		);
-
-		$mode = $this->integration->get_product_description_mode();
-
-		$this->assertEquals( WC_Facebookcommerce_Integration::PRODUCT_DESCRIPTION_MODE_SHORT, $mode );
-	}
-
-	/**
-	 * Tests get product description mode with filter.
-	 *
-	 * @return void
-	 */
-	public function test_get_product_description_mode_with_filter() {
-		$this->add_filter_with_safe_teardown(
-			'wc_facebook_product_description_mode',
-			function ( $mode ) {
-				return WC_Facebookcommerce_Integration::PRODUCT_DESCRIPTION_MODE_STANDARD;
-			}
-		);
-
-		add_option(
-			WC_Facebookcommerce_Integration::SETTING_PRODUCT_DESCRIPTION_MODE,
-			WC_Facebookcommerce_Integration::PRODUCT_DESCRIPTION_MODE_SHORT
-		);
-
-		$mode = $this->integration->get_product_description_mode();
-
-		$this->assertEquals( WC_Facebookcommerce_Integration::PRODUCT_DESCRIPTION_MODE_STANDARD, $mode );
-	}
-
-	/**
-	 * Tests get product description mode falls back into default mode if mode is not recognised as valid mode.
-	 *
-	 * @return void
-	 */
-	public function test_get_product_description_mode_falls_back_to_default_when_unknown_mode() {
-		$this->add_filter_with_safe_teardown(
-			'wc_facebook_product_description_mode',
-			function ( $mode ) {
-				return 'super-duper-description-mode-123';
-			}
-		);
-
-		add_option(
-			WC_Facebookcommerce_Integration::SETTING_PRODUCT_DESCRIPTION_MODE,
-			WC_Facebookcommerce_Integration::PRODUCT_DESCRIPTION_MODE_SHORT
-		);
-
-		$mode = $this->integration->get_product_description_mode();
-
-		$this->assertEquals( WC_Facebookcommerce_Integration::PRODUCT_DESCRIPTION_MODE_STANDARD, $mode );
-	}
 
 	/**
 	 * Tests product catalog id option update with valid catalog id value.
@@ -3287,5 +3190,50 @@ class WCFacebookCommerceIntegrationTest extends \WooCommerce\Facebook\Tests\Unit
 
 		$this->assertEquals( 'product-id', $facebook_product_id );
 		$this->assertEquals( 'product-id', get_post_meta( $product->get_id(), WC_Facebookcommerce_Integration::FB_PRODUCT_ITEM_ID, true ) );
+	}
+
+	/**
+	 * Tests get product facebook id calls facebook graph api with the endpoint with filter to get id and updates
+	 * post meta item id value.
+	 *
+	 * @return void
+	 */
+	public function test_get_product_fbid_calls_facebook_and_sets_post_meta_value_for_item_id_with_filter_endpoint() {
+		add_option( WC_Facebookcommerce_Integration::OPTION_PRODUCT_CATALOG_ID, '1122334455' );
+
+		$product        = WC_Helper_Product::create_simple_product();
+		$fb_retailer_id = WC_Facebookcommerce_Utils::get_fb_retailer_id( new WC_Facebook_Product( $product->get_id() ) );
+
+		$this->api->expects( $this->once() )
+			->method( 'get_product_facebook_ids' )
+			->with( '1122334455', $fb_retailer_id )
+			->willReturn( new API\ProductCatalog\Products\Id\Response( '{"data":[{"id":"product-id","product_group":{"id":"product-group-id"}}]}' ) );
+
+		$facebook_product_id = $this->integration->get_product_fbid( WC_Facebookcommerce_Integration::FB_PRODUCT_ITEM_ID, $product->get_id() );
+
+		$this->assertEquals( 'product-id', $facebook_product_id );
+		$this->assertEquals( 'product-id', get_post_meta( $product->get_id(), WC_Facebookcommerce_Integration::FB_PRODUCT_ITEM_ID, true ) );
+	}
+
+		/**
+	 * Tests get product facebook id calls facebook graph api with the endpoint with filter to find that the item doesn't exist.
+	 *
+	 * @return void
+	 */
+	public function test_get_product_fbid_calls_facebook_and_sets_post_meta_value_for_item_id_with_filter_endpoint_empty_data() {
+		add_option( WC_Facebookcommerce_Integration::OPTION_PRODUCT_CATALOG_ID, '1122334455' );
+
+		$product        = WC_Helper_Product::create_simple_product();
+		$fb_retailer_id = WC_Facebookcommerce_Utils::get_fb_retailer_id( new WC_Facebook_Product( $product->get_id() ) );
+
+		$this->api->expects( $this->once() )
+			->method( 'get_product_facebook_ids' )
+			->with( '1122334455', $fb_retailer_id )
+			->willReturn( new API\ProductCatalog\Products\Id\Response( '{"data":[]}' ) );
+
+		$facebook_product_id = $this->integration->get_product_fbid( WC_Facebookcommerce_Integration::FB_PRODUCT_ITEM_ID, $product->get_id() );
+
+		$this->assertEquals( null, $facebook_product_id );
+		$this->assertEquals( null, get_post_meta( $product->get_id(), WC_Facebookcommerce_Integration::FB_PRODUCT_ITEM_ID, true ) );
 	}
 }

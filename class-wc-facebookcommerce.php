@@ -60,6 +60,9 @@ class WC_Facebookcommerce extends WooCommerce\Facebook\Framework\Plugin {
 	/** @var WooCommerce\Facebook\Admin\Settings */
 	private $admin_settings;
 
+	/** @var WooCommerce\Facebook\Admin\Enhanced_Settings */
+	private $admin_enhanced_settings;
+
 	/** @var WooCommerce\Facebook\AJAX Ajax handler instance */
 	private $ajax;
 
@@ -185,7 +188,7 @@ class WC_Facebookcommerce extends WooCommerce\Facebook\Framework\Plugin {
 			array( $this, 'force_user_agent_in_latin' )
 		);
 
-		if ( \WC_Facebookcommerce_Utils::isWoocommerceIntegration() ) {
+		if ( \WC_Facebookcommerce_Utils::is_woocommerce_integration() ) {
 			include_once 'facebook-commerce.php';
 
 			require_once __DIR__ . '/includes/fbproductfeed.php';
@@ -222,6 +225,7 @@ class WC_Facebookcommerce extends WooCommerce\Facebook\Framework\Plugin {
 				$this->background_remove_duplicate_visibility_meta = new Background_Remove_Duplicate_Visibility_Meta();
 			}
 
+			new WooCommerce\Facebook\API\Plugin\InitializeRestAPI();
 			$this->connection_handler = new WooCommerce\Facebook\Handlers\Connection( $this );
 			new WooCommerce\Facebook\Handlers\MetaExtension();
 			$this->webhook_handler    = new WooCommerce\Facebook\Handlers\WebHook( $this );
@@ -237,7 +241,11 @@ class WC_Facebookcommerce extends WooCommerce\Facebook\Framework\Plugin {
 
 			// load admin handlers, before admin_init
 			if ( is_admin() ) {
-				$this->admin_settings = new WooCommerce\Facebook\Admin\Settings( $this->connection_handler->is_connected() );
+				if ($this->use_enhanced_onboarding()) {
+					$this->admin_enhanced_settings = new WooCommerce\Facebook\Admin\Enhanced_Settings( $this->connection_handler->is_connected() );
+				} else {
+					$this->admin_settings = new WooCommerce\Facebook\Admin\Settings( $this->connection_handler->is_connected() );
+				}
 			}
 		}
 	}
@@ -337,15 +345,16 @@ class WC_Facebookcommerce extends WooCommerce\Facebook\Framework\Plugin {
 	 * @since 2.3.3
 	 * @param string $message error or message to save to log
 	 * @param string $log_id optional log id to segment the files by, defaults to plugin id
+	 * @param string $level optional log level represents log's tag
 	 */
-	public function log( $message, $log_id = null ) {
+	public function log( $message, $log_id = null, $level = null ) {
 		// Bail if site is connected and user has disabled logging.
 		// If site is disconnected, force-enable logging so merchant can diagnose connection issues.
 		if ( ( ! $this->get_integration() || ! $this->get_integration()->is_debug_mode_enabled() ) && $this->get_connection_handler()->is_connected() ) {
 			return;
 		}
 
-		parent::log( $message, $log_id );
+		parent::log( $message, $log_id, $level );
 	}
 
 	/**
@@ -866,8 +875,24 @@ class WC_Facebookcommerce extends WooCommerce\Facebook\Framework\Plugin {
 		}
 		return $current_screen_id;
 	}
-}
 
+	/**
+	 * Determines if the enhanced onboarding (iframe) should be used.
+	 *
+	 * @return bool
+	 *
+	 */
+	public function use_enhanced_onboarding(): bool {
+		$connection_handler              = $this->get_connection_handler();
+		$commerce_partner_integration_id = $connection_handler->get_commerce_partner_integration_id();
+
+		// If current connection is using the non-enhanced flow, don't show the new experience
+		if ( $connection_handler->is_connected() && empty( $commerce_partner_integration_id ) ) {
+			return false;
+		}
+		return false;
+	}
+}
 
 /**
  * Gets the Facebook for WooCommerce plugin instance.
@@ -877,5 +902,5 @@ class WC_Facebookcommerce extends WooCommerce\Facebook\Framework\Plugin {
  * @return \WC_Facebookcommerce instance of the plugin
  */
 function facebook_for_woocommerce() {
-	return \WC_Facebookcommerce::instance();
+	return apply_filters('wc_facebook_instance', \WC_Facebookcommerce::instance());
 }

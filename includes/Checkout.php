@@ -98,7 +98,7 @@ class Checkout {
 						try {
 							WC()->cart->add_to_cart( $product_id, $quantity );
 						} catch ( \Exception $e ) {
-							\WC_Facebookcommerce_Utils::logExceptionImmediatelyToMeta(
+							\WC_Facebookcommerce_Utils::log_exception_immediately_to_meta(
 								$e,
 								array(
 									'flow_name'       => 'checkout',
@@ -110,7 +110,7 @@ class Checkout {
 							);
 						}
 					} else {
-						\WC_Facebookcommerce_Utils::logTelemetryToMeta(
+						\WC_Facebookcommerce_Utils::log_to_meta(
 							'Failed to add product to cart',
 							array(
 								'flow_name'       => 'checkout',

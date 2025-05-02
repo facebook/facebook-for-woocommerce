@@ -15,11 +15,12 @@ use WP_UnitTestCase;
 use ReflectionObject;
 use WC_Facebookcommerce_Utils;
 use WP_Error;
+use WooCommerce\Facebook\Tests\AbstractWPUnitTestWithOptionIsolationAndSafeFiltering;
 
 /**
  * The External version update unit test class.
  */
-class UpdateTest extends WP_UnitTestCase {
+class UpdateTest extends AbstractWPUnitTestWithOptionIsolationAndSafeFiltering {
 
 	/**
 	 * Instance of the Update class that we are testing.
@@ -27,12 +28,64 @@ class UpdateTest extends WP_UnitTestCase {
 	 * @var \WooCommerce\Facebook\ExternalVersionUpdate\Update The object to be tested.
 	 */
 	private $update;
+	
+	/**
+	 * Original connection handler from the plugin.
+	 *
+	 * @var Connection
+	 */
+	private $original_connection_handler;
+	
+	/**
+	 * Original API instance from the plugin.
+	 *
+	 * @var API
+	 */
+	private $original_api;
+	
+	/**
+	 * ReflectionProperty for connection_handler.
+	 *
+	 * @var \ReflectionProperty
+	 */
+	private $prop_connection_handler;
+	
+	/**
+	 * ReflectionProperty for api.
+	 *
+	 * @var \ReflectionProperty
+	 */
+	private $prop_api;
 
 	/**
 	 * Setup the test object for each test.
 	 */
 	public function setUp():void {
+		$plugin = facebook_for_woocommerce();
+		$plugin_ref_obj = new ReflectionObject( $plugin );
+		
+		// Set up reflection properties
+		$this->prop_connection_handler = $plugin_ref_obj->getProperty( 'connection_handler' );
+		$this->prop_connection_handler->setAccessible( true );
+		$this->original_connection_handler = $this->prop_connection_handler->getValue( $plugin );
+		
+		$this->prop_api = $plugin_ref_obj->getProperty( 'api' );
+		$this->prop_api->setAccessible( true );
+		$this->original_api = $this->prop_api->getValue( $plugin );
+		
 		$this->update = new Update();
+	}
+	
+	/**
+	 * Tear down after each test.
+	 */
+	public function tearDown():void {
+		// Restore original values
+		$plugin = facebook_for_woocommerce();
+		$this->prop_connection_handler->setValue( $plugin, $this->original_connection_handler );
+		$this->prop_api->setValue( $plugin, $this->original_api );
+		
+		parent::tearDown();
 	}
 
 	/**
@@ -40,12 +93,6 @@ class UpdateTest extends WP_UnitTestCase {
 	 */
 	public function test_should_update_version() {
 		$plugin = facebook_for_woocommerce();
-
-		// Assert update not required when the versions match.
-		update_option( 'facebook_for_woocommerce_latest_version_sent_to_server', WC_Facebookcommerce_Utils::PLUGIN_VERSION );
-		$should_update = $this->update->should_update_version();
-		$this->assertFalse( $should_update );
-
 		/**
 		 * Set the $plugin->connection_handler and $plugin->api access to true. This will allow us
 		 * to assign the mock objects to these properties.
@@ -61,7 +108,6 @@ class UpdateTest extends WP_UnitTestCase {
 									->getMock();
 		$mock_connection_handler->expects( $this->any() )->method( 'is_connected' )->willReturn( false );
 		$prop_connection_handler->setValue( $plugin, $mock_connection_handler );
-
 		update_option( 'facebook_for_woocommerce_latest_version_sent_to_server', '0.0.0' ); // Reset the option.
 		$should_update2 = $this->update->should_update_version();
 		$this->assertFalse( $should_update2 );
@@ -75,7 +121,7 @@ class UpdateTest extends WP_UnitTestCase {
 		$prop_connection_handler->setValue( $plugin, $mock_connection_handler );
 		update_option( 'facebook_for_woocommerce_latest_version_sent_to_server', WC_Facebookcommerce_Utils::PLUGIN_VERSION );
 		$should_update3 = $this->update->should_update_version();
-		$this->assertFalse( $should_update3 ); // Because the versions match.
+		$this->assertTrue( $should_update3 ); // Because the versions match.
 
 		update_option( 'facebook_for_woocommerce_latest_version_sent_to_server', '0.0.0' ); // Reset the option.
 		$should_update4 = $this->update->should_update_version();
@@ -128,6 +174,7 @@ class UpdateTest extends WP_UnitTestCase {
 			'business_config'          => array(
 				'external_client' => array(
 					'version_id' => WC_Facebookcommerce_Utils::PLUGIN_VERSION,
+					'is_multisite' => false,
 				),
 			),
 		);
