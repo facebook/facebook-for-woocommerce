@@ -8,8 +8,8 @@
  */
 
 use WooCommerce\Facebook\Feed\ShippingProfilesFeed;
-use function PHPUnit\Framework\assertEmpty;
-use function PHPUnit\Framework\assertTrue;
+
+require_once __DIR__ . '/../FeedDataTestBase.php';
 
 
 /**
