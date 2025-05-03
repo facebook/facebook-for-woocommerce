@@ -259,12 +259,27 @@ class WhatsAppUtilityConnection {
 			'headers' => array(
 				'Authorization' => $bisu_token,
 			),
-			'body'    => array(),
+			'body'    => array(
+				'event'                          => $event,
+				'language'                       => $language,
+				'status'                         => $status,
+				'library_template_name'          => self::EVENT_TO_LIBRARY_TEMPLATE_MAPPING[ $event ],
+				'library_template_button_inputs' => array(
+					array(
+						'type' => 'URL',
+						'url'  => array(
+							'base_url'           => $view_order_url,
+							'url_suffix_example' => $view_order_example_url,
+						),
+					),
+				),
+
+			),
 		);
-		$response             = wp_remote_post( $base_url, $options );
-		$status_code          = wp_remote_retrieve_response_code( $response );
-		$data                 = explode( "\n", wp_remote_retrieve_body( $response ) );
-		$response_object      = json_decode( $data[0] );
+		$response        = wp_remote_post( $base_url, $options );
+		$status_code     = wp_remote_retrieve_response_code( $response );
+		$data            = explode( "\n", wp_remote_retrieve_body( $response ) );
+		$response_object = json_decode( $data[0] );
 		if ( is_wp_error( $response ) || 200 !== $status_code ) {
 			$error_message = $response_object->error->error_user_title ?? $response_object->error->message ?? 'Something went wrong. Please try again later!';
 			wc_get_logger()->info(
@@ -303,6 +318,88 @@ class WhatsAppUtilityConnection {
 				);
 			}
 			wp_send_json_success( 'Event Configs Post API call Completed' );
+		}
+	}
+
+
+	/**
+	 * Makes an API call to Event Processor: Message Events Post API to send whatsapp utility messages
+	 * TODO: Update API Endpoint from Messages to Message Events
+	 *
+	 * @param string $event Order Managerment event
+	 * @param string $event_config_id Event Config Id
+	 * @param string $language_code Language code
+	 * @param string $wacs_id Whatsapp Phone Number id
+	 * @param string $order_id Order id
+	 * @param string $phone_number Customer phone number
+	 * @param string $first_name Customer first name
+	 * @param string $bisu_token the BISU token received in the webhook
+	 */
+	public static function post_whatsapp_utility_messages_events_call( $event, $event_config_id, $language_code, $wacs_id, $order_id, $phone_number, $first_name, $bisu_token ) {
+		$base_url        = array( self::GRAPH_API_BASE_URL, self::API_VERSION, $wacs_id, "messages?access_token=$bisu_token" );
+		$base_url        = esc_url( implode( '/', $base_url ) );
+		$name            = self::EVENT_TO_LIBRARY_TEMPLATE_MAPPING[ $event ];
+		$options         = array(
+			'body' => array(
+				'messaging_product' => 'whatsapp',
+				'to'                => $phone_number,
+				'template'          => array(
+					'name'       => $name,
+					'language'   => array(
+						'code' => $language_code,
+					),
+					'components' => array(
+						array(
+							'type'       => 'BODY',
+							'parameters' => array(
+								array(
+									'type' => 'text',
+									'text' => $first_name,
+								),
+								array(
+									'type' => 'text',
+									'text' => "#$order_id",
+								),
+							),
+						),
+						array(
+							'type'       => 'BUTTON',
+							'sub_type'   => 'url',
+							'index'      => 0,
+							'parameters' => array(
+								array(
+									'type' => 'text',
+									'text' => "$order_id",
+								),
+							),
+						),
+					),
+				),
+				'type'              => 'template',
+			),
+		);
+		$response        = wp_remote_post( $base_url, $options );
+		$status_code     = wp_remote_retrieve_response_code( $response );
+		$data            = explode( "\n", wp_remote_retrieve_body( $response ) );
+		$response_object = json_decode( $data[0] );
+		if ( is_wp_error( $response ) || 200 !== $status_code ) {
+			$error_message = $response_object->error->error_user_title ?? $response_object->error->message ?? 'Something went wrong. Please try again later!';
+			wc_get_logger()->info(
+				sprintf(
+				/* translators: %s $order_id %s $error_message */
+					__( 'Messages Post API call for Order id %1$s Failed %2$s ', 'facebook-for-woocommerce' ),
+					$order_id,
+					$error_message,
+				)
+			);
+		} else {
+			wc_get_logger()->info(
+				sprintf(
+				/* translators: %s $order_id */
+					__( 'Messages Post API call for Order id %1$s Succeeded.', 'facebook-for-woocommerce' ),
+					$order_id
+				)
+			);
 		}
 	}
 }
