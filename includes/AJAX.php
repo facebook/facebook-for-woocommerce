@@ -335,6 +335,11 @@ class AJAX {
 		if ( empty( $bisu_token ) ) {
 			wp_send_json_error( 'Missing access token for Event Configs POST API call' );
 		}
+		// Get Integration Config id
+		$integration_config_id = get_option( 'wc_facebook_wa_integration_config_id', null );
+		if ( empty( $integration_config_id ) ) {
+			wp_send_json_error( 'Missing Integration Config for Event Configs POST API call' );
+		}
 		// Get POST parameters from the request
 		$event    = isset( $_POST['event'] ) ? wc_clean( wp_unslash( $_POST['event'] ) ) : '';
 		$language = isset( $_POST['language'] ) ? wc_clean( wp_unslash( $_POST['language'] ) ) : '';
@@ -342,7 +347,7 @@ class AJAX {
 		if ( empty( $event ) || empty( $language ) || empty( $status ) ) {
 			wp_send_json_error( 'Missing request parameters for Event Configs POST API call' );
 		}
-		WhatsAppUtilityConnection::post_whatsapp_utility_messages_event_configs_call( $event, $language, $status, $bisu_token );
+		WhatsAppUtilityConnection::post_whatsapp_utility_messages_event_configs_call( $event, $integration_config_id, $language, $status, $bisu_token );
 	}
 
 	/**

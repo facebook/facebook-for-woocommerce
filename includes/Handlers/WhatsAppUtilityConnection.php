@@ -37,6 +37,8 @@ class WhatsAppUtilityConnection {
 		'ORDER_REFUNDED' => 'refund_confirmation_1',
 	);
 
+	/** @var string Default language for Library Template */
+	const DEFAULT_LANGUAGE = 'en';
 
 	/**
 	 * Makes an API call to Template Library API
@@ -55,7 +57,7 @@ class WhatsAppUtilityConnection {
 
 		$params  = array(
 			'name'         => $library_name,
-			'language'     => 'en',
+			'language'     => self::DEFAULT_LANGUAGE,
 			'access_token' => $bisu_token,
 		);
 		$url     = add_query_arg( $params, $base_url );
@@ -193,6 +195,12 @@ class WhatsAppUtilityConnection {
 				'wc_facebook_wa_integration_waba_display_name',
 				'wc_facebook_whatsapp_consent_collection_setting_status',
 				'wc_facebook_wa_integration_config_id',
+				'wc_facebook_wa_order_placed_event_config_id',
+				'wc_facebook_wa_order_placed_language',
+				'wc_facebook_wa_order_shipped_event_config_id',
+				'wc_facebook_wa_order_shipped_language',
+				'wc_facebook_wa_order_refunded_event_config_id',
+				'wc_facebook_wa_order_refunded_language',
 			);
 
 			self::wc_facebook_whatsapp_settings_delete( $wa_settings );
@@ -217,44 +225,46 @@ class WhatsAppUtilityConnection {
 	 * Makes an API call to Whatsapp Utility Event Configs Post API to create or update Event Configs
 	 *
 	 * @param string $event Order Management Event
+	 * @param string $integration_config_id Integration Config Id
 	 * @param string $language Language Code
 	 * @param string $status ACTIVE or INACTIVE
 	 * @param string $bisu_token the BISU token received in the webhook
 	 */
-	public static function post_whatsapp_utility_messages_event_configs_call( $event, $language, $status, $bisu_token ) {
-		// TODO: Update Harcoded Integration id to Option value
-		$integration_id = 1486573012315320;
-		$base_url       = array( self::GRAPH_API_BASE_URL, self::API_VERSION, $integration_id, 'event_configs' );
-		$base_url       = esc_url( implode( '/', $base_url ) );
-		// Order id is provided as the third positional parameter {{3}} for Order Confirmation, Order Shipped library templates and it is the fourth positional parameter {{4}} for Order Refunded template.
-		// Encoding the Parameter brackets as %7B so that they get encoded properly in the url
-		$param_str            = 'ORDER_REFUNDED' === $event ? '%7B%7B4%7B%7B' : '%7B%7B3%7B%7B';
+	public static function post_whatsapp_utility_messages_event_configs_call( $event, $integration_config_id, $language, $status, $bisu_token ) {
+		$base_url             = array( self::GRAPH_API_BASE_URL, self::API_VERSION, $integration_config_id, 'event_configs' );
+		$base_url             = esc_url( implode( '/', $base_url ) );
 		$account_url          = get_permalink( get_option( 'woocommerce_myaccount_page_id' ) );
 		$view_orders_endpoint = get_option( 'woocommerce_myaccount_view_order_endpoint' );
 		$view_orders_base_url = esc_url( $account_url . $view_orders_endpoint );
-		$view_order_url       = esc_url( implode( '/', array( $view_orders_base_url, $param_str ) ) );
-		// Creating Example view orders url with order id: 12345
-		$view_order_example_url = esc_url( implode( '/', array( $view_orders_base_url, '12345' ) ) );
-
-		$query_params    = array(
+		$query_params         = array(
 			'event'                          => $event,
 			'language'                       => $language,
 			'status'                         => $status,
 			'library_template_name'          => self::EVENT_TO_LIBRARY_TEMPLATE_MAPPING[ $event ],
-			'library_template_button_inputs' => "[{'type': 'URL', 'url': {'base_url': '" . $view_order_url . "', 'url_suffix_example': '" . $view_order_example_url . "'}}]",
+			'library_template_button_inputs' => array(
+				array(
+					'type' => 'URL',
+					'url'  => array(
+						// View Url is dynamic and has order_id as suffix
+						'base_url'           => "$view_orders_base_url/{{1}}",
+						// Example view orders url with order id: 1234
+						'url_suffix_example' => "$view_orders_base_url/1234",
+					),
+				),
+			),
 			'access_token'                   => $bisu_token,
 		);
-		$base_url        = add_query_arg( $query_params, $base_url );
-		$options         = array(
+		$base_url             = add_query_arg( $query_params, $base_url );
+		$options              = array(
 			'headers' => array(
 				'Authorization' => $bisu_token,
 			),
 			'body'    => array(),
 		);
-		$response        = wp_remote_post( $base_url, $options );
-		$status_code     = wp_remote_retrieve_response_code( $response );
-		$data            = explode( "\n", wp_remote_retrieve_body( $response ) );
-		$response_object = json_decode( $data[0] );
+		$response             = wp_remote_post( $base_url, $options );
+		$status_code          = wp_remote_retrieve_response_code( $response );
+		$data                 = explode( "\n", wp_remote_retrieve_body( $response ) );
+		$response_object      = json_decode( $data[0] );
 		if ( is_wp_error( $response ) || 200 !== $status_code ) {
 			$error_message = $response_object->error->error_user_title ?? $response_object->error->message ?? 'Something went wrong. Please try again later!';
 			wc_get_logger()->info(
@@ -266,22 +276,31 @@ class WhatsAppUtilityConnection {
 			);
 			wp_send_json_error( $response, 'Event Configs Post API call Failed' );
 		} else {
-			$option_name     = implode( '_', array( self::WA_UTILITY_OPTION_PREFIX, strtolower( $event ), 'event_config_id' ) );
-			$event_config_id = $response_object->id;
-			$event_status    = $response_object->status;
+			$event_config_id_option_name       = implode( '_', array( self::WA_UTILITY_OPTION_PREFIX, strtolower( $event ), 'event_config_id' ) );
+			$event_config_language_option_name = implode( '_', array( self::WA_UTILITY_OPTION_PREFIX, strtolower( $event ), 'language' ) );
+			$event_config_id                   = $response_object->id;
+			$event_status                      = $response_object->status;
+			$language                          = $response_object->language;
 			wc_get_logger()->info(
 				sprintf(
 					/* translators: %s $option_name  %s $event_config_id %s $event_status */
-					__( 'Event Configs Post API call Succeeded. Updating Option name: %1$s, Event Config id: %2$s, Event Status: %3$s', 'facebook-for-woocommerce' ),
-					$option_name,
+					__( 'Event Configs Post API call Succeeded. API Response Event Config id: %1$s, Event Status: %2$s, Language: %3$s', 'facebook-for-woocommerce' ),
 					$event_config_id,
 					$event_status,
+					$language,
 				)
 			);
 			if ( 'ACTIVE' === $event_status ) {
-				update_option( $option_name, $event_config_id );
+				update_option( $event_config_id_option_name, $event_config_id );
+				update_option( $event_config_language_option_name, $language );
 			} else {
-				update_option( $option_name, null );
+				$settings = array(
+					$event_config_id_option_name,
+					$event_config_language_option_name,
+				);
+				self::wc_facebook_whatsapp_settings_delete(
+					$settings
+				);
 			}
 			wp_send_json_success( 'Event Configs Post API call Completed' );
 		}
