@@ -75,6 +75,19 @@ class ShippingProfilesFeed extends AbstractFeed {
 				$locations           = $zone['zone_locations'];
 				$countries_to_states = array();
 
+				// An empty location list indicates that the shipping profile applies to the whole world.
+				if ( empty( $locations ) ) {
+					$locations = array_map(
+						function ( $country_code ) {
+							return [
+								'code' => $country_code,
+								'type' => 'country',
+							];
+						},
+						array_keys( WC()->countries->get_countries() )
+					);
+				}
+
 				foreach ( $locations as $location ) {
 					$location = (array) $location;
 					if ( 'continent' === $location['type'] ) {
