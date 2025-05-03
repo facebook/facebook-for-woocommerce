@@ -44,6 +44,9 @@ jQuery( document ).ready( function( $ ) {
         orderRefundedInactiveStatus.show();
     }
 
+    var eventConfiglanguage = facebook_for_woocommerce_whatsapp_events.order_placed_language;
+    $("#manage-event-language").val(eventConfiglanguage);
+
     // update current view from utility settings to manage event when order confirmation button is clicked.
     $('#woocommerce-whatsapp-manage-order-confirmation').click(function (event) {
         let url = new URL(window.location.href);
