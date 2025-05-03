@@ -40,6 +40,14 @@ class WhatsAppUtilityConnection {
 	/** @var string Default language for Library Template */
 	const DEFAULT_LANGUAGE = 'en';
 
+	/** @var array Mapping of Order Status to Event name */
+	const ORDER_STATUS_TO_EVENT_MAPPING = array(
+		'processing' => 'ORDER_PLACED',
+		'completed'  => 'ORDER_SHIPPED',
+		'refunded'   => 'ORDER_REFUNDED',
+	);
+
+
 	/**
 	 * Makes an API call to Template Library API
 	 *
@@ -276,10 +284,10 @@ class WhatsAppUtilityConnection {
 
 			),
 		);
-		$response             = wp_remote_post( $base_url, $options );
-		$status_code          = wp_remote_retrieve_response_code( $response );
-		$data                 = explode( "\n", wp_remote_retrieve_body( $response ) );
-		$response_object      = json_decode( $data[0] );
+		$response        = wp_remote_post( $base_url, $options );
+		$status_code     = wp_remote_retrieve_response_code( $response );
+		$data            = explode( "\n", wp_remote_retrieve_body( $response ) );
+		$response_object = json_decode( $data[0] );
 		if ( is_wp_error( $response ) || 200 !== $status_code ) {
 			$error_message = $response_object->error->error_user_title ?? $response_object->error->message ?? 'Something went wrong. Please try again later!';
 			wc_get_logger()->info(
