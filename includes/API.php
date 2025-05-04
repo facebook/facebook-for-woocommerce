@@ -190,6 +190,19 @@ class API extends Base {
 		throw $exception;
 	}
 
+	/**
+	 * Gets the system user access token.
+	 * https://developers.facebook.com/docs/facebook-business-extension/fbe/guides/get-features/
+	 * @param string $business_manager_id business manager id
+	 * @return API\Response|API\AccessToken\Response
+	 * @throws ApiException
+	 */
+	public function get_system_user_access_token( string $business_manager_id, string $external_business_id, string $app_id, string $scope ) : API\AccessToken\Response
+	{
+		$request = new API\AccessToken\Request( $business_manager_id, $external_business_id, $app_id, $scope );
+		$this->set_response_handler( API\AccessToken\Response::class );
+		return $this->perform_request( $request );
+	}
 
 	/**
 	 * Gets the FBE installation IDs.
