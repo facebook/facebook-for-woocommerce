@@ -102,6 +102,7 @@ class MetaExtension {
 	 * @return string
 	 * @throws \Exception If the URL generation fails or if external_business_id is invalid.
 	 * @since 3.5.0
+	 * @throws \Exception When Commerce extension URI not found
 	 */
 	public static function generate_iframe_management_url( $external_business_id ) {
 		$access_token = get_option( self::OPTION_ACCESS_TOKEN, '' );
