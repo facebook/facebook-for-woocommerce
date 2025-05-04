@@ -38,6 +38,13 @@ class Whatsapp_Utility extends Abstract_Settings_Screen {
 	/** @var string Prefix for Whatsapp Utility Option Names */
 	const WA_UTILITY_OPTION_PREFIX = 'wc_facebook_wa';
 
+	/** @var array Values for Manage Events  */
+	const MANAGE_EVENT_VIEWS = array(
+		'manage_order_placed',
+		'manage_order_shipped',
+		'manage_order_refunded',
+	);
+
 	/**
 	 * Whatsapp Utility constructor.
 	 */
@@ -146,6 +153,7 @@ class Whatsapp_Utility extends Abstract_Settings_Screen {
 			array(
 				'ajax_url'                => admin_url( 'admin-ajax.php' ),
 				'nonce'                   => wp_create_nonce( 'facebook-for-wc-whatsapp-events-nonce' ),
+				'event'                   => $this->get_current_event(),
 				'order_placed_enabled'    => ! empty( $order_placed_event_config_id ),
 				'order_placed_language'   => $order_placed_language,
 				'order_shipped_enabled'   => ! empty( $order_shipped_event_config_id ),
@@ -239,7 +247,7 @@ class Whatsapp_Utility extends Abstract_Settings_Screen {
 		$view = $this->get_current_view();
 		if ( 'utility_settings' === $view ) {
 			$this->render_utility_message_overview();
-		} elseif ( 'manage_event' === $view ) {
+		} elseif ( in_array( $view, self::MANAGE_EVENT_VIEWS, true ) ) {
 			$this->render_manage_events_view();
 		} else {
 			$this->render_utility_message_onboarding();
@@ -374,7 +382,7 @@ class Whatsapp_Utility extends Abstract_Settings_Screen {
 				</div>
 				<div class="event-config-manage-button">
 					<a
-						id="woocommerce-whatsapp-manage-order-confirmation"
+						id="woocommerce-whatsapp-manage-order-placed"
 						class="event-config-manage-button button"
 						href="#"><?php esc_html_e( 'Manage', 'facebook-for-woocommerce' ); ?></a>
 				</div>
@@ -516,12 +524,53 @@ class Whatsapp_Utility extends Abstract_Settings_Screen {
 	 * Renders the view to manage WhatsApp Utility Events.
 	 */
 	public function render_manage_events_view() {
+		$event = $this->get_current_event();
 		?>
 		<div class="onboarding-card">
 			<div class="manage-event-card-item">
 				<div class="card-content">
-					<h1><b><?php esc_html_e( 'Manage order confirmation message', 'facebook-for-woocommerce' ); ?></b></h1>
-					<p><?php esc_html_e( 'Send a confirmation to customers after they\'ve placed an order.', 'facebook-for-woocommerce' ); ?></p>
+					<h1><b>
+					<?php
+					switch ( $event ) {
+						case 'ORDER_PLACED':
+							?>
+							<?php esc_html_e( 'Manage order confirmation message', 'facebook-for-woocommerce' ); ?>
+							<?php
+							break;
+						case 'ORDER_SHIPPED':
+							?>
+							<?php esc_html_e( 'Manage order shipped message', 'facebook-for-woocommerce' ); ?>
+							<?php
+							break;
+						case 'ORDER_REFUNDED':
+							?>
+							<?php esc_html_e( 'Manage order refunded message', 'facebook-for-woocommerce' ); ?>
+							<?php
+							break;
+					}
+					?>
+					</b></h1>
+						<p>
+						<?php
+						switch ( $event ) {
+							case 'ORDER_PLACED':
+								?>
+								<?php esc_html_e( 'Send a confirmation to customers after they\'ve placed an order.', 'facebook-for-woocommerce' ); ?>
+									<?php
+								break;
+							case 'ORDER_SHIPPED':
+								?>
+								<?php esc_html_e( 'Send a confirmation to customers when their order has shipped.', 'facebook-for-woocommerce' ); ?>
+									<?php
+								break;
+							case 'ORDER_REFUNDED':
+								?>
+								<?php esc_html_e( 'Send a confirmation whenever an order has been refunded.', 'facebook-for-woocommerce' ); ?>
+									<?php
+								break;
+						}
+						?>
+				</p>
 				</div>
 			</div>
 			<div class="divider"></div>
@@ -538,7 +587,27 @@ class Whatsapp_Utility extends Abstract_Settings_Screen {
 				<div class="manage-event-template-block">
 					<div class="manage-event-template-header">
 						<input type="radio" name="template-status" id="active-template-status" value="ACTIVE" checked="checked" />
-						<label for="active-template-status"><b><?php esc_html_e( 'Send order confirmation message', 'facebook-for-woocommerce' ); ?> </b></label>
+						<label for="active-template-status"><b>				
+						<?php
+						switch ( $event ) {
+							case 'ORDER_PLACED':
+								?>
+								<?php esc_html_e( 'Send order confirmation message', 'facebook-for-woocommerce' ); ?>
+								<?php
+								break;
+							case 'ORDER_SHIPPED':
+								?>
+								<?php esc_html_e( 'Send order shipped message', 'facebook-for-woocommerce' ); ?>
+								<?php
+								break;
+							case 'ORDER_REFUNDED':
+								?>
+								<?php esc_html_e( 'Send order refunded message', 'facebook-for-woocommerce' ); ?>
+								<?php
+								break;
+						}
+						?>
+						</b></label>
 					</div>
 					<div class="divider"></div>
 					<div class="manage-event-card-item fbwa-hidden-element" id="library-template-content"></div>
@@ -546,7 +615,27 @@ class Whatsapp_Utility extends Abstract_Settings_Screen {
 				<div class="manage-event-template-block">
 					<div class="manage-event-template-header">
 						<input type="radio" name="template-status" id="inactive-template-status" value="INACTIVE" />
-						<label for="inactive-template-status"><b><?php esc_html_e( 'Turn off order confirmation', 'facebook-for-woocommerce' ); ?> </b></label>
+						<label for="inactive-template-status"><b>
+						<?php
+						switch ( $event ) {
+							case 'ORDER_PLACED':
+								?>
+								<?php esc_html_e( 'Turn off order confirmation message', 'facebook-for-woocommerce' ); ?>
+								<?php
+								break;
+							case 'ORDER_SHIPPED':
+								?>
+								<?php esc_html_e( 'Turn off order shipped message', 'facebook-for-woocommerce' ); ?>
+								<?php
+								break;
+							case 'ORDER_REFUNDED':
+								?>
+								<?php esc_html_e( 'Turn off order refunded message', 'facebook-for-woocommerce' ); ?>
+								<?php
+								break;
+						}
+						?>
+						</b></label>
 					</div>
 				</div>
 			</div>
@@ -580,6 +669,19 @@ class Whatsapp_Utility extends Abstract_Settings_Screen {
 	public function get_current_view() {
 		$current_view = Helper::get_requested_value( 'view' );
 		return $current_view;
+	}
+
+	/**
+	 * Gets the current event
+	 *
+	 * @since 2.0.0
+	 *
+	 * @return array
+	 */
+	public function get_current_event() {
+		$view      = Helper::get_requested_value( 'view' );
+		$event_val = str_replace( 'manage_', '', $view );
+		return strtoupper( $event_val );
 	}
 
 	/**

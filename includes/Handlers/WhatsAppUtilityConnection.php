@@ -40,20 +40,14 @@ class WhatsAppUtilityConnection {
 	/** @var string Default language for Library Template */
 	const DEFAULT_LANGUAGE = 'en';
 
-	/** @var array Mapping of Order Status to Event name */
-	const ORDER_STATUS_TO_EVENT_MAPPING = array(
-		'processing' => 'ORDER_PLACED',
-		'completed'  => 'ORDER_SHIPPED',
-		'refunded'   => 'ORDER_REFUNDED',
-	);
-
 
 	/**
 	 * Makes an API call to Template Library API
 	 *
+	 * @param string $event Order Management Event
 	 * @param string $bisu_token the BISU token received in the webhook
 	 */
-	public static function get_template_library_content( $bisu_token ) {
+	public static function get_template_library_content( $event, $bisu_token ) {
 		wc_get_logger()->info(
 			sprintf(
 				__( 'In Template Library Get API call ', 'facebook-for-woocommerce' ),
@@ -61,7 +55,7 @@ class WhatsAppUtilityConnection {
 		);
 		$base_url     = array( self::GRAPH_API_BASE_URL, self::API_VERSION, 'message_template_library' );
 		$base_url     = esc_url( implode( '/', $base_url ) );
-		$library_name = self::EVENT_TO_LIBRARY_TEMPLATE_MAPPING['ORDER_PLACED'];
+		$library_name = self::EVENT_TO_LIBRARY_TEMPLATE_MAPPING[ $event ];
 
 		$params  = array(
 			'name'         => $library_name,
@@ -244,26 +238,28 @@ class WhatsAppUtilityConnection {
 		$account_url          = get_permalink( get_option( 'woocommerce_myaccount_page_id' ) );
 		$view_orders_endpoint = get_option( 'woocommerce_myaccount_view_order_endpoint' );
 		$view_orders_base_url = esc_url( $account_url . $view_orders_endpoint );
-		$query_params         = array(
+		// Order Refunded template has no CTA
+		$library_template_button_inputs = 'ORDER_REFUNDED' === $event ? array() : array(
+			array(
+				'type' => 'URL',
+				'url'  => array(
+					// View Url is dynamic and has order_id as suffix
+					'base_url'           => "$view_orders_base_url/{{1}}",
+					// Example view orders url with order id: 1234
+					'url_suffix_example' => "$view_orders_base_url/1234",
+				),
+			),
+		);
+		$query_params                   = array(
 			'event'                          => $event,
 			'language'                       => $language,
 			'status'                         => $status,
 			'library_template_name'          => self::EVENT_TO_LIBRARY_TEMPLATE_MAPPING[ $event ],
-			'library_template_button_inputs' => array(
-				array(
-					'type' => 'URL',
-					'url'  => array(
-						// View Url is dynamic and has order_id as suffix
-						'base_url'           => "$view_orders_base_url/{{1}}",
-						// Example view orders url with order id: 1234
-						'url_suffix_example' => "$view_orders_base_url/1234",
-					),
-				),
-			),
+			'library_template_button_inputs' => $library_template_button_inputs,
 			'access_token'                   => $bisu_token,
 		);
-		$base_url             = add_query_arg( $query_params, $base_url );
-		$options              = array(
+		$base_url                       = add_query_arg( $query_params, $base_url );
+		$options                        = array(
 			'headers' => array(
 				'Authorization' => $bisu_token,
 			),
