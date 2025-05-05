@@ -30,13 +30,13 @@ jQuery( document ).ready( function( $ ) {
 			nonce:  facebook_for_woocommerce_whatsapp_billing.nonce
 		}, function ( response ) {
             if ( response.success ) {
-				console.log( 'Whatsapp Url Info Fetched Successfully', response );
+				console.log( 'Whatsapp Billing Url Info Fetched Successfully', response );
                 var  business_id = response.data.business_id;
                 var asset_id = response.data.waba_id;
 				const BILLING_URL = `https://business.facebook.com/billing_hub/accounts/details/?business_id=${business_id}&asset_id=${asset_id}&account_type=whatsapp-business-account`;
                 window.open( BILLING_URL);
 			} else {
-				console.log( 'Whatsapp Url Info Fetch Failure', response );
+				console.log( 'Whatsapp Billing Url Info Fetch Failure', response );
 			}
 		} );
 

@@ -16,13 +16,13 @@ jQuery( document ).ready( function( $ ) {
 		}, function ( response ) {
 
             if ( response.success ) {
-                console.log( 'Whatsapp Url Info Fetched Successfully', response );
+                console.log( 'Whatsapp Edit Url Info Fetched Successfully', response );
                 var  business_id = response.data.business_id;
                 var asset_id = response.data.waba_id;
                 const WHATSAPP_MANAGER_URL = `https://business.facebook.com/latest/whatsapp_manager/phone_numbers/?asset_id=${asset_id}&business_id=${business_id}`;
                 window.open(WHATSAPP_MANAGER_URL);
 			} else {
-                console.log( 'Whatsapp Url Info Fetch Failure', response );
+                console.log( 'Whatsapp Edit Url Info Fetch Failure', response );
             }
 		} );
     });
