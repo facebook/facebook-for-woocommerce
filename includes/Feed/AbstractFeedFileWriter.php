@@ -266,10 +266,12 @@ abstract class AbstractFeedFileWriter {
 			throw new PluginException( __( "Could not open file {$file_path} for writing.", 'facebook-for-woocommerce' ), 500 );
 		}
 
-		$headers = str_getcsv( $this->header_row );
-		if ( fputcsv( $temp_feed_file, $headers, $this->delimiter, $this->enclosure, $this->escape_char ) === false ) {
-			// phpcs:ignore -- Escaping function for translated string not available in this context
-			throw new PluginException( __( "Failed to write header row to {$temp_file_path}.", 'facebook-for-woocommerce' ), 500 );
+		if ( ! empty( $this->header_row ) ) {
+			$headers = str_getcsv( $this->header_row );
+			if ( fputcsv( $temp_feed_file, $headers, $this->delimiter, $this->enclosure, $this->escape_char ) === false ) {
+				// phpcs:ignore -- Escaping function for translated string not available in this context
+				throw new PluginException( __( "Failed to write header row to {$temp_file_path}.", 'facebook-for-woocommerce' ), 500 );
+			}
 		}
 
 		return $temp_feed_file;
