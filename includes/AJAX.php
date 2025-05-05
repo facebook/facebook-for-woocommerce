@@ -202,7 +202,7 @@ class AJAX {
 	 */
 	public function wc_facebook_whatsapp_fetch_url_info() {
 		facebook_for_woocommerce()->log( 'Fetching url info for whatsapp pages' );
-		if ( ! check_ajax_referer( 'facebook-for-wc-whatsapp-billing-nonce', 'nonce', false ) && ! check_ajax_referer( 'facebook-for-wc-whatsapp-templates-nonce', 'nonce', false ) ) {
+		if ( ! check_ajax_referer( 'facebook-for-wc-whatsapp-billing-nonce', 'nonce', false ) && ! check_ajax_referer( 'facebook-for-wc-whatsapp-templates-nonce', 'nonce', false ) && ! check_ajax_referer( 'facebook-for-wc-whatsapp-disconnect-nonce', 'nonce', false ) ) {
 			wp_send_json_error( 'Invalid security token sent.' );
 		}
 
