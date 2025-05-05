@@ -112,6 +112,13 @@ class WhatsAppUtilityConnection {
 			'body'    => array(),
 		);
 		$response      = wp_remote_post( $base_url, $options );
+		wc_get_logger()->info(
+				sprintf(
+					/* translators: %s $response */
+					__( 'Connect Whatsapp Utility Message API Response: %1$s ', 'facebook-for-woocommerce' ),
+					json_encode($response),
+				)
+		);
 		$response_body = explode( "\n", wp_remote_retrieve_body( $response ) );
 		$response_data = json_decode( $response_body[0] );
 		if ( is_wp_error( $response ) || 200 !== wp_remote_retrieve_response_code( $response ) ) {
@@ -120,7 +127,7 @@ class WhatsAppUtilityConnection {
 			wc_get_logger()->info(
 				sprintf(
 					/* translators: %s $error_message */
-					__( 'Finish Onboarding Button Click Failure %1$s ', 'facebook-for-woocommerce' ),
+					__( 'Connect Whatsapp Utility Message API Call Failure %1$s ', 'facebook-for-woocommerce' ),
 					$error_message,
 				)
 			);
@@ -130,7 +137,7 @@ class WhatsAppUtilityConnection {
 				wc_get_logger()->info(
 					sprintf(
 						/* translators: %s $integration_config_id */
-						__( 'Finish Onboarding Button Click Success. Integration ID: %1$s!!!', 'facebook-for-woocommerce' ),
+						__( 'Connect Whatsapp Utility Message API Call Success!!! Integration ID: %1$s!!!', 'facebook-for-woocommerce' ),
 						$integration_config_id,
 					)
 				);
@@ -161,6 +168,13 @@ class WhatsAppUtilityConnection {
 			'body'    => array(),
 		);
 		$response     = wp_remote_post( $base_url, $options );
+		wc_get_logger()->info(
+				sprintf(
+					/* translators: %s $error_message */
+					__( 'Disconnect Whatsapp Utility Message API Call Response: %1$s ', 'facebook-for-woocommerce' ),
+					json_encode($response),
+				)
+		);
 		if ( is_wp_error( $response ) || 200 !== wp_remote_retrieve_response_code( $response ) ) {
 			$error_data    = explode( "\n", wp_remote_retrieve_body( $response ) );
 			$error_object  = json_decode( $error_data[0] );
@@ -169,7 +183,7 @@ class WhatsAppUtilityConnection {
 			wc_get_logger()->info(
 				sprintf(
 					/* translators: %s $error_message */
-					__( 'Disconnect Whatsapp API Call Error: %1$s ', 'facebook-for-woocommerce' ),
+					__( 'Disconnect Whatsapp Utility Message API Call Error: %1$s ', 'facebook-for-woocommerce' ),
 					$error_message,
 				)
 			);
@@ -177,7 +191,7 @@ class WhatsAppUtilityConnection {
 		} else {
 			wc_get_logger()->info(
 				sprintf(
-					__( 'Whatsapp Disconnect API Call Success!!!', 'facebook-for-woocommerce' )
+					__( 'Disconnect Whatsapp Utility Message API Call Success!!!', 'facebook-for-woocommerce' )
 				)
 			);
 
@@ -199,7 +213,7 @@ class WhatsAppUtilityConnection {
 
 			wc_get_logger()->info(
 				sprintf(
-					__( 'Whatsapp Settings Deletion Success!!!', 'facebook-for-woocommerce' )
+					__( 'Disconnect Whatsapp Utility Message - Whatsapp Settings Deletion Success!!!', 'facebook-for-woocommerce' )
 				)
 			);
 

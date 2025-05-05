@@ -35,7 +35,7 @@ jQuery( document ).ready( function( $ ) {
 			nonce:  facebook_for_woocommerce_whatsapp_consent.nonce
 		}, function ( response ) {
             if ( response.success ) {
-				console.log( 'success', response );
+				console.log( 'Whatsapp Consent Collection is Enabled in Checkout Flow', response );
 				// update the progress for collect consent step and hide the button and subcontent
 				showConsentCollectionProgressIcon(true, false, false);
 				$consentSubcontent.hide();
@@ -45,6 +45,8 @@ jQuery( document ).ready( function( $ ) {
                 $('#wc-fb-whatsapp-billing-notstarted').hide();
 				$('#wc-fb-whatsapp-billing-subcontent').show();
 				$('#wc-fb-whatsapp-billing-button-wrapper').show();
+			} else {
+				console.log( 'Whatsapp Consent Collection Enabling has Failed', response );
 			}
 		} );
 

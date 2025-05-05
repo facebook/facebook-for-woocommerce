@@ -201,8 +201,18 @@ class AJAX {
 	 * @since 1.10.0
 	 */
 	public function wc_facebook_whatsapp_fetch_url_info() {
-		facebook_for_woocommerce()->log( 'Fetching url info for whatsapp pages' );
+		wc_get_logger()->info(
+				sprintf(
+					__( 'Fetching url info(WABA ID+BusinessID) for whatsapp pages', 'facebook-for-woocommerce' )
+				)
+			);
+		facebook_for_woocommerce()->log( '' );
 		if ( ! check_ajax_referer( 'facebook-for-wc-whatsapp-billing-nonce', 'nonce', false ) && ! check_ajax_referer( 'facebook-for-wc-whatsapp-templates-nonce', 'nonce', false ) && ! check_ajax_referer( 'facebook-for-wc-whatsapp-disconnect-nonce', 'nonce', false ) ) {
+			wc_get_logger()->info(
+				sprintf(
+					__( 'Nonce Verification Error while Fetching Url Info', 'facebook-for-woocommerce' )
+				)
+			);
 			wp_send_json_error( 'Invalid security token sent.' );
 		}
 
@@ -210,7 +220,12 @@ class AJAX {
 		$business_id = get_option( 'wc_facebook_wa_integration_business_id', null );
 
 		if ( empty( $waba_id ) || empty( $business_id ) ) {
-			wp_send_json_error( 'Onboarding is not complete or has failed.' );
+			wc_get_logger()->info(
+				sprintf(
+					__( 'Missing Waba ID + Business ID during Fetch Url Info. Whatsapp Onboarding is not complete or has failed.', 'facebook-for-woocommerce' )
+				)
+			);
+			wp_send_json_error( 'Whatsapp onboarding is not complete or has failed.' );
 		}
 
 		$response = array(
@@ -229,8 +244,17 @@ class AJAX {
 	 * @since 1.10.0
 	 */
 	public function wc_facebook_whatsapp_finish_onboarding() {
-		facebook_for_woocommerce()->log( 'Fetching data to make connect onboarding call on finish button click' );
+		wc_get_logger()->info(
+				sprintf(
+					__( 'Getting data for Whatsapp Finish Onboarding Done Button Click', 'facebook-for-woocommerce' )
+				)
+			);
 		if ( ! check_ajax_referer( 'facebook-for-wc-whatsapp-finish-nonce', 'nonce', false ) ) {
+			wc_get_logger()->info(
+				sprintf(
+					__( 'Nonce Verification Error in Finish Onboarding Flow', 'facebook-for-woocommerce' )
+				)
+			);
 			wp_send_json_error( 'Invalid security token sent.' );
 		}
 		$external_business_id = get_option( 'wc_facebook_external_business_id', null );
@@ -240,10 +264,10 @@ class AJAX {
 		if ( empty( $external_business_id ) || empty( $wacs_id ) || empty( $waba_id ) || empty( $bisu_token ) ) {
 			wc_get_logger()->info(
 				sprintf(
-					__( 'Onboarding is not complete or has failed.', 'facebook-for-woocommerce' ),
+					__( 'Finish Onboarding - Onboarding is not complete or has failed.', 'facebook-for-woocommerce' ),
 				)
 			);
-			wp_send_json_error( 'Onboarding is not complete or has failed.' );
+			wp_send_json_error( 'Onboarding Flow is not complete or has failed.' );
 		}
 		WhatsAppUtilityConnection::wc_facebook_whatsapp_connect_utility_messages_call( $waba_id, $wacs_id, $external_business_id, $bisu_token );
 	}
@@ -260,29 +284,55 @@ class AJAX {
 		if ( ! check_ajax_referer( 'facebook-for-wc-whatsapp-onboarding-progress-nonce', 'nonce', false ) ) {
 			wp_send_json_error( 'Invalid security token sent.' );
 		}
-		if ( get_option( 'wc_facebook_wa_integration_waba_id', '' ) !== '' ) { // TODO: Do a detailed check of all the required fields
+		$waba_id = get_option( 'wc_facebook_wa_integration_waba_id', null );
+		if ( empty( $waba_id ) ) {
 			wp_send_json_success();
 		}
 		wp_send_json_error( 'WhatsApp onboarding is not complete' );
 	}
 
 	public function whatsapp_consent_collection_enable() {
+		wc_get_logger()->info(
+				sprintf(
+					__( 'Enabling Whatsapp Consent Collection in Checkout Flow', 'facebook-for-woocommerce' )
+				)
+			);
 		if ( ! check_ajax_referer( 'facebook-for-wc-whatsapp-consent-nonce', 'nonce', false ) ) {
+			wc_get_logger()->info(
+				sprintf(
+					__( 'Nonce Verification Error in Whatsapp Consent Collection', 'facebook-for-woocommerce' )
+				)
+			);
 			wp_send_json_error( 'Invalid security token sent.' );
 		}
 		if ( get_option( 'wc_facebook_whatsapp_consent_collection_setting_status' ) !== 'enabled' ) {
 			update_option( 'wc_facebook_whatsapp_consent_collection_setting_status', 'enabled' );
 		}
+		wc_get_logger()->info(
+				sprintf(
+					__( 'Whatsapp Consent Collection Enabled Successfully in Checkout Flow', 'facebook-for-woocommerce' )
+				)
+			);
 		wp_send_json_success();
 	}
 
 	public function whatsapp_consent_collection_disable() {
+		wc_get_logger()->info(
+				sprintf(
+					__( 'Disabling Whatsapp Consent Collection in Utility Settings View', 'facebook-for-woocommerce' )
+				)
+			);
 		if ( ! check_ajax_referer( 'facebook-for-wc-whatsapp-consent-disable-nonce', 'nonce', false ) ) {
 			wp_send_json_error( 'Invalid security token sent.' );
 		}
 		if ( get_option( 'wc_facebook_whatsapp_consent_collection_setting_status' ) !== 'disabled' ) {
 			update_option( 'wc_facebook_whatsapp_consent_collection_setting_status', 'disabled' );
 		}
+		wc_get_logger()->info(
+				sprintf(
+					__( 'Whatsapp Consent Collection Disabled Successfully in Utility Settings View', 'facebook-for-woocommerce' )
+				)
+			);
 		wp_send_json_success();
 	}
 
@@ -294,7 +344,17 @@ class AJAX {
 	 * @since 1.10.0
 	 */
 	public function wc_facebook_disconnect_whatsapp() {
+		wc_get_logger()->info(
+				sprintf(
+					__( 'Diconnecting Whatsapp From Woocommerce', 'facebook-for-woocommerce' )
+				)
+			);
 		if ( ! check_ajax_referer( 'facebook-for-wc-whatsapp-disconnect-nonce', 'nonce', false ) ) {
+			wc_get_logger()->info(
+				sprintf(
+					__( 'Nonce Verification Failed while Diconnecting Whatsapp From Woocommerce', 'facebook-for-woocommerce' )
+				)
+			);
 			wp_send_json_error( 'Invalid security token sent.' );
 		}
 
@@ -302,6 +362,11 @@ class AJAX {
 		$bisu_token            = get_option( 'wc_facebook_wa_integration_bisu_access_token', null );
 		$waba_id               = get_option( 'wc_facebook_wa_integration_waba_id', null );
 		if ( empty( $integration_config_id ) || empty( $bisu_token ) || empty( $waba_id ) ) {
+			wc_get_logger()->info(
+				sprintf(
+					__( 'Missing Integration COnfig ID, BISU token, WABA ID while Diconnecting Whatsapp From Woocommerce', 'facebook-for-woocommerce' )
+				)
+			);
 			wp_send_json_error( 'Missing integration_config_id or bisu_token or waba_id for Disconnect API call' );
 		}
 		WhatsAppUtilityConnection::wc_facebook_disconnect_whatsapp( $waba_id, $integration_config_id, $bisu_token );

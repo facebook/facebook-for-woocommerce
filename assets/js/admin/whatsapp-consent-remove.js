@@ -39,7 +39,7 @@ jQuery( document ).ready( function( $ ) {
                 nonce: facebook_for_woocommerce_whatsapp_consent_remove.nonce
             }, function(response) {
                 if (response.success) {
-                    console.log('success', response);
+                    console.log( 'Whatsapp Consent Collection Disabled Successfully', response );
                     // Change the status from "on-status" to "off-status" for the specific element.
                     $statusElement.removeClass('on-status').addClass('off-status');
                     // Update the text to "Off".
@@ -51,7 +51,7 @@ jQuery( document ).ready( function( $ ) {
                     // Show the "Add" button
                     $('#wc-whatsapp-collect-consent-add-container').removeClass('fbwa-hidden-element');
                 } else {
-                    console.error('Error:', response);
+                    console.log( 'Whatsapp Consent Collection Disabling Failed', response );
                 }
             });
 
@@ -68,7 +68,7 @@ jQuery( document ).ready( function( $ ) {
             nonce: facebook_for_woocommerce_whatsapp_consent.nonce
         }, function(response) {
             if (response.success) {
-                console.log('success', response);
+                console.log( 'Whatsapp Consent Collection Enabled Successfully', response );
                 // Change the status from "off-status" to "on-status" for the specific element.
                 $statusElement.removeClass('off-status').addClass('on-status');
                 // Update the text to "On".
@@ -80,7 +80,7 @@ jQuery( document ).ready( function( $ ) {
                 // Show the original "Remove" button
                 $('#wc-whatsapp-collect-consent-remove-container').removeClass('fbwa-hidden-element');
             } else {
-                console.error('Error:', response);
+                console.log( 'Whatsapp Consent Collection Enabling Failed', response );
             }
         });
     });
