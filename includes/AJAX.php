@@ -285,7 +285,7 @@ class AJAX {
 			wp_send_json_error( 'Invalid security token sent.' );
 		}
 		$waba_id = get_option( 'wc_facebook_wa_integration_waba_id', null );
-		if ( empty( $waba_id ) ) {
+		if ( ! empty( $waba_id ) ) {
 			wp_send_json_success();
 		}
 		wp_send_json_error( 'WhatsApp onboarding is not complete' );
