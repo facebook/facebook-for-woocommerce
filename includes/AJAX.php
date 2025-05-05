@@ -202,10 +202,10 @@ class AJAX {
 	 */
 	public function wc_facebook_whatsapp_fetch_url_info() {
 		wc_get_logger()->info(
-				sprintf(
-					__( 'Fetching url info(WABA ID+BusinessID) for whatsapp pages', 'facebook-for-woocommerce' )
-				)
-			);
+			sprintf(
+				__( 'Fetching url info(WABA ID+BusinessID) for whatsapp pages', 'facebook-for-woocommerce' )
+			)
+		);
 		facebook_for_woocommerce()->log( '' );
 		if ( ! check_ajax_referer( 'facebook-for-wc-whatsapp-billing-nonce', 'nonce', false ) && ! check_ajax_referer( 'facebook-for-wc-whatsapp-templates-nonce', 'nonce', false ) && ! check_ajax_referer( 'facebook-for-wc-whatsapp-disconnect-nonce', 'nonce', false ) ) {
 			wc_get_logger()->info(
@@ -245,10 +245,10 @@ class AJAX {
 	 */
 	public function wc_facebook_whatsapp_finish_onboarding() {
 		wc_get_logger()->info(
-				sprintf(
-					__( 'Getting data for Whatsapp Finish Onboarding Done Button Click', 'facebook-for-woocommerce' )
-				)
-			);
+			sprintf(
+				__( 'Getting data for Whatsapp Finish Onboarding Done Button Click', 'facebook-for-woocommerce' )
+			)
+		);
 		if ( ! check_ajax_referer( 'facebook-for-wc-whatsapp-finish-nonce', 'nonce', false ) ) {
 			wc_get_logger()->info(
 				sprintf(
@@ -293,10 +293,10 @@ class AJAX {
 
 	public function whatsapp_consent_collection_enable() {
 		wc_get_logger()->info(
-				sprintf(
-					__( 'Enabling Whatsapp Consent Collection in Checkout Flow', 'facebook-for-woocommerce' )
-				)
-			);
+			sprintf(
+				__( 'Enabling Whatsapp Consent Collection in Checkout Flow', 'facebook-for-woocommerce' )
+			)
+		);
 		if ( ! check_ajax_referer( 'facebook-for-wc-whatsapp-consent-nonce', 'nonce', false ) ) {
 			wc_get_logger()->info(
 				sprintf(
@@ -309,19 +309,19 @@ class AJAX {
 			update_option( 'wc_facebook_whatsapp_consent_collection_setting_status', 'enabled' );
 		}
 		wc_get_logger()->info(
-				sprintf(
-					__( 'Whatsapp Consent Collection Enabled Successfully in Checkout Flow', 'facebook-for-woocommerce' )
-				)
-			);
+			sprintf(
+				__( 'Whatsapp Consent Collection Enabled Successfully in Checkout Flow', 'facebook-for-woocommerce' )
+			)
+		);
 		wp_send_json_success();
 	}
 
 	public function whatsapp_consent_collection_disable() {
 		wc_get_logger()->info(
-				sprintf(
-					__( 'Disabling Whatsapp Consent Collection in Utility Settings View', 'facebook-for-woocommerce' )
-				)
-			);
+			sprintf(
+				__( 'Disabling Whatsapp Consent Collection in Utility Settings View', 'facebook-for-woocommerce' )
+			)
+		);
 		if ( ! check_ajax_referer( 'facebook-for-wc-whatsapp-consent-disable-nonce', 'nonce', false ) ) {
 			wp_send_json_error( 'Invalid security token sent.' );
 		}
@@ -329,10 +329,10 @@ class AJAX {
 			update_option( 'wc_facebook_whatsapp_consent_collection_setting_status', 'disabled' );
 		}
 		wc_get_logger()->info(
-				sprintf(
-					__( 'Whatsapp Consent Collection Disabled Successfully in Utility Settings View', 'facebook-for-woocommerce' )
-				)
-			);
+			sprintf(
+				__( 'Whatsapp Consent Collection Disabled Successfully in Utility Settings View', 'facebook-for-woocommerce' )
+			)
+		);
 		wp_send_json_success();
 	}
 
@@ -345,10 +345,10 @@ class AJAX {
 	 */
 	public function wc_facebook_disconnect_whatsapp() {
 		wc_get_logger()->info(
-				sprintf(
-					__( 'Diconnecting Whatsapp From Woocommerce', 'facebook-for-woocommerce' )
-				)
-			);
+			sprintf(
+				__( 'Diconnecting Whatsapp From Woocommerce', 'facebook-for-woocommerce' )
+			)
+		);
 		if ( ! check_ajax_referer( 'facebook-for-wc-whatsapp-disconnect-nonce', 'nonce', false ) ) {
 			wc_get_logger()->info(
 				sprintf(
