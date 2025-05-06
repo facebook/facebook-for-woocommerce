@@ -276,25 +276,48 @@ class API extends Base {
 	 */
 	public function get_business_configuration( $external_business_id, $access_token = '', $fields = [] ) {
 		$request = new API\FBE\Configuration\Request( $external_business_id, 'GET' );
-		
+
 		$params = [];
-		
+
 		// Use provided access token or fall back to the instance token
 		if ( ! empty( $access_token ) ) {
 			$params['access_token'] = $access_token;
 		}
-		
+
 		// Add fields parameter if specified
 		if ( ! empty( $fields ) ) {
 			$params['fields'] = is_array( $fields ) ? implode( ',', $fields ) : $fields;
 		}
-		
+
 		// Set parameters if we have any
 		if ( ! empty( $params ) ) {
 			$request->set_params( $params );
 		}
-		
+
 		$this->set_response_handler( API\FBE\Configuration\Read\Response::class );
+		return $this->perform_request( $request );
+	}
+
+	/**
+	 * Gets rollout switches
+	 *
+	 * @param string  $external_business_id
+	 * @return API\FBE\RolloutSwitches\Response
+	 * @throws ApiException
+	 */
+	public function get_rollout_switches( string $external_business_id ) {
+		if(!$this->get_access_token()) {
+			return null;
+		}
+
+		$request = new API\FBE\RolloutSwitches\Request( $external_business_id );
+		$request->set_params(
+			array(
+				'access_token' => $this->get_access_token(),
+				'fbe_external_business_id'=> $external_business_id
+			)
+		);
+		$this->set_response_handler( API\FBE\RolloutSwitches\Response::class );
 		return $this->perform_request( $request );
 	}
 
@@ -392,23 +415,6 @@ class API extends Base {
 	public function get_product_group_products( string $product_group_id, int $limit = 1000 ): API\ProductCatalog\ProductGroups\Read\Response {
 		$request = new API\ProductCatalog\ProductGroups\Read\Request( $product_group_id, $limit );
 		$this->set_response_handler( API\ProductCatalog\ProductGroups\Read\Response::class );
-		return $this->perform_request( $request );
-	}
-
-
-	/**
-	 * Finds a Product Item using the Catalog ID and the Retailer ID of the product or product variation.
-	 *
-	 * @since 2.0.0
-	 *
-	 * @param string $catalog_id catalog ID
-	 * @param string $retailer_id retailer ID of the product
-	 * @return Response
-	 * @throws ApiException
-	 */
-	public function find_product_item( $catalog_id, $retailer_id ) {
-		$request = new \WooCommerce\Facebook\API\Catalog\Product_Item\Find\Request( $catalog_id, $retailer_id );
-		$this->set_response_handler( \WooCommerce\Facebook\API\Catalog\Product_Item\Response::class );
 		return $this->perform_request( $request );
 	}
 

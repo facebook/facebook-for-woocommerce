@@ -8,9 +8,6 @@
  */
 
 use WooCommerce\Facebook\Feed\ShippingProfilesFeed;
-use function PHPUnit\Framework\assertEmpty;
-use function PHPUnit\Framework\assertTrue;
-
 
 /**
  * Class ShippingProfilesFeedUploadTest
@@ -152,48 +149,81 @@ class ShippingProfilesFeedTest extends FeedDataTestBase {
 
 	public function test_flat_rate_shipping(): void {
 		$zone = self::create_default_shipping_zone();
-		// Should sync
 		$basic_flat_rate_shipping_no_cost = 'basic_flat_rate_shipping_no_cost';
-		$with_shipping_classes_no_cost = 'with_shipping_classes_no_cost';
+		$with_shipping_classes = 'with_shipping_classes';
 		self::create_and_save_method_instance($zone, 'flat_rate', array('title' => $basic_flat_rate_shipping_no_cost, 'cost' => '0'));
-		self::create_and_save_method_instance($zone, 'flat_rate', array('title' => $with_shipping_classes_no_cost, 'cost' => '0', 'class_cost_1' => '0', 'no_class_cost' => '0'));
+		self::create_and_save_method_instance($zone, 'flat_rate', array('title' => $with_shipping_classes, 'cost' => '0', 'class_cost_1' => '0', 'class_cost_2' => '1', 'no_class_cost' => '0'));
 
 		// Should not sync
 		$has_base_cost = 'has_base_cost';
-		$no_base_cost_shipping_class_with_cost = 'no_base_cost_shipping_class_with_cost';
-		$has_default_shipping_class_with_cost = 'has_default_shipping_class_with_cost';
-		self::create_and_save_method_instance($zone, 'flat_rate', array('title' => $has_base_cost, 'cost' => '1'));
-		self::create_and_save_method_instance($zone, 'flat_rate', array('title' => $no_base_cost_shipping_class_with_cost, 'cost' => '0', 'class_cost_1' => '1'));
-		self::create_and_save_method_instance($zone, 'flat_rate', array('title' => $has_default_shipping_class_with_cost, 'cost' => '0', 'class_cost_1' => '0', 'no_class_cost' => '1'));
+		self::create_and_save_method_instance($zone, 'flat_rate', array('title' => $has_base_cost, 'cost' => '1', 'class_cost_4' => '0'));
+
 
 		$result = ShippingProfilesFeed::get_shipping_profiles_data();
 		$expected_shipping_profile_data = [
-			'shipping_profile_id'      => $zone->get_id().'-all_products',
-			'name'                     => 'California',
-			'applies_to_all_products'  => 'true',
-			'shipping_zones'           => [
-				[
-					'country'                   => 'US',
-					'states'                    => [ 'CA' ],
-					'applies_to_entire_country' => false,
+			[
+				'shipping_profile_id'      => $zone->get_id().'-all_products',
+				'name'                     => 'California',
+				'applies_to_all_products'  => 'true',
+				'shipping_zones'           => [
+					[
+						'country'                   => 'US',
+						'states'                    => [ 'CA' ],
+						'applies_to_entire_country' => false,
+					],
 				],
+				'shipping_rates'           => [
+					[
+						'name'              => $basic_flat_rate_shipping_no_cost,
+						'has_free_shipping' => 'true',
+					],
+				],
+				'applies_to_rest_of_world' => 'false',
 			],
-			'shipping_rates'           => [
-				[
-					'name'              => $basic_flat_rate_shipping_no_cost,
-					'has_free_shipping' => 'true',
+			[
+				'shipping_profile_id'      => $zone->get_id().'-1',
+				'name'                     => 'California',
+				'applies_to_all_products'  => 'false',
+				'applicable_products_filter' => '{"tags":{"eq":"shipping_class_1"}}',
+				'shipping_zones'           => [
+					[
+						'country'                   => 'US',
+						'states'                    => [ 'CA' ],
+						'applies_to_entire_country' => false,
+					],
 				],
-				[
-					'name'              => $with_shipping_classes_no_cost,
-					'has_free_shipping' => 'true',
+				'shipping_rates'           => [
+					[
+						'name'              => $with_shipping_classes,
+						'has_free_shipping' => 'true',
+					],
 				],
+				'applies_to_rest_of_world' => 'false',
 			],
-			'applies_to_rest_of_world' => 'false',
+			[
+				'shipping_profile_id'      => $zone->get_id().'-0',
+				'name'                     => 'California',
+				'applies_to_all_products'  => 'false',
+				'applicable_products_filter' => '{"tags":{"eq":"no_shipping_class"}}',
+				'shipping_zones'           => [
+					[
+						'country'                   => 'US',
+						'states'                    => [ 'CA' ],
+						'applies_to_entire_country' => false,
+					],
+				],
+				'shipping_rates'           => [
+					[
+						'name'              => $with_shipping_classes,
+						'has_free_shipping' => 'true',
+					],
+				],
+				'applies_to_rest_of_world' => 'false',
+			],
 		];
 
-
-		$this->assertCount( 1, $result, 'Expected one shipping profile returned.' );
-		$this->assertEqualsCanonicalizing( $expected_shipping_profile_data, $result[0], 'Shipping profile output does not match expected data.' );
+		$this->assertCount( 3, $result, 'Expected one shipping profile returned.' );
+		$this->assertEqualsCanonicalizing( $expected_shipping_profile_data, $result, 'Shipping profile output does not match expected data.' );
 	}
 
 	public function test_applies_to_rest_of_world_not_synced(): void {
@@ -217,7 +247,7 @@ class ShippingProfilesFeedTest extends FeedDataTestBase {
 			[
 				'country'                   => 'CA',
 				'states'                    => [],
-				'applies_to_entire_country' => 'true',
+				'applies_to_entire_country' => true,
 			],
 		];
 		$this->assertEqualsCanonicalizing( $expected_shipping_zones, $shipping_zone_data );
@@ -231,7 +261,7 @@ class ShippingProfilesFeedTest extends FeedDataTestBase {
 			[
 				'country'                   => 'CA',
 				'states'                    => ['BC'],
-				'applies_to_entire_country' => 'true',
+				'applies_to_entire_country' => true,
 			],
 		];
 		$this->assertEqualsCanonicalizing( $expected_shipping_zones, $shipping_zone_data );
@@ -250,22 +280,52 @@ class ShippingProfilesFeedTest extends FeedDataTestBase {
 			[
 				'country'                   => 'US',
 				'states'                    => [],
-				'applies_to_entire_country' => 'true',
+				'applies_to_entire_country' => true,
 			],
 			[
 				'country'                   => 'CA',
 				'states'                    => [],
-				'applies_to_entire_country' => 'true',
+				'applies_to_entire_country' => true,
 			],
 			[
 				'country'                   => 'CA',
 				'states'                    => [],
-				'applies_to_entire_country' => 'true',
+				'applies_to_entire_country' => true,
 			],
 		];
 		foreach($expected_shipping_zones as $expected_shipping_zone) {
 			$this->assertContains($expected_shipping_zone, $shipping_zone_data);
 	 	}
+
+		// Prevent too many asserts by just making sure every one is true.
+		$every_country_data_applies_to_entire_country = true;
+		foreach($shipping_zone_data as $country_data) {
+			if (!$country_data['applies_to_entire_country']) {
+				$every_country_data_applies_to_entire_country = false;
+			}
+		}
+		$this->asserttrue($every_country_data_applies_to_entire_country);
+	}
+
+	public function testEntireWorld(): void {
+		$zone = new WC_Shipping_Zone();
+		$zone->save();
+		self::create_and_save_method_instance($zone, 'free_shipping', array());
+		$result = ShippingProfilesFeed::get_shipping_profiles_data();
+		$shipping_zone_data = $result[0]['shipping_zones'];
+
+		$expected_shipping_zones = array_map(
+			function ( $country_code ) {
+				return [
+					'country'                   => $country_code,
+					'states'                    => [],
+					'applies_to_entire_country' => true,
+				];
+			},
+			array_keys( WC()->countries->get_countries() )
+		);
+
+		$this->assertEqualsCanonicalizing( $expected_shipping_zones, $shipping_zone_data );
 
 		// Prevent too many asserts by just making sure every one is true.
 		$every_country_data_applies_to_entire_country = true;

@@ -25,7 +25,11 @@ use WC_Shipping_Zones;
 class ShippingProfilesFeed extends AbstractFeed {
 
 	/** Header for the shipping profiles feed file. @var string */
-	const SHIPPING_PROFILES_FEED_HEADER = 'shipping_profile_id,name,shipping_zones,shipping_rates,applicable_products,applies_to_all_products,applies_to_rest_of_world' . PHP_EOL;
+	const SHIPPING_PROFILES_FEED_HEADER = 'shipping_profile_id,name,shipping_zones,shipping_rates,applies_to_all_products,applicable_products_filter,applies_to_rest_of_world' . PHP_EOL;
+	// This gets returned by get_shipping_class from product if no class is set on the product
+	const NO_SHIPPING_CLASS_ID      = '0';
+	const NO_SHIPPING_CLASS_TAG     = 'no_shipping_class';
+	const SHIPPING_CLASS_TAG_PREFIX = 'shipping_class_';
 
 	/**
 	 * Constructor.
@@ -71,6 +75,19 @@ class ShippingProfilesFeed extends AbstractFeed {
 				$locations           = $zone['zone_locations'];
 				$countries_to_states = array();
 
+				// An empty location list indicates that the shipping profile applies to the whole world.
+				if ( empty( $locations ) ) {
+					$locations = array_map(
+						function ( $country_code ) {
+							return [
+								'code' => $country_code,
+								'type' => 'country',
+							];
+						},
+						array_keys( WC()->countries->get_countries() )
+					);
+				}
+
 				foreach ( $locations as $location ) {
 					$location = (array) $location;
 					if ( 'continent' === $location['type'] ) {
@@ -107,46 +124,74 @@ class ShippingProfilesFeed extends AbstractFeed {
 					$zone['shipping_methods']
 				);
 
-				$free_shipping_methods      = array_filter(
-					$shipping_methods,
-					function ( $shipping_method ) {
-						return 'free_shipping' === $shipping_method['id'];
+				$shipping_method_data = [];
+				foreach ( $shipping_methods as $shipping_method ) {
+					try {
+						if ( 'free_shipping' === $shipping_method['id'] ) {
+							$shipping_method_data[] = self::get_free_shipping_method_data( $zone, $shipping_method );
+						}
+						if ( 'flat_rate' === $shipping_method['id'] ) {
+							$shipping_method_data[] = self::get_flat_rate_shipping_method_data( $zone, $shipping_method );
+						}
+					} catch ( \Exception $e ) {
+						\WC_Facebookcommerce_Utils::log_to_meta(
+							'Exception while trying to get data for a shipping method',
+							array(
+								'flow_name'  => FeedUploadUtils::SHIPPING_PROFILES_SYNC_LOGGING_FLOW_NAME,
+								'flow_step'  => 'get_shipping_method_data',
+								'extra_data' => [
+									'exception_message' => $e->getMessage(),
+								],
+							)
+						);
 					}
-				);
-				$flat_rate_shipping_methods = array_filter(
-					$shipping_methods,
-					function ( $shipping_method ) {
-						return 'flat_rate' === $shipping_method['id'];
+				}
+
+				$shipping_rates_per_shipping_class = [];
+				foreach ( $shipping_method_data as $method_datum ) {
+					if ( null === $method_datum ) {
+						continue;
 					}
-				);
 
-				$shipping_rates = [];
-				foreach ( $free_shipping_methods as $free_shipping_method ) {
-					$shipping_rates[] = self::get_free_shipping_method_data( $zone, $free_shipping_method );
-				}
-				foreach ( $flat_rate_shipping_methods as $flat_rate_method ) {
-					$shipping_rates[] = self::get_flat_rate_shipping_method_data( $zone, $flat_rate_method );
-				}
-				// Filter out null shipping rate data;
-				$shipping_rates = array_filter( $shipping_rates );
+					$shipping_rate = array(
+						'name'              => $method_datum['name'],
+						'has_free_shipping' => $method_datum['has_free_shipping'],
+					);
+					if ( key_exists( 'cart_minimum_for_free_shipping', $method_datum ) ) {
+						$shipping_rate['cart_minimum_for_free_shipping'] = $method_datum['cart_minimum_for_free_shipping'];
+					}
 
-				// Don't send shipping profile if there are no rates since the shipping profile won't be usable.
-				if ( 0 === count( $shipping_rates ) ) {
-					continue;
+					if ( $method_datum['applies_to_all_products'] ) {
+						$shipping_rates_per_shipping_class['all_products'][] = $shipping_rate;
+					} else {
+						foreach ( $method_datum['shipping_class_ids'] as $class_id ) {
+							$shipping_rates_per_shipping_class[ $class_id ][] = $shipping_rate;
+						}
+					}
 				}
-				// Because were only handling free shipping which applies to all products for the zone, we only
-				// need to return one data shape here. When we need to handle classes, we will want to split this up
-				// based on which products the methods apply to. For now, hard code the id suffix.
-				$id_suffix                = 'all_products';
-				$data                     = array(
-					'shipping_profile_id'      => $zone['id'] . '-' . $id_suffix,
-					'name'                     => $zone['zone_name'],
-					'applies_to_all_products'  => 'true',
-					'shipping_zones'           => $countries_with_states,
-					'shipping_rates'           => $shipping_rates,
-					'applies_to_rest_of_world' => 'false',
-				);
-				$shipping_profiles_data[] = $data;
+
+				foreach ( $shipping_rates_per_shipping_class as $shipping_class => $shipping_rates ) {
+					// Don't send shipping profile if there are no rates since the shipping profile won't be usable.
+					if ( 0 === count( $shipping_rates ) ) {
+						continue;
+					}
+					$shipping_class_string = (string) $shipping_class;
+					$data                  = array(
+						'shipping_profile_id'      => sprintf( '%s-%s', $zone['id'], $shipping_class_string ),
+						'name'                     => $zone['zone_name'],
+						'shipping_zones'           => $countries_with_states,
+						'shipping_rates'           => $shipping_rates,
+						'applies_to_rest_of_world' => 'false',
+					);
+
+					if ( 'all_products' === $shipping_class ) {
+						$data['applies_to_all_products'] = 'true';
+					} else {
+						$data['applies_to_all_products']    = 'false';
+						$data['applicable_products_filter'] = sprintf( '{"tags":{"eq":"%s"}}', self::get_shipping_class_tag_for_class( $shipping_class_string ) );
+					}
+					$shipping_profiles_data[] = $data;
+				}
 			}
 			return $shipping_profiles_data;
 		} catch ( \Exception $e ) {
@@ -168,9 +213,11 @@ class ShippingProfilesFeed extends AbstractFeed {
 	private static function get_free_shipping_method_data( array $zone, array $free_shipping_method ): ?array {
 		$shipping_settings = $free_shipping_method['instance_settings'];
 
-		$shipping_rate = array(
-			'name'              => $free_shipping_method['title'],
-			'has_free_shipping' => 'true',
+		$shipping_data = array(
+			'name'                    => $free_shipping_method['title'],
+			'has_free_shipping'       => 'true',
+			'applies_to_all_products' => true,
+			'shipping_class_ids'      => [],
 		);
 
 		// Today free shipping via coupons is displayed solely through the discounts data model. This does not
@@ -192,9 +239,9 @@ class ShippingProfilesFeed extends AbstractFeed {
 				return null;
 			}
 			$min_spend                                       = $free_shipping_method['instance_settings']['min_amount'] ?? 0;
-			$shipping_rate['cart_minimum_for_free_shipping'] = $min_spend . ' ' . get_woocommerce_currency();
+			$shipping_data['cart_minimum_for_free_shipping'] = $min_spend . ' ' . get_woocommerce_currency();
 		}
-		return $shipping_rate;
+		return $shipping_data;
 	}
 
 	/**
@@ -215,36 +262,42 @@ class ShippingProfilesFeed extends AbstractFeed {
 		}
 
 		// For each shipping class, a new key is inserted into the methods settings with form 'class_cost_{class_id}'
-		// The value is the additional cost to ship for products of that class when using the shipping method. We want
-		// to find if any of these costs are non-free. For now, if there are any non-free costs, don't sync the method.
-		$non_free_shipping_class_costs = [];
-		$class_cost_prefix             = 'class_cost_';
-		$prefix_length                 = strlen( $class_cost_prefix );
+		// The value is the additional cost to ship for products of that class when using the shipping method. If
+		// // some classes have a cost, data will be synced as a separate shipping profile for any class that has a 0 cost.
+		$shipping_class_ids_to_costs = [];
+		$class_cost_prefix           = 'class_cost_';
+		$prefix_length               = strlen( $class_cost_prefix );
 
 		foreach ( $shipping_settings as $key => $value ) {
 			if ( str_starts_with( $key, $class_cost_prefix ) ) {
-				$shipping_class_id = substr( $key, $prefix_length );
-				// We could short circuit out of the whole function here, but populating the cost array sets up
-				// future work to evaluate which subset of products should be seen as having a 'free shipping'
-				// profile and which are paid.
-				if ( ! self::is_zero_cost( $value ) ) {
-					$non_free_shipping_class_costs[ $shipping_class_id ] = $value;
-				}
+				$shipping_class_id                                 = substr( $key, $prefix_length );
+				$shipping_class_ids_to_costs[ $shipping_class_id ] = $value;
 			}
 		}
-		$no_class_cost = $shipping_settings['no_class_cost'] ?? '0';
-		if ( ! self::is_zero_cost( $no_class_cost ) ) {
-			$non_free_shipping_class_costs['no_class'] = $no_class_cost;
+		$shipping_class_ids_to_costs[ self::NO_SHIPPING_CLASS_ID ] = $shipping_settings['no_class_cost'] ?? '0';
+
+		$free_shipping_class_ids = [];
+		$paid_shipping_class_ids = [];
+		foreach ( $shipping_class_ids_to_costs as $class_id => $cost ) {
+			if ( self::is_zero_cost( $cost ) ) {
+				$free_shipping_class_ids[] = $class_id;
+			} else {
+				$paid_shipping_class_ids[] = $class_id;
+			}
 		}
 
-		if ( count( $non_free_shipping_class_costs ) !== 0 ) {
-			self::log_map_shipping_method_issue_to_meta( $zone, $flat_rate_method, 'Flat rate shipping shipping class with cost', 'map_flat_rate_shipping_method' );
+		if ( count( $free_shipping_class_ids ) === 0 ) {
+			self::log_map_shipping_method_issue_to_meta( $zone, $flat_rate_method, 'Flat rate shipping has no free classes', 'map_flat_rate_shipping_method' );
 			return null;
 		}
 
+		$free_shipping_applies_to_all_products = empty( $paid_shipping_class_ids );
+
 		return array(
-			'name'              => $flat_rate_method['title'],
-			'has_free_shipping' => 'true',
+			'name'                    => $flat_rate_method['title'],
+			'has_free_shipping'       => 'true',
+			'applies_to_all_products' => $free_shipping_applies_to_all_products,
+			'shipping_class_ids'      => $free_shipping_class_ids,
 		);
 	}
 
@@ -272,7 +325,7 @@ class ShippingProfilesFeed extends AbstractFeed {
 	}
 
 	private static function add_country_location( string $country_code, array $countries_to_states ): array {
-		$countries_to_states[ $country_code ]['applies_to_entire_country'] = 'true';
+		$countries_to_states[ $country_code ]['applies_to_entire_country'] = true;
 		return $countries_to_states;
 	}
 
@@ -284,5 +337,12 @@ class ShippingProfilesFeed extends AbstractFeed {
 			return 0.0 === (float) $cost_string;
 		}
 		return false;
+	}
+
+	public static function get_shipping_class_tag_for_class( string $class_id ): string {
+		if ( self::NO_SHIPPING_CLASS_ID === $class_id ) {
+			return self::NO_SHIPPING_CLASS_TAG;
+		}
+		return self::SHIPPING_CLASS_TAG_PREFIX . $class_id;
 	}
 }

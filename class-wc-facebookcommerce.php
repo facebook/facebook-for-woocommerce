@@ -123,6 +123,9 @@ class WC_Facebookcommerce extends WooCommerce\Facebook\Framework\Plugin {
 	/** @var WooCommerce\Facebook\Products\FBCategories instance. */
 	private $fb_categories;
 
+	/** @var WooCommerce\Facebook\RolloutSwitches instance. */
+	private $rollout_switches;
+
 	/**
 	 * The Debug tools instance.
 	 *
@@ -232,6 +235,7 @@ class WC_Facebookcommerce extends WooCommerce\Facebook\Framework\Plugin {
 			$this->webhook_handler   				= new WooCommerce\Facebook\Handlers\WebHook( $this );
 			$this->whatsapp_webhook_handler = new WooCommerce\Facebook\Handlers\Whatsapp_Webhook( $this );
 			$this->tracker            			= new WooCommerce\Facebook\Utilities\Tracker();
+			$this->rollout_switches   			= new WooCommerce\Facebook\RolloutSwitches( $this );
 
 			// Init jobs
 			$this->job_manager = new WooCommerce\Facebook\Jobs\JobManager();
@@ -267,6 +271,7 @@ class WC_Facebookcommerce extends WooCommerce\Facebook\Framework\Plugin {
 			},
 			0
 		);
+		add_action( 'admin_init', [ $this->rollout_switches, 'init' ] );
 	}
 
 	/**
@@ -791,6 +796,15 @@ class WC_Facebookcommerce extends WooCommerce\Facebook\Framework\Plugin {
 	 */
 	public function get_asset_build_dir_url() {
 		return $this->get_plugin_url() . '/assets/build';
+	}
+
+	/**
+	 * Gets the connection handler.
+	 *
+	 * @return WooCommerce\Facebook\RolloutSwitches
+	 */
+	public function get_rollout_switches() {
+		return $this->rollout_switches;
 	}
 
 
