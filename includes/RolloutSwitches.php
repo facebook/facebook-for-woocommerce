@@ -40,10 +40,12 @@ class RolloutSwitches {
 	}
 
 	public function init() {
-		$swiches = $this->plugin->get_api()->get_rollout_switches(
-			$this->plugin->get_connection_handler()->get_external_business_id()
-		);
-
+		$external_business_id = $this->plugin->get_connection_handler()->get_external_business_id();
+		if ( empty( $external_business_id ) ) {
+			return;
+		}
+		
+		$swiches = $this->plugin->get_api()->get_rollout_switches( $external_business_id );
 		$data = $swiches->get_data();
 		foreach ( $data as $switch ) {
 			if ( ! isset( $switch['switch'] ) || ! $this->is_switch_active( $switch['switch'] ) ) {
