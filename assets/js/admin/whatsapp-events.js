@@ -20,16 +20,16 @@ jQuery( document ).ready( function( $ ) {
         orderPlacedInactiveStatus.show();
     }
 
-    // Set Event Status for Order Shipped
-    var orderShippedActiveStatus = $('#order-shipped-active-status');
-    var orderShippedInactiveStatus = $('#order-shipped-inactive-status');
-    if(facebook_for_woocommerce_whatsapp_events.order_shipped_enabled){
-        orderShippedInactiveStatus.hide();
-        orderShippedActiveStatus.show();
+    // Set Event Status for Order FulFilled
+    var orderFulfilledActiveStatus = $('#order-fulfilled-active-status');
+    var orderFulfilledInactiveStatus = $('#order-fulfilled-inactive-status');
+    if(facebook_for_woocommerce_whatsapp_events.order_fulfilled_enabled){
+        orderFulfilledInactiveStatus.hide();
+        orderFulfilledActiveStatus.show();
     }
     else {
-        orderShippedActiveStatus.hide();
-        orderShippedInactiveStatus.show();
+        orderFulfilledActiveStatus.hide();
+        orderFulfilledInactiveStatus.show();
     }
 
     // Set Event Status for Order Refunded
@@ -44,11 +44,10 @@ jQuery( document ).ready( function( $ ) {
         orderRefundedInactiveStatus.show();
     }
 
-    var eventConfiglanguage = facebook_for_woocommerce_whatsapp_events.order_placed_language;
+    var eventConfiglanguage = getEventLanguage(facebook_for_woocommerce_whatsapp_events.event);
     $("#manage-event-language").val(eventConfiglanguage);
 
-    // update current view from utility settings to manage event when order confirmation button is clicked.
-    $('#woocommerce-whatsapp-manage-order-placed, #woocommerce-whatsapp-manage-order-shipped, #woocommerce-whatsapp-manage-order-refunded').click(function (event) {
+    $('#woocommerce-whatsapp-manage-order-placed, #woocommerce-whatsapp-manage-order-fulfilled, #woocommerce-whatsapp-manage-order-refunded').click(function (event) {
         var clickedButtonId = $(event.target).attr("id");
         let view=clickedButtonId.replace("woocommerce-whatsapp-", "");
         view = view.replaceAll("-", "_");
@@ -114,4 +113,17 @@ jQuery( document ).ready( function( $ ) {
             window.location.href = url.toString();
         });
     });
+
+    function getEventLanguage(event) {
+        switch (event) {
+            case "ORDER_PLACED":
+                return facebook_for_woocommerce_whatsapp_events.order_placed_language;
+            case "ORDER_FULFILLED":
+                return facebook_for_woocommerce_whatsapp_events.order_fulfilled_language;
+            case "ORDER_REFUNDED":
+                return facebook_for_woocommerce_whatsapp_events.order_refunded_language;
+            default:
+                return null;
+        }
+    }
 });

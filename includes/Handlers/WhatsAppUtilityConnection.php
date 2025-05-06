@@ -32,9 +32,9 @@ class WhatsAppUtilityConnection {
 
 	/** @var array Mapping of Events to Template Library name */
 	const EVENT_TO_LIBRARY_TEMPLATE_MAPPING = array(
-		'ORDER_PLACED'   => 'order_management_4',
-		'ORDER_SHIPPED'  => 'shipment_confirmation_4',
-		'ORDER_REFUNDED' => 'refund_confirmation_1',
+		'ORDER_PLACED'    => 'order_management_4',
+		'ORDER_FULFILLED' => 'shipment_confirmation_4',
+		'ORDER_REFUNDED'  => 'refund_confirmation_1',
 	);
 
 	/** @var string Default language for Library Template */
@@ -198,8 +198,8 @@ class WhatsAppUtilityConnection {
 				'wc_facebook_wa_integration_config_id',
 				'wc_facebook_wa_order_placed_event_config_id',
 				'wc_facebook_wa_order_placed_language',
-				'wc_facebook_wa_order_shipped_event_config_id',
-				'wc_facebook_wa_order_shipped_language',
+				'wc_facebook_wa_order_fulfilled_event_config_id',
+				'wc_facebook_wa_order_fulfilled_language',
 				'wc_facebook_wa_order_refunded_event_config_id',
 				'wc_facebook_wa_order_refunded_language',
 			);
@@ -262,34 +262,23 @@ class WhatsAppUtilityConnection {
 			'headers' => array(
 				'Authorization' => $bisu_token,
 			),
-			'body'    => array(
-				'event'                          => $event,
-				'language'                       => $language,
-				'status'                         => $status,
-				'library_template_name'          => self::EVENT_TO_LIBRARY_TEMPLATE_MAPPING[ $event ],
-				'library_template_button_inputs' => array(
-					array(
-						'type' => 'URL',
-						'url'  => array(
-							'base_url'           => $view_order_url,
-							'url_suffix_example' => $view_order_example_url,
-						),
-					),
-				),
-
-			),
+			'body'    => array(),
+			'timeout' => 300, // 5 minutes
 		);
-		$response        = wp_remote_post( $base_url, $options );
-		$status_code     = wp_remote_retrieve_response_code( $response );
-		$data            = explode( "\n", wp_remote_retrieve_body( $response ) );
-		$response_object = json_decode( $data[0] );
+		$response                       = wp_remote_post( $base_url, $options );
+		$status_code                    = wp_remote_retrieve_response_code( $response );
+		$data                           = explode( "\n", wp_remote_retrieve_body( $response ) );
+		$response_object                = json_decode( $data[0] );
+		$is_error                       = is_wp_error( $response );
 		if ( is_wp_error( $response ) || 200 !== $status_code ) {
 			$error_message = $response_object->error->error_user_title ?? $response_object->error->message ?? 'Something went wrong. Please try again later!';
 			wc_get_logger()->info(
 				sprintf(
-					/* translators: %s $error_message */
-					__( 'Event Configs Post API call Failed %1$s ', 'facebook-for-woocommerce' ),
+					/* translators: %s $error_message %s status code %s is_wp_error value*/
+					__( 'Event Configs Post API call Failed with Error: %1$s, Status code: %2$d, Is Wp Error: %3$s', 'facebook-for-woocommerce' ),
 					$error_message,
+					$status_code,
+					(string) $is_error,
 				)
 			);
 			wp_send_json_error( $response, 'Event Configs Post API call Failed' );

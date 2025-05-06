@@ -30,7 +30,7 @@ class Whatsapp_Utility extends Abstract_Settings_Screen {
 	/** @var array Values for Manage Events  */
 	const MANAGE_EVENT_VIEWS = array(
 		'manage_order_placed',
-		'manage_order_shipped',
+		'manage_order_fulfilled',
 		'manage_order_refunded',
 	);
 
@@ -125,12 +125,12 @@ class Whatsapp_Utility extends Abstract_Settings_Screen {
 				),
 			)
 		);
-		$order_placed_event_config_id   = get_option( 'wc_facebook_wa_order_placed_event_config_id', null );
-		$order_placed_language          = get_option( 'wc_facebook_wa_order_placed_language', 'en' );
-		$order_shipped_event_config_id  = get_option( 'wc_facebook_wa_order_shipped_event_config_id', null );
-		$order_shipped_language         = get_option( 'wc_facebook_wa_order_shipped_language', 'en' );
-		$order_refunded_event_config_id = get_option( 'wc_facebook_wa_order_refunded_event_config_id', null );
-		$order_refunded_language        = get_option( 'wc_facebook_wa_order_refunded_language', 'en' );
+		$order_placed_event_config_id    = get_option( 'wc_facebook_wa_order_placed_event_config_id', null );
+		$order_placed_language           = get_option( 'wc_facebook_wa_order_placed_language', 'en' );
+		$order_fulfilled_event_config_id = get_option( 'wc_facebook_wa_order_fulfilled_event_config_id', null );
+		$order_fulfilled_language        = get_option( 'wc_facebook_wa_order_fulfilled_language', 'en' );
+		$order_refunded_event_config_id  = get_option( 'wc_facebook_wa_order_refunded_event_config_id', null );
+		$order_refunded_language         = get_option( 'wc_facebook_wa_order_refunded_language', 'en' );
 		wp_enqueue_script(
 			'facebook-for-woocommerce-whatsapp-events',
 			facebook_for_woocommerce()->get_asset_build_dir_url() . '/admin/whatsapp-events.js',
@@ -141,16 +141,16 @@ class Whatsapp_Utility extends Abstract_Settings_Screen {
 			'facebook-for-woocommerce-whatsapp-events',
 			'facebook_for_woocommerce_whatsapp_events',
 			array(
-				'ajax_url'                => admin_url( 'admin-ajax.php' ),
-				'nonce'                   => wp_create_nonce( 'facebook-for-wc-whatsapp-events-nonce' ),
-				'event'                   => $this->get_current_event(),
-				'order_placed_enabled'    => ! empty( $order_placed_event_config_id ),
-				'order_placed_language'   => $order_placed_language,
-				'order_shipped_enabled'   => ! empty( $order_shipped_event_config_id ),
-				'order_shipped_language'  => $order_shipped_language,
-				'order_refunded_enabled'  => ! empty( $order_refunded_event_config_id ),
-				'order_refunded_language' => $order_refunded_language,
-				'i18n'                    => array(
+				'ajax_url'                 => admin_url( 'admin-ajax.php' ),
+				'nonce'                    => wp_create_nonce( 'facebook-for-wc-whatsapp-events-nonce' ),
+				'event'                    => $this->get_current_event(),
+				'order_placed_enabled'     => ! empty( $order_placed_event_config_id ),
+				'order_placed_language'    => $order_placed_language,
+				'order_fulfilled_enabled'  => ! empty( $order_fulfilled_event_config_id ),
+				'order_fulfilled_language' => $order_fulfilled_language,
+				'order_refunded_enabled'   => ! empty( $order_refunded_event_config_id ),
+				'order_refunded_language'  => $order_refunded_language,
+				'i18n'                     => array(
 					'result' => true,
 				),
 			)
@@ -382,10 +382,10 @@ class Whatsapp_Utility extends Abstract_Settings_Screen {
 				<div>
 					<div class="event-config-heading-container">
 						<h3><?php esc_html_e( 'Order shipped', 'facebook-for-woocommerce' ); ?></h3>
-						<div class="event-config-status on-status fbwa-hidden-element" id="order-shipped-active-status">
+						<div class="event-config-status on-status fbwa-hidden-element" id="order-fulfilled-active-status">
 							<?php esc_html_e( 'On', 'facebook-for-woocommerce' ); ?>
 						</div>
-						<div class="event-config-status fbwa-hidden-element" id="order-shipped-inactive-status">
+						<div class="event-config-status fbwa-hidden-element" id="order-fulfilled-inactive-status">
 							<?php esc_html_e( 'Off', 'facebook-for-woocommerce' ); ?>
 						</div>
 					</div>
@@ -393,7 +393,7 @@ class Whatsapp_Utility extends Abstract_Settings_Screen {
 				</div>
 				<div class="event-config-manage-button">
 					<a
-						id="woocommerce-whatsapp-manage-order-shipped"
+						id="woocommerce-whatsapp-manage-order-fulfilled"
 						class="event-config-manage-button button"
 						href="#"><?php esc_html_e( 'Manage', 'facebook-for-woocommerce' ); ?></a>
 				</div>
@@ -527,7 +527,7 @@ class Whatsapp_Utility extends Abstract_Settings_Screen {
 							<?php esc_html_e( 'Manage order confirmation message', 'facebook-for-woocommerce' ); ?>
 							<?php
 							break;
-						case 'ORDER_SHIPPED':
+						case 'ORDER_FULFILLED':
 							?>
 							<?php esc_html_e( 'Manage order shipped message', 'facebook-for-woocommerce' ); ?>
 							<?php
@@ -548,7 +548,7 @@ class Whatsapp_Utility extends Abstract_Settings_Screen {
 								<?php esc_html_e( 'Send a confirmation to customers after they\'ve placed an order.', 'facebook-for-woocommerce' ); ?>
 									<?php
 								break;
-							case 'ORDER_SHIPPED':
+							case 'ORDER_FULFILLED':
 								?>
 								<?php esc_html_e( 'Send a confirmation to customers when their order has shipped.', 'facebook-for-woocommerce' ); ?>
 									<?php
@@ -569,7 +569,7 @@ class Whatsapp_Utility extends Abstract_Settings_Screen {
 				<select id="manage-event-language" class="manage-event-selector">
 					<option value="en">English</option>
 					<option value="en_US">English (US)</option>
-					<option value="en_UK">English (UK)</option>
+					<option value="en_GB">English (UK)</option>
 					<option value="es">Spanish</option>
 				</select>
 			</div>
@@ -585,7 +585,7 @@ class Whatsapp_Utility extends Abstract_Settings_Screen {
 								<?php esc_html_e( 'Send order confirmation message', 'facebook-for-woocommerce' ); ?>
 								<?php
 								break;
-							case 'ORDER_SHIPPED':
+							case 'ORDER_FULFILLED':
 								?>
 								<?php esc_html_e( 'Send order shipped message', 'facebook-for-woocommerce' ); ?>
 								<?php
@@ -613,7 +613,7 @@ class Whatsapp_Utility extends Abstract_Settings_Screen {
 								<?php esc_html_e( 'Turn off order confirmation message', 'facebook-for-woocommerce' ); ?>
 								<?php
 								break;
-							case 'ORDER_SHIPPED':
+							case 'ORDER_FULFILLED':
 								?>
 								<?php esc_html_e( 'Turn off order shipped message', 'facebook-for-woocommerce' ); ?>
 								<?php
