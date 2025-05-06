@@ -5,7 +5,7 @@ use WooCommerce\Facebook\API;
 use WooCommerce\Facebook\Framework\Api\Exception as ApiException;
 use WooCommerce\Facebook\RolloutSwitches;
 
-class RolloutSwitchesTest extends \WooCommerce\Facebook\Tests\AbstractWPUnitTestWithSafeFiltering {
+class RolloutSwitchesTest extends \WooCommerce\Facebook\Tests\Unit\AbstractWPUnitTestWithSafeFiltering {
 
 	/**
 	 * Facebook Graph API endpoint.
@@ -20,7 +20,7 @@ class RolloutSwitchesTest extends \WooCommerce\Facebook\Tests\AbstractWPUnitTest
 	 * @var string
 	 */
 	private $version = Api::API_VERSION;
-
+	
 	/**
 	 * @var Api
 	 */
@@ -36,8 +36,8 @@ class RolloutSwitchesTest extends \WooCommerce\Facebook\Tests\AbstractWPUnitTest
 		parent::setUp();
 		$this->api = new Api( $this->access_token );
 	}
-
-	public function test_api() {
+	
+	public function test_api() {	
 		$response = function( $result, $parsed_args, $url ) {
 			$this->assertEquals( 'GET', $parsed_args['method'] );
 			$url_params = "access_token={$this->access_token}&fbe_external_business_id={$this->external_business_id}";
@@ -52,7 +52,7 @@ class RolloutSwitchesTest extends \WooCommerce\Facebook\Tests\AbstractWPUnitTest
 			];
 		};
 		$this->add_filter_with_safe_teardown( 'pre_http_request', $response, 10, 3 );
-
+		
 		$response = $this->api->get_rollout_switches( $this->external_business_id );
 		$this->assertEquals([
 			[
@@ -70,8 +70,8 @@ class RolloutSwitchesTest extends \WooCommerce\Facebook\Tests\AbstractWPUnitTest
 		], $response->get_data());
 	}
 
-	public function test_plugin() {
-
+	public function test_plugin() {	
+		
 		// mock the active filters to test business values
 		$plugin = facebook_for_woocommerce();
 		$plugin_ref_obj          = new ReflectionObject( $plugin );
@@ -98,7 +98,7 @@ class RolloutSwitchesTest extends \WooCommerce\Facebook\Tests\AbstractWPUnitTest
 				)
 			))));
 		$prop_api->setValue( $plugin, $mock_api );
-
+		
 		$switch_mock = $this->getMockBuilder(RolloutSwitches::class)
 			->setConstructorArgs( array( $plugin ) )
             ->onlyMethods(['is_switch_active'])
@@ -122,7 +122,7 @@ class RolloutSwitchesTest extends \WooCommerce\Facebook\Tests\AbstractWPUnitTest
 		// If the feature is active and in the response -> response value
 		$this->assertEquals( $switch_mock->is_switch_enabled("switch_a"), true );
 		$this->assertEquals( $switch_mock->is_switch_enabled("switch_b"), false );
-
+		
 		// If the switch is active but not in the response -> TRUE
 		$this->assertEquals( $switch_mock->is_switch_enabled("switch_d"), true );
 	}
