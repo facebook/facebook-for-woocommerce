@@ -32,9 +32,9 @@ class API extends Base {
 
 	use API\Traits\Rate_Limited_API;
 
-	public const GRAPH_API_URL = 'https://graph.facebook.com/';
+	public const GRAPH_API_URL = 'https://graph.11856.od.facebook.com/';
 
-	public const API_VERSION = 'v20.0';
+	public const API_VERSION = 'v21.0';
 
 	/** @var string URI used for the request */
 	protected $request_uri = self::GRAPH_API_URL . self::API_VERSION;
