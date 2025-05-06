@@ -157,37 +157,36 @@ abstract class AbstractFeed {
 	 */
 	public function send_request_to_upload_feed(): void {
 		$name = static::get_data_stream_name();
+		$data = array(
+			'url'         => self::get_feed_data_url(),
+			'feed_type'   => static::get_feed_type(),
+			'update_type' => 'CREATE',
+		);
 
 		try {
-			if ( $this->feed_writer instanceof JsonFeedFileWriter ) {
-				$file_path = $this->feed_writer->get_file_path();
-				\WC_Facebookcommerce_Utils::log_with_debug_mode_enabled( "File path: {$file_path}" );
-				$real_path = realpath( $file_path );
-				\WC_Facebookcommerce_Utils::log_with_debug_mode_enabled( "Real path: {$real_path}" );
-				if ( ! file_exists( $file_path ) || ! is_readable( $file_path ) ) {
-					throw new \Exception( "File path does not exist or is not readable at path: $file_path" );
-				}
-				if ( ! file_exists( $real_path ) || ! is_readable( $real_path ) ) {
-					throw new \Exception( "Real path does not exist or is not readable at path: $file_path" );
-				}
-				$data = array(
-					'file'        => new \CURLFile( realpath( $file_path ), 'application/json', basename( $file_path ) ),
-					'feed_type'   => static::get_feed_type(),
-					'update_type' => 'CREATE',
-				);
-			} else {
-				$data = array(
-					'url'         => self::get_feed_data_url(),
-					'feed_type'   => static::get_feed_type(),
-					'update_type' => 'CREATE',
-				);
-			}
-
-//			$data = array(
-//				'url'         => self::get_feed_data_url(),
-//				'feed_type'   => static::get_feed_type(),
-//				'update_type' => 'CREATE',
-//			);
+//			if ( $this->feed_writer instanceof JsonFeedFileWriter ) {
+//				$file_path = $this->feed_writer->get_file_path();
+//				\WC_Facebookcommerce_Utils::log_with_debug_mode_enabled( "File path: {$file_path}" );
+//				$real_path = realpath( $file_path );
+//				\WC_Facebookcommerce_Utils::log_with_debug_mode_enabled( "Real path: {$real_path}" );
+//				if ( ! file_exists( $file_path ) || ! is_readable( $file_path ) ) {
+//					throw new \Exception( "File path does not exist or is not readable at path: $file_path" );
+//				}
+//				if ( ! file_exists( $real_path ) || ! is_readable( $real_path ) ) {
+//					throw new \Exception( "Real path does not exist or is not readable at path: $file_path" );
+//				}
+//				$data = array(
+//					'file'        => new \CURLFile( realpath( $file_path ), 'application/json', basename( $file_path ) ),
+//					'feed_type'   => static::get_feed_type(),
+//					'update_type' => 'CREATE',
+//				);
+//			} else {
+//				$data = array(
+//					'url'         => self::get_feed_data_url(),
+//					'feed_type'   => static::get_feed_type(),
+//					'update_type' => 'CREATE',
+//				);
+//			}
 
 			$cpi_id = facebook_for_woocommerce()->get_connection_handler()->get_commerce_partner_integration_id();
 			facebook_for_woocommerce()->

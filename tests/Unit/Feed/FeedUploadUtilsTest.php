@@ -621,9 +621,9 @@ class FeedUploadUtilsTest extends FeedDataTestBase {
 	public function test_build_category_tree() {
 		// Mock categories
 		$categories = [
-			(object) ['term_id' => 1, 'name' => 'Category 1', 'parent' => 0],
-			(object) ['term_id' => 2, 'name' => 'Category 2', 'parent' => 0],
-			(object) ['term_id' => 3, 'name' => 'Subcategory 1', 'parent' => 1],
+			(object) ['term_taxonomy_id' => 1, 'name' => 'Category 1', 'parent' => 0],
+			(object) ['term_taxonomy_id' => 2, 'name' => 'Category 2', 'parent' => 0],
+			(object) ['term_taxonomy_id' => 3, 'name' => 'Subcategory 1', 'parent' => 1],
 		];
 
 		// Use reflection to access the private method

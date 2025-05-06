@@ -442,11 +442,11 @@ class FeedUploadUtils {
 
 		foreach ( $categories as $category ) {
 			if ( $category->parent === $parent_id ) {
-				$children      = self::build_category_tree( $categories, $category->term_id );
+				$children      = self::build_category_tree( $categories, $category->term_taxonomy_id );
 				$category_data = array(
 					'title'        => $category->name,
 					'resourceType' => 'collection',
-					'retailerID'   => $category->term_id,
+					'retailerID'   => $category->term_taxonomy_id,
 				);
 				if ( ! empty( $children ) ) {
 					$category_data['items'] = $children;
