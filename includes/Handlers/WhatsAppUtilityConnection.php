@@ -325,12 +325,14 @@ class WhatsAppUtilityConnection {
 	 * @param string $order_id Order id
 	 * @param string $phone_number Customer phone number
 	 * @param string $first_name Customer first name
+	 * @param string $refund_value Amount refunded to the Customer
 	 * @param string $bisu_token the BISU token received in the webhook
 	 */
-	public static function post_whatsapp_utility_messages_events_call( $event, $event_config_id, $language_code, $wacs_id, $order_id, $phone_number, $first_name, $bisu_token ) {
+	public static function post_whatsapp_utility_messages_events_call( $event, $event_config_id, $language_code, $wacs_id, $order_id, $phone_number, $first_name, $refund_value, $bisu_token ) {
 		$base_url        = array( self::GRAPH_API_BASE_URL, self::API_VERSION, $wacs_id, "messages?access_token=$bisu_token" );
 		$base_url        = esc_url( implode( '/', $base_url ) );
 		$name            = self::EVENT_TO_LIBRARY_TEMPLATE_MAPPING[ $event ];
+		$components      = self::get_components_for_event( $event, $order_id, $first_name, $refund_value );
 		$options         = array(
 			'body' => array(
 				'messaging_product' => 'whatsapp',
@@ -340,32 +342,7 @@ class WhatsAppUtilityConnection {
 					'language'   => array(
 						'code' => $language_code,
 					),
-					'components' => array(
-						array(
-							'type'       => 'BODY',
-							'parameters' => array(
-								array(
-									'type' => 'text',
-									'text' => $first_name,
-								),
-								array(
-									'type' => 'text',
-									'text' => "#$order_id",
-								),
-							),
-						),
-						array(
-							'type'       => 'BUTTON',
-							'sub_type'   => 'url',
-							'index'      => 0,
-							'parameters' => array(
-								array(
-									'type' => 'text',
-									'text' => "$order_id",
-								),
-							),
-						),
-					),
+					'components' => $components,
 				),
 				'type'              => 'template',
 			),
@@ -391,6 +368,75 @@ class WhatsAppUtilityConnection {
 					__( 'Messages Post API call for Order id %1$s Succeeded.', 'facebook-for-woocommerce' ),
 					$order_id
 				)
+			);
+		}
+	}
+
+
+	/**
+	 * Gets Component Objects for Order Management Events
+	 *
+	 * @param string $event Order Management event
+	 * @param string $order_id Order id
+	 * @param string $first_name Customer first name
+	 * @param string $refund_value Amount refunded to the Customer
+	 */
+	public static function get_components_for_event( $event, $order_id, $first_name, $refund_value ) {
+		if ( 'ORDER_REFUNDED' === $event ) {
+			return array(
+				array(
+					'type'       => 'HEADER',
+					'parameters' => array(
+						array(
+							'type' => 'text',
+							'text' => $refund_value,
+						),
+					),
+				),
+				array(
+					'type'       => 'BODY',
+					'parameters' => array(
+						array(
+							'type' => 'text',
+							'text' => $first_name,
+						),
+						array(
+							'type' => 'text',
+							'text' => $refund_value,
+						),
+						array(
+							'type' => 'text',
+							'text' => "#$order_id",
+						),
+					),
+				),
+			);
+		} else {
+			return array(
+				array(
+					'type'       => 'BODY',
+					'parameters' => array(
+						array(
+							'type' => 'text',
+							'text' => $first_name,
+						),
+						array(
+							'type' => 'text',
+							'text' => "#$order_id",
+						),
+					),
+				),
+				array(
+					'type'       => 'BUTTON',
+					'sub_type'   => 'url',
+					'index'      => 0,
+					'parameters' => array(
+						array(
+							'type' => 'text',
+							'text' => "$order_id",
+						),
+					),
+				),
 			);
 		}
 	}

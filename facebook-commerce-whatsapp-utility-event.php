@@ -54,8 +54,8 @@ class WC_Facebookcommerce_Whatsapp_Utility_Event {
 	 */
 	public function process_wc_order_status_changed( $order_id, $old_status, $new_status ) {
 		// WhatsApp Utility Messages are supported only for Processing status
-		// TODO: add support for Completed and Refunded Status
-		if ( 'processing' !== $new_status ) {
+		$supported_statuses = array_keys( self::ORDER_STATUS_TO_EVENT_MAPPING );
+		if ( ! in_array( $new_status, $supported_statuses, true ) ) {
 			return;
 		}
 
@@ -95,6 +95,13 @@ class WC_Facebookcommerce_Whatsapp_Utility_Event {
 		$phone_number          = ( isset( $billing_phone_number ) && $billing_consent_value ) ? $billing_phone_number : $shipping_phone_number;
 		// Get Customer first name
 		$first_name = $order->get_billing_first_name();
+		// Get Total Refund Amount for Order Refunded event
+		$total_refund = 0;
+		foreach ( $order->get_refunds() as $refund ) {
+			$total_refund += $refund->get_amount();
+		}
+		$currency_symbol = get_woocommerce_currency_symbol( $currency );
+		$refund_amount   = $currency_symbol . $total_refund;
 		if ( empty( $phone_number ) || ! $has_whatsapp_consent || empty( $event ) || empty( $first_name ) ) {
 			wc_get_logger()->info(
 				sprintf(
@@ -119,6 +126,6 @@ class WC_Facebookcommerce_Whatsapp_Utility_Event {
 			);
 			return;
 		}
-		WhatsAppUtilityConnection::post_whatsapp_utility_messages_events_call( $event, $event_config_id, $language_code, $wacs_id, $order_id, $phone_number, $first_name, $bisu_token );
+		WhatsAppUtilityConnection::post_whatsapp_utility_messages_events_call( $event, $event_config_id, $language_code, $wacs_id, $order_id, $phone_number, $first_name, $refund_amount, $bisu_token );
 	}
 }
