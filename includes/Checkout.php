@@ -101,8 +101,9 @@ class Checkout {
 							\WC_Facebookcommerce_Utils::log_exception_immediately_to_meta(
 								$e,
 								array(
-									'flow_name'       => 'checkout',
-									'incoming_params' => array(
+									'flow_name'  => 'checkout',
+									'flow_step'  => 'add_product_to_cart',
+									'extra_data' => array(
 										'products_param' => $products_param,
 										'product_id'     => $product_id,
 									),
@@ -113,8 +114,9 @@ class Checkout {
 						\WC_Facebookcommerce_Utils::log_to_meta(
 							'Failed to add product to cart',
 							array(
-								'flow_name'       => 'checkout',
-								'incoming_params' => array(
+								'flow_name'  => 'checkout',
+								'flow_step'  => 'add_product_to_cart',
+								'extra_data' => array(
 									'products_param' => $products_param,
 									'product_id'     => $product_id,
 								),
@@ -126,7 +128,20 @@ class Checkout {
 
 			$coupon_code = get_query_var( 'coupon' );
 			if ( $coupon_code ) {
-				WC()->cart->apply_coupon( sanitize_text_field( $coupon_code ) );
+				try {
+					WC()->cart->apply_coupon( sanitize_text_field( $coupon_code ) );
+				} catch ( \Exception $e ) {
+							\WC_Facebookcommerce_Utils::logExceptionImmediatelyToMeta(
+								$e,
+								array(
+									'flow_name'  => 'checkout',
+									'flow_step'  => 'apply_coupon_code',
+									'extra_data' => array(
+										'coupon_code' => $coupon_code,
+									),
+								)
+							);
+				}
 			}
 
 			$checkout_url = wc_get_checkout_url();
