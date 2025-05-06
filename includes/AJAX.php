@@ -402,7 +402,9 @@ class AJAX {
 		if ( empty( $bisu_token ) ) {
 			wp_send_json_error( 'Missing access token for Library template API call' );
 		}
-		WhatsAppUtilityConnection::get_template_library_content( $bisu_token );
+		// Get POST parameters from the request
+		$event = isset( $_POST['event'] ) ? wc_clean( wp_unslash( $_POST['event'] ) ) : '';
+		WhatsAppUtilityConnection::get_template_library_content( $event, $bisu_token );
 	}
 	/**
 	 * Creates or Updates WhatsApp Utility Event Configs
