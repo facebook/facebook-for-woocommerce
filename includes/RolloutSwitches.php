@@ -23,9 +23,11 @@ class RolloutSwitches {
 	private \WC_Facebookcommerce $plugin;
 
 	public const SWITCH_ROLLOUT_FEATURES = 'rollout_enabled';
+	public const WHATSAPP_UTILITY_MESSAGING = 'whatsapp_utility_messages_enabled';
 
 	private const ACTIVE_SWITCHES = array(
 		self::SWITCH_ROLLOUT_FEATURES,
+		self::WHATSAPP_UTILITY_MESSAGING,
 	);
 	/**
 	 * Stores the rollout switches and their enabled/disabled states.
@@ -36,6 +38,7 @@ class RolloutSwitches {
 
 	public function __construct( \WC_Facebookcommerce $plugin ) {
 		$this->plugin = $plugin;
+		// $this->init();
 		add_action( Heartbeat::HOURLY, array( $this, 'init' ) );
 	}
 
@@ -53,6 +56,14 @@ class RolloutSwitches {
 			}
 			$this->rollout_switches[ $switch['switch'] ] = (bool) $switch['enabled'];
 		}
+
+		wc_get_logger()->info(
+			sprintf(
+					/* translators: %s $response */
+				 'WAUM rollout switches init: %1$s ',
+				json_encode( $this->rollout_switches ),
+			)
+		);
 	}
 
 	/**
@@ -76,7 +87,15 @@ class RolloutSwitches {
 			return false;
 		}
 
-		return $this->rollout_switches[ $switch_name ] ?? true;
+		wc_get_logger()->info(
+			sprintf(
+					/* translators: %s $response */
+				 'WAUM rollout switches: %1$s ',
+				json_encode( $this->rollout_switches ),
+			)
+		);
+
+		return isset($this->rollout_switches[ $switch_name ]) ? $this->rollout_switches[ $switch_name ] : true;
 	}
 
 	public function is_switch_active( string $switch_name ) {
