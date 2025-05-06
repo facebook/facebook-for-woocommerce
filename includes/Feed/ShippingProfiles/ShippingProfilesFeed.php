@@ -58,11 +58,6 @@ class ShippingProfilesFeed extends AbstractFeed {
 		return FeedManager::SHIPPING_PROFILES;
 	}
 
-	protected static function get_feed_gen_interval(): int {
-		return HOUR_IN_SECONDS;
-	}
-
-
 	/**
 	 * @throws \Exception If an error is encountered mapping shipping profile data.
 	 */
