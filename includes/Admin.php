@@ -1613,8 +1613,6 @@ class Admin {
 			$image_source = isset( $_POST[ $posted_param ][ $index ] ) ? sanitize_key( wp_unslash( $_POST[ $posted_param ][ $index ] ) ) : '';
 			$posted_param = 'variable_' . \WC_Facebook_Product::FB_PRODUCT_IMAGE;
 			$image_url    = isset( $_POST[ $posted_param ][ $index ] ) ? esc_url_raw( wp_unslash( $_POST[ $posted_param ][ $index ] ) ) : null;
-			$posted_param = 'variable_' . \WC_Facebook_Product::FB_PRODUCT_CONDITION;
-			$condition    = isset( $_POST[ $posted_param ][ $index ] ) ? esc_url_raw( wp_unslash( $_POST[ $posted_param ][ $index ] ) ) : null;
 			$posted_param = 'variable_' . \WC_Facebook_Product::FB_PRODUCT_VIDEO;
 			$video_urls   = isset( $_POST[ $posted_param ][ $index ] ) ? esc_url_raw( wp_unslash( $_POST[ $posted_param ][ $index ] ) ) : [];
 			$posted_param = 'variable_' . \WC_Facebook_Product::FB_PRODUCT_PRICE;
@@ -1624,7 +1622,6 @@ class Admin {
 			$variation->update_meta_data( Products::PRODUCT_IMAGE_SOURCE_META_KEY, $image_source );
 			$variation->update_meta_data( \WC_Facebook_Product::FB_MPN, $fb_mpn );
 			$variation->update_meta_data( \WC_Facebook_Product::FB_PRODUCT_IMAGE, $image_url );
-			$variation->update_meta_data( \WC_Facebook_Product::FB_PRODUCT_CONDITION, $condition );
 			$variation->update_meta_data( \WC_Facebook_Product::FB_PRODUCT_VIDEO, $video_urls );
 			$variation->update_meta_data( \WC_Facebook_Product::FB_PRODUCT_PRICE, $price );
 			$variation->save_meta_data();
@@ -1770,28 +1767,43 @@ class Admin {
 							$field.find('option:first').prop('selected', true);
 						}
 						
-						// Make sure it's visible and enabled
-						$field.show().prop('disabled', false).removeClass('synced-attribute');
-						
-						// If this is a WooCommerce select2 field, reset the select2 as well
+						// Reset select2 if it's initialized
 						if ($field.hasClass('wc-enhanced-select') || $field.hasClass('select2-hidden-accessible')) {
 							try {
 								$field.select2('val', '');
+								// Also reset the select2 container styles
+								$field.next('.select2-container').find('.select2-selection').css({
+									'cursor': '',
+									'background-color': '',
+									'color': ''
+								});
 							} catch (e) {
-								// Ignore select2 errors, it might not be initialized
+								// Ignore select2 errors
 							}
 						}
-					} else {
-						// For text fields
-						$field.val('');
 					}
-					
-					// Remove any remaining custom styling
-					$field.css({
-						'background-color': '',
-						'color': '',
-						'border-color': ''
-					});
+
+					// Reset all styles and classes
+					$field
+						.val('')
+						.prop('disabled', false)
+						.removeClass('synced-attribute')
+						.css({
+							'cursor': '',
+							'background-color': '',
+							'color': '',
+							'border-color': '',
+							'opacity': ''
+						})
+						.show();
+
+					// Also reset any select2 container if it exists
+					if ($field.next('.select2-container').length) {
+						$field.next('.select2-container').css({
+							'cursor': '',
+							'opacity': ''
+						});
+					}
 				}
 
 				// Function to sync Facebook attributes
@@ -1885,7 +1897,7 @@ class Admin {
 													// Always add the sync badge after the multi-value display
 													// Only if it doesn't already exist
 													if ($multiDisplay.next('.sync-indicator').length === 0) {
-														$multiDisplay.after('<span class="sync-indicator wc-attributes-icon" data-tip="Synced from the Attributes tab. Multiple values are used for variations." style="margin-left: 4px;"><span class="sync-tooltip">Synced from the Attributes tab. Multiple values are used for variations.</span></span>');
+														$multiDisplay.after('<span class="sync-indicator wc-attributes-icon" data-tip="Synced from the Attributes tab." style="margin-left: 4px;"><span class="sync-tooltip">Synced from the Attributes tab.</span></span>');
 													}
 												} else {
 													// Update the existing multi-value display
