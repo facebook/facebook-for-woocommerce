@@ -40,7 +40,6 @@ class WhatsAppUtilityConnection {
 	/** @var string Default language for Library Template */
 	const DEFAULT_LANGUAGE = 'en';
 
-
 	/**
 	 * Makes an API call to Template Library API
 	 *

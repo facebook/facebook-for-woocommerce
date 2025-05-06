@@ -15,7 +15,6 @@ defined( 'ABSPATH' ) || exit;
 use WooCommerce\Facebook\Admin\Abstract_Settings_Screen;
 use WooCommerce\Facebook\Framework\Api\Exception as ApiException;
 use WooCommerce\Facebook\Framework\Helper;
-use WooCommerce\Facebook\Handlers\WhatsAppUtilityConnection;
 
 /**
  * The Whatsapp Utility settings screen object.
@@ -28,16 +27,6 @@ class Whatsapp_Utility extends Abstract_Settings_Screen {
 	/** @var string screen ID */
 	const ID = 'whatsapp_utility';
 
-	/** @var array Mapping of Order Status to Event name */
-	const ORDER_STATUS_TO_EVENT_MAPPING = array(
-		'processing' => 'ORDER_PLACED',
-		'completed'  => 'ORDER_SHIPPED',
-		'refunded'   => 'ORDER_REFUNDED',
-	);
-
-	/** @var string Prefix for Whatsapp Utility Option Names */
-	const WA_UTILITY_OPTION_PREFIX = 'wc_facebook_wa';
-
 	/** @var array Values for Manage Events  */
 	const MANAGE_EVENT_VIEWS = array(
 		'manage_order_placed',
@@ -45,13 +34,14 @@ class Whatsapp_Utility extends Abstract_Settings_Screen {
 		'manage_order_refunded',
 	);
 
+
 	/**
 	 * Whatsapp Utility constructor.
 	 */
 	public function __construct() {
 		add_action( 'init', array( $this, 'initHook' ) );
+
 		add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_assets' ) );
-		add_action( 'woocommerce_order_status_changed', array( $this, 'process_wc_order_status_changed' ), 10, 3 );
 	}
 
 	/**
@@ -694,69 +684,5 @@ class Whatsapp_Utility extends Abstract_Settings_Screen {
 	 */
 	public function get_settings() {
 		return array();
-	}
-
-	public function process_wc_order_status_changed( $order_id, $old_status, $new_status ) {
-
-		// WhatsApp Utility Messages are supported only for Processing status
-		// TODO: add support for Completed and Refunded Status
-		if ( 'processing' !== $new_status ) {
-			return;
-		}
-
-		$event = self::ORDER_STATUS_TO_EVENT_MAPPING[ $new_status ];
-
-		// Check WhatsApp Event Config is active
-		$event_config_id_option_name       = implode( '_', array( self::WA_UTILITY_OPTION_PREFIX, strtolower( $event ), 'event_config_id' ) );
-		$event_config_language_option_name = implode( '_', array( self::WA_UTILITY_OPTION_PREFIX, strtolower( $event ), 'language' ) );
-		$event_config_id                   = get_option( $event_config_id_option_name, null );
-		$language_code                     = get_option( $event_config_language_option_name, null );
-		if ( empty( $event_config_id ) || empty( $language_code ) ) {
-			wc_get_logger()->info(
-				sprintf(
-				/* translators: %s $order_id */
-					__( 'Messages Post API call for Order id %1$s skipped due to no active event config', 'facebook-for-woocommerce' ),
-					$order_id,
-				)
-			);
-			return;
-		}
-
-		$order = wc_get_order( $order_id );
-		// Check WhatsApp Consent Checkbox is selected in shipping and billing
-		$billing_consent_value  = $order->get_meta( '_wc_billing/wc_facebook/whatsapp_consent_checkbox' );
-		$shipping_consent_value = $order->get_meta( '_wc_shipping/wc_facebook/whatsapp_consent_checkbox' );
-		$has_whatsapp_consent   = $billing_consent_value && $shipping_consent_value;
-		// Get WhatsApp Phone number from entered Billing and Shipping phone number
-		$billing_phone_number  = $order->get_billing_phone();
-		$shipping_phone_number = $order->get_shipping_phone();
-		$phone_number          = ( isset( $billing_phone_number ) && $billing_consent_value ) ? $billing_phone_number : $shipping_phone_number;
-		// Get Customer first name
-		$first_name = $order->get_billing_first_name();
-		if ( empty( $phone_number ) || ! $has_whatsapp_consent || empty( $event ) || empty( $first_name ) ) {
-			wc_get_logger()->info(
-				sprintf(
-				/* translators: %s $order_id */
-					__( 'Messages Post API call for Order id %1$s skipped due to missing whatsapp consent or Order info', 'facebook-for-woocommerce' ),
-					$order_id,
-				)
-			);
-			return;
-		}
-
-		// Check Access token and WACS is available
-		$bisu_token = get_option( 'wc_facebook_wa_integration_bisu_access_token', null );
-		$wacs_id    = get_option( 'wc_facebook_wa_integration_wacs_id', null );
-		if ( empty( $bisu_token ) || empty( $wacs_id ) ) {
-			wc_get_logger()->info(
-				sprintf(
-				/* translators: %s $order_id */
-					__( 'Messages Post API call for Order id %1$s Failed due to missing access token or wacs info', 'facebook-for-woocommerce' ),
-					$order_id,
-				)
-			);
-			return;
-		}
-		WhatsAppUtilityConnection::post_whatsapp_utility_messages_events_call( $event, $event_config_id, $language_code, $wacs_id, $order_id, $phone_number, $first_name, $bisu_token );
 	}
 }
