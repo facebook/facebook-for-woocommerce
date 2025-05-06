@@ -22,9 +22,11 @@ jQuery( document ).ready( function( $ ) {
                  params.set('view', 'utility_settings');
                  url.search = params.toString();
                  window.location.href = url.toString();
+                 console.log( 'Whatsapp Connect Success', response );
 			} else {
                 var message;
                 const error = response.data;
+                console.log( 'Whatsapp Connect Failure', response );
 
                 switch (error) {
                     case "Incorrect payment setup":

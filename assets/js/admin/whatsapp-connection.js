@@ -39,7 +39,7 @@ jQuery( document ).ready( function( $ ) {
 
             // check if the response is success (i.e. onboarding is completed)
             if ( response.success ) {
-				console.log( 'success', response );
+				console.log( 'Whatsapp Connection is Complete', response );
                 // update the progress for connect whatsapp step
                 $connectInProgress.remove();
                 $connectSuccess.show();
@@ -52,7 +52,7 @@ jQuery( document ).ready( function( $ ) {
                 $('#wc-fb-whatsapp-consent-subcontent').show();
 	            $('#wc-fb-whatsapp-consent-button-wrapper').show();
 			} else {
-                console.log('Failure. Checking again in 1 second:', response, ', retry attempt:', retryCount, 'pollingTimeout', pollingTimeout);
+                console.log('Whatsapp connection is not complete. Checking again in 5 seconds:', response, ', retry attempt:', retryCount, 'pollingTimeout', pollingTimeout);
                 if(retryCount >= pollingTimeout) {
                     console.log('Max retries reached. Aborting.');
                     return;

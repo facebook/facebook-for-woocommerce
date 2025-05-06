@@ -14,13 +14,16 @@ jQuery( document ).ready( function( $ ) {
 			action: 'wc_facebook_whatsapp_fetch_url_info',
 			nonce:  facebook_for_woocommerce_whatsapp_disconnect.nonce
 		}, function ( response ) {
-            console.log(response);
+
             if ( response.success ) {
+                console.log( 'Whatsapp Edit Url Info Fetched Successfully', response );
                 var  business_id = response.data.business_id;
                 var asset_id = response.data.waba_id;
                 const WHATSAPP_MANAGER_URL = `https://business.facebook.com/latest/whatsapp_manager/phone_numbers/?asset_id=${asset_id}&business_id=${business_id}`;
                 window.open(WHATSAPP_MANAGER_URL);
-			}
+			} else {
+                console.log( 'Whatsapp Edit Url Info Fetch Failure', response );
+            }
 		} );
     });
 
@@ -36,9 +39,9 @@ jQuery( document ).ready( function( $ ) {
                 params.delete('view');
                 url.search = params.toString();
                 window.location.href = url.toString();
-                console.log("Success!!!",response);
+                console.log( 'Whatsapp Disconnect Success', response );
 			} else {
-                console.log("Disconnect Failure!!!",response);
+                console.log("Whatsapp Disconnect Failure!!!",response);
             }
 		} );
     });
