@@ -32,18 +32,21 @@ class WhatsAppUtilityConnection {
 
 	/** @var array Mapping of Events to Template Library name */
 	const EVENT_TO_LIBRARY_TEMPLATE_MAPPING = array(
-		'ORDER_PLACED'   => 'order_management_4',
-		'ORDER_SHIPPED'  => 'shipment_confirmation_4',
-		'ORDER_REFUNDED' => 'refund_confirmation_1',
+		'ORDER_PLACED'    => 'order_management_4',
+		'ORDER_FULFILLED' => 'shipment_confirmation_4',
+		'ORDER_REFUNDED'  => 'refund_confirmation_1',
 	);
 
+	/** @var string Default language for Library Template */
+	const DEFAULT_LANGUAGE = 'en';
 
 	/**
 	 * Makes an API call to Template Library API
 	 *
+	 * @param string $event Order Management Event
 	 * @param string $bisu_token the BISU token received in the webhook
 	 */
-	public static function get_template_library_content( $bisu_token ) {
+	public static function get_template_library_content( $event, $bisu_token ) {
 		wc_get_logger()->info(
 			sprintf(
 				__( 'In Template Library Get API call ', 'facebook-for-woocommerce' ),
@@ -51,11 +54,11 @@ class WhatsAppUtilityConnection {
 		);
 		$base_url     = array( self::GRAPH_API_BASE_URL, self::API_VERSION, 'message_template_library' );
 		$base_url     = esc_url( implode( '/', $base_url ) );
-		$library_name = self::EVENT_TO_LIBRARY_TEMPLATE_MAPPING['ORDER_PLACED'];
+		$library_name = self::EVENT_TO_LIBRARY_TEMPLATE_MAPPING[ $event ];
 
 		$params  = array(
 			'name'         => $library_name,
-			'language'     => 'en',
+			'language'     => self::DEFAULT_LANGUAGE,
 			'access_token' => $bisu_token,
 		);
 		$url     = add_query_arg( $params, $base_url );
@@ -207,6 +210,12 @@ class WhatsAppUtilityConnection {
 				'wc_facebook_wa_integration_waba_display_name',
 				'wc_facebook_whatsapp_consent_collection_setting_status',
 				'wc_facebook_wa_integration_config_id',
+				'wc_facebook_wa_order_placed_event_config_id',
+				'wc_facebook_wa_order_placed_language',
+				'wc_facebook_wa_order_fulfilled_event_config_id',
+				'wc_facebook_wa_order_fulfilled_language',
+				'wc_facebook_wa_order_refunded_event_config_id',
+				'wc_facebook_wa_order_refunded_language',
 			);
 
 			self::wc_facebook_whatsapp_settings_delete( $wa_settings );
@@ -231,39 +240,126 @@ class WhatsAppUtilityConnection {
 	 * Makes an API call to Whatsapp Utility Event Configs Post API to create or update Event Configs
 	 *
 	 * @param string $event Order Management Event
+	 * @param string $integration_config_id Integration Config Id
 	 * @param string $language Language Code
 	 * @param string $status ACTIVE or INACTIVE
 	 * @param string $bisu_token the BISU token received in the webhook
 	 */
-	public static function post_whatsapp_utility_messages_event_configs_call( $event, $language, $status, $bisu_token ) {
-		// TODO: Update Harcoded Integration id to Option value
-		$integration_id = 1486573012315320;
-		$base_url       = array( self::GRAPH_API_BASE_URL, self::API_VERSION, $integration_id, 'event_configs' );
-		$base_url       = esc_url( implode( '/', $base_url ) );
-		// Order id is provided as the third positional parameter {{3}} for Order Confirmation, Order Shipped library templates and it is the fourth positional parameter {{4}} for Order Refunded template.
-		// Encoding the Parameter brackets as %7B so that they get encoded properly in the url
-		$param_str            = 'ORDER_REFUNDED' === $event ? '%7B%7B4%7B%7B' : '%7B%7B3%7B%7B';
+	public static function post_whatsapp_utility_messages_event_configs_call( $event, $integration_config_id, $language, $status, $bisu_token ) {
+		$base_url             = array( self::GRAPH_API_BASE_URL, self::API_VERSION, $integration_config_id, 'event_configs' );
+		$base_url             = esc_url( implode( '/', $base_url ) );
 		$account_url          = get_permalink( get_option( 'woocommerce_myaccount_page_id' ) );
 		$view_orders_endpoint = get_option( 'woocommerce_myaccount_view_order_endpoint' );
 		$view_orders_base_url = esc_url( $account_url . $view_orders_endpoint );
-		$view_order_url       = esc_url( implode( '/', array( $view_orders_base_url, $param_str ) ) );
-		// Creating Example view orders url with order id: 12345
-		$view_order_example_url = esc_url( implode( '/', array( $view_orders_base_url, '12345' ) ) );
-
-		$query_params    = array(
+		// Order Refunded template has no CTA
+		$library_template_button_inputs = 'ORDER_REFUNDED' === $event ? array() : array(
+			array(
+				'type' => 'URL',
+				'url'  => array(
+					// View Url is dynamic and has order_id as suffix
+					'base_url'           => "$view_orders_base_url/{{1}}",
+					// Example view orders url with order id: 1234
+					'url_suffix_example' => "$view_orders_base_url/1234",
+				),
+			),
+		);
+		$query_params                   = array(
 			'event'                          => $event,
 			'language'                       => $language,
 			'status'                         => $status,
 			'library_template_name'          => self::EVENT_TO_LIBRARY_TEMPLATE_MAPPING[ $event ],
-			'library_template_button_inputs' => "[{'type': 'URL', 'url': {'base_url': '" . $view_order_url . "', 'url_suffix_example': '" . $view_order_example_url . "'}}]",
+			'library_template_button_inputs' => $library_template_button_inputs,
 			'access_token'                   => $bisu_token,
 		);
-		$base_url        = add_query_arg( $query_params, $base_url );
-		$options         = array(
+		$base_url                       = add_query_arg( $query_params, $base_url );
+		$options                        = array(
 			'headers' => array(
 				'Authorization' => $bisu_token,
 			),
 			'body'    => array(),
+			'timeout' => 300, // 5 minutes
+		);
+		$response                       = wp_remote_post( $base_url, $options );
+		$status_code                    = wp_remote_retrieve_response_code( $response );
+		$data                           = explode( "\n", wp_remote_retrieve_body( $response ) );
+		$response_object                = json_decode( $data[0] );
+		$is_error                       = is_wp_error( $response );
+		if ( is_wp_error( $response ) || 200 !== $status_code ) {
+			$error_message = $response_object->error->error_user_title ?? $response_object->error->message ?? 'Something went wrong. Please try again later!';
+			wc_get_logger()->info(
+				sprintf(
+					/* translators: %s $error_message %s status code %s is_wp_error value*/
+					__( 'Event Configs Post API call Failed with Error: %1$s, Status code: %2$d, Is Wp Error: %3$s', 'facebook-for-woocommerce' ),
+					$error_message,
+					$status_code,
+					(string) $is_error,
+				)
+			);
+			wp_send_json_error( $response, 'Event Configs Post API call Failed' );
+		} else {
+			$event_config_id_option_name       = implode( '_', array( self::WA_UTILITY_OPTION_PREFIX, strtolower( $event ), 'event_config_id' ) );
+			$event_config_language_option_name = implode( '_', array( self::WA_UTILITY_OPTION_PREFIX, strtolower( $event ), 'language' ) );
+			$event_config_id                   = $response_object->id;
+			$event_status                      = $response_object->status;
+			$language                          = $response_object->language;
+			wc_get_logger()->info(
+				sprintf(
+					/* translators: %s $option_name  %s $event_config_id %s $event_status */
+					__( 'Event Configs Post API call Succeeded. API Response Event Config id: %1$s, Event Status: %2$s, Language: %3$s', 'facebook-for-woocommerce' ),
+					$event_config_id,
+					$event_status,
+					$language,
+				)
+			);
+			if ( 'ACTIVE' === $event_status ) {
+				update_option( $event_config_id_option_name, $event_config_id );
+				update_option( $event_config_language_option_name, $language );
+			} else {
+				$settings = array(
+					$event_config_id_option_name,
+					$event_config_language_option_name,
+				);
+				self::wc_facebook_whatsapp_settings_delete(
+					$settings
+				);
+			}
+			wp_send_json_success( 'Event Configs Post API call Completed' );
+		}
+	}
+
+
+	/**
+	 * Makes an API call to Event Processor: Message Events Post API to send whatsapp utility messages
+	 * TODO: Update API Endpoint from Messages to Message Events
+	 *
+	 * @param string $event Order Managerment event
+	 * @param string $event_config_id Event Config Id
+	 * @param string $language_code Language code
+	 * @param string $wacs_id Whatsapp Phone Number id
+	 * @param string $order_id Order id
+	 * @param string $phone_number Customer phone number
+	 * @param string $first_name Customer first name
+	 * @param string $refund_value Amount refunded to the Customer
+	 * @param string $bisu_token the BISU token received in the webhook
+	 */
+	public static function post_whatsapp_utility_messages_events_call( $event, $event_config_id, $language_code, $wacs_id, $order_id, $phone_number, $first_name, $refund_value, $bisu_token ) {
+		$base_url        = array( self::GRAPH_API_BASE_URL, self::API_VERSION, $wacs_id, "messages?access_token=$bisu_token" );
+		$base_url        = esc_url( implode( '/', $base_url ) );
+		$name            = self::EVENT_TO_LIBRARY_TEMPLATE_MAPPING[ $event ];
+		$components      = self::get_components_for_event( $event, $order_id, $first_name, $refund_value );
+		$options         = array(
+			'body' => array(
+				'messaging_product' => 'whatsapp',
+				'to'                => $phone_number,
+				'template'          => array(
+					'name'       => $name,
+					'language'   => array(
+						'code' => $language_code,
+					),
+					'components' => $components,
+				),
+				'type'              => 'template',
+			),
 		);
 		$response        = wp_remote_post( $base_url, $options );
 		$status_code     = wp_remote_retrieve_response_code( $response );
@@ -273,31 +369,89 @@ class WhatsAppUtilityConnection {
 			$error_message = $response_object->error->error_user_title ?? $response_object->error->message ?? 'Something went wrong. Please try again later!';
 			wc_get_logger()->info(
 				sprintf(
-					/* translators: %s $error_message */
-					__( 'Event Configs Post API call Failed %1$s ', 'facebook-for-woocommerce' ),
+				/* translators: %s $order_id %s $error_message */
+					__( 'Messages Post API call for Order id %1$s Failed %2$s ', 'facebook-for-woocommerce' ),
+					$order_id,
 					$error_message,
 				)
 			);
-			wp_send_json_error( $response, 'Event Configs Post API call Failed' );
 		} else {
-			$option_name     = implode( '_', array( self::WA_UTILITY_OPTION_PREFIX, strtolower( $event ), 'event_config_id' ) );
-			$event_config_id = $response_object->id;
-			$event_status    = $response_object->status;
 			wc_get_logger()->info(
 				sprintf(
-					/* translators: %s $option_name  %s $event_config_id %s $event_status */
-					__( 'Event Configs Post API call Succeeded. Updating Option name: %1$s, Event Config id: %2$s, Event Status: %3$s', 'facebook-for-woocommerce' ),
-					$option_name,
-					$event_config_id,
-					$event_status,
+				/* translators: %s $order_id */
+					__( 'Messages Post API call for Order id %1$s Succeeded.', 'facebook-for-woocommerce' ),
+					$order_id
 				)
 			);
-			if ( 'ACTIVE' === $event_status ) {
-				update_option( $option_name, $event_config_id );
-			} else {
-				update_option( $option_name, null );
-			}
-			wp_send_json_success( 'Event Configs Post API call Completed' );
+		}
+	}
+
+
+	/**
+	 * Gets Component Objects for Order Management Events
+	 *
+	 * @param string $event Order Management event
+	 * @param string $order_id Order id
+	 * @param string $first_name Customer first name
+	 * @param string $refund_value Amount refunded to the Customer
+	 */
+	public static function get_components_for_event( $event, $order_id, $first_name, $refund_value ) {
+		if ( 'ORDER_REFUNDED' === $event ) {
+			return array(
+				array(
+					'type'       => 'HEADER',
+					'parameters' => array(
+						array(
+							'type' => 'text',
+							'text' => $refund_value,
+						),
+					),
+				),
+				array(
+					'type'       => 'BODY',
+					'parameters' => array(
+						array(
+							'type' => 'text',
+							'text' => $first_name,
+						),
+						array(
+							'type' => 'text',
+							'text' => $refund_value,
+						),
+						array(
+							'type' => 'text',
+							'text' => "#$order_id",
+						),
+					),
+				),
+			);
+		} else {
+			return array(
+				array(
+					'type'       => 'BODY',
+					'parameters' => array(
+						array(
+							'type' => 'text',
+							'text' => $first_name,
+						),
+						array(
+							'type' => 'text',
+							'text' => "#$order_id",
+						),
+					),
+				),
+				array(
+					'type'       => 'BUTTON',
+					'sub_type'   => 'url',
+					'index'      => 0,
+					'parameters' => array(
+						array(
+							'type' => 'text',
+							'text' => "$order_id",
+						),
+					),
+				),
+			);
 		}
 	}
 }

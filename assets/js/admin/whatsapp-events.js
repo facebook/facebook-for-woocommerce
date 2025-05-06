@@ -20,16 +20,16 @@ jQuery( document ).ready( function( $ ) {
         orderPlacedInactiveStatus.show();
     }
 
-    // Set Event Status for Order Shipped
-    var orderShippedActiveStatus = $('#order-shipped-active-status');
-    var orderShippedInactiveStatus = $('#order-shipped-inactive-status');
-    if(facebook_for_woocommerce_whatsapp_events.order_shipped_enabled){
-        orderShippedInactiveStatus.hide();
-        orderShippedActiveStatus.show();
+    // Set Event Status for Order FulFilled
+    var orderFulfilledActiveStatus = $('#order-fulfilled-active-status');
+    var orderFulfilledInactiveStatus = $('#order-fulfilled-inactive-status');
+    if(facebook_for_woocommerce_whatsapp_events.order_fulfilled_enabled){
+        orderFulfilledInactiveStatus.hide();
+        orderFulfilledActiveStatus.show();
     }
     else {
-        orderShippedActiveStatus.hide();
-        orderShippedInactiveStatus.show();
+        orderFulfilledActiveStatus.hide();
+        orderFulfilledInactiveStatus.show();
     }
 
     // Set Event Status for Order Refunded
@@ -44,11 +44,16 @@ jQuery( document ).ready( function( $ ) {
         orderRefundedInactiveStatus.show();
     }
 
-    // update current view from utility settings to manage event when order confirmation button is clicked.
-    $('#woocommerce-whatsapp-manage-order-confirmation').click(function (event) {
+    var eventConfiglanguage = getEventLanguage(facebook_for_woocommerce_whatsapp_events.event);
+    $("#manage-event-language").val(eventConfiglanguage);
+
+    $('#woocommerce-whatsapp-manage-order-placed, #woocommerce-whatsapp-manage-order-fulfilled, #woocommerce-whatsapp-manage-order-refunded').click(function (event) {
+        var clickedButtonId = $(event.target).attr("id");
+        let view=clickedButtonId.replace("woocommerce-whatsapp-", "");
+        view = view.replaceAll("-", "_");
         let url = new URL(window.location.href);
         let params = new URLSearchParams(url.search);
-        params.set('view', 'manage_event');
+        params.set('view', view);
         url.search = params.toString();
         window.location.href = url.toString();
     });
@@ -57,7 +62,8 @@ jQuery( document ).ready( function( $ ) {
     $("#library-template-content").load(facebook_for_woocommerce_whatsapp_events.ajax_url, function () {
         $.post(facebook_for_woocommerce_whatsapp_events.ajax_url, {
             action: 'wc_facebook_whatsapp_fetch_library_template_info',
-            nonce: facebook_for_woocommerce_whatsapp_events.nonce
+            nonce: facebook_for_woocommerce_whatsapp_events.nonce,
+            event: facebook_for_woocommerce_whatsapp_events.event,
         }, function (response) {
             if (response.success) {
                 const parsedData = JSON.parse(response.data);
@@ -65,8 +71,17 @@ jQuery( document ).ready( function( $ ) {
                 // Parse template strings as HTML and extract text content to sanitize text
                 const header = $.parseHTML(apiResponseData.header)[0].textContent;
                 const body = $.parseHTML(apiResponseData.body)[0].textContent;
-                const button = $.parseHTML(apiResponseData.buttons[0].text)[0].textContent;
-                $('#library-template-content').html(`
+                if (facebook_for_woocommerce_whatsapp_events.event === "ORDER_REFUNDED") {
+                    $('#library-template-content').html(`
+                        <h3>Header</h3>
+                        <p>${header}</p>
+                        <h3>Body</h3>
+                        <p>${body}</p>
+                    `).show();
+                }
+                else {
+                    const button = $.parseHTML(apiResponseData.buttons[0].text)[0].textContent;
+                    $('#library-template-content').html(`
                     <h3>Header</h3>
                     <p>${header}</p>
                     <h3>Body</h3>
@@ -74,6 +89,7 @@ jQuery( document ).ready( function( $ ) {
                     <h3>Call to action</h3>
                     <p>${button}</p>
                 `).show();
+                }
             }
         });
     });
@@ -85,7 +101,7 @@ jQuery( document ).ready( function( $ ) {
         $.post(facebook_for_woocommerce_whatsapp_events.ajax_url, {
             action: 'wc_facebook_whatsapp_upsert_event_config',
             nonce: facebook_for_woocommerce_whatsapp_events.nonce,
-            event: 'ORDER_PLACED',
+            event: facebook_for_woocommerce_whatsapp_events.event,
             language: languageValue,
             status: statusValue
         }, function (response) {
@@ -97,4 +113,17 @@ jQuery( document ).ready( function( $ ) {
             window.location.href = url.toString();
         });
     });
+
+    function getEventLanguage(event) {
+        switch (event) {
+            case "ORDER_PLACED":
+                return facebook_for_woocommerce_whatsapp_events.order_placed_language;
+            case "ORDER_FULFILLED":
+                return facebook_for_woocommerce_whatsapp_events.order_fulfilled_language;
+            case "ORDER_REFUNDED":
+                return facebook_for_woocommerce_whatsapp_events.order_refunded_language;
+            default:
+                return null;
+        }
+    }
 });
