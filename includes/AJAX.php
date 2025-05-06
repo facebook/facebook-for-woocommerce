@@ -364,7 +364,7 @@ class AJAX {
 		if ( empty( $integration_config_id ) || empty( $bisu_token ) || empty( $waba_id ) ) {
 			wc_get_logger()->info(
 				sprintf(
-					__( 'Missing Integration COnfig ID, BISU token, WABA ID while Diconnecting Whatsapp From Woocommerce', 'facebook-for-woocommerce' )
+					__( 'Missing Integration Config ID, BISU token, WABA ID while Diconnecting Whatsapp From Woocommerce', 'facebook-for-woocommerce' )
 				)
 			);
 			wp_send_json_error( 'Missing integration_config_id or bisu_token or waba_id for Disconnect API call' );
