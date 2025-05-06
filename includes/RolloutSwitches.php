@@ -34,7 +34,7 @@ class RolloutSwitches {
 	 */
 	private $rollout_switches = array();
 
-	public function __construct( \WC_Facebookcommerce $plugin  ) {
+	public function __construct( \WC_Facebookcommerce $plugin ) {
 		$this->plugin = $plugin;
 		add_action( Heartbeat::HOURLY, array( $this, 'init' ) );
 	}
@@ -44,9 +44,9 @@ class RolloutSwitches {
 		if ( empty( $external_business_id ) ) {
 			return;
 		}
-		
+
 		$swiches = $this->plugin->get_api()->get_rollout_switches( $external_business_id );
-		$data = $swiches->get_data();
+		$data    = $swiches->get_data();
 		foreach ( $data as $switch ) {
 			if ( ! isset( $switch['switch'] ) || ! $this->is_switch_active( $switch['switch'] ) ) {
 				continue;
