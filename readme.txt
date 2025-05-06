@@ -47,4 +47,4 @@ When opening a bug on GitHub, please give us as many details as possible.
 * Tweak - Remove unused condition field code for variable products by @devbodaghe in #3114
 * Fix - Cursor style not resetting after attribute removal by @devbodaghe in #3113
 
-[See changelog for all versions](https://raw.githubusercontent.com/facebook/facebook-for-woocommerce/refs/heads/main/changelog.txt).
+[See changelog for all versions](https://raw.githubusercontent.com/facebook/facebook-for-woocommerce/refs/heads/releases/changelog.txt).
