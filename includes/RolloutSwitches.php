@@ -34,17 +34,19 @@ class RolloutSwitches {
 	 */
 	private $rollout_switches = array();
 
-	public function __construct( \WC_Facebookcommerce $plugin  ) {
+	public function __construct( \WC_Facebookcommerce $plugin ) {
 		$this->plugin = $plugin;
 		add_action( Heartbeat::HOURLY, array( $this, 'init' ) );
 	}
 
 	public function init() {
-		$swiches = $this->plugin->get_api()->get_rollout_switches(
-			$this->plugin->get_connection_handler()->get_external_business_id()
-		);
+		$external_business_id = $this->plugin->get_connection_handler()->get_external_business_id();
+		if ( empty( $external_business_id ) ) {
+			return;
+		}
 
-		$data = $swiches->get_data();
+		$swiches = $this->plugin->get_api()->get_rollout_switches( $external_business_id );
+		$data    = $swiches->get_data();
 		foreach ( $data as $switch ) {
 			if ( ! isset( $switch['switch'] ) || ! $this->is_switch_active( $switch['switch'] ) ) {
 				continue;

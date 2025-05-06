@@ -5,7 +5,7 @@ use WooCommerce\Facebook\API;
 use WooCommerce\Facebook\Framework\Api\Exception as ApiException;
 use WooCommerce\Facebook\RolloutSwitches;
 
-class RolloutSwitchesTest extends \WooCommerce\Facebook\Tests\Unit\AbstractWPUnitTestWithSafeFiltering {
+class RolloutSwitchesTest extends \WooCommerce\Facebook\Tests\AbstractWPUnitTestWithSafeFiltering {
 
 	/**
 	 * Facebook Graph API endpoint.
