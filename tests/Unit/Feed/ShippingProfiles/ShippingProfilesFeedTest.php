@@ -309,6 +309,36 @@ class ShippingProfilesFeedTest extends FeedDataTestBase {
 		$this->asserttrue($every_country_data_applies_to_entire_country);
 	}
 
+	public function testEntireWorld(): void {
+		$zone = new WC_Shipping_Zone();
+		$zone->save();
+		self::create_and_save_method_instance($zone, 'free_shipping', array());
+		$result = ShippingProfilesFeed::get_shipping_profiles_data();
+		$shipping_zone_data = $result[0]['shipping_zones'];
+
+		$expected_shipping_zones = array_map(
+			function ( $country_code ) {
+				return [
+					'country'                   => $country_code,
+					'states'                    => [],
+					'applies_to_entire_country' => true,
+				];
+			},
+			array_keys( WC()->countries->get_countries() )
+		);
+
+		$this->assertEqualsCanonicalizing( $expected_shipping_zones, $shipping_zone_data );
+
+		// Prevent too many asserts by just making sure every one is true.
+		$every_country_data_applies_to_entire_country = true;
+		foreach($shipping_zone_data as $country_data) {
+			if (!$country_data['applies_to_entire_country']) {
+				$every_country_data_applies_to_entire_country = false;
+			}
+		}
+		$this->asserttrue($every_country_data_applies_to_entire_country);
+	}
+
 	// Dont Sync if Local Pickup
 	private static function create_default_shipping_zone(): WC_Shipping_Zone {
 		$zone = new WC_Shipping_Zone();
