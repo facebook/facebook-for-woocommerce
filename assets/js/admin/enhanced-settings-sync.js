@@ -73,4 +73,37 @@ jQuery(document).ready(function($) {
             button.prop('disabled', false);
         });
     });
+
+	/**
+	 * Handle the sync shipping profiles button click event
+	 *
+	 * @since 3.5.0
+	 *
+	 * @param {object} event
+	 */
+	$('#wc-facebook-enhanced-settings-sync-shipping-profiles').click(function(event) {
+		event.preventDefault();
+		var button = $(this);
+
+		button.html('Syncing...');
+		button.prop('disabled', true);
+
+		var data = {
+			action: "wc_facebook_sync_shipping_profiles",
+			nonce: wc_facebook_enhanced_settings_sync.sync_shipping_profiles_nonce
+		};
+
+		$.post(wc_facebook_enhanced_settings_sync.ajax_url, data, function(response) {
+			if (response.success) {
+				button.html('Sync completed');
+				button.prop('disabled', false);
+			} else {
+				button.html('Sync failed');
+				button.prop('disabled', false);
+			}
+		}).fail(function() {
+			button.html('Sync failed');
+			button.prop('disabled', false);
+		});
+	});
 });
