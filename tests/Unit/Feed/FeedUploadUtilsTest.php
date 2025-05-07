@@ -623,6 +623,7 @@ class FeedUploadUtilsTest extends FeedDataTestBase {
 			(object) ['term_taxonomy_id' => 1, 'name' => 'Category 1', 'parent' => 0],
 			(object) ['term_taxonomy_id' => 2, 'name' => 'Category 2', 'parent' => 0],
 			(object) ['term_taxonomy_id' => 3, 'name' => 'Subcategory 1', 'parent' => 1],
+			(object) ['term_taxonomy_id' => 4, 'name' => 'Subcategory 2', 'parent' => 1],
 		];
 
 		// Use reflection to access the private method
@@ -643,7 +644,12 @@ class FeedUploadUtilsTest extends FeedDataTestBase {
 						'title' => 'Subcategory 1',
 						'resourceType' => 'collection',
 						'retailerID' => 3,
-					]
+					],
+					[
+						'title' => 'Subcategory 2',
+						'resourceType' => 'collection',
+						'retailerID' => 4,
+					],
 				]
 			],
 			[

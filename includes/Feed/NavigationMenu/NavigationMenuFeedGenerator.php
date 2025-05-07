@@ -32,9 +32,11 @@ class NavigationMenuFeedGenerator extends FeedGenerator {
 	 * @since 3.5.0
 	 */
 	protected function get_items_for_batch( int $batch_number, array $args ): array {
+		// Internal category query APIs don't provide batching, so we just return everything on the first batch
 		if ( 1 === $batch_number ) {
 			return FeedUploadUtils::get_navigation_menu_data();
 		}
+		// Return empty array after the first batch to trigger the next action
 		return [];
 	}
 }

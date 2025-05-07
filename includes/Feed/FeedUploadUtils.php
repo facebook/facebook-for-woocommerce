@@ -436,12 +436,16 @@ class FeedUploadUtils {
 		}
 	}
 
-	private static function build_category_tree( $categories, $parent_id = 0 ): array {
-		$branch = array();
+	private static function build_category_tree( array $categories, int $parent_id = 0, array &$memo = [] ): array {
+		if ( isset( $memo[ $parent_id ] ) ) {
+			return $memo[ $parent_id ];
+		}
+
+		$branch = [];
 
 		foreach ( $categories as $category ) {
 			if ( $category->parent === $parent_id ) {
-				$children      = self::build_category_tree( $categories, $category->term_taxonomy_id );
+				$children      = self::build_category_tree( $categories, $category->term_taxonomy_id, $memo );
 				$category_data = array(
 					'title'        => $category->name,
 					'resourceType' => 'collection',
@@ -454,6 +458,7 @@ class FeedUploadUtils {
 			}
 		}
 
+		$memo[ $parent_id ] = $branch;
 		return $branch;
 	}
 }
