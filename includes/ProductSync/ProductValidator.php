@@ -338,7 +338,6 @@ class ProductValidator {
 		}
 	}
 
-
 	/**
 	 * Check if variation product has proper settings.
 	 *
