@@ -31,7 +31,7 @@ class Whatsapp_Utility extends Abstract_Settings_Screen {
 	 * Whatsapp Utility constructor.
 	 */
 	public function __construct() {
-		add_action( 'init', array( $this, 'initHook' ) );
+		$this->initHook();
 
 		add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_assets' ) );
 	}

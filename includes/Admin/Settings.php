@@ -51,15 +51,22 @@ class Settings {
 	public function __construct( \WC_Facebookcommerce $plugin ) {
 
 		$this->plugin = $plugin;
-		
-
-		$this->screens = $this->build_menu_item_array( $is_connected );
-		add_action( 'admin_init', array( $this, 'build_menu_item_array' ) );
+		$this->screens = $this->build_menu_item_array();
+		add_action( 'admin_menu', array( $this, 'build_menu_item_array' ) );
+		add_action( 'admin_init', array( $this, 'add_extra_screens' ) );
 		add_action( 'admin_menu', array( $this, 'add_menu_item' ) );
 		add_action( 'wp_loaded', array( $this, 'save' ) );
 		add_filter( 'parent_file', array( $this, 'set_parent_and_submenu_file' ) );
 
 		add_action( 'all_admin_notices', array( $this, 'add_tabs_to_product_sets_taxonomy' ) );
+	}
+	
+	public function add_extra_screens(): void {
+		$rollout_switches = $this->plugin->get_rollout_switches();
+		$is_whatsapp_utility_messaging_enabled = $rollout_switches->is_switch_enabled(RolloutSwitches::WHATSAPP_UTILITY_MESSAGING);
+		if ( $is_whatsapp_utility_messaging_enabled === true ) {
+			$this->screens[ Settings_Screens\Whatsapp_Utility::ID ] = new Settings_Screens\Whatsapp_Utility();
+		}
 	}
 
 	/**
@@ -81,10 +88,6 @@ class Settings {
 			Settings_Screens\Product_Sets::ID => new Settings_Screens\Product_Sets(),
 		);
 
-		$rollout_switches = $this->plugin->get_rollout_switches();
-		$is_whatsapp_utility_messaging_enabled = $rollout_switches->is_switch_enabled(RolloutSwitches::WHATSAPP_UTILITY_MESSAGING);
-		// print_r($is_whatsapp_utility_messaging_enabled);die;
-
 		wc_get_logger()->info(
 			sprintf(
 					/* translators: %s $response */
@@ -92,11 +95,6 @@ class Settings {
 				json_encode( $is_whatsapp_utility_messaging_enabled ),
 			)
 		);
-
-		if ( $is_whatsapp_utility_messaging_enabled === true ) {
-			$whatsapp_utility_screens = [ Settings_Screens\Whatsapp_Utility::ID => new Settings_Screens\Whatsapp_Utility() ];
-			$last                     = array_merge( $last, $whatsapp_utility_screens );
-		}
 
 		return array_merge( array_merge( $first, $screens ), $last );
 	}
@@ -107,7 +105,6 @@ class Settings {
 	 * @since 2.0.0
 	 */
 	public function add_menu_item() {
-
 		$root_menu_item = $this->root_menu_item();
 
 		add_submenu_page(
@@ -385,7 +382,7 @@ class Settings {
 	 * @since 3.3.0
 	 */
 	public function add_tabs_to_product_sets_taxonomy() {
-
+		
 		// Only load this on the edit-tags.php page
 		$screen                  = get_current_screen();
 		$is_taxonomy_list_page   = 'edit-tags' === $screen->base;
