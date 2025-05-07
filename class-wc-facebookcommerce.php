@@ -273,7 +273,6 @@ class WC_Facebookcommerce extends WooCommerce\Facebook\Framework\Plugin {
 			},
 			0
 		);
-		add_action( 'admin_init', [ $this->rollout_switches, 'init' ] );
 	}
 
 	/**
