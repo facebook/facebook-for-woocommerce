@@ -10,15 +10,19 @@
 jQuery( document ).ready( function( $ ) {
   	var $billingStepInProgress = $('#wc-fb-whatsapp-billing-inprogress');
   	var $billingStepNotStarted = $('#wc-fb-whatsapp-billing-notstarted');
+	var $billingStepSuccess = $('#wc-fb-whatsapp-billing-success');
 	var $billingSubcontent = $('#wc-fb-whatsapp-billing-subcontent');
 	var $billingButtonWrapper = $('#wc-fb-whatsapp-billing-button-wrapper');
-	if (facebook_for_woocommerce_whatsapp_consent.consent_collection_enabled) {
-		$billingStepInProgress.show();
+	var $whatsappOnboardingDoneButton = $('#whatsapp-onboarding-done-button');
+	if (facebook_for_woocommerce_whatsapp_billing.consent_collection_enabled) {
+		facebook_for_woocommerce_whatsapp_billing.is_payment_setup ? $billingStepSuccess.show() : $billingStepInProgress.show();
+		$whatsappOnboardingDoneButton.show();
 		$billingStepNotStarted.hide();
 	} else {
 		$billingStepInProgress.hide();
 		$billingStepNotStarted.show();
 		$billingSubcontent.hide();
+		$whatsappOnboardingDoneButton.hide();
 		$billingButtonWrapper.hide()
 	}
 
