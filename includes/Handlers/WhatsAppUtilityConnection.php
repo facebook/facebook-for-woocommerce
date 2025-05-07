@@ -339,14 +339,15 @@ class WhatsAppUtilityConnection {
 	 * @param string $order_id Order id
 	 * @param string $phone_number Customer phone number
 	 * @param string $first_name Customer first name
-	 * @param string $refund_value Amount refunded to the Customer
+	 * @param int    $refund_value Amount refunded to the Customer
+	 * @param string $currency Currency code
 	 * @param string $bisu_token the BISU token received in the webhook
 	 */
-	public static function post_whatsapp_utility_messages_events_call( $event, $event_config_id, $language_code, $wacs_id, $order_id, $phone_number, $first_name, $refund_value, $bisu_token ) {
+	public static function post_whatsapp_utility_messages_events_call( $event, $event_config_id, $language_code, $wacs_id, $order_id, $phone_number, $first_name, $refund_value, $currency, $bisu_token ) {
 		$base_url        = array( self::GRAPH_API_BASE_URL, self::API_VERSION, $wacs_id, "messages?access_token=$bisu_token" );
 		$base_url        = esc_url( implode( '/', $base_url ) );
 		$name            = self::EVENT_TO_LIBRARY_TEMPLATE_MAPPING[ $event ];
-		$components      = self::get_components_for_event( $event, $order_id, $first_name, $refund_value );
+		$components      = self::get_components_for_event( $event, $order_id, $first_name, $refund_value, $currency );
 		$options         = array(
 			'body' => array(
 				'messaging_product' => 'whatsapp',
@@ -394,16 +395,21 @@ class WhatsAppUtilityConnection {
 	 * @param string $order_id Order id
 	 * @param string $first_name Customer first name
 	 * @param string $refund_value Amount refunded to the Customer
+	 * @param string $currency Currency code
 	 */
-	public static function get_components_for_event( $event, $order_id, $first_name, $refund_value ) {
+	public static function get_components_for_event( $event, $order_id, $first_name, $refund_value, $currency ) {
 		if ( 'ORDER_REFUNDED' === $event ) {
 			return array(
 				array(
 					'type'       => 'HEADER',
 					'parameters' => array(
 						array(
-							'type' => 'text',
-							'text' => $refund_value,
+							'type'     => 'currency',
+							'currency' => array(
+								'fallback_value' => 'VALUE',
+								'code'           => $currency,
+								'amount_1000'    => $refund_value,
+							),
 						),
 					),
 				),
@@ -415,8 +421,12 @@ class WhatsAppUtilityConnection {
 							'text' => $first_name,
 						),
 						array(
-							'type' => 'text',
-							'text' => $refund_value,
+							'type'     => 'currency',
+							'currency' => array(
+								'fallback_value' => 'VALUE',
+								'code'           => $currency,
+								'amount_1000'    => $refund_value,
+							),
 						),
 						array(
 							'type' => 'text',
