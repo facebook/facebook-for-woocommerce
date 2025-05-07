@@ -45,7 +45,6 @@ class ProductAttributeMapper {
 
 	/** @var array Extended Facebook fields based on Meta commerce platform catalog fields */
 	private static $extended_facebook_fields = array(
-		'adult' => array('adult', 'adult_product', 'is_adult'),
 		'availability' => array('availability', 'stock_status'),
 		'description' => array('description', 'product_description'),
 		'title' => array('title', 'product_name'),
