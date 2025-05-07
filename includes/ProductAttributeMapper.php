@@ -38,6 +38,9 @@ class ProductAttributeMapper {
 		'brand' => array('brand', 'manufacturer'),
 		'condition' => array('condition', 'state'),
 		'mpn' => array('mpn', 'manufacturer_part_number'),
+		'gtin' => array('gtin', 'upc', 'ean', 'jan', 'isbn'),
+		'google_product_category' => array('google_product_category', 'product_category', 'category'),
+		'fb_product_category' => array('fb_product_category', 'facebook_product_category', 'fb_category'),
 	);
 
 	/** @var array Extended Facebook fields based on Meta commerce platform catalog fields */
@@ -48,8 +51,21 @@ class ProductAttributeMapper {
 		'title' => array('title', 'product_name'),
 		'price' => array('price', 'regular_price'),
 		'sale_price' => array('sale_price', 'discount_price', 'offer_price'),
+		'sale_price_effective_date' => array('sale_price_effective_date', 'sale_dates'),
 		'inventory' => array('inventory', 'stock', 'quantity'),
+		'quantity_to_sell_on_fb' => array('quantity_to_sell_on_fb', 'fb_quantity'),
 		'url' => array('url', 'product_url', 'link'),
+		'image_link' => array('image_link', 'image', 'featured_image'),
+		'additional_image_link' => array('additional_image_link', 'additional_images', 'gallery'),
+		'item_group_id' => array('item_group_id', 'product_group', 'variant_group'),
+		'shipping_weight' => array('shipping_weight', 'weight'),
+		'shipping' => array('shipping', 'shipping_info'),
+		'tax' => array('tax', 'tax_info'),
+		'custom_label_0' => array('custom_label_0', 'label0'),
+		'custom_label_1' => array('custom_label_1', 'label1'),
+		'custom_label_2' => array('custom_label_2', 'label2'),
+		'custom_label_3' => array('custom_label_3', 'label3'),
+		'custom_label_4' => array('custom_label_4', 'label4'),
 	);
 
 	/** @var array Maps WooCommerce attribute naming variations to standardized Meta field names */
