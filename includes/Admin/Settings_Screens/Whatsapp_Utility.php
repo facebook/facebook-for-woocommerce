@@ -107,6 +107,7 @@ class Whatsapp_Utility extends Abstract_Settings_Screen {
 				),
 			)
 		);
+		$is_payment_setup = (bool) get_option( 'wc_facebook_wa_integration_is_payment_setup', null );
 		wp_enqueue_script(
 			'facebook-for-woocommerce-whatsapp-billing',
 			facebook_for_woocommerce()->get_asset_build_dir_url() . '/admin/whatsapp-billing.js',
@@ -120,6 +121,7 @@ class Whatsapp_Utility extends Abstract_Settings_Screen {
 				'ajax_url'                   => admin_url( 'admin-ajax.php' ),
 				'nonce'                      => wp_create_nonce( 'facebook-for-wc-whatsapp-billing-nonce' ),
 				'consent_collection_enabled' => $consent_collection_enabled,
+				'is_payment_setup'           => $is_payment_setup,
 				'i18n'                       => array(
 					'result' => true,
 				),
@@ -301,6 +303,7 @@ class Whatsapp_Utility extends Abstract_Settings_Screen {
 			<div class="card-content-icon">
 				<div id="wc-fb-whatsapp-billing-notstarted" class="custom-dashicon-circle fbwa-hidden-element"></div>
 				<div id="wc-fb-whatsapp-billing-inprogress" class="custom-dashicon-halfcircle fbwa-hidden-element"></div>
+				<div id="wc-fb-whatsapp-billing-success" class="custom-dashicon-check fbwa-hidden-element"></div>
 				<div class="card-content">
 					<h2><?php esc_html_e( 'Add a payment method', 'facebook-for-woocommerce' ); ?></h2>
 					<div id="wc-fb-whatsapp-billing-subcontent">
@@ -327,8 +330,8 @@ class Whatsapp_Utility extends Abstract_Settings_Screen {
 			<div id="payment-method-error-notice"></div>
 		</div>
 		<div class="divider"></div>
-		<div class="card-item">
-			<div class="whatsapp-onboarding-button">
+		<div id="whatsapp-onboarding-done-button" class="card-item">
+			<div class="whatsapp-onboarding-done-button">
 				<a
 					class="button button-primary"
 					id="wc-whatsapp-onboarding-finish"

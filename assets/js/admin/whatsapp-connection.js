@@ -51,6 +51,13 @@ jQuery( document ).ready( function( $ ) {
                 $('#wc-fb-whatsapp-consent-collection-notstarted').hide();
                 $('#wc-fb-whatsapp-consent-subcontent').show();
 	            $('#wc-fb-whatsapp-consent-button-wrapper').show();
+
+                // update the progress of payment step if payment already setup
+                if(response.data['is_payment_setup'] === true) {
+                    $('#wc-fb-whatsapp-billing-inprogress').hide();
+                    $('#wc-fb-whatsapp-billing-notstarted').hide();
+                    $('#wc-fb-whatsapp-billing-success').show();
+                }
 			} else {
                 console.log('Whatsapp connection is not complete. Checking again in 5 seconds:', response, ', retry attempt:', retryCount, 'pollingTimeout', pollingTimeout);
                 if(retryCount >= pollingTimeout) {
