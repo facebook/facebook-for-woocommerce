@@ -240,6 +240,7 @@ class WC_Facebookcommerce extends WooCommerce\Facebook\Framework\Plugin {
 			// Init jobs
 			$this->job_manager = new WooCommerce\Facebook\Jobs\JobManager();
 			add_action( 'init', [ $this->job_manager, 'init' ] );
+			add_action( 'admin_init', [ $this->rollout_switches, 'init' ] );
 
 			// Instantiate the debug tools.
 			$this->debug_tools = new DebugTools();
@@ -247,12 +248,16 @@ class WC_Facebookcommerce extends WooCommerce\Facebook\Framework\Plugin {
 			// load admin handlers, before admin_init
 			if ( is_admin() ) {
 				if ($this->use_enhanced_onboarding()) {
-					$this->admin_enhanced_settings = new WooCommerce\Facebook\Admin\Enhanced_Settings( $this->connection_handler->is_connected() );
+					$this->admin_enhanced_settings = new WooCommerce\Facebook\Admin\Enhanced_Settings( $this );
 				} else {
-					$this->admin_settings = new WooCommerce\Facebook\Admin\Settings( $this->connection_handler->is_connected(), $this->rollout_switches );
+					$this->admin_settings = new WooCommerce\Facebook\Admin\Settings( $this );
 				}
 			}
 		}
+	}
+
+	private function is_access_token_defined(): bool {
+		return !empty($this->get_connection_handler()->get_access_token());
 	}
 
 

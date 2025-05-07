@@ -40,17 +40,23 @@ class Settings {
 	/** @var Abstract_Settings_Screen[] */
 	private $screens;
 
+	/** @var WC_Facebookcommerce */
+	private $plugin;
+
 	/**
 	 * Settings constructor.
 	 *
-	 * @param bool $is_connected is the state of the plugin connection to the Facebook Marketing API
+	 * @param WC_Facebookcommerce $plugin is the plugin instance of WC_Facebookcommerce
 	 * @since 2.0.0
 	 */
-	public function __construct( bool $is_connected, RolloutSwitches $rollout_switches ) {
+	public function __construct( \WC_Facebookcommerce $plugin ) {
 
-		$this->screens = $this->build_menu_item_array( $is_connected, $rollout_switches );
+		$this->plugin = $plugin;
 
+		$this->screens = $this->build_menu_item_array();
 
+		add_action( 'admin_menu', array( $this, 'build_menu_item_array' ) );
+		add_action( 'admin_init', array( $this, 'add_extra_screens' ) );
 		add_action( 'admin_menu', array( $this, 'add_menu_item' ) );
 		add_action( 'wp_loaded', array( $this, 'save' ) );
 		add_filter( 'parent_file', array( $this, 'set_parent_and_submenu_file' ) );
@@ -64,10 +70,11 @@ class Settings {
 	 * @param bool $is_connected is Facebook connected
 	 * @since 3.0.7
 	 */
-	private function build_menu_item_array( bool $is_connected, RolloutSwitches $rollout_switches ): array {
+	public function build_menu_item_array(): array {
 		$advertise  = [ Settings_Screens\Advertise::ID => new Settings_Screens\Advertise() ];
 		$connection = [ Settings_Screens\Connection::ID => new Settings_Screens\Connection() ];
 
+		$is_connected = $this->plugin->get_connection_handler()->is_connected();
 		$first = ( $is_connected ) ? $advertise : $connection;
 		$last  = ( $is_connected ) ? $connection : $advertise;
 
@@ -76,22 +83,16 @@ class Settings {
 			Settings_Screens\Product_Sets::ID => new Settings_Screens\Product_Sets(),
 		);
 
-		$is_whatsapp_utility_messaging_enabled = $rollout_switches->is_switch_enabled(RolloutSwitches::WHATSAPP_UTILITY_MESSAGING);
-
-		wc_get_logger()->info(
-			sprintf(
-					/* translators: %s $response */
-				 'Fetching WAUM rollout switch: %1$s ',
-				json_encode( $is_whatsapp_utility_messaging_enabled ),
-			)
-		);
-
-		if ( $is_whatsapp_utility_messaging_enabled === true ) {
-			$whatsapp_utility_screens = [ Settings_Screens\Whatsapp_Utility::ID => new Settings_Screens\Whatsapp_Utility() ];
-			$last                     = array_merge( $last, $whatsapp_utility_screens );
-		}
-
 		return array_merge( array_merge( $first, $screens ), $last );
+	}
+
+	public function add_extra_screens(): void {
+		$rollout_switches = $this->plugin->get_rollout_switches();
+		$is_connected = $this->plugin->get_connection_handler()->is_connected();
+		$is_whatsapp_utility_messaging_enabled = $rollout_switches->is_switch_enabled(RolloutSwitches::WHATSAPP_UTILITY_MESSAGING);
+		if ( $is_connected === true && $is_whatsapp_utility_messaging_enabled === true ) {
+			$this->screens[ Settings_Screens\Whatsapp_Utility::ID ] = new Settings_Screens\Whatsapp_Utility();
+		}
 	}
 
 	/**

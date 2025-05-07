@@ -373,7 +373,7 @@ abstract class Plugin {
 			// store the previous minor while we loop patch versions, which we ignore
 			$previous_minor = $older_minor;
 
-			$supported_minor--;
+			--$supported_minor;
 		}
 
 		// for strict comparison, we strip the patch version from the determined versions and compare only major, minor versions, ignoring patches (i.e. 1.2.3 becomes 1.2)
@@ -548,7 +548,7 @@ abstract class Plugin {
 			$level,
 			$message,
 			array(
-				'source'  => $log_id,
+				'source' => $log_id,
 			)
 		);
 	}

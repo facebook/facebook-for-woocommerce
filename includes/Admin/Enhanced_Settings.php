@@ -16,6 +16,7 @@ use WooCommerce\Facebook\Admin\Settings_Screens\Shops;
 use WooCommerce\Facebook\Framework\Helper;
 use WooCommerce\Facebook\Framework\Plugin\Exception as PluginException;
 use WooCommerce\Facebook\Admin\Settings_Screens\Whatsapp_Utility;
+use WooCommerce\Facebook\RolloutSwitches;
 
 defined( 'ABSPATH' ) || exit;
 
@@ -39,19 +40,24 @@ class Enhanced_Settings {
 	 */
 	const SUBMENU_PAGE_ID = 'edit-tags.php?taxonomy=fb_product_set&post_type=product';
 
-	/** @var bool flag to check if whatsapp utility is enabled, this is just a boolean for now, will implement a flagging mechanism */
-	const WHATSAPP_UTILITY_FEATURE_FLAG = true;
+	/** @var WC_Facebookcommerce */
+	private $plugin;
+
 
 	/**
 	 * Enhanced settings constructor.
 	 *
 	 * @since 3.5.0
 	 *
-	 * @param bool $is_connected
+	 * @param WC_Facebookcommerce $plugin is the plugin instance of WC_Facebookcommerce
 	 */
-	public function __construct( bool $is_connected ) {
-		$this->screens = $this->build_menu_item_array( $is_connected );
+	public function __construct( \WC_Facebookcommerce $plugin ) {
+		$this->plugin = $plugin;
 
+		$this->screens = $this->build_menu_item_array();
+
+		add_action( 'admin_menu', array( $this, 'build_menu_item_array' ) );
+		add_action( 'admin_init', array( $this, 'add_extra_screens' ) );
 		add_action( 'admin_menu', array( $this, 'add_menu_item' ) );
 		add_action( 'wp_loaded', array( $this, 'save' ) );
 
@@ -68,7 +74,8 @@ class Enhanced_Settings {
 	 * @param bool $is_connected is Facebook connected
 	 * @return array
 	 */
-	private function build_menu_item_array( bool $is_connected ): array {
+	public function build_menu_item_array(): array {
+		$is_connected = $this->plugin->get_connection_handler()->is_connected();
 
 		if ( $is_connected ) {
 			// TODO: Remove Product sync and Product sets tab once catalog changes are complete
@@ -81,12 +88,26 @@ class Enhanced_Settings {
 			$screens = [ Settings_Screens\Shops::ID => new Settings_Screens\Shops() ];
 		}
 
-		if ( self::WHATSAPP_UTILITY_FEATURE_FLAG ) {
-			$whatsapp_utility_screens = [ Settings_Screens\Whatsapp_Utility::ID => new Settings_Screens\Whatsapp_Utility() ];
-			$screens                  = array_merge( $screens, $whatsapp_utility_screens );
-		}
 
 		return $screens;
+	}
+
+	/**
+	 * Add extra screens to $this->screens - basic settings_screens
+	 *
+	 * @since 3.5.0
+	 *
+	 * @return void
+	 */
+	public function add_extra_screens(): void {
+		$rollout_switches = $this->plugin->get_rollout_switches();
+		$is_connected = $this->plugin->get_connection_handler()->is_connected();
+		$is_whatsapp_utility_messaging_enabled = $rollout_switches->is_switch_enabled(RolloutSwitches::WHATSAPP_UTILITY_MESSAGING);
+
+		if ( $is_connected === true && $is_whatsapp_utility_messaging_enabled === true ) {
+			$this->screens[ Settings_Screens\Whatsapp_Utility::ID ] = new Settings_Screens\Whatsapp_Utility();
+		}
+
 	}
 
 	/**
