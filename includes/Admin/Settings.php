@@ -78,6 +78,7 @@ class Settings {
 
 		$screens = array(
 			Settings_Screens\Product_Sets::ID => new Settings_Screens\Product_Sets(),
+			Settings_Screens\Product_Attributes::ID => new Settings_Screens\Product_Attributes(),
 		);
 
 		return array_merge( array_merge( $first, $screens ), $last );
