@@ -41,16 +41,18 @@ jQuery( document ).ready( function( $ ) {
 				$consentSubcontent.hide();
 				$consentButtonWrapper.hide();
 				// update the progress of billing step and show the button and subcontent
-				$('#wc-fb-whatsapp-billing-inprogress').show();
-                $('#wc-fb-whatsapp-billing-notstarted').hide();
-				$('#wc-fb-whatsapp-billing-subcontent').show();
-				$('#wc-fb-whatsapp-billing-button-wrapper').show();
-				$('#whatsapp-onboarding-done-button').show();
 				if(response.data['is_payment_setup'] === true) {
                     $('#wc-fb-whatsapp-billing-inprogress').hide();
                     $('#wc-fb-whatsapp-billing-notstarted').hide();
                     $('#wc-fb-whatsapp-billing-success').show();
-                }
+                } else {
+					$('#wc-fb-whatsapp-billing-inprogress').show();
+               		$('#wc-fb-whatsapp-billing-notstarted').hide();
+
+				}
+				$('#wc-fb-whatsapp-billing-subcontent').show();
+				$('#wc-fb-whatsapp-billing-button-wrapper').show();
+				$('#whatsapp-onboarding-done-button').show();
 			} else {
 				console.log( 'Whatsapp Consent Collection Enabling has Failed', response );
 			}
