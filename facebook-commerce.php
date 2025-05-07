@@ -251,6 +251,11 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 
 		WC_Facebookcommerce_Utils::$ems = $this->get_external_merchant_settings_id();
 
+		// Set meta diagnosis to yes by default
+		if(!get_option( self::SETTING_ENABLE_META_DIAGNOSIS )) {
+			update_option(self::SETTING_ENABLE_META_DIAGNOSIS, 'yes');
+		}
+
 		if ( is_admin() ) {
 
 			$this->init_pixel();
