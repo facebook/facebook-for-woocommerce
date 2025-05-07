@@ -52,6 +52,9 @@ class Product_Attributes extends Abstract_Settings_Screen {
 		// Add hooks to process form submissions and display notices
 		add_action( 'admin_init', array( $this, 'process_form_submission' ) );
 		add_action( 'admin_notices', array( $this, 'display_admin_notices' ) );
+		
+		// Add AJAX handler for notice dismissal
+		add_action( 'wp_ajax_fb_dismiss_attribute_notice', array( $this, 'ajax_dismiss_notice' ) );
 	}
 
 
@@ -87,15 +90,29 @@ class Product_Attributes extends Abstract_Settings_Screen {
 			\WC_Facebookcommerce::PLUGIN_VERSION
 		);
 		
-		// Add script for notice dismissibility if not using the framework
-		wp_add_inline_script( 'facebook-for-woocommerce-product-attributes', "
+		// Add dismissible notice handlers
+		wp_add_inline_script(
+			'facebook-for-woocommerce-product-attributes',
+			"
 			jQuery(document).ready(function($) {
 				// Make notices dismissible
-				$(document).on('click', '.notice.is-dismissible .notice-dismiss', function() {
-					$(this).closest('.notice').slideUp('fast');
+				$(document).on('click', '.fb-attributes-notice .notice-dismiss', function() {
+					var noticeEl = $(this).closest('.fb-attributes-notice');
+					var noticeId = noticeEl.data('notice-id');
+					
+					// Hide the notice with animation
+					noticeEl.slideUp('fast');
+					
+					// Send AJAX request to mark this notice as dismissed
+					$.post(ajaxurl, {
+						action: 'fb_dismiss_attribute_notice',
+						notice_id: noticeId,
+						security: '" . wp_create_nonce('fb_dismiss_attribute_notice') . "'
+					});
 				});
 			});
-		" );
+			"
+		);
 
 		// Add custom CSS for the attribute mapping page
 		wp_add_inline_style(
@@ -348,6 +365,44 @@ class Product_Attributes extends Abstract_Settings_Screen {
 				color: #666;
 				font-size: 13px;
 				line-height: 1.6;
+			}
+			
+			/* Make sure notices are properly styled */
+			.fb-attributes-notice {
+				margin: 5px 0 15px;
+				position: relative;
+			}
+			
+			.fb-attributes-notice .notice-dismiss {
+				position: absolute;
+				top: 0;
+				right: 1px;
+				border: none;
+				margin: 0;
+				padding: 9px;
+				background: none;
+				color: #787c82;
+				cursor: pointer;
+			}
+			
+			.fb-attributes-notice .notice-dismiss:before {
+				background: 0 0;
+				color: #787c82;
+				content: "\\f153";
+				display: block;
+				font: normal 16px/20px dashicons;
+				speak: never;
+				height: 20px;
+				text-align: center;
+				width: 20px;
+				-webkit-font-smoothing: antialiased;
+				-moz-osx-font-smoothing: grayscale;
+			}
+			
+			.fb-attributes-notice .notice-dismiss:hover:before,
+			.fb-attributes-notice .notice-dismiss:active:before,
+			.fb-attributes-notice .notice-dismiss:focus:before {
+				color: #d63638;
 			}
 			'
 		);
@@ -1089,9 +1144,18 @@ class Product_Attributes extends Abstract_Settings_Screen {
 		$notices = get_transient( 'facebook_for_woocommerce_attribute_notices' );
 		
 		if ( ! empty( $notices ) ) {
-			foreach ( $notices as $notice ) {
-				$class = 'notice ' . ( $notice['type'] === 'success' ? 'notice-success' : 'notice-error' ) . ' is-dismissible';
-				printf( '<div class="%1$s"><p>%2$s</p></div>', esc_attr( $class ), esc_html( $notice['message'] ) );
+			foreach ( $notices as $key => $notice ) {
+				$notice_id = 'fb-attributes-notice-' . $key;
+				$class = 'notice ' . ( $notice['type'] === 'success' ? 'notice-success' : 'notice-error' ) . ' is-dismissible fb-attributes-notice';
+				
+				?>
+				<div id="<?php echo esc_attr( $notice_id ); ?>" class="<?php echo esc_attr( $class ); ?>" data-notice-id="<?php echo esc_attr( $notice_id ); ?>">
+					<p><?php echo esc_html( $notice['message'] ); ?></p>
+					<button type="button" class="notice-dismiss">
+						<span class="screen-reader-text"><?php esc_html_e( 'Dismiss this notice.', 'facebook-for-woocommerce' ); ?></span>
+					</button>
+				</div>
+				<?php
 			}
 			
 			// Clear the notices
@@ -1249,5 +1313,35 @@ class Product_Attributes extends Abstract_Settings_Screen {
 		
 		// Hidden field to store the actual value
 		echo '<input type="hidden" name="wc_facebook_attribute_default[' . esc_attr($attribute_name) . ']" value="' . esc_attr($selected_value) . '" class="' . esc_attr($field_type) . '-default-value-' . esc_attr($attribute_name) . '">';
+	}
+
+	/**
+	 * AJAX handler for dismissing notices.
+	 * 
+	 * @since 3.0.0
+	 */
+	public function ajax_dismiss_notice() {
+		check_ajax_referer( 'fb_dismiss_attribute_notice', 'security' );
+		
+		if ( isset( $_POST['notice_id'] ) ) {
+			$notice_id = sanitize_text_field( $_POST['notice_id'] );
+			
+			// Get current dismissed notices
+			$dismissed_notices = get_user_meta( get_current_user_id(), 'facebook_wc_dismissed_attribute_notices', true );
+			if ( ! is_array( $dismissed_notices ) ) {
+				$dismissed_notices = array();
+			}
+			
+			// Add this notice to dismissed list
+			$dismissed_notices[] = $notice_id;
+			$dismissed_notices = array_unique( $dismissed_notices );
+			
+			// Update user meta
+			update_user_meta( get_current_user_id(), 'facebook_wc_dismissed_attribute_notices', $dismissed_notices );
+			
+			wp_send_json_success();
+		}
+		
+		wp_send_json_error();
 	}
 } 
