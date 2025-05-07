@@ -40,7 +40,7 @@ class Enhanced_Settings {
 	 */
 	const SUBMENU_PAGE_ID = 'edit-tags.php?taxonomy=fb_product_set&post_type=product';
 
-	/** @var WC_Facebookcommerce */
+	/** @var \WC_Facebookcommerce */
 	private $plugin;
 
 
@@ -49,7 +49,7 @@ class Enhanced_Settings {
 	 *
 	 * @since 3.5.0
 	 *
-	 * @param WC_Facebookcommerce $plugin is the plugin instance of WC_Facebookcommerce
+	 * @param \WC_Facebookcommerce $plugin is the plugin instance of WC_Facebookcommerce
 	 */
 	public function __construct( \WC_Facebookcommerce $plugin ) {
 		$this->plugin = $plugin;
@@ -71,7 +71,6 @@ class Enhanced_Settings {
 	 *
 	 * @since 3.5.0
 	 *
-	 * @param bool $is_connected is Facebook connected
 	 * @return array
 	 */
 	public function build_menu_item_array(): array {
@@ -103,7 +102,7 @@ class Enhanced_Settings {
 		$is_connected                          = $this->plugin->get_connection_handler()->is_connected();
 		$is_whatsapp_utility_messaging_enabled = $rollout_switches->is_switch_enabled( RolloutSwitches::WHATSAPP_UTILITY_MESSAGING );
 
-		if ( $is_connected === true && $is_whatsapp_utility_messaging_enabled === true ) {
+		if ( true === $is_connected && true === $is_whatsapp_utility_messaging_enabled ) {
 			$this->screens[ Settings_Screens\Whatsapp_Utility::ID ] = new Settings_Screens\Whatsapp_Utility();
 		}
 	}

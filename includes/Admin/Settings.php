@@ -40,13 +40,13 @@ class Settings {
 	/** @var Abstract_Settings_Screen[] */
 	private $screens;
 
-	/** @var WC_Facebookcommerce */
+	/** @var \WC_Facebookcommerce */
 	private $plugin;
 
 	/**
 	 * Settings constructor.
 	 *
-	 * @param WC_Facebookcommerce $plugin is the plugin instance of WC_Facebookcommerce
+	 * @param \WC_Facebookcommerce $plugin is the plugin instance of WC_Facebookcommerce
 	 * @since 2.0.0
 	 */
 	public function __construct( \WC_Facebookcommerce $plugin ) {
@@ -67,7 +67,6 @@ class Settings {
 	/**
 	 * Arranges the tabs. If the plugin is connected to FB, Advertise tab will be first, otherwise the Connection tab will be the first tab.
 	 *
-	 * @param bool $is_connected is Facebook connected
 	 * @since 3.0.7
 	 */
 	public function build_menu_item_array(): array {
@@ -90,7 +89,7 @@ class Settings {
 		$rollout_switches                      = $this->plugin->get_rollout_switches();
 		$is_connected                          = $this->plugin->get_connection_handler()->is_connected();
 		$is_whatsapp_utility_messaging_enabled = $rollout_switches->is_switch_enabled( RolloutSwitches::WHATSAPP_UTILITY_MESSAGING );
-		if ( $is_connected === true && $is_whatsapp_utility_messaging_enabled === true ) {
+		if ( true === $is_connected && true === $is_whatsapp_utility_messaging_enabled ) {
 			$this->screens[ Settings_Screens\Whatsapp_Utility::ID ] = new Settings_Screens\Whatsapp_Utility();
 		}
 	}
