@@ -73,16 +73,29 @@ class Product_Attributes extends Abstract_Settings_Screen {
 	 * @since 3.0.0
 	 */
 	public function enqueue_assets() {
+		// Only load on our settings page
 		if ( ! $this->is_current_screen_page() ) {
 			return;
 		}
-
+		
+		wp_enqueue_style( 'woocommerce_admin_styles' );
+		
 		wp_enqueue_script(
 			'facebook-for-woocommerce-product-attributes',
 			facebook_for_woocommerce()->get_asset_build_dir_url() . '/admin/product-attributes.js',
 			array( 'jquery', 'jquery-tiptip', 'wc-enhanced-select' ),
 			\WC_Facebookcommerce::PLUGIN_VERSION
 		);
+		
+		// Add script for notice dismissibility if not using the framework
+		wp_add_inline_script( 'facebook-for-woocommerce-product-attributes', "
+			jQuery(document).ready(function($) {
+				// Make notices dismissible
+				$(document).on('click', '.notice.is-dismissible .notice-dismiss', function() {
+					$(this).closest('.notice').slideUp('fast');
+				});
+			});
+		" );
 
 		// Add custom CSS for the attribute mapping page
 		wp_add_inline_style(
@@ -91,82 +104,250 @@ class Product_Attributes extends Abstract_Settings_Screen {
 			/* Facebook Product Attributes Styles */
 			.facebook-woo-attributes-screen {
 				background-color: #f0f0f1;
-				padding: 20px;
+				padding: 30px;
 				margin: -10px -20px;
 				max-width: none;
 			}
 			
 			.facebook-woo-attributes-screen h1 {
-				margin-bottom: 15px;
-			}
-			
-			.facebook-attributes-form-section {
 				margin-bottom: 20px;
+				font-size: 24px;
+				color: #23282d;
 			}
 			
-			.facebook-attributes-form-section h2 {
-				font-size: 16px;
-				font-weight: 600;
-				margin: 0 0 15px 0;
+			.facebook-woo-attributes-screen > p {
+				font-size: 15px;
+				line-height: 1.6;
+				margin-bottom: 25px;
+				color: #50575e;
+			}
+			
+			.facebook-woo-attributes-screen h2 {
+				margin-top: 0;
+				margin-bottom: 25px;
+				padding-bottom: 15px;
+				border-bottom: 1px solid #eee;
+				font-size: 18px;
+				color: #23282d;
+			}
+			
+			.facebook-woo-attributes-screen > div {
+				display: flex;
+				gap: 30px;
+				margin-top: 25px;
+			}
+			
+			.facebook-woo-attributes-screen > div > div {
+				flex: 1;
+				background: #fff;
+				padding: 30px;
+				border: 1px solid #ddd;
+				border-radius: 4px;
+				box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
 			}
 			
 			.form-field {
-				margin-bottom: 15px;
+				margin-bottom: 28px;
 			}
 			
 			.form-field label {
 				display: block;
-				margin-bottom: 5px;
+				margin-bottom: 12px;
 				font-weight: 600;
+				font-size: 14px;
+				color: #23282d;
 			}
 			
 			.form-field input,
-			.form-field textarea {
-				width: 100%;
+			.form-field textarea,
+			.form-field select,
+			.form-field .select2-container {
+				width: 100% !important;
 				max-width: 100%;
-				padding: 8px;
+				min-height: 38px;
+			}
+			
+			.form-field .select2-container--default .select2-selection--single {
+				height: 38px;
+				border-color: #ddd;
+			}
+			
+			.form-field .select2-container--default .select2-selection--single .select2-selection__rendered {
+				line-height: 38px;
+				padding-left: 12px;
+				font-size: 14px;
+			}
+			
+			.form-field .select2-container--default .select2-selection--single .select2-selection__arrow {
+				height: 36px;
 			}
 			
 			.form-field .description {
 				color: #666;
 				font-size: 13px;
-				margin: 5px 0 0 0;
+				margin: 10px 0 0 0;
+				line-height: 1.6;
 			}
 			
 			.submit {
-				margin: 15px 0 0 0;
+				margin: 28px 0 0 0;
 				padding: 0;
 			}
 			
-			.facebook-attribute-table {
-				background: #fff;
-				border: 1px solid #ddd;
-				box-shadow: 0 1px 1px rgba(0,0,0,.04);
+			.submit .button {
+				height: auto;
+				padding: 8px 16px;
+				font-size: 14px;
+				min-height: 38px;
 			}
 			
-			.facebook-attribute-table th {
+			#facebook-attribute-mapping-table {
+				border-collapse: collapse;
+				margin-top: 10px;
+				width: 100%;
+				border: 1px solid #e5e5e5;
+			}
+			
+			#facebook-attribute-mapping-table th {
 				font-weight: 600;
+				padding: 12px 15px;
+				text-align: left;
+				background-color: #f8f8f8;
+				border-bottom: 1px solid #ddd;
+				font-size: 14px;
 			}
 			
-			.facebook-attribute-table .column-name {
+			#facebook-attribute-mapping-table td {
+				padding: 15px;
+				vertical-align: middle;
+				border-bottom: 1px solid #eee;
+				font-size: 14px;
+				line-height: 1.5;
+			}
+			
+			#facebook-attribute-mapping-table tr:hover {
+				background-color: #f9f9f9;
+			}
+			
+			/* Add this to improve checkbox appearance */
+			#facebook-attribute-mapping-table input[type="checkbox"] {
+				margin: 0;
+			}
+			
+			#facebook-attribute-mapping-table .check-column {
+				width: 5%;
+				text-align: center;
+			}
+			
+			#facebook-attribute-mapping-table .name-column {
 				width: 30%;
 			}
 			
-			.facebook-attribute-table .column-description {
-				width: 40%;
+			#facebook-attribute-mapping-table .desc-column {
+				width: 30%;
 			}
 			
-			.facebook-attribute-table .column-slug {
-				width: 25%;
+			#facebook-attribute-mapping-table .slug-column {
+				width: 35%;
 			}
 			
-			.facebook-attribute-table .check-column {
-				width: 5%;
-			}
-			
-			.facebook-attribute-table .no-items td {
-				text-align: center;
+			#facebook-attribute-mapping-table tfoot td {
 				padding: 15px;
+				border-bottom: none;
+			}
+			
+			#facebook-attribute-mapping-table .no-items td {
+				text-align: center;
+				padding: 20px;
+				color: #888;
+				font-style: italic;
+			}
+			
+			#facebook-attribute-mapping-table .last-sync-info {
+				color: #888;
+				font-style: italic;
+				font-size: 13px;
+			}
+			
+			/* Static display for values in the table */
+			.static-value-display {
+				padding: 8px 0;
+				font-size: 14px;
+				line-height: 1.4;
+				color: #333;
+				background-color: #f9f9f9;
+				border: 1px solid #eee;
+				border-radius: 3px;
+				padding: 8px 12px;
+				display: inline-block;
+				min-width: 70%;
+				pointer-events: none;
+			}
+			
+			.static-value-empty {
+				color: #999;
+				font-style: italic;
+				background-color: #f9f9f9;
+			}
+			
+			/* Dropdowns within the table */
+			#facebook-attribute-mapping-table .wc-enhanced-select {
+				min-width: 200px;
+				width: 100% !important;
+			}
+			
+			/* Special dropdowns styling */
+			#condition-dropdown,
+			#gender-dropdown, 
+			#age-group-dropdown, 
+			#availability-dropdown {
+				margin-top: 15px;
+			}
+			
+			/* Custom Select2 fixes */
+			body span.select2-container--default .select2-selection--single {
+				border-color: #8c8f94;
+				border-radius: 3px;
+			}
+			
+			body .select2-container .select2-selection--single .select2-selection__rendered {
+				padding-left: 12px;
+				padding-right: 20px;
+				font-size: 14px;
+			}
+			
+			body .select2-container .select2-selection--single .select2-selection__arrow {
+				right: 5px;
+			}
+			
+			body .select2-dropdown {
+				border-color: #8c8f94;
+				z-index: 999999;
+			}
+			
+			body .select2-search--dropdown {
+				padding: 10px;
+			}
+			
+			body .select2-results__option {
+				padding: 10px;
+				margin: 0;
+				font-size: 14px;
+			}
+			
+			/* Input styling */
+			.form-field input[type="text"] {
+				padding: 0 12px;
+				line-height: 38px;
+				font-size: 14px;
+			}
+			
+			/* Help text styling */
+			.facebook-woo-attributes-screen .description {
+				margin-top: 10px;
+				color: #666;
+				font-size: 13px;
+				line-height: 1.6;
 			}
 			'
 		);
@@ -208,17 +389,17 @@ class Product_Attributes extends Abstract_Settings_Screen {
 		<div class="wrap woocommerce facebook-woo-attributes-screen">
 			<h1><?php esc_html_e('Facebook Product Attributes', 'facebook-for-woocommerce'); ?></h1>
 			
-			<p><?php esc_html_e('Map your WooCommerce product attributes to Facebook catalog attributes. This helps Facebook properly display your products with the correct properties like size, color, gender, etc.', 'facebook-for-woocommerce'); ?></p>
+			<p style="font-size: 15px; line-height: 1.6; margin-bottom: 30px; max-width: 900px;"><?php esc_html_e('Map your WooCommerce product attributes to Facebook catalog attributes. This helps Facebook properly display your products with the correct properties like size, color, gender, etc.', 'facebook-for-woocommerce'); ?></p>
 			
-			<div style="display: flex; gap: 20px; margin-top: 20px;">
+			<div style="display: flex; gap: 30px; margin-top: 30px;">
 				<!-- Left column: Form to add new attribute mapping -->
-				<div style="flex: 1; background: #fff; padding: 20px; border: 1px solid #ddd;">
-					<h2><?php esc_html_e('Add new Facebook Product Attribute Mapping', 'facebook-for-woocommerce'); ?></h2>
+				<div style="flex: 1; background: #fff; padding: 30px; border: 1px solid #ddd; border-radius: 4px;">
+					<h2 style="margin-top: 0; padding-bottom: 15px; border-bottom: 1px solid #eee; margin-bottom: 25px;"><?php esc_html_e('Add new Facebook Product Attribute Mapping', 'facebook-for-woocommerce'); ?></h2>
 					
 					<form method="post" id="add-attribute-form" action=""><?php // empty action will submit to the current page ?>
 						<div class="form-field">
 							<label for="wc-facebook-attribute"><?php esc_html_e('WooCommerce Attribute', 'facebook-for-woocommerce'); ?></label>
-							<select id="wc-facebook-attribute" name="wc_facebook_attribute" class="wc-enhanced-select" style="width: 100%;">
+							<select id="wc-facebook-attribute" name="wc_facebook_attribute" class="wc-enhanced-select" style="width: 100%; min-height: 38px;">
 								<option value=""><?php esc_html_e('Select a WooCommerce attribute...', 'facebook-for-woocommerce'); ?></option>
 								<?php foreach ($product_attributes as $attribute_id => $attribute_label) : ?>
 									<option value="<?php echo esc_attr($attribute_id); ?>"><?php echo esc_html($attribute_label); ?></option>
@@ -229,7 +410,7 @@ class Product_Attributes extends Abstract_Settings_Screen {
 						
 						<div class="form-field">
 							<label for="wc-facebook-field"><?php esc_html_e('Facebook Attribute', 'facebook-for-woocommerce'); ?></label>
-							<select id="wc-facebook-field" name="wc_facebook_field" class="wc-enhanced-select" style="width: 100%;">
+							<select id="wc-facebook-field" name="wc_facebook_field" class="wc-enhanced-select" style="width: 100%; min-height: 38px;">
 								<option value=""><?php esc_html_e('Select a Facebook attribute...', 'facebook-for-woocommerce'); ?></option>
 								<?php foreach ($facebook_fields as $field_id => $field_label) : ?>
 									<option value="<?php echo esc_attr($field_id); ?>"><?php echo esc_html($field_label); ?></option>
@@ -240,12 +421,12 @@ class Product_Attributes extends Abstract_Settings_Screen {
 						
 						<div class="form-field">
 							<label for="wc-facebook-default"><?php esc_html_e('Default Value', 'facebook-for-woocommerce'); ?></label>
-							<input type="text" id="wc-facebook-default" name="wc_facebook_default" class="regular-text" />
+							<input type="text" id="wc-facebook-default" name="wc_facebook_default" class="regular-text" style="min-height: 38px; padding: 0 12px; width: 100%;" />
 							<p class="description"><?php esc_html_e('Optional default value to use when the attribute is not set.', 'facebook-for-woocommerce'); ?></p>
 							
 							<!-- Dropdown fields for specific attributes - hidden by default -->
-							<div id="condition-dropdown" style="display: none; margin-top: 10px;">
-								<select id="wc-facebook-default-condition" name="wc_facebook_default_condition" class="wc-enhanced-select" style="width: 100%;">
+							<div id="condition-dropdown" style="display: none; margin-top: 15px;">
+								<select id="wc-facebook-default-condition" name="wc_facebook_default_condition" class="wc-enhanced-select" style="width: 100%; min-height: 38px;">
 									<option value=""><?php esc_html_e('Select condition...', 'facebook-for-woocommerce'); ?></option>
 									<option value="new"><?php esc_html_e('New', 'facebook-for-woocommerce'); ?></option>
 									<option value="used"><?php esc_html_e('Used', 'facebook-for-woocommerce'); ?></option>
@@ -253,8 +434,8 @@ class Product_Attributes extends Abstract_Settings_Screen {
 								</select>
 							</div>
 							
-							<div id="gender-dropdown" style="display: none; margin-top: 10px;">
-								<select id="wc-facebook-default-gender" name="wc_facebook_default_gender" class="wc-enhanced-select" style="width: 100%;">
+							<div id="gender-dropdown" style="display: none; margin-top: 15px;">
+								<select id="wc-facebook-default-gender" name="wc_facebook_default_gender" class="wc-enhanced-select" style="width: 100%; min-height: 38px;">
 									<option value=""><?php esc_html_e('Select gender...', 'facebook-for-woocommerce'); ?></option>
 									<option value="male"><?php esc_html_e('Male', 'facebook-for-woocommerce'); ?></option>
 									<option value="female"><?php esc_html_e('Female', 'facebook-for-woocommerce'); ?></option>
@@ -262,8 +443,8 @@ class Product_Attributes extends Abstract_Settings_Screen {
 								</select>
 							</div>
 							
-							<div id="age-group-dropdown" style="display: none; margin-top: 10px;">
-								<select id="wc-facebook-default-age-group" name="wc_facebook_default_age_group" class="wc-enhanced-select" style="width: 100%;">
+							<div id="age-group-dropdown" style="display: none; margin-top: 15px;">
+								<select id="wc-facebook-default-age-group" name="wc_facebook_default_age_group" class="wc-enhanced-select" style="width: 100%; min-height: 38px;">
 									<option value=""><?php esc_html_e('Select age group...', 'facebook-for-woocommerce'); ?></option>
 									<option value="adult"><?php esc_html_e('Adult', 'facebook-for-woocommerce'); ?></option>
 									<option value="all ages"><?php esc_html_e('All Ages', 'facebook-for-woocommerce'); ?></option>
@@ -275,8 +456,8 @@ class Product_Attributes extends Abstract_Settings_Screen {
 								</select>
 							</div>
 							
-							<div id="availability-dropdown" style="display: none; margin-top: 10px;">
-								<select id="wc-facebook-default-availability" name="wc_facebook_default_availability" class="wc-enhanced-select" style="width: 100%;">
+							<div id="availability-dropdown" style="display: none; margin-top: 15px;">
+								<select id="wc-facebook-default-availability" name="wc_facebook_default_availability" class="wc-enhanced-select" style="width: 100%; min-height: 38px;">
 									<option value=""><?php esc_html_e('Select availability...', 'facebook-for-woocommerce'); ?></option>
 									<option value="in stock"><?php esc_html_e('In Stock', 'facebook-for-woocommerce'); ?></option>
 									<option value="out of stock"><?php esc_html_e('Out of Stock', 'facebook-for-woocommerce'); ?></option>
@@ -285,7 +466,7 @@ class Product_Attributes extends Abstract_Settings_Screen {
 						</div>
 						
 						<p class="submit">
-							<button type="submit" name="add_attribute_mapping" class="button button-primary">
+							<button type="submit" name="add_attribute_mapping" class="button button-primary" style="padding: 8px 20px; min-height: 38px; font-size: 14px;">
 								<?php esc_html_e('Add Attribute Mapping', 'facebook-for-woocommerce'); ?>
 							</button>
 						</p>
@@ -295,8 +476,9 @@ class Product_Attributes extends Abstract_Settings_Screen {
 				</div>
 				
 				<!-- Right column: Table of existing mappings -->
-				<div style="flex: 1; background: #fff; padding: 20px; border: 1px solid #ddd;">
+				<div style="flex: 1; background: #fff; padding: 30px; border: 1px solid #ddd; border-radius: 4px;">
 					<form method="post" id="existing-mappings-form" action=""><?php // empty action will submit to the current page ?>
+						<p style="margin-bottom: 15px; font-style: italic; color: #666; font-size: 13px;"><?php esc_html_e('To change a default value, delete the mapping and create a new one with your preferred default.', 'facebook-for-woocommerce'); ?></p>
 						<table class="widefat striped" id="facebook-attribute-mapping-table">
 							<thead>
 								<tr>
@@ -339,7 +521,12 @@ class Product_Attributes extends Abstract_Settings_Screen {
 												<?php elseif ($fb_field === 'availability'): ?>
 													<?php $this->render_availability_dropdown($wc_attribute, $default_value); ?>
 												<?php else: ?>
-													<?php echo esc_html($default_value); ?>
+													<?php if (!empty($default_value)): ?>
+														<div class="static-value-display"><?php echo esc_html($default_value); ?></div>
+													<?php else: ?>
+														<div class="static-value-display static-value-empty">—</div>
+													<?php endif; ?>
+													<input type="hidden" name="wc_facebook_attribute_default[<?php echo esc_attr($wc_attribute); ?>]" value="<?php echo esc_attr($default_value); ?>">
 												<?php endif; ?>
 											</td>
 										</tr>
@@ -353,11 +540,11 @@ class Product_Attributes extends Abstract_Settings_Screen {
 									<tr>
 										<td colspan="4">
 											<div class="bulkactions">
-												<button type="submit" name="delete_mappings" class="button button-secondary delete-mappings">
+												<button type="submit" name="delete_mappings" class="button button-secondary delete-mappings" style="padding: 8px 16px; min-height: 38px;">
 													<?php esc_html_e('Delete Selected', 'facebook-for-woocommerce'); ?>
 												</button>
 												<?php if (!empty($last_sync)) : ?>
-													<span class="last-sync-info" style="float: right;">
+													<span class="last-sync-info" style="float: right; line-height: 38px; font-style: italic; color: #888;">
 														<?php printf(esc_html__('Last synchronized: %s', 'facebook-for-woocommerce'), $last_sync_formatted); ?>
 													</span>
 												<?php endif; ?>
@@ -903,7 +1090,7 @@ class Product_Attributes extends Abstract_Settings_Screen {
 		
 		if ( ! empty( $notices ) ) {
 			foreach ( $notices as $notice ) {
-				$class = 'notice ' . ( $notice['type'] === 'success' ? 'notice-success' : 'notice-error' );
+				$class = 'notice ' . ( $notice['type'] === 'success' ? 'notice-success' : 'notice-error' ) . ' is-dismissible';
 				printf( '<div class="%1$s"><p>%2$s</p></div>', esc_attr( $class ), esc_html( $notice['message'] ) );
 			}
 			
@@ -919,6 +1106,26 @@ class Product_Attributes extends Abstract_Settings_Screen {
 	 * @param string $type The notice type (success or error).
 	 */
 	private function add_notice( $message, $type = 'success' ) {
+		// Try to use the framework's AdminNoticeHandler if available
+		if ( class_exists( '\WooCommerce\Facebook\Framework\AdminNoticeHandler' ) ) {
+			$message_id = $this->generate_notice_id( $message );
+			$notice_handler = facebook_for_woocommerce()->get_admin_notice_handler();
+			
+			if ( $notice_handler ) {
+				$notice_handler->add_admin_notice(
+					$message,
+					$message_id,
+					[
+						'dismissible'    => true,
+						'notice_class'   => 'notice-' . $type,
+					]
+				);
+				
+				return;
+			}
+		}
+		
+		// Fallback to the transient-based notice system
 		$notices = get_transient( 'facebook_for_woocommerce_attribute_notices' ) ?: array();
 		
 		$notices[] = array(
@@ -927,6 +1134,16 @@ class Product_Attributes extends Abstract_Settings_Screen {
 		);
 		
 		set_transient( 'facebook_for_woocommerce_attribute_notices', $notices, 60 * 5 ); // 5 minutes expiration
+	}
+	
+	/**
+	 * Generates a unique notice ID based on the message content.
+	 *
+	 * @param string $message The notice message.
+	 * @return string The generated notice ID.
+	 */
+	private function generate_notice_id( $message ) {
+		return 'facebook_attribute_' . md5( $message . time() );
 	}
 
 	/**
@@ -1022,15 +1239,15 @@ class Product_Attributes extends Abstract_Settings_Screen {
 		$name = 'wc_facebook_attribute_default_' . $field_type . '[' . esc_attr($attribute_name) . ']';
 		$id = 'wc-facebook-default-' . $field_type . '-' . esc_attr($attribute_name);
 		
-		echo '<select id="' . esc_attr($id) . '" name="' . esc_attr($name) . '" class="wc-enhanced-select" style="width: 100%;">';
-		
-		foreach ($options as $value => $label) {
-			echo '<option value="' . esc_attr($value) . '" ' . selected($value, $selected_value, false) . '>' . esc_html($label) . '</option>';
+		// Display the selected value as static text
+		if (!empty($selected_value)) {
+			$label = isset($options[$selected_value]) ? $options[$selected_value] : $selected_value;
+			echo '<div class="static-value-display">' . esc_html($label) . '</div>';
+		} else {
+			echo '<div class="static-value-display static-value-empty">—</div>';
 		}
 		
-		echo '</select>';
-		
-		// Hidden field to store the actual value (for compatibility with existing code)
+		// Hidden field to store the actual value
 		echo '<input type="hidden" name="wc_facebook_attribute_default[' . esc_attr($attribute_name) . ']" value="' . esc_attr($selected_value) . '" class="' . esc_attr($field_type) . '-default-value-' . esc_attr($attribute_name) . '">';
 	}
 } 
