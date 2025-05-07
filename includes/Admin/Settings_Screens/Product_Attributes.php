@@ -15,6 +15,14 @@ namespace WooCommerce\Facebook\Admin\Settings_Screens;
 
 defined( 'ABSPATH' ) || exit;
 
+/**
+ * Note on attribute normalization:
+ * While the ProductAttributeMapper class contains normalization functions for fields like condition, gender, and age_group,
+ * this admin interface enforces the exact values required by Facebook's API through dropdown menus.
+ * The normalization functions are still useful for handling product data that comes from other sources
+ * (imports, bulk edits, API calls, etc.) but aren't needed for this UI since we're restricting input to valid values.
+ */
+
 use WooCommerce\Facebook\Admin\Abstract_Settings_Screen;
 use WooCommerce\Facebook\ProductAttributeMapper;
 
@@ -234,6 +242,46 @@ class Product_Attributes extends Abstract_Settings_Screen {
 							<label for="wc-facebook-default"><?php esc_html_e('Default Value', 'facebook-for-woocommerce'); ?></label>
 							<input type="text" id="wc-facebook-default" name="wc_facebook_default" class="regular-text" />
 							<p class="description"><?php esc_html_e('Optional default value to use when the attribute is not set.', 'facebook-for-woocommerce'); ?></p>
+							
+							<!-- Dropdown fields for specific attributes - hidden by default -->
+							<div id="condition-dropdown" style="display: none; margin-top: 10px;">
+								<select id="wc-facebook-default-condition" name="wc_facebook_default_condition" class="wc-enhanced-select" style="width: 100%;">
+									<option value=""><?php esc_html_e('Select condition...', 'facebook-for-woocommerce'); ?></option>
+									<option value="new"><?php esc_html_e('New', 'facebook-for-woocommerce'); ?></option>
+									<option value="used"><?php esc_html_e('Used', 'facebook-for-woocommerce'); ?></option>
+									<option value="refurbished"><?php esc_html_e('Refurbished', 'facebook-for-woocommerce'); ?></option>
+								</select>
+							</div>
+							
+							<div id="gender-dropdown" style="display: none; margin-top: 10px;">
+								<select id="wc-facebook-default-gender" name="wc_facebook_default_gender" class="wc-enhanced-select" style="width: 100%;">
+									<option value=""><?php esc_html_e('Select gender...', 'facebook-for-woocommerce'); ?></option>
+									<option value="male"><?php esc_html_e('Male', 'facebook-for-woocommerce'); ?></option>
+									<option value="female"><?php esc_html_e('Female', 'facebook-for-woocommerce'); ?></option>
+									<option value="unisex"><?php esc_html_e('Unisex', 'facebook-for-woocommerce'); ?></option>
+								</select>
+							</div>
+							
+							<div id="age-group-dropdown" style="display: none; margin-top: 10px;">
+								<select id="wc-facebook-default-age-group" name="wc_facebook_default_age_group" class="wc-enhanced-select" style="width: 100%;">
+									<option value=""><?php esc_html_e('Select age group...', 'facebook-for-woocommerce'); ?></option>
+									<option value="adult"><?php esc_html_e('Adult', 'facebook-for-woocommerce'); ?></option>
+									<option value="all ages"><?php esc_html_e('All Ages', 'facebook-for-woocommerce'); ?></option>
+									<option value="teen"><?php esc_html_e('Teen', 'facebook-for-woocommerce'); ?></option>
+									<option value="kids"><?php esc_html_e('Kids', 'facebook-for-woocommerce'); ?></option>
+									<option value="toddler"><?php esc_html_e('Toddler', 'facebook-for-woocommerce'); ?></option>
+									<option value="infant"><?php esc_html_e('Infant', 'facebook-for-woocommerce'); ?></option>
+									<option value="newborn"><?php esc_html_e('Newborn', 'facebook-for-woocommerce'); ?></option>
+								</select>
+							</div>
+							
+							<div id="availability-dropdown" style="display: none; margin-top: 10px;">
+								<select id="wc-facebook-default-availability" name="wc_facebook_default_availability" class="wc-enhanced-select" style="width: 100%;">
+									<option value=""><?php esc_html_e('Select availability...', 'facebook-for-woocommerce'); ?></option>
+									<option value="in stock"><?php esc_html_e('In Stock', 'facebook-for-woocommerce'); ?></option>
+									<option value="out of stock"><?php esc_html_e('Out of Stock', 'facebook-for-woocommerce'); ?></option>
+								</select>
+							</div>
 						</div>
 						
 						<p class="submit">
@@ -282,7 +330,17 @@ class Product_Attributes extends Abstract_Settings_Screen {
 												<?php echo esc_html($fb_field_label); ?>
 											</td>
 											<td class="slug-column">
-												<?php echo esc_html($default_value); ?>
+												<?php if ($fb_field === 'condition'): ?>
+													<?php $this->render_condition_dropdown($wc_attribute, $default_value); ?>
+												<?php elseif ($fb_field === 'gender'): ?>
+													<?php $this->render_gender_dropdown($wc_attribute, $default_value); ?>
+												<?php elseif ($fb_field === 'age_group'): ?>
+													<?php $this->render_age_group_dropdown($wc_attribute, $default_value); ?>
+												<?php elseif ($fb_field === 'availability'): ?>
+													<?php $this->render_availability_dropdown($wc_attribute, $default_value); ?>
+												<?php else: ?>
+													<?php echo esc_html($default_value); ?>
+												<?php endif; ?>
 											</td>
 										</tr>
 										<?php
@@ -333,6 +391,64 @@ class Product_Attributes extends Abstract_Settings_Screen {
 				$('#select-all-mappings').on('click', function() {
 					var isChecked = $(this).prop('checked');
 					$('#facebook-attribute-mapping-table tbody input[type="checkbox"]').prop('checked', isChecked);
+				});
+				
+				// Handle Facebook field selection to show appropriate default value field
+				$('#wc-facebook-field').on('change', function() {
+					var selectedField = $(this).val();
+					
+					// Hide all dropdowns first
+					$('#condition-dropdown, #gender-dropdown, #age-group-dropdown, #availability-dropdown').hide();
+					$('#wc-facebook-default').show();
+					
+					// Show appropriate dropdown based on selected field
+					if (selectedField === 'condition') {
+						$('#condition-dropdown').show();
+						$('#wc-facebook-default').hide();
+					} else if (selectedField === 'gender') {
+						$('#gender-dropdown').show();
+						$('#wc-facebook-default').hide();
+					} else if (selectedField === 'age_group') {
+						$('#age-group-dropdown').show();
+						$('#wc-facebook-default').hide();
+					} else if (selectedField === 'availability') {
+						$('#availability-dropdown').show();
+						$('#wc-facebook-default').hide();
+					}
+				});
+				
+				// Sync the dropdown values with the hidden input field
+				$('#wc-facebook-default-condition, #wc-facebook-default-gender, #wc-facebook-default-age-group, #wc-facebook-default-availability').on('change', function() {
+					$('#wc-facebook-default').val($(this).val());
+				});
+				
+				// Handle form submission to ensure the correct value is submitted
+				$('#add-attribute-form').on('submit', function() {
+					var selectedField = $('#wc-facebook-field').val();
+					
+					if (selectedField === 'condition') {
+						$('#wc-facebook-default').val($('#wc-facebook-default-condition').val());
+					} else if (selectedField === 'gender') {
+						$('#wc-facebook-default').val($('#wc-facebook-default-gender').val());
+					} else if (selectedField === 'age_group') {
+						$('#wc-facebook-default').val($('#wc-facebook-default-age-group').val());
+					} else if (selectedField === 'availability') {
+						$('#wc-facebook-default').val($('#wc-facebook-default-availability').val());
+					}
+				});
+				
+				// Add this code to the jQuery section before the existing script ends 
+				$('.wc-enhanced-select').on('change', function() {
+					var $this = $(this);
+					var fieldName = $this.attr('name');
+					
+					// Check if this is one of our special dropdowns
+					if (fieldName && (fieldName.indexOf('condition') > -1 || fieldName.indexOf('gender') > -1 || fieldName.indexOf('age_group') > -1 || fieldName.indexOf('availability') > -1)) {
+						var $hiddenField = $(this).siblings('input[type="hidden"]');
+						if ($hiddenField.length) {
+							$hiddenField.val($this.val());
+						}
+					}
 				});
 			});
 		</script>
@@ -637,93 +753,7 @@ class Product_Attributes extends Abstract_Settings_Screen {
 	 * @since 3.0.0
 	 */
 	public function save() {
-		// Debug info
-		error_log('FB Product Attributes save method called');
-		error_log('POST data: ' . print_r($_POST, true));
-		
-		// Get existing mappings
-		$existing_mappings = $this->get_saved_mappings();
-		$existing_defaults = $this->get_saved_defaults();
-		
-		// Process adding a new mapping
-		if (isset($_POST['add_attribute_mapping']) && 
-			isset($_POST['add_attribute_mapping_nonce']) && 
-			wp_verify_nonce($_POST['add_attribute_mapping_nonce'], 'wc_facebook_add_attribute_mapping')) {
-			
-			$wc_attribute = isset($_POST['wc_facebook_attribute']) ? sanitize_text_field($_POST['wc_facebook_attribute']) : '';
-			$fb_field = isset($_POST['wc_facebook_field']) ? sanitize_text_field($_POST['wc_facebook_field']) : '';
-			$default = isset($_POST['wc_facebook_default']) ? sanitize_text_field($_POST['wc_facebook_default']) : '';
-			
-			if (!empty($wc_attribute) && !empty($fb_field)) {
-				// Add or update the mapping
-				$existing_mappings[$wc_attribute] = $fb_field;
-				
-				// Add or update the default value if provided
-				if (!empty($default)) {
-					$existing_defaults[$wc_attribute] = $default;
-				} elseif (isset($existing_defaults[$wc_attribute])) {
-					// Remove existing default if new value is empty
-					unset($existing_defaults[$wc_attribute]);
-				}
-				
-				$this->add_notice(__('Attribute mapping added successfully.', 'facebook-for-woocommerce'), 'success');
-			} else {
-				$this->add_notice(__('Please select both a WooCommerce attribute and a Facebook attribute.', 'facebook-for-woocommerce'), 'error');
-			}
-		}
-		
-		// Process deleting selected mappings
-		if (isset($_POST['delete_mappings']) && 
-			isset($_POST['delete_mappings_nonce']) && 
-			wp_verify_nonce($_POST['delete_mappings_nonce'], 'wc_facebook_delete_attribute_mappings')) {
-			
-			if (isset($_POST['selected_mappings']) && is_array($_POST['selected_mappings'])) {
-				$deleted_count = 0;
-				
-				foreach ($_POST['selected_mappings'] as $mapping_key) {
-					$mapping_key = sanitize_text_field($mapping_key);
-					
-					if (isset($existing_mappings[$mapping_key])) {
-						unset($existing_mappings[$mapping_key]);
-						$deleted_count++;
-						
-						// Also remove any default value
-						if (isset($existing_defaults[$mapping_key])) {
-							unset($existing_defaults[$mapping_key]);
-						}
-					}
-				}
-				
-				if ($deleted_count > 0) {
-					$this->add_notice(
-						sprintf(
-							_n(
-								'%d attribute mapping deleted.',
-								'%d attribute mappings deleted.',
-								$deleted_count,
-								'facebook-for-woocommerce'
-							),
-							$deleted_count
-						),
-						'success'
-					);
-				}
-			}
-		}
-		
-		// Save mappings to WordPress options
-		update_option(self::OPTION_CUSTOM_ATTRIBUTE_MAPPINGS, $existing_mappings);
-		
-		// Save defaults to WordPress options
-		update_option('wc_facebook_attribute_defaults', $existing_defaults);
-		
-		// Update the static mapping in the ProductAttributeMapper class
-		if (method_exists('WooCommerce\Facebook\ProductAttributeMapper', 'set_custom_attribute_mappings')) {
-			\WooCommerce\Facebook\ProductAttributeMapper::set_custom_attribute_mappings($existing_mappings);
-		}
-		
-		// Update last sync time
-		update_option('wc_facebook_last_attribute_sync', current_time('mysql'));
+		$this->process_form_submission();
 	}
 
 	/**
@@ -749,6 +779,17 @@ class Product_Attributes extends Abstract_Settings_Screen {
 			$fb_field = isset($_POST['wc_facebook_field']) ? sanitize_text_field($_POST['wc_facebook_field']) : '';
 			$default = isset($_POST['wc_facebook_default']) ? sanitize_text_field($_POST['wc_facebook_default']) : '';
 			
+			// Check for special field types and use their dropdown values if available
+			if ($fb_field === 'condition' && isset($_POST['wc_facebook_default_condition'])) {
+				$default = sanitize_text_field($_POST['wc_facebook_default_condition']);
+			} elseif ($fb_field === 'gender' && isset($_POST['wc_facebook_default_gender'])) {
+				$default = sanitize_text_field($_POST['wc_facebook_default_gender']);
+			} elseif ($fb_field === 'age_group' && isset($_POST['wc_facebook_default_age_group'])) {
+				$default = sanitize_text_field($_POST['wc_facebook_default_age_group']);
+			} elseif ($fb_field === 'availability' && isset($_POST['wc_facebook_default_availability'])) {
+				$default = sanitize_text_field($_POST['wc_facebook_default_availability']);
+			}
+			
 			if (!empty($wc_attribute) && !empty($fb_field)) {
 				// Add or update the mapping
 				$existing_mappings[$wc_attribute] = $fb_field;
@@ -802,6 +843,34 @@ class Product_Attributes extends Abstract_Settings_Screen {
 						),
 						'success'
 					);
+				}
+			}
+		}
+		
+		// Process updates to existing mapping defaults from special dropdowns
+		foreach (array('condition', 'gender', 'age_group', 'availability') as $special_field) {
+			$field_key = 'wc_facebook_attribute_default_' . $special_field;
+			
+			if (isset($_POST[$field_key]) && is_array($_POST[$field_key])) {
+				foreach ($_POST[$field_key] as $attr_key => $value) {
+					if (!empty($value)) {
+						$existing_defaults[sanitize_text_field($attr_key)] = sanitize_text_field($value);
+					}
+				}
+			}
+		}
+		
+		// Process updates to regular default values
+		if (isset($_POST['wc_facebook_attribute_default']) && is_array($_POST['wc_facebook_attribute_default'])) {
+			foreach ($_POST['wc_facebook_attribute_default'] as $attr_key => $value) {
+				$attr_key = sanitize_text_field($attr_key);
+				$value = sanitize_text_field($value);
+				
+				if (!empty($value)) {
+					$existing_defaults[$attr_key] = $value;
+				} else {
+					// Remove default if empty
+					unset($existing_defaults[$attr_key]);
 				}
 			}
 		}
@@ -858,5 +927,110 @@ class Product_Attributes extends Abstract_Settings_Screen {
 		);
 		
 		set_transient( 'facebook_for_woocommerce_attribute_notices', $notices, 60 * 5 ); // 5 minutes expiration
+	}
+
+	/**
+	 * Renders a dropdown for condition values.
+	 *
+	 * @since 3.0.0
+	 *
+	 * @param string $attribute_name The attribute name
+	 * @param string $selected_value The currently selected value
+	 */
+	private function render_condition_dropdown($attribute_name, $selected_value) {
+		$options = array(
+			'' => __('Select condition...', 'facebook-for-woocommerce'),
+			'new' => __('New', 'facebook-for-woocommerce'),
+			'used' => __('Used', 'facebook-for-woocommerce'),
+			'refurbished' => __('Refurbished', 'facebook-for-woocommerce'),
+		);
+		
+		$this->render_dropdown('condition', $attribute_name, $options, $selected_value);
+	}
+
+	/**
+	 * Renders a dropdown for gender values.
+	 *
+	 * @since 3.0.0
+	 *
+	 * @param string $attribute_name The attribute name
+	 * @param string $selected_value The currently selected value
+	 */
+	private function render_gender_dropdown($attribute_name, $selected_value) {
+		$options = array(
+			'' => __('Select gender...', 'facebook-for-woocommerce'),
+			'male' => __('Male', 'facebook-for-woocommerce'),
+			'female' => __('Female', 'facebook-for-woocommerce'),
+			'unisex' => __('Unisex', 'facebook-for-woocommerce'),
+		);
+		
+		$this->render_dropdown('gender', $attribute_name, $options, $selected_value);
+	}
+
+	/**
+	 * Renders a dropdown for age group values.
+	 *
+	 * @since 3.0.0
+	 *
+	 * @param string $attribute_name The attribute name
+	 * @param string $selected_value The currently selected value
+	 */
+	private function render_age_group_dropdown($attribute_name, $selected_value) {
+		$options = array(
+			'' => __('Select age group...', 'facebook-for-woocommerce'),
+			'adult' => __('Adult', 'facebook-for-woocommerce'),
+			'all ages' => __('All Ages', 'facebook-for-woocommerce'),
+			'teen' => __('Teen', 'facebook-for-woocommerce'),
+			'kids' => __('Kids', 'facebook-for-woocommerce'),
+			'toddler' => __('Toddler', 'facebook-for-woocommerce'),
+			'infant' => __('Infant', 'facebook-for-woocommerce'),
+			'newborn' => __('Newborn', 'facebook-for-woocommerce'),
+		);
+		
+		$this->render_dropdown('age_group', $attribute_name, $options, $selected_value);
+	}
+
+	/**
+	 * Renders a dropdown for availability values.
+	 *
+	 * @since 3.0.0
+	 *
+	 * @param string $attribute_name The attribute name
+	 * @param string $selected_value The currently selected value
+	 */
+	private function render_availability_dropdown($attribute_name, $selected_value) {
+		$options = array(
+			'' => __('Select availability...', 'facebook-for-woocommerce'),
+			'in stock' => __('In Stock', 'facebook-for-woocommerce'),
+			'out of stock' => __('Out of Stock', 'facebook-for-woocommerce'),
+		);
+		
+		$this->render_dropdown('availability', $attribute_name, $options, $selected_value);
+	}
+
+	/**
+	 * Renders a dropdown with the given options.
+	 *
+	 * @since 3.0.0
+	 *
+	 * @param string $field_type The field type
+	 * @param string $attribute_name The attribute name
+	 * @param array $options The dropdown options
+	 * @param string $selected_value The currently selected value
+	 */
+	private function render_dropdown($field_type, $attribute_name, $options, $selected_value) {
+		$name = 'wc_facebook_attribute_default_' . $field_type . '[' . esc_attr($attribute_name) . ']';
+		$id = 'wc-facebook-default-' . $field_type . '-' . esc_attr($attribute_name);
+		
+		echo '<select id="' . esc_attr($id) . '" name="' . esc_attr($name) . '" class="wc-enhanced-select" style="width: 100%;">';
+		
+		foreach ($options as $value => $label) {
+			echo '<option value="' . esc_attr($value) . '" ' . selected($value, $selected_value, false) . '>' . esc_html($label) . '</option>';
+		}
+		
+		echo '</select>';
+		
+		// Hidden field to store the actual value (for compatibility with existing code)
+		echo '<input type="hidden" name="wc_facebook_attribute_default[' . esc_attr($attribute_name) . ']" value="' . esc_attr($selected_value) . '" class="' . esc_attr($field_type) . '-default-value-' . esc_attr($attribute_name) . '">';
 	}
 } 
