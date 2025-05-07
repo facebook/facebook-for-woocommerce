@@ -40,17 +40,21 @@ class Settings {
 	/** @var Abstract_Settings_Screen[] */
 	private $screens;
 
+	private $plugin;
+
 	/**
 	 * Settings constructor.
 	 *
 	 * @param bool $is_connected is the state of the plugin connection to the Facebook Marketing API
 	 * @since 2.0.0
 	 */
-	public function __construct( bool $is_connected, RolloutSwitches $rollout_switches ) {
+	public function __construct( \WC_Facebookcommerce $plugin ) {
 
-		$this->screens = $this->build_menu_item_array( $is_connected, $rollout_switches );
+		$this->plugin = $plugin;
+		
 
-
+		$this->screens = $this->build_menu_item_array( $is_connected );
+		add_action( 'admin_init', array( $this, 'build_menu_item_array' ) );
 		add_action( 'admin_menu', array( $this, 'add_menu_item' ) );
 		add_action( 'wp_loaded', array( $this, 'save' ) );
 		add_filter( 'parent_file', array( $this, 'set_parent_and_submenu_file' ) );
@@ -64,10 +68,11 @@ class Settings {
 	 * @param bool $is_connected is Facebook connected
 	 * @since 3.0.7
 	 */
-	private function build_menu_item_array( bool $is_connected, RolloutSwitches $rollout_switches ): array {
+	public function build_menu_item_array(): array {
 		$advertise  = [ Settings_Screens\Advertise::ID => new Settings_Screens\Advertise() ];
 		$connection = [ Settings_Screens\Connection::ID => new Settings_Screens\Connection() ];
 
+		$is_connected = $this->plugin->get_connection_handler()->is_connected();
 		$first = ( $is_connected ) ? $advertise : $connection;
 		$last  = ( $is_connected ) ? $connection : $advertise;
 
@@ -76,7 +81,9 @@ class Settings {
 			Settings_Screens\Product_Sets::ID => new Settings_Screens\Product_Sets(),
 		);
 
+		$rollout_switches = $this->plugin->get_rollout_switches();
 		$is_whatsapp_utility_messaging_enabled = $rollout_switches->is_switch_enabled(RolloutSwitches::WHATSAPP_UTILITY_MESSAGING);
+		// print_r($is_whatsapp_utility_messaging_enabled);die;
 
 		wc_get_logger()->info(
 			sprintf(
@@ -100,6 +107,7 @@ class Settings {
 	 * @since 2.0.0
 	 */
 	public function add_menu_item() {
+
 		$root_menu_item = $this->root_menu_item();
 
 		add_submenu_page(
