@@ -331,7 +331,7 @@ class Whatsapp_Utility extends Abstract_Settings_Screen {
 		</div>
 		<div class="divider"></div>
 		<div id="whatsapp-onboarding-done-button" class="card-item">
-			<div class="whatsapp-onboarding-button">
+			<div class="whatsapp-onboarding-done-button">
 				<a
 					class="button button-primary"
 					id="wc-whatsapp-onboarding-finish"
