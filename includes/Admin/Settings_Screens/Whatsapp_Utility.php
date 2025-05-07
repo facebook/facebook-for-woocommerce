@@ -514,7 +514,7 @@ class Whatsapp_Utility extends Abstract_Settings_Screen {
 					</div>
 					<div class="warning-modal-footer">
 						<button id="wc-fb-disconnect-warning-modal-cancel" class="button"><?php esc_html_e( 'Cancel', 'facebook-for-woocommerce' ); ?></button>
-						<button id="wc-fb-disconnect-warning-modal-confirm" class="button button-primary"><?php esc_html_e( 'Remove', 'facebook-for-woocommerce' ); ?></button>
+						<button id="wc-fb-disconnect-warning-modal-confirm" class="button button-primary"><?php esc_html_e( 'Disconnect', 'facebook-for-woocommerce' ); ?></button>
 					</div>
 				</div>
 			</div>
