@@ -10,6 +10,7 @@
 
 namespace WooCommerce\Facebook;
 
+use WooCommerce\Facebook\Framework\Api\Exception;
 use WooCommerce\Facebook\Utilities\Heartbeat;
 
 defined( 'ABSPATH' ) || exit;
@@ -19,7 +20,7 @@ defined( 'ABSPATH' ) || exit;
  * features in the Facebook for WooCommerce plugin.
  */
 class RolloutSwitches {
-	/** @var WooCommerce\Facebook\Commerce commerce handler */
+	/** @var \WC_Facebookcommerce commerce handler */
 	private \WC_Facebookcommerce $plugin;
 
 	public const SWITCH_ROLLOUT_FEATURES = 'rollout_enabled';
@@ -32,7 +33,7 @@ class RolloutSwitches {
 	 *
 	 * @var array
 	 */
-	private $rollout_switches = array();
+	private array $rollout_switches = array();
 
 	public function __construct( \WC_Facebookcommerce $plugin ) {
 		$this->plugin = $plugin;
@@ -40,18 +41,26 @@ class RolloutSwitches {
 	}
 
 	public function init() {
-		$external_business_id = $this->plugin->get_connection_handler()->get_external_business_id();
-		if ( empty( $external_business_id ) ) {
+		$is_connected = $this->plugin->get_connection_handler()->is_connected();
+		if ( ! $is_connected ) {
 			return;
 		}
 
-		$swiches = $this->plugin->get_api()->get_rollout_switches( $external_business_id );
-		$data    = $swiches->get_data();
-		foreach ( $data as $switch ) {
-			if ( ! isset( $switch['switch'] ) || ! $this->is_switch_active( $switch['switch'] ) ) {
-				continue;
+		try {
+			$external_business_id = $this->plugin->get_connection_handler()->get_external_business_id();
+			$switches             = $this->plugin->get_api()->get_rollout_switches( $external_business_id );
+			$data                 = $switches->get_data();
+			foreach ( $data as $switch ) {
+				if ( ! isset( $switch['switch'] ) || ! $this->is_switch_active( $switch['switch'] ) ) {
+					continue;
+				}
+				$this->rollout_switches[ $switch['switch'] ] = (bool) $switch['enabled'];
 			}
-			$this->rollout_switches[ $switch['switch'] ] = (bool) $switch['enabled'];
+		} catch ( Exception $e ) {
+			\WC_Facebookcommerce_Utils::log_exception_immediately_to_meta(
+				$e,
+				[ 'event' => 'rollout_switches_init' ]
+			);
 		}
 	}
 
@@ -79,7 +88,7 @@ class RolloutSwitches {
 		return $this->rollout_switches[ $switch_name ] ?? true;
 	}
 
-	public function is_switch_active( string $switch_name ) {
+	public function is_switch_active( string $switch_name ): bool {
 		return in_array( $switch_name, self::ACTIVE_SWITCHES, true );
 	}
 }
