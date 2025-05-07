@@ -506,6 +506,18 @@ class Whatsapp_Utility extends Abstract_Settings_Screen {
 				</a>
 			</div>
 			</div>
+			<div id="wc-fb-disconnect-warning-modal" class="warning-custom-modal">
+				<div class="warning-modal-content">
+					<h2><?php esc_html_e( 'Disconnect WhatsApp from WooCommerce?', 'facebook-for-woocommerce' ); ?></h2>
+					<div class="warning-modal-body">
+						<?php esc_html_e( 'Your WhatsApp Business account will be disconnected from WooCommerce, resulting in the loss of messaging features. To reconnect in the future, you\'ll need to set up the connection again. However, you can still view your old insights in WhatsApp Manager. ', 'facebook-for-woocommerce' ); ?>
+					</div>
+					<div class="warning-modal-footer">
+						<button id="wc-fb-disconnect-warning-modal-cancel" class="button"><?php esc_html_e( 'Cancel', 'facebook-for-woocommerce' ); ?></button>
+						<button id="wc-fb-disconnect-warning-modal-confirm" class="button button-primary"><?php esc_html_e( 'Disconnect', 'facebook-for-woocommerce' ); ?></button>
+					</div>
+				</div>
+			</div>
 		</div>
 		<?php
 	}
@@ -590,7 +602,7 @@ class Whatsapp_Utility extends Abstract_Settings_Screen {
 				<div class="manage-event-template-block">
 					<div class="manage-event-template-header">
 						<input type="radio" name="template-status" id="active-template-status" value="ACTIVE" checked="checked" />
-						<label for="active-template-status"><b>				
+						<label for="active-template-status"><b>
 						<?php
 						switch ( $event ) {
 							case 'ORDER_PLACED':
