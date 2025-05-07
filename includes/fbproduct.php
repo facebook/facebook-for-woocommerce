@@ -1274,7 +1274,7 @@ class WC_Facebook_Product {
 			}
 		}
 
-		if ($attribute_found && $attribute_obj && $attribute_obj->is_taxonomy()) {
+		if ($attribute_found && $attribute_obj && is_object($attribute_obj) && method_exists($attribute_obj, 'is_taxonomy') && $attribute_obj->is_taxonomy()) {
 			$terms = $attribute_obj->get_terms();
 			if ($terms && !is_wp_error($terms)) {
 				return wp_list_pluck($terms, 'name');
@@ -1313,12 +1313,12 @@ class WC_Facebook_Product {
 			// Check if the attribute label contains our target type
 			if (stripos($normalized_label, $attribute_type) !== false) {
 				// Found an attribute with the requested type in the label
-				if ($attr_obj->is_taxonomy()) {
+				if (is_object($attr_obj) && method_exists($attr_obj, 'is_taxonomy') && $attr_obj->is_taxonomy()) {
 					$terms = $attr_obj->get_terms();
 					if ($terms && !is_wp_error($terms)) {
 						return wp_list_pluck($terms, 'name');
 					}
-				} else if (method_exists($attr_obj, 'get_options')) {
+				} else if (is_object($attr_obj) && method_exists($attr_obj, 'get_options')) {
 					return $attr_obj->get_options();
 				}
 			}
@@ -1350,12 +1350,12 @@ class WC_Facebook_Product {
 						$normalized_label = strtolower($attr_label);
 
 						if (stripos($normalized_label, $attribute_type) !== false) {
-							if ($attr_obj->is_taxonomy()) {
+							if (is_object($attr_obj) && method_exists($attr_obj, 'is_taxonomy') && $attr_obj->is_taxonomy()) {
 								$terms = $attr_obj->get_terms();
 								if ($terms && !is_wp_error($terms)) {
 									return wp_list_pluck($terms, 'name');
 								}
-							} else if (method_exists($attr_obj, 'get_options')) {
+							} else if (is_object($attr_obj) && method_exists($attr_obj, 'get_options')) {
 								return $attr_obj->get_options();
 							}
 						}

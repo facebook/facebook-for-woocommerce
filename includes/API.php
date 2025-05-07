@@ -17,7 +17,6 @@ use WooCommerce\Facebook\API\Exceptions\Request_Limit_Reached;
 use WooCommerce\Facebook\API\Request;
 use WooCommerce\Facebook\API\Response;
 use WooCommerce\Facebook\Events\Event;
-
 use WooCommerce\Facebook\Framework\Api\Base;
 use WooCommerce\Facebook\Framework\Api\Exception as ApiException;
 
@@ -276,24 +275,19 @@ class API extends Base {
 	 */
 	public function get_business_configuration( $external_business_id, $access_token = '', $fields = [] ) {
 		$request = new API\FBE\Configuration\Request( $external_business_id, 'GET' );
-
 		$params = [];
-
 		// Use provided access token or fall back to the instance token
 		if ( ! empty( $access_token ) ) {
 			$params['access_token'] = $access_token;
 		}
-
 		// Add fields parameter if specified
 		if ( ! empty( $fields ) ) {
 			$params['fields'] = is_array( $fields ) ? implode( ',', $fields ) : $fields;
 		}
-
 		// Set parameters if we have any
 		if ( ! empty( $params ) ) {
 			$request->set_params( $params );
 		}
-
 		$this->set_response_handler( API\FBE\Configuration\Read\Response::class );
 		return $this->perform_request( $request );
 	}
@@ -720,5 +714,60 @@ class API extends Base {
 	 */
 	protected function get_plugin() {
 		return facebook_for_woocommerce();
+	}
+
+	/**
+	 * Repairs the commerce integration connection.
+	 *
+	 * @param string $fbe_external_business_id The external business ID associated with the Facebook Business Extension
+	 * @param string $shop_domain The domain of the WooCommerce site
+	 * @param string $admin_url The admin URL of the WooCommerce site
+	 * @param string $extension_version The version of the Facebook for WooCommerce extension
+	 *
+	 * @return API\Response|API\CommerceIntegration\Repair\Response
+	 * @throws ApiException
+	 */
+	public function repair_commerce_integration( string $fbe_external_business_id, string $shop_domain, string $admin_url, string $extension_version ): API\CommerceIntegration\Repair\Response {
+		$request = new API\CommerceIntegration\Repair\RepairRequest( $fbe_external_business_id, $shop_domain, $admin_url, $extension_version );
+		$this->set_response_handler( API\CommerceIntegration\Repair\Response::class );
+		return $this->perform_request( $request );
+	}
+
+	/**
+	 * Updates the commerce integration configuration.
+	 *
+	 * @param string $commerce_integration_id The ID of the commerce integration to update
+	 * @param string|null $extension_version The version of the Facebook for WooCommerce extension
+	 * @param string|null $admin_url The admin URL of the WooCommerce site
+	 * @param string|null $country_code ISO2 country code
+	 * @param string|null $currency ISO currency code
+	 * @param string|null $platform_store_id The ID of the current website on a multisite setup
+	 * @param string $commerce_partner_seller_platform_type The type of commerce partner platform
+	 * @param string $installation_status The installation status of the integration
+	 * @return API\Response|API\CommerceIntegration\Configuration\Update\Response
+	 * @throws ApiException
+	 */
+	public function update_commerce_integration(
+		string $commerce_integration_id,
+		?string $extension_version = null,
+		?string $admin_url = null,
+		?string $country_code = null,
+		?string $currency = null,
+		?string $platform_store_id = null,
+		string $commerce_partner_seller_platform_type = 'SELF_SERVE',
+		string $installation_status = 'ACCESS_TOKEN_DEPOSITED'
+	): API\CommerceIntegration\Configuration\Update\Response {
+		$request = new API\CommerceIntegration\Configuration\Update\UpdateRequest(
+			$commerce_integration_id,
+			$extension_version,
+			$admin_url,
+			$country_code,
+			$currency,
+			$platform_store_id,
+			$commerce_partner_seller_platform_type,
+			$installation_status
+		);
+		$this->set_response_handler(API\CommerceIntegration\Configuration\Update\Response::class);
+		return $this->perform_request($request);
 	}
 }
