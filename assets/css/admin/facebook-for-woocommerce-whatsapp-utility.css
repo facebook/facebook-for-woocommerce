@@ -3,9 +3,8 @@
     border: 1px solid #ccc;
     border-radius: 10px;
     box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-    margin-left: 400px;
-    margin-right: 400px;
-    margin-top: 50px;
+    width: 680px;
+    margin: 40px auto 0; /* Top margin 5px, horizontal centering */
 }
 .custom-dashicon-check {
     position: relative;
@@ -14,7 +13,7 @@
     height: 26px; /* Set the size of the circle */
     background-color: #1a805b; /* Fill the circle with green */
     border-radius: 50%; /* Make it a circle */
-    margin-right: 10px;
+    margin-right: 20px;
     top: 50%;
     transform: translateY(-50%);
 }
@@ -40,7 +39,7 @@
     width: 20px; /* Set the size of the circle */
     height: 20px; /* Set the size of the circle */
     border-radius: 50%; /* Make it a circle */
-    margin-right: 10px;
+    margin-right: 20px;
     border: 3px solid #222121ab;
     top: 50%;
     transform: translateY(-50%);
@@ -51,7 +50,7 @@
     width: 20px; /* Set the size of the circle */
     height: 20px; /* Set the size of the circle */
     border-radius: 50%; /* Make it a circle */
-    margin-right: 10px;
+    margin-right: 20px;
     border: 3px solid #222121ab;
     background-image: linear-gradient(to left, #222121ab 50%, transparent 50%);
     background-clip: padding-box; /* Add this line */
@@ -62,7 +61,7 @@
     display: flex;
 }
 .card-item {
-    padding: 20px;
+    padding: 10px 24px;
     justify-content: space-between;
     display: flex;
 }
@@ -74,13 +73,23 @@
     margin-bottom: 10px;
 }
 .whatsapp-onboarding-button {
-    margin-top: 30px;
     margin-left: auto;
     position: relative;
     top: 50%;
+    margin: auto 0; /* Ensure button is centered */
+}
+.whatsapp-onboarding-done-button {
+    margin-left: auto;
+    padding: 6px 0;
 }
 .card-content {
-    max-width: 94%;
+    max-width: 90%;
+}
+.card-content-icon h2 {
+    top: 50%;
+}
+.card-content-icon p {
+    margin-top: -10px; /* Remove margin top */
 }
 .event-config {
     display: flex;

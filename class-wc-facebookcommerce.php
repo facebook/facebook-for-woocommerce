@@ -895,10 +895,10 @@ class WC_Facebookcommerce extends WooCommerce\Facebook\Framework\Plugin {
 			woocommerce_register_additional_checkout_field(
 					array(
 						'id'       => 'wc_facebook/whatsapp_consent_checkbox', // id = namespace/field_name
-						'label'    => esc_html('Get order updates on Whatsapp'),
+						'label'    => esc_html('Get order updates on WhatsApp'),
 						'location' => 'address',
 						'type'     => 'checkbox',
-						'optionalLabel' => esc_html('Get order updates on Whatsapp')
+						'optionalLabel' => esc_html('Get order updates on WhatsApp')
 					)
 				);
 		}
