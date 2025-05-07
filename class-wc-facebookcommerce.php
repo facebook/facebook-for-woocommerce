@@ -256,9 +256,6 @@ class WC_Facebookcommerce extends WooCommerce\Facebook\Framework\Plugin {
 		}
 	}
 
-	private function is_access_token_defined(): bool {
-		return !empty($this->get_connection_handler()->get_access_token());
-	}
 
 
 	/**
