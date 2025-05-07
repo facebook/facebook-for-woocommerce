@@ -335,3 +335,40 @@ class WC_Facebook_Loader {
 
 // fire it up!
 WC_Facebook_Loader::instance();
+
+// Hook to register our Product Attributes settings screen
+// add_filter('wc_facebook_admin_settings_screens', function($screens) {
+//     // Only add if not already present
+//     if (!isset($screens['product-attributes'])) {
+//         // Include the class if not yet loaded
+//         if (!class_exists('\\WooCommerce\\Facebook\\Admin\\Settings_Screens\\Product_Attributes')) {
+//             require_once(__DIR__ . '/includes/Admin/Settings_Screens/Product_Attributes.php');
+//         }
+        
+//         // Make sure the ProductAttributeMapper class is loaded
+//         if (!class_exists('\\WooCommerce\\Facebook\\ProductAttributeMapper')) {
+//             require_once(__DIR__ . '/includes/ProductAttributeMapper.php');
+//         }
+        
+//         // Add our settings screen after Product sync tab
+//         $new_screens = array();
+//         foreach ($screens as $id => $screen) {
+//             $new_screens[$id] = $screen;
+            
+//             // Add our screen after product sync
+//             if ($id === 'product-sync') {
+//                 $new_screens['product-attributes'] = new \WooCommerce\Facebook\Admin\Settings_Screens\Product_Attributes();
+//                 break; // Add it only once
+//             }
+//         }
+        
+//         // If we didn't add it yet (maybe product-sync doesn't exist), add it at the end
+//         if (!isset($new_screens['product-attributes'])) {
+//             $new_screens['product-attributes'] = new \WooCommerce\Facebook\Admin\Settings_Screens\Product_Attributes();
+//         }
+        
+//         return $new_screens;
+//     }
+    
+//     return $screens;
+// }, 20); // Higher priority to make sure it runs after other filters
