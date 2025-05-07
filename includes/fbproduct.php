@@ -184,8 +184,14 @@ class WC_Facebook_Product {
 	 * @param string $attribute_name The WooCommerce attribute name
 	 * @return bool|string False if not mapped, or the Facebook field name if mapped
 	 */
-	public function check_attribute_mapping( $attribute_name ) {
-		$sanitized_name = \WC_Facebookcommerce_Utils::sanitize_variant_name( $attribute_name, false );
+	public function check_attribute_mapping($attribute_name) {
+		// Use the new attribute mapper if available
+		if (class_exists('\\WooCommerce\\Facebook\\ProductAttributeMapper')) {
+			return \WooCommerce\Facebook\ProductAttributeMapper::check_attribute_mapping($attribute_name);
+		}
+		
+		// Fallback to the old implementation
+		$sanitized_name = \WC_Facebookcommerce_Utils::sanitize_variant_name($attribute_name, false);
 
 		foreach ( self::$standard_facebook_fields as $fb_field => $possible_matches ) {
 			foreach ( $possible_matches as $match ) {
@@ -204,6 +210,12 @@ class WC_Facebook_Product {
 	 * @return array Array of unmapped attributes with 'name' and 'value' keys
 	 */
 	public function get_unmapped_attributes() {
+		// Use the new attribute mapper if available
+		if (class_exists('\\WooCommerce\\Facebook\\ProductAttributeMapper')) {
+			return \WooCommerce\Facebook\ProductAttributeMapper::get_unmapped_attributes($this->woo_product);
+		}
+		
+		// Fallback to the old implementation
 		$unmapped_attributes = array();
 		$attributes          = $this->woo_product->get_attributes();
 
@@ -343,8 +355,20 @@ class WC_Facebook_Product {
 	 * @return bool
 	 */
 	private function is_bookable_product() {
-
-		return facebook_for_woocommerce()->is_plugin_active( 'woocommerce-bookings.php' ) && class_exists( 'WC_Product_Booking' ) && is_callable( 'is_wc_booking_product' ) && is_wc_booking_product( $this );
+		// First check if the WooCommerce Bookings plugin is active
+		if (!facebook_for_woocommerce()->is_plugin_active('woocommerce-bookings.php')) {
+			return false;
+		}
+		
+		// Check if the Booking product class exists
+		if (!class_exists('WC_Product_Booking')) {
+			return false;
+		}
+		
+		// Check if the product is an instance of WC_Product_Booking
+		// Using get_class to avoid direct instanceof with potentially undefined class
+		$product_class = get_class($this->woo_product);
+		return $product_class === 'WC_Product_Booking' || is_subclass_of($product_class, 'WC_Product_Booking');
 	}
 
 	/**
@@ -1929,46 +1953,43 @@ class WC_Facebook_Product {
 	}
 
 	/**
-	 * Adds enhanced catalog fields to product data array. Separated from
-	 * the main function to make it easier to develop and debug, potentially
-	 * worth refactoring into main prepare_product function when complete.
+	 * Apply enhanced catalog fields from product attributes if available
 	 *
-	 * @param array  $product_data       The preparted product data map.
-	 * @param string $google_category_id The Google product category id string.
+	 * @param array $product_data
+	 * @param string $google_category_id
 	 * @return array
 	 */
 	private function apply_enhanced_catalog_fields_from_attributes( $product_data, $google_category_id ) {
-		$category_handler = facebook_for_woocommerce()->get_facebook_category_handler();
-		if ( empty( $google_category_id ) || ! $category_handler->is_category( $google_category_id ) ) {
+		// Use our new mapper if available
+		if (class_exists('\\WooCommerce\\Facebook\\ProductAttributeMapper')) {
+			$fb_attributes = \WooCommerce\Facebook\ProductAttributeMapper::prepare_product_attributes_for_facebook($this->woo_product);
+			
+			// Merge the mapped attributes with existing product data
+			if (!empty($fb_attributes)) {
+				$product_data = array_merge($product_data, $fb_attributes);
+			}
+			
 			return $product_data;
 		}
-		$enhanced_data = array();
-
-		$all_attributes = $category_handler->get_attributes_with_fallback_to_parent_category( $google_category_id );
-
-		if ( empty( $all_attributes ) ) {
-			return $product_data;
-		}
-
-		foreach ( $all_attributes as $attribute ) {
-			$value            = Products::get_enhanced_catalog_attribute( $attribute['key'], $this->woo_product );
-			$convert_to_array = (
-				isset( $attribute['can_have_multiple_values'] ) &&
-				true === $attribute['can_have_multiple_values'] &&
-				'string' === $attribute['type']
-			);
-
-			if ( ! empty( $value ) &&
-				$category_handler->is_valid_value_for_attribute( $google_category_id, $attribute['key'], $value )
-			) {
-				if ( $convert_to_array ) {
-					$value = array_map( 'trim', explode( ',', $value ) );
+		
+		// Fall back to the old implementation
+		$fb_categories = facebook_for_woocommerce()->get_facebook_category_handler();
+		$attributes = $fb_categories->get_attributes_with_fallback_to_parent_category($google_category_id);
+		
+		if (!empty($attributes)) {
+			$matched_attributes = $this->get_matched_attributes_for_product($this->woo_product, $attributes);
+			
+			foreach ($matched_attributes as $attribute_key => $attribute_values) {
+				// Store array values as comma-separated list
+				if (is_array($attribute_values)) {
+					$attribute_values = implode(', ', $attribute_values);
 				}
-				$enhanced_data[ $attribute['key'] ] = $value;
+				
+				$product_data['enhanced_catalog_attributes_' . $attribute_key] = $attribute_values;
 			}
 		}
-
-		return array_merge( $product_data, $enhanced_data );
+		
+		return $product_data;
 	}
 
 

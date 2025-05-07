@@ -79,6 +79,7 @@ class Enhanced_Settings {
 			$screens = array(
 				Settings_Screens\Shops::ID        => new Settings_Screens\Shops(),
 				Settings_Screens\Product_Sets::ID => new Settings_Screens\Product_Sets(),
+				Settings_Screens\Product_Attributes::ID => new Settings_Screens\Product_Attributes(),	
 			);
 		} else {
 			$screens = [ Settings_Screens\Shops::ID => new Settings_Screens\Shops() ];
