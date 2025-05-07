@@ -44,6 +44,7 @@ class RolloutSwitches {
 		if ( empty( $external_business_id ) ) {
 			return;
 		}
+		
 
 		$swiches = $this->plugin->get_api()->get_rollout_switches( $external_business_id );
 		$data    = $swiches->get_data();
