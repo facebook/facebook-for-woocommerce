@@ -38,7 +38,6 @@ class RolloutSwitches {
 
 	public function __construct( \WC_Facebookcommerce $plugin ) {
 		$this->plugin = $plugin;
-		// $this->init();
 		add_action( Heartbeat::HOURLY, array( $this, 'init' ) );
 	}
 
@@ -57,14 +56,6 @@ class RolloutSwitches {
 			}
 			$this->rollout_switches[ $switch['switch'] ] = (bool) $switch['enabled'];
 		}
-
-		wc_get_logger()->info(
-			sprintf(
-					/* translators: %s $response */
-				 'WAUM rollout switches init: %1$s ',
-				json_encode( $this->rollout_switches ),
-			)
-		);
 	}
 
 	/**
@@ -87,14 +78,6 @@ class RolloutSwitches {
 		if ( ! $this->is_switch_active( $switch_name ) ) {
 			return false;
 		}
-
-		wc_get_logger()->info(
-			sprintf(
-					/* translators: %s $response */
-				 'WAUM rollout switches: %1$s ',
-				json_encode( $this->rollout_switches ),
-			)
-		);
 
 		return isset($this->rollout_switches[ $switch_name ]) ? $this->rollout_switches[ $switch_name ] : true;
 	}
