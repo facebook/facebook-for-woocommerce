@@ -98,12 +98,12 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 		private function add_hooks() {
 
 			// inject Pixel
-			add_action( 'wp_head', array( $this, 'inject_base_pixel' ) );
+			add_action( 'wp_head', array( $this, 'inject_base_pixel' ), 1 );
 			add_action( 'wp_footer', array( $this, 'inject_base_pixel_noscript' ) );
 
 			// ViewContent for individual products
-			add_action( 'woocommerce_after_single_product', array( $this, 'inject_view_content_event' ) );
-			add_action( 'woocommerce_after_single_product', array( $this, 'maybe_inject_search_event' ) );
+			add_action( 'woocommerce_after_single_product', array( $this, 'inject_view_content_event' ), 20 );
+			add_action( 'woocommerce_after_single_product', array( $this, 'maybe_inject_search_event' ), 20 );
 
 			// ViewCategory events
 			add_action( 'woocommerce_after_shop_loop', array( $this, 'inject_view_category_event' ) );
