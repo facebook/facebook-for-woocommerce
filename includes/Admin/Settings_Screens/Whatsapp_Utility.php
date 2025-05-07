@@ -107,7 +107,7 @@ class Whatsapp_Utility extends Abstract_Settings_Screen {
 				),
 			)
 		);
-		$is_payment_setup = (bool)get_option( 'wc_facebook_wa_integration_is_payment_setup', null );
+		$is_payment_setup = (bool) get_option( 'wc_facebook_wa_integration_is_payment_setup', null );
 		wp_enqueue_script(
 			'facebook-for-woocommerce-whatsapp-billing',
 			facebook_for_woocommerce()->get_asset_build_dir_url() . '/admin/whatsapp-billing.js',
@@ -121,7 +121,7 @@ class Whatsapp_Utility extends Abstract_Settings_Screen {
 				'ajax_url'                   => admin_url( 'admin-ajax.php' ),
 				'nonce'                      => wp_create_nonce( 'facebook-for-wc-whatsapp-billing-nonce' ),
 				'consent_collection_enabled' => $consent_collection_enabled,
-				'is_payment_setup'					 => $is_payment_setup,
+				'is_payment_setup'           => $is_payment_setup,
 				'i18n'                       => array(
 					'result' => true,
 				),

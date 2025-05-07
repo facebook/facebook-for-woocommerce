@@ -306,7 +306,7 @@ class AJAX {
 			wp_send_json_error( 'Invalid security token sent.' );
 		}
 		$waba_id          = get_option( 'wc_facebook_wa_integration_waba_id', null );
-		$is_payment_setup = (bool)get_option( 'wc_facebook_wa_integration_is_payment_setup', null );
+		$is_payment_setup = (bool) get_option( 'wc_facebook_wa_integration_is_payment_setup', null );
 		if ( ! empty( $waba_id ) ) {
 			wp_send_json_success(
 				array(
@@ -335,16 +335,18 @@ class AJAX {
 		if ( get_option( 'wc_facebook_whatsapp_consent_collection_setting_status' ) !== 'enabled' ) {
 			update_option( 'wc_facebook_whatsapp_consent_collection_setting_status', 'enabled' );
 		}
-		$is_payment_setup = (bool)get_option( 'wc_facebook_wa_integration_is_payment_setup', null );
+		$is_payment_setup = (bool) get_option( 'wc_facebook_wa_integration_is_payment_setup', null );
 		wc_get_logger()->info(
 			sprintf(
 				__( 'Whatsapp Consent Collection Enabled Successfully in Checkout Flow', 'facebook-for-woocommerce' )
 			)
 		);
-		wp_send_json_success(array(
-					'message'          => 'Whatsapp Consent Collection Enabled Successfully in Checkout Flow',
-					'is_payment_setup' => $is_payment_setup,
-				));
+		wp_send_json_success(
+			array(
+				'message'          => 'Whatsapp Consent Collection Enabled Successfully in Checkout Flow',
+				'is_payment_setup' => $is_payment_setup,
+			)
+		);
 	}
 
 	public function whatsapp_consent_collection_disable() {
