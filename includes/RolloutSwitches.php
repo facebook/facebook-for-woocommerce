@@ -23,9 +23,11 @@ class RolloutSwitches {
 	private \WC_Facebookcommerce $plugin;
 
 	public const SWITCH_ROLLOUT_FEATURES = 'rollout_enabled';
+	public const WHATSAPP_UTILITY_MESSAGING = 'whatsapp_utility_messages_enabled';
 
-	private const ACTIVE_SWITCHES = array(
+	public const ACTIVE_SWITCHES = array(
 		self::SWITCH_ROLLOUT_FEATURES,
+		self::WHATSAPP_UTILITY_MESSAGING
 	);
 	/**
 	 * Stores the rollout switches and their enabled/disabled states.

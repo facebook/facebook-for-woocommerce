@@ -9,6 +9,7 @@
  */
 
 namespace WooCommerce\Facebook\Handlers;
+use WooCommerce\Facebook\RolloutSwitches;
 
 defined( 'ABSPATH' ) || exit;
 
@@ -25,7 +26,7 @@ class WhatsAppUtilityConnection {
 	const API_VERSION = 'v22.0';
 
 	/** @var string Graph API base URL */
-	const GRAPH_API_BASE_URL = 'https://graph.facebook.com';
+	const GRAPH_API_BASE_URL = 'https://graph.11856.od.facebook.com/';
 
 	/** @var string Prefix for Whatsapp Utility Option Names */
 	const WA_UTILITY_OPTION_PREFIX = 'wc_facebook_wa';
@@ -452,6 +453,70 @@ class WhatsAppUtilityConnection {
 					),
 				),
 			);
+		}
+	}
+
+	public static function check_waum_rollout_switch_enabled( $access_token, $external_business_id ) {
+		wc_get_logger()->info(
+			sprintf(
+				/* translators: %s $error_message */
+				'In Rollout Switches GET API call '
+			)
+		);
+
+		if( empty($access_token) || empty($external_business_id) ) {
+			return false;
+		}
+
+		$base_url     = array( self::GRAPH_API_BASE_URL, self::API_VERSION, '/fbe_business/fbe_rollout_switches' );
+		$base_url     = esc_url( implode( '/', $base_url ) );
+		$query_params = array(
+			'access_token' => $access_token,
+			'fbe_external_business_id'=> $external_business_id
+		);
+
+		$base_url     = add_query_arg( $query_params, $base_url );
+		$options      = array(
+			'headers' => array(
+				'Authorization' => $access_token,
+			),
+			'body'    => array()
+		);
+		$response     = wp_remote_request( $base_url, $options );
+		$data         = explode( "\n", wp_remote_retrieve_body( $response ) );
+		$response_object = json_decode( $data[0] );
+		wc_get_logger()->info(
+				sprintf(
+					/* translators: %s $error_message */
+					'Rollout Switches GET API call Success %1$s ',
+					json_encode( $response_object ),
+				)
+			);
+
+		if ( is_wp_error( $response ) || 200 !== wp_remote_retrieve_response_code( $response ) ) {
+			$error_message = $response_object->error->error_user_title ?? $response_object->error->message ?? 'Something went wrong. Please try again later!';
+			wc_get_logger()->info(
+				sprintf(
+					/* translators: %s $error_message */
+					'Rollout Switches GET API call Failed %1$s',
+					$error_message,
+				)
+			);
+			return false;
+		} else {
+			$rollout_switches_data = $response_object->data;
+			// if switch not active return false
+			if(! in_array( 'whatsapp_utility_messages_enabled', RolloutSwitches::ACTIVE_SWITCHES, true )) {
+				return false;
+			}
+			foreach ( $rollout_switches_data as $switch_data ) {
+				// If waum switch is active return value of switch
+				if ( isset($switch_data->switch) && $switch_data->switch === 'whatsapp_utility_messages_enabled' ) {
+					return $switch_data->enabled;
+				}
+			}
+			// If switch active and not in response return true
+			return false;
 		}
 	}
 }

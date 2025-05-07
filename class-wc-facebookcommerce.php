@@ -25,6 +25,7 @@ use WooCommerce\Facebook\Utilities\Background_Handle_Virtual_Products_Variations
 use WooCommerce\Facebook\Utilities\Background_Remove_Duplicate_Visibility_Meta;
 use WooCommerce\Facebook\Utilities\DebugTools;
 use WooCommerce\Facebook\Utilities\Heartbeat;
+use WooCommerce\Facebook\Handlers\WhatsAppUtilityConnection;
 
 class WC_Facebookcommerce extends WooCommerce\Facebook\Framework\Plugin {
 	/** @var string the plugin version */
@@ -244,12 +245,14 @@ class WC_Facebookcommerce extends WooCommerce\Facebook\Framework\Plugin {
 			// Instantiate the debug tools.
 			$this->debug_tools = new DebugTools();
 
+			$whatsapp_utility_message_enabled = WhatsAppUtilityConnection::check_waum_rollout_switch_enabled( $this->connection_handler->get_access_token(), $this->connection_handler->get_external_business_id() );
+
 			// load admin handlers, before admin_init
 			if ( is_admin() ) {
 				if ($this->use_enhanced_onboarding()) {
-					$this->admin_enhanced_settings = new WooCommerce\Facebook\Admin\Enhanced_Settings( $this->connection_handler->is_connected() );
+					$this->admin_enhanced_settings = new WooCommerce\Facebook\Admin\Enhanced_Settings( $this->connection_handler->is_connected(), $whatsapp_utility_message_enabled );
 				} else {
-					$this->admin_settings = new WooCommerce\Facebook\Admin\Settings( $this->connection_handler->is_connected() );
+					$this->admin_settings = new WooCommerce\Facebook\Admin\Settings( $this->connection_handler->is_connected(), $whatsapp_utility_message_enabled );
 				}
 			}
 		}

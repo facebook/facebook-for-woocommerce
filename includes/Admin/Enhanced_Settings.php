@@ -39,8 +39,6 @@ class Enhanced_Settings {
 	 */
 	const SUBMENU_PAGE_ID = 'edit-tags.php?taxonomy=fb_product_set&post_type=product';
 
-	/** @var bool flag to check if whatsapp utility is enabled, this is just a boolean for now, will implement a flagging mechanism */
-	const WHATSAPP_UTILITY_FEATURE_FLAG = true;
 
 	/**
 	 * Enhanced settings constructor.
@@ -49,8 +47,8 @@ class Enhanced_Settings {
 	 *
 	 * @param bool $is_connected
 	 */
-	public function __construct( bool $is_connected ) {
-		$this->screens = $this->build_menu_item_array( $is_connected );
+	public function __construct( bool $is_connected, bool $whatsapp_utility_message_enabled ) {
+		$this->screens = $this->build_menu_item_array( $is_connected, $whatsapp_utility_message_enabled );
 
 		add_action( 'admin_menu', array( $this, 'add_menu_item' ) );
 		add_action( 'wp_loaded', array( $this, 'save' ) );
@@ -68,7 +66,7 @@ class Enhanced_Settings {
 	 * @param bool $is_connected is Facebook connected
 	 * @return array
 	 */
-	private function build_menu_item_array( bool $is_connected ): array {
+	private function build_menu_item_array( bool $is_connected, bool $whatsapp_utility_message_enabled ): array {
 
 		if ( $is_connected ) {
 			// TODO: Remove Product sync and Product sets tab once catalog changes are complete
@@ -81,7 +79,7 @@ class Enhanced_Settings {
 			$screens = [ Settings_Screens\Shops::ID => new Settings_Screens\Shops() ];
 		}
 
-		if ( self::WHATSAPP_UTILITY_FEATURE_FLAG ) {
+		if ( $whatsapp_utility_message_enabled === true ) {
 			$whatsapp_utility_screens = [ Settings_Screens\Whatsapp_Utility::ID => new Settings_Screens\Whatsapp_Utility() ];
 			$screens                  = array_merge( $screens, $whatsapp_utility_screens );
 		}

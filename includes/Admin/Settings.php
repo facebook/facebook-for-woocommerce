@@ -48,9 +48,9 @@ class Settings {
 	 * @param bool $is_connected is the state of the plugin connection to the Facebook Marketing API
 	 * @since 2.0.0
 	 */
-	public function __construct( bool $is_connected ) {
+	public function __construct( bool $is_connected, bool $whatsapp_utility_message_enabled ) {
 
-		$this->screens = $this->build_menu_item_array( $is_connected );
+		$this->screens = $this->build_menu_item_array( $is_connected, $whatsapp_utility_message_enabled );
 
 		add_action( 'admin_menu', array( $this, 'add_menu_item' ) );
 		add_action( 'wp_loaded', array( $this, 'save' ) );
@@ -65,7 +65,7 @@ class Settings {
 	 * @param bool $is_connected is Facebook connected
 	 * @since 3.0.7
 	 */
-	private function build_menu_item_array( bool $is_connected ): array {
+	private function build_menu_item_array( bool $is_connected, bool $whatsapp_utility_message_enabled ): array {
 		$advertise  = [ Settings_Screens\Advertise::ID => new Settings_Screens\Advertise() ];
 		$connection = [ Settings_Screens\Connection::ID => new Settings_Screens\Connection() ];
 
@@ -77,7 +77,7 @@ class Settings {
 			Settings_Screens\Product_Sets::ID => new Settings_Screens\Product_Sets(),
 		);
 
-		if ( self::WHATSAPP_UTILITY_FEATURE_FLAG ) {
+		if ( $whatsapp_utility_message_enabled === true ) {
 			$whatsapp_utility_screens = [ Settings_Screens\Whatsapp_Utility::ID => new Settings_Screens\Whatsapp_Utility() ];
 			$last                     = array_merge( $last, $whatsapp_utility_screens );
 		}
