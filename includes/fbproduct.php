@@ -1720,9 +1720,11 @@ class WC_Facebook_Product {
 				 */
 				if($parent_product_visibility === "yes"){
 					$product_data[ 'visibility' ] = \WC_Facebookcommerce_Integration::FB_SHOP_PRODUCT_VISIBLE;
+					$product_data["is_woo_all_products_sync"] = true;
 				}
 				else if ($parent_product_visibility === "no"){
 					$product_data[ 'visibility' ] = \WC_Facebookcommerce_Integration::FB_SHOP_PRODUCT_HIDDEN;
+					$product_data["is_woo_all_products_sync"] = false;
 				}
 				else{
 					/**
@@ -1738,10 +1740,13 @@ class WC_Facebook_Product {
 						$variation = wc_get_product($variation_id);
 				
 						if ($variation) {
-							$variation_visibility = $variation_visibility || Products::is_product_visible($variation);
-						}
+							$current_variation_visibility = Products::is_product_visible($variation);
+							$variation_visibility = $variation_visibility || $current_variation_visibility;
 
-						if ($variation_visibility) break;
+							if($current_variation_visibility){
+								$product_data["is_woo_all_products_sync"] = true;
+							}
+						}
 					}
 					$product_data[ 'visibility' ] = $variation_visibility ? \WC_Facebookcommerce_Integration::FB_SHOP_PRODUCT_VISIBLE : \WC_Facebookcommerce_Integration::FB_SHOP_PRODUCT_HIDDEN;
 					/**
