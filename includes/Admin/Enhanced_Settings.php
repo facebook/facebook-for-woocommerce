@@ -88,7 +88,6 @@ class Enhanced_Settings {
 			$screens = [ Settings_Screens\Shops::ID => new Settings_Screens\Shops() ];
 		}
 
-
 		return $screens;
 	}
 
@@ -100,14 +99,13 @@ class Enhanced_Settings {
 	 * @return void
 	 */
 	public function add_extra_screens(): void {
-		$rollout_switches = $this->plugin->get_rollout_switches();
-		$is_connected = $this->plugin->get_connection_handler()->is_connected();
-		$is_whatsapp_utility_messaging_enabled = $rollout_switches->is_switch_enabled(RolloutSwitches::WHATSAPP_UTILITY_MESSAGING);
+		$rollout_switches                      = $this->plugin->get_rollout_switches();
+		$is_connected                          = $this->plugin->get_connection_handler()->is_connected();
+		$is_whatsapp_utility_messaging_enabled = $rollout_switches->is_switch_enabled( RolloutSwitches::WHATSAPP_UTILITY_MESSAGING );
 
 		if ( $is_connected === true && $is_whatsapp_utility_messaging_enabled === true ) {
 			$this->screens[ Settings_Screens\Whatsapp_Utility::ID ] = new Settings_Screens\Whatsapp_Utility();
 		}
-
 	}
 
 	/**
