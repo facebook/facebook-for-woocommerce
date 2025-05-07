@@ -80,7 +80,6 @@ class FeedUploadUtils {
 						'review_image_urls'               => null,
 						'incentivized'                    => 'false',
 						'has_verified_purchase'           => 'false',
-						'country'                         => null,
 						'reviewer.name'                   => $comment->comment_author,
 						'reviewer.reviewerID'             => $reviewer_id,
 						'reviewer.isAnonymous'            => $reviewer_is_anonymous,

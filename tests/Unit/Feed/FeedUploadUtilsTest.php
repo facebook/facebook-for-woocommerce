@@ -52,7 +52,6 @@ class FeedUploadUtilsTest extends FeedDataTestBase {
 			'review_image_urls'               => null,
 			'incentivized'                    => 'false',
 			'has_verified_purchase'           => 'false',
-			'country'                         => null,
 			'reviewer.name'                   => 'John Doe',
 			'reviewer.reviewerID'             => "0",
 			'reviewer.isAnonymous'            => 'true',

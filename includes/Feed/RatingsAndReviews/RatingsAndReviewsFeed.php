@@ -24,7 +24,7 @@ use Automattic\WooCommerce\ActionSchedulerJobFramework\Proxies\ActionScheduler;
  */
 class RatingsAndReviewsFeed extends AbstractFeed {
 	/** Header for the ratings and reviews feed file. @var string */
-	const RATINGS_AND_REVIEWS_FEED_HEADER = 'aggregator,store.name,store.id,store.storeUrls,review_id,rating,title,content,created_at,updated_at,review_image_urls,incentivized,has_verified_purchase,country,reviewer.name,reviewer.reviewerID,reviewer.isAnonymous,product.name,product.url,product.productIdentifiers.skus' . PHP_EOL;
+	const RATINGS_AND_REVIEWS_FEED_HEADER = 'aggregator,store.name,store.id,store.storeUrls,review_id,rating,title,content,created_at,updated_at,review_image_urls,incentivized,has_verified_purchase,reviewer.name,reviewer.reviewerID,reviewer.isAnonymous,product.name,product.url,product.productIdentifiers.skus' . PHP_EOL;
 
 	/**
 	 * Constructor.
