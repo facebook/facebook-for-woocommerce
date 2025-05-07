@@ -275,7 +275,13 @@ class Handler extends AbstractRESTEndpoint {
 				if ( facebook_for_woocommerce()->get_integration()->allow_full_batch_api_sync() ) {
 					facebook_for_woocommerce()->get_products_sync_handler()->create_or_update_all_products();
 				} else {
-					\WC_Facebookcommerce_Utils::log_to_meta( 'Initial full product sync disabled by filter hook `facebook_for_woocommerce_allow_full_batch_api_sync`' );
+					\WC_Facebookcommerce_Utils::log_to_meta(
+						'Initial full product sync disabled by filter hook `facebook_for_woocommerce_allow_full_batch_api_sync`',
+						[
+							'flow_name' => 'product_sync',
+							'flow_step' => 'initial_sync',
+						]
+					);
 				}
 			}
 		} catch ( \Exception $exception ) {

@@ -101,7 +101,7 @@ class Checkout {
 							\WC_Facebookcommerce_Utils::log_exception_immediately_to_meta(
 								$e,
 								array(
-									'flow_name'       => 'checkout',
+									'event'           => 'checkout_permalink_template_exception',
 									'incoming_params' => array(
 										'products_param' => $products_param,
 										'product_id'     => $product_id,
