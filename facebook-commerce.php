@@ -173,6 +173,9 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 	/** @var WC_Facebook_Product_Feed instance. */
 	private $fbproductfeed;
 
+	/** @var WC_Facebookcommerce_Whatsapp_Utility_Event instance. */
+	private $wa_utility_event_processor;
+
 	/**
 	 * Init and hook in the integration.
 	 *
@@ -360,6 +363,9 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 		// Product Set hooks.
 		add_action( 'fb_wc_product_set_sync', [ $this, 'create_or_update_product_set_item' ], 99, 2 );
 		add_action( 'fb_wc_product_set_delete', [ $this, 'delete_product_set_item' ], 99 );
+
+		// Init Whatsapp Utility Event Processor
+		$this->wa_utility_event_processor = $this->load_whatsapp_utility_event_processor();
 	}
 
 	/**
@@ -3025,6 +3031,21 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 		delete_option( 'fb_test_pass' );
 		printf( json_encode( $response ) );
 		wp_die();
+	}
+
+	/**
+	 * Init WhatsApp Utility Event Processor.
+	 *
+	 * @return void
+	 */
+	public function load_whatsapp_utility_event_processor() {
+		// Attempt to load WhatsApp Utility Event Processor
+		include_once 'facebook-commerce-whatsapp-utility-event.php';
+		if ( class_exists( 'WC_Facebookcommerce_Whatsapp_Utility_Event' ) ) {
+			if ( ! isset( $this->wa_utility_event_processor ) ) {
+				$this->wa_utility_event_processor = new WC_Facebookcommerce_Whatsapp_Utility_Event( $this );
+			}
+		}
 	}
 
 }
