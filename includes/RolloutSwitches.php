@@ -59,7 +59,10 @@ class RolloutSwitches {
 		} catch ( Exception $e ) {
 			\WC_Facebookcommerce_Utils::log_exception_immediately_to_meta(
 				$e,
-				[ 'event' => 'rollout_switches_init' ]
+				[
+					'event'      => 'rollout_switches',
+					'event_type' => 'init',
+				]
 			);
 		}
 	}
