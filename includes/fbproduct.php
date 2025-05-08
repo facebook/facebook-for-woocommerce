@@ -167,6 +167,11 @@ class WC_Facebook_Product {
 	 */
 	public $rich_text_description;
 
+	/**
+	 * @var string Current type of product preparation being performed
+	 */
+	protected $current_type_to_prepare;
+
 	/** @var array Standard Facebook fields that WooCommerce attributes can map to */
 	private static $standard_facebook_fields = array(
 		'size'      => array( 'size' ),
@@ -1693,6 +1698,15 @@ class WC_Facebook_Product {
 	 * @return array
 	 */
 	public function prepare_product( $retailer_id = null, $type_to_prepare_for = self::PRODUCT_PREP_TYPE_NORMAL ) {
+		// Direct debug logging
+		$log_file = WP_CONTENT_DIR . '/uploads/fb-product-debug.log';
+		$log_message = "----------------------\n";
+		$log_message .= "START PREPARE_PRODUCT for product ID: {$this->id}\n";
+		$log_message .= "Type: {$type_to_prepare_for}\n";
+		file_put_contents($log_file, $log_message, FILE_APPEND);
+		
+		// Store the preparation type for later use
+		$this->current_type_to_prepare = $type_to_prepare_for;
 
 		if ( ! $retailer_id ) {
 			$retailer_id = WC_Facebookcommerce_Utils::get_fb_retailer_id( $this );
@@ -1945,11 +1959,20 @@ class WC_Facebook_Product {
 		* @param int   $id           Woocommerce product id
 		* @param array $product_data An array of product data
 		*/
-		return apply_filters(
+		$product_data = apply_filters(
 			'facebook_for_woocommerce_integration_prepare_product',
 			$product_data,
 			$id
 		);
+		
+		// Log final product data at the end of prepare_product
+		$log_file = WP_CONTENT_DIR . '/uploads/fb-product-debug.log';
+		$log_message = "END PREPARE_PRODUCT for product ID: {$this->id}\n";
+		$log_message .= "Final data size: " . strlen(json_encode($product_data)) . " bytes\n";
+		$log_message .= "----------------------\n\n";
+		file_put_contents($log_file, $log_message, FILE_APPEND);
+		
+		return $product_data;
 	}
 
 	/**
@@ -1960,19 +1983,120 @@ class WC_Facebook_Product {
 	 * @return array
 	 */
 	private function apply_enhanced_catalog_fields_from_attributes( $product_data, $google_category_id ) {
-		// Use our new mapper if available
+		// Add a direct file logging function to help with debugging
+		$log_file = WP_CONTENT_DIR . '/uploads/fb-product-debug.log';
+		$log_message = "Product ID: {$this->id} - Starting attribute mapping\n";
+		file_put_contents($log_file, $log_message, FILE_APPEND);
+		
+		// Use our attribute mapper for all product attributes
 		if (class_exists('\\WooCommerce\\Facebook\\ProductAttributeMapper')) {
-			$fb_attributes = \WooCommerce\Facebook\ProductAttributeMapper::prepare_product_attributes_for_facebook($this->woo_product);
+			// Store current type for API-specific transformations
+			$is_api_call = ($this->current_type_to_prepare === self::PRODUCT_PREP_TYPE_ITEMS_BATCH);
+			$log_message = "API call: " . ($is_api_call ? "Yes" : "No") . "\n";
+			file_put_contents($log_file, $log_message, FILE_APPEND);
 			
-			// Merge the mapped attributes with existing product data
-			if (!empty($fb_attributes)) {
-				$product_data = array_merge($product_data, $fb_attributes);
+			// Get all standard mapped attributes (this already includes default values logic)
+			$standard_attributes = \WooCommerce\Facebook\ProductAttributeMapper::get_mapped_attributes($this->woo_product);
+			$log_message = "Mapped attributes: " . json_encode($standard_attributes) . "\n";
+			file_put_contents($log_file, $log_message, FILE_APPEND);
+			
+			// Handle type-specific mappings or transformations
+			foreach ($standard_attributes as $field => $value) {
+				switch ($field) {
+					case 'brand':
+					case 'mpn':
+					case 'material':
+					case 'pattern':
+						// Ensure proper length limits
+						$standard_attributes[$field] = mb_substr(WC_Facebookcommerce_Utils::clean_string($value), 0, 100);
+						break;
+						
+					// For array values that need special handling in API calls
+					case 'color':
+					case 'size':
+						if ($is_api_call) {
+							// If this is for API and value contains pipe separator, convert to array
+							if (is_string($value) && strpos($value, ' | ') !== false) {
+								$standard_attributes[$field] = array_map('trim', explode(' | ', $value));
+							}
+						}
+						break;
+				}
 			}
+			
+			$log_message = "Processed attributes: " . json_encode($standard_attributes) . "\n";
+			file_put_contents($log_file, $log_message, FILE_APPEND);
+			
+			// Log what we're about to add to product data
+			if (function_exists('facebook_for_woocommerce')) {
+					facebook_for_woocommerce()->log("Adding mapped attributes using ProductAttributeMapper: " . json_encode($standard_attributes));
+			}
+			
+			// Merge with product data (will override any existing values set earlier)
+			$product_data = array_merge($product_data, $standard_attributes);
+			
+			// Process unmapped attributes as custom_data
+			$unmapped_attributes = \WooCommerce\Facebook\ProductAttributeMapper::get_unmapped_attributes($this->woo_product);
+			$log_message = "Unmapped attributes: " . json_encode($unmapped_attributes) . "\n";
+			file_put_contents($log_file, $log_message, FILE_APPEND);
+			
+			if (!empty($unmapped_attributes)) {
+				if (!isset($product_data['custom_data'])) {
+					$product_data['custom_data'] = array();
+				}
+				
+				foreach ($unmapped_attributes as $attribute) {
+					// Skip empty values
+					if (empty($attribute['value'])) continue;
+					
+					// Format attribute name (remove pa_ prefix and standardize)
+					$attr_name = \WooCommerce\Facebook\ProductAttributeMapper::sanitize_attribute_name($attribute['name']);
+					
+					// Add as custom data
+					$product_data['custom_data'][$attr_name] = $attribute['value'];
+				}
+				
+				// Log custom data
+				if (function_exists('facebook_for_woocommerce')) {
+					facebook_for_woocommerce()->log("Adding unmapped attributes as custom_data: " . json_encode($product_data['custom_data']));
+				}
+				
+				$log_message = "Custom data: " . json_encode($product_data['custom_data']) . "\n";
+				file_put_contents($log_file, $log_message, FILE_APPEND);
+			}
+			
+			// Also handle enhanced catalog attributes based on Google category
+			$fb_categories = facebook_for_woocommerce()->get_facebook_category_handler();
+			if ($fb_categories) {
+				$attributes = $fb_categories->get_attributes_with_fallback_to_parent_category($google_category_id);
+				
+				if (!empty($attributes)) {
+					$matched_attributes = $this->get_matched_attributes_for_product($this->woo_product, $attributes);
+					
+					foreach ($matched_attributes as $attribute_key => $attribute_values) {
+						// Skip empty values
+						if (empty($attribute_values)) continue;
+						
+						// Store array values as comma-separated list
+						if (is_array($attribute_values)) {
+							$attribute_values = implode(', ', $attribute_values);
+						}
+						
+						$product_data['enhanced_catalog_attributes_' . $attribute_key] = $attribute_values;
+					}
+					
+					$log_message = "Enhanced catalog attributes: " . json_encode($matched_attributes) . "\n";
+					file_put_contents($log_file, $log_message, FILE_APPEND);
+				}
+			}
+			
+			$log_message = "Final product data: " . json_encode($product_data) . "\n\n";
+			file_put_contents($log_file, $log_message, FILE_APPEND);
 			
 			return $product_data;
 		}
 		
-		// Fall back to the old implementation
+		// Fallback to the old implementation
 		$fb_categories = facebook_for_woocommerce()->get_facebook_category_handler();
 		$attributes = $fb_categories->get_attributes_with_fallback_to_parent_category($google_category_id);
 		
