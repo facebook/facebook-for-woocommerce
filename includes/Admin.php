@@ -1129,7 +1129,7 @@ class Admin {
 		// 'id' attribute needs to match the 'target' parameter set above
 		?>
 		<div id='facebook_options' class='panel woocommerce_options_panel'>
-			<div class='options_group'>
+			<div>
 				<?php
 
 				woocommerce_wp_select(
@@ -1146,7 +1146,12 @@ class Admin {
 						'description' => __( 'Choose whether to sync this product to Facebook and, if synced, whether it should be visible in the catalog.', 'facebook-for-woocommerce' ),
 					)
 				);
-
+				?>
+			</div>
+			
+			
+			<div class='options_group hide_if_variable'>
+				<?php
 				echo '<div class="wp-editor-wrap">';
 				echo '<label for="' . esc_attr( \WC_Facebookcommerce_Integration::FB_PRODUCT_DESCRIPTION ) . '">' .
 					esc_html__( 'Facebook Description', 'facebook-for-woocommerce' ) .
