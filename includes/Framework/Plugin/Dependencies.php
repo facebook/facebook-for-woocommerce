@@ -61,7 +61,7 @@ class Dependencies {
 	 * @return array
 	 */
 	private function parse_dependencies( $args ) {
-		$dependencies     = wp_parse_args(
+		$dependencies = wp_parse_args(
 			$args,
 			array(
 				'php_extensions' => array(),
@@ -199,7 +199,7 @@ class Dependencies {
 	protected function add_deprecated_notices() {
 		// add a notice for PHP < 5.6
 		if ( version_compare( PHP_VERSION, '5.6.0', '<' ) ) {
-			$message  = '<p>';
+			$message = '<p>';
 			$message .= sprintf(
 				/* translators: Placeholders: %1$s - <strong>, %2$s - </strong> */
 				__(
@@ -259,7 +259,7 @@ class Dependencies {
 		 *
 		 * @param array $plugins an array of file identifiers (keys) and plugin names (values)
 		 */
-		$plugins        = (array) apply_filters(
+		$plugins = (array) apply_filters(
 			'wc_' . $this->get_plugin()->get_id() . '_scripts_optimization_plugins',
 			[
 				'async-javascript.php' => 'Async JavaScript',
