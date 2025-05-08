@@ -25,6 +25,8 @@ class ProductSetSync {
 
     const WC_PRODUCT_CATEGORY_TAXONOMY = 'product_cat';
 
+    const WC_AUTO_PRODUCT_SET_PREFIX = '[WC Auto] ';
+
     /**
      * ProductSetSync constructor.
      */
@@ -165,7 +167,7 @@ class ProductSetSync {
         }
 
         $fb_product_set_data = array(
-            'name'     => $wc_category_name,
+            'name'     => self::WC_AUTO_PRODUCT_SET_PREFIX.$wc_category_name,
             'filter'   => wp_json_encode( array( 'and' => array( array( 'product_type' => array( 'i_contains' => $wc_category_name ) ) ) ) ),
             'retailer_id' => $this->get_retailer_id( $wc_category ),
             'metadata' => wp_json_encode( $fb_product_set_metadata ),
