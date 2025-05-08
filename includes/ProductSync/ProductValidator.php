@@ -333,17 +333,37 @@ class ProductValidator {
 
 			// Variable product has no variations with sync enabled so it shouldn't be synced.
 			throw $invalid_exception;
-		} elseif( $this->product->get_type() === "variation"){
+		} elseif( $this->product->get_type() === 'variation'){
 			/**
 			 * This check will run mostly for background jobs like sync all and feeds
 			 */
-			foreach ( $this->product_parent->get_children() as $child_id ) {
-				$child_product = wc_get_product( $child_id );
-				if ( $child_product && 'no' !== $child_product->get_meta( self::SYNC_ENABLED_META_KEY ) ) {
-					// At least one product is "sync-enabled" so bail before exception.
-					return;
-				}
+			$parent_sync= $this->product_parent->get_meta( self::SYNC_ENABLED_META_KEY );
+
+			if($parent_sync === 'yes'){
+				return;
 			}
+			else if($parent_sync === 'no'){
+				throw $invalid_exception;
+			}
+			else {
+				$variation_sync = false;
+				foreach ( $this->product_parent->get_children() as $child_id ) {
+					$child_product = wc_get_product( $child_id );
+					if ( $child_product && 'no' !== $child_product->get_meta( self::SYNC_ENABLED_META_KEY ) ) {
+						// At least one product is "sync-enabled" so bail before exception.
+						$variation_sync = true;
+						break;
+					}
+				}
+
+				/**
+				 * Updating parent level sync for UI issues and
+				 * Future variation checks for sync
+				 */
+				update_post_meta($this->product_parent->get_id(),self::SYNC_ENABLED_META_KEY , $variation_sync ? "yes" : "no");
+				if($variation_sync) return;
+			}
+
 
 			// Variable product has no variations with sync enabled so it shouldn't be synced.
 			throw $invalid_exception;
