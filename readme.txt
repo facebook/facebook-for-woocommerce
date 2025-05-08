@@ -3,7 +3,7 @@ Contributors: facebook
 Tags: meta, facebook, conversions api, catalog sync, ads
 Requires at least: 5.6
 Tested up to: 6.7
-Stable tag: 3.4.7
+Stable tag: 3.4.8
 Requires PHP: 7.4
 MySQL: 5.6 or greater
 License: GPLv2 or later
@@ -40,29 +40,12 @@ When opening a bug on GitHub, please give us as many details as possible.
 
 == Changelog ==
 
-= 3.4.7 - 2025-04-17 =
-* Tweak - Added external_variant_id to the feed file by @mshymon in #2998
-* Tweak - Added support for syncing product type by @vinkmeta in #3013
-* Tweak - Relocating bulk actions by @SayanPandey in #2943
-* Tweak - Filtration on All Products page | Synced and Not Synced by @SayanPandey in #2999
-* Tweak - Updated PR Template by @vinkmeta in #3019
-* Fix - Null check exceptions by @vinkmeta in #3015
-* Tweak - Relaxing sync validations by @raymon1 in #2969
-* Tweak - Truncates extra characters from title and description by @raymon1 in #3023
-* Tweak - Updated PR template by @vinkmeta in #3053
-* Fix - The item not found error by using filter in the product endpoint @vinkmeta in #3054
-* Fix - Bug where MPN input box had no tooltip by @devbodaghe in #3034
-* Tweak - Investigation: WooCommerce to Facebook Product Attribute Syncing by @devbodaghe in #3033
-* Fix - Add parent product material inheritance for variations by @devbodaghe in #3035
-* Fix - Tooltip Messages for Skirt Length and Sleeve Length by @devbodaghe in #3039
-* Fix - Typo in Admin.php by @SayanPandey in #3063
-* Add - Add separate short_description field to Facebook product data by @devbodaghe in #3029
-* Tweak - Sync short description remove dropdown by @devbodaghe in #3031
-* Tweak - Short Description Fallback by @devbodaghe in #3048
-* Fix - A problem where Purchase event was not firing if thankyou page was not shown or Purchase state updated through Woo dashboard by @vahidkay-meta in #3060
-* Tweak - Remove type casting for gpc to int by @devbodaghe in 3078
-* Tweak - Disable unmapped fields to batch api by @devbodaghe in #3079
-* Fix - Product variation fields not saving correctly by @devbodaghe in #3090
-* Fix - Removed failing test due to merge conflicts @vinkmeta in #3103
+= 3.4.8 - 2025-05-06 =
+* Add - Feature to sync global attributes to Meta and test API format by @devbodaghe in #3050
+* Fix - Facebook attribute dropdown display and syncing issues by @devbodaghe in #3051
+* Tweak - Set helper text for dropdown sync by @devbodaghe in #3104
+* Tweak - Remove unused condition field code for variable products by @devbodaghe in #3114
+* Fix - Cursor style not resetting after attribute removal by @devbodaghe in #3113
+* Fix - 'Call to a member function is_taxonomy() on string' error when processing variable products by @devbodaghe in #3155
 
-[See changelog for all versions](https://raw.githubusercontent.com/facebook/facebook-for-woocommerce/refs/heads/main/changelog.txt).
+[See changelog for all versions](https://raw.githubusercontent.com/facebook/facebook-for-woocommerce/refs/heads/releases/changelog.txt).

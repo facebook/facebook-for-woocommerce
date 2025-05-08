@@ -350,7 +350,6 @@ class WC_Facebook_Product {
 		return facebook_for_woocommerce()->is_plugin_active( 'woocommerce-bookings.php' ) && class_exists( 'WC_Product_Booking' ) && is_callable( 'is_wc_booking_product' ) && is_wc_booking_product( $this );
 	}
 
-
 	/**
 	 * Gets a list of image URLs to use for this product in Facebook sync.
 	 *
@@ -623,7 +622,20 @@ class WC_Facebook_Product {
 		);
 	}
 
-	public function get_fb_brand() {
+	/**
+	 * Gets the FB brand value for the product.
+	 *
+	 * @param bool $is_api_call Whether this is for API submission
+	 * @return string|array String for UI display, array for API if pipe-separated
+	 */
+	public function get_fb_brand($is_api_call = false) {
+		// Check if we have a taxonomy attribute for brand
+		$brand_values = $this->get_taxonomy_attribute_values('pa_brand');
+		
+		if ($brand_values) {
+			return $this->process_attribute_values($brand_values, $is_api_call);
+		}
+		
 		// If this is a variation, first check for variation-specific brand
 		if ($this->is_type('variation')) {
 			// Get brand directly from variation's post meta
@@ -663,7 +675,8 @@ class WC_Facebook_Product {
 			}
 		}
 
-		return WC_Facebookcommerce_Utils::clean_string($fb_brand);
+		$clean_value = WC_Facebookcommerce_Utils::clean_string($fb_brand);
+		return $this->convert_pipe_separated_values($clean_value, $is_api_call);
 	}
 
 	public function get_fb_description() {
@@ -934,6 +947,13 @@ class WC_Facebook_Product {
 	}
 
 	public function get_fb_condition() {
+		// Check for taxonomy attributes for condition
+		$condition_values = $this->get_attribute_by_type('condition');
+		if ($condition_values) {
+			$condition = $this->process_attribute_values($condition_values);
+			return !empty($condition) ? $condition : self::CONDITION_NEW;
+		}
+		
 		// Get condition directly from post meta
 		$fb_condition = get_post_meta(
 			$this->id,
@@ -949,6 +969,9 @@ class WC_Facebook_Product {
 			}
 		}
 
+		// Extract first value from array or object
+		$fb_condition = $this->get_first_value_from_complex_type($fb_condition);
+
 		return WC_Facebookcommerce_Utils::clean_string( $fb_condition ) ?: self::CONDITION_NEW;
 	}
 
@@ -961,9 +984,17 @@ class WC_Facebook_Product {
 			foreach ($attributes as $key => $value) {
 				$attr_key = strtolower($key);
 				if ($attr_key === 'age_group') {
+					// Extract first value from array or object for attribute
+					$value = $this->get_first_value_from_complex_type($value);
 					return WC_Facebookcommerce_Utils::clean_string($value);
 				}
 			}
+		}
+
+		// Check for taxonomy attributes
+		$age_group_values = $this->get_attribute_by_type('age_group');
+		if ($age_group_values) {
+			return $this->process_attribute_values($age_group_values);
 		}
 
 		// Get age group directly from post meta
@@ -981,6 +1012,9 @@ class WC_Facebook_Product {
 			}
 		}
 
+		// Extract first value from array or object
+		$fb_age_group = $this->get_first_value_from_complex_type($fb_age_group);
+
 		return WC_Facebookcommerce_Utils::clean_string( $fb_age_group );
 	}
 
@@ -992,9 +1026,17 @@ class WC_Facebook_Product {
 			foreach ($attributes as $key => $value) {
 				$attr_key = strtolower($key);
 				if ($attr_key === 'gender') {
+					// Extract first value from array or object for attribute
+					$value = $this->get_first_value_from_complex_type($value);
 					return WC_Facebookcommerce_Utils::clean_string($value);
 				}
 			}
+		}
+
+		// Check for taxonomy attributes
+		$gender_values = $this->get_attribute_by_type('gender');
+		if ($gender_values) {
+			return $this->process_attribute_values($gender_values);
 		}
 
 		// Get gender directly from post meta
@@ -1012,103 +1054,357 @@ class WC_Facebook_Product {
 			}
 		}
 
+		// Extract first value from array or object
+		$fb_gender = $this->get_first_value_from_complex_type($fb_gender);
+
 		return WC_Facebookcommerce_Utils::clean_string( $fb_gender );
 	}
 
-
-	/**
-	 * Gets the FB size value for the product.
-	 *
-	 * @return string
-	 */
-	public function get_fb_size() {
-		// If this is a variation, get its specific size value
-		if ($this->is_type('variation')) {
-			$attributes = $this->woo_product->get_attributes();
-			
-			foreach ($attributes as $key => $value) {
-				$attr_key = strtolower($key);
-				if ($attr_key === 'size') {
-					return mb_substr(WC_Facebookcommerce_Utils::clean_string($value), 0, 200);
-				}
-			}
+	private function convert_pipe_separated_values($value, $is_api_call = false) {
+		if (!$is_api_call) {
+			// Return as is for UI display
+			return $value;
 		}
-
-		// Get size directly from post meta
-		$fb_size = get_post_meta(
-			$this->id,
-			self::FB_SIZE,
-			true
-		);
-
-		// If empty and this is a variation, get the parent condition
-		if ( empty( $fb_size ) && $this->is_type( 'variation' ) ) {
-			$parent_id = $this->get_parent_id();
-			if ( $parent_id ) {
-				$fb_size = get_post_meta( $parent_id, self::FB_SIZE, true );
-			}
+		
+		// Convert pipe-separated string to array for API
+		if (is_string($value) && strpos($value, ' | ') !== false) {
+			return array_map('trim', explode(' | ', $value));
 		}
-
-		return mb_substr( WC_Facebookcommerce_Utils::clean_string( $fb_size ), 0, 200 );
+		
+		return $value;
 	}
 
-
 	/**
-	 * Gets the FB color value for the product.
+	 * Gets taxonomy attribute values for a product
 	 *
-	 * @return string
+	 * @param string $attribute_name The attribute name to check (like 'pa_material')
+	 * @return array|null Array of term names if found, null if not
 	 */
-	public function get_fb_color() {
-		// If this is a variation, get its specific color value
-		if ($this->is_type('variation')) {
-			$attributes = $this->woo_product->get_attributes();
+	private function get_taxonomy_attribute_values($attribute_name) {
+		if (!$this->woo_product) {
+			return null;
+		}
+		
+		$attributes = $this->woo_product->get_attributes();
+					$attribute_found = false;
+		$attribute_obj = null;
+		$requested_type = '';
+		
+		// Determine which type of attribute we're looking for based on the input name
+		if (strpos($attribute_name, 'material') !== false) {
+			$requested_type = 'material';
+		} else if (strpos($attribute_name, 'color') !== false || strpos($attribute_name, 'colour') !== false) {
+			$requested_type = 'color';
+		} else if (strpos($attribute_name, 'size') !== false) {
+			$requested_type = 'size';
+		} else if (strpos($attribute_name, 'pattern') !== false) {
+			$requested_type = 'pattern';
+		}
+		
+		// First try to get by exact slug
+		if (isset($attributes[$attribute_name])) {
+			$attribute_found = true;
+			$attribute_obj = $attributes[$attribute_name];
+		} else {
+			// For numeric/non-descriptive slugs, we need to try to match by label
+			$requested_attr_name = str_replace('pa_', '', $attribute_name);
 			
-			foreach ($attributes as $key => $value) {
-				$attr_key = strtolower($key);
-				if ($attr_key === 'color' || $attr_key === 'colour') {
-					return mb_substr(WC_Facebookcommerce_Utils::clean_string($value), 0, 200);
+			// Try to match attributes by attribute label and requested type
+			foreach ($attributes as $attr_key => $attr_obj) {
+				$attr_label = wc_attribute_label($attr_key);
+				$normalized_label = strtolower($attr_label);
+				
+				// If we determined what type we're looking for, check if the label contains that type
+				if (!empty($requested_type) && strpos($normalized_label, $requested_type) !== false) {
+					$attribute_found = true;
+					$attribute_obj = $attr_obj;
+					break;
+				}
+				
+				// As a fallback, check if label contains the requested attribute name
+				$normalized_requested = strtolower($requested_attr_name);
+				if (strpos($normalized_label, $normalized_requested) !== false) {
+					$attribute_found = true;
+					$attribute_obj = $attr_obj;
+					break;
+				}
+			}
+		}
+		
+		// Handle variation products specially to get only their specific term
+		if ($this->is_type('variation')) {
+			// For variations, get the attribute value directly from the variation
+			$parent_product = wc_get_product($this->get_parent_id());
+			if (!$parent_product) {
+				return null;
+			}
+			
+			// Try all possible attribute keys if we're looking for a specific type
+			if (!empty($requested_type)) {
+				foreach ($attributes as $attr_key => $value) {
+					$attr_label = wc_attribute_label($attr_key);
+					$normalized_label = strtolower($attr_label);
+					
+					if (strpos($normalized_label, $requested_type) !== false) {
+						$attribute_value = $this->woo_product->get_attribute($attr_key);
+						if (!empty($attribute_value)) {
+							return array($attribute_value);
+						}
+					}
+				}
+			}
+			
+			// Try with the original attribute name
+			$attribute_value = $this->woo_product->get_attribute($attribute_name);
+			
+			// If attribute value exists, return it
+			if (!empty($attribute_value)) {
+				return array($attribute_value);
+			}
+			
+			// If no specific value, try parent product
+			return $this->get_parent_taxonomy_attribute_values($attribute_name);
+		} 
+		// For regular products
+		else if ($attribute_found && $attribute_obj) {
+			if ($attribute_obj->is_taxonomy()) {
+				$terms = $attribute_obj->get_terms();
+				if ($terms && !is_wp_error($terms)) {
+					return wp_list_pluck($terms, 'name');
+				}
+			}
+		}
+		
+		return null;
+	}
+	
+	/**
+	 * Gets parent product taxonomy attribute values
+	 * 
+	 * @param string $attribute_name The attribute name to check
+	 * @return array|null Array of term names if found, null if not
+	 */
+	private function get_parent_taxonomy_attribute_values($attribute_name) {
+		if (!$this->is_type('variation')) {
+			return null;
+		}
+		
+		$parent_id = $this->get_parent_id();
+		if (!$parent_id) {
+			return null;
+		}
+		
+		$parent_product = wc_get_product($parent_id);
+		if (!$parent_product) {
+			return null;
+		}
+		
+		$parent_attributes = $parent_product->get_attributes();
+		$attribute_found = false;
+		$attribute_obj = null;
+		$requested_type = '';
+		
+		// Determine which type of attribute we're looking for based on the input name
+		if (strpos($attribute_name, 'material') !== false) {
+			$requested_type = 'material';
+		} else if (strpos($attribute_name, 'color') !== false || strpos($attribute_name, 'colour') !== false) {
+			$requested_type = 'color';
+		} else if (strpos($attribute_name, 'size') !== false) {
+			$requested_type = 'size';
+		} else if (strpos($attribute_name, 'pattern') !== false) {
+			$requested_type = 'pattern';
+		}
+		
+		// First try to get by exact slug
+		if (isset($parent_attributes[$attribute_name])) {
+			$attribute_found = true;
+			$attribute_obj = $parent_attributes[$attribute_name];
+		} else {
+			// For numeric/non-descriptive slugs, we need to try to match by label
+			$requested_attr_name = str_replace('pa_', '', $attribute_name);
+			
+			// Try to match attributes by attribute label and requested type
+			foreach ($parent_attributes as $attr_key => $attr_obj) {
+				$attr_label = wc_attribute_label($attr_key);
+				$normalized_label = strtolower($attr_label);
+				
+				// If we determined what type we're looking for, check if the label contains that type
+				if (!empty($requested_type) && strpos($normalized_label, $requested_type) !== false) {
+					$attribute_found = true;
+					$attribute_obj = $attr_obj;
+					break;
+				}
+				
+				// As a fallback, check if label contains the requested attribute name
+				$normalized_requested = strtolower($requested_attr_name);
+				if (strpos($normalized_label, $normalized_requested) !== false) {
+					$attribute_found = true;
+					$attribute_obj = $attr_obj;
+					break;
 				}
 			}
 		}
 
-		// Get color directly from post meta for non-variation products
-		$fb_color = get_post_meta(
-			$this->id,
-			self::FB_COLOR,
-			true
-		);
-
-		// If empty and this is a variation, get the parent color
-		if ( empty( $fb_color ) && $this->is_type( 'variation' ) ) {
-			$parent_id = $this->get_parent_id();
-			if ( $parent_id ) {
-				$fb_color = get_post_meta( $parent_id, self::FB_COLOR, true );
+		if ($attribute_found && $attribute_obj && is_object($attribute_obj) && method_exists($attribute_obj, 'is_taxonomy') && $attribute_obj->is_taxonomy()) {
+			$terms = $attribute_obj->get_terms();
+			if ($terms && !is_wp_error($terms)) {
+				return wp_list_pluck($terms, 'name');
 			}
 		}
+		
+		return null;
+	}
 
-		return mb_substr(WC_Facebookcommerce_Utils::clean_string($fb_color), 0, 200);
+	/**
+	 * Gets a WooCommerce attribute by type, supporting both standard and numeric/custom slugs.
+	 * 
+	 * @param string $attribute_type The attribute type to search for (material, color, size, etc.)
+	 * @return array|null Array of attribute values if found, null if not
+	 */
+	private function get_attribute_by_type($attribute_type) {
+		if (!$this->woo_product) {
+			return null;
+		}
+		
+		// First try the standard taxonomy name
+		$standard_taxonomy = 'pa_' . $attribute_type;
+		$attribute_values = $this->get_taxonomy_attribute_values($standard_taxonomy);
+		if ($attribute_values) {
+			return $attribute_values;
+		}
+		
+		// If not found, try to find by matching the attribute label
+		$attributes = $this->woo_product->get_attributes();
+		
+		// Loop through all attributes to find one that matches our type
+		foreach ($attributes as $attr_key => $attr_obj) {
+			$attr_label = wc_attribute_label($attr_key);
+			$normalized_label = strtolower($attr_label);
+			
+			// Check if the attribute label contains our target type
+			if (stripos($normalized_label, $attribute_type) !== false) {
+				// Found an attribute with the requested type in the label
+				if (is_object($attr_obj) && method_exists($attr_obj, 'is_taxonomy') && $attr_obj->is_taxonomy()) {
+					$terms = $attr_obj->get_terms();
+					if ($terms && !is_wp_error($terms)) {
+						return wp_list_pluck($terms, 'name');
+					}
+				} else if (is_object($attr_obj) && method_exists($attr_obj, 'get_options')) {
+					return $attr_obj->get_options();
+				}
+			}
+		}
+		
+		// For variations, also check direct attribute values
+		if ($this->is_type('variation')) {
+			foreach ($attributes as $key => $value) {
+				$attr_label = wc_attribute_label($key);
+				$normalized_label = strtolower($attr_label);
+				
+				if (stripos($normalized_label, $attribute_type) !== false) {
+					$attr_value = $this->woo_product->get_attribute($key);
+					if (!empty($attr_value)) {
+						return array($attr_value);
+					}
+				}
+			}
+			
+			// If still not found, check parent product
+			$parent_id = $this->get_parent_id();
+			if ($parent_id) {
+				$parent_product = wc_get_product($parent_id);
+				if ($parent_product) {
+					$parent_attributes = $parent_product->get_attributes();
+					
+					foreach ($parent_attributes as $attr_key => $attr_obj) {
+						$attr_label = wc_attribute_label($attr_key);
+						$normalized_label = strtolower($attr_label);
+						
+						if (stripos($normalized_label, $attribute_type) !== false) {
+							if (is_object($attr_obj) && method_exists($attr_obj, 'is_taxonomy') && $attr_obj->is_taxonomy()) {
+								$terms = $attr_obj->get_terms();
+								if ($terms && !is_wp_error($terms)) {
+									return wp_list_pluck($terms, 'name');
+								}
+							} else if (is_object($attr_obj) && method_exists($attr_obj, 'get_options')) {
+								return $attr_obj->get_options();
+							}
+						}
+					}
+				}
+			}
+		}
+		
+		return null;
+	}
+
+	/**
+	 * Utility method to get first value from a potential array or object
+	 * For simple products, always returns just the first value of arrays
+	 * For variable/variation products, preserves the full array
+	 * 
+	 * @param mixed $value The value to process
+	 * @return mixed The first value for simple products, original array for variations
+	 */
+	private function get_first_value_from_complex_type($value) {
+		// Only extract first value for simple products (not variations/variable)
+		if ($this->is_type('simple')) {
+			if (is_array($value)) {
+				return !empty($value) ? $value[0] : '';
+			} elseif (is_object($value)) {
+				$vars = get_object_vars($value);
+				return !empty($vars) ? array_values($vars)[0] : '';
+			}
+		}
+		
+		// For variations or non-array/object values, just return as is
+		return $value;
+	}
+
+	/**
+	 * Helper method to process attribute values consistently across different attribute types
+	 * Handles the logic of returning a single value for simple products and multiple values for variable products
+	 *
+	 * @param array $attribute_values Array of attribute values
+	 * @param bool $is_api_call Whether this is for API submission
+	 * @return string|array Processed attribute value(s)
+	 */
+	private function process_attribute_values($attribute_values, $is_api_call = false) {
+		if (!$attribute_values) {
+			return '';
+		}
+		
+		// For simple products, just take the first element
+		if ($this->is_type('simple')) {
+			if (is_array($attribute_values) && !empty($attribute_values)) {
+				$value = $attribute_values[0];
+				// Clean and truncate the value directly for simple products
+				return mb_substr(WC_Facebookcommerce_Utils::clean_string($value), 0, 200);
+			}
+		} else {
+			// For variable/variation products, keep all values
+			$joined_values = implode(' | ', $attribute_values);
+			return $this->convert_pipe_separated_values($joined_values, $is_api_call);
+		}
+		
+		return '';
 	}
 
 	/**
 	 * Gets the FB material value for the product.
 	 *
-	 * @return string
+	 * @param bool $is_api_call Whether this is for API submission
+	 * @return string|array String for UI display, array for API if pipe-separated
 	 */
-	public function get_fb_material() {
-		// If this is a variation, get its specific material value
-		if ($this->is_type('variation')) {
-			$attributes = $this->woo_product->get_attributes();
-			
-			// Check for material attribute
-			foreach ($attributes as $key => $value) {
-				$attr_key = strtolower($key);
-				if ($attr_key === 'material') {
-					return mb_substr(WC_Facebookcommerce_Utils::clean_string($value), 0, 200);
-				}
-			}
+	public function get_fb_material($is_api_call = false) {
+		// Use generic attribute finder
+		$material_values = $this->get_attribute_by_type('material');
+		
+		if ($material_values) {
+			return $this->process_attribute_values($material_values, $is_api_call);
 		}
 
-		// Get material directly from post meta for non-variation products
+		// Get material directly from post meta as fallback
 		$fb_material = get_post_meta(
 			$this->id,
 			self::FB_MATERIAL,
@@ -1123,61 +1419,105 @@ class WC_Facebook_Product {
 			}
 		}
 
-		return mb_substr(WC_Facebookcommerce_Utils::clean_string($fb_material), 0, 200);
+		// Extract first value from array or object
+		$fb_material = $this->get_first_value_from_complex_type($fb_material);
+
+		$clean_value = mb_substr(WC_Facebookcommerce_Utils::clean_string($fb_material), 0, 200);
+		return $this->convert_pipe_separated_values($clean_value, $is_api_call);
 	}
 
-	public function get_fb_mpn() {
-		// If this is a variation, get its specific mpn value
-		if ($this->is_type('variation')) {
-			$attributes = $this->woo_product->get_attributes();
-			
-			// Check for mpn attribute
-			foreach ($attributes as $key => $value) {
-				$attr_key = strtolower($key);
-				if ($attr_key === 'mpn') {
-					return mb_substr(WC_Facebookcommerce_Utils::clean_string($value), 0, 200);
-				}
-			}
+	/**
+	 * Gets the FB color value for the product.
+	 *
+	 * @param bool $is_api_call Whether this is for API submission
+	 * @return string|array String for UI display, array for API if pipe-separated
+	 */
+	public function get_fb_color($is_api_call = false) {
+		// Use generic attribute finder - try both color and colour
+		$color_values = $this->get_attribute_by_type('color');
+		
+		// Try British spelling if US spelling fails
+		if (!$color_values) {
+			$color_values = $this->get_attribute_by_type('colour');
+		}
+		
+		if ($color_values) {
+			return $this->process_attribute_values($color_values, $is_api_call);
 		}
 
-		// Get material directly from post meta for non-variation products
-		$fb_mpn = get_post_meta(
+		// Get color directly from post meta as fallback
+		$fb_color = get_post_meta(
 			$this->id,
-			self::FB_MPN,
+			self::FB_COLOR,
 			true
 		);
 
-		// If empty and this is a variation, get the parent mpn
-		if ( empty( $fb_mpn ) && $this->is_type( 'variation' ) ) {
+		// If empty and this is a variation, get the parent color
+		if ( empty( $fb_color ) && $this->is_type( 'variation' ) ) {
 			$parent_id = $this->get_parent_id();
 			if ( $parent_id ) {
-				$fb_mpn = get_post_meta( $parent_id, self::FB_MPN, true );
+				$fb_color = get_post_meta( $parent_id, self::FB_COLOR, true );
 			}
 		}
 
-		return WC_Facebookcommerce_Utils::clean_string( $fb_mpn );
+		// Extract first value from array or object
+		$fb_color = $this->get_first_value_from_complex_type($fb_color);
+
+		$clean_value = mb_substr(WC_Facebookcommerce_Utils::clean_string($fb_color), 0, 200);
+		return $this->convert_pipe_separated_values($clean_value, $is_api_call);
+	}
+
+	/**
+	 * Gets the FB size value for the product.
+	 *
+	 * @param bool $is_api_call Whether this is for API submission
+	 * @return string|array String for UI display, array for API if pipe-separated
+	 */
+	public function get_fb_size($is_api_call = false) {
+		// Use generic attribute finder
+		$size_values = $this->get_attribute_by_type('size');
+		
+		if ($size_values) {
+			return $this->process_attribute_values($size_values, $is_api_call);
+		}
+
+		// Get size directly from post meta as fallback
+		$fb_size = get_post_meta(
+			$this->id,
+			self::FB_SIZE,
+			true
+		);
+
+		// If empty and this is a variation, get the parent size
+		if ( empty( $fb_size ) && $this->is_type( 'variation' ) ) {
+			$parent_id = $this->get_parent_id();
+			if ( $parent_id ) {
+				$fb_size = get_post_meta( $parent_id, self::FB_SIZE, true );
+			}
+		}
+
+		// Extract first value from array or object
+		$fb_size = $this->get_first_value_from_complex_type($fb_size);
+
+		$clean_value = mb_substr(WC_Facebookcommerce_Utils::clean_string($fb_size), 0, 200);
+		return $this->convert_pipe_separated_values($clean_value, $is_api_call);
 	}
 
 	/**
 	 * Gets the FB pattern value for the product.
 	 *
-	 * @return string
+	 * @param bool $is_api_call Whether this is for API submission
+	 * @return string|array String for UI display, array for API if pipe-separated
 	 */
-	public function get_fb_pattern() {
-		// If this is a variation, get its specific material value
-		if ($this->is_type('variation')) {
-			$attributes = $this->woo_product->get_attributes();
-			
-			// Check for material attribute
-			foreach ($attributes as $key => $value) {
-				$attr_key = strtolower($key);
-				if ($attr_key === 'pattern') {
-					return mb_substr(WC_Facebookcommerce_Utils::clean_string($value), 0, 200);
-				}
-			}
+	public function get_fb_pattern($is_api_call = false) {
+		// Use generic attribute finder
+		$pattern_values = $this->get_attribute_by_type('pattern');
+		
+		if ($pattern_values) {
+			return $this->process_attribute_values($pattern_values, $is_api_call);
 		}
 
-		// Get pattern directly from post meta
+		// Get pattern directly from post meta as fallback
 		$fb_pattern = get_post_meta(
 			$this->id,
 			self::FB_PATTERN,
@@ -1192,7 +1532,11 @@ class WC_Facebook_Product {
 			}
 		}
 
-		return mb_substr( WC_Facebookcommerce_Utils::clean_string( $fb_pattern ), 0, 200 );
+		// Extract first value from array or object
+		$fb_pattern = $this->get_first_value_from_complex_type($fb_pattern);
+
+		$clean_value = mb_substr(WC_Facebookcommerce_Utils::clean_string($fb_pattern), 0, 200);
+		return $this->convert_pipe_separated_values($clean_value, $is_api_call);
 	}
 
 
@@ -1309,21 +1653,24 @@ class WC_Facebook_Product {
 
 		$categories = WC_Facebookcommerce_Utils::get_product_categories( $id );
 		
+		// Determine if this is an API call where we should convert pipe-separated values to arrays
+		$is_api_call = ($type_to_prepare_for === self::PRODUCT_PREP_TYPE_ITEMS_BATCH);
+		
 		$product_data = array();
 		$product_data[ 'description' ] = Helper::str_truncate( $this->get_fb_description(), self::MAX_DESCRIPTION_LENGTH );
 		$product_data[ 'short_description' ] = $this->get_fb_short_description();
 		$product_data[ 'rich_text_description' ] = $this->get_rich_text_description();
 		$product_data[ 'product_type' ] = $categories['categories'];
-		$product_data[ 'brand' ] = Helper::str_truncate( $this->get_fb_brand(), 100 );
-		$product_data[ 'mpn' ] = Helper::str_truncate( $this->get_fb_mpn(), 100 );
+		$product_data[ 'brand' ] = Helper::str_truncate( $this->get_fb_brand($is_api_call), 100 );
+		$product_data[ 'mpn' ] = Helper::str_truncate( $this->get_fb_mpn($is_api_call), 100 );
 		$product_data[ 'availability' ] = $this->is_in_stock() ? 'in stock' : 'out of stock';
 		$product_data[ 'visibility' ] = Products::is_product_visible( $this->woo_product ) ? \WC_Facebookcommerce_Integration::FB_SHOP_PRODUCT_VISIBLE : \WC_Facebookcommerce_Integration::FB_SHOP_PRODUCT_HIDDEN;
 		$product_data[ 'retailer_id' ] = $retailer_id;
 		$product_data[ 'external_variant_id' ] = $this->get_id();
 		$product_data[ 'condition' ] = $this->get_fb_condition();
-		$product_data[ 'size' ] = $this->get_fb_size();
-		$product_data[ 'color' ] = $this->get_fb_color();
-		$product_data[ 'pattern' ] = Helper::str_truncate( $this->get_fb_pattern(), 100 );
+		$product_data[ 'size' ] = $this->get_fb_size($is_api_call);
+		$product_data[ 'color' ] = $this->get_fb_color($is_api_call);
+		$product_data[ 'pattern' ] = Helper::str_truncate( $this->get_fb_pattern($is_api_call), 100 );
 		$product_data[ 'age_group' ] = $this->get_fb_age_group();
 		$product_data[ 'gender' ] = $this->get_fb_gender();
 		$product_data[ 'material' ] = Helper::str_truncate( $this->get_fb_material(), 100 );
@@ -1728,6 +2075,78 @@ class WC_Facebook_Product {
 		}//end try
 
 		return $final_variants;
+	}
+
+	/**
+	 * Some products cannot be directly used in the fb-checkout endpoint. This field is used to exclude those
+	 * from being shown on Facebook Shops.
+	 *
+	 * @return array<string> list of disabled capabilities
+	 */
+	private function get_disabled_capabilities(): array {
+		$product_type = $this->woo_product->get_type();
+
+		// grouped and external products do not work with the checkout URL
+		if ('grouped' === $product_type || 'external' === $product_type ) {
+			return array('mini_shops');
+		}
+
+		// product variations that have undefined attributes ("Any Size...", "Any Color...", etc) are unsupported
+		if ('variation' === $product_type ) {
+			$attributes = $this->woo_product->get_attributes();
+
+			foreach ($attributes as $_attribute_name => $attribute_value) {
+				if ( '' === $attribute_value || null === $attribute_value ) {
+					return array('mini_shops');
+				}
+			}
+		}
+
+		return array();
+	}
+
+	public function get_fb_mpn($is_api_call = false) {
+		// Check for taxonomy attribute for MPN
+		$mpn_values = $this->get_attribute_by_type('mpn');
+		if ($mpn_values) {
+			return $this->process_attribute_values($mpn_values, $is_api_call);
+		}
+		
+		// If this is a variation, get its specific mpn value
+		if ($this->is_type('variation')) {
+			$attributes = $this->woo_product->get_attributes();
+			
+			foreach ($attributes as $key => $value) {
+				$attr_key = strtolower($key);
+				if ($attr_key === 'mpn') {
+					// Extract first value from array or object for attribute
+					$value = $this->get_first_value_from_complex_type($value);
+					$clean_value = WC_Facebookcommerce_Utils::clean_string($value);
+					return $this->convert_pipe_separated_values($clean_value, $is_api_call);
+				}
+			}
+		}
+
+		// Get material directly from post meta for non-variation products
+		$fb_mpn = get_post_meta(
+			$this->id,
+			self::FB_MPN,
+			true
+		);
+
+		// If empty and this is a variation, get the parent mpn
+		if ( empty( $fb_mpn ) && $this->is_type( 'variation' ) ) {
+			$parent_id = $this->get_parent_id();
+			if ( $parent_id ) {
+				$fb_mpn = get_post_meta( $parent_id, self::FB_MPN, true );
+			}
+		}
+
+		// Extract first value from array or object
+		$fb_mpn = $this->get_first_value_from_complex_type($fb_mpn);
+
+		$clean_value = WC_Facebookcommerce_Utils::clean_string($fb_mpn);
+		return $this->convert_pipe_separated_values($clean_value, $is_api_call);
 	}
 
 }
