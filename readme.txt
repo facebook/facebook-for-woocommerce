@@ -46,5 +46,6 @@ When opening a bug on GitHub, please give us as many details as possible.
 * Tweak - Set helper text for dropdown sync by @devbodaghe in #3104
 * Tweak - Remove unused condition field code for variable products by @devbodaghe in #3114
 * Fix - Cursor style not resetting after attribute removal by @devbodaghe in #3113
+* Fix - 'Call to a member function is_taxonomy() on string' error when processing variable products by @devbodaghe in #3155
 
 [See changelog for all versions](https://raw.githubusercontent.com/facebook/facebook-for-woocommerce/refs/heads/releases/changelog.txt).
