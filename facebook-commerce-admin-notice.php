@@ -23,6 +23,7 @@ class WC_Facebookcommerce_Admin_Notice {
 	 */
 	public function __construct() {
 		add_action( 'admin_notices', array( $this, 'show_notice' ) );
+		add_action( 'admin_init', array( $this, 'dismiss_notice' ) );
 	}
 	public function show_notice() {
 		if ( ! current_user_can( 'manage_woocommerce' ) ) {
@@ -54,3 +55,19 @@ class WC_Facebookcommerce_Admin_Notice {
 		</div>
 		<?php
 	}
+
+	/**
+	 * Handles the dismissal of the notice.
+	 */
+	public function dismiss_notice() {
+		if (
+			isset( $_GET[ self::NOTICE_ID ] ) &&
+			isset( $_GET['_wpnonce'] ) &&
+			wp_verify_nonce( sanitize_text_field( wp_unslash( $_GET['_wpnonce'] ) ), self::NOTICE_ID )
+		) {
+			update_user_meta( get_current_user_id(), self::NOTICE_ID, 1 );
+			wp_safe_redirect( remove_query_arg( array( self::NOTICE_ID, '_wpnonce' ) ) );
+			exit;
+		}
+	}
+}
