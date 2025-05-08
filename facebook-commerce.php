@@ -254,6 +254,11 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 
 		WC_Facebookcommerce_Utils::$ems = $this->get_external_merchant_settings_id();
 
+		// Set meta diagnosis to yes by default
+		if(!get_option( self::SETTING_ENABLE_META_DIAGNOSIS )) {
+			update_option(self::SETTING_ENABLE_META_DIAGNOSIS, 'yes');
+		}
+
 		if ( is_admin() ) {
 
 			$this->init_pixel();
@@ -847,7 +852,9 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 				}
 				$this->delete_fb_product( $delete_product );
 			}
-		} elseif ( $sync_enabled ) {
+		} 
+		
+		if( $sync_enabled ) {
 				Products::enable_sync_for_products( [ $product ] );
 				Products::set_product_visibility( $product, Admin::SYNC_MODE_SYNC_AND_HIDE !== $sync_mode );
 				$this->save_product_settings( $product );

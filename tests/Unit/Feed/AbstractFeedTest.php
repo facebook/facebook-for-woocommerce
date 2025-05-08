@@ -15,7 +15,7 @@ use WooCommerce\Facebook\Utilities\Heartbeat;
 use WooCommerce\Facebook\Tests\AbstractWPUnitTestWithOptionIsolationAndSafeFiltering;
 
 class TestFeed extends AbstractFeed {
-	public function __construct(FeedFileWriter $file_writer, AbstractFeedHandler $feed_handler, FeedGenerator $feed_generator) {
+	public function __construct(AbstractFeedFileWriter $file_writer, AbstractFeedHandler $feed_handler, FeedGenerator $feed_generator) {
 		$this->init(
 			$file_writer,
 			$feed_handler,
@@ -51,7 +51,7 @@ class AbstractFeedTest extends AbstractWPUnitTestWithOptionIsolationAndSafeFilte
 
 	public function setUp(): void {
 		parent::setUp();
-		$file_writer    = $this->createMock( FeedFileWriter::class );
+		$file_writer    = $this->createMock( AbstractFeedFileWriter::class );
 		$feed_handler   = $this->createMock( AbstractFeedHandler::class );
 		$feed_generator = $this->createMock( FeedGenerator::class );
 		$this->feed = new TestFeed($file_writer, $feed_handler, $feed_generator);
