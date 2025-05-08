@@ -100,8 +100,8 @@ class WC_Facebookcommerce_Whatsapp_Utility_Event {
 		foreach ( $order->get_refunds() as $refund ) {
 			$total_refund += $refund->get_amount();
 		}
-		$currency_symbol = get_woocommerce_currency_symbol( $currency );
-		$refund_amount   = $currency_symbol . $total_refund;
+		$currency      = $order->get_currency();
+		$refund_amount = $total_refund * 1000;
 		if ( empty( $phone_number ) || ! $has_whatsapp_consent || empty( $event ) || empty( $first_name ) ) {
 			wc_get_logger()->info(
 				sprintf(
@@ -126,6 +126,6 @@ class WC_Facebookcommerce_Whatsapp_Utility_Event {
 			);
 			return;
 		}
-		WhatsAppUtilityConnection::post_whatsapp_utility_messages_events_call( $event, $event_config_id, $language_code, $wacs_id, $order_id, $phone_number, $first_name, $refund_amount, $bisu_token );
+		WhatsAppUtilityConnection::post_whatsapp_utility_messages_events_call( $event, $event_config_id, $language_code, $wacs_id, $order_id, $phone_number, $first_name, $refund_amount, $currency, $bisu_token );
 	}
 }
