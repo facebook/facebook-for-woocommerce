@@ -1708,6 +1708,31 @@ class WC_Facebook_Product {
 		// $product_data[ 'unmapped_attributes' ] = $this->get_unmapped_attributes();
 		$product_data[ 'disabled_capabilities' ] = $this->get_disabled_capabilities();
 
+		if($this->get_type() === "variable"){
+			$parent_id = $this->woo_product->get_parent_id();	
+			$parent_product =  wc_get_product( $parent_id );
+			$parent_product_visibility = $parent_product->get_catalog_visibility();
+
+			if($parent_product_visibility === "yes"){
+				$product_data[ 'visibility' ] = \WC_Facebookcommerce_Integration::FB_SHOP_PRODUCT_VISIBLE;
+			}
+			else if ($parent_product_visibility === "no"){
+				$product_data[ 'visibility' ] = \WC_Facebookcommerce_Integration::FB_SHOP_PRODUCT_HIDDEN;
+			}
+			else{
+				$variations = $parent_product->get_children(); 
+				$variation_visibility = false;
+				foreach ($variations as $variation_id) {
+					$variation = wc_get_product($variation_id);
+			
+					if ($variation) {
+						$variation_visibility = $variation_visibility || Products::is_product_visible($variation);
+					}
+				}
+				$product_data[ 'visibility' ] = Products::is_product_visible( $this->woo_product ) ? \WC_Facebookcommerce_Integration::FB_SHOP_PRODUCT_VISIBLE : \WC_Facebookcommerce_Integration::FB_SHOP_PRODUCT_HIDDEN;
+				$parent_product->update_meta_data(Products::VISIBILITY_META_KEY, $variation_visibility ? "yes" : "no");
+			}
+		}
 
 		if ( self::PRODUCT_PREP_TYPE_ITEMS_BATCH === $type_to_prepare_for ) {
 			$product_data['title'] = Helper::str_truncate( WC_Facebookcommerce_Utils::clean_string( $this->get_title() ), self::MAX_TITLE_LENGTH );

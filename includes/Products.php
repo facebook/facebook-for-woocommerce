@@ -187,6 +187,24 @@ class Products {
 		}
 	}
 
+		/**
+	 * Determines whether the given product should be synced.
+	 *
+	 *
+	 * @since 1.10.0
+	 *
+	 * @param \WC_Product $product
+	 * @return bool
+	 */
+	public static function product_should_be_synced_for_background_jobs( \WC_Product $product ) {
+		try {
+			facebook_for_woocommerce()->get_product_sync_validator( $product )->validate_background_jobs();
+			return true;
+		} catch ( \Exception $e ) {
+			return false;
+		}
+	}
+
 
 	/**
 	 * Determines whether the given product should be synced assuming the product is published.
