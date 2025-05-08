@@ -106,6 +106,15 @@ class Helper {
 	 * @return string
 	 */
 	public static function str_truncate( $input_string, $length, $omission = '...' ) {
+		// Ensure input is a string
+		if (!is_string($input_string)) {
+			if (is_array($input_string)) {
+				$input_string = isset($input_string[0]) ? $input_string[0] : '';
+			} else {
+				$input_string = (string) $input_string;
+			}
+		}
+		
 		if ( self::multibyte_loaded() ) {
 			// bail if string doesn't need to be truncated
 			if ( mb_strlen( $input_string, self::MB_ENCODING ) <= $length ) {
