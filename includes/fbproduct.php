@@ -1714,17 +1714,17 @@ class WC_Facebook_Product {
 
 			if( $parent_product ){
 				$parent_product_visibility =  $parent_product->get_meta( Products::VISIBILITY_META_KEY );
+				$current_variation_product_visibility = Products::is_product_visible( $this->woo_product );
 
 				/**
 				 * If parent's visibility is already marked we know we should assign it to the child/variation as well
 				 */
 				if($parent_product_visibility === "yes"){
+					$product_data["is_woo_all_products_sync"] = !$current_variation_product_visibility;
 					$product_data[ 'visibility' ] = \WC_Facebookcommerce_Integration::FB_SHOP_PRODUCT_VISIBLE;
-					$product_data["is_woo_all_products_sync"] = true;
 				}
 				else if ($parent_product_visibility === "no"){
 					$product_data[ 'visibility' ] = \WC_Facebookcommerce_Integration::FB_SHOP_PRODUCT_HIDDEN;
-					$product_data["is_woo_all_products_sync"] = false;
 				}
 				else{
 					/**
@@ -1740,14 +1740,20 @@ class WC_Facebook_Product {
 						$variation = wc_get_product($variation_id);
 				
 						if ($variation) {
-							$current_variation_visibility = Products::is_product_visible($variation);
-							$variation_visibility = $variation_visibility || $current_variation_visibility;
-
-							if($current_variation_visibility){
-								$product_data["is_woo_all_products_sync"] = true;
-							}
+							$variation_visibility = $variation_visibility || Products::is_product_visible($variation);
 						}
+
+						if ($variation_visibility) break;
 					}
+
+					/**
+					 * Tagging those products who were previously having visibility hidden
+					 * But now have visibility published
+					 */
+					if($variation_visibility){
+						$product_data["is_woo_all_products_sync"] = !$current_variation_product_visibility;
+					}
+
 					$product_data[ 'visibility' ] = $variation_visibility ? \WC_Facebookcommerce_Integration::FB_SHOP_PRODUCT_VISIBLE : \WC_Facebookcommerce_Integration::FB_SHOP_PRODUCT_HIDDEN;
 					/**
 					 *  Since this function will be called again for other variations as well for the same parent product.
