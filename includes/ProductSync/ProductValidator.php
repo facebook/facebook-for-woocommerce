@@ -118,8 +118,8 @@ class ProductValidator {
 	 */
 	public function validate() {
 		$this->validate_sync_enabled_globally();
-		$this->validate_product_status();
 		$this->validate_product_sync_field();
+		$this->validate_product_status();
 		$this->validate_product_visibility();
 		$this->validate_product_terms();
 	}

@@ -10,7 +10,6 @@
 
 namespace WooCommerce\Facebook\Feed;
 
-use WooCommerce\Facebook\Framework\Api\Exception;
 use WooCommerce\Facebook\Framework\Helper;
 use WooCommerce\Facebook\Framework\Plugin\Exception as PluginException;
 use WooCommerce\Facebook\Utilities\Heartbeat;
@@ -42,10 +41,10 @@ abstract class AbstractFeed {
 	/**
 	 * The feed writer instance for the given feed.
 	 *
-	 * @var FeedFileWriter
+	 * @var AbstractFeedFileWriter
 	 * @since 3.5.0
 	 */
-	protected FeedFileWriter $feed_writer;
+	protected AbstractFeedFileWriter $feed_writer;
 
 	/**
 	 * The feed generator instance for the given feed.
@@ -66,11 +65,11 @@ abstract class AbstractFeed {
 	/**
 	 * Initialize feed properties.
 	 *
-	 * @param FeedFileWriter      $feed_writer The feed file writer instance.
-	 * @param AbstractFeedHandler $feed_handler The feed handler instance.
-	 * @param FeedGenerator       $feed_generator The feed generator instance.
+	 * @param AbstractFeedFileWriter $feed_writer The feed file writer instance.
+	 * @param AbstractFeedHandler    $feed_handler The feed handler instance.
+	 * @param FeedGenerator          $feed_generator The feed generator instance.
 	 */
-	protected function init( FeedFileWriter $feed_writer, AbstractFeedHandler $feed_handler, FeedGenerator $feed_generator ): void {
+	protected function init( AbstractFeedFileWriter $feed_writer, AbstractFeedHandler $feed_handler, FeedGenerator $feed_generator ): void {
 		$this->feed_writer    = $feed_writer;
 		$this->feed_handler   = $feed_handler;
 		$this->feed_generator = $feed_generator;
@@ -253,8 +252,14 @@ abstract class AbstractFeed {
 				throw new PluginException( "{$name}: File at path ' . $file_path . ' is not readable.", 404 );
 			}
 
+			if ( $this->feed_writer instanceof JsonFeedFileWriter ) {
+				$content_type = 'Content-Type: application/json; charset=utf-8';
+			} else {
+				$content_type = 'Content-Type: text/csv; charset=utf-8';
+			}
+
 			// set the download headers.
-			header( 'Content-Type: text/csv; charset=utf-8' );
+			header( $content_type );
 			header( 'Content-Description: File Transfer' );
 			header( 'Content-Disposition: attachment; filename="' . basename( $file_path ) . '"' );
 			header( 'Expires: 0' );

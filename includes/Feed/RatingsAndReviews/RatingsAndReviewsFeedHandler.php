@@ -25,9 +25,9 @@ class RatingsAndReviewsFeedHandler extends AbstractFeedHandler {
 	/**
 	 * Constructor.
 	 *
-	 * @param FeedFileWriter $feed_writer An instance of the CSV feed file writer.
+	 * @param AbstractFeedFileWriter $feed_writer An instance of the CSV feed file writer.
 	 */
-	public function __construct( FeedFileWriter $feed_writer ) {
+	public function __construct( AbstractFeedFileWriter $feed_writer ) {
 		$this->feed_writer = $feed_writer;
 		$this->feed_type   = FeedManager::RATINGS_AND_REVIEWS;
 	}

@@ -7,6 +7,8 @@
  * @package FacebookCommerce
  */
 
+ require_once __DIR__ . '/FeedDataTestBase.php';
+
 /**
  * Class FeedUploadUtilsTest
  */
@@ -46,6 +48,10 @@ class FeedUploadUtilsTest extends FeedDataTestBase {
 			'title'                           => null,
 			'content'                         => 'Awesome product!',
 			'created_at'                      => '2023-10-01 10:00:00',
+			'updated_at'                      => null,
+			'review_image_urls'               => null,
+			'incentivized'                    => 'false',
+			'has_verified_purchase'           => 'false',
 			'reviewer.name'                   => 'John Doe',
 			'reviewer.reviewerID'             => "0",
 			'reviewer.isAnonymous'            => 'true',
@@ -609,5 +615,50 @@ class FeedUploadUtilsTest extends FeedDataTestBase {
 		];
 		$result = \WooCommerce\Facebook\Feed\FeedUploadUtils::get_coupons_data($query_args);
 		$this->assertEmpty($result, 'Expected coupon to be invalid if excluded product_brands targeting is used.');
+	}
+
+	public function test_build_category_tree() {
+		// Mock categories
+		$categories = [
+			(object) ['term_taxonomy_id' => 1, 'name' => 'Category 1', 'parent' => 0],
+			(object) ['term_taxonomy_id' => 2, 'name' => 'Category 2', 'parent' => 0],
+			(object) ['term_taxonomy_id' => 3, 'name' => 'Subcategory 1', 'parent' => 1],
+			(object) ['term_taxonomy_id' => 4, 'name' => 'Subcategory 2', 'parent' => 1],
+		];
+
+		// Use reflection to access the private method
+		$reflection = new \ReflectionClass(\WooCommerce\Facebook\Feed\FeedUploadUtils::class);
+		$method = $reflection->getMethod('build_category_tree');
+		$method->setAccessible(true);
+
+		// Invoke the private method
+		$category_tree = $method->invokeArgs(null, [$categories]);
+
+		$expected = [
+			[
+				'title' => 'Category 1',
+				'resourceType' => 'collection',
+				'retailerID' => 1,
+				'items' => [
+					[
+						'title' => 'Subcategory 1',
+						'resourceType' => 'collection',
+						'retailerID' => 3,
+					],
+					[
+						'title' => 'Subcategory 2',
+						'resourceType' => 'collection',
+						'retailerID' => 4,
+					],
+				]
+			],
+			[
+				'title' => 'Category 2',
+				'resourceType' => 'collection',
+				'retailerID' => 2,
+			]
+		];
+
+		$this->assertEquals($expected, $category_tree, 'Category tree does not match expected structure.');
 	}
 }

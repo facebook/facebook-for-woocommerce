@@ -1,0 +1,120 @@
+name: Build Plugin Artifact
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+jobs:
+  build-and-upload:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+    
+    steps:
+      - uses: actions/checkout@v1
+      
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '7.4'
+          tools: composer
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '16'
+          cache-dependency-path: './package-lock.json'
+          cache: 'npm'
+      
+      - name: Install dependencies
+        run: |
+          npm ci || npm install
+          composer install
+      
+      - name: Build plugin
+        run: npm run build
+      
+      - name: Store built plugin
+        uses: actions/upload-artifact@master
+        continue-on-error: true
+        with:
+          name: facebook-for-woocommerce
+          path: facebook-for-woocommerce.zip
+          
+      - name: Check if build succeeded
+        id: check_build
+        run: |
+          if [ -f "facebook-for-woocommerce.zip" ]; then
+            echo "build_success=true" >> $GITHUB_OUTPUT
+            echo "filesize=$(du -h facebook-for-woocommerce.zip | cut -f1)" >> $GITHUB_OUTPUT
+          else
+            echo "build_success=false" >> $GITHUB_OUTPUT
+          fi
+      
+      - name: Create simple summary
+        run: echo "⬇️ Scroll to the bottom of this page and download the 'facebook-for-woocommerce' artifact to get the latest plugin build." > $GITHUB_STEP_SUMMARY
+        
+      - name: Post build info comment on PR
+        uses: actions/github-script@v6
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            // Get PR number from pull_request event
+            const prNumber = context.payload.pull_request.number;
+            console.log(`Preparing build info for PR #${prNumber}`);
+            
+            const runUrl = `https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
+            const timestamp = new Date().toISOString();
+            const commitSha = context.sha.substring(0, 7);
+            
+            // Create build info comment
+            let commentBody = '';
+            if ("${{ steps.check_build.outputs.build_success }}" === "true") {
+              commentBody = "## 📦 Latest Plugin Build\n\n" +
+                `**Built at:** ${timestamp}\n` +
+                `**Commit:** ${commitSha}\n` +
+                `**Size:** ${{ steps.check_build.outputs.filesize }}\n\n` +
+                `**Download:** [Click here to download the plugin](${runUrl})\n\n` +
+                `_To download: Click the link above → Scroll to bottom → Download "facebook-for-woocommerce" artifact_`;
+            } else {
+              commentBody = "## ❌ Plugin Build Failed\n\n" +
+                `**Attempted at:** ${timestamp}\n` +
+                `**Commit:** ${commitSha}\n\n` +
+                `Please check the [workflow logs](${runUrl}) for more information.`;
+            }
+            
+            // Add build info to workflow summary regardless
+            core.summary
+              .addHeading(("${{ steps.check_build.outputs.build_success }}" === "true") ? 
+                "📦 Latest Plugin Build" : "❌ Plugin Build Failed")
+              .addRaw(commentBody)
+              .write();
+            
+            // Always try to post a comment, regardless of repository ownership
+            try {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: prNumber,
+                body: commentBody
+              });
+              console.log("Successfully posted comment on PR");
+            } catch (error) {
+              console.log("Unable to post comment to PR. Build information is still available in the workflow summary.");
+              console.log(`Error details: ${error.message}`);
+            }
+            
+            // Always try to post a comment
+            try {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: prNumber,
+                body: commentBody
+              });
+              console.log("Successfully posted comment on PR");
+            } catch (error) {
+              console.log("Unable to post comment to PR. Build information is still available in the workflow summary.");
+              console.log(`Error details: ${error.message}`);
+            } 

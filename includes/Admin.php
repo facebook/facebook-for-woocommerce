@@ -1129,7 +1129,7 @@ class Admin {
 		// 'id' attribute needs to match the 'target' parameter set above
 		?>
 		<div id='facebook_options' class='panel woocommerce_options_panel'>
-			<div class='options_group hide_if_variable'>
+			<div>
 				<?php
 
 				woocommerce_wp_select(
@@ -1146,7 +1146,12 @@ class Admin {
 						'description' => __( 'Choose whether to sync this product to Facebook and, if synced, whether it should be visible in the catalog.', 'facebook-for-woocommerce' ),
 					)
 				);
-
+				?>
+			</div>
+			
+			
+			<div class='options_group hide_if_variable'>
+				<?php
 				echo '<div class="wp-editor-wrap">';
 				echo '<label for="' . esc_attr( \WC_Facebookcommerce_Integration::FB_PRODUCT_DESCRIPTION ) . '">' .
 					esc_html__( 'Facebook Description', 'facebook-for-woocommerce' ) .
@@ -1155,7 +1160,7 @@ class Admin {
 					$rich_text_description,
 					\WC_Facebookcommerce_Integration::FB_PRODUCT_DESCRIPTION,
 					array(
-						'id'            => 'wc_facebook_sync_mode',
+						'id'            => \WC_Facebook_Product::FB_PRODUCT_DESCRIPTION,
 						'textarea_name' => \WC_Facebookcommerce_Integration::FB_PRODUCT_DESCRIPTION,
 						'textarea_rows' => 10,
 						'media_buttons' => true,
@@ -1415,20 +1420,11 @@ class Admin {
 		}
 
 		// Get variation meta values
-		$sync_enabled = 'no' !== $this->get_product_variation_meta( $variation, Products::SYNC_ENABLED_META_KEY, $parent );
-		$visibility   = $this->get_product_variation_meta( $variation, Products::VISIBILITY_META_KEY, $parent );
-		$is_visible   = $visibility ? wc_string_to_bool( $visibility ) : true;
 		$description  = $this->get_product_variation_meta( $variation, \WC_Facebookcommerce_Integration::FB_PRODUCT_DESCRIPTION, $parent );
 		$price        = $this->get_product_variation_meta( $variation, \WC_Facebook_Product::FB_PRODUCT_PRICE, $parent );
 		$image_url    = $this->get_product_variation_meta( $variation, \WC_Facebook_Product::FB_PRODUCT_IMAGE, $parent );
 		$image_source = $variation->get_meta( Products::PRODUCT_IMAGE_SOURCE_META_KEY );
 		$fb_mpn       = $this->get_product_variation_meta( $variation, \WC_Facebook_Product::FB_MPN, $parent );
-
-		if ( $sync_enabled ) {
-			$sync_mode = $is_visible ? self::SYNC_MODE_SYNC_AND_SHOW : self::SYNC_MODE_SYNC_AND_HIDE;
-		} else {
-			$sync_mode = self::SYNC_MODE_SYNC_DISABLED;
-		}
 
 		?>
 		<div class="facebook-metabox wc-metabox closed">
@@ -1438,25 +1434,6 @@ class Admin {
 			</h3>
 			<div class="wc-metabox-content" style="display: none;">
 				<?php
-				// Sync Mode Select
-				woocommerce_wp_select(
-					array(
-						'id'            => "variable_facebook_sync_mode$index",
-						'name'          => "variable_facebook_sync_mode[$index]",
-						'label'         => __( 'Facebook Sync', 'facebook-for-woocommerce' ),
-						'options'       => array(
-							self::SYNC_MODE_SYNC_AND_SHOW => __( 'Sync and show in catalog', 'facebook-for-woocommerce' ),
-							self::SYNC_MODE_SYNC_AND_HIDE => __( 'Sync and hide in catalog', 'facebook-for-woocommerce' ),
-							self::SYNC_MODE_SYNC_DISABLED => __( 'Do not sync', 'facebook-for-woocommerce' ),
-						),
-						'value'         => $sync_mode,
-						'desc_tip'      => true,
-						'description'   => __( 'Choose whether to sync this product to Facebook and, if synced, whether it should be visible in the catalog.', 'facebook-for-woocommerce' ),
-						'class'         => 'js-variable-fb-sync-toggle',
-						'wrapper_class' => 'form-row form-row-full',
-					)
-				);
-
 				woocommerce_wp_textarea_input(
 					array(
 						'id'            => sprintf( 'variable_%s%s', \WC_Facebookcommerce_Integration::FB_PRODUCT_DESCRIPTION, $index ),
@@ -1596,7 +1573,7 @@ class Admin {
 			return;
 		}
 		// phpcs:disable WordPress.Security.NonceVerification.Missing
-		$sync_mode    = isset( $_POST['variable_facebook_sync_mode'][ $index ] ) ? wc_clean( wp_unslash( $_POST['variable_facebook_sync_mode'][ $index ] ) ) : self::SYNC_MODE_SYNC_DISABLED;
+		$sync_mode    = isset( $_POST['wc_facebook_sync_mode'] ) ? wc_clean( wp_unslash( $_POST['wc_facebook_sync_mode'] ) ) : self::SYNC_MODE_SYNC_DISABLED;
 		$sync_enabled = self::SYNC_MODE_SYNC_DISABLED !== $sync_mode;
 		if ( self::SYNC_MODE_SYNC_AND_SHOW === $sync_mode && $variation->is_virtual() ) {
 			// force to Sync and hide

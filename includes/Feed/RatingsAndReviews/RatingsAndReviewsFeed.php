@@ -1,5 +1,6 @@
 <?php
-/** Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
+/**
+ * Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
  *
  * This source code is licensed under the license found in the
  * LICENSE file in the root directory of this source tree.
@@ -23,7 +24,7 @@ use Automattic\WooCommerce\ActionSchedulerJobFramework\Proxies\ActionScheduler;
  */
 class RatingsAndReviewsFeed extends AbstractFeed {
 	/** Header for the ratings and reviews feed file. @var string */
-	const RATINGS_AND_REVIEWS_FEED_HEADER = 'aggregator,store.name,store.id,store.storeUrls,review_id,rating,title,content,created_at,reviewer.name,reviewer.reviewerID,reviewer.isAnonymous,product.name,product.url,product.productIdentifiers.skus' . PHP_EOL;
+	const RATINGS_AND_REVIEWS_FEED_HEADER = 'aggregator,store.name,store.id,store.storeUrls,review_id,rating,title,content,created_at,updated_at,review_image_urls,incentivized,has_verified_purchase,reviewer.name,reviewer.reviewerID,reviewer.isAnonymous,product.name,product.url,product.productIdentifiers.skus' . PHP_EOL;
 
 	/**
 	 * Constructor.

@@ -85,10 +85,11 @@ class Products {
 							$product_variation->save_meta_data();
 						}
 					}
-				} else {
-					$product->update_meta_data( self::SYNC_ENABLED_META_KEY, $enabled );
-					$product->save_meta_data();
 				}
+
+				// Adding sync mode settings to simple product as well as main product for variants.
+				$product->update_meta_data( self::SYNC_ENABLED_META_KEY, $enabled );
+				$product->save_meta_data();
 
 				// Remove excluded product from FB.
 				if ( "no" === $enabled ) {
@@ -186,7 +187,6 @@ class Products {
 		}
 	}
 
-
 	/**
 	 * Determines whether the given product should be synced assuming the product is published.
 	 *
@@ -272,6 +272,18 @@ class Products {
 		if ( ! is_bool( $visibility ) ) {
 			return false;
 		}
+
+		// Updating visibility for the all variable products
+		if ( $product->is_type( 'variable' ) ) {
+			foreach ( $product->get_children() as $variation ) {
+				$product_variation = wc_get_product( $variation );
+				if ( $product_variation instanceof \WC_Product ) {
+					$product_variation->update_meta_data( self::VISIBILITY_META_KEY, wc_bool_to_string($visibility));
+					$product_variation->save_meta_data();
+				}
+			}
+		} 
+		
 		$product->update_meta_data( self::VISIBILITY_META_KEY, wc_bool_to_string( $visibility ) );
 		$product->save_meta_data();
 		self::$products_visibility[ $product->get_id() ] = $visibility;

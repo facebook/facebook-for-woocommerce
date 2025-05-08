@@ -9,6 +9,8 @@
 
 use WooCommerce\Facebook\Feed\ShippingProfilesFeed;
 
+require_once __DIR__ . '/../FeedDataTestBase.php';
+
 /**
  * Class ShippingProfilesFeedUploadTest
  */
