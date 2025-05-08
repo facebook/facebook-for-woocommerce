@@ -13,6 +13,7 @@ namespace WooCommerce\Facebook\ProductSets;
 
 defined( 'ABSPATH' ) || exit;
 
+use WooCommerce\Facebook\RolloutSwitches;
 use WooCommerce\Facebook\Utilities\Heartbeat;
 
 /**
@@ -57,6 +58,10 @@ class ProductSetSync {
     public function on_create_or_update_product_wc_category_callback( $term_id, $tt_id, $args )
     {
         try {
+            if ( ! $this->is_sync_enabled() ) {
+                return;
+            }
+
             $wc_category = get_term( $term_id, self::WC_PRODUCT_CATEGORY_TAXONOMY );
             if ( $fb_product_set_id = $this->get_fb_product_set_id( $wc_category ) ) {
                 $this->update_fb_product_set( $wc_category, $fb_product_set_id );
@@ -74,6 +79,10 @@ class ProductSetSync {
     public function on_delete_wc_product_category_callback( $term_id, $tt_id, $deleted_term, $object_ids )
     {
         try {
+            if ( ! $this->is_sync_enabled() ) {
+                return;
+            }
+
             if ( $fb_product_set_id = $this->get_fb_product_set_id( $deleted_term ) ) {
                 $this->delete_fb_product_set( $fb_product_set_id );
             }
@@ -87,11 +96,21 @@ class ProductSetSync {
      */
     public function sync_all_product_sets() {
         try {
+            if ( ! $this->is_sync_enabled() ) {
+                return;
+            }
+
             $this->sync_all_wc_product_categories();
         } catch ( \Exception $exception ) {
             $this->log_exception( $exception );
         }
     }
+
+    private function is_sync_enabled() {
+        return facebook_for_woocommerce()->get_rollout_switches()->is_switch_enabled(
+            RolloutSwitches::SWITCH_PRODUCT_SETS_SYNC_ENABLED
+        );
+    }    
 
     private function log_exception( \Exception $exception ) {
         facebook_for_woocommerce()->log(
