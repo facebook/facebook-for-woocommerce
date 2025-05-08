@@ -19,7 +19,7 @@ use WooCommerce\Facebook\Utilities\Heartbeat;
 /**
  * The product set sync handler.
  * 
- * @since 3.4.8
+ * @since 3.4.9
  */
 class ProductSetSync {
 
@@ -53,7 +53,7 @@ class ProductSetSync {
     }
 
     /**
-     * @since 3.4.8
+     * @since 3.4.9
      */
     public function on_create_or_update_product_wc_category_callback( $term_id, $tt_id, $args )
     {
@@ -74,7 +74,7 @@ class ProductSetSync {
     }
 
     /**
-     * @since 3.4.8
+     * @since 3.4.9
      */
     public function on_delete_wc_product_category_callback( $term_id, $tt_id, $deleted_term, $object_ids )
     {
@@ -92,7 +92,7 @@ class ProductSetSync {
     }
 
      /**
-     * @since 3.4.8
+     * @since 3.4.9
      */
     public function sync_all_product_sets() {
         try {

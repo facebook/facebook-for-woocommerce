@@ -54,7 +54,7 @@ class Lifecycle extends Framework\Lifecycle {
 			'2.4.0',
 			'2.5.0',
 			'3.2.0',
-			'3.4.8'
+			'3.4.9'
 		);
 	}
 
@@ -340,9 +340,9 @@ class Lifecycle extends Framework\Lifecycle {
 	/**
 	 * Trigger sync of all WooCommerce categories
 	 *
-	 * @since 3.4.8
+	 * @since 3.4.9
 	 */
-	protected function upgrade_to_3_4_8() {
+	protected function upgrade_to_3_4_9() {
 		facebook_for_woocommerce()->get_product_sets_sync_handler()->sync_all_product_sets();
 	}
 

@@ -625,7 +625,7 @@ class WC_Facebookcommerce extends WooCommerce\Facebook\Framework\Plugin {
 	/**
 	 * Gets the products sync handler.
 	 *
-	 * @since 3.4.8
+	 * @since 3.4.9
 	 *
 	 * @return WooCommerce\Facebook\ProductSets\ProductSetSync
 	 */
