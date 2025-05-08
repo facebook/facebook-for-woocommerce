@@ -22,10 +22,12 @@ class RolloutSwitches {
 	/** @var WooCommerce\Facebook\Commerce commerce handler */
 	private \WC_Facebookcommerce $plugin;
 
-	public const SWITCH_ROLLOUT_FEATURES = 'rollout_enabled';
+	public const SWITCH_ROLLOUT_FEATURES    = 'rollout_enabled';
+	public const WHATSAPP_UTILITY_MESSAGING = 'whatsapp_utility_messages_enabled';
 
 	private const ACTIVE_SWITCHES = array(
 		self::SWITCH_ROLLOUT_FEATURES,
+		self::WHATSAPP_UTILITY_MESSAGING,
 	);
 	/**
 	 * Stores the rollout switches and their enabled/disabled states.
@@ -41,7 +43,8 @@ class RolloutSwitches {
 
 	public function init() {
 		$external_business_id = $this->plugin->get_connection_handler()->get_external_business_id();
-		if ( empty( $external_business_id ) ) {
+		$access_token         = $this->plugin->get_connection_handler()->get_access_token();
+		if ( empty( $access_token ) || empty( $external_business_id ) ) {
 			return;
 		}
 
@@ -76,7 +79,7 @@ class RolloutSwitches {
 			return false;
 		}
 
-		return $this->rollout_switches[ $switch_name ] ?? true;
+		return isset( $this->rollout_switches[ $switch_name ] ) ? $this->rollout_switches[ $switch_name ] : true;
 	}
 
 	public function is_switch_active( string $switch_name ) {
