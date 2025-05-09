@@ -321,7 +321,10 @@ class ProductValidator {
 		if ( ! apply_filters( 'wc_facebook_should_sync_product', true, $this->product ) ) {
 			throw new ProductExcludedException( __( 'Product excluded by wc_facebook_should_sync_product filter.', 'facebook-for-woocommerce' ) );
 		}
-
+		/**
+		 * The variable check will be used when we have create update of a product
+		 * Either from Product details page or bulk editor
+		 */
 		if ( $this->product->is_type( 'variable' ) ) {
 			foreach ( $this->product->get_children() as $child_id ) {
 				$child_product = wc_get_product( $child_id );
@@ -333,19 +336,17 @@ class ProductValidator {
 
 			// Variable product has no variations with sync enabled so it shouldn't be synced.
 			throw $invalid_exception;
-		} elseif( $this->product->get_type() === 'variation'){
+		} elseif ( $this->product->get_type() === 'variation' ) {
 			/**
-			 * This check will run mostly for background jobs like sync all and feeds
+			 * This check will run for background jobs like sync all and feeds
 			 */
-			$parent_sync= $this->product_parent->get_meta( self::SYNC_ENABLED_META_KEY );
+			$parent_sync = $this->product_parent->get_meta( self::SYNC_ENABLED_META_KEY );
 
-			if($parent_sync === 'yes'){
+			if ( $parent_sync === 'yes' ) {
 				return;
-			}
-			else if($parent_sync === 'no'){
+			} elseif ( $parent_sync === 'no' ) {
 				throw $invalid_exception;
-			}
-			else {
+			} else {
 				$variation_sync = false;
 				foreach ( $this->product_parent->get_children() as $child_id ) {
 					$child_product = wc_get_product( $child_id );
@@ -360,15 +361,15 @@ class ProductValidator {
 				 * Updating parent level sync for UI issues and
 				 * Future variation checks for sync
 				 */
-				update_post_meta($this->product_parent->get_id(),self::SYNC_ENABLED_META_KEY , $variation_sync ? "yes" : "no");
-				if($variation_sync) return;
+				update_post_meta( $this->product_parent->get_id(), self::SYNC_ENABLED_META_KEY, $variation_sync ? 'yes' : 'no' );
+				if ( $variation_sync ) {
+					return;
+				}
 			}
-
 
 			// Variable product has no variations with sync enabled so it shouldn't be synced.
 			throw $invalid_exception;
-		}
-		elseif ( 'no' === $this->product->get_meta( self::SYNC_ENABLED_META_KEY ) ) {
+		} elseif ( 'no' === $this->product->get_meta( self::SYNC_ENABLED_META_KEY ) ) {
 				throw $invalid_exception;
 		}
 	}
