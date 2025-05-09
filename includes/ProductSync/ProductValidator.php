@@ -340,11 +340,11 @@ class ProductValidator {
 			/**
 			 * This check will run for background jobs like sync all and feeds
 			 */
-			$parent_sync = $this->product_parent->get_meta( self::SYNC_ENABLED_META_KEY );
+			$parent_sync = $this->product_parent->get_meta( self::SYNC_ENABLED_META_KEY ) || null;
 
-			if ( $parent_sync === 'yes' ) {
+			if ( 'yes' === $parent_sync ) {
 				return;
-			} elseif ( $parent_sync === 'no' ) {
+			} elseif ( 'no' === $parent_sync ) {
 				throw $invalid_exception;
 			} else {
 				$variation_sync = false;
