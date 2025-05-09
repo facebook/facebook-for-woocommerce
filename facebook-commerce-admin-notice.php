@@ -25,6 +25,10 @@ class WC_Facebookcommerce_Admin_Notice {
 		add_action( 'admin_notices', array( $this, 'show_notice' ) );
 		add_action( 'admin_init', array( $this, 'dismiss_notice' ) );
 	}
+
+	/**
+	 * Displays the admin notice if not dismissed.
+	 */
 	public function show_notice() {
 		if ( ! current_user_can( 'manage_woocommerce' ) ) {
 			return;
