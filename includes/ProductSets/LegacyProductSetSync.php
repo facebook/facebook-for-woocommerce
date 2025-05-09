@@ -18,7 +18,7 @@ defined( 'ABSPATH' ) || exit;
  *
  * @since 2.3.0
  */
-class Sync {
+class LegacyProductSetSync {
 
 
 	/**

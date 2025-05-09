@@ -189,7 +189,7 @@ class Connection {
 	/**
 	 * Refreshes the client side info and configuration.
 	 *
-	 * @since 3.4.8
+	 * @since 3.4.9
 	 */
 	public function repair_or_update_commerce_integration_data() {
 		// bail if not connected
@@ -423,6 +423,7 @@ class Connection {
 			else {
 				facebook_for_woocommerce()->log( 'Initial full product sync disabled by filter hook `facebook_for_woocommerce_allow_full_batch_api_sync`', 'facebook_for_woocommerce_connect' );
 			}
+			facebook_for_woocommerce()->get_product_sets_sync_handler()->sync_all_product_sets();
 			update_option( 'wc_facebook_has_connected_fbe_2', 'yes' );
 			update_option( 'wc_facebook_has_authorized_pages_read_engagement', 'yes' );
 			// redirect to the Commerce onboarding if directed to do so
@@ -898,7 +899,7 @@ class Connection {
 	/**
 	 * Gets Commerce Partner Integration ID value.
 	 *
-	 * @since 3.4.8
+	 * @since 3.4.9
 	 *
 	 * @return string
 	 */
