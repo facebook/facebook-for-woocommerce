@@ -121,6 +121,9 @@ class ShippingProfilesFeed extends AbstractFeed {
 
 				$shipping_method_data = [];
 				foreach ( $shipping_methods as $shipping_method ) {
+					if ( 'yes' !== $shipping_method['enabled'] ) {
+						continue;
+					}
 					try {
 						if ( 'free_shipping' === $shipping_method['id'] ) {
 							$shipping_method_data[] = self::get_free_shipping_method_data( $zone, $shipping_method );
