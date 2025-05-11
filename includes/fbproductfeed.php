@@ -45,7 +45,7 @@ class WC_Facebook_Product_Feed {
 		$profiling_logger = facebook_for_woocommerce()->get_profiling_logger();
 		$profiling_logger->start( 'generate_feed' );
 
-		\WC_Facebookcommerce_Utils::logWithDebugModeEnabled( 'Generating a fresh product feed file' );
+		\WC_Facebookcommerce_Utils::log_with_debug_mode_enabled( 'Generating a fresh product feed file' );
 
 		try {
 
@@ -56,13 +56,13 @@ class WC_Facebook_Product_Feed {
 			$generation_time = microtime( true ) - $start_time;
 			facebook_for_woocommerce()->get_tracker()->track_feed_file_generation_time( $generation_time );
 
-			\WC_Facebookcommerce_Utils::logWithDebugModeEnabled( 'Product feed file generated' );
+			\WC_Facebookcommerce_Utils::log_with_debug_mode_enabled( 'Product feed file generated' );
 
 			do_action('wc_facebook_feed_generation_completed');
 
 		} catch ( \Exception $exception ) {
 
-			\WC_Facebookcommerce_Utils::logWithDebugModeEnabled( $exception->getMessage() );
+			\WC_Facebookcommerce_Utils::log_with_debug_mode_enabled( $exception->getMessage() );
 			// Feed generation failed - clear the generation time to track that there's an issue.
 			facebook_for_woocommerce()->get_tracker()->track_feed_file_generation_time( -1 );
 
@@ -262,7 +262,7 @@ class WC_Facebook_Product_Feed {
 
 		} catch ( Exception $e ) {
 
-			WC_Facebookcommerce_Utils::logWithDebugModeEnabled( json_encode( $e->getMessage() ) );
+			WC_Facebookcommerce_Utils::log_with_debug_mode_enabled( json_encode( $e->getMessage() ) );
 
 			$written = false;
 
@@ -386,7 +386,7 @@ class WC_Facebook_Product_Feed {
 		'brand,price,availability,item_group_id,checkout_url,' .
 		'additional_image_link,sale_price_effective_date,sale_price,condition,' .
 		'visibility,gender,color,size,pattern,google_product_category,default_product,'.
-		'variant,gtin,quantity_to_sell_on_facebook,rich_text_description,external_update_time,'.
+		'variant,gtin,quantity_to_sell_on_facebook,rich_text_description,internal_label,external_update_time,'.
 		'external_variant_id'. PHP_EOL;
 	}
 
@@ -399,7 +399,6 @@ class WC_Facebook_Product_Feed {
 	 * @return string product feed line data
 	 */
 	private function prepare_product_for_feed( $woo_product, &$attribute_variants ) {
-
 		$product_data  = $woo_product->prepare_product( null, \WC_Facebook_Product::PRODUCT_PREP_TYPE_FEED );
 		$item_group_id = $product_data['retailer_id'];
 
@@ -537,6 +536,7 @@ class WC_Facebook_Product_Feed {
 		static::format_string_for_feed( static::get_value_from_product_data( $product_data, 'gtin' )) . ',' .
 		static::format_string_for_feed( static::get_value_from_product_data( $product_data, 'quantity_to_sell_on_facebook' )) . ',' .
 		static::format_string_for_feed( static::get_value_from_product_data( $product_data, 'rich_text_description' ) ) . ',' .
+		static::format_internal_labels_for_feed( static::get_value_from_product_data( $product_data, 'internal_label' ) ) . ',' .
 		static::get_value_from_product_data( $product_data, 'external_update_time' ) . ',' .
 		static::get_value_from_product_data( $product_data, 'external_variant_id' ) . PHP_EOL;
 	}
@@ -562,6 +562,13 @@ class WC_Facebook_Product_Feed {
 		} else {
 			return '';
 		}
+	}
+
+	private static function format_internal_labels_for_feed( $internal_labels ): string {
+		$quoted_internal_labels = array_map(function(string $label) {
+			return sprintf("'%s'", $label);
+		} , $internal_labels);
+		return sprintf("[%s]", implode( ',', $quoted_internal_labels ));
 	}
 
 	private static function format_price_for_feed( $value, $currency ) {
@@ -641,6 +648,6 @@ class WC_Facebook_Product_Feed {
 	public function log_feed_progress( $msg, $object = array() ) {
 		WC_Facebookcommerce_Utils::fblog( $msg, $object );
 		$msg = empty( $object ) ? $msg : $msg . json_encode( $object );
-		WC_Facebookcommerce_Utils::logWithDebugModeEnabled( $msg );
+		WC_Facebookcommerce_Utils::log_with_debug_mode_enabled( $msg );
 	}
 }

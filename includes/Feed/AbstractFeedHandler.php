@@ -25,10 +25,10 @@ abstract class AbstractFeedHandler {
 	/**
 	 * The feed file writer instance.
 	 *
-	 * @var FeedFileWriter
+	 * @var AbstractFeedFileWriter
 	 * @since 3.5.0
 	 */
-	protected FeedFileWriter $feed_writer;
+	protected AbstractFeedFileWriter $feed_writer;
 
 	/**
 	 * The feed type identifier.
@@ -55,10 +55,10 @@ abstract class AbstractFeedHandler {
 	/**
 	 * Get the feed file writer instance.
 	 *
-	 * @return FeedFileWriter
+	 * @return AbstractFeedFileWriter
 	 * @since 3.5.0
 	 */
-	public function get_feed_writer(): FeedFileWriter {
+	public function get_feed_writer(): AbstractFeedFileWriter {
 		return $this->feed_writer;
 	}
 

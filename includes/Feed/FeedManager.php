@@ -20,6 +20,8 @@ namespace WooCommerce\Facebook\Feed;
 class FeedManager {
 	const PROMOTIONS          = 'promotions';
 	const RATINGS_AND_REVIEWS = 'ratings_and_reviews';
+	const SHIPPING_PROFILES   = 'shipping_profiles';
+	const NAVIGATION_MENU     = 'navigation_menu';
 
 	/**
 	 * The map of feed types to their instances.
@@ -56,6 +58,10 @@ class FeedManager {
 				return new PromotionsFeed();
 			case self::RATINGS_AND_REVIEWS:
 				return new RatingsAndReviewsFeed();
+			case self::SHIPPING_PROFILES:
+				return new ShippingProfilesFeed();
+			case self::NAVIGATION_MENU:
+				return new NavigationMenuFeed();
 			default:
 				throw new \InvalidArgumentException( "Invalid feed type {$data_stream_name}" );
 		}
@@ -68,7 +74,8 @@ class FeedManager {
 	 * @since 3.5.0
 	 */
 	public static function get_active_feed_types(): array {
-		return array( self::PROMOTIONS, self::RATINGS_AND_REVIEWS );
+		// TODO add self::NAVIGATION_MENU once category sync is implemented
+		return array( self::PROMOTIONS, self::RATINGS_AND_REVIEWS, self::SHIPPING_PROFILES );
 	}
 
 	/**

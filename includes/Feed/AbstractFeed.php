@@ -10,7 +10,6 @@
 
 namespace WooCommerce\Facebook\Feed;
 
-use WooCommerce\Facebook\Framework\Api\Exception;
 use WooCommerce\Facebook\Framework\Helper;
 use WooCommerce\Facebook\Framework\Plugin\Exception as PluginException;
 use WooCommerce\Facebook\Utilities\Heartbeat;
@@ -42,10 +41,10 @@ abstract class AbstractFeed {
 	/**
 	 * The feed writer instance for the given feed.
 	 *
-	 * @var FeedFileWriter
+	 * @var AbstractFeedFileWriter
 	 * @since 3.5.0
 	 */
-	protected FeedFileWriter $feed_writer;
+	protected AbstractFeedFileWriter $feed_writer;
 
 	/**
 	 * The feed generator instance for the given feed.
@@ -66,11 +65,11 @@ abstract class AbstractFeed {
 	/**
 	 * Initialize feed properties.
 	 *
-	 * @param FeedFileWriter      $feed_writer The feed file writer instance.
-	 * @param AbstractFeedHandler $feed_handler The feed handler instance.
-	 * @param FeedGenerator       $feed_generator The feed generator instance.
+	 * @param AbstractFeedFileWriter $feed_writer The feed file writer instance.
+	 * @param AbstractFeedHandler    $feed_handler The feed handler instance.
+	 * @param FeedGenerator          $feed_generator The feed generator instance.
 	 */
-	protected function init( FeedFileWriter $feed_writer, AbstractFeedHandler $feed_handler, FeedGenerator $feed_generator ): void {
+	protected function init( AbstractFeedFileWriter $feed_writer, AbstractFeedHandler $feed_handler, FeedGenerator $feed_generator ): void {
 		$this->feed_writer    = $feed_writer;
 		$this->feed_handler   = $feed_handler;
 		$this->feed_generator = $feed_generator;
@@ -170,7 +169,7 @@ abstract class AbstractFeed {
 			get_api()->
 			create_common_data_feed_upload( $cpi_id, $data );
 		} catch ( \Exception $exception ) {
-			\WC_Facebookcommerce_Utils::logExceptionImmediatelyToMeta(
+			\WC_Facebookcommerce_Utils::log_exception_immediately_to_meta(
 				$exception,
 				[
 					'event'      => 'feed_upload',
@@ -233,7 +232,7 @@ abstract class AbstractFeed {
 	 */
 	public function handle_feed_data_request(): void {
 		$name = static::get_data_stream_name();
-		\WC_Facebookcommerce_Utils::logWithDebugModeEnabled( "{$name} feed: Meta is requesting feed file." );
+		\WC_Facebookcommerce_Utils::log_with_debug_mode_enabled( "{$name} feed: Meta is requesting feed file." );
 
 		$file_path = $this->feed_writer->get_file_path();
 
@@ -253,8 +252,14 @@ abstract class AbstractFeed {
 				throw new PluginException( "{$name}: File at path ' . $file_path . ' is not readable.", 404 );
 			}
 
+			if ( $this->feed_writer instanceof JsonFeedFileWriter ) {
+				$content_type = 'Content-Type: application/json; charset=utf-8';
+			} else {
+				$content_type = 'Content-Type: text/csv; charset=utf-8';
+			}
+
 			// set the download headers.
-			header( 'Content-Type: text/csv; charset=utf-8' );
+			header( $content_type );
 			header( 'Content-Description: File Transfer' );
 			header( 'Content-Disposition: attachment; filename="' . basename( $file_path ) . '"' );
 			header( 'Expires: 0' );
@@ -271,7 +276,7 @@ abstract class AbstractFeed {
 			// fpassthru might be disabled in some hosts (like Flywheel).
 			// phpcs:ignore
 			if ( \WC_Facebookcommerce_Utils::is_fpassthru_disabled() || ! @fpassthru( $file ) ) {
-				\WC_Facebookcommerce_Utils::logWithDebugModeEnabled( "{$name} feed: fpassthru is disabled: getting file contents." );
+				\WC_Facebookcommerce_Utils::log_with_debug_mode_enabled( "{$name} feed: fpassthru is disabled: getting file contents." );
 				//phpcs:ignore
 				$contents = @stream_get_contents( $file );
 				if ( ! $contents ) {
@@ -280,7 +285,7 @@ abstract class AbstractFeed {
 				echo $contents; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
 			}
 		} catch ( \Exception $exception ) {
-			\WC_Facebookcommerce_Utils::logExceptionImmediatelyToMeta(
+			\WC_Facebookcommerce_Utils::log_exception_immediately_to_meta(
 				$exception,
 				[
 					'event'      => 'feed_upload',

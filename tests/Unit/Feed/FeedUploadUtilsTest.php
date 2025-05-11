@@ -7,151 +7,12 @@
  * @package FacebookCommerce
  */
 
-require_once __DIR__ . '/../../../includes/Feed/FeedUploadUtils.php';
-
-use WooCommerce\Facebook\Tests\AbstractWPUnitTestWithOptionIsolationAndSafeFiltering;
+ require_once __DIR__ . '/FeedDataTestBase.php';
 
 /**
  * Class FeedUploadUtilsTest
- *
- * Sets up environment to test various logic in FeedUploadUtils
  */
-class FeedUploadUtilsTest extends AbstractWPUnitTestWithOptionIsolationAndSafeFiltering {
-
-	/** @var int Shop page ID */
-	protected static $shop_page_id;
-
-	/**
-	 * Set up the test environment: force pretty permalinks, configure site options,
-	 * create a Shop page, and add high–priority filters to force expected URLs.
-	 */
-	public function setUp(): void {
-		parent::setUp();
-
-		// Force a pretty permalink structure.
-		$this->add_filter_with_safe_teardown('pre_option_permalink_structure', function () {
-			return '/%postname%/';
-		});
-
-		update_option( 'permalink_structure', '/%postname%/' );
-		global $wp_rewrite;
-		if ( ! ( $wp_rewrite instanceof WP_Rewrite ) ) {
-			$wp_rewrite = new WP_Rewrite();
-		}
-		$wp_rewrite->init();
-		$wp_rewrite->set_permalink_structure( '/%postname%/' );
-		flush_rewrite_rules();
-
-		// Set basic site options.
-		update_option( 'blogname', 'Test Store' );
-		update_option( 'wc_facebook_commerce_merchant_settings_id', '123456789' );
-		update_option( 'siteurl', 'https://example.com' );
-		update_option( 'home', 'https://example.com' );
-
-		// Create and register the Shop page.
-		self::$shop_page_id = self::factory()->post->create( [
-			'post_type'   => 'page',
-			'post_status' => 'publish',
-			'post_title'  => 'Shop',
-			'post_name'   => 'shop'
-		] );
-		update_option( 'woocommerce_shop_page_id', self::$shop_page_id );
-		flush_rewrite_rules();
-
-		// Add high–priority filters to force URLs.
-		$this->add_filter_with_safe_teardown('woocommerce_get_page_permalink', [ $this, 'forceShopPermalink' ], 9999, 2);
-		$this->add_filter_with_safe_teardown('get_permalink', [ $this, 'forceGetPermalink' ], 9999, 2);
-		$this->add_filter_with_safe_teardown('post_type_link', [ $this, 'forcePostTypeLink' ], 9999, 3);
-		$this->add_filter_with_safe_teardown('woocommerce_product_get_permalink', [ $this, 'forceProductPermalink' ], 9999, 2);
-	}
-
-	/**
-	 * Clean up filters and rewrite rules.
-	 */
-	public function tearDown(): void {
-		flush_rewrite_rules();
-		// No need to manually remove filters, parent tearDown will handle it
-		parent::tearDown();
-	}
-
-	/**
-	 * Helper: Return forced product URL for any product post.
-	 *
-	 * @param WP_Post $post
-	 *
-	 * @return string|false
-	 */
-	private function getForcedProductUrl( WP_Post $post ) {
-		if ( 'product' !== $post->post_type || empty( $post->post_name ) ) {
-			return false;
-		}
-
-		return sprintf( 'https://example.com/product/%s', $post->post_name );
-	}
-
-	/**
-	 * Force the shop page URL.
-	 *
-	 * @param string $permalink Original permalink.
-	 * @param mixed $page Page identifier.
-	 *
-	 * @return string
-	 */
-	public function forceShopPermalink( string $permalink, $page ): string {
-		return 'shop' === $page ? 'https://example.com/shop/' : $permalink;
-	}
-
-	/**
-	 * Force get_permalink() output.
-	 *
-	 * @param string $url Original URL.
-	 * @param WP_Post $post The post object.
-	 *
-	 * @return string
-	 */
-	public function forceGetPermalink( string $url, WP_Post $post ): string {
-		if ( ! is_object( $post ) ) {
-			return $url;
-		}
-		// Check for Shop page.
-		$shop_page_id = absint( get_option( 'woocommerce_shop_page_id' ) );
-		if ( absint( $post->ID ) === $shop_page_id ) {
-			return 'https://example.com/shop/';
-		}
-		// Check for forced product URL.
-		$forced_url = $this->getForcedProductUrl( $post );
-
-		return $forced_url ? $forced_url : $url;
-	}
-
-	/**
-	 * Force post_type_link() output for products.
-	 *
-	 * @param string $url Original URL.
-	 * @param WP_Post $post The post object.
-	 *
-	 * @return string
-	 */
-	public function forcePostTypeLink( string $url, WP_Post $post ) {
-		$forced_url = $this->getForcedProductUrl( $post );
-
-		return $forced_url ?? $url;
-	}
-
-	/**
-	 * Force WooCommerce product permalink.
-	 *
-	 * @param string $permalink Original product permalink.
-	 * @param WC_Product $product The product object.
-	 *
-	 * @return string
-	 */
-	public function forceProductPermalink( string $permalink, WC_Product $product ): string {
-		$post       = get_post( $product->get_id() );
-		$forced_url = $post ? $this->getForcedProductUrl( $post ) : false;
-
-		return $forced_url ?? $permalink;
-	}
+class FeedUploadUtilsTest extends FeedDataTestBase {
 
 	/* ------------------ Test Methods ------------------ */
 
@@ -187,6 +48,10 @@ class FeedUploadUtilsTest extends AbstractWPUnitTestWithOptionIsolationAndSafeFi
 			'title'                           => null,
 			'content'                         => 'Awesome product!',
 			'created_at'                      => '2023-10-01 10:00:00',
+			'updated_at'                      => null,
+			'review_image_urls'               => null,
+			'incentivized'                    => 'false',
+			'has_verified_purchase'           => 'false',
 			'reviewer.name'                   => 'John Doe',
 			'reviewer.reviewerID'             => "0",
 			'reviewer.isAnonymous'            => 'true',
@@ -750,5 +615,50 @@ class FeedUploadUtilsTest extends AbstractWPUnitTestWithOptionIsolationAndSafeFi
 		];
 		$result = \WooCommerce\Facebook\Feed\FeedUploadUtils::get_coupons_data($query_args);
 		$this->assertEmpty($result, 'Expected coupon to be invalid if excluded product_brands targeting is used.');
+	}
+
+	public function test_build_category_tree() {
+		// Mock categories
+		$categories = [
+			(object) ['term_taxonomy_id' => 1, 'name' => 'Category 1', 'parent' => 0],
+			(object) ['term_taxonomy_id' => 2, 'name' => 'Category 2', 'parent' => 0],
+			(object) ['term_taxonomy_id' => 3, 'name' => 'Subcategory 1', 'parent' => 1],
+			(object) ['term_taxonomy_id' => 4, 'name' => 'Subcategory 2', 'parent' => 1],
+		];
+
+		// Use reflection to access the private method
+		$reflection = new \ReflectionClass(\WooCommerce\Facebook\Feed\FeedUploadUtils::class);
+		$method = $reflection->getMethod('build_category_tree');
+		$method->setAccessible(true);
+
+		// Invoke the private method
+		$category_tree = $method->invokeArgs(null, [$categories]);
+
+		$expected = [
+			[
+				'title' => 'Category 1',
+				'resourceType' => 'collection',
+				'retailerID' => 1,
+				'items' => [
+					[
+						'title' => 'Subcategory 1',
+						'resourceType' => 'collection',
+						'retailerID' => 3,
+					],
+					[
+						'title' => 'Subcategory 2',
+						'resourceType' => 'collection',
+						'retailerID' => 4,
+					],
+				]
+			],
+			[
+				'title' => 'Category 2',
+				'resourceType' => 'collection',
+				'retailerID' => 2,
+			]
+		];
+
+		$this->assertEquals($expected, $category_tree, 'Category tree does not match expected structure.');
 	}
 }

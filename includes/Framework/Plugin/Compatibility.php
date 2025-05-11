@@ -1,12 +1,11 @@
 <?php
-// phpcs:ignoreFile
 /**
  * Facebook for WooCommerce
  */
 
 namespace WooCommerce\Facebook\Framework\Plugin;
 
-defined( 'ABSPATH' ) or exit;
+defined( 'ABSPATH' ) || exit;
 
 /**
  * WooCommerce Compatibility Utility Class
@@ -75,8 +74,7 @@ class Compatibility {
 	 * @return string|null Woocommerce version number or null if undetermined
 	 */
 	public static function get_wc_version() {
-
-		return defined( 'WC_VERSION' ) && WC_VERSION ? WC_VERSION : null;
+		return defined( 'WC_VERSION' ) ? constant( 'WC_VERSION' ) : null;
 	}
 
 

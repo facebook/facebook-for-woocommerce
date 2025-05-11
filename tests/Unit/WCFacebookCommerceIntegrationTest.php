@@ -3233,4 +3233,13 @@ class WCFacebookCommerceIntegrationTest extends \WooCommerce\Facebook\Tests\Abst
 		$this->assertEquals( null, $facebook_product_id );
 		$this->assertEquals( null, get_post_meta( $product->get_id(), WC_Facebookcommerce_Integration::FB_PRODUCT_ITEM_ID, true ) );
 	}
+
+	/**
+	 * Tests if meta diagnosis is enabled by default.
+	 *
+	 * @return void
+	 */
+	public function  test_meta_diagnosis_enabled_by_default() {
+		$this->assertEquals( 'yes', get_option( WC_Facebookcommerce_Integration::SETTING_ENABLE_META_DIAGNOSIS ) );
+	}
 }

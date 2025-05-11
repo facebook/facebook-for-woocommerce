@@ -29,7 +29,8 @@
   },
   "autoload": {
     "psr-4": {
-      "WooCommerce\\Facebook\\": "includes"
+      "WooCommerce\\Facebook\\": "includes",
+      "WooCommerce\\Facebook\\Feed\\": ["includes/Feed", "includes/Feed/Promotions", "includes/Feed/RatingsAndReviews", "includes/Feed/ShippingProfiles", "includes/Feed/NavigationMenu"]
     }
   },
   "autoload-dev": {
