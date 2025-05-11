@@ -1334,7 +1334,7 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 		}
 
 		if ( $fb_product_group_id ) {
-			return $this->create_product_item_batch_api( $woo_product, $retailer_id, $fb_product_group_id );
+		return $this->create_product_item( $woo_product, $retailer_id );
 		}
 
 		return '';
@@ -1475,10 +1475,11 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 		return '';
 	}
 
-	public function create_product_item( $woo_product, $retailer_id, $product_group_id ): string {
+	public function create_product_item( $woo_product, $retailer_id ): string {
 		try {
+			$product_catalog_id = $this->get_product_catalog_id();
 			$product_data   = $woo_product->prepare_product( $retailer_id );
-			$product_result = $this->facebook_for_woocommerce->get_api()->create_product_item( $product_group_id, $product_data );
+			$product_result = $this->facebook_for_woocommerce->get_api()->create_product_item( $product_catalog_id, $product_data );
 
 			if ( $product_result->id ) {
 				$fb_product_item_id = $product_result->id;
