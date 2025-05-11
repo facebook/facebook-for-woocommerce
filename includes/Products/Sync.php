@@ -91,8 +91,7 @@ class Sync {
 	 */
 	public function create_or_update_products( array $product_ids ) {
 		foreach ( $product_ids as $product_id ) {
-			//Will move to items batch after migrating simple and variant to product item graph api
-			//$this->requests[ $this->get_product_index( $product_id ) ] = self::ACTION_UPDATE;
+			$this->requests[ $this->get_product_index( $product_id ) ] = self::ACTION_UPDATE;
 		}
 	}
 
