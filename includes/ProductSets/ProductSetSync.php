@@ -25,8 +25,6 @@ class ProductSetSync {
 
     const WC_PRODUCT_CATEGORY_TAXONOMY = 'product_cat';
 
-    const WC_AUTO_PRODUCT_SET_PREFIX = '[WC Auto] ';
-
     /**
      * ProductSetSync constructor.
      */
@@ -108,7 +106,7 @@ class ProductSetSync {
         }
     }
 
-    private function is_sync_enabled() {
+    protected function is_sync_enabled() {
         return facebook_for_woocommerce()->get_rollout_switches()->is_switch_enabled(
             RolloutSwitches::SWITCH_PRODUCT_SETS_SYNC_ENABLED
         );
@@ -133,7 +131,7 @@ class ProductSetSync {
         return $wc_category->term_taxonomy_id;
     }
 
-    private function get_fb_product_set_id( $wc_category ) {
+    protected function get_fb_product_set_id( $wc_category ) {
         $retailer_id = $this->get_retailer_id( $wc_category );
         $fb_catalog_id = facebook_for_woocommerce()->get_integration()->get_product_catalog_id();
         
@@ -147,7 +145,7 @@ class ProductSetSync {
         return $response->data[0]['id'] ?? null;
     }
 
-    private function build_fb_product_set_data( $wc_category )
+    protected function build_fb_product_set_data( $wc_category )
     {
         $wc_category_name          = get_term_field( 'name', $wc_category, self::WC_PRODUCT_CATEGORY_TAXONOMY );
         $wc_category_description   = get_term_field( 'description', $wc_category, self::WC_PRODUCT_CATEGORY_TAXONOMY );
@@ -167,7 +165,7 @@ class ProductSetSync {
         }
 
         $fb_product_set_data = array(
-            'name'     => self::WC_AUTO_PRODUCT_SET_PREFIX.$wc_category_name,
+            'name'     => $wc_category_name,
             'filter'   => wp_json_encode( array( 'and' => array( array( 'product_type' => array( 'i_contains' => $wc_category_name ) ) ) ) ),
             'retailer_id' => $this->get_retailer_id( $wc_category ),
             'metadata' => wp_json_encode( $fb_product_set_metadata ),
@@ -176,7 +174,7 @@ class ProductSetSync {
         return $fb_product_set_data;
     }
 
-    private function create_fb_product_set( $wc_category )
+    protected function create_fb_product_set( $wc_category )
     {
         $fb_product_set_data = $this->build_fb_product_set_data( $wc_category );
         $fb_catalog_id = facebook_for_woocommerce()->get_integration()->get_product_catalog_id();
@@ -189,7 +187,7 @@ class ProductSetSync {
         }
     }
 
-    private function update_fb_product_set( $wc_category, $fb_product_set_id )
+    protected function update_fb_product_set( $wc_category, $fb_product_set_id )
     {
         $fb_product_set_data = $this->build_fb_product_set_data( $wc_category );
 
@@ -201,10 +199,10 @@ class ProductSetSync {
         }
     }
 
-    private function delete_fb_product_set( $fb_product_set_id )
+    protected function delete_fb_product_set( $fb_product_set_id )
     {
         try {
-            $allow_live_deletion = true; // TODO: is this the right thing? What does active mean, is Ads running on it?
+            $allow_live_deletion = true;
             facebook_for_woocommerce()->get_api()->delete_product_set_item( $fb_product_set_id, $allow_live_deletion );
         } catch ( \Exception $e ) {
             $message = sprintf( 'There was an error trying to create product set in a catalog: %s', $e->getMessage() );
