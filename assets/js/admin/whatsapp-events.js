@@ -7,11 +7,11 @@
  * @package FacebookCommerce
  */
 
-jQuery( document ).ready( function( $ ) {
+jQuery(document).ready(function ($) {
     // Set Event Status for Order Placed
     var orderPlacedActiveStatus = $('#order-placed-active-status');
     var orderPlacedInactiveStatus = $('#order-placed-inactive-status');
-    if(facebook_for_woocommerce_whatsapp_events.order_placed_enabled){
+    if (facebook_for_woocommerce_whatsapp_events.order_placed_enabled) {
         orderPlacedInactiveStatus.hide();
         orderPlacedActiveStatus.show();
     }
@@ -23,7 +23,7 @@ jQuery( document ).ready( function( $ ) {
     // Set Event Status for Order FulFilled
     var orderFulfilledActiveStatus = $('#order-fulfilled-active-status');
     var orderFulfilledInactiveStatus = $('#order-fulfilled-inactive-status');
-    if(facebook_for_woocommerce_whatsapp_events.order_fulfilled_enabled){
+    if (facebook_for_woocommerce_whatsapp_events.order_fulfilled_enabled) {
         orderFulfilledInactiveStatus.hide();
         orderFulfilledActiveStatus.show();
     }
@@ -35,7 +35,7 @@ jQuery( document ).ready( function( $ ) {
     // Set Event Status for Order Refunded
     var orderRefundedActiveStatus = $('#order-refunded-active-status');
     var orderRefundedInactiveStatus = $('#order-refunded-inactive-status');
-    if(facebook_for_woocommerce_whatsapp_events.order_refunded_enabled){
+    if (facebook_for_woocommerce_whatsapp_events.order_refunded_enabled) {
         orderRefundedInactiveStatus.hide();
         orderRefundedActiveStatus.show();
     }
@@ -49,7 +49,7 @@ jQuery( document ).ready( function( $ ) {
 
     $('#woocommerce-whatsapp-manage-order-placed, #woocommerce-whatsapp-manage-order-fulfilled, #woocommerce-whatsapp-manage-order-refunded').click(function (event) {
         var clickedButtonId = $(event.target).attr("id");
-        let view=clickedButtonId.replace("woocommerce-whatsapp-", "");
+        let view = clickedButtonId.replace("woocommerce-whatsapp-", "");
         view = view.replaceAll("-", "_");
         let url = new URL(window.location.href);
         let params = new URLSearchParams(url.search);
@@ -90,6 +90,10 @@ jQuery( document ).ready( function( $ ) {
                     <p>${button}</p>
                 `).show();
                 }
+                console.log('Whatsapp Library Template call succeeded', response);
+            }
+            else {
+                console.log('Whatsapp Library Template call failed', response);
             }
         });
     });
@@ -111,6 +115,7 @@ jQuery( document ).ready( function( $ ) {
             params.set('view', 'utility_settings');
             url.search = params.toString();
             window.location.href = url.toString();
+            console.log('Whatsapp Event Config has been updated', response);
         });
     });
 

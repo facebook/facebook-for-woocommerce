@@ -67,6 +67,7 @@ class WhatsAppUtilityConnection {
 				'Authorization' => $bisu_token,
 			),
 			'body'    => array(),
+			'timeout' => 300, // 5 minutes
 		);
 
 		$response    = wp_remote_request( $url, $options );
@@ -113,6 +114,7 @@ class WhatsAppUtilityConnection {
 				'Authorization' => $bisu_token,
 			),
 			'body'    => array(),
+			'timeout' => 300, // 5 minutes
 		);
 		$response     = wp_remote_post( $base_url, $options );
 		wc_get_logger()->info(
@@ -169,6 +171,7 @@ class WhatsAppUtilityConnection {
 				'Authorization' => $bisu_token,
 			),
 			'body'    => array(),
+			'timeout' => 300, // 5 minutes
 		);
 		$response     = wp_remote_post( $base_url, $options );
 		wc_get_logger()->info(
@@ -284,6 +287,13 @@ class WhatsAppUtilityConnection {
 		$data                           = explode( "\n", wp_remote_retrieve_body( $response ) );
 		$response_object                = json_decode( $data[0] );
 		$is_error                       = is_wp_error( $response );
+		wc_get_logger()->info(
+			sprintf(
+					/* translators: %s $error_message */
+				__( 'Event Configs Post API call Response: %1$s ', 'facebook-for-woocommerce' ),
+				json_encode( $response ),
+			)
+		);
 		if ( is_wp_error( $response ) || 200 !== $status_code ) {
 			$error_message = $response_object->error->error_user_title ?? $response_object->error->message ?? 'Something went wrong. Please try again later!';
 			wc_get_logger()->info(
@@ -349,7 +359,7 @@ class WhatsAppUtilityConnection {
 		$name            = self::EVENT_TO_LIBRARY_TEMPLATE_MAPPING[ $event ];
 		$components      = self::get_components_for_event( $event, $order_id, $first_name, $refund_value, $currency );
 		$options         = array(
-			'body' => array(
+			'body'    => array(
 				'messaging_product' => 'whatsapp',
 				'to'                => $phone_number,
 				'template'          => array(
@@ -361,11 +371,19 @@ class WhatsAppUtilityConnection {
 				),
 				'type'              => 'template',
 			),
+			'timeout' => 300, // 5 minutes
 		);
 		$response        = wp_remote_post( $base_url, $options );
 		$status_code     = wp_remote_retrieve_response_code( $response );
 		$data            = explode( "\n", wp_remote_retrieve_body( $response ) );
 		$response_object = json_decode( $data[0] );
+		wc_get_logger()->info(
+			sprintf(
+					/* translators: %s $error_message */
+				__( 'Messages Post API call Response: %1$s ', 'facebook-for-woocommerce' ),
+				json_encode( $response ),
+			)
+		);
 		if ( is_wp_error( $response ) || 200 !== $status_code ) {
 			$error_message = $response_object->error->error_user_title ?? $response_object->error->message ?? 'Something went wrong. Please try again later!';
 			wc_get_logger()->info(
