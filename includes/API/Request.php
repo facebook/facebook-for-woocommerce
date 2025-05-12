@@ -115,4 +115,18 @@ class Request extends JSONRequest {
 	public function get_retry_codes() {
 		return $this->retry_codes;
 	}
+
+	/**
+	 * @return string|null
+	 */
+	public function get_base_path_override(): ?string {
+		return null;
+	}
+
+	/**
+	 * @return array|null
+	 */
+	public function get_request_specific_headers(): array {
+		return [];
+	}
 }
