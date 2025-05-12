@@ -158,8 +158,6 @@ class WC_Facebookcommerce_Pixel {
 
 				<?php echo $this->get_pixel_init_code(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
 
-				fbq( 'track', 'PageView', <?php echo json_encode( self::build_params( [], 'PageView' ), JSON_PRETTY_PRINT | JSON_FORCE_OBJECT ); ?> );
-
 				document.addEventListener( 'DOMContentLoaded', function() {
 					// Insert placeholder for events injected when a product is added to the cart through AJAX.
 					document.body.insertAdjacentHTML( 'beforeend', '<div class=\"wc-facebook-pixel-event-placeholder\"></div>' );
@@ -283,7 +281,7 @@ class WC_Facebookcommerce_Pixel {
 		 * @param string $method     Name of the pixel's fbq() function to call.
 		 */
 		public function inject_event( $event_name, $params, $method = 'track' ) {
-			if ( WC_Facebookcommerce_Utils::is_woocommerce_integration() ) {
+			if ( WC_Facebookcommerce_Utils::isWoocommerceIntegration() ) {
 				$code = $this->get_event_code( $event_name, self::build_params( $params, $event_name ), $method );
 
 				// If we have add to cart redirect enabled, we must defer the AddToCart events to render them the next page load.
@@ -439,7 +437,7 @@ class WC_Facebookcommerce_Pixel {
 					"/* %s Facebook Integration Event Tracking */\n" .
 					"fbq('set', 'agent', '%s', '%s');\n" .
 					"fbq('%s', '%s', %s, %s);",
-					WC_Facebookcommerce_Utils::get_integration_name(),
+					WC_Facebookcommerce_Utils::getIntegrationName(),
 					Event::get_platform_identifier(),
 					self::get_pixel_id(),
 					esc_js( $method ),
@@ -454,7 +452,7 @@ class WC_Facebookcommerce_Pixel {
 					"/* %s Facebook Integration Event Tracking */\n" .
 					"fbq('set', 'agent', '%s', '%s');\n" .
 					"fbq('%s', '%s', %s);",
-					WC_Facebookcommerce_Utils::get_integration_name(),
+					WC_Facebookcommerce_Utils::getIntegrationName(),
 					Event::get_platform_identifier(),
 					self::get_pixel_id(),
 					esc_js( $method ),
@@ -643,7 +641,7 @@ class WC_Facebookcommerce_Pixel {
 		private static function get_version_info() {
 			global $wp_version;
 
-			if ( WC_Facebookcommerce_Utils::is_woocommerce_integration() ) {
+			if ( WC_Facebookcommerce_Utils::isWoocommerceIntegration() ) {
 				return array(
 					'source'        => 'woocommerce',
 					'version'       => WC()->version,

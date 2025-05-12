@@ -153,6 +153,7 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 			if ( $this->is_pixel_enabled() ) {
 				// phpcs:ignore WordPress.XSS.EscapeOutput.OutputNotEscaped
 				echo $this->pixel->pixel_base_code();
+				$this->inject_page_view_event();
 			}
 		}
 
@@ -168,6 +169,30 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 				// phpcs:ignore WordPress.XSS.EscapeOutput.OutputNotEscaped
 				echo $this->pixel->pixel_base_code_noscript();
 			}
+		}
+
+
+		/**
+		 * Triggers the PageView event
+		 */
+		public function inject_page_view_event() {
+			if ( ! $this->is_pixel_enabled() ) {
+				return;
+			}
+
+			$event_name = 'PageView';
+			$event_data = array(
+				'event_name'  => $event_name,
+				'user_data'   => $this->pixel->get_user_info(),
+			);
+
+			$event = new Event( $event_data );
+
+			$this->send_api_event( $event, false );
+
+			$event_data['event_id'] = $event->get_id();
+
+			$this->pixel->inject_event( $event_name, $event_data );
 		}
 
 
@@ -539,7 +564,7 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 
 			$event = new Event( $event_data );
 
-			$this->send_api_event( $event, false );
+			$this->send_api_event( $event );
 
 			$event_data['event_id'] = $event->get_id();
 
@@ -603,7 +628,7 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 
 			$event = new WooCommerce\Facebook\Events\Event( $event_data );
 
-			$this->send_api_event( $event, false );
+			$this->send_api_event( $event );
 
 			// send the event ID to prevent duplication
 			$event_data['event_id'] = $event->get_id();
