@@ -1733,26 +1733,17 @@ class WC_Facebook_Product {
 		// Determine if this is an API call where we should convert pipe-separated values to arrays
 		$is_api_call = ( self::PRODUCT_PREP_TYPE_ITEMS_BATCH === $type_to_prepare_for );
 
-		$product_data                          = array();
-		$product_data['description']           = Helper::str_truncate( $this->get_fb_description(), self::MAX_DESCRIPTION_LENGTH );
-		$product_data['short_description']     = $this->get_fb_short_description();
-		$product_data['rich_text_description'] = $this->get_rich_text_description();
-		$product_data['product_type']          = $categories['categories'];
-		$product_data['brand']                 = Helper::str_truncate( $this->get_fb_brand( $is_api_call ), 100 );
-		$product_data['mpn']                   = Helper::str_truncate( $this->get_fb_mpn( $is_api_call ), 100 );
-		$product_data['availability']          = $this->is_in_stock() ? 'in stock' : 'out of stock';
-		$product_data['visibility']            = Products::is_product_visible( $this->woo_product ) ? \WC_Facebookcommerce_Integration::FB_SHOP_PRODUCT_VISIBLE : \WC_Facebookcommerce_Integration::FB_SHOP_PRODUCT_HIDDEN;
-		$product_data['retailer_id']           = $retailer_id;
-		$product_data['external_variant_id']   = $this->get_id();
-		$product_data['condition']             = $this->get_fb_condition();
-		$product_data['size']                  = $this->get_fb_size( $is_api_call );
-		$product_data['color']                 = $this->get_fb_color( $is_api_call );
-		$product_data['pattern']               = Helper::str_truncate( $this->get_fb_pattern( $is_api_call ), 100 );
-		$product_data['age_group']             = $this->get_fb_age_group();
-		$product_data['gender']                = $this->get_fb_gender();
-		$product_data['material']              = Helper::str_truncate( $this->get_fb_material(), 100 );
-		$product_data['internal_label']        = $this->get_internal_labels();
-		$product_data['disabled_capabilities'] = $this->get_disabled_capabilities();
+		$product_data = array();
+		$product_data[ 'description' ] = Helper::str_truncate( $this->get_fb_description(), self::MAX_DESCRIPTION_LENGTH );
+		$product_data[ 'short_description' ] = $this->get_fb_short_description();
+		$product_data[ 'rich_text_description' ] = $this->get_rich_text_description();
+		$product_data[ 'product_type' ] = $categories['categories'];
+		$product_data[ 'availability' ] = $this->is_in_stock() ? 'in stock' : 'out of stock';
+		$product_data[ 'visibility' ] = Products::is_product_visible( $this->woo_product ) ? \WC_Facebookcommerce_Integration::FB_SHOP_PRODUCT_VISIBLE : \WC_Facebookcommerce_Integration::FB_SHOP_PRODUCT_HIDDEN;
+		$product_data[ 'retailer_id' ] = $retailer_id;
+		$product_data[ 'external_variant_id' ] = $this->get_id();
+		$product_data[ 'internal_label' ] = $this->get_internal_labels();
+		$product_data[ 'disabled_capabilities' ] = $this->get_disabled_capabilities();
 
 		if ( $this->get_type() === 'variation' ) {
 			$parent_id      = $this->woo_product->get_parent_id();
@@ -1808,10 +1799,139 @@ class WC_Facebook_Product {
 					 *  We can now assign the visibility marker to the parent product
 					 *  That way it won't come to this block next time
 					 */
-
-					update_post_meta( $parent_id, Products::VISIBILITY_META_KEY, $variation_visibility ? 'yes' : 'no' );
+	
+					update_post_meta($parent_id,Products::VISIBILITY_META_KEY, $variation_visibility ? "yes" : "no");
 				}
 			}
+		}
+
+		// Set any attributes not already set by direct mappings
+		if (!isset($product_data['brand'])) {
+			$product_data['brand'] = Helper::str_truncate($this->get_fb_brand($is_api_call), 100);
+		}
+		
+		if (!isset($product_data['mpn'])) {
+			$product_data['mpn'] = Helper::str_truncate($this->get_fb_mpn($is_api_call), 100);
+		}
+		
+		if (!isset($product_data['condition'])) {
+			$product_data['condition'] = $this->get_fb_condition();
+		}
+		
+		if (!isset($product_data['size'])) {
+			$product_data['size'] = $this->get_fb_size($is_api_call);
+		}
+		
+		if (!isset($product_data['color'])) {
+			$product_data['color'] = $this->get_fb_color($is_api_call);
+		}
+		
+		if (!isset($product_data['pattern'])) {
+			$product_data['pattern'] = Helper::str_truncate($this->get_fb_pattern($is_api_call), 100);
+		}
+		
+		// Only set age_group if we actually have a value (make it optional)
+		if (!isset($product_data['age_group'])) {
+			$age_group_value = $this->get_fb_age_group();
+			if (!empty($age_group_value)) {
+				$product_data['age_group'] = $age_group_value;
+			}
+		}
+		
+		if (!isset($product_data['gender'])) {
+			$product_data['gender'] = $this->get_fb_gender();
+		}
+		
+		if (!isset($product_data['material'])) {
+			$product_data['material'] = Helper::str_truncate($this->get_fb_material(), 100);
+		}
+		// For API calls, check mapped attributes first to ensure they're properly handled
+		if ($is_api_call && class_exists('\\WooCommerce\\Facebook\\ProductAttributeMapper')) {
+			// Get our attribute mappings - only use explicitly defined mappings
+			$attribute_mappings = $this->get_default_attribute_mappings();
+			file_put_contents($log_file, "API call: Using attribute mappings: " . json_encode($attribute_mappings) . "\n", FILE_APPEND);
+			
+			// Check each mapped attribute
+			foreach ($attribute_mappings as $woo_attribute => $fb_attribute) {
+				// Get the attribute value
+				$attribute_value = $this->woo_product->get_attribute($woo_attribute);
+				
+				if (!empty($attribute_value)) {
+					file_put_contents($log_file, "API call: Found mapped attribute {$woo_attribute} → {$fb_attribute} with value: {$attribute_value}\n", FILE_APPEND);
+					
+					// Normalize the value based on the Facebook attribute type
+					switch ($fb_attribute) {
+						case 'age_group':
+							$normalized_value = \WooCommerce\Facebook\ProductAttributeMapper::normalize_age_group_value($attribute_value);
+							break;
+						case 'gender':
+							$normalized_value = \WooCommerce\Facebook\ProductAttributeMapper::normalize_gender_value($attribute_value);
+							break;
+						case 'condition':
+							// Only allow specific condition values
+							$normalized_value = strtolower(trim($attribute_value));
+							if (!in_array($normalized_value, array('new', 'used', 'refurbished'))) {
+								$normalized_value = 'new'; // Default to new if not valid
+							}
+							break;
+						default:
+							// For other attributes, just clean the string
+							$normalized_value = WC_Facebookcommerce_Utils::clean_string($attribute_value);
+							
+							// Handle array conversion for API calls (if value contains pipe separator)
+							if (is_string($normalized_value) && strpos($normalized_value, ' | ') !== false) {
+								$normalized_value = array_map('trim', explode(' | ', $normalized_value));
+							}
+							break;
+					}
+					
+					file_put_contents($log_file, "API call: Set {$fb_attribute} with normalized value: " . json_encode($normalized_value) . "\n", FILE_APPEND);
+					
+					// Set the value in product data
+					$product_data[$fb_attribute] = $normalized_value;
+				}
+			}
+		}
+
+		// Set any attributes not already set by direct mappings
+		if (!isset($product_data['brand'])) {
+			$product_data['brand'] = Helper::str_truncate($this->get_fb_brand($is_api_call), 100);
+		}
+		
+		if (!isset($product_data['mpn'])) {
+			$product_data['mpn'] = Helper::str_truncate($this->get_fb_mpn($is_api_call), 100);
+		}
+		
+		if (!isset($product_data['condition'])) {
+			$product_data['condition'] = $this->get_fb_condition();
+		}
+		
+		if (!isset($product_data['size'])) {
+			$product_data['size'] = $this->get_fb_size($is_api_call);
+		}
+		
+		if (!isset($product_data['color'])) {
+			$product_data['color'] = $this->get_fb_color($is_api_call);
+		}
+		
+		if (!isset($product_data['pattern'])) {
+			$product_data['pattern'] = Helper::str_truncate($this->get_fb_pattern($is_api_call), 100);
+		}
+		
+		// Only set age_group if we actually have a value (make it optional)
+		if (!isset($product_data['age_group'])) {
+			$age_group_value = $this->get_fb_age_group();
+			if (!empty($age_group_value)) {
+				$product_data['age_group'] = $age_group_value;
+			}
+		}
+		
+		if (!isset($product_data['gender'])) {
+			$product_data['gender'] = $this->get_fb_gender();
+		}
+		
+		if (!isset($product_data['material'])) {
+			$product_data['material'] = Helper::str_truncate($this->get_fb_material(), 100);
 		}
 
 		/**
@@ -1849,16 +1969,20 @@ class WC_Facebook_Product {
 		}
 
 		if ( self::PRODUCT_PREP_TYPE_ITEMS_BATCH === $type_to_prepare_for ) {
-			$product_data['title']                 = Helper::str_truncate( WC_Facebookcommerce_Utils::clean_string( $this->get_title() ), self::MAX_TITLE_LENGTH );
-			$product_data['image_link']            = $image_urls[0];
+			file_put_contents($log_file, "API CALL: Setting title, image_link, etc. fields for items_batch\n", FILE_APPEND);
+			
+			$product_data['title'] = Helper::str_truncate( WC_Facebookcommerce_Utils::clean_string( $this->get_title() ), self::MAX_TITLE_LENGTH );
+			$product_data['image_link'] = $image_urls[0];
 			$product_data['additional_image_link'] = $this->get_additional_image_urls( $image_urls );
 			$product_data['link']                  = $product_url;
 			$product_data['price']                 = $this->get_fb_price( true );
 
 			$product_data = $this->add_sale_price( $product_data, true );
 		} else {
-			$product_data['name']                  = WC_Facebookcommerce_Utils::clean_string( $this->get_title() );
-			$product_data['image_url']             = $image_urls[0];
+			file_put_contents($log_file, "NORMAL CALL: Setting name, image_url, etc. fields\n", FILE_APPEND);
+			
+			$product_data['name'] = WC_Facebookcommerce_Utils::clean_string( $this->get_title() );
+			$product_data['image_url'] = $image_urls[0];
 			$product_data['additional_image_urls'] = $this->get_additional_image_urls( $image_urls );
 			$product_data['url']                   = $product_url;
 			$product_data['price']                 = $this->get_fb_price();
@@ -1972,6 +2096,22 @@ class WC_Facebook_Product {
 		$log_message .= "----------------------\n\n";
 		file_put_contents($log_file, $log_message, FILE_APPEND);
 		
+		// For API calls, normalize values to match Facebook's requirements
+		if (self::PRODUCT_PREP_TYPE_ITEMS_BATCH === $type_to_prepare_for) {
+			$product_data = $this->normalize_api_values($product_data);
+			
+			// Log debug info for important fields after normalization
+			$important_fields = array('age_group', 'brand', 'gender', 'condition', 'title', 'price');
+			file_put_contents($log_file, "API call: Final normalized field values:\n", FILE_APPEND);
+			foreach ($important_fields as $field) {
+				if (isset($product_data[$field])) {
+					file_put_contents($log_file, "API FIELD: {$field} = " . json_encode($product_data[$field]) . "\n", FILE_APPEND);
+				} else {
+					file_put_contents($log_file, "API FIELD MISSING: {$field}\n", FILE_APPEND);
+				}
+			}
+		}
+		
 		return $product_data;
 	}
 
@@ -1986,58 +2126,45 @@ class WC_Facebook_Product {
 		// Add a direct file logging function to help with debugging
 		$log_file = WP_CONTENT_DIR . '/uploads/fb-product-debug.log';
 		$log_message = "Product ID: {$this->id} - Starting attribute mapping\n";
+		$log_message .= "Google Category ID: " . ($google_category_id ?: 'Not set') . "\n";
+		$log_message .= "Input product data keys: " . implode(', ', array_keys($product_data)) . "\n";
+		$log_message .= "API call: " . ($this->current_type_to_prepare === self::PRODUCT_PREP_TYPE_ITEMS_BATCH ? "Yes" : "No") . "\n";
+		$log_message .= "Preparation type: {$this->current_type_to_prepare}\n";
 		file_put_contents($log_file, $log_message, FILE_APPEND);
 		
 		// Use our attribute mapper for all product attributes
 		if (class_exists('\\WooCommerce\\Facebook\\ProductAttributeMapper')) {
-			// Store current type for API-specific transformations
-			$is_api_call = ($this->current_type_to_prepare === self::PRODUCT_PREP_TYPE_ITEMS_BATCH);
-			$log_message = "API call: " . ($is_api_call ? "Yes" : "No") . "\n";
-			file_put_contents($log_file, $log_message, FILE_APPEND);
-			
-			// Get all standard mapped attributes (this already includes default values logic)
-			$standard_attributes = \WooCommerce\Facebook\ProductAttributeMapper::get_mapped_attributes($this->woo_product);
-			$log_message = "Mapped attributes: " . json_encode($standard_attributes) . "\n";
-			file_put_contents($log_file, $log_message, FILE_APPEND);
-			
-			// Handle type-specific mappings or transformations
-			foreach ($standard_attributes as $field => $value) {
-				switch ($field) {
-					case 'brand':
-					case 'mpn':
-					case 'material':
-					case 'pattern':
-						// Ensure proper length limits
-						$standard_attributes[$field] = mb_substr(WC_Facebookcommerce_Utils::clean_string($value), 0, 100);
-						break;
-						
-					// For array values that need special handling in API calls
-					case 'color':
-					case 'size':
-						if ($is_api_call) {
-							// If this is for API and value contains pipe separator, convert to array
-							if (is_string($value) && strpos($value, ' | ') !== false) {
-								$standard_attributes[$field] = array_map('trim', explode(' | ', $value));
-							}
-						}
-						break;
-				}
+			// Get product object
+			$product = wc_get_product($this->id);
+			if (!$product) {
+				file_put_contents($log_file, "ERROR: Could not load product {$this->id}\n", FILE_APPEND);
+				return $product_data;
 			}
 			
-			$log_message = "Processed attributes: " . json_encode($standard_attributes) . "\n";
-			file_put_contents($log_file, $log_message, FILE_APPEND);
+			file_put_contents($log_file, "Loading product: " . $product->get_name() . "\n", FILE_APPEND);
 			
-			// Log what we're about to add to product data
-			if (function_exists('facebook_for_woocommerce')) {
+			// Get attribute mappings - only use explicitly defined mappings
+			$attribute_mappings = $this->get_default_attribute_mappings();
+			file_put_contents($log_file, "Configured attribute mappings: " . json_encode($attribute_mappings) . "\n", FILE_APPEND);
+			
+			// Use the ProductAttributeMapper to get mapped attributes directly
+			if (method_exists('\\WooCommerce\\Facebook\\ProductAttributeMapper', 'get_mapped_standard_attributes')) {
+				// This is the preferred method - it will respect the user's attribute mapping settings
+				$standard_attributes = \WooCommerce\Facebook\ProductAttributeMapper::get_mapped_standard_attributes($product);
+				file_put_contents($log_file, "Standard mapped attributes from ProductAttributeMapper: " . json_encode($standard_attributes, JSON_PRETTY_PRINT) . "\n", FILE_APPEND);
+				
+				// Log what we're about to add to product data
+				if (function_exists('facebook_for_woocommerce')) {
 					facebook_for_woocommerce()->log("Adding mapped attributes using ProductAttributeMapper: " . json_encode($standard_attributes));
+				}
+				
+				// Merge with product data
+				$product_data = array_merge($product_data, $standard_attributes);
 			}
-			
-			// Merge with product data (will override any existing values set earlier)
-			$product_data = array_merge($product_data, $standard_attributes);
 			
 			// Process unmapped attributes as custom_data
-			$unmapped_attributes = \WooCommerce\Facebook\ProductAttributeMapper::get_unmapped_attributes($this->woo_product);
-			$log_message = "Unmapped attributes: " . json_encode($unmapped_attributes) . "\n";
+			$unmapped_attributes = \WooCommerce\Facebook\ProductAttributeMapper::get_unmapped_attributes($product);
+			$log_message = "Unmapped attributes: " . json_encode($unmapped_attributes, JSON_PRETTY_PRINT) . "\n";
 			file_put_contents($log_file, $log_message, FILE_APPEND);
 			
 			if (!empty($unmapped_attributes)) {
@@ -2048,6 +2175,11 @@ class WC_Facebook_Product {
 				foreach ($unmapped_attributes as $attribute) {
 					// Skip empty values
 					if (empty($attribute['value'])) continue;
+					
+					// Skip attributes already directly mapped
+					if (isset($attribute_mappings[$attribute['name']])) {
+						continue;
+					}
 					
 					// Format attribute name (remove pa_ prefix and standardize)
 					$attr_name = \WooCommerce\Facebook\ProductAttributeMapper::sanitize_attribute_name($attribute['name']);
@@ -2061,55 +2193,70 @@ class WC_Facebook_Product {
 					facebook_for_woocommerce()->log("Adding unmapped attributes as custom_data: " . json_encode($product_data['custom_data']));
 				}
 				
-				$log_message = "Custom data: " . json_encode($product_data['custom_data']) . "\n";
+				$log_message = "Custom data: " . json_encode($product_data['custom_data'], JSON_PRETTY_PRINT) . "\n";
 				file_put_contents($log_file, $log_message, FILE_APPEND);
 			}
 			
 			// Also handle enhanced catalog attributes based on Google category
-			$fb_categories = facebook_for_woocommerce()->get_facebook_category_handler();
-			if ($fb_categories) {
-				$attributes = $fb_categories->get_attributes_with_fallback_to_parent_category($google_category_id);
-				
-				if (!empty($attributes)) {
-					$matched_attributes = $this->get_matched_attributes_for_product($this->woo_product, $attributes);
+			if ($google_category_id) {
+				$fb_categories = facebook_for_woocommerce()->get_facebook_category_handler();
+				if ($fb_categories) {
+					$attributes = $fb_categories->get_attributes_with_fallback_to_parent_category($google_category_id);
 					
-					foreach ($matched_attributes as $attribute_key => $attribute_values) {
-						// Skip empty values
-						if (empty($attribute_values)) continue;
+					if (!empty($attributes)) {
+						$matched_attributes = $this->get_matched_attributes_for_product($product, $attributes);
 						
-						// Store array values as comma-separated list
-						if (is_array($attribute_values)) {
-							$attribute_values = implode(', ', $attribute_values);
+						foreach ($matched_attributes as $attribute_key => $attribute_values) {
+							// Skip empty values
+							if (empty($attribute_values)) continue;
+							
+							// Store array values as comma-separated list
+							if (is_array($attribute_values)) {
+								$attribute_values = implode(', ', $attribute_values);
+							}
+							
+							$product_data['enhanced_catalog_attributes_' . $attribute_key] = $attribute_values;
 						}
 						
-						$product_data['enhanced_catalog_attributes_' . $attribute_key] = $attribute_values;
+						$log_message = "Enhanced catalog attributes: " . json_encode($matched_attributes, JSON_PRETTY_PRINT) . "\n";
+						file_put_contents($log_file, $log_message, FILE_APPEND);
 					}
-					
-					$log_message = "Enhanced catalog attributes: " . json_encode($matched_attributes) . "\n";
-					file_put_contents($log_file, $log_message, FILE_APPEND);
 				}
 			}
 			
-			$log_message = "Final product data: " . json_encode($product_data) . "\n\n";
-			file_put_contents($log_file, $log_message, FILE_APPEND);
+			// Debug the final product data
+			file_put_contents($log_file, "Final product data keys: " . implode(', ', array_keys($product_data)) . "\n", FILE_APPEND);
 			
-			return $product_data;
-		}
-		
-		// Fallback to the old implementation
-		$fb_categories = facebook_for_woocommerce()->get_facebook_category_handler();
-		$attributes = $fb_categories->get_attributes_with_fallback_to_parent_category($google_category_id);
-		
-		if (!empty($attributes)) {
-			$matched_attributes = $this->get_matched_attributes_for_product($this->woo_product, $attributes);
+			// Check if age_group exists in final data
+			if (isset($product_data['age_group'])) {
+				file_put_contents($log_file, "FINAL age_group value: {$product_data['age_group']}\n", FILE_APPEND);
+			} else {
+				file_put_contents($log_file, "WARNING: age_group not found in final product data!\n", FILE_APPEND);
+			}
 			
-			foreach ($matched_attributes as $attribute_key => $attribute_values) {
-				// Store array values as comma-separated list
-				if (is_array($attribute_values)) {
-					$attribute_values = implode(', ', $attribute_values);
+			file_put_contents($log_file, "\n", FILE_APPEND);
+		} else {
+			file_put_contents($log_file, "ERROR: ProductAttributeMapper class not found\n\n", FILE_APPEND);
+			
+			// Fallback to the old implementation for compatibility
+			if ($google_category_id) {
+				$fb_categories = facebook_for_woocommerce()->get_facebook_category_handler();
+				if ($fb_categories) {
+					$attributes = $fb_categories->get_attributes_with_fallback_to_parent_category($google_category_id);
+					
+					if (!empty($attributes)) {
+						$matched_attributes = $this->get_matched_attributes_for_product($this->woo_product, $attributes);
+						
+						foreach ($matched_attributes as $attribute_key => $attribute_values) {
+							// Store array values as comma-separated list
+							if (is_array($attribute_values)) {
+								$attribute_values = implode(', ', $attribute_values);
+							}
+							
+							$product_data['enhanced_catalog_attributes_' . $attribute_key] = $attribute_values;
+						}
+					}
 				}
-				
-				$product_data['enhanced_catalog_attributes_' . $attribute_key] = $attribute_values;
 			}
 		}
 		
@@ -2442,4 +2589,341 @@ class WC_Facebook_Product {
 		$clean_value = WC_Facebookcommerce_Utils::clean_string( $fb_mpn );
 		return $this->convert_pipe_separated_values( $clean_value, $is_api_call );
 	}
+
+	/**
+	 * Maps Facebook attribute display names (as shown in UI) to their API field names
+	 *
+	 * @return array Mapping of display names to API field names
+	 */
+	private static function get_facebook_attribute_display_to_api_mapping() {
+		return array(
+			'Age group' => 'age_group',
+			'Availability' => 'availability',
+			'Brand' => 'brand',
+			'Color' => 'color',
+			'Condition' => 'condition',
+			'Gender' => 'gender',
+			'Material' => 'material',
+			'Pattern' => 'pattern',
+			'Size' => 'size',
+			'MPN' => 'mpn',
+			'GTIN' => 'gtin',
+			// Extended fields
+			'Additional image link' => 'additional_image_link',
+			'Image link' => 'image_link',
+			'Title' => 'title',
+			'Description' => 'description',
+			'Price' => 'price',
+			'Sale price' => 'sale_price',
+			'Sale price effective date' => 'sale_price_effective_date',
+			'Custom label 0' => 'custom_label_0',
+			'Custom label 1' => 'custom_label_1',
+			'Custom label 2' => 'custom_label_2',
+			'Custom label 3' => 'custom_label_3',
+			'Custom label 4' => 'custom_label_4',
+		);
+	}
+
+	/**
+	 * Gets default attribute mappings when the ProductAttributeMapper doesn't have a method for it.
+	 *
+	 * @return array Map of WooCommerce attributes to Facebook attributes
+	 */
+	private function get_default_attribute_mappings() {
+		// Initialize log file for debugging
+		$log_file = WP_CONTENT_DIR . '/uploads/fb-product-debug.log';
+		file_put_contents($log_file, "Getting attribute mappings\n", FILE_APPEND);
+		
+		// Get the mapping from Facebook display names to API field names
+		$fb_display_to_api = self::get_facebook_attribute_display_to_api_mapping();
+		
+		// First check if the Facebook options exist in database
+		// These are stored by the Facebook UI as woo attribute -> Facebook display name
+		$saved_ui_mappings = get_option('wc_facebook_product_attribute_mappings', array());
+		
+		file_put_contents($log_file, "Raw saved UI mappings: " . json_encode($saved_ui_mappings) . "\n", FILE_APPEND);
+		
+		// If we have UI mappings, convert them to API field names
+		if (!empty($saved_ui_mappings) && is_array($saved_ui_mappings)) {
+			$api_mappings = array();
+			
+			foreach ($saved_ui_mappings as $woo_attribute => $fb_display_name) {
+				// Convert Facebook display name to API field name
+				if (isset($fb_display_to_api[$fb_display_name])) {
+					$api_field = $fb_display_to_api[$fb_display_name];
+					$api_mappings[$woo_attribute] = $api_field;
+					file_put_contents($log_file, "Mapped {$woo_attribute} -> {$fb_display_name} -> {$api_field}\n", FILE_APPEND);
+				} else {
+					// If we can't map it, keep the original
+					$api_mappings[$woo_attribute] = $fb_display_name;
+					file_put_contents($log_file, "Unmapped display name: {$woo_attribute} -> {$fb_display_name}\n", FILE_APPEND);
+				}
+			}
+			
+			file_put_contents($log_file, "Converted mappings: " . json_encode($api_mappings) . "\n", FILE_APPEND);
+			return $api_mappings;
+		}
+		
+		// If no UI mappings, try to get mappings from the ProductAttributeMapper
+		if (class_exists('\\WooCommerce\\Facebook\\ProductAttributeMapper') && 
+		    method_exists('\\WooCommerce\\Facebook\\ProductAttributeMapper', 'get_custom_attribute_mappings')) {
+			$mappings = \WooCommerce\Facebook\ProductAttributeMapper::get_custom_attribute_mappings();
+			
+			if (!empty($mappings)) {
+				file_put_contents($log_file, "Using ProductAttributeMapper mappings: " . json_encode($mappings) . "\n", FILE_APPEND);
+				return $mappings;
+			}
+		}
+		
+		// Fall back to basic mappings only if no other mappings exist
+		file_put_contents($log_file, "Using fallback default mappings\n", FILE_APPEND);
+		$mappings = array(
+			'pa_age_group' => 'age_group',
+			'pa_age' => 'age_group',
+			'pa_brand' => 'brand',
+			'pa_gender' => 'gender',
+			'pa_color' => 'color',
+			'pa_size' => 'size',
+			'pa_material' => 'material',
+			'pa_pattern' => 'pattern',
+			'pa_condition' => 'condition',
+			
+			// Without pa_ prefix
+			'age_group' => 'age_group',
+			'age' => 'age_group',
+			'brand' => 'brand',
+			'gender' => 'gender',
+			'color' => 'color',
+			'size' => 'size',
+			'material' => 'material',
+			'pattern' => 'pattern',
+			'condition' => 'condition',
+		);
+		
+		return $mappings;
+	}
+
+	/**
+	 * Normalizes values for Facebook API calls to ensure they match Facebook's format requirements.
+	 *
+	 * @param array $product_data The product data to normalize
+	 * @return array The normalized product data
+	 */
+	private function normalize_api_values($product_data) {
+		$log_file = WP_CONTENT_DIR . '/uploads/fb-product-debug.log';
+		
+		// Normalize age_group for API only if it's already set
+		if (isset($product_data['age_group']) && !empty($product_data['age_group'])) {
+			file_put_contents($log_file, "Normalizing age_group before: {$product_data['age_group']}\n", FILE_APPEND);
+			
+			// Ensure age_group is properly formatted for API
+			$age_group = strtolower(trim($product_data['age_group']));
+			// List of valid values Facebook accepts for age_group in API calls
+			$valid_age_groups = array('newborn', 'infant', 'toddler', 'kids', 'adult');
+			
+			if (!in_array($age_group, $valid_age_groups)) {
+				// Try to map to a valid value
+				if ($age_group === 'teen' || $age_group === 'teenager') {
+					$product_data['age_group'] = 'adult'; // Facebook API maps teens to adult
+					file_put_contents($log_file, "Mapped teen to adult for age_group\n", FILE_APPEND);
+				} elseif ($age_group === 'all ages') {
+					$product_data['age_group'] = 'adult'; // Map all ages to adult
+					file_put_contents($log_file, "Mapped all ages to adult for age_group\n", FILE_APPEND);
+				} elseif ($age_group === 'children' || $age_group === 'child') {
+					$product_data['age_group'] = 'kids'; // Map children to kids
+					file_put_contents($log_file, "Mapped children/child to kids for age_group\n", FILE_APPEND);
+				} else {
+					// Default to kids if no matching value and contains kid/child
+					if (strpos($age_group, 'kid') !== false || strpos($age_group, 'child') !== false) {
+						$product_data['age_group'] = 'kids';
+						file_put_contents($log_file, "Mapped {$age_group} to kids for age_group\n", FILE_APPEND);
+					} else {
+						// Remove age_group if it's not a valid value
+						unset($product_data['age_group']);
+						file_put_contents($log_file, "Removed invalid age_group value: {$age_group}\n", FILE_APPEND);
+					}
+				}
+			}
+			
+			if (isset($product_data['age_group'])) {
+				file_put_contents($log_file, "Normalizing age_group after: {$product_data['age_group']}\n", FILE_APPEND);
+			} else {
+				file_put_contents($log_file, "Age group removed due to invalid value\n", FILE_APPEND);
+			}
+		}
+		
+		// Normalize gender for API
+		if (isset($product_data['gender'])) {
+			$gender = strtolower(trim($product_data['gender']));
+			$valid_genders = array('male', 'female', 'unisex');
+			
+			if (!in_array($gender, $valid_genders)) {
+				// Map to supported values
+				if (in_array($gender, array('man', 'men', 'boys', 'boy'), true)) {
+					$product_data['gender'] = 'male';
+				} elseif (in_array($gender, array('woman', 'women', 'girls', 'girl'), true)) {
+					$product_data['gender'] = 'female';
+				} else {
+					// Default to unisex for unknown values
+					$product_data['gender'] = 'unisex';
+				}
+			}
+		}
+		
+		// Normalize condition for API
+		if (isset($product_data['condition'])) {
+			$condition = strtolower(trim($product_data['condition']));
+			$valid_conditions = array('new', 'used', 'refurbished');
+			
+			if (!in_array($condition, $valid_conditions)) {
+				// Default to new for invalid conditions
+				$product_data['condition'] = 'new';
+			}
+		}
+		
+		return $product_data;
+	}
+
+	/**
+	 * Gets available product attribute mapping options for admin settings.
+	 * 
+	 * This method can be called by the admin interface to show available mapping options.
+	 *
+	 * @return array Array of WooCommerce to Facebook attribute mappings
+	 */
+	public static function get_product_attribute_mapping_options() {
+		// If the ProductAttributeMapper class exists, use its fields
+		if (class_exists('\\WooCommerce\\Facebook\\ProductAttributeMapper') && 
+		    method_exists('\\WooCommerce\\Facebook\\ProductAttributeMapper', 'get_all_facebook_fields')) {
+			$all_fields = \WooCommerce\Facebook\ProductAttributeMapper::get_all_facebook_fields();
+			$facebook_attributes = array();
+			
+			// Convert field mapping array to our format
+			foreach ($all_fields as $field => $variations) {
+				$facebook_attributes[$field] = ucfirst(str_replace('_', ' ', $field));
+			}
+			
+			return array(
+				'facebook_attributes' => $facebook_attributes,
+				'facebook_attribute_values' => array(
+					'age_group' => array(
+						'adult'     => __('Adult', 'facebook-for-woocommerce'),
+						'kids'      => __('Kids', 'facebook-for-woocommerce'),
+						'infant'    => __('Infant', 'facebook-for-woocommerce'),
+						'newborn'   => __('Newborn', 'facebook-for-woocommerce'),
+						'toddler'   => __('Toddler', 'facebook-for-woocommerce')
+					),
+					'gender' => array(
+						'female'    => __('Female', 'facebook-for-woocommerce'),
+						'male'      => __('Male', 'facebook-for-woocommerce'),
+						'unisex'    => __('Unisex', 'facebook-for-woocommerce')
+					),
+					'condition' => array(
+						'new'           => __('New', 'facebook-for-woocommerce'),
+						'refurbished'   => __('Refurbished', 'facebook-for-woocommerce'),
+						'used'          => __('Used', 'facebook-for-woocommerce')
+					)
+				)
+			);
+		}
+		
+		// Fall back to our own definition if ProductAttributeMapper is not available
+		return array(
+			'facebook_attributes' => array(
+				// Basic catalog attributes
+				'age_group'  => __('Age Group', 'facebook-for-woocommerce'),
+				'brand'      => __('Brand', 'facebook-for-woocommerce'),
+				'gender'     => __('Gender', 'facebook-for-woocommerce'),
+				'color'      => __('Color', 'facebook-for-woocommerce'),
+				'size'       => __('Size', 'facebook-for-woocommerce'),
+				'material'   => __('Material', 'facebook-for-woocommerce'),
+				'pattern'    => __('Pattern', 'facebook-for-woocommerce'),
+				'condition'  => __('Condition', 'facebook-for-woocommerce'),
+				
+				// Product identifiers
+				'mpn'        => __('MPN (Manufacturer Part Number)', 'facebook-for-woocommerce'),
+				'gtin'       => __('GTIN (Global Trade Item Number)', 'facebook-for-woocommerce'),
+			),
+			'facebook_attribute_values' => array(
+				'age_group' => array(
+					'adult'     => __('Adult', 'facebook-for-woocommerce'),
+					'kids'      => __('Kids', 'facebook-for-woocommerce'),
+					'infant'    => __('Infant', 'facebook-for-woocommerce'),
+					'newborn'   => __('Newborn', 'facebook-for-woocommerce'),
+					'toddler'   => __('Toddler', 'facebook-for-woocommerce')
+				),
+				'gender' => array(
+					'female'    => __('Female', 'facebook-for-woocommerce'),
+					'male'      => __('Male', 'facebook-for-woocommerce'),
+					'unisex'    => __('Unisex', 'facebook-for-woocommerce')
+				),
+				'condition' => array(
+					'new'           => __('New', 'facebook-for-woocommerce'),
+					'refurbished'   => __('Refurbished', 'facebook-for-woocommerce'),
+					'used'          => __('Used', 'facebook-for-woocommerce')
+				)
+			)
+		);
+	}
+
+	/**
+	 * Attempts to find the best Facebook attribute match for a WooCommerce attribute when no exact mapping exists
+	 *
+	 * @param string $attribute_name The WooCommerce attribute name to match
+	 * @return string|false The matched Facebook attribute or false if no match found
+	 */
+	private function find_best_attribute_match($attribute_name) {
+		$log_file = WP_CONTENT_DIR . '/uploads/fb-product-debug.log';
+		
+		// Clean up attribute name, remove pa_ prefix and standardize
+		$clean_name = \WooCommerce\Facebook\ProductAttributeMapper::sanitize_attribute_name($attribute_name);
+		
+		// Common fuzzy matches by attribute category
+		$fuzzy_matches = array(
+			'material' => array('mat', 'matl', 'fabric', 'textile', 'cloth'),
+			'color' => array('col', 'clr', 'colour', 'couleur'),
+			'size' => array('sz', 'dimension', 'dimensions'),
+			'pattern' => array('pat', 'print', 'design'),
+			'gender' => array('sex', 'gen', 'for'),
+			'age_group' => array('age', 'years', 'group'),
+			'condition' => array('cond', 'state', 'quality'),
+			'brand' => array('make', 'manufacturer', 'producer', 'vendor'),
+		);
+		
+		// Check for fuzzy matches
+		foreach ($fuzzy_matches as $fb_attribute => $patterns) {
+			foreach ($patterns as $pattern) {
+				// Check if the attribute name contains the pattern
+				if (stripos($clean_name, $pattern) !== false) {
+					file_put_contents($log_file, "Fuzzy matched attribute '{$attribute_name}' to '{$fb_attribute}' based on pattern '{$pattern}'\n", FILE_APPEND);
+					return $fb_attribute;
+				}
+			}
+		}
+		
+		// Check for common substrings that might indicate a match
+		$common_substrings = array(
+			'material' => array('material', 'fabric'),
+			'color' => array('color', 'colour'),
+			'size' => array('size', 'dimension'),
+			'pattern' => array('pattern', 'print', 'design'),
+			'gender' => array('gender', 'sex'),
+			'age_group' => array('age'),
+			'condition' => array('condition', 'state'),
+			'brand' => array('brand', 'make'),
+		);
+		
+		foreach ($common_substrings as $fb_attribute => $substrings) {
+			foreach ($substrings as $substring) {
+				// Check for substring in the attribute name (allowing partial words)
+				if (stripos($clean_name, $substring) !== false) {
+					file_put_contents($log_file, "Substring matched attribute '{$attribute_name}' to '{$fb_attribute}' based on substring '{$substring}'\n", FILE_APPEND);
+					return $fb_attribute;
+				}
+			}
+		}
+		
+		return false;
+	}
+
 }
