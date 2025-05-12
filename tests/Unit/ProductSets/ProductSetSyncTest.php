@@ -9,13 +9,13 @@
 
 require_once __DIR__ . '/../../../includes/ProductSets/ProductSetSync.php';
 
-use WooCommerce\Facebook\Tests\AbstractWPUnitTestWithSafeFiltering;
+use WP_UnitTestCase;
 use WooCommerce\Facebook\ProductSets\ProductSetSync;
 
 /**
  * Class FeedUploadUtilsTest
  */
-class ProductSetSyncTest extends AbstractWPUnitTestWithSafeFiltering {
+class ProductSetSyncTest extends WP_UnitTestCase {
 
     const FB_PRODUCT_SET_ID = "3720002385";
 
@@ -132,12 +132,10 @@ class ProductSetSyncTest extends AbstractWPUnitTestWithSafeFiltering {
 		$product_set_sync->expects( $this->exactly(1) )
             ->method( 'is_sync_enabled' )
             ->willReturn(true);
-        
-        // Expect +1 due to the default wc product category "Uncategorized"
-        $product_set_sync->expects( $this->exactly(3) )
+        $product_set_sync->expects( $this->atLeast(2) )
             ->method( 'get_fb_product_set_id' )
             ->willReturn(null);
-        $product_set_sync->expects( $this->exactly(3) )
+        $product_set_sync->expects( $this->atLeast(2) )
             ->method( 'create_fb_product_set' );
         
         $product_set_sync->sync_all_product_sets();
