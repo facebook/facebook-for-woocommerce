@@ -113,6 +113,7 @@ class WhatsAppUtilityConnection {
 				'Authorization' => $bisu_token,
 			),
 			'body'    => array(),
+			'timeout' => 300, // 5 minutes
 		);
 		$response     = wp_remote_post( $base_url, $options );
 		wc_get_logger()->info(
@@ -169,6 +170,7 @@ class WhatsAppUtilityConnection {
 				'Authorization' => $bisu_token,
 			),
 			'body'    => array(),
+			'timeout' => 300, // 5 minutes
 		);
 		$response     = wp_remote_post( $base_url, $options );
 		wc_get_logger()->info(
