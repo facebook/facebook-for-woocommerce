@@ -2944,6 +2944,7 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 		}
 	}
 
+	/**
 	 * Filter function for woocommerce_duplicate_product_exclude_meta filter.
 	 *
 	 * @param array $to_delete
