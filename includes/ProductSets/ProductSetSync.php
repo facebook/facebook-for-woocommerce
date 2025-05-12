@@ -149,6 +149,11 @@ class ProductSetSync {
 		} catch ( \Exception $e ) {
 			$message = sprintf( 'There was an error trying to get product set data in a catalog: %s', $e->getMessage() );
 			facebook_for_woocommerce()->log( $message );
+
+			/**
+			 * Re-throw the exception to prevent potential issues, such as creating duplicate sets.
+			 */
+			throw $e;
 		}
 
 		return $response->data[0]['id'] ?? null;
@@ -226,11 +231,15 @@ class ProductSetSync {
 		);
 
 		foreach ( $wc_product_categories as $wc_category ) {
-			$fb_product_set_id = $this->get_fb_product_set_id( $wc_category );
-			if ( ! empty( $fb_product_set_id ) ) {
-				$this->update_fb_product_set( $wc_category, $fb_product_set_id );
-			} else {
-				$this->create_fb_product_set( $wc_category );
+			try {
+				$fb_product_set_id = $this->get_fb_product_set_id( $wc_category );
+				if ( ! empty( $fb_product_set_id ) ) {
+					$this->update_fb_product_set( $wc_category, $fb_product_set_id );
+				} else {
+					$this->create_fb_product_set( $wc_category );
+				}
+			} catch ( \Exception $exception ) {
+				$this->log_exception( $exception );
 			}
 		}
 	}
