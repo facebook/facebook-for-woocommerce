@@ -157,22 +157,24 @@ class ProductAttributeMapper {
 	}
 
 	/**
-	 * Clean and normalize an attribute name for comparison.
+	 * Sanitizes an attribute name for use in custom data fields
 	 *
-	 * @since 3.0.0
+	 * @since 2.6.0
 	 *
-	 * @param string $attribute_name The WooCommerce attribute name
-	 * @return string Sanitized attribute name
+	 * @param string $attribute_name The raw attribute name
+	 * @return string
 	 */
-	public static function sanitize_attribute_name($attribute_name) {
-		// Remove pa_ prefix from WooCommerce attribute taxonomy names
-		$name = str_replace('pa_', '', $attribute_name);
+	public static function sanitize_attribute_name( $attribute_name ) {
+		// Remove pa_ prefix from taxonomy attributes
+		$attribute_name = preg_replace( '/^pa_/', '', $attribute_name );
 		
-		// Convert to lowercase and replace spaces/underscores/hyphens with empty string
-		$name = strtolower($name);
-		$name = str_replace(array(' ', '_', '-'), '', $name);
+		// Convert spaces and special characters to underscores
+		$attribute_name = strtolower( $attribute_name );
+		$attribute_name = preg_replace( '/[^a-z0-9_]/', '_', $attribute_name );
+		$attribute_name = preg_replace( '/_+/', '_', $attribute_name );
+		$attribute_name = trim( $attribute_name, '_' );
 		
-		return $name;
+		return $attribute_name;
 	}
 
 	/**
@@ -217,38 +219,132 @@ class ProductAttributeMapper {
 		$mapped_attributes = array();
 		$attributes = $product->get_attributes();
 		$default_values = get_option('wc_facebook_attribute_defaults', array());
+		
+		// Debug log
+		$log_file = WP_CONTENT_DIR . '/uploads/fb-product-debug.log';
+		$log_message = "ProductAttributeMapper: Starting attribute mapping for product " . $product->get_id() . "\n";
+		$log_message .= "Available attributes: " . json_encode(array_keys($attributes)) . "\n";
+		file_put_contents($log_file, $log_message, FILE_APPEND);
 
+		// Create a map to track exact slug matches first
+		$slug_to_fb_field = array(
+			'brand' => 'brand',
+			'age-group' => 'age_group',
+			'age_group' => 'age_group',
+			'age' => 'age_group', // Map 'age' directly to age_group
+			'gender' => 'gender',
+			'material' => 'material',
+			'condition' => 'condition',
+			'color' => 'color',
+			'size' => 'size',
+			'pattern' => 'pattern'
+		);
+
+		// First pass: check for exact slug matches (preferred)
 		foreach ($attributes as $attribute_name => $_) {
 			$value = $product->get_attribute($attribute_name);
+			if (empty($value)) continue;
+			
+			// Extract clean slug
+			$clean_slug = self::sanitize_attribute_name($attribute_name);
+			
+			file_put_contents($log_file, "Checking attribute: {$attribute_name} with clean slug: {$clean_slug}\n", FILE_APPEND);
+			
+			// Check for direct slug match first
+			if (isset($slug_to_fb_field[$clean_slug])) {
+				$mapped_field = $slug_to_fb_field[$clean_slug];
+				file_put_contents($log_file, "EXACT MATCH: {$attribute_name} -> {$mapped_field} with value: {$value}\n", FILE_APPEND);
+				
+				// Process standard field formats if needed
+				switch ($mapped_field) {
+					case 'gender':
+						$value = self::normalize_gender_value($value);
+						break;
+						
+					case 'age_group':
+						$value = self::normalize_age_group_value($value);
+						break;
+						
+					case 'condition':
+						$value = self::normalize_condition_value($value);
+						break;
+				}
+				
+				$mapped_attributes[$mapped_field] = $value;
+				continue; // Skip the fuzzy matching for exact matches
+			}
+			
+			// If we get here, try fuzzy matching
+			$mapped_field = self::check_attribute_mapping($attribute_name);
 
-			if (!empty($value)) {
-				$mapped_field = self::check_attribute_mapping($attribute_name);
+			if ($mapped_field !== false) {
+				file_put_contents($log_file, "FUZZY MATCH: {$attribute_name} -> {$mapped_field} with value: {$value}\n", FILE_APPEND);
+				
+				// Process standard field formats if needed
+				switch ($mapped_field) {
+					case 'gender':
+						$value = self::normalize_gender_value($value);
+						break;
+						
+					case 'age_group':
+						$value = self::normalize_age_group_value($value);
+						break;
+						
+					case 'condition':
+						$value = self::normalize_condition_value($value);
+						break;
+				}
+				
+				$mapped_attributes[$mapped_field] = $value;
+			}
+		}
 
-				if ($mapped_field !== false) {
-					// Process standard field formats if needed
-					switch ($mapped_field) {
-						case 'gender':
-							// Normalize gender values
-							$value = self::normalize_gender_value($value);
-							break;
-							
-						case 'age_group':
-							// Normalize age group values
-							$value = self::normalize_age_group_value($value);
-							break;
-							
-						case 'condition':
-							// Normalize condition values
-							$value = self::normalize_condition_value($value);
-							break;
-					}
-					
-					$mapped_attributes[$mapped_field] = $value;
+		// Validate default values, and only use ones that make sense for each field
+		// Don't use the default if the value is clearly for a different field
+		$valid_defaults = array();
+		foreach ($default_values as $attribute_key => $default_value) {
+			$sanitized_attribute = self::sanitize_attribute_name($attribute_key);
+			$mapped_field = self::check_attribute_mapping($attribute_key);
+			
+			if ($mapped_field !== false) {
+				// Validate based on field type
+				$is_valid = true;
+				switch ($mapped_field) {
+					case 'gender':
+						// Only accept male, female, unisex for gender
+						$normalized = strtolower(trim($default_value));
+						if (!in_array($normalized, array('male', 'female', 'unisex'))) {
+							$is_valid = false;
+							file_put_contents($log_file, "INVALID DEFAULT: {$attribute_key} -> {$mapped_field} with value: {$default_value} (not a valid gender)\n", FILE_APPEND);
+						}
+						break;
+						
+					case 'age_group':
+						// Check that this is a valid age group value
+						$normalized = strtolower(trim($default_value));
+						if (!in_array($normalized, array('adult', 'all ages', 'teen', 'kids', 'toddler', 'infant', 'newborn'))) {
+							$is_valid = false;
+							file_put_contents($log_file, "INVALID DEFAULT: {$attribute_key} -> {$mapped_field} with value: {$default_value} (not a valid age group)\n", FILE_APPEND);
+						}
+						break;
+						
+					case 'brand':
+						// Brand shouldn't be an age group or gender value
+						$normalized = strtolower(trim($default_value));
+						if (in_array($normalized, array('male', 'female', 'unisex', 'adult', 'all ages', 'teen', 'kids', 'toddler', 'infant', 'newborn'))) {
+							$is_valid = false;
+							file_put_contents($log_file, "INVALID DEFAULT: {$attribute_key} -> {$mapped_field} with value: {$default_value} (looks like an age group or gender value)\n", FILE_APPEND);
+						}
+						break;
+				}
+				
+				if ($is_valid) {
+					$valid_defaults[$mapped_field] = $default_value;
 				}
 			}
 		}
 
-		// Now add any default values for fields that weren't found in the product
+		// Now add any valid default values for fields that weren't found in the product
 		$sanitized_keys = array_map(
 			function($key) {
 				return self::sanitize_attribute_name($key);
@@ -256,18 +352,15 @@ class ProductAttributeMapper {
 			array_keys($attributes)
 		);
 
-		foreach ($default_values as $attribute_key => $default_value) {
-			$sanitized_attribute = self::sanitize_attribute_name($attribute_key);
-			$mapped_field = self::check_attribute_mapping($attribute_key);
-			
-			// Only apply default if the field is mappable and not already set
-			if ($mapped_field !== false && !isset($mapped_attributes[$mapped_field])) {
-				// Only apply default if the product doesn't have this attribute
-				if (!in_array($sanitized_attribute, $sanitized_keys)) {
-					$mapped_attributes[$mapped_field] = $default_value;
-				}
+		foreach ($valid_defaults as $mapped_field => $default_value) {
+			// Only apply default if the field is not already set
+			if (!isset($mapped_attributes[$mapped_field])) {
+				$mapped_attributes[$mapped_field] = $default_value;
+				file_put_contents($log_file, "USING VALID DEFAULT VALUE: {$mapped_field} with value: {$default_value}\n", FILE_APPEND);
 			}
 		}
+		
+		file_put_contents($log_file, "Final mapped attributes: " . json_encode($mapped_attributes) . "\n\n", FILE_APPEND);
 
 		return $mapped_attributes;
 	}
@@ -280,7 +373,7 @@ class ProductAttributeMapper {
 	 * @param string $value The original gender value
 	 * @return string Normalized gender value
 	 */
-	private static function normalize_gender_value($value) {
+	public static function normalize_gender_value($value) {
 		$value = strtolower(trim($value));
 		
 		// Map common gender values to Facebook's expected values
@@ -315,7 +408,7 @@ class ProductAttributeMapper {
 	 * @param string $value The original age group value
 	 * @return string Normalized age group value
 	 */
-	private static function normalize_age_group_value($value) {
+	public static function normalize_age_group_value($value) {
 		$value = strtolower(trim($value));
 		
 		// Map common age group values to Facebook's expected values
@@ -504,5 +597,36 @@ class ProductAttributeMapper {
 		}
 		
 		return $fb_ready_attributes;
+	}
+
+	/**
+	 * Gets mapped attributes that correspond to the standard Facebook product fields.
+	 *
+	 * @since 2.6.0
+	 *
+	 * @param \WC_Product $product the product object
+	 * @return array
+	 */
+	public static function get_mapped_standard_attributes( \WC_Product $product ) {
+		$all_mapped_attributes = self::get_mapped_attributes( $product );
+		$standard_field_names = array(
+			'brand',
+			'condition',
+			'gender',
+			'color',
+			'size',
+			'pattern',
+			'material',
+			'age_group',
+		);
+		
+		$standard_attributes = array();
+		foreach ( $standard_field_names as $field ) {
+			if ( isset( $all_mapped_attributes[ $field ] ) ) {
+				$standard_attributes[ $field ] = $all_mapped_attributes[ $field ];
+			}
+		}
+		
+		return $standard_attributes;
 	}
 } 
