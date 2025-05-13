@@ -231,29 +231,51 @@ class ProductAttributeMapper {
 			'brand' => 'brand',
 			'age-group' => 'age_group',
 			'age_group' => 'age_group',
-			'age' => 'age_group', // Map 'age' directly to age_group
+			'agegroup' => 'age_group',
 			'gender' => 'gender',
 			'material' => 'material',
 			'condition' => 'condition',
 			'color' => 'color',
+			'colour' => 'color',
 			'size' => 'size',
-			'pattern' => 'pattern'
+			'pattern' => 'pattern',
+			'mpn' => 'mpn'
 		);
 
-		// First pass: check for exact slug matches (preferred)
+		// Store attributes that have already been processed to avoid duplicates
+		$processed_fb_fields = array();
+
+		// PHASE 1: First look for EXACT matches by attribute name or label
 		foreach ($attributes as $attribute_name => $_) {
 			$value = $product->get_attribute($attribute_name);
 			if (empty($value)) continue;
 			
-			// Extract clean slug
+			// Extract clean slug and attribute label
 			$clean_slug = self::sanitize_attribute_name($attribute_name);
+			$attribute_label = wc_attribute_label($attribute_name);
+			$clean_label_slug = self::sanitize_attribute_name($attribute_label);
 			
-			file_put_contents($log_file, "Checking attribute: {$attribute_name} with clean slug: {$clean_slug}\n", FILE_APPEND);
+			file_put_contents($log_file, "Checking attribute: {$attribute_name} with clean slug: {$clean_slug} and label: {$attribute_label}\n", FILE_APPEND);
 			
-			// Check for direct slug match first
-			if (isset($slug_to_fb_field[$clean_slug])) {
+			// Check for exact matches first - either by slug or by label
+			$exact_match = false;
+			$mapped_field = null;
+			
+			// Direct match on slug
+			if (isset($slug_to_fb_field[$clean_slug]) && !isset($processed_fb_fields[$slug_to_fb_field[$clean_slug]])) {
 				$mapped_field = $slug_to_fb_field[$clean_slug];
-				file_put_contents($log_file, "EXACT MATCH: {$attribute_name} -> {$mapped_field} with value: {$value}\n", FILE_APPEND);
+				$exact_match = true;
+				file_put_contents($log_file, "EXACT MATCH ON SLUG: {$attribute_name} -> {$mapped_field}\n", FILE_APPEND);
+			}
+			// Direct match on label
+			else if (isset($slug_to_fb_field[$clean_label_slug]) && !isset($processed_fb_fields[$slug_to_fb_field[$clean_label_slug]])) {
+				$mapped_field = $slug_to_fb_field[$clean_label_slug];
+				$exact_match = true;
+				file_put_contents($log_file, "EXACT MATCH ON LABEL: {$attribute_label} -> {$mapped_field}\n", FILE_APPEND);
+			}
+			
+			if ($exact_match && $mapped_field) {
+				file_put_contents($log_file, "PROCESSING EXACT MATCH: {$attribute_name} -> {$mapped_field} with value: {$value}\n", FILE_APPEND);
 				
 				// Process standard field formats if needed
 				switch ($mapped_field) {
@@ -271,13 +293,24 @@ class ProductAttributeMapper {
 				}
 				
 				$mapped_attributes[$mapped_field] = $value;
-				continue; // Skip the fuzzy matching for exact matches
+				$processed_fb_fields[$mapped_field] = true;
+			}
+		}
+
+		// PHASE 2: Only if we don't have exact matches, try fuzzy matching
+		foreach ($attributes as $attribute_name => $_) {
+			$value = $product->get_attribute($attribute_name);
+			if (empty($value)) continue;
+			
+			// Skip if we already have a value for this Facebook field from an exact match
+			$mapped_field = self::check_attribute_mapping($attribute_name);
+			if ($mapped_field !== false && isset($processed_fb_fields[$mapped_field])) {
+				file_put_contents($log_file, "SKIPPING FUZZY MATCH: {$attribute_name} -> {$mapped_field} as this field already has an exact match\n", FILE_APPEND);
+				continue;
 			}
 			
-			// If we get here, try fuzzy matching
-			$mapped_field = self::check_attribute_mapping($attribute_name);
-
-			if ($mapped_field !== false) {
+			// Try fuzzy matching only if we don't have an exact match
+			if ($mapped_field !== false && !isset($processed_fb_fields[$mapped_field])) {
 				file_put_contents($log_file, "FUZZY MATCH: {$attribute_name} -> {$mapped_field} with value: {$value}\n", FILE_APPEND);
 				
 				// Process standard field formats if needed
@@ -296,17 +329,18 @@ class ProductAttributeMapper {
 				}
 				
 				$mapped_attributes[$mapped_field] = $value;
+				$processed_fb_fields[$mapped_field] = true;
 			}
 		}
 
 		// Validate default values, and only use ones that make sense for each field
-		// Don't use the default if the value is clearly for a different field
+		// Only apply defaults for fields that don't have values from attributes
 		$valid_defaults = array();
 		foreach ($default_values as $attribute_key => $default_value) {
 			$sanitized_attribute = self::sanitize_attribute_name($attribute_key);
 			$mapped_field = self::check_attribute_mapping($attribute_key);
 			
-			if ($mapped_field !== false) {
+			if ($mapped_field !== false && !isset($processed_fb_fields[$mapped_field])) {
 				// Validate based on field type
 				$is_valid = true;
 				switch ($mapped_field) {
@@ -345,15 +379,8 @@ class ProductAttributeMapper {
 		}
 
 		// Now add any valid default values for fields that weren't found in the product
-		$sanitized_keys = array_map(
-			function($key) {
-				return self::sanitize_attribute_name($key);
-			},
-			array_keys($attributes)
-		);
-
 		foreach ($valid_defaults as $mapped_field => $default_value) {
-			// Only apply default if the field is not already set
+			// Only apply default if the field is not already set from an attribute
 			if (!isset($mapped_attributes[$mapped_field])) {
 				$mapped_attributes[$mapped_field] = $default_value;
 				file_put_contents($log_file, "USING VALID DEFAULT VALUE: {$mapped_field} with value: {$default_value}\n", FILE_APPEND);
