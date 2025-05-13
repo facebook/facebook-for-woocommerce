@@ -2313,8 +2313,8 @@ class Admin {
 				return;
 			}
 			
-			// Use ProductAttributeMapper instead of the old sync_product_attributes method
-			$mapped_attributes = \WooCommerce\Facebook\ProductAttributeMapper::get_mapped_attributes( $product );
+			// Use ProductAttributeMapper to get and save the mapped attributes
+			$mapped_attributes = \WooCommerce\Facebook\ProductAttributeMapper::get_and_save_mapped_attributes( $product );
 			
 			// Prepare the response with mapped field => value pairs
 			$facebook_fields = array();
