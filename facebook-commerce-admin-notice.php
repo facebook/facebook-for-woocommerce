@@ -24,6 +24,36 @@ class WC_Facebookcommerce_Admin_Notice {
 	public function __construct() {
 		add_action( 'admin_notices', array( $this, 'show_notice' ) );
 		add_action( 'admin_init', array( $this, 'dismiss_notice' ) );
+		add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_notice_script' ) );
+		add_action( 'wp_ajax_wc_facebook_dismiss_notice', array( $this, 'ajax_dismiss_notice' ) );
+	}
+
+	public function enqueue_notice_script() {
+		wp_enqueue_script(
+			'wc-facebook-admin-notice',
+			plugins_url( 'assets/js/admin/whatsapp-admin-notice.js', __FILE__ ),
+			array( 'jquery' ),
+			'1.0',
+			true
+		);
+		wp_localize_script(
+			'wc-facebook-admin-notice',
+			'WCFBAdminNotice',
+			array(
+				'ajax_url'  => admin_url( 'admin-ajax.php' ),
+				'nonce'     => wp_create_nonce( self::NOTICE_ID ),
+				'notice_id' => self::NOTICE_ID,
+			)
+		);
+	}
+
+	/**
+	 * Handles the AJAX request to dismiss the notice.
+	 */
+	public function ajax_dismiss_notice() {
+		check_ajax_referer( self::NOTICE_ID, 'nonce' );
+		update_user_meta( get_current_user_id(), self::NOTICE_ID, 1 );
+		wp_send_json_success();
 	}
 
 	/**
@@ -33,6 +63,17 @@ class WC_Facebookcommerce_Admin_Notice {
 		if ( ! current_user_can( 'manage_woocommerce' ) ) {
 			return;
 		}
+
+		if ( get_user_meta( get_current_user_id(), self::NOTICE_ID, true ) ) {
+			return;
+		}
+
+		$dismiss_url = add_query_arg(
+			array(
+				self::NOTICE_ID => '1',
+				'_wpnonce'      => wp_create_nonce( self::NOTICE_ID ),
+			)
+		);
 
 		?>
 
