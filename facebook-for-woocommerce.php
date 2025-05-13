@@ -336,6 +336,36 @@ class WC_Facebook_Loader {
 // fire it up!
 WC_Facebook_Loader::instance();
 
+// These hooks must be added outside of any class
+add_filter( 'plugin_action_links_facebook-for-woocommerce/facebook-for-woocommerce.php', function( $links ) {
+	// Create a link to clear attribute mappings
+	$clear_link = '<a href="' . esc_url( admin_url( 'admin.php?page=wc-facebook&clear_fb_mappings=1' ) ) . '" style="color:red;" onclick="return confirm(\'Are you sure you want to clear all Facebook attribute mappings? This cannot be undone.\');">Clear FB Mappings</a>';
+	
+	// Add our link to the beginning of the array
+	array_unshift( $links, $clear_link );
+	
+	return $links;
+} );
+
+// Hook to process the clear mappings request
+add_action( 'admin_init', function() {
+	// Check if clearing mappings was requested
+	if ( isset( $_GET['page'] ) && 'wc-facebook' === $_GET['page'] && 
+		 isset( $_GET['clear_fb_mappings'] ) && '1' === $_GET['clear_fb_mappings'] && 
+		 current_user_can( 'manage_woocommerce' ) ) {
+		// Clear the mappings
+		delete_option( 'wc_facebook_attribute_mappings' );
+		
+		// Log the action
+		$log_file = WP_CONTENT_DIR . '/uploads/fb-product-debug.log';
+		file_put_contents( $log_file, "Cleared all attribute mappings from database at " . date( 'Y-m-d H:i:s' ) . " via admin action\n", FILE_APPEND );
+		
+		// Redirect to remove the action from the URL
+		wp_safe_redirect( remove_query_arg( 'clear_fb_mappings' ) );
+		exit;
+	}
+} );
+
 // Hook to register our Product Attributes settings screen
 // add_filter('wc_facebook_admin_settings_screens', function($screens) {
 //     // Only add if not already present
