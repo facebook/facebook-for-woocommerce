@@ -154,6 +154,8 @@ class Whatsapp_Utility extends Abstract_Settings_Screen {
 				'order_refunded_language'  => $order_refunded_language,
 				'i18n'                     => array(
 					'result' => true,
+					'generic_error' => __( 'Something went wrong. Please try again.', 'facebook-for-woocommerce' ),
+
 				),
 			)
 		);
@@ -640,6 +642,7 @@ class Whatsapp_Utility extends Abstract_Settings_Screen {
 						</b></label>
 					</div>
 				</div>
+				<div id="events-error-notice" class="manage-event-error-notice"></div>
 			</div>
 			<div class="manage-event-card-item manage-event-template-footer">
 				<div class="manage-event-button">
