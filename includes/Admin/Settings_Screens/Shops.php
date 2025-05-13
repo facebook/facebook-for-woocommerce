@@ -14,6 +14,7 @@ defined( 'ABSPATH' ) || exit;
 
 use WooCommerce\Facebook\Admin\Abstract_Settings_Screen;
 use WooCommerce\Facebook\Framework\Api\Exception as ApiException;
+use WooCommerce\Facebook\RolloutSwitches;
 
 /**
  * Shops settings screen object.
@@ -325,22 +326,26 @@ class Shops extends Abstract_Settings_Screen {
 	 * @return array
 	 */
 	public static function get_settings_with_title_static( string $title ): array {
-		return array(
-			array(
-				'title' => $title,
-				'type'  => 'title',
-			),
+		$offer_management_enabled_by_fb = facebook_for_woocommerce()->get_rollout_switches()->is_switch_enabled(
+			RolloutSwitches::SWITCH_OFFER_MANAGEMENT_ENABLED
+		);
 
-			array(
+		$title_array = [
+			'title' => $title,
+			'type'  => 'title',
+		];
+
+		$settings_without_title_and_type = [
+			[
 				'id'       => \WC_Facebookcommerce_Integration::SETTING_ENABLE_META_DIAGNOSIS,
 				'title'    => __( 'Enable meta diagnosis', 'facebook-for-woocommerce' ),
 				'type'     => 'checkbox',
 				'desc'     => __( 'Upload plugin events to Meta', 'facebook-for-woocommerce' ),
 				'desc_tip' => sprintf( __( 'Allow Meta to monitor event and error logs to help fix issues.', 'facebook-for-woocommerce' ) ),
 				'default'  => 'yes',
-			),
+			],
 
-			array(
+			[
 				'id'       => \WC_Facebookcommerce_Integration::SETTING_ENABLE_DEBUG_MODE,
 				'title'    => __( 'Enable debug mode', 'facebook-for-woocommerce' ),
 				'type'     => 'checkbox',
@@ -348,10 +353,25 @@ class Shops extends Abstract_Settings_Screen {
 				/* translators: %s URL to the documentation page. */
 				'desc_tip' => sprintf( __( 'Only enable this if you are experiencing problems with the plugin. <a href="%s" target="_blank">Learn more</a>.', 'facebook-for-woocommerce' ), 'https://woocommerce.com/document/facebook-for-woocommerce/#debug-tools' ),
 				'default'  => 'no',
-			),
+			],
+		];
+		if ( $offer_management_enabled_by_fb ) {
+			$settings_without_title_and_type[] = [
+				'id'       => \WC_Facebookcommerce_Integration::SETTING_ENABLE_FACEBOOK_MANAGED_COUPONS,
+				'title'    => __( 'Enable Meta-managed coupons', 'facebook-for-woocommerce' ),
+				'type'     => 'checkbox',
+				'desc'     => __( 'Allow Meta to create and manage coupons based on your offer setup on Meta business tools', 'facebook-for-woocommerce' ),
+				'desc_tip' => sprintf( __( 'If this is disabled, some promotional features in Meta business tools may not be available.', 'facebook-for-woocommerce' ) ),
+				'default'  => \WC_Facebookcommerce_Integration::SETTING_ENABLE_FACEBOOK_MANAGED_COUPONS_DEFAULT_VALUE,
+			];
+		}
 
-			array( 'type' => 'sectionend' ),
-		);
+		$section_end_array = [ 'type' => 'sectionend' ];
+
+		array_unshift( $settings_without_title_and_type, $title_array );
+		$settings_without_title_and_type[] = $section_end_array;
+
+		return array_merge( $title_array, $settings_without_title_and_type, $section_end_array );
 	}
 
 	/**
@@ -386,10 +406,10 @@ class Shops extends Abstract_Settings_Screen {
 				const messageEvent = message.event;
 
 				if (messageEvent === 'CommerceExtension::INSTALL' && message.success) {
-					const cms_id = message.installed_features.find( ( f ) => 'fb_shop' === f.feature_type )?.connected_assets?.commerce_merchant_settings_id || 
+					const cms_id = message.installed_features.find( ( f ) => 'fb_shop' === f.feature_type )?.connected_assets?.commerce_merchant_settings_id ||
 						message.installed_features.find( ( f ) => 'ig_shopping' === f.feature_type )?.connected_assets?.commerce_merchant_settings_id || '';
 					const ad_account_id = message.installed_features.find( ( f ) => 'ads' === f.feature_type )?.connected_assets?.ad_account_id || '';
-					
+
 					const requestBody = {
 						access_token: message.access_token,
 						merchant_access_token: message.access_token,
