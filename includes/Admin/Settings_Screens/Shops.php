@@ -350,6 +350,14 @@ class Shops extends Abstract_Settings_Screen {
 				'default'  => 'no',
 			),
 
+			array(
+				'id'      => \WC_Facebookcommerce_Integration::SETTING_ENABLE_FACEBOOK_MANAGED_COUPONS,
+				'title'   => __( 'Enable meta managed coupons', 'facebook-for-woocommerce' ),
+				'type'    => 'checkbox',
+				'desc'    => __( 'Allow Meta to create and manage Meta-specific coupons on your shop', 'facebook-for-woocommerce' ),
+				'default' => \WC_Facebookcommerce_Integration::SETTING_ENABLE_FACEBOOK_MANAGED_COUPONS_DEFAULT_VALUE,
+			),
+
 			array( 'type' => 'sectionend' ),
 		);
 	}
@@ -386,10 +394,10 @@ class Shops extends Abstract_Settings_Screen {
 				const messageEvent = message.event;
 
 				if (messageEvent === 'CommerceExtension::INSTALL' && message.success) {
-					const cms_id = message.installed_features.find( ( f ) => 'fb_shop' === f.feature_type )?.connected_assets?.commerce_merchant_settings_id || 
+					const cms_id = message.installed_features.find( ( f ) => 'fb_shop' === f.feature_type )?.connected_assets?.commerce_merchant_settings_id ||
 						message.installed_features.find( ( f ) => 'ig_shopping' === f.feature_type )?.connected_assets?.commerce_merchant_settings_id || '';
 					const ad_account_id = message.installed_features.find( ( f ) => 'ads' === f.feature_type )?.connected_assets?.ad_account_id || '';
-					
+
 					const requestBody = {
 						access_token: message.access_token,
 						merchant_access_token: message.access_token,
