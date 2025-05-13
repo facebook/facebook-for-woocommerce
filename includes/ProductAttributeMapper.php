@@ -127,26 +127,40 @@ class ProductAttributeMapper {
 	 * @return bool|string False if not mapped, or the Facebook field name if mapped
 	 */
 	public static function check_attribute_mapping($attribute_name) {
+		// Debug log
+		$log_file = WP_CONTENT_DIR . '/uploads/fb-product-debug.log';
+		file_put_contents($log_file, "  [check_attribute_mapping] Checking mapping for '{$attribute_name}'\n", FILE_APPEND);
+		
 		// Clean the attribute name
 		$sanitized_name = self::sanitize_attribute_name($attribute_name);
+		file_put_contents($log_file, "  [check_attribute_mapping] Sanitized name: '{$sanitized_name}'\n", FILE_APPEND);
 		
 		// Check if there's a direct mapping in our attribute_name_mapping
 		if (isset(self::$attribute_name_mapping[$sanitized_name])) {
-			return self::$attribute_name_mapping[$sanitized_name];
+			$result = self::$attribute_name_mapping[$sanitized_name];
+			file_put_contents($log_file, "  [check_attribute_mapping] Found in attribute_name_mapping: '{$sanitized_name}' => '{$result}'\n", FILE_APPEND);
+			return $result;
 		}
 		
 		// Check for exact matches in standard fields
 		foreach (self::$standard_facebook_fields as $fb_field => $possible_matches) {
 			if (in_array($sanitized_name, $possible_matches, true)) {
+				file_put_contents($log_file, "  [check_attribute_mapping] Found in standard_facebook_fields possible_matches: '{$sanitized_name}' => '{$fb_field}'\n", FILE_APPEND);
 				return $fb_field;
 			}
 		}
 		
 		// If no exact match in standard fields, check if the attribute is a standard field itself
 		if (isset(self::$standard_facebook_fields[$sanitized_name])) {
+			file_put_contents($log_file, "  [check_attribute_mapping] Attribute is a standard field itself: '{$sanitized_name}'\n", FILE_APPEND);
 			return $sanitized_name;
 		}
 		
+		// DISABLED: Fuzzy matching can lead to unpredictable attribute mappings
+		// We now only use explicit mappings (from UI) and exact matches for consistent behavior
+		// This ensures that attributes are only mapped when the store owner explicitly intends them to be
+		
+		file_put_contents($log_file, "  [check_attribute_mapping] No mapping found for '{$attribute_name}'\n", FILE_APPEND);
 		return false;
 	}
 
@@ -159,8 +173,21 @@ class ProductAttributeMapper {
 	 * @return string
 	 */
 	public static function sanitize_attribute_name( $attribute_name ) {
+		// First, get the original attribute name without the pa_ prefix
+		$original_name = preg_replace( '/^pa_/', '', $attribute_name );
+		
+		// If the attribute is a taxonomy attribute and likely has a display name,
+		// try to get the display name first (e.g., "Material" instead of "pa_material")
+		if (strpos($attribute_name, 'pa_') === 0) {
+			$taxonomy = get_taxonomy($attribute_name);
+			if ($taxonomy && !empty($taxonomy->labels->singular_name)) {
+				// Return the display name in lowercase for standardization
+				return strtolower($taxonomy->labels->singular_name);
+			}
+		}
+		
 		// Remove pa_ prefix from taxonomy attributes
-		$attribute_name = preg_replace( '/^pa_/', '', $attribute_name );
+		$attribute_name = $original_name;
 		
 		// Convert spaces and special characters to underscores
 		$attribute_name = strtolower( $attribute_name );
@@ -234,8 +261,39 @@ class ProductAttributeMapper {
 		
 		// Debug log
 		$log_file = WP_CONTENT_DIR . '/uploads/fb-product-debug.log';
-		$log_message = "ProductAttributeMapper: Starting attribute mapping for product " . $product->get_id() . "\n";
+		$log_message = "---------------------------------------------\n";
+		$log_message .= "ProductAttributeMapper: Starting attribute mapping for product " . $product->get_id() . " (" . $product->get_name() . ")\n";
 		$log_message .= "Available attributes: " . json_encode(array_keys($attributes)) . "\n";
+		
+		// Log the actual attribute values for debugging
+		$log_message .= "Attribute values:\n";
+		foreach ($attributes as $attribute_name => $_) {
+			$value = $product->get_attribute($attribute_name);
+			$log_message .= "  - {$attribute_name}: '{$value}'\n";
+		}
+		
+		// Get manual attribute mappings from the plugin settings
+		$custom_mappings = get_option('wc_facebook_attribute_mappings', array());
+		if (!empty($custom_mappings)) {
+			$log_message .= "Custom attribute mappings configured in settings:\n";
+			foreach ($custom_mappings as $wc_attr => $fb_attr) {
+				$log_message .= "  - {$wc_attr} => {$fb_attr}\n";
+			}
+		} else {
+			$log_message .= "No custom attribute mappings configured in settings.\n";
+		}
+		
+		// Check for attribute mappings via filter (used by the plugin UI)
+		$filtered_mappings = apply_filters('wc_facebook_product_attribute_mappings', array(), $product);
+		if (!empty($filtered_mappings)) {
+			$log_message .= "Custom attribute mappings via filter:\n";
+			foreach ($filtered_mappings as $wc_attr => $fb_attr) {
+				$log_message .= "  - {$wc_attr} => {$fb_attr}\n";
+			}
+		} else {
+			$log_message .= "No custom attribute mappings via filter.\n";
+		}
+		
 		file_put_contents($log_file, $log_message, FILE_APPEND);
 
 		// Create a map to track exact slug matches first
@@ -256,73 +314,199 @@ class ProductAttributeMapper {
 
 		// Store attributes that have already been processed to avoid duplicates
 		$processed_fb_fields = array();
+		
+		// Get a complete list of standard Facebook fields for prioritization
+		$standard_fields = array('brand', 'color', 'size', 'pattern', 'material', 'gender', 'age_group', 'condition', 'mpn');
+		
+		// Create a priority map to resolve conflicts - higher number = higher priority
+		$priority_map = array(
+			'direct_match' => 100,     // Highest priority - direct match by attribute name
+			'slug_match' => 80,        // High priority - slug match
+			'mapped' => 60,            // Medium priority - mapped via check_attribute_mapping
+			'custom_mapped' => 50,     // Medium priority - manually mapped via UI (reduced from 90)
+			'default' => 10,           // Low priority - default value 
+			'meta' => 20               // Low-medium priority - meta value
+		);
+		
+		// Track attribute sources and their priorities for later conflict resolution
+		$attribute_sources = array();
+		
+		// PHASE 0: First process any custom attribute mappings set via the UI
+		// These should have very high priority but not override direct matches
+		file_put_contents($log_file, "PHASE UI: Checking for custom attribute mappings set via UI...\n", FILE_APPEND);
+		foreach ($filtered_mappings as $wc_attr_name => $fb_field) {
+			// Find the attribute in the product
+			foreach ($attributes as $attribute_key => $attribute) {
+				$clean_key = self::sanitize_attribute_name($attribute_key);
+				$clean_name = self::sanitize_attribute_name($wc_attr_name);
+				
+				if ($clean_key === $clean_name) {
+					$value = $product->get_attribute($attribute_key);
+					
+					if (!empty($value)) {
+						file_put_contents($log_file, "  Found UI mapping: '{$wc_attr_name}' to '{$fb_field}' with value '{$value}'\n", FILE_APPEND);
+						
+						// Save the attribute with its priority
+						if (!isset($attribute_sources[$fb_field]) || $priority_map['custom_mapped'] > $attribute_sources[$fb_field]['priority']) {
+							$attribute_sources[$fb_field] = array(
+								'value' => $value,
+								'priority' => $priority_map['custom_mapped'],
+								'source' => "UI mapping: {$wc_attr_name}"
+							);
+						}
+					}
+				}
+			}
+		}
 
-		// PHASE 1: First look for EXACT matches by attribute name or label
+		// PHASE 1: Now check for direct standard field matches by attribute name
+		file_put_contents($log_file, "PHASE 1: Checking for direct standard field matches...\n", FILE_APPEND);
 		foreach ($attributes as $attribute_name => $_) {
 			$value = $product->get_attribute($attribute_name);
 			
 			if (!empty($value)) {
 				// Clean up attribute name for matching
 				$clean_name = self::sanitize_attribute_name($attribute_name);
+				file_put_contents($log_file, "  Checking attribute '{$attribute_name}' (cleaned: '{$clean_name}')\n", FILE_APPEND);
 				
-				// Check for exact match in our slug mapping
-				if (isset($slug_to_fb_field[$clean_name]) && !isset($processed_fb_fields[$slug_to_fb_field[$clean_name]])) {
-					$fb_field = $slug_to_fb_field[$clean_name];
-					$mapped_attributes[$fb_field] = $value;
-					$processed_fb_fields[$fb_field] = true;
+				// Direct match with standard fields - fix: also check attribute display name
+				foreach (self::$standard_facebook_fields as $fb_field => $possible_matches) {
+					// Get the attribute's display name by removing "pa_" prefix and converting underscores to spaces
+					$display_name = ucfirst(str_replace('_', ' ', preg_replace('/^pa_/', '', $attribute_name)));
+					$lower_display_name = strtolower($display_name);
+					
+					// If the attribute name exactly matches the standard field name OR
+					// the display name matches the field name (case insensitive)
+					if ($clean_name === $fb_field || $lower_display_name === $fb_field) {
+						file_put_contents($log_file, "  ** MATCHED in PHASE 1: Direct match for standard field '{$fb_field}' with attribute '{$attribute_name}' (display: '{$display_name}') = '{$value}'\n", FILE_APPEND);
+						
+						// Save the attribute with its priority
+						if (!isset($attribute_sources[$fb_field]) || $priority_map['direct_match'] > $attribute_sources[$fb_field]['priority']) {
+							$attribute_sources[$fb_field] = array(
+								'value' => $value,
+								'priority' => $priority_map['direct_match'],
+								'source' => "Direct match: {$attribute_name}"
+							);
+						}
+						break;
+					}
 				}
 			}
 		}
 		
-		// PHASE 2: Now look for partial matches
+		// PHASE 2: Look for exact slug matches
+		file_put_contents($log_file, "PHASE 2: Checking for exact slug matches...\n", FILE_APPEND);
+		foreach ($attributes as $attribute_name => $_) {
+			$value = $product->get_attribute($attribute_name);
+			
+			if (!empty($value)) {
+				// Clean up attribute name for matching
+				$clean_name = self::sanitize_attribute_name($attribute_name);
+				file_put_contents($log_file, "  Checking attribute '{$attribute_name}' (cleaned: '{$clean_name}')\n", FILE_APPEND);
+				
+				// Check for exact match in our slug mapping
+				if (isset($slug_to_fb_field[$clean_name])) {
+					$fb_field = $slug_to_fb_field[$clean_name];
+					file_put_contents($log_file, "  ** MATCHED in PHASE 2: Exact slug match for '{$fb_field}' with attribute '{$attribute_name}' = '{$value}'\n", FILE_APPEND);
+					
+					// Save the attribute with its priority
+					if (!isset($attribute_sources[$fb_field]) || $priority_map['slug_match'] > $attribute_sources[$fb_field]['priority']) {
+						$attribute_sources[$fb_field] = array(
+							'value' => $value,
+							'priority' => $priority_map['slug_match'],
+							'source' => "Slug match: {$attribute_name}"
+						);
+					}
+				}
+			}
+		}
+		
+		// PHASE 3: Look for mapped attributes via check_attribute_mapping
+		file_put_contents($log_file, "PHASE 3: Checking for mapped attributes...\n", FILE_APPEND);
 		foreach ($attributes as $attribute_name => $_) {
 			$value = $product->get_attribute($attribute_name);
 			
 			if (!empty($value) && !empty($attribute_name)) {
+				file_put_contents($log_file, "  Checking if '{$attribute_name}' is mapped to a Facebook field\n", FILE_APPEND);
 				$mapped_field = self::check_attribute_mapping($attribute_name);
 				
-				// Skip if we've already processed this field or no mapping found
-				if ($mapped_field !== false && !isset($processed_fb_fields[$mapped_field])) {
+				// Skip if no mapping found
+				if ($mapped_field !== false) {
 					// Normalize certain field values to conform to Facebook requirements
+					$original_value = $value;
 					switch ($mapped_field) {
 						case 'gender':
 							$value = self::normalize_gender_value($value);
+							file_put_contents($log_file, "  Normalized gender value from '{$original_value}' to '{$value}'\n", FILE_APPEND);
 							break;
 						case 'age_group':
 							$value = self::normalize_age_group_value($value);
+							file_put_contents($log_file, "  Normalized age_group value from '{$original_value}' to '{$value}'\n", FILE_APPEND);
 							break;
 						case 'condition':
 							$value = self::normalize_condition_value($value);
+							file_put_contents($log_file, "  Normalized condition value from '{$original_value}' to '{$value}'\n", FILE_APPEND);
 							break;
 					}
 					
-					$mapped_attributes[$mapped_field] = $value;
-					$processed_fb_fields[$mapped_field] = true;
+					file_put_contents($log_file, "  ** MATCHED in PHASE 3: Mapped '{$attribute_name}' to '{$mapped_field}' = '{$value}'\n", FILE_APPEND);
+					
+					// Save the attribute with its priority
+					if (!isset($attribute_sources[$mapped_field]) || $priority_map['mapped'] > $attribute_sources[$mapped_field]['priority']) {
+						$attribute_sources[$mapped_field] = array(
+							'value' => $value,
+							'priority' => $priority_map['mapped'],
+							'source' => "Mapped via check_attribute_mapping: {$attribute_name}"
+						);
+					}
 				}
 			}
 		}
 		
-		// PHASE 3: For fields not found in product attributes, check post meta or use defaults
-		$std_fields = array('brand', 'color', 'size', 'pattern', 'material', 'gender', 'age_group', 'condition', 'mpn');
-		
-		foreach ($std_fields as $field) {
-			if (!isset($processed_fb_fields[$field])) {
-				// First check if there's a default value
+		// PHASE 4: For fields not found in product attributes, check defaults and meta
+		file_put_contents($log_file, "PHASE 4: Checking for defaults and meta values...\n", FILE_APPEND);
+		foreach ($standard_fields as $field) {
+			// Check defaults only if we haven't found a higher priority source
+			if (!isset($attribute_sources[$field]) || $attribute_sources[$field]['priority'] < $priority_map['default']) {
+				// Check for default value
 				if (isset($default_values[$field]) && !empty($default_values[$field])) {
-					$mapped_attributes[$field] = $default_values[$field];
-					$processed_fb_fields[$field] = true;
+					file_put_contents($log_file, "  ** MATCHED in PHASE 4: Using default value for '{$field}' = '{$default_values[$field]}'\n", FILE_APPEND);
+					
+					$attribute_sources[$field] = array(
+						'value' => $default_values[$field],
+						'priority' => $priority_map['default'],
+						'source' => "Default value"
+					);
 				}
-				
+			}
+			
+			// Check meta values only if we haven't found a higher priority source
+			if (!isset($attribute_sources[$field]) || $attribute_sources[$field]['priority'] < $priority_map['meta']) {
 				// Check for alternative storage in dedicated meta fields
 				$meta_key = '_wc_facebook_enhanced_catalog_attributes_' . $field;
 				$meta_value = $product->get_meta($meta_key, true);
 				
 				if (!empty($meta_value)) {
-					$mapped_attributes[$field] = $meta_value;
-					$processed_fb_fields[$field] = true;
+					file_put_contents($log_file, "  ** MATCHED in PHASE 4: Using meta value for '{$field}' = '{$meta_value}'\n", FILE_APPEND);
+					
+					$attribute_sources[$field] = array(
+						'value' => $meta_value,
+						'priority' => $priority_map['meta'],
+						'source' => "Meta value"
+					);
 				}
 			}
 		}
+		
+		// Now build the final mapped attributes based on priority
+		foreach ($attribute_sources as $fb_field => $source_data) {
+			$mapped_attributes[$fb_field] = $source_data['value'];
+			file_put_contents($log_file, "Final mapping for '{$fb_field}' = '{$source_data['value']}' (priority: {$source_data['priority']}, source: {$source_data['source']})\n", FILE_APPEND);
+		}
+		
+		// Log the final result
+		file_put_contents($log_file, "FINAL MAPPED ATTRIBUTES: " . json_encode($mapped_attributes) . "\n", FILE_APPEND);
+		file_put_contents($log_file, "---------------------------------------------\n", FILE_APPEND);
 		
 		return $mapped_attributes;
 	}
@@ -655,5 +839,23 @@ class ProductAttributeMapper {
 	public static function get_and_save_mapped_attributes(WC_Product $product) {
 		$mapped_attributes = self::get_mapped_attributes($product);
 		return self::save_mapped_attributes($product, $mapped_attributes);
+	}
+
+	/**
+	 * Clear all attribute mappings stored in the database.
+	 * 
+	 * @since 3.0.0
+	 *
+	 * @return bool Whether the operation was successful
+	 */
+	public static function clear_all_attribute_mappings() {
+		// Delete the custom mappings stored in the database
+		$result1 = delete_option('wc_facebook_attribute_mappings');
+		
+		// Log this action
+		$log_file = WP_CONTENT_DIR . '/uploads/fb-product-debug.log';
+		file_put_contents($log_file, "Cleared all attribute mappings from database at " . date('Y-m-d H:i:s') . "\n", FILE_APPEND);
+		
+		return $result1;
 	}
 } 
