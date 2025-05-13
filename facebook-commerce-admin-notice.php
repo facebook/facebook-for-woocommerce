@@ -30,14 +30,14 @@ class WC_Facebookcommerce_Admin_Notice {
 
 	public function enqueue_notice_script() {
 		wp_enqueue_script(
-			'wc-facebook-admin-notice',
+			'whatsapp-admin-notice',
 			plugins_url( 'assets/js/admin/whatsapp-admin-notice.js', __FILE__ ),
 			array( 'jquery' ),
 			'1.0',
 			true
 		);
 		wp_localize_script(
-			'wc-facebook-admin-notice',
+			'whatsapp-admin-notice',
 			'WCFBAdminNotice',
 			array(
 				'ajax_url'  => admin_url( 'admin-ajax.php' ),
