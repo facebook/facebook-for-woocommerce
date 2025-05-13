@@ -340,7 +340,6 @@ class WhatsAppUtilityConnection {
 
 	/**
 	 * Makes an API call to Event Processor: Message Events Post API to send whatsapp utility messages
-	 * TODO: Update API Endpoint from Messages to Message Events
 	 *
 	 * @param string $event Order Managerment event
 	 * @param string $event_config_id Event Config Id
@@ -354,7 +353,7 @@ class WhatsAppUtilityConnection {
 	 * @param string $bisu_token the BISU token received in the webhook
 	 */
 	public static function post_whatsapp_utility_messages_events_call( $event, $event_config_id, $language_code, $wacs_id, $order_id, $phone_number, $first_name, $refund_value, $currency, $bisu_token ) {
-		$base_url        = array( self::GRAPH_API_BASE_URL, self::API_VERSION, $wacs_id, "messages?access_token=$bisu_token" );
+		$base_url        = array( self::GRAPH_API_BASE_URL, self::API_VERSION, $wacs_id, "message_events?access_token=$bisu_token" );
 		$base_url        = esc_url( implode( '/', $base_url ) );
 		$name            = self::EVENT_TO_LIBRARY_TEMPLATE_MAPPING[ $event ];
 		$components      = self::get_components_for_event( $event, $order_id, $first_name, $refund_value, $currency );
@@ -362,8 +361,9 @@ class WhatsAppUtilityConnection {
 			'body'    => array(
 				'messaging_product' => 'whatsapp',
 				'to'                => $phone_number,
+				'event_config_id'   => $event_config_id,
+				'external_event_id' => "${order_id}",
 				'template'          => array(
-					'name'       => $name,
 					'language'   => array(
 						'code' => $language_code,
 					),
@@ -380,7 +380,7 @@ class WhatsAppUtilityConnection {
 		wc_get_logger()->info(
 			sprintf(
 					/* translators: %s $error_message */
-				__( 'Messages Post API call Response: %1$s ', 'facebook-for-woocommerce' ),
+				__( 'Message Events Post API call Response: %1$s ', 'facebook-for-woocommerce' ),
 				json_encode( $response ),
 			)
 		);
@@ -389,7 +389,7 @@ class WhatsAppUtilityConnection {
 			wc_get_logger()->info(
 				sprintf(
 				/* translators: %s $order_id %s $error_message */
-					__( 'Messages Post API call for Order id %1$s Failed %2$s ', 'facebook-for-woocommerce' ),
+					__( 'Message Events Post API call for Order id %1$s Failed %2$s ', 'facebook-for-woocommerce' ),
 					$order_id,
 					$error_message,
 				)
@@ -398,7 +398,7 @@ class WhatsAppUtilityConnection {
 			wc_get_logger()->info(
 				sprintf(
 				/* translators: %s $order_id */
-					__( 'Messages Post API call for Order id %1$s Succeeded.', 'facebook-for-woocommerce' ),
+					__( 'Message Events Post API call for Order id %1$s Succeeded.', 'facebook-for-woocommerce' ),
 					$order_id
 				)
 			);
