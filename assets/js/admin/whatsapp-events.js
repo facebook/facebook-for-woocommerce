@@ -66,11 +66,40 @@ jQuery(document).ready(function ($) {
             event: facebook_for_woocommerce_whatsapp_events.event,
         }, function (response) {
             if (response.success) {
+                const event = facebook_for_woocommerce_whatsapp_events.event;
+                const headerReplacements = {
+                    "ORDER_REFUNDED": {
+                        "{{1}}": "{{$amount}}"
+                    }
+                };
+                const bodyReplacements = {
+                    "ORDER_PLACED": {
+                        "{{1}}": "{{first_name}}",
+                        "{{2}}": "#{{order_number}}"
+                    },
+                    "ORDER_FULFILLED": {
+                        "{{1}}": "{{first_name}}",
+                        "{{2}}": "#{{order_number}}"
+                    },
+                    "ORDER_REFUNDED": {
+                        "{{1}}": "{{first_name}}",
+                        "{{2}}": "{{$amount}}",
+                        "{{3}}": "#{{order_number}}"
+                    }
+                };
                 const parsedData = JSON.parse(response.data);
                 const apiResponseData = parsedData.data[0];
                 // Parse template strings as HTML and extract text content to sanitize text
-                const header = $.parseHTML(apiResponseData.header)[0].textContent;
-                const body = $.parseHTML(apiResponseData.body)[0].textContent;
+                var header = $.parseHTML(apiResponseData.header)[0].textContent;
+                header = header.replace(/{{\d+}}/g, function (match) {
+                    return headerReplacements[event][match];
+                });
+                var body = $.parseHTML(apiResponseData.body)[0].textContent;
+                body = body.replace(/{{\d+}}/g, function(match) {
+                    return bodyReplacements[event][match];
+                  });
+                // Body content has line breaks that need to be rendered in html
+                body = body.replace(/\n/g, '<br>');
                 if (facebook_for_woocommerce_whatsapp_events.event === "ORDER_REFUNDED") {
                     $('#library-template-content').html(`
                         <h3>Header</h3>
