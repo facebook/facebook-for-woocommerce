@@ -150,6 +150,9 @@
 .manage-event-button {
     margin-left: 20px;
 }
+.manage-event-error-notice {
+    margin-right: 5px;
+}
 .fbwa-hidden-element {
     display: none;
 }

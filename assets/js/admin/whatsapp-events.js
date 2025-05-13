@@ -120,6 +120,13 @@ jQuery(document).ready(function ($) {
             }
             else {
                 console.log('Whatsapp Library Template call failed', response);
+                const message = facebook_for_woocommerce_whatsapp_finish.i18n.generic_error;
+                const errorNoticeHtml = `
+                <div class="notice-error">
+                  <p>${message}</p>
+                </div>
+              `;
+                $('#events-error-notice').html(errorNoticeHtml).show();
             }
         });
     });
@@ -135,13 +142,24 @@ jQuery(document).ready(function ($) {
             language: languageValue,
             status: statusValue
         }, function (response) {
-            //TODO: Add Error Handling
-            let url = new URL(window.location.href);
-            let params = new URLSearchParams(url.search);
-            params.set('view', 'utility_settings');
-            url.search = params.toString();
-            window.location.href = url.toString();
-            console.log('Whatsapp Event Config has been updated', response);
+            if (response.success) {
+                let url = new URL(window.location.href);
+                let params = new URLSearchParams(url.search);
+                params.set('view', 'utility_settings');
+                url.search = params.toString();
+                window.location.href = url.toString();
+                console.log('Whatsapp Event Config has been updated', response);
+            }
+            else {
+                console.log('Whatsapp Event Config Update failure', response);
+                const message = facebook_for_woocommerce_whatsapp_finish.i18n.generic_error;
+                const errorNoticeHtml = `
+                <div class="notice-error">
+                  <p>${message}</p>
+                </div>
+              `;
+                $('#events-error-notice').html(errorNoticeHtml).show();
+            }
         });
     });
 
@@ -164,6 +182,13 @@ jQuery(document).ready(function ($) {
             }
             else {
                 console.log('Fetch supported language call failed', response);
+                const message = facebook_for_woocommerce_whatsapp_finish.i18n.generic_error;
+                const errorNoticeHtml = `
+                <div class="notice-error">
+                  <p>${message}</p>
+                </div>
+              `;
+                $('#events-error-notice').html(errorNoticeHtml).show();
             }
         });
     });
