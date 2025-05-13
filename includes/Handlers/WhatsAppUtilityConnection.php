@@ -405,6 +405,50 @@ class WhatsAppUtilityConnection {
 		}
 	}
 
+	/**
+	 * Makes an API call to Integration Config Get API
+	 *
+	 * @param string $integration_config_id Integration Config id
+	 * @param string $bisu_token the BISU token received in the webhook
+	 */
+	public static function get_supported_languages_for_templates( $integration_config_id, $bisu_token ) {
+		$base_url = array( self::GRAPH_API_BASE_URL, self::API_VERSION, $integration_config_id );
+		$base_url = esc_url( implode( '/', $base_url ) );
+		$params   = array(
+			'access_token' => $bisu_token,
+		);
+		$url      = add_query_arg( $params, $base_url );
+		$options  = array(
+			'headers' => array(
+				'Authorization' => $bisu_token,
+			),
+			'body'    => array(),
+			'timeout' => 300, // 5 minutes
+		);
+
+		$response    = wp_remote_request( $url, $options );
+		$status_code = wp_remote_retrieve_response_code( $response );
+		$data        = wp_remote_retrieve_body( $response );
+		if ( is_wp_error( $response ) || 200 !== $status_code ) {
+			wc_get_logger()->info(
+				sprintf(
+					/* translators: %s $error_message */
+					__( 'Integration Config GET API call Failed %1$s ', 'facebook-for-woocommerce' ),
+					$data,
+				)
+			);
+			wp_send_json_error( $response, 'Integration Config GET API call Failed' );
+		} else {
+			wc_get_logger()->info(
+				sprintf(
+					__( 'Integration Config GET API call Succeeded', 'facebook-for-woocommerce' )
+				)
+			);
+			// $response_object = json_decode( $data[0] );
+			wp_send_json_success( $data, 'Finish Integration Config API Call' );
+		}
+	}
+
 
 	/**
 	 * Gets Component Objects for Order Management Events
