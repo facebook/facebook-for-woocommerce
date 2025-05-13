@@ -23,7 +23,6 @@ class WC_Facebookcommerce_Admin_Notice {
 	 */
 	public function __construct() {
 		add_action( 'admin_notices', array( $this, 'show_notice' ) );
-		add_action( 'admin_init', array( $this, 'dismiss_notice' ) );
 		add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_notice_script' ) );
 		add_action( 'wp_ajax_wc_facebook_dismiss_notice', array( $this, 'ajax_dismiss_notice' ) );
 	}
@@ -99,20 +98,5 @@ class WC_Facebookcommerce_Admin_Notice {
 			</p>
 		</div>
 		<?php
-	}
-
-	/**
-	 * Handles the dismissal of the notice.
-	 */
-	public function dismiss_notice() {
-		if (
-			isset( $_GET[ self::NOTICE_ID ] ) &&
-			isset( $_GET['_wpnonce'] ) &&
-			wp_verify_nonce( sanitize_text_field( wp_unslash( $_GET['_wpnonce'] ) ), self::NOTICE_ID )
-		) {
-			update_user_meta( get_current_user_id(), self::NOTICE_ID, 1 );
-			wp_safe_redirect( remove_query_arg( array( self::NOTICE_ID, '_wpnonce' ) ) );
-			exit;
-		}
 	}
 }
