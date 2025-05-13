@@ -44,9 +44,6 @@ jQuery(document).ready(function ($) {
         orderRefundedInactiveStatus.show();
     }
 
-    var eventConfiglanguage = getEventLanguage(facebook_for_woocommerce_whatsapp_events.event);
-    $("#manage-event-language").val(eventConfiglanguage);
-
     $('#woocommerce-whatsapp-manage-order-placed, #woocommerce-whatsapp-manage-order-fulfilled, #woocommerce-whatsapp-manage-order-refunded').click(function (event) {
         var clickedButtonId = $(event.target).attr("id");
         let view = clickedButtonId.replace("woocommerce-whatsapp-", "");
@@ -145,6 +142,36 @@ jQuery(document).ready(function ($) {
             url.search = params.toString();
             window.location.href = url.toString();
             console.log('Whatsapp Event Config has been updated', response);
+        });
+    });
+
+    $("#manage-event-language").load(facebook_for_woocommerce_whatsapp_events.ajax_url, function () {
+        $.post(facebook_for_woocommerce_whatsapp_events.ajax_url, {
+            action: 'wc_facebook_whatsapp_fetch_supported_languages',
+            nonce: facebook_for_woocommerce_whatsapp_events.nonce,
+        }, function (response) {
+            if (response.success) {
+                const parsedData = JSON.parse(response.data);
+                const supportedLanguages = parsedData.supported_languages;
+                $.each(supportedLanguages, function (index, languageObj) {
+                    var displayValue = $.parseHTML(languageObj.display_value)[0].textContent;
+                    var locale = $.parseHTML(languageObj.locale)[0].textContent;
+                    $("#manage-event-language").append($("<option></option>").text(displayValue).val(locale));
+                });
+                var eventConfiglanguage = getEventLanguage(facebook_for_woocommerce_whatsapp_events.event);
+                $("#manage-event-language").val(eventConfiglanguage);
+                console.log('Fetch supported language call succeeded');
+            }
+            else {
+                console.log('Fetch supported language call failed', response);
+                const message = facebook_for_woocommerce_whatsapp_finish.i18n.generic_error;
+                const errorNoticeHtml = `
+                <div class="notice-error">
+                  <p>${message}</p>
+                </div>
+              `;
+                $('#events-error-notice').html(errorNoticeHtml).show();
+            }
         });
     });
 

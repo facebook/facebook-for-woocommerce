@@ -583,22 +583,6 @@ class Whatsapp_Utility extends Abstract_Settings_Screen {
 			<div class="manage-event-card-item">
 				<p><b><?php esc_html_e( 'Select a language', 'facebook-for-woocommerce' ); ?></b></p>
 				<select id="manage-event-language" class="manage-event-selector">
-					<option value="af">Afrikaans</option>
-					<option value="sq">Albanian</option>
-					<option value="ar">Arabic</option>
-					<option value="az">Azerbaijani</option>
-					<option value="bn">Bengali</option>
-					<option value="bg">Bulgarian</option>
-					<option value="ca">Catalan</option>
-					<option value="zh_CN">Chinese (CHN)</option>
-					<option value="zh_HK">Chinese (HKG)</option>
-					<option value="zh_TW">Chinese (TAI)</option>
-					<option value="hr">Croatian</option>
-					<option value="nl">Dutch</option>
-					<option value="en">English</option>
-					<option value="en_US">English (US)</option>
-					<option value="en_GB">English (UK)</option>
-					<option value="es">Spanish</option>
 				</select>
 			</div>
 			<div class="manage-event-card-item">
