@@ -59,6 +59,10 @@ class WC_Facebookcommerce_Admin_Notice {
 	 * Displays the admin notice if not dismissed.
 	 */
 	public function show_notice() {
+		if ( strtotime( 'now' ) > strtotime( '2025-06-16 23:59:59' ) ) {
+			return;
+		}
+
 		if ( ! current_user_can( 'manage_woocommerce' ) ) {
 			return;
 		}
