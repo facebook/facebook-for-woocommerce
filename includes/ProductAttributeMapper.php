@@ -135,24 +135,18 @@ class ProductAttributeMapper {
 			return self::$attribute_name_mapping[$sanitized_name];
 		}
 		
-		// Try to find a match in standard fields
+		// Check for exact matches in standard fields
 		foreach (self::$standard_facebook_fields as $fb_field => $possible_matches) {
-			foreach ($possible_matches as $match) {
-				if (stripos($sanitized_name, $match) !== false) {
-					return $fb_field;
-				}
+			if (in_array($sanitized_name, $possible_matches, true)) {
+				return $fb_field;
 			}
 		}
 		
-		// Try to find a match in extended fields
-		foreach (self::$extended_facebook_fields as $fb_field => $possible_matches) {
-			foreach ($possible_matches as $match) {
-				if (stripos($sanitized_name, $match) !== false) {
-					return $fb_field;
-				}
-			}
+		// If no exact match in standard fields, check if the attribute is a standard field itself
+		if (isset(self::$standard_facebook_fields[$sanitized_name])) {
+			return $sanitized_name;
 		}
-
+		
 		return false;
 	}
 
@@ -193,9 +187,27 @@ class ProductAttributeMapper {
 			$value = $product->get_attribute($attribute_name);
 
 			if (!empty($value)) {
-				$mapped_field = self::check_attribute_mapping($attribute_name);
-
-				if ($mapped_field === false) {
+				// For the purposes of the unmapped attributes feature, we only consider an attribute
+				// as "mapped" if it's one of the standard Facebook fields. This prevents
+				// attributes like "weight" from being incorrectly categorized as mapped just because
+				// they're part of a compound field like "shipping_weight".
+				$clean_name = self::sanitize_attribute_name($attribute_name);
+				$is_standard_field = false;
+				
+				// First check for direct mapping in our attribute_name_mapping
+				if (isset(self::$attribute_name_mapping[$clean_name])) {
+					$is_standard_field = true;
+				} else {
+					// Then check if it exactly matches one of the standard field options
+					foreach (self::$standard_facebook_fields as $fb_field => $possible_matches) {
+						if (in_array($clean_name, $possible_matches, true)) {
+							$is_standard_field = true;
+							break;
+						}
+					}
+				}
+				
+				if (!$is_standard_field) {
 					$unmapped_attributes[] = array(
 						'name' => $attribute_name,
 						'value' => $value
@@ -248,147 +260,70 @@ class ProductAttributeMapper {
 		// PHASE 1: First look for EXACT matches by attribute name or label
 		foreach ($attributes as $attribute_name => $_) {
 			$value = $product->get_attribute($attribute_name);
-			if (empty($value)) continue;
 			
-			// Extract clean slug and attribute label
-			$clean_slug = self::sanitize_attribute_name($attribute_name);
-			$attribute_label = wc_attribute_label($attribute_name);
-			$clean_label_slug = self::sanitize_attribute_name($attribute_label);
-			
-			file_put_contents($log_file, "Checking attribute: {$attribute_name} with clean slug: {$clean_slug} and label: {$attribute_label}\n", FILE_APPEND);
-			
-			// Check for exact matches first - either by slug or by label
-			$exact_match = false;
-			$mapped_field = null;
-			
-			// Direct match on slug
-			if (isset($slug_to_fb_field[$clean_slug]) && !isset($processed_fb_fields[$slug_to_fb_field[$clean_slug]])) {
-				$mapped_field = $slug_to_fb_field[$clean_slug];
-				$exact_match = true;
-				file_put_contents($log_file, "EXACT MATCH ON SLUG: {$attribute_name} -> {$mapped_field}\n", FILE_APPEND);
-			}
-			// Direct match on label
-			else if (isset($slug_to_fb_field[$clean_label_slug]) && !isset($processed_fb_fields[$slug_to_fb_field[$clean_label_slug]])) {
-				$mapped_field = $slug_to_fb_field[$clean_label_slug];
-				$exact_match = true;
-				file_put_contents($log_file, "EXACT MATCH ON LABEL: {$attribute_label} -> {$mapped_field}\n", FILE_APPEND);
-			}
-			
-			if ($exact_match && $mapped_field) {
-				file_put_contents($log_file, "PROCESSING EXACT MATCH: {$attribute_name} -> {$mapped_field} with value: {$value}\n", FILE_APPEND);
+			if (!empty($value)) {
+				// Clean up attribute name for matching
+				$clean_name = self::sanitize_attribute_name($attribute_name);
 				
-				// Process standard field formats if needed
-				switch ($mapped_field) {
-					case 'gender':
-						$value = self::normalize_gender_value($value);
-						break;
-						
-					case 'age_group':
-						$value = self::normalize_age_group_value($value);
-						break;
-						
-					case 'condition':
-						$value = self::normalize_condition_value($value);
-						break;
+				// Check for exact match in our slug mapping
+				if (isset($slug_to_fb_field[$clean_name]) && !isset($processed_fb_fields[$slug_to_fb_field[$clean_name]])) {
+					$fb_field = $slug_to_fb_field[$clean_name];
+					$mapped_attributes[$fb_field] = $value;
+					$processed_fb_fields[$fb_field] = true;
 				}
-				
-				$mapped_attributes[$mapped_field] = $value;
-				$processed_fb_fields[$mapped_field] = true;
-			}
-		}
-
-		// PHASE 2: Only if we don't have exact matches, try fuzzy matching
-		foreach ($attributes as $attribute_name => $_) {
-			$value = $product->get_attribute($attribute_name);
-			if (empty($value)) continue;
-			
-			// Skip if we already have a value for this Facebook field from an exact match
-			$mapped_field = self::check_attribute_mapping($attribute_name);
-			if ($mapped_field !== false && isset($processed_fb_fields[$mapped_field])) {
-				file_put_contents($log_file, "SKIPPING FUZZY MATCH: {$attribute_name} -> {$mapped_field} as this field already has an exact match\n", FILE_APPEND);
-				continue;
-			}
-			
-			// Try fuzzy matching only if we don't have an exact match
-			if ($mapped_field !== false && !isset($processed_fb_fields[$mapped_field])) {
-				file_put_contents($log_file, "FUZZY MATCH: {$attribute_name} -> {$mapped_field} with value: {$value}\n", FILE_APPEND);
-				
-				// Process standard field formats if needed
-				switch ($mapped_field) {
-					case 'gender':
-						$value = self::normalize_gender_value($value);
-						break;
-						
-					case 'age_group':
-						$value = self::normalize_age_group_value($value);
-						break;
-						
-					case 'condition':
-						$value = self::normalize_condition_value($value);
-						break;
-				}
-				
-				$mapped_attributes[$mapped_field] = $value;
-				$processed_fb_fields[$mapped_field] = true;
-			}
-		}
-
-		// Validate default values, and only use ones that make sense for each field
-		// Only apply defaults for fields that don't have values from attributes
-		$valid_defaults = array();
-		foreach ($default_values as $attribute_key => $default_value) {
-			$sanitized_attribute = self::sanitize_attribute_name($attribute_key);
-			$mapped_field = self::check_attribute_mapping($attribute_key);
-			
-			if ($mapped_field !== false && !isset($processed_fb_fields[$mapped_field])) {
-				// Validate based on field type
-				$is_valid = true;
-				switch ($mapped_field) {
-					case 'gender':
-						// Only accept male, female, unisex for gender
-						$normalized = strtolower(trim($default_value));
-						if (!in_array($normalized, array('male', 'female', 'unisex'))) {
-							$is_valid = false;
-							file_put_contents($log_file, "INVALID DEFAULT: {$attribute_key} -> {$mapped_field} with value: {$default_value} (not a valid gender)\n", FILE_APPEND);
-						}
-						break;
-						
-					case 'age_group':
-						// Check that this is a valid age group value
-						$normalized = strtolower(trim($default_value));
-						if (!in_array($normalized, array('adult', 'all ages', 'teen', 'kids', 'toddler', 'infant', 'newborn'))) {
-							$is_valid = false;
-							file_put_contents($log_file, "INVALID DEFAULT: {$attribute_key} -> {$mapped_field} with value: {$default_value} (not a valid age group)\n", FILE_APPEND);
-						}
-						break;
-						
-					case 'brand':
-						// Brand shouldn't be an age group or gender value
-						$normalized = strtolower(trim($default_value));
-						if (in_array($normalized, array('male', 'female', 'unisex', 'adult', 'all ages', 'teen', 'kids', 'toddler', 'infant', 'newborn'))) {
-							$is_valid = false;
-							file_put_contents($log_file, "INVALID DEFAULT: {$attribute_key} -> {$mapped_field} with value: {$default_value} (looks like an age group or gender value)\n", FILE_APPEND);
-						}
-						break;
-				}
-				
-				if ($is_valid) {
-					$valid_defaults[$mapped_field] = $default_value;
-				}
-			}
-		}
-
-		// Now add any valid default values for fields that weren't found in the product
-		foreach ($valid_defaults as $mapped_field => $default_value) {
-			// Only apply default if the field is not already set from an attribute
-			if (!isset($mapped_attributes[$mapped_field])) {
-				$mapped_attributes[$mapped_field] = $default_value;
-				file_put_contents($log_file, "USING VALID DEFAULT VALUE: {$mapped_field} with value: {$default_value}\n", FILE_APPEND);
 			}
 		}
 		
-		file_put_contents($log_file, "Final mapped attributes: " . json_encode($mapped_attributes) . "\n\n", FILE_APPEND);
-
+		// PHASE 2: Now look for partial matches
+		foreach ($attributes as $attribute_name => $_) {
+			$value = $product->get_attribute($attribute_name);
+			
+			if (!empty($value) && !empty($attribute_name)) {
+				$mapped_field = self::check_attribute_mapping($attribute_name);
+				
+				// Skip if we've already processed this field or no mapping found
+				if ($mapped_field !== false && !isset($processed_fb_fields[$mapped_field])) {
+					// Normalize certain field values to conform to Facebook requirements
+					switch ($mapped_field) {
+						case 'gender':
+							$value = self::normalize_gender_value($value);
+							break;
+						case 'age_group':
+							$value = self::normalize_age_group_value($value);
+							break;
+						case 'condition':
+							$value = self::normalize_condition_value($value);
+							break;
+					}
+					
+					$mapped_attributes[$mapped_field] = $value;
+					$processed_fb_fields[$mapped_field] = true;
+				}
+			}
+		}
+		
+		// PHASE 3: For fields not found in product attributes, check post meta or use defaults
+		$std_fields = array('brand', 'color', 'size', 'pattern', 'material', 'gender', 'age_group', 'condition', 'mpn');
+		
+		foreach ($std_fields as $field) {
+			if (!isset($processed_fb_fields[$field])) {
+				// First check if there's a default value
+				if (isset($default_values[$field]) && !empty($default_values[$field])) {
+					$mapped_attributes[$field] = $default_values[$field];
+					$processed_fb_fields[$field] = true;
+				}
+				
+				// Check for alternative storage in dedicated meta fields
+				$meta_key = '_wc_facebook_enhanced_catalog_attributes_' . $field;
+				$meta_value = $product->get_meta($meta_key, true);
+				
+				if (!empty($meta_value)) {
+					$mapped_attributes[$field] = $meta_value;
+					$processed_fb_fields[$field] = true;
+				}
+			}
+		}
+		
 		return $mapped_attributes;
 	}
 
@@ -655,5 +590,70 @@ class ProductAttributeMapper {
 		}
 		
 		return $standard_attributes;
+	}
+
+	/**
+	 * Saves mapped attributes to product meta.
+	 *
+	 * @since 3.0.0
+	 *
+	 * @param WC_Product $product The WooCommerce product
+	 * @param array $mapped_attributes Array of mapped attributes to save (optional, if not provided will map attributes first)
+	 * @return array The mapped attributes that were saved
+	 */
+	public static function save_mapped_attributes(WC_Product $product, $mapped_attributes = null) {
+		if ($mapped_attributes === null) {
+			$mapped_attributes = self::get_mapped_attributes($product);
+		}
+		
+		$product_id = $product->get_id();
+		
+		// Save each mapped attribute to product meta
+		foreach ($mapped_attributes as $field_name => $value) {
+			switch ($field_name) {
+				case 'material':
+					update_post_meta($product_id, \WC_Facebook_Product::FB_MATERIAL, $value);
+					break;
+				case 'color':
+					update_post_meta($product_id, \WC_Facebook_Product::FB_COLOR, $value);
+					break;
+				case 'size':
+					update_post_meta($product_id, \WC_Facebook_Product::FB_SIZE, $value);
+					break;
+				case 'pattern':
+					update_post_meta($product_id, \WC_Facebook_Product::FB_PATTERN, $value);
+					break;
+				case 'brand':
+					update_post_meta($product_id, \WC_Facebook_Product::FB_BRAND, $value);
+					break;
+				case 'mpn':
+					update_post_meta($product_id, \WC_Facebook_Product::FB_MPN, $value);
+					break;
+				case 'age_group':
+					update_post_meta($product_id, \WC_Facebook_Product::FB_AGE_GROUP, $value);
+					break;
+				case 'gender':
+					update_post_meta($product_id, \WC_Facebook_Product::FB_GENDER, $value);
+					break;
+				case 'condition':
+					update_post_meta($product_id, \WC_Facebook_Product::FB_PRODUCT_CONDITION, $value);
+					break;
+			}
+		}
+		
+		return $mapped_attributes;
+	}
+	
+	/**
+	 * Gets mapped attributes and saves them to product meta in one operation.
+	 * 
+	 * @since 3.0.0
+	 *
+	 * @param WC_Product $product The WooCommerce product
+	 * @return array The mapped attributes that were saved
+	 */
+	public static function get_and_save_mapped_attributes(WC_Product $product) {
+		$mapped_attributes = self::get_mapped_attributes($product);
+		return self::save_mapped_attributes($product, $mapped_attributes);
 	}
 } 
