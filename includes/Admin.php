@@ -12,6 +12,7 @@ namespace WooCommerce\Facebook;
 
 use WooCommerce\Facebook\Admin\Enhanced_Catalog_Attribute_Fields;
 use WooCommerce\Facebook\Framework\Helper;
+use WooCommerce\Facebook\ProductAttributeMapper;
 use Automattic\WooCommerce\Utilities\OrderUtil;
 
 defined( 'ABSPATH' ) || exit;
@@ -1675,6 +1676,27 @@ class Admin {
 						select.synced-attribute + .select2-container .select2-selection__rendered {
 							color: rgba(44, 51, 56, .5) !important;
 						}
+						
+						/* Sync indicator styles */
+						.wc-attributes-icon {
+							position: relative;
+							display: inline-block;
+							margin-left: 8px;
+							vertical-align: middle;
+							cursor: help;
+						}
+						
+						.wc-attributes-icon:after {
+							content: '\f160';
+							font-family: dashicons;
+							display: inline-block;
+							width: 18px;
+							height: 18px;
+							vertical-align: text-bottom;
+							opacity: 0.8;
+							color: #2271b1;
+							font-size: 18px;
+						}
 					</style>
 				`);
 				
@@ -1686,7 +1708,7 @@ class Admin {
 					pattern: false,
 					brand: false,
 					mpn: false,
-					age_group: false,   // Add dropdown fields
+					age_group: false,
 					gender: false,
 					condition: false
 				};
@@ -1786,8 +1808,8 @@ class Admin {
 				// Function to sync Facebook attributes
 				function syncFacebookAttributes() {
 					// First clean up any stray elements that might exist globally
-					$('.multi-value-display + .sync-indicator').remove();
-					$('.woocommerce_options_panel').find('.multi-value-display, .sync-indicator').each(function() {
+					$('.multi-value-display + .wc-attributes-icon').remove();
+					$('.woocommerce_options_panel').find('.multi-value-display, .wc-attributes-icon').each(function() {
 						// Only remove elements that are duplicates (more than one per field)
 						var $parent = $(this).parent();
 						var $siblings = $parent.find('.' + $(this).attr('class'));
@@ -1807,7 +1829,6 @@ class Admin {
 						},
 						success: function(response) {
 							if (response.success) {
-								// Array of fields to potentially update
 								var fields = {
 									'material': '<?php echo esc_js( \WC_Facebook_Product::FB_MATERIAL ); ?>',
 									'color': '<?php echo esc_js( \WC_Facebook_Product::FB_COLOR ); ?>',
@@ -1873,12 +1894,68 @@ class Admin {
 													
 													// Always add the sync badge after the multi-value display
 													// Only if it doesn't already exist
-													if ($multiDisplay.next('.sync-indicator').length === 0) {
-														$multiDisplay.after('<span class="sync-indicator wc-attributes-icon" data-tip="Synced from the Attributes tab." style="margin-left: 4px;"><span class="sync-tooltip">Synced from the Attributes tab.</span></span>');
+													if ($multiDisplay.next('.wc-attributes-icon').length === 0) {
+														$multiDisplay.after('<span class="wc-attributes-icon" data-tip="Synced from product attributes"></span>');
 													}
 												} else {
 													// Update the existing multi-value display
 													$field.next('.multi-value-display').val(syncedValue);
+												}
+											// If this is a dropdown field like gender, age_group, or condition with a single mapped value,
+											// select that value in the dropdown and disable it
+											} else if (key === 'age_group' || key === 'gender' || key === 'condition') {
+												// First check if this dropdown has a corresponding value
+												var hasMatchingOption = false;
+												$field.find('option').each(function() {
+													if ($(this).val() === syncedValue || 
+														$(this).text().toLowerCase() === syncedValue.toLowerCase()) {
+														hasMatchingOption = true;
+														return false; // break loop
+													}
+												});
+												
+												if (hasMatchingOption) {
+													$field.val(syncedValue)
+														.prop('disabled', true)
+														.addClass('synced-attribute')
+														.css({
+															'cursor': 'not-allowed',
+															'background-color': '#f0f0f1',
+															'color': 'rgba(44, 51, 56, .5)'
+														});
+													
+													// Add the sync badge if it doesn't exist
+													if ($field.next('.wc-attributes-icon').length === 0) {
+														$field.after('<span class="sync-indicator wc-attributes-icon" data-tip="Synced from the Attributes tab." style="margin-left: 4px;"><span class="sync-tooltip">Synced from the Attributes tab.</span></span>');
+													}
+												} else if (isMultipleValues) {
+													// This is a multi-value field but not a dropdown
+													$field.prop('disabled', true).addClass('synced-attribute').hide();
+													
+													// Create a styled disabled field to show multiple values
+													var $multiDisplay = $('<input type="text" class="multi-value-display" disabled>')
+														.val(syncedValue)
+														.css({
+															'width': '50%',
+															'max-width': '100%',
+															'height': '34px',
+															'margin': '0',
+															'padding': '0 8px',
+															'background-color': '#f0f0f1',
+															'border': '1px solid #ddd',
+															'border-radius': '4px',
+															'box-sizing': 'border-box',
+															'font-size': '14px',
+															'line-height': '32px',
+															'color': 'rgba(44, 51, 56, .5)',
+															'display': 'inline-block',
+															'vertical-align': 'middle',
+															'cursor': 'not-allowed'
+														})
+														.insertAfter($field);
+													
+													// Add the sync badge
+													$multiDisplay.after('<span class="wc-attributes-icon" data-tip="Synced from product attributes"></span>');
 												}
 											} else if (isMultipleValues) {
 												// For non-dropdown multi-value fields
@@ -1893,7 +1970,7 @@ class Admin {
 													.show();
 													
 												// Add the sync badge if it doesn't exist
-												if ($field.next('.sync-indicator').length === 0) {
+												if ($field.next('.wc-attributes-icon').length === 0) {
 													$field.after('<span class="sync-indicator wc-attributes-icon" data-tip="Synced from the Attributes tab." style="margin-left: 4px;"><span class="sync-tooltip">Synced from the Attributes tab.</span></span>');
 												}
 											} else {
@@ -1909,7 +1986,7 @@ class Admin {
 													.show();
 													
 												// Add the sync badge if it doesn't exist
-												if ($field.next('.sync-indicator').length === 0) {
+												if ($field.next('.wc-attributes-icon').length === 0) {
 													$field.after('<span class="sync-indicator wc-attributes-icon" data-tip="Synced from the Attributes tab." style="margin-left: 4px;"><span class="sync-tooltip">Synced from the Attributes tab.</span></span>');
 												}
 											}
@@ -1926,7 +2003,7 @@ class Admin {
 												.show();
 											
 											// Add the sync badge if it doesn't exist
-											if ($field.next('.sync-indicator').length === 0) {
+											if ($field.next('.wc-attributes-icon').length === 0) {
 												$field.after('<span class="sync-indicator wc-attributes-icon" data-tip="Synced from the Attributes tab." style="margin-left: 4px;"><span class="sync-tooltip">Synced from the Attributes tab.</span></span>');
 											}
 										}
@@ -2182,167 +2259,58 @@ class Admin {
 		<?php
 	}
 
-	public function sync_product_attributes( $product_id ) {
-		$product = wc_get_product( $product_id );
-		if ( ! $product ) {
-			return [];
-		}
-
-		$attributes      = $product->get_attributes();
-		$facebook_fields = [];
-
-		$attribute_map = [
-			'material'  => \WC_Facebook_Product::FB_MATERIAL,
-			'color'     => \WC_Facebook_Product::FB_COLOR,
-			'colour'    => \WC_Facebook_Product::FB_COLOR, // Add support for British spelling
-			'size'      => \WC_Facebook_Product::FB_SIZE,
-			'pattern'   => \WC_Facebook_Product::FB_PATTERN,
-			'brand'     => \WC_Facebook_Product::FB_BRAND,
-			'mpn'       => \WC_Facebook_Product::FB_MPN,
-			'age_group' => \WC_Facebook_Product::FB_AGE_GROUP,
-			'gender'    => \WC_Facebook_Product::FB_GENDER,
-			'condition' => \WC_Facebook_Product::FB_PRODUCT_CONDITION,
-		];
-
-		// Dropdown-based attributes that should match specific values
-		$dropdown_attrs = [
-			'age_group' => [
-				\WC_Facebook_Product::AGE_GROUP_ADULT,
-				\WC_Facebook_Product::AGE_GROUP_ALL_AGES,
-				\WC_Facebook_Product::AGE_GROUP_TEEN,
-				\WC_Facebook_Product::AGE_GROUP_KIDS,
-				\WC_Facebook_Product::AGE_GROUP_TODDLER,
-				\WC_Facebook_Product::AGE_GROUP_INFANT,
-				\WC_Facebook_Product::AGE_GROUP_NEWBORN,
-			],
-			'gender'    => [
-				\WC_Facebook_Product::GENDER_MALE,
-				\WC_Facebook_Product::GENDER_FEMALE,
-				\WC_Facebook_Product::GENDER_UNISEX,
-			],
-			'condition' => [
-				\WC_Facebook_Product::CONDITION_NEW,
-				\WC_Facebook_Product::CONDITION_USED,
-				\WC_Facebook_Product::CONDITION_REFURBISHED,
-			],
-		];
-
-		// Process all attributes and track which have been processed
-		$processed_fields = [];
-
-		foreach ( $attributes as $attribute ) {
-			// Get all possible variations of the attribute name for matching
-			$raw_name             = $attribute->get_name();
-			$clean_name           = str_replace( 'pa_', '', $raw_name );
-			$normalized_attr_name = strtolower( $clean_name );
-			$attribute_label      = wc_attribute_label( $raw_name );
-			$normalized_label     = strtolower( $attribute_label );
-
-			// Create variations for more flexible matching
-			$name_variations = [
-				$normalized_attr_name,
-				$normalized_label,
-				str_replace( [ '_', ' ', '-' ], '', $normalized_attr_name ),
-				str_replace( [ '_', ' ', '-' ], '', $normalized_label ),
-			];
-
-			// Find matching Facebook field
-			$matched_facebook_field = null;
-			$field_name             = null;
-
-			// Look for matches in attribute map
-			foreach ( $attribute_map as $fb_attr_name => $fb_meta_key ) {
-				$fb_variations = [
-					$fb_attr_name,
-					str_replace( [ '_', ' ', '-' ], '', $fb_attr_name ),
-				];
-
-				// Check for any variation match
-				$matched = false;
-				foreach ( $name_variations as $name_var ) {
-					foreach ( $fb_variations as $fb_var ) {
-						if ( $name_var === $fb_var ) {
-							$matched                = true;
-							$matched_facebook_field = $fb_meta_key;
-							$field_name             = $fb_attr_name;
-							break 2;
-						}
-					}
-				}
-
-				if ( $matched ) {
-					break;
-				}
-			}
-
-			// Special case for color/colour conversion
-			if ( 'colour' === $field_name ) {
-				$field_name = 'color';
-			}
-
-			// If we found a match and haven't processed this field yet
-			if ( $matched_facebook_field && ! in_array( $field_name, $processed_fields ) ) {
-				$values = [];
-
-				if ( $attribute->is_taxonomy() ) {
-					$terms = $attribute->get_terms();
-					if ( $terms && ! is_wp_error( $terms ) ) {
-						$values = wp_list_pluck( $terms, 'name' );
-					}
-				} else {
-					$values = $attribute->get_options();
-				}
-
-				if ( ! empty( $values ) ) {
-					// For dropdown attributes, validate against allowed values
-					if ( array_key_exists( $field_name, $dropdown_attrs ) ) {
-						$valid_values = [];
-
-						foreach ( $values as $value ) {
-							$normalized_value = strtolower( trim( $value ) );
-
-							foreach ( $dropdown_attrs[ $field_name ] as $allowed_value ) {
-								if ( strtolower( $allowed_value ) === $normalized_value ) {
-									$valid_values[] = $allowed_value;
-									break;
-								}
-							}
-						}
-
-						if ( ! empty( $valid_values ) ) {
-							$joined_values                  = implode( ' | ', $valid_values );
-							$facebook_fields[ $field_name ] = $joined_values;
-							update_post_meta( $product_id, $matched_facebook_field, $joined_values );
-						} else {
-							delete_post_meta( $product_id, $matched_facebook_field );
-							$facebook_fields[ $field_name ] = '';
-						}
-					} else {
-						// Regular attributes - join multiple values with a pipe character and spaces
-						$joined_values                  = implode( ' | ', $values );
-						$facebook_fields[ $field_name ] = $joined_values;
-						update_post_meta( $product_id, $matched_facebook_field, $joined_values );
-					}
-				} else {
-					delete_post_meta( $product_id, $matched_facebook_field );
-					$facebook_fields[ $field_name ] = '';
-				}
-
-				// Mark this field as processed
-				$processed_fields[] = $field_name;
-			}
-		}
-
-		return $facebook_fields;
-	}
-
 	public function ajax_sync_facebook_attributes() {
 		check_ajax_referer( 'sync_facebook_attributes', 'nonce' );
 
 		$product_id = isset( $_POST['product_id'] ) ? intval( $_POST['product_id'] ) : 0;
 		if ( $product_id ) {
-			$synced_fields = $this->sync_product_attributes( $product_id );
-			wp_send_json_success( $synced_fields );
+			$product = wc_get_product( $product_id );
+			
+			if ( ! $product ) {
+				wp_send_json_error( 'Invalid product' );
+				return;
+			}
+			
+			// Use ProductAttributeMapper instead of the old sync_product_attributes method
+			$mapped_attributes = \WooCommerce\Facebook\ProductAttributeMapper::get_mapped_attributes( $product );
+			
+			// Prepare the response with mapped field => value pairs
+			$facebook_fields = array();
+			
+			foreach ( $mapped_attributes as $field_name => $value ) {
+				// Convert to the field names expected by the frontend
+				switch ( $field_name ) {
+					case 'material':
+						$facebook_fields['material'] = $value;
+						break;
+					case 'color':
+						$facebook_fields['color'] = $value;
+						break;
+					case 'size':
+						$facebook_fields['size'] = $value;
+						break;
+					case 'pattern':
+						$facebook_fields['pattern'] = $value;
+						break;
+					case 'brand':
+						$facebook_fields['brand'] = $value;
+						break;
+					case 'mpn':
+						$facebook_fields['mpn'] = $value;
+						break;
+					case 'age_group':
+						$facebook_fields['age_group'] = $value;
+						break;
+					case 'gender':
+						$facebook_fields['gender'] = $value;
+						break;
+					case 'condition':
+						$facebook_fields['condition'] = $value;
+						break;
+				}
+			}
+			
+			wp_send_json_success( $facebook_fields );
 		}
 		wp_send_json_error( 'Invalid product ID' );
 	}
