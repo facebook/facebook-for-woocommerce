@@ -1744,6 +1744,15 @@ class WC_Facebook_Product {
 		$product_data[ 'external_variant_id' ] = $this->get_id();
 		$product_data[ 'internal_label' ] = $this->get_internal_labels();
 		$product_data[ 'disabled_capabilities' ] = $this->get_disabled_capabilities();
+		$product_data['brand'] = Helper::str_truncate($this->get_fb_brand($is_api_call), 100);
+		$product_data['mpn'] = Helper::str_truncate($this->get_fb_mpn($is_api_call), 100);
+		$product_data['condition'] = $this->get_fb_condition();
+		$product_data['size'] = $this->get_fb_size($is_api_call);
+		$product_data['color'] = $this->get_fb_color($is_api_call);
+		$product_data['pattern'] = Helper::str_truncate($this->get_fb_pattern($is_api_call), 100);
+		$product_data['age_group'] = $this->get_fb_age_group();
+		$product_data['gender'] = $this->get_fb_gender();
+		$product_data['material'] = Helper::str_truncate($this->get_fb_material(), 100);
 
 		if ( $this->get_type() === 'variation' ) {
 			$parent_id      = $this->woo_product->get_parent_id();
@@ -1853,6 +1862,12 @@ class WC_Facebook_Product {
 			
 			// Check each mapped attribute
 			foreach ($attribute_mappings as $woo_attribute => $fb_attribute) {
+				// Skip if the natural attribute is already set
+				if (isset($product_data[$fb_attribute]) && !empty($product_data[$fb_attribute])) {
+					file_put_contents($log_file, "API call: Skipping mapped attribute {$woo_attribute} → {$fb_attribute} as natural value is already set\n", FILE_APPEND);
+					continue;
+				}
+
 				// Get the attribute value
 				$attribute_value = $this->woo_product->get_attribute($woo_attribute);
 				
@@ -1887,8 +1902,10 @@ class WC_Facebook_Product {
 					
 					file_put_contents($log_file, "API call: Set {$fb_attribute} with normalized value: " . json_encode($normalized_value) . "\n", FILE_APPEND);
 					
-					// Set the value in product data
-					$product_data[$fb_attribute] = $normalized_value;
+					// Set the value in product data only if it's not already set
+					if (!isset($product_data[$fb_attribute]) || empty($product_data[$fb_attribute])) {
+						$product_data[$fb_attribute] = $normalized_value;
+					}
 				}
 			}
 		}
