@@ -350,6 +350,15 @@ class Shops extends Abstract_Settings_Screen {
 				'default'  => 'no',
 			),
 
+			array(
+				'id'       => \WC_Facebookcommerce_Integration::SETTING_ENABLE_FACEBOOK_MANAGED_COUPONS,
+				'title'    => __( 'Enable facebook managed coupons', 'facebook-for-woocommerce' ),
+				'type'     => 'checkbox',
+				'desc'     => __( 'Allow facebook to create and manage facebook-specific coupons', 'facebook-for-woocommerce' ),
+				'desc_tip' => __( 'Allow facebook to create and manage facebook-specific coupons', 'facebook-for-woocommerce' ),
+				'default'  => \WC_Facebookcommerce_Integration::SETTING_ENABLE_FACEBOOK_MANAGED_COUPONS_DEFAULT_VALUE,
+			),
+
 			array( 'type' => 'sectionend' ),
 		);
 	}
