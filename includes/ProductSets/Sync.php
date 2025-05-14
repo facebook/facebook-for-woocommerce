@@ -1,5 +1,4 @@
 <?php
-// phpcs:ignoreFile
 /**
  * Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
  *
@@ -301,7 +300,8 @@ class Sync {
 	 *
 	 * @since 2.3.0
 	 *
-	 * @param int $product_set_term_id Product Set Term ID.
+	 * @param int    $product_set_term_id Product Set Term ID.
+	 * @param string $taxonomy            Taxonomy name.
 	 */
 	public function sync_remove_product_set( $product_set_term_id, $taxonomy ) {
 
@@ -381,7 +381,7 @@ class Sync {
 			implode( ', ', array_map( 'intval', $product_ids ) )
 		);
 
-		$variation_ids = $wpdb->get_results( $sql );
+		$variation_ids = $wpdb->get_results( $sql ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
 		if ( ! empty( $variation_ids ) ) {
 
 			// product_variations: add retailer id to the products filter
