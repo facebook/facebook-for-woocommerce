@@ -79,7 +79,7 @@ class Whatsapp_Webhook {
 	 * @internal
 	 */
 	private static function authenticate_request( $auth_key, $bisu_token ) {
-		$external_business_id = get_option( 'wc_facebook_external_business_id' );
+		$external_business_id = get_option( 'wc_facebook_business_manager_id' );
 
 		$expected_auth_key = 'sha1=' . (string) hash_hmac( 'sha1', $bisu_token, $external_business_id );
 
