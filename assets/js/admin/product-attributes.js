@@ -40,23 +40,24 @@ jQuery(document).ready(function($) {
         
         // Update the name attributes of other fields in the row
         if (attribute) {
-            $row.find('.fb-field-search').attr('name', 'wc_facebook_attribute_mapping[' + attribute + ']');
+            $row.find('.fb-field-search').attr('name', 'wc_facebook_field_mapping[' + attribute + ']');
             $row.find('.fb-default-value').attr('name', 'wc_facebook_attribute_default[' + attribute + ']');
         } else {
             // If no attribute is selected, use an empty name to prevent conflicts
-            $row.find('.fb-field-search').attr('name', 'wc_facebook_attribute_mapping[]');
+            $row.find('.fb-field-search').attr('name', 'wc_facebook_field_mapping[]');
             $row.find('.fb-default-value').attr('name', 'wc_facebook_attribute_default[]');
         }
     });
     
-    // Make sure we only have one event handler for add mapping button
-    $('.add-mapping-row').off('click').on('click', function() {
+    // Add new mapping row in edit mode
+    $('.add-new-mapping').on('click', function() {
         var $lastRow = $('#facebook-attribute-mapping-table tbody tr:last-child');
         var $newRow = $lastRow.clone();
         
         // Clear values
         $newRow.find('select').val('').trigger('change');
         $newRow.find('input[type="text"]').val('');
+        $newRow.find('input[type="hidden"]').remove();
         
         // Reinitialize select2
         if ($.fn.select2) {
@@ -70,8 +71,15 @@ jQuery(document).ready(function($) {
         initializeSelects();
     });
     
-    // Make sure we only have one event handler for remove buttons
-    $('#facebook-attribute-mapping-table').off('click', '.remove-mapping-row').on('click', '.remove-mapping-row', function(e) {
+    // Add new mapping from view mode - redirects to edit mode with a new empty row
+    $('.add-mapping-button').on('click', function(e) {
+        // Use the href attribute directly, which has been set with all necessary parameters
+        window.location.href = $(this).attr('href');
+        e.preventDefault();
+    });
+    
+    // Remove mapping row
+    $('#facebook-attribute-mapping-table').on('click', '.remove-mapping-row', function(e) {
         e.preventDefault();
         
         // Don't remove if it's the only row
@@ -81,6 +89,7 @@ jQuery(document).ready(function($) {
             // Clear values instead
             $(this).closest('tr').find('select').val('').trigger('change');
             $(this).closest('tr').find('input[type="text"]').val('');
+            $(this).closest('tr').find('input[type="hidden"]').remove();
         }
     });
 }); 
