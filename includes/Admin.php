@@ -2266,13 +2266,26 @@ class Admin {
 		if ( $product_id ) {
 			$product = wc_get_product( $product_id );
 			
+			// Debug logging
+			$log_file = WP_CONTENT_DIR . '/uploads/fb-product-debug.log';
+			file_put_contents($log_file, "---------------------------------------------\n", FILE_APPEND);
+			file_put_contents($log_file, "AJAX request for product attribute sync for product ID: {$product_id}\n", FILE_APPEND);
+			
 			if ( ! $product ) {
+				file_put_contents($log_file, "Error: Invalid product\n", FILE_APPEND);
 				wp_send_json_error( 'Invalid product' );
 				return;
 			}
 			
+			// Get stored custom mappings for diagnostic purposes
+			$custom_mappings = get_option('wc_facebook_custom_attribute_mappings', array());
+			file_put_contents($log_file, "Custom attribute mappings from database: " . json_encode($custom_mappings) . "\n", FILE_APPEND);
+			
 			// Use ProductAttributeMapper to get and save the mapped attributes
 			$mapped_attributes = \WooCommerce\Facebook\ProductAttributeMapper::get_and_save_mapped_attributes( $product );
+			
+			// Log the result for diagnostics
+			file_put_contents($log_file, "Final mapped attributes: " . json_encode($mapped_attributes) . "\n", FILE_APPEND);
 			
 			// Prepare the response with mapped field => value pairs
 			$facebook_fields = array();
@@ -2310,6 +2323,9 @@ class Admin {
 				}
 			}
 			
+			file_put_contents($log_file, "Sending response to frontend: " . json_encode($facebook_fields) . "\n", FILE_APPEND);
+			file_put_contents($log_file, "---------------------------------------------\n", FILE_APPEND);
+			
 			wp_send_json_success( $facebook_fields );
 		}
 		wp_send_json_error( 'Invalid product ID' );
@@ -2332,7 +2348,7 @@ class Admin {
 		// Check if clearing mappings was requested
 		if ( isset( $_GET['clear_fb_mappings'] ) && '1' === $_GET['clear_fb_mappings'] && current_user_can( 'manage_woocommerce' ) ) {
 			// Clear the mappings
-			delete_option( 'wc_facebook_attribute_mappings' );
+			delete_option( 'wc_facebook_custom_attribute_mappings' );
 			
 			// Log the action
 			$log_file = WP_CONTENT_DIR . '/uploads/fb-product-debug.log';
@@ -2393,7 +2409,7 @@ class Admin {
 			 isset( $_GET['clear_fb_mappings'] ) && '1' === $_GET['clear_fb_mappings'] && 
 			 current_user_can( 'manage_woocommerce' ) ) {
 			// Clear the mappings
-			delete_option( 'wc_facebook_attribute_mappings' );
+			delete_option( 'wc_facebook_custom_attribute_mappings' );
 			
 			// Log the action
 			$log_file = WP_CONTENT_DIR . '/uploads/fb-product-debug.log';
