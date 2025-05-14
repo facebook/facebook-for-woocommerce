@@ -87,7 +87,7 @@ class WC_Facebookcommerce_Admin_Notice {
 					wp_kses(
 						// translators: %s: URL to the WhatsApp order tracking testing program sign-up page.
 						__(
-							"WhatsApp order tracking is now available for testing. <a href='%s'>Sign up our testing program</a> and get early access now!",
+							"WhatsApp order tracking is now available for testing. <a href='%s'>Sign up for our testing program</a> and get early access now!",
 							'facebook-for-woocommerce'
 						),
 						array(
