@@ -249,35 +249,9 @@ class Background extends BackgroundJobHandler {
 	 */
 	private function send_item_updates( array $requests ): array {
 		$facebook_catalog_id = facebook_for_woocommerce()->get_integration()->get_product_catalog_id();
-		
-		// DEBUG MODE: Log the product data instead of sending to Facebook API
-		if (!function_exists('facebook_for_woocommerce')) {
-			return [];
-		}
-
-		// Log the product data that would be sent to Facebook
-		facebook_for_woocommerce()->log("=== START PRODUCT DATA DEBUG LOG ===");
-		facebook_for_woocommerce()->log("Products being prepared for Facebook sync:");
-		
-		foreach ($requests as $index => $request) {
-			facebook_for_woocommerce()->log("Product #{$index}:");
-			facebook_for_woocommerce()->log("Method: " . $request['method']);
-			facebook_for_woocommerce()->log("Data: " . json_encode($request['data'], JSON_PRETTY_PRINT));
-			facebook_for_woocommerce()->log("---");
-		}
-		
-		facebook_for_woocommerce()->log("=== END PRODUCT DATA DEBUG LOG ===");
-		
-		// Return empty array of handles as if we succeeded
-		return [];
-		
-		/* Original code is commented out for debugging:
 		$response            = facebook_for_woocommerce()->get_api()->send_item_updates( $facebook_catalog_id, $requests );
-		$batch_process_id    = $response->get_batch_process_id();
-		$batch_estimated_time = $response->get_batch_estimated_time();
-		$handle              = array( 'process_id' => $batch_process_id, 'estimated_time' => $batch_estimated_time );
-		facebook_for_woocommerce()->log( 'Facebook catalog batch job created with ID: ' . $batch_process_id . ' Time: ' . $batch_estimated_time );
-		return array( $handle );
-		*/
+		$response_handles    = $response->handles;
+		$handles             = ( isset( $response_handles ) && is_array( $response_handles ) ) ? $response_handles : array();
+		return $handles;
 	}
 }
