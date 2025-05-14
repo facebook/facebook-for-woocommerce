@@ -2117,7 +2117,9 @@ class Admin {
 						// Reset select2 if applicable
 						if ($select.hasClass('wc-enhanced-select') || $select.hasClass('select2-hidden-accessible')) {
 							try {
-								$select.select2('val', '');
+								// Use .empty().trigger('change') instead of setting val('')
+								// This fixes compatibility with WooCommerce Product Bundles
+								$select.empty().trigger('change');
 							} catch (e) {
 								// Ignore select2 errors
 							}
