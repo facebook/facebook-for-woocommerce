@@ -433,263 +433,411 @@ class Product_Attributes extends Abstract_Settings_Screen {
 		$current_mappings = $this->get_saved_mappings();
 		$saved_defaults = $this->get_saved_defaults();
 		
-		// Get the last synchronization time
-		$last_sync = get_option('wc_facebook_last_attribute_sync', '');
-		if (empty($last_sync)) {
-			$last_sync = current_time('mysql');
-		}
-		$last_sync_formatted = date_i18n(get_option('date_format') . ' ' . get_option('time_format'), strtotime($last_sync));
+		
+		// Check if we're in edit mode (either via GET parameter or when there are no mappings)
+		$edit_mode = isset($_GET['edit']) || empty($current_mappings);
+		
+		// Check for success message from redirect
+		$show_success = isset($_GET['success']) && $_GET['success'] === '1';
 		
 		?>
-		<div class="wrap woocommerce facebook-woo-attributes-screen">
-			<h1><?php esc_html_e('Facebook Product Attributes', 'facebook-for-woocommerce'); ?></h1>
+		<div class="wrap woocommerce">
+			<h2><?php esc_html_e('Map custom WooCommerce attributes to Meta', 'facebook-for-woocommerce'); ?></h2>
+			<p><?php esc_html_e('Map your WooCommerce product attributes to Meta catalog attributes. This helps Meta properly display your products with the correct properties like size, color, gender, etc.', 'facebook-for-woocommerce'); ?> <a href="<?php echo esc_url(admin_url('edit.php?post_type=product&page=product_attributes')); ?>"><?php esc_html_e('Manage WooCommerce attributes', 'facebook-for-woocommerce'); ?></a>.</p>
 			
-			<p style="font-size: 15px; line-height: 1.6; margin-bottom: 30px; max-width: 900px;"><?php esc_html_e('Map your WooCommerce product attributes to Facebook catalog attributes. This helps Facebook properly display your products with the correct properties like size, color, gender, etc.', 'facebook-for-woocommerce'); ?></p>
+			<?php if ($show_success): ?>
+			<div class="notice notice-success is-dismissible">
+				<p><?php esc_html_e('Product attribute mappings saved successfully.', 'facebook-for-woocommerce'); ?></p>
+			</div>
+			<script type="text/javascript">
+				jQuery(document).ready(function($) {
+					// Remove success parameter from URL to prevent showing the message on page refresh
+					if (window.history && window.history.replaceState) {
+						var url = window.location.href;
+						url = url.replace(/[?&]success=1/, '');
+						window.history.replaceState({}, document.title, url);
+					}
+				});
+			</script>
+			<?php endif; ?>
 			
-			<div style="display: flex; gap: 30px; margin-top: 30px;">
-				<!-- Left column: Form to add new attribute mapping -->
-				<div style="flex: 1; background: #fff; padding: 30px; border: 1px solid #ddd; border-radius: 4px;">
-					<h2 style="margin-top: 0; padding-bottom: 15px; border-bottom: 1px solid #eee; margin-bottom: 25px;"><?php esc_html_e('Add new Facebook Product Attribute Mapping', 'facebook-for-woocommerce'); ?></h2>
+			<?php if ($edit_mode): ?>
+				<!-- Edit Mode -->
+				<form method="post" id="attribute-mapping-form" action="">
+					<?php wp_nonce_field('wc_facebook_save_attribute_mappings', 'save_attribute_mappings_nonce'); ?>
 					
-					<form method="post" id="add-attribute-form" action=""><?php // empty action will submit to the current page ?>
-						<div class="form-field">
-							<label for="wc-facebook-attribute"><?php esc_html_e('WooCommerce Attribute', 'facebook-for-woocommerce'); ?></label>
-							<select id="wc-facebook-attribute" name="wc_facebook_attribute" class="wc-enhanced-select" style="width: 100%; min-height: 38px;">
-								<option value=""><?php esc_html_e('Select a WooCommerce attribute...', 'facebook-for-woocommerce'); ?></option>
-								<?php foreach ($product_attributes as $attribute_id => $attribute_label) : ?>
-									<option value="<?php echo esc_attr($attribute_id); ?>"><?php echo esc_html($attribute_label); ?></option>
-								<?php endforeach; ?>
-							</select>
-							<p class="description"><?php esc_html_e('Select the WooCommerce product attribute to map.', 'facebook-for-woocommerce'); ?></p>
-						</div>
-						
-						<div class="form-field">
-							<label for="wc-facebook-field"><?php esc_html_e('Facebook Attribute', 'facebook-for-woocommerce'); ?></label>
-							<select id="wc-facebook-field" name="wc_facebook_field" class="wc-enhanced-select" style="width: 100%; min-height: 38px;">
-								<option value=""><?php esc_html_e('Select a Facebook attribute...', 'facebook-for-woocommerce'); ?></option>
-								<?php foreach ($facebook_fields as $field_id => $field_label) : ?>
-									<option value="<?php echo esc_attr($field_id); ?>"><?php echo esc_html($field_label); ?></option>
-								<?php endforeach; ?>
-							</select>
-							<p class="description"><?php esc_html_e('Select the Facebook catalog attribute this maps to.', 'facebook-for-woocommerce'); ?></p>
-						</div>
-						
-						<div class="form-field">
-							<label for="wc-facebook-default"><?php esc_html_e('Default Value', 'facebook-for-woocommerce'); ?></label>
-							<input type="text" id="wc-facebook-default" name="wc_facebook_default" class="regular-text" style="min-height: 38px; padding: 0 12px; width: 100%;" />
-							<p class="description"><?php esc_html_e('Optional default value to use when the attribute is not set.', 'facebook-for-woocommerce'); ?></p>
-							
-							<!-- Dropdown fields for specific attributes - hidden by default -->
-							<div id="condition-dropdown" style="display: none; margin-top: 15px;">
-								<select id="wc-facebook-default-condition" name="wc_facebook_default_condition" class="wc-enhanced-select" style="width: 100%; min-height: 38px;">
-									<option value=""><?php esc_html_e('Select condition...', 'facebook-for-woocommerce'); ?></option>
-									<option value="new"><?php esc_html_e('New', 'facebook-for-woocommerce'); ?></option>
-									<option value="used"><?php esc_html_e('Used', 'facebook-for-woocommerce'); ?></option>
-									<option value="refurbished"><?php esc_html_e('Refurbished', 'facebook-for-woocommerce'); ?></option>
-								</select>
-							</div>
-							
-							<div id="gender-dropdown" style="display: none; margin-top: 15px;">
-								<select id="wc-facebook-default-gender" name="wc_facebook_default_gender" class="wc-enhanced-select" style="width: 100%; min-height: 38px;">
-									<option value=""><?php esc_html_e('Select gender...', 'facebook-for-woocommerce'); ?></option>
-									<option value="male"><?php esc_html_e('Male', 'facebook-for-woocommerce'); ?></option>
-									<option value="female"><?php esc_html_e('Female', 'facebook-for-woocommerce'); ?></option>
-									<option value="unisex"><?php esc_html_e('Unisex', 'facebook-for-woocommerce'); ?></option>
-								</select>
-							</div>
-							
-							<div id="age-group-dropdown" style="display: none; margin-top: 15px;">
-								<select id="wc-facebook-default-age-group" name="wc_facebook_default_age_group" class="wc-enhanced-select" style="width: 100%; min-height: 38px;">
-									<option value=""><?php esc_html_e('Select age group...', 'facebook-for-woocommerce'); ?></option>
-									<option value="adult"><?php esc_html_e('Adult', 'facebook-for-woocommerce'); ?></option>
-									<option value="all ages"><?php esc_html_e('All Ages', 'facebook-for-woocommerce'); ?></option>
-									<option value="teen"><?php esc_html_e('Teen', 'facebook-for-woocommerce'); ?></option>
-									<option value="kids"><?php esc_html_e('Kids', 'facebook-for-woocommerce'); ?></option>
-									<option value="toddler"><?php esc_html_e('Toddler', 'facebook-for-woocommerce'); ?></option>
-									<option value="infant"><?php esc_html_e('Infant', 'facebook-for-woocommerce'); ?></option>
-									<option value="newborn"><?php esc_html_e('Newborn', 'facebook-for-woocommerce'); ?></option>
-								</select>
-							</div>
-							
-							<div id="availability-dropdown" style="display: none; margin-top: 15px;">
-								<select id="wc-facebook-default-availability" name="wc_facebook_default_availability" class="wc-enhanced-select" style="width: 100%; min-height: 38px;">
-									<option value=""><?php esc_html_e('Select availability...', 'facebook-for-woocommerce'); ?></option>
-									<option value="in stock"><?php esc_html_e('In Stock', 'facebook-for-woocommerce'); ?></option>
-									<option value="out of stock"><?php esc_html_e('Out of Stock', 'facebook-for-woocommerce'); ?></option>
-								</select>
-							</div>
-						</div>
-						
-						<p class="submit">
-							<button type="submit" name="add_attribute_mapping" class="button button-primary" style="padding: 8px 20px; min-height: 38px; font-size: 14px;">
-								<?php esc_html_e('Add Attribute Mapping', 'facebook-for-woocommerce'); ?>
-							</button>
-						</p>
-						
-						<?php wp_nonce_field('wc_facebook_add_attribute_mapping', 'add_attribute_mapping_nonce'); ?>
-					</form>
-				</div>
-				
-				<!-- Right column: Table of existing mappings -->
-				<div style="flex: 1; background: #fff; padding: 30px; border: 1px solid #ddd; border-radius: 4px;">
-					<form method="post" id="existing-mappings-form" action=""><?php // empty action will submit to the current page ?>
-						<p style="margin-bottom: 15px; font-style: italic; color: #666; font-size: 13px;"><?php esc_html_e('To change a default value, delete the mapping and create a new one with your preferred default.', 'facebook-for-woocommerce'); ?></p>
-						<table class="widefat striped" id="facebook-attribute-mapping-table">
-							<thead>
-								<tr>
-									<th class="check-column"><input type="checkbox" id="select-all-mappings" /></th>
-									<th class="name-column"><?php esc_html_e('WooCommerce Attribute', 'facebook-for-woocommerce'); ?> <?php echo wc_help_tip(__('The product attribute from your store', 'facebook-for-woocommerce')); ?></th>
-									<th class="desc-column"><?php esc_html_e('Facebook Attribute', 'facebook-for-woocommerce'); ?> <?php echo wc_help_tip(__('The corresponding Facebook catalog field', 'facebook-for-woocommerce')); ?></th>
-									<th class="slug-column"><?php esc_html_e('Default', 'facebook-for-woocommerce'); ?> <?php echo wc_help_tip(__('Default value used when attribute is not available', 'facebook-for-woocommerce')); ?></th>
+					<table class="widefat" id="facebook-attribute-mapping-table">
+						<thead>
+							<tr>
+								<th><?php esc_html_e('WooCommerce Attribute', 'facebook-for-woocommerce'); ?> <?php echo wc_help_tip(__('The product attribute from your store', 'facebook-for-woocommerce')); ?></th>
+								<th><?php esc_html_e('Meta Attribute', 'facebook-for-woocommerce'); ?> <?php echo wc_help_tip(__('The corresponding Meta catalog field', 'facebook-for-woocommerce')); ?></th>
+								<th><?php esc_html_e('Default Value', 'facebook-for-woocommerce'); ?> <?php echo wc_help_tip(__('Optional default value when attribute is not set', 'facebook-for-woocommerce')); ?></th>
+								<th></th>
+							</tr>
+						</thead>
+						<tbody>
+							<?php if (empty($current_mappings)) : ?>
+								<tr class="fb-attribute-row">
+									<td>
+										<select name="wc_facebook_attribute_mapping[]" class="wc-attribute-search" data-placeholder="<?php esc_attr_e('Select attribute', 'facebook-for-woocommerce'); ?>">
+											<option value=""><?php esc_html_e('Select attribute', 'facebook-for-woocommerce'); ?></option>
+											
+											<?php foreach ($product_attributes as $attribute_id => $attribute_label) : ?>
+												<option value="<?php echo esc_attr($attribute_id); ?>">
+													<?php echo esc_html($attribute_label); ?>
+												</option>
+											<?php endforeach; ?>
+										</select>
+									</td>
+									<td>
+										<select name="wc_facebook_field_mapping[]" class="fb-field-search" data-placeholder="<?php esc_attr_e('Select attribute', 'facebook-for-woocommerce'); ?>">
+											<option value=""><?php esc_html_e('Select attribute', 'facebook-for-woocommerce'); ?></option>
+											
+											<?php foreach ($facebook_fields as $field_id => $field_label) : ?>
+												<option value="<?php echo esc_attr($field_id); ?>">
+													<?php echo esc_html($field_label); ?>
+												</option>
+											<?php endforeach; ?>
+										</select>
+									</td>
+									<td>
+										<input type="text" name="wc_facebook_attribute_default[]" class="fb-default-value" placeholder="<?php esc_attr_e('Optional', 'facebook-for-woocommerce'); ?>">
+									</td>
+									<td>
+										<a href="#" class="remove-mapping-row" style="color: #a00;"><?php esc_html_e('Remove mapping', 'facebook-for-woocommerce'); ?></a>
+									</td>
 								</tr>
-							</thead>
-							<tbody>
-								<?php if (empty($current_mappings)) : ?>
-									<tr class="no-items">
-										<td class="colspanchange" colspan="4"><?php esc_html_e('No Facebook Product Attributes found.', 'facebook-for-woocommerce'); ?></td>
-									</tr>
-								<?php else : ?>
-									<?php 
-									// Display existing mappings
-									foreach ($current_mappings as $wc_attribute => $fb_field) {
-										$default_value = isset($saved_defaults[$wc_attribute]) ? $saved_defaults[$wc_attribute] : '';
-										$wc_attribute_label = isset($product_attributes[$wc_attribute]) ? $product_attributes[$wc_attribute] : $wc_attribute;
-										$fb_field_label = isset($facebook_fields[$fb_field]) ? $facebook_fields[$fb_field] : $fb_field;
-										?>
-										<tr>
-											<th scope="row" class="check-column">
-												<input type="checkbox" name="selected_mappings[]" value="<?php echo esc_attr($wc_attribute); ?>" />
-											</th>
-											<td class="name-column">
-												<?php echo esc_html($wc_attribute_label); ?>
-											</td>
-											<td class="desc-column">
-												<?php echo esc_html($fb_field_label); ?>
-											</td>
-											<td class="slug-column">
-												<?php if ($fb_field === 'condition'): ?>
-													<?php $this->render_condition_dropdown($wc_attribute, $default_value); ?>
-												<?php elseif ($fb_field === 'gender'): ?>
-													<?php $this->render_gender_dropdown($wc_attribute, $default_value); ?>
-												<?php elseif ($fb_field === 'age_group'): ?>
-													<?php $this->render_age_group_dropdown($wc_attribute, $default_value); ?>
-												<?php elseif ($fb_field === 'availability'): ?>
-													<?php $this->render_availability_dropdown($wc_attribute, $default_value); ?>
-												<?php else: ?>
-													<?php if (!empty($default_value)): ?>
-														<div class="static-value-display"><?php echo esc_html($default_value); ?></div>
-													<?php else: ?>
-														<div class="static-value-display static-value-empty">—</div>
-													<?php endif; ?>
-													<input type="hidden" name="wc_facebook_attribute_default[<?php echo esc_attr($wc_attribute); ?>]" value="<?php echo esc_attr($default_value); ?>">
-												<?php endif; ?>
-											</td>
-										</tr>
-										<?php
-									}
+							<?php else : ?>
+								<?php foreach ($current_mappings as $wc_attribute => $fb_field) : 
+									$default_value = isset($saved_defaults[$wc_attribute]) ? $saved_defaults[$wc_attribute] : '';
 									?>
-								<?php endif; ?>
-							</tbody>
-							<tfoot>
-								<?php if (!empty($current_mappings)) : ?>
-									<tr>
-										<td colspan="4">
-											<div class="bulkactions">
-												<button type="submit" name="delete_mappings" class="button button-secondary delete-mappings" style="padding: 8px 16px; min-height: 38px;">
-													<?php esc_html_e('Delete Selected', 'facebook-for-woocommerce'); ?>
-												</button>
-												<?php if (!empty($last_sync)) : ?>
-													<span class="last-sync-info" style="float: right; line-height: 38px; font-style: italic; color: #888;">
-														<?php printf(esc_html__('Last synchronized: %s', 'facebook-for-woocommerce'), $last_sync_formatted); ?>
-													</span>
-												<?php endif; ?>
-											</div>
+									<tr class="fb-attribute-row">
+										<td>
+											<select name="wc_facebook_attribute_mapping[<?php echo esc_attr($wc_attribute); ?>]" class="wc-attribute-search" data-placeholder="<?php esc_attr_e('Select attribute', 'facebook-for-woocommerce'); ?>">
+												<option value=""><?php esc_html_e('Select attribute', 'facebook-for-woocommerce'); ?></option>
+												
+												<?php foreach ($product_attributes as $attribute_id => $attribute_label) : ?>
+													<option value="<?php echo esc_attr($attribute_id); ?>" <?php selected($attribute_id, $wc_attribute); ?>>
+														<?php echo esc_html($attribute_label); ?>
+													</option>
+												<?php endforeach; ?>
+											</select>
+										</td>
+										<td>
+											<select name="wc_facebook_field_mapping[<?php echo esc_attr($wc_attribute); ?>]" class="fb-field-search" data-placeholder="<?php esc_attr_e('Select attribute', 'facebook-for-woocommerce'); ?>">
+												<option value=""><?php esc_html_e('Select attribute', 'facebook-for-woocommerce'); ?></option>
+												
+												<?php foreach ($facebook_fields as $field_id => $field_label) : ?>
+													<option value="<?php echo esc_attr($field_id); ?>" <?php selected($field_id, $fb_field); ?>>
+														<?php echo esc_html($field_label); ?>
+													</option>
+												<?php endforeach; ?>
+											</select>
+										</td>
+										<td>
+											<input type="text" name="wc_facebook_attribute_default[<?php echo esc_attr($wc_attribute); ?>]" class="fb-default-value" value="<?php echo esc_attr($default_value); ?>" placeholder="<?php esc_attr_e('Optional', 'facebook-for-woocommerce'); ?>">
+										</td>
+										<td>
+											<a href="#" class="remove-mapping-row" style="color: #a00;"><?php esc_html_e('Remove mapping', 'facebook-for-woocommerce'); ?></a>
 										</td>
 									</tr>
-								<?php endif; ?>
-							</tfoot>
-						</table>
-						
-						<input type="hidden" name="screen_id" value="<?php echo esc_attr($this->get_id()); ?>">
-						<?php wp_nonce_field('wc_facebook_delete_attribute_mappings', 'delete_mappings_nonce'); ?>
-					</form>
+								<?php endforeach; ?>
+								
+								<!-- Always add an empty row for new mappings -->
+								<?php $unique_index = time(); ?>
+								<tr class="fb-attribute-row">
+									<td>
+										<select name="wc_facebook_attribute_mapping[<?php echo $unique_index; ?>]" class="wc-attribute-search" data-placeholder="<?php esc_attr_e('Select attribute', 'facebook-for-woocommerce'); ?>">
+											<option value=""><?php esc_html_e('Select attribute', 'facebook-for-woocommerce'); ?></option>
+											
+											<?php foreach ($product_attributes as $attribute_id => $attribute_label) : ?>
+												<option value="<?php echo esc_attr($attribute_id); ?>">
+													<?php echo esc_html($attribute_label); ?>
+												</option>
+											<?php endforeach; ?>
+										</select>
+									</td>
+									<td>
+										<select name="wc_facebook_field_mapping[<?php echo $unique_index; ?>]" class="fb-field-search" data-placeholder="<?php esc_attr_e('Select attribute', 'facebook-for-woocommerce'); ?>">
+											<option value=""><?php esc_html_e('Select attribute', 'facebook-for-woocommerce'); ?></option>
+											
+											<?php foreach ($facebook_fields as $field_id => $field_label) : ?>
+												<option value="<?php echo esc_attr($field_id); ?>">
+													<?php echo esc_html($field_label); ?>
+												</option>
+											<?php endforeach; ?>
+										</select>
+									</td>
+									<td>
+										<input type="text" name="wc_facebook_attribute_default[<?php echo $unique_index; ?>]" class="fb-default-value" placeholder="<?php esc_attr_e('Optional', 'facebook-for-woocommerce'); ?>">
+									</td>
+									<td>
+										<a href="#" class="remove-mapping-row" style="color: #a00;"><?php esc_html_e('Remove mapping', 'facebook-for-woocommerce'); ?></a>
+									</td>
+								</tr>
+							<?php endif; ?>
+						</tbody>
+					</table>
+					
+					<p>
+						<button type="button" class="button add-new-mapping" style="margin-top: 15px;"><?php esc_html_e('Add new mapping', 'facebook-for-woocommerce'); ?></button>
+					</p>
+					
+					<p class="submit">
+						<button type="submit" name="save_attribute_mappings" class="button button-primary" id="btn_save_fb_settings">
+							<?php esc_html_e('Save Changes', 'facebook-for-woocommerce'); ?>
+						</button>
+						<?php if (!empty($current_mappings)): ?>
+						<a href="<?php echo esc_url(remove_query_arg('edit')); ?>" class="button" style="margin-left: 10px;"><?php esc_html_e('Cancel', 'facebook-for-woocommerce'); ?></a>
+						<?php endif; ?>
+					</p>
+					
+				</form>
+			<?php else: ?>
+				<!-- View Mode -->
+				<div id="attribute-mappings-view">
+					<table class="widefat" id="facebook-attribute-mapping-table-view">
+						<thead>
+							<tr>
+								<th><?php esc_html_e('WooCommerce Attribute', 'facebook-for-woocommerce'); ?></th>
+								<th><?php esc_html_e('Meta Attribute', 'facebook-for-woocommerce'); ?></th>
+								<th><?php esc_html_e('Default Value', 'facebook-for-woocommerce'); ?></th>
+							</tr>
+						</thead>
+						<tbody>
+							<?php if (empty($current_mappings)) : ?>
+								<tr>
+									<td colspan="3" style="text-align: center; padding: 20px;"><?php esc_html_e('No attribute mappings configured.', 'facebook-for-woocommerce'); ?></td>
+								</tr>
+							<?php else : ?>
+								<?php foreach ($current_mappings as $wc_attribute => $fb_field) : 
+									$default_value = isset($saved_defaults[$wc_attribute]) ? $saved_defaults[$wc_attribute] : '';
+									$wc_attribute_label = isset($product_attributes[$wc_attribute]) ? $product_attributes[$wc_attribute] : $wc_attribute;
+									$fb_field_label = isset($facebook_fields[$fb_field]) ? $facebook_fields[$fb_field] : $fb_field;
+									?>
+									<tr>
+										<td><?php echo esc_html($wc_attribute_label); ?></td>
+										<td><?php echo esc_html($fb_field_label); ?></td>
+										<td><?php echo !empty($default_value) ? esc_html($default_value) : '<em>' . esc_html__('None', 'facebook-for-woocommerce') . '</em>'; ?></td>
+									</tr>
+								<?php endforeach; ?>
+							<?php endif; ?>
+						</tbody>
+					</table>
+					
+					<p style="margin-top: 15px;">
+						<a href="<?php echo esc_url(add_query_arg('edit', '1', remove_query_arg('success'))); ?>" class="button button-primary"><?php esc_html_e('Edit Mappings', 'facebook-for-woocommerce'); ?></a>
+					</p>
+					
 				</div>
+			<?php endif; ?>
+			
+			<h3 style="margin-top: 30px;"><?php esc_html_e('Troubleshooting', 'facebook-for-woocommerce'); ?></h3>
+			<div id="troubleshooting-section" style="margin-top: 10px; background: #fff; padding: 15px; border: 1px solid #ddd; border-radius: 4px;">
+				<p><?php esc_html_e('If your products are not displaying correctly in Meta:', 'facebook-for-woocommerce'); ?></p>
+				<ul style="list-style-type: disc; margin-left: 20px;">
+					<li><?php esc_html_e('Make sure your product attributes are correctly mapped to Meta catalog fields.', 'facebook-for-woocommerce'); ?></li>
+					<li><?php esc_html_e('Check that required attributes like gender, size, and color are properly configured for relevant products.', 'facebook-for-woocommerce'); ?></li>
+					<li><?php esc_html_e('After changing mappings, products will be updated during the next sync with Meta.', 'facebook-for-woocommerce'); ?></li>
+					<li><a href="https://www.facebook.com/business/help/2302017289821154" target="_blank"><?php esc_html_e('Learn more about Meta catalog attributes', 'facebook-for-woocommerce'); ?></a></li>
+				</ul>
 			</div>
 		</div>
+		
+		<style>
+			#facebook-attribute-mapping-table,
+			#facebook-attribute-mapping-table-view {
+				border-collapse: collapse;
+				margin-top: 10px;
+				width: 100%;
+				border: 1px solid #e5e5e5;
+			}
+			
+			#facebook-attribute-mapping-table th,
+			#facebook-attribute-mapping-table-view th {
+				font-weight: 600;
+				padding: 12px 15px;
+				text-align: left;
+				background-color: #f8f8f8;
+				border-bottom: 1px solid #ddd;
+				font-size: 14px;
+			}
+			
+			#facebook-attribute-mapping-table td,
+			#facebook-attribute-mapping-table-view td {
+				padding: 15px;
+				vertical-align: middle;
+				border-bottom: 1px solid #eee;
+				font-size: 14px;
+				line-height: 1.5;
+			}
+			
+			#facebook-attribute-mapping-table-view tr:hover {
+				background-color: #f5f5f5;
+			}
+			
+			.fb-default-value {
+				width: 100%;
+				min-height: 30px;
+				padding: 0 8px;
+			}
+		</style>
 		
 		<script type="text/javascript">
 			jQuery(document).ready(function($) {
 				// Initialize enhanced select boxes
-				if ($.fn.select2) {
-					$('.wc-enhanced-select').select2({
+				function initializeSelects() {
+					if ($.fn.select2) {
+						$('.wc-attribute-search, .fb-field-search').select2({
+							width: '100%',
+							placeholder: function() {
+								return $(this).data('placeholder');
+							}
+						});
+					}
+				}
+				
+				// Initialize on page load
+				initializeSelects();
+				
+				// Update the template row with a unique index based on position
+				function updateEmptyRowIndices() {
+					// Find all rows with placeholder indices (999)
+					$('#facebook-attribute-mapping-table tbody tr').each(function(index) {
+						var $row = $(this);
+						
+						// Check if this row has the placeholder index [999]
+						var $wcAttrField = $row.find('.wc-attribute-search');
+						var nameAttr = $wcAttrField.attr('name') || '';
+						
+						if (nameAttr.indexOf('[999]') > -1) {
+							// Update all field names in this row with the current index
+							$row.find('.wc-attribute-search').attr('name', 'wc_facebook_attribute_mapping[' + index + ']');
+							$row.find('.fb-field-search').attr('name', 'wc_facebook_field_mapping[' + index + ']');
+							$row.find('.fb-default-value').attr('name', 'wc_facebook_attribute_default[' + index + ']');
+						}
+					});
+				}
+				
+				// Initialize the row indices on page load
+				updateEmptyRowIndices();
+				
+				// Add new mapping row in edit mode
+				$('.add-new-mapping').on('click', function(e) {
+					e.preventDefault();
+					
+					// Generate a unique timestamp for field names
+					var newIndex = Date.now();
+					
+					// Create an empty row structure directly rather than cloning
+					var newRowHtml = '<tr class="fb-attribute-row">' +
+						'<td>' +
+						'<select name="wc_facebook_attribute_mapping[' + newIndex + ']" class="wc-attribute-search" data-placeholder="<?php esc_attr_e('Select attribute', 'facebook-for-woocommerce'); ?>">' +
+						'<option value=""><?php esc_html_e('Select attribute', 'facebook-for-woocommerce'); ?></option>';
+					
+					// Add product attributes options
+					<?php foreach ($product_attributes as $attribute_id => $attribute_label) : ?>
+						newRowHtml += '<option value="<?php echo esc_attr($attribute_id); ?>"><?php echo esc_html($attribute_label); ?></option>';
+					<?php endforeach; ?>
+					
+					newRowHtml += '</select>' +
+						'</td>' +
+						'<td>' +
+						'<select name="wc_facebook_field_mapping[' + newIndex + ']" class="fb-field-search" data-placeholder="<?php esc_attr_e('Select attribute', 'facebook-for-woocommerce'); ?>">' +
+						'<option value=""><?php esc_html_e('Select attribute', 'facebook-for-woocommerce'); ?></option>';
+					
+					// Add Facebook fields options
+					<?php foreach ($facebook_fields as $field_id => $field_label) : ?>
+						newRowHtml += '<option value="<?php echo esc_attr($field_id); ?>"><?php echo esc_html($field_label); ?></option>';
+					<?php endforeach; ?>
+					
+					newRowHtml += '</select>' +
+						'</td>' +
+						'<td>' +
+						'<input type="text" name="wc_facebook_attribute_default[' + newIndex + ']" class="fb-default-value" placeholder="<?php esc_attr_e('Optional', 'facebook-for-woocommerce'); ?>">' +
+						'</td>' +
+						'<td>' +
+						'<a href="#" class="remove-mapping-row" style="color: #a00;"><?php esc_html_e('Remove mapping', 'facebook-for-woocommerce'); ?></a>' +
+						'</td>' +
+						'</tr>';
+					
+					// Append the new row to the table
+					var $tbody = $('#facebook-attribute-mapping-table tbody');
+					$tbody.append(newRowHtml);
+					
+					// Initialize select2 on the new row's select elements
+					var $newRow = $tbody.find('tr:last');
+					$newRow.find('.wc-attribute-search, .fb-field-search').select2({
 						width: '100%',
 						placeholder: function() {
 							return $(this).data('placeholder');
 						}
 					});
+					
+					// Focus the first select field in the new row
+					setTimeout(function() {
+						$newRow.find('.wc-attribute-search').select2('open');
+					}, 100);
+					
+					// Scroll to the newly added row
+					$('html, body').animate({
+						scrollTop: $newRow.offset().top - 100
+					}, 500);
+				});
+				
+				// Add new mapping from view mode - directly goes to edit mode and sets a flag for adding a row
+				$('.add-new-mapping-btn').on('click', function(e) {
+					e.preventDefault();
+					// Store flag in localStorage to add new row after page loads in edit mode
+					localStorage.setItem('fb_add_new_mapping_row', 'true');
+					// Redirect to edit mode
+					window.location.href = "<?php echo esc_url(add_query_arg('edit', '1', remove_query_arg(array('success', 'new_row')))); ?>";
+				});
+				
+				// Check if we need to add a new row after page load (coming from view mode)
+				if (localStorage.getItem('fb_add_new_mapping_row') === 'true') {
+					// Clear the flag immediately to prevent it from persisting
+					localStorage.removeItem('fb_add_new_mapping_row');
+					
+					// Wait for DOM and Select2 to be fully initialized
+					setTimeout(function() {
+						// Add a new row by clicking the button
+						$('.add-new-mapping').trigger('click');
+					}, 500);
 				}
 				
-				// Select all checkboxes
-				$('#select-all-mappings').on('click', function() {
-					var isChecked = $(this).prop('checked');
-					$('#facebook-attribute-mapping-table tbody input[type="checkbox"]').prop('checked', isChecked);
-				});
-				
-				// Handle Facebook field selection to show appropriate default value field
-				$('#wc-facebook-field').on('change', function() {
-					var selectedField = $(this).val();
+				// Remove mapping row
+				$('#facebook-attribute-mapping-table').on('click', '.remove-mapping-row', function(e) {
+					e.preventDefault();
 					
-					// Hide all dropdowns first
-					$('#condition-dropdown, #gender-dropdown, #age-group-dropdown, #availability-dropdown').hide();
-					$('#wc-facebook-default').show();
-					
-					// Show appropriate dropdown based on selected field
-					if (selectedField === 'condition') {
-						$('#condition-dropdown').show();
-						$('#wc-facebook-default').hide();
-					} else if (selectedField === 'gender') {
-						$('#gender-dropdown').show();
-						$('#wc-facebook-default').hide();
-					} else if (selectedField === 'age_group') {
-						$('#age-group-dropdown').show();
-						$('#wc-facebook-default').hide();
-					} else if (selectedField === 'availability') {
-						$('#availability-dropdown').show();
-						$('#wc-facebook-default').hide();
+					// Don't remove if it's the only row
+					if ($('#facebook-attribute-mapping-table tbody tr').length > 1) {
+						$(this).closest('tr').remove();
+					} else {
+						// Clear values instead
+						$(this).closest('tr').find('select').val('').trigger('change');
+						$(this).closest('tr').find('input[type="text"]').val('');
+						$(this).closest('tr').find('input[type="hidden"]').remove();
 					}
 				});
 				
-				// Sync the dropdown values with the hidden input field
-				$('#wc-facebook-default-condition, #wc-facebook-default-gender, #wc-facebook-default-age-group, #wc-facebook-default-availability').on('change', function() {
-					$('#wc-facebook-default').val($(this).val());
-				});
-				
-				// Handle form submission to ensure the correct value is submitted
-				$('#add-attribute-form').on('submit', function() {
-					var selectedField = $('#wc-facebook-field').val();
+				// Handle WooCommerce attribute changes to update field names
+				$('#facebook-attribute-mapping-table').on('change', '.wc-attribute-search', function() {
+					var $select = $(this);
+					var $row = $select.closest('tr');
+					var attribute = $select.val();
 					
-					if (selectedField === 'condition') {
-						$('#wc-facebook-default').val($('#wc-facebook-default-condition').val());
-					} else if (selectedField === 'gender') {
-						$('#wc-facebook-default').val($('#wc-facebook-default-gender').val());
-					} else if (selectedField === 'age_group') {
-						$('#wc-facebook-default').val($('#wc-facebook-default-age-group').val());
-					} else if (selectedField === 'availability') {
-						$('#wc-facebook-default').val($('#wc-facebook-default-availability').val());
-					}
-				});
-				
-				// Add this code to the jQuery section before the existing script ends 
-				$('.wc-enhanced-select').on('change', function() {
-					var $this = $(this);
-					var fieldName = $this.attr('name');
+					// Extract the current index from the field name
+					var currentName = $select.attr('name');
+					var matches = currentName.match(/\[(.*?)\]/);
+					var currentIndex = matches ? matches[1] : '';
 					
-					// Check if this is one of our special dropdowns
-					if (fieldName && (fieldName.indexOf('condition') > -1 || fieldName.indexOf('gender') > -1 || fieldName.indexOf('age_group') > -1 || fieldName.indexOf('availability') > -1)) {
-						var $hiddenField = $(this).siblings('input[type="hidden"]');
-						if ($hiddenField.length) {
-							$hiddenField.val($this.val());
-						}
+					// For numerical indices, we should preserve the index for all fields in the row
+					// This ensures form fields remain correctly associated with each other
+					if (currentIndex && !isNaN(parseInt(currentIndex))) {
+						// Always use the same index for all fields in this row
+						$row.find('.fb-field-search').attr('name', 'wc_facebook_field_mapping[' + currentIndex + ']');
+						$row.find('.fb-default-value').attr('name', 'wc_facebook_attribute_default[' + currentIndex + ']');
 					}
 				});
 			});
@@ -779,9 +927,10 @@ class Product_Attributes extends Abstract_Settings_Screen {
 							
 							<!-- Empty row template for new mappings -->
 							<tr class="fb-attribute-row">
+								<?php $unique_index = time(); ?>
 								<td>
-									<select name="wc_facebook_attribute_mapping[]" class="wc-attribute-search" data-placeholder="<?php esc_attr_e('Select a WooCommerce attribute...', 'facebook-for-woocommerce'); ?>">
-										<option value=""><?php esc_html_e('Select a WooCommerce attribute...', 'facebook-for-woocommerce'); ?></option>
+									<select name="wc_facebook_attribute_mapping[<?php echo $unique_index; ?>]" class="wc-attribute-search" data-placeholder="<?php esc_attr_e('Select attribute', 'facebook-for-woocommerce'); ?>">
+										<option value=""><?php esc_html_e('Select attribute', 'facebook-for-woocommerce'); ?></option>
 										
 										<?php foreach ($product_attributes as $attribute_id => $attribute_label) : ?>
 											<option value="<?php echo esc_attr($attribute_id); ?>">
@@ -791,8 +940,8 @@ class Product_Attributes extends Abstract_Settings_Screen {
 									</select>
 								</td>
 								<td>
-									<select name="wc_facebook_field_mapping[]" class="fb-field-search" data-placeholder="<?php esc_attr_e('Select a Facebook attribute...', 'facebook-for-woocommerce'); ?>">
-										<option value=""><?php esc_html_e('Select a Facebook attribute...', 'facebook-for-woocommerce'); ?></option>
+									<select name="wc_facebook_field_mapping[<?php echo $unique_index; ?>]" class="fb-field-search" data-placeholder="<?php esc_attr_e('Select attribute', 'facebook-for-woocommerce'); ?>">
+										<option value=""><?php esc_html_e('Select attribute', 'facebook-for-woocommerce'); ?></option>
 										
 										<?php foreach ($facebook_fields as $field_id => $field_label) : ?>
 											<option value="<?php echo esc_attr($field_id); ?>">
@@ -802,7 +951,7 @@ class Product_Attributes extends Abstract_Settings_Screen {
 									</select>
 								</td>
 								<td>
-									<input type="text" class="fb-default-value" name="wc_facebook_attribute_default[]" placeholder="<?php esc_attr_e('Enter default value (optional)', 'facebook-for-woocommerce'); ?>" value="">
+									<input type="text" class="fb-default-value" name="wc_facebook_attribute_default[<?php echo $unique_index; ?>]" placeholder="<?php esc_attr_e('Enter default value (optional)', 'facebook-for-woocommerce'); ?>" value="">
 								</td>
 								<td>
 									<a href="#" class="fb-attributes-remove" title="<?php esc_attr_e('Remove mapping', 'facebook-for-woocommerce'); ?>">
@@ -1004,132 +1153,78 @@ class Product_Attributes extends Abstract_Settings_Screen {
 	 * @since 3.0.0
 	 */
 	public function process_form_submission() {
-		// Debug info
-		error_log('FB Product Attributes process_form_submission method called');
-		error_log('POST data: ' . print_r($_POST, true));
+		// Check if we're on the right page
+		if (!$this->is_current_screen_page()) {
+			return;
+		}
 		
-		// Get existing mappings
+		// Get existing mappings and defaults
 		$existing_mappings = $this->get_saved_mappings();
 		$existing_defaults = $this->get_saved_defaults();
 		
-		// Process adding a new mapping
-		if (isset($_POST['add_attribute_mapping']) && 
-			isset($_POST['add_attribute_mapping_nonce']) && 
-			wp_verify_nonce($_POST['add_attribute_mapping_nonce'], 'wc_facebook_add_attribute_mapping')) {
+		// Process the new single form submission
+		if (isset($_POST['save_attribute_mappings']) && 
+			isset($_POST['save_attribute_mappings_nonce']) && 
+			wp_verify_nonce($_POST['save_attribute_mappings_nonce'], 'wc_facebook_save_attribute_mappings')) {
 			
-			$wc_attribute = isset($_POST['wc_facebook_attribute']) ? sanitize_text_field($_POST['wc_facebook_attribute']) : '';
-			$fb_field = isset($_POST['wc_facebook_field']) ? sanitize_text_field($_POST['wc_facebook_field']) : '';
-			$default = isset($_POST['wc_facebook_default']) ? sanitize_text_field($_POST['wc_facebook_default']) : '';
+			// Start with an empty array to rebuild the mappings
+			$new_mappings = array();
+			$new_defaults = array();
 			
-			// Check for special field types and use their dropdown values if available
-			if ($fb_field === 'condition' && isset($_POST['wc_facebook_default_condition'])) {
-				$default = sanitize_text_field($_POST['wc_facebook_default_condition']);
-			} elseif ($fb_field === 'gender' && isset($_POST['wc_facebook_default_gender'])) {
-				$default = sanitize_text_field($_POST['wc_facebook_default_gender']);
-			} elseif ($fb_field === 'age_group' && isset($_POST['wc_facebook_default_age_group'])) {
-				$default = sanitize_text_field($_POST['wc_facebook_default_age_group']);
-			} elseif ($fb_field === 'availability' && isset($_POST['wc_facebook_default_availability'])) {
-				$default = sanitize_text_field($_POST['wc_facebook_default_availability']);
-			}
+			// Process WooCommerce attribute => Facebook field mappings
+			$wc_attributes = isset($_POST['wc_facebook_attribute_mapping']) ? (array) $_POST['wc_facebook_attribute_mapping'] : array();
+			$fb_fields = isset($_POST['wc_facebook_field_mapping']) ? (array) $_POST['wc_facebook_field_mapping'] : array();
+			$default_values = isset($_POST['wc_facebook_attribute_default']) ? (array) $_POST['wc_facebook_attribute_default'] : array();
 			
-			if (!empty($wc_attribute) && !empty($fb_field)) {
-				// Add or update the mapping
-				$existing_mappings[$wc_attribute] = $fb_field;
+			// Process all mappings (both associative array format and indexed array format)
+			foreach ($wc_attributes as $key => $wc_attribute) {
+				$wc_attribute = sanitize_text_field($wc_attribute);
 				
-				// Add or update the default value if provided
-				if (!empty($default)) {
-					$existing_defaults[$wc_attribute] = $default;
-				} elseif (isset($existing_defaults[$wc_attribute])) {
-					// Remove existing default if new value is empty
-					unset($existing_defaults[$wc_attribute]);
+				// Skip empty selections
+				if (empty($wc_attribute)) {
+					continue;
 				}
 				
-				$this->add_notice(__('Attribute mapping added successfully.', 'facebook-for-woocommerce'), 'success');
-			} else {
-				$this->add_notice(__('Please select both a WooCommerce attribute and a Facebook attribute.', 'facebook-for-woocommerce'), 'error');
+				// Get corresponding Facebook field if it exists
+				$fb_field = isset($fb_fields[$key]) ? sanitize_text_field($fb_fields[$key]) : '';
+				
+				// Skip if no Facebook field was selected
+				if (empty($fb_field)) {
+					continue;
+				}
+				
+				// Add to mappings
+				$new_mappings[$wc_attribute] = $fb_field;
+				
+				// Check for default value
+				if (isset($default_values[$key]) && !empty($default_values[$key])) {
+					$new_defaults[$wc_attribute] = sanitize_text_field($default_values[$key]);
+				}
 			}
-		}
-		
-		// Process deleting selected mappings
-		if (isset($_POST['delete_mappings']) && 
-			isset($_POST['delete_mappings_nonce']) && 
-			wp_verify_nonce($_POST['delete_mappings_nonce'], 'wc_facebook_delete_attribute_mappings')) {
 			
-			if (isset($_POST['selected_mappings']) && is_array($_POST['selected_mappings'])) {
-				$deleted_count = 0;
-				
-				foreach ($_POST['selected_mappings'] as $mapping_key) {
-					$mapping_key = sanitize_text_field($mapping_key);
-					
-					if (isset($existing_mappings[$mapping_key])) {
-						unset($existing_mappings[$mapping_key]);
-						$deleted_count++;
-						
-						// Also remove any default value
-						if (isset($existing_defaults[$mapping_key])) {
-							unset($existing_defaults[$mapping_key]);
-						}
-					}
-				}
-				
-				if ($deleted_count > 0) {
-					$this->add_notice(
-						sprintf(
-							_n(
-								'%d attribute mapping deleted.',
-								'%d attribute mappings deleted.',
-								$deleted_count,
-								'facebook-for-woocommerce'
-							),
-							$deleted_count
-						),
-						'success'
-					);
-				}
-			}
-		}
-		
-		// Process updates to existing mapping defaults from special dropdowns
-		foreach (array('condition', 'gender', 'age_group', 'availability') as $special_field) {
-			$field_key = 'wc_facebook_attribute_default_' . $special_field;
+			// Save the new mappings
+			update_option(self::OPTION_CUSTOM_ATTRIBUTE_MAPPINGS, $new_mappings);
+			update_option('wc_facebook_attribute_defaults', $new_defaults);
 			
-			if (isset($_POST[$field_key]) && is_array($_POST[$field_key])) {
-				foreach ($_POST[$field_key] as $attr_key => $value) {
-					if (!empty($value)) {
-						$existing_defaults[sanitize_text_field($attr_key)] = sanitize_text_field($value);
-					}
-				}
+			// Update the static mapping in the ProductAttributeMapper class
+			if (method_exists('WooCommerce\Facebook\ProductAttributeMapper', 'set_custom_attribute_mappings')) {
+				\WooCommerce\Facebook\ProductAttributeMapper::set_custom_attribute_mappings($new_mappings);
 			}
+			
+			// Update last sync time
+			update_option('wc_facebook_last_attribute_sync', current_time('mysql'));
+			
+			// Add success notice
+			$this->add_notice(
+				__('Product attribute mappings saved successfully.', 'facebook-for-woocommerce'),
+				'success'
+			);
+			
+			// Redirect back to view mode
+			$redirect_url = add_query_arg('success', '1', remove_query_arg('edit'));
+			wp_safe_redirect($redirect_url);
+			exit;
 		}
-		
-		// Process updates to regular default values
-		if (isset($_POST['wc_facebook_attribute_default']) && is_array($_POST['wc_facebook_attribute_default'])) {
-			foreach ($_POST['wc_facebook_attribute_default'] as $attr_key => $value) {
-				$attr_key = sanitize_text_field($attr_key);
-				$value = sanitize_text_field($value);
-				
-				if (!empty($value)) {
-					$existing_defaults[$attr_key] = $value;
-				} else {
-					// Remove default if empty
-					unset($existing_defaults[$attr_key]);
-				}
-			}
-		}
-		
-		// Save mappings to WordPress options
-		update_option(self::OPTION_CUSTOM_ATTRIBUTE_MAPPINGS, $existing_mappings);
-		
-		// Save defaults to WordPress options
-		update_option('wc_facebook_attribute_defaults', $existing_defaults);
-		
-		// Update the static mapping in the ProductAttributeMapper class
-		if (method_exists('WooCommerce\Facebook\ProductAttributeMapper', 'set_custom_attribute_mappings')) {
-			\WooCommerce\Facebook\ProductAttributeMapper::set_custom_attribute_mappings($existing_mappings);
-		}
-		
-		// Update last sync time
-		update_option('wc_facebook_last_attribute_sync', current_time('mysql'));
 	}
 
 	/**
