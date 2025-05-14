@@ -107,6 +107,41 @@ class ProductAttributeMapper {
 		'item_condition' => 'condition',
 	);
 
+	/** @var bool Flag to track if custom mappings have been loaded */
+	private static $custom_mappings_loaded = false;
+
+	/**
+	 * Initializes the attribute mappings by loading custom mappings from the database.
+	 * This ensures that mappings created through the UI are available for use.
+	 *
+	 * @since 3.0.32
+	 *
+	 * @return void
+	 */
+	private static function load_custom_mappings() {
+		if (self::$custom_mappings_loaded) {
+			return;
+		}
+
+		// Load custom mappings from the database
+		// NOTE: The option name wc_facebook_custom_attribute_mappings is defined in Admin/Settings_Screens/Product_Attributes.php
+		$custom_mappings = get_option('wc_facebook_custom_attribute_mappings', array());
+		
+		// Log the loading of mappings
+		$log_file = WP_CONTENT_DIR . '/uploads/fb-product-debug.log';
+		file_put_contents($log_file, "Loading custom attribute mappings from database: " . json_encode($custom_mappings) . "\n", FILE_APPEND);
+		
+		if (!empty($custom_mappings) && is_array($custom_mappings)) {
+			foreach ($custom_mappings as $wc_attribute => $fb_field) {
+				$sanitized_attribute = self::sanitize_attribute_name($wc_attribute);
+				self::$attribute_name_mapping[$sanitized_attribute] = $fb_field;
+				file_put_contents($log_file, "Added mapping: {$sanitized_attribute} => {$fb_field}\n", FILE_APPEND);
+			}
+		}
+		
+		self::$custom_mappings_loaded = true;
+	}
+
 	/**
 	 * Gets all standardized Meta catalog fields.
 	 *
@@ -127,6 +162,9 @@ class ProductAttributeMapper {
 	 * @return bool|string False if not mapped, or the Facebook field name if mapped
 	 */
 	public static function check_attribute_mapping($attribute_name) {
+		// Ensure custom mappings are loaded
+		self::load_custom_mappings();
+		
 		// Debug log
 		$log_file = WP_CONTENT_DIR . '/uploads/fb-product-debug.log';
 		file_put_contents($log_file, "  [check_attribute_mapping] Checking mapping for '{$attribute_name}'\n", FILE_APPEND);
@@ -255,6 +293,9 @@ class ProductAttributeMapper {
 	 * @return array Array of mapped attributes with Meta field name as key and attribute value as value
 	 */
 	public static function get_mapped_attributes(WC_Product $product) {
+		// Ensure custom mappings are loaded
+		self::load_custom_mappings();
+		
 		$mapped_attributes = array();
 		$attributes = $product->get_attributes();
 		$default_values = get_option('wc_facebook_attribute_defaults', array());
@@ -281,6 +322,12 @@ class ProductAttributeMapper {
 			}
 		} else {
 			$log_message .= "No custom attribute mappings configured in settings.\n";
+		}
+		
+		// Log the internal attribute mappings loaded from static property
+		$log_message .= "Internal attribute name mappings loaded:\n";
+		foreach (self::$attribute_name_mapping as $wc_attr => $fb_attr) {
+			$log_message .= "  - {$wc_attr} => {$fb_attr}\n";
 		}
 		
 		// Check for attribute mappings via filter (used by the plugin UI)
@@ -682,12 +729,19 @@ class ProductAttributeMapper {
 	 */
 	public static function set_custom_attribute_mappings(array $mappings) {
 		$success_count = 0;
+		$log_file = WP_CONTENT_DIR . '/uploads/fb-product-debug.log';
+		
+		file_put_contents($log_file, "Setting custom attribute mappings: " . json_encode($mappings) . "\n", FILE_APPEND);
 		
 		foreach ($mappings as $wc_attribute => $fb_field) {
 			if (self::add_custom_attribute_mapping($wc_attribute, $fb_field)) {
 				$success_count++;
+				file_put_contents($log_file, "Added mapping: {$wc_attribute} => {$fb_field}\n", FILE_APPEND);
 			}
 		}
+		
+		// Mark custom mappings as loaded
+		self::$custom_mappings_loaded = true;
 		
 		return $success_count;
 	}
@@ -850,7 +904,7 @@ class ProductAttributeMapper {
 	 */
 	public static function clear_all_attribute_mappings() {
 		// Delete the custom mappings stored in the database
-		$result1 = delete_option('wc_facebook_attribute_mappings');
+		$result1 = delete_option('wc_facebook_custom_attribute_mappings');
 		
 		// Log this action
 		$log_file = WP_CONTENT_DIR . '/uploads/fb-product-debug.log';
