@@ -70,7 +70,7 @@ class Whatsapp_Webhook {
 	}
 
 	/**
-	 * Authenticates Whatsapp Webhook using the SHA1 of the external business ID and BISU token
+	 * Authenticates Whatsapp Webhook using the SHA1 of the business ID and BISU token
 	 *
 	 * @param string $auth_key the auth key received in the webhook
 	 * @param string $bisu_token the BISU token received in the webhook
@@ -79,9 +79,9 @@ class Whatsapp_Webhook {
 	 * @internal
 	 */
 	private static function authenticate_request( $auth_key, $bisu_token ) {
-		$external_business_id = get_option( 'wc_facebook_business_manager_id' );
+		$business_id = get_option( 'wc_facebook_business_manager_id' );
 
-		$expected_auth_key = 'sha1=' . (string) hash_hmac( 'sha1', $bisu_token, $external_business_id );
+		$expected_auth_key = 'sha1=' . (string) hash_hmac( 'sha1', $bisu_token, $business_id );
 
 		return hash_equals( $expected_auth_key, $auth_key );
 	}
@@ -110,7 +110,7 @@ class Whatsapp_Webhook {
 			$waba_display_name        = sanitize_text_field( $request_params['wabaDisplayName'] );
 			$auth_key                 = sanitize_text_field( $request_params['authKey'] );
 
-			// authentication is done via auth_key using sha_1 hash mac of BISU token and external business ID stored in woo DB
+			// authentication is done via auth_key using sha_1 hash mac of BISU token and business ID stored in woo DB
 			$authentication_result = self::authenticate_request( $auth_key, $bisu_token );
 
 			if ( false === $authentication_result ) {
