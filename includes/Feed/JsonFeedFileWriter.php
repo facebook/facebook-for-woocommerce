@@ -10,6 +10,7 @@
 
 namespace WooCommerce\Facebook\Feed;
 
+use WC_Facebookcommerce_Utils;
 use WooCommerce\Facebook\Framework\Plugin\Exception as PluginException;
 
 defined( 'ABSPATH' ) || exit;
@@ -36,19 +37,39 @@ class JsonFeedFileWriter extends AbstractFeedFileWriter {
 	 */
 	public function write_temp_feed_file( array $data ): void {
 		$temp_file_path = $this->get_temp_file_path();
-		// phpcs:ignore -- use php file i/o functions
-		$temp_feed_file = fopen( $temp_file_path, 'a' );
-		if ( false === $temp_feed_file ) {
-			// phpcs:ignore -- Escaping function for translated string not available in this context
-			throw new PluginException( __( "Unable to open temporary file {$temp_file_path} for appending.", 'facebook-for-woocommerce' ), 500 );
-		}
+		$temp_feed_file = false;
+		try {
+			// throw new PluginException( 'Testing persisting logging to Meta in write_temp_feed_file (json)', 400 );
+			// phpcs:ignore -- use php file i/o functions
+			$temp_feed_file = fopen( $temp_file_path, 'a' );
+			if ( false === $temp_feed_file ) {
+				// phpcs:ignore -- Escaping function for translated string not available in this context
+				throw new PluginException( "Unable to open temporary file {$temp_file_path} for appending.", 500 );
+			}
 
-		// phpcs:ignore -- use php file i/o functions
-		if ( fwrite( $temp_feed_file, wp_json_encode( $data ) ) === false ) {
-			throw new PluginException( 'Failed to write JSON data to the file.', 500 );
+			// phpcs:ignore -- use php file i/o functions
+			if ( fwrite( $temp_feed_file, wp_json_encode( $data ) ) === false ) {
+				throw new PluginException( 'Failed to write JSON data to the file.', 500 );
+			}
+		} catch ( \Exception $exception ) {
+			WC_Facebookcommerce_Utils::log_exception_immediately_to_meta(
+				$exception,
+				[
+					'event'      => 'feed_upload',
+					'event_type' => 'write_temp_feed_file',
+					'extra_data' => [
+						'feed_name'      => $this->feed_name,
+						'temp_file_path' => $temp_file_path,
+						'file_type'      => 'json',
+					],
+				]
+			);
+			throw $exception;
+		} finally {
+			if ( $temp_feed_file ) {
+				// phpcs:ignore -- use php file i/o functions
+				fclose( $temp_feed_file );
+			}
 		}
-
-		// phpcs:ignore -- use php file i/o functions
-		fclose( $temp_feed_file );
 	}
 }
