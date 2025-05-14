@@ -82,6 +82,9 @@ class WC_Facebookcommerce extends WooCommerce\Facebook\Framework\Plugin {
 	private $sync_background_handler;
 
 	/** @var WooCommerce\Facebook\ProductSets\Sync product sets sync handler */
+	private $legacy_product_sets_sync_handler;
+
+	/** @var WooCommerce\Facebook\ProductSets\ProductSetSync product sets sync handler */
 	private $product_sets_sync_handler;
 
 	/** @var WooCommerce\Facebook\Handlers\Connection connection handler */
@@ -190,15 +193,18 @@ class WC_Facebookcommerce extends WooCommerce\Facebook\Framework\Plugin {
 
 			$this->heartbeat = new Heartbeat( WC()->queue() );
 			$this->heartbeat->init();
-			$this->product_feed              = new WooCommerce\Facebook\Products\Feed();
-			$this->products_stock_handler    = new WooCommerce\Facebook\Products\Stock();
-			$this->products_sync_handler     = new WooCommerce\Facebook\Products\Sync();
-			$this->sync_background_handler   = new WooCommerce\Facebook\Products\Sync\Background();
-			$this->configuration_detection   = new WooCommerce\Facebook\Feed\FeedConfigurationDetection();
-			$this->product_sets_sync_handler = new WooCommerce\Facebook\ProductSets\Sync();
-			$this->commerce_handler          = new WooCommerce\Facebook\Commerce();
-			$this->fb_categories             = new WooCommerce\Facebook\Products\FBCategories();
-			$this->external_version_update   = new WooCommerce\Facebook\ExternalVersionUpdate\Update();
+			$this->feed_manager              		= new WooCommerce\Facebook\Feed\FeedManager();
+			$this->checkout           		 		= new WooCommerce\Facebook\Checkout();
+			$this->product_feed              		= new WooCommerce\Facebook\Products\Feed();
+			$this->products_stock_handler    		= new WooCommerce\Facebook\Products\Stock();
+			$this->products_sync_handler     		= new WooCommerce\Facebook\Products\Sync();
+			$this->sync_background_handler   		= new WooCommerce\Facebook\Products\Sync\Background();
+			$this->configuration_detection   		= new WooCommerce\Facebook\Feed\FeedConfigurationDetection();
+			$this->legacy_product_sets_sync_handler = new WooCommerce\Facebook\ProductSets\Sync();
+			$this->product_sets_sync_handler 		= new WooCommerce\Facebook\ProductSets\ProductSetSync();
+			$this->commerce_handler          		= new WooCommerce\Facebook\Commerce();
+			$this->fb_categories             		= new WooCommerce\Facebook\Products\FBCategories();
+			$this->external_version_update   		= new WooCommerce\Facebook\ExternalVersionUpdate\Update();
 
 			if ( wp_doing_ajax() ) {
 				$this->ajax = new WooCommerce\Facebook\AJAX();
@@ -597,6 +603,17 @@ class WC_Facebookcommerce extends WooCommerce\Facebook\Framework\Plugin {
 	 */
 	public function get_products_sync_handler() {
 		return $this->products_sync_handler;
+	}
+
+	/**
+	 * Gets the products sync handler.
+	 *
+	 * @since 3.4.9
+	 *
+	 * @return WooCommerce\Facebook\ProductSets\ProductSetSync
+	 */
+	public function get_product_sets_sync_handler() {
+		return $this->product_sets_sync_handler;
 	}
 
 
