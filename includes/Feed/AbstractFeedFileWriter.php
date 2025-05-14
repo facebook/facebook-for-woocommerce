@@ -188,7 +188,7 @@ abstract class AbstractFeedFileWriter {
 				$file_path = trailingslashit( $file['base'] ) . $file['file'];
 				if ( wp_mkdir_p( $file['base'] ) && ! file_exists( $file_path ) ) {
 					// phpcs:ignore -- use php file i/o functions
-					$file_handle = @fopen( $file_path, 'w' );
+					$file_handle = fopen( $file_path, 'w' );
 					if ( $file_handle ) {
 						try {
 							fwrite( $file_handle, $file['content'] ); //phpcs:ignore
@@ -281,12 +281,13 @@ abstract class AbstractFeedFileWriter {
 	 */
 	public function prepare_temporary_feed_file() {
 		$temp_file_path = $this->get_temp_file_path();
+		$temp_feed_file = false;
 		$file_path      = $this->get_file_path();
 
 		try {
 			// throw new PluginException( 'Testing persisting logging to Meta in prepare_temporary_feed_file', 400 );
 			// phpcs:ignore -- use php file i/o functions
-			$temp_feed_file = @fopen( $temp_file_path, 'w' );
+			$temp_feed_file = fopen( $temp_file_path, 'w' );
 
 			// Check if we can open the temporary feed file.
 			// phpcs:ignore
@@ -321,6 +322,10 @@ abstract class AbstractFeedFileWriter {
 					],
 				]
 			);
+			if ( $temp_feed_file ) {
+				// phpcs:ignore -- use php file i/o functions
+				fclose( $temp_feed_file );
+			}
 			throw $exception;
 		}
 	}
