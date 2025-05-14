@@ -90,7 +90,7 @@ class WC_Facebookcommerce extends WooCommerce\Facebook\Framework\Plugin {
 	/** @var WooCommerce\Facebook\Products\Sync\Background background sync handler */
 	private $sync_background_handler;
 
-	/** @var WooCommerce\Facebook\ProductSets\LegacyProductSetSync product sets sync handler */
+	/** @var WooCommerce\Facebook\ProductSets\Sync product sets sync handler */
 	private $legacy_product_sets_sync_handler;
 
 	/** @var WooCommerce\Facebook\ProductSets\ProductSetSync product sets sync handler */
@@ -209,7 +209,7 @@ class WC_Facebookcommerce extends WooCommerce\Facebook\Framework\Plugin {
 			$this->products_sync_handler     		= new WooCommerce\Facebook\Products\Sync();
 			$this->sync_background_handler   		= new WooCommerce\Facebook\Products\Sync\Background();
 			$this->configuration_detection   		= new WooCommerce\Facebook\Feed\FeedConfigurationDetection();
-			$this->legacy_product_sets_sync_handler = new WooCommerce\Facebook\ProductSets\LegacyProductSetSync();
+			$this->legacy_product_sets_sync_handler = new WooCommerce\Facebook\ProductSets\Sync();
 			$this->product_sets_sync_handler 		= new WooCommerce\Facebook\ProductSets\ProductSetSync();
 			$this->commerce_handler          		= new WooCommerce\Facebook\Commerce();
 			$this->fb_categories             		= new WooCommerce\Facebook\Products\FBCategories();

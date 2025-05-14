@@ -22,7 +22,7 @@ use WooCommerce\Facebook\Utilities\Heartbeat;
  */
 class ProductSetSync {
 
-
+	// Product category taxonomy used by WooCommerce
 	const WC_PRODUCT_CATEGORY_TAXONOMY = 'product_cat';
 
 	/**
@@ -156,7 +156,7 @@ class ProductSetSync {
 			throw $e;
 		}
 
-		return $response->data[0]['id'] ?? null;
+		return $response->get_product_set_id();
 	}
 
 	protected function build_fb_product_set_data( $wc_category ) {
@@ -215,7 +215,7 @@ class ProductSetSync {
 			$allow_live_deletion = true;
 			facebook_for_woocommerce()->get_api()->delete_product_set_item( $fb_product_set_id, $allow_live_deletion );
 		} catch ( \Exception $e ) {
-			$message = sprintf( 'There was an error trying to create product set in a catalog: %s', $e->getMessage() );
+			$message = sprintf( 'There was an error trying to delete product set in a catalog: %s', $e->getMessage() );
 			facebook_for_woocommerce()->log( $message );
 		}
 	}

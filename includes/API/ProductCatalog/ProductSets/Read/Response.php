@@ -12,5 +12,18 @@ defined( 'ABSPATH' ) || exit;
  *
  * @link https://developers.facebook.com/docs/marketing-api/reference/product-catalog/product_sets/
  * @property-read string id Facebook Product Set ID.
+ *
+ * @since 3.4.9
  */
-class Response extends ApiResponse {}
+class Response extends ApiResponse {
+
+	/**
+	 * Returns the fb product set ID.
+	 *
+	 * @return ?string
+	 * @since 3.4.9
+	 */
+	public function get_product_set_id(): ?string {
+		return $this->data[0]['id'] ?? null;
+	}
+}
