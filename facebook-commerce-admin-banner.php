@@ -24,6 +24,18 @@ class WC_Facebookcommerce_Admin_Banner {
 	 * Output the banner HTML if it should be shown.
 	 */
 	public function render_banner() {
+		// Check if the WhatsApp admin banner should be shown.
+		if ( strtotime( 'now' ) > strtotime( '2025-06-15 23:59:59' ) ) {
+			return;
+		}
+
+		if ( ! current_user_can( 'manage_woocommerce' ) ) {
+			return;
+		}
+
+		if ( get_user_meta( get_current_user_id(), self::BANNER_ID, true ) ) {
+			return;
+		}
 
 		$banner_html  = '<div class="fb-wa-banner">';
 		$banner_html .= '<img src="' . esc_url( plugins_url( 'assets/images/ico-whatsapp.png', __FILE__ ) ) . '" width="36" height="36" alt="WhatsApp Logo" />';
