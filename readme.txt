@@ -3,7 +3,7 @@ Contributors: facebook
 Tags: meta, facebook, conversions api, catalog sync, ads
 Requires at least: 5.6
 Tested up to: 6.7
-Stable tag: 3.4.8
+Stable tag: 3.4.9
 Requires PHP: 7.4
 MySQL: 5.6 or greater
 License: GPLv2 or later
@@ -40,12 +40,12 @@ When opening a bug on GitHub, please give us as many details as possible.
 
 == Changelog ==
 
-= 3.4.8 - 2025-05-06 =
-* Add - Feature to sync global attributes to Meta and test API format by @devbodaghe in #3050
-* Fix - Facebook attribute dropdown display and syncing issues by @devbodaghe in #3051
-* Tweak - Set helper text for dropdown sync by @devbodaghe in #3104
-* Tweak - Remove unused condition field code for variable products by @devbodaghe in #3114
-* Fix - Cursor style not resetting after attribute removal by @devbodaghe in #3113
-* Fix - 'Call to a member function is_taxonomy() on string' error when processing variable products by @devbodaghe in #3155
+= 3.4.9 - 2025-05-14 =
+* Add - Support for rollout switches in the plugin to control feature rollouts from meta side @francorisso in #3126
+* Fix - Tests in the rollout switches file by @francorisso in #3146
+* Fix - RolloutSwitches Init by @carterbuce in #3157
+* Add - Integrate Whatsapp Utility Messaging for WooCommerce Order Update Notifications by @sharunaanandraj in #3164
+* Tweak - Improve Test Filter Management with AbstractWPUnitTestWithSafeFiltering by @sol-loup in #2944
+* Fix - Namespacing issue causing some tests to be skipped @sol-loup in #3037
 
 [See changelog for all versions](https://raw.githubusercontent.com/facebook/facebook-for-woocommerce/refs/heads/releases/changelog.txt).
