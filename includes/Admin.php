@@ -2484,7 +2484,7 @@ class Admin {
 		// Check if clearing mappings was requested
 		if ( isset( $_GET['clear_fb_mappings'] ) && '1' === $_GET['clear_fb_mappings'] && current_user_can( 'manage_woocommerce' ) ) {
 			// Clear the mappings
-			delete_option( 'wc_facebook_attribute_mappings' );
+			delete_option( 'wc_facebook_custom_attribute_mappings' );
 			
 			// Log the action
 			$log_file = WP_CONTENT_DIR . '/uploads/fb-product-debug.log';
@@ -2545,7 +2545,7 @@ class Admin {
 			 isset( $_GET['clear_fb_mappings'] ) && '1' === $_GET['clear_fb_mappings'] && 
 			 current_user_can( 'manage_woocommerce' ) ) {
 			// Clear the mappings
-			delete_option( 'wc_facebook_attribute_mappings' );
+			delete_option( 'wc_facebook_custom_attribute_mappings' );
 			
 			// Log the action
 			$log_file = WP_CONTENT_DIR . '/uploads/fb-product-debug.log';
