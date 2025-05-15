@@ -135,6 +135,7 @@ abstract class AbstractFeedFileWriter {
 	 * Generates the feed file.
 	 *
 	 * @throws PluginException If the directory could not be created.
+	 * @throws \Exception Caught exception is rethrown.
 	 * @since 3.5.0
 	 */
 	public function create_feed_directory(): void {
@@ -163,6 +164,7 @@ abstract class AbstractFeedFileWriter {
 	/**
 	 * Creates files in the feed directory to prevent directory listing and hotlinking.
 	 *
+	 * @throws \Exception Caught exception is rethrown.
 	 * @since 3.5.0
 	 */
 	public function create_files_to_protect_feed_directory(): void {
@@ -273,6 +275,7 @@ abstract class AbstractFeedFileWriter {
 	 * Prepare a fresh empty temporary feed file with the header row.
 	 *
 	 * @throws PluginException We can't open the file or the file is not writable.
+	 * @throws \Exception Caught exception is rethrown.
 	 * @return resource A file pointer resource.
 	 * @since 3.5.0
 	 */
@@ -331,6 +334,7 @@ abstract class AbstractFeedFileWriter {
 	 * This is the last step fo the feed generation procedure.
 	 *
 	 * @throws PluginException If the temporary feed file could not be renamed.
+	 * @throws \Exception Caught exception is rethrown.
 	 * @since 3.5.0
 	 */
 	public function promote_temp_file(): void {

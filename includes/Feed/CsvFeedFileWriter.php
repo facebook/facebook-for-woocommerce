@@ -33,6 +33,7 @@ class CsvFeedFileWriter extends AbstractFeedFileWriter {
 	 *
 	 * @return void
 	 * @throws PluginException If the temporary file cannot be opened or row can't be written.
+	 * @throws \Exception Caught exception is rethrown.
 	 * @since 3.5.0
 	 */
 	public function write_temp_feed_file( array $data ): void {
