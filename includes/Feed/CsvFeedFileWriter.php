@@ -39,7 +39,6 @@ class CsvFeedFileWriter extends AbstractFeedFileWriter {
 		$temp_file_path = $this->get_temp_file_path();
 		$temp_feed_file = false;
 		try {
-			// throw new PluginException( 'Testing persisting logging to Meta in write_temp_feed_file (csv)', 400 );
 			// phpcs:ignore -- use php file i/o functions
 			$temp_feed_file = fopen( $temp_file_path, 'a' );
 			if ( false === $temp_feed_file ) {

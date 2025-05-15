@@ -140,7 +140,6 @@ abstract class AbstractFeedFileWriter {
 	public function create_feed_directory(): void {
 		$file_directory = $this->get_file_directory();
 		try {
-			// throw new PluginException( 'Testing persisting logging to Meta in create_feed_directory', 400 );
 			$directory_created = wp_mkdir_p( $file_directory );
 			if ( ! $directory_created ) {
 				throw new PluginException( "Could not create feed directory at {$file_directory}", 500 );
@@ -169,8 +168,6 @@ abstract class AbstractFeedFileWriter {
 	public function create_files_to_protect_feed_directory(): void {
 		$feed_directory = trailingslashit( $this->get_file_directory() );
 		try {
-			// throw new PluginException( 'Testing persisting logging to Meta in create_files_to_protect_feed_directory', 400 );
-
 			$files = array(
 				array(
 					'base'    => $feed_directory,
@@ -285,7 +282,6 @@ abstract class AbstractFeedFileWriter {
 		$file_path      = $this->get_file_path();
 
 		try {
-			// throw new PluginException( 'Testing persisting logging to Meta in prepare_temporary_feed_file', 400 );
 			// phpcs:ignore -- use php file i/o functions
 			$temp_feed_file = fopen( $temp_file_path, 'w' );
 
@@ -342,7 +338,6 @@ abstract class AbstractFeedFileWriter {
 		$file_path      = $this->get_file_path();
 
 		try {
-			// throw new PluginException( 'Testing persisting logging to Meta in promote_temp_file', 400 );
 			if ( ! empty( $temp_file_path ) && ! empty( $file_path ) ) {
 				// phpcs:ignore -- use php file i/o functions
 				$renamed = rename( $temp_file_path, $file_path );
