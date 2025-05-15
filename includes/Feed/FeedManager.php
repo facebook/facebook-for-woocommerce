@@ -75,7 +75,7 @@ class FeedManager {
 	 */
 	public static function get_active_feed_types(): array {
 		// TODO add self::NAVIGATION_MENU once category sync is implemented
-		return array( self::PROMOTIONS, self::RATINGS_AND_REVIEWS, self::SHIPPING_PROFILES, self::NAVIGATION_MENU );
+		return array( self::PROMOTIONS, self::RATINGS_AND_REVIEWS, self::SHIPPING_PROFILES );
 	}
 
 	/**
