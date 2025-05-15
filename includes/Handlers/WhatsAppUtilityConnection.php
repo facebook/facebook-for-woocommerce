@@ -109,6 +109,13 @@ class WhatsAppUtilityConnection {
 			'access_token'            => $bisu_token,
 		);
 		$base_url     = add_query_arg( $query_params, $base_url );
+		wc_get_logger()->info(
+			sprintf(
+					/* translators: %s $response */
+				__( 'Connect Whatsapp Utility Message API Query Params: %1$s ', 'facebook-for-woocommerce' ),
+				json_encode( $query_params ),
+			)
+		);
 		$options      = array(
 			'headers' => array(
 				'Authorization' => $bisu_token,
