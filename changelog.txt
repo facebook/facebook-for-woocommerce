@@ -1,5 +1,13 @@
 *** Facebook for WooCommerce Changelog ***
 
+= 3.4.9 - 2025-05-14 =
+* Add - Support for rollout switches in the plugin to control feature rollouts from meta side @francorisso in #3126
+* Fix - Tests in the rollout switches file by @francorisso in #3146
+* Fix - RolloutSwitches Init by @carterbuce in #3157
+* Add - Integrate Whatsapp Utility Messaging for WooCommerce Order Update Notifications by @sharunaanandraj in #3164
+* Tweak - Improve Test Filter Management with AbstractWPUnitTestWithSafeFiltering by @sol-loup in #2944
+* Fix - Namespacing issue causing some tests to be skipped @sol-loup in #3037
+
 = 3.4.8 - 2025-05-06 =
 * Add - Feature to sync global attributes to Meta and test API format by @devbodaghe in #3050
 * Fix - Facebook attribute dropdown display and syncing issues by @devbodaghe in #3051

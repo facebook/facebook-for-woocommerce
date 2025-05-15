@@ -279,6 +279,29 @@ class API extends Base {
 	}
 
 	/**
+	 * Gets rollout switches
+	 *
+	 * @param string  $external_business_id
+	 * @return API\FBE\RolloutSwitches\Response
+	 * @throws ApiException
+	 */
+	public function get_rollout_switches( string $external_business_id ) {
+		if(!$this->get_access_token()) {
+			return null;
+		}
+
+		$request = new API\FBE\RolloutSwitches\Request( $external_business_id );
+		$request->set_params(
+			array(
+				'access_token' => $this->get_access_token(),
+				'fbe_external_business_id'=> $external_business_id
+			)
+		);
+		$this->set_response_handler( API\FBE\RolloutSwitches\Response::class );
+		return $this->perform_request( $request );
+	}
+
+	/**
 	 * Updates the plugin version configuration.
 	 *
 	 * @param string $external_business_id external business ID
