@@ -70,6 +70,7 @@ class Advertise extends Abstract_Settings_Screen {
 			return;
 		}
 		wp_enqueue_style( 'wc-facebook-admin-advertise-settings', facebook_for_woocommerce()->get_plugin_url() . '/assets/css/admin/facebook-for-woocommerce-advertise.css', array(), \WC_Facebookcommerce::VERSION );
+		wp_enqueue_style( 'wc-facebook-admin-whatsapp-banner', facebook_for_woocommerce()->get_plugin_url() . '/assets/css/admin/facebook-for-woocommerce-whatsapp-banner.css', array(), \WC_Facebookcommerce::VERSION );
 	}
 
 
