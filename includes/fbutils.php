@@ -998,11 +998,11 @@ if ( ! class_exists( 'WC_Facebookcommerce_Utils' ) ) :
 		 *
 		 * @param array  $context
 		 * @param string $key
-		 * @param mixed  $default_key
+		 * @param mixed  $default_value
 		 * @return mixed
 		 */
-		public static function get_context_data( array $context, string $key, $default_key = null ) {
-			return $context[ $key ] ?? $default_key;
+		public static function get_context_data( array $context, string $key, $default_value = null ) {
+			return $context[ $key ] ?? $default_value;
 		}
 
 		/**
