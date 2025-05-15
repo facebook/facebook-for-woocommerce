@@ -235,7 +235,7 @@ abstract class AbstractFeed {
 		\WC_Facebookcommerce_Utils::log_with_debug_mode_enabled( "{$name} feed: Meta is requesting feed file." );
 
 		$file_path = $this->feed_writer->get_file_path();
-		$file = false;
+		$file      = false;
 
 		// regenerate if the file doesn't exist using the legacy flow.
 		if ( ! file_exists( $file_path ) ) {
