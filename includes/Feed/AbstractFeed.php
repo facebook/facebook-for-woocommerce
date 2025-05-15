@@ -276,7 +276,7 @@ abstract class AbstractFeed {
 
 			// fpassthru might be disabled in some hosts (like Flywheel).
 			// phpcs:ignore
-			if ( \WC_Facebookcommerce_Utils::is_fpassthru_disabled() || ! fpassthru( $file ) ) {
+			if ( \WC_Facebookcommerce_Utils::is_fpassthru_disabled() || ! @fpassthru( $file ) ) {
 				\WC_Facebookcommerce_Utils::log_with_debug_mode_enabled( "{$name} feed: fpassthru is disabled: getting file contents." );
 				//phpcs:ignore
 				$contents = @stream_get_contents( $file );
