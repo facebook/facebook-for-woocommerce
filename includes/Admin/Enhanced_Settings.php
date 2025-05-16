@@ -188,6 +188,14 @@ class Enhanced_Settings {
 		$current_tab = $this->get_current_tab();
 		$screen      = $this->get_screen( $current_tab );
 
+		\WC_Facebookcommerce_Utils::log_to_meta(
+      'User visited the Facebook for WooCommerce settings' . $current_tab . 'tab',
+      array(
+        'flow_name' => 'settings',
+        'flow_step' => $current_tab . '_tab_rendered',
+      )
+    );
+
 		?>
 		<div class="wrap woocommerce">
 			<?php $this->render_tabs( $current_tab ); ?>
