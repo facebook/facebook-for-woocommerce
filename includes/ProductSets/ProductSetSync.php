@@ -63,7 +63,7 @@ class ProductSetSync {
 				return;
 			}
 
-			$wc_category = get_term( $term_id, self::WC_PRODUCT_CATEGORY_TAXONOMY );
+			$wc_category       = get_term( $term_id, self::WC_PRODUCT_CATEGORY_TAXONOMY );
 			$fb_product_set_id = $this->get_fb_product_set_id( $wc_category );
 			if ( ! empty( $fb_product_set_id ) ) {
 				$this->update_fb_product_set( $wc_category, $fb_product_set_id );

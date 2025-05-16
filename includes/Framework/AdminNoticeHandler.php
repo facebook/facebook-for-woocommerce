@@ -299,7 +299,7 @@ class AdminNoticeHandler {
 		if ( is_null( $user_id ) ) {
 			$user_id = get_current_user_id();
 		}
-		$dismissed_notices = $this->get_dismissed_notices( $user_id );
+		$dismissed_notices                = $this->get_dismissed_notices( $user_id );
 		$dismissed_notices[ $message_id ] = true;
 		update_user_meta( $user_id, '_wc_plugin_framework_' . $this->get_plugin()->get_id() . '_dismissed_messages', $dismissed_notices );
 		/**
@@ -326,7 +326,7 @@ class AdminNoticeHandler {
 		if ( is_null( $user_id ) ) {
 			$user_id = get_current_user_id();
 		}
-		$dismissed_notices = $this->get_dismissed_notices( $user_id );
+		$dismissed_notices                = $this->get_dismissed_notices( $user_id );
 		$dismissed_notices[ $message_id ] = false;
 		update_user_meta( $user_id, '_wc_plugin_framework_' . $this->get_plugin()->get_id() . '_dismissed_messages', $dismissed_notices );
 	}
