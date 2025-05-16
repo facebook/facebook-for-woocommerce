@@ -200,6 +200,24 @@ jQuery( document ).ready( function( $ ) {
 
 	} );
 
+	    // Opt out sync controls
+		const optOutOfSyncButton = $('#opt_out_of_sync_button');
+		optOutOfSyncButton.click(function(event) {
+
+			event.preventDefault();
+			$.post( facebook_for_woocommerce_settings_sync.ajax_url, {
+				action: 'wc_facebook_opt_out_of_sync',
+				nonce:  facebook_for_woocommerce_settings_sync.opt_out_of_sync,
+			}, function (response){
+				console.log(response);
+					data = typeof response === "string" ? JSON.parse(response) : response;
+                    console.log("Success:", data); 
+			}).fail(function() {
+				console.error("Error Code:", xhr.status);
+					console.error("Error Message:", xhr.responseText);
+			});
+		})
+
 	/**
 	 * Sets the UI as sync in progress and starts an interval to check the background sync status.
 	 *

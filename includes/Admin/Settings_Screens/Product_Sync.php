@@ -36,6 +36,10 @@ class Product_Sync extends Abstract_Settings_Screen {
 	/** @var string the get sync status action */
 	const ACTION_GET_SYNC_STATUS = 'wc_facebook_get_sync_status';
 
+	/** @var string opt out sync action */
+	const ACTION_OPT_OUT_OF_SYNC = 'wc_facebook_opt_out_of_sync';
+
+
 	/**
 	 * Connection constructor.
 	 */
@@ -92,6 +96,7 @@ class Product_Sync extends Abstract_Settings_Screen {
 				'set_excluded_terms_prompt_nonce' => wp_create_nonce( 'set-excluded-terms-prompt' ),
 				'sync_products_nonce'             => wp_create_nonce( self::ACTION_SYNC_PRODUCTS ),
 				'sync_status_nonce'               => wp_create_nonce( self::ACTION_GET_SYNC_STATUS ),
+				'opt_out_of_sync'				=>wp_create_nonce(self::ACTION_OPT_OUT_OF_SYNC),
 				'sync_in_progress'                => Sync::is_sync_in_progress(),
 				'excluded_category_ids'           => facebook_for_woocommerce()->get_integration()->get_excluded_product_category_ids(),
 				'excluded_tag_ids'                => facebook_for_woocommerce()->get_integration()->get_excluded_product_tag_ids(),
