@@ -16,11 +16,15 @@ jQuery( document ).ready( function( $ ) {
 		}, function ( response ) {
             console.log(response);
             if ( response.success ) {
+                console.log( 'Whatsapp Template Insights Info was fetched successfully', response );
                 var  business_id = response.data.business_id;
                 var asset_id = response.data.waba_id;
                 const MANAGE_TEMPLATES_URL = `https://business.facebook.com/latest/whatsapp_manager/message_templates?business_id=${business_id}&asset_id=${asset_id}`;                
                 window.open(MANAGE_TEMPLATES_URL);
 			}
+            else {
+                console.log( 'Whatsapp Template Insights Info fetch call failed', response );
+            }
 		} );
     });
 } );

@@ -23,6 +23,9 @@ defined( 'ABSPATH' ) || exit;
 require_once 'facebook-config-warmer.php';
 require_once 'includes/fbproduct.php';
 require_once 'facebook-commerce-pixel-event.php';
+require_once 'facebook-commerce-admin-notice.php';
+
+new WC_Facebookcommerce_Admin_Notice();
 
 class WC_Facebookcommerce_Integration extends WC_Integration {
 
@@ -855,27 +858,27 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 		if ( isset( $_POST[ WC_Facebook_Product::FB_SIZE ] ) ) {
 			$woo_product->set_fb_size( sanitize_text_field( wp_unslash( $_POST[ WC_Facebook_Product::FB_SIZE ] ) ) );
 		}
-		
+
 		if ( isset( $_POST[ WC_Facebook_Product::FB_COLOR ] ) ) {
 			$woo_product->set_fb_color( sanitize_text_field( wp_unslash( $_POST[ WC_Facebook_Product::FB_COLOR ] ) ) );
 		}
-		
+
 		if ( isset( $_POST[ WC_Facebook_Product::FB_MATERIAL ] ) ) {
 			$woo_product->set_fb_material( sanitize_text_field( wp_unslash( $_POST[ WC_Facebook_Product::FB_MATERIAL ] ) ) );
 		}
-		
+
 		if ( isset( $_POST[ WC_Facebook_Product::FB_PATTERN ] ) ) {
 			$woo_product->set_fb_pattern( sanitize_text_field( wp_unslash( $_POST[ WC_Facebook_Product::FB_PATTERN ] ) ) );
 		}
-		
+
 		if ( isset( $_POST[ WC_Facebook_Product::FB_AGE_GROUP ] ) ) {
 			$woo_product->set_fb_age_group( sanitize_text_field( wp_unslash( $_POST[ WC_Facebook_Product::FB_AGE_GROUP ] ) ) );
 		}
-		
+
 		if ( isset( $_POST[ WC_Facebook_Product::FB_GENDER ] ) ) {
 			$woo_product->set_fb_gender( sanitize_text_field( wp_unslash( $_POST[ WC_Facebook_Product::FB_GENDER ] ) ) );
 		}
-		
+
 		if ( isset( $_POST[ WC_Facebook_Product::FB_PRODUCT_CONDITION ] ) ) {
 			$woo_product->set_fb_condition( sanitize_text_field( wp_unslash( $_POST[ WC_Facebook_Product::FB_PRODUCT_CONDITION ] ) ) );
 		}
@@ -907,7 +910,7 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 			$woo_product->set_description( sanitize_text_field( wp_unslash( $_POST[ self::FB_PRODUCT_DESCRIPTION ] ) ) );
 			$woo_product->set_rich_text_description( $_POST[ self::FB_PRODUCT_DESCRIPTION ] );
 		}
-		
+
 		if ( isset( $_POST[ WC_Facebook_Product::FB_PRODUCT_PRICE ] ) ) {
 			$woo_product->set_price( sanitize_text_field( wp_unslash( $_POST[ WC_Facebook_Product::FB_PRODUCT_PRICE ] ) ) );
 		}

@@ -14,6 +14,17 @@ jQuery( document ).ready( function( $ ) {
     var confirmButton = document.getElementById("wc-fb-warning-modal-confirm");
     var $statusElement = $('#wc-whatsapp-collect-consent-status');
 
+    if (!facebook_for_woocommerce_whatsapp_consent.consent_collection_enabled) {
+       // Change the status from "on-status" to "off-status" for the specific element.
+       $statusElement.removeClass('on-status').addClass('off-status');
+       // Update the text to "Off".
+       $statusElement.text('Off');
+       // Hide the original "Remove" button
+       $('#wc-whatsapp-collect-consent-remove-container').addClass('fbwa-hidden-element');
+       // Show the "Add" button
+       $('#wc-whatsapp-collect-consent-add-container').removeClass('fbwa-hidden-element');
+    }
+
     // On click of the remove button, show the warning modal
     $("#wc-whatsapp-collect-consent-remove").click(function(event) {
         // Show the modal

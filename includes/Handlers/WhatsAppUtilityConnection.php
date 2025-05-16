@@ -67,6 +67,7 @@ class WhatsAppUtilityConnection {
 				'Authorization' => $bisu_token,
 			),
 			'body'    => array(),
+			'timeout' => 300, // 5 minutes
 		);
 
 		$response    = wp_remote_request( $url, $options );
@@ -113,6 +114,7 @@ class WhatsAppUtilityConnection {
 				'Authorization' => $bisu_token,
 			),
 			'body'    => array(),
+			'timeout' => 300, // 5 minutes
 		);
 		$response     = wp_remote_post( $base_url, $options );
 		wc_get_logger()->info(
@@ -169,6 +171,7 @@ class WhatsAppUtilityConnection {
 				'Authorization' => $bisu_token,
 			),
 			'body'    => array(),
+			'timeout' => 300, // 5 minutes
 		);
 		$response     = wp_remote_post( $base_url, $options );
 		wc_get_logger()->info(
@@ -284,6 +287,13 @@ class WhatsAppUtilityConnection {
 		$data                           = explode( "\n", wp_remote_retrieve_body( $response ) );
 		$response_object                = json_decode( $data[0] );
 		$is_error                       = is_wp_error( $response );
+		wc_get_logger()->info(
+			sprintf(
+					/* translators: %s $error_message */
+				__( 'Event Configs Post API call Response: %1$s ', 'facebook-for-woocommerce' ),
+				json_encode( $response ),
+			)
+		);
 		if ( is_wp_error( $response ) || 200 !== $status_code ) {
 			$error_message = $response_object->error->error_user_title ?? $response_object->error->message ?? 'Something went wrong. Please try again later!';
 			wc_get_logger()->info(
@@ -330,7 +340,6 @@ class WhatsAppUtilityConnection {
 
 	/**
 	 * Makes an API call to Event Processor: Message Events Post API to send whatsapp utility messages
-	 * TODO: Update API Endpoint from Messages to Message Events
 	 *
 	 * @param string $event Order Managerment event
 	 * @param string $event_config_id Event Config Id
@@ -344,16 +353,17 @@ class WhatsAppUtilityConnection {
 	 * @param string $bisu_token the BISU token received in the webhook
 	 */
 	public static function post_whatsapp_utility_messages_events_call( $event, $event_config_id, $language_code, $wacs_id, $order_id, $phone_number, $first_name, $refund_value, $currency, $bisu_token ) {
-		$base_url        = array( self::GRAPH_API_BASE_URL, self::API_VERSION, $wacs_id, "messages?access_token=$bisu_token" );
+		$base_url        = array( self::GRAPH_API_BASE_URL, self::API_VERSION, $wacs_id, "message_events?access_token=$bisu_token" );
 		$base_url        = esc_url( implode( '/', $base_url ) );
 		$name            = self::EVENT_TO_LIBRARY_TEMPLATE_MAPPING[ $event ];
 		$components      = self::get_components_for_event( $event, $order_id, $first_name, $refund_value, $currency );
 		$options         = array(
-			'body' => array(
+			'body'    => array(
 				'messaging_product' => 'whatsapp',
 				'to'                => $phone_number,
+				'event_config_id'   => $event_config_id,
+				'external_event_id' => "${order_id}",
 				'template'          => array(
-					'name'       => $name,
 					'language'   => array(
 						'code' => $language_code,
 					),
@@ -361,17 +371,25 @@ class WhatsAppUtilityConnection {
 				),
 				'type'              => 'template',
 			),
+			'timeout' => 300, // 5 minutes
 		);
 		$response        = wp_remote_post( $base_url, $options );
 		$status_code     = wp_remote_retrieve_response_code( $response );
 		$data            = explode( "\n", wp_remote_retrieve_body( $response ) );
 		$response_object = json_decode( $data[0] );
+		wc_get_logger()->info(
+			sprintf(
+					/* translators: %s $error_message */
+				__( 'Message Events Post API call Response: %1$s ', 'facebook-for-woocommerce' ),
+				json_encode( $response ),
+			)
+		);
 		if ( is_wp_error( $response ) || 200 !== $status_code ) {
 			$error_message = $response_object->error->error_user_title ?? $response_object->error->message ?? 'Something went wrong. Please try again later!';
 			wc_get_logger()->info(
 				sprintf(
 				/* translators: %s $order_id %s $error_message */
-					__( 'Messages Post API call for Order id %1$s Failed %2$s ', 'facebook-for-woocommerce' ),
+					__( 'Message Events Post API call for Order id %1$s Failed %2$s ', 'facebook-for-woocommerce' ),
 					$order_id,
 					$error_message,
 				)
@@ -380,10 +398,54 @@ class WhatsAppUtilityConnection {
 			wc_get_logger()->info(
 				sprintf(
 				/* translators: %s $order_id */
-					__( 'Messages Post API call for Order id %1$s Succeeded.', 'facebook-for-woocommerce' ),
+					__( 'Message Events Post API call for Order id %1$s Succeeded.', 'facebook-for-woocommerce' ),
 					$order_id
 				)
 			);
+		}
+	}
+
+	/**
+	 * Makes an API call to Integration Config Get API
+	 *
+	 * @param string $integration_config_id Integration Config id
+	 * @param string $bisu_token the BISU token received in the webhook
+	 */
+	public static function get_supported_languages_for_templates( $integration_config_id, $bisu_token ) {
+		$base_url = array( self::GRAPH_API_BASE_URL, self::API_VERSION, $integration_config_id );
+		$base_url = esc_url( implode( '/', $base_url ) );
+		$params   = array(
+			'access_token' => $bisu_token,
+		);
+		$url      = add_query_arg( $params, $base_url );
+		$options  = array(
+			'headers' => array(
+				'Authorization' => $bisu_token,
+			),
+			'body'    => array(),
+			'timeout' => 300, // 5 minutes
+		);
+
+		$response    = wp_remote_request( $url, $options );
+		$status_code = wp_remote_retrieve_response_code( $response );
+		$data        = wp_remote_retrieve_body( $response );
+		if ( is_wp_error( $response ) || 200 !== $status_code ) {
+			wc_get_logger()->info(
+				sprintf(
+					/* translators: %s $error_message */
+					__( 'Integration Config GET API call Failed %1$s ', 'facebook-for-woocommerce' ),
+					$data,
+				)
+			);
+			wp_send_json_error( $response, 'Integration Config GET API call Failed' );
+		} else {
+			wc_get_logger()->info(
+				sprintf(
+					__( 'Integration Config GET API call Succeeded', 'facebook-for-woocommerce' )
+				)
+			);
+			// $response_object = json_decode( $data[0] );
+			wp_send_json_success( $data, 'Finish Integration Config API Call' );
 		}
 	}
 
