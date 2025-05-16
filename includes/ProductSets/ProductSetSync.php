@@ -25,6 +25,12 @@ class ProductSetSync {
 	// Product category taxonomy used by WooCommerce
 	const WC_PRODUCT_CATEGORY_TAXONOMY = 'product_cat';
 
+	// Product tag taxonomy used by WooCommerce
+	const WC_PRODUCT_TAG_TAXONOMY = 'product_tag';
+
+	// Prefix to be used in fb product tag names
+	const FB_PRODUCT_TAG_PREFIX = 'wc_tag_id_';
+
 	/**
 	 * ProductSetSync constructor.
 	 */
@@ -45,7 +51,14 @@ class ProductSetSync {
 		add_action( 'delete_' . self::WC_PRODUCT_CATEGORY_TAXONOMY, array( $this, 'on_delete_wc_product_category_callback' ), 99, 4 );
 
 		/**
-		 * Schedules a daily sync of all WooCommerce categories to ensure any missed real-time updates are captured.
+		 * Sets up hooks to synchronize WooCommerce product tags mutations (create, update, delete) with Meta catalog's product sets in real-time.
+		 */
+		add_action( 'create_' . self::WC_PRODUCT_TAG_TAXONOMY, array( $this, 'on_create_or_update_wc_product_tag_callback' ), 99, 3 );
+		add_action( 'edited_' . self::WC_PRODUCT_TAG_TAXONOMY, array( $this, 'on_create_or_update_wc_product_tag_callback' ), 99, 3 );
+		add_action( 'delete_' . self::WC_PRODUCT_TAG_TAXONOMY, array( $this, 'on_delete_wc_product_tag_callback' ), 99, 4 );
+
+		/**
+		 * Schedules a daily sync of all WooCommerce categories and tags to ensure any missed real-time updates are captured.
 		 */
 		add_action( Heartbeat::DAILY, array( $this, 'sync_all_product_sets' ) );
 	}
@@ -58,21 +71,7 @@ class ProductSetSync {
 	 * @param array $args Arguments.
 	 */
 	public function on_create_or_update_product_wc_category_callback( $term_id, $tt_id, $args ) {
-		try {
-			if ( ! $this->is_sync_enabled() ) {
-				return;
-			}
-
-			$wc_category = get_term( $term_id, self::WC_PRODUCT_CATEGORY_TAXONOMY );
-			$fb_product_set_id = $this->get_fb_product_set_id( $wc_category );
-			if ( ! empty( $fb_product_set_id ) ) {
-				$this->update_fb_product_set( $wc_category, $fb_product_set_id );
-			} else {
-				$this->create_fb_product_set( $wc_category );
-			}
-		} catch ( \Exception $exception ) {
-			$this->log_exception( $exception );
-		}
+		$this->on_create_or_update_term_callback_impl( $term_id, self::WC_PRODUCT_CATEGORY_TAXONOMY );
 	}
 
 	/**
@@ -84,18 +83,30 @@ class ProductSetSync {
 	 * @param array   $object_ids List of term object IDs.
 	 */
 	public function on_delete_wc_product_category_callback( $term_id, $tt_id, $deleted_term, $object_ids ) {
-		try {
-			if ( ! $this->is_sync_enabled() ) {
-				return;
-			}
+		$this->on_delete_term_callback_impl( $deleted_term );
+	}
 
-			$fb_product_set_id = $this->get_fb_product_set_id( $deleted_term );
-			if ( ! empty( $fb_product_set_id ) ) {
-				$this->delete_fb_product_set( $fb_product_set_id );
-			}
-		} catch ( \Exception $exception ) {
-			$this->log_exception( $exception );
-		}
+	/**
+	 * @since 3.4.9
+	 *
+	 * @param int   $term_id Term ID.
+	 * @param int   $tt_id Term taxonomy ID.
+	 * @param array $args Arguments.
+	 */
+	public function on_create_or_update_wc_product_tag_callback( $term_id, $tt_id, $args ) {
+		$this->on_create_or_update_term_callback_impl( $term_id, self::WC_PRODUCT_TAG_TAXONOMY );
+	}
+
+	/**
+	 * @since 3.4.9
+	 *
+	 * @param int     $term_id Term ID.
+	 * @param int     $tt_id Term taxonomy ID.
+	 * @param WP_Term $deleted_term Copy of the already-deleted term.
+	 * @param array   $object_ids List of term object IDs.
+	 */
+	public function on_delete_wc_product_tag_callback( $term_id, $tt_id, $deleted_term, $object_ids ) {
+		$this->on_delete_term_callback_impl( $deleted_term );
 	}
 
 	/**
@@ -107,7 +118,41 @@ class ProductSetSync {
 				return;
 			}
 
-			$this->sync_all_wc_product_categories();
+			$this->sync_all_product_sets_for_taxonomy( self::WC_PRODUCT_CATEGORY_TAXONOMY );
+			$this->sync_all_product_sets_for_taxonomy( self::WC_PRODUCT_TAG_TAXONOMY );
+		} catch ( \Exception $exception ) {
+			$this->log_exception( $exception );
+		}
+	}
+
+	private function on_create_or_update_term_callback_impl( $term_id, $wc_taxonomy ) {
+		try {
+			if ( ! $this->is_sync_enabled() ) {
+				return;
+			}
+
+			$wc_term = get_term( $term_id, $wc_taxonomy );
+			$fb_product_set_id = $this->get_fb_product_set_id( $wc_term );
+			if ( ! empty( $fb_product_set_id ) ) {
+				$this->update_fb_product_set( $wc_term, $fb_product_set_id, $wc_taxonomy );
+			} else {
+				$this->create_fb_product_set( $wc_term, $wc_taxonomy );
+			}
+		} catch ( \Exception $exception ) {
+			$this->log_exception( $exception );
+		}
+	}
+
+	private function on_delete_term_callback_impl( $deleted_term ) {
+		try {
+			if ( ! $this->is_sync_enabled() ) {
+				return;
+			}
+
+			$fb_product_set_id = $this->get_fb_product_set_id( $deleted_term );
+			if ( ! empty( $fb_product_set_id ) ) {
+				$this->delete_fb_product_set( $fb_product_set_id );
+			}
 		} catch ( \Exception $exception ) {
 			$this->log_exception( $exception );
 		}
@@ -132,16 +177,25 @@ class ProductSetSync {
 	}
 
 	/**
-	 * Important. This is ID from the WC category to be used as a retailer ID for the FB product set
+	 * Important. This is ID from the WC term to be used as a retailer ID for the FB product set
 	 *
-	 * @param WP_Term $wc_category The WooCommerce category object.
+	 * @param WP_Term $wc_term The WooCommerce term object.
 	 */
-	private function get_retailer_id( $wc_category ) {
-		return $wc_category->term_taxonomy_id;
+	private function get_retailer_id( $wc_term ) {
+		return $wc_term->term_taxonomy_id;
 	}
 
-	protected function get_fb_product_set_id( $wc_category ) {
-		$retailer_id   = $this->get_retailer_id( $wc_category );
+	/**
+	 * Important. This gets a product tag to be used in fb product items and fb sets filters
+	 *
+	 * @param WP_Term $wc_tag The WooCommerce atg object.
+	 */
+	public static function get_fb_product_tag( $wc_tag ) {
+		return self::FB_PRODUCT_TAG_PREFIX . $wc_tag->term_taxonomy_id;
+	}
+
+	protected function get_fb_product_set_id( $wc_term ) {
+		$retailer_id   = $this->get_retailer_id( $wc_term );
 		$fb_catalog_id = facebook_for_woocommerce()->get_integration()->get_product_catalog_id();
 
 		try {
@@ -159,36 +213,42 @@ class ProductSetSync {
 		return $response->get_product_set_id();
 	}
 
-	protected function build_fb_product_set_data( $wc_category ) {
-		$wc_category_name          = get_term_field( 'name', $wc_category, self::WC_PRODUCT_CATEGORY_TAXONOMY );
-		$wc_category_description   = get_term_field( 'description', $wc_category, self::WC_PRODUCT_CATEGORY_TAXONOMY );
-		$wc_category_url           = get_term_link( $wc_category, self::WC_PRODUCT_CATEGORY_TAXONOMY );
-		$wc_category_thumbnail_id  = get_term_meta( $wc_category, 'thumbnail_id', true );
-		$wc_category_thumbnail_url = wp_get_attachment_image_src( $wc_category_thumbnail_id );
+	protected function build_fb_product_set_data( $wc_term, $wc_taxonomy ) {
+		$wc_term_name          = get_term_field( 'name', $wc_term, $wc_taxonomy );
+		$wc_term_description   = get_term_field( 'description', $wc_term, $wc_taxonomy );
+		$wc_term_url           = get_term_link( $wc_term, $wc_taxonomy );
+		$wc_term_thumbnail_id  = get_term_meta( $wc_term, 'thumbnail_id', true );
+		$wc_term_thumbnail_url = wp_get_attachment_image_src( $wc_term_thumbnail_id );
 
 		$fb_product_set_metadata = array();
-		if ( ! empty( $wc_category_thumbnail_url ) ) {
-			$fb_product_set_metadata['cover_image_url'] = $wc_category_thumbnail_url;
+		if ( ! empty( $wc_term_thumbnail_url ) ) {
+			$fb_product_set_metadata['cover_image_url'] = $wc_term_thumbnail_url;
 		}
-		if ( ! empty( $wc_category_description ) ) {
-			$fb_product_set_metadata['description'] = $wc_category_description;
+		if ( ! empty( $wc_term_description ) ) {
+			$fb_product_set_metadata['description'] = $wc_term_description;
 		}
-		if ( ! empty( $wc_category_url ) ) {
-			$fb_product_set_metadata['external_url'] = $wc_category_url;
+		if ( ! empty( $wc_term_url ) ) {
+			$fb_product_set_metadata['external_url'] = $wc_term_url;
+		}
+
+		if ( self::WC_PRODUCT_CATEGORY_TAXONOMY === $wc_taxonomy ) {
+			$fb_set_filter = wp_json_encode( array( 'and' => array( array( 'product_type' => array( 'i_contains' => $wc_term_name ) ) ) ) );
+		} else {
+			$fb_set_filter = wp_json_encode( array( 'and' => array( array( 'tags' => array( 'eq' => self::get_fb_product_tag( $wc_term ) ) ) ) ) );
 		}
 
 		$fb_product_set_data = array(
-			'name'        => $wc_category_name,
-			'filter'      => wp_json_encode( array( 'and' => array( array( 'product_type' => array( 'i_contains' => $wc_category_name ) ) ) ) ),
-			'retailer_id' => $this->get_retailer_id( $wc_category ),
+			'name'        => $wc_term_name,
+			'filter'      => $fb_set_filter,
+			'retailer_id' => $this->get_retailer_id( $wc_term ),
 			'metadata'    => wp_json_encode( $fb_product_set_metadata ),
 		);
 
 		return $fb_product_set_data;
 	}
 
-	protected function create_fb_product_set( $wc_category ) {
-		$fb_product_set_data = $this->build_fb_product_set_data( $wc_category );
+	protected function create_fb_product_set( $wc_term, $wc_taxonomy ) {
+		$fb_product_set_data = $this->build_fb_product_set_data( $wc_term, $wc_taxonomy );
 		$fb_catalog_id       = facebook_for_woocommerce()->get_integration()->get_product_catalog_id();
 
 		try {
@@ -199,8 +259,8 @@ class ProductSetSync {
 		}
 	}
 
-	protected function update_fb_product_set( $wc_category, $fb_product_set_id ) {
-		$fb_product_set_data = $this->build_fb_product_set_data( $wc_category );
+	protected function update_fb_product_set( $wc_term, $fb_product_set_id, $wc_taxonomy ) {
+		$fb_product_set_data = $this->build_fb_product_set_data( $wc_term, $wc_taxonomy );
 
 		try {
 			facebook_for_woocommerce()->get_api()->update_product_set_item( $fb_product_set_id, $fb_product_set_data );
@@ -220,23 +280,23 @@ class ProductSetSync {
 		}
 	}
 
-	private function sync_all_wc_product_categories() {
-		$wc_product_categories = get_terms(
+	private function sync_all_product_sets_for_taxonomy( $wc_taxonomy ) {
+		$wc_terms = get_terms(
 			array(
-				'taxonomy'   => self::WC_PRODUCT_CATEGORY_TAXONOMY,
+				'taxonomy'   => $wc_taxonomy,
 				'hide_empty' => false,
 				'orderby'    => 'ID',
 				'order'      => 'ASC',
 			)
 		);
 
-		foreach ( $wc_product_categories as $wc_category ) {
+		foreach ( $wc_terms as $wc_term ) {
 			try {
-				$fb_product_set_id = $this->get_fb_product_set_id( $wc_category );
+				$fb_product_set_id = $this->get_fb_product_set_id( $wc_term );
 				if ( ! empty( $fb_product_set_id ) ) {
-					$this->update_fb_product_set( $wc_category, $fb_product_set_id );
+					$this->update_fb_product_set( $wc_term, $fb_product_set_id, $wc_taxonomy );
 				} else {
-					$this->create_fb_product_set( $wc_category );
+					$this->create_fb_product_set( $wc_term, $wc_taxonomy );
 				}
 			} catch ( \Exception $exception ) {
 				$this->log_exception( $exception );

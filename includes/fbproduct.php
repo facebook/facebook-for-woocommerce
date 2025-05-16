@@ -12,9 +12,9 @@
 require_once __DIR__ . '/fbutils.php';
 
 use WooCommerce\Facebook\Feed\ShippingProfilesFeed;
-use WooCommerce\Facebook\Framework\Plugin\Compatibility;
 use WooCommerce\Facebook\Framework\Helper;
 use WooCommerce\Facebook\Products;
+use WooCommerce\Facebook\ProductSets\ProductSetSync;
 
 defined( 'ABSPATH' ) || exit;
 
@@ -813,7 +813,7 @@ class WC_Facebook_Product {
 	 */
 	public function get_internal_labels(): array
 	{
-		$labels = [];
+		$labels = $this->get_product_tags();
 		$labels[] = $this->get_shipping_class_label();
 
 		// Wrap labels in single quotes
@@ -829,6 +829,18 @@ class WC_Facebook_Product {
 	{
 		$shipping_class_id = (string) $this->woo_product->get_shipping_class_id();
 		return ShippingProfilesFeed::get_shipping_class_tag_for_class($shipping_class_id);
+	}
+
+	private function get_product_tags(): array
+	{
+		$tag_term_ids = $this->woo_product->get_tag_ids();
+		return array_map(
+			function ( $tag_term_id ) {
+				$wc_tag = get_term( $tag_term_id, ProductSetSync::WC_PRODUCT_TAG_TAXONOMY );
+				return ProductSetSync::get_fb_product_tag( $wc_tag );
+			},
+			$tag_term_ids
+    );
 	}
 
 	/**
