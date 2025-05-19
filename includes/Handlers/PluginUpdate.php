@@ -23,7 +23,8 @@ class PluginUpdate {
     }
 
     private static function add_hooks() {
-        add_action( 'upgrader_process_complete', [ __CLASS__, 'on_plugin_update' ], 10 );
+        add_action('wp_ajax_wc_facebook_opt_out_of_sync', [ __CLASS__,  'opt_out_of_sync_clicked']);
+        add_action('wp_ajax_nopriv_wc_facebook_opt_out_of_sync', [ __CLASS__,'opt_out_of_sync_clicked']); 
         
     }
 
@@ -51,8 +52,7 @@ class PluginUpdate {
          */
 
         if($current_version <= self::ALL_PRODUCTS_PLUGIN_VERSION){
-            add_action('wp_ajax_wc_facebook_opt_out_of_sync', [ __CLASS__,  'opt_out_of_sync_clicked']);
-            add_action('wp_ajax_nopriv_wc_facebook_opt_out_of_sync', [ __CLASS__,'opt_out_of_sync_clicked']); 
+            
             add_action('admin_notices', [ __CLASS__, 'fb_woocommerce_admin_banner_upcoming_version_change' ], 0); 
         }
     }
