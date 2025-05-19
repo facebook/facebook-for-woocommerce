@@ -9,7 +9,6 @@
  * @package FacebookCommerce
  */
 
- 
 require_once __DIR__ . '/fbutils.php';
 
 use WooCommerce\Facebook\Feed\ShippingProfilesFeed;
