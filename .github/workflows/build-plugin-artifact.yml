@@ -10,6 +10,7 @@ jobs:
     permissions:
       contents: read
       pull-requests: write
+      statuses: write
     
     steps:
       - uses: actions/checkout@v1
@@ -103,6 +104,20 @@ jobs:
               .write();
             
             try {
+              // First attempt to create/update commit status
+              await github.rest.repos.createCommitStatus({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                sha: context.payload.pull_request.head.sha,
+                state: "${{ steps.check_build.outputs.build_success }}" === "true" ? 'success' : 'failure',
+                target_url: runUrl,
+                description: "${{ steps.check_build.outputs.build_success }}" === "true" ? 
+                  `Build successful (${timestamp})` : `Build failed (${timestamp})`,
+                context: 'Plugin Build'
+              });
+              console.log("Successfully created commit status");
+              
+              // Also try to post a comment if possible
               // Find all comments
               console.log(`Listing comments for PR #${prNumber}`);
               const { data: comments } = await github.rest.issues.listComments({
@@ -140,7 +155,7 @@ jobs:
                 console.log("Successfully posted new build info comment");
               }
             } catch (error) {
-              console.log("Unable to post comment to PR. Build information is still available in the workflow summary.");
+              console.log("Error encountered during PR communication:");
               console.log(`Error details: ${error.message}`);
               
               if (error.response) {
