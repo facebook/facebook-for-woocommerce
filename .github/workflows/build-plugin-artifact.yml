@@ -1,6 +1,8 @@
 name: Build Plugin Artifact
 
-on: [ push, pull_request_target ] # Run on all pushes and PRs
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
 
 jobs:
   build-and-upload:
@@ -11,9 +13,6 @@ jobs:
     
     steps:
       - uses: actions/checkout@v1
-        with:
-          ref: ${{ github.event.pull_request.head.sha }}
-          # This ensures we checkout the PR code when running on pull_request_target
       
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
@@ -56,279 +55,96 @@ jobs:
       - name: Create simple summary
         run: echo "⬇️ Scroll to the bottom of this page and download the 'facebook-for-woocommerce' artifact to get the latest plugin build." > $GITHUB_STEP_SUMMARY
       
+      # Debug info about the event context
       - name: Debug event information
         run: |
           echo "Event name: ${{ github.event_name }}"
           echo "Repository: ${{ github.repository }}"
-          echo "Is PR?: ${{ github.event_name == 'pull_request_target' || github.event_name == 'pull_request' }}"
-          echo "Has PR number?: ${{ github.event.pull_request.number != '' }}"
+          echo "PR number: ${{ github.event.pull_request.number }}"
           echo "SHA: ${{ github.sha }}"
-          echo "Ref: ${{ github.ref }}"
-          echo "Branch name: ${{ github.ref_name }}"
           echo "Head repo: ${{ github.event.pull_request.head.repo.full_name }}"
           echo "Base repo: ${{ github.event.pull_request.base.repo.full_name }}"
-      
-      # Find associated PR for push events within the same repository
-      - name: Find associated PR
-        id: find-pr
-        if: github.event_name == 'push'
+        
+      # Post comment on PR
+      - name: Post build info comment on PR
         uses: actions/github-script@v6
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
-            try {
-              // For push events, find if there's an open PR for this branch
-              const branch = context.ref.replace('refs/heads/', '');
-              console.log(`Looking for PRs from branch: ${branch}`);
-              
-              // Get repository owner and name
-              const [owner, repo] = context.repository.split('/');
-              
-              // First check for PRs within this repository
-              console.log(`Checking for PRs within ${owner}/${repo}`);
-              const { data: internalPRs } = await github.rest.pulls.list({
-                owner: owner,
-                repo: repo,
-                state: 'open',
-                head: `${owner}:${branch}`
-              });
-              
-              if (internalPRs.length > 0) {
-                // Use the first PR if there are multiple for this branch
-                const prNumber = internalPRs[0].number;
-                console.log(`Found internal PR #${prNumber}`);
-                core.setOutput('pr_number', prNumber.toString());
-                core.setOutput('pr_repo_owner', owner);
-                core.setOutput('pr_repo_name', repo);
-                core.setOutput('found', 'true');
-                return;
-              }
-              
-              // Check if this branch is part of a PR to other repositories (like facebook/facebook-for-woocommerce)
-              // This requires scanning potential upstream repositories
-              const potentialUpstreams = ['facebook/facebook-for-woocommerce'];
-              
-              for (const upstream of potentialUpstreams) {
-                const [upstreamOwner, upstreamRepo] = upstream.split('/');
-                console.log(`Checking for PRs to ${upstreamOwner}/${upstreamRepo}`);
-                
-                try {
-                  const { data: externalPRs } = await github.rest.pulls.list({
-                    owner: upstreamOwner,
-                    repo: upstreamRepo,
-                    state: 'open',
-                    head: `${owner}:${branch}`
-                  });
-                  
-                  if (externalPRs.length > 0) {
-                    // Found a PR to an upstream repo
-                    const prNumber = externalPRs[0].number;
-                    console.log(`Found external PR #${prNumber} to ${upstreamOwner}/${upstreamRepo}`);
-                    core.setOutput('pr_number', prNumber.toString());
-                    core.setOutput('pr_repo_owner', upstreamOwner);
-                    core.setOutput('pr_repo_name', upstreamRepo);
-                    core.setOutput('found', 'true');
-                    return;
-                  }
-                } catch (error) {
-                  console.log(`Error checking ${upstreamOwner}/${upstreamRepo}: ${error.message}`);
-                }
-              }
-              
-              console.log(`No open PR found for branch ${branch}`);
-              core.setOutput('found', 'false');
-            } catch (error) {
-              console.log(`Error finding PR: ${error.message}`);
-              core.setOutput('found', 'false');
+            // Get PR number from pull_request event
+            const prNumber = context.payload.pull_request.number;
+            console.log(`Preparing build info for PR #${prNumber}`);
+            
+            const runUrl = `https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
+            const timestamp = new Date().toISOString();
+            const commitSha = context.sha.substring(0, 7);
+            
+            // Create build info comment
+            let commentBody = '';
+            if ("${{ steps.check_build.outputs.build_success }}" === "true") {
+              commentBody = "## 📦 Latest Plugin Build\n\n" +
+                `**Built at:** ${timestamp}\n` +
+                `**Commit:** ${commitSha}\n` +
+                `**Size:** ${{ steps.check_build.outputs.filesize }}\n\n` +
+                `**Download:** [Click here to download the plugin](${runUrl})\n\n` +
+                `_To download: Click the link above → Scroll to bottom → Download "facebook-for-woocommerce" artifact_`;
+            } else {
+              commentBody = "## ❌ Plugin Build Failed\n\n" +
+                `**Attempted at:** ${timestamp}\n` +
+                `**Commit:** ${commitSha}\n\n` +
+                `Please check the [workflow logs](${runUrl}) for more information.`;
             }
-      
-      # Create a commit status with build information
-      - name: Post build status to commit
-        if: ${{ github.event_name == 'pull_request_target' || github.event_name == 'pull_request' || steps.find-pr.outputs.found == 'true' }}
-        uses: actions/github-script@v6
-        with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          script: |
+            
+            // Add build info to workflow summary regardless
+            core.summary
+              .addHeading(("${{ steps.check_build.outputs.build_success }}" === "true") ? 
+                "📦 Latest Plugin Build" : "❌ Plugin Build Failed")
+              .addRaw(commentBody)
+              .write();
+            
             try {
-              // Get commit hash 
-              const sha = context.payload.pull_request ? context.payload.pull_request.head.sha : context.sha;
-              
-              // Get target repo owner/name
-              const repoOwner = context.payload.pull_request ? 
-                                context.payload.pull_request.base.repo.owner.login : 
-                                ('${{ steps.find-pr.outputs.pr_repo_owner }}' || context.repo.owner);
-              
-              const repoName = context.payload.pull_request ? 
-                              context.payload.pull_request.base.repo.name : 
-                              ('${{ steps.find-pr.outputs.pr_repo_name }}' || context.repo.repo);
-              
-              const runUrl = `https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
-              const description = "${{ steps.check_build.outputs.build_success }}" === "true" ? 
-                                "Build successful! Click 'Details' to download." : 
-                                "Build failed. Click 'Details' to see logs.";
-              const state = "${{ steps.check_build.outputs.build_success }}" === "true" ? "success" : "failure";
-              
-              console.log(`Creating commit status on ${repoOwner}/${repoName} for commit ${sha}`);
-              
-              await github.rest.repos.createCommitStatus({
-                owner: repoOwner,
-                repo: repoName,
-                sha: sha,
-                state: state,
-                target_url: runUrl,
-                description: description,
-                context: "Plugin Build"
+              // Find all comments
+              console.log(`Listing comments for PR #${prNumber}`);
+              const { data: comments } = await github.rest.issues.listComments({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: prNumber
               });
               
-              console.log("Successfully set commit status");
+              // The unique marker to identify our build comment
+              const commentIdentifier = "## 📦 Latest Plugin Build";
+              
+              // Look for our build info comment
+              const buildInfoComment = comments.find(comment => 
+                comment.body.includes(commentIdentifier) && 
+                comment.user.login === 'github-actions[bot]'
+              );
+              
+              if (buildInfoComment) {
+                // Update the existing comment
+                await github.rest.issues.updateComment({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  comment_id: buildInfoComment.id,
+                  body: commentBody
+                });
+                console.log("Successfully updated existing build info comment");
+              } else {
+                // Create a new comment
+                await github.rest.issues.createComment({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: prNumber,
+                  body: commentBody
+                });
+                console.log("Successfully posted new build info comment");
+              }
             } catch (error) {
-              console.log("Error setting commit status:", error.message);
+              console.log("Unable to post comment to PR. Build information is still available in the workflow summary.");
+              console.log(`Error details: ${error.message}`);
               
               if (error.response) {
                 console.log("Status:", error.response.status);
                 console.log("Response data:", JSON.stringify(error.response.data));
               }
-              
-              // Don't fail the workflow, just log the error
-              console.log("Unable to set commit status. Build information is still available in the workflow summary.");
-            }
-      
-      # Only run this step when we're in a pull request context or have found an associated PR
-      # and when we're NOT dealing with a cross-repo PR
-      - name: Update or post build info comment on PR
-        if: |
-          (github.event_name == 'pull_request_target' || github.event_name == 'pull_request' || steps.find-pr.outputs.found == 'true') && 
-          !(github.event.pull_request.head.repo.full_name != github.event.pull_request.base.repo.full_name)
-        uses: actions/github-script@v6
-        with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          script: |
-            try {
-              // Get PR number and repository information
-              let prNumber, repoOwner, repoName;
-              
-              if (context.payload.pull_request) {
-                // If this is a pull_request or pull_request_target event
-                prNumber = context.payload.pull_request.number;
-                // Use the base repository (the one receiving the PR)
-                repoOwner = context.payload.pull_request.base.repo.owner.login;
-                repoName = context.payload.pull_request.base.repo.name;
-                console.log(`Got PR #${prNumber} on ${repoOwner}/${repoName} from event payload`);
-              } else if ('${{ steps.find-pr.outputs.found }}' === 'true') {
-                // If this is from the find-pr step
-                prNumber = parseInt('${{ steps.find-pr.outputs.pr_number }}');
-                repoOwner = '${{ steps.find-pr.outputs.pr_repo_owner }}';
-                repoName = '${{ steps.find-pr.outputs.pr_repo_name }}';
-                console.log(`Got PR #${prNumber} on ${repoOwner}/${repoName} from find-pr step`);
-              } else {
-                throw new Error("No PR information found");
-              }
-              
-              // Check if this is a cross-repo PR
-              const currentRepo = context.repository;
-              const [currentOwner, currentRepoName] = currentRepo.split('/');
-              const isCrossRepoPR = (repoOwner !== currentOwner || repoName !== currentRepoName);
-              
-              if (isCrossRepoPR) {
-                console.log(`This is a cross-repo PR from ${currentRepo} to ${repoOwner}/${repoName}`);
-                
-                // Cross-repo PRs may have permission limitations with GITHUB_TOKEN
-                // We'll prepare the comment but log a warning
-                console.log("⚠️ Cross-repository PRs may have permission limitations when commenting");
-              }
-              
-              console.log(`Working with PR #${prNumber} on ${repoOwner}/${repoName}`);
-              
-              const runUrl = `https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
-              const timestamp = new Date().toISOString();
-              const commitSha = context.sha.substring(0, 7);
-              
-              // Create build info comment
-              let commentBody = '';
-              if ("${{ steps.check_build.outputs.build_success }}" === "true") {
-                commentBody = "## 📦 Latest Plugin Build\n\n" +
-                  `**Built at:** ${timestamp}\n` +
-                  `**Commit:** ${commitSha}\n` +
-                  `**Size:** ${{ steps.check_build.outputs.filesize }}\n\n` +
-                  `**Download:** [Click here to download the plugin](${runUrl})\n\n` +
-                  `_To download: Click the link above → Scroll to bottom → Download "facebook-for-woocommerce" artifact_`;
-              } else {
-                commentBody = "## ❌ Plugin Build Failed\n\n" +
-                  `**Attempted at:** ${timestamp}\n` +
-                  `**Commit:** ${commitSha}\n\n` +
-                  `Please check the [workflow logs](${runUrl}) for more information.`;
-              }
-              
-              // Add build info to workflow summary
-              core.summary
-                .addHeading(("${{ steps.check_build.outputs.build_success }}" === "true") ? 
-                  "📦 Latest Plugin Build" : "❌ Plugin Build Failed")
-                .addRaw(commentBody)
-                .write();
-              
-              try {
-                // The unique marker to identify our build comment
-                const commentIdentifier = "## 📦 Latest Plugin Build";
-                
-                // Find all comments
-                console.log(`Listing comments for PR #${prNumber} on ${repoOwner}/${repoName}`);
-                const { data: comments } = await github.rest.issues.listComments({
-                  owner: repoOwner,
-                  repo: repoName,
-                  issue_number: prNumber
-                });
-                
-                console.log(`Found ${comments.length} comments`);
-                
-                // Look for our build info comment
-                const buildInfoComment = comments.find(comment => 
-                  comment.body.includes(commentIdentifier) && 
-                  comment.user.login === 'github-actions[bot]'
-                );
-                
-                if (buildInfoComment) {
-                  console.log(`Updating existing comment ID: ${buildInfoComment.id}`);
-                  // Update the existing comment
-                  await github.rest.issues.updateComment({
-                    owner: repoOwner,
-                    repo: repoName,
-                    comment_id: buildInfoComment.id,
-                    body: commentBody
-                  });
-                  console.log("Successfully updated existing build info comment");
-                } else {
-                  console.log(`Creating new comment on PR #${prNumber} in ${repoOwner}/${repoName}`);
-                  // Create a new comment
-                  await github.rest.issues.createComment({
-                    owner: repoOwner,
-                    repo: repoName,
-                    issue_number: prNumber,
-                    body: commentBody
-                  });
-                  console.log("Successfully posted new build info comment");
-                }
-              } catch (error) {
-                console.log("Error interacting with PR:");
-                console.log(`Status: ${error.status}, Message: ${error.message}`);
-                
-                if (isCrossRepoPR) {
-                  console.log("This is likely due to permissions on cross-repository PRs.");
-                  console.log("Consider configuring a GitHub personal access token with appropriate permissions.");
-                  
-                  // Instead of failing, let's log a message that the user should check the workflow summary
-                  core.notice("⚠️ Could not comment on the PR due to cross-repository permissions. The build information is available in the workflow summary.");
-                } else {
-                  throw error; // Re-throw for other types of errors
-                }
-              }
-            } catch (error) {
-              console.log("Error details:", error.message);
-              
-              if (error.response) {
-                console.log("Response status:", error.response.status);
-                console.log("Response data:", JSON.stringify(error.response.data));
-              }
-              
-              // Don't fail the workflow, just log the error
-              console.log("Unable to update or post comment to PR. Build information is still available in the workflow summary.");
             } 
