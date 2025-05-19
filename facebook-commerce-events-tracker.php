@@ -879,6 +879,12 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 			// Save the metadata
 			$order->save();
 
+			// Log which hook triggered this purchase event
+			$hook_name = current_action();
+			if ( method_exists( facebook_for_woocommerce(), 'log' ) ) {
+				facebook_for_woocommerce()->log( sprintf( 'Purchase event fired for order %d by hook %s', $order_id, $hook_name ) );
+			}
+
 			$content_type  = 'product';
 			$contents      = array();
 			$product_ids   = array( array() );
