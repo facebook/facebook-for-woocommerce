@@ -91,30 +91,52 @@ jobs:
               .addRaw(commentBody)
               .write();
             
-            // Always try to post a comment, regardless of repository ownership
+            // Look for an existing comment from this workflow
+            const commentMarker = '## 📦 Latest Plugin Build';
+            const failMarker = '## ❌ Plugin Build Failed';
+            
+            let existingCommentId = null;
+            
             try {
-              await github.rest.issues.createComment({
+              const comments = await github.rest.issues.listComments({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
-                issue_number: prNumber,
-                body: commentBody
+                issue_number: prNumber
               });
-              console.log("Successfully posted comment on PR");
+              
+              // Look for comments that contain our markers
+              for (const comment of comments.data) {
+                if (comment.body.includes(commentMarker) || comment.body.includes(failMarker)) {
+                  existingCommentId = comment.id;
+                  break;
+                }
+              }
             } catch (error) {
-              console.log("Unable to post comment to PR. Build information is still available in the workflow summary.");
-              console.log(`Error details: ${error.message}`);
+              console.log(`Error listing comments: ${error.message}`);
             }
             
-            // Always try to post a comment
+            // Update or create comment
             try {
-              await github.rest.issues.createComment({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                issue_number: prNumber,
-                body: commentBody
-              });
-              console.log("Successfully posted comment on PR");
+              if (existingCommentId) {
+                // Update existing comment
+                await github.rest.issues.updateComment({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  comment_id: existingCommentId,
+                  body: commentBody
+                });
+                console.log(`Updated existing comment ID: ${existingCommentId}`);
+              } else {
+                // Create new comment if no existing one found
+                await github.rest.issues.createComment({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: prNumber,
+                  body: commentBody
+                });
+                console.log("Created new comment");
+              }
             } catch (error) {
-              console.log("Unable to post comment to PR. Build information is still available in the workflow summary.");
+              console.log("Unable to update or create comment. Build information is still available in the workflow summary.");
               console.log(`Error details: ${error.message}`);
             } 
