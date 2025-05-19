@@ -79,10 +79,10 @@ class Product_Sets {
 				$fb_catalog_id = facebook_for_woocommerce()->get_integration()->get_product_catalog_id();
 
 				?>
-					<div class="notice notice-info">
+					<div class="notice notice-warning">
 						<p><b>Your categories now automatically sync as product sets on Facebook</b></p>
-						<p>To make changes to automatically synced sets going forward, you should <a href="edit-tags.php?taxonomy=product_cat" target="_blank">edit your categories on WooCommerce</a>. This may take some time to update initially, but then will automatically sync every few minutes. There are no changes to any sets you previously created.
-						To see what’s synced, go to <a href="https://business.facebook.com/commerce/catalogs/<?php echo esc_attr( $fb_catalog_id ); ?>/sets" target="_blank">sets in Commerce Manager</a>.</p>
+						<p>Your categories in WooCommerce are now automatically synced to your catalog as product sets. To make changes to synced sets, you should <a href="edit-tags.php?taxonomy=product_cat" target="_blank">edit your categories on WooCommerce</a>. To see what has synced, <a href="https://business.facebook.com/commerce/catalogs/<?php echo esc_attr( $fb_catalog_id ); ?>/sets" target="_blank">go to sets in Commerce Manager</a>. Syncing categories helps customers discover more products and optimize ad performance.</p>
+						<p>The Product Sets tab will also be deprecated soon so you can no longer create and manage product sets within the plugin. Previously created sets will still remain, go to Commerce Manager to manage product sets going forward.</p>
 					</div>
 				<?php
 			}
