@@ -1,8 +1,6 @@
 name: Build Plugin Artifact
 
-on:
-  pull_request_target:
-    types: [opened, synchronize, reopened]
+on: [ push, pull_request_target ] # Run on all pushes and PRs
 
 jobs:
   build-and-upload:
@@ -13,6 +11,9 @@ jobs:
     
     steps:
       - uses: actions/checkout@v1
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          # This ensures we checkout the PR code when running on pull_request_target
       
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
@@ -56,6 +57,7 @@ jobs:
         run: echo "⬇️ Scroll to the bottom of this page and download the 'facebook-for-woocommerce' artifact to get the latest plugin build." > $GITHUB_STEP_SUMMARY
         
       - name: Update or post build info comment on PR
+        if: github.event_name == 'pull_request_target'
         uses: actions/github-script@v6
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
