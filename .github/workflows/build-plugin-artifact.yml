@@ -10,7 +10,6 @@ jobs:
     permissions:
       contents: read
       pull-requests: write
-      statuses: write
     
     steps:
       - uses: actions/checkout@v1
@@ -55,19 +54,8 @@ jobs:
       
       - name: Create simple summary
         run: echo "⬇️ Scroll to the bottom of this page and download the 'facebook-for-woocommerce' artifact to get the latest plugin build." > $GITHUB_STEP_SUMMARY
-      
-      # Debug info about the event context
-      - name: Debug event information
-        run: |
-          echo "Event name: ${{ github.event_name }}"
-          echo "Repository: ${{ github.repository }}"
-          echo "PR number: ${{ github.event.pull_request.number }}"
-          echo "SHA: ${{ github.sha }}"
-          echo "Head repo: ${{ github.event.pull_request.head.repo.full_name }}"
-          echo "Base repo: ${{ github.event.pull_request.base.repo.full_name }}"
         
-      # Post comment on PR
-      - name: Post build info comment on PR
+      - name: Update or post build info comment on PR
         uses: actions/github-script@v6
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
@@ -103,31 +91,16 @@ jobs:
               .addRaw(commentBody)
               .write();
             
+            // The unique marker to identify our build comment
+            const commentIdentifier = "## 📦 Latest Plugin Build";
+            
             try {
-              // First attempt to create/update commit status
-              await github.rest.repos.createCommitStatus({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                sha: context.payload.pull_request.head.sha,
-                state: "${{ steps.check_build.outputs.build_success }}" === "true" ? 'success' : 'failure',
-                target_url: runUrl,
-                description: "${{ steps.check_build.outputs.build_success }}" === "true" ? 
-                  `Build successful (${timestamp})` : `Build failed (${timestamp})`,
-                context: 'Plugin Build'
-              });
-              console.log("Successfully created commit status");
-              
-              // Also try to post a comment if possible
               // Find all comments
-              console.log(`Listing comments for PR #${prNumber}`);
               const { data: comments } = await github.rest.issues.listComments({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
                 issue_number: prNumber
               });
-              
-              // The unique marker to identify our build comment
-              const commentIdentifier = "## 📦 Latest Plugin Build";
               
               // Look for our build info comment
               const buildInfoComment = comments.find(comment => 
@@ -155,11 +128,6 @@ jobs:
                 console.log("Successfully posted new build info comment");
               }
             } catch (error) {
-              console.log("Error encountered during PR communication:");
+              console.log("Unable to update or post comment to PR. Build information is still available in the workflow summary.");
               console.log(`Error details: ${error.message}`);
-              
-              if (error.response) {
-                console.log("Status:", error.response.status);
-                console.log("Response data:", JSON.stringify(error.response.data));
-              }
             } 
