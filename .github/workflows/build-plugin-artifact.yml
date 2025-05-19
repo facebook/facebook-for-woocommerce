@@ -4,7 +4,6 @@ on:
   pull_request:
     types: [opened, synchronize, reopened]
 
-# Testing comment update functionality
 jobs:
   build-and-upload:
     runs-on: ubuntu-latest
@@ -129,12 +128,12 @@ jobs:
                 console.log(`Updated existing comment ID: ${existingCommentId}`);
               } else {
                 // Create new comment if no existing one found
-                await github.rest.issues.createComment({
-                  owner: context.repo.owner,
-                  repo: context.repo.repo,
-                  issue_number: prNumber,
-                  body: commentBody
-                });
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: prNumber,
+                body: commentBody
+              });
                 console.log("Created new comment");
               }
             } catch (error) {
