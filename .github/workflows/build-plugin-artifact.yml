@@ -104,17 +104,3 @@ jobs:
               console.log("Unable to post comment to PR. Build information is still available in the workflow summary.");
               console.log(`Error details: ${error.message}`);
             }
-            
-            // Always try to post a comment
-            try {
-              await github.rest.issues.createComment({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                issue_number: prNumber,
-                body: commentBody
-              });
-              console.log("Successfully posted comment on PR");
-            } catch (error) {
-              console.log("Unable to post comment to PR. Build information is still available in the workflow summary.");
-              console.log(`Error details: ${error.message}`);
-            } 
