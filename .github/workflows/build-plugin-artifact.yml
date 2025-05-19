@@ -62,20 +62,63 @@ jobs:
           echo "Is PR?: ${{ github.event_name == 'pull_request_target' || github.event_name == 'pull_request' }}"
           echo "Has PR number?: ${{ github.event.pull_request.number != '' }}"
           echo "SHA: ${{ github.sha }}"
+          echo "Ref: ${{ github.ref }}"
+          echo "Branch name: ${{ github.ref_name }}"
       
-      # Only run this step when we're in a pull request context
-      - name: Update or post build info comment on PR
-        if: github.event_name == 'pull_request_target' || github.event_name == 'pull_request'
+      # Find associated PR for push events
+      - name: Find associated PR
+        id: find-pr
+        if: github.event_name == 'push'
         uses: actions/github-script@v6
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
             try {
-              // Get PR number from event context
-              const prNumber = context.payload.pull_request ? context.payload.pull_request.number : null;
+              // For push events, find if there's an open PR for this branch
+              const branch = context.ref.replace('refs/heads/', '');
+              console.log(`Looking for PRs from branch: ${branch}`);
               
-              if (!prNumber) {
-                throw new Error("No PR number found in context payload");
+              const { data: pullRequests } = await github.rest.pulls.list({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                state: 'open',
+                head: `${context.repo.owner}:${branch}`
+              });
+              
+              if (pullRequests.length > 0) {
+                // Use the first PR if there are multiple for this branch
+                const prNumber = pullRequests[0].number;
+                console.log(`Found associated PR #${prNumber}`);
+                core.setOutput('pr_number', prNumber.toString());
+                core.setOutput('found', 'true');
+              } else {
+                console.log(`No open PR found for branch ${branch}`);
+                core.setOutput('found', 'false');
+              }
+            } catch (error) {
+              console.log(`Error finding PR: ${error.message}`);
+              core.setOutput('found', 'false');
+            }
+      
+      # Only run this step when we're in a pull request context or have found an associated PR
+      - name: Update or post build info comment on PR
+        if: github.event_name == 'pull_request_target' || github.event_name == 'pull_request' || steps.find-pr.outputs.found == 'true'
+        uses: actions/github-script@v6
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            try {
+              // Get PR number from event context or from the find-pr step
+              let prNumber;
+              
+              if (context.payload.pull_request) {
+                prNumber = context.payload.pull_request.number;
+                console.log(`Got PR number from event payload: ${prNumber}`);
+              } else if ('${{ steps.find-pr.outputs.pr_number }}') {
+                prNumber = parseInt('${{ steps.find-pr.outputs.pr_number }}');
+                console.log(`Got PR number from find-pr step: ${prNumber}`);
+              } else {
+                throw new Error("No PR number found in context or from find-pr step");
               }
               
               console.log(`Working with PR #${prNumber}`);
