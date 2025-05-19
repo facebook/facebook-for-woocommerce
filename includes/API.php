@@ -521,6 +521,19 @@ class API extends Base {
 
 	/**
 	 * @param string $product_catalog_id
+	 * @param array $data
+	 * @return API\Response|API\ProductCatalog\ProductSets\Read\Response
+	 * @throws ApiException
+	 * @throws API\Exceptions\Request_Limit_Reached
+	 */
+	public function read_product_set_item( string $product_catalog_id, string $retailer_id ): API\ProductCatalog\ProductSets\Read\Response {
+		$request = new API\ProductCatalog\ProductSets\Read\Request( $product_catalog_id, $retailer_id );
+		$this->set_response_handler( API\ProductCatalog\ProductSets\Read\Response::class );
+		return $this->perform_request( $request );
+	}
+
+	/**
+	 * @param string $product_catalog_id
 	 * @return API\Response|API\ProductCatalog\ProductFeeds\ReadAll\Response
 	 * @throws ApiException
 	 * @throws API\Exceptions\Request_Limit_Reached

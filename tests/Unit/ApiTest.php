@@ -863,4 +863,31 @@ class ApiTest extends \WooCommerce\Facebook\Tests\AbstractWPUnitTestWithSafeFilt
 		$response = $this->api->create_upload( $product_feed_id, $data );
 		$this->assertFalse( $response->has_api_error() );
 	}
+
+	/**
+	 * Tests read product set request to Facebook.
+	 *
+	 * @return void
+	 * @throws ApiException In case of network request error.
+	 */
+	public function test_read_product_set_item() {
+		$product_catalog_id = '726635365295186';
+		$retailer_id = '29';
+
+		$response = function( $result, $parsed_args, $url ) use ( $product_catalog_id, $retailer_id ) {
+			$this->assertEquals( 'GET', $parsed_args['method'] );
+			$this->assertEquals( "{$this->endpoint}{$this->version}/{$product_catalog_id}/product_sets?retailer_id={$retailer_id}", $url );
+			return [
+				'body'     => '{"id":"325235346346546"}',
+				'response' => [
+					'code'    => 200,
+					'message' => 'OK',
+				],
+			];
+		};
+		$this->add_filter_with_safe_teardown( 'pre_http_request', $response, 10, 3 );
+
+		$response = $this->api->read_product_set_item( $product_catalog_id, $retailer_id );
+		$this->assertFalse( $response->has_api_error() );
+	}
 }
