@@ -213,7 +213,9 @@ class Advertise extends Abstract_Settings_Screen {
 		require_once __DIR__ . '/../../../facebook-commerce-admin-banner.php';
 		$banner = new \WC_Facebookcommerce_Admin_Banner();
 		$banner->render_banner();
+		$banner->enqueue_banner_script();
 		?>
+
 		<script async defer src="<?php echo esc_url( $this->get_lwi_ads_sdk_url() ); ?>"></script>
 		<div
 			class="fb-lwi-ads-creation"

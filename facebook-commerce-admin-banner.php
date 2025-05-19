@@ -20,6 +20,42 @@
 class WC_Facebookcommerce_Admin_Banner {
 	const BANNER_ID = 'wc_facebook_admin_banner';
 
+	public function __construct() {
+		add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_banner_script' ) );
+		add_action( 'wp_ajax_wc_facebook_dismiss_banner', array( $this, 'ajax_dismiss_banner' ) );
+	}
+
+	/**
+	 * Enqueue the admin banner script and localize data.
+	 */
+	public function enqueue_banner_script() {
+		wp_enqueue_script(
+			'whatsapp-admin-banner',
+			plugins_url( 'assets/js/admin/whatsapp-admin-banner.js', __FILE__ ),
+			array( 'jquery' ),
+			'1.0',
+			true
+		);
+		wp_localize_script(
+			'whatsapp-admin-banner',
+			'WCFBAdminBanner',
+			array(
+				'ajax_url'  => admin_url( 'admin-ajax.php' ),
+				'nonce'     => wp_create_nonce( self::BANNER_ID ),
+				'banner_id' => self::BANNER_ID,
+			)
+		);
+	}
+
+	/**
+	 * AJAX handler to dismiss the banner.
+	 */
+	public function ajax_dismiss_banner() {
+		check_ajax_referer( self::BANNER_ID, 'nonce' );
+		update_user_meta( get_current_user_id(), self::BANNER_ID, 1 );
+		wp_send_json_success();
+	}
+
 	/**
 	 * Output the banner HTML if it should be shown.
 	 */
@@ -37,7 +73,7 @@ class WC_Facebookcommerce_Admin_Banner {
 			return;
 		}
 
-		$banner_html  = '<div class="fb-wa-banner">';
+		$banner_html  = '<div class="fb-wa-banner" data-nonce="' . esc_attr( wp_create_nonce( self::BANNER_ID ) ) . '" data-banner-id="' . esc_attr( self::BANNER_ID ) . '">';
 		$banner_html .= '<img src="' . esc_url( plugins_url( 'assets/images/ico-whatsapp.png', __FILE__ ) ) . '" width="36" height="36" alt="WhatsApp Logo" />';
 		$banner_html .= '<h2>Sign up to test WhatsApp’s new integration with WooCommerce</h2>';
 		$banner_html .= '<p>We’re launching a brand new WhatsApp integration for WooCommerce allowing businesses to send order tracking notifications on WhatsApp. Sign up for a chance to join our testing program and get early access to this new feature. As a thank you, participants who complete testing will receive a $500 ad credit.</p>';
