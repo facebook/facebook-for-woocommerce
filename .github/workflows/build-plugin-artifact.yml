@@ -4,6 +4,7 @@ on:
   pull_request:
     types: [opened, synchronize, reopened]
 
+# Testing comment update functionality
 jobs:
   build-and-upload:
     runs-on: ubuntu-latest
