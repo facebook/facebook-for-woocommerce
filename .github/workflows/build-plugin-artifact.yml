@@ -59,13 +59,16 @@ jobs:
       - name: Debug event information
         run: |
           echo "Event name: ${{ github.event_name }}"
+          echo "Repository: ${{ github.repository }}"
           echo "Is PR?: ${{ github.event_name == 'pull_request_target' || github.event_name == 'pull_request' }}"
           echo "Has PR number?: ${{ github.event.pull_request.number != '' }}"
           echo "SHA: ${{ github.sha }}"
           echo "Ref: ${{ github.ref }}"
           echo "Branch name: ${{ github.ref_name }}"
+          echo "Head repo: ${{ github.event.pull_request.head.repo.full_name }}"
+          echo "Base repo: ${{ github.event.pull_request.base.repo.full_name }}"
       
-      # Find associated PR for push events
+      # Find associated PR for push events within the same repository
       - name: Find associated PR
         id: find-pr
         if: github.event_name == 'push'
@@ -78,23 +81,62 @@ jobs:
               const branch = context.ref.replace('refs/heads/', '');
               console.log(`Looking for PRs from branch: ${branch}`);
               
-              const { data: pullRequests } = await github.rest.pulls.list({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
+              // Get repository owner and name
+              const [owner, repo] = context.repository.split('/');
+              
+              // First check for PRs within this repository
+              console.log(`Checking for PRs within ${owner}/${repo}`);
+              const { data: internalPRs } = await github.rest.pulls.list({
+                owner: owner,
+                repo: repo,
                 state: 'open',
-                head: `${context.repo.owner}:${branch}`
+                head: `${owner}:${branch}`
               });
               
-              if (pullRequests.length > 0) {
+              if (internalPRs.length > 0) {
                 // Use the first PR if there are multiple for this branch
-                const prNumber = pullRequests[0].number;
-                console.log(`Found associated PR #${prNumber}`);
+                const prNumber = internalPRs[0].number;
+                console.log(`Found internal PR #${prNumber}`);
                 core.setOutput('pr_number', prNumber.toString());
+                core.setOutput('pr_repo_owner', owner);
+                core.setOutput('pr_repo_name', repo);
                 core.setOutput('found', 'true');
-              } else {
-                console.log(`No open PR found for branch ${branch}`);
-                core.setOutput('found', 'false');
+                return;
               }
+              
+              // Check if this branch is part of a PR to other repositories (like facebook/facebook-for-woocommerce)
+              // This requires scanning potential upstream repositories
+              const potentialUpstreams = ['facebook/facebook-for-woocommerce'];
+              
+              for (const upstream of potentialUpstreams) {
+                const [upstreamOwner, upstreamRepo] = upstream.split('/');
+                console.log(`Checking for PRs to ${upstreamOwner}/${upstreamRepo}`);
+                
+                try {
+                  const { data: externalPRs } = await github.rest.pulls.list({
+                    owner: upstreamOwner,
+                    repo: upstreamRepo,
+                    state: 'open',
+                    head: `${owner}:${branch}`
+                  });
+                  
+                  if (externalPRs.length > 0) {
+                    // Found a PR to an upstream repo
+                    const prNumber = externalPRs[0].number;
+                    console.log(`Found external PR #${prNumber} to ${upstreamOwner}/${upstreamRepo}`);
+                    core.setOutput('pr_number', prNumber.toString());
+                    core.setOutput('pr_repo_owner', upstreamOwner);
+                    core.setOutput('pr_repo_name', upstreamRepo);
+                    core.setOutput('found', 'true');
+                    return;
+                  }
+                } catch (error) {
+                  console.log(`Error checking ${upstreamOwner}/${upstreamRepo}: ${error.message}`);
+                }
+              }
+              
+              console.log(`No open PR found for branch ${branch}`);
+              core.setOutput('found', 'false');
             } catch (error) {
               console.log(`Error finding PR: ${error.message}`);
               core.setOutput('found', 'false');
@@ -105,23 +147,44 @@ jobs:
         if: github.event_name == 'pull_request_target' || github.event_name == 'pull_request' || steps.find-pr.outputs.found == 'true'
         uses: actions/github-script@v6
         with:
+          # Use GITHUB_TOKEN for same-repo PRs, or a PAT for cross-repo PRs if available
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
             try {
-              // Get PR number from event context or from the find-pr step
-              let prNumber;
+              // Get PR number and repository information
+              let prNumber, repoOwner, repoName;
               
               if (context.payload.pull_request) {
+                // If this is a pull_request or pull_request_target event
                 prNumber = context.payload.pull_request.number;
-                console.log(`Got PR number from event payload: ${prNumber}`);
-              } else if ('${{ steps.find-pr.outputs.pr_number }}') {
+                // Use the base repository (the one receiving the PR)
+                repoOwner = context.payload.pull_request.base.repo.owner.login;
+                repoName = context.payload.pull_request.base.repo.name;
+                console.log(`Got PR #${prNumber} on ${repoOwner}/${repoName} from event payload`);
+              } else if ('${{ steps.find-pr.outputs.found }}' === 'true') {
+                // If this is from the find-pr step
                 prNumber = parseInt('${{ steps.find-pr.outputs.pr_number }}');
-                console.log(`Got PR number from find-pr step: ${prNumber}`);
+                repoOwner = '${{ steps.find-pr.outputs.pr_repo_owner }}';
+                repoName = '${{ steps.find-pr.outputs.pr_repo_name }}';
+                console.log(`Got PR #${prNumber} on ${repoOwner}/${repoName} from find-pr step`);
               } else {
-                throw new Error("No PR number found in context or from find-pr step");
+                throw new Error("No PR information found");
               }
               
-              console.log(`Working with PR #${prNumber}`);
+              // Check if this is a cross-repo PR
+              const currentRepo = context.repository;
+              const [currentOwner, currentRepoName] = currentRepo.split('/');
+              const isCrossRepoPR = (repoOwner !== currentOwner || repoName !== currentRepoName);
+              
+              if (isCrossRepoPR) {
+                console.log(`This is a cross-repo PR from ${currentRepo} to ${repoOwner}/${repoName}`);
+                
+                // Cross-repo PRs may have permission limitations with GITHUB_TOKEN
+                // We'll prepare the comment but log a warning
+                console.log("⚠️ Cross-repository PRs may have permission limitations when commenting");
+              }
+              
+              console.log(`Working with PR #${prNumber} on ${repoOwner}/${repoName}`);
               
               const runUrl = `https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
               const timestamp = new Date().toISOString();
@@ -150,40 +213,60 @@ jobs:
                 .addRaw(commentBody)
                 .write();
               
-              // The unique marker to identify our build comment
-              const commentIdentifier = "## 📦 Latest Plugin Build";
-              
-              // Find all comments
-              const { data: comments } = await github.rest.issues.listComments({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                issue_number: prNumber
-              });
-              
-              // Look for our build info comment
-              const buildInfoComment = comments.find(comment => 
-                comment.body.includes(commentIdentifier) && 
-                comment.user.login === 'github-actions[bot]'
-              );
-              
-              if (buildInfoComment) {
-                // Update the existing comment
-                await github.rest.issues.updateComment({
-                  owner: context.repo.owner,
-                  repo: context.repo.repo,
-                  comment_id: buildInfoComment.id,
-                  body: commentBody
+              try {
+                // The unique marker to identify our build comment
+                const commentIdentifier = "## 📦 Latest Plugin Build";
+                
+                // Find all comments
+                console.log(`Listing comments for PR #${prNumber} on ${repoOwner}/${repoName}`);
+                const { data: comments } = await github.rest.issues.listComments({
+                  owner: repoOwner,
+                  repo: repoName,
+                  issue_number: prNumber
                 });
-                console.log("Successfully updated existing build info comment");
-              } else {
-                // Create a new comment
-                await github.rest.issues.createComment({
-                  owner: context.repo.owner,
-                  repo: context.repo.repo,
-                  issue_number: prNumber,
-                  body: commentBody
-                });
-                console.log("Successfully posted new build info comment");
+                
+                console.log(`Found ${comments.length} comments`);
+                
+                // Look for our build info comment
+                const buildInfoComment = comments.find(comment => 
+                  comment.body.includes(commentIdentifier) && 
+                  comment.user.login === 'github-actions[bot]'
+                );
+                
+                if (buildInfoComment) {
+                  console.log(`Updating existing comment ID: ${buildInfoComment.id}`);
+                  // Update the existing comment
+                  await github.rest.issues.updateComment({
+                    owner: repoOwner,
+                    repo: repoName,
+                    comment_id: buildInfoComment.id,
+                    body: commentBody
+                  });
+                  console.log("Successfully updated existing build info comment");
+                } else {
+                  console.log(`Creating new comment on PR #${prNumber} in ${repoOwner}/${repoName}`);
+                  // Create a new comment
+                  await github.rest.issues.createComment({
+                    owner: repoOwner,
+                    repo: repoName,
+                    issue_number: prNumber,
+                    body: commentBody
+                  });
+                  console.log("Successfully posted new build info comment");
+                }
+              } catch (error) {
+                console.log("Error interacting with PR:");
+                console.log(`Status: ${error.status}, Message: ${error.message}`);
+                
+                if (isCrossRepoPR) {
+                  console.log("This is likely due to permissions on cross-repository PRs.");
+                  console.log("Consider configuring a GitHub personal access token with appropriate permissions.");
+                  
+                  // Instead of failing, let's log a message that the user should check the workflow summary
+                  core.notice("⚠️ Could not comment on the PR due to cross-repository permissions. The build information is available in the workflow summary.");
+                } else {
+                  throw error; // Re-throw for other types of errors
+                }
               }
             } catch (error) {
               console.log("Error details:", error.message);
