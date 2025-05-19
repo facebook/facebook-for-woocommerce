@@ -55,48 +55,61 @@ jobs:
       
       - name: Create simple summary
         run: echo "⬇️ Scroll to the bottom of this page and download the 'facebook-for-woocommerce' artifact to get the latest plugin build." > $GITHUB_STEP_SUMMARY
-        
+      
+      - name: Debug event information
+        run: |
+          echo "Event name: ${{ github.event_name }}"
+          echo "Is PR?: ${{ github.event_name == 'pull_request_target' || github.event_name == 'pull_request' }}"
+          echo "Has PR number?: ${{ github.event.pull_request.number != '' }}"
+          echo "SHA: ${{ github.sha }}"
+      
+      # Only run this step when we're in a pull request context
       - name: Update or post build info comment on PR
-        if: github.event_name == 'pull_request_target'
+        if: github.event_name == 'pull_request_target' || github.event_name == 'pull_request'
         uses: actions/github-script@v6
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
-            // Get PR number from pull_request event
-            const prNumber = context.payload.pull_request.number;
-            console.log(`Preparing build info for PR #${prNumber}`);
-            
-            const runUrl = `https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
-            const timestamp = new Date().toISOString();
-            const commitSha = context.sha.substring(0, 7);
-            
-            // Create build info comment
-            let commentBody = '';
-            if ("${{ steps.check_build.outputs.build_success }}" === "true") {
-              commentBody = "## 📦 Latest Plugin Build\n\n" +
-                `**Built at:** ${timestamp}\n` +
-                `**Commit:** ${commitSha}\n` +
-                `**Size:** ${{ steps.check_build.outputs.filesize }}\n\n` +
-                `**Download:** [Click here to download the plugin](${runUrl})\n\n` +
-                `_To download: Click the link above → Scroll to bottom → Download "facebook-for-woocommerce" artifact_`;
-            } else {
-              commentBody = "## ❌ Plugin Build Failed\n\n" +
-                `**Attempted at:** ${timestamp}\n` +
-                `**Commit:** ${commitSha}\n\n` +
-                `Please check the [workflow logs](${runUrl}) for more information.`;
-            }
-            
-            // Add build info to workflow summary regardless
-            core.summary
-              .addHeading(("${{ steps.check_build.outputs.build_success }}" === "true") ? 
-                "📦 Latest Plugin Build" : "❌ Plugin Build Failed")
-              .addRaw(commentBody)
-              .write();
-            
-            // The unique marker to identify our build comment
-            const commentIdentifier = "## 📦 Latest Plugin Build";
-            
             try {
+              // Get PR number from event context
+              const prNumber = context.payload.pull_request ? context.payload.pull_request.number : null;
+              
+              if (!prNumber) {
+                throw new Error("No PR number found in context payload");
+              }
+              
+              console.log(`Working with PR #${prNumber}`);
+              
+              const runUrl = `https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
+              const timestamp = new Date().toISOString();
+              const commitSha = context.sha.substring(0, 7);
+              
+              // Create build info comment
+              let commentBody = '';
+              if ("${{ steps.check_build.outputs.build_success }}" === "true") {
+                commentBody = "## 📦 Latest Plugin Build\n\n" +
+                  `**Built at:** ${timestamp}\n` +
+                  `**Commit:** ${commitSha}\n` +
+                  `**Size:** ${{ steps.check_build.outputs.filesize }}\n\n` +
+                  `**Download:** [Click here to download the plugin](${runUrl})\n\n` +
+                  `_To download: Click the link above → Scroll to bottom → Download "facebook-for-woocommerce" artifact_`;
+              } else {
+                commentBody = "## ❌ Plugin Build Failed\n\n" +
+                  `**Attempted at:** ${timestamp}\n` +
+                  `**Commit:** ${commitSha}\n\n` +
+                  `Please check the [workflow logs](${runUrl}) for more information.`;
+              }
+              
+              // Add build info to workflow summary
+              core.summary
+                .addHeading(("${{ steps.check_build.outputs.build_success }}" === "true") ? 
+                  "📦 Latest Plugin Build" : "❌ Plugin Build Failed")
+                .addRaw(commentBody)
+                .write();
+              
+              // The unique marker to identify our build comment
+              const commentIdentifier = "## 📦 Latest Plugin Build";
+              
               // Find all comments
               const { data: comments } = await github.rest.issues.listComments({
                 owner: context.repo.owner,
@@ -130,6 +143,13 @@ jobs:
                 console.log("Successfully posted new build info comment");
               }
             } catch (error) {
+              console.log("Error details:", error.message);
+              
+              if (error.response) {
+                console.log("Response status:", error.response.status);
+                console.log("Response data:", JSON.stringify(error.response.data));
+              }
+              
+              // Don't fail the workflow, just log the error
               console.log("Unable to update or post comment to PR. Build information is still available in the workflow summary.");
-              console.log(`Error details: ${error.message}`);
             } 
