@@ -127,7 +127,7 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 
 			// InitiateCheckout events for checkout block.
 			add_action( 'woocommerce_blocks_checkout_enqueue_data', array( $this, 'inject_initiate_checkout_event' ) );
-			
+
 			// Purchase and Subscribe events
 			add_action( 'woocommerce_new_order', array( $this, 'inject_purchase_event' ) );
 			add_action( 'woocommerce_payment_complete', array( $this, 'inject_purchase_event' ), 10 );
@@ -823,11 +823,11 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 			if ( ! $order ) {
 				return;
 			}
-			
+
 			// Get the status of the order to ensure we track the actual purchases and not the ones that have a failed payment.
 			$order_state = $order->get_status();
 
-			// use a session flag to ensure this Purchase event is not tracked multiple times
+			// Use a session flag to ensure this Purchase event is not tracked multiple times.
 			$purchase_tracked_flag = '_wc_' . facebook_for_woocommerce()->get_id() . '_purchase_tracked_' . $order_id;
 
 			// Return if this Purchase event has already been tracked
@@ -850,7 +850,6 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 			$product_names = array();
 
 			foreach ( $order->get_items() as $item ) {
-
 				$product = $item->get_product();
 
 				if ( $product ) {
@@ -870,6 +869,7 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 					$contents[] = $content;
 				}
 			}
+
 			// Advanced matching information is extracted from the order
 			$event_data = array(
 				'event_name'  => $event_name,
