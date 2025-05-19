@@ -1,7 +1,7 @@
 name: Build Plugin Artifact
 
 on:
-  pull_request:
+  pull_request_target:
     types: [opened, synchronize, reopened]
 
 jobs:
@@ -12,7 +12,9 @@ jobs:
       pull-requests: write
     
     steps:
-      - uses: actions/checkout@v1
+      - uses: actions/checkout@v2
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
       
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
@@ -66,7 +68,7 @@ jobs:
             
             const runUrl = `https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
             const timestamp = new Date().toISOString();
-            const commitSha = context.sha.substring(0, 7);
+            const commitSha = context.payload.pull_request.head.sha.substring(0, 7);
             
             // Create build info comment
             let commentBody = '';
