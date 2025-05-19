@@ -405,15 +405,15 @@ class API extends Base {
 	/**
 	 * Creates a Product under the specified Product Group.
 	 *
-	 * @since 2.0.0
+	 * @since 3.4.9
 	 *
-	 * @param string $product_group_id Facebook Product Group ID.
+	 * @param string $product_catalog_id Facebook Product Catalog ID.
 	 * @param array  $data Facebook Product Data.
 	 * @return API\Response|API\ProductCatalog\Products\Create\Response
 	 * @throws ApiException In case of network request error.
 	 */
-	public function create_product_item( string $product_group_id, array $data ): API\ProductCatalog\Products\Create\Response {
-		$request = new API\ProductCatalog\Products\Create\Request( $product_group_id, $data );
+	public function create_product_item( string $product_catalog_id, array $data ): API\ProductCatalog\Products\Create\Response {
+		$request = new API\ProductCatalog\Products\Create\Request( $product_catalog_id, $data );
 		$this->set_response_handler( API\ProductCatalog\Products\Create\Response::class );
 		return $this->perform_request( $request );
 	}
