@@ -38,6 +38,20 @@ add_action(
 		}
 	}
 );
+
+if ( is_admin() ) {
+	add_action(
+		'admin_init',
+		function () {
+			if ( ! class_exists( 'WC_Facebookcommerce_Admin_Banner' ) ) {
+				require_once plugin_dir_path( __FILE__ ) .
+				'facebook-commerce-admin-banner.php';
+			}
+			new WC_Facebookcommerce_Admin_Banner();
+		}
+	);
+}
+
 /**
  * The plugin loader class.
  *

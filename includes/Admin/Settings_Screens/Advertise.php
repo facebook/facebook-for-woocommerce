@@ -210,10 +210,9 @@ class Advertise extends Abstract_Settings_Screen {
 
 		$fbe_extras = wp_json_encode( $this->get_lwi_ads_configuration_data() );
 
-		require_once __DIR__ . '/../../../facebook-commerce-admin-banner.php';
-		$banner = new \WC_Facebookcommerce_Admin_Banner();
-		$banner->render_banner();
-		$banner->enqueue_banner_script();
+		$wa_banner = new \WC_Facebookcommerce_Admin_Banner();
+		$wa_banner->render_banner();
+		$wa_banner->enqueue_banner_script();
 		?>
 
 		<script async defer src="<?php echo esc_url( $this->get_lwi_ads_sdk_url() ); ?>"></script>
