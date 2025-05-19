@@ -142,12 +142,65 @@ jobs:
               core.setOutput('found', 'false');
             }
       
-      # Only run this step when we're in a pull request context or have found an associated PR
-      - name: Update or post build info comment on PR
-        if: github.event_name == 'pull_request_target' || github.event_name == 'pull_request' || steps.find-pr.outputs.found == 'true'
+      # Create a commit status with build information
+      - name: Post build status to commit
+        if: ${{ github.event_name == 'pull_request_target' || github.event_name == 'pull_request' || steps.find-pr.outputs.found == 'true' }}
         uses: actions/github-script@v6
         with:
-          # Use GITHUB_TOKEN for same-repo PRs, or a PAT for cross-repo PRs if available
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            try {
+              // Get commit hash 
+              const sha = context.payload.pull_request ? context.payload.pull_request.head.sha : context.sha;
+              
+              // Get target repo owner/name
+              const repoOwner = context.payload.pull_request ? 
+                                context.payload.pull_request.base.repo.owner.login : 
+                                ('${{ steps.find-pr.outputs.pr_repo_owner }}' || context.repo.owner);
+              
+              const repoName = context.payload.pull_request ? 
+                              context.payload.pull_request.base.repo.name : 
+                              ('${{ steps.find-pr.outputs.pr_repo_name }}' || context.repo.repo);
+              
+              const runUrl = `https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
+              const description = "${{ steps.check_build.outputs.build_success }}" === "true" ? 
+                                "Build successful! Click 'Details' to download." : 
+                                "Build failed. Click 'Details' to see logs.";
+              const state = "${{ steps.check_build.outputs.build_success }}" === "true" ? "success" : "failure";
+              
+              console.log(`Creating commit status on ${repoOwner}/${repoName} for commit ${sha}`);
+              
+              await github.rest.repos.createCommitStatus({
+                owner: repoOwner,
+                repo: repoName,
+                sha: sha,
+                state: state,
+                target_url: runUrl,
+                description: description,
+                context: "Plugin Build"
+              });
+              
+              console.log("Successfully set commit status");
+            } catch (error) {
+              console.log("Error setting commit status:", error.message);
+              
+              if (error.response) {
+                console.log("Status:", error.response.status);
+                console.log("Response data:", JSON.stringify(error.response.data));
+              }
+              
+              // Don't fail the workflow, just log the error
+              console.log("Unable to set commit status. Build information is still available in the workflow summary.");
+            }
+      
+      # Only run this step when we're in a pull request context or have found an associated PR
+      # and when we're NOT dealing with a cross-repo PR
+      - name: Update or post build info comment on PR
+        if: |
+          (github.event_name == 'pull_request_target' || github.event_name == 'pull_request' || steps.find-pr.outputs.found == 'true') && 
+          !(github.event.pull_request.head.repo.full_name != github.event.pull_request.base.repo.full_name)
+        uses: actions/github-script@v6
+        with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
             try {
