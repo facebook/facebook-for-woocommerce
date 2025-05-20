@@ -665,7 +665,8 @@ class WC_Facebook_Product {
 		// Only fallback to store name if no brand is found on product or parent
 		if (empty($fb_brand)) {
 			$brand = get_post_meta($this->id, Products::ENHANCED_CATALOG_ATTRIBUTES_META_KEY_PREFIX . 'brand', true);
-			$brand_taxonomy = get_the_term_list($this->id, 'product_brand', '', ', ');
+            $brand_taxonomy_slug = apply_filters( 'facebook_for_woocommerce_fb_product_brand_taxonomy', 'product_brand', $this->id );
+			$brand_taxonomy = get_the_term_list($this->id, $brand_taxonomy_slug, '', ', ');
 
 			if ($brand) {
 				$fb_brand = $brand;
