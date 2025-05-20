@@ -12,6 +12,7 @@ namespace WooCommerce\Facebook\Handlers;
 defined( 'ABSPATH' ) || exit;
 
 use WooCommerce\Facebook\Products\Sync;
+use WooCommerce\Facebook\Framework\Plugin\Exception;
 
 class PluginUpdate {
 
@@ -22,6 +23,13 @@ class PluginUpdate {
 
     /** @var string opt out sync action */
 	const ACTION_OPT_OUT_OF_SYNC = 'wc_facebook_opt_out_of_sync';
+
+     /** @var string master sync option */
+	const MASTER_SYNC_OPT_OUT_TIME = 'wc_facebook_master_sync_opt_out_time';
+
+    /** @var string master sync option */
+	const OPT_IN_CONFIRMATION = 'wc_facebook_opt_in_confirmation';
+
 
     public function __construct(\WC_Facebookcommerce $plugin) {
         $this->plugin = $plugin;
@@ -51,8 +59,6 @@ class PluginUpdate {
 				'set_excluded_terms_prompt_nonce' => wp_create_nonce( 'set-excluded-terms-prompt' ),
 				'opt_out_of_sync'				   =>wp_create_nonce(self::ACTION_OPT_OUT_OF_SYNC),
 				'sync_in_progress'                => Sync::is_sync_in_progress(),
-				'excluded_category_ids'           => facebook_for_woocommerce()->get_integration()->get_excluded_product_category_ids(),
-				'excluded_tag_ids'                => facebook_for_woocommerce()->get_integration()->get_excluded_product_tag_ids(),
 			)
 		);
     }
@@ -61,6 +67,24 @@ class PluginUpdate {
         add_action('admin_enqueue_scripts',[ __CLASS__,  'enqueue_assets']);
         add_action('wp_ajax_wc_facebook_opt_out_of_sync', [ __CLASS__,  'opt_out_of_sync_clicked']);
         add_action('wp_ajax_nopriv_wc_facebook_opt_out_of_sync', [ __CLASS__,'opt_out_of_sync_clicked']); 
+        add_action('wp_ajax_wc_facebook_opt_back_in_for_sync', [ __CLASS__,  'opt_back_in_for_sync_clicked']);
+        add_action('wp_ajax_nopriv_wc_facebook_opt_back_in_for_sync', [ __CLASS__,'opt_back_in_for_sync_clicked']); 
+    }
+
+    public static function getOptOutTime(){
+        try{
+            $option_value = get_option(self::MASTER_SYNC_OPT_OUT_TIME);
+            return $option_value;
+        }
+        catch (Exception $e){
+            error_log("Error while fetching master sync option: " . $e->getMessage());
+            return null;
+        }
+    }
+
+    public static function isMasterSyncOn () {
+        $option_value = self::getOptOutTime();
+        return $option_value !== "";
     }
 
     public static function on_plugin_update( $upgrader_object, $options ) {
@@ -85,17 +109,19 @@ class PluginUpdate {
         /**
          * Show the banner if the user is having a version lower than that of the ALl products version
          */
-
-        if($current_version <= self::ALL_PRODUCTS_PLUGIN_VERSION){
-            add_action('admin_notices', [ __CLASS__, 'fb_woocommerce_admin_banner_upcoming_version_change' ], 0); 
+        if($current_version <= self::ALL_PRODUCTS_PLUGIN_VERSION && !self::isMasterSyncOn()){
+            add_action('admin_notices', [ __CLASS__, 'upcoming_version_change_banner' ], 0); 
+        }
+        else if(self::isMasterSyncOn()){
+            add_action('admin_notices', [ __CLASS__, 'opted_out_on_upcoming_version_change_banner' ], 0); 
         }
     }
 
-    public function fb_woocommerce_admin_banner_upcoming_version_change() {
+    public function upcoming_version_change_banner() {
         $screen = get_current_screen();
         if (isset($screen->id) && $screen->id === 'marketing_page_wc-facebook') {
-            echo '<div class="notice notice-info is-dismissible" style="padding: 15px">
-            When you update to version <b>'.self::ALL_PRODUCTS_PLUGIN_VERSION.'</b> and above, your products will automatically sync to your catalog at Meta
+            echo '<div id="opt_out_banner" class="notice notice-info is-dismissible" style="padding: 15px">
+            <h2>When you update to version <b>'.self::ALL_PRODUCTS_PLUGIN_VERSION.'</b> and above, your products will automatically sync to your catalog at Meta catalog</h2>
             The next time you update your Facebook for WooCommerce plugin, all your products will be synced automatically. This is to help you drive sales and optimize your ad performance.<a href="https://www.facebook.com"> Learn more about changes to how your products will sync to Meta </a>
                 <p>
                     <a href="edit.php?post_type=product"> Review products </a>
@@ -105,8 +131,40 @@ class PluginUpdate {
         }
     }
 
+    public function opted_out_on_upcoming_version_change_banner() {
+        $screen = get_current_screen();
+        if (isset($screen->id) && $screen->id === 'marketing_page_wc-facebook') {
+            echo '<div id="opt_in_banner" class="notice notice-success is-dismissible" style="padding: 15px">
+            <h2>You’ve opted out of automatic syncing on the next plugin update </h2>
+                Products that are not synced will not be available for your customers to discover on your ads and shops. To manually add products,<a href="https://www.facebook.com"> learn how to sync products to your Meta catalog</a>
+                <p>
+                    <a href="javascript:void(0);" id="opt_in_to_automatic_sync_button" class="button wc-forward">Opt in to automatic syncing</a>
+                </p>
+            </div>';
+        }
+    }
+
     function opt_out_of_sync_clicked() {
-        wp_send_json_success("This is cool !!");
+        try{
+            $latest_date = date("Y-m-d H:i:s");
+            update_option( self::MASTER_SYNC_OPT_OUT_TIME, $latest_date );
+            wp_send_json_success('Opted out successfully');
+        }
+        catch(Exception $e){
+            error_log("Error while updating WP option: " . $e->getMessage());
+            wp_send_json_error('Failed to opt out');
+        }
+    }
+
+    function opt_back_in_for_sync_clicked() {
+        try{
+            update_option( self::MASTER_SYNC_OPT_OUT_TIME, "" );
+            wp_send_json_success('Opted back in successfully');
+        }
+        catch(Exception $e){
+            error_log("Error while updating WP option: " . $e->getMessage());
+            wp_send_json_error('Failed to opt back in');
+        }
     }
 }
 
