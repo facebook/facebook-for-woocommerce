@@ -124,7 +124,9 @@ class PluginUpdate {
 
             echo '<div id="opt_in_banner" class="'.$opt_in_banner_class.'" style="padding: 15px">
             <h2>You’ve opted out of automatic syncing on the next plugin update </h2>
-                Products that are not synced will not be available for your customers to discover on your ads and shops. To manually add products, <a href="https://www.facebook.com">learn how to sync products to your Meta catalog</a>
+                <p>
+                    Products that are not synced will not be available for your customers to discover on your ads and shops. To manually add products, <a href="https://www.facebook.com">learn how to sync products to your Meta catalog</a>
+                </p>
             </div>';
         }
     }
