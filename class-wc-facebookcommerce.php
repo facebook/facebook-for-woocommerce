@@ -935,7 +935,8 @@ class WC_Facebookcommerce extends WooCommerce\Facebook\Framework\Plugin {
 		if ( $connection_handler->is_connected() && empty( $commerce_partner_integration_id ) ) {
 			return false;
 		}
-		return false;
+		// By default, all net new WooC Merchants will be shown the enhanced onboarding experience
+		return true;
 	}
 }
 
