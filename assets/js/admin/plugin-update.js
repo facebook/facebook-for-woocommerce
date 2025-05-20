@@ -20,7 +20,7 @@ jQuery( document ).ready( function( $ ) {
             if(data.success){
                 $('#opt_out_banner').hide();
                 $('#opt_in_banner').show();
-            }
+            }   
         }).fail(function() {
             console.error("Error Code:", xhr.status);
             console.error("Error Message:", xhr.responseText);
