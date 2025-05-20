@@ -487,7 +487,7 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 		}
 		$config_key       = 'wc_facebook_aam_settings';
 		$saved_value      = get_transient( $config_key );
-		$refresh_interval = 20 * MINUTE_IN_SECONDS;
+		$refresh_interval = 10 * MINUTE_IN_SECONDS;
 		$aam_settings     = null;
 		// If wc_facebook_aam_settings is present in the DB it is converted into an AAMSettings object.
 		if ( $saved_value !== false ) {
