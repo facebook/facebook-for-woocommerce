@@ -836,7 +836,7 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 			}
 
 			// Mark the order as tracked for the session
-			set_transient( $purchase_tracked_flag, 'yes', 15 * MINUTE_IN_SECONDS );
+			set_transient( $purchase_tracked_flag, 'yes', 45 * MINUTE_IN_SECONDS );
 
 			// Set a flag to ensure this Purchase event is not going to be sent across different sessions
 			$order->add_meta_data( '_meta_purchase_tracked', true, true );
