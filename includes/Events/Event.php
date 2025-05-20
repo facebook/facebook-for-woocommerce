@@ -1,5 +1,4 @@
 <?php
-// phpcs:ignoreFile
 /**
  * Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
  *
@@ -11,7 +10,7 @@
 
 namespace WooCommerce\Facebook\Events;
 
-defined( 'ABSPATH' ) or exit;
+defined( 'ABSPATH' ) || exit;
 
 /**
  * Event object.
@@ -22,7 +21,7 @@ class Event {
 
 
 	/**
-	 * @var array data specific to this event instance with the same structure as the event’s payload
+	 * @var array data specific to this event instance with the same structure as the event's payload
 	 *
 	 * @see https://developers.facebook.com/docs/marketing-api/server-side-api/payload-helper
 	 */
@@ -160,6 +159,7 @@ class Event {
 	 *
 	 * @return string
 	 */
+// phpcs:disable
 	protected function generate_event_id() {
 		try {
 			$data = random_bytes( 16 );
@@ -189,6 +189,7 @@ class Event {
 			);
 		}
 	}
+// phpcs:enable
 
 
 	/**
