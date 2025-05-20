@@ -99,6 +99,9 @@ class WC_Facebookcommerce extends WooCommerce\Facebook\Framework\Plugin {
 	/** @var WooCommerce\Facebook\Handlers\Connection connection handler */
 	private $connection_handler;
 
+	/** @var WooCommerce\Facebook\Handlers\PluginUpdate connection handler */
+	private $plugin_update_handler;
+
 	/** @var WooCommerce\Facebook\Handlers\WebHook webhook handler */
 	private $webhook_handler;
 
@@ -236,7 +239,7 @@ class WC_Facebookcommerce extends WooCommerce\Facebook\Framework\Plugin {
 			new WooCommerce\Facebook\API\Plugin\InitializeRestAPI();
 			$this->connection_handler = new WooCommerce\Facebook\Handlers\Connection( $this );
 			new WooCommerce\Facebook\Handlers\MetaExtension();
-			new \WooCommerce\Facebook\Handlers\PluginUpdate($this);
+			$this->plugin_update_handler = new \WooCommerce\Facebook\Handlers\PluginUpdate($this);
 			$this->webhook_handler   				= new WooCommerce\Facebook\Handlers\WebHook( $this );
 			$this->whatsapp_webhook_handler = new WooCommerce\Facebook\Handlers\Whatsapp_Webhook( $this );
 			$this->tracker            			= new WooCommerce\Facebook\Utilities\Tracker();
@@ -655,6 +658,17 @@ class WC_Facebookcommerce extends WooCommerce\Facebook\Framework\Plugin {
 	 */
 	public function get_connection_handler() {
 		return $this->connection_handler;
+	}
+
+	/**
+	 * Gets the connection handler.
+	 *
+	 * @since 2.0.0
+	 *
+	 * @return WooCommerce\Facebook\Handlers\PluginUpdate
+	 */
+	public function get_plugin_update_handler() {
+		return $this->plugin_update_handler;
 	}
 
 
