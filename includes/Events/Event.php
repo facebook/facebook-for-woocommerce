@@ -252,18 +252,20 @@ class Event {
 	 * @return string
 	 */
 	protected function get_click_id() {
-		$click_id = '';
-		if ( ! empty( $_COOKIE['_fbc'] ) ) {
-			$click_id = wc_clean( wp_unslash( $_COOKIE['_fbc'] ) );
-		} elseif ( ! empty( $_REQUEST['fbclid'] ) ) {
-			// generate the click ID based on the query parameter
-			$version         = 'fb';
-			$subdomain_index = 1;
-			$creation_time   = time();
-			$fbclid          = wc_clean( wp_unslash( $_REQUEST['fbclid'] ) );
-			$click_id        = "{$version}.{$subdomain_index}.{$creation_time}.{$fbclid}";
+		$fbc = '';
+		if ( isset( $_GET['fbclid'] ) ) {
+			$fbclid   = sanitize_text_field( wp_unslash( $_GET['fbclid'] ) ); // phpcs:ignore WordPress.Security.NonceVerification
+            $cur_time = (int) ( microtime( true ) * 1000 );
+            $fbc      = 'fb.1.' . $cur_time . '.' . rawurldecode( $fbclid );
+		} elseif ( ! empty( $_COOKIE['_fbc'] ) ) {
+			$fbc = wc_clean( wp_unslash( $_COOKIE['_fbc'] ) );
+		} else if ( isset( $_SESSION['_fbc'] ) ) {
+			$fbc = $_SESSION['_fbc'];
 		}
-		return $click_id;
+		if ( $fbc ) {
+			$_SESSION['_fbc'] = $fbc;
+		}
+		return $fbc;
 	}
 
 
@@ -275,7 +277,13 @@ class Event {
 	 * @return string
 	 */
 	protected function get_browser_id() {
-		return ! empty( $_COOKIE['_fbp'] ) ? wc_clean( wp_unslash( $_COOKIE['_fbp'] ) ) : '';
+		$fbp = ! empty( $_COOKIE['_fbp'] ) ? wc_clean( wp_unslash( $_COOKIE['_fbp'] ) ) : '';
+		if ( $fbp ) {
+			$_SESSION['_fbp'] = $fbp;
+		} else if ( isset( $_SESSION['_fbp'] ) ) {
+			$fbp = $_SESSION['_fbp'];
+		}
+		return $fbp;
 	}
 
 

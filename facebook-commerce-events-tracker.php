@@ -176,6 +176,7 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 		}
 
 
+
 		/**
 		 * Triggers the PageView event
 		 */
@@ -262,7 +263,7 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 
 			$event = new Event( $event_data );
 
-			$this->send_api_event( $event, false );
+			$this->send_api_event( $event );
 
 			$event_data['event_id'] = $event->get_id();
 
@@ -502,6 +503,8 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 		public function actually_inject_search_event() {
 
 			$event = $this->get_search_event();
+
+			$this->send_api_event( $event );
 
 			$this->pixel->inject_event(
 				$event->get_name(),
