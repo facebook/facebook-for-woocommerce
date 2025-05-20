@@ -11,30 +11,54 @@ namespace WooCommerce\Facebook\Handlers;
 
 defined( 'ABSPATH' ) || exit;
 
+use WooCommerce\Facebook\Products\Sync;
+
 class PluginUpdate {
 
     private \WC_Facebookcommerce $plugin;
+
+    /** @var string opt out plugin version action */
     const ALL_PRODUCTS_PLUGIN_VERSION = '3.5.0';
+
+    /** @var string opt out sync action */
+	const ACTION_OPT_OUT_OF_SYNC = 'wc_facebook_opt_out_of_sync';
 
     public function __construct(\WC_Facebookcommerce $plugin) {
         $this->plugin = $plugin;
-        $this->add_hooks(); 
         $this->should_show_sync_all_banner();
+        $this->add_hooks(); 
     }
 
-    public function enqueue_assets($hook){
-        error_log("Hook received: " . $hook);
-        $path = facebook_for_woocommerce()->get_asset_build_dir_url() ;
+    public function enqueue_assets(){
+        wp_enqueue_script( 'wc-backbone-modal', null, array( 'backbone' ) );
+        wp_enqueue_script(
+			'facebook-for-woocommerce-modal',
+			facebook_for_woocommerce()->get_asset_build_dir_url() . '/admin/modal.js',
+			array( 'jquery', 'wc-backbone-modal', 'jquery-blockui' ),
+			\WC_Facebookcommerce::PLUGIN_VERSION
+		);
         wp_enqueue_script(
 			'facebook-for-woocommerce-plugin-update',
 			facebook_for_woocommerce()->get_asset_build_dir_url() . '/admin/plugin-update.js',
 			array( 'jquery', 'wc-backbone-modal', 'jquery-blockui', 'jquery-tiptip', 'facebook-for-woocommerce-modal', 'wc-enhanced-select' ),
 			\WC_Facebookcommerce::PLUGIN_VERSION,         
 		);
+        wp_localize_script(
+			'facebook-for-woocommerce-plugin-update',
+			'facebook_for_woocommerce_plugin_update',
+			array(
+				'ajax_url'                        => admin_url( 'admin-ajax.php' ),
+				'set_excluded_terms_prompt_nonce' => wp_create_nonce( 'set-excluded-terms-prompt' ),
+				'opt_out_of_sync'				   =>wp_create_nonce(self::ACTION_OPT_OUT_OF_SYNC),
+				'sync_in_progress'                => Sync::is_sync_in_progress(),
+				'excluded_category_ids'           => facebook_for_woocommerce()->get_integration()->get_excluded_product_category_ids(),
+				'excluded_tag_ids'                => facebook_for_woocommerce()->get_integration()->get_excluded_product_tag_ids(),
+			)
+		);
     }
 
     private static function add_hooks() {
-        add_action('admin_enqueue_scripts',[ __CLASS__,  'enqueue_assets'], 10, 1);
+        add_action('admin_enqueue_scripts',[ __CLASS__,  'enqueue_assets']);
         add_action('wp_ajax_wc_facebook_opt_out_of_sync', [ __CLASS__,  'opt_out_of_sync_clicked']);
         add_action('wp_ajax_nopriv_wc_facebook_opt_out_of_sync', [ __CLASS__,'opt_out_of_sync_clicked']); 
     }
@@ -63,7 +87,6 @@ class PluginUpdate {
          */
 
         if($current_version <= self::ALL_PRODUCTS_PLUGIN_VERSION){
-            
             add_action('admin_notices', [ __CLASS__, 'fb_woocommerce_admin_banner_upcoming_version_change' ], 0); 
         }
     }
@@ -83,19 +106,7 @@ class PluginUpdate {
     }
 
     function opt_out_of_sync_clicked() {
-        error_log("🔥 custom_woocommerce_action was triggered!"); // Log execution
-       
-        $some_variable = isset($_POST['variable1']) ? sanitize_text_field($_POST['variable1']) : '';
-        $another_variable = isset($_POST['variable2']) ? sanitize_text_field($_POST['variable2']) : '';
-
-        $response = array(
-            "message" => "WooCommerce Action Executed!",
-            "variable1" => $some_variable,
-            "variable2" => $another_variable,
-            "status" => "success"
-        );
-        
-        wp_send_json_success($response);
+        wp_send_json_success("This is cool !!");
     }
 }
 
