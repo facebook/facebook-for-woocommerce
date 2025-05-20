@@ -18,14 +18,25 @@ class PluginUpdate {
 
     public function __construct(\WC_Facebookcommerce $plugin) {
         $this->plugin = $plugin;
-        $this->add_hooks();
+        $this->add_hooks(); 
         $this->should_show_sync_all_banner();
     }
 
+    public function enqueue_assets($hook){
+        error_log("Hook received: " . $hook);
+        $path = facebook_for_woocommerce()->get_asset_build_dir_url() ;
+        wp_enqueue_script(
+			'facebook-for-woocommerce-plugin-update',
+			facebook_for_woocommerce()->get_asset_build_dir_url() . '/admin/plugin-update.js',
+			array( 'jquery', 'wc-backbone-modal', 'jquery-blockui', 'jquery-tiptip', 'facebook-for-woocommerce-modal', 'wc-enhanced-select' ),
+			\WC_Facebookcommerce::PLUGIN_VERSION,         
+		);
+    }
+
     private static function add_hooks() {
+        add_action('admin_enqueue_scripts',[ __CLASS__,  'enqueue_assets'], 10, 1);
         add_action('wp_ajax_wc_facebook_opt_out_of_sync', [ __CLASS__,  'opt_out_of_sync_clicked']);
         add_action('wp_ajax_nopriv_wc_facebook_opt_out_of_sync', [ __CLASS__,'opt_out_of_sync_clicked']); 
-        
     }
 
     public static function on_plugin_update( $upgrader_object, $options ) {
