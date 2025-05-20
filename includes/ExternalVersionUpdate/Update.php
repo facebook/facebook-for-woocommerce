@@ -82,7 +82,8 @@ class Update {
 		// Send the request to the Meta server with the latest plugin version.
 		try {
 			$external_business_id = $plugin->get_connection_handler()->get_external_business_id();
-			$response             = $plugin->get_api()->update_plugin_version_configuration( $external_business_id, WC_Facebookcommerce_Utils::PLUGIN_VERSION );
+			$is_opted_out = $plugin->get_plugin_update_handler()->is_master_sync_on() === false;
+			$response             = $plugin->get_api()->update_plugin_version_configuration( $external_business_id, $is_opted_out, WC_Facebookcommerce_Utils::PLUGIN_VERSION );
 			if ( $response->has_api_error() ) {
 				// If the request fails, we should retry it in the next heartbeat.
 				return false;
