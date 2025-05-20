@@ -23,6 +23,9 @@ defined( 'ABSPATH' ) || exit;
 require_once 'facebook-config-warmer.php';
 require_once 'includes/fbproduct.php';
 require_once 'facebook-commerce-pixel-event.php';
+require_once 'facebook-commerce-admin-notice.php';
+
+new WC_Facebookcommerce_Admin_Notice();
 
 class WC_Facebookcommerce_Integration extends WC_Integration {
 
@@ -172,6 +175,9 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 
 	/** @var WC_Facebook_Product_Feed instance. */
 	private $fbproductfeed;
+
+	/** @var WC_Facebookcommerce_Whatsapp_Utility_Event instance. */
+	private $wa_utility_event_processor;
 
 	/**
 	 * Init and hook in the integration.
@@ -360,6 +366,9 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 		// Product Set hooks.
 		add_action( 'fb_wc_product_set_sync', [ $this, 'create_or_update_product_set_item' ], 99, 2 );
 		add_action( 'fb_wc_product_set_delete', [ $this, 'delete_product_set_item' ], 99 );
+
+		// Init Whatsapp Utility Event Processor
+		$this->wa_utility_event_processor = $this->load_whatsapp_utility_event_processor();
 	}
 
 	/**
@@ -849,27 +858,27 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 		if ( isset( $_POST[ WC_Facebook_Product::FB_SIZE ] ) ) {
 			$woo_product->set_fb_size( sanitize_text_field( wp_unslash( $_POST[ WC_Facebook_Product::FB_SIZE ] ) ) );
 		}
-		
+
 		if ( isset( $_POST[ WC_Facebook_Product::FB_COLOR ] ) ) {
 			$woo_product->set_fb_color( sanitize_text_field( wp_unslash( $_POST[ WC_Facebook_Product::FB_COLOR ] ) ) );
 		}
-		
+
 		if ( isset( $_POST[ WC_Facebook_Product::FB_MATERIAL ] ) ) {
 			$woo_product->set_fb_material( sanitize_text_field( wp_unslash( $_POST[ WC_Facebook_Product::FB_MATERIAL ] ) ) );
 		}
-		
+
 		if ( isset( $_POST[ WC_Facebook_Product::FB_PATTERN ] ) ) {
 			$woo_product->set_fb_pattern( sanitize_text_field( wp_unslash( $_POST[ WC_Facebook_Product::FB_PATTERN ] ) ) );
 		}
-		
+
 		if ( isset( $_POST[ WC_Facebook_Product::FB_AGE_GROUP ] ) ) {
 			$woo_product->set_fb_age_group( sanitize_text_field( wp_unslash( $_POST[ WC_Facebook_Product::FB_AGE_GROUP ] ) ) );
 		}
-		
+
 		if ( isset( $_POST[ WC_Facebook_Product::FB_GENDER ] ) ) {
 			$woo_product->set_fb_gender( sanitize_text_field( wp_unslash( $_POST[ WC_Facebook_Product::FB_GENDER ] ) ) );
 		}
-		
+
 		if ( isset( $_POST[ WC_Facebook_Product::FB_PRODUCT_CONDITION ] ) ) {
 			$woo_product->set_fb_condition( sanitize_text_field( wp_unslash( $_POST[ WC_Facebook_Product::FB_PRODUCT_CONDITION ] ) ) );
 		}
@@ -901,7 +910,7 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 			$woo_product->set_description( sanitize_text_field( wp_unslash( $_POST[ self::FB_PRODUCT_DESCRIPTION ] ) ) );
 			$woo_product->set_rich_text_description( $_POST[ self::FB_PRODUCT_DESCRIPTION ] );
 		}
-		
+
 		if ( isset( $_POST[ WC_Facebook_Product::FB_PRODUCT_PRICE ] ) ) {
 			$woo_product->set_price( sanitize_text_field( wp_unslash( $_POST[ WC_Facebook_Product::FB_PRODUCT_PRICE ] ) ) );
 		}
@@ -3025,6 +3034,21 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 		delete_option( 'fb_test_pass' );
 		printf( json_encode( $response ) );
 		wp_die();
+	}
+
+	/**
+	 * Init WhatsApp Utility Event Processor.
+	 *
+	 * @return void
+	 */
+	public function load_whatsapp_utility_event_processor() {
+		// Attempt to load WhatsApp Utility Event Processor
+		include_once 'facebook-commerce-whatsapp-utility-event.php';
+		if ( class_exists( 'WC_Facebookcommerce_Whatsapp_Utility_Event' ) ) {
+			if ( ! isset( $this->wa_utility_event_processor ) ) {
+				$this->wa_utility_event_processor = new WC_Facebookcommerce_Whatsapp_Utility_Event( $this );
+			}
+		}
 	}
 
 }

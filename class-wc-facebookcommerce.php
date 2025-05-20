@@ -82,6 +82,9 @@ class WC_Facebookcommerce extends WooCommerce\Facebook\Framework\Plugin {
 	private $sync_background_handler;
 
 	/** @var WooCommerce\Facebook\ProductSets\Sync product sets sync handler */
+	private $legacy_product_sets_sync_handler;
+
+	/** @var WooCommerce\Facebook\ProductSets\ProductSetSync product sets sync handler */
 	private $product_sets_sync_handler;
 
 	/** @var WooCommerce\Facebook\Handlers\Connection connection handler */
@@ -89,6 +92,9 @@ class WC_Facebookcommerce extends WooCommerce\Facebook\Framework\Plugin {
 
 	/** @var WooCommerce\Facebook\Handlers\WebHook webhook handler */
 	private $webhook_handler;
+
+	/** @var WooCommerce\Facebook\Handlers\Whatsapp_WebHook whatsapp webhook handler */
+	private $whatsapp_webhook_handler;
 
 	/** @var WooCommerce\Facebook\Commerce commerce handler */
 	private $commerce_handler;
@@ -110,6 +116,9 @@ class WC_Facebookcommerce extends WooCommerce\Facebook\Framework\Plugin {
 
 	/** @var WooCommerce\Facebook\Products\FBCategories instance. */
 	private $fb_categories;
+
+	/** @var WooCommerce\Facebook\RolloutSwitches instance. */
+	private $rollout_switches;
 
 	/**
 	 * The Debug tools instance.
@@ -160,6 +169,7 @@ class WC_Facebookcommerce extends WooCommerce\Facebook\Framework\Plugin {
 		add_action( 'init', array( $this, 'get_integration' ) );
 		add_action( 'init', array( $this, 'register_custom_taxonomy' ) );
 		add_action( 'add_meta_boxes_product', array( $this, 'remove_product_fb_product_set_metabox' ), 50 );
+		add_action( 'woocommerce_init', array($this, 'add_whatsapp_consent_checkout_fields'));
 		add_filter( 'fb_product_set_row_actions', array( $this, 'product_set_links' ) );
 		add_filter( 'manage_edit-fb_product_set_columns', array( $this, 'manage_fb_product_set_columns' ) );
 
@@ -183,16 +193,16 @@ class WC_Facebookcommerce extends WooCommerce\Facebook\Framework\Plugin {
 
 			$this->heartbeat = new Heartbeat( WC()->queue() );
 			$this->heartbeat->init();
-
-			$this->product_feed              = new WooCommerce\Facebook\Products\Feed();
-			$this->products_stock_handler    = new WooCommerce\Facebook\Products\Stock();
-			$this->products_sync_handler     = new WooCommerce\Facebook\Products\Sync();
-			$this->sync_background_handler   = new WooCommerce\Facebook\Products\Sync\Background();
-			$this->configuration_detection   = new WooCommerce\Facebook\Feed\FeedConfigurationDetection();
-			$this->product_sets_sync_handler = new WooCommerce\Facebook\ProductSets\Sync();
-			$this->commerce_handler          = new WooCommerce\Facebook\Commerce();
-			$this->fb_categories             = new WooCommerce\Facebook\Products\FBCategories();
-			$this->external_version_update   = new WooCommerce\Facebook\ExternalVersionUpdate\Update();
+			$this->product_feed              		= new WooCommerce\Facebook\Products\Feed();
+			$this->products_stock_handler    		= new WooCommerce\Facebook\Products\Stock();
+			$this->products_sync_handler     		= new WooCommerce\Facebook\Products\Sync();
+			$this->sync_background_handler   		= new WooCommerce\Facebook\Products\Sync\Background();
+			$this->configuration_detection   		= new WooCommerce\Facebook\Feed\FeedConfigurationDetection();
+			$this->legacy_product_sets_sync_handler = new WooCommerce\Facebook\ProductSets\Sync();
+			$this->product_sets_sync_handler 		= new WooCommerce\Facebook\ProductSets\ProductSetSync();
+			$this->commerce_handler          		= new WooCommerce\Facebook\Commerce();
+			$this->fb_categories             		= new WooCommerce\Facebook\Products\FBCategories();
+			$this->external_version_update   		= new WooCommerce\Facebook\ExternalVersionUpdate\Update();
 
 			if ( wp_doing_ajax() ) {
 				$this->ajax = new WooCommerce\Facebook\AJAX();
@@ -213,21 +223,26 @@ class WC_Facebookcommerce extends WooCommerce\Facebook\Framework\Plugin {
 
 			$this->connection_handler = new WooCommerce\Facebook\Handlers\Connection( $this );
 			$this->webhook_handler    = new WooCommerce\Facebook\Handlers\WebHook( $this );
+			$this->whatsapp_webhook_handler = new WooCommerce\Facebook\Handlers\Whatsapp_Webhook( $this );
 			$this->tracker            = new WooCommerce\Facebook\Utilities\Tracker();
+			$this->rollout_switches   = new WooCommerce\Facebook\RolloutSwitches( $this );
+
 
 			// Init jobs
 			$this->job_manager = new WooCommerce\Facebook\Jobs\JobManager();
 			add_action( 'init', [ $this->job_manager, 'init' ] );
+			add_action( 'admin_init', [ $this->rollout_switches, 'init' ] );
 
 			// Instantiate the debug tools.
 			$this->debug_tools = new DebugTools();
 
 			// load admin handlers, before admin_init
 			if ( is_admin() ) {
-				$this->admin_settings = new WooCommerce\Facebook\Admin\Settings( $this->connection_handler->is_connected() );
+				$this->admin_settings = new WooCommerce\Facebook\Admin\Settings( $this );
 			}
 		}
 	}
+
 
 
 	/**
@@ -588,6 +603,17 @@ class WC_Facebookcommerce extends WooCommerce\Facebook\Framework\Plugin {
 		return $this->products_sync_handler;
 	}
 
+	/**
+	 * Gets the products sync handler.
+	 *
+	 * @since 3.4.9
+	 *
+	 * @return WooCommerce\Facebook\ProductSets\ProductSetSync
+	 */
+	public function get_product_sets_sync_handler() {
+		return $this->product_sets_sync_handler;
+	}
+
 
 	/**
 	 * Gets the products sync background handler.
@@ -770,6 +796,15 @@ class WC_Facebookcommerce extends WooCommerce\Facebook\Framework\Plugin {
 		return $this->get_plugin_url() . '/assets/build';
 	}
 
+	/**
+	 * Gets the connection handler.
+	 *
+	 * @return WooCommerce\Facebook\RolloutSwitches
+	 */
+	public function get_rollout_switches() {
+		return $this->rollout_switches;
+	}
+
 
 	/** Conditional methods ***************************************************************************************/
 
@@ -842,6 +877,30 @@ class WC_Facebookcommerce extends WooCommerce\Facebook\Framework\Plugin {
 			$current_screen_id = $current_screen->id;
 		}
 		return $current_screen_id;
+	}
+
+	/**
+	* Add checkout fields to collect whatsapp consent if consent collection is enabled
+	*
+	* @since 2.3.0
+	*
+	* @param array $fields
+	*
+	* @return array
+	*/
+	function add_whatsapp_consent_checkout_fields($fields) {
+		if (get_option('wc_facebook_whatsapp_consent_collection_setting_status', 'disabled') === 'enabled') {
+			woocommerce_register_additional_checkout_field(
+					array(
+						'id'       => 'wc_facebook/whatsapp_consent_checkbox', // id = namespace/field_name
+						'label'    => esc_html('Get order updates on WhatsApp'),
+						'location' => 'address',
+						'type'     => 'checkbox',
+						'optionalLabel' => esc_html('Get order updates on WhatsApp')
+					)
+				);
+		}
+		return $fields;
 	}
 }
 
