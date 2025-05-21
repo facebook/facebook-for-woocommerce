@@ -12,20 +12,21 @@ namespace WooCommerce\Facebook\Handlers;
 
 defined( 'ABSPATH' ) || exit;
 
+use WooCommerce\Facebook\Framework\Plugin\Compatibility;
 use WooCommerce\Facebook\Products\Sync;
 use WooCommerce\Facebook\Framework\Plugin\Exception;
 
 /**
  * PluginUpdate
  * This is an class that is triggered for Opt in/ Opt out experience
+ * from @ver 3.4.10
  */
 class PluginUpdate {
 	/** @var object storing plugin object */
 	private \WC_Facebookcommerce $plugin;
 
 	/** @var string opt out plugin version action */
-	// TODO: Update the version accordingly
-	const ALL_PRODUCTS_PLUGIN_VERSION = '3.5.0';
+	const ALL_PRODUCTS_PLUGIN_VERSION = '3.4.11';
 
 	/** @var string opt out sync action */
 	const ACTION_OPT_OUT_OF_SYNC = 'wc_facebook_opt_out_of_sync';
@@ -35,7 +36,7 @@ class PluginUpdate {
 
 	public function __construct( \WC_Facebookcommerce $plugin ) {
 		$this->plugin = $plugin;
-		$this->should_show_sync_all_banner();
+		$this->should_show_banners();
 		$this->add_hooks();
 	}
 
@@ -86,47 +87,110 @@ class PluginUpdate {
 		return '' === $option_value;
 	}
 
-	public function should_show_sync_all_banner() {
+	/**
+	 * latest plugin version
+	 * available on WooCommerce store
+	 * If unable to fetch gets the current plugin version
+	 * Should be anything above 3.4.10
+	 */
+	public function get_latest_plugin_version(){
+		$latest_plugin = Compatibility::get_latest_facebook_woocommerce_version();
+		if(!$latest_plugin){
+			$latest_plugin = $this->plugin->get_version();
+		}
+		return $latest_plugin;
+		// return '3.4.11';
+	}
+
+	public function should_show_banners() {
 		$current_version = $this->plugin->get_version();
+		$latest_version = $this->get_latest_plugin_version();
 
 		/**
-		 * Show the banner if the user is having a version lower than that of the ALl products version
+		 * Case when current version is less or equal to latest
+		 * but latest is below 3.4.11
+		 * Should show the opt in/ opt out banner
 		 */
-		if ( $current_version <= self::ALL_PRODUCTS_PLUGIN_VERSION ) {
-			add_action( 'admin_notices', [ __CLASS__, 'upcoming_version_change_banner' ], 0 );
+		if(self::compare_versions($latest_version, $current_version) <= 0 && self::compare_versions($latest_version, self::ALL_PRODUCTS_PLUGIN_VERSION) === -1){
+			add_action( 'admin_notices', [ __CLASS__, 'upcoming_version_change_banner'], 0, 1 );
+		}
+		/**
+		 * If latest version is above All products version show the update banner accordingly
+		 */
+		else if(self::compare_versions($latest_version, self::ALL_PRODUCTS_PLUGIN_VERSION) >= 0){
+			add_action( 'admin_notices', [ __CLASS__, 'plugin_update_avaialble_banner'], 0, 1 );
 		}
 	}
 
 	public function upcoming_version_change_banner() {
 		$screen               = get_current_screen();
-		$hidden               = ! self::is_master_sync_on();
-		$opt_out_banner_class = 'notice notice-info is-dismissible';
-		$opt_in_banner_class  = 'notice notice-success is-dismissible';
 
-		if ( $hidden ) {
-			$opt_in_banner_class  = 'notice notice-success is-dismissible';
-			$opt_out_banner_class = 'notice notice-info is-dismissible hidden';
-		} else {
-			$opt_out_banner_class = 'notice notice-info is-dismissible';
-			$opt_in_banner_class  = 'notice notice-success is-dismissible hidden';
-		}
-
-		// TODO: Update the links
 		if ( isset( $screen->id ) && 'marketing_page_wc-facebook' === $screen->id ) {
-			echo '<div id="opt_out_banner" class="' . esc_html( $opt_out_banner_class ) . '" style="padding: 15px">
-            <h2>When you update to version <b>' . esc_html( self::ALL_PRODUCTS_PLUGIN_VERSION ) . '</b> your products will automatically sync to your catalog at Meta catalog</h2>
-            The next time you update your Facebook for WooCommerce plugin, all your products will be synced automatically. This is to help you drive sales and optimize your ad performance. <a href="https://www.facebook.com">Learn more about changes to how your products will sync to Meta </a>
+			echo '<div id="opt_out_banner" class="' . esc_html( self::get_opt_out_banner_class() ) . '" style="padding: 15px">
+            <h2>When you update to version <b>' . self::get_latest_plugin_version() . '</b> your products will automatically sync to your catalog at Meta catalog</h2>
+            The next time you update your Facebook for WooCommerce plugin, all your products will be synced automatically. This is to help you drive sales and optimize your ad performance. <a href="https://www.facebook.com/business/help/4049935305295468">Learn more about changes to how your products will sync to Meta </a>
                 <p>
                     <a href="edit.php?post_type=product"> Review products </a>
-                    <a href="javascript:void(0);" style="text-decoration: underline; cursor: pointer; margin-left: 10px" id="opt_out_of_sync_button"> Opt out of automatic sync</a>
+                    <a href="javascript:void(0);" style="text-decoration: underline; cursor: pointer; margin-left: 10px" class="opt_out_of_sync_button"> Opt out of automatic sync</a>
                 </p>
             </div>';
 
-			echo '<div id="opt_in_banner" class="' . esc_html( $opt_in_banner_class ) . '" style="padding: 15px">
+			echo '<div id="opt_in_banner" class="' . esc_html( self::get_opt_in_banner_class() ) . '" style="padding: 15px">
             <h2>You’ve opted out of automatic syncing on the next plugin update </h2>
                 <p>
-                    Products that are not synced will not be available for your customers to discover on your ads and shops. To manually add products, <a href="https://www.facebook.com">learn how to sync products to your Meta catalog</a>
+                    Products that are not synced will not be available for your customers to discover on your ads and shops. To manually add products, <a href="https://www.facebook.com/business/help/4049935305295468">learn how to sync products to your Meta catalog</a>
                 </p>
+            </div>';
+		}
+	}
+
+	// public function updated_notification_banner() {
+	// 	$screen               = get_current_screen();
+
+	// 	if ( isset( $screen->id ) && 'marketing_page_wc-facebook' === $screen->id ) {
+	// 		echo '<div id="opt_out_banner_notification" class="' . esc_html( self::get_opt_out_banner_class() ) . '" style="padding: 15px">
+    //         <h2>You’ve updated to the latest plugin version</h2>
+    //         The next time you update your Facebook for WooCommerce plugin, all your products will be synced automatically. This is to help you drive sales and optimize your ad performance. <a disabled href="">Learn more about changes to how your products will sync to Meta </a>
+    //             <p>
+    //                 <a href="edit.php?post_type=product"> Review products </a>
+    //                 <a href="javascript:void(0);" style="text-decoration: underline; cursor: pointer; margin-left: 10px" id="opt_out_of_sync_button"> Opt out of automatic sync</a>
+    //             </p>
+    //         </div>';
+
+	// 		echo '<div id="opt_in_banner_notification" class="' . esc_html( self::get_opt_in_banner_class() ) . '" style="padding: 15px">
+    //         <h2>You’ve opted out of automatic syncing on the next plugin update </h2>
+    //             <p>
+    //                 Products that are not synced will not be available for your customers to discover on your ads and shops. To manually add products, <a href="">learn how to sync products to your Meta catalog</a>
+    //             </p>
+    //         </div>';
+	// 	}
+	// }
+
+	public function plugin_update_avaialble_banner() {
+		$screen               = get_current_screen();
+
+		if ( isset( $screen->id ) && 'marketing_page_wc-facebook' === $screen->id ) {
+			echo '<div id="opt_out_banner_update_available" class="' . esc_html( self::get_opt_out_banner_class() ) . '" style="padding: 15px">
+            <h2>Version '. self::get_latest_plugin_version() .' is available: This release includes automatic product syncing</h2>
+            A new version of our plugin is now available. When you update, all your products will now be automatically synced to Meta for seamless advertising. Opt out before you update if want to sync your products later.
+                <p>
+                   <a href="https://wordpress.org/plugins/facebook-for-woocommerce/" class="button wc-forward" target="_blank">
+						Update now
+					</a>
+					<a href="javascript:void(0);" style="text-decoration: underline; cursor: pointer; margin-left: 10px" class="opt_out_of_sync_button"> Opt out of automatic sync</a>
+                </p>
+            </div>';
+
+			echo '<div id="opt_in_banner_update_available" class="' . esc_html( self::get_opt_in_banner_class() ) . '" style="padding: 15px">
+            <h2>Update to the latest plugin version </h2>
+                <p>
+                    A new version of our plugin is now available, featuring improved performance and simplified features. Since you’ve opted out of the automatic product sync, it will not be part of this update. Update now to get the best experience possible.
+                </p>
+				<p>
+                   <a href="https://wordpress.org/plugins/facebook-for-woocommerce/" class="button wc-forward" target="_blank">
+						Update now
+					</a>
+				</p>
             </div>';
 		}
 	}
@@ -140,5 +204,51 @@ class PluginUpdate {
 			error_log( 'Error while updating WP option: ' . $e->getMessage() );
 			wp_send_json_error( 'Failed to opt out' );
 		}
+	}
+
+
+	/**
+	 * Utils
+	 */
+
+	 public function compare_versions($version1, $version2) {
+		$parts1 = explode('.', $version1);
+		$parts2 = explode('.', $version2);
+	
+		$max_length = max(count($parts1), count($parts2));
+	
+		for ($i = 0; $i < $max_length; $i++) {
+			$num1 = isset($parts1[$i]) ? (int) $parts1[$i] : 0;
+			$num2 = isset($parts2[$i]) ? (int) $parts2[$i] : 0;
+	
+			if ($num1 > $num2) return 1; // $version1 is greater
+			if ($num1 < $num2) return -1; // $version2 is greater
+		}
+	
+		return 0; // Versions are equal
+	}
+
+	private function get_opt_in_banner_class() {
+		$hidden               = ! self::is_master_sync_on();
+		$opt_in_banner_class  = 'notice notice-success is-dismissible';
+
+		if ( $hidden ) {
+			$opt_in_banner_class  = 'notice notice-success is-dismissible';
+		} else {
+			$opt_in_banner_class  = 'notice notice-success is-dismissible hidden';
+		}
+		return $opt_in_banner_class;
+	}
+
+	private function get_opt_out_banner_class(){
+		$hidden               = ! self::is_master_sync_on();
+		$opt_out_banner_class = 'notice notice-info is-dismissible';
+
+		if ( $hidden ) {
+			$opt_out_banner_class = 'notice notice-info is-dismissible hidden';
+		} else {
+			$opt_out_banner_class = 'notice notice-info is-dismissible';
+		}
+		return $opt_out_banner_class;
 	}
 }
