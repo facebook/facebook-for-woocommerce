@@ -30,16 +30,26 @@ jQuery( document ).ready( function( $ ) {
         });
     })
 
-    $('.upgrade_plugin_button').on('click', function(event) {
+    $('.upgrade_plugin_button').on('click',function(event) {
         event.preventDefault();
+        let context = $(this);
         $.post( facebook_for_woocommerce_plugin_update.ajax_url, {
-            action: 'wc_facebook_upgrade_plugin',
+            action: 'wc_facebook_upgrade_plugin',   
             nonce:  facebook_for_woocommerce_plugin_update.opt_out_of_sync,
         } ,function (response){
             data = typeof response === "string" ? JSON.parse(response) : response;
-            if( data.success) {
-                console.log(data);
+            if( data.success ) {
+              
             }
+            else{
+                context.text('Failed to update plugin !')
+                context.css("color", "red");
+                context.css('border', '2px solid red');
+                context.prop('disabled', true);
+            }
+        }).fail(function() {
+            console.error("Error Code:", xhr.status);
+            console.error("Error Message:", xhr.responseText);
         });
     });
 });
