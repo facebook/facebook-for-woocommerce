@@ -39,7 +39,8 @@ jQuery( document ).ready( function( $ ) {
         } ,function (response){
             data = typeof response === "string" ? JSON.parse(response) : response;
             if( data.success ) {
-              
+              console.log(data);
+              location.reload();
             }
             else{
                 context.text('Failed to update plugin !')
