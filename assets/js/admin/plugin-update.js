@@ -21,6 +21,7 @@ jQuery( document ).ready( function( $ ) {
                 $('#opt_out_banner').hide();
                 $('#opt_out_banner_update_available').hide();
 
+                $('#opt_in_banner_update_available').show();
                 $('#opt_in_banner').show();
             }   
         }).fail(function() {
@@ -28,4 +29,18 @@ jQuery( document ).ready( function( $ ) {
             console.error("Error Message:", xhr.responseText);
         });
     })
+
+    $('.upgrade_plugin_button').on('click', function(event) {
+        event.preventDefault();
+        $.post( facebook_for_woocommerce_plugin_update.ajax_url, {
+            action: 'wc_facebook_upgrade_plugin',
+            nonce:  facebook_for_woocommerce_plugin_update.opt_out_of_sync,
+        } ,function (response){
+            data = typeof response === "string" ? JSON.parse(response) : response;
+            if( data.success) {
+                console.log(data);
+            }
+        });
+    });
 });
+
