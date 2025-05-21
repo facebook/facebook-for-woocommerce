@@ -66,6 +66,19 @@ class Compatibility {
 		return is_array( $latest_wc_versions ) ? $latest_wc_versions : [];
 	}
 
+	public static function get_latest_facebook_woocommerce_version() {
+		$response = wp_remote_get('https://api.wordpress.org/plugins/info/1.2/?action=plugin_information&slug=facebook-for-woocommerce');
+	
+		if (is_wp_error($response)) {
+			return null;
+		}
+	
+		$body = wp_remote_retrieve_body($response);
+		$plugin_data = json_decode($body);
+	
+		return isset($plugin_data->version) ? $plugin_data->version : null;
+	}
+
 	/**
 	 * Gets the version of the currently installed WooCommerce.
 	 *
