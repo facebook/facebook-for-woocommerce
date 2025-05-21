@@ -10,7 +10,7 @@
 
 jQuery( document ).ready( function( $ ) {
     // Opt out sync controls
-     $('#opt_out_of_sync_button').on('click', function(event) {
+     $('.opt_out_of_sync_button').on('click', function(event) {
         event.preventDefault();
         $.post( facebook_for_woocommerce_plugin_update.ajax_url, {
             action: 'wc_facebook_opt_out_of_sync',
@@ -19,6 +19,8 @@ jQuery( document ).ready( function( $ ) {
             data = typeof response === "string" ? JSON.parse(response) : response;
             if(data.success){
                 $('#opt_out_banner').hide();
+                $('#opt_out_banner_update_available').hide();
+
                 $('#opt_in_banner').show();
             }   
         }).fail(function() {
