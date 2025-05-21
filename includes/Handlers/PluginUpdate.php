@@ -100,28 +100,32 @@ class PluginUpdate {
         if(!$latest_plugin){
             $latest_plugin = $this->plugin->get_version();
         }
-        // return $latest_plugin;
-        return '3.4.11';
+        return $latest_plugin;
     }
 
     public function should_show_banners() {
-        $current_version = $this->plugin->get_version();
-        $latest_version = $this->get_latest_plugin_version();
+        $current_version =  $this->plugin->get_version();
+        $latest_version =  $this->get_latest_plugin_version();
 
         /**
          * Case when current version is less or equal to latest
          * but latest is below 3.4.11
          * Should show the opt in/ opt out banner
          */
-        if(self::compare_versions($latest_version, $current_version) <= 0 && self::compare_versions($latest_version, self::ALL_PRODUCTS_PLUGIN_VERSION) === -1){
+        if(self::compare_versions($latest_version, $current_version) >= 0 && self::compare_versions($latest_version, self::ALL_PRODUCTS_PLUGIN_VERSION) < 0){
             add_action( 'admin_notices', [ __CLASS__, 'upcoming_version_change_banner'], 0, 1 );
         }
         /**
          * If latest version is above All products version show the update banner accordingly
+         * also show for update banner in case latest version is above current version
          */
-        else if(self::compare_versions($latest_version, self::ALL_PRODUCTS_PLUGIN_VERSION) >= 0){
+        else if(self::compare_versions($latest_version, self::ALL_PRODUCTS_PLUGIN_VERSION) >= 0 && self::compare_versions($latest_version, $current_version) > 0){
             add_action( 'admin_notices', [ __CLASS__, 'plugin_update_avaialble_banner'], 0, 1 );
         }
+        else if (get_transient('show_plugin_updated_notice')) {
+            add_action( 'admin_notices', [ __CLASS__, 'plugin_updated_banner'] );   
+            delete_transient('show_plugin_updated_notice');
+        } 
     }
 
     public function upcoming_version_change_banner() {
@@ -175,6 +179,35 @@ class PluginUpdate {
         }
     }
 
+    public function plugin_updated_banner() {
+        $screen               = get_current_screen();
+
+        if ( isset( $screen->id ) && 'marketing_page_wc-facebook' === $screen->id ) {
+
+            if(self::is_master_sync_on()){
+                echo '<div id="opt_out_banner_update_available" class="notice notice-success is-dismissible" style="padding: 15px">
+                <h2>You’ve updated to the latest plugin version</h2>
+                    <p>
+                        As part of this update, all your products automatically sync to Meta. It may take some time before all your products are synced. If you change your mind, go to WooCommerce > Products and select which products to un-sync. <a href="https://www.facebook.com/business/help/4049935305295468"> About syncing products to Meta </a>
+                    </p>
+                </div>';
+            }
+            else {
+                echo '<div id="opt_in_banner_update_available" class="notice notice-success is-dismissible" style="padding: 15px">
+                 <h2>You’ve updated to the latest plugin version</h2>   
+                    <p>
+                        To see all the changes, view the changelog. Since you’ve opted out of automatically syncing all your products, some of your products are not yet on Meta. We recommend turning on auto syncing to help drive your sales and improve ad performance. About syncing products to Meta
+                    </p>
+                    <p>
+                        <a href="javascript:void(0);" class="button wc-forward upgrade_plugin_button">
+                            Sync all products
+                        </a>
+                    </p>
+                </div>';
+            }
+        }
+    }
+
     public function opt_out_of_sync_clicked() {
         try {
             $latest_date = gmdate( 'Y-m-d H:i:s' );
@@ -212,8 +245,6 @@ class PluginUpdate {
         }
     
         $latest_version = $plugin_info->version;
-
-        set_time_limit(60);
     
         if (version_compare($installed_version, $latest_version, '<')) {
             include_once ABSPATH . 'wp-admin/includes/class-wp-upgrader.php';
@@ -223,13 +254,14 @@ class PluginUpdate {
             activate_plugin($plugin_file);
             return $result ? wp_send_json_success( 'Upgraded to lates version :'. $latest_version ) : wp_send_json_error("Upgrade failed failed!");
         }
-    
+
+        set_transient('show_plugin_updated_notice', true, 1000);
         return wp_send_json_success("Plugin up to date");
     }
 
 
     /**
-     * Utils
+     * Utils for this class
      */
 
      public function compare_versions($version1, $version2) {
