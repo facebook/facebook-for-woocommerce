@@ -167,7 +167,7 @@ class PluginUpdate {
                     A new version of our plugin is now available, featuring improved performance and simplified features. Since you’ve opted out of the automatic product sync, it will not be part of this update. Update now to get the best experience possible.
                 </p>
                 <p>
-                   <a href="javascript:void(0);" class="button wc-forward upgrade_plugin_button">
+                    <a href="javascript:void(0);" class="button wc-forward upgrade_plugin_button">
                         Update now
                     </a>
                 </p>
@@ -190,15 +190,13 @@ class PluginUpdate {
         $plugin_slug = 'facebook-for-woocommerce';
         $plugin_file = "$plugin_slug/$plugin_slug.php";
     
-        //Get installed version
         if (!function_exists('get_plugin_data')) {
             require_once ABSPATH . 'wp-admin/includes/plugin.php';
         }
         
         $plugin_data = get_plugin_data(WP_PLUGIN_DIR . '/' . $plugin_file);
         $installed_version = $plugin_data['Version'];
-    
-        // Fetch latest version from WordPress Plugin API
+
         $response = wp_remote_get("https://api.wordpress.org/plugins/info/1.2/?action=plugin_information&slug={$plugin_slug}");
         
         if (is_wp_error($response)) {
@@ -214,14 +212,15 @@ class PluginUpdate {
         }
     
         $latest_version = $plugin_info->version;
+
+        set_time_limit(60);
     
-        // Compare versions and update if needed
         if (version_compare($installed_version, $latest_version, '<')) {
             include_once ABSPATH . 'wp-admin/includes/class-wp-upgrader.php';
     
             $upgrader = new \Plugin_Upgrader(new \Automatic_Upgrader_Skin());
             $result = $upgrader->upgrade($plugin_file);
-    
+            activate_plugin($plugin_file);
             return $result ? wp_send_json_success( 'Upgraded to lates version :'. $latest_version ) : wp_send_json_error("Upgrade failed failed!");
         }
     
