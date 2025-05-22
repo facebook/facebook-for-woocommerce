@@ -9,9 +9,11 @@
 
 
 jQuery( document ).ready( function( $ ) {
-    // Opt out sync controls
-     $('.opt_out_of_sync_button').on('click', function(event) {
-        event.preventDefault();
+    //Setting up opt out modal
+    let modal;
+
+    $(document).on('click', '#modal_opt_out_button', function(e) {
+        e.preventDefault();
         $.post( facebook_for_woocommerce_plugin_update.ajax_url, {
             action: 'wc_facebook_opt_out_of_sync',
             nonce:  facebook_for_woocommerce_plugin_update.opt_out_of_sync,
@@ -23,10 +25,25 @@ jQuery( document ).ready( function( $ ) {
 
                 $('#opt_in_banner_update_available').show();
                 $('#opt_in_banner').show();
+                
+                modal.remove();
             }   
         }).fail(function() {
             console.error("Error Code:", xhr.status);
             console.error("Error Message:", xhr.responseText);
+        });
+    });
+
+
+    // Opt out sync controls
+     $('.opt_out_of_sync_button').on('click', function(event) {
+        event.preventDefault();
+        modal = new $.WCBackboneModal.View({
+            target: 'facebook-for-woocommerce-modal',
+            string: {
+                message: facebook_for_woocommerce_plugin_update.opt_out_confirmation_message,
+                buttons: facebook_for_woocommerce_plugin_update.opt_out_confirmation_buttons
+            }
         });
     })
 
