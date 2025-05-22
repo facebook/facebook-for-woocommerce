@@ -59,6 +59,9 @@ class RolloutSwitches {
 			$external_business_id = $this->plugin->get_connection_handler()->get_external_business_id();
 			$switches             = $this->plugin->get_api()->get_rollout_switches( $external_business_id );
 			$data                 = $switches->get_data();
+			if ( empty( $data ) ) {
+				throw new Exception( 'Empty data' );
+			}
 			foreach ( $data as $switch ) {
 				if ( ! isset( $switch['switch'] ) || ! $this->is_switch_active( $switch['switch'] ) ) {
 					continue;
@@ -66,7 +69,11 @@ class RolloutSwitches {
 				$this->rollout_switches[ $switch['switch'] ] = (bool) $switch['enabled'];
 			}
 		} catch ( Exception $e ) {
-			\WC_Facebookcommerce_Utils::log_exception_immediately_to_meta(
+			// if there is an exception we will assume that the switch is disabled
+			foreach ( self::ACTIVE_SWITCHES as $switch ) {
+				$this->rollout_switches[ $switch ] = false;
+			}
+			\WC_Facebookcommerce_Utils::fblog(
 				$e,
 				[
 					'event'      => 'rollout_switches',
