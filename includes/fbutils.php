@@ -32,7 +32,7 @@ if ( ! class_exists( 'WC_Facebookcommerce_Utils' ) ) :
 		const FB_VARIANT_GENDER  = 'gender';
 		// TODO: this constant is no longer used and can probably be removed {WV 2020-01-21}
 		const FB_VARIANT_IMAGE = 'fb_image';
-
+    	const EXTERNAL_ID_COOKIE = 'meta_capi_exid';
 		/** @var string */
 		public static $ems = null;
 
@@ -336,23 +336,29 @@ if ( ! class_exists( 'WC_Facebookcommerce_Utils' ) ) :
 		 */
 		public static function get_user_info( $aam_settings ) {
 			$current_user = wp_get_current_user();
-			if ( 0 === $current_user->ID || null === $aam_settings || ! $aam_settings->get_enable_automatic_matching() ) {
+
+			if ( null === $aam_settings || ! $aam_settings->get_enable_automatic_matching() ) {
 				// User not logged in or pixel not configured with automatic advance matching
 				return [];
 			} else {
-				// Keys documented in https://developers.facebook.com/docs/facebook-pixel/advanced/advanced-matching
-				$user_data            = array(
-					'em'          => $current_user->user_email,
-					'fn'          => $current_user->user_firstname,
-					'ln'          => $current_user->user_lastname,
-					'external_id' => strval( $current_user->ID ),
-				);
-				$user_id              = $current_user->ID;
-				$user_data['ct']      = get_user_meta( $user_id, 'billing_city', true );
-				$user_data['zp']      = get_user_meta( $user_id, 'billing_postcode', true );
-				$user_data['country'] = get_user_meta( $user_id, 'billing_country', true );
-				$user_data['st']      = get_user_meta( $user_id, 'billing_state', true );
-				$user_data['ph']      = get_user_meta( $user_id, 'billing_phone', true );
+				$user_data = array();
+				if ( 0 === $current_user->ID ) {
+					$user_data['external_id'] = self::get_external_ids();
+				} else {
+					// Keys documented in https://developers.facebook.com/docs/facebook-pixel/advanced/advanced-matching
+					$user_data            = array(
+						'em'          => $current_user->user_email,
+						'fn'          => $current_user->user_firstname,
+						'ln'          => $current_user->user_lastname,
+						'external_id' => self::get_external_ids(),
+					);
+					$user_id              = $current_user->ID;
+					$user_data['ct']      = get_user_meta( $user_id, 'billing_city', true );
+					$user_data['zp']      = get_user_meta( $user_id, 'billing_postcode', true );
+					$user_data['country'] = get_user_meta( $user_id, 'billing_country', true );
+					$user_data['st']      = get_user_meta( $user_id, 'billing_state', true );
+					$user_data['ph']      = get_user_meta( $user_id, 'billing_phone', true );
+				}
 
 				// Each field that is not present in AAM settings or is empty is deleted from user data
 				foreach ( $user_data as $field => $value ) {
@@ -377,68 +383,19 @@ if ( ! class_exists( 'WC_Facebookcommerce_Utils' ) ) :
 		}
 
 		/**
-		 * Utility function for development logging.
+		 * Function for generating the external_id array. Returns an array.
 		 *
-		 * @param string $message
-		 * @param array  $obj
-		 * @param bool   $error
-		 * @param string $ems
 		 */
-		public static function fblog(
-			$message,
-			$obj = [],
-			$error = false,
-			$ems = ''
-		) {
-			if ( $error ) {
-				$obj['plugin_version'] = self::PLUGIN_VERSION;
-				$obj['php_version']    = phpversion();
-			}
-			$message = json_encode(
-				array(
-					'message' => $message,
-					'object'  => $obj,
-				)
-			);
+		private static function get_external_ids() {
+			$external_ids = array();
 
-			// phpcs:ignore Universal.Operators.DisallowShortTernary.Found
-			$ems = $ems ?: self::$ems;
-			if ( $ems ) {
-				try {
-					facebook_for_woocommerce()->get_api()->log( $ems, $message, $error );
-				} catch ( ApiException $e ) {
-					$message = sprintf( 'There was an error trying to log: %s', $e->getMessage() );
-					facebook_for_woocommerce()->log( $message );
-				}
-			} else {
-				error_log(
-					'external merchant setting is null, something wrong here: ' .
-					$message
-				);
+			if ( isset( $_COOKIE[WC_Facebookcommerce::EXTERNAL_ID_COOKIE] ) ) {
+				$external_ids[] = $_COOKIE[WC_Facebookcommerce::EXTERNAL_ID_COOKIE];
 			}
-		}
-
-		/**
-		 * Utility function for development Tip Events logging.
-		 *
-		 * @param string $tip_id
-		 * @param string $channel_id
-		 * @param string $event
-		 * @param string $ems
-		 */
-		public static function tip_events_log( $tip_id, $channel_id, $event, $ems = '' ) {
-			// phpcs:ignore Universal.Operators.DisallowShortTernary.Found
-			$ems = $ems ?: self::$ems;
-			if ( $ems ) {
-				try {
-					facebook_for_woocommerce()->get_api()->log_tip_event( $tip_id, $channel_id, $event );
-				} catch ( ApiException $e ) {
-					$message = sprintf( 'There was an error while logging tip events: %s', $e->getMessage() );
-					facebook_for_woocommerce()->log( $message );
-				}
-			} else {
-				error_log( 'external merchant setting is null' );
+			if ( 0 !== get_current_user_id() ) {
+				$external_ids[] = strval( get_current_user_id() );
 			}
+			return $external_ids;
 		}
 
 		/**
@@ -780,32 +737,22 @@ if ( ! class_exists( 'WC_Facebookcommerce_Utils' ) ) :
 			set_transient( 'facebook_plugin_test_stack_trace', $trace );
 		}
 
-		/**
-		 * Helper function to check time cap.
-		 *
-		 * @param string $from
-		 * @param int    $date_cap
-		 * @return bool
-		 */
-		public static function check_time_cap( $from, $date_cap ) {
-			if ( null === $from ) {
-				return true;
-			}
-			$now         = new DateTime( current_time( 'mysql' ) );
-			$diff_in_day = $now->diff( new DateTime( $from ) )->format( '%a' );
-			return is_numeric( $diff_in_day ) && (int) $diff_in_day > $date_cap;
-		}
+		public static function generate_guid() {
+			if ( function_exists( 'com_create_guid' ) === true ) {
+            return trim( com_create_guid(), '{}' );
+     	   }
 
-		/**
-		 * Gets the cached best tip.
-		 *
-		 * @return mixed
-		 */
-		public static function get_cached_best_tip() {
-			$cached_best_tip = self::decode_json(
-				get_option( 'fb_info_banner_last_best_tip', '' )
+			return sprintf(
+				'%04X%04X-%04X-%04X-%04X-%04X%04X%04X',
+				wp_rand( 0, 65535 ),
+				wp_rand( 0, 65535 ),
+				wp_rand( 0, 65535 ),
+				wp_rand( 16384, 20479 ),
+				wp_rand( 32768, 49151 ),
+				wp_rand( 0, 65535 ),
+				wp_rand( 0, 65535 ),
+				wp_rand( 0, 65535 )
 			);
-			return $cached_best_tip;
 		}
 
 		/**
