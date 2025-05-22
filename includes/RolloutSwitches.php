@@ -32,12 +32,6 @@ class RolloutSwitches {
 		self::WHATSAPP_UTILITY_MESSAGING,
 		self::SWITCH_PRODUCT_SETS_SYNC_ENABLED,
 	);
-	/**
-	 * Stores the rollout switches and their enabled/disabled states.
-	 *
-	 * @var array
-	 */
-	private array $rollout_switches = array();
 
 	public function __construct( \WC_Facebookcommerce $plugin ) {
 		$this->plugin = $plugin;
@@ -49,6 +43,7 @@ class RolloutSwitches {
 			return;
 		}
 
+		// This is to avoid calling the API multiple times
 		$flag_name = '_wc_' . facebook_for_woocommerce()->get_id() . '_rollout_switch_flag';
 		if ( 'yes' === get_transient( $flag_name ) ) {
 			return;
@@ -66,12 +61,14 @@ class RolloutSwitches {
 				if ( ! isset( $switch['switch'] ) || ! $this->is_switch_active( $switch['switch'] ) ) {
 					continue;
 				}
-				$this->rollout_switches[ $switch['switch'] ] = (bool) $switch['enabled'];
+				$flag_name = $this->get_transient_name($switch['switch']);
+				set_transient( $flag_name, (bool)$switch['enabled'] ? 'yes' : 'no', 24 * HOUR_IN_SECONDS );
 			}
 		} catch ( Exception $e ) {
 			// if there is an exception we will assume that the switch is disabled
 			foreach ( self::ACTIVE_SWITCHES as $switch ) {
-				$this->rollout_switches[ $switch ] = false;
+				$flag_name = $this->get_transient_name($switch);
+				set_transient( $flag_name, 'no', 24 * HOUR_IN_SECONDS );
 			}
 			\WC_Facebookcommerce_Utils::fblog(
 				$e,
@@ -103,11 +100,16 @@ class RolloutSwitches {
 		if ( ! $this->is_switch_active( $switch_name ) ) {
 			return false;
 		}
-
-		return isset( $this->rollout_switches[ $switch_name ] ) ? $this->rollout_switches[ $switch_name ] : true;
+		
+		$flag_name = $this->get_transient_name($switch_name);
+		return get_transient( $flag_name ) === 'yes' ? true : false;
 	}
 
 	public function is_switch_active( string $switch_name ): bool {
 		return in_array( $switch_name, self::ACTIVE_SWITCHES, true );
+	}
+
+	private function get_transient_name($switch_name) {
+		return '_wc_' . facebook_for_woocommerce()->get_id() . '_rollout_switch_' . $switch_name;
 	}
 }
