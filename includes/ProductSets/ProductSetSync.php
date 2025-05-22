@@ -14,6 +14,7 @@ defined( 'ABSPATH' ) || exit;
 
 use WooCommerce\Facebook\RolloutSwitches;
 use WooCommerce\Facebook\Utilities\Heartbeat;
+use WC_Facebookcommerce_Utils;
 
 /**
  * The product set sync handler.
@@ -171,7 +172,7 @@ class ProductSetSync {
 			$fb_product_set_metadata['cover_image_url'] = $wc_category_thumbnail_url;
 		}
 		if ( ! empty( $wc_category_description ) ) {
-			$fb_product_set_metadata['description'] = $wc_category_description;
+			$fb_product_set_metadata['description'] = WC_Facebookcommerce_Utils::clean_string( $wc_category_description );
 		}
 		if ( ! empty( $wc_category_url ) ) {
 			$fb_product_set_metadata['external_url'] = $wc_category_url;
