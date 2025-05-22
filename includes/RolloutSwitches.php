@@ -26,6 +26,7 @@ class RolloutSwitches {
 	public const SWITCH_ROLLOUT_FEATURES    = 'rollout_enabled';
 	public const WHATSAPP_UTILITY_MESSAGING = 'whatsapp_utility_messages_enabled';
 	public const SWITCH_PRODUCT_SETS_SYNC_ENABLED = 'product_sets_sync_enabled';
+	private const SETTINGS_KEY = 'wc_facebook_for_woocommerce_rollout_switches';
 
 	private const ACTIVE_SWITCHES = array(
 		self::SWITCH_ROLLOUT_FEATURES,
@@ -57,19 +58,15 @@ class RolloutSwitches {
 			if ( empty( $data ) ) {
 				throw new Exception( 'Empty data' );
 			}
+			$fb_options = array();
 			foreach ( $data as $switch ) {
 				if ( ! isset( $switch['switch'] ) || ! $this->is_switch_active( $switch['switch'] ) ) {
 					continue;
 				}
-				$flag_name = $this->get_transient_name($switch['switch']);
-				set_transient( $flag_name, (bool)$switch['enabled'] ? 'yes' : 'no', 24 * HOUR_IN_SECONDS );
+				$fb_options[ $switch['switch'] ] = (bool) $switch['enabled'] ? 'yes' : 'no';
 			}
+			update_option( self::SETTINGS_KEY, $fb_options );
 		} catch ( Exception $e ) {
-			// if there is an exception we will assume that the switch is disabled
-			foreach ( self::ACTIVE_SWITCHES as $switch ) {
-				$flag_name = $this->get_transient_name($switch);
-				set_transient( $flag_name, 'no', 24 * HOUR_IN_SECONDS );
-			}
 			\WC_Facebookcommerce_Utils::fblog(
 				$e,
 				[
@@ -101,15 +98,10 @@ class RolloutSwitches {
 			return false;
 		}
 		
-		$flag_name = $this->get_transient_name($switch_name);
-		return get_transient( $flag_name ) === 'yes' ? true : false;
+		return get_option( self::SETTINGS_KEY )[$switch_name] === 'yes' ? true : false;
 	}
 
 	public function is_switch_active( string $switch_name ): bool {
 		return in_array( $switch_name, self::ACTIVE_SWITCHES, true );
-	}
-
-	private function get_transient_name($switch_name) {
-		return '_wc_' . facebook_for_woocommerce()->get_id() . '_rollout_switch_' . $switch_name;
 	}
 }
