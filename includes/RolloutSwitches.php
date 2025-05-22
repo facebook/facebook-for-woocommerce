@@ -49,7 +49,7 @@ class RolloutSwitches {
 			return;
 		}
 
-		$flag_name = '_wc_' . facebook_for_woocommerce()->get_id() . '_rollout_switch_flag';
+		$flag_name = '_wc_facebook_for_woocommerce_rollout_switch_flag';
 		if ( 'yes' === get_transient( $flag_name ) ) {
 			return;
 		}
