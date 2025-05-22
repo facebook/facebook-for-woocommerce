@@ -62,6 +62,8 @@ class PluginUpdate {
                 'set_excluded_terms_prompt_nonce' => wp_create_nonce( 'set-excluded-terms-prompt' ),
                 'opt_out_of_sync'                 => wp_create_nonce( self::ACTION_OPT_OUT_OF_SYNC ),
                 'sync_in_progress'                => Sync::is_sync_in_progress(),
+                'opt_out_confirmation_message' => self::get_opt_out_modal_message(),
+                'opt_out_confirmation_buttons' => self::get_opt_out_modal_buttons(),
             )
         );
     }
@@ -136,12 +138,13 @@ class PluginUpdate {
         if ( isset( $screen->id ) && 'marketing_page_wc-facebook' === $screen->id ) {
             echo '<div id="opt_out_banner" class="' . esc_html( self::get_opt_out_banner_class() ) . '" style="padding: 15px">
             <h2>When you update to version <b>' . self::get_latest_plugin_version() . '</b> your products will automatically sync to your catalog at Meta catalog</h2>
-            The next time you update your Facebook for WooCommerce plugin, all your products will be synced automatically. This is to help you drive sales and optimize your ad performance. <a href="https://www.facebook.com/business/help/4049935305295468">Learn more about changes to how your products will sync to Meta </a>
+            The next time you update your Facebook for WooCommerce plugin, all your products will be synced automatically. This is to help you drive sales and optimize your ad performance. <a href="https://www.facebook.com/business/help/4049935305295468">Learn more about changes to how your products will sync to Meta</a>
                 <p>
                     <a href="edit.php?post_type=product"> Review products </a>
                     <a href="javascript:void(0);" style="text-decoration: underline; cursor: pointer; margin-left: 10px" class="opt_out_of_sync_button"> Opt out of automatic sync</a>
                 </p>
-            </div>';
+            </div>
+            ';
 
             echo '<div id="opt_in_banner" class="' . esc_html( self::get_opt_in_banner_class() ) . '" style="padding: 15px">
             <h2>You’ve opted out of automatic syncing on the next plugin update </h2>
@@ -328,6 +331,31 @@ class PluginUpdate {
             $opt_out_banner_class = 'notice notice-info is-dismissible';
         }
         return $opt_out_banner_class;
+    }
+
+    private function get_opt_out_modal_message(){
+        return "
+            <h2>Opt out of automatic product sync?</h2>
+            <p>
+                If you opt out, we will not be syncing your products to your Meta catalog even after you update your Facebook for WooCommerce plugin.
+            </p>
+
+            <p>
+                However, we strongly recommend syncing all products to help drive sales and optimize ad performance. Products that aren’t synced will not be available for your customers to discover and buy in your ads and shops.
+            </p>
+
+            <p>
+                If you change your mind later, you can easily un-sync your products by going to WooCommerce > Products.
+            </p>
+        ";
+    }
+
+    private function get_opt_out_modal_buttons() {
+        return '
+            <a href="javascript:void(0);" class="button wc-forward upgrade_plugin_button" id="modal_opt_out_button">
+               Opt out
+            </a>
+        ';
     }
 }
 
