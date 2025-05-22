@@ -1656,49 +1656,7 @@ class Admin {
 		<script type="text/javascript">
 			jQuery(document).ready(function($) {
 				// Add CSS for synced fields
-				$('head').append(`
-					<style>
-						.multi-value-display,
-						select.synced-attribute,
-						input.synced-attribute {
-							cursor: not-allowed !important;
-							color: rgba(44, 51, 56, .5) !important;
-							background-color: #f0f0f1 !important;
-						}
-						
-						/* Style for Select2 when parent select is synced */
-						select.synced-attribute + .select2-container .select2-selection {
-							cursor: not-allowed !important;
-							background-color: #f0f0f1 !important;
-							color: rgba(44, 51, 56, .5) !important;
-						}
-						
-						select.synced-attribute + .select2-container .select2-selection__rendered {
-							color: rgba(44, 51, 56, .5) !important;
-						}
-						
-						/* Sync indicator styles */
-						.wc-attributes-icon {
-							position: relative;
-							display: inline-block;
-							margin-left: 8px;
-							vertical-align: middle;
-							cursor: help;
-						}
-						
-						.wc-attributes-icon:after {
-							content: '\f160';
-							font-family: dashicons;
-							display: inline-block;
-							width: 18px;
-							height: 18px;
-							vertical-align: text-bottom;
-							opacity: 0.8;
-							color: #2271b1;
-							font-size: 18px;
-						}
-					</style>
-				`);
+				// CSS has been moved to facebook-for-woocommerce-products-admin.css
 				
 				// State object to track badge display status
 				var syncedBadgeState = {
@@ -1935,23 +1893,6 @@ class Admin {
 													// Create a styled disabled field to show multiple values
 													var $multiDisplay = $('<input type="text" class="multi-value-display" disabled>')
 														.val(syncedValue)
-														.css({
-															'width': '50%',
-															'max-width': '100%',
-															'height': '34px',
-															'margin': '0',
-															'padding': '0 8px',
-															'background-color': '#f0f0f1',
-															'border': '1px solid #ddd',
-															'border-radius': '4px',
-															'box-sizing': 'border-box',
-															'font-size': '14px',
-															'line-height': '32px',
-															'color': 'rgba(44, 51, 56, .5)',
-															'display': 'inline-block',
-															'vertical-align': 'middle',
-															'cursor': 'not-allowed'
-														})
 														.insertAfter($field);
 													
 													// Add the sync badge
@@ -2268,24 +2209,17 @@ class Admin {
 			
 			// Debug logging
 			$log_file = WP_CONTENT_DIR . '/uploads/fb-product-debug.log';
-			file_put_contents($log_file, "---------------------------------------------\n", FILE_APPEND);
-			file_put_contents($log_file, "AJAX request for product attribute sync for product ID: {$product_id}\n", FILE_APPEND);
 			
 			if ( ! $product ) {
-				file_put_contents($log_file, "Error: Invalid product\n", FILE_APPEND);
 				wp_send_json_error( 'Invalid product' );
 				return;
 			}
 			
 			// Get stored custom mappings for diagnostic purposes
 			$custom_mappings = get_option('wc_facebook_custom_attribute_mappings', array());
-			file_put_contents($log_file, "Custom attribute mappings from database: " . json_encode($custom_mappings) . "\n", FILE_APPEND);
 			
 			// Use ProductAttributeMapper to get and save the mapped attributes
-			$mapped_attributes = \WooCommerce\Facebook\ProductAttributeMapper::get_and_save_mapped_attributes( $product );
-			
-			// Log the result for diagnostics
-			file_put_contents($log_file, "Final mapped attributes: " . json_encode($mapped_attributes) . "\n", FILE_APPEND);
+			$mapped_attributes = ProductAttributeMapper::get_and_save_mapped_attributes( $product );
 			
 			// Prepare the response with mapped field => value pairs
 			$facebook_fields = array();
@@ -2323,102 +2257,9 @@ class Admin {
 				}
 			}
 			
-			file_put_contents($log_file, "Sending response to frontend: " . json_encode($facebook_fields) . "\n", FILE_APPEND);
-			file_put_contents($log_file, "---------------------------------------------\n", FILE_APPEND);
-			
 			wp_send_json_success( $facebook_fields );
 		}
 		wp_send_json_error( 'Invalid product ID' );
 	}
 
-	/**
-	 * Adds a link to clear attribute mappings in the Facebook integration settings.
-	 *
-	 * @internal
-	 *
-	 * @since 3.0.0
-	 */
-	public function add_clear_mappings_button() {
-		// Only add this if on the right settings page
-		global $pagenow;
-		if ( 'admin.php' !== $pagenow || ! isset( $_GET['page'] ) || 'wc-facebook' !== $_GET['page'] ) {
-			return;
-		}
-		
-		// Check if clearing mappings was requested
-		if ( isset( $_GET['clear_fb_mappings'] ) && '1' === $_GET['clear_fb_mappings'] && current_user_can( 'manage_woocommerce' ) ) {
-			// Clear the mappings
-			delete_option( 'wc_facebook_custom_attribute_mappings' );
-			
-			// Log the action
-			$log_file = WP_CONTENT_DIR . '/uploads/fb-product-debug.log';
-			file_put_contents( $log_file, "Cleared all attribute mappings from database at " . date( 'Y-m-d H:i:s' ) . " via admin action\n", FILE_APPEND );
-			
-			// Redirect to remove the action from the URL
-			wp_redirect( remove_query_arg( 'clear_fb_mappings' ) );
-			exit;
-		}
-		
-		// Add the button via JavaScript
-		?>
-		<script type="text/javascript">
-		jQuery(document).ready(function($) {
-			// Find the Facebook integration settings section
-			var $settings = $('.woocommerce-facebook-integration-settings');
-			if ($settings.length) {
-				// Add the clear mappings button
-				$settings.append(
-					'<div class="clear-fb-mappings" style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #eee;">' +
-					'<h3>Advanced Settings</h3>' +
-					'<p>If you\'re experiencing issues with attribute mapping, you can clear all custom attribute mappings.</p>' +
-					'<a href="<?php echo esc_url( add_query_arg( 'clear_fb_mappings', '1' ) ); ?>" class="button button-secondary" ' +
-					'onclick="return confirm(\'Are you sure you want to clear all Facebook attribute mappings? This cannot be undone.\');">' +
-					'Clear Attribute Mappings</a>' +
-					'</div>'
-				);
-			}
-		});
-		</script>
-		<?php
-	}
-
-	/**
-	 * Adds plugin action links on the plugins page.
-	 * 
-	 * @since 3.0.0
-	 * 
-	 * @param array $links plugin action links
-	 * @return array
-	 */
-	public function add_plugin_action_links( $links ) {
-		$plugin_links = array(
-			'<a href="' . esc_url( admin_url( 'admin.php?page=wc-facebook&clear_fb_mappings=1' ) ) . '" onclick="return confirm(\'Are you sure you want to clear all Facebook attribute mappings? This cannot be undone.\');">Clear Attribute Mappings</a>',
-		);
-		
-		return array_merge( $plugin_links, $links );
-	}
-	
-	/**
-	 * Processes the attribute mapping clear request.
-	 * 
-	 * @since 3.0.0
-	 */
-	public function process_clear_mappings_request() {
-		// Check if clearing mappings was requested
-		if ( isset( $_GET['page'] ) && 'wc-facebook' === $_GET['page'] && 
-			 isset( $_GET['clear_fb_mappings'] ) && '1' === $_GET['clear_fb_mappings'] && 
-			 current_user_can( 'manage_woocommerce' ) ) {
-			// Clear the mappings
-			delete_option( 'wc_facebook_custom_attribute_mappings' );
-			
-			// Log the action
-			$log_file = WP_CONTENT_DIR . '/uploads/fb-product-debug.log';
-			file_put_contents( $log_file, "Cleared all attribute mappings from database at " . date( 'Y-m-d H:i:s' ) . " via admin action\n", FILE_APPEND );
-			
-			// Add admin notice
-			add_action( 'admin_notices', function() {
-				echo '<div class="notice notice-success is-dismissible"><p><strong>Facebook for WooCommerce:</strong> All attribute mappings have been cleared successfully.</p></div>';
-			});
-		}
-	}
 }
