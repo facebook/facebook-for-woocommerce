@@ -39,7 +39,6 @@ jQuery( document ).ready( function( $ ) {
         } ,function (response){
             data = typeof response === "string" ? JSON.parse(response) : response;
             if( data.success ) {
-              console.log(data);
               location.reload();
             }
             else{
@@ -53,5 +52,29 @@ jQuery( document ).ready( function( $ ) {
             console.error("Error Message:", xhr.responseText);
         });
     });
+
+    $('#sync_all_products').on('click',function(event) {
+        event.preventDefault();
+        $.post( facebook_for_woocommerce_plugin_update.ajax_url, {
+            action: 'wc_facebook_sync_all_products',   
+            nonce:  facebook_for_woocommerce_plugin_update.opt_out_of_sync,
+        } ,function (response){
+            data = typeof response === "string" ? JSON.parse(response) : response;
+            if( data.success ) {
+                $('#opted_out_banner_updated_plugin').hide();
+                $('#opted_in_banner_updated_plugin').show();
+            }
+            else{
+                context.text('Failed to enable sync !')
+                context.css("color", "red");
+                context.css('border', '2px solid red');
+                context.prop('disabled', true);
+            }
+        }).fail(function() {
+            console.error("Error Code:", xhr.status);
+            console.error("Error Message:", xhr.responseText);
+        });
+    });
+
 });
 
