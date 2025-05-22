@@ -3,7 +3,7 @@ Contributors: facebook
 Tags: meta, facebook, conversions api, catalog sync, ads
 Requires at least: 5.6
 Tested up to: 6.8.1
-Stable tag: 3.4.9
+Stable tag: 3.4.10
 Requires PHP: 7.4
 MySQL: 5.6 or greater
 License: GPLv2 or later
@@ -40,26 +40,8 @@ When opening a bug on GitHub, please give us as many details as possible.
 
 == Changelog ==
 
-= 3.4.9 - 2025-05-14 =
-* Add - Support for rollout switches in the plugin to control feature rollouts from meta side @francorisso in #3126
-* Fix - Tests in the rollout switches file by @francorisso in #3146
-* Fix - RolloutSwitches Init by @carterbuce in #3157
-* Add - Integrate Whatsapp Utility Messaging for WooCommerce Order Update Notifications by @sharunaanandraj in #3164
-* Tweak - Improve Test Filter Management with AbstractWPUnitTestWithSafeFiltering by @sol-loup in #2944
-* Fix - Namespacing issue causing some tests to be skipped @sol-loup in #3037
-* Tweak - Additional logs and timeout for Utility Message Flows by @woo-ardsouza in #3171
-* Fix - The WAUM payment progress to only Show Up after Consent Collection is Enabled by @sharunaanandraj in #3175
-* Tweak - Update language dropdown based on supported_languages in GET api response by @woo-ardsouza in #3178
-* Add - Error notice to gracefully handle errors in Manage Events view by @woo-ardsouza in #3179
-* Fix - The Status on the Whatsapp Consent Collection Pill and Button @sharunaanandraj in #3183
-* Tweak - Update Message Sending API from Messages to Message Events by @woo-ardsouza in #3182
-* Tweak - Update the Authentication mechanism for Whatsapp Webhook by @sharunaanandraj #3186
-* Tweak - Minor design updates to Utility Event Settings card by @woo-ardsouza in #3193
-* Add - Admin notice for WhatsApp utility messaging recruitment @iodic in #3177
-* Fix - The product sync button showing up twice by @sharunaanandraj in #3199
-* Tweak - Bump WooCommerce and WordPress compatibility by @iodic in #3200
-* Add - An automated process that synchronizes all WooCommerce product categories with Meta, creating catalog product sets for each category. The synchronization process ensures that any changes made to the WooCommerce product categories are reflected in the corresponding Meta catalog product sets by @mshymon in #3168
-* Add - A banner in product sets tab to explain recent changes to product sets sync by @mshymon in #3207
-* Add - Admin notice for WhatsApp utility messaging recruitment by @iodic in #3211
+= 3.4.10 - 2025-05-22 =
+* Fix - Disabled the RollOut switch
+* Fix - Removed the Global Admin Notice
 
 [See changelog for all versions](https://raw.githubusercontent.com/facebook/facebook-for-woocommerce/refs/heads/releases/changelog.txt).

@@ -1,5 +1,9 @@
 *** Facebook for WooCommerce Changelog ***
 
+= 3.4.10 - 2025-05-22 =
+* Fix - Disabled the RollOut switch
+* Fix - Removed the Global Admin Notice
+
 = 3.4.9 - 2025-05-14 =
 * Add - Support for rollout switches in the plugin to control feature rollouts from meta side @francorisso in #3126
 * Fix - Tests in the rollout switches file by @francorisso in #3146

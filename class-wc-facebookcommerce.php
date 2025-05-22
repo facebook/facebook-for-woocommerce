@@ -227,12 +227,10 @@ class WC_Facebookcommerce extends WooCommerce\Facebook\Framework\Plugin {
 			$this->tracker            = new WooCommerce\Facebook\Utilities\Tracker();
 			$this->rollout_switches   = new WooCommerce\Facebook\RolloutSwitches( $this );
 
-
 			// Init jobs
 			$this->job_manager = new WooCommerce\Facebook\Jobs\JobManager();
 			add_action( 'init', [ $this->job_manager, 'init' ] );
-			add_action( 'admin_init', [ $this->rollout_switches, 'init' ] );
-
+			add_action( 'admin_init', array( $this->rollout_switches, 'init' ) );
 			// Instantiate the debug tools.
 			$this->debug_tools = new DebugTools();
 

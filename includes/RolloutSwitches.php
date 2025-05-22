@@ -23,25 +23,19 @@ class RolloutSwitches {
 	/** @var \WC_Facebookcommerce commerce handler */
 	private \WC_Facebookcommerce $plugin;
 
-	public const SWITCH_ROLLOUT_FEATURES    = 'rollout_enabled';
-	public const WHATSAPP_UTILITY_MESSAGING = 'whatsapp_utility_messages_enabled';
+	public const SWITCH_ROLLOUT_FEATURES          = 'rollout_enabled';
+	public const WHATSAPP_UTILITY_MESSAGING       = 'whatsapp_utility_messages_enabled';
 	public const SWITCH_PRODUCT_SETS_SYNC_ENABLED = 'product_sets_sync_enabled';
+	private const SETTINGS_KEY                    = 'wc_facebook_for_woocommerce_rollout_switches';
 
 	private const ACTIVE_SWITCHES = array(
 		self::SWITCH_ROLLOUT_FEATURES,
 		self::WHATSAPP_UTILITY_MESSAGING,
 		self::SWITCH_PRODUCT_SETS_SYNC_ENABLED,
 	);
-	/**
-	 * Stores the rollout switches and their enabled/disabled states.
-	 *
-	 * @var array
-	 */
-	private array $rollout_switches = array();
 
 	public function __construct( \WC_Facebookcommerce $plugin ) {
 		$this->plugin = $plugin;
-		add_action( Heartbeat::HOURLY, array( $this, 'init' ) );
 	}
 
 	public function init() {
@@ -50,18 +44,42 @@ class RolloutSwitches {
 			return;
 		}
 
+		// This is to avoid calling the API multiple times
+		$flag_name = '_wc_facebook_for_woocommerce_rollout_switch_flag';
+		if ( 'yes' === get_transient( $flag_name ) ) {
+			return;
+		}
+		set_transient( $flag_name, 'yes', 60 * MINUTE_IN_SECONDS );
+
 		try {
 			$external_business_id = $this->plugin->get_connection_handler()->get_external_business_id();
 			$switches             = $this->plugin->get_api()->get_rollout_switches( $external_business_id );
 			$data                 = $switches->get_data();
+			if ( empty( $data ) ) {
+				throw new Exception( 'Empty data' );
+			}
+			$fb_options = array();
 			foreach ( $data as $switch ) {
 				if ( ! isset( $switch['switch'] ) || ! $this->is_switch_active( $switch['switch'] ) ) {
 					continue;
 				}
-				$this->rollout_switches[ $switch['switch'] ] = (bool) $switch['enabled'];
+				$fb_options[ $switch['switch'] ] = (bool) $switch['enabled'] ? 'yes' : 'no';
 			}
+			update_option( self::SETTINGS_KEY, $fb_options );
 		} catch ( Exception $e ) {
-			\WC_Facebookcommerce_Utils::log_exception_immediately_to_meta(
+			$fb_options = get_option( self::SETTINGS_KEY );
+			if ( empty( $fb_options ) ) {
+				$fb_options = array();
+			}
+			foreach ( $this->get_active_switches() as $switch_name ) {
+				// if the switch is not in the response and we have a failure
+				// we fallback to the old value first and false otherwise
+				if ( ! isset( $fb_options[ $switch_name ] ) ) {
+					$fb_options[ $switch_name ] = 'no';
+				}
+			}
+			update_option( self::SETTINGS_KEY, $fb_options );
+			\WC_Facebookcommerce_Utils::fblog(
 				$e,
 				[
 					'event'      => 'rollout_switches',
@@ -91,11 +109,23 @@ class RolloutSwitches {
 		if ( ! $this->is_switch_active( $switch_name ) ) {
 			return false;
 		}
+		$features = get_option( self::SETTINGS_KEY );
+		if ( empty( $features ) ) {
+			return false;
+		}
 
-		return isset( $this->rollout_switches[ $switch_name ] ) ? $this->rollout_switches[ $switch_name ] : true;
+		if ( ! isset( $features[ $switch_name ] ) ) {
+			return true;
+		}
+
+		return 'yes' === $features[ $switch_name ] ? true : false;
 	}
 
 	public function is_switch_active( string $switch_name ): bool {
 		return in_array( $switch_name, self::ACTIVE_SWITCHES, true );
+	}
+
+	public function get_active_switches(): array {
+		return self::ACTIVE_SWITCHES;
 	}
 }
