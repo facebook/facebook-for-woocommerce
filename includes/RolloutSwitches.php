@@ -97,8 +97,12 @@ class RolloutSwitches {
 		if ( ! $this->is_switch_active( $switch_name ) ) {
 			return false;
 		}
+		$features = get_option( self::SETTINGS_KEY );
+		if ( empty( $features ) ) {
+			return false;
+		}
 		
-		return get_option( self::SETTINGS_KEY )[$switch_name] === 'yes' ? true : false;
+		return $features[$switch_name] === 'yes' ? true : false;
 	}
 
 	public function is_switch_active( string $switch_name ): bool {
