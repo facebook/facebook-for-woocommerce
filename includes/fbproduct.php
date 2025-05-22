@@ -1676,65 +1676,6 @@ class WC_Facebook_Product {
 		$product_data[ 'material' ] = Helper::str_truncate( $this->get_fb_material(), 100 );
 		// $product_data[ 'woo_product_type' ] = $this->get_type();
 		// $product_data[ 'unmapped_attributes' ] = $this->get_unmapped_attributes();
-		$product_data[ 'disabled_capabilities' ] = $this->get_disabled_capabilities();
-
-		if($this->get_type() === "variation"){
-			$parent_id = $this->woo_product->get_parent_id();	
-			$parent_product =  wc_get_product( $parent_id );
-
-			if( $parent_product ){
-				$parent_product_visibility =  $parent_product->get_meta( Products::VISIBILITY_META_KEY );
-				$current_variation_product_visibility = Products::is_product_visible( $this->woo_product );
-
-				/**
-				 * If parent's visibility is already marked we know we should assign it to the child/variation as well
-				 */
-				if($parent_product_visibility === "yes"){
-					$product_data["is_woo_all_products_sync"] = !$current_variation_product_visibility;
-					$product_data[ 'visibility' ] = \WC_Facebookcommerce_Integration::FB_SHOP_PRODUCT_VISIBLE;
-				}
-				else if ($parent_product_visibility === "no"){
-					$product_data[ 'visibility' ] = \WC_Facebookcommerce_Integration::FB_SHOP_PRODUCT_HIDDEN;
-				}
-				else{
-					/**
-					 * If the visibility is empty,
-					 * We then check for the variation's visibility.
-					 * If even a single one is marked yes, we bail it out as published.
-					 * If all marked no we honor the visibility as hidden.
-					 */
-					$variations = $parent_product->get_children(); 
-					$variation_visibility = false;
-
-					foreach ($variations as $variation_id) {
-						$variation = wc_get_product($variation_id);
-				
-						if ($variation) {
-							$variation_visibility = $variation_visibility || Products::is_product_visible($variation);
-						}
-
-						if ($variation_visibility) break;
-					}
-
-					/**
-					 * Tagging those products who were previously having visibility hidden
-					 * But now have visibility published
-					 */
-					if($variation_visibility){
-						$product_data["is_woo_all_products_sync"] = !$current_variation_product_visibility;
-					}
-
-					$product_data[ 'visibility' ] = $variation_visibility ? \WC_Facebookcommerce_Integration::FB_SHOP_PRODUCT_VISIBLE : \WC_Facebookcommerce_Integration::FB_SHOP_PRODUCT_HIDDEN;
-					/**
-					 *  Since this function will be called again for other variations as well for the same parent product.
-					 *  We can now assign the visibility marker to the parent product
-					 *  That way it won't come to this block next time
-					 */
-	
-					update_post_meta($parent_id,Products::VISIBILITY_META_KEY, $variation_visibility ? "yes" : "no");
-				}
-			}
-		}
 
 		if ( self::PRODUCT_PREP_TYPE_ITEMS_BATCH === $type_to_prepare_for ) {
 			$product_data['title'] = Helper::str_truncate( WC_Facebookcommerce_Utils::clean_string( $this->get_title() ), self::MAX_TITLE_LENGTH );
