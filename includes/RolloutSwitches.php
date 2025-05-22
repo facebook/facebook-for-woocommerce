@@ -15,8 +15,6 @@ use WooCommerce\Facebook\Utilities\Heartbeat;
 
 defined( 'ABSPATH' ) || exit;
 
-const MINUTE_IN_SECONDS = 60;
-
 /**
  * The rollout switches is used to control available
  * features in the Facebook for WooCommerce plugin.
