@@ -34,6 +34,9 @@ class Shops extends Abstract_Settings_Screen {
 	/** @var string */
 	const ACTION_SYNC_SHIPPING_PROFILES = 'wc_facebook_sync_shipping_profiles';
 
+	/** @var string */
+	const ACTION_SYNC_NAVIGATION_MENU = 'wc_facebook_sync_navigation_menu';
+
 	/**
 	 * Shops constructor.
 	 *
@@ -133,6 +136,7 @@ class Shops extends Abstract_Settings_Screen {
 				'sync_products_nonce'          => wp_create_nonce( self::ACTION_SYNC_PRODUCTS ),
 				'sync_coupons_nonce'           => wp_create_nonce( self::ACTION_SYNC_COUPONS ),
 				'sync_shipping_profiles_nonce' => wp_create_nonce( self::ACTION_SYNC_SHIPPING_PROFILES ),
+				'sync_navigation_menu_nonce'   => wp_create_nonce( self::ACTION_SYNC_NAVIGATION_MENU ),
 			)
 		);
 	}
@@ -251,6 +255,22 @@ class Shops extends Abstract_Settings_Screen {
 							</button>
 							<p id="shipping-profile-sync-description" class="sync-description">
 								Manually sync your shipping profiles from WooCommerce to your shop. It may take a couple of minutes for the changes to populate.
+							</p>
+						</td>
+					</tr>
+					<tr valign="top" class="wc-facebook-shops-sample">
+						<th scope="row" class="titledesc">
+							Navigation menu sync
+						</th>
+						<td class="forminp">
+							<button
+								id="wc-facebook-enhanced-settings-sync-navigation-menu"
+								class="button"
+								type="button">
+								<?php esc_html_e( 'Sync now', 'facebook-for-woocommerce' ); ?>
+							</button>
+							<p id="navigation-menu-sync-description" class="sync-description">
+								Manually sync your category navigation menu from WooCommerce to your shop. It may take a couple of minutes for the changes to populate.
 							</p>
 						</td>
 					</tr>

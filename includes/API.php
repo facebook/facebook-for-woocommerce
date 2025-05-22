@@ -643,6 +643,17 @@ class API extends Base {
 		return $this->perform_request( $request );
 	}
 
+    /**
+     * @return Response
+     * @throws ApiException
+     * @throws API\Exceptions\Request_Limit_Reached
+     */
+    public function get_public_key( string $key_project ): Response
+    {
+        $request = new API\PublicKeyGet\Request( $key_project );
+        $this->set_response_handler( API\Response::class );
+        return $this->perform_request( $request );
+    }
 
 	/**
 	 * Gets the next page of results for a paginated response.

@@ -152,7 +152,7 @@ class ProductSetSyncTest extends WP_UnitTestCase {
         $this->assertEquals( self::WC_CATEGORY_NAME_1, $data['name'] );
         $this->assertEquals( $wc_category->term_taxonomy_id, $data['retailer_id'] );
         $this->assertEquals('{"and":[{"product_type":{"i_contains":"Test Category 1"}}]}', $data['filter'] );
-        $this->assertEquals( '{"description":"<p>This is a test category<\/p>\n","external_url":"http:\/\/example.org\/?product_cat=test-category"}', $data['metadata'] );
+        $this->assertEquals( '{"description":"This is a test category","external_url":"http:\/\/example.org\/?product_cat=test-category"}', $data['metadata'] );
     }
 
     /* ------------------ Utils Methods ------------------ */

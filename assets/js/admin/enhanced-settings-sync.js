@@ -106,4 +106,37 @@ jQuery(document).ready(function($) {
 			button.prop('disabled', false);
 		});
 	});
+
+	/**
+	 * Handle the sync navigation menu button click event
+	 *
+	 * @since 3.5.0
+	 *
+	 * @param {object} event
+	 */
+	$('#wc-facebook-enhanced-settings-sync-navigation-menu').click(function(event) {
+		event.preventDefault();
+		var button = $(this);
+
+		button.html('Syncing...');
+		button.prop('disabled', true);
+
+		var data = {
+			action: "wc_facebook_sync_navigation_menu",
+			nonce: wc_facebook_enhanced_settings_sync.sync_navigation_menu_nonce
+		};
+
+		$.post(wc_facebook_enhanced_settings_sync.ajax_url, data, function(response) {
+			if (response.success) {
+				button.html('Sync completed');
+				button.prop('disabled', false);
+			} else {
+				button.html('Sync failed');
+				button.prop('disabled', false);
+			}
+		}).fail(function() {
+			button.html('Sync failed');
+			button.prop('disabled', false);
+		});
+	});
 });
