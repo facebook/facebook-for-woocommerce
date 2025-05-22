@@ -40,18 +40,51 @@ When opening a bug on GitHub, please give us as many details as possible.
 
 == Changelog ==
 
-= 3.4.4 - 2025-03-26 =
-* Add - Create tests for ProductFeedUploads create endpoint by @ajello-meta in #2902
-* Add - Create tests for ProductFeedUploads read endpoint by @ajello-meta in #2903
-* Tweak - Remove phpcs:ignoreFile annotation + Enable code coverage report generation with phpunit by @sol-loup in #2897 and #2901
-* Fix - Restores the original dynamic property behavior in the AsyncRequest class by @sol-loup in #2921
-* Tweak - Changing APP to PLUGIN on README.MD by @SayanPandey in #2916
-* Tweak - Update README.md - Added noification for ownership transfer by @SayanPandey in #2910
-* Tweak - Added is_multisite logging to the update_plugin_version_configuration request by @carterbuce in #2955
-* Tweak - Add woo_commerce_retailer_id to products API request by @crisojog in #2958
-* Tweak - Syncing plugin version info by @vinkmeta in #2960
-* Fix - sync products out of stock to meta despite visibility config by @francorisso in #2952
-* Fix - Update woo_commerce_retailer_id to existing field external_variant_id by @crisojog in #2963
-* Tweak - Update readme.txt by @vinkmeta in #2949
+= 3.5.0 - 2025-05-28 =
+*  Add - Create basic checkout permalink w/ products and coupon support by @ajello-meta in #2887
+*  Add - Common Feed Upload Framework by @jmencab in #2875
+*  Fix - Fix bug where templates were not loading correctly by @ajello-meta in #2915
+*  Tweak - Change MICE to use base site url instead of shop url by @carterbuce in #2934
+*  Tweak - Improve custom checkout UI by @ajello-meta in #2930
+*  Tweak - Make custom checkout UI mobile compatible by @ajello-meta in #2942
+*  Fix - Update parsing for Checkout URL Product IDs by @carterbuce in #2935
+*  Add - Implement dummy logging util by @nealweiMeta in #2920
+*  Add - Setup cron job for batch logging with global message queue by @nealweiMeta in #2924
+*  Add - Error log request api activate by @nealweiMeta in #2933
+*  Add - Log locally with debug mode enabled by @nealweiMeta in #2939
+*  Add - Ratings and reviews feed upload by @nrostrow-meta in #2937
+*  Tweak - Feed upload skip logic and logging calls by @nrostrow-meta in #2964
+*  Add - Add function to fetch feed upload instance by @nrostrow-meta in #2970
+*  Tweak - Have feed uploads always use feed generator by @nrostrow-meta in #2971
+*  Tweak - Trigger metadata feed uploads on CPI ID change (post onboarding) by @nrostrow-meta in #2995
+*  Add - Shipping profile feed upload button by @nrostrow-meta in #3140
+*  Add - Navigation menu feed upload logic by @nrostrow-meta in #3159
+*  Fix - Fixing some fclose and logging gaps in the feed upload logic by @nrostrow-meta in #3192
+*  Add - Enabling navigation menu feed upload and adding manual sync button by @nrostrow-meta in #3223
+*  Add - Promotions feed upload by @carterbuce in #2941
+*  Add - Plugin AJAX API Framework by @sol-loup in #2928
+*  Tweak - Test Infrastructure Enhancement by @sol-loup in #2944
+*  Add - Implement telemetry logs api by @nealweiMeta in #2940
+*  Fix -  Make error logging event configurable by @nealweiMeta in #2954
+*  Add - Implement logging toggle by @nealweiMeta in #2959
+*  Fix - auto products sync by @nealweiMeta in #2978
+*  Tweak - Sync products with restriction by @nealweiMeta in #2983
+*  Fix - Fix use_enhanced_onboarding for legacy connections by @carterbuce in #2986
+*  Add - Create enhanced settings UI by @ajello-meta in #2968
+*  Add - Create new troubleshooting drawer from legacy debug settings by @ajello-meta in #2977
+*  Add - Add manual product and coupon sync buttons by @ajello-meta in #2984
+*  Tweak - Make page title in enhanced settings static by @ajello-meta in #2985
+*  Tweak - Align finalized content for logging toggle by @nealweiMeta in #2992
+*  Tweak - Improve local log by @nealweiMeta in #3009
+*  Fix - Fix free shipping coupon sync by @carterbuce in #2993
+*  Tweak - Add logging for feed generation scheduling failure by @carterbuce in #2994
+*  Tweak - Add logging in checkout for coupon code by @ajello-meta in #2991
+*  Tweak - Clean up CSS in enhanced settings UI by @ajello-meta in #2996
+*  Tweak - Remove the "Advertise" tab by @ajello-meta in #3024
+*  Tweak - Sync "Usage Count" in Promos Feed by @carterbuce in #3036
+*  Tweak - Disable mini_shops product capability for unsupported items by @carterbuce in #3084
+*  Add - Add usage logging for enhanced settings tabs by @ajello-meta in #3202
+*  Tweak - Remove UI of a checkbox that controls enablement of the new style feed generation by @mshymon in #3056
+*  Fix - Fix linter errors for ./includes/fbutils.php files by @ajello-meta in #3075
 
 [See changelog for all versions](https://raw.githubusercontent.com/facebook/facebook-for-woocommerce/refs/heads/main/changelog.txt).
