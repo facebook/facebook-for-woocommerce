@@ -66,6 +66,18 @@ class RolloutSwitches {
 			}
 			update_option( self::SETTINGS_KEY, $fb_options );
 		} catch ( Exception $e ) {
+			$fb_options = get_option( self::SETTINGS_KEY );
+			if ( empty( $fb_options ) ) {
+				$fb_options = array();
+			}
+			foreach ( $this->get_active_switches() as $switch_name ) {
+				// if the switch is not in the response and we have a failure
+				// we fallback to the old value first and false otherwise
+				if ( ! isset( $features[ $switch_name ] ) ) {
+					$fb_options[ $switch_name ] = 'no';
+				}
+			}
+			update_option( self::SETTINGS_KEY, $fb_options );
 			\WC_Facebookcommerce_Utils::fblog(
 				$e,
 				[
@@ -100,11 +112,19 @@ class RolloutSwitches {
 		if ( empty( $features ) ) {
 			return false;
 		}
+
+		if ( ! isset( $features[ $switch_name ] ) ) {
+			return true;
+		}
 		
 		return $features[$switch_name] === 'yes' ? true : false;
 	}
 
 	public function is_switch_active( string $switch_name ): bool {
 		return in_array( $switch_name, self::ACTIVE_SWITCHES, true );
+	}
+	
+	public function get_active_switches(): array {
+		return self::ACTIVE_SWITCHES;
 	}
 }
