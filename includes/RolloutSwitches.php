@@ -26,7 +26,7 @@ class RolloutSwitches {
 	public const SWITCH_ROLLOUT_FEATURES          = 'rollout_enabled';
 	public const WHATSAPP_UTILITY_MESSAGING       = 'whatsapp_utility_messages_enabled';
 	public const SWITCH_PRODUCT_SETS_SYNC_ENABLED = 'product_sets_sync_enabled';
-	private const SETTINGS_KEY = 'wc_facebook_for_woocommerce_rollout_switches';
+	private const SETTINGS_KEY                    = 'wc_facebook_for_woocommerce_rollout_switches';
 
 	private const ACTIVE_SWITCHES = array(
 		self::SWITCH_ROLLOUT_FEATURES,
@@ -116,14 +116,14 @@ class RolloutSwitches {
 		if ( ! isset( $features[ $switch_name ] ) ) {
 			return true;
 		}
-		
-		return $features[$switch_name] === 'yes' ? true : false;
+
+		return 'yes' === $features[ $switch_name ] ? true : false;
 	}
 
 	public function is_switch_active( string $switch_name ): bool {
 		return in_array( $switch_name, self::ACTIVE_SWITCHES, true );
 	}
-	
+
 	public function get_active_switches(): array {
 		return self::ACTIVE_SWITCHES;
 	}
