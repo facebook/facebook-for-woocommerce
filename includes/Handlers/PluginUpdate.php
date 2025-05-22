@@ -72,6 +72,8 @@ class PluginUpdate {
         add_action( 'wp_ajax_nopriv_wc_facebook_opt_out_of_sync', [ __CLASS__,'opt_out_of_sync_clicked' ] );
         add_action( 'wp_ajax_wc_facebook_upgrade_plugin', [ __CLASS__,  'upgrade_facebook_woocommerce_plugin' ] );
         add_action( 'wp_ajax_nopriv_wc_facebook_upgrade_plugin', [ __CLASS__,'upgrade_facebook_woocommerce_plugin' ] );
+        add_action( 'wp_ajax_wc_facebook_sync_all_products', [ __CLASS__,  'sync_all_clicked' ] );
+        add_action( 'wp_ajax_nopriv_wc_facebook_sync_all_products', [ __CLASS__,'sync_all_clicked' ] );
     }
 
     public static function get_opt_out_time() {
@@ -181,11 +183,13 @@ class PluginUpdate {
 
     public function plugin_updated_banner() {
         $screen               = get_current_screen();
+        
+
 
         if ( isset( $screen->id ) && 'marketing_page_wc-facebook' === $screen->id ) {
 
             if(self::is_master_sync_on()){
-                echo '<div id="opt_out_banner_update_available" class="notice notice-success is-dismissible" style="padding: 15px">
+                echo '<div class="notice notice-success is-dismissible" style="padding: 15px">
                 <h2>You’ve updated to the latest plugin version</h2>
                     <p>
                         As part of this update, all your products automatically sync to Meta. It may take some time before all your products are synced. If you change your mind, go to WooCommerce > Products and select which products to un-sync. <a href="https://www.facebook.com/business/help/4049935305295468"> About syncing products to Meta </a>
@@ -193,17 +197,28 @@ class PluginUpdate {
                 </div>';
             }
             else {
-                echo '<div id="opt_in_banner_update_available" class="notice notice-success is-dismissible" style="padding: 15px">
-                 <h2>You’ve updated to the latest plugin version</h2>   
-                    <p>
-                        To see all the changes, view the changelog. Since you’ve opted out of automatically syncing all your products, some of your products are not yet on Meta. We recommend turning on auto syncing to help drive your sales and improve ad performance. About syncing products to Meta
-                    </p>
-                    <p>
-                        <a href="javascript:void(0);" class="button wc-forward upgrade_plugin_button">
-                            Sync all products
-                        </a>
-                    </p>
-                </div>';
+                $hidden               = self::is_master_sync_on();
+                $opted_out_banner_class = $hidden ? 'hidden' : '';
+                $opted_in_banner_class =  !$hidden ? 'hidden' : '';
+
+                echo '<div id="opted_out_banner_updated_plugin" class="notice notice-success is-dismissible '.$opted_out_banner_class.'"" style="padding: 15px">
+                    <h2>You’ve updated to the latest plugin version</h2>   
+                        <p>
+                            To see all the changes, view the changelog. Since you’ve opted out of automatically syncing all your products, some of your products are not yet on Meta. We recommend turning on auto syncing to help drive your sales and improve ad performance. About syncing products to Meta
+                        </p>
+                        <p>
+                            <a href="javascript:void(0);" class="button wc-forward" id="sync_all_products">
+                                Sync all products
+                            </a>
+                        </p>
+                    </div>';
+
+                echo '<div id="opted_in_banner_updated_plugin" class="notice notice-success is-dismissible '.$opted_in_banner_class.'"" style="padding: 15px">
+                    <h2>Your products will be synced automatically</h2>   
+                        <p>
+                            It may take some time before all your products are synced. If you change your mind, go to WooCommerce > Products and select which products to un-sync.<a href="https://www.facebook.com/business/help/4049935305295468"> About syncing products to Meta</a>
+                        </p>
+                    </div>';
             }
         }
     }
@@ -216,6 +231,16 @@ class PluginUpdate {
         } catch ( Exception $e ) {
             error_log( 'Error while updating WP option: ' . $e->getMessage() );
             wp_send_json_error( 'Failed to opt out' );
+        }
+    }
+
+    public function sync_all_clicked() {
+        try {
+            update_option( self::MASTER_SYNC_OPT_OUT_TIME, '' );
+            wp_send_json_success( 'Opted in successfully' );
+        } catch ( Exception $e ) {
+            error_log( 'Error while updating WP option: ' . $e->getMessage() );
+            wp_send_json_error( 'Failed to opt in' );
         }
     }
 
