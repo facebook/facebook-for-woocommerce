@@ -44,7 +44,11 @@ class RolloutSwitches {
 	}
 
 	public function init() {
-		get_transient();
+		$flag_name = '_wc_' . facebook_for_woocommerce()->get_id() . '_rollout_switch_flag';
+		if ( 'yes' === get_transient( $flag_name ) ) {
+			return;
+		}
+		set_transient( $flag_name, 'yes', 15 * MINUTE_IN_SECONDS );
 		// Disabled until fixed (S523360)
 		return;
 		$is_connected = $this->plugin->get_connection_handler()->is_connected();
