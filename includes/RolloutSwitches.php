@@ -73,7 +73,7 @@ class RolloutSwitches {
 			foreach ( $this->get_active_switches() as $switch_name ) {
 				// if the switch is not in the response and we have a failure
 				// we fallback to the old value first and false otherwise
-				if ( ! isset( $features[ $switch_name ] ) ) {
+				if ( ! isset( $fb_options[ $switch_name ] ) ) {
 					$fb_options[ $switch_name ] = 'no';
 				}
 			}
