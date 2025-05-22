@@ -53,7 +53,7 @@ class RolloutSwitches {
 		if ( 'yes' === get_transient( $flag_name ) ) {
 			return;
 		}
-		set_transient( $flag_name, 'yes', 15 * MINUTE_IN_SECONDS );
+		set_transient( $flag_name, 'yes', 60 * MINUTE_IN_SECONDS );
 
 		try {
 			$external_business_id = $this->plugin->get_connection_handler()->get_external_business_id();
