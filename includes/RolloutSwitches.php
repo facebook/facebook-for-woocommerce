@@ -41,10 +41,12 @@ class RolloutSwitches {
 
 	public function __construct( \WC_Facebookcommerce $plugin ) {
 		$this->plugin = $plugin;
-		add_action( Heartbeat::HOURLY, array( $this, 'init' ) );
+		//add_action( Heartbeat::HOURLY, array( $this, 'init' ) );
 	}
 
 	public function init() {
+		// Disabled until fixed (S523360)
+		return;
 		$is_connected = $this->plugin->get_connection_handler()->is_connected();
 		if ( ! $is_connected ) {
 			return;

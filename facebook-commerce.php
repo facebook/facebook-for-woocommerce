@@ -25,8 +25,6 @@ require_once 'includes/fbproduct.php';
 require_once 'facebook-commerce-pixel-event.php';
 require_once 'facebook-commerce-admin-notice.php';
 
-new WC_Facebookcommerce_Admin_Notice();
-
 class WC_Facebookcommerce_Integration extends WC_Integration {
 
 
