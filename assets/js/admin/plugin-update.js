@@ -21,11 +21,7 @@ jQuery( document ).ready( function( $ ) {
             data = typeof response === "string" ? JSON.parse(response) : response;
             if(data.success){
                 $('#opt_out_banner').hide();
-                $('#opt_out_banner_update_available').hide();
-
-                $('#opt_in_banner_update_available').show();
                 $('#opt_in_banner').show();
-                      
                 modal.remove();
             }   
         }).fail(function(xhr) {
@@ -35,6 +31,25 @@ jQuery( document ).ready( function( $ ) {
         });
     });
 
+    /**
+     * Banner dismissed callback
+     */
+    $(document).on('click','#opt_out_banner .notice-dismiss, #opt_in_banner .notice-dismiss', function (e) {
+        e.preventDefault();
+        $.post( facebook_for_woocommerce_plugin_update.ajax_url, {
+            action: 'wc_banner_close_action',
+            nonce:  facebook_for_woocommerce_plugin_update.banner_close,
+        }, function (response){
+            data = typeof response === "string" ? JSON.parse(response) : response;
+            if(data.success){
+                // No success condition
+            }   
+        }).fail(function(xhr) {
+            console.error("Error Code:", xhr.status);
+            console.error("Error Message:", xhr.responseText);
+            modal.remove();
+        });
+    });
 
     // Opt out sync controls
      $('.opt_out_of_sync_button').on('click', function(event) {
