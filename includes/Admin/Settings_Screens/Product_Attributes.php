@@ -29,7 +29,7 @@ use WooCommerce\Facebook\ProductAttributeMapper;
 /**
  * The product attributes settings screen.
  *
- * @since 3.0.0
+ * @since 3.4.11
  */
 class Product_Attributes extends Abstract_Settings_Screen {
 
@@ -73,7 +73,7 @@ class Product_Attributes extends Abstract_Settings_Screen {
 	 *
 	 * @internal
 	 *
-	 * @since 3.0.0
+	 * @since 3.4.11
 	 */
 	public function enqueue_assets() {
 		// Only load on our settings page
@@ -128,7 +128,7 @@ class Product_Attributes extends Abstract_Settings_Screen {
 	/**
 	 * Gets the screen's settings.
 	 *
-	 * @since 3.0.0
+	 * @since 3.4.11
 	 *
 	 * @return array
 	 */
@@ -141,7 +141,7 @@ class Product_Attributes extends Abstract_Settings_Screen {
 	/**
 	 * Custom rendering for the attribute mapping page.
 	 *
-	 * @since 3.0.0
+	 * @since 3.4.11
 	 */
 	public function render() {
 		if ( ! current_user_can( 'manage_woocommerce' ) ) {
@@ -476,7 +476,7 @@ class Product_Attributes extends Abstract_Settings_Screen {
 	/**
 	 * Renders the attribute mapping table.
 	 *
-	 * @since 3.0.0
+	 * @since 3.4.11
 	 *
 	 * @param array $field Field data
 	 */
@@ -648,7 +648,7 @@ class Product_Attributes extends Abstract_Settings_Screen {
 	/**
 	 * Renders an info note field.
 	 *
-	 * @since 3.0.0
+	 * @since 3.4.11
 	 *
 	 * @param array $field Field data
 	 */
@@ -676,7 +676,7 @@ class Product_Attributes extends Abstract_Settings_Screen {
 	/**
 	 * Gets all WooCommerce product attributes.
 	 *
-	 * @since 3.0.0
+	 * @since 3.4.11
 	 *
 	 * @return array
 	 */
@@ -699,7 +699,7 @@ class Product_Attributes extends Abstract_Settings_Screen {
 	/**
 	 * Gets all Facebook catalog fields.
 	 *
-	 * @since 3.0.0
+	 * @since 3.4.11
 	 *
 	 * @return array
 	 */
@@ -724,7 +724,7 @@ class Product_Attributes extends Abstract_Settings_Screen {
 	/**
 	 * Gets saved attribute mappings from database.
 	 *
-	 * @since 3.0.0
+	 * @since 3.4.11
 	 *
 	 * @return array
 	 */
@@ -741,7 +741,7 @@ class Product_Attributes extends Abstract_Settings_Screen {
 	/**
 	 * Saves the attribute mappings.
 	 *
-	 * @since 3.0.0
+	 * @since 3.4.11
 	 */
 	public function save() {
 		$this->process_form_submission();
@@ -750,7 +750,7 @@ class Product_Attributes extends Abstract_Settings_Screen {
 	/**
 	 * Processes form submissions.
 	 *
-	 * @since 3.0.0
+	 * @since 3.4.11
 	 */
 	public function process_form_submission() {
 		if ( ! isset( $_POST['save_attribute_mappings'], $_POST['save_attribute_mappings_nonce'] ) ||
