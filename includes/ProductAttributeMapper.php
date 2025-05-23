@@ -23,7 +23,7 @@ use WooCommerce\Facebook\Products;
  * to Meta catalog fields, enhancing the default mapping with more flexibility
  * and better support for custom attributes.
  *
- * @since 3.0.0
+ * @since 3.4.11
  */
 class ProductAttributeMapper {
 
@@ -140,7 +140,7 @@ class ProductAttributeMapper {
 	/**
 	 * Gets all standardized Meta catalog fields.
 	 *
-	 * @since 3.0.0
+	 * @since 3.4.11
 	 *
 	 * @return array Array of all supported Meta fields with their variations
 	 */
@@ -151,7 +151,7 @@ class ProductAttributeMapper {
 	/**
 	 * Check if a WooCommerce attribute maps to a standard Facebook field
 	 *
-	 * @since 3.0.0
+	 * @since 3.4.11
 	 *
 	 * @param string $attribute_name The WooCommerce attribute name
 	 * @return bool|string False if not mapped, or the Facebook field name if mapped
@@ -225,7 +225,7 @@ class ProductAttributeMapper {
 	/**
 	 * Get all attributes that are not mapped to standard Facebook fields
 	 *
-	 * @since 3.0.0
+	 * @since 3.4.11
 	 *
 	 * @param WC_Product $product The WooCommerce product
 	 * @return array Array of unmapped attributes with 'name' and 'value' keys
@@ -269,7 +269,7 @@ class ProductAttributeMapper {
 	/**
 	 * Gets all mapped attributes for a product.
 	 *
-	 * @since 3.0.0
+	 * @since 3.4.11
 	 *
 	 * @param WC_Product $product The WooCommerce product
 	 * @return array Array of mapped attributes with Meta field name as key and attribute value as value
@@ -288,7 +288,7 @@ class ProductAttributeMapper {
 		/**
 		 * Filters the product attribute mappings.
 		 *
-		 * @since 3.0.0
+		 * @since 3.4.11
 		 *
 		 * @param array      $mappings The attribute mappings
 		 * @param WC_Product $product  The product object
@@ -472,7 +472,7 @@ class ProductAttributeMapper {
 	/**
 	 * Normalizes gender values to Facebook's expected format.
 	 *
-	 * @since 3.0.0
+	 * @since 3.4.11
 	 *
 	 * @param string $value The original gender value
 	 * @return string Normalized gender value
@@ -507,7 +507,7 @@ class ProductAttributeMapper {
 	/**
 	 * Normalizes age group values to Facebook's expected format.
 	 *
-	 * @since 3.0.0
+	 * @since 3.4.11
 	 *
 	 * @param string $value The original age group value
 	 * @return string Normalized age group value
@@ -555,7 +555,7 @@ class ProductAttributeMapper {
 	/**
 	 * Normalizes condition values to Facebook's expected format.
 	 *
-	 * @since 3.0.0
+	 * @since 3.4.11
 	 *
 	 * @param string $value The original condition value
 	 * @return string Normalized condition value
@@ -591,7 +591,7 @@ class ProductAttributeMapper {
 	/**
 	 * Adds a custom mapping from a WooCommerce attribute to a Facebook field.
 	 *
-	 * @since 3.0.0
+	 * @since 3.4.11
 	 *
 	 * @param string $wc_attribute The WooCommerce attribute name
 	 * @param string $fb_field The Facebook field to map to
@@ -614,7 +614,7 @@ class ProductAttributeMapper {
 	/**
 	 * Removes a custom attribute mapping.
 	 *
-	 * @since 3.0.0
+	 * @since 3.4.11
 	 *
 	 * @param string $wc_attribute The WooCommerce attribute name
 	 * @return bool Whether the mapping was removed successfully
@@ -633,7 +633,7 @@ class ProductAttributeMapper {
 	/**
 	 * Sets all custom mappings from an associative array.
 	 *
-	 * @since 3.0.0
+	 * @since 3.4.11
 	 *
 	 * @param array $mappings Associative array of WooCommerce attribute => Facebook field
 	 * @return int Number of successfully added mappings
@@ -656,7 +656,7 @@ class ProductAttributeMapper {
 	/**
 	 * Gets all currently defined custom attribute mappings.
 	 *
-	 * @since 3.0.0
+	 * @since 3.4.11
 	 *
 	 * @return array Associative array of custom attribute mappings
 	 */
@@ -667,7 +667,7 @@ class ProductAttributeMapper {
 	/**
 	 * Prepares a product's attributes for Facebook according to the mapping.
 	 *
-	 * @since 3.0.0
+	 * @since 3.4.11
 	 *
 	 * @param WC_Product $product The WooCommerce product
 	 * @return array Array of Facebook-mapped attributes ready for the API
@@ -740,7 +740,7 @@ class ProductAttributeMapper {
 	/**
 	 * Saves mapped attributes to product meta.
 	 *
-	 * @since 3.0.0
+	 * @since 3.4.11
 	 *
 	 * @param WC_Product $product The WooCommerce product
 	 * @param array      $mapped_attributes Array of mapped attributes to save (optional, if not provided will map attributes first)
@@ -792,7 +792,7 @@ class ProductAttributeMapper {
 	/**
 	 * Gets mapped attributes and saves them to product meta in one operation.
 	 *
-	 * @since 3.0.0
+	 * @since 3.4.11
 	 *
 	 * @param WC_Product $product The WooCommerce product
 	 * @return array The mapped attributes that were saved
