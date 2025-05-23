@@ -2404,5 +2404,4 @@ class Admin {
 		}
 		wp_send_json_error( 'Invalid product ID' );
 	}
-
 }
