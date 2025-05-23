@@ -17,11 +17,11 @@ use WooCommerce\Facebook\Products\Sync;
 use WooCommerce\Facebook\Framework\Plugin\Exception;
 
 /**
- * PluginUpdate
+ * PluginRender
  * This is an class that is triggered for Opt in/ Opt out experience
  * from @ver 3.4.11
  */
-class PluginUpdate {
+class PluginRender {
 	/** @var object storing plugin object */
 	private \WC_Facebookcommerce $plugin;
 
