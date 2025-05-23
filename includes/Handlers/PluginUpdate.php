@@ -19,17 +19,23 @@ use WooCommerce\Facebook\Framework\Plugin\Exception;
 /**
  * PluginUpdate
  * This is an class that is triggered for Opt in/ Opt out experience
- * from @ver 3.4.10
+ * from @ver 3.4.11
  */
 class PluginUpdate {
 	/** @var object storing plugin object */
 	private \WC_Facebookcommerce $plugin;
 
 	/** @var string opt out plugin version action */
-	const ALL_PRODUCTS_PLUGIN_VERSION = '3.4.11';
+	const ALL_PRODUCTS_PLUGIN_VERSION = '3.4.12';
 
 	/** @var string opt out sync action */
 	const ACTION_OPT_OUT_OF_SYNC = 'wc_facebook_opt_out_of_sync';
+
+	/** @var string opt out sync action */
+	const ACTION_UPGRADE_PLUGIN = 'wc_facebook_upgrade_plugin';
+
+	/** @var string opt out sync action */
+	const ACTION_SYNC_BACK_IN = 'wc_facebook_sync_back_in';
 
 	/** @var string master sync option */
 	const MASTER_SYNC_OPT_OUT_TIME = 'wc_facebook_master_sync_opt_out_time';
@@ -61,6 +67,8 @@ class PluginUpdate {
 				'ajax_url'                        => admin_url( 'admin-ajax.php' ),
 				'set_excluded_terms_prompt_nonce' => wp_create_nonce( 'set-excluded-terms-prompt' ),
 				'opt_out_of_sync'                 => wp_create_nonce( self::ACTION_OPT_OUT_OF_SYNC ),
+				'upgrade_plugin'                  => wp_create_nonce( self::ACTION_UPGRADE_PLUGIN ),
+				'sync_back_in'                    => wp_create_nonce( self::ACTION_SYNC_BACK_IN ),
 				'sync_in_progress'                => Sync::is_sync_in_progress(),
 				'opt_out_confirmation_message'    => self::get_opt_out_modal_message(),
 				'opt_out_confirmation_buttons'    => self::get_opt_out_modal_buttons(),
@@ -112,7 +120,7 @@ class PluginUpdate {
 		$latest_version  = $this->get_latest_plugin_version();
 		/**
 		 * Case when current version is less or equal to latest
-		 * but latest is below 3.4.11
+		 * but latest is below 3.4.12
 		 * Should show the opt in/ opt out banner
 		 */
 		if ( self::compare_versions( $latest_version, $current_version ) >= 0 && self::compare_versions( $latest_version, self::ALL_PRODUCTS_PLUGIN_VERSION ) < 0 ) {
@@ -122,7 +130,7 @@ class PluginUpdate {
 			 * If latest version is above All products version show the update banner accordingly
 			 * also show for update banner in case latest version is above current version
 			 */
-			add_action( 'admin_notices', [ __CLASS__, 'plugin_update_avaialble_banner' ], 0, 1 );
+			add_action( 'admin_notices', [ __CLASS__, 'plugin_update_available_banner' ], 0, 1 );
 		} elseif ( get_transient( 'show_plugin_updated_notice' ) ) {
 			add_action( 'admin_notices', [ __CLASS__, 'plugin_updated_banner' ] );
 			delete_transient( 'show_plugin_updated_notice' );
@@ -152,7 +160,7 @@ class PluginUpdate {
 		}
 	}
 
-	public function plugin_update_avaialble_banner() {
+	public function plugin_update_available_banner() {
 		$screen = get_current_screen();
 
 		if ( isset( $screen->id ) && 'marketing_page_wc-facebook' === $screen->id ) {
@@ -288,7 +296,7 @@ class PluginUpdate {
 	 * @param string $version1 is the first version
 	 * @param string $version2 is the second vesion
 	 */
-	public function compare_versions( $version1, $version2 ) {
+	public static function compare_versions( $version1, $version2 ) {
 		$parts1 = explode( '.', $version1 );
 		$parts2 = explode( '.', $version2 );
 
@@ -353,7 +361,7 @@ class PluginUpdate {
 	private function get_opt_out_modal_buttons() {
 		return '
             <a href="javascript:void(0);" class="button wc-forward upgrade_plugin_button" id="modal_opt_out_button">
-               Opt out
+            	Opt out
             </a>
         ';
 	}
