@@ -335,4 +335,3 @@ class WC_Facebook_Loader {
 
 // fire it up!
 WC_Facebook_Loader::instance();
-
