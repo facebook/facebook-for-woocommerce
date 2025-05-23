@@ -63,8 +63,8 @@ class Product_Attributes extends Abstract_Settings_Screen {
 	 */
 	public function initHook() {
 		$this->id                = self::ID;
-		$this->label             = __( 'Product Attributes', 'facebook-for-woocommerce' );
-		$this->title             = __( 'Product Attribute', 'facebook-for-woocommerce' );
+		$this->label             = __( 'Attribute Mapping', 'facebook-for-woocommerce' );
+		$this->title             = __( 'Attribute Mapping', 'facebook-for-woocommerce' );
 	}
 
 
@@ -155,8 +155,8 @@ class Product_Attributes extends Abstract_Settings_Screen {
 		
 		?>
 		<div class="wrap woocommerce">
-			<h2><?php esc_html_e('Map custom WooCommerce attributes to Meta', 'facebook-for-woocommerce'); ?></h2>
-			<p><?php esc_html_e('Map your WooCommerce product attributes to Meta catalog attributes. This helps Meta properly display your products with the correct properties like size, color, gender, etc.', 'facebook-for-woocommerce'); ?> <a href="<?php echo esc_url(admin_url('edit.php?post_type=product&page=product_attributes')); ?>"><?php esc_html_e('Manage WooCommerce attributes', 'facebook-for-woocommerce'); ?></a>.</p>
+			<h2><?php esc_html_e('Attribute Mapping', 'facebook-for-woocommerce'); ?></h2>
+			<p><?php esc_html_e('Map your custom attributes in WooCommerce to Meta equivalents. This helps to sync and display your products with the right information in your Meta ads.', 'facebook-for-woocommerce'); ?> <a href="<?php echo esc_url(admin_url('edit.php?post_type=product&page=product_attributes')); ?>"><?php esc_html_e('Manage WooCommerce attributes', 'facebook-for-woocommerce'); ?></a>.</p>
 			
 			<?php if ($show_success): ?>
 			<div class="notice notice-success is-dismissible">
