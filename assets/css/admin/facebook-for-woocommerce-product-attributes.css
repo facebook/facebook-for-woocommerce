@@ -103,7 +103,7 @@
 #facebook-attribute-mapping-table-view {
     border-collapse: collapse;
     margin-top: 10px;
-    width: 100%;
+    width: 50%;
     border: 1px solid #e5e5e5;
 }
 
@@ -293,4 +293,33 @@ body .select2-results__option {
     width: 100%;
     min-height: 30px;
     padding: 0 8px;
+}
+
+/* Trash icon styling */
+.remove-mapping,
+.fb-attributes-remove {
+    color: #cc1818;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0.85;
+    border: none;
+    background: none;
+    padding: 0;
+    cursor: pointer;
+}
+
+.remove-mapping:hover,
+.fb-attributes-remove:hover {
+    color: #dc3232;
+    opacity: 1;
+}
+
+.remove-mapping .dashicons,
+.fb-attributes-remove .dashicons {
+    font-size: 18px;
+    width: 18px;
+    height: 18px;
+    line-height: 18px;
 } 
