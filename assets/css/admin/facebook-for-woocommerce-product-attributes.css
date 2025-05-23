@@ -322,4 +322,14 @@ body .select2-results__option {
     width: 18px;
     height: 18px;
     line-height: 18px;
+}
+
+/* Remove underline from the manage attributes link */
+.wrap.woocommerce p a {
+    text-decoration: none;
+    color: #0073aa;
+}
+
+.wrap.woocommerce p a:hover {
+    text-decoration: underline;
 } 
