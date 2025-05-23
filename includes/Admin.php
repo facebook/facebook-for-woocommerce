@@ -1697,8 +1697,6 @@ class Admin {
 		?>
 		<script type="text/javascript">
 			jQuery(document).ready(function($) {
-				// Add CSS for synced fields
-				// CSS has been moved to facebook-for-woocommerce-products-admin.css
 				
 				// State object to track badge display status
 				var syncedBadgeState = {
