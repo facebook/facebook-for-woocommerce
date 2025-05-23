@@ -36,7 +36,7 @@ class Product_Attributes extends Abstract_Settings_Screen {
 	/** @var string screen ID */
 	const ID = 'product-attributes';
 
-	/** @var string the option name for custom attribute mappings */ 
+	/** @var string the option name for custom attribute mappings */
 	const OPTION_CUSTOM_ATTRIBUTE_MAPPINGS = 'wc_facebook_custom_attribute_mappings';
 
 
@@ -48,11 +48,11 @@ class Product_Attributes extends Abstract_Settings_Screen {
 		add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_assets' ) );
 		add_action( 'woocommerce_admin_field_attribute_mapping_table', array( $this, 'render_attribute_mapping_table_field' ) );
 		add_action( 'woocommerce_admin_field_info_note', array( $this, 'render_info_note_field' ) );
-		
+
 		// Add hooks to process form submissions and display notices
 		add_action( 'admin_init', array( $this, 'process_form_submission' ) );
 		add_action( 'admin_notices', array( $this, 'display_admin_notices' ) );
-		
+
 		// Add AJAX handler for notice dismissal
 		add_action( 'wp_ajax_fb_dismiss_attribute_notice', array( $this, 'ajax_dismiss_notice' ) );
 	}
@@ -62,9 +62,9 @@ class Product_Attributes extends Abstract_Settings_Screen {
 	 * Initializes this settings page's properties.
 	 */
 	public function initHook() {
-		$this->id                = self::ID;
-		$this->label             = __( 'Attribute Mapping', 'facebook-for-woocommerce' );
-		$this->title             = __( 'Attribute Mapping', 'facebook-for-woocommerce' );
+		$this->id    = self::ID;
+		$this->label = __( 'Attribute Mapping', 'facebook-for-woocommerce' );
+		$this->title = __( 'Attribute Mapping', 'facebook-for-woocommerce' );
 	}
 
 
@@ -80,16 +80,17 @@ class Product_Attributes extends Abstract_Settings_Screen {
 		if ( ! $this->is_current_screen_page() ) {
 			return;
 		}
-		
+
 		wp_enqueue_style( 'woocommerce_admin_styles' );
-		
+
 		wp_enqueue_script(
 			'facebook-for-woocommerce-product-attributes',
 			facebook_for_woocommerce()->get_asset_build_dir_url() . '/admin/product-attributes.js',
 			array( 'jquery', 'jquery-tiptip', 'wc-enhanced-select' ),
-			\WC_Facebookcommerce::PLUGIN_VERSION
+			\WC_Facebookcommerce::PLUGIN_VERSION,
+			true // Load in footer
 		);
-		
+
 		// Add dismissible notice handlers
 		wp_add_inline_script(
 			'facebook-for-woocommerce-product-attributes',
@@ -107,7 +108,7 @@ class Product_Attributes extends Abstract_Settings_Screen {
 					$.post(ajaxurl, {
 						action: 'fb_dismiss_attribute_notice',
 						notice_id: noticeId,
-						security: '" . wp_create_nonce('fb_dismiss_attribute_notice') . "'
+						security: '" . wp_create_nonce( 'fb_dismiss_attribute_notice' ) . "'
 					});
 				});
 			});
@@ -143,24 +144,27 @@ class Product_Attributes extends Abstract_Settings_Screen {
 	 * @since 3.0.0
 	 */
 	public function render() {
+		if ( ! current_user_can( 'manage_woocommerce' ) ) {
+			return;
+		}
+
 		$product_attributes = $this->get_product_attributes();
-		$facebook_fields = $this->get_facebook_fields();
-		$current_mappings = $this->get_saved_mappings();
-		
-		
-		$edit_mode = isset($_GET['edit']);
-		
+		$facebook_fields    = $this->get_facebook_fields();
+		$current_mappings   = $this->get_saved_mappings();
+
+		$edit_mode = isset( $_GET['edit'] ) && wp_verify_nonce( sanitize_text_field( wp_unslash( $_GET['_wpnonce'] ?? '' ) ), 'facebook_product_attributes_edit' );
+
 		// Check for success message from redirect
-		$show_success = isset($_GET['success']) && $_GET['success'] === '1';
-		
+		$show_success = isset( $_GET['success'] ) && wp_verify_nonce( sanitize_text_field( wp_unslash( $_GET['_wpnonce'] ?? '' ) ), 'facebook_product_attributes_success' ) && '1' === $_GET['success'];
+
 		?>
 		<div class="wrap woocommerce">
-			<h2><?php esc_html_e('Attribute Mapping', 'facebook-for-woocommerce'); ?></h2>
-			<p><?php esc_html_e('Map your custom attributes in WooCommerce to Meta equivalents. This helps to sync and display your products with the right information in your Meta ads.', 'facebook-for-woocommerce'); ?> <a href="<?php echo esc_url(admin_url('edit.php?post_type=product&page=product_attributes')); ?>"><?php esc_html_e('Manage WooCommerce attributes', 'facebook-for-woocommerce'); ?></a>.</p>
+			<h2><?php esc_html_e( 'Attribute Mapping', 'facebook-for-woocommerce' ); ?></h2>
+			<p><?php esc_html_e( 'Map your custom attributes in WooCommerce to Meta equivalents. This helps to sync and display your products with the right information in your Meta ads.', 'facebook-for-woocommerce' ); ?> <a href="<?php echo esc_url( admin_url( 'edit.php?post_type=product&page=product_attributes' ) ); ?>"><?php esc_html_e( 'Manage WooCommerce attributes', 'facebook-for-woocommerce' ); ?></a>.</p>
 			
-			<?php if ($show_success): ?>
+			<?php if ( $show_success ) : ?>
 			<div class="notice notice-success is-dismissible">
-				<p><?php esc_html_e('Product attribute mappings saved successfully.', 'facebook-for-woocommerce'); ?></p>
+				<p><?php esc_html_e( 'Product attribute mappings saved successfully.', 'facebook-for-woocommerce' ); ?></p>
 			</div>
 			<script type="text/javascript">
 				jQuery(document).ready(function($) {
@@ -174,40 +178,40 @@ class Product_Attributes extends Abstract_Settings_Screen {
 			</script>
 			<?php endif; ?>
 			
-			<?php if ($edit_mode): ?>
+			<?php if ( $edit_mode ) : ?>
 				<!-- Edit Mode -->
 				<form method="post" id="attribute-mapping-form" action="">
-					<?php wp_nonce_field('wc_facebook_save_attribute_mappings', 'save_attribute_mappings_nonce'); ?>
+					<?php wp_nonce_field( 'wc_facebook_save_attribute_mappings', 'save_attribute_mappings_nonce' ); ?>
 					
 					<table class="widefat" id="facebook-attribute-mapping-table">
 						<thead>
 							<tr>
-								<th><?php esc_html_e('WooCommerce Attribute', 'facebook-for-woocommerce'); ?></th>
-								<th><?php esc_html_e('Meta Attribute', 'facebook-for-woocommerce'); ?></th>
+								<th><?php esc_html_e( 'WooCommerce Attribute', 'facebook-for-woocommerce' ); ?></th>
+								<th><?php esc_html_e( 'Meta Attribute', 'facebook-for-woocommerce' ); ?></th>
 								<th></th>
 							</tr>
 						</thead>
 						<tbody>
-							<?php foreach ($current_mappings as $wc_attribute => $fb_field) : ?>
+							<?php foreach ( $current_mappings as $wc_attribute => $fb_field ) : ?>
 								<tr class="fb-attribute-row">
 									<td>
-										<select name="wc_facebook_attribute_mapping[<?php echo esc_attr($wc_attribute); ?>]" class="wc-attribute-search" data-placeholder="<?php esc_attr_e('Select attribute', 'facebook-for-woocommerce'); ?>">
-											<option value=""><?php esc_html_e('Select attribute', 'facebook-for-woocommerce'); ?></option>
-											<?php foreach ($product_attributes as $attribute_id => $attribute_label) : ?>
-												<option value="<?php echo esc_attr($attribute_id); ?>" <?php selected($attribute_id, $wc_attribute); ?>><?php echo esc_html($attribute_label); ?></option>
+										<select name="wc_facebook_attribute_mapping[<?php echo esc_attr( $wc_attribute ); ?>]" class="wc-attribute-search" data-placeholder="<?php esc_attr_e( 'Select attribute', 'facebook-for-woocommerce' ); ?>">
+											<option value=""><?php esc_html_e( 'Select attribute', 'facebook-for-woocommerce' ); ?></option>
+											<?php foreach ( $product_attributes as $attribute_id => $attribute_label ) : ?>
+												<option value="<?php echo esc_attr( $attribute_id ); ?>" <?php selected( $attribute_id, $wc_attribute ); ?>><?php echo esc_html( $attribute_label ); ?></option>
 											<?php endforeach; ?>
 										</select>
 									</td>
 									<td>
-										<select name="wc_facebook_field_mapping[<?php echo esc_attr($wc_attribute); ?>]" class="fb-field-search" data-placeholder="<?php esc_attr_e('Select attribute', 'facebook-for-woocommerce'); ?>">
-											<option value=""><?php esc_html_e('Select attribute', 'facebook-for-woocommerce'); ?></option>
-											<?php foreach ($facebook_fields as $field_id => $field_label) : ?>
-												<option value="<?php echo esc_attr($field_id); ?>" <?php selected($field_id, $fb_field); ?>><?php echo esc_html($field_label); ?></option>
+										<select name="wc_facebook_field_mapping[<?php echo esc_attr( $wc_attribute ); ?>]" class="fb-field-search" data-placeholder="<?php esc_attr_e( 'Select attribute', 'facebook-for-woocommerce' ); ?>">
+											<option value=""><?php esc_html_e( 'Select attribute', 'facebook-for-woocommerce' ); ?></option>
+											<?php foreach ( $facebook_fields as $field_id => $field_label ) : ?>
+												<option value="<?php echo esc_attr( $field_id ); ?>" <?php selected( $field_id, $fb_field ); ?>><?php echo esc_html( $field_label ); ?></option>
 											<?php endforeach; ?>
 										</select>
 									</td>
 									<td>
-										<a href="#" class="remove-mapping" title="<?php esc_attr_e('Remove mapping', 'facebook-for-woocommerce'); ?>">
+										<a href="#" class="remove-mapping" title="<?php esc_attr_e( 'Remove mapping', 'facebook-for-woocommerce' ); ?>">
 											<span class="dashicons dashicons-trash"></span>
 										</a>
 									</td>
@@ -218,23 +222,23 @@ class Product_Attributes extends Abstract_Settings_Screen {
 							<?php $unique_index = time(); ?>
 							<tr class="fb-attribute-row">
 								<td>
-									<select name="wc_facebook_attribute_mapping[<?php echo $unique_index; ?>]" class="wc-attribute-search" data-placeholder="<?php esc_attr_e('Select attribute', 'facebook-for-woocommerce'); ?>">
-										<option value=""><?php esc_html_e('Select attribute', 'facebook-for-woocommerce'); ?></option>
-										<?php foreach ($product_attributes as $attribute_id => $attribute_label) : ?>
-											<option value="<?php echo esc_attr($attribute_id); ?>"><?php echo esc_html($attribute_label); ?></option>
+									<select name="wc_facebook_attribute_mapping[<?php echo esc_attr( $unique_index ); ?>]" class="wc-attribute-search" data-placeholder="<?php esc_attr_e( 'Select attribute', 'facebook-for-woocommerce' ); ?>">
+										<option value=""><?php esc_html_e( 'Select attribute', 'facebook-for-woocommerce' ); ?></option>
+										<?php foreach ( $product_attributes as $attribute_id => $attribute_label ) : ?>
+											<option value="<?php echo esc_attr( $attribute_id ); ?>"><?php echo esc_html( $attribute_label ); ?></option>
 										<?php endforeach; ?>
 									</select>
 								</td>
 								<td>
-									<select name="wc_facebook_field_mapping[<?php echo $unique_index; ?>]" class="fb-field-search" data-placeholder="<?php esc_attr_e('Select attribute', 'facebook-for-woocommerce'); ?>">
-										<option value=""><?php esc_html_e('Select attribute', 'facebook-for-woocommerce'); ?></option>
-										<?php foreach ($facebook_fields as $field_id => $field_label) : ?>
-											<option value="<?php echo esc_attr($field_id); ?>"><?php echo esc_html($field_label); ?></option>
+									<select name="wc_facebook_field_mapping[<?php echo esc_attr( $unique_index ); ?>]" class="fb-field-search" data-placeholder="<?php esc_attr_e( 'Select attribute', 'facebook-for-woocommerce' ); ?>">
+										<option value=""><?php esc_html_e( 'Select attribute', 'facebook-for-woocommerce' ); ?></option>
+										<?php foreach ( $facebook_fields as $field_id => $field_label ) : ?>
+											<option value="<?php echo esc_attr( $field_id ); ?>"><?php echo esc_html( $field_label ); ?></option>
 										<?php endforeach; ?>
 									</select>
 								</td>
 								<td>
-									<a href="#" class="remove-mapping" title="<?php esc_attr_e('Remove mapping', 'facebook-for-woocommerce'); ?>">
+									<a href="#" class="remove-mapping" title="<?php esc_attr_e( 'Remove mapping', 'facebook-for-woocommerce' ); ?>">
 										<span class="dashicons dashicons-trash"></span>
 									</a>
 								</td>
@@ -243,42 +247,43 @@ class Product_Attributes extends Abstract_Settings_Screen {
 							<!-- Add new mapping button row -->
 							<tr class="add-mapping-row">
 								<td colspan="3" style="text-align: left; padding: 12px;">
-									<button type="button" class="button add-new-mapping"><?php esc_html_e('Add new mapping', 'facebook-for-woocommerce'); ?></button>
+									<button type="button" class="button add-new-mapping"><?php esc_html_e( 'Add new mapping', 'facebook-for-woocommerce' ); ?></button>
 								</td>
 							</tr>
 						</tbody>
 					</table>
 					
 					<p class="submit">
-						<button type="submit" name="save_attribute_mappings" class="button button-primary"><?php esc_html_e('Save Changes', 'facebook-for-woocommerce'); ?></button>
-						<a href="<?php echo esc_url(remove_query_arg('edit')); ?>" class="button" style="margin-left: 10px;"><?php esc_html_e('Cancel', 'facebook-for-woocommerce'); ?></a>
+						<button type="submit" name="save_attribute_mappings" class="button button-primary"><?php esc_html_e( 'Save Changes', 'facebook-for-woocommerce' ); ?></button>
+						<a href="<?php echo esc_url( remove_query_arg( 'edit' ) ); ?>" class="button" style="margin-left: 10px;"><?php esc_html_e( 'Cancel', 'facebook-for-woocommerce' ); ?></a>
 					</p>
 				</form>
-			<?php else: ?>
+			<?php else : ?>
 				<!-- View Mode -->
 				<div id="attribute-mappings-view">
 					<table class="widefat" id="facebook-attribute-mapping-table-view">
 						<thead>
 							<tr>
-								<th><?php esc_html_e('WooCommerce Attribute', 'facebook-for-woocommerce'); ?></th>
-								<th><?php esc_html_e('Meta Attribute', 'facebook-for-woocommerce'); ?></th>
+								<th><?php esc_html_e( 'WooCommerce Attribute', 'facebook-for-woocommerce' ); ?></th>
+								<th><?php esc_html_e( 'Meta Attribute', 'facebook-for-woocommerce' ); ?></th>
 							</tr>
 						</thead>
 						<tbody>
-							<?php if (empty($current_mappings)) : ?>
+							<?php if ( empty( $current_mappings ) ) : ?>
 								<tr>
 									<td colspan="2" style="text-align: center; padding: 20px; color: #666; font-style: italic;">
-										<?php esc_html_e('No attribute mappings configured.', 'facebook-for-woocommerce'); ?>
+										<?php esc_html_e( 'No attribute mappings configured.', 'facebook-for-woocommerce' ); ?>
 									</td>
 								</tr>
 							<?php else : ?>
-								<?php foreach ($current_mappings as $wc_attribute => $fb_field) : 
-									$wc_attribute_label = isset($product_attributes[$wc_attribute]) ? $product_attributes[$wc_attribute] : $wc_attribute;
-									$fb_field_label = isset($facebook_fields[$fb_field]) ? $facebook_fields[$fb_field] : $fb_field;
+								<?php
+								foreach ( $current_mappings as $wc_attribute => $fb_field ) :
+									$wc_attribute_label = isset( $product_attributes[ $wc_attribute ] ) ? $product_attributes[ $wc_attribute ] : $wc_attribute;
+									$fb_field_label     = isset( $facebook_fields[ $fb_field ] ) ? $facebook_fields[ $fb_field ] : $fb_field;
 									?>
 									<tr>
-										<td><?php echo esc_html($wc_attribute_label); ?></td>
-										<td><?php echo esc_html($fb_field_label); ?></td>
+										<td><?php echo esc_html( $wc_attribute_label ); ?></td>
+										<td><?php echo esc_html( $fb_field_label ); ?></td>
 									</tr>
 								<?php endforeach; ?>
 							<?php endif; ?>
@@ -286,23 +291,23 @@ class Product_Attributes extends Abstract_Settings_Screen {
 					</table>
 					
 					<p style="margin-top: 15px;">
-						<?php if (empty($current_mappings)) : ?>
-							<a href="<?php echo esc_url(add_query_arg('edit', '1')); ?>" class="button button-primary"><?php esc_html_e('Add new mapping', 'facebook-for-woocommerce'); ?></a>
+						<?php if ( empty( $current_mappings ) ) : ?>
+							<a href="<?php echo esc_url( add_query_arg( 'edit', '1' ) ); ?>" class="button button-primary"><?php esc_html_e( 'Add new mapping', 'facebook-for-woocommerce' ); ?></a>
 						<?php else : ?>
-							<a href="<?php echo esc_url(add_query_arg('edit', '1')); ?>" class="button button-primary"><?php esc_html_e('Edit Mappings', 'facebook-for-woocommerce'); ?></a>
+							<a href="<?php echo esc_url( add_query_arg( 'edit', '1' ) ); ?>" class="button button-primary"><?php esc_html_e( 'Edit Mappings', 'facebook-for-woocommerce' ); ?></a>
 						<?php endif; ?>
 					</p>
 				</div>
 			<?php endif; ?>
 			
-			<h3 style="margin-top: 30px;"><?php esc_html_e('Troubleshooting', 'facebook-for-woocommerce'); ?></h3>
+			<h3 style="margin-top: 30px;"><?php esc_html_e( 'Troubleshooting', 'facebook-for-woocommerce' ); ?></h3>
 			<div id="troubleshooting-section" style="margin-top: 10px; background: #fff; padding: 15px; border: 1px solid #ddd; border-radius: 4px;">
-				<p><?php esc_html_e('If your products are not displaying correctly in Meta:', 'facebook-for-woocommerce'); ?></p>
+				<p><?php esc_html_e( 'If your products are not displaying correctly in Meta:', 'facebook-for-woocommerce' ); ?></p>
 				<ul style="list-style-type: disc; margin-left: 20px;">
-					<li><?php esc_html_e('Make sure your product attributes are correctly mapped to Meta catalog fields.', 'facebook-for-woocommerce'); ?></li>
-					<li><?php esc_html_e('Check that required attributes like gender, size, and color are properly configured for relevant products.', 'facebook-for-woocommerce'); ?></li>
-					<li><?php esc_html_e('After changing mappings, products will be updated during the next sync with Meta.', 'facebook-for-woocommerce'); ?></li>
-					<li><a href="https://www.facebook.com/business/help/2302017289821154" target="_blank"><?php esc_html_e('Learn more about Meta catalog attributes', 'facebook-for-woocommerce'); ?></a></li>
+					<li><?php esc_html_e( 'Make sure your product attributes are correctly mapped to Meta catalog fields.', 'facebook-for-woocommerce' ); ?></li>
+					<li><?php esc_html_e( 'Check that required attributes like gender, size, and color are properly configured for relevant products.', 'facebook-for-woocommerce' ); ?></li>
+					<li><?php esc_html_e( 'After changing mappings, products will be updated during the next sync with Meta.', 'facebook-for-woocommerce' ); ?></li>
+					<li><a href="https://www.facebook.com/business/help/2302017289821154" target="_blank"><?php esc_html_e( 'Learn more about Meta catalog attributes', 'facebook-for-woocommerce' ); ?></a></li>
 				</ul>
 			</div>
 		</div>
@@ -355,29 +360,29 @@ class Product_Attributes extends Abstract_Settings_Screen {
 					// Create an empty row structure directly rather than cloning
 					var newRowHtml = '<tr class="fb-attribute-row">' +
 						'<td>' +
-						'<select name="wc_facebook_attribute_mapping[' + newIndex + ']" class="wc-attribute-search" data-placeholder="<?php esc_attr_e('Select attribute', 'facebook-for-woocommerce'); ?>">' +
-						'<option value=""><?php esc_html_e('Select attribute', 'facebook-for-woocommerce'); ?></option>';
+						'<select name="wc_facebook_attribute_mapping[' + newIndex + ']" class="wc-attribute-search" data-placeholder="<?php esc_attr_e( 'Select attribute', 'facebook-for-woocommerce' ); ?>">' +
+						'<option value=""><?php esc_html_e( 'Select attribute', 'facebook-for-woocommerce' ); ?></option>';
 					
 					// Add product attributes options
-					<?php foreach ($product_attributes as $attribute_id => $attribute_label) : ?>
-						newRowHtml += '<option value="<?php echo esc_attr($attribute_id); ?>"><?php echo esc_html($attribute_label); ?></option>';
+					<?php foreach ( $product_attributes as $attribute_id => $attribute_label ) : ?>
+						newRowHtml += '<option value="<?php echo esc_attr( $attribute_id ); ?>"><?php echo esc_html( $attribute_label ); ?></option>';
 					<?php endforeach; ?>
 					
 					newRowHtml += '</select>' +
 						'</td>' +
 						'<td>' +
-						'<select name="wc_facebook_field_mapping[' + newIndex + ']" class="fb-field-search" data-placeholder="<?php esc_attr_e('Select attribute', 'facebook-for-woocommerce'); ?>">' +
-						'<option value=""><?php esc_html_e('Select attribute', 'facebook-for-woocommerce'); ?></option>';
+						'<select name="wc_facebook_field_mapping[' + newIndex + ']" class="fb-field-search" data-placeholder="<?php esc_attr_e( 'Select attribute', 'facebook-for-woocommerce' ); ?>">' +
+						'<option value=""><?php esc_html_e( 'Select attribute', 'facebook-for-woocommerce' ); ?></option>';
 					
 					// Add Facebook fields options
-					<?php foreach ($facebook_fields as $field_id => $field_label) : ?>
-						newRowHtml += '<option value="<?php echo esc_attr($field_id); ?>"><?php echo esc_html($field_label); ?></option>';
+					<?php foreach ( $facebook_fields as $field_id => $field_label ) : ?>
+						newRowHtml += '<option value="<?php echo esc_attr( $field_id ); ?>"><?php echo esc_html( $field_label ); ?></option>';
 					<?php endforeach; ?>
 					
 					newRowHtml += '</select>' +
 						'</td>' +
 						'<td>' +
-						'<a href="#" class="remove-mapping" title="<?php esc_attr_e('Remove mapping', 'facebook-for-woocommerce'); ?>">' +
+						'<a href="#" class="remove-mapping" title="<?php esc_attr_e( 'Remove mapping', 'facebook-for-woocommerce' ); ?>">' +
 						'<span class="dashicons dashicons-trash"></span>' +
 						'</a>' +
 						'</td>' +
@@ -414,7 +419,7 @@ class Product_Attributes extends Abstract_Settings_Screen {
 					// Store flag in localStorage to add new row after page loads in edit mode
 					localStorage.setItem('fb_add_new_mapping_row', 'true');
 					// Redirect to edit mode
-					window.location.href = "<?php echo esc_url(add_query_arg('edit', '1', remove_query_arg(array('success', 'new_row')))); ?>";
+					window.location.href = "<?php echo esc_url( add_query_arg( 'edit', '1', remove_query_arg( array( 'success', 'new_row' ) ) ) ); ?>";
 				});
 				
 				// Check if we need to add a new row after page load (coming from view mode)
@@ -475,67 +480,68 @@ class Product_Attributes extends Abstract_Settings_Screen {
 	 *
 	 * @param array $field Field data
 	 */
-	public function render_attribute_mapping_table_field($field) {
+	public function render_attribute_mapping_table_field( $field ) {
 		// Prevent duplicate rendering by checking for a static flag
 		static $rendered = false;
-		
-		if ($rendered) {
+
+		if ( $rendered ) {
 			return;
 		}
-		
+
 		$rendered = true;
-		
-		$product_attributes = !empty($field['product_attributes']) ? $field['product_attributes'] : array();
-		$facebook_fields = !empty($field['facebook_fields']) ? $field['facebook_fields'] : array();
-		$current_mappings = !empty($field['current_mappings']) ? $field['current_mappings'] : array();
-		
+
+		$product_attributes = ! empty( $field['product_attributes'] ) ? $field['product_attributes'] : array();
+		$facebook_fields    = ! empty( $field['facebook_fields'] ) ? $field['facebook_fields'] : array();
+		$current_mappings   = ! empty( $field['current_mappings'] ) ? $field['current_mappings'] : array();
+
 		?>
 		<tr valign="top">
 			<th scope="row" class="titledesc">
-				<?php esc_html_e('WooCommerce to Facebook Field Mapping', 'facebook-for-woocommerce'); ?>
+				<?php esc_html_e( 'WooCommerce to Facebook Field Mapping', 'facebook-for-woocommerce' ); ?>
 			</th>
 			<td class="forminp">
 				<table class="widefat striped" id="facebook-attribute-mapping-table">
 					<thead>
 						<tr>
-							<th><?php esc_html_e('WooCommerce Attribute', 'facebook-for-woocommerce'); ?></th>
-							<th><?php esc_html_e('Facebook Attribute', 'facebook-for-woocommerce'); ?></th>
-							<th><?php esc_html_e('Actions', 'facebook-for-woocommerce'); ?></th>
+							<th><?php esc_html_e( 'WooCommerce Attribute', 'facebook-for-woocommerce' ); ?></th>
+							<th><?php esc_html_e( 'Facebook Attribute', 'facebook-for-woocommerce' ); ?></th>
+							<th><?php esc_html_e( 'Actions', 'facebook-for-woocommerce' ); ?></th>
 						</tr>
 					</thead>
 					<tbody>
-						<?php if (empty($current_mappings)) : ?>
+						<?php if ( empty( $current_mappings ) ) : ?>
 							<tr class="no-items">
-								<td class="colspanchange" colspan="3"><?php esc_html_e('No Facebook Product Attributes found.', 'facebook-for-woocommerce'); ?></td>
+								<td class="colspanchange" colspan="3"><?php esc_html_e( 'No Facebook Product Attributes found.', 'facebook-for-woocommerce' ); ?></td>
 							</tr>
 						<?php else : ?>
-							<?php foreach ($current_mappings as $wc_attribute => $fb_field) : 
+							<?php
+							foreach ( $current_mappings as $wc_attribute => $fb_field ) :
 								?>
 								<tr class="fb-attribute-row">
 									<td>
-										<select name="wc_facebook_attribute_mapping[<?php echo esc_attr($wc_attribute); ?>]" class="wc-attribute-search" data-placeholder="<?php esc_attr_e('Select a WooCommerce attribute...', 'facebook-for-woocommerce'); ?>">
-											<option value=""><?php esc_html_e('Select a WooCommerce attribute...', 'facebook-for-woocommerce'); ?></option>
+										<select name="wc_facebook_attribute_mapping[<?php echo esc_attr( $wc_attribute ); ?>]" class="wc-attribute-search" data-placeholder="<?php esc_attr_e( 'Select a WooCommerce attribute...', 'facebook-for-woocommerce' ); ?>">
+											<option value=""><?php esc_html_e( 'Select a WooCommerce attribute...', 'facebook-for-woocommerce' ); ?></option>
 											
-											<?php foreach ($product_attributes as $attribute_id => $attribute_label) : ?>
-												<option value="<?php echo esc_attr($attribute_id); ?>" <?php selected($attribute_id, $wc_attribute); ?>>
-													<?php echo esc_html($attribute_label); ?>
+											<?php foreach ( $product_attributes as $attribute_id => $attribute_label ) : ?>
+												<option value="<?php echo esc_attr( $attribute_id ); ?>" <?php selected( $attribute_id, $wc_attribute ); ?>>
+													<?php echo esc_html( $attribute_label ); ?>
 												</option>
 											<?php endforeach; ?>
 										</select>
 									</td>
 									<td>
-										<select name="wc_facebook_field_mapping[<?php echo esc_attr($wc_attribute); ?>]" class="fb-field-search" data-placeholder="<?php esc_attr_e('Select a Facebook attribute...', 'facebook-for-woocommerce'); ?>">
-											<option value=""><?php esc_html_e('Select a Facebook attribute...', 'facebook-for-woocommerce'); ?></option>
+										<select name="wc_facebook_field_mapping[<?php echo esc_attr( $wc_attribute ); ?>]" class="fb-field-search" data-placeholder="<?php esc_attr_e( 'Select a Facebook attribute...', 'facebook-for-woocommerce' ); ?>">
+											<option value=""><?php esc_html_e( 'Select a Facebook attribute...', 'facebook-for-woocommerce' ); ?></option>
 											
-											<?php foreach ($facebook_fields as $field_id => $field_label) : ?>
-												<option value="<?php echo esc_attr($field_id); ?>" <?php selected($field_id, $fb_field); ?>>
-													<?php echo esc_html($field_label); ?>
+											<?php foreach ( $facebook_fields as $field_id => $field_label ) : ?>
+												<option value="<?php echo esc_attr( $field_id ); ?>" <?php selected( $field_id, $fb_field ); ?>>
+													<?php echo esc_html( $field_label ); ?>
 												</option>
 											<?php endforeach; ?>
 										</select>
 									</td>
 									<td>
-										<a href="#" class="fb-attributes-remove" title="<?php esc_attr_e('Remove mapping', 'facebook-for-woocommerce'); ?>">
+										<a href="#" class="fb-attributes-remove" title="<?php esc_attr_e( 'Remove mapping', 'facebook-for-woocommerce' ); ?>">
 											<span class="dashicons dashicons-trash"></span>
 										</a>
 									</td>
@@ -546,29 +552,29 @@ class Product_Attributes extends Abstract_Settings_Screen {
 							<tr class="fb-attribute-row">
 								<?php $unique_index = time(); ?>
 								<td>
-									<select name="wc_facebook_attribute_mapping[<?php echo $unique_index; ?>]" class="wc-attribute-search" data-placeholder="<?php esc_attr_e('Select attribute', 'facebook-for-woocommerce'); ?>">
-										<option value=""><?php esc_html_e('Select attribute', 'facebook-for-woocommerce'); ?></option>
+									<select name="wc_facebook_attribute_mapping[<?php echo esc_attr( $unique_index ); ?>]" class="wc-attribute-search" data-placeholder="<?php esc_attr_e( 'Select attribute', 'facebook-for-woocommerce' ); ?>">
+										<option value=""><?php esc_html_e( 'Select attribute', 'facebook-for-woocommerce' ); ?></option>
 										
-										<?php foreach ($product_attributes as $attribute_id => $attribute_label) : ?>
-											<option value="<?php echo esc_attr($attribute_id); ?>">
-												<?php echo esc_html($attribute_label); ?>
+										<?php foreach ( $product_attributes as $attribute_id => $attribute_label ) : ?>
+											<option value="<?php echo esc_attr( $attribute_id ); ?>">
+												<?php echo esc_html( $attribute_label ); ?>
 											</option>
 										<?php endforeach; ?>
 									</select>
 								</td>
 								<td>
-									<select name="wc_facebook_field_mapping[<?php echo $unique_index; ?>]" class="fb-field-search" data-placeholder="<?php esc_attr_e('Select attribute', 'facebook-for-woocommerce'); ?>">
-										<option value=""><?php esc_html_e('Select attribute', 'facebook-for-woocommerce'); ?></option>
+									<select name="wc_facebook_field_mapping[<?php echo esc_attr( $unique_index ); ?>]" class="fb-field-search" data-placeholder="<?php esc_attr_e( 'Select attribute', 'facebook-for-woocommerce' ); ?>">
+										<option value=""><?php esc_html_e( 'Select attribute', 'facebook-for-woocommerce' ); ?></option>
 										
-										<?php foreach ($facebook_fields as $field_id => $field_label) : ?>
-											<option value="<?php echo esc_attr($field_id); ?>">
-												<?php echo esc_html($field_label); ?>
+										<?php foreach ( $facebook_fields as $field_id => $field_label ) : ?>
+											<option value="<?php echo esc_attr( $field_id ); ?>">
+												<?php echo esc_html( $field_label ); ?>
 											</option>
 										<?php endforeach; ?>
 									</select>
 								</td>
 								<td>
-									<a href="#" class="fb-attributes-remove" title="<?php esc_attr_e('Remove mapping', 'facebook-for-woocommerce'); ?>">
+									<a href="#" class="fb-attributes-remove" title="<?php esc_attr_e( 'Remove mapping', 'facebook-for-woocommerce' ); ?>">
 										<span class="dashicons dashicons-trash"></span>
 									</a>
 								</td>
@@ -579,7 +585,7 @@ class Product_Attributes extends Abstract_Settings_Screen {
 						<tr>
 							<td colspan="3">
 								<button type="button" class="button button-secondary add-mapping-row">
-									<?php esc_html_e('Add Mapping', 'facebook-for-woocommerce'); ?>
+									<?php esc_html_e( 'Add Mapping', 'facebook-for-woocommerce' ); ?>
 								</button>
 							</td>
 						</tr>
@@ -637,8 +643,8 @@ class Product_Attributes extends Abstract_Settings_Screen {
 		</tr>
 		<?php
 	}
-	
-	
+
+
 	/**
 	 * Renders an info note field.
 	 *
@@ -646,21 +652,21 @@ class Product_Attributes extends Abstract_Settings_Screen {
 	 *
 	 * @param array $field Field data
 	 */
-	public function render_info_note_field($field) {
+	public function render_info_note_field( $field ) {
 		// Prevent duplicate rendering by checking for a hidden flag
 		static $rendered = false;
-		
-		if ($rendered) {
+
+		if ( $rendered ) {
 			return;
 		}
-		
+
 		$rendered = true;
-		
+
 		?>
 		<tr valign="top">
 			<td class="forminp" colspan="2">
 				<div class="wc-facebook-info-note">
-					<?php echo wp_kses_post($field['content']); ?>
+					<?php echo wp_kses_post( $field['content'] ); ?>
 				</div>
 			</td>
 		</tr>
@@ -676,20 +682,20 @@ class Product_Attributes extends Abstract_Settings_Screen {
 	 */
 	private function get_product_attributes() {
 		$attributes = array();
-		
+
 		// Get all attribute taxonomies
 		$attribute_taxonomies = wc_get_attribute_taxonomies();
-		
-		if (!empty($attribute_taxonomies)) {
-			foreach ($attribute_taxonomies as $taxonomy) {
-				$attributes['pa_' . $taxonomy->attribute_name] = $taxonomy->attribute_label;
+
+		if ( ! empty( $attribute_taxonomies ) ) {
+			foreach ( $attribute_taxonomies as $taxonomy ) {
+				$attributes[ 'pa_' . $taxonomy->attribute_name ] = $taxonomy->attribute_label;
 			}
 		}
-		
+
 		return $attributes;
 	}
-	
-	
+
+
 	/**
 	 * Gets all Facebook catalog fields.
 	 *
@@ -699,22 +705,22 @@ class Product_Attributes extends Abstract_Settings_Screen {
 	 */
 	private function get_facebook_fields() {
 		$fields = array();
-		
+
 		// Get all fields from the mapping class
 		$all_fb_fields = ProductAttributeMapper::get_all_facebook_fields();
-		
+
 		// Format for the dropdown
-		foreach ($all_fb_fields as $field_key => $field_variations) {
-			$fields[$field_key] = ucfirst(str_replace('_', ' ', $field_key));
+		foreach ( $all_fb_fields as $field_key => $field_variations ) {
+			$fields[ $field_key ] = ucfirst( str_replace( '_', ' ', $field_key ) );
 		}
-		
+
 		// Sort alphabetically
-		asort($fields);
-		
+		asort( $fields );
+
 		return $fields;
 	}
-	
-	
+
+
 	/**
 	 * Gets saved attribute mappings from database.
 	 *
@@ -723,12 +729,12 @@ class Product_Attributes extends Abstract_Settings_Screen {
 	 * @return array
 	 */
 	private function get_saved_mappings() {
-		$saved_mappings = get_option(self::OPTION_CUSTOM_ATTRIBUTE_MAPPINGS, array());
-		
-		if (!is_array($saved_mappings)) {
+		$saved_mappings = get_option( self::OPTION_CUSTOM_ATTRIBUTE_MAPPINGS, array() );
+
+		if ( ! is_array( $saved_mappings ) ) {
 			$saved_mappings = array();
 		}
-		
+
 		return $saved_mappings;
 	}
 
@@ -747,64 +753,65 @@ class Product_Attributes extends Abstract_Settings_Screen {
 	 * @since 3.0.0
 	 */
 	public function process_form_submission() {
-		if (!isset($_POST['save_attribute_mappings']) || !wp_verify_nonce($_POST['save_attribute_mappings_nonce'], 'wc_facebook_save_attribute_mappings')) {
+		if ( ! isset( $_POST['save_attribute_mappings'], $_POST['save_attribute_mappings_nonce'] ) ||
+			! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['save_attribute_mappings_nonce'] ) ), 'wc_facebook_save_attribute_mappings' ) ) {
 			return;
 		}
-		
-		// Get existing mappings
-		$existing_mappings = $this->get_saved_mappings();
-		
+
 		// Initialize new mappings as empty array
 		$new_mappings = array();
-		
+
 		// Process the form submission (even if arrays are empty)
-		if (isset($_POST['wc_facebook_attribute_mapping']) || isset($_POST['wc_facebook_field_mapping'])) {
-			
+		if ( isset( $_POST['wc_facebook_attribute_mapping'] ) || isset( $_POST['wc_facebook_field_mapping'] ) ) {
 			// Get the submitted data (handle empty arrays)
-			$wc_attributes = isset($_POST['wc_facebook_attribute_mapping']) ? (array) $_POST['wc_facebook_attribute_mapping'] : array();
-			$fb_fields = isset($_POST['wc_facebook_field_mapping']) ? (array) $_POST['wc_facebook_field_mapping'] : array();
-			
+			$wc_attributes = isset( $_POST['wc_facebook_attribute_mapping'] ) ? array_map( 'sanitize_text_field', wp_unslash( (array) $_POST['wc_facebook_attribute_mapping'] ) ) : array();
+			$fb_fields     = isset( $_POST['wc_facebook_field_mapping'] ) ? array_map( 'sanitize_text_field', wp_unslash( (array) $_POST['wc_facebook_field_mapping'] ) ) : array();
+
 			// Process WooCommerce attribute => Facebook field mappings
-			foreach ($wc_attributes as $key => $wc_attribute) {
+			foreach ( $wc_attributes as $key => $wc_attribute ) {
 				// Skip empty attributes
-				if (empty($wc_attribute)) continue;
-				
+				if ( empty( $wc_attribute ) ) {
+					continue;
+				}
+
 				// Get the corresponding Facebook field
-				$fb_field = isset($fb_fields[$key]) ? $fb_fields[$key] : '';
-				
+				$fb_field = isset( $fb_fields[ $key ] ) ? $fb_fields[ $key ] : '';
+
 				// Skip if no Facebook field is selected
-				if (empty($fb_field)) continue;
-				
+				if ( empty( $fb_field ) ) {
+					continue;
+				}
+
 				// Clean the data
-				$wc_attribute = sanitize_text_field($wc_attribute);
-				$fb_field = sanitize_text_field($fb_field);
-				
+				$wc_attribute = sanitize_text_field( $wc_attribute );
+				$fb_field     = sanitize_text_field( $fb_field );
+
 				// Add to new mappings
-				$new_mappings[$wc_attribute] = $fb_field;
+				$new_mappings[ $wc_attribute ] = $fb_field;
 			}
 		}
-		
+
 		// Save the new mappings (even if empty)
-		update_option(self::OPTION_CUSTOM_ATTRIBUTE_MAPPINGS, $new_mappings);
-		
+		update_option( self::OPTION_CUSTOM_ATTRIBUTE_MAPPINGS, $new_mappings );
+
 		// Update the static mapping in the ProductAttributeMapper class
-		if (method_exists('WooCommerce\Facebook\ProductAttributeMapper', 'set_custom_attribute_mappings')) {
-			ProductAttributeMapper::set_custom_attribute_mappings($new_mappings);
+		if ( method_exists( 'WooCommerce\Facebook\ProductAttributeMapper', 'set_custom_attribute_mappings' ) ) {
+			ProductAttributeMapper::set_custom_attribute_mappings( $new_mappings );
 		}
-		
+
 		// Update last sync time
-		update_option('wc_facebook_last_attribute_sync', current_time('mysql'));
-		
+		update_option( 'wc_facebook_last_attribute_sync', current_time( 'mysql' ) );
+
 		// Add success notice
-		$message = empty($new_mappings) 
-			? __('All attribute mappings have been removed.', 'facebook-for-woocommerce')
-			: __('Product attribute mappings saved successfully.', 'facebook-for-woocommerce');
-		
-		$this->add_notice($message, 'success');
-		
+		$message = empty( $new_mappings )
+			? __( 'All attribute mappings have been removed.', 'facebook-for-woocommerce' )
+			: __( 'Product attribute mappings saved successfully.', 'facebook-for-woocommerce' );
+
+		$this->add_notice( $message, 'success' );
+
 		// Redirect back to view mode
-		$redirect_url = add_query_arg('success', '1', remove_query_arg('edit'));
-		wp_safe_redirect($redirect_url);
+		$redirect_url = add_query_arg( 'success', '1', remove_query_arg( 'edit' ) );
+		wp_safe_redirect( $redirect_url );
 		exit;
 	}
 
@@ -816,14 +823,14 @@ class Product_Attributes extends Abstract_Settings_Screen {
 		if ( ! $this->is_current_screen_page() ) {
 			return;
 		}
-		
+
 		$notices = get_transient( 'facebook_for_woocommerce_attribute_notices' );
-		
+
 		if ( ! empty( $notices ) ) {
 			foreach ( $notices as $key => $notice ) {
 				$notice_id = 'fb-attributes-notice-' . $key;
-				$class = 'notice ' . ( $notice['type'] === 'success' ? 'notice-success' : 'notice-error' ) . ' is-dismissible fb-attributes-notice';
-				
+				$class     = 'notice ' . ( 'success' === $notice['type'] ? 'notice-success' : 'notice-error' ) . ' is-dismissible fb-attributes-notice';
+
 				?>
 				<div id="<?php echo esc_attr( $notice_id ); ?>" class="<?php echo esc_attr( $class ); ?>" data-notice-id="<?php echo esc_attr( $notice_id ); ?>">
 					<p><?php echo esc_html( $notice['message'] ); ?></p>
@@ -833,12 +840,12 @@ class Product_Attributes extends Abstract_Settings_Screen {
 				</div>
 				<?php
 			}
-			
+
 			// Clear the notices
 			delete_transient( 'facebook_for_woocommerce_attribute_notices' );
 		}
 	}
-	
+
 	/**
 	 * Adds an admin notice for this screen.
 	 *
@@ -848,34 +855,34 @@ class Product_Attributes extends Abstract_Settings_Screen {
 	private function add_notice( $message, $type = 'success' ) {
 		// Try to use the framework's AdminNoticeHandler if available
 		if ( class_exists( '\WooCommerce\Facebook\Framework\AdminNoticeHandler' ) ) {
-			$message_id = $this->generate_notice_id( $message );
+			$message_id     = $this->generate_notice_id( $message );
 			$notice_handler = facebook_for_woocommerce()->get_admin_notice_handler();
-			
+
 			if ( $notice_handler ) {
 				$notice_handler->add_admin_notice(
 					$message,
 					$message_id,
 					[
-						'dismissible'    => true,
-						'notice_class'   => 'notice-' . $type,
+						'dismissible'  => true,
+						'notice_class' => 'notice-' . $type,
 					]
 				);
-				
+
 				return;
 			}
 		}
-		
+
 		// Fallback to the transient-based notice system
-		$notices = get_transient( 'facebook_for_woocommerce_attribute_notices' ) ?: array();
-		
+		$notices = isset( $notices ) && is_array( $notices ) ? $notices : array();
+
 		$notices[] = array(
 			'message' => $message,
 			'type'    => $type,
 		);
-		
+
 		set_transient( 'facebook_for_woocommerce_attribute_notices', $notices, 60 * 5 ); // 5 minutes expiration
 	}
-	
+
 	/**
 	 * Generates a unique notice ID based on the message content.
 	 *
@@ -894,19 +901,20 @@ class Product_Attributes extends Abstract_Settings_Screen {
 		if ( ! $this->is_current_screen_page() ) {
 			wp_die( -1, 403 );
 		}
-		
+
 		// Check nonce for security
-		if ( ! wp_verify_nonce( $_POST['nonce'] ?? '', 'dismiss_facebook_attributes_notice' ) ) {
-			wp_die( -1, 403 );
+		check_ajax_referer( 'dismiss_facebook_attributes_notice', 'nonce' );
+
+		$notice_id = '';
+		if ( isset( $_POST['notice_id'] ) ) {
+			$notice_id = sanitize_text_field( wp_unslash( $_POST['notice_id'] ) );
 		}
-		
-		$notice_id = sanitize_text_field( $_POST['notice_id'] ?? '' );
-		
+
 		if ( $notice_id ) {
 			// Clear the notices - this is a simple implementation
 			delete_transient( 'facebook_for_woocommerce_attribute_notices' );
 		}
-		
+
 		wp_die(); // this is required to terminate immediately and return a proper response
 	}
-} 
+}
