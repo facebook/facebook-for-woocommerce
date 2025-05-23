@@ -2204,18 +2204,18 @@ class Admin {
 		$product_id = isset( $_POST['product_id'] ) ? intval( $_POST['product_id'] ) : 0;
 		if ( $product_id ) {
 			$product = wc_get_product( $product_id );
-			
+
 			if ( ! $product ) {
 				wp_send_json_error( 'Invalid product' );
 				return;
 			}
-			
+
 			// Use ProductAttributeMapper to get and save the mapped attributes
 			$mapped_attributes = ProductAttributeMapper::get_and_save_mapped_attributes( $product );
-			
+
 			// Prepare the response with mapped field => value pairs
 			$facebook_fields = array();
-			
+
 			foreach ( $mapped_attributes as $field_name => $value ) {
 				// Convert to the field names expected by the frontend
 				switch ( $field_name ) {
@@ -2248,10 +2248,9 @@ class Admin {
 						break;
 				}
 			}
-			
+
 			wp_send_json_success( $facebook_fields );
 		}
 		wp_send_json_error( 'Invalid product ID' );
 	}
-
 }
