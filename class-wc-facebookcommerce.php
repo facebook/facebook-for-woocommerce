@@ -99,7 +99,7 @@ class WC_Facebookcommerce extends WooCommerce\Facebook\Framework\Plugin {
 	/** @var WooCommerce\Facebook\Handlers\Connection connection handler */
 	private $connection_handler;
 
-	/** @var WooCommerce\Facebook\Handlers\PluginUpdate connection handler */
+	/** @var WooCommerce\Facebook\Handlers\PluginUpdate plugin update handler */
 	private $plugin_update_handler;
 
 	/** @var WooCommerce\Facebook\Handlers\WebHook webhook handler */
@@ -661,7 +661,7 @@ class WC_Facebookcommerce extends WooCommerce\Facebook\Framework\Plugin {
 	}
 
 	/**
-	 * Gets the connection handler.
+	 * Gets the Plugin update handler.
 	 *
 	 * @since 2.0.0
 	 *

@@ -320,7 +320,7 @@ class API extends Base {
 	 *
 	 * @param string $external_business_id external business ID
 	 * @param string $plugin_version The plugin version.
-	 *
+	 * @param bool is_opted_out The plugin version.
 	 * @return Response|API\FBE\Configuration\Update\Response
 	 * @throws ApiException
 	 */
