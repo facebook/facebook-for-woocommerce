@@ -124,14 +124,14 @@ class PluginRender {
 		 * Should show the opt in/ opt out banner
 		 */
 		if ( self::compare_versions( $latest_version, $current_version ) >= 0 && self::compare_versions( $latest_version, self::ALL_PRODUCTS_PLUGIN_VERSION ) < 0 ) {
-			if ( get_transient( 'upcoming_banner_hide' ) ) {
+			if ( get_transient( 'upcoming_woo_all_products_banner_hide' ) ) {
 				return;
 			}
-			add_action( 'admin_notices', [ __CLASS__, 'upcoming_version_change_banner' ], 0, 1 );
+			add_action( 'admin_notices', [ __CLASS__, 'upcoming_woo_all_products_banner' ], 0, 1 );
 		}
 	}
 
-	public function upcoming_version_change_banner() {
+	public function upcoming_woo_all_products_banner() {
 		$screen = get_current_screen();
 
 		if ( isset( $screen->id ) && 'marketing_page_wc-facebook' === $screen->id ) {
@@ -155,28 +155,13 @@ class PluginRender {
 	}
 
 	public function opt_out_of_sync_clicked() {
-		try {
 			$latest_date = gmdate( 'Y-m-d H:i:s' );
 			update_option( self::MASTER_SYNC_OPT_OUT_TIME, $latest_date );
 			wp_send_json_success( 'Opted out successfully' );
-		} catch ( Exception $e ) {
-			error_log( 'Error while updating WP option: ' . $e->getMessage() );
-			wp_send_json_error( 'Failed to opt out' );
-		}
-	}
-
-	public function sync_all_clicked() {
-		try {
-			update_option( self::MASTER_SYNC_OPT_OUT_TIME, '' );
-			wp_send_json_success( 'Opted in successfully' );
-		} catch ( Exception $e ) {
-			error_log( 'Error while updating WP option: ' . $e->getMessage() );
-			wp_send_json_error( 'Failed to opt in' );
-		}
 	}
 
 	public function reset_upcoming_version_banners() {
-		set_transient( 'upcoming_banner_hide', true, 7 * 24 * 60 * 60 );
+		set_transient( 'upcoming_woo_all_products_banner_hide', true, 7 * 24 * 60 * 60 );
 	}
 
 	/**
