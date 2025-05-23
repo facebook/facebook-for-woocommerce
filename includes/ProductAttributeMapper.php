@@ -238,10 +238,6 @@ class ProductAttributeMapper {
 			$value = $product->get_attribute($attribute_name);
 
 			if (!empty($value)) {
-				// For the purposes of the unmapped attributes feature, we only consider an attribute
-				// as "mapped" if it's one of the standard Facebook fields. This prevents
-				// attributes like "weight" from being incorrectly categorized as mapped just because
-				// they're part of a compound field like "shipping_weight".
 				$clean_name = self::sanitize_attribute_name($attribute_name);
 				$is_standard_field = false;
 				

@@ -1655,8 +1655,6 @@ class Admin {
 		?>
 		<script type="text/javascript">
 			jQuery(document).ready(function($) {
-				// Add CSS for synced fields
-				// CSS has been moved to facebook-for-woocommerce-products-admin.css
 				
 				// State object to track badge display status
 				var syncedBadgeState = {
@@ -2207,16 +2205,10 @@ class Admin {
 		if ( $product_id ) {
 			$product = wc_get_product( $product_id );
 			
-			// Debug logging
-			$log_file = WP_CONTENT_DIR . '/uploads/fb-product-debug.log';
-			
 			if ( ! $product ) {
 				wp_send_json_error( 'Invalid product' );
 				return;
 			}
-			
-			// Get stored custom mappings for diagnostic purposes
-			$custom_mappings = get_option('wc_facebook_custom_attribute_mappings', array());
 			
 			// Use ProductAttributeMapper to get and save the mapped attributes
 			$mapped_attributes = ProductAttributeMapper::get_and_save_mapped_attributes( $product );
