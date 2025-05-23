@@ -56,7 +56,7 @@ class PluginUpdate {
 		);
 		wp_enqueue_script(
 			'facebook-for-woocommerce-plugin-update',
-			facebook_for_woocommerce()->get_asset_build_dir_url() . '/admin/plugin-update.js',
+			facebook_for_woocommerce()->get_asset_build_dir_url() . '/admin/plugin-rendering.js',
 			array( 'jquery', 'wc-backbone-modal', 'jquery-blockui', 'jquery-tiptip', 'facebook-for-woocommerce-modal', 'wc-enhanced-select' ),
 			\WC_Facebookcommerce::PLUGIN_VERSION,
 		);
