@@ -280,7 +280,6 @@ class ProductAttributeMapper {
 		
 		$mapped_attributes = array();
 		$attributes = $product->get_attributes();
-		$default_values = get_option('wc_facebook_attribute_defaults', array());
 		
 		// Get manual attribute mappings from the plugin settings
 		$custom_mappings = get_option('wc_facebook_attribute_mappings', array());
@@ -316,7 +315,6 @@ class ProductAttributeMapper {
 			'slug_match' => 80,        // High priority - slug match
 			'mapped' => 60,            // Medium priority - mapped via check_attribute_mapping
 			'custom_mapped' => 50,     // Medium priority - manually mapped via UI (reduced from 90)
-			'default' => 10,           // Low priority - default value 
 			'meta' => 20               // Low-medium priority - meta value
 		);
 		
@@ -437,20 +435,8 @@ class ProductAttributeMapper {
 			}
 		}
 		
-		// PHASE 4: For fields not found in product attributes, check defaults and meta
+		// PHASE 4: For fields not found in product attributes, check meta values
 		foreach ($standard_fields as $field) {
-			// Check defaults only if we haven't found a higher priority source
-			if (!isset($attribute_sources[$field]) || $attribute_sources[$field]['priority'] < $priority_map['default']) {
-				// Check for default value
-				if (isset($default_values[$field]) && !empty($default_values[$field])) {
-					$attribute_sources[$field] = array(
-						'value' => $default_values[$field],
-						'priority' => $priority_map['default'],
-						'source' => "Default value"
-					);
-				}
-			}
-			
 			// Check meta values only if we haven't found a higher priority source
 			if (!isset($attribute_sources[$field]) || $attribute_sources[$field]['priority'] < $priority_map['meta']) {
 				// Check for alternative storage in dedicated meta fields
