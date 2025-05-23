@@ -67,7 +67,7 @@ class PluginUpdate {
 				'ajax_url'                        => admin_url( 'admin-ajax.php' ),
 				'set_excluded_terms_prompt_nonce' => wp_create_nonce( 'set-excluded-terms-prompt' ),
 				'opt_out_of_sync'                 => wp_create_nonce( self::ACTION_OPT_OUT_OF_SYNC ),
-				'banner_close'						=> wp_create_nonce( self::ACTION_CLOSE_BANNER ),
+				'banner_close'                    => wp_create_nonce( self::ACTION_CLOSE_BANNER ),
 				'sync_back_in'                    => wp_create_nonce( self::ACTION_SYNC_BACK_IN ),
 				'sync_in_progress'                => Sync::is_sync_in_progress(),
 				'opt_out_confirmation_message'    => self::get_opt_out_modal_message(),
@@ -124,7 +124,7 @@ class PluginUpdate {
 		 * Should show the opt in/ opt out banner
 		 */
 		if ( self::compare_versions( $latest_version, $current_version ) >= 0 && self::compare_versions( $latest_version, self::ALL_PRODUCTS_PLUGIN_VERSION ) < 0 ) {
-			if(get_transient( 'upcoming_banner_hide' )){
+			if ( get_transient( 'upcoming_banner_hide' ) ) {
 				return;
 			}
 			add_action( 'admin_notices', [ __CLASS__, 'upcoming_version_change_banner' ], 0, 1 );
@@ -175,8 +175,8 @@ class PluginUpdate {
 		}
 	}
 
-	public function reset_upcoming_version_banners(){
-		set_transient('upcoming_banner_hide', true, 7 * 24 * 60 * 60 );
+	public function reset_upcoming_version_banners() {
+		set_transient( 'upcoming_banner_hide', true, 7 * 24 * 60 * 60 );
 	}
 
 	/**
