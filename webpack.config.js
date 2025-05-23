@@ -21,7 +21,7 @@ const jQueryUIAdminFileNames = [
     'whatsapp-consent-remove',
     'whatsapp-disconnect',
     'whatsapp-events',
-	'plugin-update'
+	'plugin-rendering'
 ];
 
 const jQueryUIAdminFileEntries = {};
