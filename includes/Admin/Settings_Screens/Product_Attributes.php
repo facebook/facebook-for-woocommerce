@@ -148,8 +148,7 @@ class Product_Attributes extends Abstract_Settings_Screen {
 		$current_mappings = $this->get_saved_mappings();
 		
 		
-		// Check if we're in edit mode (either via GET parameter or when there are no mappings)
-		$edit_mode = isset($_GET['edit']) || empty($current_mappings);
+		$edit_mode = isset($_GET['edit']);
 		
 		// Check for success message from redirect
 		$show_success = isset($_GET['success']) && $_GET['success'] === '1';
@@ -183,118 +182,77 @@ class Product_Attributes extends Abstract_Settings_Screen {
 					<table class="widefat" id="facebook-attribute-mapping-table">
 						<thead>
 							<tr>
-								<th><?php esc_html_e('WooCommerce Attribute', 'facebook-for-woocommerce'); ?> <?php echo wc_help_tip(__('The product attribute from your store', 'facebook-for-woocommerce')); ?></th>
-								<th><?php esc_html_e('Meta Attribute', 'facebook-for-woocommerce'); ?> <?php echo wc_help_tip(__('The corresponding Meta catalog field', 'facebook-for-woocommerce')); ?></th>
+								<th><?php esc_html_e('WooCommerce Attribute', 'facebook-for-woocommerce'); ?></th>
+								<th><?php esc_html_e('Meta Attribute', 'facebook-for-woocommerce'); ?></th>
 								<th></th>
 							</tr>
 						</thead>
 						<tbody>
-							<?php if (empty($current_mappings)) : ?>
+							<?php foreach ($current_mappings as $wc_attribute => $fb_field) : ?>
 								<tr class="fb-attribute-row">
 									<td>
-										<select name="wc_facebook_attribute_mapping[]" class="wc-attribute-search" data-placeholder="<?php esc_attr_e('Select attribute', 'facebook-for-woocommerce'); ?>">
+										<select name="wc_facebook_attribute_mapping[<?php echo esc_attr($wc_attribute); ?>]" class="wc-attribute-search" data-placeholder="<?php esc_attr_e('Select attribute', 'facebook-for-woocommerce'); ?>">
 											<option value=""><?php esc_html_e('Select attribute', 'facebook-for-woocommerce'); ?></option>
-											
 											<?php foreach ($product_attributes as $attribute_id => $attribute_label) : ?>
-												<option value="<?php echo esc_attr($attribute_id); ?>">
-													<?php echo esc_html($attribute_label); ?>
-												</option>
+												<option value="<?php echo esc_attr($attribute_id); ?>" <?php selected($attribute_id, $wc_attribute); ?>><?php echo esc_html($attribute_label); ?></option>
 											<?php endforeach; ?>
 										</select>
 									</td>
 									<td>
-										<select name="wc_facebook_field_mapping[]" class="fb-field-search" data-placeholder="<?php esc_attr_e('Select attribute', 'facebook-for-woocommerce'); ?>">
+										<select name="wc_facebook_field_mapping[<?php echo esc_attr($wc_attribute); ?>]" class="fb-field-search" data-placeholder="<?php esc_attr_e('Select attribute', 'facebook-for-woocommerce'); ?>">
 											<option value=""><?php esc_html_e('Select attribute', 'facebook-for-woocommerce'); ?></option>
-											
 											<?php foreach ($facebook_fields as $field_id => $field_label) : ?>
-												<option value="<?php echo esc_attr($field_id); ?>">
-													<?php echo esc_html($field_label); ?>
-												</option>
+												<option value="<?php echo esc_attr($field_id); ?>" <?php selected($field_id, $fb_field); ?>><?php echo esc_html($field_label); ?></option>
 											<?php endforeach; ?>
 										</select>
 									</td>
 									<td>
-										<a href="#" class="remove-mapping-row" style="color: #a00;"><?php esc_html_e('Remove mapping', 'facebook-for-woocommerce'); ?></a>
+										<a href="#" class="remove-mapping" title="<?php esc_attr_e('Remove mapping', 'facebook-for-woocommerce'); ?>">
+											<span class="dashicons dashicons-trash"></span>
+										</a>
 									</td>
 								</tr>
-							<?php else : ?>
-								<?php foreach ($current_mappings as $wc_attribute => $fb_field) : 
-									?>
-									<tr class="fb-attribute-row">
-										<td>
-											<select name="wc_facebook_attribute_mapping[<?php echo esc_attr($wc_attribute); ?>]" class="wc-attribute-search" data-placeholder="<?php esc_attr_e('Select attribute', 'facebook-for-woocommerce'); ?>">
-												<option value=""><?php esc_html_e('Select attribute', 'facebook-for-woocommerce'); ?></option>
-												
-												<?php foreach ($product_attributes as $attribute_id => $attribute_label) : ?>
-													<option value="<?php echo esc_attr($attribute_id); ?>" <?php selected($attribute_id, $wc_attribute); ?>>
-														<?php echo esc_html($attribute_label); ?>
-													</option>
-												<?php endforeach; ?>
-											</select>
-										</td>
-										<td>
-											<select name="wc_facebook_field_mapping[<?php echo esc_attr($wc_attribute); ?>]" class="fb-field-search" data-placeholder="<?php esc_attr_e('Select attribute', 'facebook-for-woocommerce'); ?>">
-												<option value=""><?php esc_html_e('Select attribute', 'facebook-for-woocommerce'); ?></option>
-												
-												<?php foreach ($facebook_fields as $field_id => $field_label) : ?>
-													<option value="<?php echo esc_attr($field_id); ?>" <?php selected($field_id, $fb_field); ?>>
-														<?php echo esc_html($field_label); ?>
-													</option>
-												<?php endforeach; ?>
-											</select>
-										</td>
-										<td>
-											<a href="#" class="remove-mapping-row" style="color: #a00;"><?php esc_html_e('Remove mapping', 'facebook-for-woocommerce'); ?></a>
-										</td>
-									</tr>
-								<?php endforeach; ?>
-								
-								<!-- Always add an empty row for new mappings -->
-								<?php $unique_index = time(); ?>
-								<tr class="fb-attribute-row">
-									<td>
-										<select name="wc_facebook_attribute_mapping[<?php echo $unique_index; ?>]" class="wc-attribute-search" data-placeholder="<?php esc_attr_e('Select attribute', 'facebook-for-woocommerce'); ?>">
-											<option value=""><?php esc_html_e('Select attribute', 'facebook-for-woocommerce'); ?></option>
-											
-											<?php foreach ($product_attributes as $attribute_id => $attribute_label) : ?>
-												<option value="<?php echo esc_attr($attribute_id); ?>">
-													<?php echo esc_html($attribute_label); ?>
-												</option>
-											<?php endforeach; ?>
-										</select>
-									</td>
-									<td>
-										<select name="wc_facebook_field_mapping[<?php echo $unique_index; ?>]" class="fb-field-search" data-placeholder="<?php esc_attr_e('Select attribute', 'facebook-for-woocommerce'); ?>">
-											<option value=""><?php esc_html_e('Select attribute', 'facebook-for-woocommerce'); ?></option>
-											
-											<?php foreach ($facebook_fields as $field_id => $field_label) : ?>
-												<option value="<?php echo esc_attr($field_id); ?>">
-													<?php echo esc_html($field_label); ?>
-												</option>
-											<?php endforeach; ?>
-										</select>
-									</td>
-									<td>
-										<a href="#" class="remove-mapping-row" style="color: #a00;"><?php esc_html_e('Remove mapping', 'facebook-for-woocommerce'); ?></a>
-									</td>
-								</tr>
-							<?php endif; ?>
+							<?php endforeach; ?>
+							
+							<!-- Always have one empty row for new mappings -->
+							<?php $unique_index = time(); ?>
+							<tr class="fb-attribute-row">
+								<td>
+									<select name="wc_facebook_attribute_mapping[<?php echo $unique_index; ?>]" class="wc-attribute-search" data-placeholder="<?php esc_attr_e('Select attribute', 'facebook-for-woocommerce'); ?>">
+										<option value=""><?php esc_html_e('Select attribute', 'facebook-for-woocommerce'); ?></option>
+										<?php foreach ($product_attributes as $attribute_id => $attribute_label) : ?>
+											<option value="<?php echo esc_attr($attribute_id); ?>"><?php echo esc_html($attribute_label); ?></option>
+										<?php endforeach; ?>
+									</select>
+								</td>
+								<td>
+									<select name="wc_facebook_field_mapping[<?php echo $unique_index; ?>]" class="fb-field-search" data-placeholder="<?php esc_attr_e('Select attribute', 'facebook-for-woocommerce'); ?>">
+										<option value=""><?php esc_html_e('Select attribute', 'facebook-for-woocommerce'); ?></option>
+										<?php foreach ($facebook_fields as $field_id => $field_label) : ?>
+											<option value="<?php echo esc_attr($field_id); ?>"><?php echo esc_html($field_label); ?></option>
+										<?php endforeach; ?>
+									</select>
+								</td>
+								<td>
+									<a href="#" class="remove-mapping" title="<?php esc_attr_e('Remove mapping', 'facebook-for-woocommerce'); ?>">
+										<span class="dashicons dashicons-trash"></span>
+									</a>
+								</td>
+							</tr>
+							
+							<!-- Add new mapping button row -->
+							<tr class="add-mapping-row">
+								<td colspan="3" style="text-align: left; padding: 12px;">
+									<button type="button" class="button add-new-mapping"><?php esc_html_e('Add new mapping', 'facebook-for-woocommerce'); ?></button>
+								</td>
+							</tr>
 						</tbody>
 					</table>
 					
-					<p>
-						<button type="button" class="button add-new-mapping" style="margin-top: 15px;"><?php esc_html_e('Add new mapping', 'facebook-for-woocommerce'); ?></button>
-					</p>
-					
 					<p class="submit">
-						<button type="submit" name="save_attribute_mappings" class="button button-primary" id="btn_save_fb_settings">
-							<?php esc_html_e('Save Changes', 'facebook-for-woocommerce'); ?>
-						</button>
-						<?php if (!empty($current_mappings)): ?>
+						<button type="submit" name="save_attribute_mappings" class="button button-primary"><?php esc_html_e('Save Changes', 'facebook-for-woocommerce'); ?></button>
 						<a href="<?php echo esc_url(remove_query_arg('edit')); ?>" class="button" style="margin-left: 10px;"><?php esc_html_e('Cancel', 'facebook-for-woocommerce'); ?></a>
-						<?php endif; ?>
 					</p>
-					
 				</form>
 			<?php else: ?>
 				<!-- View Mode -->
@@ -309,7 +267,9 @@ class Product_Attributes extends Abstract_Settings_Screen {
 						<tbody>
 							<?php if (empty($current_mappings)) : ?>
 								<tr>
-									<td colspan="2" style="text-align: center; padding: 20px;"><?php esc_html_e('No attribute mappings configured.', 'facebook-for-woocommerce'); ?></td>
+									<td colspan="2" style="text-align: center; padding: 20px; color: #666; font-style: italic;">
+										<?php esc_html_e('No attribute mappings configured.', 'facebook-for-woocommerce'); ?>
+									</td>
 								</tr>
 							<?php else : ?>
 								<?php foreach ($current_mappings as $wc_attribute => $fb_field) : 
@@ -326,9 +286,12 @@ class Product_Attributes extends Abstract_Settings_Screen {
 					</table>
 					
 					<p style="margin-top: 15px;">
-						<a href="<?php echo esc_url(add_query_arg('edit', '1', remove_query_arg('success'))); ?>" class="button button-primary"><?php esc_html_e('Edit Mappings', 'facebook-for-woocommerce'); ?></a>
+						<?php if (empty($current_mappings)) : ?>
+							<a href="<?php echo esc_url(add_query_arg('edit', '1')); ?>" class="button button-primary"><?php esc_html_e('Add new mapping', 'facebook-for-woocommerce'); ?></a>
+						<?php else : ?>
+							<a href="<?php echo esc_url(add_query_arg('edit', '1')); ?>" class="button button-primary"><?php esc_html_e('Edit Mappings', 'facebook-for-woocommerce'); ?></a>
+						<?php endif; ?>
 					</p>
-					
 				</div>
 			<?php endif; ?>
 			
@@ -414,16 +377,19 @@ class Product_Attributes extends Abstract_Settings_Screen {
 					newRowHtml += '</select>' +
 						'</td>' +
 						'<td>' +
-						'<a href="#" class="remove-mapping-row" style="color: #a00;"><?php esc_html_e('Remove mapping', 'facebook-for-woocommerce'); ?></a>' +
+						'<a href="#" class="remove-mapping" title="<?php esc_attr_e('Remove mapping', 'facebook-for-woocommerce'); ?>">' +
+						'<span class="dashicons dashicons-trash"></span>' +
+						'</a>' +
 						'</td>' +
 						'</tr>';
 					
-					// Append the new row to the table
+					// Insert the new row before the "Add new mapping" button row
 					var $tbody = $('#facebook-attribute-mapping-table tbody');
-					$tbody.append(newRowHtml);
+					var $addButtonRow = $tbody.find('.add-mapping-row');
+					$addButtonRow.before(newRowHtml);
 					
 					// Initialize select2 on the new row's select elements
-					var $newRow = $tbody.find('tr:last');
+					var $newRow = $addButtonRow.prev();
 					$newRow.find('.wc-attribute-search, .fb-field-search').select2({
 						width: '100%',
 						placeholder: function() {
@@ -464,7 +430,7 @@ class Product_Attributes extends Abstract_Settings_Screen {
 				}
 				
 				// Remove mapping row
-				$('#facebook-attribute-mapping-table').on('click', '.remove-mapping-row', function(e) {
+				$('#facebook-attribute-mapping-table').on('click', '.remove-mapping', function(e) {
 					e.preventDefault();
 					
 					// Don't remove if it's the only row
@@ -570,7 +536,7 @@ class Product_Attributes extends Abstract_Settings_Screen {
 									</td>
 									<td>
 										<a href="#" class="fb-attributes-remove" title="<?php esc_attr_e('Remove mapping', 'facebook-for-woocommerce'); ?>">
-											<?php esc_html_e('Remove', 'facebook-for-woocommerce'); ?>
+											<span class="dashicons dashicons-trash"></span>
 										</a>
 									</td>
 								</tr>
@@ -603,7 +569,7 @@ class Product_Attributes extends Abstract_Settings_Screen {
 								</td>
 								<td>
 									<a href="#" class="fb-attributes-remove" title="<?php esc_attr_e('Remove mapping', 'facebook-for-woocommerce'); ?>">
-										<?php esc_html_e('Remove', 'facebook-for-woocommerce'); ?>
+										<span class="dashicons dashicons-trash"></span>
 									</a>
 								</td>
 							</tr>
@@ -788,15 +754,15 @@ class Product_Attributes extends Abstract_Settings_Screen {
 		// Get existing mappings
 		$existing_mappings = $this->get_saved_mappings();
 		
-		// Process the new single form submission
-		if (isset($_POST['wc_facebook_attribute_mapping']) && isset($_POST['wc_facebook_field_mapping'])) {
+		// Initialize new mappings as empty array
+		$new_mappings = array();
+		
+		// Process the form submission (even if arrays are empty)
+		if (isset($_POST['wc_facebook_attribute_mapping']) || isset($_POST['wc_facebook_field_mapping'])) {
 			
-			// Get the submitted data
-			$wc_attributes = (array) $_POST['wc_facebook_attribute_mapping'];
-			$fb_fields = (array) $_POST['wc_facebook_field_mapping'];
-			
-			// Start with an empty array to rebuild the mappings
-			$new_mappings = array();
+			// Get the submitted data (handle empty arrays)
+			$wc_attributes = isset($_POST['wc_facebook_attribute_mapping']) ? (array) $_POST['wc_facebook_attribute_mapping'] : array();
+			$fb_fields = isset($_POST['wc_facebook_field_mapping']) ? (array) $_POST['wc_facebook_field_mapping'] : array();
 			
 			// Process WooCommerce attribute => Facebook field mappings
 			foreach ($wc_attributes as $key => $wc_attribute) {
@@ -816,29 +782,30 @@ class Product_Attributes extends Abstract_Settings_Screen {
 				// Add to new mappings
 				$new_mappings[$wc_attribute] = $fb_field;
 			}
-			
-			// Save the new mappings
-			update_option(self::OPTION_CUSTOM_ATTRIBUTE_MAPPINGS, $new_mappings);
-			
-			// Update the static mapping in the ProductAttributeMapper class
-			if (method_exists('WooCommerce\Facebook\ProductAttributeMapper', 'set_custom_attribute_mappings')) {
-				ProductAttributeMapper::set_custom_attribute_mappings($new_mappings);
-			}
-			
-			// Update last sync time
-			update_option('wc_facebook_last_attribute_sync', current_time('mysql'));
-			
-			// Add success notice
-			$this->add_notice(
-				__('Product attribute mappings saved successfully.', 'facebook-for-woocommerce'),
-				'success'
-			);
-			
-			// Redirect back to view mode
-			$redirect_url = add_query_arg('success', '1', remove_query_arg('edit'));
-			wp_safe_redirect($redirect_url);
-			exit;
 		}
+		
+		// Save the new mappings (even if empty)
+		update_option(self::OPTION_CUSTOM_ATTRIBUTE_MAPPINGS, $new_mappings);
+		
+		// Update the static mapping in the ProductAttributeMapper class
+		if (method_exists('WooCommerce\Facebook\ProductAttributeMapper', 'set_custom_attribute_mappings')) {
+			ProductAttributeMapper::set_custom_attribute_mappings($new_mappings);
+		}
+		
+		// Update last sync time
+		update_option('wc_facebook_last_attribute_sync', current_time('mysql'));
+		
+		// Add success notice
+		$message = empty($new_mappings) 
+			? __('All attribute mappings have been removed.', 'facebook-for-woocommerce')
+			: __('Product attribute mappings saved successfully.', 'facebook-for-woocommerce');
+		
+		$this->add_notice($message, 'success');
+		
+		// Redirect back to view mode
+		$redirect_url = add_query_arg('success', '1', remove_query_arg('edit'));
+		wp_safe_redirect($redirect_url);
+		exit;
 	}
 
 	/**
