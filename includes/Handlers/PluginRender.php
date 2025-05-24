@@ -85,13 +85,8 @@ class PluginRender {
 	}
 
 	public static function get_opt_out_time() {
-		try {
-			$option_value = get_option( self::MASTER_SYNC_OPT_OUT_TIME );
-			return $option_value;
-		} catch ( Exception $e ) {
-			error_log( 'Error while fetching master sync option: ' . $e->getMessage() );
-			return null;
-		}
+		$option_value = get_option( self::MASTER_SYNC_OPT_OUT_TIME );
+		return $option_value;
 	}
 
 	public static function is_master_sync_on() {
