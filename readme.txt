@@ -86,5 +86,6 @@ When opening a bug on GitHub, please give us as many details as possible.
 *  Add - Add usage logging for enhanced settings tabs by @ajello-meta in #3202
 *  Tweak - Remove UI of a checkbox that controls enablement of the new style feed generation by @mshymon in #3056
 *  Fix - Fix linter errors for ./includes/fbutils.php files by @ajello-meta in #3075
+*  Fix - Hotfix for Rollout Switches by @vinkmeta in #3236
 
 [See changelog for all versions](https://raw.githubusercontent.com/facebook/facebook-for-woocommerce/refs/heads/main/changelog.txt).
