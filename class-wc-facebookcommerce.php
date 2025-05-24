@@ -243,6 +243,7 @@ class WC_Facebookcommerce extends WooCommerce\Facebook\Framework\Plugin {
 			$this->whatsapp_webhook_handler = new WooCommerce\Facebook\Handlers\Whatsapp_Webhook( $this );
 			$this->tracker            			= new WooCommerce\Facebook\Utilities\Tracker();
 			$this->rollout_switches   			= new WooCommerce\Facebook\RolloutSwitches( $this );
+			$this->plugin_render_handler = new \WooCommerce\Facebook\Handlers\PluginRender($this);
 			
 
 			// Init jobs
@@ -259,7 +260,6 @@ class WC_Facebookcommerce extends WooCommerce\Facebook\Framework\Plugin {
 				} else {
 					$this->admin_settings = new WooCommerce\Facebook\Admin\Settings( $this );
 				}
-				$this->plugin_render_handler = new \WooCommerce\Facebook\Handlers\PluginRender($this);
 			}
 		}
 	}
