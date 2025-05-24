@@ -175,6 +175,7 @@ class UpdateTest extends AbstractWPUnitTestWithOptionIsolationAndSafeFiltering {
 				'external_client' => array(
 					'version_id' => WC_Facebookcommerce_Utils::PLUGIN_VERSION,
 					'is_multisite' => false,
+					'is_opted_out' => true
 				),
 			),
 		);

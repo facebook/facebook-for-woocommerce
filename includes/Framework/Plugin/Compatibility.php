@@ -67,6 +67,26 @@ class Compatibility {
 	}
 
 	/**
+	 * Gets the latest version of facebook for woocommerce version from the woo store
+	 *
+	 * @since 3.4.11
+	 *
+	 * @return string|null Woocommerce version number or null if undetermined
+	 */
+	public static function get_latest_facebook_woocommerce_version() {
+		$response = wp_remote_get( 'https://api.wordpress.org/plugins/info/1.2/?action=plugin_information&slug=facebook-for-woocommerce', [ 'timeout' => 1 ] );
+
+		if ( is_wp_error( $response ) ) {
+			return null;
+		}
+
+		$body        = wp_remote_retrieve_body( $response );
+		$plugin_data = json_decode( $body );
+
+		return isset( $plugin_data->version ) ? $plugin_data->version : null;
+	}
+
+	/**
 	 * Gets the version of the currently installed WooCommerce.
 	 *
 	 * @since 3.0.0
