@@ -106,7 +106,7 @@ class PluginRender {
 		 * but latest is below 3.4.12
 		 * Should show the opt in/ opt out banner
 		 */
-		if (  version_compare( $current_version, self::ALL_PRODUCTS_PLUGIN_VERSION, '<')  ) {
+		if ( version_compare( $current_version, self::ALL_PRODUCTS_PLUGIN_VERSION, '<' ) ) {
 			if ( get_transient( 'upcoming_woo_all_products_banner_hide' ) ) {
 				return;
 			}
