@@ -133,6 +133,7 @@ class UpdateTest extends AbstractWPUnitTestWithOptionIsolationAndSafeFiltering {
 	 */
 	public function test_maybe_update_external_plugin_version() {
 		$plugin = facebook_for_woocommerce();
+		$plugin->init_admin();
 
 		/**
 		 * Set the $plugin->connection_handler and $plugin->api access to true. This will allow us

@@ -21,7 +21,7 @@ jQuery( document ).ready( function( $ ) {
             data = typeof response === "string" ? JSON.parse(response) : response;
             if(data.success){
                 $('#opt_out_banner').hide();
-                $('#opt_in_banner').show();
+                $('#opted_our_successfullly_banner').show();
                 modal.remove();
             }   
         }).fail(function(xhr) {
@@ -34,7 +34,7 @@ jQuery( document ).ready( function( $ ) {
     /**
      * Banner dismissed callback
      */
-    $(document).on('click','#opt_out_banner .notice-dismiss, #opt_in_banner .notice-dismiss', function (e) {
+    $(document).on('click','#opt_out_banner .notice-dismiss, #opted_our_successfullly_banner .notice-dismiss', function (e) {
         e.preventDefault();
         $.post( facebook_for_woocommerce_plugin_update.ajax_url, {
             action: 'wc_banner_close_action',
