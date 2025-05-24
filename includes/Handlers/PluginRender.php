@@ -80,8 +80,6 @@ class PluginRender {
 		add_action( 'admin_enqueue_scripts', [ __CLASS__,  'enqueue_assets' ] );
 		add_action( 'wp_ajax_wc_facebook_opt_out_of_sync', [ __CLASS__,  'opt_out_of_sync_clicked' ] );
 		add_action( 'wp_ajax_nopriv_wc_facebook_opt_out_of_sync', [ __CLASS__,'opt_out_of_sync_clicked' ] );
-		add_action( 'wp_ajax_wc_facebook_sync_all_products', [ __CLASS__,  'sync_all_clicked' ] );
-		add_action( 'wp_ajax_nopriv_wc_facebook_sync_all_products', [ __CLASS__,'sync_all_clicked' ] );
 		add_action( 'wp_ajax_wc_banner_close_action', [ __CLASS__,  'reset_upcoming_version_banners' ] );
 		add_action( 'wp_ajax_nopriv_wc_banner_close_action', [ __CLASS__,'reset_upcoming_version_banners' ] );
 	}
@@ -101,29 +99,14 @@ class PluginRender {
 		return '' === $option_value;
 	}
 
-	/**
-	 * Latest plugin version
-	 * available on WooCommerce store
-	 * If unable to fetch gets the current plugin version
-	 * Should be anything above 3.4.10
-	 */
-	public function get_latest_plugin_version() {
-		$latest_plugin = Compatibility::get_latest_facebook_woocommerce_version();
-		if ( ! $latest_plugin ) {
-			$latest_plugin = $this->plugin->get_version();
-		}
-		return $latest_plugin;
-	}
-
 	public function should_show_banners() {
 		$current_version = $this->plugin->get_version();
-		$latest_version  = $this->get_latest_plugin_version();
 		/**
 		 * Case when current version is less or equal to latest
 		 * but latest is below 3.4.12
 		 * Should show the opt in/ opt out banner
 		 */
-		if ( self::compare_versions( $latest_version, $current_version ) >= 0 && self::compare_versions( $latest_version, self::ALL_PRODUCTS_PLUGIN_VERSION ) < 0 ) {
+		if (  version_compare( $current_version, self::ALL_PRODUCTS_PLUGIN_VERSION, '<')  ) {
 			if ( get_transient( 'upcoming_woo_all_products_banner_hide' ) ) {
 				return;
 			}
@@ -136,7 +119,7 @@ class PluginRender {
 
 		if ( isset( $screen->id ) && 'marketing_page_wc-facebook' === $screen->id ) {
 			echo '<div id="opt_out_banner" class="' . esc_html( self::get_opt_out_banner_class() ) . '" style="padding: 15px">
-            <h4>When you update to version <b>' . esc_html( self::get_latest_plugin_version() ) . '</b> your products will automatically sync to your catalog at Meta catalog</h4>
+            <h4>When you update to version <b>' . esc_html( self::ALL_PRODUCTS_PLUGIN_VERSION ) . '</b> your products will automatically sync to your catalog at Meta catalog</h4>
             The next time you update your Facebook for WooCommerce plugin, all your products will be synced automatically. This is to help you drive sales and optimize your ad performance. <a href="https://www.facebook.com/business/help/4049935305295468">Learn more about changes to how your products will sync to Meta</a>
                 <p>
                     <a href="edit.php?post_type=product"> Review products </a>
@@ -145,7 +128,7 @@ class PluginRender {
             </div>
             ';
 
-			echo '<div id="opt_in_banner" class="' . esc_html( self::get_opt_in_banner_class() ) . '" style="padding: 15px">
+			echo '<div id="opted_our_successfullly_banner" class="' . esc_html( self::get_opted_out_successfully_banner_class() ) . '" style="padding: 15px">
             <h4>You’ve opted out of automatic syncing on the next plugin update </h4>
                 <p>
                     Products that are not synced will not be available for your customers to discover on your ads and shops. To manually add products, <a href="https://www.facebook.com/business/help/4049935305295468">learn how to sync products to your Meta catalog</a>
@@ -160,38 +143,16 @@ class PluginRender {
 			wp_send_json_success( 'Opted out successfully' );
 	}
 
-	public function reset_upcoming_version_banners() {
-		set_transient( 'upcoming_woo_all_products_banner_hide', true, 7 * 24 * 60 * 60 );
-	}
-
 	/**
-	 * Utils for this class
-	 *
-	 * @param string $version1 is the first version
-	 * @param string $version2 is the second vesion
+	 * Banner for initmation of WooAllProducts version will show up
+	 * after a week
 	 */
-	public static function compare_versions( $version1, $version2 ) {
-		$parts1 = explode( '.', $version1 );
-		$parts2 = explode( '.', $version2 );
-
-		$max_length = max( count( $parts1 ), count( $parts2 ) );
-
-		for ( $i = 0; $i < $max_length; $i++ ) {
-			$num1 = isset( $parts1[ $i ] ) ? (int) $parts1[ $i ] : 0;
-			$num2 = isset( $parts2[ $i ] ) ? (int) $parts2[ $i ] : 0;
-
-			if ( $num1 > $num2 ) {
-				return 1; // $version1 is greater
-			}
-			if ( $num1 < $num2 ) {
-				return -1; // $version2 is greater
-			}
-		}
-
-		return 0; // Versions are equal
+	public function reset_upcoming_version_banners() {
+		set_transient( 'upcoming_woo_all_products_banner_hide', true, 7 * DAY_IN_SECONDS );
 	}
 
-	private function get_opt_in_banner_class() {
+
+	private function get_opted_out_successfully_banner_class() {
 		$hidden              = ! self::is_master_sync_on();
 		$opt_in_banner_class = 'notice notice-success is-dismissible';
 

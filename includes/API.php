@@ -330,7 +330,7 @@ class API extends Base {
 			array(
 				'version_id' => $plugin_version,
 				'is_multisite'   => is_multisite(),
-				'is_opted_out' => $is_opted_out
+				'is_woo_all_products_opted_out' => $is_opted_out
 			)
 		);
 		$this->set_response_handler( API\FBE\Configuration\Update\Response::class );
