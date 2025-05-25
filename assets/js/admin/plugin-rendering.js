@@ -51,6 +51,47 @@ jQuery( document ).ready( function( $ ) {
         });
     });
 
+    /**
+     * Banner dismissed callback
+     */
+       $(document).on('click','.plugin_updated_successfully .notice-dismiss', function (e) {
+        e.preventDefault();
+        $.post( facebook_for_woocommerce_plugin_update.ajax_url, {
+            action: 'wc_banner_post_update_close_action',
+            nonce:  facebook_for_woocommerce_plugin_update.banner_close,
+        }, function (response){
+            data = typeof response === "string" ? JSON.parse(response) : response;
+            if(data.success){
+                // No success condition
+            }   
+        }).fail(function(xhr) {
+            console.error("Error Code:", xhr.status);
+            console.error("Error Message:", xhr.responseText);
+            modal.remove();
+        });
+    });
+
+    /**
+     * Banner dismissed callback
+     * but when master sync is off
+     */
+    $(document).on('click','#plugin_updated_successfully_but_master_sync_off .notice-dismiss', function (e) {
+        e.preventDefault();
+        $.post( facebook_for_woocommerce_plugin_update.ajax_url, {
+            action: 'wc_banner_post_update__master_sync_off_close_action',
+            nonce:  facebook_for_woocommerce_plugin_update.banner_close,
+        }, function (response){
+            data = typeof response === "string" ? JSON.parse(response) : response;
+            if(data.success){
+                // No success condition
+            }   
+        }).fail(function(xhr) {
+            console.error("Error Code:", xhr.status);
+            console.error("Error Message:", xhr.responseText);
+            modal.remove();
+        });
+    });
+
     // Opt out sync controls
      $('.opt_out_of_sync_button').on('click', function(event) {
         event.preventDefault();
@@ -62,5 +103,30 @@ jQuery( document ).ready( function( $ ) {
             }
         });
     })
+
+    // Sync all products 
+    $('#sync_all_products').on('click',function(event) {
+        event.preventDefault();
+        let context = $(this);
+        $.post( facebook_for_woocommerce_plugin_update.ajax_url, {
+            action: 'wc_facebook_sync_all_products',   
+            nonce:  facebook_for_woocommerce_plugin_update.sync_back_in,
+        } ,function (response){
+            data = typeof response === "string" ? JSON.parse(response) : response;
+            if( data.success ) {
+                $('#plugin_updated_successfully_but_master_sync_off').hide();
+                $('#plugin_updated_successfully_after_user_opts_in').show();
+            }
+            else{
+                context.text('Failed to enable sync !')
+                context.css("color", "red");
+                context.css('border', '2px solid red');
+                context.prop('disabled', true);
+            }
+        }).fail(function(xhr) {
+            console.error("Error Code:", xhr.status);
+            console.error("Error Message:", xhr.responseText);
+        });
+    });
 });
 
