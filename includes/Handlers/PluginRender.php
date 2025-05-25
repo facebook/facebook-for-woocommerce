@@ -39,6 +39,7 @@ class PluginRender {
 
 	/** @var string  action */
 	const ACTION_CLOSE_BANNER = 'wc_banner_close_action';
+	
 
 	public function __construct( \WC_Facebookcommerce $plugin ) {
 		$this->plugin = $plugin;
@@ -82,10 +83,12 @@ class PluginRender {
 		add_action( 'wp_ajax_nopriv_wc_facebook_opt_out_of_sync', [ __CLASS__,'opt_out_of_sync_clicked' ] );
 		add_action( 'wp_ajax_wc_banner_close_action', [ __CLASS__,  'reset_upcoming_version_banners' ] );
 		add_action( 'wp_ajax_nopriv_wc_banner_close_action', [ __CLASS__,'reset_upcoming_version_banners' ] );
+		add_action( 'wp_ajax_wc_facebook_sync_all_products', [ __CLASS__,  'sync_all_clicked' ] );
+		add_action( 'wp_ajax_nopriv_wc_facebook_sync_all_products', [ __CLASS__,'sync_all_clicked' ] );
 	}
 
 	public function should_show_banners() {
-		$current_version = $this->plugin->get_version();
+		$current_version =  '3.4.12';//$this->plugin->get_version();
 		/**
 		 * Case when current version is less or equal to latest
 		 * but latest is below 3.4.12
@@ -95,6 +98,9 @@ class PluginRender {
 			if ( get_transient( 'upcoming_woo_all_products_banner_hide' ) ) {
 				return;
 			}
+			add_action( 'admin_notices', [ __CLASS__, 'upcoming_woo_all_products_banner' ], 0, 1 );
+		}
+		else if ( version_compare($current_version, self::ALL_PRODUCTS_PLUGIN_VERSION, '>=')){
 			add_action( 'admin_notices', [ __CLASS__, 'upcoming_woo_all_products_banner' ], 0, 1 );
 		}
 	}
@@ -132,10 +138,53 @@ class PluginRender {
 		}
 	}
 
+	public function plugin_updated_banner() {
+		$screen = get_current_screen();
+
+		if ( isset( $screen->id ) && 'marketing_page_wc-facebook' === $screen->id ) {
+
+			if ( self::is_master_sync_on() ) {
+				echo '<div class="notice notice-success is-dismissible" style="padding: 15px">
+                <h2>You’ve updated to the latest plugin version</h2>
+                    <p>
+                        As part of this update, all your products automatically sync to Meta. It may take some time before all your products are synced. If you change your mind, go to WooCommerce > Products and select which products to un-sync. <a href="https://www.facebook.com/business/help/4049935305295468"> About syncing products to Meta </a>
+                    </p>
+                </div>';
+			} else {
+				$hidden                 = self::is_master_sync_on();
+				$opted_out_banner_class = $hidden ? 'hidden' : '';
+				$opted_in_banner_class  = ! $hidden ? 'hidden' : '';
+
+				echo '<div id="opted_out_banner_updated_plugin" class="notice notice-success is-dismissible ' . esc_html( $opted_out_banner_class ) . '"" style="padding: 15px">
+                    <h2>You’ve updated to the latest plugin version</h2>   
+                        <p>
+                            To see all the changes, view the changelog. Since you’ve opted out of automatically syncing all your products, some of your products are not yet on Meta. We recommend turning on auto syncing to help drive your sales and improve ad performance. About syncing products to Meta
+                        </p>
+                        <p>
+                            <a href="javascript:void(0);" class="button wc-forward" id="sync_all_products">
+                                Sync all products
+                            </a>
+                        </p>
+                    </div>';
+
+				echo '<div id="opted_in_banner_updated_plugin" class="notice notice-success is-dismissible ' . esc_html( $opted_in_banner_class ) . '"" style="padding: 15px">
+                    <h2>Your products will be synced automatically</h2>   
+                        <p>
+                            It may take some time before all your products are synced. If you change your mind, go to WooCommerce > Products and select which products to un-sync.<a href="https://www.facebook.com/business/help/4049935305295468"> About syncing products to Meta</a>
+                        </p>
+                    </div>';
+			}
+		}
+	}
+
 	public function opt_out_of_sync_clicked() {
 			$latest_date = gmdate( 'Y-m-d H:i:s' );
 			update_option( self::MASTER_SYNC_OPT_OUT_TIME, $latest_date );
 			wp_send_json_success( 'Opted out successfully' );
+	}
+
+	public function sync_all_clicked() {
+			update_option( self::MASTER_SYNC_OPT_OUT_TIME, '' );
 	}
 
 	/**
@@ -143,7 +192,7 @@ class PluginRender {
 	 * after a week
 	 */
 	public function reset_upcoming_version_banners() {
-		set_transient( 'upcoming_woo_all_products_banner_hide', true, 7 * DAY_IN_SECONDS );
+		set_transient( 'upcoming_woo_all_products_banner_hide', true, 10 ); //7 * DAY_IN_SECONDS );
 	}
 
 
