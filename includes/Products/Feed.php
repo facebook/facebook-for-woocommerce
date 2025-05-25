@@ -168,11 +168,9 @@ class Feed {
 		set_transient( $flag_name, 'yes', HOUR_IN_SECONDS );
 		$integration   = facebook_for_woocommerce()->get_integration();
 		$configured_ok = $integration && $integration->is_configured();
-		// Only schedule feed job if store has not opted out of product sync.
-		$store_allows_sync = $configured_ok && $integration->is_product_sync_enabled();
 		// Only schedule if has not opted out of feed generation (e.g. large stores).
 		$store_allows_feed = $configured_ok && $integration->is_legacy_feed_file_generation_enabled();
-		if ( ! $store_allows_sync || ! $store_allows_feed ) {
+		if (! $store_allows_feed ) {
 			as_unschedule_all_actions( self::GENERATE_FEED_ACTION );
 
 			$message = '';
@@ -180,8 +178,6 @@ class Feed {
 				$message = 'Integration not configured.';
 			} elseif ( ! $store_allows_feed ) {
 				$message = 'Store does not allow feed.';
-			} elseif ( ! $store_allows_sync ) {
-				$message = 'Store does not allow sync.';
 			}
 			WC_Facebookcommerce_Utils::log_to_meta(
 				sprintf( 'Product feed scheduling failed: %s', $message ),

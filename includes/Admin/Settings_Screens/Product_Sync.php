@@ -270,15 +270,6 @@ class Product_Sync extends Abstract_Settings_Screen {
 				'title' => __( 'Product sync', 'facebook-for-woocommerce' ),
 			),
 			array(
-				'id'       => \WC_Facebookcommerce_Integration::SETTING_ENABLE_PRODUCT_SYNC,
-				'title'    => __( 'Enable product sync', 'facebook-for-woocommerce' ),
-				'type'     => 'checkbox',
-				'label'    => ' ',
-				'default'  => 'yes',
-				'desc_tip' => __( 'Enable product syncing with Facebook.', 'facebook-for-woocommerce' ),
-			),
-
-			array(
 				'id'                => \WC_Facebookcommerce_Integration::SETTING_EXCLUDED_PRODUCT_CATEGORY_IDS,
 				'title'             => __( 'Exclude categories from sync', 'facebook-for-woocommerce' ),
 				'type'              => 'multiselect',
