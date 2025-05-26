@@ -16,7 +16,7 @@ use WooCommerce\Facebook\Admin\Settings_Screens\Shops;
 use WooCommerce\Facebook\Framework\Helper;
 use WooCommerce\Facebook\Framework\Plugin\Exception as PluginException;
 use WooCommerce\Facebook\Admin\Settings_Screens\Whatsapp_Utility;
-use WooCommerce\Facebook\RolloutSwitches;
+use WooCommerce\Facebook\Admin\RolloutSwitches;
 
 defined( 'ABSPATH' ) || exit;
 

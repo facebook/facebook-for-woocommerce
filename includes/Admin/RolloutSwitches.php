@@ -8,10 +8,9 @@
  * @package FacebookCommerce
  */
 
-namespace WooCommerce\Facebook;
+namespace WooCommerce\Facebook\Admin;
 
 use WooCommerce\Facebook\Framework\Api\Exception;
-use WooCommerce\Facebook\Utilities\Heartbeat;
 
 defined( 'ABSPATH' ) || exit;
 
@@ -36,7 +35,7 @@ class RolloutSwitches {
 
 	public function __construct( \WC_Facebookcommerce $plugin ) {
 		$this->plugin = $plugin;
-		add_action( 'admin_init', array( $this->rollout_switches, 'init' ) );
+		add_action( 'admin_init', array( $this->plugin->rollout_switches, 'init' ) );
 	}
 
 	public function init() {

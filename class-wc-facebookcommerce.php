@@ -126,7 +126,7 @@ class WC_Facebookcommerce extends WooCommerce\Facebook\Framework\Plugin {
 	/** @var WooCommerce\Facebook\Products\FBCategories instance. */
 	private $fb_categories;
 
-	/** @var WooCommerce\Facebook\RolloutSwitches instance. */
+	/** @var WooCommerce\Facebook\Admin\RolloutSwitches instance. */
 	private $rollout_switches;
 
 	/**
@@ -210,7 +210,6 @@ class WC_Facebookcommerce extends WooCommerce\Facebook\Framework\Plugin {
 			$this->sync_background_handler   		= new WooCommerce\Facebook\Products\Sync\Background();
 			$this->configuration_detection   		= new WooCommerce\Facebook\Feed\FeedConfigurationDetection();
 			$this->legacy_product_sets_sync_handler = new WooCommerce\Facebook\ProductSets\Sync();
-			$this->product_sets_sync_handler 		= new WooCommerce\Facebook\ProductSets\ProductSetSync();
 			$this->commerce_handler          		= new WooCommerce\Facebook\Commerce();
 			$this->fb_categories             		= new WooCommerce\Facebook\Products\FBCategories();
 			$this->external_version_update   		= new WooCommerce\Facebook\ExternalVersionUpdate\Update();
@@ -248,8 +247,8 @@ class WC_Facebookcommerce extends WooCommerce\Facebook\Framework\Plugin {
 
 			// load admin handlers, before admin_init
 			if ( is_admin() ) {
-				$this->rollout_switches   			= new WooCommerce\Facebook\RolloutSwitches( $this );
-
+				$this->rollout_switches   			= new WooCommerce\Facebook\Admin\RolloutSwitches( $this );
+				$this->product_sets_sync_handler 		= new WooCommerce\Facebook\ProductSets\ProductSetSync();
 				if ($this->use_enhanced_onboarding()) {
 					$this->admin_enhanced_settings = new WooCommerce\Facebook\Admin\Enhanced_Settings( $this );
 				} else {
@@ -816,7 +815,7 @@ class WC_Facebookcommerce extends WooCommerce\Facebook\Framework\Plugin {
 	/**
 	 * Gets the connection handler.
 	 *
-	 * @return WooCommerce\Facebook\RolloutSwitches
+	 * @return WooCommerce\Facebook\Admin\RolloutSwitches
 	 */
 	public function get_rollout_switches() {
 		return $this->rollout_switches;
