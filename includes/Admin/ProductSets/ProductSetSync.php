@@ -54,7 +54,7 @@ class ProductSetSync {
 	/**
 	 * @since 3.4.9
 	 *
-	 * @param int   $term_id Term ID.
+	 * @param int $term_id Term ID.
 	 */
 	public function on_create_or_update_product_wc_category_callback( $term_id ) {
 		try {
