@@ -507,12 +507,7 @@ class WC_Facebook_Product_Feed {
 
 			$product_data['default_product'] = '';
 		}
-
-		// when dealing with the feed file, only set out-of-stock products as hidden
-		if ( Products::product_should_be_deleted( $woo_product->woo_product ) ) {
-			$product_data['visibility'] = \WC_Facebookcommerce_Integration::FB_SHOP_PRODUCT_HIDDEN;
-		}
-
+		
 		// Sale price, only format if we have a sale price set for the product, else leave as empty ('').
 		$sale_price                = static::get_value_from_product_data( $product_data, 'sale_price', '' );
 		$sale_price_effective_date = '';

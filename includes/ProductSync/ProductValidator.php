@@ -162,18 +162,6 @@ class ProductValidator {
 	}
 
 	/**
-	 * Check if the product's terms (categories and tags) allow it to sync.
-	 *
-	 * @return bool
-	 */
-	
-	// Sayan : remove this !!
-	public function passes_product_terms_check(): bool {
-
-		return true;
-	}
-
-	/**
 	 * Check if the product's product sync meta field allows it to sync.
 	 *
 	 * @return bool

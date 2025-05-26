@@ -88,17 +88,14 @@ class Stock {
 	/**
 	 * Schedules a product sync to update the product's stock status.
 	 *
-	 * The product is removed from Facebook if it is out of stock and the plugin is configured to remove out of stock products from the catalog.
+	 * The product are not removed any longer for stock statuses
+	 * Please check PR :  https://github.com/facebook/facebook-for-woocommerce/pull/2952
 	 *
 	 * @since 2.0.5
 	 *
 	 * @param \WC_Product $product a product object
 	 */
 	private function maybe_sync_product_stock_status( \WC_Product $product ) {
-		if ( Products::product_should_be_deleted( $product ) ) {
-			facebook_for_woocommerce()->get_integration()->delete_fb_product( $product );
-			return;
-		}
 		facebook_for_woocommerce()->get_products_sync_handler()->create_or_update_products( array( $product->get_id() ) );
 	}
 }
