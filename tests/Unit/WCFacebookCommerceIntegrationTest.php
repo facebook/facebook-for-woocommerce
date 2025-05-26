@@ -2077,7 +2077,8 @@ class WCFacebookCommerceIntegrationTest extends \WooCommerce\Facebook\Tests\Abst
 
 		$categories = $this->integration->get_excluded_product_category_ids();
 
-		$this->assertEquals( [ 121, 221, 321, 421, 521, 621 ], $categories );
+		// Empty array will be retured as there is no longer support for excluded categories
+		$this->assertEquals( [ ], $categories );
 	}
 
 	/**
@@ -2100,7 +2101,8 @@ class WCFacebookCommerceIntegrationTest extends \WooCommerce\Facebook\Tests\Abst
 
 		$categories = $this->integration->get_excluded_product_category_ids();
 
-		$this->assertEquals( [ 111, 222, 333 ], $categories );
+		// Empty array will be retured as there is no longer support for excluded categories
+		$this->assertEquals( [ ], $categories );
 	}
 
 	/**
@@ -2131,7 +2133,8 @@ class WCFacebookCommerceIntegrationTest extends \WooCommerce\Facebook\Tests\Abst
 
 		$tags = $this->integration->get_excluded_product_tag_ids();
 
-		$this->assertEquals( [ 121, 221, 321, 421, 521, 621 ], $tags );
+		// Empty array will be retured as there is no longer support for excluded tags
+		$this->assertEquals( [ ], $tags );
 	}
 
 	/**
@@ -2154,7 +2157,7 @@ class WCFacebookCommerceIntegrationTest extends \WooCommerce\Facebook\Tests\Abst
 
 		$tags = $this->integration->get_excluded_product_tag_ids();
 
-		$this->assertEquals( [ 111, 222, 333 ], $tags );
+		$this->assertEquals( [ ], $tags );
 	}
 
 
