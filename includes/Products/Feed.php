@@ -170,7 +170,7 @@ class Feed {
 		$configured_ok = $integration && $integration->is_configured();
 		// Only schedule if has not opted out of feed generation (e.g. large stores).
 		$store_allows_feed = $configured_ok && $integration->is_legacy_feed_file_generation_enabled();
-		if (! $store_allows_feed ) {
+		if ( ! $store_allows_feed ) {
 			as_unschedule_all_actions( self::GENERATE_FEED_ACTION );
 
 			$message = '';
