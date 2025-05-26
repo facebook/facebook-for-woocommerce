@@ -249,7 +249,6 @@ class WC_Facebookcommerce extends WooCommerce\Facebook\Framework\Plugin {
 
 			// load admin handlers, before admin_init
 			if ( is_admin() ) {
-				$this->product_sets_sync_handler 		= new WooCommerce\Facebook\Admin\ProductSets\ProductSetSync();
 				if ($this->use_enhanced_onboarding()) {
 					$this->admin_enhanced_settings = new WooCommerce\Facebook\Admin\Enhanced_Settings( $this );
 				} else {
@@ -273,6 +272,7 @@ class WC_Facebookcommerce extends WooCommerce\Facebook\Framework\Plugin {
 			'admin_init',
 			function () {
 				$this->admin = new WooCommerce\Facebook\Admin();
+				$this->product_sets_sync_handler 		= new WooCommerce\Facebook\Admin\ProductSets\ProductSetSync();
 			},
 			0
 		);
