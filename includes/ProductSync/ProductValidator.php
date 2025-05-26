@@ -120,7 +120,6 @@ class ProductValidator {
 		$this->validate_product_sync_field();
 		$this->validate_product_status();
 		$this->validate_product_visibility();
-		$this->validate_product_terms();
 	}
 
 	/**
@@ -133,7 +132,6 @@ class ProductValidator {
 	public function validate_but_skip_status_check() {
 		$this->validate_product_sync_field();
 		$this->validate_product_visibility();
-		$this->validate_product_terms();
 	}
 
 	/**
@@ -144,7 +142,6 @@ class ProductValidator {
 	 */
 	public function validate_but_skip_sync_field() {
 		$this->validate_product_visibility();
-		$this->validate_product_terms();
 	}
 
 	/**
@@ -169,14 +166,9 @@ class ProductValidator {
 	 *
 	 * @return bool
 	 */
+	
+	// Sayan : remove this !!
 	public function passes_product_terms_check(): bool {
-		try {
-			$this->validate_product_terms();
-		} catch ( ProductExcludedException $e ) {
-			return false;
-		} catch ( ProductInvalidException $e ) {
-			return false;
-		}
 
 		return true;
 	}
@@ -263,29 +255,6 @@ class ProductValidator {
 
 		if ( ! $visible ) {
 			throw new ProductExcludedException( __( 'This product cannot be synced to Facebook because it is hidden from your store catalog.', 'facebook-for-woocommerce' ) );
-		}
-	}
-
-	/**
-	 * Check whether the product's categories or tags (terms) exclude it from sync.
-	 *
-	 * @throws ProductExcludedException If product should not be synced.
-	 */
-	protected function validate_product_terms() {
-		$product = $this->product_parent ? $this->product_parent : $this->product;
-
-		$excluded_categories = $this->integration->get_excluded_product_category_ids();
-		if ( $excluded_categories ) {
-			if ( ! empty( array_intersect( $product->get_category_ids(), $excluded_categories ) ) ) {
-				throw new ProductExcludedException( __( 'Product excluded because of categories.', 'facebook-for-woocommerce' ) );
-			}
-		}
-
-		$excluded_tags = $this->integration->get_excluded_product_tag_ids();
-		if ( $excluded_tags ) {
-			if ( ! empty( array_intersect( $product->get_tag_ids(), $excluded_tags ) ) ) {
-				throw new ProductExcludedException( __( 'Product excluded because of tags.', 'facebook-for-woocommerce' ) );
-			}
 		}
 	}
 

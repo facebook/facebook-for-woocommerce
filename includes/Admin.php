@@ -750,23 +750,6 @@ class Admin {
 	}
 
 	/**
-	 * Adds bulk actions in the products edit screen.
-	 *
-	 * @internal
-	 *
-	 * @since 1.10.0
-	 *
-	 * @param array $bulk_actions array of bulk action keys and labels
-	 * @return array
-	 */
-	public function add_products_sync_bulk_actions( $bulk_actions ) {
-		$bulk_actions['facebook_include'] = __( 'Include in Facebook sync', 'facebook-for-woocommerce' );
-		$bulk_actions['facebook_exclude'] = __( 'Exclude from Facebook sync', 'facebook-for-woocommerce' );
-		return $bulk_actions;
-	}
-
-
-	/**
 	 * Handles a Facebook product sync bulk action.
 	 * Called every time for a product
 	 *
