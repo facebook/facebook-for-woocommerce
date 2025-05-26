@@ -36,6 +36,7 @@ class RolloutSwitches {
 
 	public function __construct( \WC_Facebookcommerce $plugin ) {
 		$this->plugin = $plugin;
+		add_action( 'admin_init', array( $this->rollout_switches, 'init' ) );
 	}
 
 	public function init() {

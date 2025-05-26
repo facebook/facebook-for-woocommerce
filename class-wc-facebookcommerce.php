@@ -249,7 +249,6 @@ class WC_Facebookcommerce extends WooCommerce\Facebook\Framework\Plugin {
 			// load admin handlers, before admin_init
 			if ( is_admin() ) {
 				$this->rollout_switches   			= new WooCommerce\Facebook\RolloutSwitches( $this );
-				add_action( 'admin_init', array( $this->rollout_switches, 'init' ) );
 
 				if ($this->use_enhanced_onboarding()) {
 					$this->admin_enhanced_settings = new WooCommerce\Facebook\Admin\Enhanced_Settings( $this );
