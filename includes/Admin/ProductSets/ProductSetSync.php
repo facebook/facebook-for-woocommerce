@@ -8,7 +8,7 @@
  * @package FacebookCommerce
  */
 
-namespace WooCommerce\Facebook\ProductSets;
+namespace WooCommerce\Facebook\Admin\ProductSets;
 
 defined( 'ABSPATH' ) || exit;
 

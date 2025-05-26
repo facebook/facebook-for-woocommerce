@@ -93,7 +93,7 @@ class WC_Facebookcommerce extends WooCommerce\Facebook\Framework\Plugin {
 	/** @var WooCommerce\Facebook\ProductSets\Sync product sets sync handler */
 	private $legacy_product_sets_sync_handler;
 
-	/** @var WooCommerce\Facebook\ProductSets\ProductSetSync product sets sync handler */
+	/** @var WooCommerce\Facebook\Admin\ProductSets\ProductSetSync product sets sync handler */
 	private $product_sets_sync_handler;
 
 	/** @var WooCommerce\Facebook\Handlers\Connection connection handler */
@@ -210,7 +210,6 @@ class WC_Facebookcommerce extends WooCommerce\Facebook\Framework\Plugin {
 			$this->sync_background_handler   		= new WooCommerce\Facebook\Products\Sync\Background();
 			$this->configuration_detection   		= new WooCommerce\Facebook\Feed\FeedConfigurationDetection();
 			$this->legacy_product_sets_sync_handler = new WooCommerce\Facebook\ProductSets\Sync();
-			$this->product_sets_sync_handler 		= new WooCommerce\Facebook\ProductSets\ProductSetSync();
 			$this->commerce_handler          		= new WooCommerce\Facebook\Commerce();
 			$this->fb_categories             		= new WooCommerce\Facebook\Products\FBCategories();
 			$this->external_version_update   		= new WooCommerce\Facebook\ExternalVersionUpdate\Update();
@@ -250,6 +249,7 @@ class WC_Facebookcommerce extends WooCommerce\Facebook\Framework\Plugin {
 
 			// load admin handlers, before admin_init
 			if ( is_admin() ) {
+				$this->product_sets_sync_handler 		= new WooCommerce\Facebook\Admin\ProductSets\ProductSetSync();
 				if ($this->use_enhanced_onboarding()) {
 					$this->admin_enhanced_settings = new WooCommerce\Facebook\Admin\Enhanced_Settings( $this );
 				} else {
@@ -625,7 +625,7 @@ class WC_Facebookcommerce extends WooCommerce\Facebook\Framework\Plugin {
 	 *
 	 * @since 3.4.9
 	 *
-	 * @return WooCommerce\Facebook\ProductSets\ProductSetSync
+	 * @return WooCommerce\Facebook\Admin\ProductSets\ProductSetSync
 	 */
 	public function get_product_sets_sync_handler() {
 		return $this->product_sets_sync_handler;

@@ -7,10 +7,10 @@
  * @package FacebookCommerce
  */
 
-require_once __DIR__ . '/../../../includes/ProductSets/ProductSetSync.php';
+require_once __DIR__ . '/../../../../includes/Admin/ProductSets/ProductSetSync.php';
 
 use WP_UnitTestCase;
-use WooCommerce\Facebook\ProductSets\ProductSetSync;
+use WooCommerce\Facebook\Admin\ProductSets\ProductSetSync;
 
 /**
  * Class FeedUploadUtilsTest
