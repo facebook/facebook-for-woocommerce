@@ -239,17 +239,18 @@ class WC_Facebookcommerce extends WooCommerce\Facebook\Framework\Plugin {
 			$this->webhook_handler   				= new WooCommerce\Facebook\Handlers\WebHook( $this );
 			$this->whatsapp_webhook_handler = new WooCommerce\Facebook\Handlers\Whatsapp_Webhook( $this );
 			$this->tracker            			= new WooCommerce\Facebook\Utilities\Tracker();
-			$this->rollout_switches   			= new WooCommerce\Facebook\RolloutSwitches( $this );
 
 			// Init jobs
 			$this->job_manager = new WooCommerce\Facebook\Jobs\JobManager();
 			add_action( 'init', [ $this->job_manager, 'init' ] );
-			add_action( 'admin_init', array( $this->rollout_switches, 'init' ) );
 			// Instantiate the debug tools.
 			$this->debug_tools = new DebugTools();
 
 			// load admin handlers, before admin_init
 			if ( is_admin() ) {
+				$this->rollout_switches   			= new WooCommerce\Facebook\RolloutSwitches( $this );
+				add_action( 'admin_init', array( $this->rollout_switches, 'init' ) );
+
 				if ($this->use_enhanced_onboarding()) {
 					$this->admin_enhanced_settings = new WooCommerce\Facebook\Admin\Enhanced_Settings( $this );
 				} else {
