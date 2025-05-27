@@ -133,13 +133,13 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 			add_action( 'woocommerce_blocks_checkout_enqueue_data', array( $this, 'inject_initiate_checkout_event' ) );
 
 			// Purchase and Subscribe events
-			add_action( 'woocommerce_new_order', array( $this, 'inject_purchase_event' ) );
-			add_action( 'woocommerce_payment_complete', array( $this, 'inject_purchase_event' ), 10 );
-			add_action( 'woocommerce_checkout_update_order_meta', array( $this, 'inject_purchase_event' ), 20 );
-			add_action( 'woocommerce_thankyou', array( $this, 'inject_purchase_event' ), 40 );
+			add_action( 'woocommerce_new_order', array( $this, 'inject_purchase_event' ), 10 );
+			add_action( 'woocommerce_process_shop_order_meta', array( $this, 'inject_purchase_event' ), 20 );
+			add_action( 'woocommerce_checkout_update_order_meta', array( $this, 'inject_purchase_event' ), 30 );
+			add_action( 'woocommerce_payment_complete', array( $this, 'inject_purchase_event' ), 40 );
 			add_action( 'woocommerce_order_status_processing', array( $this, 'inject_purchase_event' ), 50 );
-			add_action( 'woocommerce_order_status_completed', array( $this, 'inject_purchase_event' ), 50 );
-			add_action( 'woocommerce_process_shop_order_meta', array( $this, 'inject_purchase_event' ), 60 );
+			add_action( 'woocommerce_order_status_completed', array( $this, 'inject_purchase_event' ), 60 );
+			add_action( 'woocommerce_thankyou', array( $this, 'inject_purchase_event' ), 70 );
 
 			// Lead events through Contact Form 7
 			add_action( 'wpcf7_contact_form', array( $this, 'inject_lead_event_hook' ), 11 );
@@ -174,7 +174,6 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 				echo $this->pixel->pixel_base_code_noscript();
 			}
 		}
-
 
 
 		/**
@@ -503,7 +502,7 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 		public function actually_inject_search_event() {
 
 			$event = $this->get_search_event();
-
+			
 			$this->send_api_event( $event );
 
 			$this->pixel->inject_event(
@@ -873,7 +872,7 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 
 			// Mark the order as tracked for the session
 			set_transient( $purchase_tracked_flag, 'yes', 15 * MINUTE_IN_SECONDS );
-
+			
 			// Set a flag to ensure this Purchase event is not going to be sent across different sessions
 			$order->add_meta_data( '_meta_purchase_tracked', true, true );
 
@@ -916,6 +915,7 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 					'content_type' => $content_type,
 					'value'        => $order->get_total(),
 					'currency'     => get_woocommerce_currency(),
+					'order_id'     => $order_id,
 				),
 				'user_data'   => $this->get_user_data_from_billing_address( $order ),
 			);
