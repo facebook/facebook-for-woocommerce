@@ -56,7 +56,6 @@ class Enhanced_Settings {
 
 		$this->screens = $this->build_menu_item_array();
 
-		add_action( 'admin_menu', array( $this, 'build_menu_item_array' ) );
 		add_action( 'admin_init', array( $this, 'add_extra_screens' ) );
 		add_action( 'admin_menu', array( $this, 'add_menu_item' ) );
 		add_action( 'wp_loaded', array( $this, 'save' ) );
