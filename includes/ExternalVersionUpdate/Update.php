@@ -72,7 +72,7 @@ class Update {
 	/**
 	 * Sends the latest plugin version to the Meta server.
 	 *
-	 * @since 3.0.11
+	 * @since 3.0.10
 	 * @return bool
 	 */
 	public function send_new_version_to_facebook_server() {
