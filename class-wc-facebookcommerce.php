@@ -90,6 +90,9 @@ class WC_Facebookcommerce extends WooCommerce\Facebook\Framework\Plugin {
 	/** @var WooCommerce\Facebook\Handlers\Connection connection handler */
 	private $connection_handler;
 
+	/** @var WooCommerce\Facebook\Handlers\PluginRender plugin update handler */
+	private $plugin_render_handler;
+
 	/** @var WooCommerce\Facebook\Handlers\WebHook webhook handler */
 	private $webhook_handler;
 
@@ -224,8 +227,9 @@ class WC_Facebookcommerce extends WooCommerce\Facebook\Framework\Plugin {
 			$this->connection_handler = new WooCommerce\Facebook\Handlers\Connection( $this );
 			$this->webhook_handler    = new WooCommerce\Facebook\Handlers\WebHook( $this );
 			$this->whatsapp_webhook_handler = new WooCommerce\Facebook\Handlers\Whatsapp_Webhook( $this );
-			$this->tracker            = new WooCommerce\Facebook\Utilities\Tracker();
-			$this->rollout_switches   = new WooCommerce\Facebook\RolloutSwitches( $this );
+			$this->tracker            			= new WooCommerce\Facebook\Utilities\Tracker();
+			$this->rollout_switches   			= new WooCommerce\Facebook\RolloutSwitches( $this );
+			
 
 			// Init jobs
 			$this->job_manager = new WooCommerce\Facebook\Jobs\JobManager();
@@ -236,7 +240,12 @@ class WC_Facebookcommerce extends WooCommerce\Facebook\Framework\Plugin {
 
 			// load admin handlers, before admin_init
 			if ( is_admin() ) {
-				$this->admin_settings = new WooCommerce\Facebook\Admin\Settings( $this );
+				if ($this->use_enhanced_onboarding()) {
+					$this->admin_enhanced_settings = new WooCommerce\Facebook\Admin\Enhanced_Settings( $this );
+				} else {
+					$this->admin_settings = new WooCommerce\Facebook\Admin\Settings( $this );
+				}
+				$this->plugin_render_handler = new \WooCommerce\Facebook\Handlers\PluginRender($this);
 			}
 		}
 	}
@@ -634,6 +643,17 @@ class WC_Facebookcommerce extends WooCommerce\Facebook\Framework\Plugin {
 	 */
 	public function get_connection_handler() {
 		return $this->connection_handler;
+	}
+
+	/**
+	 * Gets the Plugin update handler.
+	 *
+	 * @since 2.0.0
+	 *
+	 * @return WooCommerce\Facebook\Handlers\PluginRender
+	 */
+	public function get_plugin_render_handler() {
+		return $this->plugin_render_handler;
 	}
 
 
