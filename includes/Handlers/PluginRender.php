@@ -225,7 +225,7 @@ class PluginRender {
 	 * But this will keep showing every week fortnight if user not synced in
 	 */
 	public function reset_plugin_updated_successfully_but_master_sync_off_banner() {
-		set_transient( 'plugin_updated_with_master_sync_off_banner_hide', true, 20 ); // 2 * WEEK_IN_SECONDS );
+		set_transient( 'plugin_updated_with_master_sync_off_banner_hide', true, 2 * WEEK_IN_SECONDS );
 	}
 
 
