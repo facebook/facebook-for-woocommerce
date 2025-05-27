@@ -7,7 +7,6 @@
  * @package FacebookCommerce
  */
 
-
 jQuery( document ).ready( function( $ ) {
     //Setting up opt out modal
     let modal;
