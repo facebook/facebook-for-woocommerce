@@ -84,16 +84,6 @@ class PluginRender {
 		add_action( 'wp_ajax_nopriv_wc_banner_close_action', [ __CLASS__,'reset_upcoming_version_banners' ] );
 	}
 
-	public static function get_opt_out_time() {
-		$option_value = get_option( self::MASTER_SYNC_OPT_OUT_TIME );
-		return $option_value;
-	}
-
-	public static function is_master_sync_on() {
-		$option_value = self::get_opt_out_time();
-		return '' === $option_value;
-	}
-
 	public function should_show_banners() {
 		$current_version = $this->plugin->get_version();
 		/**
@@ -107,6 +97,16 @@ class PluginRender {
 			}
 			add_action( 'admin_notices', [ __CLASS__, 'upcoming_woo_all_products_banner' ], 0, 1 );
 		}
+	}
+
+	public static function get_opt_out_time() {
+		$option_value = get_option( self::MASTER_SYNC_OPT_OUT_TIME );
+		return $option_value;
+	}
+
+	public static function is_master_sync_on() {
+		$option_value = self::get_opt_out_time();
+		return '' === $option_value;
 	}
 
 	public function upcoming_woo_all_products_banner() {
