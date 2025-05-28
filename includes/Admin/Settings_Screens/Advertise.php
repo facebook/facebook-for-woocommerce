@@ -242,7 +242,7 @@ class Advertise extends Abstract_Settings_Screen {
 	 *
 	 * @return array
 	 */
-	public function get_settings() {
+	public function get_settings(): array {
 		return array();
 	}
 }
