@@ -150,7 +150,7 @@ class PluginRender {
 	}
 
 
-	private function get_opted_out_successfully_banner_class() {
+	public static function get_opted_out_successfully_banner_class() {
 		$hidden              = ! self::is_master_sync_on();
 		$opt_in_banner_class = 'notice notice-success is-dismissible';
 
@@ -162,7 +162,7 @@ class PluginRender {
 		return $opt_in_banner_class;
 	}
 
-	private function get_opt_out_banner_class() {
+	public static function get_opt_out_banner_class() {
 		$hidden               = ! self::is_master_sync_on();
 		$opt_out_banner_class = 'notice notice-info is-dismissible';
 
@@ -174,7 +174,7 @@ class PluginRender {
 		return $opt_out_banner_class;
 	}
 
-	private static function get_opt_out_modal_message() {
+	public static function get_opt_out_modal_message() {
 		return '
             <h4>Opt out of automatic product sync?</h4>
             <p>
@@ -191,7 +191,7 @@ class PluginRender {
         ';
 	}
 
-	private static function get_opt_out_modal_buttons() {
+	public static function get_opt_out_modal_buttons() {
 		return '
             <a href="javascript:void(0);" class="button wc-forward upgrade_plugin_button" id="modal_opt_out_button">
             	Opt out
