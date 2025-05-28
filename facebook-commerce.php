@@ -806,7 +806,9 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 				}
 				$this->delete_fb_product( $delete_product );
 			}
-		} elseif ( $sync_enabled ) {
+		} 
+		
+		if( $sync_enabled ) {
 				Products::enable_sync_for_products( [ $product ] );
 				Products::set_product_visibility( $product, Admin::SYNC_MODE_SYNC_AND_HIDE !== $sync_mode );
 				$this->save_product_settings( $product );
@@ -987,11 +989,9 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 			}
 			// enqueue variations to be deleted in the background
 			$this->facebook_for_woocommerce->get_products_sync_handler()->delete_products( $retailer_ids );
-			$this->delete_product_group( $product_id );
 		} else {
 
 			$this->delete_product_item( $product_id );
-			$this->delete_product_group( $product_id );
 		}
 
 		// clear out both item and group IDs
@@ -1173,7 +1173,7 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 			$this->update_product_group( $woo_product );
 		} else {
 			$retailer_id = WC_Facebookcommerce_Utils::get_fb_retailer_id( $woo_product->woo_product );
-			$this->create_product_group( $woo_product, $retailer_id, true );
+			$this->create_product_group( $woo_product, $retailer_id );
 		}
 
 		$variation_ids = [];
@@ -1219,26 +1219,7 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 			$this->update_product_item_batch_api( $woo_product, $fb_product_item_id );
 			return $fb_product_item_id;
 		} else {
-			// Check if this is a new product item for an existing product group
-			if ( $woo_product->get_parent_id() ) {
-				$fb_product_group_id = $this->get_product_fbid(
-					self::FB_PRODUCT_GROUP_ID,
-					$woo_product->get_parent_id(),
-					$woo_product
-				);
-				// New variant added
-				if ( $fb_product_group_id ) {
-					return $this->create_product_simple( $woo_product, $fb_product_group_id );
-				} else {
-					WC_Facebookcommerce_Utils::fblog(
-						'Wrong! simple_product_publish called without group ID for a variable product!',
-						[],
-						true
-					);
-				}
-			} else {
-				return $this->create_product_simple( $woo_product );  // new product
-			}
+			return $this->create_product_simple( $woo_product );  // new product
 		}
 	}
 
@@ -1265,17 +1246,9 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 	 * @param string|null         $fb_product_group_id
 	 * @return string
 	 */
-	public function create_product_simple( WC_Facebook_Product $woo_product, string $fb_product_group_id = null ): string {
+	public function create_product_simple( WC_Facebook_Product $woo_product): string {
 		$retailer_id = WC_Facebookcommerce_Utils::get_fb_retailer_id( $woo_product );
-
-		if ( ! $fb_product_group_id ) {
-			$fb_product_group_id = $this->create_product_group( $woo_product, $retailer_id );
-		}
-
-		if ( $fb_product_group_id ) {
-			return $this->create_product_item_batch_api( $woo_product, $retailer_id, $fb_product_group_id );
-		}
-		return '';
+		return $this->create_product_item_batch_api( $woo_product, $retailer_id );
 	}
 
 	/**
@@ -1284,13 +1257,11 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 	 * @param bool                $variants
 	 * @return ?string
 	 */
-	public function create_product_group( WC_Facebook_Product $woo_product, string $retailer_id, bool $variants = false ): ?string {
+	public function create_product_group( WC_Facebook_Product $woo_product, string $retailer_id ): ?string {
 		$product_group_data = [
 			'retailer_id' => $retailer_id,
 		];
-		if ( $variants ) {
-			$product_group_data['variants'] = $woo_product->prepare_variants_for_group();
-		}
+		$product_group_data['variants'] = $woo_product->prepare_variants_for_group();
 
 		try {
 			$create_product_group_result = $this->facebook_for_woocommerce->get_api()->create_product_group(
@@ -1385,9 +1356,10 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 	 *
 	 * @since 3.1.7
 	 * @param WC_Facebook_Product $woo_product
-	 * @param string              $retailer_id
-	 **/
-	public function create_product_item_batch_api( $woo_product, $retailer_id, $product_group_id ): string {
+	 * @param string $retailer_id
+	 **@since 3.1.7
+	 */
+	public function create_product_item_batch_api( $woo_product, $retailer_id ): string {
 		try {
 			$product_data        = $woo_product->prepare_product( $retailer_id, \WC_Facebook_Product::PRODUCT_PREP_TYPE_ITEMS_BATCH );
 			$requests            = WC_Facebookcommerce_Utils::prepare_product_requests_items_batch( $product_data );
@@ -2828,27 +2800,6 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 				WC_Facebookcommerce_Utils::log( $pi_result );
 			} catch ( ApiException $e ) {
 				$message = sprintf( 'There was an error trying to delete a product set item: %s', $e->getMessage() );
-				WC_Facebookcommerce_Utils::log( $message );
-			}
-		}
-	}
-
-	/**
-	 * Uses the Graph API to delete the Product Group associated with the given product.
-	 *
-	 * @since 2.0.0
-	 *
-	 * @param int $product_id product ID
-	 */
-	public function delete_product_group( int $product_id ) {
-		$product_group_id = $this->get_product_fbid( self::FB_PRODUCT_GROUP_ID, $product_id );
-		if ( $product_group_id ) {
-			// TODO: replace with a call to API::delete_product_group() {WV 2020-05-26}
-			try {
-				$pg_result = $this->facebook_for_woocommerce->get_api()->delete_product_group( $product_group_id );
-				WC_Facebookcommerce_Utils::log( $pg_result );
-			} catch ( ApiException $e ) {
-				$message = sprintf( 'There was an error trying to delete a product group: %s', $e->getMessage() );
 				WC_Facebookcommerce_Utils::log( $message );
 			}
 		}

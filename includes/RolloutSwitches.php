@@ -44,7 +44,6 @@ class RolloutSwitches {
 			return;
 		}
 
-		// This is to avoid calling the API multiple times
 		$flag_name = '_wc_facebook_for_woocommerce_rollout_switch_flag';
 		if ( 'yes' === get_transient( $flag_name ) ) {
 			return;

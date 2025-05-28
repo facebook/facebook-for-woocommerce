@@ -1,5 +1,19 @@
 *** Facebook for WooCommerce Changelog ***
 
+= 3.4.11 - 2025-06-02 =
+* Tweak - Removing Variant Level Sync by @SayanPandey in #2931
+* Tweak - Removed concept of Product Group Deletion from the plugin by @vinkmeta in #3062
+* Tweak - Tagging woo all products using a flag by @SayanPandey in #3165
+* Add - A simple column for Woo All Products sync in feed file by @SayanPandey in #3197
+* Tweak - Preparation for migrating Batch API to Graph API by @vinkmeta in #3203
+* Tweak Block Product Group Creation for Simple Products by @vinkmeta in #3204
+* Fix - Removed html tags from product set description by @mshymon in #3230
+* Fix - Fix for the rollout Switches by @vinkmeta in #3236
+* Add - Opt out sync experience. by @SayanPandey in #3220
+* Fix - Added a transient flag to avoid flooding of product set api requests by @vinkmeta in #3245
+* Fix - Additional check for the opt-out banner by @SayanPandey in #3259
+* Fix - Bump up GraphAPI version to 21 by @vahidkay-meta in #3219
+
 = 3.4.10 - 2025-05-22 =
 * Fix - Disabled the RollOut switch
 * Fix - Removed the Global Admin Notice

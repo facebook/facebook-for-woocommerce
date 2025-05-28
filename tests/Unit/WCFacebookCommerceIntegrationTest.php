@@ -685,9 +685,6 @@ class WCFacebookCommerceIntegrationTest extends \WooCommerce\Facebook\Tests\Abst
 		$this->api->expects( $this->once() )
 			->method( 'delete_product_item' )
 			->with( 'facebook-product-id' );
-		$this->api->expects( $this->once() )
-			->method( 'delete_product_group' )
-			->with( 'facebook-product-group-id' );
 
 		$this->integration->on_product_delete( $product_to_delete->get_id() );
 
@@ -1085,55 +1082,6 @@ class WCFacebookCommerceIntegrationTest extends \WooCommerce\Facebook\Tests\Abst
 	}
 
 	/**
-	 * Tests on simple product publish update callback/hook creates new product.
-	 *
-	 * @return void
-	 */
-	public function test_on_simple_product_publish_existing_product_creates_product() {
-		add_option( WC_Facebookcommerce_Integration::OPTION_PRODUCT_CATALOG_ID, '1234567891011121314' );
-
-		$product               = WC_Helper_Product::create_simple_product();
-		$facebook_product      = new WC_Facebook_Product( $product->get_id() );
-		$facebook_product_data = $facebook_product->prepare_product(null, \WC_Facebook_Product::PRODUCT_PREP_TYPE_ITEMS_BATCH );
-		$requests              = WC_Facebookcommerce_Utils::prepare_product_requests_items_batch($facebook_product_data);
-
-		/* Product should be synced with all its variations. So seven calls expected. */
-		$validator = $this->createMock( ProductValidator::class );
-		$validator->expects( $this->once() )
-			->method( 'validate' );
-		$this->facebook_for_woocommerce->expects( $this->once() )
-			->method( 'get_product_sync_validator' )
-			->with( $facebook_product->woo_product )
-			->willReturn( $validator );
-
-		update_option( 'woocommerce_hide_out_of_stock_items', 'yes' );
-		$facebook_product->woo_product->set_stock_status( 'instock' );
-		add_post_meta( $product->get_id(), WC_Facebookcommerce_Integration::FB_PRODUCT_ITEM_ID, '' );
-
-		$this->api->expects( $this->once() )
-			->method( 'create_product_group' )
-			->with(
-				'1234567891011121314',
-				[ 'retailer_id' => WC_Facebookcommerce_Utils::get_fb_retailer_id( $facebook_product ) ]
-			)
-			->willReturn( new API\ProductCatalog\ProductGroups\Create\Response( '{"id":"facebook-simple-product-group-item-id"}' ) );
-		$this->api->expects( $this->once() )
-			->method( 'send_item_updates' )
-			->with(
-				$this->integration->get_product_catalog_id(),
-				$requests
-			)
-			->willReturn( new API\ProductCatalog\ItemsBatch\Create\Response( '{"handles":"abcxyz"}' ) );
-
-		$this->integration->on_simple_product_publish( $product->get_id(), $facebook_product );
-
-		$this->assertEquals(
-			'facebook-simple-product-group-item-id',
-			get_post_meta( $facebook_product->get_id(), WC_Facebookcommerce_Integration::FB_PRODUCT_GROUP_ID, true )
-		);
-	}
-
-	/**
 	 * Tests product should be synced calls to return success.
 	 *
 	 * @return void
@@ -1177,41 +1125,6 @@ class WCFacebookCommerceIntegrationTest extends \WooCommerce\Facebook\Tests\Abst
 	}
 
 	/**
-	 * Tests create simple product creates product group and the product itself.
-	 *
-	 * @return void
-	 */
-	public function test_create_product_simple_creates_product_group_before_creating_product_item() {
-		add_option( WC_Facebookcommerce_Integration::OPTION_PRODUCT_CATALOG_ID, '123456789101112' );
-
-		$product               = WC_Helper_Product::create_simple_product();
-		$facebook_product      = new WC_Facebook_Product( $product->get_id() );
-		$facebook_product_data = $facebook_product->prepare_product(null, \WC_Facebook_Product::PRODUCT_PREP_TYPE_ITEMS_BATCH );
-		$requests              = WC_Facebookcommerce_Utils::prepare_product_requests_items_batch($facebook_product_data);
-		$retailer_id           = WC_Facebookcommerce_Utils::get_fb_retailer_id( $facebook_product );
-
-		$data = [
-			'retailer_id' => $retailer_id,
-		];
-		$this->api->expects( $this->once() )
-			->method( 'create_product_group' )
-			->with( '123456789101112', $data )
-			->willReturn( new API\ProductCatalog\ProductGroups\Create\Response( '{"id":"facebook-simple-product-group-id"}' ) );
-
-		$this->api->expects( $this->once() )
-			->method( 'send_item_updates' )
-			->with(
-				$this->integration->get_product_catalog_id(),
-				$requests
-			)
-			->willReturn( new API\ProductCatalog\ItemsBatch\Create\Response( '{"handles":"abcxyz"}' ) );
-
-		$this->integration->create_product_simple( $facebook_product );
-
-		$this->assertEquals( 'facebook-simple-product-group-id', get_post_meta( $facebook_product->get_id(), WC_Facebookcommerce_Integration::FB_PRODUCT_GROUP_ID, true ) );
-	}
-
-	/**
 	 * Tests create simple product with provided product group id.
 	 *
 	 * @return void
@@ -1233,57 +1146,6 @@ class WCFacebookCommerceIntegrationTest extends \WooCommerce\Facebook\Tests\Abst
 			->willReturn( new API\ProductCatalog\ItemsBatch\Create\Response( '{"handles":"abcxyz"}' ) );
 
 		$facebook_product_item_id = $this->integration->create_product_simple( $facebook_product, 'facebook-simple-product-group-id' );
-	}
-
-	/**
-	 * Tests create simple product fails to create product group and returns empty product item id.
-	 *
-	 * @return void
-	 */
-	public function test_create_product_simple_with_failed_create_product_group_returns_empty_product_item() {
-		add_option( WC_Facebookcommerce_Integration::OPTION_PRODUCT_CATALOG_ID, '123456789101112' );
-
-		$product          = WC_Helper_Product::create_simple_product();
-		$facebook_product = new WC_Facebook_Product( $product->get_id() );
-		$retailer_id      = WC_Facebookcommerce_Utils::get_fb_retailer_id( $facebook_product );
-		$data             = [
-			'retailer_id' => $retailer_id,
-		];
-		$this->api->expects( $this->once() )
-			->method( 'create_product_group' )
-			->with( '123456789101112', $data )
-			->willReturn( new API\ProductCatalog\ProductGroups\Create\Response( '{"error":{"message":"Unsupported post request. Object with ID \'4964146013695812\' does not exist, cannot be loaded due to missing permissions, or does not support this operation. Please read the Graph API documentation at https:\/\/developers.facebook.com\/docs\/graph-api","type":"GraphMethodException","code":100,"error_subcode":33,"fbtrace_id":"AtmMkt0H2dwNBhdRfcYqzVY"}}' ) );
-
-		$facebook_product_item_id = $this->integration->create_product_simple( $facebook_product );
-
-		$this->assertEquals( '', get_post_meta( $facebook_product->get_id(), WC_Facebookcommerce_Integration::FB_PRODUCT_GROUP_ID, true ) );
-		$this->assertEquals( '', get_post_meta( $facebook_product->get_id(), WC_Facebookcommerce_Integration::FB_PRODUCT_ITEM_ID, true ) );
-		$this->assertEquals( '', $facebook_product_item_id );
-	}
-
-	/**
-	 * Tests create product group fpr product w/o variants.
-	 *
-	 * @return void
-	 */
-	public function test_create_product_group_creates_group_no_variants() {
-		add_option( WC_Facebookcommerce_Integration::OPTION_PRODUCT_CATALOG_ID, '123456789101112' );
-
-		$product          = WC_Helper_Product::create_simple_product();
-		$facebook_product = new WC_Facebook_Product( $product->get_id() );
-		$retailer_id      = 'product-retailer-id';
-		$data             = [
-			'retailer_id' => $retailer_id,
-		];
-		$this->api->expects( $this->once() )
-			->method( 'create_product_group' )
-			->with( '123456789101112', $data )
-			->willReturn( new API\ProductCatalog\ProductGroups\Create\Response( '{"id":"facebook-product-group-id"}' ) );
-
-		$facebook_product_group_id = $this->integration->create_product_group( $facebook_product, $retailer_id );
-
-		$this->assertEquals( 'facebook-product-group-id', $facebook_product_group_id );
-		$this->assertEquals( 'facebook-product-group-id', get_post_meta( $facebook_product->get_id(), WC_Facebookcommerce_Integration::FB_PRODUCT_GROUP_ID, true ) );
 	}
 
 	/**
@@ -1320,11 +1182,13 @@ class WCFacebookCommerceIntegrationTest extends \WooCommerce\Facebook\Tests\Abst
 	public function test_create_product_group_fails_to_create_group() {
 		add_option( WC_Facebookcommerce_Integration::OPTION_PRODUCT_CATALOG_ID, '123456789101112' );
 
-		$product          = WC_Helper_Product::create_simple_product();
+		$product          = WC_Helper_Product::create_variation_product();
 		$facebook_product = new WC_Facebook_Product( $product->get_id() );
+		add_post_meta( $facebook_product->get_id(), WC_Facebookcommerce_Integration::FB_PRODUCT_GROUP_ID, 'facebook-product-group-id' );
 		$retailer_id      = 'product-retailer-id';
 		$data             = [
 			'retailer_id' => $retailer_id,
+			'variants' => $facebook_product->prepare_variants_for_group(),
 		];
 		$this->api->expects( $this->once() )
 			->method( 'create_product_group' )
