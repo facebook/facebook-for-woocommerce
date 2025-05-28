@@ -1773,10 +1773,12 @@ class WC_Facebook_Product {
 		 * So we are tagging them as well since they are now synced with us
 		 */
 		$excluded_category_ids = get_option('wc_facebook_excluded_product_category_ids');
-		if (!empty(array_intersect($excluded_category_ids, $category_ids))) {
-			$product_data["is_woo_all_products_sync"] = true;
-		}
 
+		if($excluded_category_ids && $category_ids){
+			if (!empty(array_intersect($excluded_category_ids, $category_ids))) {
+				$product_data["is_woo_all_products_sync"] = true;	
+			}
+		}
 
 		if ( self::PRODUCT_PREP_TYPE_ITEMS_BATCH === $type_to_prepare_for ) {
 			$product_data['title'] = Helper::str_truncate( WC_Facebookcommerce_Utils::clean_string( $this->get_title() ), self::MAX_TITLE_LENGTH );
