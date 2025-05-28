@@ -244,7 +244,7 @@ class Product_Sync extends Abstract_Settings_Screen {
 	 *
 	 * @return array
 	 */
-	public function get_settings() {
+	public function get_settings(): array {
 		$term_query = new \WP_Term_Query(
 			array(
 				'taxonomy'   => 'product_cat',
