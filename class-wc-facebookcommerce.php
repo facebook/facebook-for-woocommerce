@@ -217,9 +217,9 @@ class WC_Facebookcommerce extends WooCommerce\Facebook\Framework\Plugin {
 			$this->sync_background_handler          = new WooCommerce\Facebook\Products\Sync\Background();
 			$this->configuration_detection          = new WooCommerce\Facebook\Feed\FeedConfigurationDetection();
 			$this->legacy_product_sets_sync_handler = new WooCommerce\Facebook\ProductSets\Sync();
-			$this->commerce_handler          		= new WooCommerce\Facebook\Commerce();
-			$this->fb_categories             		= new WooCommerce\Facebook\Products\FBCategories();
-			$this->external_version_update   		= new WooCommerce\Facebook\ExternalVersionUpdate\Update();
+			$this->commerce_handler                 = new WooCommerce\Facebook\Commerce();
+			$this->fb_categories                    = new WooCommerce\Facebook\Products\FBCategories();
+			$this->external_version_update          = new WooCommerce\Facebook\ExternalVersionUpdate\Update();
 
 			if ( wp_doing_ajax() ) {
 				$this->ajax = new WooCommerce\Facebook\AJAX();
@@ -243,7 +243,7 @@ class WC_Facebookcommerce extends WooCommerce\Facebook\Framework\Plugin {
 			new WooCommerce\Facebook\Handlers\MetaExtension();
 			$this->webhook_handler          = new WooCommerce\Facebook\Handlers\WebHook( $this );
 			$this->whatsapp_webhook_handler = new WooCommerce\Facebook\Handlers\Whatsapp_Webhook( $this );
-			$this->tracker            			= new WooCommerce\Facebook\Utilities\Tracker();
+			$this->tracker                  = new WooCommerce\Facebook\Utilities\Tracker();
 
 			// Init jobs
 			$this->job_manager = new WooCommerce\Facebook\Jobs\JobManager();
@@ -276,9 +276,9 @@ class WC_Facebookcommerce extends WooCommerce\Facebook\Framework\Plugin {
 		add_action(
 			'admin_init',
 			function () {
-				$this->admin = new WooCommerce\Facebook\Admin();
-				$this->rollout_switches   			= new WooCommerce\Facebook\Admin\RolloutSwitches( $this );
-				$this->product_sets_sync_handler 	= new WooCommerce\Facebook\ProductSets\ProductSetSync();
+				$this->admin                     = new WooCommerce\Facebook\Admin();
+				$this->rollout_switches          = new WooCommerce\Facebook\Admin\RolloutSwitches( $this );
+				$this->product_sets_sync_handler = new WooCommerce\Facebook\ProductSets\ProductSetSync();
 			},
 			0
 		);
