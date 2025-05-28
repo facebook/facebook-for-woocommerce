@@ -239,16 +239,16 @@ if ( ! class_exists( 'WC_Facebookcommerce_Utils' ) ) :
 		 * @param int $wpid
 		 * @return Array
 		 */
-		public static function get_product_category_ids($wpid) {
-			$product = wc_get_product($wpid);
-		
-			if (!$product) {
+		public static function get_product_category_ids( $wpid ) {
+			$product = wc_get_product( $wpid );
+
+			if ( ! $product ) {
 				return 'Invalid product ID';
 			}
-		
+
 			return $product->get_category_ids();
 		}
-		
+
 
 		/**
 		 * Returns the content ID to match on for Pixel fires.
