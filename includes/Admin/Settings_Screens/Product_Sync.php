@@ -273,35 +273,6 @@ class Product_Sync extends Abstract_Settings_Screen {
 				'default'  => 'yes',
 				'desc_tip' => __( 'Enable product syncing with Facebook.', 'facebook-for-woocommerce' ),
 			),
-
-			array(
-				'id'                => \WC_Facebookcommerce_Integration::SETTING_EXCLUDED_PRODUCT_CATEGORY_IDS,
-				'title'             => __( 'Exclude categories from sync', 'facebook-for-woocommerce' ),
-				'type'              => 'multiselect',
-				'class'             => 'wc-enhanced-select product-sync-field',
-				'css'               => 'min-width: 300px;',
-				'desc_tip'          => __( 'Products in any of these categories will not sync to Facebook.', 'facebook-for-woocommerce' ),
-				'default'           => array(),
-				'options'           => is_array( $product_categories ) ? $product_categories : array(),
-				'custom_attributes' => array(
-					'data-placeholder' => __( 'Search for a product category&hellip;', 'facebook-for-woocommerce' ),
-				),
-			),
-
-			array(
-				'id'                => \WC_Facebookcommerce_Integration::SETTING_EXCLUDED_PRODUCT_TAG_IDS,
-				'title'             => __( 'Exclude tags from sync', 'facebook-for-woocommerce' ),
-				'type'              => 'multiselect',
-				'class'             => 'wc-enhanced-select product-sync-field',
-				'css'               => 'min-width: 300px;',
-				'desc_tip'          => __( 'Products with any of these tags will not sync to Facebook.', 'facebook-for-woocommerce' ),
-				'default'           => array(),
-				'options'           => is_array( $product_tags ) ? $product_tags : array(),
-				'custom_attributes' => array(
-					'data-placeholder' => __( 'Search for a product tag&hellip;', 'facebook-for-woocommerce' ),
-				),
-			),
-
 			array(
 				'id'       => Commerce::OPTION_GOOGLE_PRODUCT_CATEGORY_ID,
 				'type'     => 'product_sync_google_product_categories',
