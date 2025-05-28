@@ -101,6 +101,9 @@ class PluginRender {
 
 	public static function get_opt_out_time() {
 		$option_value = get_option( self::MASTER_SYNC_OPT_OUT_TIME );
+		if ( ! $option_value ) {
+			return '';
+		}
 		return $option_value;
 	}
 
