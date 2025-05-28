@@ -83,8 +83,9 @@ class WC_Facebookcommerce_Pixel {
 		class_exists( 'WC_Facebookcommerce_WarmConfig' ) ) {
 			$fb_warm_pixel_id = WC_Facebookcommerce_WarmConfig::$fb_warm_pixel_id;
 
+			// phpcs:disable Universal.Operators.StrictComparisons.LooseEqual
 			if ( WC_Facebookcommerce_Utils::is_valid_id( $fb_warm_pixel_id ) &&
-			(int) $fb_warm_pixel_id === $fb_warm_pixel_id ) {
+			(int) $fb_warm_pixel_id == $fb_warm_pixel_id ) {
 				$fb_warm_pixel_id = (string) $fb_warm_pixel_id;
 				self::set_pixel_id( $fb_warm_pixel_id );
 			}
