@@ -46,7 +46,7 @@ class PluginRender {
 		$this->add_hooks();
 	}
 
-	public function enqueue_assets() {
+	public static function enqueue_assets() {
 		wp_enqueue_script( 'wc-backbone-modal', null, array( 'backbone' ) );
 		wp_enqueue_script(
 			'facebook-for-woocommerce-modal',
@@ -109,7 +109,7 @@ class PluginRender {
 		return '' === $option_value;
 	}
 
-	public function upcoming_woo_all_products_banner() {
+	public static function upcoming_woo_all_products_banner() {
 		$screen = get_current_screen();
 
 		if ( isset( $screen->id ) && 'marketing_page_wc-facebook' === $screen->id ) {
@@ -171,7 +171,7 @@ class PluginRender {
 		return $opt_out_banner_class;
 	}
 
-	private function get_opt_out_modal_message() {
+	private static function get_opt_out_modal_message() {
 		return '
             <h4>Opt out of automatic product sync?</h4>
             <p>
@@ -188,7 +188,7 @@ class PluginRender {
         ';
 	}
 
-	private function get_opt_out_modal_buttons() {
+	private static function get_opt_out_modal_buttons() {
 		return '
             <a href="javascript:void(0);" class="button wc-forward upgrade_plugin_button" id="modal_opt_out_button">
             	Opt out
