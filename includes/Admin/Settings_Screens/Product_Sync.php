@@ -32,7 +32,6 @@ class Product_Sync extends Abstract_Settings_Screen {
 	/** @var string the get sync status action */
 	const ACTION_GET_SYNC_STATUS = 'wc_facebook_get_sync_status';
 
-
 	/**
 	 * Connection constructor.
 	 */

@@ -133,6 +133,7 @@ class UpdateTest extends AbstractWPUnitTestWithOptionIsolationAndSafeFiltering {
 	 */
 	public function test_maybe_update_external_plugin_version() {
 		$plugin = facebook_for_woocommerce();
+		$plugin->init_admin();
 
 		/**
 		 * Set the $plugin->connection_handler and $plugin->api access to true. This will allow us
@@ -141,6 +142,10 @@ class UpdateTest extends AbstractWPUnitTestWithOptionIsolationAndSafeFiltering {
 		$plugin_ref_obj          = new ReflectionObject( $plugin );
 		$prop_connection_handler = $plugin_ref_obj->getProperty( 'connection_handler' );
 		$prop_connection_handler->setAccessible( true );
+
+		// Set up plugin render properties
+		$prop_plugin_render_handler = $plugin_ref_obj->getProperty( 'plugin_render_handler' );
+		$prop_plugin_render_handler->setAccessible( true );
 
 		$prop_api = $plugin_ref_obj->getProperty( 'api' );
 		$prop_api->setAccessible( true );
@@ -153,6 +158,14 @@ class UpdateTest extends AbstractWPUnitTestWithOptionIsolationAndSafeFiltering {
 		$mock_connection_handler->expects( $this->any() )->method( 'get_external_business_id' )->willReturn( 'dummy-business-id' );
 		$mock_connection_handler->expects( $this->any() )->method( 'is_connected' )->willReturn( true );
 		$prop_connection_handler->setValue( $plugin, $mock_connection_handler );
+
+		// Mock render handler
+		$mock_plugin_render_handler = $this->getMockBuilder( Connection::class )
+									->disableOriginalConstructor()
+									->setMethods( array( 'is_master_sync_on' ) )
+									->getMock();
+		$mock_plugin_render_handler->expects( $this->any() )->method( 'is_master_sync_on' )->willReturn( true );
+		$prop_plugin_render_handler->setValue($plugin,$mock_plugin_render_handler);
 
 		// Create the mock api object that will return an array, meaning a successful response.
 		$mock_api = $this->getMockBuilder( API::class )->disableOriginalConstructor()->setMethods( array( 'do_remote_request' ) )->getMock();
@@ -175,6 +188,7 @@ class UpdateTest extends AbstractWPUnitTestWithOptionIsolationAndSafeFiltering {
 				'external_client' => array(
 					'version_id' => WC_Facebookcommerce_Utils::PLUGIN_VERSION,
 					'is_multisite' => false,
+					'is_woo_all_products_opted_out' => false
 				),
 			),
 		);
