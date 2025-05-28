@@ -1509,14 +1509,6 @@ class Admin {
 					)
 				);
 
-				// Hidden field for video URLs (not commonly used in variations but needed for save handler)
-				woocommerce_wp_hidden_input(
-					array(
-						'id'    => sprintf( 'variable_%s%s', \WC_Facebook_Product::FB_PRODUCT_VIDEO, $index ),
-						'name'  => sprintf( "variable_%s[%s]", \WC_Facebook_Product::FB_PRODUCT_VIDEO, $index ),
-						'value' => '',
-					)
-				);
 				?>
 			</div>
 		</div>
