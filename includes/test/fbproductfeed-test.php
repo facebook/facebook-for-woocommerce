@@ -43,7 +43,7 @@ if ( ! class_exists( 'WC_Facebook_Product_Feed_Test' ) ) :
 		 */
 		public function log_feed_progress( $msg, $data = array() ) {
 			$msg = empty( $data ) ? $msg : $msg . wp_json_encode( $data );
-			WC_Facebookcommerce_Utils::log( 'Test - ' . $msg );
+			WC_Facebookcommerce_Utils::log_with_debug_mode_enabled( 'Test - ' . $msg );
 		}
 	}
 

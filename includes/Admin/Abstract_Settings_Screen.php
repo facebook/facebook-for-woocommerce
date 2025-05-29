@@ -148,7 +148,7 @@ abstract class Abstract_Settings_Screen {
 	 *
 	 * @return array
 	 */
-	abstract public function get_settings();
+	abstract public function get_settings(): array;
 
 
 	/**

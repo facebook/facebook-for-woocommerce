@@ -29,6 +29,9 @@ class FeedUploadUtils {
 	const APPLICATION_TYPE_BUYER_APPLIED             = 'BUYER_APPLIED';
 	const PROMO_SYNC_LOGGING_FLOW_NAME               = 'promotion_feed_sync';
 	const RATINGS_AND_REVIEWS_SYNC_LOGGING_FLOW_NAME = 'ratings_and_reviews_feed_sync';
+	const SHIPPING_PROFILES_SYNC_LOGGING_FLOW_NAME   = 'shipping_profiles_feed_sync';
+	const NAVIGATION_MENU_SYNC_LOGGING_FLOW_NAME     = 'navigation_menu_feed_sync';
+
 
 	public static function get_ratings_and_reviews_data( array $query_args ): array {
 		try {
@@ -73,6 +76,10 @@ class FeedUploadUtils {
 						'title'                           => null,
 						'content'                         => $comment->comment_content,
 						'created_at'                      => $comment->comment_date,
+						'updated_at'                      => null,
+						'review_image_urls'               => null,
+						'incentivized'                    => 'false',
+						'has_verified_purchase'           => 'false',
 						'reviewer.name'                   => $comment->comment_author,
 						'reviewer.reviewerID'             => $reviewer_id,
 						'reviewer.isAnonymous'            => $reviewer_is_anonymous,
@@ -81,7 +88,7 @@ class FeedUploadUtils {
 						'product.productIdentifiers.skus' => "['" . implode( "','", $product_skus ) . "']",
 					);
 				} catch ( \Exception $e ) {
-					\WC_Facebookcommerce_Utils::logToMeta(
+					\WC_Facebookcommerce_Utils::log_to_meta(
 						'Exception while trying to map product review data for feed',
 						array(
 							'flow_name'  => self::RATINGS_AND_REVIEWS_SYNC_LOGGING_FLOW_NAME,
@@ -97,7 +104,7 @@ class FeedUploadUtils {
 
 			return $reviews_data;
 		} catch ( \Exception $exception ) {
-			\WC_Facebookcommerce_Utils::logExceptionImmediatelyToMeta(
+			\WC_Facebookcommerce_Utils::log_exception_immediately_to_meta(
 				$exception,
 				[
 					'event'      => self::RATINGS_AND_REVIEWS_SYNC_LOGGING_FLOW_NAME,
@@ -145,7 +152,7 @@ class FeedUploadUtils {
 						$value_type       = self::VALUE_TYPE_FIXED_AMOUNT;
 						$fixed_amount_off = $coupon->get_amount(); // TODO we may want to pass in optional currency code for multinational support
 					} else {
-						\WC_Facebookcommerce_Utils::logToMeta(
+						\WC_Facebookcommerce_Utils::log_to_meta(
 							'Unknown discount type encountered during feed processing',
 							array(
 								'promotion_id' => $coupon_post->ID,
@@ -238,11 +245,12 @@ class FeedUploadUtils {
 						'prerequisite_product_group_retailer_ids' => '', // Concept does not exist in Woo
 						'prerequisite_product_set_retailer_ids' => '', // Concept does not exist in Woo
 						'exclude_sale_priced_products'    => $coupon->get_exclude_sale_items(),
+						'usage_count'                     => $coupon->get_usage_count(),
 					);
 
 					$coupons_data[] = $data;
 				} catch ( \Exception $e ) {
-					\WC_Facebookcommerce_Utils::logToMeta(
+					\WC_Facebookcommerce_Utils::log_to_meta(
 						'Exception while trying to get coupon data for feed',
 						array(
 							'promotion_id' => $coupon_post->ID,
@@ -260,7 +268,7 @@ class FeedUploadUtils {
 
 			return $coupons_data;
 		} catch ( \Exception $e ) {
-			\WC_Facebookcommerce_Utils::logExceptionImmediatelyToMeta(
+			\WC_Facebookcommerce_Utils::log_exception_immediately_to_meta(
 				$e,
 				array(
 					'event'      => self::PROMO_SYNC_LOGGING_FLOW_NAME,
@@ -392,5 +400,65 @@ class FeedUploadUtils {
 		}
 
 		return $products;
+	}
+
+	public static function get_navigation_menu_data(): array {
+		try {
+			// Fetch all product categories
+			$args       = array(
+				'taxonomy'   => 'product_cat',
+				'orderby'    => 'name',
+				'order'      => 'ASC',
+				'hide_empty' => false, // Show all categories, even if they are empty
+			);
+			$categories = get_terms( $args );
+
+			$category_tree = self::build_category_tree( $categories );
+			return array(
+				'navigation' => array(
+					array(
+						'items'               => $category_tree,
+						'title'               => 'Product Categories',
+						'partner_menu_handle' => 'product_categories_menu',
+						'partner_menu_id'     => '1',
+					),
+				),
+			);
+		} catch ( \Exception $e ) {
+			\WC_Facebookcommerce_Utils::log_exception_immediately_to_meta(
+				$e,
+				array(
+					'event'      => self::NAVIGATION_MENU_SYNC_LOGGING_FLOW_NAME,
+					'event_type' => 'get_navigation_menu_data',
+				)
+			);
+			throw $e;
+		}
+	}
+
+	private static function build_category_tree( array $categories, int $parent_id = 0, array &$memo = [] ): array {
+		if ( isset( $memo[ $parent_id ] ) ) {
+			return $memo[ $parent_id ];
+		}
+
+		$branch = [];
+
+		foreach ( $categories as $category ) {
+			if ( $category->parent === $parent_id ) {
+				$children      = self::build_category_tree( $categories, $category->term_taxonomy_id, $memo );
+				$category_data = array(
+					'title'        => $category->name,
+					'resourceType' => 'collection',
+					'retailerID'   => $category->term_taxonomy_id,
+				);
+				if ( ! empty( $children ) ) {
+					$category_data['items'] = $children;
+				}
+				$branch[] = $category_data;
+			}
+		}
+
+		$memo[ $parent_id ] = $branch;
+		return $branch;
 	}
 }

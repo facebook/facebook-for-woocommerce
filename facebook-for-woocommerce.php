@@ -15,9 +15,9 @@
  * Requires PHP: 7.4
  * Text Domain: facebook-for-woocommerce
  * Requires Plugins: woocommerce
- * Tested up to: 6.7
+ * Tested up to: 6.8.1
  * WC requires at least: 6.4
- * WC tested up to: 9.6
+ * WC tested up to: 9.8.5
  *
  * @package FacebookCommerce
  */
@@ -38,6 +38,20 @@ add_action(
 		}
 	}
 );
+
+if ( is_admin() ) {
+	add_action(
+		'admin_init',
+		function () {
+			if ( ! class_exists( 'WC_Facebookcommerce_Admin_Banner' ) ) {
+				require_once plugin_dir_path( __FILE__ ) .
+				'facebook-commerce-admin-banner.php';
+			}
+			new WC_Facebookcommerce_Admin_Banner();
+		}
+	);
+}
+
 /**
  * The plugin loader class.
  *

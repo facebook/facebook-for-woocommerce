@@ -1,0 +1,253 @@
+.onboarding-card {
+    background-color: #f7f7f7;
+    border: 1px solid #ccc;
+    border-radius: 10px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    width: 680px;
+    margin: 40px auto 0; /* Top margin 5px, horizontal centering */
+}
+.custom-dashicon-check {
+    position: relative;
+    display: inline-block;
+    width: 26px; /* Set the size of the circle */
+    height: 26px; /* Set the size of the circle */
+    background-color: #1a805b; /* Fill the circle with green */
+    border-radius: 50%; /* Make it a circle */
+    margin-right: 20px;
+    top: 50%;
+    transform: translateY(-50%);
+}
+.custom-dashicon-check::before {
+    content: '\f147'; /* Unicode for dashicons-yes-alt */
+    font-family: 'Dashicons';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-55%, -45%) scale(1.2); /* Center and slightly enlarge the checkmark */
+    font-size: 20px; /* Set the size of the checkmark */
+    color: white; /* Make the checkmark white */
+    text-shadow:
+        -4px 0 #1a805b,
+        4px 0 #1a805b,
+        0 -2px #1a805b,
+        0 2px #1a805b; /* Increase shadow offsets to thin the checkmark more */
+}
+
+.custom-dashicon-circle {
+    position: relative;
+    display: inline-block;
+    width: 20px; /* Set the size of the circle */
+    height: 20px; /* Set the size of the circle */
+    border-radius: 50%; /* Make it a circle */
+    margin-right: 20px;
+    border: 3px solid #222121ab;
+    top: 50%;
+    transform: translateY(-50%);
+}
+.custom-dashicon-halfcircle {
+    position: relative;
+    display: inline-block;
+    width: 20px; /* Set the size of the circle */
+    height: 20px; /* Set the size of the circle */
+    border-radius: 50%; /* Make it a circle */
+    margin-right: 20px;
+    border: 3px solid #222121ab;
+    background-image: linear-gradient(to left, #222121ab 50%, transparent 50%);
+    background-clip: padding-box; /* Add this line */
+    top: 50%;
+    transform: translateY(-50%);
+}
+.card-content-icon {
+    display: flex;
+}
+.card-item {
+    padding: 10px 24px;
+    justify-content: space-between;
+    display: flex;
+}
+.divider {
+    border-bottom: 1px solid #ccc;
+}
+.review-payment-content {
+    padding: 20px;
+    margin-bottom: 10px;
+}
+.whatsapp-onboarding-button {
+    margin-left: auto;
+    position: relative;
+    top: 50%;
+    margin: auto 0; /* Ensure button is centered */
+}
+.whatsapp-onboarding-done-button {
+    margin-left: auto;
+    padding: 6px 0;
+}
+.card-content {
+    max-width: 90%;
+}
+.card-content-icon h2 {
+    top: 50%;
+}
+.card-content-icon p {
+    margin-top: -10px; /* Remove margin top */
+}
+.event-config {
+    display: flex;
+    flex-direction: row;
+    padding-top: 16px;
+    padding-bottom: 16px;
+}
+.event-config-heading-container {
+    display: flex;
+    flex-direction: row;
+}
+.event-config-manage-button {
+    margin-left: auto;
+    padding-left: 20px;
+    padding-right: 10px;
+    display: flex;
+    align-items: center;
+}
+.event-config-status {
+    background-color: #FFFFFF;
+    border: 1px solid #9f9f9f;
+    color: #9f9f9f;
+    padding: 4px 10px;
+    text-align: center;
+    display: inline-block;
+    border-radius: 16px;
+    margin-left: 10px;
+    font-size: small;
+    align-self: center;
+}
+.on-status {
+    background-color: #00A32A;
+    color: #FFFFFF;
+    border:none;
+}
+.manage-event-card-item {
+    padding: 20px;
+    justify-content: space-between;
+}
+.manage-event-selector {
+    min-width: 100%;
+}
+.manage-event-template-block {
+    border: 1px solid #c4c3c3;
+    margin-bottom: 20px;
+}
+.manage-event-template-header {
+    position: relative;
+    display: block;
+    padding: 20px;
+    font-size: medium;
+}
+.manage-event-template-footer {
+    padding: 20px;
+    display: flex;
+    flex-direction: row-reverse;
+    justify-content: flex-start;
+}
+.manage-event-button {
+    margin-left: 20px;
+}
+.manage-event-error-notice {
+    margin-right: 5px;
+}
+.fbwa-hidden-element {
+    display: none;
+}
+.error-notice-wrapper {
+    justify-content: left;
+    padding-left: 20px;
+    padding-bottom: 10px;
+    margin-right: 20px; /* Add the right margin */
+}
+.notice-error {
+    background-color: #f7f7f7;
+    border: 1px solid #EF0000; /* Red border */
+    border-radius: 0; /* No curvature */
+    border-left-width: 5px; /* Thicker left border */
+    width: 100%; /* Take up full width */
+}
+.notice-error p {
+    margin: 5px;
+}
+.warning-custom-modal {
+    display: none; /* Hidden by default */
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0,0,0,0.4); /* Black with opacity */
+}
+/* Modal content */
+.warning-modal-content {
+    background-color: #fefefe;
+    margin: 25% auto;
+    padding: 20px;
+    border: 1px solid #ddd;
+    top: 10%;
+    width: 50%;
+    max-width: 500px;
+    border-radius: 10px;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+/* Modal body */
+.warning-modal-body {
+    padding: 20px 0;
+}
+/* Modal footer */
+.warning-modal-footer {
+    padding: 10px 0;
+    text-align: right;
+}
+/* Close button */
+.warning-modal-close {
+    color: #aaa;
+    float: right;
+    font-size: 28px;
+    font-weight: bold;
+    cursor: pointer;
+    position: absolute;
+    right: 0;
+    top: 0;
+}
+.warning-modal-close:hover {
+    color: #000;
+}
+.whatsapp-icon {
+    width: 45px;
+    height: 40px;
+    flex-shrink: 0; /* Prevents icon from shrinking */
+}
+.contact-info {
+    padding-left: 10px;
+    display: flex;
+    flex-direction: column;
+}
+.contact-info h3 {
+    margin: 0;
+    font-size: 1.1em;
+}
+.contact-info p {
+    margin: 0;
+    font-size: 1.1em;
+    color: #666;
+}
+.disconnect-footer-left {
+    display: flex;
+    padding: 25px;
+}
+.disconnect-footer-right-separator {
+    margin-right:10px;
+}
+.disconnect-footer-right {
+    padding: 30px;
+    margin-left: auto;
+}
+.disconnect-footer {
+    display: flex;
+    position: relative;
+}

@@ -1,5 +1,4 @@
 <?php
-// phpcs:ignoreFile
 /**
  * Facebook for WooCommerce.
  */
@@ -8,7 +7,7 @@ namespace WooCommerce\Facebook\Framework\Plugin;
 
 use WooCommerce\Facebook\Framework\Plugin;
 
-defined( 'ABSPATH' ) or exit;
+defined( 'ABSPATH' ) || exit;
 
 /**
  * Plugin dependencies handler.
@@ -34,7 +33,7 @@ class Dependencies {
 	 * @since 5.2.0
 	 *
 	 * @param Plugin $plugin plugin instance
-	 * @param array $args {
+	 * @param array  $args {
 	 *     PHP extension, function, and settings dependencies
 	 *
 	 *     @type array $php_extensions PHP extension dependencies
@@ -62,11 +61,14 @@ class Dependencies {
 	 * @return array
 	 */
 	private function parse_dependencies( $args ) {
-		$dependencies = wp_parse_args( $args, array(
-			'php_extensions' => array(),
-			'php_functions'  => array(),
-			'php_settings'   => array(),
-		) );
+		$dependencies     = wp_parse_args(
+			$args,
+			array(
+				'php_extensions' => array(),
+				'php_functions'  => array(),
+				'php_settings'   => array(),
+			)
+		);
 		$default_settings = array(
 			'suhosin.post.max_array_index_length'    => 256,
 			'suhosin.post.max_totalname_length'      => 65535,
@@ -166,21 +168,21 @@ class Dependencies {
 			if ( count( $bad_settings ) > 0 ) {
 				$message = sprintf(
 					/* translators: Placeholders: %s - plugin name */
-					__( '%s may behave unexpectedly because the following PHP configuration settings are required:' ),
+					__( '%s may behave unexpectedly because the following PHP configuration settings are required:', 'facebook-for-woocommerce' ),
 					'<strong>' . esc_html( $this->get_plugin()->get_plugin_name() ) . '</strong>'
 				);
 				$message .= '<ul>';
-					foreach ( $bad_settings as $setting => $values ) {
-						$setting_message = '<code>' . $setting . ' = ' . $values['expected'] . '</code>';
-						if ( ! empty( $values['type'] ) && 'min' === $values['type'] ) {
-							$setting_message = sprintf(
-								/* translators: Placeholders: %s - a PHP setting value */
-								__( '%s or higher', 'facebook-for-woocommerce' ),
-								$setting_message
-							);
-						}
-						$message .= '<li>' . $setting_message . '</li>';
+				foreach ( $bad_settings as $setting => $values ) {
+					$setting_message = '<code>' . $setting . ' = ' . $values['expected'] . '</code>';
+					if ( ! empty( $values['type'] ) && 'min' === $values['type'] ) {
+						$setting_message = sprintf(
+							/* translators: Placeholders: %s - a PHP setting value */
+							__( '%s or higher', 'facebook-for-woocommerce' ),
+							$setting_message
+						);
 					}
+					$message .= '<li>' . $setting_message . '</li>';
+				}
 				$message .= '</ul>';
 				$message .= __( 'Please contact your hosting provider or server administrator to configure these settings.', 'facebook-for-woocommerce' );
 				$this->add_admin_notice( 'wc-' . $this->get_plugin()->get_id_dasherized() . '-incompatibile-php-settings', $message, 'warning' );
@@ -197,16 +199,21 @@ class Dependencies {
 	protected function add_deprecated_notices() {
 		// add a notice for PHP < 5.6
 		if ( version_compare( PHP_VERSION, '5.6.0', '<' ) ) {
-			$message = '<p>';
+			$message  = '<p>';
 			$message .= sprintf(
 				/* translators: Placeholders: %1$s - <strong>, %2$s - </strong> */
-				__( 'Hey there! We\'ve noticed that your server is running %1$san outdated version of PHP%2$s, which is the programming language that WooCommerce and its extensions are built on.
+				__(
+					'Hey there! We\'ve noticed that your server is running %1$san outdated version of PHP%2$s, which is the programming language that WooCommerce and its extensions are built on.
 					The PHP version that is currently used for your site is no longer maintained, nor %1$sreceives security updates%2$s; newer versions are faster and more secure.
 					As a result, %3$s no longer supports this version and you should upgrade PHP as soon as possible.
-					Your hosting provider can do this for you. %4$sHere are some resources to help you upgrade%5$s and to explain PHP versions further.', 'facebook-for-woocommerce' ),
-				'<strong>', '</strong>',
+					Your hosting provider can do this for you. %4$sHere are some resources to help you upgrade%5$s and to explain PHP versions further.',
+					'facebook-for-woocommerce'
+				),
+				'<strong>',
+				'</strong>',
 				esc_html( $this->get_plugin()->get_plugin_name() ),
-				'<a href="http://skyver.ge/upgradephp">', '</a>'
+				'<a href="http://skyver.ge/upgradephp">',
+				'</a>'
 			);
 			$message .= '</p>';
 			$this->add_admin_notice( 'sv-wc-deprecated-php-version', $message, 'error' );
@@ -225,9 +232,13 @@ class Dependencies {
 	 */
 	protected function add_admin_notice( $id, $message, $type = 'info' ) {
 		$notice_class = 'notice-' . $type;
-		$this->get_plugin()->get_admin_notice_handler()->add_admin_notice( $message, $id, array(
-			'notice_class' => $notice_class,
-		) );
+		$this->get_plugin()->get_admin_notice_handler()->add_admin_notice(
+			$message,
+			$id,
+			array(
+				'notice_class' => $notice_class,
+			)
+		);
 	}
 
 
@@ -248,15 +259,18 @@ class Dependencies {
 		 *
 		 * @param array $plugins an array of file identifiers (keys) and plugin names (values)
 		 */
-		$plugins = (array) apply_filters( 'wc_' . $this->get_plugin()->get_id() . '_scripts_optimization_plugins', [
-			'async-javascript.php' => 'Async JavaScript',
-			'autoptimize.php'      => 'Autoptimize',
-			'wp-hummingbird.php'   => 'Hummingbird',
-			'sg-optimizer.php'     => 'SG Optimizer',
-			'w3-total-cache.php'   => 'W3 Total Cache',
-			'wpFastestCache.php'   => 'WP Fastest Cache',
-			'wp-rocket.php'        => 'WP Rocket',
-		] );
+		$plugins        = (array) apply_filters(
+			'wc_' . $this->get_plugin()->get_id() . '_scripts_optimization_plugins',
+			[
+				'async-javascript.php' => 'Async JavaScript',
+				'autoptimize.php'      => 'Autoptimize',
+				'wp-hummingbird.php'   => 'Hummingbird',
+				'sg-optimizer.php'     => 'SG Optimizer',
+				'w3-total-cache.php'   => 'W3 Total Cache',
+				'wpFastestCache.php'   => 'WP Fastest Cache',
+				'wp-rocket.php'        => 'WP Rocket',
+			]
+		);
 		$active_plugins = [];
 		foreach ( $plugins as $filename => $plugin_name ) {
 			if ( $this->get_plugin()->is_plugin_active( $filename ) ) {

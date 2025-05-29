@@ -100,6 +100,7 @@ class MetaExtension {
 	 * @param string $external_business_id External business ID.
 	 *
 	 * @return string
+	 * @throws \Exception If the URL generation fails or if external_business_id is invalid.
 	 * @since 3.5.0
 	 * @throws \Exception When Commerce extension URI not found
 	 */

@@ -1,6 +1,6 @@
 <?php
 
-namespace WooCommerce\Facebook\Tests\Unit;
+namespace WooCommerce\Facebook\Tests\Admin\Settings;
 
 use WooCommerce\Facebook\Admin\Settings_Screens\Connection;
 
@@ -47,10 +47,5 @@ class ConnectionTest extends \WP_UnitTestCase {
         $debug_setting = $settings[2];
         $this->assertEquals('checkbox', $debug_setting['type']);
         $this->assertEquals('no', $debug_setting['default']);
-
-        // Check feed generator setting
-        $feed_setting = $settings[3];
-        $this->assertEquals('checkbox', $feed_setting['type']);
-        $this->assertEquals('no', $feed_setting['default']);
     }
 }

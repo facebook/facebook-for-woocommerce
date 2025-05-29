@@ -43,5 +43,14 @@ class Product_Sets extends Abstract_Settings_Screen {
 		exit;
 	}
 
-	public function get_settings() {}
+	/**
+	 * Gets the screen settings.
+	 *
+	 * @since 2.2.0
+	 *
+	 * @return array
+	 */
+	public function get_settings(): array {
+		return array();
+	}
 }

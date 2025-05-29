@@ -17,7 +17,6 @@ use WooCommerce\Facebook\API\Exceptions\Request_Limit_Reached;
 use WooCommerce\Facebook\API\Request;
 use WooCommerce\Facebook\API\Response;
 use WooCommerce\Facebook\Events\Event;
-
 use WooCommerce\Facebook\Framework\Api\Base;
 use WooCommerce\Facebook\Framework\Api\Exception as ApiException;
 
@@ -34,7 +33,7 @@ class API extends Base {
 
 	public const GRAPH_API_URL = 'https://graph.facebook.com/';
 
-	public const API_VERSION = 'v20.0';
+	public const API_VERSION = 'v21.0';
 
 	/** @var string URI used for the request */
 	protected $request_uri = self::GRAPH_API_URL . self::API_VERSION;
@@ -276,25 +275,43 @@ class API extends Base {
 	 */
 	public function get_business_configuration( $external_business_id, $access_token = '', $fields = [] ) {
 		$request = new API\FBE\Configuration\Request( $external_business_id, 'GET' );
-		
 		$params = [];
-		
 		// Use provided access token or fall back to the instance token
 		if ( ! empty( $access_token ) ) {
 			$params['access_token'] = $access_token;
 		}
-		
 		// Add fields parameter if specified
 		if ( ! empty( $fields ) ) {
 			$params['fields'] = is_array( $fields ) ? implode( ',', $fields ) : $fields;
 		}
-		
 		// Set parameters if we have any
 		if ( ! empty( $params ) ) {
 			$request->set_params( $params );
 		}
-		
 		$this->set_response_handler( API\FBE\Configuration\Read\Response::class );
+		return $this->perform_request( $request );
+	}
+
+	/**
+	 * Gets rollout switches
+	 *
+	 * @param string  $external_business_id
+	 * @return API\FBE\RolloutSwitches\Response
+	 * @throws ApiException
+	 */
+	public function get_rollout_switches( string $external_business_id ) {
+		if(!$this->get_access_token()) {
+			return null;
+		}
+
+		$request = new API\FBE\RolloutSwitches\Request( $external_business_id );
+		$request->set_params(
+			array(
+				'access_token' => $this->get_access_token(),
+				'fbe_external_business_id'=> $external_business_id
+			)
+		);
+		$this->set_response_handler( API\FBE\RolloutSwitches\Response::class );
 		return $this->perform_request( $request );
 	}
 
@@ -303,16 +320,17 @@ class API extends Base {
 	 *
 	 * @param string $external_business_id external business ID
 	 * @param string $plugin_version The plugin version.
-	 *
+	 * @param bool is_opted_out The plugin version.
 	 * @return Response|API\FBE\Configuration\Update\Response
 	 * @throws ApiException
 	 */
-	public function update_plugin_version_configuration( string $external_business_id, string $plugin_version ): API\FBE\Configuration\Update\Response {
+	public function update_plugin_version_configuration( string $external_business_id, bool $is_opted_out, string $plugin_version ): API\FBE\Configuration\Update\Response {
 		$request = new API\FBE\Configuration\Update\Request( $external_business_id );
 		$request->set_external_client_metadata(
 			array(
 				'version_id' => $plugin_version,
 				'is_multisite'   => is_multisite(),
+				'is_woo_all_products_opted_out' => $is_opted_out
 			)
 		);
 		$this->set_response_handler( API\FBE\Configuration\Update\Response::class );
@@ -368,20 +386,6 @@ class API extends Base {
 
 
 	/**
-	 * Deletes a Facebook Product Group object.
-	 *
-	 * @param string $product_group_id Facebook Product Group ID.
-	 * @return API\ProductCatalog\ProductGroups\Delete\Response
-	 * @throws ApiException
-	 */
-	public function delete_product_group( string $product_group_id ): API\ProductCatalog\ProductGroups\Delete\Response {
-		$request = new API\ProductCatalog\ProductGroups\Delete\Request( $product_group_id );
-		$this->set_response_handler( API\ProductCatalog\ProductGroups\Delete\Response::class );
-		return $this->perform_request( $request );
-	}
-
-
-	/**
 	 * Gets a list of Product Items in the given Product Group.
 	 *
 	 * @param string $product_group_id product group ID
@@ -397,34 +401,17 @@ class API extends Base {
 
 
 	/**
-	 * Finds a Product Item using the Catalog ID and the Retailer ID of the product or product variation.
-	 *
-	 * @since 2.0.0
-	 *
-	 * @param string $catalog_id catalog ID
-	 * @param string $retailer_id retailer ID of the product
-	 * @return Response
-	 * @throws ApiException
-	 */
-	public function find_product_item( $catalog_id, $retailer_id ) {
-		$request = new \WooCommerce\Facebook\API\Catalog\Product_Item\Find\Request( $catalog_id, $retailer_id );
-		$this->set_response_handler( \WooCommerce\Facebook\API\Catalog\Product_Item\Response::class );
-		return $this->perform_request( $request );
-	}
-
-
-	/**
 	 * Creates a Product under the specified Product Group.
 	 *
-	 * @since 2.0.0
+	 * @since 3.4.9
 	 *
-	 * @param string $product_group_id Facebook Product Group ID.
+	 * @param string $product_catalog_id Facebook Product Catalog ID.
 	 * @param array  $data Facebook Product Data.
 	 * @return API\Response|API\ProductCatalog\Products\Create\Response
 	 * @throws ApiException In case of network request error.
 	 */
-	public function create_product_item( string $product_group_id, array $data ): API\ProductCatalog\Products\Create\Response {
-		$request = new API\ProductCatalog\Products\Create\Request( $product_group_id, $data );
+	public function create_product_item( string $product_catalog_id, array $data ): API\ProductCatalog\Products\Create\Response {
+		$request = new API\ProductCatalog\Products\Create\Request( $product_catalog_id, $data );
 		$this->set_response_handler( API\ProductCatalog\Products\Create\Response::class );
 		return $this->perform_request( $request );
 	}
@@ -513,6 +500,19 @@ class API extends Base {
 	public function delete_product_set_item( string $product_set_id, bool $allow_live_deletion ): API\ProductCatalog\ProductSets\Delete\Response {
 		$request = new API\ProductCatalog\ProductSets\Delete\Request( $product_set_id, $allow_live_deletion );
 		$this->set_response_handler( API\ProductCatalog\ProductSets\Delete\Response::class );
+		return $this->perform_request( $request );
+	}
+
+	/**
+	 * @param string $product_catalog_id
+	 * @param array $data
+	 * @return API\Response|API\ProductCatalog\ProductSets\Read\Response
+	 * @throws ApiException
+	 * @throws API\Exceptions\Request_Limit_Reached
+	 */
+	public function read_product_set_item( string $product_catalog_id, string $retailer_id ): API\ProductCatalog\ProductSets\Read\Response {
+		$request = new API\ProductCatalog\ProductSets\Read\Request( $product_catalog_id, $retailer_id );
+		$this->set_response_handler( API\ProductCatalog\ProductSets\Read\Response::class );
 		return $this->perform_request( $request );
 	}
 
@@ -644,6 +644,17 @@ class API extends Base {
 		return $this->perform_request( $request );
 	}
 
+    /**
+     * @return Response
+     * @throws ApiException
+     * @throws API\Exceptions\Request_Limit_Reached
+     */
+    public function get_public_key( string $key_project ): Response
+    {
+        $request = new API\PublicKeyGet\Request( $key_project );
+        $this->set_response_handler( API\Response::class );
+        return $this->perform_request( $request );
+    }
 
 	/**
 	 * Gets the next page of results for a paginated response.
@@ -714,5 +725,60 @@ class API extends Base {
 	 */
 	protected function get_plugin() {
 		return facebook_for_woocommerce();
+	}
+
+	/**
+	 * Repairs the commerce integration connection.
+	 *
+	 * @param string $fbe_external_business_id The external business ID associated with the Facebook Business Extension
+	 * @param string $shop_domain The domain of the WooCommerce site
+	 * @param string $admin_url The admin URL of the WooCommerce site
+	 * @param string $extension_version The version of the Facebook for WooCommerce extension
+	 *
+	 * @return API\Response|API\CommerceIntegration\Repair\Response
+	 * @throws ApiException
+	 */
+	public function repair_commerce_integration( string $fbe_external_business_id, string $shop_domain, string $admin_url, string $extension_version ): API\CommerceIntegration\Repair\Response {
+		$request = new API\CommerceIntegration\Repair\RepairRequest( $fbe_external_business_id, $shop_domain, $admin_url, $extension_version );
+		$this->set_response_handler( API\CommerceIntegration\Repair\Response::class );
+		return $this->perform_request( $request );
+	}
+
+	/**
+	 * Updates the commerce integration configuration.
+	 *
+	 * @param string $commerce_integration_id The ID of the commerce integration to update
+	 * @param string|null $extension_version The version of the Facebook for WooCommerce extension
+	 * @param string|null $admin_url The admin URL of the WooCommerce site
+	 * @param string|null $country_code ISO2 country code
+	 * @param string|null $currency ISO currency code
+	 * @param string|null $platform_store_id The ID of the current website on a multisite setup
+	 * @param string $commerce_partner_seller_platform_type The type of commerce partner platform
+	 * @param string $installation_status The installation status of the integration
+	 * @return API\Response|API\CommerceIntegration\Configuration\Update\Response
+	 * @throws ApiException
+	 */
+	public function update_commerce_integration(
+		string $commerce_integration_id,
+		?string $extension_version = null,
+		?string $admin_url = null,
+		?string $country_code = null,
+		?string $currency = null,
+		?string $platform_store_id = null,
+		string $commerce_partner_seller_platform_type = 'SELF_SERVE',
+		string $installation_status = 'ACCESS_TOKEN_DEPOSITED'
+	): API\CommerceIntegration\Configuration\Update\Response {
+		$request = new API\CommerceIntegration\Configuration\Update\UpdateRequest(
+			$commerce_integration_id,
+			$extension_version,
+			$admin_url,
+			$country_code,
+			$currency,
+			$platform_store_id,
+			$commerce_partner_seller_platform_type,
+			$installation_status
+		);
+		$this->set_response_handler(API\CommerceIntegration\Configuration\Update\Response::class);
+		return $this->perform_request($request);
 	}
 }

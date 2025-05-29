@@ -17,7 +17,8 @@
     "php": ">=7.4",
     "woocommerce/action-scheduler-job-framework": "2.0.0",
     "composer/installers": "~1.0",
-    "woocommerce/grow": "dev-compat-checker"
+    "woocommerce/grow": "dev-compat-checker",
+    "firebase/php-jwt": "^6.10"
   },
   "require-dev": {
     "composer/installers": "^1.7.0",
@@ -29,7 +30,8 @@
   },
   "autoload": {
     "psr-4": {
-      "WooCommerce\\Facebook\\": "includes"
+      "WooCommerce\\Facebook\\": "includes",
+      "WooCommerce\\Facebook\\Feed\\": ["includes/Feed", "includes/Feed/Promotions", "includes/Feed/RatingsAndReviews", "includes/Feed/ShippingProfiles", "includes/Feed/NavigationMenu"]
     }
   },
   "autoload-dev": {

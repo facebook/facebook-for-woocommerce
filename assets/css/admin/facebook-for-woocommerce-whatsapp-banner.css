@@ -1,0 +1,64 @@
+.fb-wa-banner {
+	display: block;
+	position: relative;
+	box-sizing: border-box;
+	width: 1000px;
+	margin-bottom: 20px;
+	padding: 16px;
+	color: #050505;
+	background: #fff;
+	box-shadow: 0 0 3px rgba(0, 0, 0, 0.2);
+}
+
+.fb-wa-banner p,
+.fb-wa-banner h2 {
+	font-family: Helvetica, Arial, sans-serif;
+	font-size: 20px;
+	line-height: 24px;
+	color:#606770;
+}
+
+.fb-wa-banner h2 {
+	font-weight: 600;
+	color: #1c1e21;
+}
+
+.fb-wa-banner .wa-cta-button {
+	display: inline-block;
+	cursor: pointer;
+	border: 1px solid;
+	width: 151px;
+	border-radius: 6px;
+	text-decoration: none;
+	box-sizing: content-box;
+	font-size: 16px;
+	line-height: 34px;
+	-webkit-font-smoothing: antialiased;
+	font-weight: bold;
+	justify-content: center;
+	padding: 0 8px;
+	position: relative;
+	text-align: center;
+	text-shadow: none;
+	vertical-align: middle;
+	transition: 200ms cubic-bezier(.08, .52, .52, 1) background-color, 200ms cubic-bezier(.08, .52, .52, 1) box-shadow, 200ms cubic-bezier(.08, .52, .52, 1) transform;
+	padding: 0 16px;
+	color: #fff;
+	background-color: #1877f2;
+	border-color: #1877f2;
+}
+
+.fb-wa-banner .wa-cta-button:hover {
+	background-color: #1763cf;
+	border-color: #1763cf;
+}
+
+.fb-wa-banner .wa-close-button {
+	position: absolute;
+	display: block;
+	width: 16px;
+	height: 16px;
+	padding: 5px;
+	right: 16px;
+	top: 16px;
+}
