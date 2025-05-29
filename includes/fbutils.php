@@ -249,6 +249,22 @@ if ( ! class_exists( 'WC_Facebookcommerce_Utils' ) ) :
 			return $product->get_category_ids();
 		}
 
+		/**
+		 * Returns the category ids for products/pixel.
+		 *
+		 * @param int $wpid
+		 * @return Array
+		 */
+		public static function get_excluded_product_tags( $wpid ) {
+			$product = wc_get_product( $wpid );
+
+			if ( ! $product ) {
+				return [];
+			}
+
+			return $product->get_tag_ids();
+		}
+
 
 		/**
 		 * Returns the content ID to match on for Pixel fires.
