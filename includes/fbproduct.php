@@ -519,8 +519,7 @@ class WC_Facebook_Product {
 	}
 
 	public function set_rich_text_description( $rich_text_description ) {
-		$rich_text_description       =
-			WC_Facebookcommerce_Utils::clean_string( $rich_text_description, false );
+		$rich_text_description = stripslashes( $rich_text_description );
 		$this->rich_text_description = $rich_text_description;
 		update_post_meta(
 			$this->id,
@@ -848,7 +847,7 @@ class WC_Facebook_Product {
 		if ( $this->woo_product->is_type( 'variation' ) ) {
 			$rich_text_description = get_post_meta(
 				$this->id,
-				\WC_Facebookcommerce_Integration::FB_PRODUCT_DESCRIPTION,
+				self::FB_RICH_TEXT_DESCRIPTION,
 				true
 			);
 			if ($rich_text_description) {
@@ -878,7 +877,7 @@ class WC_Facebook_Product {
 			if ( $parent_product ) {
 				$rich_text_description = get_post_meta(
 					$parent_product->get_id(),
-					\WC_Facebookcommerce_Integration::FB_PRODUCT_DESCRIPTION,
+					self::FB_RICH_TEXT_DESCRIPTION,
 					true
 				);
 			}

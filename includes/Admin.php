@@ -1420,7 +1420,7 @@ class Admin {
 		}
 
 		// Get variation meta values
-		$description  = $this->get_product_variation_meta( $variation, \WC_Facebookcommerce_Integration::FB_PRODUCT_DESCRIPTION, $parent );
+		$description  = $this->get_product_variation_meta( $variation, \WC_Facebookcommerce_Integration::FB_RICH_TEXT_DESCRIPTION, $parent );
 		$price        = $this->get_product_variation_meta( $variation, \WC_Facebook_Product::FB_PRODUCT_PRICE, $parent );
 		$image_url    = $this->get_product_variation_meta( $variation, \WC_Facebook_Product::FB_PRODUCT_IMAGE, $parent );
 		$image_source = $variation->get_meta( Products::PRODUCT_IMAGE_SOURCE_META_KEY );
@@ -1611,7 +1611,12 @@ class Admin {
 		
 		// ALWAYS save Facebook field data (this fixes the PR #2931 breaking change)
 		$posted_param = 'variable_' . \WC_Facebookcommerce_Integration::FB_PRODUCT_DESCRIPTION;
-		$description  = isset( $_POST[ $posted_param ][ $index ] ) ? sanitize_text_field( wp_unslash( $_POST[ $posted_param ][ $index ] ) ) : null;
+		$description_raw = isset( $_POST[ $posted_param ][ $index ] ) ? wp_unslash( $_POST[ $posted_param ][ $index ] ) : null;
+		
+		// Create separate sanitized versions for different purposes
+		$description_plain = $description_raw ? sanitize_text_field( $description_raw ) : null; // Plain text for regular description
+		$description_rich = $description_raw ? wp_kses_post( $description_raw ) : null; // HTML-preserved for rich text description
+		
 		$posted_param = 'variable_' . \WC_Facebook_Product::FB_MPN;
 		$fb_mpn       = isset( $_POST[ $posted_param ][ $index ] ) ? sanitize_text_field( wp_unslash( $_POST[ $posted_param ][ $index ] ) ) : null;
 		$posted_param = 'variable_fb_product_image_source';
@@ -1623,9 +1628,9 @@ class Admin {
 		$posted_param = 'variable_' . \WC_Facebook_Product::FB_PRODUCT_PRICE;
 		$price        = isset( $_POST[ $posted_param ][ $index ] ) ? wc_format_decimal( wc_clean( wp_unslash( $_POST[ $posted_param ][ $index ] ) ) ) : '';
 		
-		// Always save the Facebook field data
-		$variation->update_meta_data( \WC_Facebookcommerce_Integration::FB_PRODUCT_DESCRIPTION, $description );
-		$variation->update_meta_data( \WC_Facebookcommerce_Integration::FB_RICH_TEXT_DESCRIPTION, $description );
+		// Always save the Facebook field data with appropriate sanitization for each field
+		$variation->update_meta_data( \WC_Facebookcommerce_Integration::FB_PRODUCT_DESCRIPTION, $description_plain );
+		$variation->update_meta_data( \WC_Facebookcommerce_Integration::FB_RICH_TEXT_DESCRIPTION, $description_rich );
 		$variation->update_meta_data( Products::PRODUCT_IMAGE_SOURCE_META_KEY, $image_source );
 		$variation->update_meta_data( \WC_Facebook_Product::FB_MPN, $fb_mpn );
 		$variation->update_meta_data( \WC_Facebook_Product::FB_PRODUCT_IMAGE, $image_url );
