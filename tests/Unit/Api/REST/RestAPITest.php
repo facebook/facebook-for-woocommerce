@@ -9,11 +9,12 @@ use WooCommerce\Facebook\API\Plugin\InitializeRestAPI;
 use WooCommerce\Facebook\API\Plugin\Settings\Handler;
 use WooCommerce\Facebook\API\Plugin\Settings\Update\Request as UpdateRequest;
 use PHPUnit\Framework\TestCase;
+use WooCommerce\Facebook\Tests\AbstractWPUnitTestWithOptionIsolationAndSafeFiltering;
 
 /**
  * The REST API unit test class.
  */
-class RestAPITest extends TestCase {
+class RestAPITest extends AbstractWPUnitTestWithOptionIsolationAndSafeFiltering {
 
     /**
      * Test REST API routes are registered
@@ -223,4 +224,19 @@ class RestAPITest extends TestCase {
                 "JS_Exposable class '$class' with function name '$function_name' has no corresponding API definition");
         }
     }
+
+	/**
+	 * Test that options set in a previous test are reset due to isolation.
+	 */
+	public function test_options_are_reset_after_previous_test() {
+		// These options were set in test_settings_update_succeeds_with_valid_data
+		// Due to setUp/tearDown isolation, they should now return their default value (false)
+		$this->assertFalse( get_option('wc_facebook_access_token'), 'Option wc_facebook_access_token should be reset.' );
+		$this->assertFalse( get_option('wc_facebook_merchant_access_token'), 'Option wc_facebook_merchant_access_token should be reset.' );
+		$this->assertFalse( get_option('wc_facebook_product_catalog_id'), 'Option wc_facebook_product_catalog_id should be reset.' );
+		$this->assertFalse( get_option('wc_facebook_pixel_id'), 'Option wc_facebook_pixel_id should be reset.' );
+		$this->assertFalse( get_option('wc_facebook_has_connected_fbe_2'), 'Option wc_facebook_has_connected_fbe_2 should be reset.' );
+		$this->assertFalse( get_option('wc_facebook_has_authorized_pages_read_engagement'), 'Option wc_facebook_has_authorized_pages_read_engagement should be reset.' );
+		$this->assertFalse( get_option('wc_facebook_enable_messenger'), 'Option wc_facebook_enable_messenger should be reset.' );
+	}
 }

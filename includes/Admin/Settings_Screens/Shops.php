@@ -31,6 +31,12 @@ class Shops extends Abstract_Settings_Screen {
 	/** @var string */
 	const ACTION_SYNC_COUPONS = 'wc_facebook_sync_coupons';
 
+	/** @var string */
+	const ACTION_SYNC_SHIPPING_PROFILES = 'wc_facebook_sync_shipping_profiles';
+
+	/** @var string */
+	const ACTION_SYNC_NAVIGATION_MENU = 'wc_facebook_sync_navigation_menu';
+
 	/**
 	 * Shops constructor.
 	 *
@@ -126,9 +132,11 @@ class Shops extends Abstract_Settings_Screen {
 			'wc-facebook-enhanced-settings-sync',
 			'wc_facebook_enhanced_settings_sync',
 			array(
-				'ajax_url'            => admin_url( 'admin-ajax.php' ),
-				'sync_products_nonce' => wp_create_nonce( self::ACTION_SYNC_PRODUCTS ),
-				'sync_coupons_nonce'  => wp_create_nonce( self::ACTION_SYNC_COUPONS ),
+				'ajax_url'                     => admin_url( 'admin-ajax.php' ),
+				'sync_products_nonce'          => wp_create_nonce( self::ACTION_SYNC_PRODUCTS ),
+				'sync_coupons_nonce'           => wp_create_nonce( self::ACTION_SYNC_COUPONS ),
+				'sync_shipping_profiles_nonce' => wp_create_nonce( self::ACTION_SYNC_SHIPPING_PROFILES ),
+				'sync_navigation_menu_nonce'   => wp_create_nonce( self::ACTION_SYNC_NAVIGATION_MENU ),
 			)
 		);
 	}
@@ -234,6 +242,38 @@ class Shops extends Abstract_Settings_Screen {
 							</p>
 						</td>
 					</tr>
+					<tr valign="top" class="wc-facebook-shops-sample">
+						<th scope="row" class="titledesc">
+							Shipping profiles sync
+						</th>
+						<td class="forminp">
+							<button
+								id="wc-facebook-enhanced-settings-sync-shipping-profiles"
+								class="button"
+								type="button">
+								<?php esc_html_e( 'Sync now', 'facebook-for-woocommerce' ); ?>
+							</button>
+							<p id="shipping-profile-sync-description" class="sync-description">
+								Manually sync your shipping profiles from WooCommerce to your shop. It may take a couple of minutes for the changes to populate.
+							</p>
+						</td>
+					</tr>
+					<tr valign="top" class="wc-facebook-shops-sample">
+						<th scope="row" class="titledesc">
+							Navigation menu sync
+						</th>
+						<td class="forminp">
+							<button
+								id="wc-facebook-enhanced-settings-sync-navigation-menu"
+								class="button"
+								type="button">
+								<?php esc_html_e( 'Sync now', 'facebook-for-woocommerce' ); ?>
+							</button>
+							<p id="navigation-menu-sync-description" class="sync-description">
+								Manually sync your category navigation menu from WooCommerce to your shop. It may take a couple of minutes for the changes to populate.
+							</p>
+						</td>
+					</tr>
 				</tbody>
 			</table>
 			<?php parent::render(); ?>
@@ -272,11 +312,22 @@ class Shops extends Abstract_Settings_Screen {
 	 * @return array
 	 * @since 3.5.0
 	 */
-	public function get_settings() {
+	public function get_settings(): array {
+		//phpcs:ignore WordPress.WP.I18n.NoEmptyStrings
+		return self::get_settings_with_title_static( __( '', 'facebook-for-woocommerce' ) );
+	}
+
+	/**
+	 * Returns the shop-wide settings array.
+	 * Reused in Connection.php.
+	 *
+	 * @param string $title A translated title.
+	 * @return array
+	 */
+	public static function get_settings_with_title_static( string $title ): array {
 		return array(
 			array(
-				//phpcs:ignore WordPress.WP.I18n.NoEmptyStrings
-				'title' => __( '', 'facebook-for-woocommerce' ),
+				'title' => $title,
 				'type'  => 'title',
 			),
 
@@ -296,16 +347,6 @@ class Shops extends Abstract_Settings_Screen {
 				'desc'     => __( 'Log plugin events for debugging.', 'facebook-for-woocommerce' ),
 				/* translators: %s URL to the documentation page. */
 				'desc_tip' => sprintf( __( 'Only enable this if you are experiencing problems with the plugin. <a href="%s" target="_blank">Learn more</a>.', 'facebook-for-woocommerce' ), 'https://woocommerce.com/document/facebook-for-woocommerce/#debug-tools' ),
-				'default'  => 'no',
-			),
-
-			array(
-				'id'       => \WC_Facebookcommerce_Integration::SETTING_ENABLE_NEW_STYLE_FEED_GENERATOR,
-				'title'    => __( '[Experimental] Use new, memory improved, feed generation process', 'facebook-for-woocommerce' ),
-				'type'     => 'checkbox',
-				'desc'     => __( 'Enable', 'facebook-for-woocommerce' ),
-				/* translators: %s URL to the documentation page. */
-				'desc_tip' => sprintf( __( 'This is an experimental feature in testing phase. Only enable this if you are experiencing problems with feed generation. <a href="%s" target="_blank">Learn more</a>.', 'facebook-for-woocommerce' ), 'https://woocommerce.com/document/facebook-for-woocommerce/#feed-generation' ),
 				'default'  => 'no',
 			),
 

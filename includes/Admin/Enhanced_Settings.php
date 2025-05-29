@@ -15,6 +15,8 @@ use WooCommerce\Facebook\Admin\Settings_Screens;
 use WooCommerce\Facebook\Admin\Settings_Screens\Shops;
 use WooCommerce\Facebook\Framework\Helper;
 use WooCommerce\Facebook\Framework\Plugin\Exception as PluginException;
+use WooCommerce\Facebook\Admin\Settings_Screens\Whatsapp_Utility;
+use WooCommerce\Facebook\Admin\RolloutSwitches;
 
 defined( 'ABSPATH' ) || exit;
 
@@ -38,16 +40,23 @@ class Enhanced_Settings {
 	 */
 	const SUBMENU_PAGE_ID = 'edit-tags.php?taxonomy=fb_product_set&post_type=product';
 
+	/** @var \WC_Facebookcommerce */
+	private $plugin;
+
+
 	/**
 	 * Enhanced settings constructor.
 	 *
 	 * @since 3.5.0
 	 *
-	 * @param bool $is_connected
+	 * @param \WC_Facebookcommerce $plugin is the plugin instance of WC_Facebookcommerce
 	 */
-	public function __construct( bool $is_connected ) {
-		$this->screens = $this->build_menu_item_array( $is_connected );
+	public function __construct( \WC_Facebookcommerce $plugin ) {
+		$this->plugin = $plugin;
 
+		$this->screens = $this->build_menu_item_array();
+
+		add_action( 'admin_init', array( $this, 'add_extra_screens' ) );
 		add_action( 'admin_menu', array( $this, 'add_menu_item' ) );
 		add_action( 'wp_loaded', array( $this, 'save' ) );
 
@@ -61,21 +70,39 @@ class Enhanced_Settings {
 	 *
 	 * @since 3.5.0
 	 *
-	 * @param bool $is_connected is Facebook connected
 	 * @return array
 	 */
-	private function build_menu_item_array( bool $is_connected ): array {
+	public function build_menu_item_array(): array {
+		$is_connected = $this->plugin->get_connection_handler()->is_connected();
+
 		if ( $is_connected ) {
-			// TODO: Add Utility messaging tab
 			// TODO: Remove Product sync and Product sets tab once catalog changes are complete
-			return array(
+			$screens = array(
 				Settings_Screens\Shops::ID        => new Settings_Screens\Shops(),
 				Settings_Screens\Product_Sync::ID => new Settings_Screens\Product_Sync(),
 				Settings_Screens\Product_Sets::ID => new Settings_Screens\Product_Sets(),
 			);
 		} else {
-			// TODO: Add Utility messaging tab
-			return [ Settings_Screens\Shops::ID => new Settings_Screens\Shops() ];
+			$screens = [ Settings_Screens\Shops::ID => new Settings_Screens\Shops() ];
+		}
+
+		return $screens;
+	}
+
+	/**
+	 * Add extra screens to $this->screens - basic settings_screens
+	 *
+	 * @since 3.5.0
+	 *
+	 * @return void
+	 */
+	public function add_extra_screens(): void {
+		$rollout_switches                      = $this->plugin->get_rollout_switches();
+		$is_connected                          = $this->plugin->get_connection_handler()->is_connected();
+		$is_whatsapp_utility_messaging_enabled = $rollout_switches->is_switch_enabled( RolloutSwitches::WHATSAPP_UTILITY_MESSAGING );
+
+		if ( true === $is_connected && true === $is_whatsapp_utility_messaging_enabled ) {
+			$this->screens[ Settings_Screens\Whatsapp_Utility::ID ] = new Settings_Screens\Whatsapp_Utility();
 		}
 	}
 
@@ -160,6 +187,14 @@ class Enhanced_Settings {
 		$current_tab = $this->get_current_tab();
 		$screen      = $this->get_screen( $current_tab );
 
+		\WC_Facebookcommerce_Utils::log_to_meta(
+			'User visited the Facebook for WooCommerce settings' . $current_tab . 'tab',
+			array(
+				'flow_name' => 'settings',
+				'flow_step' => $current_tab . '_tab_rendered',
+			)
+		);
+
 		?>
 		<div class="wrap woocommerce">
 			<?php $this->render_tabs( $current_tab ); ?>
@@ -186,7 +221,18 @@ class Enhanced_Settings {
 		?>
 		<nav class="nav-tab-wrapper woo-nav-tab-wrapper facebook-for-woocommerce-tabs">
 			<?php foreach ( $tabs as $id => $label ) : ?>
-				<a href="<?php echo esc_html( admin_url( 'admin.php?page=' . self::PAGE_ID . '&tab=' . esc_attr( $id ) ) ); ?>" class="nav-tab <?php echo $current_tab === $id ? 'nav-tab-active' : ''; ?>"><?php echo esc_html( $label ); ?></a>
+				<?php $url = admin_url( 'admin.php?page=' . self::PAGE_ID . '&tab=' . esc_attr( $id ) ); ?>
+				<?php if ( 'whatsapp_utility' === $id ) : ?>
+					<?php
+					$wa_integration_config_id = get_option( 'wc_facebook_wa_integration_config_id', '' );
+					if ( ! empty( $wa_integration_config_id ) ) {
+						$url .= '&view=utility_settings';
+					}
+					?>
+					<a href="<?php echo esc_url( $url ); ?>" class="nav-tab <?php echo $current_tab === $id ? 'nav-tab-active' : ''; ?>"><?php echo esc_html( $label ); ?></a>
+				<?php else : ?>
+					<a href="<?php echo esc_url( $url ); ?>" class="nav-tab <?php echo $current_tab === $id ? 'nav-tab-active' : ''; ?>"><?php echo esc_html( $label ); ?></a>
+				<?php endif; ?>
 			<?php endforeach; ?>
 		</nav>
 		<?php

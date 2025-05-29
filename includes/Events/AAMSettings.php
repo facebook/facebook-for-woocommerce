@@ -160,7 +160,7 @@ class AAMSettings {
 	 * @return string
 	 */
 	public function __toString() {
-		return json_encode(
+		return wp_json_encode(
 			array(
 				'enableAutomaticMatching'        => $this->enable_automatic_matching,
 				'enabledAutomaticMatchingFields' => $this->enabled_automatic_matching_fields,

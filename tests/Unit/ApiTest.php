@@ -363,33 +363,6 @@ class ApiTest extends \WooCommerce\Facebook\Tests\AbstractWPUnitTestWithSafeFilt
 	}
 
 	/**
-	 * Tests delete product group prepares a request to Facebook.
-	 *
-	 * @return void
-	 * @throws ApiException In case of network request error.
-	 */
-	public function test_delete_product_group_deletes_product_group_request() {
-		$facebook_product_group_id = '5427299404026432';
-
-		$response = function( $result, $parsed_args, $url ) use ( $facebook_product_group_id ) {
-			$this->assertEquals( 'DELETE', $parsed_args['method'] );
-			$this->assertEquals( "{$this->endpoint}{$this->version}/{$facebook_product_group_id}?deletion_method=delete_items", $url );
-			return [
-				'body'     => '{"success":true}',
-				'response' => [
-					'code'    => 200,
-					'message' => 'OK',
-				],
-			];
-		};
-		$this->add_filter_with_safe_teardown( 'pre_http_request', $response, 10, 3 );
-
-		$response = $this->api->delete_product_group( $facebook_product_group_id );
-
-		$this->assertTrue( $response->success );
-	}
-
-	/**
 	 * Tests get product group products prepares a request to Facebook.
 	 *
 	 * @return void
@@ -540,8 +513,9 @@ class ApiTest extends \WooCommerce\Facebook\Tests\AbstractWPUnitTestWithSafeFilt
 		$response = function( $result, $parsed_args, $url ) use ( $facebook_product_catalog_id, $facebook_product_retailer_id ) {
 			$this->assertEquals( 'GET', $parsed_args['method'] );
 
-			$path = "catalog:{$facebook_product_catalog_id}:" . base64_encode( $facebook_product_retailer_id );
-			$path = "/{$path}/?fields=id,product_group{id}";
+			$filter = urlencode('{"retailer_id":{"eq":"' . $facebook_product_retailer_id . '"}}');
+			$fields = urlencode('id,product_group{id}');
+			$path = "/{$facebook_product_catalog_id}/products?filter={$filter}&fields={$fields}";
 
 			$this->assertEquals( "{$this->endpoint}{$this->version}{$path}", $url );
 			return [
@@ -558,6 +532,93 @@ class ApiTest extends \WooCommerce\Facebook\Tests\AbstractWPUnitTestWithSafeFilt
 
 		$this->assertEquals( '8672727132741181', $response->id );
 		$this->assertEquals( '8672727046074523', $response->get_facebook_product_group_id() );
+	}
+
+	/**
+	 * Tests get product ids prepares a request to Facebook.
+	 * This test is for the filter endpoint.
+	 *
+	 * @return void
+	 * @throws ApiException In case of network request error.
+	 */
+	public function test_get_product_facebook_ids_creates_get_ids_request_with_filter_endpoint() {
+		$facebook_product_catalog_id  = '726635365295186';
+		$facebook_product_retailer_id = 'woo-cap_97';
+
+		$response = function( $result, $parsed_args, $url ) use ( $facebook_product_catalog_id, $facebook_product_retailer_id ) {
+			$this->assertEquals( 'GET', $parsed_args['method'] );
+
+			$filter = urlencode('{"retailer_id":{"eq":"' . $facebook_product_retailer_id . '"}}');
+			$fields = urlencode('id,product_group{id}');
+			$path = "/{$facebook_product_catalog_id}/products?filter={$filter}&fields={$fields}";
+
+			$this->assertEquals( "{$this->endpoint}{$this->version}{$path}", $url );
+			return [
+				'body'     => '{"data":[{"id":"8672727132741181","product_group":{"id":"8672727046074523"}}]}',
+				'response' => [
+					'code'    => 200,
+					'message' => 'OK',
+				],
+			];
+		};
+		add_filter( 'pre_http_request', $response, 10, 3 );
+
+		$is_call_before_sync = true;
+		$product = WC_Helper_Product::create_simple_product();
+		$woo_product = new WC_Facebook_Product( $product );
+		$response = $this->api->get_product_facebook_ids( $facebook_product_catalog_id, $facebook_product_retailer_id, $woo_product, $is_call_before_sync );
+
+		$this->assertEquals(
+			[
+				[
+					'id'            => '8672727132741181',
+					'product_group'	=> [
+						'id' => '8672727046074523',
+					],
+				],
+			],
+			$response->data
+		);
+	}
+
+	/**
+	 * Tests get product ids prepares a request to Facebook.
+	 * This test is for the filter endpoint with a product retailer id that doesn't exist.
+	 *
+	 * @return void
+	 * @throws ApiException In case of network request error.
+	 */
+	public function test_get_product_facebook_ids_creates_get_ids_request_with_filter_endpoint_nonexisting_product() {
+		$facebook_product_catalog_id  = '726635365295186';
+		$facebook_product_retailer_id = 'nonexisting_product_retailer_id';
+
+		$response = function( $result, $parsed_args, $url ) use ( $facebook_product_catalog_id, $facebook_product_retailer_id ) {
+			$this->assertEquals( 'GET', $parsed_args['method'] );
+
+			$filter = urlencode('{"retailer_id":{"eq":"' . $facebook_product_retailer_id . '"}}');
+			$fields = urlencode('id,product_group{id}');
+			$path = "/{$facebook_product_catalog_id}/products?filter={$filter}&fields={$fields}";
+
+			$this->assertEquals( "{$this->endpoint}{$this->version}{$path}", $url );
+			return [
+				'body'     => '{"data":[]}',
+				'response' => [
+					'code'    => 200,
+					'message' => 'OK',
+				],
+			];
+		};
+		add_filter( 'pre_http_request', $response, 10, 3 );
+
+		$is_call_before_sync = true;
+		$product = WC_Helper_Product::create_simple_product();
+		$woo_product = new \WC_Facebook_Product( $product );
+		$response = $this->api->get_product_facebook_ids( $facebook_product_catalog_id, $facebook_product_retailer_id, $woo_product, $is_call_before_sync );
+
+		$this->assertEquals(
+			[],
+			$response->data
+		);
 	}
 
 	/**
@@ -804,6 +865,139 @@ class ApiTest extends \WooCommerce\Facebook\Tests\AbstractWPUnitTestWithSafeFilt
 		$this->add_filter_with_safe_teardown( 'pre_http_request', $response, 10, 3 );
 
 		$response = $this->api->create_common_data_feed_upload( $cpi, $data );
+		$this->assertFalse( $response->has_api_error() );
+	}
+
+	/**
+	 * Tests repair commerce integration request to Facebook.
+	 *
+	 * @return void
+	 * @throws ApiException In case of network request error.
+	 */
+	public function test_repair_commerce_integration_request() {
+		$fbe_external_business_id = 'test-business-123';
+		$shop_domain = 'example.com';
+		$admin_url = 'https://example.com/wp-admin';
+		$extension_version = '3.0.0';
+
+		$response = function( $result, $parsed_args, $url ) use ( $fbe_external_business_id ) {
+			$this->assertEquals( 'POST', $parsed_args['method'] );
+			$this->assertEquals( "{$this->endpoint}{$this->version}/commerce_partner_integrations_repair", $url );
+
+			// Parse the actual request body to compare properties regardless of order
+			$actual_body = json_decode($parsed_args['body'], true);
+			$expected_body = [
+				'fbe_external_business_id' => $fbe_external_business_id,
+				'shop_domain' => 'example.com',
+				'admin_url' => 'https://example.com/wp-admin',
+				'extension_version' => '3.0.0',
+				'commerce_partner_seller_platform_type' => 'SELF_SERVE_PLATFORM'
+			];
+
+			$this->assertEquals($expected_body, $actual_body);
+
+			return [
+				'body'     => '{"success":true}',
+				'response' => [
+					'code'    => 200,
+					'message' => 'OK',
+				],
+			];
+		};
+		$this->add_filter_with_safe_teardown( 'pre_http_request', $response, 10, 3 );
+
+		$response = $this->api->repair_commerce_integration(
+			$fbe_external_business_id,
+			$shop_domain,
+			$admin_url,
+			$extension_version
+		);
+
+		$this->assertTrue( $response->success );
+	}
+
+	/**
+	 * Tests update commerce integration request to Facebook.
+	 *
+	 * @return void
+	 * @throws ApiException In case of network request error.
+	 */
+	public function test_update_commerce_integration_request() {
+		$commerce_integration_id = 'test-integration-123';
+		$extension_version = '3.0.0';
+		$admin_url = 'https://example.com/wp-admin';
+		$country_code = 'US';
+		$currency = 'USD';
+		$platform_store_id = 'store-123';
+		$commerce_partner_seller_platform_type = 'SELF_SERVE';
+		$installation_status = 'ACCESS_TOKEN_DEPOSITED';
+
+		$response = function( $result, $parsed_args, $url ) use ( $commerce_integration_id ) {
+			$this->assertEquals( 'POST', $parsed_args['method'] );
+			$this->assertEquals( "{$this->endpoint}{$this->version}/{$commerce_integration_id}", $url );
+
+			// Parse the actual request body to compare properties regardless of order
+			$actual_body = json_decode($parsed_args['body'], true);
+			$expected_body = [
+				'commerce_partner_seller_platform_type' => 'SELF_SERVE',
+				'installation_status' => 'ACCESS_TOKEN_DEPOSITED',
+				'extension_version' => '3.0.0',
+				'admin_url' => 'https://example.com/wp-admin',
+				'country_code' => 'US',
+				'currency' => 'USD',
+				'platform_store_id' => 'store-123'
+			];
+
+			$this->assertEquals($expected_body, $actual_body);
+
+			return [
+				'body'     => '{"success":true}',
+				'response' => [
+					'code'    => 200,
+					'message' => 'OK',
+				],
+			];
+		};
+		$this->add_filter_with_safe_teardown( 'pre_http_request', $response, 10, 3 );
+
+		$response = $this->api->update_commerce_integration(
+			$commerce_integration_id,
+			$extension_version,
+			$admin_url,
+			$country_code,
+			$currency,
+			$platform_store_id,
+			$commerce_partner_seller_platform_type,
+			$installation_status
+		);
+
+		$this->assertTrue( $response->success );
+	}
+
+	/**
+	 * Tests read product set request to Facebook.
+	 *
+	 * @return void
+	 * @throws ApiException In case of network request error.
+	 */
+	public function test_read_product_set_item() {
+		$product_catalog_id = '726635365295186';
+		$retailer_id = '29';
+
+		$response = function( $result, $parsed_args, $url ) use ( $product_catalog_id, $retailer_id ) {
+			$this->assertEquals( 'GET', $parsed_args['method'] );
+			$this->assertEquals( "{$this->endpoint}{$this->version}/{$product_catalog_id}/product_sets?retailer_id={$retailer_id}", $url );
+			return [
+				'body'     => '{"id":"325235346346546"}',
+				'response' => [
+					'code'    => 200,
+					'message' => 'OK',
+				],
+			];
+		};
+		$this->add_filter_with_safe_teardown( 'pre_http_request', $response, 10, 3 );
+
+		$response = $this->api->read_product_set_item( $product_catalog_id, $retailer_id );
 		$this->assertFalse( $response->has_api_error() );
 	}
 }

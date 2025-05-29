@@ -31,23 +31,8 @@ class Connection extends Abstract_Settings_Screen {
 		add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_assets' ) );
 
 		add_action( 'admin_notices', array( $this, 'add_notices' ) );
-
-		// Add action to enqueue the message handler script
-		add_action( 'admin_footer', array( $this, 'render_message_handler' ) );
-
-		add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_admin_scripts' ) );
 	}
 
-	/**
-	 * Enqueues the wp-api script and the Facebook REST API JavaScript client.
-	 *
-	 * @internal
-	 */
-	public function enqueue_admin_scripts() {
-		if ( $this->is_current_screen_page() ) {
-			wp_enqueue_script( 'wp-api' );
-		}
-	}
 	/**
 	 * Initializes this settings page's properties.
 	 */
@@ -114,19 +99,12 @@ class Connection extends Abstract_Settings_Screen {
 	 * @since 3.5.0
 	 */
 	public function render() {
-		// Check if we should render iframe
-		if ( facebook_for_woocommerce()->use_enhanced_onboarding() ) {
-			$this->render_facebook_iframe();
-
-			return;
-		}
-
 		$is_connected = facebook_for_woocommerce()->get_connection_handler()->is_connected();
 
-		// always render the CTA box
+		// Always render the CTA box
 		$this->render_facebook_box( $is_connected );
 
-		// don't proceed further if not connected
+		// Don't proceed further if not connected
 		if ( ! $is_connected ) {
 			return;
 		}
@@ -267,43 +245,6 @@ class Connection extends Abstract_Settings_Screen {
 	}
 
 	/**
-	 * Renders the appropriate Facebook iframe based on connection status.
-	 */
-	private function render_facebook_iframe() {
-		$connection            = facebook_for_woocommerce()->get_connection_handler();
-		$is_connected          = $connection->is_connected();
-		$merchant_access_token = get_option( 'wc_facebook_merchant_access_token', '' );
-
-		if ( ! empty( $merchant_access_token ) && $is_connected ) {
-			// Get management iframe URL for connected merchants
-			$iframe_url = \WooCommerce\Facebook\Handlers\MetaExtension::generate_iframe_management_url(
-				$connection->get_external_business_id()
-			);
-		} else {
-			// Get onboarding iframe URL for new connections
-			$iframe_url = \WooCommerce\Facebook\Handlers\MetaExtension::generate_iframe_splash_url(
-				$is_connected,
-				$connection->get_plugin(),
-				$connection->get_external_business_id()
-			);
-		}
-
-		if ( empty( $iframe_url ) ) {
-			return;
-		}
-
-		?>
-		<iframe
-			src="<?php echo esc_url( $iframe_url ); ?>"
-			width="100%"
-			height="800"
-			frameborder="0"
-			style="background: transparent;"
-			id="facebook-commerce-iframe"></iframe>
-		<?php
-	}
-
-	/**
 	 * Renders the legacy Facebook CTA box.
 	 *
 	 * @param bool $is_connected whether the plugin is connected
@@ -357,126 +298,12 @@ class Connection extends Abstract_Settings_Screen {
 	}
 
 	/**
-	 * Renders the message handler script in the footer.
-	 *
-	 * @since 3.5.0
-	 */
-	public function render_message_handler() {
-		if ( ! $this->is_current_screen_page() || ! facebook_for_woocommerce()->use_enhanced_onboarding() ) {
-			return;
-		}
-		// Add the inline script as a dependent script
-		wp_add_inline_script( 'plugin-api-client', $this->generate_inline_enhanced_onboarding_script(), 'after' );
-	}
-
-	public function generate_inline_enhanced_onboarding_script() {
-		// Generate a fresh nonce for this request
-		$nonce = wp_json_encode( wp_create_nonce( 'wp_rest' ) );
-
-		// Create the inline script with HEREDOC syntax for better JS readability
-		return <<<JAVASCRIPT
-			const fbAPI = GeneratePluginAPIClient({$nonce});
-			window.addEventListener('message', function(event) {
-				const message = event.data;
-				const messageEvent = message.event;
-
-				if (messageEvent === 'CommerceExtension::INSTALL' && message.success) {
-					const requestBody = {
-						access_token: message.access_token,
-						merchant_access_token: message.access_token,
-						page_access_token: message.access_token,
-						product_catalog_id: message.catalog_id,
-						pixel_id: message.pixel_id,
-						page_id: message.page_id,
-						business_manager_id: message.business_manager_id,
-						commerce_merchant_settings_id: message.installed_features.find(f => f.feature_type === 'fb_shop')?.connected_assets?.commerce_merchant_settings_id || '',
-						ad_account_id: message.installed_features.find(f => f.feature_type === 'ads')?.connected_assets?.ad_account_id || '',
-						commerce_partner_integration_id: message.commerce_partner_integration_id || '',
-						profiles: message.profiles,
-						installed_features: message.installed_features
-					};
-
-					fbAPI.updateSettings(requestBody)
-						.then(function(response) {
-							if (response.success) {
-								window.location.reload();
-							} else {
-								console.error('Error updating Facebook settings:', response);
-							}
-						})
-						.catch(function(error) {
-							console.error('Error during settings update:', error);
-						});
-				}
-
-				if (messageEvent === 'CommerceExtension::RESIZE') {
-					const iframe = document.getElementById('facebook-commerce-iframe');
-					if (iframe && message.height) {
-						iframe.height = message.height;
-					}
-				}
-
-				if (messageEvent === 'CommerceExtension::UNINSTALL') {
-					fbAPI.uninstallSettings()
-						.then(function(response) {
-							if (response.success) {
-								window.location.reload();
-							}
-						})
-						.catch(function(error) {
-							console.error('Error during uninstall:', error);
-							window.location.reload();
-						});
-				}
-			});
-		JAVASCRIPT;
-	}
-
-
-	/**
 	 * Gets the screen settings.
 	 *
 	 * @return array
 	 * @since 3.5.0
 	 */
-	public function get_settings() {
-
-		return array(
-
-			array(
-				'title' => __( 'Debug', 'facebook-for-woocommerce' ),
-				'type'  => 'title',
-			),
-
-			array(
-				'id'       => \WC_Facebookcommerce_Integration::SETTING_ENABLE_META_DIAGNOSIS,
-				'title'    => __( 'Enable meta diagnosis', 'facebook-for-woocommerce' ),
-				'type'     => 'checkbox',
-				'desc'     => __( 'Upload plugin events to Meta', 'facebook-for-woocommerce' ),
-				'desc_tip' => sprintf( __( 'Allow Meta to monitor event and error logs to help fix issues.', 'facebook-for-woocommerce' ) ),
-				'default'  => 'yes',
-			),
-
-			array(
-				'id'       => \WC_Facebookcommerce_Integration::SETTING_ENABLE_DEBUG_MODE,
-				'title'    => __( 'Enable debug mode', 'facebook-for-woocommerce' ),
-				'type'     => 'checkbox',
-				'desc'     => __( 'Log plugin events for debugging.', 'facebook-for-woocommerce' ),
-				/* translators: %s URL to the documentation page. */
-				'desc_tip' => sprintf( __( 'Only enable this if you are experiencing problems with the plugin. <a href="%s" target="_blank">Learn more</a>.', 'facebook-for-woocommerce' ), 'https://woocommerce.com/document/facebook-for-woocommerce/#debug-tools' ),
-				'default'  => 'no',
-			),
-
-			array(
-				'id'       => \WC_Facebookcommerce_Integration::SETTING_ENABLE_NEW_STYLE_FEED_GENERATOR,
-				'title'    => __( 'Experimental! Enable new style feed generation', 'facebook-for-woocommerce' ),
-				'type'     => 'checkbox',
-				'desc'     => __( 'Use new, memory improved, feed generation process.', 'facebook-for-woocommerce' ),
-				/* translators: %s URL to the documentation page. */
-				'desc_tip' => sprintf( __( 'This is an experimental feature in testing phase. Only enable this if you are experiencing problems with feed generation. <a href="%s" target="_blank">Learn more</a>.', 'facebook-for-woocommerce' ), 'https://woocommerce.com/document/facebook-for-woocommerce/#feed-generation' ),
-				'default'  => 'no',
-			),
-			array( 'type' => 'sectionend' ),
-		);
+	public function get_settings(): array {
+		return Shops::get_settings_with_title_static( __( 'Debug', 'facebook-for-woocommerce' ) );
 	}
 }

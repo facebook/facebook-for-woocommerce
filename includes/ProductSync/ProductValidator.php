@@ -118,8 +118,8 @@ class ProductValidator {
 	 */
 	public function validate() {
 		$this->validate_sync_enabled_globally();
-		$this->validate_product_status();
 		$this->validate_product_sync_field();
+		$this->validate_product_status();
 		$this->validate_product_visibility();
 		$this->validate_product_terms();
 	}
@@ -321,12 +321,48 @@ class ProductValidator {
 		if ( ! apply_filters( 'wc_facebook_should_sync_product', true, $this->product ) ) {
 			throw new ProductExcludedException( __( 'Product excluded by wc_facebook_should_sync_product filter.', 'facebook-for-woocommerce' ) );
 		}
-
+		/**
+		 * The variable check will be used when we have create update of a product
+		 * Either from Product details page or bulk editor
+		 */
 		if ( $this->product->is_type( 'variable' ) ) {
 			foreach ( $this->product->get_children() as $child_id ) {
 				$child_product = wc_get_product( $child_id );
 				if ( $child_product && 'no' !== $child_product->get_meta( self::SYNC_ENABLED_META_KEY ) ) {
 					// At least one product is "sync-enabled" so bail before exception.
+					return;
+				}
+			}
+
+			// Variable product has no variations with sync enabled so it shouldn't be synced.
+			throw $invalid_exception;
+		} elseif ( $this->product->get_type() === 'variation' ) {
+			/**
+			 * This check will run for background jobs like sync all and feeds
+			 */
+			$parent_sync = $this->product_parent->get_meta( self::SYNC_ENABLED_META_KEY ) || null;
+
+			if ( 'yes' === $parent_sync ) {
+				return;
+			} elseif ( 'no' === $parent_sync ) {
+				throw $invalid_exception;
+			} else {
+				$variation_sync = false;
+				foreach ( $this->product_parent->get_children() as $child_id ) {
+					$child_product = wc_get_product( $child_id );
+					if ( $child_product && 'no' !== $child_product->get_meta( self::SYNC_ENABLED_META_KEY ) ) {
+						// At least one product is "sync-enabled" so bail before exception.
+						$variation_sync = true;
+						break;
+					}
+				}
+
+				/**
+				 * Updating parent level sync for UI issues and
+				 * Future variation checks for sync
+				 */
+				update_post_meta( $this->product_parent->get_id(), self::SYNC_ENABLED_META_KEY, $variation_sync ? 'yes' : 'no' );
+				if ( $variation_sync ) {
 					return;
 				}
 			}

@@ -53,7 +53,8 @@ class Lifecycle extends Framework\Lifecycle {
 			'2.0.4',
 			'2.4.0',
 			'2.5.0',
-			'3.2.0'
+			'3.2.0',
+			'3.4.9'
 		);
 	}
 
@@ -334,6 +335,15 @@ class Lifecycle extends Framework\Lifecycle {
 		delete_option( self::SETTING_MESSENGER_LOCALE );
 		delete_option( self::SETTING_MESSENGER_GREETING );
 		delete_option( self::SETTING_MESSENGER_COLOR_HEX );
+	}
+
+	/**
+	 * Trigger sync of all WooCommerce categories
+	 *
+	 * @since 3.4.9
+	 */
+	protected function upgrade_to_3_4_9() {
+		facebook_for_woocommerce()->get_product_sets_sync_handler()->sync_all_product_sets();
 	}
 
 }

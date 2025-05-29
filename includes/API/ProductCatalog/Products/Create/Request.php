@@ -8,18 +8,18 @@ use WooCommerce\Facebook\API\Request as ApiRequest;
 defined( 'ABSPATH' ) || exit;
 
 /**
- * Request object for Product Catalog > Product Groups > Products > Create Graph Api.
+ * Request object for Product Catalog > Products > Create Graph Api.
  *
- * @link https://developers.facebook.com/docs/marketing-api/reference/product-group/products/#Creating
+ * @link https://developers.facebook.com/docs/marketing-api/reference/product-catalog/products/#Creating
  */
 class Request extends ApiRequest {
 
 	/**
-	 * @param string $product_group_id Facebook Product Group ID.
+	 * @param string $product_catalog_id Facebook Product Catalog ID.
 	 * @param array  $data Facebook Product Data.
 	 */
-	public function __construct( string $product_group_id, array $data ) {
-		parent::__construct( "/{$product_group_id}/products", 'POST' );
+	public function __construct( string $product_catalog_id, array $data ) {
+		parent::__construct( "/{$product_catalog_id}/products", 'POST' );
 		parent::set_data( $data );
 	}
 }
