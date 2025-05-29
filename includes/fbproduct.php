@@ -851,7 +851,7 @@ class WC_Facebook_Product {
 				true
 			);
 			if ($rich_text_description) {
-				return apply_filters( 'facebook_for_woocommerce_fb_rich_text_description', $rich_text_description, $this->id );
+				return $rich_text_description;
 			}
 		}
 
@@ -883,38 +883,15 @@ class WC_Facebook_Product {
 			}
 		}
 
-		// If still empty, fallback to WooCommerce description
+		// If still empty, use the post content
 		if ( empty( $rich_text_description ) ) {
-			// For variations, try the variation's own description first
-			if ( $this->woo_product->is_type( 'variation' ) ) {
-				$rich_text_description = $this->woo_product->get_description();
-			}
-			
-			// If still empty, try the post content and then post excerpt
-			if ( empty( $rich_text_description ) ) {
-				$post = get_post( $this->id );
-				if ( $post ) {
-					// Try post content first
-					if ( ! empty( $post->post_content ) ) {
-						$rich_text_description = $post->post_content;
-					} 
-					// If no content, fallback to excerpt (short description)
-					elseif ( ! empty( $post->post_excerpt ) ) {
-						$rich_text_description = $post->post_excerpt;
-					}
-				}
+			$post = get_post( $this->id );
+			if ( $post ) {
+				$rich_text_description = $post->post_content;
 			}
 		}
 
-		/**
-		 * Filters the FB product rich text description.
-		 *
-		 * @since 3.2.6
-		 *
-		 * @param string  $rich_text_description Facebook product rich text description.
-		 * @param int     $id                    WooCommerce Product ID.
-		 */
-		return apply_filters( 'facebook_for_woocommerce_fb_rich_text_description', $rich_text_description, $this->id );
+		return $rich_text_description;
 	}
 
 	/**
