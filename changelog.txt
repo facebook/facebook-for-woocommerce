@@ -46,7 +46,29 @@
 *  Add - Add usage logging for enhanced settings tabs by @ajello-meta in #3202
 *  Tweak - Remove UI of a checkbox that controls enablement of the new style feed generation by @mshymon in #3056
 *  Fix - Fix linter errors for ./includes/fbutils.php files by @ajello-meta in #3075
-*  Fix - Hotfix for Rollout Switches by @vinkmeta in #3236
+*  Tweak - Removing Variant Level Sync by @SayanPandey in #2931
+*  Tweak - Removed concept of Product Group Deletion from the plugin by @vinkmeta in #3062
+*  Tweak - Tagging woo all products using a flag by @SayanPandey in #3165
+*  Add - A simple column for Woo All Products sync in feed file by @SayanPandey in #3197
+*  Tweak - Preparation for migrating Batch API to Graph API by @vinkmeta in #3203
+*  Tweak Block Product Group Creation for Simple Products by @vinkmeta in #3204
+*  Fix - Removed html tags from product set description by @mshymon in #3230
+*  Fix - Fix for the rollout Switches by @vinkmeta in #3236
+*  Add - Opt out sync experience. by @SayanPandey in #3220
+*  Fix - Added a transient flag to avoid flooding of product set api requests by @vinkmeta in #3245
+*  Fix - Additional check for the opt-out banner by @SayanPandey in #3259
+*  Fix - Bump up GraphAPI version to 21 by @vahidkay-meta in #3219
+*  Fix - fix linter errors for ./class-wc-facebookcommerce.php by @ajello-meta in #3255
+*  Fix - fix linter errors for ./facebook-commerce-events-tracker.php by @ajello-meta in #3254
+*  Fix - fix linter errors for ./includes/Admin/Settings_Screens/Advertise.php by @ajello-meta in #3237
+*  Fix - fix linter errors for ./includes/Admin/Settings_Screens/Product_Sync.php by @ajello-meta in #3239
+*  Fix - fix function return typing for get_settings() by @ajello-meta in #3257
+*  Tweak - Addition check for opt out by @SayanPandey in #3259
+*  Tweak - Update the GraphAPI version to 21 by @vahidkay-meta in #3219
+*  Fix - Enabled rollout switch only for plugin admins by @vinkmeta in #3242
+*  Add - reset connection functionality by @jczhuoMeta in #3262
+*  Fix - fixing the non static method called as static issue by @SayanPandey in #3263
+*  Fix - Fix linter errors for ./facebook-commerce.php by @ajello-meta in #3251
 
 = 3.4.10 - 2025-05-22 =
 * Fix - Disabled the RollOut switch
