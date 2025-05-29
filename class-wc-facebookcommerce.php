@@ -217,9 +217,9 @@ class WC_Facebookcommerce extends WooCommerce\Facebook\Framework\Plugin {
 			$this->sync_background_handler          = new WooCommerce\Facebook\Products\Sync\Background();
 			$this->configuration_detection          = new WooCommerce\Facebook\Feed\FeedConfigurationDetection();
 			$this->legacy_product_sets_sync_handler = new WooCommerce\Facebook\ProductSets\Sync();
-			$this->commerce_handler          		= new WooCommerce\Facebook\Commerce();
-			$this->fb_categories             		= new WooCommerce\Facebook\Products\FBCategories();
-			$this->external_version_update   		= new WooCommerce\Facebook\ExternalVersionUpdate\Update();
+			$this->commerce_handler                 = new WooCommerce\Facebook\Commerce();
+			$this->fb_categories                    = new WooCommerce\Facebook\Products\FBCategories();
+			$this->external_version_update          = new WooCommerce\Facebook\ExternalVersionUpdate\Update();
 
 			if ( wp_doing_ajax() ) {
 				$this->ajax = new WooCommerce\Facebook\AJAX();
