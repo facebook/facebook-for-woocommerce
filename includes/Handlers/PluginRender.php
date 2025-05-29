@@ -26,7 +26,7 @@ class PluginRender {
 	private \WC_Facebookcommerce $plugin;
 
 	/** @var string opt out plugin version action */
-	const ALL_PRODUCTS_PLUGIN_VERSION = '3.4.12';
+	const ALL_PRODUCTS_PLUGIN_VERSION = '3.5.1';
 
 	/** @var string opt out sync action */
 	const ACTION_OPT_OUT_OF_SYNC = 'wc_facebook_opt_out_of_sync';
@@ -88,7 +88,7 @@ class PluginRender {
 		$current_version = $this->plugin->get_version();
 		/**
 		 * Case when current version is less or equal to latest
-		 * but latest is below 3.4.12
+		 * but latest is below 3.5.1
 		 * Should show the opt in/ opt out banner
 		 */
 		if ( version_compare( $current_version, self::ALL_PRODUCTS_PLUGIN_VERSION, '<' ) ) {
