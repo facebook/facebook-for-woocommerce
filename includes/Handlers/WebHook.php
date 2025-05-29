@@ -25,8 +25,6 @@ class WebHook {
 	/**
 	 * Constructs a new WebHook.
 	 *
-	 * @param \WC_Facebookcommerce $plugin Plugin instance.
-	 *
 	 * @since 2.3.0
 	 */
 	public function __construct() {
