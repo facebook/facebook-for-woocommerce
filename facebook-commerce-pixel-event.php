@@ -92,7 +92,8 @@ class WC_Facebookcommerce_Pixel {
 		}
 
 		$is_advanced_matching_enabled = self::get_use_pii_key();
-		if ( null === $is_advanced_matching_enabled &&
+		//phpcs:disable Universal.Operators.StrictComparisons.LooseEqual
+		if ( null == $is_advanced_matching_enabled &&
 		class_exists( 'WC_Facebookcommerce_WarmConfig' ) ) {
 			$fb_warm_is_advanced_matching_enabled =
 			WC_Facebookcommerce_WarmConfig::$fb_warm_is_advanced_matching_enabled;
