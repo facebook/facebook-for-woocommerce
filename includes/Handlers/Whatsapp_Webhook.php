@@ -26,6 +26,7 @@ class Whatsapp_Webhook {
 	 *
 	 * @since 2.3.0
 	 */
+	// phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter
 	public function __construct( \WC_Facebookcommerce $plugin ) {
 		add_action( 'rest_api_init', array( $this, 'init_whatsapp_webhook_endpoint' ) );
 	}

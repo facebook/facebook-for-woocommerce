@@ -121,7 +121,7 @@ class WhatsAppUtilityConnection {
 			sprintf(
 					/* translators: %s $response */
 				__( 'Connect Whatsapp Utility Message API Response: %1$s ', 'facebook-for-woocommerce' ),
-				json_encode( $response ),
+				wp_json_encode( $response ),
 			)
 		);
 		$response_body = explode( "\n", wp_remote_retrieve_body( $response ) );
@@ -178,7 +178,7 @@ class WhatsAppUtilityConnection {
 			sprintf(
 					/* translators: %s $error_message */
 				__( 'Disconnect Whatsapp Utility Message API Call Response: %1$s ', 'facebook-for-woocommerce' ),
-				json_encode( $response ),
+				wp_json_encode( $response ),
 			)
 		);
 		if ( is_wp_error( $response ) || 200 !== wp_remote_retrieve_response_code( $response ) ) {
@@ -291,7 +291,7 @@ class WhatsAppUtilityConnection {
 			sprintf(
 					/* translators: %s $error_message */
 				__( 'Event Configs Post API call Response: %1$s ', 'facebook-for-woocommerce' ),
-				json_encode( $response ),
+				wp_json_encode( $response ),
 			)
 		);
 		if ( is_wp_error( $response ) || 200 !== $status_code ) {
@@ -381,7 +381,7 @@ class WhatsAppUtilityConnection {
 			sprintf(
 					/* translators: %s $error_message */
 				__( 'Message Events Post API call Response: %1$s ', 'facebook-for-woocommerce' ),
-				json_encode( $response ),
+				wp_json_encode( $response ),
 			)
 		);
 		if ( is_wp_error( $response ) || 200 !== $status_code ) {
@@ -444,7 +444,6 @@ class WhatsAppUtilityConnection {
 					__( 'Integration Config GET API call Succeeded', 'facebook-for-woocommerce' )
 				)
 			);
-			// $response_object = json_decode( $data[0] );
 			wp_send_json_success( $data, 'Finish Integration Config API Call' );
 		}
 	}
