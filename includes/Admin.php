@@ -1438,7 +1438,7 @@ class Admin {
 				woocommerce_wp_textarea_input(
 					array(
 						'id'            => sprintf( 'variable_%s%s', \WC_Facebookcommerce_Integration::FB_PRODUCT_DESCRIPTION, $index ),
-						'name'          => sprintf( "variable_%s[%s]", \WC_Facebookcommerce_Integration::FB_PRODUCT_DESCRIPTION, $index ),
+						'name'          => sprintf( 'variable_%s[%s]', \WC_Facebookcommerce_Integration::FB_PRODUCT_DESCRIPTION, $index ),
 						'label'         => __( 'Facebook Description', 'facebook-for-woocommerce' ),
 						'desc_tip'      => true,
 						'description'   => __( 'Custom (plain-text only) description for product on Facebook. If blank, product description will be used. If product description is blank, shortname will be used.', 'facebook-for-woocommerce' ),
@@ -1469,7 +1469,7 @@ class Admin {
 				woocommerce_wp_text_input(
 					array(
 						'id'            => sprintf( 'variable_%s%s', \WC_Facebook_Product::FB_PRODUCT_IMAGE, $index ),
-						'name'          => sprintf( "variable_%s[%s]", \WC_Facebook_Product::FB_PRODUCT_IMAGE, $index ),
+						'name'          => sprintf( 'variable_%s[%s]', \WC_Facebook_Product::FB_PRODUCT_IMAGE, $index ),
 						'label'         => __( 'Custom Image URL', 'facebook-for-woocommerce' ),
 						'value'         => $image_url,
 						'class'         => sprintf( 'enable-if-sync-enabled product-image-source-field show-if-product-image-source-%s', Products::PRODUCT_IMAGE_SOURCE_CUSTOM ),
@@ -1482,7 +1482,7 @@ class Admin {
 				woocommerce_wp_text_input(
 					array(
 						'id'            => sprintf( 'variable_%s%s', \WC_Facebook_Product::FB_PRODUCT_PRICE, $index ),
-						'name'          => sprintf( "variable_%s[%s]", \WC_Facebook_Product::FB_PRODUCT_PRICE, $index ),
+						'name'          => sprintf( 'variable_%s[%s]', \WC_Facebook_Product::FB_PRODUCT_PRICE, $index ),
 						'label'         => sprintf(
 						/* translators: Placeholders %1$s - WC currency symbol */
 							__( 'Facebook Price (%1$s)', 'facebook-for-woocommerce' ),
@@ -1499,7 +1499,7 @@ class Admin {
 				woocommerce_wp_text_input(
 					array(
 						'id'            => sprintf( 'variable_%s%s', \WC_Facebook_Product::FB_MPN, $index ),
-						'name'          => sprintf( "variable_%s[%s]", \WC_Facebook_Product::FB_MPN, $index ),
+						'name'          => sprintf( 'variable_%s[%s]', \WC_Facebook_Product::FB_MPN, $index ),
 						'label'         => __( 'Manufacturer Parts Number (MPN)', 'facebook-for-woocommerce' ),
 						'desc_tip'      => true,
 						'description'   => __( 'Manufacturer Parts Number', 'facebook-for-woocommerce' ),
@@ -1574,27 +1574,27 @@ class Admin {
 		if ( ! $variation instanceof \WC_Product_Variation ) {
 			return;
 		}
-		
+
 		// Verify nonce
 		$nonce_field = 'facebook_variation_nonce_' . $variation_id;
-		if ( ! isset( $_POST[$nonce_field] ) || ! wp_verify_nonce( sanitize_key( $_POST[$nonce_field] ), 'facebook_variation_save' ) ) {
+		if ( ! isset( $_POST[ $nonce_field ] ) || ! wp_verify_nonce( sanitize_key( $_POST[ $nonce_field ] ), 'facebook_variation_save' ) ) {
 			return;
 		}
-		
+
 		// phpcs:disable WordPress.Security.NonceVerification.Missing
-		
+
 		// Get sync mode from POST or parent product
-		$sync_mode = isset( $_POST['wc_facebook_sync_mode'] ) ? wc_clean( wp_unslash( $_POST['wc_facebook_sync_mode'] ) ) : self::SYNC_MODE_SYNC_DISABLED;
+		$sync_mode    = isset( $_POST['wc_facebook_sync_mode'] ) ? wc_clean( wp_unslash( $_POST['wc_facebook_sync_mode'] ) ) : self::SYNC_MODE_SYNC_DISABLED;
 		$sync_enabled = self::SYNC_MODE_SYNC_DISABLED !== $sync_mode;
-		
+
 		// Get sync settings from parent product if not in POST data (fixes PR #2931 issue)
 		if ( ! isset( $_POST['wc_facebook_sync_mode'] ) ) {
 			$parent_product = wc_get_product( $variation->get_parent_id() );
 			if ( $parent_product ) {
 				$parent_sync_enabled = 'no' !== get_post_meta( $parent_product->get_id(), Products::SYNC_ENABLED_META_KEY, true );
-				$parent_visibility = get_post_meta( $parent_product->get_id(), Products::VISIBILITY_META_KEY, true );
-				$parent_is_visible = $parent_visibility ? wc_string_to_bool( $parent_visibility ) : true;
-				
+				$parent_visibility   = get_post_meta( $parent_product->get_id(), Products::VISIBILITY_META_KEY, true );
+				$parent_is_visible   = $parent_visibility ? wc_string_to_bool( $parent_visibility ) : true;
+
 				if ( $parent_sync_enabled ) {
 					$sync_mode = $parent_is_visible ? self::SYNC_MODE_SYNC_AND_SHOW : self::SYNC_MODE_SYNC_AND_HIDE;
 				} else {
@@ -1603,20 +1603,21 @@ class Admin {
 				$sync_enabled = self::SYNC_MODE_SYNC_DISABLED !== $sync_mode;
 			}
 		}
-		
+
 		if ( self::SYNC_MODE_SYNC_AND_SHOW === $sync_mode && $variation->is_virtual() ) {
 			// force to Sync and hide
 			$sync_mode = self::SYNC_MODE_SYNC_AND_HIDE;
 		}
-		
+
 		// ALWAYS save Facebook field data (this fixes the PR #2931 breaking change)
-		$posted_param = 'variable_' . \WC_Facebookcommerce_Integration::FB_PRODUCT_DESCRIPTION;
+		$posted_param    = 'variable_' . \WC_Facebookcommerce_Integration::FB_PRODUCT_DESCRIPTION;
+		// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Intentionally getting raw value to apply different sanitization methods below
 		$description_raw = isset( $_POST[ $posted_param ][ $index ] ) ? wp_unslash( $_POST[ $posted_param ][ $index ] ) : null;
-		
+
 		// Create separate sanitized versions for different purposes
 		$description_plain = $description_raw ? sanitize_text_field( $description_raw ) : null; // Plain text for regular description
-		$description_rich = $description_raw ? wp_kses_post( $description_raw ) : null; // HTML-preserved for rich text description
-		
+		$description_rich  = $description_raw ? wp_kses_post( $description_raw ) : null; // HTML-preserved for rich text description
+
 		$posted_param = 'variable_' . \WC_Facebook_Product::FB_MPN;
 		$fb_mpn       = isset( $_POST[ $posted_param ][ $index ] ) ? sanitize_text_field( wp_unslash( $_POST[ $posted_param ][ $index ] ) ) : null;
 		$posted_param = 'variable_fb_product_image_source';
@@ -1627,7 +1628,7 @@ class Admin {
 		$video_urls   = isset( $_POST[ $posted_param ][ $index ] ) ? esc_url_raw( wp_unslash( $_POST[ $posted_param ][ $index ] ) ) : [];
 		$posted_param = 'variable_' . \WC_Facebook_Product::FB_PRODUCT_PRICE;
 		$price        = isset( $_POST[ $posted_param ][ $index ] ) ? wc_format_decimal( wc_clean( wp_unslash( $_POST[ $posted_param ][ $index ] ) ) ) : '';
-		
+
 		// Always save the Facebook field data with appropriate sanitization for each field
 		$variation->update_meta_data( \WC_Facebookcommerce_Integration::FB_PRODUCT_DESCRIPTION, $description_plain );
 		$variation->update_meta_data( \WC_Facebookcommerce_Integration::FB_RICH_TEXT_DESCRIPTION, $description_rich );
@@ -1637,7 +1638,7 @@ class Admin {
 		$variation->update_meta_data( \WC_Facebook_Product::FB_PRODUCT_VIDEO, $video_urls );
 		$variation->update_meta_data( \WC_Facebook_Product::FB_PRODUCT_PRICE, $price );
 		$variation->save_meta_data();
-		
+
 		// Handle sync operations based on sync settings
 		if ( $sync_enabled ) {
 			Products::enable_sync_for_products( array( $variation ) );
@@ -1645,7 +1646,7 @@ class Admin {
 		} else {
 			Products::disable_sync_for_products( array( $variation ) );
 		}
-		
+
 		// phpcs:enable WordPress.Security.NonceVerification.Missing
 	}
 
