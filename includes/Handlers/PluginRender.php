@@ -135,7 +135,7 @@ class PluginRender {
 		}
 	}
 
-	public function opt_out_of_sync_clicked() {
+	public static function opt_out_of_sync_clicked() {
 			$latest_date = gmdate( 'Y-m-d H:i:s' );
 			update_option( self::MASTER_SYNC_OPT_OUT_TIME, $latest_date );
 			wp_send_json_success( 'Opted out successfully' );
@@ -145,7 +145,7 @@ class PluginRender {
 	 * Banner for initmation of WooAllProducts version will show up
 	 * after a week
 	 */
-	public function reset_upcoming_version_banners() {
+	public static function reset_upcoming_version_banners() {
 		set_transient( 'upcoming_woo_all_products_banner_hide', true, 7 * DAY_IN_SECONDS );
 	}
 
