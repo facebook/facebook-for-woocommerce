@@ -1610,7 +1610,7 @@ class Admin {
 		}
 
 		// ALWAYS save Facebook field data (this fixes the PR #2931 breaking change)
-		$posted_param    = 'variable_' . \WC_Facebookcommerce_Integration::FB_PRODUCT_DESCRIPTION;
+		$posted_param = 'variable_' . \WC_Facebookcommerce_Integration::FB_PRODUCT_DESCRIPTION;
 		// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Intentionally getting raw value to apply different sanitization methods below
 		$description_raw = isset( $_POST[ $posted_param ][ $index ] ) ? wp_unslash( $_POST[ $posted_param ][ $index ] ) : null;
 
