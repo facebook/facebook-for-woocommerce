@@ -162,7 +162,6 @@ class Connection {
 			);
 
 		} catch ( ApiException $exception ) {
-
 			$this->get_plugin()->log( 'Could not refresh business configuration. ' . $exception->getMessage() );
 		}
 
