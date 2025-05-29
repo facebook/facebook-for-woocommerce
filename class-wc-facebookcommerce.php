@@ -97,7 +97,7 @@ class WC_Facebookcommerce extends WooCommerce\Facebook\Framework\Plugin {
 	/** @var WooCommerce\Facebook\ProductSets\Sync product sets sync handler */
 	private $legacy_product_sets_sync_handler;
 
-	/** @var WooCommerce\Facebook\Admin\ProductSets\ProductSetSync product sets sync handler */
+	/** @var WooCommerce\Facebook\ProductSets\ProductSetSync product sets sync handler */
 	private $product_sets_sync_handler;
 
 	/** @var WooCommerce\Facebook\Handlers\Connection connection handler */
@@ -278,7 +278,7 @@ class WC_Facebookcommerce extends WooCommerce\Facebook\Framework\Plugin {
 			function () {
 				$this->admin                     = new WooCommerce\Facebook\Admin();
 				$this->rollout_switches          = new WooCommerce\Facebook\Admin\RolloutSwitches( $this );
-				$this->product_sets_sync_handler = new WooCommerce\Facebook\Admin\ProductSets\ProductSetSync();
+				$this->product_sets_sync_handler = new WooCommerce\Facebook\ProductSets\ProductSetSync();
 			},
 			0
 		);
@@ -631,7 +631,7 @@ class WC_Facebookcommerce extends WooCommerce\Facebook\Framework\Plugin {
 	 *
 	 * @since 3.4.9
 	 *
-	 * @return WooCommerce\Facebook\Admin\ProductSets\ProductSetSync
+	 * @return WooCommerce\Facebook\ProductSets\ProductSetSync
 	 */
 	public function get_product_sets_sync_handler() {
 		return $this->product_sets_sync_handler;
