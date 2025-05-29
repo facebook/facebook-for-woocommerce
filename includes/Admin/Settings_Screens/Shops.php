@@ -312,11 +312,22 @@ class Shops extends Abstract_Settings_Screen {
 	 * @return array
 	 * @since 3.5.0
 	 */
-	public function get_settings() {
+	public function get_settings(): array {
+		//phpcs:ignore WordPress.WP.I18n.NoEmptyStrings
+		return self::get_settings_with_title_static( __( '', 'facebook-for-woocommerce' ) );
+	}
+
+	/**
+	 * Returns the shop-wide settings array.
+	 * Reused in Connection.php.
+	 *
+	 * @param string $title A translated title.
+	 * @return array
+	 */
+	public static function get_settings_with_title_static( string $title ): array {
 		return array(
 			array(
-				//phpcs:ignore WordPress.WP.I18n.NoEmptyStrings
-				'title' => __( '', 'facebook-for-woocommerce' ),
+				'title' => $title,
 				'type'  => 'title',
 			),
 

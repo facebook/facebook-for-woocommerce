@@ -33,7 +33,7 @@ class API extends Base {
 
 	public const GRAPH_API_URL = 'https://graph.facebook.com/';
 
-	public const API_VERSION = 'v20.0';
+	public const API_VERSION = 'v21.0';
 
 	/** @var string URI used for the request */
 	protected $request_uri = self::GRAPH_API_URL . self::API_VERSION;
@@ -320,16 +320,17 @@ class API extends Base {
 	 *
 	 * @param string $external_business_id external business ID
 	 * @param string $plugin_version The plugin version.
-	 *
+	 * @param bool is_opted_out The plugin version.
 	 * @return Response|API\FBE\Configuration\Update\Response
 	 * @throws ApiException
 	 */
-	public function update_plugin_version_configuration( string $external_business_id, string $plugin_version ): API\FBE\Configuration\Update\Response {
+	public function update_plugin_version_configuration( string $external_business_id, bool $is_opted_out, string $plugin_version ): API\FBE\Configuration\Update\Response {
 		$request = new API\FBE\Configuration\Update\Request( $external_business_id );
 		$request->set_external_client_metadata(
 			array(
 				'version_id' => $plugin_version,
 				'is_multisite'   => is_multisite(),
+				'is_woo_all_products_opted_out' => $is_opted_out
 			)
 		);
 		$this->set_response_handler( API\FBE\Configuration\Update\Response::class );

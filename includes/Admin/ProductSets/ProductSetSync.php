@@ -12,7 +12,7 @@ namespace WooCommerce\Facebook\Admin\ProductSets;
 
 defined( 'ABSPATH' ) || exit;
 
-use WooCommerce\Facebook\RolloutSwitches;
+use WooCommerce\Facebook\Admin\RolloutSwitches;
 use WooCommerce\Facebook\Utilities\Heartbeat;
 use WC_Facebookcommerce_Utils;
 
@@ -104,6 +104,12 @@ class ProductSetSync {
 	 */
 	public function sync_all_product_sets() {
 		try {
+			$flag_name = '_wc_facebook_for_woocommerce_product_sets_sync_flag';
+			if ( 'yes' === get_transient( $flag_name ) ) {
+				return;
+			}
+			set_transient( $flag_name, 'yes', DAY_IN_SECONDS - 1 );
+
 			if ( ! $this->is_sync_enabled() ) {
 				return;
 			}
