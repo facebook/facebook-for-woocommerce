@@ -567,7 +567,7 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 				'background' => false,
 			];
 		}
-		printf( json_encode( $response ) );
+		printf( wp_json_encode( $response ) );
 		wp_die();
 	}
 
@@ -1739,7 +1739,7 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 			'connected' => true,
 			'status'    => 'complete',
 		];
-		printf( json_encode( $response ) );
+		printf( wp_json_encode( $response ) );
 		wp_die();
 	}
 
@@ -1790,7 +1790,7 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 		} else {
 			$response = [ 'connected' => false ];
 		}
-		printf( json_encode( $response ) );
+		printf( wp_json_encode( $response ) );
 		wp_die();
 	}
 
@@ -2019,7 +2019,7 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 		wp_reset_postdata();
 		ob_end_clean();
 
-		return json_encode( [ $items ] );
+		return wp_json_encode( [ $items ] );
 	}
 
 	/**
@@ -3054,7 +3054,7 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 			delete_transient( 'facebook_plugin_test_stack_trace' );
 		}
 		delete_option( 'fb_test_pass' );
-		printf( json_encode( $response ) );
+		printf( wp_json_encode( $response ) );
 		wp_die();
 	}
 
