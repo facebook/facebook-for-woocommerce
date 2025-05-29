@@ -52,6 +52,9 @@ class AJAX {
 		// sync navigation menu via AJAX
 		add_action( 'wp_ajax_wc_facebook_sync_navigation_menu', array( $this, 'sync_navigation_menu' ) );
 
+		// sync product sets via AJAX
+		add_action( 'wp_ajax_wc_facebook_sync_product_sets', array( $this, 'sync_product_sets' ) );
+
 		// get the current sync status
 		add_action( 'wp_ajax_wc_facebook_get_sync_status', array( $this, 'get_sync_status' ) );
 
@@ -199,6 +202,24 @@ class AJAX {
 
 		try {
 			facebook_for_woocommerce()->feed_manager->get_feed_instance( 'navigation_menu' )->regenerate_feed();
+			wp_send_json_success();
+		} catch ( \Exception $exception ) {
+			wp_send_json_error( $exception->getMessage() );
+		}
+	}
+
+	/**
+	 * Syncs navigation menu via AJAX.
+	 *
+	 * @internal
+	 *
+	 * @since 3.5.0
+	 */
+	public function sync_product_sets() {
+		check_admin_referer( Shops::ACTION_SYNC_PRODUCT_SETS, 'nonce' );
+
+		try {
+			facebook_for_woocommerce()->get_product_sets_sync_handler()->sync_all_product_sets();
 			wp_send_json_success();
 		} catch ( \Exception $exception ) {
 			wp_send_json_error( $exception->getMessage() );
