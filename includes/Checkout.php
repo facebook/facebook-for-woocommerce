@@ -112,9 +112,13 @@ class Checkout {
 							\WC_Facebookcommerce_Utils::log_to_meta(
 								$error_message,
 								array(
-									'flow_name'       => 'checkout',
-									'flow_step'       => 'add_to_cart',
-									'extra_data'   => [ 'products_param' => $products_param, 'product_id' => $product_id, 'quantity' => $quantity, ],
+									'flow_name'  => 'checkout',
+									'flow_step'  => 'add_to_cart',
+									'extra_data' => [
+										'products_param' => $products_param,
+										'product_id'     => $product_id,
+										'quantity'       => $quantity,
+									],
 								)
 							);
 						}
@@ -128,9 +132,13 @@ class Checkout {
 						\WC_Facebookcommerce_Utils::log_to_meta(
 							$error_message,
 							array(
-								'flow_name'       => 'checkout',
-								'flow_step'       => 'product_quantity_validation',
-								'extra_data'   => [ 'products_param' => $products_param, 'product_id' => $product_id, 'quantity' => $quantity, ],
+								'flow_name'  => 'checkout',
+								'flow_step'  => 'product_quantity_validation',
+								'extra_data' => [
+									'products_param' => $products_param,
+									'product_id'     => $product_id,
+									'quantity'       => $quantity,
+								],
 							)
 						);
 					}
