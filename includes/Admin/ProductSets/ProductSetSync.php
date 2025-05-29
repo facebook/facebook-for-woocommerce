@@ -54,9 +54,11 @@ class ProductSetSync {
 	/**
 	 * @since 3.4.9
 	 *
-	 * @param int $term_id Term ID.
+	 * @param int   $term_id Term ID.
+	 * @param int   $tt_id Term taxonomy ID.
+	 * @param array $args Arguments.
 	 */
-	public function on_create_or_update_product_wc_category_callback( $term_id ) {
+	public function on_create_or_update_product_wc_category_callback( $term_id, $tt_id, $args ) { // phpcs:ignoreUnusedVariable
 		try {
 			if ( ! $this->is_sync_enabled() ) {
 				return;
@@ -77,9 +79,12 @@ class ProductSetSync {
 	/**
 	 * @since 3.4.9
 	 *
+	 * @param int     $term_id Term ID.
+	 * @param int     $tt_id Term taxonomy ID.
 	 * @param WP_Term $deleted_term Copy of the already-deleted term.
+	 * @param array   $object_ids List of term object IDs.
 	 */
-	public function on_delete_wc_product_category_callback( $deleted_term ) {
+	public function on_delete_wc_product_category_callback( $term_id, $tt_id, $deleted_term, $object_ids ) {
 		try {
 			if ( ! $this->is_sync_enabled() ) {
 				return;

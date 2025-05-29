@@ -92,7 +92,10 @@ class ProductSetSyncTest extends WP_UnitTestCase {
             ->with(self::FB_PRODUCT_SET_ID);
         
         $product_set_sync->on_delete_wc_product_category_callback( 
-            $wc_category
+            $wc_category->term_id, 
+            $wc_category->term_taxonomy_id, 
+            $wc_category,
+            array() 
         );
     }
 
