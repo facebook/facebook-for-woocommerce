@@ -79,7 +79,6 @@ class Enhanced_Settings {
 			// TODO: Remove Product sync and Product sets tab once catalog changes are complete
 			$screens = array(
 				Settings_Screens\Shops::ID        => new Settings_Screens\Shops(),
-				Settings_Screens\Product_Sync::ID => new Settings_Screens\Product_Sync(),
 				Settings_Screens\Product_Sets::ID => new Settings_Screens\Product_Sets(),
 			);
 		} else {
