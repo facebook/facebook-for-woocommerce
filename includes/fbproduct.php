@@ -888,10 +888,15 @@ class WC_Facebook_Product {
 			$post = get_post( $this->id );
 			if ( $post ) {
 				$rich_text_description = $post->post_content;
+				
+				// If post content is empty, fall back to short description (post_excerpt)
+				if ( empty( $rich_text_description ) ) {
+					$rich_text_description = $post->post_excerpt;
+				}
 			}
 		}
 
-		return $rich_text_description;
+		return apply_filters( 'facebook_for_woocommerce_fb_rich_text_description', $rich_text_description, $this->id );
 	}
 
 	/**
