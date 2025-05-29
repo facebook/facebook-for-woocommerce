@@ -335,10 +335,12 @@ class Whatsapp_Utility extends Abstract_Settings_Screen {
 		<div id="whatsapp-onboarding-done-button" class="card-item">
 			<div class="whatsapp-onboarding-done-button">
 				<a
-					class="button button-primary"
+					class="button button-primary fbwa-button"
 					id="wc-whatsapp-onboarding-finish"
-					href="#"
-				><?php esc_html_e( 'Done', 'facebook-for-woocommerce' ); ?></a>
+					href="#">
+					<div id="wc-whatsapp-onboarding-finish-loading-state" class="fbwa-spinner fbwa-hidden-element"></div>
+					<span><?php esc_html_e( 'Done', 'facebook-for-woocommerce' ); ?></span>
+				</a>
 			</div>
 		</div>
 	</div>
@@ -518,8 +520,11 @@ class Whatsapp_Utility extends Abstract_Settings_Screen {
 						<?php esc_html_e( 'Your WhatsApp Business account will be disconnected from WooCommerce, resulting in the loss of messaging features. To reconnect in the future, you\'ll need to set up the connection again. However, you can still view your old insights in WhatsApp Manager. ', 'facebook-for-woocommerce' ); ?>
 					</div>
 					<div class="warning-modal-footer">
-						<button id="wc-fb-disconnect-warning-modal-cancel" class="button"><?php esc_html_e( 'Cancel', 'facebook-for-woocommerce' ); ?></button>
-						<button id="wc-fb-disconnect-warning-modal-confirm" class="button button-primary"><?php esc_html_e( 'Disconnect', 'facebook-for-woocommerce' ); ?></button>
+						<a id="wc-fb-disconnect-warning-modal-cancel" class="button fbwa-button" href="#"><?php esc_html_e( 'Cancel', 'facebook-for-woocommerce' ); ?></a>
+						<a id="wc-fb-disconnect-warning-modal-confirm" class="button button-primary fbwa-button" href="#">
+							<div id="wc-fb-disconnect-warning-modal-confirm-loading-state" class="fbwa-spinner fbwa-hidden-element"></div>
+							<span><?php esc_html_e( 'Disconnect', 'facebook-for-woocommerce' ); ?></span>
+						</a>
 					</div>
 				</div>
 			</div>
@@ -648,14 +653,16 @@ class Whatsapp_Utility extends Abstract_Settings_Screen {
 				<div class="manage-event-button">
 					<a
 						id="woocommerce-whatsapp-save-order-confirmation"
-						class="button button-primary"
-						href="#"><?php esc_html_e( 'Save', 'facebook-for-woocommerce' ); ?>
+						class="button button-primary fbwa-button"
+						href="#">
+							<div id="woocommerce-whatsapp-save-loading-state" class="fbwa-spinner fbwa-hidden-element"></div>
+							<span><?php esc_html_e( 'Save', 'facebook-for-woocommerce' ); ?></span>
 					</a>
 				</div>
 				<div class="manage-event-button">
 					<a
 						id="woocommerce-whatsapp-cancel-order-confirmation"
-						class="button"
+						class="button fbwa-button"
 						href="<?php echo esc_html( admin_url( 'admin.php?page=' . self::PAGE_ID . '&tab=' . self::ID . '&view=utility_settings' ) ); ?>"><?php esc_html_e( 'Cancel', 'facebook-for-woocommerce' ); ?></a>
 				</div>
 			</div>

@@ -8,8 +8,13 @@
  */
 
 jQuery( document ).ready( function( $ ) {
+    var doneBtn = $('#wc-whatsapp-onboarding-finish');
+
     // handle the whatsapp finish button click
-	$( '#wc-whatsapp-onboarding-finish' ).click( function( event ) {
+	doneBtn.click( function( event ) {
+        var spinnerState = $('#wc-whatsapp-onboarding-finish-loading-state');
+        doneBtn.addClass('fbwa-button-disabled');
+        spinnerState.show();
         // call the connect API to create configs and check payment
         $.post( facebook_for_woocommerce_whatsapp_finish.ajax_url, {
 			action: 'wc_facebook_whatsapp_finish_onboarding',
@@ -46,6 +51,8 @@ jQuery( document ).ready( function( $ ) {
                       </div>
                     `;
                 $( '#payment-method-error-notice' ).html( errorNoticeHtml ).show();
+                spinnerState.hide();
+                doneBtn.removeClass('fbwa-button-disabled');
             }
 		} );
     });
