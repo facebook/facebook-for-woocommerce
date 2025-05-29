@@ -13,7 +13,7 @@ namespace WooCommerce\Facebook\Admin;
 defined( 'ABSPATH' ) || exit;
 
 use WP_Term;
-use WooCommerce\Facebook\Admin\RolloutSwitches;
+use WooCommerce\Facebook\RolloutSwitches;
 
 /**
  * General handler for the product set admin functionality.

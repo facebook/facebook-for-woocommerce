@@ -3,7 +3,7 @@ use PHPUnit\Framework\TestCase;
 use WooCommerce\Facebook\Admin\Settings_Screens\Connection;
 use WooCommerce\Facebook\API;
 use WooCommerce\Facebook\Framework\Api\Exception as ApiException;
-use WooCommerce\Facebook\Admin\RolloutSwitches;
+use WooCommerce\Facebook\RolloutSwitches;
 
 class RolloutSwitchesTest extends \WooCommerce\Facebook\Tests\AbstractWPUnitTestWithSafeFiltering {
 

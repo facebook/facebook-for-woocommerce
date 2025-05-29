@@ -8,7 +8,7 @@
  * @package FacebookCommerce
  */
 
-namespace WooCommerce\Facebook\Admin;
+namespace WooCommerce\Facebook;
 
 use WooCommerce\Facebook\Framework\Api\Exception;
 use WooCommerce\Facebook\Utilities\Heartbeat;
@@ -36,7 +36,6 @@ class RolloutSwitches {
 
 	public function __construct( \WC_Facebookcommerce $plugin ) {
 		$this->plugin = $plugin;
-		add_action( Heartbeat::HOURLY, array( $this, 'init' ) );
 	}
 
 	public function init() {
@@ -49,7 +48,7 @@ class RolloutSwitches {
 		if ( 'yes' === get_transient( $flag_name ) ) {
 			return;
 		}
-		set_transient( $flag_name, 'yes', HOUR_IN_SECONDS );
+		set_transient( $flag_name, 'yes', 60 * MINUTE_IN_SECONDS );
 
 		try {
 			$external_business_id = $this->plugin->get_connection_handler()->get_external_business_id();

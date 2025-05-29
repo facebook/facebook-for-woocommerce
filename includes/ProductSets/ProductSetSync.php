@@ -12,7 +12,7 @@ namespace WooCommerce\Facebook\ProductSets;
 
 defined( 'ABSPATH' ) || exit;
 
-use WooCommerce\Facebook\Admin\RolloutSwitches;
+use WooCommerce\Facebook\RolloutSwitches;
 use WooCommerce\Facebook\Utilities\Heartbeat;
 use WC_Facebookcommerce_Utils;
 
