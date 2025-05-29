@@ -713,6 +713,7 @@ abstract class Plugin {
 	 *        (ie a gateway that supports both credit cards and echecks)
 	 * @return string plugin settings URL
 	 */
+	// phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter
 	public function get_settings_url( $plugin_id = null ) {
 		// stub method
 		return '';

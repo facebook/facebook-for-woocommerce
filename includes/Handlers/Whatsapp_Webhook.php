@@ -26,7 +26,7 @@ class Whatsapp_Webhook {
 	 *
 	 * @since 2.3.0
 	 */
-	public function __construct( \WC_Facebookcommerce $plugin ) {
+	public function __construct() {
 		add_action( 'rest_api_init', array( $this, 'init_whatsapp_webhook_endpoint' ) );
 	}
 
