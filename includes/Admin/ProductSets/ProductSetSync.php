@@ -58,7 +58,7 @@ class ProductSetSync {
 	 * @param int   $tt_id Term taxonomy ID.
 	 * @param array $args Arguments.
 	 */
-	public function on_create_or_update_product_wc_category_callback( $term_id, $tt_id, $args ) { // phpcs:ignoreUnusedVariable
+	public function on_create_or_update_product_wc_category_callback( $term_id, $tt_id, $args ) {
 		try {
 			if ( ! $this->is_sync_enabled() ) {
 				return;
