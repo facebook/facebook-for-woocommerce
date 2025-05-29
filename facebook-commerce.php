@@ -2451,7 +2451,7 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 		 *
 		 * @since 1.10.0
 		 */
-		
+
 		// TODO: to Remove all existence of these function `get_excluded_product_category_ids` as we are no longer supporting these.
 		// Matter of fact it is used in multiple places including important places like Product sets tab.
 		// Hence providing empty array as excluded categories :)
