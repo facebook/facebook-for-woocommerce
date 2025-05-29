@@ -49,6 +49,9 @@ class AJAX {
 		// sync all shipping profiles via AJAX
 		add_action( 'wp_ajax_wc_facebook_sync_shipping_profiles', array( $this, 'sync_shipping_profiles' ) );
 
+		// sync navigation menu via AJAX
+		add_action( 'wp_ajax_wc_facebook_sync_navigation_menu', array( $this, 'sync_navigation_menu' ) );
+
 		// get the current sync status
 		add_action( 'wp_ajax_wc_facebook_get_sync_status', array( $this, 'get_sync_status' ) );
 
@@ -78,6 +81,9 @@ class AJAX {
 
 		// disconnect whatsapp account from woocommcerce app
 		add_action( 'wp_ajax_wc_facebook_disconnect_whatsapp', array( $this, 'wc_facebook_disconnect_whatsapp' ) );
+
+		// get supported languages for whatsapp templates
+		add_action( 'wp_ajax_wc_facebook_whatsapp_fetch_supported_languages', array( $this, 'whatsapp_fetch_supported_languages' ) );
 	}
 
 
@@ -175,6 +181,24 @@ class AJAX {
 
 		try {
 			facebook_for_woocommerce()->feed_manager->get_feed_instance( 'shipping_profiles' )->regenerate_feed();
+			wp_send_json_success();
+		} catch ( \Exception $exception ) {
+			wp_send_json_error( $exception->getMessage() );
+		}
+	}
+
+	/**
+	 * Syncs navigation menu via AJAX.
+	 *
+	 * @internal
+	 *
+	 * @since 3.5.0
+	 */
+	public function sync_navigation_menu() {
+		check_admin_referer( Shops::ACTION_SYNC_NAVIGATION_MENU, 'nonce' );
+
+		try {
+			facebook_for_woocommerce()->feed_manager->get_feed_instance( 'navigation_menu' )->regenerate_feed();
 			wp_send_json_success();
 		} catch ( \Exception $exception ) {
 			wp_send_json_error( $exception->getMessage() );
@@ -418,6 +442,34 @@ class AJAX {
 		$event = isset( $_POST['event'] ) ? wc_clean( wp_unslash( $_POST['event'] ) ) : '';
 		WhatsAppUtilityConnection::get_template_library_content( $event, $bisu_token );
 	}
+
+	public function whatsapp_fetch_supported_languages() {
+		wc_get_logger()->info(
+			sprintf(
+				__( 'Fetching supported languages for WhatsApp Utility Templates', 'facebook-for-woocommerce' )
+			)
+		);
+		if ( ! check_ajax_referer( 'facebook-for-wc-whatsapp-events-nonce', 'nonce', false ) ) {
+			wc_get_logger()->info(
+				sprintf(
+					__( 'Nonce Verification Failed while fetching supported languages for WhatsApp Utility Templates', 'facebook-for-woocommerce' )
+				)
+			);
+			wp_send_json_error( 'Invalid security token sent.' );
+		}
+		$bisu_token            = get_option( 'wc_facebook_wa_integration_bisu_access_token', null );
+		$integration_config_id = get_option( 'wc_facebook_wa_integration_config_id', null );
+		if ( empty( $bisu_token ) || empty( $integration_config_id ) ) {
+			wc_get_logger()->info(
+				sprintf(
+					__( 'Missing Integration Config ID, BISU token, WABA ID for Integration Config Get API call', 'facebook-for-woocommerce' )
+				)
+			);
+			wp_send_json_error( 'Missing integration_config_id or bisu_token for Integration Config Get API call', 'facebook-for-woocommerce' );
+		}
+		WhatsAppUtilityConnection::get_supported_languages_for_templates( $integration_config_id, $bisu_token );
+	}
+
 	/**
 	 * Creates or Updates WhatsApp Utility Event Configs
 	 *

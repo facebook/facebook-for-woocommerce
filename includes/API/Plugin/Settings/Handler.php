@@ -76,8 +76,8 @@ class Handler extends AbstractRESTEndpoint {
 			}
 
 			// Check if we should trigger product sync and/or metadata feed uploads for this update
-			// Only trigger product sync if catalog id is being updated
-			$should_trigger_product_sync = ! empty( $request_data['product_catalog_id'] ) && facebook_for_woocommerce()->get_integration()->get_product_catalog_id() !== $request_data['product_catalog_id'];
+			// Only trigger products and sets sync if catalog id is being updated
+			$should_trigger_products_and_sets_sync = ! empty( $request_data['product_catalog_id'] ) && facebook_for_woocommerce()->get_integration()->get_product_catalog_id() !== $request_data['product_catalog_id'];
 			// Only trigger metadata feed uploads if CPI id is being updated
 			$should_trigger_metadata_feed_uploads = ! empty( $request_data['commerce_partner_integration_id'] ) && facebook_for_woocommerce()->get_connection_handler()->get_commerce_partner_integration_id() !== $request_data['commerce_partner_integration_id'];
 
@@ -89,7 +89,7 @@ class Handler extends AbstractRESTEndpoint {
 			$this->update_connection_status( $request_data );
 
 			// Maybe trigger products sync and/or metadata feed uploads
-			$this->maybe_trigger_feed_uploads( $should_trigger_product_sync, $should_trigger_metadata_feed_uploads, $request_data );
+			$this->maybe_trigger_feed_uploads( $should_trigger_products_and_sets_sync, $should_trigger_metadata_feed_uploads, $request_data );
 
 			return $this->success_response(
 				[
@@ -263,14 +263,14 @@ class Handler extends AbstractRESTEndpoint {
 	 *
 	 * @since 3.5.0
 	 *
-	 * @param bool  $should_trigger_product_sync
+	 * @param bool  $should_trigger_products_and_sets_sync
 	 * @param bool  $should_trigger_metadata_feed_uploads
 	 * @param array $params
 	 * @return void
 	 */
-	private function maybe_trigger_feed_uploads( bool $should_trigger_product_sync, bool $should_trigger_metadata_feed_uploads, array $params ) {
+	private function maybe_trigger_feed_uploads( bool $should_trigger_products_and_sets_sync, bool $should_trigger_metadata_feed_uploads, array $params ) {
 		try {
-			if ( $should_trigger_product_sync ) {
+			if ( $should_trigger_products_and_sets_sync ) {
 				// Allow opt-out of full batch-API sync, for example if store has a large number of products.
 				if ( facebook_for_woocommerce()->get_integration()->allow_full_batch_api_sync() ) {
 					facebook_for_woocommerce()->get_products_sync_handler()->create_or_update_all_products();
@@ -296,6 +296,24 @@ class Handler extends AbstractRESTEndpoint {
 				]
 			);
 		}
+
+		try {
+			if ( $should_trigger_products_and_sets_sync ) {
+				facebook_for_woocommerce()->get_product_sets_sync_handler()->sync_all_product_sets();
+			}
+		} catch ( \Exception $exception ) {
+			\WC_Facebookcommerce_Utils::log_exception_immediately_to_meta(
+				$exception,
+				[
+					'event'      => 'product_sets_sync',
+					'event_type' => 'sync_product_sets_after_settings_update',
+					'extra_data' => [
+						'params' => wp_json_encode( $params ),
+					],
+				]
+			);
+		}
+
 		try {
 			if ( $should_trigger_metadata_feed_uploads ) {
 				facebook_for_woocommerce()->feed_manager->run_all_feed_uploads();

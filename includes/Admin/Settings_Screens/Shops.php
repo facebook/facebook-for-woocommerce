@@ -34,6 +34,9 @@ class Shops extends Abstract_Settings_Screen {
 	/** @var string */
 	const ACTION_SYNC_SHIPPING_PROFILES = 'wc_facebook_sync_shipping_profiles';
 
+	/** @var string */
+	const ACTION_SYNC_NAVIGATION_MENU = 'wc_facebook_sync_navigation_menu';
+
 	/**
 	 * Shops constructor.
 	 *
@@ -133,6 +136,7 @@ class Shops extends Abstract_Settings_Screen {
 				'sync_products_nonce'          => wp_create_nonce( self::ACTION_SYNC_PRODUCTS ),
 				'sync_coupons_nonce'           => wp_create_nonce( self::ACTION_SYNC_COUPONS ),
 				'sync_shipping_profiles_nonce' => wp_create_nonce( self::ACTION_SYNC_SHIPPING_PROFILES ),
+				'sync_navigation_menu_nonce'   => wp_create_nonce( self::ACTION_SYNC_NAVIGATION_MENU ),
 			)
 		);
 	}
@@ -254,6 +258,22 @@ class Shops extends Abstract_Settings_Screen {
 							</p>
 						</td>
 					</tr>
+					<tr valign="top" class="wc-facebook-shops-sample">
+						<th scope="row" class="titledesc">
+							Navigation menu sync
+						</th>
+						<td class="forminp">
+							<button
+								id="wc-facebook-enhanced-settings-sync-navigation-menu"
+								class="button"
+								type="button">
+								<?php esc_html_e( 'Sync now', 'facebook-for-woocommerce' ); ?>
+							</button>
+							<p id="navigation-menu-sync-description" class="sync-description">
+								Manually sync your category navigation menu from WooCommerce to your shop. It may take a couple of minutes for the changes to populate.
+							</p>
+						</td>
+					</tr>
 				</tbody>
 			</table>
 			<?php parent::render(); ?>
@@ -292,11 +312,22 @@ class Shops extends Abstract_Settings_Screen {
 	 * @return array
 	 * @since 3.5.0
 	 */
-	public function get_settings() {
+	public function get_settings(): array {
+		//phpcs:ignore WordPress.WP.I18n.NoEmptyStrings
+		return self::get_settings_with_title_static( __( '', 'facebook-for-woocommerce' ) );
+	}
+
+	/**
+	 * Returns the shop-wide settings array.
+	 * Reused in Connection.php.
+	 *
+	 * @param string $title A translated title.
+	 * @return array
+	 */
+	public static function get_settings_with_title_static( string $title ): array {
 		return array(
 			array(
-				//phpcs:ignore WordPress.WP.I18n.NoEmptyStrings
-				'title' => __( '', 'facebook-for-woocommerce' ),
+				'title' => $title,
 				'type'  => 'title',
 			),
 

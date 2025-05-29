@@ -121,6 +121,9 @@ class ShippingProfilesFeed extends AbstractFeed {
 
 				$shipping_method_data = [];
 				foreach ( $shipping_methods as $shipping_method ) {
+					if ( 'yes' !== $shipping_method['enabled'] ) {
+						continue;
+					}
 					try {
 						if ( 'free_shipping' === $shipping_method['id'] ) {
 							$shipping_method_data[] = self::get_free_shipping_method_data( $zone, $shipping_method );
@@ -129,14 +132,11 @@ class ShippingProfilesFeed extends AbstractFeed {
 							$shipping_method_data[] = self::get_flat_rate_shipping_method_data( $zone, $shipping_method );
 						}
 					} catch ( \Exception $e ) {
-						\WC_Facebookcommerce_Utils::log_to_meta(
-							'Exception while trying to get data for a shipping method',
+						\WC_Facebookcommerce_Utils::log_exception_immediately_to_meta(
+							$e,
 							array(
-								'flow_name'  => FeedUploadUtils::SHIPPING_PROFILES_SYNC_LOGGING_FLOW_NAME,
-								'flow_step'  => 'get_shipping_method_data',
-								'extra_data' => [
-									'exception_message' => $e->getMessage(),
-								],
+								'event'      => FeedUploadUtils::SHIPPING_PROFILES_SYNC_LOGGING_FLOW_NAME,
+								'event_type' => 'get_shipping_method_data',
 							)
 						);
 					}
@@ -190,14 +190,11 @@ class ShippingProfilesFeed extends AbstractFeed {
 			}
 			return $shipping_profiles_data;
 		} catch ( \Exception $e ) {
-			\WC_Facebookcommerce_Utils::log_to_meta(
-				'Exception while trying to map shipping profile data for feed',
+			\WC_Facebookcommerce_Utils::log_exception_immediately_to_meta(
+				$e,
 				array(
-					'flow_name'  => FeedUploadUtils::SHIPPING_PROFILES_SYNC_LOGGING_FLOW_NAME,
-					'flow_step'  => 'get_shipping_profiles_data',
-					'extra_data' => [
-						'exception_message' => $e->getMessage(),
-					],
+					'event'      => FeedUploadUtils::SHIPPING_PROFILES_SYNC_LOGGING_FLOW_NAME,
+					'event_type' => 'get_shipping_profiles_data',
 				)
 			);
 			throw $e;

@@ -349,7 +349,43 @@ class ShippingProfilesFeedTest extends FeedDataTestBase {
 		return $zone;
 	}
 
-	private static function create_and_save_method_instance( WC_Shipping_Zone $zone, $method_type, array $settings ): void {
+	public function test_disabled_shipping_method(): void {
+		$zone = self::create_default_shipping_zone();
+		// We don't care about the ignoring discounts field if there is no subtotal requirement on the shipping profile.
+		self::create_and_save_method_instance($zone, 'free_shipping', array('ignore_discounts' => 'yes', 'title' => 'enabled_method'), true);
+		self::create_and_save_method_instance($zone, 'free_shipping', array('ignore_discounts' => 'no',  'title' => 'disabled_method'), false);
+
+
+		$result = ShippingProfilesFeed::get_shipping_profiles_data();
+
+		$expected_shipping_profile_data = [
+			'shipping_profile_id'      => $zone->get_id().'-all_products',
+			'name'                     => 'California',
+			'applies_to_all_products'  => 'true',
+			'shipping_zones'           => [
+				[
+					'country'                   => 'US',
+					'states'                    => [ 'CA' ],
+					'applies_to_entire_country' => false,
+				],
+			],
+			'shipping_rates'           => [
+				[
+					'name'              => 'enabled_method',
+					'has_free_shipping' => 'true',
+				],
+			],
+			'applies_to_rest_of_world' => 'false',
+		];
+
+		$this->assertCount( 1 , $result, 'Expected one shipping profile returned.' );
+		$this->assertEquals( $expected_shipping_profile_data, $result[0], 'Shipping profile output does not match expected data.' );
+	}
+
+
+
+	private static function create_and_save_method_instance( WC_Shipping_Zone $zone, $method_type, array $settings, bool $is_enabled = true ): void {
+		global $wpdb;
         $method_instance_id = $zone->add_shipping_method( $method_type );
         $method            = $zone->get_shipping_methods()[ $method_instance_id ];
 
@@ -361,6 +397,11 @@ class ShippingProfilesFeedTest extends FeedDataTestBase {
 		}
 
 		update_option( $method->get_instance_option_key(), apply_filters( 'woocommerce_shipping_' . $method->id . '_instance_settings_values', $instance_settings, $method ) );
+
+		// Update enabled flag
+		$wpdb->update( "{$wpdb->prefix}woocommerce_shipping_zone_methods", array( 'is_enabled' => $is_enabled ), array( 'instance_id' => $method_instance_id) );
+		do_action( 'woocommerce_shipping_zone_method_status_toggled', $method_instance_id, $method->id, $zone->get_id(), $is_enabled );
+
         $zone->save();
 	}
 }

@@ -33,7 +33,7 @@ class API extends Base {
 
 	public const GRAPH_API_URL = 'https://graph.facebook.com/';
 
-	public const API_VERSION = 'v20.0';
+	public const API_VERSION = 'v21.0';
 
 	/** @var string URI used for the request */
 	protected $request_uri = self::GRAPH_API_URL . self::API_VERSION;
@@ -320,16 +320,17 @@ class API extends Base {
 	 *
 	 * @param string $external_business_id external business ID
 	 * @param string $plugin_version The plugin version.
-	 *
+	 * @param bool is_opted_out The plugin version.
 	 * @return Response|API\FBE\Configuration\Update\Response
 	 * @throws ApiException
 	 */
-	public function update_plugin_version_configuration( string $external_business_id, string $plugin_version ): API\FBE\Configuration\Update\Response {
+	public function update_plugin_version_configuration( string $external_business_id, bool $is_opted_out, string $plugin_version ): API\FBE\Configuration\Update\Response {
 		$request = new API\FBE\Configuration\Update\Request( $external_business_id );
 		$request->set_external_client_metadata(
 			array(
 				'version_id' => $plugin_version,
 				'is_multisite'   => is_multisite(),
+				'is_woo_all_products_opted_out' => $is_opted_out
 			)
 		);
 		$this->set_response_handler( API\FBE\Configuration\Update\Response::class );
@@ -402,15 +403,15 @@ class API extends Base {
 	/**
 	 * Creates a Product under the specified Product Group.
 	 *
-	 * @since 2.0.0
+	 * @since 3.4.9
 	 *
-	 * @param string $product_group_id Facebook Product Group ID.
+	 * @param string $product_catalog_id Facebook Product Catalog ID.
 	 * @param array  $data Facebook Product Data.
 	 * @return API\Response|API\ProductCatalog\Products\Create\Response
 	 * @throws ApiException In case of network request error.
 	 */
-	public function create_product_item( string $product_group_id, array $data ): API\ProductCatalog\Products\Create\Response {
-		$request = new API\ProductCatalog\Products\Create\Request( $product_group_id, $data );
+	public function create_product_item( string $product_catalog_id, array $data ): API\ProductCatalog\Products\Create\Response {
+		$request = new API\ProductCatalog\Products\Create\Request( $product_catalog_id, $data );
 		$this->set_response_handler( API\ProductCatalog\Products\Create\Response::class );
 		return $this->perform_request( $request );
 	}
@@ -499,6 +500,19 @@ class API extends Base {
 	public function delete_product_set_item( string $product_set_id, bool $allow_live_deletion ): API\ProductCatalog\ProductSets\Delete\Response {
 		$request = new API\ProductCatalog\ProductSets\Delete\Request( $product_set_id, $allow_live_deletion );
 		$this->set_response_handler( API\ProductCatalog\ProductSets\Delete\Response::class );
+		return $this->perform_request( $request );
+	}
+
+	/**
+	 * @param string $product_catalog_id
+	 * @param array $data
+	 * @return API\Response|API\ProductCatalog\ProductSets\Read\Response
+	 * @throws ApiException
+	 * @throws API\Exceptions\Request_Limit_Reached
+	 */
+	public function read_product_set_item( string $product_catalog_id, string $retailer_id ): API\ProductCatalog\ProductSets\Read\Response {
+		$request = new API\ProductCatalog\ProductSets\Read\Request( $product_catalog_id, $retailer_id );
+		$this->set_response_handler( API\ProductCatalog\ProductSets\Read\Response::class );
 		return $this->perform_request( $request );
 	}
 
@@ -630,6 +644,17 @@ class API extends Base {
 		return $this->perform_request( $request );
 	}
 
+    /**
+     * @return Response
+     * @throws ApiException
+     * @throws API\Exceptions\Request_Limit_Reached
+     */
+    public function get_public_key( string $key_project ): Response
+    {
+        $request = new API\PublicKeyGet\Request( $key_project );
+        $this->set_response_handler( API\Response::class );
+        return $this->perform_request( $request );
+    }
 
 	/**
 	 * Gets the next page of results for a paginated response.
