@@ -111,6 +111,7 @@ When opening a bug on GitHub, please give us as many details as possible.
 *  Fix - fix linter errors for ./facebook-commerce-pixel-event.php by @ajello-meta in #3248
 *  Fix - fix /variation field persistence & rich text description handling for variants by @devbodaghe in #3269
 *  Tweak - update product validation logic for checkout by @ajello-meta in #3271
-*  Fix - Adding percautionary bug fix by @SayanPandey in #3275
+*  Fix - Adding precautionary bug fix by @SayanPandey in #3275
+*  Add - Added Loading States to WAUM flows by @woo-ardsouza in #3272
 
 [See changelog for all versions](https://raw.githubusercontent.com/facebook/facebook-for-woocommerce/refs/heads/main/changelog.txt).
