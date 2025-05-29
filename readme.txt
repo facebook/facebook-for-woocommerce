@@ -102,5 +102,15 @@ When opening a bug on GitHub, please give us as many details as possible.
 *  Add - reset connection functionality by @jczhuoMeta in #3262
 *  Fix - fixing the non static method called as static issue by @SayanPandey in #3263
 *  Fix - Fix linter errors for ./facebook-commerce.php by @ajello-meta in #3251
+*  Fix - updating banners to show the latest version as 3.5.1 by @SayanPandey in #3265
+*  Tweak - enforced product sets functionality for plugin admins by @vinkmeta in #3243
+*  Tweak - removing the product set functionality migration to Admin by @vinkmeta in #3267
+*  Tweak - removing the migration of rollout switch to Admin by @vinkmeta in #3268
+*  Fix - fix to remove html encoding in fb product sets names by @mshymon in #3266
+*  Add - trigger product sets sync in Handler on catalog ID update (new SAOff MBE onboarding flow) by @mshymon in #3270
+*  Fix - fix linter errors for ./facebook-commerce-pixel-event.php by @ajello-meta in #3248
+*  Fix - fix /variation field persistence & rich text description handling for variants by @devbodaghe in #3269
+*  Tweak - update product validation logic for checkout by @ajello-meta in #3271
+*  Fix - Adding percautionary bug fix by @SayanPandey in #3275
 
 [See changelog for all versions](https://raw.githubusercontent.com/facebook/facebook-for-woocommerce/refs/heads/main/changelog.txt).
