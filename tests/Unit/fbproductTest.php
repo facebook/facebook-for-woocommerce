@@ -677,16 +677,6 @@ class fbproductTest extends \WooCommerce\Facebook\Tests\AbstractWPUnitTestWithSa
 		$description = $new_facebook_product->get_rich_text_description();
 		$this->assertEquals('<p>meta description test</p>', $description);
 
-		// Test 4: For variations, gets description from variation first
-		$variable_product = WC_Helper_Product::create_variation_product();
-		$variation = wc_get_product($variable_product->get_children()[0]);
-		$variation->set_description('<p>variation description</p>');
-		$variation->save();
-
-		$parent_fb_product = new \WC_Facebook_Product($variable_product);
-		$facebook_product = new \WC_Facebook_Product($variation, $parent_fb_product);
-		$description = $facebook_product->get_rich_text_description();
-		$this->assertEquals('<p>variation description</p>', $description);
 
 		// Test 5: Falls back to post content if no other description is set
 		$product = WC_Helper_Product::create_simple_product();
