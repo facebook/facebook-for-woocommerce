@@ -13,6 +13,7 @@ namespace WooCommerce\Facebook;
 use WC_Facebook_Product;
 use WooCommerce\Facebook\Framework\Helper;
 use WooCommerce\Facebook\Framework\Plugin\Exception as PluginException;
+use WooCommerce\Facebook\Handlers\PluginRender;
 
 defined( 'ABSPATH' ) || exit;
 
@@ -25,6 +26,9 @@ class Products {
 
 	/** @var string the meta key used to flag whether a product should be synced in Facebook */
 	const SYNC_ENABLED_META_KEY = '_wc_facebook_sync_enabled';
+
+	/** @var string the meta key used to flag whether a product should be synced in Facebook for woo all products opted in users */
+	const OPTEN_IN_SYNC_ENABLED_META_KEY = '_wc_facebook_sync_enabled_v2';
 
 	// TODO probably we'll want to run some upgrade routine or somehow move meta keys to follow the same patter e.g. _wc_facebook_visibility {FN 2020-01-17}
 	/** @var string the meta key used to flag whether a product should be visible in Facebook */
@@ -74,20 +78,22 @@ class Products {
 	 */
 	private static function set_sync_for_products( array $products, $enabled ) {
 		$enabled = wc_bool_to_string( $enabled );
+		$product_sync_meta_key = self::get_product_sync_meta_key();
+
 		foreach ( $products as $product ) {
 			if ( $product instanceof \WC_Product ) {
 				if ( $product->is_type( 'variable' ) ) {
 					foreach ( $product->get_children() as $variation ) {
 						$product_variation = wc_get_product( $variation );
 						if ( $product_variation instanceof \WC_Product ) {
-							$product_variation->update_meta_data( self::SYNC_ENABLED_META_KEY, $enabled );
+							$product_variation->update_meta_data( $product_sync_meta_key, $enabled );
 							$product_variation->save_meta_data();
 						}
 					}
 				}
 
 				// Adding sync mode settings to simple product as well as main product for variants.
-				$product->update_meta_data( self::SYNC_ENABLED_META_KEY, $enabled );
+				$product->update_meta_data( $product_sync_meta_key, $enabled );
 				$product->save_meta_data();
 
 				// Remove excluded product from FB.
@@ -96,6 +102,23 @@ class Products {
 				}
 			}//end if
 		}//end foreach
+	}
+
+	/**
+	 * Chooses a particular key for product sync
+	 * based on user opt in status for Woo all products
+	 *
+	 * @since 3.5.1
+	 *
+	 * @param \WC_Product[] $products an array of product objects
+	 */
+	public static function get_product_sync_meta_key() {
+		if(PluginRender::is_master_sync_on()){
+			return self::SYNC_ENABLED_META_KEY;
+		}
+		else {
+			return self::OPTEN_IN_SYNC_ENABLED_META_KEY;
+		}
 	}
 
 	/**
