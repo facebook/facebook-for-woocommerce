@@ -87,5 +87,20 @@ When opening a bug on GitHub, please give us as many details as possible.
 *  Tweak - Remove UI of a checkbox that controls enablement of the new style feed generation by @mshymon in #3056
 *  Fix - Fix linter errors for ./includes/fbutils.php files by @ajello-meta in #3075
 *  Fix - Hotfix for Rollout Switches by @vinkmeta in #3236
+*  Add - Opt out sync experience. by @SayanPandey in #3220
+*  Fix - Added a transient flag to avoid flooding of product set api requests by @vinkmeta in #3245
+*  Fix - Additional check for the opt-out banner by @SayanPandey in #3259
+*  Fix - Bump up GraphAPI version to 21 by @vahidkay-meta in #3219
+*  Fix - fix linter errors for ./class-wc-facebookcommerce.php by @ajello-meta in #3255
+*  Fix - fix linter errors for ./facebook-commerce-events-tracker.php by @ajello-meta in #3254
+*  Fix - fix linter errors for ./includes/Admin/Settings_Screens/Advertise.php by @ajello-meta in #3237
+*  Fix - fix linter errors for ./includes/Admin/Settings_Screens/Product_Sync.php by @ajello-meta in #3239
+*  Fix - fix function return typing for get_settings() by @ajello-meta in #3257
+*  Tweak - Addition check for opt out by @SayanPandey in #3259
+*  Tweak - Update the GraphAPI version to 21 by @vahidkay-meta in #3219
+*  Fix - Enabled rollout switch only for plugin admins by @vinkmeta in #3242
+*  Add - reset connection functionality by @jczhuoMeta in #3262
+*  Fix - fixing the non static method called as static issue by @SayanPandey in #3263
+*  Fix - Fix linter errors for ./facebook-commerce.php by @ajello-meta in #3251
 
 [See changelog for all versions](https://raw.githubusercontent.com/facebook/facebook-for-woocommerce/refs/heads/main/changelog.txt).
