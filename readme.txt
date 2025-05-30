@@ -113,5 +113,6 @@ When opening a bug on GitHub, please give us as many details as possible.
 *  Tweak - update product validation logic for checkout by @ajello-meta in #3271
 *  Fix - Adding precautionary bug fix by @SayanPandey in #3275
 *  Add - Added Loading States to WAUM flows by @woo-ardsouza in #3272
+*  Add - Add logging for coupon in checkout by @ajello-meta in #3279
 
 [See changelog for all versions](https://raw.githubusercontent.com/facebook/facebook-for-woocommerce/refs/heads/main/changelog.txt).

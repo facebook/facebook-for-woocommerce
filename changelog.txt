@@ -80,6 +80,7 @@
 *  Tweak - update product validation logic for checkout by @ajello-meta in #3271
 *  Fix - Adding precautionary bug fix by @SayanPandey in #3275
 *  Add - Added Loading States to WAUM flows by @woo-ardsouza in #3272
+*  Add - Add logging for coupon in checkout by @ajello-meta in #3279
 
 = 3.4.10 - 2025-05-22 =
 * Fix - Disabled the RollOut switch
