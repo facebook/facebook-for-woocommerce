@@ -114,10 +114,10 @@ class Products {
 	 */
 	public static function get_product_sync_meta_key() {
 		if(PluginRender::is_master_sync_on()){
-			return self::SYNC_ENABLED_META_KEY;
+			return self::OPTEN_IN_SYNC_ENABLED_META_KEY;
 		}
 		else {
-			return self::OPTEN_IN_SYNC_ENABLED_META_KEY;
+			return self::SYNC_ENABLED_META_KEY;
 		}
 	}
 
