@@ -206,7 +206,7 @@ class WhatsAppUtilityConnection {
 			)
 		);
 		// Error code 190 is for invalid token meaning the app was already uninstalled, in this case we can delete the options in DB
-		if ( null !== $response_body_json && null !== $response_body_json->error && self::WA_INVALID_TOKEN_ERROR_CODE === $response_body_json->error->code ) {
+		if ( null !== $response_body_json && isset( $response_body_json->error ) && self::WA_INVALID_TOKEN_ERROR_CODE === $response_body_json->error->code ) {
 			wc_get_logger()->info(
 				sprintf(
 					__( 'Disconnecting Whatsapp Utility Message since Access token is invalid!!!', 'facebook-for-woocommerce' )
