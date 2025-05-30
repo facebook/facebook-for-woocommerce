@@ -191,6 +191,10 @@ class Handler extends AbstractRESTEndpoint {
 			$options[ \WC_Facebookcommerce_Integration::OPTION_PROFILES ] = $params['profiles'];
 		}
 
+		if ( ! empty( $params['business_manager_id'] ) ) {
+			$options[ \WC_Facebookcommerce_Integration::OPTION_BUSINESS_MANAGER_ID ] = $params['business_manager_id'];
+		}
+
 		return $options;
 	}
 
