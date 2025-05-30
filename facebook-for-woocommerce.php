@@ -243,13 +243,13 @@ class WC_Facebook_Loader {
 	 * @since 1.10.0
 	 *
 	 * @param string $slug    The slug for the notice.
-	 * @param string $class   The css class for the notice.
+	 * @param string $cls   The css class for the notice.
 	 * @param string $message The notice message.
 	 */
-	private function add_admin_notice( $slug, $class, $message ) {
+	private function add_admin_notice( $slug, $cls, $message ) {
 
 		$this->notices[ $slug ] = array(
-			'class'   => $class,
+			'class'   => $cls,
 			'message' => $message,
 		);
 	}
