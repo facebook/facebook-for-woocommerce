@@ -111,6 +111,9 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 	/** @var string the WordPress option name where the merchant access token is stored */
 	const OPTION_MERCHANT_ACCESS_TOKEN = 'wc_facebook_merchant_access_token';
 
+	/** @var string the WordPress option name where the business manager ID is stored */
+	const OPTION_BUSINESS_MANAGER_ID = 'wc_facebook_business_manager_id';
+	
 	/** @var string the WordPress option name where the commerce merchant settings ID is stored */
 	const OPTION_COMMERCE_MERCHANT_SETTINGS_ID = 'wc_facebook_commerce_merchant_settings_id';
 

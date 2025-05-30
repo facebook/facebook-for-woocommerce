@@ -239,6 +239,7 @@ class Handler extends AbstractRESTEndpoint {
 	private function clear_integration_options() {
 		$options = [
 			\WC_Facebookcommerce_Integration::OPTION_ACCESS_TOKEN,
+			\WC_Facebookcommerce_Integration::OPTION_BUSINESS_MANAGER_ID,
 			\WC_Facebookcommerce_Integration::OPTION_COMMERCE_MERCHANT_SETTINGS_ID,
 			\WC_Facebookcommerce_Integration::OPTION_COMMERCE_PARTNER_INTEGRATION_ID,
 			\WC_Facebookcommerce_Integration::OPTION_ENABLE_MESSENGER,
