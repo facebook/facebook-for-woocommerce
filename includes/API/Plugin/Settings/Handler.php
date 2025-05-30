@@ -191,6 +191,10 @@ class Handler extends AbstractRESTEndpoint {
 			$options[ \WC_Facebookcommerce_Integration::OPTION_PROFILES ] = $params['profiles'];
 		}
 
+		if ( ! empty( $params['business_manager_id'] ) ) {
+			$options[ \WC_Facebookcommerce_Integration::OPTION_BUSINESS_MANAGER_ID ] = $params['business_manager_id'];
+		}
+
 		return $options;
 	}
 
@@ -239,6 +243,10 @@ class Handler extends AbstractRESTEndpoint {
 	private function clear_integration_options() {
 		$options = [
 			\WC_Facebookcommerce_Integration::OPTION_ACCESS_TOKEN,
+			\WC_Facebookcommerce_Integration::OPTION_BUSINESS_MANAGER_ID,
+			\WC_Facebookcommerce_Integration::OPTION_AD_ACCOUNT_ID,
+			\WC_Facebookcommerce_Integration::OPTION_SYSTEM_USER_ID,
+			\WC_Facebookcommerce_Integration::OPTION_FEED_ID,
 			\WC_Facebookcommerce_Integration::OPTION_COMMERCE_MERCHANT_SETTINGS_ID,
 			\WC_Facebookcommerce_Integration::OPTION_COMMERCE_PARTNER_INTEGRATION_ID,
 			\WC_Facebookcommerce_Integration::OPTION_ENABLE_MESSENGER,
