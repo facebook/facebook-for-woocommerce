@@ -175,6 +175,7 @@ class WhatsAppUtilityConnection {
 		);
 		$response      = wp_remote_post( $base_url, $options );
 		$response_body = explode( "\n", wp_remote_retrieve_body( $response ) );
+		$response_body_json = json_decode( $response_body[0] );
 		wc_get_logger()->info(
 			sprintf(
 					/* translators: %s $error_message */
@@ -183,7 +184,7 @@ class WhatsAppUtilityConnection {
 			)
 		);
 		// Error code 190 is for invalid token meaning the app was already uninstalled, in this case we can delete the options in DB
-		if ( ( is_wp_error( $response ) || 200 !== wp_remote_retrieve_response_code( $response ) ) && json_decode( $response_body[0] )?->error?->code !== 190 ) {
+		if ( ( is_wp_error( $response ) || 200 !== wp_remote_retrieve_response_code( $response ) ) && ( $response_body_json !== null && $response_body_json->error !== null && $response_body_json->error->code !== 190) ) {
 			$error_object  = json_decode( $response_body[0] );
 			$error_message = $error_object->error->error_user_title ?? $error_object->error->message ?? 'Something went wrong. Please try again later!';
 
