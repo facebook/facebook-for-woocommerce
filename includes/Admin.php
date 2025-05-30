@@ -2323,7 +2323,7 @@ class Admin {
 			}
 
 			// If we found a match and haven't processed this field yet
-			if ( $matched_facebook_field && ! in_array( $field_name, $processed_fields ) ) {
+			if ( $matched_facebook_field && ! in_array( $field_name, $processed_fields, true ) ) {
 				$values = [];
 
 				if ( $attribute->is_taxonomy() ) {

@@ -839,7 +839,7 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 			$purchase_tracked_flag = '_wc_' . facebook_for_woocommerce()->get_id() . '_purchase_tracked_' . $order_id;
 
 			// Return if this Purchase event has already been tracked
-			if ( 'yes' === get_transient( $purchase_tracked_flag ) || $order->meta_exists( '_meta_purchase_tracked' ) || ! in_array( $order_state, $valid_purchase_order_states ) ) {
+			if ( 'yes' === get_transient( $purchase_tracked_flag ) || $order->meta_exists( '_meta_purchase_tracked' ) || ! in_array( $order_state, $valid_purchase_order_states, true ) ) {
 				return;
 			}
 
@@ -1124,7 +1124,7 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 			// The fields contain country, so we do not need to add a condition
 			foreach ( $user_data as $field => $value ) {
 				if ( null === $value || '' === $value ||
-					! in_array( $field, $this->aam_settings->get_enabled_automatic_matching_fields() )
+					! in_array( $field, $this->aam_settings->get_enabled_automatic_matching_fields(), true )
 				) {
 					unset( $user_data[ $field ] );
 				}
