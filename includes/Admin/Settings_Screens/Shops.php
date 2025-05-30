@@ -386,6 +386,10 @@ class Shops extends Abstract_Settings_Screen {
 				const messageEvent = message.event;
 
 				if (messageEvent === 'CommerceExtension::INSTALL' && message.success) {
+					const cms_id = message.installed_features.find( ( f ) => 'fb_shop' === f.feature_type )?.connected_assets?.cms_id || 
+						message.installed_features.find( ( f ) => 'ig_shopping' === f.feature_type )?.connected_assets?.commerce_merchant_settings_id || '';
+					const ad_account_id = message.installed_features.find( ( f ) => 'ads' === f.feature_type )?.connected_assets?.ad_account_id || '';
+					
 					const requestBody = {
 						access_token: message.access_token,
 						merchant_access_token: message.access_token,
@@ -394,8 +398,8 @@ class Shops extends Abstract_Settings_Screen {
 						pixel_id: message.pixel_id,
 						page_id: message.page_id,
 						business_manager_id: message.business_manager_id,
-						commerce_merchant_settings_id: message.installed_features.find(f => f.feature_type === 'fb_shop')?.connected_assets?.commerce_merchant_settings_id || '',
-						ad_account_id: message.installed_features.find(f => f.feature_type === 'ads')?.connected_assets?.ad_account_id || '',
+						commerce_merchant_settings_id: cms_id,
+						ad_account_id: ad_account_id,
 						commerce_partner_integration_id: message.commerce_partner_integration_id || '',
 						profiles: message.profiles,
 						installed_features: message.installed_features

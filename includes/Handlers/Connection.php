@@ -332,6 +332,12 @@ class Connection {
 		if ( $response->get_commerce_merchant_settings_id() ) {
 			$this->update_commerce_merchant_settings_id( sanitize_text_field( $response->get_commerce_merchant_settings_id() ) );
 		}
+
+		if ( $response->get_commerce_partner_integration_id() ) {
+			$this->update_commerce_partner_integration_id( sanitize_text_field( $response->get_commerce_partner_integration_id() ) );
+		} else {
+			$this->update_commerce_partner_integration_id( "" );
+		}
 	}
 
 
