@@ -40,6 +40,28 @@ class WhatsAppUtilityConnection {
 	/** @var string Default language for Library Template */
 	const DEFAULT_LANGUAGE = 'en';
 
+	/** @var array List of all WA settings stored in wp_options */
+	const WA_SETTINGS = array(
+		'wc_facebook_wa_integration_waba_id',
+		'wc_facebook_wa_integration_bisu_access_token',
+		'wc_facebook_wa_integration_business_id',
+		'wc_facebook_wa_integration_wacs_phone_number',
+		'wc_facebook_wa_integration_is_payment_setup',
+		'wc_facebook_wa_integration_wacs_id',
+		'wc_facebook_wa_integration_waba_profile_picture_url',
+		'wc_facebook_wa_integration_waba_display_name',
+		'wc_facebook_whatsapp_consent_collection_setting_status',
+		'wc_facebook_wa_integration_config_id',
+		'wc_facebook_wa_order_placed_event_config_id',
+		'wc_facebook_wa_order_placed_language',
+		'wc_facebook_wa_order_fulfilled_event_config_id',
+		'wc_facebook_wa_order_fulfilled_language',
+		'wc_facebook_wa_order_refunded_event_config_id',
+		'wc_facebook_wa_order_refunded_language',
+	);
+
+	const WA_INVALID_TOKEN_ERROR_CODE = 190;
+
 	/**
 	 * Makes an API call to Template Library API
 	 *
@@ -121,7 +143,7 @@ class WhatsAppUtilityConnection {
 			sprintf(
 					/* translators: %s $response */
 				__( 'Connect Whatsapp Utility Message API Response: %1$s ', 'facebook-for-woocommerce' ),
-				json_encode( $response ),
+				wp_json_encode( $response ),
 			)
 		);
 		$response_body = explode( "\n", wp_remote_retrieve_body( $response ) );
@@ -180,11 +202,29 @@ class WhatsAppUtilityConnection {
 			sprintf(
 					/* translators: %s $error_message */
 				__( 'Disconnect Whatsapp Utility Message API Call Response: %1$s ', 'facebook-for-woocommerce' ),
-				json_encode( $response ),
+				wp_json_encode( $response_body_json->error->code ),
 			)
 		);
 		// Error code 190 is for invalid token meaning the app was already uninstalled, in this case we can delete the options in DB
-		if ( ( is_wp_error( $response ) || 200 !== wp_remote_retrieve_response_code( $response ) ) && ( null !== $response_body_json && null !== $response_body_json->error && 190 !== $response_body_json->error->code ) ) {
+		if ( null !== $response_body_json && null !== $response_body_json->error && self::WA_INVALID_TOKEN_ERROR_CODE === $response_body_json->error->code ) {
+			wc_get_logger()->info(
+				sprintf(
+					__( 'Disconnecting Whatsapp Utility Message since Access token is invalid!!!', 'facebook-for-woocommerce' )
+				)
+			);
+
+			// delete all the whatsapp setting options in DB
+			self::wc_facebook_whatsapp_settings_delete( self::WA_SETTINGS );
+
+			wc_get_logger()->info(
+				sprintf(
+					__( 'Disconnect Whatsapp Utility Message Invalid Access Token - Whatsapp Settings Deletion Success!!!', 'facebook-for-woocommerce' )
+				)
+			);
+
+			wp_send_json_success( $response, 'Disconnect Whatsapp Success with Invalid Access Token' );
+
+		} else if ( is_wp_error( $response ) || 200 !== wp_remote_retrieve_response_code( $response ) ) {
 			$error_object  = json_decode( $response_body[0] );
 			$error_message = $error_object->error->error_user_title ?? $error_object->error->message ?? 'Something went wrong. Please try again later!';
 
@@ -204,26 +244,7 @@ class WhatsAppUtilityConnection {
 			);
 
 			// delete all the whatsapp setting options in DB
-			$wa_settings = array(
-				'wc_facebook_wa_integration_waba_id',
-				'wc_facebook_wa_integration_bisu_access_token',
-				'wc_facebook_wa_integration_business_id',
-				'wc_facebook_wa_integration_wacs_phone_number',
-				'wc_facebook_wa_integration_is_payment_setup',
-				'wc_facebook_wa_integration_wacs_id',
-				'wc_facebook_wa_integration_waba_profile_picture_url',
-				'wc_facebook_wa_integration_waba_display_name',
-				'wc_facebook_whatsapp_consent_collection_setting_status',
-				'wc_facebook_wa_integration_config_id',
-				'wc_facebook_wa_order_placed_event_config_id',
-				'wc_facebook_wa_order_placed_language',
-				'wc_facebook_wa_order_fulfilled_event_config_id',
-				'wc_facebook_wa_order_fulfilled_language',
-				'wc_facebook_wa_order_refunded_event_config_id',
-				'wc_facebook_wa_order_refunded_language',
-			);
-
-			self::wc_facebook_whatsapp_settings_delete( $wa_settings );
+			self::wc_facebook_whatsapp_settings_delete( self::WA_SETTINGS );
 
 			wc_get_logger()->info(
 				sprintf(
@@ -293,7 +314,7 @@ class WhatsAppUtilityConnection {
 			sprintf(
 					/* translators: %s $error_message */
 				__( 'Event Configs Post API call Response: %1$s ', 'facebook-for-woocommerce' ),
-				json_encode( $response ),
+				wp_json_encode( $response ),
 			)
 		);
 		if ( is_wp_error( $response ) || 200 !== $status_code ) {
@@ -383,7 +404,7 @@ class WhatsAppUtilityConnection {
 			sprintf(
 					/* translators: %s $error_message */
 				__( 'Message Events Post API call Response: %1$s ', 'facebook-for-woocommerce' ),
-				json_encode( $response ),
+				wp_json_encode( $response ),
 			)
 		);
 		if ( is_wp_error( $response ) || 200 !== $status_code ) {
