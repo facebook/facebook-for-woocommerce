@@ -114,5 +114,6 @@ When opening a bug on GitHub, please give us as many details as possible.
 *  Fix - Adding precautionary bug fix by @SayanPandey in #3275
 *  Add - Added Loading States to WAUM flows by @woo-ardsouza in #3272
 *  Add - Add logging for coupon in checkout by @ajello-meta in #3279
+*  Fix - fix inconsistency between enhanced and legacy flow by @jczhuoMeta in #3285
 
 [See changelog for all versions](https://raw.githubusercontent.com/facebook/facebook-for-woocommerce/refs/heads/main/changelog.txt).
