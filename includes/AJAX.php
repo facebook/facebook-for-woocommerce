@@ -647,11 +647,11 @@ class AJAX {
 		$sync_enabled_meta_query = array(
 			'relation' => 'OR',
 			array(
-				'key'   => Products::SYNC_ENABLED_META_KEY,
+				'key'   => Products::get_product_sync_meta_key(),
 				'value' => 'yes',
 			),
 			array(
-				'key'     => Products::SYNC_ENABLED_META_KEY,
+				'key'     => Products::get_product_sync_meta_key(),
 				'compare' => 'NOT EXISTS',
 			),
 		);

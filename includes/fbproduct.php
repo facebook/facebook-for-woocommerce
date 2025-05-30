@@ -1717,9 +1717,18 @@ class WC_Facebook_Product {
 		// $product_data[ 'unmapped_attributes' ] = $this->get_unmapped_attributes();
 		$product_data[ 'disabled_capabilities' ] = $this->get_disabled_capabilities();
 
+
+		/**
+		 * As part of Woo All Products if user was not syncing a product before and currently is syncing
+		 * That will be tagged as well
+		 * If code has reached this point sync is enabled
+		*/
+		$previous_sync_status = 'yes' === $this->get_meta( Products::SYNC_ENABLED_META_KEY);
+
 		if($this->get_type() === "variation"){
 			$parent_id = $this->woo_product->get_parent_id();	
 			$parent_product =  wc_get_product( $parent_id );
+			$previous_sync_status = 'yes' === $parent_product->get_meta( Products::SYNC_ENABLED_META_KEY);
 
 			if( $parent_product ){
 				$parent_product_visibility =  $parent_product->get_meta( Products::VISIBILITY_META_KEY );
@@ -1773,6 +1782,10 @@ class WC_Facebook_Product {
 					update_post_meta($parent_id,Products::VISIBILITY_META_KEY, $variation_visibility ? "yes" : "no");
 				}
 			}
+		}
+
+		if(!$previous_sync_status){
+			$product_data["is_woo_all_products_sync"] = true;
 		}
 
 		if ( self::PRODUCT_PREP_TYPE_ITEMS_BATCH === $type_to_prepare_for ) {
