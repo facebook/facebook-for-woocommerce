@@ -159,21 +159,22 @@ class WhatsAppUtilityConnection {
 	 * @param string $bisu_token BISU token
 	 */
 	public static function wc_facebook_disconnect_whatsapp( $waba_id, $integration_config_id, $bisu_token ) {
-		$base_url     = array( self::GRAPH_API_BASE_URL, self::API_VERSION, $waba_id, 'disconnect_utility_messages' );
-		$base_url     = esc_url( implode( '/', $base_url ) );
-		$query_params = array(
+		$base_url      = array( self::GRAPH_API_BASE_URL, self::API_VERSION, $waba_id, 'disconnect_utility_messages' );
+		$base_url      = esc_url( implode( '/', $base_url ) );
+		$query_params  = array(
 			'integration_config_id' => $integration_config_id,
 			'access_token'          => $bisu_token,
 		);
-		$base_url     = add_query_arg( $query_params, $base_url );
-		$options      = array(
+		$base_url      = add_query_arg( $query_params, $base_url );
+		$options       = array(
 			'headers' => array(
 				'Authorization' => $bisu_token,
 			),
 			'body'    => array(),
 			'timeout' => 300, // 5 minutes
 		);
-		$response     = wp_remote_post( $base_url, $options );
+		$response      = wp_remote_post( $base_url, $options );
+		$response_body = explode( "\n", wp_remote_retrieve_body( $response ) );
 		wc_get_logger()->info(
 			sprintf(
 					/* translators: %s $error_message */
@@ -181,9 +182,9 @@ class WhatsAppUtilityConnection {
 				json_encode( $response ),
 			)
 		);
-		if ( is_wp_error( $response ) || 200 !== wp_remote_retrieve_response_code( $response ) ) {
-			$error_data    = explode( "\n", wp_remote_retrieve_body( $response ) );
-			$error_object  = json_decode( $error_data[0] );
+		// Error code 190 is for invalid token meaning the app was already uninstalled, in this case we can delete the options in DB
+		if ( ( is_wp_error( $response ) || 200 !== wp_remote_retrieve_response_code( $response ) ) && json_decode( $response_body[0] )?->error?->code !== 190 ) {
+			$error_object  = json_decode( $response_body[0] );
 			$error_message = $error_object->error->error_user_title ?? $error_object->error->message ?? 'Something went wrong. Please try again later!';
 
 			wc_get_logger()->info(
