@@ -202,7 +202,7 @@ class WhatsAppUtilityConnection {
 			sprintf(
 					/* translators: %s $error_message */
 				__( 'Disconnect Whatsapp Utility Message API Call Response: %1$s ', 'facebook-for-woocommerce' ),
-				wp_json_encode( $response_body_json->error->code ),
+				wp_json_encode( $response ),
 			)
 		);
 		// Error code 190 is for invalid token meaning the app was already uninstalled, in this case we can delete the options in DB
