@@ -228,7 +228,7 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 				'custom_data' => array(
 					'content_name'     => $category->name,
 					'content_category' => $category->name,
-					'content_ids'      => json_encode( array_slice( $product_ids, 0, 10 ) ),
+					'content_ids'      => wp_json_encode( array_slice( $product_ids, 0, 10 ) ),
 					'content_type'     => $content_type,
 					'contents'         => $contents,
 				),
@@ -453,7 +453,7 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 					'event_name'  => 'Search',
 					'custom_data' => array(
 						'content_type'  => $content_type,
-						'content_ids'   => json_encode( array_slice( $product_ids, 0, 10 ) ),
+						'content_ids'   => wp_json_encode( array_slice( $product_ids, 0, 10 ) ),
 						'contents'      => $contents,
 						'search_string' => get_search_query(),
 						'value'         => Helper::number_format( $total_value ),

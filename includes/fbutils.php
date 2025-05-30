@@ -394,7 +394,7 @@ if ( ! class_exists( 'WC_Facebookcommerce_Utils' ) ) :
 				$obj['plugin_version'] = self::PLUGIN_VERSION;
 				$obj['php_version']    = phpversion();
 			}
-			$message = json_encode(
+			$message = wp_json_encode(
 				array(
 					'message' => $message,
 					'object'  => $obj,
@@ -1020,7 +1020,7 @@ if ( ! class_exists( 'WC_Facebookcommerce_Utils' ) ) :
 			}
 
 			if ( is_array( $message ) || is_object( $message ) ) {
-				$message = json_encode( $message );
+				$message = wp_json_encode( $message );
 			} else {
 				$message = sanitize_textarea_field( $message );
 			}

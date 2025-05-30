@@ -467,7 +467,6 @@ class WhatsAppUtilityConnection {
 					__( 'Integration Config GET API call Succeeded', 'facebook-for-woocommerce' )
 				)
 			);
-			// $response_object = json_decode( $data[0] );
 			wp_send_json_success( $data, 'Finish Integration Config API Call' );
 		}
 	}
