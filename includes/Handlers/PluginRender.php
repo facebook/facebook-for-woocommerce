@@ -26,7 +26,7 @@ class PluginRender {
 	private \WC_Facebookcommerce $plugin;
 
 	/** @var string opt out plugin version action */
-	const ALL_PRODUCTS_PLUGIN_VERSION = '3.4.12';
+	const ALL_PRODUCTS_PLUGIN_VERSION = '3.5.1';
 
 	/** @var string opt out sync action */
 	const ACTION_OPT_OUT_OF_SYNC = 'wc_facebook_opt_out_of_sync';
@@ -88,7 +88,7 @@ class PluginRender {
 		$current_version = $this->plugin->get_version();
 		/**
 		 * Case when current version is less or equal to latest
-		 * but latest is below 3.4.12
+		 * but latest is below 3.5.1
 		 * Should show the opt in/ opt out banner
 		 */
 		if ( version_compare( $current_version, self::ALL_PRODUCTS_PLUGIN_VERSION, '<' ) ) {
@@ -135,7 +135,7 @@ class PluginRender {
 		}
 	}
 
-	public function opt_out_of_sync_clicked() {
+	public static function opt_out_of_sync_clicked() {
 			$latest_date = gmdate( 'Y-m-d H:i:s' );
 			update_option( self::MASTER_SYNC_OPT_OUT_TIME, $latest_date );
 			wp_send_json_success( 'Opted out successfully' );
@@ -150,7 +150,7 @@ class PluginRender {
 	}
 
 
-	private function get_opted_out_successfully_banner_class() {
+	public static function get_opted_out_successfully_banner_class() {
 		$hidden              = ! self::is_master_sync_on();
 		$opt_in_banner_class = 'notice notice-success is-dismissible';
 
@@ -162,7 +162,7 @@ class PluginRender {
 		return $opt_in_banner_class;
 	}
 
-	private function get_opt_out_banner_class() {
+	public static function get_opt_out_banner_class() {
 		$hidden               = ! self::is_master_sync_on();
 		$opt_out_banner_class = 'notice notice-info is-dismissible';
 
@@ -174,7 +174,7 @@ class PluginRender {
 		return $opt_out_banner_class;
 	}
 
-	private static function get_opt_out_modal_message() {
+	public static function get_opt_out_modal_message() {
 		return '
             <h4>Opt out of automatic product sync?</h4>
             <p>
@@ -191,7 +191,7 @@ class PluginRender {
         ';
 	}
 
-	private static function get_opt_out_modal_buttons() {
+	public static function get_opt_out_modal_buttons() {
 		return '
             <a href="javascript:void(0);" class="button wc-forward upgrade_plugin_button" id="modal_opt_out_button">
             	Opt out

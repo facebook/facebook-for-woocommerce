@@ -519,8 +519,7 @@ class WC_Facebook_Product {
 	}
 
 	public function set_rich_text_description( $rich_text_description ) {
-		$rich_text_description       =
-			WC_Facebookcommerce_Utils::clean_string( $rich_text_description, false );
+		$rich_text_description = stripslashes( $rich_text_description );
 		$this->rich_text_description = $rich_text_description;
 		update_post_meta(
 			$this->id,
@@ -844,6 +843,18 @@ class WC_Facebook_Product {
 	public function get_rich_text_description() {
 		$rich_text_description = '';
 
+		// For variations, first check if there's a Facebook description set specifically for that variation
+		if ( $this->woo_product->is_type( 'variation' ) ) {
+			$rich_text_description = get_post_meta(
+				$this->id,
+				self::FB_RICH_TEXT_DESCRIPTION,
+				true
+			);
+			if ($rich_text_description) {
+				return $rich_text_description;
+			}
+		}
+
 		// Check if the fb description is set as that takes preference
 		if ( $this->rich_text_description ) {
 			$rich_text_description = $this->rich_text_description;
@@ -858,32 +869,30 @@ class WC_Facebook_Product {
 				self::FB_RICH_TEXT_DESCRIPTION,
 				true
 			);
-
 		}
 
-		// For variable products, we want to use the rich text description of the variant.
-		// If that's not available, fall back to the main (parent) product's rich text description.
-		if ( empty( $rich_text_description ) && WC_Facebookcommerce_Utils::is_variation_type( $this->woo_product->get_type() ) ) {
-			$rich_text_description = WC_Facebookcommerce_Utils::clean_string( $this->woo_product->get_description(), false );
-
-			// If the variant's rich text description is still empty, use the main product's rich text description as a fallback
-			if ( empty( $rich_text_description ) && $this->main_description ) {
-				$rich_text_description = $this->main_description;
+		// If still empty and this is a variation, inherit from parent
+		if ( empty( $rich_text_description ) && $this->woo_product->is_type( 'variation' ) ) {
+			$parent_product = wc_get_product( $this->woo_product->get_parent_id() );
+			if ( $parent_product ) {
+				$rich_text_description = get_post_meta(
+					$parent_product->get_id(),
+					self::FB_RICH_TEXT_DESCRIPTION,
+					true
+				);
 			}
 		}
 
-		// If no description is found from meta or variation, get from product
+		// If still empty, use the post content
 		if ( empty( $rich_text_description ) ) {
-			$post         = $this->get_post_data();
-			$post_content = WC_Facebookcommerce_Utils::clean_string( $post->post_content, false );
-			$post_excerpt = WC_Facebookcommerce_Utils::clean_string( $post->post_excerpt, false );
-
-			if ( ! empty( $post_content ) ) {
-				$rich_text_description = $post_content;
-			}
-
-			if ( empty( $rich_text_description ) && ! empty( $post_excerpt ) ) {
-				$rich_text_description = $post_excerpt;
+			$post = get_post( $this->id );
+			if ( $post ) {
+				$rich_text_description = $post->post_content;
+				
+				// If post content is empty, fall back to short description (post_excerpt)
+				if ( empty( $rich_text_description ) ) {
+					$rich_text_description = $post->post_excerpt;
+				}
 			}
 		}
 

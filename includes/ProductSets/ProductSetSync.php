@@ -167,8 +167,8 @@ class ProductSetSync {
 	}
 
 	protected function build_fb_product_set_data( $wc_category ) {
-		$wc_category_name          = get_term_field( 'name', $wc_category, self::WC_PRODUCT_CATEGORY_TAXONOMY );
-		$wc_category_description   = get_term_field( 'description', $wc_category, self::WC_PRODUCT_CATEGORY_TAXONOMY );
+		$wc_category_name          = WC_Facebookcommerce_Utils::clean_string( get_term_field( 'name', $wc_category, self::WC_PRODUCT_CATEGORY_TAXONOMY ) );
+		$wc_category_description   = WC_Facebookcommerce_Utils::clean_string( get_term_field( 'description', $wc_category, self::WC_PRODUCT_CATEGORY_TAXONOMY ) );
 		$wc_category_url           = get_term_link( $wc_category, self::WC_PRODUCT_CATEGORY_TAXONOMY );
 		$wc_category_thumbnail_id  = get_term_meta( $wc_category, 'thumbnail_id', true );
 		$wc_category_thumbnail_url = wp_get_attachment_image_src( $wc_category_thumbnail_id );
@@ -178,7 +178,7 @@ class ProductSetSync {
 			$fb_product_set_metadata['cover_image_url'] = $wc_category_thumbnail_url;
 		}
 		if ( ! empty( $wc_category_description ) ) {
-			$fb_product_set_metadata['description'] = WC_Facebookcommerce_Utils::clean_string( $wc_category_description );
+			$fb_product_set_metadata['description'] = $wc_category_description;
 		}
 		if ( ! empty( $wc_category_url ) ) {
 			$fb_product_set_metadata['external_url'] = $wc_category_url;

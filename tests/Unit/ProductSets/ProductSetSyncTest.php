@@ -20,7 +20,7 @@ class ProductSetSyncTest extends WP_UnitTestCase {
     const FB_PRODUCT_SET_ID = "3720002385";
 
     const WC_CATEGORY_NAME_1 =  'Test Category 1';
-    const WC_CATEGORY_NAME_2 =  'Test Category 2';
+    const WC_CATEGORY_NAME_2 =  'Test Category 2 (with special characters: &^%$#@!~|)';
 
 	/* ------------------ Test Methods ------------------ */
 
