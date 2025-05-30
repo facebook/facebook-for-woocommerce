@@ -113,7 +113,13 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 
 	/** @var string the WordPress option name where the business manager ID is stored */
 	const OPTION_BUSINESS_MANAGER_ID = 'wc_facebook_business_manager_id';
-	
+
+	/** @var string the WordPress option name where the ad account ID is stored */
+	const OPTION_AD_ACCOUNT_ID = 'wc_facebook_ad_account_id';
+
+	/** @var string the WordPress option name where the system user ID is stored */
+	const OPTION_SYSTEM_USER_ID = 'wc_facebook_system_user_id';
+
 	/** @var string the WordPress option name where the commerce merchant settings ID is stored */
 	const OPTION_COMMERCE_MERCHANT_SETTINGS_ID = 'wc_facebook_commerce_merchant_settings_id';
 

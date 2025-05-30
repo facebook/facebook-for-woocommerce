@@ -386,7 +386,7 @@ class Shops extends Abstract_Settings_Screen {
 				const messageEvent = message.event;
 
 				if (messageEvent === 'CommerceExtension::INSTALL' && message.success) {
-					const cms_id = message.installed_features.find( ( f ) => 'fb_shop' === f.feature_type )?.connected_assets?.cms_id || 
+					const cms_id = message.installed_features.find( ( f ) => 'fb_shop' === f.feature_type )?.connected_assets?.commerce_merchant_settings_id || 
 						message.installed_features.find( ( f ) => 'ig_shopping' === f.feature_type )?.connected_assets?.commerce_merchant_settings_id || '';
 					const ad_account_id = message.installed_features.find( ( f ) => 'ads' === f.feature_type )?.connected_assets?.ad_account_id || '';
 					
