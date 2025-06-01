@@ -20,6 +20,7 @@ use WooCommerce\Facebook\Products\Sync;
 
 /**
  * The Product Sync settings screen object.
+ *
  * @deprecated
  * From version 3.5.1 onwards product sync tab will no longer be used across the app and should be
  * removed from existence after WooAllProducts happen.
