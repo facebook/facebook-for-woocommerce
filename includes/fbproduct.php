@@ -14,6 +14,7 @@ require_once __DIR__ . '/fbutils.php';
 use WooCommerce\Facebook\Feed\ShippingProfilesFeed;
 use WooCommerce\Facebook\Framework\Plugin\Compatibility;
 use WooCommerce\Facebook\Framework\Helper;
+use WooCommerce\Facebook\Handlers\PluginRender;
 use WooCommerce\Facebook\Products;
 
 defined( 'ABSPATH' ) || exit;
@@ -1718,13 +1719,6 @@ class WC_Facebook_Product {
 		$product_data[ 'disabled_capabilities' ] = $this->get_disabled_capabilities();
 
 
-		/**
-		 * As part of Woo All Products if user was not syncing a product before and currently is syncing
-		 * That will be tagged as well
-		 * If code has reached this point sync is enabled
-		*/
-		$previous_sync_status = 'yes' === $this->get_meta( Products::SYNC_ENABLED_META_KEY);
-
 		if($this->get_type() === "variation"){
 			$parent_id = $this->woo_product->get_parent_id();	
 			$parent_product =  wc_get_product( $parent_id );
@@ -1784,7 +1778,15 @@ class WC_Facebook_Product {
 			}
 		}
 
-		if(!$previous_sync_status){
+		/**
+		 * As part of Woo All Products if user was not syncing a product before and currently is syncing
+		 * That will be tagged as well
+		 * If current function is triggered, sync is enabled for product and if the user has maste sync on only
+		 * then the code is taged
+		*/
+		$previous_sync_status = 'yes' === $this->get_meta( Products::SYNC_ENABLED_META_KEY);
+
+		if(!$previous_sync_status && PluginRender::is_master_sync_on()){
 			$product_data["is_woo_all_products_sync"] = true;
 		}
 
