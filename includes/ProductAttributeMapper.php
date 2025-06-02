@@ -282,7 +282,7 @@ class ProductAttributeMapper {
 		$attributes        = $product->get_attributes();
 
 		// Get manual attribute mappings from the plugin settings
-		$custom_mappings = get_option( 'wc_facebook_attribute_mappings', array() );
+		$custom_mappings = get_option( 'wc_facebook_custom_attribute_mappings', array() );
 
 		// Filters the product attribute mappings.
 		/**
