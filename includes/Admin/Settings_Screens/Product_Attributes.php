@@ -292,9 +292,9 @@ class Product_Attributes extends Abstract_Settings_Screen {
 					
 					<p style="margin-top: 15px;">
 						<?php if ( empty( $current_mappings ) ) : ?>
-							<a href="<?php echo esc_url( add_query_arg( 'edit', '1' ) ); ?>" class="button button-primary"><?php esc_html_e( 'Add new mapping', 'facebook-for-woocommerce' ); ?></a>
+							<a href="<?php echo esc_url( wp_nonce_url( add_query_arg( 'edit', '1' ), 'facebook_product_attributes_edit', '_wpnonce' ) ); ?>" class="button button-primary"><?php esc_html_e( 'Add new mapping', 'facebook-for-woocommerce' ); ?></a>
 						<?php else : ?>
-							<a href="<?php echo esc_url( add_query_arg( 'edit', '1' ) ); ?>" class="button button-primary"><?php esc_html_e( 'Edit Mappings', 'facebook-for-woocommerce' ); ?></a>
+							<a href="<?php echo esc_url( wp_nonce_url( add_query_arg( 'edit', '1' ), 'facebook_product_attributes_edit', '_wpnonce' ) ); ?>" class="button button-primary"><?php esc_html_e( 'Edit Mappings', 'facebook-for-woocommerce' ); ?></a>
 						<?php endif; ?>
 					</p>
 				</div>
