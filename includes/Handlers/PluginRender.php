@@ -195,13 +195,13 @@ class PluginRender {
 		}
 	}
 
-	public function opt_out_of_sync_clicked() {
+	public static function opt_out_of_sync_clicked() {
 		$latest_date = gmdate( 'Y-m-d H:i:s' );
 		update_option( self::MASTER_SYNC_OPT_OUT_TIME, $latest_date );
 		wp_send_json_success( 'Opted out successfully' );
 	}
 
-	public function sync_all_clicked() {
+	public static function sync_all_clicked() {
 		update_option( self::MASTER_SYNC_OPT_OUT_TIME, '' );
 		wp_send_json_success( 'Synced all in successfully' );
 	}
@@ -219,7 +219,7 @@ class PluginRender {
 	 * after a year
 	 * NOTE: We are doing this because anyway we will remove this in cleanup post : 3.4.12
 	 */
-	public function reset_plugin_updated_successfully_banner() {
+	public static function reset_plugin_updated_successfully_banner() {
 		set_transient( 'plugin_updated_banner_hide', true, 12 * MONTH_IN_SECONDS );
 	}
 
@@ -227,7 +227,7 @@ class PluginRender {
 	 * Banner for WooAllProducts versiong upgrade will show up
 	 * But this will keep showing every week fortnight if user not synced in
 	 */
-	public function reset_plugin_updated_successfully_but_master_sync_off_banner() {
+	public static function reset_plugin_updated_successfully_but_master_sync_off_banner() {
 		set_transient( 'plugin_updated_with_master_sync_off_banner_hide', true, 2 * WEEK_IN_SECONDS );
 	}
 
