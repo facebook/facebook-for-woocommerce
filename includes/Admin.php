@@ -2247,6 +2247,13 @@ class Admin {
 			return [];
 		}
 
+		// Use the ProductAttributeMapper to get mapped attributes
+		if ( class_exists( '\WooCommerce\Facebook\ProductAttributeMapper' ) ) {
+			$mapped_attributes = \WooCommerce\Facebook\ProductAttributeMapper::get_and_save_mapped_attributes( $product );
+			return $mapped_attributes;
+		}
+
+		// Fallback to old method if ProductAttributeMapper is not available
 		$attributes      = $product->get_attributes();
 		$facebook_fields = [];
 
