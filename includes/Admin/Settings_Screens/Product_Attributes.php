@@ -132,7 +132,7 @@ class Product_Attributes extends Abstract_Settings_Screen {
 	 *
 	 * @return array
 	 */
-	public function get_settings() {
+	public function get_settings(): array {
 		// The settings array is empty because we'll be rendering the content directly
 		return array();
 	}
