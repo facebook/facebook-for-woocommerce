@@ -268,14 +268,14 @@ select.synced-attribute + .select2-container .select2-selection__rendered {
 }
 
 .wc-attributes-icon:after {
-	content: '\f160';
+	content: '\f175';
 	font-family: dashicons;
 	display: inline-block;
 	width: 18px;
 	height: 18px;
 	vertical-align: text-bottom;
 	opacity: 0.8;
-	color: #2271b1;
+	color: #000;
 	font-size: 18px;
 }
 
