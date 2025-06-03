@@ -145,7 +145,7 @@ class PluginRender {
 	 * Banner for initmation of WooAllProducts version will show up
 	 * after a week
 	 */
-	public function reset_upcoming_version_banners() {
+	public static function reset_upcoming_version_banners() {
 		set_transient( 'upcoming_woo_all_products_banner_hide', true, 7 * DAY_IN_SECONDS );
 	}
 
