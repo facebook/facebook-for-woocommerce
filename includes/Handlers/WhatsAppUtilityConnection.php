@@ -224,7 +224,7 @@ class WhatsAppUtilityConnection {
 
 			wp_send_json_success( $response, 'Disconnect Whatsapp Success with Invalid Access Token' );
 
-		} else if ( is_wp_error( $response ) || 200 !== wp_remote_retrieve_response_code( $response ) ) {
+		} elseif ( is_wp_error( $response ) || 200 !== wp_remote_retrieve_response_code( $response ) ) {
 			$error_object  = json_decode( $response_body[0] );
 			$error_message = $error_object->error->error_user_title ?? $error_object->error->message ?? 'Something went wrong. Please try again later!';
 
