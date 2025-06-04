@@ -98,6 +98,21 @@
     min-height: 38px;
 }
 
+/* Make Save Changes and Cancel buttons same size as Add new mapping button */
+.submit .button,
+.submit .button-primary {
+    height: auto !important;
+    padding: 6px 12px !important;
+    font-size: 13px !important;
+    line-height: 16px !important;
+    min-height: 30px !important;
+    margin: 0 !important;
+}
+
+.submit .button + .button {
+    margin-left: 10px !important;
+}
+
 /* Table styles for both edit and view modes */
 #facebook-attribute-mapping-table,
 #facebook-attribute-mapping-table-view {
@@ -105,6 +120,23 @@
     margin-top: 10px;
     width: 50%;
     border: 1px solid #e5e5e5;
+}
+
+/* Make WooCommerce and Meta attribute columns equal width */
+#facebook-attribute-mapping-table th:nth-child(1),
+#facebook-attribute-mapping-table td:nth-child(1) {
+    width: 40%;
+}
+
+#facebook-attribute-mapping-table th:nth-child(2),
+#facebook-attribute-mapping-table td:nth-child(2) {
+    width: 40%;
+}
+
+#facebook-attribute-mapping-table th:nth-child(3),
+#facebook-attribute-mapping-table td:nth-child(3) {
+    width: 20%;
+    text-align: center;
 }
 
 #facebook-attribute-mapping-table th,
@@ -295,31 +327,17 @@ body .select2-results__option {
     padding: 0 8px;
 }
 
-/* Trash icon styling */
+/* Delete mapping text styling */
 .remove-mapping,
 .fb-attributes-remove {
-    color: #cc1818;
+    color: #d63638;
     text-decoration: none;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    opacity: 0.85;
-    border: none;
-    background: none;
-    padding: 0;
-    cursor: pointer;
+    font-size: 13px;
+    font-weight: 500;
 }
 
 .remove-mapping:hover,
 .fb-attributes-remove:hover {
-    color: #dc3232;
-    opacity: 1;
-}
-
-.remove-mapping .dashicons,
-.fb-attributes-remove .dashicons {
-    font-size: 18px;
-    width: 18px;
-    height: 18px;
-    line-height: 18px;
+    color: #a02828;
+    text-decoration: none;
 } 

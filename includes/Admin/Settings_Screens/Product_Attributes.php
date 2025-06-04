@@ -212,7 +212,7 @@ class Product_Attributes extends Abstract_Settings_Screen {
 									</td>
 									<td>
 										<a href="#" class="remove-mapping" title="<?php esc_attr_e( 'Remove mapping', 'facebook-for-woocommerce' ); ?>">
-											<span class="dashicons dashicons-trash"></span>
+											<?php esc_html_e( 'Remove mapping', 'facebook-for-woocommerce' ); ?>
 										</a>
 									</td>
 								</tr>
@@ -239,7 +239,7 @@ class Product_Attributes extends Abstract_Settings_Screen {
 								</td>
 								<td>
 									<a href="#" class="remove-mapping" title="<?php esc_attr_e( 'Remove mapping', 'facebook-for-woocommerce' ); ?>">
-										<span class="dashicons dashicons-trash"></span>
+										<?php esc_html_e( 'Remove mapping', 'facebook-for-woocommerce' ); ?>
 									</a>
 								</td>
 							</tr>
@@ -300,16 +300,6 @@ class Product_Attributes extends Abstract_Settings_Screen {
 				</div>
 			<?php endif; ?>
 			
-			<h3 style="margin-top: 30px;"><?php esc_html_e( 'Troubleshooting', 'facebook-for-woocommerce' ); ?></h3>
-			<div id="troubleshooting-section" style="margin-top: 10px; background: #fff; padding: 15px; border: 1px solid #ddd; border-radius: 4px;">
-				<p><?php esc_html_e( 'If your products are not displaying correctly in Meta:', 'facebook-for-woocommerce' ); ?></p>
-				<ul style="list-style-type: disc; margin-left: 20px;">
-					<li><?php esc_html_e( 'Make sure your product attributes are correctly mapped to Meta catalog fields.', 'facebook-for-woocommerce' ); ?></li>
-					<li><?php esc_html_e( 'Check that required attributes like gender, size, and color are properly configured for relevant products.', 'facebook-for-woocommerce' ); ?></li>
-					<li><?php esc_html_e( 'After changing mappings, products will be updated during the next sync with Meta.', 'facebook-for-woocommerce' ); ?></li>
-					<li><a href="https://www.facebook.com/business/help/2302017289821154" target="_blank"><?php esc_html_e( 'Learn more about Meta catalog attributes', 'facebook-for-woocommerce' ); ?></a></li>
-				</ul>
-			</div>
 		</div>
 		
 		<script type="text/javascript">
@@ -383,7 +373,7 @@ class Product_Attributes extends Abstract_Settings_Screen {
 						'</td>' +
 						'<td>' +
 						'<a href="#" class="remove-mapping" title="<?php esc_attr_e( 'Remove mapping', 'facebook-for-woocommerce' ); ?>">' +
-						'<span class="dashicons dashicons-trash"></span>' +
+						'<?php esc_html_e( 'Remove mapping', 'facebook-for-woocommerce' ); ?>' +
 						'</a>' +
 						'</td>' +
 						'</tr>';
@@ -401,6 +391,11 @@ class Product_Attributes extends Abstract_Settings_Screen {
 							return $(this).data('placeholder');
 						}
 					});
+					
+					// Update disabled states after adding new row
+					setTimeout(function() {
+						updateDisabledAttributes();
+					}, 200);
 					
 					// Focus the first select field in the new row
 					setTimeout(function() {
@@ -466,7 +461,131 @@ class Product_Attributes extends Abstract_Settings_Screen {
 						// Always use the same index for all fields in this row
 						$row.find('.fb-field-search').attr('name', 'wc_facebook_field_mapping[' + currentIndex + ']');
 					}
+					
+					// Update disabled states for 1:1 mapping
+					updateDisabledAttributes();
 				});
+				
+				// Handle Meta attribute changes to update disabled states
+				$('#facebook-attribute-mapping-table').on('change', '.fb-field-search', function() {
+					updateDisabledAttributes();
+				});
+				
+				// Handle row removal to update disabled states
+				$('#facebook-attribute-mapping-table').on('click', '.remove-mapping', function(e) {
+					var $row = $(this).closest('tr');
+					setTimeout(function() {
+						updateDisabledAttributes();
+					}, 100);
+				});
+				
+				// Function to update disabled attributes for 1:1 mapping
+				function updateDisabledAttributes() {
+					// Get all currently selected WooCommerce attributes
+					var selectedWcAttributes = [];
+					$('.wc-attribute-search').each(function() {
+						var value = $(this).val();
+						if (value && value !== '') {
+							selectedWcAttributes.push(value);
+						}
+					});
+					
+					// Get all currently selected Meta attributes
+					var selectedMetaAttributes = [];
+					$('.fb-field-search').each(function() {
+						var value = $(this).val();
+						if (value && value !== '') {
+							selectedMetaAttributes.push(value);
+						}
+					});
+					
+					// Update WooCommerce attribute dropdowns
+					$('.wc-attribute-search').each(function() {
+						var $select = $(this);
+						var currentValue = $select.val();
+						
+						$select.find('option').each(function() {
+							var $option = $(this);
+							var optionValue = $option.val();
+							
+							if (optionValue === '' || optionValue === currentValue) {
+								// Always enable empty option and current selection
+								$option.prop('disabled', false).css({
+									'color': '',
+									'background-color': ''
+								});
+							} else if (selectedWcAttributes.includes(optionValue)) {
+								// Disable if selected elsewhere
+								$option.prop('disabled', true).css({
+									'color': '#999',
+									'background-color': '#f5f5f5'
+								});
+							} else {
+								// Enable if not selected elsewhere
+								$option.prop('disabled', false).css({
+									'color': '',
+									'background-color': ''
+								});
+							}
+						});
+						
+						// Refresh Select2 if it exists
+						if ($.fn.select2 && $select.hasClass('select2-hidden-accessible')) {
+							$select.select2('destroy').select2({
+								width: '100%',
+								placeholder: function() {
+									return $(this).data('placeholder');
+								}
+							});
+						}
+					});
+					
+					// Update Meta attribute dropdowns
+					$('.fb-field-search').each(function() {
+						var $select = $(this);
+						var currentValue = $select.val();
+						
+						$select.find('option').each(function() {
+							var $option = $(this);
+							var optionValue = $option.val();
+							
+							if (optionValue === '' || optionValue === currentValue) {
+								// Always enable empty option and current selection
+								$option.prop('disabled', false).css({
+									'color': '',
+									'background-color': ''
+								});
+							} else if (selectedMetaAttributes.includes(optionValue)) {
+								// Disable if selected elsewhere
+								$option.prop('disabled', true).css({
+									'color': '#999',
+									'background-color': '#f5f5f5'
+								});
+							} else {
+								// Enable if not selected elsewhere
+								$option.prop('disabled', false).css({
+									'color': '',
+									'background-color': ''
+								});
+							}
+						});
+						
+						// Refresh Select2 if it exists
+						if ($.fn.select2 && $select.hasClass('select2-hidden-accessible')) {
+							$select.select2('destroy').select2({
+								width: '100%',
+								placeholder: function() {
+									return $(this).data('placeholder');
+								}
+							});
+						}
+					});
+				}
+				
+				// Initialize disabled states on page load
+				setTimeout(function() {
+					updateDisabledAttributes();
+				}, 500);
 			});
 		</script>
 		<?php
@@ -542,7 +661,7 @@ class Product_Attributes extends Abstract_Settings_Screen {
 									</td>
 									<td>
 										<a href="#" class="fb-attributes-remove" title="<?php esc_attr_e( 'Remove mapping', 'facebook-for-woocommerce' ); ?>">
-											<span class="dashicons dashicons-trash"></span>
+											<?php esc_html_e( 'Remove mapping', 'facebook-for-woocommerce' ); ?>
 										</a>
 									</td>
 								</tr>
@@ -575,7 +694,7 @@ class Product_Attributes extends Abstract_Settings_Screen {
 								</td>
 								<td>
 									<a href="#" class="fb-attributes-remove" title="<?php esc_attr_e( 'Remove mapping', 'facebook-for-woocommerce' ); ?>">
-										<span class="dashicons dashicons-trash"></span>
+										<?php esc_html_e( 'Remove mapping', 'facebook-for-woocommerce' ); ?>
 									</a>
 								</td>
 							</tr>
