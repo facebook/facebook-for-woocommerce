@@ -1736,8 +1736,8 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 			return;
 		}
 
-		$count           = count( $unmapped_attributes );
-		
+		$count = count( $unmapped_attributes );
+
 		// Convert attribute names to user-friendly labels
 		$attribute_labels = array();
 		foreach ( $unmapped_attributes as $attribute ) {
@@ -1750,8 +1750,8 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 			}
 			$attribute_labels[] = $label;
 		}
-		
-		$attribute_list  = implode( ', ', array_slice( $attribute_labels, 0, 3 ) );
+
+		$attribute_list = implode( ', ', array_slice( $attribute_labels, 0, 3 ) );
 		if ( $count > 3 ) {
 			/* translators: %d: number of additional unmapped attributes */
 			$attribute_list .= sprintf( __( ' and %d more', 'facebook-for-woocommerce' ), $count - 3 );

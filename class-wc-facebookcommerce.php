@@ -283,7 +283,7 @@ class WC_Facebookcommerce extends WooCommerce\Facebook\Framework\Plugin {
 			'admin_init',
 			function () {
 				$this->admin = new WooCommerce\Facebook\Admin();
-				
+
 				// Initialize the global attributes banner
 				if ( class_exists( 'WooCommerce\Facebook\Admin\Global_Attributes_Banner' ) ) {
 					new WooCommerce\Facebook\Admin\Global_Attributes_Banner();
