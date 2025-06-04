@@ -28,7 +28,10 @@ class Global_Attributes_Banner {
 	 * Constructor.
 	 */
 	public function __construct() {
-		// Hook into global attribute creation
+		// Hook into WooCommerce attribute creation (better than generic term creation)
+		add_action( 'woocommerce_attribute_added', array( $this, 'check_new_woocommerce_attribute' ), 10, 2 );
+		
+		// Also hook into generic term creation as fallback
 		add_action( 'created_term', array( $this, 'check_new_attribute_mapping' ), 20, 3 );
 		
 		// Hook into attribute page display
@@ -36,6 +39,57 @@ class Global_Attributes_Banner {
 		
 		// AJAX handler for dismissing banner
 		add_action( 'wp_ajax_dismiss_fb_unmapped_attribute_banner', array( $this, 'dismiss_banner' ) );
+		
+		// Add test action for debugging (remove in production)
+		add_action( 'wp_ajax_test_fb_banner', array( $this, 'ajax_test_banner' ) );
+		
+		// Add URL parameter trigger for testing
+		add_action( 'admin_init', array( $this, 'maybe_trigger_test_banner' ) );
+	}
+
+	/**
+	 * Check for URL parameter to trigger test banner.
+	 */
+	public function maybe_trigger_test_banner() {
+		if ( isset( $_GET['test_fb_banner'] ) && current_user_can( 'manage_woocommerce' ) ) {
+			$attribute_name = sanitize_text_field( $_GET['test_fb_banner'] );
+			if ( empty( $attribute_name ) ) {
+				$attribute_name = 'escobar';
+			}
+			$this->test_banner( $attribute_name );
+			
+			// Add an admin notice to confirm
+			add_action( 'admin_notices', function() use ( $attribute_name ) {
+				echo '<div class="notice notice-success"><p>Test banner triggered for: ' . esc_html( $attribute_name ) . '</p></div>';
+			});
+		}
+	}
+
+	/**
+	 * Check if a newly created WooCommerce attribute has a direct mapping to Meta.
+	 *
+	 * @param int   $id   Attribute ID.
+	 * @param array $data Attribute data.
+	 */
+	public function check_new_woocommerce_attribute( $id, $data ) {
+		// Only show to users who can manage WooCommerce
+		if ( ! current_user_can( 'manage_woocommerce' ) ) {
+			return;
+		}
+
+		// Get the attribute name from the data
+		$attribute_name = isset( $data['attribute_name'] ) ? $data['attribute_name'] : '';
+		
+		if ( empty( $attribute_name ) ) {
+			return;
+		}
+		
+		// Check if this attribute maps to any Meta field
+		$maps_to_meta = $this->attribute_maps_to_meta( $attribute_name );
+		
+		if ( ! $maps_to_meta ) {
+			$this->queue_unmapped_attribute_banner( $attribute_name );
+		}
 	}
 
 	/**
@@ -60,7 +114,9 @@ class Global_Attributes_Banner {
 		$attribute_name = str_replace( 'pa_', '', $taxonomy );
 		
 		// Check if this attribute maps to any Meta field
-		if ( ! $this->attribute_maps_to_meta( $attribute_name ) ) {
+		$maps_to_meta = $this->attribute_maps_to_meta( $attribute_name );
+		
+		if ( ! $maps_to_meta ) {
 			$this->queue_unmapped_attribute_banner( $attribute_name );
 		}
 	}
@@ -106,19 +162,33 @@ class Global_Attributes_Banner {
 
 		// Increase duration to 30 minutes to account for page redirects
 		set_transient( 'fb_new_unmapped_attribute_banner', $banner_data, 1800 );
+		
+		// Also store a flag to show the banner immediately on the current page
+		set_transient( 'fb_show_banner_now', true, 300 );
 	}
 
 	/**
 	 * Display the unmapped attribute banner.
 	 */
 	public function display_unmapped_attribute_banner() {
-		if ( ! $this->should_show_banner() ) {
+		// Check if we should force show the banner now (for immediate display)
+		$show_now = get_transient( 'fb_show_banner_now' );
+		
+		$should_show = $this->should_show_banner();
+		
+		if ( ! $should_show && ! $show_now ) {
 			return;
 		}
 
 		$banner_data = get_transient( 'fb_new_unmapped_attribute_banner' );
+		
 		if ( ! $banner_data || ! isset( $banner_data['attribute_name'] ) ) {
 			return;
+		}
+
+		// Clear the immediate show flag if it was set
+		if ( $show_now ) {
+			delete_transient( 'fb_show_banner_now' );
 		}
 
 		$attribute_name = $banner_data['attribute_name'];
@@ -136,13 +206,13 @@ class Global_Attributes_Banner {
 		?>
 		<div class="notice notice-info is-dismissible fb-unmapped-attribute-banner" style="position: relative;">
 			<p>
-				<strong><?php esc_html_e( 'Meta for WooCommerce', 'facebook-for-woocommerce' ); ?></strong>
+				<strong><?php esc_html_e( 'Facebook for WooCommerce', 'facebook-for-woocommerce' ); ?></strong>
 			</p>
 			<p>
 				<?php
 				printf(
 					/* translators: %1$s - attribute name, %2$s - link start, %3$s - link end */
-					esc_html__( 'Your new "%1$s" attribute doesn\'t directly map to a Meta catalog field. %2$sMap it to Meta%3$s to improve product visibility in Meta ads and help customers find your products more easily.', 'facebook-for-woocommerce' ),
+					esc_html__( 'Your new "%1$s" attribute doesn\'t directly map to a Meta catalog field. %2$sMap it to Facebook%3$s to improve product visibility in Meta ads and help customers find your products more easily.', 'facebook-for-woocommerce' ),
 					esc_html( $display_name ),
 					'<a href="' . esc_url( $mapper_url ) . '">',
 					'</a>'
@@ -210,5 +280,28 @@ class Global_Attributes_Banner {
 
 		delete_transient( 'fb_new_unmapped_attribute_banner' );
 		wp_die();
+	}
+
+	/**
+	 * Manual method to test the banner (for debugging).
+	 *
+	 * @param string $attribute_name The attribute name to test.
+	 */
+	public function test_banner( $attribute_name = 'escobar' ) {
+		$this->queue_unmapped_attribute_banner( $attribute_name );
+	}
+
+	/**
+	 * AJAX handler to test the banner.
+	 */
+	public function ajax_test_banner() {
+		if ( ! current_user_can( 'manage_woocommerce' ) ) {
+			wp_die( -1 );
+		}
+		
+		$attribute_name = isset( $_POST['attribute'] ) ? sanitize_text_field( $_POST['attribute'] ) : 'escobar';
+		$this->test_banner( $attribute_name );
+		
+		wp_send_json_success( 'Banner queued for: ' . $attribute_name );
 	}
 } 
