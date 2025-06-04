@@ -1,5 +1,8 @@
 *** Facebook for WooCommerce Changelog ***
 
+= 3.5.1 - 2025-06-04 =
+*  Fix - Removing BatchLogHandler as hotfix by @vinkmeta in #3295
+
 = 3.5.0 - 2025-05-28 =
 *  Add - Create basic checkout permalink w/ products and coupon support by @ajello-meta in #2887
 *  Add - Common Feed Upload Framework by @jmencab in #2875
