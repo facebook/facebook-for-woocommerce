@@ -35,9 +35,6 @@ class Google_Product_Category_Field {
 			// Only load top-level categories initially to prevent browser crashes
 			$top_level_categories = $this->get_top_level_categories( $all_categories );
 
-			error_log( 'FB DEBUG: Progressive loading - Total categories: ' . count( $all_categories ) );
-			error_log( 'FB DEBUG: Progressive loading - Top-level categories: ' . count( $top_level_categories ) );
-			error_log( 'FB DEBUG: Progressive loading - Data size: ' . strlen( wp_json_encode( $top_level_categories ) ) . ' bytes' );
 
 			$facebook_category_fields = sprintf(
 				"window.wc_facebook_google_product_category_fields = new WC_Facebook_Google_Product_Category_Fields( %s, '%s', '%s' );",
