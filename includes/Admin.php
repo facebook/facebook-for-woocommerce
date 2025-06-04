@@ -13,6 +13,7 @@ namespace WooCommerce\Facebook;
 use WooCommerce\Facebook\Admin\Enhanced_Catalog_Attribute_Fields;
 use WooCommerce\Facebook\Framework\Helper;
 use Automattic\WooCommerce\Utilities\OrderUtil;
+use WooCommerce\Facebook\Admin\Products as AdminProducts;
 
 defined( 'ABSPATH' ) || exit;
 
@@ -126,6 +127,8 @@ class Admin {
 
 		// AJAX handlers for progressive category loading
 		add_action( 'wp_ajax_wc_facebook_load_category_children', array( $this, 'ajax_load_category_children' ) );
+		add_action( 'wp_ajax_wc_facebook_get_category_path', array( $this, 'ajax_get_category_path' ) );
+		add_action( 'wp_ajax_wc_facebook_find_category_id_from_name', array( $this, 'ajax_find_category_id_from_name' ) );
 	}
 
 	/**
@@ -2418,5 +2421,102 @@ class Admin {
 		error_log( 'FB DEBUG: Found ' . count( $children ) . ' children for parent: ' . $parent_id );
 		
 		wp_send_json_success( $children );
+	}
+
+	/**
+	 * AJAX handler to get category path for a given category ID.
+	 *
+	 * @since 2.1.0
+	 */
+	public function ajax_get_category_path() {
+		check_ajax_referer( 'wc_facebook_category_nonce', 'nonce' );
+
+		$category_id = sanitize_text_field( $_POST['category_id'] );
+		
+		if ( empty( $category_id ) ) {
+			wp_send_json_error( 'Invalid category ID' );
+		}
+
+		$facebook_category_handler = facebook_for_woocommerce()->get_facebook_category_handler();
+		
+		if ( ! $facebook_category_handler ) {
+			wp_send_json_error( 'Category handler not available' );
+		}
+		
+		$all_categories = $facebook_category_handler->get_categories();
+		
+		// Build the path from child to root
+		$path = array();
+		$current_id = $category_id;
+		$categories_needed = array(); // Categories that need to be loaded on frontend
+		
+		while ( $current_id && isset( $all_categories[ $current_id ] ) ) {
+			array_unshift( $path, $current_id ); // Add to beginning of array
+			$categories_needed[ $current_id ] = $all_categories[ $current_id ];
+			$current_id = $all_categories[ $current_id ]['parent'];
+		}
+		
+		error_log( 'FB DEBUG: Built category path: ' . implode( ' > ', $path ) );
+		
+		wp_send_json_success( array(
+			'path' => $path,
+			'categories' => $categories_needed
+		) );
+	}
+
+	/**
+	 * AJAX handler to find category ID from category name.
+	 *
+	 * @since 2.1.0
+	 */
+	public function ajax_find_category_id_from_name() {
+		check_ajax_referer( 'wc_facebook_category_nonce', 'nonce' );
+
+		$category_name_path = sanitize_text_field( $_POST['category_name_path'] );
+		
+		if ( empty( $category_name_path ) ) {
+			wp_send_json_error( 'Invalid category name' );
+		}
+
+		$facebook_category_handler = facebook_for_woocommerce()->get_facebook_category_handler();
+		
+		if ( ! $facebook_category_handler ) {
+			wp_send_json_error( 'Category handler not available' );
+		}
+		
+		$all_categories = $facebook_category_handler->get_categories();
+		
+		// Try to find the category by exact path match
+		$found_category_id = null;
+		
+		// First, try exact match of the full path
+		foreach ( $all_categories as $category_id => $category ) {
+			if ( isset( $category['label'] ) && $category['label'] === $category_name_path ) {
+				$found_category_id = $category_id;
+				break;
+			}
+		}
+		
+		// If not found, try to match the last part of the path (leaf category)
+		if ( ! $found_category_id ) {
+			$path_parts = explode( ' > ', $category_name_path );
+			$leaf_name = trim( end( $path_parts ) );
+			
+			foreach ( $all_categories as $category_id => $category ) {
+				if ( isset( $category['label'] ) && $category['label'] === $leaf_name ) {
+					$found_category_id = $category_id;
+					break;
+				}
+			}
+		}
+		
+		error_log( 'FB DEBUG: Searching for category: ' . $category_name_path );
+		error_log( 'FB DEBUG: Found category ID: ' . ( $found_category_id ?: 'not found' ) );
+		
+		if ( $found_category_id ) {
+			wp_send_json_success( array( 'category_id' => $found_category_id ) );
+		} else {
+			wp_send_json_error( 'Category not found: ' . $category_name_path );
+		}
 	}
 }
