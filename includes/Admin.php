@@ -192,7 +192,6 @@ class Admin {
 				// enqueue select2 for our category fields
 				wp_enqueue_script( 'select2' );
 
-
 				// enqueue google product category select
 				wp_enqueue_script(
 					'wc-facebook-google-product-category-fields',
@@ -779,7 +778,9 @@ class Admin {
 	 * @param string $product_edit the product metadata that is being edited.
 	 */
 	public function handle_products_sync_bulk_actions( $product_edit ) {
+		// phpcs:disable WordPress.Security.NonceVerification.Recommended -- Bulk actions are handled by WooCommerce core with nonce verification
 		$sync_mode = isset( $_GET['facebook_bulk_sync_options'] ) ? (string) sanitize_text_field( wp_unslash( $_GET['facebook_bulk_sync_options'] ) ) : null;
+		// phpcs:enable WordPress.Security.NonceVerification.Recommended
 
 		if ( $sync_mode ) {
 			/** @var \WC_Product[] $enabling_sync_virtual_products virtual products that are being included */
@@ -2395,31 +2396,31 @@ class Admin {
 	 */
 	public function ajax_load_category_children() {
 		// Verify nonce
-		if ( ! wp_verify_nonce( $_POST['nonce'], 'wc_facebook_category_nonce' ) ) {
+		if ( ! isset( $_POST['nonce'] ) || ! wp_verify_nonce( sanitize_key( wp_unslash( $_POST['nonce'] ) ), 'wc_facebook_category_nonce' ) ) {
 			wp_die( 'Security check failed' );
 		}
 
-		$parent_id = sanitize_text_field( $_POST['parent_id'] );
-		
-		error_log( 'FB DEBUG: AJAX request for children of parent: ' . $parent_id );
-		
+		if ( ! isset( $_POST['parent_id'] ) ) {
+			wp_send_json_error( 'Missing parent ID' );
+		}
+
+		$parent_id = sanitize_text_field( wp_unslash( $_POST['parent_id'] ) );
+
 		$facebook_category_handler = facebook_for_woocommerce()->get_facebook_category_handler();
-		
+
 		if ( ! $facebook_category_handler ) {
 			wp_send_json_error( 'Category handler not available' );
 		}
-		
+
 		$all_categories = $facebook_category_handler->get_categories();
-		$children = array();
-		
+		$children       = array();
+
 		foreach ( $all_categories as $category_id => $category ) {
 			if ( isset( $category['parent'] ) && $category['parent'] === $parent_id ) {
 				$children[ $category_id ] = $category;
 			}
 		}
-		
-		error_log( 'FB DEBUG: Found ' . count( $children ) . ' children for parent: ' . $parent_id );
-		
+
 		wp_send_json_success( $children );
 	}
 
@@ -2431,37 +2432,41 @@ class Admin {
 	public function ajax_get_category_path() {
 		check_ajax_referer( 'wc_facebook_category_nonce', 'nonce' );
 
-		$category_id = sanitize_text_field( $_POST['category_id'] );
-		
+		if ( ! isset( $_POST['category_id'] ) ) {
+			wp_send_json_error( 'Missing category ID' );
+		}
+
+		$category_id = sanitize_text_field( wp_unslash( $_POST['category_id'] ) );
+
 		if ( empty( $category_id ) ) {
 			wp_send_json_error( 'Invalid category ID' );
 		}
 
 		$facebook_category_handler = facebook_for_woocommerce()->get_facebook_category_handler();
-		
+
 		if ( ! $facebook_category_handler ) {
 			wp_send_json_error( 'Category handler not available' );
 		}
-		
+
 		$all_categories = $facebook_category_handler->get_categories();
-		
+
 		// Build the path from child to root
-		$path = array();
-		$current_id = $category_id;
+		$path              = array();
+		$current_id        = $category_id;
 		$categories_needed = array(); // Categories that need to be loaded on frontend
-		
+
 		while ( $current_id && isset( $all_categories[ $current_id ] ) ) {
 			array_unshift( $path, $current_id ); // Add to beginning of array
 			$categories_needed[ $current_id ] = $all_categories[ $current_id ];
-			$current_id = $all_categories[ $current_id ]['parent'];
+			$current_id                       = $all_categories[ $current_id ]['parent'];
 		}
-		
-		error_log( 'FB DEBUG: Built category path: ' . implode( ' > ', $path ) );
-		
-		wp_send_json_success( array(
-			'path' => $path,
-			'categories' => $categories_needed
-		) );
+
+		wp_send_json_success(
+			array(
+				'path'       => $path,
+				'categories' => $categories_needed,
+			)
+		);
 	}
 
 	/**
@@ -2472,23 +2477,27 @@ class Admin {
 	public function ajax_find_category_id_from_name() {
 		check_ajax_referer( 'wc_facebook_category_nonce', 'nonce' );
 
-		$category_name_path = sanitize_text_field( $_POST['category_name_path'] );
-		
+		if ( ! isset( $_POST['category_name_path'] ) ) {
+			wp_send_json_error( 'Missing category name' );
+		}
+
+		$category_name_path = sanitize_text_field( wp_unslash( $_POST['category_name_path'] ) );
+
 		if ( empty( $category_name_path ) ) {
 			wp_send_json_error( 'Invalid category name' );
 		}
 
 		$facebook_category_handler = facebook_for_woocommerce()->get_facebook_category_handler();
-		
+
 		if ( ! $facebook_category_handler ) {
 			wp_send_json_error( 'Category handler not available' );
 		}
-		
+
 		$all_categories = $facebook_category_handler->get_categories();
-		
+
 		// Try to find the category by exact path match
 		$found_category_id = null;
-		
+
 		// First, try exact match of the full path
 		foreach ( $all_categories as $category_id => $category ) {
 			if ( isset( $category['label'] ) && $category['label'] === $category_name_path ) {
@@ -2496,12 +2505,12 @@ class Admin {
 				break;
 			}
 		}
-		
+
 		// If not found, try to match the last part of the path (leaf category)
 		if ( ! $found_category_id ) {
 			$path_parts = explode( ' > ', $category_name_path );
-			$leaf_name = trim( end( $path_parts ) );
-			
+			$leaf_name  = trim( end( $path_parts ) );
+
 			foreach ( $all_categories as $category_id => $category ) {
 				if ( isset( $category['label'] ) && $category['label'] === $leaf_name ) {
 					$found_category_id = $category_id;
@@ -2509,10 +2518,7 @@ class Admin {
 				}
 			}
 		}
-		
-		error_log( 'FB DEBUG: Searching for category: ' . $category_name_path );
-		error_log( 'FB DEBUG: Found category ID: ' . ( $found_category_id ?: 'not found' ) );
-		
+
 		if ( $found_category_id ) {
 			wp_send_json_success( array( 'category_id' => $found_category_id ) );
 		} else {

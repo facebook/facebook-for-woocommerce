@@ -28,17 +28,17 @@ class Google_Product_Category_Field {
 	 */
 	public function render( $input_id ) {
 		$facebook_category_handler = facebook_for_woocommerce()->get_facebook_category_handler();
-		
+
 		if ( $facebook_category_handler ) {
 			$all_categories = $facebook_category_handler->get_categories();
-			
+
 			// Only load top-level categories initially to prevent browser crashes
 			$top_level_categories = $this->get_top_level_categories( $all_categories );
-			
+
 			error_log( 'FB DEBUG: Progressive loading - Total categories: ' . count( $all_categories ) );
 			error_log( 'FB DEBUG: Progressive loading - Top-level categories: ' . count( $top_level_categories ) );
 			error_log( 'FB DEBUG: Progressive loading - Data size: ' . strlen( wp_json_encode( $top_level_categories ) ) . ' bytes' );
-			
+
 			$facebook_category_fields = sprintf(
 				"window.wc_facebook_google_product_category_fields = new WC_Facebook_Google_Product_Category_Fields( %s, '%s', '%s' );",
 				wp_json_encode( $top_level_categories ),
@@ -48,7 +48,7 @@ class Google_Product_Category_Field {
 			wc_enqueue_js( $facebook_category_fields );
 		}
 	}
-	
+
 	/**
 	 * Gets only the top-level categories (no parent).
 	 *
@@ -57,14 +57,14 @@ class Google_Product_Category_Field {
 	 */
 	private function get_top_level_categories( $all_categories ) {
 		$top_level = array();
-		
+
 		foreach ( $all_categories as $category_id => $category ) {
 			// Top-level categories have no parent or empty parent
 			if ( empty( $category['parent'] ) ) {
 				$top_level[ $category_id ] = $category;
 			}
 		}
-		
+
 		return $top_level;
 	}
 }
