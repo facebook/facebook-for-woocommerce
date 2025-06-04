@@ -231,6 +231,9 @@ class ProductAttributeMapper {
 	 * @return array Array of unmapped attributes with 'name' and 'value' keys
 	 */
 	public static function get_unmapped_attributes( WC_Product $product ) {
+		// Ensure custom mappings are loaded first
+		self::load_custom_mappings();
+		
 		$unmapped_attributes = array();
 		$attributes          = $product->get_attributes();
 
@@ -238,23 +241,11 @@ class ProductAttributeMapper {
 			$value = $product->get_attribute( $attribute_name );
 
 			if ( ! empty( $value ) ) {
-				$clean_name        = self::sanitize_attribute_name( $attribute_name );
-				$is_standard_field = false;
-
-				// First check for direct mapping in our attribute_name_mapping
-				if ( isset( self::$attribute_name_mapping[ $clean_name ] ) ) {
-					$is_standard_field = true;
-				} else {
-					// Then check if it exactly matches one of the standard field options
-					foreach ( self::$standard_facebook_fields as $fb_field => $possible_matches ) {
-						if ( in_array( $clean_name, $possible_matches, true ) ) {
-							$is_standard_field = true;
-							break;
-						}
-					}
-				}
-
-				if ( ! $is_standard_field ) {
+				// Use the comprehensive check_attribute_mapping method to determine if mapped
+				$mapped_field = self::check_attribute_mapping( $attribute_name );
+				
+				// If no mapping found, it's unmapped
+				if ( false === $mapped_field ) {
 					$unmapped_attributes[] = array(
 						'name'  => $attribute_name,
 						'value' => $value,
