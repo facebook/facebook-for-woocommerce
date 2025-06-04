@@ -271,8 +271,6 @@ class WC_Facebookcommerce extends WooCommerce\Facebook\Framework\Plugin {
 		}
 	}
 
-
-
 	/**
 	 * Initializes the admin handling.
 	 *
@@ -285,6 +283,11 @@ class WC_Facebookcommerce extends WooCommerce\Facebook\Framework\Plugin {
 			'admin_init',
 			function () {
 				$this->admin = new WooCommerce\Facebook\Admin();
+				
+				// Initialize the global attributes banner
+				if ( class_exists( 'WooCommerce\Facebook\Admin\Global_Attributes_Banner' ) ) {
+					new WooCommerce\Facebook\Admin\Global_Attributes_Banner();
+				}
 			},
 			0
 		);
@@ -486,7 +489,6 @@ class WC_Facebookcommerce extends WooCommerce\Facebook\Framework\Plugin {
 		register_taxonomy( 'fb_product_set', array( 'product' ), $args );
 	}
 
-
 	/**
 	 * Filter Facebook Product Set Taxonomy table links
 	 *
@@ -502,7 +504,6 @@ class WC_Facebookcommerce extends WooCommerce\Facebook\Framework\Plugin {
 		return $actions;
 	}
 
-
 	/**
 	 * Remove posts count column from Facebook Product Set custom taxonomy
 	 *
@@ -517,7 +518,6 @@ class WC_Facebookcommerce extends WooCommerce\Facebook\Framework\Plugin {
 		return $columns;
 	}
 
-
 	/**
 	 * Filter WC Breadcrumbs when the page is Facebook Product Sets
 	 *
@@ -528,7 +528,6 @@ class WC_Facebookcommerce extends WooCommerce\Facebook\Framework\Plugin {
 	 * @return array
 	 */
 	public function wc_page_breadcrumbs_filter( $breadcrumbs ) {
-
 		if ( 'edit-fb_product_set' !== $this->get_current_page_id() ) {
 			return $breadcrumbs;
 		}
@@ -546,7 +545,6 @@ class WC_Facebookcommerce extends WooCommerce\Facebook\Framework\Plugin {
 		$breadcrumbs[] = ( empty( $term_id ) ? 'Product Sets' : 'Edit Product Set' );
 		return $breadcrumbs;
 	}
-
 
 	/**
 	 * Return that Facebook Product Set page is a WC Conected Page
@@ -589,9 +587,7 @@ class WC_Facebookcommerce extends WooCommerce\Facebook\Framework\Plugin {
 		return $http_request_headers;
 	}
 
-
 	/** Getter methods ********************************************************************************************/
-
 
 	/**
 	 * Gets the API instance.
@@ -640,7 +636,6 @@ class WC_Facebookcommerce extends WooCommerce\Facebook\Framework\Plugin {
 		return $this->background_handle_virtual_products_variations;
 	}
 
-
 	/**
 	 * Gets the background remove duplicate visibility meta data handler instance.
 	 *
@@ -651,7 +646,6 @@ class WC_Facebookcommerce extends WooCommerce\Facebook\Framework\Plugin {
 	public function get_background_remove_duplicate_visibility_meta_instance() {
 		return $this->background_remove_duplicate_visibility_meta;
 	}
-
 
 	/**
 	 * Gets the products sync handler.
@@ -675,7 +669,6 @@ class WC_Facebookcommerce extends WooCommerce\Facebook\Framework\Plugin {
 		return $this->product_sets_sync_handler;
 	}
 
-
 	/**
 	 * Gets the products sync background handler.
 	 *
@@ -686,7 +679,6 @@ class WC_Facebookcommerce extends WooCommerce\Facebook\Framework\Plugin {
 	public function get_products_sync_background_handler() {
 		return $this->sync_background_handler;
 	}
-
 
 	/**
 	 * Gets the connection handler.
@@ -710,7 +702,6 @@ class WC_Facebookcommerce extends WooCommerce\Facebook\Framework\Plugin {
 		return $this->plugin_render_handler;
 	}
 
-
 	/**
 	 * Gets the integration instance.
 	 *
@@ -725,7 +716,6 @@ class WC_Facebookcommerce extends WooCommerce\Facebook\Framework\Plugin {
 
 		return $this->integration;
 	}
-
 
 	/**
 	 * Gets the commerce handler instance.
@@ -809,7 +799,6 @@ class WC_Facebookcommerce extends WooCommerce\Facebook\Framework\Plugin {
 		return 'https://woocommerce.com/document/facebook-for-woocommerce/';
 	}
 
-
 	/**
 	 * Gets the plugin's support URL.
 	 *
@@ -820,7 +809,6 @@ class WC_Facebookcommerce extends WooCommerce\Facebook\Framework\Plugin {
 	public function get_support_url() {
 		return 'https://wordpress.org/support/plugin/facebook-for-woocommerce/';
 	}
-
 
 	/**
 	 * Gets the plugin's sales page URL.
@@ -833,7 +821,6 @@ class WC_Facebookcommerce extends WooCommerce\Facebook\Framework\Plugin {
 		return 'https://woocommerce.com/products/facebook/';
 	}
 
-
 	/**
 	 * Gets the plugin's reviews URL.
 	 *
@@ -844,7 +831,6 @@ class WC_Facebookcommerce extends WooCommerce\Facebook\Framework\Plugin {
 	public function get_reviews_url() {
 		return 'https://wordpress.org/support/plugin/facebook-for-woocommerce/reviews/';
 	}
-
 
 	/**
 	 * Gets the plugin name.
@@ -877,9 +863,7 @@ class WC_Facebookcommerce extends WooCommerce\Facebook\Framework\Plugin {
 		return $this->rollout_switches;
 	}
 
-
 	/** Conditional methods ***************************************************************************************/
-
 
 	/**
 	 * Determines if viewing the plugin settings in the admin.
@@ -892,9 +876,7 @@ class WC_Facebookcommerce extends WooCommerce\Facebook\Framework\Plugin {
 		return is_admin() && WooCommerce\Facebook\Admin\Settings::PAGE_ID === Helper::get_requested_value( 'page' );
 	}
 
-
 	/** Utility methods *******************************************************************************************/
-
 
 	/**
 	 * Initializes the lifecycle handler.
@@ -904,7 +886,6 @@ class WC_Facebookcommerce extends WooCommerce\Facebook\Framework\Plugin {
 	protected function init_lifecycle_handler() {
 		$this->lifecycle_handler = new Lifecycle( $this );
 	}
-
 
 	/**
 	 * Gets the plugin singleton instance.
@@ -922,7 +903,6 @@ class WC_Facebookcommerce extends WooCommerce\Facebook\Framework\Plugin {
 		return self::$instance;
 	}
 
-
 	/**
 	 * Gets the plugin file.
 	 *
@@ -933,7 +913,6 @@ class WC_Facebookcommerce extends WooCommerce\Facebook\Framework\Plugin {
 	protected function get_file() {
 		return __FILE__;
 	}
-
 
 	/**
 	 * Return current page ID

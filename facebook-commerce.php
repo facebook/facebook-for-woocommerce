@@ -1737,8 +1737,21 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 		}
 
 		$count           = count( $unmapped_attributes );
-		$attribute_names = array_column( $unmapped_attributes, 'name' );
-		$attribute_list  = implode( ', ', array_slice( $attribute_names, 0, 3 ) );
+		
+		// Convert attribute names to user-friendly labels
+		$attribute_labels = array();
+		foreach ( $unmapped_attributes as $attribute ) {
+			$attribute_name = $attribute['name'];
+			// Get the user-friendly label for the attribute
+			$label = wc_attribute_label( $attribute_name );
+			// If no label found, clean up the name by removing pa_ prefix
+			if ( $label === $attribute_name && strpos( $attribute_name, 'pa_' ) === 0 ) {
+				$label = ucfirst( str_replace( array( 'pa_', '_', '-' ), array( '', ' ', ' ' ), $attribute_name ) );
+			}
+			$attribute_labels[] = $label;
+		}
+		
+		$attribute_list  = implode( ', ', array_slice( $attribute_labels, 0, 3 ) );
 		if ( $count > 3 ) {
 			/* translators: %d: number of additional unmapped attributes */
 			$attribute_list .= sprintf( __( ' and %d more', 'facebook-for-woocommerce' ), $count - 3 );
