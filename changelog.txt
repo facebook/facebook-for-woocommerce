@@ -1,5 +1,8 @@
 *** Facebook for WooCommerce Changelog ***
 
+= 3.5.2 - 2025-06-04 =
+*  Tweak - Update ALL_PRODUCTS_PLUGIN_VERSION to 3.5.3 @tzahgr
+
 = 3.5.0 - 2025-05-28 =
 *  Add - Create basic checkout permalink w/ products and coupon support by @ajello-meta in #2887
 *  Add - Common Feed Upload Framework by @jmencab in #2875

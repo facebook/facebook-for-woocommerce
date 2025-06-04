@@ -26,7 +26,7 @@ class PluginRender {
 	private \WC_Facebookcommerce $plugin;
 
 	/** @var string opt out plugin version action */
-	const ALL_PRODUCTS_PLUGIN_VERSION = '3.5.1';
+	const ALL_PRODUCTS_PLUGIN_VERSION = '3.5.3';
 
 	/** @var string opt out sync action */
 	const ACTION_OPT_OUT_OF_SYNC = 'wc_facebook_opt_out_of_sync';

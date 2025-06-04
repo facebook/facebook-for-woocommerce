@@ -3,7 +3,7 @@ Contributors: facebook
 Tags: meta, facebook, conversions api, catalog sync, ads
 Requires at least: 5.6
 Tested up to: 6.8.1
-Stable tag: 3.5.0
+Stable tag: 3.5.2
 Requires PHP: 7.4
 MySQL: 5.6 or greater
 License: GPLv2 or later
@@ -39,6 +39,9 @@ When opening a bug on GitHub, please give us as many details as possible.
 * Current version of Facebook-for-WooCommerce, WooCommerce, Wordpress, PHP
 
 == Changelog ==
+
+= 3.5.2 - 2025-06-04 =
+*  Tweak - Update ALL_PRODUCTS_PLUGIN_VERSION to 3.5.3 @tzahgr
 
 = 3.5.0 - 2025-05-28 =
 *  Add - Create basic checkout permalink w/ products and coupon support by @ajello-meta in #2887
