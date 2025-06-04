@@ -35,7 +35,6 @@ class Google_Product_Category_Field {
 			// Only load top-level categories initially to prevent browser crashes
 			$top_level_categories = $this->get_top_level_categories( $all_categories );
 
-
 			$facebook_category_fields = sprintf(
 				"window.wc_facebook_google_product_category_fields = new WC_Facebook_Google_Product_Category_Fields( %s, '%s', '%s' );",
 				wp_json_encode( $top_level_categories ),
