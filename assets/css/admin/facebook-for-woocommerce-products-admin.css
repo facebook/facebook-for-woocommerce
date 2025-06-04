@@ -238,34 +238,45 @@
 	cursor: not-allowed;
 }
 
-.sync-indicator .sync-tooltip:before {
-	content: '';
-	position: absolute;
-	border: 6px solid transparent;
-	border-bottom-color: #32373c;
-	top: -12px;
-	left: 50%;
-	transform: translateX(-50%);
+/* Styles for synced fields */
+.multi-value-display,
+select.synced-attribute,
+input.synced-attribute {
+	cursor: not-allowed !important;
+	color: rgba(44, 51, 56, .5) !important;
+	background-color: #f0f0f1 !important;
 }
 
-.sync-indicator:hover .sync-tooltip {
-	display: block;
+/* Style for Select2 when parent select is synced */
+select.synced-attribute + .select2-container .select2-selection {
+	cursor: not-allowed !important;
+	background-color: #f0f0f1 !important;
+	color: rgba(44, 51, 56, .5) !important;
 }
 
+select.synced-attribute + .select2-container .select2-selection__rendered {
+	color: rgba(44, 51, 56, .5) !important;
+}
+
+/* Sync indicator styles */
 .wc-attributes-icon {
-    display: inline-block;
-    margin-left: 8px;
-    cursor: help;
-    vertical-align: middle;
-    font-size: 14px;
-    position: relative;
-    line-height: 1;
-    top: 2px;
+	position: relative;
+	display: inline-block;
+	margin-left: 8px;
+	vertical-align: middle;
+	cursor: help;
 }
 
-.wc-attributes-icon:before {
-    font-family: Dashicons;
-    content: "\f175";
+.wc-attributes-icon:after {
+	content: '\f175';
+	font-family: dashicons;
+	display: inline-block;
+	width: 18px;
+	height: 18px;
+	vertical-align: text-bottom;
+	opacity: 0.8;
+	color: #000;
+	font-size: 18px;
 }
 
 .woocommerce_options_panel {
@@ -276,4 +287,23 @@
     select {
         font-size: 12px !important;
     }
+}
+
+/* Multi-value display styles */
+.multi-value-display {
+    width: 50%;
+    max-width: 100%;
+    height: 34px;
+    margin: 0;
+    padding: 0 8px;
+    background-color: #f0f0f1;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    box-sizing: border-box;
+    font-size: 14px;
+    line-height: 32px;
+    color: rgba(44, 51, 56, .5);
+    display: inline-block;
+    vertical-align: middle;
+    cursor: not-allowed;
 }

@@ -1,0 +1,343 @@
+/* Facebook Product Attributes Styles */
+.facebook-woo-attributes-screen {
+    background-color: #f0f0f1;
+    padding: 30px;
+    margin: -10px -20px;
+    max-width: none;
+}
+
+.facebook-woo-attributes-screen h1 {
+    margin-bottom: 20px;
+    font-size: 24px;
+    color: #23282d;
+}
+
+.facebook-woo-attributes-screen > p {
+    font-size: 15px;
+    line-height: 1.6;
+    margin-bottom: 25px;
+    color: #50575e;
+}
+
+.facebook-woo-attributes-screen h2 {
+    margin-top: 0;
+    margin-bottom: 25px;
+    padding-bottom: 15px;
+    border-bottom: 1px solid #eee;
+    font-size: 18px;
+    color: #23282d;
+}
+
+.facebook-woo-attributes-screen > div {
+    display: flex;
+    gap: 30px;
+    margin-top: 25px;
+}
+
+.facebook-woo-attributes-screen > div > div {
+    flex: 1;
+    background: #fff;
+    padding: 30px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.form-field {
+    margin-bottom: 28px;
+}
+
+.form-field label {
+    display: block;
+    margin-bottom: 12px;
+    font-weight: 600;
+    font-size: 14px;
+    color: #23282d;
+}
+
+.form-field input,
+.form-field textarea,
+.form-field select,
+.form-field .select2-container {
+    width: 100% !important;
+    max-width: 100%;
+    min-height: 38px;
+}
+
+.form-field .select2-container--default .select2-selection--single {
+    height: 38px;
+    border-color: #ddd;
+}
+
+.form-field .select2-container--default .select2-selection--single .select2-selection__rendered {
+    line-height: 38px;
+    padding-left: 12px;
+    font-size: 14px;
+}
+
+.form-field .select2-container--default .select2-selection--single .select2-selection__arrow {
+    height: 36px;
+}
+
+.form-field .description {
+    color: #666;
+    font-size: 13px;
+    margin: 10px 0 0 0;
+    line-height: 1.6;
+}
+
+.submit {
+    margin: 28px 0 0 0;
+    padding: 0;
+}
+
+.submit .button {
+    height: auto;
+    padding: 8px 16px;
+    font-size: 14px;
+    min-height: 38px;
+}
+
+/* Make Save Changes and Cancel buttons same size as Add new mapping button */
+.submit .button,
+.submit .button-primary {
+    height: auto !important;
+    padding: 6px 12px !important;
+    font-size: 13px !important;
+    line-height: 16px !important;
+    min-height: 30px !important;
+    margin: 0 !important;
+}
+
+.submit .button + .button {
+    margin-left: 10px !important;
+}
+
+/* Table styles for both edit and view modes */
+#facebook-attribute-mapping-table,
+#facebook-attribute-mapping-table-view {
+    border-collapse: collapse;
+    margin-top: 10px;
+    width: 50%;
+    border: 1px solid #e5e5e5;
+}
+
+/* Make WooCommerce and Meta attribute columns equal width */
+#facebook-attribute-mapping-table th:nth-child(1),
+#facebook-attribute-mapping-table td:nth-child(1) {
+    width: 40%;
+}
+
+#facebook-attribute-mapping-table th:nth-child(2),
+#facebook-attribute-mapping-table td:nth-child(2) {
+    width: 40%;
+}
+
+#facebook-attribute-mapping-table th:nth-child(3),
+#facebook-attribute-mapping-table td:nth-child(3) {
+    width: 20%;
+    text-align: center;
+}
+
+#facebook-attribute-mapping-table th,
+#facebook-attribute-mapping-table-view th {
+    font-weight: 600;
+    padding: 12px 15px;
+    text-align: left;
+    background-color: #f8f8f8;
+    border-bottom: 1px solid #ddd;
+    font-size: 14px;
+}
+
+#facebook-attribute-mapping-table td,
+#facebook-attribute-mapping-table-view td {
+    padding: 15px;
+    vertical-align: middle;
+    border-bottom: 1px solid #eee;
+    font-size: 14px;
+    line-height: 1.5;
+}
+
+#facebook-attribute-mapping-table-view tr:hover {
+    background-color: #f5f5f5;
+}
+
+/* Add this to improve checkbox appearance */
+#facebook-attribute-mapping-table input[type="checkbox"] {
+    margin: 0;
+}
+
+#facebook-attribute-mapping-table .check-column {
+    width: 5%;
+    text-align: center;
+}
+
+#facebook-attribute-mapping-table .name-column {
+    width: 30%;
+}
+
+#facebook-attribute-mapping-table .desc-column {
+    width: 30%;
+}
+
+#facebook-attribute-mapping-table .slug-column {
+    width: 35%;
+}
+
+#facebook-attribute-mapping-table tfoot td {
+    padding: 15px;
+    border-bottom: none;
+}
+
+#facebook-attribute-mapping-table .no-items td {
+    text-align: center;
+    padding: 20px;
+    color: #888;
+    font-style: italic;
+}
+
+#facebook-attribute-mapping-table .last-sync-info {
+    color: #888;
+    font-style: italic;
+    font-size: 13px;
+}
+
+/* Static display for values in the table */
+.static-value-display {
+    padding: 8px 0;
+    font-size: 14px;
+    line-height: 1.4;
+    color: #333;
+    background-color: #f9f9f9;
+    border: 1px solid #eee;
+    border-radius: 3px;
+    padding: 8px 12px;
+    display: inline-block;
+    min-width: 70%;
+    pointer-events: none;
+}
+
+.static-value-empty {
+    color: #999;
+    font-style: italic;
+    background-color: #f9f9f9;
+}
+
+/* Dropdowns within the table */
+#facebook-attribute-mapping-table .wc-enhanced-select {
+    min-width: 200px;
+    width: 100% !important;
+}
+
+/* Special dropdowns styling */
+#condition-dropdown,
+#gender-dropdown, 
+#age-group-dropdown, 
+#availability-dropdown {
+    margin-top: 15px;
+}
+
+/* Custom Select2 fixes */
+body span.select2-container--default .select2-selection--single {
+    border-color: #8c8f94;
+    border-radius: 3px;
+}
+
+body .select2-container .select2-selection--single .select2-selection__rendered {
+    padding-left: 12px;
+    padding-right: 20px;
+    font-size: 14px;
+}
+
+body .select2-container .select2-selection--single .select2-selection__arrow {
+    right: 5px;
+}
+
+body .select2-dropdown {
+    border-color: #8c8f94;
+    z-index: 999999;
+}
+
+body .select2-search--dropdown {
+    padding: 10px;
+}
+
+body .select2-results__option {
+    padding: 10px;
+    margin: 0;
+    font-size: 14px;
+}
+
+/* Input styling */
+.form-field input[type="text"] {
+    padding: 0 12px;
+    line-height: 38px;
+    font-size: 14px;
+}
+
+/* Help text styling */
+.facebook-woo-attributes-screen .description {
+    margin-top: 10px;
+    color: #666;
+    font-size: 13px;
+    line-height: 1.6;
+}
+
+/* Make sure notices are properly styled */
+.fb-attributes-notice {
+    margin: 5px 0 15px;
+    position: relative;
+}
+
+.fb-attributes-notice .notice-dismiss {
+    position: absolute;
+    top: 0;
+    right: 1px;
+    border: none;
+    margin: 0;
+    padding: 9px;
+    background: none;
+    color: #787c82;
+    cursor: pointer;
+}
+
+.fb-attributes-notice .notice-dismiss:before {
+    background: 0 0;
+    color: #787c82;
+    content: "\f153";
+    display: block;
+    font: normal 16px/20px dashicons;
+    speak: never;
+    height: 20px;
+    text-align: center;
+    width: 20px;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+.fb-attributes-notice .notice-dismiss:hover:before,
+.fb-attributes-notice .notice-dismiss:active:before,
+.fb-attributes-notice .notice-dismiss:focus:before {
+    color: #d63638;
+}
+
+.fb-default-value {
+    width: 100%;
+    min-height: 30px;
+    padding: 0 8px;
+}
+
+/* Delete mapping text styling */
+.remove-mapping,
+.fb-attributes-remove {
+    color: #d63638;
+    text-decoration: none;
+    font-size: 13px;
+    font-weight: 500;
+}
+
+.remove-mapping:hover,
+.fb-attributes-remove:hover {
+    color: #a02828;
+    text-decoration: none;
+} 
