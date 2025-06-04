@@ -167,7 +167,7 @@ jQuery( function( $ ) {
 				if ( allCats[ categoryId ].parent === parentId ) {
 					children.push({
 						id: categoryId,
-						name: allCats[ categoryId ].name
+						name: allCats[ categoryId ].label
 					});
 				}
 			}
@@ -235,7 +235,7 @@ jQuery( function( $ ) {
 			for ( var categoryId in this.categories ) {
 				topLevelOptions.push({
 					id: categoryId,
-					name: this.categories[ categoryId ].name
+					name: this.categories[ categoryId ].label
 				});
 			}
 			
