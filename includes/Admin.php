@@ -185,7 +185,7 @@ class Admin {
 				wp_enqueue_script(
 					'wc-facebook-google-product-category-fields',
 					facebook_for_woocommerce()->get_asset_build_dir_url() . '/admin/google-product-category-fields.js',
-					array( 'jquery' ),
+					array( 'jquery', 'select2' ),
 					\WC_Facebookcommerce::PLUGIN_VERSION,
 					false
 				);

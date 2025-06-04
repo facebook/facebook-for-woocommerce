@@ -7,9 +7,13 @@
  * @package FacebookCommerce
  */
 
+console.log('FB DEBUG: google-product-category-fields.js loading...');
+
 jQuery( document ).ready( ( $ ) => {
 
 	'use strict';
+
+	console.log('FB DEBUG: jQuery ready, initializing Google Product Category Fields class');
 
 	/**
 	 * Google product category field handler.
@@ -32,8 +36,9 @@ jQuery( document ).ready( ( $ ) => {
 		 */
 		constructor(categories, input_id) {
 
-			this.categories = categories;
+			console.log('FB DEBUG: Constructor called with categories:', categories ? Object.keys(categories).length : 'null', 'input_id:', input_id);
 
+			this.categories = categories;
 			this.input_id = input_id;
 
 			var $input = $( '#' + this.input_id );
@@ -45,39 +50,7 @@ jQuery( document ).ready( ( $ ) => {
 				} );
 
 			this.addInitialSelects( $input.val() );
-			var optionalSelectorID = this.globalsHolder().enhanced_attribute_optional_selector;
-
-			if(typeof(optionalSelectorID) !== 'undefined') {
-				// Initial trigger for the optional attributes selector
-				$( '#' + optionalSelectorID ).on('change', function(){
-					$('.wc-facebook-enhanced-catalog-attribute-optional-row')
-						.toggleClass('hidden', !$(this).prop("checked"));
-				});
-			}
 		}
-
-		globalsHolder() {
-			if(typeof(facebook_for_woocommerce_product_categories) !== 'undefined'){
-				return facebook_for_woocommerce_product_categories;
-			} else if(typeof(facebook_for_woocommerce_settings_sync) !== 'undefined'){
-				return facebook_for_woocommerce_settings_sync;
-			} else {
-				return facebook_for_woocommerce_products_admin;
-			}
-		}
-
-		getPageType(){
-			if(typeof(facebook_for_woocommerce_product_categories) !== 'undefined'){
-				if( $( 'input[name=tag_ID]' ).length === 0){
-					return this.globalsHolder().enhanced_attribute_page_type_add_category;
-				} else {
-					return this.globalsHolder().enhanced_attribute_page_type_edit_category;
-				}
-			} else {
-				return this.globalsHolder().enhanced_attribute_page_type_edit_product;
-			}
-		}
-
 
 		/**
 		 * Adds the initial select fields for the previously selected values.
@@ -88,71 +61,41 @@ jQuery( document ).ready( ( $ ) => {
 		 */
 		addInitialSelects( categoryId ) {
 
+			console.log('FB DEBUG: addInitialSelects called with:', categoryId);
+
 			if ( categoryId ) {
 
-				this.getSelectedCategoryIds( categoryId ).forEach( ( pair ) => {
-					this.addSelect( this.getOptions( pair[1] ), pair[0] );
-				} );
+				// If categoryId is a string (like "Clothing & Accessories > Clothing > Shirts & Tops"), 
+				// convert it to a numeric ID
+				if ( isNaN( categoryId ) ) {
+					console.log('FB DEBUG: Converting category string to ID:', categoryId);
+					categoryId = this.getCategoryId( categoryId );
+					console.log('FB DEBUG: Converted to ID:', categoryId);
+				}
 
-				var options = this.getOptions( categoryId );
+				if ( categoryId ) {
+					this.getSelectedCategoryIds( categoryId ).forEach( ( pair ) => {
+						this.addSelect( this.getOptions( pair[1] ), pair[0] );
+					} );
 
-				if ( Object.keys( options ).length ) {
-					this.addSelect( options );
+					var options = this.getOptions( categoryId );
+
+					if ( Object.keys( options ).length ) {
+						this.addSelect( options );
+					}
+				} else {
+					console.log('FB DEBUG: Could not find category ID, showing top-level categories');
+					this.addSelect( this.getOptions() );
+					this.addSelect( {} );
 				}
 
 			} else {
 
+				console.log('FB DEBUG: No existing category, showing top-level categories');
 				this.addSelect( this.getOptions() );
 				this.addSelect( {} );
 			}
 		}
-
-		/**
-		 * Sets the enhanced attributes to show
-		 *
-		 */
-		requestAttributesIfValid() {
-			// if an input with this id isn't available then we can't show
-			// enhanced attributes on this page, (for example it may be the
-			// product sync page)
-			var canShowEnhancedAttributesID = 'wc_facebook_can_show_enhanced_catalog_attributes_id';
-			if($( '#'+canShowEnhancedAttributesID ).val() !== 'true'){
-				return;
-			}
-
-			$('.wc-facebook-enhanced-catalog-attribute-row').remove();
-
-			if(this.isValid()) {
-				var inputSelector = '#' + this.input_id;
-				var $inputParent = $( inputSelector ).parents('div.form-field');
-				var optionalSelectorID = this.globalsHolder().enhanced_attribute_optional_selector;
-				if( this.getPageType() === this.globalsHolder().enhanced_attribute_page_type_edit_category ){
-					$inputParent = $( inputSelector ).parents('tr.form-field');
-				} else if( this.getPageType() === this.globalsHolder().enhanced_attribute_page_type_edit_product ) {
-					$inputParent = $( inputSelector ).parents('p.form-field');
-				}
-			  $.get( this.globalsHolder().ajax_url, {
-					action:   'wc_facebook_enhanced_catalog_attributes',
-					security: '',
-					selected_category:  $( inputSelector ).val(),
-					tag_id:  parseInt($( 'input[name=tag_ID]' ).val(), 10),
-					taxonomy:  $( 'input[name=taxonomy]' ).val(),
-					item_id: parseInt( $( 'input[name=post_ID]' ).val(), 10 ),
-					page_type: this.getPageType(),
-				}, function( response ) {
-					var $response = $(response);
-
-					$( '#' + optionalSelectorID, $response ).on('change', function(){
-						$('.wc-facebook-enhanced-catalog-attribute-optional-row')
-							.toggleClass('hidden', !$(this).prop("checked"));
-					});
-					$response.insertAfter($inputParent);
-					// Ensure tooltips work:
-					$(document.body).trigger('init_tooltips');
-				});
-			}
-		}
-
 
 		/**
 		 * Updates the subsequent selects whenever one of the selects changes.
@@ -191,23 +134,36 @@ jQuery( document ).ready( ( $ ) => {
 			}
 
 			$( '#' + this.input_id ).val( categoryId );
-			this.requestAttributesIfValid();
 		}
 
 		/**
-		 * Returns true if there have been at least two levels of category selected
+		 * Gets an array of selected category IDs up to the category with the given ID.
 		 *
-		 * @return {boolean}
+		 * @since 2.1.0
+		 *
+		 * @param {string} categoryId the concrete category ID
+		 *
+		 * @return {Array} an array of category ID pairs (selected option, parent)
 		 */
-		isValid() {
-			var selectsWithValueCount = $('.wc-facebook-google-product-category-select')
-				.filter(function(_i, el) { return $(el).val() !== ""; })
-					.length;
-			return selectsWithValueCount >= 2;
+		getSelectedCategoryIds( categoryId ) {
+
+			let ids = [];
+			let selectedCategory = this.categories[ categoryId ];
+
+			if ( selectedCategory ) {
+
+				ids.push( [ categoryId, selectedCategory.parent ] );
+
+				if ( selectedCategory.parent ) {
+					ids = this.getSelectedCategoryIds( selectedCategory.parent ).concat( ids );
+				}
+			}
+
+			return ids;
 		}
 
 		/**
-		 * Adds a new select with the given options.
+		 * Adds a select field.
 		 *
 		 * @since 2.1.0
 		 *
@@ -233,110 +189,107 @@ jQuery( document ).ready( ( $ ) => {
 			$select.val( selected ).select2( { allowClear: true } );
 		}
 
-
 		/**
-		 * Gets the placeholder string for a select field based on the number of existing select fields.
+		 * Gets an array of category options.
 		 *
 		 * @since 2.1.0
 		 *
-		 * @param {jQuery} $otherSelects a jQuery object matching existing select fields
-		 * @param {Object.<string, string>} options an object with option IDs as keys and option labels as values
-		 * @return {string}
-		 */
-		getSelectPlaceholder( $otherSelects, options ) {
-
-			if ( 0 === $otherSelects.length ) {
-				return facebook_for_woocommerce_google_product_category.i18n.top_level_dropdown_placeholder;
-			}
-
-			if ( 1 === $otherSelects.length && 0 === Object.keys( options ).length ) {
-				return facebook_for_woocommerce_google_product_category.i18n.second_level_empty_dropdown_placeholder;
-			}
-
-			return facebook_for_woocommerce_google_product_category.i18n.general_dropdown_placeholder;
-		}
-
-
-		/**
-		 * Gets an array of options for the given category ID.
-		 *
-		 * @since 2.1.0
-		 *
-		 * @param {string} category_id The given category ID
-		 * @return {Object.<string, string>} an object with option IDs as keys and option labels as values
-		 */
-		getOptions(category_id) {
-
-			if ( 'undefined' === typeof category_id || '' === category_id ) {
-				return this.getTopLevelOptions();
-			}
-
-			if ( 'undefined' === typeof this.categories[ category_id ] ) {
-				return [];
-			}
-
-			if ( 'undefined' === typeof this.categories[ category_id ]['options'] ) {
-				return [];
-			}
-
-			return this.categories[ category_id ]['options'];
-		}
-
-
-		/**
-		 * Gets an array of top level category options.
-		 *
-		 * @since 2.1.0
+		 * @param {string} parent_id the parent category ID
 		 *
 		 * @return {Object.<string, string>} an object with option IDs as keys and option labels as values
 		 */
-		getTopLevelOptions() {
+		getOptions( parent_id ) {
 
 			let options = {};
 
-			Object.keys( this.categories ).forEach( ( key ) => {
+			for ( const key in this.categories ) {
 
-				if ( this.categories[ key ].parent ) {
-					return;
+				if ( this.categories.hasOwnProperty( key ) ) {
+
+					const category = this.categories[ key ];
+
+					// Handle the case where top-level categories have parent: '' but parent_id is undefined
+					const categoryParent = category.parent;
+					const targetParent = parent_id || '';
+
+					if ( categoryParent === targetParent ) {
+						options[ key ] = category.label;
+					}
 				}
-
-				options[ key ] = this.categories[ key ].label;
-			} );
+			}
 
 			return options;
 		}
 
-
 		/**
-		 * Gets the ID of the selected category and all its ancestors.
+		 * Gets the placeholder text for a select field.
 		 *
-		 * The method returns an array of arrays, where each entry is a pair of category IDs.
-		 * The first entry in the pair is the category ID and the second entry is the ID of the corresponding parent category.
+		 * @since 2.1.0
 		 *
-		 * We use an array of arrays to be able to present the select fields in the correct order.
-		 * Object keys are automatically ordered causing options for categories with larger IDs to be displayed last.
+		 * @param {jQuery} $otherSelects other select fields
+		 * @param {Object.<string, string>} options the select field options
 		 *
-		 * @param {string} categoryId
-		 * @param {Array.<string[]>} categoryId
+		 * @return {string} the placeholder text
 		 */
-		getSelectedCategoryIds( categoryId ) {
+		getSelectPlaceholder( $otherSelects, options ) {
 
-			var options = [];
-
-			do {
-				if ( 'undefined' !== typeof this.categories[ categoryId ] ) {
-
-					options.push( [ categoryId, this.categories[ categoryId ].parent ] );
-
-					categoryId = this.categories[ categoryId ].parent;
-				}
-			} while ( '' !== categoryId );
-
-			return options.reverse();
+			if ( $otherSelects.length === 0 ) {
+				return facebook_for_woocommerce_google_product_category.i18n.top_level_dropdown_placeholder;
+			} else if ( Object.keys( options ).length === 0 ) {
+				return facebook_for_woocommerce_google_product_category.i18n.second_level_empty_dropdown_placeholder;
+			} else {
+				return facebook_for_woocommerce_google_product_category.i18n.general_dropdown_placeholder;
+			}
 		}
 
+		/**
+		 * Gets a concrete category ID from a category string.
+		 *
+		 * @since 2.1.0
+		 *
+		 * @param {string} categoryString the category string
+		 *
+		 * @return {string} the concrete category ID
+		 */
+		getCategoryId( categoryString ) {
 
-	}
+			console.log('FB DEBUG: getCategoryId searching for:', categoryString);
 
+			for ( const key in this.categories ) {
 
+				if ( this.categories.hasOwnProperty( key ) ) {
+
+					const category = this.categories[ key ];
+					
+					// Try exact match first
+					if ( category.label === categoryString ) {
+						console.log('FB DEBUG: Found exact match for category ID:', key);
+						return key;
+					}
+				}
+			}
+
+			console.log('FB DEBUG: No exact match found for category string:', categoryString);
+			
+			// If no exact match, try to find the last part of the category string
+			// For "Clothing & Accessories > Clothing > Shirts & Tops", look for "Shirts & Tops"
+			if ( categoryString.includes( ' > ' ) ) {
+				const lastPart = categoryString.split( ' > ' ).pop();
+				console.log('FB DEBUG: Trying to match last part:', lastPart);
+				
+				for ( const key in this.categories ) {
+					if ( this.categories.hasOwnProperty( key ) ) {
+						const category = this.categories[ key ];
+						if ( category.label === lastPart ) {
+							console.log('FB DEBUG: Found match for last part, category ID:', key);
+							return key;
+						}
+					}
+				}
+			}
+
+			console.log('FB DEBUG: No match found for category string');
+			return '';
+		}
+	};
 } );

@@ -622,7 +622,15 @@ class WC_Facebook_Product_Feed {
 	 */
 	private static function get_value_from_product_data( &$product_data, $index, $return_if_not_set = '' ) {
 
-		return isset( $product_data[ $index ] ) ? $product_data[ $index ] : $return_if_not_set;
+		$value = isset( $product_data[ $index ] ) ? $product_data[ $index ] : $return_if_not_set;
+		
+		// Decode HTML entities for google_product_category to fix feed import issues
+		// where categories contain &amp; &gt; etc.
+		if ( 'google_product_category' === $index && is_string( $value ) ) {
+			$value = html_entity_decode( $value, ENT_QUOTES | ENT_HTML401, 'UTF-8' );
+		}
+		
+		return $value;
 	}
 
 
