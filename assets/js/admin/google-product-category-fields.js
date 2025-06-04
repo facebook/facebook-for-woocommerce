@@ -187,8 +187,21 @@ jQuery( function( $ ) {
 			var $select = $( '<select class="wc-facebook-google-product-category-select"></select>' );
 			$select.data( 'level', level );
 			
-			// Add empty option
-			$select.append( '<option value="">— Select —</option>' );
+			// Get appropriate placeholder text based on level and content
+			var placeholder = '';
+			if ( level === 0 ) {
+				// Top level dropdown
+				placeholder = facebook_for_woocommerce_google_product_category.i18n.top_level_dropdown_placeholder;
+			} else if ( children.length === 0 ) {
+				// Empty dropdown after selection
+				placeholder = facebook_for_woocommerce_google_product_category.i18n.second_level_empty_dropdown_placeholder;
+			} else {
+				// General dropdown with options
+				placeholder = facebook_for_woocommerce_google_product_category.i18n.general_dropdown_placeholder;
+			}
+			
+			// Add empty option with proper placeholder
+			$select.append( '<option value="">' + placeholder + '</option>' );
 			
 			// Add children options
 			children.forEach( function( child ) {
@@ -202,9 +215,11 @@ jQuery( function( $ ) {
 			// Add to main container
 			this.container.append( $container );
 			
-			// Initialize select2
+			// Initialize select2 with proper placeholder
 			$select.select2({
-				width: '100%'
+				width: '100%',
+				placeholder: placeholder,
+				allowClear: true
 			});
 		},
 
