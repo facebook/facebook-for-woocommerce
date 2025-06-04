@@ -233,7 +233,7 @@ class ProductAttributeMapper {
 	public static function get_unmapped_attributes( WC_Product $product ) {
 		// Ensure custom mappings are loaded first
 		self::load_custom_mappings();
-		
+
 		$unmapped_attributes = array();
 		$attributes          = $product->get_attributes();
 
@@ -243,7 +243,7 @@ class ProductAttributeMapper {
 			if ( ! empty( $value ) ) {
 				// Use the comprehensive check_attribute_mapping method to determine if mapped
 				$mapped_field = self::check_attribute_mapping( $attribute_name );
-				
+
 				// If no mapping found, it's unmapped
 				if ( false === $mapped_field ) {
 					$unmapped_attributes[] = array(
