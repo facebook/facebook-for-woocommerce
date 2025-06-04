@@ -120,6 +120,12 @@ class Admin {
 		// add custom taxonomy for Product Sets
 		add_filter( 'gettext', array( $this, 'change_custom_taxonomy_tip' ), 20, 2 );
 		add_action( 'wp_ajax_sync_facebook_attributes', array( $this, 'ajax_sync_facebook_attributes' ) );
+
+		// add integrations
+		add_action( 'wp_loaded', array( $this, 'add_integrations' ) );
+
+		// AJAX handlers for progressive category loading
+		add_action( 'wp_ajax_wc_facebook_load_category_children', array( $this, 'ajax_load_category_children' ) );
 	}
 
 	/**
@@ -191,6 +197,15 @@ class Admin {
 					array( 'jquery', 'select2' ),
 					\WC_Facebookcommerce::PLUGIN_VERSION,
 					false
+				);
+
+				// Localize script with nonce for AJAX requests
+				wp_localize_script(
+					'wc-facebook-google-product-category-fields',
+					'wc_facebook_google_product_category_fields_params',
+					array(
+						'nonce' => wp_create_nonce( 'wc_facebook_category_nonce' ),
+					)
 				);
 
 				wp_localize_script(
@@ -2368,5 +2383,40 @@ class Admin {
 			wp_send_json_success( $synced_fields );
 		}
 		wp_send_json_error( 'Invalid product ID' );
+	}
+
+	/**
+	 * AJAX handler to load children categories for a given parent ID.
+	 *
+	 * @since 2.1.0
+	 */
+	public function ajax_load_category_children() {
+		// Verify nonce
+		if ( ! wp_verify_nonce( $_POST['nonce'], 'wc_facebook_category_nonce' ) ) {
+			wp_die( 'Security check failed' );
+		}
+
+		$parent_id = sanitize_text_field( $_POST['parent_id'] );
+		
+		error_log( 'FB DEBUG: AJAX request for children of parent: ' . $parent_id );
+		
+		$facebook_category_handler = facebook_for_woocommerce()->get_facebook_category_handler();
+		
+		if ( ! $facebook_category_handler ) {
+			wp_send_json_error( 'Category handler not available' );
+		}
+		
+		$all_categories = $facebook_category_handler->get_categories();
+		$children = array();
+		
+		foreach ( $all_categories as $category_id => $category ) {
+			if ( isset( $category['parent'] ) && $category['parent'] === $parent_id ) {
+				$children[ $category_id ] = $category;
+			}
+		}
+		
+		error_log( 'FB DEBUG: Found ' . count( $children ) . ' children for parent: ' . $parent_id );
+		
+		wp_send_json_success( $children );
 	}
 }
