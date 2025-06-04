@@ -416,19 +416,24 @@ class WC_Facebook_Product {
 	 *
 	 * @return array
 	 */
-	public function get_all_video_urls() {
+	public function get_all_video_urls( $parent_id = null ) {
 
 		$video_urls = array();
-
+		$product = $this->woo_product;
+		
+		if($parent_id !== null) {
+			$product = wc_get_product( $parent_id );
+		}
+	
 		$attached_videos = get_attached_media( 'video', $this->id );
 
-			$custom_video_urls = $this->woo_product->get_meta( self::FB_PRODUCT_VIDEO );
+		$custom_video_urls = $product->get_meta( self::FB_PRODUCT_VIDEO );
 
 		if ( empty( $attached_videos ) && empty( $custom_video_urls ) ) {
 			return $video_urls;
 		}
 
-			// Add custom video URLs to the list
+		// Add custom video URLs to the list
 		if ( ! empty( $custom_video_urls ) && is_array( $custom_video_urls ) ) {
 			foreach ( $custom_video_urls as $custom_url ) {
 				$custom_url = trim( $custom_url );
@@ -438,7 +443,7 @@ class WC_Facebook_Product {
 			}
 		}
 
-			// Add attached video URLs to the list, excluding duplicates from custom video URLs
+		// Add attached video URLs to the list, excluding duplicates from custom video URLs
 		if ( ! empty( $attached_videos ) ) {
 			$custom_video_url_set = array_flip( array_column( $video_urls, 'url' ) );
 			foreach ( $attached_videos as $video ) {
@@ -1418,7 +1423,7 @@ class WC_Facebook_Product {
 				$value = $attribute_values[0];
 				// Clean and truncate the value directly for simple products
 				return mb_substr(WC_Facebookcommerce_Utils::clean_string($value), 0, 200);
-			}
+			}		
 		} else {
 			// For variable/variation products, keep all values
 			$joined_values = implode(' | ', $attribute_values);
@@ -1807,6 +1812,13 @@ class WC_Facebook_Product {
 		}//end if
 
 		$video_urls = $this->get_all_video_urls();
+		
+		// If this is a variable product, get the video URLs from the parent product and add them to variations.
+		if($this->get_type() === "variation"){
+			$parent_id = $this->woo_product->get_parent_id();
+			$video_urls = $this->get_all_video_urls($parent_id);
+		}
+
 		if ( ! empty( $video_urls ) && self::PRODUCT_PREP_TYPE_NORMAL !== $type_to_prepare_for ) {
 			$product_data['video'] = $video_urls;
 		}
