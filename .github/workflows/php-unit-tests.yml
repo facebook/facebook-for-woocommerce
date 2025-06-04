@@ -21,7 +21,8 @@ jobs:
 
     steps:
       - name: Show runner details
-        run: echo "RUNNER_ENVIRONMENT: $RUNNER_ENVIRONMENT"
+        run: |
+          echo "RUNNER_ENVIRONMENT : $RUNNER_ENVIRONMENT"
 
       - name: Install SVN
         run: sudo apt-get install subversion -y
