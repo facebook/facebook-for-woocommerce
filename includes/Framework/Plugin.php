@@ -122,7 +122,6 @@ abstract class Plugin {
 
 		// add the action & filter hooks
 		$this->add_hooks();
-		
 
 		// build the error log handler instance
 		$this->init_error_log_handler();
