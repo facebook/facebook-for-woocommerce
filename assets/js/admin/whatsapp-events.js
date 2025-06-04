@@ -172,6 +172,8 @@ jQuery(document).ready(function ($) {
         });
     });
 
+    const tokenInvalidationErrorCode = 190;
+
     $("#manage-event-language").load(facebook_for_woocommerce_whatsapp_events.ajax_url, function () {
         $.post(facebook_for_woocommerce_whatsapp_events.ajax_url, {
             action: 'wc_facebook_whatsapp_fetch_supported_languages',
@@ -190,8 +192,8 @@ jQuery(document).ready(function ($) {
                 console.log('Fetch supported language call succeeded');
             }
             else {
-                console.log('Fetch supported language call failed', response);
-                const message = facebook_for_woocommerce_whatsapp_finish.i18n.generic_error;
+                const errorCode = JSON.parse(response.data.body).error.code;
+                const message = errorCode === tokenInvalidationErrorCode ? facebook_for_woocommerce_whatsapp_events.i18n.token_invalidated_error : facebook_for_woocommerce_whatsapp_finish.i18n.generic_error;
                 const errorNoticeHtml = `
                 <div class="notice-error">
                   <p>${message}</p>

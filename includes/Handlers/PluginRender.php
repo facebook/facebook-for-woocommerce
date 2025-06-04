@@ -88,7 +88,7 @@ class PluginRender {
 		$current_version = $this->plugin->get_version();
 		/**
 		 * Case when current version is less or equal to latest
-		 * but latest is below 3.5.1
+		 * but latest is below 3.5.2
 		 * Should show the opt in/ opt out banner
 		 */
 		if ( version_compare( $current_version, self::ALL_PRODUCTS_PLUGIN_VERSION, '<' ) ) {
@@ -116,7 +116,7 @@ class PluginRender {
 		$screen = get_current_screen();
 
 		if ( isset( $screen->id ) && 'marketing_page_wc-facebook' === $screen->id ) {
-			echo '<div id="opt_out_banner" class="' . esc_html( self::get_opt_out_banner_class() ) . '" style="padding: 15px">
+			echo '<div id="opt_out_banner" class="' . esc_html( self::get_opt_out_banner_class() ) . '">
             <h4>When you update to version <b>' . esc_html( self::ALL_PRODUCTS_PLUGIN_VERSION ) . '</b> your products will automatically sync to your catalog at Meta catalog</h4>
             The next time you update your Facebook for WooCommerce plugin, all your products will be synced automatically. This is to help you drive sales and optimize your ad performance. <a href="https://www.facebook.com/business/help/4049935305295468">Learn more about changes to how your products will sync to Meta</a>
                 <p>
@@ -126,7 +126,7 @@ class PluginRender {
             </div>
             ';
 
-			echo '<div id="opted_our_successfullly_banner" class="' . esc_html( self::get_opted_out_successfully_banner_class() ) . '" style="padding: 15px">
+			echo '<div id="opted_our_successfullly_banner" class="' . esc_html( self::get_opted_out_successfully_banner_class() ) . '">
             <h4>You’ve opted out of automatic syncing on the next plugin update </h4>
                 <p>
                     Products that are not synced will not be available for your customers to discover on your ads and shops. To manually add products, <a href="https://www.facebook.com/business/help/4049935305295468">learn how to sync products to your Meta catalog</a>

@@ -58,6 +58,7 @@ class ProductSetSync {
 	 * @param int   $tt_id Term taxonomy ID.
 	 * @param array $args Arguments.
 	 */
+	// phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter
 	public function on_create_or_update_product_wc_category_callback( $term_id, $tt_id, $args ) {
 		try {
 			if ( ! $this->is_sync_enabled() ) {
@@ -84,6 +85,7 @@ class ProductSetSync {
 	 * @param WP_Term $deleted_term Copy of the already-deleted term.
 	 * @param array   $object_ids List of term object IDs.
 	 */
+	// phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter
 	public function on_delete_wc_product_category_callback( $term_id, $tt_id, $deleted_term, $object_ids ) {
 		try {
 			if ( ! $this->is_sync_enabled() ) {

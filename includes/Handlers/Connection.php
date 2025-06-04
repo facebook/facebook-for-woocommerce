@@ -148,8 +148,13 @@ class Connection {
 			return;
 		}
 
-		try {
+		$flag_name = '_wc_facebook_for_woocommerce_refresh_business_configuration';
+		if ( 'yes' === get_transient( $flag_name ) ) {
+			return;
+		}
+		set_transient( $flag_name, 'yes', HOUR_IN_SECONDS );
 
+		try {
 			$response = $this->get_plugin()->get_api()->get_business_configuration( $this->get_external_business_id() );
 			facebook_for_woocommerce()->get_tracker()->track_facebook_business_config(
 				$response->is_ig_shopping_enabled(),
@@ -157,7 +162,6 @@ class Connection {
 			);
 
 		} catch ( ApiException $exception ) {
-
 			$this->get_plugin()->log( 'Could not refresh business configuration. ' . $exception->getMessage() );
 		}
 
@@ -176,8 +180,13 @@ class Connection {
 			return;
 		}
 
-		try {
+		$flag_name = '_wc_facebook_for_woocommerce_refresh_installation_data';
+		if ( 'yes' === get_transient( $flag_name ) ) {
+			return;
+		}
+		set_transient( $flag_name, 'yes', DAY_IN_SECONDS );
 
+		try {
 			$this->update_installation_data();
 			$this->repair_or_update_commerce_integration_data();
 		} catch ( ApiException $exception ) {

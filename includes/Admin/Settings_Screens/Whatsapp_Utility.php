@@ -153,8 +153,9 @@ class Whatsapp_Utility extends Abstract_Settings_Screen {
 				'order_refunded_enabled'   => ! empty( $order_refunded_event_config_id ),
 				'order_refunded_language'  => $order_refunded_language,
 				'i18n'                     => array(
-					'result'        => true,
-					'generic_error' => __( 'Something went wrong. Please try again.', 'facebook-for-woocommerce' ),
+					'result'                  => true,
+					'generic_error'           => __( 'Something went wrong. Please try again.', 'facebook-for-woocommerce' ),
+					'token_invalidated_error' => __( 'Your access token has been invalidated. Please disconnect and reconnect your whatsapp account.', 'facebook-for-woocommerce' ),
 
 				),
 			)

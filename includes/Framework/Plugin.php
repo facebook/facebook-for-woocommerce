@@ -65,9 +65,6 @@ abstract class Plugin {
 	/** @var AdminNoticeHandler the admin notice handler class */
 	private $admin_notice_handler;
 
-	/** @var BatchLogHandler the batch log handler class */
-	private $batch_log_handler;
-
 	/** @var ErrorLogHandler the error log handler class */
 	private $error_log_handler;
 
@@ -125,9 +122,6 @@ abstract class Plugin {
 
 		// add the action & filter hooks
 		$this->add_hooks();
-
-		// build the batch log handler instance
-		$this->init_batch_log_handler();
 
 		// build the error log handler instance
 		$this->init_error_log_handler();
@@ -187,15 +181,6 @@ abstract class Plugin {
 	 */
 	protected function init_lifecycle_handler() {
 		$this->lifecycle_handler = new \WooCommerce\Facebook\Lifecycle( $this );
-	}
-
-	/**
-	 * Builds the batch log handler instance.
-	 *
-	 * @since 3.5.0
-	 */
-	protected function init_batch_log_handler() {
-		$this->batch_log_handler = new BatchLogHandler();
 	}
 
 	/**
@@ -477,7 +462,7 @@ abstract class Plugin {
 		$messages   = [];
 		$messages[] = isset( $data['uri'] ) && $data['uri'] ? 'Request' : 'Response';
 		foreach ( (array) $data as $key => $value ) {
-			$messages[] = trim( sprintf( '%s: %s', $key, is_array( $value ) || ( is_object( $value ) && 'stdClass' == get_class( $value ) ) ? print_r( (array) $value, true ) : $value ) );
+			$messages[] = trim( sprintf( '%s: %s', $key, is_array( $value ) || ( is_object( $value ) && 'stdClass' === get_class( $value ) ) ? print_r( (array) $value, true ) : $value ) );
 		}
 		return implode( "\n", $messages ) . "\n";
 	}
@@ -713,6 +698,7 @@ abstract class Plugin {
 	 *        (ie a gateway that supports both credit cards and echecks)
 	 * @return string plugin settings URL
 	 */
+	// phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter
 	public function get_settings_url( $plugin_id = null ) {
 		// stub method
 		return '';
