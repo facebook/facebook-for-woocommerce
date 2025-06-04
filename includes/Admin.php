@@ -180,6 +180,9 @@ class Admin {
 					\WC_Facebookcommerce::PLUGIN_VERSION,
 					false
 				);
+				// enqueue select2 for our category fields
+				wp_enqueue_script( 'select2' );
+
 
 				// enqueue google product category select
 				wp_enqueue_script(
