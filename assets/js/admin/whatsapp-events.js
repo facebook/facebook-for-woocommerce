@@ -44,6 +44,9 @@ jQuery(document).ready(function ($) {
         orderRefundedInactiveStatus.show();
     }
 
+    var saveEventBtn = $('#woocommerce-whatsapp-save-order-confirmation');
+    var cancelEventBtn = $('#woocommerce-whatsapp-cancel-order-confirmation');
+
     $('#woocommerce-whatsapp-manage-order-placed, #woocommerce-whatsapp-manage-order-fulfilled, #woocommerce-whatsapp-manage-order-refunded').click(function (event) {
         var clickedButtonId = $(event.target).attr("id");
         let view = clickedButtonId.replace("woocommerce-whatsapp-", "");
@@ -131,10 +134,13 @@ jQuery(document).ready(function ($) {
         });
     });
 
-    $('#woocommerce-whatsapp-save-order-confirmation').click(function (event) {
+    saveEventBtn.click(function (event) {
         var languageValue = $("#manage-event-language").val();
         var statusValue = $('input[name="template-status"]:checked').val();
-        console.log('Save confirmation clicked: ', languageValue, statusValue);
+        var spinnerState = $('#woocommerce-whatsapp-save-loading-state');
+        saveEventBtn.addClass('fbwa-button-disabled');
+        cancelEventBtn.addClass('fbwa-button-disabled');
+        spinnerState.show();
         $.post(facebook_for_woocommerce_whatsapp_events.ajax_url, {
             action: 'wc_facebook_whatsapp_upsert_event_config',
             nonce: facebook_for_woocommerce_whatsapp_events.nonce,
@@ -151,6 +157,9 @@ jQuery(document).ready(function ($) {
                 console.log('Whatsapp Event Config has been updated', response);
             }
             else {
+                spinnerState.hide();
+                saveEventBtn.removeClass('fbwa-button-disabled');
+                cancelEventBtn.removeClass('fbwa-button-disabled');
                 console.log('Whatsapp Event Config Update failure', response);
                 const message = facebook_for_woocommerce_whatsapp_finish.i18n.generic_error;
                 const errorNoticeHtml = `
@@ -162,6 +171,8 @@ jQuery(document).ready(function ($) {
             }
         });
     });
+
+    const tokenInvalidationErrorCode = 190;
 
     $("#manage-event-language").load(facebook_for_woocommerce_whatsapp_events.ajax_url, function () {
         $.post(facebook_for_woocommerce_whatsapp_events.ajax_url, {
@@ -181,8 +192,8 @@ jQuery(document).ready(function ($) {
                 console.log('Fetch supported language call succeeded');
             }
             else {
-                console.log('Fetch supported language call failed', response);
-                const message = facebook_for_woocommerce_whatsapp_finish.i18n.generic_error;
+                const errorCode = JSON.parse(response.data.body).error.code;
+                const message = errorCode === tokenInvalidationErrorCode ? facebook_for_woocommerce_whatsapp_events.i18n.token_invalidated_error : facebook_for_woocommerce_whatsapp_finish.i18n.generic_error;
                 const errorNoticeHtml = `
                 <div class="notice-error">
                   <p>${message}</p>

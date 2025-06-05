@@ -108,7 +108,7 @@ abstract class AbstractFeedFileWriter {
 
 			// Step 3: Rename temporary feed file to final feed file.
 			$this->promote_temp_file();
-		} catch ( PluginException $exception ) {
+		} catch ( \Exception $exception ) {
 			WC_Facebookcommerce_Utils::log_exception_immediately_to_meta(
 				$exception,
 				[
@@ -135,48 +135,81 @@ abstract class AbstractFeedFileWriter {
 	 * Generates the feed file.
 	 *
 	 * @throws PluginException If the directory could not be created.
+	 * @throws \Exception Caught exception is rethrown.
 	 * @since 3.5.0
 	 */
 	public function create_feed_directory(): void {
-		$file_directory    = $this->get_file_directory();
-		$directory_created = wp_mkdir_p( $file_directory );
-		if ( ! $directory_created ) {
-			// phpcs:ignore -- Escaping function for translated string not available in this context
-			throw new PluginException( __( "Could not create feed directory at {$file_directory}", 'facebook-for-woocommerce' ), 500 );
+		$file_directory = $this->get_file_directory();
+		try {
+			$directory_created = wp_mkdir_p( $file_directory );
+			if ( ! $directory_created ) {
+				throw new PluginException( "Could not create feed directory at {$file_directory}", 500 );
+			}
+		} catch ( \Exception $exception ) {
+			WC_Facebookcommerce_Utils::log_exception_immediately_to_meta(
+				$exception,
+				[
+					'event'      => 'feed_upload',
+					'event_type' => 'create_feed_directory',
+					'extra_data' => [
+						'feed_name'      => $this->feed_name,
+						'file_directory' => $file_directory,
+					],
+				]
+			);
+			throw $exception;
 		}
 	}
 
 	/**
 	 * Creates files in the feed directory to prevent directory listing and hotlinking.
 	 *
+	 * @throws \Exception Caught exception is rethrown.
 	 * @since 3.5.0
 	 */
 	public function create_files_to_protect_feed_directory(): void {
 		$feed_directory = trailingslashit( $this->get_file_directory() );
+		try {
+			$files = array(
+				array(
+					'base'    => $feed_directory,
+					'file'    => 'index.html',
+					'content' => '',
+				),
+				array(
+					'base'    => $feed_directory,
+					'file'    => '.htaccess',
+					'content' => 'deny from all',
+				),
+			);
 
-		$files = array(
-			array(
-				'base'    => $feed_directory,
-				'file'    => 'index.html',
-				'content' => '',
-			),
-			array(
-				'base'    => $feed_directory,
-				'file'    => '.htaccess',
-				'content' => 'deny from all',
-			),
-		);
-
-		foreach ( $files as $file ) {
-			$file_path = trailingslashit( $file['base'] ) . $file['file'];
-			if ( wp_mkdir_p( $file['base'] ) && ! file_exists( $file_path ) ) {
-				// phpcs:ignore -- use php file i/o functions
-				$file_handle = @fopen( $file_path, 'w' );
-				if ( $file_handle ) {
-					fwrite( $file_handle, $file['content'] ); //phpcs:ignore
-					fclose( $file_handle ); //phpcs:ignore
+			foreach ( $files as $file ) {
+				$file_path = trailingslashit( $file['base'] ) . $file['file'];
+				if ( wp_mkdir_p( $file['base'] ) && ! file_exists( $file_path ) ) {
+					// phpcs:ignore -- use php file i/o functions
+					$file_handle = fopen( $file_path, 'w' );
+					if ( $file_handle ) {
+						try {
+							fwrite( $file_handle, $file['content'] ); //phpcs:ignore
+						} finally {
+							fclose( $file_handle ); //phpcs:ignore
+						}
+					}
 				}
 			}
+		} catch ( \Exception $exception ) {
+			WC_Facebookcommerce_Utils::log_exception_immediately_to_meta(
+				$exception,
+				[
+					'event'      => 'feed_upload',
+					'event_type' => 'create_files_to_protect_feed_directory',
+					'extra_data' => [
+						'feed_name'      => $this->feed_name,
+						'feed_directory' => $feed_directory,
+					],
+				]
+			);
+			throw $exception;
 		}
 	}
 
@@ -242,39 +275,58 @@ abstract class AbstractFeedFileWriter {
 	 * Prepare a fresh empty temporary feed file with the header row.
 	 *
 	 * @throws PluginException We can't open the file or the file is not writable.
+	 * @throws \Exception Caught exception is rethrown.
 	 * @return resource A file pointer resource.
 	 * @since 3.5.0
 	 */
 	public function prepare_temporary_feed_file() {
 		$temp_file_path = $this->get_temp_file_path();
-		// phpcs:ignore -- use php file i/o functions
-		$temp_feed_file = @fopen( $temp_file_path, 'w' );
+		$temp_feed_file = false;
+		$file_path      = $this->get_file_path();
 
-		// Check if we can open the temporary feed file.
-		// phpcs:ignore
-		if ( false === $temp_feed_file || ! is_writable( $temp_file_path ) ) {
-			// phpcs:ignore -- Escaping function for translated string not available in this context
-			throw new PluginException( __( "Could not open file {$temp_file_path} for writing.", 'facebook-for-woocommerce' ), 500 );
-		}
+		try {
+			// phpcs:ignore -- use php file i/o functions
+			$temp_feed_file = fopen( $temp_file_path, 'w' );
 
-		$file_path = $this->get_file_path();
-
-		// Check if we will be able to write to the final feed file.
-		// phpcs:ignore -- use php file i/o functions
-		if ( file_exists( $file_path ) && ! is_writable( $file_path ) ) {
-			// phpcs:ignore -- Escaping function for translated string not available in this context
-			throw new PluginException( __( "Could not open file {$file_path} for writing.", 'facebook-for-woocommerce' ), 500 );
-		}
-
-		if ( ! empty( $this->header_row ) ) {
-			$headers = str_getcsv( $this->header_row );
-			if ( fputcsv( $temp_feed_file, $headers, $this->delimiter, $this->enclosure, $this->escape_char ) === false ) {
-				// phpcs:ignore -- Escaping function for translated string not available in this context
-				throw new PluginException( __( "Failed to write header row to {$temp_file_path}.", 'facebook-for-woocommerce' ), 500 );
+			// Check if we can open the temporary feed file.
+			// phpcs:ignore
+			if ( false === $temp_feed_file || ! is_writable( $temp_file_path ) ) {
+				throw new PluginException( "Could not open file {$temp_file_path} for writing.", 500 );
 			}
-		}
 
-		return $temp_feed_file;
+			// Check if we will be able to write to the final feed file.
+			// phpcs:ignore -- use php file i/o functions
+			if ( file_exists( $file_path ) && ! is_writable( $file_path ) ) {
+				throw new PluginException( "Could not open file {$file_path} for writing.", 500 );
+			}
+
+			if ( ! empty( $this->header_row ) ) {
+				$headers = str_getcsv( $this->header_row );
+				if ( fputcsv( $temp_feed_file, $headers, $this->delimiter, $this->enclosure, $this->escape_char ) === false ) {
+					throw new PluginException( "Failed to write header row to {$temp_file_path}.", 500 );
+				}
+			}
+
+			return $temp_feed_file;
+		} catch ( \Exception $exception ) {
+			WC_Facebookcommerce_Utils::log_exception_immediately_to_meta(
+				$exception,
+				[
+					'event'      => 'feed_upload',
+					'event_type' => 'prepare_temporary_feed_file',
+					'extra_data' => [
+						'feed_name'      => $this->feed_name,
+						'temp_file_path' => $temp_file_path,
+						'file_path'      => $file_path,
+					],
+				]
+			);
+			if ( $temp_feed_file ) {
+				// phpcs:ignore -- use php file i/o functions
+				fclose( $temp_feed_file );
+			}
+			throw $exception;
+		}
 	}
 
 	/**
@@ -282,18 +334,35 @@ abstract class AbstractFeedFileWriter {
 	 * This is the last step fo the feed generation procedure.
 	 *
 	 * @throws PluginException If the temporary feed file could not be renamed.
+	 * @throws \Exception Caught exception is rethrown.
 	 * @since 3.5.0
 	 */
 	public function promote_temp_file(): void {
-		$file_path      = $this->get_file_path();
 		$temp_file_path = $this->get_temp_file_path();
-		if ( ! empty( $temp_file_path ) && ! empty( $file_path ) ) {
-			// phpcs:ignore -- use php file i/o functions
-			$renamed = rename( $temp_file_path, $file_path );
-			if ( empty( $renamed ) ) {
-				// phpcs:ignore -- Escaping function for translated string not available in this context
-				throw new PluginException( __( "Could not promote temp file: {$temp_file_path}", 'facebook-for-woocommerce' ), 500 );
+		$file_path      = $this->get_file_path();
+
+		try {
+			if ( ! empty( $temp_file_path ) && ! empty( $file_path ) ) {
+				// phpcs:ignore -- use php file i/o functions
+				$renamed = rename( $temp_file_path, $file_path );
+				if ( empty( $renamed ) ) {
+					throw new PluginException( "Could not promote temp file: {$temp_file_path}", 500 );
+				}
 			}
+		} catch ( \Exception $exception ) {
+			WC_Facebookcommerce_Utils::log_exception_immediately_to_meta(
+				$exception,
+				[
+					'event'      => 'feed_upload',
+					'event_type' => 'promote_temp_file',
+					'extra_data' => [
+						'feed_name'      => $this->feed_name,
+						'temp_file_path' => $temp_file_path,
+						'file_path'      => $file_path,
+					],
+				]
+			);
+			throw $exception;
 		}
 	}
 

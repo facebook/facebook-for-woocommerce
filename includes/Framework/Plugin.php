@@ -373,7 +373,7 @@ abstract class Plugin {
 			// store the previous minor while we loop patch versions, which we ignore
 			$previous_minor = $older_minor;
 
-			$supported_minor--;
+			--$supported_minor;
 		}
 
 		// for strict comparison, we strip the patch version from the determined versions and compare only major, minor versions, ignoring patches (i.e. 1.2.3 becomes 1.2)
@@ -477,7 +477,7 @@ abstract class Plugin {
 		$messages   = [];
 		$messages[] = isset( $data['uri'] ) && $data['uri'] ? 'Request' : 'Response';
 		foreach ( (array) $data as $key => $value ) {
-			$messages[] = trim( sprintf( '%s: %s', $key, is_array( $value ) || ( is_object( $value ) && 'stdClass' == get_class( $value ) ) ? print_r( (array) $value, true ) : $value ) );
+			$messages[] = trim( sprintf( '%s: %s', $key, is_array( $value ) || ( is_object( $value ) && 'stdClass' === get_class( $value ) ) ? print_r( (array) $value, true ) : $value ) );
 		}
 		return implode( "\n", $messages ) . "\n";
 	}
@@ -548,7 +548,7 @@ abstract class Plugin {
 			$level,
 			$message,
 			array(
-				'source'  => $log_id,
+				'source' => $log_id,
 			)
 		);
 	}
@@ -713,6 +713,7 @@ abstract class Plugin {
 	 *        (ie a gateway that supports both credit cards and echecks)
 	 * @return string plugin settings URL
 	 */
+	// phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter
 	public function get_settings_url( $plugin_id = null ) {
 		// stub method
 		return '';

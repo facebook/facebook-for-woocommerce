@@ -10,6 +10,7 @@
 
 namespace WooCommerce\Facebook\Feed;
 
+use WC_Facebookcommerce_Utils;
 use WooCommerce\Facebook\Framework\Plugin\Exception as PluginException;
 
 defined( 'ABSPATH' ) || exit;
@@ -32,35 +33,55 @@ class CsvFeedFileWriter extends AbstractFeedFileWriter {
 	 *
 	 * @return void
 	 * @throws PluginException If the temporary file cannot be opened or row can't be written.
+	 * @throws \Exception Caught exception is rethrown.
 	 * @since 3.5.0
 	 */
 	public function write_temp_feed_file( array $data ): void {
 		$temp_file_path = $this->get_temp_file_path();
-		// phpcs:ignore -- use php file i/o functions
-		$temp_feed_file = fopen( $temp_file_path, 'a' );
-		if ( false === $temp_feed_file ) {
-			// phpcs:ignore -- Escaping function for translated string not available in this context
-			throw new PluginException( __( "Unable to open temporary file {$temp_file_path} for appending.", 'facebook-for-woocommerce' ), 500 );
-		}
-
-		// Convert the header row (CSV string) to an array to use as field accessors.
-		$accessors = str_getcsv( $this->header_row );
-
-		// Process and write each data row.
-		foreach ( $data as $obj ) {
-			$row = [];
-			foreach ( $accessors as $accessor ) {
-				// Map each field in the row to ensure proper string conversion
-				$value = $obj[ $accessor ] ?? '';
-				$row[] = $this->format_field( $value );
+		$temp_feed_file = false;
+		try {
+			// phpcs:ignore -- use php file i/o functions
+			$temp_feed_file = fopen( $temp_file_path, 'a' );
+			if ( false === $temp_feed_file ) {
+				// phpcs:ignore -- Escaping function for translated string not available in this context
+				throw new PluginException( "Unable to open temporary file {$temp_file_path} for appending.", 500 );
 			}
-			if ( fputcsv( $temp_feed_file, $row, $this->delimiter, $this->enclosure, $this->escape_char ) === false ) {
-				throw new PluginException( 'Failed to write a CSV data row.', 500 );
+
+			// Convert the header row (CSV string) to an array to use as field accessors.
+			$accessors = str_getcsv( $this->header_row );
+
+			// Process and write each data row.
+			foreach ( $data as $obj ) {
+				$row = [];
+				foreach ( $accessors as $accessor ) {
+					// Map each field in the row to ensure proper string conversion
+					$value = $obj[ $accessor ] ?? '';
+					$row[] = $this->format_field( $value );
+				}
+				if ( fputcsv( $temp_feed_file, $row, $this->delimiter, $this->enclosure, $this->escape_char ) === false ) {
+					throw new PluginException( 'Failed to write a CSV data row.', 500 );
+				}
+			}
+		} catch ( \Exception $exception ) {
+			WC_Facebookcommerce_Utils::log_exception_immediately_to_meta(
+				$exception,
+				[
+					'event'      => 'feed_upload',
+					'event_type' => 'write_temp_feed_file',
+					'extra_data' => [
+						'feed_name'      => $this->feed_name,
+						'temp_file_path' => $temp_file_path,
+						'file_type'      => 'csv',
+					],
+				]
+			);
+			throw $exception;
+		} finally {
+			if ( $temp_feed_file ) {
+				// phpcs:ignore -- use php file i/o functions
+				fclose( $temp_feed_file );
 			}
 		}
-
-		// phpcs:ignore -- use php file i/o functions
-		fclose( $temp_feed_file );
 	}
 
 	protected function format_field( $value ) {

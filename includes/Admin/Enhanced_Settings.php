@@ -56,7 +56,6 @@ class Enhanced_Settings {
 
 		$this->screens = $this->build_menu_item_array();
 
-		add_action( 'admin_menu', array( $this, 'build_menu_item_array' ) );
 		add_action( 'admin_init', array( $this, 'add_extra_screens' ) );
 		add_action( 'admin_menu', array( $this, 'add_menu_item' ) );
 		add_action( 'wp_loaded', array( $this, 'save' ) );
@@ -188,6 +187,14 @@ class Enhanced_Settings {
 		$current_tab = $this->get_current_tab();
 		$screen      = $this->get_screen( $current_tab );
 
+		\WC_Facebookcommerce_Utils::log_to_meta(
+			'User visited the Facebook for WooCommerce settings' . $current_tab . 'tab',
+			array(
+				'flow_name' => 'settings',
+				'flow_step' => $current_tab . '_tab_rendered',
+			)
+		);
+
 		?>
 		<div class="wrap woocommerce">
 			<?php $this->render_tabs( $current_tab ); ?>
@@ -217,8 +224,8 @@ class Enhanced_Settings {
 				<?php $url = admin_url( 'admin.php?page=' . self::PAGE_ID . '&tab=' . esc_attr( $id ) ); ?>
 				<?php if ( 'whatsapp_utility' === $id ) : ?>
 					<?php
-					$wa_onboarding_completion_setting = get_option( 'wc_facebook_wa_integration_onboarding_complete', '' );
-					if ( 'true' === $wa_onboarding_completion_setting ) {
+					$wa_integration_config_id = get_option( 'wc_facebook_wa_integration_config_id', '' );
+					if ( ! empty( $wa_integration_config_id ) ) {
 						$url .= '&view=utility_settings';
 					}
 					?>

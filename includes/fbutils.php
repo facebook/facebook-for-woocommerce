@@ -357,7 +357,7 @@ if ( ! class_exists( 'WC_Facebookcommerce_Utils' ) ) :
 				// Each field that is not present in AAM settings or is empty is deleted from user data
 				foreach ( $user_data as $field => $value ) {
 					if ( null === $value || '' === $value
-						|| ! in_array( $field, $aam_settings->get_enabled_automatic_matching_fields() )
+						|| ! in_array( $field, $aam_settings->get_enabled_automatic_matching_fields(), true )
 					) {
 						unset( $user_data[ $field ] );
 					}
@@ -621,7 +621,7 @@ if ( ! class_exists( 'WC_Facebookcommerce_Utils' ) ) :
 				$parent_product_ids[ $parent_id ] = true;
 
 				// Include variations with published parents only.
-				if ( in_array( $parent_id, $product_ids ) ) {
+				if ( in_array( $parent_id, $product_ids, true ) ) {
 					$product_ids[] = $post_id;
 				}
 			}
@@ -998,11 +998,11 @@ if ( ! class_exists( 'WC_Facebookcommerce_Utils' ) ) :
 		 *
 		 * @param array  $context
 		 * @param string $key
-		 * @param mixed  $default_key
+		 * @param mixed  $default_value
 		 * @return mixed
 		 */
-		public static function get_context_data( array $context, string $key, $default_key = null ) {
-			return $context[ $key ] ?? $default_key;
+		public static function get_context_data( array $context, string $key, $default_value = null ) {
+			return $context[ $key ] ?? $default_value;
 		}
 
 		/**

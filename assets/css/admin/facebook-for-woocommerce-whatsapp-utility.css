@@ -94,18 +94,19 @@
 .event-config {
     display: flex;
     flex-direction: row;
-    padding-top: 10px;
+    padding-top: 16px;
+    padding-bottom: 16px;
 }
 .event-config-heading-container {
     display: flex;
     flex-direction: row;
 }
 .event-config-manage-button {
-    position: relative;
     margin-left: auto;
-    top: 50%;
     padding-left: 20px;
     padding-right: 10px;
+    display: flex;
+    align-items: center;
 }
 .event-config-status {
     background-color: #FFFFFF;
@@ -199,8 +200,10 @@
 }
 /* Modal footer */
 .warning-modal-footer {
+    display: flex;
+    flex-direction: row-reverse;
+    gap: 10px;
     padding: 10px 0;
-    text-align: right;
 }
 /* Close button */
 .warning-modal-close {
@@ -249,4 +252,27 @@
 .disconnect-footer {
     display: flex;
     position: relative;
+}
+.fbwa-spinner {
+    width: 8px;
+    height: 8px;
+    border: 2px solid white;
+    border-top: 2px solid transparent;
+    border-radius: 50%;
+    margin-right: 4px;
+    animation: spin 0.6s linear infinite;
+}
+@keyframes spin {
+    100% {
+        transform: rotate(360deg);
+    }
+}
+.fbwa-button {
+    display: flex !important; /* Overrides wordpress button flex property */
+    flex-direction: row;
+    align-items: center;
+}
+.fbwa-button-disabled {
+    cursor: not-allowed !important; /* Overrides wordpress cursor property */
+    opacity: 0.7;
 }
