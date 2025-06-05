@@ -2,8 +2,8 @@
 Contributors: facebook
 Tags: meta, facebook, conversions api, catalog sync, ads
 Requires at least: 5.6
-Tested up to: 6.7
-Stable tag: 3.4.4
+Tested up to: 6.8.1
+Stable tag: 3.5.2
 Requires PHP: 7.4
 MySQL: 5.6 or greater
 License: GPLv2 or later
@@ -40,18 +40,84 @@ When opening a bug on GitHub, please give us as many details as possible.
 
 == Changelog ==
 
-= 3.4.4 - 2025-03-26 =
-* Add - Create tests for ProductFeedUploads create endpoint by @ajello-meta in #2902
-* Add - Create tests for ProductFeedUploads read endpoint by @ajello-meta in #2903
-* Tweak - Remove phpcs:ignoreFile annotation + Enable code coverage report generation with phpunit by @sol-loup in #2897 and #2901
-* Fix - Restores the original dynamic property behavior in the AsyncRequest class by @sol-loup in #2921
-* Tweak - Changing APP to PLUGIN on README.MD by @SayanPandey in #2916
-* Tweak - Update README.md - Added noification for ownership transfer by @SayanPandey in #2910
-* Tweak - Added is_multisite logging to the update_plugin_version_configuration request by @carterbuce in #2955
-* Tweak - Add woo_commerce_retailer_id to products API request by @crisojog in #2958
-* Tweak - Syncing plugin version info by @vinkmeta in #2960
-* Fix - sync products out of stock to meta despite visibility config by @francorisso in #2952
-* Fix - Update woo_commerce_retailer_id to existing field external_variant_id by @crisojog in #2963
-* Tweak - Update readme.txt by @vinkmeta in #2949
+= 3.5.2 - 2025-06-04 =
+*  Tweak - Update ALL_PRODUCTS_PLUGIN_VERSION to 3.5.3 @tzahgr
+
+= 3.5.0 - 2025-05-28 =
+*  Add - Create basic checkout permalink w/ products and coupon support by @ajello-meta in #2887
+*  Add - Common Feed Upload Framework by @jmencab in #2875
+*  Fix - Fix bug where templates were not loading correctly by @ajello-meta in #2915
+*  Tweak - Change MICE to use base site url instead of shop url by @carterbuce in #2934
+*  Tweak - Improve custom checkout UI by @ajello-meta in #2930
+*  Tweak - Make custom checkout UI mobile compatible by @ajello-meta in #2942
+*  Fix - Update parsing for Checkout URL Product IDs by @carterbuce in #2935
+*  Add - Implement dummy logging util by @nealweiMeta in #2920
+*  Add - Setup cron job for batch logging with global message queue by @nealweiMeta in #2924
+*  Add - Error log request api activate by @nealweiMeta in #2933
+*  Add - Log locally with debug mode enabled by @nealweiMeta in #2939
+*  Add - Ratings and reviews feed upload by @nrostrow-meta in #2937
+*  Tweak - Feed upload skip logic and logging calls by @nrostrow-meta in #2964
+*  Add - Add function to fetch feed upload instance by @nrostrow-meta in #2970
+*  Tweak - Have feed uploads always use feed generator by @nrostrow-meta in #2971
+*  Tweak - Trigger metadata feed uploads on CPI ID change (post onboarding) by @nrostrow-meta in #2995
+*  Add - Shipping profile feed upload button by @nrostrow-meta in #3140
+*  Add - Navigation menu feed upload logic by @nrostrow-meta in #3159
+*  Fix - Fixing some fclose and logging gaps in the feed upload logic by @nrostrow-meta in #3192
+*  Add - Enabling navigation menu feed upload and adding manual sync button by @nrostrow-meta in #3223
+*  Add - Promotions feed upload by @carterbuce in #2941
+*  Add - Plugin AJAX API Framework by @sol-loup in #2928
+*  Tweak - Test Infrastructure Enhancement by @sol-loup in #2944
+*  Add - Implement telemetry logs api by @nealweiMeta in #2940
+*  Fix -  Make error logging event configurable by @nealweiMeta in #2954
+*  Add - Implement logging toggle by @nealweiMeta in #2959
+*  Fix - auto products sync by @nealweiMeta in #2978
+*  Tweak - Sync products with restriction by @nealweiMeta in #2983
+*  Fix - Fix use_enhanced_onboarding for legacy connections by @carterbuce in #2986
+*  Add - Create enhanced settings UI by @ajello-meta in #2968
+*  Add - Create new troubleshooting drawer from legacy debug settings by @ajello-meta in #2977
+*  Add - Add manual product and coupon sync buttons by @ajello-meta in #2984
+*  Tweak - Make page title in enhanced settings static by @ajello-meta in #2985
+*  Tweak - Align finalized content for logging toggle by @nealweiMeta in #2992
+*  Tweak - Improve local log by @nealweiMeta in #3009
+*  Fix - Fix free shipping coupon sync by @carterbuce in #2993
+*  Tweak - Add logging for feed generation scheduling failure by @carterbuce in #2994
+*  Tweak - Add logging in checkout for coupon code by @ajello-meta in #2991
+*  Tweak - Clean up CSS in enhanced settings UI by @ajello-meta in #2996
+*  Tweak - Remove the "Advertise" tab by @ajello-meta in #3024
+*  Tweak - Sync "Usage Count" in Promos Feed by @carterbuce in #3036
+*  Tweak - Disable mini_shops product capability for unsupported items by @carterbuce in #3084
+*  Add - Add usage logging for enhanced settings tabs by @ajello-meta in #3202
+*  Tweak - Remove UI of a checkbox that controls enablement of the new style feed generation by @mshymon in #3056
+*  Fix - Fix linter errors for ./includes/fbutils.php files by @ajello-meta in #3075
+*  Fix - Hotfix for Rollout Switches by @vinkmeta in #3236
+*  Add - Opt out sync experience. by @SayanPandey in #3220
+*  Fix - Added a transient flag to avoid flooding of product set api requests by @vinkmeta in #3245
+*  Fix - Additional check for the opt-out banner by @SayanPandey in #3259
+*  Fix - Bump up GraphAPI version to 21 by @vahidkay-meta in #3219
+*  Fix - fix linter errors for ./class-wc-facebookcommerce.php by @ajello-meta in #3255
+*  Fix - fix linter errors for ./facebook-commerce-events-tracker.php by @ajello-meta in #3254
+*  Fix - fix linter errors for ./includes/Admin/Settings_Screens/Advertise.php by @ajello-meta in #3237
+*  Fix - fix linter errors for ./includes/Admin/Settings_Screens/Product_Sync.php by @ajello-meta in #3239
+*  Fix - fix function return typing for get_settings() by @ajello-meta in #3257
+*  Tweak - Addition check for opt out by @SayanPandey in #3259
+*  Tweak - Update the GraphAPI version to 21 by @vahidkay-meta in #3219
+*  Fix - Enabled rollout switch only for plugin admins by @vinkmeta in #3242
+*  Add - reset connection functionality by @jczhuoMeta in #3262
+*  Fix - fixing the non static method called as static issue by @SayanPandey in #3263
+*  Fix - Fix linter errors for ./facebook-commerce.php by @ajello-meta in #3251
+*  Fix - updating banners to show the latest version as 3.5.1 by @SayanPandey in #3265
+*  Tweak - enforced product sets functionality for plugin admins by @vinkmeta in #3243
+*  Tweak - removing the product set functionality migration to Admin by @vinkmeta in #3267
+*  Tweak - removing the migration of rollout switch to Admin by @vinkmeta in #3268
+*  Fix - fix to remove html encoding in fb product sets names by @mshymon in #3266
+*  Add - trigger product sets sync in Handler on catalog ID update (new SAOff MBE onboarding flow) by @mshymon in #3270
+*  Fix - fix linter errors for ./facebook-commerce-pixel-event.php by @ajello-meta in #3248
+*  Fix - fix /variation field persistence & rich text description handling for variants by @devbodaghe in #3269
+*  Tweak - update product validation logic for checkout by @ajello-meta in #3271
+*  Fix - Adding precautionary bug fix by @SayanPandey in #3275
+*  Add - Added Loading States to WAUM flows by @woo-ardsouza in #3272
+*  Add - Add logging for coupon in checkout by @ajello-meta in #3279
+*  Fix - fix inconsistency between enhanced and legacy flow by @jczhuoMeta in #3285
+*  Fix - Removing the tag to get rid of warnings by @SayanPandey in #3287
 
 [See changelog for all versions](https://raw.githubusercontent.com/facebook/facebook-for-woocommerce/refs/heads/main/changelog.txt).

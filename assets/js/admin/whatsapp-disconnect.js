@@ -32,6 +32,12 @@ jQuery( document ).ready( function( $ ) {
     if (confirmButton) {
         // Handle confirm action
         confirmButton.onclick = function() {
+            var spinnerState = $('#wc-fb-disconnect-warning-modal-confirm-loading-state');
+            var disconnectButton =  $('#wc-fb-disconnect-warning-modal-confirm');
+            var disconnectCancelBtn = $('#wc-fb-disconnect-warning-modal-cancel');
+            spinnerState.show();
+            disconnectButton.addClass('fbwa-button-disabled');
+            disconnectCancelBtn.addClass('fbwa-button-disabled');
             $.post( facebook_for_woocommerce_whatsapp_disconnect.ajax_url, {
                 action: 'wc_facebook_disconnect_whatsapp',
                 nonce:  facebook_for_woocommerce_whatsapp_disconnect.nonce
@@ -44,12 +50,14 @@ jQuery( document ).ready( function( $ ) {
                     window.location.href = url.toString();
                     console.log( 'Whatsapp Disconnect Success', response );
                 } else {
+                    spinnerState.hide();
+                    disconnectButton.removeClass('fbwa-button-disabled');
+                    disconnectCancelBtn.removeClass('fbwa-button-disabled');
                     console.log("Whatsapp Disconnect Failure!!!",response);
                 }
+                // Close the modal
+                modal.style.display = "none";
             } );
-
-            // Close the modal
-            modal.style.display = "none";
         };
     }
 

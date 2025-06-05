@@ -49,6 +49,9 @@ class AJAX {
 		// sync all shipping profiles via AJAX
 		add_action( 'wp_ajax_wc_facebook_sync_shipping_profiles', array( $this, 'sync_shipping_profiles' ) );
 
+		// sync navigation menu via AJAX
+		add_action( 'wp_ajax_wc_facebook_sync_navigation_menu', array( $this, 'sync_navigation_menu' ) );
+
 		// get the current sync status
 		add_action( 'wp_ajax_wc_facebook_get_sync_status', array( $this, 'get_sync_status' ) );
 
@@ -178,6 +181,24 @@ class AJAX {
 
 		try {
 			facebook_for_woocommerce()->feed_manager->get_feed_instance( 'shipping_profiles' )->regenerate_feed();
+			wp_send_json_success();
+		} catch ( \Exception $exception ) {
+			wp_send_json_error( $exception->getMessage() );
+		}
+	}
+
+	/**
+	 * Syncs navigation menu via AJAX.
+	 *
+	 * @internal
+	 *
+	 * @since 3.5.0
+	 */
+	public function sync_navigation_menu() {
+		check_admin_referer( Shops::ACTION_SYNC_NAVIGATION_MENU, 'nonce' );
+
+		try {
+			facebook_for_woocommerce()->feed_manager->get_feed_instance( 'navigation_menu' )->regenerate_feed();
 			wp_send_json_success();
 		} catch ( \Exception $exception ) {
 			wp_send_json_error( $exception->getMessage() );

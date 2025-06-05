@@ -95,6 +95,17 @@ class Response extends API\Response {
 		return $this->get_data()['commerce_merchant_settings_id'] ?? '';
 	}
 
+	/**
+	 * Gets the commerce partner integration ID.
+	 *
+	 * @since 3.5.0
+	 *
+	 * @return string
+	 */
+	public function get_commerce_partner_integration_id() {
+		return $this->get_data()['commerce_partner_integration_id'] ?? '';
+	}
+
 
 	/**
 	 * Gets the profiles.

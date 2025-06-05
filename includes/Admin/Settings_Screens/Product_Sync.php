@@ -1,5 +1,4 @@
 <?php
-// phpcs:ignoreFile
 /**
  * Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
  *
@@ -11,7 +10,7 @@
 
 namespace WooCommerce\Facebook\Admin\Settings_Screens;
 
-defined( 'ABSPATH' ) or exit;
+defined( 'ABSPATH' ) || exit;
 
 use WooCommerce\Facebook\Admin\Abstract_Settings_Screen;
 use WooCommerce\Facebook\Admin\Google_Product_Category_Field;
@@ -32,7 +31,6 @@ class Product_Sync extends Abstract_Settings_Screen {
 
 	/** @var string the get sync status action */
 	const ACTION_GET_SYNC_STATUS = 'wc_facebook_get_sync_status';
-
 
 	/**
 	 * Connection constructor.
@@ -200,7 +198,7 @@ class Product_Sync extends Abstract_Settings_Screen {
 	 * @since 2.0.0
 	 */
 	public function save() {
-		$integration = facebook_for_woocommerce()->get_integration();
+		$integration              = facebook_for_woocommerce()->get_integration();
 		$previous_product_cat_ids = $integration->get_excluded_product_category_ids();
 		$previous_product_tag_ids = $integration->get_excluded_product_tag_ids();
 		parent::save();
@@ -244,8 +242,8 @@ class Product_Sync extends Abstract_Settings_Screen {
 	 *
 	 * @return array
 	 */
-	public function get_settings() {
-		$term_query = new \WP_Term_Query(
+	public function get_settings(): array {
+		$term_query         = new \WP_Term_Query(
 			array(
 				'taxonomy'   => 'product_cat',
 				'hide_empty' => false,
@@ -253,7 +251,7 @@ class Product_Sync extends Abstract_Settings_Screen {
 			)
 		);
 		$product_categories = $term_query->get_terms();
-		$term_query = new \WP_Term_Query(
+		$term_query         = new \WP_Term_Query(
 			array(
 				'taxonomy'     => 'product_tag',
 				'hide_empty'   => false,
@@ -261,7 +259,7 @@ class Product_Sync extends Abstract_Settings_Screen {
 				'fields'       => 'id=>name',
 			)
 		);
-		$product_tags = $term_query->get_terms();
+		$product_tags       = $term_query->get_terms();
 		return array(
 			array(
 				'type'  => 'product_sync_title',
