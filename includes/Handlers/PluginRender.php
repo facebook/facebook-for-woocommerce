@@ -88,7 +88,7 @@ class PluginRender {
 		$current_version = $this->plugin->get_version();
 		/**
 		 * Case when current version is less or equal to latest
-		 * but latest is below 3.5.2
+		 * but latest is below 3.5.1
 		 * Should show the opt in/ opt out banner
 		 */
 		if ( version_compare( $current_version, self::ALL_PRODUCTS_PLUGIN_VERSION, '<' ) ) {
