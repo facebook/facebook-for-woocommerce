@@ -148,8 +148,13 @@ class Connection {
 			return;
 		}
 
-		try {
+		$flag_name = '_wc_facebook_for_woocommerce_refresh_business_configuration';
+		if ( 'yes' === get_transient( $flag_name ) ) {
+			return;
+		}
+		set_transient( $flag_name, 'yes', HOUR_IN_SECONDS );
 
+		try {
 			$response = $this->get_plugin()->get_api()->get_business_configuration( $this->get_external_business_id() );
 			facebook_for_woocommerce()->get_tracker()->track_facebook_business_config(
 				$response->is_ig_shopping_enabled(),
@@ -157,7 +162,6 @@ class Connection {
 			);
 
 		} catch ( ApiException $exception ) {
-
 			$this->get_plugin()->log( 'Could not refresh business configuration. ' . $exception->getMessage() );
 		}
 
@@ -176,8 +180,13 @@ class Connection {
 			return;
 		}
 
-		try {
+		$flag_name = '_wc_facebook_for_woocommerce_refresh_installation_data';
+		if ( 'yes' === get_transient( $flag_name ) ) {
+			return;
+		}
+		set_transient( $flag_name, 'yes', DAY_IN_SECONDS );
 
+		try {
 			$this->update_installation_data();
 			$this->repair_or_update_commerce_integration_data();
 		} catch ( ApiException $exception ) {
@@ -332,6 +341,12 @@ class Connection {
 		if ( $response->get_commerce_merchant_settings_id() ) {
 			$this->update_commerce_merchant_settings_id( sanitize_text_field( $response->get_commerce_merchant_settings_id() ) );
 		}
+
+		if ( $response->get_commerce_partner_integration_id() ) {
+			$this->update_commerce_partner_integration_id( sanitize_text_field( $response->get_commerce_partner_integration_id() ) );
+		} else {
+			$this->update_commerce_partner_integration_id( "" );
+		}
 	}
 
 
@@ -423,6 +438,7 @@ class Connection {
 			else {
 				facebook_for_woocommerce()->log( 'Initial full product sync disabled by filter hook `facebook_for_woocommerce_allow_full_batch_api_sync`', 'facebook_for_woocommerce_connect' );
 			}
+			facebook_for_woocommerce()->get_product_sets_sync_handler()->sync_all_product_sets();
 			update_option( 'wc_facebook_has_connected_fbe_2', 'yes' );
 			update_option( 'wc_facebook_has_authorized_pages_read_engagement', 'yes' );
 			// redirect to the Commerce onboarding if directed to do so
@@ -529,6 +545,7 @@ class Connection {
 		$this->update_instagram_business_id( '' );
 		$this->update_commerce_merchant_settings_id( '' );
 		$this->update_external_business_id( '' );
+		$this->update_commerce_partner_integration_id( '' );
 		update_option( \WC_Facebookcommerce_Integration::SETTING_FACEBOOK_PAGE_ID, '' );
 		update_option( \WC_Facebookcommerce_Integration::SETTING_FACEBOOK_PIXEL_ID, '' );
 		facebook_for_woocommerce()->get_integration()->update_product_catalog_id( '' );

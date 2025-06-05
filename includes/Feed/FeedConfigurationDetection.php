@@ -36,6 +36,11 @@ class FeedConfigurationDetection {
 	 * @return void
 	 */
 	public function track_data_source_feed_tracker_info() {
+		$flag_name = '_wc_facebook_for_woocommerce_track_data_source_feed_tracker_info';
+		if ( 'yes' === get_transient( $flag_name ) ) {
+			return;
+		}
+		set_transient( $flag_name, 'yes', DAY_IN_SECONDS );
 		try {
 			$info = $this->get_data_source_feed_tracker_info();
 			facebook_for_woocommerce()->get_tracker()->track_facebook_feed_config( $info );

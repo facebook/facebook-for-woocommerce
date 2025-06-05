@@ -235,6 +235,7 @@ abstract class AbstractFeed {
 		\WC_Facebookcommerce_Utils::log_with_debug_mode_enabled( "{$name} feed: Meta is requesting feed file." );
 
 		$file_path = $this->feed_writer->get_file_path();
+		$file      = false;
 
 		// regenerate if the file doesn't exist using the legacy flow.
 		if ( ! file_exists( $file_path ) ) {
@@ -267,8 +268,8 @@ abstract class AbstractFeed {
 			header( 'Pragma: public' );
 			header( 'Content-Length:' . filesize( $file_path ) );
 
-			// phpcs:ignore
-			$file = @fopen( $file_path, 'rb' );
+			// phpcs:ignore -- use php file i/o functions
+			$file = fopen( $file_path, 'rb' );
 			if ( ! $file ) {
 				throw new PluginException( "{$name} feed: Could not open feed file.", 500 );
 			}
@@ -297,6 +298,11 @@ abstract class AbstractFeed {
 				]
 			);
 			status_header( $exception->getCode() );
+		} finally {
+			if ( $file ) {
+				// phpcs:ignore -- use php file i/o functions
+				fclose($file);
+			}
 		}
 		exit;
 	}

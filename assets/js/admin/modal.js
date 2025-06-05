@@ -8,7 +8,7 @@
  */
 
 (function( $ ) {
-
+	
 	/**
 	 * Determines if the current modal is blocked.
 	 *

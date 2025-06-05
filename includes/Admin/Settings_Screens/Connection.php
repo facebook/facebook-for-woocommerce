@@ -303,35 +303,7 @@ class Connection extends Abstract_Settings_Screen {
 	 * @return array
 	 * @since 3.5.0
 	 */
-	public function get_settings() {
-
-		return array(
-
-			array(
-				'title' => __( 'Debug', 'facebook-for-woocommerce' ),
-				'type'  => 'title',
-			),
-
-			array(
-				'id'       => \WC_Facebookcommerce_Integration::SETTING_ENABLE_META_DIAGNOSIS,
-				'title'    => __( 'Enable meta diagnosis', 'facebook-for-woocommerce' ),
-				'type'     => 'checkbox',
-				'desc'     => __( 'Upload plugin events to Meta', 'facebook-for-woocommerce' ),
-				'desc_tip' => sprintf( __( 'Allow Meta to monitor event and error logs to help fix issues.', 'facebook-for-woocommerce' ) ),
-				'default'  => 'yes',
-			),
-
-			array(
-				'id'       => \WC_Facebookcommerce_Integration::SETTING_ENABLE_DEBUG_MODE,
-				'title'    => __( 'Enable debug mode', 'facebook-for-woocommerce' ),
-				'type'     => 'checkbox',
-				'desc'     => __( 'Log plugin events for debugging.', 'facebook-for-woocommerce' ),
-				/* translators: %s URL to the documentation page. */
-				'desc_tip' => sprintf( __( 'Only enable this if you are experiencing problems with the plugin. <a href="%s" target="_blank">Learn more</a>.', 'facebook-for-woocommerce' ), 'https://woocommerce.com/document/facebook-for-woocommerce/#debug-tools' ),
-				'default'  => 'no',
-			),
-
-			array( 'type' => 'sectionend' ),
-		);
+	public function get_settings(): array {
+		return Shops::get_settings_with_title_static( __( 'Debug', 'facebook-for-woocommerce' ) );
 	}
 }
