@@ -1792,7 +1792,7 @@ class WC_Facebook_Product {
 			 * Previously they wouldn't have syned
 			 * But now they are 
 			 */
-			 $product_data["is_woo_all_products_sync"] = true;
+			 $product_data["is_woo_all_products_sync"] = 1;
 		 }
 
 
