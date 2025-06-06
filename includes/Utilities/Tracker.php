@@ -114,9 +114,9 @@ class Tracker {
 		$data['extensions']['facebook-for-woocommerce']['is-connected'] = wc_bool_to_string( $connection_is_happy );
 
 		/**
-		 * Sync will always be allowed post WooAllProducts
+		 * Synchronization will always be permitted once we initiate the process of syncing all WooCommerce products.
 		 *
-		 * @since 3.4.12
+		 * @since 3.5.3
 		 */
 		$data['extensions']['facebook-for-woocommerce']['product-sync-enabled'] = true;
 

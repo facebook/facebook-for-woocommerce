@@ -1781,15 +1781,13 @@ class WC_Facebook_Product {
 		}
 
 		/**
-		 * If code has reached this point of execution
-		 * Means that sync validations have been checked.
 		 * Visibility has been set for the products, both for simple and variations
 		 * Now if prevously they had product sync checkbox/ global products sync off, we will mark the products
 		 * This is in accordance with the facet that now all the products will sync
 		 */
 
-		 $global_sync_checkbox_status = 'yes' === get_option('wc_facebook_enable_product_sync', 'yes' );
-		 if($global_sync_checkbox_status === false){
+		 $deprecated_global_sync_checkbox_status = 'yes' === get_option('wc_facebook_enable_product_sync', 'yes' );
+		 if($deprecated_global_sync_checkbox_status === false){
 			/**
 			 * Previously they wouldn't have syned
 			 * But now they are 
