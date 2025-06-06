@@ -169,7 +169,7 @@ class WC_Facebookcommerce_Info_Banner {
 			update_option(
 				'fb_info_banner_last_best_tip',
 				is_object( $tip_info ) || is_array( $tip_info )
-				? json_encode( $tip_info ) : $tip_info
+				? wp_json_encode( $tip_info ) : $tip_info
 			);
 		}
 

@@ -91,7 +91,7 @@ class RolloutSwitchesTest extends \WooCommerce\Facebook\Tests\AbstractWPUnitTest
 		$prop_api->setAccessible( true );
 		$mock_api = $this->getMockBuilder( API::class )->disableOriginalConstructor()->setMethods( array( 'do_remote_request' ) )->getMock();
 		$mock_api->expects( $this->any() )->method( 'do_remote_request' )->willReturn(
-			array('body' => json_encode(array(
+			array('body' => wp_json_encode(array(
 				'data' => array(
 					array('switch' => 'switch_a','enabled' => '1'),
 					array('switch' => 'switch_b', 'enabled' => ''),
@@ -149,7 +149,7 @@ class RolloutSwitchesTest extends \WooCommerce\Facebook\Tests\AbstractWPUnitTest
 		$prop_api->setAccessible( true );
 		$mock_api = $this->getMockBuilder( API::class )->disableOriginalConstructor()->setMethods( array( 'do_remote_request' ) )->getMock();
 		$mock_api->expects( $this->any() )->method( 'do_remote_request' )->willReturn(
-			array('body' => json_encode(array())));
+			array('body' => wp_json_encode(array())));
 		$prop_api->setValue( $plugin, $mock_api );
 
 		$switch_mock = $this->getMockBuilder(RolloutSwitches::class)

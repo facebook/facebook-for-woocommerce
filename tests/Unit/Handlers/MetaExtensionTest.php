@@ -72,7 +72,7 @@ class MetaExtensionTest extends AbstractWPUnitTestWithOptionIsolationAndSafeFilt
                         'code' => 200,
                         'message' => 'OK',
                     ],
-                    'body' => json_encode([
+                    'body' => wp_json_encode([
                         'commerce_extension' => [
                             'uri' => $expected_url
                         ]

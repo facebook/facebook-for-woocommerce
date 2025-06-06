@@ -33,7 +33,7 @@ class GenerateCategoryAttributeMapping {
 			foreach ( $category['attributes'] as &$attr ) {
 
 				// hash the attribute array to determine unique entries
-				$hash = md5( json_encode( $attr ) );
+				$hash = md5( wp_json_encode( $attr ) );
 
 				if ( ! isset( $unique_fields[ $hash ] ) ) {
 					$this->field_export[ $hash ] = $attr;
@@ -45,8 +45,8 @@ class GenerateCategoryAttributeMapping {
 			$this->category_export[ $category_id ] = $category;
 		}
 
-		file_put_contents( $plugin_root . $this::EXPORT_CATEGORIES_FILE_NAME, json_encode( $this->category_export ) );
-		file_put_contents( $plugin_root . $this::EXPORT_FIELDS_FILE_NAME, json_encode( $this->field_export ) );
+		file_put_contents( $plugin_root . $this::EXPORT_CATEGORIES_FILE_NAME, wp_json_encode( $this->category_export ) );
+		file_put_contents( $plugin_root . $this::EXPORT_FIELDS_FILE_NAME, wp_json_encode( $this->field_export ) );
 
 		echo sprintf(
 			"Files successfully generated: \n %s \n %s \n",

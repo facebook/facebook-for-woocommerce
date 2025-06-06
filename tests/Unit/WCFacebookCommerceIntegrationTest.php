@@ -289,7 +289,7 @@ class WCFacebookCommerceIntegrationTest extends \WooCommerce\Facebook\Tests\Abst
 		}
 		/* From Product Meta or FB API. */
 		$facebook_product_group_id = 'some-facebook-product-group-id';
-		$facebook_response         = new API\ProductCatalog\ProductGroups\Read\Response( json_encode( [ 'data' => $facebook_output ] ) );
+		$facebook_response         = new API\ProductCatalog\ProductGroups\Read\Response( wp_json_encode( [ 'data' => $facebook_output ] ) );
 
 		$this->api->expects( $this->once() )
 			->method( 'get_product_group_products' )
@@ -325,7 +325,7 @@ class WCFacebookCommerceIntegrationTest extends \WooCommerce\Facebook\Tests\Abst
 		}
 		/* From Product Meta or FB API. */
 		$facebook_product_group_id = 'some-facebook-product-group-id';
-		$facebook_response         = new API\ProductCatalog\ProductGroups\Read\Response( json_encode( [ 'data' => $facebook_output ] ) );
+		$facebook_response         = new API\ProductCatalog\ProductGroups\Read\Response( wp_json_encode( [ 'data' => $facebook_output ] ) );
 
 		$this->api->expects( $this->once() )
 			->method( 'get_product_group_products' )

@@ -126,8 +126,8 @@ class WC_Facebookcommerce_Pixel {
 			sprintf(
 				"fbq('init', '%s', %s, %s);\n",
 				esc_js( self::get_pixel_id() ),
-				json_encode( $this->user_info, JSON_PRETTY_PRINT | JSON_FORCE_OBJECT ),
-				json_encode( array( 'agent' => $agent_string ), JSON_PRETTY_PRINT | JSON_FORCE_OBJECT )
+				wp_json_encode( $this->user_info, JSON_PRETTY_PRINT | JSON_FORCE_OBJECT ),
+				wp_json_encode( array( 'agent' => $agent_string ), JSON_PRETTY_PRINT | JSON_FORCE_OBJECT )
 			)
 		);
 	}
@@ -166,7 +166,7 @@ class WC_Facebookcommerce_Pixel {
 
 			<?php echo $this->get_pixel_init_code(); ?>
 
-				fbq( 'track', 'PageView', <?php echo json_encode( self::build_params( [], 'PageView' ), JSON_PRETTY_PRINT | JSON_FORCE_OBJECT ); ?> );
+				fbq( 'track', 'PageView', <?php echo wp_json_encode( self::build_params( [], 'PageView' ), JSON_PRETTY_PRINT | JSON_FORCE_OBJECT ); ?> );
 
 				document.addEventListener( 'DOMContentLoaded', function() {
 					// Insert placeholder for events injected when a product is added to the cart through AJAX.
@@ -460,8 +460,8 @@ class WC_Facebookcommerce_Pixel {
 				self::get_pixel_id(),
 				esc_js( $method ),
 				esc_js( $event_name ),
-				json_encode( self::build_params( $params, $event_name ), JSON_PRETTY_PRINT | JSON_FORCE_OBJECT ),
-				json_encode( array( 'eventID' => $event_id ), JSON_PRETTY_PRINT | JSON_FORCE_OBJECT )
+				wp_json_encode( self::build_params( $params, $event_name ), JSON_PRETTY_PRINT | JSON_FORCE_OBJECT ),
+				wp_json_encode( array( 'eventID' => $event_id ), JSON_PRETTY_PRINT | JSON_FORCE_OBJECT )
 			);
 
 		} else {
@@ -475,7 +475,7 @@ class WC_Facebookcommerce_Pixel {
 				self::get_pixel_id(),
 				esc_js( $method ),
 				esc_js( $event_name ),
-				json_encode( self::build_params( $params, $event_name ), JSON_PRETTY_PRINT | JSON_FORCE_OBJECT )
+				wp_json_encode( self::build_params( $params, $event_name ), JSON_PRETTY_PRINT | JSON_FORCE_OBJECT )
 			);
 		}
 

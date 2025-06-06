@@ -262,7 +262,7 @@ class WC_Facebook_Product_Feed {
 
 		} catch ( Exception $e ) {
 
-			WC_Facebookcommerce_Utils::log_with_debug_mode_enabled( json_encode( $e->getMessage() ) );
+			WC_Facebookcommerce_Utils::log_with_debug_mode_enabled( wp_json_encode( $e->getMessage() ) );
 
 			$written = false;
 
@@ -628,7 +628,7 @@ class WC_Facebook_Product_Feed {
 			$result        = facebook_for_woocommerce()->get_api()->read_upload( $upload_id );
 
 			if ( is_wp_error( $result ) || ! isset( $result['body'] ) ) {
-				$this->log_feed_progress( json_encode( $result ) );
+				$this->log_feed_progress( wp_json_encode( $result ) );
 				return $upload_status;
 			}
 
@@ -650,7 +650,7 @@ class WC_Facebook_Product_Feed {
 	// Log progress in local log file and FB.
 	public function log_feed_progress( $msg, $object = array() ) {
 		WC_Facebookcommerce_Utils::fblog( $msg, $object );
-		$msg = empty( $object ) ? $msg : $msg . json_encode( $object );
+		$msg = empty( $object ) ? $msg : $msg . wp_json_encode( $object );
 		WC_Facebookcommerce_Utils::log_with_debug_mode_enabled( $msg );
 	}
 }

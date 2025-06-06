@@ -479,7 +479,7 @@ class Connection {
 			if ( json_last_error() === JSON_ERROR_NONE ) {
 				// If error is the first key we want to use just the body to simplify the message.
 				$decoded_message = isset( $decoded_message->error ) ? $decoded_message->error : $decoded_message;
-				$message         = json_encode( $decoded_message, JSON_PRETTY_PRINT );
+				$message         = wp_json_encode( $decoded_message, JSON_PRETTY_PRINT );
 			}
 			return $message;
 	}
@@ -1039,7 +1039,7 @@ class Connection {
 				'display'       => 'page',
 				'response_type' => 'code',
 				'scope'         => implode( ',', $this->get_scopes() ),
-				'extras'        => json_encode( $this->get_connect_parameters_extras() ),
+				'extras'        => wp_json_encode( $this->get_connect_parameters_extras() ),
 			)
 		);
 	}
