@@ -19,7 +19,7 @@ use WooCommerce\Facebook\Framework\Plugin\Exception;
 /**
  * PluginRender
  * This is an class that is triggered for Opt in/ Opt out experience
- * from @ver 3.4.11
+ * from @ver 3.5.2
  */
 class PluginRender {
 	/** @var object storing plugin object */
@@ -39,7 +39,6 @@ class PluginRender {
 
 	/** @var string  action */
 	const ACTION_CLOSE_BANNER = 'wc_banner_close_action';
-
 
 	public function __construct( \WC_Facebookcommerce $plugin ) {
 		$this->plugin = $plugin;
@@ -175,8 +174,8 @@ class PluginRender {
 				 </div>';
 
 				/**
-				 * Shows up every fortnight after version 3.4.12
-				 * If and only if the user has opted out and also upgraded the plugin to 3.4.12
+				 * Shows up every fortnight after version 3.5.3
+				 * If and only if the user has opted out and also upgraded the plugin to 3.5.3
 				 */
 
 					echo '<div id="plugin_updated_successfully_but_master_sync_off" class="notice notice-success is-dismissible ' . esc_html( $plugin_updated_but_not_master_sync_on ) . '"" style="padding: 15px">
@@ -217,7 +216,7 @@ class PluginRender {
 	/**
 	 * Banner for  WooAllProducts version upgrade will show up
 	 * after a year
-	 * NOTE: We are doing this because anyway we will remove this in cleanup post : 3.4.12
+	 * NOTE: We are doing this because anyway we will remove this in cleanup post : 3.5.3
 	 */
 	public static function reset_plugin_updated_successfully_banner() {
 		set_transient( 'plugin_updated_banner_hide', true, 12 * MONTH_IN_SECONDS );
