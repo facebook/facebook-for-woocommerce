@@ -477,7 +477,7 @@ abstract class Plugin {
 		$messages   = [];
 		$messages[] = isset( $data['uri'] ) && $data['uri'] ? 'Request' : 'Response';
 		foreach ( (array) $data as $key => $value ) {
-			$messages[] = trim( sprintf( '%s: %s', $key, is_array( $value ) || ( is_object( $value ) && 'stdClass' == get_class( $value ) ) ? print_r( (array) $value, true ) : $value ) );
+			$messages[] = trim( sprintf( '%s: %s', $key, is_array( $value ) || ( is_object( $value ) && 'stdClass' === get_class( $value ) ) ? print_r( (array) $value, true ) : $value ) );
 		}
 		return implode( "\n", $messages ) . "\n";
 	}
@@ -713,6 +713,7 @@ abstract class Plugin {
 	 *        (ie a gateway that supports both credit cards and echecks)
 	 * @return string plugin settings URL
 	 */
+	// phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter
 	public function get_settings_url( $plugin_id = null ) {
 		// stub method
 		return '';

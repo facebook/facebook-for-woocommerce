@@ -416,19 +416,24 @@ class WC_Facebook_Product {
 	 *
 	 * @return array
 	 */
-	public function get_all_video_urls() {
+	public function get_all_video_urls( $parent_id = null ) {
 
 		$video_urls = array();
-
+		$product = $this->woo_product;
+		
+		if($parent_id !== null) {
+			$product = wc_get_product( $parent_id );
+		}
+	
 		$attached_videos = get_attached_media( 'video', $this->id );
 
-			$custom_video_urls = $this->woo_product->get_meta( self::FB_PRODUCT_VIDEO );
+		$custom_video_urls = $product->get_meta( self::FB_PRODUCT_VIDEO );
 
 		if ( empty( $attached_videos ) && empty( $custom_video_urls ) ) {
 			return $video_urls;
 		}
 
-			// Add custom video URLs to the list
+		// Add custom video URLs to the list
 		if ( ! empty( $custom_video_urls ) && is_array( $custom_video_urls ) ) {
 			foreach ( $custom_video_urls as $custom_url ) {
 				$custom_url = trim( $custom_url );
@@ -438,7 +443,7 @@ class WC_Facebook_Product {
 			}
 		}
 
-			// Add attached video URLs to the list, excluding duplicates from custom video URLs
+		// Add attached video URLs to the list, excluding duplicates from custom video URLs
 		if ( ! empty( $attached_videos ) ) {
 			$custom_video_url_set = array_flip( array_column( $video_urls, 'url' ) );
 			foreach ( $attached_videos as $video ) {
@@ -519,8 +524,7 @@ class WC_Facebook_Product {
 	}
 
 	public function set_rich_text_description( $rich_text_description ) {
-		$rich_text_description       =
-			WC_Facebookcommerce_Utils::clean_string( $rich_text_description, false );
+		$rich_text_description = stripslashes( $rich_text_description );
 		$this->rich_text_description = $rich_text_description;
 		update_post_meta(
 			$this->id,
@@ -844,6 +848,18 @@ class WC_Facebook_Product {
 	public function get_rich_text_description() {
 		$rich_text_description = '';
 
+		// For variations, first check if there's a Facebook description set specifically for that variation
+		if ( $this->woo_product->is_type( 'variation' ) ) {
+			$rich_text_description = get_post_meta(
+				$this->id,
+				self::FB_RICH_TEXT_DESCRIPTION,
+				true
+			);
+			if ($rich_text_description) {
+				return $rich_text_description;
+			}
+		}
+
 		// Check if the fb description is set as that takes preference
 		if ( $this->rich_text_description ) {
 			$rich_text_description = $this->rich_text_description;
@@ -858,32 +874,30 @@ class WC_Facebook_Product {
 				self::FB_RICH_TEXT_DESCRIPTION,
 				true
 			);
-
 		}
 
-		// For variable products, we want to use the rich text description of the variant.
-		// If that's not available, fall back to the main (parent) product's rich text description.
-		if ( empty( $rich_text_description ) && WC_Facebookcommerce_Utils::is_variation_type( $this->woo_product->get_type() ) ) {
-			$rich_text_description = WC_Facebookcommerce_Utils::clean_string( $this->woo_product->get_description(), false );
-
-			// If the variant's rich text description is still empty, use the main product's rich text description as a fallback
-			if ( empty( $rich_text_description ) && $this->main_description ) {
-				$rich_text_description = $this->main_description;
+		// If still empty and this is a variation, inherit from parent
+		if ( empty( $rich_text_description ) && $this->woo_product->is_type( 'variation' ) ) {
+			$parent_product = wc_get_product( $this->woo_product->get_parent_id() );
+			if ( $parent_product ) {
+				$rich_text_description = get_post_meta(
+					$parent_product->get_id(),
+					self::FB_RICH_TEXT_DESCRIPTION,
+					true
+				);
 			}
 		}
 
-		// If no description is found from meta or variation, get from product
+		// If still empty, use the post content
 		if ( empty( $rich_text_description ) ) {
-			$post         = $this->get_post_data();
-			$post_content = WC_Facebookcommerce_Utils::clean_string( $post->post_content, false );
-			$post_excerpt = WC_Facebookcommerce_Utils::clean_string( $post->post_excerpt, false );
-
-			if ( ! empty( $post_content ) ) {
-				$rich_text_description = $post_content;
-			}
-
-			if ( empty( $rich_text_description ) && ! empty( $post_excerpt ) ) {
-				$rich_text_description = $post_excerpt;
+			$post = get_post( $this->id );
+			if ( $post ) {
+				$rich_text_description = $post->post_content;
+				
+				// If post content is empty, fall back to short description (post_excerpt)
+				if ( empty( $rich_text_description ) ) {
+					$rich_text_description = $post->post_excerpt;
+				}
 			}
 		}
 
@@ -1409,7 +1423,7 @@ class WC_Facebook_Product {
 				$value = $attribute_values[0];
 				// Clean and truncate the value directly for simple products
 				return mb_substr(WC_Facebookcommerce_Utils::clean_string($value), 0, 200);
-			}
+			}		
 		} else {
 			// For variable/variation products, keep all values
 			$joined_values = implode(' | ', $attribute_values);
@@ -1720,7 +1734,7 @@ class WC_Facebook_Product {
 				 * If parent's visibility is already marked we know we should assign it to the child/variation as well
 				 */
 				if($parent_product_visibility === "yes"){
-					$product_data["is_woo_all_products_sync"] = !$current_variation_product_visibility;
+					// $product_data["is_woo_all_products_sync"] = !$current_variation_product_visibility;
 					$product_data[ 'visibility' ] = \WC_Facebookcommerce_Integration::FB_SHOP_PRODUCT_VISIBLE;
 				}
 				else if ($parent_product_visibility === "no"){
@@ -1751,7 +1765,7 @@ class WC_Facebook_Product {
 					 * But now have visibility published
 					 */
 					if($variation_visibility){
-						$product_data["is_woo_all_products_sync"] = !$current_variation_product_visibility;
+						// $product_data["is_woo_all_products_sync"] = !$current_variation_product_visibility;
 					}
 
 					$product_data[ 'visibility' ] = $variation_visibility ? \WC_Facebookcommerce_Integration::FB_SHOP_PRODUCT_VISIBLE : \WC_Facebookcommerce_Integration::FB_SHOP_PRODUCT_HIDDEN;
@@ -1798,6 +1812,13 @@ class WC_Facebook_Product {
 		}//end if
 
 		$video_urls = $this->get_all_video_urls();
+		
+		// If this is a variable product, get the video URLs from the parent product and add them to variations.
+		if($this->get_type() === "variation"){
+			$parent_id = $this->woo_product->get_parent_id();
+			$video_urls = $this->get_all_video_urls($parent_id);
+		}
+
 		if ( ! empty( $video_urls ) && self::PRODUCT_PREP_TYPE_NORMAL !== $type_to_prepare_for ) {
 			$product_data['video'] = $video_urls;
 		}

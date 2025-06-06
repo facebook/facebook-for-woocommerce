@@ -161,6 +161,11 @@ class Feed {
 	 * @since 1.11.0
 	 */
 	public function schedule_feed_generation() {
+		$flag_name = '_wc_facebook_for_woocommerce_schedule_feed_generation';
+		if ( 'yes' === get_transient( $flag_name ) ) {
+			return;
+		}
+		set_transient( $flag_name, 'yes', HOUR_IN_SECONDS );
 		$integration   = facebook_for_woocommerce()->get_integration();
 		$configured_ok = $integration && $integration->is_configured();
 		// Only schedule feed job if store has not opted out of product sync.

@@ -26,7 +26,7 @@ class PluginRender {
 	private \WC_Facebookcommerce $plugin;
 
 	/** @var string opt out plugin version action */
-	const ALL_PRODUCTS_PLUGIN_VERSION = '3.5.1';
+	const ALL_PRODUCTS_PLUGIN_VERSION = '3.5.3';
 
 	/** @var string opt out sync action */
 	const ACTION_OPT_OUT_OF_SYNC = 'wc_facebook_opt_out_of_sync';
@@ -116,7 +116,7 @@ class PluginRender {
 		$screen = get_current_screen();
 
 		if ( isset( $screen->id ) && 'marketing_page_wc-facebook' === $screen->id ) {
-			echo '<div id="opt_out_banner" class="' . esc_html( self::get_opt_out_banner_class() ) . '" style="padding: 15px">
+			echo '<div id="opt_out_banner" class="' . esc_html( self::get_opt_out_banner_class() ) . '">
             <h4>When you update to version <b>' . esc_html( self::ALL_PRODUCTS_PLUGIN_VERSION ) . '</b> your products will automatically sync to your catalog at Meta catalog</h4>
             The next time you update your Facebook for WooCommerce plugin, all your products will be synced automatically. This is to help you drive sales and optimize your ad performance. <a href="https://www.facebook.com/business/help/4049935305295468">Learn more about changes to how your products will sync to Meta</a>
                 <p>
@@ -126,7 +126,7 @@ class PluginRender {
             </div>
             ';
 
-			echo '<div id="opted_our_successfullly_banner" class="' . esc_html( self::get_opted_out_successfully_banner_class() ) . '" style="padding: 15px">
+			echo '<div id="opted_our_successfullly_banner" class="' . esc_html( self::get_opted_out_successfully_banner_class() ) . '">
             <h4>You’ve opted out of automatic syncing on the next plugin update </h4>
                 <p>
                     Products that are not synced will not be available for your customers to discover on your ads and shops. To manually add products, <a href="https://www.facebook.com/business/help/4049935305295468">learn how to sync products to your Meta catalog</a>
@@ -135,7 +135,7 @@ class PluginRender {
 		}
 	}
 
-	public function opt_out_of_sync_clicked() {
+	public static function opt_out_of_sync_clicked() {
 			$latest_date = gmdate( 'Y-m-d H:i:s' );
 			update_option( self::MASTER_SYNC_OPT_OUT_TIME, $latest_date );
 			wp_send_json_success( 'Opted out successfully' );
@@ -145,7 +145,7 @@ class PluginRender {
 	 * Banner for initmation of WooAllProducts version will show up
 	 * after a week
 	 */
-	public function reset_upcoming_version_banners() {
+	public static function reset_upcoming_version_banners() {
 		set_transient( 'upcoming_woo_all_products_banner_hide', true, 7 * DAY_IN_SECONDS );
 	}
 

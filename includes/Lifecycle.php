@@ -1,5 +1,4 @@
 <?php
-// phpcs:ignoreFile
 /**
  * Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
  *
@@ -11,7 +10,7 @@
 
 namespace WooCommerce\Facebook;
 
-defined( 'ABSPATH' ) or exit;
+defined( 'ABSPATH' ) || exit;
 
 /**
  * The Facebook for WooCommerce plugin lifecycle handler.
@@ -54,7 +53,7 @@ class Lifecycle extends Framework\Lifecycle {
 			'2.4.0',
 			'2.5.0',
 			'3.2.0',
-			'3.4.9'
+			'3.4.9',
 		);
 	}
 
@@ -155,7 +154,7 @@ class Lifecycle extends Framework\Lifecycle {
 			$parsed_time   = ! empty( $autosync_time ) ? strtotime( $autosync_time ) : false;
 			$resync_offset = null;
 			if ( false !== $parsed_time ) {
-				$midnight = ( new \DateTime() )->setTimestamp( $parsed_time )->setTime( 0, 0, 0 );
+				$midnight      = ( new \DateTime() )->setTimestamp( $parsed_time )->setTime( 0, 0, 0 );
 				$resync_offset = $parsed_time - $midnight->getTimestamp();
 			}
 			$new_settings[ \WC_Facebookcommerce_Integration::SETTING_SCHEDULED_RESYNC_OFFSET ] = $resync_offset;
@@ -202,7 +201,8 @@ class Lifecycle extends Framework\Lifecycle {
 	 */
 	protected function upgrade_to_2_0_0() {
 		// handle sync enabled and visible virtual products and variations
-		if ( $handler = $this->get_plugin()->get_background_handle_virtual_products_variations_instance() ) {
+		$handler = $this->get_plugin()->get_background_handle_virtual_products_variations_instance();
+		if ( $handler ) {
 			// create_job() expects an non-empty array of attributes
 			$handler->create_job( array( 'created_at' => current_time( 'mysql' ) ) );
 			$handler->dispatch();
@@ -244,12 +244,14 @@ class Lifecycle extends Framework\Lifecycle {
 		}
 
 		// if an unfinished job is stuck, give the handler a chance to complete it
-		if ( $handler = $this->get_plugin()->get_background_handle_virtual_products_variations_instance() ) {
+		$handler = $this->get_plugin()->get_background_handle_virtual_products_variations_instance();
+		if ( $handler ) {
 			$handler->dispatch();
 		}
 
 		// create a job to remove duplicate visibility meta data entries
-		if ( $handler = $this->get_plugin()->get_background_remove_duplicate_visibility_meta_instance() ) {
+		$handler = $this->get_plugin()->get_background_remove_duplicate_visibility_meta_instance();
+		if ( $handler ) {
 			// create_job() expects an non-empty array of attributes
 			$handler->create_job( array( 'created_at' => current_time( 'mysql' ) ) );
 			$handler->dispatch();
@@ -285,10 +287,13 @@ class Lifecycle extends Framework\Lifecycle {
 	 */
 	protected function upgrade_to_2_0_4() {
 		// if unfinished jobs are stuck, give the handlers a chance to complete them
-		if ( $handler = $this->get_plugin()->get_background_handle_virtual_products_variations_instance() ) {
+		$handler = $this->get_plugin()->get_background_handle_virtual_products_variations_instance();
+		if ( $handler ) {
 			$handler->dispatch();
 		}
-		if ( $handler = $this->get_plugin()->get_background_remove_duplicate_visibility_meta_instance() ) {
+
+		$handler = $this->get_plugin()->get_background_remove_duplicate_visibility_meta_instance();
+		if ( $handler ) {
 			$handler->dispatch();
 		}
 	}
@@ -326,7 +331,7 @@ class Lifecycle extends Framework\Lifecycle {
 	protected function upgrade_to_3_2_0() {
 		// Remove the Messenger deprecation notice.
 		$notice_slug = 'facebook_messenger_deprecation_warning';
-		if( class_exists( 'WC_Admin_Notices' ) && \WC_Admin_Notices::has_notice( $notice_slug ) ) {
+		if ( class_exists( 'WC_Admin_Notices' ) && \WC_Admin_Notices::has_notice( $notice_slug ) ) {
 			\WC_Admin_Notices::remove_notice( $notice_slug );
 		}
 
@@ -345,5 +350,4 @@ class Lifecycle extends Framework\Lifecycle {
 	protected function upgrade_to_3_4_9() {
 		facebook_for_woocommerce()->get_product_sets_sync_handler()->sync_all_product_sets();
 	}
-
 }

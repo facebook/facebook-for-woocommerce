@@ -15,7 +15,6 @@ use WooCommerce\Facebook\Framework\Helper;
 use WooCommerce\Facebook\Framework\Plugin\Exception as PluginException;
 use WooCommerce\Facebook\Products;
 use WooCommerce\Facebook\Products\Feed;
-use WooCommerce\Facebook\Products\Sync;
 
 defined( 'ABSPATH' ) || exit;
 
@@ -110,6 +109,15 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 
 	/** @var string the WordPress option name where the merchant access token is stored */
 	const OPTION_MERCHANT_ACCESS_TOKEN = 'wc_facebook_merchant_access_token';
+
+	/** @var string the WordPress option name where the business manager ID is stored */
+	const OPTION_BUSINESS_MANAGER_ID = 'wc_facebook_business_manager_id';
+
+	/** @var string the WordPress option name where the ad account ID is stored */
+	const OPTION_AD_ACCOUNT_ID = 'wc_facebook_ad_account_id';
+
+	/** @var string the WordPress option name where the system user ID is stored */
+	const OPTION_SYSTEM_USER_ID = 'wc_facebook_system_user_id';
 
 	/** @var string the WordPress option name where the commerce merchant settings ID is stored */
 	const OPTION_COMMERCE_MERCHANT_SETTINGS_ID = 'wc_facebook_commerce_merchant_settings_id';
@@ -338,23 +346,11 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 					[ $this, 'on_quick_and_bulk_edit_save' ]
 				);
 
-				add_action( 'add_meta_boxes', 'WooCommerce\Facebook\Admin\Product_Sync_Meta_Box::register', 10, 1 );
-
 				add_action( 'add_meta_boxes_product', [ $this, 'display_batch_api_completed' ], 10, 2 );
 
 				add_action(
 					'wp_ajax_ajax_fb_toggle_visibility',
 					array( $this, 'ajax_fb_toggle_visibility' )
-				);
-
-				add_action(
-					'wp_ajax_ajax_reset_single_fb_product',
-					array( $this, 'ajax_reset_single_fb_product' )
-				);
-
-				add_action(
-					'wp_ajax_ajax_delete_fb_product',
-					array( $this, 'ajax_delete_fb_product' )
 				);
 
 				add_action(
@@ -2107,47 +2103,6 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 		WC_Facebookcommerce_Utils::check_woo_ajax_permissions( 'reset products', true );
 		check_ajax_referer( 'wc_facebook_settings_jsx' );
 		$this->reset_all_products();
-		wp_reset_postdata();
-		wp_die();
-	}
-
-	/**
-	 * Ajax reset single Facebook product.
-	 *
-	 * @return void
-	 */
-	public function ajax_reset_single_fb_product() {
-		WC_Facebookcommerce_Utils::check_woo_ajax_permissions( 'reset single product', true );
-		check_ajax_referer( 'wc_facebook_metabox_jsx' );
-		if ( ! isset( $_POST['wp_id'] ) ) {
-			wp_die();
-		}
-
-		$wp_id       = sanitize_text_field( wp_unslash( $_POST['wp_id'] ) );
-		$woo_product = new WC_Facebook_Product( $wp_id );
-		if ( $woo_product ) {
-			$this->reset_single_product( $wp_id );
-		}
-
-		wp_reset_postdata();
-		wp_die();
-	}
-
-	/**
-	 * Ajax delete Facebook product.
-	 *
-	 * @return void
-	 */
-	public function ajax_delete_fb_product() {
-		WC_Facebookcommerce_Utils::check_woo_ajax_permissions( 'delete single product', true );
-		check_ajax_referer( 'wc_facebook_metabox_jsx' );
-		if ( ! isset( $_POST['wp_id'] ) ) {
-			wp_die();
-		}
-
-		$wp_id = sanitize_text_field( wp_unslash( $_POST['wp_id'] ) );
-		$this->on_product_delete( $wp_id );
-		$this->reset_single_product( $wp_id );
 		wp_reset_postdata();
 		wp_die();
 	}
