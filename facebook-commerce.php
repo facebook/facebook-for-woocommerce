@@ -2831,6 +2831,9 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 	 */
 	public function on_quick_and_bulk_edit_save( $product ) {
 		// bail if not a product or product is not enabled for sync
+		static $bulk_product_edit_ids = [];
+		static $bulk_products_to_exclude = [];
+		
 		if ( ! $product instanceof \WC_Product || ! Products::published_product_should_be_synced( $product ) ) {
 			return;
 		}
@@ -2840,11 +2843,25 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 
 		if ( self::FB_SHOP_PRODUCT_VISIBLE === $visibility ) {
 			// - new status is 'publish' regardless of old status, sync to Facebook
-			$this->on_product_publish( $wp_id );
+			// $this->on_product_publish( $wp_id );
 		} else {
 			// - product never published to Facebook, new status is not publish
 			// - product new status is not publish but may have been published before
 			$this->update_fb_visibility( $product, $visibility );
+		}
+
+
+		if (!empty($_REQUEST['post'])) {
+			$bulk_product_edit_ids = $_REQUEST['post'];
+		}
+
+		$bulk_action_products_cumulative_count = did_action('woocommerce_product_bulk_edit_save');
+
+		if($bulk_action_products_cumulative_count === count($bulk_product_edit_ids)){
+			$unique_in_bulk_prouduct_edit_ids = array_diff($bulk_product_edit_ids, $bulk_products_to_exclude); 
+			$unique_in_bulk_prouduct_to_exclude = array_diff($bulk_products_to_exclude, $bulk_product_edit_ids);
+			$final_products_to_updte = array_merge($unique_in_bulk_prouduct_edit_ids, $unique_in_bulk_prouduct_to_exclude);
+			$this->facebook_for_woocommerce->get_products_sync_handler()->create_or_update_products( $final_products_to_updte );
 		}
 	}
 
