@@ -1727,14 +1727,16 @@ class WC_Facebook_Product {
 				/**
 				 * If parent's visibility is already marked we know we should assign it to the child/variation as well
 				 */
-				if ( 'yes' === $parent_product_visibility ) {
-					if ( ! $current_variation_product_visibility ) {
-						$product_data['is_woo_all_products_sync'] = 1;
+				if($parent_product_visibility === "yes"){
+					if( !$current_variation_product_visibility){
+						$product_data["is_woo_all_products_sync"] = 1;
 					}
-					$product_data['visibility'] = \WC_Facebookcommerce_Integration::FB_SHOP_PRODUCT_VISIBLE;
-				} elseif ( 'no' === $parent_product_visibility ) {
-					$product_data['visibility'] = \WC_Facebookcommerce_Integration::FB_SHOP_PRODUCT_HIDDEN;
-				} else {
+					$product_data[ 'visibility' ] = \WC_Facebookcommerce_Integration::FB_SHOP_PRODUCT_VISIBLE;
+				}
+				else if ($parent_product_visibility === "no"){
+					$product_data[ 'visibility' ] = \WC_Facebookcommerce_Integration::FB_SHOP_PRODUCT_HIDDEN;
+				}
+				else{
 					/**
 					 * If the visibility is empty,
 					 * We then check for the variation's visibility.
@@ -1760,8 +1762,8 @@ class WC_Facebook_Product {
 					 * Tagging those products who were previously having visibility hidden
 					 * But now have visibility published
 					 */
-					if ( $variation_visibility && ! $current_variation_product_visibility ) {
-						$product_data['is_woo_all_products_sync'] = 1;
+					if($variation_visibility && !$current_variation_product_visibility){
+						$product_data["is_woo_all_products_sync"] = 1;
 					}
 
 					$product_data['visibility'] = $variation_visibility ? \WC_Facebookcommerce_Integration::FB_SHOP_PRODUCT_VISIBLE : \WC_Facebookcommerce_Integration::FB_SHOP_PRODUCT_HIDDEN;
