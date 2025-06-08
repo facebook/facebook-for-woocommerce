@@ -2861,7 +2861,7 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 			$unique_in_bulk_prouduct_edit_ids = array_diff($bulk_product_edit_ids, $bulk_products_to_exclude); 
 			$unique_in_bulk_prouduct_to_exclude = array_diff($bulk_products_to_exclude, $bulk_product_edit_ids);
 			$final_products_to_updte = array_merge($unique_in_bulk_prouduct_edit_ids, $unique_in_bulk_prouduct_to_exclude);
-			$this->facebook_for_woocommerce->get_products_sync_handler()->create_or_update_products( $final_products_to_updte );
+			$this->facebook_for_woocommerce->get_products_sync_handler()->create_or_update_all_products_for_bulk_edit( $final_products_to_updte );
 		}
 	}
 
