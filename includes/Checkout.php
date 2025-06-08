@@ -12,6 +12,8 @@ namespace WooCommerce\Facebook;
 
 defined( 'ABSPATH' ) || exit;
 
+use WooCommerce\Facebook\Framework\Logger;
+
 /**
  * The checkout permalink.
  *
@@ -109,12 +111,13 @@ class Checkout {
 								$quantity
 							);
 
-							\WC_Facebookcommerce_Utils::log_to_meta(
-								$error_message,
+							Logger::log(
+								null,
 								array(
 									'flow_name'  => 'checkout',
 									'flow_step'  => 'add_to_cart',
 									'extra_data' => [
+										'message'        => $error_message,
 										'products_param' => $products_param,
 										'product_id'     => $product_id,
 										'quantity'       => $quantity,
