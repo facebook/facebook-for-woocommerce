@@ -76,6 +76,26 @@ jobs:
       # - name: Delete file - temp
       #   run: rm woocommerce_svn/tags/1.10.0/changelog.txt
 
+      - name: Extract Release Notes
+        id: extract_release_notes
+        run: |
+          readme_file="facebook-for-woocommerce/readme.txt"
+          found_changelog=0
+          output=""
+          while IFS= read -r line || [[ -n $line ]]; do
+              clean_line=$(echo "$line" | tr -d '\r' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+              if [[ $found_changelog -eq 0 ]]; then
+                  if [[ "$clean_line" == "== Changelog ==" ]]; then
+                      found_changelog=1
+                  fi
+              else
+                  if [[ "$clean_line" == \** ]]; then
+                      output+="$clean_line"$'\n'
+                  fi
+              fi
+          done < "$readme_file"
+          echo -e "release_notes=$output" >> $GITHUB_OUTPUT
+
       - name: Commit to SVN
         env:
           SVN_USERNAME: ${{ secrets.SVN_USERNAME }}
@@ -102,16 +122,20 @@ jobs:
         uses: actions/github-script@v6
         env:
           VERSION: ${{ steps.package-version.outputs.current-version}}
+          RELEASE_NOTES: ${{ steps.extract_release_notes.outputs.release_notes }}
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
             try {
               const version = process.env.VERSION;
+              const releaseNotes = process.env.RELEASE_NOTES;
               await github.rest.repos.createRelease({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
                 tag_name: `v${version}`,
+                target_commitish: "release/current",
                 name: `Release ${version}`,
+                body: releaseNotes,
                 draft: true,
               });
               console.log(`Done`);
