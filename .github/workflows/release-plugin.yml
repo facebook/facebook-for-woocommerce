@@ -93,9 +93,6 @@ jobs:
             exit 1
           fi
 
-      # - name: Delete file - temp
-      #   run: rm woocommerce_svn/tags/1.10.0/changelog.txt
-
       - name: Commit to SVN
         env:
           SVN_USERNAME: ${{ secrets.SVN_USERNAME }}
@@ -125,19 +122,24 @@ jobs:
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
-            try {
-              const version = process.env.VERSION;
-              const releaseNotes = process.env.RELEASE_NOTES;
-              await github.rest.repos.createRelease({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                tag_name: `v${version}`,
-                target_commitish: "release/current",
-                name: `Release ${version}`,
-                body: releaseNotes,
-                draft: true,
-              });
-              console.log(`Done`);
-            } catch (error) {
-              console.log(`Error details: ${error.message}`);
-            } 
+            const version = process.env.VERSION;
+            const releaseNotes = process.env.RELEASE_NOTES;
+            const release = await github.rest.repos.createRelease({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              tag_name: `v${version}`,
+              target_commitish: 'release/current',
+              name: `Release ${version}`,
+              body: releaseNotes,
+              make_latest: false,
+            });
+            const fileName = 'facebook-for-woocommerce.zip'
+            const source = fs.readFileSync(fileName);
+            await github.rest.repos.uploadReleaseAsset({
+              owner: context.repo.owner, 
+              repo: context.repo.repo, 
+              release_id: release.data.id,
+              name: fileName, 
+              headers: {'Content-Type': 'application/x-xz'}, 
+              data: source
+            });
