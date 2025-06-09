@@ -168,7 +168,7 @@ class FeedUploadUtilsTest extends FeedDataTestBase {
 		// Build the expected coupon shape according to how FeedUploadUtils outputs the data.
 		$expected_coupon = [
 			'offer_id'                              => $coupon_id,              // coupon ID as an integer
-			'title'                                 => 'coupon-code-1',         // lowercased coupon post title
+			'title'                                 => 'COUPON-CODE-1',         // uppercase coupon post title
 			'value_type'                            => 'PERCENTAGE',
 			'percent_off'                           => '15',                    // as a string
 			'fixed_amount_off'                      => '',                      // empty string output
@@ -178,7 +178,7 @@ class FeedUploadUtilsTest extends FeedDataTestBase {
 			'target_selection'                      => 'SPECIFIC_PRODUCTS',
 			'start_date_time'                       => $coupon_data['start_date_time'], // use the output from the coupon post date/time
 			'end_date_time'                         => '',
-			'coupon_codes'                          => ['coupon-code-1'],
+			'coupon_codes'                          => ['COUPON-CODE-1'],
 			'public_coupon_code'                    => '',
 			'target_filter'                         => '{"or":[{"retailer_id":{"eq":"product-sku-1_'.$product1->get_id().'"}}]}',
 			'target_product_retailer_ids'           => '',
@@ -234,7 +234,7 @@ class FeedUploadUtilsTest extends FeedDataTestBase {
 		// Build the expected coupon shape according to how FeedUploadUtils outputs the data.
 		$expected_coupon = [
 			'offer_id'                              => $coupon_id,              // coupon ID as an integer
-			'title'                                 => 'coupon-code-1',         // lowercased coupon post title
+			'title'                                 => 'COUPON-CODE-1',         // uppercase coupon post title
 			'value_type'                            => 'PERCENTAGE',
 			'fixed_amount_off'                      => '0',                      // empty string output
 			'percent_off'                           => '100',                    // as a string
@@ -244,7 +244,7 @@ class FeedUploadUtilsTest extends FeedDataTestBase {
 			'target_selection'                      => 'ALL_CATALOG_PRODUCTS',
 			'start_date_time'                       => $coupon_data['start_date_time'], // use the output from the coupon post date/time
 			'end_date_time'                         => '',
-			'coupon_codes'                          => ['coupon-code-1'],
+			'coupon_codes'                          => ['COUPON-CODE-1'],
 			'public_coupon_code'                    => '',
 			'target_filter'                         => '',
 			'target_product_retailer_ids'           => '',
@@ -326,7 +326,7 @@ class FeedUploadUtilsTest extends FeedDataTestBase {
 		// Build the expected coupon shape.
 		$expected_coupon = [
 			'offer_id'                              => $coupon_id,                          // coupon ID as an integer
-			'title'                                 => 'coupon-incl-excl',                  // lowercased coupon post title
+			'title'                                 => 'COUPON-INCL-EXCL',                  // uppercase coupon post title
 			'value_type'                            => 'PERCENTAGE',
 			'percent_off'                           => '20',                                // as a string
 			'fixed_amount_off'                      => '',                                  // empty string output
@@ -336,7 +336,7 @@ class FeedUploadUtilsTest extends FeedDataTestBase {
 			'target_selection'                      => 'SPECIFIC_PRODUCTS',
 			'start_date_time'                       => $coupon_data['start_date_time'],     // use the generated start date/time
 			'end_date_time'                         => '',
-			'coupon_codes'                          => ['coupon-incl-excl'],                // coupon_codes as an array containing the title
+			'coupon_codes'                          => ['COUPON-INCL-EXCL'],                // coupon_codes as an array containing the title
 			'public_coupon_code'                    => '',
 			'target_filter'                         => '{"and":[{"or":[{"retailer_id":{"eq":"product-sku-1_'.$product1->get_id().'"}},{"retailer_id":{"eq":"product-sku-2_'.$product2->get_id().'"}}]},{"and":[{"retailer_id":{"neq":"product-sku-3_'.$product3->get_id().'"}}]}]}',
 			'target_product_retailer_ids'           => '',
@@ -436,7 +436,7 @@ class FeedUploadUtilsTest extends FeedDataTestBase {
 		// Build the expected coupon shape.
 		$expected_coupon = [
 			'offer_id'                              => $coupon_id,                           // coupon ID as an integer
-			'title'                                 => 'coupon-cat-only',                   // lowercased coupon post title
+			'title'                                 => 'COUPON-CAT-ONLY',                   // uppercase coupon post title
 			'value_type'                            => 'PERCENTAGE',
 			'percent_off'                           => '15',                                // as a string
 			'fixed_amount_off'                      => '',                                  // empty string output
@@ -446,7 +446,7 @@ class FeedUploadUtilsTest extends FeedDataTestBase {
 			'target_selection'                      => 'SPECIFIC_PRODUCTS',
 			'start_date_time'                       => $coupon_data['start_date_time'],     // generated start date/time
 			'end_date_time'                         => '',
-			'coupon_codes'                          => ['coupon-cat-only'],                 // coupon_codes as an array containing the code
+			'coupon_codes'                          => ['COUPON-CAT-ONLY'],                 // coupon_codes as an array containing the code
 			'public_coupon_code'                    => '',
 			'target_filter'                         => $expected_target_filter,
 			'target_product_retailer_ids'           => '',
