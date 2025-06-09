@@ -96,5 +96,25 @@ jobs:
           echo "Status:"
           svn status
 
+      # svn commit -m "Deploy new version ${{ steps.package-version.outputs.current-version}}" --username "$SVN_USERNAME" --password "$SVN_PASSWORD" --no-auth-cache --non-interactive
 
-# svn commit -m "Deploy new version ${{ steps.package-version.outputs.current-version}}" --username "$SVN_USERNAME" --password "$SVN_PASSWORD" --no-auth-cache --non-interactive
+      - name: Create a new release on GitHub
+        uses: actions/github-script@v6
+        env:
+          VERSION: ${{ steps.package-version.outputs.current-version}}
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            try {
+              const version = process.env.VERSION;
+              await github.rest.repos.createRelease({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                tag_name: `v${version}`,
+                name: `Release ${version}`,
+                draft: true,
+              });
+              console.log(`Done`);
+            } catch (error) {
+              console.log(`Error details: ${error.message}`);
+            } 
