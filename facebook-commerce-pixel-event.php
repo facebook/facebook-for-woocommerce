@@ -293,7 +293,7 @@ class WC_Facebookcommerce_Pixel {
 		 * phpcs:disable WordPress.Security.EscapeOutput.OutputNotEscaped
 		 */
 		public function inject_event( $event_name, $params, $method = 'track' ) {
-			if ( WC_Facebookcommerce_Utils::isWoocommerceIntegration() ) {
+			if ( WC_Facebookcommerce_Utils::is_woocommerce_integration() ) {
 				$code = $this->get_event_code( $event_name, self::build_params( $params, $event_name ), $method );
 
 			// If we have add to cart redirect enabled, we must defer the AddToCart events to render them the next page load.
@@ -453,7 +453,7 @@ class WC_Facebookcommerce_Pixel {
 					"/* %s Facebook Integration Event Tracking */\n" .
 					"fbq('set', 'agent', '%s', '%s');\n" .
 					"fbq('%s', '%s', %s, %s);",
-					WC_Facebookcommerce_Utils::getIntegrationName(),
+					WC_Facebookcommerce_Utils::get_integration_name(),
 					Event::get_platform_identifier(),
 					self::get_pixel_id(),
 					esc_js( $method ),
@@ -468,7 +468,7 @@ class WC_Facebookcommerce_Pixel {
 					"/* %s Facebook Integration Event Tracking */\n" .
 					"fbq('set', 'agent', '%s', '%s');\n" .
 					"fbq('%s', '%s', %s);",
-					WC_Facebookcommerce_Utils::getIntegrationName(),
+					WC_Facebookcommerce_Utils::get_integration_name(),
 					Event::get_platform_identifier(),
 					self::get_pixel_id(),
 					esc_js( $method ),
@@ -657,7 +657,7 @@ class WC_Facebookcommerce_Pixel {
 	private static function get_version_info() {
 		global $wp_version;
 
-			if ( WC_Facebookcommerce_Utils::isWoocommerceIntegration() ) {
+			if ( WC_Facebookcommerce_Utils::is_woocommerce_integration() ) {
 				return array(
 					'source'        => 'woocommerce',
 					'version'       => WC()->version,
