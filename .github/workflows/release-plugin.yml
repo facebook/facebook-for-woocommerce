@@ -16,6 +16,13 @@ jobs:
         id: package-version
         uses: martinbeentjes/npm-get-version-action@v1.3.1
 
+      - name: Validate Git tag
+        run: |
+          if [ $(git tag -l "v${{ steps.package-version.outputs.current-version}}") ]; then
+            echo "Git tag exist" 1>&2
+            exit 1
+          fi
+
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
         with:
@@ -52,10 +59,10 @@ jobs:
       - name: Checkout SVN Repository
         run: svn co https://plugins.svn.wordpress.org/facebook-for-woocommerce/ woocommerce_svn --quiet --non-interactive
 
-      - name: Validate tag
+      - name: Validate SVN tag
         run: |
           if [ -d "woocommerce_svn/tags/${{ steps.package-version.outputs.current-version}}" ]; then
-            echo "Tag directory exist" 1>&2
+            echo "SVN tag directory exist" 1>&2
             exit 1
           fi
 
