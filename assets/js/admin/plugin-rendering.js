@@ -25,8 +25,6 @@ jQuery( document ).ready( function( $ ) {
                 modal.remove();
             }   
         }).fail(function(xhr) {
-            console.error("Error Code:", xhr.status);
-            console.error("Error Message:", xhr.responseText);
             modal.remove();
         });
     });
@@ -45,8 +43,6 @@ jQuery( document ).ready( function( $ ) {
                 // No success condition
             }   
         }).fail(function(xhr) {
-            console.error("Error Code:", xhr.status);
-            console.error("Error Message:", xhr.responseText);
             modal.remove();
         });
     });
@@ -65,8 +61,6 @@ jQuery( document ).ready( function( $ ) {
                 // No success condition
             }   
         }).fail(function(xhr) {
-            console.error("Error Code:", xhr.status);
-            console.error("Error Message:", xhr.responseText);
             modal.remove();
         });
     });
@@ -86,8 +80,6 @@ jQuery( document ).ready( function( $ ) {
                 // No success condition
             }   
         }).fail(function(xhr) {
-            console.error("Error Code:", xhr.status);
-            console.error("Error Message:", xhr.responseText);
             modal.remove();
         });
     });
@@ -106,8 +98,6 @@ jQuery( document ).ready( function( $ ) {
                 // No success condition
             }   
         }).fail(function(xhr) {
-            console.error("Error Code:", xhr.status);
-            console.error("Error Message:", xhr.responseText);
             modal.remove();
         });
     });
@@ -127,8 +117,6 @@ jQuery( document ).ready( function( $ ) {
                 // No success condition
             }   
         }).fail(function(xhr) {
-            console.error("Error Code:", xhr.status);
-            console.error("Error Message:", xhr.responseText);
             modal.remove();
         });
     });
@@ -158,15 +146,8 @@ jQuery( document ).ready( function( $ ) {
                 $('#plugin_updated_successfully_but_master_sync_off').hide();
                 $('#plugin_updated_successfully_after_user_opts_in').show();
             }
-            else{
-                context.text('Failed to enable sync !')
-                context.css("color", "red");
-                context.css('border', '2px solid red');
-                context.prop('disabled', true);
-            }
         }).fail(function(xhr) {
-            console.error("Error Code:", xhr.status);
-            console.error("Error Message:", xhr.responseText);
+            // No fail conditon
         });
     });
 
@@ -183,15 +164,8 @@ jQuery( document ).ready( function( $ ) {
                 $('#plugin_updated_successfully_but_master_sync_off').hide();
                 $('#plugin_updated_successfully_after_user_opts_in').show();
             }
-            else{
-                context.text('Failed to enable sync !')
-                context.css("color", "red");
-                context.css('border', '2px solid red');
-                context.prop('disabled', true);
-            }
         }).fail(function(xhr) {
-            console.error("Error Code:", xhr.status);
-            console.error("Error Message:", xhr.responseText);
+            // No fail condition
         });
     });
 });

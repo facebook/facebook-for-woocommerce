@@ -149,8 +149,8 @@ class PluginRender {
 		if ( isset( $screen->id ) && 'marketing_page_wc-facebook' === $screen->id ) {
 
 			if ( self::is_master_sync_on() && ! get_transient( 'plugin_updated_banner_hide' ) ) {
-				echo '<div class="notice notice-success is-dismissible plugin_updated_successfully" style="padding: 15px">
-                <h2>You’ve updated to the latest plugin version</h2>
+				echo '<div class="notice notice-success is-dismissible plugin_updated_successfully" style="">
+                <h4>You’ve updated to the latest plugin version</h4>
                     <p>
                         As part of this update, all your products automatically sync to Meta. It may take some time before all your products are synced. If you change your mind, go to WooCommerce > Products and select which products to un-sync. <a href="https://www.facebook.com/business/help/4049935305295468"> About syncing products to Meta </a>
                     </p>
@@ -166,8 +166,8 @@ class PluginRender {
 				 * Won't be shown again
 				 */
 
-				echo '<div id="plugin_updated_successfully_after_user_opts_in" class="notice notice-success is-dismissible plugin_updated_successfully ' . esc_html( $plugin_updated_and_master_sync_on ) . '"" style="padding: 15px">
-				 <h2>Your products will be synced automatically</h2>   
+				echo '<div id="plugin_updated_successfully_after_user_opts_in" class="notice notice-success is-dismissible plugin_updated_successfully ' . esc_html( $plugin_updated_and_master_sync_on ) . '"" style="">
+				 <h4>Your products will be synced automatically</h4>   
 					 <p>
 						 It may take some time before all your products are synced. If you change your mind, go to WooCommerce > Products and select which products to un-sync.<a href="https://www.facebook.com/business/help/4049935305295468"> About syncing products to Meta</a>
 					 </p>
@@ -178,8 +178,8 @@ class PluginRender {
 				 * If and only if the user has opted out and also upgraded the plugin to 3.5.3
 				 */
 
-					echo '<div id="plugin_updated_successfully_but_master_sync_off" class="notice notice-success is-dismissible ' . esc_html( $plugin_updated_but_not_master_sync_on ) . '"" style="padding: 15px">
-					<h2>You’ve updated to the latest plugin version</h2>   
+					echo '<div id="plugin_updated_successfully_but_master_sync_off" class="notice notice-success is-dismissible ' . esc_html( $plugin_updated_but_not_master_sync_on ) . '"" style="">
+					<h4>You’ve updated to the latest plugin version</h4>   
 						<p>
 							To see all the changes, view the changelog. Since you’ve opted out of automatically syncing all your products, some of your products are not yet on Meta. We recommend turning on auto syncing to help drive your sales and improve ad performance. About syncing products to Meta
 						</p>
