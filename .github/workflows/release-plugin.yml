@@ -52,7 +52,27 @@ jobs:
             echo "Build error" 1>&2
             exit 1
           fi
-      
+
+      - name: Extract Release Notes
+        id: extract_release_notes
+        run: |
+          readme_file="readme.txt"
+          found_changelog=0
+          output=""
+          while IFS= read -r line || [[ -n $line ]]; do
+              clean_line=$(echo "$line" | tr -d '\r' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+              if [[ $found_changelog -eq 0 ]]; then
+                  if [[ "$clean_line" == "== Changelog ==" ]]; then
+                      found_changelog=1
+                  fi
+              else
+                  if [[ "$clean_line" == \** ]]; then
+                      output+="$clean_line"$'\n'
+                  fi
+              fi
+          done < "$readme_file"
+          echo -e "release_notes=$output" >> $GITHUB_OUTPUT
+
       - name: Store built plugin
         uses: actions/upload-artifact@master
         continue-on-error: true
@@ -75,26 +95,6 @@ jobs:
 
       # - name: Delete file - temp
       #   run: rm woocommerce_svn/tags/1.10.0/changelog.txt
-
-      - name: Extract Release Notes
-        id: extract_release_notes
-        run: |
-          readme_file="facebook-for-woocommerce/readme.txt"
-          found_changelog=0
-          output=""
-          while IFS= read -r line || [[ -n $line ]]; do
-              clean_line=$(echo "$line" | tr -d '\r' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
-              if [[ $found_changelog -eq 0 ]]; then
-                  if [[ "$clean_line" == "== Changelog ==" ]]; then
-                      found_changelog=1
-                  fi
-              else
-                  if [[ "$clean_line" == \** ]]; then
-                      output+="$clean_line"$'\n'
-                  fi
-              fi
-          done < "$readme_file"
-          echo -e "release_notes=$output" >> $GITHUB_OUTPUT
 
       - name: Commit to SVN
         env:
