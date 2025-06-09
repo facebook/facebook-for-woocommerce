@@ -1695,6 +1695,8 @@ class WC_Facebook_Product {
 		}
 
 		$categories = WC_Facebookcommerce_Utils::get_product_categories( $id );
+		$category_ids =  array_map('strval', WC_Facebookcommerce_Utils::get_product_category_ids( $id ));
+		$tags_ids = array_map('strval',  WC_Facebookcommerce_Utils::get_excluded_product_tags_ids($id));
 
 		// Determine if this is an API call where we should convert pipe-separated values to arrays
 		$is_api_call = ($type_to_prepare_for === self::PRODUCT_PREP_TYPE_ITEMS_BATCH);
@@ -1795,6 +1797,26 @@ class WC_Facebook_Product {
 			 */
 			 $product_data["is_woo_all_products_sync"] = 1;
 		 }
+
+		 /*
+		 * If a category was previously excluded that meant that it was not getting synced
+		 * 3.5.3 changes will make sure these categories are no longer kept from syncing
+		 * So we are tagging them as well since they are now synced with us
+		 */
+		$deprecated_excluded_category_ids = get_option('wc_facebook_excluded_product_category_ids');
+
+		if($deprecated_excluded_category_ids && $category_ids && !empty(array_intersect($deprecated_excluded_category_ids, $category_ids))){
+			$product_data["is_woo_all_products_sync"] = 1;	
+		}
+
+		/**
+		 * Doing same tagging for proudct tags exclusion
+		*/
+		$deprecated_excluded_tag_ids = get_option('wc_facebook_excluded_product_tag_ids');
+
+		if($deprecated_excluded_tag_ids && $tags_ids && !empty(array_intersect($deprecated_excluded_tag_ids, $tags_ids))){
+			$product_data["is_woo_all_products_sync"] = 1;	
+		}
 
 
 		if ( self::PRODUCT_PREP_TYPE_ITEMS_BATCH === $type_to_prepare_for ) {
