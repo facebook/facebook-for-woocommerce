@@ -52,6 +52,13 @@ jobs:
             echo "Build error" 1>&2
             exit 1
           fi
+      
+      - name: Store built plugin
+        uses: actions/upload-artifact@master
+        continue-on-error: true
+        with:
+          name: facebook-for-woocommerce
+          path: facebook-for-woocommerce.zip
 
       - name: Install SVN
         run: sudo apt-get install subversion -y
