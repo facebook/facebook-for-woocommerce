@@ -12,6 +12,10 @@ jobs:
     steps:
       - uses: actions/checkout@v1
 
+      - name: Get NPM Version
+        id: package-version
+        uses: martinbeentjes/npm-get-version-action@v1.3.1
+
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
         with:
@@ -48,9 +52,12 @@ jobs:
       - name: Checkout SVN Repository
         run: svn co https://plugins.svn.wordpress.org/facebook-for-woocommerce/ woocommerce_svn --quiet --non-interactive
 
-      - name: Get NPM Version
-        id: package-version
-        uses: martinbeentjes/npm-get-version-action@v1.3.1
+      - name: Validate tag
+        run: |
+          if [ -d "tags/${{ steps.package-version.outputs.current-version}}" ]; then
+            echo "Tag directory exist" 1>&2
+            exit 1
+          fi
 
       # - name: Delete file - temp
       #   run: rm woocommerce_svn/tags/1.10.0/changelog.txt
@@ -63,13 +70,16 @@ jobs:
           cd woocommerce_svn
           rm -rf trunk
           mv ../facebook-for-woocommerce.zip ./
+          echo "Unzipping the atrifact"
           unzip facebook-for-woocommerce.zip
           mv facebook-for-woocommerce trunk
           rm facebook-for-woocommerce.zip
           svn add --force .
           svn st | grep ^! | awk '{print $2}' | xargs -r svn rm
           svn status
+          echo "Tagging version ${{ steps.package-version.outputs.current-version}}"
           svn cp trunk "tags/${{ steps.package-version.outputs.current-version}}"
+          echo "Status:"
           svn status
 
 
