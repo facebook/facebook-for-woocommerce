@@ -123,6 +123,7 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
             const fs = require('fs');
+            const path = require('path');
             const version = process.env.VERSION;
             const releaseNotes = process.env.RELEASE_NOTES;
             const release = await github.rest.repos.createRelease({
@@ -136,7 +137,8 @@ jobs:
             });
             const maxRetries = 5;
             const fileName = 'facebook-for-woocommerce.zip'
-            const source = fs.readFileSync(fileName);
+            const filePath = path.resolve(process.env.GITHUB_WORKSPACE, fileName);
+            const source = fs.readFileSync(filePath);
             for (let retry = 0; retry < maxRetries; retry++) {
               try {
                 await github.rest.repos.uploadReleaseAsset({
