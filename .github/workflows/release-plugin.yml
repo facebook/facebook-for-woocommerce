@@ -11,7 +11,7 @@ jobs:
     environment: Deployment
     steps:
       - uses: actions/checkout@v1
-      
+
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
         with:
@@ -32,6 +32,27 @@ jobs:
       
       - name: Build plugin
         run: npm run build
-      
+
+      - name: Install SVN
+        run: sudo apt-get install subversion -y
+
+      - name: Checkout SVN Repository
+        run: svn co https://plugins.svn.wordpress.org/facebook-for-woocommerce/ woocommerce_svn --non-interactive
+
+      - name: Amend file - temp
+        run: printf "\n" >> woocommerce_svn/tags/1.10.0/changelog.txt
+
+      - name: Commit to SVN
+        env:
+          SVN_USERNAME: ${{ secrets.SVN_USERNAME }}
+          SVN_PASSWORD: ${{ secrets.SVN_PASSWORD }}
+        run: |
+          cd woocommerce_svn
+          svn add --force .
+          svn st | grep ^! | awk '{print $2}' | xargs svn rm
+          svn commit -m "Deploy test" --username "$SVN_USERNAME" --password "$SVN_PASSWORD" --no-auth-cache --non-interactive
+
+
+
 
       
