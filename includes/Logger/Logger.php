@@ -1,0 +1,63 @@
+<?php
+/**
+ * Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
+ *
+ * This source code is licensed under the license found in the
+ * LICENSE file in the root directory of this source tree.
+ *
+ * @package FacebookCommerce
+ */
+
+namespace WooCommerce\Facebook\Framework;
+
+defined( 'ABSPATH' ) || exit;
+
+/**
+ * Centralised Logger class for the plugin
+ *
+ * @since 3.5.3
+ */
+class Logger {
+
+	/** @var string the "debug mode" setting ID */
+	const SETTING_ENABLE_DEBUG_MODE = 'wc_facebook_enable_debug_mode';
+	/** @var string the "meta diagnosis" setting ID */
+	const SETTING_ENABLE_META_DIAGNOSIS = 'wc_facebook_enable_meta_diagnosis';
+	/** @var string the message queue for this plugin handled in BatchLogHandler class */
+	const LOGGING_MESSAGE_QUEUE = 'global_logging_message_queue';
+
+	/**
+	 * Centralised Logger function for the plugin
+	 *
+	 * @since 3.5.3
+	 *
+	 * @param string    $message log message
+	 * @param array     $context optional body of log with whole context
+	 * @param array     $log_options optional options for logging place and levels
+	 */
+	public static function log($message, $context = [], $log_options = [
+		'should_send_log_to_meta'        => false,
+		'should_save_log_in_woocommerce' => false,
+		'woocommerce_log_level'          => \WC_Log_Levels::DEBUG,
+	]) {
+		$is_debug_mode_enabled = 'yes' === get_option( self::SETTING_ENABLE_META_DIAGNOSIS );
+		if ( $is_debug_mode_enabled && $log_options['should_save_log_in_woocommerce'] ) {
+			facebook_for_woocommerce()->log( $message . ' : ' . wp_json_encode( $context ), null, $log_options['woocommerce_log_level'] );
+		}
+
+		$is_meta_diagnosis_enabled = (bool) ( 'yes' === get_option( self::SETTING_ENABLE_META_DIAGNOSIS ) );
+		if ( $log_options['should_send_log_to_meta'] && $is_meta_diagnosis_enabled ) {
+
+			$extra_data            = $context['extra_data'] ?? [];
+			$extra_data['message'] = $message;
+			$context['extra_data'] = $extra_data;
+
+			$logs = get_transient( self::LOGGING_MESSAGE_QUEUE );
+			if ( ! $logs ) {
+				$logs = [];
+			}
+			$logs[] = $context;
+			set_transient( self::LOGGING_MESSAGE_QUEUE, $logs, HOUR_IN_SECONDS );
+		}
+	}
+}
