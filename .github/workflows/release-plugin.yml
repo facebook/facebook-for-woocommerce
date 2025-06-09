@@ -10,7 +10,7 @@ jobs:
     runs-on: ubuntu-latest
     environment: Deployment
     steps:
-      - uses: actions/checkout@v1
+      - uses: actions/checkout@v4
 
       - name: Get NPM Version
         id: package-version
