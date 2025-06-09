@@ -86,10 +86,7 @@ class Stock {
 
 
 	/**
-	 * Schedules a product sync to update the product's stock status.
-	 *
-	 * The product are not removed any longer for stock statuses
-	 * Please check PR :  https://github.com/facebook/facebook-for-woocommerce/pull/2952
+	 * Schedules a product sync to update the product's stock status
 	 *
 	 * @since 2.0.5
 	 *
