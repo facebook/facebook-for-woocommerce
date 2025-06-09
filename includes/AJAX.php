@@ -494,5 +494,5 @@ class AJAX {
 			wp_send_json_error( 'Missing request parameters for Event Configs POST API call' );
 		}
 		WhatsAppUtilityConnection::post_whatsapp_utility_messages_event_configs_call( $event, $integration_config_id, $language, $status, $bisu_token );
-	}	
+	}
 }
