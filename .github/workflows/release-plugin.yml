@@ -39,8 +39,8 @@ jobs:
       - name: Checkout SVN Repository
         run: svn co https://plugins.svn.wordpress.org/facebook-for-woocommerce/ woocommerce_svn --quiet --non-interactive
 
-      - name: Delete file - temp
-        run: rm woocommerce_svn/tags/1.10.0/changelog.txt
+      # - name: Delete file - temp
+      #   run: rm woocommerce_svn/tags/1.10.0/changelog.txt
 
       - name: Commit to SVN
         env:
