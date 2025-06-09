@@ -131,15 +131,32 @@ jobs:
               target_commitish: 'release/current',
               name: `Release ${version}`,
               body: releaseNotes,
-              make_latest: false,
+              draft: true,
             });
+            const maxRetries = 5;
             const fileName = 'facebook-for-woocommerce.zip'
             const source = fs.readFileSync(fileName);
-            await github.rest.repos.uploadReleaseAsset({
+            for (let retry = 0; retry < maxRetries; retry++) {
+              try {
+                await github.rest.repos.uploadReleaseAsset({
+                  owner: context.repo.owner, 
+                  repo: context.repo.repo, 
+                  release_id: release.data.id,
+                  name: fileName, 
+                  headers: {'Content-Type': 'application/x-xz'}, 
+                  data: source
+                });
+                break;
+              } catch (error) {
+                  console.log(`Failed to upload (status ${error.status}, retry: ${retry})`);
+                  if (error.status != 500) {
+                      throw error;
+                  }
+              }
+            }
+            await github.rest.repos.updateRelease({
               owner: context.repo.owner, 
               repo: context.repo.repo, 
               release_id: release.data.id,
-              name: fileName, 
-              headers: {'Content-Type': 'application/x-xz'}, 
-              data: source
+              draft: false,
             });
