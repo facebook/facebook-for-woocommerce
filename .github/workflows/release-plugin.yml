@@ -39,6 +39,10 @@ jobs:
       - name: Checkout SVN Repository
         run: svn co https://plugins.svn.wordpress.org/facebook-for-woocommerce/ woocommerce_svn --quiet --non-interactive
 
+      - name: Get NPM Version
+        id: package-version
+        uses: martinbeentjes/npm-get-version-action@v1.3.1
+
       # - name: Delete file - temp
       #   run: rm woocommerce_svn/tags/1.10.0/changelog.txt
 
@@ -50,6 +54,7 @@ jobs:
           cd woocommerce_svn
           svn add --force .
           svn st | grep ^! | awk '{print $2}' | xargs svn rm
+          echo ${{ steps.package-version.outputs.current-version}}
 
 
 # svn commit -m "Deploy test" --username "$SVN_USERNAME" --password "$SVN_PASSWORD" --no-auth-cache --non-interactive
