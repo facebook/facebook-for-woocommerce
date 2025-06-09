@@ -49,7 +49,7 @@ jobs:
         run: |
           cd woocommerce_svn
           svn add --force .
-          svn st | grep ^! | awk '{print $2}'
+          svn st | grep ^! | awk '{print $2}' | xargs svn rm
 
 
 # svn commit -m "Deploy test" --username "$SVN_USERNAME" --password "$SVN_PASSWORD" --no-auth-cache --non-interactive
