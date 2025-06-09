@@ -88,8 +88,6 @@ jobs:
 
       - name: Validate SVN tag
         run: |
-          ls -l "$GITHUB_WORKSPACE"
-          pwd
           if [ -d "woocommerce_svn/tags/${{ steps.package-version.outputs.current-version}}" ]; then
             echo "SVN tag directory exist" 1>&2
             exit 1
@@ -102,7 +100,7 @@ jobs:
         run: |
           cd woocommerce_svn
           rm -rf trunk
-          mv ../facebook-for-woocommerce.zip ./
+          cp ../facebook-for-woocommerce.zip ./
           echo "Unzipping the atrifact"
           unzip facebook-for-woocommerce.zip
           mv facebook-for-woocommerce trunk
