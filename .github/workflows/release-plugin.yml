@@ -1,0 +1,37 @@
+name: Release Plugin
+
+on:
+  push:
+    branches:
+      - 'release/current'
+
+jobs:
+  build-and-release:
+    runs-on: ubuntu-latest
+    environment: Deployment
+    steps:
+      - uses: actions/checkout@v1
+      
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '7.4'
+          tools: composer
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '16'
+          cache-dependency-path: './package-lock.json'
+          cache: 'npm'
+      
+      - name: Install dependencies
+        run: |
+          npm ci || npm install
+          composer install
+      
+      - name: Build plugin
+        run: npm run build
+      
+
+      
