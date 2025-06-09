@@ -37,10 +37,10 @@ jobs:
         run: sudo apt-get install subversion -y
 
       - name: Checkout SVN Repository
-        run: svn co https://plugins.svn.wordpress.org/facebook-for-woocommerce/ woocommerce_svn --non-interactive
+        run: svn co https://plugins.svn.wordpress.org/facebook-for-woocommerce/ woocommerce_svn --quiet --non-interactive
 
-      - name: Amend file - temp
-        run: printf "\n" >> woocommerce_svn/tags/1.10.0/changelog.txt
+      - name: Delete file - temp
+        run: rm woocommerce_svn/tags/1.10.0/changelog.txt
 
       - name: Commit to SVN
         env:
@@ -49,7 +49,7 @@ jobs:
         run: |
           cd woocommerce_svn
           svn add --force .
-          echo svn st | grep ^! | awk '{print $2}' | xargs svn rm
+          svn st | grep ^! | awk '{print $2}'
 
 
 # svn commit -m "Deploy test" --username "$SVN_USERNAME" --password "$SVN_PASSWORD" --no-auth-cache --non-interactive
