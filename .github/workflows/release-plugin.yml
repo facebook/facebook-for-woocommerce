@@ -54,7 +54,7 @@ jobs:
 
       - name: Validate tag
         run: |
-          if [ -d "tags/${{ steps.package-version.outputs.current-version}}" ]; then
+          if [ -d "woocommerce_svn/tags/${{ steps.package-version.outputs.current-version}}" ]; then
             echo "Tag directory exist" 1>&2
             exit 1
           fi
