@@ -88,7 +88,6 @@ jobs:
 
       - name: Validate SVN tag
         run: |
-          ls -l "$GITHUB_WORKSPACE"
           if [ -d "woocommerce_svn/tags/${{ steps.package-version.outputs.current-version}}" ]; then
             echo "SVN tag directory exist" 1>&2
             exit 1
@@ -138,7 +137,7 @@ jobs:
             });
             const maxRetries = 5;
             const fileName = 'facebook-for-woocommerce.zip'
-            const filePath = path.resolve(process.env.GITHUB_WORKSPACE, fileName);
+            const filePath = path.join(process.env.GITHUB_WORKSPACE, fileName);
             const source = fs.readFileSync(filePath);
             for (let retry = 0; retry < maxRetries; retry++) {
               try {
