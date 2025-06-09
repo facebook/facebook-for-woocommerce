@@ -31,7 +31,16 @@ jobs:
           composer install
       
       - name: Build plugin
-        run: npm run build
+        run: |
+          npm run build
+          if [ -f "facebook-for-woocommerce.zip" ]; then
+            echo "build_success=true" >> $GITHUB_OUTPUT
+            echo "filesize=$(du -h facebook-for-woocommerce.zip | cut -f1)" >> $GITHUB_OUTPUT
+          else
+            echo "build_success=false" >> $GITHUB_OUTPUT
+            echo "Build error" 1>&2
+            exit 1
+          fi
 
       - name: Install SVN
         run: sudo apt-get install subversion -y
@@ -52,14 +61,16 @@ jobs:
           SVN_PASSWORD: ${{ secrets.SVN_PASSWORD }}
         run: |
           cd woocommerce_svn
+          rm -rf trunk
+          mv ../facebook-for-woocommerce.zip ./
+          unzip facebook-for-woocommerce.zip
+          mv facebook-for-woocommerce trunk
+          rm facebook-for-woocommerce.zip
           svn add --force .
-          svn st | grep ^! | awk '{print $2}' | xargs svn rm
-          echo ${{ steps.package-version.outputs.current-version}}
+          svn st | grep ^! | awk '{print $2}' | xargs -r svn rm
+          svn status
+          svn cp trunk "tags/${{ steps.package-version.outputs.current-version}}"
+          svn status
 
 
-# svn commit -m "Deploy test" --username "$SVN_USERNAME" --password "$SVN_PASSWORD" --no-auth-cache --non-interactive
-
-
-
-
-      
+# svn commit -m "Deploy new version ${{ steps.package-version.outputs.current-version}}" --username "$SVN_USERNAME" --password "$SVN_PASSWORD" --no-auth-cache --non-interactive
