@@ -65,7 +65,7 @@ class ErrorLogHandler extends LogHandlerBase {
 	 * @since 3.5.0
 	 *
 	 * @param Throwable $error error object
-	 * @param array     $context wiki: https://www.internalfb.com/wiki/Commerce_Platform/Teams/3P_Ecosystems_(3PE)/3rd_Party_platforms/Woo_Commerce/How_To_Use_WooCommerce_Side_Logging/
+	 * @param array     $context optional error message attributes
 	 */
 	public static function log_exception_to_meta( Throwable $error, array $context = [] ) {
 		$extra_data                = WC_Facebookcommerce_Utils::get_context_data( $context, 'extra_data', [] );
