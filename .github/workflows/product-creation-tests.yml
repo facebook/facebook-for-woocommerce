@@ -1,0 +1,192 @@
+name: Product Creation E2E Tests
+
+on:
+  push:
+    branches: [ main, master, develop ]
+  pull_request:
+    branches: [ main, master, develop ]
+
+jobs:
+  e2e-tests:
+    runs-on: ubuntu-latest
+    
+    services:
+      mysql:
+        image: mysql:5.7
+        env:
+          MYSQL_ROOT_PASSWORD: wordpress
+          MYSQL_DATABASE: wordpress
+          MYSQL_USER: wordpress
+          MYSQL_PASSWORD: wordpress
+        ports:
+          - 3306:3306
+        options: --health-cmd="mysqladmin ping" --health-interval=10s --health-timeout=5s --health-retries=3
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.1'
+          extensions: mysqli, zip, gd, curl, dom, imagick, fileinfo, mbstring
+
+      - name: Create WordPress test environment
+        run: |
+          # Create WordPress directory
+          mkdir -p /tmp/wordpress
+          cd /tmp/wordpress
+          
+          # Download WordPress
+          curl -O https://wordpress.org/latest.tar.gz
+          tar -xzf latest.tar.gz --strip-components=1
+          
+          # Create wp-config.php
+          cp wp-config-sample.php wp-config.php
+          sed -i "s/database_name_here/wordpress/" wp-config.php
+          sed -i "s/username_here/wordpress/" wp-config.php
+          sed -i "s/password_here/wordpress/" wp-config.php
+          sed -i "s/localhost/127.0.0.1/" wp-config.php
+          
+          # Add debug and security settings
+          cat >> wp-config.php << 'EOF'
+          
+          // Debug settings
+          define('WP_DEBUG', true);
+          define('WP_DEBUG_LOG', true);
+          define('WP_DEBUG_DISPLAY', false);
+          
+          // Security keys (for testing only)
+          define('AUTH_KEY',         'testing-key-1');
+          define('SECURE_AUTH_KEY',  'testing-key-2');
+          define('LOGGED_IN_KEY',    'testing-key-3');
+          define('NONCE_KEY',        'testing-key-4');
+          define('AUTH_SALT',        'testing-salt-1');
+          define('SECURE_AUTH_SALT', 'testing-salt-2');
+          define('LOGGED_IN_SALT',   'testing-salt-3');
+          define('NONCE_SALT',       'testing-salt-4');
+          
+          EOF
+
+      - name: Install WP-CLI
+        run: |
+          curl -O https://raw.githubusercontent.com/wp-cli/wp-cli/v2.8.1/utils/wp-cli.phar
+          chmod +x wp-cli.phar
+          sudo mv wp-cli.phar /usr/local/bin/wp
+
+      - name: Start PHP server
+        run: |
+          cd /tmp/wordpress
+          php -S localhost:8080 -t . &
+          echo $! > /tmp/php-server.pid
+          sleep 5
+
+      - name: Install WordPress
+        run: |
+          cd /tmp/wordpress
+          wp core install \
+            --url=http://localhost:8080 \
+            --title="E2E Test Site" \
+            --admin_user=admin \
+            --admin_password=admin \
+            --admin_email=test@example.com \
+            --allow-root
+
+      - name: Install WooCommerce
+        run: |
+          cd /tmp/wordpress
+          wp plugin install woocommerce --activate --allow-root
+          
+          # Basic WooCommerce setup
+          wp option update woocommerce_store_address "123 Test Street" --allow-root
+          wp option update woocommerce_store_city "Test City" --allow-root
+          wp option update woocommerce_default_country "US:CA" --allow-root
+          wp option update woocommerce_store_postcode "12345" --allow-root
+          wp option update woocommerce_currency "USD" --allow-root
+
+      - name: Install Facebook for WooCommerce plugin
+        run: |
+          cd /tmp/wordpress
+          # Copy plugin files
+          cp -r ${{ github.workspace }} wp-content/plugins/facebook-for-woocommerce/
+          
+          # Install Composer dependencies for the plugin
+          cd wp-content/plugins/facebook-for-woocommerce
+          if [ -f composer.json ]; then
+            composer install --no-dev --optimize-autoloader
+          fi
+          
+          # Activate the plugin
+          cd /tmp/wordpress
+          wp plugin activate facebook-for-woocommerce --allow-root
+
+      - name: Verify WordPress setup
+        run: |
+          cd /tmp/wordpress
+          echo "=== WordPress Info ==="
+          wp core version --allow-root
+          echo "=== Active Plugins ==="
+          wp plugin list --status=active --allow-root
+          echo "=== Site URL ==="
+          wp option get siteurl --allow-root
+          
+          # Test if site is accessible
+          curl -f http://localhost:8080 || exit 1
+
+      - name: Install Playwright
+        run: |
+          npm install
+          npx playwright install chromium
+
+      - name: Run E2E tests
+        env:
+          WORDPRESS_URL: http://localhost:8080
+          WP_USERNAME: admin
+          WP_PASSWORD: admin
+        run: npm run test:e2e
+
+      - name: Check for PHP errors
+        if: always()
+        run: |
+          cd /tmp/wordpress
+          if [ -f wp-content/debug.log ]; then
+            echo "=== PHP Debug Log ==="
+            cat wp-content/debug.log
+            if grep -i "fatal\|error\|warning" wp-content/debug.log; then
+              echo "❌ PHP errors detected"
+              exit 1
+            fi
+          else
+            echo "✅ No debug log found - no PHP errors"
+          fi
+
+      - name: Upload test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 7
+
+      - name: Upload PHP logs
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: php-debug-logs
+          path: /tmp/wordpress/wp-content/debug.log
+          retention-days: 7
+
+      - name: Upload test videos/screenshots
+        uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: test-failures
+          path: test-results/
+          retention-days: 7
