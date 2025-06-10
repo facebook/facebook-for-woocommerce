@@ -13,6 +13,7 @@ defined( 'ABSPATH' ) || exit;
 
 use Automattic\WooCommerce\ActionSchedulerJobFramework\Proxies\ActionScheduler;
 use WC_Shipping_Zones;
+use WooCommerce\Facebook\Framework\Logger;
 
 /**
  * Ratings and Reviews Feed class
@@ -294,7 +295,7 @@ class ShippingProfilesFeed extends AbstractFeed {
 	}
 
 	private static function log_map_shipping_method_issue_to_meta( array $zone, array $shipping_method, string $message, string $flow_step ): void {
-		\WC_Facebookcommerce_Utils::log_to_meta(
+		Logger::log(
 			$message,
 			array(
 				'flow_name'  => FeedUploadUtils::SHIPPING_PROFILES_SYNC_LOGGING_FLOW_NAME,
@@ -304,6 +305,11 @@ class ShippingProfilesFeed extends AbstractFeed {
 					'zone_name' => $zone['zone_name'],
 					'method_id' => $shipping_method['instance_id'],
 				],
+			),
+			array(
+				'should_send_log_to_meta'        => true,
+				'should_save_log_in_woocommerce' => true,
+				'woocommerce_log_level'          => \WC_Log_Levels::DEBUG,
 			)
 		);
 	}

@@ -18,6 +18,7 @@ use WC_Facebookcommerce_Utils;
 use WooCommerce\Facebook\Framework\Helper;
 use WooCommerce\Facebook\Utilities\Heartbeat;
 use WooCommerce\Facebook\Framework\Plugin\Exception as PluginException;
+use WooCommerce\Facebook\Framework\Logger;
 
 /**
  * The main product feed handler.
@@ -179,11 +180,16 @@ class Feed {
 			} elseif ( ! $store_allows_feed ) {
 				$message = 'Store does not allow feed.';
 			}
-			WC_Facebookcommerce_Utils::log_to_meta(
+			Logger::log(
 				sprintf( 'Product feed scheduling failed: %s', $message ),
 				array(
 					'flow_name' => 'product_feed',
 					'flow_step' => 'schedule_feed_generation',
+				),
+				array(
+					'should_send_log_to_meta'        => true,
+					'should_save_log_in_woocommerce' => true,
+					'woocommerce_log_level'          => \WC_Log_Levels::DEBUG,
 				)
 			);
 			return;

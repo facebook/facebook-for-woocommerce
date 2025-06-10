@@ -11,6 +11,7 @@
 namespace WooCommerce\Facebook\Feed;
 
 use WC_Coupon;
+use WooCommerce\Facebook\Framework\Logger;
 
 /**
  * Class containing util functions related to various feed uploads.
@@ -88,7 +89,7 @@ class FeedUploadUtils {
 						'product.productIdentifiers.skus' => "['" . implode( "','", $product_skus ) . "']",
 					);
 				} catch ( \Exception $e ) {
-					\WC_Facebookcommerce_Utils::log_to_meta(
+					Logger::log(
 						'Exception while trying to map product review data for feed',
 						array(
 							'flow_name'  => self::RATINGS_AND_REVIEWS_SYNC_LOGGING_FLOW_NAME,
@@ -96,6 +97,11 @@ class FeedUploadUtils {
 							'extra_data' => [
 								'exception_message' => $e->getMessage(),
 							],
+						),
+						array(
+							'should_send_log_to_meta' => true,
+							'should_save_log_in_woocommerce' => true,
+							'woocommerce_log_level'   => \WC_Log_Levels::ERROR,
 						)
 					);
 					continue;
@@ -152,13 +158,18 @@ class FeedUploadUtils {
 						$value_type       = self::VALUE_TYPE_FIXED_AMOUNT;
 						$fixed_amount_off = $coupon->get_amount(); // TODO we may want to pass in optional currency code for multinational support
 					} else {
-						\WC_Facebookcommerce_Utils::log_to_meta(
+						Logger::log(
 							'Unknown discount type encountered during feed processing',
 							array(
 								'promotion_id' => $coupon_post->ID,
 								'extra_data'   => [ 'discount_type' => $woo_discount_type ],
 								'flow_name'    => self::PROMO_SYNC_LOGGING_FLOW_NAME,
 								'flow_step'    => 'map_discount_type',
+							),
+							array(
+								'should_send_log_to_meta' => true,
+								'should_save_log_in_woocommerce' => true,
+								'woocommerce_log_level'   => \WC_Log_Levels::WARNING,
 							)
 						);
 						continue;
@@ -250,7 +261,7 @@ class FeedUploadUtils {
 
 					$coupons_data[] = $data;
 				} catch ( \Exception $e ) {
-					\WC_Facebookcommerce_Utils::log_to_meta(
+					Logger::log(
 						'Exception while trying to get coupon data for feed',
 						array(
 							'promotion_id' => $coupon_post->ID,
@@ -260,6 +271,11 @@ class FeedUploadUtils {
 							],
 							'flow_name'    => self::PROMO_SYNC_LOGGING_FLOW_NAME,
 							'flow_step'    => 'map_coupon_data',
+						),
+						array(
+							'should_send_log_to_meta' => true,
+							'should_save_log_in_woocommerce' => true,
+							'woocommerce_log_level'   => \WC_Log_Levels::ERROR,
 						)
 					);
 					continue;
@@ -354,11 +370,13 @@ class FeedUploadUtils {
 			return '';
 		}
 
-		// Return the JSON representation. It should look something like:
-		// {"and":[
-		// {"or":[{"retailer_id":{"eq":"retailer_id_1"}},{"retailer_id":{"eq":"retailer_id_2"}}]},
-		// {"and":[{"retailer_id":{"neq":"retailer_id_3"}},{"retailer_id":{"neq":"retailer_id_4"}}]}
-		// ]}
+		/**
+		 * Return the JSON representation. It should look something like:
+		 * {"and":[
+		 * {"or":[{"retailer_id":{"eq":"retailer_id_1"}},{"retailer_id":{"eq":"retailer_id_2"}}]},
+		 * {"and":[{"retailer_id":{"neq":"retailer_id_3"}},{"retailer_id":{"neq":"retailer_id_4"}}]}
+		 * ]}
+		 */
 		return wp_json_encode( $final_filter );
 	}
 

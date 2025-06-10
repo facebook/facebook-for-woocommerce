@@ -13,6 +13,7 @@ namespace WooCommerce\Facebook\API\Plugin\Settings;
 use WooCommerce\Facebook\API\Plugin\AbstractRESTEndpoint;
 use WooCommerce\Facebook\API\Plugin\Settings\Update\Request as UpdateRequest;
 use WooCommerce\Facebook\API\Plugin\Settings\Uninstall\Request as UninstallRequest;
+use WooCommerce\Facebook\Framework\Logger;
 
 defined( 'ABSPATH' ) || exit;
 
@@ -283,12 +284,17 @@ class Handler extends AbstractRESTEndpoint {
 				if ( facebook_for_woocommerce()->get_integration()->allow_full_batch_api_sync() ) {
 					facebook_for_woocommerce()->get_products_sync_handler()->create_or_update_all_products();
 				} else {
-					\WC_Facebookcommerce_Utils::log_to_meta(
+					Logger::log(
 						'Initial full product sync disabled by filter hook `facebook_for_woocommerce_allow_full_batch_api_sync`',
 						[
 							'flow_name' => 'product_sync',
 							'flow_step' => 'initial_sync',
-						]
+						],
+						array(
+							'should_send_log_to_meta' => true,
+							'should_save_log_in_woocommerce' => true,
+							'woocommerce_log_level'   => \WC_Log_Levels::DEBUG,
+						)
 					);
 				}
 			}
