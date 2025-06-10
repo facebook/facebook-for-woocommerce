@@ -12,6 +12,8 @@ namespace WooCommerce\Facebook;
 
 defined( 'ABSPATH' ) || exit;
 
+use WooCommerce\Facebook\Framework\Logger;
+
 /**
  * The checkout permalink.
  *
@@ -109,7 +111,7 @@ class Checkout {
 								$quantity
 							);
 
-							\WC_Facebookcommerce_Utils::log_to_meta(
+							Logger::log(
 								$error_message,
 								array(
 									'flow_name'  => 'checkout',
@@ -119,6 +121,11 @@ class Checkout {
 										'product_id'     => $product_id,
 										'quantity'       => $quantity,
 									],
+								),
+								array(
+									'should_send_log_to_meta'        => true,
+									'should_save_log_in_woocommerce' => true,
+									'woocommerce_log_level'          => \WC_Log_Levels::ERROR,
 								)
 							);
 						}
@@ -129,7 +136,7 @@ class Checkout {
 							$quantity
 						);
 
-						\WC_Facebookcommerce_Utils::log_to_meta(
+						Logger::log(
 							$error_message,
 							array(
 								'flow_name'  => 'checkout',
@@ -139,6 +146,11 @@ class Checkout {
 									'product_id'     => $product_id,
 									'quantity'       => $quantity,
 								],
+							),
+							array(
+								'should_send_log_to_meta' => true,
+								'should_save_log_in_woocommerce' => true,
+								'woocommerce_log_level'   => \WC_Log_Levels::ERROR,
 							)
 						);
 					}
@@ -156,7 +168,7 @@ class Checkout {
 						$coupon_code_sanitized
 					);
 
-					\WC_Facebookcommerce_Utils::log_to_meta(
+					Logger::log(
 						$error_message,
 						array(
 							'flow_name'  => 'checkout',
@@ -165,6 +177,11 @@ class Checkout {
 								'coupon_param' => $coupon_code,
 								'coupon_code'  => $coupon_code_sanitized,
 							],
+						),
+						array(
+							'should_send_log_to_meta' => true,
+							'should_save_log_in_woocommerce' => true,
+							'woocommerce_log_level'   => \WC_Log_Levels::ERROR,
 						)
 					);
 				}

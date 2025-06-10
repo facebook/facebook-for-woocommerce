@@ -12,11 +12,10 @@ namespace WooCommerce\Facebook\Admin;
 
 use Automattic\WooCommerce\Admin\Features\Features as WooAdminFeatures;
 use WooCommerce\Facebook\Admin\Settings_Screens;
-use WooCommerce\Facebook\Admin\Settings_Screens\Shops;
 use WooCommerce\Facebook\Framework\Helper;
 use WooCommerce\Facebook\Framework\Plugin\Exception as PluginException;
-use WooCommerce\Facebook\Admin\Settings_Screens\Whatsapp_Utility;
 use WooCommerce\Facebook\RolloutSwitches;
+use WooCommerce\Facebook\Framework\Logger;
 
 defined( 'ABSPATH' ) || exit;
 
@@ -186,11 +185,16 @@ class Enhanced_Settings {
 		$current_tab = $this->get_current_tab();
 		$screen      = $this->get_screen( $current_tab );
 
-		\WC_Facebookcommerce_Utils::log_to_meta(
+		Logger::log(
 			'User visited the Facebook for WooCommerce settings' . $current_tab . 'tab',
 			array(
 				'flow_name' => 'settings',
 				'flow_step' => $current_tab . '_tab_rendered',
+			),
+			array(
+				'should_send_log_to_meta' => true,
+				'should_save_log_in_woocommerce' => true,
+				'woocommerce_log_level'   => \WC_Log_Levels::DEBUG,
 			)
 		);
 
