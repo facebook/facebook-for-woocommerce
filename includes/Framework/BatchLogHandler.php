@@ -48,10 +48,17 @@ class BatchLogHandler extends LogHandlerBase {
 				function ( $logs_chunk ) {
 					$logs_chunk_with_core_context = array_map(
 						function ( $log ) {
+							if ( empty( $log ) ) {
+								return [];
+							}
 							return self::set_core_log_context( $log );
 						},
 						$logs_chunk
 					);
+
+					if ( empty( $logs_chunk_with_core_context ) ) {
+						return [];
+					}
 
 					$context = [
 						'event'      => 'persist_meta_logs',
