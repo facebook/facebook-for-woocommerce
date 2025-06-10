@@ -14,7 +14,7 @@
   "devDependencies": {
     "@playwright/test": "^1.40.0",
     "@wordpress/env": "^9.10.0",
-    "@wordpress/scripts": "^14.0.0",
+    "@wordpress/scripts": "^12.6.1",
     "babel-loader": "^8.2.2",
     "clean-webpack-plugin": "^3.0.0",
     "css-loader": "^3.6.0",
