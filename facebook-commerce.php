@@ -1181,26 +1181,6 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 	}
 
 	/**
-	 * If the user has opt-in to remove products that are out of stock,
-	 * this function will delete the product from FB Page as well.
-	 *
-	 * @param int        $wp_id
-	 * @param WC_Product $woo_product
-	 *
-	 * @return bool
-	 */
-	public function delete_on_out_of_stock( int $wp_id, WC_Product $woo_product ): bool {
-		if ( Products::product_should_be_deleted( $woo_product ) ) {
-			$product = wc_get_product( $wp_id );
-			$this->delete_fb_product( $product );
-
-			return true;
-		}
-
-		return false;
-	}
-
-	/**
 	 * Syncs product to Facebook when saving a variable product.
 	 *
 	 * @param int                      $wp_id product post ID
@@ -1209,10 +1189,6 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 	public function on_variable_product_publish( $wp_id, $woo_product = null ) {
 		if ( ! $woo_product instanceof \WC_Facebook_Product ) {
 			$woo_product = new \WC_Facebook_Product( $wp_id );
-		}
-
-		if ( $this->delete_on_out_of_stock( $wp_id, $woo_product->woo_product ) ) {
-			return;
 		}
 
 		if ( ! $this->product_should_be_synced( $woo_product->woo_product ) ) {
@@ -1235,7 +1211,7 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 		// scheduled update for each variation that should be synced
 		foreach ( $woo_product->get_children() as $variation_id ) {
 			$variation = wc_get_product( $variation_id );
-			if ( $variation instanceof WC_Product && $this->product_should_be_synced( $variation ) && ! $this->delete_on_out_of_stock( $variation_id, $variation ) ) {
+			if ( $variation instanceof WC_Product && $this->product_should_be_synced( $variation ) ) {
 				$variation_ids[] = $variation_id;
 			}
 		}
@@ -1255,10 +1231,6 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 	public function on_simple_product_publish( $wp_id, $woo_product = null, &$parent_product = null ) {
 		if ( ! $woo_product instanceof \WC_Facebook_Product ) {
 			$woo_product = new \WC_Facebook_Product( $wp_id, $parent_product );
-		}
-
-		if ( $this->delete_on_out_of_stock( $wp_id, $woo_product->woo_product ) ) {
-			return;
 		}
 
 		if ( ! $this->product_should_be_synced( $woo_product->woo_product ) ) {
