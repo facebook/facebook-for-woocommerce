@@ -15,6 +15,7 @@ use WooCommerce\Facebook\Framework\Helper;
 use WooCommerce\Facebook\Framework\Plugin\Exception as PluginException;
 use WooCommerce\Facebook\Products;
 use WooCommerce\Facebook\Products\Feed;
+use WooCommerce\Facebook\Framework\Logger;
 
 defined( 'ABSPATH' ) || exit;
 
@@ -630,8 +631,16 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 				// get up to two additional pages of results
 			} while ( $response = $this->facebook_for_woocommerce->get_api()->next( $response, 2 ) );
 		} catch ( ApiException $e ) {
-			$message = sprintf( 'There was an error trying to find the IDs for Product Items in the Product Group %s: %s', $product_group_id, $e->getMessage() );
-			WC_Facebookcommerce_Utils::log_with_debug_mode_enabled( $message );
+			$message = sprintf( 'Meta APIs thrown APIException while fetching the Product Items in the Product Group %s: %s', $product_group_id, $e->getMessage() );
+			Logger::log(
+				$message,
+				[],
+				array(
+					'should_send_log_to_meta'        => false,
+					'should_save_log_in_woocommerce' => true,
+					'woocommerce_log_level'          => \WC_Log_Levels::ERROR,
+				)
+			);
 		}
 
 		return $product_item_ids;
