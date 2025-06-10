@@ -2096,7 +2096,7 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 		$this->delete_post_meta_loop( $products );
 
 		Logger::log(
-			'Deleted FB Metadata for product ' . $wp_id ,
+			'Deleted FB Metadata for product ' . $wp_id,
 			[],
 			array(
 				'should_send_log_to_meta'        => false,
