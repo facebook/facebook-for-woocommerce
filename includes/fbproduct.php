@@ -1,5 +1,4 @@
 <?php
-// phpcs:ignoreFile
 /**
  * Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
  *
@@ -989,10 +988,10 @@ class WC_Facebook_Product {
 
 	public function get_fb_condition() {
 		// Check for taxonomy attributes for condition
-		$condition_values = $this->get_attribute_by_type('condition');
-		if ($condition_values) {
-			$condition = $this->process_attribute_values($condition_values);
-			return !empty($condition) ? $condition : self::CONDITION_NEW;
+		$condition_values = $this->get_attribute_by_type( 'condition' );
+		if ( $condition_values ) {
+			$condition = $this->process_attribute_values( $condition_values );
+			return ! empty( $condition ) ? $condition : self::CONDITION_NEW;
 		}
 
 		// Get condition directly from post meta
@@ -1011,7 +1010,7 @@ class WC_Facebook_Product {
 		}
 
 		// Extract first value from array or object
-		$fb_condition = $this->get_first_value_from_complex_type($fb_condition);
+		$fb_condition = $this->get_first_value_from_complex_type( $fb_condition );
 
 		return WC_Facebookcommerce_Utils::clean_string( $fb_condition ) ?: self::CONDITION_NEW;
 	}
@@ -1019,23 +1018,23 @@ class WC_Facebook_Product {
 
 	public function get_fb_age_group() {
 		// If this is a variation, get its specific age group value
-		if ($this->is_type('variation')) {
+		if ( $this->is_type( 'variation' ) ) {
 			$attributes = $this->woo_product->get_attributes();
 
-			foreach ($attributes as $key => $value) {
-				$attr_key = strtolower($key);
-				if ($attr_key === 'age_group') {
+			foreach ( $attributes as $key => $value ) {
+				$attr_key = strtolower( $key );
+				if ( $attr_key === 'age_group' ) {
 					// Extract first value from array or object for attribute
-					$value = $this->get_first_value_from_complex_type($value);
-					return WC_Facebookcommerce_Utils::clean_string($value);
+					$value = $this->get_first_value_from_complex_type( $value );
+					return WC_Facebookcommerce_Utils::clean_string( $value );
 				}
 			}
 		}
 
 		// Check for taxonomy attributes
-		$age_group_values = $this->get_attribute_by_type('age_group');
-		if ($age_group_values) {
-			return $this->process_attribute_values($age_group_values);
+		$age_group_values = $this->get_attribute_by_type( 'age_group' );
+		if ( $age_group_values ) {
+			return $this->process_attribute_values( $age_group_values );
 		}
 
 		// Get age group directly from post meta
@@ -1054,30 +1053,30 @@ class WC_Facebook_Product {
 		}
 
 		// Extract first value from array or object
-		$fb_age_group = $this->get_first_value_from_complex_type($fb_age_group);
+		$fb_age_group = $this->get_first_value_from_complex_type( $fb_age_group );
 
 		return WC_Facebookcommerce_Utils::clean_string( $fb_age_group );
 	}
 
 	public function get_fb_gender() {
 		// If this is a variation, get its specific gender value
-		if ($this->is_type('variation')) {
+		if ( $this->is_type( 'variation' ) ) {
 			$attributes = $this->woo_product->get_attributes();
 
-			foreach ($attributes as $key => $value) {
-				$attr_key = strtolower($key);
-				if ($attr_key === 'gender') {
+			foreach ( $attributes as $key => $value ) {
+				$attr_key = strtolower( $key );
+				if ( $attr_key === 'gender' ) {
 					// Extract first value from array or object for attribute
-					$value = $this->get_first_value_from_complex_type($value);
-					return WC_Facebookcommerce_Utils::clean_string($value);
+					$value = $this->get_first_value_from_complex_type( $value );
+					return WC_Facebookcommerce_Utils::clean_string( $value );
 				}
 			}
 		}
 
 		// Check for taxonomy attributes
-		$gender_values = $this->get_attribute_by_type('gender');
-		if ($gender_values) {
-			return $this->process_attribute_values($gender_values);
+		$gender_values = $this->get_attribute_by_type( 'gender' );
+		if ( $gender_values ) {
+			return $this->process_attribute_values( $gender_values );
 		}
 
 		// Get gender directly from post meta
@@ -1096,20 +1095,20 @@ class WC_Facebook_Product {
 		}
 
 		// Extract first value from array or object
-		$fb_gender = $this->get_first_value_from_complex_type($fb_gender);
+		$fb_gender = $this->get_first_value_from_complex_type( $fb_gender );
 
 		return WC_Facebookcommerce_Utils::clean_string( $fb_gender );
 	}
 
-	private function convert_pipe_separated_values($value, $is_api_call = false) {
-		if (!$is_api_call) {
+	private function convert_pipe_separated_values( $value, $is_api_call = false ) {
+		if ( ! $is_api_call ) {
 			// Return as is for UI display
 			return $value;
 		}
 
 		// Convert pipe-separated string to array for API
-		if (is_string($value) && strpos($value, ' | ') !== false) {
-			return array_map('trim', explode(' | ', $value));
+		if ( is_string( $value ) && strpos( $value, ' | ' ) !== false ) {
+			return array_map( 'trim', explode( ' | ', $value ) );
 		}
 
 		return $value;
@@ -1121,97 +1120,97 @@ class WC_Facebook_Product {
 	 * @param string $attribute_name The attribute name to check (like 'pa_material')
 	 * @return array|null Array of term names if found, null if not
 	 */
-	private function get_taxonomy_attribute_values($attribute_name) {
-		if (!$this->woo_product) {
+	private function get_taxonomy_attribute_values( $attribute_name ) {
+		if ( ! $this->woo_product ) {
 			return null;
 		}
 
-		$attributes = $this->woo_product->get_attributes();
+		$attributes      = $this->woo_product->get_attributes();
 		$attribute_found = false;
-		$attribute_obj = null;
-		$requested_type = '';
+		$attribute_obj   = null;
+		$requested_type  = '';
 
 		// Determine which type of attribute we're looking for based on the input name
-		if (strpos($attribute_name, 'material') !== false) {
+		if ( strpos( $attribute_name, 'material' ) !== false ) {
 			$requested_type = 'material';
-		} else if (strpos($attribute_name, 'color') !== false || strpos($attribute_name, 'colour') !== false) {
+		} elseif ( strpos( $attribute_name, 'color' ) !== false || strpos( $attribute_name, 'colour' ) !== false ) {
 			$requested_type = 'color';
-		} else if (strpos($attribute_name, 'size') !== false) {
+		} elseif ( strpos( $attribute_name, 'size' ) !== false ) {
 			$requested_type = 'size';
-		} else if (strpos($attribute_name, 'pattern') !== false) {
+		} elseif ( strpos( $attribute_name, 'pattern' ) !== false ) {
 			$requested_type = 'pattern';
 		}
 
 		// First try to get by exact slug
-		if (isset($attributes[$attribute_name])) {
+		if ( isset( $attributes[ $attribute_name ] ) ) {
 			$attribute_found = true;
-			$attribute_obj = $attributes[$attribute_name];
+			$attribute_obj   = $attributes[ $attribute_name ];
 		} else {
 			// For numeric/non-descriptive slugs, we need to try to match by label
-			$requested_attr_name = str_replace('pa_', '', $attribute_name);
+			$requested_attr_name = str_replace( 'pa_', '', $attribute_name );
 
 			// Try to match attributes by attribute label and requested type
-			foreach ($attributes as $attr_key => $attr_obj) {
-				$attr_label = wc_attribute_label($attr_key);
-				$normalized_label = strtolower($attr_label);
+			foreach ( $attributes as $attr_key => $attr_obj ) {
+				$attr_label       = wc_attribute_label( $attr_key );
+				$normalized_label = strtolower( $attr_label );
 
 				// If we determined what type we're looking for, check if the label contains that type
-				if (!empty($requested_type) && strpos($normalized_label, $requested_type) !== false) {
+				if ( ! empty( $requested_type ) && strpos( $normalized_label, $requested_type ) !== false ) {
 					$attribute_found = true;
-					$attribute_obj = $attr_obj;
+					$attribute_obj   = $attr_obj;
 					break;
 				}
 
 				// As a fallback, check if label contains the requested attribute name
-				$normalized_requested = strtolower($requested_attr_name);
-				if (strpos($normalized_label, $normalized_requested) !== false) {
+				$normalized_requested = strtolower( $requested_attr_name );
+				if ( strpos( $normalized_label, $normalized_requested ) !== false ) {
 					$attribute_found = true;
-					$attribute_obj = $attr_obj;
+					$attribute_obj   = $attr_obj;
 					break;
 				}
 			}
 		}
 
 		// Handle variation products specially to get only their specific term
-		if ($this->is_type('variation')) {
+		if ( $this->is_type( 'variation' ) ) {
 			// For variations, get the attribute value directly from the variation
-			$parent_product = wc_get_product($this->get_parent_id());
-			if (!$parent_product) {
+			$parent_product = wc_get_product( $this->get_parent_id() );
+			if ( ! $parent_product ) {
 				return null;
 			}
 
 			// Try all possible attribute keys if we're looking for a specific type
-			if (!empty($requested_type)) {
-				foreach ($attributes as $attr_key => $value) {
-					$attr_label = wc_attribute_label($attr_key);
-					$normalized_label = strtolower($attr_label);
+			if ( ! empty( $requested_type ) ) {
+				foreach ( $attributes as $attr_key => $value ) {
+					$attr_label       = wc_attribute_label( $attr_key );
+					$normalized_label = strtolower( $attr_label );
 
-					if (strpos($normalized_label, $requested_type) !== false) {
-						$attribute_value = $this->woo_product->get_attribute($attr_key);
-						if (!empty($attribute_value)) {
-							return array($attribute_value);
+					if ( strpos( $normalized_label, $requested_type ) !== false ) {
+						$attribute_value = $this->woo_product->get_attribute( $attr_key );
+						if ( ! empty( $attribute_value ) ) {
+							return array( $attribute_value );
 						}
 					}
 				}
 			}
 
 			// Try with the original attribute name
-			$attribute_value = $this->woo_product->get_attribute($attribute_name);
+			$attribute_value = $this->woo_product->get_attribute( $attribute_name );
 
 			// If attribute value exists, return it
-			if (!empty($attribute_value)) {
-				return array($attribute_value);
+			if ( ! empty( $attribute_value ) ) {
+				return array( $attribute_value );
 			}
 
 			// If no specific value, try parent product
-			return $this->get_parent_taxonomy_attribute_values($attribute_name);
+			return $this->get_parent_taxonomy_attribute_values( $attribute_name );
 		}
 		// For regular products
-		else if ($attribute_found && $attribute_obj) {
-			if ($attribute_obj->is_taxonomy()) {
+		elseif ( $attribute_found && $attribute_obj ) {
+			if ( $attribute_obj->is_taxonomy() ) {
 				$terms = $attribute_obj->get_terms();
-				if ($terms && !is_wp_error($terms)) {
-					return wp_list_pluck($terms, 'name');
+				if ( $terms && ! is_wp_error( $terms ) ) {
+					return wp_list_pluck( $terms, 'name' );
 				}
 			}
 		}
@@ -1225,71 +1224,71 @@ class WC_Facebook_Product {
 	 * @param string $attribute_name The attribute name to check
 	 * @return array|null Array of term names if found, null if not
 	 */
-	private function get_parent_taxonomy_attribute_values($attribute_name) {
-		if (!$this->is_type('variation')) {
+	private function get_parent_taxonomy_attribute_values( $attribute_name ) {
+		if ( ! $this->is_type( 'variation' ) ) {
 			return null;
 		}
 
 		$parent_id = $this->get_parent_id();
-		if (!$parent_id) {
+		if ( ! $parent_id ) {
 			return null;
 		}
 
-		$parent_product = wc_get_product($parent_id);
-		if (!$parent_product) {
+		$parent_product = wc_get_product( $parent_id );
+		if ( ! $parent_product ) {
 			return null;
 		}
 
 		$parent_attributes = $parent_product->get_attributes();
-		$attribute_found = false;
-		$attribute_obj = null;
-		$requested_type = '';
+		$attribute_found   = false;
+		$attribute_obj     = null;
+		$requested_type    = '';
 
 		// Determine which type of attribute we're looking for based on the input name
-		if (strpos($attribute_name, 'material') !== false) {
+		if ( strpos( $attribute_name, 'material' ) !== false ) {
 			$requested_type = 'material';
-		} else if (strpos($attribute_name, 'color') !== false || strpos($attribute_name, 'colour') !== false) {
+		} elseif ( strpos( $attribute_name, 'color' ) !== false || strpos( $attribute_name, 'colour' ) !== false ) {
 			$requested_type = 'color';
-		} else if (strpos($attribute_name, 'size') !== false) {
+		} elseif ( strpos( $attribute_name, 'size' ) !== false ) {
 			$requested_type = 'size';
-		} else if (strpos($attribute_name, 'pattern') !== false) {
+		} elseif ( strpos( $attribute_name, 'pattern' ) !== false ) {
 			$requested_type = 'pattern';
 		}
 
 		// First try to get by exact slug
-		if (isset($parent_attributes[$attribute_name])) {
+		if ( isset( $parent_attributes[ $attribute_name ] ) ) {
 			$attribute_found = true;
-			$attribute_obj = $parent_attributes[$attribute_name];
+			$attribute_obj   = $parent_attributes[ $attribute_name ];
 		} else {
 			// For numeric/non-descriptive slugs, we need to try to match by label
-			$requested_attr_name = str_replace('pa_', '', $attribute_name);
+			$requested_attr_name = str_replace( 'pa_', '', $attribute_name );
 
 			// Try to match attributes by attribute label and requested type
-			foreach ($parent_attributes as $attr_key => $attr_obj) {
-				$attr_label = wc_attribute_label($attr_key);
-				$normalized_label = strtolower($attr_label);
+			foreach ( $parent_attributes as $attr_key => $attr_obj ) {
+				$attr_label       = wc_attribute_label( $attr_key );
+				$normalized_label = strtolower( $attr_label );
 
 				// If we determined what type we're looking for, check if the label contains that type
-				if (!empty($requested_type) && strpos($normalized_label, $requested_type) !== false) {
+				if ( ! empty( $requested_type ) && strpos( $normalized_label, $requested_type ) !== false ) {
 					$attribute_found = true;
-					$attribute_obj = $attr_obj;
+					$attribute_obj   = $attr_obj;
 					break;
 				}
 
 				// As a fallback, check if label contains the requested attribute name
-				$normalized_requested = strtolower($requested_attr_name);
-				if (strpos($normalized_label, $normalized_requested) !== false) {
+				$normalized_requested = strtolower( $requested_attr_name );
+				if ( strpos( $normalized_label, $normalized_requested ) !== false ) {
 					$attribute_found = true;
-					$attribute_obj = $attr_obj;
+					$attribute_obj   = $attr_obj;
 					break;
 				}
 			}
 		}
 
-		if ($attribute_found && $attribute_obj && is_object($attribute_obj) && method_exists($attribute_obj, 'is_taxonomy') && $attribute_obj->is_taxonomy()) {
+		if ( $attribute_found && $attribute_obj && is_object( $attribute_obj ) && method_exists( $attribute_obj, 'is_taxonomy' ) && $attribute_obj->is_taxonomy() ) {
 			$terms = $attribute_obj->get_terms();
-			if ($terms && !is_wp_error($terms)) {
-				return wp_list_pluck($terms, 'name');
+			if ( $terms && ! is_wp_error( $terms ) ) {
+				return wp_list_pluck( $terms, 'name' );
 			}
 		}
 
@@ -1302,15 +1301,15 @@ class WC_Facebook_Product {
 	 * @param string $attribute_type The attribute type to search for (material, color, size, etc.)
 	 * @return array|null Array of attribute values if found, null if not
 	 */
-	private function get_attribute_by_type($attribute_type) {
-		if (!$this->woo_product) {
+	private function get_attribute_by_type( $attribute_type ) {
+		if ( ! $this->woo_product ) {
 			return null;
 		}
 
 		// First try the standard taxonomy name
 		$standard_taxonomy = 'pa_' . $attribute_type;
-		$attribute_values = $this->get_taxonomy_attribute_values($standard_taxonomy);
-		if ($attribute_values) {
+		$attribute_values  = $this->get_taxonomy_attribute_values( $standard_taxonomy );
+		if ( $attribute_values ) {
 			return $attribute_values;
 		}
 
@@ -1318,56 +1317,56 @@ class WC_Facebook_Product {
 		$attributes = $this->woo_product->get_attributes();
 
 		// Loop through all attributes to find one that matches our type
-		foreach ($attributes as $attr_key => $attr_obj) {
-			$attr_label = wc_attribute_label($attr_key);
-			$normalized_label = strtolower($attr_label);
+		foreach ( $attributes as $attr_key => $attr_obj ) {
+			$attr_label       = wc_attribute_label( $attr_key );
+			$normalized_label = strtolower( $attr_label );
 
 			// Check if the attribute label contains our target type
-			if (stripos($normalized_label, $attribute_type) !== false) {
+			if ( stripos( $normalized_label, $attribute_type ) !== false ) {
 				// Found an attribute with the requested type in the label
-				if (is_object($attr_obj) && method_exists($attr_obj, 'is_taxonomy') && $attr_obj->is_taxonomy()) {
+				if ( is_object( $attr_obj ) && method_exists( $attr_obj, 'is_taxonomy' ) && $attr_obj->is_taxonomy() ) {
 					$terms = $attr_obj->get_terms();
-					if ($terms && !is_wp_error($terms)) {
-						return wp_list_pluck($terms, 'name');
+					if ( $terms && ! is_wp_error( $terms ) ) {
+						return wp_list_pluck( $terms, 'name' );
 					}
-				} else if (is_object($attr_obj) && method_exists($attr_obj, 'get_options')) {
+				} elseif ( is_object( $attr_obj ) && method_exists( $attr_obj, 'get_options' ) ) {
 					return $attr_obj->get_options();
 				}
 			}
 		}
 
 		// For variations, also check direct attribute values
-		if ($this->is_type('variation')) {
-			foreach ($attributes as $key => $value) {
-				$attr_label = wc_attribute_label($key);
-				$normalized_label = strtolower($attr_label);
+		if ( $this->is_type( 'variation' ) ) {
+			foreach ( $attributes as $key => $value ) {
+				$attr_label       = wc_attribute_label( $key );
+				$normalized_label = strtolower( $attr_label );
 
-				if (stripos($normalized_label, $attribute_type) !== false) {
-					$attr_value = $this->woo_product->get_attribute($key);
-					if (!empty($attr_value)) {
-						return array($attr_value);
+				if ( stripos( $normalized_label, $attribute_type ) !== false ) {
+					$attr_value = $this->woo_product->get_attribute( $key );
+					if ( ! empty( $attr_value ) ) {
+						return array( $attr_value );
 					}
 				}
 			}
 
 			// If still not found, check parent product
 			$parent_id = $this->get_parent_id();
-			if ($parent_id) {
-				$parent_product = wc_get_product($parent_id);
-				if ($parent_product) {
+			if ( $parent_id ) {
+				$parent_product = wc_get_product( $parent_id );
+				if ( $parent_product ) {
 					$parent_attributes = $parent_product->get_attributes();
 
-					foreach ($parent_attributes as $attr_key => $attr_obj) {
-						$attr_label = wc_attribute_label($attr_key);
-						$normalized_label = strtolower($attr_label);
+					foreach ( $parent_attributes as $attr_key => $attr_obj ) {
+						$attr_label       = wc_attribute_label( $attr_key );
+						$normalized_label = strtolower( $attr_label );
 
-						if (stripos($normalized_label, $attribute_type) !== false) {
-							if (is_object($attr_obj) && method_exists($attr_obj, 'is_taxonomy') && $attr_obj->is_taxonomy()) {
+						if ( stripos( $normalized_label, $attribute_type ) !== false ) {
+							if ( is_object( $attr_obj ) && method_exists( $attr_obj, 'is_taxonomy' ) && $attr_obj->is_taxonomy() ) {
 								$terms = $attr_obj->get_terms();
-								if ($terms && !is_wp_error($terms)) {
-									return wp_list_pluck($terms, 'name');
+								if ( $terms && ! is_wp_error( $terms ) ) {
+									return wp_list_pluck( $terms, 'name' );
 								}
-							} else if (is_object($attr_obj) && method_exists($attr_obj, 'get_options')) {
+							} elseif ( is_object( $attr_obj ) && method_exists( $attr_obj, 'get_options' ) ) {
 								return $attr_obj->get_options();
 							}
 						}
@@ -1387,14 +1386,14 @@ class WC_Facebook_Product {
 	 * @param mixed $value The value to process
 	 * @return mixed The first value for simple products, original array for variations
 	 */
-	private function get_first_value_from_complex_type($value) {
+	private function get_first_value_from_complex_type( $value ) {
 		// Only extract first value for simple products (not variations/variable)
-		if ($this->is_type('simple')) {
-			if (is_array($value)) {
-				return !empty($value) ? $value[0] : '';
-			} elseif (is_object($value)) {
-				$vars = get_object_vars($value);
-				return !empty($vars) ? array_values($vars)[0] : '';
+		if ( $this->is_type( 'simple' ) ) {
+			if ( is_array( $value ) ) {
+				return ! empty( $value ) ? $value[0] : '';
+			} elseif ( is_object( $value ) ) {
+				$vars = get_object_vars( $value );
+				return ! empty( $vars ) ? array_values( $vars )[0] : '';
 			}
 		}
 
@@ -1407,25 +1406,25 @@ class WC_Facebook_Product {
 	 * Handles the logic of returning a single value for simple products and multiple values for variable products
 	 *
 	 * @param array $attribute_values Array of attribute values
-	 * @param bool $is_api_call Whether this is for API submission
+	 * @param bool  $is_api_call Whether this is for API submission
 	 * @return string|array Processed attribute value(s)
 	 */
-	private function process_attribute_values($attribute_values, $is_api_call = false) {
-		if (!$attribute_values) {
+	private function process_attribute_values( $attribute_values, $is_api_call = false ) {
+		if ( ! $attribute_values ) {
 			return '';
 		}
 
 		// For simple products, just take the first element
-		if ($this->is_type('simple')) {
-			if (is_array($attribute_values) && !empty($attribute_values)) {
+		if ( $this->is_type( 'simple' ) ) {
+			if ( is_array( $attribute_values ) && ! empty( $attribute_values ) ) {
 				$value = $attribute_values[0];
 				// Clean and truncate the value directly for simple products
-				return mb_substr(WC_Facebookcommerce_Utils::clean_string($value), 0, 200);
-			}		
+				return mb_substr( WC_Facebookcommerce_Utils::clean_string( $value ), 0, 200 );
+			}
 		} else {
 			// For variable/variation products, keep all values
-			$joined_values = implode(' | ', $attribute_values);
-			return $this->convert_pipe_separated_values($joined_values, $is_api_call);
+			$joined_values = implode( ' | ', $attribute_values );
+			return $this->convert_pipe_separated_values( $joined_values, $is_api_call );
 		}
 
 		return '';
@@ -1437,12 +1436,12 @@ class WC_Facebook_Product {
 	 * @param bool $is_api_call Whether this is for API submission
 	 * @return string|array String for UI display, array for API if pipe-separated
 	 */
-	public function get_fb_material($is_api_call = false) {
+	public function get_fb_material( $is_api_call = false ) {
 		// Use generic attribute finder
-		$material_values = $this->get_attribute_by_type('material');
+		$material_values = $this->get_attribute_by_type( 'material' );
 
-		if ($material_values) {
-			return $this->process_attribute_values($material_values, $is_api_call);
+		if ( $material_values ) {
+			return $this->process_attribute_values( $material_values, $is_api_call );
 		}
 
 		// Get material directly from post meta as fallback
@@ -1461,10 +1460,10 @@ class WC_Facebook_Product {
 		}
 
 		// Extract first value from array or object
-		$fb_material = $this->get_first_value_from_complex_type($fb_material);
+		$fb_material = $this->get_first_value_from_complex_type( $fb_material );
 
-		$clean_value = mb_substr(WC_Facebookcommerce_Utils::clean_string($fb_material), 0, 200);
-		return $this->convert_pipe_separated_values($clean_value, $is_api_call);
+		$clean_value = mb_substr( WC_Facebookcommerce_Utils::clean_string( $fb_material ), 0, 200 );
+		return $this->convert_pipe_separated_values( $clean_value, $is_api_call );
 	}
 
 	/**
@@ -1473,17 +1472,17 @@ class WC_Facebook_Product {
 	 * @param bool $is_api_call Whether this is for API submission
 	 * @return string|array String for UI display, array for API if pipe-separated
 	 */
-	public function get_fb_color($is_api_call = false) {
+	public function get_fb_color( $is_api_call = false ) {
 		// Use generic attribute finder - try both color and colour
-		$color_values = $this->get_attribute_by_type('color');
+		$color_values = $this->get_attribute_by_type( 'color' );
 
 		// Try British spelling if US spelling fails
-		if (!$color_values) {
-			$color_values = $this->get_attribute_by_type('colour');
+		if ( ! $color_values ) {
+			$color_values = $this->get_attribute_by_type( 'colour' );
 		}
 
-		if ($color_values) {
-			return $this->process_attribute_values($color_values, $is_api_call);
+		if ( $color_values ) {
+			return $this->process_attribute_values( $color_values, $is_api_call );
 		}
 
 		// Get color directly from post meta as fallback
@@ -1502,10 +1501,10 @@ class WC_Facebook_Product {
 		}
 
 		// Extract first value from array or object
-		$fb_color = $this->get_first_value_from_complex_type($fb_color);
+		$fb_color = $this->get_first_value_from_complex_type( $fb_color );
 
-		$clean_value = mb_substr(WC_Facebookcommerce_Utils::clean_string($fb_color), 0, 200);
-		return $this->convert_pipe_separated_values($clean_value, $is_api_call);
+		$clean_value = mb_substr( WC_Facebookcommerce_Utils::clean_string( $fb_color ), 0, 200 );
+		return $this->convert_pipe_separated_values( $clean_value, $is_api_call );
 	}
 
 	/**
@@ -1514,12 +1513,12 @@ class WC_Facebook_Product {
 	 * @param bool $is_api_call Whether this is for API submission
 	 * @return string|array String for UI display, array for API if pipe-separated
 	 */
-	public function get_fb_size($is_api_call = false) {
+	public function get_fb_size( $is_api_call = false ) {
 		// Use generic attribute finder
-		$size_values = $this->get_attribute_by_type('size');
+		$size_values = $this->get_attribute_by_type( 'size' );
 
-		if ($size_values) {
-			return $this->process_attribute_values($size_values, $is_api_call);
+		if ( $size_values ) {
+			return $this->process_attribute_values( $size_values, $is_api_call );
 		}
 
 		// Get size directly from post meta as fallback
@@ -1538,10 +1537,10 @@ class WC_Facebook_Product {
 		}
 
 		// Extract first value from array or object
-		$fb_size = $this->get_first_value_from_complex_type($fb_size);
+		$fb_size = $this->get_first_value_from_complex_type( $fb_size );
 
-		$clean_value = mb_substr(WC_Facebookcommerce_Utils::clean_string($fb_size), 0, 200);
-		return $this->convert_pipe_separated_values($clean_value, $is_api_call);
+		$clean_value = mb_substr( WC_Facebookcommerce_Utils::clean_string( $fb_size ), 0, 200 );
+		return $this->convert_pipe_separated_values( $clean_value, $is_api_call );
 	}
 
 	/**
@@ -1550,12 +1549,12 @@ class WC_Facebook_Product {
 	 * @param bool $is_api_call Whether this is for API submission
 	 * @return string|array String for UI display, array for API if pipe-separated
 	 */
-	public function get_fb_pattern($is_api_call = false) {
+	public function get_fb_pattern( $is_api_call = false ) {
 		// Use generic attribute finder
-		$pattern_values = $this->get_attribute_by_type('pattern');
+		$pattern_values = $this->get_attribute_by_type( 'pattern' );
 
-		if ($pattern_values) {
-			return $this->process_attribute_values($pattern_values, $is_api_call);
+		if ( $pattern_values ) {
+			return $this->process_attribute_values( $pattern_values, $is_api_call );
 		}
 
 		// Get pattern directly from post meta as fallback
@@ -1574,10 +1573,10 @@ class WC_Facebook_Product {
 		}
 
 		// Extract first value from array or object
-		$fb_pattern = $this->get_first_value_from_complex_type($fb_pattern);
+		$fb_pattern = $this->get_first_value_from_complex_type( $fb_pattern );
 
-		$clean_value = mb_substr(WC_Facebookcommerce_Utils::clean_string($fb_pattern), 0, 200);
-		return $this->convert_pipe_separated_values($clean_value, $is_api_call);
+		$clean_value = mb_substr( WC_Facebookcommerce_Utils::clean_string( $fb_pattern ), 0, 200 );
+		return $this->convert_pipe_separated_values( $clean_value, $is_api_call );
 	}
 
 
