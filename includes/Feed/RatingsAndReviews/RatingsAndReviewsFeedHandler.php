@@ -39,7 +39,9 @@ class RatingsAndReviewsFeedHandler extends AbstractFeedHandler {
 	 */
 	public function get_feed_data(): array {
 		$query_args = array(
-			'status' => 'approve',
+			'status'       => 'approve',
+			'post_type'    => 'product',
+			'comment_type' => 'review',
 		);
 
 		return FeedUploadUtils::get_ratings_and_reviews_data( $query_args );
