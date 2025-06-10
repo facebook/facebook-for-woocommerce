@@ -15,6 +15,7 @@ use WooCommerce\Facebook\Events\Normalizer;
 use WooCommerce\Facebook\Framework\Api\Exception as ApiException;
 use WooCommerce\Facebook\Framework\ErrorLogHandler;
 use WooCommerce\Facebook\Products\Sync;
+use WooCommerce\Facebook\Framework\Logger;
 
 if ( ! class_exists( 'WC_Facebookcommerce_Utils' ) ) :
 	/**
@@ -467,8 +468,15 @@ if ( ! class_exists( 'WC_Facebookcommerce_Utils' ) ) :
 		 */
 		public static function check_woo_ajax_permissions( $action_text, $should_die ) {
 			if ( ! current_user_can( 'manage_woocommerce' ) ) {
-				self::log_with_debug_mode_enabled(
-					'Non manage_woocommerce user attempting to' . $action_text . '!'
+
+				Logger::log(
+					'Non manage_woocommerce user attempting to' . $action_text . '!',
+					[],
+					array(
+						'should_send_log_to_meta'        => false,
+						'should_save_log_in_woocommerce' => true,
+						'woocommerce_log_level'          => \WC_Log_Levels::CRITICAL,
+					)
 				);
 
 				if ( $should_die ) {
