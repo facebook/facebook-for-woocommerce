@@ -12,6 +12,7 @@ use WooCommerce\Facebook\Handlers\Connection;
 use WooCommerce\Facebook\Products;
 use WooCommerce\Facebook\ProductSync\ProductValidator;
 use WooCommerce\Facebook\Framework\AdminMessageHandler;
+use WooCommerce\Facebook\Handlers\PluginRender;
 
 /**
  * Unit tests for Facebook Graph API calls.
@@ -288,7 +289,7 @@ class WCFacebookCommerceIntegrationTest extends \WooCommerce\Facebook\Tests\Abst
 		}
 		/* From Product Meta or FB API. */
 		$facebook_product_group_id = 'some-facebook-product-group-id';
-		$facebook_response         = new API\ProductCatalog\ProductGroups\Read\Response( wp_json_encode( [ 'data' => $facebook_output ] ) );
+		$facebook_response         = new API\ProductCatalog\ProductGroups\Read\Response( json_encode( [ 'data' => $facebook_output ] ) );
 
 		$this->api->expects( $this->once() )
 			->method( 'get_product_group_products' )
@@ -324,7 +325,7 @@ class WCFacebookCommerceIntegrationTest extends \WooCommerce\Facebook\Tests\Abst
 		}
 		/* From Product Meta or FB API. */
 		$facebook_product_group_id = 'some-facebook-product-group-id';
-		$facebook_response         = new API\ProductCatalog\ProductGroups\Read\Response( wp_json_encode( [ 'data' => $facebook_output ] ) );
+		$facebook_response         = new API\ProductCatalog\ProductGroups\Read\Response( json_encode( [ 'data' => $facebook_output ] ) );
 
 		$this->api->expects( $this->once() )
 			->method( 'get_product_group_products' )
@@ -877,7 +878,67 @@ class WCFacebookCommerceIntegrationTest extends \WooCommerce\Facebook\Tests\Abst
 
 		$this->integration->on_product_publish( $product->get_id() );
 	}
-	
+
+	/**
+	 * Sunny day test. Tests deletion of out of stock simple product item.
+	 *
+	 * @return void
+	 */
+	public function test_delete_on_out_of_stock_deletes_simple_product() {
+		$product = WC_Helper_Product::create_simple_product();
+
+		update_option( 'woocommerce_hide_out_of_stock_items', 'yes' );
+		$product->set_stock_status( 'outofstock' );
+
+		add_post_meta( $product->get_id(), WC_Facebookcommerce_Integration::FB_PRODUCT_ITEM_ID, 'facebook-product-item-id' );
+
+		$this->api->expects( $this->never() )
+			->method( 'delete_product_item' )
+			->with( 'facebook-product-item-id' );
+
+		$result = $this->integration->delete_on_out_of_stock( $product->get_id(), $product );
+
+		$this->assertFalse( $result );
+	}
+
+	/**
+	 * Tests deletion of out of stock simple product item not performed due to WC settings set to 'no'.
+	 *
+	 * @return void
+	 */
+	public function test_delete_on_out_of_stock_does_not_delete_simple_product_with_wc_settings_off() {
+		$product = WC_Helper_Product::create_simple_product();
+
+		update_option( 'woocommerce_hide_out_of_stock_items', 'no' );
+		$product->set_stock_status( 'outofstock' );
+
+		$this->api->expects( $this->never() )
+			->method( 'delete_product_item' );
+
+		$result = $this->integration->delete_on_out_of_stock( $product->get_id(), $product );
+
+		$this->assertFalse( $result );
+	}
+
+	/**
+	 * Tests deletion of in-stock variation product item not performed.
+	 *
+	 * @return void
+	 */
+	public function test_delete_on_out_of_stock_does_not_delete_in_stock_simple_product() {
+		$product = WC_Helper_Product::create_variation_product();
+
+		update_option( 'woocommerce_hide_out_of_stock_items', 'yes' );
+		$product->set_stock_status( 'instock' );
+
+		$this->api->expects( $this->never() )
+			->method( 'delete_product_item' );
+
+		$result = $this->integration->delete_on_out_of_stock( $product->get_id(), $product );
+
+		$this->assertFalse( $result );
+	}
+
 	/**
 	 * Tests update of existing variable product.
 	 *
@@ -2080,8 +2141,7 @@ class WCFacebookCommerceIntegrationTest extends \WooCommerce\Facebook\Tests\Abst
 
 		$categories = $this->integration->get_excluded_product_category_ids();
 
-		// Empty array will be retured as there is no longer support for excluded categories
-		$this->assertEquals( [ ], $categories );
+		$this->assertEquals( [ 121, 221, 321, 421, 521, 621 ], $categories );
 	}
 
 	/**
@@ -2104,8 +2164,7 @@ class WCFacebookCommerceIntegrationTest extends \WooCommerce\Facebook\Tests\Abst
 
 		$categories = $this->integration->get_excluded_product_category_ids();
 
-		// Empty array will be retured as there is no longer support for excluded categories
-		$this->assertEquals( [ ], $categories );
+		$this->assertEquals( [ 111, 222, 333 ], $categories );
 	}
 
 	/**
@@ -2136,8 +2195,7 @@ class WCFacebookCommerceIntegrationTest extends \WooCommerce\Facebook\Tests\Abst
 
 		$tags = $this->integration->get_excluded_product_tag_ids();
 
-		// Empty array will be retured as there is no longer support for excluded tags
-		$this->assertEquals( [ ], $tags );
+		$this->assertEquals( [ 121, 221, 321, 421, 521, 621 ], $tags );
 	}
 
 	/**
@@ -2160,7 +2218,7 @@ class WCFacebookCommerceIntegrationTest extends \WooCommerce\Facebook\Tests\Abst
 
 		$tags = $this->integration->get_excluded_product_tag_ids();
 
-		$this->assertEquals( [ ], $tags );
+		$this->assertEquals( [ 111, 222, 333 ], $tags );
 	}
 
 
@@ -2403,6 +2461,59 @@ class WCFacebookCommerceIntegrationTest extends \WooCommerce\Facebook\Tests\Abst
 		$output = $this->integration->is_advanced_matching_enabled();
 
 		$this->assertFalse( $output );
+	}
+
+	/**
+	 * Tests is product sync enabled returns default value.
+	 *
+	 * @return void
+	 */
+	public function test_is_product_sync_enabled_no_filter_no_option() {
+		$this->teardown_callback_category_safely( 'wc_facebook_is_product_sync_enabled' );
+		delete_option( WC_Facebookcommerce_Integration::SETTING_ENABLE_PRODUCT_SYNC );
+
+		$result = $this->integration->is_product_sync_enabled();
+
+		$this->assertTrue( $result );
+	}
+
+	/**
+	 * Tests is product sync enabled returns option value.
+	 *
+	 * @return void
+	 */
+	public function test_is_product_sync_enabled_no_filter() {
+		$this->teardown_callback_category_safely( 'wc_facebook_is_product_sync_enabled' );
+		add_option(
+			WC_Facebookcommerce_Integration::SETTING_ENABLE_PRODUCT_SYNC,
+			'no'
+		);
+
+		$result = $this->integration->is_product_sync_enabled();
+
+		$this->assertFalse( $result );
+	}
+
+	/**
+	 * Tests is product sync enabled with filter.
+	 *
+	 * @return void
+	 */
+	public function test_is_product_sync_enabled_with_filter() {
+		$this->add_filter_with_safe_teardown(
+			'wc_facebook_is_product_sync_enabled',
+			function ( $is_enabled ) {
+				return false;
+			}
+		);
+		add_option(
+			WC_Facebookcommerce_Integration::SETTING_ENABLE_PRODUCT_SYNC,
+			'yes'
+		);
+
+		$result = $this->integration->is_product_sync_enabled();
+
+		$this->assertFalse( $result );
 	}
 
 	/**

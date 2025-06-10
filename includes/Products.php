@@ -77,7 +77,7 @@ class Products {
 	 * @param bool          $enabled whether sync should be enabled for $products
 	 */
 	private static function set_sync_for_products( array $products, $enabled ) {
-		$enabled = wc_bool_to_string( $enabled );
+		$enabled               = wc_bool_to_string( $enabled );
 		$product_sync_meta_key = self::get_product_sync_meta_key();
 
 		foreach ( $products as $product ) {
@@ -113,10 +113,9 @@ class Products {
 	 * @param \WC_Product[] $products an array of product objects
 	 */
 	public static function get_product_sync_meta_key() {
-		if(PluginRender::is_master_sync_on()){
+		if ( PluginRender::is_master_sync_on() ) {
 			return self::OPTEN_IN_SYNC_ENABLED_META_KEY;
-		}
-		else {
+		} else {
 			return self::SYNC_ENABLED_META_KEY;
 		}
 	}
