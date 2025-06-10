@@ -19,7 +19,7 @@ use WooCommerce\Facebook\Framework\Plugin\Exception;
 /**
  * PluginRender
  * This is an class that is triggered for Opt in/ Opt out experience
- * from @ver 3.4.11
+ * from @ver 3.5.2
  */
 class PluginRender {
 	/** @var object storing plugin object */
@@ -82,6 +82,12 @@ class PluginRender {
 		add_action( 'wp_ajax_nopriv_wc_facebook_opt_out_of_sync', [ __CLASS__,'opt_out_of_sync_clicked' ] );
 		add_action( 'wp_ajax_wc_banner_close_action', [ __CLASS__,  'reset_upcoming_version_banners' ] );
 		add_action( 'wp_ajax_nopriv_wc_banner_close_action', [ __CLASS__,'reset_upcoming_version_banners' ] );
+		add_action( 'wp_ajax_wc_facebook_sync_all_products', [ __CLASS__,  'sync_all_clicked' ] );
+		add_action( 'wp_ajax_nopriv_wc_facebook_sync_all_products', [ __CLASS__,'sync_all_clicked' ] );
+		add_action( 'wp_ajax_wc_banner_post_update_close_action', [ __CLASS__,  'reset_plugin_updated_successfully_banner' ] );
+		add_action( 'wp_ajax_nopriv_wc_banner_post_update_close_action', [ __CLASS__,'reset_plugin_updated_successfully_banner' ] );
+		add_action( 'wp_ajax_wc_banner_post_update__master_sync_off_close_action', [ __CLASS__,  'reset_plugin_updated_successfully_but_master_sync_off_banner' ] );
+		add_action( 'wp_ajax_nopriv_wc_banner_post_update__master_sync_off_close_action', [ __CLASS__,'reset_plugin_updated_successfully_but_master_sync_off_banner' ] );
 	}
 
 	public function should_show_banners() {
@@ -96,6 +102,8 @@ class PluginRender {
 				return;
 			}
 			add_action( 'admin_notices', [ __CLASS__, 'upcoming_woo_all_products_banner' ], 0, 1 );
+		} elseif ( version_compare( $current_version, self::ALL_PRODUCTS_PLUGIN_VERSION, '>=' ) ) {
+			add_action( 'admin_notices', [ __CLASS__, 'plugin_updated_banner' ], 0, 1 );
 		}
 	}
 
@@ -135,10 +143,66 @@ class PluginRender {
 		}
 	}
 
+	public static function plugin_updated_banner() {
+		$screen = get_current_screen();
+
+		if ( isset( $screen->id ) && 'marketing_page_wc-facebook' === $screen->id ) {
+
+			if ( self::is_master_sync_on() && ! get_transient( 'plugin_updated_banner_hide' ) ) {
+				echo '<div class="notice notice-success is-dismissible plugin_updated_successfully" style="">
+                <h4>You’ve updated to the latest plugin version</h4>
+                    <p>
+                        As part of this update, all your products automatically sync to Meta. It may take some time before all your products are synced. If you change your mind, go to WooCommerce > Products and select which products to un-sync. <a href="https://www.facebook.com/business/help/4049935305295468"> About syncing products to Meta </a>
+                    </p>
+                </div>';
+			} else {
+				$is_master_sync_on                     = self::is_master_sync_on();
+				$plugin_updated_and_master_sync_on     = ! $is_master_sync_on || get_transient( 'plugin_updated_banner_hide' ) ? 'hidden' : '';
+				$plugin_updated_but_not_master_sync_on = $is_master_sync_on || get_transient( 'plugin_updated_with_master_sync_off_banner_hide' ) ? 'hidden' : '';
+
+				/**
+				 *Showing updated successfully banner after user has already clicked sync all
+				 * This banner will be shown only once and if user decides to dismiss it
+				 * Won't be shown again
+				 */
+
+				echo '<div id="plugin_updated_successfully_after_user_opts_in" class="notice notice-success is-dismissible plugin_updated_successfully ' . esc_html( $plugin_updated_and_master_sync_on ) . '"" style="">
+				 <h4>Your products will be synced automatically</h4>   
+					 <p>
+						 It may take some time before all your products are synced. If you change your mind, go to WooCommerce > Products and select which products to un-sync.<a href="https://www.facebook.com/business/help/4049935305295468"> About syncing products to Meta</a>
+					 </p>
+				 </div>';
+
+				/**
+				 * Shows up every fortnight after version 3.5.3
+				 * If and only if the user has opted out and also upgraded the plugin to 3.5.3
+				 */
+
+					echo '<div id="plugin_updated_successfully_but_master_sync_off" class="notice notice-success is-dismissible ' . esc_html( $plugin_updated_but_not_master_sync_on ) . '"" style="">
+					<h4>You’ve updated to the latest plugin version</h4>   
+						<p>
+							To see all the changes, view the changelog. Since you’ve opted out of automatically syncing all your products, some of your products are not yet on Meta. We recommend turning on auto syncing to help drive your sales and improve ad performance. About syncing products to Meta
+						</p>
+						<p>
+							<a href="javascript:void(0);" class="button wc-forward" id="sync_all_products">
+								Sync all products
+							</a>
+						</p>
+					</div>';
+
+			}
+		}
+	}
+
 	public static function opt_out_of_sync_clicked() {
-			$latest_date = gmdate( 'Y-m-d H:i:s' );
-			update_option( self::MASTER_SYNC_OPT_OUT_TIME, $latest_date );
-			wp_send_json_success( 'Opted out successfully' );
+		$latest_date = gmdate( 'Y-m-d H:i:s' );
+		update_option( self::MASTER_SYNC_OPT_OUT_TIME, $latest_date );
+		wp_send_json_success( 'Opted out successfully' );
+	}
+
+	public static function sync_all_clicked() {
+		update_option( self::MASTER_SYNC_OPT_OUT_TIME, '' );
+		wp_send_json_success( 'Synced all in successfully' );
 	}
 
 	/**
@@ -148,6 +212,24 @@ class PluginRender {
 	public static function reset_upcoming_version_banners() {
 		set_transient( 'upcoming_woo_all_products_banner_hide', true, 7 * DAY_IN_SECONDS );
 	}
+
+	/**
+	 * Banner for  WooAllProducts version upgrade will show up
+	 * after a year
+	 * NOTE: We are doing this because anyway we will remove this in cleanup post : 3.5.3
+	 */
+	public static function reset_plugin_updated_successfully_banner() {
+		set_transient( 'plugin_updated_banner_hide', true, 12 * MONTH_IN_SECONDS );
+	}
+
+	/**
+	 * Banner for WooAllProducts versiong upgrade will show up
+	 * But this will keep showing every week fortnight if user not synced in
+	 */
+	public static function reset_plugin_updated_successfully_but_master_sync_off_banner() {
+		set_transient( 'plugin_updated_with_master_sync_off_banner_hide', true, 2 * WEEK_IN_SECONDS );
+	}
+
 
 
 	public static function get_opted_out_successfully_banner_class() {

@@ -37,9 +37,11 @@ class RatingsAndReviewsFeedGenerator extends FeedGenerator {
 		$offset       = ( $batch_number - 1 ) * $batch_size;
 
 		$query_args = array(
-			'number' => $batch_size,
-			'offset' => $offset,
-			'status' => 'approve',
+			'number'       => $batch_size,
+			'offset'       => $offset,
+			'status'       => 'approve',
+			'post_type'    => 'product',
+			'comment_type' => 'review',
 		);
 
 		return FeedUploadUtils::get_ratings_and_reviews_data( $query_args );

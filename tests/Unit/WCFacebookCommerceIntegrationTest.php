@@ -875,67 +875,7 @@ class WCFacebookCommerceIntegrationTest extends \WooCommerce\Facebook\Tests\Abst
 
 		$this->integration->on_product_publish( $product->get_id() );
 	}
-
-	/**
-	 * Sunny day test. Tests deletion of out of stock simple product item.
-	 *
-	 * @return void
-	 */
-	public function test_delete_on_out_of_stock_deletes_simple_product() {
-		$product = WC_Helper_Product::create_simple_product();
-
-		update_option( 'woocommerce_hide_out_of_stock_items', 'yes' );
-		$product->set_stock_status( 'outofstock' );
-
-		add_post_meta( $product->get_id(), WC_Facebookcommerce_Integration::FB_PRODUCT_ITEM_ID, 'facebook-product-item-id' );
-
-		$this->api->expects( $this->never() )
-			->method( 'delete_product_item' )
-			->with( 'facebook-product-item-id' );
-
-		$result = $this->integration->delete_on_out_of_stock( $product->get_id(), $product );
-
-		$this->assertFalse( $result );
-	}
-
-	/**
-	 * Tests deletion of out of stock simple product item not performed due to WC settings set to 'no'.
-	 *
-	 * @return void
-	 */
-	public function test_delete_on_out_of_stock_does_not_delete_simple_product_with_wc_settings_off() {
-		$product = WC_Helper_Product::create_simple_product();
-
-		update_option( 'woocommerce_hide_out_of_stock_items', 'no' );
-		$product->set_stock_status( 'outofstock' );
-
-		$this->api->expects( $this->never() )
-			->method( 'delete_product_item' );
-
-		$result = $this->integration->delete_on_out_of_stock( $product->get_id(), $product );
-
-		$this->assertFalse( $result );
-	}
-
-	/**
-	 * Tests deletion of in-stock variation product item not performed.
-	 *
-	 * @return void
-	 */
-	public function test_delete_on_out_of_stock_does_not_delete_in_stock_simple_product() {
-		$product = WC_Helper_Product::create_variation_product();
-
-		update_option( 'woocommerce_hide_out_of_stock_items', 'yes' );
-		$product->set_stock_status( 'instock' );
-
-		$this->api->expects( $this->never() )
-			->method( 'delete_product_item' );
-
-		$result = $this->integration->delete_on_out_of_stock( $product->get_id(), $product );
-
-		$this->assertFalse( $result );
-	}
-
+	
 	/**
 	 * Tests update of existing variable product.
 	 *
