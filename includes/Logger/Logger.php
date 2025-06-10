@@ -31,9 +31,9 @@ class Logger {
 	 *
 	 * @since 3.5.3
 	 *
-	 * @param string    $message log message
-	 * @param array     $context optional body of log with whole context
-	 * @param array     $log_options optional options for logging place and levels
+	 * @param string $message log message
+	 * @param array  $context optional body of log with whole context
+	 * @param array  $log_options optional options for logging place and levels
 	 */
 	public static function log($message, $context = [], $log_options = [
 		'should_send_log_to_meta'        => false,
