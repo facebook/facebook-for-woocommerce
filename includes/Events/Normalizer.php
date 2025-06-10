@@ -1,5 +1,4 @@
 <?php
-// phpcs:ignoreFile
 /**
  * Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
  *
@@ -13,7 +12,7 @@ namespace WooCommerce\Facebook\Events;
 
 use InvalidArgumentException;
 
-defined( 'ABSPATH' ) or exit;
+defined( 'ABSPATH' ) || exit;
 
 /**
  * Normalizer class.
@@ -28,10 +27,10 @@ class Normalizer {
 	 * @param string $field to be normalized.
 	 * @param string $data value to be normalized
 	 * @return string
-	 * @throws InvalidArgumentException
+	 * @throws InvalidArgumentException Invalid data.
 	 */
 	public static function normalize( $field, $data ) {
-		if ( $data == null || strlen( $data ) == 0 ) {
+		if ( null === $data || 0 === strlen( $data ) ) {
 			return null;
 		}
 
@@ -40,31 +39,31 @@ class Normalizer {
 
 		switch ( $field ) {
 			case 'em':
-				$normalized_data = self::normalizeEmail( $data );
+				$normalized_data = self::normalize_email( $data );
 				break;
 
 			case 'ph':
-				$normalized_data = self::normalizePhone( $data );
+				$normalized_data = self::normalize_phone( $data );
 				break;
 
 			case 'zp':
-				$normalized_data = self::normalizeZipCode( $data );
+				$normalized_data = self::normalize_zip_code( $data );
 				break;
 
 			case 'ct':
-				$normalized_data = self::normalizeCity( $data );
+				$normalized_data = self::normalize_city( $data );
 				break;
 
 			case 'st':
-				$normalized_data = self::normalizeState( $data );
+				$normalized_data = self::normalize_state( $data );
 				break;
 
 			case 'country':
-				$normalized_data = self::normalizeCountry( $data );
+				$normalized_data = self::normalize_country( $data );
 				break;
 
 			case 'cn':
-				$normalized_data = self::normalizeCountry( $data );
+				$normalized_data = self::normalize_country( $data );
 				break;
 
 			default:
@@ -78,7 +77,8 @@ class Normalizer {
 	 *
 	 * @since 2.0.3
 	 *
-	 * @param string[] array with user data to be normalized
+	 * @param string[] $data array with user data to be normalized
+	 * @param mixed    $is_pixel_data pixel data
 	 * @return string[]
 	 */
 	public static function normalize_array( $data, $is_pixel_data ) {
@@ -109,9 +109,9 @@ class Normalizer {
 	 *
 	 * @param string $email Email address to be normalized.
 	 * @return string
-	 * @throws InvalidArgumentException
+	 * @throws InvalidArgumentException Invalid email format.
 	 */
-	private static function normalizeEmail( $email ) {
+	private static function normalize_email( $email ) {
 		// Validates email against RFC 822
 		$result = filter_var( $email, FILTER_SANITIZE_EMAIL );
 
@@ -130,7 +130,7 @@ class Normalizer {
 	 * @param string $city city name to be normalized.
 	 * @return string
 	 */
-	private static function normalizeCity( $city ) {
+	private static function normalize_city( $city ) {
 		return trim( preg_replace( '/[0-9.\s\-()]/', '', $city ) );
 	}
 
@@ -142,7 +142,7 @@ class Normalizer {
 	 * @param string $state state name to be normalized.
 	 * @return string
 	 */
-	private static function normalizeState( $state ) {
+	private static function normalize_state( $state ) {
 		return preg_replace( '/[^a-z]/', '', $state );
 	}
 
@@ -153,12 +153,12 @@ class Normalizer {
 	 *
 	 * @param string $country country code to be normalized(ISO 3166-2).
 	 * @return string
-	 * @throws InvalidArgumentException
+	 * @throws InvalidArgumentException If length of country is not 2.
 	 */
-	private static function normalizeCountry( $country ) {
+	private static function normalize_country( $country ) {
 		$result = preg_replace( '/[^a-z]/i', '', $country );
 
-		if ( strlen( $result ) != 2 ) {
+		if ( 2 !== strlen( $result ) ) {
 			throw new InvalidArgumentException( 'Invalid country format passed(' . $country . '). Country Code should be a two-letter ISO Country Code' );
 		}
 
@@ -173,7 +173,7 @@ class Normalizer {
 	 * @param string $zip postal code to be normalized.
 	 * @return string
 	 */
-	private static function normalizeZipCode( $zip ) {
+	private static function normalize_zip_code( $zip ) {
 		// Removing the spaces from the zip code. Eg:
 		$zip = preg_replace( '/[ ]/', '', $zip );
 
@@ -190,10 +190,10 @@ class Normalizer {
 	 * @param string $phone phone number to be normalized.
 	 * @return string
 	 */
-	private static function normalizePhone( $phone ) {
+	private static function normalize_phone( $phone ) {
 		$result = trim( preg_replace( '/[a-z()-]/', '', $phone ) );
 
-		if ( self::isInternationalNumber( $result ) ) {
+		if ( self::is_international_number( $result ) ) {
 			$result = preg_replace( '/[\-\s+]/', '', $result );
 		}
 
@@ -208,7 +208,7 @@ class Normalizer {
 	 * @param string $phone_number Phone number to be normalized.
 	 * @return bool
 	 */
-	private static function isInternationalNumber( $phone_number ) {
+	private static function is_international_number( $phone_number ) {
 		// Remove spaces and hyphens
 		$phone_number = preg_replace( '/[\-\s]/', '', $phone_number );
 
