@@ -1,4 +1,4 @@
-name: Product Creation E2E Tests WITH DEBUG FORCED
+name: Product Creation E2E Tests WITH DEBUG FORCED v2
 
 on:
   push:
