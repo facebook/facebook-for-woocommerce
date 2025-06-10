@@ -17,6 +17,8 @@ use WooCommerce\Facebook\Framework\ErrorLogHandler;
 use WooCommerce\Facebook\Products\Sync;
 use WooCommerce\Facebook\Framework\Logger;
 
+require_once __DIR__ . '/Logger/Logger.php';
+
 if ( ! class_exists( 'WC_Facebookcommerce_Utils' ) ) :
 	/**
 	 * FB Graph API helper functions
