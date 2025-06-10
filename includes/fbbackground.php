@@ -22,22 +22,22 @@ if ( ! class_exists( 'WP_Background_Process', false ) ) {
  */
 class WC_Facebookcommerce_Background_Process extends WP_Background_Process {
 
-		/**
-		 * @var WC_Facebookcommerce_Integration instance.
-		 */
-		private $commerce;
+	/**
+	 * @var WC_Facebookcommerce_Integration instance.
+	 */
+	private $commerce;
 
 	public function __construct( $commerce ) {
 		$this->commerce = $commerce; // Full WC_Facebookcommerce_Integration obj
 	}
 
-		/**
-		 * __get method for backward compatibility.
-		 *
-		 * @param string $key property name
-		 * @return mixed
-		 * @since 3.0.32
-		 */
+	/**
+	 * __get method for backward compatibility.
+	 *
+	 * @param string $key property name
+	 * @return mixed
+	 * @since 3.0.32
+	 */
 	public function __get( $key ) {
 		// Add warning for private properties.
 		if ( 'commerce' === $key ) {
@@ -49,10 +49,10 @@ class WC_Facebookcommerce_Background_Process extends WP_Background_Process {
 		return null;
 	}
 
-		/**
-		 * @var string
-		 */
-		protected $action = 'fb_commerce_background_process';
+	/**
+	 * @var string
+	 */
+	protected $action = 'fb_commerce_background_process';
 
 	public function dispatch() {
 		$commerce   = $this->commerce;
@@ -73,12 +73,12 @@ class WC_Facebookcommerce_Background_Process extends WP_Background_Process {
 		return (int) get_transient( $commerce::FB_SYNC_REMAINING );
 	}
 
-		/**
-		 * Handle cron healthcheck
-		 *
-		 * Restart the background process if not already running
-		 * and data exists in the queue.
-		 */
+	/**
+	 * Handle cron healthcheck
+	 *
+	 * Restart the background process if not already running
+	 * and data exists in the queue.
+	 */
 	public function handle_cron_healthcheck() {
 		$commerce = $this->commerce;
 		if ( $this->is_process_running() ) {
@@ -97,9 +97,9 @@ class WC_Facebookcommerce_Background_Process extends WP_Background_Process {
 		return true;
 	}
 
-		/**
-		 * Schedule fallback event.
-		 */
+	/**
+	 * Schedule fallback event.
+	 */
 	protected function schedule_event() {
 		if ( ! wp_next_scheduled( $this->cron_hook_identifier ) ) {
 			wp_schedule_event(
@@ -110,34 +110,34 @@ class WC_Facebookcommerce_Background_Process extends WP_Background_Process {
 		}
 	}
 
-		/**
-		 * Is the processor updating?
-		 *
-		 * @return boolean
-		 */
+	/**
+	 * Is the processor updating?
+	 *
+	 * @return boolean
+	 */
 	public function is_updating() {
 		return false === $this->is_queue_empty();
 	}
 
-		/**
-		 * Is the processor running?
-		 *
-		 * @return boolean
-		 */
+	/**
+	 * Is the processor running?
+	 *
+	 * @return boolean
+	 */
 	public function is_running() {
 		return $this->is_process_running();
 	}
 
-		/**
-		 * Process individual product
-		 *
-		 * Returns false to remove the item from the queue
-		 * (would return item if it needed additional processing).
-		 *
-		 * @param mixed $item Queue item to iterate over
-		 *
-		 * @return mixed
-		 */
+	/**
+	 * Process individual product
+	 *
+	 * Returns false to remove the item from the queue
+	 * (would return item if it needed additional processing).
+	 *
+	 * @param mixed $item Queue item to iterate over
+	 *
+	 * @return mixed
+	 */
 	protected function task( $item ) {
 		$commerce      = $this->commerce;  // PHP5 compatibility for static access
 		$remaining     = $this->get_item_count();
@@ -163,12 +163,12 @@ class WC_Facebookcommerce_Background_Process extends WP_Background_Process {
 		return false;
 	}
 
-		/**
-		 * Complete
-		 *
-		 * Override if applicable, but ensure that the below actions are
-		 * performed, or, call parent::complete().
-		 */
+	/**
+	 * Complete
+	 *
+	 * Override if applicable, but ensure that the below actions are
+	 * performed, or, call parent::complete().
+	 */
 	protected function complete() {
 		$commerce = $this->commerce;  // PHP5 compatibility for static access
 		delete_transient( $commerce::FB_SYNC_IN_PROGRESS );

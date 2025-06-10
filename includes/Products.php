@@ -206,23 +206,6 @@ class Products {
 		}
 	}
 
-
-	/**
-	 * Determines whether the given product should be removed from the catalog.
-	 *
-	 * A product should be removed if it is no longer in stock and the user has opted-in to hide products that are out of stock,
-	 * or belongs to an excluded category.
-	 *
-	 * @since 2.0.0
-	 *
-	 * @param \WC_Product $product
-	 * @return bool
-	 */
-	public static function product_should_be_deleted( \WC_Product $product ) {
-		return ! facebook_for_woocommerce()->get_product_sync_validator( $product )->passes_product_terms_check();
-	}
-
-
 	/**
 	 * Determines whether a product is enabled to be synced in Facebook.
 	 *
@@ -239,22 +222,6 @@ class Products {
 	public static function is_sync_enabled_for_product( \WC_Product $product ) {
 		return facebook_for_woocommerce()->get_product_sync_validator( $product )->passes_product_sync_field_check();
 	}
-
-
-	/**
-	 * Determines whether the product's terms would make it excluded to be synced from Facebook.
-	 *
-	 * @since 1.10.0
-	 *
-	 * @deprecated use \WooCommerce\Facebook\ProductSync\ProductValidator::passes_product_terms_check() instead
-	 *
-	 * @param \WC_Product $product product object
-	 * @return bool if true, product should be excluded from sync, if false, product can be included in sync (unless manually excluded by individual product meta)
-	 */
-	public static function is_sync_excluded_for_product_terms( \WC_Product $product ) {
-		return ! facebook_for_woocommerce()->get_product_sync_validator( $product )->passes_product_terms_check();
-	}
-
 
 	/**
 	 * Sets a product's visibility in the Facebook shop.

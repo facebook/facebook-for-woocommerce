@@ -124,26 +124,6 @@ jQuery( document ).ready( function( $ ) {
 
 
 		/**
-		 * Toggles (shows/hides) the visibility of Facebook Commerce setting fields.
-		 *
-		 * @since 2.1.0
-		 *
-		 * @param {boolean} enabled whether the settings fields should be enabled or not
-		 * @param {jQuery} $container a common ancestor of all the elements that can be shown/hidden
-		 */
-		function toggleFacebookCommerceSettings( enabled, $container ) {
-
-			let $group = $container.find( '.wc-facebook-commerce-options-group' );
-
-			if ( enabled ) {
-				$group.show();
-			} else {
-				$group.hide();
-			}
-		}
-
-
-		/**
 		 * Disables and changes the checked status of the Sell on Instagram setting field.
 		 *
 		 * Additionally, shows/hides messages explaining that the product is not ready for Commerce.
@@ -475,7 +455,6 @@ jQuery( document ).ready( function( $ ) {
 			let syncEnabled = simpleProductSyncModeSelect.val() !== 'sync_disabled';
 
 			toggleFacebookSettings( syncEnabled, facebookSettingsPanel );
-			toggleFacebookCommerceSettings( syncEnabled, facebookSettingsPanel );
 
 			if ( syncEnabled ) {
 				removeProductIDFromUnSyncList( getSyncTargetProductID( simpleProductSyncModeSelect ) );

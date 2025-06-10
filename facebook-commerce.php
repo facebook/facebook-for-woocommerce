@@ -15,6 +15,7 @@ use WooCommerce\Facebook\Framework\Helper;
 use WooCommerce\Facebook\Framework\Plugin\Exception as PluginException;
 use WooCommerce\Facebook\Products;
 use WooCommerce\Facebook\Products\Feed;
+use WooCommerce\Facebook\Framework\Logger;
 
 defined( 'ABSPATH' ) || exit;
 
@@ -630,8 +631,16 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 				// get up to two additional pages of results
 			} while ( $response = $this->facebook_for_woocommerce->get_api()->next( $response, 2 ) );
 		} catch ( ApiException $e ) {
-			$message = sprintf( 'There was an error trying to find the IDs for Product Items in the Product Group %s: %s', $product_group_id, $e->getMessage() );
-			WC_Facebookcommerce_Utils::log_with_debug_mode_enabled( $message );
+			$message = sprintf( 'Meta APIs thrown APIException while fetching the Product Items in the Product Group %s: %s', $product_group_id, $e->getMessage() );
+			Logger::log(
+				$message,
+				[],
+				array(
+					'should_send_log_to_meta'        => false,
+					'should_save_log_in_woocommerce' => true,
+					'woocommerce_log_level'          => \WC_Log_Levels::ERROR,
+				)
+			);
 		}
 
 		return $product_item_ids;
@@ -1172,26 +1181,6 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 	}
 
 	/**
-	 * If the user has opt-in to remove products that are out of stock,
-	 * this function will delete the product from FB Page as well.
-	 *
-	 * @param int        $wp_id
-	 * @param WC_Product $woo_product
-	 *
-	 * @return bool
-	 */
-	public function delete_on_out_of_stock( int $wp_id, WC_Product $woo_product ): bool {
-		if ( Products::product_should_be_deleted( $woo_product ) ) {
-			$product = wc_get_product( $wp_id );
-			$this->delete_fb_product( $product );
-
-			return true;
-		}
-
-		return false;
-	}
-
-	/**
 	 * Syncs product to Facebook when saving a variable product.
 	 *
 	 * @param int                      $wp_id product post ID
@@ -1200,10 +1189,6 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 	public function on_variable_product_publish( $wp_id, $woo_product = null ) {
 		if ( ! $woo_product instanceof \WC_Facebook_Product ) {
 			$woo_product = new \WC_Facebook_Product( $wp_id );
-		}
-
-		if ( $this->delete_on_out_of_stock( $wp_id, $woo_product->woo_product ) ) {
-			return;
 		}
 
 		if ( ! $this->product_should_be_synced( $woo_product->woo_product ) ) {
@@ -1226,7 +1211,7 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 		// scheduled update for each variation that should be synced
 		foreach ( $woo_product->get_children() as $variation_id ) {
 			$variation = wc_get_product( $variation_id );
-			if ( $variation instanceof WC_Product && $this->product_should_be_synced( $variation ) && ! $this->delete_on_out_of_stock( $variation_id, $variation ) ) {
+			if ( $variation instanceof WC_Product && $this->product_should_be_synced( $variation ) ) {
 				$variation_ids[] = $variation_id;
 			}
 		}
@@ -1246,10 +1231,6 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 	public function on_simple_product_publish( $wp_id, $woo_product = null, &$parent_product = null ) {
 		if ( ! $woo_product instanceof \WC_Facebook_Product ) {
 			$woo_product = new \WC_Facebook_Product( $wp_id, $parent_product );
-		}
-
-		if ( $this->delete_on_out_of_stock( $wp_id, $woo_product->woo_product ) ) {
-			return;
 		}
 
 		if ( ! $this->product_should_be_synced( $woo_product->woo_product ) ) {
@@ -1354,7 +1335,7 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 		$variants = $woo_product->prepare_variants_for_group();
 
 		if ( ! $variants ) {
-			WC_Facebookcommerce_Utils::log_with_debug_mode_enabled(
+			Logger::log(
 				sprintf(
 				/* translators: %1$s is referring to facebook product group id. */
 					__(
@@ -1362,6 +1343,12 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 						'facebook-for-woocommerce'
 					),
 					$fb_product_group_id
+				),
+				[],
+				array(
+					'should_send_log_to_meta'        => false,
+					'should_save_log_in_woocommerce' => true,
+					'woocommerce_log_level'          => \WC_Log_Levels::DEBUG,
 				)
 			);
 
@@ -2033,16 +2020,28 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 	 **/
 	public function reset_all_products() {
 		if ( ! is_admin() ) {
-			WC_Facebookcommerce_Utils::log_with_debug_mode_enabled(
-				'Not resetting any FBIDs from products,
-        must call reset from admin context.'
+			Logger::log(
+				'Not resetting any FBIDs from products, must call reset from admin context.',
+				[],
+				array(
+					'should_send_log_to_meta'        => false,
+					'should_save_log_in_woocommerce' => true,
+					'woocommerce_log_level'          => \WC_Log_Levels::DEBUG,
+				)
 			);
-
 			return false;
 		}
 
 		// Include draft products (omit 'post_status' => 'publish')
-		WC_Facebookcommerce_Utils::log_with_debug_mode_enabled( 'Removing FBIDs from all products' );
+		Logger::log(
+			'Removing FBIDs from all products',
+			[],
+			array(
+				'should_send_log_to_meta'        => false,
+				'should_save_log_in_woocommerce' => true,
+				'woocommerce_log_level'          => \WC_Log_Levels::DEBUG,
+			)
+		);
 
 		$post_ids = get_posts(
 			[
@@ -2069,7 +2068,15 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 		$post_ids = array_merge( $post_ids, $children );
 		$this->delete_post_meta_loop( $post_ids );
 
-		WC_Facebookcommerce_Utils::log_with_debug_mode_enabled( 'Product FBIDs deleted' );
+		Logger::log(
+			'Product FBIDs deleted',
+			[],
+			array(
+				'should_send_log_to_meta'        => false,
+				'should_save_log_in_woocommerce' => true,
+				'woocommerce_log_level'          => \WC_Log_Levels::DEBUG,
+			)
+		);
 
 		return true;
 	}
@@ -2088,7 +2095,15 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 
 		$this->delete_post_meta_loop( $products );
 
-		WC_Facebookcommerce_Utils::log_with_debug_mode_enabled( 'Deleted FB Metadata for product ' . $wp_id );
+		Logger::log(
+			'Deleted FB Metadata for product ' . $wp_id ,
+			[],
+			array(
+				'should_send_log_to_meta'        => false,
+				'should_save_log_in_woocommerce' => true,
+				'woocommerce_log_level'          => \WC_Log_Levels::DEBUG,
+			)
+		);
 	}
 
 	/**
@@ -2156,7 +2171,15 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 	 */
 	private function sync_facebook_products_using_background_processor() {
 		if ( ! $this->is_configured() || ! $this->get_product_catalog_id() ) {
-			WC_Facebookcommerce_Utils::log_with_debug_mode_enabled( sprintf( 'Not syncing, the plugin is not configured or the Catalog ID is missing' ) );
+			Logger::log(
+				sprintf( 'Not syncing, the plugin is not configured or the Catalog ID is missing' ),
+				[],
+				array(
+					'should_send_log_to_meta'        => false,
+					'should_save_log_in_woocommerce' => true,
+					'woocommerce_log_level'          => \WC_Log_Levels::DEBUG,
+				)
+			);
 			throw new PluginException( __( 'The plugin is not configured or the Catalog ID is missing.', 'facebook-for-woocommerce' ) );
 		}
 
@@ -2171,7 +2194,15 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 		}
 
 		if ( $currently_syncing ) {
-			WC_Facebookcommerce_Utils::log_with_debug_mode_enabled( 'Not syncing again, sync already in progress' );
+			Logger::log(
+				'Not syncing again, sync already in progress',
+				[],
+				array(
+					'should_send_log_to_meta'        => false,
+					'should_save_log_in_woocommerce' => true,
+					'woocommerce_log_level'          => \WC_Log_Levels::DEBUG,
+				)
+			);
 			WC_Facebookcommerce_Utils::fblog(
 				'Tried to sync during an in-progress sync!',
 				[],
@@ -2187,7 +2218,15 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 			WC_Facebookcommerce_Utils::log_with_debug_mode_enabled( $message );
 		}
 		if ( $catalog->id ) {
-			WC_Facebookcommerce_Utils::log_with_debug_mode_enabled( 'Not syncing, invalid product catalog!' );
+			Logger::log(
+				'Not syncing, invalid product catalog!',
+				[],
+				array(
+					'should_send_log_to_meta'        => false,
+					'should_save_log_in_woocommerce' => true,
+					'woocommerce_log_level'          => \WC_Log_Levels::DEBUG,
+				)
+			);
 			WC_Facebookcommerce_Utils::fblog(
 				'Tried to sync with an invalid product catalog!',
 				[],
@@ -2221,9 +2260,16 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 			set_transient( self::FB_SYNC_IN_PROGRESS, true, self::FB_SYNC_TIMEOUT );
 			set_transient( self::FB_SYNC_REMAINING, (int) $total );
 			$this->display_info_message( $starting_message );
-			WC_Facebookcommerce_Utils::log_with_debug_mode_enabled( $starting_message );
+			Logger::log(
+				$starting_message,
+				[],
+				array(
+					'should_send_log_to_meta'        => false,
+					'should_save_log_in_woocommerce' => true,
+					'woocommerce_log_level'          => \WC_Log_Levels::DEBUG,
+				)
+			);
 			foreach ( $post_ids as $post_id ) {
-				WC_Facebookcommerce_Utils::log_with_debug_mode_enabled( 'Pushing post to queue: ' . $post_id );
 				$this->background_processor->push_to_queue( $post_id );
 			}
 
@@ -2253,7 +2299,15 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 				$this->on_product_publish( $post_id );
 				++$count;
 			}
-			WC_Facebookcommerce_Utils::log_with_debug_mode_enabled( 'Synced ' . $count . ' products' );
+			Logger::log(
+				'Synced ' . $count . ' products',
+				[],
+				array(
+					'should_send_log_to_meta'        => false,
+					'should_save_log_in_woocommerce' => true,
+					'woocommerce_log_level'          => \WC_Log_Levels::DEBUG,
+				)
+			);
 			$this->remove_sticky_message();
 			$this->display_info_message( 'Facebook product sync complete!' );
 			delete_transient( self::FB_SYNC_IN_PROGRESS );
@@ -2470,7 +2524,11 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 		 *
 		 * @since 1.10.0
 		 */
-		return (array) apply_filters( 'wc_facebook_excluded_product_category_ids', get_option( self::SETTING_EXCLUDED_PRODUCT_CATEGORY_IDS, [] ), $this );
+
+		// TODO: to Remove all existence of these function `get_excluded_product_category_ids` as we are no longer supporting these.
+		// Matter of fact it is used in multiple places including important places like Product sets tab.
+		// Hence providing empty array as excluded categories :)
+		return (array) [];
 	}
 
 	/**
@@ -2488,7 +2546,10 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 		 *
 		 * @since 1.10.0
 		 */
-		return (array) apply_filters( 'wc_facebook_excluded_product_tag_ids', get_option( self::SETTING_EXCLUDED_PRODUCT_TAG_IDS, [] ), $this );
+		// TODO: to Remove all existence of these function `get_excluded_product_tag_ids` as we are no longer supporting these.
+		// Matter of fact it is used in multiple places including important places like Product sets tab.
+		// Hence providing empty array as excluded tags :)
+		return (array) [];
 	}
 
 	/** Setter methods ************************************************************************************************/

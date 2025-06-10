@@ -15,6 +15,9 @@ use WooCommerce\Facebook\Events\Normalizer;
 use WooCommerce\Facebook\Framework\Api\Exception as ApiException;
 use WooCommerce\Facebook\Framework\ErrorLogHandler;
 use WooCommerce\Facebook\Products\Sync;
+use WooCommerce\Facebook\Framework\Logger;
+
+require_once __DIR__ . '/Logger/Logger.php';
 
 if ( ! class_exists( 'WC_Facebookcommerce_Utils' ) ) :
 	/**
@@ -231,6 +234,38 @@ if ( ! class_exists( 'WC_Facebookcommerce_Utils' ) ) :
 				'name'       => array_pop( $content_category_slice ),
 				'categories' => $categories,
 			);
+		}
+
+		/**
+		 * Returns the category ids for products/pixel.
+		 *
+		 * @param int $wpid
+		 * @return Array
+		 */
+		public static function get_product_category_ids( $wpid ) {
+			$product = wc_get_product( $wpid );
+
+			if ( ! $product ) {
+				return 'Invalid product ID';
+			}
+
+			return $product->get_category_ids();
+		}
+
+		/**
+		 * Returns the category ids for products/pixel.
+		 *
+		 * @param int $wpid
+		 * @return Array
+		 */
+		public static function get_excluded_product_tags_ids( $wpid ) {
+			$product = wc_get_product( $wpid );
+
+			if ( ! $product ) {
+				return [];
+			}
+
+			return $product->get_tag_ids();
 		}
 
 		/**
@@ -467,8 +502,15 @@ if ( ! class_exists( 'WC_Facebookcommerce_Utils' ) ) :
 		 */
 		public static function check_woo_ajax_permissions( $action_text, $should_die ) {
 			if ( ! current_user_can( 'manage_woocommerce' ) ) {
-				self::log_with_debug_mode_enabled(
-					'Non manage_woocommerce user attempting to' . $action_text . '!'
+
+				Logger::log(
+					'Non manage_woocommerce user attempting to' . $action_text . '!',
+					[],
+					array(
+						'should_send_log_to_meta'        => false,
+						'should_save_log_in_woocommerce' => true,
+						'woocommerce_log_level'          => \WC_Log_Levels::CRITICAL,
+					)
 				);
 
 				if ( $should_die ) {
