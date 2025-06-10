@@ -1,5 +1,4 @@
 <?php
-// phpcs:ignoreFile
 /**
  * Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
  *
@@ -12,7 +11,6 @@
 require_once __DIR__ . '/fbutils.php';
 
 use WooCommerce\Facebook\Feed\ShippingProfilesFeed;
-use WooCommerce\Facebook\Framework\Plugin\Compatibility;
 use WooCommerce\Facebook\Framework\Helper;
 use WooCommerce\Facebook\Products;
 
@@ -213,7 +211,7 @@ class WC_Facebook_Product {
 			if ( ! empty( $value ) ) {
 				$mapped_field = $this->check_attribute_mapping( $attribute_name );
 
-				if ( $mapped_field === false ) {
+				if ( false === $mapped_field ) {
 					$unmapped_attributes[] = array(
 						'name'  => $attribute_name,
 						'value' => $value,
@@ -241,7 +239,8 @@ class WC_Facebook_Product {
 		$this->main_description      = '';
 		$this->rich_text_description = '';
 
-		if ( $meta = get_post_meta( $this->id, self::FB_VISIBILITY, true ) ) {
+		if ( get_post_meta( $this->id, self::FB_VISIBILITY, true ) ) {
+			$meta                = get_post_meta( $this->id, self::FB_VISIBILITY, true );
 			$this->fb_visibility = wc_string_to_bool( $meta );
 		} else {
 			$this->fb_visibility = '';
@@ -277,18 +276,15 @@ class WC_Facebook_Product {
 	}
 
 	public function exists() {
-		return ( $this->woo_product !== null && $this->woo_product !== false );
+		return ( null !== $this->woo_product && false !== $this->woo_product );
 	}
 
-	// Fall back to calling method on $woo_product
-	public function __call( $function, $args ) {
+	public function __call( $func, $args ) {
 		if ( $this->woo_product ) {
-			return call_user_func_array( array( $this->woo_product, $function ), $args );
+			return call_user_func_array( array( $this->woo_product, $func ), $args );
 		} else {
-			$e         = new Exception();
-			$backtrace = var_export( $e->getTraceAsString(), true );
 			WC_Facebookcommerce_Utils::fblog(
-				"Calling $function on Null Woo Object. Trace:\n" . $backtrace,
+				"Calling $func on Null Woo Object.\n",
 				array(),
 				true
 			);
@@ -297,7 +293,7 @@ class WC_Facebook_Product {
 	}
 
 	public function get_gallery_urls() {
-		if ( $this->gallery_urls === null ) {
+		if ( null === $this->gallery_urls ) {
 			if ( is_callable( array( $this, 'get_gallery_image_ids' ) ) ) {
 				$image_ids = $this->get_gallery_image_ids();
 			} else {
@@ -377,8 +373,8 @@ class WC_Facebook_Product {
 
 		if ( $this->woo_product->is_type( 'variation' ) ) {
 
-			if ( $parent_product = wc_get_product( $this->woo_product->get_parent_id() ) ) {
-
+			if ( wc_get_product( $this->woo_product->get_parent_id() ) ) {
+				$parent_product           = wc_get_product( $this->woo_product->get_parent_id() );
 				$parent_product_image_url = wp_get_attachment_image_url( $parent_product->get_image_id(), $image_size );
 			}
 		}
@@ -417,6 +413,7 @@ class WC_Facebook_Product {
 	/**
 	 * Gets a list of video URLs to use for this product in Facebook sync.
 	 *
+	 * @param mixed $parent_id
 	 * @return array
 	 */
 	public function get_all_video_urls( $parent_id = null ) {
@@ -424,7 +421,7 @@ class WC_Facebook_Product {
 		$video_urls = array();
 		$product    = $this->woo_product;
 
-		if ( $parent_id !== null ) {
+		if ( null !== $parent_id ) {
 			$product = wc_get_product( $parent_id );
 		}
 
@@ -479,7 +476,7 @@ class WC_Facebook_Product {
 	}
 
 
-	// Returns the parent image id for variable products only.
+	/** Returns the parent image id for variable products only. */
 	public function get_parent_image_id() {
 		if ( WC_Facebookcommerce_Utils::is_variation_type( $this->woo_product->get_type() ) ) {
 			$parent_data = $this->get_parent_data();
@@ -499,7 +496,7 @@ class WC_Facebook_Product {
 	}
 
 	public function set_product_image( $image ) {
-		if ( $image !== null && strlen( $image ) !== 0 ) {
+		if ( null !== $image && 0 !== strlen( $image ) ) {
 			$image = WC_Facebookcommerce_Utils::clean_string( $image );
 			$image = WC_Facebookcommerce_Utils::make_url( $image );
 			update_post_meta(
@@ -613,7 +610,7 @@ class WC_Facebook_Product {
 	}
 
 	public function get_use_parent_image() {
-		if ( $this->fb_use_parent_image === null ) {
+		if ( null === $this->fb_use_parent_image ) {
 			$variant_image_setting     =
 			get_post_meta( $this->id, self::FB_VARIANT_IMAGE, true );
 			$this->fb_use_parent_image = ( $variant_image_setting ) ? true : false;
@@ -622,7 +619,7 @@ class WC_Facebook_Product {
 	}
 
 	public function set_use_parent_image( $setting ) {
-		$this->fb_use_parent_image = ( $setting === 'yes' );
+		$this->fb_use_parent_image = ( 'yes' === $setting );
 		update_post_meta(
 			$this->id,
 			self::FB_VARIANT_IMAGE,
@@ -920,23 +917,25 @@ class WC_Facebook_Product {
 
 		// check if sale exist
 		if ( is_numeric( $sale_price ) && $sale_price > 0 ) {
-			$sale_start =
-				( $date     = $this->woo_product->get_date_on_sale_from() )
-					? date_i18n( WC_DateTime::ATOM, $date->getOffsetTimestamp() )
+			$sale_start                = $this->woo_product->get_date_on_sale_from();
+			$sale_start                =
+				$sale_start
+					? date_i18n( WC_DateTime::ATOM, $sale_start->getOffsetTimestamp() )
 					: self::MIN_DATE_1 . self::MIN_TIME;
-			$sale_end =
-				( $date   = $this->woo_product->get_date_on_sale_to() )
-					? date_i18n( WC_DateTime::ATOM, $date->getOffsetTimestamp() )
+			$sale_end                  = $this->woo_product->get_date_on_sale_to();
+			$sale_end                  =
+				$sale_end
+					? date_i18n( WC_DateTime::ATOM, $sale_end->getOffsetTimestamp() )
 					: self::MAX_DATE . self::MAX_TIME;
 			$sale_price_effective_date =
-				( $sale_start == self::MIN_DATE_1 . self::MIN_TIME && $sale_end == self::MAX_DATE . self::MAX_TIME )
+				( self::MIN_DATE_1 . self::MIN_TIME === $sale_start && self::MAX_DATE . self::MAX_TIME === $sale_end )
 				? ''
 				: $sale_start . '/' . $sale_end;
 				$sale_price            =
 				intval( round( $this->get_price_plus_tax( $sale_price ) * 100 ) );
 
 			// Set Sale start and end as empty if set to default values
-			if ( $sale_start == self::MIN_DATE_1 . self::MIN_TIME && $sale_end == self::MAX_DATE . self::MAX_TIME ) {
+			if ( self::MIN_DATE_1 . self::MIN_TIME === $sale_start && self::MAX_DATE . self::MAX_TIME === $sale_end ) {
 				$sale_start = '';
 				$sale_end   = '';
 			}
@@ -1016,7 +1015,7 @@ class WC_Facebook_Product {
 		// Extract first value from array or object
 		$fb_condition = $this->get_first_value_from_complex_type( $fb_condition );
 
-		return WC_Facebookcommerce_Utils::clean_string( $fb_condition ) ?: self::CONDITION_NEW;
+		return WC_Facebookcommerce_Utils::clean_string( $fb_condition ) ? WC_Facebookcommerce_Utils::clean_string( $fb_condition ) : self::CONDITION_NEW;
 	}
 
 
@@ -1027,7 +1026,7 @@ class WC_Facebook_Product {
 
 			foreach ( $attributes as $key => $value ) {
 				$attr_key = strtolower( $key );
-				if ( $attr_key === 'age_group' ) {
+				if ( 'age_group' === $attr_key ) {
 					// Extract first value from array or object for attribute
 					$value = $this->get_first_value_from_complex_type( $value );
 					return WC_Facebookcommerce_Utils::clean_string( $value );
@@ -1069,7 +1068,7 @@ class WC_Facebook_Product {
 
 			foreach ( $attributes as $key => $value ) {
 				$attr_key = strtolower( $key );
-				if ( $attr_key === 'gender' ) {
+				if ( 'gender' === $attr_key ) {
 					// Extract first value from array or object for attribute
 					$value = $this->get_first_value_from_complex_type( $value );
 					return WC_Facebookcommerce_Utils::clean_string( $value );
@@ -1205,12 +1204,9 @@ class WC_Facebook_Product {
 			if ( ! empty( $attribute_value ) ) {
 				return array( $attribute_value );
 			}
-
 			// If no specific value, try parent product
 			return $this->get_parent_taxonomy_attribute_values( $attribute_name );
-		}
-		// For regular products
-		elseif ( $attribute_found && $attribute_obj ) {
+		} elseif ( $attribute_found && $attribute_obj ) { // For regular products
 			if ( $attribute_obj->is_taxonomy() ) {
 				$terms = $attribute_obj->get_terms();
 				if ( $terms && ! is_wp_error( $terms ) ) {
