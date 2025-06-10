@@ -29,6 +29,7 @@ class FeedUploadUtilsTest extends FeedDataTestBase {
 		// Create a review comment.
 		$comment_id = self::factory()->comment->create( [
 			'comment_post_ID' => $product_id,
+			'comment_type'    => 'review',
 			'comment_date'    => '2023-10-01 10:00:00',
 			'comment_content' => 'Awesome product!',
 			'comment_author'  => 'John Doe',
@@ -36,7 +37,14 @@ class FeedUploadUtilsTest extends FeedDataTestBase {
 		] );
 		update_comment_meta( $comment_id, 'rating', 5 );
 
-		$result = \WooCommerce\Facebook\Feed\FeedUploadUtils::get_ratings_and_reviews_data( [] );
+		//Query arguments to fetch R&R data
+		$query_args = array(
+			'status'       => 'approve',
+			'post_type'    => 'product',
+			'comment_type' => 'review',
+		);
+
+		$result = \WooCommerce\Facebook\Feed\FeedUploadUtils::get_ratings_and_reviews_data( $query_args );
 
 		$expected_review = [
 			'aggregator'                      => 'woocommerce',
@@ -83,7 +91,14 @@ class FeedUploadUtilsTest extends FeedDataTestBase {
 		] );
 		update_comment_meta( $comment_id, 'rating', 4 );
 
-		$result = \WooCommerce\Facebook\Feed\FeedUploadUtils::get_ratings_and_reviews_data( [] );
+		//Query arguments to fetch R&R data
+		$query_args = array(
+			'status'       => 'approve',
+			'post_type'    => 'product',
+			'comment_type' => 'review',
+		);
+
+		$result = \WooCommerce\Facebook\Feed\FeedUploadUtils::get_ratings_and_reviews_data( $query_args );
 		$this->assertEmpty( $result, 'Expected no review for a non-product comment.' );
 	}
 
@@ -100,13 +115,21 @@ class FeedUploadUtilsTest extends FeedDataTestBase {
 		// Create a comment without a valid rating.
 		$comment_id = self::factory()->comment->create( [
 			'comment_post_ID' => $product_id,
+			'comment_type'    => 'review',
 			'comment_date'    => '2023-10-01 10:00:00',
 			'comment_content' => 'I did not rate this product.',
 			'comment_author'  => 'Alice',
 			'user_id'         => 3,
 		] );
 
-		$result = \WooCommerce\Facebook\Feed\FeedUploadUtils::get_ratings_and_reviews_data( [] );
+		//Query arguments to fetch R&R data
+		$query_args = array(
+			'status'       => 'approve',
+			'post_type'    => 'product',
+			'comment_type' => 'review',
+		);
+
+		$result = \WooCommerce\Facebook\Feed\FeedUploadUtils::get_ratings_and_reviews_data( $query_args );
 		$this->assertEmpty( $result, 'Expected no review when rating is missing.' );
 	}
 
@@ -115,6 +138,7 @@ class FeedUploadUtilsTest extends FeedDataTestBase {
 		$invalid_product_id = 999999;
 		$comment_id         = self::factory()->comment->create( [
 			'comment_post_ID' => $invalid_product_id,
+			'comment_type'    => 'review',
 			'comment_date'    => '2023-10-01 12:00:00',
 			'comment_content' => 'Product does not exist.',
 			'comment_author'  => 'Bob',
@@ -122,7 +146,14 @@ class FeedUploadUtilsTest extends FeedDataTestBase {
 		] );
 		update_comment_meta( $comment_id, 'rating', 3 );
 
-		$result = \WooCommerce\Facebook\Feed\FeedUploadUtils::get_ratings_and_reviews_data( [] );
+		//Query arguments to fetch R&R data
+		$query_args = array(
+			'status'       => 'approve',
+			'post_type'    => 'product',
+			'comment_type' => 'review',
+		);
+
+		$result = \WooCommerce\Facebook\Feed\FeedUploadUtils::get_ratings_and_reviews_data( $query_args );
 		$this->assertEmpty( $result, 'Expected no review for comment with invalid product.' );
 	}
 
@@ -168,7 +199,7 @@ class FeedUploadUtilsTest extends FeedDataTestBase {
 		// Build the expected coupon shape according to how FeedUploadUtils outputs the data.
 		$expected_coupon = [
 			'offer_id'                              => $coupon_id,              // coupon ID as an integer
-			'title'                                 => 'coupon-code-1',         // lowercased coupon post title
+			'title'                                 => 'COUPON-CODE-1',         // uppercase coupon post title
 			'value_type'                            => 'PERCENTAGE',
 			'percent_off'                           => '15',                    // as a string
 			'fixed_amount_off'                      => '',                      // empty string output
@@ -178,7 +209,7 @@ class FeedUploadUtilsTest extends FeedDataTestBase {
 			'target_selection'                      => 'SPECIFIC_PRODUCTS',
 			'start_date_time'                       => $coupon_data['start_date_time'], // use the output from the coupon post date/time
 			'end_date_time'                         => '',
-			'coupon_codes'                          => ['coupon-code-1'],
+			'coupon_codes'                          => ['COUPON-CODE-1'],
 			'public_coupon_code'                    => '',
 			'target_filter'                         => '{"or":[{"retailer_id":{"eq":"product-sku-1_'.$product1->get_id().'"}}]}',
 			'target_product_retailer_ids'           => '',
@@ -234,7 +265,7 @@ class FeedUploadUtilsTest extends FeedDataTestBase {
 		// Build the expected coupon shape according to how FeedUploadUtils outputs the data.
 		$expected_coupon = [
 			'offer_id'                              => $coupon_id,              // coupon ID as an integer
-			'title'                                 => 'coupon-code-1',         // lowercased coupon post title
+			'title'                                 => 'COUPON-CODE-1',         // uppercase coupon post title
 			'value_type'                            => 'PERCENTAGE',
 			'fixed_amount_off'                      => '0',                      // empty string output
 			'percent_off'                           => '100',                    // as a string
@@ -244,7 +275,7 @@ class FeedUploadUtilsTest extends FeedDataTestBase {
 			'target_selection'                      => 'ALL_CATALOG_PRODUCTS',
 			'start_date_time'                       => $coupon_data['start_date_time'], // use the output from the coupon post date/time
 			'end_date_time'                         => '',
-			'coupon_codes'                          => ['coupon-code-1'],
+			'coupon_codes'                          => ['COUPON-CODE-1'],
 			'public_coupon_code'                    => '',
 			'target_filter'                         => '',
 			'target_product_retailer_ids'           => '',
@@ -326,7 +357,7 @@ class FeedUploadUtilsTest extends FeedDataTestBase {
 		// Build the expected coupon shape.
 		$expected_coupon = [
 			'offer_id'                              => $coupon_id,                          // coupon ID as an integer
-			'title'                                 => 'coupon-incl-excl',                  // lowercased coupon post title
+			'title'                                 => 'COUPON-INCL-EXCL',                  // uppercase coupon post title
 			'value_type'                            => 'PERCENTAGE',
 			'percent_off'                           => '20',                                // as a string
 			'fixed_amount_off'                      => '',                                  // empty string output
@@ -336,7 +367,7 @@ class FeedUploadUtilsTest extends FeedDataTestBase {
 			'target_selection'                      => 'SPECIFIC_PRODUCTS',
 			'start_date_time'                       => $coupon_data['start_date_time'],     // use the generated start date/time
 			'end_date_time'                         => '',
-			'coupon_codes'                          => ['coupon-incl-excl'],                // coupon_codes as an array containing the title
+			'coupon_codes'                          => ['COUPON-INCL-EXCL'],                // coupon_codes as an array containing the title
 			'public_coupon_code'                    => '',
 			'target_filter'                         => '{"and":[{"or":[{"retailer_id":{"eq":"product-sku-1_'.$product1->get_id().'"}},{"retailer_id":{"eq":"product-sku-2_'.$product2->get_id().'"}}]},{"and":[{"retailer_id":{"neq":"product-sku-3_'.$product3->get_id().'"}}]}]}',
 			'target_product_retailer_ids'           => '',
@@ -435,8 +466,8 @@ class FeedUploadUtilsTest extends FeedDataTestBase {
 
 		// Build the expected coupon shape.
 		$expected_coupon = [
-			'offer_id'                              => $coupon_id,                           // coupon ID as an integer
-			'title'                                 => 'coupon-cat-only',                   // lowercased coupon post title
+			'offer_id'                              => $coupon_id,                          // coupon ID as an integer
+			'title'                                 => 'COUPON-CAT-ONLY',                   // uppercase coupon post title
 			'value_type'                            => 'PERCENTAGE',
 			'percent_off'                           => '15',                                // as a string
 			'fixed_amount_off'                      => '',                                  // empty string output
@@ -446,7 +477,7 @@ class FeedUploadUtilsTest extends FeedDataTestBase {
 			'target_selection'                      => 'SPECIFIC_PRODUCTS',
 			'start_date_time'                       => $coupon_data['start_date_time'],     // generated start date/time
 			'end_date_time'                         => '',
-			'coupon_codes'                          => ['coupon-cat-only'],                 // coupon_codes as an array containing the code
+			'coupon_codes'                          => ['COUPON-CAT-ONLY'],                 // coupon_codes as an array containing the code
 			'public_coupon_code'                    => '',
 			'target_filter'                         => $expected_target_filter,
 			'target_product_retailer_ids'           => '',
