@@ -104,7 +104,7 @@ class WC_Facebook_Product {
 	const MAX_TIME   = 'T23:59+00:00';
 	const MIN_TIME   = 'T00:00+00:00';
 
-  /**
+	/**
 	 * Maximum length of product description.
 	 *
 	 * @var int
@@ -166,12 +166,12 @@ class WC_Facebook_Product {
 
 	/** @var array Standard Facebook fields that WooCommerce attributes can map to */
 	private static $standard_facebook_fields = array(
-		'size' => array('size'),
-		'color' => array('color', 'colour'),
-		'pattern' => array('pattern'),
-		'material' => array('material'),
-		'gender' => array('gender'),
-		'age_group' => array('age_group')
+		'size'      => array( 'size' ),
+		'color'     => array( 'color', 'colour' ),
+		'pattern'   => array( 'pattern' ),
+		'material'  => array( 'material' ),
+		'gender'    => array( 'gender' ),
+		'age_group' => array( 'age_group' ),
 	);
 
 
@@ -181,12 +181,12 @@ class WC_Facebook_Product {
 	 * @param string $attribute_name The WooCommerce attribute name
 	 * @return bool|string False if not mapped, or the Facebook field name if mapped
 	 */
-	public function check_attribute_mapping($attribute_name) {
-		$sanitized_name = \WC_Facebookcommerce_Utils::sanitize_variant_name($attribute_name, false);
+	public function check_attribute_mapping( $attribute_name ) {
+		$sanitized_name = \WC_Facebookcommerce_Utils::sanitize_variant_name( $attribute_name, false );
 
-		foreach (self::$standard_facebook_fields as $fb_field => $possible_matches) {
-			foreach ($possible_matches as $match) {
-				if (stripos($sanitized_name, $match) !== false) {
+		foreach ( self::$standard_facebook_fields as $fb_field => $possible_matches ) {
+			foreach ( $possible_matches as $match ) {
+				if ( stripos( $sanitized_name, $match ) !== false ) {
 					return $fb_field;
 				}
 			}
@@ -202,18 +202,18 @@ class WC_Facebook_Product {
 	 */
 	public function get_unmapped_attributes() {
 		$unmapped_attributes = array();
-		$attributes = $this->woo_product->get_attributes();
+		$attributes          = $this->woo_product->get_attributes();
 
-		foreach ($attributes as $attribute_name => $_) {
-			$value = $this->woo_product->get_attribute($attribute_name);
+		foreach ( $attributes as $attribute_name => $_ ) {
+			$value = $this->woo_product->get_attribute( $attribute_name );
 
-			if (!empty($value)) {
-				$mapped_field = $this->check_attribute_mapping($attribute_name);
+			if ( ! empty( $value ) ) {
+				$mapped_field = $this->check_attribute_mapping( $attribute_name );
 
-				if ($mapped_field === false) {
+				if ( $mapped_field === false ) {
 					$unmapped_attributes[] = array(
-						'name' => $attribute_name,
-						'value' => $value
+						'name'  => $attribute_name,
+						'value' => $value,
 					);
 				}
 			}
@@ -232,11 +232,11 @@ class WC_Facebook_Product {
 			$this->woo_product = wc_get_product( $wpid );
 		}
 
-		$this->fb_description         = '';
-		$this->gallery_urls           = null;
-		$this->fb_use_parent_image    = null;
-		$this->main_description       = '';
-		$this->rich_text_description  = '';
+		$this->fb_description        = '';
+		$this->gallery_urls          = null;
+		$this->fb_use_parent_image   = null;
+		$this->main_description      = '';
+		$this->rich_text_description = '';
 
 		if ( $meta = get_post_meta( $this->id, self::FB_VISIBILITY, true ) ) {
 			$this->fb_visibility = wc_string_to_bool( $meta );
@@ -419,12 +419,12 @@ class WC_Facebook_Product {
 	public function get_all_video_urls( $parent_id = null ) {
 
 		$video_urls = array();
-		$product = $this->woo_product;
-		
-		if($parent_id !== null) {
+		$product    = $this->woo_product;
+
+		if ( $parent_id !== null ) {
 			$product = wc_get_product( $parent_id );
 		}
-	
+
 		$attached_videos = get_attached_media( 'video', $this->id );
 
 		$custom_video_urls = $product->get_meta( self::FB_PRODUCT_VIDEO );
@@ -524,7 +524,7 @@ class WC_Facebook_Product {
 	}
 
 	public function set_rich_text_description( $rich_text_description ) {
-		$rich_text_description = stripslashes( $rich_text_description );
+		$rich_text_description       = stripslashes( $rich_text_description );
 		$this->rich_text_description = $rich_text_description;
 		update_post_meta(
 			$this->id,
@@ -551,9 +551,9 @@ class WC_Facebook_Product {
 	 * @param string $value The value to store
 	 * @return void
 	 */
-	private function set_fb_attribute($key, $value) {
+	private function set_fb_attribute( $key, $value ) {
 		$value = stripslashes(
-			WC_Facebookcommerce_Utils::clean_string($value)
+			WC_Facebookcommerce_Utils::clean_string( $value )
 		);
 		update_post_meta(
 			$this->id,
@@ -563,35 +563,35 @@ class WC_Facebook_Product {
 	}
 
 	public function set_fb_material( $fb_material ) {
-		$this->set_fb_attribute(self::FB_MATERIAL, $fb_material);
+		$this->set_fb_attribute( self::FB_MATERIAL, $fb_material );
 	}
 
 	public function set_fb_pattern( $fb_pattern ) {
-		$this->set_fb_attribute(self::FB_PATTERN, $fb_pattern);
+		$this->set_fb_attribute( self::FB_PATTERN, $fb_pattern );
 	}
 
 	public function set_fb_mpn( $fb_mpn ) {
-		$this->set_fb_attribute(self::FB_MPN, $fb_mpn);
+		$this->set_fb_attribute( self::FB_MPN, $fb_mpn );
 	}
 
 	public function set_fb_condition( $fb_condition ) {
-		$this->set_fb_attribute(self::FB_PRODUCT_CONDITION, $fb_condition);
+		$this->set_fb_attribute( self::FB_PRODUCT_CONDITION, $fb_condition );
 	}
 
 	public function set_fb_age_group( $fb_age_group ) {
-		$this->set_fb_attribute(self::FB_AGE_GROUP, $fb_age_group);
+		$this->set_fb_attribute( self::FB_AGE_GROUP, $fb_age_group );
 	}
 
 	public function set_fb_gender( $fb_gender ) {
-		$this->set_fb_attribute(self::FB_GENDER, $fb_gender);
+		$this->set_fb_attribute( self::FB_GENDER, $fb_gender );
 	}
 
 	public function set_fb_color( $fb_color ) {
-		$this->set_fb_attribute(self::FB_COLOR, $fb_color);
+		$this->set_fb_attribute( self::FB_COLOR, $fb_color );
 	}
 
 	public function set_fb_size( $fb_size ) {
-		$this->set_fb_attribute(self::FB_SIZE, $fb_size);
+		$this->set_fb_attribute( self::FB_SIZE, $fb_size );
 	}
 
 	public function set_price( $price ) {
@@ -633,16 +633,16 @@ class WC_Facebook_Product {
 	 * @param bool $is_api_call Whether this is for API submission
 	 * @return string|array String for UI display, array for API if pipe-separated
 	 */
-	public function get_fb_brand($is_api_call = false) {
+	public function get_fb_brand( $is_api_call = false ) {
 		// Check if we have a taxonomy attribute for brand
-		$brand_values = $this->get_taxonomy_attribute_values('pa_brand');
+		$brand_values = $this->get_taxonomy_attribute_values( 'pa_brand' );
 
-		if ($brand_values) {
-			return $this->process_attribute_values($brand_values, $is_api_call);
+		if ( $brand_values ) {
+			return $this->process_attribute_values( $brand_values, $is_api_call );
 		}
 
 		// If this is a variation, first check for variation-specific brand
-		if ($this->is_type('variation')) {
+		if ( $this->is_type( 'variation' ) ) {
 			// Get brand directly from variation's post meta
 			$fb_brand = get_post_meta(
 				$this->id,
@@ -651,10 +651,10 @@ class WC_Facebook_Product {
 			);
 
 			// If variation has no brand set, get from parent
-			if (empty($fb_brand)) {
+			if ( empty( $fb_brand ) ) {
 				$parent_id = $this->get_parent_id();
-				if ($parent_id) {
-					$fb_brand = get_post_meta($parent_id, self::FB_BRAND, true);
+				if ( $parent_id ) {
+					$fb_brand = get_post_meta( $parent_id, self::FB_BRAND, true );
 				}
 			}
 		} else {
@@ -667,21 +667,21 @@ class WC_Facebook_Product {
 		}
 
 		// Only fallback to store name if no brand is found on product or parent
-		if (empty($fb_brand)) {
-			$brand = get_post_meta($this->id, Products::ENHANCED_CATALOG_ATTRIBUTES_META_KEY_PREFIX . 'brand', true);
-			$brand_taxonomy = get_the_term_list($this->id, 'product_brand', '', ', ');
+		if ( empty( $fb_brand ) ) {
+			$brand          = get_post_meta( $this->id, Products::ENHANCED_CATALOG_ATTRIBUTES_META_KEY_PREFIX . 'brand', true );
+			$brand_taxonomy = get_the_term_list( $this->id, 'product_brand', '', ', ' );
 
-			if ($brand) {
+			if ( $brand ) {
 				$fb_brand = $brand;
-			} elseif (!is_wp_error($brand_taxonomy) && $brand_taxonomy) {
+			} elseif ( ! is_wp_error( $brand_taxonomy ) && $brand_taxonomy ) {
 				$fb_brand = $brand_taxonomy;
 			} else {
-				$fb_brand = wp_strip_all_tags(WC_Facebookcommerce_Utils::get_store_name());
+				$fb_brand = wp_strip_all_tags( WC_Facebookcommerce_Utils::get_store_name() );
 			}
 		}
 
-		$clean_value = WC_Facebookcommerce_Utils::clean_string($fb_brand);
-		return $this->convert_pipe_separated_values($clean_value, $is_api_call);
+		$clean_value = WC_Facebookcommerce_Utils::clean_string( $fb_brand );
+		return $this->convert_pipe_separated_values( $clean_value, $is_api_call );
 	}
 
 	public function get_fb_description() {
@@ -753,47 +753,47 @@ class WC_Facebook_Product {
 		$short_description = '';
 
 		// For variations, first try to get the short description from the parent product
-		if (WC_Facebookcommerce_Utils::is_variation_type($this->woo_product->get_type())) {
+		if ( WC_Facebookcommerce_Utils::is_variation_type( $this->woo_product->get_type() ) ) {
 			// Get the parent product
 			$parent_id = $this->woo_product->get_parent_id();
-			if ($parent_id) {
-				$parent_post = get_post($parent_id);
-				if ($parent_post && !empty($parent_post->post_excerpt)) {
-					$short_description = WC_Facebookcommerce_Utils::clean_string($parent_post->post_excerpt);
+			if ( $parent_id ) {
+				$parent_post = get_post( $parent_id );
+				if ( $parent_post && ! empty( $parent_post->post_excerpt ) ) {
+					$short_description = WC_Facebookcommerce_Utils::clean_string( $parent_post->post_excerpt );
 				}
 			}
 
 			// If no parent description found, try getting the variation's own excerpt
-			if (empty($short_description)) {
+			if ( empty( $short_description ) ) {
 				$post = $this->get_post_data();
-				if ($post && !empty($post->post_excerpt)) {
-					$short_description = WC_Facebookcommerce_Utils::clean_string($post->post_excerpt);
+				if ( $post && ! empty( $post->post_excerpt ) ) {
+					$short_description = WC_Facebookcommerce_Utils::clean_string( $post->post_excerpt );
 				}
 			}
 
 			// If still no short description, check if main description is short enough
-			if (empty($short_description)) {
-				$main_description = WC_Facebookcommerce_Utils::clean_string($this->woo_product->get_description());
-				if (!empty($main_description) && strlen($main_description) <= 1000) {
+			if ( empty( $short_description ) ) {
+				$main_description = WC_Facebookcommerce_Utils::clean_string( $this->woo_product->get_description() );
+				if ( ! empty( $main_description ) && strlen( $main_description ) <= 1000 ) {
 					$short_description = $main_description;
 				}
 			}
 
-			return apply_filters('facebook_for_woocommerce_fb_product_short_description', $short_description, $this->id);
+			return apply_filters( 'facebook_for_woocommerce_fb_product_short_description', $short_description, $this->id );
 		}
 
 		// Use the product's short description (excerpt) from WooCommerce
-		$post = $this->get_post_data();
-		$post_excerpt = WC_Facebookcommerce_Utils::clean_string($post->post_excerpt);
+		$post         = $this->get_post_data();
+		$post_excerpt = WC_Facebookcommerce_Utils::clean_string( $post->post_excerpt );
 
-		if (!empty($post_excerpt)) {
+		if ( ! empty( $post_excerpt ) ) {
 			$short_description = $post_excerpt;
 		}
 
 		// If no short description (excerpt) found, check if main description is short enough
-		if (empty($short_description)) {
-			$post_content = WC_Facebookcommerce_Utils::clean_string($post->post_content);
-			if (!empty($post_content) && strlen($post_content) <= 1000) {
+		if ( empty( $short_description ) ) {
+			$post_content = WC_Facebookcommerce_Utils::clean_string( $post->post_content );
+			if ( ! empty( $post_content ) && strlen( $post_content ) <= 1000 ) {
 				$short_description = $post_content;
 			}
 		}
@@ -804,7 +804,7 @@ class WC_Facebook_Product {
 		 * @param string  $short_description Facebook product short description.
 		 * @param int     $id                WooCommerce Product ID.
 		 */
-		return apply_filters('facebook_for_woocommerce_fb_product_short_description', $short_description, $this->id);
+		return apply_filters( 'facebook_for_woocommerce_fb_product_short_description', $short_description, $this->id );
 	}
 
 	/**
@@ -815,24 +815,22 @@ class WC_Facebook_Product {
 	 *
 	 * @return array The labels/tags for the product
 	 */
-	public function get_internal_labels(): array
-	{
-		$labels = [];
+	public function get_internal_labels(): array {
+		$labels   = [];
 		$labels[] = $this->get_shipping_class_label();
 
 		// Wrap labels in single quotes
 		return array_map(
 			function ( string $label ) {
-				return sprintf("%s", $label);
+				return sprintf( '%s', $label );
 			},
 			$labels
 		);
 	}
 
-	private function get_shipping_class_label(): string
-	{
+	private function get_shipping_class_label(): string {
 		$shipping_class_id = (string) $this->woo_product->get_shipping_class_id();
-		return ShippingProfilesFeed::get_shipping_class_tag_for_class($shipping_class_id);
+		return ShippingProfilesFeed::get_shipping_class_tag_for_class( $shipping_class_id );
 	}
 
 	/**
@@ -855,7 +853,7 @@ class WC_Facebook_Product {
 				self::FB_RICH_TEXT_DESCRIPTION,
 				true
 			);
-			if ($rich_text_description) {
+			if ( $rich_text_description ) {
 				return $rich_text_description;
 			}
 		}
@@ -893,7 +891,7 @@ class WC_Facebook_Product {
 			$post = get_post( $this->id );
 			if ( $post ) {
 				$rich_text_description = $post->post_content;
-				
+
 				// If post content is empty, fall back to short description (post_excerpt)
 				if ( empty( $rich_text_description ) ) {
 					$rich_text_description = $post->post_excerpt;
