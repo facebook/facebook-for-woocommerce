@@ -2,9 +2,9 @@ name: Product Creation E2E Tests WITH DEBUG
 
 on:
   push:
-    branches: [ main, master, develop ]
+    branches: [ main, master, develop, feature/e2e-testing-infrastructure ]
   pull_request:
-    branches: [ main, master, develop ]
+    branches: [ main, master, develop, feature/e2e-testing-infrastructure ]
 
 jobs:
   e2e-tests:
