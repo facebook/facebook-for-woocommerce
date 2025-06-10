@@ -51,7 +51,7 @@ if ( ! class_exists( 'WC_Facebook_Product_Feed_Test' ) ) :
 				array(
 					'should_send_log_to_meta'        => false,
 					'should_save_log_in_woocommerce' => true,
-					'woocommerce_log_level'          => \WC_Log_Levels::ERROR,
+					'woocommerce_log_level'          => \WC_Log_Levels::DEBUG,
 				)
 			);
 		}
