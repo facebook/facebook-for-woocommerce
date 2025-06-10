@@ -109,8 +109,6 @@ class Products {
 	 * based on user opt in status for Woo all products
 	 *
 	 * @since 3.5.1
-	 *
-	 * @param \WC_Product[] $products an array of product objects
 	 */
 	public static function get_product_sync_meta_key() {
 		if ( PluginRender::is_master_sync_on() ) {
