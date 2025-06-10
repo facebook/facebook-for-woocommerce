@@ -13,6 +13,7 @@ namespace WooCommerce\Facebook\Feed;
 use WooCommerce\Facebook\Framework\Helper;
 use WooCommerce\Facebook\Framework\Plugin\Exception as PluginException;
 use WooCommerce\Facebook\Utilities\Heartbeat;
+use WooCommerce\Facebook\Framework\Logger;
 
 defined( 'ABSPATH' ) || exit;
 
@@ -232,7 +233,15 @@ abstract class AbstractFeed {
 	 */
 	public function handle_feed_data_request(): void {
 		$name = static::get_data_stream_name();
-		\WC_Facebookcommerce_Utils::log_with_debug_mode_enabled( "{$name} feed: Meta is requesting feed file." );
+		Logger::log(
+			"{$name} feed: Meta is requesting feed file.",
+			[],
+			array(
+				'should_send_log_to_meta'        => false,
+				'should_save_log_in_woocommerce' => true,
+				'woocommerce_log_level'          => \WC_Log_Levels::DEBUG,
+			)
+		);
 
 		$file_path = $this->feed_writer->get_file_path();
 		$file      = false;
@@ -277,7 +286,15 @@ abstract class AbstractFeed {
 			// fpassthru might be disabled in some hosts (like Flywheel).
 			// phpcs:ignore
 			if ( \WC_Facebookcommerce_Utils::is_fpassthru_disabled() || ! @fpassthru( $file ) ) {
-				\WC_Facebookcommerce_Utils::log_with_debug_mode_enabled( "{$name} feed: fpassthru is disabled: getting file contents." );
+				Logger::log(
+					"{$name} feed: fpassthru is disabled: getting file contents.",
+					[],
+					array(
+						'should_send_log_to_meta'        => false,
+						'should_save_log_in_woocommerce' => true,
+						'woocommerce_log_level'          => \WC_Log_Levels::DEBUG,
+					)
+				);
 				//phpcs:ignore
 				$contents = @stream_get_contents( $file );
 				if ( ! $contents ) {

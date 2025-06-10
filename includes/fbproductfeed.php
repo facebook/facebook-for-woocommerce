@@ -78,8 +78,15 @@ class WC_Facebook_Product_Feed {
 			do_action('wc_facebook_feed_generation_completed');
 
 		} catch ( \Exception $exception ) {
-
-			\WC_Facebookcommerce_Utils::log_with_debug_mode_enabled( $exception->getMessage() );
+			Logger::log(
+				$exception->getMessage(),
+				[],
+				array(
+					'should_send_log_to_meta'        => false,
+					'should_save_log_in_woocommerce' => true,
+					'woocommerce_log_level'          => \WC_Log_Levels::ERROR,
+				)
+			);
 			// Feed generation failed - clear the generation time to track that there's an issue.
 			facebook_for_woocommerce()->get_tracker()->track_feed_file_generation_time( -1 );
 
@@ -279,7 +286,15 @@ class WC_Facebook_Product_Feed {
 
 		} catch ( Exception $e ) {
 
-			WC_Facebookcommerce_Utils::log_with_debug_mode_enabled( wp_json_encode( $e->getMessage() ) );
+			Logger::log(
+				wp_json_encode( $e->getMessage() ),
+				[],
+				array(
+					'should_send_log_to_meta'        => false,
+					'should_save_log_in_woocommerce' => true,
+					'woocommerce_log_level'          => \WC_Log_Levels::ERROR,
+				)
+			);
 
 			$written = false;
 

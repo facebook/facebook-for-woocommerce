@@ -8,6 +8,8 @@
  * @package FacebookCommerce
  */
 
+use WooCommerce\Facebook\Framework\Logger;
+
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
@@ -43,7 +45,15 @@ if ( ! class_exists( 'WC_Facebook_Product_Feed_Test' ) ) :
 		 */
 		public function log_feed_progress( $msg, $data = array() ) {
 			$msg = empty( $data ) ? $msg : $msg . wp_json_encode( $data );
-			WC_Facebookcommerce_Utils::log_with_debug_mode_enabled( 'Test - ' . $msg );
+			Logger::log(
+				'Test - ' . $msg,
+				[],
+				array(
+					'should_send_log_to_meta'        => false,
+					'should_save_log_in_woocommerce' => true,
+					'woocommerce_log_level'          => \WC_Log_Levels::ERROR,
+				)
+			);
 		}
 	}
 
