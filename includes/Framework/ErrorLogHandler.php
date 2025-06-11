@@ -49,13 +49,27 @@ class ErrorLogHandler extends LogHandlerBase {
 		$context = self::set_core_log_context( $raw_context );
 		try {
 			$response = facebook_for_woocommerce()->get_api()->log_to_meta( $context );
-			if ( $response->success ) {
-				WC_Facebookcommerce_Utils::log_with_debug_mode_enabled( 'Error log: ' . wp_json_encode( $context ), \WC_Log_Levels::ERROR );
-			} else {
-				WC_Facebookcommerce_Utils::log_with_debug_mode_enabled( 'Bad response from log_to_meta request', \WC_Log_Levels::ERROR );
+			if ( ! $response->success ) {
+				Logger::log(
+					'Bad response from log_to_meta request',
+					[],
+					array(
+						'should_send_log_to_meta'        => false,
+						'should_save_log_in_woocommerce' => true,
+						'woocommerce_log_level'          => \WC_Log_Levels::ERROR,
+					)
+				);
 			}
 		} catch ( \Exception $e ) {
-			WC_Facebookcommerce_Utils::log_with_debug_mode_enabled( 'Error persisting error logs: ' . $e->getMessage(), \WC_Log_Levels::ERROR );
+			Logger::log(
+				'Error persisting error logs: ' . $e->getMessage(),
+				[],
+				array(
+					'should_send_log_to_meta'        => false,
+					'should_save_log_in_woocommerce' => true,
+					'woocommerce_log_level'          => \WC_Log_Levels::ERROR,
+				)
+			);
 		}
 	}
 
