@@ -2167,7 +2167,7 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 		wp_reset_postdata();
 		wp_die();
 	}
-	
+
 	/**
 	 * Toggles product visibility via AJAX.
 	 *
