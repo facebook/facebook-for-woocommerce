@@ -572,6 +572,11 @@ class Products {
 	 */
 	public static function update_google_product_category_id( \WC_Product $product, $category_id ) {
 
+		// Decode HTML entities if the category_id contains them (common in feed imports)
+		if ( is_string( $category_id ) ) {
+			$category_id = html_entity_decode( $category_id, ENT_QUOTES | ENT_HTML401, 'UTF-8' );
+		}
+
 		$product->update_meta_data( self::GOOGLE_PRODUCT_CATEGORY_META_KEY, $category_id );
 		$product->save_meta_data();
 	}
