@@ -412,48 +412,6 @@ if ( ! class_exists( 'WC_Facebookcommerce_Utils' ) ) :
 		}
 
 		/**
-		 * Utility function for development logging.
-		 *
-		 * @param string $message
-		 * @param array  $obj
-		 * @param bool   $error
-		 * @param string $ems
-		 */
-		public static function fblog(
-			$message,
-			$obj = [],
-			$error = false,
-			$ems = ''
-		) {
-			if ( $error ) {
-				$obj['plugin_version'] = self::PLUGIN_VERSION;
-				$obj['php_version']    = phpversion();
-			}
-			$message = wp_json_encode(
-				array(
-					'message' => $message,
-					'object'  => $obj,
-				)
-			);
-
-			// phpcs:ignore Universal.Operators.DisallowShortTernary.Found
-			$ems = $ems ?: self::$ems;
-			if ( $ems ) {
-				try {
-					facebook_for_woocommerce()->get_api()->log( $ems, $message, $error );
-				} catch ( ApiException $e ) {
-					$message = sprintf( 'There was an error trying to log: %s', $e->getMessage() );
-					facebook_for_woocommerce()->log( $message );
-				}
-			} else {
-				error_log(
-					'external merchant setting is null, something wrong here: ' .
-					$message
-				);
-			}
-		}
-
-		/**
 		 * Utility function for development Tip Events logging.
 		 *
 		 * @param string $tip_id
