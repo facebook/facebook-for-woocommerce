@@ -79,6 +79,7 @@ class BatchLogHandler extends LogHandlerBase {
 									'woocommerce_log_level'   => \WC_Log_Levels::ERROR,
 								)
 							);
+							return $logs_chunk;
 						}
 					} catch ( \Exception $e ) {
 						Logger::log(
