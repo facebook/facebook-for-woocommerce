@@ -992,28 +992,6 @@ if ( ! class_exists( 'WC_Facebookcommerce_Utils' ) ) :
 		}
 
 		/**
-		 * Utility function for sending logs to Meta.
-		 *
-		 * @since 3.5.0
-		 *
-		 * @param string $message
-		 * @param array  $context optional error message attributes
-		 */
-		public static function log_to_meta( string $message, array $context = [] ) {
-			$extra_data            = self::get_context_data( $context, 'extra_data', [] );
-			$extra_data['message'] = $message;
-			$context['extra_data'] = $extra_data;
-
-			// Push logging request to global message queue function.
-			$logs = get_transient( 'global_logging_message_queue' );
-			if ( ! $logs ) {
-				$logs = [];
-			}
-			$logs[] = $context;
-			set_transient( 'global_logging_message_queue', $logs, HOUR_IN_SECONDS );
-		}
-
-		/**
 		 * Checks whether fpassthru has been disabled in PHP.
 		 *
 		 * @since 3.5.0
