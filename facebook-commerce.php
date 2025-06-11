@@ -2936,16 +2936,7 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 		);
 		if ( $fb_product_item_id ) {
 			try {
-				$pi_result = $this->facebook_for_woocommerce->get_api()->delete_product_item( $fb_product_item_id );
-				Logger::log(
-					$pi_result,
-					[],
-					array(
-						'should_send_log_to_meta'        => false,
-						'should_save_log_in_woocommerce' => true,
-						'woocommerce_log_level'          => \WC_Log_Levels::ERROR,
-					)
-				);
+				$this->facebook_for_woocommerce->get_api()->delete_product_item( $fb_product_item_id );
 			} catch ( ApiException $e ) {
 				$message = sprintf( 'There was an error trying to delete a product set item: %s', $e->getMessage() );
 				Logger::log(
