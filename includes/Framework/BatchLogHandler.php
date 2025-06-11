@@ -68,14 +68,29 @@ class BatchLogHandler extends LogHandlerBase {
 					try {
 						$response = facebook_for_woocommerce()->get_api()->log_to_meta( $context );
 						if ( $response->success ) {
-							WC_Facebookcommerce_Utils::log_with_debug_mode_enabled( 'Meta logs: ' . wp_json_encode( $context ) );
 							return [];
 						} else {
-							WC_Facebookcommerce_Utils::log_with_debug_mode_enabled( 'Bad response from log_to_meta request' );
+							Logger::log(
+								'Bad response from Meta logging APIs',
+								[],
+								array(
+									'should_send_log_to_meta' => false,
+									'should_save_log_in_woocommerce' => true,
+									'woocommerce_log_level'   => \WC_Log_Levels::ERROR,
+								)
+							);
 							return $logs_chunk;
 						}
 					} catch ( \Exception $e ) {
-						WC_Facebookcommerce_Utils::log_with_debug_mode_enabled( 'Error persisting meta logs: ' . $e->getMessage() );
+						Logger::log(
+							'Error persisting Meta logs: ' . $e->getMessage(),
+							[],
+							array(
+								'should_send_log_to_meta' => false,
+								'should_save_log_in_woocommerce' => true,
+								'woocommerce_log_level'   => \WC_Log_Levels::ERROR,
+							)
+						);
 						return $logs_chunk;
 					}
 				},
