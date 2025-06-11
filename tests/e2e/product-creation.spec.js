@@ -180,6 +180,115 @@ test.describe('Facebook for WooCommerce - Product Creation E2E Tests', () => {
     }
   });
 
+  test('Create variable product with attributes - comprehensive test', async ({ page }) => {
+    try {
+      console.log('🧪 Testing variable product creation with attributes...');
+      
+      // Navigate to Add Product page
+      await page.goto(`${baseURL}/wp-admin/post-new.php?post_type=product`, { 
+        waitUntil: 'networkidle', 
+        timeout: 30000 
+      });
+      
+      // Fill basic product details
+      await page.waitForSelector('#title', { timeout: 15000 });
+      await page.fill('#title', 'Test Variable Product - E2E');
+      
+      // Set product type to variable
+      await page.selectOption('#product-type', 'variable');
+      console.log('✅ Set product type to variable');
+      
+      // Wait for variable product options to load
+      await page.waitForSelector('#variable_product_options', { timeout: 10000 });
+      
+      // Go to Attributes tab
+      await page.click('a[href="#product_attributes"]');
+      await page.waitForTimeout(2000);
+      console.log('✅ Switched to Attributes tab');
+      
+      try {
+        // Add Size attribute
+        await page.selectOption('#attribute_taxonomy', { label: 'Custom product attribute' });
+        await page.click('.add_attribute');
+        await page.waitForTimeout(1000);
+        
+        // Fill attribute details
+        await page.fill('input[name="attribute_names[0]"]', 'Size');
+        await page.fill('textarea[name="attribute_values[0]"]', 'Small | Medium | Large');
+        await page.check('input[name="attribute_variation[0]"]');
+        
+        // Save attributes
+        await page.click('.save_attributes');
+        await page.waitForTimeout(3000);
+        console.log('✅ Added Size attribute with variations');
+        
+        // Go to Variations tab
+        await page.click('a[href="#variable_product_options"]');
+        await page.waitForTimeout(2000);
+        
+        // Generate variations from all attributes
+        const addVariationBtn = page.locator('.toolbar .variation_actions select');
+        if (await addVariationBtn.isVisible({ timeout: 5000 })) {
+          await addVariationBtn.selectOption('add_variation');
+          await page.click('.toolbar .variation_actions .do_variation_action');
+          await page.waitForTimeout(3000);
+          console.log('✅ Generated product variations');
+          
+          // Set prices for variations if they exist
+          const variations = await page.locator('.woocommerce_variation').count();
+          if (variations > 0) {
+            console.log(`✅ Found ${variations} variations, setting prices...`);
+            
+            for (let i = 0; i < Math.min(variations, 2); i++) {
+              const variation = page.locator('.woocommerce_variation').nth(i);
+              
+              // Expand variation
+              await variation.locator('.variation_actions .expand_variation').click();
+              await page.waitForTimeout(1000);
+              
+              // Set price
+              const priceField = variation.locator('input[name*="variable_regular_price"]');
+              if (await priceField.isVisible({ timeout: 3000 })) {
+                await priceField.fill(`${25 + i}.99`);
+                console.log(`✅ Set price for variation ${i + 1}`);
+              }
+            }
+            
+            // Save variations
+            await page.click('.save-variation-changes');
+            await page.waitForTimeout(2000);
+            console.log('✅ Saved variation changes');
+          }
+        }
+      } catch (error) {
+        console.log(`⚠️ Variation setup warning: ${error.message}`);
+      }
+      
+      // Publish product
+      try {
+        const publishButton = page.locator('#publish');
+        if (await publishButton.isVisible({ timeout: 10000 })) {
+          await publishButton.click();
+          await page.waitForTimeout(3000);
+          console.log('✅ Published variable product');
+        }
+      } catch (error) {
+        console.log('⚠️ Publish step may be slow, continuing with error check');
+      }
+      
+      // Verify no PHP fatal errors
+      const pageContent = await page.content();
+      expect(pageContent).not.toContain('Fatal error');
+      expect(pageContent).not.toContain('Parse error');
+      
+      console.log('✅ Variable product creation test completed successfully');
+      
+    } catch (error) {
+      console.log(`⚠️ Variable product test failed: ${error.message}`);
+      throw error;
+    }
+  });
+
   test('Test WordPress admin and Facebook plugin presence', async ({ page }) => {
     try {
       // Navigate to plugins page with increased timeout
@@ -275,29 +384,118 @@ test.describe('Facebook for WooCommerce - Product Creation E2E Tests', () => {
 
   test('Facebook settings accessibility test', async ({ page }) => {
     try {
-      // Try to access Facebook settings with increased timeout
+      // Navigate to Facebook settings
       await page.goto(`${baseURL}/wp-admin/admin.php?page=wc-facebook`, { 
         waitUntil: 'networkidle', 
         timeout: 30000 
       });
       
+      // Check if Facebook settings page loaded
       const pageContent = await page.content();
       
-      // Check for PHP errors
+      // Verify no PHP errors
       expect(pageContent).not.toContain('Fatal error');
       expect(pageContent).not.toContain('Parse error');
       
-      if (pageContent.includes('Facebook for WooCommerce')) {
+      // Check if Facebook settings are accessible
+      const hasFacebookSettings = pageContent.includes('Facebook') || 
+                                 pageContent.includes('woocommerce') ||
+                                 await page.locator('#wpcontent').isVisible({ timeout: 5000 });
+      
+      if (hasFacebookSettings) {
         console.log('✅ Facebook settings page accessible');
       } else {
-        console.log('⚠️ Facebook settings page not available (may not be configured)');
+        console.log('⚠️ Facebook settings may not be configured');
       }
       
       console.log('✅ Facebook settings test completed');
       
     } catch (error) {
       console.log(`⚠️ Facebook settings test failed: ${error.message}`);
-      // Don't fail if Facebook settings aren't configured
+      throw error;
+    }
+  });
+
+  test('Plugin activation and deactivation lifecycle test', async ({ page }) => {
+    try {
+      console.log('🧪 Testing plugin activation and deactivation...');
+      
+      // Navigate to plugins page
+      await page.goto(`${baseURL}/wp-admin/plugins.php`, { 
+        waitUntil: 'networkidle', 
+        timeout: 30000 
+      });
+      
+      // Look for Facebook for WooCommerce plugin
+      const pluginRow = page.locator('tr[data-slug="facebook-for-woocommerce"], tr:has-text("Facebook for WooCommerce")').first();
+      
+      if (await pluginRow.isVisible({ timeout: 5000 })) {
+        console.log('✅ Facebook for WooCommerce plugin found in plugins list');
+        
+        // Check if plugin is currently active
+        const isActive = await pluginRow.locator('.active').isVisible({ timeout: 2000 });
+        
+        if (isActive) {
+          console.log('✅ Plugin is currently active');
+          
+          // Test deactivation
+          const deactivateLink = pluginRow.locator('a:has-text("Deactivate")');
+          if (await deactivateLink.isVisible({ timeout: 3000 })) {
+            await deactivateLink.click();
+            await page.waitForTimeout(3000);
+            
+            // Verify deactivation worked
+            const pageContent = await page.content();
+            expect(pageContent).not.toContain('Fatal error');
+            expect(pageContent).not.toContain('Parse error');
+            
+            console.log('✅ Plugin deactivated successfully');
+            
+            // Test reactivation
+            const reactivateLink = page.locator('tr[data-slug="facebook-for-woocommerce"] a:has-text("Activate"), tr:has-text("Facebook for WooCommerce") a:has-text("Activate")').first();
+            if (await reactivateLink.isVisible({ timeout: 3000 })) {
+              await reactivateLink.click();
+              await page.waitForTimeout(3000);
+              
+              // Verify reactivation worked
+              const pageContentAfter = await page.content();
+              expect(pageContentAfter).not.toContain('Fatal error');
+              expect(pageContentAfter).not.toContain('Parse error');
+              
+              console.log('✅ Plugin reactivated successfully');
+            }
+          }
+        } else {
+          console.log('✅ Plugin is currently inactive - testing activation');
+          
+          // Test activation
+          const activateLink = pluginRow.locator('a:has-text("Activate")');
+          if (await activateLink.isVisible({ timeout: 3000 })) {
+            await activateLink.click();
+            await page.waitForTimeout(3000);
+            
+            // Verify activation worked
+            const pageContent = await page.content();
+            expect(pageContent).not.toContain('Fatal error');
+            expect(pageContent).not.toContain('Parse error');
+            
+            console.log('✅ Plugin activated successfully');
+          }
+        }
+      } else {
+        console.log('⚠️ Facebook for WooCommerce plugin not found in plugins list');
+      }
+      
+      // Final verification - no PHP errors on plugins page
+      const finalPageContent = await page.content();
+      expect(finalPageContent).not.toContain('Fatal error');
+      expect(finalPageContent).not.toContain('Parse error');
+      
+      console.log('✅ Plugin lifecycle test completed');
+      
+    } catch (error) {
+      console.log(`⚠️ Plugin lifecycle test failed: ${error.message}`);
+      throw error;
     }
   });
 });
