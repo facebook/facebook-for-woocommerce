@@ -3112,7 +3112,7 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 			}
 		} catch ( Exception $e ) {
 			Logger::log(
-				'There was an issue connecting to the Facebook API:'.$e->getMessage(),
+				'There was an issue connecting to the Facebook API:' . $e->getMessage(),
 				[],
 				array(
 					'should_send_log_to_meta'        => false,
