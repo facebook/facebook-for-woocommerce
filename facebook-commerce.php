@@ -2865,7 +2865,7 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 					],
 				),
 				array(
-					'should_send_log_to_meta'        => true,
+					'should_send_log_to_meta' => true,
 				)
 			);
 		}
