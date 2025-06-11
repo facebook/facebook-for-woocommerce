@@ -1046,28 +1046,5 @@ if ( ! class_exists( 'WC_Facebookcommerce_Utils' ) ) :
 		public static function get_context_data( array $context, string $key, $default_value = null ) {
 			return $context[ $key ] ?? $default_value;
 		}
-
-		/**
-		 * Saves errors or messages to WooCommerce (WP admin page:WooCommerce->Status).
-		 *
-		 * Only logs if debug mode is enabled and WP_DEBUG and WP_DEBUG_LOG are true in wp-config.php.
-		 *
-		 * @param string $message
-		 * @param string $level
-		 */
-		public static function log_with_debug_mode_enabled( $message, $level = null ) {
-			// if this file is being included outside the plugin, or the plugin setting is disabled
-			if ( ! function_exists( 'facebook_for_woocommerce' ) || ! facebook_for_woocommerce()->get_integration()->is_debug_mode_enabled() ) {
-				return;
-			}
-
-			if ( is_array( $message ) || is_object( $message ) ) {
-				$message = wp_json_encode( $message );
-			} else {
-				$message = sanitize_textarea_field( $message );
-			}
-
-			facebook_for_woocommerce()->log( $message, null, $level );
-		}
 	}
 endif;
