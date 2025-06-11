@@ -615,13 +615,6 @@ class API extends Base {
 		return $this->perform_request( $request );
 	}
 
-
-	public function log( $facebook_external_merchant_settings_id, $message, $error ) {
-		$request = new API\Log\Create\Request( $facebook_external_merchant_settings_id, $message, $error );
-		$this->set_response_handler( API\Log\Create\Response::class );
-		return $this->perform_request( $request );
-	}
-
 	public function log_to_meta( $context ) {
 		if ( ! facebook_for_woocommerce()->get_integration()->is_meta_diagnosis_enabled() ) {
 			return;
