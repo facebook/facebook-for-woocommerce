@@ -454,29 +454,6 @@ if ( ! class_exists( 'WC_Facebookcommerce_Utils' ) ) :
 		}
 
 		/**
-		 * Utility function for development Tip Events logging.
-		 *
-		 * @param string $tip_id
-		 * @param string $channel_id
-		 * @param string $event
-		 * @param string $ems
-		 */
-		public static function tip_events_log( $tip_id, $channel_id, $event, $ems = '' ) {
-			// phpcs:ignore Universal.Operators.DisallowShortTernary.Found
-			$ems = $ems ?: self::$ems;
-			if ( $ems ) {
-				try {
-					facebook_for_woocommerce()->get_api()->log_tip_event( $tip_id, $channel_id, $event );
-				} catch ( ApiException $e ) {
-					$message = sprintf( 'There was an error while logging tip events: %s', $e->getMessage() );
-					facebook_for_woocommerce()->log( $message );
-				}
-			} else {
-				error_log( 'external merchant setting is null' );
-			}
-		}
-
-		/**
 		 * Returns whether the variation type is 'variation' or 'subscription_variation'.
 		 *
 		 * @param string $type
