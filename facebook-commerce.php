@@ -276,25 +276,6 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 				include_once 'includes/fbutils.php';
 			}
 
-			// Display an info banner for eligible pixel and user.
-			if ( $this->get_external_merchant_settings_id()
-				&& $this->get_facebook_pixel_id()
-				&& $this->get_pixel_install_time() ) {
-				$should_query_tip =
-					WC_Facebookcommerce_Utils::check_time_cap(
-						get_option( 'fb_info_banner_last_query_time', '' ),
-						self::FB_TIP_QUERY
-					);
-				$last_tip_info    = WC_Facebookcommerce_Utils::get_cached_best_tip();
-
-				if ( $should_query_tip || $last_tip_info ) {
-					if ( ! class_exists( 'WC_Facebookcommerce_Info_Banner' ) ) {
-						include_once 'includes/fbinfobanner.php';
-					}
-					WC_Facebookcommerce_Info_Banner::get_instance( $this->get_external_merchant_settings_id(), $should_query_tip );
-				}
-			}
-
 			if ( ! $this->get_pixel_install_time() && $this->get_facebook_pixel_id() ) {
 				$this->update_pixel_install_time( time() );
 			}
