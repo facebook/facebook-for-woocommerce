@@ -15,6 +15,7 @@ defined( 'ABSPATH' ) || exit;
 use Exception;
 use WC_Facebookcommerce_Utils;
 use WooCommerce\Facebook\Utilities\Heartbeat;
+use WooCommerce\Facebook\Framework\Logger;
 
 /**
  * Facebook for WooCommerce External Plugin Version Update.
@@ -90,7 +91,15 @@ class Update {
 			}
 			return update_option( self::LATEST_VERSION_SENT, WC_Facebookcommerce_Utils::PLUGIN_VERSION );
 		} catch ( Exception $e ) {
-			WC_Facebookcommerce_Utils::log_with_debug_mode_enabled( $e->getMessage() );
+			Logger::log(
+				$e->getMessage(),
+				[],
+				array(
+					'should_send_log_to_meta'        => false,
+					'should_save_log_in_woocommerce' => true,
+					'woocommerce_log_level'          => \WC_Log_Levels::ERROR,
+				)
+			);
 			// If the request fails, we should retry it in the next heartbeat.
 			return false;
 		}
