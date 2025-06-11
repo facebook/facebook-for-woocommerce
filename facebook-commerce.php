@@ -1343,23 +1343,6 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 		$variants = $woo_product->prepare_variants_for_group();
 
 		if ( ! $variants ) {
-			Logger::log(
-				sprintf(
-				/* translators: %1$s is referring to facebook product group id. */
-					__(
-						'Nothing to update for product group for %1$s',
-						'facebook-for-woocommerce'
-					),
-					$fb_product_group_id
-				),
-				[],
-				array(
-					'should_send_log_to_meta'        => false,
-					'should_save_log_in_woocommerce' => true,
-					'woocommerce_log_level'          => \WC_Log_Levels::DEBUG,
-				)
-			);
-
 			return;
 		}
 
@@ -2249,7 +2232,7 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 				array(
 					'should_send_log_to_meta'        => false,
 					'should_save_log_in_woocommerce' => true,
-					'woocommerce_log_level'          => \WC_Log_Levels::DEBUG,
+					'woocommerce_log_level'          => \WC_Log_Levels::WARNING,
 				)
 			);
 			throw new PluginException( __( 'The plugin is not configured or the Catalog ID is missing.', 'facebook-for-woocommerce' ) );
@@ -2304,7 +2287,7 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 				array(
 					'should_send_log_to_meta'        => false,
 					'should_save_log_in_woocommerce' => true,
-					'woocommerce_log_level'          => \WC_Log_Levels::DEBUG,
+					'woocommerce_log_level'          => \WC_Log_Levels::WARNING,
 				)
 			);
 			WC_Facebookcommerce_Utils::fblog(
