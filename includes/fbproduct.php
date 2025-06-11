@@ -2107,8 +2107,6 @@ class WC_Facebook_Product {
 						break;
 				}//end switch
 			} else {
-
-				\WC_Facebookcommerce_Utils::log_with_debug_mode_enabled( $product->get_id() . ': No options for ' . $original_variant_name );
 				continue;
 			}//end if
 		}//end foreach
@@ -2162,7 +2160,6 @@ class WC_Facebook_Product {
 					$option_values = $variation_attributes[ $key ];
 				} else {
 					// skip variations without valid attribute options
-					\WC_Facebookcommerce_Utils::log_with_debug_mode_enabled( $product->get_id() . ': No options for ' . $name );
 					continue;
 				}
 
