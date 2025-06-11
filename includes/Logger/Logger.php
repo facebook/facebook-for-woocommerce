@@ -41,12 +41,12 @@ class Logger {
 		'woocommerce_log_level'          => \WC_Log_Levels::DEBUG,
 	]) {
 		$is_debug_mode_enabled = 'yes' === get_option( self::SETTING_ENABLE_META_DIAGNOSIS );
-		if ( $is_debug_mode_enabled && array_key_exists('should_save_log_in_woocommerce', $log_options) && $log_options['should_save_log_in_woocommerce'] ) {
+		if ( $is_debug_mode_enabled && array_key_exists( 'should_save_log_in_woocommerce', $log_options ) && $log_options['should_save_log_in_woocommerce'] ) {
 			facebook_for_woocommerce()->log( $message . ' : ' . wp_json_encode( $context ), null, $log_options['woocommerce_log_level'] );
 		}
 
 		$is_meta_diagnosis_enabled = (bool) ( 'yes' === get_option( self::SETTING_ENABLE_META_DIAGNOSIS ) );
-		if ( $is_meta_diagnosis_enabled && array_key_exists('should_send_log_to_meta', $log_options) && $log_options['should_send_log_to_meta'] ) {
+		if ( $is_meta_diagnosis_enabled && array_key_exists( 'should_send_log_to_meta', $log_options ) && $log_options['should_send_log_to_meta'] ) {
 
 			$extra_data            = $context['extra_data'] ?? [];
 			$extra_data['message'] = $message;
