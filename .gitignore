@@ -45,3 +45,10 @@ wp-config.php
 
 # Code coverage report
 /reports
+
+# Playwright test artifacts
+/test-results/
+/playwright-report/
+*login-failure-attempt*.png
+*test-failure*.png
+*debug*.png
