@@ -3,13 +3,12 @@ name: Release Plugin
 on:
   push:
     branches:
-      # - 'release/current'
-      - 'automated_release'
+      - 'release/current'
 
 jobs:
   build-and-release:
     runs-on: ubuntu-latest
-    # environment: Deployment
+    environment: Deployment
     steps:
       - uses: actions/checkout@v4
 
@@ -93,73 +92,73 @@ jobs:
             exit 1
           fi
 
-      # - name: Commit to SVN
-      #   env:
-      #     SVN_USERNAME: ${{ secrets.SVN_USERNAME }}
-      #     SVN_PASSWORD: ${{ secrets.SVN_PASSWORD }}
-      #   run: |
-      #     cd woocommerce_svn
-      #     rm -rf trunk
-      #     cp ../facebook-for-woocommerce.zip ./
-      #     echo "Unzipping the atrifact"
-      #     unzip facebook-for-woocommerce.zip
-      #     mv facebook-for-woocommerce trunk
-      #     rm facebook-for-woocommerce.zip
-      #     svn add --force .
-      #     svn st | grep ^! | awk '{print $2}' | xargs -r svn rm
-      #     svn status
-      #     echo "Tagging version ${{ steps.package-version.outputs.current-version}}"
-      #     svn cp trunk "tags/${{ steps.package-version.outputs.current-version}}"
-      #     echo "Status:"
-      #     svn status
-      #     svn commit -m "Deploy new version ${{ steps.package-version.outputs.current-version}}" --username "$SVN_USERNAME" --password "$SVN_PASSWORD" --no-auth-cache --non-interactive
+      - name: Commit to SVN
+        env:
+          SVN_USERNAME: ${{ secrets.SVN_USERNAME }}
+          SVN_PASSWORD: ${{ secrets.SVN_PASSWORD }}
+        run: |
+          cd woocommerce_svn
+          rm -rf trunk
+          cp ../facebook-for-woocommerce.zip ./
+          echo "Unzipping the atrifact"
+          unzip facebook-for-woocommerce.zip
+          mv facebook-for-woocommerce trunk
+          rm facebook-for-woocommerce.zip
+          svn add --force .
+          svn st | grep ^! | awk '{print $2}' | xargs -r svn rm
+          svn status
+          echo "Tagging version ${{ steps.package-version.outputs.current-version}}"
+          svn cp trunk "tags/${{ steps.package-version.outputs.current-version}}"
+          echo "Status:"
+          svn status
+          svn commit -m "Deploy new version ${{ steps.package-version.outputs.current-version}}" --username "$SVN_USERNAME" --password "$SVN_PASSWORD" --no-auth-cache --non-interactive
 
-      # - name: Create a new release on GitHub
-      #   uses: actions/github-script@v7
-      #   env:
-      #     VERSION: ${{ steps.package-version.outputs.current-version}}
-      #   with:
-      #     github-token: ${{ secrets.GITHUB_TOKEN }}
-      #     script: |
-      #       const fs = require('fs');
-      #       const path = require('path');
-      #       const version = process.env.VERSION;
-      #       const releaseNotes = process.env.RELEASE_NOTES;
-      #       const release = await github.rest.repos.createRelease({
-      #         owner: context.repo.owner,
-      #         repo: context.repo.repo,
-      #         tag_name: `v${version}`,
-      #         target_commitish: 'release/current',
-      #         name: `Release ${version}`,
-      #         body: releaseNotes,
-      #         draft: true,
-      #       });
-      #       const maxRetries = 5;
-      #       const fileName = 'facebook-for-woocommerce.zip'
-      #       const filePath = path.join(process.env.GITHUB_WORKSPACE, fileName);
-      #       const source = fs.readFileSync(filePath);
-      #       for (let retry = 0; retry < maxRetries; retry++) {
-      #         try {
-      #           await github.rest.repos.uploadReleaseAsset({
-      #             owner: context.repo.owner, 
-      #             repo: context.repo.repo, 
-      #             release_id: release.data.id,
-      #             name: fileName, 
-      #             headers: {'Content-Type': 'application/x-xz'}, 
-      #             data: source
-      #           });
-      #           break;
-      #         } catch (error) {
-      #             console.log(`Failed to upload (status ${error.status}, retry: ${retry})`);
-      #             if (error.status != 500) {
-      #                 throw error;
-      #             }
-      #         }
-      #       }
-      #       await github.rest.repos.updateRelease({
-      #         owner: context.repo.owner, 
-      #         repo: context.repo.repo, 
-      #         release_id: release.data.id,
-      #         draft: false,
-      #         prerelease: true,
-      #       });
+      - name: Create a new release on GitHub
+        uses: actions/github-script@v7
+        env:
+          VERSION: ${{ steps.package-version.outputs.current-version}}
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const fs = require('fs');
+            const path = require('path');
+            const version = process.env.VERSION;
+            const releaseNotes = process.env.RELEASE_NOTES;
+            const release = await github.rest.repos.createRelease({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              tag_name: `v${version}`,
+              target_commitish: 'release/current',
+              name: `Release ${version}`,
+              body: releaseNotes,
+              draft: true,
+            });
+            const maxRetries = 5;
+            const fileName = 'facebook-for-woocommerce.zip'
+            const filePath = path.join(process.env.GITHUB_WORKSPACE, fileName);
+            const source = fs.readFileSync(filePath);
+            for (let retry = 0; retry < maxRetries; retry++) {
+              try {
+                await github.rest.repos.uploadReleaseAsset({
+                  owner: context.repo.owner, 
+                  repo: context.repo.repo, 
+                  release_id: release.data.id,
+                  name: fileName, 
+                  headers: {'Content-Type': 'application/x-xz'}, 
+                  data: source
+                });
+                break;
+              } catch (error) {
+                  console.log(`Failed to upload (status ${error.status}, retry: ${retry})`);
+                  if (error.status != 500) {
+                      throw error;
+                  }
+              }
+            }
+            await github.rest.repos.updateRelease({
+              owner: context.repo.owner, 
+              repo: context.repo.repo, 
+              release_id: release.data.id,
+              draft: false,
+              prerelease: true,
+            });
