@@ -1727,6 +1727,8 @@ class WC_Facebook_Product {
 		$product_data[ 'external_variant_id' ] = $this->get_id();
 		$product_data[ 'internal_label' ] = $this->get_internal_labels();
 		$product_data[ 'disabled_capabilities' ] = $this->get_disabled_capabilities();
+		
+		// PRIORITY 1: Set actual product data (from product meta, attributes, etc.)
 		$product_data['brand'] = Helper::str_truncate($this->get_fb_brand($is_api_call), 100);
 		$product_data['mpn'] = Helper::str_truncate($this->get_fb_mpn($is_api_call), 100);
 		$product_data['condition'] = $this->get_fb_condition();
@@ -1882,6 +1884,88 @@ class WC_Facebook_Product {
 					// Set the value in product data only if it's not already set
 					if (!isset($product_data[$fb_attribute]) || empty($product_data[$fb_attribute])) {
 						$product_data[$fb_attribute] = $normalized_value;
+					}
+				}
+			}
+		}
+
+		// PRIORITY 2: For fields that are still empty, check attribute mappings
+		if (class_exists(ProductAttributeMapper::class)) {
+			$mapped_attributes = ProductAttributeMapper::get_mapped_attributes($this->woo_product);
+			
+			// Process each mapped attribute, but only fill in empty fields
+			foreach ($mapped_attributes as $fb_field => $value) {
+				// Only set if the field is empty or not already set
+				if ((!isset($product_data[$fb_field]) || empty($product_data[$fb_field])) && !empty($value)) {
+					
+					// Process the extended fields that might be mapped
+					switch ($fb_field) {
+						case 'custom_label_0':
+						case 'custom_label_1':
+						case 'custom_label_2':
+						case 'custom_label_3':
+						case 'custom_label_4':
+							$product_data[$fb_field] = Helper::str_truncate(WC_Facebookcommerce_Utils::clean_string($value), 100);
+							break;
+							
+						case 'inventory':
+							$product_data[$fb_field] = is_numeric($value) ? (int) $value : 0;
+							break;
+							
+						case 'shipping_weight':
+							// For shipping weight, ensure we have a proper weight value
+							if (is_numeric($value)) {
+								$product_data[$fb_field] = $value . ' ' . get_option('woocommerce_weight_unit', 'kg');
+							} else {
+								$product_data[$fb_field] = WC_Facebookcommerce_Utils::clean_string($value);
+							}
+							break;
+							
+						case 'shipping':
+						case 'tax':
+							$product_data[$fb_field] = WC_Facebookcommerce_Utils::clean_string($value);
+							break;
+							
+						case 'sale_price':
+							// Handle sale price mapping if it's numeric
+							if (is_numeric($value)) {
+								$product_data[$fb_field] = $is_api_call ? self::format_price_for_fb_items_batch($value * 100) : (int) ($value * 100);
+							}
+							break;
+							
+						// For standard fields, only fill if empty
+						case 'brand':
+							$product_data[$fb_field] = Helper::str_truncate(WC_Facebookcommerce_Utils::clean_string($value), 100);
+							break;
+						case 'mpn':
+							$product_data[$fb_field] = Helper::str_truncate(WC_Facebookcommerce_Utils::clean_string($value), 100);
+							break;
+						case 'condition':
+							$clean_value = strtolower(trim($value));
+							if (in_array($clean_value, array('new', 'used', 'refurbished'))) {
+								$product_data[$fb_field] = $clean_value;
+							}
+							break;
+						case 'age_group':
+							$normalized_value = ProductAttributeMapper::normalize_age_group_value($value);
+							if (!empty($normalized_value)) {
+								$product_data[$fb_field] = $normalized_value;
+							}
+							break;
+						case 'gender':
+							$product_data[$fb_field] = ProductAttributeMapper::normalize_gender_value($value);
+							break;
+						case 'color':
+						case 'size':
+						case 'pattern':
+						case 'material':
+							$product_data[$fb_field] = Helper::str_truncate(WC_Facebookcommerce_Utils::clean_string($value), 100);
+							break;
+							
+						default:
+							// For other extended fields, just clean and set
+							$product_data[$fb_field] = WC_Facebookcommerce_Utils::clean_string($value);
+							break;
 					}
 				}
 			}
