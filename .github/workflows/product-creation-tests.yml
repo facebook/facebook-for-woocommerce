@@ -1,10 +1,8 @@
 name: Product Creation E2E Tests WITH DEBUG FORCED v2
 
 on:
-  push:
-    branches: [ main, master, develop, feature/e2e-testing-infrastructure, test-personal ]
   pull_request:
-    branches: [ main, master, develop, feature/e2e-testing-infrastructure, test-personal ]
+    branches: [ main, master, develop ]
 
 jobs:
   e2e-tests:
