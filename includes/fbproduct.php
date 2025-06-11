@@ -12,6 +12,7 @@ require_once __DIR__ . '/fbutils.php';
 
 use WooCommerce\Facebook\Feed\ShippingProfilesFeed;
 use WooCommerce\Facebook\Framework\Helper;
+use WooCommerce\Facebook\Handlers\PluginRender;
 use WooCommerce\Facebook\Products;
 
 defined( 'ABSPATH' ) || exit;

@@ -1335,7 +1335,7 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 		$variants = $woo_product->prepare_variants_for_group();
 
 		if ( ! $variants ) {
-			WC_Facebookcommerce_Utils::log_with_debug_mode_enabled(
+			Logger::log(
 				sprintf(
 				/* translators: %1$s is referring to facebook product group id. */
 					__(
@@ -1343,6 +1343,12 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 						'facebook-for-woocommerce'
 					),
 					$fb_product_group_id
+				),
+				[],
+				array(
+					'should_send_log_to_meta'        => false,
+					'should_save_log_in_woocommerce' => true,
+					'woocommerce_log_level'          => \WC_Log_Levels::DEBUG,
 				)
 			);
 
@@ -2014,16 +2020,28 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 	 **/
 	public function reset_all_products() {
 		if ( ! is_admin() ) {
-			WC_Facebookcommerce_Utils::log_with_debug_mode_enabled(
-				'Not resetting any FBIDs from products,
-        must call reset from admin context.'
+			Logger::log(
+				'Not resetting any FBIDs from products, must call reset from admin context.',
+				[],
+				array(
+					'should_send_log_to_meta'        => false,
+					'should_save_log_in_woocommerce' => true,
+					'woocommerce_log_level'          => \WC_Log_Levels::DEBUG,
+				)
 			);
-
 			return false;
 		}
 
 		// Include draft products (omit 'post_status' => 'publish')
-		WC_Facebookcommerce_Utils::log_with_debug_mode_enabled( 'Removing FBIDs from all products' );
+		Logger::log(
+			'Removing FBIDs from all products',
+			[],
+			array(
+				'should_send_log_to_meta'        => false,
+				'should_save_log_in_woocommerce' => true,
+				'woocommerce_log_level'          => \WC_Log_Levels::DEBUG,
+			)
+		);
 
 		$post_ids = get_posts(
 			[
@@ -2050,7 +2068,15 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 		$post_ids = array_merge( $post_ids, $children );
 		$this->delete_post_meta_loop( $post_ids );
 
-		WC_Facebookcommerce_Utils::log_with_debug_mode_enabled( 'Product FBIDs deleted' );
+		Logger::log(
+			'Product FBIDs deleted',
+			[],
+			array(
+				'should_send_log_to_meta'        => false,
+				'should_save_log_in_woocommerce' => true,
+				'woocommerce_log_level'          => \WC_Log_Levels::DEBUG,
+			)
+		);
 
 		return true;
 	}
@@ -2069,7 +2095,15 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 
 		$this->delete_post_meta_loop( $products );
 
-		WC_Facebookcommerce_Utils::log_with_debug_mode_enabled( 'Deleted FB Metadata for product ' . $wp_id );
+		Logger::log(
+			'Deleted FB Metadata for product ' . $wp_id,
+			[],
+			array(
+				'should_send_log_to_meta'        => false,
+				'should_save_log_in_woocommerce' => true,
+				'woocommerce_log_level'          => \WC_Log_Levels::DEBUG,
+			)
+		);
 	}
 
 	/**
@@ -2137,7 +2171,15 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 	 */
 	private function sync_facebook_products_using_background_processor() {
 		if ( ! $this->is_configured() || ! $this->get_product_catalog_id() ) {
-			WC_Facebookcommerce_Utils::log_with_debug_mode_enabled( sprintf( 'Not syncing, the plugin is not configured or the Catalog ID is missing' ) );
+			Logger::log(
+				sprintf( 'Not syncing, the plugin is not configured or the Catalog ID is missing' ),
+				[],
+				array(
+					'should_send_log_to_meta'        => false,
+					'should_save_log_in_woocommerce' => true,
+					'woocommerce_log_level'          => \WC_Log_Levels::DEBUG,
+				)
+			);
 			throw new PluginException( __( 'The plugin is not configured or the Catalog ID is missing.', 'facebook-for-woocommerce' ) );
 		}
 
@@ -2152,7 +2194,15 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 		}
 
 		if ( $currently_syncing ) {
-			WC_Facebookcommerce_Utils::log_with_debug_mode_enabled( 'Not syncing again, sync already in progress' );
+			Logger::log(
+				'Not syncing again, sync already in progress',
+				[],
+				array(
+					'should_send_log_to_meta'        => false,
+					'should_save_log_in_woocommerce' => true,
+					'woocommerce_log_level'          => \WC_Log_Levels::DEBUG,
+				)
+			);
 			WC_Facebookcommerce_Utils::fblog(
 				'Tried to sync during an in-progress sync!',
 				[],
@@ -2168,7 +2218,15 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 			WC_Facebookcommerce_Utils::log_with_debug_mode_enabled( $message );
 		}
 		if ( $catalog->id ) {
-			WC_Facebookcommerce_Utils::log_with_debug_mode_enabled( 'Not syncing, invalid product catalog!' );
+			Logger::log(
+				'Not syncing, invalid product catalog!',
+				[],
+				array(
+					'should_send_log_to_meta'        => false,
+					'should_save_log_in_woocommerce' => true,
+					'woocommerce_log_level'          => \WC_Log_Levels::DEBUG,
+				)
+			);
 			WC_Facebookcommerce_Utils::fblog(
 				'Tried to sync with an invalid product catalog!',
 				[],
@@ -2202,9 +2260,16 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 			set_transient( self::FB_SYNC_IN_PROGRESS, true, self::FB_SYNC_TIMEOUT );
 			set_transient( self::FB_SYNC_REMAINING, (int) $total );
 			$this->display_info_message( $starting_message );
-			WC_Facebookcommerce_Utils::log_with_debug_mode_enabled( $starting_message );
+			Logger::log(
+				$starting_message,
+				[],
+				array(
+					'should_send_log_to_meta'        => false,
+					'should_save_log_in_woocommerce' => true,
+					'woocommerce_log_level'          => \WC_Log_Levels::DEBUG,
+				)
+			);
 			foreach ( $post_ids as $post_id ) {
-				WC_Facebookcommerce_Utils::log_with_debug_mode_enabled( 'Pushing post to queue: ' . $post_id );
 				$this->background_processor->push_to_queue( $post_id );
 			}
 
@@ -2234,7 +2299,15 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 				$this->on_product_publish( $post_id );
 				++$count;
 			}
-			WC_Facebookcommerce_Utils::log_with_debug_mode_enabled( 'Synced ' . $count . ' products' );
+			Logger::log(
+				'Synced ' . $count . ' products',
+				[],
+				array(
+					'should_send_log_to_meta'        => false,
+					'should_save_log_in_woocommerce' => true,
+					'woocommerce_log_level'          => \WC_Log_Levels::DEBUG,
+				)
+			);
 			$this->remove_sticky_message();
 			$this->display_info_message( 'Facebook product sync complete!' );
 			delete_transient( self::FB_SYNC_IN_PROGRESS );

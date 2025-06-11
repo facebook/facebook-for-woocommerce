@@ -12,6 +12,7 @@ use WooCommerce\Facebook\Handlers\Connection;
 use WooCommerce\Facebook\Products;
 use WooCommerce\Facebook\ProductSync\ProductValidator;
 use WooCommerce\Facebook\Framework\AdminMessageHandler;
+use WooCommerce\Facebook\Handlers\PluginRender;
 
 /**
  * Unit tests for Facebook Graph API calls.
@@ -288,7 +289,7 @@ class WCFacebookCommerceIntegrationTest extends \WooCommerce\Facebook\Tests\Abst
 		}
 		/* From Product Meta or FB API. */
 		$facebook_product_group_id = 'some-facebook-product-group-id';
-		$facebook_response         = new API\ProductCatalog\ProductGroups\Read\Response( wp_json_encode( [ 'data' => $facebook_output ] ) );
+		$facebook_response         = new API\ProductCatalog\ProductGroups\Read\Response( json_encode( [ 'data' => $facebook_output ] ) );
 
 		$this->api->expects( $this->once() )
 			->method( 'get_product_group_products' )
@@ -324,7 +325,7 @@ class WCFacebookCommerceIntegrationTest extends \WooCommerce\Facebook\Tests\Abst
 		}
 		/* From Product Meta or FB API. */
 		$facebook_product_group_id = 'some-facebook-product-group-id';
-		$facebook_response         = new API\ProductCatalog\ProductGroups\Read\Response( wp_json_encode( [ 'data' => $facebook_output ] ) );
+		$facebook_response         = new API\ProductCatalog\ProductGroups\Read\Response( json_encode( [ 'data' => $facebook_output ] ) );
 
 		$this->api->expects( $this->once() )
 			->method( 'get_product_group_products' )
@@ -496,6 +497,7 @@ class WCFacebookCommerceIntegrationTest extends \WooCommerce\Facebook\Tests\Abst
 		$product_to_update->set_stock_status( 'instock' );
 
 		add_post_meta( $product_to_update->get_id(), WC_Facebookcommerce_Integration::FB_PRODUCT_ITEM_ID, 'facebook-product-item-id' );
+		add_option(PluginRender::MASTER_SYNC_OPT_OUT_TIME,'Random time');
 
 		$product_to_update->set_meta_data( Products::VISIBILITY_META_KEY, true );
 
@@ -506,7 +508,7 @@ class WCFacebookCommerceIntegrationTest extends \WooCommerce\Facebook\Tests\Abst
 		$facebook_product_data['description']				 = 'Facebook product description.';
 		$facebook_product_data['rich_text_description']		 = 'Facebook product description.';
 		$facebook_product_data['price']                      = '199 USD';
-		$facebook_product_data['google_product_category']    = 1718;
+		$facebook_product_data['google_product_category']    = '1718';
 
 		$requests = WC_Facebookcommerce_Utils::prepare_product_requests_items_batch($facebook_product_data);
 
@@ -595,9 +597,10 @@ class WCFacebookCommerceIntegrationTest extends \WooCommerce\Facebook\Tests\Abst
 		$_POST[ Enhanced_Catalog_Attribute_Fields::FIELD_ENHANCED_CATALOG_ATTRIBUTE_PREFIX . '_attr3' ] = 'Enhanced catalog attribute three.';
 		$_POST[ Enhanced_Catalog_Attribute_Fields::FIELD_ENHANCED_CATALOG_ATTRIBUTE_PREFIX . '_attr4' ] = 'Enhanced catalog attribute four.';
 
-		add_post_meta( $parent_to_delete->get_id(), ProductValidator::SYNC_ENABLED_META_KEY, 'no' );
+		add_option(PluginRender::MASTER_SYNC_OPT_OUT_TIME,'Random time');
+		add_post_meta( $parent_to_delete->get_id(), Products::SYNC_ENABLED_META_KEY, 'no' );
 		foreach ( $parent_to_delete->get_children() as $id ) {
-			add_post_meta( $id, ProductValidator::SYNC_ENABLED_META_KEY, 'no' );
+			add_post_meta( $id, Products::SYNC_ENABLED_META_KEY, 'no' );
 		}
 
 		$sync = $this->createMock( Products\Sync::class );
@@ -657,7 +660,7 @@ class WCFacebookCommerceIntegrationTest extends \WooCommerce\Facebook\Tests\Abst
 	public function test_on_product_delete_simple_product() {
 		$product_to_delete = WC_Helper_Product::create_simple_product();
 
-		add_post_meta( $product_to_delete->get_id(), ProductValidator::SYNC_ENABLED_META_KEY, 'yes' );
+		add_post_meta( $product_to_delete->get_id(), Products::SYNC_ENABLED_META_KEY, 'yes' );
 		add_post_meta( $product_to_delete->get_id(), WC_Facebookcommerce_Integration::FB_PRODUCT_ITEM_ID, 'facebook-product-id' );
 		add_post_meta( $product_to_delete->get_id(), WC_Facebookcommerce_Integration::FB_PRODUCT_GROUP_ID, 'facebook-product-group-id' );
 
@@ -705,6 +708,7 @@ class WCFacebookCommerceIntegrationTest extends \WooCommerce\Facebook\Tests\Abst
 	public function test_fb_change_product_published_status_for_simple_product() {
 		add_option( WC_Facebookcommerce_Integration::SETTING_FACEBOOK_PAGE_ID, 'facebook-page-id' );
 		add_option( WC_Facebookcommerce_Integration::OPTION_PRODUCT_CATALOG_ID, '1234567891011121314' );
+		add_option(PluginRender::MASTER_SYNC_OPT_OUT_TIME, 'Random time');
 
 		$this->connection_handler->expects( $this->once() )
 			->method( 'is_connected' )
@@ -719,7 +723,7 @@ class WCFacebookCommerceIntegrationTest extends \WooCommerce\Facebook\Tests\Abst
 			$product_data['additional_image_urls'] = '';
 		}
 
-		add_post_meta( $product->get_id(), ProductValidator::SYNC_ENABLED_META_KEY, 'yes' );
+		add_post_meta( $product->get_id(), Products::SYNC_ENABLED_META_KEY, 'yes' );
 		add_post_meta( $product->get_id(), WC_Facebookcommerce_Integration::FB_PRODUCT_ITEM_ID, 'facebook-product-id' );
 
 		$product_validator = $this->createMock( ProductValidator::class );
@@ -797,7 +801,7 @@ class WCFacebookCommerceIntegrationTest extends \WooCommerce\Facebook\Tests\Abst
 
 		$product = WC_Helper_Product::create_simple_product();
 
-		add_post_meta( $product->get_id(), ProductValidator::SYNC_ENABLED_META_KEY, 'yes' );
+		add_post_meta( $product->get_id(), Products::SYNC_ENABLED_META_KEY, 'yes' );
 		add_post_meta( $product->get_id(), WC_Facebookcommerce_Integration::FB_PRODUCT_ITEM_ID, 'facebook-product-item-id' );
 
 		$this->connection_handler->expects( $this->once() )
@@ -828,6 +832,7 @@ class WCFacebookCommerceIntegrationTest extends \WooCommerce\Facebook\Tests\Abst
 
 		$this->integration->on_product_publish( $product->get_id() );
 	}
+
 
 	/**
 	 * Sunny day test with all the conditions evaluated to true and maximum conditions triggered.
@@ -2077,7 +2082,6 @@ class WCFacebookCommerceIntegrationTest extends \WooCommerce\Facebook\Tests\Abst
 
 		$categories = $this->integration->get_excluded_product_category_ids();
 
-		// Empty array will be retured as there is no longer support for excluded categories
 		$this->assertEquals( [ ], $categories );
 	}
 
@@ -2090,18 +2094,17 @@ class WCFacebookCommerceIntegrationTest extends \WooCommerce\Facebook\Tests\Abst
 		$this->add_filter_with_safe_teardown(
 			'wc_facebook_excluded_product_category_ids',
 			function ( $ids ) {
-				return [ 111, 222, 333 ];
+				return [ ];
 			}
 		);
 
 		add_option(
 			WC_Facebookcommerce_Integration::SETTING_EXCLUDED_PRODUCT_CATEGORY_IDS,
-			[ 121, 221, 321, 421, 521, 621 ]
+			[ ]
 		);
 
 		$categories = $this->integration->get_excluded_product_category_ids();
 
-		// Empty array will be retured as there is no longer support for excluded categories
 		$this->assertEquals( [ ], $categories );
 	}
 
@@ -2128,12 +2131,11 @@ class WCFacebookCommerceIntegrationTest extends \WooCommerce\Facebook\Tests\Abst
 		$this->teardown_callback_category_safely( 'wc_facebook_excluded_product_tag_ids' );
 		add_option(
 			WC_Facebookcommerce_Integration::SETTING_EXCLUDED_PRODUCT_TAG_IDS,
-			[ 121, 221, 321, 421, 521, 621 ]
+			[ ]
 		);
 
 		$tags = $this->integration->get_excluded_product_tag_ids();
 
-		// Empty array will be retured as there is no longer support for excluded tags
 		$this->assertEquals( [ ], $tags );
 	}
 
@@ -2146,7 +2148,7 @@ class WCFacebookCommerceIntegrationTest extends \WooCommerce\Facebook\Tests\Abst
 		$this->add_filter_with_safe_teardown(
 			'wc_facebook_excluded_product_tag_ids',
 			function ( $ids ) {
-				return [ 111, 222, 333 ];
+				return [ ];
 			}
 		);
 
