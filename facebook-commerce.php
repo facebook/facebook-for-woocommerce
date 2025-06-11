@@ -2775,10 +2775,6 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 			$this->facebook_for_woocommerce->get_products_sync_handler()->create_or_update_products( $product_ids );
 		} else {
 			$fb_product_item_id = $this->get_product_fbid( self::FB_PRODUCT_ITEM_ID, $product->get_id() );
-			if ( ! $fb_product_item_id ) {
-				\WC_Facebookcommerce_Utils::fblog( $fb_product_item_id . " doesn't exist but underwent a visibility transform.", [], true );
-				return;
-			}
 			try {
 				$set_visibility = $this->facebook_for_woocommerce->get_api()->update_product_item( $fb_product_item_id, [ 'visibility' => $visibility ] );
 				if ( $set_visibility->success ) {
