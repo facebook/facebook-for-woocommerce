@@ -2638,10 +2638,18 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 			// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
 			echo $this->get_message_html( $message );
 			delete_transient( 'facebook_plugin_api_error' );
-			WC_Facebookcommerce_Utils::fblog(
-				$error_msg,
-				[],
-				true
+			Logger::log(
+				'Error message displayed to Admins',
+				array(
+					'flow_name'  => 'display_admin_message',
+					'flow_step'  => 'display_admin_error_message',
+					'extra_data' => [
+						'displayed_message' => $error_msg,
+					],
+				),
+				array(
+					'should_send_log_to_meta' => true,
+				)
 			);
 		}
 		$warning_msg = get_transient( 'facebook_plugin_api_warning' );
