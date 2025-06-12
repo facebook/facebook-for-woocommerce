@@ -499,6 +499,10 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 			'wp_ajax_ajax_fb_background_check_queue',
 			[ $this, 'ajax_fb_background_check_queue' ]
 		);
+		add_action(
+			'wp_ajax_fb_dismiss_unmapped_attributes_banner',
+			[ $this, 'ajax_dismiss_unmapped_attributes_banner' ]
+		);
 	}
 
 	/**
@@ -1727,9 +1731,102 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 					$this->get_product_catalog_id() .
 					'/products/" target="_blank">View product on Meta catalog</a>'
 			);
+
+			// Display unmapped attributes banner if there are any
+			$this->display_unmapped_attributes_banner( $fb_product->woo_product );
 		}
 	}
 
+	/**
+	 * Displays a banner for unmapped attributes encouraging users to use the attribute mapper.
+	 *
+	 * @param \WC_Product $product The product object
+	 * @return void
+	 */
+	public function display_unmapped_attributes_banner( \WC_Product $product ) {
+		// Check if this feature should be shown
+		if ( ! $this->should_show_unmapped_attributes_banner() ) {
+			return;
+		}
+
+		// Get unmapped attributes using the ProductAttributeMapper
+		if ( ! class_exists( '\WooCommerce\Facebook\ProductAttributeMapper' ) ) {
+			return;
+		}
+
+		$unmapped_attributes = \WooCommerce\Facebook\ProductAttributeMapper::get_unmapped_attributes( $product );
+
+		// Only show if there are unmapped attributes
+		if ( empty( $unmapped_attributes ) ) {
+			return;
+		}
+
+		$count = count( $unmapped_attributes );
+
+		// Convert attribute names to user-friendly labels
+		$attribute_labels = array();
+		foreach ( $unmapped_attributes as $attribute ) {
+			$attribute_name = $attribute['name'];
+			// Get the user-friendly label for the attribute
+			$label = wc_attribute_label( $attribute_name );
+			// If no label found, clean up the name by removing pa_ prefix
+			if ( $label === $attribute_name && strpos( $attribute_name, 'pa_' ) === 0 ) {
+				$label = ucfirst( str_replace( array( 'pa_', '_', '-' ), array( '', ' ', ' ' ), $attribute_name ) );
+			}
+			$attribute_labels[] = $label;
+		}
+
+		$attribute_list = implode( ', ', array_slice( $attribute_labels, 0, 3 ) );
+		if ( $count > 3 ) {
+			/* translators: %d: number of additional unmapped attributes */
+			$attribute_list .= sprintf( __( ' and %d more', 'facebook-for-woocommerce' ), $count - 3 );
+		}
+
+		// Build the mapper URL
+		$mapper_url = add_query_arg(
+			array(
+				'page' => 'wc-facebook',
+				'tab'  => 'product-attributes',
+			),
+			admin_url( 'admin.php' )
+		);
+
+		$message = sprintf(
+			/* translators: %1$s - attribute list, %2$d - count, %3$s - link start, %4$s - link end */
+			_n(
+				'%3$s%2$d attribute "%1$s" is not mapped to Meta.%4$s Use the %3$sattribute mapper%4$s to map this attribute and improve your product visibility in Meta ads.',
+				'%3$s%2$d attributes (%1$s) are not mapped to Meta.%4$s Use the %3$sattribute mapper%4$s to map these attributes and improve your product visibility in Meta ads.',
+				$count,
+				'facebook-for-woocommerce'
+			),
+			$attribute_list,
+			$count,
+			'<a href="' . esc_url( $mapper_url ) . '" target="_blank">',
+			'</a>'
+		);
+
+		// Store the message with a specific prefix to identify it
+		$banner_message = self::FB_ADMIN_MESSAGE_PREPEND . $message;
+		set_transient(
+			'facebook_plugin_unmapped_attributes_info',
+			$banner_message,
+			self::FB_MESSAGE_DISPLAY_TIME
+		);
+	}
+
+	/**
+	 * Determines if the unmapped attributes banner should be shown.
+	 *
+	 * @return bool
+	 */
+	private function should_show_unmapped_attributes_banner() {
+		// Only show to users who can manage WooCommerce
+		if ( ! current_user_can( 'manage_woocommerce' ) ) {
+			return false;
+		}
+
+		return true;
+	}
 
 	/**
 	 * Checks the feed upload status (FBE v1.0).
@@ -2146,6 +2243,68 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 		check_ajax_referer( 'wc_facebook_settings_jsx' );
 		$this->reset_all_products();
 		wp_reset_postdata();
+		wp_die();
+	}
+
+	/**
+	 * Ajax reset single Facebook product.
+	 *
+	 * @return void
+	 */
+	public function ajax_reset_single_fb_product() {
+		WC_Facebookcommerce_Utils::check_woo_ajax_permissions( 'reset single product', true );
+		check_ajax_referer( 'wc_facebook_metabox_jsx' );
+		if ( ! isset( $_POST['wp_id'] ) ) {
+			wp_die();
+		}
+
+		$wp_id       = sanitize_text_field( wp_unslash( $_POST['wp_id'] ) );
+		$woo_product = new WC_Facebook_Product( $wp_id );
+		if ( $woo_product ) {
+			$this->reset_single_product( $wp_id );
+		}
+
+		wp_reset_postdata();
+		wp_die();
+	}
+
+	/**
+	 * Ajax delete Facebook product.
+	 *
+	 * @return void
+	 */
+	public function ajax_delete_fb_product() {
+		WC_Facebookcommerce_Utils::check_woo_ajax_permissions( 'delete single product', true );
+		check_ajax_referer( 'wc_facebook_metabox_jsx' );
+		if ( ! isset( $_POST['wp_id'] ) ) {
+			wp_die();
+		}
+
+		$wp_id = sanitize_text_field( wp_unslash( $_POST['wp_id'] ) );
+		$this->on_product_delete( $wp_id );
+		$this->reset_single_product( $wp_id );
+		wp_reset_postdata();
+		wp_die();
+	}
+
+	/**
+	 * AJAX handler for dismissing the unmapped attributes banner.
+	 *
+	 * @return void
+	 */
+	public function ajax_dismiss_unmapped_attributes_banner() {
+		// Check permissions
+		if ( ! current_user_can( 'manage_woocommerce' ) ) {
+			wp_die( -1, 403 );
+		}
+
+		// Check nonce
+		check_ajax_referer( 'fb_dismiss_unmapped_attributes_banner' );
+
+		// Clear the transient (but don't set permanent user meta)
+		// This way the banner will show again next time there are unmapped attributes
+		delete_transient( 'facebook_plugin_unmapped_attributes_info' );
+
 		wp_die();
 	}
 
@@ -2656,6 +2815,39 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 			// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
 			echo $this->get_message_html( $sticky_msg, 'info' );
 			// transient must be deleted elsewhere, or wait for timeout
+		}
+
+		// Display unmapped attributes banner
+		$unmapped_attributes_msg = get_transient( 'facebook_plugin_unmapped_attributes_info' );
+		if ( $unmapped_attributes_msg && $this->should_show_unmapped_attributes_banner() ) {
+			// Add a dismiss button to the message
+			$dismiss_message = $unmapped_attributes_msg . ' <button type="button" class="notice-dismiss" onclick="fbDismissUnmappedAttributesBanner(event)" title="' . esc_attr__( 'Dismiss this notice.', 'facebook-for-woocommerce' ) . '"><span class="screen-reader-text">' . esc_html__( 'Dismiss this notice.', 'facebook-for-woocommerce' ) . '</span></button>';
+
+			// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+			echo $this->get_message_html( $dismiss_message, 'info' );
+
+			// Include JavaScript for dismiss functionality
+			?>
+			<script type="text/javascript">
+			function fbDismissUnmappedAttributesBanner(event) {
+				// Make AJAX request to dismiss the banner
+				var xhr = new XMLHttpRequest();
+				xhr.open('POST', '<?php echo esc_url( admin_url( 'admin-ajax.php' ) ); ?>', true);
+				xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+				xhr.onload = function() {
+					if (xhr.status === 200) {
+						// Hide the notice immediately
+						var notice = event.target.closest('.notice');
+						if (notice) {
+							notice.style.display = 'none';
+						}
+					}
+				};
+				xhr.send('action=fb_dismiss_unmapped_attributes_banner&_wpnonce=<?php echo esc_attr( wp_create_nonce( 'fb_dismiss_unmapped_attributes_banner' ) ); ?>');
+			}
+			</script>
+			<?php
+			delete_transient( 'facebook_plugin_unmapped_attributes_info' );
 		}
 	}
 
