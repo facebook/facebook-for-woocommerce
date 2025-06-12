@@ -1787,10 +1787,21 @@ class Admin {
 							$field.find('option:first').prop('selected', true);
 						}
 						
-						// Reset select2 if it's initialized
+						// Reset select2 if it's initialized, with special handling for different field types
 						if ($field.hasClass('wc-enhanced-select') || $field.hasClass('select2-hidden-accessible')) {
 							try {
-								$field.select2('val', '');
+								// Check if this is a Google Product Category field or WC Product Bundle field
+								if ($field.closest('#wc-facebook-google-product-category-fields').length) {
+									// For Google Product Category fields, preserve options but clear selection
+									$field.val('').trigger('change');
+								} else if ($field.hasClass('wc-product-search') || 
+								    $field.closest('.wc-product-bundles').length) {
+									// For Product Bundle fields, use empty() and trigger change
+									$field.empty().trigger('change');
+								} else {
+									// For standard WooCommerce enhanced selects, use the traditional method
+									$field.select2('val', '');
+								}
 								// Also reset the select2 container styles
 								$field.next('.select2-container').find('.select2-selection').css({
 									'cursor': '',
@@ -1798,7 +1809,8 @@ class Admin {
 									'color': ''
 								});
 							} catch (e) {
-								// Ignore select2 errors
+								// If select2 methods fail, fallback to basic reset
+								$field.val('').trigger('change');
 							}
 						}
 					}
@@ -2147,35 +2159,51 @@ class Admin {
 					// Remove all multi-value displays and sync indicators
 					$('.woocommerce_options_panel').find('.multi-value-display, .sync-indicator').remove();
 					
-					// Reset all select fields
-					$('.woocommerce_options_panel select').each(function() {
-						var $select = $(this);
-						$select.show().prop('disabled', false).removeClass('synced-attribute');
-						
-						// If the select has no options or just one, ensure it's properly reset
-						if ($select.find('option').length <= 1) {
-							$select.val('').prop('selected', true);
-						}
-						
-						// Reset select2 if applicable
-						if ($select.hasClass('wc-enhanced-select') || $select.hasClass('select2-hidden-accessible')) {
-							try {
-								$select.select2('val', '');
-							} catch (e) {
-								// Ignore select2 errors
+					// Define the specific Facebook attribute fields to clean up
+					var facebookAttributeFields = [
+						'#<?php echo esc_js( \WC_Facebook_Product::FB_MATERIAL ); ?>',       // Material
+						'#<?php echo esc_js( \WC_Facebook_Product::FB_COLOR ); ?>',          // Color  
+						'#<?php echo esc_js( \WC_Facebook_Product::FB_SIZE ); ?>',           // Size
+						'#<?php echo esc_js( \WC_Facebook_Product::FB_PATTERN ); ?>',        // Pattern
+						'#<?php echo esc_js( \WC_Facebook_Product::FB_BRAND ); ?>',          // Brand
+						'#<?php echo esc_js( \WC_Facebook_Product::FB_MPN ); ?>',            // MPN
+						'#<?php echo esc_js( \WC_Facebook_Product::FB_AGE_GROUP ); ?>',      // Age Group (dropdown)
+						'#<?php echo esc_js( \WC_Facebook_Product::FB_GENDER ); ?>',         // Gender (dropdown)
+						'#<?php echo esc_js( \WC_Facebook_Product::FB_PRODUCT_CONDITION ); ?>' // Condition (dropdown)
+					];
+					
+					// Clean up each specific Facebook attribute field
+					facebookAttributeFields.forEach(function(fieldId) {
+						var $field = $(fieldId);
+						if ($field.length) {
+							// Reset field state
+							$field.show().prop('disabled', false).removeClass('synced-attribute');
+							
+							// Reset field styles
+							$field.css({
+								'cursor': '',
+								'background-color': '',
+								'color': '',
+								'border-color': '',
+								'opacity': ''
+							});
+							
+							// Handle based on field type
+							if ($field.is('select')) {
+								// For dropdown fields (Age Group, Gender, Condition)
+								$field.val('').trigger('change');
+								if ($field.find('option').length > 0) {
+									$field.find('option:first').prop('selected', true);
+								}
+							} else {
+								// For text input fields (Material, Color, Size, Pattern, Brand, MPN)
+								$field.val('');
 							}
 						}
 					});
 					
-					// Reset all text inputs styling
-					$('.woocommerce_options_panel input[type="text"]').each(function() {
-						var $input = $(this);
-						if ($input.hasClass('multi-value-display')) {
-							$input.remove();
-							return;
-						}
-						$input.show().prop('disabled', false).removeClass('synced-attribute');
-					});
+					// Clean up any remaining multi-value display inputs that might be leftover
+					$('.woocommerce_options_panel input[type="text"].multi-value-display').remove();
 				}
 
 				// Original tab click handler
