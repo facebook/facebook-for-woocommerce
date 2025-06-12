@@ -150,7 +150,7 @@ class Product_Attributes extends Abstract_Settings_Screen {
 
 		// Auto-cleanup orphaned mappings on page load
 		$cleaned_count = $this->cleanup_orphaned_mappings();
-		
+
 		// Show cleanup notification if any mappings were removed
 		if ( $cleaned_count > 0 ) {
 			$message = sprintf(
@@ -1075,9 +1075,9 @@ class Product_Attributes extends Abstract_Settings_Screen {
 	 * @return array Array of orphaned mapping keys
 	 */
 	private function get_orphaned_mappings() {
-		$saved_mappings = $this->get_saved_mappings();
+		$saved_mappings     = $this->get_saved_mappings();
 		$current_attributes = $this->get_product_attributes();
-		$orphaned = array();
+		$orphaned           = array();
 
 		foreach ( $saved_mappings as $wc_attribute => $fb_field ) {
 			if ( ! isset( $current_attributes[ $wc_attribute ] ) ) {
@@ -1096,10 +1096,10 @@ class Product_Attributes extends Abstract_Settings_Screen {
 	 * @return int Number of orphaned mappings removed
 	 */
 	private function cleanup_orphaned_mappings() {
-		$saved_mappings = $this->get_saved_mappings();
+		$saved_mappings     = $this->get_saved_mappings();
 		$current_attributes = $this->get_product_attributes();
-		$cleaned_mappings = array();
-		$removed_count = 0;
+		$cleaned_mappings   = array();
+		$removed_count      = 0;
 
 		foreach ( $saved_mappings as $wc_attribute => $fb_field ) {
 			if ( isset( $current_attributes[ $wc_attribute ] ) ) {
@@ -1107,7 +1107,7 @@ class Product_Attributes extends Abstract_Settings_Screen {
 				$cleaned_mappings[ $wc_attribute ] = $fb_field;
 			} else {
 				// Count orphaned mappings
-				$removed_count++;
+				++$removed_count;
 			}
 		}
 
