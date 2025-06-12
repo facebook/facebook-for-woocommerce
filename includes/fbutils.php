@@ -412,71 +412,6 @@ if ( ! class_exists( 'WC_Facebookcommerce_Utils' ) ) :
 		}
 
 		/**
-		 * Utility function for development logging.
-		 *
-		 * @param string $message
-		 * @param array  $obj
-		 * @param bool   $error
-		 * @param string $ems
-		 */
-		public static function fblog(
-			$message,
-			$obj = [],
-			$error = false,
-			$ems = ''
-		) {
-			if ( $error ) {
-				$obj['plugin_version'] = self::PLUGIN_VERSION;
-				$obj['php_version']    = phpversion();
-			}
-			$message = wp_json_encode(
-				array(
-					'message' => $message,
-					'object'  => $obj,
-				)
-			);
-
-			// phpcs:ignore Universal.Operators.DisallowShortTernary.Found
-			$ems = $ems ?: self::$ems;
-			if ( $ems ) {
-				try {
-					facebook_for_woocommerce()->get_api()->log( $ems, $message, $error );
-				} catch ( ApiException $e ) {
-					$message = sprintf( 'There was an error trying to log: %s', $e->getMessage() );
-					facebook_for_woocommerce()->log( $message );
-				}
-			} else {
-				error_log(
-					'external merchant setting is null, something wrong here: ' .
-					$message
-				);
-			}
-		}
-
-		/**
-		 * Utility function for development Tip Events logging.
-		 *
-		 * @param string $tip_id
-		 * @param string $channel_id
-		 * @param string $event
-		 * @param string $ems
-		 */
-		public static function tip_events_log( $tip_id, $channel_id, $event, $ems = '' ) {
-			// phpcs:ignore Universal.Operators.DisallowShortTernary.Found
-			$ems = $ems ?: self::$ems;
-			if ( $ems ) {
-				try {
-					facebook_for_woocommerce()->get_api()->log_tip_event( $tip_id, $channel_id, $event );
-				} catch ( ApiException $e ) {
-					$message = sprintf( 'There was an error while logging tip events: %s', $e->getMessage() );
-					facebook_for_woocommerce()->log( $message );
-				}
-			} else {
-				error_log( 'external merchant setting is null' );
-			}
-		}
-
-		/**
 		 * Returns whether the variation type is 'variation' or 'subscription_variation'.
 		 *
 		 * @param string $type
@@ -820,34 +755,6 @@ if ( ! class_exists( 'WC_Facebookcommerce_Utils' ) ) :
 			}
 			set_transient( 'facebook_plugin_test_fail', $msg );
 			set_transient( 'facebook_plugin_test_stack_trace', $trace );
-		}
-
-		/**
-		 * Helper function to check time cap.
-		 *
-		 * @param string $from
-		 * @param int    $date_cap
-		 * @return bool
-		 */
-		public static function check_time_cap( $from, $date_cap ) {
-			if ( null === $from ) {
-				return true;
-			}
-			$now         = new DateTime( current_time( 'mysql' ) );
-			$diff_in_day = $now->diff( new DateTime( $from ) )->format( '%a' );
-			return is_numeric( $diff_in_day ) && (int) $diff_in_day > $date_cap;
-		}
-
-		/**
-		 * Gets the cached best tip.
-		 *
-		 * @return mixed
-		 */
-		public static function get_cached_best_tip() {
-			$cached_best_tip = self::decode_json(
-				get_option( 'fb_info_banner_last_best_tip', '' )
-			);
-			return $cached_best_tip;
 		}
 
 		/**

@@ -677,13 +677,12 @@ class WC_Facebook_Product_Feed {
 
 	// Log progress in local log file and FB.
 	public function log_feed_progress( $msg, $object = array() ) {
-		WC_Facebookcommerce_Utils::fblog( $msg, $object );
 		$msg = empty( $object ) ? $msg : $msg . wp_json_encode( $object );
 		Logger::log(
 			$msg,
-			[],
+			$object,
 			array(
-				'should_send_log_to_meta'        => false,
+				'should_send_log_to_meta'        => true,
 				'should_save_log_in_woocommerce' => true,
 				'woocommerce_log_level'          => \WC_Log_Levels::DEBUG,
 			)

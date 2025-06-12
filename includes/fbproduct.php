@@ -14,6 +14,7 @@ use WooCommerce\Facebook\Feed\ShippingProfilesFeed;
 use WooCommerce\Facebook\Framework\Helper;
 use WooCommerce\Facebook\Handlers\PluginRender;
 use WooCommerce\Facebook\Products;
+use WooCommerce\Facebook\Framework\Logger;
 
 defined( 'ABSPATH' ) || exit;
 
@@ -284,11 +285,6 @@ class WC_Facebook_Product {
 		if ( $this->woo_product ) {
 			return call_user_func_array( array( $this->woo_product, $func ), $args );
 		} else {
-			WC_Facebookcommerce_Utils::fblog(
-				"Calling $func on Null Woo Object.\n",
-				array(),
-				true
-			);
 			return null;
 		}
 	}
@@ -2215,9 +2211,15 @@ class WC_Facebook_Product {
 				);
 			}//end foreach
 		} catch ( \Exception $e ) {
-
-			\WC_Facebookcommerce_Utils::fblog( $e->getMessage() );
-
+			Logger::log(
+				$e->getMessage(),
+				[],
+				array(
+					'should_send_log_to_meta'        => false,
+					'should_save_log_in_woocommerce' => true,
+					'woocommerce_log_level'          => \WC_Log_Levels::ERROR,
+				)
+			);
 			return array();
 		}//end try
 
