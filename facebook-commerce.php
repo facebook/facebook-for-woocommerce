@@ -995,7 +995,7 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 
 		$product_id = $product->get_id();
 
-		if ( $product->is_type( 'variation' ) || $product->is_type('simple')) {
+		if ( $product->is_type( 'variation' ) || $product->is_type( 'simple' ) ) {
 			$retailer_id = \WC_Facebookcommerce_Utils::get_fb_retailer_id( $product );
 			// enqueue variation to be deleted in the background
 			$this->facebook_for_woocommerce->get_products_sync_handler()->delete_products( [ $retailer_id ] );
@@ -1195,7 +1195,7 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 		if ( ! $this->product_should_be_synced( $woo_product->woo_product ) ) {
 			return;
 		}
-		
+
 		return $this->create_product_simple( $woo_product );  // new product
 	}
 
