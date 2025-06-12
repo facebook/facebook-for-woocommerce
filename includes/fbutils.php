@@ -781,34 +781,6 @@ if ( ! class_exists( 'WC_Facebookcommerce_Utils' ) ) :
 		}
 
 		/**
-		 * Helper function to check time cap.
-		 *
-		 * @param string $from
-		 * @param int    $date_cap
-		 * @return bool
-		 */
-		public static function check_time_cap( $from, $date_cap ) {
-			if ( null === $from ) {
-				return true;
-			}
-			$now         = new DateTime( current_time( 'mysql' ) );
-			$diff_in_day = $now->diff( new DateTime( $from ) )->format( '%a' );
-			return is_numeric( $diff_in_day ) && (int) $diff_in_day > $date_cap;
-		}
-
-		/**
-		 * Gets the cached best tip.
-		 *
-		 * @return mixed
-		 */
-		public static function get_cached_best_tip() {
-			$cached_best_tip = self::decode_json(
-				get_option( 'fb_info_banner_last_best_tip', '' )
-			);
-			return $cached_best_tip;
-		}
-
-		/**
 		 * Normalizes product data to be included in a sync request. /items_batch
 		 * rather than /batch this time.
 		 *
