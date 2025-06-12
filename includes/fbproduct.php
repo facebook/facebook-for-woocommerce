@@ -2774,10 +2774,7 @@ class WC_Facebook_Product {
 					$product_data['gender'] = 'male';
 				} elseif (in_array($gender, array('woman', 'women', 'girls', 'girl'), true)) {
 					$product_data['gender'] = 'female';
-				} else {
-					// Default to unisex for unknown values
-					$product_data['gender'] = 'unisex';
-				}
+				} 
 			}
 		}
 		
