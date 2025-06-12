@@ -9,13 +9,13 @@
 
 require_once __DIR__ . '/../../../includes/ProductSets/ProductSetSync.php';
 
-use WP_UnitTestCase;
+use WooCommerce\Facebook\Tests\AbstractWPUnitTestWithSafeFiltering;
 use WooCommerce\Facebook\ProductSets\ProductSetSync;
 
 /**
  * Class FeedUploadUtilsTest
  */
-class ProductSetSyncTest extends WP_UnitTestCase {
+class ProductSetSyncTest extends AbstractWPUnitTestWithSafeFiltering {
 
     const FB_PRODUCT_SET_ID = "3720002385";
 
