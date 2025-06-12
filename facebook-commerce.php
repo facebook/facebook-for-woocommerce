@@ -2765,7 +2765,6 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 		} else {
 			$fb_product_item_id = $this->get_product_fbid( self::FB_PRODUCT_ITEM_ID, $product->get_id() );
 			if ( ! $fb_product_item_id ) {
-				\WC_Facebookcommerce_Utils::fblog( $fb_product_item_id . " doesn't exist but underwent a visibility transform.", [], true );
 				return;
 			}
 			try {

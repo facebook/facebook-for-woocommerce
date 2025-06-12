@@ -12,6 +12,7 @@ namespace WooCommerce\Facebook;
 
 use WooCommerce\Facebook\Framework\Api\Exception;
 use WooCommerce\Facebook\Utilities\Heartbeat;
+use WooCommerce\Facebook\Framework\Logger;
 
 defined( 'ABSPATH' ) || exit;
 
@@ -78,12 +79,17 @@ class RolloutSwitches {
 				}
 			}
 			update_option( self::SETTINGS_KEY, $fb_options );
-			\WC_Facebookcommerce_Utils::fblog(
-				$e,
-				[
-					'event'      => 'rollout_switches',
-					'event_type' => 'init',
-				]
+			Logger::log(
+				$e->getMessage(),
+				array(
+					'flow_name'  => 'rollout_switches',
+					'flow_step'  => 'init',
+				),
+				array(
+					'should_send_log_to_meta' => true,
+					'should_save_log_in_woocommerce' => true,
+					'woocommerce_log_level'   => \WC_Log_Levels::ERROR,
+				)
 			);
 		}
 	}
