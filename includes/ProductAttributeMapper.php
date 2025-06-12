@@ -736,38 +736,54 @@ class ProductAttributeMapper {
 
 		$product_id = $product->get_id();
 
-		// Save each mapped attribute to product meta
+		// Save each mapped attribute to product meta using the correct constants
 		foreach ( $mapped_attributes as $field_name => $value ) {
 			switch ( $field_name ) {
-				case 'material':
-					update_post_meta( $product_id, \WC_Facebook_Product::FB_MATERIAL, $value );
+				case 'brand':
+					$meta_key = 'fb_brand';
 					break;
 				case 'color':
-					update_post_meta( $product_id, \WC_Facebook_Product::FB_COLOR, $value );
+					$meta_key = 'fb_color';
+					break;
+				case 'material':
+					$meta_key = 'fb_material';
 					break;
 				case 'size':
-					update_post_meta( $product_id, \WC_Facebook_Product::FB_SIZE, $value );
+					$meta_key = 'fb_size';
 					break;
 				case 'pattern':
-					update_post_meta( $product_id, \WC_Facebook_Product::FB_PATTERN, $value );
-					break;
-				case 'brand':
-					update_post_meta( $product_id, \WC_Facebook_Product::FB_BRAND, $value );
-					break;
-				case 'mpn':
-					update_post_meta( $product_id, \WC_Facebook_Product::FB_MPN, $value );
+					$meta_key = 'fb_pattern';
 					break;
 				case 'age_group':
-					update_post_meta( $product_id, \WC_Facebook_Product::FB_AGE_GROUP, $value );
+					$meta_key = 'fb_age_group';
 					break;
 				case 'gender':
-					update_post_meta( $product_id, \WC_Facebook_Product::FB_GENDER, $value );
+					$meta_key = 'fb_gender';
 					break;
 				case 'condition':
-					update_post_meta( $product_id, \WC_Facebook_Product::FB_PRODUCT_CONDITION, $value );
+					$meta_key = 'fb_product_condition';
 					break;
+				case 'mpn':
+					$meta_key = 'fb_mpn';
+					break;
+				default:
+					continue 2; // Skip this iteration
 			}
+
+			// Update the meta value
+			update_post_meta( $product_id, $meta_key, $value );
 		}
+
+		// Clear WordPress meta cache to ensure fresh values are read
+		wp_cache_delete( $product_id, 'post_meta' );
+		
+		// Also clear WooCommerce product cache
+		if ( function_exists( 'wc_delete_product_transients' ) ) {
+			wc_delete_product_transients( $product_id );
+		}
+		
+		// Clear any object cache for this product
+		clean_post_cache( $product_id );
 
 		return $mapped_attributes;
 	}
@@ -781,7 +797,31 @@ class ProductAttributeMapper {
 	 * @return array The mapped attributes that were saved
 	 */
 	public static function get_and_save_mapped_attributes( WC_Product $product ) {
-		$mapped_attributes = self::get_mapped_attributes( $product );
-		return self::save_mapped_attributes( $product, $mapped_attributes );
+		try {
+			$mapped_attributes = self::get_mapped_attributes( $product );
+			$result = self::save_mapped_attributes( $product, $mapped_attributes );
+			return $result;
+		} catch ( \Exception $e ) {
+			error_log( 'ProductAttributeMapper sync error: ' . $e->getMessage() );
+			return array();
+		}
+	}
+
+	/**
+	 * Initialize the attribute mapper.
+	 *
+	 * @since 3.4.11
+	 *
+	 * @return void
+	 */
+	public static function init() {
+		// Load custom mappings when the class is initialized
+		self::load_custom_mappings();
 	}
 }
+
+// Initialize when WooCommerce is fully loaded
+add_action( 'woocommerce_init', array( 'WooCommerce\Facebook\ProductAttributeMapper', 'init' ), 10 );
+
+// Also try initializing on plugins_loaded as a fallback
+add_action( 'plugins_loaded', array( 'WooCommerce\Facebook\ProductAttributeMapper', 'init' ), 20 );
