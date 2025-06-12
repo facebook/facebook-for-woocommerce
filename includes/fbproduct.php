@@ -2266,25 +2266,22 @@ class WC_Facebook_Product {
 					}
 				}
 			}
-		} else {
-
+		} elseif ( $google_category_id ) {
 			// Fallback to the old implementation for compatibility
-			if ( $google_category_id ) {
 				$fb_categories = facebook_for_woocommerce()->get_facebook_category_handler();
-				if ( $fb_categories ) {
-					$attributes = $fb_categories->get_attributes_with_fallback_to_parent_category( $google_category_id );
+			if ( $fb_categories ) {
+				$attributes = $fb_categories->get_attributes_with_fallback_to_parent_category( $google_category_id );
 
-					if ( ! empty( $attributes ) ) {
-						$matched_attributes = $this->get_matched_attributes_for_product( $this->woo_product, $attributes );
+				if ( ! empty( $attributes ) ) {
+					$matched_attributes = $this->get_matched_attributes_for_product( $this->woo_product, $attributes );
 
-						foreach ( $matched_attributes as $attribute_key => $attribute_values ) {
-							// Store array values as comma-separated list
-							if ( is_array( $attribute_values ) ) {
-								$attribute_values = implode( ', ', $attribute_values );
-							}
-
-							$product_data[ 'enhanced_catalog_attributes_' . $attribute_key ] = $attribute_values;
+					foreach ( $matched_attributes as $attribute_key => $attribute_values ) {
+						// Store array values as comma-separated list
+						if ( is_array( $attribute_values ) ) {
+							$attribute_values = implode( ', ', $attribute_values );
 						}
+
+						$product_data[ 'enhanced_catalog_attributes_' . $attribute_key ] = $attribute_values;
 					}
 				}
 			}
@@ -2740,20 +2737,18 @@ class WC_Facebook_Product {
 
 			if ( ! in_array( $age_group, $valid_age_groups ) ) {
 				// Try to map to a valid value
-				if ( $age_group === 'teen' || $age_group === 'teenager' ) {
+				if ( 'teen' === $age_group || 'teenager' === $age_group ) {
 					$product_data['age_group'] = 'adult'; // Facebook API maps teens to adult
-				} elseif ( $age_group === 'all ages' ) {
+				} elseif ( 'all ages' === $age_group ) {
 					$product_data['age_group'] = 'adult'; // Map all ages to adult
-				} elseif ( $age_group === 'children' || $age_group === 'child' ) {
+				} elseif ( 'children' === $age_group || 'child' === $age_group ) {
 					$product_data['age_group'] = 'kids'; // Map children to kids
-				} else {
+				} elseif ( false !== strpos( $age_group, 'kid' ) || false !== strpos( $age_group, 'child' ) ) {
 					// Default to kids if no matching value and contains kid/child
-					if ( strpos( $age_group, 'kid' ) !== false || strpos( $age_group, 'child' ) !== false ) {
-						$product_data['age_group'] = 'kids';
-					} else {
-						// Remove age_group if it's not a valid value
-						unset( $product_data['age_group'] );
-					}
+					$product_data['age_group'] = 'kids';
+				} else {
+					// Remove age_group if it's not a valid value
+					unset( $product_data['age_group'] );
 				}
 			}
 		}
