@@ -45,18 +45,18 @@ class ProductAttributeMapper {
 
 	/** @var array Extended Facebook fields based on Meta commerce platform catalog fields */
 	private static $extended_facebook_fields = array(
-		'sale_price'                => array( 'sale_price', 'discount_price', 'offer_price' ),
-		'inventory'                 => array( 'inventory', 'stock', 'quantity' ),
-		'image_link'                => array( 'image_link', 'image', 'featured_image' ),
-		'additional_image_link'     => array( 'additional_image_link', 'additional_images', 'gallery' ),
-		'shipping_weight'           => array( 'shipping_weight', 'weight' ),
-		'shipping'                  => array( 'shipping', 'shipping_info' ),
-		'tax'                       => array( 'tax', 'tax_info' ),
-		'custom_label_0'            => array( 'custom_label_0', 'label0' ),
-		'custom_label_1'            => array( 'custom_label_1', 'label1' ),
-		'custom_label_2'            => array( 'custom_label_2', 'label2' ),
-		'custom_label_3'            => array( 'custom_label_3', 'label3' ),
-		'custom_label_4'            => array( 'custom_label_4', 'label4' ),
+		'sale_price'            => array( 'sale_price', 'discount_price', 'offer_price' ),
+		'inventory'             => array( 'inventory', 'stock', 'quantity' ),
+		'image_link'            => array( 'image_link', 'image', 'featured_image' ),
+		'additional_image_link' => array( 'additional_image_link', 'additional_images', 'gallery' ),
+		'shipping_weight'       => array( 'shipping_weight', 'weight' ),
+		'shipping'              => array( 'shipping', 'shipping_info' ),
+		'tax'                   => array( 'tax', 'tax_info' ),
+		'custom_label_0'        => array( 'custom_label_0', 'label0' ),
+		'custom_label_1'        => array( 'custom_label_1', 'label1' ),
+		'custom_label_2'        => array( 'custom_label_2', 'label2' ),
+		'custom_label_3'        => array( 'custom_label_3', 'label3' ),
+		'custom_label_4'        => array( 'custom_label_4', 'label4' ),
 	);
 
 	/** @var array Maps WooCommerce attribute naming variations to standardized Meta field names */
@@ -776,12 +776,12 @@ class ProductAttributeMapper {
 
 		// Clear WordPress meta cache to ensure fresh values are read
 		wp_cache_delete( $product_id, 'post_meta' );
-		
+
 		// Also clear WooCommerce product cache
 		if ( function_exists( 'wc_delete_product_transients' ) ) {
 			wc_delete_product_transients( $product_id );
 		}
-		
+
 		// Clear any object cache for this product
 		clean_post_cache( $product_id );
 
@@ -799,7 +799,7 @@ class ProductAttributeMapper {
 	public static function get_and_save_mapped_attributes( WC_Product $product ) {
 		try {
 			$mapped_attributes = self::get_mapped_attributes( $product );
-			$result = self::save_mapped_attributes( $product, $mapped_attributes );
+			$result            = self::save_mapped_attributes( $product, $mapped_attributes );
 			return $result;
 		} catch ( \Exception $e ) {
 			error_log( 'ProductAttributeMapper sync error: ' . $e->getMessage() );
