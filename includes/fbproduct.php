@@ -1688,6 +1688,18 @@ class WC_Facebook_Product {
 	 */
 	public function prepare_product( $retailer_id = null, $type_to_prepare_for = self::PRODUCT_PREP_TYPE_NORMAL ) {
 		
+		// Directly sync mapped attributes BEFORE preparing product data
+		if (class_exists(ProductAttributeMapper::class)) {
+			try {
+				$product = wc_get_product($this->id);
+				if ($product) {
+					ProductAttributeMapper::get_and_save_mapped_attributes($product);
+				}
+			} catch (Exception $e) {
+				error_log( 'WC_Facebook_Product::prepare_product() sync error: ' . $e->getMessage() );
+			}
+		}
+		
 		// Store the preparation type for later use
 		$this->current_type_to_prepare = $type_to_prepare_for;
 
