@@ -148,6 +148,28 @@ class Product_Attributes extends Abstract_Settings_Screen {
 			return;
 		}
 
+		// Auto-cleanup orphaned mappings on page load
+		$cleaned_count = $this->cleanup_orphaned_mappings();
+		
+		// Show cleanup notification if any mappings were removed
+		if ( $cleaned_count > 0 ) {
+			$message = sprintf(
+				/* translators: %d: number of orphaned mappings cleaned up */
+				_n(
+					'Cleaned up %d obsolete attribute mapping for an attribute that no longer exists.',
+					'Cleaned up %d obsolete attribute mappings for attributes that no longer exist.',
+					$cleaned_count,
+					'facebook-for-woocommerce'
+				),
+				$cleaned_count
+			);
+			?>
+			<div class="notice notice-info is-dismissible">
+				<p><?php echo esc_html( $message ); ?></p>
+			</div>
+			<?php
+		}
+
 		$product_attributes = $this->get_product_attributes();
 		$facebook_fields    = $this->get_facebook_fields();
 		$current_mappings   = $this->get_saved_mappings();
@@ -886,10 +908,18 @@ class Product_Attributes extends Abstract_Settings_Screen {
 			$wc_attributes = isset( $_POST['wc_facebook_attribute_mapping'] ) ? array_map( 'sanitize_text_field', wp_unslash( (array) $_POST['wc_facebook_attribute_mapping'] ) ) : array();
 			$fb_fields     = isset( $_POST['wc_facebook_field_mapping'] ) ? array_map( 'sanitize_text_field', wp_unslash( (array) $_POST['wc_facebook_field_mapping'] ) ) : array();
 
+			// Get current valid attributes to ensure we only save valid mappings
+			$current_attributes = $this->get_product_attributes();
+
 			// Process WooCommerce attribute => Facebook field mappings
 			foreach ( $wc_attributes as $key => $wc_attribute ) {
 				// Skip empty attributes
 				if ( empty( $wc_attribute ) ) {
+					continue;
+				}
+
+				// Skip if the attribute doesn't exist (additional safety check)
+				if ( ! isset( $current_attributes[ $wc_attribute ] ) ) {
 					continue;
 				}
 
@@ -1035,5 +1065,63 @@ class Product_Attributes extends Abstract_Settings_Screen {
 		}
 
 		wp_die(); // this is required to terminate immediately and return a proper response
+	}
+
+	/**
+	 * Detects orphaned attribute mappings (mappings that reference non-existent attributes).
+	 *
+	 * @since 3.4.11
+	 *
+	 * @return array Array of orphaned mapping keys
+	 */
+	private function get_orphaned_mappings() {
+		$saved_mappings = $this->get_saved_mappings();
+		$current_attributes = $this->get_product_attributes();
+		$orphaned = array();
+
+		foreach ( $saved_mappings as $wc_attribute => $fb_field ) {
+			if ( ! isset( $current_attributes[ $wc_attribute ] ) ) {
+				$orphaned[] = $wc_attribute;
+			}
+		}
+
+		return $orphaned;
+	}
+
+	/**
+	 * Removes orphaned attribute mappings from the database.
+	 *
+	 * @since 3.4.11
+	 *
+	 * @return int Number of orphaned mappings removed
+	 */
+	private function cleanup_orphaned_mappings() {
+		$saved_mappings = $this->get_saved_mappings();
+		$current_attributes = $this->get_product_attributes();
+		$cleaned_mappings = array();
+		$removed_count = 0;
+
+		foreach ( $saved_mappings as $wc_attribute => $fb_field ) {
+			if ( isset( $current_attributes[ $wc_attribute ] ) ) {
+				// Keep valid mappings
+				$cleaned_mappings[ $wc_attribute ] = $fb_field;
+			} else {
+				// Count orphaned mappings
+				$removed_count++;
+			}
+		}
+
+		// Only update if we actually removed something
+		if ( $removed_count > 0 ) {
+			// Update the option with cleaned mappings
+			update_option( self::OPTION_CUSTOM_ATTRIBUTE_MAPPINGS, $cleaned_mappings );
+
+			// Update the static mapping in the ProductAttributeMapper class
+			if ( method_exists( 'WooCommerce\Facebook\ProductAttributeMapper', 'set_custom_attribute_mappings' ) ) {
+				ProductAttributeMapper::set_custom_attribute_mappings( $cleaned_mappings );
+			}
+		}
+
+		return $removed_count;
 	}
 }
