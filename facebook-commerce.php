@@ -276,25 +276,6 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 				include_once 'includes/fbutils.php';
 			}
 
-			// Display an info banner for eligible pixel and user.
-			if ( $this->get_external_merchant_settings_id()
-				&& $this->get_facebook_pixel_id()
-				&& $this->get_pixel_install_time() ) {
-				$should_query_tip =
-					WC_Facebookcommerce_Utils::check_time_cap(
-						get_option( 'fb_info_banner_last_query_time', '' ),
-						self::FB_TIP_QUERY
-					);
-				$last_tip_info    = WC_Facebookcommerce_Utils::get_cached_best_tip();
-
-				if ( $should_query_tip || $last_tip_info ) {
-					if ( ! class_exists( 'WC_Facebookcommerce_Info_Banner' ) ) {
-						include_once 'includes/fbinfobanner.php';
-					}
-					WC_Facebookcommerce_Info_Banner::get_instance( $this->get_external_merchant_settings_id(), $should_query_tip );
-				}
-			}
-
 			if ( ! $this->get_pixel_install_time() && $this->get_facebook_pixel_id() ) {
 				$this->update_pixel_install_time( time() );
 			}
@@ -2638,10 +2619,18 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 			// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
 			echo $this->get_message_html( $message );
 			delete_transient( 'facebook_plugin_api_error' );
-			WC_Facebookcommerce_Utils::fblog(
-				$error_msg,
-				[],
-				true
+			Logger::log(
+				'Error message displayed to Admins',
+				array(
+					'flow_name'  => 'display_admin_message',
+					'flow_step'  => 'display_admin_error_message',
+					'extra_data' => [
+						'displayed_message' => $error_msg,
+					],
+				),
+				array(
+					'should_send_log_to_meta' => true,
+				)
 			);
 		}
 		$warning_msg = get_transient( 'facebook_plugin_api_warning' );
@@ -2776,7 +2765,6 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 		} else {
 			$fb_product_item_id = $this->get_product_fbid( self::FB_PRODUCT_ITEM_ID, $product->get_id() );
 			if ( ! $fb_product_item_id ) {
-				\WC_Facebookcommerce_Utils::fblog( $fb_product_item_id . " doesn't exist but underwent a visibility transform.", [], true );
 				return;
 			}
 			try {

@@ -65,9 +65,12 @@ class WC_Facebookcommerce_Background_Process extends WP_Background_Process {
 					'Unable to dispatch FB Background processor: %s',
 					$dispatched->get_error_message()
 				),
-				[],
 				array(
-					'should_send_log_to_meta'        => false,
+					'flow_name'  => 'background_sync',
+					'flow_step'  => 'background_sync_completed',
+				),
+				array(
+					'should_send_log_to_meta'        => true,
 					'should_save_log_in_woocommerce' => true,
 					'woocommerce_log_level'          => \WC_Log_Levels::ERROR,
 				)
@@ -182,14 +185,16 @@ class WC_Facebookcommerce_Background_Process extends WP_Background_Process {
 		delete_transient( $commerce::FB_SYNC_REMAINING );
 		Logger::log(
 			'Background sync complete!',
-			[],
 			array(
-				'should_send_log_to_meta'        => false,
+				'flow_name'  => 'background_sync',
+				'flow_step'  => 'background_sync_completed',
+			),
+			array(
+				'should_send_log_to_meta'        => true,
 				'should_save_log_in_woocommerce' => true,
 				'woocommerce_log_level'          => \WC_Log_Levels::DEBUG,
 			)
 		);
-		WC_Facebookcommerce_Utils::fblog( 'Background sync complete!' );
 		$this->commerce->remove_sticky_message();
 		$this->commerce->display_info_message( 'Facebook product sync complete!' );
 		parent::complete();
