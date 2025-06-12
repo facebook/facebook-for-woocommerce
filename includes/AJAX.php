@@ -46,7 +46,7 @@ class AJAX {
 		// sync all coupons via AJAX
 		add_action( 'wp_ajax_wc_facebook_sync_coupons', array( $this, 'sync_coupons' ) );
 
-		// sync all shipping profiles via AJAX
+		// sync all shipping profiles via AJAX	
 		add_action( 'wp_ajax_wc_facebook_sync_shipping_profiles', array( $this, 'sync_shipping_profiles' ) );
 
 		// sync navigation menu via AJAX
