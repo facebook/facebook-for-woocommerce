@@ -1795,7 +1795,7 @@ class Admin {
 									// For Google Product Category fields, preserve options but clear selection
 									$field.val('').trigger('change');
 								} else if ($field.hasClass('wc-product-search') || 
-								    $field.closest('.wc-product-bundles').length) {
+									$field.closest('.wc-product-bundles').length) {
 									// For Product Bundle fields, use empty() and trigger change
 									$field.empty().trigger('change');
 								} else {
