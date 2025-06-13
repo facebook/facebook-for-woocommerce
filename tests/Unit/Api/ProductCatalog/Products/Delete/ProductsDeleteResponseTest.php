@@ -13,7 +13,7 @@ use WooCommerce\Facebook\Tests\AbstractWPUnitTestWithOptionIsolationAndSafeFilte
  *
  * @since x.x.x
  */
-class ProductsDeleteTest extends AbstractWPUnitTestWithOptionIsolationAndSafeFiltering {
+class ProductsDeleteResponseTest extends AbstractWPUnitTestWithOptionIsolationAndSafeFiltering {
 
 	/**
 	 * Test that the Response class exists and can be instantiated.

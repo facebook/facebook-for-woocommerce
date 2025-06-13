@@ -13,7 +13,7 @@ use WooCommerce\Facebook\Tests\AbstractWPUnitTestWithOptionIsolationAndSafeFilte
  *
  * @since x.x.x
  */
-class ProductGroupsCreateTest extends AbstractWPUnitTestWithOptionIsolationAndSafeFiltering {
+class ProductGroupsCreateResponseTest extends AbstractWPUnitTestWithOptionIsolationAndSafeFiltering {
 
 	/**
 	 * Test that the Response class exists and can be instantiated.
