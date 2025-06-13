@@ -750,6 +750,23 @@ class Admin {
 	}
 
 	/**
+	 * Adds bulk actions in the products edit screen.
+	 *
+	 * @internal
+	 *
+	 * @since 1.10.0
+	 *
+	 * @param array $bulk_actions array of bulk action keys and labels
+	 * @return array
+	 */
+	public function add_products_sync_bulk_actions( $bulk_actions ) {
+		$bulk_actions['facebook_include'] = __( 'Include in Facebook sync', 'facebook-for-woocommerce' );
+		$bulk_actions['facebook_exclude'] = __( 'Exclude from Facebook sync', 'facebook-for-woocommerce' );
+		return $bulk_actions;
+	}
+
+
+	/**
 	 * Handles a Facebook product sync bulk action.
 	 * Called every time for a product
 	 *
@@ -842,7 +859,13 @@ class Admin {
 				$integration->on_product_publish( $product->get_id() );
 
 			} elseif ( $integration->product_should_be_synced( $product ) ) {
-				facebook_for_woocommerce()->get_products_sync_handler()->create_or_update_products( array( $product->get_id() ) );
+
+				// schedule simple products to be updated or deleted from the catalog in the background
+				if ( Products::product_should_be_deleted( $product ) ) {
+					facebook_for_woocommerce()->get_products_sync_handler()->delete_products( array( $product->get_id() ) );
+				} else {
+					facebook_for_woocommerce()->get_products_sync_handler()->create_or_update_products( array( $product->get_id() ) );
+				}
 			}
 		}
 	}

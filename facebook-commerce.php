@@ -2351,11 +2351,7 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 		 *
 		 * @since 1.10.0
 		 */
-
-		// TODO: to Remove all existence of these function `get_excluded_product_category_ids` as we are no longer supporting these.
-		// Matter of fact it is used in multiple places including important places like Product sets tab.
-		// Hence providing empty array as excluded categories :)
-		return (array) [];
+		return (array) apply_filters( 'wc_facebook_excluded_product_category_ids', get_option( self::SETTING_EXCLUDED_PRODUCT_CATEGORY_IDS, [] ), $this );
 	}
 
 	/**
@@ -2373,10 +2369,7 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 		 *
 		 * @since 1.10.0
 		 */
-		// TODO: to Remove all existence of these function `get_excluded_product_tag_ids` as we are no longer supporting these.
-		// Matter of fact it is used in multiple places including important places like Product sets tab.
-		// Hence providing empty array as excluded tags :)
-		return (array) [];
+		return (array) apply_filters( 'wc_facebook_excluded_product_tag_ids', get_option( self::SETTING_EXCLUDED_PRODUCT_TAG_IDS, [] ), $this );
 	}
 
 	/** Setter methods ************************************************************************************************/
