@@ -172,6 +172,10 @@ class Settings {
 	 * @param string $screen_id the ID to connect to
 	 */
 	private function connect_to_enhanced_admin( $screen_id ) {
+		$is_woo_all_products_sync_enbaled = $this->plugin->get_rollout_switches()->is_switch_enabled(
+			RolloutSwitches::SWITCH_WOO_ALL_PRODUCTS_SYNC_ENABLED
+		);
+
 		if ( is_callable( 'wc_admin_connect_page' ) ) {
 			$crumbs = array(
 				__( 'Facebook for WooCommerce', 'facebook-for-woocommerce' ),
@@ -184,7 +188,9 @@ class Settings {
 						$crumbs[] = __( 'Connection', 'facebook-for-woocommerce' );
 						break;
 					case Settings_Screens\Product_Sync::ID:
-						$crumbs[] = __( 'Product sync', 'facebook-for-woocommerce' );
+						if ( $is_woo_all_products_sync_enbaled ) {
+							$crumbs[] = __( 'Product sync', 'facebook-for-woocommerce' );
+						}
 						break;
 					case Settings_Screens\Advertise::ID:
 						$crumbs[] = __( 'Advertise', 'facebook-for-woocommerce' );
