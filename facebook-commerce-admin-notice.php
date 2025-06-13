@@ -13,7 +13,7 @@
  *
  * Adds a dismissible global admin notice for Facebook for WooCommerce.
  *
- * @since x.x.x
+ * @since 3.5.2
  */
 class WC_Facebookcommerce_Admin_Notice {
 	const NOTICE_ID = 'wc_facebook_admin_notice';
