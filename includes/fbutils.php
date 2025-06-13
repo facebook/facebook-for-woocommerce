@@ -34,8 +34,8 @@ if ( ! class_exists( 'WC_Facebookcommerce_Utils' ) ) :
 		const FB_VARIANT_PATTERN = 'pattern';
 		const FB_VARIANT_GENDER  = 'gender';
 		// TODO: this constant is no longer used and can probably be removed {WV 2020-01-21}
-		const FB_VARIANT_IMAGE = 'fb_image';
-    	const EXTERNAL_ID_COOKIE = 'meta_capi_exid';
+		const FB_VARIANT_IMAGE   = 'fb_image';
+		const EXTERNAL_ID_COOKIE = 'meta_capi_exid';
 		/** @var string */
 		public static $ems = null;
 
@@ -419,13 +419,12 @@ if ( ! class_exists( 'WC_Facebookcommerce_Utils' ) ) :
 
 		/**
 		 * Function for generating the external_id array. Returns an array.
-		 *
 		 */
 		private static function get_external_ids() {
 			$external_ids = array();
 
-			if ( isset( $_COOKIE[WC_Facebookcommerce::EXTERNAL_ID_COOKIE] ) ) {
-				$external_ids[] = $_COOKIE[WC_Facebookcommerce::EXTERNAL_ID_COOKIE];
+			if ( isset( $_COOKIE[ WC_Facebookcommerce::EXTERNAL_ID_COOKIE ] ) ) {
+				$external_ids[] = $_COOKIE[ WC_Facebookcommerce::EXTERNAL_ID_COOKIE ];
 			}
 			if ( 0 !== get_current_user_id() ) {
 				$external_ids[] = strval( get_current_user_id() );
@@ -781,8 +780,8 @@ if ( ! class_exists( 'WC_Facebookcommerce_Utils' ) ) :
 
 		public static function generate_guid() {
 			if ( function_exists( 'com_create_guid' ) === true ) {
-            return trim( com_create_guid(), '{}' );
-     	   }
+				return trim( com_create_guid(), '{}' );
+			}
 
 			return sprintf(
 				'%04X%04X-%04X-%04X-%04X-%04X%04X%04X',

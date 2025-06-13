@@ -186,8 +186,8 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 
 			$event_name = 'PageView';
 			$event_data = array(
-				'event_name'  => $event_name,
-				'user_data'   => $this->pixel->get_user_info(),
+				'event_name' => $event_name,
+				'user_data'  => $this->pixel->get_user_info(),
 			);
 
 			$event = new Event( $event_data );
@@ -502,7 +502,7 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 		public function actually_inject_search_event() {
 
 			$event = $this->get_search_event();
-			
+
 			$this->send_api_event( $event );
 
 			$this->pixel->inject_event(
@@ -1154,7 +1154,7 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 			self::update_array_if_not_null( $order->get_billing_phone(), $user_data, 'ph' );
 			// get_user_id() returns 0 if the current user is a guest
 			if ( $order->get_user_id() !== 0 ) {
-				$external_ids = $user_data['external_id'];
+				$external_ids   = $user_data['external_id'];
 				$external_ids[] = strval( $order->get_user_id() );
 			}
 
@@ -1171,14 +1171,14 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 
 		/**
 		 * Checks the value, if it's not null, updates the array at array_key with value
-		 * 
-		 * @param mixed $value
-		 * @param array $array
+		 *
+		 * @param mixed  $value
+		 * @param array  $array
 		 * @param string $array_key
 		 */
-		private static function update_array_if_not_null( $value, $array, $array_key ){
+		private static function update_array_if_not_null( $value, $array, $array_key ) {
 			if ( ! empty( $value ) ) {
-				$array[$array_key] = $value;
+				$array[ $array_key ] = $value;
 			}
 		}
 

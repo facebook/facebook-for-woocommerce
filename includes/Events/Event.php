@@ -147,11 +147,11 @@ class Event {
 				$user_data[ $key ] = hash( 'sha256', $user_data[ $key ], false );
 			}
 		}
-		if ( isset ( $user_data['external_id'] ) ) {
+		if ( isset( $user_data['external_id'] ) ) {
 			if ( is_array( $user_data['external_id'] ) ) {
 				$external_ids = array();
 				foreach ( $user_data['external_id'] as $id ) {
-					$external_ids[] = hash( 'sha256', $user_data['external_id'][$id], false );
+					$external_ids[] = hash( 'sha256', $user_data['external_id'][ $id ], false );
 				}
 				$user_data['external_id'] = $external_ids;
 			} else {
@@ -266,11 +266,11 @@ class Event {
 		$fbc = '';
 		if ( isset( $_GET['fbclid'] ) ) {
 			$fbclid   = sanitize_text_field( wp_unslash( $_GET['fbclid'] ) ); // phpcs:ignore WordPress.Security.NonceVerification
-            $cur_time = (int) ( microtime( true ) * 1000 );
-            $fbc      = 'fb.1.' . $cur_time . '.' . rawurldecode( $fbclid );
+			$cur_time = (int) ( microtime( true ) * 1000 );
+			$fbc      = 'fb.1.' . $cur_time . '.' . rawurldecode( $fbclid );
 		} elseif ( ! empty( $_COOKIE['_fbc'] ) ) {
 			$fbc = wc_clean( wp_unslash( $_COOKIE['_fbc'] ) );
-		} else if ( isset( $_SESSION['_fbc'] ) ) {
+		} elseif ( isset( $_SESSION['_fbc'] ) ) {
 			$fbc = $_SESSION['_fbc'];
 		}
 		if ( $fbc ) {
@@ -291,7 +291,7 @@ class Event {
 		$fbp = ! empty( $_COOKIE['_fbp'] ) ? wc_clean( wp_unslash( $_COOKIE['_fbp'] ) ) : '';
 		if ( $fbp ) {
 			$_SESSION['_fbp'] = $fbp;
-		} else if ( isset( $_SESSION['_fbp'] ) ) {
+		} elseif ( isset( $_SESSION['_fbp'] ) ) {
 			$fbp = $_SESSION['_fbp'];
 		}
 		return $fbp;

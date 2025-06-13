@@ -82,13 +82,13 @@ class RolloutSwitches {
 			Logger::log(
 				$e->getMessage(),
 				array(
-					'flow_name'  => 'rollout_switches',
-					'flow_step'  => 'init',
+					'flow_name' => 'rollout_switches',
+					'flow_step' => 'init',
 				),
 				array(
-					'should_send_log_to_meta' => true,
+					'should_send_log_to_meta'        => true,
 					'should_save_log_in_woocommerce' => true,
-					'woocommerce_log_level'   => \WC_Log_Levels::ERROR,
+					'woocommerce_log_level'          => \WC_Log_Levels::ERROR,
 				)
 			);
 		}

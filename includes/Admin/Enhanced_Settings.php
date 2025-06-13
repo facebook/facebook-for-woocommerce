@@ -192,9 +192,9 @@ class Enhanced_Settings {
 				'flow_step' => $current_tab . '_tab_rendered',
 			),
 			array(
-				'should_send_log_to_meta' => true,
+				'should_send_log_to_meta'        => true,
 				'should_save_log_in_woocommerce' => true,
-				'woocommerce_log_level'   => \WC_Log_Levels::DEBUG,
+				'woocommerce_log_level'          => \WC_Log_Levels::DEBUG,
 			)
 		);
 

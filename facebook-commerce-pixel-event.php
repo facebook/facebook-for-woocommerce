@@ -279,22 +279,21 @@ class WC_Facebookcommerce_Pixel {
 			return ob_get_clean();
 	}
 
-
-		/**
-		 * Prints or enqueues the JavaScript code to track an event.
-		 * Preferred method to inject events in a page.
-		 *
-		 * @see \WC_Facebookcommerce_Pixel::build_event()
-		 *
-		 * @param string $event_name The name of the event to track.
-		 * @param array  $params     Custom event parameters.
-		 * @param string $method     Name of the pixel's fbq() function to call.
-		 *
-		 * phpcs:disable WordPress.Security.EscapeOutput.OutputNotEscaped
-		 */
-		public function inject_event( $event_name, $params, $method = 'track' ) {
-			if ( WC_Facebookcommerce_Utils::is_woocommerce_integration() ) {
-				$code = $this->get_event_code( $event_name, self::build_params( $params, $event_name ), $method );
+	/**
+	 * Prints or enqueues the JavaScript code to track an event.
+	 * Preferred method to inject events in a page.
+	 *
+	 * @see \WC_Facebookcommerce_Pixel::build_event()
+	 *
+	 * @param string $event_name The name of the event to track.
+	 * @param array  $params     Custom event parameters.
+	 * @param string $method     Name of the pixel's fbq() function to call.
+	 *
+	 * phpcs:disable WordPress.Security.EscapeOutput.OutputNotEscaped
+	 */
+	public function inject_event( $event_name, $params, $method = 'track' ) {
+		if ( WC_Facebookcommerce_Utils::is_woocommerce_integration() ) {
+			$code = $this->get_event_code( $event_name, self::build_params( $params, $event_name ), $method );
 
 			// If we have add to cart redirect enabled, we must defer the AddToCart events to render them the next page load.
 			$is_redirect    = 'yes' === get_option( 'woocommerce_cart_redirect_after_add', 'no' );
@@ -448,19 +447,19 @@ class WC_Facebookcommerce_Pixel {
 			$params = $params['custom_data'];
 		}
 
-			if ( ! empty( $event_id ) ) {
-				$event = sprintf(
-					"/* %s Facebook Integration Event Tracking */\n" .
-					"fbq('set', 'agent', '%s', '%s');\n" .
-					"fbq('%s', '%s', %s, %s);",
-					WC_Facebookcommerce_Utils::get_integration_name(),
-					Event::get_platform_identifier(),
-					self::get_pixel_id(),
-					esc_js( $method ),
-					esc_js( $event_name ),
-					json_encode( self::build_params( $params, $event_name ), JSON_PRETTY_PRINT | JSON_FORCE_OBJECT ),
-					json_encode( array( 'eventID' => $event_id ), JSON_PRETTY_PRINT | JSON_FORCE_OBJECT )
-				);
+		if ( ! empty( $event_id ) ) {
+			$event = sprintf(
+				"/* %s Facebook Integration Event Tracking */\n" .
+				"fbq('set', 'agent', '%s', '%s');\n" .
+				"fbq('%s', '%s', %s, %s);",
+				WC_Facebookcommerce_Utils::get_integration_name(),
+				Event::get_platform_identifier(),
+				self::get_pixel_id(),
+				esc_js( $method ),
+				esc_js( $event_name ),
+				json_encode( self::build_params( $params, $event_name ), JSON_PRETTY_PRINT | JSON_FORCE_OBJECT ),
+				json_encode( array( 'eventID' => $event_id ), JSON_PRETTY_PRINT | JSON_FORCE_OBJECT )
+			);
 
 		} else {
 
@@ -475,7 +474,7 @@ class WC_Facebookcommerce_Pixel {
 					esc_js( $event_name ),
 					json_encode( self::build_params( $params, $event_name ), JSON_PRETTY_PRINT | JSON_FORCE_OBJECT )
 				);
-			}
+		}
 
 		return $event;
 	}
@@ -657,13 +656,13 @@ class WC_Facebookcommerce_Pixel {
 	private static function get_version_info() {
 		global $wp_version;
 
-			if ( WC_Facebookcommerce_Utils::is_woocommerce_integration() ) {
-				return array(
-					'source'        => 'woocommerce',
-					'version'       => WC()->version,
-					'pluginVersion' => WC_Facebookcommerce_Utils::PLUGIN_VERSION,
-				);
-			}
+		if ( WC_Facebookcommerce_Utils::is_woocommerce_integration() ) {
+			return array(
+				'source'        => 'woocommerce',
+				'version'       => WC()->version,
+				'pluginVersion' => WC_Facebookcommerce_Utils::PLUGIN_VERSION,
+			);
+		}
 
 		return array(
 			'source'        => 'wordpress',
