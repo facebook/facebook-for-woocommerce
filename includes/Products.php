@@ -112,7 +112,7 @@ class Products {
 	 */
 	public static function get_product_sync_meta_key() {
 		$is_rolled_out = facebook_for_woocommerce()->get_integration()->is_woo_all_products_enabled();
-		if ( PluginRender::is_master_sync_on() && $is_rolled_out) {
+		if ( PluginRender::is_master_sync_on() && $is_rolled_out ) {
 			return self::OPTEN_IN_SYNC_ENABLED_META_KEY;
 		} else {
 			return self::SYNC_ENABLED_META_KEY;
