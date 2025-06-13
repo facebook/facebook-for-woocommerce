@@ -10,7 +10,7 @@ use WooCommerce\Facebook\Tests\AbstractWPUnitTestWithOptionIsolationAndSafeFilte
 /**
  * Unit tests for Framework Api Exception class.
  *
- * @since x.x.x
+ * @since 3.5.2
  */
 class FrameworkAPIExceptionTest extends AbstractWPUnitTestWithOptionIsolationAndSafeFiltering {
 
