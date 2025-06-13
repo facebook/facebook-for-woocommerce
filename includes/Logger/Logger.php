@@ -45,7 +45,7 @@ class Logger {
 			facebook_for_woocommerce()->log( $message . ' : ' . wp_json_encode( $context ), null, $log_options['woocommerce_log_level'] );
 		}
 
-		$is_meta_diagnosis_enabled = (bool) ( 'yes' === get_option( self::SETTING_ENABLE_META_DIAGNOSIS ) );
+		$is_meta_diagnosis_enabled = facebook_for_woocommerce()->get_integration()->is_meta_diagnosis_enabled();
 		if ( $is_meta_diagnosis_enabled && array_key_exists( 'should_send_log_to_meta', $log_options ) && $log_options['should_send_log_to_meta'] ) {
 
 			$extra_data            = $context['extra_data'] ?? [];

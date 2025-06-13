@@ -29,9 +29,7 @@ class BatchLogHandler extends LogHandlerBase {
 	 * @since 3.5.0
 	 */
 	public function __construct() {
-		if ( ! facebook_for_woocommerce()->get_integration()->is_meta_diagnosis_enabled() ) {
-			add_action( Heartbeat::EVERY_5_MINUTES, array( $this, 'process_logs_batch' ) );
-		}
+		add_action( Heartbeat::EVERY_5_MINUTES, array( $this, 'process_logs_batch' ) );
 	}
 
 	/**
@@ -42,7 +40,8 @@ class BatchLogHandler extends LogHandlerBase {
 	 * @since 3.5.0
 	 */
 	public function process_logs_batch() {
-		if ( get_transient( 'global_logging_message_queue' ) !== false && ! empty( get_transient( 'global_logging_message_queue' ) ) ) {
+
+		if ( facebook_for_woocommerce()->get_integration()->is_meta_diagnosis_enabled() && get_transient( 'global_logging_message_queue' ) !== false && ! empty( get_transient( 'global_logging_message_queue' ) ) ) {
 			$logs         = get_transient( 'global_logging_message_queue' );
 			$chunked_logs = array_chunk( $logs, 20 );
 
