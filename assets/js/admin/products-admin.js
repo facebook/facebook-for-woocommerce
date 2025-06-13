@@ -122,6 +122,7 @@ jQuery( document ).ready( function( $ ) {
 			}
 		}
 
+		
 		/**
 		 * Disables and changes the checked status of the Sell on Instagram setting field.
 		 *
