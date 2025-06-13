@@ -2014,7 +2014,7 @@ class Admin {
 				$('.woocommerce_options_panel select').on('change', function() {
 					var fieldId = $(this).attr('id');
 					for (var key in syncedBadgeState) {
-						if (fieldId.includes(key)) {
+						if (fieldId && fieldId.includes(key)) {
 							manualValues[key] = $(this).val();
 							// When manually selecting a value, mark as not synced
 							syncedFields[key] = false;
