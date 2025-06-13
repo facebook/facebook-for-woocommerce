@@ -24,15 +24,17 @@ class RolloutSwitches {
 	/** @var \WC_Facebookcommerce commerce handler */
 	private \WC_Facebookcommerce $plugin;
 
-	public const SWITCH_ROLLOUT_FEATURES          = 'rollout_enabled';
-	public const WHATSAPP_UTILITY_MESSAGING       = 'whatsapp_utility_messages_enabled';
-	public const SWITCH_PRODUCT_SETS_SYNC_ENABLED = 'product_sets_sync_enabled';
-	private const SETTINGS_KEY                    = 'wc_facebook_for_woocommerce_rollout_switches';
+	public const SWITCH_ROLLOUT_FEATURES              = 'rollout_enabled';
+	public const WHATSAPP_UTILITY_MESSAGING           = 'whatsapp_utility_messages_enabled';
+	public const SWITCH_PRODUCT_SETS_SYNC_ENABLED     = 'product_sets_sync_enabled';
+	public const SWITCH_WOO_ALL_PRODUCTS_SYNC_ENABLED = 'woo_all_products_sync_enabled';
+	private const SETTINGS_KEY                        = 'wc_facebook_for_woocommerce_rollout_switches';
 
 	private const ACTIVE_SWITCHES = array(
 		self::SWITCH_ROLLOUT_FEATURES,
 		self::WHATSAPP_UTILITY_MESSAGING,
 		self::SWITCH_PRODUCT_SETS_SYNC_ENABLED,
+		self::SWITCH_WOO_ALL_PRODUCTS_SYNC_ENABLED,
 	);
 
 	public function __construct( \WC_Facebookcommerce $plugin ) {
@@ -82,13 +84,13 @@ class RolloutSwitches {
 			Logger::log(
 				$e->getMessage(),
 				array(
-					'flow_name'  => 'rollout_switches',
-					'flow_step'  => 'init',
+					'flow_name' => 'rollout_switches',
+					'flow_step' => 'init',
 				),
 				array(
-					'should_send_log_to_meta' => true,
+					'should_send_log_to_meta'        => true,
 					'should_save_log_in_woocommerce' => true,
-					'woocommerce_log_level'   => \WC_Log_Levels::ERROR,
+					'woocommerce_log_level'          => \WC_Log_Levels::ERROR,
 				)
 			);
 		}
