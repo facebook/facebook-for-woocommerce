@@ -185,7 +185,7 @@ class WC_Facebookcommerce extends WooCommerce\Facebook\Framework\Plugin {
 	 * @internal
 	 */
 	public function init() {
-		add_action( 'init', array( $this, 'initialize_cookies') );
+		add_action( 'init', array( $this, 'initialize_cookies' ) );
 		add_action( 'init', array( $this, 'get_integration' ) );
 		add_action( 'init', array( $this, 'register_custom_taxonomy' ) );
 		add_action( 'add_meta_boxes_product', array( $this, 'remove_product_fb_product_set_metabox' ), 50 );
@@ -303,17 +303,17 @@ class WC_Facebookcommerce extends WooCommerce\Facebook\Framework\Plugin {
 
 
 	private function set_external_id_cookie() {
-		if ( ! isset( $_COOKIE[self::EXTERNAL_ID_COOKIE] ) ) {
+		if ( ! isset( $_COOKIE[ self::EXTERNAL_ID_COOKIE ] ) ) {
 			$maxlifetime = 7776000;
 			$secure      = false;
-        	$httponly    = true;
-			setcookie( 
+			$httponly    = true;
+			setcookie(
 				self::EXTERNAL_ID_COOKIE,
 				WC_Facebookcommerce_Utils::generate_guid(),
 				$maxlifetime,
 				'/',
 				isset( $_SERVER['HTTP_HOST'] ) ?
-                    sanitize_text_field( wp_unslash( $_SERVER['HTTP_HOST'] ) ) : '',
+					sanitize_text_field( wp_unslash( $_SERVER['HTTP_HOST'] ) ) : '',
 				$secure,
 				$httponly
 			);
