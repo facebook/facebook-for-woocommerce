@@ -144,13 +144,6 @@ class Lifecycle extends Framework\Lifecycle {
 			}
 		}
 
-		// migrate settings from standalone options
-		if ( ! isset( $new_settings[ \WC_Facebookcommerce_Integration::SETTING_ENABLE_PRODUCT_SYNC ] ) ) {
-			$product_sync_enabled = empty( get_option( 'fb_disable_sync_on_dev_environment', 0 ) );
-			$new_settings[ \WC_Facebookcommerce_Integration::SETTING_ENABLE_PRODUCT_SYNC ] = $product_sync_enabled ? 'yes' : 'no';
-		}
-
-
 		$is_woo_all_products_sync_enbaled = facebook_for_woocommerce()->get_integration()->is_woo_all_products_enabled();
 
 		// migrate settings from standalone options
