@@ -94,7 +94,10 @@ class Settings {
 		$is_woo_all_products_sync_enbaled = $this->plugin->get_rollout_switches()->is_switch_enabled(
 			RolloutSwitches::SWITCH_WOO_ALL_PRODUCTS_SYNC_ENABLED
 		);
-		if ( true === $is_connected && true === $is_woo_all_products_sync_enbaled ) {
+		/**
+		 * If all products sync is not enabled should show the Product sync tab
+		 */
+		if ( true === $is_connected && false === $is_woo_all_products_sync_enbaled ) {
 			$this->screens[ Settings_Screens\Product_Sync::ID ] = new Settings_Screens\Product_Sync();
 		}
 	}
@@ -194,7 +197,11 @@ class Settings {
 						$crumbs[] = __( 'Connection', 'facebook-for-woocommerce' );
 						break;
 					case Settings_Screens\Product_Sync::ID:
-						if ( $is_woo_all_products_sync_enbaled ) {
+						/**
+						 * If all proudcts sync not enabled 
+						 * Show the product sync tab
+						 */
+						if ( !$is_woo_all_products_sync_enbaled ) {
 							$crumbs[] = __( 'Product sync', 'facebook-for-woocommerce' );
 						}
 						break;

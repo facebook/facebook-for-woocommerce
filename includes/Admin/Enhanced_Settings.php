@@ -79,15 +79,17 @@ class Enhanced_Settings {
 
 		if ( $is_connected ) {
 			if ( $is_woo_all_products_sync_enbaled ) {
-				// TODO: Remove Product sync and Product sets tab once catalog changes are complete
 				$screens = array(
 					Settings_Screens\Shops::ID        => new Settings_Screens\Shops(),
-					Settings_Screens\Product_Sync::ID => new Settings_Screens\Product_Sync(),
 					Settings_Screens\Product_Sets::ID => new Settings_Screens\Product_Sets(),
 				);
 			} else {
+				/**
+				 * If not enabled then the product sync tab should show itself
+				 */
 				$screens = array(
 					Settings_Screens\Shops::ID        => new Settings_Screens\Shops(),
+					Settings_Screens\Product_Sync::ID => new Settings_Screens\Product_Sync(),
 					Settings_Screens\Product_Sets::ID => new Settings_Screens\Product_Sets(),
 				);
 			}
