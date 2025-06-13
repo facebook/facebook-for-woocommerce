@@ -9,7 +9,7 @@ use WooCommerce\Facebook\Tests\AbstractWPUnitTestWithOptionIsolationAndSafeFilte
 /**
  * Unit tests for Events AAMSettings class.
  *
- * @since x.x.x
+ * @since 3.5.2
  */
 class AAMSettingsTest extends AbstractWPUnitTestWithOptionIsolationAndSafeFiltering {
 
