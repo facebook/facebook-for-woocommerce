@@ -198,10 +198,10 @@ class Settings {
 						break;
 					case Settings_Screens\Product_Sync::ID:
 						/**
-						 * If all proudcts sync not enabled 
+						 * If all proudcts sync not enabled
 						 * Show the product sync tab
 						 */
-						if ( !$is_woo_all_products_sync_enbaled ) {
+						if ( ! $is_woo_all_products_sync_enbaled ) {
 							$crumbs[] = __( 'Product sync', 'facebook-for-woocommerce' );
 						}
 						break;
