@@ -36,38 +36,7 @@ class Update {
 	 * @since 3.0.10
 	 */
 	public function __construct() {
-		add_action( Heartbeat::DAILY, array( $this, 'maybe_update_external_plugin_version' ) );
-	}
-
-	/**
-	 * Check if we need to inform the Meta server of a new version.
-	 *
-	 * @since 3.0.10
-	 * @return bool
-	 */
-	public function maybe_update_external_plugin_version() {
-		if ( ! $this->should_update_version() ) {
-			return false;
-		}
-
-		return $this->send_new_version_to_facebook_server();
-	}
-
-	/**
-	 * Checks if the plugin version needs to be updated.
-	 *
-	 * @since 3.0.10
-	 * @return bool
-	 */
-	public function should_update_version() {
-		$plugin = facebook_for_woocommerce();
-
-		if ( ! $plugin->get_connection_handler()->is_connected() ) {
-			// If the plugin is not connected, we don't need to send the version to the Meta server.
-			return false;
-		}
-
-		return true;
+		add_action( Heartbeat::DAILY, array( $this, 'send_new_version_to_facebook_server' ) );
 	}
 
 	/**
@@ -79,6 +48,16 @@ class Update {
 	public function send_new_version_to_facebook_server() {
 
 		$plugin = facebook_for_woocommerce();
+		if ( ! $plugin->get_connection_handler()->is_connected() ) {
+			// If the plugin is not connected, we don't need to send the version to the Meta server.
+			return;
+		}
+
+		$flag_name = '_wc_facebook_for_woocommerce_external_version_update_flag';
+		if ( 'yes' === get_transient( $flag_name ) ) {
+			return;
+		}
+		set_transient( $flag_name, 'yes', 12 * HOUR_IN_SECONDS );
 
 		// Send the request to the Meta server with the latest plugin version.
 		try {
