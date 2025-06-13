@@ -870,16 +870,16 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 				return;
 			}
 
-			// Mark the order as tracked for the session
+			// Mark the order as tracked for the session.
 			set_transient( $purchase_tracked_flag, 'yes', 45 * MINUTE_IN_SECONDS );
 
-			// Set a flag to ensure this Purchase event is not going to be sent across different sessions
+			// Set a flag to ensure this Purchase event is not going to be sent across different sessions.
 			$order->add_meta_data( '_meta_purchase_tracked', true, true );
 
-			// Save the metadata
+			// Save the metadata.
 			$order->save();
 
-			// Log which hook triggered this purchase event
+			// Log which hook triggered this purchase event.
 			$hook_name = current_action();
 			if ( method_exists( facebook_for_woocommerce(), 'log' ) ) {
 				facebook_for_woocommerce()->log( sprintf( 'Purchase event fired for order %d by hook %s', $order_id, $hook_name ) );
