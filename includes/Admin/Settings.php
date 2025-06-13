@@ -77,6 +77,7 @@ class Settings {
 		$last         = ( $is_connected ) ? $connection : $advertise;
 
 		$screens = array(
+			Settings_Screens\Product_Sync::ID => new Settings_Screens\Product_Sync(),
 			Settings_Screens\Product_Sets::ID => new Settings_Screens\Product_Sets(),
 		);
 
@@ -181,6 +182,9 @@ class Settings {
 				switch ( $_GET['tab'] ) {
 					case Connection::ID:
 						$crumbs[] = __( 'Connection', 'facebook-for-woocommerce' );
+						break;
+					case Settings_Screens\Product_Sync::ID:
+						$crumbs[] = __( 'Product sync', 'facebook-for-woocommerce' );
 						break;
 					case Settings_Screens\Advertise::ID:
 						$crumbs[] = __( 'Advertise', 'facebook-for-woocommerce' );
