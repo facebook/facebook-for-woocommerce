@@ -10,7 +10,7 @@ use Exception;
 /**
  * Unit tests for ProductExcludedException class.
  *
- * @since x.x.x
+ * @since 3.5.2
  */
 class ProductExcludedExceptionTest extends AbstractWPUnitTestWithOptionIsolationAndSafeFiltering {
 

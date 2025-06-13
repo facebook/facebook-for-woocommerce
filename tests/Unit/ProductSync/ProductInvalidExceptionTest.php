@@ -10,7 +10,7 @@ use Exception;
 /**
  * Unit tests for ProductInvalidException class.
  *
- * @since x.x.x
+ * @since 3.5.2
  */
 class ProductInvalidExceptionTest extends AbstractWPUnitTestWithOptionIsolationAndSafeFiltering {
 
