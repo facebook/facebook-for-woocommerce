@@ -109,6 +109,7 @@ class ProductValidator {
 	 * @throws ProductExcludedException If product should not be synced.
 	 */
 	public function validate() {
+		$this->validate_sync_enabled_globally();
 		$this->validate_product_sync_field();
 		$this->validate_product_status();
 		$this->validate_product_visibility();
@@ -122,6 +123,7 @@ class ProductValidator {
 	 * @throws ProductExcludedException If product should not be synced.
 	 */
 	public function validate_but_skip_status_check() {
+		$this->validate_sync_enabled_globally();
 		$this->validate_product_sync_field();
 		$this->validate_product_visibility();
 	}
@@ -133,6 +135,7 @@ class ProductValidator {
 	 * @throws ProductExcludedException|ProductInvalidException If product should not be synced.
 	 */
 	public function validate_but_skip_sync_field() {
+		$this->validate_sync_enabled_globally();
 		$this->validate_product_visibility();
 	}
 
@@ -185,6 +188,17 @@ class ProductValidator {
 		}
 
 		return true;
+	}
+
+	/**
+	 * Check whether product sync is globally disabled.
+	 *
+	 * @throws ProductExcludedException If product should not be synced.
+	 */
+	protected function validate_sync_enabled_globally() {
+		if ( ! $this->integration->is_product_sync_enabled() ) {
+			throw new ProductExcludedException( __( 'Product sync is globally disabled.', 'facebook-for-woocommerce' ) );
+		}
 	}
 
 	/**

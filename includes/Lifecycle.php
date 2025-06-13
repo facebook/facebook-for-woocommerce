@@ -144,6 +144,12 @@ class Lifecycle extends Framework\Lifecycle {
 			}
 		}
 
+		// migrate settings from standalone options
+		if ( ! isset( $new_settings[ \WC_Facebookcommerce_Integration::SETTING_ENABLE_PRODUCT_SYNC ] ) ) {
+			$product_sync_enabled = empty( get_option( 'fb_disable_sync_on_dev_environment', 0 ) );
+			$new_settings[ \WC_Facebookcommerce_Integration::SETTING_ENABLE_PRODUCT_SYNC ] = $product_sync_enabled ? 'yes' : 'no';
+		}
+
 		if ( ! isset( $new_settings[ \WC_Facebookcommerce_Integration::SETTING_SCHEDULED_RESYNC_OFFSET ] ) ) {
 			$autosync_time = get_option( 'woocommerce_fb_autosync_time' );
 			$parsed_time   = ! empty( $autosync_time ) ? strtotime( $autosync_time ) : false;
@@ -208,6 +214,7 @@ class Lifecycle extends Framework\Lifecycle {
 			$settings_map = array(
 				'facebook_pixel_id'             => \WC_Facebookcommerce_Integration::SETTING_FACEBOOK_PIXEL_ID,
 				'facebook_page_id'              => \WC_Facebookcommerce_Integration::SETTING_FACEBOOK_PAGE_ID,
+				'enable_product_sync'           => \WC_Facebookcommerce_Integration::SETTING_ENABLE_PRODUCT_SYNC,
 				'excluded_product_category_ids' => \WC_Facebookcommerce_Integration::SETTING_EXCLUDED_PRODUCT_CATEGORY_IDS,
 				'excluded_product_tag_ids'      => \WC_Facebookcommerce_Integration::SETTING_EXCLUDED_PRODUCT_TAG_IDS,
 				'enable_messenger'              => self::SETTING_ENABLE_MESSENGER,

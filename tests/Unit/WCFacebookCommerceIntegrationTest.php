@@ -2405,6 +2405,59 @@ class WCFacebookCommerceIntegrationTest extends \WooCommerce\Facebook\Tests\Abst
 	}
 
 	/**
+	 * Tests is product sync enabled returns default value.
+	 *
+	 * @return void
+	 */
+	public function test_is_product_sync_enabled_no_filter_no_option() {
+		$this->teardown_callback_category_safely( 'wc_facebook_is_product_sync_enabled' );
+		delete_option( WC_Facebookcommerce_Integration::SETTING_ENABLE_PRODUCT_SYNC );
+
+		$result = $this->integration->is_product_sync_enabled();
+
+		$this->assertTrue( $result );
+	}
+
+	/**
+	 * Tests is product sync enabled returns option value.
+	 *
+	 * @return void
+	 */
+	public function test_is_product_sync_enabled_no_filter() {
+		$this->teardown_callback_category_safely( 'wc_facebook_is_product_sync_enabled' );
+		add_option(
+			WC_Facebookcommerce_Integration::SETTING_ENABLE_PRODUCT_SYNC,
+			'no'
+		);
+
+		$result = $this->integration->is_product_sync_enabled();
+
+		$this->assertFalse( $result );
+	}
+
+	/**
+	 * Tests is product sync enabled with filter.
+	 *
+	 * @return void
+	 */
+	public function test_is_product_sync_enabled_with_filter() {
+		$this->add_filter_with_safe_teardown(
+			'wc_facebook_is_product_sync_enabled',
+			function ( $is_enabled ) {
+				return false;
+			}
+		);
+		add_option(
+			WC_Facebookcommerce_Integration::SETTING_ENABLE_PRODUCT_SYNC,
+			'yes'
+		);
+
+		$result = $this->integration->is_product_sync_enabled();
+
+		$this->assertFalse( $result );
+	}
+
+	/**
 	 * Tests is legacy feed file generation enabled with no option set.
 	 *
 	 * @return void
