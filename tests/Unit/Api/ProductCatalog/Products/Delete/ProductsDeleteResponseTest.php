@@ -11,7 +11,7 @@ use WooCommerce\Facebook\Tests\AbstractWPUnitTestWithOptionIsolationAndSafeFilte
 /**
  * Unit tests for ProductCatalog Products Delete Response class.
  *
- * @since x.x.x
+ * @since 3.5.2
  */
 class ProductsDeleteResponseTest extends AbstractWPUnitTestWithOptionIsolationAndSafeFiltering {
 
