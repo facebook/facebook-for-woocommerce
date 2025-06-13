@@ -2496,12 +2496,11 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 	 *
 	 * @return bool
 	 */
-
-	 public function is_woo_all_products_enabled() {
+	public function is_woo_all_products_enabled() {
 		return $this->facebook_for_woocommerce->get_rollout_switches()->is_switch_enabled(
 			RolloutSwitches::SWITCH_WOO_ALL_PRODUCTS_SYNC_ENABLED
 		);
-	 }
+	}
 
 	/**
 	 * Determines whether advanced matching is enabled.
@@ -2533,7 +2532,7 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 		 * There is no check for global sync
 		 */
 
-		if($this->is_woo_all_products_enabled()){
+		if ( $this->is_woo_all_products_enabled() ) {
 			return true;
 		}
 

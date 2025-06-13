@@ -196,7 +196,7 @@ class ProductValidator {
 	 * @throws ProductExcludedException If product should not be synced.
 	 */
 	protected function validate_sync_enabled_globally() {
-		if($this->integration->is_woo_all_products_enabled()){
+		if ( $this->integration->is_woo_all_products_enabled() ) {
 			return true;
 		}
 
