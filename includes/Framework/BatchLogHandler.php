@@ -29,7 +29,9 @@ class BatchLogHandler extends LogHandlerBase {
 	 * @since 3.5.0
 	 */
 	public function __construct() {
-		add_action( Heartbeat::EVERY_5_MINUTES, array( $this, 'process_logs_batch' ) );
+		if ( ! facebook_for_woocommerce()->get_integration()->is_meta_diagnosis_enabled() ) {
+			add_action( Heartbeat::EVERY_5_MINUTES, array( $this, 'process_logs_batch' ) );
+		}
 	}
 
 	/**
