@@ -271,7 +271,7 @@ class Event {
 		} elseif ( ! empty( $_COOKIE['_fbc'] ) ) {
 			$fbc = wc_clean( wp_unslash( $_COOKIE['_fbc'] ) );
 		} elseif ( isset( $_SESSION['_fbc'] ) ) {
-			$fbc = $_SESSION['_fbc'];
+			$fbc = $_SESSION['_fbc']; // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
 		}
 		if ( $fbc ) {
 			$_SESSION['_fbc'] = $fbc;
@@ -292,7 +292,7 @@ class Event {
 		if ( $fbp ) {
 			$_SESSION['_fbp'] = $fbp;
 		} elseif ( isset( $_SESSION['_fbp'] ) ) {
-			$fbp = $_SESSION['_fbp'];
+			$fbp = $_SESSION['_fbp']; // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
 		}
 		return $fbp;
 	}

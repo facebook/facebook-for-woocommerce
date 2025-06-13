@@ -424,7 +424,7 @@ if ( ! class_exists( 'WC_Facebookcommerce_Utils' ) ) :
 			$external_ids = array();
 
 			if ( isset( $_COOKIE[ WC_Facebookcommerce::EXTERNAL_ID_COOKIE ] ) ) {
-				$external_ids[] = $_COOKIE[ WC_Facebookcommerce::EXTERNAL_ID_COOKIE ];
+				$external_ids[] = $_COOKIE[ WC_Facebookcommerce::EXTERNAL_ID_COOKIE ]; // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized,WordPress.Security.ValidatedSanitizedInput.MissingUnslash
 			}
 			if ( 0 !== get_current_user_id() ) {
 				$external_ids[] = strval( get_current_user_id() );
