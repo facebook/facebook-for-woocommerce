@@ -2533,7 +2533,7 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 		 * There is no check for global sync
 		 */
 
-		if($this->plugin->is_woo_all_products_enabled()){
+		if($this->is_woo_all_products_enabled()){
 			return true;
 		}
 

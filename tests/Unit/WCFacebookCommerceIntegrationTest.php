@@ -560,6 +560,8 @@ class WCFacebookCommerceIntegrationTest extends \WooCommerce\Facebook\Tests\Abst
 		// The mock below is hit otherwise it would generate a random Mock_Response and throw error
 		$integration_mock = $this->createMock(WC_Facebookcommerce_Integration::class);
 		$integration_mock->method('delete_product_item');
+		$integration_mock->method('is_woo_all_products_enabled')
+						->willReturn(false);
 		$this->integration = $integration_mock;
 
 		$_POST['wc_facebook_sync_mode'] = Admin::SYNC_MODE_SYNC_DISABLED;
