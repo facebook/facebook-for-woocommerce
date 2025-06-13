@@ -89,49 +89,9 @@ class UpdateTest extends AbstractWPUnitTestWithOptionIsolationAndSafeFiltering {
 	}
 
 	/**
-	 * Test should_update_version
-	 */
-	public function test_should_update_version() {
-		$plugin = facebook_for_woocommerce();
-		/**
-		 * Set the $plugin->connection_handler and $plugin->api access to true. This will allow us
-		 * to assign the mock objects to these properties.
-		 */
-		$plugin_ref_obj          = new ReflectionObject( $plugin );
-		$prop_connection_handler = $plugin_ref_obj->getProperty( 'connection_handler' );
-		$prop_connection_handler->setAccessible( true );
-
-		// Connection Handler mock object to return is_connected as false.
-		$mock_connection_handler = $this->getMockBuilder( Connection::class )
-									->disableOriginalConstructor()
-									->setMethods( array( 'is_connected' ) )
-									->getMock();
-		$mock_connection_handler->expects( $this->any() )->method( 'is_connected' )->willReturn( false );
-		$prop_connection_handler->setValue( $plugin, $mock_connection_handler );
-		update_option( 'facebook_for_woocommerce_latest_version_sent_to_server', '0.0.0' ); // Reset the option.
-		$should_update2 = $this->update->should_update_version();
-		$this->assertFalse( $should_update2 );
-
-		// Connection Handler mock object to return is_connected as true.
-		$mock_connection_handler = $this->getMockBuilder( Connection::class )
-									->disableOriginalConstructor()
-									->setMethods( array( 'is_connected' ) )
-									->getMock();
-		$mock_connection_handler->expects( $this->any() )->method( 'is_connected' )->willReturn( true );
-		$prop_connection_handler->setValue( $plugin, $mock_connection_handler );
-		update_option( 'facebook_for_woocommerce_latest_version_sent_to_server', WC_Facebookcommerce_Utils::PLUGIN_VERSION );
-		$should_update3 = $this->update->should_update_version();
-		$this->assertTrue( $should_update3 ); // Because the versions match.
-
-		update_option( 'facebook_for_woocommerce_latest_version_sent_to_server', '0.0.0' ); // Reset the option.
-		$should_update4 = $this->update->should_update_version();
-		$this->assertTrue( $should_update4 );
-	}
-
-	/**
 	 * Test send new version to facebook.
 	 */
-	public function test_maybe_update_external_plugin_version() {
+	public function test_send_new_version_to_facebook_server() {
 		$plugin = facebook_for_woocommerce();
 		$plugin->init_admin();
 
@@ -179,7 +139,7 @@ class UpdateTest extends AbstractWPUnitTestWithOptionIsolationAndSafeFiltering {
 		);
 		$prop_api->setValue( $plugin, $mock_api );
 
-		$updated = $this->update->maybe_update_external_plugin_version();
+		$updated = $this->update->send_new_version_to_facebook_server();
 
 		// Assert request data.
 		$expected_request = array(
@@ -203,41 +163,19 @@ class UpdateTest extends AbstractWPUnitTestWithOptionIsolationAndSafeFiltering {
 		$this->assertTrue( $updated, 'Failed asserting that the update plugin request was made.' );
 		$this->assertEquals( WC_Facebookcommerce_Utils::PLUGIN_VERSION, get_option( 'facebook_for_woocommerce_latest_version_sent_to_server' ), 'Failed asserting that latest version sent to server is the same as the plugin version.' );
 
-		// For the subsequent request, no update request should be made.
-		$updated_second_time = $this->update->maybe_update_external_plugin_version();
-		$this->assertFalse( $updated_second_time, 'Failed asserting that the update plugin request was not made.' );
-
 		// Now the mock API object will return a WP_Error.
 		$mock_api2 = $this->getMockBuilder( API::class )->disableOriginalConstructor()->setMethods( array( 'do_remote_request' ) )->getMock();
 		$mock_api2->expects( $this->any() )->method( 'do_remote_request' )->willReturn( new WP_Error( 'dummy-code', 'dummy-message', array( 'data' => 'dummy data' ) ) );
 		$prop_api->setValue( $plugin, $mock_api2 );
-
-		// Assert handling failed API response.
-		update_option( 'facebook_for_woocommerce_latest_version_sent_to_server', '0.0.0' ); // Reset the version to pass the should_update_version check.
-		$updated3 = $this->update->maybe_update_external_plugin_version();
-		$this->assertFalse( $updated3 ); // API failed response is handled.
-		$this->assertNotEquals( WC_Facebookcommerce_Utils::PLUGIN_VERSION, get_option( 'facebook_for_woocommerce_latest_version_sent_to_server' ) ); // API failed response should not update the option.
 
 		// Now the mock API object will throw a Plugin Exception.
 		$mock_api3 = $this->getMockBuilder( API::class )->disableOriginalConstructor()->setMethods( array( 'perform_request' ) )->getMock();
 		$mock_api3->expects( $this->any() )->method( 'perform_request' )->willThrowException( new PluginException( 'Dummy Plugin Exception' ) );
 		$prop_api->setValue( $plugin, $mock_api3 );
 
-		// Assert PluginException Handling.
-		update_option( 'facebook_for_woocommerce_latest_version_sent_to_server', '0.0.0' ); // Reset the version to pass the should_update_version check.
-		$updated4 = $this->update->maybe_update_external_plugin_version();
-		$this->assertFalse( $updated4 ); // API failed response is handled.
-		$this->assertNotEquals( WC_Facebookcommerce_Utils::PLUGIN_VERSION, get_option( 'facebook_for_woocommerce_latest_version_sent_to_server' ) ); // API failed response should not update the option.
-
 		// Now the mock API object will throw an ApiException.
 		$mock_api4 = $this->getMockBuilder( API::class )->disableOriginalConstructor()->setMethods( array( 'perform_request' ) )->getMock();
 		$mock_api4->expects( $this->any() )->method( 'perform_request' )->willThrowException( new ApiException( 'Dummy API Exception' ) );
 		$prop_api->setValue( $plugin, $mock_api4 );
-
-		// Assert ApiException Handling.
-		update_option( 'facebook_for_woocommerce_latest_version_sent_to_server', '0.0.0' ); // Reset the version to pass the should_update_version check.
-		$updated5 = $this->update->maybe_update_external_plugin_version();
-		$this->assertFalse( $updated5 ); // API failed response is handled.
-		$this->assertNotEquals( WC_Facebookcommerce_Utils::PLUGIN_VERSION, get_option( 'facebook_for_woocommerce_latest_version_sent_to_server' ) ); // API failed response should not update the option.
 	}
 }
