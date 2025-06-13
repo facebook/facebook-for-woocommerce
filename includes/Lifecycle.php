@@ -55,6 +55,7 @@ class Lifecycle extends Framework\Lifecycle {
 			'3.2.0',
 			'3.4.9',
 			'3.5.3',
+			'3.5.4',
 		);
 	}
 
@@ -224,6 +225,9 @@ class Lifecycle extends Framework\Lifecycle {
 		}
 		// deletes an option that is not longer used to generate an admin notice
 		delete_option( 'fb_cart_url' );
+
+		// Trigger config sync after major settings migration
+		$this->trigger_config_sync();
 	}
 
 
@@ -343,6 +347,9 @@ class Lifecycle extends Framework\Lifecycle {
 	 */
 	protected function upgrade_to_3_4_9() {
 		facebook_for_woocommerce()->get_product_sets_sync_handler()->sync_all_product_sets();
+
+		// Trigger config sync after product sets sync to ensure consistency
+		$this->trigger_config_sync();
 	}
 
 	/**
@@ -353,5 +360,30 @@ class Lifecycle extends Framework\Lifecycle {
 	protected function upgrade_to_3_5_3() {
 		add_rewrite_rule( '^fb-checkout/?$', 'index.php?fb_checkout=1', 'top' );
 		flush_rewrite_rules();
+	}
+
+	/**
+	 * Forces config synchronization with Meta to ensure all configuration fields are up-to-date
+	 *
+	 * @since 3.5.4
+	 */
+	protected function upgrade_to_3_5_4() {
+		// Force config sync with Meta to ensure all fields are properly synchronized
+		$connection_handler = facebook_for_woocommerce()->get_connection_handler();
+		if ( $connection_handler ) {
+			$connection_handler->force_config_sync_on_update();
+		}
+	}
+
+	/**
+	 * Helper method to trigger config sync during upgrades
+	 *
+	 * @since 3.5.4
+	 */
+	private function trigger_config_sync() {
+		$connection_handler = facebook_for_woocommerce()->get_connection_handler();
+		if ( $connection_handler ) {
+			$connection_handler->force_config_sync_on_update();
+		}
 	}
 }

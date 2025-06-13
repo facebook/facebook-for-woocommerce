@@ -196,6 +196,42 @@ class Connection {
 	}
 
 	/**
+	 * Forces a refresh of installation data and config sync with Meta, bypassing transient checks.
+	 * Used during version upgrades to ensure config is properly synchronized.
+	 *
+	 * @since 3.5.4
+	 */
+	public function force_config_sync_on_update() {
+
+		// bail if not connected
+		if ( ! $this->is_connected() ) {
+			$this->get_plugin()->log( 'Skipping config sync on update - not connected to Facebook' );
+			return;
+		}
+
+		$this->get_plugin()->log( 'Starting forced config sync on version update' );
+
+		try {
+			// Force refresh installation data without transient check
+			$this->update_installation_data();
+			$this->repair_or_update_commerce_integration_data();
+
+			// Also refresh business configuration without transient check
+			$response = $this->get_plugin()->get_api()->get_business_configuration( $this->get_external_business_id() );
+			facebook_for_woocommerce()->get_tracker()->track_facebook_business_config(
+				$response->is_ig_shopping_enabled(),
+				$response->is_ig_cta_enabled()
+			);
+
+			$this->get_plugin()->log( 'Successfully completed forced config sync on version update' );
+
+		} catch ( ApiException $exception ) {
+			$this->get_plugin()->log( 'Failed to complete forced config sync on update: ' . $exception->getMessage(), null, 'error' );
+		}
+
+	}
+
+	/**
 	 * Refreshes the client side info and configuration.
 	 *
 	 * @since 3.4.8
