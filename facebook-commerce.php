@@ -2345,7 +2345,7 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 	 */
 	public function get_excluded_product_category_ids() {
 
-		if($this->is_woo_all_products_enabled()){
+		if ( $this->is_woo_all_products_enabled() ) {
 			return (array) [];
 		}
 		/**
@@ -2366,7 +2366,7 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 	 * @since 1.10.0
 	 */
 	public function get_excluded_product_tag_ids() {
-		if($this->is_woo_all_products_enabled()){
+		if ( $this->is_woo_all_products_enabled() ) {
 			return (array) [];
 		}
 		/**

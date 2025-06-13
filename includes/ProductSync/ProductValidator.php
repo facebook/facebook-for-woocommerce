@@ -265,7 +265,7 @@ class ProductValidator {
 	 */
 	protected function validate_product_terms() {
 
-		if($this->integration->is_woo_all_products_enabled()){
+		if ( $this->integration->is_woo_all_products_enabled() ) {
 			return;
 		}
 
