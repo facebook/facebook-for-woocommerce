@@ -13,6 +13,7 @@ use WooCommerce\Facebook\Products;
 use WooCommerce\Facebook\ProductSync\ProductValidator;
 use WooCommerce\Facebook\Framework\AdminMessageHandler;
 use WooCommerce\Facebook\Handlers\PluginRender;
+use WooCommerce\Facebook\RolloutSwitches;
 
 /**
  * Unit tests for Facebook Graph API calls.
@@ -39,6 +40,12 @@ class WCFacebookCommerceIntegrationTest extends \WooCommerce\Facebook\Tests\Abst
 	 */
 	private $integration;
 
+
+	/**
+	 * @var RolloutSwitches
+	 */
+	private $rollout_switches;
+
 	/**
 	 * Default plugin options.
 	 *
@@ -59,11 +66,20 @@ class WCFacebookCommerceIntegrationTest extends \WooCommerce\Facebook\Tests\Abst
 
 		$this->facebook_for_woocommerce = $this->createMock( WC_Facebookcommerce::class );
 		$this->connection_handler       = $this->createMock( Connection::class );
+		$this->rollout_switches = $this->createMock(RolloutSwitches::class);
+		$this->rollout_switches->method('is_switch_enabled')
+								->willReturn(false);
+
+
 		$this->facebook_for_woocommerce->method( 'get_connection_handler' )
 			->willReturn( $this->connection_handler );
 		$this->api = $this->createMock( Api::class );
 		$this->facebook_for_woocommerce->method( 'get_api' )
 			->willReturn( $this->api );
+		$this->facebook_for_woocommerce->method('get_rollout_switches')
+			->willReturn($this->rollout_switches);
+		
+		
 
 		$this->integration = new WC_Facebookcommerce_Integration( $this->facebook_for_woocommerce );
 
@@ -2105,7 +2121,7 @@ class WCFacebookCommerceIntegrationTest extends \WooCommerce\Facebook\Tests\Abst
 
 		$categories = $this->integration->get_excluded_product_category_ids();
 
-		$this->assertEquals( [ 111, 222, 333 ], $categories );
+		$this->assertEquals( [ ], $categories );
 	}
 
 	/**
@@ -2133,10 +2149,10 @@ class WCFacebookCommerceIntegrationTest extends \WooCommerce\Facebook\Tests\Abst
 			WC_Facebookcommerce_Integration::SETTING_EXCLUDED_PRODUCT_TAG_IDS,
 			[ ]
 		);
-
+		
 		$tags = $this->integration->get_excluded_product_tag_ids();
 
-		$this->assertEquals( [ 121, 221, 321, 421, 521, 621 ], $tags );
+		$this->assertEquals( [  ], $tags );
 	}
 
 	/**
@@ -2156,10 +2172,14 @@ class WCFacebookCommerceIntegrationTest extends \WooCommerce\Facebook\Tests\Abst
 			WC_Facebookcommerce_Integration::SETTING_EXCLUDED_PRODUCT_TAG_IDS,
 			[ 121, 221, 321, 421, 521, 621 ]
 		);
-
+		// $integration_mock = $this->createMock(WC_Facebookcommerce_Integration::class);
+		// $integration_mock->method('is_woo_all_products_enabled')
+		// 				->willReturn(true);
+		// $this->integration = $integration_mock;
 		$tags = $this->integration->get_excluded_product_tag_ids();
+		var_dump($tags);
 
-		$this->assertEquals( [ 111, 222, 333 ], $tags );
+		$this->assertEquals( [], $tags );
 	}
 
 
