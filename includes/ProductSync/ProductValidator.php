@@ -264,6 +264,11 @@ class ProductValidator {
 	 * @throws ProductExcludedException If product should not be synced.
 	 */
 	protected function validate_product_terms() {
+
+		if($this->integration->is_woo_all_products_enabled()){
+			return;
+		}
+
 		$product = $this->product_parent ? $this->product_parent : $this->product;
 
 		$excluded_categories = $this->integration->get_excluded_product_category_ids();

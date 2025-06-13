@@ -16,6 +16,7 @@ use WooCommerce\Facebook\Framework\Plugin\Exception as PluginException;
 use WooCommerce\Facebook\Products;
 use WooCommerce\Facebook\Products\Feed;
 use WooCommerce\Facebook\Framework\Logger;
+use WooCommerce\Facebook\RolloutSwitches;
 
 defined( 'ABSPATH' ) || exit;
 
@@ -2343,6 +2344,10 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 	 * @since 1.10.0
 	 */
 	public function get_excluded_product_category_ids() {
+
+		if($this->is_woo_all_products_enabled()){
+			return (array) [];
+		}
 		/**
 		 * Filters the configured excluded product category IDs.
 		 *
@@ -2361,6 +2366,9 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 	 * @since 1.10.0
 	 */
 	public function get_excluded_product_tag_ids() {
+		if($this->is_woo_all_products_enabled()){
+			return (array) [];
+		}
 		/**
 		 * Filters the configured excluded product tag IDs.
 		 *
@@ -2476,6 +2484,19 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 	 */
 	public function is_configured() {
 		return $this->get_facebook_page_id() && $this->facebook_for_woocommerce->get_connection_handler()->is_connected();
+	}
+
+	/**
+	 * Determines if viewing the plugin settings in the admin.
+	 *
+	 * @since 3.5.3
+	 *
+	 * @return bool
+	 */
+	public function is_woo_all_products_enabled() {
+		return $this->facebook_for_woocommerce->get_rollout_switches()->is_switch_enabled(
+			RolloutSwitches::SWITCH_WOO_ALL_PRODUCTS_SYNC_ENABLED
+		);
 	}
 
 	/**
