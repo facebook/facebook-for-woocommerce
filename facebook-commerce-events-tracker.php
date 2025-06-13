@@ -11,6 +11,7 @@
 use WooCommerce\Facebook\Events\Event;
 use WooCommerce\Facebook\Framework\Api\Exception as ApiException;
 use WooCommerce\Facebook\Framework\Helper;
+use WooCommerce\Facebook\Framework\Logger;
 
 if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 
@@ -881,9 +882,16 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 
 			// Log which hook triggered this purchase event.
 			$hook_name = current_action();
-			if ( method_exists( facebook_for_woocommerce(), 'log' ) ) {
-				facebook_for_woocommerce()->log( sprintf( 'Purchase event fired for order %d by hook %s', $order_id, $hook_name ) );
-			}
+
+			Logger::log(
+				'Purchase event fired for order ' . $order_id . ' by hook ' . $hook_name . '.',
+				[],
+				array(
+					'should_send_log_to_meta'        => false,
+					'should_save_log_in_woocommerce' => true,
+					'woocommerce_log_level'          => \WC_Log_Levels::INFO,
+				)
+			);
 
 			$content_type  = 'product';
 			$contents      = array();
