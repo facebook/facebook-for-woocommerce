@@ -595,26 +595,6 @@ class API extends Base {
 		return $this->perform_request( $request );
 	}
 
-
-	/**
-	 * @param string $external_merchant_settings_id
-	 * @return API\Response|API\Tip\Read\Response
-	 * @throws ApiException In case of network request error.
-	 * @throws API\Exceptions\Request_Limit_Reached In case of rate limit error.
-	 */
-	public function get_tip_info( string $external_merchant_settings_id ): API\Tip\Read\Response {
-		$request = new API\Tip\Read\Request( $external_merchant_settings_id );
-		$this->set_response_handler( API\Tip\Read\Response::class );
-		return $this->perform_request( $request );
-	}
-
-
-	public function log_tip_event( $tip_id, $channel_id, $event ) {
-		$request = new API\Tip\Log\Request( $tip_id, $channel_id, $event );
-		$this->set_response_handler( API\Tip\Log\Response::class );
-		return $this->perform_request( $request );
-	}
-
 	public function log_to_meta( $context ) {
 		if ( ! facebook_for_woocommerce()->get_integration()->is_meta_diagnosis_enabled() ) {
 			return;
