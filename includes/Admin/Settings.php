@@ -77,7 +77,6 @@ class Settings {
 		$last         = ( $is_connected ) ? $connection : $advertise;
 
 		$screens = array(
-			Settings_Screens\Product_Sync::ID => new Settings_Screens\Product_Sync(),
 			Settings_Screens\Product_Sets::ID => new Settings_Screens\Product_Sets(),
 		);
 
@@ -90,6 +89,13 @@ class Settings {
 		$is_whatsapp_utility_messaging_enabled = $rollout_switches->is_switch_enabled( RolloutSwitches::WHATSAPP_UTILITY_MESSAGING );
 		if ( true === $is_connected && true === $is_whatsapp_utility_messaging_enabled ) {
 			$this->screens[ Settings_Screens\Whatsapp_Utility::ID ] = new Settings_Screens\Whatsapp_Utility();
+		}
+
+		$is_woo_all_products_sync_enbaled = $this->plugin->get_rollout_switches()->is_switch_enabled(
+			RolloutSwitches::SWITCH_WOO_ALL_PRODUCTS_SYNC_ENABLED
+		);
+		if ( true === $is_connected && true === $is_woo_all_products_sync_enbaled ) {
+			$this->screens[ Settings_Screens\Product_Sync::ID ] = new Settings_Screens\Product_Sync();
 		}
 	}
 
