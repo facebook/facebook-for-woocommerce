@@ -196,6 +196,10 @@ class ProductValidator {
 	 * @throws ProductExcludedException If product should not be synced.
 	 */
 	protected function validate_sync_enabled_globally() {
+		if($this->integration->is_woo_all_products_enabled()){
+			return true;
+		}
+
 		if ( ! $this->integration->is_product_sync_enabled() ) {
 			throw new ProductExcludedException( __( 'Product sync is globally disabled.', 'facebook-for-woocommerce' ) );
 		}
