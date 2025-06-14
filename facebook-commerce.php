@@ -1278,7 +1278,7 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 	 * @deprecated as we are no longer calling an update
 	 * We create everytime and it will be handled in the backend
 	 * TO_BE_DELETED
-	 * 
+	 *
 	 * @param WC_Facebook_Product $woo_product
 	 **/
 	public function update_product_group( WC_Facebook_Product $woo_product ) {
@@ -2713,7 +2713,7 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 		}
 
 		$should_set_visible = self::FB_SHOP_PRODUCT_VISIBLE === $visibility;
-		if ( $product->is_type( 'variation' ) || $product->is_type( 'simple' )) {
+		if ( $product->is_type( 'variation' ) || $product->is_type( 'simple' ) ) {
 			Products::set_product_visibility( $product, $should_set_visible );
 			$this->facebook_for_woocommerce->get_products_sync_handler()->create_or_update_products( [ $product->get_id() ] );
 		} elseif ( $product->is_type( 'variable' ) ) {
