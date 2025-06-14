@@ -48,7 +48,6 @@ class Update {
 	 * Sends the plugin configs to the Meta server.
 	 *
 	 * @since 3.5.3
-	 * @return bool
 	 */
 	public function send_plugin_config_to_facebook_server() {
 		$flag_name = '_wc_facebook_for_woocommerce_send_plugin_config_flag';
