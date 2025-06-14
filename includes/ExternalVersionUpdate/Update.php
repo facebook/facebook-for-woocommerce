@@ -16,6 +16,7 @@ use Exception;
 use WC_Facebookcommerce_Utils;
 use WooCommerce\Facebook\Utilities\Heartbeat;
 use WooCommerce\Facebook\Framework\Logger;
+use WooCommerce\Facebook\Framework\LogHandlerBase;
 
 /**
  * Facebook for WooCommerce External Plugin Version Update.
@@ -37,6 +38,79 @@ class Update {
 	 */
 	public function __construct() {
 		add_action( Heartbeat::DAILY, array( $this, 'send_new_version_to_facebook_server' ) );
+		add_action( Heartbeat::HOURLY, array( $this, 'send_plugin_config_to_facebook_server' ) );
+	}
+
+	/**
+	 * Sends the plugin configs to the Meta server.
+	 *
+	 * @since 3.5.3
+	 * @return bool
+	 */
+	public function send_plugin_config_to_facebook_server() {
+		$flag_name = '_wc_facebook_for_woocommerce_send_plugin_config_flag';
+		if ( 'yes' === get_transient( $flag_name ) ) {
+			return;
+		}
+		set_transient( $flag_name, 'yes', 3 * HOUR_IN_SECONDS );
+
+		try {
+			$term_query                  = new \WP_Term_Query(
+				array(
+					'taxonomy'   => 'product_cat',
+					'hide_empty' => false,
+					'fields'     => 'id=>name',
+				)
+			);
+			$excluded_product_categories = $term_query->get_terms();
+			$term_query                  = new \WP_Term_Query(
+				array(
+					'taxonomy'     => 'product_tag',
+					'hide_empty'   => false,
+					'hierarchical' => false,
+					'fields'       => 'id=>name',
+				)
+			);
+			$excluded_product_tags       = $term_query->get_terms();
+			$context                     = array(
+				'flow_name'  => 'plugin_updates',
+				'flow_step'  => 'send_plugin_updates',
+				'extra_data' => [
+					'is_multisite'                => is_multisite(),
+					'is_product_sync_enabled'     => facebook_for_woocommerce()->get_integration()->is_product_sync_enabled(),
+					'excluded_product_categories' => $excluded_product_categories,
+					'excluded_product_tags'       => $excluded_product_tags,
+					'published_product_count'     => facebook_for_woocommerce()->get_integration()->get_product_count(),
+				],
+			);
+			$context                     = [ LogHandlerBase::set_core_log_context( $context ) ];
+			$context                     = [
+				'event'      => 'persist_meta_logs',
+				'extra_data' => [ 'meta_logs' => wp_json_encode( $context ) ],
+			];
+			$response                    = facebook_for_woocommerce()->get_api()->log_to_meta( $context );
+			if ( ! $response->success ) {
+				Logger::log(
+					'Bad response from log_to_meta request',
+					[],
+					array(
+						'should_send_log_to_meta'        => false,
+						'should_save_log_in_woocommerce' => true,
+						'woocommerce_log_level'          => \WC_Log_Levels::ERROR,
+					)
+				);
+			}
+		} catch ( \Exception $e ) {
+			Logger::log(
+				'Error persisting error logs: ' . $e->getMessage(),
+				[],
+				array(
+					'should_send_log_to_meta'        => false,
+					'should_save_log_in_woocommerce' => true,
+					'woocommerce_log_level'          => \WC_Log_Levels::ERROR,
+				)
+			);
+		}
 	}
 
 	/**
