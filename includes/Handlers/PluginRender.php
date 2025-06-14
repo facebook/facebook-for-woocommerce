@@ -94,6 +94,7 @@ class PluginRender {
 	public function should_show_banners() {
 		$current_version = $this->plugin->get_version();
 		$is_rolled_out   = $this->plugin->get_rollout_switches()->is_switch_enabled( RolloutSwitches::SWITCH_WOO_ALL_PRODUCTS_SYNC_ENABLED );
+
 		/**
 		 * Case when current version is less or equal to latest
 		 * but latest is below 3.5.1
