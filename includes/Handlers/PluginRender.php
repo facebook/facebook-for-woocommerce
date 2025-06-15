@@ -181,7 +181,7 @@ class PluginRender {
 					echo '<div id="plugin_updated_successfully_but_master_sync_off" class="notice notice-success is-dismissible ' . esc_html( $plugin_updated_but_not_master_sync_on ) . '"" style="">
 					<h4>You’ve updated to the latest plugin version</h4>   
 						<p>
-							To see all the changes, view the changelog. Since you’ve opted out of automatically syncing all your products, some of your products are not yet on Meta. We recommend turning on auto syncing to help drive your sales and improve ad performance. About syncing products to Meta
+							To see all the changes, view the changelog. Since you’ve opted out of automatically syncing all your products, some of your products are not yet on Meta. We recommend turning on auto syncing to help drive your sales and improve ad performance.<a href="https://www.facebook.com/business/help/4049935305295468"> About syncing products to Meta </a>
 						</p>
 						<p>
 							<a href="javascript:void(0);" class="button wc-forward" id="sync_all_products">
