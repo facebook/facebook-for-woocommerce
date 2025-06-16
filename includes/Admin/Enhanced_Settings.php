@@ -72,14 +72,27 @@ class Enhanced_Settings {
 	 * @return array
 	 */
 	public function build_menu_item_array(): array {
-		$is_connected = $this->plugin->get_connection_handler()->is_connected();
+		$is_connected                     = $this->plugin->get_connection_handler()->is_connected();
+		$is_woo_all_products_sync_enbaled = $this->plugin->get_rollout_switches()->is_switch_enabled(
+			RolloutSwitches::SWITCH_WOO_ALL_PRODUCTS_SYNC_ENABLED
+		);
 
 		if ( $is_connected ) {
-			// TODO: Remove Product sync and Product sets tab once catalog changes are complete
-			$screens = array(
-				Settings_Screens\Shops::ID        => new Settings_Screens\Shops(),
-				Settings_Screens\Product_Sets::ID => new Settings_Screens\Product_Sets(),
-			);
+			if ( $is_woo_all_products_sync_enbaled ) {
+				$screens = array(
+					Settings_Screens\Shops::ID        => new Settings_Screens\Shops(),
+					Settings_Screens\Product_Sets::ID => new Settings_Screens\Product_Sets(),
+				);
+			} else {
+				/**
+				 * If not enabled then the product sync tab should show itself
+				 */
+				$screens = array(
+					Settings_Screens\Shops::ID        => new Settings_Screens\Shops(),
+					Settings_Screens\Product_Sync::ID => new Settings_Screens\Product_Sync(),
+					Settings_Screens\Product_Sets::ID => new Settings_Screens\Product_Sets(),
+				);
+			}
 		} else {
 			$screens = [ Settings_Screens\Shops::ID => new Settings_Screens\Shops() ];
 		}
@@ -192,9 +205,9 @@ class Enhanced_Settings {
 				'flow_step' => $current_tab . '_tab_rendered',
 			),
 			array(
-				'should_send_log_to_meta' => true,
+				'should_send_log_to_meta'        => true,
 				'should_save_log_in_woocommerce' => true,
-				'woocommerce_log_level'   => \WC_Log_Levels::DEBUG,
+				'woocommerce_log_level'          => \WC_Log_Levels::DEBUG,
 			)
 		);
 

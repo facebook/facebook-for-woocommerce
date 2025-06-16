@@ -103,7 +103,15 @@ class ErrorLogHandler extends LogHandlerBase {
 			as_enqueue_async_action( 'facebook_for_woocommerce_log_api', array( $request_data ) );
 		} else {
 			// Handle the absence of the Action Scheduler
-			WC_Facebookcommerce_Utils::log_with_debug_mode_enabled( 'Action Scheduler is not available.' );
+			Logger::log(
+				'Action Scheduler is not available.',
+				[],
+				array(
+					'should_send_log_to_meta' => false,
+					'should_save_log_in_woocommerce' => true,
+					'woocommerce_log_level'   => \WC_Log_Levels::DEBUG,
+				)
+			);
 		}
 	}
 }
