@@ -225,9 +225,6 @@ class Lifecycle extends Framework\Lifecycle {
 		}
 		// deletes an option that is not longer used to generate an admin notice
 		delete_option( 'fb_cart_url' );
-
-		// Trigger config sync after major settings migration
-		$this->trigger_config_sync();
 	}
 
 
@@ -347,9 +344,6 @@ class Lifecycle extends Framework\Lifecycle {
 	 */
 	protected function upgrade_to_3_4_9() {
 		facebook_for_woocommerce()->get_product_sets_sync_handler()->sync_all_product_sets();
-
-		// Trigger config sync after product sets sync to ensure consistency
-		$this->trigger_config_sync();
 	}
 
 	/**
