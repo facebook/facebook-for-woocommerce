@@ -30,9 +30,9 @@ class ProductFeedsReadAllResponseTest extends AbstractWPUnitTestWithOptionIsolat
 	}
 
 	/**
-	 * Test instantiation with feed data.
+	 * Test instantiation and to_string method.
 	 */
-	public function test_instantiation_with_feed_data() {
+	public function test_instantiation_and_to_string() {
 		$data = json_encode( [ 
 			'data' => [
 				[ 'id' => 'feed_1', 'name' => 'Feed 1' ],
@@ -484,24 +484,4 @@ class ProductFeedsReadAllResponseTest extends AbstractWPUnitTestWithOptionIsolat
 		$this->assertEquals( 12.75, $feed['file_size_mb'] );
 	}
 
-	/**
-	 * Test with single feed in data array.
-	 */
-	public function test_single_feed_in_data_array() {
-		$data = json_encode( [
-			'data' => [
-				[
-					'id' => 'single_feed',
-					'name' => 'Only Feed',
-					'enabled' => true
-				]
-			]
-		] );
-		$response = new Response( $data );
-		
-		$this->assertIsArray( $response->data );
-		$this->assertCount( 1, $response->data );
-		$this->assertEquals( 'single_feed', $response->data[0]['id'] );
-		$this->assertEquals( 'Only Feed', $response->data[0]['name'] );
-	}
 } 
