@@ -125,63 +125,7 @@ class LifecycleConfigSyncTest extends \WooCommerce\Facebook\Tests\AbstractWPUnit
 		$reflection->invoke( $this->lifecycle );
 	}
 
-	/**
-	 * Tests that trigger_config_sync helper method works correctly.
-	 */
-	public function test_trigger_config_sync_helper_method(): void {
-		// This test verifies the helper method exists and is callable
-		$reflection = new \ReflectionMethod( $this->lifecycle, 'trigger_config_sync' );
-		$reflection->setAccessible( true );
-		
-		// Should not throw an exception
-		$this->expectNotToPerformAssertions();
-		$reflection->invoke( $this->lifecycle );
-	}
 
-	/**
-	 * Tests that upgrade_to_2_0_0 includes config sync call.
-	 */
-	public function test_upgrade_to_2_0_0_includes_config_sync(): void {
-		// Mock background handler with proper method definitions
-		$background_handler_mock = $this->getMockBuilder( \stdClass::class )
-			->addMethods( [ 'create_job', 'dispatch' ] )
-			->getMock();
-		$background_handler_mock->method( 'create_job' )->willReturn( true );
-		$background_handler_mock->method( 'dispatch' )->willReturn( true );
-
-		$this->plugin_mock->method( 'get_background_handle_virtual_products_variations_instance' )
-			->willReturn( $background_handler_mock );
-
-		// Use reflection to call the protected method
-		$reflection = new \ReflectionMethod( $this->lifecycle, 'upgrade_to_2_0_0' );
-		$reflection->setAccessible( true );
-		
-		// Should not throw an exception
-		$this->expectNotToPerformAssertions();
-		$reflection->invoke( $this->lifecycle );
-	}
-
-	/**
-	 * Tests that upgrade_to_3_4_9 includes config sync call.
-	 */
-	public function test_upgrade_to_3_4_9_includes_config_sync(): void {
-		// Mock product sets sync handler with proper method definitions
-		$product_sets_handler_mock = $this->getMockBuilder( \stdClass::class )
-			->addMethods( [ 'sync_all_product_sets' ] )
-			->getMock();
-		$product_sets_handler_mock->method( 'sync_all_product_sets' )->willReturn( true );
-
-		$this->plugin_mock->method( 'get_product_sets_sync_handler' )
-			->willReturn( $product_sets_handler_mock );
-
-		// Use reflection to call the protected method
-		$reflection = new \ReflectionMethod( $this->lifecycle, 'upgrade_to_3_4_9' );
-		$reflection->setAccessible( true );
-		
-		// Should not throw an exception
-		$this->expectNotToPerformAssertions();
-		$reflection->invoke( $this->lifecycle );
-	}
 
 	/**
 	 * Tests that upgrade sequence from 3.5.1 to 3.5.5 would include 3.5.4.

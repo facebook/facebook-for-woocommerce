@@ -378,15 +378,4 @@ class Lifecycle extends Framework\Lifecycle {
 		}
 	}
 
-	/**
-	 * Helper method to trigger config sync during upgrades
-	 *
-	 * @since 3.5.4
-	 */
-	private function trigger_config_sync() {
-		$connection_handler = facebook_for_woocommerce()->get_connection_handler();
-		if ( $connection_handler ) {
-			$connection_handler->force_config_sync_on_update();
-		}
-	}
 }
