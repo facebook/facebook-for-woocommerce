@@ -66,8 +66,8 @@ class WC_Facebookcommerce_Background_Process extends WP_Background_Process {
 					$dispatched->get_error_message()
 				),
 				array(
-					'flow_name'  => 'background_sync',
-					'flow_step'  => 'background_sync_completed',
+					'flow_name' => 'background_sync',
+					'flow_step' => 'background_sync_completed',
 				),
 				array(
 					'should_send_log_to_meta'        => true,
@@ -186,8 +186,8 @@ class WC_Facebookcommerce_Background_Process extends WP_Background_Process {
 		Logger::log(
 			'Background sync complete!',
 			array(
-				'flow_name'  => 'background_sync',
-				'flow_step'  => 'background_sync_completed',
+				'flow_name' => 'background_sync',
+				'flow_step' => 'background_sync_completed',
 			),
 			array(
 				'should_send_log_to_meta'        => true,

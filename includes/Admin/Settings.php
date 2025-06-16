@@ -90,6 +90,16 @@ class Settings {
 		if ( true === $is_connected && true === $is_whatsapp_utility_messaging_enabled ) {
 			$this->screens[ Settings_Screens\Whatsapp_Utility::ID ] = new Settings_Screens\Whatsapp_Utility();
 		}
+
+		$is_woo_all_products_sync_enbaled = $this->plugin->get_rollout_switches()->is_switch_enabled(
+			RolloutSwitches::SWITCH_WOO_ALL_PRODUCTS_SYNC_ENABLED
+		);
+		/**
+		 * If all products sync is not enabled should show the Product sync tab
+		 */
+		if ( true === $is_connected && false === $is_woo_all_products_sync_enbaled ) {
+			$this->screens[ Settings_Screens\Product_Sync::ID ] = new Settings_Screens\Product_Sync();
+		}
 	}
 
 	/**
@@ -171,6 +181,10 @@ class Settings {
 	 * @param string $screen_id the ID to connect to
 	 */
 	private function connect_to_enhanced_admin( $screen_id ) {
+		$is_woo_all_products_sync_enbaled = $this->plugin->get_rollout_switches()->is_switch_enabled(
+			RolloutSwitches::SWITCH_WOO_ALL_PRODUCTS_SYNC_ENABLED
+		);
+
 		if ( is_callable( 'wc_admin_connect_page' ) ) {
 			$crumbs = array(
 				__( 'Facebook for WooCommerce', 'facebook-for-woocommerce' ),
@@ -181,6 +195,15 @@ class Settings {
 				switch ( $_GET['tab'] ) {
 					case Connection::ID:
 						$crumbs[] = __( 'Connection', 'facebook-for-woocommerce' );
+						break;
+					case Settings_Screens\Product_Sync::ID:
+						/**
+						 * If all proudcts sync not enabled
+						 * Show the product sync tab
+						 */
+						if ( ! $is_woo_all_products_sync_enbaled ) {
+							$crumbs[] = __( 'Product sync', 'facebook-for-woocommerce' );
+						}
 						break;
 					case Settings_Screens\Advertise::ID:
 						$crumbs[] = __( 'Advertise', 'facebook-for-woocommerce' );
