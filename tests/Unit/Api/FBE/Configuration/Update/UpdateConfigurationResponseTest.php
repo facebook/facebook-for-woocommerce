@@ -10,7 +10,7 @@ use WooCommerce\Facebook\Tests\AbstractWPUnitTestWithOptionIsolationAndSafeFilte
 /**
  * Unit tests for FBE\Configuration\Update\Response class.
  *
- * @since x.x.x
+ * @since 3.5.2
  */
 class UpdateConfigurationResponseTest extends AbstractWPUnitTestWithOptionIsolationAndSafeFiltering {
 

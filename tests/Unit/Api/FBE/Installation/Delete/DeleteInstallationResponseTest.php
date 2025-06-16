@@ -10,7 +10,7 @@ use WooCommerce\Facebook\Tests\AbstractWPUnitTestWithOptionIsolationAndSafeFilte
 /**
  * Unit tests for FBE\Installation\Delete\Response class.
  *
- * @since x.x.x
+ * @since 3.5.2
  */
 class DeleteInstallationResponseTest extends AbstractWPUnitTestWithOptionIsolationAndSafeFiltering {
 
