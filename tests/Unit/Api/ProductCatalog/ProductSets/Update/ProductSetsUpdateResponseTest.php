@@ -16,49 +16,30 @@ use WooCommerce\Facebook\Tests\AbstractWPUnitTestWithOptionIsolationAndSafeFilte
 class ProductSetsUpdateResponseTest extends AbstractWPUnitTestWithOptionIsolationAndSafeFiltering {
 
 	/**
-	 * Test that the Response class exists and can be instantiated.
+	 * Test that the Response class exists and extends proper classes.
 	 */
-	public function test_response_class_exists() {
+	public function test_response_class_hierarchy() {
 		$this->assertTrue( class_exists( Response::class ) );
-	}
-
-	/**
-	 * Test that Response extends the API Response class.
-	 */
-	public function test_response_extends_api_response() {
+		
 		$response = new Response( '{}' );
 		$this->assertInstanceOf( ApiResponse::class, $response );
-	}
-
-	/**
-	 * Test that Response extends JSONResponse through inheritance.
-	 */
-	public function test_response_extends_json_response() {
-		$response = new Response( '{}' );
 		$this->assertInstanceOf( JSONResponse::class, $response );
 	}
 
 	/**
-	 * Test response with successful update.
+	 * Test response with success values (true and false).
 	 */
-	public function test_response_with_successful_update() {
-		$data = [
-			'success' => true,
-		];
+	public function test_response_with_success_values() {
+		// Test successful update
+		$data = [ 'success' => true ];
 		$json = json_encode( $data );
 		$response = new Response( $json );
 		
 		$this->assertTrue( $response->success );
 		$this->assertFalse( $response->has_api_error() );
-	}
-
-	/**
-	 * Test response with failed update.
-	 */
-	public function test_response_with_failed_update() {
-		$data = [
-			'success' => false,
-		];
+		
+		// Test failed update
+		$data = [ 'success' => false ];
 		$json = json_encode( $data );
 		$response = new Response( $json );
 		
