@@ -377,5 +377,4 @@ class Lifecycle extends Framework\Lifecycle {
 			$connection_handler->force_config_sync_on_update();
 		}
 	}
-
 }
