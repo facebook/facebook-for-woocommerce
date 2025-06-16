@@ -215,14 +215,6 @@ class Connection {
 			// Force refresh installation data without transient check
 			$this->update_installation_data();
 			$this->repair_or_update_commerce_integration_data();
-
-			// Also refresh business configuration without transient check
-			$response = $this->get_plugin()->get_api()->get_business_configuration( $this->get_external_business_id() );
-			facebook_for_woocommerce()->get_tracker()->track_facebook_business_config(
-				$response->is_ig_shopping_enabled(),
-				$response->is_ig_cta_enabled()
-			);
-
 			$this->get_plugin()->log( 'Successfully completed forced config sync on version update' );
 
 		} catch ( ApiException $exception ) {
