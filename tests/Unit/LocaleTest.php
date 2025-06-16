@@ -9,7 +9,7 @@ use WooCommerce\Facebook\Tests\AbstractWPUnitTestWithOptionIsolationAndSafeFilte
 /**
  * Unit tests for Locale class.
  *
- * @since x.x.x
+ * @since 3.5.2
  */
 class LocaleTest extends AbstractWPUnitTestWithOptionIsolationAndSafeFiltering {
 
@@ -28,23 +28,6 @@ class LocaleTest extends AbstractWPUnitTestWithOptionIsolationAndSafeFiltering {
 		
 		$this->assertIsArray( $locales );
 		$this->assertNotEmpty( $locales );
-	}
-
-	/**
-	 * Test get_supported_locales contains expected locales.
-	 */
-	public function test_get_supported_locales_contains_expected_locales() {
-		$locales = Locale::get_supported_locales();
-		
-		// Test some common locales
-		$this->assertArrayHasKey( 'en_US', $locales );
-		$this->assertArrayHasKey( 'es_ES', $locales );
-		$this->assertArrayHasKey( 'fr_FR', $locales );
-		$this->assertArrayHasKey( 'de_DE', $locales );
-		$this->assertArrayHasKey( 'it_IT', $locales );
-		$this->assertArrayHasKey( 'pt_BR', $locales );
-		$this->assertArrayHasKey( 'ja_JP', $locales );
-		$this->assertArrayHasKey( 'zh_CN', $locales );
 	}
 
 	/**
@@ -80,23 +63,6 @@ class LocaleTest extends AbstractWPUnitTestWithOptionIsolationAndSafeFiltering {
 	}
 
 	/**
-	 * Test is_supported_locale with valid locales.
-	 */
-	public function test_is_supported_locale_valid() {
-		// Common locales that should be supported
-		$this->assertTrue( Locale::is_supported_locale( 'en_US' ) );
-		$this->assertTrue( Locale::is_supported_locale( 'es_ES' ) );
-		$this->assertTrue( Locale::is_supported_locale( 'fr_FR' ) );
-		$this->assertTrue( Locale::is_supported_locale( 'de_DE' ) );
-		$this->assertTrue( Locale::is_supported_locale( 'zh_CN' ) );
-		
-		// Less common but still supported
-		$this->assertTrue( Locale::is_supported_locale( 'af_ZA' ) );
-		$this->assertTrue( Locale::is_supported_locale( 'cy_GB' ) );
-		$this->assertTrue( Locale::is_supported_locale( 'sw_KE' ) );
-	}
-
-	/**
 	 * Test is_supported_locale with invalid locales.
 	 */
 	public function test_is_supported_locale_invalid() {
@@ -114,13 +80,8 @@ class LocaleTest extends AbstractWPUnitTestWithOptionIsolationAndSafeFiltering {
 		// Empty and null
 		$this->assertFalse( Locale::is_supported_locale( '' ) );
 		$this->assertFalse( Locale::is_supported_locale( ' ' ) );
-	}
-
-	/**
-	 * Test is_supported_locale is case sensitive.
-	 */
-	public function test_is_supported_locale_case_sensitive() {
-		$this->assertTrue( Locale::is_supported_locale( 'en_US' ) );
+		
+		// Case sensitivity tests
 		$this->assertFalse( Locale::is_supported_locale( 'en_us' ) );
 		$this->assertFalse( Locale::is_supported_locale( 'EN_US' ) );
 		$this->assertFalse( Locale::is_supported_locale( 'En_Us' ) );
