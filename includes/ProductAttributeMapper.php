@@ -47,16 +47,9 @@ class ProductAttributeMapper {
 	private static $extended_facebook_fields = array(
 		'sale_price'            => array( 'sale_price', 'discount_price', 'offer_price' ),
 		'inventory'             => array( 'inventory', 'stock', 'quantity' ),
-		'image_link'            => array( 'image_link', 'image', 'featured_image' ),
-		'additional_image_link' => array( 'additional_image_link', 'additional_images', 'gallery' ),
-		'shipping_weight'       => array( 'shipping_weight', 'weight' ),
-		'shipping'              => array( 'shipping', 'shipping_info' ),
 		'tax'                   => array( 'tax', 'tax_info' ),
 		'custom_label_0'        => array( 'custom_label_0', 'label0' ),
 		'custom_label_1'        => array( 'custom_label_1', 'label1' ),
-		'custom_label_2'        => array( 'custom_label_2', 'label2' ),
-		'custom_label_3'        => array( 'custom_label_3', 'label3' ),
-		'custom_label_4'        => array( 'custom_label_4', 'label4' ),
 	);
 
 	/** @var array Maps WooCommerce attribute naming variations to standardized Meta field names */
