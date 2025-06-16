@@ -12,7 +12,7 @@ use WooCommerce\Facebook\Tests\AbstractWPUnitTestWithOptionIsolationAndSafeFilte
  *
  * @since 3.5.2
  */
-class ResponseTest extends AbstractWPUnitTestWithOptionIsolationAndSafeFiltering {
+class MetaLogResponseTest extends AbstractWPUnitTestWithOptionIsolationAndSafeFiltering {
 
 	/**
 	 * Test that the class exists and can be instantiated.
@@ -27,14 +27,6 @@ class ResponseTest extends AbstractWPUnitTestWithOptionIsolationAndSafeFiltering
 	public function test_extends_api_response() {
 		$response = new Response( '' );
 		$this->assertInstanceOf( ApiResponse::class, $response );
-	}
-
-	/**
-	 * Test instantiation with empty response data.
-	 */
-	public function test_instantiation_with_empty_data() {
-		$response = new Response( '' );
-		$this->assertInstanceOf( Response::class, $response );
 	}
 
 	/**
