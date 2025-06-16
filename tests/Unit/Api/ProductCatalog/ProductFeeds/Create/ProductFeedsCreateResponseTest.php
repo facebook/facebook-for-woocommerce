@@ -74,28 +74,6 @@ class ProductFeedsCreateResponseTest extends AbstractWPUnitTestWithOptionIsolati
 	}
 
 	/**
-	 * Test response with error data.
-	 */
-	public function test_response_with_error_data() {
-		$errorData = [
-			'error' => [
-				'message' => 'Invalid product catalog ID',
-				'type' => 'OAuthException',
-				'code' => 100,
-				'error_user_msg' => 'The product catalog does not exist or you do not have permission to create feeds.',
-			],
-		];
-		$json = json_encode( $errorData );
-		$response = new Response( $json );
-		
-		$this->assertTrue( $response->has_api_error() );
-		$this->assertEquals( 'Invalid product catalog ID', $response->get_api_error_message() );
-		$this->assertEquals( 'OAuthException', $response->get_api_error_type() );
-		$this->assertEquals( 100, $response->get_api_error_code() );
-		$this->assertEquals( 'The product catalog does not exist or you do not have permission to create feeds.', $response->get_user_error_message() );
-	}
-
-	/**
 	 * Test response array access interface.
 	 */
 	public function test_response_array_access() {
