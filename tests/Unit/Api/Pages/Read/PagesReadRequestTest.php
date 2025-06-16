@@ -16,69 +16,50 @@ use WooCommerce\Facebook\Tests\AbstractWPUnitTestWithOptionIsolationAndSafeFilte
 class PagesReadRequestTest extends AbstractWPUnitTestWithOptionIsolationAndSafeFiltering {
 
 	/**
-	 * Test that the Request class exists and can be instantiated.
+	 * Test that the Request class exists and extends proper parent classes.
 	 */
-	public function test_request_class_exists() {
+	public function test_request_class_inheritance() {
 		$this->assertTrue( class_exists( Request::class ) );
-	}
-
-	/**
-	 * Test that Request extends the API Request class.
-	 */
-	public function test_request_extends_api_request() {
+		
 		$request = new Request( '123456789' );
 		$this->assertInstanceOf( ApiRequest::class, $request );
-	}
-
-	/**
-	 * Test that Request extends JSONRequest through inheritance.
-	 */
-	public function test_request_extends_json_request() {
-		$request = new Request( '123456789' );
 		$this->assertInstanceOf( JSONRequest::class, $request );
-	}
-
-	/**
-	 * Test request constructor with page ID.
-	 */
-	public function test_request_constructor_with_page_id() {
-		$pageId = '123456789';
-		$request = new Request( $pageId );
-		
-		$this->assertEquals( "/{$pageId}/?fields=name,link", $request->get_path() );
-		$this->assertEquals( 'GET', $request->get_method() );
 	}
 
 	/**
 	 * Test request with different page ID formats.
 	 */
 	public function test_request_with_different_page_id_formats() {
-		// Numeric string ID
-		$request1 = new Request( '987654321' );
-		$this->assertEquals( '/987654321/?fields=name,link', $request1->get_path() );
+		// Standard numeric string ID
+		$request1 = new Request( '123456789' );
+		$this->assertEquals( '/123456789/?fields=name,link', $request1->get_path() );
+		$this->assertEquals( 'GET', $request1->get_method() );
+		
+		// Different numeric string ID
+		$request2 = new Request( '987654321' );
+		$this->assertEquals( '/987654321/?fields=name,link', $request2->get_path() );
 		
 		// Very long ID
 		$longId = '123456789012345678901234567890';
-		$request2 = new Request( $longId );
-		$this->assertEquals( "/{$longId}/?fields=name,link", $request2->get_path() );
+		$request3 = new Request( $longId );
+		$this->assertEquals( "/{$longId}/?fields=name,link", $request3->get_path() );
 		
 		// ID with leading zeros
-		$request3 = new Request( '000123456789' );
-		$this->assertEquals( '/000123456789/?fields=name,link', $request3->get_path() );
-	}
-
-	/**
-	 * Test request path construction.
-	 */
-	public function test_request_path_construction() {
-		$pageId = 'test_page_123';
-		$request = new Request( $pageId );
+		$request4 = new Request( '000123456789' );
+		$this->assertEquals( '/000123456789/?fields=name,link', $request4->get_path() );
 		
-		$expectedPath = "/{$pageId}/?fields=name,link";
-		$this->assertEquals( $expectedPath, $request->get_path() );
+		// Empty page ID
+		$request5 = new Request( '' );
+		$this->assertEquals( '//?fields=name,link', $request5->get_path() );
 		
-		// Verify the fields parameter is included
-		$this->assertStringContainsString( 'fields=name,link', $request->get_path() );
+		// Special characters (edge case - Facebook IDs are numeric)
+		$request6 = new Request( 'page-123_test' );
+		$this->assertEquals( '/page-123_test/?fields=name,link', $request6->get_path() );
+		
+		// Verify the fields parameter is included in all cases
+		$this->assertStringContainsString( 'fields=name,link', $request1->get_path() );
+		$this->assertStringContainsString( 'name', $request1->get_path() );
+		$this->assertStringContainsString( 'link', $request1->get_path() );
 	}
 
 	/**
@@ -88,17 +69,6 @@ class PagesReadRequestTest extends AbstractWPUnitTestWithOptionIsolationAndSafeF
 		$request = new Request( '123' );
 		$this->assertEquals( 'GET', $request->get_method() );
 		$this->assertNotEquals( 'POST', $request->get_method() );
-	}
-
-	/**
-	 * Test request with special characters in page ID.
-	 */
-	public function test_request_with_special_characters_in_page_id() {
-		// Note: In practice, Facebook page IDs are numeric, but testing edge cases
-		$pageId = 'page-123_test';
-		$request = new Request( $pageId );
-		
-		$this->assertEquals( "/{$pageId}/?fields=name,link", $request->get_path() );
 	}
 
 	/**
@@ -131,13 +101,16 @@ class PagesReadRequestTest extends AbstractWPUnitTestWithOptionIsolationAndSafeF
 	}
 
 	/**
-	 * Test request retry functionality.
+	 * Test request retry functionality and limits.
 	 */
 	public function test_request_retry_functionality() {
 		$request = new Request( '123456789' );
 		
 		// Test initial retry count
 		$this->assertEquals( 0, $request->get_retry_count() );
+		
+		// Default retry limit should be 5
+		$this->assertEquals( 5, $request->get_retry_limit() );
 		
 		// Mark as retried
 		$request->mark_retry();
@@ -146,16 +119,12 @@ class PagesReadRequestTest extends AbstractWPUnitTestWithOptionIsolationAndSafeF
 		// Mark as retried again
 		$request->mark_retry();
 		$this->assertEquals( 2, $request->get_retry_count() );
-	}
-
-	/**
-	 * Test request retry limit.
-	 */
-	public function test_request_retry_limit() {
-		$request = new Request( '123456789' );
 		
-		// Default retry limit should be 5
-		$this->assertEquals( 5, $request->get_retry_limit() );
+		// Test up to the limit
+		for ( $i = 2; $i < 5; $i++ ) {
+			$request->mark_retry();
+		}
+		$this->assertEquals( 5, $request->get_retry_count() );
 	}
 
 	/**
@@ -191,36 +160,14 @@ class PagesReadRequestTest extends AbstractWPUnitTestWithOptionIsolationAndSafeF
 	}
 
 	/**
-	 * Test request with empty page ID.
-	 */
-	public function test_request_with_empty_page_id() {
-		$request = new Request( '' );
-		
-		$this->assertEquals( '//?fields=name,link', $request->get_path() );
-		$this->assertEquals( 'GET', $request->get_method() );
-	}
-
-	/**
-	 * Test request with numeric page ID.
+	 * Test request with numeric page ID value.
 	 */
 	public function test_request_with_numeric_page_id() {
-		// Testing with actual numeric value (not string)
-		$request = new Request( '123456789' );
+		// Testing with actual numeric value converted to string
+		$numericId = 123456789;
+		$request = new Request( (string) $numericId );
 		
 		$this->assertEquals( '/123456789/?fields=name,link', $request->get_path() );
-	}
-
-	/**
-	 * Test request path includes required fields.
-	 */
-	public function test_request_path_includes_required_fields() {
-		$request = new Request( '123456789' );
-		$path = $request->get_path();
-		
-		// Verify both name and link fields are requested
-		$this->assertStringContainsString( 'name', $path );
-		$this->assertStringContainsString( 'link', $path );
-		$this->assertStringContainsString( 'fields=name,link', $path );
 	}
 
 	/**
