@@ -53,6 +53,11 @@ class ItemsBatchCreateResponseTest extends AbstractWPUnitTestWithOptionIsolation
 		$this->assertIsArray( $response->handles );
 		$this->assertEquals( $handles, $response->handles );
 		$this->assertCount( 3, $response->handles );
+		
+		// Test with missing handles property
+		$data_without_handles = json_encode( [ 'validation_status' => [ 'errors' => 0 ] ] );
+		$response_without_handles = new Response( $data_without_handles );
+		$this->assertNull( $response_without_handles->handles );
 	}
 
 	/**
@@ -70,6 +75,11 @@ class ItemsBatchCreateResponseTest extends AbstractWPUnitTestWithOptionIsolation
 		$this->assertEquals( $validation_status, $response->validation_status );
 		$this->assertEquals( 0, $response->validation_status['errors'] );
 		$this->assertEquals( 2, $response->validation_status['warnings'] );
+		
+		// Test with missing validation_status property
+		$data_without_validation = json_encode( [ 'handles' => [ 'handle1' ] ] );
+		$response_without_validation = new Response( $data_without_validation );
+		$this->assertNull( $response_without_validation->validation_status );
 	}
 
 	/**
@@ -101,26 +111,6 @@ class ItemsBatchCreateResponseTest extends AbstractWPUnitTestWithOptionIsolation
 		
 		$this->assertIsArray( $response->handles );
 		$this->assertEmpty( $response->handles );
-	}
-
-	/**
-	 * Test with missing handles property.
-	 */
-	public function test_missing_handles_property() {
-		$data = json_encode( [ 'validation_status' => [ 'errors' => 0 ] ] );
-		$response = new Response( $data );
-		
-		$this->assertNull( $response->handles );
-	}
-
-	/**
-	 * Test with missing validation_status property.
-	 */
-	public function test_missing_validation_status_property() {
-		$data = json_encode( [ 'handles' => [ 'handle1' ] ] );
-		$response = new Response( $data );
-		
-		$this->assertNull( $response->validation_status );
 	}
 
 	/**
