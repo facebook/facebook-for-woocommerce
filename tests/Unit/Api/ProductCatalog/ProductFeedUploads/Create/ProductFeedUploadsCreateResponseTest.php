@@ -16,25 +16,13 @@ use WooCommerce\Facebook\Tests\AbstractWPUnitTestWithOptionIsolationAndSafeFilte
 class ProductFeedUploadsCreateResponseTest extends AbstractWPUnitTestWithOptionIsolationAndSafeFiltering {
 
 	/**
-	 * Test that the Response class exists and can be instantiated.
+	 * Test that the Response class exists and extends proper classes.
 	 */
-	public function test_response_class_exists() {
+	public function test_response_class_hierarchy() {
 		$this->assertTrue( class_exists( Response::class ) );
-	}
-
-	/**
-	 * Test that Response extends the API Response class.
-	 */
-	public function test_response_extends_api_response() {
+		
 		$response = new Response( '{}' );
 		$this->assertInstanceOf( ApiResponse::class, $response );
-	}
-
-	/**
-	 * Test that Response extends JSONResponse through inheritance.
-	 */
-	public function test_response_extends_json_response() {
-		$response = new Response( '{}' );
 		$this->assertInstanceOf( JSONResponse::class, $response );
 	}
 
