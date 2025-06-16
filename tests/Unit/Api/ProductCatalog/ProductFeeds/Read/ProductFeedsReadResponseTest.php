@@ -30,9 +30,9 @@ class ProductFeedsReadResponseTest extends AbstractWPUnitTestWithOptionIsolation
 	}
 
 	/**
-	 * Test instantiation with feed data.
+	 * Test instantiation and to_string method.
 	 */
-	public function test_instantiation_with_feed_data() {
+	public function test_instantiation_and_to_string() {
 		$data = json_encode( [ 
 			'id' => 'feed_123',
 			'data' => [
@@ -47,9 +47,9 @@ class ProductFeedsReadResponseTest extends AbstractWPUnitTestWithOptionIsolation
 	}
 
 	/**
-	 * Test accessing data property.
+	 * Test accessing data property with single feed.
 	 */
-	public function test_data_property_access() {
+	public function test_data_property_access_single_feed() {
 		$feed_data = [
 			'id' => '1068839467367301',
 			'file_name' => 'WooCommerce Catalog - Feed',
@@ -104,9 +104,9 @@ class ProductFeedsReadResponseTest extends AbstractWPUnitTestWithOptionIsolation
 	}
 
 	/**
-	 * Test with multiple feeds in data array.
+	 * Test with multiple feeds and various schedule types.
 	 */
-	public function test_multiple_feeds_in_data() {
+	public function test_multiple_feeds_with_various_schedules() {
 		$feeds = [
 			[
 				'id' => 'feed_001',
@@ -125,16 +125,32 @@ class ProductFeedsReadResponseTest extends AbstractWPUnitTestWithOptionIsolation
 				'name' => 'Backup Feed',
 				'schedule' => 'WEEKLY',
 				'enabled' => true
+			],
+			[
+				'id' => 'feed_004',
+				'name' => 'Monthly Feed',
+				'schedule' => 'MONTHLY',
+				'enabled' => true
 			]
 		];
 		$data = json_encode( [ 'data' => $feeds ] );
 		$response = new Response( $data );
 		
 		$this->assertIsArray( $response->data );
-		$this->assertCount( 3, $response->data );
+		$this->assertCount( 4, $response->data );
+		
+		// Test array access
 		$this->assertEquals( 'feed_001', $response->data[0]['id'] );
 		$this->assertEquals( 'Secondary Feed', $response->data[1]['name'] );
 		$this->assertEquals( 'WEEKLY', $response->data[2]['schedule'] );
+		$this->assertEquals( 'MONTHLY', $response->data[3]['schedule'] );
+		
+		// Test schedule variety
+		$schedules = array_column( $response->data, 'schedule' );
+		$this->assertContains( 'HOURLY', $schedules );
+		$this->assertContains( 'DAILY', $schedules );
+		$this->assertContains( 'WEEKLY', $schedules );
+		$this->assertContains( 'MONTHLY', $schedules );
 	}
 
 	/**
@@ -220,38 +236,6 @@ class ProductFeedsReadResponseTest extends AbstractWPUnitTestWithOptionIsolation
 		$this->assertNull( $response->data['url'] );
 		$this->assertNull( $response->data['enabled'] );
 		$this->assertNull( $response->data['schedule'] );
-	}
-
-	/**
-	 * Test with various schedule types.
-	 */
-	public function test_various_schedule_types() {
-		$data = json_encode( [
-			'data' => [
-				[
-					'id' => 'feed_hourly',
-					'schedule' => 'HOURLY'
-				],
-				[
-					'id' => 'feed_daily',
-					'schedule' => 'DAILY'
-				],
-				[
-					'id' => 'feed_weekly',
-					'schedule' => 'WEEKLY'
-				],
-				[
-					'id' => 'feed_monthly',
-					'schedule' => 'MONTHLY'
-				]
-			]
-		] );
-		$response = new Response( $data );
-		
-		$this->assertEquals( 'HOURLY', $response->data[0]['schedule'] );
-		$this->assertEquals( 'DAILY', $response->data[1]['schedule'] );
-		$this->assertEquals( 'WEEKLY', $response->data[2]['schedule'] );
-		$this->assertEquals( 'MONTHLY', $response->data[3]['schedule'] );
 	}
 
 	/**
