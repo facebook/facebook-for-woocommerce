@@ -41,84 +41,62 @@ class RateLimitedResponseTest extends AbstractWPUnitTestWithOptionIsolationAndSa
 	}
 
 	/**
-	 * Test get_usage_data with uppercase Business Use Case header.
+	 * Test get_usage_data with Business Use Case headers (both cases).
 	 */
-	public function test_get_usage_data_with_uppercase_business_header() {
-		$headers = [
+	public function test_get_usage_data_with_business_use_case_headers() {
+		$reflection = new \ReflectionClass( $this->test_class );
+		$method = $reflection->getMethod( 'get_usage_data' );
+		$method->setAccessible( true );
+		
+		// Test uppercase header
+		$headers_uppercase = [
 			'X-Business-Use-Case-Usage' => [
 				'call_count' => 50,
 				'total_time' => 30,
 				'total_cputime' => 25,
 			],
 		];
+		$result = $method->invoke( $this->test_class, $headers_uppercase );
+		$this->assertEquals( $headers_uppercase['X-Business-Use-Case-Usage'], $result );
 		
-		$reflection = new \ReflectionClass( $this->test_class );
-		$method = $reflection->getMethod( 'get_usage_data' );
-		$method->setAccessible( true );
-		
-		$result = $method->invoke( $this->test_class, $headers );
-		
-		$this->assertEquals( $headers['X-Business-Use-Case-Usage'], $result );
-	}
-
-	/**
-	 * Test get_usage_data with lowercase Business Use Case header.
-	 */
-	public function test_get_usage_data_with_lowercase_business_header() {
-		$headers = [
+		// Test lowercase header
+		$headers_lowercase = [
 			'x-business-use-case-usage' => [
 				'call_count' => 75,
 				'total_time' => 45,
 			],
 		];
-		
+		$result = $method->invoke( $this->test_class, $headers_lowercase );
+		$this->assertEquals( $headers_lowercase['x-business-use-case-usage'], $result );
+	}
+
+	/**
+	 * Test get_usage_data with App Usage headers (both cases).
+	 */
+	public function test_get_usage_data_with_app_usage_headers() {
 		$reflection = new \ReflectionClass( $this->test_class );
 		$method = $reflection->getMethod( 'get_usage_data' );
 		$method->setAccessible( true );
 		
-		$result = $method->invoke( $this->test_class, $headers );
-		
-		$this->assertEquals( $headers['x-business-use-case-usage'], $result );
-	}
-
-	/**
-	 * Test get_usage_data with uppercase App Usage header.
-	 */
-	public function test_get_usage_data_with_uppercase_app_header() {
-		$headers = [
+		// Test uppercase header
+		$headers_uppercase = [
 			'X-App-Usage' => [
 				'call_count' => 25,
 				'total_time' => 15,
 			],
 		];
+		$result = $method->invoke( $this->test_class, $headers_uppercase );
+		$this->assertEquals( $headers_uppercase['X-App-Usage'], $result );
 		
-		$reflection = new \ReflectionClass( $this->test_class );
-		$method = $reflection->getMethod( 'get_usage_data' );
-		$method->setAccessible( true );
-		
-		$result = $method->invoke( $this->test_class, $headers );
-		
-		$this->assertEquals( $headers['X-App-Usage'], $result );
-	}
-
-	/**
-	 * Test get_usage_data with lowercase App Usage header.
-	 */
-	public function test_get_usage_data_with_lowercase_app_header() {
-		$headers = [
+		// Test lowercase header
+		$headers_lowercase = [
 			'x-app-usage' => [
 				'call_count' => 90,
 				'total_cputime' => 80,
 			],
 		];
-		
-		$reflection = new \ReflectionClass( $this->test_class );
-		$method = $reflection->getMethod( 'get_usage_data' );
-		$method->setAccessible( true );
-		
-		$result = $method->invoke( $this->test_class, $headers );
-		
-		$this->assertEquals( $headers['x-app-usage'], $result );
+		$result = $method->invoke( $this->test_class, $headers_lowercase );
+		$this->assertEquals( $headers_lowercase['x-app-usage'], $result );
 	}
 
 	/**
