@@ -164,9 +164,7 @@ class WC_Facebookcommerce_Pixel {
 			<!-- WooCommerce Facebook Integration Begin -->
 			<script <?php echo self::get_script_attributes(); ?>>
 
-			<?php echo $this->get_pixel_init_code(); ?>
-
-				fbq( 'track', 'PageView', <?php echo wp_json_encode( self::build_params( [], 'PageView' ), JSON_PRETTY_PRINT | JSON_FORCE_OBJECT ); ?> );
+				<?php echo $this->get_pixel_init_code(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
 
 				document.addEventListener( 'DOMContentLoaded', function() {
 					// Insert placeholder for events injected when a product is added to the cart through AJAX.
@@ -281,19 +279,18 @@ class WC_Facebookcommerce_Pixel {
 			return ob_get_clean();
 	}
 
-
-		/**
-		 * Prints or enqueues the JavaScript code to track an event.
-		 * Preferred method to inject events in a page.
-		 *
-		 * @see \WC_Facebookcommerce_Pixel::build_event()
-		 *
-		 * @param string $event_name The name of the event to track.
-		 * @param array  $params     Custom event parameters.
-		 * @param string $method     Name of the pixel's fbq() function to call.
-		 *
-		 * phpcs:disable WordPress.Security.EscapeOutput.OutputNotEscaped
-		 */
+	/**
+	 * Prints or enqueues the JavaScript code to track an event.
+	 * Preferred method to inject events in a page.
+	 *
+	 * @see \WC_Facebookcommerce_Pixel::build_event()
+	 *
+	 * @param string $event_name The name of the event to track.
+	 * @param array  $params     Custom event parameters.
+	 * @param string $method     Name of the pixel's fbq() function to call.
+	 *
+	 * phpcs:disable WordPress.Security.EscapeOutput.OutputNotEscaped
+	 */
 	public function inject_event( $event_name, $params, $method = 'track' ) {
 		if ( WC_Facebookcommerce_Utils::is_woocommerce_integration() ) {
 			$code = $this->get_event_code( $event_name, self::build_params( $params, $event_name ), $method );
@@ -460,23 +457,23 @@ class WC_Facebookcommerce_Pixel {
 				self::get_pixel_id(),
 				esc_js( $method ),
 				esc_js( $event_name ),
-				wp_json_encode( self::build_params( $params, $event_name ), JSON_PRETTY_PRINT | JSON_FORCE_OBJECT ),
-				wp_json_encode( array( 'eventID' => $event_id ), JSON_PRETTY_PRINT | JSON_FORCE_OBJECT )
+				json_encode( self::build_params( $params, $event_name ), JSON_PRETTY_PRINT | JSON_FORCE_OBJECT ),
+				json_encode( array( 'eventID' => $event_id ), JSON_PRETTY_PRINT | JSON_FORCE_OBJECT )
 			);
 
 		} else {
 
-			$event = sprintf(
-				"/* %s Facebook Integration Event Tracking */\n" .
-				"fbq('set', 'agent', '%s', '%s');\n" .
-				"fbq('%s', '%s', %s);",
-				WC_Facebookcommerce_Utils::get_integration_name(),
-				Event::get_platform_identifier(),
-				self::get_pixel_id(),
-				esc_js( $method ),
-				esc_js( $event_name ),
-				wp_json_encode( self::build_params( $params, $event_name ), JSON_PRETTY_PRINT | JSON_FORCE_OBJECT )
-			);
+				$event = sprintf(
+					"/* %s Facebook Integration Event Tracking */\n" .
+					"fbq('set', 'agent', '%s', '%s');\n" .
+					"fbq('%s', '%s', %s);",
+					WC_Facebookcommerce_Utils::get_integration_name(),
+					Event::get_platform_identifier(),
+					self::get_pixel_id(),
+					esc_js( $method ),
+					esc_js( $event_name ),
+					json_encode( self::build_params( $params, $event_name ), JSON_PRETTY_PRINT | JSON_FORCE_OBJECT )
+				);
 		}
 
 		return $event;

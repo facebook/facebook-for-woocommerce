@@ -11,6 +11,7 @@
 use WooCommerce\Facebook\Events\Event;
 use WooCommerce\Facebook\Framework\Api\Exception as ApiException;
 use WooCommerce\Facebook\Framework\Helper;
+use WooCommerce\Facebook\Framework\Logger;
 
 if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 
@@ -133,13 +134,13 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 			add_action( 'woocommerce_blocks_checkout_enqueue_data', array( $this, 'inject_initiate_checkout_event' ) );
 
 			// Purchase and Subscribe events
-			add_action( 'woocommerce_new_order', array( $this, 'inject_purchase_event' ) );
-			add_action( 'woocommerce_payment_complete', array( $this, 'inject_purchase_event' ), 10 );
-			add_action( 'woocommerce_checkout_update_order_meta', array( $this, 'inject_purchase_event' ), 20 );
-			add_action( 'woocommerce_thankyou', array( $this, 'inject_purchase_event' ), 40 );
+			add_action( 'woocommerce_new_order', array( $this, 'inject_purchase_event' ), 10 );
+			add_action( 'woocommerce_process_shop_order_meta', array( $this, 'inject_purchase_event' ), 20 );
+			add_action( 'woocommerce_checkout_update_order_meta', array( $this, 'inject_purchase_event' ), 30 );
+			add_action( 'woocommerce_payment_complete', array( $this, 'inject_purchase_event' ), 40 );
 			add_action( 'woocommerce_order_status_processing', array( $this, 'inject_purchase_event' ), 50 );
-			add_action( 'woocommerce_order_status_completed', array( $this, 'inject_purchase_event' ), 50 );
-			add_action( 'woocommerce_process_shop_order_meta', array( $this, 'inject_purchase_event' ), 60 );
+			add_action( 'woocommerce_order_status_completed', array( $this, 'inject_purchase_event' ), 60 );
+			add_action( 'woocommerce_thankyou', array( $this, 'inject_purchase_event' ), 70 );
 
 			// Lead events through Contact Form 7
 			add_action( 'wpcf7_contact_form', array( $this, 'inject_lead_event_hook' ), 11 );
@@ -157,6 +158,7 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 		public function inject_base_pixel() {
 			if ( $this->is_pixel_enabled() ) {
 				echo $this->pixel->pixel_base_code();
+				$this->inject_page_view_event();
 			}
 		}
 
@@ -172,6 +174,30 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 			if ( $this->is_pixel_enabled() ) {
 				echo $this->pixel->pixel_base_code_noscript();
 			}
+		}
+
+
+		/**
+		 * Triggers the PageView event
+		 */
+		public function inject_page_view_event() {
+			if ( ! $this->is_pixel_enabled() ) {
+				return;
+			}
+
+			$event_name = 'PageView';
+			$event_data = array(
+				'event_name' => $event_name,
+				'user_data'  => $this->pixel->get_user_info(),
+			);
+
+			$event = new Event( $event_data );
+
+			$this->send_api_event( $event, false );
+
+			$event_data['event_id'] = $event->get_id();
+
+			$this->pixel->inject_event( $event_name, $event_data );
 		}
 
 
@@ -237,7 +263,7 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 
 			$event = new Event( $event_data );
 
-			$this->send_api_event( $event, false );
+			$this->send_api_event( $event );
 
 			$event_data['event_id'] = $event->get_id();
 
@@ -478,6 +504,8 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 
 			$event = $this->get_search_event();
 
+			$this->send_api_event( $event );
+
 			$this->pixel->inject_event(
 				$event->get_name(),
 				array(
@@ -545,7 +573,7 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 
 			$event = new Event( $event_data );
 
-			$this->send_api_event( $event, false );
+			$this->send_api_event( $event );
 
 			$event_data['event_id'] = $event->get_id();
 
@@ -609,7 +637,7 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 
 			$event = new WooCommerce\Facebook\Events\Event( $event_data );
 
-			$this->send_api_event( $event, false );
+			$this->send_api_event( $event );
 
 			// send the event ID to prevent duplication
 			$event_data['event_id'] = $event->get_id();
@@ -792,7 +820,7 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 
 			$event = new Event( $event_data );
 
-			$this->send_api_event( $event, false );
+			$this->send_api_event( $event );
 
 			$event_data['event_id'] = $event->get_id();
 
@@ -838,19 +866,32 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 			// use a session flag to ensure this Purchase event is not tracked multiple times
 			$purchase_tracked_flag = '_wc_' . facebook_for_woocommerce()->get_id() . '_purchase_tracked_' . $order_id;
 
-			// Return if this Purchase event has already been tracked
+			// Return if this Purchase event has already been tracked or order state is invalid.
 			if ( 'yes' === get_transient( $purchase_tracked_flag ) || $order->meta_exists( '_meta_purchase_tracked' ) || ! in_array( $order_state, $valid_purchase_order_states, true ) ) {
 				return;
 			}
 
-			// Mark the order as tracked for the session
-			set_transient( $purchase_tracked_flag, 'yes', 15 * MINUTE_IN_SECONDS );
+			// Mark the order as tracked for the session.
+			set_transient( $purchase_tracked_flag, 'yes', 45 * MINUTE_IN_SECONDS );
 
-			// Set a flag to ensure this Purchase event is not going to be sent across different sessions
+			// Set a flag to ensure this Purchase event is not going to be sent across different sessions.
 			$order->add_meta_data( '_meta_purchase_tracked', true, true );
 
-			// Save the metadata
+			// Save the metadata.
 			$order->save();
+
+			// Log which hook triggered this purchase event.
+			$hook_name = current_action();
+
+			Logger::log(
+				'Purchase event fired for order ' . $order_id . ' by hook ' . $hook_name . '.',
+				[],
+				array(
+					'should_send_log_to_meta'        => false,
+					'should_save_log_in_woocommerce' => true,
+					'woocommerce_log_level'          => \WC_Log_Levels::INFO,
+				)
+			);
 
 			$content_type  = 'product';
 			$contents      = array();
@@ -888,6 +929,7 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 					'content_type' => $content_type,
 					'value'        => $order->get_total(),
 					'currency'     => get_woocommerce_currency(),
+					'order_id'     => $order_id,
 				),
 				'user_data'   => $this->get_user_data_from_billing_address( $order ),
 			);
@@ -1109,19 +1151,21 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 			if ( null === $this->aam_settings || ! $this->aam_settings->get_enable_automatic_matching() ) {
 				return array();
 			}
-			$user_data       = array();
-			$user_data['fn'] = $order->get_billing_first_name();
-			$user_data['ln'] = $order->get_billing_last_name();
-			$user_data['em'] = $order->get_billing_email();
+			$user_data = $this->pixel->get_user_info();
+			self::update_array_if_not_null( $order->get_billing_first_name(), $user_data, 'fn' );
+			self::update_array_if_not_null( $order->get_billing_last_name(), $user_data, 'ln' );
+			self::update_array_if_not_null( $order->get_billing_email(), $user_data, 'em' );
+			self::update_array_if_not_null( $order->get_billing_postcode(), $user_data, 'zp' );
+			self::update_array_if_not_null( $order->get_billing_state(), $user_data, 'st' );
+			self::update_array_if_not_null( $order->get_billing_country(), $user_data, 'country' );
+			self::update_array_if_not_null( $order->get_billing_city(), $user_data, 'ct' );
+			self::update_array_if_not_null( $order->get_billing_phone(), $user_data, 'ph' );
 			// get_user_id() returns 0 if the current user is a guest
-			$user_data['external_id'] = $order->get_user_id() === 0 ? null : strval( $order->get_user_id() );
-			$user_data['zp']          = $order->get_billing_postcode();
-			$user_data['st']          = $order->get_billing_state();
-			// We can use country as key because this information is for CAPI events only
-			$user_data['country'] = $order->get_billing_country();
-			$user_data['ct']      = $order->get_billing_city();
-			$user_data['ph']      = $order->get_billing_phone();
-			// The fields contain country, so we do not need to add a condition
+			if ( $order->get_user_id() !== 0 ) {
+				$external_ids   = $user_data['external_id'];
+				$external_ids[] = strval( $order->get_user_id() );
+			}
+
 			foreach ( $user_data as $field => $value ) {
 				if ( null === $value || '' === $value ||
 					! in_array( $field, $this->aam_settings->get_enabled_automatic_matching_fields(), true )
@@ -1129,7 +1173,21 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 					unset( $user_data[ $field ] );
 				}
 			}
+
 			return $user_data;
+		}
+
+		/**
+		 * Checks the value, if it's not null, updates the array at array_key with value
+		 *
+		 * @param mixed  $value
+		 * @param array  $array
+		 * @param string $array_key
+		 */
+		private static function update_array_if_not_null( $value, $array, $array_key ) {
+			if ( ! empty( $value ) ) {
+				$array[ $array_key ] = $value;
+			}
 		}
 
 		/**

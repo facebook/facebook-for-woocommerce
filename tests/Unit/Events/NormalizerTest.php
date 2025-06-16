@@ -10,7 +10,7 @@ use InvalidArgumentException;
 /**
  * Unit tests for Events\Normalizer class.
  *
- * @since x.x.x
+ * @since 3.5.2
  */
 class NormalizerTest extends AbstractWPUnitTestWithOptionIsolationAndSafeFiltering {
 

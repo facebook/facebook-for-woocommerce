@@ -11,7 +11,7 @@
 /**
  * Outputs WhatApp utility messaging recruitment admin banner
  *
- * @since x.x.x
+ * @since 3.5.2
  */
 
 /**
