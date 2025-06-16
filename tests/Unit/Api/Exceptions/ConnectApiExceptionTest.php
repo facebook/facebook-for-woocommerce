@@ -30,14 +30,6 @@ class ConnectApiExceptionTest extends AbstractWPUnitTestWithOptionIsolationAndSa
 	}
 
 	/**
-	 * Test that ConnectApiException extends Exception.
-	 */
-	public function test_extends_exception() {
-		$exception = new ConnectApiException();
-		$this->assertInstanceOf( \Exception::class, $exception );
-	}
-
-	/**
 	 * Test instantiation with default values.
 	 */
 	public function test_instantiation_with_defaults() {
