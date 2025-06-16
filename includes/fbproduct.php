@@ -1909,10 +1909,19 @@ class WC_Facebook_Product {
 			// Process each mapped attribute - respect explicitly set values first
 			foreach ( $mapped_attributes as $fb_field => $value ) {
 				// For extended fields, always prioritize mapped values over existing ones
-				$is_extended_field = in_array( $fb_field, array( 
-					'custom_label_0', 'custom_label_1', 'custom_label_4',
-					'sale_price', 'inventory', 'additional_image_link', 'tax'
-				), true );
+				$is_extended_field = in_array(
+					$fb_field,
+					array(
+						'custom_label_0',
+						'custom_label_1',
+						'custom_label_4',
+						'sale_price',
+						'inventory',
+						'additional_image_link',
+						'tax',
+					),
+					true
+				);
 
 				// Check if there's an explicitly set Facebook meta value for this field
 				$explicit_meta_value = null;
@@ -1982,7 +1991,7 @@ class WC_Facebook_Product {
 				if ( ! empty( $explicit_meta_value ) ) {
 					// If there's an explicit meta value, use it and skip mapped value
 					$product_data[ $fb_field ] = $explicit_meta_value;
-					$should_set_field = false; // We've already set the value
+					$should_set_field          = false; // We've already set the value
 				} elseif ( $is_extended_field ) {
 					// For extended fields, use mapped value if no explicit value and mapped value is not empty
 					$should_set_field = ! empty( $value );

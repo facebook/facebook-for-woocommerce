@@ -45,11 +45,11 @@ class ProductAttributeMapper {
 
 	/** @var array Extended Facebook fields based on Meta commerce platform catalog fields */
 	private static $extended_facebook_fields = array(
-		'sale_price'            => array( 'sale_price', 'discount_price', 'offer_price' ),
-		'inventory'             => array( 'inventory', 'stock', 'quantity' ),
-		'tax'                   => array( 'tax', 'tax_info' ),
-		'custom_label_0'        => array( 'custom_label_0', 'label0' ),
-		'custom_label_1'        => array( 'custom_label_1', 'label1' ),
+		'sale_price'     => array( 'sale_price', 'discount_price', 'offer_price' ),
+		'inventory'      => array( 'inventory', 'stock', 'quantity' ),
+		'tax'            => array( 'tax', 'tax_info' ),
+		'custom_label_0' => array( 'custom_label_0', 'label0' ),
+		'custom_label_1' => array( 'custom_label_1', 'label1' ),
 	);
 
 	/** @var array Maps WooCommerce attribute naming variations to standardized Meta field names */
