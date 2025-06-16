@@ -1901,21 +1901,102 @@ class WC_Facebook_Product {
 			}
 		}
 
-		// PRIORITY 2: For fields that are still empty, check attribute mappings
+		// PRIORITY 2: Check attribute mappings, but respect explicitly set Facebook meta values
+		// Priority order: 1. Explicit Facebook meta values  2. Mapped attribute values  3. Default values
 		if ( class_exists( ProductAttributeMapper::class ) ) {
 			$mapped_attributes = ProductAttributeMapper::get_mapped_attributes( $this->woo_product );
 
-			// Process each mapped attribute, but only fill in empty fields
+			// Process each mapped attribute - respect explicitly set values first
 			foreach ( $mapped_attributes as $fb_field => $value ) {
-				// Only set if the field is empty or not already set
-				if ( ( ! isset( $product_data[ $fb_field ] ) || empty( $product_data[ $fb_field ] ) ) && ! empty( $value ) ) {
+				// For extended fields, always prioritize mapped values over existing ones
+				$is_extended_field = in_array( $fb_field, array( 
+					'custom_label_0', 'custom_label_1', 'custom_label_4',
+					'sale_price', 'inventory', 'additional_image_link', 'tax'
+				), true );
+
+				// Check if there's an explicitly set Facebook meta value for this field
+				$explicit_meta_value = null;
+				if ( $is_extended_field ) {
+					// Check for explicit meta values for extended fields
+					switch ( $fb_field ) {
+						case 'custom_label_0':
+							$explicit_meta_value = get_post_meta( $this->id, '_wc_facebook_custom_label_0', true );
+							break;
+						case 'custom_label_1':
+							$explicit_meta_value = get_post_meta( $this->id, '_wc_facebook_custom_label_1', true );
+							break;
+						case 'custom_label_4':
+							$explicit_meta_value = get_post_meta( $this->id, '_wc_facebook_custom_label_4', true );
+							break;
+						case 'sale_price':
+							$explicit_meta_value = get_post_meta( $this->id, '_wc_facebook_sale_price', true );
+							break;
+						case 'inventory':
+							$explicit_meta_value = get_post_meta( $this->id, '_wc_facebook_inventory', true );
+							break;
+						case 'tax':
+							$explicit_meta_value = get_post_meta( $this->id, '_wc_facebook_tax', true );
+							break;
+						case 'additional_image_link':
+							$explicit_meta_value = get_post_meta( $this->id, '_wc_facebook_additional_image_link', true );
+							break;
+					}
+				} else {
+					// Check for explicit meta values for standard fields
+					switch ( $fb_field ) {
+						case 'brand':
+							$explicit_meta_value = get_post_meta( $this->id, 'fb_brand', true );
+							break;
+						case 'color':
+							$explicit_meta_value = get_post_meta( $this->id, 'fb_color', true );
+							break;
+						case 'material':
+							$explicit_meta_value = get_post_meta( $this->id, 'fb_material', true );
+							break;
+						case 'size':
+							$explicit_meta_value = get_post_meta( $this->id, 'fb_size', true );
+							break;
+						case 'pattern':
+							$explicit_meta_value = get_post_meta( $this->id, 'fb_pattern', true );
+							break;
+						case 'age_group':
+							$explicit_meta_value = get_post_meta( $this->id, 'fb_age_group', true );
+							break;
+						case 'gender':
+							$explicit_meta_value = get_post_meta( $this->id, 'fb_gender', true );
+							break;
+						case 'condition':
+							$explicit_meta_value = get_post_meta( $this->id, 'fb_product_condition', true );
+							break;
+						case 'mpn':
+							$explicit_meta_value = get_post_meta( $this->id, 'fb_mpn', true );
+							break;
+						case 'gtin':
+							$explicit_meta_value = get_post_meta( $this->id, 'fb_gtin', true );
+							break;
+					}
+				}
+
+				// Determine if we should set the field
+				$should_set_field = false;
+				if ( ! empty( $explicit_meta_value ) ) {
+					// If there's an explicit meta value, use it and skip mapped value
+					$product_data[ $fb_field ] = $explicit_meta_value;
+					$should_set_field = false; // We've already set the value
+				} elseif ( $is_extended_field ) {
+					// For extended fields, use mapped value if no explicit value and mapped value is not empty
+					$should_set_field = ! empty( $value );
+				} else {
+					// For standard fields, only set if field is empty and mapped value is not empty
+					$should_set_field = ( ! isset( $product_data[ $fb_field ] ) || empty( $product_data[ $fb_field ] ) ) && ! empty( $value );
+				}
+
+				if ( $should_set_field ) {
 
 					// Process the extended fields that might be mapped
 					switch ( $fb_field ) {
 						case 'custom_label_0':
 						case 'custom_label_1':
-						case 'custom_label_2':
-						case 'custom_label_3':
 						case 'custom_label_4':
 							$product_data[ $fb_field ] = Helper::str_truncate( WC_Facebookcommerce_Utils::clean_string( $value ), 100 );
 							break;
@@ -1924,24 +2005,23 @@ class WC_Facebook_Product {
 							$product_data[ $fb_field ] = is_numeric( $value ) ? (int) $value : 0;
 							break;
 
-						case 'shipping_weight':
-							// For shipping weight, ensure we have a proper weight value
-							if ( is_numeric( $value ) ) {
-								$product_data[ $fb_field ] = $value . ' ' . get_option( 'woocommerce_weight_unit', 'kg' );
-							} else {
-								$product_data[ $fb_field ] = WC_Facebookcommerce_Utils::clean_string( $value );
-							}
-							break;
-
-						case 'shipping':
 						case 'tax':
 							$product_data[ $fb_field ] = WC_Facebookcommerce_Utils::clean_string( $value );
 							break;
 
 						case 'sale_price':
-							// Handle sale price mapping if it's numeric
+							// Handle sale price mapping if it's numeric - OVERRIDE existing value
 							if ( is_numeric( $value ) ) {
 								$product_data[ $fb_field ] = $is_api_call ? self::format_price_for_fb_items_batch( $value * 100 ) : (int) ( $value * 100 );
+							}
+							break;
+
+						case 'additional_image_link':
+							// Handle additional image link - could be array or string
+							if ( is_array( $value ) ) {
+								$product_data[ $fb_field ] = $value;
+							} else {
+								$product_data[ $fb_field ] = array( WC_Facebookcommerce_Utils::clean_string( $value ) );
 							}
 							break;
 

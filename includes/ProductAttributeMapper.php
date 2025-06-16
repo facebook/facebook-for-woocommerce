@@ -729,9 +729,10 @@ class ProductAttributeMapper {
 
 		$product_id = $product->get_id();
 
-		// Save each mapped attribute to product meta using the correct constants
+		// Save each mapped attribute to product meta using the correct meta keys
 		foreach ( $mapped_attributes as $field_name => $value ) {
 			switch ( $field_name ) {
+				// Standard Facebook fields - these use fb_ prefix
 				case 'brand':
 					$meta_key = 'fb_brand';
 					break;
@@ -759,8 +760,53 @@ class ProductAttributeMapper {
 				case 'mpn':
 					$meta_key = 'fb_mpn';
 					break;
+				case 'gtin':
+					$meta_key = 'fb_gtin';
+					break;
+
+				// Extended Facebook fields - these use different patterns
+				case 'custom_label_0':
+					$meta_key = '_wc_facebook_custom_label_0';
+					break;
+				case 'custom_label_1':
+					$meta_key = '_wc_facebook_custom_label_1';
+					break;
+				case 'custom_label_2':
+					$meta_key = '_wc_facebook_custom_label_2';
+					break;
+				case 'custom_label_3':
+					$meta_key = '_wc_facebook_custom_label_3';
+					break;
+				case 'custom_label_4':
+					$meta_key = '_wc_facebook_custom_label_4';
+					break;
+				case 'sale_price':
+					$meta_key = '_wc_facebook_sale_price';
+					break;
+				case 'inventory':
+					$meta_key = '_wc_facebook_inventory';
+					break;
+				case 'shipping_weight':
+					$meta_key = '_wc_facebook_shipping_weight';
+					break;
+				case 'shipping':
+					$meta_key = '_wc_facebook_shipping';
+					break;
+				case 'tax':
+					$meta_key = '_wc_facebook_tax';
+					break;
+				case 'image_link':
+					$meta_key = '_wc_facebook_image_link';
+					break;
+				case 'additional_image_link':
+					$meta_key = '_wc_facebook_additional_image_link';
+					break;
+
+				// For any other extended fields or unknown fields
 				default:
-					continue 2; // Skip this iteration
+					// Use enhanced catalog attributes pattern for other fields
+					$meta_key = '_wc_facebook_enhanced_catalog_attributes_' . $field_name;
+					break;
 			}
 
 			// Update the meta value
