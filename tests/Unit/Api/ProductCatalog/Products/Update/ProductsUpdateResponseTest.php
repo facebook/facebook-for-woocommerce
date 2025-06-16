@@ -30,9 +30,9 @@ class ProductsUpdateResponseTest extends AbstractWPUnitTestWithOptionIsolationAn
 	}
 
 	/**
-	 * Test instantiation with success response.
+	 * Test instantiation and to_string method.
 	 */
-	public function test_instantiation_with_success_response() {
+	public function test_instantiation_and_to_string() {
 		$data = json_encode( [ 'success' => true ] );
 		$response = new Response( $data );
 		
@@ -41,22 +41,17 @@ class ProductsUpdateResponseTest extends AbstractWPUnitTestWithOptionIsolationAn
 	}
 
 	/**
-	 * Test accessing success property when true.
+	 * Test accessing success property with boolean values.
 	 */
-	public function test_success_property_true() {
+	public function test_success_property_boolean_values() {
+		// Test true
 		$data = json_encode( [ 'success' => true ] );
 		$response = new Response( $data );
-		
 		$this->assertTrue( $response->success );
-	}
-
-	/**
-	 * Test accessing success property when false.
-	 */
-	public function test_success_property_false() {
+		
+		// Test false
 		$data = json_encode( [ 'success' => false ] );
 		$response = new Response( $data );
-		
 		$this->assertFalse( $response->success );
 	}
 
@@ -123,37 +118,25 @@ class ProductsUpdateResponseTest extends AbstractWPUnitTestWithOptionIsolationAn
 	}
 
 	/**
-	 * Test with null success value.
+	 * Test with various success value types.
 	 */
-	public function test_null_success_value() {
+	public function test_various_success_value_types() {
+		// Test null
 		$data = json_encode( [ 'success' => null ] );
 		$response = new Response( $data );
-		
 		$this->assertNull( $response->success );
-	}
-
-	/**
-	 * Test with string success value.
-	 */
-	public function test_string_success_value() {
-		// Testing non-boolean values that might be returned
+		
+		// Test string
 		$data = json_encode( [ 'success' => 'true' ] );
 		$response = new Response( $data );
-		
-		// Should be preserved as string
 		$this->assertEquals( 'true', $response->success );
-	}
-
-	/**
-	 * Test with numeric success value.
-	 */
-	public function test_numeric_success_value() {
-		// Test with 1 (truthy)
+		
+		// Test numeric 1
 		$data = json_encode( [ 'success' => 1 ] );
 		$response = new Response( $data );
 		$this->assertEquals( 1, $response->success );
 		
-		// Test with 0 (falsy)
+		// Test numeric 0
 		$data = json_encode( [ 'success' => 0 ] );
 		$response = new Response( $data );
 		$this->assertEquals( 0, $response->success );
