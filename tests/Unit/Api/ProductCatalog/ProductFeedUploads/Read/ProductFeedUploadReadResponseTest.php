@@ -30,9 +30,9 @@ class ProductFeedUploadReadResponseTest extends AbstractWPUnitTestWithOptionIsol
 	}
 
 	/**
-	 * Test instantiation with feed upload data.
+	 * Test instantiation and to_string method.
 	 */
-	public function test_instantiation_with_feed_upload_data() {
+	public function test_instantiation_and_to_string() {
 		$data = json_encode( [ 
 			'id' => 'upload_123',
 			'data' => [
@@ -47,28 +47,36 @@ class ProductFeedUploadReadResponseTest extends AbstractWPUnitTestWithOptionIsol
 	}
 
 	/**
-	 * Test accessing data property.
+	 * Test accessing data property with complete feed upload structure.
 	 */
-	public function test_data_property_access() {
+	public function test_data_property_access_complete_structure() {
 		$upload_data = [
-			'error_count' => 5,
-			'warning_count' => 10,
-			'num_detected_items' => 100,
-			'num_persisted_items' => 85,
-			'url' => 'https://example.com/feed.xml',
-			'end_time' => '2023-10-01T12:00:00+0000'
+			'error_count' => 3,
+			'warning_count' => 7,
+			'num_detected_items' => 500,
+			'num_persisted_items' => 490,
+			'url' => 'https://shop.example.com/products/feed.xml',
+			'end_time' => '2023-12-25T15:30:45+0000',
+			'start_time' => '2023-12-25T15:25:30+0000',
+			'status' => 'completed'
 		];
-		$data = json_encode( [ 'data' => $upload_data ] );
+		$data = json_encode( [ 
+			'id' => 'feed_upload_789',
+			'data' => $upload_data 
+		] );
 		$response = new Response( $data );
 		
 		$this->assertIsArray( $response->data );
 		$this->assertEquals( $upload_data, $response->data );
-		$this->assertEquals( 5, $response->data['error_count'] );
-		$this->assertEquals( 10, $response->data['warning_count'] );
-		$this->assertEquals( 100, $response->data['num_detected_items'] );
-		$this->assertEquals( 85, $response->data['num_persisted_items'] );
-		$this->assertEquals( 'https://example.com/feed.xml', $response->data['url'] );
-		$this->assertEquals( '2023-10-01T12:00:00+0000', $response->data['end_time'] );
+		$this->assertEquals( 'feed_upload_789', $response->id );
+		$this->assertEquals( 3, $response->data['error_count'] );
+		$this->assertEquals( 7, $response->data['warning_count'] );
+		$this->assertEquals( 500, $response->data['num_detected_items'] );
+		$this->assertEquals( 490, $response->data['num_persisted_items'] );
+		$this->assertEquals( 'https://shop.example.com/products/feed.xml', $response->data['url'] );
+		$this->assertEquals( '2023-12-25T15:30:45+0000', $response->data['end_time'] );
+		$this->assertEquals( '2023-12-25T15:25:30+0000', $response->data['start_time'] );
+		$this->assertEquals( 'completed', $response->data['status'] );
 	}
 
 	/**
@@ -102,39 +110,10 @@ class ProductFeedUploadReadResponseTest extends AbstractWPUnitTestWithOptionIsol
 	}
 
 	/**
-	 * Test with complete feed upload data structure.
+	 * Test with edge case numeric values (zero and large numbers).
 	 */
-	public function test_complete_feed_upload_data() {
-		$data = json_encode( [
-			'id' => 'feed_upload_789',
-			'data' => [
-				'error_count' => 3,
-				'warning_count' => 7,
-				'num_detected_items' => 500,
-				'num_persisted_items' => 490,
-				'url' => 'https://shop.example.com/products/feed.xml',
-				'end_time' => '2023-12-25T15:30:45+0000',
-				'start_time' => '2023-12-25T15:25:30+0000',
-				'status' => 'completed'
-			]
-		] );
-		$response = new Response( $data );
-		
-		$this->assertEquals( 'feed_upload_789', $response->id );
-		$this->assertEquals( 3, $response->data['error_count'] );
-		$this->assertEquals( 7, $response->data['warning_count'] );
-		$this->assertEquals( 500, $response->data['num_detected_items'] );
-		$this->assertEquals( 490, $response->data['num_persisted_items'] );
-		$this->assertEquals( 'https://shop.example.com/products/feed.xml', $response->data['url'] );
-		$this->assertEquals( '2023-12-25T15:30:45+0000', $response->data['end_time'] );
-		$this->assertEquals( '2023-12-25T15:25:30+0000', $response->data['start_time'] );
-		$this->assertEquals( 'completed', $response->data['status'] );
-	}
-
-	/**
-	 * Test with zero counts.
-	 */
-	public function test_zero_counts() {
+	public function test_edge_case_numeric_values() {
+		// Test zero values
 		$data = json_encode( [
 			'data' => [
 				'error_count' => 0,
@@ -149,12 +128,8 @@ class ProductFeedUploadReadResponseTest extends AbstractWPUnitTestWithOptionIsol
 		$this->assertEquals( 0, $response->data['warning_count'] );
 		$this->assertEquals( 0, $response->data['num_detected_items'] );
 		$this->assertEquals( 0, $response->data['num_persisted_items'] );
-	}
-
-	/**
-	 * Test with large numbers.
-	 */
-	public function test_large_numbers() {
+		
+		// Test large numbers
 		$data = json_encode( [
 			'data' => [
 				'error_count' => 999999,
