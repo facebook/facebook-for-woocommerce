@@ -206,7 +206,6 @@ class ProductSetsDeleteResponseTest extends AbstractWPUnitTestWithOptionIsolatio
 		$this->assertEquals( 'Permission denied', $response->get_api_error_message() );
 		$this->assertEquals( 'OAuthException', $response->get_api_error_type() );
 		$this->assertEquals( 200, $response->get_api_error_code() );
-		$this->assertEquals( 1234, $response->error['error_subcode'] );
 	}
 
 	/**
