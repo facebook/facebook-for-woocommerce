@@ -75,8 +75,9 @@ class EventTest extends AbstractWPUnitTestWithOptionIsolationAndSafeFiltering {
 	public function test_constructor_with_custom_data() {
 		$custom_data = array(
 			'event_name'    => 'Purchase',
+			'event_time'    => 1234567890,
+			'event_id'      => 'custom-event-123',
 			'custom_data'   => array( 'value' => '100.00', 'currency' => 'USD' ),
-			'user_data'     => array( 'em' => 'test@example.com' ),
 			'action_source' => 'app',
 		);
 		
@@ -85,19 +86,28 @@ class EventTest extends AbstractWPUnitTestWithOptionIsolationAndSafeFiltering {
 		
 		$this->assertEquals( 'Purchase', $data['event_name'] );
 		$this->assertEquals( 'app', $data['action_source'] );
+		$this->assertEquals( 1234567890, $data['event_time'] );
+		$this->assertEquals( 'custom-event-123', $data['event_id'] );
 		$this->assertEquals( '100.00', $data['custom_data']['value'] );
 		$this->assertEquals( 'USD', $data['custom_data']['currency'] );
 	}
 
 	/**
-	 * Test event ID generation.
+	 * Test event ID generation and get_id method.
 	 */
-	public function test_event_id_generation() {
+	public function test_event_id_generation_and_getter() {
 		$event1 = new Event();
 		$event2 = new Event();
 		
 		$id1 = $event1->get_id();
 		$id2 = $event2->get_id();
+		
+		// Test that get_id returns a non-empty string
+		$this->assertIsString( $id1 );
+		$this->assertNotEmpty( $id1 );
+		
+		// Test that ID matches the one in data array
+		$this->assertEquals( $event1->get_data()['event_id'], $id1 );
 		
 		// Test IDs are unique
 		$this->assertNotEquals( $id1, $id2 );
@@ -106,18 +116,6 @@ class EventTest extends AbstractWPUnitTestWithOptionIsolationAndSafeFiltering {
 		$uuid_pattern = '/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i';
 		$this->assertMatchesRegularExpression( $uuid_pattern, $id1 );
 		$this->assertMatchesRegularExpression( $uuid_pattern, $id2 );
-	}
-
-	/**
-	 * Test get_id method.
-	 */
-	public function test_get_id() {
-		$event = new Event();
-		$id = $event->get_id();
-		
-		$this->assertIsString( $id );
-		$this->assertNotEmpty( $id );
-		$this->assertEquals( $event->get_data()['event_id'], $id );
 	}
 
 	/**
