@@ -2179,7 +2179,6 @@ class WCFacebookCommerceIntegrationTest extends \WooCommerce\Facebook\Tests\Abst
 		// 				->willReturn(true);
 		// $this->integration = $integration_mock;
 		$tags = $this->integration->get_excluded_product_tag_ids();
-		var_dump($tags);
 
 		$this->assertEquals( [], $tags );
 	}
