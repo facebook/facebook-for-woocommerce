@@ -5,9 +5,6 @@ const baseURL = process.env.WORDPRESS_URL || 'http://localhost:8080';
 const username = process.env.WP_USERNAME || 'admin';
 const password = process.env.WP_PASSWORD || 'admin';
 
-// Configure test timeouts for slower local environments - increased to 3 minutes
-test.setTimeout(180000); // 3 minutes per test to accommodate slow WordPress operations
-
 // Helper function for reliable login
 async function loginToWordPress(page) {
   // Navigate to login page
@@ -30,6 +27,21 @@ async function loginToWordPress(page) {
   // Wait for login to complete
   await page.waitForLoadState('networkidle', { timeout: 120000 });
   console.log('✅ Login completed');
+}
+
+// Helper function to safely take screenshots
+async function safeScreenshot(page, path) {
+  try {
+    // Check if page is still available
+    if (page && !page.isClosed()) {
+      await page.screenshot({ path, fullPage: true });
+      console.log(`✅ Screenshot saved: ${path}`);
+    } else {
+      console.log('⚠️ Cannot take screenshot - page is closed');
+    }
+  } catch (error) {
+    console.log(`⚠️ Screenshot failed: ${error.message}`);
+  }
 }
 
 test.describe('Facebook for WooCommerce - Product Creation E2E Tests', () => {
@@ -163,7 +175,7 @@ test.describe('Facebook for WooCommerce - Product Creation E2E Tests', () => {
     } catch (error) {
       console.log(`⚠️ Simple product test failed: ${error.message}`);
       // Take screenshot for debugging
-      await page.screenshot({ path: 'simple-product-test-failure.png', fullPage: true });
+      await safeScreenshot(page, 'simple-product-test-failure.png');
       throw error;
     }
   });
@@ -433,7 +445,7 @@ test.describe('Facebook for WooCommerce - Product Creation E2E Tests', () => {
     } catch (error) {
       console.log(`⚠️ Variable product test failed: ${error.message}`);
       // Take screenshot for debugging
-      await page.screenshot({ path: 'variable-product-test-failure.png', fullPage: true });
+      await safeScreenshot(page, 'variable-product-test-failure.png');
       throw error;
     }
   });

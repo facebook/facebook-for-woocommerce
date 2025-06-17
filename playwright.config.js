@@ -7,8 +7,8 @@ export default defineConfig({
   retries: process.env.CI ? 2 : 0,
   workers: process.env.CI ? 1 : undefined,
   reporter: 'html',
-  // Global test timeout - 2 minutes per test
-  timeout: 120000,
+  // Global test timeout - increased to 5 minutes for complex WordPress operations
+  timeout: 300000,
   use: {
     baseURL: process.env.WORDPRESS_URL || 'http://localhost:8080',
     trace: 'on-first-retry',
@@ -16,9 +16,9 @@ export default defineConfig({
     video: 'retain-on-failure',
     // Ignore SSL errors for local development
     ignoreHTTPSErrors: true,
-    // Global timeouts for all actions - 2 minutes
-    actionTimeout: 120000,
-    navigationTimeout: 120000,
+    // Global timeouts for all actions - increased to 3 minutes
+    actionTimeout: 180000,
+    navigationTimeout: 180000,
   },
   
   projects: [
@@ -27,8 +27,8 @@ export default defineConfig({
       use: { 
         ...devices['Desktop Chrome'],
         // Increased timeouts for WordPress admin operations
-        actionTimeout: 120000,
-        navigationTimeout: 120000,
+        actionTimeout: 180000,
+        navigationTimeout: 180000,
       },
     },
   ],
