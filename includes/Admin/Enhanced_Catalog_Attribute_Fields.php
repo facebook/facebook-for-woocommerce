@@ -152,7 +152,7 @@ class Enhanced_Catalog_Attribute_Fields {
 		}
 		$selector_value      = $this->get_value( self::OPTIONAL_SELECTOR_KEY, $category_id );
 		$is_showing_optional = 'on' === $selector_value;
-// 
+
 		// Only show the selector if we have natural recommendations
 		if ( $should_render_checkbox ) {
 			$this->render_selector_checkbox( $is_showing_optional );
