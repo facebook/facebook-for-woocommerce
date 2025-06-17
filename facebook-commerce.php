@@ -323,8 +323,6 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 					[ $this, 'on_quick_and_bulk_edit_save' ]
 				);
 
-				add_action( 'add_meta_boxes_product', [ $this, 'display_batch_api_completed' ], 10, 2 );
-
 				add_action(
 					'wp_ajax_ajax_fb_toggle_visibility',
 					array( $this, 'ajax_fb_toggle_visibility' )
