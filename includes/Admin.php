@@ -2025,7 +2025,7 @@ class Admin {
 				$('.woocommerce_options_panel input[type="text"]').on('input', function() {
 					var fieldId = $(this).attr('id');
 					for (var key in syncedBadgeState) {
-						if (fieldId.includes(key)) {
+						if (fieldId && fieldId.includes(key)) {
 							manualValues[key] = $(this).val();
 							// When manually entering a value, mark as not synced
 							syncedFields[key] = false;
@@ -2037,7 +2037,7 @@ class Admin {
 				$('.woocommerce_options_panel select').on('change', function() {
 					var fieldId = $(this).attr('id');
 					for (var key in syncedBadgeState) {
-						if (fieldId.includes(key)) {
+						if (fieldId && fieldId.includes(key)) {
 							manualValues[key] = $(this).val();
 							// When manually selecting a value, mark as not synced
 							syncedFields[key] = false;
@@ -2184,9 +2184,9 @@ class Admin {
 					
 					// If we're clicking on a tab that isn't the Facebook tab,
 					// clean up all UI elements first
-					if (!tabClass.includes('fb_commerce_tab')) {
+					if (!tabClass || !tabClass.includes('fb_commerce_tab')) {
 						cleanupAllUIElements();
-					} else if (tabClass.includes('fb_commerce_tab')) {
+					} else if (tabClass && tabClass.includes('fb_commerce_tab')) {
 						// If we're clicking on the Facebook tab
 						// First clean up any previous UI elements
 						cleanupAllUIElements();
