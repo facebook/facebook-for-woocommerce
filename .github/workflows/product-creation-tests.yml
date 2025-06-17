@@ -24,26 +24,17 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Setup Node.js with caching
+      - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '16'
           cache: 'npm'
 
-      - name: Setup PHP with caching
+      - name: Setup PHP
         uses: shivammathur/setup-php@v2
         with:
           php-version: '8.1'
           extensions: mysqli, zip, gd, curl, dom, imagick, fileinfo, mbstring
-          tools: wp-cli
-
-      - name: Cache WordPress
-        uses: actions/cache@v4
-        with:
-          path: /tmp/wordpress
-          key: wordpress-${{ runner.os }}-${{ hashFiles('**/composer.lock') }}
-          restore-keys: |
-            wordpress-${{ runner.os }}-
 
       - name: Create WordPress test environment
         run: |
@@ -51,32 +42,24 @@ jobs:
           mkdir -p /tmp/wordpress
           cd /tmp/wordpress
           
-          # Check if WordPress is already cached
-          if [ ! -f wp-config.php ]; then
-            echo "Setting up fresh WordPress installation..."
-            
-            # Download WordPress
-            curl -O https://wordpress.org/latest.tar.gz
-            tar -xzf latest.tar.gz --strip-components=1
-            
-            # Create wp-config.php
-            cp wp-config-sample.php wp-config.php
-            sed -i "s/database_name_here/wordpress/" wp-config.php
-            sed -i "s/username_here/wordpress/" wp-config.php
-            sed -i "s/password_here/wordpress/" wp-config.php
-            sed -i "s/localhost/127.0.0.1/" wp-config.php
-            
-            # Add debug and security settings
-            cat >> wp-config.php << 'EOF'
+          # Download WordPress
+          curl -O https://wordpress.org/latest.tar.gz
+          tar -xzf latest.tar.gz --strip-components=1
+          
+          # Create wp-config.php
+          cp wp-config-sample.php wp-config.php
+          sed -i "s/database_name_here/wordpress/" wp-config.php
+          sed -i "s/username_here/wordpress/" wp-config.php
+          sed -i "s/password_here/wordpress/" wp-config.php
+          sed -i "s/localhost/127.0.0.1/" wp-config.php
+          
+          # Add debug and security settings
+          cat >> wp-config.php << 'EOF'
           
           // Debug settings
           define('WP_DEBUG', true);
           define('WP_DEBUG_LOG', true);
           define('WP_DEBUG_DISPLAY', false);
-          
-          // Performance settings
-          define('WP_MEMORY_LIMIT', '512M');
-          define('WP_MAX_MEMORY_LIMIT', '512M');
           
           // Security keys (for testing only)
           define('AUTH_KEY',         'testing-key-1');
@@ -89,9 +72,6 @@ jobs:
           define('NONCE_SALT',       'testing-salt-4');
           
           EOF
-          else
-            echo "Using cached WordPress installation"
-          fi
 
 
       - name: Start PHP server
@@ -99,7 +79,23 @@ jobs:
           cd /tmp/wordpress
           php -S localhost:8080 -t . &
           echo $! > /tmp/php-server.pid
-          sleep 3
+          sleep 5
+
+      - name: Install WP-CLI
+        run: |
+          echo "=== Installing WP-CLI ==="
+          curl -L -o wp-cli.phar https://github.com/wp-cli/wp-cli/releases/download/v2.10.0/wp-cli-2.10.0.phar
+          
+          if head -1 wp-cli.phar | grep -q "#!/usr/bin/env php"; then
+            chmod +x wp-cli.phar
+            sudo mv wp-cli.phar /usr/local/bin/wp
+            echo "✅ WP-CLI installed successfully"
+          else
+            echo "❌ Downloaded file is not valid PHP"
+            exit 1
+          fi
+          
+          wp --version
 
       - name: Install WordPress
         run: |
@@ -110,24 +106,19 @@ jobs:
             --admin_user=admin \
             --admin_password=admin \
             --admin_email=test@example.com \
-            --allow-root \
-            --skip-email
+            --allow-root
 
       - name: Install WooCommerce
         run: |
           cd /tmp/wordpress
           wp plugin install woocommerce --activate --allow-root
           
-          # Basic WooCommerce setup with reduced complexity
+          # Basic WooCommerce setup
           wp option update woocommerce_store_address "123 Test Street" --allow-root
           wp option update woocommerce_store_city "Test City" --allow-root
           wp option update woocommerce_default_country "US:CA" --allow-root
           wp option update woocommerce_store_postcode "12345" --allow-root
           wp option update woocommerce_currency "USD" --allow-root
-          
-          # Skip WooCommerce setup wizard
-          wp option update woocommerce_onboarding_opt_in "no" --allow-root
-          wp option update woocommerce_marketing_overview_welcome_hidden "yes" --allow-root
 
       - name: Install Facebook for WooCommerce plugin
         run: |
@@ -138,7 +129,7 @@ jobs:
           # Install Composer dependencies for the plugin
           cd wp-content/plugins/facebook-for-woocommerce
           if [ -f composer.json ]; then
-            composer install --no-dev --optimize-autoloader --quiet
+            composer install --no-dev --optimize-autoloader
           fi
           
           # Activate the plugin
@@ -158,10 +149,10 @@ jobs:
           # Test if site is accessible
           curl -f http://localhost:8080 || exit 1
 
-      - name: Install dependencies and Playwright
+      - name: Install Playwright
         run: |
           npm install
-          npx playwright install chromium --with-deps
+          npx playwright install chromium
 
       - name: Run E2E tests
         env:
@@ -177,7 +168,7 @@ jobs:
           if [ -f wp-content/debug.log ]; then
             echo "=== PHP Debug Log ==="
             cat wp-content/debug.log
-            if grep -i "fatal\|error" wp-content/debug.log; then
+            if grep -i "fatal\|error\|warning" wp-content/debug.log; then
               echo "❌ PHP errors detected"
               exit 1
             fi
@@ -200,7 +191,6 @@ jobs:
           name: php-debug-logs
           path: /tmp/wordpress/wp-content/debug.log
           retention-days: 7
-          if-no-files-found: ignore
 
       - name: Upload test videos/screenshots
         uses: actions/upload-artifact@v4
@@ -209,4 +199,3 @@ jobs:
           name: test-failures
           path: test-results/
           retention-days: 7
-          if-no-files-found: ignore
