@@ -203,7 +203,7 @@ class Product_CategoriesTest extends AbstractWPUnitTestWithOptionIsolationAndSaf
 	 */
 	public function test_meta_key_constant() {
 		// Verify we're using the correct meta key from Products class
-		$this->assertEquals( '_wc_facebook_google_product_category_id', Products::GOOGLE_PRODUCT_CATEGORY_META_KEY );
+		$this->assertEquals( '_wc_facebook_google_product_category', Products::GOOGLE_PRODUCT_CATEGORY_META_KEY );
 	}
 
 	/**
