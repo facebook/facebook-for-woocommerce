@@ -139,9 +139,8 @@ class ProductGroupsReadResponseTest extends AbstractWPUnitTestWithOptionIsolatio
 		// Despite the warnings, PHP will use null for missing array keys
 		$expected = array(
 			'SKU001' => '123456789',
-			'' => '987654321',  // Missing retailer_id becomes empty string key
+			'' => null,  // Last item with missing retailer_id (empty string key) overwrites previous ones
 			'SKU003' => null,   // Missing id becomes null value
-			// Last item overwrites the second item since both have empty string key
 		);
 		$this->assertEquals( $expected, $result );
 	}
