@@ -1905,16 +1905,23 @@ class Admin {
 											} else if (key === 'age_group' || key === 'gender' || key === 'condition') {
 												// First check if this dropdown has a corresponding value
 												var hasMatchingOption = false;
+												var matchingOptionValue = '';
 												$field.find('option').each(function() {
-													if ($(this).val() === syncedValue || 
-														$(this).text().toLowerCase() === syncedValue.toLowerCase()) {
+													var optionValue = $(this).val();
+													var optionText = $(this).text();
+													
+													// Check both option value and option text (case-insensitive)
+													if (optionValue === syncedValue || 
+														optionText.toLowerCase() === syncedValue.toLowerCase() ||
+														optionValue.toLowerCase() === syncedValue.toLowerCase()) {
 														hasMatchingOption = true;
+														matchingOptionValue = optionValue; // Use the actual option value, not the synced value
 														return false; // break loop
 													}
 												});
 												
 												if (hasMatchingOption) {
-													$field.val(syncedValue)
+													$field.val(matchingOptionValue) // Use the correct option value
 														.prop('disabled', true)
 														.addClass('synced-attribute')
 														.css({
