@@ -152,9 +152,9 @@ class CheckoutTest extends AbstractWPUnitTestWithOptionIsolationAndSafeFiltering
 	}
 
 	/**
-	 * Test load_checkout_permalink_template with products parameter.
+	 * Test load_checkout_permalink_template with valid products parameter.
 	 */
-	public function test_load_checkout_permalink_template_with_products() {
+	public function test_load_checkout_permalink_template_with_valid_products() {
 		// Create a test product
 		$product = WC_Helper_Product::create_simple_product();
 		$product_id = $product->get_id();
@@ -195,6 +195,103 @@ class CheckoutTest extends AbstractWPUnitTestWithOptionIsolationAndSafeFiltering
 		
 		// Clean up
 		$product->delete( true );
+	}
+
+	/**
+	 * Test load_checkout_permalink_template with multiple products.
+	 */
+	public function test_load_checkout_permalink_template_with_multiple_products() {
+		// Create test products
+		$product1 = WC_Helper_Product::create_simple_product();
+		$product2 = WC_Helper_Product::create_simple_product();
+		$product_id1 = $product1->get_id();
+		$product_id2 = $product2->get_id();
+		
+		// Mock cart
+		$mock_cart = $this->getMockBuilder( \WC_Cart::class )
+			->disableOriginalConstructor()
+			->getMock();
+		
+		$mock_cart->expects( $this->once() )
+			->method( 'empty_cart' );
+		
+		// Expect two add_to_cart calls
+		$mock_cart->expects( $this->exactly( 2 ) )
+			->method( 'add_to_cart' )
+			->withConsecutive(
+				[ $product_id1, 1 ],
+				[ $product_id2, 3 ]
+			)
+			->willReturn( true );
+		
+		// Mock WC
+		$mock_wc = $this->getMockBuilder( \WooCommerce::class )
+			->disableOriginalConstructor()
+			->getMock();
+		$mock_wc->cart = $mock_cart;
+		
+		$this->set_wc_instance( $mock_wc );
+		
+		// Set query vars with multiple products
+		$this->set_query_var( 'fb_checkout', '1' );
+		$this->set_query_var( 'products', $product_id1 . ':1,' . $product_id2 . ':3' );
+		
+		// Execute
+		ob_start();
+		try {
+			$this->checkout->load_checkout_permalink_template( '/template.php' );
+		} catch ( \Exception $e ) {
+			// Expected
+		}
+		ob_end_clean();
+		
+		// Clean up
+		$product1->delete( true );
+		$product2->delete( true );
+	}
+
+	/**
+	 * Test load_checkout_permalink_template with invalid product ID.
+	 */
+	public function test_load_checkout_permalink_template_with_invalid_product() {
+		// Mock cart
+		$mock_cart = $this->getMockBuilder( \WC_Cart::class )
+			->disableOriginalConstructor()
+			->getMock();
+		
+		$mock_cart->expects( $this->once() )
+			->method( 'empty_cart' );
+		
+		// Should not call add_to_cart for invalid product
+		$mock_cart->expects( $this->never() )
+			->method( 'add_to_cart' );
+		
+		// Mock WC
+		$mock_wc = $this->getMockBuilder( \WooCommerce::class )
+			->disableOriginalConstructor()
+			->getMock();
+		$mock_wc->cart = $mock_cart;
+		
+		$this->set_wc_instance( $mock_wc );
+		
+		// Mock wc_get_product to return false
+		add_filter( 'woocommerce_product_get_id', '__return_false' );
+		
+		// Set query vars with invalid product
+		$this->set_query_var( 'fb_checkout', '1' );
+		$this->set_query_var( 'products', '999999:1' );
+		
+		// Execute
+		ob_start();
+		try {
+			$this->checkout->load_checkout_permalink_template( '/template.php' );
+		} catch ( \Exception $e ) {
+			// Expected
+		}
+		ob_end_clean();
+		
+		// Clean up
+		remove_filter( 'woocommerce_product_get_id', '__return_false' );
 	}
 
 	/**
@@ -247,9 +344,9 @@ class CheckoutTest extends AbstractWPUnitTestWithOptionIsolationAndSafeFiltering
 	}
 
 	/**
-	 * Test load_checkout_permalink_template with coupon.
+	 * Test load_checkout_permalink_template with valid coupon.
 	 */
-	public function test_load_checkout_permalink_template_with_coupon() {
+	public function test_load_checkout_permalink_template_with_valid_coupon() {
 		// Create a test coupon
 		$coupon_code = 'test_coupon_' . time();
 		$coupon = new \WC_Coupon();
@@ -297,6 +394,146 @@ class CheckoutTest extends AbstractWPUnitTestWithOptionIsolationAndSafeFiltering
 		
 		// Clean up
 		$coupon->delete( true );
+	}
+
+	/**
+	 * Test load_checkout_permalink_template with invalid coupon.
+	 */
+	public function test_load_checkout_permalink_template_with_invalid_coupon() {
+		$invalid_coupon = 'INVALID_COUPON_CODE';
+		
+		// Mock cart
+		$mock_cart = $this->getMockBuilder( \WC_Cart::class )
+			->disableOriginalConstructor()
+			->getMock();
+		
+		$mock_cart->expects( $this->once() )
+			->method( 'empty_cart' );
+		
+		$mock_cart->expects( $this->once() )
+			->method( 'apply_coupon' )
+			->with( $invalid_coupon );
+		
+		// Return empty array to simulate failed coupon application
+		$mock_cart->expects( $this->once() )
+			->method( 'get_applied_coupons' )
+			->willReturn( array() );
+		
+		// Mock WC
+		$mock_wc = $this->getMockBuilder( \WooCommerce::class )
+			->disableOriginalConstructor()
+			->getMock();
+		$mock_wc->cart = $mock_cart;
+		
+		$this->set_wc_instance( $mock_wc );
+		
+		// Set query vars
+		$this->set_query_var( 'fb_checkout', '1' );
+		$this->set_query_var( 'coupon', $invalid_coupon );
+		
+		// Execute
+		ob_start();
+		try {
+			$this->checkout->load_checkout_permalink_template( '/template.php' );
+		} catch ( \Exception $e ) {
+			// Expected
+		}
+		ob_end_clean();
+	}
+
+	/**
+	 * Test load_checkout_permalink_template with invalid quantity.
+	 */
+	public function test_load_checkout_permalink_template_with_invalid_quantity() {
+		// Create a test product
+		$product = WC_Helper_Product::create_simple_product();
+		$product_id = $product->get_id();
+		
+		// Mock cart
+		$mock_cart = $this->getMockBuilder( \WC_Cart::class )
+			->disableOriginalConstructor()
+			->getMock();
+		
+		$mock_cart->expects( $this->once() )
+			->method( 'empty_cart' );
+		
+		// Should not call add_to_cart for invalid quantity
+		$mock_cart->expects( $this->never() )
+			->method( 'add_to_cart' );
+		
+		// Mock WC
+		$mock_wc = $this->getMockBuilder( \WooCommerce::class )
+			->disableOriginalConstructor()
+			->getMock();
+		$mock_wc->cart = $mock_cart;
+		
+		$this->set_wc_instance( $mock_wc );
+		
+		// Set query vars with invalid quantities
+		$this->set_query_var( 'fb_checkout', '1' );
+		$this->set_query_var( 'products', $product_id . ':0' ); // Zero quantity
+		
+		// Execute
+		ob_start();
+		try {
+			$this->checkout->load_checkout_permalink_template( '/template.php' );
+		} catch ( \Exception $e ) {
+			// Expected
+		}
+		ob_end_clean();
+		
+		// Clean up
+		$product->delete( true );
+	}
+
+	/**
+	 * Test load_checkout_permalink_template when add_to_cart fails.
+	 */
+	public function test_load_checkout_permalink_template_add_to_cart_fails() {
+		// Create a test product
+		$product = WC_Helper_Product::create_simple_product();
+		$product_id = $product->get_id();
+		
+		// Mock cart
+		$mock_cart = $this->getMockBuilder( \WC_Cart::class )
+			->disableOriginalConstructor()
+			->getMock();
+		
+		$mock_cart->expects( $this->once() )
+			->method( 'empty_cart' );
+		
+		// add_to_cart returns false to simulate failure
+		$mock_cart->expects( $this->once() )
+			->method( 'add_to_cart' )
+			->with( $product_id, 1 )
+			->willReturn( false );
+		
+		// Mock WC
+		$mock_wc = $this->getMockBuilder( \WooCommerce::class )
+			->disableOriginalConstructor()
+			->getMock();
+		$mock_wc->cart = $mock_cart;
+		
+		$this->set_wc_instance( $mock_wc );
+		
+		// Set query vars
+		$this->set_query_var( 'fb_checkout', '1' );
+		$this->set_query_var( 'products', $product_id . ':1' );
+		
+		// Execute
+		ob_start();
+		try {
+			$this->checkout->load_checkout_permalink_template( '/template.php' );
+		} catch ( \Exception $e ) {
+			// Expected
+		}
+		$output = ob_get_clean();
+		
+		// Should still output the iframe even if add_to_cart fails
+		$this->assertStringContainsString( '<iframe', $output );
+		
+		// Clean up
+		$product->delete( true );
 	}
 
 	/**
