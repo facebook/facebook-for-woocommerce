@@ -12,8 +12,6 @@ use WC_Product;
  *
  * Tests core business logic for determining whether products should be synced to Facebook.
  *
- * @group product-validation
- * @group integration
  */
 class ProductValidatorTest extends IntegrationTestCase {
 

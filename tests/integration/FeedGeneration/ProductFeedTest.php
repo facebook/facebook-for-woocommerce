@@ -11,8 +11,6 @@ use WooCommerce\Facebook\Tests\Integration\IntegrationTestCase;
  * Tests the complete pipeline from product data to CSV feed file generation.
  * These are integration tests that validate end-to-end feed creation workflows.
  *
- * @group feed-generation
- * @group integration
  */
 class ProductFeedTest extends IntegrationTestCase {
 

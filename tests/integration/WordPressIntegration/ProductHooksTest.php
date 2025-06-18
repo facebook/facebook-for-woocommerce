@@ -9,9 +9,6 @@ use WooCommerce\Facebook\Tests\Integration\IntegrationTestCase;
  * Test class for WordPress and WooCommerce hook integration scenarios.
  *
  * Tests how the plugin responds to WordPress events and hooks.
- *
- * @group wordpress-integration
- * @group integration
  */
 class ProductHooksTest extends IntegrationTestCase {
 
