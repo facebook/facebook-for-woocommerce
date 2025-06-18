@@ -151,7 +151,7 @@ class Event {
 			if ( is_array( $user_data['external_id'] ) ) {
 				$external_ids = array();
 				foreach ( $user_data['external_id'] as $id ) {
-					$external_ids[] = hash( 'sha256', $user_data['external_id'][ $id ], false );
+					$external_ids[] = hash( 'sha256', $id, false );
 				}
 				$user_data['external_id'] = $external_ids;
 			} else {
