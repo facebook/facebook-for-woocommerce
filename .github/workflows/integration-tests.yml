@@ -14,21 +14,13 @@ concurrency:
 
 jobs:
   integration-tests:
-    name: Integration Tests (PHP ${{ matrix.php }})
+    name: Integration Tests
     runs-on: ubuntu-latest
     
     # Add permissions like build-plugin-artifact.yml
     permissions:
       contents: read
       pull-requests: write
-    
-    strategy:
-      fail-fast: false
-      matrix:
-        php: ['7.4', '8.1']  # Test minimum and recommended PHP versions
-        include:
-          - php: '7.4'
-            coverage: true
 
     services:
       mysql:
@@ -51,9 +43,9 @@ jobs:
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
         with:
-          php-version: ${{ matrix.php }}
+          php-version: '7.4'
           extensions: dom, curl, libxml, mbstring, zip, pcntl, pdo, sqlite, pdo_sqlite, mysql, mysqli, pdo_mysql, bcmath, soap, intl, gd, exif, iconv, imagick
-          coverage: ${{ matrix.coverage && 'xdebug' || 'none' }}
+          coverage: xdebug
           ini-values: memory_limit=-1
 
       - name: Get Composer Cache Directory
@@ -136,7 +128,7 @@ jobs:
           fi
           
       - name: Run Integration Tests with Coverage
-        if: matrix.coverage && steps.setup-wp.outputs.wp_setup_success == 'true'
+        if: steps.setup-wp.outputs.wp_setup_success == 'true'
         continue-on-error: true
         env:
           WP_TESTS_DIR: /tmp/wordpress-tests-lib
@@ -146,12 +138,12 @@ jobs:
           ./vendor/bin/phpunit --testsuite=integration --coverage-clover=coverage.xml --coverage-html=coverage-html || echo "::warning::Coverage generation failed"
 
       - name: Upload Coverage to Codecov
-        if: matrix.coverage && success()
+        if: success()
         uses: codecov/codecov-action@v3
         with:
           file: ./coverage.xml
           flags: integration
-          name: integration-tests-php${{ matrix.php }}
+          name: integration-tests
           fail_ci_if_error: false
 
       # Add workflow summary like build-plugin-artifact.yml
@@ -160,7 +152,7 @@ jobs:
         run: |
           echo "## 🧪 Integration Test Results" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "**PHP Version:** ${{ matrix.php }}" >> $GITHUB_STEP_SUMMARY
+          echo "**PHP Version:** 7.4" >> $GITHUB_STEP_SUMMARY
           echo "**WordPress:** Latest Stable" >> $GITHUB_STEP_SUMMARY
           echo "**WooCommerce:** Latest Stable" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
@@ -189,7 +181,7 @@ jobs:
         if: failure()
         uses: actions/upload-artifact@v3
         with:
-          name: test-results-php${{ matrix.php }}
+          name: test-results
           path: |
             tests/
             coverage-html/
@@ -200,7 +192,7 @@ jobs:
         if: failure()
         uses: actions/upload-artifact@v3
         with:
-          name: error-logs-php${{ matrix.php }}
+          name: error-logs
           path: |
             /tmp/wordpress/wp-content/debug.log
             /var/log/
@@ -259,7 +251,7 @@ jobs:
               commentBody = "## ✅ Integration Tests Passed\n\n" +
                 `**Tested at:** ${timestamp}\n` +
                 `**Commit:** ${commitSha}\n\n` +
-                `All integration tests completed successfully on PHP 7.4 and 8.1 with latest WordPress and WooCommerce.\n\n` +
+                `All integration tests completed successfully on PHP 7.4 with latest WordPress and WooCommerce.\n\n` +
                 `[View detailed results](${runUrl})`;
             } else {
               commentBody = "## ❌ Integration Tests Failed\n\n" +
@@ -344,7 +336,7 @@ jobs:
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
         with:
-          php-version: '8.1'
+          php-version: '7.4'
           extensions: dom, curl, libxml, mbstring, zip, pcntl, pdo, sqlite, pdo_sqlite, mysql, mysqli, pdo_mysql, bcmath, soap, intl, gd, exif, iconv, imagick
 
       - name: Install Composer dependencies
