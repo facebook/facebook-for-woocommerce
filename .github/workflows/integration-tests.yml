@@ -1,13 +1,11 @@
 name: Integration Tests
 
 on:
-  push:
-    branches: [ main, develop, feature/integration-testing ]
+
   pull_request:
     branches: [ main, develop ]
   workflow_dispatch:
 
-# Add concurrency control like js-unit-tests.yml
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
@@ -17,7 +15,6 @@ jobs:
     name: Integration Tests
     runs-on: ubuntu-latest
     
-    # Add permissions like build-plugin-artifact.yml
     permissions:
       contents: read
       pull-requests: write
@@ -44,7 +41,6 @@ jobs:
         uses: shivammathur/setup-php@v2
         with:
           php-version: '7.4'
-          extensions: dom, curl, libxml, mbstring, zip, pcntl, pdo, sqlite, pdo_sqlite, mysql, mysqli, pdo_mysql, bcmath, soap, intl, gd, exif, iconv, imagick
           coverage: xdebug
           ini-values: memory_limit=-1
 
@@ -61,7 +57,6 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-composer-
 
-      # Add error handling like js-unit-tests.yml
       - name: Install Composer dependencies
         id: install-composer
         continue-on-error: true
@@ -146,7 +141,6 @@ jobs:
           name: integration-tests
           fail_ci_if_error: false
 
-      # Add workflow summary like build-plugin-artifact.yml
       - name: Create Test Summary
         if: always()
         run: |
@@ -198,7 +192,6 @@ jobs:
             /var/log/
           retention-days: 7
 
-      # Add skip notification like js-unit-tests.yml
       - name: Skip tests notification
         if: steps.install-composer.outputs.composer_installed != 'true' || steps.setup-wp.outputs.wp_setup_success != 'true'
         run: echo "::warning::Skipping integration tests due to setup issues"
@@ -209,7 +202,6 @@ jobs:
     needs: integration-tests
     if: always()
     
-    # Add permissions
     permissions:
       contents: read
       pull-requests: write
@@ -234,7 +226,6 @@ jobs:
             echo "status=unknown" >> $GITHUB_OUTPUT
           fi
 
-      # Add PR comment like build-plugin-artifact.yml
       - name: Post test results comment on PR
         if: github.event_name == 'pull_request'
         uses: actions/github-script@v6
@@ -313,7 +304,6 @@ jobs:
     needs: integration-tests
     if: success()
     
-    # Add permissions
     permissions:
       contents: read
     
@@ -337,8 +327,6 @@ jobs:
         uses: shivammathur/setup-php@v2
         with:
           php-version: '7.4'
-          extensions: dom, curl, libxml, mbstring, zip, pcntl, pdo, sqlite, pdo_sqlite, mysql, mysqli, pdo_mysql, bcmath, soap, intl, gd, exif, iconv, imagick
-
       - name: Install Composer dependencies
         run: composer install --prefer-dist --no-progress
 
