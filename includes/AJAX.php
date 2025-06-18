@@ -514,7 +514,7 @@ class AJAX {
 
 		try {
 			facebook_for_woocommerce()->log( 'Manual connection reset requested' );
-			
+
 			// Get the connection handler and disconnect
 			$connection_handler = facebook_for_woocommerce()->get_connection_handler();
 			if ( $connection_handler ) {
@@ -542,7 +542,7 @@ class AJAX {
 
 		try {
 			facebook_for_woocommerce()->log( 'Manual config sync requested' );
-			
+
 			// Get the connection handler and force config sync
 			$connection_handler = facebook_for_woocommerce()->get_connection_handler();
 			if ( $connection_handler && $connection_handler->is_connected() ) {
