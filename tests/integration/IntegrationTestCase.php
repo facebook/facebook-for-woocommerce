@@ -5,8 +5,6 @@ namespace WooCommerce\Facebook\Tests\Integration;
 
 use WP_UnitTestCase;
 use WC_Helper_Product;
-use WC_Helper_Shipping;
-use WC_Helper_Customer;
 use WC_Product;
 use WC_Product_Variable;
 use WC_Product_Variation;
@@ -45,11 +43,31 @@ abstract class IntegrationTestCase extends WP_UnitTestCase {
 		$this->plugin = facebook_for_woocommerce();
 		$this->integration = $this->plugin->get_integration();
 		
+		// Ensure plugin is properly initialized
+		$this->ensure_plugin_initialized();
+		
 		// Reset plugin settings to defaults
 		$this->reset_plugin_settings();
 		
 		// Clear any existing products
 		$this->clear_products();
+	}
+
+	/**
+	 * Ensure the plugin is properly initialized for testing
+	 */
+	protected function ensure_plugin_initialized(): void {
+		// Set up basic plugin configuration for testing
+		$this->integration->update_option( 'external_business_id', 'test_business_id' );
+		$this->integration->update_option( 'access_token', 'test_access_token' );
+		$this->integration->update_option( 'product_catalog_id', 'test_catalog_id' );
+		$this->integration->update_option( 'pixel_id', 'test_pixel_id' );
+		
+		// Disable the "woo all products sync" rollout switch to ensure 
+		// category/tag exclusions work properly in tests
+		$rollout_switches = get_option( 'wc_facebook_for_woocommerce_rollout_switches', [] );
+		$rollout_switches['woo_all_products_sync_enabled'] = 'no';
+		update_option( 'wc_facebook_for_woocommerce_rollout_switches', $rollout_switches );
 	}
 
 	/**
@@ -102,8 +120,9 @@ abstract class IntegrationTestCase extends WP_UnitTestCase {
 	 */
 	protected function create_simple_product( array $args = [] ): WC_Product {
 		$defaults = [
-			'name' => 'Test Product',
+			'name' => 'Test Product ' . uniqid(),
 			'regular_price' => '10.00',
+			'sale_price' => '8.00',
 			'sku' => 'test-product-' . uniqid(),
 			'manage_stock' => true,
 			'stock_quantity' => 100,
@@ -156,7 +175,10 @@ abstract class IntegrationTestCase extends WP_UnitTestCase {
 	 * Create a test category
 	 */
 	protected function create_category( string $name, int $parent_id = 0 ): \WP_Term {
-		$result = wp_insert_term( $name, 'product_cat', [
+		// Add timestamp to make category names unique
+		$unique_name = $name . '_' . time() . '_' . uniqid();
+		
+		$result = wp_insert_term( $unique_name, 'product_cat', [
 			'parent' => $parent_id
 		] );
 		
@@ -174,6 +196,9 @@ abstract class IntegrationTestCase extends WP_UnitTestCase {
 		$this->integration->update_option( 'is_enabled', 'yes' );
 		$this->integration->update_option( 'sync_enabled', 'yes' );
 		$this->integration->update_option( 'product_sync_enabled', 'yes' );
+		
+		// Set the specific option that the validator checks
+		update_option( 'wc_facebook_enable_product_sync', 'yes' );
 	}
 
 	/**
@@ -183,6 +208,9 @@ abstract class IntegrationTestCase extends WP_UnitTestCase {
 		$this->integration->update_option( 'is_enabled', 'no' );
 		$this->integration->update_option( 'sync_enabled', 'no' );
 		$this->integration->update_option( 'product_sync_enabled', 'no' );
+		
+		// Set the specific option that the validator checks
+		update_option( 'wc_facebook_enable_product_sync', 'no' );
 	}
 
 	/**
@@ -190,6 +218,9 @@ abstract class IntegrationTestCase extends WP_UnitTestCase {
 	 */
 	protected function set_excluded_categories( array $category_ids ): void {
 		$this->integration->update_option( 'excluded_product_category_ids', $category_ids );
+		
+		// Set the specific option that the validator checks
+		update_option( 'wc_facebook_excluded_product_category_ids', $category_ids );
 	}
 
 	/**
@@ -197,6 +228,9 @@ abstract class IntegrationTestCase extends WP_UnitTestCase {
 	 */
 	protected function set_excluded_tags( array $tag_ids ): void {
 		$this->integration->update_option( 'excluded_product_tag_ids', $tag_ids );
+		
+		// Set the specific option that the validator checks
+		update_option( 'wc_facebook_excluded_product_tag_ids', $tag_ids );
 	}
 
 	/**

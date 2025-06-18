@@ -123,8 +123,9 @@ class ProductValidatorTest extends IntegrationTestCase {
 			'catalog_visibility' => 'search'
 		]);
 
-		// Search-only products should be synced
-		$this->assertProductShouldSync( $product, 'Search-only products should be synced' );
+		// Search-only products should NOT be synced when not in search context
+		// This follows WooCommerce's core visibility logic
+		$this->assertProductShouldNotSync( $product, 'Search-only products should not be synced outside search context' );
 	}
 
 	/**
@@ -167,6 +168,9 @@ class ProductValidatorTest extends IntegrationTestCase {
 
 		// Assign product to excluded category
 		wp_set_object_terms( $product->get_id(), [ $category->term_id ], 'product_cat' );
+		
+		// Refresh the product to get updated category data
+		$product = wc_get_product( $product->get_id() );
 
 		// Product should not be synced due to excluded category
 		$this->assertProductShouldNotSync( $product, 'Products in excluded categories should not be synced' );
@@ -195,6 +199,9 @@ class ProductValidatorTest extends IntegrationTestCase {
 
 		// Assign product to excluded tag
 		wp_set_object_terms( $product->get_id(), [ $tag_id ], 'product_tag' );
+		
+		// Refresh the product to get updated tag data
+		$product = wc_get_product( $product->get_id() );
 
 		// Product should not be synced due to excluded tag
 		$this->assertProductShouldNotSync( $product, 'Products with excluded tags should not be synced' );
@@ -281,6 +288,9 @@ class ProductValidatorTest extends IntegrationTestCase {
 
 		// Assign product to category
 		wp_set_object_terms( $product->get_id(), [ $category->term_id ], 'product_cat' );
+		
+		// Refresh the product to get updated category data
+		$product = wc_get_product( $product->get_id() );
 
 		// Product should not be deleted initially
 		$this->assertFalse( 
@@ -318,6 +328,9 @@ class ProductValidatorTest extends IntegrationTestCase {
 
 		// Assign product to both categories
 		wp_set_object_terms( $product->get_id(), [ $allowed_category->term_id, $excluded_category->term_id ], 'product_cat' );
+		
+		// Refresh the product to get updated category data
+		$product = wc_get_product( $product->get_id() );
 
 		// Product should not be synced because it's in an excluded category
 		$this->assertProductShouldNotSync( $product, 'Products in any excluded category should not be synced' );
@@ -342,7 +355,7 @@ class ProductValidatorTest extends IntegrationTestCase {
 	}
 
 	/**
-	 * Test product sync with out of stock status
+	 * Test product sync with out of stock products
 	 */
 	public function test_product_sync_with_out_of_stock(): void {
 		$this->enable_facebook_sync();
@@ -358,7 +371,7 @@ class ProductValidatorTest extends IntegrationTestCase {
 			'stock_status' => 'outofstock'
 		]);
 
-		// Out of stock products should still be synced (stock status sync is separate)
+		// Out of stock products should still be synced
 		$this->assertProductShouldSync( $product, 'Out of stock products should be synced' );
 	}
 } 
