@@ -346,7 +346,7 @@ class ProductAttributeMapper {
 					// Get the attribute's display name by removing "pa_" prefix and converting underscores to spaces
 					$display_name       = ucfirst( str_replace( '_', ' ', preg_replace( '/^pa_/', '', $attribute_name ) ) );
 					$lower_display_name = strtolower( $display_name );
-					
+
 					// Also check display name with hyphens converted to underscores (for attributes like "age-group")
 					$display_name_with_underscores = str_replace( '-', '_', $lower_display_name );
 
@@ -380,7 +380,7 @@ class ProductAttributeMapper {
 
 				// Get both the original slug (with hyphens) and sanitized name (with underscores)
 				$original_slug = preg_replace( '/^pa_/', '', $attribute_name ); // Remove pa_ but keep hyphens
-				$clean_name = self::sanitize_attribute_name( $attribute_name ); // This converts hyphens to underscores
+				$clean_name    = self::sanitize_attribute_name( $attribute_name ); // This converts hyphens to underscores
 
 				// Check for exact match in our slug mapping using both forms
 				$fb_field = null;
