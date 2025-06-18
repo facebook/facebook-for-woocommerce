@@ -543,11 +543,7 @@ class WC_Facebook_Product_Feed {
 		}
 
 		// Setting up Woo All Products sync flag
-		if ( ! isset( $product_data['is_woo_all_products_sync'] ) ) {
-			$is_woo_all_products_sync = 0;
-		} else {
-			$is_woo_all_products_sync = $product_data['is_woo_all_products_sync'];
-		}
+		$is_woo_all_products_sync = $product_data['is_woo_all_products_sync'] || 0;
 
 		return $product_data['retailer_id'] . ',' .
 		static::format_string_for_feed( static::get_value_from_product_data( $product_data, 'name' ) ) . ',' .
