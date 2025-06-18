@@ -36,8 +36,8 @@ class SettingsMovedTest extends AbstractWPUnitTestWithOptionIsolationAndSafeFilt
 		$this->mock_plugin->method( 'get_settings_url' )
 			->willReturn( 'https://example.com/wp-admin/admin.php?page=wc-settings&tab=facebook' );
 			
-		// Override the global function to return our mock
-		add_filter( 'wc_facebook_for_woocommerce_instance', function() {
+		// Override the global function to return our mock - use the correct filter name
+		add_filter( 'wc_facebook_instance', function() {
 			return $this->mock_plugin;
 		} );
 	}
@@ -126,11 +126,25 @@ class SettingsMovedTest extends AbstractWPUnitTestWithOptionIsolationAndSafeFilt
 		);
 		
 		foreach ( $test_cases as $version => $expected ) {
-			$this->mock_plugin->method( 'get_last_event_from_history' )
+			// Create a fresh mock for each iteration
+			$mock_plugin = $this->getMockBuilder( \WC_Facebookcommerce::class )
+				->disableOriginalConstructor()
+				->getMock();
+			
+			$mock_plugin->method( 'get_settings_url' )
+				->willReturn( 'https://example.com/wp-admin/admin.php?page=wc-settings&tab=facebook' );
+			
+			$mock_plugin->method( 'get_last_event_from_history' )
 				->willReturn( array(
 					'name' => 'upgrade',
 					'data' => array( 'from_version' => $version )
 				) );
+			
+			// Remove existing filter and add the new mock
+			remove_all_filters( 'wc_facebook_instance' );
+			add_filter( 'wc_facebook_instance', function() use ( $mock_plugin ) {
+				return $mock_plugin;
+			} );
 			
 			$this->assertEquals( 
 				$expected, 
@@ -175,19 +189,45 @@ class SettingsMovedTest extends AbstractWPUnitTestWithOptionIsolationAndSafeFilt
 	 */
 	public function test_should_display_edge_case_versions() {
 		// Test with exactly version 2.2.0 (boundary case)
-		$this->mock_plugin->method( 'get_last_event_from_history' )
+		$mock_plugin_220 = $this->getMockBuilder( \WC_Facebookcommerce::class )
+			->disableOriginalConstructor()
+			->getMock();
+		
+		$mock_plugin_220->method( 'get_settings_url' )
+			->willReturn( 'https://example.com/wp-admin/admin.php?page=wc-settings&tab=facebook' );
+			
+		$mock_plugin_220->method( 'get_last_event_from_history' )
 			->willReturn( array(
 				'name' => 'upgrade',
 				'data' => array( 'from_version' => '2.2.0' )
 			) );
+		
+		remove_all_filters( 'wc_facebook_instance' );
+		add_filter( 'wc_facebook_instance', function() use ( $mock_plugin_220 ) {
+			return $mock_plugin_220;
+		} );
+		
 		$this->assertFalse( SettingsMoved::should_display() );
 		
 		// Test with version 2.1.99 (just below boundary)
-		$this->mock_plugin->method( 'get_last_event_from_history' )
+		$mock_plugin_2199 = $this->getMockBuilder( \WC_Facebookcommerce::class )
+			->disableOriginalConstructor()
+			->getMock();
+		
+		$mock_plugin_2199->method( 'get_settings_url' )
+			->willReturn( 'https://example.com/wp-admin/admin.php?page=wc-settings&tab=facebook' );
+			
+		$mock_plugin_2199->method( 'get_last_event_from_history' )
 			->willReturn( array(
 				'name' => 'upgrade',
 				'data' => array( 'from_version' => '2.1.99' )
 			) );
+		
+		remove_all_filters( 'wc_facebook_instance' );
+		add_filter( 'wc_facebook_instance', function() use ( $mock_plugin_2199 ) {
+			return $mock_plugin_2199;
+		} );
+		
 		$this->assertTrue( SettingsMoved::should_display() );
 	}
 
@@ -223,7 +263,7 @@ class SettingsMovedTest extends AbstractWPUnitTestWithOptionIsolationAndSafeFilt
 	 * Clean up after tests.
 	 */
 	public function tearDown(): void {
-		remove_all_filters( 'wc_facebook_for_woocommerce_instance' );
+		remove_all_filters( 'wc_facebook_instance' );
 		parent::tearDown();
 	}
 } 
