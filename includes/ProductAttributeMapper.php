@@ -334,7 +334,7 @@ class ProductAttributeMapper {
 			$value = $product->get_attribute( $attribute_name );
 
 			if ( ! empty( $value ) ) {
-				if ( $attribute->is_taxonomy() && strpos( $value, ', ' ) !== false ) {
+				if ( is_object( $attribute ) && method_exists( $attribute, 'is_taxonomy' ) && $attribute->is_taxonomy() && strpos( $value, ', ' ) !== false ) {
 					$value = str_replace( ', ', ' | ', $value );
 				}
 
@@ -374,7 +374,7 @@ class ProductAttributeMapper {
 
 			if ( ! empty( $value ) ) {
 				// Fix delimiter issue: WooCommerce uses commas for global attributes, but we need pipes
-				if ( $attribute->is_taxonomy() && strpos( $value, ', ' ) !== false ) {
+				if ( is_object( $attribute ) && method_exists( $attribute, 'is_taxonomy' ) && $attribute->is_taxonomy() && strpos( $value, ', ' ) !== false ) {
 					$value = str_replace( ', ', ' | ', $value );
 				}
 
@@ -409,7 +409,7 @@ class ProductAttributeMapper {
 
 			if ( ! empty( $value ) && ! empty( $attribute_name ) ) {
 				// Fix delimiter issue: WooCommerce uses commas for global attributes, but we need pipes
-				if ( $attribute->is_taxonomy() && strpos( $value, ', ' ) !== false ) {
+				if ( is_object( $attribute ) && method_exists( $attribute, 'is_taxonomy' ) && $attribute->is_taxonomy() && strpos( $value, ', ' ) !== false ) {
 					$value = str_replace( ', ', ' | ', $value );
 				}
 

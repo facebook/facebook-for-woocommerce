@@ -1222,7 +1222,7 @@ class WC_Facebook_Product {
 			// If no specific value, try parent product
 			return $this->get_parent_taxonomy_attribute_values( $attribute_name );
 		} elseif ( $attribute_found && $attribute_obj ) { // For regular products
-			if ( $attribute_obj->is_taxonomy() ) {
+			if ( is_object( $attribute_obj ) && method_exists( $attribute_obj, 'is_taxonomy' ) && $attribute_obj->is_taxonomy() ) {
 				$terms = $attribute_obj->get_terms();
 				if ( $terms && ! is_wp_error( $terms ) ) {
 					return wp_list_pluck( $terms, 'name' );

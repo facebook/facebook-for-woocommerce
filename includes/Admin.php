@@ -2357,7 +2357,7 @@ class Admin {
 			if ( $matched_facebook_field && ! in_array( $field_name, $processed_fields, true ) ) {
 				$values = [];
 
-				if ( $attribute->is_taxonomy() ) {
+				if ( is_object( $attribute ) && method_exists( $attribute, 'is_taxonomy' ) && $attribute->is_taxonomy() ) {
 					$terms = $attribute->get_terms();
 					if ( $terms && ! is_wp_error( $terms ) ) {
 						$values = wp_list_pluck( $terms, 'name' );
