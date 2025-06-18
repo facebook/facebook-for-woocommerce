@@ -2275,108 +2275,46 @@ class WC_Facebook_Product {
 	}
 
 	/**
-	 * Apply enhanced catalog fields from product attributes if available
+	 * Adds enhanced catalog fields to product data array. Separated from
+	 * the main function to make it easier to develop and debug, potentially
+	 * worth refactoring into main prepare_product function when complete.
 	 *
-	 * @param array  $product_data
-	 * @param string $google_category_id
+	 * @param array  $product_data       The preparted product data map.
+	 * @param string $google_category_id The Google product category id string.
 	 * @return array
 	 */
 	private function apply_enhanced_catalog_fields_from_attributes( $product_data, $google_category_id ) {
+		$category_handler = facebook_for_woocommerce()->get_facebook_category_handler();
+		if ( empty( $google_category_id ) || ! $category_handler->is_category( $google_category_id ) ) {
+			return $product_data;
+		}
+		$enhanced_data = array();
 
-		// Use our attribute mapper for all product attributes
-		if ( class_exists( ProductAttributeMapper::class ) ) {
-			// Get product object
-			$product = wc_get_product( $this->id );
-			if ( ! $product ) {
-				return $product_data;
-			}
+		$all_attributes = $category_handler->get_attributes_with_fallback_to_parent_category( $google_category_id );
 
-			// Get attribute mappings - only use explicitly defined mappings
-			$attribute_mappings = $this->get_default_attribute_mappings();
+		if ( empty( $all_attributes ) ) {
+			return $product_data;
+		}
 
-			// Use the ProductAttributeMapper to get mapped attributes directly
-			if ( method_exists( ProductAttributeMapper::class, 'get_mapped_standard_attributes' ) ) {
-				// This is the preferred method - it will respect the user's attribute mapping settings
-				$standard_attributes = ProductAttributeMapper::get_mapped_standard_attributes( $product );
+		foreach ( $all_attributes as $attribute ) {
+			$value            = Products::get_enhanced_catalog_attribute( $attribute['key'], $this->woo_product );
+			$convert_to_array = (
+				isset( $attribute['can_have_multiple_values'] ) &&
+				true === $attribute['can_have_multiple_values'] &&
+				'string' === $attribute['type']
+			);
 
-				// Merge with product data
-				$product_data = array_merge( $product_data, $standard_attributes );
-			}
-
-			// Process unmapped attributes as custom_data
-			$unmapped_attributes = ProductAttributeMapper::get_unmapped_attributes( $product );
-
-			if ( ! empty( $unmapped_attributes ) ) {
-				if ( ! isset( $product_data['custom_data'] ) ) {
-					$product_data['custom_data'] = array();
+			if ( ! empty( $value ) &&
+				$category_handler->is_valid_value_for_attribute( $google_category_id, $attribute['key'], $value )
+			) {
+				if ( $convert_to_array ) {
+					$value = array_map( 'trim', explode( ',', $value ) );
 				}
-
-				foreach ( $unmapped_attributes as $attribute ) {
-					// Skip empty values
-					if ( empty( $attribute['value'] ) ) {
-						continue;
-					}
-
-					// Skip attributes already directly mapped
-					if ( isset( $attribute_mappings[ $attribute['name'] ] ) ) {
-						continue;
-					}
-
-					// Format attribute name (remove pa_ prefix and standardize)
-					$attr_name = ProductAttributeMapper::sanitize_attribute_name( $attribute['name'] );
-
-					// Add as custom data
-					$product_data['custom_data'][ $attr_name ] = $attribute['value'];
-				}
-			}
-
-			// Also handle enhanced catalog attributes based on Google category
-			if ( $google_category_id ) {
-				$fb_categories = facebook_for_woocommerce()->get_facebook_category_handler();
-				if ( $fb_categories ) {
-					$attributes = $fb_categories->get_attributes_with_fallback_to_parent_category( $google_category_id );
-
-					if ( ! empty( $attributes ) ) {
-						$matched_attributes = $this->get_matched_attributes_for_product( $product, $attributes );
-
-						foreach ( $matched_attributes as $attribute_key => $attribute_values ) {
-							// Skip empty values
-							if ( empty( $attribute_values ) ) {
-								continue;
-							}
-
-							// Store array values as comma-separated list
-							if ( is_array( $attribute_values ) ) {
-								$attribute_values = implode( ', ', $attribute_values );
-							}
-
-							$product_data[ 'enhanced_catalog_attributes_' . $attribute_key ] = $attribute_values;
-						}
-					}
-				}
-			}
-		} elseif ( $google_category_id ) {
-			// Fallback to the old implementation for compatibility
-				$fb_categories = facebook_for_woocommerce()->get_facebook_category_handler();
-			if ( $fb_categories ) {
-				$attributes = $fb_categories->get_attributes_with_fallback_to_parent_category( $google_category_id );
-
-				if ( ! empty( $attributes ) ) {
-					$matched_attributes = $this->get_matched_attributes_for_product( $this->woo_product, $attributes );
-
-					foreach ( $matched_attributes as $attribute_key => $attribute_values ) {
-						// Store array values as comma-separated list
-						if ( is_array( $attribute_values ) ) {
-							$attribute_values = implode( ', ', $attribute_values );
-						}
-
-						$product_data[ 'enhanced_catalog_attributes_' . $attribute_key ] = $attribute_values;
-					}
-				}
+				$enhanced_data[ $attribute['key'] ] = $value;
 			}
 		}
 
-		return $product_data;
+		return array_merge( $product_data, $enhanced_data );
 	}
 
 
