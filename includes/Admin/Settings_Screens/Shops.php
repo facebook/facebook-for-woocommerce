@@ -37,6 +37,12 @@ class Shops extends Abstract_Settings_Screen {
 	/** @var string */
 	const ACTION_SYNC_NAVIGATION_MENU = 'wc_facebook_sync_navigation_menu';
 
+	/** @var string */
+	const ACTION_RESET_CONNECTION = 'wc_facebook_reset_connection';
+
+	/** @var string */
+	const ACTION_MANUAL_CONFIG_SYNC = 'wc_facebook_manual_config_sync';
+
 	/**
 	 * Shops constructor.
 	 *
@@ -122,7 +128,7 @@ class Shops extends Abstract_Settings_Screen {
 
 		wp_enqueue_script(
 			'wc-facebook-enhanced-settings-sync',
-			facebook_for_woocommerce()->get_asset_build_dir_url() . '/admin/enhanced-settings-sync.js',
+			facebook_for_woocommerce()->get_plugin_url() . '/assets/js/admin/enhanced-settings-sync.js',
 			array( 'jquery' ),
 			\WC_Facebookcommerce::PLUGIN_VERSION,
 			true
@@ -137,6 +143,8 @@ class Shops extends Abstract_Settings_Screen {
 				'sync_coupons_nonce'           => wp_create_nonce( self::ACTION_SYNC_COUPONS ),
 				'sync_shipping_profiles_nonce' => wp_create_nonce( self::ACTION_SYNC_SHIPPING_PROFILES ),
 				'sync_navigation_menu_nonce'   => wp_create_nonce( self::ACTION_SYNC_NAVIGATION_MENU ),
+				'reset_connection_nonce'       => wp_create_nonce( self::ACTION_RESET_CONNECTION ),
+				'manual_config_sync_nonce'     => wp_create_nonce( self::ACTION_MANUAL_CONFIG_SYNC ),
 			)
 		);
 	}
@@ -151,9 +159,8 @@ class Shops extends Abstract_Settings_Screen {
 
 		$this->render_facebook_iframe();
 
-		if ( $is_connected ) {
-			$this->render_troubleshooting_button_and_drawer();
-		}
+		// Always show troubleshooting section, but with different content based on connection status
+		$this->render_troubleshooting_button_and_drawer();
 	}
 
 	/**
@@ -198,6 +205,7 @@ class Shops extends Abstract_Settings_Screen {
 	 * @since 3.5.0
 	 */
 	private function render_troubleshooting_button_and_drawer() {
+		$is_connected = facebook_for_woocommerce()->get_connection_handler()->is_connected();
 		?>
 	<div class="centered-container">
 		<button id="toggle-troubleshooting-drawer" class="drawer-toggle-button">
@@ -210,67 +218,107 @@ class Shops extends Abstract_Settings_Screen {
 		<div class="settings-drawer-content">
 			<table class="form-table">
 				<tbody>
+					<?php if ( $is_connected ) : ?>
+						<tr valign="top" class="wc-facebook-shops-sample">
+							<th scope="row" class="titledesc">
+								Product data sync
+							</th>
+							<td class="forminp">
+								<button
+									id="wc-facebook-enhanced-settings-sync-products"
+									class="button"
+									type="button">
+									<?php esc_html_e( 'Sync now', 'facebook-for-woocommerce' ); ?>
+								</button>
+								<p id="product-sync-description" class="sync-description">
+									Manually sync your products from WooCommerce to your shop. It may take a couple of minutes for the changes to populate.
+								</p>
+							</td>
+						</tr>
+						<tr valign="top" class="wc-facebook-shops-sample">
+							<th scope="row" class="titledesc">
+								Coupon codes sync
+							</th>
+							<td class="forminp">
+								<button
+									id="wc-facebook-enhanced-settings-sync-coupons"
+									class="button"
+									type="button">
+									<?php esc_html_e( 'Sync now', 'facebook-for-woocommerce' ); ?>
+								</button>
+								<p id="coupon-sync-description" class="sync-description">
+									Manually sync your coupons from WooCommerce to your shop. It may take a couple of minutes for the changes to populate.
+								</p>
+							</td>
+						</tr>
+						<tr valign="top" class="wc-facebook-shops-sample">
+							<th scope="row" class="titledesc">
+								Shipping profiles sync
+							</th>
+							<td class="forminp">
+								<button
+									id="wc-facebook-enhanced-settings-sync-shipping-profiles"
+									class="button"
+									type="button">
+									<?php esc_html_e( 'Sync now', 'facebook-for-woocommerce' ); ?>
+								</button>
+								<p id="shipping-profile-sync-description" class="sync-description">
+									Manually sync your shipping profiles from WooCommerce to your shop. It may take a couple of minutes for the changes to populate.
+								</p>
+							</td>
+						</tr>
+						<tr valign="top" class="wc-facebook-shops-sample">
+							<th scope="row" class="titledesc">
+								Navigation menu sync
+							</th>
+							<td class="forminp">
+								<button
+									id="wc-facebook-enhanced-settings-sync-navigation-menu"
+									class="button"
+									type="button">
+									<?php esc_html_e( 'Sync now', 'facebook-for-woocommerce' ); ?>
+								</button>
+								<p id="navigation-menu-sync-description" class="sync-description">
+									Manually sync your category navigation menu from WooCommerce to your shop. It may take a couple of minutes for the changes to populate.
+								</p>
+							</td>
+						</tr>
+						<tr valign="top" class="wc-facebook-shops-sample">
+							<th scope="row" class="titledesc">
+								Manual config sync
+							</th>
+							<td class="forminp">
+								<button
+									id="wc-facebook-enhanced-settings-manual-config-sync"
+									class="button"
+									type="button">
+									<?php esc_html_e( 'Sync config now', 'facebook-for-woocommerce' ); ?>
+								</button>
+								<p id="manual-config-sync-description" class="sync-description">
+									Manually synchronize configuration data with Facebook to ensure all settings are up-to-date. Use this if you're experiencing configuration issues.
+								</p>
+							</td>
+						</tr>
+					<?php endif; ?>
+					
+					<!-- Reset connection button (available both connected and unconnected) -->
 					<tr valign="top" class="wc-facebook-shops-sample">
 						<th scope="row" class="titledesc">
-							Product data sync
+							Reset connection
 						</th>
 						<td class="forminp">
 							<button
-								id="wc-facebook-enhanced-settings-sync-products"
-								class="button"
+								id="wc-facebook-enhanced-settings-reset-connection"
+								class="button button-secondary"
 								type="button">
-								<?php esc_html_e( 'Sync now', 'facebook-for-woocommerce' ); ?>
+								<?php esc_html_e( 'Reset connection', 'facebook-for-woocommerce' ); ?>
 							</button>
-							<p id="product-sync-description" class="sync-description">
-								Manually sync your products from WooCommerce to your shop. It may take a couple of minutes for the changes to populate.
-							</p>
-						</td>
-					</tr>
-					<tr valign="top" class="wc-facebook-shops-sample">
-						<th scope="row" class="titledesc">
-							Coupon codes sync
-						</th>
-						<td class="forminp">
-							<button
-								id="wc-facebook-enhanced-settings-sync-coupons"
-								class="button"
-								type="button">
-								<?php esc_html_e( 'Sync now', 'facebook-for-woocommerce' ); ?>
-							</button>
-							<p id="coupon-sync-description" class="sync-description">
-								Manually sync your coupons from WooCommerce to your shop. It may take a couple of minutes for the changes to populate.
-							</p>
-						</td>
-					</tr>
-					<tr valign="top" class="wc-facebook-shops-sample">
-						<th scope="row" class="titledesc">
-							Shipping profiles sync
-						</th>
-						<td class="forminp">
-							<button
-								id="wc-facebook-enhanced-settings-sync-shipping-profiles"
-								class="button"
-								type="button">
-								<?php esc_html_e( 'Sync now', 'facebook-for-woocommerce' ); ?>
-							</button>
-							<p id="shipping-profile-sync-description" class="sync-description">
-								Manually sync your shipping profiles from WooCommerce to your shop. It may take a couple of minutes for the changes to populate.
-							</p>
-						</td>
-					</tr>
-					<tr valign="top" class="wc-facebook-shops-sample">
-						<th scope="row" class="titledesc">
-							Navigation menu sync
-						</th>
-						<td class="forminp">
-							<button
-								id="wc-facebook-enhanced-settings-sync-navigation-menu"
-								class="button"
-								type="button">
-								<?php esc_html_e( 'Sync now', 'facebook-for-woocommerce' ); ?>
-							</button>
-							<p id="navigation-menu-sync-description" class="sync-description">
-								Manually sync your category navigation menu from WooCommerce to your shop. It may take a couple of minutes for the changes to populate.
+							<p id="reset-connection-description" class="sync-description">
+								<?php if ( $is_connected ) : ?>
+									Reset your Facebook connection to resolve connection issues. This will disconnect your site and clear all connection data.
+								<?php else : ?>
+									Clear any existing connection data and reset the plugin to its initial state. Use this if you're having trouble connecting.
+								<?php endif; ?>
 							</p>
 						</td>
 					</tr>

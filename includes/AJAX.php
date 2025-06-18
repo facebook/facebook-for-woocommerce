@@ -46,6 +46,12 @@ class AJAX {
 		// sync navigation menu via AJAX
 		add_action( 'wp_ajax_wc_facebook_sync_navigation_menu', array( $this, 'sync_navigation_menu' ) );
 
+		// reset connection via AJAX
+		add_action( 'wp_ajax_wc_facebook_reset_connection', array( $this, 'reset_connection' ) );
+
+		// manual config sync via AJAX
+		add_action( 'wp_ajax_wc_facebook_manual_config_sync', array( $this, 'manual_config_sync' ) );
+
 		// get the current sync status
 		add_action( 'wp_ajax_wc_facebook_get_sync_status', array( $this, 'get_sync_status' ) );
 
@@ -494,5 +500,61 @@ class AJAX {
 			wp_send_json_error( 'Missing request parameters for Event Configs POST API call' );
 		}
 		WhatsAppUtilityConnection::post_whatsapp_utility_messages_event_configs_call( $event, $integration_config_id, $language, $status, $bisu_token );
+	}
+
+	/**
+	 * Resets the Facebook connection.
+	 *
+	 * @internal
+	 *
+	 * @since 3.5.0
+	 */
+	public function reset_connection() {
+		check_admin_referer( Shops::ACTION_RESET_CONNECTION, 'nonce' );
+
+		try {
+			facebook_for_woocommerce()->log( 'Manual connection reset requested' );
+			
+			// Get the connection handler and disconnect
+			$connection_handler = facebook_for_woocommerce()->get_connection_handler();
+			if ( $connection_handler ) {
+				$connection_handler->disconnect();
+				facebook_for_woocommerce()->log( 'Connection reset successfully' );
+				wp_send_json_success( __( 'Connection reset successfully. You can now reconnect to Facebook.', 'facebook-for-woocommerce' ) );
+			} else {
+				wp_send_json_error( __( 'Unable to access connection handler.', 'facebook-for-woocommerce' ) );
+			}
+		} catch ( \Exception $exception ) {
+			facebook_for_woocommerce()->log( 'Error resetting connection: ' . $exception->getMessage() );
+			wp_send_json_error( __( 'An error occurred while resetting the connection. Please try again.', 'facebook-for-woocommerce' ) );
+		}
+	}
+
+	/**
+	 * Manually syncs configuration data with Facebook.
+	 *
+	 * @internal
+	 *
+	 * @since 3.5.0
+	 */
+	public function manual_config_sync() {
+		check_admin_referer( Shops::ACTION_MANUAL_CONFIG_SYNC, 'nonce' );
+
+		try {
+			facebook_for_woocommerce()->log( 'Manual config sync requested' );
+			
+			// Get the connection handler and force config sync
+			$connection_handler = facebook_for_woocommerce()->get_connection_handler();
+			if ( $connection_handler && $connection_handler->is_connected() ) {
+				$connection_handler->force_config_sync_on_update();
+				facebook_for_woocommerce()->log( 'Manual config sync completed successfully' );
+				wp_send_json_success( __( 'Configuration sync completed successfully.', 'facebook-for-woocommerce' ) );
+			} else {
+				wp_send_json_error( __( 'Unable to sync config - not connected to Facebook.', 'facebook-for-woocommerce' ) );
+			}
+		} catch ( \Exception $exception ) {
+			facebook_for_woocommerce()->log( 'Error during manual config sync: ' . $exception->getMessage() );
+			wp_send_json_error( __( 'An error occurred during config sync. Please try again.', 'facebook-for-woocommerce' ) );
+		}
 	}
 }
