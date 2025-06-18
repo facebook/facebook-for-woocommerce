@@ -705,15 +705,6 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 			\WC_Facebookcommerce::PLUGIN_VERSION
 		);
 		wp_localize_script( 'wc_facebook_infobanner_jsx', 'wc_facebook_infobanner_jsx', $ajax_data );
-		wp_enqueue_style(
-			'wc_facebook_infobanner_css',
-			plugins_url(
-				'/assets/css/facebook-infobanner.css',
-				__FILE__
-			),
-			[],
-			\WC_Facebookcommerce::PLUGIN_VERSION
-		);
 
 		if ( ! $this->facebook_for_woocommerce->is_plugin_settings() ) {
 			return;
