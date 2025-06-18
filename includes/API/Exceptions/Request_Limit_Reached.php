@@ -43,6 +43,6 @@ class Request_Limit_Reached extends ApiException {
 	 * @param \DateTime $date_time date time object representing when the throttle will end
 	 */
 	public function set_throttle_end( \DateTime $date_time ) {
-		$this->throttle_end = $date_time;
+		$this->throttle_end = clone $date_time;
 	}
 }
