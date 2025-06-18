@@ -330,10 +330,14 @@ class ProductAttributeMapper {
 		}
 
 		// PHASE 1: Now check for direct standard field matches by attribute name
-		foreach ( $attributes as $attribute_name => $_ ) {
+		foreach ( $attributes as $attribute_name => $attribute ) {
 			$value = $product->get_attribute( $attribute_name );
 
 			if ( ! empty( $value ) ) {
+				if ( $attribute->is_taxonomy() && strpos( $value, ', ' ) !== false ) {
+					$value = str_replace( ', ', ' | ', $value );
+				}
+
 				// Clean up attribute name for matching
 				$clean_name = self::sanitize_attribute_name( $attribute_name );
 
@@ -342,10 +346,14 @@ class ProductAttributeMapper {
 					// Get the attribute's display name by removing "pa_" prefix and converting underscores to spaces
 					$display_name       = ucfirst( str_replace( '_', ' ', preg_replace( '/^pa_/', '', $attribute_name ) ) );
 					$lower_display_name = strtolower( $display_name );
+					
+					// Also check display name with hyphens converted to underscores (for attributes like "age-group")
+					$display_name_with_underscores = str_replace( '-', '_', $lower_display_name );
 
 					// If the attribute name exactly matches the standard field name OR
-					// the display name matches the field name (case insensitive)
-					if ( $clean_name === $fb_field || $lower_display_name === $fb_field ) {
+					// the display name matches the field name (case insensitive) OR
+					// the display name with hyphens converted to underscores matches
+					if ( $clean_name === $fb_field || $lower_display_name === $fb_field || $display_name_with_underscores === $fb_field ) {
 						// Save the attribute with its priority
 						if ( ! isset( $attribute_sources[ $fb_field ] ) || $priority_map['direct_match'] > $attribute_sources[ $fb_field ]['priority'] ) {
 							$attribute_sources[ $fb_field ] = array(
@@ -361,17 +369,28 @@ class ProductAttributeMapper {
 		}
 
 		// PHASE 2: Look for exact slug matches
-		foreach ( $attributes as $attribute_name => $_ ) {
+		foreach ( $attributes as $attribute_name => $attribute ) {
 			$value = $product->get_attribute( $attribute_name );
 
 			if ( ! empty( $value ) ) {
-				// Clean up attribute name for matching
-				$clean_name = self::sanitize_attribute_name( $attribute_name );
+				// Fix delimiter issue: WooCommerce uses commas for global attributes, but we need pipes
+				if ( $attribute->is_taxonomy() && strpos( $value, ', ' ) !== false ) {
+					$value = str_replace( ', ', ' | ', $value );
+				}
 
-				// Check for exact match in our slug mapping
-				if ( isset( $slug_to_fb_field[ $clean_name ] ) ) {
+				// Get both the original slug (with hyphens) and sanitized name (with underscores)
+				$original_slug = preg_replace( '/^pa_/', '', $attribute_name ); // Remove pa_ but keep hyphens
+				$clean_name = self::sanitize_attribute_name( $attribute_name ); // This converts hyphens to underscores
+
+				// Check for exact match in our slug mapping using both forms
+				$fb_field = null;
+				if ( isset( $slug_to_fb_field[ $original_slug ] ) ) {
+					$fb_field = $slug_to_fb_field[ $original_slug ];
+				} elseif ( isset( $slug_to_fb_field[ $clean_name ] ) ) {
 					$fb_field = $slug_to_fb_field[ $clean_name ];
+				}
 
+				if ( $fb_field ) {
 					// Save the attribute with its priority
 					if ( ! isset( $attribute_sources[ $fb_field ] ) || $priority_map['slug_match'] > $attribute_sources[ $fb_field ]['priority'] ) {
 						$attribute_sources[ $fb_field ] = array(
@@ -385,10 +404,15 @@ class ProductAttributeMapper {
 		}
 
 		// PHASE 3: Look for mapped attributes via check_attribute_mapping
-		foreach ( $attributes as $attribute_name => $_ ) {
+		foreach ( $attributes as $attribute_name => $attribute ) {
 			$value = $product->get_attribute( $attribute_name );
 
 			if ( ! empty( $value ) && ! empty( $attribute_name ) ) {
+				// Fix delimiter issue: WooCommerce uses commas for global attributes, but we need pipes
+				if ( $attribute->is_taxonomy() && strpos( $value, ', ' ) !== false ) {
+					$value = str_replace( ', ', ' | ', $value );
+				}
+
 				$mapped_field = self::check_attribute_mapping( $attribute_name );
 
 				// Skip if no mapping found
