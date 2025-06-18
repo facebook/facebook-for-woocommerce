@@ -55,6 +55,7 @@ class Lifecycle extends Framework\Lifecycle {
 			'3.2.0',
 			'3.4.9',
 			'3.5.3',
+			'3.5.4',
 		);
 	}
 
@@ -362,5 +363,18 @@ class Lifecycle extends Framework\Lifecycle {
 	protected function upgrade_to_3_5_3() {
 		add_rewrite_rule( '^fb-checkout/?$', 'index.php?fb_checkout=1', 'top' );
 		flush_rewrite_rules();
+	}
+
+	/**
+	 * Forces config synchronization with Meta to ensure all configuration fields are up-to-date
+	 *
+	 * @since 3.5.4
+	 */
+	protected function upgrade_to_3_5_4() {
+		// Force config sync with Meta to ensure all fields are properly synchronized
+		$connection_handler = facebook_for_woocommerce()->get_connection_handler();
+		if ( $connection_handler ) {
+			$connection_handler->force_config_sync_on_update();
+		}
 	}
 }
