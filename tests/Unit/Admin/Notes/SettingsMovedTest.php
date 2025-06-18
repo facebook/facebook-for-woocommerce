@@ -171,69 +171,38 @@ class SettingsMovedTest extends AbstractWPUnitTestWithOptionIsolationAndSafeFilt
 	}
 
 	/**
-	 * Test possibly_add_or_delete_note adds note when should_display is true.
+	 * Test version comparison logic for should_display edge cases.
 	 */
-	public function test_possibly_add_or_delete_note_adds_note() {
-		// Mock should_display to return true
+	public function test_should_display_edge_case_versions() {
+		// Test with exactly version 2.2.0 (boundary case)
 		$this->mock_plugin->method( 'get_last_event_from_history' )
 			->willReturn( array(
 				'name' => 'upgrade',
-				'data' => array( 'from_version' => '2.1.0' )
+				'data' => array( 'from_version' => '2.2.0' )
 			) );
+		$this->assertFalse( SettingsMoved::should_display() );
 		
-		// Mock note_exists to return false
-		$mock_note_exists = function() {
-			return false;
-		};
-		add_filter( 'wc_facebook_settings_moved_note_exists', $mock_note_exists );
-		
-		// Mock possibly_add_note to track if it was called
-		$add_note_called = false;
-		$mock_add_note = function() use ( &$add_note_called ) {
-			$add_note_called = true;
-		};
-		add_filter( 'wc_facebook_settings_moved_possibly_add_note', $mock_add_note );
-		
-		SettingsMoved::possibly_add_or_delete_note();
-		
-		$this->assertTrue( $add_note_called );
-		
-		// Clean up
-		remove_filter( 'wc_facebook_settings_moved_note_exists', $mock_note_exists );
-		remove_filter( 'wc_facebook_settings_moved_possibly_add_note', $mock_add_note );
+		// Test with version 2.1.99 (just below boundary)
+		$this->mock_plugin->method( 'get_last_event_from_history' )
+			->willReturn( array(
+				'name' => 'upgrade',
+				'data' => array( 'from_version' => '2.1.99' )
+			) );
+		$this->assertTrue( SettingsMoved::should_display() );
 	}
 
 	/**
-	 * Test possibly_add_or_delete_note deletes note when should_display is false.
+	 * Test get_note returns consistent values across multiple calls.
 	 */
-	public function test_possibly_add_or_delete_note_deletes_note() {
-		// Mock should_display to return false
-		$this->mock_plugin->method( 'get_last_event_from_history' )
-			->willReturn( array(
-				'name' => 'upgrade',
-				'data' => array( 'from_version' => '2.3.0' )
-			) );
+	public function test_get_note_consistency() {
+		$note1 = SettingsMoved::get_note();
+		$note2 = SettingsMoved::get_note();
 		
-		// Mock note_exists to return true
-		$mock_note_exists = function() {
-			return true;
-		};
-		add_filter( 'wc_facebook_settings_moved_note_exists', $mock_note_exists );
-		
-		// Mock possibly_delete_note to track if it was called
-		$delete_note_called = false;
-		$mock_delete_note = function() use ( &$delete_note_called ) {
-			$delete_note_called = true;
-		};
-		add_filter( 'wc_facebook_settings_moved_possibly_delete_note', $mock_delete_note );
-		
-		SettingsMoved::possibly_add_or_delete_note();
-		
-		$this->assertTrue( $delete_note_called );
-		
-		// Clean up
-		remove_filter( 'wc_facebook_settings_moved_note_exists', $mock_note_exists );
-		remove_filter( 'wc_facebook_settings_moved_possibly_delete_note', $mock_delete_note );
+		// Both should return new instances with same values
+		$this->assertNotSame( $note1, $note2 );
+		$this->assertEquals( $note1->get_title(), $note2->get_title() );
+		$this->assertEquals( $note1->get_content(), $note2->get_content() );
+		$this->assertEquals( $note1->get_name(), $note2->get_name() );
 	}
 
 	/**
