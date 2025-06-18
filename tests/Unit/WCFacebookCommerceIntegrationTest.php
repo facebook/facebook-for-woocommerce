@@ -436,26 +436,23 @@ class WCFacebookCommerceIntegrationTest extends \WooCommerce\Facebook\Tests\Abst
 	}
 
 	/**
-	 * Tests plugin enqueues scripts and styles for admin user for plugin settings screens.
+	 * Tests plugin enqueues scripts and styles for non admin user for non plugin settings screens.
 	 *
 	 * @return void
 	 */
-	public function test_load_assets_loads_only_info_banner_assets_for_admin_at_plugin_settings_page() {
+	public function test_load_assets_loads_only_info_banner_assets_for_not_admin_or_not_a_plugin_settings_page() {
 		$this->facebook_for_woocommerce->expects( $this->once() )
 			->method( 'is_plugin_settings' )
-			->willReturn( true );
+			->willReturn( false );
 
-		ob_start();
 		$this->integration->load_assets();
-		$output = ob_get_clean();
 
 		do_action( 'wp_enqueue_scripts' );
 		do_action( 'wp_enqueue_styles' );
 
 		$this->assertTrue( wp_script_is( 'wc_facebook_infobanner_jsx' ) );
 		$this->assertTrue( wp_style_is( 'wc_facebook_infobanner_css' ) );
-		$this->assertTrue( wp_style_is( 'wc_facebook_css' ) );
-		$this->assertMatchesRegularExpression( '/window.facebookAdsToolboxConfig = {/', $output );
+		$this->assertFalse( wp_style_is( 'wc_facebook_css' ) );
 	}
 
 	/**
