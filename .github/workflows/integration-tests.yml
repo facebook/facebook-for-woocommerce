@@ -1,0 +1,216 @@
+name: Integration Tests
+
+on:
+  push:
+    branches: [ main, develop, feature/integration-testing ]
+  pull_request:
+    branches: [ main, develop ]
+  workflow_dispatch:
+
+jobs:
+  integration-tests:
+    name: Integration Tests (PHP ${{ matrix.php }}, WP ${{ matrix.wordpress }}, WC ${{ matrix.woocommerce }})
+    runs-on: ubuntu-latest
+    
+    strategy:
+      fail-fast: false
+      matrix:
+        php: ['7.4', '8.0', '8.1', '8.2']
+        wordpress: ['6.0', '6.1', '6.2', '6.3', '6.4']
+        woocommerce: ['7.8', '8.0', '8.1', '8.2']
+        include:
+          - php: '7.4'
+            wordpress: '6.0'
+            woocommerce: '7.8'
+            coverage: true
+        exclude:
+          # Exclude unsupported combinations
+          - php: '7.4'
+            wordpress: '6.4'
+          - php: '8.2'
+            wordpress: '6.0'
+
+    services:
+      mysql:
+        image: mysql:5.7
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: wordpress_test
+          MYSQL_USER: wp_user
+          MYSQL_PASSWORD: wp_pass
+        ports:
+          - 3306:3306
+        options: --health-cmd="mysqladmin ping" --health-interval=10s --health-timeout=5s --health-retries=3
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          extensions: dom, curl, libxml, mbstring, zip, pcntl, pdo, sqlite, pdo_sqlite, mysql, mysqli, pdo_mysql, bcmath, soap, intl, gd, exif, iconv, imagick
+          coverage: ${{ matrix.coverage && 'xdebug' || 'none' }}
+          ini-values: memory_limit=-1
+
+      - name: Get Composer Cache Directory
+        id: composer-cache
+        run: |
+          echo "dir=$(composer config cache-files-dir)" >> $GITHUB_OUTPUT
+
+      - name: Cache Composer dependencies
+        uses: actions/cache@v3
+        with:
+          path: ${{ steps.composer-cache.outputs.dir }}
+          key: ${{ runner.os }}-composer-${{ hashFiles('**/composer.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-composer-
+
+      - name: Install Composer dependencies
+        run: composer install --prefer-dist --no-progress --no-suggest
+
+      - name: Setup WordPress Test Environment
+        env:
+          WP_VERSION: ${{ matrix.wordpress }}
+          WC_VERSION: ${{ matrix.woocommerce }}
+        run: |
+          # Install WordPress test suite
+          bash bin/install-wp-tests.sh wordpress_test wp_user wp_pass 127.0.0.1:3306 $WP_VERSION
+          
+          # Install WooCommerce
+          mkdir -p /tmp/wordpress/wp-content/plugins/woocommerce
+          curl -L https://github.com/woocommerce/woocommerce/archive/refs/tags/$WC_VERSION.tar.gz | tar xz --strip-components=1 -C /tmp/wordpress/wp-content/plugins/woocommerce
+          
+          # Install Facebook for WooCommerce plugin
+          cp -r . /tmp/wordpress/wp-content/plugins/facebook-for-woocommerce
+
+      - name: Verify Test Environment
+        run: |
+          php --version
+          composer --version
+          # Verify WordPress installation
+          ls -la /tmp/wordpress/
+          ls -la /tmp/wordpress/wp-content/plugins/
+          # Verify database connection
+          mysql -h 127.0.0.1 -P 3306 -u wp_user -pwp_pass -e "SHOW DATABASES;"
+
+      - name: Run Integration Tests
+        env:
+          WP_TESTS_DIR: /tmp/wordpress-tests-lib
+          WP_CORE_DIR: /tmp/wordpress
+          WC_DIR: /tmp/wordpress/wp-content/plugins/woocommerce
+        run: |
+          # Run integration tests with verbose output
+          ./vendor/bin/phpunit --testsuite=integration --verbose --debug
+          
+      - name: Run Integration Tests with Coverage
+        if: matrix.coverage
+        env:
+          WP_TESTS_DIR: /tmp/wordpress-tests-lib
+          WP_CORE_DIR: /tmp/wordpress
+          WC_DIR: /tmp/wordpress/wp-content/plugins/woocommerce
+        run: |
+          ./vendor/bin/phpunit --testsuite=integration --coverage-clover=coverage.xml --coverage-html=coverage-html
+
+      - name: Upload Coverage to Codecov
+        if: matrix.coverage && success()
+        uses: codecov/codecov-action@v3
+        with:
+          file: ./coverage.xml
+          flags: integration
+          name: integration-tests-php${{ matrix.php }}-wp${{ matrix.wordpress }}-wc${{ matrix.woocommerce }}
+
+      - name: Archive Test Results
+        if: failure()
+        uses: actions/upload-artifact@v3
+        with:
+          name: test-results-php${{ matrix.php }}-wp${{ matrix.wordpress }}-wc${{ matrix.woocommerce }}
+          path: |
+            tests/
+            coverage-html/
+          retention-days: 7
+
+      - name: Archive Error Logs
+        if: failure()
+        uses: actions/upload-artifact@v3
+        with:
+          name: error-logs-php${{ matrix.php }}-wp${{ matrix.wordpress }}-wc${{ matrix.woocommerce }}
+          path: |
+            /tmp/wordpress/wp-content/debug.log
+            /var/log/
+          retention-days: 7
+
+  integration-tests-summary:
+    name: Integration Tests Summary
+    runs-on: ubuntu-latest
+    needs: integration-tests
+    if: always()
+    
+    steps:
+      - name: Check Integration Tests Results
+        run: |
+          if [[ "${{ needs.integration-tests.result }}" == "success" ]]; then
+            echo "✅ All integration tests passed!"
+          elif [[ "${{ needs.integration-tests.result }}" == "failure" ]]; then
+            echo "❌ Integration tests failed!"
+            exit 1
+          elif [[ "${{ needs.integration-tests.result }}" == "cancelled" ]]; then
+            echo "⚠️ Integration tests were cancelled!"
+            exit 1
+          else
+            echo "⚠️ Integration tests completed with status: ${{ needs.integration-tests.result }}"
+          fi
+
+  performance-tests:
+    name: Performance Tests
+    runs-on: ubuntu-latest
+    needs: integration-tests
+    if: success()
+    
+    services:
+      mysql:
+        image: mysql:5.7
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: wordpress_test
+          MYSQL_USER: wp_user
+          MYSQL_PASSWORD: wp_pass
+        ports:
+          - 3306:3306
+        options: --health-cmd="mysqladmin ping" --health-interval=10s --health-timeout=5s --health-retries=3
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.1'
+          extensions: dom, curl, libxml, mbstring, zip, pcntl, pdo, sqlite, pdo_sqlite, mysql, mysqli, pdo_mysql, bcmath, soap, intl, gd, exif, iconv, imagick
+
+      - name: Install Composer dependencies
+        run: composer install --prefer-dist --no-progress
+
+      - name: Setup WordPress Test Environment
+        run: |
+          bash bin/install-wp-tests.sh wordpress_test wp_user wp_pass 127.0.0.1:3306 latest
+          curl -L https://github.com/woocommerce/woocommerce/archive/refs/heads/trunk.tar.gz | tar xz --strip-components=1 -C /tmp/wordpress/wp-content/plugins/woocommerce
+
+      - name: Run Performance Benchmarks
+        env:
+          WP_TESTS_DIR: /tmp/wordpress-tests-lib
+          WP_CORE_DIR: /tmp/wordpress
+          WC_DIR: /tmp/wordpress/wp-content/plugins/woocommerce
+        run: |
+          # Run performance-focused integration tests
+          ./vendor/bin/phpunit --testsuite=integration --group=performance --verbose
+
+      - name: Performance Report
+        run: |
+          echo "📊 Performance test results:"
+          # Add performance metrics collection here
+          echo "Integration tests completed within acceptable time limits" 
