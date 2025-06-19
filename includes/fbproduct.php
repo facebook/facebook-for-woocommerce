@@ -1912,9 +1912,6 @@ class WC_Facebook_Product {
 				$is_extended_field = in_array(
 					$fb_field,
 					array(
-						'custom_label_0',
-						'custom_label_1',
-						'custom_label_4',
 						'sale_price',
 						'inventory',
 						'additional_image_link',
@@ -1928,15 +1925,6 @@ class WC_Facebook_Product {
 				if ( $is_extended_field ) {
 					// Check for explicit meta values for extended fields
 					switch ( $fb_field ) {
-						case 'custom_label_0':
-							$explicit_meta_value = get_post_meta( $this->id, '_wc_facebook_custom_label_0', true );
-							break;
-						case 'custom_label_1':
-							$explicit_meta_value = get_post_meta( $this->id, '_wc_facebook_custom_label_1', true );
-							break;
-						case 'custom_label_4':
-							$explicit_meta_value = get_post_meta( $this->id, '_wc_facebook_custom_label_4', true );
-							break;
 						case 'sale_price':
 							$explicit_meta_value = get_post_meta( $this->id, '_wc_facebook_sale_price', true );
 							break;
@@ -2004,12 +1992,6 @@ class WC_Facebook_Product {
 
 					// Process the extended fields that might be mapped
 					switch ( $fb_field ) {
-						case 'custom_label_0':
-						case 'custom_label_1':
-						case 'custom_label_4':
-							$product_data[ $fb_field ] = Helper::str_truncate( WC_Facebookcommerce_Utils::clean_string( $value ), 100 );
-							break;
-
 						case 'inventory':
 							$product_data[ $fb_field ] = is_numeric( $value ) ? (int) $value : 0;
 							break;
@@ -2670,11 +2652,6 @@ class WC_Facebook_Product {
 			'Price'                     => 'price',
 			'Sale price'                => 'sale_price',
 			'Sale price effective date' => 'sale_price_effective_date',
-			'Custom label 0'            => 'custom_label_0',
-			'Custom label 1'            => 'custom_label_1',
-			'Custom label 2'            => 'custom_label_2',
-			'Custom label 3'            => 'custom_label_3',
-			'Custom label 4'            => 'custom_label_4',
 		);
 	}
 
