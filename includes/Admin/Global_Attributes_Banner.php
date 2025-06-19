@@ -20,7 +20,7 @@ use WooCommerce\Facebook\ProductAttributeMapper;
  * Shows informational banners when users create global attributes
  * that don't have direct mappings to Meta catalog fields.
  *
- * @since 3.4.11
+ * @since 3.5.4
  */
 class Global_Attributes_Banner {
 
