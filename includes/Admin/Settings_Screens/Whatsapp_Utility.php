@@ -271,7 +271,24 @@ class Whatsapp_Utility extends Abstract_Settings_Screen {
 				<div id="wc-fb-whatsapp-connect-inprogress" class="custom-dashicon-halfcircle fbwa-hidden-element"></div>
 				<div class="card-content">
 					<h2><?php esc_html_e( 'Connect your WhatApp Business account', 'facebook-for-woocommerce' ); ?></h2>
-					<p id="wc-fb-whatsapp-onboarding-subcontent"><?php esc_html_e( 'Allows WooCommerce to connect to your WhatsApp account. ', 'facebook-for-woocommerce' ); ?></p>
+					<p id="wc-fb-whatsapp-onboarding-subcontent">
+						<p>
+							<?php esc_html_e( 'Allows WooCommerce to connect to your WhatsApp account. By connecting your account, you agree to the ', 'facebook-for-woocommerce' ); ?>
+							<a
+								href="https://www.facebook.com/legal/Meta-Hosting-Terms-Cloud-API"
+								id="wc-whatsapp-about-pricing"
+								target="_blank"
+							><?php esc_html_e( 'Cloud API Terms', 'facebook-for-woocommerce' ); ?>
+							</a>
+							<?php esc_html_e( 'and ', 'facebook-for-woocommerce' ); ?>
+							<a
+								href="https://www.whatsapp.com/legal/meta-terms-whatsapp-business"
+								id="wc-whatsapp-about-pricing"
+								target="_blank"
+							><?php esc_html_e( ' Meta Terms for WhatsApp Business.', 'facebook-for-woocommerce' ); ?>
+							</a>
+						</p>
+					</p>
 				</div>
 			</div>
 			<div id="wc-fb-whatsapp-onboarding-button-wrapper" class="whatsapp-onboarding-button">
