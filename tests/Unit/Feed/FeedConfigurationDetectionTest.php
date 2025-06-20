@@ -105,6 +105,9 @@ class FeedConfigurationDetectionTest extends AbstractWPUnitTestWithOptionIsolati
 		$mock_feed_response->method( 'offsetExists' )->willReturnCallback( function( $key ) use ( $feed_data ) {
 			return isset( $feed_data[ $key ] );
 		} );
+		$mock_feed_response->method( 'offsetGet' )->willReturnCallback( function( $key ) use ( $feed_data ) {
+			return $feed_data[ $key ] ?? null;
+		} );
 		
 		// Mock upload metadata response
 		$mock_upload_response = $this->createMock( \WooCommerce\Facebook\API\Response::class );
@@ -297,6 +300,9 @@ class FeedConfigurationDetectionTest extends AbstractWPUnitTestWithOptionIsolati
 		$mock_feed_response->method( 'offsetExists' )->willReturnCallback( function( $key ) use ( $feed_data ) {
 			return isset( $feed_data[ $key ] );
 		} );
+		$mock_feed_response->method( 'offsetGet' )->willReturnCallback( function( $key ) use ( $feed_data ) {
+			return $feed_data[ $key ] ?? null;
+		} );
 		
 		// Mock upload metadata response
 		$mock_upload_response = $this->createMock( \WooCommerce\Facebook\API\Response::class );
@@ -421,6 +427,9 @@ class FeedConfigurationDetectionTest extends AbstractWPUnitTestWithOptionIsolati
 			} );
 			$mock_response->method( 'offsetExists' )->willReturnCallback( function( $key ) use ( $data ) {
 				return isset( $data[ $key ] );
+			} );
+			$mock_response->method( 'offsetGet' )->willReturnCallback( function( $key ) use ( $data ) {
+				return $data[ $key ] ?? null;
 			} );
 			return $mock_response;
 		} );
