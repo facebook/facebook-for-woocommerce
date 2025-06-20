@@ -162,7 +162,7 @@ class Enhanced_Catalog_Attribute_FieldsTest extends AbstractWPUnitTestWithOption
 		$mock_plugin = $this->createMock( \WC_Facebookcommerce::class );
 		$mock_plugin->method( 'get_facebook_category_handler' )->willReturn( $mock_category_handler );
 		
-		$this->add_filter_with_safe_teardown( 'facebook_for_woocommerce', function() use ( $mock_plugin ) {
+		$this->add_filter_with_safe_teardown( 'wc_facebook_instance', function() use ( $mock_plugin ) {
 			return $mock_plugin;
 		} );
 		
@@ -197,7 +197,7 @@ class Enhanced_Catalog_Attribute_FieldsTest extends AbstractWPUnitTestWithOption
 		$mock_plugin = $this->createMock( \WC_Facebookcommerce::class );
 		$mock_plugin->method( 'get_facebook_category_handler' )->willReturn( $mock_category_handler );
 		
-		$this->add_filter_with_safe_teardown( 'facebook_for_woocommerce', function() use ( $mock_plugin ) {
+		$this->add_filter_with_safe_teardown( 'wc_facebook_instance', function() use ( $mock_plugin ) {
 			return $mock_plugin;
 		} );
 		
@@ -276,7 +276,7 @@ class Enhanced_Catalog_Attribute_FieldsTest extends AbstractWPUnitTestWithOption
 		$mock_plugin = $this->createMock( \WC_Facebookcommerce::class );
 		$mock_plugin->method( 'get_facebook_category_handler' )->willReturn( $mock_category_handler );
 		
-		$this->add_filter_with_safe_teardown( 'facebook_for_woocommerce', function() use ( $mock_plugin ) {
+		$this->add_filter_with_safe_teardown( 'wc_facebook_instance', function() use ( $mock_plugin ) {
 			return $mock_plugin;
 		} );
 		
