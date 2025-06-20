@@ -44,12 +44,18 @@ class Enhanced_Catalog_Attribute_FieldsTest extends AbstractWPUnitTestWithOption
 	 * Test constructor with term parameter.
 	 */
 	public function test_constructor_with_term() {
-		// Create a mock term
-		$term = (object) [
+		// Create a proper WP_Term object
+		$term = new \WP_Term( (object) [
 			'term_id' => 123,
 			'name' => 'Test Category',
-			'slug' => 'test-category'
-		];
+			'slug' => 'test-category',
+			'term_group' => 0,
+			'term_taxonomy_id' => 123,
+			'taxonomy' => 'product_cat',
+			'description' => '',
+			'parent' => 0,
+			'count' => 0
+		] );
 		
 		$fields = new Enhanced_Catalog_Attribute_Fields( 
 			Enhanced_Catalog_Attribute_Fields::PAGE_TYPE_EDIT_CATEGORY, 
@@ -137,7 +143,17 @@ class Enhanced_Catalog_Attribute_FieldsTest extends AbstractWPUnitTestWithOption
 	 * Test __get magic method for backward compatibility.
 	 */
 	public function test_magic_get_method() {
-		$term = (object) [ 'term_id' => 123 ];
+		$term = new \WP_Term( (object) [ 
+			'term_id' => 123,
+			'name' => 'Test Category',
+			'slug' => 'test-category',
+			'term_group' => 0,
+			'term_taxonomy_id' => 123,
+			'taxonomy' => 'product_cat',
+			'description' => '',
+			'parent' => 0,
+			'count' => 0
+		] );
 		$fields = new Enhanced_Catalog_Attribute_Fields( 
 			Enhanced_Catalog_Attribute_Fields::PAGE_TYPE_EDIT_CATEGORY,
 			$term
@@ -201,6 +217,11 @@ class Enhanced_Catalog_Attribute_FieldsTest extends AbstractWPUnitTestWithOption
 			return $mock_plugin;
 		} );
 		
+		// Mock term meta to return null for values
+		$this->add_filter_with_safe_teardown( 'get_term_metadata', function( $value, $term_id, $meta_key ) {
+			return null;
+		}, 10, 3 );
+		
 		ob_start();
 		$fields->render( 'test_category_123' );
 		$output = ob_get_clean();
@@ -217,6 +238,7 @@ class Enhanced_Catalog_Attribute_FieldsTest extends AbstractWPUnitTestWithOption
 	public function test_get_value_with_product() {
 		// Create a mock product
 		$product = $this->createMock( \WC_Product::class );
+		$product->method( 'get_id' )->willReturn( 123 );
 		
 		$fields = new Enhanced_Catalog_Attribute_Fields( 
 			Enhanced_Catalog_Attribute_Fields::PAGE_TYPE_EDIT_PRODUCT,
@@ -228,6 +250,18 @@ class Enhanced_Catalog_Attribute_FieldsTest extends AbstractWPUnitTestWithOption
 		$reflection = new \ReflectionClass( $fields );
 		$method = $reflection->getMethod( 'get_value' );
 		$method->setAccessible( true );
+		
+		// Mock the category handler
+		$mock_category_handler = $this->createMock( \WooCommerce\Facebook\Products\FBCategories::class );
+		$mock_category_handler->method( 'is_valid_value_for_attribute' )
+			->willReturn( true );
+		
+		$mock_plugin = $this->createMock( \WC_Facebookcommerce::class );
+		$mock_plugin->method( 'get_facebook_category_handler' )->willReturn( $mock_category_handler );
+		
+		$this->add_filter_with_safe_teardown( 'wc_facebook_instance', function() use ( $mock_plugin ) {
+			return $mock_plugin;
+		} );
 		
 		// Mock the Products handler static method
 		$this->add_filter_with_safe_teardown( 'woocommerce_product_get_meta', function( $value, $object, $key ) {
@@ -247,8 +281,18 @@ class Enhanced_Catalog_Attribute_FieldsTest extends AbstractWPUnitTestWithOption
 	 * Test get_value method with term.
 	 */
 	public function test_get_value_with_term() {
-		// Create a mock term
-		$term = (object) [ 'term_id' => 123 ];
+		// Create a proper WP_Term object
+		$term = new \WP_Term( (object) [ 
+			'term_id' => 123,
+			'name' => 'Test Category',
+			'slug' => 'test-category',
+			'term_group' => 0,
+			'term_taxonomy_id' => 123,
+			'taxonomy' => 'product_cat',
+			'description' => '',
+			'parent' => 0,
+			'count' => 0
+		] );
 		
 		$fields = new Enhanced_Catalog_Attribute_Fields( 
 			Enhanced_Catalog_Attribute_Fields::PAGE_TYPE_EDIT_CATEGORY,
@@ -304,7 +348,8 @@ class Enhanced_Catalog_Attribute_FieldsTest extends AbstractWPUnitTestWithOption
 		// Check output for product page type
 		$this->assertStringContainsString( '<p class="form-field', $output );
 		$this->assertStringContainsString( 'type="checkbox"', $output );
-		$this->assertStringContainsString( 'checked="checked"', $output );
+		// Check for the escaped version since esc_attr is used
+		$this->assertStringContainsString( 'checked=&quot;checked&quot;', $output );
 		$this->assertStringContainsString( 'Show more attributes', $output );
 	}
 
