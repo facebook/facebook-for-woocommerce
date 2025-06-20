@@ -36,7 +36,8 @@
   },
   "autoload-dev": {
     "psr-4": {
-      "WooCommerce\\Facebook\\Tests\\": "tests/Unit"
+      "WooCommerce\\Facebook\\Tests\\": "tests/Unit",
+      "WooCommerce\\Facebook\\Tests\\Integration\\": "tests/integration"
     }
   },
   "config": {
@@ -59,6 +60,8 @@
     "lint": "chg=$(git diff --relative --name-only -- '*.php'); [[ -z $chg ]] || phpcs-changed -s --git --git-unstaged $chg",
     "lint-staged": "chg=$(git diff HEAD --relative --name-only -- '*.php'); [[ -z $chg ]] || phpcs-changed -s --git $chg",
     "lint-branch": "sh ./bin/lint-branch.sh",
-    "test-unit": "./vendor/bin/phpunit"
+    "test-unit": "./vendor/bin/phpunit --testsuite=unit",
+    "test-integration": "./vendor/bin/phpunit --testsuite=integration",
+    "test-all": "./vendor/bin/phpunit"
   }
 }
