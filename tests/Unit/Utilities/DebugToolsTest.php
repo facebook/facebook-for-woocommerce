@@ -14,29 +14,6 @@ use WooCommerce\Facebook\Tests\AbstractWPUnitTestWithOptionIsolationAndSafeFilte
 class DebugToolsTest extends AbstractWPUnitTestWithOptionIsolationAndSafeFiltering {
 
 	/**
-	 * Set up before each test.
-	 */
-	public function setUp(): void {
-		parent::setUp();
-		
-		// Define the global function once if not already defined
-		if ( ! function_exists( 'facebook_for_woocommerce' ) ) {
-			function facebook_for_woocommerce() {
-				return $GLOBALS['test_debug_tools_plugin_mock'] ?? null;
-			}
-		}
-	}
-	
-	/**
-	 * Clean up after each test.
-	 */
-	public function tearDown(): void {
-		// Clean up global variable
-		unset( $GLOBALS['test_debug_tools_plugin_mock'] );
-		parent::tearDown();
-	}
-
-	/**
 	 * Test that the class can be instantiated.
 	 */
 	public function test_class_exists_and_can_be_instantiated() {
@@ -78,8 +55,10 @@ class DebugToolsTest extends AbstractWPUnitTestWithOptionIsolationAndSafeFilteri
 		$mock_plugin = $this->createMock( \WC_Facebookcommerce::class );
 		$mock_plugin->method( 'get_connection_handler' )->willReturn( $mock_connection_handler );
 		
-		// Set the global mock
-		$GLOBALS['test_debug_tools_plugin_mock'] = $mock_plugin;
+		// Use filter to override the instance
+		$this->add_filter_with_safe_teardown( 'wc_facebook_instance', function() use ( $mock_plugin ) {
+			return $mock_plugin;
+		} );
 		
 		$result = $debug_tools->add_debug_tool( $tools );
 		
@@ -106,8 +85,10 @@ class DebugToolsTest extends AbstractWPUnitTestWithOptionIsolationAndSafeFilteri
 		$mock_plugin->method( 'get_connection_handler' )->willReturn( $mock_connection_handler );
 		$mock_plugin->method( 'get_integration' )->willReturn( $mock_integration );
 		
-		// Set the global mock
-		$GLOBALS['test_debug_tools_plugin_mock'] = $mock_plugin;
+		// Use filter to override the instance
+		$this->add_filter_with_safe_teardown( 'wc_facebook_instance', function() use ( $mock_plugin ) {
+			return $mock_plugin;
+		} );
 		
 		$result = $debug_tools->add_debug_tool( $tools );
 		
@@ -134,8 +115,10 @@ class DebugToolsTest extends AbstractWPUnitTestWithOptionIsolationAndSafeFilteri
 		$mock_plugin->method( 'get_connection_handler' )->willReturn( $mock_connection_handler );
 		$mock_plugin->method( 'get_integration' )->willReturn( $mock_integration );
 		
-		// Set the global mock
-		$GLOBALS['test_debug_tools_plugin_mock'] = $mock_plugin;
+		// Use filter to override the instance
+		$this->add_filter_with_safe_teardown( 'wc_facebook_instance', function() use ( $mock_plugin ) {
+			return $mock_plugin;
+		} );
 		
 		$result = $debug_tools->add_debug_tool( $tools );
 		
@@ -226,8 +209,10 @@ class DebugToolsTest extends AbstractWPUnitTestWithOptionIsolationAndSafeFilteri
 		$mock_plugin = $this->createMock( \WC_Facebookcommerce::class );
 		$mock_plugin->method( 'get_connection_handler' )->willReturn( $mock_connection_handler );
 		
-		// Set the global mock
-		$GLOBALS['test_debug_tools_plugin_mock'] = $mock_plugin;
+		// Use filter to override the instance
+		$this->add_filter_with_safe_teardown( 'wc_facebook_instance', function() use ( $mock_plugin ) {
+			return $mock_plugin;
+		} );
 		
 		$result = $debug_tools->clear_facebook_settings();
 		
@@ -254,8 +239,10 @@ class DebugToolsTest extends AbstractWPUnitTestWithOptionIsolationAndSafeFilteri
 		$mock_plugin = $this->createMock( \WC_Facebookcommerce::class );
 		$mock_plugin->job_manager = $mock_job_manager;
 		
-		// Set the global mock
-		$GLOBALS['test_debug_tools_plugin_mock'] = $mock_plugin;
+		// Use filter to override the instance
+		$this->add_filter_with_safe_teardown( 'wc_facebook_instance', function() use ( $mock_plugin ) {
+			return $mock_plugin;
+		} );
 		
 		$result = $debug_tools->reset_all_product_fb_settings();
 		
@@ -282,8 +269,10 @@ class DebugToolsTest extends AbstractWPUnitTestWithOptionIsolationAndSafeFilteri
 		$mock_plugin = $this->createMock( \WC_Facebookcommerce::class );
 		$mock_plugin->job_manager = $mock_job_manager;
 		
-		// Set the global mock
-		$GLOBALS['test_debug_tools_plugin_mock'] = $mock_plugin;
+		// Use filter to override the instance
+		$this->add_filter_with_safe_teardown( 'wc_facebook_instance', function() use ( $mock_plugin ) {
+			return $mock_plugin;
+		} );
 		
 		$result = $debug_tools->delete_all_products();
 		
@@ -309,8 +298,10 @@ class DebugToolsTest extends AbstractWPUnitTestWithOptionIsolationAndSafeFilteri
 		$mock_plugin->method( 'get_connection_handler' )->willReturn( $mock_connection_handler );
 		$mock_plugin->method( 'get_integration' )->willReturn( $mock_integration );
 		
-		// Set the global mock
-		$GLOBALS['test_debug_tools_plugin_mock'] = $mock_plugin;
+		// Use filter to override the instance
+		$this->add_filter_with_safe_teardown( 'wc_facebook_instance', function() use ( $mock_plugin ) {
+			return $mock_plugin;
+		} );
 		
 		$result = $debug_tools->add_debug_tool( $tools );
 		
@@ -360,8 +351,10 @@ class DebugToolsTest extends AbstractWPUnitTestWithOptionIsolationAndSafeFilteri
 		$mock_plugin->method( 'get_connection_handler' )->willReturn( $mock_connection_handler );
 		$mock_plugin->method( 'get_integration' )->willReturn( $mock_integration );
 		
-		// Set the global mock
-		$GLOBALS['test_debug_tools_plugin_mock'] = $mock_plugin;
+		// Use filter to override the instance
+		$this->add_filter_with_safe_teardown( 'wc_facebook_instance', function() use ( $mock_plugin ) {
+			return $mock_plugin;
+		} );
 		
 		$result = $debug_tools->add_debug_tool( $existing_tools );
 		
