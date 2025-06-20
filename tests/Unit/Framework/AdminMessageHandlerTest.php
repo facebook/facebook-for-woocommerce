@@ -376,9 +376,12 @@ class AdminMessageHandlerTest extends AbstractWPUnitTestWithOptionIsolationAndSa
 		$output = ob_get_clean();
 		
 		// Verify messages are present (they should be escaped by wp_kses_post)
-		foreach ( $special_messages as $message ) {
-			$this->assertStringContainsString( $message, $output );
-		}
+		// Check for the actual output after wp_kses_post processing
+		$this->assertStringContainsString( 'Message with <strong>HTML</strong>', $output );
+		$this->assertStringContainsString( 'Message with "quotes"', $output );
+		$this->assertStringContainsString( "Message with 'apostrophes'", $output );
+		$this->assertStringContainsString( 'Message with &amp; ampersand', $output ); // & becomes &amp;
+		$this->assertStringContainsString( 'Message with  symbols', $output ); // < and > are stripped
 	}
 
 	/**
