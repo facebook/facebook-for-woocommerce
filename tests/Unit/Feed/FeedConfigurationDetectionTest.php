@@ -51,7 +51,7 @@ class FeedConfigurationDetectionTest extends AbstractWPUnitTestWithOptionIsolati
 		$mock_plugin = $this->createMock( \WC_Facebookcommerce::class );
 		$mock_plugin->method( 'get_tracker' )->willReturn( $mock_tracker );
 		
-		$this->add_filter_with_safe_teardown( 'facebook_for_woocommerce', function() use ( $mock_plugin ) {
+		$this->add_filter_with_safe_teardown( 'wc_facebook_instance', function() use ( $mock_plugin ) {
 			return $mock_plugin;
 		} );
 		
@@ -76,17 +76,16 @@ class FeedConfigurationDetectionTest extends AbstractWPUnitTestWithOptionIsolati
 		$mock_integration->method( 'get_feed_id' )->willReturn( 'test_feed_123' );
 		$mock_integration->method( 'get_product_catalog_id' )->willReturn( 'catalog_456' );
 		
-		// Mock the API
-		$mock_api = $this->createMock( \WooCommerce\Facebook\API::class );
-		$mock_api->method( 'read_feeds' )->willReturn( (object) [
-			'data' => [
-				[ 'id' => 'feed_1', 'name' => 'Feed 1' ],
-				[ 'id' => 'test_feed_123', 'name' => 'Test Feed' ]
-			]
-		] );
+		// Mock the API response for read_feeds
+		$mock_feeds_response = $this->createMock( \WooCommerce\Facebook\API\ProductCatalog\ProductFeeds\ReadAll\Response::class );
+		$mock_feeds_response->data = [
+			[ 'id' => 'feed_1', 'name' => 'Feed 1' ],
+			[ 'id' => 'test_feed_123', 'name' => 'Test Feed' ]
+		];
 		
-		// Mock feed metadata
-		$mock_api->method( 'read_feed' )->willReturn( (object) [
+		// Mock feed metadata response
+		$mock_feed_response = $this->createMock( \WooCommerce\Facebook\API\Response::class );
+		$feed_data = (object) [
 			'id' => 'test_feed_123',
 			'created_time' => '2023-01-01T00:00:00+0000',
 			'product_count' => 100,
@@ -99,16 +98,30 @@ class FeedConfigurationDetectionTest extends AbstractWPUnitTestWithOptionIsolati
 				'start_time' => '2023-01-02T00:00:00+0000',
 				'end_time' => '2023-01-02T01:00:00+0000'
 			]
-		] );
+		];
+		// Use array access to set properties on the mock
+		foreach ( get_object_vars( $feed_data ) as $key => $value ) {
+			$mock_feed_response->$key = $value;
+		}
 		
-		// Mock upload metadata
-		$mock_api->method( 'read_upload' )->willReturn( (object) [
+		// Mock upload metadata response
+		$mock_upload_response = $this->createMock( \WooCommerce\Facebook\API\Response::class );
+		$upload_data = (object) [
 			'error_count' => 5,
 			'warning_count' => 10,
 			'num_detected_items' => 105,
 			'num_persisted_items' => 100,
 			'url' => 'https://example.com/feed'
-		] );
+		];
+		foreach ( get_object_vars( $upload_data ) as $key => $value ) {
+			$mock_upload_response->$key = $value;
+		}
+		
+		// Mock the API
+		$mock_api = $this->createMock( \WooCommerce\Facebook\API::class );
+		$mock_api->method( 'read_feeds' )->willReturn( $mock_feeds_response );
+		$mock_api->method( 'read_feed' )->willReturn( $mock_feed_response );
+		$mock_api->method( 'read_upload' )->willReturn( $mock_upload_response );
 		
 		// Mock the tracker
 		$mock_tracker = $this->createMock( \WooCommerce\Facebook\Utilities\Tracker::class );
@@ -122,7 +135,7 @@ class FeedConfigurationDetectionTest extends AbstractWPUnitTestWithOptionIsolati
 		$mock_plugin->method( 'get_tracker' )->willReturn( $mock_tracker );
 		$mock_plugin->method( 'log' )->willReturn( null );
 		
-		$this->add_filter_with_safe_teardown( 'facebook_for_woocommerce', function() use ( $mock_plugin ) {
+		$this->add_filter_with_safe_teardown( 'wc_facebook_instance', function() use ( $mock_plugin ) {
 			return $mock_plugin;
 		} );
 		
@@ -156,7 +169,7 @@ class FeedConfigurationDetectionTest extends AbstractWPUnitTestWithOptionIsolati
 			->method( 'log' )
 			->with( $this->stringContains( 'Unable to detect valid feed configuration' ) );
 		
-		$this->add_filter_with_safe_teardown( 'facebook_for_woocommerce', function() use ( $mock_plugin ) {
+		$this->add_filter_with_safe_teardown( 'wc_facebook_instance', function() use ( $mock_plugin ) {
 			return $mock_plugin;
 		} );
 		
@@ -184,7 +197,7 @@ class FeedConfigurationDetectionTest extends AbstractWPUnitTestWithOptionIsolati
 		$mock_plugin = $this->createMock( \WC_Facebookcommerce::class );
 		$mock_plugin->method( 'get_integration' )->willReturn( $mock_integration );
 		
-		$this->add_filter_with_safe_teardown( 'facebook_for_woocommerce', function() use ( $mock_plugin ) {
+		$this->add_filter_with_safe_teardown( 'wc_facebook_instance', function() use ( $mock_plugin ) {
 			return $mock_plugin;
 		} );
 		
@@ -212,15 +225,18 @@ class FeedConfigurationDetectionTest extends AbstractWPUnitTestWithOptionIsolati
 		$mock_integration->method( 'get_product_catalog_id' )->willReturn( 'catalog_456' );
 		
 		// Mock API to return empty feeds
+		$mock_feeds_response = $this->createMock( \WooCommerce\Facebook\API\ProductCatalog\ProductFeeds\ReadAll\Response::class );
+		$mock_feeds_response->data = [];
+		
 		$mock_api = $this->createMock( \WooCommerce\Facebook\API::class );
-		$mock_api->method( 'read_feeds' )->willReturn( (object) [ 'data' => [] ] );
+		$mock_api->method( 'read_feeds' )->willReturn( $mock_feeds_response );
 		
 		$mock_plugin = $this->createMock( \WC_Facebookcommerce::class );
 		$mock_plugin->method( 'get_integration' )->willReturn( $mock_integration );
 		$mock_plugin->method( 'get_api' )->willReturn( $mock_api );
 		$mock_plugin->method( 'log' )->willReturn( null );
 		
-		$this->add_filter_with_safe_teardown( 'facebook_for_woocommerce', function() use ( $mock_plugin ) {
+		$this->add_filter_with_safe_teardown( 'wc_facebook_instance', function() use ( $mock_plugin ) {
 			return $mock_plugin;
 		} );
 		
@@ -248,14 +264,14 @@ class FeedConfigurationDetectionTest extends AbstractWPUnitTestWithOptionIsolati
 		$mock_integration->method( 'get_product_catalog_id' )->willReturn( 'catalog_456' );
 		
 		// Mock API responses
-		$mock_api = $this->createMock( \WooCommerce\Facebook\API::class );
-		$mock_api->method( 'read_feeds' )->willReturn( (object) [
-			'data' => [
-				[ 'id' => 'feed_123', 'name' => 'Test Feed' ]
-			]
-		] );
+		$mock_feeds_response = $this->createMock( \WooCommerce\Facebook\API\ProductCatalog\ProductFeeds\ReadAll\Response::class );
+		$mock_feeds_response->data = [
+			[ 'id' => 'feed_123', 'name' => 'Test Feed' ]
+		];
 		
-		$mock_api->method( 'read_feed' )->willReturn( (object) [
+		// Mock feed metadata response
+		$mock_feed_response = $this->createMock( \WooCommerce\Facebook\API\Response::class );
+		$feed_data = (object) [
 			'id' => 'feed_123',
 			'created_time' => '2023-01-01T00:00:00+0000',
 			'product_count' => 100,
@@ -272,21 +288,34 @@ class FeedConfigurationDetectionTest extends AbstractWPUnitTestWithOptionIsolati
 				'start_time' => '2023-01-02T00:00:00+0000',
 				'end_time' => '2023-01-02T01:00:00+0000'
 			]
-		] );
+		];
+		foreach ( get_object_vars( $feed_data ) as $key => $value ) {
+			$mock_feed_response->$key = $value;
+		}
 		
-		$mock_api->method( 'read_upload' )->willReturn( (object) [
+		// Mock upload metadata response
+		$mock_upload_response = $this->createMock( \WooCommerce\Facebook\API\Response::class );
+		$upload_data = (object) [
 			'error_count' => 5,
 			'warning_count' => 10,
 			'num_detected_items' => 105,
 			'num_persisted_items' => 100,
 			'url' => 'https://example.com/feed'
-		] );
+		];
+		foreach ( get_object_vars( $upload_data ) as $key => $value ) {
+			$mock_upload_response->$key = $value;
+		}
+		
+		$mock_api = $this->createMock( \WooCommerce\Facebook\API::class );
+		$mock_api->method( 'read_feeds' )->willReturn( $mock_feeds_response );
+		$mock_api->method( 'read_feed' )->willReturn( $mock_feed_response );
+		$mock_api->method( 'read_upload' )->willReturn( $mock_upload_response );
 		
 		$mock_plugin = $this->createMock( \WC_Facebookcommerce::class );
 		$mock_plugin->method( 'get_integration' )->willReturn( $mock_integration );
 		$mock_plugin->method( 'get_api' )->willReturn( $mock_api );
 		
-		$this->add_filter_with_safe_teardown( 'facebook_for_woocommerce', function() use ( $mock_plugin ) {
+		$this->add_filter_with_safe_teardown( 'wc_facebook_instance', function() use ( $mock_plugin ) {
 			return $mock_plugin;
 		} );
 		
@@ -353,19 +382,20 @@ class FeedConfigurationDetectionTest extends AbstractWPUnitTestWithOptionIsolati
 		$mock_integration->method( 'get_product_catalog_id' )->willReturn( 'catalog_456' );
 		
 		// Mock API with multiple feeds
-		$mock_api = $this->createMock( \WooCommerce\Facebook\API::class );
-		$mock_api->method( 'read_feeds' )->willReturn( (object) [
-			'data' => [
-				[ 'id' => 'feed_old', 'name' => 'Old Feed' ],
-				[ 'id' => 'feed_123', 'name' => 'Current Feed' ],
-				[ 'id' => 'feed_new', 'name' => 'New Feed' ]
-			]
-		] );
+		$mock_feeds_response = $this->createMock( \WooCommerce\Facebook\API\ProductCatalog\ProductFeeds\ReadAll\Response::class );
+		$mock_feeds_response->data = [
+			[ 'id' => 'feed_old', 'name' => 'Old Feed' ],
+			[ 'id' => 'feed_123', 'name' => 'Current Feed' ],
+			[ 'id' => 'feed_new', 'name' => 'New Feed' ]
+		];
 		
 		// Mock different feed metadata
+		$mock_api = $this->createMock( \WooCommerce\Facebook\API::class );
+		$mock_api->method( 'read_feeds' )->willReturn( $mock_feeds_response );
 		$mock_api->method( 'read_feed' )->willReturnCallback( function( $feed_id ) {
+			$mock_response = $this->createMock( \WooCommerce\Facebook\API\Response::class );
 			if ( $feed_id === 'feed_123' ) {
-				return (object) [
+				$data = (object) [
 					'id' => 'feed_123',
 					'created_time' => '2023-01-02T00:00:00+0000',
 					'product_count' => 100,
@@ -374,19 +404,24 @@ class FeedConfigurationDetectionTest extends AbstractWPUnitTestWithOptionIsolati
 						'start_time' => '2023-01-02T00:00:00+0000'
 					]
 				];
+			} else {
+				$data = (object) [
+					'id' => $feed_id,
+					'created_time' => '2023-01-01T00:00:00+0000',
+					'product_count' => 50
+				];
 			}
-			return (object) [
-				'id' => $feed_id,
-				'created_time' => '2023-01-01T00:00:00+0000',
-				'product_count' => 50
-			];
+			foreach ( get_object_vars( $data ) as $key => $value ) {
+				$mock_response->$key = $value;
+			}
+			return $mock_response;
 		} );
 		
 		$mock_plugin = $this->createMock( \WC_Facebookcommerce::class );
 		$mock_plugin->method( 'get_integration' )->willReturn( $mock_integration );
 		$mock_plugin->method( 'get_api' )->willReturn( $mock_api );
 		
-		$this->add_filter_with_safe_teardown( 'facebook_for_woocommerce', function() use ( $mock_plugin ) {
+		$this->add_filter_with_safe_teardown( 'wc_facebook_instance', function() use ( $mock_plugin ) {
 			return $mock_plugin;
 		} );
 		
@@ -419,7 +454,7 @@ class FeedConfigurationDetectionTest extends AbstractWPUnitTestWithOptionIsolati
 			->method( 'log' )
 			->with( $this->stringContains( 'There was an error trying to get feed nodes' ) );
 		
-		$this->add_filter_with_safe_teardown( 'facebook_for_woocommerce', function() use ( $mock_plugin ) {
+		$this->add_filter_with_safe_teardown( 'wc_facebook_instance', function() use ( $mock_plugin ) {
 			return $mock_plugin;
 		} );
 		
@@ -450,7 +485,7 @@ class FeedConfigurationDetectionTest extends AbstractWPUnitTestWithOptionIsolati
 			->method( 'log' )
 			->with( $this->stringContains( 'There was an error trying to get feed upload metadata' ) );
 		
-		$this->add_filter_with_safe_teardown( 'facebook_for_woocommerce', function() use ( $mock_plugin ) {
+		$this->add_filter_with_safe_teardown( 'wc_facebook_instance', function() use ( $mock_plugin ) {
 			return $mock_plugin;
 		} );
 		
