@@ -134,6 +134,7 @@ class WC_Facebookcommerce_Whatsapp_Utility_Event {
 	/**
 	 * Determines if WhatsApp Consent is Enabled for a user either for Billing or Shipping Phone Number for Blocks or Classic Flows
 	 *
+	 * @param \WC_Order $order Order object
 	 * @since 2.3.0
 	 *
 	 * @return array
