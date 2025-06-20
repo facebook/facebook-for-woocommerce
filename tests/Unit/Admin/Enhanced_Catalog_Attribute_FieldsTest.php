@@ -143,6 +143,15 @@ class Enhanced_Catalog_Attribute_FieldsTest extends AbstractWPUnitTestWithOption
 	 * Test __get magic method for backward compatibility.
 	 */
 	public function test_magic_get_method() {
+		// Set up mock before creating the instance
+		$mock_category_handler = $this->createMock( \WooCommerce\Facebook\Products\FBCategories::class );
+		$mock_plugin = $this->createMock( \WC_Facebookcommerce::class );
+		$mock_plugin->method( 'get_facebook_category_handler' )->willReturn( $mock_category_handler );
+		
+		$this->add_filter_with_safe_teardown( 'wc_facebook_instance', function() use ( $mock_plugin ) {
+			return $mock_plugin;
+		} );
+		
 		$term = new \WP_Term( (object) [ 
 			'term_id' => 123,
 			'name' => 'Test Category',
@@ -159,20 +168,22 @@ class Enhanced_Catalog_Attribute_FieldsTest extends AbstractWPUnitTestWithOption
 			$term
 		);
 		
-		// Suppress the doing_it_wrong notice
-		$this->expectNotice();
+		// Set expected incorrect usage for WordPress doing_it_wrong
+		$this->setExpectedIncorrectUsage( '__get' );
 		
 		// Test accessing private properties (should trigger doing_it_wrong)
 		$page_type = $fields->page_type;
 		$this->assertEquals( Enhanced_Catalog_Attribute_Fields::PAGE_TYPE_EDIT_CATEGORY, $page_type );
+		
+		// Test that it returns null for non-existent properties
+		$non_existent = $fields->non_existent_property;
+		$this->assertNull( $non_existent );
 	}
 
 	/**
 	 * Test render method with empty category ID.
 	 */
 	public function test_render_with_empty_category_id() {
-		$fields = new Enhanced_Catalog_Attribute_Fields( Enhanced_Catalog_Attribute_Fields::PAGE_TYPE_EDIT_CATEGORY );
-		
 		// Mock the category handler
 		$mock_category_handler = $this->createMock( \WooCommerce\Facebook\Products\FBCategories::class );
 		$mock_category_handler->method( 'get_attributes_with_fallback_to_parent_category' )
@@ -184,6 +195,8 @@ class Enhanced_Catalog_Attribute_FieldsTest extends AbstractWPUnitTestWithOption
 		$this->add_filter_with_safe_teardown( 'wc_facebook_instance', function() use ( $mock_plugin ) {
 			return $mock_plugin;
 		} );
+		
+		$fields = new Enhanced_Catalog_Attribute_Fields( Enhanced_Catalog_Attribute_Fields::PAGE_TYPE_EDIT_CATEGORY );
 		
 		ob_start();
 		$fields->render( '' );
@@ -197,24 +210,6 @@ class Enhanced_Catalog_Attribute_FieldsTest extends AbstractWPUnitTestWithOption
 	 * Test render method with valid category and attributes.
 	 */
 	public function test_render_with_valid_category_and_attributes() {
-		// Create a term for the test
-		$term = new \WP_Term( (object) [ 
-			'term_id' => 456,
-			'name' => 'Test Category',
-			'slug' => 'test-category',
-			'term_group' => 0,
-			'term_taxonomy_id' => 456,
-			'taxonomy' => 'product_cat',
-			'description' => '',
-			'parent' => 0,
-			'count' => 0
-		] );
-		
-		$fields = new Enhanced_Catalog_Attribute_Fields( 
-			Enhanced_Catalog_Attribute_Fields::PAGE_TYPE_EDIT_CATEGORY,
-			$term
-		);
-		
 		// Mock attributes
 		$mock_attributes = [
 			[ 'key' => 'color', 'recommended' => true, 'type' => 'enum', 'enum_values' => ['red', 'blue', 'green'], 'description' => 'Product color', 'example' => 'red' ],
@@ -244,6 +239,24 @@ class Enhanced_Catalog_Attribute_FieldsTest extends AbstractWPUnitTestWithOption
 			return $value;
 		}, 10, 4 );
 		
+		// Create a term for the test
+		$term = new \WP_Term( (object) [ 
+			'term_id' => 456,
+			'name' => 'Test Category',
+			'slug' => 'test-category',
+			'term_group' => 0,
+			'term_taxonomy_id' => 456,
+			'taxonomy' => 'product_cat',
+			'description' => '',
+			'parent' => 0,
+			'count' => 0
+		] );
+		
+		$fields = new Enhanced_Catalog_Attribute_Fields( 
+			Enhanced_Catalog_Attribute_Fields::PAGE_TYPE_EDIT_CATEGORY,
+			$term
+		);
+		
 		ob_start();
 		$fields->render( 'test_category_123' );
 		$output = ob_get_clean();
@@ -258,6 +271,18 @@ class Enhanced_Catalog_Attribute_FieldsTest extends AbstractWPUnitTestWithOption
 	 * Test get_value method with product.
 	 */
 	public function test_get_value_with_product() {
+		// Mock the category handler first
+		$mock_category_handler = $this->createMock( \WooCommerce\Facebook\Products\FBCategories::class );
+		$mock_category_handler->method( 'is_valid_value_for_attribute' )
+			->willReturn( true );
+		
+		$mock_plugin = $this->createMock( \WC_Facebookcommerce::class );
+		$mock_plugin->method( 'get_facebook_category_handler' )->willReturn( $mock_category_handler );
+		
+		$this->add_filter_with_safe_teardown( 'wc_facebook_instance', function() use ( $mock_plugin ) {
+			return $mock_plugin;
+		} );
+		
 		// Create a mock product
 		$product = $this->createMock( \WC_Product::class );
 		$product->method( 'get_id' )->willReturn( 123 );
@@ -278,7 +303,17 @@ class Enhanced_Catalog_Attribute_FieldsTest extends AbstractWPUnitTestWithOption
 		$method = $reflection->getMethod( 'get_value' );
 		$method->setAccessible( true );
 		
-		// Mock the category handler
+		$value = $method->invokeArgs( $fields, [ 'color', 'test_category' ] );
+		
+		// Should return the mocked value
+		$this->assertEquals( 'red', $value );
+	}
+
+	/**
+	 * Test get_value method with term.
+	 */
+	public function test_get_value_with_term() {
+		// Mock the category handler first
 		$mock_category_handler = $this->createMock( \WooCommerce\Facebook\Products\FBCategories::class );
 		$mock_category_handler->method( 'is_valid_value_for_attribute' )
 			->willReturn( true );
@@ -290,16 +325,14 @@ class Enhanced_Catalog_Attribute_FieldsTest extends AbstractWPUnitTestWithOption
 			return $mock_plugin;
 		} );
 		
-		$value = $method->invokeArgs( $fields, [ 'color', 'test_category' ] );
+		// Mock term meta
+		$this->add_filter_with_safe_teardown( 'get_term_metadata', function( $value, $term_id, $meta_key, $single ) {
+			if ( $term_id === 123 && $meta_key === '_wc_facebook_enhanced_catalog_attributes_color' && $single ) {
+				return 'blue';
+			}
+			return $value;
+		}, 10, 4 );
 		
-		// Should return the mocked value
-		$this->assertEquals( 'red', $value );
-	}
-
-	/**
-	 * Test get_value method with term.
-	 */
-	public function test_get_value_with_term() {
 		// Create a proper WP_Term object
 		$term = new \WP_Term( (object) [ 
 			'term_id' => 123,
@@ -322,26 +355,6 @@ class Enhanced_Catalog_Attribute_FieldsTest extends AbstractWPUnitTestWithOption
 		$reflection = new \ReflectionClass( $fields );
 		$method = $reflection->getMethod( 'get_value' );
 		$method->setAccessible( true );
-		
-		// Mock term meta
-		$this->add_filter_with_safe_teardown( 'get_term_metadata', function( $value, $term_id, $meta_key, $single ) {
-			if ( $term_id === 123 && $meta_key === '_wc_facebook_enhanced_catalog_attributes_color' && $single ) {
-				return 'blue';
-			}
-			return $value;
-		}, 10, 4 );
-		
-		// Mock category handler
-		$mock_category_handler = $this->createMock( \WooCommerce\Facebook\Products\FBCategories::class );
-		$mock_category_handler->method( 'is_valid_value_for_attribute' )
-			->willReturn( true );
-		
-		$mock_plugin = $this->createMock( \WC_Facebookcommerce::class );
-		$mock_plugin->method( 'get_facebook_category_handler' )->willReturn( $mock_category_handler );
-		
-		$this->add_filter_with_safe_teardown( 'wc_facebook_instance', function() use ( $mock_plugin ) {
-			return $mock_plugin;
-		} );
 		
 		$value = $method->invokeArgs( $fields, [ 'color', 'test_category' ] );
 		
