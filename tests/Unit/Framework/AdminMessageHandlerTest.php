@@ -265,6 +265,10 @@ class AdminMessageHandlerTest extends AbstractWPUnitTestWithOptionIsolationAndSa
 	 * Test show_messages output.
 	 */
 	public function test_show_messages_output() {
+		// Create and set an admin user with manage_woocommerce capability
+		$user_id = $this->factory->user->create( [ 'role' => 'administrator' ] );
+		wp_set_current_user( $user_id );
+		
 		$handler = new AdminMessageHandler();
 		
 		// Add various message types
@@ -345,6 +349,10 @@ class AdminMessageHandlerTest extends AbstractWPUnitTestWithOptionIsolationAndSa
 	 * Test special characters in messages.
 	 */
 	public function test_special_characters_in_messages() {
+		// Create and set an admin user with manage_woocommerce capability
+		$user_id = $this->factory->user->create( [ 'role' => 'administrator' ] );
+		wp_set_current_user( $user_id );
+		
 		$handler = new AdminMessageHandler();
 		
 		$special_messages = [
