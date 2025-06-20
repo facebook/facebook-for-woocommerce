@@ -78,14 +78,14 @@ class FeedConfigurationDetectionTest extends AbstractWPUnitTestWithOptionIsolati
 		
 		// Mock the API response for read_feeds
 		$mock_feeds_response = $this->createMock( \WooCommerce\Facebook\API\ProductCatalog\ProductFeeds\ReadAll\Response::class );
-		$mock_feeds_response->data = [
+		$mock_feeds_response->method( '__get' )->with( 'data' )->willReturn( [
 			[ 'id' => 'feed_1', 'name' => 'Feed 1' ],
 			[ 'id' => 'test_feed_123', 'name' => 'Test Feed' ]
-		];
+		] );
 		
 		// Mock feed metadata response
 		$mock_feed_response = $this->createMock( \WooCommerce\Facebook\API\Response::class );
-		$feed_data = (object) [
+		$feed_data = [
 			'id' => 'test_feed_123',
 			'created_time' => '2023-01-01T00:00:00+0000',
 			'product_count' => 100,
@@ -99,23 +99,25 @@ class FeedConfigurationDetectionTest extends AbstractWPUnitTestWithOptionIsolati
 				'end_time' => '2023-01-02T01:00:00+0000'
 			]
 		];
-		// Use array access to set properties on the mock
-		foreach ( get_object_vars( $feed_data ) as $key => $value ) {
-			$mock_feed_response->$key = $value;
-		}
+		$mock_feed_response->method( '__get' )->willReturnCallback( function( $key ) use ( $feed_data ) {
+			return $feed_data[ $key ] ?? null;
+		} );
+		$mock_feed_response->method( 'offsetExists' )->willReturnCallback( function( $key ) use ( $feed_data ) {
+			return isset( $feed_data[ $key ] );
+		} );
 		
 		// Mock upload metadata response
 		$mock_upload_response = $this->createMock( \WooCommerce\Facebook\API\Response::class );
-		$upload_data = (object) [
+		$upload_data = [
 			'error_count' => 5,
 			'warning_count' => 10,
 			'num_detected_items' => 105,
 			'num_persisted_items' => 100,
 			'url' => 'https://example.com/feed'
 		];
-		foreach ( get_object_vars( $upload_data ) as $key => $value ) {
-			$mock_upload_response->$key = $value;
-		}
+		$mock_upload_response->method( '__get' )->willReturnCallback( function( $key ) use ( $upload_data ) {
+			return $upload_data[ $key ] ?? null;
+		} );
 		
 		// Mock the API
 		$mock_api = $this->createMock( \WooCommerce\Facebook\API::class );
@@ -226,7 +228,7 @@ class FeedConfigurationDetectionTest extends AbstractWPUnitTestWithOptionIsolati
 		
 		// Mock API to return empty feeds
 		$mock_feeds_response = $this->createMock( \WooCommerce\Facebook\API\ProductCatalog\ProductFeeds\ReadAll\Response::class );
-		$mock_feeds_response->data = [];
+		$mock_feeds_response->method( '__get' )->with( 'data' )->willReturn( [] );
 		
 		$mock_api = $this->createMock( \WooCommerce\Facebook\API::class );
 		$mock_api->method( 'read_feeds' )->willReturn( $mock_feeds_response );
@@ -265,13 +267,13 @@ class FeedConfigurationDetectionTest extends AbstractWPUnitTestWithOptionIsolati
 		
 		// Mock API responses
 		$mock_feeds_response = $this->createMock( \WooCommerce\Facebook\API\ProductCatalog\ProductFeeds\ReadAll\Response::class );
-		$mock_feeds_response->data = [
+		$mock_feeds_response->method( '__get' )->with( 'data' )->willReturn( [
 			[ 'id' => 'feed_123', 'name' => 'Test Feed' ]
-		];
+		] );
 		
 		// Mock feed metadata response
 		$mock_feed_response = $this->createMock( \WooCommerce\Facebook\API\Response::class );
-		$feed_data = (object) [
+		$feed_data = [
 			'id' => 'feed_123',
 			'created_time' => '2023-01-01T00:00:00+0000',
 			'product_count' => 100,
@@ -289,22 +291,25 @@ class FeedConfigurationDetectionTest extends AbstractWPUnitTestWithOptionIsolati
 				'end_time' => '2023-01-02T01:00:00+0000'
 			]
 		];
-		foreach ( get_object_vars( $feed_data ) as $key => $value ) {
-			$mock_feed_response->$key = $value;
-		}
+		$mock_feed_response->method( '__get' )->willReturnCallback( function( $key ) use ( $feed_data ) {
+			return $feed_data[ $key ] ?? null;
+		} );
+		$mock_feed_response->method( 'offsetExists' )->willReturnCallback( function( $key ) use ( $feed_data ) {
+			return isset( $feed_data[ $key ] );
+		} );
 		
 		// Mock upload metadata response
 		$mock_upload_response = $this->createMock( \WooCommerce\Facebook\API\Response::class );
-		$upload_data = (object) [
+		$upload_data = [
 			'error_count' => 5,
 			'warning_count' => 10,
 			'num_detected_items' => 105,
 			'num_persisted_items' => 100,
 			'url' => 'https://example.com/feed'
 		];
-		foreach ( get_object_vars( $upload_data ) as $key => $value ) {
-			$mock_upload_response->$key = $value;
-		}
+		$mock_upload_response->method( '__get' )->willReturnCallback( function( $key ) use ( $upload_data ) {
+			return $upload_data[ $key ] ?? null;
+		} );
 		
 		$mock_api = $this->createMock( \WooCommerce\Facebook\API::class );
 		$mock_api->method( 'read_feeds' )->willReturn( $mock_feeds_response );
@@ -383,11 +388,11 @@ class FeedConfigurationDetectionTest extends AbstractWPUnitTestWithOptionIsolati
 		
 		// Mock API with multiple feeds
 		$mock_feeds_response = $this->createMock( \WooCommerce\Facebook\API\ProductCatalog\ProductFeeds\ReadAll\Response::class );
-		$mock_feeds_response->data = [
+		$mock_feeds_response->method( '__get' )->with( 'data' )->willReturn( [
 			[ 'id' => 'feed_old', 'name' => 'Old Feed' ],
 			[ 'id' => 'feed_123', 'name' => 'Current Feed' ],
 			[ 'id' => 'feed_new', 'name' => 'New Feed' ]
-		];
+		] );
 		
 		// Mock different feed metadata
 		$mock_api = $this->createMock( \WooCommerce\Facebook\API::class );
@@ -395,7 +400,7 @@ class FeedConfigurationDetectionTest extends AbstractWPUnitTestWithOptionIsolati
 		$mock_api->method( 'read_feed' )->willReturnCallback( function( $feed_id ) {
 			$mock_response = $this->createMock( \WooCommerce\Facebook\API\Response::class );
 			if ( $feed_id === 'feed_123' ) {
-				$data = (object) [
+				$data = [
 					'id' => 'feed_123',
 					'created_time' => '2023-01-02T00:00:00+0000',
 					'product_count' => 100,
@@ -405,15 +410,18 @@ class FeedConfigurationDetectionTest extends AbstractWPUnitTestWithOptionIsolati
 					]
 				];
 			} else {
-				$data = (object) [
+				$data = [
 					'id' => $feed_id,
 					'created_time' => '2023-01-01T00:00:00+0000',
 					'product_count' => 50
 				];
 			}
-			foreach ( get_object_vars( $data ) as $key => $value ) {
-				$mock_response->$key = $value;
-			}
+			$mock_response->method( '__get' )->willReturnCallback( function( $key ) use ( $data ) {
+				return $data[ $key ] ?? null;
+			} );
+			$mock_response->method( 'offsetExists' )->willReturnCallback( function( $key ) use ( $data ) {
+				return isset( $data[ $key ] );
+			} );
 			return $mock_response;
 		} );
 		
