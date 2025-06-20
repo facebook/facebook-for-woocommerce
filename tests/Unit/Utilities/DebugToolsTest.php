@@ -14,6 +14,29 @@ use WooCommerce\Facebook\Tests\AbstractWPUnitTestWithOptionIsolationAndSafeFilte
 class DebugToolsTest extends AbstractWPUnitTestWithOptionIsolationAndSafeFiltering {
 
 	/**
+	 * Set up before each test.
+	 */
+	public function setUp(): void {
+		parent::setUp();
+		
+		// Define the global function once if not already defined
+		if ( ! function_exists( 'facebook_for_woocommerce' ) ) {
+			function facebook_for_woocommerce() {
+				return $GLOBALS['test_debug_tools_plugin_mock'] ?? null;
+			}
+		}
+	}
+	
+	/**
+	 * Clean up after each test.
+	 */
+	public function tearDown(): void {
+		// Clean up global variable
+		unset( $GLOBALS['test_debug_tools_plugin_mock'] );
+		parent::tearDown();
+	}
+
+	/**
 	 * Test that the class can be instantiated.
 	 */
 	public function test_class_exists_and_can_be_instantiated() {
@@ -55,23 +78,13 @@ class DebugToolsTest extends AbstractWPUnitTestWithOptionIsolationAndSafeFilteri
 		$mock_plugin = $this->createMock( \WC_Facebookcommerce::class );
 		$mock_plugin->method( 'get_connection_handler' )->willReturn( $mock_connection_handler );
 		
-		// Override the global function
-		if ( ! function_exists( 'facebook_for_woocommerce' ) ) {
-			function facebook_for_woocommerce() {
-				global $test_mock_plugin;
-				return $test_mock_plugin;
-			}
-		}
-		global $test_mock_plugin;
-		$test_mock_plugin = $mock_plugin;
+		// Set the global mock
+		$GLOBALS['test_debug_tools_plugin_mock'] = $mock_plugin;
 		
 		$result = $debug_tools->add_debug_tool( $tools );
 		
 		// Should return unchanged tools array
 		$this->assertEquals( $tools, $result );
-		
-		// Clean up
-		$test_mock_plugin = null;
 	}
 
 	/**
@@ -93,23 +106,13 @@ class DebugToolsTest extends AbstractWPUnitTestWithOptionIsolationAndSafeFilteri
 		$mock_plugin->method( 'get_connection_handler' )->willReturn( $mock_connection_handler );
 		$mock_plugin->method( 'get_integration' )->willReturn( $mock_integration );
 		
-		// Override the global function
-		if ( ! function_exists( 'facebook_for_woocommerce' ) ) {
-			function facebook_for_woocommerce() {
-				global $test_mock_plugin;
-				return $test_mock_plugin;
-			}
-		}
-		global $test_mock_plugin;
-		$test_mock_plugin = $mock_plugin;
+		// Set the global mock
+		$GLOBALS['test_debug_tools_plugin_mock'] = $mock_plugin;
 		
 		$result = $debug_tools->add_debug_tool( $tools );
 		
 		// Should return unchanged tools array
 		$this->assertEquals( $tools, $result );
-		
-		// Clean up
-		$test_mock_plugin = null;
 	}
 
 	/**
@@ -131,15 +134,8 @@ class DebugToolsTest extends AbstractWPUnitTestWithOptionIsolationAndSafeFilteri
 		$mock_plugin->method( 'get_connection_handler' )->willReturn( $mock_connection_handler );
 		$mock_plugin->method( 'get_integration' )->willReturn( $mock_integration );
 		
-		// Override the global function
-		if ( ! function_exists( 'facebook_for_woocommerce' ) ) {
-			function facebook_for_woocommerce() {
-				global $test_mock_plugin;
-				return $test_mock_plugin;
-			}
-		}
-		global $test_mock_plugin;
-		$test_mock_plugin = $mock_plugin;
+		// Set the global mock
+		$GLOBALS['test_debug_tools_plugin_mock'] = $mock_plugin;
 		
 		$result = $debug_tools->add_debug_tool( $tools );
 		
@@ -160,9 +156,6 @@ class DebugToolsTest extends AbstractWPUnitTestWithOptionIsolationAndSafeFilteri
 		$this->assertIsCallable( $result['wc_facebook_delete_background_jobs']['callback'] );
 		$this->assertIsCallable( $result['reset_all_product_fb_settings']['callback'] );
 		$this->assertIsCallable( $result['wc_facebook_delete_all_products']['callback'] );
-		
-		// Clean up
-		$test_mock_plugin = null;
 	}
 
 	/**
@@ -226,30 +219,20 @@ class DebugToolsTest extends AbstractWPUnitTestWithOptionIsolationAndSafeFilteri
 		// Mock the connection handler with disconnect method
 		$mock_connection_handler = $this->getMockBuilder( \WooCommerce\Facebook\Handlers\Connection::class )
 			->disableOriginalConstructor()
-			->addMethods( ['disconnect'] )
+			->onlyMethods( ['disconnect'] )
 			->getMock();
 		$mock_connection_handler->expects( $this->once() )->method( 'disconnect' );
 		
 		$mock_plugin = $this->createMock( \WC_Facebookcommerce::class );
 		$mock_plugin->method( 'get_connection_handler' )->willReturn( $mock_connection_handler );
 		
-		// Override the global function
-		if ( ! function_exists( 'facebook_for_woocommerce' ) ) {
-			function facebook_for_woocommerce() {
-				global $test_mock_plugin;
-				return $test_mock_plugin;
-			}
-		}
-		global $test_mock_plugin;
-		$test_mock_plugin = $mock_plugin;
+		// Set the global mock
+		$GLOBALS['test_debug_tools_plugin_mock'] = $mock_plugin;
 		
 		$result = $debug_tools->clear_facebook_settings();
 		
 		// Check result message
 		$this->assertEquals( 'Cleared all Facebook settings!', $result );
-		
-		// Clean up
-		$test_mock_plugin = null;
 	}
 
 	/**
@@ -271,23 +254,13 @@ class DebugToolsTest extends AbstractWPUnitTestWithOptionIsolationAndSafeFilteri
 		$mock_plugin = $this->createMock( \WC_Facebookcommerce::class );
 		$mock_plugin->job_manager = $mock_job_manager;
 		
-		// Override the global function
-		if ( ! function_exists( 'facebook_for_woocommerce' ) ) {
-			function facebook_for_woocommerce() {
-				global $test_mock_plugin;
-				return $test_mock_plugin;
-			}
-		}
-		global $test_mock_plugin;
-		$test_mock_plugin = $mock_plugin;
+		// Set the global mock
+		$GLOBALS['test_debug_tools_plugin_mock'] = $mock_plugin;
 		
 		$result = $debug_tools->reset_all_product_fb_settings();
 		
 		// Check result message
 		$this->assertEquals( 'Reset products Facebook settings job started!', $result );
-		
-		// Clean up
-		$test_mock_plugin = null;
 	}
 
 	/**
@@ -309,23 +282,13 @@ class DebugToolsTest extends AbstractWPUnitTestWithOptionIsolationAndSafeFilteri
 		$mock_plugin = $this->createMock( \WC_Facebookcommerce::class );
 		$mock_plugin->job_manager = $mock_job_manager;
 		
-		// Override the global function
-		if ( ! function_exists( 'facebook_for_woocommerce' ) ) {
-			function facebook_for_woocommerce() {
-				global $test_mock_plugin;
-				return $test_mock_plugin;
-			}
-		}
-		global $test_mock_plugin;
-		$test_mock_plugin = $mock_plugin;
+		// Set the global mock
+		$GLOBALS['test_debug_tools_plugin_mock'] = $mock_plugin;
 		
 		$result = $debug_tools->delete_all_products();
 		
 		// Check result message
 		$this->assertEquals( 'Delete products from Facebook catalog job started!', $result );
-		
-		// Clean up
-		$test_mock_plugin = null;
 	}
 
 	/**
@@ -346,15 +309,8 @@ class DebugToolsTest extends AbstractWPUnitTestWithOptionIsolationAndSafeFilteri
 		$mock_plugin->method( 'get_connection_handler' )->willReturn( $mock_connection_handler );
 		$mock_plugin->method( 'get_integration' )->willReturn( $mock_integration );
 		
-		// Override the global function
-		if ( ! function_exists( 'facebook_for_woocommerce' ) ) {
-			function facebook_for_woocommerce() {
-				global $test_mock_plugin;
-				return $test_mock_plugin;
-			}
-		}
-		global $test_mock_plugin;
-		$test_mock_plugin = $mock_plugin;
+		// Set the global mock
+		$GLOBALS['test_debug_tools_plugin_mock'] = $mock_plugin;
 		
 		$result = $debug_tools->add_debug_tool( $tools );
 		
@@ -377,9 +333,6 @@ class DebugToolsTest extends AbstractWPUnitTestWithOptionIsolationAndSafeFilteri
 		$this->assertEquals( 'Facebook: Delete all products from your Facebook Catalog', $result['wc_facebook_delete_all_products']['name'] );
 		$this->assertEquals( 'Delete all products', $result['wc_facebook_delete_all_products']['button'] );
 		$this->assertStringContainsString( 'delete all products from', $result['wc_facebook_delete_all_products']['desc'] );
-		
-		// Clean up
-		$test_mock_plugin = null;
 	}
 
 	/**
@@ -407,15 +360,8 @@ class DebugToolsTest extends AbstractWPUnitTestWithOptionIsolationAndSafeFilteri
 		$mock_plugin->method( 'get_connection_handler' )->willReturn( $mock_connection_handler );
 		$mock_plugin->method( 'get_integration' )->willReturn( $mock_integration );
 		
-		// Override the global function
-		if ( ! function_exists( 'facebook_for_woocommerce' ) ) {
-			function facebook_for_woocommerce() {
-				global $test_mock_plugin;
-				return $test_mock_plugin;
-			}
-		}
-		global $test_mock_plugin;
-		$test_mock_plugin = $mock_plugin;
+		// Set the global mock
+		$GLOBALS['test_debug_tools_plugin_mock'] = $mock_plugin;
 		
 		$result = $debug_tools->add_debug_tool( $existing_tools );
 		
@@ -428,8 +374,5 @@ class DebugToolsTest extends AbstractWPUnitTestWithOptionIsolationAndSafeFilteri
 		$this->assertArrayHasKey( 'wc_facebook_delete_background_jobs', $result );
 		$this->assertArrayHasKey( 'reset_all_product_fb_settings', $result );
 		$this->assertArrayHasKey( 'wc_facebook_delete_all_products', $result );
-		
-		// Clean up
-		$test_mock_plugin = null;
 	}
 } 
