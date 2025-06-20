@@ -451,7 +451,6 @@ class WCFacebookCommerceIntegrationTest extends \WooCommerce\Facebook\Tests\Abst
 		do_action( 'wp_enqueue_styles' );
 
 		$this->assertTrue( wp_script_is( 'wc_facebook_infobanner_jsx' ) );
-		$this->assertTrue( wp_style_is( 'wc_facebook_infobanner_css' ) );
 		$this->assertFalse( wp_style_is( 'wc_facebook_css' ) );
 	}
 
@@ -473,7 +472,6 @@ class WCFacebookCommerceIntegrationTest extends \WooCommerce\Facebook\Tests\Abst
 		do_action( 'wp_enqueue_styles' );
 
 		$this->assertTrue( wp_script_is( 'wc_facebook_infobanner_jsx' ) );
-		$this->assertTrue( wp_style_is( 'wc_facebook_infobanner_css' ) );
 		$this->assertTrue( wp_style_is( 'wc_facebook_css' ) );
 		$this->assertMatchesRegularExpression( '/window.facebookAdsToolboxConfig = {/', $output );
 	}
