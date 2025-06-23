@@ -156,6 +156,46 @@ class WC_Facebookcommerce extends WooCommerce\Facebook\Framework\Plugin {
 		);
 		$this->init();
 		$this->init_admin();
+
+		// Register shutdown function to check and deactivate on fatal errors.
+		register_shutdown_function( [ $this, 'fatal_error_shutdown_handler' ] );
+	}
+
+	/**
+	 * Shutdown handler to catch fatal errors and deactivate this plugin.
+	 *
+	 * @return void
+	 */
+	public function fatal_error_shutdown_handler() {
+		$error = error_get_last();
+
+		if ( $error && in_array( $error['type'], [E_ERROR, E_PARSE, E_CORE_ERROR, E_COMPILE_ERROR], true ) ) {
+			if ( is_plugin_active( plugin_basename( __FILE__ ) ) ) {
+				include_once ABSPATH . 'wp-admin/includes/plugin.php';
+
+				$plugin_slug = 'facebook-for-woocommerce';
+
+				if ( function_exists( 'wc_get_logger' ) ) {
+					$logger->debug( 'Attempting to deactivate plugin file: ' . $plugin_slug, array( 'source' => 'facebook-for-woocommerce' ) );
+				}
+
+				deactivate_plugins( $plugin_slug );
+
+				set_transient( 'fbcom_shutdown_deactivated', $plugin_slug, 60 );
+
+				if ( function_exists( 'wp_cache_flush' ) ) {
+					wp_cache_flush();
+				}
+
+				if ( function_exists( 'wp_cache_delete' ) ) {
+					wp_cache_delete( 'active_plugins', 'options' );
+				}
+
+				if ( function_exists( 'wc_get_logger' ) ) {
+					$logger->debug( "WC_Facebookcommerce plugin deactivated due to fatal error", array( 'source' => 'facebook-for-woocommerce' ) );
+				}
+			}
+		}
 	}
 
 	/**
