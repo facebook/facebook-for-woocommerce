@@ -80,8 +80,8 @@ class Update {
 				'extra_data' => [
 					'is_multisite'                => is_multisite(),
 					'is_product_sync_enabled'     => facebook_for_woocommerce()->get_integration()->is_product_sync_enabled(),
-					'excluded_product_categories' => $excluded_product_categories,
-					'excluded_product_tags'       => $excluded_product_tags,
+					'excluded_product_categories' => json_encode( $excluded_product_categories ),
+					'excluded_product_tags'       => json_encode( $excluded_product_tags ),
 					'published_product_count'     => facebook_for_woocommerce()->get_integration()->get_product_count(),
 					'opted_out_woo_all_products'  => get_option( self::MASTER_SYNC_OPT_OUT_TIME ),
 				],

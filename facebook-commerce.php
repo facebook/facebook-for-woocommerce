@@ -323,8 +323,6 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 					[ $this, 'on_quick_and_bulk_edit_save' ]
 				);
 
-				add_action( 'add_meta_boxes_product', [ $this, 'display_batch_api_completed' ], 10, 2 );
-
 				add_action(
 					'wp_ajax_ajax_fb_toggle_visibility',
 					array( $this, 'ajax_fb_toggle_visibility' )
@@ -995,7 +993,7 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 
 		$product_id = $product->get_id();
 
-		if ( $product->is_type( 'variation' ) ) {
+		if ( $product->is_type( 'variation' ) || $product->is_type( 'simple' ) ) {
 			$retailer_id = \WC_Facebookcommerce_Utils::get_fb_retailer_id( $product );
 			// enqueue variation to be deleted in the background
 			$this->facebook_for_woocommerce->get_products_sync_handler()->delete_products( [ $retailer_id ] );
@@ -1010,9 +1008,6 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 			}
 			// enqueue variations to be deleted in the background
 			$this->facebook_for_woocommerce->get_products_sync_handler()->delete_products( $retailer_ids );
-		} else {
-
-			$this->delete_product_item( $product_id );
 		}
 
 		// clear out both item and group IDs
@@ -1165,16 +1160,8 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 			return;
 		}
 
-		// Check if product group has been published to FB. If not, it's new.
-		// If yes, loop through variants and see if product items are published.
-		$fb_product_group_id = $this->get_product_fbid( self::FB_PRODUCT_GROUP_ID, $wp_id, $woo_product );
-		if ( $fb_product_group_id ) {
-			$woo_product->fb_visibility = Products::is_product_visible( $woo_product->woo_product );
-			$this->update_product_group( $woo_product );
-		} else {
-			$retailer_id = WC_Facebookcommerce_Utils::get_fb_retailer_id( $woo_product->woo_product );
-			$this->create_product_group( $woo_product, $retailer_id );
-		}
+		$retailer_id = WC_Facebookcommerce_Utils::get_fb_retailer_id( $woo_product->woo_product );
+		$this->create_product_group( $woo_product, $retailer_id );
 
 		$variation_ids = [];
 
@@ -1206,18 +1193,7 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 		if ( ! $this->product_should_be_synced( $woo_product->woo_product ) ) {
 			return;
 		}
-
-		// Check if this product has already been published to FB.
-		// If not, it's new!
-		$fb_product_item_id = $this->get_product_fbid( self::FB_PRODUCT_ITEM_ID, $wp_id, $woo_product );
-
-		if ( $fb_product_item_id ) {
-			$woo_product->fb_visibility = Products::is_product_visible( $woo_product->woo_product );
-			$this->update_product_item_batch_api( $woo_product, $fb_product_item_id );
-			return $fb_product_item_id;
-		} else {
-			return $this->create_product_simple( $woo_product );  // new product
-		}
+		return $this->create_product_simple( $woo_product );  // new product
 	}
 
 	/**
@@ -1296,6 +1272,10 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 
 	/**
 	 * Update existing product group (variant data only)
+	 *
+	 * @deprecated as we are no longer calling an update
+	 * We create everytime and it will be handled in the backend
+	 * TO_BE_DELETED
 	 *
 	 * @param WC_Facebook_Product $woo_product
 	 **/
@@ -1679,52 +1659,6 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 			);
 		}
 	}
-
-	/**
-	 * Displays Batch API completed message on simple_product_publish.
-	 * This is called by the hook `add_meta_boxes_product` because that is sufficient time
-	 * to retrieve product_item_id for the product item created via batch API.
-	 *
-	 * Some sanity checks are added before displaying the message after publish
-	 *  - product_item_id : if exists, means product was created else not and don't display
-	 *  - should_sync: Don't display if the product is not supposed to be synced.
-	 *
-	 * @param WP_Post $post WordPress Post
-	 * @return void
-	 */
-	public function display_batch_api_completed( $post ) {
-		$fb_product         = new \WC_Facebook_Product( $post->ID );
-		$fb_product_item_id = null;
-		$should_sync        = true;
-
-		// Bail if this is not a WooCommerce product.
-		if ( ! $fb_product->woo_product instanceof \WC_Product ) {
-			return;
-		}
-
-		try {
-			facebook_for_woocommerce()->get_product_sync_validator( $fb_product->woo_product )->validate();
-		} catch ( \Exception $e ) {
-			$should_sync = false;
-		}
-
-		if ( $should_sync ) {
-			if ( $fb_product->woo_product->is_type( 'variable' ) ) {
-				$fb_product_item_id = $this->get_product_fbid( self::FB_PRODUCT_GROUP_ID, $post->ID, $fb_product->woo_product );
-			} else {
-				$fb_product_item_id = $this->get_product_fbid( self::FB_PRODUCT_ITEM_ID, $post->ID, $fb_product->woo_product );
-			}
-		}
-
-		if ( $fb_product_item_id ) {
-			$this->display_success_message(
-				'<a href="https://business.facebook.com/commerce/catalogs/' .
-					$this->get_product_catalog_id() .
-					'/products/" target="_blank">View product on Meta catalog</a>'
-			);
-		}
-	}
-
 
 	/**
 	 * Checks the feed upload status (FBE v1.0).
@@ -2713,6 +2647,7 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 	}
 
 	/**
+	 * @deprecated
 	 * Delete product item by id.
 	 *
 	 * @param int $wp_id
@@ -2776,7 +2711,7 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 		}
 
 		$should_set_visible = self::FB_SHOP_PRODUCT_VISIBLE === $visibility;
-		if ( $product->is_type( 'variation' ) ) {
+		if ( $product->is_type( 'variation' ) || $product->is_type( 'simple' ) ) {
 			Products::set_product_visibility( $product, $should_set_visible );
 			$this->facebook_for_woocommerce->get_products_sync_handler()->create_or_update_products( [ $product->get_id() ] );
 		} elseif ( $product->is_type( 'variable' ) ) {
@@ -2797,28 +2732,6 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 			}
 			// sync product with all variations
 			$this->facebook_for_woocommerce->get_products_sync_handler()->create_or_update_products( $product_ids );
-		} else {
-			$fb_product_item_id = $this->get_product_fbid( self::FB_PRODUCT_ITEM_ID, $product->get_id() );
-			if ( ! $fb_product_item_id ) {
-				return;
-			}
-			try {
-				$set_visibility = $this->facebook_for_woocommerce->get_api()->update_product_item( $fb_product_item_id, [ 'visibility' => $visibility ] );
-				if ( $set_visibility->success ) {
-					Products::set_product_visibility( $product, $should_set_visible );
-				}
-			} catch ( ApiException $e ) {
-				$message = sprintf( 'There was an error trying to update product item: %s', $e->getMessage() );
-				Logger::log(
-					$message,
-					[],
-					array(
-						'should_send_log_to_meta'        => false,
-						'should_save_log_in_woocommerce' => true,
-						'woocommerce_log_level'          => \WC_Log_Levels::ERROR,
-					)
-				);
-			}
 		}
 	}
 
@@ -2831,6 +2744,9 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 	 */
 	public function on_quick_and_bulk_edit_save( $product ) {
 		// bail if not a product or product is not enabled for sync
+		static $bulk_product_edit_ids    = [];
+		static $bulk_products_to_exclude = [];
+
 		if ( ! $product instanceof \WC_Product || ! Products::published_product_should_be_synced( $product ) ) {
 			return;
 		}
@@ -2838,13 +2754,28 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 		$wp_id      = $product->get_id();
 		$visibility = get_post_status( $wp_id ) === 'publish' ? self::FB_SHOP_PRODUCT_VISIBLE : self::FB_SHOP_PRODUCT_HIDDEN;
 
-		if ( self::FB_SHOP_PRODUCT_VISIBLE === $visibility ) {
-			// - new status is 'publish' regardless of old status, sync to Facebook
-			$this->on_product_publish( $wp_id );
-		} else {
+		if ( self::FB_SHOP_PRODUCT_HIDDEN === $visibility ) {
 			// - product never published to Facebook, new status is not publish
 			// - product new status is not publish but may have been published before
 			$this->update_fb_visibility( $product, $visibility );
+		}
+
+		if ( ! empty( $_REQUEST['post'] ) ) {
+			$bulk_product_edit_ids = $_REQUEST['post'];
+		}
+
+		/**
+		 * Draft products are also included in this bulk edit
+		 * As they will not be sent in requests since in backgroun jon they will be discarded
+		 * when validations are checked
+		 */
+		$bulk_action_products_cumulative_count = did_action( 'woocommerce_product_bulk_edit_save' );
+
+		if ( count( $bulk_product_edit_ids ) === $bulk_action_products_cumulative_count ) {
+			$unique_in_bulk_prouduct_edit_ids   = array_diff( $bulk_product_edit_ids, $bulk_products_to_exclude );
+			$unique_in_bulk_prouduct_to_exclude = array_diff( $bulk_products_to_exclude, $bulk_product_edit_ids );
+			$final_products_to_updte            = array_merge( $unique_in_bulk_prouduct_edit_ids, $unique_in_bulk_prouduct_to_exclude );
+			$this->facebook_for_woocommerce->get_products_sync_handler()->create_or_update_all_products_for_bulk_edit( $final_products_to_updte );
 		}
 	}
 

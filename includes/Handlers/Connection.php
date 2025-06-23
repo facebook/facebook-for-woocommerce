@@ -196,6 +196,34 @@ class Connection {
 	}
 
 	/**
+	 * Forces a refresh of installation data and config sync with Meta, bypassing transient checks.
+	 * Used during version upgrades to ensure config is properly synchronized.
+	 *
+	 * @since 3.5.4
+	 */
+	public function force_config_sync_on_update() {
+
+		// bail if not connected
+		if ( ! $this->is_connected() ) {
+			$this->get_plugin()->log( 'Skipping config sync on update - not connected to Facebook' );
+			return;
+		}
+
+		$this->get_plugin()->log( 'Starting forced config sync on version update' );
+
+		try {
+			// Force refresh installation data without transient check
+			$this->update_installation_data();
+			$this->repair_or_update_commerce_integration_data();
+			$this->get_plugin()->log( 'Successfully completed forced config sync on version update' );
+
+		} catch ( ApiException $exception ) {
+			$this->get_plugin()->log( 'Failed to complete forced config sync on update: ' . $exception->getMessage(), null, 'error' );
+		}
+
+	}
+
+	/**
 	 * Refreshes the client side info and configuration.
 	 *
 	 * @since 3.4.8

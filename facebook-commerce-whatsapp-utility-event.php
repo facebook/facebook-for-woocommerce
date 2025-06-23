@@ -85,14 +85,16 @@ class WC_Facebookcommerce_Whatsapp_Utility_Event {
 		}
 
 		$order = wc_get_order( $order_id );
-		// Check WhatsApp Consent Checkbox is selected in shipping and billing
-		$billing_consent_value  = $order->get_meta( '_wc_billing/wc_facebook/whatsapp_consent_checkbox' );
-		$shipping_consent_value = $order->get_meta( '_wc_shipping/wc_facebook/whatsapp_consent_checkbox' );
-		$has_whatsapp_consent   = $billing_consent_value && $shipping_consent_value;
+		// Check WhatsApp Consent Checkbox is selected in shipping or billing
+		$user_wa_consent             = $this->has_billing_or_shipping_number_whatsapp_consent( $order );
+		$wa_billing_consent_enabled  = $user_wa_consent['has_user_consented_to_wa_billing_number_notif'];
+		$wa_shipping_consent_enabled = $user_wa_consent['has_user_consented_to_wa_shipping_number_notif'];
+
+		$has_whatsapp_consent = $wa_billing_consent_enabled || $wa_shipping_consent_enabled;
 		// Get WhatsApp Phone number from entered Billing and Shipping phone number
 		$billing_phone_number  = $order->get_billing_phone();
 		$shipping_phone_number = $order->get_shipping_phone();
-		$phone_number          = ( isset( $billing_phone_number ) && $billing_consent_value ) ? $billing_phone_number : $shipping_phone_number;
+		$phone_number          = ( isset( $billing_phone_number ) && $wa_billing_consent_enabled ) ? $billing_phone_number : $shipping_phone_number;
 		// Get Customer first name
 		$first_name = $order->get_billing_first_name();
 		// Get Total Refund Amount for Order Refunded event
@@ -127,5 +129,46 @@ class WC_Facebookcommerce_Whatsapp_Utility_Event {
 			return;
 		}
 		WhatsAppUtilityConnection::post_whatsapp_utility_messages_events_call( $event, $event_config_id, $language_code, $wacs_id, $order_id, $phone_number, $first_name, $refund_amount, $currency, $bisu_token );
+	}
+
+	/**
+	 * Determines if WhatsApp Consent is Enabled for a user either for Billing or Shipping Phone Number for Blocks or Classic Flows
+	 *
+	 * @param \WC_Order $order Order object
+	 * @since 2.3.0
+	 *
+	 * @return array
+	 */
+	private function has_billing_or_shipping_number_whatsapp_consent( $order ) {
+		$block_billing_consent_value    = $order->get_meta( '_wc_billing/wc_facebook/whatsapp_consent_checkbox' );
+		$block_shipping_consent_value   = $order->get_meta( '_wc_shipping/wc_facebook/whatsapp_consent_checkbox' );
+		$classic_billing_consent_value  = $order->get_meta( '_billing_whatsapp_consent' );
+		$classic_shipping_consent_value = $order->get_meta( '_shipping_whatsapp_consent' );
+
+		$has_user_consented_to_wa_billing_number_notif  = false;
+		$has_user_consented_to_wa_shipping_number_notif = false;
+		if ( $block_billing_consent_value || $classic_billing_consent_value ) {
+			$has_user_consented_to_wa_billing_number_notif = true;
+		}
+
+		if ( $block_shipping_consent_value || $classic_shipping_consent_value ) {
+			$has_user_consented_to_wa_shipping_number_notif = true;
+		}
+
+		wc_get_logger()->info(
+			sprintf(
+				/* translators: %s consent for billing and shipping */
+				__( 'WhatsApp Consent info for user  $block_billing_consent_value: %1$s, $block_shipping_consent_value: %2$s, $classic_billing_consent_value: %3$s, $classic_shipping_consent_value: %4$s', 'facebook-for-woocommerce' ),
+				$block_billing_consent_value,
+				$block_shipping_consent_value,
+				$classic_billing_consent_value,
+				$classic_shipping_consent_value
+			)
+		);
+
+		return array(
+			'has_user_consented_to_wa_billing_number_notif' => $has_user_consented_to_wa_billing_number_notif,
+			'has_user_consented_to_wa_shipping_number_notif' => $has_user_consented_to_wa_shipping_number_notif,
+		);
 	}
 }

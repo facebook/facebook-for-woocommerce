@@ -83,6 +83,44 @@ class Sync {
 
 
 	/**
+	 * Adds all eligible product IDs to the requests array to be created or updated.
+	 * which are coming form bulk edit
+	 *
+	 * @see \WC_Facebook_Product_Feed::get_product_ids()
+	 * @see \WC_Facebook_Product_Feed::write_product_feed_file()
+	 *
+	 * @since 3.5.3
+	 *
+	 * @param array $product_ids for the bulk edit
+	 */
+	public function create_or_update_all_products_for_bulk_edit( array $product_ids ) {
+		$profiling_logger = facebook_for_woocommerce()->get_profiling_logger();
+		$profiling_logger->start( 'create_or_update_all_products_for_bulk_edit' );
+
+		$parent_products    = [];
+		$variation_products = [];
+
+		foreach ( $product_ids as $product_id ) {
+			$product = wc_get_product( $product_id );
+			if ( $product->is_type( 'variable' ) ) {
+				$parent_products[] = $product_id;
+				foreach ( $product->get_children() as $child_id ) {
+					$variation_products[] = $child_id;
+				}
+			}
+		}
+
+		$final_product_ids = array_diff( $product_ids, $parent_products );
+		$final_product_ids = array_merge( $final_product_ids, $variation_products );
+
+		// Queue up these IDs for sync. they will only be included in the final requests if they should be synced.
+		$this->create_or_update_products( $final_product_ids );
+
+		$profiling_logger->stop( 'create_or_update_all_products_for_bulk_edit' );
+	}
+
+
+	/**
 	 * Adds the given product IDs to the requests array to be updated.
 	 *
 	 * @since 2.0.0
