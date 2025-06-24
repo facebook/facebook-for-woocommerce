@@ -152,13 +152,13 @@ class WC_Facebookcommerce extends WooCommerce\Facebook\Framework\Plugin {
 		parent::__construct(
 			self::PLUGIN_ID,
 			self::VERSION,
-			[ 'text_domain' => 'facebook-for-woocommerce' ]
+			array( 'text_domain' => 'facebook-for-woocommerce' )
 		);
 		$this->init();
 		$this->init_admin();
 
 		// Register shutdown function to check and deactivate on fatal errors.
-		register_shutdown_function( [ $this, 'fatal_error_shutdown_handler' ] );
+		register_shutdown_function( array( $this, 'fatal_error_shutdown_handler' ) );
 	}
 
 	/**
@@ -169,7 +169,7 @@ class WC_Facebookcommerce extends WooCommerce\Facebook\Framework\Plugin {
 	public function fatal_error_shutdown_handler() {
 		$error = error_get_last();
 
-		if ( $error && in_array( $error['type'], [E_ERROR, E_PARSE, E_CORE_ERROR, E_COMPILE_ERROR], true ) ) {
+		if ( $error && in_array( $error['type'], array( E_ERROR, E_PARSE, E_CORE_ERROR, E_COMPILE_ERROR ), true ) ) {
 			$plugin_slug = 'facebook-for-woocommerce/facebook-for-woocommerce.php';
 
 			if ( is_plugin_active( $plugin_slug ) ) {
@@ -184,6 +184,21 @@ class WC_Facebookcommerce extends WooCommerce\Facebook\Framework\Plugin {
 
 				set_transient( 'fbcom_shutdown_deactivated', $plugin_slug, 60 );
 
+				$admin_email = get_option( 'admin_email' );
+
+				$subject = 'Facebook for WooCommerce plugin deactivated due to fatal error';
+
+				$message  = "The plugin was automatically deactivated after a fatal error was detected.\n\n";
+				$message .= "Error details:\n";
+				$message .= 'Type: ' . $error['type'] . "\n";
+				$message .= 'Message: ' . $error['message'] . "\n";
+				$message .= 'File: ' . $error['file'] . "\n";
+				$message .= 'Line: ' . $error['line'] . "\n\n";
+				$message .= "Plugin: facebook-for-woocommerce\n";
+				$message .= 'Site: ' . get_bloginfo( 'url' ) . "\n";
+
+				@wp_mail( $admin_email, $subject, $message );
+
 				if ( function_exists( 'wp_cache_flush' ) ) {
 					wp_cache_flush();
 				}
@@ -193,7 +208,7 @@ class WC_Facebookcommerce extends WooCommerce\Facebook\Framework\Plugin {
 				}
 
 				if ( function_exists( 'wc_get_logger' ) ) {
-					$logger->debug( "WC_Facebookcommerce plugin deactivated due to fatal error", array( 'source' => 'facebook-for-woocommerce' ) );
+					$logger->debug( 'WC_Facebookcommerce plugin deactivated due to fatal error', array( 'source' => 'facebook-for-woocommerce' ) );
 				}
 			}
 		}
@@ -291,7 +306,7 @@ class WC_Facebookcommerce extends WooCommerce\Facebook\Framework\Plugin {
 
 			// Init jobs
 			$this->job_manager = new WooCommerce\Facebook\Jobs\JobManager();
-			add_action( 'init', [ $this->job_manager, 'init' ] );
+			add_action( 'init', array( $this->job_manager, 'init' ) );
 			add_action( 'admin_init', array( $this->rollout_switches, 'init' ) );
 			// Instantiate the debug tools.
 			$this->debug_tools = new DebugTools();
