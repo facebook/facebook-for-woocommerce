@@ -8,14 +8,10 @@ concurrency:
 
 jobs:
   JSUnitTests:
-    name: JavaScript unit tests - Node ${{ matrix.node }}
+    name: JavaScript unit tests
     runs-on: ubuntu-latest
     env:
       NODE_ENV: test
-    strategy:
-      matrix:
-        node: [22]  # Using Node 22 as specified in package.json engine requirements
-      fail-fast: false  # Continue with other tests if one fails
 
     steps:
       - name: Checkout repository
@@ -24,7 +20,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v3
         with:
-          node-version: ${{ matrix.node }}
+          node-version-file: 'package.json'
           cache: 'npm'
 
       - name: Prepare package.json for Linux
