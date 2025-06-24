@@ -9,9 +9,19 @@ on:
 jobs:
   set-stable-tag:
     runs-on: ubuntu-latest
-    # environment: Deployment
+    environment: Deployment
     steps:
       - uses: actions/checkout@v4
+
+      - name: Fail if not on a release publish branch
+        run: |
+          echo "Current ref: ${{ github.ref }}"
+          BRANCH="${{ github.ref#refs/heads/ }}"
+          if [[ ! $BRANCH == release/*/publish ]]; then
+            echo "❌ This workflow can only be run on release/*/publish branches."
+            exit 1
+          fi
+          echo "✅ Branch $BRANCH is allowed."
 
       - name: Get NPM Version
         id: package-version
@@ -20,7 +30,7 @@ jobs:
       # - name: Validate Git tag
       #   run: |
       #     if [ ! $(git tag -l "v${{ steps.package-version.outputs.current-version}}") ]; then
-      #       echo "Git tag does not exist" 1>&2
+      #       echo "❌ Git tag does not exist" 1>&2
       #       exit 1
       #     fi
 
@@ -33,7 +43,7 @@ jobs:
       # - name: Validate SVN tag
       #   run: |
       #     if [ ! -d "woocommerce_svn/tags/${{ steps.package-version.outputs.current-version}}" ]; then
-      #       echo "SVN tag directory does not exist" 1>&2
+      #       echo "❌ SVN tag directory does not exist" 1>&2
       #       exit 1
       #     fi
 
@@ -44,3 +54,4 @@ jobs:
           sed -i -E "s/^(Stable tag:)[[:space:]]*[0-9.]+/\1 $NEW_VERSION/" "readme.txt"
           cat readme.txt
           git diff
+
