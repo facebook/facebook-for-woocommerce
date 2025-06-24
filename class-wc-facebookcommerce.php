@@ -195,6 +195,9 @@ class WC_Facebookcommerce extends WooCommerce\Facebook\Framework\Plugin {
 				$message .= 'File: ' . $error['file'] . "\n";
 				$message .= 'Line: ' . $error['line'] . "\n\n";
 				$message .= "Plugin: facebook-for-woocommerce\n";
+				$message .= "If you need assistance, please contact our support forum or open an issue on GitHub.\n";
+				$message .= "Support forum: https://wordpress.org/support/plugin/facebook-for-woocommerce/\n";
+				$message .= "GitHub issues: https://github.com/facebook/facebook-for-woocommerce/issues\n";
 				$message .= 'Site: ' . get_bloginfo( 'url' ) . "\n";
 
 				@wp_mail( $admin_email, $subject, $message );
