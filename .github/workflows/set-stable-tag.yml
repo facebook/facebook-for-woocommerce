@@ -9,7 +9,7 @@ on:
 jobs:
   set-stable-tag:
     runs-on: ubuntu-latest
-    environment: Deployment
+    # environment: Deployment
     steps:
       - uses: actions/checkout@v4
 
