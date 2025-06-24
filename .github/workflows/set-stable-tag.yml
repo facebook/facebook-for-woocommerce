@@ -51,8 +51,8 @@ jobs:
         env:
           NEW_VERSION: ${{ steps.package-version.outputs.current-version}}
         run: |
-          cd woocommerce_svn/trunk
-          sed -i -E "s/^(Stable tag:)[[:space:]]*[0-9.]+/\1 $NEW_VERSION/" "readme.txt"
+          cd woocommerce_svn
+          sed -i -E "s/^(Stable tag:)[[:space:]]*[0-9.]+/\1 $NEW_VERSION/" "trunk/readme.txt"
       
       - name: Commit to SVN
         run: |
