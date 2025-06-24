@@ -170,12 +170,13 @@ class WC_Facebookcommerce extends WooCommerce\Facebook\Framework\Plugin {
 		$error = error_get_last();
 
 		if ( $error && in_array( $error['type'], [E_ERROR, E_PARSE, E_CORE_ERROR, E_COMPILE_ERROR], true ) ) {
-			if ( is_plugin_active( plugin_basename( __FILE__ ) ) ) {
+			$plugin_slug = 'facebook-for-woocommerce/facebook-for-woocommerce.php';
+
+			if ( is_plugin_active( $plugin_slug ) ) {
 				include_once ABSPATH . 'wp-admin/includes/plugin.php';
 
-				$plugin_slug = 'facebook-for-woocommerce';
-
 				if ( function_exists( 'wc_get_logger' ) ) {
+					$logger = wc_get_logger();
 					$logger->debug( 'Attempting to deactivate plugin file: ' . $plugin_slug, array( 'source' => 'facebook-for-woocommerce' ) );
 				}
 
