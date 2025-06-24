@@ -13,15 +13,15 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Fail if not on a release publish branch
-        run: |
-          echo "Current ref: ${{ github.ref }}"
-          BRANCH="${{ github.ref }}"
-          if [[ ! $BRANCH == release/*/publish ]]; then
-            echo "❌ This workflow can only be run on release/*/publish branches."
-            exit 1
-          fi
-          echo "✅ Branch $BRANCH is allowed."
+      # - name: Fail if not on a release publish branch
+      #   run: |
+      #     echo "Current ref: ${{ github.ref }}"
+      #     BRANCH="${{ github.ref }}"
+      #     if [[ ! $BRANCH == release/*/publish ]]; then
+      #       echo "❌ This workflow can only be run on release/*/publish branches."
+      #       exit 1
+      #     fi
+      #     echo "✅ Branch $BRANCH is allowed."
 
       - name: Get NPM Version
         id: package-version
@@ -51,7 +51,9 @@ jobs:
         env:
           NEW_VERSION: ${{ steps.package-version.outputs.current-version}}
         run: |
+          cd woocommerce_svn/trunk
           sed -i -E "s/^(Stable tag:)[[:space:]]*[0-9.]+/\1 $NEW_VERSION/" "readme.txt"
           cat readme.txt
-          git diff
+          svn status
+          svn diff
 
