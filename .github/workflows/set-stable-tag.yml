@@ -53,7 +53,10 @@ jobs:
         run: |
           cd woocommerce_svn/trunk
           sed -i -E "s/^(Stable tag:)[[:space:]]*[0-9.]+/\1 $NEW_VERSION/" "readme.txt"
+      
+      - name: Commit to SVN
+        run: |
+          pwd
           cat readme.txt
           svn status
           svn diff
-
