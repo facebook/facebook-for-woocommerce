@@ -16,7 +16,7 @@ jobs:
       - name: Fail if not on a release publish branch
         run: |
           echo "Current ref: ${{ github.ref }}"
-          BRANCH="${{ github.ref#refs/heads/ }}"
+          BRANCH="${{ github.ref }}"
           if [[ ! $BRANCH == release/*/publish ]]; then
             echo "❌ This workflow can only be run on release/*/publish branches."
             exit 1
