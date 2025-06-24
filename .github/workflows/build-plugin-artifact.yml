@@ -3,6 +3,10 @@ name: Build Plugin Artifact
 on:
   pull_request:
     types: [opened, synchronize, reopened]
+  push:
+    branches:
+      - release/*
+      - tzahgr/*
 
 jobs:
   build-and-upload:
@@ -23,7 +27,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v3
         with:
-          node-version: '16'
+          node-version-file: 'package.json'
           cache-dependency-path: './package-lock.json'
           cache: 'npm'
       
