@@ -14,7 +14,7 @@ jobs:
       NODE_ENV: test
     strategy:
       matrix:
-        node: [16]  # Using Node 16 as specified in package.json engine requirements
+        node: [22]  # Using Node 22 as specified in package.json engine requirements
       fail-fast: false  # Continue with other tests if one fails
 
     steps:
@@ -33,17 +33,17 @@ jobs:
           # Create a .npmrc file to ignore fsevents
           echo "optional=false" > .npmrc
           echo "omit=optional" >> .npmrc
-          
+
           # Create a backup of the original package.json
           cp package.json package.json.bak
-          
+
           # Remove fsevents from package.json if it exists
           if grep -q "fsevents" package.json; then
             # Use jq to remove fsevents from dependencies and devDependencies
             jq 'del(.dependencies.fsevents) | del(.devDependencies.fsevents) | del(.optionalDependencies.fsevents)' package.json > package.json.tmp
             mv package.json.tmp package.json
           fi
-          
+
           echo "Package.json prepared for Linux environment"
 
       - name: Install dependencies
@@ -52,7 +52,7 @@ jobs:
         run: |
           # Try to install dependencies with multiple fallback options
           npm install --no-optional || npm install --legacy-peer-deps --no-optional || npm ci --no-optional || echo "::warning::Dependency installation failed, tests may be skipped"
-          
+
           # Check if node_modules exists and has content
           if [ -d "node_modules" ] && [ "$(ls -A node_modules)" ]; then
             echo "dependencies_installed=true" >> $GITHUB_OUTPUT
@@ -73,7 +73,7 @@ jobs:
       - name: Skip tests notification
         if: steps.install.outputs.dependencies_installed != 'true'
         run: echo "::warning::Skipping tests due to dependency installation issues"
-        
+
       - name: Restore original package.json
         if: always()
         run: |
