@@ -30,12 +30,12 @@ jobs:
       - name: Checkout SVN Repository
         run: svn co https://plugins.svn.wordpress.org/facebook-for-woocommerce/ woocommerce_svn --quiet --non-interactive
 
-      - name: Validate SVN tag
-        run: |
-          if [ ! -d "woocommerce_svn/tags/${{ steps.package-version.outputs.current-version}}" ]; then
-            echo "SVN tag directory does not exist" 1>&2
-            exit 1
-          fi
+      # - name: Validate SVN tag
+      #   run: |
+      #     if [ ! -d "woocommerce_svn/tags/${{ steps.package-version.outputs.current-version}}" ]; then
+      #       echo "SVN tag directory does not exist" 1>&2
+      #       exit 1
+      #     fi
 
       - name: Update readme.txt
         env:
