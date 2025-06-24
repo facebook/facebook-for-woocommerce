@@ -58,6 +58,7 @@ jobs:
       - name: Commit to SVN
         run: |
           pwd
+          cd woocommerce_svn
           cat trunk/readme.txt
           svn status
           svn diff
