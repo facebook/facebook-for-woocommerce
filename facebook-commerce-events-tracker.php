@@ -1172,7 +1172,6 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 				} else {
 					$user_data['external_id'] = strval( $order->get_user_id() );
 				}
-				
 			}
 
 			foreach ( $user_data as $field => $value ) {
