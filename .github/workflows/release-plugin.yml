@@ -3,7 +3,7 @@ name: Release Plugin
 on:
   push:
     branches:
-      - 'release/current'
+      - 'release/*/publish'
 
 jobs:
   build-and-release:
