@@ -1162,8 +1162,17 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 			self::update_array_if_not_null( $order->get_billing_phone(), $user_data, 'ph' );
 			// get_user_id() returns 0 if the current user is a guest
 			if ( $order->get_user_id() !== 0 ) {
-				$external_ids   = $user_data['external_id'];
-				$external_ids[] = strval( $order->get_user_id() );
+				if ( isset ( $user_data['external_id'] ) && ! empty ( $user_data['external_id'] ) ) {
+					$external_ids = $user_data['external_id'];
+					if ( ! is_array ( $external_ids ) ) {
+						$external_ids = array( $external_ids );
+					}
+					$external_ids[] = strval( $order->get_user_id() );
+					$user_data['external_id'] = $external_ids;
+				} else {
+					 $user_data['external_id'] = strval( $order->get_user_id() );
+				}
+				
 			}
 
 			foreach ( $user_data as $field => $value ) {
