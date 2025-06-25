@@ -2329,7 +2329,6 @@ class WC_Facebook_Product {
 		return $matched_attributes;
 	}
 
-
 	/**
 	 * Normalizes variant data for Facebook.
 	 *
@@ -2737,14 +2736,13 @@ class WC_Facebook_Product {
 			// Ensure age_group is properly formatted for API
 			$age_group = strtolower( trim( $product_data['age_group'] ) );
 			// List of valid values Facebook accepts for age_group in API calls
-			$valid_age_groups = array( 'newborn', 'infant', 'toddler', 'kids', 'adult' );
+			// Updated to match Facebook's actual supported values
+			$valid_age_groups = array( 'newborn', 'infant', 'toddler', 'kids', 'teen', 'adult', 'all ages' );
 
 			if ( ! in_array( $age_group, $valid_age_groups ) ) {
 				// Try to map to a valid value
-				if ( 'teen' === $age_group || 'teenager' === $age_group ) {
-					$product_data['age_group'] = 'adult'; // Facebook API maps teens to adult
-				} elseif ( 'all ages' === $age_group ) {
-					$product_data['age_group'] = 'adult'; // Map all ages to adult
+				if ( 'teenager' === $age_group ) {
+					$product_data['age_group'] = 'teen'; // Map teenager to teen
 				} elseif ( 'children' === $age_group || 'child' === $age_group ) {
 					$product_data['age_group'] = 'kids'; // Map children to kids
 				} elseif ( false !== strpos( $age_group, 'kid' ) || false !== strpos( $age_group, 'child' ) ) {
@@ -2809,11 +2807,13 @@ class WC_Facebook_Product {
 				'facebook_attributes'       => $facebook_attributes,
 				'facebook_attribute_values' => array(
 					'age_group' => array(
-						'adult'   => __( 'Adult', 'facebook-for-woocommerce' ),
-						'kids'    => __( 'Kids', 'facebook-for-woocommerce' ),
-						'infant'  => __( 'Infant', 'facebook-for-woocommerce' ),
-						'newborn' => __( 'Newborn', 'facebook-for-woocommerce' ),
-						'toddler' => __( 'Toddler', 'facebook-for-woocommerce' ),
+						'adult'     => __( 'Adult', 'facebook-for-woocommerce' ),
+						'all ages'  => __( 'All Ages', 'facebook-for-woocommerce' ),
+						'kids'      => __( 'Kids', 'facebook-for-woocommerce' ),
+						'teen'      => __( 'Teen', 'facebook-for-woocommerce' ),
+						'infant'    => __( 'Infant', 'facebook-for-woocommerce' ),
+						'newborn'   => __( 'Newborn', 'facebook-for-woocommerce' ),
+						'toddler'   => __( 'Toddler', 'facebook-for-woocommerce' ),
 					),
 					'gender'    => array(
 						'female' => __( 'Female', 'facebook-for-woocommerce' ),
@@ -2848,11 +2848,13 @@ class WC_Facebook_Product {
 			),
 			'facebook_attribute_values' => array(
 				'age_group' => array(
-					'adult'   => __( 'Adult', 'facebook-for-woocommerce' ),
-					'kids'    => __( 'Kids', 'facebook-for-woocommerce' ),
-					'infant'  => __( 'Infant', 'facebook-for-woocommerce' ),
-					'newborn' => __( 'Newborn', 'facebook-for-woocommerce' ),
-					'toddler' => __( 'Toddler', 'facebook-for-woocommerce' ),
+					'adult'     => __( 'Adult', 'facebook-for-woocommerce' ),
+					'all ages'  => __( 'All Ages', 'facebook-for-woocommerce' ),
+					'kids'      => __( 'Kids', 'facebook-for-woocommerce' ),
+					'teen'      => __( 'Teen', 'facebook-for-woocommerce' ),
+					'infant'    => __( 'Infant', 'facebook-for-woocommerce' ),
+					'newborn'   => __( 'Newborn', 'facebook-for-woocommerce' ),
+					'toddler'   => __( 'Toddler', 'facebook-for-woocommerce' ),
 				),
 				'gender'    => array(
 					'female' => __( 'Female', 'facebook-for-woocommerce' ),
