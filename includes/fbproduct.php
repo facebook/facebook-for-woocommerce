@@ -19,7 +19,6 @@ use WooCommerce\Facebook\ProductAttributeMapper;
 
 defined( 'ABSPATH' ) || exit;
 
-
 /**
  * Custom FB Product proxy class
  */
