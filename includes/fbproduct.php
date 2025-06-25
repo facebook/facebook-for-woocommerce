@@ -2329,7 +2329,6 @@ class WC_Facebook_Product {
 		return $matched_attributes;
 	}
 
-
 	/**
 	 * Normalizes variant data for Facebook.
 	 *
