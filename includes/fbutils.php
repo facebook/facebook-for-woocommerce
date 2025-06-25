@@ -35,7 +35,6 @@ if ( ! class_exists( 'WC_Facebookcommerce_Utils' ) ) :
 		const FB_VARIANT_GENDER  = 'gender';
 		// TODO: this constant is no longer used and can probably be removed {WV 2020-01-21}
 		const FB_VARIANT_IMAGE   = 'fb_image';
-		const EXTERNAL_ID_COOKIE = 'meta_capi_exid';
 		/** @var string */
 		public static $ems = null;
 
@@ -377,15 +376,13 @@ if ( ! class_exists( 'WC_Facebookcommerce_Utils' ) ) :
 				return [];
 			} else {
 				$user_data = array();
-				if ( 0 === $current_user->ID ) {
-					$user_data['external_id'] = self::get_external_ids();
-				} else {
+				if ( 0 !== $current_user->ID ) {
 					// Keys documented in https://developers.facebook.com/docs/facebook-pixel/advanced/advanced-matching
 					$user_data            = array(
 						'em'          => $current_user->user_email,
 						'fn'          => $current_user->user_firstname,
 						'ln'          => $current_user->user_lastname,
-						'external_id' => self::get_external_ids(),
+						'external_id' => strval( get_current_user_id() ),
 					);
 					$user_id              = $current_user->ID;
 					$user_data['ct']      = get_user_meta( $user_id, 'billing_city', true );
@@ -415,21 +412,6 @@ if ( ! class_exists( 'WC_Facebookcommerce_Utils' ) ) :
 				$user_data = Normalizer::normalize_array( $user_data, true );
 				return $user_data;
 			}
-		}
-
-		/**
-		 * Function for generating the external_id array. Returns an array.
-		 */
-		private static function get_external_ids() {
-			$external_ids = array();
-
-			if ( isset( $_COOKIE[ WC_Facebookcommerce::EXTERNAL_ID_COOKIE ] ) ) {
-				$external_ids[] = $_COOKIE[ WC_Facebookcommerce::EXTERNAL_ID_COOKIE ]; // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized,WordPress.Security.ValidatedSanitizedInput.MissingUnslash
-			}
-			if ( 0 !== get_current_user_id() ) {
-				$external_ids[] = strval( get_current_user_id() );
-			}
-			return $external_ids;
 		}
 
 		/**
