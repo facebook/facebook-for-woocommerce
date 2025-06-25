@@ -141,23 +141,10 @@ class Event {
 	 * @return array
 	 */
 	protected function hash_pii_data( $user_data ) {
-		$keys_to_hash = array( 'em', 'fn', 'ln', 'ph', 'ct', 'st', 'zp', 'country' );
+		$keys_to_hash = array( 'em', 'fn', 'ln', 'ph', 'ct', 'st', 'zp', 'country', 'external_id' );
 		foreach ( $keys_to_hash as $key ) {
 			if ( array_key_exists( $key, $user_data ) ) {
 				$user_data[ $key ] = hash( 'sha256', $user_data[ $key ], false );
-			}
-		}
-		if ( isset( $user_data['external_id'] ) ) {
-			if ( is_array( $user_data['external_id'] ) ) {
-				$external_ids = array();
-				foreach ( $user_data['external_id'] as $id ) {
-					if ( $id ) {
-						$external_ids[] = hash( 'sha256', $id, false );
-					}
-				}
-				$user_data['external_id'] = $external_ids;
-			} else {
-				$user_data['external_id'] = hash( 'sha256', $user_data['external_id'], false );
 			}
 		}
 		return $user_data;
