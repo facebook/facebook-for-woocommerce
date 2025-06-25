@@ -1138,22 +1138,22 @@ class Product_Attributes extends Abstract_Settings_Screen {
 	private function clear_unmapped_attribute_banner( $new_mappings ) {
 		// Get the current banner data
 		$banner_data = get_transient( 'fb_new_unmapped_attribute_banner' );
-		
+
 		// If there's no banner showing, nothing to do
 		if ( ! $banner_data || ! isset( $banner_data['attribute_name'] ) ) {
 			return;
 		}
-		
+
 		$banner_attribute = $banner_data['attribute_name'];
-		
+
 		// Check if the banner's attribute is now mapped
 		if ( ! class_exists( 'WooCommerce\Facebook\ProductAttributeMapper' ) ) {
 			return;
 		}
-		
+
 		// Use the same logic as the banner system to check if the attribute is now mapped
 		$mapped_field = ProductAttributeMapper::check_attribute_mapping( 'pa_' . $banner_attribute );
-		
+
 		// If the attribute is now mapped, clear the banner
 		if ( false !== $mapped_field ) {
 			delete_transient( 'fb_new_unmapped_attribute_banner' );
