@@ -1161,7 +1161,7 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 			self::update_array_if_not_null( $order->get_billing_city(), $user_data, 'ct' );
 			self::update_array_if_not_null( $order->get_billing_phone(), $user_data, 'ph' );
 			self::update_array_if_not_null( strval( $order->get_user_id() ), $user_data, 'external_id' );
-			
+
 			foreach ( $user_data as $field => $value ) {
 				if ( null === $value || '' === $value ||
 					! in_array( $field, $this->aam_settings->get_enabled_automatic_matching_fields(), true )
