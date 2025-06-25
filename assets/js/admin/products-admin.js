@@ -663,6 +663,7 @@ jQuery( document ).ready( function( $ ) {
 
 			// Pre-select previously selected attachments
 			productGalleryFrame.on('open', function () {
+				productGalleryFrame.$el.addClass('fb-product-video-media-frame');
 				const selection = productGalleryFrame.state().get('selection');
 				attachmentIds.forEach(function (id) {
 					const attachment = wp.media.attachment(id);
