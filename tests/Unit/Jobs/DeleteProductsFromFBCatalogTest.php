@@ -6,6 +6,7 @@ use WooCommerce\Facebook\Jobs\DeleteProductsFromFBCatalog;
 use WC_Facebookcommerce;
 use WooCommerce\Facebook\Tests\AbstractWPUnitTestWithSafeFiltering;
 use PHPUnit\Framework\MockObject\MockObject;
+use Automattic\WooCommerce\ActionSchedulerJobFramework\Proxies\ActionSchedulerInterface;
 
 /**
  * @covers \WooCommerce\Facebook\Jobs\DeleteProductsFromFBCatalog
@@ -22,8 +23,16 @@ class DeleteProductsFromFBCatalogTest extends AbstractWPUnitTestWithSafeFilterin
 	 */
 	private $integration_mock;
 
+	/**
+	 * @var MockObject|ActionSchedulerInterface
+	 */
+	private $mock_scheduler;
+
 	public function setUp(): void {
 		parent::setUp();
+
+		// Create a mock action scheduler
+		$this->mock_scheduler = $this->createMock( ActionSchedulerInterface::class );
 
 		// Create a mock integration
 		$this->integration_mock = $this->getMockBuilder( \stdClass::class )
@@ -45,8 +54,9 @@ class DeleteProductsFromFBCatalogTest extends AbstractWPUnitTestWithSafeFilterin
 		}
 		$GLOBALS['test_facebook_for_woocommerce_mock'] = $mock_facebook_for_woocommerce;
 
-		// Create the job instance
+		// Create the job instance with the required action scheduler dependency
 		$this->job = $this->getMockBuilder( DeleteProductsFromFBCatalog::class )
+			->setConstructorArgs( [ $this->mock_scheduler ] )
 			->onlyMethods( [ 'log' ] )
 			->getMock();
 	}
