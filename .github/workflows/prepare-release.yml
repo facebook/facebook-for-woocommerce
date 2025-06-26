@@ -1,51 +1,55 @@
 name: "Prepare New Release"
-run-name: Prepare New Release `${{ github.event.inputs.type }}/${{ github.event.inputs.version }}` from by @${{ github.actor }}
+# run-name: Prepare New Release `${{ github.event.inputs.type }}/${{ github.event.inputs.version }}` from by @${{ github.actor }}
 
 # **What it does**: Does release preparation: creates the release branch and the PR with a checklist.
 # **Why we have it**: To support devs automating a few manual steps and to leave a nice reference for consumers.
 
 on:
-  workflow_dispatch:
-    inputs:
-      ## In the future we could infer that version from the changelog, or bump it via major|minor|patch.
-      version:
-        description: "Version number to be released"
-        required: true
-      type:
-        description: "Type of the release (release|hotfix)"
-        required: true
-        default: "release"
-      wp-version:
-        description: "WordPress tested up to"
-      wc-version:
-        description: "WooCommerce tested up to"
+  # workflow_dispatch:
+  #   inputs:
+  #     ## In the future we could infer that version from the changelog, or bump it via major|minor|patch.
+  #     version:
+  #       description: "Version number to be released"
+  #       required: true
+  push:
+    branches:
+      - 'tzahgr/prepare_release'
+
 
 jobs:
-  PrepareRelease:
+  prepare-release:
     name: Prepare Release
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
 
-      - name: Create branch & PR
-        uses: woocommerce/grow/prepare-extension-release@actions-v1
+      - name: Changelog
+        uses: actions/github-script@v7
         with:
-          version: ${{ github.event.inputs.version }}
-          type: ${{ github.event.inputs.type }}
-          wp-version: ${{ github.event.inputs.wp-version }}
-          wc-version: ${{ github.event.inputs.wc-version }}
-          main-branch: "main"
-          post-steps: |
-            ### After deploy
-            1. [ ] Confirm the release deployed correctly to [WPORG](https://wordpress.org/plugins/facebook-for-woocommerce/).
-               - [ ] Ensure you can download and install the latest release from WPORG and WCCOM.
-               - [ ] We've had an issue where the release tag (e.g. 2.6.1) wasn't present in the svn `tags/` folder.
-               - [ ] Troubleshooting processes when the release version doesn't exist in the svn `tags/` folder:
-                    1. [ ] Check the version by `Stable tag` in [https://plugins.svn.wordpress.org/facebook-for-woocommerce/trunk/readme.txt](https://plugins.svn.wordpress.org/facebook-for-woocommerce/trunk/readme.txt) to see if the new release is committed to `trunk`
-                    1. [ ] If the above version is the same as the one just released, then you can make up the missed version tag by `svn cp https://plugins.svn.wordpress.org/facebook-for-woocommerce/trunk https://plugins.svn.wordpress.org/facebook-for-woocommerce/tags/X.X.X -m "Tagging version X.X.X"`. Please note that the `X.X.X` is used as a placeholder but should be replaced with the *actual* release version (e.g., `1.5.0`).
-                    1. [ ] Wait for a while, and the zip file should be able to download from: [https://downloads.wordpress.org/plugin/facebook-for-woocommerce.x.x.x.zip](https://downloads.wordpress.org/plugin/facebook-for-woocommerce.x.x.x.zip)
-            1. [ ] Close the release milestone.
-            1. [ ] Publish any documentation updates relating to the release:
-               - [ ] [User documentation](https://woocommerce.com/document/facebook-for-woocommerce)
-               - [ ] [Any changes to privacy/tracking](https://woocommerce.com/usage-tracking/)
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const fs = require('fs');
+            const path = require('path');
+            const version = process.env.VERSION;
+            const releaseNotes = process.env.RELEASE_NOTES;
+            const release = await github.rest.repos.createRelease({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              tag_name: `v${version}`,
+              target_commitish: 'release/current',
+              name: `Release ${version}`,
+              body: releaseNotes,
+              draft: true,
+            });
+            const response = await github.rest.repos.generateReleaseNotes( {
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              tag_name: 'v3.5.4',
+              previous_tag_name: 'v3.5.3',
+            } );
+
+            core.summary
+              .addHeading("Output")
+              .addRaw(response.data)
+              .write();
