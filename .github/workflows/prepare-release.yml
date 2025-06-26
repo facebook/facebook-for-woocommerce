@@ -76,7 +76,7 @@ jobs:
                 })).data;
                 console.log(sha, pr);
                 const labels = pr.labels.map(l => l.name).join(', ');
-                changelog.push(`- ${pr.title} [${labels}]`);
+                changelog.push(`- [${labels}] ${pr.title} by ${pr.user.login} in #${prNumber}`);
               }
             }
 
