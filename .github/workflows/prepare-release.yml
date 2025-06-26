@@ -24,32 +24,17 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v3
 
-      - name: Changelog
+      - name: Get latest release tag
+        id: get_release
         uses: actions/github-script@v7
         with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
-            const fs = require('fs');
-            const path = require('path');
-            const version = process.env.VERSION;
-            const releaseNotes = process.env.RELEASE_NOTES;
-            const release = await github.rest.repos.createRelease({
+            const latestRelease = await github.rest.repos.getLatestRelease({
               owner: context.repo.owner,
               repo: context.repo.repo,
-              tag_name: `v${version}`,
-              target_commitish: 'release/current',
-              name: `Release ${version}`,
-              body: releaseNotes,
-              draft: true,
             });
-            const response = await github.rest.repos.generateReleaseNotes( {
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              tag_name: 'v3.5.4',
-              previous_tag_name: 'v3.5.3',
-            } );
 
-            core.summary
-              .addHeading("Output")
-              .addRaw(JSON.stringify(response.data))
-              .write();
+            const tag = latestRelease.data.tag_name;
+            core.setOutput("tag", tag);
+            console.log("Latest release tag:", tag);
+
