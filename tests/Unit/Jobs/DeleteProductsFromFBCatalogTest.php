@@ -38,10 +38,12 @@ class DeleteProductsFromFBCatalogTest extends AbstractWPUnitTestWithSafeFilterin
 			->willReturn( $this->integration_mock );
 
 		// Mock the facebook_for_woocommerce function
-		\WP_Mock::userFunction( 'facebook_for_woocommerce', [
-			'times' => '0+',
-			'return' => $mock_facebook_for_woocommerce,
-		] );
+		if ( ! function_exists( 'facebook_for_woocommerce' ) ) {
+			function facebook_for_woocommerce() {
+				return $GLOBALS['test_facebook_for_woocommerce_mock'];
+			}
+		}
+		$GLOBALS['test_facebook_for_woocommerce_mock'] = $mock_facebook_for_woocommerce;
 
 		// Create the job instance
 		$this->job = $this->getMockBuilder( DeleteProductsFromFBCatalog::class )
@@ -86,11 +88,14 @@ class DeleteProductsFromFBCatalogTest extends AbstractWPUnitTestWithSafeFilterin
 	public function test_get_items_for_batch_returns_product_ids() {
 		// Arrange: Mock get_posts to return product IDs
 		$product_ids = [ 101, 102, 103 ];
-		\WP_Mock::userFunction( 'get_posts', [
-			'times' => 1,
-			'args' => $this->anything(),
-			'return' => $product_ids,
-		] );
+		
+		// Mock the get_posts function
+		if ( ! function_exists( 'get_posts' ) ) {
+			function get_posts( $args ) {
+				return $GLOBALS['test_get_posts_return'];
+			}
+		}
+		$GLOBALS['test_get_posts_return'] = $product_ids;
 
 		// Act: Call the protected method
 		$reflection = new \ReflectionClass( $this->job );
