@@ -6,7 +6,7 @@ namespace WooCommerce\Facebook\Tests\Unit\Jobs;
 
 use WooCommerce\Facebook\Jobs\DeleteProductsFromFBCatalog;
 use WC_Facebookcommerce;
-use WooCommerce\Facebook\Tests\Unit\AbstractWPUnitTestWithSafeFiltering;
+use WooCommerce\Facebook\Tests\AbstractWPUnitTestWithSafeFiltering;
 
 /**
  * @covers \WooCommerce\Facebook\Jobs\DeleteProductsFromFBCatalogTest
