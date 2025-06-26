@@ -40,8 +40,36 @@ jobs:
       - name: Get commits since latest release
         id: get_commits
         run: |
-          git fetch --tags
+          git fetch origin tag ${{ steps.get_release.outputs.latest_tag }}
           COMMITS=$(git rev-list ${{ steps.get_release.outputs.latest_tag }}..HEAD)
           echo "commits<<EOF" >> $GITHUB_OUTPUT
           echo "$COMMITS" >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
+
+      - name: Build changelog from PRs
+        id: changelog
+        uses: actions/github-script@v7
+        env:
+          COMMITS: ${{ steps.get_commits.outputs.commits }}
+        with:
+          script: |
+            const commits = process.env.COMMITS.trim().split('\n');
+            const changelog = [];
+
+            for (const sha of commits) {
+              const prs = await github.rest.repos.listPullRequestsAssociatedWithCommit({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                commit_sha: sha,
+              });
+
+              if (prs.data.length > 0) {
+                const pr = prs.data[0];
+                const labels = pr.labels.map(l => l.name).join(', ');
+                changelog.push(`- ${pr.title} [${labels}]`);
+              } 
+            }
+
+            const output = changelog.join('\n');
+            core.setOutput('changelog', output);
+            console.log("Changelog:\n" + output);
