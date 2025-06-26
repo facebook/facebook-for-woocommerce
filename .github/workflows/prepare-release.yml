@@ -53,6 +53,7 @@ jobs:
           COMMITS: ${{ steps.get_commits.outputs.commits }}
         with:
           script: |
+            console.log("Commits:\n" + process.env.COMMITS);
             const commits = process.env.COMMITS.trim().split('\n');
             const changelog = [];
 
