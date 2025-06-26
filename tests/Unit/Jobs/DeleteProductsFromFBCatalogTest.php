@@ -46,13 +46,17 @@ class DeleteProductsFromFBCatalogTest extends AbstractWPUnitTestWithSafeFilterin
 		$mock_facebook_for_woocommerce->method( 'get_integration' )
 			->willReturn( $this->integration_mock );
 
-		// Mock the facebook_for_woocommerce function
-		if ( ! function_exists( 'facebook_for_woocommerce' ) ) {
-			function facebook_for_woocommerce() {
-				return $GLOBALS['test_facebook_for_woocommerce_mock'];
-			}
-		}
+		// Store the mock in a global variable
 		$GLOBALS['test_facebook_for_woocommerce_mock'] = $mock_facebook_for_woocommerce;
+
+		// Create the facebook_for_woocommerce function in the global scope
+		if ( ! function_exists( 'facebook_for_woocommerce' ) ) {
+			eval( '
+				function facebook_for_woocommerce() {
+					return $GLOBALS["test_facebook_for_woocommerce_mock"];
+				}
+			' );
+		}
 
 		// Create the job instance with the required action scheduler dependency
 		$this->job = $this->getMockBuilder( DeleteProductsFromFBCatalog::class )
@@ -126,15 +130,6 @@ class DeleteProductsFromFBCatalogTest extends AbstractWPUnitTestWithSafeFilterin
 			->method( 'reset_single_product' )
 			->withConsecutive( [ $items[0] ], [ $items[1] ] );
 
-		// Ensure the global function is available
-		if ( ! function_exists( 'facebook_for_woocommerce' ) ) {
-			eval( '
-				function facebook_for_woocommerce() {
-					return $GLOBALS["test_facebook_for_woocommerce_mock"];
-				}
-			' );
-		}
-
 		// Act: Call the protected method
 		$reflection = new \ReflectionClass( $this->job );
 		$method = $reflection->getMethod( 'process_items' );
@@ -148,15 +143,6 @@ class DeleteProductsFromFBCatalogTest extends AbstractWPUnitTestWithSafeFilterin
 			->method( 'delete_product_item' );
 		$this->integration_mock->expects( $this->never() )
 			->method( 'reset_single_product' );
-
-		// Ensure the global function is available
-		if ( ! function_exists( 'facebook_for_woocommerce' ) ) {
-			eval( '
-				function facebook_for_woocommerce() {
-					return $GLOBALS["test_facebook_for_woocommerce_mock"];
-				}
-			' );
-		}
 
 		// Act: Call the protected method with empty array
 		$reflection = new \ReflectionClass( $this->job );
