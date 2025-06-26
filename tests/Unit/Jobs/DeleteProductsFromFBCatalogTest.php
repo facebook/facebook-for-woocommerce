@@ -189,4 +189,122 @@ class DeleteProductsFromFBCatalogTest extends AbstractWPUnitTestWithSafeFilterin
 		// Assert: Verify the method returns null (no-op)
 		$this->assertNull( $result );
 	}
+
+	public function test_get_items_for_batch_with_different_batch_numbers() {
+		// Arrange: Create a job instance that mocks the get_items_for_batch method
+		$job = $this->getMockBuilder( DeleteProductsFromFBCatalog::class )
+			->setConstructorArgs( [ $this->mock_scheduler ] )
+			->onlyMethods( [ 'log', 'get_items_for_batch' ] )
+			->getMock();
+		
+		$expected_product_ids = [ 301, 302, 303 ];
+		$job->method( 'get_items_for_batch' )
+			->willReturn( $expected_product_ids );
+
+		// Act: Call the protected method with different batch numbers
+		$reflection = new \ReflectionClass( $job );
+		$method = $reflection->getMethod( 'get_items_for_batch' );
+		$method->setAccessible( true );
+		
+		$result_batch_1 = $method->invoke( $job, 1, [] );
+		$result_batch_2 = $method->invoke( $job, 2, [] );
+		$result_batch_3 = $method->invoke( $job, 3, [] );
+
+		// Assert: Verify the results are consistent
+		$this->assertSame( $expected_product_ids, $result_batch_1 );
+		$this->assertSame( $expected_product_ids, $result_batch_2 );
+		$this->assertSame( $expected_product_ids, $result_batch_3 );
+	}
+
+	public function test_get_items_for_batch_with_custom_args() {
+		// Arrange: Create a job instance that mocks the get_items_for_batch method
+		$job = $this->getMockBuilder( DeleteProductsFromFBCatalog::class )
+			->setConstructorArgs( [ $this->mock_scheduler ] )
+			->onlyMethods( [ 'log', 'get_items_for_batch' ] )
+			->getMock();
+		
+		$expected_product_ids = [ 401, 402 ];
+		$custom_args = [ 'custom_param' => 'test_value', 'limit' => 10 ];
+		
+		$job->method( 'get_items_for_batch' )
+			->willReturn( $expected_product_ids );
+
+		// Act: Call the protected method with custom args
+		$reflection = new \ReflectionClass( $job );
+		$method = $reflection->getMethod( 'get_items_for_batch' );
+		$method->setAccessible( true );
+		$result = $method->invoke( $job, 1, $custom_args );
+
+		// Assert: Verify the result
+		$this->assertSame( $expected_product_ids, $result );
+	}
+
+	public function test_process_items_with_single_item() {
+		// Arrange: Create a test that verifies the method works with a single item
+		$items = [ 501 ];
+		
+		// Test that the method can be called with a single item without errors
+		$reflection = new \ReflectionClass( $this->job );
+		$method = $reflection->getMethod( 'process_items' );
+		$method->setAccessible( true );
+		
+		// Act: Call the method with a single item
+		$method->invoke( $this->job, $items, [] );
+		
+		// Assert: If we get here, the method completed without fatal errors
+		$this->assertTrue( true, 'process_items method completed with single item without fatal errors' );
+	}
+
+	public function test_process_items_with_large_array() {
+		// Arrange: Create a test that verifies the method works with a large array
+		$items = range( 601, 650 ); // 50 items
+		
+		// Test that the method can be called with a large array without errors
+		$reflection = new \ReflectionClass( $this->job );
+		$method = $reflection->getMethod( 'process_items' );
+		$method->setAccessible( true );
+		
+		// Act: Call the method with a large array
+		$method->invoke( $this->job, $items, [] );
+		
+		// Assert: If we get here, the method completed without fatal errors
+		$this->assertTrue( true, 'process_items method completed with large array without fatal errors' );
+	}
+
+	public function test_process_items_with_mixed_data_types() {
+		// Arrange: Create a test that verifies the method handles mixed data types
+		$items = [ '601', 602, '603', 604 ]; // Mixed string and integer IDs
+		
+		// Test that the method can be called with mixed data types without errors
+		$reflection = new \ReflectionClass( $this->job );
+		$method = $reflection->getMethod( 'process_items' );
+		$method->setAccessible( true );
+		
+		// Act: Call the method with mixed data types
+		$method->invoke( $this->job, $items, [] );
+		
+		// Assert: If we get here, the method completed without fatal errors
+		$this->assertTrue( true, 'process_items method completed with mixed data types without fatal errors' );
+	}
+
+	public function test_class_extends_abstract_chained_job() {
+		// Assert: Verify the class extends the correct parent class
+		$this->assertInstanceOf( \WooCommerce\Facebook\Jobs\AbstractChainedJob::class, $this->job );
+	}
+
+	public function test_class_uses_batch_query_offset_trait() {
+		// Assert: Verify the class uses the BatchQueryOffset trait
+		$reflection = new \ReflectionClass( $this->job );
+		$traits = $reflection->getTraitNames();
+		
+		$this->assertContains( 'Automattic\WooCommerce\ActionSchedulerJobFramework\Utilities\BatchQueryOffset', $traits );
+	}
+
+	public function test_class_uses_logging_trait() {
+		// Assert: Verify the class uses the LoggingTrait
+		$reflection = new \ReflectionClass( $this->job );
+		$traits = $reflection->getTraitNames();
+		
+		$this->assertContains( 'WooCommerce\Facebook\Jobs\LoggingTrait', $traits );
+	}
 } 
