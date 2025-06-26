@@ -24,7 +24,9 @@ class AbstractChainedJobTest extends AbstractWPUnitTestWithSafeFiltering {
 
 	public function test_handle_batch_action_logs_and_calls_parent() {
 		// Arrange: create a test double for AbstractChainedJob
-		$logger = $this->createMock(\stdClass::class);
+		$logger = $this->getMockBuilder(\WooCommerce\Facebook\Tests\Unit\Jobs\TestLogger::class)
+			->onlyMethods(['start', 'stop'])
+			->getMock();
 		$logger->expects($this->once())->method('start')->with('test_job');
 		$logger->expects($this->once())->method('stop')->with('test_job');
 
@@ -47,4 +49,9 @@ class AbstractChainedJobTest extends AbstractWPUnitTestWithSafeFiltering {
 		// Act & Assert: call handle_batch_action and expect logger start/stop
 		$job->handle_batch_action(1, []);
 	}
+}
+
+class TestLogger {
+	public function start($name) {}
+	public function stop($name) {}
 } 
