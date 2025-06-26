@@ -38,10 +38,10 @@ jobs:
             console.log("Latest release tag:", tag);
 
       - name: Get commits since latest release
-              id: get_commits
-              run: |
-                git fetch --tags
-                COMMITS=$(git rev-list ${{ steps.get_release.outputs.latest_tag }}..HEAD)
-                echo "commits<<EOF" >> $GITHUB_OUTPUT
-                echo "$COMMITS" >> $GITHUB_OUTPUT
-                echo "EOF" >> $GITHUB_OUTPUT
+        id: get_commits
+        run: |
+          git fetch --tags
+          COMMITS=$(git rev-list ${{ steps.get_release.outputs.latest_tag }}..HEAD)
+          echo "commits<<EOF" >> $GITHUB_OUTPUT
+          echo "$COMMITS" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
