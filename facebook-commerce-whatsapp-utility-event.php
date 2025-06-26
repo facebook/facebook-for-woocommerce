@@ -85,16 +85,10 @@ class WC_Facebookcommerce_Whatsapp_Utility_Event {
 		}
 
 		$order = wc_get_order( $order_id );
-		// Check WhatsApp Consent Checkbox is selected in shipping or billing
-		$user_wa_consent             = $this->has_billing_or_shipping_number_whatsapp_consent( $order );
-		$wa_billing_consent_enabled  = $user_wa_consent['has_user_consented_to_wa_billing_number_notif'];
-		$wa_shipping_consent_enabled = $user_wa_consent['has_user_consented_to_wa_shipping_number_notif'];
-
-		$has_whatsapp_consent = $wa_billing_consent_enabled || $wa_shipping_consent_enabled;
 		// Get WhatsApp Phone number from entered Billing and Shipping phone number
 		$billing_phone_number  = $order->get_billing_phone();
 		$shipping_phone_number = $order->get_shipping_phone();
-		$phone_number          = ( isset( $billing_phone_number ) && $wa_billing_consent_enabled ) ? $billing_phone_number : $shipping_phone_number;
+		$phone_number          = isset( $billing_phone_number ) ? $billing_phone_number : $shipping_phone_number;
 		// Get Customer first name
 		$first_name = $order->get_billing_first_name();
 		// Get Total Refund Amount for Order Refunded event
@@ -104,7 +98,7 @@ class WC_Facebookcommerce_Whatsapp_Utility_Event {
 		}
 		$currency      = $order->get_currency();
 		$refund_amount = $total_refund * 1000;
-		if ( empty( $phone_number ) || ! $has_whatsapp_consent || empty( $event ) || empty( $first_name ) ) {
+		if ( empty( $phone_number ) || empty( $event ) || empty( $first_name ) ) {
 			wc_get_logger()->info(
 				sprintf(
 				/* translators: %s $order_id */
