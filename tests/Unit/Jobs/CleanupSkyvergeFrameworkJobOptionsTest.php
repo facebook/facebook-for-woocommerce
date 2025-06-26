@@ -75,7 +75,9 @@ class CleanupSkyvergeFrameworkJobOptionsTest extends AbstractWPUnitTestWithOptio
 		];
 
 		// Mock the database query to return our test data
-		$wpdb = $this->createMock(\stdClass::class);
+		$wpdb = $this->getMockBuilder(\stdClass::class)
+			->addMethods(['query'])
+			->getMock();
 		$wpdb->options = 'wp_options';
 		$wpdb->expects($this->once())
 			->method('query')
@@ -93,7 +95,9 @@ class CleanupSkyvergeFrameworkJobOptionsTest extends AbstractWPUnitTestWithOptio
 		global $wpdb;
 
 		// Arrange: Mock wpdb
-		$wpdb = $this->createMock(\stdClass::class);
+		$wpdb = $this->getMockBuilder(\stdClass::class)
+			->addMethods(['query'])
+			->getMock();
 		$wpdb->options = 'wp_options';
 
 		$expected_query_pattern = "/DELETE\s+FROM\s+wp_options\s+WHERE\s+option_name\s+LIKE\s+'wc_facebook_background_product_sync_job_%'\s+AND\s+\(\s*option_value\s+LIKE\s+'%\"status\":\"completed\"%'\s+OR\s+option_value\s+LIKE\s+'%\"status\":\"failed\"%'\s*\)\s+ORDER\s+BY\s+option_id\s+ASC\s+LIMIT\s+500/i";
@@ -111,7 +115,9 @@ class CleanupSkyvergeFrameworkJobOptionsTest extends AbstractWPUnitTestWithOptio
 		global $wpdb;
 
 		// Arrange: Mock wpdb to return no affected rows
-		$wpdb = $this->createMock(\stdClass::class);
+		$wpdb = $this->getMockBuilder(\stdClass::class)
+			->addMethods(['query'])
+			->getMock();
 		$wpdb->options = 'wp_options';
 		$wpdb->expects($this->once())
 			->method('query')
@@ -128,7 +134,9 @@ class CleanupSkyvergeFrameworkJobOptionsTest extends AbstractWPUnitTestWithOptio
 		global $wpdb;
 
 		// Arrange: Mock wpdb to return false (error)
-		$wpdb = $this->createMock(\stdClass::class);
+		$wpdb = $this->getMockBuilder(\stdClass::class)
+			->addMethods(['query'])
+			->getMock();
 		$wpdb->options = 'wp_options';
 		$wpdb->expects($this->once())
 			->method('query')
@@ -145,7 +153,9 @@ class CleanupSkyvergeFrameworkJobOptionsTest extends AbstractWPUnitTestWithOptio
 		global $wpdb;
 
 		// Arrange: Mock wpdb
-		$wpdb = $this->createMock(\stdClass::class);
+		$wpdb = $this->getMockBuilder(\stdClass::class)
+			->addMethods(['query'])
+			->getMock();
 		$wpdb->options = 'wp_options';
 
 		$wpdb->expects($this->once())
@@ -164,7 +174,9 @@ class CleanupSkyvergeFrameworkJobOptionsTest extends AbstractWPUnitTestWithOptio
 		global $wpdb;
 
 		// Arrange: Mock wpdb
-		$wpdb = $this->createMock(\stdClass::class);
+		$wpdb = $this->getMockBuilder(\stdClass::class)
+			->addMethods(['query'])
+			->getMock();
 		$wpdb->options = 'wp_options';
 
 		$wpdb->expects($this->once())
@@ -180,7 +192,9 @@ class CleanupSkyvergeFrameworkJobOptionsTest extends AbstractWPUnitTestWithOptio
 		global $wpdb;
 
 		// Arrange: Mock wpdb
-		$wpdb = $this->createMock(\stdClass::class);
+		$wpdb = $this->getMockBuilder(\stdClass::class)
+			->addMethods(['query'])
+			->getMock();
 		$wpdb->options = 'wp_options';
 
 		$wpdb->expects($this->once())
@@ -196,7 +210,9 @@ class CleanupSkyvergeFrameworkJobOptionsTest extends AbstractWPUnitTestWithOptio
 		global $wpdb;
 
 		// Arrange: Mock wpdb
-		$wpdb = $this->createMock(\stdClass::class);
+		$wpdb = $this->getMockBuilder(\stdClass::class)
+			->addMethods(['query'])
+			->getMock();
 		$wpdb->options = 'wp_options';
 
 		$wpdb->expects($this->once())
