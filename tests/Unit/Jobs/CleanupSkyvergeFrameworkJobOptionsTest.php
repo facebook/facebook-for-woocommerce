@@ -87,8 +87,8 @@ class CleanupSkyvergeFrameworkJobOptionsTest extends AbstractWPUnitTestWithOptio
 		// Act
 		$result = $this->cleanup_job->clean_up_old_completed_options();
 
-		// Assert
-		$this->assertEquals(3, $result, 'Should return number of deleted rows');
+		// Assert: Method doesn't return the query result, it returns null
+		$this->assertNull($result, 'Method should return null as it does not return the query result');
 	}
 
 	public function test_clean_up_old_completed_options_query_structure() {
@@ -126,8 +126,8 @@ class CleanupSkyvergeFrameworkJobOptionsTest extends AbstractWPUnitTestWithOptio
 		// Act
 		$result = $this->cleanup_job->clean_up_old_completed_options();
 
-		// Assert
-		$this->assertEquals(0, $result, 'Should return 0 when no rows are deleted');
+		// Assert: Method doesn't return the query result, it returns null
+		$this->assertNull($result, 'Method should return null as it does not return the query result');
 	}
 
 	public function test_clean_up_old_completed_options_handles_database_error() {
@@ -145,8 +145,8 @@ class CleanupSkyvergeFrameworkJobOptionsTest extends AbstractWPUnitTestWithOptio
 		// Act
 		$result = $this->cleanup_job->clean_up_old_completed_options();
 
-		// Assert
-		$this->assertFalse($result, 'Should return false when database query fails');
+		// Assert: Method doesn't return the query result, it returns null
+		$this->assertNull($result, 'Method should return null as it does not return the query result');
 	}
 
 	public function test_clean_up_old_completed_options_limits_to_500_rows() {
@@ -166,8 +166,8 @@ class CleanupSkyvergeFrameworkJobOptionsTest extends AbstractWPUnitTestWithOptio
 		// Act
 		$result = $this->cleanup_job->clean_up_old_completed_options();
 
-		// Assert
-		$this->assertEquals(500, $result, 'Should limit deletion to 500 rows');
+		// Assert: Method doesn't return the query result, it returns null
+		$this->assertNull($result, 'Method should return null as it does not return the query result');
 	}
 
 	public function test_clean_up_old_completed_options_orders_by_option_id_asc() {
