@@ -59,17 +59,25 @@ jobs:
             const changelog = [];
 
             for (const sha of commits) {
-              const prs = await github.rest.repos.listPullRequestsAssociatedWithCommit({
+              const commit = await github.rest.repos.getCommit({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
-                commit_sha: sha,
+                ref: sha,
               });
-              console.log(sha, prs);
-              if (prs.data.length > 0) {
-                const pr = prs.data[0];
+
+              const msg = commit.data.commit.message;
+              const prMatch = msg.match(/\(#(\d+)\)/);
+              if (prMatch) {
+                const prNumber = parseInt(prMatch[1], 10);
+                pr = (await github.rest.pulls.get({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  pull_number: prNumber,
+                })).data;
+                console.log(sha, pr);
                 const labels = pr.labels.map(l => l.name).join(', ');
                 changelog.push(`- ${pr.title} [${labels}]`);
-              } 
+              }
             }
 
             const output = changelog.join('\n');
