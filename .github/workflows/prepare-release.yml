@@ -41,9 +41,8 @@ jobs:
         id: get_commits
         run: |
           git fetch origin tag ${{ steps.get_release.outputs.latest_tag }}
-          COMMITS=$(git rev-list ${{ steps.get_release.outputs.latest_tag }}..HEAD)
           echo "commits<<EOF" >> $GITHUB_OUTPUT
-          echo "$COMMITS" >> $GITHUB_OUTPUT
+          git rev-list ${{ steps.get_release.outputs.latest_tag }}..HEAD >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
 
       - name: Build changelog from PRs
