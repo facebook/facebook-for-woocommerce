@@ -180,6 +180,7 @@ class AbstractChainedJobTest extends AbstractWPUnitTestWithSafeFiltering {
 			');
 		}
 
+		// Create a test double that throws an exception
 		$job = new class($this->mock_scheduler) extends AbstractChainedJob {
 			protected function get_items_for_batch(int $batch_number, array $args): array { return []; }
 			protected function process_item($item, array $args) {}
@@ -187,19 +188,9 @@ class AbstractChainedJobTest extends AbstractWPUnitTestWithSafeFiltering {
 			public function get_plugin_name(): string { return 'test_plugin'; }
 			protected function get_batch_size(): int { return 1; }
 			public function handle_batch_action(int $batch_number, array $args) { 
-				parent::handle_batch_action($batch_number, $args); 
+				throw new Exception('Test exception');
 			}
 		};
-
-		// Mock the parent method to throw an exception
-		$job = $this->getMockBuilder(get_class($job))
-			->setConstructorArgs([$this->mock_scheduler])
-			->onlyMethods(['handle_batch_action'])
-			->getMock();
-		
-		$job->expects($this->once())
-			->method('handle_batch_action')
-			->willThrowException(new Exception('Test exception'));
 
 		// Act & Assert: expect exception to be thrown but logger to still be stopped
 		$this->expectException(Exception::class);
