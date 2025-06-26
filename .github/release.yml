@@ -41,6 +41,10 @@ changelog:
         - "changelog: doc"
         - "type: documentation"
 
+    - title: Merged
+      labels:
+        - "Merged"
+
     - title: Other Changes
       labels:
         - "*"
