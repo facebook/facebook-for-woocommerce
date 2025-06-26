@@ -16,9 +16,26 @@ class CleanupSkyvergeFrameworkJobOptionsTest extends AbstractWPUnitTestWithOptio
 	 */
 	private $cleanup_job;
 
+	/**
+	 * @var mixed
+	 */
+	private $original_wpdb;
+
 	public function setUp(): void {
 		parent::setUp();
 		$this->cleanup_job = new CleanupSkyvergeFrameworkJobOptions();
+		
+		// Store original wpdb for cleanup
+		global $wpdb;
+		$this->original_wpdb = $wpdb;
+	}
+
+	public function tearDown(): void {
+		// Restore original wpdb
+		global $wpdb;
+		$wpdb = $this->original_wpdb;
+		
+		parent::tearDown();
 	}
 
 	public function test_init_adds_daily_heartbeat_action() {
@@ -26,7 +43,7 @@ class CleanupSkyvergeFrameworkJobOptionsTest extends AbstractWPUnitTestWithOptio
 		$this->cleanup_job->init();
 
 		// Assert
-		$this->assertTrue(
+		$this->assertNotFalse(
 			has_action(Heartbeat::DAILY, [$this->cleanup_job, 'clean_up_old_completed_options']),
 			'Daily heartbeat action should be added for clean_up_old_completed_options method'
 		);
