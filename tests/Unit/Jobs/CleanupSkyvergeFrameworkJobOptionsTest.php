@@ -441,7 +441,7 @@ class CleanupSkyvergeFrameworkJobOptionsTest extends AbstractWPUnitTestWithOptio
 		// Don't set $wpdb->options
 
 		// Act & Assert: Should handle missing options property
-		$this->expectException(\Error::class);
+		$this->expectException(\ErrorException::class);
 		$this->cleanup_job->clean_up_old_completed_options();
 	}
 } 
