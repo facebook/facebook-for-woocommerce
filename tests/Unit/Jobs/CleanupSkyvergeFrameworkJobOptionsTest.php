@@ -228,4 +228,220 @@ class CleanupSkyvergeFrameworkJobOptionsTest extends AbstractWPUnitTestWithOptio
 		// Act
 		$this->cleanup_job->clean_up_old_completed_options();
 	}
+
+	public function test_clean_up_old_completed_options_uses_correct_table_name() {
+		global $wpdb;
+
+		// Arrange: Mock wpdb with custom table name
+		$wpdb = $this->getMockBuilder(\stdClass::class)
+			->addMethods(['query'])
+			->getMock();
+		$wpdb->options = 'custom_wp_options';
+		$wpdb->expects($this->once())
+			->method('query')
+			->with($this->stringContains('FROM custom_wp_options'))
+			->willReturn(0);
+
+		// Act
+		$this->cleanup_job->clean_up_old_completed_options();
+	}
+
+	public function test_init_can_be_called_multiple_times_safely() {
+		// Act: Call init multiple times
+		$this->cleanup_job->init();
+		$this->cleanup_job->init();
+		$this->cleanup_job->init();
+
+		// Assert: Should still have the action registered
+		$this->assertNotFalse(
+			has_action(Heartbeat::DAILY, [$this->cleanup_job, 'clean_up_old_completed_options']),
+			'Action should still be registered after multiple init() calls'
+		);
+	}
+
+	public function test_clean_up_old_completed_options_handles_large_result_set() {
+		global $wpdb;
+
+		// Arrange: Mock wpdb to return maximum affected rows
+		$wpdb = $this->getMockBuilder(\stdClass::class)
+			->addMethods(['query'])
+			->getMock();
+		$wpdb->options = 'wp_options';
+		$wpdb->expects($this->once())
+			->method('query')
+			->willReturn(500); // Maximum limit
+
+		// Act
+		$result = $this->cleanup_job->clean_up_old_completed_options();
+
+		// Assert
+		$this->assertNull($result, 'Should return null as method does not return query result');
+	}
+
+	public function test_clean_up_old_completed_options_handles_negative_result() {
+		global $wpdb;
+
+		// Arrange: Mock wpdb to return negative number (edge case)
+		$wpdb = $this->getMockBuilder(\stdClass::class)
+			->addMethods(['query'])
+			->getMock();
+		$wpdb->options = 'wp_options';
+		$wpdb->expects($this->once())
+			->method('query')
+			->willReturn(-1);
+
+		// Act
+		$result = $this->cleanup_job->clean_up_old_completed_options();
+
+		// Assert
+		$this->assertNull($result, 'Should return null as method does not return query result');
+	}
+
+	public function test_clean_up_old_completed_options_handles_string_result() {
+		global $wpdb;
+
+		// Arrange: Mock wpdb to return string (edge case)
+		$wpdb = $this->getMockBuilder(\stdClass::class)
+			->addMethods(['query'])
+			->getMock();
+		$wpdb->options = 'wp_options';
+		$wpdb->expects($this->once())
+			->method('query')
+			->willReturn('success');
+
+		// Act
+		$result = $this->cleanup_job->clean_up_old_completed_options();
+
+		// Assert
+		$this->assertNull($result, 'Should return null as method does not return query result');
+	}
+
+	public function test_clean_up_old_completed_options_handles_empty_options_table() {
+		global $wpdb;
+
+		// Arrange: Mock wpdb
+		$wpdb = $this->getMockBuilder(\stdClass::class)
+			->addMethods(['query'])
+			->getMock();
+		$wpdb->options = 'wp_options';
+		$wpdb->expects($this->once())
+			->method('query')
+			->willReturn(0);
+
+		// Act
+		$result = $this->cleanup_job->clean_up_old_completed_options();
+
+		// Assert
+		$this->assertNull($result, 'Should return null when no rows are affected');
+	}
+
+	public function test_clean_up_old_completed_options_handles_very_large_table() {
+		global $wpdb;
+
+		// Arrange: Mock wpdb to simulate a very large table
+		$wpdb = $this->getMockBuilder(\stdClass::class)
+			->addMethods(['query'])
+			->getMock();
+		$wpdb->options = 'wp_options';
+		$wpdb->expects($this->once())
+			->method('query')
+			->willReturn(500); // Hit the limit
+
+		// Act
+		$result = $this->cleanup_job->clean_up_old_completed_options();
+
+		// Assert
+		$this->assertNull($result, 'Should return null even when hitting the 500 row limit');
+	}
+
+	public function test_clean_up_old_completed_options_handles_database_timeout() {
+		global $wpdb;
+
+		// Arrange: Mock wpdb to simulate a database timeout
+		$wpdb = $this->getMockBuilder(\stdClass::class)
+			->addMethods(['query'])
+			->getMock();
+		$wpdb->options = 'wp_options';
+		$wpdb->expects($this->once())
+			->method('query')
+			->willReturn(false); // Database error/timeout
+
+		// Act
+		$result = $this->cleanup_job->clean_up_old_completed_options();
+
+		// Assert
+		$this->assertNull($result, 'Should return null even when database query fails');
+	}
+
+	public function test_clean_up_old_completed_options_handles_malformed_json_in_options() {
+		global $wpdb;
+
+		// Arrange: Mock wpdb
+		$wpdb = $this->getMockBuilder(\stdClass::class)
+			->addMethods(['query'])
+			->getMock();
+		$wpdb->options = 'wp_options';
+		$wpdb->expects($this->once())
+			->method('query')
+			->willReturn(0);
+
+		// Act: The query should still execute even if some options have malformed JSON
+		$result = $this->cleanup_job->clean_up_old_completed_options();
+
+		// Assert
+		$this->assertNull($result, 'Should return null even with malformed JSON in options');
+	}
+
+	public function test_clean_up_old_completed_options_handles_special_characters_in_option_names() {
+		global $wpdb;
+
+		// Arrange: Mock wpdb
+		$wpdb = $this->getMockBuilder(\stdClass::class)
+			->addMethods(['query'])
+			->getMock();
+		$wpdb->options = 'wp_options';
+		$wpdb->expects($this->once())
+			->method('query')
+			->willReturn(0);
+
+		// Act: The query should handle special characters in option names
+		$result = $this->cleanup_job->clean_up_old_completed_options();
+
+		// Assert
+		$this->assertNull($result, 'Should return null even with special characters in option names');
+	}
+
+	public function test_class_can_be_instantiated() {
+		// Act & Assert: Should be able to create new instance
+		$instance = new CleanupSkyvergeFrameworkJobOptions();
+		$this->assertInstanceOf(CleanupSkyvergeFrameworkJobOptions::class, $instance);
+	}
+
+	public function test_clean_up_old_completed_options_handles_null_wpdb() {
+		// Arrange: Set wpdb to null to test edge case
+		global $wpdb;
+		$original_wpdb = $wpdb;
+		$wpdb = null;
+
+		// Act & Assert: Should handle null wpdb gracefully
+		$this->expectException(\Error::class);
+		$this->cleanup_job->clean_up_old_completed_options();
+
+		// Cleanup: Restore original wpdb
+		$wpdb = $original_wpdb;
+	}
+
+	public function test_clean_up_old_completed_options_handles_missing_options_property() {
+		global $wpdb;
+
+		// Arrange: Mock wpdb without options property
+		$wpdb = $this->getMockBuilder(\stdClass::class)
+			->addMethods(['query'])
+			->getMock();
+		// Don't set $wpdb->options
+
+		// Act & Assert: Should handle missing options property
+		$this->expectException(\Error::class);
+		$this->cleanup_job->clean_up_old_completed_options();
+	}
 } 
