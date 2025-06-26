@@ -74,7 +74,7 @@ jobs:
                   pull_number: prNumber,
                 })).data;
                 const labelPrefix = "changelog: ";
-                const changeLogLabels = pr.labels.map(l => l.name).filter((l) => l.startsWith(labelPrefix)).map(l => l.replace(labelPrefix, "");
+                const changeLogLabels = pr.labels.map(l => l.name).filter((l) => l.startsWith(labelPrefix)).map(l => l.replace(labelPrefix, ""));
                 const itemPrefix = changeLogLabels.length > 0 ? `${changeLogLabels[0].charAt(0).toUpperCase()}${changeLogLabels[0].slice(1)} - ` : "";
                 changelog.push(`* ${itemPrefix}${pr.title} by @${pr.user.login} in #${prNumber}`);
               }
