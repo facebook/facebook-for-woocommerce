@@ -81,6 +81,6 @@ jobs:
             }
             const version = "X.X.X";
             const date = new Date();
-            const output = `= ${version} - ${date.toISOString().slice(10)} =\n${changelog.join('\n')}\n`;
+            const output = `= ${version} - ${date.toISOString().slice(0, 10)} =\n${changelog.join('\n')}\n`;
             core.setOutput('changelog', output);
             console.log(output);
