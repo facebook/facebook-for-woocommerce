@@ -20,7 +20,7 @@ class AbstractChainedJobTest extends AbstractWPUnitTestWithOptionIsolationAndSaf
     /** @var callable|null */
     private $originalFacebookForWooCommerce;
 
-    protected function setUp(): void {
+    public function setUp(): void {
         parent::setUp();
 
         // Mock the logger
@@ -44,7 +44,7 @@ class AbstractChainedJobTest extends AbstractWPUnitTestWithOptionIsolationAndSaf
         self::$testPluginInstance = $this->mockPlugin;
     }
 
-    protected function tearDown(): void {
+    public function tearDown(): void {
         // Restore the original global function if it existed
         if ($this->originalFacebookForWooCommerce) {
             eval('namespace { function facebook_for_woocommerce() { return (\WooCommerce\\Facebook\\Tests\\Unit\\Jobs\\AbstractChainedJobTest::getOriginalPluginInstance())(); } }');
