@@ -79,7 +79,8 @@ jobs:
                 changelog.push(`* ${itemPrefix}${pr.title} by @${pr.user.login} in #${prNumber}`);
               }
             }
-
-            const output = changelog.join('\n');
+            const version = "X.X.X";
+            const date = new Date();
+            const output = `= ${version} - ${date.toISOString().slice(10)} =\n${changelog.join('\n')}\n`;
             core.setOutput('changelog', output);
-            console.log("Changelog:\n" + output);
+            console.log(output);
