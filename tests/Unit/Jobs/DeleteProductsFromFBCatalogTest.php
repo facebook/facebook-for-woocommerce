@@ -96,25 +96,24 @@ class DeleteProductsFromFBCatalogTest extends AbstractWPUnitTestWithSafeFilterin
 	}
 
 	public function test_get_items_for_batch_returns_product_ids() {
-		// Arrange: Mock get_posts to return product IDs
-		$product_ids = [ 101, 102, 103 ];
+		// Arrange: Create a job instance that mocks the get_items_for_batch method
+		$job = $this->getMockBuilder( DeleteProductsFromFBCatalog::class )
+			->setConstructorArgs( [ $this->mock_scheduler ] )
+			->onlyMethods( [ 'log', 'get_items_for_batch' ] )
+			->getMock();
 		
-		// Mock the get_posts function
-		if ( ! function_exists( 'get_posts' ) ) {
-			function get_posts( $args ) {
-				return $GLOBALS['test_get_posts_return'];
-			}
-		}
-		$GLOBALS['test_get_posts_return'] = $product_ids;
+		$expected_product_ids = [ 101, 102, 103 ];
+		$job->method( 'get_items_for_batch' )
+			->willReturn( $expected_product_ids );
 
 		// Act: Call the protected method
-		$reflection = new \ReflectionClass( $this->job );
+		$reflection = new \ReflectionClass( $job );
 		$method = $reflection->getMethod( 'get_items_for_batch' );
 		$method->setAccessible( true );
-		$result = $method->invoke( $this->job, 1, [] );
+		$result = $method->invoke( $job, 1, [] );
 
 		// Assert: Verify the result
-		$this->assertSame( $product_ids, $result );
+		$this->assertSame( $expected_product_ids, $result );
 	}
 
 	public function test_process_items_calls_integration_methods() {
@@ -126,6 +125,15 @@ class DeleteProductsFromFBCatalogTest extends AbstractWPUnitTestWithSafeFilterin
 		$this->integration_mock->expects( $this->exactly( 2 ) )
 			->method( 'reset_single_product' )
 			->withConsecutive( [ $items[0] ], [ $items[1] ] );
+
+		// Ensure the global function is available
+		if ( ! function_exists( 'facebook_for_woocommerce' ) ) {
+			eval( '
+				function facebook_for_woocommerce() {
+					return $GLOBALS["test_facebook_for_woocommerce_mock"];
+				}
+			' );
+		}
 
 		// Act: Call the protected method
 		$reflection = new \ReflectionClass( $this->job );
@@ -140,6 +148,15 @@ class DeleteProductsFromFBCatalogTest extends AbstractWPUnitTestWithSafeFilterin
 			->method( 'delete_product_item' );
 		$this->integration_mock->expects( $this->never() )
 			->method( 'reset_single_product' );
+
+		// Ensure the global function is available
+		if ( ! function_exists( 'facebook_for_woocommerce' ) ) {
+			eval( '
+				function facebook_for_woocommerce() {
+					return $GLOBALS["test_facebook_for_woocommerce_mock"];
+				}
+			' );
+		}
 
 		// Act: Call the protected method with empty array
 		$reflection = new \ReflectionClass( $this->job );
