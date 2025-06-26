@@ -54,7 +54,6 @@ jobs:
           COMMITS: ${{ steps.get_commits.outputs.commits }}
         with:
           script: |
-            console.log("Commits:\n" + process.env.COMMITS);
             const commits = process.env.COMMITS.trim().split('\n');
             const changelog = [];
 
@@ -74,7 +73,6 @@ jobs:
                   repo: context.repo.repo,
                   pull_number: prNumber,
                 })).data;
-                console.log(sha, pr);
                 const labels = pr.labels.map(l => l.name).join(', ');
                 changelog.push(`- [${labels}] ${pr.title} by ${pr.user.login} in #${prNumber}`);
               }
