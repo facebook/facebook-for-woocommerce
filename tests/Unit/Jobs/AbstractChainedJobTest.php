@@ -17,7 +17,7 @@ class AbstractChainedJobTest extends AbstractWPUnitTestWithSafeFiltering {
 	 */
 	private $mock_scheduler;
 
-	protected function setUp(): void {
+	public function setUp(): void {
 		parent::setUp();
 		$this->mock_scheduler = $this->createMock(ActionSchedulerInterface::class);
 	}
