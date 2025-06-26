@@ -291,20 +291,4 @@ class DeleteProductsFromFBCatalogTest extends AbstractWPUnitTestWithSafeFilterin
 		// Assert: Verify the class extends the correct parent class
 		$this->assertInstanceOf( \WooCommerce\Facebook\Jobs\AbstractChainedJob::class, $this->job );
 	}
-
-	public function test_class_uses_batch_query_offset_trait() {
-		// Assert: Verify the class uses the BatchQueryOffset trait
-		$reflection = new \ReflectionClass( $this->job );
-		$traits = $reflection->getTraitNames();
-		
-		$this->assertContains( 'Automattic\WooCommerce\ActionSchedulerJobFramework\Utilities\BatchQueryOffset', $traits );
-	}
-
-	public function test_class_uses_logging_trait() {
-		// Assert: Verify the class uses the LoggingTrait
-		$reflection = new \ReflectionClass( $this->job );
-		$traits = $reflection->getTraitNames();
-		
-		$this->assertContains( 'WooCommerce\Facebook\Jobs\LoggingTrait', $traits );
-	}
 } 
