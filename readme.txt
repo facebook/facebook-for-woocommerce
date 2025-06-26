@@ -58,5 +58,6 @@ When opening a bug on GitHub, please give us as many details as possible.
 * Add - Unit tests for SettingsMoved note class to improve code coverage by @sol-loup in #3428
 * Add - Comprehensive unit tests for ProfilingLoggerProcess to improve code coverage by @sol-loup in #3412
 * Fix - Logs for excluded categories and tags by @SayanPandey in #3445
+* Fix - Age group normalisation error and updating supported FB fields for age group by @devbodaghe in #3460
 
 [See changelog for all versions](https://raw.githubusercontent.com/facebook/facebook-for-woocommerce/refs/heads/main/changelog.txt).
