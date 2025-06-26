@@ -81,7 +81,7 @@ class CleanupSkyvergeFrameworkJobOptionsTest extends AbstractWPUnitTestWithOptio
 		$wpdb->options = 'wp_options';
 		$wpdb->expects($this->once())
 			->method('query')
-			->with($this->stringContains("DELETE FROM {$wpdb->options}"))
+			->with($this->matchesRegularExpression('/DELETE\s+FROM\s+wp_options/i'))
 			->willReturn(3); // Return number of affected rows
 
 		// Act
