@@ -11,7 +11,7 @@ use WooCommerce\Facebook\Tests\AbstractWPUnitTestWithOptionIsolationAndSafeFilte
 class AbstractChainedJobTest extends AbstractWPUnitTestWithOptionIsolationAndSafeFiltering {
 
     /**
-     * Returns a testable subclass of AbstractChainedJob.
+     * Returns a testable subclass of AbstractChainedJob with required methods stubbed.
      */
     protected function getTestJob(): AbstractChainedJob {
         return new class extends AbstractChainedJob {
@@ -21,13 +21,24 @@ class AbstractChainedJobTest extends AbstractWPUnitTestWithOptionIsolationAndSaf
                 return 'test';
             }
 
-            public function handle_batch_action(int $batch_number, array $args) {
+            public function get_items_for_batch( int $batch_number, array $args ): array {
+                return [];
+            }
+
+            public function process_item( $item, array $args ) {
+                // No-op for test
+            }
+
+            public function get_plugin_name(): string {
+                return 'facebook-for-woocommerce';
+            }
+
+            public function handle_batch_action( int $batch_number, array $args ) {
                 $this->handleCalledWith = [
                     'batch_number' => $batch_number,
                     'args'         => $args,
                 ];
-                // Simulate call to parent::handle_batch_action
-                // In a real test, we would mock the parent if needed
+                // Simulate call to parent logic (e.g., record for test)
             }
         };
     }
