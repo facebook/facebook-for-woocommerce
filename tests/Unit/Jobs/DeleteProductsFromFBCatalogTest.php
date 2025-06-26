@@ -17,7 +17,7 @@ class DeleteProductsFromFBCatalogTest extends AbstractWPUnitTestWithSafeFilterin
     private $integrationMock;
     private $originalFacebookForWooCommerce;
 
-    protected function setUp(): void
+    public function setUp(): void
     {
         parent::setUp();
         // Create a mock integration
@@ -39,7 +39,7 @@ class DeleteProductsFromFBCatalogTest extends AbstractWPUnitTestWithSafeFilterin
             ->getMock();
     }
 
-    protected function tearDown(): void
+    public function tearDown(): void
     {
         unset($GLOBALS['facebook_for_woocommerce']);
         parent::tearDown();
