@@ -183,9 +183,15 @@ jobs:
             if (markerIndex === -1) {
               throw new Error('Marker not found in file');
             }
+
+            function shouldRemove(line) {
+              const trimmed = line.trim();
+              return trimmed === '' || trimmed.startsWith('=') || trimmed.startsWith('*');
+            }
+
             let i = markerIndex + 1;
             // Remove all lines starting with "*" after the marker
-            while (i < content.length && content[i].startsWith('*')) {
+            while (i < content.length && shouldRemove(content[i])) {
               content.splice(i, 1); // Don't increment i since we're removing current line
             }
             const newLines = process.env.CHANGELOG_TEXT.split(/\r?\n/);
