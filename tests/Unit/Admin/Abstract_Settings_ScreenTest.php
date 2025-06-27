@@ -20,12 +20,15 @@ class Abstract_Settings_ScreenTest extends AbstractWPUnitTestWithOptionIsolation
      * Set up the test environment
      */
     public function setUp(): void {
-        parent::setUp();
-
-        // Mock apply_filters for the test environment
-        if ( ! function_exists( 'apply_filters' ) ) {
-            eval('function apply_filters($tag, $value) { return $value; }');
+        // Unset global $wp_filter to avoid WordPress filter system interference
+        if (isset($GLOBALS['wp_filter'])) {
+            unset($GLOBALS['wp_filter']);
         }
+        // Mock apply_filters for pure unit test context if not already defined
+        if (!function_exists('apply_filters')) {
+            function apply_filters($tag, $value) { return $value; }
+        }
+        parent::setUp();
 
         // Use an anonymous class as a concrete implementation for testing
         $this->screen = new class extends Abstract_Settings_Screen {
