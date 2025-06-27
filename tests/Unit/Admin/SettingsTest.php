@@ -17,7 +17,7 @@ class SettingsTest extends AbstractWPUnitTestWithOptionIsolationAndSafeFiltering
     /**
      * Set up the test environment
      */
-    protected function setUp(): void {
+    public function setUp(): void {
         parent::setUp();
 
         // Only create the plugin mock here, not the Settings instance
