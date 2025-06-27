@@ -20,8 +20,13 @@ class GenerateProductFeedTest extends AbstractWPUnitTestWithSafeFiltering {
 	/** @var MockObject|ActionSchedulerInterface */
 	private $mock_scheduler;
 
+	/** @var mixed */
+	private $original_wpdb;
+
 	public function setUp(): void {
 		parent::setUp();
+		global $wpdb;
+		$this->original_wpdb = $wpdb;
 		$this->mock_scheduler = $this->createMock(ActionSchedulerInterface::class);
 		$this->job = $this->getMockBuilder(GenerateProductFeed::class)
 			->setConstructorArgs([$this->mock_scheduler])
@@ -29,6 +34,12 @@ class GenerateProductFeedTest extends AbstractWPUnitTestWithSafeFiltering {
 			->getMock();
 		$this->job->method('get_batch_size')->willReturn(2);
 		$this->job->method('get_query_offset')->willReturn(0);
+	}
+
+	public function tearDown(): void {
+		global $wpdb;
+		$wpdb = $this->original_wpdb;
+		parent::tearDown();
 	}
 
 	private function mock_facebook_for_woocommerce_tracker() {
