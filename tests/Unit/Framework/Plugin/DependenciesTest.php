@@ -471,7 +471,8 @@ class DependenciesTest extends AbstractWPUnitTestWithOptionIsolationAndSafeFilte
 		$dependencies = new Dependencies( $this->plugin );
 		
 		// Check that the admin_init hook is added
-		$this->assertTrue( has_action( 'admin_init', array( $dependencies, 'add_admin_notices' ) ) );
+		// has_action returns the priority if the action exists, false otherwise
+		$this->assertNotFalse( has_action( 'admin_init', array( $dependencies, 'add_admin_notices' ) ) );
 	}
 
 	/**
