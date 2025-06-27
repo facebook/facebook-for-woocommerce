@@ -146,7 +146,7 @@ jobs:
         env:
           NEW_VERSION: ${{ steps.set_version.outputs.new_version }}
         run: |
-          sed -i -E 's/^  "version":[[:space:]]*"[^\"]*"[[:space:]]*,/  "version": "$NEW_VERSION",/' 'package.json'
+          sed -i -E 's/^  "version":[[:space:]]*"[^\"]*"[[:space:]]*,/  "version": "${NEW_VERSION}",/' 'package.json'
           git diff
 
       - name: Commit changes
@@ -156,5 +156,5 @@ jobs:
           git status
           git add .
           git commit -m "Updating version to $NEW_VERSION"
-          git log
+          git log -n 5
 
