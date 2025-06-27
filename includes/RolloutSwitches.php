@@ -28,6 +28,7 @@ class RolloutSwitches {
 	public const WHATSAPP_UTILITY_MESSAGING           = 'whatsapp_utility_messages_enabled';
 	public const SWITCH_PRODUCT_SETS_SYNC_ENABLED     = 'product_sets_sync_enabled';
 	public const SWITCH_WOO_ALL_PRODUCTS_SYNC_ENABLED = 'woo_all_products_sync_enabled';
+	public const SWITCH_OFFER_MANAGEMENT_ENABLED      = 'offer_management_enabled';
 	private const SETTINGS_KEY                        = 'wc_facebook_for_woocommerce_rollout_switches';
 
 	private const ACTIVE_SWITCHES = array(
@@ -35,6 +36,7 @@ class RolloutSwitches {
 		self::WHATSAPP_UTILITY_MESSAGING,
 		self::SWITCH_PRODUCT_SETS_SYNC_ENABLED,
 		self::SWITCH_WOO_ALL_PRODUCTS_SYNC_ENABLED,
+		self::SWITCH_OFFER_MANAGEMENT_ENABLED,
 	);
 
 	public function __construct( \WC_Facebookcommerce $plugin ) {

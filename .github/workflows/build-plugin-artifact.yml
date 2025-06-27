@@ -3,6 +3,9 @@ name: Build Plugin Artifact
 on:
   pull_request:
     types: [opened, synchronize, reopened]
+  push:
+    branches:
+      - release/*
 
 jobs:
   build-and-upload:
@@ -23,7 +26,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v3
         with:
-          node-version: '16'
+          node-version-file: 'package.json'
           cache-dependency-path: './package-lock.json'
           cache: 'npm'
       
@@ -56,6 +59,7 @@ jobs:
         run: echo "⬇️ Scroll to the bottom of this page and download the 'facebook-for-woocommerce' artifact to get the latest plugin build." > $GITHUB_STEP_SUMMARY
         
       - name: Post build info comment on PR
+        if: github.event_name == 'pull_request'
         uses: actions/github-script@v6
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}

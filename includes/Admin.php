@@ -12,6 +12,7 @@ namespace WooCommerce\Facebook;
 
 use WooCommerce\Facebook\Admin\Enhanced_Catalog_Attribute_Fields;
 use WooCommerce\Facebook\Framework\Helper;
+use WooCommerce\Facebook\ProductAttributeMapper;
 use Automattic\WooCommerce\Utilities\OrderUtil;
 
 defined( 'ABSPATH' ) || exit;
@@ -1697,29 +1698,6 @@ class Admin {
 		?>
 		<script type="text/javascript">
 			jQuery(document).ready(function($) {
-				// Add CSS for synced fields
-				$('head').append(`
-					<style>
-						.multi-value-display,
-						select.synced-attribute,
-						input.synced-attribute {
-							cursor: not-allowed !important;
-							color: rgba(44, 51, 56, .5) !important;
-							background-color: #f0f0f1 !important;
-						}
-						
-						/* Style for Select2 when parent select is synced */
-						select.synced-attribute + .select2-container .select2-selection {
-							cursor: not-allowed !important;
-							background-color: #f0f0f1 !important;
-							color: rgba(44, 51, 56, .5) !important;
-						}
-						
-						select.synced-attribute + .select2-container .select2-selection__rendered {
-							color: rgba(44, 51, 56, .5) !important;
-						}
-					</style>
-				`);
 				
 				// State object to track badge display status
 				var syncedBadgeState = {
@@ -1729,7 +1707,7 @@ class Admin {
 					pattern: false,
 					brand: false,
 					mpn: false,
-					age_group: false,   // Add dropdown fields
+					age_group: false,
 					gender: false,
 					condition: false
 				};
@@ -1829,8 +1807,8 @@ class Admin {
 				// Function to sync Facebook attributes
 				function syncFacebookAttributes() {
 					// First clean up any stray elements that might exist globally
-					$('.multi-value-display + .sync-indicator').remove();
-					$('.woocommerce_options_panel').find('.multi-value-display, .sync-indicator').each(function() {
+					$('.multi-value-display + .wc-attributes-icon').remove();
+					$('.woocommerce_options_panel').find('.multi-value-display, .wc-attributes-icon').each(function() {
 						// Only remove elements that are duplicates (more than one per field)
 						var $parent = $(this).parent();
 						var $siblings = $parent.find('.' + $(this).attr('class'));
@@ -1850,7 +1828,6 @@ class Admin {
 						},
 						success: function(response) {
 							if (response.success) {
-								// Array of fields to potentially update
 								var fields = {
 									'material': '<?php echo esc_js( \WC_Facebook_Product::FB_MATERIAL ); ?>',
 									'color': '<?php echo esc_js( \WC_Facebook_Product::FB_COLOR ); ?>',
@@ -1916,12 +1893,58 @@ class Admin {
 													
 													// Always add the sync badge after the multi-value display
 													// Only if it doesn't already exist
-													if ($multiDisplay.next('.sync-indicator').length === 0) {
-														$multiDisplay.after('<span class="sync-indicator wc-attributes-icon" data-tip="Synced from the Attributes tab." style="margin-left: 4px;"><span class="sync-tooltip">Synced from the Attributes tab.</span></span>');
+													if ($multiDisplay.next('.wc-attributes-icon').length === 0) {
+														$multiDisplay.after('<span class="wc-attributes-icon" data-tip="Synced from product attributes"></span>');
 													}
 												} else {
 													// Update the existing multi-value display
 													$field.next('.multi-value-display').val(syncedValue);
+												}
+											// If this is a dropdown field like gender, age_group, or condition with a single mapped value,
+											// select that value in the dropdown and disable it
+											} else if (key === 'age_group' || key === 'gender' || key === 'condition') {
+												// First check if this dropdown has a corresponding value
+												var hasMatchingOption = false;
+												var matchingOptionValue = '';
+												$field.find('option').each(function() {
+													var optionValue = $(this).val();
+													var optionText = $(this).text();
+													
+													// Check both option value and option text (case-insensitive)
+													if (optionValue === syncedValue || 
+														optionText.toLowerCase() === syncedValue.toLowerCase() ||
+														optionValue.toLowerCase() === syncedValue.toLowerCase()) {
+														hasMatchingOption = true;
+														matchingOptionValue = optionValue; // Use the actual option value, not the synced value
+														return false; // break loop
+													}
+												});
+												
+												if (hasMatchingOption) {
+													$field.val(matchingOptionValue) // Use the correct option value
+														.prop('disabled', true)
+														.addClass('synced-attribute')
+														.css({
+															'cursor': 'not-allowed',
+															'background-color': '#f0f0f1',
+															'color': 'rgba(44, 51, 56, .5)'
+														});
+													
+													// Add the sync badge if it doesn't exist
+													if ($field.next('.wc-attributes-icon').length === 0) {
+														$field.after('<span class="sync-indicator wc-attributes-icon" data-tip="Synced from the Attributes tab." style="margin-left: 4px;"><span class="sync-tooltip">Synced from the Attributes tab.</span></span>');
+													}
+												} else if (isMultipleValues) {
+													// This is a multi-value field but not a dropdown
+													$field.prop('disabled', true).addClass('synced-attribute').hide();
+													
+													// Create a styled disabled field to show multiple values
+													var $multiDisplay = $('<input type="text" class="multi-value-display" disabled>')
+														.val(syncedValue)
+														.insertAfter($field);
+													
+													// Add the sync badge
+													$multiDisplay.after('<span class="wc-attributes-icon" data-tip="Synced from product attributes"></span>');
 												}
 											} else if (isMultipleValues) {
 												// For non-dropdown multi-value fields
@@ -1936,7 +1959,7 @@ class Admin {
 													.show();
 													
 												// Add the sync badge if it doesn't exist
-												if ($field.next('.sync-indicator').length === 0) {
+												if ($field.next('.wc-attributes-icon').length === 0) {
 													$field.after('<span class="sync-indicator wc-attributes-icon" data-tip="Synced from the Attributes tab." style="margin-left: 4px;"><span class="sync-tooltip">Synced from the Attributes tab.</span></span>');
 												}
 											} else {
@@ -1952,7 +1975,7 @@ class Admin {
 													.show();
 													
 												// Add the sync badge if it doesn't exist
-												if ($field.next('.sync-indicator').length === 0) {
+												if ($field.next('.wc-attributes-icon').length === 0) {
 													$field.after('<span class="sync-indicator wc-attributes-icon" data-tip="Synced from the Attributes tab." style="margin-left: 4px;"><span class="sync-tooltip">Synced from the Attributes tab.</span></span>');
 												}
 											}
@@ -1969,7 +1992,7 @@ class Admin {
 												.show();
 											
 											// Add the sync badge if it doesn't exist
-											if ($field.next('.sync-indicator').length === 0) {
+											if ($field.next('.wc-attributes-icon').length === 0) {
 												$field.after('<span class="sync-indicator wc-attributes-icon" data-tip="Synced from the Attributes tab." style="margin-left: 4px;"><span class="sync-tooltip">Synced from the Attributes tab.</span></span>');
 											}
 										}
@@ -2025,7 +2048,7 @@ class Admin {
 				$('.woocommerce_options_panel input[type="text"]').on('input', function() {
 					var fieldId = $(this).attr('id');
 					for (var key in syncedBadgeState) {
-						if (fieldId.includes(key)) {
+						if (fieldId && fieldId.includes(key)) {
 							manualValues[key] = $(this).val();
 							// When manually entering a value, mark as not synced
 							syncedFields[key] = false;
@@ -2037,7 +2060,7 @@ class Admin {
 				$('.woocommerce_options_panel select').on('change', function() {
 					var fieldId = $(this).attr('id');
 					for (var key in syncedBadgeState) {
-						if (fieldId.includes(key)) {
+						if (fieldId && fieldId.includes(key)) {
 							manualValues[key] = $(this).val();
 							// When manually selecting a value, mark as not synced
 							syncedFields[key] = false;
@@ -2184,9 +2207,9 @@ class Admin {
 					
 					// If we're clicking on a tab that isn't the Facebook tab,
 					// clean up all UI elements first
-					if (!tabClass.includes('fb_commerce_tab')) {
+					if (!tabClass || !tabClass.includes('fb_commerce_tab')) {
 						cleanupAllUIElements();
-					} else if (tabClass.includes('fb_commerce_tab')) {
+					} else if (tabClass && tabClass.includes('fb_commerce_tab')) {
 						// If we're clicking on the Facebook tab
 						// First clean up any previous UI elements
 						cleanupAllUIElements();
@@ -2231,6 +2254,13 @@ class Admin {
 			return [];
 		}
 
+		// Use the ProductAttributeMapper to get mapped attributes
+		if ( class_exists( '\WooCommerce\Facebook\ProductAttributeMapper' ) ) {
+			$mapped_attributes = \WooCommerce\Facebook\ProductAttributeMapper::get_and_save_mapped_attributes( $product );
+			return $mapped_attributes;
+		}
+
+		// Fallback to old method if ProductAttributeMapper is not available
 		$attributes      = $product->get_attributes();
 		$facebook_fields = [];
 
@@ -2327,7 +2357,7 @@ class Admin {
 			if ( $matched_facebook_field && ! in_array( $field_name, $processed_fields, true ) ) {
 				$values = [];
 
-				if ( $attribute->is_taxonomy() ) {
+				if ( is_object( $attribute ) && method_exists( $attribute, 'is_taxonomy' ) && $attribute->is_taxonomy() ) {
 					$terms = $attribute->get_terms();
 					if ( $terms && ! is_wp_error( $terms ) ) {
 						$values = wp_list_pluck( $terms, 'name' );

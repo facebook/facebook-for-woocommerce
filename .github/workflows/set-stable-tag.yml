@@ -1,0 +1,58 @@
+name: Set Stable Tag
+
+on: workflow_dispatch
+
+jobs:
+  set-stable-tag:
+    runs-on: ubuntu-latest
+    environment: Deployment
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Fail if not on a release publish branch
+        run: |
+          echo "Current ref: ${{ github.ref }}"
+          BRANCH="${{ github.ref }}"
+          if [[ ! $BRANCH == release/*/publish ]]; then
+            echo "❌ This workflow can only be run on release/*/publish branches."
+            exit 1
+          fi
+
+      - name: Get NPM Version
+        id: package-version
+        uses: martinbeentjes/npm-get-version-action@v1.3.1
+
+      - name: Validate Git tag
+        run: |
+          if [ ! $(git tag -l "v${{ steps.package-version.outputs.current-version}}") ]; then
+            echo "❌ Git tag does not exist" 1>&2
+            exit 1
+          fi
+
+      - name: Install SVN
+        run: sudo apt-get install subversion -y
+
+      - name: Checkout SVN Repository
+        run: svn co https://plugins.svn.wordpress.org/facebook-for-woocommerce/ woocommerce_svn --quiet --non-interactive
+
+      - name: Validate SVN tag
+        run: |
+          if [ ! -d "woocommerce_svn/tags/${{ steps.package-version.outputs.current-version}}" ]; then
+            echo "❌ SVN tag directory does not exist" 1>&2
+            exit 1
+          fi
+
+      - name: Update readme.txt
+        env:
+          NEW_VERSION: ${{ steps.package-version.outputs.current-version}}
+        run: |
+          cd woocommerce_svn
+          sed -i -E "s/^(Stable tag:)[[:space:]]*[0-9.]+/\1 $NEW_VERSION/" "trunk/readme.txt"
+      
+      - name: Commit to SVN
+        run: |
+          cd woocommerce_svn
+          cat trunk/readme.txt
+          svn status
+          svn diff
+          svn commit -m "Update stable tag for version ${{ steps.package-version.outputs.current-version}}" --username "$SVN_USERNAME" --password "$SVN_PASSWORD" --no-auth-cache --non-interactive

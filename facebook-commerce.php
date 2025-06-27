@@ -100,6 +100,9 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 	/** @var string the "debug mode" setting ID */
 	const SETTING_ENABLE_NEW_STYLE_FEED_GENERATOR = 'wc_facebook_enable_new_style_feed_generator';
 
+	/** @var string enable facebook managed coupons setting ID */
+	const SETTING_ENABLE_FACEBOOK_MANAGED_COUPONS = 'wc_facebook_enable_facebook_managed_coupons';
+
 	/** @var string request headers in the debug log */
 	const SETTING_REQUEST_HEADERS_IN_DEBUG_MODE = 'wc_facebook_request_headers_in_debug_log';
 
@@ -141,6 +144,9 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 
 	/** @var string the WordPress option name where the messenger chat status is stored */
 	const OPTION_ENABLE_MESSENGER = 'wc_facebook_enable_messenger';
+
+	/** @var string default value for facebook_managed_coupons_setting */
+	const SETTING_ENABLE_FACEBOOK_MANAGED_COUPONS_DEFAULT_VALUE = 'yes';
 
 	/** @var string|null the configured product catalog ID */
 	public $product_catalog_id;
@@ -323,8 +329,6 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 					[ $this, 'on_quick_and_bulk_edit_save' ]
 				);
 
-				add_action( 'add_meta_boxes_product', [ $this, 'display_batch_api_completed' ], 10, 2 );
-
 				add_action(
 					'wp_ajax_ajax_fb_toggle_visibility',
 					array( $this, 'ajax_fb_toggle_visibility' )
@@ -502,6 +506,10 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 		add_action(
 			'wp_ajax_ajax_fb_background_check_queue',
 			[ $this, 'ajax_fb_background_check_queue' ]
+		);
+		add_action(
+			'wp_ajax_fb_dismiss_unmapped_attributes_banner',
+			[ $this, 'ajax_dismiss_unmapped_attributes_banner' ]
 		);
 	}
 
@@ -705,15 +713,6 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 			\WC_Facebookcommerce::PLUGIN_VERSION
 		);
 		wp_localize_script( 'wc_facebook_infobanner_jsx', 'wc_facebook_infobanner_jsx', $ajax_data );
-		wp_enqueue_style(
-			'wc_facebook_infobanner_css',
-			plugins_url(
-				'/assets/css/facebook-infobanner.css',
-				__FILE__
-			),
-			[],
-			\WC_Facebookcommerce::PLUGIN_VERSION
-		);
 
 		if ( ! $this->facebook_for_woocommerce->is_plugin_settings() ) {
 			return;
@@ -1004,7 +1003,7 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 
 		$product_id = $product->get_id();
 
-		if ( $product->is_type( 'variation' ) ) {
+		if ( $product->is_type( 'variation' ) || $product->is_type( 'simple' ) ) {
 			$retailer_id = \WC_Facebookcommerce_Utils::get_fb_retailer_id( $product );
 			// enqueue variation to be deleted in the background
 			$this->facebook_for_woocommerce->get_products_sync_handler()->delete_products( [ $retailer_id ] );
@@ -1019,9 +1018,6 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 			}
 			// enqueue variations to be deleted in the background
 			$this->facebook_for_woocommerce->get_products_sync_handler()->delete_products( $retailer_ids );
-		} else {
-
-			$this->delete_product_item( $product_id );
 		}
 
 		// clear out both item and group IDs
@@ -1174,16 +1170,8 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 			return;
 		}
 
-		// Check if product group has been published to FB. If not, it's new.
-		// If yes, loop through variants and see if product items are published.
-		$fb_product_group_id = $this->get_product_fbid( self::FB_PRODUCT_GROUP_ID, $wp_id, $woo_product );
-		if ( $fb_product_group_id ) {
-			$woo_product->fb_visibility = Products::is_product_visible( $woo_product->woo_product );
-			$this->update_product_group( $woo_product );
-		} else {
-			$retailer_id = WC_Facebookcommerce_Utils::get_fb_retailer_id( $woo_product->woo_product );
-			$this->create_product_group( $woo_product, $retailer_id );
-		}
+		$retailer_id = WC_Facebookcommerce_Utils::get_fb_retailer_id( $woo_product->woo_product );
+		$this->create_product_group( $woo_product, $retailer_id );
 
 		$variation_ids = [];
 
@@ -1215,18 +1203,7 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 		if ( ! $this->product_should_be_synced( $woo_product->woo_product ) ) {
 			return;
 		}
-
-		// Check if this product has already been published to FB.
-		// If not, it's new!
-		$fb_product_item_id = $this->get_product_fbid( self::FB_PRODUCT_ITEM_ID, $wp_id, $woo_product );
-
-		if ( $fb_product_item_id ) {
-			$woo_product->fb_visibility = Products::is_product_visible( $woo_product->woo_product );
-			$this->update_product_item_batch_api( $woo_product, $fb_product_item_id );
-			return $fb_product_item_id;
-		} else {
-			return $this->create_product_simple( $woo_product );  // new product
-		}
+		return $this->create_product_simple( $woo_product );  // new product
 	}
 
 	/**
@@ -1305,6 +1282,10 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 
 	/**
 	 * Update existing product group (variant data only)
+	 *
+	 * @deprecated as we are no longer calling an update
+	 * We create everytime and it will be handled in the backend
+	 * TO_BE_DELETED
 	 *
 	 * @param WC_Facebook_Product $woo_product
 	 **/
@@ -1731,9 +1712,102 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 					$this->get_product_catalog_id() .
 					'/products/" target="_blank">View product on Meta catalog</a>'
 			);
+
+			// Display unmapped attributes banner if there are any
+			$this->display_unmapped_attributes_banner( $fb_product->woo_product );
 		}
 	}
 
+	/**
+	 * Displays a banner for unmapped attributes encouraging users to use the attribute mapper.
+	 *
+	 * @param \WC_Product $product The product object
+	 * @return void
+	 */
+	public function display_unmapped_attributes_banner( \WC_Product $product ) {
+		// Check if this feature should be shown
+		if ( ! $this->should_show_unmapped_attributes_banner() ) {
+			return;
+		}
+
+		// Get unmapped attributes using the ProductAttributeMapper
+		if ( ! class_exists( '\WooCommerce\Facebook\ProductAttributeMapper' ) ) {
+			return;
+		}
+
+		$unmapped_attributes = \WooCommerce\Facebook\ProductAttributeMapper::get_unmapped_attributes( $product );
+
+		// Only show if there are unmapped attributes
+		if ( empty( $unmapped_attributes ) ) {
+			return;
+		}
+
+		$count = count( $unmapped_attributes );
+
+		// Convert attribute names to user-friendly labels
+		$attribute_labels = array();
+		foreach ( $unmapped_attributes as $attribute ) {
+			$attribute_name = $attribute['name'];
+			// Get the user-friendly label for the attribute
+			$label = wc_attribute_label( $attribute_name );
+			// If no label found, clean up the name by removing pa_ prefix
+			if ( $label === $attribute_name && strpos( $attribute_name, 'pa_' ) === 0 ) {
+				$label = ucfirst( str_replace( array( 'pa_', '_', '-' ), array( '', ' ', ' ' ), $attribute_name ) );
+			}
+			$attribute_labels[] = $label;
+		}
+
+		$attribute_list = implode( ', ', array_slice( $attribute_labels, 0, 3 ) );
+		if ( $count > 3 ) {
+			/* translators: %d: number of additional unmapped attributes */
+			$attribute_list .= sprintf( __( ' and %d more', 'facebook-for-woocommerce' ), $count - 3 );
+		}
+
+		// Build the mapper URL
+		$mapper_url = add_query_arg(
+			array(
+				'page' => 'wc-facebook',
+				'tab'  => 'product-attributes',
+			),
+			admin_url( 'admin.php' )
+		);
+
+		$message = sprintf(
+			/* translators: %1$s - attribute list, %2$d - count, %3$s - link start, %4$s - link end */
+			_n(
+				'%3$s%2$d attribute "%1$s" is not mapped to Meta.%4$s Use the %3$sattribute mapper%4$s to map this attribute and improve your product visibility in Meta ads.',
+				'%3$s%2$d attributes (%1$s) are not mapped to Meta.%4$s Use the %3$sattribute mapper%4$s to map these attributes and improve your product visibility in Meta ads.',
+				$count,
+				'facebook-for-woocommerce'
+			),
+			$attribute_list,
+			$count,
+			'<a href="' . esc_url( $mapper_url ) . '" target="_blank">',
+			'</a>'
+		);
+
+		// Store the message with a specific prefix to identify it
+		$banner_message = self::FB_ADMIN_MESSAGE_PREPEND . $message;
+		set_transient(
+			'facebook_plugin_unmapped_attributes_info',
+			$banner_message,
+			self::FB_MESSAGE_DISPLAY_TIME
+		);
+	}
+
+	/**
+	 * Determines if the unmapped attributes banner should be shown.
+	 *
+	 * @return bool
+	 */
+	private function should_show_unmapped_attributes_banner() {
+		// Only show to users who can manage WooCommerce
+		if ( ! current_user_can( 'manage_woocommerce' ) ) {
+			return false;
+		}
+
+		return true;
+	}
 
 	/**
 	 * Checks the feed upload status (FBE v1.0).
@@ -2150,6 +2224,68 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 		check_ajax_referer( 'wc_facebook_settings_jsx' );
 		$this->reset_all_products();
 		wp_reset_postdata();
+		wp_die();
+	}
+
+	/**
+	 * Ajax reset single Facebook product.
+	 *
+	 * @return void
+	 */
+	public function ajax_reset_single_fb_product() {
+		WC_Facebookcommerce_Utils::check_woo_ajax_permissions( 'reset single product', true );
+		check_ajax_referer( 'wc_facebook_metabox_jsx' );
+		if ( ! isset( $_POST['wp_id'] ) ) {
+			wp_die();
+		}
+
+		$wp_id       = sanitize_text_field( wp_unslash( $_POST['wp_id'] ) );
+		$woo_product = new WC_Facebook_Product( $wp_id );
+		if ( $woo_product ) {
+			$this->reset_single_product( $wp_id );
+		}
+
+		wp_reset_postdata();
+		wp_die();
+	}
+
+	/**
+	 * Ajax delete Facebook product.
+	 *
+	 * @return void
+	 */
+	public function ajax_delete_fb_product() {
+		WC_Facebookcommerce_Utils::check_woo_ajax_permissions( 'delete single product', true );
+		check_ajax_referer( 'wc_facebook_metabox_jsx' );
+		if ( ! isset( $_POST['wp_id'] ) ) {
+			wp_die();
+		}
+
+		$wp_id = sanitize_text_field( wp_unslash( $_POST['wp_id'] ) );
+		$this->on_product_delete( $wp_id );
+		$this->reset_single_product( $wp_id );
+		wp_reset_postdata();
+		wp_die();
+	}
+
+	/**
+	 * AJAX handler for dismissing the unmapped attributes banner.
+	 *
+	 * @return void
+	 */
+	public function ajax_dismiss_unmapped_attributes_banner() {
+		// Check permissions
+		if ( ! current_user_can( 'manage_woocommerce' ) ) {
+			wp_die( -1, 403 );
+		}
+
+		// Check nonce
+		check_ajax_referer( 'fb_dismiss_unmapped_attributes_banner' );
+
+		// Clear the transient (but don't set permanent user meta)
+		// This way the banner will show again next time there are unmapped attributes
+		delete_transient( 'facebook_plugin_unmapped_attributes_info' );
+
 		wp_die();
 	}
 
@@ -2596,6 +2732,15 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 	}
 
 	/**
+	 * Determines whether facebook managed coupons is enabled.
+	 *
+	 * @return bool
+	 */
+	public function is_facebook_managed_coupons_enabled(): bool {
+		return ( 'yes' === get_option( self::SETTING_ENABLE_FACEBOOK_MANAGED_COUPONS, self::SETTING_ENABLE_FACEBOOK_MANAGED_COUPONS_DEFAULT_VALUE ) );
+	}
+
+	/**
 	 * Determines whether debug mode is enabled.
 	 *
 	 * @return bool
@@ -2701,6 +2846,39 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 			echo $this->get_message_html( $sticky_msg, 'info' );
 			// transient must be deleted elsewhere, or wait for timeout
 		}
+
+		// Display unmapped attributes banner
+		$unmapped_attributes_msg = get_transient( 'facebook_plugin_unmapped_attributes_info' );
+		if ( $unmapped_attributes_msg && $this->should_show_unmapped_attributes_banner() ) {
+			// Add a dismiss button to the message
+			$dismiss_message = $unmapped_attributes_msg . ' <button type="button" class="notice-dismiss" onclick="fbDismissUnmappedAttributesBanner(event)" title="' . esc_attr__( 'Dismiss this notice.', 'facebook-for-woocommerce' ) . '"><span class="screen-reader-text">' . esc_html__( 'Dismiss this notice.', 'facebook-for-woocommerce' ) . '</span></button>';
+
+			// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+			echo $this->get_message_html( $dismiss_message, 'info' );
+
+			// Include JavaScript for dismiss functionality
+			?>
+			<script type="text/javascript">
+			function fbDismissUnmappedAttributesBanner(event) {
+				// Make AJAX request to dismiss the banner
+				var xhr = new XMLHttpRequest();
+				xhr.open('POST', '<?php echo esc_url( admin_url( 'admin-ajax.php' ) ); ?>', true);
+				xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+				xhr.onload = function() {
+					if (xhr.status === 200) {
+						// Hide the notice immediately
+						var notice = event.target.closest('.notice');
+						if (notice) {
+							notice.style.display = 'none';
+						}
+					}
+				};
+				xhr.send('action=fb_dismiss_unmapped_attributes_banner&_wpnonce=<?php echo esc_attr( wp_create_nonce( 'fb_dismiss_unmapped_attributes_banner' ) ); ?>');
+			}
+			</script>
+			<?php
+			delete_transient( 'facebook_plugin_unmapped_attributes_info' );
+		}
 	}
 
 	/**
@@ -2722,6 +2900,7 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 	}
 
 	/**
+	 * @deprecated
 	 * Delete product item by id.
 	 *
 	 * @param int $wp_id
@@ -2785,7 +2964,7 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 		}
 
 		$should_set_visible = self::FB_SHOP_PRODUCT_VISIBLE === $visibility;
-		if ( $product->is_type( 'variation' ) ) {
+		if ( $product->is_type( 'variation' ) || $product->is_type( 'simple' ) ) {
 			Products::set_product_visibility( $product, $should_set_visible );
 			$this->facebook_for_woocommerce->get_products_sync_handler()->create_or_update_products( [ $product->get_id() ] );
 		} elseif ( $product->is_type( 'variable' ) ) {
@@ -2806,28 +2985,6 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 			}
 			// sync product with all variations
 			$this->facebook_for_woocommerce->get_products_sync_handler()->create_or_update_products( $product_ids );
-		} else {
-			$fb_product_item_id = $this->get_product_fbid( self::FB_PRODUCT_ITEM_ID, $product->get_id() );
-			if ( ! $fb_product_item_id ) {
-				return;
-			}
-			try {
-				$set_visibility = $this->facebook_for_woocommerce->get_api()->update_product_item( $fb_product_item_id, [ 'visibility' => $visibility ] );
-				if ( $set_visibility->success ) {
-					Products::set_product_visibility( $product, $should_set_visible );
-				}
-			} catch ( ApiException $e ) {
-				$message = sprintf( 'There was an error trying to update product item: %s', $e->getMessage() );
-				Logger::log(
-					$message,
-					[],
-					array(
-						'should_send_log_to_meta'        => false,
-						'should_save_log_in_woocommerce' => true,
-						'woocommerce_log_level'          => \WC_Log_Levels::ERROR,
-					)
-				);
-			}
 		}
 	}
 
@@ -2840,6 +2997,9 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 	 */
 	public function on_quick_and_bulk_edit_save( $product ) {
 		// bail if not a product or product is not enabled for sync
+		static $bulk_product_edit_ids    = [];
+		static $bulk_products_to_exclude = [];
+
 		if ( ! $product instanceof \WC_Product || ! Products::published_product_should_be_synced( $product ) ) {
 			return;
 		}
@@ -2847,13 +3007,28 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 		$wp_id      = $product->get_id();
 		$visibility = get_post_status( $wp_id ) === 'publish' ? self::FB_SHOP_PRODUCT_VISIBLE : self::FB_SHOP_PRODUCT_HIDDEN;
 
-		if ( self::FB_SHOP_PRODUCT_VISIBLE === $visibility ) {
-			// - new status is 'publish' regardless of old status, sync to Facebook
-			$this->on_product_publish( $wp_id );
-		} else {
+		if ( self::FB_SHOP_PRODUCT_HIDDEN === $visibility ) {
 			// - product never published to Facebook, new status is not publish
 			// - product new status is not publish but may have been published before
 			$this->update_fb_visibility( $product, $visibility );
+		}
+
+		if ( ! empty( $_REQUEST['post'] ) ) {
+			$bulk_product_edit_ids = $_REQUEST['post'];
+		}
+
+		/**
+		 * Draft products are also included in this bulk edit
+		 * As they will not be sent in requests since in backgroun jon they will be discarded
+		 * when validations are checked
+		 */
+		$bulk_action_products_cumulative_count = did_action( 'woocommerce_product_bulk_edit_save' );
+
+		if ( count( $bulk_product_edit_ids ) === $bulk_action_products_cumulative_count ) {
+			$unique_in_bulk_prouduct_edit_ids   = array_diff( $bulk_product_edit_ids, $bulk_products_to_exclude );
+			$unique_in_bulk_prouduct_to_exclude = array_diff( $bulk_products_to_exclude, $bulk_product_edit_ids );
+			$final_products_to_updte            = array_merge( $unique_in_bulk_prouduct_edit_ids, $unique_in_bulk_prouduct_to_exclude );
+			$this->facebook_for_woocommerce->get_products_sync_handler()->create_or_update_all_products_for_bulk_edit( $final_products_to_updte );
 		}
 	}
 

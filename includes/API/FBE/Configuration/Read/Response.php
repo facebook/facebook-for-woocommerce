@@ -22,7 +22,7 @@ class Response extends API\Response {
 		if ( empty( $this->response_data['ig_shopping'] ) ) {
 			return false;
 		}
-		return (bool) $this->response_data['ig_shopping']['enabled'] ?? false;
+		return (bool) ( $this->response_data['ig_shopping']['enabled'] ?? false );
 	}
 
 	/**
@@ -35,7 +35,7 @@ class Response extends API\Response {
 		if ( empty( $this->response_data['ig_cta'] ) ) {
 			return false;
 		}
-		return (bool) $this->response_data['ig_cta']['enabled'] ?? false;
+		return (bool) ( $this->response_data['ig_cta']['enabled'] ?? false );
 	}
 
 	/**

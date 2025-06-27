@@ -185,11 +185,12 @@ class WC_Facebookcommerce extends WooCommerce\Facebook\Framework\Plugin {
 	 * @internal
 	 */
 	public function init() {
-		add_action( 'init', array( $this, 'initialize_cookies' ) );
+		add_action( 'plugins_loaded', array( $this, 'initialize_cookies' ), 5 );
 		add_action( 'init', array( $this, 'get_integration' ) );
 		add_action( 'init', array( $this, 'register_custom_taxonomy' ) );
 		add_action( 'add_meta_boxes_product', array( $this, 'remove_product_fb_product_set_metabox' ), 50 );
-		add_action( 'woocommerce_init', array( $this, 'add_whatsapp_consent_checkout_fields' ) );
+		add_action( 'woocommerce_init', array( $this, 'add_whatsapp_consent_block_checkout_fields' ) );
+		add_filter( 'woocommerce_checkout_fields', array( $this, 'add_whatsapp_consent_classic_checkout_fields' ) );
 		add_filter( 'fb_product_set_row_actions', array( $this, 'product_set_links' ) );
 		add_filter( 'manage_edit-fb_product_set_columns', array( $this, 'manage_fb_product_set_columns' ) );
 
@@ -270,8 +271,6 @@ class WC_Facebookcommerce extends WooCommerce\Facebook\Framework\Plugin {
 		}
 	}
 
-
-
 	/**
 	 * Initializes the admin handling.
 	 *
@@ -284,6 +283,11 @@ class WC_Facebookcommerce extends WooCommerce\Facebook\Framework\Plugin {
 			'admin_init',
 			function () {
 				$this->admin = new WooCommerce\Facebook\Admin();
+
+				// Initialize the global attributes banner
+				if ( class_exists( 'WooCommerce\Facebook\Admin\Global_Attributes_Banner' ) ) {
+					new WooCommerce\Facebook\Admin\Global_Attributes_Banner();
+				}
 			},
 			0
 		);
@@ -485,7 +489,6 @@ class WC_Facebookcommerce extends WooCommerce\Facebook\Framework\Plugin {
 		register_taxonomy( 'fb_product_set', array( 'product' ), $args );
 	}
 
-
 	/**
 	 * Filter Facebook Product Set Taxonomy table links
 	 *
@@ -501,7 +504,6 @@ class WC_Facebookcommerce extends WooCommerce\Facebook\Framework\Plugin {
 		return $actions;
 	}
 
-
 	/**
 	 * Remove posts count column from Facebook Product Set custom taxonomy
 	 *
@@ -516,7 +518,6 @@ class WC_Facebookcommerce extends WooCommerce\Facebook\Framework\Plugin {
 		return $columns;
 	}
 
-
 	/**
 	 * Filter WC Breadcrumbs when the page is Facebook Product Sets
 	 *
@@ -527,7 +528,6 @@ class WC_Facebookcommerce extends WooCommerce\Facebook\Framework\Plugin {
 	 * @return array
 	 */
 	public function wc_page_breadcrumbs_filter( $breadcrumbs ) {
-
 		if ( 'edit-fb_product_set' !== $this->get_current_page_id() ) {
 			return $breadcrumbs;
 		}
@@ -545,7 +545,6 @@ class WC_Facebookcommerce extends WooCommerce\Facebook\Framework\Plugin {
 		$breadcrumbs[] = ( empty( $term_id ) ? 'Product Sets' : 'Edit Product Set' );
 		return $breadcrumbs;
 	}
-
 
 	/**
 	 * Return that Facebook Product Set page is a WC Conected Page
@@ -588,9 +587,7 @@ class WC_Facebookcommerce extends WooCommerce\Facebook\Framework\Plugin {
 		return $http_request_headers;
 	}
 
-
 	/** Getter methods ********************************************************************************************/
-
 
 	/**
 	 * Gets the API instance.
@@ -639,7 +636,6 @@ class WC_Facebookcommerce extends WooCommerce\Facebook\Framework\Plugin {
 		return $this->background_handle_virtual_products_variations;
 	}
 
-
 	/**
 	 * Gets the background remove duplicate visibility meta data handler instance.
 	 *
@@ -650,7 +646,6 @@ class WC_Facebookcommerce extends WooCommerce\Facebook\Framework\Plugin {
 	public function get_background_remove_duplicate_visibility_meta_instance() {
 		return $this->background_remove_duplicate_visibility_meta;
 	}
-
 
 	/**
 	 * Gets the products sync handler.
@@ -674,7 +669,6 @@ class WC_Facebookcommerce extends WooCommerce\Facebook\Framework\Plugin {
 		return $this->product_sets_sync_handler;
 	}
 
-
 	/**
 	 * Gets the products sync background handler.
 	 *
@@ -685,7 +679,6 @@ class WC_Facebookcommerce extends WooCommerce\Facebook\Framework\Plugin {
 	public function get_products_sync_background_handler() {
 		return $this->sync_background_handler;
 	}
-
 
 	/**
 	 * Gets the connection handler.
@@ -709,7 +702,6 @@ class WC_Facebookcommerce extends WooCommerce\Facebook\Framework\Plugin {
 		return $this->plugin_render_handler;
 	}
 
-
 	/**
 	 * Gets the integration instance.
 	 *
@@ -724,7 +716,6 @@ class WC_Facebookcommerce extends WooCommerce\Facebook\Framework\Plugin {
 
 		return $this->integration;
 	}
-
 
 	/**
 	 * Gets the commerce handler instance.
@@ -808,7 +799,6 @@ class WC_Facebookcommerce extends WooCommerce\Facebook\Framework\Plugin {
 		return 'https://woocommerce.com/document/facebook-for-woocommerce/';
 	}
 
-
 	/**
 	 * Gets the plugin's support URL.
 	 *
@@ -819,7 +809,6 @@ class WC_Facebookcommerce extends WooCommerce\Facebook\Framework\Plugin {
 	public function get_support_url() {
 		return 'https://wordpress.org/support/plugin/facebook-for-woocommerce/';
 	}
-
 
 	/**
 	 * Gets the plugin's sales page URL.
@@ -832,7 +821,6 @@ class WC_Facebookcommerce extends WooCommerce\Facebook\Framework\Plugin {
 		return 'https://woocommerce.com/products/facebook/';
 	}
 
-
 	/**
 	 * Gets the plugin's reviews URL.
 	 *
@@ -843,7 +831,6 @@ class WC_Facebookcommerce extends WooCommerce\Facebook\Framework\Plugin {
 	public function get_reviews_url() {
 		return 'https://wordpress.org/support/plugin/facebook-for-woocommerce/reviews/';
 	}
-
 
 	/**
 	 * Gets the plugin name.
@@ -876,9 +863,7 @@ class WC_Facebookcommerce extends WooCommerce\Facebook\Framework\Plugin {
 		return $this->rollout_switches;
 	}
 
-
 	/** Conditional methods ***************************************************************************************/
-
 
 	/**
 	 * Determines if viewing the plugin settings in the admin.
@@ -891,9 +876,7 @@ class WC_Facebookcommerce extends WooCommerce\Facebook\Framework\Plugin {
 		return is_admin() && WooCommerce\Facebook\Admin\Settings::PAGE_ID === Helper::get_requested_value( 'page' );
 	}
 
-
 	/** Utility methods *******************************************************************************************/
-
 
 	/**
 	 * Initializes the lifecycle handler.
@@ -903,7 +886,6 @@ class WC_Facebookcommerce extends WooCommerce\Facebook\Framework\Plugin {
 	protected function init_lifecycle_handler() {
 		$this->lifecycle_handler = new Lifecycle( $this );
 	}
-
 
 	/**
 	 * Gets the plugin singleton instance.
@@ -921,7 +903,6 @@ class WC_Facebookcommerce extends WooCommerce\Facebook\Framework\Plugin {
 		return self::$instance;
 	}
 
-
 	/**
 	 * Gets the plugin file.
 	 *
@@ -932,7 +913,6 @@ class WC_Facebookcommerce extends WooCommerce\Facebook\Framework\Plugin {
 	protected function get_file() {
 		return __FILE__;
 	}
-
 
 	/**
 	 * Return current page ID
@@ -951,7 +931,7 @@ class WC_Facebookcommerce extends WooCommerce\Facebook\Framework\Plugin {
 	}
 
 	/**
-	 * Add checkout fields to collect whatsapp consent if consent collection is enabled
+	 * Add blocks checkout fields to collect whatsapp consent if consent collection is enabled
 	 *
 	 * @since 2.3.0
 	 *
@@ -959,7 +939,7 @@ class WC_Facebookcommerce extends WooCommerce\Facebook\Framework\Plugin {
 	 *
 	 * @return array
 	 */
-	public function add_whatsapp_consent_checkout_fields( $fields ) {
+	public function add_whatsapp_consent_block_checkout_fields( $fields ) {
 		if ( get_option( 'wc_facebook_whatsapp_consent_collection_setting_status', 'disabled' ) === 'enabled' ) {
 			woocommerce_register_additional_checkout_field(
 				array(
@@ -970,6 +950,37 @@ class WC_Facebookcommerce extends WooCommerce\Facebook\Framework\Plugin {
 					'optionalLabel' => esc_html( 'Get order updates on WhatsApp' ),
 				)
 			);
+		}
+		return $fields;
+	}
+
+	/**
+	 * Add classic checkout fields to collect whatsapp consent if consent collection is enabled
+	 *
+	 * @since 2.3.0
+	 *
+	 * @param array $fields
+	 *
+	 * @return array
+	 */
+	public function add_whatsapp_consent_classic_checkout_fields( $fields ) {
+		if ( get_option( 'wc_facebook_whatsapp_consent_collection_setting_status', 'disabled' ) === 'enabled' ) {
+				$fields['billing']['billing_whatsapp_consent']   = array(
+					'label'    => esc_html( 'Get order updates on WhatsApp' ),
+					'type'     => 'checkbox',
+					'required' => false,
+					'class'    => array( 'form-row-wide' ),
+					'default'  => true,
+					'priority' => 101,
+				);
+				$fields['shipping']['shipping_whatsapp_consent'] = array(
+					'label'    => esc_html( 'Get order updates on WhatsApp' ),
+					'type'     => 'checkbox',
+					'required' => false,
+					'class'    => array( 'form-row-wide' ),
+					'default'  => true,
+					'priority' => 101,
+				);
 		}
 		return $fields;
 	}

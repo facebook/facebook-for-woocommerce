@@ -451,7 +451,6 @@ class WCFacebookCommerceIntegrationTest extends \WooCommerce\Facebook\Tests\Abst
 		do_action( 'wp_enqueue_styles' );
 
 		$this->assertTrue( wp_script_is( 'wc_facebook_infobanner_jsx' ) );
-		$this->assertTrue( wp_style_is( 'wc_facebook_infobanner_css' ) );
 		$this->assertFalse( wp_style_is( 'wc_facebook_css' ) );
 	}
 
@@ -473,7 +472,6 @@ class WCFacebookCommerceIntegrationTest extends \WooCommerce\Facebook\Tests\Abst
 		do_action( 'wp_enqueue_styles' );
 
 		$this->assertTrue( wp_script_is( 'wc_facebook_infobanner_jsx' ) );
-		$this->assertTrue( wp_style_is( 'wc_facebook_infobanner_css' ) );
 		$this->assertTrue( wp_style_is( 'wc_facebook_css' ) );
 		$this->assertMatchesRegularExpression( '/window.facebookAdsToolboxConfig = {/', $output );
 	}
@@ -650,14 +648,7 @@ class WCFacebookCommerceIntegrationTest extends \WooCommerce\Facebook\Tests\Abst
 		$parent->set_meta_data( Products::VISIBILITY_META_KEY, true );
 
 		$this->api->expects( $this->once() )
-			->method( 'update_product_group' )
-			->with(
-				'facebook-variable-product-group-item-id',
-				[
-					'variants' => $fb_product->prepare_variants_for_group(),
-				]
-			)
-			->willReturn( new API\ProductCatalog\ProductGroups\Update\Response( '{"id":"5191364664265911"}' ) );
+			->method( 'create_product_group' );
 
 		$this->integration->on_product_save( $parent->get_id() );
 
@@ -682,9 +673,13 @@ class WCFacebookCommerceIntegrationTest extends \WooCommerce\Facebook\Tests\Abst
 		add_post_meta( $product_to_delete->get_id(), WC_Facebookcommerce_Integration::FB_PRODUCT_ITEM_ID, 'facebook-product-id' );
 		add_post_meta( $product_to_delete->get_id(), WC_Facebookcommerce_Integration::FB_PRODUCT_GROUP_ID, 'facebook-product-group-id' );
 
-		$this->api->expects( $this->once() )
-			->method( 'delete_product_item' )
-			->with( 'facebook-product-id' );
+		$sync_handler = $this->createMock( Products\Sync::class );
+		$sync_handler->expects( $this->once() )
+			->method( 'delete_products' )
+			->willReturn('');
+		$this->facebook_for_woocommerce->expects( $this->once() )
+			->method( 'get_products_sync_handler' )
+			->willReturn( $sync_handler );
 
 		$this->integration->on_product_delete( $product_to_delete->get_id() );
 
@@ -878,14 +873,7 @@ class WCFacebookCommerceIntegrationTest extends \WooCommerce\Facebook\Tests\Abst
 			->willReturn( $validator );
 
 		$this->api->expects( $this->once() )
-			->method( 'update_product_group' )
-			->with(
-				'facebook-variable-product-group-item-id',
-				[
-					'variants' => $facebook_product->prepare_variants_for_group(),
-				]
-			)
-			->willReturn( new API\ProductCatalog\ProductGroups\Update\Response( '{"id":"5191364664265911"}' ) );
+			->method( 'create_product_group' );
 
 		$sync_handler = $this->createMock( Products\Sync::class );
 		$sync_handler->expects( $this->once() )
@@ -921,14 +909,7 @@ class WCFacebookCommerceIntegrationTest extends \WooCommerce\Facebook\Tests\Abst
 		add_post_meta( $product->get_id(), WC_Facebookcommerce_Integration::FB_PRODUCT_GROUP_ID, 'facebook-variable-product-group-item-id' );
 
 		$this->api->expects( $this->once() )
-			->method( 'update_product_group' )
-			->with(
-				'facebook-variable-product-group-item-id',
-				[
-					'variants' => $facebook_product->prepare_variants_for_group(),
-				]
-			)
-			->willReturn( new API\ProductCatalog\ProductGroups\Update\Response( '{"id":"5191364664265911"}' ) );
+			->method( 'create_product_group' );
 
 		$sync_handler = $this->createMock( Products\Sync::class );
 		$sync_handler->expects( $this->once() )
@@ -1003,7 +984,6 @@ class WCFacebookCommerceIntegrationTest extends \WooCommerce\Facebook\Tests\Abst
 
 		update_option( 'woocommerce_hide_out_of_stock_items', 'yes' );
 		$facebook_product->woo_product->set_stock_status( 'instock' );
-		add_post_meta( $product->get_id(), WC_Facebookcommerce_Integration::FB_PRODUCT_ITEM_ID, 'facebook-simple-product-item-id' );
 
 		$this->integration->product_catalog_id          = '123123123123123123';
 		$facebook_product_data                          = $facebook_product->prepare_product(null, \WC_Facebook_Product::PRODUCT_PREP_TYPE_ITEMS_BATCH );
@@ -1017,10 +997,15 @@ class WCFacebookCommerceIntegrationTest extends \WooCommerce\Facebook\Tests\Abst
 				$requests
 			)
 			->willReturn( new API\ProductCatalog\ItemsBatch\Create\Response( '{"handles":"abcxyz"}' ) );
+		
+		/**
+		 * In this update we are removing the dependency on fbid.
+		 * Hence if the handles exist, then the return is an empty string.
+		 * So the product is created/updated
+		 */
+		$empty_handles = $this->integration->on_simple_product_publish( $product->get_id(), $facebook_product );
 
-		$facebook_product_item_id = $this->integration->on_simple_product_publish( $product->get_id(), $facebook_product );
-
-		$this->assertEquals( 'facebook-simple-product-item-id', $facebook_product_item_id );
+		$this->assertEquals( '', $empty_handles );
 	}
 
 	/**
@@ -2174,12 +2159,7 @@ class WCFacebookCommerceIntegrationTest extends \WooCommerce\Facebook\Tests\Abst
 			WC_Facebookcommerce_Integration::SETTING_EXCLUDED_PRODUCT_TAG_IDS,
 			[ 121, 221, 321, 421, 521, 621 ]
 		);
-		// $integration_mock = $this->createMock(WC_Facebookcommerce_Integration::class);
-		// $integration_mock->method('is_woo_all_products_enabled')
-		// 				->willReturn(true);
-		// $this->integration = $integration_mock;
 		$tags = $this->integration->get_excluded_product_tag_ids();
-		var_dump($tags);
 
 		$this->assertEquals( [], $tags );
 	}
@@ -2866,10 +2846,14 @@ class WCFacebookCommerceIntegrationTest extends \WooCommerce\Facebook\Tests\Abst
 		$product->add_meta_data( WC_Facebookcommerce_Integration::FB_PRODUCT_ITEM_ID, 'some-facebook-product-group-id' );
 		$product->save_meta_data();
 
-		$this->api->expects( $this->once() )
-			->method( 'update_product_item' )
-			->with( 'some-facebook-product-group-id', [ 'visibility' => WC_Facebookcommerce_Integration::FB_SHOP_PRODUCT_HIDDEN ] )
-			->willReturn( new API\ProductCatalog\Products\Update\Response( '{"success":true}' ) );
+		$sync_handler = $this->createMock( Products\Sync::class );
+		$sync_handler->expects( $this->once() )
+			->method( 'create_or_update_products' )
+			->willReturn('');
+		$this->facebook_for_woocommerce->expects( $this->once() )
+			->method( 'get_products_sync_handler' )
+			->willReturn( $sync_handler );
+
 
 		$this->integration->update_fb_visibility(
 			$product->get_id(),
@@ -2893,11 +2877,14 @@ class WCFacebookCommerceIntegrationTest extends \WooCommerce\Facebook\Tests\Abst
 		$product->add_meta_data( WC_Facebookcommerce_Integration::FB_PRODUCT_ITEM_ID, 'some-facebook-product-group-id' );
 		$product->add_meta_data( Products::VISIBILITY_META_KEY, 'no' );
 		$product->save_meta_data();
-
-		$this->api->expects( $this->once() )
-			->method( 'update_product_item' )
-			->with( 'some-facebook-product-group-id', [ 'visibility' => WC_Facebookcommerce_Integration::FB_SHOP_PRODUCT_VISIBLE ] )
-			->willReturn( new API\ProductCatalog\Products\Update\Response( '{"success":true}' ) );
+	
+		$sync_handler = $this->createMock( Products\Sync::class );
+		$sync_handler->expects( $this->once() )
+			->method( 'create_or_update_products' )
+			->willReturn('');
+		$this->facebook_for_woocommerce->expects( $this->once() )
+			->method( 'get_products_sync_handler' )
+			->willReturn( $sync_handler );
 
 		$this->integration->update_fb_visibility(
 			$product->get_id(),
