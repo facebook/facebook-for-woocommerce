@@ -368,22 +368,29 @@ class DependenciesTest extends AbstractWPUnitTestWithOptionIsolationAndSafeFilte
 	 * Test add_php_settings_notices with incompatible settings.
 	 */
 	public function test_add_php_settings_notices_with_incompatible_settings() {
+		// Create a fresh plugin and handler mock for this test
+		$plugin = $this->createMock( Plugin::class );
+		$admin_notice_handler = $this->createMock( AdminNoticeHandler::class );
+		$plugin->method( 'get_admin_notice_handler' )->willReturn( $admin_notice_handler );
+		
+		// Use a setting that should be incompatible (very high memory limit)
 		$args = array(
-			'php_settings' => array( 'memory_limit' => '1G' ),
+			'php_settings' => array( 'memory_limit' => '999999M' ),
 		);
 		
-		$dependencies = new Dependencies( $this->plugin, $args );
-		
-		// Mock the admin notice handler
-		$admin_notice_handler = $this->createMock( AdminNoticeHandler::class );
-		$this->plugin->method( 'get_admin_notice_handler' )->willReturn( $admin_notice_handler );
+		$dependencies = new Dependencies( $plugin, $args );
 		
 		// Mock $_GET to simulate being on WC settings page
 		$_GET['page'] = 'wc-settings';
 		
 		// Expect the admin notice to be called if there are incompatible settings
-		$admin_notice_handler->expects( $this->any() )
-			->method( 'add_admin_notice' );
+		$admin_notice_handler->expects( $this->atLeastOnce() )
+			->method( 'add_admin_notice' )
+			->with(
+				$this->stringContains( 'may behave unexpectedly' ),
+				$this->stringContains( 'incompatibile-php-settings' ),
+				$this->equalTo( array( 'notice_class' => 'notice-warning' ) )
+			);
 		
 		$dependencies->add_php_settings_notices();
 		
@@ -420,18 +427,10 @@ class DependenciesTest extends AbstractWPUnitTestWithOptionIsolationAndSafeFilte
 	 */
 	public function test_add_deprecated_notices_with_old_php_version() {
 		$dependencies = new Dependencies( $this->plugin );
-		
-		// Mock the admin notice handler
 		$admin_notice_handler = $this->createMock( AdminNoticeHandler::class );
 		$this->plugin->method( 'get_admin_notice_handler' )->willReturn( $admin_notice_handler );
-		
-		// Mock PHP_VERSION to simulate old version
-		$original_php_version = PHP_VERSION;
-		if ( ! defined( 'PHP_VERSION' ) ) {
-			define( 'PHP_VERSION', '5.5.0' );
-		}
-		
-		// Expect the admin notice to be called for old PHP version
+
+		// Mock PHP_VERSION to simulate old version (not possible to redefine in PHP, so just test the call)
 		$admin_notice_handler->expects( $this->once() )
 			->method( 'add_admin_notice' )
 			->with(
@@ -439,13 +438,12 @@ class DependenciesTest extends AbstractWPUnitTestWithOptionIsolationAndSafeFilte
 				$this->equalTo( 'sv-wc-deprecated-php-version' ),
 				$this->equalTo( array( 'notice_class' => 'notice-error' ) )
 			);
-		
-		$dependencies->add_deprecated_notices();
-		
-		// Restore original PHP_VERSION
-		if ( defined( 'PHP_VERSION' ) ) {
-			define( 'PHP_VERSION', $original_php_version );
-		}
+
+		// Use Reflection to call the protected method
+		$reflection = new \ReflectionClass( $dependencies );
+		$method = $reflection->getMethod( 'add_deprecated_notices' );
+		$method->setAccessible( true );
+		$method->invoke( $dependencies );
 	}
 
 	/**
@@ -453,27 +451,17 @@ class DependenciesTest extends AbstractWPUnitTestWithOptionIsolationAndSafeFilte
 	 */
 	public function test_add_deprecated_notices_with_new_php_version() {
 		$dependencies = new Dependencies( $this->plugin );
-		
-		// Mock the admin notice handler
 		$admin_notice_handler = $this->createMock( AdminNoticeHandler::class );
 		$this->plugin->method( 'get_admin_notice_handler' )->willReturn( $admin_notice_handler );
-		
-		// Mock PHP_VERSION to simulate new version
-		$original_php_version = PHP_VERSION;
-		if ( ! defined( 'PHP_VERSION' ) ) {
-			define( 'PHP_VERSION', '7.4.0' );
-		}
-		
-		// Expect no admin notice to be called for new PHP version
+
 		$admin_notice_handler->expects( $this->never() )
 			->method( 'add_admin_notice' );
-		
-		$dependencies->add_deprecated_notices();
-		
-		// Restore original PHP_VERSION
-		if ( defined( 'PHP_VERSION' ) ) {
-			define( 'PHP_VERSION', $original_php_version );
-		}
+
+		// Use Reflection to call the protected method
+		$reflection = new \ReflectionClass( $dependencies );
+		$method = $reflection->getMethod( 'add_deprecated_notices' );
+		$method->setAccessible( true );
+		$method->invoke( $dependencies );
 	}
 
 	/**
