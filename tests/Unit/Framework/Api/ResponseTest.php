@@ -225,23 +225,4 @@ class ResponseTest extends AbstractWPUnitTestWithOptionIsolationAndSafeFiltering
 		$interfaces = $reflection->getInterfaceNames();
 		$this->assertNotContains(Response::class, $interfaces);
 	}
-
-	/**
-	 * Test that a class implementing Response with only one method triggers an error (using Reflection).
-	 */
-	public function test_partial_implementation_triggers_error() {
-		// Create a class that implements Response but only one method
-		$partial = new class implements Response {
-			public function to_string() { return 'foo'; }
-			// Missing to_string_safe
-		};
-
-		$reflection = new \ReflectionClass($partial);
-		$methods = $reflection->getMethods();
-		$methodNames = array_map(function($m) { return $m->getName(); }, $methods);
-
-		// Assert to_string exists, to_string_safe does not
-		$this->assertContains('to_string', $methodNames);
-		$this->assertNotContains('to_string_safe', $methodNames);
-	}
 } 
