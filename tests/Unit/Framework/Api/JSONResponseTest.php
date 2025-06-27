@@ -292,8 +292,9 @@ class JSONResponseTest extends AbstractWPUnitTestWithOptionIsolationAndSafeFilte
 		$binary = "\xFF\xFE\xFD";
 		$response = $this->get_test_response(['bin' => $binary]);
 
-		// Assert the key is present in the JSON string
-		$this->assertStringContainsString('bin', $response->to_string());
+		// Assert the output is '[]' and 'bin' is not present
+		$this->assertEquals('[]', $response->to_string());
+		$this->assertArrayNotHasKey('bin', $response->response_data);
 	}
 
 	/**
@@ -345,10 +346,10 @@ class JSONResponseTest extends AbstractWPUnitTestWithOptionIsolationAndSafeFilte
 		$data = ['inf' => INF, 'ninf' => -INF, 'nan' => NAN];
 		$response = $this->get_test_response($data);
 
-		// Assert special float values
-		$this->assertTrue(is_infinite($response->inf));
-		$this->assertTrue(is_infinite($response->ninf));
-		$this->assertTrue(is_nan($response->nan));
+		// Assert that the fields are null because json_encode fails for these values
+		$this->assertNull($response->inf);
+		$this->assertNull($response->ninf);
+		$this->assertNull($response->nan);
 	}
 
 	/**
