@@ -4,6 +4,18 @@ namespace WooCommerce\Facebook\Tests\Admin;
 use WooCommerce\Facebook\Tests\AbstractWPUnitTestWithOptionIsolationAndSafeFiltering;
 use WooCommerce\Facebook\Admin\Settings;
 
+// Define get_current_screen globally for all tests/code under test
+if (!function_exists('get_current_screen')) {
+    eval('
+        function get_current_screen() {
+            return (object)[
+                "base" => "edit-tags",
+                "taxonomy" => "fb_product_set",
+            ];
+        }
+    ');
+}
+
 /**
  * Class SettingsTest
  *
