@@ -4,18 +4,6 @@ namespace WooCommerce\Facebook\Tests\Admin;
 use WooCommerce\Facebook\Tests\AbstractWPUnitTestWithOptionIsolationAndSafeFiltering;
 use WooCommerce\Facebook\Admin\Settings;
 
-// Define get_current_screen globally for all tests/code under test
-if (!function_exists('get_current_screen')) {
-    eval('
-        function get_current_screen() {
-            return (object)[
-                "base" => "edit-tags",
-                "taxonomy" => "fb_product_set",
-            ];
-        }
-    ');
-}
-
 /**
  * Class SettingsTest
  *
@@ -408,17 +396,12 @@ class SettingsTest extends AbstractWPUnitTestWithOptionIsolationAndSafeFiltering
         // Now instantiate Settings
         $settings = new Settings($this->plugin);
 
-        // Use eval to define get_current_screen in the global namespace for this test
-        if (!function_exists('get_current_screen')) {
-            eval(
-                'function get_current_screen() {
-                    return (object)[
-                        "base" => "edit-tags",
-                        "taxonomy" => "fb_product_set",
-                    ];
-                }'
-            );
-        }
+        // Set the global $current_screen variable to simulate the correct screen
+        global $current_screen;
+        $current_screen = (object)[
+            'base' => 'edit-tags',
+            'taxonomy' => 'fb_product_set',
+        ];
 
         // Use getMockForAbstractClass and onlyMethods for get_label
         $mock_screen = $this->getMockBuilder(\WooCommerce\Facebook\Admin\Abstract_Settings_Screen::class)
