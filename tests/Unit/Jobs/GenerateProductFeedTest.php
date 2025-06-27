@@ -7,6 +7,7 @@ use WooCommerce\Facebook\Tests\AbstractWPUnitTestWithSafeFiltering;
 use PHPUnit\Framework\MockObject\MockObject;
 use WC_Facebookcommerce;
 use Exception;
+use Automattic\WooCommerce\ActionSchedulerJobFramework\Proxies\ActionSchedulerInterface;
 
 /**
  * @covers \WooCommerce\Facebook\Jobs\GenerateProductFeed
@@ -16,9 +17,14 @@ class GenerateProductFeedTest extends AbstractWPUnitTestWithSafeFiltering {
 	/** @var GenerateProductFeed */
 	private $job;
 
+	/** @var MockObject|ActionSchedulerInterface */
+	private $mock_scheduler;
+
 	public function setUp(): void {
 		parent::setUp();
+		$this->mock_scheduler = $this->createMock(ActionSchedulerInterface::class);
 		$this->job = $this->getMockBuilder(GenerateProductFeed::class)
+			->setConstructorArgs([$this->mock_scheduler])
 			->onlyMethods(['get_batch_size', 'get_query_offset'])
 			->getMock();
 		$this->job->method('get_batch_size')->willReturn(2);
