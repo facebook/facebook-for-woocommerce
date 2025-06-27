@@ -28,6 +28,13 @@
     "mini-css-extract-plugin": "^2.9.2",
     "clean-webpack-plugin": "^4.0.0"
   },
+  "overrides": {
+    "rimraf": "^6.0.1",
+    "glob": "9.3.5",
+    "@humanwhocodes/object-schema": "^2.0.3",
+    "@humanwhocodes/config-array": "^0.13.0",
+    "eslint": "^9.29.0"
+  },
   "scripts": {
     "prearchive": "rm -rf vendor && composer install --no-dev && composer dump-autoload -o",
     "archive": "composer archive --file=$npm_package_name --format=zip",
