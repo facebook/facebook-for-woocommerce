@@ -6,7 +6,7 @@ on:
 
 jobs:
   check-label:
-    name: Validate PR has single changelog label
+    name: Validate single changelog label
     runs-on: ubuntu-latest
     steps:
       - name: Validate label
@@ -29,5 +29,5 @@ jobs:
             if (matching.length !== 1) {
               core.setFailed(`PR must have exactly one changelog label, ${matching.length} detected.`);
             } else {
-              console.log(`✅ Single changelog label: ${matching[0]}`);
+              console.log(`✅ Single changelog label: "${matching[0]}"`);
             }
