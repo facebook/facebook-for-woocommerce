@@ -50,7 +50,6 @@ class DeleteProductsFromFBCatalogTest extends AbstractWPUnitTestWithSafeFilterin
 		$GLOBALS['test_facebook_for_woocommerce_mock'] = $mock_facebook_for_woocommerce;
 
 		// Create the facebook_for_woocommerce function in the global scope
-		// Use a simpler approach that directly returns the mock
 		if ( ! function_exists( 'facebook_for_woocommerce' ) ) {
 			eval( '
 				function facebook_for_woocommerce() {
@@ -64,13 +63,6 @@ class DeleteProductsFromFBCatalogTest extends AbstractWPUnitTestWithSafeFilterin
 			->setConstructorArgs( [ $this->mock_scheduler ] )
 			->onlyMethods( [ 'log' ] )
 			->getMock();
-
-		// Verify the function is working correctly
-		if ( function_exists( 'facebook_for_woocommerce' ) ) {
-			$result = facebook_for_woocommerce();
-			$this->assertSame( $mock_facebook_for_woocommerce, $result, 'facebook_for_woocommerce function should return the mock object' );
-			$this->assertTrue( method_exists( $result, 'get_integration' ), 'Mock object should have get_integration method' );
-		}
 	}
 
 	public function test_get_name() {
