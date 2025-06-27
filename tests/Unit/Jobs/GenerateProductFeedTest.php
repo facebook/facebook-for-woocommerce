@@ -18,10 +18,16 @@ if (!function_exists('WooCommerce\\Facebook\\Jobs\\facebook_for_woocommerce')) {
 			if ($mock_ffw) {
 				return $mock_ffw;
 			}
-			// Default mock with get_tracker and log methods
+			// Default mock with get_tracker, log, and get_profiling_logger methods
 			return new class {
 				public function get_tracker() { return null; }
 				public function log($message, $log_id = null, $level = null) {}
+				public function get_profiling_logger() {
+					return new class {
+						public function start($name) {}
+						public function stop($name) {}
+					};
+				}
 			};
 		}
 	');
@@ -169,6 +175,7 @@ class GenerateProductFeedTest extends AbstractWPUnitTestWithSafeFiltering {
 
 	public function test_handle_end_calls_feed_handler_and_tracker_and_triggers_action() {
 		// Arrange: mock feed handler and tracker
+		update_option('wc_facebook_product_catalog_id', 'test-catalog-id');
 		$feed_handler = $this->createMock(WC_Facebook_Product_Feed::class);
 		$feed_handler->expects($this->once())->method('rename_temporary_feed_file_to_final_feed_file');
 
