@@ -373,22 +373,29 @@ class SettingsTest extends AbstractWPUnitTestWithOptionIsolationAndSafeFiltering
             function is_admin() { return true; }
         }
         if (!function_exists('current_user_can')) {
-            function current_user_can() { return true; }
+            function current_user_can($cap = null) { return true; }
         }
         if (!function_exists('check_admin_referer')) {
             function check_admin_referer() { return true; }
         }
-        // Simulate Helper::get_requested_value and Helper::get_posted_value using static variables
+        // Simulate Helper::get_requested_value and Helper::get_posted_value for the correct sequence
+        global $test_save_call_count;
+        $test_save_call_count = 0;
         if (!function_exists('test_get_requested_value_success')) {
-            function test_get_requested_value_success() { return Settings::PAGE_ID; }
+            function test_get_requested_value_success($key = null) {
+                // Always return the correct page ID for this test
+                return Settings::PAGE_ID;
+            }
         }
         if (!function_exists('test_get_posted_value_success')) {
             function test_get_posted_value_success($key = null) {
+                // Return the correct values for the save sequence
                 if ($key === 'screen_id') return 'mock';
                 if ($key === 'save_mock_settings') return true;
                 return null;
             }
         }
+
         // Mock screen that throws PluginException on save
         $mock_screen = $this->getMockBuilder(\WooCommerce\Facebook\Admin\Abstract_Settings_Screen::class)
             ->disableOriginalConstructor()->onlyMethods(['get_id', 'save'])->getMockForAbstractClass();
