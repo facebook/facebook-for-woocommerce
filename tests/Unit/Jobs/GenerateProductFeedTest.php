@@ -164,7 +164,6 @@ class GenerateProductFeedTest extends AbstractWPUnitTestWithSafeFiltering {
 		$reflection = new \ReflectionClass($job);
 		$method = $reflection->getMethod('handle_start');
 		$method->setAccessible(true);
-		$this->expectNotToPerformAssertions();
 		$method->invoke($job);
 	}
 
@@ -224,7 +223,6 @@ class GenerateProductFeedTest extends AbstractWPUnitTestWithSafeFiltering {
 		$reflection = new \ReflectionClass($job);
 		$method = $reflection->getMethod('process_items');
 		$method->setAccessible(true);
-		$this->expectNotToPerformAssertions();
 		$method->invokeArgs($job, [[1,2], []]);
 	}
 
