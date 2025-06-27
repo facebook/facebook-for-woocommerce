@@ -164,10 +164,9 @@ jobs:
         with:
           script: |
             const fs = require('fs');
-            const changelogText = process.env.CHANGELOG_TEXT;
             const filePath = 'changelog.txt';
             let content = fs.readFileSync(filePath).split('\n');;
-            const newLines = insertText.split(/\r?\n/);
+            const newLines = process.env.CHANGELOG_TEXT.split(/\r?\n/);
             content.splice(1, 0, ...newLines);
             fs.writeFileSync(filePath, content.join('\n'));
 
