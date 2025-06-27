@@ -219,7 +219,6 @@ class Connection {
 		} catch ( ApiException $exception ) {
 			$this->get_plugin()->log( 'Failed to complete forced config sync on update: ' . $exception->getMessage(), null, 'error' );
 		}
-
 	}
 
 	/**
