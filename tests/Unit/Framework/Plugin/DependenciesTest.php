@@ -318,25 +318,24 @@ class DependenciesTest extends AbstractWPUnitTestWithOptionIsolationAndSafeFilte
 	 * Test add_php_extension_notices with missing extensions.
 	 */
 	public function test_add_php_extension_notices_with_missing_extensions() {
-		$args = array(
-			'php_extensions' => array( 'nonexistent_extension' ),
-		);
-		
-		$dependencies = new Dependencies( $this->plugin, $args );
-		
-		// Mock the admin notice handler
+		// Create a fresh plugin and handler mock for this test
+		$plugin = $this->createMock( Plugin::class );
 		$admin_notice_handler = $this->createMock( AdminNoticeHandler::class );
-		$this->plugin->method( 'get_admin_notice_handler' )->willReturn( $admin_notice_handler );
-		
-		// Expect the admin notice to be called
+		$plugin->method( 'get_admin_notice_handler' )->willReturn( $admin_notice_handler );
+
+		$args = array(
+			'php_extensions' => array( 'definitely_not_a_real_php_extension' ),
+		);
+		$dependencies = new Dependencies( $plugin, $args );
+
 		$admin_notice_handler->expects( $this->once() )
 			->method( 'add_admin_notice' )
 			->with(
-				$this->stringContains( 'nonexistent_extension' ),
+				$this->stringContains( 'definitely_not_a_real_php_extension' ),
 				$this->stringContains( 'missing-extensions' ),
 				$this->equalTo( array( 'notice_class' => 'notice-error' ) )
 			);
-		
+
 		$dependencies->add_php_extension_notices();
 	}
 
@@ -344,25 +343,24 @@ class DependenciesTest extends AbstractWPUnitTestWithOptionIsolationAndSafeFilte
 	 * Test add_php_function_notices with missing functions.
 	 */
 	public function test_add_php_function_notices_with_missing_functions() {
-		$args = array(
-			'php_functions' => array( 'nonexistent_function' ),
-		);
-		
-		$dependencies = new Dependencies( $this->plugin, $args );
-		
-		// Mock the admin notice handler
+		// Create a fresh plugin and handler mock for this test
+		$plugin = $this->createMock( Plugin::class );
 		$admin_notice_handler = $this->createMock( AdminNoticeHandler::class );
-		$this->plugin->method( 'get_admin_notice_handler' )->willReturn( $admin_notice_handler );
-		
-		// Expect the admin notice to be called
+		$plugin->method( 'get_admin_notice_handler' )->willReturn( $admin_notice_handler );
+
+		$args = array(
+			'php_functions' => array( 'definitely_not_a_real_php_function' ),
+		);
+		$dependencies = new Dependencies( $plugin, $args );
+
 		$admin_notice_handler->expects( $this->once() )
 			->method( 'add_admin_notice' )
 			->with(
-				$this->stringContains( 'nonexistent_function' ),
+				$this->stringContains( 'definitely_not_a_real_php_function' ),
 				$this->stringContains( 'missing-functions' ),
 				$this->equalTo( array( 'notice_class' => 'notice-error' ) )
 			);
-		
+
 		$dependencies->add_php_function_notices();
 	}
 
