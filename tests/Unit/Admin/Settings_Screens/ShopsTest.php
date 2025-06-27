@@ -127,4 +127,66 @@ class ShopsTest extends AbstractWPUnitTestWithOptionIsolationAndSafeFiltering {
         $this->assertStringContainsString('<iframe', $output);
         $this->assertStringContainsString('id="facebook-commerce-iframe-enhanced"', $output);
     }
+
+    /**
+     * Test get_settings returns all expected settings and structure
+     */
+    public function test_get_settings_returns_all_expected_settings() {
+        $shops = new Shops();
+        $switch_key = 'offer_management_enabled';
+        $option_key = 'wc_facebook_for_woocommerce_rollout_switches';
+
+        // When offer management is disabled
+        update_option($option_key, [$switch_key => 'no']);
+        $settings = $shops->get_settings();
+        $this->assertIsArray($settings);
+        $found_meta = false;
+        $found_debug = false;
+        foreach ($settings as $setting) {
+            if (isset($setting['id']) && $setting['id'] === 'wc_facebook_enable_meta_diagnosis') {
+                $found_meta = true;
+                $this->assertEquals('checkbox', $setting['type']);
+                $this->assertEquals('yes', $setting['default']);
+            }
+            if (isset($setting['id']) && $setting['id'] === 'wc_facebook_enable_debug_mode') {
+                $found_debug = true;
+                $this->assertEquals('checkbox', $setting['type']);
+                $this->assertEquals('no', $setting['default']);
+            }
+        }
+        $this->assertTrue($found_meta);
+        $this->assertTrue($found_debug);
+        $last_setting = end($settings);
+        $this->assertEquals('sectionend', $last_setting['type']);
+
+        // When offer management is enabled
+        update_option($option_key, [$switch_key => 'yes']);
+        $settings = $shops->get_settings();
+        $this->assertIsArray($settings);
+        $found_meta = false;
+        $found_debug = false;
+        $found_coupon = false;
+        foreach ($settings as $setting) {
+            if (isset($setting['id']) && $setting['id'] === 'wc_facebook_enable_meta_diagnosis') {
+                $found_meta = true;
+                $this->assertEquals('checkbox', $setting['type']);
+                $this->assertEquals('yes', $setting['default']);
+            }
+            if (isset($setting['id']) && $setting['id'] === 'wc_facebook_enable_debug_mode') {
+                $found_debug = true;
+                $this->assertEquals('checkbox', $setting['type']);
+                $this->assertEquals('no', $setting['default']);
+            }
+            if (isset($setting['id']) && $setting['id'] === 'wc_facebook_enable_facebook_managed_coupons') {
+                $found_coupon = true;
+                $this->assertEquals('checkbox', $setting['type']);
+                $this->assertEquals('yes', $setting['default']);
+            }
+        }
+        $this->assertTrue($found_meta);
+        $this->assertTrue($found_debug);
+        $this->assertTrue($found_coupon);
+        $last_setting = end($settings);
+        $this->assertEquals('sectionend', $last_setting['type']);
+    }
 }
