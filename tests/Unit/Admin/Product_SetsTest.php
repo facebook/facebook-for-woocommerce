@@ -47,11 +47,20 @@ class Product_SetsTest extends AbstractWPUnitTestWithOptionIsolationAndSafeFilte
     public function test_display_fb_product_sets_banner_outputs_when_enabled() {
         $_GET['taxonomy'] = 'fb_product_set';
 
-        // Mock rollout switch and integration
-        $mock_switches = $this->createMock(\stdClass::class);
+        // Mock RolloutSwitches with is_switch_enabled
+        $mock_switches = $this->getMockBuilder(\WooCommerce\Facebook\RolloutSwitches::class)
+            ->disableOriginalConstructor()
+            ->onlyMethods(['is_switch_enabled'])
+            ->getMock();
         $mock_switches->method('is_switch_enabled')->willReturn(true);
-        $mock_integration = $this->createMock(\stdClass::class);
+
+        // Mock integration with get_product_catalog_id
+        $mock_integration = $this->getMockBuilder(\stdClass::class)
+            ->addMethods(['get_product_catalog_id'])
+            ->getMock();
         $mock_integration->method('get_product_catalog_id')->willReturn('12345');
+
+        // Mock plugin with get_rollout_switches and get_integration
         $mock_plugin = $this->getMockBuilder(\stdClass::class)
             ->addMethods(['get_rollout_switches', 'get_integration'])
             ->getMock();
@@ -115,13 +124,20 @@ class Product_SetsTest extends AbstractWPUnitTestWithOptionIsolationAndSafeFilte
      */
     public function test_save_custom_field_updates_term_meta() {
         $term_id = 123;
-        $_POST[$this->product_sets->categories_field] = ['1', '2', '3'];
+
+        // Access protected property categories_field via reflection
+        $reflection = new \ReflectionClass($this->product_sets);
+        $prop = $reflection->getProperty('categories_field');
+        $prop->setAccessible(true);
+        $categories_field = $prop->getValue($this->product_sets);
+
+        $_POST[$categories_field] = ['1', '2', '3'];
 
         $this->product_sets->save_custom_field($term_id, 0);
-        $saved = get_term_meta($term_id, $this->product_sets->categories_field, true);
+        $saved = get_term_meta($term_id, $categories_field, true);
 
         $this->assertEquals([1, 2, 3], $saved);
-        unset($_POST[$this->product_sets->categories_field]);
+        unset($_POST[$categories_field]);
     }
 
     /**
@@ -129,9 +145,16 @@ class Product_SetsTest extends AbstractWPUnitTestWithOptionIsolationAndSafeFilte
      */
     public function test_save_custom_field_with_empty_post_saves_empty_array() {
         $term_id = 789;
+
+        // Access protected property categories_field via reflection
+        $reflection = new \ReflectionClass($this->product_sets);
+        $prop = $reflection->getProperty('categories_field');
+        $prop->setAccessible(true);
+        $categories_field = $prop->getValue($this->product_sets);
+
         // No POST set
         $this->product_sets->save_custom_field($term_id, 0);
-        $saved = get_term_meta($term_id, $this->product_sets->categories_field, true);
+        $saved = get_term_meta($term_id, $categories_field, true);
 
         // Should be empty string, as per implementation
         $this->assertEquals('', $saved);
@@ -165,8 +188,15 @@ class Product_SetsTest extends AbstractWPUnitTestWithOptionIsolationAndSafeFilte
      */
     public function test_get_field_outputs_select_html_with_saved_items() {
         $term_id = 456;
+
+        // Access protected property categories_field via reflection
+        $reflection = new \ReflectionClass($this->product_sets);
+        $prop = $reflection->getProperty('categories_field');
+        $prop->setAccessible(true);
+        $categories_field = $prop->getValue($this->product_sets);
+
         // Simulate saved items in term meta
-        update_term_meta($term_id, $this->product_sets->categories_field, [2]);
+        update_term_meta($term_id, $categories_field, [2]);
 
         ob_start();
         $this->invoke_protected_method($this->product_sets, 'get_field', [$term_id]);
