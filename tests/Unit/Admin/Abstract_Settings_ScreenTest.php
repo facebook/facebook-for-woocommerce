@@ -22,6 +22,11 @@ class Abstract_Settings_ScreenTest extends AbstractWPUnitTestWithOptionIsolation
     public function setUp(): void {
         parent::setUp();
 
+        // Mock apply_filters for the test environment
+        if ( ! function_exists( 'apply_filters' ) ) {
+            eval('function apply_filters($tag, $value) { return $value; }');
+        }
+
         // Use an anonymous class as a concrete implementation for testing
         $this->screen = new class extends Abstract_Settings_Screen {
             public function __construct() {
