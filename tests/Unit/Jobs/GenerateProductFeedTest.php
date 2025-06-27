@@ -143,6 +143,7 @@ class GenerateProductFeedTest extends AbstractWPUnitTestWithSafeFiltering {
 			private $tracker;
 			public function __construct($tracker) { $this->tracker = $tracker; }
 			public function get_tracker() { return $this->tracker; }
+			public function log($message, $log_id = null, $level = null) { /* no-op for this test */ }
 		};
 		if (!function_exists('WooCommerce\\Facebook\\Jobs\\facebook_for_woocommerce')) {
 			eval('namespace WooCommerce\\Facebook\\Jobs; function facebook_for_woocommerce() { global $mock_ffw; return $mock_ffw; }');
@@ -171,6 +172,7 @@ class GenerateProductFeedTest extends AbstractWPUnitTestWithSafeFiltering {
 			private $tracker;
 			public function __construct($tracker) { $this->tracker = $tracker; }
 			public function get_tracker() { return $this->tracker; }
+			public function log($message, $log_id = null, $level = null) { /* no-op for this test */ }
 		};
 		if (!function_exists('WooCommerce\\Facebook\\Jobs\\facebook_for_woocommerce')) {
 			eval('namespace WooCommerce\\Facebook\\Jobs; function facebook_for_woocommerce() { global $mock_ffw; return $mock_ffw; }');
@@ -207,6 +209,7 @@ class GenerateProductFeedTest extends AbstractWPUnitTestWithSafeFiltering {
 			private $tracker;
 			public function __construct($tracker) { $this->tracker = $tracker; }
 			public function get_tracker() { return $this->tracker; }
+			public function log($message, $log_id = null, $level = null) { /* no-op for this test */ }
 		};
 		if (!function_exists('WooCommerce\\Facebook\\Jobs\\facebook_for_woocommerce')) {
 			eval('namespace WooCommerce\\Facebook\\Jobs; function facebook_for_woocommerce() { global $mock_ffw; return $mock_ffw; }');
@@ -238,10 +241,11 @@ class GenerateProductFeedTest extends AbstractWPUnitTestWithSafeFiltering {
 		$mock_ffw = new class($test) {
 			private $test;
 			public function __construct($test) { $this->test = $test; }
-			public function log($message, $context) {
+			public function get_tracker() { return null; }
+			public function log($message, $log_id = null, $level = null) {
 				// Assert inside the logger
 				$this->test->assertStringContainsString('Test log message', $message);
-				$this->test->assertStringContainsString('facebook-for-woocommerce_generate_feed', $context);
+				$this->test->assertStringContainsString('facebook-for-woocommerce_generate_feed', $log_id);
 			}
 		};
 		if (!function_exists('WooCommerce\\Facebook\\Jobs\\facebook_for_woocommerce')) {
