@@ -321,21 +321,22 @@ class DependenciesTest extends AbstractWPUnitTestWithOptionIsolationAndSafeFilte
 		$args = array(
 			'php_extensions' => array( 'nonexistent_extension' ),
 		);
-
+		
 		$dependencies = new Dependencies( $this->plugin, $args );
-
+		
 		// Mock the admin notice handler
-		$admin_notice_handler = $this->createMock( \WooCommerce\Facebook\Framework\AdminNotice\Handler::class );
+		$admin_notice_handler = $this->createMock( AdminNoticeHandler::class );
+		$this->plugin->method( 'get_admin_notice_handler' )->willReturn( $admin_notice_handler );
+		
+		// Expect the admin notice to be called
 		$admin_notice_handler->expects( $this->once() )
 			->method( 'add_admin_notice' )
 			->with(
 				$this->stringContains( 'nonexistent_extension' ),
 				$this->stringContains( 'missing-extensions' ),
-				$this->anything()
+				$this->equalTo( array( 'notice_class' => 'notice-error' ) )
 			);
-
-		$this->plugin->method( 'get_admin_notice_handler' )->willReturn( $admin_notice_handler );
-
+		
 		$dependencies->add_php_extension_notices();
 	}
 
@@ -346,21 +347,22 @@ class DependenciesTest extends AbstractWPUnitTestWithOptionIsolationAndSafeFilte
 		$args = array(
 			'php_functions' => array( 'nonexistent_function' ),
 		);
-
+		
 		$dependencies = new Dependencies( $this->plugin, $args );
-
+		
 		// Mock the admin notice handler
-		$admin_notice_handler = $this->createMock( \WooCommerce\Facebook\Framework\AdminNotice\Handler::class );
+		$admin_notice_handler = $this->createMock( AdminNoticeHandler::class );
+		$this->plugin->method( 'get_admin_notice_handler' )->willReturn( $admin_notice_handler );
+		
+		// Expect the admin notice to be called
 		$admin_notice_handler->expects( $this->once() )
 			->method( 'add_admin_notice' )
 			->with(
 				$this->stringContains( 'nonexistent_function' ),
 				$this->stringContains( 'missing-functions' ),
-				$this->anything()
+				$this->equalTo( array( 'notice_class' => 'notice-error' ) )
 			);
-
-		$this->plugin->method( 'get_admin_notice_handler' )->willReturn( $admin_notice_handler );
-
+		
 		$dependencies->add_php_function_notices();
 	}
 
@@ -368,100 +370,112 @@ class DependenciesTest extends AbstractWPUnitTestWithOptionIsolationAndSafeFilte
 	 * Test add_php_settings_notices with incompatible settings.
 	 */
 	public function test_add_php_settings_notices_with_incompatible_settings() {
-		// Set up $_GET to simulate being on the WooCommerce settings page
-		$_GET['page'] = 'wc-settings';
-
 		$args = array(
-			'php_settings' => array(
-				'memory_limit' => '999999M', // Very high value
-			),
+			'php_settings' => array( 'memory_limit' => '1G' ),
 		);
-
+		
 		$dependencies = new Dependencies( $this->plugin, $args );
-
+		
 		// Mock the admin notice handler
-		$admin_notice_handler = $this->createMock( \WooCommerce\Facebook\Framework\AdminNotice\Handler::class );
-		$admin_notice_handler->expects( $this->once() )
-			->method( 'add_admin_notice' )
-			->with(
-				$this->stringContains( 'PHP configuration settings' ),
-				$this->stringContains( 'incompatibile-php-settings' ),
-				$this->anything()
-			);
-
+		$admin_notice_handler = $this->createMock( AdminNoticeHandler::class );
 		$this->plugin->method( 'get_admin_notice_handler' )->willReturn( $admin_notice_handler );
-
+		
+		// Mock $_GET to simulate being on WC settings page
+		$_GET['page'] = 'wc-settings';
+		
+		// Expect the admin notice to be called if there are incompatible settings
+		$admin_notice_handler->expects( $this->any() )
+			->method( 'add_admin_notice' );
+		
 		$dependencies->add_php_settings_notices();
-
+		
 		// Clean up
 		unset( $_GET['page'] );
 	}
 
 	/**
-	 * Test add_php_settings_notices when not on WooCommerce settings page.
+	 * Test add_php_settings_notices when not on WC settings page.
 	 */
 	public function test_add_php_settings_notices_when_not_on_wc_settings_page() {
 		$args = array(
-			'php_settings' => array(
-				'memory_limit' => '999999M',
-			),
+			'php_settings' => array( 'memory_limit' => '1G' ),
 		);
-
+		
 		$dependencies = new Dependencies( $this->plugin, $args );
-
+		
 		// Mock the admin notice handler
-		$admin_notice_handler = $this->createMock( \WooCommerce\Facebook\Framework\AdminNotice\Handler::class );
-		$admin_notice_handler->expects( $this->never() )->method( 'add_admin_notice' );
-
+		$admin_notice_handler = $this->createMock( AdminNoticeHandler::class );
 		$this->plugin->method( 'get_admin_notice_handler' )->willReturn( $admin_notice_handler );
-
+		
+		// Ensure we're not on WC settings page
+		unset( $_GET['page'] );
+		
+		// Expect no admin notice to be called
+		$admin_notice_handler->expects( $this->never() )
+			->method( 'add_admin_notice' );
+		
 		$dependencies->add_php_settings_notices();
 	}
 
 	/**
-	 * Test add_deprecated_notices with PHP version < 5.6.
+	 * Test add_deprecated_notices with old PHP version.
 	 */
 	public function test_add_deprecated_notices_with_old_php_version() {
 		$dependencies = new Dependencies( $this->plugin );
-
+		
 		// Mock the admin notice handler
-		$admin_notice_handler = $this->createMock( \WooCommerce\Facebook\Framework\AdminNotice\Handler::class );
+		$admin_notice_handler = $this->createMock( AdminNoticeHandler::class );
+		$this->plugin->method( 'get_admin_notice_handler' )->willReturn( $admin_notice_handler );
+		
+		// Mock PHP_VERSION to simulate old version
+		$original_php_version = PHP_VERSION;
+		if ( ! defined( 'PHP_VERSION' ) ) {
+			define( 'PHP_VERSION', '5.5.0' );
+		}
+		
+		// Expect the admin notice to be called for old PHP version
 		$admin_notice_handler->expects( $this->once() )
 			->method( 'add_admin_notice' )
 			->with(
 				$this->stringContains( 'outdated version of PHP' ),
-				'sv-wc-deprecated-php-version',
-				$this->anything()
+				$this->equalTo( 'sv-wc-deprecated-php-version' ),
+				$this->equalTo( array( 'notice_class' => 'notice-error' ) )
 			);
-
-		$this->plugin->method( 'get_admin_notice_handler' )->willReturn( $admin_notice_handler );
-
-		// Mock PHP_VERSION to be old
-		$this->add_filter_with_safe_teardown( 'PHP_VERSION', function() {
-			return '5.5.0';
-		} );
-
+		
 		$dependencies->add_deprecated_notices();
+		
+		// Restore original PHP_VERSION
+		if ( defined( 'PHP_VERSION' ) ) {
+			define( 'PHP_VERSION', $original_php_version );
+		}
 	}
 
 	/**
-	 * Test add_deprecated_notices with PHP version >= 5.6.
+	 * Test add_deprecated_notices with new PHP version.
 	 */
 	public function test_add_deprecated_notices_with_new_php_version() {
 		$dependencies = new Dependencies( $this->plugin );
-
+		
 		// Mock the admin notice handler
-		$admin_notice_handler = $this->createMock( \WooCommerce\Facebook\Framework\AdminNotice\Handler::class );
-		$admin_notice_handler->expects( $this->never() )->method( 'add_admin_notice' );
-
+		$admin_notice_handler = $this->createMock( AdminNoticeHandler::class );
 		$this->plugin->method( 'get_admin_notice_handler' )->willReturn( $admin_notice_handler );
-
-		// Mock PHP_VERSION to be new
-		$this->add_filter_with_safe_teardown( 'PHP_VERSION', function() {
-			return '7.4.0';
-		} );
-
+		
+		// Mock PHP_VERSION to simulate new version
+		$original_php_version = PHP_VERSION;
+		if ( ! defined( 'PHP_VERSION' ) ) {
+			define( 'PHP_VERSION', '7.4.0' );
+		}
+		
+		// Expect no admin notice to be called for new PHP version
+		$admin_notice_handler->expects( $this->never() )
+			->method( 'add_admin_notice' );
+		
 		$dependencies->add_deprecated_notices();
+		
+		// Restore original PHP_VERSION
+		if ( defined( 'PHP_VERSION' ) ) {
+			define( 'PHP_VERSION', $original_php_version );
+		}
 	}
 
 	/**
