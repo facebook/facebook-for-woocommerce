@@ -20,24 +20,8 @@ class ShopsTest extends AbstractWPUnitTestWithOptionIsolationAndSafeFiltering {
      */
     public function setUp(): void {
         parent::setUp();
+        
         $this->shops = new Shops();
-    }
-
-    /**
-     * Helper method to invoke private/protected methods
-     *
-     * @param object $object     Object instance
-     * @param string $methodName Method name to call
-     * @param array  $parameters Parameters to pass into method
-     *
-     * @return mixed Method return value
-     */
-    private function invoke_method($object, $methodName, array $parameters = []) {
-        $reflection = new \ReflectionClass(get_class($object));
-        $method = $reflection->getMethod($methodName);
-        $method->setAccessible(true);
-
-        return $method->invokeArgs($object, $parameters);
     }
 
     /**
@@ -120,7 +104,11 @@ class ShopsTest extends AbstractWPUnitTestWithOptionIsolationAndSafeFiltering {
 
         // Start output buffering to capture the render output
         ob_start();
-        $this->invoke_method($shops, 'render_facebook_iframe');
+        // Directly use Reflection to invoke the private/protected method
+        $reflection = new \ReflectionClass(get_class($shops));
+        $method = $reflection->getMethod('render_facebook_iframe');
+        $method->setAccessible(true);
+        $method->invoke($shops);
         $output = ob_get_clean();
 
         // Check that the iframe is rendered
