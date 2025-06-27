@@ -117,18 +117,20 @@ jobs:
         uses: actions/github-script@v7
         env:
           VERSION: ${{ steps.package-version.outputs.current-version}}
+          COMMIT_SHA: ${{ github.sha }}
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
             const fs = require('fs');
             const path = require('path');
             const version = process.env.VERSION;
+            const commitSha = process.env.COMMIT_SHA;
             const releaseNotes = process.env.RELEASE_NOTES;
             const release = await github.rest.repos.createRelease({
               owner: context.repo.owner,
               repo: context.repo.repo,
               tag_name: `v${version}`,
-              target_commitish: 'release/current',
+              target_commitish: commitSha,
               name: `Release ${version}`,
               body: releaseNotes,
               draft: true,

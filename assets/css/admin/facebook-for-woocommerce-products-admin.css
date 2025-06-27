@@ -121,6 +121,10 @@
     text-decoration: none;
 }
 
+.fb-product-video-media-frame .media-toolbar-secondary select.attachment-filters {
+	width: 350px;
+}
+
 #woocommerce-product-data #wc-facebook-google-product-category-fields {
 	width: 50%;
 }

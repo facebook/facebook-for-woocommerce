@@ -1,0 +1,33 @@
+name: Validate PR Labels
+
+on:
+  pull_request:
+    types: [opened, labeled, unlabeled, synchronize, reopened, edited]
+
+jobs:
+  check-label:
+    name: Validate single changelog label
+    runs-on: ubuntu-latest
+    steps:
+      - name: Validate label
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const allowedLabels = ['feature', 'bug', 'chore'];
+            const changelogLabelPrefix = 'changelog:';
+            const prNumber = context.payload.pull_request.number;
+
+            const { data: labels } = await github.rest.issues.listLabelsOnIssue({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: prNumber
+            });
+
+            const prLabels = labels.map(label => label.name);
+            const matching = prLabels.filter(label => label.startsWith(changelogLabelPrefix));
+
+            if (matching.length !== 1) {
+              core.setFailed(`PR must have exactly one changelog label, ${matching.length} detected.`);
+            } else {
+              console.log(`✅ Single changelog label: "${matching[0]}"`);
+            }

@@ -2807,13 +2807,13 @@ class WC_Facebook_Product {
 				'facebook_attributes'       => $facebook_attributes,
 				'facebook_attribute_values' => array(
 					'age_group' => array(
-						'adult'     => __( 'Adult', 'facebook-for-woocommerce' ),
-						'all ages'  => __( 'All Ages', 'facebook-for-woocommerce' ),
-						'kids'      => __( 'Kids', 'facebook-for-woocommerce' ),
-						'teen'      => __( 'Teen', 'facebook-for-woocommerce' ),
-						'infant'    => __( 'Infant', 'facebook-for-woocommerce' ),
-						'newborn'   => __( 'Newborn', 'facebook-for-woocommerce' ),
-						'toddler'   => __( 'Toddler', 'facebook-for-woocommerce' ),
+						'adult'    => __( 'Adult', 'facebook-for-woocommerce' ),
+						'all ages' => __( 'All Ages', 'facebook-for-woocommerce' ),
+						'kids'     => __( 'Kids', 'facebook-for-woocommerce' ),
+						'teen'     => __( 'Teen', 'facebook-for-woocommerce' ),
+						'infant'   => __( 'Infant', 'facebook-for-woocommerce' ),
+						'newborn'  => __( 'Newborn', 'facebook-for-woocommerce' ),
+						'toddler'  => __( 'Toddler', 'facebook-for-woocommerce' ),
 					),
 					'gender'    => array(
 						'female' => __( 'Female', 'facebook-for-woocommerce' ),
@@ -2848,13 +2848,13 @@ class WC_Facebook_Product {
 			),
 			'facebook_attribute_values' => array(
 				'age_group' => array(
-					'adult'     => __( 'Adult', 'facebook-for-woocommerce' ),
-					'all ages'  => __( 'All Ages', 'facebook-for-woocommerce' ),
-					'kids'      => __( 'Kids', 'facebook-for-woocommerce' ),
-					'teen'      => __( 'Teen', 'facebook-for-woocommerce' ),
-					'infant'    => __( 'Infant', 'facebook-for-woocommerce' ),
-					'newborn'   => __( 'Newborn', 'facebook-for-woocommerce' ),
-					'toddler'   => __( 'Toddler', 'facebook-for-woocommerce' ),
+					'adult'    => __( 'Adult', 'facebook-for-woocommerce' ),
+					'all ages' => __( 'All Ages', 'facebook-for-woocommerce' ),
+					'kids'     => __( 'Kids', 'facebook-for-woocommerce' ),
+					'teen'     => __( 'Teen', 'facebook-for-woocommerce' ),
+					'infant'   => __( 'Infant', 'facebook-for-woocommerce' ),
+					'newborn'  => __( 'Newborn', 'facebook-for-woocommerce' ),
+					'toddler'  => __( 'Toddler', 'facebook-for-woocommerce' ),
 				),
 				'gender'    => array(
 					'female' => __( 'Female', 'facebook-for-woocommerce' ),
