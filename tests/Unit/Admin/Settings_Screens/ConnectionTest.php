@@ -138,20 +138,12 @@ class ConnectionTest extends AbstractWPUnitTestWithOptionIsolationAndSafeFilteri
      */
     public function test_get_settings_returns_all_expected_settings() {
         $connection = new Connection();
-
-        // Patch global facebook_for_woocommerce() and its rollout switches
-        $mock_rollout = $this->getMockBuilder('stdClass')
-            ->addMethods(['is_switch_enabled'])
-            ->getMock();
-        $mock_rollout->method('is_switch_enabled')->willReturn(false);
-        $mock_plugin = $this->getMockBuilder('stdClass')
-            ->addMethods(['get_rollout_switches'])
-            ->getMock();
-        $mock_plugin->method('get_rollout_switches')->willReturn($mock_rollout);
-        global $facebook_for_woocommerce;
-        $facebook_for_woocommerce = function() use ($mock_plugin) { return $mock_plugin; };
+        // Use the global option to control the offer management switch
+        $switch_key = 'offer_management_enabled';
+        $option_key = 'wc_facebook_for_woocommerce_rollout_switches';
 
         // When offer management is disabled
+        update_option($option_key, [$switch_key => 'no']);
         $settings = $connection->get_settings();
         $this->assertIsArray($settings);
         $found_meta = false;
@@ -173,7 +165,7 @@ class ConnectionTest extends AbstractWPUnitTestWithOptionIsolationAndSafeFilteri
         $this->assertEquals('sectionend', $settings[count($settings)-1]['type']);
 
         // When offer management is enabled
-        $mock_rollout->method('is_switch_enabled')->willReturn(true);
+        update_option($option_key, [$switch_key => 'yes']);
         $settings = $connection->get_settings();
         $this->assertIsArray($settings);
         $found_meta = false;
@@ -196,7 +188,6 @@ class ConnectionTest extends AbstractWPUnitTestWithOptionIsolationAndSafeFilteri
                 $this->assertEquals('yes', $setting['default']);
             }
         }
-        
         $this->assertTrue($found_meta);
         $this->assertTrue($found_debug);
         $this->assertTrue($found_coupon);
