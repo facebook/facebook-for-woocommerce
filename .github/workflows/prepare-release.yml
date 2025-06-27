@@ -15,6 +15,8 @@ on:
     branches:
       - 'tzahgr/prepare_release'
 
+permissions:
+  contents: write
 
 jobs:
   prepare-release:
@@ -24,6 +26,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v3
         with:
+            token: ${{ secrets.GITHUB_TOKEN }}
             fetch-depth: 0
 
       - name: Set Version
@@ -127,3 +130,31 @@ jobs:
             const output = `= ${newVersion} - ${date.toISOString().slice(0, 10)} =\n${changelog.join('\n')}\n`;
             core.setOutput('changelog', output);
             console.log(output);
+
+      - name: Configure Git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Create new branch locally
+        env:
+          NEW_VERSION: ${{ steps.set_version.outputs.new_version }}
+        run: |
+          git checkout -b "release/$NEW_VERSION"
+
+      - name: Update package.json
+        env:
+          NEW_VERSION: ${{ steps.set_version.outputs.new_version }}
+        run: |
+          sed -i -E 's/^  "version":[[:space:]]*"[^\"]*"[[:space:]]*,/  "version": "$NEW_VERSION",/' 'package.json'
+          git diff
+
+      - name: Commit changes
+        env:
+          NEW_VERSION: ${{ steps.set_version.outputs.new_version }}
+        run: |
+          git status
+          git add .
+          git commit -m "Updating version to $NEW_VERSION"
+          git log
+
