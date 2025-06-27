@@ -31,7 +31,7 @@ jobs:
 
       - name: Set Version
         id: set_version
-        run: echo "new_version=9.9.9" >> "$GITHUB_OUTPUT"
+        run: echo "new_version=99.99.99" >> "$GITHUB_OUTPUT"
 
       - name: Check if branch exists
         uses: actions/github-script@v7
@@ -168,6 +168,28 @@ jobs:
             let content = fs.readFileSync(filePath).toString().split('\n');
             const newLines = process.env.CHANGELOG_TEXT.split(/\r?\n/);
             content.splice(2, 0, ...newLines);
+            fs.writeFileSync(filePath, content.join('\n'));
+
+      - name: Update readme.txt
+        uses: actions/github-script@v7
+        env:
+          CHANGELOG_TEXT: ${{ steps.changelog.outputs.changelog }}
+        with:
+          script: |
+            const fs = require('fs');
+            const filePath = 'readme.txt';
+            let content = fs.readFileSync(filePath).toString().split('\n');
+            const markerIndex = content.findIndex(line => line.trim().toLowerCase() === '== changelog ==');
+            if (markerIndex === -1) {
+              throw new Error('Marker not found in file');
+            }
+            let i = markerIndex + 1;
+            // Remove all lines starting with "*" after the marker
+            while (i < content.length && content[i].startsWith('*')) {
+              content.splice(i, 1); // Don't increment i since we're removing current line
+            }
+            const newLines = process.env.CHANGELOG_TEXT.split(/\r?\n/);
+            content.splice(i, 0, ...newLines);
             fs.writeFileSync(filePath, content.join('\n'));
 
       - name: Commit changes
