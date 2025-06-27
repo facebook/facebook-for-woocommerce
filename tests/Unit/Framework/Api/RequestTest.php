@@ -196,7 +196,7 @@ class RequestTest extends AbstractWPUnitTestWithOptionIsolationAndSafeFiltering 
 	 */
 	public function test_params_and_data_with_non_string_keys_and_values() {
 		$params = [ 1 => 2, true => false, 'str' => 123 ];
-		$data = [ 0 => 'zero', 1.5 => 'float', 'arr' => [1,2,3] ];
+		$data = [ 0 => 'zero', 2 => 'int', 'arr' => [1,2,3] ];
 
 		// Create a request with non-string keys/values
 		$request = $this->get_test_request([
