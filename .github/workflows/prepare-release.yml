@@ -146,7 +146,7 @@ jobs:
         env:
           NEW_VERSION: ${{ steps.set_version.outputs.new_version }}
         run: |
-          sed -i -E 's/^  "version":[[:space:]]*"[^\"]*"[[:space:]]*,/  "version": "${NEW_VERSION}",/' 'package.json'
+          sed -i -E "s/^  \"version\":[[:space:]]*\"[^\"]*\"[[:space:]]*,/  \"version\": \"${NEW_VERSION}\",/" "package.json"
           git diff
 
       - name: Commit changes
