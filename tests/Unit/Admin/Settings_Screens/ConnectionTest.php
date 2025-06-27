@@ -14,13 +14,10 @@ use WooCommerce\Facebook\Framework\Api\Exception as ApiException;
 class ConnectionTest extends AbstractWPUnitTestWithOptionIsolationAndSafeFiltering {
 
     /**
-     * Helper method to invoke private/protected methods
+     * Set up the test environment
      */
-    private function invoke_method($object, $methodName, array $parameters = []) {
-        $reflection = new \ReflectionClass(get_class($object));
-        $method = $reflection->getMethod($methodName);
-        $method->setAccessible(true);
-        return $method->invokeArgs($object, $parameters);
+    public function setUp(): void {
+        parent::setUp();
     }
 
     /**
@@ -44,8 +41,11 @@ class ConnectionTest extends AbstractWPUnitTestWithOptionIsolationAndSafeFilteri
     public function test_initHook_sets_properties() {
         $connection = new Connection();
 
-        // Call the initHook method
-        $this->invoke_method($connection, 'initHook');
+        // Call the initHook method using Reflection
+        $reflection = new \ReflectionClass(get_class($connection));
+        $method = $reflection->getMethod('initHook');
+        $method->setAccessible(true);
+        $method->invoke($connection);
 
         // Assert that properties are set as expected
         $this->assertEquals(Connection::ID, $connection->get_id());
