@@ -162,7 +162,8 @@ class ConnectionTest extends AbstractWPUnitTestWithOptionIsolationAndSafeFilteri
         }
         $this->assertTrue($found_meta);
         $this->assertTrue($found_debug);
-        $this->assertEquals('sectionend', $settings[count($settings)-1]['type']);
+        $last_setting = end($settings);
+        $this->assertEquals('sectionend', $last_setting['type']);
 
         // When offer management is enabled
         update_option($option_key, [$switch_key => 'yes']);
@@ -191,6 +192,7 @@ class ConnectionTest extends AbstractWPUnitTestWithOptionIsolationAndSafeFilteri
         $this->assertTrue($found_meta);
         $this->assertTrue($found_debug);
         $this->assertTrue($found_coupon);
-        $this->assertEquals('sectionend', $settings[count($settings)-1]['type']);
+        $last_setting = end($settings);
+        $this->assertEquals('sectionend', $last_setting['type']);
     }
 }
