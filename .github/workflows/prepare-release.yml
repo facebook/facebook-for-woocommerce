@@ -1,20 +1,14 @@
 name: "Prepare New Release"
-# run-name: Prepare New Release `${{ github.event.inputs.type }}/${{ github.event.inputs.version }}` from by @${{ github.actor }}
+run-name: Prepare New Release release/${{ github.event.inputs.version }}` from by @${{ github.actor }}
 
-# **What it does**: Does release preparation: creates the release branch and the PR with a checklist.
-# **Why we have it**: To support devs automating a few manual steps and to leave a nice reference for consumers.
 
 on:
-  # workflow_dispatch:
-  #   inputs:
-  #     ## In the future we could infer that version from the changelog, or bump it via major|minor|patch.
-  #     version:
-  #       description: "Version number to be released"
-  #       required: true
-  push:
-    branches:
-      - 'tzahgr/prepare_release'
-
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version number to be released"
+        required: true
+  
 permissions:
   contents: write
 
@@ -31,7 +25,9 @@ jobs:
 
       - name: Set Version
         id: set_version
-        run: echo "new_version=99.99.99" >> "$GITHUB_OUTPUT"
+        env:
+          NEW_VERSION: ${{ github.event.inputs.version }}
+        run: echo "new_version=$NEW_VERSION" >> "$GITHUB_OUTPUT"
 
       - name: Check if branch exists
         uses: actions/github-script@v7
