@@ -430,14 +430,20 @@ class DependenciesTest extends AbstractWPUnitTestWithOptionIsolationAndSafeFilte
 		$admin_notice_handler = $this->createMock( AdminNoticeHandler::class );
 		$this->plugin->method( 'get_admin_notice_handler' )->willReturn( $admin_notice_handler );
 
-		// Mock PHP_VERSION to simulate old version (not possible to redefine in PHP, so just test the call)
-		$admin_notice_handler->expects( $this->once() )
-			->method( 'add_admin_notice' )
-			->with(
-				$this->stringContains( 'outdated version of PHP' ),
-				$this->equalTo( 'sv-wc-deprecated-php-version' ),
-				$this->equalTo( array( 'notice_class' => 'notice-error' ) )
-			);
+		// Since we can't easily mock PHP_VERSION, we test the current behavior
+		// If current PHP version is >= 5.6.0, no notice should be shown
+		if ( version_compare( PHP_VERSION, '5.6.0', '<' ) ) {
+			$admin_notice_handler->expects( $this->once() )
+				->method( 'add_admin_notice' )
+				->with(
+					$this->stringContains( 'outdated version of PHP' ),
+					$this->equalTo( 'sv-wc-deprecated-php-version' ),
+					$this->equalTo( array( 'notice_class' => 'notice-error' ) )
+				);
+		} else {
+			$admin_notice_handler->expects( $this->never() )
+				->method( 'add_admin_notice' );
+		}
 
 		// Use Reflection to call the protected method
 		$reflection = new \ReflectionClass( $dependencies );
