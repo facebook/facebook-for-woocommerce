@@ -66,19 +66,30 @@ jobs:
 
               const msg = commit.data.commit.message;
               const prMatch = msg.match(/\(#(\d+)\)/);
-              if (prMatch) {
-                const prNumber = parseInt(prMatch[1], 10);
-                pr = (await github.rest.pulls.get({
-                  owner: context.repo.owner,
-                  repo: context.repo.repo,
-                  pull_number: prNumber,
-                })).data;
-                const labelPrefix = "changelog: ";
-                const changeLogLabels = pr.labels.map(l => l.name).filter((l) => l.startsWith(labelPrefix)).map(l => l.replace(labelPrefix, ""));
-                const itemPrefix = changeLogLabels.length > 0 ? `${changeLogLabels[0].charAt(0).toUpperCase()}${changeLogLabels[0].slice(1)} - ` : "";
-                changelog.push(`* ${itemPrefix}${pr.title} by @${pr.user.login} in #${prNumber}`);
+              if (!prMatch) {
+                continue;
               }
+
+              const prNumber = parseInt(prMatch[1], 10);
+              pr = (await github.rest.pulls.get({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                pull_number: prNumber,
+              })).data;
+              const labelPrefix = "changelog:";
+              const changeLogLabels = pr.labels.map(l => l.name).filter((l) => l.startsWith(labelPrefix)).map(l => l.replace(labelPrefix, "").trim());
+              if (changeLogLabels.length === 0){
+                continue;
+              }
+
+              const changeLogLabel = changeLogLabels[0];
+              if (changeLogLabel.toLowerCase() === 'none'){
+                continue;
+              }
+
+              changelog.push(`* ${changeLogLabel.charAt(0).toUpperCase()}${changeLogLabel.slice(1)} - ${pr.title} by @${pr.user.login} in #${prNumber}`);              
             }
+            
             const version = "X.X.X";
             const date = new Date();
             const output = `= ${version} - ${date.toISOString().slice(0, 10)} =\n${changelog.join('\n')}\n`;
