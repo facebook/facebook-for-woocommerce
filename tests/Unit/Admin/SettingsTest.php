@@ -1,7 +1,7 @@
 <?php
 namespace WooCommerce\Facebook\Tests\Admin;
 
-use PHPUnit\Framework\TestCase;
+use WooCommerce\Facebook\Tests\AbstractWPUnitTestWithOptionIsolationAndSafeFiltering;
 use WooCommerce\Facebook\Admin\Settings;
 
 /**
@@ -9,7 +9,7 @@ use WooCommerce\Facebook\Admin\Settings;
  *
  * @package WooCommerce\Facebook\Tests\Unit\Admin
  */
-class SettingsTest extends TestCase {
+class SettingsTest extends AbstractWPUnitTestWithOptionIsolationAndSafeFiltering {
 
     /** @var \WC_Facebookcommerce|\PHPUnit\Framework\MockObject\MockObject */
     protected $plugin;
@@ -377,32 +377,29 @@ class SettingsTest extends TestCase {
      * Test render_tabs outputs correct nav-tab markup for tabs, including whatsapp_utility special case
      */
     public function test_render_tabs_outputs_markup() {
-        // Inline stub connection handler
+        // Mock connection handler before instantiating Settings
         $handler = $this->getMockBuilder('stdClass')
             ->addMethods(['is_connected'])
             ->getMock();
         $handler->method('is_connected')->willReturn(true);
         $this->plugin->method('get_connection_handler')->willReturn($handler);
 
-        // Now instantiate Settings
-        $settings = new Settings($this->plugin);
-
         // Use reflection to set up a whatsapp_utility screen
-        $mock_screen = $this->getMockBuilder('WooCommerce\\Facebook\\Admin\\Abstract_Settings_Screen')
+        $mock_screen = $this->getMockBuilder(\WooCommerce\Facebook\Admin\Abstract_Settings_Screen::class)
             ->disableOriginalConstructor()->getMockForAbstractClass();
         $mock_screen->method('get_label')->willReturn('Whatsapp Utility');
+
+        $settings = new Settings($this->plugin);
 
         $reflection = new \ReflectionClass($settings);
         $prop = $reflection->getProperty('screens');
         $prop->setAccessible(true);
         $prop->setValue($settings, ['whatsapp_utility' => $mock_screen]);
 
-        // Capture output
         ob_start();
         $settings->render_tabs('whatsapp_utility');
         $output = ob_get_clean();
 
-        // Assert nav-tab markup and tab ID are present
         $this->assertStringContainsString('nav-tab', $output);
         $this->assertStringContainsString('whatsapp_utility', $output);
     }
@@ -421,14 +418,18 @@ class SettingsTest extends TestCase {
         // Now instantiate Settings
         $settings = new Settings($this->plugin);
 
-        // Mock get_current_screen to simulate the correct taxonomy page
-        \WP_Mock::userFunction('get_current_screen', ['return' => (object)[
-            'base' => 'edit-tags',
-            'taxonomy' => 'fb_product_set',
-        ]]);
+        // Patch get_current_screen for this test only
+        if (!function_exists('get_current_screen')) {
+            function get_current_screen() {
+                return (object)[
+                    'base' => 'edit-tags',
+                    'taxonomy' => 'fb_product_set',
+                ];
+            }
+        }
 
         // Use reflection to set up a product_sets screen
-        $mock_screen = $this->getMockBuilder('WooCommerce\\Facebook\\Admin\\Abstract_Settings_Screen')
+        $mock_screen = $this->getMockBuilder(\WooCommerce\Facebook\Admin\Abstract_Settings_Screen::class)
             ->disableOriginalConstructor()->getMockForAbstractClass();
         $mock_screen->method('get_label')->willReturn('Product Sets');
 
