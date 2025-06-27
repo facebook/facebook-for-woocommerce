@@ -396,14 +396,16 @@ class SettingsTest extends AbstractWPUnitTestWithOptionIsolationAndSafeFiltering
         // Now instantiate Settings
         $settings = new Settings($this->plugin);
 
-        // Define get_current_screen in the global namespace for this test (no eval)
+        // Use eval to define get_current_screen in the global namespace for this test
         if (!function_exists('get_current_screen')) {
-            function get_current_screen() {
-                return (object)[
-                    'base' => 'edit-tags',
-                    'taxonomy' => 'fb_product_set',
-                ];
-            }
+            eval(
+                'function get_current_screen() {
+                    return (object)[
+                        "base" => "edit-tags",
+                        "taxonomy" => "fb_product_set",
+                    ];
+                }'
+            );
         }
 
         // Use getMockForAbstractClass and onlyMethods for get_label
