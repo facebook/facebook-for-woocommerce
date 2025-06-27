@@ -48,12 +48,16 @@ class DeleteProductsFromFBCatalogTest extends AbstractWPUnitTestWithSafeFilterin
 
 		// Store the mock in a global variable
 		$GLOBALS['test_facebook_for_woocommerce_mock'] = $mock_facebook_for_woocommerce;
+		global $test_facebook_for_woocommerce_mock;
+		$test_facebook_for_woocommerce_mock = $mock_facebook_for_woocommerce;
 
 		// Create the facebook_for_woocommerce function in the global scope
+		// Use the simplest possible approach
 		if ( ! function_exists( 'facebook_for_woocommerce' ) ) {
 			eval( '
 				function facebook_for_woocommerce() {
-					return $GLOBALS["test_facebook_for_woocommerce_mock"];
+					global $test_facebook_for_woocommerce_mock;
+					return $test_facebook_for_woocommerce_mock;
 				}
 			' );
 		}
