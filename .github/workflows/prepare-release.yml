@@ -157,10 +157,25 @@ jobs:
           sed -i -E "s/^([[:space:]]*const PLUGIN_VERSION = ')[^']*(';.*)/\1$NEW_VERSION\2/" "facebook-for-woocommerce.php"
           git diff
 
+      - name: Update changelog.txt
+        uses: actions/github-script@v7
+        env:
+          CHANGELOG_TEXT: ${{ steps.changelog.outputs.changelog }}
+        with:
+          script: |
+            const fs = require('fs');
+            const changelogText = process.env.CHANGELOG_TEXT;
+            const filePath = 'changelog.txt';
+            let content = fs.readFileSync(filePath).split('\n');;
+            const newLines = insertText.split(/\r?\n/);
+            content.splice(1, 0, ...newLines);
+            fs.writeFileSync(filePath, content.join('\n'));
+
       - name: Commit changes
         env:
           NEW_VERSION: ${{ steps.set_version.outputs.new_version }}
         run: |
+          git diff
           git status
           git add .
           git commit -m "Updating version to $NEW_VERSION"
