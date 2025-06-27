@@ -26,6 +26,37 @@ jobs:
         with:
             fetch-depth: 0
 
+      - name: Set Version
+        id: set_version
+        run: echo "new_version=3.5.3" >> "$GITHUB_OUTPUT"
+
+      - name: Check if branch exists
+        uses: actions/github-script@v7
+        env:
+          NEW_VERSION: ${{ steps.set_version.outputs.new_version }}
+        with:
+          script: |
+            const newVersion = process.env.NEW_VERSION.trim();            
+            const branch = `release/${newVersion}`;
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+
+            try {
+              await github.rest.repos.getBranch({
+                owner,
+                repo,
+                branch,
+              });
+
+              core.setFailed(`Branch "${branch}" already exists.`);
+            } catch (error) {
+              if (error.status === 404) {
+                console.log(`✅ Branch "${branch}" does not exist.`);
+              } else {
+                throw error;
+              }
+            }
+
       - name: Get latest release tag
         id: get_release
         uses: actions/github-script@v7
@@ -52,8 +83,10 @@ jobs:
         uses: actions/github-script@v7
         env:
           COMMITS: ${{ steps.get_commits.outputs.commits }}
+          NEW_VERSION: ${{ steps.set_version.outputs.new_version }}
         with:
           script: |
+            const newVersion = process.env.NEW_VERSION.trim();
             const commits = process.env.COMMITS.trim().split('\n');
             const changelog = [];
 
@@ -89,9 +122,8 @@ jobs:
 
               changelog.push(`* ${changeLogLabel.charAt(0).toUpperCase()}${changeLogLabel.slice(1)} - ${pr.title} by @${pr.user.login} in #${prNumber}`);              
             }
-            
-            const version = "X.X.X";
+
             const date = new Date();
-            const output = `= ${version} - ${date.toISOString().slice(0, 10)} =\n${changelog.join('\n')}\n`;
+            const output = `= ${newVersion} - ${date.toISOString().slice(0, 10)} =\n${changelog.join('\n')}\n`;
             core.setOutput('changelog', output);
             console.log(output);
