@@ -22,6 +22,8 @@ class Product_SetsTest extends AbstractWPUnitTestWithOptionIsolationAndSafeFilte
      */
     public function setUp(): void {
         parent::setUp();
+
+        // Instantiate the Product_Sets class for each test
         $this->product_sets = new Product_Sets();
     }
 
@@ -31,7 +33,9 @@ class Product_SetsTest extends AbstractWPUnitTestWithOptionIsolationAndSafeFilte
     public function test_constructor_adds_init_action() {
         global $wp_filter;
 
+        // Check that the 'init' hook is present
         $this->assertArrayHasKey('init', $wp_filter);
+
         $found = false;
         foreach ($wp_filter['init'] as $priority => $callbacks) {
             foreach ($callbacks as $cb) {
@@ -41,6 +45,7 @@ class Product_SetsTest extends AbstractWPUnitTestWithOptionIsolationAndSafeFilte
                 }
             }
         }
+
         $this->assertTrue($found, 'initHook should be hooked to init');
     }
 
@@ -91,6 +96,7 @@ class Product_SetsTest extends AbstractWPUnitTestWithOptionIsolationAndSafeFilte
      */
     public function test_get_id_returns_expected_value() {
         $this->product_sets->initHook();
+
         $this->assertEquals(Product_Sets::ID, $this->product_sets->get_id());
     }
 
@@ -99,9 +105,12 @@ class Product_SetsTest extends AbstractWPUnitTestWithOptionIsolationAndSafeFilte
      */
     public function test_get_label_returns_expected_value_and_applies_filter() {
         $this->product_sets->initHook();
+
         $filter = 'wc_facebook_admin_settings_' . Product_Sets::ID . '_screen_label';
         add_filter($filter, function($label) { return 'Filtered Label'; });
+
         $this->assertEquals('Filtered Label', $this->product_sets->get_label());
+
         remove_all_filters($filter);
     }
 
@@ -110,9 +119,12 @@ class Product_SetsTest extends AbstractWPUnitTestWithOptionIsolationAndSafeFilte
      */
     public function test_get_title_returns_expected_value_and_applies_filter() {
         $this->product_sets->initHook();
+
         $filter = 'wc_facebook_admin_settings_' . Product_Sets::ID . '_screen_title';
         add_filter($filter, function($title) { return 'Filtered Title'; });
+
         $this->assertEquals('Filtered Title', $this->product_sets->get_title());
+
         remove_all_filters($filter);
     }
 
@@ -121,9 +133,12 @@ class Product_SetsTest extends AbstractWPUnitTestWithOptionIsolationAndSafeFilte
      */
     public function test_get_description_returns_expected_value_and_applies_filter() {
         $this->product_sets->initHook();
+
         $filter = 'wc_facebook_admin_settings_' . Product_Sets::ID . '_screen_description';
         add_filter($filter, function($desc) { return 'Filtered Description'; });
+
         $this->assertEquals('Filtered Description', $this->product_sets->get_description());
+
         remove_all_filters($filter);
     }
 
@@ -139,4 +154,4 @@ class Product_SetsTest extends AbstractWPUnitTestWithOptionIsolationAndSafeFilte
      * @var string|null
      */
     public static $redirect_url;
-} 
+}
