@@ -6,14 +6,7 @@ use WooCommerce\Facebook\Jobs\GenerateProductFeed;
 use WooCommerce\Facebook\Tests\AbstractWPUnitTestWithSafeFiltering;
 use PHPUnit\Framework\MockObject\MockObject;
 use WC_Facebookcommerce;
-use Exception;
 use Automattic\WooCommerce\ActionSchedulerJobFramework\Proxies\ActionSchedulerInterface;
-
-if (!function_exists('facebook_for_woocommerce')) {
-	function facebook_for_woocommerce() {
-		return $GLOBALS['mock_plugin'];
-	}
-}
 
 // Proxy class to expose protected methods for testing
 class GenerateProductFeedTestProxy extends GenerateProductFeed {
@@ -59,6 +52,11 @@ class GenerateProductFeedTest extends AbstractWPUnitTestWithSafeFiltering {
 			->getMock();
 		$this->job->method('get_batch_size')->willReturn(2);
 		$this->job->method('get_query_offset')->willReturn(0);
+
+		// Patch the global facebook_for_woocommerce() function at runtime
+		if (!function_exists('facebook_for_woocommerce')) {
+			eval('function facebook_for_woocommerce() { return $GLOBALS["mock_plugin"]; }');
+		}
 	}
 
 	public function tearDown(): void {
