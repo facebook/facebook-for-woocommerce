@@ -146,7 +146,15 @@ jobs:
         env:
           NEW_VERSION: ${{ steps.set_version.outputs.new_version }}
         run: |
-          sed -i -E "s/^  \"version\":[[:space:]]*\"[^\"]*\"[[:space:]]*,/  \"version\": \"${NEW_VERSION}\",/" "package.json"
+          sed -i -E "s/^  \"version\":[[:space:]]*\"[^\"]*\"[[:space:]]*,/  \"version\": \"$NEW_VERSION\",/" "package.json"
+          git diff
+
+      - name: Update facebook-for-woocommerce.php
+        env:
+          NEW_VERSION: ${{ steps.set_version.outputs.new_version }}
+        run: |
+          sed -i -E "s/^ \* Version:.*/ \* Version: $NEW_VERSION/" "facebook-for-woocommerce.php"
+          sed -i -E "s/^([[:space:]]*const PLUGIN_VERSION = ')[^']*(';.*)/\1$NEW_VERSION\2/" "facebook-for-woocommerce.php"
           git diff
 
       - name: Commit changes
