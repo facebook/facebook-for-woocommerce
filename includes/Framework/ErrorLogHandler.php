@@ -107,9 +107,9 @@ class ErrorLogHandler extends LogHandlerBase {
 				'Action Scheduler is not available.',
 				[],
 				array(
-					'should_send_log_to_meta' => false,
+					'should_send_log_to_meta'        => false,
 					'should_save_log_in_woocommerce' => true,
-					'woocommerce_log_level'   => \WC_Log_Levels::DEBUG,
+					'woocommerce_log_level'          => \WC_Log_Levels::DEBUG,
 				)
 			);
 		}
