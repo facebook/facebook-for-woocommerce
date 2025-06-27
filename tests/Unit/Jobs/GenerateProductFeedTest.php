@@ -36,11 +36,6 @@ class GenerateProductFeedTest extends AbstractWPUnitTestWithSafeFiltering {
 		$this->mock_scheduler = $this->createMock(ActionSchedulerInterface::class);
 		global $wpdb;
 		$this->original_wpdb = $wpdb;
-
-		// Always define the facebook_for_woocommerce mock in the correct namespace for all tests
-		if (!function_exists('WooCommerce\\Facebook\\Jobs\\facebook_for_woocommerce')) {
-			eval('namespace WooCommerce\\Facebook\\Jobs; function facebook_for_woocommerce() { global $mock_ffw; return $mock_ffw; }');
-		}
 	}
 
 	/**
