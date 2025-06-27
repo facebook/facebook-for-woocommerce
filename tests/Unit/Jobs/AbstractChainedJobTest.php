@@ -36,25 +36,18 @@ class AbstractChainedJobTest extends AbstractWPUnitTestWithSafeFiltering {
 		$mock_logger = $logger;
 		if (!function_exists('WooCommerce\\Facebook\\Jobs\\facebook_for_woocommerce')) {
 			eval('
-				namespace WooCommerce\\Facebook\\Jobs;
-				function facebook_for_woocommerce() {
-					global $mock_logger;
-					if ($mock_logger) {
-						return new class($mock_logger) {
-							private $logger;
-							public function __construct($logger) { $this->logger = $logger; }
-							public function get_profiling_logger() { return $this->logger; }
-						};
-					}
-					// Default mock with get_profiling_logger method
-					return new class {
-						public function get_profiling_logger() {
-							return new class {
-								public function start($name) {}
-								public function stop($name) {}
-							};
-						}
-					};
+				namespace WooCommerce\\Facebook\\Jobs; 
+				function facebook_for_woocommerce() { 
+					global $mock_logger; 
+					return new class($mock_logger) { 
+						private $logger; 
+						public function __construct($logger) { 
+							$this->logger = $logger; 
+						} 
+						public function get_profiling_logger() { 
+							return $this->logger; 
+						} 
+					}; 
 				}
 			');
 		}
@@ -85,25 +78,18 @@ class AbstractChainedJobTest extends AbstractWPUnitTestWithSafeFiltering {
 		$mock_logger = $logger;
 		if (!function_exists('WooCommerce\\Facebook\\Jobs\\facebook_for_woocommerce')) {
 			eval('
-				namespace WooCommerce\\Facebook\\Jobs;
-				function facebook_for_woocommerce() {
-					global $mock_logger;
-					if ($mock_logger) {
-						return new class($mock_logger) {
-							private $logger;
-							public function __construct($logger) { $this->logger = $logger; }
-							public function get_profiling_logger() { return $this->logger; }
-						};
-					}
-					// Default mock with get_profiling_logger method
-					return new class {
-						public function get_profiling_logger() {
-							return new class {
-								public function start($name) {}
-								public function stop($name) {}
-							};
-						}
-					};
+				namespace WooCommerce\\Facebook\\Jobs; 
+				function facebook_for_woocommerce() { 
+					global $mock_logger; 
+					return new class($mock_logger) { 
+						private $logger; 
+						public function __construct($logger) { 
+							$this->logger = $logger; 
+						} 
+						public function get_profiling_logger() { 
+							return $this->logger; 
+						} 
+					}; 
 				}
 			');
 		}
@@ -134,25 +120,18 @@ class AbstractChainedJobTest extends AbstractWPUnitTestWithSafeFiltering {
 		$mock_logger = $logger;
 		if (!function_exists('WooCommerce\\Facebook\\Jobs\\facebook_for_woocommerce')) {
 			eval('
-				namespace WooCommerce\\Facebook\\Jobs;
-				function facebook_for_woocommerce() {
-					global $mock_logger;
-					if ($mock_logger) {
-						return new class($mock_logger) {
-							private $logger;
-							public function __construct($logger) { $this->logger = $logger; }
-							public function get_profiling_logger() { return $this->logger; }
-						};
-					}
-					// Default mock with get_profiling_logger method
-					return new class {
-						public function get_profiling_logger() {
-							return new class {
-								public function start($name) {}
-								public function stop($name) {}
-							};
-						}
-					};
+				namespace WooCommerce\\Facebook\\Jobs; 
+				function facebook_for_woocommerce() { 
+					global $mock_logger; 
+					return new class($mock_logger) { 
+						private $logger; 
+						public function __construct($logger) { 
+							$this->logger = $logger; 
+						} 
+						public function get_profiling_logger() { 
+							return $this->logger; 
+						} 
+					}; 
 				}
 			');
 		}
@@ -187,25 +166,18 @@ class AbstractChainedJobTest extends AbstractWPUnitTestWithSafeFiltering {
 		$mock_logger = $logger;
 		if (!function_exists('WooCommerce\\Facebook\\Jobs\\facebook_for_woocommerce')) {
 			eval('
-				namespace WooCommerce\\Facebook\\Jobs;
-				function facebook_for_woocommerce() {
-					global $mock_logger;
-					if ($mock_logger) {
-						return new class($mock_logger) {
-							private $logger;
-							public function __construct($logger) { $this->logger = $logger; }
-							public function get_profiling_logger() { return $this->logger; }
-						};
-					}
-					// Default mock with get_profiling_logger method
-					return new class {
-						public function get_profiling_logger() {
-							return new class {
-								public function start($name) {}
-								public function stop($name) {}
-							};
-						}
-					};
+				namespace WooCommerce\\Facebook\\Jobs; 
+				function facebook_for_woocommerce() { 
+					global $mock_logger; 
+					return new class($mock_logger) { 
+						private $logger; 
+						public function __construct($logger) { 
+							$this->logger = $logger; 
+						} 
+						public function get_profiling_logger() { 
+							return $this->logger; 
+						} 
+					}; 
 				}
 			');
 		}
