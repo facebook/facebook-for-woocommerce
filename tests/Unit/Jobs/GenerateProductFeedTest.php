@@ -16,54 +16,18 @@ class GenerateProductFeedTest extends AbstractWPUnitTestWithSafeFiltering {
 
 	/** @var MockObject|ActionSchedulerInterface */
 	private $mock_scheduler;
-
 	private $original_wpdb;
-	private $original_facebook_for_woocommerce;
-	private $original_wc_get_products;
-	private $original_fopen;
-	private $original_fclose;
 
 	public function setUp(): void {
 		parent::setUp();
 		$this->mock_scheduler = $this->createMock(ActionSchedulerInterface::class);
-
-		// Backup global $wpdb
 		global $wpdb;
 		$this->original_wpdb = $wpdb;
-
-		// Backup global functions
-		if (function_exists('facebook_for_woocommerce')) {
-			$this->original_facebook_for_woocommerce = \Closure::fromCallable('facebook_for_woocommerce');
-		}
-		if (function_exists('wc_get_products')) {
-			$this->original_wc_get_products = \Closure::fromCallable('wc_get_products');
-		}
-		if (function_exists('fopen')) {
-			$this->original_fopen = \Closure::fromCallable('fopen');
-		}
-		if (function_exists('fclose')) {
-			$this->original_fclose = \Closure::fromCallable('fclose');
-		}
 	}
 
 	public function tearDown(): void {
-		// Restore global $wpdb
 		global $wpdb;
 		$wpdb = $this->original_wpdb;
-
-		// Restore global functions
-		if ($this->original_facebook_for_woocommerce) {
-			\runkit_function_redefine('facebook_for_woocommerce', '', $this->original_facebook_for_woocommerce);
-		}
-		if ($this->original_wc_get_products) {
-			\runkit_function_redefine('wc_get_products', '', $this->original_wc_get_products);
-		}
-		if ($this->original_fopen) {
-			\runkit_function_redefine('fopen', '', $this->original_fopen);
-		}
-		if ($this->original_fclose) {
-			\runkit_function_redefine('fclose', '', $this->original_fclose);
-		}
 		parent::tearDown();
 	}
 
@@ -84,7 +48,42 @@ class GenerateProductFeedTest extends AbstractWPUnitTestWithSafeFiltering {
 
 	public function test_get_batch_size_returns_15() {
 		$job = new GenerateProductFeed($this->mock_scheduler);
-		$this->assertEquals(15, $job->get_batch_size());
+		// get_batch_size is protected, use reflection
+		$reflection = new \ReflectionClass($job);
+		$method = $reflection->getMethod('get_batch_size');
+		$method->setAccessible(true);
+		$this->assertEquals(15, $method->invoke($job));
+	}
+
+	public function test_get_items_for_batch_queries_wpdb_and_returns_int_array() {
+		global $wpdb;
+		$wpdb = $this->getMockBuilder(\stdClass::class)
+			->addMethods(['get_col', 'prepare'])
+			->getMock();
+		$wpdb->posts = 'wp_posts'; // Needed for the SQL
+		$wpdb->expects($this->once())->method('prepare')->willReturn('SQL');
+		$wpdb->expects($this->once())->method('get_col')->willReturn(['1', '2', '3']);
+
+		$job = $this->getMockBuilder(GenerateProductFeed::class)
+			->setConstructorArgs([$this->mock_scheduler])
+			->onlyMethods(['get_batch_size', 'get_query_offset'])
+			->getMock();
+		$job->method('get_batch_size')->willReturn(3);
+		$job->method('get_query_offset')->willReturn(0);
+
+		$reflection = new \ReflectionClass($job);
+		$method = $reflection->getMethod('get_items_for_batch');
+		$method->setAccessible(true);
+		$result = $method->invokeArgs($job, [1, []]);
+		$this->assertEquals([1, 2, 3], $result);
+	}
+
+	public function test_process_item_is_noop() {
+		$job = new GenerateProductFeed($this->mock_scheduler);
+		$reflection = new \ReflectionClass($job);
+		$method = $reflection->getMethod('process_item');
+		$method->setAccessible(true);
+		$this->assertNull($method->invokeArgs($job, [1, []]));
 	}
 
 	public function test_handle_start_calls_feed_handler_methods_and_tracker() {
@@ -97,14 +96,16 @@ class GenerateProductFeedTest extends AbstractWPUnitTestWithSafeFiltering {
 			->getMock();
 		$tracker->expects($this->once())->method('reset_batch_generation_time');
 
-		$ffw = $this->getMockBuilder(\stdClass::class)
-			->addMethods(['get_tracker'])
-			->getMock();
-		$ffw->expects($this->once())->method('get_tracker')->willReturn($tracker);
-
-		// Patch global function and class
-		\runkit_class_adopt('WC_Facebook_Product_Feed', get_class($feed_handler));
-		\runkit_function_redefine('facebook_for_woocommerce', '', 'return $ffw;');
+		// Use eval to override facebook_for_woocommerce in the correct namespace
+		global $mock_ffw;
+		$mock_ffw = new class($tracker) {
+			private $tracker;
+			public function __construct($tracker) { $this->tracker = $tracker; }
+			public function get_tracker() { return $this->tracker; }
+		};
+		if (!function_exists('WooCommerce\\Facebook\\Jobs\\facebook_for_woocommerce')) {
+			eval('namespace WooCommerce\\Facebook\\Jobs; function facebook_for_woocommerce() { global $mock_ffw; return $mock_ffw; }');
+		}
 
 		$job = new GenerateProductFeed($this->mock_scheduler);
 		$job->handle_start();
@@ -119,14 +120,15 @@ class GenerateProductFeedTest extends AbstractWPUnitTestWithSafeFiltering {
 			->getMock();
 		$tracker->expects($this->once())->method('save_batch_generation_time');
 
-		$ffw = $this->getMockBuilder(\stdClass::class)
-			->addMethods(['get_tracker'])
-			->getMock();
-		$ffw->expects($this->once())->method('get_tracker')->willReturn($tracker);
-
-		// Patch global function and class
-		\runkit_class_adopt('WC_Facebook_Product_Feed', get_class($feed_handler));
-		\runkit_function_redefine('facebook_for_woocommerce', '', 'return $ffw;');
+		global $mock_ffw;
+		$mock_ffw = new class($tracker) {
+			private $tracker;
+			public function __construct($tracker) { $this->tracker = $tracker; }
+			public function get_tracker() { return $this->tracker; }
+		};
+		if (!function_exists('WooCommerce\\Facebook\\Jobs\\facebook_for_woocommerce')) {
+			eval('namespace WooCommerce\\Facebook\\Jobs; function facebook_for_woocommerce() { global $mock_ffw; return $mock_ffw; }');
+		}
 
 		$called = false;
 		add_action('wc_facebook_feed_generation_completed', function() use (&$called) { $called = true; });
@@ -134,28 +136,6 @@ class GenerateProductFeedTest extends AbstractWPUnitTestWithSafeFiltering {
 		$job = new GenerateProductFeed($this->mock_scheduler);
 		$job->handle_end();
 		$this->assertTrue($called, 'Action wc_facebook_feed_generation_completed should be triggered');
-	}
-
-	public function test_get_items_for_batch_queries_wpdb_and_returns_int_array() {
-		global $wpdb;
-		$wpdb = $this->getMockBuilder(\stdClass::class)
-			->addMethods(['get_col', 'prepare'])
-			->getMock();
-		$wpdb->expects($this->once())->method('prepare')->willReturn('SQL');
-		$wpdb->expects($this->once())->method('get_col')->willReturn(['1', '2', '3']);
-
-		$job = $this->getMockBuilder(GenerateProductFeed::class)
-			->setConstructorArgs([$this->mock_scheduler])
-			->onlyMethods(['get_batch_size', 'get_query_offset'])
-			->getMock();
-		$job->method('get_batch_size')->willReturn(3);
-		$job->method('get_query_offset')->willReturn(0);
-
-		$reflection = new \ReflectionClass(get_class($job));
-		$method = $reflection->getMethod('get_items_for_batch');
-		$method->setAccessible(true);
-		$result = $method->invokeArgs($job, [1, []]);
-		$this->assertEquals([1, 2, 3], $result);
 	}
 
 	public function test_process_items_writes_products_to_temp_file_and_tracks_time() {
@@ -169,33 +149,28 @@ class GenerateProductFeedTest extends AbstractWPUnitTestWithSafeFiltering {
 			->getMock();
 		$tracker->expects($this->once())->method('increment_batch_generation_time');
 
-		$ffw = $this->getMockBuilder(\stdClass::class)
-			->addMethods(['get_tracker'])
-			->getMock();
-		$ffw->expects($this->once())->method('get_tracker')->willReturn($tracker);
-
-		// Patch global function and class
-		\runkit_class_adopt('WC_Facebook_Product_Feed', get_class($feed_handler));
-		\runkit_function_redefine('facebook_for_woocommerce', '', 'return $ffw;');
-		\runkit_function_redefine('wc_get_products', '', 'return [ (object)["id" => 1], (object)["id" => 2] ];');
-		\runkit_function_redefine('fopen', '', 'return fopen("php://memory", "a");');
-		\runkit_function_redefine('fclose', '', 'return true;');
+		global $mock_ffw;
+		$mock_ffw = new class($tracker) {
+			private $tracker;
+			public function __construct($tracker) { $this->tracker = $tracker; }
+			public function get_tracker() { return $this->tracker; }
+		};
+		if (!function_exists('WooCommerce\\Facebook\\Jobs\\facebook_for_woocommerce')) {
+			eval('namespace WooCommerce\\Facebook\\Jobs; function facebook_for_woocommerce() { global $mock_ffw; return $mock_ffw; }');
+		}
+		// Also override wc_get_products in the namespace if needed
+		global $mock_wc_get_products;
+		$mock_wc_get_products = function($args) use ($products) { return $products; };
+		if (!function_exists('WooCommerce\\Facebook\\Jobs\\wc_get_products')) {
+			eval('namespace WooCommerce\\Facebook\\Jobs; function wc_get_products($args) { global $mock_wc_get_products; return $mock_wc_get_products ? $mock_wc_get_products($args) : []; }');
+		}
+		// For fopen/fclose, you can use the real ones or override similarly if needed
 
 		$job = new GenerateProductFeed($this->mock_scheduler);
-
-        $reflection = new \ReflectionClass(get_class($job));
+		$reflection = new \ReflectionClass($job);
 		$method = $reflection->getMethod('process_items');
 		$method->setAccessible(true);
 		$method->invokeArgs($job, [[1,2], []]);
-	}
-
-	public function test_process_item_is_noop() {
-		$job = new GenerateProductFeed($this->mock_scheduler);
-
-		$reflection = new \ReflectionClass(get_class($job));
-		$method = $reflection->getMethod('process_item');
-		$method->setAccessible(true);
-		$this->assertNull($method->invokeArgs($job, [1, []]));
 	}
 
 	public function test_log_writes_to_plugin_logger() {
@@ -213,9 +188,13 @@ class GenerateProductFeedTest extends AbstractWPUnitTestWithSafeFiltering {
 			$this->stringContains('facebook-for-woocommerce_generate_feed')
 		);
 
-		\runkit_function_redefine('facebook_for_woocommerce', '', 'return $logger;');
+		global $mock_ffw;
+		$mock_ffw = $logger;
+		if (!function_exists('WooCommerce\\Facebook\\Jobs\\facebook_for_woocommerce')) {
+			eval('namespace WooCommerce\\Facebook\\Jobs; function facebook_for_woocommerce() { global $mock_ffw; return $mock_ffw; }');
+		}
 
-		$reflection = new \ReflectionClass(get_class($job));
+		$reflection = new \ReflectionClass($job);
 		$method = $reflection->getMethod('log');
 		$method->setAccessible(true);
 		$method->invokeArgs($job, ['Test log message']);
