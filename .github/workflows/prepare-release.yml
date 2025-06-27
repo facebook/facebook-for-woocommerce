@@ -167,7 +167,7 @@ jobs:
             const filePath = 'changelog.txt';
             let content = fs.readFileSync(filePath).toString().split('\n');
             const newLines = process.env.CHANGELOG_TEXT.split(/\r?\n/);
-            content.splice(1, 0, ...newLines);
+            content.splice(2, 0, ...newLines);
             fs.writeFileSync(filePath, content.join('\n'));
 
       - name: Commit changes
