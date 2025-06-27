@@ -9,6 +9,24 @@ use Automattic\WooCommerce\ActionSchedulerJobFramework\Proxies\ActionSchedulerIn
 use WC_Facebook_Product_Feed;
 use Exception;
 
+// Mock global function facebook_for_woocommerce() for the Jobs namespace
+if (!function_exists('WooCommerce\\Facebook\\Jobs\\facebook_for_woocommerce')) {
+	eval('
+		namespace WooCommerce\\Facebook\\Jobs;
+		function facebook_for_woocommerce() {
+			global $mock_ffw;
+			if ($mock_ffw) {
+				return $mock_ffw;
+			}
+			// Default mock with get_tracker and log methods
+			return new class {
+				public function get_tracker() { return null; }
+				public function log($message, $log_id = null, $level = null) {}
+			};
+		}
+	');
+}
+
 /**
  * @covers \WooCommerce\Facebook\Jobs\GenerateProductFeed
  */
@@ -143,7 +161,7 @@ class GenerateProductFeedTest extends AbstractWPUnitTestWithSafeFiltering {
 			private $tracker;
 			public function __construct($tracker) { $this->tracker = $tracker; }
 			public function get_tracker() { return $this->tracker; }
-			public function log($message, $log_id = null, $level = null) { /* no-op for this test */ }
+			public function log($message, $log_id = null, $level = null) {}
 		};
 
 		// Act
@@ -169,7 +187,7 @@ class GenerateProductFeedTest extends AbstractWPUnitTestWithSafeFiltering {
 			private $tracker;
 			public function __construct($tracker) { $this->tracker = $tracker; }
 			public function get_tracker() { return $this->tracker; }
-			public function log($message, $log_id = null, $level = null) { /* no-op for this test */ }
+			public function log($message, $log_id = null, $level = null) {}
 		};
 
 		$called = false;
@@ -203,7 +221,7 @@ class GenerateProductFeedTest extends AbstractWPUnitTestWithSafeFiltering {
 			private $tracker;
 			public function __construct($tracker) { $this->tracker = $tracker; }
 			public function get_tracker() { return $this->tracker; }
-			public function log($message, $log_id = null, $level = null) { /* no-op for this test */ }
+			public function log($message, $log_id = null, $level = null) {}
 		};
 		global $mock_wc_get_products;
 		$mock_wc_get_products = function($args) use ($products) { return $products; };
