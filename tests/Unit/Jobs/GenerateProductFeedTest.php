@@ -27,6 +27,33 @@ if (!function_exists('WooCommerce\\Facebook\\Jobs\\facebook_for_woocommerce')) {
 	');
 }
 
+// Proxy class for WC_Facebook_Product_Feed
+if (!class_exists('WC_Facebook_Product_Feed_UnitTestDouble')) {
+	eval('
+		class WC_Facebook_Product_Feed_UnitTestDouble extends \WC_Facebook_Product_Feed {
+			public function __construct() {
+				if (\WooCommerce\Facebook\Tests\Unit\Jobs\GenerateProductFeedTest::$feed_handler_mock) {
+					// Return the mock instance instead of $this
+					$mock = \WooCommerce\Facebook\Tests\Unit\Jobs\GenerateProductFeedTest::$feed_handler_mock;
+					// PHP hack: replace $this with the mock by copying properties
+					foreach ((array) $mock as $k => $v) {
+						$this->$k = $v;
+					}
+				}
+			}
+			public function __call($name, $arguments) {
+				if (\WooCommerce\Facebook\Tests\Unit\Jobs\GenerateProductFeedTest::$feed_handler_mock && method_exists(\WooCommerce\Facebook\Tests\Unit\Jobs\GenerateProductFeedTest::$feed_handler_mock, $name)) {
+					return call_user_func_array([\WooCommerce\Facebook\Tests\Unit\Jobs\GenerateProductFeedTest::$feed_handler_mock, $name], $arguments);
+				}
+				return null;
+			}
+		}
+	');
+}
+if (!class_exists('WC_Facebook_Product_Feed', false)) {
+	class_alias('WC_Facebook_Product_Feed_UnitTestDouble', 'WC_Facebook_Product_Feed');
+}
+
 /**
  * @covers \WooCommerce\Facebook\Jobs\GenerateProductFeed
  */
@@ -68,6 +95,8 @@ class GenerateProductFeedTest extends AbstractWPUnitTestWithSafeFiltering {
 		global $wpdb;
 		$wpdb = $this->original_wpdb;
 		parent::tearDown();
+		// Reset the static mock after each test
+		self::$feed_handler_mock = null;
 	}
 
 	public static function setUpBeforeClass(): void {
