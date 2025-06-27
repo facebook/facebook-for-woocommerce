@@ -9,6 +9,12 @@ use WC_Facebookcommerce;
 use Exception;
 use Automattic\WooCommerce\ActionSchedulerJobFramework\Proxies\ActionSchedulerInterface;
 
+if (!function_exists('facebook_for_woocommerce')) {
+	function facebook_for_woocommerce() {
+		return $GLOBALS['mock_plugin'];
+	}
+}
+
 // Proxy class to expose protected methods for testing
 class GenerateProductFeedTestProxy extends GenerateProductFeed {
 	public function public_get_items_for_batch(int $batch_number, array $args): array {
@@ -111,12 +117,6 @@ class GenerateProductFeedTest extends AbstractWPUnitTestWithSafeFiltering {
 
 		// Patch global function and class
 		$GLOBALS['mock_feed_handler'] = $feed_handler;
-		if (!class_exists('WC_Facebook_Product_Feed')) {
-			eval('class WC_Facebook_Product_Feed { public function __construct() { $this->mock = $GLOBALS["mock_feed_handler"]; foreach (get_class_methods($this->mock) as $m) { $this->$m = [$this->mock, $m]; } } }');
-		}
-		if (!function_exists('WooCommerce\\Facebook\\Jobs\\facebook_for_woocommerce')) {
-			eval('namespace WooCommerce\\Facebook\\Jobs; function facebook_for_woocommerce() { return $GLOBALS["mock_plugin"]; }');
-		}
 		$GLOBALS['mock_plugin'] = $plugin;
 
 		$this->job->public_handle_start();
@@ -136,12 +136,6 @@ class GenerateProductFeedTest extends AbstractWPUnitTestWithSafeFiltering {
 
 		// Patch global function and class
 		$GLOBALS['mock_feed_handler'] = $feed_handler;
-		if (!class_exists('WC_Facebook_Product_Feed')) {
-			eval('class WC_Facebook_Product_Feed { public function __construct() { $this->mock = $GLOBALS["mock_feed_handler"]; foreach (get_class_methods($this->mock) as $m) { $this->$m = [$this->mock, $m]; } } }');
-		}
-		if (!function_exists('WooCommerce\\Facebook\\Jobs\\facebook_for_woocommerce')) {
-			eval('namespace WooCommerce\\Facebook\\Jobs; function facebook_for_woocommerce() { return $GLOBALS["mock_plugin"]; }');
-		}
 		$GLOBALS['mock_plugin'] = $plugin;
 
 		$called = false;
@@ -155,8 +149,12 @@ class GenerateProductFeedTest extends AbstractWPUnitTestWithSafeFiltering {
 		$wpdb = $this->getMockBuilder('stdClass')
 			->addMethods(['get_col', 'prepare'])
 			->getMock();
+		$wpdb->posts = 'wp_posts';
 		$wpdb->expects($this->once())->method('prepare')->willReturn('SQL');
 		$wpdb->expects($this->once())->method('get_col')->with('SQL')->willReturn(['1', '2']);
+
+		// Patch global function and class
+		$GLOBALS['mock_plugin'] = $this->mock_facebook_for_woocommerce();
 
 		$result = $this->job->public_get_items_for_batch(1, []);
 		$this->assertEquals([1, 2], $result);
@@ -171,12 +169,6 @@ class GenerateProductFeedTest extends AbstractWPUnitTestWithSafeFiltering {
 
 		// Patch global function and class
 		$GLOBALS['mock_feed_handler'] = $feed_handler;
-		if (!class_exists('WC_Facebook_Product_Feed')) {
-			eval('class WC_Facebook_Product_Feed { public function __construct() { $this->mock = $GLOBALS["mock_feed_handler"]; foreach (get_class_methods($this->mock) as $m) { $this->$m = [$this->mock, $m]; } } }');
-		}
-		if (!function_exists('WooCommerce\\Facebook\\Jobs\\facebook_for_woocommerce')) {
-			eval('namespace WooCommerce\\Facebook\\Jobs; function facebook_for_woocommerce() { return $GLOBALS["mock_plugin"]; }');
-		}
 		$GLOBALS['mock_plugin'] = $plugin;
 
 		if (!function_exists('wc_get_products')) {
