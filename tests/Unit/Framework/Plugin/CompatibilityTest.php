@@ -10,7 +10,7 @@ use WooCommerce\Facebook\Tests\AbstractWPUnitTestWithOptionIsolationAndSafeFilte
 /**
  * Unit tests for Framework Plugin Compatibility class.
  *
- * @since 3.5.2
+ * @since 3.5.4
  */
 class CompatibilityTest extends AbstractWPUnitTestWithOptionIsolationAndSafeFiltering {
 
