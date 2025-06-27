@@ -195,16 +195,16 @@ jobs:
               content.splice(i, 1); // Don't increment i since we're removing current line
             }
             const newLines = process.env.CHANGELOG_TEXT.split(/\r?\n/);
+            newLines.unshift("");
             content.splice(i, 0, ...newLines);
             fs.writeFileSync(filePath, content.join('\n'));
 
-      - name: Commit changes
+      - name: Commit and Push
         env:
           NEW_VERSION: ${{ steps.set_version.outputs.new_version }}
         run: |
           git diff
-          git status
           git add .
           git commit -m "Updating version to $NEW_VERSION"
-          git log -n 5
+          git push origin HEAD
 
