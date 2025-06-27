@@ -203,4 +203,3 @@ jobs:
           git add .
           git commit -m "Updating version to $NEW_VERSION"
           git push origin HEAD
-
