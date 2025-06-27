@@ -17,6 +17,15 @@ class GenerateProductFeedTestProxy extends GenerateProductFeed {
 	public function public_get_batch_size(): int {
 		return $this->get_batch_size();
 	}
+	public function public_handle_start() {
+		return $this->handle_start();
+	}
+	public function public_handle_end() {
+		return $this->handle_end();
+	}
+	public function public_process_items(array $items, array $args) {
+		return $this->process_items($items, $args);
+	}
 }
 
 /**
@@ -110,7 +119,7 @@ class GenerateProductFeedTest extends AbstractWPUnitTestWithSafeFiltering {
 		}
 		$GLOBALS['mock_plugin'] = $plugin;
 
-		$this->job->handle_start();
+		$this->job->public_handle_start();
 	}
 
 	public function test_handle_end_calls_feed_handler_and_tracker_and_triggers_action() {
@@ -137,14 +146,14 @@ class GenerateProductFeedTest extends AbstractWPUnitTestWithSafeFiltering {
 
 		$called = false;
 		add_action('wc_facebook_feed_generation_completed', function() use (&$called) { $called = true; });
-		$this->job->handle_end();
+		$this->job->public_handle_end();
 		$this->assertTrue($called, 'Action wc_facebook_feed_generation_completed should be triggered.');
 	}
 
 	public function test_get_items_for_batch_returns_ids() {
 		global $wpdb;
 		$wpdb = $this->getMockBuilder('stdClass')
-			->onlyMethods(['get_col', 'prepare'])
+			->addMethods(['get_col', 'prepare'])
 			->getMock();
 		$wpdb->expects($this->once())->method('prepare')->willReturn('SQL');
 		$wpdb->expects($this->once())->method('get_col')->with('SQL')->willReturn(['1', '2']);
@@ -174,7 +183,7 @@ class GenerateProductFeedTest extends AbstractWPUnitTestWithSafeFiltering {
 			function wc_get_products($args) { return ['product1', 'product2']; }
 		}
 
-		$this->job->process_items([1, 2], []);
+		$this->job->public_process_items([1, 2], []);
 	}
 
 	public function test_get_name_and_plugin_name_and_batch_size() {
