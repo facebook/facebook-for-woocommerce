@@ -13,7 +13,7 @@ jobs:
         run: |
           echo "Current ref: ${{ github.ref }}"
           BRANCH="${{ github.ref }}"
-          if [[ ! $BRANCH == release/*/publish ]]; then
+          if [[ ! $BRANCH == refs/heads/release/*/publish ]]; then
             echo "❌ This workflow can only be run on release/*/publish branches."
             exit 1
           fi
