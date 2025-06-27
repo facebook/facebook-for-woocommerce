@@ -6,6 +6,7 @@ namespace WooCommerce\Facebook\Tests\Unit\Framework\Plugin;
 
 use WooCommerce\Facebook\Framework\Plugin\Dependencies;
 use WooCommerce\Facebook\Framework\Plugin;
+use WooCommerce\Facebook\Framework\AdminNoticeHandler;
 use WooCommerce\Facebook\Tests\AbstractWPUnitTestWithOptionIsolationAndSafeFiltering;
 
 /**
@@ -20,6 +21,9 @@ class DependenciesTest extends AbstractWPUnitTestWithOptionIsolationAndSafeFilte
 
 	/** @var Dependencies */
 	private $dependencies;
+
+	/** @var AdminNoticeHandler */
+	private $admin_notice_handler;
 
 	/**
 	 * Set up test fixtures.
@@ -36,8 +40,8 @@ class DependenciesTest extends AbstractWPUnitTestWithOptionIsolationAndSafeFilte
 		$this->plugin->method( 'get_id_dasherized' )->willReturn( 'facebook-for-woocommerce' );
 		
 		// Create a mock admin notice handler
-		$admin_notice_handler = $this->createMock( \WooCommerce\Facebook\Framework\AdminNotice\Handler::class );
-		$this->plugin->method( 'get_admin_notice_handler' )->willReturn( $admin_notice_handler );
+		$this->admin_notice_handler = $this->createMock( AdminNoticeHandler::class );
+		$this->plugin->method( 'get_admin_notice_handler' )->willReturn( $this->admin_notice_handler );
 	}
 
 	/**
