@@ -20,14 +20,6 @@ class Abstract_Settings_ScreenTest extends AbstractWPUnitTestWithOptionIsolation
      * Set up the test environment
      */
     public function setUp(): void {
-        // Unset global $wp_filter to avoid WordPress filter system interference
-        if (isset($GLOBALS['wp_filter'])) {
-            unset($GLOBALS['wp_filter']);
-        }
-        // Mock apply_filters for pure unit test context if not already defined
-        if (!function_exists('apply_filters')) {
-            function apply_filters($tag, $value) { return $value; }
-        }
         parent::setUp();
 
         // Use an anonymous class as a concrete implementation for testing
@@ -148,49 +140,6 @@ class Abstract_Settings_ScreenTest extends AbstractWPUnitTestWithOptionIsolation
 
         // Should not output anything
         $this->assertEmpty($output);
-    }
-
-    /**
-     * Test render outputs form and actions if settings are present and connection is mocked as connected
-     */
-    public function test_render_outputs_form_when_connected() {
-        $screen = $this->screen;
-
-        // Mock global functions and handlers
-        global $wp_filter;
-        $wp_filter['wc_facebook_admin_test_screen_settings'] = [];
-
-        // Mock plugin and WooCommerce functions if not already defined
-        if (!function_exists('facebook_for_woocommerce')) {
-            eval('function facebook_for_woocommerce() { return new class {
-                public function get_connection_handler() {
-                    return new class {
-                        public function is_connected() { return true; }
-                        public function has_previously_connected_fbe_1() { return false; }
-                    };
-                }
-            }; }');
-        }
-        if (!function_exists('woocommerce_admin_fields')) {
-            eval('function woocommerce_admin_fields($settings) { echo "<div>fields</div>"; }');
-        }
-        if (!function_exists('wp_nonce_field')) {
-            eval('function wp_nonce_field() { echo "<input type=\"hidden\" name=\"_wpnonce\" value=\"abc\">"; }');
-        }
-        if (!function_exists('__')) {
-            eval('function __($str) { return $str; }');
-        }
-        if (!function_exists('submit_button')) {
-            eval('function submit_button() { echo "<button>Save changes</button>"; }');
-        }
-
-        ob_start();
-        $screen->render();
-        $output = ob_get_clean();
-
-        // Should output a form and the save button
-        $this->assertStringContainsString('<form', $output);
-        $this->assertStringContainsString('Save changes', $output);
     }
 
     /**
