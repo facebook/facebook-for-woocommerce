@@ -285,26 +285,12 @@ class RequestTest extends AbstractWPUnitTestWithOptionIsolationAndSafeFiltering 
 	}
 
 	/**
-	 * Test that the Request interface cannot be instantiated directly.
+	 * Test that the Request interface is not instantiable.
 	 */
-	public function test_request_interface_cannot_be_instantiated() {
-		// Attempt to instantiate an interface should throw an error
-		$this->expectException(\Error::class);
-		// @phpstan-ignore-next-line
-		new class implements Request {
-			// Purposely omit all methods to trigger error
-		};
-	}
-
-	/**
-	 * Test that missing methods in an implementation cause errors.
-	 */
-	public function test_missing_methods_in_implementation() {
-		// Attempt to instantiate a class missing required methods should throw an error
-		$this->expectException(\Error::class);
-		// @phpstan-ignore-next-line
-		new class {
-			// No methods at all
-		};
+	public function test_request_interface_is_not_instantiable() {
+		$reflection = new \ReflectionClass(\WooCommerce\Facebook\Framework\Api\Request::class);
+        
+		$this->assertTrue($reflection->isInterface());
+		$this->assertFalse($reflection->isInstantiable());
 	}
 } 
