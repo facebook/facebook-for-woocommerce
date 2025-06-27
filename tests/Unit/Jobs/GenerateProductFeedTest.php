@@ -9,12 +9,22 @@ use WC_Facebookcommerce;
 use Exception;
 use Automattic\WooCommerce\ActionSchedulerJobFramework\Proxies\ActionSchedulerInterface;
 
+// Proxy class to expose protected methods for testing
+class GenerateProductFeedTestProxy extends GenerateProductFeed {
+	public function public_get_items_for_batch(int $batch_number, array $args): array {
+		return $this->get_items_for_batch($batch_number, $args);
+	}
+	public function public_get_batch_size(): int {
+		return $this->get_batch_size();
+	}
+}
+
 /**
  * @covers \WooCommerce\Facebook\Jobs\GenerateProductFeed
  */
 class GenerateProductFeedTest extends AbstractWPUnitTestWithSafeFiltering {
 
-	/** @var GenerateProductFeed */
+	/** @var GenerateProductFeedTestProxy */
 	private $job;
 
 	/** @var MockObject|ActionSchedulerInterface */
@@ -28,7 +38,7 @@ class GenerateProductFeedTest extends AbstractWPUnitTestWithSafeFiltering {
 		global $wpdb;
 		$this->original_wpdb = $wpdb;
 		$this->mock_scheduler = $this->createMock(ActionSchedulerInterface::class);
-		$this->job = $this->getMockBuilder(GenerateProductFeed::class)
+		$this->job = $this->getMockBuilder(GenerateProductFeedTestProxy::class)
 			->setConstructorArgs([$this->mock_scheduler])
 			->onlyMethods(['get_batch_size', 'get_query_offset'])
 			->getMock();
@@ -65,7 +75,7 @@ class GenerateProductFeedTest extends AbstractWPUnitTestWithSafeFiltering {
 	private function mock_feed_handler() {
 		$mock = $this->getMockBuilder('WC_Facebook_Product_Feed')
 			->disableOriginalConstructor()
-			->addMethods([
+			->onlyMethods([
 				'create_files_to_protect_product_feed_directory',
 				'prepare_temporary_feed_file',
 				'rename_temporary_feed_file_to_final_feed_file',
@@ -134,12 +144,12 @@ class GenerateProductFeedTest extends AbstractWPUnitTestWithSafeFiltering {
 	public function test_get_items_for_batch_returns_ids() {
 		global $wpdb;
 		$wpdb = $this->getMockBuilder('stdClass')
-			->addMethods(['get_col', 'prepare'])
+			->onlyMethods(['get_col', 'prepare'])
 			->getMock();
 		$wpdb->expects($this->once())->method('prepare')->willReturn('SQL');
 		$wpdb->expects($this->once())->method('get_col')->with('SQL')->willReturn(['1', '2']);
 
-		$result = $this->job->get_items_for_batch(1, []);
+		$result = $this->job->public_get_items_for_batch(1, []);
 		$this->assertEquals([1, 2], $result);
 	}
 
@@ -170,6 +180,6 @@ class GenerateProductFeedTest extends AbstractWPUnitTestWithSafeFiltering {
 	public function test_get_name_and_plugin_name_and_batch_size() {
 		$this->assertEquals('generate_feed', $this->job->get_name());
 		$this->assertEquals(WC_Facebookcommerce::PLUGIN_ID, $this->job->get_plugin_name());
-		$this->assertEquals(2, $this->job->get_batch_size());
+		$this->assertEquals(2, $this->job->public_get_batch_size());
 	}
 }
