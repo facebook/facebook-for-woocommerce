@@ -36,6 +36,11 @@ class GenerateProductFeedTest extends AbstractWPUnitTestWithSafeFiltering {
 		$this->mock_scheduler = $this->createMock(ActionSchedulerInterface::class);
 		global $wpdb;
 		$this->original_wpdb = $wpdb;
+
+		// Always define the facebook_for_woocommerce mock in the correct namespace for all tests
+		if (!function_exists('WooCommerce\\Facebook\\Jobs\\facebook_for_woocommerce')) {
+			eval('namespace WooCommerce\\Facebook\\Jobs; function facebook_for_woocommerce() { global $mock_ffw; return $mock_ffw; }');
+		}
 	}
 
 	/**
@@ -145,9 +150,6 @@ class GenerateProductFeedTest extends AbstractWPUnitTestWithSafeFiltering {
 			public function get_tracker() { return $this->tracker; }
 			public function log($message, $log_id = null, $level = null) { /* no-op for this test */ }
 		};
-		if (!function_exists('WooCommerce\\Facebook\\Jobs\\facebook_for_woocommerce')) {
-			eval('namespace WooCommerce\\Facebook\\Jobs; function facebook_for_woocommerce() { global $mock_ffw; return $mock_ffw; }');
-		}
 
 		// Act
 		$job = new GenerateProductFeed($this->mock_scheduler);
@@ -174,9 +176,6 @@ class GenerateProductFeedTest extends AbstractWPUnitTestWithSafeFiltering {
 			public function get_tracker() { return $this->tracker; }
 			public function log($message, $log_id = null, $level = null) { /* no-op for this test */ }
 		};
-		if (!function_exists('WooCommerce\\Facebook\\Jobs\\facebook_for_woocommerce')) {
-			eval('namespace WooCommerce\\Facebook\\Jobs; function facebook_for_woocommerce() { global $mock_ffw; return $mock_ffw; }');
-		}
 
 		$called = false;
 		add_action('wc_facebook_feed_generation_completed', function() use (&$called) { $called = true; });
@@ -211,9 +210,6 @@ class GenerateProductFeedTest extends AbstractWPUnitTestWithSafeFiltering {
 			public function get_tracker() { return $this->tracker; }
 			public function log($message, $log_id = null, $level = null) { /* no-op for this test */ }
 		};
-		if (!function_exists('WooCommerce\\Facebook\\Jobs\\facebook_for_woocommerce')) {
-			eval('namespace WooCommerce\\Facebook\\Jobs; function facebook_for_woocommerce() { global $mock_ffw; return $mock_ffw; }');
-		}
 		global $mock_wc_get_products;
 		$mock_wc_get_products = function($args) use ($products) { return $products; };
 		if (!function_exists('WooCommerce\\Facebook\\Jobs\\wc_get_products')) {
@@ -248,9 +244,6 @@ class GenerateProductFeedTest extends AbstractWPUnitTestWithSafeFiltering {
 				$this->test->assertStringContainsString('facebook-for-woocommerce_generate_feed', $log_id);
 			}
 		};
-		if (!function_exists('WooCommerce\\Facebook\\Jobs\\facebook_for_woocommerce')) {
-			eval('namespace WooCommerce\\Facebook\\Jobs; function facebook_for_woocommerce() { global $mock_ffw; return $mock_ffw; }');
-		}
 
 		// Act
 		$reflection = new \ReflectionClass($job);
