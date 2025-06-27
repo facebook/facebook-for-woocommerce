@@ -4,6 +4,7 @@ namespace WooCommerce\Facebook\Tests\Admin\Settings_Screens;
 use PHPUnit\Framework\TestCase;
 use WooCommerce\Facebook\Admin\Settings_Screens\Connection;
 use WooCommerce\Facebook\Tests\AbstractWPUnitTestWithOptionIsolationAndSafeFiltering;
+use WooCommerce\Facebook\Framework\Api\Exception as ApiException;
 
 /**
  * Class ConnectionTest
@@ -164,7 +165,7 @@ class ConnectionTest extends AbstractWPUnitTestWithOptionIsolationAndSafeFilteri
      * Test render when connected (should render CTA and static items)
      */
     public function test_render_connected() {
-        // Patch global facebook_for_woocommerce() and its methods
+        // Patch global facebook_for_woocommerce() and its methods BEFORE instantiating Connection
         $mock_plugin = $this->getMockBuilder('stdClass')
             ->addMethods([
                 'get_connection_handler', 'get_integration', 'get_api'
@@ -194,7 +195,7 @@ class ConnectionTest extends AbstractWPUnitTestWithOptionIsolationAndSafeFilteri
         global $facebook_for_woocommerce;
         $facebook_for_woocommerce = function() use ($mock_plugin) { return $mock_plugin; };
 
-        $connection = new Connection();
+        $connection = new Connection(); // Instantiate after patching global
         ob_start();
         $connection->render();
         $output = ob_get_clean();
@@ -212,7 +213,7 @@ class ConnectionTest extends AbstractWPUnitTestWithOptionIsolationAndSafeFilteri
      * Test render handles API exception gracefully
      */
     public function test_render_catalog_api_exception() {
-        // Patch global facebook_for_woocommerce() and its methods
+        // Patch global facebook_for_woocommerce() and its methods BEFORE instantiating Connection
         $mock_plugin = $this->getMockBuilder('stdClass')
             ->addMethods([
                 'get_connection_handler', 'get_integration', 'get_api', 'log'
@@ -235,7 +236,7 @@ class ConnectionTest extends AbstractWPUnitTestWithOptionIsolationAndSafeFilteri
         $mock_api = $this->getMockBuilder('stdClass')
             ->addMethods(['get_catalog'])
             ->getMock();
-        $mock_api->method('get_catalog')->willThrowException(new \Exception('API error'));
+        $mock_api->method('get_catalog')->willThrowException(new ApiException('API error'));
         $mock_plugin->method('get_connection_handler')->willReturn($mock_handler);
         $mock_plugin->method('get_integration')->willReturn($mock_integration);
         $mock_plugin->method('get_api')->willReturn($mock_api);
@@ -243,24 +244,27 @@ class ConnectionTest extends AbstractWPUnitTestWithOptionIsolationAndSafeFilteri
         global $facebook_for_woocommerce;
         $facebook_for_woocommerce = function() use ($mock_plugin) { return $mock_plugin; };
 
-        $connection = new Connection();
+        $connection = new Connection(); // Instantiate after patching global
         ob_start();
         $connection->render();
         $output = ob_get_clean();
 
         // Assert the CTA box is present even if API fails
         $this->assertStringContainsString('wc-facebook-connection-box', $output);
+        // Assert the static items are present (since is_connected is true)
+        $this->assertStringContainsString('bm_id', $output);
+        $this->assertStringContainsString('ad_id', $output);
+        $this->assertStringContainsString('ig_id', $output);
+        $this->assertStringContainsString('cms_id', $output);
     }
 
     /**
      * Test render_facebook_box outputs correct CTA for both states
      */
     public function test_render_facebook_box_connected_and_not_connected() {
-        $connection = new Connection();
-
-        // Patch global facebook_for_woocommerce() and its methods
+        // Patch global facebook_for_woocommerce() and its methods BEFORE instantiating Connection
         $mock_plugin = $this->getMockBuilder('stdClass')
-            ->addMethods(['get_connection_handler', 'get_disconnect_url', 'get_connect_url'])
+            ->addMethods(['get_connection_handler'])
             ->getMock();
         $mock_handler = $this->getMockBuilder('stdClass')
             ->addMethods(['get_disconnect_url', 'get_connect_url'])
@@ -270,6 +274,8 @@ class ConnectionTest extends AbstractWPUnitTestWithOptionIsolationAndSafeFilteri
         $mock_plugin->method('get_connection_handler')->willReturn($mock_handler);
         global $facebook_for_woocommerce;
         $facebook_for_woocommerce = function() use ($mock_plugin) { return $mock_plugin; };
+
+        $connection = new Connection(); // Instantiate after patching global
 
         // Connected
         ob_start();
