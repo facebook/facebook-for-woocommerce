@@ -188,7 +188,7 @@ class Product_SetsTest extends AbstractWPUnitTestWithOptionIsolationAndSafeFilte
         $output = ob_get_clean();
 
         $this->assertStringContainsString('select', $output);
-        $this->assertStringContainsString('selected="selected"', $output);
+        $this->assertStringContainsString('selected=&quot;selected&quot;', $output);
     }
 
     /**
