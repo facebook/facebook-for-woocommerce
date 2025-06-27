@@ -24,6 +24,7 @@ jobs:
 
       - name: Validate Git tag
         run: |
+          git fetch --tags
           if [ ! $(git tag -l "v${{ steps.package-version.outputs.current-version}}") ]; then
             echo "❌ Git tag does not exist" 1>&2
             exit 1
