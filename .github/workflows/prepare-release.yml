@@ -201,6 +201,7 @@ jobs:
             content.splice(i, 0, ...newLines);
             fs.writeFileSync(filePath, content.join('\n'));
 
+
       - name: Commit and Push
         env:
           NEW_VERSION: ${{ steps.set_version.outputs.new_version }}
