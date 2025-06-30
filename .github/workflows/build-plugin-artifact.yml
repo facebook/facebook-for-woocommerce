@@ -10,7 +10,7 @@ on:
 
 jobs:
   build-and-upload:
-    uses: ./.github/workflows/shared-build-plugin-artifact.yml@tzahgr/build_artifact
+    uses: ./.github/workflows/shared-build-plugin-artifact.yml
     with:
       ref: ${{ github.ref }}
       pr_number: ${{ github.event.pull_request.number }}
