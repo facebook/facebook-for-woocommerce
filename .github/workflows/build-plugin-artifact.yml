@@ -11,6 +11,13 @@ on:
 jobs:
   build-and-upload:
     uses: ./.github/workflows/shared-build-plugin-artifact.yml
+    if: github.event_name != 'pull_request'
+    with:
+      ref: ${{ github.ref }}
+
+  build-and-upload-for-pr:
+    uses: ./.github/workflows/shared-build-plugin-artifact.yml
+    if: github.event_name == 'pull_request'
     with:
       ref: ${{ github.ref }}
       pr_number: ${{ github.event.pull_request.number }}
