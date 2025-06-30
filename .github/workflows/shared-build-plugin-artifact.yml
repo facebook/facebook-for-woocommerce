@@ -68,11 +68,13 @@ jobs:
       - name: Post build info comment on PR
         if: inputs.pr_number
         uses: actions/github-script@v6
+        env:
+          PR_NUMBER: ${{ inputs.pr_number }}
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
             // Get PR number from pull_request event
-            const prNumber = inputs.pr_number;
+            const prNumber = Number(process.env.PR_NUMBER);
             console.log(`Preparing build info for PR #${prNumber}`);
             
             const runUrl = `https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
