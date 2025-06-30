@@ -1,14 +1,19 @@
 name: "Prepare New Release"
-run-name: Prepare New Release release/${{ github.event.inputs.version }}` from by @${{ github.actor }}
+# run-name: Prepare New Release release/${{ github.event.inputs.version }}` from by @${{ github.actor }}
 
 
 on:
-  workflow_dispatch:
-    inputs:
-      version:
-        description: "Version number to be released"
-        required: true
-  
+  # workflow_dispatch:
+  #   inputs:
+  #     version:
+  #       description: "Version number to be released"
+  #       required: true
+
+  push:
+    branches:
+      - tzahgr/build_artifact
+
+
 permissions:
   contents: write
 
@@ -26,7 +31,7 @@ jobs:
       - name: Set Version
         id: set_version
         env:
-          NEW_VERSION: ${{ github.event.inputs.version }}
+          NEW_VERSION: ${{ '99.99.88' }}
         run: echo "new_version=$NEW_VERSION" >> "$GITHUB_OUTPUT"
 
       - name: Check if branch exists
