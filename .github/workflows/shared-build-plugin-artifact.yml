@@ -10,6 +10,7 @@ on:
       pr_number:
         required: false
         type: number
+        default: 0
 
 
 jobs:
