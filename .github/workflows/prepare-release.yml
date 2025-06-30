@@ -214,4 +214,4 @@ jobs:
     needs: prepare-release
     uses: ./.github/workflows/shared-build-plugin-artifact.yml
     with:
-      ref: ${{ format('refs/heads/release/{0}', github.event.inputs.version) }}
+      ref: ${{ format('refs/heads/release/{0}', '99.99.88') }}
