@@ -13,4 +13,4 @@ jobs:
     uses: ./.github/workflows/shared-build-plugin-artifact.yml
     with:
       ref: ${{ github.ref }}
-      pr_number: ${{ github.event_name != 'pull_request' && github.event.pull_request.number || 0 }}
+      pr_number: ${{ github.event_name == 'pull_request' && github.event.pull_request.number || 0 }}
