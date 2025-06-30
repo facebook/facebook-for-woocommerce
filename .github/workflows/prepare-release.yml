@@ -1,18 +1,13 @@
 name: "Prepare New Release"
-# run-name: Prepare New Release release/${{ github.event.inputs.version }}` from by @${{ github.actor }}
+run-name: Prepare New Release release/${{ github.event.inputs.version }}` from by @${{ github.actor }}
 
 
 on:
-  # workflow_dispatch:
-  #   inputs:
-  #     version:
-  #       description: "Version number to be released"
-  #       required: true
-
-  push:
-    branches:
-      - tzahgr/build_artifact
-
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version number to be released"
+        required: true
 
 permissions:
   contents: write
@@ -32,7 +27,7 @@ jobs:
       - name: Set Version
         id: set_version
         env:
-          NEW_VERSION: ${{ '99.99.88' }}
+          NEW_VERSION: ${{ github.event.inputs.version }}
         run: echo "new_version=$NEW_VERSION" >> "$GITHUB_OUTPUT"
 
       - name: Check if branch exists
@@ -201,7 +196,6 @@ jobs:
             content.splice(i, 0, ...newLines);
             fs.writeFileSync(filePath, content.join('\n'));
 
-
       - name: Commit and Push
         env:
           NEW_VERSION: ${{ steps.set_version.outputs.new_version }}
@@ -215,4 +209,4 @@ jobs:
     needs: prepare-release
     uses: ./.github/workflows/shared-build-plugin-artifact.yml
     with:
-      ref: ${{ format('refs/heads/release/{0}', '99.99.88') }}
+      ref: ${{ format('refs/heads/release/{0}', github.event.inputs.version) }}
