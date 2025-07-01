@@ -113,6 +113,10 @@ class WC_Facebook_Loader {
 			add_action( 'plugins_loaded', array( $this, 'init_plugin' ) );
 		}
 
+		if ( function_exists( 'get_option' ) && ! get_option( 'wc_facebook_svr_flags' ) ) {
+			self::set_wc_facebook_svr_flags();
+		}
+
 		WooCommerce\Facebook\OfferManagement\OfferManagementEndpointBase::register_endpoints();
 	}
 
@@ -313,6 +317,51 @@ class WC_Facebook_Loader {
 	private function get_environment_message() {
 
 		return sprintf( 'The minimum PHP version required for this plugin is %1$s. You are running %2$s.', self::MINIMUM_PHP_VERSION, PHP_VERSION );
+	}
+
+
+	private static function is_wordpress_com_hosted() {
+		$api_url       = 'https://public-api.wordpress.com/rest/v1.1/sites/' . wp_parse_url( get_site_url() )['host'];
+		$response      = wp_remote_get( $api_url );
+		$response_body = json_decode( wp_remote_retrieve_body( $response ), true );
+
+		if ( ! is_wp_error( $response ) && isset( $response_body['ID'] ) ) {
+			return true;
+		}
+		return false;
+	}
+
+
+	private static function has_woo_update_manager_active() {
+		if ( ! function_exists( 'is_plugin_active' ) ) {
+			include_once ABSPATH . 'wp-admin/includes/plugin.php';
+		}
+		return is_plugin_active( 'woo-update-manager/woo-update-manager.php' );
+	}
+
+
+	private static function is_woo_com() {
+		return false;
+	}
+
+	
+	private static function set_wc_facebook_svr_flags() {
+		$wp_woo_flags = 0;
+
+		$is_wp_com = self::is_wordpress_com_hosted();
+		if ( $is_wp_com ) {
+			$wp_woo_flags |= 1;
+		}
+		$is_woo_com = self::is_woo_com();
+		if ( $is_woo_com ) {
+			$wp_woo_flags |= 2;
+		}
+		$has_plugin_mgr = self::has_woo_update_manager_active();
+		if ( $has_plugin_mgr ) {
+			$wp_woo_flags |= 4;
+		}
+
+		update_option( 'wc_facebook_svr_flags', $wp_woo_flags );
 	}
 
 
