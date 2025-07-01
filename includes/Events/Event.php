@@ -38,8 +38,10 @@ class Event {
 	 * }
 	 */
 	public static function get_version_info() {
+		$source = 'woocommerce';
+		$source .= self::get_agent_flags();
 		return array(
-			'source'        => 'woocommerce',
+			'source'        => $source,
 			'version'       => WC()->version,
 			'pluginVersion' => facebook_for_woocommerce()->get_version(),
 		);
@@ -344,5 +346,21 @@ class Event {
 	 */
 	public function get_custom_data() {
 		return ! empty( $this->data['custom_data'] ) ? $this->data['custom_data'] : array();
+	}
+
+
+	/**
+	 * Gets the postfix flags for the agent string.
+	 *
+	 * @since 3.5.5
+	 *
+	 * @return string
+	 */
+	private static function get_agent_flags() {
+		$postfix = '';
+		if ( function_exists( 'get_option' ) && ( $flags = get_option( 'set_wc_facebook_svr_flags' ) ) ) {
+			$postfix = "_{$flags}";
+		}
+		return $postfix;
 	}
 }
