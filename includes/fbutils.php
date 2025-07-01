@@ -34,7 +34,7 @@ if ( ! class_exists( 'WC_Facebookcommerce_Utils' ) ) :
 		const FB_VARIANT_PATTERN = 'pattern';
 		const FB_VARIANT_GENDER  = 'gender';
 		// TODO: this constant is no longer used and can probably be removed {WV 2020-01-21}
-		const FB_VARIANT_IMAGE   = 'fb_image';
+		const FB_VARIANT_IMAGE = 'fb_image';
 		/** @var string */
 		public static $ems = null;
 
@@ -53,7 +53,7 @@ if ( ! class_exists( 'WC_Facebookcommerce_Utils' ) ) :
 		 *
 		 * @var array
 		 */
-		private static $deferred_events = [];
+		private static $deferred_events = array();
 
 		/**
 		 * Prints deferred events into page header.
@@ -261,7 +261,7 @@ if ( ! class_exists( 'WC_Facebookcommerce_Utils' ) ) :
 			$product = wc_get_product( $wpid );
 
 			if ( ! $product ) {
-				return [];
+				return array();
 			}
 
 			return $product->get_tag_ids();
@@ -328,7 +328,7 @@ if ( ! class_exists( 'WC_Facebookcommerce_Utils' ) ) :
 		 * @return array
 		 */
 		public static function get_product_array( $woo_product ) {
-			$result = [];
+			$result = array();
 
 			if ( self::is_variable_type( $woo_product->get_type() ) ) {
 				foreach ( $woo_product->get_children() as $item_id ) {
@@ -373,7 +373,7 @@ if ( ! class_exists( 'WC_Facebookcommerce_Utils' ) ) :
 
 			if ( null === $aam_settings || ! $aam_settings->get_enable_automatic_matching() ) {
 				// User not logged in or pixel not configured with automatic advance matching
-				return [];
+				return array();
 			} else {
 				$user_data = array();
 				if ( 0 !== $current_user->ID ) {
@@ -443,7 +443,7 @@ if ( ! class_exists( 'WC_Facebookcommerce_Utils' ) ) :
 
 				Logger::log(
 					'Non manage_woocommerce user attempting to' . $action_text . '!',
-					[],
+					array(),
 					array(
 						'should_send_log_to_meta'        => false,
 						'should_save_log_in_woocommerce' => true,
@@ -489,7 +489,7 @@ if ( ! class_exists( 'WC_Facebookcommerce_Utils' ) ) :
 					array(
 						'key'     => $product_group_id,
 						'compare' => $compare_condition,
-					) : []
+					) : array()
 					),
 				),
 				'post_status'    => 'publish',
@@ -592,7 +592,7 @@ if ( ! class_exists( 'WC_Facebookcommerce_Utils' ) ) :
 			* Collect all parent products.
 			* Exclude variations which parents are not 'publish'.
 			*/
-			$parent_product_ids = [];
+			$parent_product_ids = array();
 			foreach ( $variation_products as $post_id => $parent_id ) {
 				/*
 				* Keep track of all parents to remove them from the list of products to sync.
@@ -798,7 +798,7 @@ if ( ! class_exists( 'WC_Facebookcommerce_Utils' ) ) :
 
 			// Attributes other than size, color, pattern, or gender need to be included in the additional_variant_attributes field.
 			if ( isset( $data['custom_data'] ) && is_array( $data['custom_data'] ) ) {
-				$attributes = [];
+				$attributes = array();
 				foreach ( $data['custom_data'] as $key => $val ) {
 
 					/**
@@ -822,7 +822,7 @@ if ( ! class_exists( 'WC_Facebookcommerce_Utils' ) ) :
 						$val
 					);
 					/** Force replacing , and : characters if those were not cleaned up by filters */
-					$attributes[] = str_replace( [ ',', ':' ], ' ', $key ) . ':' . str_replace( [ ',', ':' ], ' ', $attribute_value );
+					$attributes[] = str_replace( array( ',', ':' ), ' ', $key ) . ':' . str_replace( array( ',', ':' ), ' ', $attribute_value );
 				}
 
 				$data['additional_variant_attribute'] = implode( ',', $attributes );
@@ -843,8 +843,17 @@ if ( ! class_exists( 'WC_Facebookcommerce_Utils' ) ) :
 		public static function prepare_product_data_items_batch( $product ) {
 			$fb_product = new \WC_Facebook_Product( $product->get_id() );
 			$data       = $fb_product->prepare_product( null, \WC_Facebook_Product::PRODUCT_PREP_TYPE_ITEMS_BATCH );
+
 			// Products that are not variations use their retailer retailer ID as the retailer product group ID
 			$data['item_group_id'] = $data['retailer_id'];
+
+			// Add visibility and availability overrides based on visibility check
+			$visible            = \WooCommerce\Facebook\Products::is_product_visible( $product );
+			$data['visibility'] = $visible ? 'published' : 'hidden';
+
+			if ( ! $visible ) {
+				$data['availability'] = 'out of stock';
+			}
 
 			return self::normalize_product_data_for_items_batch( $data );
 		}
@@ -870,10 +879,10 @@ if ( ! class_exists( 'WC_Facebookcommerce_Utils' ) ) :
 			$product_data['id'] = $retailer_id;
 
 			$requests = array(
-				[
+				array(
 					'method' => Sync::ACTION_UPDATE,
 					'data'   => $product_data,
-				],
+				),
 			);
 
 			return $requests;
@@ -904,6 +913,13 @@ if ( ! class_exists( 'WC_Facebookcommerce_Utils' ) ) :
 			// $data['retailer_product_group_id'] = \WC_Facebookcommerce_Utils::get_fb_retailer_id( $parent_product );
 			$data['item_group_id'] = self::get_fb_retailer_id( $parent_product );
 
+			// Add visibility and availability overrides based on visibility check
+			$visible            = \WooCommerce\Facebook\Products::is_product_visible( $product );
+			$data['visibility'] = $visible ? 'published' : 'hidden';
+			if ( ! $visible ) {
+				$data['availability'] = 'out of stock';
+			}
+
 			return self::normalize_product_data_for_items_batch( $data );
 		}
 
@@ -915,7 +931,7 @@ if ( ! class_exists( 'WC_Facebookcommerce_Utils' ) ) :
 		 * @param Throwable $error error object
 		 * @param array     $context optional error message attributes
 		 */
-		public static function log_exception_immediately_to_meta( Throwable $error, array $context = [] ) {
+		public static function log_exception_immediately_to_meta( Throwable $error, array $context = array() ) {
 			ErrorLogHandler::log_exception_to_meta( $error, $context );
 		}
 
