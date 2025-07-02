@@ -346,6 +346,23 @@ class WC_Facebookcommerce extends WooCommerce\Facebook\Framework\Plugin {
 			},
 			0
 		);
+		add_action( 'admin_notices', array( $this, 'show_shutdown_deactivation_notice' ) );
+	}
+	/**
+	 * Displays an admin notice when the plugin is deactivated due to a PHP shutdown error.
+	 *
+	 * This function is triggered after a fatal error causes the plugin to be deactivated,
+	 * and it displays a message in the WordPress admin area to inform the user about the deactivation.
+	 */
+	public function show_shutdown_deactivation_notice() {
+		if ( get_transient( 'fbcom_shutdown_deactivated' ) ) {
+			?>
+		<div class="notice notice-error is-dismissible">
+			<p><strong>Facebook for WooCommerce</strong> was automatically deactivated due to a fatal error. Please check your error logs.</p>
+		</div>
+			<?php
+			delete_transient( 'fbcom_shutdown_deactivated' );
+		}
 	}
 
 
