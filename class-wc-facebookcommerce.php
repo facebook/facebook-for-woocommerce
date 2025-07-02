@@ -176,22 +176,6 @@ class WC_Facebookcommerce extends WooCommerce\Facebook\Framework\Plugin {
 			if ( isset( $error['file'] ) && strpos( realpath( $error['file'] ), realpath( $plugin_path ) ) === 0 && is_plugin_active( $plugin_slug ) ) {
 				include_once ABSPATH . 'wp-admin/includes/plugin.php';
 
-				if ( function_exists( 'wc_get_logger' ) ) {
-					$logger = wc_get_logger();
-					$logger->debug(
-						'Fatal error in plugin. Attempting to deactivate: ' . $plugin_slug,
-						array( 'source' => 'facebook-for-woocommerce' )
-					);
-				}
-
-				deactivate_plugins( $plugin_slug );
-
-				set_transient( 'fbcom_shutdown_deactivated', $plugin_slug, 60 );
-
-				$admin_email = get_option( 'admin_email' );
-				
-				$subject     = 'Facebook for WooCommerce plugin deactivated due to fatal error';
-
 				$message  = "The plugin was automatically deactivated after a fatal error was detected.\n\n";
 				$message .= "Error details:\n";
 				$message .= 'Type: ' . $error['type'] . "\n";
@@ -203,6 +187,24 @@ class WC_Facebookcommerce extends WooCommerce\Facebook\Framework\Plugin {
 				$message .= "Support forum: https://wordpress.org/support/plugin/facebook-for-woocommerce/\n";
 				$message .= "GitHub issues: https://github.com/facebook/facebook-for-woocommerce/issues\n";
 				$message .= 'Site: ' . get_bloginfo( 'url' ) . "\n";
+
+				if ( function_exists( 'wc_get_logger' ) ) {
+					$logger       = wc_get_logger();
+					$log_message  = "[Fatal Error] Facebook for WooCommerce plugin auto-deactivated.\n";
+					$log_message .= 'Timestamp: ' . gmdate( 'Y-m-d H:i:s T' ) . "\n";
+					$log_message .= 'Plugin Version: ' . self::VERSION . "\n";
+					$log_message .= $message;
+
+					$logger->error( $log_message, array( 'source' => 'facebook-for-woocommerce' ) );
+				}
+
+				deactivate_plugins( $plugin_slug );
+
+				set_transient( 'fbcom_shutdown_deactivated', $plugin_slug, 60 );
+
+				$admin_email = get_option( 'admin_email' );
+
+				$subject = 'Facebook for WooCommerce plugin deactivated due to fatal error';
 
 				@wp_mail( $admin_email, $subject, $message );
 
@@ -363,6 +365,7 @@ class WC_Facebookcommerce extends WooCommerce\Facebook\Framework\Plugin {
 			?>
 		<div class="notice notice-error is-dismissible">
 			<p><strong>Facebook for WooCommerce</strong> was automatically deactivated due to a fatal error. Please check your error logs.</p>
+			<a href="<?php echo esc_url( admin_url( 'admin.php?page=wc-status&tab=logs' ) ); ?>">View WooCommerce logs</a>.
 		</div>
 			<?php
 			delete_transient( 'fbcom_shutdown_deactivated' );
