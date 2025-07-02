@@ -171,13 +171,17 @@ class WC_Facebookcommerce extends WooCommerce\Facebook\Framework\Plugin {
 
 		if ( $error && in_array( $error['type'], array( E_ERROR, E_PARSE, E_CORE_ERROR, E_COMPILE_ERROR ), true ) ) {
 			$plugin_slug = 'facebook-for-woocommerce/facebook-for-woocommerce.php';
+			$plugin_path = plugin_dir_path( __FILE__ );
 
-			if ( is_plugin_active( $plugin_slug ) ) {
+			if ( isset( $error['file'] ) && strpos( realpath( $error['file'] ), realpath( $plugin_path ) ) === 0 && is_plugin_active( $plugin_slug ) ) {
 				include_once ABSPATH . 'wp-admin/includes/plugin.php';
 
 				if ( function_exists( 'wc_get_logger' ) ) {
 					$logger = wc_get_logger();
-					$logger->debug( 'Attempting to deactivate plugin file: ' . $plugin_slug, array( 'source' => 'facebook-for-woocommerce' ) );
+					$logger->debug(
+						'Fatal error in plugin. Attempting to deactivate: ' . $plugin_slug,
+						array( 'source' => 'facebook-for-woocommerce' )
+					);
 				}
 
 				deactivate_plugins( $plugin_slug );
@@ -185,8 +189,8 @@ class WC_Facebookcommerce extends WooCommerce\Facebook\Framework\Plugin {
 				set_transient( 'fbcom_shutdown_deactivated', $plugin_slug, 60 );
 
 				$admin_email = get_option( 'admin_email' );
-
-				$subject = 'Facebook for WooCommerce plugin deactivated due to fatal error';
+				
+				$subject     = 'Facebook for WooCommerce plugin deactivated due to fatal error';
 
 				$message  = "The plugin was automatically deactivated after a fatal error was detected.\n\n";
 				$message .= "Error details:\n";
