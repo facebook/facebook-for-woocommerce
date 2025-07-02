@@ -255,7 +255,7 @@ class FeedUploadUtils {
 						'prerequisite_product_retailer_ids' => '', // Concept does not exist in Woo
 						'prerequisite_product_group_retailer_ids' => '', // Concept does not exist in Woo
 						'prerequisite_product_set_retailer_ids' => '', // Concept does not exist in Woo
-						'exclude_sale_priced_products'    => $coupon->get_exclude_sale_items(),
+						'exclude_sale_priced_products'    => $coupon->get_exclude_sale_items() ? 'YES' : 'NO',
 						'usage_count'                     => $coupon->get_usage_count(),
 					);
 

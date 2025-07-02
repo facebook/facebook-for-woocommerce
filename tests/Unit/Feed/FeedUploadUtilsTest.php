@@ -183,6 +183,8 @@ class FeedUploadUtilsTest extends FeedDataTestBase {
 		update_post_meta( $coupon_id, 'email_restrictions', array() );
 		update_post_meta( $coupon_id, 'product_ids', array( $product1->get_id() ) );
 		update_post_meta( $coupon_id, 'usage_count', 2 );
+		// Stored as 'yes'/'no' in post data. See update_post_meta in WC_Coupon_Data_Store_CPT
+		update_post_meta( $coupon_id, 'exclude_sale_items', wc_bool_to_string( true ) );
 
 		$query_args = [
 			'post_type'      => 'shop_coupon',
@@ -225,7 +227,7 @@ class FeedUploadUtilsTest extends FeedDataTestBase {
 			'prerequisite_product_retailer_ids'     => '',
 			'prerequisite_product_group_retailer_ids' => '',
 			'prerequisite_product_set_retailer_ids'   => '',
-			'exclude_sale_priced_products'          => false,
+			'exclude_sale_priced_products'          => 'YES',
 			'target_shipping_option_types'          => '',
 			'usage_count' => 2,
 		];
@@ -249,6 +251,8 @@ class FeedUploadUtilsTest extends FeedDataTestBase {
 		update_post_meta( $coupon_id, 'limit_usage_to_x_items', '' );
 		update_post_meta( $coupon_id, 'maximum_amount', '' );
 		update_post_meta( $coupon_id, 'email_restrictions', array() );
+		update_post_meta( $coupon_id, 'exclude_sale_items', wc_bool_to_string( false ) );
+
 
 		$query_args = [
 			'post_type'      => 'shop_coupon',
@@ -291,7 +295,7 @@ class FeedUploadUtilsTest extends FeedDataTestBase {
 			'prerequisite_product_retailer_ids'     => '',
 			'prerequisite_product_group_retailer_ids' => '',
 			'prerequisite_product_set_retailer_ids'   => '',
-			'exclude_sale_priced_products'          => false,
+			'exclude_sale_priced_products'          => 'NO',
 			'target_shipping_option_types'          => ['STANDARD'],
 			'usage_count' => 0,
 		];
@@ -383,7 +387,7 @@ class FeedUploadUtilsTest extends FeedDataTestBase {
 			'prerequisite_product_retailer_ids'     => '',
 			'prerequisite_product_group_retailer_ids' => '',
 			'prerequisite_product_set_retailer_ids'   => '',
-			'exclude_sale_priced_products'          => false,
+			'exclude_sale_priced_products'          => 'NO',
 			'target_shipping_option_types'          => '',
 			'usage_count' => 0,
 		];
@@ -493,7 +497,7 @@ class FeedUploadUtilsTest extends FeedDataTestBase {
 			'prerequisite_product_retailer_ids'     => '',
 			'prerequisite_product_group_retailer_ids' => '',
 			'prerequisite_product_set_retailer_ids'   => '',
-			'exclude_sale_priced_products'          => false,
+			'exclude_sale_priced_products'          => 'NO',
 			'target_shipping_option_types'          => '',
 			'usage_count' => 0,
 		];
