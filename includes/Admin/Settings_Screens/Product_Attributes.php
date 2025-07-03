@@ -419,11 +419,6 @@ class Product_Attributes extends Abstract_Settings_Screen {
 						updateDisabledAttributes();
 					}, 200);
 					
-					// Focus the first select field in the new row
-					setTimeout(function() {
-						$newRow.find('.wc-attribute-search').select2('open');
-					}, 100);
-					
 					// Scroll to the newly added row
 					$('html, body').animate({
 						scrollTop: $newRow.offset().top - 100
