@@ -46,7 +46,6 @@ class ProductAttributeMapper {
 	private static $extended_facebook_fields = array(
 		'sale_price' => array( 'sale_price', 'discount_price', 'offer_price' ),
 		'inventory'  => array( 'inventory', 'stock', 'quantity' ),
-		'tax'        => array( 'tax', 'tax_info' ),
 	);
 
 	/** @var array Maps WooCommerce attribute naming variations to standardized Meta field names */
