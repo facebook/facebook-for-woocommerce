@@ -34,7 +34,7 @@ class Normalizer {
 			return null;
 		}
 
-		$data            = trim( strtolower( $data ) );
+		$data            = trim( mb_strtolower( $data, 'UTF-8' ) );
 		$normalized_data = $data;
 
 		switch ( $field ) {
