@@ -1201,6 +1201,9 @@ class Admin {
 					)
 				);
 
+				// Render the Facebook Product Video field at Product level
+				$this->render_facebook_product_video_field( $video_urls );
+
 				woocommerce_wp_text_input(
 					array(
 						'id'          => \WC_Facebook_Product::FB_PRODUCT_PRICE,
@@ -1249,9 +1252,6 @@ class Admin {
 			</script>
 
 			<?php
-				// Render the Facebook Product Video field at Product level
-				$this->render_facebook_product_video_field( $video_urls );
-
 				woocommerce_wp_text_input(
 					array(
 						'id'          => \WC_Facebook_Product::FB_MPN,
