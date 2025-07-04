@@ -1811,16 +1811,6 @@ class WC_Facebook_Product {
 			}
 		}
 
-		/**
-		 * Additional check to ensure product is marked hidden in case of out of stock
-		 */
-		$product_id      = $this->get_id();
-		$current_product = wc_get_product( $product_id );
-
-		if ( $current_product && ! $current_product->is_in_stock() ) {
-			$product_data['visibility'] = \WC_Facebookcommerce_Integration::FB_SHOP_PRODUCT_HIDDEN;
-		}
-
 		// Set any attributes not already set by direct mappings
 		if ( ! isset( $product_data['brand'] ) ) {
 			$product_data['brand'] = Helper::str_truncate( $this->get_fb_brand( $is_api_call ), 100 );
