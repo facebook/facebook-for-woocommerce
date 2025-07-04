@@ -40,24 +40,18 @@ When opening a bug on GitHub, please give us as many details as possible.
 
 == Changelog ==
 
-= 3.5.4 - 2025-06-25 =
-* Add - Enhanced product attribute mapping system with improved support for custom fields and value normalization by @devbodaghe in #3234
-* Fix - Single batch call for bulk edit by @SayanPandey in #3352
-* Tweak - Redundant api calls reduction by @SayanPandey in #3356
-* Fix - Whatsapp consent checkbox enable for classic checkout by @sharunaanandraj in #3451
-* Add - Unit tests for FeedConfigurationDetection class by @sol-loup in #3450
-* Add - Unit tests for DebugTools class by @sol-loup in #3448
-* Add - Unit tests for AdminMessageHandler class by @sol-loup in #3447
-* Add - Unit tests for Enhanced_Catalog_Attribute_Fields class by @sol-loup in #3449
-* Add - Comprehensive unit tests for Google_Product_Category_Field class to improve code coverage by @sol-loup in #3446
-* Add - Comprehensive unit tests for Product_Categories class to improve code coverage by @sol-loup in #3426
-* Add - Unit tests for ProductCatalog ProductSets Delete Request class by @sol-loup in #3417
-* Add - Comprehensive unit tests for Request_Limit_Reached exception to improve code coverage by @sol-loup in #3427
-* Add - Comprehensive unit tests for WC_Facebookcommerce_WarmConfig to improve code coverage by @sol-loup in #3424
-* Add - Comprehensive unit tests for Commerce class to improve code coverage by @sol-loup in #3425
-* Add - Unit tests for SettingsMoved note class to improve code coverage by @sol-loup in #3428
-* Add - Comprehensive unit tests for ProfilingLoggerProcess to improve code coverage by @sol-loup in #3412
-* Fix - Logs for excluded categories and tags by @SayanPandey in #3445
-* Fix - Age group normalisation error and updating supported FB fields for age group by @devbodaghe in #3460
+= 3.5.5 - 2025-07-04 =
+* Fix - Adding visibility hidden check for out of stock products by @SayanPandey in #3489
+* Fix - Fix exclude_sale_price Value Type in Discount Syncing by @mradmeta in #3487
+* Dev - Create unit tests for ./Framework/Plugin/Dependancies.php by @ajello-meta in #3485
+* Dev - Create unit tests for ./Framework/Plugin/Compatibility.php by @ajello-meta in #3484
+* Dev - Create unit tests for ./Framework/Api/JSONResponse.php by @ajello-meta in #3481
+* Dev - Create unit tests for ./Framework/Api/Request.php by @ajello-meta in #3479
+* Dev - Improve unit tests for ./Admin/Settings_Screens/Shops.php by @ajello-meta in #3477
+* Dev - Create unit tests for ./Framework/Api/Response.php by @ajello-meta in #3480
+* Dev - Create unit tests for ./Admin/Abstract_Settings_Screen.php by @ajello-meta in #3478
+* Dev - Improve unit tests for ./Admin/Settings_Screens/Connection.php by @ajello-meta in #3476
+* Add - Validate PR has single changelog label by @tzahgr in #3470
+* Add - Set stable tag manual workflow by @tzahgr in #3454
 
 [See changelog for all versions](https://raw.githubusercontent.com/facebook/facebook-for-woocommerce/refs/heads/main/changelog.txt).
