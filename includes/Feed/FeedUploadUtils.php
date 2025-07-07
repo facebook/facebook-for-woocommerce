@@ -110,15 +110,21 @@ class FeedUploadUtils {
 
 			return $reviews_data;
 		} catch ( \Exception $exception ) {
-			\WC_Facebookcommerce_Utils::log_exception_immediately_to_meta(
-				$exception,
-				[
+			Logger::log(
+				'Error while fetching ratings and reviews data.',
+				array(
 					'event'      => self::RATINGS_AND_REVIEWS_SYNC_LOGGING_FLOW_NAME,
 					'event_type' => 'get_ratings_and_reviews_data',
 					'extra_data' => [
 						'query_args' => wp_json_encode( $query_args ),
 					],
-				]
+				),
+				array(
+					'should_send_log_to_meta'        => true,
+					'should_save_log_in_woocommerce' => false,
+					'woocommerce_log_level'          => \WC_Log_Levels::DEBUG,
+				),
+				$exception,
 			);
 			throw $exception;
 		}
@@ -284,13 +290,19 @@ class FeedUploadUtils {
 
 			return $coupons_data;
 		} catch ( \Exception $e ) {
-			\WC_Facebookcommerce_Utils::log_exception_immediately_to_meta(
-				$e,
+			Logger::log(
+				'Error while fetching coupons data.',
 				array(
 					'event'      => self::PROMO_SYNC_LOGGING_FLOW_NAME,
 					'event_type' => 'get_coupon_data',
 					'extra_data' => [ 'query_args' => wp_json_encode( $query_args ) ],
-				)
+				),
+				array(
+					'should_send_log_to_meta'        => true,
+					'should_save_log_in_woocommerce' => false,
+					'woocommerce_log_level'          => \WC_Log_Levels::DEBUG,
+				),
+				$e,
 			);
 			throw $e;
 		}
@@ -443,12 +455,18 @@ class FeedUploadUtils {
 				),
 			);
 		} catch ( \Exception $e ) {
-			\WC_Facebookcommerce_Utils::log_exception_immediately_to_meta(
-				$e,
+			Logger::log(
+				'Error while fetching navigations menu data.',
 				array(
 					'event'      => self::NAVIGATION_MENU_SYNC_LOGGING_FLOW_NAME,
 					'event_type' => 'get_navigation_menu_data',
-				)
+				),
+				array(
+					'should_send_log_to_meta'        => true,
+					'should_save_log_in_woocommerce' => false,
+					'woocommerce_log_level'          => \WC_Log_Levels::DEBUG,
+				),
+				$e,
 			);
 			throw $e;
 		}
