@@ -33,10 +33,10 @@ class Logger {
 	 *
 	 * @since 3.5.3
 	 *
-	 * @param Throwable $exception error object
 	 * @param string    $message log message
 	 * @param array     $context optional body of log with whole context
 	 * @param array     $log_options optional options for logging place and levels
+	 * @param Throwable $exception error object
 	 */
 	public static function log(
 		$message,
