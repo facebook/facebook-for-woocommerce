@@ -12,6 +12,7 @@ namespace WooCommerce\Facebook\Feed;
 
 use WC_Facebookcommerce_Utils;
 use WooCommerce\Facebook\Framework\Plugin\Exception as PluginException;
+use WooCommerce\Facebook\Framework\Logger;
 
 defined( 'ABSPATH' ) || exit;
 
@@ -63,9 +64,9 @@ class CsvFeedFileWriter extends AbstractFeedFileWriter {
 				}
 			}
 		} catch ( \Exception $exception ) {
-			WC_Facebookcommerce_Utils::log_exception_immediately_to_meta(
-				$exception,
-				[
+			Logger::log(
+				'Error while writing temporary feed file.',
+				array(
 					'event'      => 'feed_upload',
 					'event_type' => 'write_temp_feed_file',
 					'extra_data' => [
@@ -73,7 +74,13 @@ class CsvFeedFileWriter extends AbstractFeedFileWriter {
 						'temp_file_path' => $temp_file_path,
 						'file_type'      => 'csv',
 					],
-				]
+				),
+				array(
+					'should_send_log_to_meta'        => true,
+					'should_save_log_in_woocommerce' => false,
+					'woocommerce_log_level'          => \WC_Log_Levels::DEBUG,
+				),
+				$exception,
 			);
 			throw $exception;
 		} finally {
