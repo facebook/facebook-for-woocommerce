@@ -299,15 +299,21 @@ class Handler extends AbstractRESTEndpoint {
 				}
 			}
 		} catch ( \Exception $exception ) {
-			\WC_Facebookcommerce_Utils::log_exception_immediately_to_meta(
-				$exception,
-				[
+			Logger::log(
+				'Product feed upload failed.',
+				array(
 					'event'      => 'product_sync',
 					'event_type' => 'sync_products_after_settings_update',
 					'extra_data' => [
 						'params' => wp_json_encode( $params ),
 					],
-				]
+				),
+				array(
+					'should_send_log_to_meta'        => true,
+					'should_save_log_in_woocommerce' => false,
+					'woocommerce_log_level'          => \WC_Log_Levels::DEBUG,
+				),
+				$exception,
 			);
 		}
 
@@ -316,15 +322,21 @@ class Handler extends AbstractRESTEndpoint {
 				facebook_for_woocommerce()->get_product_sets_sync_handler()->sync_all_product_sets();
 			}
 		} catch ( \Exception $exception ) {
-			\WC_Facebookcommerce_Utils::log_exception_immediately_to_meta(
-				$exception,
-				[
+			Logger::log(
+				'Product feed upload failed.',
+				array(
 					'event'      => 'product_sets_sync',
 					'event_type' => 'sync_product_sets_after_settings_update',
 					'extra_data' => [
 						'params' => wp_json_encode( $params ),
 					],
-				]
+				),
+				array(
+					'should_send_log_to_meta'        => true,
+					'should_save_log_in_woocommerce' => false,
+					'woocommerce_log_level'          => \WC_Log_Levels::DEBUG,
+				),
+				$exception,
 			);
 		}
 
@@ -333,15 +345,21 @@ class Handler extends AbstractRESTEndpoint {
 				facebook_for_woocommerce()->feed_manager->run_all_feed_uploads();
 			}
 		} catch ( \Exception $exception ) {
-			\WC_Facebookcommerce_Utils::log_exception_immediately_to_meta(
-				$exception,
-				[
+			Logger::log(
+				'Product feed upload failed.',
+				array(
 					'event'      => 'feed_upload',
 					'event_type' => 'trigger_feed_uploads_after_settings_update',
 					'extra_data' => [
 						'params' => wp_json_encode( $params ),
 					],
-				]
+				),
+				array(
+					'should_send_log_to_meta'        => true,
+					'should_save_log_in_woocommerce' => false,
+					'woocommerce_log_level'          => \WC_Log_Levels::DEBUG,
+				),
+				$exception,
 			);
 		}
 	}
