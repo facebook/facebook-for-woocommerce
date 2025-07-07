@@ -323,7 +323,7 @@ class Handler extends AbstractRESTEndpoint {
 			}
 		} catch ( \Exception $exception ) {
 			Logger::log(
-				'Product feed upload failed.',
+				'Product sets sync failed.',
 				array(
 					'event'      => 'product_sets_sync',
 					'event_type' => 'sync_product_sets_after_settings_update',
@@ -346,7 +346,7 @@ class Handler extends AbstractRESTEndpoint {
 			}
 		} catch ( \Exception $exception ) {
 			Logger::log(
-				'Product feed upload failed.',
+				'Products metadata feed upload failed.',
 				array(
 					'event'      => 'feed_upload',
 					'event_type' => 'trigger_feed_uploads_after_settings_update',
