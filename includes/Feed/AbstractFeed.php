@@ -170,16 +170,22 @@ abstract class AbstractFeed {
 			get_api()->
 			create_common_data_feed_upload( $cpi_id, $data );
 		} catch ( \Exception $exception ) {
-			\WC_Facebookcommerce_Utils::log_exception_immediately_to_meta(
-				$exception,
-				[
+			Logger::log(
+				'Abstract feed upload failed.',
+				array(
 					'event'      => 'feed_upload',
 					'event_type' => 'send_request_to_upload_feed',
 					'extra_data' => [
 						'feed_name' => $name,
 						'data'      => wp_json_encode( $data ),
 					],
-				]
+				),
+				array(
+					'should_send_log_to_meta'        => true,
+					'should_save_log_in_woocommerce' => false,
+					'woocommerce_log_level'          => \WC_Log_Levels::DEBUG,
+				),
+				$exception,
 			);
 		}
 	}
@@ -303,16 +309,22 @@ abstract class AbstractFeed {
 				echo $contents; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
 			}
 		} catch ( \Exception $exception ) {
-			\WC_Facebookcommerce_Utils::log_exception_immediately_to_meta(
-				$exception,
-				[
+			Logger::log(
+				'Error while handling Feed data request.',
+				array(
 					'event'      => 'feed_upload',
 					'event_type' => 'handle_feed_data_request',
 					'extra_data' => [
 						'feed_name' => $name,
 						'file_path' => $file_path,
 					],
-				]
+				),
+				array(
+					'should_send_log_to_meta'        => true,
+					'should_save_log_in_woocommerce' => false,
+					'woocommerce_log_level'          => \WC_Log_Levels::DEBUG,
+				),
+				$exception,
 			);
 			status_header( $exception->getCode() );
 		} finally {
