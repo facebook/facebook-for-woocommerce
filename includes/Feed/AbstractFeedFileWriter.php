@@ -12,6 +12,7 @@ namespace WooCommerce\Facebook\Feed;
 
 use WC_Facebookcommerce_Utils;
 use WooCommerce\Facebook\Framework\Plugin\Exception as PluginException;
+use WooCommerce\Facebook\Framework\Logger;
 
 defined( 'ABSPATH' ) || exit;
 
@@ -109,15 +110,21 @@ abstract class AbstractFeedFileWriter {
 			// Step 3: Rename temporary feed file to final feed file.
 			$this->promote_temp_file();
 		} catch ( \Exception $exception ) {
-			WC_Facebookcommerce_Utils::log_exception_immediately_to_meta(
-				$exception,
-				[
+			Logger::log(
+				'Error while writing feed file.',
+				array(
 					'event'      => 'feed_upload',
 					'event_type' => 'write_feed_file',
 					'extra_data' => [
 						'feed_name' => $this->feed_name,
 					],
-				]
+				),
+				array(
+					'should_send_log_to_meta'        => true,
+					'should_save_log_in_woocommerce' => false,
+					'woocommerce_log_level'          => \WC_Log_Levels::DEBUG,
+				),
+				$exception,
 			);
 			// Close the temporary file if it is still open.
 			if ( ! empty( $temp_feed_file ) && is_resource( $temp_feed_file ) ) {
@@ -146,16 +153,22 @@ abstract class AbstractFeedFileWriter {
 				throw new PluginException( "Could not create feed directory at {$file_directory}", 500 );
 			}
 		} catch ( \Exception $exception ) {
-			WC_Facebookcommerce_Utils::log_exception_immediately_to_meta(
-				$exception,
-				[
+			Logger::log(
+				'Error while creating feed directory.',
+				array(
 					'event'      => 'feed_upload',
 					'event_type' => 'create_feed_directory',
 					'extra_data' => [
 						'feed_name'      => $this->feed_name,
 						'file_directory' => $file_directory,
 					],
-				]
+				),
+				array(
+					'should_send_log_to_meta'        => true,
+					'should_save_log_in_woocommerce' => false,
+					'woocommerce_log_level'          => \WC_Log_Levels::DEBUG,
+				),
+				$exception,
 			);
 			throw $exception;
 		}
@@ -198,16 +211,22 @@ abstract class AbstractFeedFileWriter {
 				}
 			}
 		} catch ( \Exception $exception ) {
-			WC_Facebookcommerce_Utils::log_exception_immediately_to_meta(
-				$exception,
-				[
+			Logger::log(
+				'Error while creating files to protect feed directory.',
+				array(
 					'event'      => 'feed_upload',
 					'event_type' => 'create_files_to_protect_feed_directory',
 					'extra_data' => [
 						'feed_name'      => $this->feed_name,
 						'feed_directory' => $feed_directory,
 					],
-				]
+				),
+				array(
+					'should_send_log_to_meta'        => true,
+					'should_save_log_in_woocommerce' => false,
+					'woocommerce_log_level'          => \WC_Log_Levels::DEBUG,
+				),
+				$exception,
 			);
 			throw $exception;
 		}
@@ -309,9 +328,9 @@ abstract class AbstractFeedFileWriter {
 
 			return $temp_feed_file;
 		} catch ( \Exception $exception ) {
-			WC_Facebookcommerce_Utils::log_exception_immediately_to_meta(
-				$exception,
-				[
+			Logger::log(
+				'Error while creating temporary feed file.',
+				array(
 					'event'      => 'feed_upload',
 					'event_type' => 'prepare_temporary_feed_file',
 					'extra_data' => [
@@ -319,7 +338,13 @@ abstract class AbstractFeedFileWriter {
 						'temp_file_path' => $temp_file_path,
 						'file_path'      => $file_path,
 					],
-				]
+				),
+				array(
+					'should_send_log_to_meta'        => true,
+					'should_save_log_in_woocommerce' => false,
+					'woocommerce_log_level'          => \WC_Log_Levels::DEBUG,
+				),
+				$exception,
 			);
 			if ( $temp_feed_file ) {
 				// phpcs:ignore -- use php file i/o functions
@@ -350,9 +375,9 @@ abstract class AbstractFeedFileWriter {
 				}
 			}
 		} catch ( \Exception $exception ) {
-			WC_Facebookcommerce_Utils::log_exception_immediately_to_meta(
-				$exception,
-				[
+			Logger::log(
+				'Error while promoting temporary file.',
+				array(
 					'event'      => 'feed_upload',
 					'event_type' => 'promote_temp_file',
 					'extra_data' => [
@@ -360,7 +385,13 @@ abstract class AbstractFeedFileWriter {
 						'temp_file_path' => $temp_file_path,
 						'file_path'      => $file_path,
 					],
-				]
+				),
+				array(
+					'should_send_log_to_meta'        => true,
+					'should_save_log_in_woocommerce' => false,
+					'woocommerce_log_level'          => \WC_Log_Levels::DEBUG,
+				),
+				$exception,
 			);
 			throw $exception;
 		}
