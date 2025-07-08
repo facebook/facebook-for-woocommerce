@@ -10,7 +10,6 @@
 
 namespace WooCommerce\Facebook;
 
-
 use WooCommerce\Facebook\Admin\Enhanced_Catalog_Attribute_Fields;
 use WooCommerce\Facebook\Framework\Helper;
 use WooCommerce\Facebook\ProductAttributeMapper;
