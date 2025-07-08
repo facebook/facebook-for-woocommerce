@@ -546,6 +546,15 @@ if ( ! class_exists( 'WC_Facebookcommerce_Utils' ) ) :
 			return ( self::$store_name ) ? ( self::$store_name ) : 'A Store Has No Name';
 		}
 
+		/**
+		 * Returns the default brand name
+		 *
+		 * @return string
+		 */
+		public static function get_default_fb_brand() {
+			return wp_strip_all_tags( self::get_store_name() );
+		}
+
 
 		/**
 		 * Get visible name for variant attribute rather than the slug

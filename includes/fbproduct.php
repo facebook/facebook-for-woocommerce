@@ -691,7 +691,7 @@ class WC_Facebook_Product {
 			} elseif ( ! is_wp_error( $brand_taxonomy ) && $brand_taxonomy ) {
 				$fb_brand = $brand_taxonomy;
 			} else {
-				$fb_brand = wp_strip_all_tags( WC_Facebookcommerce_Utils::get_store_name() );
+				$fb_brand = WC_Facebookcommerce_Utils::get_default_fb_brand();
 			}
 		}
 

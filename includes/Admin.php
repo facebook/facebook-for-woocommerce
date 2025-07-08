@@ -10,6 +10,8 @@
 
 namespace WooCommerce\Facebook;
 
+require_once __DIR__ . '/fbutils.php';
+
 use WooCommerce\Facebook\Admin\Enhanced_Catalog_Attribute_Fields;
 use WooCommerce\Facebook\Framework\Helper;
 use WooCommerce\Facebook\ProductAttributeMapper;
@@ -1273,6 +1275,7 @@ class Admin {
 						'class'       => 'enable-if-sync-enabled',
 						'desc_tip'    => true,
 						'description' => __( 'Brand name of the item', 'facebook-for-woocommerce' ),
+						'placeholder' => \WC_Facebookcommerce_Utils::get_default_fb_brand(),
 					)
 				);
 
