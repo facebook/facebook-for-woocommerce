@@ -1094,7 +1094,7 @@ class fbproductTest extends \WooCommerce\Facebook\Tests\AbstractWPUnitTestWithSa
 
 		$before_time = time();
 		$fb_product = new \WC_Facebook_Product( $woo_product );
-		$data = $fb_product->product_prepare();
+		$data = $fb_product->prepare_product();
 		$after_time = time();
 
 		$this->assertArrayHasKey('product_prepare_time', $data);
