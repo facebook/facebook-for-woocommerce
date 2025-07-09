@@ -288,25 +288,6 @@ class SettingsTest extends AbstractWPUnitTestWithOptionIsolationAndSafeFiltering
     }
 
     /**
-     * Test set_parent_and_submenu_file returns string
-     */
-    public function test_set_parent_and_submenu_file_returns_string() {
-        // Inline stub connection handler
-        $handler = $this->getMockBuilder('stdClass')
-            ->addMethods(['is_connected'])
-            ->getMock();
-        $handler->method('is_connected')->willReturn(true);
-        $this->plugin->method('get_connection_handler')->willReturn($handler);
-
-        // Now instantiate Settings
-        $settings = new Settings($this->plugin);
-
-        // Call the method and assert the result is a string
-        $result = $settings->set_parent_and_submenu_file('woocommerce');
-        $this->assertIsString($result);
-    }
-
-    /**
      * Test save returns early for non-admin, wrong page, no screen, no save, or insufficient permissions
      */
     public function test_save_returns_early_on_invalid_conditions() {
@@ -380,43 +361,5 @@ class SettingsTest extends AbstractWPUnitTestWithOptionIsolationAndSafeFiltering
 
         $this->assertStringContainsString('nav-tab', $output);
         $this->assertStringContainsString('whatsapp_utility', $output);
-    }
-
-    /**
-     * Test add_tabs_to_product_sets_taxonomy only renders for correct screen/taxonomy
-     */
-    public function test_add_tabs_to_product_sets_taxonomy_renders_only_for_product_set() {
-        // Inline stub connection handler
-        $handler = $this->getMockBuilder('stdClass')
-            ->addMethods(['is_connected'])
-            ->getMock();
-        $handler->method('is_connected')->willReturn(true);
-        $this->plugin->method('get_connection_handler')->willReturn($handler);
-
-        // Now instantiate Settings
-        $settings = new Settings($this->plugin);
-
-        // Set the global $current_screen variable to simulate the correct screen
-        global $current_screen;
-        $current_screen = (object)[
-            'base' => 'edit-tags',
-            'taxonomy' => 'fb_product_set',
-        ];
-
-        // Use getMockForAbstractClass and onlyMethods for get_label
-        $mock_screen = $this->getMockBuilder(\WooCommerce\Facebook\Admin\Abstract_Settings_Screen::class)
-            ->disableOriginalConstructor()->onlyMethods(['get_label'])->getMockForAbstractClass();
-        $mock_screen->method('get_label')->willReturn('Product Sets');
-
-        $reflection = new \ReflectionClass($settings);
-        $prop = $reflection->getProperty('screens');
-        $prop->setAccessible(true);
-        $prop->setValue($settings, ['product_sets' => $mock_screen]);
-
-        ob_start();
-        $settings->add_tabs_to_product_sets_taxonomy();
-        $output = ob_get_clean();
-
-        $this->assertStringContainsString('facebook-for-woocommerce-tabs', $output);
     }
 } 

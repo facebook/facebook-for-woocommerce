@@ -8,7 +8,6 @@ const jQueryUIAdminFileNames = [
 	'metabox',
 	'modal',
 	'product-categories',
-	'product-sets-admin',
 	'products-admin',
 	'settings-commerce',
 	'settings-sync',

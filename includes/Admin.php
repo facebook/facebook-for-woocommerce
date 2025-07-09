@@ -51,9 +51,6 @@ class Admin {
 	/** @var array screens ids where to include scripts */
 	protected $screen_ids = [];
 
-	/** @var Product_Sets the product set admin handler. */
-	protected $product_sets;
-
 	/**
 	 * Admin constructor.
 	 *
@@ -82,7 +79,7 @@ class Admin {
 		}
 
 		$this->product_categories = new Admin\Product_Categories();
-		$this->product_sets       = new Admin\Product_Sets();
+
 		// add a modal in admin product pages
 		add_action( 'admin_footer', array( $this, 'render_modal_template' ) );
 		add_action( 'admin_footer', array( $this, 'add_tab_switch_script' ) );
@@ -118,45 +115,7 @@ class Admin {
 		add_action( 'woocommerce_save_product_variation', array( $this, 'save_product_variation_edit_fields' ), 10, 2 );
 		add_action( 'wp_ajax_get_facebook_product_data', array( $this, 'ajax_get_facebook_product_data' ) );
 
-		// add custom taxonomy for Product Sets
-		add_filter( 'gettext', array( $this, 'change_custom_taxonomy_tip' ), 20, 2 );
 		add_action( 'wp_ajax_sync_facebook_attributes', array( $this, 'ajax_sync_facebook_attributes' ) );
-	}
-
-	/**
-	 * __get method for backward compatibility.
-	 *
-	 * @param string $key property name
-	 * @return mixed
-	 * @since 3.0.32
-	 */
-	public function __get( $key ) {
-		// Add warning for private properties.
-		if ( 'product_sets' === $key ) {
-			/* translators: %s property name. */
-			_doing_it_wrong( __FUNCTION__, sprintf( esc_html__( 'The %s property is protected and should not be accessed outside its class.', 'facebook-for-woocommerce' ), esc_html( $key ) ), '3.0.32' );
-			return $this->$key;
-		}
-
-		return null;
-	}
-
-	/**
-	 * Change custom taxonomy tip text
-	 *
-	 * @since 2.3.0
-	 *
-	 * @param string $translation Text translation.
-	 * @param string $text Original text.
-	 *
-	 * @return string
-	 */
-	public function change_custom_taxonomy_tip( $translation, $text ) {
-		global $current_screen;
-		if ( isset( $current_screen->id ) && 'edit-fb_product_set' === $current_screen->id && 'The name is how it appears on your site.' === $text ) {
-			$translation = esc_html__( 'The name is how it appears on Facebook Catalog.', 'facebook-for-woocommerce' );
-		}
-		return $translation;
 	}
 
 	/**
@@ -200,40 +159,6 @@ class Admin {
 							'second_level_empty_dropdown_placeholder' => __( 'Choose a main category first', 'facebook-for-woocommerce' ),
 							'general_dropdown_placeholder' => __( 'Choose a category', 'facebook-for-woocommerce' ),
 						),
-					)
-				);
-			}
-
-			if ( 'edit-fb_product_set' === $current_screen->id ) {
-				// enqueue WooCommerce Admin Styles because of Select2
-				wp_enqueue_style(
-					'woocommerce_admin_styles',
-					WC()->plugin_url() . '/assets/css/admin.css',
-					[],
-					\WC_Facebookcommerce::PLUGIN_VERSION
-				);
-				wp_enqueue_style(
-					'facebook-for-woocommerce-product-sets-admin',
-					facebook_for_woocommerce()->get_plugin_url() . '/assets/css/admin/facebook-for-woocommerce-product-sets-admin.css',
-					[],
-					\WC_Facebookcommerce::PLUGIN_VERSION
-				);
-
-				wp_enqueue_script(
-					'facebook-for-woocommerce-product-sets',
-					facebook_for_woocommerce()->get_asset_build_dir_url() . '/admin/product-sets-admin.js',
-					[ 'jquery', 'select2' ],
-					\WC_Facebookcommerce::PLUGIN_VERSION,
-					true
-				);
-
-				wp_localize_script(
-					'facebook-for-woocommerce-product-sets',
-					'facebook_for_woocommerce_product_sets',
-					array(
-
-						'excluded_category_ids' => facebook_for_woocommerce()->get_integration()->get_excluded_product_category_ids(),
-						'excluded_category_warning_message' => __( 'You have selected one or more categories currently excluded from the Facebook sync. Products belonging to the excluded categories will not be added to your Facebook Product Set.', 'facebook-for-woocommerce' ),
 					)
 				);
 			}
