@@ -1086,6 +1086,26 @@ class fbproductTest extends \WooCommerce\Facebook\Tests\AbstractWPUnitTestWithSa
 	}
 
 	/**
+	 * Test prepare_product_time is populated
+	 * @return void
+	 */
+	public function test_prepare_product_time_set() {
+		$woo_product = WC_Helper_Product::create_simple_product();
+
+		$before_time = time();
+		$fb_product = new \WC_Facebook_Product( $woo_product );
+		$data = $fb_product->prepare_product();
+		$after_time = time();
+
+		$this->assertArrayHasKey('prepare_product_time', $data);
+		$this->assertIsNumeric($data['prepare_product_time']);
+
+		// Verify the timestamp is within the expected range (between before and after the prepare_product call)
+		$this->assertGreaterThanOrEqual($before_time, $data['prepare_product_time']);
+		$this->assertLessThanOrEqual($after_time, $data['prepare_product_time']);
+	}
+
+	/**
 	 * Test fallback to main description when it's less than 1000 characters.
 	 */
 	public function test_get_fb_short_description_fallback_to_short_main_description() {
