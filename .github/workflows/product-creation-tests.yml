@@ -7,7 +7,7 @@ on:
 jobs:
   e2e-tests:
     runs-on: ubuntu-latest
-    
+
     services:
       mysql:
         image: mysql:5.7
@@ -27,7 +27,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '16'
+          node-version-file: 'package.json'
           cache: 'npm'
 
       - name: Setup PHP
@@ -41,26 +41,26 @@ jobs:
           # Create WordPress directory
           mkdir -p /tmp/wordpress
           cd /tmp/wordpress
-          
+
           # Download WordPress
           curl -O https://wordpress.org/latest.tar.gz
           tar -xzf latest.tar.gz --strip-components=1
-          
+
           # Create wp-config.php
           cp wp-config-sample.php wp-config.php
           sed -i "s/database_name_here/wordpress/" wp-config.php
           sed -i "s/username_here/wordpress/" wp-config.php
           sed -i "s/password_here/wordpress/" wp-config.php
           sed -i "s/localhost/127.0.0.1/" wp-config.php
-          
+
           # Add debug and security settings
           cat >> wp-config.php << 'EOF'
-          
+
           // Debug settings
           define('WP_DEBUG', true);
           define('WP_DEBUG_LOG', true);
           define('WP_DEBUG_DISPLAY', false);
-          
+
           // Security keys (for testing only)
           define('AUTH_KEY',         'testing-key-1');
           define('SECURE_AUTH_KEY',  'testing-key-2');
@@ -70,7 +70,7 @@ jobs:
           define('SECURE_AUTH_SALT', 'testing-salt-2');
           define('LOGGED_IN_SALT',   'testing-salt-3');
           define('NONCE_SALT',       'testing-salt-4');
-          
+
           EOF
 
 
@@ -85,7 +85,7 @@ jobs:
         run: |
           echo "=== Installing WP-CLI ==="
           curl -L -o wp-cli.phar https://github.com/wp-cli/wp-cli/releases/download/v2.10.0/wp-cli-2.10.0.phar
-          
+
           if head -1 wp-cli.phar | grep -q "#!/usr/bin/env php"; then
             chmod +x wp-cli.phar
             sudo mv wp-cli.phar /usr/local/bin/wp
@@ -94,7 +94,7 @@ jobs:
             echo "❌ Downloaded file is not valid PHP"
             exit 1
           fi
-          
+
           wp --version
 
       - name: Install WordPress
@@ -112,7 +112,7 @@ jobs:
         run: |
           cd /tmp/wordpress
           wp plugin install woocommerce --activate --allow-root
-          
+
           # Basic WooCommerce setup
           wp option update woocommerce_store_address "123 Test Street" --allow-root
           wp option update woocommerce_store_city "Test City" --allow-root
@@ -125,13 +125,13 @@ jobs:
           cd /tmp/wordpress
           # Copy plugin files from the checked out repository root
           cp -r ${{ github.workspace }} wp-content/plugins/facebook-for-woocommerce/
-          
+
           # Install Composer dependencies for the plugin
           cd wp-content/plugins/facebook-for-woocommerce
           if [ -f composer.json ]; then
             composer install --no-dev --optimize-autoloader
           fi
-          
+
           # Activate the plugin
           cd /tmp/wordpress
           wp plugin activate facebook-for-woocommerce --allow-root
@@ -145,7 +145,7 @@ jobs:
           wp plugin list --status=active --allow-root
           echo "=== Site URL ==="
           wp option get siteurl --allow-root
-          
+
           # Test if site is accessible
           curl -f http://localhost:8080 || exit 1
 
