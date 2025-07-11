@@ -1180,7 +1180,7 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 		 * @param array  $array
 		 * @param string $array_key
 		 */
-		private static function update_array_if_not_null( $value, $array, $array_key ) {
+		private static function update_array_if_not_null( $value, &$array, $array_key ) {
 			if ( ! empty( $value ) ) {
 				$array[ $array_key ] = $value;
 			}
