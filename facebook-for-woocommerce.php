@@ -112,8 +112,6 @@ class WC_Facebook_Loader {
 		if ( $this->is_environment_compatible() ) {
 			add_action( 'plugins_loaded', array( $this, 'init_plugin' ) );
 		}
-
-		WooCommerce\Facebook\OfferManagement\OfferManagementEndpointBase::register_endpoints();
 	}
 
 
