@@ -374,18 +374,20 @@ class WhatsAppUtilityConnection {
 	 * @param int    $refund_value Amount refunded to the Customer
 	 * @param string $currency Currency code
 	 * @param string $bisu_token the BISU token received in the webhook
+	 * @param string $country_code Customer country code
 	 */
-	public static function post_whatsapp_utility_messages_events_call( $event, $event_config_id, $language_code, $wacs_id, $order_id, $phone_number, $first_name, $refund_value, $currency, $bisu_token ) {
-		$base_url        = array( self::GRAPH_API_BASE_URL, self::API_VERSION, $wacs_id, "message_events?access_token=$bisu_token" );
-		$base_url        = esc_url( implode( '/', $base_url ) );
-		$name            = self::EVENT_TO_LIBRARY_TEMPLATE_MAPPING[ $event ];
-		$components      = self::get_components_for_event( $event, $order_id, $first_name, $refund_value, $currency );
-		$options         = array(
+	public static function post_whatsapp_utility_messages_events_call( $event, $event_config_id, $language_code, $wacs_id, $order_id, $phone_number, $first_name, $refund_value, $currency, $bisu_token, $country_code ) {
+		$base_url   = array( self::GRAPH_API_BASE_URL, self::API_VERSION, $wacs_id, "message_events?access_token=$bisu_token" );
+		$base_url   = esc_url( implode( '/', $base_url ) );
+		$name       = self::EVENT_TO_LIBRARY_TEMPLATE_MAPPING[ $event ];
+		$components = self::get_components_for_event( $event, $order_id, $first_name, $refund_value, $currency );
+		$options    = array(
 			'body'    => array(
 				'messaging_product' => 'whatsapp',
 				'to'                => $phone_number,
 				'event_config_id'   => $event_config_id,
 				'external_event_id' => "${order_id}",
+				'country_code'      => $country_code,
 				'template'          => array(
 					'language'   => array(
 						'code' => $language_code,
@@ -395,6 +397,13 @@ class WhatsAppUtilityConnection {
 				'type'              => 'template',
 			),
 			'timeout' => 300, // 5 minutes
+		);
+		wc_get_logger()->info(
+			sprintf(
+					/* translators: %s $options */
+				__( 'Message Events Post API call Request Parameters: %1$s ', 'facebook-for-woocommerce' ),
+				wp_json_encode( $options ),
+			)
 		);
 		$response        = wp_remote_post( $base_url, $options );
 		$status_code     = wp_remote_retrieve_response_code( $response );

@@ -90,11 +90,14 @@ class WC_Facebookcommerce_Whatsapp_Utility_Event {
 		$wa_billing_consent_enabled  = $user_wa_consent['has_user_consented_to_wa_billing_number_notif'];
 		$wa_shipping_consent_enabled = $user_wa_consent['has_user_consented_to_wa_shipping_number_notif'];
 
-		$has_whatsapp_consent = $wa_billing_consent_enabled || $wa_shipping_consent_enabled;
+		$has_whatsapp_consent    = $wa_billing_consent_enabled || $wa_shipping_consent_enabled;
+		$should_use_billing_info = isset( $billing_phone_number ) && $wa_billing_consent_enabled;
 		// Get WhatsApp Phone number from entered Billing and Shipping phone number
 		$billing_phone_number  = $order->get_billing_phone();
 		$shipping_phone_number = $order->get_shipping_phone();
-		$phone_number          = ( isset( $billing_phone_number ) && $wa_billing_consent_enabled ) ? $billing_phone_number : $shipping_phone_number;
+		$phone_number          = $should_use_billing_info ? $billing_phone_number : $shipping_phone_number;
+		// Get Country Code from Billing and Shipping Country to override Country Calling Code
+		$country_code = $should_use_billing_info ? $order->get_billing_country() : $order->get_shipping_country();
 		// Get Customer first name
 		$first_name = $order->get_billing_first_name();
 		// Get Total Refund Amount for Order Refunded event
@@ -128,7 +131,7 @@ class WC_Facebookcommerce_Whatsapp_Utility_Event {
 			);
 			return;
 		}
-		WhatsAppUtilityConnection::post_whatsapp_utility_messages_events_call( $event, $event_config_id, $language_code, $wacs_id, $order_id, $phone_number, $first_name, $refund_amount, $currency, $bisu_token );
+		WhatsAppUtilityConnection::post_whatsapp_utility_messages_events_call( $event, $event_config_id, $language_code, $wacs_id, $order_id, $phone_number, $first_name, $refund_amount, $currency, $bisu_token, $country_code );
 	}
 
 	/**
