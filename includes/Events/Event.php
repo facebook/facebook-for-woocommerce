@@ -253,12 +253,12 @@ class Event {
 	 */
 	protected function get_click_id() {
 		$fbc = '';
-		if ( isset( $_GET['fbclid'] ) ) {
-			$fbclid   = sanitize_text_field( wp_unslash( $_GET['fbclid'] ) ); // phpcs:ignore WordPress.Security.NonceVerification
-			$cur_time = (int) ( microtime( true ) * 1000 );
-			$fbc      = 'fb.1.' . $cur_time . '.' . rawurldecode( $fbclid );
-		} elseif ( ! empty( $_COOKIE['_fbc'] ) ) {
+		if ( ! empty( $_COOKIE['_fbc'] ) ) {
 			$fbc = wc_clean( wp_unslash( $_COOKIE['_fbc'] ) );
+		} elseif ( isset( $_REQUEST['fbclid'] ) ) {
+			$creation_time 	= time();
+			$fbclid   		= wc_clean( wp_unslash( $_REQUEST['fbclid'] ) ); // phpcs:ignore WordPress.Security.NonceVerification
+			$fbc      		= "fb.1.{$creation_time}.{$fbclid}";
 		} elseif ( isset( $_SESSION['_fbc'] ) ) {
 			$fbc = $_SESSION['_fbc']; // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
 		}
