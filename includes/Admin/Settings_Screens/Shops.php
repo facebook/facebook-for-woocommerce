@@ -354,6 +354,30 @@ class Shops extends Abstract_Settings_Screen {
 				'desc_tip' => sprintf( __( 'Only enable this if you are experiencing problems with the plugin. <a href="%s" target="_blank">Learn more</a>.', 'facebook-for-woocommerce' ), 'https://woocommerce.com/document/facebook-for-woocommerce/#debug-tools' ),
 				'default'  => 'no',
 			],
+
+			[
+				'title'    => __( 'Exclude Emails from Purchase Events', 'facebook-for-woocommerce' ),
+				'desc'     => __( 'Comma-separated list of email addresses. Orders from these will not trigger a Facebook Purchase event.', 'facebook-for-woocommerce' ),
+				'id'       => 'wc_facebook_excluded_emails',
+				'type'     => 'text',
+				'default'  => '',
+			],
+
+			[
+				'title'    => __( 'Exclude IPs from Purchase Events', 'facebook-for-woocommerce' ),
+				'desc'     => __( 'Comma-separated list of IP addresses. Orders from these will not trigger a Facebook Purchase event.', 'facebook-for-woocommerce' ),
+				'id'       => 'wc_facebook_excluded_ips',
+				'type'     => 'text',
+				'default'  => '',
+			],
+
+			[
+				'title'    => __( 'Exclude Admin User Purchases', 'facebook-for-woocommerce' ),
+				'desc'     => __( 'If enabled, orders placed by admin users will not trigger a Facebook Purchase event.', 'facebook-for-woocommerce' ),
+				'id'       => 'wc_facebook_exclude_admin_purchases',
+				'type'     => 'checkbox',
+				'default'  => 'no',
+			],
 		];
 		if ( $offer_management_enabled_by_fb ) {
 			$settings_without_title_and_type[] = [
