@@ -43,7 +43,7 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 		private $tracked_events;
 
 		/** @var array array with epnding events */
-		private $pending_events = [];
+		private $pending_events = array();
 
 		/** @var AAMSettings aam settings instance, used to filter advanced matching fields*/
 		private $aam_settings;
@@ -860,6 +860,35 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 				return;
 			}
 
+			$exclude_admin = 'yes' === get_option( 'wc_facebook_exclude_admin_purchases', 'yes' );
+
+			if ( $exclude_admin && $order->get_user_id() ) {
+				$user = get_userdata( $order->get_user_id() );
+				if ( $user && in_array( 'administrator', (array) $user->roles, true ) ) {
+					Logger::log( "Skipping Purchase event for admin user (user ID: {$order->get_user_id()})" );
+					return;
+				}
+			}
+
+			$billing_email = strtolower( $order->get_billing_email() );
+			$order_ip      = $order->get_customer_ip_address();
+
+			$excluded_emails_raw = get_option( 'wc_facebook_excluded_emails', '' );
+			$excluded_ips_raw    = get_option( 'wc_facebook_excluded_ips', '' );
+
+			$excluded_emails = array_map( 'trim', explode( ',', strtolower( $excluded_emails_raw ) ) );
+			$excluded_ips    = array_map( 'trim', explode( ',', $excluded_ips_raw ) );
+
+			if ( in_array( $billing_email, $excluded_emails, true ) ) {
+				Logger::log( "Skipping Purchase event for excluded email: $billing_email" );
+				return;
+			}
+
+			if ( in_array( $order_ip, $excluded_ips, true ) ) {
+				Logger::log( "Skipping Purchase event for excluded IP: $order_ip" );
+				return;
+			}
+
 			// Get the status of the order to ensure we track the actual purchases and not the ones that have a failed payment.
 			$order_state = $order->get_status();
 
@@ -885,7 +914,7 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 
 			Logger::log(
 				'Purchase event fired for order ' . $order_id . ' by hook ' . $hook_name . '.',
-				[],
+				array(),
 				array(
 					'should_send_log_to_meta'        => false,
 					'should_save_log_in_woocommerce' => true,
