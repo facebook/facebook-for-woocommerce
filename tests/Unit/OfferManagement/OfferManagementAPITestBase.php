@@ -31,7 +31,7 @@ class OfferManagementAPITestBase extends AbstractWPUnitTestWithOptionIsolationAn
 
 	public function setUp(): void {
 		parent::setUp();
-
+		OfferManagementEndpointBase::register_endpoints();
 		// Initiating the REST API.
 		global $wp_rest_server;
 		$wp_rest_server = new \WP_REST_Server;
