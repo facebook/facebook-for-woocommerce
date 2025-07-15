@@ -876,8 +876,12 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 			$excluded_emails_raw = get_option( 'wc_facebook_excluded_emails', '' );
 			$excluded_ips_raw    = get_option( 'wc_facebook_excluded_ips', '' );
 
-			$excluded_emails = array_map( 'trim', explode( ',', strtolower( $excluded_emails_raw ) ) );
-			$excluded_ips    = array_map( 'trim', explode( ',', $excluded_ips_raw ) );
+			$excluded_emails_raw = is_array( $excluded_emails_raw ) ? $excluded_emails_raw : explode( ',', $excluded_emails_raw );
+			$excluded_ips_raw    = is_array( $excluded_ips_raw ) ? $excluded_ips_raw : explode( ',', $excluded_ips_raw );
+
+			$excluded_emails = array_map( 'trim', array_map( 'strtolower', $excluded_emails_raw ) );
+			$excluded_ips    = array_map( 'trim', $excluded_ips_raw );
+
 
 			if ( in_array( $billing_email, $excluded_emails, true ) ) {
 				Logger::log( "Skipping Purchase event for excluded email: $billing_email" );
