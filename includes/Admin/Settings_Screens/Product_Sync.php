@@ -17,6 +17,8 @@ use WooCommerce\Facebook\Admin\Google_Product_Category_Field;
 use WooCommerce\Facebook\Commerce;
 use WooCommerce\Facebook\Products;
 use WooCommerce\Facebook\Products\Sync;
+use WooCommerce\Facebook\Framework\Api\Exception as ApiException;
+use WooCommerce\Facebook\Framework\Logger;
 
 /**
  * The Product Sync settings screen object.
@@ -40,6 +42,7 @@ class Product_Sync extends Abstract_Settings_Screen {
 		add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_assets' ) );
 		add_action( 'woocommerce_admin_field_product_sync_title', array( $this, 'render_title' ) );
 		add_action( 'woocommerce_admin_field_product_sync_google_product_categories', array( $this, 'render_google_product_category_field' ) );
+		add_action( 'woocommerce_admin_field_product_sync_catalog_display', array( $this, 'render_catalog_display' ) );
 	}
 
 	/**
@@ -161,9 +164,7 @@ class Product_Sync extends Abstract_Settings_Screen {
 	}
 
 	/**
-	 * Renders the custom title.
-	 *
-	 * @internal
+	 * Renders the title for the product sync screen.
 	 *
 	 * @since 2.0.0
 	 *
@@ -308,6 +309,10 @@ class Product_Sync extends Abstract_Settings_Screen {
 				'title'    => __( 'Default Google product category', 'facebook-for-woocommerce' ),
 				'desc_tip' => __( 'Choose a default Google product category for your products. Defaults can also be set for product categories. Products need at least two category levels defined for tax to be correctly applied.', 'facebook-for-woocommerce' ),
 			),
+			array(
+				'type'  => 'product_sync_catalog_display',
+				'title' => __( 'Catalog', 'facebook-for-woocommerce' ),
+			),
 			array( 'type' => 'sectionend' ),
 
 		);
@@ -334,6 +339,73 @@ class Product_Sync extends Abstract_Settings_Screen {
 			<td class="forminp forminp-<?php echo esc_attr( sanitize_title( $field['type'] ) ); ?>">
 				<?php $category_field->render( $field['id'] ); ?>
 				<input id="<?php echo esc_attr( $field['id'] ); ?>" type="hidden" name="<?php echo esc_attr( $field['id'] ); ?>" value="<?php echo esc_attr( $field['value'] ); ?>" />
+			</td>
+		</tr>
+		<?php
+	}
+
+	/**
+	 * Renders the Catalog Display field markup.
+	 *
+	 * @internal
+	 *
+	 * @since 2.1.0
+	 *
+	 * @param array $field field data
+	 */
+	public function render_catalog_display( $field ) {
+		$integration = facebook_for_woocommerce()->get_integration();
+		$catalog_id = $integration->get_product_catalog_id();
+		
+		// Only display if catalog ID exists
+		if ( empty( $catalog_id ) ) {
+			return;
+		}
+		
+		$catalog_item = array(
+			'label' => __( 'Catalog', 'facebook-for-woocommerce' ),
+			'value' => $catalog_id,
+			'url'   => "https://www.facebook.com/commerce/catalogs/{$catalog_id}/products/",
+		);
+
+		// Try to get the catalog name for display
+		try {
+			$response = facebook_for_woocommerce()->get_api()->get_catalog( $catalog_id );
+			$name     = $response->name ?? '';
+			if ( $name ) {
+				$catalog_item['value'] = $name;
+			}
+		} catch ( ApiException $exception ) {
+			// Log the exception with additional information
+			$message = sprintf( 'Meta APIs thrown APIException while fetching the Catalog details for catalog %s: %s', $catalog_id, $exception->getMessage() );
+			Logger::log(
+				$message,
+				[],
+				array(
+					'should_send_log_to_meta'        => false,
+					'should_save_log_in_woocommerce' => true,
+					'woocommerce_log_level'          => \WC_Log_Levels::ERROR,
+				)
+			);
+			
+			// Use store name
+			$store_name = get_bloginfo( 'name' );
+			if ( ! empty( $store_name ) ) {
+				$catalog_item['value'] = sprintf( '%s Catalog', $store_name );
+			} else {
+				$catalog_item['value'] = __( 'Facebook Catalog', 'facebook-for-woocommerce' );
+			}
+		}
+		?>
+		<tr valign="top">
+			<th scope="row" class="titledesc">
+				<?php echo esc_html( $catalog_item['label'] ); ?>
+			</th>
+			<td class="forminp">
+				<a href="<?php echo esc_url( $catalog_item['url'] ); ?>" target="_blank">
+					<?php echo esc_html( $catalog_item['value'] ); ?>
+					<span class="dashicons dashicons-external" style="margin-left: 5px; vertical-align: middle; text-decoration: none;"></span>
+				</a>
 			</td>
 		</tr>
 		<?php
