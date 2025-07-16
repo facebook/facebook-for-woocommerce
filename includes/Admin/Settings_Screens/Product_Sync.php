@@ -351,7 +351,7 @@ class Product_Sync extends Abstract_Settings_Screen {
 	 *
 	 * @internal
 	 *
-	 * @since 2.1.0
+	 * @since 3.5.4
 	 *
 	 * @param array $field field data
 	 */
