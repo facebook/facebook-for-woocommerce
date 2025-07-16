@@ -164,10 +164,10 @@ class Product_Sync extends Abstract_Settings_Screen {
 	}
 
 	/**
-	* Renders the custom title.
+	 * Renders the custom title.
 	 *
 	 * @internal
-	 * 
+	 *
 	 * @since 2.0.0
 	 *
 	 * @param array $field field data
@@ -357,13 +357,13 @@ class Product_Sync extends Abstract_Settings_Screen {
 	 */
 	public function render_catalog_display( $field ) {
 		$integration = facebook_for_woocommerce()->get_integration();
-		$catalog_id = $integration->get_product_catalog_id();
-		
+		$catalog_id  = $integration->get_product_catalog_id();
+
 		// Only display if catalog ID exists
 		if ( empty( $catalog_id ) ) {
 			return;
 		}
-		
+
 		$catalog_item = array(
 			'label' => __( 'Catalog', 'facebook-for-woocommerce' ),
 			'value' => $catalog_id,
@@ -389,7 +389,7 @@ class Product_Sync extends Abstract_Settings_Screen {
 					'woocommerce_log_level'          => \WC_Log_Levels::ERROR,
 				)
 			);
-			
+
 			// Use store name
 			$store_name = get_bloginfo( 'name' );
 			if ( ! empty( $store_name ) ) {
