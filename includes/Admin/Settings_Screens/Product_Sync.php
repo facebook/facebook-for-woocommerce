@@ -357,12 +357,12 @@ class Product_Sync extends Abstract_Settings_Screen {
 	 */
 	public function render_catalog_display( $field ) {
 		$catalog_item = $this->get_catalog_item_data();
-		
+
 		// Only display if catalog ID exists
 		if ( empty( $catalog_item ) ) {
 			return;
 		}
-		
+
 		$this->render_catalog_row( $catalog_item );
 	}
 
@@ -373,13 +373,13 @@ class Product_Sync extends Abstract_Settings_Screen {
 	 */
 	private function get_catalog_item_data() {
 		$integration = facebook_for_woocommerce()->get_integration();
-		$catalog_id = $integration->get_product_catalog_id();
-		
+		$catalog_id  = $integration->get_product_catalog_id();
+
 		// Return null if no catalog ID exists
 		if ( empty( $catalog_id ) ) {
 			return null;
 		}
-		
+
 		// Build catalog item similar to Connection screen
 		$catalog_item = array(
 			'label' => __( 'Catalog', 'facebook-for-woocommerce' ),
@@ -409,7 +409,7 @@ class Product_Sync extends Abstract_Settings_Screen {
 					'woocommerce_log_level'          => \WC_Log_Levels::ERROR,
 				)
 			);
-			
+
 			// Use store name as fallback
 			$catalog_item['value'] = $this->get_catalog_fallback_name();
 		}
