@@ -2105,8 +2105,8 @@ class Admin {
 						var $select = $(this);
 						$select.show().prop('disabled', false).removeClass('synced-attribute');
 						
-						// If the select has no options or just one, ensure it's properly reset
-						if ($select.find('option').length <= 1) {
+						// If the select has no options ensure it's properly reset
+						if ($select.find('option').length < 1) {
 							$select.val('').prop('selected', true);
 						}
 						
