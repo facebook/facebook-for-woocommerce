@@ -164,8 +164,10 @@ class Product_Sync extends Abstract_Settings_Screen {
 	}
 
 	/**
-	 * Renders the title for the product sync screen.
+	* Renders the custom title.
 	 *
+	 * @internal
+	 * 
 	 * @since 2.0.0
 	 *
 	 * @param array $field field data
