@@ -148,9 +148,7 @@ class WC_Facebook_Loader {
 			return;
 		}
 
-		if ( function_exists( 'get_option' ) && false === get_option( 'wc_facebook_svr_flags' ) ) {
-			self::set_wc_facebook_svr_flags();
-		}
+		self::set_wc_facebook_svr_flags();
 
 		require_once plugin_dir_path( __FILE__ ) . 'class-wc-facebookcommerce.php';
 
@@ -362,6 +360,20 @@ class WC_Facebook_Loader {
 
 
 	private static function set_wc_facebook_svr_flags() {
+
+		if ( ! function_exists( 'get_option' ) ) {
+			return;
+		}
+
+		$flags = get_option( 'wc_facebook_svr_flags' );
+
+		if ( false !== $flags ) {
+			$flags = json_decode( $flags, true );
+			if ( isset( $flags['ds'] ) && ( gmdate( 'Y-m-d' ) < gmdate( 'Y-m-d', strtotime( $flags['ds'] . ' + 7 days' ) ) ) ) {
+				return;
+			}
+		}
+
 		$wp_woo_flags = 0;
 
 		$is_wp_com = self::is_wp_com();
@@ -377,7 +389,12 @@ class WC_Facebook_Loader {
 			$wp_woo_flags |= 4;
 		}
 
-		update_option( 'wc_facebook_svr_flags', $wp_woo_flags );
+		$flags = array(
+			'ds' => gmdate( 'Y-m-d' ),
+			'flags' => $wp_woo_flags,
+		);
+
+		update_option( 'wc_facebook_svr_flags', json_encode( $flags ) );
 	}
 
 

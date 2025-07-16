@@ -31,7 +31,7 @@ class EventTest extends AbstractWPUnitTestWithOptionIsolationAndSafeFiltering {
 		$this->assertArrayHasKey( 'version', $version_info );
 		$this->assertArrayHasKey( 'pluginVersion', $version_info );
 		
-		$this->assertEquals( 'woocommerce', $version_info['source'] );
+		$this->assertEquals( 'woocommerce_0', $version_info['source'] );
 		$this->assertIsString( $version_info['version'] );
 		$this->assertIsString( $version_info['pluginVersion'] );
 	}
@@ -44,7 +44,7 @@ class EventTest extends AbstractWPUnitTestWithOptionIsolationAndSafeFiltering {
 		
 		$this->assertIsString( $identifier );
 		$this->assertStringContainsString( 'woocommerce', $identifier );
-		$this->assertMatchesRegularExpression( '/^woocommerce-[\d.]+-[\d.]+$/', $identifier );
+		$this->assertMatchesRegularExpression( '/^woocommerce[_\d]*-[\d.]+-[\d.]+$/', $identifier );
 	}
 
 	/**
