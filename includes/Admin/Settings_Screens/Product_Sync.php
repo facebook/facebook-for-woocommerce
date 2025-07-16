@@ -376,6 +376,14 @@ class Product_Sync extends Abstract_Settings_Screen {
 			$name     = $response->name ?? '';
 			if ( $name ) {
 				$catalog_item['value'] = $name;
+			} else {
+				// API succeeded but returned empty name - use store name fallback
+				$store_name = get_bloginfo( 'name' );
+				if ( ! empty( $store_name ) ) {
+					$catalog_item['value'] = sprintf( '%s Catalog', $store_name );
+				} else {
+					$catalog_item['value'] = __( 'Facebook Catalog', 'facebook-for-woocommerce' );
+				}
 			}
 		} catch ( ApiException $exception ) {
 			// Log the exception with additional information
@@ -389,8 +397,8 @@ class Product_Sync extends Abstract_Settings_Screen {
 					'woocommerce_log_level'          => \WC_Log_Levels::ERROR,
 				)
 			);
-
-			// Use store name
+			
+			// Use store name as fallback
 			$store_name = get_bloginfo( 'name' );
 			if ( ! empty( $store_name ) ) {
 				$catalog_item['value'] = sprintf( '%s Catalog', $store_name );
