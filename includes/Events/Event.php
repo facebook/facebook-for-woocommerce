@@ -358,7 +358,8 @@ class Event {
 	 */
 	private static function get_agent_flags() {
 		$postfix = '';
-		if ( function_exists( 'get_option' ) && ( $flags = get_option( 'set_wc_facebook_svr_flags' ) ) ) {
+		if ( function_exists( 'get_option' ) && false !== get_option( 'set_wc_facebook_svr_flags' ) ) {
+			$flags = get_option( 'set_wc_facebook_svr_flags' );
 			$postfix = "_{$flags}";
 		}
 		return $postfix;

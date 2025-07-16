@@ -329,7 +329,7 @@ class WC_Facebook_Loader {
 		return false;
 	}
 
-	
+
 	private static function is_site_connected_compat() {
 		if ( ! is_callable( array( 'WC_Helper_Options', 'get' ) ) ) {
 			return false;
@@ -352,7 +352,7 @@ class WC_Facebook_Loader {
 		return $site_connected;
 	}
 
-	
+
 	private static function has_woo_um_active() {
 		if ( ! function_exists( 'is_plugin_active' ) ) {
 			include_once ABSPATH . 'wp-admin/includes/plugin.php';
@@ -360,7 +360,7 @@ class WC_Facebook_Loader {
 		return is_plugin_active( 'woo-update-manager/woo-update-manager.php' );
 	}
 
-	
+
 	private static function set_wc_facebook_svr_flags() {
 		$wp_woo_flags = 0;
 
