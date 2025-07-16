@@ -254,17 +254,15 @@ class Global_Attributes_Banner {
 			return false;
 		}
 
-		// Show on multiple relevant admin pages, not just the attributes page
+		// Show only on the attributes page & Facebook settings page to reduce noise
 		$screen = get_current_screen();
 		if ( ! $screen ) {
 			return false;
 		}
 
-		// Show on: attributes page, products page, and Facebook settings page
+		// Show only on: attributes page & Facebook settings page
 		$allowed_screens = array(
 			'product_page_product_attributes',  // Global attributes page
-			'edit-product',                     // Products list
-			'product',                          // Single product edit
 			'woocommerce_page_wc-facebook',     // Facebook settings page
 		);
 
