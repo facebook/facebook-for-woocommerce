@@ -351,19 +351,36 @@ class Product_Sync extends Abstract_Settings_Screen {
 	 *
 	 * @internal
 	 *
-	 * @since 3.5.4
+	 * @since 2.1.0
 	 *
 	 * @param array $field field data
 	 */
 	public function render_catalog_display( $field ) {
-		$integration = facebook_for_woocommerce()->get_integration();
-		$catalog_id  = $integration->get_product_catalog_id();
-
+		$catalog_item = $this->get_catalog_item_data();
+		
 		// Only display if catalog ID exists
-		if ( empty( $catalog_id ) ) {
+		if ( empty( $catalog_item ) ) {
 			return;
 		}
+		
+		$this->render_catalog_row( $catalog_item );
+	}
 
+	/**
+	 * Gets the catalog item data with API call and fallbacks.
+	 *
+	 * @return array|null Catalog item data or null if no catalog ID exists
+	 */
+	private function get_catalog_item_data() {
+		$integration = facebook_for_woocommerce()->get_integration();
+		$catalog_id = $integration->get_product_catalog_id();
+		
+		// Return null if no catalog ID exists
+		if ( empty( $catalog_id ) ) {
+			return null;
+		}
+		
+		// Build catalog item similar to Connection screen
 		$catalog_item = array(
 			'label' => __( 'Catalog', 'facebook-for-woocommerce' ),
 			'value' => $catalog_id,
@@ -378,12 +395,7 @@ class Product_Sync extends Abstract_Settings_Screen {
 				$catalog_item['value'] = $name;
 			} else {
 				// API succeeded but returned empty name - use store name fallback
-				$store_name = get_bloginfo( 'name' );
-				if ( ! empty( $store_name ) ) {
-					$catalog_item['value'] = sprintf( '%s Catalog', $store_name );
-				} else {
-					$catalog_item['value'] = __( 'Facebook Catalog', 'facebook-for-woocommerce' );
-				}
+				$catalog_item['value'] = $this->get_catalog_fallback_name();
 			}
 		} catch ( ApiException $exception ) {
 			// Log the exception with additional information
@@ -399,13 +411,31 @@ class Product_Sync extends Abstract_Settings_Screen {
 			);
 			
 			// Use store name as fallback
-			$store_name = get_bloginfo( 'name' );
-			if ( ! empty( $store_name ) ) {
-				$catalog_item['value'] = sprintf( '%s Catalog', $store_name );
-			} else {
-				$catalog_item['value'] = __( 'Facebook Catalog', 'facebook-for-woocommerce' );
-			}
+			$catalog_item['value'] = $this->get_catalog_fallback_name();
 		}
+
+		return $catalog_item;
+	}
+
+	/**
+	 * Gets the fallback catalog name using store name.
+	 *
+	 * @return string Fallback catalog name
+	 */
+	private function get_catalog_fallback_name() {
+		$store_name = get_bloginfo( 'name' );
+		if ( ! empty( $store_name ) ) {
+			return sprintf( '%s Catalog', $store_name );
+		}
+		return __( 'Facebook Catalog', 'facebook-for-woocommerce' );
+	}
+
+	/**
+	 * Renders the catalog row HTML.
+	 *
+	 * @param array $catalog_item Catalog item data
+	 */
+	private function render_catalog_row( $catalog_item ) {
 		?>
 		<tr valign="top">
 			<th scope="row" class="titledesc">
