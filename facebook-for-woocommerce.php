@@ -361,8 +361,8 @@ class WC_Facebook_Loader {
 
 	private static function set_wc_facebook_svr_flags() {
 
-		if ( ! function_exists( 'update_option' ) || 
-			 ! function_exists( 'get_transient' ) || 
+		if ( ! function_exists( 'update_option' ) ||
+			 ! function_exists( 'get_transient' ) ||
 			 ! function_exists( 'set_transient' ) ) {
 			return;
 		}
