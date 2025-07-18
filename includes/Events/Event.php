@@ -256,9 +256,9 @@ class Event {
 		if ( ! empty( $_COOKIE['_fbc'] ) ) {
 			$fbc = wc_clean( wp_unslash( $_COOKIE['_fbc'] ) );
 		} elseif ( isset( $_REQUEST['fbclid'] ) ) {
-			$creation_time 	= time();
-			$fbclid   		= wc_clean( wp_unslash( $_REQUEST['fbclid'] ) ); // phpcs:ignore WordPress.Security.NonceVerification
-			$fbc      		= "fb.1.{$creation_time}.{$fbclid}";
+			$creation_time = time();
+			$fbclid = wc_clean( wp_unslash( $_REQUEST['fbclid'] ) ); // phpcs:ignore WordPress.Security.NonceVerification
+			$fbc = "fb.1.{$creation_time}.{$fbclid}";
 		} elseif ( isset( $_SESSION['_fbc'] ) ) {
 			$fbc = $_SESSION['_fbc']; // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
 		}

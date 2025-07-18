@@ -141,7 +141,6 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 			add_action( 'woocommerce_payment_complete', array( $this, 'inject_purchase_event' ), 50 );
 			add_action( 'woocommerce_order_status_processing', array( $this, 'inject_purchase_event' ), 60 );
 			add_action( 'woocommerce_order_status_completed', array( $this, 'inject_purchase_event' ), 70 );
-			
 
 			// Lead events through Contact Form 7
 			add_action( 'wpcf7_contact_form', array( $this, 'inject_lead_event_hook' ), 11 );
