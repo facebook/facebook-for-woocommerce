@@ -43,7 +43,7 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 		private $tracked_events;
 
 		/** @var array array with epnding events */
-		private $pending_events = [];
+		private $pending_events = array();
 
 		/** @var AAMSettings aam settings instance, used to filter advanced matching fields*/
 		private $aam_settings;
@@ -137,10 +137,10 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 			add_action( 'woocommerce_new_order', array( $this, 'inject_purchase_event' ), 10 );
 			add_action( 'woocommerce_process_shop_order_meta', array( $this, 'inject_purchase_event' ), 20 );
 			add_action( 'woocommerce_checkout_update_order_meta', array( $this, 'inject_purchase_event' ), 30 );
-			add_action( 'woocommerce_payment_complete', array( $this, 'inject_purchase_event' ), 40 );
-			add_action( 'woocommerce_order_status_processing', array( $this, 'inject_purchase_event' ), 50 );
-			add_action( 'woocommerce_order_status_completed', array( $this, 'inject_purchase_event' ), 60 );
-			add_action( 'woocommerce_thankyou', array( $this, 'inject_purchase_event' ), 70 );
+			add_action( 'woocommerce_thankyou', array( $this, 'inject_purchase_event' ), 40 );
+			add_action( 'woocommerce_payment_complete', array( $this, 'inject_purchase_event' ), 50 );
+			add_action( 'woocommerce_order_status_processing', array( $this, 'inject_purchase_event' ), 60 );
+			add_action( 'woocommerce_order_status_completed', array( $this, 'inject_purchase_event' ), 70 );
 
 			// Lead events through Contact Form 7
 			add_action( 'wpcf7_contact_form', array( $this, 'inject_lead_event_hook' ), 11 );
@@ -863,11 +863,16 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 			// Get the status of the order to ensure we track the actual purchases and not the ones that have a failed payment.
 			$order_state = $order->get_status();
 
+			// Return if this Purchase event order state is invalid.
+			if ( ! in_array( $order_state, $valid_purchase_order_states, true ) ) {
+				return;
+			}
+
 			// use a session flag to ensure this Purchase event is not tracked multiple times
 			$purchase_tracked_flag = '_wc_' . facebook_for_woocommerce()->get_id() . '_purchase_tracked_' . $order_id;
 
-			// Return if this Purchase event has already been tracked or order state is invalid.
-			if ( 'yes' === get_transient( $purchase_tracked_flag ) || $order->meta_exists( '_meta_purchase_tracked' ) || ! in_array( $order_state, $valid_purchase_order_states, true ) ) {
+			// Return if this Purchase event has already been tracked.
+			if ( 'yes' === get_transient( $purchase_tracked_flag ) || $order->meta_exists( '_meta_purchase_tracked' ) ) {
 				return;
 			}
 
@@ -885,7 +890,7 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 
 			Logger::log(
 				'Purchase event fired for order ' . $order_id . ' by hook ' . $hook_name . '.',
-				[],
+				array(),
 				array(
 					'should_send_log_to_meta'        => false,
 					'should_save_log_in_woocommerce' => true,
@@ -1180,7 +1185,7 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 		 * @param array  $array
 		 * @param string $array_key
 		 */
-		private static function update_array_if_not_null( $value, $array, $array_key ) {
+		private static function update_array_if_not_null( $value, &$array, $array_key ) {
 			if ( ! empty( $value ) ) {
 				$array[ $array_key ] = $value;
 			}
