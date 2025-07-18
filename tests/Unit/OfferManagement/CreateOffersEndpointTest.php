@@ -316,6 +316,7 @@ class CreateOffersEndpointTest extends OfferManagementAPITestBase
 		$expected_fixed_amount_off = empty($create_offer_data['fixed_amount_off'] ?? null) ? null : $create_offer_data['fixed_amount_off'];
 		$expected_percent_off = empty($create_offer_data['percent_off'] ?? 0) ? null : $create_offer_data['percent_off'];
 		$expected_response_offer = [
+			'offer_id' => $coupon->get_id(),
 			'code' => $code,
 			'percent_off'      => $expected_percent_off,
 			'fixed_amount_off' => $expected_fixed_amount_off,
@@ -358,7 +359,7 @@ class CreateOffersEndpointTest extends OfferManagementAPITestBase
 			],
 			'exp' => $exp,
 			'jti' => wp_generate_uuid4(),
-			'key_name' => 'test_key',
+			'key_name' => self::KEY_NAME,
 			'aud' => self::CATALOG_ID,
 		];
 	}
