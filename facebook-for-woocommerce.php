@@ -361,17 +361,14 @@ class WC_Facebook_Loader {
 
 	private static function set_wc_facebook_svr_flags() {
 
-		if ( ! function_exists( 'get_option' ) ) {
+		if ( ! function_exists( 'update_option' ) || 
+			 ! function_exists( 'get_transient' ) || 
+			 ! function_exists( 'set_transient' ) ) {
 			return;
 		}
 
-		$flags = get_option( 'wc_facebook_svr_flags' );
-
-		if ( false !== $flags ) {
-			$flags = json_decode( $flags, true );
-			if ( isset( $flags['ds'] ) && ( gmdate( 'Y-m-d' ) < gmdate( 'Y-m-d', strtotime( $flags['ds'] . ' + 7 days' ) ) ) ) {
-				return;
-			}
+		if ( false !== get_transient( 'wc_facebook_svr_flags_ds' ) ) {
+			return;
 		}
 
 		$wp_woo_flags = 0;
@@ -389,12 +386,8 @@ class WC_Facebook_Loader {
 			$wp_woo_flags |= 4;
 		}
 
-		$flags = array(
-			'ds' => gmdate( 'Y-m-d' ),
-			'flags' => $wp_woo_flags,
-		);
-
-		update_option( 'wc_facebook_svr_flags', json_encode( $flags ) );
+		update_option( 'wc_facebook_svr_flags', $wp_woo_flags );
+		set_transient( 'wc_facebook_svr_flags_ds', 1, WEEK_IN_SECONDS );
 	}
 
 
