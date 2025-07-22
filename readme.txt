@@ -28,15 +28,16 @@ Visit the Facebook Help Center [here](https://www.facebook.com/business/help/900
 
 == Support ==
 
-If you believe you have found a security vulnerability on Facebook, we encourage you to let us know right away. We investigate all legitimate reports and do our best to quickly fix the problem. Before reporting, please review [this page](https://www.facebook.com/whitehat), which includes our responsible disclosure policy and reward guideline. You can submit bugs [here](https://github.com/facebookincubator/facebook-for-woocommerce/issues) or contact advertising support [here](https://www.facebook.com/business/help/900699293402826).
+Before raising a question with Meta Support, please first take a look at the Meta [helpcenter docs](https://www.facebook.com/business/help), by searching for keywords like 'WooCommerce' here. If you didn't find what you were looking for, you can go to [Meta Direct Support](https://www.facebook.com/business-support-home) and ask your question.
 
-When opening a bug on GitHub, please give us as many details as possible.
-
+When reporting an issue on Meta Direct Support, please give us as many details as possible.
 * Symptoms of your problem
 * Screenshot, if possible
 * Your Facebook page URL
 * Your website URL
 * Current version of Facebook-for-WooCommerce, WooCommerce, Wordpress, PHP
+
+To suggest technical improvements, you can raise an issue on our [Github repository](https://github.com/facebook/facebook-for-woocommerce/issues).
 
 == Changelog ==
 
