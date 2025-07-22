@@ -25,6 +25,12 @@ class Background extends BackgroundJobHandler {
 	/** @var string data key */
 	protected $data_key = 'requests';
 
+	public function __construct() {
+		parent::__construct();
+
+		add_action( 'facebook_sync_poll_handle', array( $this, 'handle_poll_action' ), 10, 1 );
+	}
+
 	/**
 	 * Processes a job.
 	 *
@@ -252,6 +258,90 @@ class Background extends BackgroundJobHandler {
 		$response            = facebook_for_woocommerce()->get_api()->send_item_updates( $facebook_catalog_id, $requests );
 		$response_handles    = $response->handles;
 		$handles             = ( isset( $response_handles ) && is_array( $response_handles ) ) ? $response_handles : array();
+
+		foreach ( $handles as $handle ) {
+			set_transient( 'facebook_batch_handle_' . $handle, $requests, 12 * HOUR_IN_SECONDS );
+
+			if ( function_exists( 'as_schedule_single_action' ) ) {
+				as_schedule_single_action( time() + 60, 'facebook_sync_poll_handle', array( $handle ) );
+			} else {
+				wp_schedule_single_event( time() + 60, 'facebook_sync_poll_handle', array( $handle ) );
+			}
+		}
+
 		return $handles;
+	}
+
+
+	/**
+	 * Poll Facebook API for the batch job status using the handle.
+	 *
+	 * @param string $handle The batch handle returned by Facebook.
+	 * @return array|null Returns status data array on success, or null on failure.
+	 */
+	public function poll_batch_status( string $handle ): ?array {
+		try {
+			$catalog_id = facebook_for_woocommerce()->get_integration()->get_product_catalog_id();
+			$response = facebook_for_woocommerce()->get_api()->get_batch_status( $catalog_id, $handle );
+
+			$data = $response->get_data();
+			return $data;
+
+		} catch ( \Exception $e ) {
+			error_log( 'Exception in poll_batch_status: ' . $e->getMessage() );
+			facebook_for_woocommerce()->log( 'Error polling batch status for handle ' . $handle . ': ' . $e->getMessage() );
+			return null;
+		}
+	}
+
+
+	/**
+	 * Callback triggered by scheduled action to poll batch status.
+	 *
+	 * @param string $handle The batch handle to poll.
+	 */
+	public function handle_poll_action( string $handle ) {
+
+		$status = $this->poll_batch_status( $handle );
+
+		if ( ! $status ) {
+			return;
+		}
+
+		if ( isset( $status['status'] ) && 'IN_PROGRESS' === $status['status'] ) {
+			if ( function_exists( 'as_schedule_single_action' ) ) {
+				as_schedule_single_action( time() + 60, 'facebook_sync_poll_handle', array( $handle ) );
+			} else {
+				wp_schedule_single_event( time() + 60, 'facebook_sync_poll_handle', array( $handle ) );
+			}
+			return;
+		}
+
+		$this->process_batch_status_results( $status, $handle );
+
+		delete_transient( 'facebook_batch_handle_' . $handle );
+	}
+
+
+	/**
+	 * Processes the results of a batch status update for product synchronization.
+	 *
+	 * This method handles the status array returned from a batch operation,
+	 * performing any necessary actions based on the results and the provided handle.
+	 *
+	 * @param array  $status  The status results from the batch operation.
+	 * @param string $handle The unique identifier for the batch process.
+	 */
+	protected function process_batch_status_results( array $status, string $handle ) {
+
+		if ( empty( $status['items'] ) ) {
+			return;
+		}
+
+		foreach ( $status['items'] as $item ) {
+			$external_id = $item['id'] ?? '';
+			$result      = $item['result'] ?? array();
+			$status_val  = $item['status'] ?? 'UNKNOWN';
+		}
 	}
 }
