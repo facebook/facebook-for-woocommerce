@@ -761,7 +761,7 @@ class WC_Facebookcommerce extends WooCommerce\Facebook\Framework\Plugin {
 	 * @return string
 	 */
 	public function get_documentation_url() {
-		return 'https://woocommerce.com/document/facebook-for-woocommerce/';
+		return 'https://www.facebook.com/business/search/?q=woocommerce';
 	}
 
 	/**
@@ -772,7 +772,7 @@ class WC_Facebookcommerce extends WooCommerce\Facebook\Framework\Plugin {
 	 * @return string
 	 */
 	public function get_support_url() {
-		return 'https://wordpress.org/support/plugin/facebook-for-woocommerce/';
+		return 'https://www.facebook.com/business-support-home';
 	}
 
 	/**
@@ -783,7 +783,7 @@ class WC_Facebookcommerce extends WooCommerce\Facebook\Framework\Plugin {
 	 * @return string
 	 */
 	public function get_sales_page_url() {
-		return 'https://woocommerce.com/products/facebook/';
+		return 'https://wordpress.org/plugins/facebook-for-woocommerce/';
 	}
 
 	/**

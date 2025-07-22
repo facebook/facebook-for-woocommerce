@@ -12,14 +12,12 @@ Grow your business on Facebook and Instagram. Easily promote your products and t
 
 ### This is the development repository for the Facebook for WooCommerce plugin.
 
-- [WooCommerce.com product page](https://woocommerce.com/products/facebook/)
 - [WordPress.org plugin page](https://wordpress.org/plugins/facebook-for-woocommerce/)
-- [User documentation](https://woocommerce.com/document/facebook-for-woocommerce/)
+- [User documentation](https://www.facebook.com/business/search/?q=woocommerce)
 
 ## Support
 
-The best place to get support is
-the [WordPress.org Facebook for WooCommerce forum](https://wordpress.org/support/plugin/facebook-for-woocommerce/).
+Please first take a look at the Meta helpcenter docs, by searching for keywords like 'WooCommerce' [here](https://www.facebook.com/business/help). If you didn't find what you were looking for, you can go to [Meta direct support](https://www.facebook.com/business-support-home) and ask your question.
 
 If you have a WooCommerce.com account, you
 can [search for help or submit a help request on WooCommerce.com](https://woocommerce.com/my-account/contact-support/).
