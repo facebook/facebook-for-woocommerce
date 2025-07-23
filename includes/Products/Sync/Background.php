@@ -301,23 +301,25 @@ class Background extends BackgroundJobHandler {
 	 * @param string $handle The batch handle to poll.
 	 */
 	public function handle_poll_action( string $handle ) {
+		$statuses = $this->poll_batch_status( $handle );
 
-		$status = $this->poll_batch_status( $handle );
-
-		if ( ! $status ) {
+		if ( ! is_array( $statuses ) || empty( $statuses ) ) {
 			return;
 		}
 
-		if ( isset( $status['status'] ) && 'IN_PROGRESS' === $status['status'] ) {
-			if ( function_exists( 'as_schedule_single_action' ) ) {
-				as_schedule_single_action( time() + 60, 'facebook_sync_poll_handle', array( $handle ) );
-			} else {
-				wp_schedule_single_event( time() + 60, 'facebook_sync_poll_handle', array( $handle ) );
+		foreach ( $statuses as $status ) {
+
+			if ( isset( $status['status'] ) && 'IN_PROGRESS' === $status['status'] ) {
+				if ( function_exists( 'as_schedule_single_action' ) ) {
+					as_schedule_single_action( time() + 60, 'facebook_sync_poll_handle', array( $handle ) );
+				} else {
+					wp_schedule_single_event( time() + 60, 'facebook_sync_poll_handle', array( $handle ) );
+				}
+				return;
 			}
-			return;
-		}
 
-		$this->process_batch_status_results( $status, $handle );
+			$this->process_batch_status_results( $status, $handle );
+		}
 
 		delete_transient( 'facebook_batch_handle_' . $handle );
 	}
@@ -333,15 +335,39 @@ class Background extends BackgroundJobHandler {
 	 * @param string $handle The unique identifier for the batch process.
 	 */
 	protected function process_batch_status_results( array $status, string $handle ) {
+		$warnings = $status['warnings'] ?? [];
+		$errors   = $status['errors'] ?? [];
 
-		if ( empty( $status['items'] ) ) {
-			return;
+		$issues_by_id = [];
+
+		foreach ( array_merge( $warnings, $errors ) as $entry ) {
+			$product_id_str = $entry['id'] ?? '';
+
+			if ( preg_match( '/wc_post_id_(\d+)/', $product_id_str, $matches ) ) {
+				$post_id = (int) $matches[1];
+
+				$issues_by_id[ $post_id ]['warnings'][] = $entry['message'];
+			} elseif ( is_numeric( $product_id_str ) ) {
+				// fallback
+				$post_id = (int) $product_id_str;
+
+				$issues_by_id[ $post_id ]['warnings'][] = $entry['message'];
+			}
 		}
 
-		foreach ( $status['items'] as $item ) {
-			$external_id = $item['id'] ?? '';
-			$result      = $item['result'] ?? array();
-			$status_val  = $item['status'] ?? 'UNKNOWN';
+		foreach ( $issues_by_id as $post_id => $issues ) {
+			error_log( sprintf(
+				'Product sync issue: ID=%d, warnings=%s',
+				$post_id,
+				json_encode( $issues['warnings'] ?? [] )
+			) );
+
+			update_post_meta( $post_id, '_fb_sync_issues', array(
+				'status'   => $status['status'] ?? 'UNKNOWN',
+				'errors'   => [], // if you also want to support errors separately
+				'warnings' => $issues['warnings'] ?? [],
+				'handle'   => $handle,
+			) );
 		}
 	}
 }

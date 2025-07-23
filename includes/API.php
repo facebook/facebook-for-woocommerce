@@ -767,13 +767,9 @@ class API extends Base {
 			'GET'
 		);
 
+		$this->set_response_handler( API\ProductCatalog\ProductGroups\Read\Response::class );
 		$response = $this->perform_request($request);
 
-		$response_body = json_decode($response['body'], true);
-
-		if ($response['response']['code'] !== 200) {
-			return null;
-		}
-		return $response_body;
+		return $response;
 	}
 }
