@@ -199,9 +199,13 @@ class Background extends BackgroundJobHandler {
 			$product_data['id'] = $retailer_id;
 
 			$request = [
-				'method' => Sync::ACTION_UPDATE,
-				'data'   => $product_data,
+				'method'     => Sync::ACTION_UPDATE,
+				'data'       => $product_data,
+				'product_id' => $product_id, // Store the product ID for later use
 			];
+
+			// Update the sync timestamp after preparing the product for sync
+			update_post_meta( $product_id, '_fb_sync_last_time', time() );
 
 			/**
 			 * Filters the data that will be included in a UPDATE sync request.

@@ -75,8 +75,28 @@ class Sync {
 		$profiling_logger = facebook_for_woocommerce()->get_profiling_logger();
 		$profiling_logger->start( 'create_or_update_all_products' );
 
-		// Queue up these IDs for sync. they will only be included in the final requests if they should be synced.
-		$this->create_or_update_products( \WC_Facebookcommerce_Utils::get_all_product_ids_for_sync() );
+		// Get all product IDs that are eligible for sync
+		$all_product_ids = \WC_Facebookcommerce_Utils::get_all_product_ids_for_sync();
+
+		// Filter to only get products modified since last sync
+		$products_to_sync = array();
+		foreach ( $all_product_ids as $product_id ) {
+			$product = wc_get_product( $product_id );
+			if ( ! $product ) {
+				continue;
+			}
+
+			$last_sync_time = get_post_meta( $product_id, '_fb_sync_last_time', true );
+			$modified_time = $product->get_date_modified() ? $product->get_date_modified()->getTimestamp() : 0;
+
+			// If never synced or modified since last sync, add to sync queue
+			if ( ! $last_sync_time || $modified_time > $last_sync_time ) {
+				$products_to_sync[] = $product_id;
+			}
+		}
+
+		// Queue up filtered IDs for sync
+		$this->create_or_update_products( $products_to_sync );
 
 		$profiling_logger->stop( 'create_or_update_all_products' );
 	}
