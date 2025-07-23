@@ -48,6 +48,7 @@ class RolloutSwitches {
 		if ( ! $is_connected ) {
 			return;
 		}
+		
 
 		$flag_name = '_wc_facebook_for_woocommerce_rollout_switch_flag';
 		if ( 'yes' === get_transient( $flag_name ) ) {
