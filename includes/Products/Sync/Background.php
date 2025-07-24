@@ -257,7 +257,7 @@ class Background extends BackgroundJobHandler {
 		$facebook_catalog_id = facebook_for_woocommerce()->get_integration()->get_product_catalog_id();
 		$response            = facebook_for_woocommerce()->get_api()->send_item_updates( $facebook_catalog_id, $requests );
 		$response_handles    = $response->handles;
-		$handles             = ( isset( $response_handles ) && is_array( $response_handles ) ) ? $response_handles : array();
+		$handles   = ( isset( $response_handles ) && is_array( $response_handles ) ) ? $response_handles : array();
 
 		foreach ( $handles as $handle ) {
 			set_transient( 'facebook_batch_handle_' . $handle, $requests, 12 * HOUR_IN_SECONDS );
@@ -355,17 +355,15 @@ class Background extends BackgroundJobHandler {
 		}
 
 		foreach ( $issues_by_id as $post_id => $issues ) {
-			error_log( sprintf(
-				'Product sync issue: ID=%d, warnings=%s',
+			update_post_meta(
 				$post_id,
-				json_encode( $issues['warnings'] ?? [] )
-			) );
-
-			update_post_meta( $post_id, '_fb_sync_issues', array(
-				'status'   => $status['status'] ?? 'UNKNOWN',
-				'warnings' => $issues['warnings'] ?? [],
-				'handle'   => $handle,
-			) );
+				'_fb_sync_issues',
+				array(
+					'status'   => $status['status'] ?? 'UNKNOWN',
+					'warnings' => $issues['warnings'] ?? [],
+					'handle'   => $handle,
+				)
+			);
 		}
 	}
 }

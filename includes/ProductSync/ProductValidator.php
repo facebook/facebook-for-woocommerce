@@ -407,14 +407,14 @@ class ProductValidator {
 	 * such as missing required fields or invalid data. If any issues are found, they are collected and can be
 	 * used to prevent the sync or notify the user.
 	 *
-	 * @throws \Exception If a critical validation error occurs that prevents further processing.
+	 * @throws ProductExcludedException If the product is excluded from synchronization.
 	 */
 	protected function validate_product_sync_issues() {
 		$issues = get_post_meta( $this->product->get_id(), '_fb_sync_issues', true );
 		if ( ! empty( $issues['warnings'] ) && is_array( $issues['warnings'] ) ) {
-			$messages = implode('; ', $issues['warnings']);
+			$messages = implode( '; ', $issues['warnings'] );
+			/* translators: %s: List of sync issue messages. */
 			throw new ProductExcludedException( sprintf( __( 'Sync issues: %s', 'facebook-for-woocommerce' ), $messages ) );
 		}
 	}
-
 }

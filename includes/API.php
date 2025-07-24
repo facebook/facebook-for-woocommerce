@@ -755,12 +755,12 @@ class API extends Base {
 		return $this->perform_request( $request );
 	}
 
-	public function get_batch_status(string $catalog_id, string $batch_handle) {
-		$endpoint = sprintf('/%s/check_batch_request_status', $catalog_id);
+	public function get_batch_status( string $catalog_id, string $batch_handle ) {
+		$endpoint = sprintf( '/%s/check_batch_request_status', $catalog_id );
 
-		$query_params = array('handle' => $batch_handle);
+		$query_params = array( 'handle' => $batch_handle );
 
-		$url = $endpoint . '?' . http_build_query($query_params);
+		$url = $endpoint . '?' . http_build_query( $query_params );
 
 		$request = new Request(
 			$url,
@@ -768,7 +768,7 @@ class API extends Base {
 		);
 
 		$this->set_response_handler( API\ProductCatalog\ProductGroups\Read\Response::class );
-		$response = $this->perform_request($request);
+		$response = $this->perform_request( $request );
 
 		return $response;
 	}
