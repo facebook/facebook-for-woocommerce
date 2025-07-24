@@ -17,7 +17,7 @@
 /**
  * WhatsApp Admin Banner class for Facebook for WooCommerce.
  */
-class WC_Facebookcommerce_Admin_Banner {
+class WC_Facebookcommerce_Admin_Banner {  
 	const BANNER_ID = 'wc_facebook_admin_banner';
 
 	public function __construct() {
