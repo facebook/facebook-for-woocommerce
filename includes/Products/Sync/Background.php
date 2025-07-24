@@ -348,7 +348,6 @@ class Background extends BackgroundJobHandler {
 
 				$issues_by_id[ $post_id ]['warnings'][] = $entry['message'];
 			} elseif ( is_numeric( $product_id_str ) ) {
-				// fallback
 				$post_id = (int) $product_id_str;
 
 				$issues_by_id[ $post_id ]['warnings'][] = $entry['message'];
@@ -364,7 +363,6 @@ class Background extends BackgroundJobHandler {
 
 			update_post_meta( $post_id, '_fb_sync_issues', array(
 				'status'   => $status['status'] ?? 'UNKNOWN',
-				'errors'   => [], // if you also want to support errors separately
 				'warnings' => $issues['warnings'] ?? [],
 				'handle'   => $handle,
 			) );
