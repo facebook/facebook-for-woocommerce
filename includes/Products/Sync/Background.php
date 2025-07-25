@@ -284,8 +284,7 @@ class Background extends BackgroundJobHandler {
 			$catalog_id = facebook_for_woocommerce()->get_integration()->get_product_catalog_id();
 			$response = facebook_for_woocommerce()->get_api()->get_batch_status( $catalog_id, $handle );
 
-			$data = $response->get_data();
-			return $data;
+			return $response->get_full_response();
 
 		} catch ( \Exception $e ) {
 			error_log( 'Exception in poll_batch_status: ' . $e->getMessage() );
@@ -335,21 +334,36 @@ class Background extends BackgroundJobHandler {
 	 * @param string $handle The unique identifier for the batch process.
 	 */
 	protected function process_batch_status_results( array $status, string $handle ) {
+		if ( isset( $status[0] ) && is_array( $status[0] ) && isset( $status[0]['status'] ) ) {
+			foreach ( $status as $single_status ) {
+				$this->process_batch_status_results( $single_status, $handle );
+			}
+			return;
+		}
+
 		$warnings = $status['warnings'] ?? [];
 		$errors   = $status['errors'] ?? [];
-
 		$issues_by_id = [];
 
 		foreach ( array_merge( $warnings, $errors ) as $entry ) {
 			$product_id_str = $entry['id'] ?? '';
+			$post_id = null;
 
 			if ( preg_match( '/wc_post_id_(\d+)/', $product_id_str, $matches ) ) {
 				$post_id = (int) $matches[1];
-
-				$issues_by_id[ $post_id ]['warnings'][] = $entry['message'];
 			} elseif ( is_numeric( $product_id_str ) ) {
 				$post_id = (int) $product_id_str;
+			} else {
+				$sku_parts = explode( '_', $product_id_str );
+				$last_part = end( $sku_parts );
+				if ( count( $sku_parts ) > 1 && is_numeric( $last_part ) ) {
+					$post_id = (int) $last_part;
+				} else {
+					$post_id = wc_get_product_id_by_sku( $product_id_str );
+				}
+			}
 
+			if ( $post_id ) {
 				$issues_by_id[ $post_id ]['warnings'][] = $entry['message'];
 			}
 		}
@@ -364,6 +378,22 @@ class Background extends BackgroundJobHandler {
 					'handle'   => $handle,
 				)
 			);
+		}
+
+		$posts_with_issues = get_posts(
+			array(
+				'post_type'      => 'product',
+				'posts_per_page' => -1,
+				'post_status'    => 'any',
+				'meta_key'       => '_fb_sync_issues',
+				'fields'         => 'ids',
+			)
+		);
+
+		foreach ( $posts_with_issues as $post_id ) {
+			if ( ! isset( $issues_by_id[ $post_id ] ) ) {
+				delete_post_meta( $post_id, '_fb_sync_issues' );
+			}
 		}
 	}
 }
