@@ -757,6 +757,38 @@ class WC_Facebook_Product {
 	}
 
 	/**
+	 * Check if a post excerpt is a WooCommerce-generated attribute summary.
+	 *
+	 * WooCommerce automatically generates attribute summaries for variations in the format:
+	 * "attribute1: value1, attribute2: value2"
+	 *
+	 * @param string $excerpt The post excerpt to check.
+	 * @return bool True if this appears to be a WooCommerce attribute summary.
+	 */
+	public function is_woocommerce_attribute_summary( $excerpt ) {
+		if ( empty( $excerpt ) ) {
+			return false;
+		}
+
+		// Check for attribute: value pattern
+		// Common patterns: "Size: Large", "1: kids", "Color: Red, Size: Large"
+		$patterns = array(
+			'/^[^:]+:\s*[^,:]+(\s*,\s*[^:]+:\s*[^,:]+)*$/',  // Standard format: "attr: value" or "attr1: value1, attr2: value2" (no commas in values)
+			'/^\d+:\s*\w+/',                                  // Numeric attribute names: "1: kids"
+			'/^pa_[^:]+:\s*/',                               // WooCommerce attribute prefixes: "pa_color: red"
+			'/^(size|color|brand|material|style|type|gender|age_group):\s*\w+/i', // Common attribute names
+		);
+
+		foreach ( $patterns as $pattern ) {
+			if ( preg_match( $pattern, trim( $excerpt ) ) ) {
+				return true;
+			}
+		}
+
+		return false;
+	}
+
+	/**
 	 * Get the short description for a product.
 	 *
 	 * This function retrieves the short product description, but unlike the main description
@@ -782,7 +814,15 @@ class WC_Facebook_Product {
 			if ( empty( $short_description ) ) {
 				$post = $this->get_post_data();
 				if ( $post && ! empty( $post->post_excerpt ) ) {
-					$short_description = WC_Facebookcommerce_Utils::clean_string( $post->post_excerpt );
+					$cleaned_excerpt = WC_Facebookcommerce_Utils::clean_string( $post->post_excerpt );
+					
+					// Check if this is a WooCommerce-generated attribute summary
+					if ( $this->is_woocommerce_attribute_summary( $cleaned_excerpt ) ) {
+						// Skip WooCommerce auto-generated attribute summaries
+						error_log( "FB Short Description: Skipping WooCommerce attribute summary for variation {$this->id}: '$cleaned_excerpt'" );
+					} else {
+						$short_description = $cleaned_excerpt;
+					}
 				}
 			}
 
@@ -802,7 +842,10 @@ class WC_Facebook_Product {
 		$post_excerpt = WC_Facebookcommerce_Utils::clean_string( $post->post_excerpt );
 
 		if ( ! empty( $post_excerpt ) ) {
-			$short_description = $post_excerpt;
+			// Check if this is a WooCommerce-generated attribute summary
+			if ( !$this->is_woocommerce_attribute_summary( $post_excerpt ) ) {
+				$short_description = $post_excerpt;
+			}
 		}
 
 		// If no short description (excerpt) found, check if main description is short enough

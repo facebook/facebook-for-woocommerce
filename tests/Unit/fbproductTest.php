@@ -1571,4 +1571,257 @@ class fbproductTest extends \WooCommerce\Facebook\Tests\AbstractWPUnitTestWithSa
 		$this->assertIsArray($batch_data['color'], 'Color should be an array for items batch');
 		$this->assertEquals(['red', 'blue', 'green'], $batch_data['color'], 'Color array for items batch should contain individual values');
 	}
+
+	/**
+	 * Test is_woocommerce_attribute_summary method with various inputs
+	 */
+	public function test_is_woocommerce_attribute_summary() {
+		$fb_product = new \WC_Facebook_Product($this->product);
+
+		// Test cases that should be detected as attribute summaries
+		$attribute_summaries = [
+			'1: kids',
+			'Size: Large',
+			'Color: Red',
+			'Size: Large, Color: Red',
+			'pa_color: Blue',
+			'age_group: adults',
+			'1: kids, 2: summer',
+			'Brand: Nike, Size: XL, Color: Black',
+			'material: cotton',
+			'gender: female',
+			'123: test',
+			'pa_size: medium',
+		];
+
+		foreach ($attribute_summaries as $summary) {
+			$this->assertTrue(
+				$fb_product->is_woocommerce_attribute_summary($summary),
+				"'{$summary}' should be detected as an attribute summary"
+			);
+		}
+
+		// Test cases that should NOT be detected as attribute summaries
+		$real_descriptions = [
+			'This is a genuine product description.',
+			'A high-quality item with excellent features.',
+			'Features include comfort and style.',
+			'Made with premium materials',
+			'Perfect for kids and adults alike',
+			'Available in multiple sizes',
+			'',
+			'Short description without colons',
+			'This product has: great features', // Contains colon but not in attribute format
+			'Description with, commas but no colons',
+			'Multi-line description
+			with line breaks',
+			'Very long description that exceeds typical attribute length and contains various punctuation marks!',
+		];
+
+		foreach ($real_descriptions as $description) {
+			$this->assertFalse(
+				$fb_product->is_woocommerce_attribute_summary($description),
+				"'{$description}' should NOT be detected as an attribute summary"
+			);
+		}
+	}
+
+	/**
+	 * Test is_woocommerce_attribute_summary with edge cases
+	 */
+	public function test_is_woocommerce_attribute_summary_edge_cases() {
+		$fb_product = new \WC_Facebook_Product($this->product);
+
+		// Test empty and null values
+		$this->assertFalse($fb_product->is_woocommerce_attribute_summary(''));
+		$this->assertFalse($fb_product->is_woocommerce_attribute_summary(null));
+
+		// Test whitespace handling
+		$this->assertTrue($fb_product->is_woocommerce_attribute_summary('  Size: Large  '));
+		$this->assertTrue($fb_product->is_woocommerce_attribute_summary("\tColor: Red\n"));
+
+		// Test complex attribute patterns
+		$this->assertTrue($fb_product->is_woocommerce_attribute_summary('Size: Large, Material: Cotton, Color: Blue'));
+		$this->assertTrue($fb_product->is_woocommerce_attribute_summary('pa_brand: Nike, pa_size: XL'));
+
+		// Test borderline cases that should be detected
+		$this->assertTrue($fb_product->is_woocommerce_attribute_summary('A: B'));
+		$this->assertTrue($fb_product->is_woocommerce_attribute_summary('1: 2'));
+
+		// Test cases that look like attributes but aren't
+		$this->assertFalse($fb_product->is_woocommerce_attribute_summary('Time: 3:30 PM'));
+		$this->assertFalse($fb_product->is_woocommerce_attribute_summary('Ratio: 1:2:3'));
+		$this->assertFalse($fb_product->is_woocommerce_attribute_summary('URL: https://example.com'));
+	}
+
+	/**
+	 * Test is_woocommerce_attribute_summary with numeric attribute names
+	 */
+	public function test_is_woocommerce_attribute_summary_numeric_attributes() {
+		$fb_product = new \WC_Facebook_Product($this->product);
+
+		// These should be detected as numeric attribute summaries
+		$numeric_attributes = [
+			'1: kids',
+			'2: adults',
+			'123: test',
+			'1: value, 2: another',
+			'999: long_value_name',
+		];
+
+		foreach ($numeric_attributes as $attr) {
+			$this->assertTrue(
+				$fb_product->is_woocommerce_attribute_summary($attr),
+				"'{$attr}' should be detected as a numeric attribute summary"
+			);
+		}
+	}
+
+	/**
+	 * Test is_woocommerce_attribute_summary with WooCommerce prefix patterns
+	 */
+	public function test_is_woocommerce_attribute_summary_pa_prefix() {
+		$fb_product = new \WC_Facebook_Product($this->product);
+
+		// These should be detected as WooCommerce attribute patterns
+		$pa_attributes = [
+			'pa_color: red',
+			'pa_size: large',
+			'pa_material: cotton',
+			'pa_brand: nike',
+			'pa_123: value',
+		];
+
+		foreach ($pa_attributes as $attr) {
+			$this->assertTrue(
+				$fb_product->is_woocommerce_attribute_summary($attr),
+				"'{$attr}' should be detected as a pa_ attribute summary"
+			);
+		}
+	}
+
+	/**
+	 * Test is_woocommerce_attribute_summary with common Facebook attribute names
+	 */
+	public function test_is_woocommerce_attribute_summary_common_names() {
+		$fb_product = new \WC_Facebook_Product($this->product);
+
+		// These should be detected as common Facebook attribute patterns
+		$common_attributes = [
+			'size: large',
+			'color: blue',
+			'brand: nike',
+			'material: cotton',
+			'style: modern',
+			'type: shirt',
+			'gender: unisex',
+			'age_group: adult',
+			'SIZE: LARGE', // Test case insensitivity
+			'Color: Red', // Test mixed case
+		];
+
+		foreach ($common_attributes as $attr) {
+			$this->assertTrue(
+				$fb_product->is_woocommerce_attribute_summary($attr),
+				"'{$attr}' should be detected as a common attribute summary"
+			);
+		}
+	}
+
+	/**
+	 * Test is_woocommerce_attribute_summary with multiple attributes
+	 */
+	public function test_is_woocommerce_attribute_summary_multiple_attributes() {
+		$fb_product = new \WC_Facebook_Product($this->product);
+
+		// These should be detected as multi-attribute summaries
+		$multi_attributes = [
+			'Size: Large, Color: Blue',
+			'Brand: Nike, Size: XL, Color: Black',
+			'1: kids, 2: summer, 3: outdoor',
+			'pa_color: red, pa_size: medium',
+			'material: cotton, color: blue, size: large',
+			'type: shirt, gender: male, age_group: adult',
+		];
+
+		foreach ($multi_attributes as $attr) {
+			$this->assertTrue(
+				$fb_product->is_woocommerce_attribute_summary($attr),
+				"'{$attr}' should be detected as a multi-attribute summary"
+			);
+		}
+	}
+
+	/**
+	 * Test is_woocommerce_attribute_summary integration with get_fb_short_description
+	 */
+	public function test_is_woocommerce_attribute_summary_integration() {
+		// Create a variation product to test the integration
+		$variable_product = WC_Helper_Product::create_variation_product();
+		$variation = wc_get_product($variable_product->get_children()[0]);
+
+		// Create a mock post object with attribute summary in post_excerpt
+		$post_data = (object) [
+			'post_excerpt' => '1: kids, Color: Red',
+			'post_content' => 'Real product description',
+			'post_title' => 'Test Product'
+		];
+
+		// Mock the get_post_data method to return our test data
+		$fb_product = new class($variation) extends \WC_Facebook_Product {
+			private $mock_post_data;
+
+			public function set_mock_post_data($data) {
+				$this->mock_post_data = $data;
+			}
+
+			public function get_post_data() {
+				return $this->mock_post_data;
+			}
+		};
+
+		$fb_product->set_mock_post_data($post_data);
+
+		// Test that attribute summary is detected and skipped
+		$short_description = $fb_product->get_fb_short_description();
+		
+		// Should not return the attribute summary
+		$this->assertNotEquals('1: kids, Color: Red', $short_description);
+		
+		// Should return empty string since no valid short description found
+		$this->assertEquals('', $short_description);
+
+		// Test with a real description that shouldn't be detected as attribute summary
+		$post_data->post_excerpt = 'This is a real product description with features.';
+		$fb_product->set_mock_post_data($post_data);
+		
+		$short_description = $fb_product->get_fb_short_description();
+		$this->assertEquals('This is a real product description with features.', $short_description);
+	}
+
+	/**
+	 * Test is_woocommerce_attribute_summary with malformed patterns
+	 */
+	public function test_is_woocommerce_attribute_summary_malformed_patterns() {
+		$fb_product = new \WC_Facebook_Product($this->product);
+
+		// These should NOT be detected as attribute summaries
+		$malformed_patterns = [
+			': value', // Missing attribute name
+			'attribute :', // Missing value
+			'attribute: ', // Empty value
+			': ', // Both missing
+			'no colon here',
+			'multiple:colons:here',
+			'Space Before: Colon',
+			'attribute:value:extra', // Too many parts
+		];
+
+		foreach ($malformed_patterns as $pattern) {
+			$this->assertFalse(
+				$fb_product->is_woocommerce_attribute_summary($pattern),
+				"'{$pattern}' should NOT be detected as an attribute summary"
+			);
+		}
+	}
 }
