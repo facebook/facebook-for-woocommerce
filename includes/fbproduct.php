@@ -773,14 +773,35 @@ class WC_Facebook_Product {
 		// Check for attribute: value pattern
 		// Common patterns: "Size: Large", "1: kids", "Color: Red, Size: Large"
 		$patterns = array(
-			'/^[^:]+:\s*[^,:]+(\s*,\s*[^:]+:\s*[^,:]+)*$/',  // Standard format: "attr: value" or "attr1: value1, attr2: value2" (no commas in values)
-			'/^\d+:\s*\w+/',                                  // Numeric attribute names: "1: kids"
-			'/^pa_[^:]+:\s*/',                               // WooCommerce attribute prefixes: "pa_color: red"
-			'/^(size|color|brand|material|style|type|gender|age_group):\s*\w+/i', // Common attribute names
+			// Numeric attribute names: "1: kids", "123: test" (short numeric followed by short word)
+			'/^\d+:\s*\w+(\s*,\s*\d+:\s*\w+)*$/',
+			// WooCommerce attribute prefixes: "pa_color: red"
+			'/^pa_[a-zA-Z0-9_]+:\s*[a-zA-Z0-9_\-\s]+(\s*,\s*pa_[a-zA-Z0-9_]+:\s*[a-zA-Z0-9_\-\s]+)*$/',
+			// Common attribute names (must be short and at start, followed by short values)
+			'/^(size|color|colour|brand|material|style|type|gender|age_group|pattern|condition|mpn|gtin):\s*[a-zA-Z0-9_\-\s]{1,50}(\s*,\s*(size|color|colour|brand|material|style|type|gender|age_group|pattern|condition|mpn|gtin):\s*[a-zA-Z0-9_\-\s]{1,50})*$/i',
+			// Single short attribute pattern (1-20 chars): "Material: Cotton" but NOT "This product has: great features"
+			'/^[a-zA-Z0-9_]{1,20}:\s*[a-zA-Z0-9_\-\s]{1,30}(\s*,\s*[a-zA-Z0-9_]{1,20}:\s*[a-zA-Z0-9_\-\s]{1,30})*$/',
 		);
 
+		$trimmed_excerpt = trim( $excerpt );
+
+		// Additional checks to exclude common sentence patterns (but only for longer text)
+		if ( strlen( $trimmed_excerpt ) > 10 ) {
+			$exclusion_patterns = array(
+				'/\b(this|that|the|and|or|but|in|on|at|to|for|of|with|by|from|about|into|through|during|before|after|above|below|up|down|out|off|over|under|again|further|then|once|here|there|when|where|why|how|all|any|both|each|few|more|most|other|some|such|no|nor|not|only|own|same|so|than|too|very|can|will|just|don|should|now|has|have)\b/i',
+			);
+
+			// First check if it matches any exclusion patterns (common sentence words)
+			foreach ( $exclusion_patterns as $exclusion_pattern ) {
+				if ( preg_match( $exclusion_pattern, $trimmed_excerpt ) ) {
+					return false;
+				}
+			}
+		}
+
+		// Then check if it matches attribute patterns
 		foreach ( $patterns as $pattern ) {
-			if ( preg_match( $pattern, trim( $excerpt ) ) ) {
+			if ( preg_match( $pattern, $trimmed_excerpt ) ) {
 				return true;
 			}
 		}
