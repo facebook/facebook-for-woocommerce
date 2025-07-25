@@ -836,7 +836,7 @@ class WC_Facebook_Product {
 				$post = $this->get_post_data();
 				if ( $post && ! empty( $post->post_excerpt ) ) {
 					$cleaned_excerpt = WC_Facebookcommerce_Utils::clean_string( $post->post_excerpt );
-					
+
 					// Check if this is a WooCommerce-generated attribute summary
 					if ( $this->is_woocommerce_attribute_summary( $cleaned_excerpt ) ) {
 						// Skip WooCommerce auto-generated attribute summaries
@@ -864,7 +864,7 @@ class WC_Facebook_Product {
 
 		if ( ! empty( $post_excerpt ) ) {
 			// Check if this is a WooCommerce-generated attribute summary
-			if ( !$this->is_woocommerce_attribute_summary( $post_excerpt ) ) {
+			if ( ! $this->is_woocommerce_attribute_summary( $post_excerpt ) ) {
 				$short_description = $post_excerpt;
 			}
 		}
