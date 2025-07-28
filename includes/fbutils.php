@@ -33,6 +33,8 @@ if ( ! class_exists( 'WC_Facebookcommerce_Utils' ) ) :
 		const FB_VARIANT_COLOUR  = 'colour';
 		const FB_VARIANT_PATTERN = 'pattern';
 		const FB_VARIANT_GENDER  = 'gender';
+		const WC_EXCERPT_LENGTH_THRESHOLD = 10;
+
 		// TODO: this constant is no longer used and can probably be removed {WV 2020-01-21}
 		const FB_VARIANT_IMAGE = 'fb_image';
 		/** @var string */
@@ -993,7 +995,7 @@ if ( ! class_exists( 'WC_Facebookcommerce_Utils' ) ) :
 			$trimmed_excerpt = trim( $excerpt );
 
 			// Additional checks to exclude common sentence patterns (but only for longer text)
-			if ( strlen( $trimmed_excerpt ) > 10 ) {
+			if ( strlen( $trimmed_excerpt ) > self::WC_EXCERPT_LENGTH_THRESHOLD ) {
 				$exclusion_patterns = array(
 					'/\b(this|that|the|and|or|but|in|on|at|to|for|of|with|by|from|about|into|through|during|before|after|above|below|up|down|out|off|over|under|again|further|then|once|here|there|when|where|why|how|all|any|both|each|few|more|most|other|some|such|no|nor|not|only|own|same|so|than|too|very|can|will|just|don|should|now|has|have)\b/i',
 				);
