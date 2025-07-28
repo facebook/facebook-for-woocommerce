@@ -390,8 +390,36 @@ class Background extends BackgroundJobHandler {
 			)
 		);
 
+		$batch_requests = get_transient( 'facebook_batch_handle_' . $handle );
+		$batched_product_ids = [];
+
+		if ( is_array( $batch_requests ) ) {
+			foreach ( $batch_requests as $req ) {
+				if ( isset( $req['data']['id'] ) ) {
+					$id = $req['data']['id'];
+
+					if ( preg_match( '/wc_post_id_(\d+)/', $id, $matches ) ) {
+						$batched_product_ids[] = (int) $matches[1];
+					} elseif ( is_numeric( $id ) ) {
+						$batched_product_ids[] = (int) $id;
+					} else {
+						$sku_parts = explode( '_', $id );
+						$last_part = end( $sku_parts );
+						if ( count( $sku_parts ) > 1 && is_numeric( $last_part ) ) {
+							$batched_product_ids[] = (int) $last_part;
+						} else {
+							$product_id = wc_get_product_id_by_sku( $id );
+							if ( $product_id ) {
+								$batched_product_ids[] = (int) $product_id;
+							}
+						}
+					}
+				}
+			}
+		}
+
 		foreach ( $posts_with_issues as $post_id ) {
-			if ( ! isset( $issues_by_id[ $post_id ] ) ) {
+			if ( in_array( $post_id, $batched_product_ids, true ) && ! isset( $issues_by_id[ $post_id ] ) ) {
 				delete_post_meta( $post_id, '_fb_sync_issues' );
 			}
 		}
