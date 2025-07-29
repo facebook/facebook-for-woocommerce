@@ -75,6 +75,28 @@ class Sync {
 		$profiling_logger = facebook_for_woocommerce()->get_profiling_logger();
 		$profiling_logger->start( 'create_or_update_all_products' );
 
+		// Queue up these IDs for sync. they will only be included in the final requests if they should be synced.
+		$this->create_or_update_products( \WC_Facebookcommerce_Utils::get_all_product_ids_for_sync() );
+
+		$profiling_logger->stop( 'create_or_update_all_products' );
+	}
+
+	/**
+	 * Adds all eligible product IDs to the requests array to be created or updated.
+	 *
+	 * Uses the same logic that the feed handler uses to get a list of product IDs to sync.
+	 *
+	 * TODO: consolidate the logic to decide whether a product should be synced in one or a couple of helper methods - right now we have slightly different versions of the same code in different places {WV 2020-05-25}
+	 *
+	 * @see \WC_Facebook_Product_Feed::get_product_ids()
+	 * @see \WC_Facebook_Product_Feed::write_product_feed_file()
+	 *
+	 * @since 2.0.0
+	 */
+	public function create_or_update_modified_products() {
+		$profiling_logger = facebook_for_woocommerce()->get_profiling_logger();
+		$profiling_logger->start( 'create_or_update_all_products' );
+
 		// Get all product IDs that are eligible for sync
 		$all_product_ids = \WC_Facebookcommerce_Utils::get_all_product_ids_for_sync();
 
@@ -100,7 +122,6 @@ class Sync {
 
 		$profiling_logger->stop( 'create_or_update_all_products' );
 	}
-
 
 	/**
 	 * Adds all eligible product IDs to the requests array to be created or updated.

@@ -31,6 +31,9 @@ class Product_Sync extends Abstract_Settings_Screen {
 	/** @var string the sync products action */
 	const ACTION_SYNC_PRODUCTS = 'wc_facebook_sync_products';
 
+	/** @var string the sync modified products action */
+	const ACTION_SYNC_MODIFIED_PRODUCTS = 'wc_facebook_sync_modified_products';
+
 	/** @var string the get sync status action */
 	const ACTION_GET_SYNC_STATUS = 'wc_facebook_get_sync_status';
 
@@ -90,6 +93,7 @@ class Product_Sync extends Abstract_Settings_Screen {
 				'ajax_url'                        => admin_url( 'admin-ajax.php' ),
 				'set_excluded_terms_prompt_nonce' => wp_create_nonce( 'set-excluded-terms-prompt' ),
 				'sync_products_nonce'             => wp_create_nonce( self::ACTION_SYNC_PRODUCTS ),
+				'sync_modified_products_nonce'    => wp_create_nonce( self::ACTION_SYNC_MODIFIED_PRODUCTS ),
 				'sync_status_nonce'               => wp_create_nonce( self::ACTION_GET_SYNC_STATUS ),
 				'sync_in_progress'                => Sync::is_sync_in_progress(),
 				'excluded_category_ids'           => facebook_for_woocommerce()->get_integration()->get_excluded_product_category_ids(),
@@ -177,6 +181,15 @@ class Product_Sync extends Abstract_Settings_Screen {
 		<h2>
 
 			<?php esc_html_e( 'Product sync', 'facebook-for-woocommerce' ); ?>
+
+			<?php if ( facebook_for_woocommerce()->get_connection_handler()->is_connected() ) : ?>
+				<a
+					id="woocommerce-facebook-settings-sync-modified-products"
+					class="button product-sync-modify-field"
+					href="#"
+					style="vertical-align: middle; margin-left: 20px;"
+				><?php esc_html_e( 'Sync modified products', 'facebook-for-woocommerce' ); ?></a>
+			<?php endif; ?>
 
 			<?php if ( facebook_for_woocommerce()->get_connection_handler()->is_connected() ) : ?>
 				<a
