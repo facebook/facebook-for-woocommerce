@@ -12,8 +12,6 @@ namespace WooCommerce\Facebook\Admin;
 
 use Automattic\WooCommerce\Admin\Features\Features as WooAdminFeatures;
 use WooCommerce\Facebook\Admin\Settings_Screens;
-use WooCommerce\Facebook\Admin\Settings_Screens\Connection;
-use WooCommerce\Facebook\Admin\Settings_Screens\Whatsapp_Utility;
 use WooCommerce\Facebook\Framework\Helper;
 use WooCommerce\Facebook\Framework\Plugin\Exception as PluginException;
 use WooCommerce\Facebook\RolloutSwitches;
@@ -69,12 +67,6 @@ class Settings {
 	 * @since 3.0.7
 	 */
 	public function build_menu_item_array(): array {
-		$advertise  = [ Settings_Screens\Advertise::ID => new Settings_Screens\Advertise() ];
-		$connection = [ Settings_Screens\Connection::ID => new Settings_Screens\Connection() ];
-
-		$is_connected = $this->plugin->get_connection_handler()->is_connected();
-		$first        = ( $is_connected ) ? $advertise : $connection;
-		$last         = ( $is_connected ) ? $connection : $advertise;
 
 		$screens = array(
 			Settings_Screens\Product_Sync::ID       => new Settings_Screens\Product_Sync(),
@@ -82,7 +74,6 @@ class Settings {
 			Settings_Screens\Product_Attributes::ID => new Settings_Screens\Product_Attributes(),
 		);
 
-		return array_merge( array_merge( $first, $screens ), $last );
 	}
 
 	public function add_extra_screens(): void {
@@ -206,9 +197,6 @@ class Settings {
 						if ( ! $is_woo_all_products_sync_enbaled ) {
 							$crumbs[] = __( 'Product sync', 'facebook-for-woocommerce' );
 						}
-						break;
-					case Settings_Screens\Advertise::ID:
-						$crumbs[] = __( 'Advertise', 'facebook-for-woocommerce' );
 						break;
 				}
 			}

@@ -1,6 +1,5 @@
 <?php
 use PHPUnit\Framework\TestCase;
-use WooCommerce\Facebook\Admin\Settings_Screens\Connection;
 use WooCommerce\Facebook\API;
 use WooCommerce\Facebook\Framework\Api\Exception as ApiException;
 use WooCommerce\Facebook\RolloutSwitches;
@@ -75,17 +74,6 @@ class RolloutSwitchesTest extends \WooCommerce\Facebook\Tests\AbstractWPUnitTest
 		// mock the active filters to test business values
 		$plugin = facebook_for_woocommerce();
 		$plugin_ref_obj          = new ReflectionObject( $plugin );
-		// setup connection handler
-		$prop_connection_handler = $plugin_ref_obj->getProperty( 'connection_handler' );
-		$prop_connection_handler->setAccessible( true );
-		$mock_connection_handler = $this->getMockBuilder( Connection::class )
-			->disableOriginalConstructor()
-			->setMethods( array( 'get_external_business_id', 'is_connected', 'get_access_token' ) )
-			->getMock();
-		$mock_connection_handler->expects( $this->any() )->method( 'get_external_business_id' )->willReturn( $this->external_business_id );
-		$mock_connection_handler->expects( $this->any() )->method( 'get_access_token' )->willReturn( $this->access_token );
-		$mock_connection_handler->expects( $this->any() )->method( 'is_connected' )->willReturn( true );
-		$prop_connection_handler->setValue( $plugin, $mock_connection_handler );
 		// setup API
 		$prop_api = $plugin_ref_obj->getProperty( 'api' );
 		$prop_api->setAccessible( true );
@@ -133,17 +121,6 @@ class RolloutSwitchesTest extends \WooCommerce\Facebook\Tests\AbstractWPUnitTest
 		// mock the active filters to test business values
 		$plugin = facebook_for_woocommerce();
 		$plugin_ref_obj          = new ReflectionObject( $plugin );
-		// setup connection handler
-		$prop_connection_handler = $plugin_ref_obj->getProperty( 'connection_handler' );
-		$prop_connection_handler->setAccessible( true );
-		$mock_connection_handler = $this->getMockBuilder( Connection::class )
-			->disableOriginalConstructor()
-			->setMethods( array( 'get_external_business_id', 'is_connected', 'get_access_token' ) )
-			->getMock();
-		$mock_connection_handler->expects( $this->any() )->method( 'get_external_business_id' )->willReturn( $this->external_business_id );
-		$mock_connection_handler->expects( $this->any() )->method( 'get_access_token' )->willReturn( $this->access_token );
-		$mock_connection_handler->expects( $this->any() )->method( 'is_connected' )->willReturn( true );
-		$prop_connection_handler->setValue( $plugin, $mock_connection_handler );
 		// setup API
 		$prop_api = $plugin_ref_obj->getProperty( 'api' );
 		$prop_api->setAccessible( true );
