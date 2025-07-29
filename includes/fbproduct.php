@@ -782,7 +782,15 @@ class WC_Facebook_Product {
 			if ( empty( $short_description ) ) {
 				$post = $this->get_post_data();
 				if ( $post && ! empty( $post->post_excerpt ) ) {
-					$short_description = WC_Facebookcommerce_Utils::clean_string( $post->post_excerpt );
+					$cleaned_excerpt = WC_Facebookcommerce_Utils::clean_string( $post->post_excerpt );
+
+					// Check if this is a WooCommerce-generated attribute summary
+					if ( WC_Facebookcommerce_Utils::is_woocommerce_attribute_summary( $cleaned_excerpt ) ) {
+						// Skip WooCommerce auto-generated attribute summaries
+						error_log( "FB Short Description: Skipping WooCommerce attribute summary for variation {$this->id}: '$cleaned_excerpt'" );
+					} else {
+						$short_description = $cleaned_excerpt;
+					}
 				}
 			}
 
@@ -802,7 +810,10 @@ class WC_Facebook_Product {
 		$post_excerpt = WC_Facebookcommerce_Utils::clean_string( $post->post_excerpt );
 
 		if ( ! empty( $post_excerpt ) ) {
-			$short_description = $post_excerpt;
+			// Check if this is a WooCommerce-generated attribute summary
+			if ( ! WC_Facebookcommerce_Utils::is_woocommerce_attribute_summary( $post_excerpt ) ) {
+				$short_description = $post_excerpt;
+			}
 		}
 
 		// If no short description (excerpt) found, check if main description is short enough

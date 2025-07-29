@@ -33,8 +33,10 @@ if ( ! class_exists( 'WC_Facebookcommerce_Utils' ) ) :
 		const FB_VARIANT_COLOUR  = 'colour';
 		const FB_VARIANT_PATTERN = 'pattern';
 		const FB_VARIANT_GENDER  = 'gender';
+		const WC_EXCERPT_LENGTH_THRESHOLD = 10;
+
 		// TODO: this constant is no longer used and can probably be removed {WV 2020-01-21}
-		const FB_VARIANT_IMAGE   = 'fb_image';
+		const FB_VARIANT_IMAGE = 'fb_image';
 		/** @var string */
 		public static $ems = null;
 
@@ -960,6 +962,60 @@ if ( ! class_exists( 'WC_Facebookcommerce_Utils' ) ) :
 		 */
 		public static function get_context_data( array $context, string $key, $default_value = null ) {
 			return $context[ $key ] ?? $default_value;
+		}
+
+
+		/**
+		 * Check if a post excerpt is a WooCommerce-generated attribute summary.
+		 *
+		 * WooCommerce automatically generates attribute summaries for variations in the format:
+		 * "attribute1: value1, attribute2: value2"
+		 *
+		 * @param string $excerpt The post excerpt to check.
+		 * @return bool True if this appears to be a WooCommerce attribute summary.
+		 */
+		public static function is_woocommerce_attribute_summary( $excerpt ) {
+			if ( empty( $excerpt ) ) {
+				return false;
+			}
+
+			// Check for attribute: value pattern
+			// Common patterns: "Size: Large", "1: kids", "Color: Red, Size: Large"
+			$patterns = array(
+				// Numeric attribute names: "1: kids", "123: test" (short numeric followed by short word)
+				'/^\d+:\s*\w+(\s*,\s*\d+:\s*\w+)*$/',
+				// WooCommerce attribute prefixes: "pa_color: red"
+				'/^pa_[a-zA-Z0-9_]+:\s*[a-zA-Z0-9_\-\s]+(\s*,\s*pa_[a-zA-Z0-9_]+:\s*[a-zA-Z0-9_\-\s]+)*$/',
+				// Common attribute names (must be short and at start, followed by short values)
+				'/^(size|color|colour|brand|material|style|type|gender|age_group|pattern|condition|mpn|gtin):\s*[a-zA-Z0-9_\-\s]{1,50}(\s*,\s*(size|color|colour|brand|material|style|type|gender|age_group|pattern|condition|mpn|gtin):\s*[a-zA-Z0-9_\-\s]{1,50})*$/i',
+				// Single short attribute pattern (1-20 chars): "Material: Cotton" but NOT "This product has: great features"
+				'/^[a-zA-Z0-9_]{1,20}:\s*[a-zA-Z0-9_\-\s]{1,30}(\s*,\s*[a-zA-Z0-9_]{1,20}:\s*[a-zA-Z0-9_\-\s]{1,30})*$/',
+			);
+
+			$trimmed_excerpt = trim( $excerpt );
+
+			// Additional checks to exclude common sentence patterns (but only for longer text)
+			if ( strlen( $trimmed_excerpt ) > self::WC_EXCERPT_LENGTH_THRESHOLD ) {
+				$exclusion_patterns = array(
+					'/\b(this|that|the|and|or|but|in|on|at|to|for|of|with|by|from|about|into|through|during|before|after|above|below|up|down|out|off|over|under|again|further|then|once|here|there|when|where|why|how|all|any|both|each|few|more|most|other|some|such|no|nor|not|only|own|same|so|than|too|very|can|will|just|don|should|now|has|have)\b/i',
+				);
+
+				// First check if it matches any exclusion patterns (common sentence words)
+				foreach ( $exclusion_patterns as $exclusion_pattern ) {
+					if ( preg_match( $exclusion_pattern, $trimmed_excerpt ) ) {
+						return false;
+					}
+				}
+			}
+
+			// Then check if it matches attribute patterns
+			foreach ( $patterns as $pattern ) {
+				if ( preg_match( $pattern, $trimmed_excerpt ) ) {
+					return true;
+				}
+			}
+
+			return false;
 		}
 	}
 endif;

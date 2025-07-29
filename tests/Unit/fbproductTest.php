@@ -1571,4 +1571,5 @@ class fbproductTest extends \WooCommerce\Facebook\Tests\AbstractWPUnitTestWithSa
 		$this->assertIsArray($batch_data['color'], 'Color should be an array for items batch');
 		$this->assertEquals(['red', 'blue', 'green'], $batch_data['color'], 'Color array for items batch should contain individual values');
 	}
+
 }
