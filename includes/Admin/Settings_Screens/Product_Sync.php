@@ -198,7 +198,7 @@ class Product_Sync extends Abstract_Settings_Screen {
 					class="button product-sync-field"
 					href="#"
 					style="vertical-align: middle; margin-left: 20px;"
-				><?php esc_html_e( 'Sync products', 'facebook-for-woocommerce' ); ?></a>
+				><?php esc_html_e( 'Sync all products', 'facebook-for-woocommerce' ); ?></a>
 			<?php endif; ?>
 
 		</h2>
