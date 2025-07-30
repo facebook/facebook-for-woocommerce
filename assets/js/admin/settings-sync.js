@@ -164,7 +164,7 @@ jQuery( document ).ready( function( $ ) {
 
 		event.preventDefault();
 
-		if ( confirm( facebook_for_woocommerce_settings_sync.i18n.confirm_sync ) ) {
+		if ( confirm( facebook_for_woocommerce_settings_sync.i18n.confirm_sync_modified ) ) {
 
 			setProductSyncStatus();
 
