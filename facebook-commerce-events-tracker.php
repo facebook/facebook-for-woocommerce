@@ -926,6 +926,15 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 				return;
 			}
 
+			// Log which hook triggered this purchase event.
+			$hook_name = current_action();
+
+			// Determine if this is a browser or server event.
+			$is_browser = $hook_name === 'woocommerce_thankyou';
+
+			// If the event is triggered by a hook that is not related to the browser, it is a server event.
+			$meta_flag = $is_browser ? '_meta_purchase_tracked_browser' : '_meta_purchase_tracked_server';
+
 			// Get the status of the order to ensure we track the actual purchases and not the ones that have a failed payment.
 			$order_state = $order->get_status();
 
@@ -937,8 +946,11 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 			// use a session flag to ensure this Purchase event is not tracked multiple times
 			$purchase_tracked_flag = '_wc_' . facebook_for_woocommerce()->get_id() . '_purchase_tracked_' . $order_id;
 
-			// Return if this Purchase event has already been tracked.
-			if ( 'yes' === get_transient( $purchase_tracked_flag ) || $order->meta_exists( '_meta_purchase_tracked' ) ) {
+			// Return if this Purchase event has already been tracked for this context (browser or server).
+			if (
+				( $is_browser && $order->meta_exists( '_meta_purchase_tracked_browser' ) ) ||
+				( ! $is_browser && $order->meta_exists( '_meta_purchase_tracked_server' ) )
+			) {
 				return;
 			}
 
@@ -948,11 +960,11 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 			// Set a flag to ensure this Purchase event is not going to be sent across different sessions.
 			$order->add_meta_data( '_meta_purchase_tracked', true, true );
 
+			// Set a flag that indicates whether the Purchase event was tracked by a browser or server hook.
+			$order->add_meta_data( $meta_flag, true, true );
+
 			// Save the metadata.
 			$order->save();
-
-			// Log which hook triggered this purchase event.
-			$hook_name = current_action();
 
 			Logger::log(
 				'Purchase event fired for order ' . $order_id . ' by hook ' . $hook_name . '.',
