@@ -95,9 +95,9 @@ class Lifecycle {
 				 */
 				do_action( 'wc_' . $this->get_plugin()->get_id() . '_updated', $installed_version );
 			}
-			// new version number
-			$this->set_installed_version( $plugin_version );
 		}
+		// new version number
+		$this->set_installed_version( $plugin_version );
 	}
 
 
