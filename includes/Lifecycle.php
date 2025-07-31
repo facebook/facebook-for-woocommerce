@@ -387,6 +387,6 @@ class Lifecycle extends Framework\Lifecycle {
 	 * @since 3.5.6
 	 */
 	protected function upgrade_to_3_5_6() {
-		facebook_for_woocommerce()->get_product_sets_sync_handler()->migrate_legacy_fb_product_sets();
+		LegacyProductSetMigration::migrate_legacy_fb_product_sets();
 	}
 }

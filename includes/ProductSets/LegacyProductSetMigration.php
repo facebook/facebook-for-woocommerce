@@ -26,8 +26,8 @@ class LegacyProductSetMigration {
 		$results = $wpdb->get_results(
 			$wpdb->prepare(
 				'SELECT t.term_id, t.name, t.slug, tt.description
-				FROM wp_term_taxonomy t
-				INNER JOIN wp_terms tt ON t.term_id = tt.term_id
+				FROM wp_terms t
+				INNER JOIN wp_term_taxonomy tt ON t.term_id = tt.term_id
 				WHERE tt.taxonomy = %s',
 				$fb_product_set_taxonomy_name
 			)
