@@ -23,26 +23,25 @@ class LegacyProductSetMigration {
 		// Query legacy fb product sets
 		global $wpdb;
 		$fb_product_set_taxonomy_name = 'fb_product_set';
-		$term_taxonomy_table = $wpdb->prefix . 'term_taxonomy';
-		$terms_table = $wpdb->prefix . 'terms';
-		$sql = $wpdb->prepare(
-			"SELECT t.term_id, t.name, t.slug, tt.description
-			FROM {$terms_table} t
-			INNER JOIN {$term_taxonomy_table} tt ON t.term_id = tt.term_id
-			WHERE tt.taxonomy = %s",
-			$fb_product_set_taxonomy_name
+		$results = $wpdb->get_results(
+			$wpdb->prepare(
+				'SELECT t.term_id, t.name, t.slug, tt.description
+				FROM wp_term_taxonomy t
+				INNER JOIN wp_terms tt ON t.term_id = tt.term_id
+				WHERE tt.taxonomy = %s',
+				$fb_product_set_taxonomy_name
+			)
 		);
-		$results = $wpdb->get_results($sql);
-		
+
 		// Migrate legacy fb product sets to dynamic product sets filter
 		foreach ( $results as $result ) {
 			$fb_product_set_id = get_term_meta( $result->term_id, 'fb_product_set_id', true );
 			$wc_product_categories_ids = get_term_meta( $result->term_id, '_wc_facebook_product_cats', true );
-			if (is_array($wc_product_categories_ids) && !empty($wc_product_categories_ids)) {
+			if ( is_array( $wc_product_categories_ids ) && ! empty( $wc_product_categories_ids ) ) {
 				$wc_categories = array();
-				foreach ($wc_product_categories_ids as $cat_id) {
+				foreach ( $wc_product_categories_ids as $cat_id ) {
 					$wc_category = get_term( $cat_id, 'product_cat' );
-					if (!is_wp_error($wc_category) && $wc_category) {
+					if ( ! is_wp_error( $wc_category ) && $wc_category ) {
 						$wc_categories[] = $wc_category;
 					}
 				}
@@ -54,7 +53,7 @@ class LegacyProductSetMigration {
 	private static function update_fb_product_set( $fb_set_id, $fb_set_name, $fb_set_description, $wc_categories ) {
 		// Build combined filter for multiple categories
 		$filters = array();
-		foreach ($wc_categories as $wc_category) {
+		foreach ( $wc_categories as $wc_category ) {
 			$wc_category_name = WC_Facebookcommerce_Utils::clean_string( get_term_field( 'name', $wc_category, 'product_cat' ) );
 			$filters[] = array( 'product_type' => array( 'i_contains' => $wc_category_name ) );
 		}
