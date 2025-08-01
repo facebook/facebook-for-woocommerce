@@ -49,6 +49,7 @@ class Settings {
 		add_action( 'admin_init', array( $this, 'add_extra_screens' ) );
 		add_action( 'admin_menu', array( $this, 'add_menu_item' ) );
 		add_action( 'wp_loaded', array( $this, 'save' ) );
+		add_action( 'admin_notices', array( $this, 'display_fb_product_sets_removed_banner' ) );
 	}
 
 	/**
@@ -340,5 +341,20 @@ class Settings {
 		 * @param array $tabs tab data, as $id => $label
 		 */
 		return (array) apply_filters( 'wc_facebook_admin_settings_tabs', $tabs, $this );
+	}
+
+	public function display_fb_product_sets_removed_banner() {
+		$screen = get_current_screen();
+		if ( ! $screen || ( $screen->id !== 'marketing_page_wc-facebook' && $screen->id !== 'woocommerce_page_wc-facebook' ) ) {
+			return;
+		}
+
+		$fb_catalog_id = facebook_for_woocommerce()->get_integration()->get_product_catalog_id();
+		?>
+			<div class="notice notice-info is-dismissible">
+				<p><strong>The Product Sets tab has been removed</strong></p>
+				<p>The Product Sets tab is no longer available in the plugin. All product sets you created previously remain intact and accessible. Your WooCommerce categories will continue to sync automatically as product sets to your Meta catalog. To update synced sets, please <a href="edit-tags.php?taxonomy=product_cat" target="_blank" rel="noopener noreferrer">edit your categories in WooCommerce</a>. To view and manage your synced product sets, visit <a href="https://business.facebook.com/commerce/catalogs/<?php echo esc_attr( $fb_catalog_id ); ?>/sets" target="_blank" rel="noopener noreferrer">Commerce Manager</a>.</p>
+			</div>
+		<?php
 	}
 }
