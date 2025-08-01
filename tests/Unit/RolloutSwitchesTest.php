@@ -1,6 +1,5 @@
 <?php
 use PHPUnit\Framework\TestCase;
-use WooCommerce\Facebook\Admin\Settings_Screens\Connection;
 use WooCommerce\Facebook\API;
 use WooCommerce\Facebook\Framework\Api\Exception as ApiException;
 use WooCommerce\Facebook\RolloutSwitches;
@@ -78,9 +77,8 @@ class RolloutSwitchesTest extends \WooCommerce\Facebook\Tests\AbstractWPUnitTest
 		// setup connection handler
 		$prop_connection_handler = $plugin_ref_obj->getProperty( 'connection_handler' );
 		$prop_connection_handler->setAccessible( true );
-		$mock_connection_handler = $this->getMockBuilder( Connection::class )
-			->disableOriginalConstructor()
-			->setMethods( array( 'get_external_business_id', 'is_connected', 'get_access_token' ) )
+		$mock_connection_handler = $this->getMockBuilder( 'stdClass' )
+			->addMethods( array( 'get_external_business_id', 'is_connected', 'get_access_token' ) )
 			->getMock();
 		$mock_connection_handler->expects( $this->any() )->method( 'get_external_business_id' )->willReturn( $this->external_business_id );
 		$mock_connection_handler->expects( $this->any() )->method( 'get_access_token' )->willReturn( $this->access_token );
@@ -136,9 +134,8 @@ class RolloutSwitchesTest extends \WooCommerce\Facebook\Tests\AbstractWPUnitTest
 		// setup connection handler
 		$prop_connection_handler = $plugin_ref_obj->getProperty( 'connection_handler' );
 		$prop_connection_handler->setAccessible( true );
-		$mock_connection_handler = $this->getMockBuilder( Connection::class )
-			->disableOriginalConstructor()
-			->setMethods( array( 'get_external_business_id', 'is_connected', 'get_access_token' ) )
+		$mock_connection_handler = $this->getMockBuilder( 'stdClass' )
+			->addMethods( array( 'get_external_business_id', 'is_connected', 'get_access_token' ) )
 			->getMock();
 		$mock_connection_handler->expects( $this->any() )->method( 'get_external_business_id' )->willReturn( $this->external_business_id );
 		$mock_connection_handler->expects( $this->any() )->method( 'get_access_token' )->willReturn( $this->access_token );
