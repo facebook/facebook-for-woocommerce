@@ -101,7 +101,7 @@ class Product_Sync extends Abstract_Settings_Screen {
 				'i18n'                            => array(
 					'confirm_resync'                => esc_html__( 'Your products will now be resynced to Facebook, this may take some time.', 'facebook-for-woocommerce' ),
 					'confirm_sync'                  => esc_html__( "Facebook for WooCommerce automatically syncs your products on create/update. Are you sure you want to force product resync?\n\nThis will query all published products and may take some time. You only need to do this if your products are out of sync or some of your products did not sync.", 'facebook-for-woocommerce' ),
-					'confirm_sync_modified'         => esc_html__( "This will query all recently updated/modified products. Use this to keep your product catalog up to date without a full resync.", 'facebook-for-woocommerce' ),
+					'confirm_sync_modified'         => esc_html__( 'This will query all recently updated/modified products. Use this to keep your product catalog up to date without a full resync.', 'facebook-for-woocommerce' ),
 					/* translators: Placeholders %s - html code for a spinner icon */
 					'sync_in_progress'              => sprintf( esc_html__( 'Your products are syncing - you may safely leave this page %s', 'facebook-for-woocommerce' ), '<span class="spinner is-active"></span>' ),
 					'sync_remaining_items_singular' => sprintf( esc_html( translate_nooped_plural( $sync_remaining_items_string, 1 ) ), '<strong>', '</strong>', '<span class="spinner is-active"></span>' ),
