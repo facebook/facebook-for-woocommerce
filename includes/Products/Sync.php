@@ -82,11 +82,9 @@ class Sync {
 	}
 
 	/**
-	 * Adds all eligible product IDs to the requests array to be created or updated.
+	 * Adds all eligible product IDs to the requests array that were updated/modified.
 	 *
 	 * Uses the same logic that the feed handler uses to get a list of product IDs to sync.
-	 *
-	 * TODO: consolidate the logic to decide whether a product should be synced in one or a couple of helper methods - right now we have slightly different versions of the same code in different places {WV 2020-05-25}
 	 *
 	 * @see \WC_Facebook_Product_Feed::get_product_ids()
 	 * @see \WC_Facebook_Product_Feed::write_product_feed_file()
