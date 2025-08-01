@@ -345,7 +345,7 @@ class Settings {
 
 	public function display_fb_product_sets_removed_banner() {
 		$screen = get_current_screen();
-		if ( ! $screen || ( $screen->id !== 'marketing_page_wc-facebook' && $screen->id !== 'woocommerce_page_wc-facebook' ) ) {
+		if ( ! $screen || ( 'marketing_page_wc-facebook' !== $screen->id && 'woocommerce_page_wc-facebook' !== $screen->id ) ) {
 			return;
 		}
 
