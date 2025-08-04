@@ -6,6 +6,7 @@ namespace WooCommerce\Facebook\Products\Sync;
 defined( 'ABSPATH' ) || exit;
 
 use WooCommerce\Facebook\Framework\Api\Exception as ApiException;
+use WooCommerce\Facebook\Framework\Logger;
 use WooCommerce\Facebook\Framework\Plugin\Exception as PluginException;
 use WooCommerce\Facebook\Framework\Utilities\BackgroundJobHandler;
 use WooCommerce\Facebook\Products;
@@ -134,6 +135,35 @@ class Background extends BackgroundJobHandler {
 				$handles      = $this->send_item_updates( $requests );
 				$job->handles = ! isset( $job->handles ) || ! is_array( $job->handles ) ? $handles : array_merge( $job->handles, $handles );
 				$this->update_job( $job );
+
+				// Update timestamps after successful API call
+				try {
+					foreach ( $requests as $request ) {
+						if ( Sync::ACTION_UPDATE === $request['method'] && isset( $request['data']['id'] ) ) {
+							// Extract product ID from the 'id' field (format: wc_post_id_1197)
+							$id_parts = explode('_', $request['data']['id']);
+							$product_id = end($id_parts);
+
+							if ( is_numeric( $product_id ) ) {
+								update_post_meta( (int) $product_id, '_fb_sync_last_time', time() );
+							}
+						}
+					}
+				} catch ( \Exception $e ) {
+					// Log the error but don't interrupt the sync process
+					Logger::log(
+						"Error updating product sync timestamps",
+						[
+							'event' => 'product_sync_timestamp_update_error',
+							'error_message' => $e->getMessage(),
+						],
+						[
+							'should_save_log_in_woocommerce' => true,
+							'woocommerce_log_level' => \WC_Log_Levels::ERROR,
+						],
+						$e
+					);
+				}
 			} catch ( ApiException $e ) {
 				/* translators: Placeholders: %1$s - <string  job ID, %2$s - <strong> error message */
 				$message = sprintf( __( 'There was an error trying sync products using the Catalog Batch API for job %1$s: %2$s', 'facebook-for-woocommerce' ), $job->id, $e->getMessage() );
@@ -202,9 +232,6 @@ class Background extends BackgroundJobHandler {
 				'method' => Sync::ACTION_UPDATE,
 				'data'   => $product_data,
 			];
-
-			// Update the sync timestamp after preparing the product for sync
-			update_post_meta( $product_id, '_fb_sync_last_time', time() );
 
 			/**
 			 * Filters the data that will be included in a UPDATE sync request.
