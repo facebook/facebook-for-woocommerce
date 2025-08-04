@@ -201,7 +201,6 @@ class Background extends BackgroundJobHandler {
 			$request = [
 				'method'     => Sync::ACTION_UPDATE,
 				'data'       => $product_data,
-				'product_id' => $product_id, // Store the product ID for later use
 			];
 
 			// Update the sync timestamp after preparing the product for sync
