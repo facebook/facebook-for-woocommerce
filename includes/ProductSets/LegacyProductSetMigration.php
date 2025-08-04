@@ -13,6 +13,7 @@ namespace WooCommerce\Facebook\ProductSets;
 defined( 'ABSPATH' ) || exit;
 
 use WC_Facebookcommerce_Utils;
+use WooCommerce\Facebook\Framework\Logger;
 
 /**
  * The legacy product set migration.
@@ -68,7 +69,15 @@ class LegacyProductSetMigration {
 			facebook_for_woocommerce()->get_api()->update_product_set_item( $fb_set_id, $fb_product_set_data );
 		} catch ( \Exception $e ) {
 			$message = sprintf( 'There was an error trying to update product set: %s', $e->getMessage() );
-			facebook_for_woocommerce()->log( $message );
+			Logger::log(
+				$message,
+				[],
+				array(
+					'should_send_log_to_meta'        => false,
+					'should_save_log_in_woocommerce' => true,
+					'woocommerce_log_level'          => \WC_Log_Levels::WARNING,
+				)
+			);
 		}
 	}
 }
