@@ -197,7 +197,7 @@ class AJAX {
 			wp_send_json_success();
 		} catch ( \Exception $exception ) {
 			Logger::log(
-				"Error syncing modified products via AJAX",
+				'Error syncing modified products via AJAX',
 				[
 					'event' => 'ajax_product_sync_modified_products_error',
 					'error_message' => $exception->getMessage(),

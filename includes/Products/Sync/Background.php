@@ -141,8 +141,8 @@ class Background extends BackgroundJobHandler {
 					foreach ( $requests as $request ) {
 						if ( Sync::ACTION_UPDATE === $request['method'] && isset( $request['data']['id'] ) ) {
 							// Extract product ID from the 'id' field (format: wc_post_id_1197)
-							$id_parts = explode('_', $request['data']['id']);
-							$product_id = end($id_parts);
+							$id_parts = explode( '_', $request['data']['id'] );
+							$product_id = end( $id_parts );
 
 							if ( is_numeric( $product_id ) ) {
 								update_post_meta( (int) $product_id, '_fb_sync_last_time', time() );
@@ -152,7 +152,7 @@ class Background extends BackgroundJobHandler {
 				} catch ( \Exception $e ) {
 					// Log the error but don't interrupt the sync process
 					Logger::log(
-						"Error updating product sync timestamps",
+						'Error updating product sync timestamps',
 						[
 							'event' => 'product_sync_timestamp_update_error',
 							'error_message' => $e->getMessage(),

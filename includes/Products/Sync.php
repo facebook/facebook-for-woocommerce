@@ -135,7 +135,7 @@ class Sync {
 		} catch ( \Exception $e ) {
 			// Log the error but don't interrupt the sync process
 			Logger::log(
-				"Error syncing modified products",
+				'Error syncing modified products',
 				[
 					'event' => 'product_sync_modified_products_error',
 					'error_message' => $e->getMessage(),
