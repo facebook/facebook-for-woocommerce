@@ -945,6 +945,65 @@ class Admin {
 	}
 
 	/**
+	 * Renders the Facebook Product Images field for variations.
+	 *
+	 * @param array $attachment_ids Array of attachment IDs.
+	 * @param int   $index      The variation index.
+	 * @param int   $variation_id The variation ID.
+	 */
+		private function render_facebook_product_images_field( $attachment_ids, $index, $variation_id ) {
+		// attachment_ids is already an array of attachment IDs
+		
+
+
+		// Output the form field for Facebook Product Images with a description tip
+		?>
+		<p class="form-field product-image-source-field show-if-product-image-source-<?php echo esc_attr( Products::PRODUCT_IMAGE_SOURCE_MULTIPLE ); ?>">
+			<!-- <label for="fb_product_images_<?php echo esc_attr( $index ); ?>"><?php esc_html_e( 'Facebook Product Images', 'facebook-for-woocommerce' ); ?></label> -->
+			<button type="button" class="button fb-open-images-library" data-variation-index="<?php echo esc_attr( $index ); ?>" data-variation-id="<?php echo esc_attr( $variation_id ); ?>"><?php esc_html_e( 'Choose Multiple Images', 'facebook-for-woocommerce' ); ?></button>
+			<span class="woocommerce-help-tip" data-tip="<?php esc_attr_e( 'Choose multiple product images that should be synced to the Facebook catalog and displayed for this variation.', 'facebook-for-woocommerce' ); ?>" tabindex="0"></span>
+			
+			<div id="fb_product_images_selected_thumbnails_<?php echo esc_attr( $index ); ?>" class="fb-product-images-thumbnails">
+				<?php
+				if ( ! empty( $attachment_ids ) && is_array( $attachment_ids ) ) {
+					foreach ( $attachment_ids as $attachment_id ) {
+						$attachment_id = intval( $attachment_id );
+						if ( $attachment_id > 0 ) {
+							// Get the image thumbnail URL
+							$thumbnail_url = wp_get_attachment_image_url( $attachment_id, 'thumbnail' );
+							$full_url = wp_get_attachment_url( $attachment_id );
+							$filename = basename( get_attached_file( $attachment_id ) );
+							
+							if ( $thumbnail_url && $full_url ) {
+								?>
+								<p class="form-field image-thumbnail">
+									<img src="<?php echo esc_url( $thumbnail_url ); ?>">
+									<span data-attachment-id="<?php echo esc_attr( $attachment_id ); ?>"><?php echo esc_html( $filename ); ?></span>
+									<a href="#" class="remove-image" data-attachment-id="<?php echo esc_attr( $attachment_id ); ?>"><?php esc_html_e( 'Remove', 'facebook-for-woocommerce' ); ?></a>
+								</p>
+								<?php
+							}
+						}
+					}
+				}
+				?>
+			</div>
+
+			<?php
+			// hidden input to store attachment IDs
+			woocommerce_wp_hidden_input(
+				[
+					'id'    => sprintf( 'variable_%s%s', \WC_Facebook_Product::FB_PRODUCT_IMAGES, $index ),
+					'name'  => sprintf( 'variable_%s%s', \WC_Facebook_Product::FB_PRODUCT_IMAGES, $index ),
+					'value' => esc_attr( implode( ',', $attachment_ids ) ), // Store attachment IDs
+				]
+			);
+			?>
+		</p>
+		<?php
+	}
+
+	/**
 	 * Adds content to the new Facebook tab on the Product edit page.
 	 *
 	 * @internal
@@ -1288,7 +1347,10 @@ class Admin {
 		$price        = $this->get_product_variation_meta( $variation, \WC_Facebook_Product::FB_PRODUCT_PRICE, $parent );
 		$image_url    = $this->get_product_variation_meta( $variation, \WC_Facebook_Product::FB_PRODUCT_IMAGE, $parent );
 		$image_source = $variation->get_meta( Products::PRODUCT_IMAGE_SOURCE_META_KEY );
+		$image_urls   = $this->get_product_variation_meta( $variation, \WC_Facebook_Product::FB_PRODUCT_IMAGES, $parent );
 		$fb_mpn       = $this->get_product_variation_meta( $variation, \WC_Facebook_Product::FB_MPN, $parent );
+
+
 
 		?>
 		<div class="facebook-metabox wc-metabox closed">
@@ -1323,6 +1385,7 @@ class Admin {
 							Products::PRODUCT_IMAGE_SOURCE_PRODUCT => __( 'Use variation image', 'facebook-for-woocommerce' ),
 							Products::PRODUCT_IMAGE_SOURCE_PARENT_PRODUCT => __( 'Use parent image', 'facebook-for-woocommerce' ),
 							Products::PRODUCT_IMAGE_SOURCE_CUSTOM  => __( 'Use custom image', 'facebook-for-woocommerce' ),
+							Products::PRODUCT_IMAGE_SOURCE_MULTIPLE => __( 'Use multiple images', 'facebook-for-woocommerce' ),
 						),
 						'value'         => $image_source ? $image_source : Products::PRODUCT_IMAGE_SOURCE_PRODUCT,
 						'class'         => 'enable-if-sync-enabled js-fb-product-image-source',
@@ -1342,6 +1405,13 @@ class Admin {
 						'description'   => __( 'Please enter an absolute URL (e.g. https://domain.com/image.jpg).', 'facebook-for-woocommerce' ),
 					)
 				);
+
+				// Render Facebook Product Images field
+				$image_ids_array = ! empty( $image_urls ) ? explode( ',', $image_urls ) : [];
+				// Clean up the IDs and ensure they're numeric
+				$image_ids_array = array_filter( array_map( 'trim', $image_ids_array ), 'is_numeric' );
+				
+				$this->render_facebook_product_images_field( $image_ids_array, $index, $variation->get_id() );
 
 				woocommerce_wp_text_input(
 					array(
@@ -1490,6 +1560,12 @@ class Admin {
 		$image_url    = isset( $_POST[ $posted_param ][ $index ] ) ? esc_url_raw( wp_unslash( $_POST[ $posted_param ][ $index ] ) ) : null;
 		$posted_param = 'variable_' . \WC_Facebook_Product::FB_PRODUCT_VIDEO;
 		$video_urls   = isset( $_POST[ $posted_param ][ $index ] ) ? esc_url_raw( wp_unslash( $_POST[ $posted_param ][ $index ] ) ) : [];
+		// Fix: Look for the actual POST key format that WooCommerce generates
+		$posted_param = 'variable_' . \WC_Facebook_Product::FB_PRODUCT_IMAGES . $index;
+		$image_ids    = isset( $_POST[ $posted_param ] ) ? sanitize_text_field( wp_unslash( $_POST[ $posted_param ] ) ) : '';
+		
+
+		
 		$posted_param = 'variable_' . \WC_Facebook_Product::FB_PRODUCT_PRICE;
 		$price        = isset( $_POST[ $posted_param ][ $index ] ) ? wc_format_decimal( wc_clean( wp_unslash( $_POST[ $posted_param ][ $index ] ) ) ) : '';
 
@@ -1500,6 +1576,7 @@ class Admin {
 		$variation->update_meta_data( \WC_Facebook_Product::FB_MPN, $fb_mpn );
 		$variation->update_meta_data( \WC_Facebook_Product::FB_PRODUCT_IMAGE, $image_url );
 		$variation->update_meta_data( \WC_Facebook_Product::FB_PRODUCT_VIDEO, $video_urls );
+		$variation->update_meta_data( \WC_Facebook_Product::FB_PRODUCT_IMAGES, $image_ids );
 		$variation->update_meta_data( \WC_Facebook_Product::FB_PRODUCT_PRICE, $price );
 		$variation->save_meta_data();
 

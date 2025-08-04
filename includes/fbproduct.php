@@ -91,6 +91,7 @@ class WC_Facebook_Product {
 	const FB_AGE_GROUP             = 'fb_age_group';
 	const FB_GENDER                = 'fb_gender';
 	const FB_PRODUCT_VIDEO         = 'fb_product_video';
+	const FB_PRODUCT_IMAGES        = 'fb_product_images';
 	const FB_VARIANT_IMAGE         = 'fb_image';
 	const FB_VISIBILITY            = 'fb_visibility';
 	const FB_REMOVE_FROM_SYNC      = 'fb_remove_from_sync';
@@ -398,6 +399,28 @@ class WC_Facebook_Product {
 
 			case Products::PRODUCT_IMAGE_SOURCE_CUSTOM:
 				$image_urls = array( $custom_image_url, $product_image_url, $parent_product_image_url );
+				break;
+
+			case Products::PRODUCT_IMAGE_SOURCE_MULTIPLE:
+				// Get multiple images from FB_PRODUCT_IMAGES meta field
+				$multiple_image_ids = $this->woo_product->get_meta( self::FB_PRODUCT_IMAGES );
+				$multiple_image_urls = array();
+				
+				if ( ! empty( $multiple_image_ids ) ) {
+					// Split comma-separated attachment IDs
+					$attachment_ids = array_map( 'trim', explode( ',', $multiple_image_ids ) );
+					foreach ( $attachment_ids as $attachment_id ) {
+						if ( is_numeric( $attachment_id ) && ! empty( $attachment_id ) ) {
+							$image_url = wp_get_attachment_image_url( $attachment_id, $image_size );
+							if ( $image_url ) {
+								$multiple_image_urls[] = $image_url;
+							}
+						}
+					}
+				}
+				
+				// Use multiple images first, then fallback to variation and parent images
+				$image_urls = array_merge( $multiple_image_urls, array( $product_image_url, $parent_product_image_url ) );
 				break;
 
 			case Products::PRODUCT_IMAGE_SOURCE_PARENT_PRODUCT:

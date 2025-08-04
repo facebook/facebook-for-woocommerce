@@ -535,8 +535,10 @@ jQuery( document ).ready( function( $ ) {
 			let $container  = $( this ).closest( '.woocommerce_options_panel, .wc-metabox-content' );
 			let imageSource = $( this ).val();
 
-			$container.find( '.product-image-source-field' ).closest( '.form-field' ).hide();
-			$container.find( `.show-if-product-image-source-${imageSource}` ).closest( '.form-field' ).show();
+			// Remove 'show' class from all product-image-source-field elements
+			$container.find( '.product-image-source-field' ).removeClass( 'show' );
+			// Add 'show' class to the selected image source field
+			$container.find( `.show-if-product-image-source-${imageSource}` ).addClass( 'show' );
 		} );
 
 		$( '.js-fb-product-image-source:checked' ).trigger( 'change' );
@@ -690,6 +692,152 @@ jQuery( document ).ready( function( $ ) {
 			const $button = $(this);
 			const attachmentId = $button.data('attachment-id');
 			removeVideoThumbnail(attachmentId, $button.closest('.form-field'));
+		});
+
+		// Facebook Product Images support for variations
+		let variationImageFrames = {};
+
+		/**
+		 * Creates an image thumbnail element for variations.
+		 *
+		 * @param {Object} attachment The attachment object containing image details.
+		 * @param {number} variationIndex The variation index.
+		 * @returns {jQuery} The jQuery element representing the image thumbnail.
+		 */
+		function createImageThumbnail(attachment, variationIndex) {
+			const $imageThumbnail = $('<p>', { class: 'form-field image-thumbnail' });
+			const $img = $('<img>', { 
+				src: attachment.sizes && attachment.sizes.thumbnail ? attachment.sizes.thumbnail.url : attachment.url
+			});
+			const $imageName = $('<span>', { 
+				text: attachment.filename || attachment.title, 
+				'data-attachment-id': attachment.id 
+			});
+			const $removeButton = $('<a>', { 
+				href: '#', 
+				text: 'Remove', 
+				class: 'remove-image',
+				'data-variation-index': variationIndex,
+				'data-attachment-id': attachment.id
+			});
+
+			$removeButton.on('click', function (event) {
+				event.preventDefault();
+				removeImageThumbnail(attachment.id, variationIndex, $imageThumbnail);
+			});
+
+			$imageThumbnail.append($img, $imageName, $removeButton);
+			return $imageThumbnail;
+		}
+
+		/**
+		 * Removes an image thumbnail and updates the list of attachment IDs for a variation.
+		 *
+		 * @param {Number} attachmentId The ID of the attachment to remove.
+		 * @param {Number} variationIndex The variation index.
+		 * @param {jQuery} $imageThumbnail The jQuery element representing the image thumbnail to remove.
+		 */
+		function removeImageThumbnail(attachmentId, variationIndex, $imageThumbnail) {
+			const $hiddenField = $(`#variable_fb_product_images${variationIndex}`);
+			let attachmentIds = $hiddenField.val() ? $hiddenField.val().split(',').map(Number) : [];
+			
+			attachmentIds = attachmentIds.filter(id => id !== attachmentId);
+			$hiddenField.val(attachmentIds.join(','));
+			$imageThumbnail.remove();
+		}
+
+		/**
+		 * Handles the selection of image items from the media library for variations.
+		 *
+		 * @param {Object} selection The selection object containing the chosen media items.
+		 * @param {number} variationIndex The variation index.
+		 */
+		function handleVariationImageSelection(selection, variationIndex) {
+			const $container = $(`#fb_product_images_selected_thumbnails_${variationIndex}`);
+			const $hiddenField = $(`#variable_fb_product_images${variationIndex}`);
+			let attachmentIds = $hiddenField.val() ? $hiddenField.val().split(',').map(Number) : [];
+			
+			const selectedAttachmentIds = selection.map(attachment => attachment.id);
+			const removedIds = attachmentIds.filter(id => !selectedAttachmentIds.includes(id));
+			const newIds = selectedAttachmentIds.filter(id => !attachmentIds.includes(id));
+
+			// Remove unselected image thumbnails
+			$container.find('.form-field').each(function () {
+				const $imageThumbnail = $(this);
+				const imageAttachmentId = parseInt($imageThumbnail.find('span').data('attachment-id'), 10);
+				if (removedIds.includes(imageAttachmentId)) {
+					removeImageThumbnail(imageAttachmentId, variationIndex, $imageThumbnail);
+				}
+			});
+
+			// Add new image thumbnails
+			selection.each(function (attachment) {
+				attachment = attachment.toJSON();
+				// Validate that the attachment is an image
+				if (newIds.includes(attachment.id) && attachment.mime && attachment.mime.startsWith('image/')) {
+					const $imageThumbnail = createImageThumbnail(attachment, variationIndex);
+					$container.append($imageThumbnail);
+					if (!attachmentIds.includes(attachment.id)) {
+						attachmentIds.push(attachment.id);
+					}
+				} else if (newIds.includes(attachment.id) && (!attachment.mime || !attachment.mime.startsWith('image/'))) {
+					alert('Please select a valid image file.');
+				}
+			});
+
+			$hiddenField.val(attachmentIds.join(','));
+		}
+
+		// Event handler for opening the image library for variations
+		$(document).on('click', '.fb-open-images-library', function (e) {
+			e.preventDefault();
+			
+			const $button = $(this);
+			const variationIndex = $button.data('variation-index');
+			const variationId = $button.data('variation-id');
+			
+			if (variationImageFrames[variationIndex]) {
+				variationImageFrames[variationIndex].open();
+				return;
+			}
+
+			variationImageFrames[variationIndex] = wp.media({
+				title: 'Select Images for Variation',
+				button: { text: 'Use Images' },
+				library: { type: 'image' },
+				multiple: true
+			});
+
+			// Pre-select previously selected attachments
+			variationImageFrames[variationIndex].on('open', function () {
+				variationImageFrames[variationIndex].$el.addClass('fb-product-images-media-frame');
+				const selection = variationImageFrames[variationIndex].state().get('selection');
+				const $hiddenField = $(`#variable_fb_product_images${variationIndex}`);
+				const attachmentIds = $hiddenField.val() ? $hiddenField.val().split(',').map(Number) : [];
+				
+				attachmentIds.forEach(function (id) {
+					const attachment = wp.media.attachment(id);
+					attachment.fetch();
+					selection.add(attachment ? [attachment] : []);
+				});
+			});
+
+			// Handle selection of media
+			variationImageFrames[variationIndex].on('select', function () {
+				const selection = variationImageFrames[variationIndex].state().get('selection');
+				handleVariationImageSelection(selection, variationIndex);
+			});
+
+			variationImageFrames[variationIndex].open();
+		});
+
+		// Event handler for removing image thumbnails from variations
+		$(document).on('click', '.fb-product-images-thumbnails .remove-image', function (event) {
+			event.preventDefault();
+			const $button = $(this);
+			const attachmentId = parseInt($button.data('attachment-id'), 10);
+			const variationIndex = $button.data('variation-index');
+			removeImageThumbnail(attachmentId, variationIndex, $button.closest('.form-field'));
 		});
 
 	}
