@@ -87,6 +87,9 @@ jQuery( document ).ready( function( $ ) {
 		function toggleFacebookSettings( enabled, $container ) {
 
 			$container.find( '.enable-if-sync-enabled' ).prop( 'disabled', ! enabled );
+			
+			// Also disable all select elements that don't have the enable-if-sync-enabled class
+			$container.find( 'select' ).not( '.enable-if-sync-enabled' ).prop( 'disabled', ! enabled );
 		}
 
 
