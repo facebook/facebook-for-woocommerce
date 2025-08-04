@@ -15,6 +15,7 @@ use WooCommerce\Facebook\Admin\Settings_Screens\Product_Sync;
 use WooCommerce\Facebook\Admin\Settings_Screens\Shops;
 use WooCommerce\Facebook\Framework\Plugin\Exception as PluginException;
 use WooCommerce\Facebook\Handlers\WhatsAppUtilityConnection;
+use WooCommerce\Facebook\Framework\Logger;
 
 defined( 'ABSPATH' ) || exit;
 
@@ -162,18 +163,51 @@ class AJAX {
 	 * @since 2.0.0
 	 */
 	public function sync_modified_products() {
+		Logger::log(
+			'Starting AJAX sync of modified products',
+			[
+				'event' => 'ajax_product_sync_modified_products_start',
+			]
+		);
+
 		// Allow opt-out of full batch-API sync, for example if store has a large number of products.
 		if ( ! facebook_for_woocommerce()->get_integration()->allow_full_batch_api_sync() ) {
+			Logger::log(
+				'Full product sync disabled by filter',
+				[
+					'event' => 'ajax_product_sync_modified_products_disabled',
+				]
+			);
 			wp_send_json_error( __( 'Full product sync disabled by filter.', 'facebook-for-woocommerce' ) );
 			return;
 		}
 
-		check_admin_referer( Product_Sync::ACTION_SYNC_MODIFIED_PRODUCTS, 'nonce' );
-
 		try {
+			check_admin_referer( Product_Sync::ACTION_SYNC_MODIFIED_PRODUCTS, 'nonce' );
+
 			facebook_for_woocommerce()->get_products_sync_handler()->create_or_update_modified_products();
+
+			Logger::log(
+				'Completed AJAX sync of modified products',
+				[
+					'event' => 'ajax_product_sync_modified_products_complete',
+				]
+			);
+
 			wp_send_json_success();
 		} catch ( \Exception $exception ) {
+			Logger::log(
+				"Error syncing modified products via AJAX",
+				[
+					'event' => 'ajax_product_sync_modified_products_error',
+					'error_message' => $exception->getMessage(),
+				],
+				[
+					'should_save_log_in_woocommerce' => true,
+					'woocommerce_log_level' => \WC_Log_Levels::ERROR,
+				],
+				$exception
+			);
 			wp_send_json_error( $exception->getMessage() );
 		}
 	}

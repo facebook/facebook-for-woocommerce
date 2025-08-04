@@ -10,6 +10,8 @@
 
 namespace WooCommerce\Facebook\Products;
 
+use WooCommerce\Facebook\Framework\Logger;
+
 defined( 'ABSPATH' ) || exit;
 
 /**
@@ -92,33 +94,59 @@ class Sync {
 	 * @since 2.0.0
 	 */
 	public function create_or_update_modified_products() {
-		$profiling_logger = facebook_for_woocommerce()->get_profiling_logger();
-		$profiling_logger->start( 'create_or_update_all_products' );
+		Logger::log(
+			'Starting sync of modified products',
+			[
+				'event' => 'product_sync_modified_products_start',
+			]
+		);
 
-		// Get all product IDs that are eligible for sync
-		$all_product_ids = \WC_Facebookcommerce_Utils::get_all_product_ids_for_sync();
+		try {
+			// Get all product IDs that are eligible for sync
+			$all_product_ids = \WC_Facebookcommerce_Utils::get_all_product_ids_for_sync();
 
-		// Filter to only get products modified since last sync
-		$products_to_sync = array();
-		foreach ( $all_product_ids as $product_id ) {
-			$product = wc_get_product( $product_id );
-			if ( ! $product ) {
-				continue;
+			// Filter to only get products modified since last sync
+			$products_to_sync = array();
+			foreach ( $all_product_ids as $product_id ) {
+				$product = wc_get_product( $product_id );
+				if ( ! $product ) {
+					continue;
+				}
+
+				$last_sync_time = get_post_meta( $product_id, '_fb_sync_last_time', true );
+				$modified_time = $product->get_date_modified() ? $product->get_date_modified()->getTimestamp() : 0;
+
+				// If never synced or modified since last sync, add to sync queue
+				if ( ! $last_sync_time || $modified_time > $last_sync_time ) {
+					$products_to_sync[] = $product_id;
+				}
 			}
 
-			$last_sync_time = get_post_meta( $product_id, '_fb_sync_last_time', true );
-			$modified_time = $product->get_date_modified() ? $product->get_date_modified()->getTimestamp() : 0;
+			// Queue up filtered IDs for sync
+			$this->create_or_update_products( $products_to_sync );
 
-			// If never synced or modified since last sync, add to sync queue
-			if ( ! $last_sync_time || $modified_time > $last_sync_time ) {
-				$products_to_sync[] = $product_id;
-			}
+			Logger::log(
+				'Completed sync of modified products',
+				[
+					'event' => 'product_sync_modified_products_complete',
+					'product_count' => count( $products_to_sync ),
+				]
+			);
+		} catch ( \Exception $e ) {
+			// Log the error but don't interrupt the sync process
+			Logger::log(
+				"Error syncing modified products",
+				[
+					'event' => 'product_sync_modified_products_error',
+					'error_message' => $e->getMessage(),
+				],
+				[
+					'should_save_log_in_woocommerce' => true,
+					'woocommerce_log_level' => \WC_Log_Levels::ERROR,
+				],
+				$e
+			);
 		}
-
-		// Queue up filtered IDs for sync
-		$this->create_or_update_products( $products_to_sync );
-
-		$profiling_logger->stop( 'create_or_update_all_products' );
 	}
 
 	/**
