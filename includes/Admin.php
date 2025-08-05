@@ -1078,6 +1078,13 @@ class Admin {
 				);
 				?>
 			</div>
+
+			<?php
+			if ( $product && $product->is_type( 'variable' ) ) {
+				// Render video field only for variable products
+				$this->render_facebook_product_video_field( $video_urls );
+			}
+			?>
 			
 			
 			<div class='options_group hide_if_variable'>
