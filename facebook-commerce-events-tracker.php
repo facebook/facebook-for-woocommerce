@@ -12,6 +12,7 @@ use WooCommerce\Facebook\Events\Event;
 use WooCommerce\Facebook\Framework\Api\Exception as ApiException;
 use WooCommerce\Facebook\Framework\Helper;
 use WooCommerce\Facebook\Framework\Logger;
+use WooCommerce\Facebook\Integrations\CostOfGoods\CostOfGoods;
 
 if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 
@@ -1016,12 +1017,14 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 			$contents      = array();
 			$product_ids   = array( array() );
 			$product_names = array();
+			$products	   = array();
 
 			foreach ( $order->get_items() as $item ) {
 
 				$product = $item->get_product();
 
 				if ( $product ) {
+					$products[] = $product;
 					$product_ids[]   = \WC_Facebookcommerce_Utils::get_fb_content_ids( $product );
 					$product_names[] = \WC_Facebookcommerce_Utils::clean_string( $product->get_title() );
 
@@ -1038,6 +1041,7 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 					$contents[] = $content;
 				}
 			}
+
 			// Advanced matching information is extracted from the order
 			$event_data = array(
 				'event_name'  => $event_name,
@@ -1046,12 +1050,18 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 					'content_name' => wp_json_encode( $product_names ),
 					'contents'     => wp_json_encode( $contents ),
 					'content_type' => $content_type,
-					'value'        => $order->get_total(),
+					'value'        => $order->get_subtotal(),
 					'currency'     => ( method_exists( $order, 'get_currency' ) ? $order->get_currency() : get_woocommerce_currency() ),
 					'order_id'     => $order_id,
 				),
 				'user_data'   => $this->get_user_data_from_billing_address( $order ),
 			);
+
+			$cogs = CostOfGoods::calculate_cogs_for_products( $products );
+
+			if ( false !== $cogs ) {
+				$event_data['custom_data']['net_revenue'] = $cogs;
+			}
 
 			$event = new Event( $event_data );
 
