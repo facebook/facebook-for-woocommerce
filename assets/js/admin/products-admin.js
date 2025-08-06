@@ -537,16 +537,35 @@ jQuery( document ).ready( function( $ ) {
 
 			// Remove 'show' class from all product-image-source-field elements
 			$container.find( '.product-image-source-field' ).removeClass( 'show' );
+			
 			// Add 'show' class to the selected image source field
 			$container.find( `.show-if-product-image-source-${imageSource}` ).addClass( 'show' );
+
+			// Specifically handle multiple images thumbnails visibility
+			let $thumbnailsContainer = $container.find( '.fb-product-images-thumbnails' );
+			if (imageSource === 'multiple') {
+				$thumbnailsContainer.show();
+			} else {
+				$thumbnailsContainer.hide();
+			}
 		} );
 
-		$( '.js-fb-product-image-source:checked' ).trigger( 'change' );
+		// Trigger initial show/hide on page load
+		function triggerImageSourceChange() {
+			$( '.js-fb-product-image-source:checked' ).each(function() {
+				$(this).trigger( 'change' );
+			});
+		}
+		
+		// Run immediately and with delay to handle different loading states
+		triggerImageSourceChange();
+		setTimeout(triggerImageSourceChange, 100);
+		setTimeout(triggerImageSourceChange, 500);
 
 		// trigger settings fields modifiers when variations are loaded
 		$productData.on( 'woocommerce_variations_loaded', function() {
 			$( '.js-variable-fb-sync-toggle:visible' ).trigger( 'change' );
-			$( '.js-fb-product-image-source:checked' ).trigger( 'change' );
+			setTimeout(triggerImageSourceChange, 100);
 			$( '.variable_is_virtual:visible' ).trigger( 'change' );
 		} );
 
@@ -836,8 +855,13 @@ jQuery( document ).ready( function( $ ) {
 			event.preventDefault();
 			const $button = $(this);
 			const attachmentId = parseInt($button.data('attachment-id'), 10);
-			const variationIndex = $button.data('variation-index');
-			removeImageThumbnail(attachmentId, variationIndex, $button.closest('.form-field'));
+			
+			// Get variation index from the thumbnails container ID
+			const $thumbnailsContainer = $button.closest('.fb-product-images-thumbnails');
+			const containerId = $thumbnailsContainer.attr('id'); // e.g., "fb_product_images_selected_thumbnails_0"
+			const variationIndex = containerId ? parseInt(containerId.split('_').pop(), 10) : 0;
+			
+			removeImageThumbnail(attachmentId, variationIndex, $button.closest('.image-thumbnail'));
 		});
 
 	}

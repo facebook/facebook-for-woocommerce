@@ -181,6 +181,18 @@
 	display: block !important;
 }
 
+/* Specifically hide multiple images thumbnails when not selected */
+.woocommerce_variation .show-if-product-image-source-multiple:not(.show) .fb-product-images-thumbnails,
+.woocommerce_variation .show-if-product-image-source-multiple:not(.show) .image-thumbnail {
+	display: none !important;
+}
+
+/* Show multiple images thumbnails only when multiple images is selected */
+.woocommerce_variation .show-if-product-image-source-multiple.show .fb-product-images-thumbnails,
+.woocommerce_variation .show-if-product-image-source-multiple.show .image-thumbnail {
+	display: block !important;
+}
+
 #woocommerce-product-data #wc-facebook-google-product-category-fields {
 	width: 50%;
 }
