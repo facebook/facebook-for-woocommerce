@@ -9,7 +9,7 @@ use WooCommerce\Facebook\Tests\AbstractWPUnitTestWithOptionIsolationAndSafeFilte
 /**
  * Unit tests for Products\Sync class - focused on create_or_update_modified_products() core logic.
  *
- * @since 2.0.0
+ * @since 3.5.5
  */
 class SyncTest extends AbstractWPUnitTestWithOptionIsolationAndSafeFiltering {
 
