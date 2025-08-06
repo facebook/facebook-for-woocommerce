@@ -403,9 +403,9 @@ class WC_Facebook_Product {
 
 			case Products::PRODUCT_IMAGE_SOURCE_MULTIPLE:
 				// Get multiple images from FB_PRODUCT_IMAGES meta field
-				$multiple_image_ids = $this->woo_product->get_meta( self::FB_PRODUCT_IMAGES );
+				$multiple_image_ids  = $this->woo_product->get_meta( self::FB_PRODUCT_IMAGES );
 				$multiple_image_urls = array();
-				
+
 				if ( ! empty( $multiple_image_ids ) ) {
 					// Split comma-separated attachment IDs
 					$attachment_ids = array_map( 'trim', explode( ',', $multiple_image_ids ) );
@@ -418,7 +418,7 @@ class WC_Facebook_Product {
 						}
 					}
 				}
-				
+
 				// Use multiple images first, then fallback to variation and parent images
 				$image_urls = array_merge( $multiple_image_urls, array( $product_image_url, $parent_product_image_url ) );
 				break;

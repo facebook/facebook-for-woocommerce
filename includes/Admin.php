@@ -951,10 +951,8 @@ class Admin {
 	 * @param int   $index      The variation index.
 	 * @param int   $variation_id The variation ID.
 	 */
-		private function render_facebook_product_images_field( $attachment_ids, $index, $variation_id ) {
+	private function render_facebook_product_images_field( $attachment_ids, $index, $variation_id ) {
 		// attachment_ids is already an array of attachment IDs
-		
-
 
 		// Output the form field for Facebook Product Images with a description tip
 		?>
@@ -964,29 +962,29 @@ class Admin {
 			<span class="woocommerce-help-tip" data-tip="<?php esc_attr_e( 'Choose multiple product images that should be synced to the Facebook catalog and displayed for this variation.', 'facebook-for-woocommerce' ); ?>" tabindex="0"></span>
 			
 			<div id="fb_product_images_selected_thumbnails_<?php echo esc_attr( $index ); ?>" class="fb-product-images-thumbnails">
-				<?php
-				if ( ! empty( $attachment_ids ) && is_array( $attachment_ids ) ) {
-					foreach ( $attachment_ids as $attachment_id ) {
-						$attachment_id = intval( $attachment_id );
-						if ( $attachment_id > 0 ) {
-							// Get the image thumbnail URL
-							$thumbnail_url = wp_get_attachment_image_url( $attachment_id, 'thumbnail' );
-							$full_url = wp_get_attachment_url( $attachment_id );
-							$filename = basename( get_attached_file( $attachment_id ) );
-							
-							if ( $thumbnail_url && $full_url ) {
-								?>
+			<?php
+			if ( ! empty( $attachment_ids ) && is_array( $attachment_ids ) ) {
+				foreach ( $attachment_ids as $attachment_id ) {
+					$attachment_id = intval( $attachment_id );
+					if ( $attachment_id > 0 ) {
+						// Get the image thumbnail URL
+						$thumbnail_url = wp_get_attachment_image_url( $attachment_id, 'thumbnail' );
+						$full_url      = wp_get_attachment_url( $attachment_id );
+						$filename      = basename( get_attached_file( $attachment_id ) );
+
+						if ( $thumbnail_url && $full_url ) {
+							?>
 								<p class="form-field image-thumbnail">
 									<img src="<?php echo esc_url( $thumbnail_url ); ?>">
 									<span data-attachment-id="<?php echo esc_attr( $attachment_id ); ?>"><?php echo esc_html( $filename ); ?></span>
 									<a href="#" class="remove-image" data-attachment-id="<?php echo esc_attr( $attachment_id ); ?>"><?php esc_html_e( 'Remove', 'facebook-for-woocommerce' ); ?></a>
 								</p>
 								<?php
-							}
 						}
 					}
 				}
-				?>
+			}
+			?>
 			</div>
 
 			<?php
@@ -1350,8 +1348,6 @@ class Admin {
 		$image_urls   = $this->get_product_variation_meta( $variation, \WC_Facebook_Product::FB_PRODUCT_IMAGES, $parent );
 		$fb_mpn       = $this->get_product_variation_meta( $variation, \WC_Facebook_Product::FB_MPN, $parent );
 
-
-
 		?>
 		<div class="facebook-metabox wc-metabox closed">
 			<h3>
@@ -1410,7 +1406,7 @@ class Admin {
 				$image_ids_array = ! empty( $image_urls ) ? explode( ',', $image_urls ) : [];
 				// Clean up the IDs and ensure they're numeric
 				$image_ids_array = array_filter( array_map( 'trim', $image_ids_array ), 'is_numeric' );
-				
+
 				$this->render_facebook_product_images_field( $image_ids_array, $index, $variation->get_id() );
 
 				woocommerce_wp_text_input(
@@ -1563,9 +1559,7 @@ class Admin {
 		// Fix: Look for the actual POST key format that WooCommerce generates
 		$posted_param = 'variable_' . \WC_Facebook_Product::FB_PRODUCT_IMAGES . $index;
 		$image_ids    = isset( $_POST[ $posted_param ] ) ? sanitize_text_field( wp_unslash( $_POST[ $posted_param ] ) ) : '';
-		
 
-		
 		$posted_param = 'variable_' . \WC_Facebook_Product::FB_PRODUCT_PRICE;
 		$price        = isset( $_POST[ $posted_param ][ $index ] ) ? wc_format_decimal( wc_clean( wp_unslash( $_POST[ $posted_param ][ $index ] ) ) ) : '';
 
