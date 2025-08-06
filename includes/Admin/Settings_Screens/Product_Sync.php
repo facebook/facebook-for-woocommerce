@@ -190,6 +190,7 @@ class Product_Sync extends Abstract_Settings_Screen {
 					href="#"
 					style="vertical-align: middle; margin-left: 20px;"
 				><?php esc_html_e( 'Sync modified products', 'facebook-for-woocommerce' ); ?></a>
+				<span class="woocommerce-help-tip" data-tip="<?php esc_attr_e( 'Sync only recently updated or modified products to keep your catalog up to date without a full resync', 'facebook-for-woocommerce' ); ?>" style="vertical-align: middle; margin-left: 5px;"></span>
 			<?php endif; ?>
 
 			<?php if ( facebook_for_woocommerce()->get_connection_handler()->is_connected() ) : ?>
@@ -199,6 +200,7 @@ class Product_Sync extends Abstract_Settings_Screen {
 					href="#"
 					style="vertical-align: middle; margin-left: 20px;"
 				><?php esc_html_e( 'Sync all products', 'facebook-for-woocommerce' ); ?></a>
+				<span class="woocommerce-help-tip" data-tip="<?php esc_attr_e( 'Force a complete resync of all published products to Facebook. This may take some time and should only be used if products are out of sync.', 'facebook-for-woocommerce' ); ?>" style="vertical-align: middle; margin-left: 5px;"></span>
 			<?php endif; ?>
 
 		</h2>
