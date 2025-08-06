@@ -367,14 +367,13 @@ class WC_Facebook_Loader {
 			return;
 		}
 
-		if ( false !== get_transient( 'wc_facebook_svr_flags_hourly_guard' ) ) {
+		if (
+			false !== get_transient( 'wc_facebook_svr_flags_hourly_guard' ) ||
+			false !== get_transient( 'wc_facebook_svr_flags_ds' )
+		) {
 			return;
 		}
 		set_transient( 'wc_facebook_svr_flags_hourly_guard', 1, HOUR_IN_SECONDS );
-
-		if ( false !== get_transient( 'wc_facebook_svr_flags_ds' ) ) {
-			return;
-		}
 
 		$wp_woo_flags = 0;
 
