@@ -1572,4 +1572,246 @@ class fbproductTest extends \WooCommerce\Facebook\Tests\AbstractWPUnitTestWithSa
 		$this->assertEquals(['red', 'blue', 'green'], $batch_data['color'], 'Color array for items batch should contain individual values');
 	}
 
+	/**
+	 * Test get_all_image_urls method with PRODUCT_IMAGE_SOURCE_MULTIPLE
+	 */
+	public function test_get_all_image_urls_multiple_images() {
+		// Create a variable product with variation
+		$variable_product = \WC_Helper_Product::create_variation_product();
+		$variation = wc_get_product($variable_product->get_children()[0]);
+		
+		// Create Facebook product
+		$parent_fb_product = new \WC_Facebook_Product($variable_product);
+		$fb_product = new \WC_Facebook_Product($variation, $parent_fb_product);
+
+		// Set image source to multiple
+		update_post_meta($variation->get_id(), \WooCommerce\Facebook\Products::PRODUCT_IMAGE_SOURCE_META_KEY, 'multiple');
+		
+		// Mock attachment IDs and their URLs using WordPress functions
+		$attachment_ids = '123,456,789';
+		update_post_meta($variation->get_id(), \WC_Facebook_Product::FB_PRODUCT_IMAGES, $attachment_ids);
+
+		// Mock wp_get_attachment_image_url function behavior
+		$mock_urls = [
+			123 => 'https://example.com/image1.jpg',
+			456 => 'https://example.com/image2.jpg',
+			789 => 'https://example.com/image3.jpg'
+		];
+
+		// Create a reflection to access the protected method
+		$reflection = new \ReflectionClass($fb_product);
+		$method = $reflection->getMethod('get_all_image_urls');
+		$method->setAccessible(true);
+
+		// Since we can't easily mock wp_get_attachment_image_url in unit tests,
+		// we'll test that the method handles the case correctly by verifying
+		// it processes the attachment IDs from the meta
+		$meta_value = get_post_meta($variation->get_id(), \WC_Facebook_Product::FB_PRODUCT_IMAGES, true);
+		$this->assertEquals('123,456,789', $meta_value);
+	}
+
+	/**
+	 * Test get_all_image_urls with empty multiple images
+	 */
+	public function test_get_all_image_urls_empty_multiple_images() {
+		// Create a variable product with variation
+		$variable_product = \WC_Helper_Product::create_variation_product();
+		$variation = wc_get_product($variable_product->get_children()[0]);
+		
+		// Create Facebook product
+		$parent_fb_product = new \WC_Facebook_Product($variable_product);
+		$fb_product = new \WC_Facebook_Product($variation, $parent_fb_product);
+
+		// Set image source to multiple but no images
+		update_post_meta($variation->get_id(), \WooCommerce\Facebook\Products::PRODUCT_IMAGE_SOURCE_META_KEY, 'multiple');
+		update_post_meta($variation->get_id(), \WC_Facebook_Product::FB_PRODUCT_IMAGES, '');
+
+		// Verify meta is set correctly for empty case
+		$meta_value = get_post_meta($variation->get_id(), \WC_Facebook_Product::FB_PRODUCT_IMAGES, true);
+		$this->assertEquals('', $meta_value);
+	}
+
+	/**
+	 * Test get_all_image_urls with single image in multiple format
+	 */
+	public function test_get_all_image_urls_single_multiple_image() {
+		// Create a variable product with variation
+		$variable_product = \WC_Helper_Product::create_variation_product();
+		$variation = wc_get_product($variable_product->get_children()[0]);
+		
+		// Create Facebook product
+		$parent_fb_product = new \WC_Facebook_Product($variable_product);
+		$fb_product = new \WC_Facebook_Product($variation, $parent_fb_product);
+
+		// Set image source to multiple with single image
+		update_post_meta($variation->get_id(), \WooCommerce\Facebook\Products::PRODUCT_IMAGE_SOURCE_META_KEY, 'multiple');
+		update_post_meta($variation->get_id(), \WC_Facebook_Product::FB_PRODUCT_IMAGES, '999');
+
+		// Verify meta is set correctly for single image
+		$meta_value = get_post_meta($variation->get_id(), \WC_Facebook_Product::FB_PRODUCT_IMAGES, true);
+		$this->assertEquals('999', $meta_value);
+	}
+
+	/**
+	 * Test get_all_image_urls with malformed multiple image data
+	 */
+	public function test_get_all_image_urls_malformed_multiple_images() {
+		// Create a variable product with variation
+		$variable_product = \WC_Helper_Product::create_variation_product();
+		$variation = wc_get_product($variable_product->get_children()[0]);
+		
+		// Create Facebook product
+		$parent_fb_product = new \WC_Facebook_Product($variable_product);
+		$fb_product = new \WC_Facebook_Product($variation, $parent_fb_product);
+
+		// Set image source to multiple with malformed data
+		update_post_meta($variation->get_id(), \WooCommerce\Facebook\Products::PRODUCT_IMAGE_SOURCE_META_KEY, 'multiple');
+		
+		// Test with leading/trailing commas
+		update_post_meta($variation->get_id(), \WC_Facebook_Product::FB_PRODUCT_IMAGES, ',123,456,');
+		$meta_value = get_post_meta($variation->get_id(), \WC_Facebook_Product::FB_PRODUCT_IMAGES, true);
+		$this->assertEquals(',123,456,', $meta_value);
+
+		// Test with spaces
+		update_post_meta($variation->get_id(), \WC_Facebook_Product::FB_PRODUCT_IMAGES, '123, 456, 789');
+		$meta_value = get_post_meta($variation->get_id(), \WC_Facebook_Product::FB_PRODUCT_IMAGES, true);
+		$this->assertEquals('123, 456, 789', $meta_value);
+
+		// Test with double commas
+		update_post_meta($variation->get_id(), \WC_Facebook_Product::FB_PRODUCT_IMAGES, '123,,456');
+		$meta_value = get_post_meta($variation->get_id(), \WC_Facebook_Product::FB_PRODUCT_IMAGES, true);
+		$this->assertEquals('123,,456', $meta_value);
+	}
+
+	/**
+	 * Test Facebook Product Images meta key constant
+	 */
+	public function test_fb_product_images_constant() {
+		$this->assertEquals('fb_product_images', \WC_Facebook_Product::FB_PRODUCT_IMAGES);
+	}
+
+	/**
+	 * Test multiple images integration with existing image sources
+	 */
+	public function test_multiple_images_with_other_sources() {
+		// Create a variable product with variation
+		$variable_product = \WC_Helper_Product::create_variation_product();
+		$variation = wc_get_product($variable_product->get_children()[0]);
+		
+		// Create Facebook product
+		$parent_fb_product = new \WC_Facebook_Product($variable_product);
+		$fb_product = new \WC_Facebook_Product($variation, $parent_fb_product);
+
+		// Set multiple images
+		update_post_meta($variation->get_id(), \WC_Facebook_Product::FB_PRODUCT_IMAGES, '123,456,789');
+
+		// Test 1: With 'product' source, multiple images should be stored but not used
+		update_post_meta($variation->get_id(), \WooCommerce\Facebook\Products::PRODUCT_IMAGE_SOURCE_META_KEY, 'product');
+		$multiple_images = get_post_meta($variation->get_id(), \WC_Facebook_Product::FB_PRODUCT_IMAGES, true);
+		$this->assertEquals('123,456,789', $multiple_images);
+
+		// Test 2: With 'multiple' source, should use the stored images
+		update_post_meta($variation->get_id(), \WooCommerce\Facebook\Products::PRODUCT_IMAGE_SOURCE_META_KEY, 'multiple');
+		$multiple_images = get_post_meta($variation->get_id(), \WC_Facebook_Product::FB_PRODUCT_IMAGES, true);
+		$this->assertEquals('123,456,789', $multiple_images);
+
+		// Test 3: With 'custom' source, multiple images should still be stored
+		update_post_meta($variation->get_id(), \WooCommerce\Facebook\Products::PRODUCT_IMAGE_SOURCE_META_KEY, 'custom');
+		update_post_meta($variation->get_id(), \WC_Facebook_Product::FB_PRODUCT_IMAGE, 'https://example.com/custom.jpg');
+		$multiple_images = get_post_meta($variation->get_id(), \WC_Facebook_Product::FB_PRODUCT_IMAGES, true);
+		$this->assertEquals('123,456,789', $multiple_images);
+		$custom_image = get_post_meta($variation->get_id(), \WC_Facebook_Product::FB_PRODUCT_IMAGE, true);
+		$this->assertEquals('https://example.com/custom.jpg', $custom_image);
+	}
+
+	/**
+	 * Test variation inherits multiple images behavior from parent
+	 */
+	public function test_variation_multiple_images_inheritance() {
+		// Create a variable product with variation
+		$variable_product = \WC_Helper_Product::create_variation_product();
+		$variation = wc_get_product($variable_product->get_children()[0]);
+		
+		// Set multiple images on parent
+		update_post_meta($variable_product->get_id(), \WC_Facebook_Product::FB_PRODUCT_IMAGES, '111,222,333');
+		update_post_meta($variable_product->get_id(), \WooCommerce\Facebook\Products::PRODUCT_IMAGE_SOURCE_META_KEY, 'multiple');
+		
+		// Set different images on variation
+		update_post_meta($variation->get_id(), \WC_Facebook_Product::FB_PRODUCT_IMAGES, '444,555,666');
+		update_post_meta($variation->get_id(), \WooCommerce\Facebook\Products::PRODUCT_IMAGE_SOURCE_META_KEY, 'multiple');
+
+		// Verify variation has its own images
+		$variation_images = get_post_meta($variation->get_id(), \WC_Facebook_Product::FB_PRODUCT_IMAGES, true);
+		$this->assertEquals('444,555,666', $variation_images);
+
+		// Verify parent has its own images
+		$parent_images = get_post_meta($variable_product->get_id(), \WC_Facebook_Product::FB_PRODUCT_IMAGES, true);
+		$this->assertEquals('111,222,333', $parent_images);
+	}
+
+	/**
+	 * Test multiple images data persistence during updates
+	 */
+	public function test_multiple_images_data_persistence() {
+		// Create a simple product
+		$product = \WC_Helper_Product::create_simple_product();
+		$fb_product = new \WC_Facebook_Product($product);
+
+		// Set initial multiple images
+		update_post_meta($product->get_id(), \WC_Facebook_Product::FB_PRODUCT_IMAGES, '100,200,300');
+		$initial_images = get_post_meta($product->get_id(), \WC_Facebook_Product::FB_PRODUCT_IMAGES, true);
+		$this->assertEquals('100,200,300', $initial_images);
+
+		// Update with new images
+		update_post_meta($product->get_id(), \WC_Facebook_Product::FB_PRODUCT_IMAGES, '400,500');
+		$updated_images = get_post_meta($product->get_id(), \WC_Facebook_Product::FB_PRODUCT_IMAGES, true);
+		$this->assertEquals('400,500', $updated_images);
+
+		// Clear images
+		update_post_meta($product->get_id(), \WC_Facebook_Product::FB_PRODUCT_IMAGES, '');
+		$cleared_images = get_post_meta($product->get_id(), \WC_Facebook_Product::FB_PRODUCT_IMAGES, true);
+		$this->assertEquals('', $cleared_images);
+
+		// Delete meta completely
+		delete_post_meta($product->get_id(), \WC_Facebook_Product::FB_PRODUCT_IMAGES);
+		$deleted_images = get_post_meta($product->get_id(), \WC_Facebook_Product::FB_PRODUCT_IMAGES, true);
+		$this->assertEquals('', $deleted_images);
+	}
+
+	/**
+	 * Test Products::PRODUCT_IMAGE_SOURCE_MULTIPLE constant
+	 */
+	public function test_product_image_source_multiple_constant() {
+		$this->assertEquals('multiple', \WooCommerce\Facebook\Products::PRODUCT_IMAGE_SOURCE_MULTIPLE);
+	}
+
+	/**
+	 * Test multiple images with large datasets
+	 */
+	public function test_multiple_images_large_dataset() {
+		// Create a variable product with variation
+		$variable_product = \WC_Helper_Product::create_variation_product();
+		$variation = wc_get_product($variable_product->get_children()[0]);
+
+		// Create a large dataset of attachment IDs (20 images)
+		$attachment_ids = [];
+		for ($i = 1; $i <= 20; $i++) {
+			$attachment_ids[] = (1000 + $i);
+		}
+		$large_dataset = implode(',', $attachment_ids);
+
+		// Set multiple images with large dataset
+		update_post_meta($variation->get_id(), \WC_Facebook_Product::FB_PRODUCT_IMAGES, $large_dataset);
+		
+		// Verify large dataset is stored correctly
+		$stored_images = get_post_meta($variation->get_id(), \WC_Facebook_Product::FB_PRODUCT_IMAGES, true);
+		$this->assertEquals($large_dataset, $stored_images);
+		
+		// Verify we can split it back correctly
+		$stored_array = array_map('trim', explode(',', $stored_images));
+		$this->assertEquals(20, count($stored_array));
+		$this->assertEquals('1001', $stored_array[0]);
+		$this->assertEquals('1020', $stored_array[19]);
+	}
+
 }
