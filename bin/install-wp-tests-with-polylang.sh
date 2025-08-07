@@ -1,0 +1,273 @@
+#!/usr/bin/env bash
+
+if [ $# -lt 3 ]; then
+  echo "usage: $0 <db-name> <db-user> <db-pass> [db-host] [wp-version] [wc-version] [polylang-version] [skip-database-creation]"
+  exit 1
+fi
+
+DB_NAME=$1
+DB_USER=$2
+DB_PASS=$3
+DB_HOST=${4-localhost}
+WP_VERSION=${5-latest}
+WC_VERSION=${6-latest}
+POLYLANG_VERSION=${7-latest}
+SKIP_DB_CREATE=${8-false}
+
+TMPDIR=${TMPDIR-/tmp}
+TMPDIR=$(echo $TMPDIR | sed -e "s/\/$//")
+WP_TESTS_DIR=${WP_TESTS_DIR-$TMPDIR/wordpress-tests-lib}
+WP_CORE_DIR=${WP_CORE_DIR-$TMPDIR/wordpress}
+
+# Plugin variables.
+PLUGINS_DIR="${WP_CORE_DIR}/wp-content/plugins"
+WC_DIR="${PLUGINS_DIR}/woocommerce"
+POLYLANG_DIR="${PLUGINS_DIR}/polylang"
+
+download() {
+  if [ $(which curl) ]; then
+    curl -s "$1" >"$2"
+  elif [ $(which wget) ]; then
+    wget -nv -O "$2" "$1"
+  fi
+}
+
+if [[ $WP_VERSION =~ ^[0-9]+\.[0-9]+\-(beta|RC)[0-9]+$ ]]; then
+  WP_BRANCH=${WP_VERSION%\-*}
+  WP_TESTS_TAG="branches/$WP_BRANCH"
+
+elif [[ $WP_VERSION =~ ^[0-9]+\.[0-9]+$ ]]; then
+  WP_TESTS_TAG="branches/$WP_VERSION"
+elif [[ $WP_VERSION =~ [0-9]+\.[0-9]+\.[0-9]+ ]]; then
+  if [[ $WP_VERSION =~ [0-9]+\.[0-9]+\.[0] ]]; then
+    # version x.x.0 means the first release of the major version, so strip off the .0 and download version x.x
+    WP_TESTS_TAG="tags/${WP_VERSION%??}"
+  else
+    WP_TESTS_TAG="tags/$WP_VERSION"
+  fi
+elif [[ $WP_VERSION == 'nightly' || $WP_VERSION == 'trunk' ]]; then
+  WP_TESTS_TAG="trunk"
+else
+  # http serves a single offer, whereas https serves multiple. we only want one
+  download http://api.wordpress.org/core/version-check/1.7/ "${TMPDIR}/wp-latest.json"
+  grep '[0-9]+\.[0-9]+(\.[0-9]+)?' "${TMPDIR}/wp-latest.json"
+  LATEST_VERSION=$(grep -o '"version":"[^"]*' "${TMPDIR}/wp-latest.json" | sed 's/"version":"//')
+  if [[ -z "$LATEST_VERSION" ]]; then
+    echo "Latest WordPress version could not be found"
+    exit 1
+  fi
+  WP_TESTS_TAG="tags/$LATEST_VERSION"
+fi
+
+# Get latest WC version
+if [[ $WC_VERSION == 'latest' ]]; then
+  download https://api.wordpress.org/plugins/info/1.0/woocommerce.json "${TMPDIR}/wc-latest.json"
+  WC_LATEST_VERSION=$(grep -o '"version":"[^"]*' "${TMPDIR}/wc-latest.json" | sed 's/"version":"//')
+  if [[ -z "$WC_LATEST_VERSION" ]]; then
+    echo "Latest WooCommerce version could not be found"
+    exit 1
+  fi
+  WC_VERSION=$WC_LATEST_VERSION
+fi
+
+# Get latest Polylang version
+if [[ $POLYLANG_VERSION == 'latest' ]]; then
+  download https://api.wordpress.org/plugins/info/1.0/polylang.json "${TMPDIR}/polylang-latest.json"
+  POLYLANG_LATEST_VERSION=$(grep -o '"version":"[^"]*' "${TMPDIR}/polylang-latest.json" | sed 's/"version":"//')
+  if [[ -z "$POLYLANG_LATEST_VERSION" ]]; then
+    echo "Latest Polylang version could not be found"
+    exit 1
+  fi
+  POLYLANG_VERSION=$POLYLANG_LATEST_VERSION
+fi
+
+set -ex
+
+install_wp() {
+
+  if [ -d "$WP_CORE_DIR" ]; then
+    return
+  fi
+
+  mkdir -p "$WP_CORE_DIR"
+
+  if [[ $WP_VERSION == 'nightly' || $WP_VERSION == 'trunk' ]]; then
+    mkdir -p "$TMPDIR"/wordpress-trunk
+    rm -rf "$TMPDIR"/wordpress-trunk/*
+    svn export --quiet https://core.svn.wordpress.org/trunk "$TMPDIR"/wordpress-trunk/wordpress
+    mv "$TMPDIR"/wordpress-trunk/wordpress/* "$WP_CORE_DIR"
+  else
+    if [ $WP_VERSION == 'latest' ]; then
+      local ARCHIVE_NAME='latest'
+    elif [[ $WP_VERSION =~ [0-9]+\.[0-9]+ ]]; then
+      # https serves multiple offers, whereas http serves single.
+      download https://api.wordpress.org/core/version-check/1.7/ "$TMPDIR"/wp-latest.json
+      if [[ $WP_VERSION =~ [0-9]+\.[0-9]+\.[0] ]]; then
+        # version x.x.0 means the first release of the major version, so strip off the .0 and download version x.x
+        LATEST_VERSION=${WP_VERSION%??}
+      else
+        # otherwise, scan the releases and get the most up to date minor version of the major release
+        local VERSION_ESCAPED=$(echo $WP_VERSION | sed 's/\./\\\\./g')
+        LATEST_VERSION=$(grep -o '"version":"'$VERSION_ESCAPED'[^"]*' "$TMPDIR"/wp-latest.json | sed 's/"version":"//' | head -1)
+      fi
+      if [[ -z "$LATEST_VERSION" ]]; then
+        local ARCHIVE_NAME="wordpress-$WP_VERSION"
+      else
+        local ARCHIVE_NAME="wordpress-$LATEST_VERSION"
+      fi
+    else
+      local ARCHIVE_NAME="wordpress-$WP_VERSION"
+    fi
+    download https://wordpress.org/${ARCHIVE_NAME}.tar.gz "$TMPDIR"/wordpress.tar.gz
+    tar --strip-components=1 -zxmf "$TMPDIR"/wordpress.tar.gz -C "$WP_CORE_DIR"
+  fi
+
+  download https://raw.github.com/markoheijnen/wp-mysqli/master/db.php "$WP_CORE_DIR"/wp-content/db.php
+}
+
+install_test_suite() {
+  # portable in-place argument for both GNU sed and Mac OSX sed
+  if [[ $(uname -s) == 'Darwin' ]]; then
+    local ioption='-i.bak'
+  else
+    local ioption='-i'
+  fi
+
+  # set up testing suite if it doesn't yet exist
+  if [ ! -d "$WP_TESTS_DIR" ]; then
+    # set up testing suite
+    mkdir -p "$WP_TESTS_DIR"
+    rm -rf "$WP_TESTS_DIR"/{includes,data}
+    svn export --quiet --ignore-externals https://develop.svn.wordpress.org/${WP_TESTS_TAG}/tests/phpunit/includes/ "$WP_TESTS_DIR"/includes
+    svn export --quiet --ignore-externals https://develop.svn.wordpress.org/${WP_TESTS_TAG}/tests/phpunit/data/ "$WP_TESTS_DIR"/data
+  fi
+
+  if [ ! -f wp-tests-config.php ]; then
+    download https://develop.svn.wordpress.org/${WP_TESTS_TAG}/wp-tests-config-sample.php "$WP_TESTS_DIR"/wp-tests-config.php
+    # remove all forward slashes in the end
+    WP_CORE_DIR=$(echo $WP_CORE_DIR | sed "s:/\+$::")
+    sed $ioption "s:dirname( __FILE__ ) . '/src/':'$WP_CORE_DIR/':" "$WP_TESTS_DIR"/wp-tests-config.php
+    sed $ioption "s:__DIR__ . '/src/':'$WP_CORE_DIR/':" "$WP_TESTS_DIR"/wp-tests-config.php
+    sed $ioption "s/youremptytestdbnamehere/$DB_NAME/" "$WP_TESTS_DIR"/wp-tests-config.php
+    sed $ioption "s/yourusernamehere/$DB_USER/" "$WP_TESTS_DIR"/wp-tests-config.php
+    sed $ioption "s/yourpasswordhere/$DB_PASS/" "$WP_TESTS_DIR"/wp-tests-config.php
+    sed $ioption "s|localhost|${DB_HOST}|" "$WP_TESTS_DIR"/wp-tests-config.php
+  fi
+
+}
+
+recreate_db() {
+  shopt -s nocasematch
+  if [[ $1 =~ ^(y|yes)$ ]]; then
+    mysqladmin drop $DB_NAME -f --user="$DB_USER" --password="$DB_PASS"$EXTRA
+    create_db
+    echo "Recreated the database ($DB_NAME)."
+  else
+    echo "Leaving the existing database ($DB_NAME) in place."
+  fi
+  shopt -u nocasematch
+}
+
+create_db() {
+  mysqladmin create $DB_NAME --user="$DB_USER" --password="$DB_PASS"$EXTRA
+}
+
+install_db() {
+
+  if [ ${SKIP_DB_CREATE} = "true" ]; then
+    return 0
+  fi
+
+  # parse DB_HOST for port or socket references
+  local PARTS=(${DB_HOST//\:/ })
+  local DB_HOSTNAME=${PARTS[0]}
+  local DB_SOCK_OR_PORT=${PARTS[1]}
+  local EXTRA=""
+
+  if ! [ -z $DB_HOSTNAME ]; then
+    if [ $(echo $DB_SOCK_OR_PORT | grep -e '^[0-9]\{1,\}$') ]; then
+      EXTRA=" --host=$DB_HOSTNAME --port=$DB_SOCK_OR_PORT --protocol=tcp"
+    elif ! [ -z $DB_SOCK_OR_PORT ]; then
+      EXTRA=" --socket=$DB_SOCK_OR_PORT"
+    elif ! [ -z $DB_HOSTNAME ]; then
+      EXTRA=" --host=$DB_HOSTNAME --protocol=tcp"
+    fi
+  fi
+
+  # create database
+  if [ $(mysql --user="$DB_USER" --password="$DB_PASS"$EXTRA --execute='show databases;' | grep ^$DB_NAME$) ]; then
+    echo "Reinstalling will delete the existing test database ($DB_NAME)"
+    read -p 'Are you sure you want to proceed? [y/N]: ' DELETE_EXISTING_DB
+    recreate_db $DELETE_EXISTING_DB
+  else
+    create_db
+  fi
+}
+
+install_wc() {
+  WC_VERSION_FILE="${WC_DIR}/version-"$(echo $WC_VERSION | sed -e "s/\//-/")
+  if [ ! -f "$WC_VERSION_FILE" ]; then
+    # set up testing suite
+    rm -rf "$WC_DIR"
+    mkdir -p "$WC_DIR"
+    echo "Installing WooCommerce ($WC_VERSION)."
+    # Grab the necessary plugins.
+    WC_TMPDIR="${TMPDIR}/woocommerce-${WC_VERSION}"
+    rm -rf "${WC_TMPDIR}"
+    git clone --quiet --depth=1 --branch="$WC_VERSION" https://github.com/woocommerce/woocommerce.git "$WC_TMPDIR"
+
+    # Install composer for WooCommerce
+    cd "$WC_TMPDIR"/plugins/woocommerce
+    composer install --ignore-platform-reqs --no-interaction --no-dev
+
+  # Symlink woocommerce plugin
+    mv "${WC_TMPDIR}"/plugins/woocommerce/* "$WC_DIR"
+	touch "$WC_VERSION_FILE"
+
+    cd "${WC_DIR}"
+
+    # Generate feature config for WooCommerce
+    GENERATE_FEATURE_CONFIG=bin/generate-feature-config.php
+    if [ -f $GENERATE_FEATURE_CONFIG ]; then
+      php $GENERATE_FEATURE_CONFIG
+    fi
+
+    cd -
+  else
+    echo "WooCommerce ($WC_VERSION) already installed."
+  fi
+}
+
+install_polylang() {
+  POLYLANG_VERSION_FILE="${POLYLANG_DIR}/version-"$(echo $POLYLANG_VERSION | sed -e "s/\//-/")
+  if [ ! -f "$POLYLANG_VERSION_FILE" ]; then
+    # set up polylang plugin
+    rm -rf "$POLYLANG_DIR"
+    mkdir -p "$POLYLANG_DIR"
+    echo "Installing Polylang ($POLYLANG_VERSION)."
+
+    # Download Polylang from WordPress.org
+    download "https://downloads.wordpress.org/plugin/polylang.${POLYLANG_VERSION}.zip" "${TMPDIR}/polylang.zip"
+
+    # Extract the plugin
+    unzip -q "${TMPDIR}/polylang.zip" -d "${TMPDIR}"
+
+    # Move to the plugins directory
+    mv "${TMPDIR}/polylang"/* "$POLYLANG_DIR"
+    touch "$POLYLANG_VERSION_FILE"
+
+    # Clean up
+    rm -f "${TMPDIR}/polylang.zip"
+    rm -rf "${TMPDIR}/polylang"
+
+    echo "Polylang ($POLYLANG_VERSION) installed successfully."
+  else
+    echo "Polylang ($POLYLANG_VERSION) already installed."
+  fi
+}
+
+install_wp
+install_wc
+install_polylang
+install_test_suite
+install_db
