@@ -159,47 +159,6 @@ jQuery( document ).ready( function( $ ) {
 		syncInProgress();
 	}
 
-	// handle the modified sync button click
-	$( '#woocommerce-facebook-settings-sync-modified-products' ).click( function( event ) {
-
-		event.preventDefault();
-
-		if ( confirm( facebook_for_woocommerce_settings_sync.i18n.confirm_sync_modified ) ) {
-
-			setProductSyncStatus();
-
-			let startTime = Date.now();
-
-			$.post( facebook_for_woocommerce_settings_sync.ajax_url, {
-				action: 'wc_facebook_sync_modified_products',
-				nonce:  facebook_for_woocommerce_settings_sync.sync_modified_products_nonce,
-			}, function ( response ) {
-
-				if ( ! response.success ) {
-
-					let error = facebook_for_woocommerce_settings_sync.i18n.general_error;
-
-					if ( response.data && response.data.length > 0 ) {
-						error = response.data;
-					}
-
-					clearSyncInProgress( error );
-
-				} else {
-
-					// get the current sync status after a successful response but make sure to wait at least 10 seconds since the button was pressed
-					setTimeout( getSyncStatus, Math.max( 0, 10000 - ( Date.now() - startTime ) ) );
-				}
-
-			} ).fail( function() {
-
-				clearSyncInProgress( facebook_for_woocommerce_settings_sync.i18n.general_error );
-
-			} );
-		}
-
-	} );
-
 	// handle the sync button click
 	$( '#woocommerce-facebook-settings-sync-products' ).click( function( event ) {
 

@@ -44,9 +44,6 @@ class AJAX {
 		// sync all products via AJAX
 		add_action( 'wp_ajax_wc_facebook_sync_products', array( $this, 'sync_products' ) );
 
-		// sync all modified products via AJAX
-		add_action( 'wp_ajax_wc_facebook_sync_modified_products', array( $this, 'sync_modified_products' ) );
-
 		// sync all coupons via AJAX
 		add_action( 'wp_ajax_wc_facebook_sync_coupons', array( $this, 'sync_coupons' ) );
 
@@ -132,50 +129,26 @@ class AJAX {
 	}
 
 	/**
-	 * Syncs all products via AJAX.
+	 * Syncs all products via AJAX (modified products first, then all products).
 	 *
 	 * @internal
 	 *
 	 * @since 2.0.0
 	 */
 	public function sync_products() {
-		// Allow opt-out of full batch-API sync, for example if store has a large number of products.
-		if ( ! facebook_for_woocommerce()->get_integration()->allow_full_batch_api_sync() ) {
-			wp_send_json_error( __( 'Full product sync disabled by filter.', 'facebook-for-woocommerce' ) );
-			return;
-		}
-
-		check_admin_referer( Product_Sync::ACTION_SYNC_PRODUCTS, 'nonce' );
-
-		try {
-			facebook_for_woocommerce()->get_products_sync_handler()->create_or_update_all_products();
-			wp_send_json_success();
-		} catch ( \Exception $exception ) {
-			wp_send_json_error( $exception->getMessage() );
-		}
-	}
-
-	/**
-	 * Syncs all products via AJAX.
-	 *
-	 * @internal
-	 *
-	 * @since 2.0.0
-	 */
-	public function sync_modified_products() {
 		Logger::log(
-			'Starting AJAX sync of modified products',
+			'Starting product sync (modified first, then all)',
 			[
-				'event' => 'ajax_product_sync_modified_products_start',
+				'event' => 'ajax_product_sync_start',
 			]
 		);
 
 		// Allow opt-out of full batch-API sync, for example if store has a large number of products.
 		if ( ! facebook_for_woocommerce()->get_integration()->allow_full_batch_api_sync() ) {
 			Logger::log(
-				'Full product sync disabled by filter',
+				'Product sync disabled by filter',
 				[
-					'event' => 'ajax_product_sync_modified_products_disabled',
+					'event' => 'ajax_product_sync_disabled',
 				]
 			);
 			wp_send_json_error( __( 'Full product sync disabled by filter.', 'facebook-for-woocommerce' ) );
@@ -183,23 +156,51 @@ class AJAX {
 		}
 
 		try {
-			check_admin_referer( Product_Sync::ACTION_SYNC_MODIFIED_PRODUCTS, 'nonce' );
+			check_admin_referer( Product_Sync::ACTION_SYNC_PRODUCTS, 'nonce' );
 
-			facebook_for_woocommerce()->get_products_sync_handler()->create_or_update_modified_products();
+			// Step 1: Queue modified products for sync
+			Logger::log(
+				'Step 1: Queuing modified products for sync',
+				[
+					'event' => 'ajax_product_sync_step1_start',
+				]
+			);
+
+			$sync_handler = facebook_for_woocommerce()->get_products_sync_handler();
+			$sync_handler->create_or_update_modified_products();
 
 			Logger::log(
-				'Completed AJAX sync of modified products',
+				'Step 1: Modified products queued for sync',
 				[
-					'event' => 'ajax_product_sync_modified_products_complete',
+					'event' => 'ajax_product_sync_step1_queued',
+				]
+			);
+
+			// Step 2: Queue all products for sync
+			Logger::log(
+				'Step 2: Queuing all products for sync',
+				[
+					'event' => 'ajax_product_sync_step2_start',
+				]
+			);
+
+			// Create a new sync handler instance to avoid request array conflicts
+			$sync_handler_all = new \WooCommerce\Facebook\Products\Sync();
+			$sync_handler_all->create_or_update_all_products();
+
+			Logger::log(
+				'Completed product sync queuing',
+				[
+					'event' => 'ajax_product_sync_complete',
 				]
 			);
 
 			wp_send_json_success();
 		} catch ( \Exception $exception ) {
 			Logger::log(
-				'Error syncing modified products via AJAX',
+				'Error during product sync',
 				[
-					'event' => 'ajax_product_sync_modified_products_error',
+					'event' => 'ajax_product_sync_error',
 					'error_message' => $exception->getMessage(),
 				],
 				[
@@ -211,6 +212,7 @@ class AJAX {
 			wp_send_json_error( $exception->getMessage() );
 		}
 	}
+
 
 	/**
 	 * Syncs all coupons via AJAX.
