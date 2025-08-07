@@ -54,7 +54,7 @@ jQuery( document ).ready( function( $ ) {
 	 */
 	function toggleSettingOptions( enable ) {
 
-		$( '.product-sync-field, .product-sync-modify-field' ).each( function() {
+		$( '.product-sync-field' ).each( function() {
 
 			let $element = $( this );
 
