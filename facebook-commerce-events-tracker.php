@@ -930,7 +930,7 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 			$hook_name = current_action();
 
 			// Determine if this is a browser or server event.
-			$is_browser = $hook_name === 'woocommerce_thankyou';
+			$is_browser = 'woocommerce_thankyou' === $hook_name;
 
 			// If the event is triggered by a hook that is not related to the browser, it is a server event.
 			$meta_flag = $is_browser ? '_meta_purchase_tracked_browser' : '_meta_purchase_tracked_server';
@@ -1006,7 +1006,7 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 			$event_id = $order->get_meta( '_meta_event_id' );
 			if ( empty( $event_id ) ) {
 				$temp_event = new Event( [] );
-				$event_id = $temp_event->get_id();
+				$event_id   = $temp_event->get_id();
 				$order->add_meta_data( '_meta_event_id', $event_id, true );
 				$order->save();
 			}
