@@ -190,7 +190,6 @@ class Product_Sync extends Abstract_Settings_Screen {
 					href="#"
 					style="vertical-align: middle; margin-left: 20px;"
 				><?php esc_html_e( 'Sync products', 'facebook-for-woocommerce' ); ?></a>
-				<span class="woocommerce-help-tip" data-tip="<?php esc_attr_e( 'Syncs everything to Facebook, prioritizing recent changes first for efficiency.', 'facebook-for-woocommerce' ); ?>" style="vertical-align: middle; margin-left: 5px;"></span>
 			<?php endif; ?>
 
 		</h2>
