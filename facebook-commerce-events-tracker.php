@@ -51,6 +51,9 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 		/** @var bool whether the pixel should be enabled */
 		private $is_pixel_enabled;
 
+		/** @var \FacebookAds\ParamBuilder|null parameter builder instance */
+		private $param_builder = null;
+
 
 		/**
 		 * Events tracker constructor.
@@ -69,6 +72,42 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 			$this->tracked_events = array();
 
 			$this->add_hooks();
+			$this->initialize_param_builder();
+		}
+
+		/**
+		 * Initialize the Facebook CAPI Parameter Builder
+		 *
+		 * @since 3.0.0
+		 */
+		private function initialize_param_builder() {
+			try {
+				// Initialize the Facebook CAPI Parameter Builder with the site domain
+				$site_url = $_SERVER['HTTP_HOST'];
+				$this->param_builder = new \FacebookAds\ParamBuilder( array( $site_url ) );
+
+				// Process the request to get any cookies that need to be set
+				$cookie_to_set = $this->param_builder->processRequest(
+					$_SERVER['HTTP_HOST'],
+					$_GET,
+					$_COOKIE,
+					$_SERVER['HTTP_REFERER'] ?? null
+				);
+
+				// If there are cookies to set, set them
+				if ( ! empty( $cookie_to_set ) ) {
+					foreach ($cookie_to_set as $cookie) {
+						$res = setcookie(
+							$cookie->name,
+							$cookie->value,
+							time() + $cookie->max_age,
+							'/',
+							$cookie->domain);
+					}
+				}
+			} catch ( \Exception $exception ) {
+				facebook_for_woocommerce()->log( 'Error initializing CAPI Parameter Builder: ' . $exception->getMessage() );
+			}
 		}
 
 
@@ -1023,6 +1062,17 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 
 			if ( $send_now ) {
 				try {
+					// Get fbc and fbp values from the parameter builder
+					$fbc = $this->param_builder->getFbc();
+					$fbp = $this->param_builder->getFbp();
+
+					// $event_data = $event->get_data();
+					if (!empty($fbc)) {
+						$event['user_data']['fbc'] = $fbc;
+					}
+					if (!empty($fbp)) {
+						$event['user_data']['fbp'] = $fbp;
+					}
 					facebook_for_woocommerce()->get_api()->send_pixel_events( facebook_for_woocommerce()->get_integration()->get_facebook_pixel_id(), array( $event ) );
 				} catch ( ApiException $exception ) {
 					facebook_for_woocommerce()->log( 'Could not send Pixel event: ' . $exception->getMessage() );
