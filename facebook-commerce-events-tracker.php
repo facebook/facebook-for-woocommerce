@@ -1002,6 +1002,15 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 					$contents[] = $content;
 				}
 			}
+
+			$event_id = $order->get_meta( '_meta_event_id' );
+			if ( empty( $event_id ) ) {
+				$temp_event = new Event( [] );
+				$event_id = $temp_event->get_id();
+				$order->add_meta_data( '_meta_event_id', $event_id, true );
+				$order->save();
+			}
+
 			// Advanced matching information is extracted from the order
 			$event_data = array(
 				'event_name'  => $event_name,
@@ -1015,13 +1024,14 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 					'order_id'     => $order_id,
 				),
 				'user_data'   => $this->get_user_data_from_billing_address( $order ),
+				'event_id'    => $event_id,
 			);
 
 			$event = new Event( $event_data );
 
 			$this->send_api_event( $event );
 
-			$event_data['event_id'] = $event->get_id();
+			$event_data['event_id'] = $event_id;
 
 			$this->pixel->inject_event( $event_name, $event_data );
 
