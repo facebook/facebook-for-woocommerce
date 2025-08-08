@@ -123,17 +123,51 @@
 
 #woocommerce-product-data #wc-facebook-google-product-category-fields {
 	width: 50%;
+	margin-top: 0;
+	padding-top: 0;
+	vertical-align: top;
+}
+
+#woocommerce-product-data .wc-facebook-google-product-category-field {
+	margin-bottom: 10px;
+	clear: both;
+}
+
+#woocommerce-product-data .wc-facebook-google-product-category-field:first-child {
+	margin-top: 0;
+	padding-top: 0;
 }
 
 #woocommerce-product-data .wc-facebook-google-product-category-field select {
 	float: none;
 	width: 100%;
 	max-width: none;
+	margin-bottom: 0;
+	margin-top: 0;
 }
 
 #woocommerce-product-data #wc-facebook-google-product-category-fields .select2-container {
 	float: none;
 	width: 100% !important;
+	margin-bottom: 10px;
+	margin-top: 0;
+}
+
+#woocommerce-product-data #wc-facebook-google-product-category-fields .select2-container .select2-selection--single {
+	height: 28px;
+	line-height: 28px;
+}
+
+#woocommerce-product-data #wc-facebook-google-product-category-fields .select2-container .select2-selection--single .select2-selection__rendered {
+	line-height: 28px;
+	padding-left: 8px;
+	padding-right: 20px;
+}
+
+#woocommerce-product-data #wc-facebook-google-product-category-fields .select2-container .select2-selection--single .select2-selection__arrow {
+	height: 26px;
+	top: 1px;
+	right: 1px;
 }
 
 .notice .button.js-wc-plugin-framework-notice-dismiss {
