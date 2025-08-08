@@ -1019,6 +1019,11 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 		 * @param bool  $send_now optional, defaults to true
 		 */
 		protected function send_api_event( Event $event, bool $send_now = true ) {
+			if (isset($_SERVER['HTTP_REFERER'])) {
+				$event_data = $event->get_data();
+				$event_data['referrer_url'] = $_SERVER['HTTP_REFERER'];
+				$event = new Event( $event_data );
+			}
 			$this->tracked_events[] = $event;
 
 			if ( $send_now ) {
