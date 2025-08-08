@@ -167,5 +167,21 @@ jQuery( document ).ready( function( $ ) {
             // No fail condition
         });
     });
+
+	// Product set banner dismissed callback 
+    $('.fb-product-set-banner').on('click', '.notice-dismiss', function(event) {
+		event.preventDefault();
+        $.post( facebook_for_woocommerce_plugin_update.ajax_url, {
+            action: 'wc_facebook_product_set_banner_closed',
+            nonce:  facebook_for_woocommerce_plugin_update.product_set_banner_closed_nonce,
+        }, function (response){
+            data = typeof response === "string" ? JSON.parse(response) : response;
+            if(data.success){
+                // No success condition
+            }   
+        }).fail(function(xhr) {
+            // No fail conditon
+        });
+    });
 });
 

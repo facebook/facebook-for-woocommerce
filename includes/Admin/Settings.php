@@ -344,6 +344,11 @@ class Settings {
 	}
 
 	public function display_fb_product_sets_removed_banner() {
+		$dismissed = get_transient( 'fb_product_set_banner_dismissed' );
+		if ( $dismissed ) {
+			return; // Banner dismissed, do not show
+		}
+
 		$screen = get_current_screen();
 		if ( ! $screen || ( 'marketing_page_wc-facebook' !== $screen->id && 'woocommerce_page_wc-facebook' !== $screen->id ) ) {
 			return;
@@ -351,7 +356,7 @@ class Settings {
 
 		$fb_catalog_id = facebook_for_woocommerce()->get_integration()->get_product_catalog_id();
 		?>
-			<div class="notice notice-info is-dismissible">
+			<div class="notice notice-info is-dismissible fb-product-set-banner">
 				<p><strong>The Product Sets tab has been removed</strong></p>
 				<p>The Product Sets tab is no longer available in the plugin. All product sets you created previously remain intact and accessible. Your WooCommerce categories will continue to sync automatically as product sets to your Meta catalog. To update synced sets, please <a href="edit-tags.php?taxonomy=product_cat&post_type=product" target="_blank" rel="noopener noreferrer">edit your categories in WooCommerce</a>. To view and manage your synced product sets, visit <a href="https://business.facebook.com/commerce/catalogs/<?php echo esc_attr( $fb_catalog_id ); ?>/sets" target="_blank" rel="noopener noreferrer">Commerce Manager</a>.</p>
 			</div>
