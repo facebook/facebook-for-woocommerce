@@ -1539,8 +1539,10 @@ class Admin {
 	 * @return string the sync mode
 	 */
 	private function determine_variation_sync_mode( $variation ) {
+		// phpcs:ignore WordPress.Security.NonceVerification.Missing -- Nonce verification is handled in save_product_variation_edit_fields method
 		$sync_mode = isset( $_POST['wc_facebook_sync_mode'] ) ? wc_clean( wp_unslash( $_POST['wc_facebook_sync_mode'] ) ) : self::SYNC_MODE_SYNC_DISABLED;
 
+		// phpcs:ignore WordPress.Security.NonceVerification.Missing -- Nonce verification is handled in save_product_variation_edit_fields method
 		if ( ! isset( $_POST['wc_facebook_sync_mode'] ) ) {
 			$sync_mode = $this->get_parent_product_sync_mode( $variation );
 		}
@@ -1583,7 +1585,7 @@ class Admin {
 	 */
 	private function process_variation_post_data( $index ) {
 		$posted_param = 'variable_' . \WC_Facebookcommerce_Integration::FB_PRODUCT_DESCRIPTION;
-		// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Intentionally getting raw value to apply different sanitization methods below
+		// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized,WordPress.Security.NonceVerification.Missing -- Intentionally getting raw value to apply different sanitization methods below, nonce verification handled in save_product_variation_edit_fields method
 		$description_raw = isset( $_POST[ $posted_param ][ $index ] ) ? wp_unslash( $_POST[ $posted_param ][ $index ] ) : null;
 
 		// Create separate sanitized versions for different purposes
@@ -1591,17 +1593,23 @@ class Admin {
 		$description_rich  = $description_raw ? wp_kses_post( $description_raw ) : null; // HTML-preserved for rich text description
 
 		$posted_param = 'variable_' . \WC_Facebook_Product::FB_MPN;
+		// phpcs:ignore WordPress.Security.NonceVerification.Missing -- Nonce verification is handled in save_product_variation_edit_fields method
 		$fb_mpn       = isset( $_POST[ $posted_param ][ $index ] ) ? sanitize_text_field( wp_unslash( $_POST[ $posted_param ][ $index ] ) ) : null;
 		$posted_param = 'variable_fb_product_image_source';
+		// phpcs:ignore WordPress.Security.NonceVerification.Missing -- Nonce verification is handled in save_product_variation_edit_fields method
 		$image_source = isset( $_POST[ $posted_param ][ $index ] ) ? sanitize_key( wp_unslash( $_POST[ $posted_param ][ $index ] ) ) : '';
 		$posted_param = 'variable_' . \WC_Facebook_Product::FB_PRODUCT_IMAGE;
+		// phpcs:ignore WordPress.Security.NonceVerification.Missing -- Nonce verification is handled in save_product_variation_edit_fields method
 		$image_url    = isset( $_POST[ $posted_param ][ $index ] ) ? esc_url_raw( wp_unslash( $_POST[ $posted_param ][ $index ] ) ) : null;
 		$posted_param = 'variable_' . \WC_Facebook_Product::FB_PRODUCT_VIDEO;
+		// phpcs:ignore WordPress.Security.NonceVerification.Missing -- Nonce verification is handled in save_product_variation_edit_fields method
 		$video_urls   = isset( $_POST[ $posted_param ][ $index ] ) ? esc_url_raw( wp_unslash( $_POST[ $posted_param ][ $index ] ) ) : [];
 		// Fix: Look for the actual POST key format that WooCommerce generates
 		$posted_param = 'variable_' . \WC_Facebook_Product::FB_PRODUCT_IMAGES . $index;
+		// phpcs:ignore WordPress.Security.NonceVerification.Missing -- Nonce verification is handled in save_product_variation_edit_fields method
 		$image_ids    = isset( $_POST[ $posted_param ] ) ? sanitize_text_field( wp_unslash( $_POST[ $posted_param ] ) ) : '';
 		$posted_param = 'variable_' . \WC_Facebook_Product::FB_PRODUCT_PRICE;
+		// phpcs:ignore WordPress.Security.NonceVerification.Missing -- Nonce verification is handled in save_product_variation_edit_fields method
 		$price        = isset( $_POST[ $posted_param ][ $index ] ) ? wc_format_decimal( wc_clean( wp_unslash( $_POST[ $posted_param ][ $index ] ) ) ) : '';
 
 		return array(
