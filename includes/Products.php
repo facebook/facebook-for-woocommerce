@@ -46,6 +46,9 @@ class Products {
 	/** @var string product image source option to use the parent product image in Facebook */
 	const PRODUCT_IMAGE_SOURCE_CUSTOM = 'custom';
 
+	/** @var string product image source option to use multiple images in Facebook */
+	const PRODUCT_IMAGE_SOURCE_MULTIPLE = 'multiple';
+
 	/** @var string the meta key used to store the Google product category ID for the product */
 	const GOOGLE_PRODUCT_CATEGORY_META_KEY = '_wc_facebook_google_product_category';
 
