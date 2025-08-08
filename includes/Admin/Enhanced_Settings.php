@@ -367,10 +367,10 @@ class Enhanced_Settings {
 
 	public function display_fb_product_sets_removed_banner() {
 		$dismissed = get_transient( 'fb_product_set_banner_dismissed' );
-		if ($dismissed) {
+		if ( $dismissed ) {
 			return; // Banner dismissed, do not show
 		}
-		
+
 		$screen = get_current_screen();
 		if ( ! $screen || ( 'marketing_page_wc-facebook' !== $screen->id && 'woocommerce_page_wc-facebook' !== $screen->id ) ) {
 			return;
