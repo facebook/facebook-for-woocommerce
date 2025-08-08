@@ -785,10 +785,7 @@ class WC_Facebook_Product {
 					$cleaned_excerpt = WC_Facebookcommerce_Utils::clean_string( $post->post_excerpt );
 
 					// Check if this is a WooCommerce-generated attribute summary
-					if ( WC_Facebookcommerce_Utils::is_woocommerce_attribute_summary( $cleaned_excerpt ) ) {
-						// Skip WooCommerce auto-generated attribute summaries
-						error_log( "FB Short Description: Skipping WooCommerce attribute summary for variation {$this->id}: '$cleaned_excerpt'" );
-					} else {
+					if ( ! WC_Facebookcommerce_Utils::is_woocommerce_attribute_summary( $cleaned_excerpt ) ) {
 						$short_description = $cleaned_excerpt;
 					}
 				}
