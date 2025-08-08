@@ -535,18 +535,27 @@ jQuery( document ).ready( function( $ ) {
 			let $container  = $( this ).closest( '.woocommerce_options_panel, .wc-metabox-content' );
 			let imageSource = $( this ).val();
 
-			// Remove 'show' class from all product-image-source-field elements
-			$container.find( '.product-image-source-field' ).removeClass( 'show' );
+			// Hide all product-image-source-field form wrappers
+			$container.find( '.product-image-source-field' ).closest( '.form-field' ).hide();
 			
-			// Add 'show' class to the selected image source field
-			$container.find( `.show-if-product-image-source-${imageSource}` ).addClass( 'show' );
+			// Show only the selected image source field form wrapper
+			$container.find( `.show-if-product-image-source-${imageSource}` ).closest( '.form-field' ).show();
 
-			// Specifically handle multiple images thumbnails visibility
-			let $thumbnailsContainer = $container.find( '.fb-product-images-thumbnails' );
-			if (imageSource === 'multiple') {
-				$thumbnailsContainer.show();
-			} else {
-				$thumbnailsContainer.hide();
+			// For variations, also handle the class-based approach for multiple images
+			if ( $container.hasClass( 'wc-metabox-content' ) ) {
+				// Remove 'show' class from all product-image-source-field elements
+				$container.find( '.product-image-source-field' ).removeClass( 'show' );
+				
+				// Add 'show' class to the selected image source field
+				$container.find( `.show-if-product-image-source-${imageSource}` ).addClass( 'show' );
+
+				// Specifically handle multiple images thumbnails visibility
+				let $thumbnailsContainer = $container.find( '.fb-product-images-thumbnails' );
+				if (imageSource === 'multiple') {
+					$thumbnailsContainer.show();
+				} else {
+					$thumbnailsContainer.hide();
+				}
 			}
 		} );
 
