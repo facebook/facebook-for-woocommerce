@@ -1489,57 +1489,99 @@ class Admin {
 	}
 
 
-	/**
-	 * Saves the submitted Facebook settings for each variation.
-	 *
-	 * @internal
-	 *
-	 * @since 1.10.0
-	 *
-	 * @param int $variation_id the ID of the product variation being edited
-	 * @param int $index the index of the current variation
-	 */
+		/**
+		 * Saves the submitted Facebook settings for each variation.
+		 *
+		 * @internal
+		 *
+		 * @since 1.10.0
+		 *
+		 * @param int $variation_id the ID of the product variation being edited
+		 * @param int $index the index of the current variation
+		 */
 	public function save_product_variation_edit_fields( $variation_id, $index ) {
 		$variation = wc_get_product( $variation_id );
 		if ( ! $variation instanceof \WC_Product_Variation ) {
 			return;
 		}
 
-		// Verify nonce
-		$nonce_field = 'facebook_variation_nonce_' . $variation_id;
-		if ( ! isset( $_POST[ $nonce_field ] ) || ! wp_verify_nonce( sanitize_key( $_POST[ $nonce_field ] ), 'facebook_variation_save' ) ) {
+		if ( ! $this->verify_variation_nonce( $variation_id ) ) {
 			return;
 		}
 
 		// phpcs:disable WordPress.Security.NonceVerification.Missing
 
-		// Get sync mode from POST or parent product
-		$sync_mode    = isset( $_POST['wc_facebook_sync_mode'] ) ? wc_clean( wp_unslash( $_POST['wc_facebook_sync_mode'] ) ) : self::SYNC_MODE_SYNC_DISABLED;
+		$sync_mode    = $this->determine_variation_sync_mode( $variation );
 		$sync_enabled = self::SYNC_MODE_SYNC_DISABLED !== $sync_mode;
 
-		// Get sync settings from parent product if not in POST data (fixes PR #2931 issue)
-		if ( ! isset( $_POST['wc_facebook_sync_mode'] ) ) {
-			$parent_product = wc_get_product( $variation->get_parent_id() );
-			if ( $parent_product ) {
-				$parent_sync_enabled = 'no' !== get_post_meta( $parent_product->get_id(), Products::SYNC_ENABLED_META_KEY, true );
-				$parent_visibility   = get_post_meta( $parent_product->get_id(), Products::VISIBILITY_META_KEY, true );
-				$parent_is_visible   = $parent_visibility ? wc_string_to_bool( $parent_visibility ) : true;
+		$variation_data = $this->process_variation_post_data( $index );
+		$this->save_variation_meta_data( $variation, $variation_data );
+		$this->handle_variation_sync_operations( $variation, $sync_enabled, $sync_mode );
 
-				if ( $parent_sync_enabled ) {
-					$sync_mode = $parent_is_visible ? self::SYNC_MODE_SYNC_AND_SHOW : self::SYNC_MODE_SYNC_AND_HIDE;
-				} else {
-					$sync_mode = self::SYNC_MODE_SYNC_DISABLED;
-				}
-				$sync_enabled = self::SYNC_MODE_SYNC_DISABLED !== $sync_mode;
-			}
+		// phpcs:enable WordPress.Security.NonceVerification.Missing
+	}
+
+	/**
+	 * Verifies the nonce for variation save operation.
+	 *
+	 * @param int $variation_id the ID of the product variation
+	 * @return bool true if nonce is valid, false otherwise
+	 */
+	private function verify_variation_nonce( $variation_id ) {
+		$nonce_field = 'facebook_variation_nonce_' . $variation_id;
+		return isset( $_POST[ $nonce_field ] ) && wp_verify_nonce( sanitize_key( $_POST[ $nonce_field ] ), 'facebook_variation_save' );
+	}
+
+	/**
+	 * Determines the sync mode for a variation.
+	 *
+	 * @param \WC_Product_Variation $variation the product variation
+	 * @return string the sync mode
+	 */
+	private function determine_variation_sync_mode( $variation ) {
+		$sync_mode = isset( $_POST['wc_facebook_sync_mode'] ) ? wc_clean( wp_unslash( $_POST['wc_facebook_sync_mode'] ) ) : self::SYNC_MODE_SYNC_DISABLED;
+
+		if ( ! isset( $_POST['wc_facebook_sync_mode'] ) ) {
+			$sync_mode = $this->get_parent_product_sync_mode( $variation );
 		}
 
 		if ( self::SYNC_MODE_SYNC_AND_SHOW === $sync_mode && $variation->is_virtual() ) {
-			// force to Sync and hide
 			$sync_mode = self::SYNC_MODE_SYNC_AND_HIDE;
 		}
 
-		// ALWAYS save Facebook field data (this fixes the PR #2931 breaking change)
+		return $sync_mode;
+	}
+
+	/**
+	 * Gets the sync mode from the parent product.
+	 *
+	 * @param \WC_Product_Variation $variation the product variation
+	 * @return string the sync mode
+	 */
+	private function get_parent_product_sync_mode( $variation ) {
+		$parent_product = wc_get_product( $variation->get_parent_id() );
+		if ( ! $parent_product ) {
+			return self::SYNC_MODE_SYNC_DISABLED;
+		}
+
+		$parent_sync_enabled = 'no' !== get_post_meta( $parent_product->get_id(), Products::SYNC_ENABLED_META_KEY, true );
+		$parent_visibility   = get_post_meta( $parent_product->get_id(), Products::VISIBILITY_META_KEY, true );
+		$parent_is_visible   = $parent_visibility ? wc_string_to_bool( $parent_visibility ) : true;
+
+		if ( $parent_sync_enabled ) {
+			return $parent_is_visible ? self::SYNC_MODE_SYNC_AND_SHOW : self::SYNC_MODE_SYNC_AND_HIDE;
+		}
+
+		return self::SYNC_MODE_SYNC_DISABLED;
+	}
+
+	/**
+	 * Processes and sanitizes POST data for variation.
+	 *
+	 * @param int $index the variation index
+	 * @return array the processed variation data
+	 */
+	private function process_variation_post_data( $index ) {
 		$posted_param = 'variable_' . \WC_Facebookcommerce_Integration::FB_PRODUCT_DESCRIPTION;
 		// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Intentionally getting raw value to apply different sanitization methods below
 		$description_raw = isset( $_POST[ $posted_param ][ $index ] ) ? wp_unslash( $_POST[ $posted_param ][ $index ] ) : null;
@@ -1559,29 +1601,53 @@ class Admin {
 		// Fix: Look for the actual POST key format that WooCommerce generates
 		$posted_param = 'variable_' . \WC_Facebook_Product::FB_PRODUCT_IMAGES . $index;
 		$image_ids    = isset( $_POST[ $posted_param ] ) ? sanitize_text_field( wp_unslash( $_POST[ $posted_param ] ) ) : '';
-
 		$posted_param = 'variable_' . \WC_Facebook_Product::FB_PRODUCT_PRICE;
 		$price        = isset( $_POST[ $posted_param ][ $index ] ) ? wc_format_decimal( wc_clean( wp_unslash( $_POST[ $posted_param ][ $index ] ) ) ) : '';
 
-		// Always save the Facebook field data with appropriate sanitization for each field
-		$variation->update_meta_data( \WC_Facebookcommerce_Integration::FB_PRODUCT_DESCRIPTION, $description_plain );
-		$variation->update_meta_data( \WC_Facebookcommerce_Integration::FB_RICH_TEXT_DESCRIPTION, $description_rich );
-		$variation->update_meta_data( Products::PRODUCT_IMAGE_SOURCE_META_KEY, $image_source );
-		$variation->update_meta_data( \WC_Facebook_Product::FB_MPN, $fb_mpn );
-		$variation->update_meta_data( \WC_Facebook_Product::FB_PRODUCT_IMAGE, $image_url );
-		$variation->update_meta_data( \WC_Facebook_Product::FB_PRODUCT_VIDEO, $video_urls );
-		$variation->update_meta_data( \WC_Facebook_Product::FB_PRODUCT_IMAGES, $image_ids );
-		$variation->update_meta_data( \WC_Facebook_Product::FB_PRODUCT_PRICE, $price );
-		$variation->save_meta_data();
+		return array(
+			'description_plain' => $description_plain,
+			'description_rich'  => $description_rich,
+			'fb_mpn'            => $fb_mpn,
+			'image_source'      => $image_source,
+			'image_url'         => $image_url,
+			'video_urls'        => $video_urls,
+			'image_ids'         => $image_ids,
+			'price'             => $price,
+		);
+	}
 
-		// Handle sync operations based on sync settings
+	/**
+	 * Saves the variation meta data.
+	 *
+	 * @param \WC_Product_Variation $variation the product variation
+	 * @param array                 $data the variation data to save
+	 */
+	private function save_variation_meta_data( $variation, $data ) {
+		$variation->update_meta_data( \WC_Facebookcommerce_Integration::FB_PRODUCT_DESCRIPTION, $data['description_plain'] );
+		$variation->update_meta_data( \WC_Facebookcommerce_Integration::FB_RICH_TEXT_DESCRIPTION, $data['description_rich'] );
+		$variation->update_meta_data( Products::PRODUCT_IMAGE_SOURCE_META_KEY, $data['image_source'] );
+		$variation->update_meta_data( \WC_Facebook_Product::FB_MPN, $data['fb_mpn'] );
+		$variation->update_meta_data( \WC_Facebook_Product::FB_PRODUCT_IMAGE, $data['image_url'] );
+		$variation->update_meta_data( \WC_Facebook_Product::FB_PRODUCT_VIDEO, $data['video_urls'] );
+		$variation->update_meta_data( \WC_Facebook_Product::FB_PRODUCT_IMAGES, $data['image_ids'] );
+		$variation->update_meta_data( \WC_Facebook_Product::FB_PRODUCT_PRICE, $data['price'] );
+		$variation->save_meta_data();
+	}
+
+	/**
+	 * Handles sync operations for the variation.
+	 *
+	 * @param \WC_Product_Variation $variation the product variation
+	 * @param bool                  $sync_enabled whether sync is enabled
+	 * @param string                $sync_mode the sync mode
+	 */
+	private function handle_variation_sync_operations( $variation, $sync_enabled, $sync_mode ) {
 		if ( $sync_enabled ) {
 			Products::enable_sync_for_products( array( $variation ) );
 			Products::set_product_visibility( $variation, self::SYNC_MODE_SYNC_AND_HIDE !== $sync_mode );
 		} else {
 			Products::disable_sync_for_products( array( $variation ) );
 		}
-
 		// phpcs:enable WordPress.Security.NonceVerification.Missing
 	}
 
