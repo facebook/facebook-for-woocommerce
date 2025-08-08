@@ -208,6 +208,11 @@ class PluginRender {
 		wp_send_json_success( 'Opted out successfully' );
 	}
 
+	public static function sync_all_clicked() {
+		update_option( self::MASTER_SYNC_OPT_OUT_TIME, '' );
+		wp_send_json_success( 'Synced all in successfully' );
+	}
+
 	public static function product_set_banner_closed() {
 		check_ajax_referer( self::ACTION_PRODUCT_SET_BANNER_CLOSED, 'nonce' );
 		set_transient( 'fb_product_set_banner_dismissed', true );
