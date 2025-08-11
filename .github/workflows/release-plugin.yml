@@ -1,7 +1,7 @@
 name: Release Plugin
 
 on:
-  push:
+  - push:
     branches:
       - 'release/*/publish'
 
@@ -79,39 +79,39 @@ jobs:
           name: facebook-for-woocommerce
           path: facebook-for-woocommerce.zip
 
-      - name: Install SVN
-        run: sudo apt-get install subversion -y
+      # - name: Install SVN
+      #   run: sudo apt-get install subversion -y
 
-      - name: Checkout SVN Repository
-        run: svn co https://plugins.svn.wordpress.org/facebook-for-woocommerce/ woocommerce_svn --quiet --non-interactive
+      # - name: Checkout SVN Repository
+      #   run: svn co https://plugins.svn.wordpress.org/facebook-for-woocommerce/ woocommerce_svn --quiet --non-interactive
 
-      - name: Validate SVN tag
-        run: |
-          if [ -d "woocommerce_svn/tags/${{ steps.package-version.outputs.current-version}}" ]; then
-            echo "SVN tag directory exist" 1>&2
-            exit 1
-          fi
+      # - name: Validate SVN tag
+      #   run: |
+      #     if [ -d "woocommerce_svn/tags/${{ steps.package-version.outputs.current-version}}" ]; then
+      #       echo "SVN tag directory exist" 1>&2
+      #       exit 1
+      #     fi
 
-      - name: Commit to SVN
-        env:
-          SVN_USERNAME: ${{ secrets.SVN_USERNAME }}
-          SVN_PASSWORD: ${{ secrets.SVN_PASSWORD }}
-        run: |
-          cd woocommerce_svn
-          rm -rf trunk
-          cp ../facebook-for-woocommerce.zip ./
-          echo "Unzipping the atrifact"
-          unzip facebook-for-woocommerce.zip
-          mv facebook-for-woocommerce trunk
-          rm facebook-for-woocommerce.zip
-          svn add --force .
-          svn st | grep ^! | awk '{print $2}' | xargs -r svn rm
-          svn status
-          echo "Tagging version ${{ steps.package-version.outputs.current-version}}"
-          svn cp trunk "tags/${{ steps.package-version.outputs.current-version}}"
-          echo "Status:"
-          svn status
-          svn commit -m "Deploy new version ${{ steps.package-version.outputs.current-version}}" --username "$SVN_USERNAME" --password "$SVN_PASSWORD" --no-auth-cache --non-interactive
+      # - name: Commit to SVN
+      #   env:
+      #     SVN_USERNAME: ${{ secrets.SVN_USERNAME }}
+      #     SVN_PASSWORD: ${{ secrets.SVN_PASSWORD }}
+      #   run: |
+      #     cd woocommerce_svn
+      #     rm -rf trunk
+      #     cp ../facebook-for-woocommerce.zip ./
+      #     echo "Unzipping the atrifact"
+      #     unzip facebook-for-woocommerce.zip
+      #     mv facebook-for-woocommerce trunk
+      #     rm facebook-for-woocommerce.zip
+      #     svn add --force .
+      #     svn st | grep ^! | awk '{print $2}' | xargs -r svn rm
+      #     svn status
+      #     echo "Tagging version ${{ steps.package-version.outputs.current-version}}"
+      #     svn cp trunk "tags/${{ steps.package-version.outputs.current-version}}"
+      #     echo "Status:"
+      #     svn status
+      #     svn commit -m "Deploy new version ${{ steps.package-version.outputs.current-version}}" --username "$SVN_USERNAME" --password "$SVN_PASSWORD" --no-auth-cache --non-interactive
 
       - name: Create a new release on GitHub
         uses: actions/github-script@v7
@@ -163,4 +163,15 @@ jobs:
               release_id: release.data.id,
               draft: false,
               prerelease: true,
+
+            / Write release ID to file
+            const releaseIdFile = path.join(process.env.GITHUB_WORKSPACE, 'release-id.txt');
+            fs.writeFileSync(releaseIdFile, release.data.id.toString());
             });
+
+      - name: Upload release ID as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-id
+          path: release-id.txt
+          retention-days: 30
