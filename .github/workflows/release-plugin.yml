@@ -23,25 +23,23 @@ jobs:
             echo "Git tag exist" 1>&2
             exit 1
           fi
-
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
         with:
           php-version: '7.4'
           tools: composer
-      
+
       - name: Setup Node.js
         uses: actions/setup-node@v3
         with:
           node-version-file: 'package.json'
           cache-dependency-path: './package-lock.json'
           cache: 'npm'
-      
+
       - name: Install dependencies
         run: |
           composer install
           npm ci || npm install
-          
       - name: Build plugin
         run: |
           npm run build
@@ -53,7 +51,6 @@ jobs:
             echo "Build error" 1>&2
             exit 1
           fi
-
       - name: Extract Release Notes
         id: extract_release_notes
         run: |
@@ -73,7 +70,6 @@ jobs:
               fi
           done < "$readme_file"
           echo "EOF" >> $GITHUB_ENV
-
       - name: Store built plugin
         uses: actions/upload-artifact@master
         with:
@@ -143,11 +139,11 @@ jobs:
             for (let retry = 0; retry < maxRetries; retry++) {
               try {
                 await github.rest.repos.uploadReleaseAsset({
-                  owner: context.repo.owner, 
-                  repo: context.repo.repo, 
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
                   release_id: release.data.id,
-                  name: fileName, 
-                  headers: {'Content-Type': 'application/x-xz'}, 
+                  name: fileName,
+                  headers: {'Content-Type': 'application/x-xz'},
                   data: source
                 });
                 break;
@@ -159,17 +155,15 @@ jobs:
               }
             }
             await github.rest.repos.updateRelease({
-              owner: context.repo.owner, 
-              repo: context.repo.repo, 
+              owner: context.repo.owner,
+              repo: context.repo.repo,
               release_id: release.data.id,
               draft: false,
               prerelease: true,
-
-            / Write release ID to file
+            });
+            // Write release ID to file
             const releaseIdFile = path.join(process.env.GITHUB_WORKSPACE, 'release-id.txt');
             fs.writeFileSync(releaseIdFile, release.data.id.toString());
-            });
-
       - name: Upload release ID as artifact
         uses: actions/upload-artifact@v4
         with:
