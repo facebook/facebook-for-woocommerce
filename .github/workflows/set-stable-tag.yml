@@ -3,13 +3,12 @@ name: Set Stable Tag
 on: workflow_dispatch
 
 jobs:
-  # final-qa-checks:
-  #   uses: ./.github/workflows/final-qa-checks.yml
+  final-qa-checks:
+    uses: ./.github/workflows/final-qa-checks.yml
 
   set-stable-tag:
     runs-on: ubuntu-latest
-    if: false
-    # needs: final-qa-checks
+    needs: final-qa-checks
     environment: Deployment
     steps:
       - uses: actions/checkout@v4
@@ -69,7 +68,7 @@ jobs:
   set-last-release-as-latest:
     runs-on: ubuntu-latest
     environment: Deployment
-    # needs: set-stable-tag
+    needs: set-stable-tag
     steps:
       - uses: actions/checkout@v4
 

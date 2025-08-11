@@ -4,7 +4,6 @@ on:
   push:
     branches:
       - 'release/*/publish'
-  workflow_dispatch:
 
 jobs:
   build-and-release:
@@ -165,9 +164,11 @@ jobs:
               draft: false,
               prerelease: true,
             });
+
             // Write release ID to file
             const releaseIdFile = path.join(process.env.GITHUB_WORKSPACE, 'release-id.txt');
             fs.writeFileSync(releaseIdFile, release.data.id.toString());
+            
       - name: Upload release ID as artifact
         uses: actions/upload-artifact@v4
         with:
