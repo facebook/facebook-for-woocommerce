@@ -945,6 +945,63 @@ class Admin {
 	}
 
 	/**
+	 * Renders the Facebook Product Images field for variations.
+	 *
+	 * @param array $attachment_ids Array of attachment IDs.
+	 * @param int   $index      The variation index.
+	 * @param int   $variation_id The variation ID.
+	 */
+	private function render_facebook_product_images_field( $attachment_ids, $index, $variation_id ) {
+		// attachment_ids is already an array of attachment IDs
+
+		// Output the form field for Facebook Product Images with a description tip
+		?>
+		<p class="form-field product-image-source-field show-if-product-image-source-<?php echo esc_attr( Products::PRODUCT_IMAGE_SOURCE_MULTIPLE ); ?>">
+			<!-- <label for="fb_product_images_<?php echo esc_attr( $index ); ?>"><?php esc_html_e( 'Facebook Product Images', 'facebook-for-woocommerce' ); ?></label> -->
+			<button type="button" class="button fb-open-images-library" data-variation-index="<?php echo esc_attr( $index ); ?>" data-variation-id="<?php echo esc_attr( $variation_id ); ?>"><?php esc_html_e( 'Choose Multiple Images', 'facebook-for-woocommerce' ); ?></button>
+			<span class="woocommerce-help-tip" data-tip="<?php esc_attr_e( 'Choose multiple product images that should be synced to the Facebook catalog and displayed for this variation.', 'facebook-for-woocommerce' ); ?>" tabindex="0"></span>
+			
+			<div id="fb_product_images_selected_thumbnails_<?php echo esc_attr( $index ); ?>" class="fb-product-images-thumbnails">
+			<?php
+			if ( ! empty( $attachment_ids ) && is_array( $attachment_ids ) ) {
+				foreach ( $attachment_ids as $attachment_id ) {
+					$attachment_id = intval( $attachment_id );
+					if ( $attachment_id > 0 ) {
+						// Get the image thumbnail URL
+						$thumbnail_url = wp_get_attachment_image_url( $attachment_id, 'thumbnail' );
+						$full_url      = wp_get_attachment_url( $attachment_id );
+						$filename      = basename( get_attached_file( $attachment_id ) );
+
+						if ( $thumbnail_url && $full_url ) {
+							?>
+								<p class="form-field image-thumbnail">
+									<img src="<?php echo esc_url( $thumbnail_url ); ?>">
+									<span data-attachment-id="<?php echo esc_attr( $attachment_id ); ?>"><?php echo esc_html( $filename ); ?></span>
+									<a href="#" class="remove-image" data-attachment-id="<?php echo esc_attr( $attachment_id ); ?>"><?php esc_html_e( 'Remove', 'facebook-for-woocommerce' ); ?></a>
+								</p>
+								<?php
+						}
+					}
+				}
+			}
+			?>
+			</div>
+
+			<?php
+			// hidden input to store attachment IDs
+			woocommerce_wp_hidden_input(
+				[
+					'id'    => sprintf( 'variable_%s%s', \WC_Facebook_Product::FB_PRODUCT_IMAGES, $index ),
+					'name'  => sprintf( 'variable_%s%s', \WC_Facebook_Product::FB_PRODUCT_IMAGES, $index ),
+					'value' => esc_attr( implode( ',', $attachment_ids ) ), // Store attachment IDs
+				]
+			);
+			?>
+		</p>
+		<?php
+	}
+
+	/**
 	 * Adds content to the new Facebook tab on the Product edit page.
 	 *
 	 * @internal
@@ -1288,6 +1345,7 @@ class Admin {
 		$price        = $this->get_product_variation_meta( $variation, \WC_Facebook_Product::FB_PRODUCT_PRICE, $parent );
 		$image_url    = $this->get_product_variation_meta( $variation, \WC_Facebook_Product::FB_PRODUCT_IMAGE, $parent );
 		$image_source = $variation->get_meta( Products::PRODUCT_IMAGE_SOURCE_META_KEY );
+		$image_urls   = $this->get_product_variation_meta( $variation, \WC_Facebook_Product::FB_PRODUCT_IMAGES, $parent );
 		$fb_mpn       = $this->get_product_variation_meta( $variation, \WC_Facebook_Product::FB_MPN, $parent );
 
 		?>
@@ -1323,6 +1381,7 @@ class Admin {
 							Products::PRODUCT_IMAGE_SOURCE_PRODUCT => __( 'Use variation image', 'facebook-for-woocommerce' ),
 							Products::PRODUCT_IMAGE_SOURCE_PARENT_PRODUCT => __( 'Use parent image', 'facebook-for-woocommerce' ),
 							Products::PRODUCT_IMAGE_SOURCE_CUSTOM  => __( 'Use custom image', 'facebook-for-woocommerce' ),
+							Products::PRODUCT_IMAGE_SOURCE_MULTIPLE => __( 'Use multiple images', 'facebook-for-woocommerce' ),
 						),
 						'value'         => $image_source ? $image_source : Products::PRODUCT_IMAGE_SOURCE_PRODUCT,
 						'class'         => 'enable-if-sync-enabled js-fb-product-image-source',
@@ -1342,6 +1401,13 @@ class Admin {
 						'description'   => __( 'Please enter an absolute URL (e.g. https://domain.com/image.jpg).', 'facebook-for-woocommerce' ),
 					)
 				);
+
+				// Render Facebook Product Images field
+				$image_ids_array = ! empty( $image_urls ) ? explode( ',', $image_urls ) : [];
+				// Clean up the IDs and ensure they're numeric
+				$image_ids_array = array_filter( array_map( 'trim', $image_ids_array ), 'is_numeric' );
+
+				$this->render_facebook_product_images_field( $image_ids_array, $index, $variation->get_id() );
 
 				woocommerce_wp_text_input(
 					array(
@@ -1423,59 +1489,103 @@ class Admin {
 	}
 
 
-	/**
-	 * Saves the submitted Facebook settings for each variation.
-	 *
-	 * @internal
-	 *
-	 * @since 1.10.0
-	 *
-	 * @param int $variation_id the ID of the product variation being edited
-	 * @param int $index the index of the current variation
-	 */
+		/**
+		 * Saves the submitted Facebook settings for each variation.
+		 *
+		 * @internal
+		 *
+		 * @since 1.10.0
+		 *
+		 * @param int $variation_id the ID of the product variation being edited
+		 * @param int $index the index of the current variation
+		 */
 	public function save_product_variation_edit_fields( $variation_id, $index ) {
 		$variation = wc_get_product( $variation_id );
 		if ( ! $variation instanceof \WC_Product_Variation ) {
 			return;
 		}
 
-		// Verify nonce
-		$nonce_field = 'facebook_variation_nonce_' . $variation_id;
-		if ( ! isset( $_POST[ $nonce_field ] ) || ! wp_verify_nonce( sanitize_key( $_POST[ $nonce_field ] ), 'facebook_variation_save' ) ) {
+		if ( ! $this->verify_variation_nonce( $variation_id ) ) {
 			return;
 		}
 
 		// phpcs:disable WordPress.Security.NonceVerification.Missing
 
-		// Get sync mode from POST or parent product
-		$sync_mode    = isset( $_POST['wc_facebook_sync_mode'] ) ? wc_clean( wp_unslash( $_POST['wc_facebook_sync_mode'] ) ) : self::SYNC_MODE_SYNC_DISABLED;
+		$sync_mode    = $this->determine_variation_sync_mode( $variation );
 		$sync_enabled = self::SYNC_MODE_SYNC_DISABLED !== $sync_mode;
 
-		// Get sync settings from parent product if not in POST data (fixes PR #2931 issue)
-		if ( ! isset( $_POST['wc_facebook_sync_mode'] ) ) {
-			$parent_product = wc_get_product( $variation->get_parent_id() );
-			if ( $parent_product ) {
-				$parent_sync_enabled = 'no' !== get_post_meta( $parent_product->get_id(), Products::SYNC_ENABLED_META_KEY, true );
-				$parent_visibility   = get_post_meta( $parent_product->get_id(), Products::VISIBILITY_META_KEY, true );
-				$parent_is_visible   = $parent_visibility ? wc_string_to_bool( $parent_visibility ) : true;
+		$variation_data = $this->process_variation_post_data( $index );
+		$this->save_variation_meta_data( $variation, $variation_data );
+		$this->handle_variation_sync_operations( $variation, $sync_enabled, $sync_mode );
 
-				if ( $parent_sync_enabled ) {
-					$sync_mode = $parent_is_visible ? self::SYNC_MODE_SYNC_AND_SHOW : self::SYNC_MODE_SYNC_AND_HIDE;
-				} else {
-					$sync_mode = self::SYNC_MODE_SYNC_DISABLED;
-				}
-				$sync_enabled = self::SYNC_MODE_SYNC_DISABLED !== $sync_mode;
-			}
+		// phpcs:enable WordPress.Security.NonceVerification.Missing
+	}
+
+	/**
+	 * Verifies the nonce for variation save operation.
+	 *
+	 * @param int $variation_id the ID of the product variation
+	 * @return bool true if nonce is valid, false otherwise
+	 */
+	private function verify_variation_nonce( $variation_id ) {
+		$nonce_field = 'facebook_variation_nonce_' . $variation_id;
+		return isset( $_POST[ $nonce_field ] ) && wp_verify_nonce( sanitize_key( $_POST[ $nonce_field ] ), 'facebook_variation_save' );
+	}
+
+	/**
+	 * Determines the sync mode for a variation.
+	 *
+	 * @param \WC_Product_Variation $variation the product variation
+	 * @return string the sync mode
+	 */
+	private function determine_variation_sync_mode( $variation ) {
+		// phpcs:ignore WordPress.Security.NonceVerification.Missing -- Nonce verification is handled in save_product_variation_edit_fields method
+		$sync_mode = isset( $_POST['wc_facebook_sync_mode'] ) ? wc_clean( wp_unslash( $_POST['wc_facebook_sync_mode'] ) ) : self::SYNC_MODE_SYNC_DISABLED;
+
+		// phpcs:ignore WordPress.Security.NonceVerification.Missing -- Nonce verification is handled in save_product_variation_edit_fields method
+		if ( ! isset( $_POST['wc_facebook_sync_mode'] ) ) {
+			$sync_mode = $this->get_parent_product_sync_mode( $variation );
 		}
 
 		if ( self::SYNC_MODE_SYNC_AND_SHOW === $sync_mode && $variation->is_virtual() ) {
-			// force to Sync and hide
 			$sync_mode = self::SYNC_MODE_SYNC_AND_HIDE;
 		}
 
-		// ALWAYS save Facebook field data (this fixes the PR #2931 breaking change)
+		return $sync_mode;
+	}
+
+	/**
+	 * Gets the sync mode from the parent product.
+	 *
+	 * @param \WC_Product_Variation $variation the product variation
+	 * @return string the sync mode
+	 */
+	private function get_parent_product_sync_mode( $variation ) {
+		$parent_product = wc_get_product( $variation->get_parent_id() );
+		if ( ! $parent_product ) {
+			return self::SYNC_MODE_SYNC_DISABLED;
+		}
+
+		$parent_sync_enabled = 'no' !== get_post_meta( $parent_product->get_id(), Products::SYNC_ENABLED_META_KEY, true );
+		$parent_visibility   = get_post_meta( $parent_product->get_id(), Products::VISIBILITY_META_KEY, true );
+		$parent_is_visible   = $parent_visibility ? wc_string_to_bool( $parent_visibility ) : true;
+
+		if ( $parent_sync_enabled ) {
+			return $parent_is_visible ? self::SYNC_MODE_SYNC_AND_SHOW : self::SYNC_MODE_SYNC_AND_HIDE;
+		}
+
+		return self::SYNC_MODE_SYNC_DISABLED;
+	}
+
+	/**
+	 * Processes and sanitizes POST data for variation.
+	 *
+	 * @param int $index the variation index
+	 * @return array the processed variation data
+	 */
+	private function process_variation_post_data( $index ) {
 		$posted_param = 'variable_' . \WC_Facebookcommerce_Integration::FB_PRODUCT_DESCRIPTION;
-		// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Intentionally getting raw value to apply different sanitization methods below
+		// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized,WordPress.Security.NonceVerification.Missing -- Intentionally getting raw value to apply different sanitization methods below, nonce verification handled in save_product_variation_edit_fields method
 		$description_raw = isset( $_POST[ $posted_param ][ $index ] ) ? wp_unslash( $_POST[ $posted_param ][ $index ] ) : null;
 
 		// Create separate sanitized versions for different purposes
@@ -1483,34 +1593,69 @@ class Admin {
 		$description_rich  = $description_raw ? wp_kses_post( $description_raw ) : null; // HTML-preserved for rich text description
 
 		$posted_param = 'variable_' . \WC_Facebook_Product::FB_MPN;
+		// phpcs:ignore WordPress.Security.NonceVerification.Missing -- Nonce verification is handled in save_product_variation_edit_fields method
 		$fb_mpn       = isset( $_POST[ $posted_param ][ $index ] ) ? sanitize_text_field( wp_unslash( $_POST[ $posted_param ][ $index ] ) ) : null;
 		$posted_param = 'variable_fb_product_image_source';
+		// phpcs:ignore WordPress.Security.NonceVerification.Missing -- Nonce verification is handled in save_product_variation_edit_fields method
 		$image_source = isset( $_POST[ $posted_param ][ $index ] ) ? sanitize_key( wp_unslash( $_POST[ $posted_param ][ $index ] ) ) : '';
 		$posted_param = 'variable_' . \WC_Facebook_Product::FB_PRODUCT_IMAGE;
+		// phpcs:ignore WordPress.Security.NonceVerification.Missing -- Nonce verification is handled in save_product_variation_edit_fields method
 		$image_url    = isset( $_POST[ $posted_param ][ $index ] ) ? esc_url_raw( wp_unslash( $_POST[ $posted_param ][ $index ] ) ) : null;
 		$posted_param = 'variable_' . \WC_Facebook_Product::FB_PRODUCT_VIDEO;
+		// phpcs:ignore WordPress.Security.NonceVerification.Missing -- Nonce verification is handled in save_product_variation_edit_fields method
 		$video_urls   = isset( $_POST[ $posted_param ][ $index ] ) ? esc_url_raw( wp_unslash( $_POST[ $posted_param ][ $index ] ) ) : [];
+		// Fix: Look for the actual POST key format that WooCommerce generates
+		$posted_param = 'variable_' . \WC_Facebook_Product::FB_PRODUCT_IMAGES . $index;
+		// phpcs:ignore WordPress.Security.NonceVerification.Missing -- Nonce verification is handled in save_product_variation_edit_fields method
+		$image_ids    = isset( $_POST[ $posted_param ] ) ? sanitize_text_field( wp_unslash( $_POST[ $posted_param ] ) ) : '';
 		$posted_param = 'variable_' . \WC_Facebook_Product::FB_PRODUCT_PRICE;
+		// phpcs:ignore WordPress.Security.NonceVerification.Missing -- Nonce verification is handled in save_product_variation_edit_fields method
 		$price        = isset( $_POST[ $posted_param ][ $index ] ) ? wc_format_decimal( wc_clean( wp_unslash( $_POST[ $posted_param ][ $index ] ) ) ) : '';
 
-		// Always save the Facebook field data with appropriate sanitization for each field
-		$variation->update_meta_data( \WC_Facebookcommerce_Integration::FB_PRODUCT_DESCRIPTION, $description_plain );
-		$variation->update_meta_data( \WC_Facebookcommerce_Integration::FB_RICH_TEXT_DESCRIPTION, $description_rich );
-		$variation->update_meta_data( Products::PRODUCT_IMAGE_SOURCE_META_KEY, $image_source );
-		$variation->update_meta_data( \WC_Facebook_Product::FB_MPN, $fb_mpn );
-		$variation->update_meta_data( \WC_Facebook_Product::FB_PRODUCT_IMAGE, $image_url );
-		$variation->update_meta_data( \WC_Facebook_Product::FB_PRODUCT_VIDEO, $video_urls );
-		$variation->update_meta_data( \WC_Facebook_Product::FB_PRODUCT_PRICE, $price );
-		$variation->save_meta_data();
+		return array(
+			'description_plain' => $description_plain,
+			'description_rich'  => $description_rich,
+			'fb_mpn'            => $fb_mpn,
+			'image_source'      => $image_source,
+			'image_url'         => $image_url,
+			'video_urls'        => $video_urls,
+			'image_ids'         => $image_ids,
+			'price'             => $price,
+		);
+	}
 
-		// Handle sync operations based on sync settings
+	/**
+	 * Saves the variation meta data.
+	 *
+	 * @param \WC_Product_Variation $variation the product variation
+	 * @param array                 $data the variation data to save
+	 */
+	private function save_variation_meta_data( $variation, $data ) {
+		$variation->update_meta_data( \WC_Facebookcommerce_Integration::FB_PRODUCT_DESCRIPTION, $data['description_plain'] );
+		$variation->update_meta_data( \WC_Facebookcommerce_Integration::FB_RICH_TEXT_DESCRIPTION, $data['description_rich'] );
+		$variation->update_meta_data( Products::PRODUCT_IMAGE_SOURCE_META_KEY, $data['image_source'] );
+		$variation->update_meta_data( \WC_Facebook_Product::FB_MPN, $data['fb_mpn'] );
+		$variation->update_meta_data( \WC_Facebook_Product::FB_PRODUCT_IMAGE, $data['image_url'] );
+		$variation->update_meta_data( \WC_Facebook_Product::FB_PRODUCT_VIDEO, $data['video_urls'] );
+		$variation->update_meta_data( \WC_Facebook_Product::FB_PRODUCT_IMAGES, $data['image_ids'] );
+		$variation->update_meta_data( \WC_Facebook_Product::FB_PRODUCT_PRICE, $data['price'] );
+		$variation->save_meta_data();
+	}
+
+	/**
+	 * Handles sync operations for the variation.
+	 *
+	 * @param \WC_Product_Variation $variation the product variation
+	 * @param bool                  $sync_enabled whether sync is enabled
+	 * @param string                $sync_mode the sync mode
+	 */
+	private function handle_variation_sync_operations( $variation, $sync_enabled, $sync_mode ) {
 		if ( $sync_enabled ) {
 			Products::enable_sync_for_products( array( $variation ) );
 			Products::set_product_visibility( $variation, self::SYNC_MODE_SYNC_AND_HIDE !== $sync_mode );
 		} else {
 			Products::disable_sync_for_products( array( $variation ) );
 		}
-
 		// phpcs:enable WordPress.Security.NonceVerification.Missing
 	}
 
