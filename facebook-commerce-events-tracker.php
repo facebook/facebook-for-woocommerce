@@ -83,8 +83,8 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 		private function initialize_param_builder() {
 			try {
 				// Initialize the Facebook CAPI Parameter Builder with the site domain
-				   $site_url = isset( $_SERVER['HTTP_HOST'] ) ? sanitize_text_field( wp_unslash( $_SERVER['HTTP_HOST'] ) ) : '';
-				   $this->param_builder = new \FacebookAds\ParamBuilder( array( $site_url ) );
+				$site_url = isset( $_SERVER['HTTP_HOST'] ) ? sanitize_text_field( wp_unslash( $_SERVER['HTTP_HOST'] ) ) : '';
+				$this->param_builder = new \FacebookAds\ParamBuilder( array( $site_url ) );
 
 				// Process the request to get any cookies that need to be set
 				$cookie_to_set = $this->param_builder->processRequest(
