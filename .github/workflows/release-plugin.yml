@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - 'release/*/publish'
+  workflow_dispatch:
 
 jobs:
   build-and-release:
