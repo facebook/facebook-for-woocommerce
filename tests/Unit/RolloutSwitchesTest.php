@@ -129,7 +129,7 @@ class RolloutSwitchesTest extends \WooCommerce\Facebook\Tests\AbstractWPUnitTest
 	public function test_multiple_images_switch_constant_exists() {
 		// Test that the new multiple images switch constant exists
 		$this->assertTrue(defined('WooCommerce\Facebook\RolloutSwitches::SWITCH_MULTIPLE_IMAGES_ENABLED'));
-		$this->assertEquals('multiple_images_enabled', RolloutSwitches::SWITCH_MULTIPLE_IMAGES_ENABLED);
+		$this->assertEquals('woo_variant_multiple_images_enabled', RolloutSwitches::SWITCH_MULTIPLE_IMAGES_ENABLED);
 	}
 
 	public function test_multiple_images_switch_in_active_switches() {

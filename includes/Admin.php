@@ -954,7 +954,8 @@ class Admin {
 	 */
 	private function render_facebook_product_images_field( $attachment_ids, $index, $variation_id ) {
 		// Check if multiple images feature is enabled via rollout switch
-		if ( ! facebook_for_woocommerce()->get_rollout_switches()->is_switch_enabled( RolloutSwitches::SWITCH_MULTIPLE_IMAGES_ENABLED ) ) {
+		$plugin = isset( $GLOBALS['wc_facebook_commerce'] ) ? $GLOBALS['wc_facebook_commerce'] : facebook_for_woocommerce();
+		if ( ! $plugin || ! $plugin->get_rollout_switches()->is_switch_enabled( RolloutSwitches::SWITCH_MULTIPLE_IMAGES_ENABLED ) ) {
 			return;
 		}
 

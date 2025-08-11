@@ -301,6 +301,27 @@ class AdminTest extends \WP_UnitTestCase {
      * Test render_facebook_product_images_field with empty attachment IDs
      */
     public function test_render_facebook_product_images_field_empty() {
+        // Mock the rollout switches to enable multiple images feature
+        $plugin = $this->getMockBuilder(\WC_Facebookcommerce::class)
+            ->disableOriginalConstructor()
+            ->getMock();
+
+        $rollout_switches = $this->getMockBuilder(\WooCommerce\Facebook\RolloutSwitches::class)
+            ->disableOriginalConstructor()
+            ->getMock();
+
+        $rollout_switches->expects($this->once())
+            ->method('is_switch_enabled')
+            ->with(\WooCommerce\Facebook\RolloutSwitches::SWITCH_MULTIPLE_IMAGES_ENABLED)
+            ->willReturn(true);
+
+        $plugin->expects($this->once())
+            ->method('get_rollout_switches')
+            ->willReturn($rollout_switches);
+
+        // Mock the global function
+        $GLOBALS['wc_facebook_commerce'] = $plugin;
+
         $attachment_ids = [];
         $index = 1;
         $variation_id = 888;
@@ -321,6 +342,9 @@ class AdminTest extends \WP_UnitTestCase {
         $this->assertStringContainsString('data-variation-id="888"', $output);
         $this->assertStringContainsString('variable_fb_product_images1', $output);
         $this->assertStringContainsString('value=""', $output);
+
+        // Clean up
+        unset($GLOBALS['wc_facebook_commerce']);
     }
 
     /**
