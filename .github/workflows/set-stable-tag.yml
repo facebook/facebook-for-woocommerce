@@ -8,8 +8,8 @@ jobs:
 
   set-stable-tag:
     runs-on: ubuntu-latest
-    needs: final-qa-checks
     if: false
+    needs: final-qa-checks
     environment: Deployment
     steps:
       - uses: actions/checkout@v4
@@ -69,7 +69,7 @@ jobs:
   set-last-release-as-latest:
     runs-on: ubuntu-latest
     environment: Deployment
-    needs: set-stable-tag
+    # needs: set-stable-tag
     steps:
       - uses: actions/checkout@v4
 
