@@ -9,7 +9,7 @@ jobs:
   set-stable-tag:
     runs-on: ubuntu-latest
     if: false
-    needs: final-qa-checks
+    # needs: final-qa-checks
     environment: Deployment
     steps:
       - uses: actions/checkout@v4
