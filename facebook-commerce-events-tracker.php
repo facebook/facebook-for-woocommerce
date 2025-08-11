@@ -83,26 +83,26 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 		private function initialize_param_builder() {
 			try {
 				// Initialize the Facebook CAPI Parameter Builder with the site domain
-				$site_url = $_SERVER['HTTP_HOST'];
-				$this->param_builder = new \FacebookAds\ParamBuilder( array( $site_url ) );
+				   $site_url = isset( $_SERVER['HTTP_HOST'] ) ?  sanitize_text_field( wp_unslash( $_SERVER['HTTP_HOST'] ) ) : '';
+				   $this->param_builder = new \FacebookAds\ParamBuilder( array( $site_url ) );
 
 				// Process the request to get any cookies that need to be set
 				$cookie_to_set = $this->param_builder->processRequest(
-					$_SERVER['HTTP_HOST'],
+					isset( $_SERVER['HTTP_HOST'] ) ? sanitize_text_field( wp_unslash( $_SERVER['HTTP_HOST'] ) ) : '',
 					$_GET,
 					$_COOKIE,
 					$_SERVER['HTTP_REFERER'] ?? null
 				);
 
-				// If there are cookies to set, set them
+				// Set cookie from parambuilder
 				if ( ! empty( $cookie_to_set ) ) {
-					foreach ($cookie_to_set as $cookie) {
-						$res = setcookie(
-							$cookie->name,
-							$cookie->value,
-							time() + $cookie->max_age,
-							'/',
-							$cookie->domain);
+					foreach ( $cookie_to_set as $cookie ) {
+						setcookie(
+						$cookie->name,
+						$cookie->value,
+						time() + $cookie->max_age,
+						'/',
+						$cookie->domain);
 					}
 				}
 			} catch ( \Exception $exception ) {
@@ -1067,10 +1067,10 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 					$fbp = $this->param_builder->getFbp();
 
 					// $event_data = $event->get_data();
-					if (!empty($fbc)) {
+					if ( ! empty($fbc) ) {
 						$event['user_data']['fbc'] = $fbc;
 					}
-					if (!empty($fbp)) {
+					if ( ! empty($fbp) ) {
 						$event['user_data']['fbp'] = $fbp;
 					}
 					facebook_for_woocommerce()->get_api()->send_pixel_events( facebook_for_woocommerce()->get_integration()->get_facebook_pixel_id(), array( $event ) );
