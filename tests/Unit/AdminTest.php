@@ -18,6 +18,11 @@ class AdminTest extends \WP_UnitTestCase {
     /** @var \WC_Product */
     private $product;
 
+    /**
+     * Test attribute ID for Material attribute with numeric slug
+     */
+    private const TEST_MATERIAL_ATTRIBUTE_ID = '123';
+
     public function setUp() : void {
         parent::setUp();
         
@@ -28,8 +33,12 @@ class AdminTest extends \WP_UnitTestCase {
         $this->product->save();
         
         // Create a subclass of Admin that overrides the constructor to avoid OrderUtil issues
-        $this->admin = new class extends Admin {
-            public function __construct() {
+        $materialAttributeId = self::TEST_MATERIAL_ATTRIBUTE_ID;
+        $this->admin = new class($materialAttributeId) extends Admin {
+            private $materialAttributeId;
+            
+            public function __construct($materialAttributeId) {
+                $this->materialAttributeId = $materialAttributeId;
                 // Skip parent constructor to avoid OrderUtil issues
             }
             
@@ -49,8 +58,8 @@ class AdminTest extends \WP_UnitTestCase {
                         $attribute_name = $attribute->get_name();
                         if (strpos($attribute_name, 'pa_color') !== false) {
                             $synced_fields['color'] = implode(' | ', $attribute->get_options());
-                        } elseif (is_numeric($attribute_name) && $attribute_name == '123') {
-                            // Handle numeric slug (123 = Material)
+                        } elseif (is_numeric($attribute_name) && $attribute_name == $this->materialAttributeId) {
+                            // Handle numeric slug for Material attribute
                             $synced_fields['material'] = implode(' | ', $attribute->get_options());
                         }
                     }
@@ -106,11 +115,11 @@ class AdminTest extends \WP_UnitTestCase {
      * Test the sync_product_attributes method with numeric slug attribute
      */
     public function test_sync_product_attributes_with_numeric_slug() {
-        // Create a product attribute with numeric slug (123 = Material)
+        // Create a product attribute with numeric slug for Material
         $attributes = [];
         $material_attribute = new \WC_Product_Attribute();
         $material_attribute->set_id(0);
-        $material_attribute->set_name('123'); // Numeric slug
+        $material_attribute->set_name(self::TEST_MATERIAL_ATTRIBUTE_ID); // Numeric slug
         $material_attribute->set_options(['cotton', 'polyester']);
         $material_attribute->set_position(0);
         $material_attribute->set_visible(true);
@@ -152,10 +161,10 @@ class AdminTest extends \WP_UnitTestCase {
         $color_attribute->set_variation(false);
         $attributes[] = $color_attribute;
         
-        // Numeric slug attribute (123 = Material)
+        // Numeric slug attribute for Material
         $material_attribute = new \WC_Product_Attribute();
         $material_attribute->set_id(0);
-        $material_attribute->set_name('123');
+        $material_attribute->set_name(self::TEST_MATERIAL_ATTRIBUTE_ID);
         $material_attribute->set_options(['cotton', 'polyester']);
         $material_attribute->set_position(1);
         $material_attribute->set_visible(true);

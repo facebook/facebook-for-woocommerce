@@ -566,15 +566,42 @@ jQuery( document ).ready( function( $ ) {
 			});
 		}
 		
-		// Run immediately and with delay to handle different loading states
-		triggerImageSourceChange();
-		setTimeout(triggerImageSourceChange, 100);
-		setTimeout(triggerImageSourceChange, 500);
-
-		// trigger settings fields modifiers when variations are loaded
+		// Initialize image source changes when DOM is ready
+		function initializeImageSourceStates() {
+			// Wait for elements to be available in DOM
+			if ($('.js-fb-product-image-source').length === 0) {
+				// If elements aren't ready yet, wait for DOM mutations
+				const observer = new MutationObserver(function(mutations) {
+					mutations.forEach(function(mutation) {
+						if (mutation.addedNodes.length > 0) {
+							// Check if our target elements were added
+							const $addedElements = $(mutation.addedNodes).find('.js-fb-product-image-source');
+							if ($addedElements.length > 0) {
+								triggerImageSourceChange();
+								observer.disconnect(); // Stop observing once we've found our elements
+							}
+						}
+					});
+				});
+				
+				// Start observing
+				observer.observe(document.body, {
+					childList: true,
+					subtree: true
+				});
+			} else {
+				// Elements are already available, trigger immediately
+				triggerImageSourceChange();
+			}
+		}
+		
+		// Initialize on DOM ready
+		$(document).ready(initializeImageSourceStates);
+		
+		// Also initialize when variations are loaded
 		$productData.on( 'woocommerce_variations_loaded', function() {
 			$( '.js-variable-fb-sync-toggle:visible' ).trigger( 'change' );
-			setTimeout(triggerImageSourceChange, 100);
+			triggerImageSourceChange(); // No timeout needed here since variations are already loaded
 			$( '.variable_is_virtual:visible' ).trigger( 'change' );
 		} );
 
@@ -765,14 +792,18 @@ jQuery( document ).ready( function( $ ) {
 		 * @param {Number} variationIndex The variation index.
 		 * @param {jQuery} $imageThumbnail The jQuery element representing the image thumbnail to remove.
 		 */
-		function removeImageThumbnail(attachmentId, variationIndex, $imageThumbnail) {
-			const $hiddenField = $(`#variable_fb_product_images${variationIndex}`);
-			let attachmentIds = $hiddenField.val() ? $hiddenField.val().split(',').map(Number) : [];
-			
-			attachmentIds = attachmentIds.filter(id => id !== attachmentId);
-			$hiddenField.val(attachmentIds.join(','));
-			$imageThumbnail.remove();
+			function removeImageThumbnail(attachmentId, variationIndex, $imageThumbnail) {
+		const $hiddenField = $(`#variable_fb_product_images${variationIndex}`);
+		if (!$hiddenField.length) {
+			return;
 		}
+		
+		let attachmentIds = $hiddenField.val() ? $hiddenField.val().split(',').map(Number) : [];
+		
+		attachmentIds = attachmentIds.filter(id => id !== attachmentId);
+		$hiddenField.val(attachmentIds.join(','));
+		$imageThumbnail.remove();
+	}
 
 		/**
 		 * Handles the selection of image items from the media library for variations.
@@ -781,9 +812,14 @@ jQuery( document ).ready( function( $ ) {
 		 * @param {number} variationIndex The variation index.
 		 */
 		function handleVariationImageSelection(selection, variationIndex) {
-			const $container = $(`#fb_product_images_selected_thumbnails_${variationIndex}`);
-			const $hiddenField = $(`#variable_fb_product_images${variationIndex}`);
-			let attachmentIds = $hiddenField.val() ? $hiddenField.val().split(',').map(Number) : [];
+		const $container = $(`#fb_product_images_selected_thumbnails_${variationIndex}`);
+		const $hiddenField = $(`#variable_fb_product_images${variationIndex}`);
+		
+		if (!$hiddenField.length) {
+			return;
+		}
+		
+		let attachmentIds = $hiddenField.val() ? $hiddenField.val().split(',').map(Number) : [];
 			
 			const selectedAttachmentIds = selection.map(attachment => attachment.id);
 			const removedIds = attachmentIds.filter(id => !selectedAttachmentIds.includes(id));
@@ -836,12 +872,18 @@ jQuery( document ).ready( function( $ ) {
 				multiple: true
 			});
 
-			// Pre-select previously selected attachments
-			variationImageFrames[variationIndex].on('open', function () {
-				variationImageFrames[variationIndex].$el.addClass('fb-product-images-media-frame');
-				const selection = variationImageFrames[variationIndex].state().get('selection');
-				const $hiddenField = $(`#variable_fb_product_images${variationIndex}`);
-				const attachmentIds = $hiddenField.val() ? $hiddenField.val().split(',').map(Number) : [];
+					// Pre-select previously selected attachments
+		variationImageFrames[variationIndex].on('open', function () {
+			variationImageFrames[variationIndex].$el.addClass('fb-product-images-media-frame');
+			const selection = variationImageFrames[variationIndex].state().get('selection');
+			const $hiddenField = $(`#variable_fb_product_images${variationIndex}`);
+			
+			if (!$hiddenField.length) {
+				console.warn('Hidden field not found for variation:', variationIndex);
+				return;
+			}
+			
+			const attachmentIds = $hiddenField.val() ? $hiddenField.val().split(',').map(Number) : [];
 				
 				attachmentIds.forEach(function (id) {
 					const attachment = wp.media.attachment(id);

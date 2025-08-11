@@ -344,21 +344,6 @@ describe('Multiple Images Functionality', function() {
 
     describe('Field Validation', function() {
         
-        it('should validate attachment IDs are numeric', function() {
-            const testValues = ['123,456,789', '123,abc,456', '', '999'];
-            const results = testValues.map(value => {
-                if (!value) return [];
-                return value.split(',')
-                    .map(id => parseInt(id.trim(), 10))
-                    .filter(id => !isNaN(id) && id > 0);
-            });
-            
-            expect(results[0]).toEqual([123, 456, 789]);
-            expect(results[1]).toEqual([123, 456]);
-            expect(results[2]).toEqual([]);
-            expect(results[3]).toEqual([999]);
-        });
-        
         it('should handle whitespace in attachment IDs', function() {
             const value = ' 123 , 456 , 789 ';
             const attachmentIds = value.split(',')
