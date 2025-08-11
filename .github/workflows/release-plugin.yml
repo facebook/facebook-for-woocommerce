@@ -4,7 +4,6 @@ on:
   push:
     branches:
       - 'release/*/publish'
-  workflow_dispatch:
 
 jobs:
   build-and-release:
@@ -23,23 +22,25 @@ jobs:
             echo "Git tag exist" 1>&2
             exit 1
           fi
+
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
         with:
           php-version: '7.4'
           tools: composer
-
+      
       - name: Setup Node.js
         uses: actions/setup-node@v3
         with:
           node-version-file: 'package.json'
           cache-dependency-path: './package-lock.json'
           cache: 'npm'
-
+      
       - name: Install dependencies
         run: |
           composer install
           npm ci || npm install
+          
       - name: Build plugin
         run: |
           npm run build
@@ -51,6 +52,7 @@ jobs:
             echo "Build error" 1>&2
             exit 1
           fi
+
       - name: Extract Release Notes
         id: extract_release_notes
         run: |
@@ -70,45 +72,46 @@ jobs:
               fi
           done < "$readme_file"
           echo "EOF" >> $GITHUB_ENV
+
       - name: Store built plugin
         uses: actions/upload-artifact@master
         with:
           name: facebook-for-woocommerce
           path: facebook-for-woocommerce.zip
 
-      # - name: Install SVN
-      #   run: sudo apt-get install subversion -y
+      - name: Install SVN
+        run: sudo apt-get install subversion -y
 
-      # - name: Checkout SVN Repository
-      #   run: svn co https://plugins.svn.wordpress.org/facebook-for-woocommerce/ woocommerce_svn --quiet --non-interactive
+      - name: Checkout SVN Repository
+        run: svn co https://plugins.svn.wordpress.org/facebook-for-woocommerce/ woocommerce_svn --quiet --non-interactive
 
-      # - name: Validate SVN tag
-      #   run: |
-      #     if [ -d "woocommerce_svn/tags/${{ steps.package-version.outputs.current-version}}" ]; then
-      #       echo "SVN tag directory exist" 1>&2
-      #       exit 1
-      #     fi
+      - name: Validate SVN tag
+        run: |
+          if [ -d "woocommerce_svn/tags/${{ steps.package-version.outputs.current-version}}" ]; then
+            echo "SVN tag directory exist" 1>&2
+            exit 1
+          fi
 
-      # - name: Commit to SVN
-      #   env:
-      #     SVN_USERNAME: ${{ secrets.SVN_USERNAME }}
-      #     SVN_PASSWORD: ${{ secrets.SVN_PASSWORD }}
-      #   run: |
-      #     cd woocommerce_svn
-      #     rm -rf trunk
-      #     cp ../facebook-for-woocommerce.zip ./
-      #     echo "Unzipping the atrifact"
-      #     unzip facebook-for-woocommerce.zip
-      #     mv facebook-for-woocommerce trunk
-      #     rm facebook-for-woocommerce.zip
-      #     svn add --force .
-      #     svn st | grep ^! | awk '{print $2}' | xargs -r svn rm
-      #     svn status
-      #     echo "Tagging version ${{ steps.package-version.outputs.current-version}}"
-      #     svn cp trunk "tags/${{ steps.package-version.outputs.current-version}}"
-      #     echo "Status:"
-      #     svn status
-      #     svn commit -m "Deploy new version ${{ steps.package-version.outputs.current-version}}" --username "$SVN_USERNAME" --password "$SVN_PASSWORD" --no-auth-cache --non-interactive
+      - name: Commit to SVN
+        env:
+          SVN_USERNAME: ${{ secrets.SVN_USERNAME }}
+          SVN_PASSWORD: ${{ secrets.SVN_PASSWORD }}
+        run: |
+          cd woocommerce_svn
+          rm -rf trunk
+          cp ../facebook-for-woocommerce.zip ./
+          echo "Unzipping the atrifact"
+          unzip facebook-for-woocommerce.zip
+          mv facebook-for-woocommerce trunk
+          rm facebook-for-woocommerce.zip
+          svn add --force .
+          svn st | grep ^! | awk '{print $2}' | xargs -r svn rm
+          svn status
+          echo "Tagging version ${{ steps.package-version.outputs.current-version}}"
+          svn cp trunk "tags/${{ steps.package-version.outputs.current-version}}"
+          echo "Status:"
+          svn status
+          svn commit -m "Deploy new version ${{ steps.package-version.outputs.current-version}}" --username "$SVN_USERNAME" --password "$SVN_PASSWORD" --no-auth-cache --non-interactive
 
       - name: Create a new release on GitHub
         uses: actions/github-script@v7
@@ -139,11 +142,11 @@ jobs:
             for (let retry = 0; retry < maxRetries; retry++) {
               try {
                 await github.rest.repos.uploadReleaseAsset({
-                  owner: context.repo.owner,
-                  repo: context.repo.repo,
+                  owner: context.repo.owner, 
+                  repo: context.repo.repo, 
                   release_id: release.data.id,
-                  name: fileName,
-                  headers: {'Content-Type': 'application/x-xz'},
+                  name: fileName, 
+                  headers: {'Content-Type': 'application/x-xz'}, 
                   data: source
                 });
                 break;
@@ -155,8 +158,8 @@ jobs:
               }
             }
             await github.rest.repos.updateRelease({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
+              owner: context.repo.owner, 
+              repo: context.repo.repo, 
               release_id: release.data.id,
               draft: false,
               prerelease: true,
