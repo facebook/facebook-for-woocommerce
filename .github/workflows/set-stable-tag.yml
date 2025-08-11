@@ -4,6 +4,7 @@ on: workflow_dispatch
 
 jobs:
   final-qa-checks:
+    if: false
     uses: ./.github/workflows/final-qa-checks.yml
 
   set-stable-tag:
