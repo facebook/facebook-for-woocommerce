@@ -25,32 +25,32 @@ class AdminTest extends \WP_UnitTestCase {
 
     public function setUp() : void {
         parent::setUp();
-        
+
         // Create a simple product for testing
         $this->product = new \WC_Product_Simple();
         $this->product->set_name('Test Product');
         $this->product->set_regular_price('10');
         $this->product->save();
-        
+
         // Create a subclass of Admin that overrides the constructor to avoid OrderUtil issues
         $materialAttributeId = self::TEST_MATERIAL_ATTRIBUTE_ID;
         $this->admin = new class($materialAttributeId) extends Admin {
             private $materialAttributeId;
-            
+
             public function __construct($materialAttributeId) {
                 $this->materialAttributeId = $materialAttributeId;
                 // Skip parent constructor to avoid OrderUtil issues
             }
-            
+
             // Implement the sync_product_attributes method for our tests
             public function sync_product_attributes($product_id) {
                 $product = wc_get_product($product_id);
                 if (!$product) {
                     return [];
                 }
-                
+
                 $synced_fields = [];
-                
+
                 // Get product attributes
                 $attributes = $product->get_attributes();
                 if (!empty($attributes)) {
@@ -64,7 +64,7 @@ class AdminTest extends \WP_UnitTestCase {
                         }
                     }
                 }
-                
+
                 return $synced_fields;
             }
         };
@@ -92,20 +92,20 @@ class AdminTest extends \WP_UnitTestCase {
         $color_attribute->set_visible(true);
         $color_attribute->set_variation(false);
         $attributes[] = $color_attribute;
-        
+
         $this->product->set_attributes($attributes);
         $this->product->save();
-        
+
         // Call the method via our custom admin class
         $result = $this->admin->sync_product_attributes($this->product->get_id());
-        
+
         // Verify the color attribute was synced
         $this->assertArrayHasKey('color', $result);
         $this->assertEquals('red | blue', $result['color']);
-        
+
         // Set the meta directly for verification
         update_post_meta($this->product->get_id(), WC_Facebook_Product::FB_COLOR, 'red | blue');
-        
+
         // Verify meta was saved
         $saved_color = get_post_meta($this->product->get_id(), WC_Facebook_Product::FB_COLOR, true);
         $this->assertEquals('red | blue', $saved_color);
@@ -125,20 +125,20 @@ class AdminTest extends \WP_UnitTestCase {
         $material_attribute->set_visible(true);
         $material_attribute->set_variation(false);
         $attributes[] = $material_attribute;
-        
+
         $this->product->set_attributes($attributes);
         $this->product->save();
-        
+
         // Call the method via our custom admin class
         $result = $this->admin->sync_product_attributes($this->product->get_id());
-        
+
         // Verify the material attribute was synced
         $this->assertArrayHasKey('material', $result);
         $this->assertEquals('cotton | polyester', $result['material']);
-        
+
         // Set the meta directly for verification
         update_post_meta($this->product->get_id(), WC_Facebook_Product::FB_MATERIAL, 'cotton | polyester');
-        
+
         // Verify meta was saved
         $saved_material = get_post_meta($this->product->get_id(), WC_Facebook_Product::FB_MATERIAL, true);
         $this->assertEquals('cotton | polyester', $saved_material);
@@ -150,7 +150,7 @@ class AdminTest extends \WP_UnitTestCase {
     public function test_sync_product_attributes_with_multiple_attributes() {
         // Create multiple product attributes
         $attributes = [];
-        
+
         // Color attribute (pa_color)
         $color_attribute = new \WC_Product_Attribute();
         $color_attribute->set_id(0);
@@ -160,7 +160,7 @@ class AdminTest extends \WP_UnitTestCase {
         $color_attribute->set_visible(true);
         $color_attribute->set_variation(false);
         $attributes[] = $color_attribute;
-        
+
         // Numeric slug attribute for Material
         $material_attribute = new \WC_Product_Attribute();
         $material_attribute->set_id(0);
@@ -170,28 +170,28 @@ class AdminTest extends \WP_UnitTestCase {
         $material_attribute->set_visible(true);
         $material_attribute->set_variation(false);
         $attributes[] = $material_attribute;
-        
+
         $this->product->set_attributes($attributes);
         $this->product->save();
-        
+
         // Call the method via our custom admin class
         $result = $this->admin->sync_product_attributes($this->product->get_id());
-        
+
         // Verify both attributes were synced
         $this->assertArrayHasKey('color', $result);
         $this->assertEquals('red | blue', $result['color']);
-        
+
         $this->assertArrayHasKey('material', $result);
         $this->assertEquals('cotton | polyester', $result['material']);
-        
+
         // Set the meta directly for verification
         update_post_meta($this->product->get_id(), WC_Facebook_Product::FB_COLOR, 'red | blue');
         update_post_meta($this->product->get_id(), WC_Facebook_Product::FB_MATERIAL, 'cotton | polyester');
-        
+
         // Verify meta was saved for both
         $saved_color = get_post_meta($this->product->get_id(), WC_Facebook_Product::FB_COLOR, true);
         $this->assertEquals('red | blue', $saved_color);
-        
+
         $saved_material = get_post_meta($this->product->get_id(), WC_Facebook_Product::FB_MATERIAL, true);
         $this->assertEquals('cotton | polyester', $saved_material);
     }
@@ -200,6 +200,27 @@ class AdminTest extends \WP_UnitTestCase {
      * Test render_facebook_product_images_field method
      */
     public function test_render_facebook_product_images_field() {
+        // Mock the rollout switches to enable multiple images feature
+        $plugin = $this->getMockBuilder(\WC_Facebookcommerce::class)
+            ->disableOriginalConstructor()
+            ->getMock();
+
+        $rollout_switches = $this->getMockBuilder(\WooCommerce\Facebook\RolloutSwitches::class)
+            ->disableOriginalConstructor()
+            ->getMock();
+
+        $rollout_switches->expects($this->once())
+            ->method('is_switch_enabled')
+            ->with(\WooCommerce\Facebook\RolloutSwitches::SWITCH_MULTIPLE_IMAGES_ENABLED)
+            ->willReturn(true);
+
+        $plugin->expects($this->once())
+            ->method('get_rollout_switches')
+            ->willReturn($rollout_switches);
+
+        // Mock the global function
+        $GLOBALS['wc_facebook_commerce'] = $plugin;
+
         // Create attachment IDs for testing
         $attachment_ids = [123, 456, 789];
         $index = 0;
@@ -222,6 +243,58 @@ class AdminTest extends \WP_UnitTestCase {
         $this->assertStringContainsString('fb-product-images-thumbnails', $output);
         $this->assertStringContainsString('variable_fb_product_images0', $output);
         $this->assertStringContainsString('123,456,789', $output);
+
+        // Clean up
+        unset($GLOBALS['wc_facebook_commerce']);
+    }
+
+    /**
+     * Test render_facebook_product_images_field method when rollout switch is disabled
+     */
+    public function test_render_facebook_product_images_field_rollout_switch_disabled() {
+        // Mock the rollout switches to disable multiple images feature
+        $plugin = $this->getMockBuilder(\WC_Facebookcommerce::class)
+            ->disableOriginalConstructor()
+            ->getMock();
+
+        $rollout_switches = $this->getMockBuilder(\WooCommerce\Facebook\RolloutSwitches::class)
+            ->disableOriginalConstructor()
+            ->getMock();
+
+        $rollout_switches->expects($this->once())
+            ->method('is_switch_enabled')
+            ->with(\WooCommerce\Facebook\RolloutSwitches::SWITCH_MULTIPLE_IMAGES_ENABLED)
+            ->willReturn(false);
+
+        $plugin->expects($this->once())
+            ->method('get_rollout_switches')
+            ->willReturn($rollout_switches);
+
+        // Mock the global function
+        $GLOBALS['wc_facebook_commerce'] = $plugin;
+
+        // Create attachment IDs for testing
+        $attachment_ids = [123, 456, 789];
+        $index = 0;
+        $variation_id = 999;
+
+        // Use reflection to access the private method
+        $reflection = new \ReflectionClass($this->admin);
+        $method = $reflection->getMethod('render_facebook_product_images_field');
+        $method->setAccessible(true);
+
+        // Start output buffering to capture the HTML output
+        ob_start();
+        $method->invoke($this->admin, $attachment_ids, $index, $variation_id);
+        $output = ob_get_clean();
+
+        // Verify no output is generated when rollout switch is disabled
+        $this->assertEmpty($output);
+        $this->assertStringNotContainsString('Choose Multiple Images', $output);
+        $this->assertStringNotContainsString('fb-product-images-thumbnails', $output);
+
+        // Clean up
+        unset($GLOBALS['wc_facebook_commerce']);
     }
 
     /**
@@ -387,7 +460,7 @@ class AdminTest extends \WP_UnitTestCase {
 
         // Test 2: Change to 'multiple' source - should use the saved images
         $_POST['variable_fb_product_image_source'] = [0 => 'multiple'];
-        
+
         $this->admin->save_product_variation_edit_fields($variation_id, $index);
 
         $saved_images = get_post_meta($variation_id, \WC_Facebook_Product::FB_PRODUCT_IMAGES, true);
@@ -443,11 +516,11 @@ class AdminTest extends \WP_UnitTestCase {
 
         // Test that we can call the method without errors and verify the data is set
         $this->assertTrue(method_exists($this->admin, 'add_product_variation_edit_fields'), 'Method should exist');
-        
+
         // Verify the data was stored correctly
         $stored_images = get_post_meta($variation_id, \WC_Facebook_Product::FB_PRODUCT_IMAGES, true);
         $this->assertEquals('111,222,333', $stored_images);
-        
+
         $stored_source = get_post_meta($variation_id, \WooCommerce\Facebook\Products::PRODUCT_IMAGE_SOURCE_META_KEY, true);
         $this->assertEquals('multiple', $stored_source);
     }
@@ -502,15 +575,15 @@ class AdminTest extends \WP_UnitTestCase {
 
         foreach ($image_sources as $source) {
             update_post_meta($variation_id, \WooCommerce\Facebook\Products::PRODUCT_IMAGE_SOURCE_META_KEY, $source);
-            
+
             // Verify the meta data is stored correctly for each source
             $stored_source = get_post_meta($variation_id, \WooCommerce\Facebook\Products::PRODUCT_IMAGE_SOURCE_META_KEY, true);
             $this->assertEquals($source, $stored_source, "Source should be stored correctly for: {$source}");
-            
+
             // Test that the method can be called without errors
             $this->assertTrue(method_exists($this->admin, 'add_product_variation_edit_fields'), 'Method should exist');
         }
-        
+
         // Test that 'multiple' is a valid source option
         $this->assertContains('multiple', $image_sources, 'Multiple should be a valid image source option');
     }

@@ -126,6 +126,107 @@ class RolloutSwitchesTest extends \WooCommerce\Facebook\Tests\AbstractWPUnitTest
 		$this->assertEquals( $switch_mock->is_switch_enabled("switch_d"), true );
 	}
 
+	public function test_multiple_images_switch_constant_exists() {
+		// Test that the new multiple images switch constant exists
+		$this->assertTrue(defined('WooCommerce\Facebook\RolloutSwitches::SWITCH_MULTIPLE_IMAGES_ENABLED'));
+		$this->assertEquals('multiple_images_enabled', RolloutSwitches::SWITCH_MULTIPLE_IMAGES_ENABLED);
+	}
+
+	public function test_multiple_images_switch_in_active_switches() {
+		$plugin = facebook_for_woocommerce();
+		$rollout_switches = new RolloutSwitches($plugin);
+
+		// Test that the multiple images switch is in the active switches list
+		$active_switches = $rollout_switches->get_active_switches();
+		$this->assertContains(RolloutSwitches::SWITCH_MULTIPLE_IMAGES_ENABLED, $active_switches);
+	}
+
+	public function test_multiple_images_switch_behavior() {
+		// mock the active filters to test multiple images switch behavior
+		$plugin = facebook_for_woocommerce();
+		$plugin_ref_obj = new ReflectionObject($plugin);
+
+		// setup connection handler
+		$prop_connection_handler = $plugin_ref_obj->getProperty('connection_handler');
+		$prop_connection_handler->setAccessible(true);
+		$mock_connection_handler = $this->getMockBuilder('stdClass')
+			->addMethods(array('get_external_business_id', 'is_connected', 'get_access_token'))
+			->getMock();
+		$mock_connection_handler->expects($this->any())->method('get_external_business_id')->willReturn($this->external_business_id);
+		$mock_connection_handler->expects($this->any())->method('get_access_token')->willReturn($this->access_token);
+		$mock_connection_handler->expects($this->any())->method('is_connected')->willReturn(true);
+		$prop_connection_handler->setValue($plugin, $mock_connection_handler);
+
+		// setup API
+		$prop_api = $plugin_ref_obj->getProperty('api');
+		$prop_api->setAccessible(true);
+		$mock_api = $this->getMockBuilder(API::class)->disableOriginalConstructor()->setMethods(array('do_remote_request'))->getMock();
+		$mock_api->expects($this->any())->method('do_remote_request')->willReturn(
+			array('body' => wp_json_encode(array(
+				'data' => array(
+					array('switch' => RolloutSwitches::SWITCH_MULTIPLE_IMAGES_ENABLED, 'enabled' => '1'),
+				)
+			)))
+		);
+		$prop_api->setValue($plugin, $mock_api);
+
+		$switch_mock = $this->getMockBuilder(RolloutSwitches::class)
+			->setConstructorArgs(array($plugin))
+			->onlyMethods(['is_switch_active'])
+			->getMock();
+		$switch_mock->expects($this->any())->method('is_switch_active')
+			->willReturnCallback(function($switch_name) {
+				return $switch_name === RolloutSwitches::SWITCH_MULTIPLE_IMAGES_ENABLED;
+			});
+		$switch_mock->init();
+
+		// Test that multiple images switch is enabled when returned from API
+		$this->assertTrue($switch_mock->is_switch_enabled(RolloutSwitches::SWITCH_MULTIPLE_IMAGES_ENABLED));
+	}
+
+	public function test_multiple_images_switch_disabled() {
+		// Test behavior when multiple images switch is disabled
+		$plugin = facebook_for_woocommerce();
+		$plugin_ref_obj = new ReflectionObject($plugin);
+
+		// setup connection handler
+		$prop_connection_handler = $plugin_ref_obj->getProperty('connection_handler');
+		$prop_connection_handler->setAccessible(true);
+		$mock_connection_handler = $this->getMockBuilder('stdClass')
+			->addMethods(array('get_external_business_id', 'is_connected', 'get_access_token'))
+			->getMock();
+		$mock_connection_handler->expects($this->any())->method('get_external_business_id')->willReturn($this->external_business_id);
+		$mock_connection_handler->expects($this->any())->method('get_access_token')->willReturn($this->access_token);
+		$mock_connection_handler->expects($this->any())->method('is_connected')->willReturn(true);
+		$prop_connection_handler->setValue($plugin, $mock_connection_handler);
+
+		// setup API to return switch as disabled
+		$prop_api = $plugin_ref_obj->getProperty('api');
+		$prop_api->setAccessible(true);
+		$mock_api = $this->getMockBuilder(API::class)->disableOriginalConstructor()->setMethods(array('do_remote_request'))->getMock();
+		$mock_api->expects($this->any())->method('do_remote_request')->willReturn(
+			array('body' => wp_json_encode(array(
+				'data' => array(
+					array('switch' => RolloutSwitches::SWITCH_MULTIPLE_IMAGES_ENABLED, 'enabled' => ''),
+				)
+			)))
+		);
+		$prop_api->setValue($plugin, $mock_api);
+
+		$switch_mock = $this->getMockBuilder(RolloutSwitches::class)
+			->setConstructorArgs(array($plugin))
+			->onlyMethods(['is_switch_active'])
+			->getMock();
+		$switch_mock->expects($this->any())->method('is_switch_active')
+			->willReturnCallback(function($switch_name) {
+				return $switch_name === RolloutSwitches::SWITCH_MULTIPLE_IMAGES_ENABLED;
+			});
+		$switch_mock->init();
+
+		// Test that multiple images switch is disabled when returned as disabled from API
+		$this->assertFalse($switch_mock->is_switch_enabled(RolloutSwitches::SWITCH_MULTIPLE_IMAGES_ENABLED));
+	}
+
 	public function test_plugin_when_failing() {
 
 		// mock the active filters to test business values
