@@ -139,13 +139,12 @@ class Background extends BackgroundJobHandler {
 				// Update timestamps after successful API call
 				try {
 					foreach ( $requests as $request ) {
-						if ( Sync::ACTION_UPDATE === $request['method'] && isset( $request['data']['id'] ) ) {
-							// Extract product ID from the 'id' field (format: wc_post_id_1197)
-							$id_parts = explode( '_', $request['data']['id'] );
-							$product_id = end( $id_parts );
-
-							if ( is_numeric( $product_id ) ) {
-								update_post_meta( (int) $product_id, '_fb_sync_last_time', time() );
+						if ( Sync::ACTION_UPDATE === $request['method'] && isset( $request['data']['id'] ) && ! empty( $request['data']['id'] ) ) {
+							if ( preg_match( '/wc_post_id_(\d+)/', $request['data']['id'], $matches ) ) {
+								$product_id = (int) $matches[1];
+								if ( $product_id > 0 ) {
+									update_post_meta( $product_id, '_fb_sync_last_time', time() );
+								}
 							}
 						}
 					}
