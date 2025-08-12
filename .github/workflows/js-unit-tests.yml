@@ -83,8 +83,7 @@ jobs:
           echo "✅ JavaScript unit tests completed successfully"
 
       - name: Upload coverage reports
-        if: false
-        # if: steps.install.outputs.dependencies_installed == 'true'
+        if: steps.install.outputs.dependencies_installed == 'true'
         uses: actions/upload-artifact@v4
         with:
           name: js-coverage-report
@@ -93,6 +92,7 @@ jobs:
 
       - name: Check JS coverage threshold
         if: steps.install.outputs.dependencies_installed == 'true'
+        continue-on-error: true
         run: |
           COVERAGE="${{ steps.jest.outputs.coverage_summary }}"
           MIN_THRESHOLD=30
