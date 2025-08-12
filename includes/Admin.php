@@ -1377,6 +1377,19 @@ class Admin {
 					)
 				);
 
+				// Build image source options
+				$image_source_options = array(
+					Products::PRODUCT_IMAGE_SOURCE_PRODUCT => __( 'Use variation image', 'facebook-for-woocommerce' ),
+					Products::PRODUCT_IMAGE_SOURCE_PARENT_PRODUCT => __( 'Use parent image', 'facebook-for-woocommerce' ),
+					Products::PRODUCT_IMAGE_SOURCE_CUSTOM  => __( 'Use custom image', 'facebook-for-woocommerce' ),
+				);
+
+				// Add multiple images option only if rollout switch is enabled
+				$plugin = isset( $GLOBALS['wc_facebook_commerce'] ) ? $GLOBALS['wc_facebook_commerce'] : facebook_for_woocommerce();
+				if ( $plugin && $plugin->get_rollout_switches()->is_switch_enabled( RolloutSwitches::SWITCH_MULTIPLE_IMAGES_ENABLED ) ) {
+					$image_source_options[ Products::PRODUCT_IMAGE_SOURCE_MULTIPLE ] = __( 'Use multiple images', 'facebook-for-woocommerce' );
+				}
+
 				woocommerce_wp_radio(
 					array(
 						'id'            => "variable_fb_product_image_source$index",
@@ -1384,12 +1397,7 @@ class Admin {
 						'label'         => __( 'Facebook Product Image', 'facebook-for-woocommerce' ),
 						'desc_tip'      => true,
 						'description'   => __( 'Choose the product image that should be synced to the Facebook catalog and displayed for this product.', 'facebook-for-woocommerce' ),
-						'options'       => array(
-							Products::PRODUCT_IMAGE_SOURCE_PRODUCT => __( 'Use variation image', 'facebook-for-woocommerce' ),
-							Products::PRODUCT_IMAGE_SOURCE_PARENT_PRODUCT => __( 'Use parent image', 'facebook-for-woocommerce' ),
-							Products::PRODUCT_IMAGE_SOURCE_CUSTOM  => __( 'Use custom image', 'facebook-for-woocommerce' ),
-							Products::PRODUCT_IMAGE_SOURCE_MULTIPLE => __( 'Use multiple images', 'facebook-for-woocommerce' ),
-						),
+						'options'       => $image_source_options,
 						'value'         => $image_source ? $image_source : Products::PRODUCT_IMAGE_SOURCE_PRODUCT,
 						'class'         => 'enable-if-sync-enabled js-fb-product-image-source',
 						'wrapper_class' => 'fb-product-image-source-field',
