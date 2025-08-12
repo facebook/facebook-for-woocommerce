@@ -38,6 +38,13 @@ class CleanupSkyvergeFrameworkJobOptions {
 	 * @see Products\Sync\Background
 	 */
 	public function clean_up_old_completed_options() {
+
+		$flag_name = '_wc_facebook_for_woocommerce_cleanup_sky_verge';
+		if ( 'yes' === get_transient( $flag_name ) ) {
+			return;
+		}
+		set_transient( $flag_name, 'yes', DAY_IN_SECONDS );
+
 		global $wpdb;
 
 		/**
