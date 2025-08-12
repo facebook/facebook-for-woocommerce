@@ -25,6 +25,9 @@ defined( 'ABSPATH' ) || exit;
  */
 class Admin {
 
+	/** @var int maximum number of images allowed for Facebook catalog sync */
+	const MAX_FACEBOOK_IMAGES = 21;
+
 	/** @var string the "sync and show" sync mode slug */
 	const SYNC_MODE_SYNC_AND_SHOW = 'sync_and_show';
 
@@ -195,6 +198,7 @@ class Admin {
 						'product_not_ready_modal_message' => $this->get_product_not_ready_modal_message(),
 						'product_not_ready_modal_buttons' => $this->get_product_not_ready_modal_buttons(),
 						'product_removed_from_sync_field_id' => '#' . \WC_Facebook_Product::FB_REMOVE_FROM_SYNC,
+						'max_facebook_images'             => self::MAX_FACEBOOK_IMAGES,
 						'i18n'                            => [
 							'missing_google_product_category_message' => __( 'Please enter a Google product category and at least one sub-category to sell this product on Instagram.', 'facebook-for-woocommerce' ),
 						],
@@ -1610,14 +1614,34 @@ class Admin {
 		$image_url    = isset( $_POST[ $posted_param ][ $index ] ) ? esc_url_raw( wp_unslash( $_POST[ $posted_param ][ $index ] ) ) : null;
 		$posted_param = 'variable_' . \WC_Facebook_Product::FB_PRODUCT_VIDEO;
 		// phpcs:ignore WordPress.Security.NonceVerification.Missing -- Nonce verification is handled in save_product_variation_edit_fields method
-		$video_urls   = isset( $_POST[ $posted_param ][ $index ] ) ? esc_url_raw( wp_unslash( $_POST[ $posted_param ][ $index ] ) ) : [];
+		$video_urls = isset( $_POST[ $posted_param ][ $index ] ) ? esc_url_raw( wp_unslash( $_POST[ $posted_param ][ $index ] ) ) : [];
 		// Fix: Look for the actual POST key format that WooCommerce generates
 		$posted_param = 'variable_' . \WC_Facebook_Product::FB_PRODUCT_IMAGES . $index;
 		// phpcs:ignore WordPress.Security.NonceVerification.Missing -- Nonce verification is handled in save_product_variation_edit_fields method
-		$image_ids    = isset( $_POST[ $posted_param ] ) ? sanitize_text_field( wp_unslash( $_POST[ $posted_param ] ) ) : '';
+		$image_ids = isset( $_POST[ $posted_param ] ) ? sanitize_text_field( wp_unslash( $_POST[ $posted_param ] ) ) : '';
+
+		// Validate the image limit for Facebook catalog
+		if ( ! empty( $image_ids ) ) {
+			$image_ids_array = array_filter( array_map( 'trim', explode( ',', $image_ids ) ), 'is_numeric' );
+			if ( count( $image_ids_array ) > self::MAX_FACEBOOK_IMAGES ) {
+				add_action(
+					'admin_notices',
+					function () {
+						$max_images = self::MAX_FACEBOOK_IMAGES;
+						echo '<div class="notice notice-error is-dismissible"><p>' .
+						/* translators: %d: Maximum number of images allowed */
+						sprintf( esc_html__( 'Facebook for WooCommerce: You can only select a maximum of %1$d images for Facebook catalog sync. Only the first %2$d images will be saved.', 'facebook-for-woocommerce' ), esc_html( $max_images ), esc_html( $max_images ) ) .
+						'</p></div>';
+					}
+				);
+				// Limit to maximum allowed images
+				$image_ids_array = array_slice( $image_ids_array, 0, self::MAX_FACEBOOK_IMAGES );
+				$image_ids       = implode( ',', $image_ids_array );
+			}
+		}
 		$posted_param = 'variable_' . \WC_Facebook_Product::FB_PRODUCT_PRICE;
 		// phpcs:ignore WordPress.Security.NonceVerification.Missing -- Nonce verification is handled in save_product_variation_edit_fields method
-		$price        = isset( $_POST[ $posted_param ][ $index ] ) ? wc_format_decimal( wc_clean( wp_unslash( $_POST[ $posted_param ][ $index ] ) ) ) : '';
+		$price = isset( $_POST[ $posted_param ][ $index ] ) ? wc_format_decimal( wc_clean( wp_unslash( $_POST[ $posted_param ][ $index ] ) ) ) : '';
 
 		return array(
 			'description_plain' => $description_plain,
