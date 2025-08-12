@@ -68,8 +68,6 @@ jobs:
           # Run Jest using npm script to ensure proper configuration
           npm run test:js -- --coverage --coverageReporters=json-summary --coverageReporters=lcov --coverageReporters=html
 
-          cat coverage/coverage-summary.json
-
           # Extract coverage summary from JSON
           COVERAGE=$(node -e "
             const fs = require('fs');
