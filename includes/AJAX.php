@@ -166,15 +166,31 @@ class AJAX {
 				]
 			);
 
-			$sync_handler = facebook_for_woocommerce()->get_products_sync_handler();
-			$sync_handler->create_or_update_modified_products();
+			try {
+				$sync_handler = facebook_for_woocommerce()->get_products_sync_handler();
+				$sync_handler->create_or_update_modified_products();
 
-			Logger::log(
-				'Step 1: Modified products queued for sync',
-				[
-					'event' => 'ajax_product_sync_step1_queued',
-				]
-			);
+				Logger::log(
+					'Step 1: Modified products queued for sync',
+					[
+						'event' => 'ajax_product_sync_step1_queued',
+					]
+				);
+			} catch ( \Exception $exception ) {
+				Logger::log(
+					'Error during modified products sync',
+					[
+						'event' => 'ajax_product_sync_step1_error',
+						'error_message' => $exception->getMessage(),
+					],
+					[
+						'should_save_log_in_woocommerce' => true,
+						'woocommerce_log_level' => \WC_Log_Levels::ERROR,
+					],
+					$exception
+				);
+				// Continue with full sync even if modified products sync fails
+			}
 
 			// Step 2: Queue all products for sync
 			Logger::log(
@@ -184,9 +200,33 @@ class AJAX {
 				]
 			);
 
-			// Create a new sync handler instance to avoid request array conflicts
-			$sync_handler_all = new \WooCommerce\Facebook\Products\Sync();
-			$sync_handler_all->create_or_update_all_products();
+			try {
+				// Create a new sync handler instance to avoid request array conflicts
+				$sync_handler_all = new \WooCommerce\Facebook\Products\Sync();
+				$sync_handler_all->create_or_update_all_products();
+
+				Logger::log(
+					'Step 2: All products queued for sync',
+					[
+						'event' => 'ajax_product_sync_step2_queued',
+					]
+				);
+			} catch ( \Exception $exception ) {
+				Logger::log(
+					'Error during all products sync',
+					[
+						'event' => 'ajax_product_sync_step2_error',
+						'error_message' => $exception->getMessage(),
+					],
+					[
+						'should_save_log_in_woocommerce' => true,
+						'woocommerce_log_level' => \WC_Log_Levels::ERROR,
+					],
+					$exception
+				);
+				wp_send_json_error( $exception->getMessage() );
+				return;
+			}
 
 			Logger::log(
 				'Completed product sync queuing',
@@ -198,9 +238,9 @@ class AJAX {
 			wp_send_json_success();
 		} catch ( \Exception $exception ) {
 			Logger::log(
-				'Error during product sync',
+				'Error during product sync initialization',
 				[
-					'event' => 'ajax_product_sync_error',
+					'event' => 'ajax_product_sync_init_error',
 					'error_message' => $exception->getMessage(),
 				],
 				[
