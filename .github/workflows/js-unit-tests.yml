@@ -98,7 +98,7 @@ jobs:
           echo "📈 JS Coverage: $COVERAGE%"
           echo "🎯 JS Threshold: $MIN_THRESHOLD%"
 
-          if (( $(echo "$COVERAGE >= $MIN_THRESHOLD" | bc -l) )); then
+          if (( $(echo "$COVERAGE $MIN_THRESHOLD" | awk '{print ($1 >= $2)}') )); then
             echo "✅ JS Coverage check passed!"
           else
             echo "❌ JS Coverage too low. Need $MIN_THRESHOLD%, got $COVERAGE%"
