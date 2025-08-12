@@ -15,7 +15,7 @@ use WooCommerce\Facebook\Tests\AbstractWPUnitTestWithSafeFiltering;
 class BackgroundTest extends AbstractWPUnitTestWithSafeFiltering {
 
 	/**
-	 * The testable Background instance under test.
+	 * The testable Background instance under test
 	 *
 	 * @var TestableBackground
 	 */
