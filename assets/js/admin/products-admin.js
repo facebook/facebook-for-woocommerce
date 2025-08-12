@@ -903,10 +903,30 @@ jQuery( document ).ready( function( $ ) {
 			const maxImages = window.facebook_for_woocommerce_products_admin && window.facebook_for_woocommerce_products_admin.max_facebook_images ? 
 				parseInt(window.facebook_for_woocommerce_products_admin.max_facebook_images) : 21;
 
+			let isValidating = false;
+			let lastAlertTime = 0;
+			
 			selection.on('add', function(model) {
+				if (isValidating) return; // Prevent infinite loop
+				
 				if (selection.length > maxImages) {
+					isValidating = true;
 					selection.remove(model);
-					alert(`You can only select a maximum of ${maxImages} images for Facebook catalog sync.`);
+					
+					// Only show alert once every 2 seconds to prevent spam
+					const now = Date.now();
+					if (now - lastAlertTime > 2000) {
+						lastAlertTime = now;
+						// Use setTimeout to prevent blocking and allow DOM to update
+						setTimeout(function() {
+							alert(`You can only select a maximum of ${maxImages} images for Facebook catalog sync.`);
+						}, 10);
+					}
+					
+					// Reset validation flag after a short delay
+					setTimeout(function() {
+						isValidating = false;
+					}, 100);
 				}
 			});
 			});

@@ -640,34 +640,59 @@ describe('Multiple Images Functionality', function() {
             );
         });
 
-        it('should prevent real-time selection beyond 21 images', function() {
-            // Test the real-time validation logic directly
+        it('should prevent real-time selection beyond 21 images with throttling', function(done) {
+            // Test the real-time validation logic with improved behavior
             const maxImages = 21;
             let selectionLength = 21; // Already at limit
+            let isValidating = false;
+            let lastAlertTime = 0;
             
             // Mock selection methods
             const mockModel = { id: 22 };
             const mockRemove = jest.fn();
             
+            // Simulate the improved validation logic
+            const validateSelection = function() {
+                if (isValidating) return;
+                
+                if (selectionLength > maxImages) {
+                    isValidating = true;
+                    mockRemove(mockModel);
+                    selectionLength--; // Simulate removal
+                    
+                    const now = Date.now();
+                    if (now - lastAlertTime > 2000) {
+                        lastAlertTime = now;
+                        setTimeout(function() {
+                            alert(`You can only select a maximum of ${maxImages} images for Facebook catalog sync.`);
+                        }, 10);
+                    }
+                    
+                    setTimeout(function() {
+                        isValidating = false;
+                    }, 100);
+                }
+            };
+            
             // Test adding one more image (22nd)
             selectionLength++; // Simulate adding
-            
-            if (selectionLength > maxImages) {
-                mockRemove(mockModel);
-                selectionLength--; // Simulate removal
-                alert(`You can only select a maximum of ${maxImages} images for Facebook catalog sync.`);
-            }
+            validateSelection();
 
-            // Verify alert was called
-            expect(global.alert).toHaveBeenCalledWith(
-                'You can only select a maximum of 21 images for Facebook catalog sync.'
-            );
+            // Wait for setTimeout to execute
+            setTimeout(function() {
+                // Verify alert was called
+                expect(global.alert).toHaveBeenCalledWith(
+                    'You can only select a maximum of 21 images for Facebook catalog sync.'
+                );
 
-            // Verify remove was called
-            expect(mockRemove).toHaveBeenCalledWith(mockModel);
+                // Verify remove was called
+                expect(mockRemove).toHaveBeenCalledWith(mockModel);
 
-            // Verify selection stayed at limit
-            expect(selectionLength).toBe(21);
+                // Verify selection stayed at limit
+                expect(selectionLength).toBe(21);
+                
+                done();
+            }, 50);
         });
     });
 });
