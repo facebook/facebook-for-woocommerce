@@ -238,7 +238,7 @@ class AdminTest extends \WP_UnitTestCase {
         $output = ob_get_clean();
 
         // Verify the HTML contains expected elements
-        $this->assertStringContainsString('Choose Multiple Images', $output);
+        $this->assertStringContainsString('Add Multiple Images', $output);
         $this->assertStringContainsString('data-variation-index="0"', $output);
         $this->assertStringContainsString('data-variation-id="999"', $output);
         $this->assertStringContainsString('fb-product-images-thumbnails', $output);
@@ -291,7 +291,7 @@ class AdminTest extends \WP_UnitTestCase {
 
         // Verify no output is generated when rollout switch is disabled
         $this->assertEmpty($output);
-        $this->assertStringNotContainsString('Choose Multiple Images', $output);
+        $this->assertStringNotContainsString('Add Multiple Images', $output);
         $this->assertStringNotContainsString('fb-product-images-thumbnails', $output);
 
         // Clean up
@@ -338,7 +338,7 @@ class AdminTest extends \WP_UnitTestCase {
         $output = ob_get_clean();
 
         // Verify the HTML contains expected elements for empty state
-        $this->assertStringContainsString('Choose Multiple Images', $output);
+        $this->assertStringContainsString('Add Multiple Images', $output);
         $this->assertStringContainsString('data-variation-index="1"', $output);
         $this->assertStringContainsString('data-variation-id="888"', $output);
         $this->assertStringContainsString('variable_fb_product_images1', $output);
@@ -722,11 +722,11 @@ class AdminTest extends \WP_UnitTestCase {
         $this->admin->add_product_variation_edit_fields(0, array(), $variation);
         $output_enabled = ob_get_clean();
 
-        // Verify that "Use multiple images" option is not present when switch is disabled
-        $this->assertStringNotContainsString('Use multiple images', $output_disabled);
+        // Verify that "Add multiple images" option is not present when switch is disabled
+        $this->assertStringNotContainsString('Add multiple images', $output_disabled);
 
-        // Verify that "Use multiple images" option is present when switch is enabled
-        $this->assertStringContainsString('Use multiple images', $output_enabled);
+        // Verify that "Add multiple images" option is present when switch is enabled
+        $this->assertStringContainsString('Add multiple images', $output_enabled);
 
         // Clean up
         unset($GLOBALS['wc_facebook_commerce']);

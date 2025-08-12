@@ -965,7 +965,7 @@ class Admin {
 		?>
 		<p class="form-field product-image-source-field show-if-product-image-source-<?php echo esc_attr( Products::PRODUCT_IMAGE_SOURCE_MULTIPLE ); ?>">
 			<!-- <label for="fb_product_images_<?php echo esc_attr( $index ); ?>"><?php esc_html_e( 'Facebook Product Images', 'facebook-for-woocommerce' ); ?></label> -->
-			<button type="button" class="button fb-open-images-library" data-variation-index="<?php echo esc_attr( $index ); ?>" data-variation-id="<?php echo esc_attr( $variation_id ); ?>"><?php esc_html_e( 'Choose Multiple Images', 'facebook-for-woocommerce' ); ?></button>
+			<button type="button" class="button fb-open-images-library" data-variation-index="<?php echo esc_attr( $index ); ?>" data-variation-id="<?php echo esc_attr( $variation_id ); ?>"><?php esc_html_e( 'Add Multiple Images', 'facebook-for-woocommerce' ); ?></button>
 			<span class="woocommerce-help-tip" data-tip="<?php esc_attr_e( 'Choose multiple product images that should be synced to the Facebook catalog and displayed for this variation.', 'facebook-for-woocommerce' ); ?>" tabindex="0"></span>
 
 			<div id="fb_product_images_selected_thumbnails_<?php echo esc_attr( $index ); ?>" class="fb-product-images-thumbnails">
@@ -1387,7 +1387,7 @@ class Admin {
 				// Add multiple images option only if rollout switch is enabled
 				$plugin = isset( $GLOBALS['wc_facebook_commerce'] ) ? $GLOBALS['wc_facebook_commerce'] : facebook_for_woocommerce();
 				if ( $plugin && $plugin->get_rollout_switches()->is_switch_enabled( RolloutSwitches::SWITCH_MULTIPLE_IMAGES_ENABLED ) ) {
-					$image_source_options[ Products::PRODUCT_IMAGE_SOURCE_MULTIPLE ] = __( 'Use multiple images', 'facebook-for-woocommerce' );
+					$image_source_options[ Products::PRODUCT_IMAGE_SOURCE_MULTIPLE ] = __( 'Add multiple images', 'facebook-for-woocommerce' );
 				}
 
 				woocommerce_wp_radio(
