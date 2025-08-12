@@ -107,6 +107,7 @@ class Sync {
 
 			// Filter to only get products modified since last sync
 			$products_to_sync = array();
+
 			foreach ( $all_product_ids as $product_id ) {
 				$product = wc_get_product( $product_id );
 				if ( ! $product ) {
@@ -116,8 +117,8 @@ class Sync {
 				$last_sync_time = get_post_meta( $product_id, '_fb_sync_last_time', true );
 				$modified_time = $product->get_date_modified() ? $product->get_date_modified()->getTimestamp() : 0;
 
-				// If never synced or modified since last sync, add to sync queue
-				if ( ! $last_sync_time || $modified_time > $last_sync_time ) {
+				// If never synced or modified since last sync (using >= to catch same-second modifications), add to sync queue
+				if ( ! $last_sync_time || $modified_time >= $last_sync_time ) {
 					$products_to_sync[] = $product_id;
 				}
 			}
