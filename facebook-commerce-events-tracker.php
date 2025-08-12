@@ -246,9 +246,6 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 			);
 		}
 
-		
-
-
 		/**
 		 * Triggers the PageView event
 		 */
