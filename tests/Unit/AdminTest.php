@@ -658,4 +658,46 @@ class AdminTest extends \WP_UnitTestCase {
         $restored_images = get_post_meta($variation_id, \WC_Facebook_Product::FB_PRODUCT_IMAGES, true);
         $this->assertEquals('400,500,600,700', $restored_images);
     }
+
+    /**
+     * Test 21 image limit validation in save_product_variation_edit_fields
+     */
+    public function test_save_product_variation_edit_fields_21_image_limit() {
+        // Create a variable product with variation
+        $variable_product = \WC_Helper_Product::create_variation_product();
+        $variation = wc_get_product($variable_product->get_children()[0]);
+        $variation_id = $variation->get_id();
+        $index = 0;
+
+        // Create a string with 25 image IDs (exceeding the 21 limit)
+        $image_ids_over_limit = implode(',', range(1, 25));
+
+        // Mock POST data with too many images
+        $_POST["facebook_variation_nonce_{$variation_id}"] = wp_create_nonce('facebook_variation_save');
+        $_POST['wc_facebook_sync_mode'] = 'sync_and_show';
+        $_POST['variable_fb_product_image_source'] = [0 => 'multiple'];
+        $_POST["variable_fb_product_images{$index}"] = $image_ids_over_limit;
+
+        // Call the method
+        $this->admin->save_product_variation_edit_fields($variation_id, $index);
+
+        // Verify only first 21 images were saved
+        $saved_images = get_post_meta($variation_id, \WC_Facebook_Product::FB_PRODUCT_IMAGES, true);
+        $saved_ids_array = explode(',', $saved_images);
+        $this->assertEquals(21, count($saved_ids_array));
+        
+        // Verify it's the first 21 images
+        $expected_first_21 = implode(',', range(1, 21));
+        $this->assertEquals($expected_first_21, $saved_images);
+
+        // Test with exactly 21 images (should pass)
+        $exactly_21_images = implode(',', range(100, 120));
+        $_POST["variable_fb_product_images{$index}"] = $exactly_21_images;
+        
+        $this->admin->save_product_variation_edit_fields($variation_id, $index);
+        
+        $saved_images_21 = get_post_meta($variation_id, \WC_Facebook_Product::FB_PRODUCT_IMAGES, true);
+        $this->assertEquals($exactly_21_images, $saved_images_21);
+        $this->assertEquals(21, count(explode(',', $saved_images_21)));
+    }
 }

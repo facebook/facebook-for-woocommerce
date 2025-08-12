@@ -825,6 +825,14 @@ jQuery( document ).ready( function( $ ) {
 			const removedIds = attachmentIds.filter(id => !selectedAttachmentIds.includes(id));
 			const newIds = selectedAttachmentIds.filter(id => !attachmentIds.includes(id));
 
+			// Check if the selection exceeds the Facebook image limit
+			const maxImages = window.facebook_for_woocommerce_products_admin && window.facebook_for_woocommerce_products_admin.max_facebook_images ? 
+				parseInt(window.facebook_for_woocommerce_products_admin.max_facebook_images) : 21;
+			if (selectedAttachmentIds.length > maxImages) {
+				alert(`You can only select a maximum of ${maxImages} images for Facebook catalog sync. Please reduce your selection.`);
+				return;
+			}
+
 			// Remove unselected image thumbnails
 			$container.find('.form-field').each(function () {
 				const $imageThumbnail = $(this);

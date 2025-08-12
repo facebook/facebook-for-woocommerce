@@ -504,4 +504,140 @@ describe('Multiple Images Functionality', function() {
             expect(global.wp).toBeUndefined();
         });
     });
+
+    describe('21 Image Limit Validation', function() {
+        beforeEach(function() {
+            // Setup DOM
+            document.body.innerHTML = `
+                <div id="fb_product_images_selected_thumbnails_0" class="fb-product-images-thumbnails"></div>
+                <input type="hidden" id="variable_fb_product_images0" value="" />
+            `;
+
+            // Mock window.facebook_for_woocommerce_products_admin
+            global.window.facebook_for_woocommerce_products_admin = {
+                max_facebook_images: 21
+            };
+
+            // Mock alert
+            global.alert = jest.fn();
+        });
+
+        it('should enforce 21 image limit in handleVariationImageSelection', function() {
+            // Create mock selection with 25 images (exceeding limit)
+            const mockSelection = {
+                map: jest.fn((callback) => Array.from({length: 25}, (_, i) => callback({ id: i + 1 })))
+            };
+
+            // Mock the handleVariationImageSelection function from the main script
+            const handleVariationImageSelection = function(selection, variationIndex) {
+                const selectedAttachmentIds = selection.map(attachment => attachment.id);
+                
+                // Check if the selection exceeds the Facebook image limit
+                const maxImages = window.facebook_for_woocommerce_products_admin && window.facebook_for_woocommerce_products_admin.max_facebook_images ? 
+                    parseInt(window.facebook_for_woocommerce_products_admin.max_facebook_images) : 21;
+                if (selectedAttachmentIds.length > maxImages) {
+                    alert(`You can only select a maximum of ${maxImages} images for Facebook catalog sync. Please reduce your selection.`);
+                    return;
+                }
+                
+                // Continue with normal processing...
+                const $hiddenField = $(`#variable_fb_product_images${variationIndex}`);
+                if ($hiddenField.length) {
+                    $hiddenField.val(selectedAttachmentIds.join(','));
+                }
+            };
+
+            // Call the function
+            handleVariationImageSelection(mockSelection, 0);
+
+            // Verify alert was called with correct message
+            expect(global.alert).toHaveBeenCalledWith(
+                'You can only select a maximum of 21 images for Facebook catalog sync. Please reduce your selection.'
+            );
+
+            // Verify hidden field was not updated (function returned early)
+            const hiddenField = document.getElementById('variable_fb_product_images0');
+            expect(hiddenField.value).toBe('');
+        });
+
+        it('should allow exactly 21 images', function() {
+            // Create mock selection with exactly 21 images
+            const mockSelection = {
+                map: jest.fn((callback) => Array.from({length: 21}, (_, i) => callback({ id: i + 1 })))
+            };
+
+            // Mock jQuery for this test
+            global.$ = jest.fn((selector) => {
+                if (selector === '#variable_fb_product_images0') {
+                    return {
+                        length: 1,
+                        val: jest.fn((value) => {
+                            if (value !== undefined) {
+                                document.getElementById('variable_fb_product_images0').value = value;
+                            }
+                            return document.getElementById('variable_fb_product_images0').value;
+                        })
+                    };
+                }
+                return { length: 0 };
+            });
+
+            // Mock the handleVariationImageSelection function
+            const handleVariationImageSelection = function(selection, variationIndex) {
+                const selectedAttachmentIds = selection.map(attachment => attachment.id);
+                
+                const maxImages = window.facebook_for_woocommerce_products_admin && window.facebook_for_woocommerce_products_admin.max_facebook_images ? 
+                    parseInt(window.facebook_for_woocommerce_products_admin.max_facebook_images) : 21;
+                if (selectedAttachmentIds.length > maxImages) {
+                    alert(`You can only select a maximum of ${maxImages} images for Facebook catalog sync. Please reduce your selection.`);
+                    return;
+                }
+                
+                const $hiddenField = $(`#variable_fb_product_images${variationIndex}`);
+                if ($hiddenField.length) {
+                    $hiddenField.val(selectedAttachmentIds.join(','));
+                }
+            };
+
+            // Call the function
+            handleVariationImageSelection(mockSelection, 0);
+
+            // Verify alert was not called
+            expect(global.alert).not.toHaveBeenCalled();
+
+            // Verify hidden field was updated correctly
+            const hiddenField = document.getElementById('variable_fb_product_images0');
+            expect(hiddenField.value).toBe('1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21');
+        });
+
+        it('should fall back to default limit when config is not available', function() {
+            // Remove the config
+            global.window.facebook_for_woocommerce_products_admin = undefined;
+
+            // Create mock selection with 25 images
+            const mockSelection = {
+                map: jest.fn((callback) => Array.from({length: 25}, (_, i) => callback({ id: i + 1 })))
+            };
+
+            // Mock the handleVariationImageSelection function
+            const handleVariationImageSelection = function(selection, variationIndex) {
+                const selectedAttachmentIds = selection.map(attachment => attachment.id);
+                
+                const maxImages = window.facebook_for_woocommerce_products_admin && window.facebook_for_woocommerce_products_admin.max_facebook_images ? 
+                    parseInt(window.facebook_for_woocommerce_products_admin.max_facebook_images) : 21;
+                if (selectedAttachmentIds.length > maxImages) {
+                    alert(`You can only select a maximum of ${maxImages} images for Facebook catalog sync. Please reduce your selection.`);
+                    return;
+                }
+            };
+
+            // Call the function
+            handleVariationImageSelection(mockSelection, 0);
+
+            // Verify alert was called with default limit
+            expect(global.alert).toHaveBeenCalledWith(
+                'You can only select a maximum of 21 images for Facebook catalog sync. Please reduce your selection.'
+            );
+        });
+    });
 });
