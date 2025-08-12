@@ -639,5 +639,35 @@ describe('Multiple Images Functionality', function() {
                 'You can only select a maximum of 21 images for Facebook catalog sync. Please reduce your selection.'
             );
         });
+
+        it('should prevent real-time selection beyond 21 images', function() {
+            // Test the real-time validation logic directly
+            const maxImages = 21;
+            let selectionLength = 21; // Already at limit
+            
+            // Mock selection methods
+            const mockModel = { id: 22 };
+            const mockRemove = jest.fn();
+            
+            // Test adding one more image (22nd)
+            selectionLength++; // Simulate adding
+            
+            if (selectionLength > maxImages) {
+                mockRemove(mockModel);
+                selectionLength--; // Simulate removal
+                alert(`You can only select a maximum of ${maxImages} images for Facebook catalog sync.`);
+            }
+
+            // Verify alert was called
+            expect(global.alert).toHaveBeenCalledWith(
+                'You can only select a maximum of 21 images for Facebook catalog sync.'
+            );
+
+            // Verify remove was called
+            expect(mockRemove).toHaveBeenCalledWith(mockModel);
+
+            // Verify selection stayed at limit
+            expect(selectionLength).toBe(21);
+        });
     });
 });

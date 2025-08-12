@@ -898,6 +898,17 @@ jQuery( document ).ready( function( $ ) {
 					attachment.fetch();
 					selection.add(attachment ? [attachment] : []);
 				});
+
+			// Add real-time selection limit enforcement
+			const maxImages = window.facebook_for_woocommerce_products_admin && window.facebook_for_woocommerce_products_admin.max_facebook_images ? 
+				parseInt(window.facebook_for_woocommerce_products_admin.max_facebook_images) : 21;
+
+			selection.on('add', function(model) {
+				if (selection.length > maxImages) {
+					selection.remove(model);
+					alert(`You can only select a maximum of ${maxImages} images for Facebook catalog sync.`);
+				}
+			});
 			});
 
 			// Handle selection of media
