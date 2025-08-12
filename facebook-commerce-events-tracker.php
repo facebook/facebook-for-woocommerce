@@ -146,6 +146,9 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 			add_action( 'wp_head', array( $this, 'inject_base_pixel' ) );
 			add_action( 'wp_footer', array( $this, 'inject_base_pixel_noscript' ) );
 
+			// enqueue Facebook CAPI Param Builder script
+			add_action( 'wp_enqueue_scripts', array( $this, 'enqueue_capi_param_builder_script' ) );
+
 			// ViewContent for individual products
 			add_action( 'woocommerce_after_single_product', array( $this, 'inject_view_content_event' ) );
 			add_action( 'woocommerce_after_single_product', array( $this, 'maybe_inject_search_event' ) );
@@ -215,6 +218,35 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 				echo $this->pixel->pixel_base_code_noscript();
 			}
 		}
+
+
+		/**
+		 * Enqueues the Facebook CAPI Param Builder script.
+		 *
+		 * @since 3.0.19
+		 */
+		public function enqueue_capi_param_builder_script() {
+			if ( ! $this->is_pixel_enabled() ) {
+				return;
+			}
+
+			wp_enqueue_script(
+				'facebook-capi-param-builder',
+				'https://capi-automation.s3.us-east-2.amazonaws.com/public/client_js/capiParamBuilder/clientParamBuilder.bundle.js',
+				array(),
+				null,
+				true
+			);
+			// Add inline script that executes after the external script has loaded
+			wp_add_inline_script(
+				'facebook-capi-param-builder',
+				'if (typeof clientParamBuilder !== "undefined") {
+					clientParamBuilder.processAndCollectAllParams(window.location.href);
+				}'
+			);
+		}
+
+		
 
 
 		/**

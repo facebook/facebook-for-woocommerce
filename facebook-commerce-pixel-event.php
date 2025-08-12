@@ -171,13 +171,6 @@ class WC_Facebookcommerce_Pixel {
 					document.body.insertAdjacentHTML( 'beforeend', '<div class=\"wc-facebook-pixel-event-placeholder\"></div>' );
 				}, false );
 			</script>
-			<!-- Facebook CAPI Param Builder Client JS -->
-			<script src="https://capi-automation.s3.us-east-2.amazonaws.com/public/client_js/capiParamBuilder/clientParamBuilder.bundle.js" <?php echo self::get_script_attributes(); ?>></script>
-			<script <?php echo self::get_script_attributes(); ?>>
-				if (typeof clientParamBuilder !== 'undefined') {
-					clientParamBuilder.processAndCollectAllParams(window.location.href);
-				}
-			</script>
 			<!-- WooCommerce Facebook Integration End -->
 			<?php
 
