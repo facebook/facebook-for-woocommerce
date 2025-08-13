@@ -36,6 +36,7 @@ class GetOffersEndpointTest extends OfferManagementAPITestBase
 		$response_offers = $response->get_data()['data']['offers'];
 		$this->assertCount(1, $response_offers);
 		$expected_offer_data = [
+			'offer_id' => $coupon->get_id(),
 			'code' => $code,
 			'fixed_amount_off' => null,
 			'percent_off' => 10,
@@ -52,7 +53,7 @@ class GetOffersEndpointTest extends OfferManagementAPITestBase
 		$code_2 = 'test_code_2';
 		$end_time = time() + 5000;
 
-
+		$code_to_coupon_map = [];
 		foreach([ $code_1, $code_2 ] as $code) {
 			$coupon = new WC_Coupon( $code );
 			$coupon->set_props(
@@ -65,6 +66,7 @@ class GetOffersEndpointTest extends OfferManagementAPITestBase
 			$coupon->add_meta_data( OfferManagementEndpointBase::IS_FACEBOOK_MANAGED_METADATA_KEY, 'yes', true );
 			$coupon->set_date_expires( $end_time );
 			$coupon->save();
+			$code_to_coupon_map[$code] = $coupon;
 		}
 
 		$response = $this->perform_offer_get_request( [$code_1, $code_2] );
@@ -72,6 +74,7 @@ class GetOffersEndpointTest extends OfferManagementAPITestBase
 		$this->assertCount(2, $response_offers);
 		$expected_offer_data = [
 			[
+				'offer_id' => $code_to_coupon_map[$code_1]->get_id(),
 				'code' => $code_1,
 				'fixed_amount_off' => ['amount' => '12', 'currency' => 'USD'],
 				'percent_off' => null,
@@ -81,6 +84,7 @@ class GetOffersEndpointTest extends OfferManagementAPITestBase
 				'usage_limit' => 5,
 			],
 			[
+				'offer_id' => $code_to_coupon_map[$code_2]->get_id(),
 				'code' => $code_2,
 				'fixed_amount_off' => ['amount' => '12', 'currency' => 'USD'],
 				'percent_off' => null,
@@ -119,6 +123,7 @@ class GetOffersEndpointTest extends OfferManagementAPITestBase
 
 		$expected_offer_data = [
 			[
+				'offer_id' => $coupon->get_id(),
 				'code' => $code,
 				'fixed_amount_off' => ['amount' => '12', 'currency' => 'USD'],
 				'percent_off' => null,
@@ -183,7 +188,7 @@ class GetOffersEndpointTest extends OfferManagementAPITestBase
 			],
 			'exp' =>  time() + 120,
 			'jti' => wp_generate_uuid4(),
-			'key_name' => 'test_key',
+			'key_name' => self::KEY_NAME,
 			'aud' => self::CATALOG_ID,
 		];
 	}

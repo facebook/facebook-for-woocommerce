@@ -255,7 +255,6 @@ class FeedUploadUtils {
 						'min_subtotal'                    => $coupon->get_minimum_amount(), // TODO we may want to pass in optional currency code for multinational support
 						'min_quantity'                    => '', // Concept does not exist in Woo
 						'offer_terms'                     => '', // TODO link to T&C page?
-						'redemption_limit_per_seller'     => $coupon->get_usage_limit(),
 						'target_quantity'                 => '', // Concept does not exist in Woo
 						'prerequisite_filter'             => '', // Concept does not exist in Woo
 						'prerequisite_product_retailer_ids' => '', // Concept does not exist in Woo
@@ -263,6 +262,7 @@ class FeedUploadUtils {
 						'prerequisite_product_set_retailer_ids' => '', // Concept does not exist in Woo
 						'exclude_sale_priced_products'    => $coupon->get_exclude_sale_items() ? 'YES' : 'NO',
 						'usage_count'                     => $coupon->get_usage_count(),
+						'usage_limit'                     => $coupon->get_usage_limit(),
 					);
 
 					$coupons_data[] = $data;
