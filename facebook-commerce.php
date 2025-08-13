@@ -318,12 +318,12 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 
 				add_action(
 					'woocommerce_product_quick_edit_save',
-					[ $this, 'on_quick_and_bulk_edit_save' ]
+					[ $this, 'on_product_quick_edit_save' ]
 				);
 
 				add_action(
 					'woocommerce_product_bulk_edit_save',
-					[ $this, 'on_quick_and_bulk_edit_save' ]
+					[ $this, 'on_product_bulk_edit_save' ]
 				);
 
 				add_action(
@@ -2914,13 +2914,39 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 	}
 
 	/**
-	 * Sync product upon quick or bulk edit save action.
+	 * Sync product upon quick edit save action.
 	 *
 	 * @param \WC_Product $product product object
 	 *
 	 * @internal
 	 */
-	public function on_quick_and_bulk_edit_save( $product ) {
+	public function on_product_quick_edit_save( $product ) {
+		// bail if not a product or product is not enabled for sync
+		if ( ! $product instanceof \WC_Product || ! Products::published_product_should_be_synced( $product ) ) {
+			return;
+		}
+
+		$wp_id      = $product->get_id();
+		$visibility = get_post_status( $wp_id ) === 'publish' ? self::FB_SHOP_PRODUCT_VISIBLE : self::FB_SHOP_PRODUCT_HIDDEN;
+
+		if ( self::FB_SHOP_PRODUCT_HIDDEN === $visibility ) {
+			// - product never published to Facebook, new status is not publish
+			// - product new status is not publish but may have been published before
+			$this->update_fb_visibility( $product, $visibility );
+		} else {
+			// Product is published, sync it to Facebook
+			$this->facebook_for_woocommerce->get_products_sync_handler()->create_or_update_products( [ $product->get_id() ] );
+		}
+	}
+
+	/**
+	 * Sync product upon bulk edit save action.
+	 *
+	 * @param \WC_Product $product product object
+	 *
+	 * @internal
+	 */
+	public function on_product_bulk_edit_save( $product ) {
 		// bail if not a product or product is not enabled for sync
 		static $bulk_product_edit_ids    = [];
 		static $bulk_products_to_exclude = [];
@@ -2944,7 +2970,7 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 
 		/**
 		 * Draft products are also included in this bulk edit
-		 * As they will not be sent in requests since in backgroun jon they will be discarded
+		 * As they will not be sent in requests since in background job they will be discarded
 		 * when validations are checked
 		 */
 		$bulk_action_products_cumulative_count = did_action( 'woocommerce_product_bulk_edit_save' );
