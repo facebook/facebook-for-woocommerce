@@ -2921,21 +2921,34 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 	 * @internal
 	 */
 	public function on_product_quick_edit_save( $product ) {
-		// bail if not a product or product is not enabled for sync
-		if ( ! $product instanceof \WC_Product || ! Products::published_product_should_be_synced( $product ) ) {
-			return;
-		}
+		try {
+			// bail if not a product or product is not enabled for sync
+			if ( ! $product instanceof \WC_Product || ! Products::published_product_should_be_synced( $product ) ) {
+				return;
+			}
 
-		$wp_id      = $product->get_id();
-		$visibility = get_post_status( $wp_id ) === 'publish' ? self::FB_SHOP_PRODUCT_VISIBLE : self::FB_SHOP_PRODUCT_HIDDEN;
+			$wp_id      = $product->get_id();
+			$visibility = get_post_status( $wp_id ) === 'publish' ? self::FB_SHOP_PRODUCT_VISIBLE : self::FB_SHOP_PRODUCT_HIDDEN;
 
-		if ( self::FB_SHOP_PRODUCT_HIDDEN === $visibility ) {
-			// - product never published to Facebook, new status is not publish
-			// - product new status is not publish but may have been published before
-			$this->update_fb_visibility( $product, $visibility );
-		} else {
-			// Product is published, sync it to Facebook
-			$this->facebook_for_woocommerce->get_products_sync_handler()->create_or_update_products( [ $product->get_id() ] );
+			if ( self::FB_SHOP_PRODUCT_HIDDEN === $visibility ) {
+				// - product never published to Facebook, new status is not publish
+				// - product new status is not publish but may have been published before
+				$this->update_fb_visibility( $product, $visibility );
+			} else {
+				// Product is published, sync it to Facebook
+				$this->facebook_for_woocommerce->get_products_sync_handler()->create_or_update_products( [ $product->get_id() ] );
+			}
+		} catch ( \Exception $e ) {
+			$message = sprintf( 'Error during quick edit sync for product %d: %s', $product ? $product->get_id() : 0, $e->getMessage() );
+			Logger::log(
+				$message,
+				[],
+				array(
+					'should_send_log_to_meta'        => false,
+					'should_save_log_in_woocommerce' => true,
+					'woocommerce_log_level'          => \WC_Log_Levels::ERROR,
+				)
+			);
 		}
 	}
 
