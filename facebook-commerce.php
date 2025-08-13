@@ -2922,7 +2922,7 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 	 */
 	public function on_product_quick_edit_save( $product ) {
 		try {
-			// bail if not a product or product is not enabled for sync
+			// bail if not a product or product is not enabled for sync.
 			if ( ! $product instanceof \WC_Product || ! Products::published_product_should_be_synced( $product ) ) {
 				return;
 			}
