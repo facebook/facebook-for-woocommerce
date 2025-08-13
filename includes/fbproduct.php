@@ -2245,6 +2245,9 @@ class WC_Facebook_Product {
 			$product_data['external_update_time'] = $date_modified->getTimestamp();
 		}
 
+		// Add product preparation timestamp
+		$product_data['product_prepare_time'] = time();
+
 		// Only use checkout URLs if they exist.
 		$checkout_url = $this->build_checkout_url( $product_url );
 		if ( $checkout_url ) {
