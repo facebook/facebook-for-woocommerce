@@ -137,37 +137,7 @@ class Background extends BackgroundJobHandler {
 				$this->update_job( $job );
 
 				// Update timestamps after successful API call - only if we got handles back
-				if ( ! empty( $handles ) ) {
-					try {
-						$current_time = time();
-						foreach ( $requests as $request ) {
-							if ( Sync::ACTION_UPDATE === $request['method'] && isset( $request['data']['id'] ) && ! empty( $request['data']['id'] ) ) {
-								// Extract product ID from retailer ID by taking digits after the last underscore
-								// Works with any format: wc_post_id_123, pagination-571_1167, simple-sku_456, etc.
-								if ( preg_match( '/_(\d+)$/', $request['data']['id'], $matches ) ) {
-									$product_id = (int) $matches[1];
-									if ( $product_id > 0 ) {
-										update_post_meta( $product_id, '_fb_sync_last_time', $current_time );
-									}
-								}
-							}
-						}
-					} catch ( \Exception $e ) {
-						// Log the error but don't interrupt the sync process
-						Logger::log(
-							'Error updating product sync timestamps',
-							[
-								'event' => 'product_sync_timestamp_update_error',
-								'error_message' => $e->getMessage(),
-							],
-							[
-								'should_save_log_in_woocommerce' => true,
-								'woocommerce_log_level' => \WC_Log_Levels::ERROR,
-							],
-							$e
-						);
-					}
-				}
+				$this->update_sync_timestamps( $requests, $handles );
 			} catch ( ApiException $e ) {
 				/* translators: Placeholders: %1$s - <string  job ID, %2$s - <strong> error message */
 				$message = sprintf( __( 'There was an error trying sync products using the Catalog Batch API for job %1$s: %2$s', 'facebook-for-woocommerce' ), $job->id, $e->getMessage() );
@@ -287,5 +257,47 @@ class Background extends BackgroundJobHandler {
 		$response_handles    = $response->handles;
 		$handles             = ( isset( $response_handles ) && is_array( $response_handles ) ) ? $response_handles : array();
 		return $handles;
+	}
+
+	/**
+	 * Updates sync timestamps for products after successful API call.
+	 *
+	 * @since 3.5.5
+	 *
+	 * @param array $requests Array of sync requests.
+	 * @param array $handles Array of handles returned from API call.
+	 */
+	protected function update_sync_timestamps( array $requests, array $handles ) {
+		if ( ! empty( $handles ) ) {
+			try {
+				$current_time = time();
+				foreach ( $requests as $request ) {
+					if ( Sync::ACTION_UPDATE === $request['method'] && isset( $request['data']['id'] ) && ! empty( $request['data']['id'] ) ) {
+						// Extract product ID from retailer ID by taking digits after the last underscore
+						// Works with any format: wc_post_id_123, pagination-571_1167, simple-sku_456, etc.
+						if ( preg_match( '/_(\d+)$/', $request['data']['id'], $matches ) ) {
+							$product_id = (int) $matches[1];
+							if ( $product_id > 0 ) {
+								update_post_meta( $product_id, '_fb_sync_last_time', $current_time );
+							}
+						}
+					}
+				}
+			} catch ( \Exception $e ) {
+				// Log the error but don't interrupt the sync process
+				Logger::log(
+					'Error updating product sync timestamps',
+					[
+						'event' => 'product_sync_timestamp_update_error',
+						'error_message' => $e->getMessage(),
+					],
+					[
+						'should_save_log_in_woocommerce' => true,
+						'woocommerce_log_level' => \WC_Log_Levels::ERROR,
+					],
+					$e
+				);
+			}
+		}
 	}
 }

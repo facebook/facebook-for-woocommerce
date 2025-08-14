@@ -69,7 +69,7 @@ class BackgroundTest extends AbstractWPUnitTestWithSafeFiltering {
 		$handles = ['handle1', 'handle2'];
 
 		// Execute the timestamp update logic
-		$this->background->test_timestamp_update_logic( $requests, $handles );
+		$this->background->test_update_sync_timestamps( $requests, $handles );
 
 		// Verify that update_post_meta was called for UPDATE actions only
 		$meta_updates = $this->background->get_meta_updates();
@@ -103,7 +103,7 @@ class BackgroundTest extends AbstractWPUnitTestWithSafeFiltering {
 		$handles = [];
 
 		// Execute the timestamp update logic
-		$this->background->test_timestamp_update_logic( $requests, $handles );
+		$this->background->test_update_sync_timestamps( $requests, $handles );
 
 		// Verify that no meta updates occurred
 		$meta_updates = $this->background->get_meta_updates();
@@ -134,7 +134,7 @@ class BackgroundTest extends AbstractWPUnitTestWithSafeFiltering {
 		$handles = ['handle1'];
 
 		// Execute the timestamp update logic
-		$this->background->test_timestamp_update_logic( $requests, $handles );
+		$this->background->test_update_sync_timestamps( $requests, $handles );
 
 		// Verify that no meta updates occurred
 		$meta_updates = $this->background->get_meta_updates();
@@ -171,7 +171,7 @@ class BackgroundTest extends AbstractWPUnitTestWithSafeFiltering {
 		$handles = ['handle1'];
 
 		// Execute the timestamp update logic
-		$this->background->test_timestamp_update_logic( $valid_requests, $handles );
+		$this->background->test_update_sync_timestamps( $valid_requests, $handles );
 
 		// Verify that all valid formats were processed
 		$meta_updates = $this->background->get_meta_updates();
@@ -210,7 +210,7 @@ class BackgroundTest extends AbstractWPUnitTestWithSafeFiltering {
 		$handles = ['handle1'];
 
 		// Execute the timestamp update logic
-		$this->background->test_timestamp_update_logic( $invalid_requests, $handles );
+		$this->background->test_update_sync_timestamps( $invalid_requests, $handles );
 
 		// Verify that no invalid formats were processed
 		$meta_updates = $this->background->get_meta_updates();
@@ -247,7 +247,7 @@ class BackgroundTest extends AbstractWPUnitTestWithSafeFiltering {
 		$handles = ['handle1'];
 
 		// Execute the timestamp update logic
-		$this->background->test_timestamp_update_logic( $requests, $handles );
+		$this->background->test_update_sync_timestamps( $requests, $handles );
 
 		// Verify that only the valid request was processed
 		$meta_updates = $this->background->get_meta_updates();
@@ -277,7 +277,7 @@ class BackgroundTest extends AbstractWPUnitTestWithSafeFiltering {
 		$handles = ['handle1'];
 
 		// Execute the timestamp update logic
-		$this->background->test_timestamp_update_logic( $requests, $handles );
+		$this->background->test_update_sync_timestamps( $requests, $handles );
 
 		// Verify that only the non-zero product ID was processed
 		$meta_updates = $this->background->get_meta_updates();
@@ -310,7 +310,7 @@ class TestableBackground extends Background {
 	/**
 	 * Mock time value.
 	 *
-	 * @var int
+	 * @var int|null
 	 */
 	private $mock_time;
 
@@ -336,43 +336,70 @@ class TestableBackground extends Background {
 	}
 
 	/**
-	 * Test the timestamp update logic directly.
+	 * Reset meta updates tracking.
 	 */
-	public function test_timestamp_update_logic( array $requests, array $handles ) {
-		// Reset meta updates
+	public function reset_meta_updates() {
 		$this->meta_updates = [];
+	}
 
-		// Simulate the timestamp update logic from the original method
-		if ( ! empty( $handles ) ) {
-			try {
-				$current_time = $this->mock_time ?? time();
-				foreach ( $requests as $request ) {
-					if ( Sync::ACTION_UPDATE === $request['method'] && isset( $request['data']['id'] ) && ! empty( $request['data']['id'] ) ) {
-						// Extract product ID from retailer ID by taking digits after the last underscore
-						// Works with any format: wc_post_id_123, pagination-571_1167, simple-sku_456, etc.
-						if ( preg_match( '/_(\d+)$/', $request['data']['id'], $matches ) ) {
-							$product_id = (int) $matches[1];
-							if ( $product_id > 0 ) {
-								$this->mock_update_post_meta( $product_id, '_fb_sync_last_time', $current_time );
-							}
-						}
-					}
-				}
-			} catch ( \Exception $e ) {
-				// Log the error but don't interrupt the sync process
-				// In tests, we'll just ignore exceptions
+	/**
+	 * Expose the protected update_sync_timestamps method for testing.
+	 */
+	public function test_update_sync_timestamps( array $requests, array $handles ) {
+		$this->reset_meta_updates();
+
+		// Mock the time() function to return our fixed time
+		if ( $this->mock_time !== null ) {
+			// Use runkit or uopz if available, otherwise use a simple approach
+			if ( function_exists( 'uopz_set_return' ) ) {
+				uopz_set_return( 'time', $this->mock_time );
 			}
+		}
+
+		// Set up WordPress function mocks
+		$this->setup_wp_function_mocks();
+
+		// Call the actual method from the parent class
+		$this->update_sync_timestamps( $requests, $handles );
+
+		// Clean up mocks
+		$this->cleanup_wp_function_mocks();
+
+		// Restore time() function if we mocked it
+		if ( $this->mock_time !== null && function_exists( 'uopz_unset_return' ) ) {
+			uopz_unset_return( 'time' );
 		}
 	}
 
 	/**
-	 * Mock update_post_meta function to track calls.
+	 * Set up WordPress function mocks for testing.
 	 */
-	private function mock_update_post_meta( int $product_id, string $meta_key, $meta_value ) {
-		$this->meta_updates[] = [
-			'product_id' => $product_id,
-			'meta_key' => $meta_key,
-			'meta_value' => $meta_value
-		];
+	private function setup_wp_function_mocks() {
+		// Mock update_post_meta function
+		add_filter( 'update_post_metadata', [ $this, 'mock_update_post_meta_filter' ], 10, 5 );
+	}
+
+	/**
+	 * Clean up WordPress function mocks.
+	 */
+	private function cleanup_wp_function_mocks() {
+		remove_filter( 'update_post_metadata', [ $this, 'mock_update_post_meta_filter' ], 10 );
+	}
+
+	/**
+	 * Filter to mock update_post_meta calls.
+	 */
+	public function mock_update_post_meta_filter( $check, $object_id, $meta_key, $meta_value, $prev_value ) {
+		if ( $meta_key === '_fb_sync_last_time' ) {
+			// Use our mock time if available, otherwise use the actual meta_value
+			$timestamp = $this->mock_time ?? $meta_value;
+			$this->meta_updates[] = [
+				'product_id' => $object_id,
+				'meta_key' => $meta_key,
+				'meta_value' => $timestamp
+			];
+			return true; // Prevent actual update
+		}
+		return $check; // Allow other meta updates to proceed normally
 	}
 }
