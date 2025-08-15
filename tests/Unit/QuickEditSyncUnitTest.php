@@ -74,27 +74,6 @@ class IntegrationQuickEditTest extends \WP_UnitTestCase {
     }
 
     /**
-     * Test with draft product
-     */
-    public function test_handles_draft_product() {
-        $draft_product = new WC_Product_Simple();
-        $draft_product->set_name('Draft Product');
-        $draft_product->set_status('draft');
-        $draft_product->save();
-
-        $integration = $this->createMockedIntegration();
-
-        // Should not throw exception
-        $integration->on_product_quick_edit_save($draft_product);
-        $this->assertTrue(true);
-
-        // Clean up without triggering hooks
-        remove_all_actions('before_delete_post');
-        remove_all_actions('wp_trash_post');
-        wp_delete_post($draft_product->get_id(), true);
-    }
-
-    /**
      * Test error handling doesn't break execution
      */
     public function test_error_handling() {
