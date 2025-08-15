@@ -51,6 +51,9 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 		/** @var bool whether the pixel should be enabled */
 		private $is_pixel_enabled;
 
+		/** @var \FacebookAds\ParamBuilder|null parameter builder instance */
+		private $param_builder = null;
+
 
 		/**
 		 * Events tracker constructor.
@@ -69,6 +72,43 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 			$this->tracked_events = array();
 
 			$this->add_hooks();
+			$this->initialize_param_builder();
+		}
+
+		/**
+		 * Initialize the Facebook CAPI Parameter Builder
+		 *
+		 * @since 3.0.0
+		 */
+		private function initialize_param_builder() {
+			try {
+				// Initialize the Facebook CAPI Parameter Builder with the site domain
+				$site_url = isset( $_SERVER['HTTP_HOST'] ) ? sanitize_text_field( wp_unslash( $_SERVER['HTTP_HOST'] ) ) : '';
+				$this->param_builder = new \FacebookAds\ParamBuilder( array( $site_url ) );
+
+				// Process the request to get any cookies that need to be set
+				$cookie_to_set = $this->param_builder->processRequest(
+					isset( $_SERVER['HTTP_HOST'] ) ? sanitize_text_field( wp_unslash( $_SERVER['HTTP_HOST'] ) ) : '',
+					$_GET,
+					$_COOKIE,
+					isset( $_SERVER['HTTP_REFERER'] ) ? sanitize_text_field( wp_unslash( $_SERVER['HTTP_REFERER'] ) ) : null
+				);
+
+				// Set cookie from parambuilder
+				if ( ! empty( $cookie_to_set ) ) {
+					foreach ( $cookie_to_set as $cookie ) {
+						setcookie(
+							$cookie->name,
+							$cookie->value,
+							time() + $cookie->max_age,
+							'/',
+							$cookie->domain
+						);
+					}
+				}
+			} catch ( \Exception $exception ) {
+				facebook_for_woocommerce()->log( 'Error initializing CAPI Parameter Builder: ' . $exception->getMessage() );
+			}
 		}
 
 
@@ -105,6 +145,9 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 			// inject Pixel
 			add_action( 'wp_head', array( $this, 'inject_base_pixel' ) );
 			add_action( 'wp_footer', array( $this, 'inject_base_pixel_noscript' ) );
+
+			// enqueue Facebook CAPI Param Builder script
+			add_action( 'wp_enqueue_scripts', array( $this, 'enqueue_capi_param_builder_script' ) );
 
 			// ViewContent for individual products
 			add_action( 'woocommerce_after_single_product', array( $this, 'inject_view_content_event' ) );
@@ -176,6 +219,32 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 			}
 		}
 
+
+		/**
+		 * Enqueues the Facebook CAPI Param Builder script.
+		 *
+		 * @since 3.0.19
+		 */
+		public function enqueue_capi_param_builder_script() {
+			if ( ! $this->is_pixel_enabled() ) {
+				return;
+			}
+
+			wp_enqueue_script(
+				'facebook-capi-param-builder',
+				'https://capi-automation.s3.us-east-2.amazonaws.com/public/client_js/capiParamBuilder/clientParamBuilder.bundle.js',
+				array(),
+				null,
+				true
+			);
+			// Add inline script that executes after the external script has loaded
+			wp_add_inline_script(
+				'facebook-capi-param-builder',
+				'if (typeof clientParamBuilder !== "undefined") {
+					clientParamBuilder.processAndCollectAllParams(window.location.href);
+				}'
+			);
+		}
 
 		/**
 		 * Triggers the PageView event
@@ -1023,6 +1092,16 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 
 			if ( $send_now ) {
 				try {
+					// Get fbc and fbp values from the parameter builder
+					$fbc = $this->param_builder->getFbc();
+					$fbp = $this->param_builder->getFbp();
+
+					if ( ! empty( $fbc ) ) {
+						$event['user_data']['fbc'] = $fbc;
+					}
+					if ( ! empty( $fbp ) ) {
+						$event['user_data']['fbp'] = $fbp;
+					}
 					facebook_for_woocommerce()->get_api()->send_pixel_events( facebook_for_woocommerce()->get_integration()->get_facebook_pixel_id(), array( $event ) );
 				} catch ( ApiException $exception ) {
 					facebook_for_woocommerce()->log( 'Could not send Pixel event: ' . $exception->getMessage() );
