@@ -263,7 +263,7 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 
 			$event = new Event( $event_data );
 
-			$this->send_api_event( $event );
+			$this->send_api_event( $event, false );
 
 			$event_data['event_id'] = $event->get_id();
 
@@ -504,8 +504,6 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 
 			$event = $this->get_search_event();
 
-			$this->send_api_event( $event );
-
 			$this->pixel->inject_event(
 				$event->get_name(),
 				array(
@@ -573,7 +571,7 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 
 			$event = new Event( $event_data );
 
-			$this->send_api_event( $event );
+			$this->send_api_event( $event, false );
 
 			$event_data['event_id'] = $event->get_id();
 
@@ -637,7 +635,7 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 
 			$event = new WooCommerce\Facebook\Events\Event( $event_data );
 
-			$this->send_api_event( $event );
+			$this->send_api_event( $event, false);
 
 			// send the event ID to prevent duplication
 			$event_data['event_id'] = $event->get_id();
@@ -820,7 +818,7 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 
 			$event = new Event( $event_data );
 
-			$this->send_api_event( $event );
+			$this->send_api_event( $event, false );
 
 			$event_data['event_id'] = $event->get_id();
 
