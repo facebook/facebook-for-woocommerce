@@ -73,6 +73,7 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 
 			$this->add_hooks();
 			$this->initialize_param_builder();
+			$this->set_param_builder_cookies();
 		}
 
 		/**
@@ -85,16 +86,23 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 				// Initialize the Facebook CAPI Parameter Builder with the site domain
 				$site_url = isset( $_SERVER['HTTP_HOST'] ) ? sanitize_text_field( wp_unslash( $_SERVER['HTTP_HOST'] ) ) : '';
 				$this->param_builder = new \FacebookAds\ParamBuilder( array( $site_url ) );
+			} catch ( \Exception $exception ) {
+				facebook_for_woocommerce()->log( 'Error initializing CAPI Parameter Builder: ' . $exception->getMessage() );
+			}
+		}
 
-				// Process the request to get any cookies that need to be set
+		private function set_param_builder_cookies() {
+			if ( ! $this->param_builder ) {
+				return;
+			}
+			$site_url = isset( $_SERVER['HTTP_HOST'] ) ? sanitize_text_field( wp_unslash( $_SERVER['HTTP_HOST'] ) ) : '';
+			try {
 				$cookie_to_set = $this->param_builder->processRequest(
-					isset( $_SERVER['HTTP_HOST'] ) ? sanitize_text_field( wp_unslash( $_SERVER['HTTP_HOST'] ) ) : '',
+					$site_url,
 					$_GET,
 					$_COOKIE,
 					isset( $_SERVER['HTTP_REFERER'] ) ? sanitize_text_field( wp_unslash( $_SERVER['HTTP_REFERER'] ) ) : null
 				);
-
-				// Set cookie from parambuilder
 				if ( ! empty( $cookie_to_set ) ) {
 					foreach ( $cookie_to_set as $cookie ) {
 						setcookie(
@@ -107,7 +115,7 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 					}
 				}
 			} catch ( \Exception $exception ) {
-				facebook_for_woocommerce()->log( 'Error initializing CAPI Parameter Builder: ' . $exception->getMessage() );
+				facebook_for_woocommerce()->log( 'Error setting CAPI Parameter Builder cookies: ' . $exception->getMessage() );
 			}
 		}
 
@@ -246,6 +254,24 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 			);
 		}
 
+				/**
+		 * Adds fbc and fbp to the user_data array if available from param_builder.
+		 *
+		 * @param array $user_data
+		 * @return array
+		 */
+		private function add_fbc_fbp_to_user_data( $user_data ) {
+			$fbc = $this->param_builder ? $this->param_builder->getFbc() : '';
+			$fbp = $this->param_builder ? $this->param_builder->getFbp() : '';
+			if ( ! empty( $fbc ) ) {
+				$user_data['fbc'] = $fbc;
+			}
+			if ( ! empty( $fbp ) ) {
+				$user_data['fbp'] = $fbp;
+			}
+			return $user_data;
+		}
+
 		/**
 		 * Triggers the PageView event
 		 */
@@ -255,9 +281,10 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 			}
 
 			$event_name = 'PageView';
+			$user_data = $this->add_fbc_fbp_to_user_data( $this->pixel->get_user_info() );
 			$event_data = array(
 				'event_name' => $event_name,
-				'user_data'  => $this->pixel->get_user_info(),
+				'user_data'  => $user_data,
 			);
 
 			$event = new Event( $event_data );
@@ -316,7 +343,7 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 			}
 
 			$category = get_queried_object();
-
+			$user_data = $this->add_fbc_fbp_to_user_data( $this->pixel->get_user_info() );
 			$event_name = 'ViewCategory';
 			$event_data = array(
 				'event_name'  => $event_name,
@@ -327,7 +354,7 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 					'content_type'     => $content_type,
 					'contents'         => $contents,
 				),
-				'user_data'   => $this->pixel->get_user_info(),
+				'user_data'   => $user_data,
 			);
 
 			$event = new Event( $event_data );
@@ -543,7 +570,7 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 						$content_type = 'product_group';
 					}
 				}
-
+				$user_data = $this->add_fbc_fbp_to_user_data( $this->pixel->get_user_info() );
 				$event_data = array(
 					'event_name'  => 'Search',
 					'custom_data' => array(
@@ -554,7 +581,7 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 						'value'         => Helper::number_format( $total_value ),
 						'currency'      => get_woocommerce_currency(),
 					),
-					'user_data'   => $this->pixel->get_user_info(),
+					'user_data'   => $user_data,
 				);
 
 				$this->search_event = new Event( $event_data );
@@ -619,6 +646,7 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 
 			$categories = \WC_Facebookcommerce_Utils::get_product_categories( $product->get_id() );
 
+			$user_data = $this->add_fbc_fbp_to_user_data( $this->pixel->get_user_info() );
 			$event_data = array(
 				'event_name'  => 'ViewContent',
 				'custom_data' => array(
@@ -637,7 +665,7 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 					'value'            => $product_price,
 					'currency'         => get_woocommerce_currency(),
 				),
-				'user_data'   => $this->pixel->get_user_info(),
+				'user_data'   => $user_data,
 			);
 
 			$event = new Event( $event_data );
@@ -684,6 +712,7 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 				return;
 			}
 
+			$user_data = $this->add_fbc_fbp_to_user_data( $this->pixel->get_user_info() );
 			$event_data = array(
 				'event_name'  => 'AddToCart',
 				'custom_data' => array(
@@ -701,7 +730,7 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 					'value'        => (float) $product->get_price() * $quantity,
 					'currency'     => get_woocommerce_currency(),
 				),
-				'user_data'   => $this->pixel->get_user_info(),
+				'user_data'   => $user_data,
 			);
 
 			$event = new WooCommerce\Facebook\Events\Event( $event_data );
@@ -758,7 +787,7 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 			}
 
 			if ( $this->is_pixel_enabled() ) {
-
+				$user_data = $this->add_fbc_fbp_to_user_data( $this->pixel->get_user_info() );
 				$params = array(
 					'content_ids'  => wp_json_encode( \WC_Facebookcommerce_Utils::get_fb_content_ids( $product ) ),
 					'content_name' => \WC_Facebookcommerce_Utils::clean_string( $product->get_title() ),
@@ -773,6 +802,7 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 					),
 					'value'        => (float) $product->get_price() * $quantity,
 					'currency'     => get_woocommerce_currency(),
+					'user_data'    => $user_data,
 				);
 
 				// send the event ID to prevent duplication
@@ -857,6 +887,7 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 			}
 
 			$event_name = 'InitiateCheckout';
+			$user_data = $this->add_fbc_fbp_to_user_data( $this->pixel->get_user_info() );
 			$event_data = array(
 				'event_name'  => $event_name,
 				'custom_data' => array(
@@ -868,7 +899,7 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 					'value'        => $this->get_cart_total(),
 					'currency'     => get_woocommerce_currency(),
 				),
-				'user_data'   => $this->pixel->get_user_info(),
+				'user_data'   => $user_data,
 			);
 
 			// if there is only one item in the cart, send its first category
@@ -994,6 +1025,7 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 				}
 			}
 			// Advanced matching information is extracted from the order
+			$user_data = $this->add_fbc_fbp_to_user_data( $this->get_user_data_from_billing_address( $order ) );
 			$event_data = array(
 				'event_name'  => $event_name,
 				'custom_data' => array(
@@ -1005,7 +1037,7 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 					'currency'     => get_woocommerce_currency(),
 					'order_id'     => $order_id,
 				),
-				'user_data'   => $this->get_user_data_from_billing_address( $order ),
+				'user_data'   => $user_data,
 			);
 
 			$event = new Event( $event_data );
@@ -1041,6 +1073,7 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 				$event_name = 'Subscribe';
 
 				// TODO consider including (int|float) 'predicted_ltv': "Predicted lifetime value of a subscriber as defined by the advertiser and expressed as an exact value." {FN 2020-03-20}
+				$user_data = $this->add_fbc_fbp_to_user_data( $this->pixel->get_user_info() );
 				$event_data = array(
 					'event_name'  => $event_name,
 					'custom_data' => array(
@@ -1048,7 +1081,7 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 						'value'       => $subscription->get_total(),
 						'currency'    => get_woocommerce_currency(),
 					),
-					'user_data'   => $this->pixel->get_user_info(),
+					'user_data'   => $user_data,
 				);
 
 				$event = new Event( $event_data );
@@ -1092,16 +1125,6 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 
 			if ( $send_now ) {
 				try {
-					// Get fbc and fbp values from the parameter builder
-					$fbc = $this->param_builder->getFbc();
-					$fbp = $this->param_builder->getFbp();
-
-					if ( ! empty( $fbc ) ) {
-						$event['user_data']['fbc'] = $fbc;
-					}
-					if ( ! empty( $fbp ) ) {
-						$event['user_data']['fbp'] = $fbp;
-					}
 					facebook_for_woocommerce()->get_api()->send_pixel_events( facebook_for_woocommerce()->get_integration()->get_facebook_pixel_id(), array( $event ) );
 				} catch ( ApiException $exception ) {
 					facebook_for_woocommerce()->log( 'Could not send Pixel event: ' . $exception->getMessage() );
