@@ -28,12 +28,9 @@ class ProductSetSyncTest extends AbstractWPUnitTestWithSafeFiltering {
         $wc_category = $this->createWPCategory();
 
         $product_set_sync = $this->getMockBuilder( ProductSetSyncTestable::class )
-            ->setMethods(['is_sync_enabled', 'get_fb_product_set_id','create_fb_product_set'])
+            ->setMethods(['get_fb_product_set_id','create_fb_product_set'])
             ->getMock();
 
-		$product_set_sync->expects( $this->once() )
-            ->method( 'is_sync_enabled' )
-            ->willReturn(true);
         $product_set_sync->expects( $this->once() )
             ->method( 'get_fb_product_set_id' )
             ->with($wc_category)
@@ -52,12 +49,9 @@ class ProductSetSyncTest extends AbstractWPUnitTestWithSafeFiltering {
         $wc_category = $this->createWPCategory();
 
         $product_set_sync = $this->getMockBuilder( ProductSetSyncTestable::class )
-            ->setMethods(['is_sync_enabled', 'get_fb_product_set_id','update_fb_product_set'])
+            ->setMethods(['get_fb_product_set_id','update_fb_product_set'])
             ->getMock();
 
-		$product_set_sync->expects( $this->once() )
-            ->method( 'is_sync_enabled' )
-            ->willReturn(true);        
         $product_set_sync->expects( $this->once() )
             ->method( 'get_fb_product_set_id' )
             ->with($wc_category)
@@ -77,12 +71,9 @@ class ProductSetSyncTest extends AbstractWPUnitTestWithSafeFiltering {
         $wc_category = $this->createWPCategory();
 
         $product_set_sync = $this->getMockBuilder( ProductSetSyncTestable::class )
-            ->setMethods(['is_sync_enabled', 'get_fb_product_set_id','delete_fb_product_set'])
+            ->setMethods(['get_fb_product_set_id','delete_fb_product_set'])
             ->getMock();
 
-		$product_set_sync->expects( $this->once() )
-            ->method( 'is_sync_enabled' )
-            ->willReturn(true);
         $product_set_sync->expects( $this->once() )
             ->method( 'get_fb_product_set_id' )
             ->with($wc_category)
@@ -99,39 +90,15 @@ class ProductSetSyncTest extends AbstractWPUnitTestWithSafeFiltering {
         );
     }
 
-    public function testSyncDisabled() {
-        $wc_category = $this->createWPCategory();
-
-        $product_set_sync = $this->getMockBuilder( ProductSetSyncTestable::class )
-            ->setMethods(['is_sync_enabled', 'get_fb_product_set_id','create_fb_product_set'])
-            ->getMock();
-
-		$product_set_sync->expects( $this->once() )
-            ->method( 'is_sync_enabled' )
-            ->willReturn(false);
-        $product_set_sync->expects( $this->never() )
-            ->method( 'get_fb_product_set_id' );
-        $product_set_sync->expects( $this->never() )
-            ->method( 'create_fb_product_set' );
-        
-        $product_set_sync->on_create_or_update_product_wc_category_callback( 
-            $wc_category->term_id, 
-            $wc_category->term_taxonomy_id, 
-            array() 
-        );
-    }
 
     public function testSyncAllProductSets() {
         $this->createWPCategory( self::WC_CATEGORY_NAME_1 );
         $this->createWPCategory( self::WC_CATEGORY_NAME_2 );
 
         $product_set_sync = $this->getMockBuilder( ProductSetSyncTestable::class )
-            ->setMethods(['is_sync_enabled', 'get_fb_product_set_id','create_fb_product_set'])
+            ->setMethods(['get_fb_product_set_id','create_fb_product_set'])
             ->getMock();
 
-		$product_set_sync->expects( $this->exactly(1) )
-            ->method( 'is_sync_enabled' )
-            ->willReturn(true);
         $product_set_sync->expects( $this->atLeast(2) )
             ->method( 'get_fb_product_set_id' )
             ->willReturn(null);
@@ -145,7 +112,7 @@ class ProductSetSyncTest extends AbstractWPUnitTestWithSafeFiltering {
         $wc_category = $this->createWPCategory();
 
         $product_set_sync = $this->getMockBuilder( ProductSetSyncTestable::class )
-            ->setMethods(['is_sync_enabled', 'get_fb_product_set_id','create_fb_product_set'])
+            ->setMethods(['get_fb_product_set_id','create_fb_product_set'])
             ->getMock();
         
         $data = $product_set_sync->build_fb_product_set_data( $wc_category );
@@ -175,10 +142,6 @@ class ProductSetSyncTest extends AbstractWPUnitTestWithSafeFiltering {
  * A test-specific subclass of ProductSetSync to expose private methods for mocking.
  */
 class ProductSetSyncTestable extends ProductSetSync {
-    
-    public function is_sync_enabled() {
-        return parent::is_sync_enabled();
-    }
 
     public function get_fb_product_set_id( $wc_category ) {
         return parent::get_fb_product_set_id( $wc_category );
