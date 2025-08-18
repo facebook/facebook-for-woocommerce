@@ -376,6 +376,10 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 
 		// Init Whatsapp Utility Event Processor
 		$this->wa_utility_event_processor = $this->load_whatsapp_utility_event_processor();
+
+		// Hook to update _last_change_time when post meta is updated/created
+		add_action( 'updated_post_meta', array( $this, 'update_last_change_time' ), 10, 4 );
+		add_action( 'added_post_meta', array( $this, 'update_last_change_time' ), 10, 4 );
 	}
 
 	/**
@@ -2033,6 +2037,49 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 		ob_end_clean();
 
 		return wp_json_encode( [ $items ] );
+	}
+
+	/**
+	 * Updates the _last_change_time meta field when post meta is updated.
+	 *
+	 * @param int    $meta_id    ID of the metadata entry to update.
+	 * @param int    $product_id  Post ID.
+	 * @param string $meta_key   Meta key.
+	 * @param mixed  $meta_value Meta value.
+	 */
+	public function update_last_change_time( $meta_id, $product_id, $meta_key, $meta_value ) {
+		try {
+			// Only update for WooCommerce products
+			$post = get_post( $product_id );
+			if ( ! $post || $post->post_type !== 'product' ) {
+				return;
+			}
+
+			// Don't create an infinite loop by checking for our own meta key
+			if ( $meta_key === '_last_change_time' ) {
+				return;
+			}
+
+			// Update the last change time with current timestamp
+			$result = update_post_meta( $product_id, '_last_change_time', time() );
+
+		} catch ( \Exception $e ) {
+			Logger::log(
+				'Error updating last change time for product',
+				[
+					'event'      => 'update_last_change_time_error',
+					'product_id' => $product_id,
+					'meta_key'   => $meta_key,
+					'meta_id'    => $meta_id,
+				],
+				[
+					'should_send_log_to_meta'        => false,
+					'should_save_log_in_woocommerce' => true,
+					'woocommerce_log_level'          => \WC_Log_Levels::ERROR,
+				],
+				$e
+			);
+		}
 	}
 
 	/**
