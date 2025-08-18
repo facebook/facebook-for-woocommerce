@@ -2870,6 +2870,45 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 	}
 
 	/**
+	 * Common function to process product sync for edit operations.
+	 *
+	 * @param \WC_Product $product product object
+	 *
+	 * @return string|false visibility status if product was processed, false if skipped
+	 */
+	private function process_product_sync_visibility( $product ) {
+		try {
+			// bail if not a product or product is not enabled for sync
+			if ( ! $product instanceof \WC_Product || ! Products::published_product_should_be_synced( $product ) ) {
+				return false;
+			}
+
+			$wp_id      = $product->get_id();
+			$visibility = get_post_status( $wp_id ) === 'publish' ? self::FB_SHOP_PRODUCT_VISIBLE : self::FB_SHOP_PRODUCT_HIDDEN;
+
+			if ( self::FB_SHOP_PRODUCT_HIDDEN === $visibility ) {
+				// - product never published to Facebook, new status is not publish
+				// - product new status is not publish but may have been published before
+				$this->update_fb_visibility( $product, $visibility );
+			}
+
+			return $visibility;
+		} catch ( \Exception $e ) {
+			$message = sprintf( 'Error during product sync for product %d: %s', $product ? $product->get_id() : 0, $e->getMessage() );
+			Logger::log(
+				$message,
+				[],
+				array(
+					'should_send_log_to_meta'        => false,
+					'should_save_log_in_woocommerce' => true,
+					'woocommerce_log_level'          => \WC_Log_Levels::ERROR,
+				)
+			);
+			return false;
+		}
+	}
+
+	/**
 	 * Helper function to update FB visibility.
 	 *
 	 * @param int|WC_Product $product_id product ID or product object
@@ -2922,19 +2961,11 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 	 */
 	public function on_product_quick_edit_save( $product ) {
 		try {
-			// bail if not a product or product is not enabled for sync.
-			if ( ! $product instanceof \WC_Product || ! Products::published_product_should_be_synced( $product ) ) {
-				return;
-			}
+			// Process if products exists & should be synced & Updates visibility
+			$visibility = $this->process_product_sync_visibility( $product );
 
-			$wp_id      = $product->get_id();
-			$visibility = get_post_status( $wp_id ) === 'publish' ? self::FB_SHOP_PRODUCT_VISIBLE : self::FB_SHOP_PRODUCT_HIDDEN;
-
-			if ( self::FB_SHOP_PRODUCT_HIDDEN === $visibility ) {
-				// - product never published to Facebook, new status is not publish
-				// - product new status is not publish but may have been published before
-				$this->update_fb_visibility( $product, $visibility );
-			} else {
+			// For quick edit, also handle published products that need immediate sync
+			if ( self::FB_SHOP_PRODUCT_VISIBLE === $visibility ) {
 				// Product is published, sync it to Facebook
 				$this->facebook_for_woocommerce->get_products_sync_handler()->create_or_update_products( [ $product->get_id() ] );
 			}
@@ -2964,18 +2995,8 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 		static $bulk_product_edit_ids    = [];
 		static $bulk_products_to_exclude = [];
 
-		if ( ! $product instanceof \WC_Product || ! Products::published_product_should_be_synced( $product ) ) {
-			return;
-		}
-
-		$wp_id      = $product->get_id();
-		$visibility = get_post_status( $wp_id ) === 'publish' ? self::FB_SHOP_PRODUCT_VISIBLE : self::FB_SHOP_PRODUCT_HIDDEN;
-
-		if ( self::FB_SHOP_PRODUCT_HIDDEN === $visibility ) {
-			// - product never published to Facebook, new status is not publish
-			// - product new status is not publish but may have been published before
-			$this->update_fb_visibility( $product, $visibility );
-		}
+		// Process if products exists & should be synced & Updates visibility
+		$this->process_product_sync_visibility( $product );
 
 		if ( ! empty( $_REQUEST['post'] ) ) {
 			$bulk_product_edit_ids = $_REQUEST['post'];
