@@ -818,9 +818,9 @@ class WC_Facebookcommerce extends WooCommerce\Facebook\Framework\Plugin {
 
 	/**
 	 * Gets the Facebook CAPI Parameter Builder instance
-	 * 
+	 *
 	 * @since 3.5.5
-	 * 
+	 *
 	 * @return \FacebookAds\ParamBuilder|null
 	 */
 	public function get_param_builder() {
@@ -1026,7 +1026,9 @@ class WC_Facebookcommerce extends WooCommerce\Facebook\Framework\Plugin {
 				$site_url,
 				$_GET,
 				$_COOKIE,
-				isset( $_SERVER['HTTP_REFERER'] ) ? sanitize_text_field( wp_unslash( $_SERVER['HTTP_REFERER'] ) ) : null
+				isset( $_SERVER['HTTP_REFERER'] ) ? 
+					sanitize_text_field( wp_unslash( $_SERVER['HTTP_REFERER'] ) ) : 
+					null
 			);
 
 			if ( ! empty( $cookie_to_set ) ) {
