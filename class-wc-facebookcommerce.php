@@ -144,6 +144,13 @@ class WC_Facebookcommerce extends WooCommerce\Facebook\Framework\Plugin {
 	private $debug_tools;
 
 	/**
+	 * The Facebook CAPI Parameter Builder instance.
+	 *
+	 * @var \FacebookAds\ParamBuilder
+	 */
+	private $param_builder;
+
+	/**
 	 * Constructs the plugin.
 	 *
 	 * @since 1.0.0
@@ -182,6 +189,7 @@ class WC_Facebookcommerce extends WooCommerce\Facebook\Framework\Plugin {
 	 * @internal
 	 */
 	public function init() {
+		add_action( 'init', array( $this, 'init_param_builder' ) );
 		add_action( 'init', array( $this, 'get_integration' ) );
 		add_action( 'init', array( $this, 'register_custom_taxonomy' ) );
 		add_action( 'add_meta_boxes_product', array( $this, 'remove_product_fb_product_set_metabox' ), 50 );
@@ -809,6 +817,17 @@ class WC_Facebookcommerce extends WooCommerce\Facebook\Framework\Plugin {
 	}
 
 	/**
+	 * Gets the Facebook CAPI Parameter Builder instance
+	 * 
+	 * @since 3.5.5
+	 * 
+	 * @return \FacebookAds\ParamBuilder|null
+	 */
+	public function get_param_builder() {
+		return $this->param_builder;
+	}
+
+	/**
 	 * Gets the url for the assets build directory.
 	 *
 	 * @since 2.3.4
@@ -965,6 +984,77 @@ class WC_Facebookcommerce extends WooCommerce\Facebook\Framework\Plugin {
 		}
 		// By default, all net new WooC Merchants will be shown the enhanced onboarding experience
 		return true;
+	}
+	/**
+	 * Initializes and sets the Facebook CAPI Parameter Builder cookies early during WordPress init.
+	 * This method is hooked to 'init' with priority 1 to ensure cookies are set before any headers are sent.
+	 */
+	public function init_param_builder() {
+		$this->initialize_param_builder();
+		$this->set_param_builder_cookies();
+	}
+
+	/**
+	 * Initializes the Facebook CAPI Parameter Builder with the site domain.
+	 */
+	public function initialize_param_builder() {
+		try {
+			$site_url = isset( $_SERVER['HTTP_HOST'] ) ? sanitize_text_field( wp_unslash( $_SERVER['HTTP_HOST'] ) ) : '';
+			$this->param_builder = new \FacebookAds\ParamBuilder( array( $site_url ) );
+		} catch ( \Exception $exception ) {
+			$this->log( 'Error initializing CAPI Parameter Builder: ' . $exception->getMessage() );
+		}
+	}
+
+	/**
+	 * Sets the Parameter Builder cookies using the Facebook CAPI Parameter Builder.
+	 */
+	public function set_param_builder_cookies() {
+		if ( ! $this->param_builder ) {
+			return;
+		}
+
+		$site_url = isset( $_SERVER['HTTP_HOST'] ) ? sanitize_text_field( wp_unslash( $_SERVER['HTTP_HOST'] ) ) : '';
+
+		if ( empty( $site_url ) ) {
+			$this->log( 'Cannot set Parameter Builder cookies: site URL is empty' );
+			return;
+		}
+
+		try {
+			$cookie_to_set = $this->param_builder->processRequest(
+				$site_url,
+				$_GET,
+				$_COOKIE,
+				isset( $_SERVER['HTTP_REFERER'] ) ? sanitize_text_field( wp_unslash( $_SERVER['HTTP_REFERER'] ) ) : null
+			);
+
+			if ( ! empty( $cookie_to_set ) ) {
+				foreach ( $cookie_to_set as $cookie ) {
+					$result = setcookie(
+						$cookie->name,
+						$cookie->value,
+						time() + $cookie->max_age,
+						'/',
+						$cookie->domain
+					);
+
+					// Log cookie setting for debugging
+					if ( $this->get_integration() && $this->get_integration()->is_debug_mode_enabled() ) {
+						$this->log( sprintf(
+							'Parameter Builder cookie set: %s=%s (expires in %d seconds, domain: %s) - Result: %s',
+							$cookie->name,
+							$cookie->value,
+							$cookie->max_age,
+							$cookie->domain,
+							$result ? 'success' : 'failed'
+						) );
+					}
+				}
+			}
+		} catch ( \Exception $exception ) {
+			$this->log( 'Error setting CAPI Parameter Builder cookies: ' . $exception->getMessage() );
+		}
 	}
 }
 

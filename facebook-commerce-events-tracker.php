@@ -70,55 +70,10 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 			$this->pixel          = new \WC_Facebookcommerce_Pixel( $user_info );
 			$this->aam_settings   = $aam_settings;
 			$this->tracked_events = array();
+			$this->param_builder = facebook_for_woocommerce()->get_param_builder();
 
 			$this->add_hooks();
-			$this->initialize_param_builder();
-			$this->set_param_builder_cookies();
 		}
-
-		/**
-		 * Initialize the Facebook CAPI Parameter Builder
-		 *
-		 * @since 3.0.0
-		 */
-		private function initialize_param_builder() {
-			try {
-				// Initialize the Facebook CAPI Parameter Builder with the site domain
-				$site_url = isset( $_SERVER['HTTP_HOST'] ) ? sanitize_text_field( wp_unslash( $_SERVER['HTTP_HOST'] ) ) : '';
-				$this->param_builder = new \FacebookAds\ParamBuilder( array( $site_url ) );
-			} catch ( \Exception $exception ) {
-				facebook_for_woocommerce()->log( 'Error initializing CAPI Parameter Builder: ' . $exception->getMessage() );
-			}
-		}
-
-		private function set_param_builder_cookies() {
-			if ( ! $this->param_builder ) {
-				return;
-			}
-			$site_url = isset( $_SERVER['HTTP_HOST'] ) ? sanitize_text_field( wp_unslash( $_SERVER['HTTP_HOST'] ) ) : '';
-			try {
-				$cookie_to_set = $this->param_builder->processRequest(
-					$site_url,
-					$_GET,
-					$_COOKIE,
-					isset( $_SERVER['HTTP_REFERER'] ) ? sanitize_text_field( wp_unslash( $_SERVER['HTTP_REFERER'] ) ) : null
-				);
-				if ( ! empty( $cookie_to_set ) ) {
-					foreach ( $cookie_to_set as $cookie ) {
-						setcookie(
-							$cookie->name,
-							$cookie->value,
-							time() + $cookie->max_age,
-							'/',
-							$cookie->domain
-						);
-					}
-				}
-			} catch ( \Exception $exception ) {
-				facebook_for_woocommerce()->log( 'Error setting CAPI Parameter Builder cookies: ' . $exception->getMessage() );
-			}
-		}
-
 
 		/**
 		 * Determines whether the Pixel should be enabled.
@@ -254,7 +209,7 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 			);
 		}
 
-				/**
+		/**
 		 * Adds fbc and fbp to the user_data array if available from param_builder.
 		 *
 		 * @param array $user_data
