@@ -24,6 +24,7 @@ use WooCommerce\Facebook\Utilities\Background_Handle_Virtual_Products_Variations
 use WooCommerce\Facebook\Utilities\Background_Remove_Duplicate_Visibility_Meta;
 use WooCommerce\Facebook\Utilities\DebugTools;
 use WooCommerce\Facebook\Utilities\Heartbeat;
+use WooCommerce\Facebook\RolloutSwitches;
 
 /**
  * Class WC_Facebookcommerce
@@ -189,7 +190,12 @@ class WC_Facebookcommerce extends WooCommerce\Facebook\Framework\Plugin {
 	 * @internal
 	 */
 	public function init() {
-		add_action( 'init', array( $this, 'init_param_builder' ) );
+		// Initialize rollout switches before checking feature flags
+		$this->rollout_switches = new WooCommerce\Facebook\RolloutSwitches( $this );
+		
+		if ( $this->rollout_switches->is_switch_enabled( RolloutSwitches::SWITCH_PARAMBUILDER_ENABLED ) ) {
+			add_action( 'init', array( $this, 'init_param_builder' ) );
+		}
 		add_action( 'init', array( $this, 'get_integration' ) );
 		add_action( 'init', array( $this, 'register_custom_taxonomy' ) );
 		add_action( 'add_meta_boxes_product', array( $this, 'remove_product_fb_product_set_metabox' ), 50 );
