@@ -4,6 +4,7 @@ declare( strict_types=1 );
 require_once __DIR__ . '/../../facebook-commerce.php';
 
 use WooCommerce\Facebook\Framework\Logger;
+use WooCommerce\Facebook\Products;
 use WooCommerce\Facebook\Products\Sync;
 
 /**
