@@ -30,7 +30,7 @@ class RolloutSwitches {
 	public const SWITCH_WOO_ALL_PRODUCTS_SYNC_ENABLED = 'woo_all_products_sync_enabled';
 	public const SWITCH_OFFER_MANAGEMENT_ENABLED      = 'offer_management_enabled';
 	public const SWITCH_MULTIPLE_IMAGES_ENABLED       = 'woo_variant_multiple_images_enabled';
-    public const SWITCH_PARAMBUILDER_ENABLED          = 'wc_parambuilder_lib_enabled';
+	public const SWITCH_PARAMBUILDER_ENABLED          = 'wc_parambuilder_lib_enabled';
 	private const SETTINGS_KEY                        = 'wc_facebook_for_woocommerce_rollout_switches';
 
 	private const ACTIVE_SWITCHES = array(
