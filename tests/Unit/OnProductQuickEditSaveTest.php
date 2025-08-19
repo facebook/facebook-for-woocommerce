@@ -38,6 +38,14 @@ class OnProductQuickEditSaveTest extends \WooCommerce\Facebook\Tests\AbstractWPU
 		$this->facebook_for_woocommerce->method( 'get_products_sync_handler' )
 			->willReturn( $this->sync_handler );
 
+		// Mock get_product_sync_validator to return a validator that passes validation
+		$product_validator = $this->createMock( \WooCommerce\Facebook\ProductSync\ProductValidator::class );
+		$product_validator->method( 'validate_but_skip_status_check' )
+			->willReturn( true );
+
+		$this->facebook_for_woocommerce->method( 'get_product_sync_validator' )
+			->willReturn( $product_validator );
+
 		$this->integration = new WC_Facebookcommerce_Integration( $this->facebook_for_woocommerce );
 	}
 
@@ -52,7 +60,7 @@ class OnProductQuickEditSaveTest extends \WooCommerce\Facebook\Tests\AbstractWPU
 		$product->save();
 
 		// Enable sync for this product to pass the published_product_should_be_synced check
-		update_post_meta( $product->get_id(), Products::SYNC_ENABLED_META_KEY, 'yes' );
+		update_post_meta( $product->get_id(), Products::get_product_sync_meta_key(), 'yes' );
 
 		$this->sync_handler->expects( $this->once() )
 			->method( 'create_or_update_products' )
@@ -72,7 +80,7 @@ class OnProductQuickEditSaveTest extends \WooCommerce\Facebook\Tests\AbstractWPU
 		$product->save();
 
 		// Enable sync for this product to pass the published_product_should_be_synced check
-		update_post_meta( $product->get_id(), Products::SYNC_ENABLED_META_KEY, 'yes' );
+		update_post_meta( $product->get_id(), Products::get_product_sync_meta_key(), 'yes' );
 
 		$this->sync_handler->expects( $this->once() )
 			->method( 'create_or_update_products' )
