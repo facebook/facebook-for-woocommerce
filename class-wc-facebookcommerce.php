@@ -43,9 +43,6 @@ class WC_Facebookcommerce extends WooCommerce\Facebook\Framework\Plugin {
 	/** @var string the integration ID */
 	const INTEGRATION_ID = 'facebookcommerce';
 
-	/** @var string the product set categories meta name */
-	const PRODUCT_SET_META = '_wc_facebook_product_cats';
-
 	/** @var string the plugin user agent name to use for HTTP calls within User-Agent header */
 	const PLUGIN_USER_AGENT_NAME = 'Facebook-for-WooCommerce';
 
@@ -93,9 +90,6 @@ class WC_Facebookcommerce extends WooCommerce\Facebook\Framework\Plugin {
 
 	/** @var WooCommerce\Facebook\Products\Sync\Background background sync handler */
 	private $sync_background_handler;
-
-	/** @var WooCommerce\Facebook\ProductSets\Sync product sets sync handler */
-	private $legacy_product_sets_sync_handler;
 
 	/** @var WooCommerce\Facebook\ProductSets\ProductSetSync product sets sync handler */
 	private $product_sets_sync_handler;
@@ -183,20 +177,13 @@ class WC_Facebookcommerce extends WooCommerce\Facebook\Framework\Plugin {
 	 */
 	public function init() {
 		add_action( 'init', array( $this, 'get_integration' ) );
-		add_action( 'init', array( $this, 'register_custom_taxonomy' ) );
-		add_action( 'add_meta_boxes_product', array( $this, 'remove_product_fb_product_set_metabox' ), 50 );
+
 		add_action( 'woocommerce_init', array( $this, 'add_whatsapp_consent_block_checkout_fields' ) );
 		add_filter( 'woocommerce_checkout_fields', array( $this, 'add_whatsapp_consent_classic_checkout_fields' ) );
-		add_filter( 'fb_product_set_row_actions', array( $this, 'product_set_links' ) );
-		add_filter( 'manage_edit-fb_product_set_columns', array( $this, 'manage_fb_product_set_columns' ) );
 
 		// Hook the setup task. The hook admin_init is not triggered when the WC fetches the tasks using the endpoint: wp-json/wc-admin/onboarding/tasks and hence hooking into init.
 		add_action( 'init', array( $this, 'add_setup_task' ), 20 );
 		add_action( 'admin_notices', array( $this, 'add_inbox_notes' ) );
-
-		// Product Set breadcrumb filters
-		add_filter( 'woocommerce_navigation_is_connected_page', array( $this, 'is_current_page_conected_filter' ), 99, 2 );
-		add_filter( 'woocommerce_navigation_get_breadcrumbs', array( $this, 'wc_page_breadcrumbs_filter' ), 99 );
 
 		add_filter(
 			'wc_' . self::PLUGIN_ID . '_http_request_args',
@@ -217,7 +204,6 @@ class WC_Facebookcommerce extends WooCommerce\Facebook\Framework\Plugin {
 			$this->products_sync_handler            = new WooCommerce\Facebook\Products\Sync();
 			$this->sync_background_handler          = new WooCommerce\Facebook\Products\Sync\Background();
 			$this->configuration_detection          = new WooCommerce\Facebook\Feed\FeedConfigurationDetection();
-			$this->legacy_product_sets_sync_handler = new WooCommerce\Facebook\ProductSets\Sync();
 			$this->product_sets_sync_handler        = new WooCommerce\Facebook\ProductSets\ProductSetSync();
 			$this->commerce_handler                 = new WooCommerce\Facebook\Commerce();
 			$this->fb_categories                    = new WooCommerce\Facebook\Products\FBCategories();
@@ -240,7 +226,10 @@ class WC_Facebookcommerce extends WooCommerce\Facebook\Framework\Plugin {
 				$this->background_remove_duplicate_visibility_meta = new Background_Remove_Duplicate_Visibility_Meta();
 			}
 
+			// Register REST API Endpoints
 			new WooCommerce\Facebook\API\Plugin\InitializeRestAPI();
+			WooCommerce\Facebook\OfferManagement\OfferManagementEndpointBase::register_endpoints();
+
 			$this->connection_handler = new WooCommerce\Facebook\Handlers\Connection( $this );
 			new WooCommerce\Facebook\Handlers\MetaExtension();
 			$this->webhook_handler          = new WooCommerce\Facebook\Handlers\WebHook();
@@ -404,128 +393,6 @@ class WC_Facebookcommerce extends WooCommerce\Facebook\Framework\Plugin {
 		if ( ! empty( $response ) ) {
 			$this->log( $this->get_api_log_message( $response ), $log_id );
 		}
-	}
-
-	/**
-	 * Remove Product Set metabox from Product edit page
-	 *
-	 * @since 2.3.0
-	 */
-	public function remove_product_fb_product_set_metabox() {
-		remove_meta_box( 'fb_product_setdiv', 'product', 'side' );
-	}
-
-	/**
-	 * Register Facebook Product Set Taxonomy
-	 *
-	 * @since 2.3.0
-	 */
-	public function register_custom_taxonomy() {
-		$plural   = esc_html__( 'Facebook Product Sets', 'facebook-for-woocommerce' );
-		$singular = esc_html__( 'Facebook Product Set', 'facebook-for-woocommerce' );
-
-		$args = array(
-			'labels'            => array(
-				'name'                       => $plural,
-				'singular_name'              => $singular,
-				'menu_name'                  => $plural,
-				// translators: Edit item label
-				'edit_item'                  => sprintf( esc_html__( 'Edit %s', 'facebook-for-woocommerce' ), $singular ),
-				// translators: Add new label
-				'add_new_item'               => sprintf( esc_html__( 'Add new %s', 'facebook-for-woocommerce' ), $singular ),
-				// translators: No items found text
-				'not_found'                  => sprintf( esc_html__( 'No %s found.', 'facebook-for-woocommerce' ), $plural ),
-				// translators: Search label
-				'search_items'               => sprintf( esc_html__( 'Search %s', 'facebook-for-woocommerce' ), $plural ),
-				// translators: Text label
-				'separate_items_with_commas' => sprintf( esc_html__( 'Separate %s with commas', 'facebook-for-woocommerce' ), $plural ),
-				// translators: Text label
-				'choose_from_most_used'      => sprintf( esc_html__( 'Choose from the most used %s', 'facebook-for-woocommerce' ), $plural ),
-				// translators: Backlink item label
-				'back_to_items'              => sprintf( esc_html__( '&larr; Go to %s', 'facebook-for-woocommerce' ), $plural ),
-			),
-			'hierarchical'      => true,
-			'public'            => true,
-			'show_in_nav_menus' => false,
-			'show_tagcloud'     => false,
-			'show_in_menu'      => false,
-		);
-
-		register_taxonomy( 'fb_product_set', array( 'product' ), $args );
-	}
-
-	/**
-	 * Filter Facebook Product Set Taxonomy table links
-	 *
-	 * @since 2.3.0
-	 *
-	 * @param array $actions Item Actions.
-	 *
-	 * @return array
-	 */
-	public function product_set_links( $actions ) {
-		unset( $actions['inline hide-if-no-js'] );
-		unset( $actions['view'] );
-		return $actions;
-	}
-
-	/**
-	 * Remove posts count column from Facebook Product Set custom taxonomy
-	 *
-	 * @since 2.3.0
-	 *
-	 * @param array $columns Taxonomy columns.
-	 *
-	 * @return array
-	 */
-	public function manage_fb_product_set_columns( $columns ) {
-		unset( $columns['posts'] );
-		return $columns;
-	}
-
-	/**
-	 * Filter WC Breadcrumbs when the page is Facebook Product Sets
-	 *
-	 * @since 2.3.0
-	 *
-	 * @param array $breadcrumbs Page breadcrumbs.
-	 *
-	 * @return array
-	 */
-	public function wc_page_breadcrumbs_filter( $breadcrumbs ) {
-		if ( 'edit-fb_product_set' !== $this->get_current_page_id() ) {
-			return $breadcrumbs;
-		}
-
-		$breadcrumbs = array(
-			array( 'admin.php?page=wc-admin', 'WooCommerce' ),
-			array( 'edit.php?post_type=product', 'Products' ),
-		);
-
-		$term_id = empty( $_GET['tag_ID'] ) ? '' : wc_clean( wp_unslash( $_GET['tag_ID'] ) ); //phpcs:ignore WordPress.Security
-		if ( ! empty( $term_id ) ) {
-			$breadcrumbs[] = array( 'edit-tags.php?taxonomy=fb_product_set&post_type=product', 'Products Sets' );
-		}
-
-		$breadcrumbs[] = ( empty( $term_id ) ? 'Product Sets' : 'Edit Product Set' );
-		return $breadcrumbs;
-	}
-
-	/**
-	 * Return that Facebook Product Set page is a WC Conected Page
-	 *
-	 * @since 2.3.0
-	 *
-	 * @param boolean $is_conected If it's connected or not.
-	 *
-	 * @return boolean
-	 */
-	public function is_current_page_conected_filter( $is_conected ) {
-		if ( 'edit-fb_product_set' === $this->get_current_page_id() ) {
-			return true;
-		}
-
-		return $is_conected;
 	}
 
 	/**

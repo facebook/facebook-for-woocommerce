@@ -23,6 +23,7 @@ use WooCommerce\Facebook\RolloutSwitches;
 class OfferManagementAPITestBase extends AbstractWPUnitTestWithOptionIsolationAndSafeFiltering
 {
     const CATALOG_ID = 'test_catalog_id';
+	const KEY_NAME = 'test_key_name';
 
 	private string $private_key = '';
 
@@ -86,7 +87,7 @@ class OfferManagementAPITestBase extends AbstractWPUnitTestWithOptionIsolationAn
 
 	protected static function store_public_key(string $public_key, string $storage_key):void {
 		$data =  [
-			'project' => RequestVerification::KEY_NAME_FIELD,
+			'project' => self::KEY_NAME,
 			'key' => $public_key,
 			'algorithm' => FBPublicKey::ALGORITHM_ES256,
 			'encoding_format' => FBPublicKey::ENCODING_FORMAT_PEM

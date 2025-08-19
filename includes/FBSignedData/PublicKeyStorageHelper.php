@@ -35,7 +35,7 @@ final class PublicKeyStorageHelper {
 		$key_data_response = $plugin->get_api()->get_public_key( $key_project );
 		$key_response_data = $key_data_response->response_data;
 
-		$project          = $key_response_data['project'];
+		$project          = $key_response_data['project'] ?? '';
 		$current_key_data = $key_response_data['current'] ?? [];
 		$next_key_data    = $key_response_data['next'] ?? [];
 

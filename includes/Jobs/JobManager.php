@@ -19,11 +19,6 @@ class JobManager {
 	public $generate_product_feed_job;
 
 	/**
-	 * @var CleanupSkyvergeFrameworkJobOptions
-	 */
-	public $cleanup_skyverge_job_options;
-
-	/**
 	 * @var ResetAllProductsFBSettings
 	 */
 	public $reset_all_product_fb_settings;
@@ -41,9 +36,6 @@ class JobManager {
 
 		$this->generate_product_feed_job = new GenerateProductFeed( $action_scheduler_proxy );
 		$this->generate_product_feed_job->init();
-
-		$this->cleanup_skyverge_job_options = new CleanupSkyvergeFrameworkJobOptions();
-		$this->cleanup_skyverge_job_options->init();
 
 		$this->reset_all_product_fb_settings = new ResetAllProductsFBSettings( $action_scheduler_proxy );
 		$this->reset_all_product_fb_settings->init();

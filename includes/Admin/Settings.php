@@ -28,13 +28,6 @@ class Settings {
 	/** @var string base settings page ID */
 	const PAGE_ID = 'wc-facebook';
 
-	/**
-	 * Submenu page ID
-	 *
-	 * @var string
-	 */
-	const SUBMENU_PAGE_ID = 'edit-tags.php?taxonomy=fb_product_set&post_type=product';
-
 	/** @var Abstract_Settings_Screen[] */
 	private $screens;
 
@@ -56,9 +49,7 @@ class Settings {
 		add_action( 'admin_init', array( $this, 'add_extra_screens' ) );
 		add_action( 'admin_menu', array( $this, 'add_menu_item' ) );
 		add_action( 'wp_loaded', array( $this, 'save' ) );
-		add_filter( 'parent_file', array( $this, 'set_parent_and_submenu_file' ) );
-
-		add_action( 'all_admin_notices', array( $this, 'add_tabs_to_product_sets_taxonomy' ) );
+		add_action( 'admin_notices', array( $this, 'display_fb_product_sets_removed_banner' ) );
 	}
 
 	/**
@@ -70,7 +61,6 @@ class Settings {
 
 		$screens = array(
 			Settings_Screens\Product_Sync::ID       => new Settings_Screens\Product_Sync(),
-			Settings_Screens\Product_Sets::ID       => new Settings_Screens\Product_Sets(),
 			Settings_Screens\Product_Attributes::ID => new Settings_Screens\Product_Attributes(),
 		);
 
@@ -114,28 +104,6 @@ class Settings {
 			5
 		);
 		$this->connect_to_enhanced_admin( $this->is_marketing_enabled() ? 'marketing_page_wc-facebook' : 'woocommerce_page_wc-facebook' );
-	}
-
-	/**
-	 * Set the parent and submenu file while accessing Facebook Product Sets in the marketing menu.
-	 *
-	 * @since 2.6.29
-	 * @param string $parent_file The parent file.
-	 * @return string
-	 */
-	public function set_parent_and_submenu_file( $parent_file ) {
-		global $pagenow, $submenu_file;
-
-		$root_menu_item = $this->root_menu_item();
-
-		if ( 'edit-tags.php' === $pagenow || 'term.php' === $pagenow ) {
-			if ( isset( $_GET['taxonomy'] ) && 'fb_product_set' === $_GET['taxonomy'] ) { //phpcs:ignore WordPress.Security.NonceVerification.Recommended
-				$parent_file  = $root_menu_item;
-				$submenu_file = self::PAGE_ID; //phpcs:ignore WordPress.WP.GlobalVariablesOverride.Prohibited
-			}
-		}
-
-		return $parent_file;
 	}
 
 	/**
@@ -375,48 +343,23 @@ class Settings {
 		return (array) apply_filters( 'wc_facebook_admin_settings_tabs', $tabs, $this );
 	}
 
-	/**
-	 * Add the Facebook for WooCommerce tabs to the Facebook Product Set taxonomy page.
-	 * Renders the tabs (hidden by default) at the stop of the page,
-	 * then moves them to the correct DOM location with JavaScript and displays them.
-	 *
-	 * @since 3.3.0
-	 */
-	public function add_tabs_to_product_sets_taxonomy() {
-
-		// Only load this on the edit-tags.php page
-		$screen                  = get_current_screen();
-		$is_taxonomy_list_page   = 'edit-tags' === $screen->base;
-		$is_taxonomy_term_page   = 'term' === $screen->base;
-		$is_taxonomy_page        = $is_taxonomy_list_page || $is_taxonomy_term_page;
-		$is_product_set_taxonomy = 'fb_product_set' === $screen->taxonomy && $is_taxonomy_page;
-
-		if ( $is_product_set_taxonomy ) {
-			$this->render_tabs( Settings_Screens\Product_Sets::ID );
-			?>
-				<style>
-					.facebook-for-woocommerce-tabs {
-						margin: 30px 20px 0 20px;
-					}
-					#wpbody-content > .wrap > h1 {
-						font-size: 1.3em;
-						font-weight: 600;
-					}
-
-					@media (max-width: 782px) {
-						.facebook-for-woocommerce-tabs {
-								padding-top: 19px;
-								margin-bottom: -1px;
-						}
-						.edit-tags-php .facebook-for-woocommerce-tabs {
-							clear: both;
-							padding-top: 0;
-							position: relative;
-							top: -10px;
-							margin-bottom: -11px;
-						}
-				</style>
-			<?php
+	public function display_fb_product_sets_removed_banner() {
+		$dismissed = get_transient( 'fb_product_set_banner_dismissed' );
+		if ( $dismissed ) {
+			return; // Banner dismissed, do not show
 		}
+
+		$screen = get_current_screen();
+		if ( ! $screen || ( 'marketing_page_wc-facebook' !== $screen->id && 'woocommerce_page_wc-facebook' !== $screen->id ) ) {
+			return;
+		}
+
+		$fb_catalog_id = facebook_for_woocommerce()->get_integration()->get_product_catalog_id();
+		?>
+			<div class="notice notice-info is-dismissible fb-product-set-banner">
+				<p><strong>The Product Sets tab has been removed</strong></p>
+				<p>The Product Sets tab is no longer available in the plugin. All product sets you created previously remain intact and accessible. Your WooCommerce categories will continue to sync automatically as product sets to your Meta catalog. To update synced sets, please <a href="edit-tags.php?taxonomy=product_cat&post_type=product" target="_blank" rel="noopener noreferrer">edit your categories in WooCommerce</a>. To view and manage your synced product sets, visit <a href="https://business.facebook.com/commerce/catalogs/<?php echo esc_attr( $fb_catalog_id ); ?>/sets" target="_blank" rel="noopener noreferrer">Commerce Manager</a>.</p>
+			</div>
+		<?php
 	}
 }
