@@ -2040,7 +2040,7 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 	}
 
 	/**
-	 * Updates the _last_change_time meta field when post meta is updated.
+	 * Updates the _last_change_time meta field when wp_postmeta table is updated.
 	 *
 	 * @param int    $meta_id    ID of the metadata entry to update.
 	 * @param int    $product_id  Post ID.
@@ -2056,7 +2056,7 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 			}
 
 			// Don't create an infinite loop by checking for our own meta key
-			if ( $meta_key === '_last_change_time' ) {
+			if ( $meta_key === '_last_change_time' || $meta_key === '_fb_sync_last_time' ) {
 				return;
 			}
 
