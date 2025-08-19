@@ -62,7 +62,7 @@ class OnProductQuickEditSaveTest extends \WooCommerce\Facebook\Tests\AbstractWPU
 	}
 
 	/**
-	 * Test variable product with published status gets synced.
+	 * Test variable product with published status gets synced
 	 *
 	 * @return void
 	 */
