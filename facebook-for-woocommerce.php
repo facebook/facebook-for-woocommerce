@@ -371,6 +371,8 @@ class WC_Facebook_Loader {
 			return;
 		}
 
+		set_transient( 'wc_facebook_svr_flags_ds', 1, HOUR_IN_SECONDS );
+
 		$wp_woo_flags = 0;
 
 		$is_wp_com = self::is_wp_com();
