@@ -39,6 +39,7 @@ class RolloutSwitches {
 		self::SWITCH_WOO_ALL_PRODUCTS_SYNC_ENABLED,
 		self::SWITCH_OFFER_MANAGEMENT_ENABLED,
 		self::SWITCH_MULTIPLE_IMAGES_ENABLED,
+		self::SWITCH_PARAMBUILDER_ENABLED,
 	);
 
 	public function __construct( \WC_Facebookcommerce $plugin ) {
