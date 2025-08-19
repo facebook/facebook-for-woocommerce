@@ -999,7 +999,7 @@ class WC_Facebookcommerce extends WooCommerce\Facebook\Framework\Plugin {
 	 */
 	public function initialize_param_builder() {
 		try {
-			$site_url = isset( $_SERVER['HTTP_HOST'] ) ? sanitize_text_field( wp_unslash( $_SERVER['HTTP_HOST'] ) ) : '';
+			$site_url = get_site_url();
 			$this->param_builder = new \FacebookAds\ParamBuilder( array( $site_url ) );
 		} catch ( \Exception $exception ) {
 			$this->log( 'Error initializing CAPI Parameter Builder: ' . $exception->getMessage() );

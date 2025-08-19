@@ -27,6 +27,8 @@ class Event {
 	 */
 	protected $data = array();
 
+	private $param_builder = null;
+
 
 	/**
 	 * Gets version information for pixel events.
@@ -69,6 +71,7 @@ class Event {
 	 * @param array $data event data
 	 */
 	public function __construct( $data = array() ) {
+		$this->param_builder = facebook_for_woocommerce()->get_param_builder();
 		$this->prepare_data( $data );
 	}
 
@@ -126,6 +129,17 @@ class Event {
 			$country                            = $this->data['user_data']['cn'];
 			$this->data['user_data']['country'] = $country;
 			unset( $this->data['user_data']['cn'] );
+		}
+		// Add parambuilder information to user data.
+		if ( $this->param_builder ) {
+			$fbc = $this->param_builder->getFbc();
+			$fbp = $this->param_builder->getFbp();
+			if ( ! empty( $fbc ) ) {
+				$this->data['user_data']['fbc'] = $fbc;
+			}
+			if ( ! empty( $fbp ) ) {
+				$this->data['user_data']['fbp'] = $fbp;
+			}
 		}
 		$this->data['user_data'] = Normalizer::normalize_array( $this->data['user_data'], false );
 		$this->data['user_data'] = $this->hash_pii_data( $this->data['user_data'] );
