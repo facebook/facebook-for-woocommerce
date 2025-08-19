@@ -378,8 +378,11 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 		$this->wa_utility_event_processor = $this->load_whatsapp_utility_event_processor();
 
 		// Hook to update _last_change_time when post meta is updated/created
-		add_action( 'updated_post_meta', array( $this, 'update_last_change_time' ), 10, 4 );
-		add_action( 'added_post_meta', array( $this, 'update_last_change_time' ), 10, 4 );
+		add_action( 'updated_post_meta', array( $this, 'handle_post_meta' ), 10, 4 );
+		add_action( 'added_post_meta', array( $this, 'handle_post_meta' ), 10, 4 );
+		add_action( 'created_term', array( $this, 'handle_term_change' ), 10, 3 );
+		add_action( 'edited_term', array( $this, 'handle_term_change' ), 10, 3 );
+		add_action( 'added_term_relationship', array( $this, 'update_product_last_change_time' ), 10, 1 );
 	}
 
 	/**
@@ -2047,30 +2050,58 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 	 * @param string $meta_key   Meta key.
 	 * @param mixed  $meta_value Meta value.
 	 */
-	public function update_last_change_time( $meta_id, $product_id, $meta_key, $meta_value ) {
+	public function handle_post_meta( $meta_id, $product_id, $meta_key, $meta_value ) {
+		// Don't create an infinite loop by checking for our own meta key
+		if ( $meta_key === '_last_change_time' || $meta_key === '_fb_sync_last_time' ) {
+			return;
+		}
+
+		$this->update_product_last_change_time( $product_id );
+	}
+
+	/**
+	 * Handles term changes (created or edited) and updates related products' last change time.
+	 *
+	 * @param int    $term_id  Term ID.
+	 * @param int    $tt_id    Term taxonomy ID.
+	 * @param string $taxonomy Taxonomy slug.
+	 */
+	public function handle_term_change( $term_id, $tt_id, $taxonomy ) {
 		try {
-			// Only update for WooCommerce products
-			$post = get_post( $product_id );
-			if ( ! $post || $post->post_type !== 'product' ) {
+			// Only handle product-related taxonomies
+			if ( ! in_array( $taxonomy, [ 'product_cat', 'product_tag' ], true ) ) {
 				return;
 			}
 
-			// Don't create an infinite loop by checking for our own meta key
-			if ( $meta_key === '_last_change_time' || $meta_key === '_fb_sync_last_time' ) {
-				return;
-			}
+			// Get products associated with this term
+			$args = [
+				'post_type'      => 'product',
+				'post_status'    => 'any',
+				'posts_per_page' => -1,
+				'fields'         => 'ids',
+				'tax_query'      => [
+					[
+						'taxonomy' => $taxonomy,
+						'field'    => 'term_id',
+						'terms'    => $term_id,
+					],
+				],
+			];
 
-			// Update the last change time with current timestamp
-			$result = update_post_meta( $product_id, '_last_change_time', time() );
+			$product_ids = get_posts( $args );
+
+			// Update last change time for all associated products
+			foreach ( $product_ids as $product_id ) {
+				$this->update_product_last_change_time( $product_id );
+			}
 
 		} catch ( \Exception $e ) {
 			Logger::log(
-				'Error updating last change time for product',
+				'Error updating last change time for products with term',
 				[
-					'event'      => 'update_last_change_time_error',
-					'product_id' => $product_id,
-					'meta_key'   => $meta_key,
-					'meta_id'    => $meta_id,
+					'event'    => 'handle_term_change_error',
+					'term_id'  => $term_id,
+					'taxonomy' => $taxonomy,
 				],
 				[
 					'should_send_log_to_meta'        => false,
@@ -2081,6 +2112,36 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 			);
 		}
 	}
+
+
+	/**
+	 * Core logic for updating a product's last change time.
+	 *
+	 * @param int $product_id Product ID.
+	 */
+	private function update_product_last_change_time( $product_id ) {
+		try {
+
+			// Update the last change time with current timestamp
+			update_post_meta( $product_id, '_last_change_time', time() );
+
+		} catch ( \Exception $e ) {
+			Logger::log(
+				'Error updating last change time for product',
+				[
+					'event'      => 'update_product_last_change_time_error',
+					'product_id' => $product_id,
+				],
+				[
+					'should_send_log_to_meta'        => false,
+					'should_save_log_in_woocommerce' => true,
+					'woocommerce_log_level'          => \WC_Log_Levels::ERROR,
+				],
+				$e
+			);
+		}
+	}
+
 
 	/**
 	 * Loop through array of WPIDs to remove metadata.
