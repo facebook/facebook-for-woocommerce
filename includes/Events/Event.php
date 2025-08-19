@@ -99,7 +99,7 @@ class Event {
 		);
 
 		$plugin = isset( $GLOBALS['wc_facebook_commerce'] ) ? $GLOBALS['wc_facebook_commerce'] : facebook_for_woocommerce();
-		if ( $plugin && $plugin->get_rollout_switches()->is_switch_enabled( RolloutSwitches::SWITCH_PARAMBUILDER_ENABLED ) && $_SERVER['HTTP_REFERER'] ) {
+		if ( $plugin && $plugin->get_rollout_switches()->is_switch_enabled( RolloutSwitches::SWITCH_PARAMBUILDER_ENABLED ) && isset( $_SERVER['HTTP_REFERER'] ) ) {
 			$this->data['referrer_url'] = wc_clean( wp_unslash( $_SERVER['HTTP_REFERER'] ) );
 		}
 
