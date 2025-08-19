@@ -29,8 +29,8 @@ class RolloutSwitches {
 	public const SWITCH_PRODUCT_SETS_SYNC_ENABLED     = 'product_sets_sync_enabled';
 	public const SWITCH_WOO_ALL_PRODUCTS_SYNC_ENABLED = 'woo_all_products_sync_enabled';
 	public const SWITCH_OFFER_MANAGEMENT_ENABLED      = 'offer_management_enabled';
+	public const SWITCH_PARAMBUILDER_ENABLED         = 'wc_parambuilder_lib_enabled';
 	private const SETTINGS_KEY                        = 'wc_facebook_for_woocommerce_rollout_switches';
-	private const SWITCH_PARAMBUILDER_ENABLED         = 'wc_parambuilder_lib_enabled';
 
 	private const ACTIVE_SWITCHES = array(
 		self::SWITCH_ROLLOUT_FEATURES,
