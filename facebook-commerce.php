@@ -2922,36 +2922,36 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 	 * @since 3.5.6
 	 */
 	public function on_product_quick_edit_save( $product ) {
-			try {
-					// bail if not a product
-					if  ( ! $product instanceof \WC_Product || ! Products::published_product_should_be_synced( $product ) ) {
-							return;
-					}
-
-					$wp_id = $product->get_id();
-
-					// check if visibility is published and sync the product
-					if ( get_post_status( $wp_id ) === 'publish' ) {
-							$this->facebook_for_woocommerce->get_products_sync_handler()->create_or_update_products( [ $wp_id ] );
-					}
-			} catch ( Exception $e ) {
-					Logger::log(
-							'Error in on_product_quick_edit_save',
-							[
-									'event'      => 'product_quick_edit_save_error',
-									'product_id' => $wp_id,
-									'extra_data' => [
-											'product_status' => get_post_status( $wp_id ),
-									],
-							],
-							[
-									'should_send_log_to_meta'        => false,
-									'should_save_log_in_woocommerce' => true,
-									'woocommerce_log_level'          => \WC_Log_Levels::ERROR,
-							],
-							$e
-					);
+		try {
+			// bail if not a product
+			if  ( ! $product instanceof \WC_Product || ! Products::published_product_should_be_synced( $product ) ) {
+				return;
 			}
+
+			$wp_id = $product->get_id();
+
+			// check if visibility is published and sync the product
+			if ( get_post_status( $wp_id ) === 'publish' ) {
+				$this->facebook_for_woocommerce->get_products_sync_handler()->create_or_update_products( [ $wp_id ] );
+			}
+		} catch ( Exception $e ) {
+			Logger::log(
+				'Error in on_product_quick_edit_save',
+				[
+					'event'      => 'product_quick_edit_save_error',
+					'product_id' => $wp_id,
+					'extra_data' => [
+						'product_status' => get_post_status( $wp_id ),
+					],
+				],
+				[
+					'should_send_log_to_meta'        => false,
+					'should_save_log_in_woocommerce' => true,
+					'woocommerce_log_level'          => \WC_Log_Levels::ERROR,
+				],
+				$e
+			);
+		}
 	}
 
 	/**
