@@ -51,6 +51,9 @@ class OnProductQuickEditSaveTest extends \WooCommerce\Facebook\Tests\AbstractWPU
 		$product->set_status( 'publish' );
 		$product->save();
 
+		// Enable sync for this product to pass the published_product_should_be_synced check
+		update_post_meta( $product->get_id(), Products::SYNC_ENABLED_META_KEY, 'yes' );
+
 		$this->sync_handler->expects( $this->once() )
 			->method( 'create_or_update_products' )
 			->with( [ $product->get_id() ] );
@@ -67,6 +70,9 @@ class OnProductQuickEditSaveTest extends \WooCommerce\Facebook\Tests\AbstractWPU
 		$product = WC_Helper_Product::create_variation_product();
 		$product->set_status( 'publish' );
 		$product->save();
+
+		// Enable sync for this product to pass the published_product_should_be_synced check
+		update_post_meta( $product->get_id(), Products::SYNC_ENABLED_META_KEY, 'yes' );
 
 		$this->sync_handler->expects( $this->once() )
 			->method( 'create_or_update_products' )
