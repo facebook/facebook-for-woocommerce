@@ -2038,18 +2038,19 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 	}
 
 	/**
-	 * Updates the _last_change_time meta field when post meta is updated.
+	 * Updates the _last_change_time meta field when wp_postmeta table is updated.
 	 *
 	 * @param int    $meta_id    ID of the metadata entry to update.
 	 * @param int    $product_id  Post ID.
 	 * @param string $meta_key   Meta key.
 	 * @param mixed  $meta_value Meta value.
+	 * @since 3.5.6
 	 */
 	public function update_last_change_time( $meta_id, $product_id, $meta_key, $meta_value ) {
 		try {
 			// Only update for WooCommerce products
-			$post = get_post( $product_id );
-			if ( ! $post || $post->post_type !== 'product' ) {
+			$product = wc_get_product( $product_id );
+			if ( ! $product ) {
 				return;
 			}
 
