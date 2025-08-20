@@ -29,9 +29,12 @@ class Event {
 	 */
 	protected $data = array();
 
+	/**
+	 * The Facebook CAPI Parameter Builder instance.
+	 *
+	 * @var \FacebookAds\ParamBuilder
+	 */
 	private $param_builder = null;
-
-	private $plugin = null;
 
 
 	/**
@@ -135,7 +138,7 @@ class Event {
 			unset( $this->data['user_data']['cn'] );
 		}
 		// Add parambuilder information to user data.
-		if ( $this->param_builder != null ) {
+		if ( null != $this->param_builder ) {
 			$fbc = $this->param_builder->getFbc();
 			$fbp = $this->param_builder->getFbp();
 			if ( ! empty( $fbc ) ) {
