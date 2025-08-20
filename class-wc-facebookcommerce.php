@@ -907,18 +907,6 @@ class WC_Facebookcommerce extends WooCommerce\Facebook\Framework\Plugin {
 						'/',
 						$cookie->domain
 					);
-
-					// Log cookie setting for debugging
-					if ( $this->get_integration() && $this->get_integration()->is_debug_mode_enabled() ) {
-						$this->log( sprintf(
-							'Parameter Builder cookie set: %s=%s (expires in %d seconds, domain: %s) - Result: %s',
-							$cookie->name,
-							$cookie->value,
-							$cookie->max_age,
-							$cookie->domain,
-							$result ? 'success' : 'failed'
-						) );
-					}
 				}
 			}
 		} catch ( \Exception $exception ) {
