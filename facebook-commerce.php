@@ -376,13 +376,13 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 
 		// Init Whatsapp Utility Event Processor
 		$this->wa_utility_event_processor = $this->load_whatsapp_utility_event_processor();
-
-		// Hook to update _last_change_time when post meta is updated/created
+		// Track programmatic changes that don't update post_modified
 		add_action( 'updated_post_meta', array( $this, 'handle_post_meta' ), 10, 4 );
 		add_action( 'added_post_meta', array( $this, 'handle_post_meta' ), 10, 4 );
 		add_action( 'created_term', array( $this, 'handle_term_change' ), 10, 3 );
 		add_action( 'edited_term', array( $this, 'handle_term_change' ), 10, 3 );
 		add_action( 'added_term_relationship', array( $this, 'update_product_last_change_time' ), 10, 1 );
+		add_action( 'deleted_term_relationship', array( $this, 'update_product_last_change_time' ), 10, 1 );
 	}
 
 	/**
