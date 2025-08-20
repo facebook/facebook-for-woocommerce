@@ -149,6 +149,17 @@ jobs:
             cd /tmp/wordpress
           fi
 
+          # Configure Facebook connection before activation
+          wp option update wc_facebook_access_token "${{ secrets.FB_ACCESS_TOKEN }}" --allow-root
+          wp option update wc_facebook_merchant_access_token "${{ secrets.FB_ACCESS_TOKEN }}" --allow-root
+          wp option update wc_facebook_business_manager_id "746706748528132" --allow-root
+          wp option update wc_facebook_external_business_id "mywoocstore-68a30e3940b4c" --allow-root
+          wp option update wc_facebook_product_catalog_id "33702540147099" --allow-root
+          wp option update wc_facebook_pixel_id "21602405281339" --allow-root
+          wp option update wc_facebook_has_connected_fbe_2 "yes" --allow-root
+          wp option update wc_facebook_has_authorized_pages_read_engagement "yes" --allow-root
+          wp option update wc_facebook_enable_product_sync "yes" --allow-root
+          
           # Activate the plugin
           wp plugin activate facebook-for-woocommerce --allow-root
 
