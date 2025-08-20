@@ -83,6 +83,7 @@ class OfferManagementJWTErrorTest extends OfferManagementAPITestBase
 			'exp' => $exp,
 			'jti' => wp_generate_uuid4(),
 			'aud' => self::CATALOG_ID,
+			'key_name' => self::KEY_NAME,
 		];
 	}
 }

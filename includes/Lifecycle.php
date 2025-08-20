@@ -12,6 +12,8 @@ namespace WooCommerce\Facebook;
 
 defined( 'ABSPATH' ) || exit;
 
+use WooCommerce\Facebook\ProductSets\LegacyProductSetMigration;
+
 /**
  * The Facebook for WooCommerce plugin lifecycle handler.
  *
@@ -56,6 +58,7 @@ class Lifecycle extends Framework\Lifecycle {
 			'3.4.9',
 			'3.5.3',
 			'3.5.4',
+			'3.5.6',
 		);
 	}
 
@@ -376,5 +379,14 @@ class Lifecycle extends Framework\Lifecycle {
 		if ( $connection_handler ) {
 			$connection_handler->force_config_sync_on_update();
 		}
+	}
+
+	/**
+	 * Migrate manually created FB Sets from static to dynamic filter
+	 *
+	 * @since 3.5.6
+	 */
+	protected function upgrade_to_3_5_6() {
+		LegacyProductSetMigration::migrate_legacy_fb_product_sets();
 	}
 }

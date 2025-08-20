@@ -106,9 +106,6 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 	/** @var string request headers in the debug log */
 	const SETTING_REQUEST_HEADERS_IN_DEBUG_MODE = 'wc_facebook_request_headers_in_debug_log';
 
-	/** @var string custom taxonomy Facebook Product Set ID */
-	const FB_PRODUCT_SET_ID = 'fb_product_set_id';
-
 	/** @var string the WordPress option name where the access token is stored */
 	const OPTION_ACCESS_TOKEN = 'wc_facebook_access_token';
 
@@ -376,10 +373,6 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 
 		// Ensure product is deleted from FB when status is changed to draft.
 		add_action( 'publish_to_draft', [ $this, 'delete_draft_product' ] );
-
-		// Product Set hooks.
-		add_action( 'fb_wc_product_set_sync', [ $this, 'create_or_update_product_set_item' ], 99, 2 );
-		add_action( 'fb_wc_product_set_delete', [ $this, 'delete_product_set_item' ], 99 );
 
 		// Init Whatsapp Utility Event Processor
 		$this->wa_utility_event_processor = $this->load_whatsapp_utility_event_processor();
@@ -1590,74 +1583,6 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 			}
 		} catch ( ApiException $e ) {
 			$message = sprintf( 'There was an error trying to update a product item: %s', $e->getMessage() );
-			Logger::log(
-				$message,
-				[],
-				array(
-					'should_send_log_to_meta'        => false,
-					'should_save_log_in_woocommerce' => true,
-					'woocommerce_log_level'          => \WC_Log_Levels::ERROR,
-				)
-			);
-		}
-	}
-
-
-	/**
-	 * Create or update product set
-	 *
-	 * @param array $product_set_data Product Set data.
-	 * @param int   $product_set_id Product Set Term Id.
-	 * *@since 2.3.0
-	 */
-	public function create_or_update_product_set_item( $product_set_data, $product_set_id ) {
-		// check if exists in FB
-		$fb_product_set_id = get_term_meta( $product_set_id, self::FB_PRODUCT_SET_ID, true );
-
-		try {
-			// set data and execute API call
-			$result = empty( $fb_product_set_id )
-				? $this->facebook_for_woocommerce->get_api()->create_product_set_item( $this->get_product_catalog_id(), $product_set_data )
-				: $this->facebook_for_woocommerce->get_api()->update_product_set_item( $fb_product_set_id, $product_set_data );
-
-			// update product set to set Facebook Product Set ID
-			if ( $result && empty( $fb_product_set_id ) ) {
-				$fb_product_set_id = $result->id;
-				update_term_meta(
-					$product_set_id,
-					self::FB_PRODUCT_SET_ID,
-					$fb_product_set_id
-				);
-			}
-		} catch ( ApiException $e ) {
-			$message = sprintf( 'There was an error trying to create/update a product set: %s', $e->getMessage() );
-			Logger::log(
-				$message,
-				[],
-				array(
-					'should_send_log_to_meta'        => false,
-					'should_save_log_in_woocommerce' => true,
-					'woocommerce_log_level'          => \WC_Log_Levels::ERROR,
-				)
-			);
-		}
-	}
-
-	/**
-	 * Delete product set
-	 *
-	 * @param string $fb_product_set_id Facebook Product Set ID.
-	 *
-	 * @return void
-	 * @throws ApiException If the request fails.
-	 * @throws \WooCommerce\Facebook\API\Exceptions\Request_Limit_Reached If the request limit is reached.
-	 */
-	public function delete_product_set_item( string $fb_product_set_id ) {
-		$allow_live_deletion = apply_filters( 'wc_facebook_commerce_allow_live_product_set_deletion', true, $fb_product_set_id );
-		try {
-			$this->facebook_for_woocommerce->get_api()->delete_product_set_item( $fb_product_set_id, $allow_live_deletion );
-		} catch ( ApiException $e ) {
-			$message = sprintf( 'There was an error trying to delete a product set item: %s', $e->getMessage() );
 			Logger::log(
 				$message,
 				[],

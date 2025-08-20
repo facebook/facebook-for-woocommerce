@@ -1,0 +1,139 @@
+name: Final QA Checks
+
+on:
+  workflow_dispatch:
+  workflow_call:
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  compare-artifacts:
+    runs-on: ubuntu-latest
+    environment: Deployment
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Get NPM Version
+        id: package-version
+        uses: martinbeentjes/npm-get-version-action@v1.3.1
+
+      - name: Install Github CLI
+        run: |
+          # Install GitHub CLI
+          curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg | sudo dd of=/usr/share/keyrings/githubcli-archive-keyring.gpg
+          echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" | sudo tee /etc/apt/sources.list.d/github-cli.list > /dev/null
+          sudo apt update
+          sudo apt install gh
+
+           # Authenticate with GitHub CLI
+          gh auth login --with-token <<< "${{ secrets.GITHUB_TOKEN }}"
+
+      - name: Get latest successful prepare-release run ID
+        id: get_run
+        run: |
+          version="${{ steps.package-version.outputs.current-version }}"
+
+          # First check if the API returns any results
+          response=$(gh api repos/${{ github.repository }}/actions/workflows/prepare-release.yml/runs -q '.')
+
+          # Check if we got a 404 error or empty response
+          if echo "$response" | grep -q '"status":"404"' || [ -z "$response" ]; then
+            echo "❌ No workflow runs found for prepare-release"
+            exit 1
+          fi
+
+          # Now get latest run and check if it was successful
+          # Skipping branch filtering because we may end up releasing from a branch other than main
+          latest_run=$(echo "$response" | jq '.workflow_runs[0]')
+          conclusion=$(echo "$latest_run" | jq -r '.conclusion')
+
+          if [ "$conclusion" == "success" ]; then
+            run_id=$(echo "$latest_run" | jq -r '.id')
+            echo "✅ Latest run was successful: $run_id"
+            echo "run_id=$run_id" >> $GITHUB_OUTPUT
+
+          else
+            echo "❌ Latest run was not successful: $conclusion"
+          fi
+
+      - name: Get artifact ID for facebook-for-woocommerce
+        id: compare-artifacts
+        run: |
+          artifact_id=$(gh api \
+            repos/${{ github.repository }}/actions/runs/${{ steps.get_run.outputs.run_id }}/artifacts \
+            --jq '.artifacts[] | select(.name == "facebook-for-woocommerce") | .id')
+
+          if [ -z "$artifact_id" ]; then
+            echo "❌ Artifact not found"
+            exit 1
+          fi
+
+          echo "✅ Artifact ID: $artifact_id"
+          echo "artifact_id=$artifact_id" >> $GITHUB_OUTPUT
+
+      - name: Download ZIP using curl
+        run: |
+          curl -L \
+            -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+            -H "Accept: application/vnd.github+json" \
+            -o plugin-release.zip \
+            https://api.github.com/repos/${{ github.repository }}/actions/artifacts/${{ steps.compare-artifacts.outputs.artifact_id }}/zip
+
+      - name: Unzip
+        run: |
+          unzip plugin-release.zip -d extracted-plugin
+          unzip extracted-plugin/facebook-for-woocommerce.zip -d downloaded-plugin
+
+
+      # Download marketplace version
+      - name: Install SVN
+        run: sudo apt-get install subversion -y
+
+      - name: Checkout SVN Repository
+        run: svn co https://plugins.svn.wordpress.org/facebook-for-woocommerce/ svn_repo --quiet --non-interactive
+
+      - name: Extract SVN trunk
+        run: |
+          mkdir -p marketplace-version
+          cp -r svn_repo/trunk/* marketplace-version/
+          echo "Downloaded SVN trunk to marketplace-version directory"
+
+
+      # Compare the two artifacts
+      - name: Compare the two artifacts
+        id: compare
+        run: |
+          diff -r downloaded-plugin/facebook-for-woocommerce marketplace-version > diff_output.txt || DIFF_EXIT=$?
+
+          # Check if there are differences
+          if [ -s diff_output.txt ]; then
+            echo "match=false" >> $GITHUB_OUTPUT
+          else
+            echo "✅ No differences found between built plugin and marketplace version."
+            echo "match=true" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Upload diff output
+        if: steps.compare.outputs.match == 'false'
+        uses: actions/upload-artifact@master
+        continue-on-error: true
+        with:
+          name: plugin-diff-output
+          path: diff_output.txt
+          retention-days: 5
+
+      - name: Fail if differences found
+        if: steps.compare.outputs.match == 'false'
+        run: |
+          echo "❌ Differences found between plugin from prepare-release and marketplace version! See diff_output.txt artifact for details."
+          exit 1
+
+  #reusing existing workflow to run e2e tests, but on the marketplace version
+  e2e-tests-on-marketplace-version:
+    uses: ./.github/workflows/product-creation-tests.yml
+    needs: compare-artifacts
+    with:
+      use-marketplace-version: true
