@@ -12,7 +12,6 @@ use WooCommerce\Facebook\Events\Event;
 use WooCommerce\Facebook\Framework\Api\Exception as ApiException;
 use WooCommerce\Facebook\Framework\Helper;
 use WooCommerce\Facebook\Framework\Logger;
-use WooCommerce\Facebook\RolloutSwitches;
 
 if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 
@@ -108,10 +107,7 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 			add_action( 'wp_footer', array( $this, 'inject_base_pixel_noscript' ) );
 
 			// enqueue Facebook CAPI Param Builder script
-			$plugin = isset( $GLOBALS['wc_facebook_commerce'] ) ? $GLOBALS['wc_facebook_commerce'] : facebook_for_woocommerce();
-			if ( $plugin && $plugin->get_rollout_switches()->is_switch_enabled( RolloutSwitches::SWITCH_PARAMBUILDER_ENABLED ) ) {
-				add_action( 'wp_enqueue_scripts', array( $this, 'enqueue_capi_param_builder_script' ) );
-			}
+			add_action( 'wp_enqueue_scripts', array( $this, 'enqueue_capi_param_builder_script' ) );
 
 			// ViewContent for individual products
 			add_action( 'woocommerce_after_single_product', array( $this, 'inject_view_content_event' ) );

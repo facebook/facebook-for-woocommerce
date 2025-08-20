@@ -75,10 +75,7 @@ class Event {
 	 * @param array $data event data
 	 */
 	public function __construct( $data = array() ) {
-		$this->plugin = isset( $GLOBALS['wc_facebook_commerce'] ) ? $GLOBALS['wc_facebook_commerce'] : facebook_for_woocommerce();
-		if ( $this->plugin && $this->plugin->get_rollout_switches()->is_switch_enabled( RolloutSwitches::SWITCH_PARAMBUILDER_ENABLED ) ) {
-			$this->param_builder = facebook_for_woocommerce()->get_param_builder();
-		}
+		$this->param_builder = facebook_for_woocommerce()->get_param_builder();
 		$this->prepare_data( $data );
 	}
 
@@ -138,7 +135,7 @@ class Event {
 			unset( $this->data['user_data']['cn'] );
 		}
 		// Add parambuilder information to user data.
-		if ( $this->plugin && $this->plugin->get_rollout_switches()->is_switch_enabled( RolloutSwitches::SWITCH_PARAMBUILDER_ENABLED ) && $this->param_builder != null ) {
+		if ( $this->param_builder != null ) {
 			$fbc = $this->param_builder->getFbc();
 			$fbp = $this->param_builder->getFbp();
 			if ( ! empty( $fbc ) ) {
