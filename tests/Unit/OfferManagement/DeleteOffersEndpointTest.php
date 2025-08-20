@@ -161,7 +161,7 @@ class DeleteOffersEndpointTest extends OfferManagementAPITestBase
 			],
 			'exp' => $exp,
 			'jti' => wp_generate_uuid4(),
-			'key_name' => 'test_key',
+			'key_name' => self::KEY_NAME,
 			'aud' => self::CATALOG_ID,
 		];
 	}

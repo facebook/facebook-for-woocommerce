@@ -41,6 +41,9 @@ class PluginRender {
 	/** @var string  action */
 	const ACTION_CLOSE_BANNER = 'wc_banner_close_action';
 
+	/** @var string  product set banner closed action */
+	const ACTION_PRODUCT_SET_BANNER_CLOSED = 'wc_facebook_product_set_banner_closed';
+
 	public function __construct( \WC_Facebookcommerce $plugin ) {
 		$this->plugin = $plugin;
 		$this->should_show_banners();
@@ -70,6 +73,7 @@ class PluginRender {
 				'opt_out_of_sync'                 => wp_create_nonce( self::ACTION_OPT_OUT_OF_SYNC ),
 				'banner_close'                    => wp_create_nonce( self::ACTION_CLOSE_BANNER ),
 				'sync_back_in'                    => wp_create_nonce( self::ACTION_SYNC_BACK_IN ),
+				'product_set_banner_closed_nonce' => wp_create_nonce( self::ACTION_PRODUCT_SET_BANNER_CLOSED ),
 				'sync_in_progress'                => Sync::is_sync_in_progress(),
 				'opt_out_confirmation_message'    => self::get_opt_out_modal_message(),
 				'opt_out_confirmation_buttons'    => self::get_opt_out_modal_buttons(),
@@ -89,6 +93,7 @@ class PluginRender {
 		add_action( 'wp_ajax_nopriv_wc_banner_post_update_close_action', [ __CLASS__,'reset_plugin_updated_successfully_banner' ] );
 		add_action( 'wp_ajax_wc_banner_post_update__master_sync_off_close_action', [ __CLASS__,  'reset_plugin_updated_successfully_but_master_sync_off_banner' ] );
 		add_action( 'wp_ajax_nopriv_wc_banner_post_update__master_sync_off_close_action', [ __CLASS__,'reset_plugin_updated_successfully_but_master_sync_off_banner' ] );
+		add_action( 'wp_ajax_wc_facebook_product_set_banner_closed', [ __CLASS__,  'product_set_banner_closed' ] );
 	}
 
 	public function should_show_banners() {
@@ -206,6 +211,11 @@ class PluginRender {
 	public static function sync_all_clicked() {
 		update_option( self::MASTER_SYNC_OPT_OUT_TIME, '' );
 		wp_send_json_success( 'Synced all in successfully' );
+	}
+
+	public static function product_set_banner_closed() {
+		check_ajax_referer( self::ACTION_PRODUCT_SET_BANNER_CLOSED, 'nonce' );
+		set_transient( 'fb_product_set_banner_dismissed', true );
 	}
 
 	/**

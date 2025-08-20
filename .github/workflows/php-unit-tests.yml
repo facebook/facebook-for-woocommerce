@@ -4,7 +4,7 @@ on: [ push, pull_request ] # Run on all pushes and PRs
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 jobs:
   UnitTests:
@@ -14,6 +14,7 @@ jobs:
       WP_CORE_DIR: "/tmp/wordpress/src"
       WP_TESTS_DIR: "/tmp/wordpress/tests/phpunit"
     strategy:
+      fail-fast: false
       matrix:
         php: [ 7.4, 8.3 ]
         wp-version: [ latest ]
@@ -30,6 +31,7 @@ jobs:
         uses: woocommerce/grow/prepare-php@actions-v1
         with:
           php-version: "${{ matrix.php }}"
+          coverage: xdebug
 
       - name: Prepare MySQL
         uses: woocommerce/grow/prepare-mysql@actions-v1
@@ -39,5 +41,48 @@ jobs:
           chmod +x ./bin/install-wp-tests.sh
           ./bin/install-wp-tests.sh wordpress_test root root localhost ${{ matrix.wp-version }} ${{ matrix.wc-version }}
 
-      - name: Run PHP unit tests
-        run: composer test-unit
+      - name: Run PHP unit tests with coverage
+        id: phpunit
+        run: |
+          # Run tests silently and generate coverage XML only
+          ./vendor/bin/phpunit --coverage-clover=coverage.xml > /dev/null 2>&1
+
+          # Extract coverage summary from XML
+          COVERAGE=$(php -r "
+            if (file_exists('coverage.xml')) {
+              \$xml = simplexml_load_file('coverage.xml');
+              \$metrics = \$xml->project->metrics;
+              \$covered = (int)\$metrics['coveredstatements'];
+              \$total = (int)\$metrics['statements'];
+              \$percentage = \$total > 0 ? round((\$covered / \$total) * 100, 2) : 0;
+              echo \$percentage;
+            } else {
+              echo '0';
+            }
+          ")
+
+          echo "coverage_summary=$COVERAGE" >> $GITHUB_OUTPUT
+          echo "📊 Coverage: $COVERAGE%"
+
+      - name: Upload coverage reports
+        uses: actions/upload-artifact@v4
+        with:
+          name: php-coverage-report PHP - ${{ matrix.php }}, WP - ${{ matrix.wp-version }} , WC - ${{ matrix.wc-version }}
+          path: coverage.xml
+          retention-days: 30
+
+      - name: Check coverage threshold
+        continue-on-error: true
+        run: |
+          COVERAGE="${{ steps.phpunit.outputs.coverage_summary }}"
+          MIN_THRESHOLD=40
+
+          echo "📈 Coverage: $COVERAGE%"
+          echo "🎯 Threshold: $MIN_THRESHOLD%"
+
+          if (( $(echo "$COVERAGE $MIN_THRESHOLD" | awk '{print ($1 >= $2)}') )); then
+            echo "✅ Coverage check passed!"
+          else
+            echo "❌ Coverage too low. Need $MIN_THRESHOLD%, got $COVERAGE%"
+            exit 1
+          fi

@@ -174,6 +174,7 @@ abstract class OfferManagementEndpointBase {
 		$offer_class      = 'order';
 
 		return array(
+			'offer_id'         => $coupon->get_id(),
 			'code'             => $coupon->get_code(),
 			'percent_off'      => $percent_off,
 			'fixed_amount_off' => $fixed_amount_off,

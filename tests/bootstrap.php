@@ -127,3 +127,18 @@ function validate_file_exits( string $file_name ) {
 function path_join( string $base, string $path ) {
 	return rtrim( $base, '/\\' ) . '/' . ltrim( $path, '/\\' );
 }
+
+// Load WooCommerce meta box functions for tests
+if ( ! function_exists( 'woocommerce_wp_hidden_input' ) ) {
+	$wc_meta_functions_file = $wc_dir . '/includes/admin/wc-meta-box-functions.php';
+	if ( file_exists( $wc_meta_functions_file ) ) {
+		include_once $wc_meta_functions_file;
+	}
+}
+
+// Mock WooCommerce function if still not available
+if ( ! function_exists( 'woocommerce_wp_hidden_input' ) ) {
+	function woocommerce_wp_hidden_input( $args ) {
+		echo '<input type="hidden" id="' . esc_attr( $args['id'] ) . '" name="' . esc_attr( $args['name'] ) . '" value="' . esc_attr( $args['value'] ) . '">';
+	}
+}
