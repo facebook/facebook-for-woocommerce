@@ -2922,6 +2922,8 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 	 * @since 3.5.6
 	 */
 	public function on_product_quick_edit_save( $product ) {
+		$wp_id = null;
+
 		try {
 			// bail if not a product or product is not enabled for sync
 			if ( ! $product instanceof \WC_Product || ! Products::published_product_should_be_synced( $product ) ) {
@@ -2941,7 +2943,7 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 					'event'      => 'product_quick_edit_save_error',
 					'product_id' => $wp_id,
 					'extra_data' => [
-						'product_status' => get_post_status( $wp_id ),
+						'product_status' => $wp_id ? get_post_status( $wp_id ) : null,
 					],
 				],
 				[
