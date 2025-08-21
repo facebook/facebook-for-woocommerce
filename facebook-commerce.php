@@ -2055,7 +2055,7 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 			}
 
 			// Don't create an infinite loop by checking for our own meta key
-			if ( $meta_key === '_last_change_time' || $meta_key === '_fb_sync_last_time' ) {
+			if ( '_last_change_time' === $meta_key || '_fb_sync_last_time' === $meta_key ) {
 				return;
 			}
 

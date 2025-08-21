@@ -2244,14 +2244,14 @@ class WC_Facebook_Product {
 			$date_modified = $this->woo_product->get_date_modified();
 			$external_update_time = $date_modified->getTimestamp();
 
-			// Get _last_change_time meta field (assuming it's stored as unix timestamp)
+			// Get _last_change_time meta field
 			$last_change_time = $this->woo_product->get_meta( '_last_change_time' );
 
 			// Use whichever timestamp is newer, defaulting to external_update_time if _last_change_time is empty
 			if ( ! empty( $last_change_time ) && is_numeric( $last_change_time ) ) {
-				$product_data['external_update_time'] = max( $external_update_time, (int) $last_change_time );
+				$product_data['external_update_time'] = max( (int) $external_update_time, (int) $last_change_time );
 			} else {
-				$product_data['external_update_time'] = $external_update_time;
+				$product_data['external_update_time'] = (int) $external_update_time;
 			}
 		}
 
