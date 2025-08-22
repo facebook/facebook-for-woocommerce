@@ -376,6 +376,8 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 
 		// Init Whatsapp Utility Event Processor
 		$this->wa_utility_event_processor = $this->load_whatsapp_utility_event_processor();
+		// Track programmatic changes that don't update post_modified
+		add_action( 'updated_post_meta', array( $this, 'update_last_change_time' ), 10, 4 );
 	}
 
 	/**
@@ -2034,6 +2036,85 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 
 		return wp_json_encode( [ $items ] );
 	}
+
+	/**
+	 * Determines whether the last change time should be updated for a given product and meta key.
+	 *
+	 * @param int    $product_id Post ID.
+	 * @param string $meta_key   Meta key.
+	 * @return bool True if the last change time should be updated, false otherwise.
+	 * @since 3.5.7
+	 */
+	public function should_update_last_change_time( $product_id, $meta_key ) {
+		try {
+			// Only update for WooCommerce products
+			$product = wc_get_product( $product_id );
+			if ( ! $product ) {
+				return false;
+			}
+
+			// Don't create an infinite loop by checking for our own meta key
+			if ( '_last_change_time' === $meta_key || '_fb_sync_last_time' === $meta_key ) {
+				return false;
+			}
+
+			return true;
+		} catch ( \Exception $e ) {
+			Logger::log(
+				'Error in should_update_last_change_time',
+				[
+					'product_id' => $product_id,
+					'meta_key'   => $meta_key,
+				],
+				[
+					'should_send_log_to_meta'        => false,
+					'should_save_log_in_woocommerce' => true,
+					'woocommerce_log_level'          => \WC_Log_Levels::ERROR,
+				],
+				$e
+			);
+			return false;
+		}
+	}
+
+	/**
+	 * Updates the _last_change_time meta field when wp_postmeta table is updated.
+	 *
+	 * @param int    $meta_id    ID of the metadata entry to update.
+	 * @param int    $product_id  Post ID.
+	 * @param string $meta_key   Meta key.
+	 * @param mixed  $meta_value Meta value.
+	 * @since 3.5.7
+	 */
+	public function update_last_change_time( $meta_id, $product_id, $meta_key, $meta_value ) {
+		try {
+			// Check if we should update the last change time
+			if ( ! $this->should_update_last_change_time( $product_id, $meta_key ) ) {
+				return;
+			}
+
+			// Update the last change time with current timestamp
+			update_post_meta( $product_id, '_last_change_time', time() );
+
+		} catch ( \Exception $e ) {
+			Logger::log(
+				'Error updating last change time for product',
+				[
+					'event'      => 'update_last_change_time_error',
+					'product_id' => $product_id,
+					'meta_key'   => $meta_key,
+					'meta_id'    => $meta_id,
+				],
+				[
+					'should_send_log_to_meta'        => false,
+					'should_save_log_in_woocommerce' => true,
+					'woocommerce_log_level'          => \WC_Log_Levels::ERROR,
+				],
+				$e
+			);
+		}
+	}
+
 
 	/**
 	 * Loop through array of WPIDs to remove metadata.
