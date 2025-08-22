@@ -182,7 +182,7 @@ class Event {
 	 *
 	 * @return string
 	 */
-// phpcs:disable
+	// phpcs:disable
 	protected function generate_event_id() {
 		try {
 			$data = random_bytes( 16 );
