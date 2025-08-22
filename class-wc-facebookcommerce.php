@@ -852,65 +852,16 @@ class WC_Facebookcommerce extends WooCommerce\Facebook\Framework\Plugin {
 		// By default, all net new WooC Merchants will be shown the enhanced onboarding experience
 		return true;
 	}
-	/**
-	 * Initializes and sets the Facebook CAPI Parameter Builder cookies early during WordPress init.
-	 * This method is hooked to 'init' with priority 1 to ensure cookies are set before any headers are sent.
-	 */
-	public function init_param_builder() {
-		$this->initialize_param_builder();
-		$this->set_param_builder_cookies();
-	}
 
 	/**
 	 * Initializes the Facebook CAPI Parameter Builder with the site domain.
 	 */
-	public function initialize_param_builder() {
+	public function init_param_builder() {
 		try {
 			$site_url = get_site_url();
 			$this->param_builder = new \FacebookAds\ParamBuilder( array( $site_url ) );
 		} catch ( \Exception $exception ) {
 			$this->log( 'Error initializing CAPI Parameter Builder: ' . $exception->getMessage() );
-		}
-	}
-
-	/**
-	 * Sets the Parameter Builder cookies using the Facebook CAPI Parameter Builder.
-	 */
-	public function set_param_builder_cookies() {
-		if ( ! $this->param_builder ) {
-			return;
-		}
-
-		$site_url = isset( $_SERVER['HTTP_HOST'] ) ? sanitize_text_field( wp_unslash( $_SERVER['HTTP_HOST'] ) ) : '';
-
-		if ( empty( $site_url ) ) {
-			$this->log( 'Cannot set Parameter Builder cookies: site URL is empty' );
-			return;
-		}
-
-		try {
-			$cookie_to_set = $this->param_builder->processRequest(
-				$site_url,
-				$_GET,
-				$_COOKIE,
-				isset( $_SERVER['HTTP_REFERER'] ) ? 
-					sanitize_text_field( wp_unslash( $_SERVER['HTTP_REFERER'] ) ) : 
-					null
-			);
-
-			if ( ! empty( $cookie_to_set ) ) {
-				foreach ( $cookie_to_set as $cookie ) {
-					$result = setcookie(
-						$cookie->name,
-						$cookie->value,
-						time() + $cookie->max_age,
-						'/',
-						$cookie->domain
-					);
-				}
-			}
-		} catch ( \Exception $exception ) {
-			$this->log( 'Error setting CAPI Parameter Builder cookies: ' . $exception->getMessage() );
 		}
 	}
 }

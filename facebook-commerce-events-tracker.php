@@ -51,6 +51,13 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 		/** @var bool whether the pixel should be enabled */
 		private $is_pixel_enabled;
 
+		/**
+		 * The Facebook CAPI Parameter Builder instance.
+		 *
+		 * @var \FacebookAds\ParamBuilder
+		 */
+		private $param_builder;
+
 
 		/**
 		 * Events tracker constructor.
@@ -102,6 +109,8 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 		 */
 		private function add_hooks() {
 
+			// inject Parameter Builder
+			add_action( 'init', array( $this, 'inject_param_builder' ) );
 			// inject Pixel
 			add_action( 'wp_head', array( $this, 'inject_base_pixel' ) );
 			add_action( 'wp_footer', array( $this, 'inject_base_pixel_noscript' ) );
@@ -152,6 +161,58 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 			add_action( 'shutdown', array( $this, 'send_pending_events' ) );
 		}
 
+		/**
+		 * Sets the Parameter Builder cookies using the Facebook CAPI Parameter Builder.
+		 */
+		public function inject_param_builder() {
+			$param_builder = facebook_for_woocommerce()->get_param_builder();
+			if ( ! $param_builder ) {
+				return;
+			}
+
+			$site_url = isset( $_SERVER['HTTP_HOST'] ) ? sanitize_text_field( wp_unslash( $_SERVER['HTTP_HOST'] ) ) : '';
+
+			if ( empty( $site_url ) ) {
+				$this->log( 'Cannot set Parameter Builder cookies: site URL is empty' );
+				return;
+			}
+
+			try {
+				$cookie_to_set = $param_builder->processRequest(
+					$site_url,
+					$_GET,
+					$_COOKIE,
+					isset( $_SERVER['HTTP_REFERER'] ) ? 
+						sanitize_text_field( wp_unslash( $_SERVER['HTTP_REFERER'] ) ) : 
+						null
+				);
+
+				if ( ! empty( $cookie_to_set ) ) {
+					foreach ( $cookie_to_set as $cookie ) {
+						setcookie(
+							$cookie->name,
+							$cookie->value,
+							time() + $cookie->max_age,
+							'/',
+							$cookie->domain
+						);
+					}
+				}
+			} catch ( \Exception $exception ) {
+				$this->log( 'Error setting CAPI Parameter Builder cookies: ' . $exception->getMessage() );
+			}
+		}
+
+		/**
+		 * Gets the Facebook CAPI Parameter Builder instance
+		 *
+		 * @since 3.5.5
+		 *
+		 * @return \FacebookAds\ParamBuilder|null
+		 */
+		public function get_param_builder() {
+			return $this->param_builder;
+		}
 
 		/**
 		 * Prints the base JavaScript pixel code
