@@ -109,7 +109,6 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 		 */
 		private function add_hooks() {
 
-			// inject Parameter Builder
 			add_action( 'init', array( $this, 'inject_param_builder' ) );
 			// inject Pixel
 			add_action( 'wp_head', array( $this, 'inject_base_pixel' ) );
@@ -201,17 +200,6 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 			} catch ( \Exception $exception ) {
 				$this->log( 'Error setting CAPI Parameter Builder cookies: ' . $exception->getMessage() );
 			}
-		}
-
-		/**
-		 * Gets the Facebook CAPI Parameter Builder instance
-		 *
-		 * @since 3.5.5
-		 *
-		 * @return \FacebookAds\ParamBuilder|null
-		 */
-		public function get_param_builder() {
-			return $this->param_builder;
 		}
 
 		/**

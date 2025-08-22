@@ -10,8 +10,6 @@
 
 namespace WooCommerce\Facebook\Events;
 
-use WooCommerce\Facebook\RolloutSwitches;
-
 defined( 'ABSPATH' ) || exit;
 
 /**
@@ -182,7 +180,7 @@ class Event {
 	 *
 	 * @return string
 	 */
-	// phpcs:disable
+// phpcs:disable
 	protected function generate_event_id() {
 		try {
 			$data = random_bytes( 16 );
