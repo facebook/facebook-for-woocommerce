@@ -2043,7 +2043,7 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 	 * @param int    $product_id Post ID.
 	 * @param string $meta_key   Meta key.
 	 * @return bool True if the last change time should be updated, false otherwise.
-	 * @since 3.5.6
+	 * @since 3.5.7
 	 */
 	public function should_update_last_change_time( $product_id, $meta_key ) {
 		try {
@@ -2084,7 +2084,7 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 	 * @param int    $product_id  Post ID.
 	 * @param string $meta_key   Meta key.
 	 * @param mixed  $meta_value Meta value.
-	 * @since 3.5.6
+	 * @since 3.5.7
 	 */
 	public function update_last_change_time( $meta_id, $product_id, $meta_key, $meta_value ) {
 		try {
