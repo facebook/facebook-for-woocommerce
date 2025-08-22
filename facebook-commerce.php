@@ -2038,6 +2038,29 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 	}
 
 	/**
+	 * Determines whether the last change time should be updated for a given product and meta key.
+	 *
+	 * @param int    $product_id Post ID.
+	 * @param string $meta_key   Meta key.
+	 * @return bool True if the last change time should be updated, false otherwise.
+	 * @since 3.5.6
+	 */
+	public function should_update_last_change_time( $product_id, $meta_key ) {
+		// Only update for WooCommerce products
+		$product = wc_get_product( $product_id );
+		if ( ! $product ) {
+			return false;
+		}
+
+		// Don't create an infinite loop by checking for our own meta key
+		if ( '_last_change_time' === $meta_key || '_fb_sync_last_time' === $meta_key ) {
+			return false;
+		}
+
+		return true;
+	}
+
+	/**
 	 * Updates the _last_change_time meta field when wp_postmeta table is updated.
 	 *
 	 * @param int    $meta_id    ID of the metadata entry to update.
@@ -2048,14 +2071,8 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 	 */
 	public function update_last_change_time( $meta_id, $product_id, $meta_key, $meta_value ) {
 		try {
-			// Only update for WooCommerce products
-			$product = wc_get_product( $product_id );
-			if ( ! $product ) {
-				return;
-			}
-
-			// Don't create an infinite loop by checking for our own meta key
-			if ( '_last_change_time' === $meta_key || '_fb_sync_last_time' === $meta_key ) {
+			// Check if we should update the last change time
+			if ( ! $this->should_update_last_change_time( $product_id, $meta_key ) ) {
 				return;
 			}
 
