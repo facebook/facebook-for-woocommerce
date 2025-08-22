@@ -861,13 +861,13 @@ class WC_Facebookcommerce extends WooCommerce\Facebook\Framework\Plugin {
 			$site_url = get_site_url();
 			$this->param_builder = new \FacebookAds\ParamBuilder( array( $site_url ) );
 			$this->param_builder->processRequest(
-					$site_url,
-					$_GET,
-					$_COOKIE,
-					isset( $_SERVER['HTTP_REFERER'] ) ?
-						sanitize_text_field( wp_unslash( $_SERVER['HTTP_REFERER'] ) ) :
-						null
-				);
+				$site_url,
+				$_GET,
+				$_COOKIE,
+				isset( $_SERVER['HTTP_REFERER'] ) ?
+				sanitize_text_field( wp_unslash( $_SERVER['HTTP_REFERER'] ) ) :
+					null
+			);
 		} catch ( \Exception $exception ) {
 			$this->log( 'Error initializing CAPI Parameter Builder: ' . $exception->getMessage() );
 		}
