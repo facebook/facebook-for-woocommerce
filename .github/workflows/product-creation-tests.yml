@@ -11,6 +11,13 @@ on:
           default: false
   pull_request:
     branches: [ main, master, develop ]
+  workflow_dispatch:
+    inputs:
+        use-marketplace-version:
+          description: 'Should this use marketplace version of the plugin'
+          required: false
+          type: boolean
+          default: false
 
 jobs:
   e2e-tests:
