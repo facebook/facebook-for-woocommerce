@@ -183,7 +183,7 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 					$_GET,
 					$_COOKIE,
 					isset( $_SERVER['HTTP_REFERER'] ) ?
-						sanitize_text_field( wp_unslash( $_SERVER['HTTP_REFERER'] ) ) : 
+						sanitize_text_field( wp_unslash( $_SERVER['HTTP_REFERER'] ) ) :
 						null
 				);
 
