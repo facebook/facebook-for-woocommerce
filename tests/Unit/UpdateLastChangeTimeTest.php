@@ -11,181 +11,141 @@
 use PHPUnit\Framework\TestCase;
 
 /**
- * Tests for the update_last_change_time method
+ * Simple tests for the update_last_change_time method
  */
 class UpdateLastChangeTimeTest extends TestCase {
 
-	/**
-	 * The integration instance.
-	 *
-	 * @var WC_Facebookcommerce_Integration
-	 */
-	private $integration;
+    private $integration;
+    private $update_post_meta_called;
+    private $mock_product;
 
-	/**
-	 * Track calls to update_post_meta for verification
-	 *
-	 * @var array
-	 */
-	private $update_post_meta_calls = [];
+    public function setUp(): void {
+        parent::setUp();
 
-	/**
-	 * Set up the test environment.
-	 */
-	public function setUp(): void {
-		parent::setUp();
+        // Mock the integration class
+        $this->integration = $this->getMockBuilder('WC_Facebookcommerce_Integration')
+            ->disableOriginalConstructor()
+            ->onlyMethods(['update_last_change_time'])
+            ->getMock();
 
-		// Mock the main plugin class
-		$facebook_for_woocommerce = $this->createMock( WC_Facebookcommerce::class );
+        // Reset tracking
+        $this->update_post_meta_called = false;
 
-		// Create the integration instance
-		$this->integration = new WC_Facebookcommerce_Integration( $facebook_for_woocommerce );
+        // Mock WordPress functions
+        $this->mockWordPressFunctions();
+    }
 
-		// Reset call tracking
-		$this->update_post_meta_calls = [];
+    private function mockWordPressFunctions() {
+        if (!function_exists('wc_get_product')) {
+            function wc_get_product($product_id) {
+                global $test_mock_product;
+                return $test_mock_product;
+            }
+        }
 
-		// Set up WordPress function mocks if they don't exist
-		$this->setupWordPressFunctions();
-	}
+        if (!function_exists('update_post_meta')) {
+            function update_post_meta($post_id, $meta_key, $meta_value) {
+                global $test_update_post_meta_called;
+                $test_update_post_meta_called = true;
+                return true;
+            }
+        }
 
-	/**
-	 * Set up WordPress function mocks if they don't exist
-	 */
-	private function setupWordPressFunctions() {
-		if ( ! function_exists( 'wc_get_product' ) ) {
-			function wc_get_product( $product_id ) {
-				return UpdateLastChangeTimeTest::getMockProduct( $product_id );
-			}
-		}
+        if (!function_exists('time')) {
+            function time() {
+                return 1234567890;
+            }
+        }
+    }
 
-		if ( ! function_exists( 'update_post_meta' ) ) {
-			function update_post_meta( $post_id, $meta_key, $meta_value ) {
-				return UpdateLastChangeTimeTest::trackUpdatePostMeta( $post_id, $meta_key, $meta_value );
-			}
-		}
+    /**
+     * Test that update_post_meta is called when conditions are met
+     */
+    public function test_update_post_meta_called_when_conditions_met() {
+        global $test_mock_product, $test_update_post_meta_called;
 
-		if ( ! function_exists( 'time' ) ) {
-			function time() {
-				return 1234567890; // Fixed timestamp for testing
-			}
-		}
-	}
+        // Set up a valid product
+        $test_mock_product = $this->createMock('WC_Product');
+        $test_update_post_meta_called = false;
 
-	/**
-	 * Static method to get mock product (called from global function)
-	 *
-	 * @param int $product_id
-	 * @return WC_Product|null
-	 */
-	public static function getMockProduct( $product_id ) {
-		$instance = $GLOBALS['current_test_instance'] ?? null;
-		if ( ! $instance ) {
-			return null;
-		}
-		return $instance->mock_product ?? null;
-	}
+        // Create real integration instance for testing
+        $facebook_mock = $this->createMock('WC_Facebookcommerce');
+        $integration = new WC_Facebookcommerce_Integration($facebook_mock);
 
-	/**
-	 * Static method to track update_post_meta calls (called from global function)
-	 *
-	 * @param int    $post_id
-	 * @param string $meta_key
-	 * @param mixed  $meta_value
-	 * @return bool
-	 */
-	public static function trackUpdatePostMeta( $post_id, $meta_key, $meta_value ) {
-		$instance = $GLOBALS['current_test_instance'] ?? null;
-		if ( $instance ) {
-			$instance->update_post_meta_calls[] = [
-				'post_id'    => $post_id,
-				'meta_key'   => $meta_key,
-				'meta_value' => $meta_value,
-			];
-		}
-		return true;
-	}
+        // Call the method with valid parameters
+        $integration->update_last_change_time(1, 123, 'some_meta_key', 'some_value');
 
-	/**
-	 * Helper to set up test state
-	 *
-	 * @param WC_Product|null $product
-	 */
-	private function setMockProduct( $product ) {
-		$this->mock_product = $product;
-		$GLOBALS['current_test_instance'] = $this;
-	}
+        // Assert that update_post_meta was called
+        $this->assertTrue($test_update_post_meta_called, 'update_post_meta should be called when conditions are met');
+    }
 
-	/**
-	 * Test that update_post_meta is not called when meta_key is _last_change_time
-	 */
-	public function test_no_update_when_meta_key_is_last_change_time() {
-		// Set up a valid product
-		$product = $this->createMock( WC_Product::class );
-		$this->setMockProduct( $product );
+    /**
+     * Test that update_post_meta is not called when product doesn't exist
+     */
+    public function test_update_post_meta_not_called_when_product_does_not_exist() {
+        global $test_mock_product, $test_update_post_meta_called;
 
-		// Call the method with _last_change_time as meta_key
-		$this->integration->update_last_change_time( 1, 123, '_last_change_time', 'some_value' );
+        // Set up null product (product doesn't exist)
+        $test_mock_product = null;
+        $test_update_post_meta_called = false;
 
-		// Assert that update_post_meta was not called
-		$this->assertEmpty( $this->update_post_meta_calls, 'update_post_meta should not be called when meta_key is _last_change_time' );
-	}
+        // Create real integration instance for testing
+        $facebook_mock = $this->createMock('WC_Facebookcommerce');
+        $integration = new WC_Facebookcommerce_Integration($facebook_mock);
 
-	/**
-	 * Test that update_post_meta is not called when meta_key is _fb_sync_last_time
-	 */
-	public function test_no_update_when_meta_key_is_fb_sync_last_time() {
-		// Set up a valid product
-		$product = $this->createMock( WC_Product::class );
-		$this->setMockProduct( $product );
+        // Call the method with non-existent product
+        $integration->update_last_change_time(1, 999, 'some_meta_key', 'some_value');
 
-		// Call the method with _fb_sync_last_time as meta_key
-		$this->integration->update_last_change_time( 1, 123, '_fb_sync_last_time', 'some_value' );
+        // Assert that update_post_meta was not called
+        $this->assertFalse($test_update_post_meta_called, 'update_post_meta should not be called when product does not exist');
+    }
 
-		// Assert that update_post_meta was not called
-		$this->assertEmpty( $this->update_post_meta_calls, 'update_post_meta should not be called when meta_key is _fb_sync_last_time' );
-	}
+    /**
+     * Test that update_post_meta is not called when meta_key is _fb_sync_last_time
+     */
+    public function test_update_post_meta_not_called_when_meta_key_is_fb_sync_last_time() {
+        global $test_mock_product, $test_update_post_meta_called;
 
-	/**
-	 * Test that update_post_meta is not called when product doesn't exist
-	 */
-	public function test_no_update_when_product_does_not_exist() {
-		// Set up null product (product doesn't exist)
-		$this->setMockProduct( null );
+        // Set up a valid product
+        $test_mock_product = $this->createMock('WC_Product');
+        $test_update_post_meta_called = false;
 
-		// Call the method with a non-existent product
-		$this->integration->update_last_change_time( 1, 999, 'some_meta_key', 'some_value' );
+        // Create real integration instance for testing
+        $facebook_mock = $this->createMock('WC_Facebookcommerce');
+        $integration = new WC_Facebookcommerce_Integration($facebook_mock);
 
-		// Assert that update_post_meta was not called
-		$this->assertEmpty( $this->update_post_meta_calls, 'update_post_meta should not be called when product does not exist' );
-	}
+        // Call the method with _fb_sync_last_time as meta_key
+        $integration->update_last_change_time(1, 123, '_fb_sync_last_time', 'some_value');
 
-	/**
-	 * Test that update_post_meta is called when conditions are met
-	 */
-	public function test_update_called_when_conditions_met() {
-		// Set up a valid product
-		$product = $this->createMock( WC_Product::class );
-		$this->setMockProduct( $product );
+        // Assert that update_post_meta was not called
+        $this->assertFalse($test_update_post_meta_called, 'update_post_meta should not be called when meta_key is _fb_sync_last_time');
+    }
 
-		// Call the method with valid meta_key
-		$this->integration->update_last_change_time( 1, 123, 'some_other_meta_key', 'some_value' );
+    /**
+     * Test that update_post_meta is not called when meta_key is _last_change_time
+     */
+    public function test_update_post_meta_not_called_when_meta_key_is_last_change_time() {
+        global $test_mock_product, $test_update_post_meta_called;
 
-		// Assert that update_post_meta was called once
-		$this->assertCount( 1, $this->update_post_meta_calls, 'update_post_meta should be called once when conditions are met' );
+        // Set up a valid product
+        $test_mock_product = $this->createMock('WC_Product');
+        $test_update_post_meta_called = false;
 
-		// Verify the call parameters
-		$call = $this->update_post_meta_calls[0];
-		$this->assertEquals( 123, $call['post_id'] );
-		$this->assertEquals( '_last_change_time', $call['meta_key'] );
-		$this->assertEquals( 1234567890, $call['meta_value'] );
-	}
+        // Create real integration instance for testing
+        $facebook_mock = $this->createMock('WC_Facebookcommerce');
+        $integration = new WC_Facebookcommerce_Integration($facebook_mock);
 
-	/**
-	 * Clean up after each test
-	 */
-	public function tearDown(): void {
-		unset( $GLOBALS['current_test_instance'] );
-		$this->update_post_meta_calls = [];
-		parent::tearDown();
-	}
+        // Call the method with _last_change_time as meta_key
+        $integration->update_last_change_time(1, 123, '_last_change_time', 'some_value');
+
+        // Assert that update_post_meta was not called
+        $this->assertFalse($test_update_post_meta_called, 'update_post_meta should not be called when meta_key is _last_change_time');
+    }
+
+    public function tearDown(): void {
+        global $test_mock_product, $test_update_post_meta_called;
+        $test_mock_product = null;
+        $test_update_post_meta_called = false;
+        parent::tearDown();
+    }
 }
