@@ -177,14 +177,7 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 			}
 
 			try {
-				$cookie_to_set = $param_builder->processRequest(
-					$site_url,
-					$_GET,
-					$_COOKIE,
-					isset( $_SERVER['HTTP_REFERER'] ) ?
-						sanitize_text_field( wp_unslash( $_SERVER['HTTP_REFERER'] ) ) :
-						null
-				);
+				$cookie_to_set = $param_builder->getCookiesToSet();
 
 				if ( ! empty( $cookie_to_set ) ) {
 					foreach ( $cookie_to_set as $cookie ) {
