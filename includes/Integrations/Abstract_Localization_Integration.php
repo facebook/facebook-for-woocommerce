@@ -81,19 +81,72 @@ abstract class Abstract_Localization_Integration {
 	}
 
 	/**
-	 * Log integration status for debugging
+	 * Get products from the default language
 	 *
-	 * @return array Status information
+	 * Default implementation that can be overridden by specific integrations.
+	 * This method should return products that are in the default language only.
+	 *
+	 * @param int $limit Maximum number of products to return
+	 * @param int $offset Offset for pagination
+	 * @return array Array of product IDs from the default language
 	 */
-	public function get_status(): array {
+	public function get_products_from_default_language( int $limit = 10, int $offset = 0 ): array {
+		// Default implementation - just return regular products
+		// Specific integrations should override this method
+		$args = [
+			'post_type' => 'product',
+			'post_status' => 'publish',
+			'posts_per_page' => $limit,
+			'offset' => $offset,
+			'fields' => 'ids',
+		];
+
+		return get_posts( $args );
+	}
+
+	/**
+	 * Get detailed translation information for a product
+	 *
+	 * Default implementation that can be overridden by specific integrations.
+	 *
+	 * @param int $product_id Product ID (should be from default language)
+	 * @return array Detailed translation information
+	 */
+	public function get_product_translation_details( int $product_id ): array {
+		// Default implementation - return basic structure
+		// Specific integrations should override this method
 		return [
+			'product_id' => $product_id,
+			'default_language' => $this->get_default_language(),
+			'translations' => [],
+			'translation_status' => [],
+			'translated_fields' => []
+		];
+	}
+
+	/**
+	 * Get availability data for telemetry reporting
+	 *
+	 * Provides standardized data collection for integration availability logging.
+	 * This method is used by the IntegrationAvailabilityLogger to collect
+	 * telemetry data about which integrations are available and active.
+	 *
+	 * @return array Integration availability data
+	 */
+	public function get_availability_data(): array {
+		$data = [
 			'plugin_name' => $this->get_plugin_name(),
 			'plugin_file' => $this->get_plugin_file_name(),
 			'is_installed' => $this->is_plugin_installed(),
 			'is_active' => $this->is_plugin_active(),
-			'version' => $this->get_plugin_version(),
-			'default_language' => $this->get_default_language(),
-			'available_languages' => $this->get_available_languages(),
 		];
+
+		// Add version if available
+		$version = $this->get_plugin_version();
+		if ( $version ) {
+			$data['version'] = $version;
+		}
+
+		return $data;
 	}
 }

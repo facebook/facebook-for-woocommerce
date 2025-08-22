@@ -5,6 +5,7 @@ namespace WooCommerce\Facebook\Tests\Integration\LocalizationIntegration;
 
 use WooCommerce\Facebook\Integrations\Abstract_Localization_Integration;
 use WooCommerce\Facebook\Integrations\Polylang;
+use WooCommerce\Facebook\Integrations\WPML;
 
 /**
  * Factory class for creating localization integration instances.
@@ -26,11 +27,11 @@ class LocalizationIntegrationFactory {
 			return $polylang;
 		}
 
-		// Future: Add WPML support
-		// $wpml = new WPML();
-		// if ( $wpml->is_plugin_active() ) {
-		//     return $wpml;
-		// }
+		// Try WPML
+		$wpml = new WPML();
+		if ( $wpml->is_plugin_active() ) {
+			return $wpml;
+		}
 
 		// Future: Add TranslatePress support
 		// $translatepress = new TranslatePress();
@@ -60,13 +61,13 @@ class LocalizationIntegrationFactory {
 				'class' => Polylang::class,
 				'implemented' => true,
 			],
+			'wpml' => [
+				'name' => 'WPML',
+				'file' => 'sitepress-multilingual-cms/sitepress.php',
+				'class' => WPML::class,
+				'implemented' => true,
+			],
 			// Future implementations
-			// 'wpml' => [
-			// 	'name' => 'WPML',
-			// 	'file' => 'sitepress-multilingual-cms/sitepress.php',
-			// 	'class' => 'WooCommerce\Facebook\Integrations\WPML',
-			// 	'implemented' => false,
-			// ],
 			// 'translatepress' => [
 			// 	'name' => 'TranslatePress',
 			// 	'file' => 'translatepress-multilingual/index.php',

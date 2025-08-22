@@ -46,14 +46,14 @@ class LocalizationIntegrationTest extends IntegrationTestCase {
 	 * Get message about available plugins for skip message
 	 */
 	private function get_available_plugins_message(): string {
-		$installed = LocalizationIntegrationFactory::detect_installed_plugins();
+		$available_plugins = LocalizationIntegrationFactory::detect_installed_plugins();
 
-		if ( empty( $installed ) ) {
-			return 'Supported plugins: Polylang. Install one and run tests again.';
+		if ( empty( $available_plugins ) ) {
+			return 'Supported plugins: Polylang, WPML. Install one and run tests again.';
 		}
 
 		$messages = [];
-		foreach ( $installed as $plugin ) {
+		foreach ( $available_plugins as $plugin ) {
 			$status = $plugin['active'] ? 'active' : 'installed but not active';
 			$messages[] = "{$plugin['name']} ({$status})";
 		}
