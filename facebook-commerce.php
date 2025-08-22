@@ -2046,18 +2046,35 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 	 * @since 3.5.6
 	 */
 	public function should_update_last_change_time( $product_id, $meta_key ) {
-		// Only update for WooCommerce products
-		$product = wc_get_product( $product_id );
-		if ( ! $product ) {
+		try {
+			// Only update for WooCommerce products
+			$product = wc_get_product( $product_id );
+			if ( ! $product ) {
+				return false;
+			}
+
+			// Don't create an infinite loop by checking for our own meta key
+			if ( '_last_change_time' === $meta_key || '_fb_sync_last_time' === $meta_key ) {
+				return false;
+			}
+
+			return true;
+		} catch ( \Exception $e ) {
+			Logger::log(
+				'Error in should_update_last_change_time',
+				[
+					'product_id' => $product_id,
+					'meta_key'   => $meta_key,
+				],
+				[
+					'should_send_log_to_meta'        => false,
+					'should_save_log_in_woocommerce' => true,
+					'woocommerce_log_level'          => \WC_Log_Levels::ERROR,
+				],
+				$e
+			);
 			return false;
 		}
-
-		// Don't create an infinite loop by checking for our own meta key
-		if ( '_last_change_time' === $meta_key || '_fb_sync_last_time' === $meta_key ) {
-			return false;
-		}
-
-		return true;
 	}
 
 	/**
