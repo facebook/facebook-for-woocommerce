@@ -866,7 +866,7 @@ class WC_Facebookcommerce extends WooCommerce\Facebook\Framework\Plugin {
 				$_COOKIE,
 				isset( $_SERVER['HTTP_REFERER'] ) ?
 				sanitize_text_field( wp_unslash( $_SERVER['HTTP_REFERER'] ) ) :
-					null
+				null
 			);
 		} catch ( \Exception $exception ) {
 			$this->log( 'Error initializing CAPI Parameter Builder: ' . $exception->getMessage() );
