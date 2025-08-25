@@ -296,6 +296,7 @@ class Event {
 		} elseif ( isset( $_SESSION['_fbp'] ) ) {
 			$fbp = $_SESSION['_fbp']; // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
 		}
+		
 		if ( $fbp ) {
 			$_SESSION['_fbp'] = $fbp;
 		}
