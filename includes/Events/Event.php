@@ -291,11 +291,11 @@ class Event {
 	 */
 	protected function get_browser_id() {
 		$fbp = ! empty( $_COOKIE['_fbp'] ) ? wc_clean( wp_unslash( $_COOKIE['_fbp'] ) ) : '';
-		if ( !$fbp &&  isset( $this->param_builder ) ) {
+		if ( ! $fbp && isset( $this->param_builder ) ) {
 			$fbp = $this->param_builder->getFBP();
 		} elseif ( isset( $_SESSION['_fbp'] ) ) {
 			$fbp = $_SESSION['_fbp']; // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
-		} 
+		}
 
 		if ( $fbp ) {
 			$_SESSION['_fbp'] = $fbp;
