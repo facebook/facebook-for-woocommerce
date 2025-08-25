@@ -109,9 +109,9 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 		 */
 		private function add_hooks() {
 
-			add_action( 'init', array( $this, 'inject_param_builder' ) );
+			add_action( 'wp_head', array( $this, 'inject_param_builder' ), 0 );
 			// inject Pixel
-			add_action( 'wp_head', array( $this, 'inject_base_pixel' ) );
+			add_action( 'wp_head', array( $this, 'inject_base_pixel' ), 1 );
 			add_action( 'wp_footer', array( $this, 'inject_base_pixel_noscript' ) );
 
 			// enqueue Facebook CAPI Param Builder script
@@ -169,13 +169,6 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 				return;
 			}
 
-			$site_url = isset( $_SERVER['HTTP_HOST'] ) ? sanitize_text_field( wp_unslash( $_SERVER['HTTP_HOST'] ) ) : '';
-
-			if ( empty( $site_url ) ) {
-				$this->log( 'Cannot set Parameter Builder cookies: site URL is empty' );
-				return;
-			}
-
 			try {
 				$cookie_to_set = $param_builder->getCookiesToSet();
 
@@ -225,7 +218,7 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 		 * Enqueues the Facebook CAPI Param Builder script.
 		 */
 		public function enqueue_capi_param_builder_script() {
-			if ( ! $this->is_pixel_enabled() ) {
+			if ( ! facebook_for_woocommerce()->get_connection_handler()->is_connected() ) {
 				return;
 			}
 

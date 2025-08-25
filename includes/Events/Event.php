@@ -135,17 +135,9 @@ class Event {
 			$this->data['user_data']['country'] = $country;
 			unset( $this->data['user_data']['cn'] );
 		}
-		// Add parambuilder information to user data.
-		if ( null != $this->param_builder ) {
-			$fbc = $this->param_builder->getFbc();
-			$fbp = $this->param_builder->getFbp();
-			if ( ! empty( $fbc ) ) {
-				$this->data['user_data']['fbc'] = $fbc;
-			}
-			if ( ! empty( $fbp ) ) {
-				$this->data['user_data']['fbp'] = $fbp;
-			}
-		}
+
+		$this->data['user_data']['fbc'] = $this->get_click_id();
+		$this->data['user_data']['fbp'] = $this->get_browser_id();
 		$this->data['user_data'] = Normalizer::normalize_array( $this->data['user_data'], false );
 		$this->data['user_data'] = $this->hash_pii_data( $this->data['user_data'] );
 	}
@@ -303,6 +295,8 @@ class Event {
 			$_SESSION['_fbp'] = $fbp;
 		} elseif ( isset( $_SESSION['_fbp'] ) ) {
 			$fbp = $_SESSION['_fbp']; // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
+		} elseif ( isset( $this->param_builder )) {
+			$fbp = $this->param_builder->getFBP();
 		}
 		return $fbp;
 	}
