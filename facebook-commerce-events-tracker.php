@@ -109,9 +109,9 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 		 */
 		private function add_hooks() {
 
-			add_action( 'wp_head', array( $this, 'inject_param_builder' ), 0 );
+			add_action( 'init', array( $this, 'inject_param_builder' ) );
 			// inject Pixel
-			add_action( 'wp_head', array( $this, 'inject_base_pixel' ), 1 );
+			add_action( 'wp_head', array( $this, 'inject_base_pixel' ) );
 			add_action( 'wp_footer', array( $this, 'inject_base_pixel_noscript' ) );
 
 			// enqueue Facebook CAPI Param Builder script

@@ -295,7 +295,7 @@ class Event {
 			$_SESSION['_fbp'] = $fbp;
 		} elseif ( isset( $_SESSION['_fbp'] ) ) {
 			$fbp = $_SESSION['_fbp']; // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
-		} elseif ( isset( $this->param_builder )) {
+		} elseif ( isset( $this->param_builder ) ) {
 			$fbp = $this->param_builder->getFBP();
 		}
 		return $fbp;
