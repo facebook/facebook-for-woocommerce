@@ -725,7 +725,8 @@ class WC_Facebookcommerce extends WooCommerce\Facebook\Framework\Plugin {
 	 * @return bool
 	 */
 	public function is_plugin_settings() {
-		return is_admin() && WooCommerce\Facebook\Admin\Settings::PAGE_ID === Helper::get_requested_value( 'page' );
+		$page_value = Helper::get_requested_value( 'page' );
+		return is_admin() && in_array( $page_value, [ WooCommerce\Facebook\Admin\Settings::PAGE_ID, WooCommerce\Facebook\Admin\WhatsApp_Integration_Settings::PAGE_ID ] );
 	}
 
 	/** Utility methods *******************************************************************************************/

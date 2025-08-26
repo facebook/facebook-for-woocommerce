@@ -42,6 +42,21 @@ class WhatsApp_Integration_Settings {
 		$this->plugin = $plugin;
 		add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_assets' ) );
 		add_action( 'admin_menu', array( $this, 'add_menu_item' ) );
+		add_action( 'admin_footer', array( $this, 'render_message_handler' ) );
+	}
+
+
+	/**
+	 * Renders the message handler script in the footer.
+	 *
+	 * @since 3.5.0
+	 */
+	public function render_message_handler() {
+		if ( ! $this->is_whatsapp_admin_page() ) {
+			return;
+		}
+
+		wp_add_inline_script( 'plugin-api-client', $this->generate_inline_enhanced_onboarding_script(), 'after' );
 	}
 
 	/**
@@ -159,5 +174,52 @@ class WhatsApp_Integration_Settings {
 				></iframe>
 		</div>
 		<?php
+	}
+
+	/**
+	 * Generates the inline script for the whatsapp iframe onboarding flow.
+	 *
+	 * @since 3.5.0
+	 *
+	 * @return string
+	 */
+	public function generate_inline_enhanced_onboarding_script() {
+		// Generate a fresh nonce for this request
+		$nonce = wp_json_encode( wp_create_nonce( 'wp_rest' ) );
+
+		// Create the inline script with HEREDOC syntax for better JS readability
+		return <<<JAVASCRIPT
+			const whatsAppAPI = GeneratePluginAPIClient({$nonce});
+			window.addEventListener('message', function(event) {
+				const message = event.data;
+				const messageEvent = message.event;
+
+				console.log(message);
+
+				if (messageEvent === 'CommerceExtension::WA_INSTALL' && message.success) {
+				console.log('success');
+
+					const requestBody = {
+						access_token: message.access_token,
+						business_id: message.business_id,
+						phone_number_id: message.phone_number_id,
+						waba_id: message.waba_id,
+						wa_installation_id: 'xxx',
+					};
+
+					whatsAppAPI.updateWhatsAppSettings(requestBody)
+						.then(function(response) {
+							if (response.success) {
+								window.location.reload();
+							} else {
+								console.error('Error updating Facebook settings:', response);
+							}
+						})
+						.catch(function(error) {
+							console.error('Error during settings update:', error);
+						});
+				}
+			});
+		JAVASCRIPT;
 	}
 }
