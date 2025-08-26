@@ -115,7 +115,7 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 			add_action( 'wp_footer', array( $this, 'inject_base_pixel_noscript' ) );
 
 			// set up CAPI Param Builder libraries
-			add_action( 'wp_enqueue_scripts', array( $this, 'install_param_builder' ) );
+			add_action( 'wp_enqueue_scripts', array( $this, 'param_builder_client_setup' ) );
 
 			// ViewContent for individual products
 			add_action( 'woocommerce_after_single_product', array( $this, 'inject_view_content_event' ) );
@@ -217,7 +217,7 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 		/**
 		 * Enqueues the Facebook CAPI Param Builder script.
 		 */
-		public function install_param_builder() {
+		public function param_builder_client_setup() {
 			// Client js setup
 			if ( ! facebook_for_woocommerce()->get_connection_handler()->is_connected() ) {
 				return;
