@@ -2047,9 +2047,10 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 	 */
 	public function should_update_last_change_time( $product_id, $meta_key ) {
 		try {
-			// Only update for WooCommerce products
-			$product = wc_get_product( $product_id );
-			if ( ! $product ) {
+
+			// Early bailout: Only process WooCommerce products
+			$post_type = get_post_type( $product_id );
+			if ( ! in_array( $post_type, [ 'product', 'product_variation' ], true ) ) {
 				return false;
 			}
 
