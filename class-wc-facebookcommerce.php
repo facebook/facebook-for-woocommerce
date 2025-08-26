@@ -64,6 +64,9 @@ class WC_Facebookcommerce extends WooCommerce\Facebook\Framework\Plugin {
 	/** @var WooCommerce\Facebook\Admin\Enhanced_Settings */
 	private $admin_enhanced_settings;
 
+	/** @var WooCommerce\Facebook\Admin\WhatsApp_Integration_Settings */
+	private $wa_admin_settings;
+
 	/** @var WooCommerce\Facebook\AJAX Ajax handler instance */
 	private $ajax;
 
@@ -251,6 +254,7 @@ class WC_Facebookcommerce extends WooCommerce\Facebook\Framework\Plugin {
 				} else {
 					$this->admin_settings = new WooCommerce\Facebook\Admin\Settings( $this );
 				}
+				$this->wa_admin_settings     = new WooCommerce\Facebook\Admin\WhatsApp_Integration_Settings( $this );
 				$this->plugin_render_handler = new \WooCommerce\Facebook\Handlers\PluginRender( $this );
 			}
 		}
