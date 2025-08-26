@@ -2240,18 +2240,16 @@ class WC_Facebook_Product {
 			$product_data['gtin'] = $this->woo_product->get_global_unique_id();
 		}
 
-		if ( $this->woo_product->get_date_modified() ) {
-			$date_modified = $this->woo_product->get_date_modified();
-			$external_update_time = $date_modified->getTimestamp();
+		$date_modified = $this->woo_product->get_date_modified();
+		if ( $date_modified ) {
+			$external_update_time = (int) $date_modified->getTimestamp();
+			$last_change_time = (int) $this->woo_product->get_meta( '_last_change_time' );
 
-			// Get _last_change_time meta field
-			$last_change_time = $this->woo_product->get_meta( '_last_change_time' );
-
-			// Use whichever timestamp is newer, defaulting to external_update_time if _last_change_time is empty
-			if ( ! empty( $last_change_time ) && is_numeric( $last_change_time ) ) {
-				$product_data['external_update_time'] = max( (int) $external_update_time, (int) $last_change_time );
+			// Use the newer timestamp if _last_change_time is valid, otherwise use external_update_time
+			if ( $last_change_time > 0 ) {
+				$product_data['external_update_time'] = max( $external_update_time, $last_change_time );
 			} else {
-				$product_data['external_update_time'] = (int) $external_update_time;
+				$product_data['external_update_time'] = $external_update_time;
 			}
 		}
 
