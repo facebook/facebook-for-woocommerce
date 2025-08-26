@@ -12,6 +12,7 @@ namespace WooCommerce\Facebook\Admin;
 
 use WooCommerce\Facebook\RolloutSwitches;
 use WooCommerce\Facebook\Framework\Logger;
+use WooCommerce\Facebook\Framework\Helper;
 
 defined( 'ABSPATH' ) || exit;
 
@@ -39,8 +40,24 @@ class WhatsApp_Integration_Settings {
 	 */
 	public function __construct( \WC_Facebookcommerce $plugin ) {
 		$this->plugin = $plugin;
-
+		add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_assets' ) );
 		add_action( 'admin_menu', array( $this, 'add_menu_item' ) );
+	}
+
+	/**
+	 * Enqueues the assets.
+	 *
+	 * @since 3.5.0
+	 *
+	 * @internal
+	 */
+	public function enqueue_assets() {
+
+		if ( ! $this->is_whatsapp_admin_page() ) {
+			return;
+		}
+
+		wp_enqueue_style( 'wc-facebook-admin-whatsapp-enhanced', facebook_for_woocommerce()->get_plugin_url() . '/assets/css/admin/facebook-for-woocommerce-whatsapp-enhanced.css', array(), \WC_Facebookcommerce::VERSION );
 	}
 
 
@@ -103,15 +120,44 @@ class WhatsApp_Integration_Settings {
 	}
 
 	/**
+	 * Checks if the page is WhatsApp admin page.
+	 *
+	 * @since 3.5.0
+	 *
+	 * @return string
+	 */
+	private function is_whatsapp_admin_page() {
+		return is_admin() && self::PAGE_ID === Helper::get_requested_value( 'page' );
+	}
+
+	/**
 	 * Renders the whatsapp utility settings page.
 	 *
 	 * @since 3.5.0
 	 */
 	public function render() {
+		$whatsapp_connection = $this->plugin->get_whatsapp_connection_handler();
+		$is_connected        = $whatsapp_connection->is_connected();
+
+		if ( $is_connected ) {
+			$iframe_url = \WooCommerce\Facebook\Handlers\WhatsAppExtension::generate_wa_iframe_management_url();
+		} else {
+			$iframe_url = \WooCommerce\Facebook\Handlers\WhatsAppExtension::generate_wa_iframe_splash_url(
+				$this->plugin,
+				$whatsapp_connection->get_whatsapp_external_id()
+			);
+		}
+
+		if ( empty( $iframe_url ) ) {
+			return;
+		}
 		?>
-				<div style="display: flex; justify-content: center; max-width: 1200px; margin: 0 auto;">
-					<h1><?php echo esc_html( 'Whatsapp Utility Screen' ); ?></h1>
-				</div>
+		<div class="facebook-whatsapp-iframe-container">
+			<iframe
+				id="facebook-whatsapp-iframe-enhanced"
+				src="<?php echo esc_url( $iframe_url ); ?>"
+				></iframe>
+		</div>
 		<?php
 	}
 }
