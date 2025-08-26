@@ -108,7 +108,7 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 		 * @since 2.2.0
 		 */
 		private function add_hooks() {
-			add_action('init', array($this, 'param_builder_server_setup'));
+			add_action( 'init', array($this, 'param_builder_server_setup' ) );
 
 			// inject Pixel
 			add_action( 'wp_head', array( $this, 'inject_base_pixel' ) );
