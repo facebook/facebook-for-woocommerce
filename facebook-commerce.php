@@ -2150,7 +2150,6 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 			} else {
 				return; // Skip: no need to update last change time
 			}
-
 		} catch ( \Exception $e ) {
 			Logger::log(
 				'Error updating last change time for product',
