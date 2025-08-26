@@ -108,12 +108,14 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 		 * @since 2.2.0
 		 */
 		private function add_hooks() {
+			add_action('init', array($this, 'param_builder_server_setup'));
+
 			// inject Pixel
 			add_action( 'wp_head', array( $this, 'inject_base_pixel' ) );
-			add_action( 'wp_footer', array( $this, 'inject_base_pixel_noscript' ), 0 );
+			add_action( 'wp_footer', array( $this, 'inject_base_pixel_noscript' ) );
 
 			// set up CAPI Param Builder libraries
-			add_action( 'wp_footer', array( $this, 'install_param_builder' ), 1 );
+			add_action( 'wp_enqueue_scripts', array( $this, 'install_param_builder' ) );
 
 			// ViewContent for individual products
 			add_action( 'woocommerce_after_single_product', array( $this, 'inject_view_content_event' ) );
@@ -235,8 +237,6 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 					clientParamBuilder.processAndCollectAllParams(window.location.href);
 				}'
 			);
-			// Set up parambuilder server library
-			$this->param_builder_server_setup();
 		}
 
 		/**
