@@ -2934,7 +2934,22 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 
 			// check if visibility is published and sync the product
 			if ( get_post_status( $wp_id ) === 'publish' ) {
-				$this->facebook_for_woocommerce->get_products_sync_handler()->create_or_update_products( [ $wp_id ] );
+				if ( $product->is_type( 'variable' ) ) {
+					// For variable products, sync only the variations that should be synced
+					$variation_ids = [];
+					foreach ( $product->get_children() as $variation_id ) {
+						$variation = wc_get_product( $variation_id );
+						if ( $variation instanceof WC_Product && $this->product_should_be_synced( $variation ) ) {
+							$variation_ids[] = $variation_id;
+						}
+					}
+					if ( ! empty( $variation_ids ) ) {
+						$this->facebook_for_woocommerce->get_products_sync_handler()->create_or_update_products( $variation_ids );
+					}
+				} else {
+					// For simple products and variations, sync the product directly
+					$this->facebook_for_woocommerce->get_products_sync_handler()->create_or_update_products( [ $wp_id ] );
+				}
 			}
 		} catch ( Exception $e ) {
 			Logger::log(
