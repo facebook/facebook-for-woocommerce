@@ -25,6 +25,14 @@ class WhatsAppConnection {
 	const OPTION_WA_UTILITY_ACCESS_TOKEN = 'wc_facebook_wa_utility_access_token';
 	/** @var string the whatsapp external id option name */
 	const OPTION_WA_EXTERNAL_BUSINESS_ID = 'wc_facebook_wa_external_business_id';
+	/** @var string the whatsapp business id option name */
+	const OPTION_WA_BUSINESS_ID = 'wc_facebook_wa_business_id';
+	/** @var string the whatsapp business account id option name */
+	const OPTION_WA_WABA_ID = 'wc_facebook_wa_waba_id';
+	/** @var string the whatsapp phone number id option name */
+	const OPTION_WA_PHONE_NUMBER_ID = 'wc_facebook_wa_phone_number_id';
+	/** @var string the whatsapp installation id option name */
+	const OPTION_WA_INSTALLATION_ID = 'wc_facebook_wa_installation_id';
 
 
 
