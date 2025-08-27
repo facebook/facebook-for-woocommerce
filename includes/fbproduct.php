@@ -961,6 +961,12 @@ class WC_Facebook_Product {
 		$sale_start                = '';
 		$sale_end                  = '';
 
+		// discard sale price if it's not lower than product price
+		$product_price = $this->get_fb_price();
+		if ( ! ( is_numeric( $sale_price ) && (int) round( (float) $sale_price * 100 ) < (int) $product_price ) ) {
+			$sale_price = '';
+		}
+
 		// check if sale exist
 		if ( is_numeric( $sale_price ) && $sale_price > 0 ) {
 			$sale_start                = $this->woo_product->get_date_on_sale_from();
