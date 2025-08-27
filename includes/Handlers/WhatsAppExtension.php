@@ -31,6 +31,10 @@ class WhatsAppExtension {
 	const APP_ID = '474166926521348';
 	/** @var string Whatsapp Tech Provider Business ID */
 	const TP_BUSINESS_ID = '1145282100241487';
+	/** @var string base url for meta stefi endpoint */
+	const BASE_STEFI_ENDPOINT_URL = 'https://api.facebook.com';
+	/** @var string Default language for Library Template */
+	const DEFAULT_LANGUAGE = 'en';
 
 
 	// ==========================
@@ -66,7 +70,51 @@ class WhatsAppExtension {
 	 * @return string
 	 * @since 3.5.0
 	 */
-	public static function generate_wa_iframe_management_url() {
+	public static function generate_wa_iframe_management_url( $plugin ) {
+		$whatsapp_connection = $plugin->get_whatsapp_connection_handler();
+		$is_connected       = $whatsapp_connection->is_connected();
+		wc_get_logger()->info(
+			sprintf(
+					/* translators: %s $response */
+				__( 'WA Installation Response: %1$s ', 'facebook-for-woocommerce' ),
+				(string)$is_connected,
+			)
+		);
+		if( ! $is_connected ) {
+			return '';
+		}
+		$bisu_token = $whatsapp_connection->get_access_token();
+		$params  = array(
+			'locale'         => get_user_locale() ?? self::DEFAULT_LANGUAGE,
+			'access_token' => $bisu_token,
+		);
+		$wa_installation_id = $whatsapp_connection->get_wa_installation_id();
+		$base_url     = array( self::BASE_STEFI_ENDPOINT_URL, 'whatsapp/business', '24013123858389116', 'utility_message_iframe_management_uri' );
+		$base_url     = esc_url( implode( '/', $base_url ) );
+		$url     = add_query_arg( $params, $base_url );
+		$options = array(
+			'headers' => array(
+				'Authorization' => $bisu_token,
+			),
+			'body'    => array(),
+			'timeout' => 300, // 5 minutes
+		);
+		wc_get_logger()->info(
+			sprintf(
+					/* translators: %s $response */
+				__( 'WA Installation Response: %1$s , %2$s', 'facebook-for-woocommerce' ),
+				$base_url,
+				wp_json_encode($params),
+			)
+		);
+		$response     = wp_remote_post( $base_url, $options );
+		wc_get_logger()->info(
+			sprintf(
+					/* translators: %s $response */
+				__( 'WA Installation Response: %1$s ', 'facebook-for-woocommerce' ),
+				wp_json_encode( $response ),
+			)
+		);
 		// TODO: Call the iframe management stefi endpoint to fetch the iframe management url
 		return 'https://www.commercepartnerhub.com/whatsapp_utility_integration/overview/';
 	}
