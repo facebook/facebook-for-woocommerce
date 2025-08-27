@@ -36,24 +36,6 @@ class UpdateLastChangeTimeTest extends TestCase {
     }
 
     /**
-     * Test: should_update_last_change_time() logic function
-     * Tests the core logic that determines whether to proceed with updates
-     */
-    public function test_should_update_last_change_time_logic() {
-        // Test excluded meta keys (infinite loop prevention)
-        $this->assertFalse(
-            $this->integration->should_update_last_change_time(123, '_last_change_time'),
-            'should_update_last_change_time should return false for _last_change_time meta key'
-        );
-
-        // Test non-existent product
-        $this->assertFalse(
-            $this->integration->should_update_last_change_time(999999, '_price'),
-            'should_update_last_change_time should return false for non-existent product'
-        );
-    }
-
-    /**
      * Test: update_last_change_time() integration
      * Tests the complete flow including both excluded keys and edge cases
      */
