@@ -61,10 +61,49 @@ jobs:
           node --version
           npm --version
 
-      - name: Run JavaScript unit tests
+      - name: Run JavaScript unit tests with coverage
+        id: jest
         if: steps.install.outputs.dependencies_installed == 'true'
-        run: npm run test:js || echo "::warning::Tests failed but continuing workflow"
+        run: |
+          # Run Jest using npm script to ensure proper configuration
+          npm run test:js -- --coverage --coverageReporters=json-summary --coverageReporters=lcov --coverageReporters=html
+
+          # Extract coverage summary from JSON
+          COVERAGE=$(node -e "
+            const fs = require('fs');
+            const coverage = JSON.parse(fs.readFileSync('coverage/coverage-summary.json', 'utf8'));
+            console.log(coverage.total.lines.pct);
+          ")
+
+          echo "coverage_summary=$COVERAGE" >> $GITHUB_OUTPUT
+          echo "📊 JS Coverage: $COVERAGE%"
+
+          echo "✅ JavaScript unit tests completed successfully"
+
+      - name: Upload coverage reports
+        if: steps.install.outputs.dependencies_installed == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: js-coverage-report
+          path: coverage/coverage-summary.json
+          retention-days: 30
+
+      - name: Check JS coverage threshold
+        if: steps.install.outputs.dependencies_installed == 'true'
         continue-on-error: true
+        run: |
+          COVERAGE="${{ steps.jest.outputs.coverage_summary }}"
+          MIN_THRESHOLD=30
+
+          echo "📈 JS Coverage: $COVERAGE%"
+          echo "🎯 JS Threshold: $MIN_THRESHOLD%"
+
+          if (( $(echo "$COVERAGE $MIN_THRESHOLD" | awk '{print ($1 >= $2)}') )); then
+            echo "✅ JS Coverage check passed!"
+          else
+            echo "❌ JS Coverage too low. Need $MIN_THRESHOLD%, got $COVERAGE%"
+            exit 1
+          fi
 
       - name: Skip tests notification
         if: steps.install.outputs.dependencies_installed != 'true'

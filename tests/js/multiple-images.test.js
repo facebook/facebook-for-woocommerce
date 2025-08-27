@@ -278,7 +278,7 @@ describe('Multiple Images Functionality', function() {
             
             // Mock media frame creation parameters
             const mediaFrameOptions = {
-                title: 'Choose Multiple Images',
+                title: 'Add Multiple Images',
                 button: {
                     text: 'Select Images'
                 },
@@ -290,7 +290,7 @@ describe('Multiple Images Functionality', function() {
             
             expect(mediaFrameOptions.multiple).toBe(true);
             expect(mediaFrameOptions.library.type).toBe('image');
-            expect(mediaFrameOptions.title).toBe('Choose Multiple Images');
+            expect(mediaFrameOptions.title).toBe('Add Multiple Images');
         });
         
         it('should pre-select existing images in media library', function() {
@@ -367,7 +367,7 @@ describe('Multiple Images Functionality', function() {
 
     describe('Event Handling', function() {
         
-        it('should bind click event to "Choose Multiple Images" button', function() {
+        it('should bind click event to "Add Multiple Images" button', function() {
             const mockDocument = {
                 on: jest.fn()
             };

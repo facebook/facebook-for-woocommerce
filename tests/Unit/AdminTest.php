@@ -4,6 +4,7 @@ declare(strict_types=1);
 namespace WooCommerce\Facebook\Tests\Unit;
 
 use WooCommerce\Facebook\Admin;
+use WooCommerce\Facebook\RolloutSwitches;
 use WC_Facebook_Product;
 use WP_UnitTestCase;
 
@@ -237,7 +238,7 @@ class AdminTest extends \WP_UnitTestCase {
         $output = ob_get_clean();
 
         // Verify the HTML contains expected elements
-        $this->assertStringContainsString('Choose Multiple Images', $output);
+        $this->assertStringContainsString('Add Multiple Images', $output);
         $this->assertStringContainsString('data-variation-index="0"', $output);
         $this->assertStringContainsString('data-variation-id="999"', $output);
         $this->assertStringContainsString('fb-product-images-thumbnails', $output);
@@ -290,7 +291,7 @@ class AdminTest extends \WP_UnitTestCase {
 
         // Verify no output is generated when rollout switch is disabled
         $this->assertEmpty($output);
-        $this->assertStringNotContainsString('Choose Multiple Images', $output);
+        $this->assertStringNotContainsString('Add Multiple Images', $output);
         $this->assertStringNotContainsString('fb-product-images-thumbnails', $output);
 
         // Clean up
@@ -337,7 +338,7 @@ class AdminTest extends \WP_UnitTestCase {
         $output = ob_get_clean();
 
         // Verify the HTML contains expected elements for empty state
-        $this->assertStringContainsString('Choose Multiple Images', $output);
+        $this->assertStringContainsString('Add Multiple Images', $output);
         $this->assertStringContainsString('data-variation-index="1"', $output);
         $this->assertStringContainsString('data-variation-id="888"', $output);
         $this->assertStringContainsString('variable_fb_product_images1', $output);
@@ -657,5 +658,77 @@ class AdminTest extends \WP_UnitTestCase {
         // Verify data is still there
         $restored_images = get_post_meta($variation_id, \WC_Facebook_Product::FB_PRODUCT_IMAGES, true);
         $this->assertEquals('400,500,600,700', $restored_images);
+    }
+
+    public function test_multiple_images_option_controlled_by_rollout_switch() {
+        // Create a variable product with variations for testing
+        $product = new \WC_Product_Variable();
+        $product->set_name('Test Variable Product');
+        $product->save();
+
+        // Create a variation
+        $variation = new \WC_Product_Variation();
+        $variation->set_parent_id($product->get_id());
+        $variation->set_regular_price('20');
+        $variation->save();
+
+        // Test when rollout switch is disabled
+        $plugin_mock_disabled = $this->getMockBuilder('WC_Facebookcommerce')
+            ->disableOriginalConstructor()
+            ->getMock();
+
+        $rollout_switches_mock_disabled = $this->getMockBuilder('WooCommerce\Facebook\RolloutSwitches')
+            ->disableOriginalConstructor()
+            ->getMock();
+
+        $rollout_switches_mock_disabled->expects($this->any())
+            ->method('is_switch_enabled')
+            ->with(RolloutSwitches::SWITCH_MULTIPLE_IMAGES_ENABLED)
+            ->willReturn(false);
+
+        $plugin_mock_disabled->expects($this->any())
+            ->method('get_rollout_switches')
+            ->willReturn($rollout_switches_mock_disabled);
+
+        $GLOBALS['wc_facebook_commerce'] = $plugin_mock_disabled;
+
+        // Capture output when rollout switch is disabled
+        ob_start();
+        $this->admin->add_product_variation_edit_fields(0, array(), $variation);
+        $output_disabled = ob_get_clean();
+
+        // Test when rollout switch is enabled
+        $plugin_mock_enabled = $this->getMockBuilder('WC_Facebookcommerce')
+            ->disableOriginalConstructor()
+            ->getMock();
+
+        $rollout_switches_mock_enabled = $this->getMockBuilder('WooCommerce\Facebook\RolloutSwitches')
+            ->disableOriginalConstructor()
+            ->getMock();
+
+        $rollout_switches_mock_enabled->expects($this->any())
+            ->method('is_switch_enabled')
+            ->with(RolloutSwitches::SWITCH_MULTIPLE_IMAGES_ENABLED)
+            ->willReturn(true);
+
+        $plugin_mock_enabled->expects($this->any())
+            ->method('get_rollout_switches')
+            ->willReturn($rollout_switches_mock_enabled);
+
+        $GLOBALS['wc_facebook_commerce'] = $plugin_mock_enabled;
+
+        // Capture output when rollout switch is enabled
+        ob_start();
+        $this->admin->add_product_variation_edit_fields(0, array(), $variation);
+        $output_enabled = ob_get_clean();
+
+        // Verify that "Add multiple images" option is not present when switch is disabled
+        $this->assertStringNotContainsString('Add multiple images', $output_disabled);
+
+        // Verify that "Add multiple images" option is present when switch is enabled
+        $this->assertStringContainsString('Add multiple images', $output_enabled);
+
+        // Clean up
+        unset($GLOBALS['wc_facebook_commerce']);
     }
 }

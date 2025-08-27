@@ -79,6 +79,13 @@
     "testPathIgnorePatterns": [
       "/node_modules/",
       "/tests/e2e/"
-    ]
+    ],
+    "collectCoverageFrom": [
+      "assets/js/**/*.js",
+      "!assets/js/**/*.min.js",
+      "!**/node_modules/**"
+    ],
+    "coverageDirectory": "coverage",
+    "coverageReporters": ["json-summary", "lcov", "html", "text"]
   }
 }
