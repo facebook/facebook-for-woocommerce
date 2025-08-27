@@ -46,11 +46,6 @@ class UpdateLastChangeTimeTest extends TestCase {
             'should_update_last_change_time should return false for _last_change_time meta key'
         );
 
-        $this->assertFalse(
-            $this->integration->should_update_last_change_time(123, '_fb_sync_last_time'),
-            'should_update_last_change_time should return false for _fb_sync_last_time meta key'
-        );
-
         // Test non-existent product
         $this->assertFalse(
             $this->integration->should_update_last_change_time(999999, '_price'),
@@ -63,16 +58,6 @@ class UpdateLastChangeTimeTest extends TestCase {
      * Tests the complete flow including both excluded keys and edge cases
      */
     public function test_update_last_change_time_integration() {
-        // Test excluded meta keys - should handle gracefully without exceptions
-        $excluded_keys = ['_last_change_time', '_fb_sync_last_time'];
-        foreach ($excluded_keys as $excluded_key) {
-            try {
-                $this->integration->update_last_change_time(1, 123, $excluded_key, 'value');
-                $this->assertTrue(true, "update_last_change_time handled excluded key '{$excluded_key}' gracefully");
-            } catch (Exception $e) {
-                $this->fail("update_last_change_time should not throw exception for excluded key '{$excluded_key}': " . $e->getMessage());
-            }
-        }
 
         // Test edge cases - should handle gracefully
         $edge_cases = [
@@ -88,6 +73,78 @@ class UpdateLastChangeTimeTest extends TestCase {
             } catch (Exception $e) {
                 $this->assertTrue(true, "update_last_change_time properly caught exception for edge case {$index}");
             }
-        }
-    }
+		}
+	}
+
+	/**
+	 * Test: is_meta_key_sync_relevant() - helper function for determining sync relevance
+	 * Tests the logic that identifies which meta keys should trigger sync updates
+	 */
+	public function test_is_meta_key_sync_relevant() {
+		// Use reflection to test the private method
+		$reflection = new \ReflectionClass($this->integration);
+		$method = $reflection->getMethod('is_meta_key_sync_relevant');
+		$method->setAccessible(true);
+
+		// Test excluded meta keys (should return false)
+		$excluded_keys = [
+			'_last_change_time',
+			'_fb_sync_last_time',
+			'_wp_attached_file',
+			'_wp_attachment_metadata',
+			'_edit_last',
+			'_edit_lock'
+		];
+
+		foreach ($excluded_keys as $key) {
+			$this->assertFalse(
+				$method->invoke($this->integration, $key),
+				"is_meta_key_sync_relevant should return false for excluded key: {$key}"
+			);
+		}
+
+		// Test sync-relevant meta keys (should return true)
+		$sync_relevant_keys = [
+			'_regular_price',
+			'_sale_price',
+			'_stock',
+			'_stock_status',
+			'_thumbnail_id',
+			'_price',
+			'fb_visibility',
+			'fb_product_description',
+			'fb_brand',
+			'fb_mpn',
+			'fb_size',
+			'fb_color',
+			'fb_material',
+			'fb_pattern',
+			'fb_age_group',
+			'fb_gender',
+			'fb_product_condition',
+			'_wc_facebook_sync_enabled',
+			'_wc_facebook_product_image_source'
+		];
+
+		foreach ($sync_relevant_keys as $key) {
+			$this->assertTrue(
+				$method->invoke($this->integration, $key),
+				"is_meta_key_sync_relevant should return true for sync-relevant key: {$key}"
+			);
+		}
+
+		// Test other meta keys (should return false)
+		$other_keys = [
+			'some_random_meta_key',
+			'custom_field',
+			'other_plugin_meta'
+		];
+
+		foreach ($other_keys as $key) {
+			$this->assertFalse(
+				$method->invoke($this->integration, $key),
+				"is_meta_key_sync_relevant should return false for unrelated key: {$key}"
+			);
+		}
+	}
 }
