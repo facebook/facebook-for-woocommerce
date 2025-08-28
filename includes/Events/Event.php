@@ -10,8 +10,6 @@
 
 namespace WooCommerce\Facebook\Events;
 
-use WooCommerce\Facebook\RolloutSwitches;
-
 defined( 'ABSPATH' ) || exit;
 
 /**
