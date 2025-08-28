@@ -2161,11 +2161,20 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 
 			// Only proceed if we should update the last change time
 			if ( $this->should_update_last_change_time( $product_id, $meta_key ) ) {
+				// Check cache to prevent frequent updates
+				if ( $this->is_last_change_time_update_rate_limited( $product_id ) ) {
+					return; // Skip: update rate limited
+				}
+
 				// Set flag to prevent infinite loops
 				self::$is_updating_last_change_time = true;
 
 				// Update the last change time with current timestamp
-				update_post_meta( $product_id, '_last_change_time', time() );
+				$current_time = time();
+				update_post_meta( $product_id, '_last_change_time', $current_time );
+
+				// Update cache with the new timestamp
+				$this->set_last_change_time_cache( $product_id, $current_time );
 
 				// Reset flag
 				self::$is_updating_last_change_time = false;
@@ -2192,6 +2201,43 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 				$e
 			);
 		}
+	}
+
+	/**
+	 * Checks if the last change time update is rate limited for a product.
+	 *
+	 * @param int $product_id Product ID.
+	 * @return bool True if rate limited, false otherwise.
+	 * @since 3.5.7
+	 */
+	private function is_last_change_time_update_rate_limited( $product_id ) {
+		$cache_key = "last_change_time_{$product_id}";
+		$cached_time = wp_cache_get( $cache_key, 'facebook_for_woocommerce' );
+
+		// If no cached time, allow update
+		if ( false === $cached_time ) {
+			return false;
+		}
+
+		// Rate limit to once every 60 seconds (1 minute)
+		$rate_limit_window = 60;
+		$current_time = time();
+
+		// If the last update was within the rate limit window, prevent update
+		return ( $current_time - $cached_time ) < $rate_limit_window;
+	}
+
+	/**
+	 * Sets the last change time in cache for rate limiting.
+	 *
+	 * @param int $product_id Product ID.
+	 * @param int $timestamp Timestamp to cache.
+	 * @since 3.5.7
+	 */
+	private function set_last_change_time_cache( $product_id, $timestamp ) {
+		$cache_key = "last_change_time_{$product_id}";
+		// Cache for 5 minutes (300 seconds) to ensure it persists longer than the rate limit window
+		wp_cache_set( $cache_key, $timestamp, 'facebook_for_woocommerce', 300 );
 	}
 
 
