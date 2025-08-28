@@ -385,6 +385,11 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 		$this->wa_utility_event_processor = $this->load_whatsapp_utility_event_processor();
 		// Track programmatic changes that don't update post_modified
 		add_action( 'updated_post_meta', array( $this, 'update_last_change_time' ), 10, 4 );
+
+		// TEMPORARY: Add cache testing - remove after testing
+		if ( is_admin() && current_user_can( 'manage_woocommerce' ) ) {
+			add_action( 'wp_ajax_test_fb_cache', array( $this, 'ajax_test_cache' ) );
+		}
 	}
 
 	/**
@@ -2173,6 +2178,10 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 				$current_time = time();
 				update_post_meta( $product_id, '_last_change_time', $current_time );
 
+				// Increment counter to track how many times this function is called for this product
+				$current_count = (int) get_post_meta( $product_id, '_fb_last_change_time_call_count', true );
+				update_post_meta( $product_id, '_fb_last_change_time_call_count', $current_count + 1 );
+
 				// Update cache with the new timestamp
 				$this->set_last_change_time_cache( $product_id, $current_time );
 
@@ -2237,7 +2246,7 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 	private function set_last_change_time_cache( $product_id, $timestamp ) {
 		$cache_key = "last_change_time_{$product_id}";
 		// Cache for 5 minutes (300 seconds) to ensure it persists longer than the rate limit window
-		wp_cache_set( $cache_key, $timestamp, 'facebook_for_woocommerce', 300 );
+		wp_cache_set( $cache_key, $timestamp, 'facebook_for_woocommerce', 120 );
 	}
 
 
