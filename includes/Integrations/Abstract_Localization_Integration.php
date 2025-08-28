@@ -33,6 +33,14 @@ abstract class Abstract_Localization_Integration {
 	 */
 	abstract public function is_plugin_active(): bool;
 
+	/**
+	 * Check if the integration is available (alias for is_plugin_active)
+	 *
+	 * @return bool True if integration is available
+	 */
+	public function is_available(): bool {
+		return $this->is_plugin_active();
+	}
 
 	/**
 	 * Get all available languages

@@ -12,10 +12,13 @@ namespace WooCommerce\Facebook\Admin\Settings_Screens;
 
 use WooCommerce\Facebook\Admin\Abstract_Settings_Screen;
 use WooCommerce\Facebook\Integrations\IntegrationRegistry;
-use WooCommerce\Facebook\Feed\Localization\TranslationDataExtractor;
-use WooCommerce\Facebook\Feed\Localization\LanguageFeedData;
 
 defined( 'ABSPATH' ) || exit;
+
+// Manually include the localization classes
+require_once __DIR__ . '/../../Feed/Localization/LanguageFeedData.php';
+
+use WooCommerce\Facebook\Feed\Localization\LanguageFeedData;
 
 /**
  * Localization Integrations settings screen.
@@ -363,6 +366,13 @@ class Localization_Integrations extends Abstract_Settings_Screen {
 
 		if ( $action === 'download_sample' ) {
 			$this->download_sample_csv();
+		} elseif ( $action === 'download_language_csv' ) {
+			$language_code = sanitize_text_field( $_GET['language'] ?? '' );
+			if ( $language_code ) {
+				$this->download_language_csv( $language_code );
+			}
+		} elseif ( $action === 'download_all_csvs' ) {
+			$this->download_all_language_csvs();
 		}
 	}
 
@@ -372,10 +382,10 @@ class Localization_Integrations extends Abstract_Settings_Screen {
 	 * @since 3.6.0
 	 */
 	private function render_test_section() {
-		$extractor = new TranslationDataExtractor();
-		$has_plugins = $extractor->has_active_localization_plugin();
-		$languages = $extractor->get_available_languages();
-		$active_plugins = $extractor->get_active_localization_plugins();
+		$feed_data = new LanguageFeedData();
+		$has_plugins = $feed_data->has_active_localization_plugin();
+		$languages = $feed_data->get_available_languages();
+		$active_plugins = $feed_data->get_active_localization_plugins();
 
 		?>
 		<div class="wc-facebook-test-section" style="background: #f9f9f9; border: 1px solid #ddd; border-radius: 4px; padding: 20px; margin-bottom: 20px;">
@@ -393,7 +403,79 @@ class Localization_Integrations extends Abstract_Settings_Screen {
 			</div>
 
 			<!-- Product Test -->
-			<?php $this->render_product_test_section( $extractor ); ?>
+			<?php $this->render_product_test_section( $feed_data ); ?>
+
+			<!-- Language CSV Generation -->
+			<?php if ( $has_plugins && ! empty( $languages ) ) : ?>
+				<div style="margin-top: 20px;">
+					<h4><?php esc_html_e( 'Generate Language Override CSV Files', 'facebook-for-woocommerce' ); ?></h4>
+					<p><?php esc_html_e( 'Generate CSV files containing actual translated product data for Facebook language override feeds.', 'facebook-for-woocommerce' ); ?></p>
+
+					<?php
+					$feed_data = new LanguageFeedData();
+					$statistics = $feed_data->get_language_feed_statistics();
+					?>
+
+					<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 15px; margin: 15px 0;">
+						<?php foreach ( $languages as $language_code ) : ?>
+							<?php
+							$stats = $statistics[ $language_code ] ?? [];
+							$product_count = $stats['translated_products_count'] ?? 0;
+							$estimated_size = $stats['estimated_csv_size'] ?? 'Unknown';
+
+							$nonce = wp_create_nonce( 'localization_test_action' );
+							$download_url = add_query_arg( [
+								'page' => 'wc-facebook',
+								'tab' => 'localization_integrations',
+								'action' => 'download_language_csv',
+								'language' => $language_code,
+								'_wpnonce' => $nonce,
+							], admin_url( 'admin.php' ) );
+							?>
+							<div style="border: 1px solid #ddd; border-radius: 4px; padding: 15px; background: white;">
+								<h5 style="margin: 0 0 10px 0; color: #0073aa;"><?php echo esc_html( strtoupper( $language_code ) ); ?></h5>
+								<div style="font-size: 13px; color: #666; margin-bottom: 10px;">
+									<div><strong><?php esc_html_e( 'Products:', 'facebook-for-woocommerce' ); ?></strong> <?php echo esc_html( $product_count ); ?></div>
+									<div><strong><?php esc_html_e( 'Est. Size:', 'facebook-for-woocommerce' ); ?></strong> <?php echo esc_html( $estimated_size ); ?></div>
+								</div>
+								<?php if ( $product_count > 0 ) : ?>
+									<a href="<?php echo esc_url( $download_url ); ?>" class="button button-secondary" style="width: 100%;">
+										<?php esc_html_e( 'Download CSV', 'facebook-for-woocommerce' ); ?>
+									</a>
+								<?php else : ?>
+									<button class="button button-secondary" disabled style="width: 100%;">
+										<?php esc_html_e( 'No Translations', 'facebook-for-woocommerce' ); ?>
+									</button>
+								<?php endif; ?>
+							</div>
+						<?php endforeach; ?>
+					</div>
+
+					<?php
+					$total_languages_with_products = count( array_filter( $statistics, function( $stats ) {
+						return ( $stats['translated_products_count'] ?? 0 ) > 0;
+					}));
+					?>
+
+					<?php if ( $total_languages_with_products > 1 ) : ?>
+						<div style="margin-top: 15px; padding: 15px; background: #f0f8ff; border: 1px solid #0073aa; border-radius: 4px;">
+							<h5 style="margin: 0 0 10px 0;"><?php esc_html_e( 'Download All Languages', 'facebook-for-woocommerce' ); ?></h5>
+							<p style="margin: 0 0 10px 0; font-size: 13px;"><?php printf( esc_html__( 'Download CSV files for all %d languages with translated products as a ZIP archive.', 'facebook-for-woocommerce' ), $total_languages_with_products ); ?></p>
+							<?php
+							$download_all_url = add_query_arg( [
+								'page' => 'wc-facebook',
+								'tab' => 'localization_integrations',
+								'action' => 'download_all_csvs',
+								'_wpnonce' => $nonce,
+							], admin_url( 'admin.php' ) );
+							?>
+							<a href="<?php echo esc_url( $download_all_url ); ?>" class="button button-primary">
+								<?php esc_html_e( 'Download All as ZIP', 'facebook-for-woocommerce' ); ?>
+							</a>
+						</div>
+					<?php endif; ?>
+				</div>
+			<?php endif; ?>
 
 			<!-- Sample CSV Download -->
 			<div style="margin-top: 20px;">
@@ -411,6 +493,98 @@ class Localization_Integrations extends Abstract_Settings_Screen {
 				<a href="<?php echo esc_url( $download_url ); ?>" class="button button-primary"><?php esc_html_e( 'Download Sample CSV', 'facebook-for-woocommerce' ); ?></a>
 			</div>
 		</div>
+
+		<!-- Language Feed Sync -->
+		<?php if ( $has_plugins && ! empty( $languages ) ) : ?>
+			<div class="wc-facebook-language-sync-section" style="background: #fff; border: 1px solid #ddd; border-radius: 4px; padding: 20px; margin-bottom: 20px;">
+				<h3><?php esc_html_e( '🚀 Sync Language Override Feeds', 'facebook-for-woocommerce' ); ?></h3>
+				<p><?php esc_html_e( 'Generate and upload language override feeds to Facebook for all available languages. This will create separate feeds for each language with translated product data.', 'facebook-for-woocommerce' ); ?></p>
+
+				<div style="margin: 15px 0;">
+					<strong><?php esc_html_e( 'Available Languages:', 'facebook-for-woocommerce' ); ?></strong>
+					<span style="color: #666;"><?php echo esc_html( implode( ', ', $languages ) ); ?></span>
+				</div>
+
+				<button
+					id="wc-facebook-sync-language-feeds"
+					class="button button-primary"
+					data-nonce="<?php echo esc_attr( wp_create_nonce( 'wc_facebook_sync_language_feeds' ) ); ?>"
+					style="margin-right: 10px;"
+				>
+					<?php esc_html_e( 'Sync Language Feeds', 'facebook-for-woocommerce' ); ?>
+				</button>
+
+				<div id="language-sync-status" style="margin-top: 15px; display: none; padding: 10px; border-radius: 4px;"></div>
+
+				<div style="margin-top: 15px; padding: 10px; background: #f0f8ff; border-left: 4px solid #0073aa; font-size: 13px;">
+					<strong><?php esc_html_e( 'Note:', 'facebook-for-woocommerce' ); ?></strong>
+					<?php esc_html_e( 'This process will generate CSV files for each language and upload them to Facebook as language override feeds. The process may take a few minutes depending on the number of products and languages.', 'facebook-for-woocommerce' ); ?>
+				</div>
+			</div>
+
+			<script type="text/javascript">
+			jQuery(document).ready(function($) {
+				$('#wc-facebook-sync-language-feeds').on('click', function(e) {
+					e.preventDefault();
+
+					var $button = $(this);
+					var $status = $('#language-sync-status');
+					var nonce = $button.data('nonce');
+
+					// Update button state
+					$button.prop('disabled', true).text('<?php esc_html_e( 'Syncing...', 'facebook-for-woocommerce' ); ?>');
+					$status.show().html('<span style="color: #0073aa; font-weight: bold;">⏳ <?php esc_html_e( 'Generating and uploading language feeds...', 'facebook-for-woocommerce' ); ?></span>');
+					$status.css({
+						'background': '#f0f8ff',
+						'border': '1px solid #0073aa',
+						'color': '#0073aa'
+					});
+
+					$.post(ajaxurl, {
+						action: 'wc_facebook_sync_language_feeds',
+						nonce: nonce
+					}, function(response) {
+						if (response.success) {
+							$status.html('<span style="color: #46b450; font-weight: bold;">✅ ' + response.data + '</span>');
+							$status.css({
+								'background': '#d4edda',
+								'border': '1px solid #46b450',
+								'color': '#46b450'
+							});
+						} else {
+							var errorMessage = response.data || '<?php esc_html_e( 'Unknown error occurred', 'facebook-for-woocommerce' ); ?>';
+
+							// Check if it's a language not supported error
+							if (errorMessage.indexOf('Language Feed not supported for override value') !== -1) {
+								$status.html('<span style="color: #dc3232; font-weight: bold;">❌ <?php esc_html_e( 'Language Not Supported:', 'facebook-for-woocommerce' ); ?> ' + errorMessage + '</span><br><br>' +
+									'<div style="background: #fff3cd; border: 1px solid #ffeaa7; padding: 10px; border-radius: 4px; margin-top: 10px;">' +
+									'<strong><?php esc_html_e( 'Note:', 'facebook-for-woocommerce' ); ?></strong> <?php esc_html_e( 'This language is not supported by Facebook for language override feeds. Only specific languages with Facebook-approved locale codes can be used for language overrides.', 'facebook-for-woocommerce' ); ?>' +
+									'</div>');
+							} else {
+								$status.html('<span style="color: #dc3232; font-weight: bold;">❌ <?php esc_html_e( 'Error:', 'facebook-for-woocommerce' ); ?> ' + errorMessage + '</span>');
+							}
+
+							$status.css({
+								'background': '#f8d7da',
+								'border': '1px solid #dc3232',
+								'color': '#dc3232'
+							});
+						}
+					}).fail(function() {
+						$status.html('<span style="color: #dc3232; font-weight: bold;">❌ <?php esc_html_e( 'Network error occurred.', 'facebook-for-woocommerce' ); ?></span>');
+						$status.css({
+							'background': '#f8d7da',
+							'border': '1px solid #dc3232',
+							'color': '#dc3232'
+						});
+					}).always(function() {
+						$button.prop('disabled', false).text('<?php esc_html_e( 'Sync Language Feeds', 'facebook-for-woocommerce' ); ?>');
+					});
+				});
+			});
+			</script>
+		<?php endif; ?>
+
 		<?php
 	}
 
@@ -419,9 +593,9 @@ class Localization_Integrations extends Abstract_Settings_Screen {
 	 *
 	 * @since 3.6.0
 	 */
-	private function render_product_test_section( TranslationDataExtractor $extractor ) {
+	private function render_product_test_section( LanguageFeedData $feed_data ) {
 		// Get products from default language using the new method
-		$product_ids = $extractor->get_products_from_default_language( 5 );
+		$product_ids = $feed_data->get_products_from_default_language( 5 );
 
 		?>
 		<div style="margin-bottom: 20px;">
@@ -448,7 +622,7 @@ class Localization_Integrations extends Abstract_Settings_Screen {
 							$product = wc_get_product( $product_id );
 							if ( ! $product ) continue;
 
-							$details = $extractor->get_product_translation_details( $product_id );
+							$details = $feed_data->get_product_translation_details( $product_id );
 							$has_translations = ! empty( $details['translations'] );
 							$languages = $has_translations ? array_keys( $details['translations'] ) : [];
 							$default_language = $details['default_language'] ?? 'Unknown';
@@ -513,16 +687,170 @@ class Localization_Integrations extends Abstract_Settings_Screen {
 	 * @since 3.6.0
 	 */
 	private function download_sample_csv() {
+		// Debug: Log that we reached this method
+		error_log( 'download_sample_csv: Method called' );
+
+		try {
+			$feed_data = new LanguageFeedData();
+			error_log( 'download_sample_csv: LanguageFeedData created' );
+
+			$sample_data = $feed_data->get_sample_csv_data();
+			error_log( 'download_sample_csv: Sample data retrieved, count: ' . count( $sample_data ) );
+
+			// Create a sample CSV result structure with basic columns
+			$sample_csv_result = [
+				'data' => $sample_data,
+				'columns' => ['id', 'override', 'title', 'description', 'link'],
+				'translated_fields' => ['name', 'description']
+			];
+
+			$csv_content = $feed_data->convert_to_csv_string( $sample_csv_result );
+			error_log( 'download_sample_csv: CSV content generated, length: ' . strlen( $csv_content ) );
+
+			// Clear any output buffers
+			if ( ob_get_level() ) {
+				ob_end_clean();
+			}
+
+			// Set headers for download
+			header( 'Content-Type: text/csv; charset=utf-8' );
+			header( 'Content-Disposition: attachment; filename="sample_localization_feed.csv"' );
+			header( 'Content-Length: ' . strlen( $csv_content ) );
+
+			echo $csv_content;
+			error_log( 'download_sample_csv: CSV content sent' );
+			exit;
+		} catch ( Exception $e ) {
+			error_log( 'download_sample_csv: Exception - ' . $e->getMessage() );
+			wp_die( 'Error generating CSV: ' . $e->getMessage() );
+		} catch ( Error $e ) {
+			error_log( 'download_sample_csv: Fatal Error - ' . $e->getMessage() );
+			wp_die( 'Fatal error generating CSV: ' . $e->getMessage() );
+		}
+	}
+
+	/**
+	 * Download language-specific CSV file
+	 *
+	 * @since 3.6.0
+	 */
+	private function download_language_csv( string $language_code ) {
+		// Debug: Log that we reached this method
+		error_log( "download_language_csv: Method called for language: $language_code" );
+
+		try {
+			$feed_data = new LanguageFeedData();
+			error_log( 'download_language_csv: LanguageFeedData created' );
+
+			$result = $feed_data->generate_language_csv( $language_code, 1000 ); // Generate up to 1000 products
+			error_log( 'download_language_csv: CSV generation completed, success: ' . ($result['success'] ? 'true' : 'false') );
+
+			if ( ! $result['success'] ) {
+				error_log( 'download_language_csv: CSV generation failed - ' . ($result['error'] ?? 'Unknown error') );
+				wp_die(
+					esc_html( $result['error'] ?? 'Failed to generate CSV file.' ),
+					esc_html__( 'CSV Generation Error', 'facebook-for-woocommerce' ),
+					[ 'back_link' => true ]
+				);
+			}
+
+			error_log( 'download_language_csv: CSV data length: ' . strlen( $result['data'] ) . ', filename: ' . $result['filename'] );
+
+			// Clear any output buffers
+			if ( ob_get_level() ) {
+				ob_end_clean();
+			}
+
+			// Set headers for download
+			header( 'Content-Type: text/csv; charset=utf-8' );
+			header( 'Content-Disposition: attachment; filename="' . esc_attr( $result['filename'] ) . '"' );
+			header( 'Content-Length: ' . strlen( $result['data'] ) );
+
+			echo $result['data'];
+			error_log( 'download_language_csv: CSV content sent successfully' );
+			exit;
+		} catch ( Exception $e ) {
+			error_log( 'download_language_csv: Exception - ' . $e->getMessage() );
+			wp_die( 'Error generating language CSV: ' . $e->getMessage() );
+		} catch ( Error $e ) {
+			error_log( 'download_language_csv: Fatal Error - ' . $e->getMessage() );
+			wp_die( 'Fatal error generating language CSV: ' . $e->getMessage() );
+		}
+	}
+
+	/**
+	 * Download all language CSV files as a ZIP
+	 *
+	 * @since 3.6.0
+	 */
+	private function download_all_language_csvs() {
 		$feed_data = new LanguageFeedData();
-		$sample_data = $feed_data->get_sample_csv_data();
-		$csv_content = $feed_data->convert_to_csv_string( $sample_data );
+		$results = $feed_data->generate_all_language_csvs( 1000 ); // Generate up to 1000 products per language
+
+		if ( empty( $results ) ) {
+			wp_die(
+				esc_html__( 'No language CSV files could be generated.', 'facebook-for-woocommerce' ),
+				esc_html__( 'CSV Generation Error', 'facebook-for-woocommerce' ),
+				[ 'back_link' => true ]
+			);
+		}
+
+		// Check if ZIP extension is available
+		if ( ! class_exists( 'ZipArchive' ) ) {
+			// Fallback: download the first available language CSV
+			foreach ( $results as $language_code => $result ) {
+				if ( $result['success'] ) {
+					$this->download_language_csv( $language_code );
+					return;
+				}
+			}
+
+			wp_die(
+				esc_html__( 'ZIP extension not available and no valid CSV files found.', 'facebook-for-woocommerce' ),
+				esc_html__( 'CSV Generation Error', 'facebook-for-woocommerce' ),
+				[ 'back_link' => true ]
+			);
+		}
+
+		// Create ZIP file
+		$zip = new \ZipArchive();
+		$zip_filename = 'facebook_language_feeds_' . date( 'Y-m-d_H-i-s' ) . '.zip';
+		$temp_zip_path = sys_get_temp_dir() . '/' . $zip_filename;
+
+		if ( $zip->open( $temp_zip_path, \ZipArchive::CREATE ) !== TRUE ) {
+			wp_die(
+				esc_html__( 'Failed to create ZIP file.', 'facebook-for-woocommerce' ),
+				esc_html__( 'ZIP Creation Error', 'facebook-for-woocommerce' ),
+				[ 'back_link' => true ]
+			);
+		}
+
+		$files_added = 0;
+		foreach ( $results as $language_code => $result ) {
+			if ( $result['success'] ) {
+				$zip->addFromString( $result['filename'], $result['data'] );
+				$files_added++;
+			}
+		}
+
+		$zip->close();
+
+		if ( $files_added === 0 ) {
+			unlink( $temp_zip_path );
+			wp_die(
+				esc_html__( 'No valid CSV files to include in ZIP.', 'facebook-for-woocommerce' ),
+				esc_html__( 'CSV Generation Error', 'facebook-for-woocommerce' ),
+				[ 'back_link' => true ]
+			);
+		}
 
 		// Set headers for download
-		header( 'Content-Type: text/csv; charset=utf-8' );
-		header( 'Content-Disposition: attachment; filename="sample_localization_feed.csv"' );
-		header( 'Content-Length: ' . strlen( $csv_content ) );
+		header( 'Content-Type: application/zip' );
+		header( 'Content-Disposition: attachment; filename="' . esc_attr( $zip_filename ) . '"' );
+		header( 'Content-Length: ' . filesize( $temp_zip_path ) );
 
-		echo $csv_content;
+		readfile( $temp_zip_path );
+		unlink( $temp_zip_path ); // Clean up temp file
 		exit;
 	}
 }

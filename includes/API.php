@@ -359,6 +359,23 @@ class API extends Base {
 
 
 	/**
+	 * Uses the Catalog Localized Items Batch API to update localized items in catalog.
+	 *
+	 * @since 3.6.0
+	 *
+	 * @param string $facebook_product_catalog_id Facebook Product Catalog ID.
+	 * @param array  $requests array of localized batch requests.
+	 * @return API\Response|API\ProductCatalog\LocalizedItemsBatch\Create\Response
+	 * @throws ApiException In case of a general API error or rate limit error.
+	 */
+	public function send_localized_item_updates( string $facebook_product_catalog_id, array $requests ) {
+		$request = new API\ProductCatalog\LocalizedItemsBatch\Create\Request( $facebook_product_catalog_id, $requests );
+		$this->set_response_handler( API\ProductCatalog\LocalizedItemsBatch\Create\Response::class );
+		return $this->perform_request( $request );
+	}
+
+
+	/**
 	 * Creates Facebook Product Group.
 	 *
 	 * @param string $product_catalog_id Facebook Product Catalog ID.

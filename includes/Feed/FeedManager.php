@@ -22,6 +22,7 @@ class FeedManager {
 	const RATINGS_AND_REVIEWS = 'ratings_and_reviews';
 	const SHIPPING_PROFILES   = 'shipping_profiles';
 	const NAVIGATION_MENU     = 'navigation_menu';
+	const LANGUAGE_OVERRIDE   = 'language_override';
 
 	/**
 	 * The map of feed types to their instances.
@@ -62,6 +63,8 @@ class FeedManager {
 				return new ShippingProfilesFeed();
 			case self::NAVIGATION_MENU:
 				return new NavigationMenuFeed();
+			case self::LANGUAGE_OVERRIDE:
+				return new Localization\LanguageOverrideFeed();
 			default:
 				throw new \InvalidArgumentException( "Invalid feed type {$data_stream_name}" );
 		}
@@ -74,7 +77,7 @@ class FeedManager {
 	 * @since 3.5.0
 	 */
 	public static function get_active_feed_types(): array {
-		return array( self::PROMOTIONS, self::RATINGS_AND_REVIEWS, self::SHIPPING_PROFILES, self::NAVIGATION_MENU );
+		return array( self::PROMOTIONS, self::RATINGS_AND_REVIEWS, self::SHIPPING_PROFILES, self::NAVIGATION_MENU, self::LANGUAGE_OVERRIDE );
 	}
 
 	/**
@@ -103,6 +106,22 @@ class FeedManager {
 		foreach ( $this->feed_instances as $feed_type ) {
 			$feed_type->regenerate_feed();
 		}
+	}
+
+	/**
+	 * Upload language override feeds to Facebook
+	 *
+	 * @return void
+	 * @since 3.6.0
+	 */
+	public function upload_language_override_feeds(): void {
+		// Use the new modular language override feed class
+		$language_feed = facebook_for_woocommerce()->get_language_override_feed();
+
+		// Generate the feed files first
+		$language_feed->regenerate_feed();
+
+		// Upload will be triggered automatically via the feed generation completion hook
 	}
 
 	/**

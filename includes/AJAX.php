@@ -51,6 +51,9 @@ class AJAX {
 		// sync navigation menu via AJAX
 		add_action( 'wp_ajax_wc_facebook_sync_navigation_menu', array( $this, 'sync_navigation_menu' ) );
 
+		// sync language override feeds via AJAX
+		add_action( 'wp_ajax_wc_facebook_sync_language_feeds', array( $this, 'sync_language_feeds' ) );
+
 		// get the current sync status
 		add_action( 'wp_ajax_wc_facebook_get_sync_status', array( $this, 'get_sync_status' ) );
 
@@ -177,6 +180,48 @@ class AJAX {
 		try {
 			facebook_for_woocommerce()->feed_manager->get_feed_instance( 'navigation_menu' )->regenerate_feed();
 			wp_send_json_success();
+		} catch ( \Exception $exception ) {
+			wp_send_json_error( $exception->getMessage() );
+		}
+	}
+
+	/**
+	 * Syncs language override feeds via AJAX.
+	 *
+	 * @internal
+	 *
+	 * @since 3.6.0
+	 */
+	public function sync_language_feeds() {
+		check_admin_referer( 'wc_facebook_sync_language_feeds', 'nonce' );
+
+		try {
+			// Check if we should use direct sync (for local development)
+
+			$direct_sync = new \WooCommerce\Facebook\Feed\Localization\LanguageOverrideFeedDirectSync();
+			$results = $direct_sync->sync_language_override_feeds_directly();
+
+			if ( isset( $results['error'] ) ) {
+				wp_send_json_error( $results['error'] );
+			} else {
+				$success_count = 0;
+				$error_count = 0;
+				foreach ( $results as $language_code => $result ) {
+					if ( $result['success'] ?? false ) {
+						$success_count++;
+					} else {
+						$error_count++;
+					}
+				}
+
+				$message = sprintf(
+					__( 'Language feeds synchronized directly via API. Success: %d languages, Errors: %d languages.', 'facebook-for-woocommerce' ),
+					$success_count,
+					$error_count
+				);
+				wp_send_json_success( $message );
+			}
+
 		} catch ( \Exception $exception ) {
 			wp_send_json_error( $exception->getMessage() );
 		}
