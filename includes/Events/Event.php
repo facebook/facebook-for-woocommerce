@@ -96,6 +96,10 @@ class Event {
 			)
 		);
 
+		if ( isset( $_SERVER['HTTP_REFERER'] ) ) {
+			$this->data['referrer_url'] = wc_clean( wp_unslash( $_SERVER['HTTP_REFERER'] ) );
+		}
+
 		$this->prepare_user_data( $this->data['user_data'] );
 	}
 
