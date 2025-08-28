@@ -202,6 +202,13 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 	public const FB_PRIORITY_MID     = 9;
 
 	/**
+	 * Static flag to prevent infinite loops when updating last change time.
+	 *
+	 * @var bool
+	 */
+	private static $is_updating_last_change_time = false;
+
+	/**
 	 * Facebook exception test mode switch.
 	 *
 	 * @var bool
@@ -2142,15 +2149,33 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 	 * @since 3.5.7
 	 */
 	public function update_last_change_time( $meta_id, $product_id, $meta_key, $meta_value ) {
+		// Prevent infinite loops
+		if ( self::$is_updating_last_change_time ) {
+			return;
+		}
+
 		try {
+			// Sanitize inputs
+			$product_id = absint( $product_id );
+			$meta_key = sanitize_key( $meta_key );
+
 			// Only proceed if we should update the last change time
 			if ( $this->should_update_last_change_time( $product_id, $meta_key ) ) {
+				// Set flag to prevent infinite loops
+				self::$is_updating_last_change_time = true;
+
 				// Update the last change time with current timestamp
 				update_post_meta( $product_id, '_last_change_time', time() );
+
+				// Reset flag
+				self::$is_updating_last_change_time = false;
 			} else {
 				return; // Skip: no need to update last change time
 			}
 		} catch ( \Exception $e ) {
+			// Ensure flag is reset even on exception
+			self::$is_updating_last_change_time = false;
+
 			Logger::log(
 				'Error updating last change time for product',
 				[
