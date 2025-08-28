@@ -100,6 +100,9 @@ class WC_Facebookcommerce extends WooCommerce\Facebook\Framework\Plugin {
 	/** @var WooCommerce\Facebook\Handlers\Connection connection handler */
 	private $connection_handler;
 
+	/** @var WooCommerce\Facebook\Handlers\WhatsAppConnection connection handler */
+	private $whatsapp_connection_handler;
+
 	/** @var WooCommerce\Facebook\Handlers\PluginRender plugin update handler */
 	private $plugin_render_handler;
 
@@ -233,7 +236,9 @@ class WC_Facebookcommerce extends WooCommerce\Facebook\Framework\Plugin {
 			new WooCommerce\Facebook\API\Plugin\InitializeRestAPI();
 			WooCommerce\Facebook\OfferManagement\OfferManagementEndpointBase::register_endpoints();
 
-			$this->connection_handler = new WooCommerce\Facebook\Handlers\Connection( $this );
+			$this->connection_handler          = new WooCommerce\Facebook\Handlers\Connection( $this );
+			$this->whatsapp_connection_handler = new WooCommerce\Facebook\Handlers\WhatsAppConnection( $this );
+			new WooCommerce\Facebook\Handlers\WhatsAppExtension();
 			new WooCommerce\Facebook\Handlers\MetaExtension();
 			$this->webhook_handler          = new WooCommerce\Facebook\Handlers\WebHook();
 			$this->whatsapp_webhook_handler = new WooCommerce\Facebook\Handlers\Whatsapp_Webhook();
@@ -528,6 +533,17 @@ class WC_Facebookcommerce extends WooCommerce\Facebook\Framework\Plugin {
 	}
 
 	/**
+	 * Gets the whatsapp connection handler.
+	 *
+	 * @since 2.0.0
+	 *
+	 * @return WooCommerce\Facebook\Handlers\WhatsAppConnection
+	 */
+	public function get_whatsapp_connection_handler() {
+		return $this->whatsapp_connection_handler;
+	}
+
+	/**
 	 * Gets the Plugin update handler.
 	 *
 	 * @since 2.0.0
@@ -709,7 +725,8 @@ class WC_Facebookcommerce extends WooCommerce\Facebook\Framework\Plugin {
 	 * @return bool
 	 */
 	public function is_plugin_settings() {
-		return is_admin() && WooCommerce\Facebook\Admin\Settings::PAGE_ID === Helper::get_requested_value( 'page' );
+		$page_value = Helper::get_requested_value( 'page' );
+		return is_admin() && in_array( $page_value, [ WooCommerce\Facebook\Admin\Settings::PAGE_ID, WooCommerce\Facebook\Admin\WhatsApp_Integration_Settings::PAGE_ID ] );
 	}
 
 	/** Utility methods *******************************************************************************************/

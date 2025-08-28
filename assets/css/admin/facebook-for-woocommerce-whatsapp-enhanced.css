@@ -1,0 +1,19 @@
+ .facebook-whatsapp-iframe-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 80vh;
+    min-width: 100vw;
+    background: #f9f9f9;
+}
+#facebook-whatsapp-iframe-enhanced {
+    width: 90vw;
+    height: 80vh;
+    max-width: 1200px;
+    max-height: 800px;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    background: #fff;
+    box-shadow: 0 4px 32px rgba(0,0,0,0.08);
+    display: block;
+}

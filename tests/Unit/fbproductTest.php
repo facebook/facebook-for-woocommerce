@@ -127,8 +127,20 @@ class fbproductTest extends \WooCommerce\Facebook\Tests\AbstractWPUnitTestWithSa
 				11.5,
 				null,
 				null,
+				15,
 				1150,
 				'11.5 USD',
+				'',
+				'',
+				'',
+			],
+			[
+				11.5,
+				null,
+				null,
+				10.5, // regular price lower than sale price
+				0,
+				'',
 				'',
 				'',
 				'',
@@ -137,6 +149,7 @@ class fbproductTest extends \WooCommerce\Facebook\Tests\AbstractWPUnitTestWithSa
 				0,
 				null,
 				null,
+				15,
 				0,
 				'0 USD',
 				'',
@@ -147,6 +160,7 @@ class fbproductTest extends \WooCommerce\Facebook\Tests\AbstractWPUnitTestWithSa
 				null,
 				null,
 				null,
+				15,
 				0,
 				'',
 				'',
@@ -157,6 +171,7 @@ class fbproductTest extends \WooCommerce\Facebook\Tests\AbstractWPUnitTestWithSa
 				null,
 				'2024-08-08',
 				'2024-08-18',
+				15,
 				0,
 				'',
 				'',
@@ -167,6 +182,7 @@ class fbproductTest extends \WooCommerce\Facebook\Tests\AbstractWPUnitTestWithSa
 				11,
 				'2024-08-08',
 				null,
+				15,
 				1100,
 				'11 USD',
 				'2024-08-08T00:00:00+00:00/2038-01-17T23:59+00:00',
@@ -177,6 +193,7 @@ class fbproductTest extends \WooCommerce\Facebook\Tests\AbstractWPUnitTestWithSa
 				11,
 				null,
 				'2024-08-08',
+15,
 				1100,
 				'11 USD',
 				'1970-01-29T00:00+00:00/2024-08-08T00:00:00+00:00',
@@ -187,11 +204,23 @@ class fbproductTest extends \WooCommerce\Facebook\Tests\AbstractWPUnitTestWithSa
 				11,
 				'2024-08-08',
 				'2024-08-09',
+				15,
 				1100,
 				'11 USD',
 				'2024-08-08T00:00:00+00:00/2024-08-09T00:00:00+00:00',
 				'2024-08-08T00:00:00+00:00',
 				'2024-08-09T00:00:00+00:00',
+			],
+			[
+				11,
+				'2024-08-08',
+				'2024-08-09',
+				10.5, // regular price lower than sale price
+				0,
+				'',
+				'',
+				'',
+				'',
 			],
 		];
 	}
@@ -203,9 +232,10 @@ class fbproductTest extends \WooCommerce\Facebook\Tests\AbstractWPUnitTestWithSa
 	 * @return void
 	 */
 	public function test_sale_price_and_effective_date(
-		$salePrice,
+		$sale_price,
 		$sale_price_start_date,
 		$sale_price_end_date,
+		$regular_price, 
 		$expected_sale_price,
 		$expected_sale_price_for_batch,
 		$expected_sale_price_effective_date,
@@ -214,7 +244,8 @@ class fbproductTest extends \WooCommerce\Facebook\Tests\AbstractWPUnitTestWithSa
 	) {
 		$product          = WC_Helper_Product::create_simple_product();
 		$facebook_product = new \WC_Facebook_Product( $product );
-		$facebook_product->set_sale_price( $salePrice );
+		$facebook_product->set_sale_price( $sale_price );
+		$facebook_product->set_price($regular_price);
 		$facebook_product->set_date_on_sale_from( $sale_price_start_date );
 		$facebook_product->set_date_on_sale_to( $sale_price_end_date );
 
