@@ -68,6 +68,18 @@ class WhatsAppConnection {
 		return $access_token;
 	}
 
+	/**
+	 * Gets the WA installation ID.
+	 *
+	 * @since 2.0.0
+	 *
+	 * @return string
+	 */
+	public function get_wa_installation_id() {
+		$wa_installation_id = get_option( self::OPTION_WA_INSTALLATION_ID, '' );
+		return $wa_installation_id;
+	}
+
 
 	/**
 	 * Determines whether the site is integrated whatsapp utility.
