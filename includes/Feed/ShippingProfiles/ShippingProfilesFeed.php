@@ -133,12 +133,18 @@ class ShippingProfilesFeed extends AbstractFeed {
 							$shipping_method_data[] = self::get_flat_rate_shipping_method_data( $zone, $shipping_method );
 						}
 					} catch ( \Exception $e ) {
-						\WC_Facebookcommerce_Utils::log_exception_immediately_to_meta(
-							$e,
+						Logger::log(
+							'Error while fetching shipping profiles data.',
 							array(
 								'event'      => FeedUploadUtils::SHIPPING_PROFILES_SYNC_LOGGING_FLOW_NAME,
 								'event_type' => 'get_shipping_method_data',
-							)
+							),
+							array(
+								'should_send_log_to_meta'        => true,
+								'should_save_log_in_woocommerce' => false,
+								'woocommerce_log_level'          => \WC_Log_Levels::DEBUG,
+							),
+							$e,
 						);
 					}
 				}
