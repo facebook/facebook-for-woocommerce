@@ -383,6 +383,10 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 
 		// Init Whatsapp Utility Event Processor
 		$this->wa_utility_event_processor = $this->load_whatsapp_utility_event_processor();
+
+		// Track programmatic changes that don't update post_modified
+		add_action( 'updated_post_meta', array( $this, 'update_last_change_time' ), 10, 4 );
+
 	}
 
 	/**
