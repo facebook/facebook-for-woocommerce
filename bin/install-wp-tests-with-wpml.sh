@@ -250,12 +250,11 @@ install_wpml() {
 
     # Check if sitepress-multilingual-cms directory exists in extracted files
     if [ -d "${TMPDIR}/sitepress-multilingual-cms" ]; then
-      # Copy all files including hidden ones
+      # Copy all files including hidden ones (but exclude . and ..)
       cp -R "${TMPDIR}/sitepress-multilingual-cms/"* "$WPML_DIR/"
-      # Also copy any hidden files if they exist
-      if ls "${TMPDIR}/sitepress-multilingual-cms/".* >/dev/null 2>&1; then
-        cp -R "${TMPDIR}/sitepress-multilingual-cms/".* "$WPML_DIR/" 2>/dev/null || true
-      fi
+      # Copy hidden files but exclude . and .. directories
+      find "${TMPDIR}/sitepress-multilingual-cms/" -name ".*" -not -name "." -not -name ".." -exec cp -R {} "$WPML_DIR/" \; 2>/dev/null || true
+
     else
       echo "ERROR: Expected sitepress-multilingual-cms directory not found in WPML zip file."
       echo "Please ensure you have the correct WPML plugin zip file."

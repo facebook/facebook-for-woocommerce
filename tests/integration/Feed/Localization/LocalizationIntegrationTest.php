@@ -21,7 +21,7 @@ class LocalizationIntegrationTest extends AbstractWPUnitTestWithOptionIsolationA
 	public function test_localization_feed_in_active_types() {
 		$active_types = FeedManager::get_active_feed_types();
 
-		$this->assertContains( FeedManager::LOCALIZATION, $active_types );
+		$this->assertContains( FeedManager::LANGUAGE_OVERRIDE, $active_types );
 	}
 
 	/**
@@ -30,10 +30,10 @@ class LocalizationIntegrationTest extends AbstractWPUnitTestWithOptionIsolationA
 	public function test_feed_manager_creates_localization_feed() {
 		$feed_manager = new FeedManager();
 
-		$localization_feed = $feed_manager->get_feed_instance( FeedManager::LOCALIZATION );
+		$localization_feed = $feed_manager->get_feed_instance( FeedManager::LANGUAGE_OVERRIDE );
 
 		$this->assertInstanceOf(
-			\WooCommerce\Facebook\Feed\Localization\LocalizationFeed::class,
+			\WooCommerce\Facebook\Feed\Localization\LanguageOverrideFeed::class,
 			$localization_feed
 		);
 	}
@@ -142,7 +142,7 @@ class LocalizationIntegrationTest extends AbstractWPUnitTestWithOptionIsolationA
 	 */
 	public function test_localization_feed_skips_without_plugins() {
 		$feed_manager = new FeedManager();
-		$localization_feed = $feed_manager->get_feed_instance( FeedManager::LOCALIZATION );
+		$localization_feed = $feed_manager->get_feed_instance( FeedManager::LANGUAGE_OVERRIDE );
 
 		// Should skip feed when no localization plugins are active
 		$should_skip = $localization_feed->should_skip_feed();

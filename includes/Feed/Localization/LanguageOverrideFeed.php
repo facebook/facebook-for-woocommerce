@@ -78,12 +78,13 @@ class LanguageOverrideFeed extends AbstractFeed {
 			return;
 		}
 
-		// Create a default feed writer for the base language (we'll create specific ones per language as needed)
+		// Get the default language from the active localization plugin
 		$default_language = $this->language_feed_data->get_default_language();
 
 		// Ensure we have a valid language code
 		if ( empty( $default_language ) ) {
-			$default_language = 'en_US'; // Fallback if no default language is found
+			// Plugin is active but misconfigured - use fallback for initialization
+			$default_language = 'en_US';
 		}
 
 		$header_row = $this->language_feed_data->get_csv_header_for_columns(['id', 'override']);
@@ -130,19 +131,79 @@ class LanguageOverrideFeed extends AbstractFeed {
 	 */
 	public function schedule_feed_generation(): void {
 		if ( $this->should_skip_feed() ) {
+			// Unschedule any existing actions if we should skip
+			$this->unschedule_feed_generation();
 			return;
 		}
 
 		$schedule_action_hook_name = self::GENERATE_FEED_ACTION . static::get_data_stream_name();
+
+		// Prevent double registration by checking for existing scheduled actions
 		if ( ! as_next_scheduled_action( $schedule_action_hook_name ) ) {
-			as_schedule_recurring_action(
-				time(),
-				static::get_feed_gen_interval(),
-				$schedule_action_hook_name,
-				array(),
-				facebook_for_woocommerce()->get_id_dasherized()
-			);
+			// Use a transient to prevent race conditions during scheduling
+			$scheduling_lock_key = 'wc_facebook_language_feed_scheduling_' . static::get_data_stream_name();
+
+			if ( get_transient( $scheduling_lock_key ) ) {
+				Logger::log(
+					'Language override feed scheduling skipped: Already in progress.',
+					[],
+					array(
+						'should_send_log_to_meta'        => false,
+						'should_save_log_in_woocommerce' => true,
+						'woocommerce_log_level'          => \WC_Log_Levels::DEBUG,
+					)
+				);
+				return;
+			}
+
+			// Set lock for 5 minutes
+			set_transient( $scheduling_lock_key, true, 5 * MINUTE_IN_SECONDS );
+
+			try {
+				as_schedule_recurring_action(
+					time(),
+					static::get_feed_gen_interval(),
+					$schedule_action_hook_name,
+					array(),
+					facebook_for_woocommerce()->get_id_dasherized()
+				);
+
+				Logger::log(
+					'Language override feed generation scheduled successfully.',
+					[],
+					array(
+						'should_send_log_to_meta'        => false,
+						'should_save_log_in_woocommerce' => true,
+						'woocommerce_log_level'          => \WC_Log_Levels::DEBUG,
+					)
+				);
+			} finally {
+				// Always clear the lock
+				delete_transient( $scheduling_lock_key );
+			}
 		}
+	}
+
+	/**
+	 * Unschedules the recurring feed generation.
+	 *
+	 * @since 3.6.0
+	 */
+	public function unschedule_feed_generation(): void {
+		$schedule_action_hook_name = self::GENERATE_FEED_ACTION . static::get_data_stream_name();
+
+		// Unschedule all actions for this feed type
+		as_unschedule_all_actions( $schedule_action_hook_name );
+
+		Logger::log(
+			'Language override feed generation unscheduled.',
+			[],
+			array(
+				'should_send_log_to_meta'        => false,
+				'should_save_log_in_woocommerce' => true,
+				'woocommerce_log_level'          => \WC_Log_Levels::DEBUG,
+			)
+		);
 	}
 
 	/**

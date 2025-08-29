@@ -171,7 +171,8 @@ class Localization_Integrations extends Abstract_Settings_Screen {
 
 					<h4><?php esc_html_e( 'Status Meanings:', 'facebook-for-woocommerce' ); ?></h4>
 					<ul style="margin-left: 20px;">
-						<li><strong><?php esc_html_e( 'Active:', 'facebook-for-woocommerce' ); ?></strong> <?php esc_html_e( 'Plugin is installed, activated, and ready to use.', 'facebook-for-woocommerce' ); ?></li>
+						<li><strong><?php esc_html_e( 'Active:', 'facebook-for-woocommerce' ); ?></strong> <?php esc_html_e( 'Plugin is installed, activated, and properly configured with a default language.', 'facebook-for-woocommerce' ); ?></li>
+						<li><strong><?php esc_html_e( 'Misconfigured:', 'facebook-for-woocommerce' ); ?></strong> <?php esc_html_e( 'Plugin is activated but missing required configuration (no default language set).', 'facebook-for-woocommerce' ); ?></li>
 						<li><strong><?php esc_html_e( 'Installed:', 'facebook-for-woocommerce' ); ?></strong> <?php esc_html_e( 'Plugin is installed but not activated.', 'facebook-for-woocommerce' ); ?></li>
 						<li><strong><?php esc_html_e( 'Not Available:', 'facebook-for-woocommerce' ); ?></strong> <?php esc_html_e( 'Plugin is not installed.', 'facebook-for-woocommerce' ); ?></li>
 					</ul>
@@ -217,6 +218,12 @@ class Localization_Integrations extends Abstract_Settings_Screen {
 				background-color: #d4edda;
 				color: #155724;
 				border: 1px solid #c3e6cb;
+			}
+
+			.wc-facebook-localization-integrations .status-misconfigured {
+				background-color: #ffeaa7;
+				color: #856404;
+				border: 1px solid #ffd32a;
 			}
 
 			.wc-facebook-localization-integrations .status-installed {
@@ -293,8 +300,11 @@ class Localization_Integrations extends Abstract_Settings_Screen {
 	 * @return string
 	 */
 	private function get_integration_status( $integration ) {
-		if ( $integration->is_plugin_active() ) {
+		if ( $integration->is_available() ) {
 			return 'active';
+		} elseif ( $integration->is_plugin_active() ) {
+			// Plugin is active but not properly configured (no default language)
+			return 'misconfigured';
 		} elseif ( $integration->is_plugin_installed() ) {
 			return 'installed';
 		} else {
@@ -313,6 +323,7 @@ class Localization_Integrations extends Abstract_Settings_Screen {
 	private function render_status_badge( $status ) {
 		$labels = array(
 			'active'        => __( 'Active', 'facebook-for-woocommerce' ),
+			'misconfigured' => __( 'Misconfigured', 'facebook-for-woocommerce' ),
 			'installed'     => __( 'Installed', 'facebook-for-woocommerce' ),
 			'not-available' => __( 'Not Available', 'facebook-for-woocommerce' ),
 		);

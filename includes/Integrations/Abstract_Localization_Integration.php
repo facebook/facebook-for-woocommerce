@@ -34,12 +34,26 @@ abstract class Abstract_Localization_Integration {
 	abstract public function is_plugin_active(): bool;
 
 	/**
-	 * Check if the integration is available (alias for is_plugin_active)
+	 * Check if the integration is available and properly configured
 	 *
-	 * @return bool True if integration is available
+	 * An integration is considered available if:
+	 * 1. The plugin is active
+	 * 2. It has a valid default language configured
+	 *
+	 * @return bool True if integration is available and properly configured
 	 */
 	public function is_available(): bool {
-		return $this->is_plugin_active();
+		if ( ! $this->is_plugin_active() ) {
+			return false;
+		}
+
+		// Check if the plugin has a valid default language configured
+		$default_language = $this->get_default_language();
+		if ( empty( $default_language ) ) {
+			return false;
+		}
+
+		return true;
 	}
 
 	/**

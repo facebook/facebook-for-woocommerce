@@ -37,15 +37,15 @@ class LanguageFeedData {
 	// ====================================
 
 	/**
-	 * Check if any localization plugin is active
+	 * Check if any localization plugin is active and properly configured
 	 *
-	 * @return bool True if at least one localization plugin is active
+	 * @return bool True if at least one localization plugin is available
 	 */
 	public function has_active_localization_plugin(): bool {
 		$integrations = IntegrationRegistry::get_all_localization_integrations();
 
 		foreach ( $integrations as $integration ) {
-			if ( $integration->is_plugin_active() ) {
+			if ( $integration->is_available() ) {
 				return true;
 			}
 		}

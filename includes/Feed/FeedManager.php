@@ -115,13 +115,34 @@ class FeedManager {
 	 * @since 3.6.0
 	 */
 	public function upload_language_override_feeds(): void {
-		// Use the new modular language override feed class
-		$language_feed = facebook_for_woocommerce()->get_language_override_feed();
+		// Prevent double registration by checking if upload is already in progress
+		$upload_lock_key = 'wc_facebook_language_feed_upload_in_progress';
 
-		// Generate the feed files first
-		$language_feed->regenerate_feed();
+		if ( get_transient( $upload_lock_key ) ) {
+			error_log( 'Language override feed upload skipped: Already in progress.' );
+			return;
+		}
 
-		// Upload will be triggered automatically via the feed generation completion hook
+		// Set lock for 15 minutes (upload can take time)
+		set_transient( $upload_lock_key, true, 15 * MINUTE_IN_SECONDS );
+
+		try {
+			// Use the new modular language override feed class
+			$language_feed = facebook_for_woocommerce()->get_language_override_feed();
+
+			if ( ! $language_feed ) {
+				error_log( 'Language override feed upload skipped: Feed instance not available.' );
+				return;
+			}
+
+			// Generate the feed files first
+			$language_feed->regenerate_feed();
+
+			// Upload will be triggered automatically via the feed generation completion hook
+		} finally {
+			// Always clear the lock when done
+			delete_transient( $upload_lock_key );
+		}
 	}
 
 	/**

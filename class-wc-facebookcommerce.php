@@ -158,7 +158,9 @@ class WC_Facebookcommerce extends WooCommerce\Facebook\Framework\Plugin {
 		);
 		$this->init();
 		$this->init_admin();
-		$this->init_integration_availability_logging();
+
+		// Defer integration availability logging to avoid circular dependency during construction
+		add_action( 'init', array( $this, 'init_integration_availability_logging' ), 20 );
 	}
 
 	/**
@@ -211,7 +213,8 @@ class WC_Facebookcommerce extends WooCommerce\Facebook\Framework\Plugin {
 			$this->feed_manager                     = new WooCommerce\Facebook\Feed\FeedManager();
 			$this->checkout                         = new WooCommerce\Facebook\Checkout();
 			$this->product_feed                     = new WooCommerce\Facebook\Products\Feed();
-			$this->language_override_feed           = new WooCommerce\Facebook\Feed\Localization\LanguageOverrideFeed();
+			// Initialize language override feed - will handle missing plugins gracefully
+			$this->language_override_feed           = $this->init_language_override_feed();
 			$this->products_stock_handler           = new WooCommerce\Facebook\Products\Stock();
 			$this->products_sync_handler            = new WooCommerce\Facebook\Products\Sync();
 			$this->sync_background_handler          = new WooCommerce\Facebook\Products\Sync\Background();
@@ -299,7 +302,7 @@ class WC_Facebookcommerce extends WooCommerce\Facebook\Framework\Plugin {
 	 *
 	 * @since 3.5.5
 	 */
-	private function init_integration_availability_logging() {
+	public function init_integration_availability_logging() {
 		// Check if required WordPress functions are available
 		if ( ! function_exists( 'get_transient' ) || ! function_exists( 'set_transient' ) ) {
 			return;
@@ -404,30 +407,37 @@ class WC_Facebookcommerce extends WooCommerce\Facebook\Framework\Plugin {
 	}
 
 	/**
-	 * Logs an API request.
+	 * Handle localization plugin activation/deactivation events.
 	 *
-	 * @since 2.0.0
+	 * Re-initializes the language override feed when localization plugins
+	 * are activated or deactivated to ensure proper functionality.
 	 *
-	 * @param array $request request data
-	 * @param array $response response data
-	 * @param null  $log_id log ID
+	 * @since 3.6.0
+	 * @param string $plugin Plugin file path
 	 */
-	public function log_api_request( $request, $response, $log_id = null ) {
-		// bail if logging isn't enabled
-		if ( ! $this->get_integration() || ! $this->get_integration()->is_debug_mode_enabled() ) {
-			return;
-		}
+	public function handle_localization_plugin_change( $plugin ) {
+		// List of localization plugins we care about
+		$localization_plugins = [
+			'polylang/polylang.php',
+			'polylang-pro/polylang.php',
+			'sitepress-multilingual-cms/sitepress.php', // WPML
+		];
 
-		// Maybe remove headers from the debug log.
-		if ( ! $this->get_integration()->are_headers_requested_for_debug() ) {
-			unset( $request['headers'] );
-			unset( $response['headers'] );
-		}
+		// Check if the activated/deactivated plugin is a localization plugin
+		if ( in_array( $plugin, $localization_plugins, true ) ) {
+			// Clear integration registry cache first
+			if ( class_exists( 'WooCommerce\Facebook\Integrations\IntegrationRegistry' ) ) {
+				\WooCommerce\Facebook\Integrations\IntegrationRegistry::clear_cache();
+			}
 
-		$this->log( $this->get_api_log_message( $request ), $log_id );
+			// Re-initialize the language override feed
+			$this->language_override_feed = $this->init_language_override_feed();
 
-		if ( ! empty( $response ) ) {
-			$this->log( $this->get_api_log_message( $response ), $log_id );
+			$this->log(
+				"Localization plugin change detected: {$plugin}. Language override feed re-initialized.",
+				'language-override-feed',
+				'info'
+			);
 		}
 	}
 
@@ -727,26 +737,31 @@ class WC_Facebookcommerce extends WooCommerce\Facebook\Framework\Plugin {
 	 *
 	 * @since 2.3.4
 	 *
-	 * @return string
-	 */
-	public function get_asset_build_dir_url() {
-		return $this->get_plugin_url() . '/assets/build';
-	}
-
 	/**
-	 * Gets the connection handler.
+	 * Initialize the language override feed with graceful error handling.
 	 *
-	 * @return WooCommerce\Facebook\RolloutSwitches
+	 * @since 3.6.0
+	 * @return WooCommerce\Facebook\Feed\Localization\LanguageOverrideFeed|null
 	 */
-	public function get_rollout_switches() {
-		return $this->rollout_switches;
+	private function init_language_override_feed() {
+		try {
+			return new WooCommerce\Facebook\Feed\Localization\LanguageOverrideFeed();
+		} catch ( \Exception $e ) {
+			// Log the error but don't throw - this allows the plugin to continue functioning
+			$this->log(
+				'Language override feed could not be initialized: ' . $e->getMessage(),
+				'language-override-feed',
+				'warning'
+			);
+			return null;
+		}
 	}
 
 	/**
 	 * Gets the language override feed handler.
 	 *
 	 * @since 3.6.0
-	 * @return WooCommerce\Facebook\Feed\Localization\LanguageOverrideFeed
+	 * @return WooCommerce\Facebook\Feed\Localization\LanguageOverrideFeed|null
 	 */
 	public function get_language_override_feed() {
 		return $this->language_override_feed;
