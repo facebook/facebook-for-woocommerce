@@ -1787,7 +1787,9 @@ class WC_Facebook_Product {
 		$product_data['age_group'] = $this->get_fb_age_group();
 		$product_data['gender']    = $this->get_fb_gender();
 		$product_data['material']  = Helper::str_truncate( $this->get_fb_material(), 100 );
-
+		// Generate and add collection URI
+		$collection_uri = site_url( '/fbcollection/' );
+		$product_data['custom_label_4'] = $collection_uri;
 		if ( $this->get_type() === 'variation' ) {
 			$parent_id      = $this->woo_product->get_parent_id();
 			$parent_product = wc_get_product( $parent_id );
