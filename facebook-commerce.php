@@ -202,6 +202,13 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 	public const FB_PRIORITY_MID     = 9;
 
 	/**
+	 * Static flag to prevent infinite loops when updating last change time.
+	 *
+	 * @var bool
+	 */
+	private static $is_updating_last_change_time = false;
+
+	/**
 	 * Facebook exception test mode switch.
 	 *
 	 * @var bool
@@ -2132,6 +2139,70 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 		];
 
 		return in_array( $meta_key, $sync_relevant_meta_keys, true );
+	}
+
+	/**
+	 * Updates the _last_change_time meta field when wp_postmeta table is updated.
+	 *
+	 * @param int    $meta_id    ID of the metadata entry to update.
+	 * @param int    $product_id  Post ID.
+	 * @param string $meta_key   Meta key.
+	 * @param mixed  $meta_value Meta value.
+	 * @since 3.5.7
+	 */
+	public function update_last_change_time( $meta_id, $product_id, $meta_key, $meta_value ) {
+		// Prevent infinite loops
+		if ( self::$is_updating_last_change_time ) {
+			return;
+		}
+
+		try {
+			// Sanitize inputs
+			$product_id = absint( $product_id );
+			$meta_key = sanitize_key( $meta_key );
+
+			// Only proceed if we should update the last change time
+			if ( $this->should_update_last_change_time( $product_id, $meta_key ) ) {
+				// Check cache to prevent frequent updates
+				if ( $this->is_last_change_time_update_rate_limited( $product_id ) ) {
+					return; // Skip: update rate limited
+				}
+
+				// Set flag to prevent infinite loops
+				self::$is_updating_last_change_time = true;
+
+				// Update the last change time with current timestamp
+				$current_time = time();
+				update_post_meta( $product_id, '_last_change_time', $current_time );
+
+				// Update cache with the new timestamp
+				$this->set_last_change_time_cache( $product_id, $current_time );
+
+				// Reset flag
+				self::$is_updating_last_change_time = false;
+			} else {
+				return; // Skip: no need to update last change time
+			}
+		} catch ( \Exception $e ) {
+			// Ensure flag is reset even on exception
+			self::$is_updating_last_change_time = false;
+
+			Logger::log(
+				'Error updating last change time for product',
+				[
+					'event'      => 'update_last_change_time_error',
+					'product_id' => $product_id,
+					'meta_key'   => $meta_key,
+					'meta_id'    => $meta_id,
+				],
+				[
+					'should_send_log_to_meta'        => false,
+					'should_save_log_in_woocommerce' => true,
+					'woocommerce_log_level'          => \WC_Log_Levels::ERROR,
+				],
+				$e
+			);
+		}
 	}
 
 	/**
