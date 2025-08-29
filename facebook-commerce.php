@@ -2036,6 +2036,44 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 	}
 
 	/**
+	 * Determines whether the last change time should be updated for a given product and meta key.
+	 *
+	 * @param int    $product_id Post ID.
+	 * @param string $meta_key   Meta key.
+	 * @return bool True if the last change time should be updated, false otherwise.
+	 * @since 3.5.7
+	 */
+	public function should_update_last_change_time( $product_id, $meta_key ) {
+		try {
+			// Early exit for irrelevant meta keys (cheap string operations)
+			if ( ! $this->is_meta_key_sync_relevant( $meta_key ) ) {
+				return false;
+			}
+
+			// Then check if it's a WooCommerce product (database call)
+			$is_woocommerce_product = $this->is_woocommerce_product( $product_id );
+
+			return $is_woocommerce_product;
+		} catch ( \Exception $e ) {
+			Logger::log(
+				'Error in should_update_last_change_time',
+				[
+					'product_id' => $product_id,
+					'meta_key'   => $meta_key,
+					'error'      => $e->getMessage(),
+				],
+				[
+					'should_send_log_to_meta'        => false,
+					'should_save_log_in_woocommerce' => true,
+					'woocommerce_log_level'          => \WC_Log_Levels::ERROR,
+				],
+				$e
+			);
+			return false;
+		}
+	}
+
+	/**
 	 * Checks if a post is a WooCommerce product.
 	 *
 	 * @param int $product_id Post ID to check.
