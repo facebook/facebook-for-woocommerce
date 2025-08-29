@@ -2036,6 +2036,22 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 	}
 
 	/**
+	 * Checks if a post is a WooCommerce product.
+	 *
+	 * @param int $product_id Post ID to check.
+	 * @return bool True if the post is a WooCommerce product.
+	 * @since 3.5.7
+	 */
+	private function is_woocommerce_product( $product_id ) {
+		if ( ! is_numeric( $product_id ) || $product_id <= 0 ) {
+			return false;
+		}
+
+		$post_type = get_post_type( $product_id );
+		return in_array( $post_type, [ 'product', 'product_variation' ], true );
+	}
+
+	/**
 	 * Checks if the last change time update is rate limited for a product.
 	 *
 	 * @param int $product_id Product ID.
