@@ -2052,6 +2052,51 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 	}
 
 	/**
+	 * Checks if a meta key affects Facebook sync and should trigger last change time update.
+	 *
+	 * @param string $meta_key Meta key to check.
+	 * @return bool True if the meta key is relevant to Facebook sync.
+	 * @since 3.5.7
+	 */
+	private function is_meta_key_sync_relevant( $meta_key ) {
+		// Skip our own meta keys to prevent infinite loops
+		if ( in_array( $meta_key, [ '_last_change_time', '_fb_sync_last_time' ], true ) ) {
+			return false;
+		}
+
+		// Skip WordPress internal meta keys
+		if ( strpos( $meta_key, '_wp_' ) === 0 || strpos( $meta_key, '_edit_' ) === 0 ) {
+			return false;
+		}
+
+		// Meta keys that affect Facebook sync
+		$sync_relevant_meta_keys = [
+			'_regular_price',                     // -> price
+			'_sale_price',                        // -> sale_price
+			'_stock',                             // -> availability
+			'_stock_status',                      // -> availability
+			'_thumbnail_id',                      // -> image_link
+			'_price',                             // -> price (calculated field)
+			'fb_visibility',                      // -> visibility
+			'fb_product_description',             // -> description
+			'fb_rich_text_description',           // -> rich_text_description
+			'fb_brand',                           // -> brand
+			'fb_mpn',                             // -> mpn
+			'fb_size',                            // -> size
+			'fb_color',                           // -> color
+			'fb_material',                        // -> material
+			'fb_pattern',                         // -> pattern
+			'fb_age_group',                       // -> age_group
+			'fb_gender',                          // -> gender
+			'fb_product_condition',               // -> condition
+			'_wc_facebook_sync_enabled',          // -> sync settings
+			'_wc_facebook_product_image_source',  // -> sync settings
+		];
+
+		return in_array( $meta_key, $sync_relevant_meta_keys, true );
+	}
+
+	/**
 	 * Checks if the last change time update is rate limited for a product.
 	 *
 	 * @param int $product_id Product ID.
