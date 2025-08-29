@@ -202,6 +202,13 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 	public const FB_PRIORITY_MID     = 9;
 
 	/**
+	 * Static flag to prevent infinite loops when updating last change time.
+	 *
+	 * @var bool
+	 */
+	private static $is_updating_last_change_time = false;
+
+	/**
 	 * Facebook exception test mode switch.
 	 *
 	 * @var bool
@@ -376,6 +383,8 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 
 		// Init Whatsapp Utility Event Processor
 		$this->wa_utility_event_processor = $this->load_whatsapp_utility_event_processor();
+		// Track programmatic changes that don't update post_modified
+		add_action( 'updated_post_meta', array( $this, 'update_last_change_time' ), 10, 4 );
 	}
 
 	/**
@@ -2034,6 +2043,157 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 
 		return wp_json_encode( [ $items ] );
 	}
+
+	/**
+	 * Determines whether the last change time should be updated for a given product and meta key.
+	 *
+	 * @param int    $product_id Post ID.
+	 * @param string $meta_key   Meta key.
+	 * @return bool True if the last change time should be updated, false otherwise.
+	 * @since 3.5.7
+	 */
+	public function should_update_last_change_time( $product_id, $meta_key ) {
+		try {
+			// Early exit for irrelevant meta keys (cheap string operations)
+			if ( ! $this->is_meta_key_sync_relevant( $meta_key ) ) {
+				return false;
+			}
+
+			// Then check if it's a WooCommerce product (database call)
+			$is_woocommerce_product = $this->is_woocommerce_product( $product_id );
+
+			return $is_woocommerce_product;
+		} catch ( \Exception $e ) {
+			Logger::log(
+				'Error in should_update_last_change_time',
+				[
+					'product_id' => $product_id,
+					'meta_key'   => $meta_key,
+					'error'      => $e->getMessage(),
+				],
+				[
+					'should_send_log_to_meta'        => false,
+					'should_save_log_in_woocommerce' => true,
+					'woocommerce_log_level'          => \WC_Log_Levels::ERROR,
+				],
+				$e
+			);
+			return false;
+		}
+	}
+
+	/**
+	 * Checks if a post is a WooCommerce product.
+	 *
+	 * @param int $product_id Post ID to check.
+	 * @return bool True if the post is a WooCommerce product.
+	 * @since 3.5.7
+	 */
+	private function is_woocommerce_product( $product_id ) {
+		$post_type = get_post_type( $product_id );
+		return in_array( $post_type, [ 'product', 'product_variation' ], true );
+	}
+
+	/**
+	 * Checks if a meta key affects Facebook sync and should trigger last change time update.
+	 *
+	 * @param string $meta_key Meta key to check.
+	 * @return bool True if the meta key is relevant to Facebook sync.
+	 * @since 3.5.7
+	 */
+	private function is_meta_key_sync_relevant( $meta_key ) {
+		// Skip our own meta keys to prevent infinite loops
+		if ( in_array( $meta_key, [ '_last_change_time', '_fb_sync_last_time' ], true ) ) {
+			return false;
+		}
+
+		// Skip WordPress internal meta keys
+		if ( strpos( $meta_key, '_wp_' ) === 0 || strpos( $meta_key, '_edit_' ) === 0 ) {
+			return false;
+		}
+
+		// Meta keys that affect Facebook sync
+		$sync_relevant_meta_keys = [
+			'_regular_price',                     // -> price
+			'_sale_price',                        // -> sale_price
+			'_stock',                             // -> availability
+			'_stock_status',                      // -> availability
+			'_thumbnail_id',                      // -> image_link
+			'_price',                             // -> price (calculated field)
+			'fb_visibility',                      // -> visibility
+			'fb_product_description',             // -> description
+			'fb_rich_text_description',           // -> rich_text_description
+			'fb_brand',                           // -> brand
+			'fb_mpn',                             // -> mpn
+			'fb_size',                            // -> size
+			'fb_color',                           // -> color
+			'fb_material',                        // -> material
+			'fb_pattern',                         // -> pattern
+			'fb_age_group',                       // -> age_group
+			'fb_gender',                          // -> gender
+			'fb_product_condition',               // -> condition
+			'_wc_facebook_sync_enabled',          // -> sync settings
+			'_wc_facebook_product_image_source',  // -> sync settings
+		];
+
+		return in_array( $meta_key, $sync_relevant_meta_keys, true );
+	}
+
+	/**
+	 * Updates the _last_change_time meta field when wp_postmeta table is updated.
+	 *
+	 * @param int    $meta_id    ID of the metadata entry to update.
+	 * @param int    $product_id  Post ID.
+	 * @param string $meta_key   Meta key.
+	 * @param mixed  $meta_value Meta value.
+	 * @since 3.5.7
+	 */
+	public function update_last_change_time( $meta_id, $product_id, $meta_key, $meta_value ) {
+		// Prevent infinite loops
+		if ( self::$is_updating_last_change_time ) {
+			return;
+		}
+
+		try {
+			// Sanitize inputs
+			$product_id = absint( $product_id );
+			$meta_key = sanitize_key( $meta_key );
+
+			// Only proceed if we should update the last change time
+			if ( $this->should_update_last_change_time( $product_id, $meta_key ) ) {
+				// Set flag to prevent infinite loops
+				self::$is_updating_last_change_time = true;
+
+				// Update the last change time with current timestamp
+				update_post_meta( $product_id, '_last_change_time', time() );
+
+				// Reset flag
+				self::$is_updating_last_change_time = false;
+			} else {
+				return; // Skip: no need to update last change time
+			}
+		} catch ( \Exception $e ) {
+			// Ensure flag is reset even on exception
+			self::$is_updating_last_change_time = false;
+
+			Logger::log(
+				'Error updating last change time for product',
+				[
+					'event'      => 'update_last_change_time_error',
+					'product_id' => $product_id,
+					'meta_key'   => $meta_key,
+					'meta_id'    => $meta_id,
+				],
+				[
+					'should_send_log_to_meta'        => false,
+					'should_save_log_in_woocommerce' => true,
+					'woocommerce_log_level'          => \WC_Log_Levels::ERROR,
+				],
+				$e
+			);
+		}
+	}
+
 
 	/**
 	 * Loop through array of WPIDs to remove metadata.
