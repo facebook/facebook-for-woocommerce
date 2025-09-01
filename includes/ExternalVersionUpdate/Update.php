@@ -41,7 +41,7 @@ class Update {
 	 */
 	public function __construct() {
 		add_action( Heartbeat::DAILY, array( $this, 'send_new_version_to_facebook_server' ) );
-		add_action( Heartbeat::EVERY_5_MINUTES, array( $this, 'send_plugin_config_to_facebook_server' ) );
+		add_action( Heartbeat::HOURLY, array( $this, 'send_plugin_config_to_facebook_server' ) );
 	}
 
 	/**
