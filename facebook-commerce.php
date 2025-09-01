@@ -318,12 +318,12 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 
 				add_action(
 					'woocommerce_product_quick_edit_save',
-					[ $this, 'on_quick_and_bulk_edit_save' ]
+					[ $this, 'on_product_quick_edit_save' ]
 				);
 
 				add_action(
 					'woocommerce_product_bulk_edit_save',
-					[ $this, 'on_quick_and_bulk_edit_save' ]
+					[ $this, 'on_product_bulk_edit_save' ]
 				);
 
 				add_action(
@@ -2914,13 +2914,71 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 	}
 
 	/**
-	 * Sync product upon quick or bulk edit save action.
+	 * Sync product upon quick edit save action.
+	 *
+	 * @param \WC_Product $product product object
+	 *
+	 * @internal
+	 * @since 3.5.6
+	 */
+	public function on_product_quick_edit_save( $product ) {
+		$wp_id = null;
+
+		try {
+			// bail if not a product or product is not enabled for sync
+			if ( ! $product instanceof \WC_Product || ! Products::published_product_should_be_synced( $product ) ) {
+				return;
+			}
+
+			$wp_id = $product->get_id();
+
+			// check if visibility is published and sync the product
+			if ( get_post_status( $wp_id ) === 'publish' ) {
+				if ( $product->is_type( 'variable' ) ) {
+					// For variable products, sync only the variations that should be synced
+					$variation_ids = [];
+					foreach ( $product->get_children() as $variation_id ) {
+						$variation = wc_get_product( $variation_id );
+						if ( $variation instanceof WC_Product && $this->product_should_be_synced( $variation ) ) {
+							$variation_ids[] = $variation_id;
+						}
+					}
+					if ( ! empty( $variation_ids ) ) {
+						$this->facebook_for_woocommerce->get_products_sync_handler()->create_or_update_products( $variation_ids );
+					}
+				} else {
+					// For simple products and variations, sync the product directly
+					$this->facebook_for_woocommerce->get_products_sync_handler()->create_or_update_products( [ $wp_id ] );
+				}
+			}
+		} catch ( Exception $e ) {
+			Logger::log(
+				'Error in on_product_quick_edit_save',
+				[
+					'event'      => 'product_quick_edit_save_error',
+					'product_id' => $wp_id,
+					'extra_data' => [
+						'product_status' => $wp_id ? get_post_status( $wp_id ) : null,
+					],
+				],
+				[
+					'should_send_log_to_meta'        => false,
+					'should_save_log_in_woocommerce' => true,
+					'woocommerce_log_level'          => \WC_Log_Levels::ERROR,
+				],
+				$e
+			);
+		}
+	}
+
+	/**
+	 * Sync product upon bulk edit save action.
 	 *
 	 * @param \WC_Product $product product object
 	 *
 	 * @internal
 	 */
-	public function on_quick_and_bulk_edit_save( $product ) {
+	public function on_product_bulk_edit_save( $product ) {
 		// bail if not a product or product is not enabled for sync
 		static $bulk_product_edit_ids    = [];
 		static $bulk_products_to_exclude = [];
