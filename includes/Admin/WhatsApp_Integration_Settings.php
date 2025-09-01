@@ -1,0 +1,223 @@
+<?php
+/**
+ * Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
+ *
+ * This source code is licensed under the license found in the
+ * LICENSE file in the root directory of this source tree.
+ *
+ * @package FacebookCommerce
+ */
+
+namespace WooCommerce\Facebook\Admin;
+
+use WooCommerce\Facebook\RolloutSwitches;
+use WooCommerce\Facebook\Framework\Logger;
+use WooCommerce\Facebook\Framework\Helper;
+
+defined( 'ABSPATH' ) || exit;
+
+/**
+ * Admin WhatsApp Integration Settings handler.
+ *
+ * @since 3.5.0
+ */
+class WhatsApp_Integration_Settings {
+
+	/** @var string */
+	const PAGE_ID = 'wc-whatsapp';
+
+
+	/** @var \WC_Facebookcommerce */
+	private $plugin;
+
+
+	/**
+	 * WhatsApp Integration Settings constructor.
+	 *
+	 * @since 3.5.0
+	 *
+	 * @param \WC_Facebookcommerce $plugin is the plugin instance of WC_Facebookcommerce
+	 */
+	public function __construct( \WC_Facebookcommerce $plugin ) {
+		$this->plugin = $plugin;
+		add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_assets' ) );
+		add_action( 'admin_menu', array( $this, 'add_menu_item' ) );
+		add_action( 'admin_footer', array( $this, 'render_message_handler' ) );
+	}
+
+
+	/**
+	 * Renders the message handler script in the footer.
+	 *
+	 * @since 3.5.0
+	 */
+	public function render_message_handler() {
+		if ( ! $this->is_whatsapp_admin_page() ) {
+			return;
+		}
+
+		wp_add_inline_script( 'plugin-api-client', $this->generate_inline_enhanced_onboarding_script(), 'after' );
+	}
+
+	/**
+	 * Enqueues the assets.
+	 *
+	 * @since 3.5.0
+	 *
+	 * @internal
+	 */
+	public function enqueue_assets() {
+
+		if ( ! $this->is_whatsapp_admin_page() ) {
+			return;
+		}
+
+		wp_enqueue_style( 'wc-facebook-admin-whatsapp-enhanced', facebook_for_woocommerce()->get_plugin_url() . '/assets/css/admin/facebook-for-woocommerce-whatsapp-enhanced.css', array(), \WC_Facebookcommerce::VERSION );
+	}
+
+
+	/**
+	 * Adds the WhatsApp menu item.
+	 *
+	 * @since 3.5.0
+	 */
+	public function add_menu_item() {
+		$rollout_switches                           = $this->plugin->get_rollout_switches();
+		$is_connected                               = $this->plugin->get_connection_handler()->is_connected();
+		$is_whatsapp_utility_messaging_beta_enabled = $rollout_switches->is_switch_enabled( RolloutSwitches::WHATSAPP_UTILITY_MESSAGING_BETA_EXPERIENCE_DOGFOODING ); // TODO: update to prod GK during launch
+
+		if ( ! $is_connected || ! $is_whatsapp_utility_messaging_beta_enabled ) {
+			return;
+		}
+
+		$root_menu_item = $this->root_menu_item();
+
+		add_submenu_page(
+			$root_menu_item,
+			__( 'WhatsApp for WooCommerce', 'facebook-for-woocommerce' ),
+			__( 'WhatsApp', 'facebook-for-woocommerce' ),
+			'manage_woocommerce',
+			self::PAGE_ID,
+			[ $this, 'render' ],
+			5
+		);
+	}
+
+	/**
+	 * Checks if marketing feature is enabled in woocommerce.
+	 *
+	 * @since 3.5.0
+	 *
+	 * @return bool
+	 */
+	public function is_marketing_enabled() {
+		if ( class_exists( WooAdminFeatures::class ) ) {
+			return WooAdminFeatures::is_enabled( 'marketing' );
+		}
+
+		return is_callable( '\Automattic\WooCommerce\Admin\Loader::is_feature_enabled' )
+				&& \Automattic\WooCommerce\Admin\Loader::is_feature_enabled( 'marketing' );
+	}
+
+	/**
+	 * Gets the root menu item.
+	 *
+	 * @since 3.5.0
+	 *
+	 * @return string
+	 */
+	public function root_menu_item() {
+		if ( $this->is_marketing_enabled() ) {
+			return 'woocommerce-marketing';
+		}
+
+		return 'woocommerce';
+	}
+
+	/**
+	 * Checks if the page is WhatsApp admin page.
+	 *
+	 * @since 3.5.0
+	 *
+	 * @return string
+	 */
+	private function is_whatsapp_admin_page() {
+		return is_admin() && self::PAGE_ID === Helper::get_requested_value( 'page' );
+	}
+
+	/**
+	 * Renders the whatsapp utility settings page.
+	 *
+	 * @since 3.5.0
+	 */
+	public function render() {
+		$whatsapp_connection = $this->plugin->get_whatsapp_connection_handler();
+		$is_connected        = $whatsapp_connection->is_connected();
+
+		if ( $is_connected ) {
+			$iframe_url = \WooCommerce\Facebook\Handlers\WhatsAppExtension::generate_wa_iframe_management_url( $this->plugin, );
+		} else {
+			$iframe_url = \WooCommerce\Facebook\Handlers\WhatsAppExtension::generate_wa_iframe_splash_url(
+				$this->plugin,
+				$whatsapp_connection->get_whatsapp_external_id()
+			);
+		}
+
+		if ( empty( $iframe_url ) ) {
+			return;
+		}
+		?>
+		<div class="facebook-whatsapp-iframe-container">
+			<iframe
+				id="facebook-whatsapp-iframe-enhanced"
+				src="<?php echo esc_url( $iframe_url ); ?>"
+				></iframe>
+		</div>
+		<?php
+	}
+
+	/**
+	 * Generates the inline script for the whatsapp iframe onboarding flow.
+	 *
+	 * @since 3.5.0
+	 *
+	 * @return string
+	 */
+	public function generate_inline_enhanced_onboarding_script() {
+		// Generate a fresh nonce for this request
+		$nonce = wp_json_encode( wp_create_nonce( 'wp_rest' ) );
+
+		// Create the inline script with HEREDOC syntax for better JS readability
+		return <<<JAVASCRIPT
+			const whatsAppAPI = GeneratePluginAPIClient({$nonce});
+			window.addEventListener('message', function(event) {
+				const message = event.data;
+				const messageEvent = message.event;
+
+				if (messageEvent === 'CommerceExtension::WA_INSTALL' && message.success) {
+				console.log('success');
+
+					const requestBody = {
+						access_token: message.access_token,
+						business_id: message.business_id,
+						phone_number_id: message.phone_number_id,
+						waba_id: message.waba_id,
+						wa_installation_id: 'xxx',
+					};
+
+					whatsAppAPI.updateWhatsAppSettings(requestBody)
+						.then(function(response) {
+							if (response.success) {
+								window.location.reload();
+							} else {
+								console.error('Error updating Facebook settings:', response);
+							}
+						})
+						.catch(function(error) {
+							console.error('Error during settings update:', error);
+						});
+				}
+			});
+		JAVASCRIPT;
+	}
+}

@@ -13,6 +13,7 @@ namespace WooCommerce\Facebook;
 use WooCommerce\Facebook\Admin\Enhanced_Catalog_Attribute_Fields;
 use WooCommerce\Facebook\Framework\Helper;
 use WooCommerce\Facebook\ProductAttributeMapper;
+use WooCommerce\Facebook\RolloutSwitches;
 use Automattic\WooCommerce\Utilities\OrderUtil;
 
 defined( 'ABSPATH' ) || exit;
@@ -51,9 +52,6 @@ class Admin {
 	/** @var array screens ids where to include scripts */
 	protected $screen_ids = [];
 
-	/** @var Product_Sets the product set admin handler. */
-	protected $product_sets;
-
 	/**
 	 * Admin constructor.
 	 *
@@ -82,7 +80,7 @@ class Admin {
 		}
 
 		$this->product_categories = new Admin\Product_Categories();
-		$this->product_sets       = new Admin\Product_Sets();
+
 		// add a modal in admin product pages
 		add_action( 'admin_footer', array( $this, 'render_modal_template' ) );
 		add_action( 'admin_footer', array( $this, 'add_tab_switch_script' ) );
@@ -118,45 +116,7 @@ class Admin {
 		add_action( 'woocommerce_save_product_variation', array( $this, 'save_product_variation_edit_fields' ), 10, 2 );
 		add_action( 'wp_ajax_get_facebook_product_data', array( $this, 'ajax_get_facebook_product_data' ) );
 
-		// add custom taxonomy for Product Sets
-		add_filter( 'gettext', array( $this, 'change_custom_taxonomy_tip' ), 20, 2 );
 		add_action( 'wp_ajax_sync_facebook_attributes', array( $this, 'ajax_sync_facebook_attributes' ) );
-	}
-
-	/**
-	 * __get method for backward compatibility.
-	 *
-	 * @param string $key property name
-	 * @return mixed
-	 * @since 3.0.32
-	 */
-	public function __get( $key ) {
-		// Add warning for private properties.
-		if ( 'product_sets' === $key ) {
-			/* translators: %s property name. */
-			_doing_it_wrong( __FUNCTION__, sprintf( esc_html__( 'The %s property is protected and should not be accessed outside its class.', 'facebook-for-woocommerce' ), esc_html( $key ) ), '3.0.32' );
-			return $this->$key;
-		}
-
-		return null;
-	}
-
-	/**
-	 * Change custom taxonomy tip text
-	 *
-	 * @since 2.3.0
-	 *
-	 * @param string $translation Text translation.
-	 * @param string $text Original text.
-	 *
-	 * @return string
-	 */
-	public function change_custom_taxonomy_tip( $translation, $text ) {
-		global $current_screen;
-		if ( isset( $current_screen->id ) && 'edit-fb_product_set' === $current_screen->id && 'The name is how it appears on your site.' === $text ) {
-			$translation = esc_html__( 'The name is how it appears on Facebook Catalog.', 'facebook-for-woocommerce' );
-		}
-		return $translation;
 	}
 
 	/**
@@ -200,40 +160,6 @@ class Admin {
 							'second_level_empty_dropdown_placeholder' => __( 'Choose a main category first', 'facebook-for-woocommerce' ),
 							'general_dropdown_placeholder' => __( 'Choose a category', 'facebook-for-woocommerce' ),
 						),
-					)
-				);
-			}
-
-			if ( 'edit-fb_product_set' === $current_screen->id ) {
-				// enqueue WooCommerce Admin Styles because of Select2
-				wp_enqueue_style(
-					'woocommerce_admin_styles',
-					WC()->plugin_url() . '/assets/css/admin.css',
-					[],
-					\WC_Facebookcommerce::PLUGIN_VERSION
-				);
-				wp_enqueue_style(
-					'facebook-for-woocommerce-product-sets-admin',
-					facebook_for_woocommerce()->get_plugin_url() . '/assets/css/admin/facebook-for-woocommerce-product-sets-admin.css',
-					[],
-					\WC_Facebookcommerce::PLUGIN_VERSION
-				);
-
-				wp_enqueue_script(
-					'facebook-for-woocommerce-product-sets',
-					facebook_for_woocommerce()->get_asset_build_dir_url() . '/admin/product-sets-admin.js',
-					[ 'jquery', 'select2' ],
-					\WC_Facebookcommerce::PLUGIN_VERSION,
-					true
-				);
-
-				wp_localize_script(
-					'facebook-for-woocommerce-product-sets',
-					'facebook_for_woocommerce_product_sets',
-					array(
-
-						'excluded_category_ids' => facebook_for_woocommerce()->get_integration()->get_excluded_product_category_ids(),
-						'excluded_category_warning_message' => __( 'You have selected one or more categories currently excluded from the Facebook sync. Products belonging to the excluded categories will not be added to your Facebook Product Set.', 'facebook-for-woocommerce' ),
 					)
 				);
 			}
@@ -1020,6 +946,69 @@ class Admin {
 	}
 
 	/**
+	 * Renders the Facebook Product Images field for variations.
+	 *
+	 * @param array $attachment_ids Array of attachment IDs.
+	 * @param int   $index      The variation index.
+	 * @param int   $variation_id The variation ID.
+	 */
+	private function render_facebook_product_images_field( $attachment_ids, $index, $variation_id ) {
+		// Check if multiple images feature is enabled via rollout switch
+		$plugin = isset( $GLOBALS['wc_facebook_commerce'] ) ? $GLOBALS['wc_facebook_commerce'] : facebook_for_woocommerce();
+		if ( ! $plugin || ! $plugin->get_rollout_switches()->is_switch_enabled( RolloutSwitches::SWITCH_MULTIPLE_IMAGES_ENABLED ) ) {
+			return;
+		}
+
+		// attachment_ids is already an array of attachment IDs
+
+		// Output the form field for Facebook Product Images with a description tip
+		?>
+		<p class="form-field product-image-source-field show-if-product-image-source-<?php echo esc_attr( Products::PRODUCT_IMAGE_SOURCE_MULTIPLE ); ?>">
+			<!-- <label for="fb_product_images_<?php echo esc_attr( $index ); ?>"><?php esc_html_e( 'Facebook Product Images', 'facebook-for-woocommerce' ); ?></label> -->
+			<button type="button" class="button fb-open-images-library" data-variation-index="<?php echo esc_attr( $index ); ?>" data-variation-id="<?php echo esc_attr( $variation_id ); ?>"><?php esc_html_e( 'Add Multiple Images', 'facebook-for-woocommerce' ); ?></button>
+			<span class="woocommerce-help-tip" data-tip="<?php esc_attr_e( 'Choose multiple product images that should be synced to the Facebook catalog and displayed for this variation.', 'facebook-for-woocommerce' ); ?>" tabindex="0"></span>
+
+			<div id="fb_product_images_selected_thumbnails_<?php echo esc_attr( $index ); ?>" class="fb-product-images-thumbnails">
+			<?php
+			if ( ! empty( $attachment_ids ) && is_array( $attachment_ids ) ) {
+				foreach ( $attachment_ids as $attachment_id ) {
+					$attachment_id = intval( $attachment_id );
+					if ( $attachment_id > 0 ) {
+						// Get the image thumbnail URL
+						$thumbnail_url = wp_get_attachment_image_url( $attachment_id, 'thumbnail' );
+						$full_url      = wp_get_attachment_url( $attachment_id );
+						$filename      = basename( get_attached_file( $attachment_id ) );
+
+						if ( $thumbnail_url && $full_url ) {
+							?>
+								<p class="form-field image-thumbnail">
+									<img src="<?php echo esc_url( $thumbnail_url ); ?>">
+									<span data-attachment-id="<?php echo esc_attr( $attachment_id ); ?>"><?php echo esc_html( $filename ); ?></span>
+									<a href="#" class="remove-image" data-attachment-id="<?php echo esc_attr( $attachment_id ); ?>"><?php esc_html_e( 'Remove', 'facebook-for-woocommerce' ); ?></a>
+								</p>
+								<?php
+						}
+					}
+				}
+			}
+			?>
+			</div>
+
+			<?php
+			// hidden input to store attachment IDs
+			woocommerce_wp_hidden_input(
+				[
+					'id'    => sprintf( 'variable_%s%s', \WC_Facebook_Product::FB_PRODUCT_IMAGES, $index ),
+					'name'  => sprintf( 'variable_%s%s', \WC_Facebook_Product::FB_PRODUCT_IMAGES, $index ),
+					'value' => esc_attr( implode( ',', $attachment_ids ) ), // Store attachment IDs
+				]
+			);
+			?>
+		</p>
+		<?php
+	}
+
+	/**
 	 * Adds content to the new Facebook tab on the Product edit page.
 	 *
 	 * @internal
@@ -1078,8 +1067,15 @@ class Admin {
 				);
 				?>
 			</div>
-			
-			
+
+			<?php
+			if ( $product && $product->is_type( 'variable' ) ) {
+				// Render video field only for variable products
+				$this->render_facebook_product_video_field( $video_urls );
+			}
+			?>
+
+
 			<div class='options_group hide_if_variable'>
 				<?php
 				echo '<div class="wp-editor-wrap">';
@@ -1158,7 +1154,7 @@ class Admin {
 				);
 				?>
 			</div>
-			
+
 			<div class='wc_facebook_commerce_fields'>
 				<p class="text-heading">
 					<span><?php echo esc_html( \WooCommerce\Facebook\Admin\Product_Categories::get_catalog_explanation_text() ); ?></span>
@@ -1356,6 +1352,7 @@ class Admin {
 		$price        = $this->get_product_variation_meta( $variation, \WC_Facebook_Product::FB_PRODUCT_PRICE, $parent );
 		$image_url    = $this->get_product_variation_meta( $variation, \WC_Facebook_Product::FB_PRODUCT_IMAGE, $parent );
 		$image_source = $variation->get_meta( Products::PRODUCT_IMAGE_SOURCE_META_KEY );
+		$image_urls   = $this->get_product_variation_meta( $variation, \WC_Facebook_Product::FB_PRODUCT_IMAGES, $parent );
 		$fb_mpn       = $this->get_product_variation_meta( $variation, \WC_Facebook_Product::FB_MPN, $parent );
 
 		?>
@@ -1380,6 +1377,19 @@ class Admin {
 					)
 				);
 
+				// Build image source options
+				$image_source_options = array(
+					Products::PRODUCT_IMAGE_SOURCE_PRODUCT => __( 'Use variation image', 'facebook-for-woocommerce' ),
+					Products::PRODUCT_IMAGE_SOURCE_PARENT_PRODUCT => __( 'Use parent image', 'facebook-for-woocommerce' ),
+					Products::PRODUCT_IMAGE_SOURCE_CUSTOM  => __( 'Use custom image', 'facebook-for-woocommerce' ),
+				);
+
+				// Add multiple images option only if rollout switch is enabled
+				$plugin = isset( $GLOBALS['wc_facebook_commerce'] ) ? $GLOBALS['wc_facebook_commerce'] : facebook_for_woocommerce();
+				if ( $plugin && $plugin->get_rollout_switches()->is_switch_enabled( RolloutSwitches::SWITCH_MULTIPLE_IMAGES_ENABLED ) ) {
+					$image_source_options[ Products::PRODUCT_IMAGE_SOURCE_MULTIPLE ] = __( 'Add multiple images', 'facebook-for-woocommerce' );
+				}
+
 				woocommerce_wp_radio(
 					array(
 						'id'            => "variable_fb_product_image_source$index",
@@ -1387,11 +1397,7 @@ class Admin {
 						'label'         => __( 'Facebook Product Image', 'facebook-for-woocommerce' ),
 						'desc_tip'      => true,
 						'description'   => __( 'Choose the product image that should be synced to the Facebook catalog and displayed for this product.', 'facebook-for-woocommerce' ),
-						'options'       => array(
-							Products::PRODUCT_IMAGE_SOURCE_PRODUCT => __( 'Use variation image', 'facebook-for-woocommerce' ),
-							Products::PRODUCT_IMAGE_SOURCE_PARENT_PRODUCT => __( 'Use parent image', 'facebook-for-woocommerce' ),
-							Products::PRODUCT_IMAGE_SOURCE_CUSTOM  => __( 'Use custom image', 'facebook-for-woocommerce' ),
-						),
+						'options'       => $image_source_options,
 						'value'         => $image_source ? $image_source : Products::PRODUCT_IMAGE_SOURCE_PRODUCT,
 						'class'         => 'enable-if-sync-enabled js-fb-product-image-source',
 						'wrapper_class' => 'fb-product-image-source-field',
@@ -1410,6 +1416,13 @@ class Admin {
 						'description'   => __( 'Please enter an absolute URL (e.g. https://domain.com/image.jpg).', 'facebook-for-woocommerce' ),
 					)
 				);
+
+				// Render Facebook Product Images field
+				$image_ids_array = ! empty( $image_urls ) ? explode( ',', $image_urls ) : [];
+				// Clean up the IDs and ensure they're numeric
+				$image_ids_array = array_filter( array_map( 'trim', $image_ids_array ), 'is_numeric' );
+
+				$this->render_facebook_product_images_field( $image_ids_array, $index, $variation->get_id() );
 
 				woocommerce_wp_text_input(
 					array(
@@ -1449,12 +1462,12 @@ class Admin {
 			jQuery(document).ready(function($) {
 				// Remove any existing click handlers first
 				$('.facebook-metabox h3, .facebook-metabox .handlediv').off('click');
-				
+
 				// Add new click handler
 				$('.facebook-metabox h3, .facebook-metabox .handlediv').on('click', function(e) {
 					e.preventDefault(); // Prevent any default behavior
 					e.stopPropagation(); // Stop event bubbling
-					
+
 					var $metabox = $(this).closest('.facebook-metabox');
 					$metabox.toggleClass('closed');
 					$metabox.find('.wc-metabox-content').slideToggle();
@@ -1491,59 +1504,103 @@ class Admin {
 	}
 
 
-	/**
-	 * Saves the submitted Facebook settings for each variation.
-	 *
-	 * @internal
-	 *
-	 * @since 1.10.0
-	 *
-	 * @param int $variation_id the ID of the product variation being edited
-	 * @param int $index the index of the current variation
-	 */
+		/**
+		 * Saves the submitted Facebook settings for each variation.
+		 *
+		 * @internal
+		 *
+		 * @since 1.10.0
+		 *
+		 * @param int $variation_id the ID of the product variation being edited
+		 * @param int $index the index of the current variation
+		 */
 	public function save_product_variation_edit_fields( $variation_id, $index ) {
 		$variation = wc_get_product( $variation_id );
 		if ( ! $variation instanceof \WC_Product_Variation ) {
 			return;
 		}
 
-		// Verify nonce
-		$nonce_field = 'facebook_variation_nonce_' . $variation_id;
-		if ( ! isset( $_POST[ $nonce_field ] ) || ! wp_verify_nonce( sanitize_key( $_POST[ $nonce_field ] ), 'facebook_variation_save' ) ) {
+		if ( ! $this->verify_variation_nonce( $variation_id ) ) {
 			return;
 		}
 
 		// phpcs:disable WordPress.Security.NonceVerification.Missing
 
-		// Get sync mode from POST or parent product
-		$sync_mode    = isset( $_POST['wc_facebook_sync_mode'] ) ? wc_clean( wp_unslash( $_POST['wc_facebook_sync_mode'] ) ) : self::SYNC_MODE_SYNC_DISABLED;
+		$sync_mode    = $this->determine_variation_sync_mode( $variation );
 		$sync_enabled = self::SYNC_MODE_SYNC_DISABLED !== $sync_mode;
 
-		// Get sync settings from parent product if not in POST data (fixes PR #2931 issue)
-		if ( ! isset( $_POST['wc_facebook_sync_mode'] ) ) {
-			$parent_product = wc_get_product( $variation->get_parent_id() );
-			if ( $parent_product ) {
-				$parent_sync_enabled = 'no' !== get_post_meta( $parent_product->get_id(), Products::SYNC_ENABLED_META_KEY, true );
-				$parent_visibility   = get_post_meta( $parent_product->get_id(), Products::VISIBILITY_META_KEY, true );
-				$parent_is_visible   = $parent_visibility ? wc_string_to_bool( $parent_visibility ) : true;
+		$variation_data = $this->process_variation_post_data( $index );
+		$this->save_variation_meta_data( $variation, $variation_data );
+		$this->handle_variation_sync_operations( $variation, $sync_enabled, $sync_mode );
 
-				if ( $parent_sync_enabled ) {
-					$sync_mode = $parent_is_visible ? self::SYNC_MODE_SYNC_AND_SHOW : self::SYNC_MODE_SYNC_AND_HIDE;
-				} else {
-					$sync_mode = self::SYNC_MODE_SYNC_DISABLED;
-				}
-				$sync_enabled = self::SYNC_MODE_SYNC_DISABLED !== $sync_mode;
-			}
+		// phpcs:enable WordPress.Security.NonceVerification.Missing
+	}
+
+	/**
+	 * Verifies the nonce for variation save operation.
+	 *
+	 * @param int $variation_id the ID of the product variation
+	 * @return bool true if nonce is valid, false otherwise
+	 */
+	private function verify_variation_nonce( $variation_id ) {
+		$nonce_field = 'facebook_variation_nonce_' . $variation_id;
+		return isset( $_POST[ $nonce_field ] ) && wp_verify_nonce( sanitize_key( $_POST[ $nonce_field ] ), 'facebook_variation_save' );
+	}
+
+	/**
+	 * Determines the sync mode for a variation.
+	 *
+	 * @param \WC_Product_Variation $variation the product variation
+	 * @return string the sync mode
+	 */
+	private function determine_variation_sync_mode( $variation ) {
+		// phpcs:ignore WordPress.Security.NonceVerification.Missing -- Nonce verification is handled in save_product_variation_edit_fields method
+		$sync_mode = isset( $_POST['wc_facebook_sync_mode'] ) ? wc_clean( wp_unslash( $_POST['wc_facebook_sync_mode'] ) ) : self::SYNC_MODE_SYNC_DISABLED;
+
+		// phpcs:ignore WordPress.Security.NonceVerification.Missing -- Nonce verification is handled in save_product_variation_edit_fields method
+		if ( ! isset( $_POST['wc_facebook_sync_mode'] ) ) {
+			$sync_mode = $this->get_parent_product_sync_mode( $variation );
 		}
 
 		if ( self::SYNC_MODE_SYNC_AND_SHOW === $sync_mode && $variation->is_virtual() ) {
-			// force to Sync and hide
 			$sync_mode = self::SYNC_MODE_SYNC_AND_HIDE;
 		}
 
-		// ALWAYS save Facebook field data (this fixes the PR #2931 breaking change)
+		return $sync_mode;
+	}
+
+	/**
+	 * Gets the sync mode from the parent product.
+	 *
+	 * @param \WC_Product_Variation $variation the product variation
+	 * @return string the sync mode
+	 */
+	private function get_parent_product_sync_mode( $variation ) {
+		$parent_product = wc_get_product( $variation->get_parent_id() );
+		if ( ! $parent_product ) {
+			return self::SYNC_MODE_SYNC_DISABLED;
+		}
+
+		$parent_sync_enabled = 'no' !== get_post_meta( $parent_product->get_id(), Products::SYNC_ENABLED_META_KEY, true );
+		$parent_visibility   = get_post_meta( $parent_product->get_id(), Products::VISIBILITY_META_KEY, true );
+		$parent_is_visible   = $parent_visibility ? wc_string_to_bool( $parent_visibility ) : true;
+
+		if ( $parent_sync_enabled ) {
+			return $parent_is_visible ? self::SYNC_MODE_SYNC_AND_SHOW : self::SYNC_MODE_SYNC_AND_HIDE;
+		}
+
+		return self::SYNC_MODE_SYNC_DISABLED;
+	}
+
+	/**
+	 * Processes and sanitizes POST data for variation.
+	 *
+	 * @param int $index the variation index
+	 * @return array the processed variation data
+	 */
+	private function process_variation_post_data( $index ) {
 		$posted_param = 'variable_' . \WC_Facebookcommerce_Integration::FB_PRODUCT_DESCRIPTION;
-		// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Intentionally getting raw value to apply different sanitization methods below
+		// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized,WordPress.Security.NonceVerification.Missing -- Intentionally getting raw value to apply different sanitization methods below, nonce verification handled in save_product_variation_edit_fields method
 		$description_raw = isset( $_POST[ $posted_param ][ $index ] ) ? wp_unslash( $_POST[ $posted_param ][ $index ] ) : null;
 
 		// Create separate sanitized versions for different purposes
@@ -1551,34 +1608,69 @@ class Admin {
 		$description_rich  = $description_raw ? wp_kses_post( $description_raw ) : null; // HTML-preserved for rich text description
 
 		$posted_param = 'variable_' . \WC_Facebook_Product::FB_MPN;
+		// phpcs:ignore WordPress.Security.NonceVerification.Missing -- Nonce verification is handled in save_product_variation_edit_fields method
 		$fb_mpn       = isset( $_POST[ $posted_param ][ $index ] ) ? sanitize_text_field( wp_unslash( $_POST[ $posted_param ][ $index ] ) ) : null;
 		$posted_param = 'variable_fb_product_image_source';
+		// phpcs:ignore WordPress.Security.NonceVerification.Missing -- Nonce verification is handled in save_product_variation_edit_fields method
 		$image_source = isset( $_POST[ $posted_param ][ $index ] ) ? sanitize_key( wp_unslash( $_POST[ $posted_param ][ $index ] ) ) : '';
 		$posted_param = 'variable_' . \WC_Facebook_Product::FB_PRODUCT_IMAGE;
+		// phpcs:ignore WordPress.Security.NonceVerification.Missing -- Nonce verification is handled in save_product_variation_edit_fields method
 		$image_url    = isset( $_POST[ $posted_param ][ $index ] ) ? esc_url_raw( wp_unslash( $_POST[ $posted_param ][ $index ] ) ) : null;
 		$posted_param = 'variable_' . \WC_Facebook_Product::FB_PRODUCT_VIDEO;
+		// phpcs:ignore WordPress.Security.NonceVerification.Missing -- Nonce verification is handled in save_product_variation_edit_fields method
 		$video_urls   = isset( $_POST[ $posted_param ][ $index ] ) ? esc_url_raw( wp_unslash( $_POST[ $posted_param ][ $index ] ) ) : [];
+		// Fix: Look for the actual POST key format that WooCommerce generates
+		$posted_param = 'variable_' . \WC_Facebook_Product::FB_PRODUCT_IMAGES . $index;
+		// phpcs:ignore WordPress.Security.NonceVerification.Missing -- Nonce verification is handled in save_product_variation_edit_fields method
+		$image_ids    = isset( $_POST[ $posted_param ] ) ? sanitize_text_field( wp_unslash( $_POST[ $posted_param ] ) ) : '';
 		$posted_param = 'variable_' . \WC_Facebook_Product::FB_PRODUCT_PRICE;
+		// phpcs:ignore WordPress.Security.NonceVerification.Missing -- Nonce verification is handled in save_product_variation_edit_fields method
 		$price        = isset( $_POST[ $posted_param ][ $index ] ) ? wc_format_decimal( wc_clean( wp_unslash( $_POST[ $posted_param ][ $index ] ) ) ) : '';
 
-		// Always save the Facebook field data with appropriate sanitization for each field
-		$variation->update_meta_data( \WC_Facebookcommerce_Integration::FB_PRODUCT_DESCRIPTION, $description_plain );
-		$variation->update_meta_data( \WC_Facebookcommerce_Integration::FB_RICH_TEXT_DESCRIPTION, $description_rich );
-		$variation->update_meta_data( Products::PRODUCT_IMAGE_SOURCE_META_KEY, $image_source );
-		$variation->update_meta_data( \WC_Facebook_Product::FB_MPN, $fb_mpn );
-		$variation->update_meta_data( \WC_Facebook_Product::FB_PRODUCT_IMAGE, $image_url );
-		$variation->update_meta_data( \WC_Facebook_Product::FB_PRODUCT_VIDEO, $video_urls );
-		$variation->update_meta_data( \WC_Facebook_Product::FB_PRODUCT_PRICE, $price );
-		$variation->save_meta_data();
+		return array(
+			'description_plain' => $description_plain,
+			'description_rich'  => $description_rich,
+			'fb_mpn'            => $fb_mpn,
+			'image_source'      => $image_source,
+			'image_url'         => $image_url,
+			'video_urls'        => $video_urls,
+			'image_ids'         => $image_ids,
+			'price'             => $price,
+		);
+	}
 
-		// Handle sync operations based on sync settings
+	/**
+	 * Saves the variation meta data.
+	 *
+	 * @param \WC_Product_Variation $variation the product variation
+	 * @param array                 $data the variation data to save
+	 */
+	private function save_variation_meta_data( $variation, $data ) {
+		$variation->update_meta_data( \WC_Facebookcommerce_Integration::FB_PRODUCT_DESCRIPTION, $data['description_plain'] );
+		$variation->update_meta_data( \WC_Facebookcommerce_Integration::FB_RICH_TEXT_DESCRIPTION, $data['description_rich'] );
+		$variation->update_meta_data( Products::PRODUCT_IMAGE_SOURCE_META_KEY, $data['image_source'] );
+		$variation->update_meta_data( \WC_Facebook_Product::FB_MPN, $data['fb_mpn'] );
+		$variation->update_meta_data( \WC_Facebook_Product::FB_PRODUCT_IMAGE, $data['image_url'] );
+		$variation->update_meta_data( \WC_Facebook_Product::FB_PRODUCT_VIDEO, $data['video_urls'] );
+		$variation->update_meta_data( \WC_Facebook_Product::FB_PRODUCT_IMAGES, $data['image_ids'] );
+		$variation->update_meta_data( \WC_Facebook_Product::FB_PRODUCT_PRICE, $data['price'] );
+		$variation->save_meta_data();
+	}
+
+	/**
+	 * Handles sync operations for the variation.
+	 *
+	 * @param \WC_Product_Variation $variation the product variation
+	 * @param bool                  $sync_enabled whether sync is enabled
+	 * @param string                $sync_mode the sync mode
+	 */
+	private function handle_variation_sync_operations( $variation, $sync_enabled, $sync_mode ) {
 		if ( $sync_enabled ) {
 			Products::enable_sync_for_products( array( $variation ) );
 			Products::set_product_visibility( $variation, self::SYNC_MODE_SYNC_AND_HIDE !== $sync_mode );
 		} else {
 			Products::disable_sync_for_products( array( $variation ) );
 		}
-
 		// phpcs:enable WordPress.Security.NonceVerification.Missing
 	}
 
@@ -1628,7 +1720,7 @@ class Admin {
 		?>
 		<script type="text/javascript">
 			jQuery(document).ready(function($) {
-				
+
 				// State object to track badge display status
 				var syncedBadgeState = {
 					material: false,
@@ -1647,30 +1739,30 @@ class Admin {
 
 				// Track which fields are currently synced
 				var syncedFields = {};
-				
+
 				// Helper function to clean up any previous sync UI elements
 				function cleanupSyncedField(fieldId) {
 					var $field = $(fieldId);
-					
+
 					// First find all multi-value displays and sync indicators in the parent wrapper
 					var $parent = $field.parent();
 					$parent.find('.multi-value-display').remove();
 					$parent.find('.sync-indicator').remove();
-					
+
 					// Also remove any elements directly after the field
 					$field.next('.multi-value-display').remove();
 					$field.next('.sync-indicator').remove();
-					
+
 					// Double check for elements with specific classes anywhere in the row
 					var $row = $parent.closest('.form-field, .form-row');
 					if ($row.length) {
 						$row.find('.multi-value-display').remove();
 						$row.find('.sync-indicator').remove();
 					}
-					
+
 					// Show the original field if it was hidden
 					$field.show();
-					
+
 					// Reset the field state
 					$field.prop('disabled', false).removeClass('synced-attribute');
 				}
@@ -1678,15 +1770,15 @@ class Admin {
 				// Function to completely reset a field to its default state
 				function resetFieldToDefault(fieldId) {
 					var $field = $(fieldId);
-					
+
 					// Skip if field doesn't exist
 					if (!$field.length) {
 						return;
 					}
-					
+
 					// Clean up UI elements
 					cleanupSyncedField(fieldId);
-					
+
 					// Reset select fields to first option (usually "Select")
 					if ($field.is('select')) {
 						// Check if the select has options
@@ -1694,7 +1786,7 @@ class Admin {
 							$field.val('').trigger('change');
 							$field.find('option:first').prop('selected', true);
 						}
-						
+
 						// Reset select2 if it's initialized
 						if ($field.hasClass('wc-enhanced-select') || $field.hasClass('select2-hidden-accessible')) {
 							try {
@@ -1747,7 +1839,7 @@ class Admin {
 							$siblings.not(':first').remove();
 						}
 					});
-					
+
 					$.ajax({
 						url: ajaxurl,
 						type: 'POST',
@@ -1774,20 +1866,20 @@ class Admin {
 								Object.keys(fields).forEach(function(key) {
 									var fieldId = '#' + fields[key];
 									var $field = $(fieldId);
-									
+
 									// Skip if field doesn't exist
 									if (!$field.length) {
 										return;
 									}
-									
+
 									// First thoroughly clean up any previous sync UI elements
 									cleanupSyncedField(fieldId);
-									
+
 									if (response.data && response.data[key]) {
 										// Field has a synced value
 										var syncedValue = response.data[key];
 										var isMultipleValues = syncedValue.includes(' | ');
-										
+
 										// For fields with multiple values or dropdown fields that need special handling
 										if (isMultipleValues || (key === 'age_group' || key === 'gender' || key === 'condition')) {
 											// First check if this is a standard dropdown or a multi-value field
@@ -1797,7 +1889,7 @@ class Admin {
 													// For dropdown fields with multiple values (used in variations)
 													// Disable the original dropdown
 													$field.prop('disabled', true).addClass('synced-attribute').hide();
-													
+
 													// Create a styled disabled field to show multiple values
 													var fieldWidth = $field.outerWidth();
 													var $multiDisplay = $('<input type="text" class="multi-value-display wc-enhanced-select" disabled>')
@@ -1820,7 +1912,7 @@ class Admin {
 															'cursor': 'not-allowed'
 														})
 														.insertAfter($field);
-													
+
 													// Always add the sync badge after the multi-value display
 													// Only if it doesn't already exist
 													if ($multiDisplay.next('.wc-attributes-icon').length === 0) {
@@ -1839,9 +1931,9 @@ class Admin {
 												$field.find('option').each(function() {
 													var optionValue = $(this).val();
 													var optionText = $(this).text();
-													
+
 													// Check both option value and option text (case-insensitive)
-													if (optionValue === syncedValue || 
+													if (optionValue === syncedValue ||
 														optionText.toLowerCase() === syncedValue.toLowerCase() ||
 														optionValue.toLowerCase() === syncedValue.toLowerCase()) {
 														hasMatchingOption = true;
@@ -1849,7 +1941,7 @@ class Admin {
 														return false; // break loop
 													}
 												});
-												
+
 												if (hasMatchingOption) {
 													$field.val(matchingOptionValue) // Use the correct option value
 														.prop('disabled', true)
@@ -1859,7 +1951,7 @@ class Admin {
 															'background-color': '#f0f0f1',
 															'color': 'rgba(44, 51, 56, .5)'
 														});
-													
+
 													// Add the sync badge if it doesn't exist
 													if ($field.next('.wc-attributes-icon').length === 0) {
 														$field.after('<span class="sync-indicator wc-attributes-icon" data-tip="Synced from the Attributes tab." style="margin-left: 4px;"><span class="sync-tooltip">Synced from the Attributes tab.</span></span>');
@@ -1867,12 +1959,12 @@ class Admin {
 												} else if (isMultipleValues) {
 													// This is a multi-value field but not a dropdown
 													$field.prop('disabled', true).addClass('synced-attribute').hide();
-													
+
 													// Create a styled disabled field to show multiple values
 													var $multiDisplay = $('<input type="text" class="multi-value-display" disabled>')
 														.val(syncedValue)
 														.insertAfter($field);
-													
+
 													// Add the sync badge
 													$multiDisplay.after('<span class="wc-attributes-icon" data-tip="Synced from product attributes"></span>');
 												}
@@ -1887,7 +1979,7 @@ class Admin {
 														'color': 'rgba(44, 51, 56, .5)'
 													})
 													.show();
-													
+
 												// Add the sync badge if it doesn't exist
 												if ($field.next('.wc-attributes-icon').length === 0) {
 													$field.after('<span class="sync-indicator wc-attributes-icon" data-tip="Synced from the Attributes tab." style="margin-left: 4px;"><span class="sync-tooltip">Synced from the Attributes tab.</span></span>');
@@ -1903,7 +1995,7 @@ class Admin {
 														'color': 'rgba(44, 51, 56, .5)'
 													})
 													.show();
-													
+
 												// Add the sync badge if it doesn't exist
 												if ($field.next('.wc-attributes-icon').length === 0) {
 													$field.after('<span class="sync-indicator wc-attributes-icon" data-tip="Synced from the Attributes tab." style="margin-left: 4px;"><span class="sync-tooltip">Synced from the Attributes tab.</span></span>');
@@ -1915,18 +2007,18 @@ class Admin {
 												.prop('disabled', true)
 												.addClass('synced-attribute')
 												.css({
-													'cursor': 'not-allowed', 
+													'cursor': 'not-allowed',
 													'background-color': '#f0f0f1',
 													'color': 'rgba(44, 51, 56, .5)'
 												})
 												.show();
-											
+
 											// Add the sync badge if it doesn't exist
 											if ($field.next('.wc-attributes-icon').length === 0) {
 												$field.after('<span class="sync-indicator wc-attributes-icon" data-tip="Synced from the Attributes tab." style="margin-left: 4px;"><span class="sync-tooltip">Synced from the Attributes tab.</span></span>');
 											}
 										}
-										
+
 										// Mark this field as synced
 										syncedFields[key] = true;
 										syncedBadgeState[key] = true;
@@ -1935,14 +2027,14 @@ class Admin {
 										if (syncedFields[key]) {
 											// Reset synced state
 											syncedFields[key] = false;
-											
+
 											// Completely reset the field value
 											resetFieldToDefault(fieldId);
 										} else if (manualValues[key] && !$field.val()) {
 											// Restore manual value if field is empty
 											$field.val(manualValues[key]);
 										}
-										
+
 										// Reset the badge state
 										syncedBadgeState[key] = false;
 									}
@@ -1965,7 +2057,7 @@ class Admin {
 						'gender': '<?php echo esc_js( \WC_Facebook_Product::FB_GENDER ); ?>',
 						'condition': '<?php echo esc_js( \WC_Facebook_Product::FB_PRODUCT_CONDITION ); ?>'
 					};
-					
+
 					Object.keys(fields).forEach(function(key) {
 						var fieldId = '#' + fields[key];
 						resetFieldToDefault(fieldId);
@@ -2003,7 +2095,7 @@ class Admin {
 					// Store information about which row was removed
 					var $removedRow = $(this).closest('tr');
 					var attributeName = $removedRow.find('td.attribute_name').text().trim().toLowerCase();
-					
+
 					// Wait a brief moment for WooCommerce to remove the attribute
 					setTimeout(function() {
 						// Clean up any extra UI elements that might be leftover
@@ -2011,22 +2103,22 @@ class Admin {
 							// For each multi-value display, check if there's a corresponding select field
 							var $this = $(this);
 							var $select = $this.prev('select');
-							
+
 							// If no select exists or the select has no options, remove the multi-value display
 							if ($select.length === 0 || $select.find('option').length <= 1) {
 								$this.next('.sync-indicator').remove();
 								$this.remove();
 							}
 						});
-						
+
 						// Only trigger if we're on the Facebook tab
 						if ($('.fb_commerce_tab').hasClass('active')) {
 							// First reset all fields to ensure dropdowns are cleared
 							resetAllFields();
-							
+
 							// Then perform a complete cleanup of all UI elements
 							$('.woocommerce_options_panel').find('.multi-value-display, .sync-indicator').remove();
-							
+
 							// Re-check all select fields for emptiness
 							$('.woocommerce_options_panel select').each(function() {
 								if ($(this).find('option').length <= 1) {
@@ -2036,7 +2128,7 @@ class Admin {
 									$(this).show().prop('disabled', false).removeClass('synced-attribute');
 								}
 							});
-							
+
 							// Then sync to update based on remaining attributes
 							syncFacebookAttributes();
 						}
@@ -2048,46 +2140,46 @@ class Admin {
 					// Store reference to the button and attributes panel
 					var $button = $(this);
 					var $attributesPanel = $('#product_attributes');
-					
+
 					// Wait a brief moment for WooCommerce to save the attributes
 					setTimeout(function() {
 						// Perform cleanup of any stray elements across the entire form
 						$('.woocommerce_options_panel').find('.multi-value-display, .sync-indicator').each(function() {
 							var $element = $(this);
 							var $prevSelect = $element.prev('select');
-							
+
 							// If this is a multi-value display without a valid select, remove it
-							if ($element.hasClass('multi-value-display') && 
+							if ($element.hasClass('multi-value-display') &&
 								(!$prevSelect.length || $prevSelect.find('option').length <= 1 || !$prevSelect.is(':visible'))) {
 								$element.next('.sync-indicator').remove();
 								$element.remove();
 							}
-							
+
 							// If this is a sync indicator without a valid field before it, remove it
-							if ($element.hasClass('sync-indicator') && 
-								(!$element.prev().length || 
+							if ($element.hasClass('sync-indicator') &&
+								(!$element.prev().length ||
 								($element.prev().is('select') && $element.prev().find('option').length <= 1))) {
 								$element.remove();
 							}
 						});
-						
+
 						// Re-check all select fields
 						$('.woocommerce_options_panel select').each(function() {
 							var $select = $(this);
-							
+
 							// Check for empty or nearly empty selects
 							if ($select.find('option').length <= 1) {
 								// Clean up any associated UI elements
 								$select.next('.multi-value-display').next('.sync-indicator').remove();
 								$select.next('.multi-value-display').remove();
 								$select.next('.sync-indicator').remove();
-								
+
 								// Reset the select
 								$select.val('').prop('selected', true)
 									.show().prop('disabled', false).removeClass('synced-attribute');
 							}
 						});
-						
+
 						// Only trigger if we're on the Facebook tab
 						if ($('.fb_commerce_tab').hasClass('active')) {
 							syncFacebookAttributes();
@@ -2099,17 +2191,17 @@ class Admin {
 				function cleanupAllUIElements() {
 					// Remove all multi-value displays and sync indicators
 					$('.woocommerce_options_panel').find('.multi-value-display, .sync-indicator').remove();
-					
+
 					// Reset all select fields
 					$('.woocommerce_options_panel select').each(function() {
 						var $select = $(this);
 						$select.show().prop('disabled', false).removeClass('synced-attribute');
-						
+
 						// If the select has no options ensure it's properly reset
 						if ($select.find('option').length < 1) {
 							$select.val('').prop('selected', true);
 						}
-						
+
 						// Reset select2 if applicable
 						if ($select.hasClass('wc-enhanced-select') || $select.hasClass('select2-hidden-accessible')) {
 							try {
@@ -2119,7 +2211,7 @@ class Admin {
 							}
 						}
 					});
-					
+
 					// Reset all text inputs styling
 					$('.woocommerce_options_panel input[type="text"]').each(function() {
 						var $input = $(this);
@@ -2134,7 +2226,7 @@ class Admin {
 				// Original tab click handler
 				$('.product_data_tabs li').on('click', function() {
 					var tabClass = $(this).attr('class');
-					
+
 					// If we're clicking on a tab that isn't the Facebook tab,
 					// clean up all UI elements first
 					if (!tabClass || !tabClass.includes('fb_commerce_tab')) {
@@ -2161,7 +2253,7 @@ class Admin {
 					if (key === 'age_group') fieldId = '#' + '<?php echo esc_js( \WC_Facebook_Product::FB_AGE_GROUP ); ?>';
 					if (key === 'gender') fieldId = '#' + '<?php echo esc_js( \WC_Facebook_Product::FB_GENDER ); ?>';
 					if (key === 'condition') fieldId = '#' + '<?php echo esc_js( \WC_Facebook_Product::FB_PRODUCT_CONDITION ); ?>';
-					
+
 					var $field = $(fieldId);
 					var value = $field.val();
 					if (value && !$field.hasClass('synced-attribute')) {
