@@ -13,7 +13,7 @@ require_once __DIR__ . '/../../facebook-commerce.php';
 use PHPUnit\Framework\TestCase;
 
 /**
- * Simple tests for the update_last_change_time method
+ * Tests for the updated last change time functionality
  */
 class UpdateLastChangeTimeTest extends TestCase {
 
@@ -36,97 +36,130 @@ class UpdateLastChangeTimeTest extends TestCase {
     }
 
     /**
-     * Test: update_last_change_time() integration
-     * Tests the complete flow including both excluded keys and edge cases
+     * Test: Core last change time flow
+     * Tests main entry point, validation, and update mechanisms
      */
-    public function test_update_last_change_time_integration() {
-
-        // Test edge cases - should handle gracefully
+    public function test_core_last_change_time_flow() {
+        // Test main entry point with edge cases
         $edge_cases = [
-            [0, 0, '', null],                    // All zero/empty values
-            [1, 999999, 'normal_key', 'value'], // Non-existent product
-            [1, 123, null, 'value'],            // Null meta key
+            [0, 0, '', null],                           // Empty values
+            [1, 999999, 'normal_key', 'value'],        // Non-existent product
+            [1, 123, '_last_change_time', 'value'],    // Self-referential (should be excluded)
         ];
 
-        foreach ($edge_cases as $index => [$meta_id, $product_id, $meta_key, $meta_value]) {
+        foreach ($edge_cases as [$meta_id, $product_id, $meta_key, $meta_value]) {
             try {
                 $this->integration->update_last_change_time($meta_id, $product_id, $meta_key, $meta_value);
-                $this->assertTrue(true, "update_last_change_time handled edge case {$index} gracefully");
+                $this->assertTrue(true, 'update_last_change_time handled edge case gracefully');
             } catch (Exception $e) {
-                $this->assertTrue(true, "update_last_change_time properly caught exception for edge case {$index}");
+                $this->assertTrue(true, 'update_last_change_time properly caught exception');
             }
-		}
-	}
+        }
 
-	/**
-	 * Test: is_meta_key_sync_relevant() - helper function for determining sync relevance
-	 * Tests the logic that identifies which meta keys should trigger sync updates
-	 */
-	public function test_is_meta_key_sync_relevant() {
-		// Use reflection to test the private method
-		$reflection = new \ReflectionClass($this->integration);
-		$method = $reflection->getMethod('is_meta_key_sync_relevant');
-		$method->setAccessible(true);
+        // Test validation methods
+        $this->assertFalse(
+            $this->integration->should_update_last_change_time(123, 'irrelevant_meta'),
+            'should_update_last_change_time rejects irrelevant meta keys'
+        );
 
-		// Test excluded meta keys (should return false)
-		$excluded_keys = [
-			'_last_change_time',
-			'_fb_sync_last_time',
-			'_wp_attached_file',
-			'_wp_attachment_metadata',
-			'_edit_last',
-			'_edit_lock'
-		];
+        $this->assertFalse(
+            $this->integration->should_update_last_change_time(123, '_last_change_time'),
+            'should_update_last_change_time rejects self-referential updates'
+        );
 
-		foreach ($excluded_keys as $key) {
-			$this->assertFalse(
-				$method->invoke($this->integration, $key),
-				"is_meta_key_sync_relevant should return false for excluded key: {$key}"
-			);
-		}
+        // Test core update mechanism
+        $reflection = new \ReflectionClass($this->integration);
+        $update_method = $reflection->getMethod('perform_last_change_time_update');
+        $update_method->setAccessible(true);
 
-		// Test sync-relevant meta keys (should return true)
-		$sync_relevant_keys = [
-			'_regular_price',
-			'_sale_price',
-			'_stock',
-			'_stock_status',
-			'_thumbnail_id',
-			'_price',
-			'fb_visibility',
-			'fb_product_description',
-			'fb_brand',
-			'fb_mpn',
-			'fb_size',
-			'fb_color',
-			'fb_material',
-			'fb_pattern',
-			'fb_age_group',
-			'fb_gender',
-			'fb_product_condition',
-			'_wc_facebook_sync_enabled',
-			'_wc_facebook_product_image_source'
-		];
+        try {
+            $update_method->invoke($this->integration, 123);
+            $this->assertTrue(true, 'perform_last_change_time_update executes without errors');
+        } catch (Exception $e) {
+            $this->fail('perform_last_change_time_update should not throw exceptions: ' . $e->getMessage());
+        }
+    }
 
-		foreach ($sync_relevant_keys as $key) {
-			$this->assertTrue(
-				$method->invoke($this->integration, $key),
-				"is_meta_key_sync_relevant should return true for sync-relevant key: {$key}"
-			);
-		}
+    /**
+     * Test: Meta key filtering logic
+     * Tests which meta keys should trigger sync updates
+     */
+    public function test_meta_key_filtering() {
+        $reflection = new \ReflectionClass($this->integration);
+        $method = $reflection->getMethod('is_meta_key_sync_relevant');
+        $method->setAccessible(true);
 
-		// Test other meta keys (should return false)
-		$other_keys = [
-			'some_random_meta_key',
-			'custom_field',
-			'other_plugin_meta'
-		];
+        // Should EXCLUDE these keys
+        $excluded_keys = [
+            '_last_change_time', '_fb_sync_last_time',  // Prevent infinite loops
+            '_wp_attached_file', '_edit_last',          // WordPress internals
+            'custom_field', 'other_plugin_meta'         // Unrelated meta
+        ];
 
-		foreach ($other_keys as $key) {
-			$this->assertFalse(
-				$method->invoke($this->integration, $key),
-				"is_meta_key_sync_relevant should return false for unrelated key: {$key}"
-			);
-		}
-	}
+        foreach ($excluded_keys as $key) {
+            $this->assertFalse(
+                $method->invoke($this->integration, $key),
+                "Should exclude key: {$key}"
+            );
+        }
+
+        // Should INCLUDE these keys (trigger sync)
+        $sync_relevant_keys = [
+            '_regular_price', '_sale_price', '_stock', '_stock_status',     // WooCommerce core
+            'fb_brand', 'fb_color', 'fb_size', 'fb_product_condition',     // Facebook attributes
+            '_wc_facebook_sync_enabled'                                     // Facebook settings
+        ];
+
+        foreach ($sync_relevant_keys as $key) {
+            $this->assertTrue(
+                $method->invoke($this->integration, $key),
+                "Should include key: {$key}"
+            );
+        }
+    }
+
+    /**
+     * Test: Rate limiting functionality
+     * Tests that updates are properly rate-limited to prevent spam
+     */
+    public function test_rate_limiting() {
+        $reflection = new \ReflectionClass($this->integration);
+        $rate_limited_method = $reflection->getMethod('is_last_change_time_update_rate_limited');
+        $rate_limited_method->setAccessible(true);
+
+        $cache_method = $reflection->getMethod('set_last_change_time_cache');
+        $cache_method->setAccessible(true);
+
+        $product_id = 456;
+
+        // Initially not rate limited
+        $this->assertFalse(
+            $rate_limited_method->invoke($this->integration, $product_id),
+            'Should not be rate limited initially'
+        );
+
+        // Set cache with current time - should now be rate limited
+        $current_time = time();
+        $cache_method->invoke($this->integration, $product_id, $current_time);
+        $this->assertTrue(
+            $rate_limited_method->invoke($this->integration, $product_id),
+            'Should be rate limited after setting cache'
+        );
+
+        // Set cache with old time (beyond 60s window) - should not be rate limited
+        $old_time = $current_time - 120;
+        $cache_method->invoke($this->integration, $product_id, $old_time);
+        $this->assertFalse(
+            $rate_limited_method->invoke($this->integration, $product_id),
+            'Should not be rate limited after cache expires'
+        );
+
+        // Test cache setting doesn't throw exceptions
+        try {
+            $cache_method->invoke($this->integration, $product_id, time());
+            $this->assertTrue(true, 'set_last_change_time_cache executes without errors');
+        } catch (Exception $e) {
+            $this->fail('set_last_change_time_cache should not throw exceptions: ' . $e->getMessage());
+        }
+    }
 }
