@@ -205,7 +205,7 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 							$cookie->value,
 							array(
 								'expires' => time() + $cookie->max_age,
-								'path' =>'/',
+								'path' => '/',
 								'domain' => $cookie->domain,
 								'secure' => is_ssl(),
 								'httponly' => true,
