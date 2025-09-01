@@ -186,7 +186,7 @@ class WC_Facebookcommerce extends WooCommerce\Facebook\Framework\Plugin {
 	 * @internal
 	 */
 	public function init() {
-		add_action( 'init', array( $this, 'init_param_builder' ) );
+		add_action( 'init', array( $this, 'init_param_builder' ), 15 );
 		add_action( 'init', array( $this, 'get_integration' ) );
 
 		add_action( 'woocommerce_init', array( $this, 'add_whatsapp_consent_block_checkout_fields' ) );
