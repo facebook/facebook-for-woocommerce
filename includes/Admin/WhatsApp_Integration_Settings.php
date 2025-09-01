@@ -155,7 +155,7 @@ class WhatsApp_Integration_Settings {
 		$is_connected        = $whatsapp_connection->is_connected();
 
 		if ( $is_connected ) {
-			$iframe_url = \WooCommerce\Facebook\Handlers\WhatsAppExtension::generate_wa_iframe_management_url();
+			$iframe_url = \WooCommerce\Facebook\Handlers\WhatsAppExtension::generate_wa_iframe_management_url( $this->plugin, );
 		} else {
 			$iframe_url = \WooCommerce\Facebook\Handlers\WhatsAppExtension::generate_wa_iframe_splash_url(
 				$this->plugin,
@@ -193,8 +193,6 @@ class WhatsApp_Integration_Settings {
 			window.addEventListener('message', function(event) {
 				const message = event.data;
 				const messageEvent = message.event;
-
-				console.log(message);
 
 				if (messageEvent === 'CommerceExtension::WA_INSTALL' && message.success) {
 				console.log('success');
