@@ -3,7 +3,7 @@ Contributors: facebook
 Tags: meta, facebook, conversions api, catalog sync, ads
 Requires at least: 5.6
 Tested up to: 6.8.1
-Stable tag: 3.5.4
+Stable tag: 3.5.5
 Requires PHP: 7.4
 MySQL: 5.6 or greater
 License: GPLv2 or later
@@ -41,42 +41,20 @@ To suggest technical improvements, you can raise an issue on our [Github reposit
 
 == Changelog ==
 
-= 3.5.5 - 2025-07-23 =
-* Fix - Updated the links to Meta Support by @vahidkay-meta in #3523
-* Fix - Improving AAM settings params being captured + Purchase events captured by Pixel by @vahidkay-meta in #3512
-* Fix - Prevent cleanupAllUIElements from resetting selects with one option to maintain Composite Products compatibility by @ukilla in #3515
-* Tweak - Updated the agent string to be more accurate by @vahidkay-meta in #3514
-* Fix - Add surface catalog id display with link to commerce manager in produ… by @devbodaghe in #3517
-* Fix - Restrict Facebook banner to only show on attributes page and Facebook settings page by @devbodaghe in #3516
-* Fix - [WAUM] Add country_code to Message Events API by @woo-ardsouza in #3510
-* Fix - Updating promotions feed upload utils tests to fix failure by @nrostrow-meta in #3511
-* Update - Update Node.js & NPM versions used in the plugin by @iodic in #3361
-* Fix - Adding better queries for Filters & removing variant dependencies by @SayanPandey in #3496
-* Add - [facebook-for-woocommerce][PR] Add default brand name in Facebook tab by @Rebeca-Reis in #3505
-* Fix - Updated logger for JsonFeedFileWriter by @vinkmeta in #3503
-* Fix - Migrated Handler exceptions to centralisedLogger by @vinkmeta in #3498
-* Fix - Migrated Abstract Feed Meta loggers to centralised Logger by @vinkmeta in #3499
-* Fix - Moved AbstractFeedFileWriter Meta logs to centralised logger by @vinkmeta in #3500
-* Fix - Migrated CsvFeedFileWriter logs by @vinkmeta in #3501
-* Fix - Updated FeedUploadUtils loggers by @vinkmeta in #3502
-* Fix - Added support for exceptions in Logger by @vinkmeta in #3497
-* Fix - Fix UTF-8 character encoding in normalization method by @devbodaghe in #3495
-* Fix - Fixes add new attribute mapping row selection by @yuriferretti in #3490
-* Tweak - Remove tax attribute mapping option by @juan-goncalves in #3488
-* Fix - Rolling back out of stock change by @SayanPandey in #3492
-* Tweak - [BUG] fix: Product description is a different font size from the rest of the fields on the fb product page  by @mangalutsav in #3493
-* Fix - [Bug] fix: 'Facebook Product Video' field placement by @sarthakpandeymeta in #3491
-* Fix - Adding visibility hidden check for out of stock products by @SayanPandey in #3489
-* Fix - Fix exclude_sale_price Value Type in Discount Syncing by @mradmeta in #3487
-* Dev - Create unit tests for ./Framework/Plugin/Dependancies.php by @ajello-meta in #3485
-* Dev - Create unit tests for ./Framework/Plugin/Compatibility.php by @ajello-meta in #3484
-* Dev - Create unit tests for ./Framework/Api/JSONResponse.php by @ajello-meta in #3481
-* Dev - Create unit tests for ./Framework/Api/Request.php by @ajello-meta in #3479
-* Dev - Improve unit tests for ./Admin/Settings_Screens/Shops.php by @ajello-meta in #3477
-* Dev - Create unit tests for ./Framework/Api/Response.php by @ajello-meta in #3480
-* Dev - Create unit tests for ./Admin/Abstract_Settings_Screen.php by @ajello-meta in #3478
-* Dev - Improve unit tests for ./Admin/Settings_Screens/Connection.php by @ajello-meta in #3476
-* Add - Validate PR has single changelog label by @tzahgr in #3470
-* Add - Set stable tag manual workflow by @tzahgr in #3454
+= 3.5.6 - 2025-08-18 =
+* Fix - Improving website prformance by reducing frequency of heavy queries by @vinkmeta in #3556
+* Dev - chore: add multiple images functionality tests with rollout switch in… by @devbodaghe in #3554
+* Update - Enable Offer Management APIs + Tweaks by @mradmeta in #3548
+* Add - Add Rollout Switches for Gating Multiple Variants by @devbodaghe in #3551
+* Add - Feature/multiple images for variants by @devbodaghe in #3543
+* Fix - Fix product set banner reappearance after dismissal  by @mshymon in #3547
+* Fix - Remove unnecessary logging for product attribute mapper attributes by @devbodaghe in #3546
+* Update - Deprecate FB Product Sets tab and migrate legacy product sets by @mshymon in #3534
+* Add - Automated secondary QA test to compare artifact from prepare-release and marketplace version by @immadhavv in #3544
+* Fix - Fix: Disable dropdown fields when 'Do not sync' is selected by @devbodaghe in #3541
+* Fix - Show Facebook Product Video field for variable products by @ukilla in #3542
+* Fix - Fix bug in plugin version upgrade/downgrade logic in Lifecycle by @mshymon in #3539
+* Add - Run e2e tests on marketplace release of the plugin by @immadhavv in #3535
+* Fix - Fix/prevent woocommerce attribute summaries in facebook short descriptions by @devbodaghe in #3531
 
 [See changelog for all versions](https://raw.githubusercontent.com/facebook/facebook-for-woocommerce/refs/heads/main/changelog.txt).
