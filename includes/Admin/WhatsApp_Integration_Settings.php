@@ -195,14 +195,13 @@ class WhatsApp_Integration_Settings {
 				const messageEvent = message.event;
 
 				if (messageEvent === 'CommerceExtension::WA_INSTALL' && message.success) {
-				console.log('success');
 
 					const requestBody = {
 						access_token: message.access_token,
 						business_id: message.business_id,
 						phone_number_id: message.phone_number_id,
 						waba_id: message.waba_id,
-						wa_installation_id: 'xxx',
+						wa_installation_id: message.wa_installation_id,
 					};
 
 					whatsAppAPI.updateWhatsAppSettings(requestBody)
