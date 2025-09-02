@@ -208,7 +208,6 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 								'path' => '/',
 								'domain' => $cookie->domain,
 								'secure' => is_ssl(),
-								'httponly' => true,
 								'samesite' => 'Lax',
 							)
 						);
