@@ -56,6 +56,9 @@ class Sync {
 		// stock update actions
 		add_action( 'woocommerce_product_set_stock', array( $this, 'handle_stock_update' ) );
 		add_action( 'woocommerce_variation_set_stock', array( $this, 'handle_stock_update' ) );
+
+		// product import handling
+		add_action( 'woocommerce_product_import_inserted_product_object', array( $this, 'handle_product_import_update' ), 10, 2 );
 	}
 
 
@@ -170,6 +173,53 @@ class Sync {
 
 		// add the product to the list of products to be updated
 		$this->create_or_update_products( array( $product->get_id() ) );
+	}
+
+
+	/**
+	 * Handles product imports from WooCommerce import functionality.
+	 *
+	 * @since 3.5.4
+	 *
+	 * @param \WC_Product $product The product object that was imported
+	 * @param array $data The import data
+	 */
+	public function handle_product_import_update( $product, $data ) {
+
+		// bail if not connected
+		if ( ! facebook_for_woocommerce()->get_connection_handler()->is_connected() ) {
+			return;
+		}
+
+		// Check if this is an UPDATE (not new)
+		if ( $this->is_product_update( $product ) ) {
+			// Only sync to Facebook if the product should be synced
+			try {
+				facebook_for_woocommerce()->get_product_sync_validator( $product )->validate();
+				$this->create_or_update_products( array( $product->get_id() ) );
+			} catch ( \Exception $e ) {
+				// Product validation failed, skip sync
+				return;
+			}
+		}
+		// If it's new, let existing flow handle it
+	}
+
+
+	/**
+	 * Determines if the product is being updated rather than newly created during import.
+	 *
+	 * @since 3.5.4
+	 *
+	 * @param \WC_Product $product The product object
+	 * @return bool True if this is an update, false if it's new
+	 */
+	private function is_product_update( $product ) {
+		// Method: Check if product has ID and isn't importing status
+		if ( $product->get_id() && $product->get_status() !== 'importing' ) {
+			return true; // This is an update
+		}
+		return false; // This is new
 	}
 
 
