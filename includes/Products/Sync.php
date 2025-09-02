@@ -217,24 +217,6 @@ class Sync {
 		}
 	}
 
-
-	/**
-	 * Determines if the product is being updated rather than newly created during import.
-	 *
-	 * @since 3.5.4
-	 *
-	 * @param \WC_Product $product The product object
-	 * @return bool True if this is an update, false if it's new
-	 */
-	private function is_product_update( $product ) {
-		// Method: Check if product has ID and isn't importing status
-		if ( $product->get_id() && $product->get_status() !== 'importing' ) {
-			return true; // This is an update
-		}
-		return false; // This is new
-	}
-
-
 	/**
 	 * Creates a background job to sync the products in the requests array.
 	 *
