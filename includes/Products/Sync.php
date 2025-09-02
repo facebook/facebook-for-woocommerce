@@ -10,6 +10,8 @@
 
 namespace WooCommerce\Facebook\Products;
 
+use WooCommerce\Facebook\Framework\Logger;
+
 defined( 'ABSPATH' ) || exit;
 
 /**
@@ -179,7 +181,7 @@ class Sync {
 	/**
 	 * Handles product imports from WooCommerce import functionality.
 	 *
-	 * @since 3.5.4
+	 * @since 3.5.7
 	 *
 	 * @param \WC_Product $product The product object that was imported
 	 * @param array $data The import data
@@ -191,18 +193,28 @@ class Sync {
 			return;
 		}
 
-		// Check if this is an UPDATE (not new)
-		if ( $this->is_product_update( $product ) ) {
-			// Only sync to Facebook if the product should be synced
-			try {
-				facebook_for_woocommerce()->get_product_sync_validator( $product )->validate();
-				$this->create_or_update_products( array( $product->get_id() ) );
-			} catch ( \Exception $e ) {
-				// Product validation failed, skip sync
-				return;
-			}
+		// Process ALL products (both new and updates) during import
+		try {
+			facebook_for_woocommerce()->get_product_sync_validator( $product )->validate();
+			$this->create_or_update_products( array( $product->get_id() ) );
+		} catch ( \Exception $e ) {
+			Logger::log(
+				'Product validation failed during import',
+				[
+					'event'      => 'product_import_validation_error',
+					'product_id' => $product->get_id(),
+					'product_type' => $product->get_type(),
+					'error'      => $e->getMessage(),
+				],
+				[
+					'should_send_log_to_meta'        => true,
+					'should_save_log_in_woocommerce' => true,
+					'woocommerce_log_level'          => \WC_Log_Levels::ERROR,
+				],
+				$e
+			);
+			return;
 		}
-		// If it's new, let existing flow handle it
 	}
 
 
