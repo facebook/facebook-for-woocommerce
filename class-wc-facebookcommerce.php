@@ -9,6 +9,7 @@
  */
 
 require_once __DIR__ . '/includes/fbutils.php';
+require_once __DIR__ . '/includes/fbcollection.php';
 
 use Automattic\WooCommerce\Admin\Features\Features as WooAdminFeatures;
 use Automattic\WooCommerce\Admin\Features\OnboardingTasks\TaskLists;
@@ -190,7 +191,9 @@ class WC_Facebookcommerce extends WooCommerce\Facebook\Framework\Plugin {
 		// Hook the setup task. The hook admin_init is not triggered when the WC fetches the tasks using the endpoint: wp-json/wc-admin/onboarding/tasks and hence hooking into init.
 		add_action( 'init', array( $this, 'add_setup_task' ), 20 );
 		add_action( 'admin_notices', array( $this, 'add_inbox_notes' ) );
-
+		if ( class_exists( '\Facebook\WooCommerce\Commerce_Page_Override' ) ) {
+			new \Facebook\WooCommerce\Commerce_Page_Override();
+		}
 		add_filter(
 			'wc_' . self::PLUGIN_ID . '_http_request_args',
 			array( $this, 'force_user_agent_in_latin' )
