@@ -184,7 +184,7 @@ class Sync {
 	 * @since 3.5.7
 	 *
 	 * @param \WC_Product $product The product object that was imported
-	 * @param array $data The import data
+	 * @param array       $data    The import data
 	 */
 	public function handle_product_import_update( $product, $data ) {
 
