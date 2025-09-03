@@ -57,41 +57,51 @@ class Update {
 		set_transient( $flag_name, 'yes', 3 * HOUR_IN_SECONDS );
 
 		try {
-			$term_query                  = new \WP_Term_Query(
-				array(
-					'taxonomy'   => 'product_cat',
-					'hide_empty' => false,
-					'fields'     => 'id=>name',
-				)
-			);
-			$excluded_product_categories = $term_query->get_terms();
-			$term_query                  = new \WP_Term_Query(
-				array(
-					'taxonomy'     => 'product_tag',
-					'hide_empty'   => false,
-					'hierarchical' => false,
-					'fields'       => 'id=>name',
-				)
-			);
-			$excluded_product_tags       = $term_query->get_terms();
-			$context                     = array(
+			$excluded_product_categories = (array) apply_filters( 'wc_facebook_excluded_product_category_ids', get_option( 'wc_facebook_excluded_product_category_ids', [] ), $this );
+			if ( ! empty( $excluded_product_categories ) ) {
+				$term_query                  = new \WP_Term_Query(
+					array(
+						'taxonomy'   => 'product_cat',
+						'include'    => $excluded_product_categories,
+						'hide_empty' => true,
+						'fields'     => 'id=>name',
+					)
+				);
+				$excluded_product_categories = $term_query->get_terms();
+			}
+
+			$excluded_product_tags = (array) apply_filters( 'wc_facebook_excluded_product_tag_ids', get_option( 'wc_facebook_excluded_product_tag_ids', [] ), $this );
+			if ( ! empty( $excluded_product_tags ) ) {
+				$term_query            = new \WP_Term_Query(
+					array(
+						'taxonomy'     => 'product_tag',
+						'include'      => $excluded_product_tags,
+						'hide_empty'   => true,
+						'hierarchical' => false,
+						'fields'       => 'id=>name',
+					)
+				);
+				$excluded_product_tags = $term_query->get_terms();
+			}
+
+			$context  = array(
 				'flow_name'  => 'plugin_updates',
 				'flow_step'  => 'send_plugin_updates',
 				'extra_data' => [
 					'is_multisite'                => is_multisite(),
 					'is_product_sync_enabled'     => facebook_for_woocommerce()->get_integration()->is_product_sync_enabled(),
-					'excluded_product_categories' => json_encode( $excluded_product_categories ),
-					'excluded_product_tags'       => json_encode( $excluded_product_tags ),
+					'excluded_product_categories' => wp_json_encode( $excluded_product_categories ),
+					'excluded_product_tags'       => wp_json_encode( $excluded_product_tags ),
 					'published_product_count'     => facebook_for_woocommerce()->get_integration()->get_product_count(),
 					'opted_out_woo_all_products'  => get_option( self::MASTER_SYNC_OPT_OUT_TIME ),
 				],
 			);
-			$context                     = [ LogHandlerBase::set_core_log_context( $context ) ];
-			$context                     = [
+			$context  = [ LogHandlerBase::set_core_log_context( $context ) ];
+			$context  = [
 				'event'      => 'persist_meta_logs',
 				'extra_data' => [ 'meta_logs' => wp_json_encode( $context ) ],
 			];
-			$response                    = facebook_for_woocommerce()->get_api()->log_to_meta( $context );
+			$response = facebook_for_woocommerce()->get_api()->log_to_meta( $context );
 			if ( ! $response->success ) {
 				Logger::log(
 					'Bad response from log_to_meta request',
