@@ -1,5 +1,21 @@
 *** Facebook for WooCommerce Changelog ***
 
+= 3.5.6 - 2025-08-18 =
+* Fix - Improving website prformance by reducing frequency of heavy queries by @vinkmeta in #3556
+* Dev - chore: add multiple images functionality tests with rollout switch in… by @devbodaghe in #3554
+* Update - Enable Offer Management APIs + Tweaks by @mradmeta in #3548
+* Add - Add Rollout Switches for Gating Multiple Variants by @devbodaghe in #3551
+* Add - Feature/multiple images for variants by @devbodaghe in #3543
+* Fix - Fix product set banner reappearance after dismissal  by @mshymon in #3547
+* Fix - Remove unnecessary logging for product attribute mapper attributes by @devbodaghe in #3546
+* Update - Deprecate FB Product Sets tab and migrate legacy product sets by @mshymon in #3534
+* Add - Automated secondary QA test to compare artifact from prepare-release and marketplace version by @immadhavv in #3544
+* Fix - Fix: Disable dropdown fields when 'Do not sync' is selected by @devbodaghe in #3541
+* Fix - Show Facebook Product Video field for variable products by @ukilla in #3542
+* Fix - Fix bug in plugin version upgrade/downgrade logic in Lifecycle by @mshymon in #3539
+* Add - Run e2e tests on marketplace release of the plugin by @immadhavv in #3535
+* Fix - Fix/prevent woocommerce attribute summaries in facebook short descriptions by @devbodaghe in #3531
+
 = 3.5.5 - 2025-07-23 =
 * Fix - Updated the links to Meta Support by @vahidkay-meta in #3523
 * Fix - Improving AAM settings params being captured + Purchase events captured by Pixel by @vahidkay-meta in #3512
