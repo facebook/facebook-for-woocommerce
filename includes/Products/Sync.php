@@ -91,16 +91,9 @@ class Sync {
 	 * @see \WC_Facebook_Product_Feed::get_product_ids()
 	 * @see \WC_Facebook_Product_Feed::write_product_feed_file()
 	 *
-	 * @since 2.0.0
+	 * @since 3.5.8
 	 */
 	public function create_or_update_modified_products() {
-		Logger::log(
-			'Starting sync of modified products',
-			[
-				'event' => 'product_sync_modified_products_start',
-			]
-		);
-
 		try {
 			// Get all product IDs that are eligible for sync
 			$all_product_ids = \WC_Facebookcommerce_Utils::get_all_product_ids_for_sync();
@@ -125,14 +118,6 @@ class Sync {
 
 			// Queue up filtered IDs for sync
 			$this->create_or_update_products( $products_to_sync );
-
-			Logger::log(
-				'Completed sync of modified products',
-				[
-					'event' => 'product_sync_modified_products_complete',
-					'product_count' => count( $products_to_sync ),
-				]
-			);
 		} catch ( \Exception $e ) {
 			// Log the error but don't interrupt the sync process
 			Logger::log(
