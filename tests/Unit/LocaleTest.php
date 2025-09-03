@@ -264,3 +264,4 @@ class LocaleTest extends AbstractWPUnitTestWithOptionIsolationAndSafeFiltering {
 			);
 		}
 	}
+}
