@@ -264,16 +264,3 @@ class LocaleTest extends AbstractWPUnitTestWithOptionIsolationAndSafeFiltering {
 			);
 		}
 	}
-
-	/**
-	 * TEMPORARY TEST: This test is intentionally failing to verify workflow error handling.
-	 * This should be removed after testing the workflow.
-	 */
-	public function test_intentional_failure_for_workflow_testing() {
-		// This test will always fail to verify that:
-		// 1. The workflow shows which specific tests failed
-		// 2. The workflow stops execution when tests fail
-		// 3. Coverage is not calculated when tests fail
-		$this->assertTrue( false, 'This test intentionally fails to test workflow error handling' );
-	}
-}
