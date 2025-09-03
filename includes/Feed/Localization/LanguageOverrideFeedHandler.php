@@ -42,41 +42,6 @@ class LanguageOverrideFeedHandler extends AbstractFeedHandler {
 		$this->feed_type = 'language_override';
 	}
 
-	/**
-	 * Queue the start of feed generation.
-	 * This replaces the functionality from LanguageOverrideFeedGenerator.
-	 *
-	 * @since 3.6.0
-	 */
-	public function queue_start(): void {
-		// Prevent double registration by checking if generation is already in progress
-		$generation_lock_key = 'wc_facebook_language_feed_generation_in_progress';
-
-		if ( get_transient( $generation_lock_key ) ) {
-			Logger::log(
-				'Language override feed generation skipped: Already in progress.',
-				[],
-				array(
-					'should_send_log_to_meta'        => false,
-					'should_save_log_in_woocommerce' => true,
-					'woocommerce_log_level'          => \WC_Log_Levels::DEBUG,
-				)
-			);
-			return;
-		}
-
-		// Set lock for 30 minutes (feed generation can take time)
-		set_transient( $generation_lock_key, true, 30 * MINUTE_IN_SECONDS );
-
-		try {
-			// For language feeds, we'll directly call the handler
-			// In a more complex implementation, this could queue background jobs
-			$this->generate_feed_file();
-		} finally {
-			// Always clear the lock when done
-			delete_transient( $generation_lock_key );
-		}
-	}
 
 	/**
 	 * Generates language override feed files for all available languages.

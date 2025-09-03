@@ -208,6 +208,7 @@ class LanguageOverrideFeed extends AbstractFeed {
 
 	/**
 	 * Regenerates the language override feeds based on the defined schedule.
+	 * Uses the standard AbstractFeed pattern with FeedGenerator for batched processing.
 	 *
 	 * @since 3.6.0
 	 */
@@ -216,7 +217,8 @@ class LanguageOverrideFeed extends AbstractFeed {
 			return;
 		}
 
-		$this->feed_handler->queue_start();
+		// Use the standard AbstractFeed pattern - let the generator handle batched processing
+		$this->feed_generator->queue_start();
 	}
 
 	/**

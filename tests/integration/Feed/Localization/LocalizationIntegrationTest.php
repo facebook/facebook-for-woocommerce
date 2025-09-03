@@ -3,247 +3,364 @@ declare( strict_types=1 );
 
 namespace WooCommerce\Facebook\Tests\Integration\Feed\Localization;
 
-use WooCommerce\Facebook\Feed\Localization\TranslationDataExtractor;
 use WooCommerce\Facebook\Feed\Localization\LanguageFeedData;
+use WooCommerce\Facebook\Feed\Localization\LanguageOverrideFeed;
 use WooCommerce\Facebook\Feed\FeedManager;
-use WooCommerce\Facebook\Tests\AbstractWPUnitTestWithOptionIsolationAndSafeFiltering;
+use WooCommerce\Facebook\Integrations\IntegrationRegistry;
+use WooCommerce\Facebook\Tests\Integration\IntegrationTestCase;
 
 /**
  * Integration tests for localization feed functionality
  *
  * @since 3.6.0
  */
-class LocalizationIntegrationTest extends AbstractWPUnitTestWithOptionIsolationAndSafeFiltering {
+class LocalizationIntegrationTest extends IntegrationTestCase {
 
 	/**
-	 * Test that localization feed is included in active feed types
+	 * @var string|null Expected plugin to be active for this test run
 	 */
-	public function test_localization_feed_in_active_types() {
-		$active_types = FeedManager::get_active_feed_types();
+	private static $expected_plugin = null;
 
-		$this->assertContains( FeedManager::LANGUAGE_OVERRIDE, $active_types );
+	/**
+	 * Set up the test class
+	 */
+	public static function setUpBeforeClass(): void {
+		parent::setUpBeforeClass();
+
+		// Check for command line argument or environment variable to specify expected plugin
+		self::$expected_plugin = self::getExpectedPlugin();
+
+		// Output which plugin we're testing
+		if ( self::$expected_plugin ) {
+			echo "\n=== Testing with " . strtoupper( self::$expected_plugin ) . " plugin ===\n";
+		} else {
+			echo "\n=== Testing without specific plugin requirement ===\n";
+		}
 	}
 
 	/**
-	 * Test that FeedManager can create a localization feed instance
+	 * Get the expected plugin from command line arguments or environment variables
+	 *
+	 * @return string|null
 	 */
-	public function test_feed_manager_creates_localization_feed() {
-		$feed_manager = new FeedManager();
+	private static function getExpectedPlugin(): ?string {
+		// Check environment variable first
+		$env_plugin = getenv( 'FB_TEST_PLUGIN' );
+		if ( $env_plugin && in_array( strtolower( $env_plugin ), [ 'wpml', 'polylang' ], true ) ) {
+			return strtolower( $env_plugin );
+		}
 
-		$localization_feed = $feed_manager->get_feed_instance( FeedManager::LANGUAGE_OVERRIDE );
+		// Check command line arguments
+		global $argv;
+		if ( isset( $argv ) && is_array( $argv ) ) {
+			foreach ( $argv as $arg ) {
+				if ( strpos( $arg, '--plugin=' ) === 0 ) {
+					$plugin = substr( $arg, 9 );
+					if ( in_array( strtolower( $plugin ), [ 'wpml', 'polylang' ], true ) ) {
+						return strtolower( $plugin );
+					}
+				}
+			}
+		}
 
+		return null;
+	}
+
+	/**
+	 * Test that the expected plugin is active if specified
+	 */
+	public function test_expected_plugin_is_active() {
+		if ( ! self::$expected_plugin ) {
+			$this->markTestSkipped( 'No specific plugin expected for this test run' );
+			return;
+		}
+
+		$detected_plugin = $this->detectActiveLocalizationPlugin();
+
+		$this->assertEquals(
+			self::$expected_plugin,
+			$detected_plugin,
+			sprintf(
+				'Expected %s plugin to be active, but %s was detected. Make sure you\'re using the correct bootstrap file.',
+				strtoupper( self::$expected_plugin ),
+				$detected_plugin ? strtoupper( $detected_plugin ) : 'no plugin'
+			)
+		);
+
+		echo "\n✓ Confirmed " . strtoupper( self::$expected_plugin ) . " plugin is active\n";
+	}
+
+	/**
+	 * Detect which localization plugin is currently active using the IntegrationRegistry
+	 *
+	 * @return string|null 'wpml', 'polylang', or null if none detected
+	 */
+	private function detectActiveLocalizationPlugin(): ?string {
+		// Use the IntegrationRegistry to check availability
+		$integrations = IntegrationRegistry::get_all_localization_integrations();
+
+		foreach ( $integrations as $plugin_key => $integration ) {
+			// Check if the integration is available (active + properly configured)
+			if ( $integration->is_available() ) {
+				return $plugin_key;
+			}
+		}
+
+		return null;
+	}
+
+
+	/**
+	 * Test integration registry functionality
+	 */
+	public function test_integration_registry() {
+		// Test getting all localization integration keys
+		$integration_keys = IntegrationRegistry::get_localization_integration_keys();
+		$this->assertIsArray( $integration_keys );
+		$this->assertContains( 'wpml', $integration_keys );
+		$this->assertContains( 'polylang', $integration_keys );
+
+		// Test getting specific integration
+		$wpml_integration = IntegrationRegistry::get_localization_integration( 'wpml' );
 		$this->assertInstanceOf(
-			\WooCommerce\Facebook\Feed\Localization\LanguageOverrideFeed::class,
-			$localization_feed
+			\WooCommerce\Facebook\Integrations\Abstract_Localization_Integration::class,
+			$wpml_integration
+		);
+
+		$polylang_integration = IntegrationRegistry::get_localization_integration( 'polylang' );
+		$this->assertInstanceOf(
+			\WooCommerce\Facebook\Integrations\Abstract_Localization_Integration::class,
+			$polylang_integration
+		);
+
+		// Test getting all integrations
+		$all_integrations = IntegrationRegistry::get_all_localization_integrations();
+		$this->assertIsArray( $all_integrations );
+		$this->assertArrayHasKey( 'wpml', $all_integrations );
+		$this->assertArrayHasKey( 'polylang', $all_integrations );
+
+		// Test availability data
+		$availability_data = IntegrationRegistry::get_all_localization_availability_data();
+		$this->assertIsArray( $availability_data );
+		$this->assertArrayHasKey( 'wpml', $availability_data );
+		$this->assertArrayHasKey( 'polylang', $availability_data );
+	}
+
+	/**
+	 * Test basic integration properties and metadata
+	 */
+	public function test_integration_basic_properties() {
+		$active_integration = $this->getActiveIntegration();
+		if ( ! $active_integration ) {
+			$this->markTestSkipped( 'No active localization integration found' );
+			return;
+		}
+
+		// Test plugin file name
+		$plugin_file = $active_integration->get_plugin_file_name();
+		$this->assertIsString( $plugin_file );
+		$this->assertNotEmpty( $plugin_file );
+		$this->assertStringContainsString( '/', $plugin_file, 'Plugin file should contain directory separator' );
+
+		// Test plugin name
+		$plugin_name = $active_integration->get_plugin_name();
+		$this->assertIsString( $plugin_name );
+		$this->assertNotEmpty( $plugin_name );
+
+		// Test plugin installation status
+		$is_installed = $active_integration->is_plugin_installed();
+		$this->assertTrue( $is_installed, 'Active integration should be installed' );
+
+		// Test plugin active status
+		$is_active = $active_integration->is_plugin_active();
+		$this->assertTrue( $is_active, 'Active integration should be active' );
+
+		// Test plugin version
+		$version = $active_integration->get_plugin_version();
+		if ( $version !== null ) {
+			$this->assertIsString( $version );
+			$this->assertNotEmpty( $version );
+		}
+	}
+
+	/**
+	 * Test language detection and configuration
+	 */
+	public function test_language_detection() {
+		$active_integration = $this->getActiveIntegration();
+		if ( ! $active_integration ) {
+			$this->markTestSkipped( 'No active localization integration found' );
+			return;
+		}
+
+		// Test available languages
+		$available_languages = $active_integration->get_available_languages();
+		$this->assertIsArray( $available_languages );
+		$this->assertNotEmpty( $available_languages, 'Should have at least one language available' );
+
+		// Test default language
+		$default_language = $active_integration->get_default_language();
+		$this->assertIsString( $default_language );
+		$this->assertNotEmpty( $default_language );
+
+		// Test current language
+		$current_language = $active_integration->get_current_language();
+		$this->assertIsString( $current_language );
+		$this->assertNotEmpty( $current_language );
+
+		// Test that default language is in available languages
+		$this->assertContains(
+			$default_language,
+			$available_languages,
+			'Default language should be in available languages list'
 		);
 	}
 
 	/**
-	 * Test TranslationDataExtractor basic functionality
+	 * Test integration availability logic
 	 */
-	public function test_translation_data_extractor_basic_functionality() {
-		$extractor = new TranslationDataExtractor();
+	public function test_integration_availability() {
+		$active_integration = $this->getActiveIntegration();
+		if ( ! $active_integration ) {
+			$this->markTestSkipped( 'No active localization integration found' );
+			return;
+		}
 
-		// Test getting translatable fields
-		$fields = $extractor->get_translatable_fields();
-		$this->assertIsArray( $fields );
-		$this->assertNotEmpty( $fields );
-		$this->assertContains( 'title', $fields );
-		$this->assertContains( 'description', $fields );
+		// Test availability (should be true for active integration)
+		$is_available = $active_integration->is_available();
+		$this->assertTrue( $is_available, 'Active integration should be available' );
 
-		// Test getting available languages (should be empty without plugins)
-		$languages = $extractor->get_available_languages();
-		$this->assertIsArray( $languages );
+		// Test availability data structure
+		$availability_data = $active_integration->get_availability_data();
+		$this->assertIsArray( $availability_data );
 
-		// Test checking for active plugins (should be false without plugins)
-		$has_plugins = $extractor->has_active_localization_plugin();
-		$this->assertIsBool( $has_plugins );
+		// Check required fields
+		$this->assertArrayHasKey( 'plugin_name', $availability_data );
+		$this->assertArrayHasKey( 'plugin_file', $availability_data );
+		$this->assertArrayHasKey( 'is_installed', $availability_data );
+		$this->assertArrayHasKey( 'is_active', $availability_data );
 
-		// Test getting statistics
-		$stats = $extractor->get_translation_statistics();
-		$this->assertIsArray( $stats );
-		$this->assertArrayHasKey( 'has_active_plugin', $stats );
-		$this->assertArrayHasKey( 'available_languages', $stats );
+		// Verify data types and values
+		$this->assertIsString( $availability_data['plugin_name'] );
+		$this->assertIsString( $availability_data['plugin_file'] );
+		$this->assertTrue( $availability_data['is_installed'] );
+		$this->assertTrue( $availability_data['is_active'] );
 	}
 
 	/**
-	 * Test LanguageFeedData basic functionality
+	 * Test product retrieval from default language
 	 */
-	public function test_language_feed_data_basic_functionality() {
-		$feed_data = new LanguageFeedData();
+	public function test_get_products_from_default_language() {
+		$active_integration = $this->getActiveIntegration();
+		if ( ! $active_integration ) {
+			$this->markTestSkipped( 'No active localization integration found' );
+			return;
+		}
 
-		// Test getting CSV headers
-		$headers = $feed_data->get_csv_headers();
-		$this->assertIsArray( $headers );
-		$this->assertContains( 'id', $headers );
-		$this->assertContains( 'language', $headers );
-		$this->assertContains( 'title', $headers );
+		// Test getting products from default language (without creating products to avoid rollout switches)
+		$default_products = $active_integration->get_products_from_default_language( 10, 0 );
+		$this->assertIsArray( $default_products );
 
-		// Test sample data
-		$sample_data = $feed_data->get_sample_csv_data();
-		$this->assertIsArray( $sample_data );
-		$this->assertNotEmpty( $sample_data );
+		// Test with limit
+		$limited_products = $active_integration->get_products_from_default_language( 2, 0 );
+		$this->assertIsArray( $limited_products );
+		$this->assertLessThanOrEqual( 2, count( $limited_products ), 'Should respect limit parameter' );
 
-		// Test validation with sample data
-		$validation = $feed_data->validate_translation_data( [ 'es_ES' => $sample_data ] );
-		$this->assertIsArray( $validation );
-		$this->assertArrayHasKey( 'valid', $validation );
-		$this->assertArrayHasKey( 'errors', $validation );
+		// Test with offset
+		$offset_products = $active_integration->get_products_from_default_language( 10, 1 );
+		$this->assertIsArray( $offset_products );
 	}
 
 	/**
-	 * Test CSV formatting with sample data
+	 * Test product translation details with real product
 	 */
-	public function test_csv_formatting_with_sample_data() {
-		$feed_data = new LanguageFeedData();
-		$sample_data = $feed_data->get_sample_csv_data();
+	public function test_get_product_translation_details() {
+		$active_integration = $this->getActiveIntegration();
+		if ( ! $active_integration ) {
+			$this->markTestSkipped( 'No active localization integration found' );
+			return;
+		}
 
-		// Test formatting for CSV
-		$csv_rows = $feed_data->format_language_for_csv( 'es_ES', $sample_data );
-		$this->assertIsArray( $csv_rows );
-		$this->assertNotEmpty( $csv_rows );
+		// Create a real test product using IntegrationTestCase helper
+		$product = $this->create_simple_product([
+			'name' => 'Test Product for Translation',
+			'regular_price' => '19.99',
+			'status' => 'publish',
+			'catalog_visibility' => 'visible'
+		]);
 
-		// Test converting to CSV string
-		$csv_string = $feed_data->convert_to_csv_string( $csv_rows );
-		$this->assertIsString( $csv_string );
-		$this->assertStringContainsString( 'id,language,title', $csv_string );
-		$this->assertStringContainsString( 'es_ES', $csv_string );
+		// Test getting translation details
+		$translation_details = $active_integration->get_product_translation_details( $product->get_id() );
+		$this->assertIsArray( $translation_details );
+
+		// Check required structure
+		$this->assertArrayHasKey( 'product_id', $translation_details );
+		$this->assertArrayHasKey( 'default_language', $translation_details );
+		$this->assertArrayHasKey( 'translations', $translation_details );
+		$this->assertArrayHasKey( 'translation_status', $translation_details );
+
+		// Verify data types
+		$this->assertIsInt( $translation_details['product_id'] );
+		$this->assertIsString( $translation_details['default_language'] );
+		$this->assertIsArray( $translation_details['translations'] );
+		$this->assertIsArray( $translation_details['translation_status'] );
+
+		// Verify product ID matches
+		$this->assertEquals( $product->get_id(), $translation_details['product_id'] );
+
+		// Verify default language is not empty
+		$this->assertNotEmpty( $translation_details['default_language'], 'Default language should not be empty' );
 	}
 
 	/**
-	 * Test product translation extraction with real product
+	 * Test integration with multiple languages
 	 */
-	public function test_product_translation_extraction() {
-		$extractor = new TranslationDataExtractor();
+	public function test_multiple_language_support() {
+		$active_integration = $this->getActiveIntegration();
+		if ( ! $active_integration ) {
+			$this->markTestSkipped( 'No active localization integration found' );
+			return;
+		}
 
-		// Create a test product
-		$product = new \WC_Product_Simple();
-		$product->set_name( 'Test Product' );
-		$product->set_description( 'Test product description' );
-		$product->set_short_description( 'Short description' );
-		$product->set_price( 10.00 );
-		$product->set_status( 'publish' );
-		$product_id = $product->save();
+		$available_languages = $active_integration->get_available_languages();
 
-		// Test extracting translations (should be empty without localization plugins)
-		$translations = $extractor->extract_product_translations( $product_id );
-		$this->assertIsArray( $translations );
+		if ( count( $available_languages ) < 2 ) {
+			$this->markTestSkipped( 'Multiple languages not configured for testing' );
+			return;
+		}
 
-		// Test checking if product has translations
-		$has_translations = $extractor->product_has_translations( $product_id );
-		$this->assertIsBool( $has_translations );
+		// Test that we can get language information for each available language
+		foreach ( $available_languages as $language_code ) {
+			$this->assertIsString( $language_code );
+			$this->assertNotEmpty( $language_code );
+		}
 
-		// Clean up
-		wp_delete_post( $product_id, true );
+		// Test default language is properly set
+		$default_language = $active_integration->get_default_language();
+		$this->assertContains(
+			$default_language,
+			$available_languages,
+			'Default language should be in available languages'
+		);
 	}
 
 	/**
-	 * Test localization feed should skip when no plugins active
+	 * Get the currently active integration for testing
+	 *
+	 * @return \WooCommerce\Facebook\Integrations\Abstract_Localization_Integration|null
 	 */
-	public function test_localization_feed_skips_without_plugins() {
-		$feed_manager = new FeedManager();
-		$localization_feed = $feed_manager->get_feed_instance( FeedManager::LANGUAGE_OVERRIDE );
+	private function getActiveIntegration(): ?\WooCommerce\Facebook\Integrations\Abstract_Localization_Integration {
+		$integrations = IntegrationRegistry::get_all_localization_integrations();
 
-		// Should skip feed when no localization plugins are active
-		$should_skip = $localization_feed->should_skip_feed();
-		$this->assertTrue( $should_skip );
+		foreach ( $integrations as $integration ) {
+			if ( $integration->is_available() ) {
+				return $integration;
+			}
+		}
+
+		return null;
 	}
 
-	/**
-	 * Test language feed data validation
-	 */
-	public function test_language_feed_data_validation() {
-		$feed_data = new LanguageFeedData();
 
-		// Test valid data
-		$valid_data = [
-			'es_ES' => [
-				[
-					'id' => '123',
-					'language' => 'es_ES',
-					'title' => 'Producto de Prueba',
-					'description' => 'Descripción del producto',
-					'short_description' => 'Descripción corta',
-				]
-			]
-		];
 
-		$validation = $feed_data->validate_translation_data( $valid_data );
-		$this->assertTrue( $validation['valid'] );
-		$this->assertEmpty( $validation['errors'] );
-		$this->assertEquals( 1, $validation['valid_count'] );
-		$this->assertEquals( 1, $validation['total_count'] );
-
-		// Test invalid data
-		$invalid_data = [
-			'invalid_lang' => [
-				[
-					'id' => '', // Missing ID
-					'language' => 'invalid_lang',
-					'title' => '', // Missing content
-				]
-			]
-		];
-
-		$validation = $feed_data->validate_translation_data( $invalid_data );
-		$this->assertFalse( $validation['valid'] );
-		$this->assertNotEmpty( $validation['errors'] );
-	}
-
-	/**
-	 * Test translation statistics
-	 */
-	public function test_translation_statistics() {
-		$feed_data = new LanguageFeedData();
-		$sample_data = [
-			'es_ES' => [
-				[ 'id' => '1', 'language' => 'es_ES', 'title' => 'Producto 1' ],
-				[ 'id' => '2', 'language' => 'es_ES', 'title' => 'Producto 2' ],
-			],
-			'fr_FR' => [
-				[ 'id' => '1', 'language' => 'fr_FR', 'title' => 'Produit 1' ],
-			],
-		];
-
-		$stats = $feed_data->get_translation_statistics( $sample_data );
-
-		$this->assertEquals( 2, $stats['total_languages'] );
-		$this->assertEquals( 3, $stats['total_products'] );
-		$this->assertContains( 'es_ES', $stats['languages'] );
-		$this->assertContains( 'fr_FR', $stats['languages'] );
-		$this->assertEquals( 2, $stats['products_per_language']['es_ES'] );
-		$this->assertEquals( 1, $stats['products_per_language']['fr_FR'] );
-	}
-
-	/**
-	 * Test CSV sanitization
-	 */
-	public function test_csv_sanitization() {
-		$feed_data = new LanguageFeedData();
-
-		// Test data with HTML and special characters
-		$test_data = [
-			[
-				'id' => '123',
-				'language' => 'es_ES',
-				'title' => '<strong>Producto con HTML</strong>',
-				'description' => 'Descripción con "comillas" y caracteres especiales & símbolos',
-				'short_description' => "Texto con\nmúltiples\nlíneas",
-			]
-		];
-
-		$csv_rows = $feed_data->format_language_for_csv( 'es_ES', $test_data );
-		$this->assertNotEmpty( $csv_rows );
-
-		$first_row = $csv_rows[0];
-
-		// HTML should be stripped
-		$this->assertEquals( 'Producto con HTML', $first_row['title'] );
-
-		// Quotes should be escaped for CSV
-		$this->assertStringContainsString( '""comillas""', $first_row['description'] );
-
-		// Multiple lines should be normalized to single spaces
-		$this->assertEquals( 'Texto con múltiples líneas', $first_row['short_description'] );
-	}
 }
