@@ -106,6 +106,30 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 	/** @var string request headers in the debug log */
 	const SETTING_REQUEST_HEADERS_IN_DEBUG_MODE = 'wc_facebook_request_headers_in_debug_log';
 
+	/** @var array Meta keys that affect Facebook sync and should trigger last change time update */
+	const PRODUCT_ATTRIBUTE_SYNC_RELEVANT_META_KEYS = [
+		'_regular_price',                     // -> price
+		'_sale_price',                        // -> sale_price
+		'_stock',                             // -> availability
+		'_stock_status',                      // -> availability
+		'_thumbnail_id',                      // -> image_link
+		'_price',                             // -> price (calculated field)
+		'fb_visibility',                      // -> visibility
+		'fb_product_description',             // -> description
+		'fb_rich_text_description',           // -> rich_text_description
+		'fb_brand',                           // -> brand
+		'fb_mpn',                             // -> mpn
+		'fb_size',                            // -> size
+		'fb_color',                           // -> color
+		'fb_material',                        // -> material
+		'fb_pattern',                         // -> pattern
+		'fb_age_group',                       // -> age_group
+		'fb_gender',                          // -> gender
+		'fb_product_condition',               // -> condition
+		'_wc_facebook_sync_enabled',          // -> sync settings
+		'_wc_facebook_product_image_source',  // -> sync settings
+	];
+
 	/** @var string the WordPress option name where the access token is stored */
 	const OPTION_ACCESS_TOKEN = 'wc_facebook_access_token';
 
@@ -2033,6 +2057,95 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 		ob_end_clean();
 
 		return wp_json_encode( [ $items ] );
+	}
+
+	/**
+	 * Checks if a meta key affects Facebook sync and should trigger last change time update.
+	 *
+	 * @param string $meta_key Meta key to check.
+	 * @return bool True if the meta key is relevant to Facebook sync.
+	 * @since 3.5.8
+	 */
+	private function is_product_attribute_sync_relevant( $meta_key ) {
+		// Skip our own meta keys to prevent infinite loops
+		if ( in_array( $meta_key, [ '_last_change_time', '_fb_sync_last_time' ], true ) ) {
+			return false;
+		}
+
+		// Skip WordPress internal meta keys
+		if ( strpos( $meta_key, '_wp_' ) === 0 || strpos( $meta_key, '_edit_' ) === 0 ) {
+			return false;
+		}
+
+		return in_array( $meta_key, self::PRODUCT_ATTRIBUTE_SYNC_RELEVANT_META_KEYS, true );
+	}
+
+	/**
+	 * Validates if the product and meta key should trigger a last change time update.
+	 *
+	 * @param int    $product_id Product ID.
+	 * @param string $meta_key   Meta key.
+	 * @return bool True if update should proceed, false otherwise.
+	 * @since 3.5.8
+	 */
+	private function should_update_product_change_time( $product_id, $meta_key ) {
+		$product_id = absint( $product_id );
+		$meta_key = sanitize_key( $meta_key );
+
+		// Check if this is a WooCommerce product
+		$product = wc_get_product( $product_id );
+		if ( ! $product instanceof WC_Product ) {
+			return false;
+		}
+
+		// Check if meta key is relevant for Facebook sync
+		if ( ! $this->is_product_attribute_sync_relevant( $meta_key ) ) {
+			return false;
+		}
+
+		// Check rate limiting
+		if ( $this->is_last_change_time_update_rate_limited( $product_id ) ) {
+			return false;
+		}
+
+		return true;
+	}
+
+	/**
+	 * Checks if the last change time update is rate limited for a product.
+	 *
+	 * @param int $product_id Product ID.
+	 * @return bool True if rate limited, false otherwise.
+	 * @since 3.5.8
+	 */
+	private function is_last_change_time_update_rate_limited( $product_id ) {
+		$cache_key = "last_change_time_{$product_id}";
+		$cached_time = wp_cache_get( $cache_key, 'facebook_for_woocommerce' );
+
+		// If no cached time, allow update
+		if ( false === $cached_time ) {
+			return false;
+		}
+
+		// Rate limit to once every 60 seconds (1 minute)
+		$rate_limit_window = 60;
+		$current_time = time();
+
+		// If the last update was within the rate limit window, prevent update
+		return ( $current_time - $cached_time ) < $rate_limit_window;
+	}
+
+	/**
+	 * Sets the last change time in cache for rate limiting.
+	 *
+	 * @param int $product_id Product ID.
+	 * @param int $timestamp Timestamp to cache.
+	 * @since 3.5.8
+	 */
+	private function set_last_change_time_cache( $product_id, $timestamp ) {
+		$cache_key = "last_change_time_{$product_id}";
+		// Cache for 2 minutes (120 seconds) to ensure it persists longer than the rate limit window
+		wp_cache_set( $cache_key, $timestamp, 'facebook_for_woocommerce', 120 );
 	}
 
 	/**
