@@ -2248,9 +2248,17 @@ class WC_Facebook_Product {
 			$product_data['gtin'] = $this->woo_product->get_global_unique_id();
 		}
 
-		if ( $this->woo_product->get_date_modified() ) {
-			$date_modified                        = $this->woo_product->get_date_modified();
-			$product_data['external_update_time'] = $date_modified->getTimestamp();
+		$date_modified = $this->woo_product->get_date_modified();
+		if ( $date_modified ) {
+			$external_update_time = (int) $date_modified->getTimestamp();
+			$last_change_time = (int) $this->woo_product->get_meta( '_last_change_time' );
+
+			// Use the newer timestamp if _last_change_time is valid, otherwise use external_update_time
+			if ( $last_change_time > 0 ) {
+				$product_data['external_update_time'] = max( $external_update_time, $last_change_time );
+			} else {
+				$product_data['external_update_time'] = $external_update_time;
+			}
 		}
 
 		// Only use checkout URLs if they exist.
