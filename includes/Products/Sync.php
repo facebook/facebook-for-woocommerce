@@ -181,7 +181,7 @@ class Sync {
 	/**
 	 * Handles product imports from WooCommerce import functionality.
 	 *
-	 * @since 3.5.7
+	 * @since 3.5.8
 	 *
 	 * @param \WC_Product $product The product object that was imported
 	 * @param array       $data    The import data
