@@ -108,7 +108,7 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 		 * @since 2.2.0
 		 */
 		private function add_hooks() {
-			add_action( 'init', array( $this, 'param_builder_server_setup' ), 5 );
+			add_action( 'init', array( $this, 'param_builder_set_cookies' ), 5 );
 
 			// inject Pixel
 			add_action( 'wp_head', array( $this, 'inject_base_pixel' ) );
@@ -189,7 +189,7 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 		/**
 		 * Sets the Parameter Builder cookies using the Facebook CAPI Parameter Builder.
 		 */
-		public function param_builder_server_setup() {
+		public function param_builder_set_cookies() {
 			$param_builder = facebook_for_woocommerce()->get_param_builder();
 			if ( ! $param_builder ) {
 				return;
