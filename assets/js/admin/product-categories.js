@@ -53,7 +53,7 @@ jQuery( document ).ready( ( $ ) => {
         // Recreate initial empty selectors
         window.wc_facebook_google_product_category_fields.addInitialSelects('');
 
-        // // Set the last dropdown's margin bottom
+        // Set the last dropdown's margin bottom
         $('.wc-facebook-google-product-category-field').last().attr('style', 'margin-bottom: 24px');
       }
     }
