@@ -198,21 +198,6 @@ class Sync {
 			facebook_for_woocommerce()->get_product_sync_validator( $product )->validate();
 			$this->create_or_update_products( array( $product->get_id() ) );
 		} catch ( \Exception $e ) {
-			Logger::log(
-				'Product validation failed during import',
-				[
-					'event'      => 'product_import_validation_error',
-					'product_id' => $product->get_id(),
-					'product_type' => $product->get_type(),
-					'error'      => $e->getMessage(),
-				],
-				[
-					'should_send_log_to_meta'        => true,
-					'should_save_log_in_woocommerce' => true,
-					'woocommerce_log_level'          => \WC_Log_Levels::ERROR,
-				],
-				$e
-			);
 			return;
 		}
 	}
