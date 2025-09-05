@@ -32,6 +32,7 @@ class RolloutSwitches {
 	public const SWITCH_OFFER_MANAGEMENT_ENABLED                       = 'offer_management_enabled';
 	public const SWITCH_MULTIPLE_IMAGES_ENABLED                        = 'woo_variant_multiple_images_enabled';
 	private const SETTINGS_KEY = 'wc_facebook_for_woocommerce_rollout_switches';
+	public const FLAG_NAME = '_wc_facebook_for_woocommerce_rollout_switch_flag';
 
 	private const ACTIVE_SWITCHES = array(
 		self::SWITCH_ROLLOUT_FEATURES,
@@ -51,12 +52,10 @@ class RolloutSwitches {
 		if ( ! $is_connected ) {
 			return;
 		}
-
-		$flag_name = '_wc_facebook_for_woocommerce_rollout_switch_flag';
-		if ( 'yes' === get_transient( $flag_name ) ) {
+		if ( 'yes' === get_transient( self::FLAG_NAME ) ) {
 			return;
 		}
-		set_transient( $flag_name, 'yes', 60 * MINUTE_IN_SECONDS );
+		set_transient( self::FLAG_NAME, 'yes', 60 * MINUTE_IN_SECONDS );
 
 		try {
 			$external_business_id = $this->plugin->get_connection_handler()->get_external_business_id();
