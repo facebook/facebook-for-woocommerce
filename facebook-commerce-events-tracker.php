@@ -943,9 +943,6 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 				return;
 			}
 
-			// use a session flag to ensure this Purchase event is not tracked multiple times
-			$purchase_tracked_flag = '_wc_' . facebook_for_woocommerce()->get_id() . '_purchase_tracked_' . $order_id;
-
 			// Return if this Purchase event has already been tracked for this context (browser or server).
 			if (
 				( $is_browser && $order->meta_exists( '_meta_purchase_tracked_browser' ) ) ||
@@ -953,9 +950,6 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 			) {
 				return;
 			}
-
-			// Mark the order as tracked for the session.
-			set_transient( $purchase_tracked_flag, 'yes', 45 * MINUTE_IN_SECONDS );
 
 			// Set a flag to ensure this Purchase event is not going to be sent across different sessions.
 			$order->add_meta_data( '_meta_purchase_tracked', true, true );
