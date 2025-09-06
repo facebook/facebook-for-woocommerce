@@ -145,6 +145,13 @@ class WC_Facebookcommerce extends WooCommerce\Facebook\Framework\Plugin {
 	private $debug_tools;
 
 	/**
+	 * The Facebook CAPI Parameter Builder instance.
+	 *
+	 * @var \FacebookAds\ParamBuilder
+	 */
+	private $param_builder;
+
+	/**
 	 * Constructs the plugin.
 	 *
 	 * @since 1.0.0
@@ -183,6 +190,7 @@ class WC_Facebookcommerce extends WooCommerce\Facebook\Framework\Plugin {
 	 * @internal
 	 */
 	public function init() {
+		add_action( 'init', array( $this, 'init_param_builder' ), 5 );
 		add_action( 'init', array( $this, 'get_integration' ) );
 
 		add_action( 'woocommerce_init', array( $this, 'add_whatsapp_consent_block_checkout_fields' ) );
@@ -699,6 +707,17 @@ class WC_Facebookcommerce extends WooCommerce\Facebook\Framework\Plugin {
 	}
 
 	/**
+	 * Gets the Facebook CAPI Parameter Builder instance
+	 *
+	 * @since 3.5.5
+	 *
+	 * @return \FacebookAds\ParamBuilder|null
+	 */
+	public function get_param_builder() {
+		return $this->param_builder;
+	}
+
+	/**
 	 * Gets the url for the assets build directory.
 	 *
 	 * @since 2.3.4
@@ -856,6 +875,26 @@ class WC_Facebookcommerce extends WooCommerce\Facebook\Framework\Plugin {
 		}
 		// By default, all net new WooC Merchants will be shown the enhanced onboarding experience
 		return true;
+	}
+
+	/**
+	 * Initializes the Facebook CAPI Parameter Builder with the site domain.
+	 */
+	public function init_param_builder() {
+		try {
+			$site_url = get_site_url();
+			$this->param_builder = new \FacebookAds\ParamBuilder( array( $site_url ) );
+			$this->param_builder->processRequest(
+				$site_url,
+				$_GET,
+				$_COOKIE,
+				isset( $_SERVER['HTTP_REFERER'] ) ?
+				sanitize_text_field( wp_unslash( $_SERVER['HTTP_REFERER'] ) ) :
+				null
+			);
+		} catch ( \Exception $exception ) {
+			$this->log( 'Error initializing CAPI Parameter Builder: ' . $exception->getMessage() );
+		}
 	}
 }
 
