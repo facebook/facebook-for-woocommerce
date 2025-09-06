@@ -27,6 +27,7 @@ class Controller {
 	/** @var array Endpoint handler classes */
 	const ENDPOINT_HANDLERS = [
 		Settings\Handler::class,
+		WhatsAppSettings\Handler::class,
 		// Add other handler classes here
 	];
 
@@ -34,6 +35,7 @@ class Controller {
 	const JS_ENABLED_REQUESTS = [
 		'WooCommerce\Facebook\API\Plugin\Settings\Update\Request',
 		'WooCommerce\Facebook\API\Plugin\Settings\Uninstall\Request',
+		'WooCommerce\Facebook\API\Plugin\WhatsAppSettings\Update\Request',
 		// Add other JS-enabled request classes here
 	];
 

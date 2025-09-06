@@ -1,5 +1,36 @@
 *** Facebook for WooCommerce Changelog ***
 
+= 3.5.7 - 2025-09-02 =
+* Add - DO change: Add route & feed column by @unnivgit in #3580
+* Fix - removing set stable tag to unblock release for now by @immadhavv in #3584
+* Fix - Fixed syncing of excluded product categories and tags info by @vinkmeta in #3582
+* Add - feat: quick edit syncing by @rithikb24 in #3557
+* Add - [WIFI]30/n]Fetch the iframe management url through the Stefi API by @sharunaanandraj in #3569
+* Add - changelog: add referrer url by @chc421 in #3545
+* Fix - Fix sale price higher than fb price by @guansu-meta in #3567
+* Add - [WIFI][26/n]Add Listener and update Whatsapp Settings in DB after onboarding by @sharunaanandraj in #3568
+* Add - [WIFI][25/n]Add scaffolding Iframe Integration in the Whatsapp Tab by @sharunaanandraj in #3566
+* Add - [WIFI][1/n] Add Scaffolding WhatsApp Page under Marketing for WAUM Beta Experience by @sharunaanandraj in #3564
+* Dev - cleanup: remove dead code for product sets sync rollout switch by @devbodaghe in #3560
+* Add - Automatically set last release from release-plugin workflow as latest by @immadhavv in #3552
+* Add - Run unit tests with coverage and compare against threshold by @immadhavv in #3553
+
+= 3.5.6 - 2025-08-18 =
+* Fix - Improving website prformance by reducing frequency of heavy queries by @vinkmeta in #3556
+* Dev - chore: add multiple images functionality tests with rollout switch in… by @devbodaghe in #3554
+* Update - Enable Offer Management APIs + Tweaks by @mradmeta in #3548
+* Add - Add Rollout Switches for Gating Multiple Variants by @devbodaghe in #3551
+* Add - Feature/multiple images for variants by @devbodaghe in #3543
+* Fix - Fix product set banner reappearance after dismissal  by @mshymon in #3547
+* Fix - Remove unnecessary logging for product attribute mapper attributes by @devbodaghe in #3546
+* Update - Deprecate FB Product Sets tab and migrate legacy product sets by @mshymon in #3534
+* Add - Automated secondary QA test to compare artifact from prepare-release and marketplace version by @immadhavv in #3544
+* Fix - Fix: Disable dropdown fields when 'Do not sync' is selected by @devbodaghe in #3541
+* Fix - Show Facebook Product Video field for variable products by @ukilla in #3542
+* Fix - Fix bug in plugin version upgrade/downgrade logic in Lifecycle by @mshymon in #3539
+* Add - Run e2e tests on marketplace release of the plugin by @immadhavv in #3535
+* Fix - Fix/prevent woocommerce attribute summaries in facebook short descriptions by @devbodaghe in #3531
+
 = 3.5.5 - 2025-07-23 =
 * Fix - Updated the links to Meta Support by @vahidkay-meta in #3523
 * Fix - Improving AAM settings params being captured + Purchase events captured by Pixel by @vahidkay-meta in #3512

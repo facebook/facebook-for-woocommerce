@@ -1,0 +1,11 @@
+ .facebook-whatsapp-iframe-container {
+    display: flex;
+    justify-content: center;
+    margin: 0 auto;
+ }
+#facebook-whatsapp-iframe-enhanced {
+    width: 100%;
+	min-height: calc(100vh - 200px);
+	background: transparent;
+	border: none;
+}
