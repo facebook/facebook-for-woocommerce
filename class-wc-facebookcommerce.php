@@ -191,6 +191,8 @@ class WC_Facebookcommerce extends WooCommerce\Facebook\Framework\Plugin {
 		// Hook the setup task. The hook admin_init is not triggered when the WC fetches the tasks using the endpoint: wp-json/wc-admin/onboarding/tasks and hence hooking into init.
 		add_action( 'init', array( $this, 'add_setup_task' ), 20 );
 		add_action( 'admin_notices', array( $this, 'add_inbox_notes' ) );
+		add_action( 'upgrader_process_complete', array( $this, 'clear_rollout_switch_transient' ), 10, 2 );
+
 		if ( class_exists( '\Facebook\WooCommerce\Commerce_Page_Override' ) ) {
 			new \Facebook\WooCommerce\Commerce_Page_Override();
 		}
@@ -839,6 +841,20 @@ class WC_Facebookcommerce extends WooCommerce\Facebook\Framework\Plugin {
 				);
 		}
 		return $fields;
+	}
+
+	/**
+	 * Clear rollout switch transient if plugin has been upgraded
+	 *
+	 * @since 2.3.0
+	 *
+	 * @param array $fields
+	 *
+	 * @return array
+	 */
+	public function clear_rollout_switch_transient() {
+		wc_get_logger()->info('Cleared Whatsapp WooCommerce Rollout Transients',  array( 'source' => 'facebook-for-woocommerce' ) );
+		delete_transient( '_wc_facebook_for_woocommerce_rollout_switch_flag' );
 	}
 
 	/**

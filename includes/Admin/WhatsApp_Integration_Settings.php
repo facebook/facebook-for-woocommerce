@@ -86,6 +86,15 @@ class WhatsApp_Integration_Settings {
 		$is_connected                               = $this->plugin->get_connection_handler()->is_connected();
 		$is_whatsapp_utility_messaging_beta_enabled = $rollout_switches->is_switch_enabled( RolloutSwitches::WHATSAPP_UTILITY_MESSAGING_BETA_EXPERIENCE_DOGFOODING ); // TODO: update to prod GK during launch
 
+		wc_get_logger()->info(
+				sprintf(
+					/* translators: %s $error_message */
+					__( 'User visited the WhatsApp for WooCommerce settings: %1$s, %2$s', 'facebook-for-woocommerce' ),
+					$is_whatsapp_utility_messaging_beta_enabled,
+					$is_connected,
+				)
+		);
+
 		if ( ! $is_connected || ! $is_whatsapp_utility_messaging_beta_enabled ) {
 			return;
 		}
@@ -115,8 +124,8 @@ class WhatsApp_Integration_Settings {
 			return WooAdminFeatures::is_enabled( 'marketing' );
 		}
 
-		return is_callable( '\Automattic\WooCommerce\Admin\Loader::is_feature_enabled' )
-				&& \Automattic\WooCommerce\Admin\Loader::is_feature_enabled( 'marketing' );
+		return is_callable( '\Automattic\WooCommerce\Admin\Features\Features::is_enabled' )
+				&& \Automattic\WooCommerce\Admin\Features\Features::is_enabled( 'marketing' );
 	}
 
 	/**
