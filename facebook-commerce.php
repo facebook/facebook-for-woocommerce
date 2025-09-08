@@ -226,6 +226,13 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 	public const FB_PRIORITY_MID     = 9;
 
 	/**
+	 * Static flag to prevent infinite loops when updating last change time.
+	 *
+	 * @var bool
+	 */
+	private static $is_updating_last_change_time = false;
+
+	/**
 	 * Facebook exception test mode switch.
 	 *
 	 * @var bool
@@ -400,6 +407,9 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 
 		// Init Whatsapp Utility Event Processor
 		$this->wa_utility_event_processor = $this->load_whatsapp_utility_event_processor();
+
+		// Track programmatic changes that don't update post_modified
+		add_action( 'updated_post_meta', array( $this, 'update_product_last_change_time' ), 10, 4 );
 	}
 
 	/**
@@ -2109,6 +2119,61 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 		}
 
 		return true;
+	}
+
+	/**
+	 * Performs the actual product last change time update with proper flag management.
+	 *
+	 * @param int $product_id Product ID.
+	 * @since 3.5.8
+	 */
+	private function perform_product_last_change_time_update( $product_id ) {
+		// Set flag to prevent infinite loops
+		self::$is_updating_last_change_time = true;
+
+		try {
+			$current_time = time();
+
+			// Update the database
+			update_post_meta( $product_id, '_last_change_time', $current_time );
+
+			// Update cache for rate limiting
+			$this->set_last_change_time_cache( $product_id, $current_time );
+
+		} finally {
+			// Always reset flag, even if update fails
+			self::$is_updating_last_change_time = false;
+		}
+	}
+
+	/**
+	 * Updates the _last_change_time meta field when wp_postmeta table is updated.
+	 *
+	 * @param int    $meta_id    ID of the metadata entry to update.
+	 * @param int    $product_id  Post ID.
+	 * @param string $meta_key   Meta key.
+	 * @param mixed  $meta_value Meta value.
+	 * @since 3.5.8
+	 */
+	public function update_product_last_change_time( $meta_id, $product_id, $meta_key, $meta_value ) {
+		// Guard against infinite loops
+		if ( self::$is_updating_last_change_time ) {
+			return;
+		}
+
+		try {
+			// Run all validation checks first
+			if ( ! $this->should_update_product_change_time( $product_id, $meta_key ) ) {
+				return;
+			}
+
+			// All checks passed - proceed with update
+			$this->perform_product_last_change_time_update( $product_id );
+
+		} catch ( \Exception $e ) {
+			// Ensure flag is reset even on exception
+			self::$is_updating_last_change_time = false;
+		}
 	}
 
 	/**
