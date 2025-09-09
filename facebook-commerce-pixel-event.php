@@ -170,7 +170,6 @@ class WC_Facebookcommerce_Pixel {
 					// Insert placeholder for events injected when a product is added to the cart through AJAX.
 					document.body.insertAdjacentHTML( 'beforeend', '<div class=\"wc-facebook-pixel-event-placeholder\"></div>' );
 				}, false );
-
 			</script>
 			<!-- WooCommerce Facebook Integration End -->
 			<?php
