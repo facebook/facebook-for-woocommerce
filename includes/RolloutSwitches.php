@@ -52,7 +52,9 @@ class RolloutSwitches {
 			return;
 		}
 
-		$flag_name = '_wc_facebook_for_woocommerce_rollout_switch_flag';
+		// Include plugin version in transient key to reset on version upgrades
+		$plugin_version = $this->plugin->get_version();
+		$flag_name = '_wc_facebook_for_woocommerce_rollout_switch_flag_' . $plugin_version;
 		if ( 'yes' === get_transient( $flag_name ) ) {
 			return;
 		}

@@ -115,8 +115,8 @@ class WhatsApp_Integration_Settings {
 			return WooAdminFeatures::is_enabled( 'marketing' );
 		}
 
-		return is_callable( '\Automattic\WooCommerce\Admin\Loader::is_feature_enabled' )
-				&& \Automattic\WooCommerce\Admin\Loader::is_feature_enabled( 'marketing' );
+		return is_callable( '\Automattic\WooCommerce\Admin\Features\Features::is_enabled' )
+				&& \Automattic\WooCommerce\Admin\Features\Features::is_enabled( 'marketing' );
 	}
 
 	/**
@@ -215,6 +215,18 @@ class WhatsApp_Integration_Settings {
 						.catch(function(error) {
 							console.error('Error during settings update:', error);
 						});
+				}
+
+				if (messageEvent === 'CommerceExtension::RESIZE') {
+					const iframe = document.getElementById('facebook-whatsapp-iframe-enhanced');
+					if ( iframe ) {
+						if ( message.height ) {
+							iframe.height = message.height;
+						}
+						if ( message.width ) {
+							iframe.width = message.width;
+						}
+					}
 				}
 			});
 		JAVASCRIPT;
