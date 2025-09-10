@@ -186,6 +186,7 @@ class Sync {
 	 * @param \WC_Product $product The product object that was imported
 	 * @param array       $data    The import data
 	 */
+	// phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter
 	public function handle_product_import_update( $product, $data ) {
 
 		// bail if not connected
