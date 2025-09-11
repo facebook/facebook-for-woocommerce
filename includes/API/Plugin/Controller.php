@@ -36,6 +36,7 @@ class Controller {
 		'WooCommerce\Facebook\API\Plugin\Settings\Update\Request',
 		'WooCommerce\Facebook\API\Plugin\Settings\Uninstall\Request',
 		'WooCommerce\Facebook\API\Plugin\WhatsAppSettings\Update\Request',
+		'WooCommerce\Facebook\API\Plugin\WhatsAppSettings\Uninstall\Request',
 		// Add other JS-enabled request classes here
 	];
 

@@ -37,4 +37,25 @@ jQuery( document ).ready( ( $ ) => {
 				$form.data( 'allow-submit', true ).find( ':submit' ).trigger( 'click' );
 			} );
 	} );
+
+	// Add new category button handler to clear Google Product Category selections when clicked
+  $('#submit').on('click', function(e) {
+    // Only proceed if this is the "Add new category" button
+    if ($(this).val() === 'Add new category') {
+      // Check if the Google Product Category Fields handler exists
+      if (typeof window.wc_facebook_google_product_category_fields !== 'undefined') {
+
+        // Clear selections
+        $('#' + window.wc_facebook_google_product_category_fields.input_id).val('');
+        $('#wc-facebook-google-product-category-fields').empty();
+        $('.wc-facebook-enhanced-catalog-attribute-row').remove();
+
+        // Recreate initial empty selectors
+        window.wc_facebook_google_product_category_fields.addInitialSelects('');
+
+        // Set the last dropdown's margin bottom
+        $('.wc-facebook-google-product-category-field').last().attr('style', 'margin-bottom: 24px');
+      }
+    }
+  });
 } );

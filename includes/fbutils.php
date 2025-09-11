@@ -222,7 +222,7 @@ if ( ! class_exists( 'WC_Facebookcommerce_Utils' ) ) :
 			$content_category = array_values(
 				array_map(
 					function ( $item ) {
-						return $item->name;
+						return html_entity_decode( $item->name, ENT_QUOTES | ENT_HTML401, 'UTF-8' );
 					},
 					$category_path
 				)

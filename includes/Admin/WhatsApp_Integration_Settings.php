@@ -101,6 +101,28 @@ class WhatsApp_Integration_Settings {
 			[ $this, 'render' ],
 			5
 		);
+
+		$this->connect_to_enhanced_admin( $this->is_marketing_enabled() ? 'marketing_page_wc-whatsapp' : 'woocommerce_page_wc-whatsapp' );
+	}
+
+	/**
+	 * Enables admin support for the main WhatsApp settings page.
+	 *
+	 * @since 3.5.0
+	 *
+	 * @param string $screen_id
+	 */
+	private function connect_to_enhanced_admin( $screen_id ) {
+		if ( is_callable( 'wc_admin_connect_page' ) ) {
+			wc_admin_connect_page(
+				array(
+					'id'        => self::PAGE_ID,
+					'screen_id' => $screen_id,
+					'path'      => add_query_arg( 'page', self::PAGE_ID, 'admin.php' ),
+					'title'     => [ __( 'WhatsApp for WooCommerce', 'facebook-for-woocommerce' ) ],
+				)
+			);
+		}
 	}
 
 	/**
@@ -115,8 +137,8 @@ class WhatsApp_Integration_Settings {
 			return WooAdminFeatures::is_enabled( 'marketing' );
 		}
 
-		return is_callable( '\Automattic\WooCommerce\Admin\Loader::is_feature_enabled' )
-				&& \Automattic\WooCommerce\Admin\Loader::is_feature_enabled( 'marketing' );
+		return is_callable( '\Automattic\WooCommerce\Admin\Features\Features::is_enabled' )
+				&& \Automattic\WooCommerce\Admin\Features\Features::is_enabled( 'marketing' );
 	}
 
 	/**
@@ -214,6 +236,31 @@ class WhatsApp_Integration_Settings {
 						})
 						.catch(function(error) {
 							console.error('Error during settings update:', error);
+						});
+				}
+
+				if (messageEvent === 'CommerceExtension::RESIZE') {
+					const iframe = document.getElementById('facebook-whatsapp-iframe-enhanced');
+					if ( iframe ) {
+						if ( message.height ) {
+							iframe.height = message.height;
+						}
+						if ( message.width ) {
+							iframe.width = message.width;
+						}
+					}
+				}
+
+				if (messageEvent === 'CommerceExtension::WA_UNINSTALL') {
+					whatsAppAPI.uninstallWhatsAppSettings()
+						.then(function(response) {
+							if (response.success) {
+								window.location.reload();
+							}
+						})
+						.catch(function(error) {
+							console.error('Error during uninstall:', error);
+							window.location.reload();
 						});
 				}
 			});
