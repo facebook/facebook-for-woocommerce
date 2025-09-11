@@ -250,6 +250,19 @@ class WhatsApp_Integration_Settings {
 						}
 					}
 				}
+
+				if (messageEvent === 'CommerceExtension::WA_UNINSTALL') {
+					whatsAppAPI.uninstallWhatsAppSettings()
+						.then(function(response) {
+							if (response.success) {
+								window.location.reload();
+							}
+						})
+						.catch(function(error) {
+							console.error('Error during uninstall:', error);
+							window.location.reload();
+						});
+				}
 			});
 		JAVASCRIPT;
 	}

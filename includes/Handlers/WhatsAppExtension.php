@@ -55,10 +55,10 @@ class WhatsAppExtension {
 
 		return add_query_arg(
 			array(
-				'access_client_token'  => self::CLIENT_TOKEN,
-				'app_id'               => self::APP_ID,
-				'app_owner_business_id'       => self::TP_BUSINESS_ID,
-				'external_business_id' => $external_wa_id,
+				'access_client_token'   => self::CLIENT_TOKEN,
+				'app_id'                => self::APP_ID,
+				'app_owner_business_id' => self::TP_BUSINESS_ID,
+				'external_business_id'  => $external_wa_id,
 			),
 			self::COMMERCE_HUB_URL . 'whatsapp_utility_integration/splash/'
 		);
