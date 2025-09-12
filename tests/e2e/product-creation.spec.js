@@ -148,7 +148,7 @@ async function validateFacebookSync(productId, productName, waitSeconds = 10) {
 
     // Call the Facebook sync validator
     const { stdout, stderr } = await execAsync(
-      `php e2e-facebook-sync-validator-simple.php ${productId} ${waitSeconds}`,
+      `php e2e-facebook-sync-validator.php ${productId} ${waitSeconds}`,
       { cwd: __dirname }
     );
 
