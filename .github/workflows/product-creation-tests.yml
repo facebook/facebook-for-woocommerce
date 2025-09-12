@@ -9,13 +9,6 @@ on:
           required: false
           type: boolean
           default: false
-  workflow_dispatch:
-    inputs:
-        use-marketplace-version:
-          description: 'Should this use marketplace version of the plugin'
-          required: false
-          type: boolean
-          default: false
   pull_request:
     branches: [ main, master, develop ]
 
