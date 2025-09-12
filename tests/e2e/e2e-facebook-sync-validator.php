@@ -5,7 +5,7 @@
  * Validates product sync between WooCommerce and Facebook with comprehensive debugging
  * Follows same flow pattern for both product types: getData -> checkSync -> compareFields
  *
- * Usage: php e2e-facebook-sync-validator-simple.php <product_id> [wait_seconds]
+ * Usage: php e2e-facebook-sync-validator.php <product_id> [wait_seconds]
  */
 
 // Bootstrap WordPress
