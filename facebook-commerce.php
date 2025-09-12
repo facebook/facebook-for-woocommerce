@@ -106,6 +106,30 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 	/** @var string request headers in the debug log */
 	const SETTING_REQUEST_HEADERS_IN_DEBUG_MODE = 'wc_facebook_request_headers_in_debug_log';
 
+	/** @var array Meta keys that affect Facebook sync and should trigger last change time update */
+	const PRODUCT_ATTRIBUTE_SYNC_RELEVANT_META_KEYS = [
+		'_regular_price',                     // -> price
+		'_sale_price',                        // -> sale_price
+		'_stock',                             // -> availability
+		'_stock_status',                      // -> availability
+		'_thumbnail_id',                      // -> image_link
+		'_price',                             // -> price (calculated field)
+		'fb_visibility',                      // -> visibility
+		'fb_product_description',             // -> description
+		'fb_rich_text_description',           // -> rich_text_description
+		'fb_brand',                           // -> brand
+		'fb_mpn',                             // -> mpn
+		'fb_size',                            // -> size
+		'fb_color',                           // -> color
+		'fb_material',                        // -> material
+		'fb_pattern',                         // -> pattern
+		'fb_age_group',                       // -> age_group
+		'fb_gender',                          // -> gender
+		'fb_product_condition',               // -> condition
+		'_wc_facebook_sync_enabled',          // -> sync settings
+		'_wc_facebook_product_image_source',  // -> sync settings
+	];
+
 	/** @var string the WordPress option name where the access token is stored */
 	const OPTION_ACCESS_TOKEN = 'wc_facebook_access_token';
 
@@ -200,6 +224,13 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 	public const FB_SYNC_REMAINING   = 'fb_sync_remaining';
 	public const FB_SYNC_TIMEOUT     = 30;
 	public const FB_PRIORITY_MID     = 9;
+
+	/**
+	 * Static flag to prevent infinite loops when updating last change time.
+	 *
+	 * @var bool
+	 */
+	private static $is_updating_last_change_time = false;
 
 	/**
 	 * Facebook exception test mode switch.
@@ -318,12 +349,12 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 
 				add_action(
 					'woocommerce_product_quick_edit_save',
-					[ $this, 'on_quick_and_bulk_edit_save' ]
+					[ $this, 'on_product_quick_edit_save' ]
 				);
 
 				add_action(
 					'woocommerce_product_bulk_edit_save',
-					[ $this, 'on_quick_and_bulk_edit_save' ]
+					[ $this, 'on_product_bulk_edit_save' ]
 				);
 
 				add_action(
@@ -376,6 +407,9 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 
 		// Init Whatsapp Utility Event Processor
 		$this->wa_utility_event_processor = $this->load_whatsapp_utility_event_processor();
+
+		// Track programmatic changes that don't update post_modified
+		add_action( 'updated_post_meta', array( $this, 'update_product_last_change_time' ), 10, 4 );
 	}
 
 	/**
@@ -2036,6 +2070,150 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 	}
 
 	/**
+	 * Checks if a meta key affects Facebook sync and should trigger last change time update.
+	 *
+	 * @param string $meta_key Meta key to check.
+	 * @return bool True if the meta key is relevant to Facebook sync.
+	 * @since 3.5.8
+	 */
+	private function is_product_attribute_sync_relevant( $meta_key ) {
+		// Skip our own meta keys to prevent infinite loops
+		if ( in_array( $meta_key, [ '_last_change_time', '_fb_sync_last_time' ], true ) ) {
+			return false;
+		}
+
+		// Skip WordPress internal meta keys
+		if ( strpos( $meta_key, '_wp_' ) === 0 || strpos( $meta_key, '_edit_' ) === 0 ) {
+			return false;
+		}
+
+		return in_array( $meta_key, self::PRODUCT_ATTRIBUTE_SYNC_RELEVANT_META_KEYS, true );
+	}
+
+	/**
+	 * Validates if the product and meta key should trigger a last change time update.
+	 *
+	 * @param int    $product_id Product ID.
+	 * @param string $meta_key   Meta key.
+	 * @return bool True if update should proceed, false otherwise.
+	 * @since 3.5.8
+	 */
+	private function should_update_product_change_time( $product_id, $meta_key ) {
+		$product_id = absint( $product_id );
+		$meta_key = sanitize_key( $meta_key );
+
+		// Check if this is a WooCommerce product
+		$product = wc_get_product( $product_id );
+		if ( ! $product instanceof WC_Product ) {
+			return false;
+		}
+
+		// Check if meta key is relevant for Facebook sync
+		if ( ! $this->is_product_attribute_sync_relevant( $meta_key ) ) {
+			return false;
+		}
+
+		// Check rate limiting
+		if ( $this->is_last_change_time_update_rate_limited( $product_id ) ) {
+			return false;
+		}
+
+		return true;
+	}
+
+	/**
+	 * Performs the actual product last change time update with proper flag management.
+	 *
+	 * @param int $product_id Product ID.
+	 * @since 3.5.8
+	 */
+	private function perform_product_last_change_time_update( $product_id ) {
+		// Set flag to prevent infinite loops
+		self::$is_updating_last_change_time = true;
+
+		try {
+			$current_time = time();
+
+			// Update the database
+			update_post_meta( $product_id, '_last_change_time', $current_time );
+
+			// Update cache for rate limiting
+			$this->set_last_change_time_cache( $product_id, $current_time );
+
+		} finally {
+			// Always reset flag, even if update fails
+			self::$is_updating_last_change_time = false;
+		}
+	}
+
+	/**
+	 * Updates the _last_change_time meta field when wp_postmeta table is updated.
+	 *
+	 * @param int    $meta_id    ID of the metadata entry to update.
+	 * @param int    $product_id  Post ID.
+	 * @param string $meta_key   Meta key.
+	 * @param mixed  $meta_value Meta value.
+	 * @since 3.5.8
+	 */
+	public function update_product_last_change_time( $meta_id, $product_id, $meta_key, $meta_value ) {
+		// Guard against infinite loops
+		if ( self::$is_updating_last_change_time ) {
+			return;
+		}
+
+		try {
+			// Run all validation checks first
+			if ( ! $this->should_update_product_change_time( $product_id, $meta_key ) ) {
+				return;
+			}
+
+			// All checks passed - proceed with update
+			$this->perform_product_last_change_time_update( $product_id );
+
+		} catch ( \Exception $e ) {
+			// Ensure flag is reset even on exception
+			self::$is_updating_last_change_time = false;
+		}
+	}
+
+	/**
+	 * Checks if the last change time update is rate limited for a product.
+	 *
+	 * @param int $product_id Product ID.
+	 * @return bool True if rate limited, false otherwise.
+	 * @since 3.5.8
+	 */
+	private function is_last_change_time_update_rate_limited( $product_id ) {
+		$cache_key = "last_change_time_{$product_id}";
+		$cached_time = wp_cache_get( $cache_key, 'facebook_for_woocommerce' );
+
+		// If no cached time, allow update
+		if ( false === $cached_time ) {
+			return false;
+		}
+
+		// Rate limit to once every 60 seconds (1 minute)
+		$rate_limit_window = 60;
+		$current_time = time();
+
+		// If the last update was within the rate limit window, prevent update
+		return ( $current_time - $cached_time ) < $rate_limit_window;
+	}
+
+	/**
+	 * Sets the last change time in cache for rate limiting.
+	 *
+	 * @param int $product_id Product ID.
+	 * @param int $timestamp Timestamp to cache.
+	 * @since 3.5.8
+	 */
+	private function set_last_change_time_cache( $product_id, $timestamp ) {
+		$cache_key = "last_change_time_{$product_id}";
+		// Cache for 2 minutes (120 seconds) to ensure it persists longer than the rate limit window
+		wp_cache_set( $cache_key, $timestamp, 'facebook_for_woocommerce', 120 );
+	}
+
+	/**
 	 * Loop through array of WPIDs to remove metadata.
 	 *
 	 * @param array $products
@@ -2914,13 +3092,71 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 	}
 
 	/**
-	 * Sync product upon quick or bulk edit save action.
+	 * Sync product upon quick edit save action.
+	 *
+	 * @param \WC_Product $product product object
+	 *
+	 * @internal
+	 * @since 3.5.6
+	 */
+	public function on_product_quick_edit_save( $product ) {
+		$wp_id = null;
+
+		try {
+			// bail if not a product or product is not enabled for sync
+			if ( ! $product instanceof \WC_Product || ! Products::published_product_should_be_synced( $product ) ) {
+				return;
+			}
+
+			$wp_id = $product->get_id();
+
+			// check if visibility is published and sync the product
+			if ( get_post_status( $wp_id ) === 'publish' ) {
+				if ( $product->is_type( 'variable' ) ) {
+					// For variable products, sync only the variations that should be synced
+					$variation_ids = [];
+					foreach ( $product->get_children() as $variation_id ) {
+						$variation = wc_get_product( $variation_id );
+						if ( $variation instanceof WC_Product && $this->product_should_be_synced( $variation ) ) {
+							$variation_ids[] = $variation_id;
+						}
+					}
+					if ( ! empty( $variation_ids ) ) {
+						$this->facebook_for_woocommerce->get_products_sync_handler()->create_or_update_products( $variation_ids );
+					}
+				} else {
+					// For simple products and variations, sync the product directly
+					$this->facebook_for_woocommerce->get_products_sync_handler()->create_or_update_products( [ $wp_id ] );
+				}
+			}
+		} catch ( Exception $e ) {
+			Logger::log(
+				'Error in on_product_quick_edit_save',
+				[
+					'event'      => 'product_quick_edit_save_error',
+					'product_id' => $wp_id,
+					'extra_data' => [
+						'product_status' => $wp_id ? get_post_status( $wp_id ) : null,
+					],
+				],
+				[
+					'should_send_log_to_meta'        => false,
+					'should_save_log_in_woocommerce' => true,
+					'woocommerce_log_level'          => \WC_Log_Levels::ERROR,
+				],
+				$e
+			);
+		}
+	}
+
+	/**
+	 * Sync product upon bulk edit save action.
 	 *
 	 * @param \WC_Product $product product object
 	 *
 	 * @internal
 	 */
-	public function on_quick_and_bulk_edit_save( $product ) {
+	public function on_product_bulk_edit_save( $product ) {
 		// bail if not a product or product is not enabled for sync
 		static $bulk_product_edit_ids    = [];
 		static $bulk_products_to_exclude = [];

@@ -9,6 +9,7 @@
  */
 
 require_once __DIR__ . '/includes/fbutils.php';
+require_once __DIR__ . '/includes/fbcollection.php';
 
 use Automattic\WooCommerce\Admin\Features\Features as WooAdminFeatures;
 use Automattic\WooCommerce\Admin\Features\OnboardingTasks\TaskLists;
@@ -144,6 +145,13 @@ class WC_Facebookcommerce extends WooCommerce\Facebook\Framework\Plugin {
 	private $debug_tools;
 
 	/**
+	 * The Facebook CAPI Parameter Builder instance.
+	 *
+	 * @var \FacebookAds\ParamBuilder
+	 */
+	private $param_builder;
+
+	/**
 	 * Constructs the plugin.
 	 *
 	 * @since 1.0.0
@@ -182,6 +190,7 @@ class WC_Facebookcommerce extends WooCommerce\Facebook\Framework\Plugin {
 	 * @internal
 	 */
 	public function init() {
+		add_action( 'init', array( $this, 'init_param_builder' ), 5 );
 		add_action( 'init', array( $this, 'get_integration' ) );
 
 		add_action( 'woocommerce_init', array( $this, 'add_whatsapp_consent_block_checkout_fields' ) );
@@ -190,7 +199,9 @@ class WC_Facebookcommerce extends WooCommerce\Facebook\Framework\Plugin {
 		// Hook the setup task. The hook admin_init is not triggered when the WC fetches the tasks using the endpoint: wp-json/wc-admin/onboarding/tasks and hence hooking into init.
 		add_action( 'init', array( $this, 'add_setup_task' ), 20 );
 		add_action( 'admin_notices', array( $this, 'add_inbox_notes' ) );
-
+		if ( class_exists( '\Facebook\WooCommerce\Commerce_Page_Override' ) ) {
+			new \Facebook\WooCommerce\Commerce_Page_Override();
+		}
 		add_filter(
 			'wc_' . self::PLUGIN_ID . '_http_request_args',
 			array( $this, 'force_user_agent_in_latin' )
@@ -696,6 +707,17 @@ class WC_Facebookcommerce extends WooCommerce\Facebook\Framework\Plugin {
 	}
 
 	/**
+	 * Gets the Facebook CAPI Parameter Builder instance
+	 *
+	 * @since 3.5.5
+	 *
+	 * @return \FacebookAds\ParamBuilder|null
+	 */
+	public function get_param_builder() {
+		return $this->param_builder;
+	}
+
+	/**
 	 * Gets the url for the assets build directory.
 	 *
 	 * @since 2.3.4
@@ -853,6 +875,26 @@ class WC_Facebookcommerce extends WooCommerce\Facebook\Framework\Plugin {
 		}
 		// By default, all net new WooC Merchants will be shown the enhanced onboarding experience
 		return true;
+	}
+
+	/**
+	 * Initializes the Facebook CAPI Parameter Builder with the site domain.
+	 */
+	public function init_param_builder() {
+		try {
+			$site_url = get_site_url();
+			$this->param_builder = new \FacebookAds\ParamBuilder( array( $site_url ) );
+			$this->param_builder->processRequest(
+				$site_url,
+				$_GET,
+				$_COOKIE,
+				isset( $_SERVER['HTTP_REFERER'] ) ?
+				sanitize_text_field( wp_unslash( $_SERVER['HTTP_REFERER'] ) ) :
+				null
+			);
+		} catch ( \Exception $exception ) {
+			$this->log( 'Error initializing CAPI Parameter Builder: ' . $exception->getMessage() );
+		}
 	}
 }
 

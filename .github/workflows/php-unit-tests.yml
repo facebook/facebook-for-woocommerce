@@ -44,27 +44,41 @@ jobs:
       - name: Run PHP unit tests with coverage
         id: phpunit
         run: |
-          # Run tests silently and generate coverage XML only
-          ./vendor/bin/phpunit --coverage-clover=coverage.xml > /dev/null 2>&1
+          echo "🧪 Running PHP unit tests with coverage..."
 
-          # Extract coverage summary from XML
-          COVERAGE=$(php -r "
-            if (file_exists('coverage.xml')) {
-              \$xml = simplexml_load_file('coverage.xml');
-              \$metrics = \$xml->project->metrics;
-              \$covered = (int)\$metrics['coveredstatements'];
-              \$total = (int)\$metrics['statements'];
-              \$percentage = \$total > 0 ? round((\$covered / \$total) * 100, 2) : 0;
-              echo \$percentage;
-            } else {
-              echo '0';
-            }
-          ")
+          # Run tests once with both verbose output and coverage generation
+          if ./vendor/bin/phpunit --verbose --coverage-clover=coverage.xml; then
+            echo "✅ All tests passed!"
+            TEST_STATUS="passed"
 
-          echo "coverage_summary=$COVERAGE" >> $GITHUB_OUTPUT
-          echo "📊 Coverage: $COVERAGE%"
+            # Extract coverage summary from XML
+            COVERAGE=$(php -r "
+              if (file_exists('coverage.xml')) {
+                \$xml = simplexml_load_file('coverage.xml');
+                \$metrics = \$xml->project->metrics;
+                \$covered = (int)\$metrics['coveredstatements'];
+                \$total = (int)\$metrics['statements'];
+                \$percentage = \$total > 0 ? round((\$covered / \$total) * 100, 2) : 0;
+                echo \$percentage;
+              } else {
+                echo '0';
+              }
+            ")
+
+            echo "coverage_summary=$COVERAGE" >> $GITHUB_OUTPUT
+            echo "📊 Coverage: $COVERAGE%"
+          else
+            echo "❌ Some tests failed!"
+            TEST_STATUS="failed"
+            # Clean up any partial coverage file
+            rm -f coverage.xml
+            exit 1
+          fi
+
+          echo "test_status=$TEST_STATUS" >> $GITHUB_OUTPUT
 
       - name: Upload coverage reports
+        if: steps.phpunit.outputs.test_status == 'passed'
         uses: actions/upload-artifact@v4
         with:
           name: php-coverage-report PHP - ${{ matrix.php }}, WP - ${{ matrix.wp-version }} , WC - ${{ matrix.wc-version }}
@@ -72,6 +86,7 @@ jobs:
           retention-days: 30
 
       - name: Check coverage threshold
+        if: steps.phpunit.outputs.test_status == 'passed'
         continue-on-error: true
         run: |
           COVERAGE="${{ steps.phpunit.outputs.coverage_summary }}"

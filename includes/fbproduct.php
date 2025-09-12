@@ -1787,7 +1787,9 @@ class WC_Facebook_Product {
 		$product_data['age_group'] = $this->get_fb_age_group();
 		$product_data['gender']    = $this->get_fb_gender();
 		$product_data['material']  = Helper::str_truncate( $this->get_fb_material(), 100 );
-
+		// Generate and add collection URI
+		$collection_uri = site_url( '/fbcollection/' );
+		$product_data['custom_label_4'] = $collection_uri;
 		if ( $this->get_type() === 'variation' ) {
 			$parent_id      = $this->woo_product->get_parent_id();
 			$parent_product = wc_get_product( $parent_id );
@@ -2246,9 +2248,17 @@ class WC_Facebook_Product {
 			$product_data['gtin'] = $this->woo_product->get_global_unique_id();
 		}
 
-		if ( $this->woo_product->get_date_modified() ) {
-			$date_modified                        = $this->woo_product->get_date_modified();
-			$product_data['external_update_time'] = $date_modified->getTimestamp();
+		$date_modified = $this->woo_product->get_date_modified();
+		if ( $date_modified ) {
+			$external_update_time = (int) $date_modified->getTimestamp();
+			$last_change_time = (int) $this->woo_product->get_meta( '_last_change_time' );
+
+			// Use the newer timestamp if _last_change_time is valid, otherwise use external_update_time
+			if ( $last_change_time > 0 ) {
+				$product_data['external_update_time'] = max( $external_update_time, $last_change_time );
+			} else {
+				$product_data['external_update_time'] = $external_update_time;
+			}
 		}
 
 		// Only use checkout URLs if they exist.

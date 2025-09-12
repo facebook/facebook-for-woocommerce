@@ -26,11 +26,11 @@ class WhatsAppExtension {
 	/** @var string Commerce Hub base URL */
 	const COMMERCE_HUB_URL = 'https://www.commercepartnerhub.com/';
 	/** @var string Client token */
-	const CLIENT_TOKEN = '474166926521348|92e978eb27baf47f9df578b48d430a2e';
+	const CLIENT_TOKEN = '753591807210902|489b438e3f0d9ba44504eccd5ce8fe94';
 	/** @var string Whatsapp Integration app ID */
-	const APP_ID = '474166926521348';
+	const APP_ID = '753591807210902';
 	/** @var string Whatsapp Tech Provider Business ID */
-	const TP_BUSINESS_ID = '1145282100241487';
+	const TP_BUSINESS_ID = '1421860479064677';
 	/** @var string base url for meta stefi endpoint */
 	const BASE_STEFI_ENDPOINT_URL = 'https://api.facebook.com';
 	/** @var string Default language for Library Template */
@@ -55,10 +55,10 @@ class WhatsAppExtension {
 
 		return add_query_arg(
 			array(
-				'access_client_token'  => self::CLIENT_TOKEN,
-				'app_id'               => self::APP_ID,
-				'tp_business_id'       => self::TP_BUSINESS_ID,
-				'external_business_id' => $external_wa_id,
+				'access_client_token'   => self::CLIENT_TOKEN,
+				'app_id'                => self::APP_ID,
+				'app_owner_business_id' => self::TP_BUSINESS_ID,
+				'external_business_id'  => $external_wa_id,
 			),
 			self::COMMERCE_HUB_URL . 'whatsapp_utility_integration/splash/'
 		);
