@@ -463,7 +463,7 @@ class API extends Base {
 	}
 
 
-/**
+	/**
 	 * Returns requested fields from Facebook for the given product.
 	 *
 	 * @param string $facebook_product_catalog_id
