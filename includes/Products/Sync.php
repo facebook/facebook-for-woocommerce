@@ -157,7 +157,7 @@ class Sync {
 	/**
 	 * Adds the products with stock changes to the requests array to be updated.
 	 *
-	 * @since 2.1.0
+	 * @since 3.5.8
 	 *
 	 * @param \WC_Product $product product object
 	 */
@@ -173,15 +173,18 @@ class Sync {
 			return;
 		}
 
-		// handle variable products - sync children only, not the parent
-		if ( $product->is_type( 'variable' ) ) {
-			$variation_ids = $product->get_children();
-			if ( ! empty( $variation_ids ) ) {
-				$this->create_or_update_products( $variation_ids );
+		try {
+			// handle variable products - sync children only, not the parent
+			if ( $product->is_type( 'variable' ) ) {
+				$variation_ids = $product->get_children();
+				if ( ! empty( $variation_ids ) ) {
+					$this->create_or_update_products( $variation_ids );
+				}
+			} else {
+				// add the product to the list of products to be updated
+				$this->create_or_update_products( array( $product->get_id() ) );
 			}
-		} else {
-			// add the product to the list of products to be updated
-			$this->create_or_update_products( array( $product->get_id() ) );
+		} catch ( Exception $e ) {
 		}
 	}
 
