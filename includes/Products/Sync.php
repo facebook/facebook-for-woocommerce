@@ -185,7 +185,8 @@ class Sync {
 				$this->create_or_update_products( array( $product->get_id() ) );
 			}
 		} catch ( Exception $e ) {
-			// catch any sync errors
+			// Silently handle any sync errors - Facebook sync should not break stock updates.
+			unset( $e ); // phpcs:ignore Generic.CodeAnalysis.EmptyStatement.DetectedCatch
 		}
 	}
 
