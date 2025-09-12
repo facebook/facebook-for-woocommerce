@@ -262,27 +262,27 @@ class RolloutSwitchesTest extends \WooCommerce\Facebook\Tests\AbstractWPUnitTest
 
 		$plugin_mock->method('get_connection_handler')->willReturn($mock_connection_handler);
 		$plugin_mock->method('get_api')->willReturn($mock_api);
-		$plugin_mock->method('get_version')->willReturnOnConsecutiveCalls('1.0.0', '2.0.0');
+		$plugin_mock->method('get_version')->willReturnOnConsecutiveCalls('1.x.x', '2.x.x');
 
 		$rollout_switches = new RolloutSwitches($plugin_mock);
 
 		// Clean up any existing transients
-		delete_transient('_wc_facebook_for_woocommerce_rollout_switch_flag_1.0.0');
-		delete_transient('_wc_facebook_for_woocommerce_rollout_switch_flag_2.0.0');
+		delete_transient('_wc_facebook_for_woocommerce_rollout_switch_flag_1.x.x');
+		delete_transient('_wc_facebook_for_woocommerce_rollout_switch_flag_2.x.x');
 
-		// First execution with version 1.0.0 - should execute and set transient
+		// First execution with version 1.x.x - should execute and set transient
 		$rollout_switches->init();
 
-		// Version upgrade to 2.0.0 - should bypass old transient and execute again
+		// Version upgrade to 2.x.x - should bypass old transient and execute again
 		$rollout_switches->init();
 
 		// Verify both version-specific transients were created
-		$this->assertEquals('yes', get_transient('_wc_facebook_for_woocommerce_rollout_switch_flag_1.0.0'));
-		$this->assertEquals('yes', get_transient('_wc_facebook_for_woocommerce_rollout_switch_flag_2.0.0'));
+		$this->assertEquals('yes', get_transient('_wc_facebook_for_woocommerce_rollout_switch_flag_1.x.x'));
+		$this->assertEquals('yes', get_transient('_wc_facebook_for_woocommerce_rollout_switch_flag_2.x.x'));
 
 		// Clean up
-		delete_transient('_wc_facebook_for_woocommerce_rollout_switch_flag_1.0.0');
-		delete_transient('_wc_facebook_for_woocommerce_rollout_switch_flag_2.0.0');
+		delete_transient('_wc_facebook_for_woocommerce_rollout_switch_flag_1.x.x');
+		delete_transient('_wc_facebook_for_woocommerce_rollout_switch_flag_2.x.x');
 	}
 
 	public function test_plugin_when_failing() {
