@@ -185,6 +185,7 @@ class Sync {
 				$this->create_or_update_products( array( $product->get_id() ) );
 			}
 		} catch ( Exception $e ) {
+			// catch any sync errors
 		}
 	}
 
