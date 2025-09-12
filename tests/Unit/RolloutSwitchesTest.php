@@ -227,6 +227,64 @@ class RolloutSwitchesTest extends \WooCommerce\Facebook\Tests\AbstractWPUnitTest
 		$this->assertFalse($switch_mock->is_switch_enabled(RolloutSwitches::SWITCH_MULTIPLE_IMAGES_ENABLED));
 	}
 
+	/**
+	 * Test that version updates bypass transient check and continue execution.
+	 */
+	public function test_version_update_bypasses_transient_check_and_continues_execution() {
+		// Setup connection handler mock
+		$mock_connection_handler = $this->getMockBuilder('stdClass')
+			->addMethods(array('get_external_business_id', 'is_connected'))
+			->getMock();
+		$mock_connection_handler->method('get_external_business_id')->willReturn($this->external_business_id);
+		$mock_connection_handler->method('is_connected')->willReturn(true);
+
+		// Setup API response mock
+		$mock_response = $this->getMockBuilder('stdClass')
+			->addMethods(array('get_data'))
+			->getMock();
+		$mock_response->method('get_data')->willReturn(array());
+
+		// Setup API mock to track execution
+		$mock_api = $this->getMockBuilder(API::class)
+			->disableOriginalConstructor()
+			->setMethods(array('get_rollout_switches'))
+			->getMock();
+
+		// Expect API to be called exactly twice (once per version)
+		$mock_api->expects($this->exactly(2))
+			->method('get_rollout_switches')
+			->willReturn($mock_response);
+
+		// Create plugin mock with all required methods
+		$plugin_mock = $this->getMockBuilder('WC_Facebookcommerce')
+			->onlyMethods(array('get_version', 'get_connection_handler', 'get_api'))
+			->getMock();
+
+		$plugin_mock->method('get_connection_handler')->willReturn($mock_connection_handler);
+		$plugin_mock->method('get_api')->willReturn($mock_api);
+		$plugin_mock->method('get_version')->willReturnOnConsecutiveCalls('1.x.x', '2.x.x');
+
+		$rollout_switches = new RolloutSwitches($plugin_mock);
+
+		// Clean up any existing transients
+		delete_transient('_wc_facebook_for_woocommerce_rollout_switch_flag_1.x.x');
+		delete_transient('_wc_facebook_for_woocommerce_rollout_switch_flag_2.x.x');
+
+		// First execution with version 1.x.x - should execute and set transient
+		$rollout_switches->init();
+
+		// Version upgrade to 2.x.x - should bypass old transient and execute again
+		$rollout_switches->init();
+
+		// Verify both version-specific transients were created
+		$this->assertEquals('yes', get_transient('_wc_facebook_for_woocommerce_rollout_switch_flag_1.x.x'));
+		$this->assertEquals('yes', get_transient('_wc_facebook_for_woocommerce_rollout_switch_flag_2.x.x'));
+
+		// Clean up
+		delete_transient('_wc_facebook_for_woocommerce_rollout_switch_flag_1.x.x');
+		delete_transient('_wc_facebook_for_woocommerce_rollout_switch_flag_2.x.x');
+	}
+
 	public function test_plugin_when_failing() {
 
 		// mock the active filters to test business values
