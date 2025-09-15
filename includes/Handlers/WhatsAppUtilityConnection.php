@@ -386,7 +386,7 @@ class WhatsAppUtilityConnection {
 				'messaging_product' => 'whatsapp',
 				'to'                => $phone_number,
 				'event_config_id'   => $event_config_id,
-				'external_event_id' => "${order_id}",
+				'external_event_id' => "{$order_id}",
 				'country_code'      => $country_code,
 				'template'          => array(
 					'language'   => array(
