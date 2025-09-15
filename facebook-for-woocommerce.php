@@ -22,8 +22,6 @@
  * @package FacebookCommerce
  */
 
-require_once __DIR__ . '/vendor/autoload.php';
-
 use Automattic\WooCommerce\Grow\Tools\CompatChecker\v0_0_1\Checker;
 use Automattic\WooCommerce\Utilities\FeaturesUtil;
 
@@ -143,6 +141,11 @@ class WC_Facebook_Loader {
 	 * @since 1.10.0
 	 */
 	public function init_plugin() {
+
+		// Load Composer autoloader only when plugin initializes (delayed loading for performance)
+		if ( ! class_exists( 'Automattic\WooCommerce\Grow\Tools\CompatChecker\v0_0_1\Checker' ) ) {
+			require_once plugin_dir_path( __FILE__ ) . 'vendor/autoload.php';
+		}
 
 		if ( ! Checker::instance()->is_compatible( __FILE__, self::PLUGIN_VERSION ) ) {
 			return;
