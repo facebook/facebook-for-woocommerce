@@ -239,7 +239,7 @@ class WhatsApp_Integration_Settings {
 						});
 				}
 
-				if (messageEvent === 'CommerceExtension::RESIZE') {
+				if (messageEvent === 'CommerceExtension::WA_RESIZE') {
 					const iframe = document.getElementById('facebook-whatsapp-iframe-enhanced');
 					if ( iframe ) {
 						if ( message.height ) {
