@@ -41,19 +41,25 @@ To suggest technical improvements, you can raise an issue on our [Github reposit
 
 == Changelog ==
 
-= 3.5.7 - 2025-09-02 =
-* Add - DO change: Add route & feed column by @unnivgit in #3580
-* Fix - removing set stable tag to unblock release for now by @immadhavv in #3584
-* Fix - Fixed syncing of excluded product categories and tags info by @vinkmeta in #3582
-* Add - feat: quick edit syncing by @rithikb24 in #3557
-* Add - [WIFI]30/n]Fetch the iframe management url through the Stefi API by @sharunaanandraj in #3569
-* Add - changelog: add referrer url by @chc421 in #3545
-* Fix - Fix sale price higher than fb price by @guansu-meta in #3567
-* Add - [WIFI][26/n]Add Listener and update Whatsapp Settings in DB after onboarding by @sharunaanandraj in #3568
-* Add - [WIFI][25/n]Add scaffolding Iframe Integration in the Whatsapp Tab by @sharunaanandraj in #3566
-* Add - [WIFI][1/n] Add Scaffolding WhatsApp Page under Marketing for WAUM Beta Experience by @sharunaanandraj in #3564
-* Dev - cleanup: remove dead code for product sets sync rollout switch by @devbodaghe in #3560
-* Add - Automatically set last release from release-plugin workflow as latest by @immadhavv in #3552
-* Add - Run unit tests with coverage and compare against threshold by @immadhavv in #3553
+= 3.5.8 - 2025-09-16 =
+* Fix - Feat/stock update fix by @rithikb24 in #3602
+* Add - [EZ][WIFI][56/n] Fix CSS in Iframe for whatsapp integration by @sharunaanandraj in #3599
+* Fix - Rollout Switch Test for cache update on version upgrade by @rithikb24 in #3601
+* Add - [WIFI][51/n]Add Support to receive WA Disconnect message to delete settings in Woo DB by @sharunaanandraj in #3598
+* Fix - [WooCommerce] Fix selected category values bug after a new category is created by @Rebeca-Reis in #3597
+* Add - [WIFI][49/n]Add admin banner to Whatsapp Utility Page by @sharunaanandraj in #3596
+* Fix - fix: category name by @rithikb24 in #3590
+* Add - Feat/csv reupload changes by @rithikb24 in #3585
+* Fix - Adding back set-stable-tag workflow by @vahidkay-meta in #3594
+* Add - fix: rollout-switch-transient-flag by @rithikb24 in #3595
+* Add - [WIFI][45/n] Add changes to receive Resizing postMessage and update the Whatsapp iframe by @sharunaanandraj in #3592
+* Add - integrate last change time into external_update_time calculation by @rithikb24 in #3577
+* Add - add product meta change time update handler by @rithikb24 in #3576
+* Add - main decision function based on meta key & product validation by @rithikb24 in #3575
+* Add - add helper functions for tracking product meta change times & rate limit them (#3571) by @rithikb24 in #3578
+* Add - changelog: add parambuilder by @chc421 in #3549
+* Fix - Fix unit tests failing silently by @immadhavv in #3587
+* Add - [WIFI][43/n][EZ] Polish UI for Whatsapp Utility Message Iframe Beta by @sharunaanandraj in #3591
+* Add - [WIFI][37/n]Minor changes to move to new 2P app ID and allow WA Installation Creation by @sharunaanandraj in #3586
 
 [See changelog for all versions](https://raw.githubusercontent.com/facebook/facebook-for-woocommerce/refs/heads/main/changelog.txt).
