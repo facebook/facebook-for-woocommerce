@@ -96,7 +96,7 @@ class WhatsAppExtension {
 			'body'    => array(),
 			'timeout' => 3000, // 5 minutes
 		);
-		$response        = wp_remote_get( $base_url, $options );
+		$response        = wp_remote_get( $url, $options );
 		$data            = explode( "\n", wp_remote_retrieve_body( $response ) );
 		$response_object = json_decode( $data[0] );
 		return $response_object->iframe_management_uri;
