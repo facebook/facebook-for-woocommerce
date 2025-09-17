@@ -495,6 +495,12 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 		 */
 		public function send_search_event() {
 
+			global $wp_query;
+
+			if ( empty( $wp_query->posts ) ) {
+				return;
+			}
+
 			$this->send_api_event( $this->get_search_event() );
 		}
 
