@@ -216,6 +216,7 @@ class PluginRender {
 	}
 
 	public static function product_set_banner_closed() {
+		check_admin_referer( self::ACTION_PRODUCT_SET_BANNER_CLOSED, 'nonce' );
 		check_ajax_referer( self::ACTION_PRODUCT_SET_BANNER_CLOSED, 'nonce' );
 		set_transient( 'fb_product_set_banner_dismissed', true );
 	}
@@ -225,6 +226,7 @@ class PluginRender {
 	 * after a week
 	 */
 	public static function reset_upcoming_version_banners() {
+		check_admin_referer( self::ACTION_CLOSE_BANNER, 'nonce' );
 		set_transient( 'upcoming_woo_all_products_banner_hide', true, 7 * DAY_IN_SECONDS );
 	}
 
@@ -234,6 +236,7 @@ class PluginRender {
 	 * NOTE: We are doing this because anyway we will remove this in cleanup post : 3.5.3
 	 */
 	public static function reset_plugin_updated_successfully_banner() {
+		check_admin_referer( self::ACTION_CLOSE_BANNER, 'nonce' );
 		set_transient( 'plugin_updated_banner_hide', true, 12 * MONTH_IN_SECONDS );
 	}
 
@@ -242,6 +245,7 @@ class PluginRender {
 	 * But this will keep showing every week fortnight if user not synced in
 	 */
 	public static function reset_plugin_updated_successfully_but_master_sync_off_banner() {
+		check_admin_referer( self::ACTION_CLOSE_BANNER, 'nonce' );
 		set_transient( 'plugin_updated_with_master_sync_off_banner_hide', true, 2 * WEEK_IN_SECONDS );
 	}
 
