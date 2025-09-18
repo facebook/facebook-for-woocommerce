@@ -209,6 +209,7 @@ class PluginRender {
 	}
 
 	public static function sync_all_clicked() {
+		check_admin_referer( self::ACTION_SYNC_BACK_IN, 'nonce' );
 		update_option( self::MASTER_SYNC_OPT_OUT_TIME, '' );
 		wp_send_json_success( 'Synced all in successfully' );
 	}
