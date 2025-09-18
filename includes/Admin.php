@@ -539,9 +539,17 @@ class Admin {
 	 */
 	private function add_query_vars_to_find_products_with_sync_disabled( array $query_vars ) {
 		$meta_query = array( // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_query
+			'relation' => 'OR',
+
 			array(
 				'key'   => Products::get_product_sync_meta_key(),
 				'value' => 'no',
+			),
+
+			array(
+				'key'     => '_fb_sync_issues',
+				'value'   => '"warnings";a:0',
+				'compare' => 'NOT LIKE',
 			),
 		);
 
