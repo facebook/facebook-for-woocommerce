@@ -143,8 +143,9 @@ class WC_Facebook_Loader {
 	public function init_plugin() {
 
 		// Load Composer autoloader only when plugin initializes (delayed loading for performance)
-		if ( ! class_exists( 'Automattic\WooCommerce\Grow\Tools\CompatChecker\v0_0_1\Checker' ) ) {
-			require_once plugin_dir_path( __FILE__ ) . 'vendor/autoload.php';
+		if (!defined('WC_FACEBOOK_AUTOLOADER_LOADED')) {
+			require_once plugin_dir_path(__FILE__) . 'vendor/autoload.php';
+			define('WC_FACEBOOK_AUTOLOADER_LOADED', true);
 		}
 
 		if ( ! Checker::instance()->is_compatible( __FILE__, self::PLUGIN_VERSION ) ) {
