@@ -203,6 +203,7 @@ class PluginRender {
 	}
 
 	public static function opt_out_of_sync_clicked() {
+		check_admin_referer( self::ACTION_OPT_OUT_OF_SYNC, 'nonce' );
 		$latest_date = gmdate( 'Y-m-d H:i:s' );
 		update_option( self::MASTER_SYNC_OPT_OUT_TIME, $latest_date );
 		wp_send_json_success( 'Opted out successfully' );
