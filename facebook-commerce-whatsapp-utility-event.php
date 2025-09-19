@@ -38,7 +38,7 @@ class WC_Facebookcommerce_Whatsapp_Utility_Event {
 	 * @return bool
 	 */
 	private function is_whatsapp_utility_enabled() {
-		return true;
+		return false;
 	}
 
 

@@ -129,4 +129,96 @@ class WhatsAppExtension {
 		}
 		return $response_object->iframe_management_uri;
 	}
+
+	/**
+	 * Trigger WhatsApp Message Sends for Processed Order
+	 *
+	 * @param object $plugin The plugin instance.
+	 * @param string $event Order Management event
+	 * @param string $order_id Order id
+	 * @param string $order_details_link Order Details Link
+	 * @param string $phone_number Customer phone number
+	 * @param string $first_name Customer first name
+	 * @param int    $refund_value Amount refunded to the Customer
+	 * @param string $currency Currency code
+	 * @param string $country_code Customer country code
+	 *
+	 * @return string
+	 * @since 3.5.0
+	 */
+	public static function process_whatsapp_utility_message_event(
+		$plugin,
+		$event,
+		$order_id,
+		$order_details_link,
+		$phone_number,
+		$first_name,
+		$refund_value,
+		$currency,
+		$country_code
+	) {
+		$whatsapp_connection = $plugin->get_whatsapp_connection_handler();
+		$is_connected        = $whatsapp_connection->is_connected();
+		if ( ! $is_connected ) {
+			wc_get_logger()->info(
+				sprintf(
+				/* translators: %s $order_id */
+					__( 'Customer Events Post API call for Order id %1$s Failed due to failed connection ', 'facebook-for-woocommerce' ),
+					$order_id,
+				)
+			);
+			return;
+		}
+		$wa_installation_id = $whatsapp_connection->get_wa_installation_id();
+		$base_url           = array( self::BASE_STEFI_ENDPOINT_URL, 'whatsapp/business', $wa_installation_id, 'customer_events' );
+		$base_url           = esc_url( implode( '/', $base_url ) );
+		$bisu_token         = $whatsapp_connection->get_access_token();
+		$options            = array(
+			'headers' => array(
+				'Authorization' => 'Bearer ' . $bisu_token,
+			),
+			'body'    => array(
+				'customer' => array(
+					'id'           => $phone_number,
+					'type'         => 'GUEST',
+					'first_name'   => $first_name,
+					'country_code' => $country_code,
+					'language'     => get_user_locale(),
+				),
+				'event'    => array(
+					'id'              => "#{$order_id}",
+					'type'            => $event,
+					'order_fulfilled' => array(
+						'tracking_url' => $order_details_link,
+					),
+				),
+			),
+			'timeout' => 3000, // 5 minutes
+		);
+
+		$response        = wp_remote_post( $base_url, $options );
+		$status_code     = wp_remote_retrieve_response_code( $response );
+		$data            = explode( "\n", wp_remote_retrieve_body( $response ) );
+		$response_object = json_decode( $data[0] );
+		if ( is_wp_error( $response ) || 200 !== $status_code ) {
+			$error_message = $response_object->error->error_user_title ?? $response_object->error->message ?? 'Something went wrong. Please try again later!';
+			wc_get_logger()->info(
+				sprintf(
+				/* translators: %s $order_id %s $error_message */
+					__( 'Customer Events Post API call for Order id %1$s Failed %2$s ', 'facebook-for-woocommerce' ),
+					$order_id,
+					$error_message,
+				)
+			);
+		} else {
+			wc_get_logger()->info(
+				sprintf(
+				/* translators: %s $order_id */
+					__( 'Customer Events Post API call for Order id %1$s Succeeded.', 'facebook-for-woocommerce' ),
+					$order_id
+				)
+			);
+		}
+		return;
+	}
 }
