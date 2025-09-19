@@ -79,6 +79,11 @@ class Handler extends AbstractRESTEndpoint {
 			// Map parameters to options and update settings
 			$options = $this->map_params_to_options( $request_data );
 			$this->update_settings( $options );
+			wc_get_logger()->info(
+				sprintf(
+					__( 'Update Settings for WhatsApp Utility Messages Integration Successful.', 'facebook-for-woocommerce' ),
+				)
+			);
 
 			return $this->success_response(
 				[
@@ -86,6 +91,13 @@ class Handler extends AbstractRESTEndpoint {
 				]
 			);
 		} catch ( \Exception $e ) {
+			wc_get_logger()->info(
+				sprintf(
+					/* translators: %s $error_message */
+					__( 'Failed to handle_update for WhatsApp Utility Messages Integration. Exception: %1%s', 'facebook-for-woocommerce' ),
+					$e->getMessage(),
+				)
+			);
 			return $this->error_response(
 				$e->getMessage(),
 				500
@@ -181,6 +193,13 @@ class Handler extends AbstractRESTEndpoint {
 			$validation_result = $request->validate();
 
 			if ( is_wp_error( $validation_result ) ) {
+				wc_get_logger()->info(
+					sprintf(
+						/* translators: %s $error_message */
+						__( 'Failed to handle_uninstall for WhatsApp Utility Messages Integration. Exception: %1%s', 'facebook-for-woocommerce' ),
+						$validation_result->get_error_message(),
+					)
+				);
 				return $this->error_response(
 					$validation_result->get_error_message(),
 					400
@@ -190,12 +209,25 @@ class Handler extends AbstractRESTEndpoint {
 			// Clear integration options
 			$this->clear_integration_options();
 
+			wc_get_logger()->info(
+				sprintf(
+					__( 'Uninstall successful for WhatsApp Utility Messages Integration.', 'facebook-for-woocommerce' ),
+				)
+			);
+
 			return $this->success_response(
 				[
 					'message' => __( 'WhatsApp integration successfully uninstalled', 'facebook-for-woocommerce' ),
 				]
 			);
 		} catch ( \Exception $e ) {
+			wc_get_logger()->info(
+				sprintf(
+					/* translators: %s $error_message */
+					__( 'Failed to handle_uninstall for WhatsApp Utility Messages Integration. Exception: %1%s', 'facebook-for-woocommerce' ),
+					$e->getMessage(),
+				)
+			);
 			return $this->error_response(
 				$e->getMessage(),
 				500

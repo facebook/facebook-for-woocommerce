@@ -52,6 +52,11 @@ class WhatsAppExtension {
 	 */
 	public static function generate_wa_iframe_splash_url( $plugin, $external_wa_id ): string {
 		$whatsapp_connection = $plugin->get_whatsapp_connection_handler();
+		wc_get_logger()->info(
+			sprintf(
+				__( 'WhatsApp Utility Messages Iframe Splash Url Fetched.', 'facebook-for-woocommerce' ),
+			)
+		);
 
 		return add_query_arg(
 			array(
@@ -76,7 +81,11 @@ class WhatsAppExtension {
 		$whatsapp_connection = $plugin->get_whatsapp_connection_handler();
 		$is_connected        = $whatsapp_connection->is_connected();
 		if ( ! $is_connected ) {
-			// TODO: Add error handling
+			wc_get_logger()->info(
+				sprintf(
+					__( 'WhatsApp Utility Messages Iframe Management Url failed to fetch due to failed WhatsApp connection', 'facebook-for-woocommerce' ),
+				)
+			);
 			return '';
 		}
 
@@ -97,8 +106,27 @@ class WhatsAppExtension {
 			'timeout' => 3000, // 5 minutes
 		);
 		$response        = wp_remote_get( $url, $options );
+		$status_code     = wp_remote_retrieve_response_code( $response );
 		$data            = explode( "\n", wp_remote_retrieve_body( $response ) );
 		$response_object = json_decode( $data[0] );
+		if ( is_wp_error( $response ) || 200 !== $status_code ) {
+			$error_message = $response_object->error->error_user_title ?? $response_object->error->message ?? 'Something went wrong. Please try again later!';
+			wc_get_logger()->info(
+				sprintf(
+				/* translators: %s $wa_installation_id %s $error_message */
+					__( 'Failed to fetch iframe Management URI. wa_installation_id: %1$s, error message: %2$s', 'facebook-for-woocommerce' ),
+					$wa_installation_id,
+					$error_message,
+				)
+			);
+			return '';
+		} else {
+			wc_get_logger()->info(
+				sprintf(
+					__( 'WhatsApp Utility Messages Iframe Management Url successfully fetched', 'facebook-for-woocommerce' ),
+				)
+			);
+		}
 		return $response_object->iframe_management_uri;
 	}
 
