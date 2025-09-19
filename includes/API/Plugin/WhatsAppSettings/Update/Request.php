@@ -99,6 +99,11 @@ class Request extends RESTRequest {
 	public function validate() {
 
 		if ( empty( $this->get_param( 'access_token' ) ) ) {
+			wc_get_logger()->info(
+				sprintf(
+					__( 'Failed to updateWhatsAppSettings since access_token param is missing.', 'facebook-for-woocommerce' ),
+				)
+			);
 			return new \WP_Error(
 				'missing_access_token',
 				__( 'Missing access token', 'facebook-for-woocommerce' ),
@@ -107,6 +112,11 @@ class Request extends RESTRequest {
 		}
 
 		if ( empty( $this->get_param( 'business_id' ) ) ) {
+			wc_get_logger()->info(
+				sprintf(
+					__( 'Failed to updateWhatsAppSettings since business_id param is missing.', 'facebook-for-woocommerce' ),
+				)
+			);
 			return new \WP_Error(
 				'missing_business_id',
 				__( 'Missing business id', 'facebook-for-woocommerce' ),
@@ -115,6 +125,11 @@ class Request extends RESTRequest {
 		}
 
 		if ( empty( $this->get_param( 'phone_number_id' ) ) ) {
+			wc_get_logger()->info(
+				sprintf(
+					__( 'Failed to updateWhatsAppSettings since phone_number_id param is missing.', 'facebook-for-woocommerce' ),
+				)
+			);
 			return new \WP_Error(
 				'missing_phone_number_id',
 				__( 'Missing phone number id', 'facebook-for-woocommerce' ),
@@ -123,6 +138,11 @@ class Request extends RESTRequest {
 		}
 
 		if ( empty( $this->get_param( 'waba_id' ) ) ) {
+			wc_get_logger()->info(
+				sprintf(
+					__( 'Failed to updateWhatsAppSettings since waba_id param is missing.', 'facebook-for-woocommerce' ),
+				)
+			);
 			return new \WP_Error(
 				'missing_waba_id',
 				__( 'Missing waba id', 'facebook-for-woocommerce' ),
@@ -131,6 +151,11 @@ class Request extends RESTRequest {
 		}
 
 		if ( empty( $this->get_param( 'wa_installation_id' ) ) ) {
+			wc_get_logger()->info(
+				sprintf(
+					__( 'Failed to updateWhatsAppSettings since wa_installation_id param is missing.', 'facebook-for-woocommerce' ),
+				)
+			);
 			return new \WP_Error(
 				'missing_wa_installation_id',
 				__( 'Missing wa installation id', 'facebook-for-woocommerce' ),
