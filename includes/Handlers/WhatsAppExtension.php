@@ -209,6 +209,10 @@ class WhatsAppExtension {
 	 */
 	public static function get_object_for_event( $event, $order_details_link, $refund_value, $currency ) {
 		switch ( $event ) {
+			case 'ORDER_PLACED':
+				return array(
+					'order_details_url' => $order_details_link,
+				);
 			case 'ORDER_FULFILLED':
 				return array(
 					'tracking_url' => $order_details_link,
