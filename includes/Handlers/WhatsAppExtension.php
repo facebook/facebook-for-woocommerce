@@ -145,6 +145,13 @@ class WhatsAppExtension {
 		$base_url           = array( self::BASE_STEFI_ENDPOINT_URL, 'whatsapp/business', $wa_installation_id, 'customer_events' );
 		$base_url           = esc_url( implode( '/', $base_url ) );
 		$bisu_token         = $whatsapp_connection->get_access_token();
+		$event_lowercase    = strtolower( $event );
+		$event_object       = self::get_object_for_event(
+			$event,
+			$order_details_link,
+			$refund_value,
+			$currency
+		);
 		$options            = array(
 			'headers' => array(
 				'Authorization' => 'Bearer ' . $bisu_token,
@@ -158,11 +165,9 @@ class WhatsAppExtension {
 					'language'     => get_user_locale(),
 				),
 				'event'    => array(
-					'id'              => "#{$order_id}",
-					'type'            => $event,
-					'order_fulfilled' => array(
-						'tracking_url' => $order_details_link,
-					),
+					'id'             => "#{$order_id}",
+					'type'           => $event,
+					$event_lowercase => $event_object,
 				),
 			),
 			'timeout' => 3000, // 5 minutes
@@ -192,5 +197,27 @@ class WhatsAppExtension {
 			);
 		}
 		return;
+	}
+
+	/**
+	 * Gets event data tied to Order Management Event
+	 *
+	 * @param string $event Order Management event
+	 * @param string $order_details_link Order details link
+	 * @param string $refund_value Amount refunded to the Customer
+	 * @param string $currency Currency code
+	 */
+	public static function get_object_for_event( $event, $order_details_link, $refund_value, $currency ) {
+		switch ( $event ) {
+			case 'ORDER_FULFILLED':
+				return array(
+					'tracking_url' => $order_details_link,
+				);
+			case 'ORDER_REFUNDED':
+				return array(
+					'amount_1000' => $refund_value,
+					'currency'    => $currency,
+				);
+		}
 	}
 }
