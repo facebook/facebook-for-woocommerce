@@ -81,6 +81,9 @@ class WC_Facebookcommerce extends WooCommerce\Facebook\Framework\Plugin {
 	/** @var WooCommerce\Facebook\Feed\Localization\LanguageOverrideFeed language override feed handler */
 	private $language_override_feed;
 
+	/** @var WooCommerce\Facebook\Feed\Localization\CountryOverrideFeed country override feed handler */
+	private $country_override_feed;
+
 	/** @var WooCommerce\Facebook\Feed\FeedManager Entrypoint and creates all other feeds */
 	public $feed_manager;
 
@@ -215,6 +218,8 @@ class WC_Facebookcommerce extends WooCommerce\Facebook\Framework\Plugin {
 			$this->product_feed                     = new WooCommerce\Facebook\Products\Feed();
 			// Initialize language override feed - will handle missing plugins gracefully
 			$this->language_override_feed           = $this->init_language_override_feed();
+			// Initialize country override feed - will handle missing plugins gracefully
+			$this->country_override_feed            = $this->init_country_override_feed();
 			$this->products_stock_handler           = new WooCommerce\Facebook\Products\Stock();
 			$this->products_sync_handler            = new WooCommerce\Facebook\Products\Sync();
 			$this->sync_background_handler          = new WooCommerce\Facebook\Products\Sync\Background();
@@ -404,6 +409,22 @@ class WC_Facebookcommerce extends WooCommerce\Facebook\Framework\Plugin {
 		}
 
 		parent::log( $message, $log_id, $level );
+	}
+
+	/**
+	 * Logs an API request.
+	 *
+	 * @since 2.0.0
+	 *
+	 * @param array $request request data
+	 * @param array $response response data
+	 * @param null  $log_id log ID
+	 */
+	public function log_api_request( $request, $response, $log_id = null ) {
+		// bail if logging isn't enabled
+		if ( ! $this->get_integration() || ! $this->get_integration()->is_debug_mode_enabled() ) {
+			return;
+		}
 	}
 
 	/**
@@ -737,6 +758,12 @@ class WC_Facebookcommerce extends WooCommerce\Facebook\Framework\Plugin {
 	 *
 	 * @since 2.3.4
 	 *
+	 * @return string
+	**/
+	public function get_asset_build_dir_url() {
+		return $this->get_plugin_url() . '/assets/build';
+	}
+
 	/**
 	 * Initialize the language override feed with graceful error handling.
 	 *
@@ -758,6 +785,26 @@ class WC_Facebookcommerce extends WooCommerce\Facebook\Framework\Plugin {
 	}
 
 	/**
+	 * Initialize the country override feed with graceful error handling.
+	 *
+	 * @since 3.0.18
+	 * @return WooCommerce\Facebook\Feed\Localization\CountryOverrideFeed|null
+	 */
+	private function init_country_override_feed() {
+		try {
+			return new WooCommerce\Facebook\Feed\Localization\CountryOverrideFeed();
+		} catch ( \Exception $e ) {
+			// Log the error but don't throw - this allows the plugin to continue functioning
+			$this->log(
+				'Country override feed could not be initialized: ' . $e->getMessage(),
+				'country-override-feed',
+				'warning'
+			);
+			return null;
+		}
+	}
+
+	/**
 	 * Gets the language override feed handler.
 	 *
 	 * @since 3.6.0
@@ -765,6 +812,16 @@ class WC_Facebookcommerce extends WooCommerce\Facebook\Framework\Plugin {
 	 */
 	public function get_language_override_feed() {
 		return $this->language_override_feed;
+	}
+
+	/**
+	 * Gets the connection handler.
+	 *
+	 * @return WooCommerce\Facebook\RolloutSwitches
+	 * @since 3.6.0
+	 */
+	public function get_rollout_switches() {
+		return $this->rollout_switches;
 	}
 
 	/** Conditional methods ***************************************************************************************/

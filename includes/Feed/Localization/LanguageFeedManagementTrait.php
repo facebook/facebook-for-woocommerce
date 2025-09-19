@@ -116,7 +116,7 @@ trait LanguageFeedManagementTrait {
 	 * @return string Feed ID
 	 * @since 3.6.0
 	 */
-	private function retrieve_or_create_language_feed_id( string $language_code ): string {
+	public function retrieve_or_create_language_feed_id( string $language_code ): string {
 		// Attempt 1. Request feeds data from Meta and filter the right one
 		$feed_id = $this->request_and_filter_language_feed_id( $language_code );
 		if ( $feed_id ) {

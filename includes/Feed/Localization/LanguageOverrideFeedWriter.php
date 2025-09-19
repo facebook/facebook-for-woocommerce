@@ -65,7 +65,40 @@ class LanguageOverrideFeedWriter extends AbstractFeedFileWriter {
 			$language_code = $this->language_code;
 		}
 
+		// If requesting a different language than this instance, create temp instance
+		if ( $language_code !== $this->language_code ) {
+			// Create minimal header for temp instance
+			$header_row = 'id,override';
+			$temp_writer = new self( $language_code, $header_row );
+			return $temp_writer->get_file_path();
+		}
+
 		return parent::get_file_path();
+	}
+
+	/**
+	 * Gets the language override temporary feed file path for the current language.
+	 *
+	 * @since 3.6.0
+	 *
+	 * @param string $language_code Optional. Language code (for compatibility)
+	 * @return string
+	 */
+	public function get_temp_file_path( string $language_code = '' ): string {
+		// Use the instance language code if none provided
+		if ( empty( $language_code ) ) {
+			$language_code = $this->language_code;
+		}
+
+		// If requesting a different language than this instance, create temp instance
+		if ( $language_code !== $this->language_code ) {
+			// Create minimal header for temp instance
+			$header_row = 'id,override';
+			$temp_writer = new self( $language_code, $header_row );
+			return $temp_writer->get_temp_file_path();
+		}
+
+		return parent::get_temp_file_path();
 	}
 
 	/**

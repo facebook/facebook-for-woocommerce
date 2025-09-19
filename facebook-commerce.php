@@ -49,6 +49,9 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 	/** @var string Option name for disabling feed. */
 	const OPTION_LEGACY_FEED_FILE_GENERATION_ENABLED = 'wc_facebook_legacy_feed_file_generation_enabled';
 
+	/** @var string Option name for enabling language override feed generation. */
+	const OPTION_LANGUAGE_OVERRIDE_FEED_GENERATION_ENABLED = 'wc_facebook_language_override_feed_generation_enabled';
+
 	/** @var string the WordPress option name where the feed ID is stored */
 	const OPTION_FEED_ID = 'wc_facebook_feed_id';
 
@@ -2856,6 +2859,16 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 	 */
 	public function is_new_style_feed_generation_enabled() {
 		return (bool) ( 'yes' === get_option( self::SETTING_ENABLE_NEW_STYLE_FEED_GENERATOR ) );
+	}
+
+	/**
+	 * Determines whether language override feed generation is enabled.
+	 *
+	 * @return bool
+	 * @since 3.6.0
+	 */
+	public function is_language_override_feed_generation_enabled() {
+		return 'yes' === get_option( self::OPTION_LANGUAGE_OVERRIDE_FEED_GENERATION_ENABLED, 'yes' );
 	}
 
 	/**
