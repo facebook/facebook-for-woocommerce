@@ -306,6 +306,8 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 			update_option( self::SETTING_ENABLE_META_DIAGNOSIS, 'yes' );
 		}
 
+		add_action( 'init', array( $this, 'param_builder_set_cookies' ), 2 );
+
 		if ( is_admin() ) {
 
 			$this->init_pixel();
@@ -3296,6 +3298,38 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 			if ( ! isset( $this->wa_utility_event_processor ) ) {
 				$this->wa_utility_event_processor = new WC_Facebookcommerce_Whatsapp_Utility_Event( $this );
 			}
+		}
+	}
+
+	/**
+	 * Sets the Parameter Builder cookies using the Facebook CAPI Parameter Builder.
+	 */
+	public function param_builder_set_cookies() {
+		$param_builder = facebook_for_woocommerce()->get_param_builder();
+		if ( ! $param_builder ) {
+			return;
+		}
+
+		try {
+			$cookie_to_set = $param_builder->getCookiesToSet();
+
+			if ( ! empty( $cookie_to_set ) ) {
+				foreach ( $cookie_to_set as $cookie ) {
+					setcookie(
+						$cookie->name,
+						$cookie->value,
+						array(
+							'expires' => time() + $cookie->max_age,
+							'path' => '/',
+							'domain' => $cookie->domain,
+							'secure' => is_ssl(),
+							'samesite' => 'Lax',
+						)
+					);
+				}
+			}
+		} catch ( \Exception $exception ) {
+			$this->log( 'Error setting CAPI Parameter Builder cookies: ' . $exception->getMessage() );
 		}
 	}
 }
