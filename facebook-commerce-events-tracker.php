@@ -58,6 +58,13 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 		 */
 		private $param_builder;
 
+		/**
+		 * Order meta keys used by the tracker.
+		 */
+		const META_PURCHASE_TRACKED         = '_meta_purchase_tracked'; // Legacy flag kept for compatibility; logic uses context-specific flags
+		const META_PURCHASE_TRACKED_BROWSER = '_meta_purchase_tracked_browser';
+		const META_PURCHASE_TRACKED_SERVER  = '_meta_purchase_tracked_server';
+		const META_EVENT_ID                 = '_meta_event_id';
 
 		/**
 		 * Events tracker constructor.
@@ -926,6 +933,15 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 				return;
 			}
 
+			// Log which hook triggered this purchase event.
+			$hook_name = current_action();
+
+			// Determine if this is a browser or server event.
+			$is_browser = 'woocommerce_thankyou' === $hook_name;
+
+			// If the event is triggered by a hook that is not related to the browser, it is a server event.
+			$meta_flag = $is_browser ? self::META_PURCHASE_TRACKED_BROWSER : self::META_PURCHASE_TRACKED_SERVER;
+
 			// Get the status of the order to ensure we track the actual purchases and not the ones that have a failed payment.
 			$order_state = $order->get_status();
 
@@ -934,28 +950,34 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 				return;
 			}
 
-			// use a session flag to ensure this Purchase event is not tracked multiple times
-			$purchase_tracked_flag = '_wc_' . facebook_for_woocommerce()->get_id() . '_purchase_tracked_' . $order_id;
-
-			// Return if this Purchase event has already been tracked.
-			if ( 'yes' === get_transient( $purchase_tracked_flag ) || $order->meta_exists( '_meta_purchase_tracked' ) ) {
+			// Return if this Purchase event has already been tracked for this context (browser or server).
+			if (
+				( $is_browser && $order->meta_exists( self::META_PURCHASE_TRACKED_BROWSER ) ) ||
+				( ! $is_browser && $order->meta_exists( self::META_PURCHASE_TRACKED_SERVER ) )
+			) {
 				return;
 			}
 
-			// Mark the order as tracked for the session.
-			set_transient( $purchase_tracked_flag, 'yes', 45 * MINUTE_IN_SECONDS );
+			// Ensure a single event_id is shared across browser and server for deduplication.
+			$event_id = $order->get_meta( self::META_EVENT_ID );
 
-			// Set a flag to ensure this Purchase event is not going to be sent across different sessions.
-			$order->add_meta_data( '_meta_purchase_tracked', true, true );
+			if ( empty( $event_id ) ) {
+				$temp_event = new Event( [] );
+				$event_id   = $temp_event->get_id();
+				$order->add_meta_data( self::META_EVENT_ID, $event_id, true );
+			}
+
+			// Set flags before sending to prefer “at most once” over retry-ability.
+			$order->add_meta_data( self::META_PURCHASE_TRACKED, true, true );
+
+			// Legacy flag retained for backward compatibility.
+			$order->add_meta_data( $meta_flag, true, true );
 
 			// Save the metadata.
 			$order->save();
 
-			// Log which hook triggered this purchase event.
-			$hook_name = current_action();
-
 			Logger::log(
-				'Purchase event fired for order ' . $order_id . ' by hook ' . $hook_name . '.',
+				'Purchase event fired for order ' . $order_id . ' by hook ' . $hook_name . ' (context: ' . ( $is_browser ? 'browser' : 'server' ) . ').',
 				array(),
 				array(
 					'should_send_log_to_meta'        => false,
@@ -990,6 +1012,7 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 					$contents[] = $content;
 				}
 			}
+
 			// Advanced matching information is extracted from the order
 			$event_data = array(
 				'event_name'  => $event_name,
@@ -1003,13 +1026,12 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 					'order_id'     => $order_id,
 				),
 				'user_data'   => $this->get_user_data_from_billing_address( $order ),
+				'event_id'    => $event_id,
 			);
 
 			$event = new Event( $event_data );
 
 			$this->send_api_event( $event );
-
-			$event_data['event_id'] = $event->get_id();
 
 			$this->pixel->inject_event( $event_name, $event_data );
 
