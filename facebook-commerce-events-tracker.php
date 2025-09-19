@@ -191,9 +191,6 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 		 */
 		public function param_builder_set_cookies() {
 			$param_builder = facebook_for_woocommerce()->get_param_builder();
-			if ( ! $param_builder ) {
-				return;
-			}
 
 			try {
 				$cookie_to_set = $param_builder->getCookiesToSet();

@@ -714,6 +714,9 @@ class WC_Facebookcommerce extends WooCommerce\Facebook\Framework\Plugin {
 	 * @return \FacebookAds\ParamBuilder|null
 	 */
 	public function get_param_builder() {
+		if ( null === $this->param_builder ) {
+			$this->init_param_builder();
+		}
 		return $this->param_builder;
 	}
 
