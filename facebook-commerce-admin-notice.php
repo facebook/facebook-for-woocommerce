@@ -28,23 +28,29 @@ class WC_Facebookcommerce_Admin_Notice {
 	}
 
 	public function enqueue_notice_script() {
-		wp_enqueue_script(
-			'whatsapp-admin-notice',
-			plugins_url( 'assets/js/admin/whatsapp-admin-notice.js', __FILE__ ),
-			array( 'jquery' ),
-			'1.0',
-			true
-		);
-		wp_localize_script(
-			'whatsapp-admin-notice',
-			'WCFBAdminNotice',
-			array(
-				'ajax_url'  => admin_url( 'admin-ajax.php' ),
-				'nonce'     => wp_create_nonce( self::NOTICE_ID ),
-				'notice_id' => self::NOTICE_ID,
-			)
-		);
-	}
+    // Define a unique handle for the script. Use a prefix to avoid conflicts.
+    $handle = 'wcfb-whatsapp-admin-notice';
+
+    // Enqueue the script with a unique handle, dependencies, and version.
+    wp_enqueue_script(
+        $handle,
+        plugins_url( 'assets/js/admin/whatsapp-admin-notice.js', __FILE__ ),
+        [ 'jquery' ], // Use modern short-array syntax.
+        '1.0.0',      // A more standard versioning format.
+        true
+    );
+
+    // Immediately localize the script using the same handle.
+    wp_localize_script(
+        $handle,
+        'WCFBAdminNotice',
+        [
+            'ajax_url'  => admin_url( 'admin-ajax.php' ),
+            'nonce'     => wp_create_nonce( self::NOTICE_ID ),
+            'notice_id' => self::NOTICE_ID,
+        ]
+    );
+}
 
 	/**
 	 * Handles the AJAX request to dismiss the notice.
