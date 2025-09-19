@@ -254,6 +254,9 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 	/** @var WC_Facebookcommerce_Whatsapp_Utility_Event instance. */
 	private $wa_utility_event_processor;
 
+	/** @var WC_Facebookcommerce_Iframe_Whatsapp_Utility_Event instance. */
+	private $wa_iframe_utility_event_processor;
+
 	/**
 	 * Init and hook in the integration.
 	 *
@@ -410,6 +413,9 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 
 		// Track programmatic changes that don't update post_modified
 		add_action( 'updated_post_meta', array( $this, 'update_product_last_change_time' ), 10, 4 );
+
+		// Init Whatsapp Iframe Utility Event Processor
+		$this->wa_iframe_utility_event_processor = $this->load_whatsapp_iframe_utility_event_processor();
 	}
 
 	/**
@@ -2100,7 +2106,7 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 	 */
 	private function should_update_product_change_time( $product_id, $meta_key ) {
 		$product_id = absint( $product_id );
-		$meta_key = sanitize_key( $meta_key );
+		$meta_key   = sanitize_key( $meta_key );
 
 		// Check if this is a WooCommerce product
 		$product = wc_get_product( $product_id );
@@ -2184,7 +2190,7 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 	 * @since 3.5.8
 	 */
 	private function is_last_change_time_update_rate_limited( $product_id ) {
-		$cache_key = "last_change_time_{$product_id}";
+		$cache_key   = "last_change_time_{$product_id}";
 		$cached_time = wp_cache_get( $cache_key, 'facebook_for_woocommerce' );
 
 		// If no cached time, allow update
@@ -2194,7 +2200,7 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 
 		// Rate limit to once every 60 seconds (1 minute)
 		$rate_limit_window = 60;
-		$current_time = time();
+		$current_time      = time();
 
 		// If the last update was within the rate limit window, prevent update
 		return ( $current_time - $cached_time ) < $rate_limit_window;
@@ -3295,6 +3301,21 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 		if ( class_exists( 'WC_Facebookcommerce_Whatsapp_Utility_Event' ) ) {
 			if ( ! isset( $this->wa_utility_event_processor ) ) {
 				$this->wa_utility_event_processor = new WC_Facebookcommerce_Whatsapp_Utility_Event( $this );
+			}
+		}
+	}
+
+	/**
+	 * Init WhatsApp Utility Event Processor.
+	 *
+	 * @return void
+	 */
+	public function load_whatsapp_iframe_utility_event_processor() {
+		// Attempt to load Iframe WhatsApp Utility Event Processor
+		include_once 'facebook-commerce-iframe-whatsapp-utility-event.php';
+		if ( class_exists( 'WC_Facebookcommerce_Iframe_Whatsapp_Utility_Event' ) ) {
+			if ( ! isset( $this->wa_iframe_utility_event_processor ) ) {
+				$this->wa_iframe_utility_event_processor = new WC_Facebookcommerce_Iframe_Whatsapp_Utility_Event( $this->facebook_for_woocommerce );
 			}
 		}
 	}
