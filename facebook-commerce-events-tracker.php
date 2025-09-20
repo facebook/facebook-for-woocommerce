@@ -108,8 +108,6 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 		 * @since 2.2.0
 		 */
 		private function add_hooks() {
-			add_action( 'init', array( $this, 'param_builder_set_cookies' ), 15 );
-
 			// inject Pixel
 			add_action( 'wp_head', array( $this, 'inject_base_pixel' ) );
 			add_action( 'wp_footer', array( $this, 'inject_base_pixel_noscript' ) );
@@ -183,38 +181,6 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 		public function inject_base_pixel_noscript() {
 			if ( $this->is_pixel_enabled() ) {
 				echo $this->pixel->pixel_base_code_noscript();
-			}
-		}
-
-		/**
-		 * Sets the Parameter Builder cookies using the Facebook CAPI Parameter Builder.
-		 */
-		public function param_builder_set_cookies() {
-			$param_builder = facebook_for_woocommerce()->get_param_builder();
-			if ( ! $param_builder ) {
-				return;
-			}
-
-			try {
-				$cookie_to_set = $param_builder->getCookiesToSet();
-
-				if ( ! empty( $cookie_to_set ) ) {
-					foreach ( $cookie_to_set as $cookie ) {
-						setcookie(
-							$cookie->name,
-							$cookie->value,
-							array(
-								'expires' => time() + $cookie->max_age,
-								'path' => '/',
-								'domain' => $cookie->domain,
-								'secure' => is_ssl(),
-								'samesite' => 'Lax',
-							)
-						);
-					}
-				}
-			} catch ( \Exception $exception ) {
-				$this->log( 'Error setting CAPI Parameter Builder cookies: ' . $exception->getMessage() );
 			}
 		}
 
