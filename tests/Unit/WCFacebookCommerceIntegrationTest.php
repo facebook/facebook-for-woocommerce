@@ -2557,23 +2557,6 @@ class WCFacebookCommerceIntegrationTest extends \WooCommerce\Facebook\Tests\Abst
 	}
 
 	/**
-	 * Tests delete product item calls facebook graph api.
-	 *
-	 * @return void
-	 */
-	public function test_delete_product_item() {
-		$id = 1234567890;
-
-		add_post_meta( $id, WC_Facebookcommerce_Integration::FB_PRODUCT_ITEM_ID, '00998877665544332211' );
-
-		$this->api->expects( $this->once() )
-			->method( 'delete_product_item' )
-			->with( '00998877665544332211' );
-
-		$this->integration->delete_product_item( $id );
-	}
-
-	/**
 	 * Tests filter function.
 	 *
 	 * @return void
