@@ -24,11 +24,6 @@ class JobManager {
 	public $reset_all_product_fb_settings;
 
 	/**
-	 * @var DeleteProductsFromFBCatalog
-	 */
-	public $delete_all_products;
-
-	/**
 	 * Instantiate and init all jobs for the plugin.
 	 */
 	public function init() {
@@ -39,8 +34,5 @@ class JobManager {
 
 		$this->reset_all_product_fb_settings = new ResetAllProductsFBSettings( $action_scheduler_proxy );
 		$this->reset_all_product_fb_settings->init();
-
-		$this->delete_all_products = new DeleteProductsFromFBCatalog( $action_scheduler_proxy );
-		$this->delete_all_products->init();
 	}
 }
