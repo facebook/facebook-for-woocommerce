@@ -3009,37 +3009,6 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 	}
 
 	/**
-	 * @deprecated
-	 * Delete product item by id.
-	 *
-	 * @param int $wp_id
-	 *
-	 * @return void
-	 */
-	public function delete_product_item( int $wp_id ): void {
-		$fb_product_item_id = $this->get_product_fbid(
-			self::FB_PRODUCT_ITEM_ID,
-			$wp_id
-		);
-		if ( $fb_product_item_id ) {
-			try {
-				$this->facebook_for_woocommerce->get_api()->delete_product_item( $fb_product_item_id );
-			} catch ( ApiException $e ) {
-				$message = sprintf( 'There was an error trying to delete a product set item: %s', $e->getMessage() );
-				Logger::log(
-					$message,
-					[],
-					array(
-						'should_send_log_to_meta'        => false,
-						'should_save_log_in_woocommerce' => true,
-						'woocommerce_log_level'          => \WC_Log_Levels::ERROR,
-					)
-				);
-			}
-		}
-	}
-
-	/**
 	 * Filter function for woocommerce_duplicate_product_exclude_meta filter.
 	 *
 	 * @param array $to_delete
