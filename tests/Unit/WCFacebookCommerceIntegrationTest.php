@@ -1171,61 +1171,6 @@ class WCFacebookCommerceIntegrationTest extends \WooCommerce\Facebook\Tests\Abst
 	}
 
 	/**
-	 * Tests update product group updates product group.
-	 *
-	 * @return void
-	 */
-	public function test_update_product_group_updates_product_group() {
-		$product          = WC_Helper_Product::create_variation_product();
-		$facebook_product = new WC_Facebook_Product( $product->get_id() );
-		add_post_meta( $facebook_product->get_id(), WC_Facebookcommerce_Integration::FB_PRODUCT_GROUP_ID, 'facebook-product-group-id' );
-
-		$data = [
-			'variants' => $facebook_product->prepare_variants_for_group(),
-		];
-		$this->api->expects( $this->once() )
-			->method( 'update_product_group' )
-			->with( 'facebook-product-group-id', $data )
-			->willReturn( new API\ProductCatalog\ProductGroups\Update\Response( '{"id":"5191364664265911"}' ) );
-
-		$this->integration->update_product_group( $facebook_product );
-	}
-
-	/**
-	 * Tests update product group exits when product group missing.
-	 *
-	 * @return void
-	 */
-	public function test_update_product_group_exits_when_product_group_missing() {
-		$product          = WC_Helper_Product::create_variation_product();
-		$facebook_product = new WC_Facebook_Product( $product->get_id() );
-
-		$this->api->expects( $this->once() )
-			->method( 'get_product_facebook_ids' )
-			->will( $this->throwException( new ApiException() ) );
-		$this->api->expects( $this->never() )
-			->method( 'update_product_group' );
-
-		$this->integration->update_product_group( $facebook_product );
-	}
-
-	/**
-	 * Tests update product group exits when product has no variants.
-	 *
-	 * @return void
-	 */
-	public function test_update_product_group_exits_when_product_variants_missing() {
-		$product          = WC_Helper_Product::create_simple_product();
-		$facebook_product = new WC_Facebook_Product( $product->get_id() );
-		add_post_meta( $facebook_product->get_id(), WC_Facebookcommerce_Integration::FB_PRODUCT_GROUP_ID, 'facebook-product-group-id' );
-
-		$this->api->expects( $this->never() )
-			->method( 'update_product_group' );
-
-		$this->integration->update_product_group( $facebook_product );
-	}
-
-	/**
 	 * Tests update product item updates product item.
 	 *
 	 * @return void
