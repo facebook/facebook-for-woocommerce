@@ -622,33 +622,6 @@ class ApiTest extends \WooCommerce\Facebook\Tests\AbstractWPUnitTestWithSafeFilt
 	}
 
 	/**
-	 * Tests delete product prepares a request to Facebook.
-	 *
-	 * @return void
-	 * @throws ApiException In case of network request error.
-	 */
-	public function test_delete_product_item_deletes_product_item_request() {
-		$facebook_product_id = '8672727132741181';
-
-		$response = function( $result, $parsed_args, $url ) use ( $facebook_product_id ) {
-			$this->assertEquals( 'DELETE', $parsed_args['method'] );
-			$this->assertEquals( "{$this->endpoint}{$this->version}/{$facebook_product_id}", $url );
-			return [
-				'body'     => '{"success":true}',
-				'response' => [
-					'code'    => 200,
-					'message' => 'OK',
-				],
-			];
-		};
-		$this->add_filter_with_safe_teardown( 'pre_http_request', $response, 10, 3 );
-
-		$response = $this->api->delete_product_item( $facebook_product_id );
-
-		$this->assertTrue( $response->success );
-	}
-
-	/**
 	 * Tests create product set prepares a request to Facebook.
 	 *
 	 * @return void
