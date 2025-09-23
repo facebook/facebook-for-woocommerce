@@ -27,13 +27,6 @@ class Event {
 	 */
 	protected $data = array();
 
-	/**
-	 * The Facebook CAPI Parameter Builder instance.
-	 *
-	 * @var \FacebookAds\ParamBuilder
-	 */
-	private $param_builder = null;
-
 
 	/**
 	 * Gets version information for pixel events.
@@ -76,7 +69,6 @@ class Event {
 	 * @param array $data event data
 	 */
 	public function __construct( $data = array() ) {
-		$this->param_builder = facebook_for_woocommerce()->get_param_builder();
 		$this->prepare_data( $data );
 	}
 
@@ -139,9 +131,6 @@ class Event {
 			$this->data['user_data']['country'] = $country;
 			unset( $this->data['user_data']['cn'] );
 		}
-
-		$this->data['user_data']['fbc'] = $this->get_click_id();
-		$this->data['user_data']['fbp'] = $this->get_browser_id();
 		$this->data['user_data'] = Normalizer::normalize_array( $this->data['user_data'], false );
 		$this->data['user_data'] = $this->hash_pii_data( $this->data['user_data'] );
 	}
@@ -295,13 +284,10 @@ class Event {
 	 */
 	protected function get_browser_id() {
 		$fbp = ! empty( $_COOKIE['_fbp'] ) ? wc_clean( wp_unslash( $_COOKIE['_fbp'] ) ) : '';
-		if ( ! $fbp && isset( $this->param_builder ) ) {
-			$fbp = $this->param_builder->getFBP();
-		} elseif ( isset( $_SESSION['_fbp'] ) ) {
-			$fbp = $_SESSION['_fbp']; // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
-		}
 		if ( $fbp ) {
 			$_SESSION['_fbp'] = $fbp;
+		} elseif ( isset( $_SESSION['_fbp'] ) ) {
+			$fbp = $_SESSION['_fbp']; // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
 		}
 		return $fbp;
 	}
