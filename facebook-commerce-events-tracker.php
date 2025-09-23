@@ -525,6 +525,10 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 				$contents     = array();
 				$total_value  = 0.00;
 
+				if ( empty( $wp_query->posts ) ) {
+					return null;
+				}
+
 				foreach ( $wp_query->posts as $post ) {
 
 					$product = wc_get_product( $post );
