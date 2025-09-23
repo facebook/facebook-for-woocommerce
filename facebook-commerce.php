@@ -309,8 +309,7 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 			update_option( self::SETTING_ENABLE_META_DIAGNOSIS, 'yes' );
 		}
 
-		add_action( 'init', array( $this, 'init_param_builder' ), 1 );
-		add_action( 'init', array( $this, 'param_builder_set_cookies' ), 2 );
+		add_action( 'init', [ $this, 'param_builder_server_setup' ] );
 
 		if ( is_admin() ) {
 
@@ -3195,13 +3194,13 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 	}
 
 	/**
-	 * Initializes the Facebook CAPI Parameter Builder with the site domain.
+	 * Initializes the CAPI server side Parameter Builder with the site domain.
 	 */
-	public function init_param_builder() {
+	public function param_builder_server_setup() {
 		try {
 			$site_url = get_site_url();
 			$this->param_builder = new \FacebookAds\ParamBuilder( array( $site_url ) );
-			$this->param_builder->processRequest(
+			$cookie_to_set = $this->param_builder->processRequest(
 				$site_url,
 				$_GET,
 				$_COOKIE,
@@ -3209,40 +3208,16 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 				sanitize_text_field( wp_unslash( $_SERVER['HTTP_REFERER'] ) ) :
 				null
 			);
-		} catch ( \Exception $exception ) {
-			$this->log( 'Error initializing CAPI Parameter Builder: ' . $exception->getMessage() );
-		}
-	}
-
-	/**
-	 * Sets the Parameter Builder cookies using the Facebook CAPI Parameter Builder.
-	 */
-	public function param_builder_set_cookies() {
-		$param_builder = facebook_for_woocommerce()->get_param_builder();
-		if ( ! $param_builder ) {
-			return;
-		}
-
-		try {
-			$cookie_to_set = $param_builder->getCookiesToSet();
-
-			if ( ! empty( $cookie_to_set ) ) {
-				foreach ( $cookie_to_set as $cookie ) {
-					setcookie(
-						$cookie->name,
-						$cookie->value,
-						array(
-							'expires' => time() + $cookie->max_age,
-							'path' => '/',
-							'domain' => $cookie->domain,
-							'secure' => is_ssl(),
-							'samesite' => 'Lax',
-						)
-					);
-				}
+			foreach ($cookie_to_set as $cookie) {
+				setcookie(
+					$cookie->name,
+					$cookie->value,
+					time() + $cookie->max_age,
+					'/',
+					$cookie->domain);
 			}
 		} catch ( \Exception $exception ) {
-			$this->log( 'Error setting CAPI Parameter Builder cookies: ' . $exception->getMessage() );
+			$this->log( 'Error initializing CAPI Parameter Builder: ' . $exception->getMessage() );
 		}
 	}
 
