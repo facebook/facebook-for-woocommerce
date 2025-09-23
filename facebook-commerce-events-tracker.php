@@ -848,7 +848,7 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 
 			$event_name = 'Purchase';
 
-			$valid_purchase_order_states = array( 'processing', 'completed' );
+			$valid_purchase_order_states = array( 'processing', 'completed', 'on-hold', 'pending' );
 
 			if ( ! $this->is_pixel_enabled() ) {
 				return;
