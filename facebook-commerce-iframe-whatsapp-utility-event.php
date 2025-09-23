@@ -19,8 +19,8 @@ class WC_Facebookcommerce_Iframe_Whatsapp_Utility_Event {
 	/** @var array Mapping of Order Status to Event name */
 	const ORDER_STATUS_TO_EVENT_MAPPING = array(
 		'processing' => 'ORDER_PLACED',
-		'completed' => 'ORDER_FULFILLED',
-		'refunded'  => 'ORDER_REFUNDED',
+		'completed'  => 'ORDER_FULFILLED',
+		'refunded'   => 'ORDER_REFUNDED',
 	);
 
 	/** @var \WC_Facebookcommerce */
