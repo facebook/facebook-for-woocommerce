@@ -3209,7 +3209,7 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 				null
 			);
 
-			foreach ($cookie_to_set as $cookie) {
+			foreach ( $cookie_to_set as $cookie ) {
 				setcookie(
 					$cookie->name,
 					$cookie->value,
