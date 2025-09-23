@@ -3225,7 +3225,8 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 		}
 	}
 
-	 /* Init WhatsApp Utility Event Processor.
+	/**
+	 * Init WhatsApp Utility Event Processor.
 	 *
 	 * @return void
 	 */
