@@ -51,13 +51,6 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 		/** @var bool whether the pixel should be enabled */
 		private $is_pixel_enabled;
 
-		/**
-		 * The Facebook CAPI Parameter Builder instance.
-		 *
-		 * @var \FacebookAds\ParamBuilder
-		 */
-		private $param_builder;
-
 
 		/**
 		 * Events tracker constructor.
@@ -112,9 +105,6 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 			add_action( 'wp_head', array( $this, 'inject_base_pixel' ) );
 			add_action( 'wp_footer', array( $this, 'inject_base_pixel_noscript' ) );
 
-			// set up CAPI Param Builder libraries
-			add_action( 'wp_enqueue_scripts', array( $this, 'param_builder_client_setup' ) );
-
 			// ViewContent for individual products
 			add_action( 'woocommerce_after_single_product', array( $this, 'inject_view_content_event' ) );
 			add_action( 'woocommerce_after_single_product', array( $this, 'maybe_inject_search_event' ) );
@@ -157,6 +147,7 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 			// Flush pending events on shutdown
 			add_action( 'shutdown', array( $this, 'send_pending_events' ) );
 		}
+
 
 		/**
 		 * Prints the base JavaScript pixel code
