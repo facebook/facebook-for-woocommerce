@@ -429,7 +429,13 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 		 */
 		public function send_search_event() {
 
-			$this->send_api_event( $this->get_search_event() );
+			$event = $this->get_search_event();
+
+			if ( null === $event ) {
+				return;
+			}
+
+			$this->send_api_event( $event );
 		}
 
 
@@ -452,6 +458,10 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 				$product_ids  = array();
 				$contents     = array();
 				$total_value  = 0.00;
+
+				if ( empty( $wp_query->posts ) ) {
+					return null;
+				}
 
 				foreach ( $wp_query->posts as $post ) {
 
@@ -503,6 +513,10 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 		public function actually_inject_search_event() {
 
 			$event = $this->get_search_event();
+
+			if ( null === $event ) {
+				return;
+			}
 
 			$this->send_api_event( $event );
 
