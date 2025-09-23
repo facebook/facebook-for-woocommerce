@@ -84,7 +84,7 @@ class WhatsApp_Integration_Settings {
 	public function add_menu_item() {
 		$rollout_switches                           = $this->plugin->get_rollout_switches();
 		$is_connected                               = $this->plugin->get_connection_handler()->is_connected();
-		$is_whatsapp_utility_messaging_beta_enabled = $rollout_switches->is_switch_enabled( RolloutSwitches::WHATSAPP_UTILITY_MESSAGING_BETA_EXPERIENCE_DOGFOODING ); // TODO: update to prod GK during launch
+		$is_whatsapp_utility_messaging_beta_enabled = $rollout_switches->is_switch_enabled( RolloutSwitches::WHATSAPP_UTILITY_MESSAGING_BETA_EXPERIENCE );
 
 		if ( ! $is_connected || ! $is_whatsapp_utility_messaging_beta_enabled ) {
 			return;
@@ -186,7 +186,7 @@ class WhatsApp_Integration_Settings {
 		}
 
 		if ( empty( $iframe_url ) ) {
-			return;
+			return $this->error_banner();
 		}
 		?>
 		<div class="facebook-whatsapp-iframe-container">
@@ -195,6 +195,51 @@ class WhatsApp_Integration_Settings {
 				src="<?php echo esc_url( $iframe_url ); ?>"
 				></iframe>
 		</div>
+		<?php
+	}
+
+	private function error_banner() {
+		?>
+		<div class="facebook-whatsapp-iframe-error-container">
+			<div class="notice notice-error" style="margin: 0; padding-bottom: 20px;">
+				<h3><?php esc_html_e( 'WhatsApp Utility Connection Error', 'facebook-for-woocommerce' ); ?></h3>
+				<p><?php esc_html_e( 'There was an error loading the WhatsApp Utility Message Integration. Please try reloading the page or resetting your settings.', 'facebook-for-woocommerce' ); ?></p>
+				<div style="margin-top: 15px;">
+					<button
+						type="button"
+						class="button button-primary"
+						onclick="window.location.reload();"
+						style="margin-right: 10px;"
+					>
+						<?php esc_html_e( 'Reload Page', 'facebook-for-woocommerce' ); ?>
+					</button>
+					<button
+						type="button"
+						class="button button-secondary"
+						onclick="if(confirm('<?php echo esc_js( __( 'Are you sure you want to reset WhatsApp settings? This action cannot be undone and you will have to re-onboard.', 'facebook-for-woocommerce' ) ); ?>')) { resetWhatsAppSettings(); }"
+					>
+						<?php esc_html_e( 'Reset Settings', 'facebook-for-woocommerce' ); ?>
+					</button>
+				</div>
+			</div>
+		</div>
+		<script type="text/javascript">
+			function resetWhatsAppSettings() {
+				// Use the same API client that's available on the page
+				if (typeof whatsAppAPI !== 'undefined') {
+					whatsAppAPI.uninstallWhatsAppSettings()
+						.then(function(response) {
+							if (response.success) {
+								window.location.reload();
+							}
+						})
+						.catch(function(error) {
+							console.error('Error during settings reset:', error);
+							alert('<?php echo esc_js( __( 'Error resetting settings. Please try again or contact support.', 'facebook-for-woocommerce' ) ); ?>');
+						});
+				}
+			}
+		</script>
 		<?php
 	}
 

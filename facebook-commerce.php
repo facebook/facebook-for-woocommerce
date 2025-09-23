@@ -1314,72 +1314,6 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 	}
 
 	/**
-	 * Update existing product group (variant data only)
-	 *
-	 * @deprecated as we are no longer calling an update
-	 * We create everytime and it will be handled in the backend
-	 * TO_BE_DELETED
-	 *
-	 * @param WC_Facebook_Product $woo_product
-	 **/
-	public function update_product_group( WC_Facebook_Product $woo_product ) {
-		$fb_product_group_id = $this->get_product_fbid(
-			self::FB_PRODUCT_GROUP_ID,
-			$woo_product->get_id(),
-			$woo_product
-		);
-
-		if ( ! $fb_product_group_id ) {
-			return;
-		}
-
-		$variants = $woo_product->prepare_variants_for_group();
-
-		if ( ! $variants ) {
-			return;
-		}
-
-		$product_group_data = [
-			'variants' => $variants,
-		];
-
-		// Figure out the matching default variation.
-		$default_product_fbid = $this->get_product_group_default_variation( $woo_product, $fb_product_group_id );
-
-		if ( $default_product_fbid ) {
-			$product_group_data['default_product_id'] = $default_product_fbid;
-		}
-
-		try {
-			$response = $this->facebook_for_woocommerce->get_api()->update_product_group( $fb_product_group_id, $product_group_data );
-			if ( $response->success ) {
-				$this->display_success_message(
-					'Updated product group <a href="https://facebook.com/' .
-					$fb_product_group_id . '" target="_blank">' . $fb_product_group_id .
-					'</a> on Facebook.'
-				);
-			} else {
-				$this->display_error_message(
-					'Updating product group <a href="https://facebook.com/' .
-					$fb_product_group_id . '" target="_blank">' . $fb_product_group_id .
-					'</a> on Facebook has failed.'
-				);
-			}
-		} catch ( ApiException $e ) {
-			$message = sprintf( 'There was an error trying to update Product Group %s: %s', $fb_product_group_id, $e->getMessage() );
-			Logger::log(
-				$message,
-				[],
-				array(
-					'should_send_log_to_meta'        => false,
-					'should_save_log_in_woocommerce' => true,
-					'woocommerce_log_level'          => \WC_Log_Levels::ERROR,
-				)
-			);
-		}
-	}
-
-	/**
 	 * Creates a product item using the facebook Catalog Batch API. This replaces existing functionality,
 	 * which is currently using facebook Product Item API implemented by `WC_Facebookcommerce_Integration::create_product_item`
 	 *
@@ -1632,54 +1566,6 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 					'woocommerce_log_level'          => \WC_Log_Levels::ERROR,
 				)
 			);
-		}
-	}
-
-	/**
-	 * Displays Batch API completed message on simple_product_publish.
-	 * This is called by the hook `add_meta_boxes_product` because that is sufficient time
-	 * to retrieve product_item_id for the product item created via batch API.
-	 *
-	 * Some sanity checks are added before displaying the message after publish
-	 *  - product_item_id : if exists, means product was created else not and don't display
-	 *  - should_sync: Don't display if the product is not supposed to be synced.
-	 *
-	 * @param WP_Post $post WordPress Post
-	 * @return void
-	 */
-	public function display_batch_api_completed( $post ) {
-		$fb_product         = new \WC_Facebook_Product( $post->ID );
-		$fb_product_item_id = null;
-		$should_sync        = true;
-
-		// Bail if this is not a WooCommerce product.
-		if ( ! $fb_product->woo_product instanceof \WC_Product ) {
-			return;
-		}
-
-		try {
-			facebook_for_woocommerce()->get_product_sync_validator( $fb_product->woo_product )->validate();
-		} catch ( \Exception $e ) {
-			$should_sync = false;
-		}
-
-		if ( $should_sync ) {
-			if ( $fb_product->woo_product->is_type( 'variable' ) ) {
-				$fb_product_item_id = $this->get_product_fbid( self::FB_PRODUCT_GROUP_ID, $post->ID, $fb_product->woo_product );
-			} else {
-				$fb_product_item_id = $this->get_product_fbid( self::FB_PRODUCT_ITEM_ID, $post->ID, $fb_product->woo_product );
-			}
-		}
-
-		if ( $fb_product_item_id ) {
-			$this->display_success_message(
-				'<a href="https://business.facebook.com/commerce/catalogs/' .
-					$this->get_product_catalog_id() .
-					'/products/" target="_blank">View product on Meta catalog</a>'
-			);
-
-			// Display unmapped attributes banner if there are any
-			$this->display_unmapped_attributes_banner( $fb_product->woo_product );
 		}
 	}
 

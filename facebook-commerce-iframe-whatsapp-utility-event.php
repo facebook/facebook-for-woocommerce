@@ -47,7 +47,7 @@ class WC_Facebookcommerce_Iframe_Whatsapp_Utility_Event {
 		$rollout_switches = $this->plugin->get_rollout_switches();
 		if ( isset( $rollout_switches ) ) {
 			$is_enabled = $rollout_switches->is_switch_enabled(
-				RolloutSwitches::WHATSAPP_UTILITY_MESSAGING_BETA_EXPERIENCE_DOGFOODING
+				RolloutSwitches::WHATSAPP_UTILITY_MESSAGING_BETA_EXPERIENCE
 			) ?? false;
 		}
 		return $is_enabled;
