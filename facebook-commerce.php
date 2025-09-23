@@ -308,8 +308,8 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 		if ( ! get_option( self::SETTING_ENABLE_META_DIAGNOSIS ) ) {
 			update_option( self::SETTING_ENABLE_META_DIAGNOSIS, 'yes' );
 		}
-
-		add_action( 'init', [ $this, 'param_builder_server_setup' ] );
+		
+		$this->param_builder_server_setup();
 
 		if ( is_admin() ) {
 
@@ -3199,8 +3199,8 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 	public function param_builder_server_setup() {
 		try {
 			$site_url = get_site_url();
-			$this->param_builder = new \FacebookAds\ParamBuilder( array( $site_url ) );
-			$cookie_to_set = $this->param_builder->processRequest(
+			$param_builder = new \FacebookAds\ParamBuilder( array( $site_url ) );
+			$cookie_to_set = $param_builder->processRequest(
 				$site_url,
 				$_GET,
 				$_COOKIE,
