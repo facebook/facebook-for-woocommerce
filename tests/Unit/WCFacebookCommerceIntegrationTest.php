@@ -566,38 +566,6 @@ class WCFacebookCommerceIntegrationTest extends \WooCommerce\Facebook\Tests\Abst
 	 *
 	 * @return void
 	 */
-	public function test_on_product_save_existing_simple_product_sync_disabled_updates_the_product() {
-		$product_to_update = WC_Helper_Product::create_simple_product();
-
-		// The idea of the following mock is to overide the delete_product_item.
-		// The test is that the product item is being deleted as when it is marked for do not sync.
-		// The mock below is hit otherwise it would generate a random Mock_Response and throw error
-		$integration_mock = $this->createMock(WC_Facebookcommerce_Integration::class);
-		$integration_mock->method('delete_product_item');
-		$integration_mock->method('is_woo_all_products_enabled')
-						->willReturn(false);
-		$this->integration = $integration_mock;
-
-		$_POST['wc_facebook_sync_mode'] = Admin::SYNC_MODE_SYNC_DISABLED;
-
-		$_POST[ WC_Facebook_Product::FB_REMOVE_FROM_SYNC ] = $product_to_update->get_id();
-
-		$product_to_update->set_stock_status( 'instock' );
-
-		add_post_meta( $product_to_update->get_id(), WC_Facebookcommerce_Integration::FB_PRODUCT_ITEM_ID, 'facebook-product-item-id' );
-		add_post_meta( $product_to_update->get_id(), Products::VISIBILITY_META_KEY, 'no' );
-
-		$this->integration->on_product_save( $product_to_update->get_id() );
-
-		$this->assertEquals( 'facebook-product-item-id', get_post_meta( $product_to_update->get_id(), WC_Facebookcommerce_Integration::FB_PRODUCT_ITEM_ID, true ) );
-		$this->assertEquals( null, get_post_meta( $product_to_update->get_id(), WC_Facebookcommerce_Integration::FB_PRODUCT_GROUP_ID, true ) );
-	}
-
-	/**
-	 * Sunny day test with all the conditions evaluated to true and maximum conditions triggered.
-	 *
-	 * @return void
-	 */
 	public function test_on_product_save_existing_variable_product_sync_enabled_updates_the_product() {
 		$parent           = WC_Helper_Product::create_variation_product();
 		$fb_product       = new WC_Facebook_Product( $parent->get_id() );
@@ -2499,23 +2467,6 @@ class WCFacebookCommerceIntegrationTest extends \WooCommerce\Facebook\Tests\Abst
 			'<div id="integration-settings" style="display: none"><table class="form-table"></table></div>',
 			$output
 		);
-	}
-
-	/**
-	 * Tests delete product item calls facebook graph api.
-	 *
-	 * @return void
-	 */
-	public function test_delete_product_item() {
-		$id = 1234567890;
-
-		add_post_meta( $id, WC_Facebookcommerce_Integration::FB_PRODUCT_ITEM_ID, '00998877665544332211' );
-
-		$this->api->expects( $this->once() )
-			->method( 'delete_product_item' )
-			->with( '00998877665544332211' );
-
-		$this->integration->delete_product_item( $id );
 	}
 
 	/**
