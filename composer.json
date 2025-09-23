@@ -18,8 +18,7 @@
     "woocommerce/action-scheduler-job-framework": "2.0.0",
     "composer/installers": "~1.0",
     "woocommerce/grow": "dev-compat-checker",
-    "firebase/php-jwt": "^6.10",
-    "facebook/capi-param-builder-php": "^1.0.1"
+    "firebase/php-jwt": "^6.10"
   },
   "require-dev": {
     "composer/installers": "^1.7.0",
