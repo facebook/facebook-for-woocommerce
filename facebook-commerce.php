@@ -3208,13 +3208,15 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 				sanitize_text_field( wp_unslash( $_SERVER['HTTP_REFERER'] ) ) :
 				null
 			);
+
 			foreach ($cookie_to_set as $cookie) {
 				setcookie(
 					$cookie->name,
 					$cookie->value,
 					time() + $cookie->max_age,
 					'/',
-					$cookie->domain);
+					$cookie->domain
+				);
 			}
 		} catch ( \Exception $exception ) {
 			$this->log( 'Error initializing CAPI Parameter Builder: ' . $exception->getMessage() );
