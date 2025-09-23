@@ -168,28 +168,41 @@ class WPML extends Abstract_Localization_Integration {
 	}
 
 	/**
-	 * Get translation IDs for a product
+	 * Get translation IDs for a product with comprehensive details
 	 *
 	 * @param int $product_id Product ID
-	 * @return array Array of translation IDs keyed by language code
+	 * @return array Array of translation data with id, title, and slug for each language
 	 */
 	public function get_product_translations( int $product_id ): array {
-		if ( ! $this->is_plugin_active() ) {
+		if ( ! defined( 'ICL_SITEPRESS_VERSION' ) ) {
+			wc_get_logger()->debug( 'WPML is not active.', [ 'source' => 'wpml-helper' ] );
 			return [];
 		}
 
-		$translations = [];
-		$languages = $this->get_available_languages();
-
-		foreach ( $languages as $language_code ) {
-			// Use WPML filter to get object ID in specific language
-			$translated_id = apply_filters( 'wpml_object_id', $product_id, 'post', false, $language_code );
-			if ( $translated_id && is_numeric( $translated_id ) ) {
-				$translations[ $language_code ] = (int) $translated_id;
-			}
+		// Get TRID for the product
+		$trid = apply_filters( 'wpml_element_trid', null, $product_id, 'post_product' );
+		if ( ! $trid ) {
+			wc_get_logger()->debug( "No TRID found for product ID $product_id", [ 'source' => 'wpml-helper' ] );
+			return [];
 		}
 
-		return $translations;
+		// Get translations
+		$translations = apply_filters( 'wpml_get_element_translations', null, $trid, 'post_product' );
+
+		if ( empty( $translations ) ) {
+			wc_get_logger()->debug( "No translations found for product ID $product_id", [ 'source' => 'wpml-helper' ] );
+			return [];
+		}
+
+		$output = [];
+		foreach ( $translations as $lang_code => $translation ) {
+			$output[ $lang_code ] = [
+				'id'    => $translation->element_id,
+				'title' => get_the_title( $translation->element_id ),
+				'slug'  => get_post_field( 'post_name', $translation->element_id ),
+			];
+		}
+		return $output;
 	}
 
 	/**
@@ -483,7 +496,7 @@ class WPML extends Abstract_Localization_Integration {
 
 	/**
 	 * Get the primary currency for a specific country.
-	 * Uses a fallback order to determine the best currency for a country.
+	 * Uses WPML's internal priority system and location modes to determine the best currency.
 	 *
 	 * @since 3.0.18
 	 *
@@ -495,93 +508,84 @@ class WPML extends Abstract_Localization_Integration {
 			return null;
 		}
 
-		$currencies = $this->get_available_currencies();
-		$country_currencies = array();
+		$config = $this->wcml_get_currency_config();
 
-		// Find all currencies available for this country
-		foreach ( $currencies as $currency_code => $currency_data ) {
-			if ( ! empty( $currency_data['countries'] ) &&
-				 is_array( $currency_data['countries'] ) &&
-				 in_array( $country_code, $currency_data['countries'], true ) ) {
-				$country_currencies[] = $currency_code;
+		foreach ( $config['priority'] as $currency_code ) {
+			if ( ! isset( $config['currencies'][ $currency_code ] ) ) {
+				continue;
+			}
+
+			$currency  = $config['currencies'][ $currency_code ];
+			$mode      = $currency['location_mode'];
+			$countries = $currency['countries'];
+
+			// Check for "all countries" assignment
+			if ( in_array( 'ALL', $countries, true ) ) {
+				return $currency_code;
+			}
+
+			// Check include mode
+			if ( $mode === 'include' && in_array( $country_code, $countries, true ) ) {
+				return $currency_code;
+			}
+
+			// Check exclude mode
+			if ( $mode === 'exclude' && ! in_array( $country_code, $countries, true ) ) {
+				return $currency_code;
 			}
 		}
 
-		if ( empty( $country_currencies ) ) {
-			return null;
-		}
-
-		// Use predefined country-to-currency mapping for priority
-		$priority_mapping = $this->get_country_currency_priority_mapping();
-
-		if ( isset( $priority_mapping[ $country_code ] ) &&
-			 in_array( $priority_mapping[ $country_code ], $country_currencies, true ) ) {
-			return $priority_mapping[ $country_code ];
-		}
-
-		// Return the first available currency if no priority match
-		return $country_currencies[0];
+		return null; // no matching currency
 	}
 
 	/**
-	 * Get predefined country-to-currency priority mapping.
-	 * This defines the preferred native currency for each country.
+	 * Get WPML currency configuration with normalized structure.
+	 * Reads WCML's internal settings and normalizes into a structured array.
 	 *
 	 * @since 3.0.18
 	 *
-	 * @return array Country code => Currency code mapping
+	 * @return array Normalized currency configuration
 	 */
-	private function get_country_currency_priority_mapping(): array {
-		return array(
-			'US' => 'USD', // United States
-			'GB' => 'GBP', // United Kingdom
-			'CA' => 'CAD', // Canada
-			'AU' => 'AUD', // Australia
-			'DE' => 'EUR', // Germany
-			'FR' => 'EUR', // France
-			'IT' => 'EUR', // Italy
-			'ES' => 'EUR', // Spain
-			'NL' => 'EUR', // Netherlands
-			'BE' => 'EUR', // Belgium
-			'AT' => 'EUR', // Austria
-			'IE' => 'EUR', // Ireland
-			'PT' => 'EUR', // Portugal
-			'FI' => 'EUR', // Finland
-			'GR' => 'EUR', // Greece
-			'LU' => 'EUR', // Luxembourg
-			'JP' => 'JPY', // Japan
-			'CN' => 'CNY', // China
-			'IN' => 'INR', // India
-			'BR' => 'BRL', // Brazil
-			'MX' => 'MXN', // Mexico
-			'RU' => 'RUB', // Russia
-			'KR' => 'KRW', // South Korea
-			'CH' => 'CHF', // Switzerland
-			'SE' => 'SEK', // Sweden
-			'NO' => 'NOK', // Norway
-			'DK' => 'DKK', // Denmark
-			'PL' => 'PLN', // Poland
-			'CZ' => 'CZK', // Czech Republic
-			'HU' => 'HUF', // Hungary
-			'TR' => 'TRY', // Turkey
-			'ZA' => 'ZAR', // South Africa
-			'SG' => 'SGD', // Singapore
-			'HK' => 'HKD', // Hong Kong
-			'NZ' => 'NZD', // New Zealand
-			'TH' => 'THB', // Thailand
-			'MY' => 'MYR', // Malaysia
-			'ID' => 'IDR', // Indonesia
-			'PH' => 'PHP', // Philippines
-			'VN' => 'VND', // Vietnam
-			'IL' => 'ILS', // Israel
-			'AE' => 'AED', // UAE
-			'SA' => 'SAR', // Saudi Arabia
-			'EG' => 'EGP', // Egypt
-			'AR' => 'ARS', // Argentina
-			'CL' => 'CLP', // Chile
-			'CO' => 'COP', // Colombia
-			'PE' => 'PEN', // Peru
-		);
+	private function wcml_get_currency_config(): array {
+		$currency_mode = get_option( 'wcml_currency_mode', 'site_language' );
+		$config        = get_option( '_wcml_settings', [] );
+
+		$mode = ( $currency_mode === 'by_location' ) ? 'country_based' : 'language_based';
+
+		$currencies = [];
+		$priorities = [];
+
+		if ( isset( $config['currency_options'] ) && is_array( $config['currency_options'] ) ) {
+			foreach ( $config['currency_options'] as $code => $data ) {
+				$location_mode = $data['location_mode'] ?? 'include';
+				$countries     = $data['countries'] ?? [];
+
+				// Normalize "all countries" to ['ALL']
+				if ( $location_mode === 'all' ) {
+					$countries = ['ALL'];
+				}
+
+				$currencies[ $code ] = [
+					'rate'          => $data['rate'] ?? 1,
+					'location_mode' => $location_mode,
+					'countries'     => $countries,
+					'decimals'      => $data['num_decimals'] ?? 2,
+					'rounding'      => $data['rounding'] ?? 'disabled',
+					'rounding_step' => $data['rounding_increment'] ?? 1,
+					'last_updated'  => $data['updated'] ?? null,
+				];
+			}
+		}
+
+		if ( isset( $config['currencies_order'] ) && is_array( $config['currencies_order'] ) ) {
+			$priorities = $config['currencies_order'];
+		}
+
+		return [
+			'mode'       => $mode,
+			'currencies' => $currencies,
+			'priority'   => $priorities,
+		];
 	}
 
 	/**

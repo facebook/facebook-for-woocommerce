@@ -104,7 +104,6 @@ class LanguageOverrideFeed extends AbstractFeed {
 
 		// Initialize parent class with proper components
 		$this->init( $this->feed_writer, $this->feed_handler, $feed_generator );
-
 	}
 
 
@@ -227,6 +226,168 @@ class LanguageOverrideFeed extends AbstractFeed {
 				'woocommerce_log_level'          => \WC_Log_Levels::DEBUG,
 			)
 		);
+	}
+
+	/**
+	 * Regenerates language override feeds for all available languages.
+	 * This overrides the parent method to generate feeds for multiple languages
+	 * in a single scheduled action.
+	 *
+	 * @since 3.6.0
+	 */
+	public function regenerate_feed(): void {
+		if ( $this->should_skip_feed() ) {
+			return;
+		}
+
+		Logger::log(
+			'Starting language override feed regeneration for all languages',
+			[],
+			array(
+				'should_send_log_to_meta'        => false,
+				'should_save_log_in_woocommerce' => true,
+				'woocommerce_log_level'          => \WC_Log_Levels::DEBUG,
+			)
+		);
+
+		// Generate feeds for all available languages
+		$this->regenerate_all_language_feeds();
+	}
+
+	/**
+	 * Regenerates language override feeds for all available languages.
+	 * Uses the feed handler directly instead of the feed generator to create
+	 * multiple language files in a single action.
+	 *
+	 * @since 3.6.0
+	 */
+	private function regenerate_all_language_feeds(): void {
+		// Check if we have an active localization plugin
+		if ( ! $this->language_feed_data->has_active_localization_plugin() ) {
+			Logger::log(
+				'Language override feed regeneration skipped: No active localization plugin found.',
+				[],
+				array(
+					'should_send_log_to_meta'        => false,
+					'should_save_log_in_woocommerce' => true,
+					'woocommerce_log_level'          => \WC_Log_Levels::INFO,
+				)
+			);
+			return;
+		}
+
+		// Get all available languages
+		$languages = $this->language_feed_data->get_available_languages();
+
+		if ( empty( $languages ) ) {
+			Logger::log(
+				'Language override feed regeneration skipped: No alternative languages found.',
+				[],
+				array(
+					'should_send_log_to_meta'        => false,
+					'should_save_log_in_woocommerce' => true,
+					'woocommerce_log_level'          => \WC_Log_Levels::INFO,
+				)
+			);
+			return;
+		}
+
+		$successful_languages = [];
+		$failed_languages = [];
+
+		Logger::log(
+			sprintf( 'Generating language override feeds for %d languages: %s', count( $languages ), implode( ', ', $languages ) ),
+			[ 'languages' => $languages ],
+			array(
+				'should_send_log_to_meta'        => false,
+				'should_save_log_in_woocommerce' => true,
+				'woocommerce_log_level'          => \WC_Log_Levels::DEBUG,
+			)
+		);
+
+		// Generate feed file for each language using the feed handler directly
+		foreach ( $languages as $language_code ) {
+			try {
+				Logger::log(
+					sprintf( 'Generating language override feed for: %s', $language_code ),
+					[ 'language_code' => $language_code ],
+					array(
+						'should_send_log_to_meta'        => false,
+						'should_save_log_in_woocommerce' => true,
+						'woocommerce_log_level'          => \WC_Log_Levels::DEBUG,
+					)
+				);
+
+				// Generate the feed file for this language
+				$success = $this->feed_handler->write_language_feed_file( $language_code );
+
+				if ( $success ) {
+					$successful_languages[] = $language_code;
+					Logger::log(
+						sprintf( 'Successfully generated language override feed for: %s', $language_code ),
+						[ 'language_code' => $language_code ],
+						array(
+							'should_send_log_to_meta'        => false,
+							'should_save_log_in_woocommerce' => true,
+							'woocommerce_log_level'          => \WC_Log_Levels::DEBUG,
+						)
+					);
+				} else {
+					$failed_languages[] = $language_code;
+					Logger::log(
+						sprintf( 'Failed to generate language override feed for: %s', $language_code ),
+						[ 'language_code' => $language_code ],
+						array(
+							'should_send_log_to_meta'        => true,
+							'should_save_log_in_woocommerce' => true,
+							'woocommerce_log_level'          => \WC_Log_Levels::ERROR,
+						)
+					);
+				}
+			} catch ( \Exception $e ) {
+				$failed_languages[] = $language_code;
+				Logger::log(
+					sprintf( 'Exception while generating language override feed for %s: %s', $language_code, $e->getMessage() ),
+					[
+						'language_code' => $language_code,
+						'exception_message' => $e->getMessage(),
+						'exception_trace' => $e->getTraceAsString(),
+					],
+					array(
+						'should_send_log_to_meta'        => true,
+						'should_save_log_in_woocommerce' => true,
+						'woocommerce_log_level'          => \WC_Log_Levels::ERROR,
+					),
+					$e
+				);
+			}
+		}
+
+		// Log summary
+		Logger::log(
+			sprintf(
+				'Language override feed regeneration completed. Success: %d (%s), Failed: %d (%s)',
+				count( $successful_languages ),
+				implode( ', ', $successful_languages ),
+				count( $failed_languages ),
+				implode( ', ', $failed_languages )
+			),
+			[
+				'successful_languages' => $successful_languages,
+				'failed_languages' => $failed_languages,
+				'total_languages' => count( $languages ),
+			],
+			array(
+				'should_send_log_to_meta'        => false,
+				'should_save_log_in_woocommerce' => true,
+				'woocommerce_log_level'          => count( $failed_languages ) > 0 ? \WC_Log_Levels::WARNING : \WC_Log_Levels::INFO,
+			)
+		);
+
+		// Trigger the upload hook if any languages were successful
+		if ( ! empty( $successful_languages ) ) {
+			do_action( self::FEED_GEN_COMPLETE_ACTION . static::get_data_stream_name() );
+		}
 	}
 
 	/**

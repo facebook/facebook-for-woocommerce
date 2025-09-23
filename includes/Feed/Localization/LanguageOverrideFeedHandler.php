@@ -634,6 +634,16 @@ class LanguageOverrideFeedHandler extends AbstractFeedHandler {
 	}
 
 	/**
+	 * Get the language feed data instance.
+	 *
+	 * @return \WooCommerce\Facebook\Feed\Localization\LanguageFeedData
+	 * @since 3.6.0
+	 */
+	public function get_language_feed_data(): LanguageFeedData {
+		return $this->language_feed_data;
+	}
+
+	/**
 	 * Get the feed data as an array.
 	 * Required by AbstractFeedHandler.
 	 *
