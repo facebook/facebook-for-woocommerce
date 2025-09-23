@@ -84,7 +84,7 @@ class WhatsApp_Integration_Settings {
 	public function add_menu_item() {
 		$rollout_switches                           = $this->plugin->get_rollout_switches();
 		$is_connected                               = $this->plugin->get_connection_handler()->is_connected();
-		$is_whatsapp_utility_messaging_beta_enabled = $rollout_switches->is_switch_enabled( RolloutSwitches::WHATSAPP_UTILITY_MESSAGING_BETA_EXPERIENCE_DOGFOODING ); // TODO: update to prod GK during launch
+		$is_whatsapp_utility_messaging_beta_enabled = $rollout_switches->is_switch_enabled( RolloutSwitches::WHATSAPP_UTILITY_MESSAGING_BETA_EXPERIENCE );
 
 		if ( ! $is_connected || ! $is_whatsapp_utility_messaging_beta_enabled ) {
 			return;
