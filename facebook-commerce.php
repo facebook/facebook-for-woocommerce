@@ -309,6 +309,7 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 			update_option( self::SETTING_ENABLE_META_DIAGNOSIS, 'yes' );
 		}
 
+		add_action( 'init', array( $this, 'init_param_builder' ), 1 );
 		add_action( 'init', array( $this, 'param_builder_set_cookies' ), 2 );
 
 		if ( is_admin() ) {
@@ -3190,6 +3191,26 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 			if ( ! isset( $this->wa_utility_event_processor ) ) {
 				$this->wa_utility_event_processor = new WC_Facebookcommerce_Whatsapp_Utility_Event( $this );
 			}
+		}
+	}
+
+	/**
+	 * Initializes the Facebook CAPI Parameter Builder with the site domain.
+	 */
+	public function init_param_builder() {
+		try {
+			$site_url = get_site_url();
+			$this->param_builder = new \FacebookAds\ParamBuilder( array( $site_url ) );
+			$this->param_builder->processRequest(
+				$site_url,
+				$_GET,
+				$_COOKIE,
+				isset( $_SERVER['HTTP_REFERER'] ) ?
+				sanitize_text_field( wp_unslash( $_SERVER['HTTP_REFERER'] ) ) :
+				null
+			);
+		} catch ( \Exception $exception ) {
+			$this->log( 'Error initializing CAPI Parameter Builder: ' . $exception->getMessage() );
 		}
 	}
 
