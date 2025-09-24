@@ -72,22 +72,6 @@ class WC_Facebookcommerce_Admin_Banner {
 	 * Output the banner HTML if it should be shown.
 	 */
 	public function render_banner() {
-		// Check if the WhatsApp admin banner should be shown.
-		if ( strtotime( 'now' ) > strtotime( '2025-06-15 23:59:59' ) ) {
-			return;
-		}
-
-		if ( ! current_user_can( 'manage_woocommerce' ) ) {
-			return;
-		}
-
-		if ( get_user_meta(
-			get_current_user_id(),
-			self::BANNER_ID,
-			true
-		) ) {
-			return;
-		}
 
 		$banner_html  = '<div class="fb-wa-banner" data-nonce="' .
 			esc_attr( wp_create_nonce( self::BANNER_ID ) ) .
@@ -109,6 +93,14 @@ class WC_Facebookcommerce_Admin_Banner {
 			. 'on WhatsApp. Sign up for a chance to join our testing program and get '
 			. 'early access to this new feature. As a thank you, participants who '
 			. 'complete testing will receive a $500 ad credit.</p>';
+		$banner_html .= '<img src="' .
+			esc_url(
+				plugins_url(
+					'assets/images/GeoWelcomeState3.0.png',
+					__FILE__
+				)
+			) .
+			'" width="360" height="360" alt="WhatsApp Logo" />';
 		$banner_html .= '<a class="wa-cta-button" '
 			. 'href="https://facebookpso.qualtrics.com/jfe/form/SV_0SVseus9UADOhhQ"'
 			. '>Sign Up</a>';

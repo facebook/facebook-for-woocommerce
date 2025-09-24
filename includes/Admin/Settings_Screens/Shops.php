@@ -61,6 +61,7 @@ class Shops extends Abstract_Settings_Screen {
 	public function enqueue_admin_scripts() {
 		if ( $this->is_current_screen_page() ) {
 			wp_enqueue_script( 'wp-api' );
+			wp_enqueue_style( 'wc-facebook-admin-whatsapp-banner', facebook_for_woocommerce()->get_plugin_url() . '/assets/css/admin/facebook-for-woocommerce-whatsapp-banner.css', array(), \WC_Facebookcommerce::VERSION );
 		}
 	}
 
@@ -148,6 +149,9 @@ class Shops extends Abstract_Settings_Screen {
 	 * @since 3.5.0
 	 */
 	public function render() {
+		$wa_banner = new \WC_Facebookcommerce_Admin_Banner();
+		$wa_banner->render_banner();
+		$wa_banner->enqueue_banner_script();
 		$is_connected = facebook_for_woocommerce()->get_connection_handler()->is_connected();
 
 		$this->render_facebook_iframe();
