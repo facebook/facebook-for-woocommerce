@@ -166,7 +166,7 @@ jobs:
           wp option update wc_facebook_has_connected_fbe_2 "yes" --allow-root
           wp option update wc_facebook_has_authorized_pages_read_engagement "yes" --allow-root
           wp option update wc_facebook_enable_product_sync "yes" --allow-root
-          wp option update wc_facebook_page_id  "${{ secrets.FB_PRODUCT_PAGE_ID }}" --allow-root
+          wp option update wc_facebook_page_id  "${{ secrets.FB_PAGE_ID }}" --allow-root
           # Activate the plugin (this triggers automatic sync)
           wp plugin activate facebook-for-woocommerce --allow-root
 
