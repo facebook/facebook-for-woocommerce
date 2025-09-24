@@ -434,20 +434,6 @@ class API extends Base {
 
 
 	/**
-	 * Deletes a Product Item object.
-	 *
-	 * @param string $facebook_product_id Facebook Product ID.
-	 * @return API\Response|API\ProductCatalog\Products\Delete\Response
-	 * @throws ApiException In case of network request error.
-	 */
-	public function delete_product_item( string $facebook_product_id ): API\ProductCatalog\Products\Delete\Response {
-		$request = new API\ProductCatalog\Products\Delete\Request( $facebook_product_id );
-		$this->set_response_handler( API\ProductCatalog\Products\Delete\Response::class );
-		return $this->perform_request( $request );
-	}
-
-
-	/**
 	 * Returns product Facebook ID and Facebook Group ID.
 	 *
 	 * @param string $facebook_product_catalog_id
