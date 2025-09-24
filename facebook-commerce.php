@@ -308,8 +308,8 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 		if ( ! get_option( self::SETTING_ENABLE_META_DIAGNOSIS ) ) {
 			update_option( self::SETTING_ENABLE_META_DIAGNOSIS, 'yes' );
 		}
-		
-		$this->param_builder_server_setup();
+
+		add_action( 'init', [ $this, 'param_builder_server_setup' ] );
 
 		if ( is_admin() ) {
 
@@ -3219,7 +3219,7 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 				);
 			}
 		} catch ( \Exception $exception ) {
-			$this->log( 'Error initializing CAPI Parameter Builder: ' . $exception->getMessage() );
+			$this->log( 'Error setting up server side CAPI Parameter Builder: ' . $exception->getMessage() );
 		}
 	}
 
