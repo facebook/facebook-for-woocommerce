@@ -66,11 +66,19 @@ async function cleanupProduct(productId) {
   }
 }
 
-// Helper function to generate product name with timestamp
+// Helper function to generate product name with timestamp and instance ID
 function generateProductName(productType) {
   const now = new Date();
   const timestamp = now.toISOString().replace(/[:.]/g, '-').slice(0, 19);
-  return `Test ${productType} Product E2E ${timestamp}`;
+  const runId = process.env.GITHUB_RUN_ID || 'local';
+  return `Test ${productType} Product E2E ${timestamp}-${runId}`;
+}
+
+// Helper function to generate unique SKU for any product type
+function generateUniqueSKU(productType) {
+  const runId = process.env.GITHUB_RUN_ID || 'local';
+  const randomSuffix = Math.random().toString(36).substring(2, 8);
+  return `E2E-${productType.toUpperCase()}-${runId}-${randomSuffix}`;
 }
 
 // Helper function to extract product ID from URL
@@ -256,6 +264,18 @@ test.describe('Facebook for WooCommerce - Product Creation E2E Tests', () => {
       // Scroll to product data section
       await page.locator('#woocommerce-product-data').scrollIntoViewIfNeeded();
 
+      // Click on Inventory tab
+      await page.click('li.inventory_tab a');
+      await page.waitForTimeout(1000); // Wait for tab content to load
+
+      // Set SKU to ensure unique retailer ID
+      const skuField = page.locator('#_sku');
+      if (await skuField.isVisible({ timeout: 120000 })) {
+        const uniqueSku = generateUniqueSKU('simple');
+        await skuField.fill(uniqueSku);
+        console.log(`✅ Set unique SKU: ${uniqueSku}`);
+      }
+
       // Set regular price
       const regularPriceField = page.locator('#_regular_price');
       if (await regularPriceField.isVisible({ timeout: 120000 })) {
@@ -348,6 +368,11 @@ test.describe('Facebook for WooCommerce - Product Creation E2E Tests', () => {
     // Step 3: Set product type to variable
     await page.selectOption('#product-type', 'variable');
     console.log('✅ Set product type to variable');
+
+    // Step 3.5: Set unique SKU for parent product
+    const uniqueParentSku = generateUniqueSKU('variable');
+    await page.locator('#_sku').fill(uniqueParentSku);
+    console.log(`✅ Set unique parent SKU: ${uniqueParentSku}`);
 
     // Step 4: Tell browser to directly click popup
     await page.evaluate(() => document.querySelector('button.woocommerce-tour-kit-step-navigation__done-btn')?.click());
