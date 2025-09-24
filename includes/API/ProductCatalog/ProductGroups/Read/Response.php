@@ -32,4 +32,13 @@ class Response extends ApiResponse {
 		}
 		return $product_item_ids;
 	}
+
+	/**
+	 * Returns the full response data, including warnings, errors, and other metadata.
+	 *
+	 * @return array
+	 */
+	public function get_full_response(): array {
+		return $this->response_data;
+	}
 }
