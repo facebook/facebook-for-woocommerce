@@ -859,7 +859,6 @@ class WC_Facebookcommerce extends WooCommerce\Facebook\Framework\Plugin {
 	}
 }
 
-
 /**
  * Gets the Facebook for WooCommerce plugin instance.
  *
