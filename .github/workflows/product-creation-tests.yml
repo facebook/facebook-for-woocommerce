@@ -9,6 +9,13 @@ on:
           required: false
           type: boolean
           default: false
+  workflow_dispatch:
+    inputs:
+        use-marketplace-version:
+          description: 'Should this use marketplace version of the plugin'
+          required: false
+          type: boolean
+          default: false
   pull_request:
     branches: [ main, master, develop ]
 
@@ -149,7 +156,18 @@ jobs:
             cd /tmp/wordpress
           fi
 
-          # Activate the plugin
+          # Configure Facebook connection before activation
+          wp option update wc_facebook_access_token "${{ secrets.FB_ACCESS_TOKEN }}" --allow-root
+          wp option update wc_facebook_merchant_access_token "${{ secrets.FB_ACCESS_TOKEN }}" --allow-root
+          wp option update wc_facebook_business_manager_id "${{ secrets.FB_BUSINESS_MANAGER_ID }}" --allow-root
+          wp option update wc_facebook_external_business_id "${{ secrets.FB_EXTERNAL_BUSINESS_ID }}" --allow-root
+          wp option update wc_facebook_product_catalog_id "${{ secrets.FB_PRODUCT_CATALOG_ID }}" --allow-root
+          wp option update wc_facebook_pixel_id "${{ secrets.FB_PIXEL_ID }}" --allow-root
+          wp option update wc_facebook_has_connected_fbe_2 "yes" --allow-root
+          wp option update wc_facebook_has_authorized_pages_read_engagement "yes" --allow-root
+          wp option update wc_facebook_enable_product_sync "yes" --allow-root
+          wp option update wc_facebook_page_id  "${{ secrets.FB_PAGE_ID }}" --allow-root
+          # Activate the plugin (this triggers automatic sync)
           wp plugin activate facebook-for-woocommerce --allow-root
 
 
@@ -165,6 +183,21 @@ jobs:
 
           # Test if site is accessible
           curl -f http://localhost:8080 || exit 1
+
+      - name: Verify Facebook for WooCommerce setup
+        run: |
+          cd /tmp/wordpress
+          echo "=== Facebook for WooCommerce Info ==="
+          wp eval "
+            if (function_exists('facebook_for_woocommerce')) {
+                \$connection = facebook_for_woocommerce()->get_connection_handler();
+                echo 'Connected: ' . (\$connection->is_connected() ? 'YES' : 'NO') . PHP_EOL;
+                echo 'Access Token: ' . (\$connection->get_access_token() ? 'Present' : 'Missing') . PHP_EOL;
+                echo 'External Business ID: ' . \$connection->get_external_business_id() . PHP_EOL;
+                echo 'Business Manager ID: ' . \$connection->get_business_manager_id() . PHP_EOL;
+            } else {
+                echo 'Facebook plugin not loaded properly';
+            }" --allow-root
 
       - name: Install Playwright
         run: |
