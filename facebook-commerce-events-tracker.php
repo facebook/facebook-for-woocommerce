@@ -115,14 +115,10 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 		 * @since 2.2.0
 		 */
 		private function add_hooks() {
-			add_action( 'init', array( $this, 'param_builder_set_cookies' ), 15 );
 
 			// inject Pixel
 			add_action( 'wp_head', array( $this, 'inject_base_pixel' ) );
 			add_action( 'wp_footer', array( $this, 'inject_base_pixel_noscript' ) );
-
-			// set up CAPI Param Builder libraries
-			add_action( 'wp_enqueue_scripts', array( $this, 'param_builder_client_setup' ) );
 
 			// ViewContent for individual products
 			add_action( 'woocommerce_after_single_product', array( $this, 'inject_view_content_event' ) );
@@ -164,6 +160,7 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 			add_action( 'shutdown', array( $this, 'send_pending_events' ) );
 		}
 
+
 		/**
 		 * Prints the base JavaScript pixel code
 		 *
@@ -190,62 +187,6 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 			}
 		}
 
-		/**
-		 * Sets the Parameter Builder cookies using the Facebook CAPI Parameter Builder.
-		 */
-		public function param_builder_set_cookies() {
-			$param_builder = facebook_for_woocommerce()->get_param_builder();
-			if ( ! $param_builder ) {
-				return;
-			}
-
-			try {
-				$cookie_to_set = $param_builder->getCookiesToSet();
-
-				if ( ! empty( $cookie_to_set ) ) {
-					foreach ( $cookie_to_set as $cookie ) {
-						setcookie(
-							$cookie->name,
-							$cookie->value,
-							array(
-								'expires' => time() + $cookie->max_age,
-								'path' => '/',
-								'domain' => $cookie->domain,
-								'secure' => is_ssl(),
-								'samesite' => 'Lax',
-							)
-						);
-					}
-				}
-			} catch ( \Exception $exception ) {
-				$this->log( 'Error setting CAPI Parameter Builder cookies: ' . $exception->getMessage() );
-			}
-		}
-
-		/**
-		 * Enqueues the Facebook CAPI Param Builder script.
-		 */
-		public function param_builder_client_setup() {
-			// Client js setup
-			if ( ! facebook_for_woocommerce()->get_connection_handler()->is_connected() ) {
-				return;
-			}
-
-			wp_enqueue_script(
-				'facebook-capi-param-builder',
-				'https://capi-automation.s3.us-east-2.amazonaws.com/public/client_js/capiParamBuilder/clientParamBuilder.bundle.js',
-				array(),
-				null,
-				true
-			);
-			// Add inline script that executes after the external script has loaded
-			wp_add_inline_script(
-				'facebook-capi-param-builder',
-				'if (typeof clientParamBuilder !== "undefined") {
-					clientParamBuilder.processAndCollectAllParams(window.location.href);
-				}'
-			);
-		}
 
 		/**
 		 * Triggers the PageView event
@@ -499,7 +440,13 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 		 */
 		public function send_search_event() {
 
-			$this->send_api_event( $this->get_search_event() );
+			$event = $this->get_search_event();
+
+			if ( null === $event ) {
+				return;
+			}
+
+			$this->send_api_event( $event );
 		}
 
 
@@ -522,6 +469,10 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 				$product_ids  = array();
 				$contents     = array();
 				$total_value  = 0.00;
+
+				if ( empty( $wp_query->posts ) ) {
+					return null;
+				}
 
 				foreach ( $wp_query->posts as $post ) {
 
@@ -573,6 +524,10 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 		public function actually_inject_search_event() {
 
 			$event = $this->get_search_event();
+
+			if ( null === $event ) {
+				return;
+			}
 
 			$this->send_api_event( $event );
 
