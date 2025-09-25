@@ -38,5 +38,4 @@ class IntegrationRegistry {
 
 		return $active_plugins_data;
 	}
-
 }
