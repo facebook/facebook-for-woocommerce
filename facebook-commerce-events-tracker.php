@@ -910,7 +910,7 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 				return;
 			}
 
-			// use a session flag to ensure this Purchase event is not tracked multiple times along multiple processes
+			// Use a session flag to ensure this Purchase event is not tracked multiple times along multiple processes.
 			$purchase_tracked_flag = '_wc_' . facebook_for_woocommerce()->get_id() . '_purchase_tracked_' . $order_id . '_' . ( $is_browser ? 'browser' : 'server' );
 
 			// Return if this Purchase event has already been tracked.
