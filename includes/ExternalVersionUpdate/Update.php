@@ -17,6 +17,7 @@ use WC_Facebookcommerce_Utils;
 use WooCommerce\Facebook\Utilities\Heartbeat;
 use WooCommerce\Facebook\Framework\Logger;
 use WooCommerce\Facebook\Framework\LogHandlerBase;
+use WooCommerce\Facebook\Integrations\IntegrationRegistry;
 
 /**
  * Facebook for WooCommerce External Plugin Version Update.
@@ -94,6 +95,7 @@ class Update {
 					'excluded_product_tags'       => wp_json_encode( $excluded_product_tags ),
 					'published_product_count'     => facebook_for_woocommerce()->get_integration()->get_product_count(),
 					'opted_out_woo_all_products'  => get_option( self::MASTER_SYNC_OPT_OUT_TIME ),
+					'active_plugins'  => wp_json_encode( IntegrationRegistry::get_all_active_plugin_data() ),
 				],
 			);
 			$context  = [ LogHandlerBase::set_core_log_context( $context ) ];
