@@ -24,14 +24,14 @@ class RolloutSwitches {
 	/** @var \WC_Facebookcommerce commerce handler */
 	private \WC_Facebookcommerce $plugin;
 
-	public const SWITCH_ROLLOUT_FEATURES                               = 'rollout_enabled';
-	public const WHATSAPP_UTILITY_MESSAGING                            = 'whatsapp_utility_messages_enabled';
-	public const WHATSAPP_UTILITY_MESSAGING_BETA_EXPERIENCE_DOGFOODING = 'woocommerce_utility_beta_iframe_integration_dogfooding'; // TODO: update to Prod GK during closed Beta launch
-	public const SWITCH_PRODUCT_SETS_SYNC_ENABLED                      = 'product_sets_sync_enabled';
-	public const SWITCH_WOO_ALL_PRODUCTS_SYNC_ENABLED                  = 'woo_all_products_sync_enabled';
-	public const SWITCH_OFFER_MANAGEMENT_ENABLED                       = 'offer_management_enabled';
-	public const SWITCH_MULTIPLE_IMAGES_ENABLED                        = 'woo_variant_multiple_images_enabled';
-	private const SETTINGS_KEY = 'wc_facebook_for_woocommerce_rollout_switches';
+	public const SWITCH_ROLLOUT_FEATURES                    = 'rollout_enabled';
+	public const WHATSAPP_UTILITY_MESSAGING                 = 'whatsapp_utility_messages_enabled';
+	public const WHATSAPP_UTILITY_MESSAGING_BETA_EXPERIENCE = 'woocommerce_utility_beta_iframe_integration';
+	public const SWITCH_PRODUCT_SETS_SYNC_ENABLED           = 'product_sets_sync_enabled';
+	public const SWITCH_WOO_ALL_PRODUCTS_SYNC_ENABLED       = 'woo_all_products_sync_enabled';
+	public const SWITCH_OFFER_MANAGEMENT_ENABLED            = 'offer_management_enabled';
+	public const SWITCH_MULTIPLE_IMAGES_ENABLED             = 'woo_variant_multiple_images_enabled';
+	private const SETTINGS_KEY                              = 'wc_facebook_for_woocommerce_rollout_switches';
 
 	private const ACTIVE_SWITCHES = array(
 		self::SWITCH_ROLLOUT_FEATURES,
@@ -39,7 +39,7 @@ class RolloutSwitches {
 		self::SWITCH_WOO_ALL_PRODUCTS_SYNC_ENABLED,
 		self::SWITCH_OFFER_MANAGEMENT_ENABLED,
 		self::SWITCH_MULTIPLE_IMAGES_ENABLED,
-		self::WHATSAPP_UTILITY_MESSAGING_BETA_EXPERIENCE_DOGFOODING,
+		self::WHATSAPP_UTILITY_MESSAGING_BETA_EXPERIENCE,
 	);
 
 	public function __construct( \WC_Facebookcommerce $plugin ) {
@@ -54,7 +54,7 @@ class RolloutSwitches {
 
 		// Include plugin version in transient key to reset on version upgrades
 		$plugin_version = $this->plugin->get_version();
-		$flag_name = '_wc_facebook_for_woocommerce_rollout_switch_flag_' . $plugin_version;
+		$flag_name      = '_wc_facebook_for_woocommerce_rollout_switch_flag_' . $plugin_version;
 		if ( 'yes' === get_transient( $flag_name ) ) {
 			return;
 		}

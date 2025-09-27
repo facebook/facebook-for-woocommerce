@@ -434,20 +434,6 @@ class API extends Base {
 
 
 	/**
-	 * Deletes a Product Item object.
-	 *
-	 * @param string $facebook_product_id Facebook Product ID.
-	 * @return API\Response|API\ProductCatalog\Products\Delete\Response
-	 * @throws ApiException In case of network request error.
-	 */
-	public function delete_product_item( string $facebook_product_id ): API\ProductCatalog\Products\Delete\Response {
-		$request = new API\ProductCatalog\Products\Delete\Request( $facebook_product_id );
-		$this->set_response_handler( API\ProductCatalog\Products\Delete\Response::class );
-		return $this->perform_request( $request );
-	}
-
-
-	/**
 	 * Returns product Facebook ID and Facebook Group ID.
 	 *
 	 * @param string $facebook_product_catalog_id
@@ -458,6 +444,23 @@ class API extends Base {
 	 */
 	public function get_product_facebook_ids( string $facebook_product_catalog_id, string $facebook_retailer_id ): API\ProductCatalog\Products\Id\Response {
 		$request = new API\ProductCatalog\Products\Id\Request( $facebook_product_catalog_id, $facebook_retailer_id );
+		$this->set_response_handler( API\ProductCatalog\Products\Id\Response::class );
+		return $this->perform_request( $request );
+	}
+
+
+	/**
+	 * Returns requested fields from Facebook for the given product.
+	 *
+	 * @param string $facebook_product_catalog_id
+	 * @param string $facebook_retailer_id
+	 * @param string $fields_string Comma-separated string of fields to request from Facebook API.
+	 * @return API\Response|API\ProductCatalog\Products\Id\Response
+	 * @throws ApiException In case of network request error.
+	 * @throws API\Exceptions\Request_Limit_Reached In case of rate limit error.
+	 */
+	public function get_product_facebook_fields( string $facebook_product_catalog_id, string $facebook_retailer_id, string $fields_string = 'id,product_group{id}' ): API\ProductCatalog\Products\Id\Response {
+		$request = new API\ProductCatalog\Products\Id\Request( $facebook_product_catalog_id, $facebook_retailer_id, $fields_string );
 		$this->set_response_handler( API\ProductCatalog\Products\Id\Response::class );
 		return $this->perform_request( $request );
 	}
