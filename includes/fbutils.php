@@ -440,7 +440,7 @@ if ( ! class_exists( 'WC_Facebookcommerce_Utils' ) ) :
 		 * @return bool
 		 */
 		public static function is_admin_user() {
-			return	current_user_can( 'edit_posts' ) || current_user_can( 'upload_files' );
+			return current_user_can( 'edit_posts' ) || current_user_can( 'upload_files' );
 		}
 
 		/**
