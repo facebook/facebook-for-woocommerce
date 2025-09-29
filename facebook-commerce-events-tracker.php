@@ -857,6 +857,10 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 		 */
 		public function inject_purchase_event( $order_id ) {
 
+			if ( \WC_Facebookcommerce_Utils::is_admin_user() ) {
+				return;
+			}
+
 			$event_name = 'Purchase';
 
 			$valid_purchase_order_states = array( 'processing', 'completed', 'on-hold', 'pending' );
