@@ -348,7 +348,8 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 			if ( $this->is_configured() && $this->get_product_catalog_id() ) {
 
 				// On_product_save() must run with priority larger than 20 to make sure WooCommerce has a chance to save the submitted product information.
-				add_action( 'woocommerce_process_product_meta', [ $this, 'on_product_save' ], 40 );
+				add_action( 'woocommerce_process_product_meta', [ $this, 'schedule_product_save' ], 40 );
+				add_action( 'wc_facebook_sync_product', [ $this, 'on_product_save' ] );
 
 				add_action(
 					'woocommerce_product_quick_edit_save',
@@ -826,6 +827,40 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 	}
 
 	/**
+	 * Schedule product save for async processing.
+	 *
+	 * @param int $wp_id post ID
+	 *
+	 * @since 3.5.9
+	 *
+	 * @internal
+	 */
+	public function schedule_product_save( int $wp_id ) {
+		$product = wc_get_product( $wp_id );
+		if ( ! $product ) {
+			return;
+		}
+
+		// Capture $_POST data for async processing
+		// phpcs:disable WordPress.Security.NonceVerification.Missing
+		$sync_data = [
+			'product_id' => $wp_id,
+			'post_data' => $_POST,
+			'products_to_delete' => $this->get_removed_from_sync_products_to_delete(),
+		];
+		// phpcs:enable WordPress.Security.NonceVerification.Missing
+
+		// Schedule async processing if Action Scheduler is available
+		if ( function_exists( 'as_schedule_single_action' ) ) {
+			// Schedule to run immediately with high priority
+			as_schedule_single_action( time(), 'wc_facebook_sync_product', [ $sync_data ], 'facebook-for-woocommerce-priority' );
+		} else {
+			// Fallback to synchronous processing
+			$this->on_product_save( $wp_id );
+		}
+	}
+
+	/**
 	 * Checks the product type and calls the corresponding on publish method.
 	 *
 	 * @param int $wp_id post ID
@@ -834,7 +869,14 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 	 *
 	 * @internal
 	 */
-	public function on_product_save( int $wp_id ) {
+	public function on_product_save( $wp_id ) {
+		// Handle both direct calls and async calls
+		if ( is_array( $wp_id ) && isset( $wp_id['product_id'] ) ) {
+			// Called from Action Scheduler with sync_data
+			$sync_data = $wp_id;
+			$wp_id = $sync_data['product_id'];
+			$_POST = $sync_data['post_data']; // Restore $_POST data
+		}
 		$product = wc_get_product( $wp_id );
 		if ( ! $product ) {
 			return;
