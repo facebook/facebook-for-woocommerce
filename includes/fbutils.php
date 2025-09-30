@@ -435,12 +435,12 @@ if ( ! class_exists( 'WC_Facebookcommerce_Utils' ) ) :
 		}
 
 		/**
-		 * Returns whether the current user is an admin user.
+		 * Returns whether the current user is an admin user who can manage (create) orders.
 		 *
 		 * @return bool
 		 */
 		public static function is_admin_user() {
-			return current_user_can( 'edit_posts' ) || current_user_can( 'upload_files' );
+			return current_user_can( 'manage_woocommerce' );
 		}
 
 		/**
