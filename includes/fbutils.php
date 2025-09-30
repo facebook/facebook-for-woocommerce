@@ -435,6 +435,15 @@ if ( ! class_exists( 'WC_Facebookcommerce_Utils' ) ) :
 		}
 
 		/**
+		 * Returns whether the current user is an admin user.
+		 *
+		 * @return bool
+		 */
+		public static function is_admin_user() {
+			return current_user_can( 'edit_posts' ) || current_user_can( 'upload_files' );
+		}
+
+		/**
 		 * Returns whether AJAX permissions are valid.
 		 *
 		 * @param string $action_text
