@@ -309,6 +309,9 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 			update_option( self::SETTING_ENABLE_META_DIAGNOSIS, 'yes' );
 		}
 
+		// Register the WordPress cron hook for async processing
+		add_action( 'wc_facebook_async_sync', [ $this, 'on_product_save' ] );
+
 		if ( is_admin() ) {
 
 			$this->init_pixel();
@@ -348,8 +351,7 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 			if ( $this->is_configured() && $this->get_product_catalog_id() ) {
 
 				// On_product_save() must run with priority larger than 20 to make sure WooCommerce has a chance to save the submitted product information.
-				add_action( 'woocommerce_process_product_meta', [ $this, 'schedule_product_save' ], 40 );
-				add_action( 'wc_facebook_sync_product', [ $this, 'on_product_save' ] );
+				add_action( 'woocommerce_process_product_meta', [ $this, 'schedule_product_sync' ], 40 );
 
 				add_action(
 					'woocommerce_product_quick_edit_save',
@@ -826,8 +828,9 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 		return array_map( 'absint', explode( ',', $posted_products ) );
 	}
 
+
 	/**
-	 * Schedule product save for async processing.
+	 * Schedule product sync for async processing using WordPress cron.
 	 *
 	 * @param int $wp_id post ID
 	 *
@@ -835,13 +838,13 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 	 *
 	 * @internal
 	 */
-	public function schedule_product_save( int $wp_id ) {
+	public function schedule_product_sync( int $wp_id ) {
 		$product = wc_get_product( $wp_id );
 		if ( ! $product ) {
 			return;
 		}
 
-		// Capture $_POST data for async processing
+		// Store sync data in transient for async processing
 		// phpcs:disable WordPress.Security.NonceVerification.Missing
 		$sync_data = [
 			'product_id' => $wp_id,
@@ -850,12 +853,19 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 		];
 		// phpcs:enable WordPress.Security.NonceVerification.Missing
 
-		// Schedule async processing if Action Scheduler is available
-		if ( function_exists( 'as_schedule_single_action' ) ) {
-			// Schedule to run immediately with high priority
-			as_schedule_single_action( time(), 'wc_facebook_sync_product', [ $sync_data ], 'facebook-for-woocommerce-priority' );
-		} else {
-			// Fallback to synchronous processing
+		$sync_key = 'fb_sync_data_' . $wp_id . '_' . time();
+		set_transient( $sync_key, $sync_data, 300 );
+
+		// Schedule WordPress cron event
+		$scheduled = wp_schedule_single_event(
+			time() + 1,
+			'wc_facebook_async_sync',
+			[ $sync_key ]
+		);
+
+		// Fallback to synchronous processing if scheduling fails
+		if ( false === $scheduled ) {
+			delete_transient( $sync_key );
 			$this->on_product_save( $wp_id );
 		}
 	}
@@ -863,17 +873,21 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 	/**
 	 * Checks the product type and calls the corresponding on publish method.
 	 *
-	 * @param int $wp_id post ID
+	 * @param int|string $wp_id post ID or transient key for async calls
 	 *
 	 * @since 1.10.0
 	 *
 	 * @internal
 	 */
 	public function on_product_save( $wp_id ) {
-		// Handle both direct calls and async calls
-		if ( is_array( $wp_id ) && isset( $wp_id['product_id'] ) ) {
-			// Called from Action Scheduler with sync_data
-			$sync_data = $wp_id;
+		// Handle async calls with transient key
+		if ( is_string( $wp_id ) && strpos( $wp_id, 'fb_sync_data_' ) === 0 ) {
+			// Called from WordPress cron with transient key
+			$sync_data = get_transient( $wp_id );
+			if ( ! $sync_data ) {
+				return; // Data expired or doesn't exist
+			}
+			delete_transient( $wp_id );
 			$wp_id = $sync_data['product_id'];
 			$_POST = $sync_data['post_data']; // Restore $_POST data
 		}
