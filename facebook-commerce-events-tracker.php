@@ -51,6 +51,11 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 		/** @var bool whether the pixel should be enabled */
 		private $is_pixel_enabled;
 
+		/**
+		 * @var \FacebookAds\ParamBuilder|null shared ParamBuilder instance
+		 */
+		private static $param_builder = null;
+
 
 		/**
 		 * Events tracker constructor.
@@ -68,7 +73,48 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 			$this->aam_settings   = $aam_settings;
 			$this->tracked_events = array();
 
+			$this->param_builder_server_setup();
 			$this->add_hooks();
+		}
+
+		public static function get_param_builder() {
+			if ( null === self::$param_builder ) {
+				$site_url = get_site_url();
+				self::$param_builder = new \FacebookAds\ParamBuilder( array( $site_url ) );
+				self::$param_builder->processRequest(
+					$site_url,
+					$_GET,
+					$_COOKIE,
+					isset( $_SERVER['HTTP_REFERER'] ) ?
+					sanitize_text_field( wp_unslash( $_SERVER['HTTP_REFERER'] ) ) :
+					null
+				);
+			}
+
+			return self::$param_builder;
+		}
+
+		/**
+		 * Initializes the CAPI server side Parameter Builder and sets cookies as needed.
+		 */
+		public function param_builder_server_setup() {
+			try {
+				$cookie_to_set = $this->get_param_builder()->getCookiesToSet();
+
+				if ( ! headers_sent() ) {
+					foreach ( $cookie_to_set as $cookie ) {
+						setcookie(
+							$cookie->name,
+							$cookie->value,
+							time() + $cookie->max_age,
+							'/',
+							$cookie->domain
+						);
+					}
+				}
+			} catch ( \Exception $exception ) {
+				$this->log( 'Error setting up server side CAPI Parameter Builder: ' . $exception->getMessage() );
+			}
 		}
 
 
