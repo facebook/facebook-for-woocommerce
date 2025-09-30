@@ -830,11 +830,57 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 
 
 	/**
+	 * Stores sync data in a transient for async processing.
+	 *
+	 * @param int   $product_id The product ID
+	 * @param array $sync_data  The sync data to store
+	 * @return string The transient key used for storage
+	 * @since 3.5.10
+	 */
+	private function store_sync_transient( int $product_id, array $sync_data ): string {
+		$sync_key = 'fb_sync_data_' . $product_id . '_' . time();
+		set_transient( $sync_key, $sync_data, 300 );
+		return $sync_key;
+	}
+
+	/**
+	 * Processes async sync data from transient and restores context.
+	 *
+	 * @param string $transient_key The transient key
+	 * @return array|null Array containing product_id and success flag, or null if failed
+	 * @since 3.5.10
+	 */
+	private function process_sync_transient( string $transient_key ): ?array {
+		// Validate transient key format
+		if ( strpos( $transient_key, 'fb_sync_data_' ) !== 0 ) {
+			return null;
+		}
+
+		// Retrieve sync data
+		$sync_data = get_transient( $transient_key );
+		if ( ! $sync_data ) {
+			return null; // Data expired or doesn't exist
+		}
+
+		// Clean up transient
+		delete_transient( $transient_key );
+
+		// Restore context
+		$product_id = $sync_data['product_id'];
+		$_POST = $sync_data['post_data']; // Restore $_POST data
+
+		return [
+			'product_id' => $product_id,
+			'success' => true
+		];
+	}
+
+	/**
 	 * Schedule product sync for async processing using WordPress cron.
 	 *
 	 * @param int $wp_id post ID
 	 *
-	 * @since 3.5.9
+	 * @since 3.5.10
 	 *
 	 * @internal
 	 */
@@ -847,8 +893,7 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 		];
 		// phpcs:enable WordPress.Security.NonceVerification.Missing
 
-		$sync_key = 'fb_sync_data_' . $wp_id . '_' . time();
-		set_transient( $sync_key, $sync_data, 300 );
+		$sync_key = $this->store_sync_transient( $wp_id, $sync_data );
 
 		// Schedule WordPress cron event
 		$scheduled = wp_schedule_single_event(
@@ -875,15 +920,12 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 	 */
 	public function on_product_save( $wp_id ) {
 		// Handle async calls with transient key
-		if ( is_string( $wp_id ) && strpos( $wp_id, 'fb_sync_data_' ) === 0 ) {
-			// Called from WordPress cron with transient key
-			$sync_data = get_transient( $wp_id );
-			if ( ! $sync_data ) {
-				return; // Data expired or doesn't exist
+		if ( is_string( $wp_id ) ) {
+			$transient_result = $this->process_sync_transient( $wp_id );
+			if ( ! $transient_result ) {
+				return; // Invalid transient or data expired
 			}
-			delete_transient( $wp_id );
-			$wp_id = $sync_data['product_id'];
-			$_POST = $sync_data['post_data']; // Restore $_POST data
+			$wp_id = $transient_result['product_id'];
 		}
 		$product = wc_get_product( $wp_id );
 		if ( ! $product ) {
