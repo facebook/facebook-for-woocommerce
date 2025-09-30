@@ -202,62 +202,63 @@ class AJAX {
 		check_admin_referer( 'wc_facebook_sync_language_feeds', 'nonce' );
 
 		try {
-			// Check if we should use direct sync (for local development)
+			// Get the language feed instance
+			$language_feed = facebook_for_woocommerce()->get_language_override_feed();
 
-			$direct_sync = new \WooCommerce\Facebook\Feed\Localization\LanguageOverrideFeedDirectSync();
-			$results = $direct_sync->sync_language_override_feeds_directly();
+			if ( ! $language_feed ) {
+				wp_send_json_error( __( 'Language override feed instance not available.', 'facebook-for-woocommerce' ) );
+				return;
+			}
 
-			if ( isset( $results['error'] ) ) {
-				wp_send_json_error( $results['error'] );
-			} else {
-				$success_count = 0;
-				$error_count = 0;
-				$feed_ids = array();
+			// Check if there are languages available
+			$feed_data = new \WooCommerce\Facebook\Feed\Localization\LanguageFeedData();
+			$languages = $feed_data->get_available_languages();
 
-				// Get the language feed instance to access trait methods
-				$language_feed = facebook_for_woocommerce()->get_language_override_feed();
+			if ( empty( $languages ) ) {
+				wp_send_json_error( __( 'No languages available for sync.', 'facebook-for-woocommerce' ) );
+				return;
+			}
 
-				foreach ( $results as $language_code => $result ) {
-					if ( $result['success'] ?? false ) {
+			$success_count = 0;
+			$error_count = 0;
+			$feed_ids = array();
+
+			foreach ( $languages as $language_code ) {
+				try {
+					// Get or create the feed ID for this language
+					$feed_id = $language_feed->retrieve_or_create_language_feed_id( $language_code );
+					if ( ! empty( $feed_id ) ) {
+						$feed_ids[ $language_code ] = $feed_id;
 						$success_count++;
-
-						// Try to get or create the feed ID for this language
-						if ( $language_feed ) {
-							try {
-								$feed_id = $language_feed->retrieve_or_create_language_feed_id( $language_code );
-								if ( ! empty( $feed_id ) ) {
-									$feed_ids[ $language_code ] = $feed_id;
-								}
-							} catch ( \Exception $e ) {
-								// Log error but don't fail the entire sync
-								error_log( "Could not retrieve feed ID for {$language_code}: " . $e->getMessage() );
-							}
-						}
 					} else {
 						$error_count++;
 					}
+				} catch ( \Exception $e ) {
+					// Log error but don't fail the entire sync
+					error_log( "Could not retrieve feed ID for {$language_code}: " . $e->getMessage() );
+					$error_count++;
 				}
-
-				$message = sprintf(
-					__( 'Language feeds synchronized directly via API. Success: %d languages, Errors: %d languages.', 'facebook-for-woocommerce' ),
-					$success_count,
-					$error_count
-				);
-
-				// Add feed IDs to the message if we have any
-				if ( ! empty( $feed_ids ) ) {
-					$feed_list = array();
-					foreach ( $feed_ids as $lang => $feed_id ) {
-						$feed_list[] = strtoupper( $lang ) . ': ' . $feed_id;
-					}
-					$message .= ' ' . sprintf(
-						__( 'Feed IDs: %s', 'facebook-for-woocommerce' ),
-						implode( ', ', $feed_list )
-					);
-				}
-
-				wp_send_json_success( $message );
 			}
+
+			$message = sprintf(
+				__( 'Language feeds processed. Success: %d languages, Errors: %d languages.', 'facebook-for-woocommerce' ),
+				$success_count,
+				$error_count
+			);
+
+			// Add feed IDs to the message if we have any
+			if ( ! empty( $feed_ids ) ) {
+				$feed_list = array();
+				foreach ( $feed_ids as $lang => $feed_id ) {
+					$feed_list[] = strtoupper( $lang ) . ': ' . $feed_id;
+				}
+				$message .= ' ' . sprintf(
+					__( 'Feed IDs: %s', 'facebook-for-woocommerce' ),
+					implode( ', ', $feed_list )
+				);
+			}
+
+			wp_send_json_success( $message );
 
 		} catch ( \Exception $exception ) {
 			wp_send_json_error( $exception->getMessage() );
