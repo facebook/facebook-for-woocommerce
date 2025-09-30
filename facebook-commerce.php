@@ -839,17 +839,11 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 	 * @internal
 	 */
 	public function schedule_product_sync( int $wp_id ) {
-		$product = wc_get_product( $wp_id );
-		if ( ! $product ) {
-			return;
-		}
-
 		// Store sync data in transient for async processing
 		// phpcs:disable WordPress.Security.NonceVerification.Missing
 		$sync_data = [
 			'product_id' => $wp_id,
 			'post_data' => $_POST,
-			'products_to_delete' => $this->get_removed_from_sync_products_to_delete(),
 		];
 		// phpcs:enable WordPress.Security.NonceVerification.Missing
 
