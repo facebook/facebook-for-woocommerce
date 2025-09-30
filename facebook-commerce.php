@@ -935,7 +935,7 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 	 *
 	 * @internal
 	 */
-	public function on_product_save( $wp_id ) {
+	public function on_product_save( int $wp_id ) {
 		$product = wc_get_product( $wp_id );
 		if ( ! $product ) {
 			return;
