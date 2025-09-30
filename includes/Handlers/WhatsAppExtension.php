@@ -64,6 +64,7 @@ class WhatsAppExtension {
 				'app_id'                => self::APP_ID,
 				'app_owner_business_id' => self::TP_BUSINESS_ID,
 				'external_business_id'  => $external_wa_id,
+				'locale' => get_user_locale() ?? self::DEFAULT_LANGUAGE,
 			),
 			self::COMMERCE_HUB_URL . 'whatsapp_utility_integration/splash/'
 		);
