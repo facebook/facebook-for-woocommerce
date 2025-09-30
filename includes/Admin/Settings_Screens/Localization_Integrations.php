@@ -571,14 +571,6 @@ class Localization_Integrations extends Abstract_Settings_Screen {
 				</div>
 
 				<button
-					id="wc-facebook-sync-language-feeds-direct"
-					class="button button-primary"
-					data-nonce="<?php echo esc_attr( wp_create_nonce( 'wc_facebook_sync_language_feeds' ) ); ?>"
-					style="margin-right: 10px;"
-				>
-					<?php esc_html_e( 'Sync Language Feeds - Direct', 'facebook-for-woocommerce' ); ?>
-				</button>
-				<button
 					id="wc-facebook-sync-language-feeds-scheduled"
 					class="button button-secondary"
 					data-nonce="<?php echo esc_attr( wp_create_nonce( 'wc_facebook_sync_language_feeds_scheduled' ) ); ?>"
@@ -604,65 +596,6 @@ class Localization_Integrations extends Abstract_Settings_Screen {
 
 			<script type="text/javascript">
 			jQuery(document).ready(function($) {
-				// Direct sync button
-				$('#wc-facebook-sync-language-feeds-direct').on('click', function(e) {
-					e.preventDefault();
-
-					var $button = $(this);
-					var $status = $('#language-sync-status');
-					var nonce = $button.data('nonce');
-
-					// Update button state
-					$button.prop('disabled', true).text('<?php esc_html_e( 'Syncing...', 'facebook-for-woocommerce' ); ?>');
-					$status.show().html('<span style="color: #0073aa; font-weight: bold;">⏳ <?php esc_html_e( 'Generating and uploading language feeds directly...', 'facebook-for-woocommerce' ); ?></span>');
-					$status.css({
-						'background': '#f0f8ff',
-						'border': '1px solid #0073aa',
-						'color': '#0073aa'
-					});
-
-					$.post(ajaxurl, {
-						action: 'wc_facebook_sync_language_feeds',
-						nonce: nonce
-					}, function(response) {
-						if (response.success) {
-							$status.html('<span style="color: #46b450; font-weight: bold;">✅ ' + response.data + '</span>');
-							$status.css({
-								'background': '#d4edda',
-								'border': '1px solid #46b450',
-								'color': '#46b450'
-							});
-						} else {
-							var errorMessage = response.data || '<?php esc_html_e( 'Unknown error occurred', 'facebook-for-woocommerce' ); ?>';
-
-							// Check if it's a language not supported error
-							if (errorMessage.indexOf('Language Feed not supported for override value') !== -1) {
-								$status.html('<span style="color: #dc3232; font-weight: bold;">❌ <?php esc_html_e( 'Language Not Supported:', 'facebook-for-woocommerce' ); ?> ' + errorMessage + '</span><br><br>' +
-									'<div style="background: #fff3cd; border: 1px solid #ffeaa7; padding: 10px; border-radius: 4px; margin-top: 10px;">' +
-									'<strong><?php esc_html_e( 'Note:', 'facebook-for-woocommerce' ); ?></strong> <?php esc_html_e( 'This language is not supported by Facebook for language override feeds. Only specific languages with Facebook-approved locale codes can be used for language overrides.', 'facebook-for-woocommerce' ); ?>' +
-									'</div>');
-							} else {
-								$status.html('<span style="color: #dc3232; font-weight: bold;">❌ <?php esc_html_e( 'Error:', 'facebook-for-woocommerce' ); ?> ' + errorMessage + '</span>');
-							}
-
-							$status.css({
-								'background': '#f8d7da',
-								'border': '1px solid #dc3232',
-								'color': '#dc3232'
-							});
-						}
-					}).fail(function() {
-						$status.html('<span style="color: #dc3232; font-weight: bold;">❌ <?php esc_html_e( 'Network error occurred.', 'facebook-for-woocommerce' ); ?></span>');
-						$status.css({
-							'background': '#f8d7da',
-							'border': '1px solid #dc3232',
-							'color': '#dc3232'
-						});
-					}).always(function() {
-						$button.prop('disabled', false).text('<?php esc_html_e( 'Sync Language Feeds - Direct', 'facebook-for-woocommerce' ); ?>');
-					});
-				});
-
 				// Scheduled sync button
 				$('#wc-facebook-sync-language-feeds-scheduled').on('click', function(e) {
 					e.preventDefault();
