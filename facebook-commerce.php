@@ -309,8 +309,6 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 			update_option( self::SETTING_ENABLE_META_DIAGNOSIS, 'yes' );
 		}
 
-		add_action( 'init', [ $this, 'param_builder_server_setup' ] );
-
 		if ( is_admin() ) {
 
 			$this->init_pixel();
