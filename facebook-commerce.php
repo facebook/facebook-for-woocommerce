@@ -871,7 +871,7 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 
 		return [
 			'product_id' => $product_id,
-			'success' => true
+			'success' => true,
 		];
 	}
 
