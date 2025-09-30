@@ -159,8 +159,6 @@ class WC_Facebookcommerce extends WooCommerce\Facebook\Framework\Plugin {
 		$this->init();
 		$this->init_admin();
 
-		// Defer integration availability logging to avoid circular dependency during construction
-		add_action( 'init', array( $this, 'init_integration_availability_logging' ), 20 );
 	}
 
 	/**
@@ -295,27 +293,6 @@ class WC_Facebookcommerce extends WooCommerce\Facebook\Framework\Plugin {
 		);
 	}
 
-	/**
-	 * Initialize integration availability logging.
-	 *
-	 * Sets up monthly logging of integration availability data to Meta.
-	 *
-	 * @since 3.5.5
-	 */
-	public function init_integration_availability_logging() {
-		// Check if required WordPress functions are available
-		if ( ! function_exists( 'get_transient' ) || ! function_exists( 'set_transient' ) ) {
-			return;
-		}
-
-		// Load the integration availability logger class
-		require_once __DIR__ . '/includes/Integrations/IntegrationAvailabilityLogger.php';
-
-		// Initialize the logger
-		if ( class_exists( 'WooCommerce\Facebook\Integrations\IntegrationAvailabilityLogger' ) ) {
-			\WooCommerce\Facebook\Integrations\IntegrationAvailabilityLogger::init();
-		}
-	}
 
 
 	/**
