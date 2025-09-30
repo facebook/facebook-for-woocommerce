@@ -81,9 +81,6 @@ class WC_Facebookcommerce extends WooCommerce\Facebook\Framework\Plugin {
 	/** @var WooCommerce\Facebook\Feed\Localization\LanguageOverrideFeed language override feed handler */
 	private $language_override_feed;
 
-	/** @var WooCommerce\Facebook\Feed\Localization\CountryOverrideFeed country override feed handler */
-	private $country_override_feed;
-
 	/** @var WooCommerce\Facebook\Feed\FeedManager Entrypoint and creates all other feeds */
 	public $feed_manager;
 
@@ -218,8 +215,6 @@ class WC_Facebookcommerce extends WooCommerce\Facebook\Framework\Plugin {
 			$this->product_feed                     = new WooCommerce\Facebook\Products\Feed();
 			// Initialize language override feed - will handle missing plugins gracefully
 			$this->language_override_feed           = $this->init_language_override_feed();
-			// Initialize country override feed - will handle missing plugins gracefully
-			$this->country_override_feed            = $this->init_country_override_feed();
 			$this->products_stock_handler           = new WooCommerce\Facebook\Products\Stock();
 			$this->products_sync_handler            = new WooCommerce\Facebook\Products\Sync();
 			$this->sync_background_handler          = new WooCommerce\Facebook\Products\Sync\Background();
@@ -784,25 +779,6 @@ class WC_Facebookcommerce extends WooCommerce\Facebook\Framework\Plugin {
 		}
 	}
 
-	/**
-	 * Initialize the country override feed with graceful error handling.
-	 *
-	 * @since 3.0.18
-	 * @return WooCommerce\Facebook\Feed\Localization\CountryOverrideFeed|null
-	 */
-	private function init_country_override_feed() {
-		try {
-			return new WooCommerce\Facebook\Feed\Localization\CountryOverrideFeed();
-		} catch ( \Exception $e ) {
-			// Log the error but don't throw - this allows the plugin to continue functioning
-			$this->log(
-				'Country override feed could not be initialized: ' . $e->getMessage(),
-				'country-override-feed',
-				'warning'
-			);
-			return null;
-		}
-	}
 
 	/**
 	 * Gets the language override feed handler.
