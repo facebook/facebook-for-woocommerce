@@ -832,13 +832,13 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 	/**
 	 * Stores sync data in a transient for async processing.
 	 *
-	 * @param int   $product_id The product ID
+	 * @param int   $wp_id The product ID
 	 * @param array $sync_data  The sync data to store
 	 * @return string The transient key used for storage
 	 * @since 3.5.10
 	 */
-	private function store_sync_transient( int $product_id, array $sync_data ): string {
-		$sync_key = 'fb_sync_data_' . $product_id . '_' . time();
+	private function get_store_sync_transient( int $wp_id, array $sync_data ): string {
+		$sync_key = 'fb_sync_data_' . $wp_id . '_' . time();
 		set_transient( $sync_key, $sync_data, 300 );
 		return $sync_key;
 	}
@@ -910,7 +910,7 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 		];
 		// phpcs:enable WordPress.Security.NonceVerification.Missing
 
-		$sync_key = $this->store_sync_transient( $wp_id, $sync_data );
+		$sync_key = $this->get_store_sync_transient( $wp_id, $sync_data );
 
 		// Schedule WordPress cron event
 		$scheduled = wp_schedule_single_event(
