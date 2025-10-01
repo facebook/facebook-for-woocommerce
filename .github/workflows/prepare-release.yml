@@ -171,6 +171,7 @@ jobs:
         run: |
           echo "Getting the current stable version"
           CURRENT_STABLE=$(curl 'https://api.wordpress.org/plugins/info/1.2/?action=plugin_information&request%5Bslug%5D=facebook-for-woocommerce' | jq -r '.version')
+          CURRENT_STABLE="9.9.99"
           echo "Current stable version: ${CURRENT_STABLE}"
           sed -i -E "s/^(Stable tag:)[[:space:]]*[0-9.]+/\1 $CURRENT_STABLE/" "readme.txt"
           git diff
