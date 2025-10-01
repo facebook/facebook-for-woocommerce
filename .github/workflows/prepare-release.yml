@@ -167,6 +167,14 @@ jobs:
             content.splice(2, 0, ...newLines);
             fs.writeFileSync(filePath, content.join('\n'));
 
+      - name: Set latest stable version in readme.txt
+        run: |
+          echo "Getting the current stable version"
+          CURRENT_STABLE=$(curl 'https://api.wordpress.org/plugins/info/1.2/?action=plugin_information&request%5Bslug%5D=facebook-for-woocommerce' | jq -r '.version')
+          echo "Current stable version: ${CURRENT_STABLE}"
+          sed -i -E "s/^(Stable tag:)[[:space:]]*[0-9.]+/\1 $CURRENT_STABLE/" "trunk/readme.txt"
+          git diff
+
       - name: Update readme.txt
         uses: actions/github-script@v7
         env:
