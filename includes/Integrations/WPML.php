@@ -279,11 +279,13 @@ class WPML extends Abstract_Localization_Integration {
 			$default_language_code = $default_language_locale;
 		}
 
-		// Get published products
+		// Get published products - use a larger batch size to account for translations
+		// We need to get more products initially because some will be filtered out
+		$batch_size = max( $limit * 3, 50 ); // Get 3x the requested amount or minimum 50
 		$args = [
 			'post_type' => 'product',
 			'post_status' => 'publish',
-			'posts_per_page' => $limit,
+			'posts_per_page' => $batch_size,
 			'offset' => $offset,
 			'fields' => 'ids',
 		];
@@ -299,6 +301,11 @@ class WPML extends Abstract_Localization_Integration {
 				// Only include products that are in the default language (compare WPML codes)
 				if ( $product_language['language_code'] === $default_language_code ) {
 					$default_language_products[] = $product_id;
+
+					// Stop when we have enough products
+					if ( count( $default_language_products ) >= $limit ) {
+						break;
+					}
 				}
 			}
 		}

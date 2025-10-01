@@ -180,6 +180,8 @@ class LanguageFeedData {
 	/**
 	 * Get total count of products with translations for a specific language
 	 *
+	 * Uses the same logic as CSV generation to ensure consistency
+	 *
 	 * @param string $language_code Language code
 	 * @return int Total count of products with translations
 	 */
@@ -188,18 +190,90 @@ class LanguageFeedData {
 			return 0;
 		}
 
-		// Get all products (no limit) and count those with translations
-		$all_product_ids = $this->get_products_from_default_language( -1, 0 );
+		// Use the same filtering logic as CSV generation for consistency
+		// Use a large limit instead of -1 to avoid issues with unlimited queries
+		$all_product_ids = $this->get_products_from_default_language( 10000, 0 );
 		$count = 0;
 
 		foreach ( $all_product_ids as $product_id ) {
+			// Apply the same validation as CSV generation
+			$original_product = wc_get_product( $product_id );
+			if ( ! $original_product ) {
+				continue;
+			}
+
+			// Use Facebook's product sync validator if available (same as CSV generation)
+			if ( function_exists( 'facebook_for_woocommerce' ) ) {
+				$sync_validator = facebook_for_woocommerce()->get_product_sync_validator( $original_product );
+				if ( ! $sync_validator->passes_all_checks() ) {
+					continue;
+				}
+			}
+
 			$details = $this->get_product_translation_details( $product_id );
 
-			if ( isset( $details['translations'][ $language_code ] ) ) {
-				$translated_fields = $details['translated_fields'][ $language_code ] ?? [];
-				if ( ! empty( $translated_fields ) ) {
+			if ( empty( $details['translations'] ) || ! isset( $details['translations'][ $language_code ] ) ) {
+				continue;
+			}
+
+			$translated_id = $details['translations'][ $language_code ];
+			$product_translated_fields = $details['translated_fields'][ $language_code ] ?? [];
+
+			// Only include products that have actual translated content (same as CSV generation)
+			if ( empty( $product_translated_fields ) ) {
+				continue;
+			}
+
+			$translated_product = wc_get_product( $translated_id );
+			if ( ! $translated_product ) {
+				continue;
+			}
+
+			// Verify that at least one translated field has actual content
+			try {
+				if ( ! class_exists( 'WC_Facebook_Product' ) ) {
+					require_once WC_FACEBOOKCOMMERCE_PLUGIN_DIR . '/includes/fbproduct.php';
+				}
+
+				$translated_fb_product = new \WC_Facebook_Product( $translated_product );
+
+				// Check if at least one translated field has actual content
+				$has_content = false;
+				$field_mapping = [
+					'name' => 'title',
+					'description' => 'description',
+					'short_description' => 'description',
+					'rich_text_description' => 'description',
+				];
+
+				foreach ( $product_translated_fields as $field ) {
+					if ( isset( $field_mapping[ $field ] ) ) {
+						$csv_column = $field_mapping[ $field ];
+						switch ( $csv_column ) {
+							case 'title':
+								$value = $translated_fb_product->get_name();
+								if ( ! empty( $value ) ) {
+									$has_content = true;
+								}
+								break;
+							case 'description':
+								$value = $translated_fb_product->get_fb_description();
+								if ( ! empty( $value ) ) {
+									$has_content = true;
+								}
+								break;
+						}
+						if ( $has_content ) break;
+					}
+				}
+
+				if ( $has_content ) {
 					$count++;
 				}
+
+			} catch ( Exception $e ) {
+				// Skip products that can't create Facebook products
+				continue;
 			}
 		}
 
@@ -769,7 +843,8 @@ class LanguageFeedData {
 
 		$csv_content = $this->convert_to_csv_string( $csv_data );
 		$timestamp = date( 'Y-m-d_H-i-s' );
-		$filename = "facebook_language_feed_{$language_code}_{$timestamp}.csv";
+		$facebook_override = self::convert_to_facebook_language_code( $language_code );
+		$filename = "facebook_language_feed_{$facebook_override}_{$timestamp}.csv";
 
 		return [
 			'success' => true,

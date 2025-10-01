@@ -17,10 +17,8 @@ defined( 'ABSPATH' ) || exit;
 
 // Manually include the localization classes
 require_once __DIR__ . '/../../Feed/Localization/LanguageFeedData.php';
-require_once __DIR__ . '/../../Feed/Localization/CountryFeedData.php';
 
 use WooCommerce\Facebook\Feed\Localization\LanguageFeedData;
-use WooCommerce\Facebook\Feed\Localization\CountryFeedData;
 
 /**
  * Localization Integrations settings screen.
@@ -427,18 +425,6 @@ class Localization_Integrations extends Abstract_Settings_Screen {
 				$this->download_all_language_csvs();
 			}
 		}
-
-		// Handle country feed actions
-		if ( wp_verify_nonce( $nonce, 'country_feed_test_action' ) ) {
-			if ( $action === 'test_all_country_feeds' ) {
-				$this->download_all_country_feeds_zip();
-			} elseif ( $action === 'test_single_country_feed' ) {
-				$country_code = sanitize_text_field( $_GET['country'] ?? '' );
-				if ( $country_code ) {
-					$this->download_single_country_feed( $country_code );
-				}
-			}
-		}
 	}
 
 	/**
@@ -474,7 +460,7 @@ class Localization_Integrations extends Abstract_Settings_Screen {
 			<?php if ( $has_plugins && ! empty( $languages ) ) : ?>
 				<div style="margin-top: 20px;">
 					<h4><?php esc_html_e( 'Generate Language Override CSV Files', 'facebook-for-woocommerce' ); ?></h4>
-					<p><?php esc_html_e( 'Generate CSV files containing actual translated product data for Facebook language override feeds.', 'facebook-for-woocommerce' ); ?></p>
+					<p><?php esc_html_e( 'Generate CSV files containing actual translated product data for Facebook language override feeds. Files use Facebook\'s override format (e.g., es_XX, fr_XX) as required by Facebook\'s catalog specifications.', 'facebook-for-woocommerce' ); ?></p>
 
 					<?php
 					$feed_data = new LanguageFeedData();
@@ -488,6 +474,9 @@ class Localization_Integrations extends Abstract_Settings_Screen {
 							$product_count = $stats['translated_products_count'] ?? 0;
 							$estimated_size = $stats['estimated_csv_size'] ?? 'Unknown';
 
+							// Get the Facebook override format for display
+							$facebook_override = \WooCommerce\Facebook\Locale::convert_to_facebook_language_code( $language_code );
+
 							$nonce = wp_create_nonce( 'localization_test_action' );
 							$download_url = add_query_arg( [
 								'page' => 'wc-facebook',
@@ -498,7 +487,8 @@ class Localization_Integrations extends Abstract_Settings_Screen {
 							], admin_url( 'admin.php' ) );
 							?>
 							<div style="border: 1px solid #ddd; border-radius: 4px; padding: 15px; background: white;">
-								<h5 style="margin: 0 0 10px 0; color: #0073aa;"><?php echo esc_html( strtoupper( $language_code ) ); ?></h5>
+								<h5 style="margin: 0 0 10px 0; color: #0073aa;"><?php echo esc_html( $facebook_override ); ?></h5>
+								<div style="font-size: 11px; color: #999; margin-bottom: 8px;"><?php printf( esc_html__( 'Language: %s', 'facebook-for-woocommerce' ), esc_html( $language_code ) ); ?></div>
 								<div style="font-size: 13px; color: #666; margin-bottom: 10px;">
 									<div><strong><?php esc_html_e( 'Products:', 'facebook-for-woocommerce' ); ?></strong> <?php echo esc_html( $product_count ); ?></div>
 									<div><strong><?php esc_html_e( 'Est. Size:', 'facebook-for-woocommerce' ); ?></strong> <?php echo esc_html( $estimated_size ); ?></div>
@@ -696,177 +686,6 @@ class Localization_Integrations extends Abstract_Settings_Screen {
 			});
 			</script>
 		<?php endif; ?>
-
-		<!-- Country Feed Testing Section -->
-		<?php $this->render_country_feed_test_section(); ?>
-
-		<?php
-	}
-
-	/**
-	 * Render country feed test section
-	 *
-	 * @since 3.0.18
-	 */
-	private function render_country_feed_test_section() {
-		$country_feed_data = new CountryFeedData();
-		$is_available = $country_feed_data->is_available();
-		$should_generate = $country_feed_data->should_generate_country_feeds();
-		$summary = $country_feed_data->get_country_feed_summary();
-
-		?>
-		<div class="wc-facebook-country-feed-section" style="background: #fff; border: 1px solid #ddd; border-radius: 4px; padding: 20px; margin-bottom: 20px;">
-			<h3><?php esc_html_e( '🌍 Country Override Feeds', 'facebook-for-woocommerce' ); ?></h3>
-			<p><?php esc_html_e( 'Generate country-specific override feeds for different currencies and pricing. These feeds allow you to show different prices for different countries based on currency configurations.', 'facebook-for-woocommerce' ); ?></p>
-
-			<!-- Status Overview -->
-			<div style="margin-bottom: 20px;">
-				<h4><?php esc_html_e( 'Country Feed Status', 'facebook-for-woocommerce' ); ?></h4>
-				<table class="wp-list-table widefat" style="max-width: 600px;">
-					<tr>
-						<td><strong><?php esc_html_e( 'Available:', 'facebook-for-woocommerce' ); ?></strong></td>
-						<td><?php echo $is_available ? '✅ Yes' : '❌ No'; ?></td>
-					</tr>
-					<tr>
-						<td><strong><?php esc_html_e( 'Should Generate Feeds:', 'facebook-for-woocommerce' ); ?></strong></td>
-						<td><?php echo $should_generate ? '✅ Yes' : '❌ No'; ?></td>
-					</tr>
-					<tr>
-						<td><strong><?php esc_html_e( 'Integration:', 'facebook-for-woocommerce' ); ?></strong></td>
-						<td><?php echo esc_html( $summary['integration'] ?? 'None' ); ?></td>
-					</tr>
-					<tr>
-						<td><strong><?php esc_html_e( 'Available Currencies:', 'facebook-for-woocommerce' ); ?></strong></td>
-						<td><?php echo esc_html( $summary['currency_count'] ?? 0 ); ?></td>
-					</tr>
-					<tr>
-						<td><strong><?php esc_html_e( 'Shipping Countries:', 'facebook-for-woocommerce' ); ?></strong></td>
-						<td><?php echo esc_html( $summary['shipping_country_count'] ?? 0 ); ?></td>
-					</tr>
-					<tr>
-						<td><strong><?php esc_html_e( 'Viable Countries:', 'facebook-for-woocommerce' ); ?></strong></td>
-						<td><?php echo esc_html( $summary['viable_country_count'] ?? 0 ); ?></td>
-					</tr>
-				</table>
-			</div>
-
-			<?php if ( $should_generate ) : ?>
-				<!-- Countries for Override Feeds -->
-				<?php
-				$countries_for_feeds = $country_feed_data->get_countries_for_override_feeds();
-				if ( ! empty( $countries_for_feeds ) ) :
-				?>
-					<div style="margin-bottom: 20px;">
-						<h4><?php esc_html_e( 'Countries with Override Feeds', 'facebook-for-woocommerce' ); ?></h4>
-						<div style="background: #e8f5e8; padding: 10px; border-radius: 4px; margin: 10px 0;">
-							<strong><?php printf( esc_html__( '%d override feeds will be generated:', 'facebook-for-woocommerce' ), count( $countries_for_feeds ) ); ?></strong>
-							<br>
-							<?php echo esc_html( implode( ', ', $countries_for_feeds ) ); ?>
-						</div>
-					</div>
-				<?php endif; ?>
-
-				<!-- Test CSV Generation -->
-				<div style="margin-bottom: 20px;">
-					<h4><?php esc_html_e( 'Test Country Feed Generation', 'facebook-for-woocommerce' ); ?></h4>
-					<p><?php esc_html_e( 'Generate separate CSV files for each country with country-specific pricing. Each country gets its own feed file for better campaign management.', 'facebook-for-woocommerce' ); ?></p>
-
-					<?php
-					$nonce = wp_create_nonce( 'country_feed_test_action' );
-					$download_all_url = add_query_arg( [
-						'page' => 'wc-facebook',
-						'tab' => 'localization_integrations',
-						'action' => 'test_all_country_feeds',
-						'_wpnonce' => $nonce,
-					], admin_url( 'admin.php' ) );
-					?>
-
-					<a href="<?php echo esc_url( $download_all_url ); ?>" class="button button-primary" id="test-all-country-feeds-btn">
-						<?php esc_html_e( '📦 Download All Country Feeds (ZIP)', 'facebook-for-woocommerce' ); ?>
-					</a>
-
-					<!-- Individual Country Feed Downloads -->
-					<div style="margin-top: 15px;">
-						<h5><?php esc_html_e( 'Individual Country Feeds', 'facebook-for-woocommerce' ); ?></h5>
-						<div style="display: flex; flex-wrap: wrap; gap: 10px; margin-top: 10px;">
-							<?php foreach ( $countries_for_feeds as $country_code ) : ?>
-								<?php
-								$country_name = \WooCommerce\Facebook\Locale::get_country_name( $country_code );
-								$country_download_url = add_query_arg( [
-									'page' => 'wc-facebook',
-									'tab' => 'localization_integrations',
-									'action' => 'test_single_country_feed',
-									'country' => $country_code,
-									'_wpnonce' => $nonce,
-								], admin_url( 'admin.php' ) );
-								?>
-								<a href="<?php echo esc_url( $country_download_url ); ?>" class="button" title="<?php echo esc_attr( $country_name ); ?>">
-									🏳️ <?php echo esc_html( $country_code ); ?>
-								</a>
-							<?php endforeach; ?>
-						</div>
-					</div>
-
-					<div style="margin-top: 10px; padding: 10px; background: #f0f8ff; border-left: 4px solid #0073aa; font-size: 13px;">
-						<strong><?php esc_html_e( 'Feed Structure:', 'facebook-for-woocommerce' ); ?></strong>
-						<?php esc_html_e( 'Each country gets a separate CSV file (e.g., GB.csv, DE.csv, FR.csv) with prices in the appropriate currency format like "5.99 GBP", "5.99 EUR".', 'facebook-for-woocommerce' ); ?>
-					</div>
-				</div>
-
-			<?php else : ?>
-				<!-- Prerequisites Not Met -->
-				<div style="margin-bottom: 20px;">
-					<h4><?php esc_html_e( 'Prerequisites Not Met', 'facebook-for-woocommerce' ); ?></h4>
-					<?php
-					$prerequisites = $country_feed_data->check_country_feed_prerequisites();
-					if ( ! empty( $prerequisites['issues'] ) ) :
-					?>
-						<div style="background: #f8d7da; border: 1px solid #dc3232; padding: 10px; border-radius: 4px; margin: 10px 0;">
-							<strong><?php esc_html_e( 'Issues to resolve:', 'facebook-for-woocommerce' ); ?></strong>
-							<ul style="margin: 10px 0 0 20px;">
-								<?php foreach ( $prerequisites['issues'] as $issue ) : ?>
-									<li><?php echo esc_html( $issue ); ?></li>
-								<?php endforeach; ?>
-							</ul>
-						</div>
-					<?php endif; ?>
-
-					<?php if ( ! empty( $prerequisites['warnings'] ) ) : ?>
-						<div style="background: #fff3cd; border: 1px solid #ffeaa7; padding: 10px; border-radius: 4px; margin: 10px 0;">
-							<strong><?php esc_html_e( 'Warnings:', 'facebook-for-woocommerce' ); ?></strong>
-							<ul style="margin: 10px 0 0 20px;">
-								<?php foreach ( $prerequisites['warnings'] as $warning ) : ?>
-									<li><?php echo esc_html( $warning ); ?></li>
-								<?php endforeach; ?>
-							</ul>
-						</div>
-					<?php endif; ?>
-				</div>
-			<?php endif; ?>
-
-			<!-- Configuration Help -->
-			<div style="margin-top: 20px; padding: 15px; background: #f9f9f9; border: 1px solid #ddd; border-radius: 4px;">
-				<h4 style="margin-top: 0;"><?php esc_html_e( 'How Country Override Feeds Work', 'facebook-for-woocommerce' ); ?></h4>
-				<ul style="margin-left: 20px;">
-					<li><strong><?php esc_html_e( 'Currency Configuration:', 'facebook-for-woocommerce' ); ?></strong> <?php esc_html_e( 'Configure multiple currencies in WPML WooCommerce Multilingual.', 'facebook-for-woocommerce' ); ?></li>
-					<li><strong><?php esc_html_e( 'Native Currency Logic:', 'facebook-for-woocommerce' ); ?></strong> <?php esc_html_e( 'Countries using your default currency natively are excluded (served by main feed).', 'facebook-for-woocommerce' ); ?></li>
-					<li><strong><?php esc_html_e( 'Shipping Zones:', 'facebook-for-woocommerce' ); ?></strong> <?php esc_html_e( 'Only countries in your WooCommerce shipping zones are eligible.', 'facebook-for-woocommerce' ); ?></li>
-					<li><strong><?php esc_html_e( 'Override Feeds:', 'facebook-for-woocommerce' ); ?></strong> <?php esc_html_e( 'Separate CSV files are generated for each eligible country with local pricing.', 'facebook-for-woocommerce' ); ?></li>
-				</ul>
-			</div>
-		</div>
-
-		<script type="text/javascript">
-		jQuery(document).ready(function($) {
-			$('#test-country-feed-btn').on('click', function(e) {
-				$(this).text('⏳ <?php esc_html_e( 'Generating...', 'facebook-for-woocommerce' ); ?>').prop('disabled', true);
-				// Re-enable after 3 seconds to allow for download
-				setTimeout(function() {
-					$('#test-country-feed-btn').text('📄 <?php esc_html_e( 'Generate Test Country Feed CSV', 'facebook-for-woocommerce' ); ?>').prop('disabled', false);
-				}, 3000);
-			});
-		});
-		</script>
 		<?php
 	}
 
@@ -1134,127 +953,5 @@ class Localization_Integrations extends Abstract_Settings_Screen {
 		readfile( $temp_zip_path );
 		unlink( $temp_zip_path ); // Clean up temp file
 		exit;
-	}
-
-	/**
-	 * Download all country feeds as a ZIP file
-	 *
-	 * @since 3.0.18
-	 */
-	private function download_all_country_feeds_zip() {
-		try {
-			$country_feed_data = new CountryFeedData();
-
-			if ( ! $country_feed_data->should_generate_country_feeds() ) {
-				wp_die(
-					esc_html__( 'Country feeds are not available. Please check the prerequisites in the admin panel.', 'facebook-for-woocommerce' ),
-					esc_html__( 'Country Feed Generation Error', 'facebook-for-woocommerce' ),
-					[ 'back_link' => true ]
-				);
-			}
-
-			$country_feeds = $country_feed_data->generate_all_country_csv_files();
-
-			if ( empty( $country_feeds ) ) {
-				wp_die(
-					esc_html__( 'No country override feeds could be generated. This might be because there are no products with country-specific pricing.', 'facebook-for-woocommerce' ),
-					esc_html__( 'Country Feed Generation Error', 'facebook-for-woocommerce' ),
-					[ 'back_link' => true ]
-				);
-			}
-
-			// Check if ZIP extension is available
-			if ( ! class_exists( 'ZipArchive' ) ) {
-				// Fallback: download the first available country CSV
-				foreach ( $country_feeds as $country_code => $csv_content ) {
-					$this->download_single_country_feed( $country_code );
-					return;
-				}
-				return;
-			}
-
-			// Create ZIP file
-			$zip = new \ZipArchive();
-			$zip_filename = 'facebook_country_feeds_' . date( 'Y-m-d_H-i-s' ) . '.zip';
-			$temp_zip_path = sys_get_temp_dir() . '/' . $zip_filename;
-
-			if ( $zip->open( $temp_zip_path, \ZipArchive::CREATE ) !== TRUE ) {
-				wp_die(
-					esc_html__( 'Failed to create ZIP file.', 'facebook-for-woocommerce' ),
-					esc_html__( 'ZIP Creation Error', 'facebook-for-woocommerce' ),
-					[ 'back_link' => true ]
-				);
-			}
-
-			foreach ( $country_feeds as $country_code => $csv_content ) {
-				$filename = 'facebook_country_override_' . strtolower( $country_code ) . '_' . date( 'Y-m-d_H-i-s' ) . '.csv';
-				$zip->addFromString( $filename, $csv_content );
-			}
-
-			$zip->close();
-
-			// Set headers for download
-			header( 'Content-Type: application/zip' );
-			header( 'Content-Disposition: attachment; filename="' . esc_attr( $zip_filename ) . '"' );
-			header( 'Content-Length: ' . filesize( $temp_zip_path ) );
-
-			readfile( $temp_zip_path );
-			unlink( $temp_zip_path ); // Clean up temp file
-			exit;
-
-		} catch ( Exception $e ) {
-			wp_die( 'Error generating country feeds ZIP: ' . $e->getMessage() );
-		}
-	}
-
-	/**
-	 * Download single country feed CSV
-	 *
-	 * @since 3.0.18
-	 * @param string $country_code Two-letter country code
-	 */
-	private function download_single_country_feed( string $country_code ) {
-		try {
-			$country_feed_data = new CountryFeedData();
-
-			if ( ! $country_feed_data->should_generate_country_feeds() ) {
-				wp_die(
-					esc_html__( 'Country feeds are not available. Please check the prerequisites in the admin panel.', 'facebook-for-woocommerce' ),
-					esc_html__( 'Country Feed Generation Error', 'facebook-for-woocommerce' ),
-					[ 'back_link' => true ]
-				);
-			}
-
-			$csv_content = $country_feed_data->generate_country_csv_content( $country_code );
-
-			if ( empty( $csv_content ) ) {
-				wp_die(
-					sprintf(
-						esc_html__( 'No country override feed could be generated for %s. This might be because there are no products with country-specific pricing for this country.', 'facebook-for-woocommerce' ),
-						strtoupper( $country_code )
-					),
-					esc_html__( 'Country Feed Generation Error', 'facebook-for-woocommerce' ),
-					[ 'back_link' => true ]
-				);
-			}
-
-			$filename = 'facebook_country_override_' . strtolower( $country_code ) . '_' . date( 'Y-m-d_H-i-s' ) . '.csv';
-
-			// Clear any output buffers
-			if ( ob_get_level() ) {
-				ob_end_clean();
-			}
-
-			// Set headers for download
-			header( 'Content-Type: text/csv; charset=utf-8' );
-			header( 'Content-Disposition: attachment; filename="' . esc_attr( $filename ) . '"' );
-			header( 'Content-Length: ' . strlen( $csv_content ) );
-
-			echo $csv_content;
-			exit;
-
-		} catch ( Exception $e ) {
-			wp_die( 'Error generating country feed CSV for ' . strtoupper( $country_code ) . ': ' . $e->getMessage() );
-		}
 	}
 }

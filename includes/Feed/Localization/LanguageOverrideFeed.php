@@ -780,18 +780,48 @@ class LanguageOverrideFeed extends AbstractFeed {
 	 * Gets the URL for retrieving the language feed data for direct URL upload.
 	 * This is used specifically for Facebook direct URL upload endpoints.
 	 *
+	 * IMPORTANT: This method generates the CSV file using the same logic as the admin
+	 * download CSV functionality to ensure consistency between download and sync operations.
+	 *
 	 * @param string $language_code Language code
 	 * @return string
 	 * @since 3.6.0
 	 */
 	public function get_language_feed_data_url( string $language_code ): string {
-		$query_args = array(
-			'wc-api' => static::REQUEST_FEED_ACTION,
-			'language' => $language_code,
-			'secret' => $this->get_feed_secret(),
-		);
+		// Generate CSV file using the same method as admin download
+		// This ensures consistency between download CSV and direct URL sync
+		$result = $this->language_feed_data->generate_language_csv( $language_code, 5000 );
 
-		return add_query_arg( $query_args, home_url( '/' ) );
+		if ( ! $result['success'] ) {
+			throw new \Exception( 'Failed to generate language CSV: ' . ( $result['error'] ?? 'Unknown error' ) );
+		}
+
+		// Save the generated CSV content to a temporary file for Facebook to fetch
+		$upload_dir = wp_upload_dir();
+		$facebook_dir = $upload_dir['basedir'] . '/facebook_for_woocommerce';
+		$language_dir = $facebook_dir . '/language_override_' . \WooCommerce\Facebook\Locale::convert_to_facebook_language_code( $language_code );
+
+		// Create directory if it doesn't exist
+		if ( ! wp_mkdir_p( $language_dir ) ) {
+			throw new \Exception( 'Could not create language feed directory' );
+		}
+
+		// Generate a unique filename for this sync operation
+		$timestamp = date( 'Y-m-d_H-i-s' );
+		$hash = md5( $result['data'] . $timestamp );
+		$filename = "language_override_{$language_code}_{$hash}.csv";
+		$file_path = $language_dir . '/' . $filename;
+
+		// Write the CSV content to the file
+		if ( file_put_contents( $file_path, $result['data'] ) === false ) {
+			throw new \Exception( 'Could not write language CSV file' );
+		}
+
+		// Create the URL to the CSV file
+		$language_dir_url = $upload_dir['baseurl'] . '/facebook_for_woocommerce/language_override_' . \WooCommerce\Facebook\Locale::convert_to_facebook_language_code( $language_code );
+		$file_url = $language_dir_url . '/' . $filename;
+
+		return $file_url;
 	}
 
 	/**
