@@ -172,7 +172,7 @@ jobs:
           echo "Getting the current stable version"
           CURRENT_STABLE=$(curl 'https://api.wordpress.org/plugins/info/1.2/?action=plugin_information&request%5Bslug%5D=facebook-for-woocommerce' | jq -r '.version')
           echo "Current stable version: ${CURRENT_STABLE}"
-          sed -i -E "s/^(Stable tag:)[[:space:]]*[0-9.]+/\1 $CURRENT_STABLE/" "trunk/readme.txt"
+          sed -i -E "s/^(Stable tag:)[[:space:]]*[0-9.]+/\1 $CURRENT_STABLE/" "readme.txt"
           git diff
 
       - name: Update readme.txt
@@ -212,3 +212,9 @@ jobs:
           git add .
           git commit -m "Updating version to $NEW_VERSION"
           git push origin HEAD
+
+  # build-and-upload:
+  #   needs: prepare-release
+  #   uses: ./.github/workflows/shared-build-plugin-artifact.yml
+  #   with:
+  #     ref: ${{ format('refs/heads/release/{0}', github.event.inputs.version) }}
