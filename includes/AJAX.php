@@ -135,13 +135,13 @@ class AJAX {
 	 * @since 2.0.0
 	 */
 	public function sync_products() {
+		\WC_Facebookcommerce_Utils::is_legit_ajax_call( Product_Sync::ACTION_SYNC_PRODUCTS );
+		
 		// Allow opt-out of full batch-API sync, for example if store has a large number of products.
 		if ( ! facebook_for_woocommerce()->get_integration()->allow_full_batch_api_sync() ) {
 			wp_send_json_error( __( 'Full product sync disabled by filter.', 'facebook-for-woocommerce' ) );
 			return;
 		}
-
-		check_admin_referer( Product_Sync::ACTION_SYNC_PRODUCTS, 'nonce' );
 
 		try {
 			facebook_for_woocommerce()->get_products_sync_handler()->create_or_update_all_products();
@@ -159,8 +159,7 @@ class AJAX {
 	 * @since 3.5.0
 	 */
 	public function sync_coupons() {
-		check_admin_referer( Shops::ACTION_SYNC_COUPONS, 'nonce' );
-
+		\WC_Facebookcommerce_Utils::is_legit_ajax_call( Shops::ACTION_SYNC_COUPONS );
 		try {
 			facebook_for_woocommerce()->feed_manager->get_feed_instance( 'promotions' )->regenerate_feed();
 			wp_send_json_success();
@@ -177,7 +176,7 @@ class AJAX {
 	 * @since 3.5.0
 	 */
 	public function sync_shipping_profiles() {
-		check_admin_referer( Shops::ACTION_SYNC_SHIPPING_PROFILES, 'nonce' );
+		\WC_Facebookcommerce_Utils::is_legit_ajax_call( Shops::ACTION_SYNC_SHIPPING_PROFILES );
 
 		try {
 			facebook_for_woocommerce()->feed_manager->get_feed_instance( 'shipping_profiles' )->regenerate_feed();
@@ -195,7 +194,7 @@ class AJAX {
 	 * @since 3.5.0
 	 */
 	public function sync_navigation_menu() {
-		check_admin_referer( Shops::ACTION_SYNC_NAVIGATION_MENU, 'nonce' );
+		\WC_Facebookcommerce_Utils::is_legit_ajax_call( Shops::ACTION_SYNC_NAVIGATION_MENU );
 
 		try {
 			facebook_for_woocommerce()->feed_manager->get_feed_instance( 'navigation_menu' )->regenerate_feed();
@@ -214,7 +213,7 @@ class AJAX {
 	 * @since 2.0.0
 	 */
 	public function get_sync_status() {
-		check_admin_referer( Product_Sync::ACTION_GET_SYNC_STATUS, 'nonce' );
+		\WC_Facebookcommerce_Utils::is_legit_ajax_call( Product_Sync::ACTION_GET_SYNC_STATUS );
 
 		$remaining_products = 0;
 
