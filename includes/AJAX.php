@@ -136,7 +136,7 @@ class AJAX {
 	 */
 	public function sync_products() {
 		\WC_Facebookcommerce_Utils::is_legit_ajax_call( Product_Sync::ACTION_SYNC_PRODUCTS );
-		
+
 		// Allow opt-out of full batch-API sync, for example if store has a large number of products.
 		if ( ! facebook_for_woocommerce()->get_integration()->allow_full_batch_api_sync() ) {
 			wp_send_json_error( __( 'Full product sync disabled by filter.', 'facebook-for-woocommerce' ) );

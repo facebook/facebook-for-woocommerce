@@ -446,6 +446,8 @@ if ( ! class_exists( 'WC_Facebookcommerce_Utils' ) ) :
 		/**
 		 * Checks if the ajax caller is admin.
 		 *
+		 * @param string $action
+		 * @param string $nonce
 		 * @return bool
 		 */
 		public static function is_legit_ajax_call( $action, $nonce = 'nonce' ) {

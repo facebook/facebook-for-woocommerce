@@ -204,7 +204,7 @@ class PluginRender {
 
 	public static function opt_out_of_sync_clicked() {
 		\WC_Facebookcommerce_Utils::is_legit_ajax_call( self::ACTION_OPT_OUT_OF_SYNC );
-		
+
 		$latest_date = gmdate( 'Y-m-d H:i:s' );
 		update_option( self::MASTER_SYNC_OPT_OUT_TIME, $latest_date );
 		wp_send_json_success( 'Opted out successfully' );
@@ -212,14 +212,14 @@ class PluginRender {
 
 	public static function sync_all_clicked() {
 		\WC_Facebookcommerce_Utils::is_legit_ajax_call( self::ACTION_SYNC_BACK_IN );
-		
+
 		update_option( self::MASTER_SYNC_OPT_OUT_TIME, '' );
 		wp_send_json_success( 'Synced all in successfully' );
 	}
 
 	public static function product_set_banner_closed() {
 		\WC_Facebookcommerce_Utils::is_legit_ajax_call( self::ACTION_PRODUCT_SET_BANNER_CLOSED );
-		
+
 		set_transient( 'fb_product_set_banner_dismissed', true );
 	}
 
@@ -229,7 +229,7 @@ class PluginRender {
 	 */
 	public static function reset_upcoming_version_banners() {
 		\WC_Facebookcommerce_Utils::is_legit_ajax_call( self::ACTION_CLOSE_BANNER );
-		
+
 		set_transient( 'upcoming_woo_all_products_banner_hide', true, 7 * DAY_IN_SECONDS );
 	}
 
