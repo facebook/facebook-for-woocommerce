@@ -23,9 +23,10 @@ trait Facebook_Fields_Translation_Trait {
 	 *
 	 * @param int $original_id Original product ID
 	 * @param int $translated_id Translated product ID
+	 * @param string $target_language Target language code for permalink translation (optional)
 	 * @return array Array of field names that have different values
 	 */
-	protected function get_translated_fields( int $original_id, int $translated_id ): array {
+	protected function get_translated_fields( int $original_id, int $translated_id, string $target_language = null ): array {
 		$original_product = wc_get_product( $original_id );
 		$translated_product = wc_get_product( $translated_id );
 
@@ -206,6 +207,32 @@ trait Facebook_Fields_Translation_Trait {
 			}
 		}
 
+		// Always check permalink translation when we have translations
+		// The link should be translated even if content fields aren't different
+		if ( $target_language && method_exists( $this, 'get_translated_permalink' ) ) {
+			$original_permalink = $original_fb_product->get_permalink();
+			$translated_permalink = $this->get_translated_permalink( $original_permalink, $target_language );
+
+			if ( trim( $original_permalink ) !== trim( $translated_permalink ) &&
+				 ! empty( trim( $translated_permalink ) ) ) {
+				$translated_fields[] = 'link';
+			}
+		}
+
+		// If we have any translation but no fields detected, still include link for permalink translation
+		// This handles cases where products exist in multiple languages but content is identical
+		if ( empty( $translated_fields ) && $translated_id && $translated_id !== $original_id ) {
+			if ( $target_language && method_exists( $this, 'get_translated_permalink' ) ) {
+				$original_permalink = $original_fb_product->get_permalink();
+				$translated_permalink = $this->get_translated_permalink( $original_permalink, $target_language );
+
+				if ( trim( $original_permalink ) !== trim( $translated_permalink ) &&
+					 ! empty( trim( $translated_permalink ) ) ) {
+					$translated_fields[] = 'link';
+				}
+			}
+		}
+
 		return $translated_fields;
 	}
 
@@ -235,6 +262,9 @@ trait Facebook_Fields_Translation_Trait {
 			'age_group' => 'get_fb_age_group',
 			'gender' => 'get_fb_gender',
 			'material' => 'get_fb_material',
+
+			// Product link
+			'link' => 'get_permalink',
 		];
 	}
 }

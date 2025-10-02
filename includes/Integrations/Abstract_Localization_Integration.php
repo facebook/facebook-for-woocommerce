@@ -77,6 +77,14 @@ abstract class Abstract_Localization_Integration {
 	 */
 	abstract public function get_current_language(): ?string;
 
+	/**
+	 * Get translated permalink for a product URL in a specific language
+	 *
+	 * @param string $original_url Original product URL
+	 * @param string $language_code Target language code
+	 * @return string Translated URL or original URL if translation not available
+	 */
+	abstract public function get_translated_permalink( string $original_url, string $language_code ): string;
 
 	/**
 	 * Check if the plugin is installed (but not necessarily active)

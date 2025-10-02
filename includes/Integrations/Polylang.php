@@ -148,6 +148,71 @@ class Polylang extends Abstract_Localization_Integration {
 	}
 
 	/**
+	 * Get translated permalink using Polylang approach
+	 *
+	 * @param string $original_url Original product URL
+	 * @param string $language_code Target language code (full locale like 'es_ES')
+	 * @return string Translated URL with language directory
+	 */
+	public function get_translated_permalink( string $original_url, string $language_code ): string {
+		if ( ! $this->is_plugin_active() ) {
+			return $original_url;
+		}
+
+		// Get Polylang language slug from full locale
+		$polylang_slug = $this->get_polylang_slug_from_locale( $language_code );
+
+		if ( ! $polylang_slug ) {
+			return $original_url;
+		}
+
+		// Use Polylang's URL translation approach
+		// Method 1: Try using pll_translate_url if available
+		if ( function_exists( 'pll_translate_url' ) ) {
+			$translated_url = pll_translate_url( $original_url, $polylang_slug );
+			if ( $translated_url && $translated_url !== $original_url ) {
+				return $translated_url;
+			}
+		}
+
+		// Method 2: Manual URL construction with language prefix
+		// This is Polylang's typical approach for different language URLs
+		$home_url = home_url();
+		$relative_url = str_replace( $home_url, '', $original_url );
+
+		// Add language prefix if not already present
+		if ( strpos( $relative_url, "/{$polylang_slug}/" ) !== 0 ) {
+			$translated_url = $home_url . "/{$polylang_slug}" . $relative_url;
+			return $translated_url;
+		}
+
+		return $original_url;
+	}
+
+	/**
+	 * Get Polylang language slug from full locale
+	 *
+	 * @param string $locale Full locale (e.g., 'es_ES', 'fr_FR')
+	 * @return string|null Polylang language slug or null if not found
+	 */
+	private function get_polylang_slug_from_locale( string $locale ): ?string {
+		$polylang_languages = pll_languages_list( [ 'fields' => '' ] );
+
+		if ( ! is_array( $polylang_languages ) ) {
+			return null;
+		}
+
+		foreach ( $polylang_languages as $language ) {
+			$lang_locale = $language->locale ?? $language->slug;
+			if ( $lang_locale === $locale ) {
+				return $language->slug;
+			}
+		}
+
+		return null;
+	}
+
+	/**
 	 * Get language information for a specific language code
 	 *
 	 * @param string $language_code Language code
@@ -324,7 +389,7 @@ class Polylang extends Abstract_Localization_Integration {
 				$details['translation_status'][ $full_locale ] = 'complete';
 
 				// Get which fields are translated
-				$details['translated_fields'][ $full_locale ] = $this->get_translated_fields( $product_id, $translated_id );
+				$details['translated_fields'][ $full_locale ] = $this->get_translated_fields( $product_id, $translated_id, $full_locale );
 			}
 		}
 

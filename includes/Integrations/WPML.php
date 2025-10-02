@@ -137,6 +137,40 @@ class WPML extends Abstract_Localization_Integration {
 	}
 
 	/**
+	 * Get translated permalink using WPML hook approach
+	 *
+	 * @param string $original_url Original product URL
+	 * @param string $language_code Target language code (full locale like 'es_ES')
+	 * @return string Translated URL with language directory
+	 */
+	public function get_translated_permalink( string $original_url, string $language_code ): string {
+		if ( ! $this->is_plugin_active() ) {
+			return $original_url;
+		}
+
+		// Extract 2-letter language code from full locale (es_ES -> es)
+		$wpml_language_code = $this->extract_wpml_language_code( $language_code );
+
+		// Use WPML's permalink filter (as discovered in testing)
+		$translated_url = apply_filters( 'wpml_permalink', $original_url, $wpml_language_code );
+
+		return $translated_url ?: $original_url;
+	}
+
+	/**
+	 * Extract 2-letter WPML language code from full locale
+	 *
+	 * @param string $locale Full locale (e.g., 'es_ES', 'fr_FR')
+	 * @return string 2-letter language code (e.g., 'es', 'fr')
+	 */
+	private function extract_wpml_language_code( string $locale ): string {
+		if ( strpos( $locale, '_' ) !== false ) {
+			return substr( $locale, 0, strpos( $locale, '_' ) );
+		}
+		return $locale;
+	}
+
+	/**
 	 * Get language information for a specific language code
 	 *
 	 * @param string $language_code Language code
@@ -372,7 +406,7 @@ class WPML extends Abstract_Localization_Integration {
 				$details['translation_status'][ $full_locale ] = $translation_status;
 
 				// Get which fields are translated
-				$details['translated_fields'][ $full_locale ] = $this->get_translated_fields( $product_id, $translated_id );
+				$details['translated_fields'][ $full_locale ] = $this->get_translated_fields( $product_id, $translated_id, $full_locale );
 			}
 		}
 

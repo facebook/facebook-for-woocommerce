@@ -427,6 +427,7 @@ class LanguageFeedData {
 			'product_categories' => 'product_type',
 			'image_id' => 'image_link',
 			'gallery_image_ids' => 'additional_image_link',
+			'link' => 'link',
 		];
 
 		$csv_columns = [];
@@ -523,7 +524,17 @@ class LanguageFeedData {
 					$column,
 					$original_fb_product,
 					$translated_fb_product,
-					$product_translated_fields
+					$product_translated_fields,
+					$language_code
+				);
+			}
+
+			// Force add link column if integration can generate different URLs
+			// This handles cases where WPML can translate permalinks even without content translations
+			if ( in_array( 'link', $csv_columns ) && empty( $csv_row[ 'link' ] ) ) {
+				$csv_row[ 'link' ] = $this->get_translated_permalink_from_integration(
+					$original_fb_product->get_permalink(),
+					$language_code
 				);
 			}
 
@@ -555,13 +566,15 @@ class LanguageFeedData {
 	 * @param \WC_Facebook_Product $original_fb_product Original Facebook product
 	 * @param \WC_Facebook_Product $translated_fb_product Translated Facebook product
 	 * @param array $product_translated_fields Fields that are translated for this product
+	 * @param string $language_code Target language code for permalink translation
 	 * @return string Field value with proper validation and cleaning
 	 */
 	private function get_translated_field_value(
 		string $column,
 		\WC_Facebook_Product $original_fb_product,
 		\WC_Facebook_Product $translated_fb_product,
-		array $product_translated_fields
+		array $product_translated_fields,
+		string $language_code = ''
 	): string {
 		// Import required classes for validation
 		if ( ! class_exists( '\WooCommerce\Facebook\Framework\Helper' ) ) {
@@ -695,19 +708,19 @@ class LanguageFeedData {
 					);
 				}
 				break;
-		}
 
-		// Always include the translated product link
-		if ( $column === 'link' ) {
-			$value = $translated_fb_product->get_permalink();
+			case 'link':
+				if ( in_array( 'link', $product_translated_fields, true ) ) {
+					$value = $this->get_translated_permalink_from_integration(
+						$original_fb_product->get_permalink(),
+						$language_code
+					);
+				}
+				break;
 		}
 
 		return $value;
 	}
-
-	// ====================================>>>>>>> REPLACE
-	// DYNAMIC CSV GENERATION METHODS
-	// ====================================>>>>>>> REPLACE
 
 	/**
 	 * Convert data array to CSV string with dynamic columns
@@ -871,5 +884,24 @@ class LanguageFeedData {
 		}
 
 		return $results;
+	}
+
+	/**
+	 * Get translated permalink using the appropriate integration
+	 *
+	 * @param string $original_url Original product URL
+	 * @param string $language_code Target language code
+	 * @return string Translated URL
+	 */
+	private function get_translated_permalink_from_integration( string $original_url, string $language_code ): string {
+		$integrations = IntegrationRegistry::get_all_localization_integrations();
+
+		foreach ( $integrations as $integration ) {
+			if ( $integration->is_plugin_active() ) {
+				return $integration->get_translated_permalink( $original_url, $language_code );
+			}
+		}
+
+		return $original_url;
 	}
 }
