@@ -444,7 +444,7 @@ if ( ! class_exists( 'WC_Facebookcommerce_Utils' ) ) :
 		}
 
 		/**
-		 * Checks if the ajax caller is admin.
+		 * Checks if the ajax caller is admin and the call is stemming from an active admin session.
 		 *
 		 * @param string $action
 		 * @param string $nonce
