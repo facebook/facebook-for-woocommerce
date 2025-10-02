@@ -1,5 +1,18 @@
 *** Facebook for WooCommerce Changelog ***
 
+= 3.5.9 - 2025-09-30 =
+* Tweak - Focus admin user check on order creation capabilities by @iodic in #3643
+* Fix - Added code to exclude purchases registered by the admin user by @vahidkay-meta in #3641
+* Add - [WIFI][EZ] Localization Fix on WhatsApp Splash page by @sharunaanandraj in #3642
+* Tweak - Removed get_product_fbid graph api functionality by @vinkmeta in #3624
+* Dev - Plugin availability logging by @rafael-curran in #3637
+* Add - Added complete e2e tests automation framework by @immadhavv in #3634
+* Fix - Fix/issue with set stable tag by @vahidkay-meta in #3636
+* Fix - Removed the new changes by @vahidkay-meta in #3635
+* Tweak - Removed API call to delete products by @vinkmeta in #3623
+* Tweak - Cleanup deprecated product delete functionality by @vinkmeta in #3622
+* Fix - [EZ] Error Message for Customer Events API call by @woo-ardsouza in #3630
+
 = 3.5.8 - 2025-09-23 =
 * Add - Add on-hold and pending as valid purchase order states by @ukilla in #3629
 * Fix - Added a check for the # of posts found with a query by @vahidkay-meta in #3606
