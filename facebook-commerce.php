@@ -1053,6 +1053,14 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 	 */
 	private function save_variable_product_settings( $product ) {
 		$woo_product = new WC_Facebook_Product( $product->get_id() );
+		
+		// phpcs:disable WordPress.Security.NonceVerification.Missing
+		if ( isset( $_POST[ WC_Facebook_Product::FB_PRODUCT_VIDEO ] ) ) {
+			$attachment_ids = sanitize_text_field( wp_unslash( $_POST[ WC_Facebook_Product::FB_PRODUCT_VIDEO ] ) );
+			$woo_product->set_product_video_urls( $attachment_ids );
+		}
+		// phpcs:enable WordPress.Security.NonceVerification.Missing
+		
 		$this->save_facebook_product_attributes( $woo_product );
 	}
 
