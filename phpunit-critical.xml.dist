@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<phpunit
+	bootstrap="tests/bootstrap.php"
+	backupGlobals="false"
+	colors="true"
+	convertErrorsToExceptions="true"
+	convertNoticesToExceptions="true"
+	convertWarningsToExceptions="true"
+	convertDeprecationsToExceptions="true"
+	defaultTestSuite="critical"
+>
+	<testsuites>
+		<testsuite name="critical">
+			<file>./tests/Unit/CommerceTest.php</file>
+			<file>./tests/Unit/CheckoutTest.php</file>
+			<file>./tests/Unit/Events/EventTest.php</file>
+			<file>./tests/Unit/WCFacebookCommerceIntegrationTest.php</file>
+			<directory suffix=".php">./tests/Unit/Feed</directory>
+			<directory suffix=".php">./tests/Unit/ProductSync</directory>
+			<directory suffix=".php">./tests/Unit/Api</directory>
+		</testsuite>
+	</testsuites>
+	<coverage>
+		<include>
+			<directory>includes</directory>
+			<file>./class-wc-facebookcommerce.php</file>
+			<file>./facebook-commerce-events-tracker.php</file>
+			<file>./facebook-commerce-pixel-event.php</file>
+			<file>./facebook-commerce.php</file>
+			<file>./facebook-config-warmer.php</file>
+			<file>./facebook-for-woocommerce.php</file>
+		</include>
+	</coverage>
+</phpunit>
