@@ -451,12 +451,7 @@ if ( ! class_exists( 'WC_Facebookcommerce_Utils' ) ) :
 		 * @return bool
 		 */
 		public static function is_legit_ajax_call( $action, $nonce = 'nonce' ) {
-			if ( ! self::is_admin_user() ) {
-				wp_send_json_error( 'Permission denied' );
-				return false;
-			}
-			check_ajax_referer( $action, $nonce );
-			return true;
+			return self::is_admin_user() && check_ajax_referer( $action, $nonce );
 		}
 
 		/**
