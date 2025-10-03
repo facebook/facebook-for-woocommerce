@@ -54,6 +54,6 @@ class PromotionsFeed extends AbstractFeed {
 	}
 
 	protected static function get_feed_gen_interval(): int {
-		return HOUR_IN_SECONDS;
+		return 2 * HOUR_IN_SECONDS;
 	}
 }
