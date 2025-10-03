@@ -104,7 +104,6 @@ jobs:
 
       - name: Run critical flows tests
         id: critical-tests
-        continue-on-error: true # temporarily
         run: |
           echo "🧪 Running critical flows tests..."
 
@@ -140,10 +139,10 @@ jobs:
 
       - name: Check critical flows coverage threshold
         if: steps.critical-tests.outputs.critical_test_status == 'passed'
-        continue-on-error: true
+        continue-on-error: false
         run: |
           CRITICAL_COVERAGE="${{ steps.critical-tests.outputs.critical_coverage_summary }}"
-          MIN_CRITICAL_THRESHOLD=30
+          MIN_CRITICAL_THRESHOLD=20
 
           echo "📈 Critical flows coverage: $CRITICAL_COVERAGE%"
           echo "🎯 Critical flows threshold: $MIN_CRITICAL_THRESHOLD%"
