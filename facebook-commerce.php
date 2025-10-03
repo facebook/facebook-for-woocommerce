@@ -309,6 +309,9 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 			update_option( self::SETTING_ENABLE_META_DIAGNOSIS, 'yes' );
 		}
 
+		// Register the WordPress cron hook for async processing
+		add_action( 'wc_facebook_async_sync', [ $this, 'handle_async_product_save' ] );
+
 		if ( is_admin() ) {
 
 			$this->init_pixel();
@@ -348,7 +351,7 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 			if ( $this->is_configured() && $this->get_product_catalog_id() ) {
 
 				// On_product_save() must run with priority larger than 20 to make sure WooCommerce has a chance to save the submitted product information.
-				add_action( 'woocommerce_process_product_meta', [ $this, 'on_product_save' ], 40 );
+				add_action( 'woocommerce_process_product_meta', [ $this, 'schedule_product_sync' ], 40 );
 
 				add_action(
 					'woocommerce_product_quick_edit_save',
@@ -823,6 +826,104 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 		}
 
 		return array_map( 'absint', explode( ',', $posted_products ) );
+	}
+
+
+	/**
+	 * Stores sync data in a transient for async processing.
+	 *
+	 * @param int   $wp_id The product ID
+	 * @param array $sync_data  The sync data to store
+	 * @return string The transient key used for storage
+	 * @since 3.5.10
+	 */
+	private function get_store_sync_transient( int $wp_id, array $sync_data ): string {
+		$sync_key = 'fb_sync_data_' . $wp_id . '_' . time();
+		set_transient( $sync_key, $sync_data, 300 );
+		return $sync_key;
+	}
+
+	/**
+	 * Processes async sync data from transient and restores context.
+	 *
+	 * @param string $transient_key The transient key
+	 * @return array|null Array containing product_id and success flag, or null if failed
+	 * @since 3.5.10
+	 */
+	private function process_sync_transient( string $transient_key ): ?array {
+		// Validate transient key format
+		if ( strpos( $transient_key, 'fb_sync_data_' ) !== 0 ) {
+			return null;
+		}
+
+		// Retrieve sync data
+		$sync_data = get_transient( $transient_key );
+		if ( ! $sync_data ) {
+			return null; // Data expired or doesn't exist
+		}
+
+		// Clean up transient
+		delete_transient( $transient_key );
+
+		// Restore context
+		$product_id = $sync_data['product_id'];
+		$_POST = $sync_data['post_data']; // Restore $_POST data
+
+		return [
+			'product_id' => $product_id,
+			'success' => true,
+		];
+	}
+
+	/**
+	 * Handles async product save from WordPress cron by processing transient data.
+	 *
+	 * @param string $transient_key The transient key containing sync data
+	 * @since 3.5.10
+	 * @internal
+	 */
+	public function handle_async_product_save( string $transient_key ) {
+		$transient_result = $this->process_sync_transient( $transient_key );
+		if ( ! $transient_result ) {
+			return; // Invalid transient or data expired
+		}
+
+		// Call the regular product save method with clean product ID
+		$this->on_product_save( $transient_result['product_id'] );
+	}
+
+	/**
+	 * Schedule product sync for async processing using WordPress cron.
+	 *
+	 * @param int $wp_id post ID
+	 *
+	 * @since 3.5.10
+	 *
+	 * @internal
+	 */
+	public function schedule_product_sync( int $wp_id ) {
+		// Store sync data in transient for async processing
+		// phpcs:disable WordPress.Security.NonceVerification.Missing
+		$sync_data = [
+			'product_id' => $wp_id,
+			'post_data' => $_POST,
+		];
+		// phpcs:enable WordPress.Security.NonceVerification.Missing
+
+		$sync_key = $this->get_store_sync_transient( $wp_id, $sync_data );
+
+		// Schedule WordPress cron event
+		$scheduled = wp_schedule_single_event(
+			time() + 1,
+			'wc_facebook_async_sync',
+			[ $sync_key ]
+		);
+
+		// Fallback to synchronous processing if scheduling fails
+		if ( false === $scheduled ) {
+			delete_transient( $sync_key );
+			$this->on_product_save( $wp_id );
+		}
 	}
 
 	/**
