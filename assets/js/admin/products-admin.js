@@ -624,6 +624,16 @@ jQuery( document ).ready( function( $ ) {
 		// toggle Sell on Instagram checkbox on page load
 		toggleFacebookSellOnInstagramSetting( isProductReadyForCommerce(), facebookSettingsPanel );
 
+		// Enable disabled fields before form submission so their values are saved
+		$( 'form#post' ).on( 'submit', function() {
+			// Re-enable all fields that were disabled by toggleFacebookSettings
+			// so their values are included in the form submission
+			$( '#facebook_options .enable-if-sync-enabled' ).prop( 'disabled', false );
+			$( '#facebook_options select' ).prop( 'disabled', false );
+			$( '.woocommerce_variations .enable-if-sync-enabled' ).prop( 'disabled', false );
+			$( '.woocommerce_variations select' ).prop( 'disabled', false );
+		} );
+
 		// fb product video support
 		const $openMediaButton = $('#open_media_library');
 		const $selectedVideoThumbnailsContainer = $('#fb_product_video_selected_thumbnails');
