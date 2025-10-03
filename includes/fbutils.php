@@ -455,8 +455,8 @@ if ( ! class_exists( 'WC_Facebookcommerce_Utils' ) ) :
 				wp_send_json_error( 'Permission denied' );
 				return false;
 			}
-    		check_ajax_referer( $action, $nonce );
-    		return true;
+			check_ajax_referer( $action, $nonce );
+			return true;
 		}
 
 		/**
