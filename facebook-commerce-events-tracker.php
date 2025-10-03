@@ -99,7 +99,7 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 		 */
 		public function param_builder_server_setup() {
 			try {
-				$cookie_to_set = $this->get_param_builder()->getCookiesToSet();
+				$cookie_to_set = self::get_param_builder()->getCookiesToSet();
 
 				if ( ! headers_sent() ) {
 					foreach ( $cookie_to_set as $cookie ) {
