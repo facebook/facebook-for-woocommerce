@@ -451,7 +451,7 @@ if ( ! class_exists( 'WC_Facebookcommerce_Utils' ) ) :
 		 * @return bool
 		 */
 		public static function is_legit_ajax_call( $action, $nonce = 'nonce' ) {
-			return self::is_admin_user() && check_ajax_referrer( $action, $nonce );
+			return self::is_admin_user() && check_ajax_referer( $action, $nonce );
 		}
 
 		/**
