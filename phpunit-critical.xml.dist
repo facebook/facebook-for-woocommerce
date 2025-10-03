@@ -22,13 +22,35 @@
 	</testsuites>
 	<coverage>
 		<include>
-			<directory>includes</directory>
+			<!-- Commerce & Checkout related files -->
 			<file>./class-wc-facebookcommerce.php</file>
+			<directory>includes/Commerce</directory>
+			<directory>includes/Checkout</directory>
+			
+			<!-- API Integration -->
+			<directory>includes/API</directory>
+			
+			<!-- Product Sync -->
+			<directory>includes/ProductSync</directory>
+			
+			<!-- Feed Generation -->
+			<directory>includes/Feed</directory>
+			
+			<!-- Event Tracking -->
 			<file>./facebook-commerce-events-tracker.php</file>
 			<file>./facebook-commerce-pixel-event.php</file>
+			<directory>includes/Events</directory>
+			
+			<!-- Core integration files -->
 			<file>./facebook-commerce.php</file>
 			<file>./facebook-config-warmer.php</file>
 			<file>./facebook-for-woocommerce.php</file>
 		</include>
+		<exclude>
+			<!-- Exclude utility/helper classes that aren't core functionality -->
+			<directory>includes/Utilities</directory>
+			<directory>includes/Admin</directory>
+			<directory>includes/Framework</directory>
+		</exclude>
 	</coverage>
 </phpunit>
