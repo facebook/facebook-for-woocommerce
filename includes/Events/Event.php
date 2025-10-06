@@ -261,6 +261,9 @@ class Event {
 		$fbc = '';
 		if ( ! empty( $_COOKIE['_fbc'] ) ) {
 			$fbc = wc_clean( wp_unslash( $_COOKIE['_fbc'] ) );
+		} else if ( ! $fbc ) {
+			$param_builder = \WC_Facebookcommerce_EventsTracker::get_param_builder();
+			$fbc = $param_builder->getFbc();
 		} elseif ( isset( $_REQUEST['fbclid'] ) ) {
 			$creation_time = time();
 			$fbclid = wc_clean( wp_unslash( $_REQUEST['fbclid'] ) ); // phpcs:ignore WordPress.Security.NonceVerification
