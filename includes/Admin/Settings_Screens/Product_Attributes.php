@@ -55,6 +55,9 @@ class Product_Attributes extends Abstract_Settings_Screen {
 
 		// Add AJAX handler for notice dismissal
 		add_action( 'wp_ajax_fb_dismiss_attribute_notice', array( $this, 'ajax_dismiss_notice' ) );
+		
+		// Add AJAX handler for manual feed generation
+		add_action( 'wp_ajax_fb_trigger_product_feed_generation', array( $this, 'ajax_trigger_feed_generation' ) );
 	}
 
 
@@ -91,7 +94,18 @@ class Product_Attributes extends Abstract_Settings_Screen {
 			true // Load in footer
 		);
 
-		// Add dismissible notice handlers
+		// Localize script for AJAX calls
+		wp_localize_script(
+			'facebook-for-woocommerce-product-attributes',
+			'fb_product_attributes_params',
+			array(
+				'ajax_url'                => admin_url( 'admin-ajax.php' ),
+				'feed_generation_nonce'   => wp_create_nonce( 'fb_trigger_feed_generation' ),
+				'dismiss_notice_nonce'    => wp_create_nonce( 'fb_dismiss_attribute_notice' ),
+			)
+		);
+
+		// Add dismissible notice handlers and feed generation handler
 		wp_add_inline_script(
 			'facebook-for-woocommerce-product-attributes',
 			"
@@ -108,7 +122,54 @@ class Product_Attributes extends Abstract_Settings_Screen {
 					$.post(ajaxurl, {
 						action: 'fb_dismiss_attribute_notice',
 						notice_id: noticeId,
-						security: '" . wp_create_nonce( 'fb_dismiss_attribute_notice' ) . "'
+						nonce: fb_product_attributes_params.dismiss_notice_nonce
+					});
+				});
+				
+				// Handle manual feed generation button
+				$('#fb-trigger-feed-generation').on('click', function(e) {
+					e.preventDefault();
+					
+					var button = $(this);
+					var statusSpan = $('#fb-feed-generation-status');
+					
+					// Disable button and show loading state
+					button.prop('disabled', true);
+					button.find('.dashicons').addClass('dashicons-update-alt').removeClass('dashicons-update').css('animation', 'rotation 2s infinite linear');
+					statusSpan.html('<span style=\"color: #007cba;\">Processing...</span>').show();
+					
+					// Add CSS for rotation animation if not already present
+					if (!$('#fb-feed-rotation-animation').length) {
+						$('head').append('<style id=\"fb-feed-rotation-animation\">@keyframes rotation { from { transform: rotate(0deg); } to { transform: rotate(359deg); } }</style>');
+					}
+					
+					// Send AJAX request
+					$.ajax({
+						url: fb_product_attributes_params.ajax_url,
+						type: 'POST',
+						data: {
+							action: 'fb_trigger_product_feed_generation',
+							nonce: fb_product_attributes_params.feed_generation_nonce
+						},
+						success: function(response) {
+							button.prop('disabled', false);
+							button.find('.dashicons').removeClass('dashicons-update-alt').addClass('dashicons-update').css('animation', '');
+							
+							if (response.success) {
+								statusSpan.html('<span style=\"color: #46b450;\">✓ ' + response.data.message + '</span>');
+								setTimeout(function() {
+									statusSpan.fadeOut();
+								}, 10000);
+							} else {
+								var errorMessage = response.data && response.data.message ? response.data.message : 'An unknown error occurred.';
+								statusSpan.html('<span style=\"color: #dc3232;\">✗ ' + errorMessage + '</span>');
+							}
+						},
+						error: function(xhr, status, error) {
+							button.prop('disabled', false);
+							button.find('.dashicons').removeClass('dashicons-update-alt').addClass('dashicons-update').css('animation', '');
+							statusSpan.html('<span style=\"color: #dc3232;\">✗ Failed to trigger feed generation. Please try again.</span>');
+						}
 					});
 				});
 			});
@@ -312,13 +373,18 @@ class Product_Attributes extends Abstract_Settings_Screen {
 						</tbody>
 					</table>
 					
-					<p style="margin-top: 15px;">
-						<?php if ( empty( $current_mappings ) ) : ?>
-							<a href="<?php echo esc_url( wp_nonce_url( add_query_arg( 'edit', '1' ), 'facebook_product_attributes_edit', '_wpnonce' ) ); ?>" class="button button-primary"><?php esc_html_e( 'Add new mapping', 'facebook-for-woocommerce' ); ?></a>
-						<?php else : ?>
-							<a href="<?php echo esc_url( wp_nonce_url( add_query_arg( 'edit', '1' ), 'facebook_product_attributes_edit', '_wpnonce' ) ); ?>" class="button button-primary"><?php esc_html_e( 'Edit Mappings', 'facebook-for-woocommerce' ); ?></a>
-						<?php endif; ?>
-					</p>
+				<p style="margin-top: 15px;">
+					<?php if ( empty( $current_mappings ) ) : ?>
+						<a href="<?php echo esc_url( wp_nonce_url( add_query_arg( 'edit', '1' ), 'facebook_product_attributes_edit', '_wpnonce' ) ); ?>" class="button button-primary"><?php esc_html_e( 'Add new mapping', 'facebook-for-woocommerce' ); ?></a>
+					<?php else : ?>
+						<a href="<?php echo esc_url( wp_nonce_url( add_query_arg( 'edit', '1' ), 'facebook_product_attributes_edit', '_wpnonce' ) ); ?>" class="button button-primary"><?php esc_html_e( 'Edit Mappings', 'facebook-for-woocommerce' ); ?></a>
+					<?php endif; ?>
+					<button type="button" id="fb-trigger-feed-generation" class="button" style="margin-left: 10px;">
+						<span class="dashicons dashicons-update" style="margin-top: 3px;"></span>
+						<?php esc_html_e( 'Generate & Upload Product Feed', 'facebook-for-woocommerce' ); ?>
+					</button>
+					<span id="fb-feed-generation-status" style="margin-left: 10px; display: none;"></span>
+				</p>
 				</div>
 			<?php endif; ?>
 			
@@ -1063,6 +1129,48 @@ class Product_Attributes extends Abstract_Settings_Screen {
 		}
 
 		wp_die(); // this is required to terminate immediately and return a proper response
+	}
+
+	/**
+	 * AJAX handler for manually triggering product feed generation.
+	 *
+	 * @since 3.5.9
+	 */
+	public function ajax_trigger_feed_generation() {
+		// Check user permissions
+		if ( ! current_user_can( 'manage_woocommerce' ) ) {
+			wp_send_json_error(
+				array(
+					'message' => __( 'You do not have permission to perform this action.', 'facebook-for-woocommerce' ),
+				),
+				403
+			);
+		}
+
+		// Check nonce for security
+		check_ajax_referer( 'fb_trigger_feed_generation', 'nonce' );
+
+		try {
+			// Trigger feed regeneration using the Feed class
+			// The regenerate_feed action will handle both generation and upload
+			do_action( 'wc_facebook_regenerate_feed' );
+
+			wp_send_json_success(
+				array(
+					'message' => __( 'Product feed generation has been triggered successfully. The feed will be uploaded to Facebook once generation is complete.', 'facebook-for-woocommerce' ),
+				)
+			);
+		} catch ( \Exception $e ) {
+			wp_send_json_error(
+				array(
+					'message' => sprintf(
+						/* translators: %s: error message */
+						__( 'Failed to trigger feed generation: %s', 'facebook-for-woocommerce' ),
+						$e->getMessage()
+					),
+				)
+			);
+		}
 	}
 
 	/**
