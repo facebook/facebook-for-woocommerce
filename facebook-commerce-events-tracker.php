@@ -42,8 +42,6 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 		/** @var array with events tracked */
 		private $tracked_events;
 
-		/** @var array array with epnding events */
-		private $pending_events = array();
 
 		/** @var AAMSettings aam settings instance, used to filter advanced matching fields*/
 		private $aam_settings;
@@ -69,6 +67,10 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 			$this->tracked_events = array();
 
 			$this->add_hooks();
+
+			// Add AJAX handlers for async event processing
+			add_action( 'wp_ajax_facebook_send_pixel_event', array( $this, 'handle_async_event' ) );
+			add_action( 'wp_ajax_nopriv_facebook_send_pixel_event', array( $this, 'handle_async_event' ) );
 		}
 
 
@@ -142,8 +144,6 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 			// Lead events through Contact Form 7
 			add_action( 'wpcf7_contact_form', array( $this, 'inject_lead_event_hook' ), 11 );
 
-			// Flush pending events on shutdown
-			add_action( 'shutdown', array( $this, 'send_pending_events' ) );
 		}
 
 
@@ -1043,7 +1043,7 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 					facebook_for_woocommerce()->log( 'Could not send Pixel event: ' . $exception->getMessage() );
 				}
 			} else {
-				$this->pending_events[] = $event;
+				$this->send_event_async( $event );
 			}
 		}
 
@@ -1216,29 +1216,45 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 		}
 
 		/**
-		 * Gets the pending events awaiting to be sent
+		 * Sends an event asynchronously using a non-blocking HTTP request.
 		 *
-		 * @return array
+		 * @param Event $event event object to send
 		 */
-		public function get_pending_events() {
-			return $this->pending_events;
+		private function send_event_async( Event $event ) {
+			wp_remote_post( admin_url( 'admin-ajax.php' ), array(
+				'blocking' => false,
+				'body'     => array(
+					'action' => 'facebook_send_pixel_event',
+					'event'  => base64_encode( serialize( $event ) ),
+					'nonce'  => wp_create_nonce( 'fb_pixel_event' )
+				)
+			));
 		}
 
 		/**
-		 * Send pending events.
+		 * Handles async event processing via AJAX.
 		 */
-		public function send_pending_events() {
-
-			$pending_events = $this->get_pending_events();
-
-			if ( empty( $pending_events ) ) {
-				return;
+		public function handle_async_event() {
+			if ( ! wp_verify_nonce( $_POST['nonce'], 'fb_pixel_event' ) ) {
+				wp_die();
 			}
 
-			foreach ( $pending_events as $event ) {
+			$event = unserialize( base64_decode( $_POST['event'] ) );
 
-				$this->send_api_event( $event );
+			if ( ! $event instanceof Event ) {
+				wp_die();
 			}
+
+			try {
+				facebook_for_woocommerce()->get_api()->send_pixel_events(
+					facebook_for_woocommerce()->get_integration()->get_facebook_pixel_id(),
+					array( $event )
+				);
+			} catch ( ApiException $exception ) {
+				facebook_for_woocommerce()->log( 'Async pixel event failed: ' . $exception->getMessage() );
+			}
+
+			wp_die();
 		}
 	}
 
