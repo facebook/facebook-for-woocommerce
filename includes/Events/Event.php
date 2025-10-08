@@ -290,7 +290,7 @@ class Event {
 		if ( ! $fbp ) {
 			$param_builder = \WC_Facebookcommerce_EventsTracker::get_param_builder();
 			$fbp = $param_builder->getFbp();
-		} 
+		}
 		if ( ! $fbp && isset( $_SESSION['_fbp'] ) ) {
 			$fbp = $_SESSION['_fbp']; // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
 		}
