@@ -15,17 +15,18 @@ defined( 'ABSPATH' ) || exit;
 use Exception;
 use WooCommerce\Facebook\Framework\Logger;
 use WooCommerce\Facebook\Framework\Plugin\Exception as PluginException;
-use WooCommerce\Facebook\Feed\AbstractFeedHandler;
+use WooCommerce\Facebook\Integrations\IntegrationRegistry;
 
 /**
  * Language Override Feed Handler.
  *
  * Handles the generation and management of language override feed files.
- * Extends AbstractFeedHandler to maintain consistency with the project architecture.
+ * This class is specifically designed for generating multiple language-specific feed files,
+ * which differs from the single-file approach used by AbstractFeedHandler.
  *
  * @since 3.6.0
  */
-class LanguageOverrideFeedHandler extends AbstractFeedHandler {
+class LanguageOverrideFeedHandler {
 
 	/** @var \WooCommerce\Facebook\Feed\Localization\LanguageFeedData */
 	private $language_feed_data;
@@ -39,135 +40,6 @@ class LanguageOverrideFeedHandler extends AbstractFeedHandler {
 	public function __construct( LanguageFeedData $language_feed_data, LanguageOverrideFeedWriter $feed_writer ) {
 		$this->language_feed_data = $language_feed_data;
 		$this->feed_writer = $feed_writer;
-		$this->feed_type = 'language_override';
-	}
-
-
-	/**
-	 * Generates language override feed files for all available languages.
-	 * This mirrors WC_Facebook_Product_Feed::generate_feed but for language feeds.
-	 *
-	 * @since 3.6.0
-	 */
-	public function generate_feed_file(): void {
-		$profiling_logger = facebook_for_woocommerce()->get_profiling_logger();
-		$profiling_logger->start( 'generate_language_override_feeds' );
-
-		Logger::log(
-			'Generating language override feed files',
-			[],
-			array(
-				'should_send_log_to_meta'        => false,
-				'should_save_log_in_woocommerce' => true,
-				'woocommerce_log_level'          => \WC_Log_Levels::DEBUG,
-			)
-		);
-
-		try {
-			if ( ! $this->language_feed_data->has_active_localization_plugin() ) {
-				Logger::log(
-					'Language override feed generation skipped: No active localization plugin found.',
-					[],
-					array(
-						'should_send_log_to_meta'        => false,
-						'should_save_log_in_woocommerce' => true,
-						'woocommerce_log_level'          => \WC_Log_Levels::INFO,
-					)
-				);
-				return;
-			}
-
-			$start_time = microtime( true );
-
-			$this->generate_language_feed_files();
-
-			$generation_time = microtime( true ) - $start_time;
-			facebook_for_woocommerce()->get_tracker()->track_feed_file_generation_time( $generation_time );
-
-			Logger::log(
-				'Language override feed files generated',
-				[],
-				array(
-					'should_send_log_to_meta'        => false,
-					'should_save_log_in_woocommerce' => true,
-					'woocommerce_log_level'          => \WC_Log_Levels::DEBUG,
-				)
-			);
-
-			do_action( 'wc_facebook_language_feed_generation_completed' );
-
-		} catch ( \Exception $exception ) {
-			Logger::log(
-				$exception->getMessage(),
-				[],
-				array(
-					'should_send_log_to_meta'        => false,
-					'should_save_log_in_woocommerce' => true,
-					'woocommerce_log_level'          => \WC_Log_Levels::ERROR,
-				)
-			);
-		}
-
-		$profiling_logger->stop( 'generate_language_override_feeds' );
-	}
-
-	/**
-	 * Generates the language override feed files for all available languages.
-	 * This mirrors WC_Facebook_Product_Feed::generate_productfeed_file.
-	 *
-	 * @return bool
-	 * @throws PluginException If the feed file directory can't be created or the feed files can't be written.
-	 */
-	public function generate_language_feed_files() {
-		if ( ! wp_mkdir_p( $this->feed_writer->get_file_directory() ) ) {
-			throw new PluginException( __( 'Could not create language override feed directory', 'facebook-for-woocommerce' ), 500 );
-		}
-
-		$this->create_files_to_protect_feed_directory();
-
-		$languages = $this->language_feed_data->get_available_languages();
-		$success = true;
-
-		foreach ( $languages as $language_code ) {
-			if ( ! $this->write_language_feed_file( $language_code ) ) {
-				$success = false;
-			}
-		}
-
-		return $success;
-	}
-
-	/**
-	 * Creates files in the language feed directory to prevent directory listing and hotlinking.
-	 * This mirrors WC_Facebook_Product_Feed::create_files_to_protect_product_feed_directory.
-	 *
-	 * @since 3.6.0
-	 */
-	public function create_files_to_protect_feed_directory() {
-		$feed_directory = trailingslashit( $this->feed_writer->get_file_directory() );
-
-		$files = array(
-			array(
-				'base'    => $feed_directory,
-				'file'    => 'index.html',
-				'content' => '',
-			),
-			array(
-				'base'    => $feed_directory,
-				'file'    => '.htaccess',
-				'content' => 'deny from all',
-			),
-		);
-
-		foreach ( $files as $file ) {
-			if ( wp_mkdir_p( $file['base'] ) && ! file_exists( trailingslashit( $file['base'] ) . $file['file'] ) ) {
-				$file_handle = @fopen( trailingslashit( $file['base'] ) . $file['file'], 'w' );
-				if ( $file_handle ) {
-					fwrite( $file_handle, $file['content'] );
-					fclose( $file_handle );
-				}
-			}
-		}
 	}
 
 	/**
@@ -400,7 +272,8 @@ class LanguageOverrideFeedHandler extends AbstractFeedHandler {
 		}
 
 		// Get dynamic columns for this language using LanguageFeedData
-		$csv_result = $this->language_feed_data->get_language_csv_data( $language_code, 5, 0 ); // Get more rows to ensure we get all columns
+		// Use a larger sample size to ensure we capture all possible columns (same as download CSV)
+		$csv_result = $this->language_feed_data->get_language_csv_data( $language_code, 1000, 0 );
 		$columns = $csv_result['columns'] ?? ['id', 'override'];
 
 		// Generate header using LanguageFeedData
@@ -418,6 +291,7 @@ class LanguageOverrideFeedHandler extends AbstractFeedHandler {
 	/**
 	 * Write language feed data into a file.
 	 * This mirrors WC_Facebook_Product_Feed::write_products_feed_to_temp_file.
+	 * Uses the same CSV generation logic as the downloadable CSV method to avoid redundancy.
 	 *
 	 * @since 3.6.0
 	 *
@@ -444,8 +318,8 @@ class LanguageOverrideFeedHandler extends AbstractFeedHandler {
 				)
 			);
 
-			// Use LanguageFeedData to get CSV data for this language
-			$csv_result = $this->language_feed_data->get_language_csv_data( $language_code, 1000, 0 );
+			// Use the same CSV generation logic as downloadable CSV (avoid redundancy)
+			$csv_result = $this->language_feed_data->get_language_csv_data( $language_code, 5000, 0 );
 
 			Logger::log(
 				'Retrieved CSV data from LanguageFeedData',
@@ -477,6 +351,7 @@ class LanguageOverrideFeedHandler extends AbstractFeedHandler {
 			$columns = $csv_result['columns'];
 
 			// Process and write each data row using LanguageFeedData's formatting
+			// This uses the same logic as generate_downloadable_language_csv() to ensure consistency
 			foreach ( $csv_result['data'] as $row_data ) {
 				$row = [];
 				foreach ( $columns as $column ) {
@@ -633,27 +508,6 @@ class LanguageOverrideFeedHandler extends AbstractFeedHandler {
 		);
 	}
 
-	/**
-	 * Get the language feed data instance.
-	 *
-	 * @return \WooCommerce\Facebook\Feed\Localization\LanguageFeedData
-	 * @since 3.6.0
-	 */
-	public function get_language_feed_data(): LanguageFeedData {
-		return $this->language_feed_data;
-	}
 
-	/**
-	 * Get the feed data as an array.
-	 * Required by AbstractFeedHandler.
-	 *
-	 * @return array
-	 * @since 3.6.0
-	 */
-	public function get_feed_data(): array {
-		// For language override feeds, we handle data generation per language
-		// This method is required by the abstract class but not used in our implementation
-		// since we generate feeds per language in write_language_feed_file()
-		return [];
-	}
+
 }

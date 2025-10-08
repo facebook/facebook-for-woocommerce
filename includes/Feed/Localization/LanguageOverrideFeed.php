@@ -18,16 +18,16 @@ use WooCommerce\Facebook\Framework\Plugin\Exception as PluginException;
 use WooCommerce\Facebook\Framework\Logger;
 use WooCommerce\Facebook\Utilities\Heartbeat;
 use WooCommerce\Facebook\Feed\AbstractFeed;
+use WooCommerce\Facebook\Integrations\IntegrationRegistry;
 
 /**
  * Language Override Feed handler.
  *
- * Extends AbstractFeed to be compatible with FeedManager while providing
- * specialized functionality for language override feeds.
+ * Specialized functionality for language override feeds.
  *
  * @since 3.6.0
  */
-class LanguageOverrideFeed extends AbstractFeed {
+class LanguageOverrideFeed {
 
 	use LanguageFeedManagementTrait;
 
@@ -36,9 +36,6 @@ class LanguageOverrideFeed extends AbstractFeed {
 
 	/** @var \WooCommerce\Facebook\Feed\Localization\LanguageFeedData */
 	private $language_feed_data;
-
-	/** @var \WooCommerce\Facebook\API */
-	private $api;
 
 	/** Action constants */
 	const GENERATE_FEED_ACTION = 'wc_facebook_regenerate_feed_';
@@ -56,25 +53,14 @@ class LanguageOverrideFeed extends AbstractFeed {
 		$this->language_feed_data = new LanguageFeedData();
 
 		// Check if we have an active localization plugin before proceeding
-		if ( ! $this->language_feed_data->has_active_localization_plugin() ) {
+		if ( ! IntegrationRegistry::has_active_localization_plugin() ) {
 			// No localization plugin active - create a minimal setup to prevent errors
 			$default_language = 'en_US'; // Fallback language
 			$header_row = $this->language_feed_data->get_csv_header_for_columns(['id', 'override']);
 			$this->feed_writer = new LanguageOverrideFeedWriter( $default_language, $header_row );
 			$this->feed_handler = new LanguageOverrideFeedHandler( $this->language_feed_data, $this->feed_writer );
 
-			// Create a basic feed generator for compatibility
-			$action_scheduler = new \Automattic\WooCommerce\ActionSchedulerJobFramework\Proxies\ActionScheduler();
-			$feed_generator = new LanguageOverrideFeedGenerator(
-				$action_scheduler,
-				$this->feed_writer,
-				static::get_data_stream_name(),
-				$this->language_feed_data,
-				$default_language
-			);
-
-			// Initialize parent class with proper components
-			$this->init( $this->feed_writer, $this->feed_handler, $feed_generator );
+			$this->add_hooks();
 			return;
 		}
 
@@ -92,18 +78,7 @@ class LanguageOverrideFeed extends AbstractFeed {
 
 		$this->feed_handler = new LanguageOverrideFeedHandler( $this->language_feed_data, $this->feed_writer );
 
-		// Create a basic feed generator for compatibility
-		$action_scheduler = new \Automattic\WooCommerce\ActionSchedulerJobFramework\Proxies\ActionScheduler();
-		$feed_generator = new LanguageOverrideFeedGenerator(
-			$action_scheduler,
-			$this->feed_writer,
-			static::get_data_stream_name(),
-			$this->language_feed_data,
-			$default_language
-		);
-
-		// Initialize parent class with proper components
-		$this->init( $this->feed_writer, $this->feed_handler, $feed_generator );
+		$this->add_hooks();
 	}
 
 
@@ -182,28 +157,38 @@ class LanguageOverrideFeed extends AbstractFeed {
 			set_transient( $scheduling_lock_key, true, 5 * MINUTE_IN_SECONDS );
 
 			try {
-				as_schedule_recurring_action(
-					time(),
-					static::get_feed_gen_interval(),
-					$schedule_action_hook_name,
-					array(),
-					facebook_for_woocommerce()->get_id_dasherized()
-				);
+			as_schedule_recurring_action(
+				time(),
+				static::get_feed_gen_interval(),
+				$schedule_action_hook_name,
+				array(),
+				facebook_for_woocommerce()->get_id_dasherized()
+			);
 
-				Logger::log(
-					'Language override feed generation scheduled successfully.',
-					[],
-					array(
-						'should_send_log_to_meta'        => false,
-						'should_save_log_in_woocommerce' => true,
-						'woocommerce_log_level'          => \WC_Log_Levels::DEBUG,
-					)
-				);
+			Logger::log(
+				'Language override feed generation scheduled successfully.',
+				[],
+				array(
+					'should_send_log_to_meta'        => false,
+					'should_save_log_in_woocommerce' => true,
+					'woocommerce_log_level'          => \WC_Log_Levels::DEBUG,
+				)
+			);
 			} finally {
 				// Always clear the lock
 				delete_transient( $scheduling_lock_key );
 			}
 		}
+	}
+
+	/**
+	 * Gets the API instance for making requests to Facebook.
+	 *
+	 * @return \WooCommerce\Facebook\API
+	 * @since 3.6.0
+	 */
+	private function get_api() {
+		return facebook_for_woocommerce()->get_api();
 	}
 
 	/**
@@ -236,7 +221,13 @@ class LanguageOverrideFeed extends AbstractFeed {
 	 * @since 3.6.0
 	 */
 	public function regenerate_feed(): void {
-		if ( $this->should_skip_feed() ) {
+		error_log("DEBUG: regenerate_feed() method called");
+
+		$should_skip = $this->should_skip_feed();
+		error_log("DEBUG: should_skip_feed() returned: " . ($should_skip ? 'true' : 'false'));
+
+		if ( $should_skip ) {
+			error_log("DEBUG: Exiting regenerate_feed() early due to should_skip_feed()");
 			return;
 		}
 
@@ -263,7 +254,7 @@ class LanguageOverrideFeed extends AbstractFeed {
 	 */
 	private function regenerate_all_language_feeds(): void {
 		// Check if we have an active localization plugin
-		if ( ! $this->language_feed_data->has_active_localization_plugin() ) {
+		if ( ! IntegrationRegistry::has_active_localization_plugin() ) {
 			Logger::log(
 				'Language override feed regeneration skipped: No active localization plugin found.',
 				[],
@@ -398,27 +389,19 @@ class LanguageOverrideFeed extends AbstractFeed {
 	 * @since 3.6.0
 	 */
 	public function send_request_to_upload_feed(): void {
+		Logger::log(
+			'Hook triggered: send_request_to_upload_feed called',
+			[],
+			array(
+				'should_send_log_to_meta'        => false,
+				'should_save_log_in_woocommerce' => true,
+				'woocommerce_log_level'          => \WC_Log_Levels::DEBUG,
+			)
+		);
 		$this->upload_language_override_feeds();
 	}
 
 
-	/**
-	 * Gets the secret value that should be included in the legacy WooCommerce REST API URL.
-	 *
-	 * @return string
-	 * @since 3.6.0
-	 */
-	public function get_feed_secret(): string {
-		$secret_option_name = self::OPTION_FEED_URL_SECRET . static::get_data_stream_name();
-
-		$secret = get_option( $secret_option_name, '' );
-		if ( ! $secret ) {
-			$secret = wp_hash( 'language-override-feed-' . time() );
-			update_option( $secret_option_name, $secret );
-		}
-
-		return $secret;
-	}
 
 	/**
 	 * Get the Heartbeat interval to ensure that feed gen is scheduled. Must be shorter than the feed gen interval.
@@ -448,18 +431,6 @@ class LanguageOverrideFeed extends AbstractFeed {
 		);
 	}
 
-	/**
-	 * Gets the API instance.
-	 *
-	 * @since 3.6.0
-	 * @return \WooCommerce\Facebook\API
-	 */
-	private function get_api() {
-		if ( ! $this->api ) {
-			$this->api = facebook_for_woocommerce()->get_api();
-		}
-		return $this->api;
-	}
 
 	/**
 	 * Gets the feed handler instance.
@@ -490,8 +461,7 @@ class LanguageOverrideFeed extends AbstractFeed {
 	}
 
 	/**
-	 * Override the feed generation interval to be less frequent than product feeds.
-	 * Language content doesn't change as often as product data.
+	 * Override the feed generation interval to match product feeds frequency.
 	 *
 	 * @return int
 	 */
@@ -503,7 +473,7 @@ class LanguageOverrideFeed extends AbstractFeed {
 		 *
 		 * @param int $interval the frequency with which the language override feed data is generated, in seconds.
 		 */
-		return apply_filters( 'wc_facebook_language_override_feed_generation_interval', DAY_IN_SECONDS * 7 ); // Weekly by default
+		return apply_filters( 'wc_facebook_language_override_feed_generation_interval', DAY_IN_SECONDS ); // Daily by default
 	}
 
 	/**
@@ -512,19 +482,54 @@ class LanguageOverrideFeed extends AbstractFeed {
 	 * @return bool
 	 */
 	public function should_skip_feed(): bool {
-		$connection_handler = facebook_for_woocommerce()->get_connection_handler();
-		$cpi_id             = $connection_handler->get_commerce_partner_integration_id();
-		// $cms_id             = $connection_handler->get_commerce_merchant_settings_id();
+		error_log("DEBUG: should_skip_feed() - Starting checks");
 
-		if ( empty( $cpi_id )) {
+		$connection_handler = facebook_for_woocommerce()->get_connection_handler();
+		error_log("DEBUG: should_skip_feed() - Got connection handler: " . (is_object($connection_handler) ? get_class($connection_handler) : 'NULL'));
+
+		$cpi_id = $connection_handler->get_commerce_partner_integration_id();
+		error_log("DEBUG: should_skip_feed() - CPI ID: '" . ($cpi_id ?? 'NULL') . "'");
+
+		// Also check for alternative connection methods
+		$cms_id = $connection_handler->get_commerce_merchant_settings_id();
+		error_log("DEBUG: should_skip_feed() - CMS ID: '" . ($cms_id ?? 'NULL') . "'");
+
+		$access_token = $connection_handler->get_access_token();
+		error_log("DEBUG: should_skip_feed() - Has access token: " . (!empty($access_token) ? 'YES' : 'NO'));
+
+		$is_connected = $connection_handler->is_connected();
+		error_log("DEBUG: should_skip_feed() - Is connected: " . ($is_connected ? 'YES' : 'NO'));
+
+		// Language override feeds can work with different connection requirements
+		// Check if we have any valid connection method (simplified)
+		$has_valid_connection = !empty($cpi_id) || !empty($cms_id) || !empty($access_token);
+		error_log("DEBUG: should_skip_feed() - Has valid connection: " . ($has_valid_connection ? 'YES' : 'NO'));
+
+		if ( !$has_valid_connection ) {
+			error_log("DEBUG: should_skip_feed() - RETURNING TRUE: No valid connection method found");
 			return true;
 		}
 
+		// Check if localization plugin is active
+		$has_localization_plugin = IntegrationRegistry::has_active_localization_plugin();
+		error_log("DEBUG: should_skip_feed() - Has active localization plugin: " . ($has_localization_plugin ? 'YES' : 'NO'));
+
+		// Get more details about available integrations
+		$integration_keys = IntegrationRegistry::get_localization_integration_keys();
+		error_log("DEBUG: should_skip_feed() - Integration keys: " . json_encode($integration_keys));
+
+		$active_plugins = IntegrationRegistry::get_active_localization_plugins();
+		error_log("DEBUG: should_skip_feed() - Active plugins: " . json_encode($active_plugins));
+
 		// Skip if no active localization plugin
-		if ( ! $this->language_feed_data->has_active_localization_plugin() ) {
+		if ( ! $has_localization_plugin ) {
+			error_log("DEBUG: should_skip_feed() - RETURNING TRUE: No active localization plugin");
 			Logger::log(
 				'Language override feed generation skipped: No active localization plugin found.',
-				[],
+				[
+					'integration_keys' => $integration_keys,
+					'active_plugins' => $active_plugins,
+				],
 				array(
 					'should_send_log_to_meta'        => false,
 					'should_save_log_in_woocommerce' => true,
@@ -534,6 +539,7 @@ class LanguageOverrideFeed extends AbstractFeed {
 			return true;
 		}
 
+		error_log("DEBUG: should_skip_feed() - RETURNING FALSE: All checks passed");
 		return false;
 	}
 
@@ -600,7 +606,7 @@ class LanguageOverrideFeed extends AbstractFeed {
 			}
 
 			// Check localization plugin
-			$debug_info['has_localization_plugin'] = $this->language_feed_data->has_active_localization_plugin();
+			$debug_info['has_localization_plugin'] = IntegrationRegistry::has_active_localization_plugin();
 			if ( ! $debug_info['has_localization_plugin'] ) {
 				$debug_info['error'] = 'No active localization plugin found';
 				$this->output_debug_response( $debug_info, 500 );
@@ -776,53 +782,6 @@ class LanguageOverrideFeed extends AbstractFeed {
 		return add_query_arg( $query_args, home_url( '/' ) );
 	}
 
-	/**
-	 * Gets the URL for retrieving the language feed data for direct URL upload.
-	 * This is used specifically for Facebook direct URL upload endpoints.
-	 *
-	 * IMPORTANT: This method generates the CSV file using the same logic as the admin
-	 * download CSV functionality to ensure consistency between download and sync operations.
-	 *
-	 * @param string $language_code Language code
-	 * @return string
-	 * @since 3.6.0
-	 */
-	public function get_language_feed_data_url( string $language_code ): string {
-		// Generate CSV file using the same method as admin download
-		// This ensures consistency between download CSV and direct URL sync
-		$result = $this->language_feed_data->generate_language_csv( $language_code, 5000 );
-
-		if ( ! $result['success'] ) {
-			throw new \Exception( 'Failed to generate language CSV: ' . ( $result['error'] ?? 'Unknown error' ) );
-		}
-
-		// Save the generated CSV content to a temporary file for Facebook to fetch
-		$upload_dir = wp_upload_dir();
-		$facebook_dir = $upload_dir['basedir'] . '/facebook_for_woocommerce';
-		$language_dir = $facebook_dir . '/language_override_' . \WooCommerce\Facebook\Locale::convert_to_facebook_language_code( $language_code );
-
-		// Create directory if it doesn't exist
-		if ( ! wp_mkdir_p( $language_dir ) ) {
-			throw new \Exception( 'Could not create language feed directory' );
-		}
-
-		// Generate a unique filename for this sync operation
-		$timestamp = date( 'Y-m-d_H-i-s' );
-		$hash = md5( $result['data'] . $timestamp );
-		$filename = "language_override_{$language_code}_{$hash}.csv";
-		$file_path = $language_dir . '/' . $filename;
-
-		// Write the CSV content to the file
-		if ( file_put_contents( $file_path, $result['data'] ) === false ) {
-			throw new \Exception( 'Could not write language CSV file' );
-		}
-
-		// Create the URL to the CSV file
-		$language_dir_url = $upload_dir['baseurl'] . '/facebook_for_woocommerce/language_override_' . \WooCommerce\Facebook\Locale::convert_to_facebook_language_code( $language_code );
-		$file_url = $language_dir_url . '/' . $filename;
-
-		return $file_url;
-	}
 
 	/**
 	 * Upload language override feeds to Facebook for all available languages.
@@ -831,13 +790,51 @@ class LanguageOverrideFeed extends AbstractFeed {
 	 * @since 3.6.0
 	 */
 	public function upload_language_override_feeds() {
-		if ( ! $this->language_feed_data->has_active_localization_plugin() ) {
+		Logger::log(
+			'upload_language_override_feeds called',
+			[],
+			array(
+				'should_send_log_to_meta'        => false,
+				'should_save_log_in_woocommerce' => true,
+				'woocommerce_log_level'          => \WC_Log_Levels::DEBUG,
+			)
+		);
+
+		if ( ! IntegrationRegistry::has_active_localization_plugin() ) {
+			Logger::log(
+				'upload_language_override_feeds skipped - no active localization plugin',
+				[],
+				array(
+					'should_send_log_to_meta'        => false,
+					'should_save_log_in_woocommerce' => true,
+					'woocommerce_log_level'          => \WC_Log_Levels::DEBUG,
+				)
+			);
 			return;
 		}
 
 		$languages = $this->language_feed_data->get_available_languages();
 
+		Logger::log(
+			'upload_language_override_feeds - starting uploads for languages',
+			['languages' => $languages],
+			array(
+				'should_send_log_to_meta'        => false,
+				'should_save_log_in_woocommerce' => true,
+				'woocommerce_log_level'          => \WC_Log_Levels::DEBUG,
+			)
+		);
+
 		foreach ( $languages as $language_code ) {
+			Logger::log(
+				'upload_language_override_feeds - uploading language',
+				['language_code' => $language_code],
+				array(
+					'should_send_log_to_meta'        => false,
+					'should_save_log_in_woocommerce' => true,
+					'woocommerce_log_level'          => \WC_Log_Levels::DEBUG,
+				)
+			);
 			$this->upload_single_language_feed( $language_code );
 		}
 	}
@@ -858,10 +855,7 @@ class LanguageOverrideFeed extends AbstractFeed {
 				throw new \Exception( 'Could not create or retrieve language override feed ID' );
 			}
 
-			// Step 2: Generate the CSV file for this language
-			$this->feed_handler->write_language_feed_file( $language_code );
-
-			// Step 3: Tell Facebook to fetch the CSV data from our endpoint (like main product feed does)
+			// Step 2: Tell Facebook to fetch the CSV data from our endpoint (feed files are already generated)
 			$data = [
 				'url' => $this->get_language_feed_url( $language_code ),
 			];

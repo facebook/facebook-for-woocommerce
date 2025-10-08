@@ -22,36 +22,11 @@ use WooCommerce\Facebook\Framework\Logger;
  */
 class LanguageFeedData {
 
-	/**
-	 * Convert locale code to Facebook's supported language override value
-	 *
-	 * @param string $locale_code Locale code from localization plugin (e.g., 'es_ES', 'fr_FR')
-	 * @return string Facebook-supported language override value (e.g., 'es_XX', 'fr_XX')
-	 */
-	public static function convert_to_facebook_language_code( string $locale_code ): string {
-		return \WooCommerce\Facebook\Locale::convert_to_facebook_language_code( $locale_code );
-	}
 
 	// ===========================================
 	// TRANSLATION DATA EXTRACTION METHODS
 	// ====================================
 
-	/**
-	 * Check if any localization plugin is active and properly configured
-	 *
-	 * @return bool True if at least one localization plugin is available
-	 */
-	public function has_active_localization_plugin(): bool {
-		$integrations = IntegrationRegistry::get_all_localization_integrations();
-
-		foreach ( $integrations as $integration ) {
-			if ( $integration->is_available() ) {
-				return true;
-			}
-		}
-
-		return false;
-	}
 
 	/**
 	 * Get all available languages from active localization plugins
@@ -82,23 +57,6 @@ class LanguageFeedData {
 		return array_values( $all_languages );
 	}
 
-	/**
-	 * Get active localization plugin names
-	 *
-	 * @return array Array of active plugin names
-	 */
-	public function get_active_localization_plugins(): array {
-		$active_plugins = [];
-		$integrations = IntegrationRegistry::get_all_localization_integrations();
-
-		foreach ( $integrations as $integration ) {
-			if ( $integration->is_plugin_active() ) {
-				$active_plugins[] = $integration->get_plugin_name();
-			}
-		}
-
-		return $active_plugins;
-	}
 
 	/**
 	 * Get the default language from the first active localization plugin
@@ -186,7 +144,7 @@ class LanguageFeedData {
 	 * @return int Total count of products with translations
 	 */
 	public function get_translated_products_count( string $language_code ): int {
-		if ( ! $this->has_active_localization_plugin() ) {
+		if ( ! IntegrationRegistry::has_active_localization_plugin() ) {
 			return 0;
 		}
 
@@ -280,43 +238,6 @@ class LanguageFeedData {
 		return $count;
 	}
 
-	/**
-	 * Get sample CSV data for demonstration purposes
-	 *
-	 * @return array Sample CSV data
-	 */
-	public function get_sample_csv_data(): array {
-		return [
-			[
-				'id' => 'wc_post_id_123',
-				'override' => 'es_ES',
-				'title' => 'Camiseta Azul Premium',
-				'description' => 'Una camiseta azul de alta calidad hecha de algodón 100% orgánico. Perfecta para uso diario.',
-				'link' => 'https://example.com/es/producto/camiseta-azul-premium',
-			],
-			[
-				'id' => 'wc_post_id_124',
-				'override' => 'es_ES',
-				'title' => 'Pantalones Vaqueros Clásicos',
-				'description' => 'Pantalones vaqueros de corte clásico con un ajuste cómodo. Disponibles en varios tamaños.',
-				'link' => 'https://example.com/es/producto/pantalones-vaqueros-clasicos',
-			],
-			[
-				'id' => 'wc_post_id_125',
-				'override' => 'fr_FR',
-				'title' => 'T-shirt Bleu Premium',
-				'description' => 'Un t-shirt bleu de haute qualité fabriqué en coton 100% biologique. Parfait pour un usage quotidien.',
-				'link' => 'https://example.com/fr/produit/t-shirt-bleu-premium',
-			],
-			[
-				'id' => 'wc_post_id_126',
-				'override' => 'fr_FR',
-				'title' => 'Jean Classique',
-				'description' => 'Jean de coupe classique avec un ajustement confortable. Disponible en plusieurs tailles.',
-				'link' => 'https://example.com/fr/produit/jean-classique',
-			],
-		];
-	}
 
 	/**
 	 * Get statistics for language feeds
@@ -382,7 +303,7 @@ class LanguageFeedData {
 	 * @return array Array of unique field names that have translations
 	 */
 	public function get_translated_fields_for_language( string $language_code, int $limit = 100 ): array {
-		if ( ! $this->has_active_localization_plugin() ) {
+		if ( ! IntegrationRegistry::has_active_localization_plugin() ) {
 			return [];
 		}
 
@@ -452,7 +373,7 @@ class LanguageFeedData {
 	 * @return array CSV data ready for conversion to CSV string with dynamic columns
 	 */
 	public function get_language_csv_data( string $language_code, int $limit = 100, int $offset = 0 ): array {
-		if ( ! $this->has_active_localization_plugin() ) {
+		if ( ! IntegrationRegistry::has_active_localization_plugin() ) {
 			return [
 				'data' => [],
 				'columns' => ['id', 'override'],
@@ -515,7 +436,7 @@ class LanguageFeedData {
 			// Start with required columns
 			$csv_row = [
 				'id' => $facebook_id,
-				'override' => self::convert_to_facebook_language_code( $language_code ),
+				'override' => \WooCommerce\Facebook\Locale::convert_to_facebook_language_code( $language_code ),
 			];
 
 			// Add dynamic columns based on what's actually translated
@@ -525,15 +446,6 @@ class LanguageFeedData {
 					$original_fb_product,
 					$translated_fb_product,
 					$product_translated_fields,
-					$language_code
-				);
-			}
-
-			// Force add link column if integration can generate different URLs
-			// This handles cases where WPML can translate permalinks even without content translations
-			if ( in_array( 'link', $csv_columns ) && empty( $csv_row[ 'link' ] ) ) {
-				$csv_row[ 'link' ] = $this->get_translated_permalink_from_integration(
-					$original_fb_product->get_permalink(),
 					$language_code
 				);
 			}
@@ -823,68 +735,6 @@ class LanguageFeedData {
 		return (string) ( round( $price / 100.0, 2 ) ) . ' ' . $currency;
 	}
 
-	/**
-	 * Generate CSV file for a specific language (simplified)
-	 *
-	 * @param string $language_code Language code (e.g., 'es_ES', 'fr_FR')
-	 * @param int $limit Maximum number of products to include
-	 * @param int $offset Offset for pagination
-	 * @return array Array with 'success', 'data', 'filename', and 'count' keys
-	 */
-	public function generate_language_csv( string $language_code, int $limit = 100, int $offset = 0 ): array {
-		if ( ! $this->has_active_localization_plugin() ) {
-			return [
-				'success' => false,
-				'error' => 'No active localization plugin found.',
-				'data' => '',
-				'filename' => '',
-				'count' => 0,
-			];
-		}
-
-		$csv_data = $this->get_language_csv_data( $language_code, $limit, $offset );
-
-		if ( empty( $csv_data['data'] ) ) {
-			return [
-				'success' => false,
-				'error' => "No translated products found for language: {$language_code}",
-				'data' => '',
-				'filename' => '',
-				'count' => 0,
-			];
-		}
-
-		$csv_content = $this->convert_to_csv_string( $csv_data );
-		$timestamp = date( 'Y-m-d_H-i-s' );
-		$facebook_override = self::convert_to_facebook_language_code( $language_code );
-		$filename = "facebook_language_feed_{$facebook_override}_{$timestamp}.csv";
-
-		return [
-			'success' => true,
-			'data' => $csv_content,
-			'filename' => $filename,
-			'count' => count( $csv_data['data'] ),
-			'language_code' => $language_code,
-		];
-	}
-
-	/**
-	 * Generate CSV files for all available languages
-	 *
-	 * @param int $limit Maximum number of products per language
-	 * @param int $offset Offset for pagination
-	 * @return array Array of results for each language
-	 */
-	public function generate_all_language_csvs( int $limit = 100, int $offset = 0 ): array {
-		$languages = $this->get_available_languages();
-		$results = [];
-
-		foreach ( $languages as $language_code ) {
-			$results[ $language_code ] = $this->generate_language_csv( $language_code, $limit, $offset );
-		}
-
-		return $results;
-	}
 
 	/**
 	 * Get translated permalink using the appropriate integration

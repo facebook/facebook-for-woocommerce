@@ -24,8 +24,8 @@ use WooCommerce\Facebook\Feed\AbstractFeedFileWriter;
  */
 class LanguageOverrideFeedWriter extends AbstractFeedFileWriter {
 
-	/** @var string File name template for language override feeds */
-	const FILE_NAME = 'language_override_%s_%s.csv';
+	// Use the trait for consistent file naming
+	use LanguageFeedManagementTrait;
 
 	/** @var string Current language code for this writer instance */
 	private string $language_code;
@@ -109,10 +109,8 @@ class LanguageOverrideFeedWriter extends AbstractFeedFileWriter {
 	 * @return string
 	 */
 	public function get_file_name(): string {
-		$fb_language_code = \WooCommerce\Facebook\Locale::convert_to_facebook_language_code( $this->language_code );
-		// Use the base language override feed secret instead of language-specific one
-		$feed_secret = facebook_for_woocommerce()->feed_manager->get_feed_secret( \WooCommerce\Facebook\Feed\FeedManager::LANGUAGE_OVERRIDE );
-		$file_name = sprintf( self::FILE_NAME, $fb_language_code, $feed_secret );
+		// Use consistent naming from the trait
+		$file_name = self::generate_language_feed_filename( $this->language_code, false, false );
 
 		/**
 		 * Filters the language override feed file name.
@@ -133,10 +131,8 @@ class LanguageOverrideFeedWriter extends AbstractFeedFileWriter {
 	 * @return string
 	 */
 	public function get_temp_file_name(): string {
-		$fb_language_code = \WooCommerce\Facebook\Locale::convert_to_facebook_language_code( $this->language_code );
-		// Use the base language override feed secret instead of language-specific one
-		$feed_secret = facebook_for_woocommerce()->feed_manager->get_feed_secret( \WooCommerce\Facebook\Feed\FeedManager::LANGUAGE_OVERRIDE );
-		$file_name = sprintf( self::FILE_NAME, 'temp_' . $fb_language_code, wp_hash( $feed_secret ) );
+		// Use consistent naming from the trait for temp files
+		$file_name = self::generate_language_feed_filename( $this->language_code, false, true );
 
 		/**
 		 * Filters the language override temporary feed file name.

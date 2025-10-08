@@ -212,7 +212,7 @@ class WC_Facebookcommerce extends WooCommerce\Facebook\Framework\Plugin {
 			$this->checkout                         = new WooCommerce\Facebook\Checkout();
 			$this->product_feed                     = new WooCommerce\Facebook\Products\Feed();
 			// Initialize language override feed - will handle missing plugins gracefully
-			$this->language_override_feed           = $this->init_language_override_feed();
+			$this->language_override_feed           = new WooCommerce\Facebook\Feed\Localization\LanguageOverrideFeed();
 			$this->products_stock_handler           = new WooCommerce\Facebook\Products\Stock();
 			$this->products_sync_handler            = new WooCommerce\Facebook\Products\Sync();
 			$this->sync_background_handler          = new WooCommerce\Facebook\Products\Sync\Background();
@@ -424,7 +424,7 @@ class WC_Facebookcommerce extends WooCommerce\Facebook\Framework\Plugin {
 			}
 
 			// Re-initialize the language override feed
-			$this->language_override_feed = $this->init_language_override_feed();
+			$this->language_override_feed = new WooCommerce\Facebook\Feed\Localization\LanguageOverrideFeed();
 
 			$this->log(
 				"Localization plugin change detected: {$plugin}. Language override feed re-initialized.",
@@ -734,26 +734,6 @@ class WC_Facebookcommerce extends WooCommerce\Facebook\Framework\Plugin {
 	**/
 	public function get_asset_build_dir_url() {
 		return $this->get_plugin_url() . '/assets/build';
-	}
-
-	/**
-	 * Initialize the language override feed with graceful error handling.
-	 *
-	 * @since 3.6.0
-	 * @return WooCommerce\Facebook\Feed\Localization\LanguageOverrideFeed|null
-	 */
-	private function init_language_override_feed() {
-		try {
-			return new WooCommerce\Facebook\Feed\Localization\LanguageOverrideFeed();
-		} catch ( \Exception $e ) {
-			// Log the error but don't throw - this allows the plugin to continue functioning
-			$this->log(
-				'Language override feed could not be initialized: ' . $e->getMessage(),
-				'language-override-feed',
-				'warning'
-			);
-			return null;
-		}
 	}
 
 

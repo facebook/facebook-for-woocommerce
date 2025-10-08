@@ -22,7 +22,6 @@ class FeedManager {
 	const RATINGS_AND_REVIEWS = 'ratings_and_reviews';
 	const SHIPPING_PROFILES   = 'shipping_profiles';
 	const NAVIGATION_MENU     = 'navigation_menu';
-	const LANGUAGE_OVERRIDE   = 'language_override';
 
 	/**
 	 * The map of feed types to their instances.
@@ -63,8 +62,6 @@ class FeedManager {
 				return new ShippingProfilesFeed();
 			case self::NAVIGATION_MENU:
 				return new NavigationMenuFeed();
-			case self::LANGUAGE_OVERRIDE:
-				return new Localization\LanguageOverrideFeed();
 			default:
 				throw new \InvalidArgumentException( "Invalid feed type {$data_stream_name}" );
 		}
@@ -77,7 +74,7 @@ class FeedManager {
 	 * @since 3.5.0
 	 */
 	public static function get_active_feed_types(): array {
-		return array( self::PROMOTIONS, self::RATINGS_AND_REVIEWS, self::SHIPPING_PROFILES, self::NAVIGATION_MENU, self::LANGUAGE_OVERRIDE );
+		return array( self::PROMOTIONS, self::RATINGS_AND_REVIEWS, self::SHIPPING_PROFILES, self::NAVIGATION_MENU );
 	}
 
 	/**
@@ -95,7 +92,6 @@ class FeedManager {
 		}
 		return $this->feed_instances[ $feed_type ];
 	}
-
 	/**
 	 * Run all feed uploads.
 	 *
@@ -109,44 +105,7 @@ class FeedManager {
 	}
 
 	/**
-	 * Upload language override feeds to Facebook
-	 *
-	 * @return void
-	 * @since 3.6.0
-	 */
-	public function upload_language_override_feeds(): void {
-		// Prevent double registration by checking if upload is already in progress
-		$upload_lock_key = 'wc_facebook_language_feed_upload_in_progress';
-
-		if ( get_transient( $upload_lock_key ) ) {
-			error_log( 'Language override feed upload skipped: Already in progress.' );
-			return;
-		}
-
-		// Set lock for 15 minutes (upload can take time)
-		set_transient( $upload_lock_key, true, 15 * MINUTE_IN_SECONDS );
-
-		try {
-			// Use the new modular language override feed class
-			$language_feed = facebook_for_woocommerce()->get_language_override_feed();
-
-			if ( ! $language_feed ) {
-				error_log( 'Language override feed upload skipped: Feed instance not available.' );
-				return;
-			}
-
-			// Generate the feed files first
-			$language_feed->regenerate_feed();
-
-			// Upload will be triggered automatically via the feed generation completion hook
-		} finally {
-			// Always clear the lock when done
-			delete_transient( $upload_lock_key );
-		}
-	}
-
-	/**
-	 * Get the feed instance for the given feed type.
+	 * Get the feed secret for the given feed type.
 	 *
 	 * @param string $feed_type the specific feed in question.
 	 *

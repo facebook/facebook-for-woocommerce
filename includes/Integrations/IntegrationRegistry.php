@@ -136,6 +136,41 @@ class IntegrationRegistry {
 	}
 
 	/**
+	 * Check if any localization plugin is active and properly configured
+	 *
+	 * @return bool True if at least one localization plugin is available
+	 */
+	public static function has_active_localization_plugin(): bool {
+		$integrations = self::get_all_localization_integrations();
+
+		foreach ( $integrations as $integration ) {
+			if ( $integration->is_available() ) {
+				return true;
+			}
+		}
+
+		return false;
+	}
+
+	/**
+	 * Get active localization plugin names
+	 *
+	 * @return array Array of active plugin names
+	 */
+	public static function get_active_localization_plugins(): array {
+		$active_plugins = [];
+		$integrations = self::get_all_localization_integrations();
+
+		foreach ( $integrations as $integration ) {
+			if ( $integration->is_plugin_active() ) {
+				$active_plugins[] = $integration->get_plugin_name();
+			}
+		}
+
+		return $active_plugins;
+	}
+
+	/**
 	 * Clear all cached integration instances
 	 *
 	 * Useful for testing or when integration states might have changed

@@ -231,8 +231,8 @@ trait LanguageFeedManagementTrait {
 			$override_value = \WooCommerce\Facebook\Locale::convert_to_facebook_override_value( $fb_language_code );
 
 			$feed_data = [
-				'name' => sprintf( '%s Language Override Feed (%s)', get_bloginfo( 'name' ), strtoupper( $fb_language_code ) ),
-				'file_name' => sprintf( 'language_override_%s.csv', $fb_language_code ),
+				'name' => self::generate_language_feed_name( $language_code ),
+				'file_name' => self::generate_language_feed_filename( $language_code, true ), // For Facebook API
 				'override_type' => 'language',
 				'override_value' => $override_value,
 			];
@@ -261,6 +261,16 @@ trait LanguageFeedManagementTrait {
 	}
 
 	/**
+	 * Convert locale code to Facebook's supported language override value
+	 *
+	 * @param string $locale_code Locale code from localization plugin (e.g., 'es_ES', 'fr_FR')
+	 * @return string Facebook-supported language override value (e.g., 'es_XX', 'fr_XX')
+	 */
+	public static function convert_to_facebook_language_code( string $locale_code ): string {
+		return \WooCommerce\Facebook\Locale::convert_to_facebook_language_code( $locale_code );
+	}
+
+	/**
 	 * Get the feed secret.
 	 * Uses the same secret as the main product feed for consistency.
 	 *
@@ -269,5 +279,45 @@ trait LanguageFeedManagementTrait {
 	 */
 	protected function get_feed_secret(): string {
 		return \WooCommerce\Facebook\Products\Feed::get_feed_secret();
+	}
+
+	/**
+	 * Generate a consistent file name for language override feeds.
+	 * This provides a single source of truth for file naming across all language feed operations.
+	 *
+	 * @param string $language_code Language code (e.g., 'es_ES', 'fr_FR')
+	 * @param bool $for_facebook_api Whether this file name is for Facebook API feed creation (uses timestamp)
+	 * @param bool $is_temp_file Whether this is for a temporary file
+	 * @return string File name
+	 * @since 3.6.0
+	 */
+	public static function generate_language_feed_filename( string $language_code, bool $for_facebook_api = false, bool $is_temp_file = false ): string {
+		$fb_language_code = \WooCommerce\Facebook\Locale::convert_to_facebook_language_code( $language_code );
+
+		if ( $for_facebook_api ) {
+			// For Facebook API feed creation - use timestamp for uniqueness
+			$timestamp = date( 'Y-m-d_H-i-s' );
+			return "facebook_language_feed_{$fb_language_code}_{$timestamp}.csv";
+		} else {
+			// For local file storage - use feed secret for consistency with other feeds
+			$feed_secret = \WooCommerce\Facebook\Products\Feed::get_feed_secret();
+			$prefix = $is_temp_file ? 'temp_' : '';
+			$hash_suffix = $is_temp_file ? wp_hash( $feed_secret ) : $feed_secret;
+
+			return "facebook_language_feed_{$prefix}{$fb_language_code}_{$hash_suffix}.csv";
+		}
+	}
+
+	/**
+	 * Generate a consistent feed name for Facebook API feed creation.
+	 * This provides a single source of truth for feed names in Facebook's catalog.
+	 *
+	 * @param string $language_code Language code (e.g., 'es_ES', 'fr_FR')
+	 * @return string Feed name for Facebook API
+	 * @since 3.6.0
+	 */
+	public static function generate_language_feed_name( string $language_code ): string {
+		$fb_language_code = \WooCommerce\Facebook\Locale::convert_to_facebook_language_code( $language_code );
+		return sprintf( '%s Language Override Feed (%s)', get_bloginfo( 'name' ), strtoupper( $fb_language_code ) );
 	}
 }
