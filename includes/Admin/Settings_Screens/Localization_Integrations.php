@@ -704,7 +704,7 @@ class Localization_Integrations extends Abstract_Settings_Screen {
 			}
 
 			// Get the generated file path
-			$file_path = $feed_writer->get_file_path( $language_code );
+			$file_path = $feed_writer->get_file_path();
 
 			if ( ! file_exists( $file_path ) ) {
 				wp_die(

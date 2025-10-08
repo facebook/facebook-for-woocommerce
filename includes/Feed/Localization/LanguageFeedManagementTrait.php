@@ -55,61 +55,6 @@ trait LanguageFeedManagementTrait {
 	}
 
 	/**
-	 * Get stored language feed ID.
-	 *
-	 * @param string $language_code Language code
-	 * @return string|null Feed ID or null if not found
-	 * @since 3.6.0
-	 */
-	public function get_stored_language_feed_id( string $language_code ): ?string {
-		$stored_feeds = get_option( 'wc_facebook_language_feed_ids', [] );
-		return $stored_feeds[ $language_code ] ?? null;
-	}
-
-	/**
-	 * Check the upload status of language override feeds.
-	 *
-	 * @return array Status information for all language feeds
-	 * @since 3.6.0
-	 */
-	public function get_upload_status(): array {
-		if ( ! isset( $this->language_feed_data ) ) {
-			return [];
-		}
-
-		$languages = $this->language_feed_data->get_available_languages();
-		$status = [];
-
-		foreach ( $languages as $language_code ) {
-			$feed_id = $this->get_stored_language_feed_id( $language_code );
-
-			if ( $feed_id ) {
-				try {
-					$response = $this->get_api()->read_feed( $feed_id );
-					$status[ $language_code ] = [
-						'feed_id' => $feed_id,
-						'status'  => 'active',
-						'data'    => $response->response_data ?? [],
-					];
-				} catch ( \Exception $exception ) {
-					$status[ $language_code ] = [
-						'feed_id' => $feed_id,
-						'status'  => 'error',
-						'error'   => $exception->getMessage(),
-					];
-				}
-			} else {
-				$status[ $language_code ] = [
-					'feed_id' => null,
-					'status'  => 'not_created',
-				];
-			}
-		}
-
-		return $status;
-	}
-
-	/**
 	 * Retrieves or creates a language override feed ID.
 	 *
 	 * @param string $language_code Language code
@@ -260,15 +205,6 @@ trait LanguageFeedManagementTrait {
 		return '';
 	}
 
-	/**
-	 * Convert locale code to Facebook's supported language override value
-	 *
-	 * @param string $locale_code Locale code from localization plugin (e.g., 'es_ES', 'fr_FR')
-	 * @return string Facebook-supported language override value (e.g., 'es_XX', 'fr_XX')
-	 */
-	public static function convert_to_facebook_language_code( string $locale_code ): string {
-		return \WooCommerce\Facebook\Locale::convert_to_facebook_language_code( $locale_code );
-	}
 
 	/**
 	 * Get the feed secret.

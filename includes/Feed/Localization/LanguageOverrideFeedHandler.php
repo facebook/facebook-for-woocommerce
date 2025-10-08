@@ -31,6 +31,9 @@ class LanguageOverrideFeedHandler {
 	/** @var \WooCommerce\Facebook\Feed\Localization\LanguageFeedData */
 	private $language_feed_data;
 
+	/** @var \WooCommerce\Facebook\Feed\Localization\LanguageOverrideFeedWriter */
+	private $feed_writer;
+
 	/**
 	 * Constructor
 	 *
@@ -44,25 +47,18 @@ class LanguageOverrideFeedHandler {
 
 	/**
 	 * Writes the language override feed file for a specific language.
-	 * This mirrors WC_Facebook_Product_Feed::write_product_feed_file.
+	 * Creates a language-specific writer instance and uses the parent's orchestration.
 	 *
 	 * @since 3.6.0
 	 *
 	 * @param string $language_code Language code
 	 * @return bool
 	 */
-	public function write_language_feed_file( string $language_code ) {
-		$temp_feed_file = null;
-		$temp_file_path = '';
-		$final_file_path = '';
-
+	public function write_language_feed_file( string $language_code ): bool {
 		try {
 			Logger::log(
 				'Starting write_language_feed_file',
-				array(
-					'language_code' => $language_code,
-					'step' => 'start',
-				),
+				array( 'language_code' => $language_code ),
 				array(
 					'should_send_log_to_meta'        => false,
 					'should_save_log_in_woocommerce' => true,
@@ -70,22 +66,48 @@ class LanguageOverrideFeedHandler {
 				)
 			);
 
-			// Get paths for debugging
-			$temp_file_path = $this->feed_writer->get_temp_file_path( $language_code );
-			$final_file_path = $this->feed_writer->get_file_path( $language_code );
-			$directory = $this->feed_writer->get_file_directory();
+			// Get language feed data
+			$csv_result = $this->language_feed_data->get_language_csv_data( $language_code, 5000, 0 );
+
+			if ( empty( $csv_result['data'] ) ) {
+				Logger::log(
+					'No data available for language',
+					array( 'language_code' => $language_code ),
+					array(
+						'should_send_log_to_meta'        => false,
+						'should_save_log_in_woocommerce' => true,
+						'woocommerce_log_level'          => \WC_Log_Levels::INFO,
+					)
+				);
+				// Still create an empty file with headers
+				$csv_result = array(
+					'data' => array(),
+					'columns' => array( 'id', 'override' )
+				);
+			}
+
+			$columns = $csv_result['columns'];
+			$header_row = $this->language_feed_data->get_csv_header_for_columns( $columns );
+
+			// Create a language-specific writer instance
+			$language_writer = new LanguageOverrideFeedWriter( $language_code, $header_row );
+
+			// Prepare data in the format expected by the writer
+			$data = array();
+			foreach ( $csv_result['data'] as $row_data ) {
+				$row = array();
+				foreach ( $columns as $column ) {
+					$row[] = $row_data[ $column ] ?? '';
+				}
+				$data[] = $row;
+			}
+
+			// Use the writer's write_feed_file method (from AbstractFeedFileWriter)
+			$language_writer->write_feed_file( $data );
 
 			Logger::log(
-				'File paths determined',
-				array(
-					'language_code' => $language_code,
-					'temp_file_path' => $temp_file_path,
-					'final_file_path' => $final_file_path,
-					'directory' => $directory,
-					'directory_exists' => is_dir( $directory ),
-					'directory_writable' => is_writable( $directory ),
-					'step' => 'paths_determined',
-				),
+				'Language feed file written successfully',
+				array( 'language_code' => $language_code ),
 				array(
 					'should_send_log_to_meta'        => false,
 					'should_save_log_in_woocommerce' => true,
@@ -93,119 +115,7 @@ class LanguageOverrideFeedHandler {
 				)
 			);
 
-			// Step 1: Prepare the temporary empty feed file with header row.
-			Logger::log(
-				'Step 1: Preparing temporary feed file',
-				array(
-					'language_code' => $language_code,
-					'step' => 'prepare_temp_file_start',
-				),
-				array(
-					'should_send_log_to_meta'        => false,
-					'should_save_log_in_woocommerce' => true,
-					'woocommerce_log_level'          => \WC_Log_Levels::DEBUG,
-				)
-			);
-
-			$temp_feed_file = $this->prepare_temporary_feed_file( $language_code );
-
-			Logger::log(
-				'Step 1 completed: Temporary feed file prepared',
-				array(
-					'language_code' => $language_code,
-					'temp_file_exists' => file_exists( $temp_file_path ),
-					'temp_file_size' => file_exists( $temp_file_path ) ? filesize( $temp_file_path ) : 'file not found',
-					'temp_file_resource_valid' => is_resource( $temp_feed_file ),
-					'step' => 'prepare_temp_file_complete',
-				),
-				array(
-					'should_send_log_to_meta'        => false,
-					'should_save_log_in_woocommerce' => true,
-					'woocommerce_log_level'          => \WC_Log_Levels::DEBUG,
-				)
-			);
-
-			// Step 2: Write language feed data into the temporary feed file.
-			Logger::log(
-				'Step 2: Writing data to temporary feed file',
-				array(
-					'language_code' => $language_code,
-					'step' => 'write_data_start',
-				),
-				array(
-					'should_send_log_to_meta'        => false,
-					'should_save_log_in_woocommerce' => true,
-					'woocommerce_log_level'          => \WC_Log_Levels::DEBUG,
-				)
-			);
-
-			$this->write_language_feed_to_temp_file( $language_code, $temp_feed_file );
-
-			Logger::log(
-				'Step 2 completed: Data written to temporary feed file',
-				array(
-					'language_code' => $language_code,
-					'temp_file_exists_after_write' => file_exists( $temp_file_path ),
-					'temp_file_size_after_write' => file_exists( $temp_file_path ) ? filesize( $temp_file_path ) : 'file not found',
-					'step' => 'write_data_complete',
-				),
-				array(
-					'should_send_log_to_meta'        => false,
-					'should_save_log_in_woocommerce' => true,
-					'woocommerce_log_level'          => \WC_Log_Levels::DEBUG,
-				)
-			);
-
-			// Step 3: Rename temporary feed file to final feed file.
-			Logger::log(
-				'Step 3: Renaming temporary file to final file',
-				array(
-					'language_code' => $language_code,
-					'temp_file_exists_before_rename' => file_exists( $temp_file_path ),
-					'final_file_exists_before_rename' => file_exists( $final_file_path ),
-					'step' => 'rename_start',
-				),
-				array(
-					'should_send_log_to_meta'        => false,
-					'should_save_log_in_woocommerce' => true,
-					'woocommerce_log_level'          => \WC_Log_Levels::DEBUG,
-				)
-			);
-
-			$this->rename_temporary_feed_file_to_final_feed_file( $language_code );
-
-			Logger::log(
-				'Step 3 completed: File renamed successfully',
-				array(
-					'language_code' => $language_code,
-					'temp_file_exists_after_rename' => file_exists( $temp_file_path ),
-					'final_file_exists_after_rename' => file_exists( $final_file_path ),
-					'final_file_size' => file_exists( $final_file_path ) ? filesize( $final_file_path ) : 'file not found',
-					'step' => 'rename_complete',
-				),
-				array(
-					'should_send_log_to_meta'        => false,
-					'should_save_log_in_woocommerce' => true,
-					'woocommerce_log_level'          => \WC_Log_Levels::DEBUG,
-				)
-			);
-
-			$written = true;
-
-			Logger::log(
-				'write_language_feed_file completed successfully',
-				array(
-					'language_code' => $language_code,
-					'final_file_exists' => file_exists( $final_file_path ),
-					'final_file_size' => file_exists( $final_file_path ) ? filesize( $final_file_path ) : 'file not found',
-					'step' => 'complete_success',
-				),
-				array(
-					'should_send_log_to_meta'        => false,
-					'should_save_log_in_woocommerce' => true,
-					'woocommerce_log_level'          => \WC_Log_Levels::DEBUG,
-				)
-			);
+			return true;
 
 		} catch ( \Exception $e ) {
 			Logger::log(
@@ -213,12 +123,6 @@ class LanguageOverrideFeedHandler {
 				array(
 					'language_code' => $language_code,
 					'exception_message' => $e->getMessage(),
-					'exception_file' => $e->getFile(),
-					'exception_line' => $e->getLine(),
-					'exception_trace' => $e->getTraceAsString(),
-					'temp_file_exists' => file_exists( $temp_file_path ),
-					'final_file_exists' => file_exists( $final_file_path ),
-					'step' => 'exception_caught',
 				),
 				array(
 					'should_send_log_to_meta'        => true,
@@ -227,286 +131,10 @@ class LanguageOverrideFeedHandler {
 				),
 				$e
 			);
-
-			$written = false;
-
-			// close the temporary file
-			if ( ! empty( $temp_feed_file ) && is_resource( $temp_feed_file ) ) {
-				fclose( $temp_feed_file );
-			}
-
-			// delete the temporary file
-			if ( ! empty( $temp_file_path ) && file_exists( $temp_file_path ) ) {
-				// phpcs:ignore WordPress.WP.AlternativeFunctions.unlink_unlink
-				unlink( $temp_file_path );
-			}
-		}
-
-		return $written;
-	}
-
-	/**
-	 * Prepare a fresh empty temporary feed file with the header row for a specific language.
-	 * This mirrors WC_Facebook_Product_Feed::prepare_temporary_feed_file.
-	 *
-	 * @since 3.6.0
-	 *
-	 * @param string $language_code Language code
-	 * @throws PluginException We can't open the file or the file is not writable.
-	 * @return resource A file pointer resource.
-	 */
-	public function prepare_temporary_feed_file( string $language_code ) {
-		$temp_file_path = $this->feed_writer->get_temp_file_path( $language_code );
-		$temp_feed_file = @fopen( $temp_file_path, 'w' );
-
-		// check if we can open the temporary feed file
-		if ( false === $temp_feed_file || ! is_writable( $temp_file_path ) ) {
-			throw new PluginException( __( 'Could not open the language override temporary feed file for writing', 'facebook-for-woocommerce' ), 500 );
-		}
-
-		$file_path = $this->feed_writer->get_file_path( $language_code );
-
-		// check if we will be able to write to the final feed file
-		if ( file_exists( $file_path ) && ! is_writable( $file_path ) ) {
-			throw new PluginException( __( 'Could not open the language override feed file for writing', 'facebook-for-woocommerce' ), 500 );
-		}
-
-		// Get dynamic columns for this language using LanguageFeedData
-		// Use a larger sample size to ensure we capture all possible columns (same as download CSV)
-		$csv_result = $this->language_feed_data->get_language_csv_data( $language_code, 1000, 0 );
-		$columns = $csv_result['columns'] ?? ['id', 'override'];
-
-		// Generate header using LanguageFeedData
-		$header_row = $this->language_feed_data->get_csv_header_for_columns( $columns );
-
-		// Write header with field descriptions (each on separate line)
-		fwrite( $temp_feed_file, $header_row . PHP_EOL );
-
-		// Write column headers
-		fwrite( $temp_feed_file, implode( ',', $columns ) . PHP_EOL );
-
-		return $temp_feed_file;
-	}
-
-	/**
-	 * Write language feed data into a file.
-	 * This mirrors WC_Facebook_Product_Feed::write_products_feed_to_temp_file.
-	 * Uses the same CSV generation logic as the downloadable CSV method to avoid redundancy.
-	 *
-	 * @since 3.6.0
-	 *
-	 * @param string   $language_code Language code
-	 * @param resource $temp_feed_file File resource
-	 * @return void
-	 */
-	public function write_language_feed_to_temp_file( string $language_code, $temp_feed_file ) {
-		$temp_file_path = $this->feed_writer->get_temp_file_path( $language_code );
-		$rows_written = 0;
-
-		try {
-			Logger::log(
-				'Starting to write language feed data to temp file',
-				array(
-					'language_code' => $language_code,
-					'temp_file_path' => $temp_file_path,
-					'file_resource_valid' => is_resource( $temp_feed_file ),
-				),
-				array(
-					'should_send_log_to_meta'        => false,
-					'should_save_log_in_woocommerce' => true,
-					'woocommerce_log_level'          => \WC_Log_Levels::DEBUG,
-				)
-			);
-
-			// Use the same CSV generation logic as downloadable CSV (avoid redundancy)
-			$csv_result = $this->language_feed_data->get_language_csv_data( $language_code, 5000, 0 );
-
-			Logger::log(
-				'Retrieved CSV data from LanguageFeedData',
-				array(
-					'language_code' => $language_code,
-					'data_count' => count( $csv_result['data'] ?? [] ),
-					'columns' => $csv_result['columns'] ?? [],
-				),
-				array(
-					'should_send_log_to_meta'        => false,
-					'should_save_log_in_woocommerce' => true,
-					'woocommerce_log_level'          => \WC_Log_Levels::DEBUG,
-				)
-			);
-
-			if ( empty( $csv_result['data'] ) ) {
-				Logger::log(
-					'No data available for language - writing empty file',
-					array( 'language_code' => $language_code ),
-					array(
-						'should_send_log_to_meta'        => false,
-						'should_save_log_in_woocommerce' => true,
-						'woocommerce_log_level'          => \WC_Log_Levels::INFO,
-					)
-				);
-				return; // No data for this language
-			}
-
-			$columns = $csv_result['columns'];
-
-			// Process and write each data row using LanguageFeedData's formatting
-			// This uses the same logic as generate_downloadable_language_csv() to ensure consistency
-			foreach ( $csv_result['data'] as $row_data ) {
-				$row = [];
-				foreach ( $columns as $column ) {
-					$value = $row_data[ $column ] ?? '';
-					$row[] = $value; // LanguageFeedData already formats the values properly
-				}
-
-				if ( fputcsv( $temp_feed_file, $row ) === false ) {
-					throw new PluginException( "Failed to write CSV data row {$rows_written} to temp file.", 500 );
-				}
-				$rows_written++;
-			}
-
-			Logger::log(
-				'Successfully wrote language feed data to temp file',
-				array(
-					'language_code' => $language_code,
-					'temp_file_path' => $temp_file_path,
-					'rows_written' => $rows_written,
-					'file_size' => file_exists( $temp_file_path ) ? filesize( $temp_file_path ) : 'file not found',
-				),
-				array(
-					'should_send_log_to_meta'        => false,
-					'should_save_log_in_woocommerce' => true,
-					'woocommerce_log_level'          => \WC_Log_Levels::DEBUG,
-				)
-			);
-
-		} catch ( \Exception $exception ) {
-			Logger::log(
-				'Error while writing language override temporary feed file.',
-				array(
-					'event'      => 'language_feed_upload',
-					'event_type' => 'write_language_temp_feed_file',
-					'extra_data' => [
-						'language_code'  => $language_code,
-						'temp_file_path' => $temp_file_path,
-						'rows_written' => $rows_written,
-						'exception_message' => $exception->getMessage(),
-						'exception_trace' => $exception->getTraceAsString(),
-					],
-				),
-				array(
-					'should_send_log_to_meta'        => true,
-					'should_save_log_in_woocommerce' => true,
-					'woocommerce_log_level'          => \WC_Log_Levels::ERROR,
-				),
-				$exception,
-			);
-			throw $exception;
-		} finally {
-			if ( $temp_feed_file && is_resource( $temp_feed_file ) ) {
-				fclose( $temp_feed_file );
-
-				Logger::log(
-					'Closed temp file handle',
-					array(
-						'language_code' => $language_code,
-						'temp_file_path' => $temp_file_path,
-						'final_file_exists' => file_exists( $temp_file_path ),
-						'final_file_size' => file_exists( $temp_file_path ) ? filesize( $temp_file_path ) : 'file not found',
-					),
-					array(
-						'should_send_log_to_meta'        => false,
-						'should_save_log_in_woocommerce' => true,
-						'woocommerce_log_level'          => \WC_Log_Levels::DEBUG,
-					)
-				);
-			}
+			return false;
 		}
 	}
 
-	/**
-	 * Rename temporary feed file into the final feed file for a specific language.
-	 * This mirrors WC_Facebook_Product_Feed::rename_temporary_feed_file_to_final_feed_file.
-	 *
-	 * @since 3.6.0
-	 *
-	 * @param string $language_code Language code
-	 * @return void
-	 * @throws PluginException If we can't rename the temporary feed file.
-	 */
-	public function rename_temporary_feed_file_to_final_feed_file( string $language_code ) {
-		$file_path      = $this->feed_writer->get_file_path( $language_code );
-		$temp_file_path = $this->feed_writer->get_temp_file_path( $language_code );
-
-		Logger::log(
-			'Starting file rename process',
-			array(
-				'language_code' => $language_code,
-				'temp_file_path' => $temp_file_path,
-				'final_file_path' => $file_path,
-				'temp_file_exists' => file_exists( $temp_file_path ),
-				'temp_file_size' => file_exists( $temp_file_path ) ? filesize( $temp_file_path ) : 'file not found',
-				'final_file_exists_before' => file_exists( $file_path ),
-			),
-			array(
-				'should_send_log_to_meta'        => false,
-				'should_save_log_in_woocommerce' => true,
-				'woocommerce_log_level'          => \WC_Log_Levels::DEBUG,
-			)
-		);
-
-		if ( ! empty( $temp_file_path ) && ! empty( $file_path ) ) {
-			// Check if temp file exists before attempting rename
-			if ( ! file_exists( $temp_file_path ) ) {
-				throw new PluginException( "Temporary file does not exist: {$temp_file_path}", 500 );
-			}
-
-			// phpcs:ignore WordPress.WP.AlternativeFunctions.rename_rename
-			$renamed = rename( $temp_file_path, $file_path );
-
-			Logger::log(
-				'File rename attempted',
-				array(
-					'language_code' => $language_code,
-					'rename_success' => $renamed,
-					'temp_file_exists_after' => file_exists( $temp_file_path ),
-					'final_file_exists_after' => file_exists( $file_path ),
-					'final_file_size' => file_exists( $file_path ) ? filesize( $file_path ) : 'file not found',
-				),
-				array(
-					'should_send_log_to_meta'        => false,
-					'should_save_log_in_woocommerce' => true,
-					'woocommerce_log_level'          => \WC_Log_Levels::DEBUG,
-				)
-			);
-
-			if ( empty( $renamed ) ) {
-				// Get more info about why rename failed
-				$error = error_get_last();
-				throw new PluginException(
-					"Could not rename the language override feed file from {$temp_file_path} to {$file_path}. Last error: " .
-					( $error ? $error['message'] : 'unknown' ),
-					500
-				);
-			}
-		} else {
-			throw new PluginException( "Invalid file paths provided for rename operation", 500 );
-		}
-
-		Logger::log(
-			'File rename completed successfully',
-			array(
-				'language_code' => $language_code,
-				'final_file_exists' => file_exists( $file_path ),
-				'final_file_size' => file_exists( $file_path ) ? filesize( $file_path ) : 'file not found',
-			),
-			array(
-				'should_send_log_to_meta'        => false,
-				'should_save_log_in_woocommerce' => true,
-				'woocommerce_log_level'          => \WC_Log_Levels::DEBUG,
-			)
-		);
-	}
 
 
 

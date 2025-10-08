@@ -17,8 +17,9 @@ use WooCommerce\Facebook\Feed\AbstractFeedFileWriter;
 /**
  * Language Override Feed Writer.
  *
- * Handles file path management and naming conventions for language override feeds.
- * Extends AbstractFeedFileWriter to maintain consistency with the project architecture.
+ * Extends AbstractFeedFileWriter to leverage its file handling methods.
+ * Creates a separate writer instance per language to work with the parent's design.
+ * This approach keeps the benefits of inheritance while working with the language requirement.
  *
  * @since 3.6.0
  */
@@ -27,86 +28,36 @@ class LanguageOverrideFeedWriter extends AbstractFeedFileWriter {
 	// Use the trait for consistent file naming
 	use LanguageFeedManagementTrait;
 
-	/** @var string Current language code for this writer instance */
-	private string $language_code;
+	/** @var string FILE_NAME constant required by parent class */
+	const FILE_NAME = 'facebook_language_feed_%s_%s.csv';
+
+	/** @var string Language code for this writer instance */
+	private $language_code;
 
 	/**
 	 * Constructor.
 	 *
-	 * @param string $language_code Language code for this feed writer
-	 * @param string $header_row The headers for the feed csv
+	 * @param string $language_code Language code for this writer instance
+	 * @param string $header_row CSV header row
 	 * @param string $delimiter Optional. The field delimiter. Default: comma.
 	 * @param string $enclosure Optional. The field enclosure. Default: double quotes.
 	 * @param string $escape_char Optional. The escape character. Default: backslash.
-	 *
 	 * @since 3.6.0
 	 */
 	public function __construct( string $language_code, string $header_row, string $delimiter = ',', string $enclosure = '"', string $escape_char = '\\' ) {
 		$this->language_code = $language_code;
 
-		// Convert language code to Facebook format for feed name
 		$fb_language_code = \WooCommerce\Facebook\Locale::convert_to_facebook_language_code( $language_code );
-		$feed_name = 'language_override_' . $fb_language_code;
+		$feed_name = "language_override_{$fb_language_code}";
 
 		parent::__construct( $feed_name, $header_row, $delimiter, $enclosure, $escape_char );
 	}
 
 	/**
-	 * Gets the language override feed file path for the current language.
-	 *
-	 * @since 3.6.0
-	 *
-	 * @param string $language_code Optional. Language code (for compatibility)
-	 * @return string
-	 */
-	public function get_file_path( string $language_code = '' ): string {
-		// Use the instance language code if none provided
-		if ( empty( $language_code ) ) {
-			$language_code = $this->language_code;
-		}
-
-		// If requesting a different language than this instance, create temp instance
-		if ( $language_code !== $this->language_code ) {
-			// Create minimal header for temp instance
-			$header_row = 'id,override';
-			$temp_writer = new self( $language_code, $header_row );
-			return $temp_writer->get_file_path();
-		}
-
-		return parent::get_file_path();
-	}
-
-	/**
-	 * Gets the language override temporary feed file path for the current language.
-	 *
-	 * @since 3.6.0
-	 *
-	 * @param string $language_code Optional. Language code (for compatibility)
-	 * @return string
-	 */
-	public function get_temp_file_path( string $language_code = '' ): string {
-		// Use the instance language code if none provided
-		if ( empty( $language_code ) ) {
-			$language_code = $this->language_code;
-		}
-
-		// If requesting a different language than this instance, create temp instance
-		if ( $language_code !== $this->language_code ) {
-			// Create minimal header for temp instance
-			$header_row = 'id,override';
-			$temp_writer = new self( $language_code, $header_row );
-			return $temp_writer->get_temp_file_path();
-		}
-
-		return parent::get_temp_file_path();
-	}
-
-	/**
-	 * Gets the language override feed file name for the current language.
-	 *
-	 * @since 3.6.0
+	 * Override the parent's get_file_name method to use the trait's naming convention.
 	 *
 	 * @return string
+	 * @since 3.6.0
 	 */
 	public function get_file_name(): string {
 		// Use consistent naming from the trait
@@ -124,11 +75,10 @@ class LanguageOverrideFeedWriter extends AbstractFeedFileWriter {
 	}
 
 	/**
-	 * Gets the language override temporary feed file name for the current language.
-	 *
-	 * @since 3.6.0
+	 * Override the parent's get_temp_file_name method to use the trait's naming convention.
 	 *
 	 * @return string
+	 * @since 3.6.0
 	 */
 	public function get_temp_file_name(): string {
 		// Use consistent naming from the trait for temp files
@@ -146,16 +96,15 @@ class LanguageOverrideFeedWriter extends AbstractFeedFileWriter {
 	}
 
 	/**
-	 * Write to the temp feed file.
+	 * Implement the parent's abstract write_temp_feed_file method.
+	 * This gets called by the parent's write_feed_file orchestration method.
 	 *
 	 * @param array $data The data to write to the feed file.
 	 * @since 3.6.0
 	 */
 	public function write_temp_feed_file( array $data ): void {
 		$temp_file_path = $this->get_temp_file_path();
-
-		// phpcs:ignore -- use php file i/o functions
-		$temp_feed_file = fopen( $temp_file_path, 'a' );
+		$temp_feed_file = @fopen( $temp_file_path, 'a' );
 
 		if ( ! $temp_feed_file ) {
 			throw new \WooCommerce\Facebook\Framework\Plugin\Exception( "Could not open temp file for writing: {$temp_file_path}", 500 );
@@ -168,16 +117,15 @@ class LanguageOverrideFeedWriter extends AbstractFeedFileWriter {
 				}
 			}
 		} finally {
-			// phpcs:ignore -- use php file i/o functions
 			fclose( $temp_feed_file );
 		}
 	}
 
 	/**
-	 * Get the current language code.
+	 * Get the current language code for this writer instance.
 	 *
-	 * @since 3.6.0
 	 * @return string
+	 * @since 3.6.0
 	 */
 	public function get_language_code(): string {
 		return $this->language_code;

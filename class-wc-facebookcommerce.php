@@ -211,7 +211,6 @@ class WC_Facebookcommerce extends WooCommerce\Facebook\Framework\Plugin {
 			$this->feed_manager                     = new WooCommerce\Facebook\Feed\FeedManager();
 			$this->checkout                         = new WooCommerce\Facebook\Checkout();
 			$this->product_feed                     = new WooCommerce\Facebook\Products\Feed();
-			// Initialize language override feed - will handle missing plugins gracefully
 			$this->language_override_feed           = new WooCommerce\Facebook\Feed\Localization\LanguageOverrideFeed();
 			$this->products_stock_handler           = new WooCommerce\Facebook\Products\Stock();
 			$this->products_sync_handler            = new WooCommerce\Facebook\Products\Sync();
@@ -396,41 +395,6 @@ class WC_Facebookcommerce extends WooCommerce\Facebook\Framework\Plugin {
 		// bail if logging isn't enabled
 		if ( ! $this->get_integration() || ! $this->get_integration()->is_debug_mode_enabled() ) {
 			return;
-		}
-	}
-
-	/**
-	 * Handle localization plugin activation/deactivation events.
-	 *
-	 * Re-initializes the language override feed when localization plugins
-	 * are activated or deactivated to ensure proper functionality.
-	 *
-	 * @since 3.6.0
-	 * @param string $plugin Plugin file path
-	 */
-	public function handle_localization_plugin_change( $plugin ) {
-		// List of localization plugins we care about
-		$localization_plugins = [
-			'polylang/polylang.php',
-			'polylang-pro/polylang.php',
-			'sitepress-multilingual-cms/sitepress.php', // WPML
-		];
-
-		// Check if the activated/deactivated plugin is a localization plugin
-		if ( in_array( $plugin, $localization_plugins, true ) ) {
-			// Clear integration registry cache first
-			if ( class_exists( 'WooCommerce\Facebook\Integrations\IntegrationRegistry' ) ) {
-				\WooCommerce\Facebook\Integrations\IntegrationRegistry::clear_cache();
-			}
-
-			// Re-initialize the language override feed
-			$this->language_override_feed = new WooCommerce\Facebook\Feed\Localization\LanguageOverrideFeed();
-
-			$this->log(
-				"Localization plugin change detected: {$plugin}. Language override feed re-initialized.",
-				'language-override-feed',
-				'info'
-			);
 		}
 	}
 
