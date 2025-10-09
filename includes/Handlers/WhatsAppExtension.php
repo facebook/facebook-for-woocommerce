@@ -64,6 +64,7 @@ class WhatsAppExtension {
 				'app_id'                => self::APP_ID,
 				'app_owner_business_id' => self::TP_BUSINESS_ID,
 				'external_business_id'  => $external_wa_id,
+				'locale' => get_user_locale() ?? self::DEFAULT_LANGUAGE,
 			),
 			self::COMMERCE_HUB_URL . 'whatsapp_utility_integration/splash/'
 		);
@@ -206,7 +207,7 @@ class WhatsAppExtension {
 		$data            = explode( "\n", wp_remote_retrieve_body( $response ) );
 		$response_object = json_decode( $data[0] );
 		if ( is_wp_error( $response ) || 200 !== $status_code ) {
-			$error_message = $response_object->error->error_user_title ?? $response_object->error->message ?? 'Something went wrong. Please try again later!';
+			$error_message = $response_object->detail ?? $response_object->title ?? 'Something went wrong. Please try again later!';
 			wc_get_logger()->info(
 				sprintf(
 				/* translators: %s $order_id %s $error_message */

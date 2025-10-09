@@ -3,7 +3,7 @@ Contributors: facebook
 Tags: meta, facebook, conversions api, catalog sync, ads
 Requires at least: 5.6
 Tested up to: 6.8.1
-Stable tag: 3.5.5
+Stable tag: 3.5.8
 Requires PHP: 7.4
 MySQL: 5.6 or greater
 License: GPLv2 or later
@@ -41,19 +41,17 @@ To suggest technical improvements, you can raise an issue on our [Github reposit
 
 == Changelog ==
 
-= 3.5.7 - 2025-09-02 =
-* Add - DO change: Add route & feed column by @unnivgit in #3580
-* Fix - removing set stable tag to unblock release for now by @immadhavv in #3584
-* Fix - Fixed syncing of excluded product categories and tags info by @vinkmeta in #3582
-* Add - feat: quick edit syncing by @rithikb24 in #3557
-* Add - [WIFI]30/n]Fetch the iframe management url through the Stefi API by @sharunaanandraj in #3569
-* Add - changelog: add referrer url by @chc421 in #3545
-* Fix - Fix sale price higher than fb price by @guansu-meta in #3567
-* Add - [WIFI][26/n]Add Listener and update Whatsapp Settings in DB after onboarding by @sharunaanandraj in #3568
-* Add - [WIFI][25/n]Add scaffolding Iframe Integration in the Whatsapp Tab by @sharunaanandraj in #3566
-* Add - [WIFI][1/n] Add Scaffolding WhatsApp Page under Marketing for WAUM Beta Experience by @sharunaanandraj in #3564
-* Dev - cleanup: remove dead code for product sets sync rollout switch by @devbodaghe in #3560
-* Add - Automatically set last release from release-plugin workflow as latest by @immadhavv in #3552
-* Add - Run unit tests with coverage and compare against threshold by @immadhavv in #3553
+= 3.5.9 - 2025-09-30 =
+* Tweak - Focus admin user check on order creation capabilities by @iodic in #3643
+* Fix - Added code to exclude purchases registered by the admin user by @vahidkay-meta in #3641
+* Add - [WIFI][EZ] Localization Fix on WhatsApp Splash page by @sharunaanandraj in #3642
+* Tweak - Removed get_product_fbid graph api functionality by @vinkmeta in #3624
+* Dev - Plugin availability logging by @rafael-curran in #3637
+* Add - Added complete e2e tests automation framework by @immadhavv in #3634
+* Fix - Fix/issue with set stable tag by @vahidkay-meta in #3636
+* Fix - Removed the new changes by @vahidkay-meta in #3635
+* Tweak - Removed API call to delete products by @vinkmeta in #3623
+* Tweak - Cleanup deprecated product delete functionality by @vinkmeta in #3622
+* Fix - [EZ] Error Message for Customer Events API call by @woo-ardsouza in #3630
 
 [See changelog for all versions](https://raw.githubusercontent.com/facebook/facebook-for-woocommerce/refs/heads/main/changelog.txt).

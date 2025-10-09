@@ -17,8 +17,9 @@ class Request extends ApiRequest {
 	/**
 	 * @param string $facebook_product_catalog_id Facebook Product Catalog ID.
 	 * @param string $facebook_product_retailer_id Facebook Product Retailer ID.
+	 * @param string $fields_string Comma-separated string of fields to request from Facebook API.
 	 */
-	public function __construct( string $facebook_product_catalog_id, string $facebook_product_retailer_id ) {
+	public function __construct( string $facebook_product_catalog_id, string $facebook_product_retailer_id, string $fields_string = 'id,product_group{id}' ) {
 
 		/**
 		 * We use the endpoint with filter to get the product id and group id for new products to check if the product is already synced to Facebook.
@@ -29,7 +30,7 @@ class Request extends ApiRequest {
 		$this->set_params(
 			array(
 				'filter' => '{"retailer_id":{"eq":"' . $facebook_product_retailer_id . '"}}',
-				'fields' => 'id,product_group{id}',
+				'fields' => $fields_string,
 			)
 		);
 	}

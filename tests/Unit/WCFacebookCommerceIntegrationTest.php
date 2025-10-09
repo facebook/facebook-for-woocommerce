@@ -566,38 +566,6 @@ class WCFacebookCommerceIntegrationTest extends \WooCommerce\Facebook\Tests\Abst
 	 *
 	 * @return void
 	 */
-	public function test_on_product_save_existing_simple_product_sync_disabled_updates_the_product() {
-		$product_to_update = WC_Helper_Product::create_simple_product();
-
-		// The idea of the following mock is to overide the delete_product_item.
-		// The test is that the product item is being deleted as when it is marked for do not sync.
-		// The mock below is hit otherwise it would generate a random Mock_Response and throw error
-		$integration_mock = $this->createMock(WC_Facebookcommerce_Integration::class);
-		$integration_mock->method('delete_product_item');
-		$integration_mock->method('is_woo_all_products_enabled')
-						->willReturn(false);
-		$this->integration = $integration_mock;
-
-		$_POST['wc_facebook_sync_mode'] = Admin::SYNC_MODE_SYNC_DISABLED;
-
-		$_POST[ WC_Facebook_Product::FB_REMOVE_FROM_SYNC ] = $product_to_update->get_id();
-
-		$product_to_update->set_stock_status( 'instock' );
-
-		add_post_meta( $product_to_update->get_id(), WC_Facebookcommerce_Integration::FB_PRODUCT_ITEM_ID, 'facebook-product-item-id' );
-		add_post_meta( $product_to_update->get_id(), Products::VISIBILITY_META_KEY, 'no' );
-
-		$this->integration->on_product_save( $product_to_update->get_id() );
-
-		$this->assertEquals( 'facebook-product-item-id', get_post_meta( $product_to_update->get_id(), WC_Facebookcommerce_Integration::FB_PRODUCT_ITEM_ID, true ) );
-		$this->assertEquals( null, get_post_meta( $product_to_update->get_id(), WC_Facebookcommerce_Integration::FB_PRODUCT_GROUP_ID, true ) );
-	}
-
-	/**
-	 * Sunny day test with all the conditions evaluated to true and maximum conditions triggered.
-	 *
-	 * @return void
-	 */
 	public function test_on_product_save_existing_variable_product_sync_enabled_updates_the_product() {
 		$parent           = WC_Helper_Product::create_variation_product();
 		$fb_product       = new WC_Facebook_Product( $parent->get_id() );
@@ -2502,23 +2470,6 @@ class WCFacebookCommerceIntegrationTest extends \WooCommerce\Facebook\Tests\Abst
 	}
 
 	/**
-	 * Tests delete product item calls facebook graph api.
-	 *
-	 * @return void
-	 */
-	public function test_delete_product_item() {
-		$id = 1234567890;
-
-		add_post_meta( $id, WC_Facebookcommerce_Integration::FB_PRODUCT_ITEM_ID, '00998877665544332211' );
-
-		$this->api->expects( $this->once() )
-			->method( 'delete_product_item' )
-			->with( '00998877665544332211' );
-
-		$this->integration->delete_product_item( $id );
-	}
-
-	/**
 	 * Tests filter function.
 	 *
 	 * @return void
@@ -2772,113 +2723,6 @@ class WCFacebookCommerceIntegrationTest extends \WooCommerce\Facebook\Tests\Abst
 		);
 
 		$this->assertEquals( 'yes', get_post_meta( $product->get_id(), Products::VISIBILITY_META_KEY, true ) );
-	}
-
-	/**
-	 * Tests get product facebook id returns post meta value.
-	 *
-	 * @return void
-	 */
-	public function test_get_product_fbid_returns_post_meta_value() {
-		$product = WC_Helper_Product::create_simple_product();
-		$product->add_meta_data( WC_Facebookcommerce_Integration::FB_PRODUCT_GROUP_ID, 'some-facebook-product-group-id' );
-		$product->add_meta_data( WC_Facebookcommerce_Integration::FB_PRODUCT_ITEM_ID, 'some-facebook-product-item-id' );
-		$product->save_meta_data();
-
-		$group_id = $this->integration->get_product_fbid( WC_Facebookcommerce_Integration::FB_PRODUCT_GROUP_ID, $product->get_id() );
-		$item_id  = $this->integration->get_product_fbid( WC_Facebookcommerce_Integration::FB_PRODUCT_ITEM_ID, $product->get_id() );
-
-		$this->assertEquals( 'some-facebook-product-group-id', $group_id );
-		$this->assertEquals( 'some-facebook-product-item-id', $item_id );
-	}
-
-	/**
-	 * Tests get product facebook id calls facebook graph api to get id and updates post meta group id value.
-	 *
-	 * @return void
-	 */
-	public function test_get_product_fbid_calls_facebook_and_sets_post_meta_value_for_group_id() {
-		add_option( WC_Facebookcommerce_Integration::OPTION_PRODUCT_CATALOG_ID, '1122334455' );
-
-		$product        = WC_Helper_Product::create_simple_product();
-		$fb_retailer_id = WC_Facebookcommerce_Utils::get_fb_retailer_id( new WC_Facebook_Product( $product->get_id() ) );
-
-		$this->api->expects( $this->once() )
-			->method( 'get_product_facebook_ids' )
-			->with( '1122334455', $fb_retailer_id )
-			->willReturn( new API\ProductCatalog\Products\Id\Response( '{"id":"product-id","product_group":{"id":"product-group-id"}}' ) );
-
-		$facebook_product_group_id = $this->integration->get_product_fbid( WC_Facebookcommerce_Integration::FB_PRODUCT_GROUP_ID, $product->get_id() );
-
-		$this->assertEquals( 'product-group-id', $facebook_product_group_id );
-		$this->assertEquals( 'product-group-id', get_post_meta( $product->get_id(), WC_Facebookcommerce_Integration::FB_PRODUCT_GROUP_ID, true ) );
-	}
-
-	/**
-	 * Tests get product facebook id calls facebook graph api to get id and updates post meta item id value.
-	 *
-	 * @return void
-	 */
-	public function test_get_product_fbid_calls_facebook_and_sets_post_meta_value_for_item_id() {
-		add_option( WC_Facebookcommerce_Integration::OPTION_PRODUCT_CATALOG_ID, '1122334455' );
-
-		$product        = WC_Helper_Product::create_simple_product();
-		$fb_retailer_id = WC_Facebookcommerce_Utils::get_fb_retailer_id( new WC_Facebook_Product( $product->get_id() ) );
-
-		$this->api->expects( $this->once() )
-			->method( 'get_product_facebook_ids' )
-			->with( '1122334455', $fb_retailer_id )
-			->willReturn( new API\ProductCatalog\Products\Id\Response( '{"id":"product-id","product_group":{"id":"product-group-id"}}' ) );
-
-		$facebook_product_id = $this->integration->get_product_fbid( WC_Facebookcommerce_Integration::FB_PRODUCT_ITEM_ID, $product->get_id() );
-
-		$this->assertEquals( 'product-id', $facebook_product_id );
-		$this->assertEquals( 'product-id', get_post_meta( $product->get_id(), WC_Facebookcommerce_Integration::FB_PRODUCT_ITEM_ID, true ) );
-	}
-
-	/**
-	 * Tests get product facebook id calls facebook graph api with the endpoint with filter to get id and updates
-	 * post meta item id value.
-	 *
-	 * @return void
-	 */
-	public function test_get_product_fbid_calls_facebook_and_sets_post_meta_value_for_item_id_with_filter_endpoint() {
-		add_option( WC_Facebookcommerce_Integration::OPTION_PRODUCT_CATALOG_ID, '1122334455' );
-
-		$product        = WC_Helper_Product::create_simple_product();
-		$fb_retailer_id = WC_Facebookcommerce_Utils::get_fb_retailer_id( new WC_Facebook_Product( $product->get_id() ) );
-
-		$this->api->expects( $this->once() )
-			->method( 'get_product_facebook_ids' )
-			->with( '1122334455', $fb_retailer_id )
-			->willReturn( new API\ProductCatalog\Products\Id\Response( '{"data":[{"id":"product-id","product_group":{"id":"product-group-id"}}]}' ) );
-
-		$facebook_product_id = $this->integration->get_product_fbid( WC_Facebookcommerce_Integration::FB_PRODUCT_ITEM_ID, $product->get_id() );
-
-		$this->assertEquals( 'product-id', $facebook_product_id );
-		$this->assertEquals( 'product-id', get_post_meta( $product->get_id(), WC_Facebookcommerce_Integration::FB_PRODUCT_ITEM_ID, true ) );
-	}
-
-		/**
-	 * Tests get product facebook id calls facebook graph api with the endpoint with filter to find that the item doesn't exist.
-	 *
-	 * @return void
-	 */
-	public function test_get_product_fbid_calls_facebook_and_sets_post_meta_value_for_item_id_with_filter_endpoint_empty_data() {
-		add_option( WC_Facebookcommerce_Integration::OPTION_PRODUCT_CATALOG_ID, '1122334455' );
-
-		$product        = WC_Helper_Product::create_simple_product();
-		$fb_retailer_id = WC_Facebookcommerce_Utils::get_fb_retailer_id( new WC_Facebook_Product( $product->get_id() ) );
-
-		$this->api->expects( $this->once() )
-			->method( 'get_product_facebook_ids' )
-			->with( '1122334455', $fb_retailer_id )
-			->willReturn( new API\ProductCatalog\Products\Id\Response( '{"data":[]}' ) );
-
-		$facebook_product_id = $this->integration->get_product_fbid( WC_Facebookcommerce_Integration::FB_PRODUCT_ITEM_ID, $product->get_id() );
-
-		$this->assertEquals( null, $facebook_product_id );
-		$this->assertEquals( null, get_post_meta( $product->get_id(), WC_Facebookcommerce_Integration::FB_PRODUCT_ITEM_ID, true ) );
 	}
 
 	/**
