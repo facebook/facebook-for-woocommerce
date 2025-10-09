@@ -79,16 +79,28 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 
 		public static function get_param_builder() {
 			if ( null === self::$param_builder ) {
-				$site_url = get_site_url();
-				self::$param_builder = new \FacebookAds\ParamBuilder( array( $site_url ) );
-				self::$param_builder->processRequest(
-					$site_url,
-					$_GET,
-					$_COOKIE,
-					isset( $_SERVER['HTTP_REFERER'] ) ?
-					sanitize_text_field( wp_unslash( $_SERVER['HTTP_REFERER'] ) ) :
-					null
-				);
+				try{
+					$site_url = get_site_url();
+					self::$param_builder = new \FacebookAds\ParamBuilder( array( $site_url ) );
+					self::$param_builder->processRequest(
+						$site_url,
+						$_GET,
+						$_COOKIE,
+						isset( $_SERVER['HTTP_REFERER'] ) ?
+						sanitize_text_field( wp_unslash( $_SERVER['HTTP_REFERER'] ) ) :
+						null
+					);
+				} catch ( \Exception $exception ) {
+					Logger::log( 
+						'Error initializing CAPI Parameter Builder: ' . $exception->getMessage(),
+					array(),
+				array(
+						'should_send_log_to_meta'        => true,
+						'should_save_log_in_woocommerce' => true,
+						'woocommerce_log_level'          => \WC_Log_Levels::ERROR,
+						)
+					);
+				}
 			}
 
 			return self::$param_builder;
@@ -113,7 +125,15 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 					}
 				}
 			} catch ( \Exception $exception ) {
-				$this->log( 'Error setting up server side CAPI Parameter Builder: ' . $exception->getMessage() );
+				Logger::log( 
+					'Error setting up server side CAPI Parameter Builder: ' . $exception->getMessage(),
+				array(),
+			array(
+					'should_send_log_to_meta'        => true,
+					'should_save_log_in_woocommerce' => true,
+					'woocommerce_log_level'          => \WC_Log_Levels::ERROR,
+					) 
+				);
 			}
 		}
 
