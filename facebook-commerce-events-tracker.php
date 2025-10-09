@@ -70,11 +70,11 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 			}
 			
 			$this->pixel          = new \WC_Facebookcommerce_Pixel( $user_info );
-			$this->param_builder_server_setup();
 			$this->aam_settings   = $aam_settings;
 			$this->tracked_events = array();
 
 			$this->add_hooks();
+			$this->param_builder_server_setup();
 		}
 
 		public static function get_param_builder() {
@@ -95,10 +95,10 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 						'Error initializing CAPI Parameter Builder: ' . $exception->getMessage(),
 						array(),
 						array(
-					'should_send_log_to_meta'        => true,
-					'should_save_log_in_woocommerce' => true,
-					'woocommerce_log_level'          => \WC_Log_Levels::ERROR,
-				)
+							'should_send_log_to_meta'        => true,
+							'should_save_log_in_woocommerce' => true,
+							'woocommerce_log_level'          => \WC_Log_Levels::ERROR,
+						)
 					);
 				}
 			}
@@ -127,12 +127,12 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 			} catch ( \Exception $exception ) {
 				Logger::log(
 					'Error setting up server side CAPI Parameter Builder: ' . $exception->getMessage(),
-				array(),
-				array(
+					array(),
+					array(
 					'should_send_log_to_meta'        => true,
 					'should_save_log_in_woocommerce' => true,
 					'woocommerce_log_level'          => \WC_Log_Levels::ERROR,
-		)
+					)
 				);
 			}
 		}
