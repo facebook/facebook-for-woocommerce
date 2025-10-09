@@ -324,6 +324,10 @@ class WC_Facebook_Loader {
 		if ( ! is_wp_error( $response ) && isset( $response_body['ID'] ) ) {
 			return true;
 		}
+		if ( defined( 'IS_ATOMIC' ) && IS_ATOMIC ) {
+          return true;
+	    }
+
 		return false;
 	}
 
