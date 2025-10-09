@@ -114,15 +114,13 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 
 				if ( ! headers_sent() ) {
 					foreach ( $cookie_to_set as $cookie ) {
-						if ( ! isset( $_COOKIE[$cookie->name] ) ) {
-							setcookie(
-								$cookie->name,
-								$cookie->value,
-								time() + $cookie->max_age,
-								'/',
-								$cookie->domain
-							);
-						}
+						setcookie(
+							$cookie->name,
+							$cookie->value,
+							time() + $cookie->max_age,
+							'/',
+							$cookie->domain
+						);
 					}
 				}
 			} catch ( \Exception $exception ) {
@@ -171,7 +169,7 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 
 			// set up CAPI Param Builder libraries
 			add_action( 'init', array( $this, 'param_builder_server_setup' ) );
-			
+
 			// inject Pixel
 			add_action( 'wp_head', array( $this, 'inject_base_pixel' ) );
 			add_action( 'wp_footer', array( $this, 'inject_base_pixel_noscript' ) );
