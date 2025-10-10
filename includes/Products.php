@@ -49,6 +49,15 @@ class Products {
 	/** @var string product image source option to use multiple images in Facebook */
 	const PRODUCT_IMAGE_SOURCE_MULTIPLE = 'multiple';
 
+	/** @var string the meta key used to store the source of the product video in Facebook */
+	const PRODUCT_VIDEO_SOURCE_META_KEY = '_wc_facebook_product_video_source';
+
+	/** @var string product video source option to upload/choose video from media library */
+	const PRODUCT_VIDEO_SOURCE_UPLOAD = 'upload';
+
+	/** @var string product video source option to use a custom video URL */
+	const PRODUCT_VIDEO_SOURCE_CUSTOM = 'custom';
+
 	/** @var string the meta key used to store the Google product category ID for the product */
 	const GOOGLE_PRODUCT_CATEGORY_META_KEY = '_wc_facebook_google_product_category';
 
