@@ -92,6 +92,7 @@ class FeedManager {
 		}
 		return $this->feed_instances[ $feed_type ];
 	}
+
 	/**
 	 * Run all feed uploads.
 	 *
@@ -105,7 +106,7 @@ class FeedManager {
 	}
 
 	/**
-	 * Get the feed secret for the given feed type.
+	 * Get the feed instance for the given feed type.
 	 *
 	 * @param string $feed_type the specific feed in question.
 	 *
