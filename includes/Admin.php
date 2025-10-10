@@ -1550,15 +1550,15 @@ class Admin {
 				?>
 		</div>
 		<?php
-		// hidden input to store attachment IDs for variations
-			woocommerce_wp_hidden_input(
-				[
-					'id'    => 'variable_' . \WC_Facebook_Product::FB_PRODUCT_VIDEO . $index,
-					'name'  => 'variable_' . \WC_Facebook_Product::FB_PRODUCT_VIDEO . '[' . $index . ']',
-					'value' => esc_attr( implode( ',', $attachment_ids ) ),
-					'class' => sprintf( 'product-video-source-field show-if-product-video-source-%s', Products::PRODUCT_VIDEO_SOURCE_UPLOAD ),
-				]
-			);
+	// hidden input to store attachment IDs for variations
+		woocommerce_wp_hidden_input(
+			[
+				'id'    => 'variable_' . \WC_Facebook_Product::FB_PRODUCT_VIDEO . $index,
+				'name'  => 'variable_' . \WC_Facebook_Product::FB_PRODUCT_VIDEO . $index,
+				'value' => esc_attr( implode( ',', $attachment_ids ) ),
+				'class' => sprintf( 'product-video-source-field show-if-product-video-source-%s', Products::PRODUCT_VIDEO_SOURCE_UPLOAD ),
+			]
+		);
 
 			// Render custom video URL field (shown when "Use custom video" is selected)
 			woocommerce_wp_text_input(
@@ -1679,7 +1679,19 @@ class Admin {
 		$sync_mode    = $this->determine_variation_sync_mode( $variation );
 		$sync_enabled = self::SYNC_MODE_SYNC_DISABLED !== $sync_mode;
 
+		// Debug logging for video data
+		error_log( '=== FB Video Debug - Variation ' . $variation_id . ' (Index: ' . $index . ') ===' );
+		error_log( 'POST data keys: ' . print_r( array_keys( $_POST ), true ) );
+		if ( isset( $_POST['variable_' . \WC_Facebook_Product::FB_PRODUCT_VIDEO] ) ) {
+			error_log( 'Video URLs raw POST: ' . print_r( $_POST['variable_' . \WC_Facebook_Product::FB_PRODUCT_VIDEO], true ) );
+		}
+		if ( isset( $_POST['variable_fb_product_video_source'] ) ) {
+			error_log( 'Video source POST: ' . print_r( $_POST['variable_fb_product_video_source'], true ) );
+		}
+
 		$variation_data = $this->process_variation_post_data( $index );
+		error_log( 'Processed variation data: ' . print_r( $variation_data, true ) );
+		
 		$this->save_variation_meta_data( $variation, $variation_data );
 		$this->handle_variation_sync_operations( $variation, $sync_enabled, $sync_mode );
 
@@ -1694,7 +1706,9 @@ class Admin {
 	 */
 	private function verify_variation_nonce( $variation_id ) {
 		$nonce_field = 'facebook_variation_nonce_' . $variation_id;
-		return isset( $_POST[ $nonce_field ] ) && wp_verify_nonce( sanitize_key( $_POST[ $nonce_field ] ), 'facebook_variation_save' );
+		$result = isset( $_POST[ $nonce_field ] ) && wp_verify_nonce( sanitize_key( $_POST[ $nonce_field ] ), 'facebook_variation_save' );
+		error_log( 'Nonce verification for variation ' . $variation_id . ': ' . ( $result ? 'PASSED' : 'FAILED' ) );
+		return $result;
 	}
 
 	/**
@@ -1769,12 +1783,28 @@ class Admin {
 		$posted_param = 'variable_fb_product_video_source';
 		// phpcs:ignore WordPress.Security.NonceVerification.Missing -- Nonce verification is handled in save_product_variation_edit_fields method
 		$video_source = isset( $_POST[ $posted_param ][ $index ] ) ? sanitize_key( wp_unslash( $_POST[ $posted_param ][ $index ] ) ) : '';
-		$posted_param = 'variable_' . \WC_Facebook_Product::FB_PRODUCT_VIDEO;
-		// phpcs:ignore WordPress.Security.NonceVerification.Missing -- Nonce verification is handled in save_product_variation_edit_fields method
-		$video_urls   = isset( $_POST[ $posted_param ][ $index ] ) ? esc_url_raw( wp_unslash( $_POST[ $posted_param ][ $index ] ) ) : [];
-		$posted_param = 'variable_' . \WC_Facebook_Product::FB_PRODUCT_VIDEO . '_custom_url';
-		// phpcs:ignore WordPress.Security.NonceVerification.Missing -- Nonce verification is handled in save_product_variation_edit_fields method
-		$custom_video_url = isset( $_POST[ $posted_param ][ $index ] ) ? esc_url_raw( wp_unslash( $_POST[ $posted_param ][ $index ] ) ) : null;
+	// Use the same pattern as FB_PRODUCT_IMAGES - flat key with index appended
+	$posted_param = 'variable_' . \WC_Facebook_Product::FB_PRODUCT_VIDEO . $index;
+	// phpcs:ignore WordPress.Security.NonceVerification.Missing -- Nonce verification is handled in save_product_variation_edit_fields method
+	$video_ids_raw = isset( $_POST[ $posted_param ] ) ? sanitize_text_field( wp_unslash( $_POST[ $posted_param ] ) ) : '';
+	// Convert attachment IDs to URLs (same logic as WC_Facebook_Product::set_product_video_urls)
+	if ( ! empty( $video_ids_raw ) ) {
+		$video_urls_array = array_filter(
+			array_map(
+				function ( $id ) {
+					$id = trim( $id );
+					return $id ? wp_get_attachment_url( $id ) : false;
+				},
+				explode( ',', $video_ids_raw )
+			)
+		);
+		$video_urls = $video_urls_array; // Store as array like simple products do
+	} else {
+		$video_urls = array();
+	}
+	$posted_param = 'variable_' . \WC_Facebook_Product::FB_PRODUCT_VIDEO . '_custom_url';
+	// phpcs:ignore WordPress.Security.NonceVerification.Missing -- Nonce verification is handled in save_product_variation_edit_fields method
+	$custom_video_url = isset( $_POST[ $posted_param ][ $index ] ) ? esc_url_raw( wp_unslash( $_POST[ $posted_param ][ $index ] ) ) : null;
 		// Fix: Look for the actual POST key format that WooCommerce generates
 		$posted_param = 'variable_' . \WC_Facebook_Product::FB_PRODUCT_IMAGES . $index;
 		// phpcs:ignore WordPress.Security.NonceVerification.Missing -- Nonce verification is handled in save_product_variation_edit_fields method
@@ -1804,6 +1834,11 @@ class Admin {
 	 * @param array                 $data the variation data to save
 	 */
 	private function save_variation_meta_data( $variation, $data ) {
+		error_log( 'Saving meta data for variation ' . $variation->get_id() );
+		error_log( 'Video source being saved: ' . $data['video_source'] );
+		error_log( 'Video URLs being saved: ' . print_r( $data['video_urls'], true ) );
+		error_log( 'Custom video URL being saved: ' . $data['custom_video_url'] );
+		
 		$variation->update_meta_data( \WC_Facebookcommerce_Integration::FB_PRODUCT_DESCRIPTION, $data['description_plain'] );
 		$variation->update_meta_data( \WC_Facebookcommerce_Integration::FB_RICH_TEXT_DESCRIPTION, $data['description_rich'] );
 		$variation->update_meta_data( Products::PRODUCT_IMAGE_SOURCE_META_KEY, $data['image_source'] );
@@ -1815,6 +1850,9 @@ class Admin {
 		$variation->update_meta_data( \WC_Facebook_Product::FB_PRODUCT_IMAGES, $data['image_ids'] );
 		$variation->update_meta_data( \WC_Facebook_Product::FB_PRODUCT_PRICE, $data['price'] );
 		$variation->save_meta_data();
+		
+		error_log( 'After save - Video source: ' . $variation->get_meta( Products::PRODUCT_VIDEO_SOURCE_META_KEY ) );
+		error_log( 'After save - Video URLs: ' . print_r( $variation->get_meta( \WC_Facebook_Product::FB_PRODUCT_VIDEO ), true ) );
 	}
 
 	/**
