@@ -1679,19 +1679,7 @@ class Admin {
 		$sync_mode    = $this->determine_variation_sync_mode( $variation );
 		$sync_enabled = self::SYNC_MODE_SYNC_DISABLED !== $sync_mode;
 
-		// Debug logging for video data
-		error_log( '=== FB Video Debug - Variation ' . $variation_id . ' (Index: ' . $index . ') ===' );
-		error_log( 'POST data keys: ' . print_r( array_keys( $_POST ), true ) );
-		if ( isset( $_POST['variable_' . \WC_Facebook_Product::FB_PRODUCT_VIDEO] ) ) {
-			error_log( 'Video URLs raw POST: ' . print_r( $_POST['variable_' . \WC_Facebook_Product::FB_PRODUCT_VIDEO], true ) );
-		}
-		if ( isset( $_POST['variable_fb_product_video_source'] ) ) {
-			error_log( 'Video source POST: ' . print_r( $_POST['variable_fb_product_video_source'], true ) );
-		}
-
 		$variation_data = $this->process_variation_post_data( $index );
-		error_log( 'Processed variation data: ' . print_r( $variation_data, true ) );
-		
 		$this->save_variation_meta_data( $variation, $variation_data );
 		$this->handle_variation_sync_operations( $variation, $sync_enabled, $sync_mode );
 
@@ -1706,9 +1694,7 @@ class Admin {
 	 */
 	private function verify_variation_nonce( $variation_id ) {
 		$nonce_field = 'facebook_variation_nonce_' . $variation_id;
-		$result = isset( $_POST[ $nonce_field ] ) && wp_verify_nonce( sanitize_key( $_POST[ $nonce_field ] ), 'facebook_variation_save' );
-		error_log( 'Nonce verification for variation ' . $variation_id . ': ' . ( $result ? 'PASSED' : 'FAILED' ) );
-		return $result;
+		return isset( $_POST[ $nonce_field ] ) && wp_verify_nonce( sanitize_key( $_POST[ $nonce_field ] ), 'facebook_variation_save' );
 	}
 
 	/**
@@ -1834,11 +1820,6 @@ class Admin {
 	 * @param array                 $data the variation data to save
 	 */
 	private function save_variation_meta_data( $variation, $data ) {
-		error_log( 'Saving meta data for variation ' . $variation->get_id() );
-		error_log( 'Video source being saved: ' . $data['video_source'] );
-		error_log( 'Video URLs being saved: ' . print_r( $data['video_urls'], true ) );
-		error_log( 'Custom video URL being saved: ' . $data['custom_video_url'] );
-		
 		$variation->update_meta_data( \WC_Facebookcommerce_Integration::FB_PRODUCT_DESCRIPTION, $data['description_plain'] );
 		$variation->update_meta_data( \WC_Facebookcommerce_Integration::FB_RICH_TEXT_DESCRIPTION, $data['description_rich'] );
 		$variation->update_meta_data( Products::PRODUCT_IMAGE_SOURCE_META_KEY, $data['image_source'] );
@@ -1850,9 +1831,6 @@ class Admin {
 		$variation->update_meta_data( \WC_Facebook_Product::FB_PRODUCT_IMAGES, $data['image_ids'] );
 		$variation->update_meta_data( \WC_Facebook_Product::FB_PRODUCT_PRICE, $data['price'] );
 		$variation->save_meta_data();
-		
-		error_log( 'After save - Video source: ' . $variation->get_meta( Products::PRODUCT_VIDEO_SOURCE_META_KEY ) );
-		error_log( 'After save - Video URLs: ' . print_r( $variation->get_meta( \WC_Facebook_Product::FB_PRODUCT_VIDEO ), true ) );
 	}
 
 	/**

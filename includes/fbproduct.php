@@ -456,28 +456,18 @@ class WC_Facebook_Product {
 	 */
 	public function get_all_video_urls( $parent_id = null ) {
 
-		error_log( '=== FB Video Debug - get_all_video_urls ===' );
-		error_log( 'Product ID: ' . $this->id );
-		error_log( 'Product Type: ' . $this->get_type() );
-		error_log( 'Parent ID passed: ' . ( $parent_id ? $parent_id : 'null' ) );
-
 		$video_urls = array();
 		$product    = $this->woo_product;
 
 		if ( null !== $parent_id ) {
 			$product = wc_get_product( $parent_id );
-			error_log( 'Using parent product: ' . $parent_id );
 		}
 
 		$attached_videos = get_attached_media( 'video', $this->id );
 
 		$custom_video_urls = $product->get_meta( self::FB_PRODUCT_VIDEO );
-		
-		error_log( 'Custom video URLs from meta: ' . print_r( $custom_video_urls, true ) );
-		error_log( 'Attached videos count: ' . count( $attached_videos ) );
 
 		if ( empty( $attached_videos ) && empty( $custom_video_urls ) ) {
-			error_log( 'No videos found, returning empty array' );
 			return $video_urls;
 		}
 
@@ -502,7 +492,6 @@ class WC_Facebook_Product {
 			}
 		}
 
-		error_log( 'Final video URLs: ' . print_r( $video_urls, true ) );
 		return $video_urls;
 	}
 
