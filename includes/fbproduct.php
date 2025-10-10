@@ -2210,13 +2210,13 @@ class WC_Facebook_Product {
 			$product_data = $this->add_sale_price( $product_data );
 		}//end if
 
-	$video_urls = $this->get_all_video_urls();
+		$video_urls = $this->get_all_video_urls();
 
-	// If this is a variation with no videos, fall back to parent product videos
-	if ( $this->get_type() === 'variation' && empty( $video_urls ) ) {
-		$parent_id  = $this->woo_product->get_parent_id();
-		$video_urls = $this->get_all_video_urls( $parent_id );
-	}
+		// If this is a variation with no videos, fall back to parent product videos
+		if ( $this->get_type() === 'variation' && empty( $video_urls ) ) {
+			$parent_id  = $this->woo_product->get_parent_id();
+			$video_urls = $this->get_all_video_urls( $parent_id );
+		}
 
 		if ( ! empty( $video_urls ) && self::PRODUCT_PREP_TYPE_NORMAL !== $type_to_prepare_for ) {
 			$product_data['video'] = $video_urls;
