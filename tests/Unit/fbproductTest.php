@@ -1845,4 +1845,333 @@ class fbproductTest extends \WooCommerce\Facebook\Tests\AbstractWPUnitTestWithSa
 		$this->assertEquals('1020', $stored_array[19]);
 	}
 
+	/**
+	 * Test video source constants exist for variations.
+	 */
+	public function test_video_source_constants() {
+		$this->assertEquals( 'upload', \WooCommerce\Facebook\Products::PRODUCT_VIDEO_SOURCE_UPLOAD );
+		$this->assertEquals( 'custom', \WooCommerce\Facebook\Products::PRODUCT_VIDEO_SOURCE_CUSTOM );
+		$this->assertEquals( '_wc_facebook_product_video_source', \WooCommerce\Facebook\Products::PRODUCT_VIDEO_SOURCE_META_KEY );
+	}
+
+	/**
+	 * Test variation without video falls back to parent video.
+	 */
+	public function test_variation_fallback_to_parent_video() {
+		$variable_product = \WC_Helper_Product::create_variation_product();
+		$variation = wc_get_product( $variable_product->get_children()[0] );
+
+		$parent_video_urls = [
+			'https://example.com/parent-video1.mp4',
+			'https://example.com/parent-video2.mp4',
+		];
+
+		// Set videos on parent product only
+		update_post_meta( $variable_product->get_id(), WC_Facebook_Product::FB_PRODUCT_VIDEO, $parent_video_urls );
+
+		// Create Facebook products
+		$parent_fb_product = new \WC_Facebook_Product( $variable_product );
+		$fb_variation = new \WC_Facebook_Product( $variation, $parent_fb_product );
+
+		// Variation has no videos - should get parent's videos
+		$variation_video_urls = $fb_variation->get_all_video_urls( $variable_product->get_id() );
+
+		$this->assertIsArray( $variation_video_urls );
+		$this->assertCount( 2, $variation_video_urls );
+		// get_all_video_urls returns array with 'url' keys
+		$this->assertEquals( $parent_video_urls[0], $variation_video_urls[0]['url'] );
+		$this->assertEquals( $parent_video_urls[1], $variation_video_urls[1]['url'] );
+
+		// Clean up
+		$variable_product->delete( true );
+	}
+
+	/**
+	 * Test variation video overrides parent video.
+	 */
+	public function test_variation_video_overrides_parent() {
+		$variable_product = \WC_Helper_Product::create_variation_product();
+		$variation = wc_get_product( $variable_product->get_children()[0] );
+
+		$parent_video_urls = [ 'https://example.com/parent-video.mp4' ];
+		$variation_video_urls = [ 'https://example.com/variation-video.mp4' ];
+
+		// Set videos on both parent and variation
+		update_post_meta( $variable_product->get_id(), WC_Facebook_Product::FB_PRODUCT_VIDEO, $parent_video_urls );
+		$variation->update_meta_data( WC_Facebook_Product::FB_PRODUCT_VIDEO, $variation_video_urls );
+		$variation->save_meta_data();
+
+		// Create Facebook products
+		$parent_fb_product = new \WC_Facebook_Product( $variable_product );
+		$fb_variation = new \WC_Facebook_Product( $variation, $parent_fb_product );
+
+		// Get variation's video URLs
+		$all_video_urls = $fb_variation->get_all_video_urls();
+
+		// Should get variation's own videos, not parent's
+		$this->assertIsArray( $all_video_urls );
+		$this->assertCount( 1, $all_video_urls );
+		$this->assertEquals( $variation_video_urls[0], $all_video_urls[0]['url'] );
+
+		// Clean up
+		$variable_product->delete( true );
+	}
+
+	/**
+	 * Test variation can save and retrieve video URLs.
+	 */
+	public function test_variation_save_and_retrieve_video_urls() {
+		$variable_product = \WC_Helper_Product::create_variation_product();
+		$variation = wc_get_product( $variable_product->get_children()[0] );
+
+		$video_urls = [
+			'https://example.com/video1.mp4',
+			'https://example.com/video2.mp4',
+		];
+
+		// Save video URLs
+		$variation->update_meta_data( WC_Facebook_Product::FB_PRODUCT_VIDEO, $video_urls );
+		$variation->save_meta_data();
+
+		// Retrieve video URLs
+		$saved_video_urls = $variation->get_meta( WC_Facebook_Product::FB_PRODUCT_VIDEO );
+
+		$this->assertIsArray( $saved_video_urls );
+		$this->assertCount( 2, $saved_video_urls );
+		$this->assertEquals( $video_urls, $saved_video_urls );
+
+		// Clean up
+		$variable_product->delete( true );
+	}
+
+	/**
+	 * Test variation video source meta data.
+	 */
+	public function test_variation_video_source_meta() {
+		$variable_product = \WC_Helper_Product::create_variation_product();
+		$variation = wc_get_product( $variable_product->get_children()[0] );
+
+		// Test upload source
+		$variation->update_meta_data( \WooCommerce\Facebook\Products::PRODUCT_VIDEO_SOURCE_META_KEY, \WooCommerce\Facebook\Products::PRODUCT_VIDEO_SOURCE_UPLOAD );
+		$variation->save_meta_data();
+
+		$source = $variation->get_meta( \WooCommerce\Facebook\Products::PRODUCT_VIDEO_SOURCE_META_KEY );
+		$this->assertEquals( \WooCommerce\Facebook\Products::PRODUCT_VIDEO_SOURCE_UPLOAD, $source );
+
+		// Test custom source
+		$variation->update_meta_data( \WooCommerce\Facebook\Products::PRODUCT_VIDEO_SOURCE_META_KEY, \WooCommerce\Facebook\Products::PRODUCT_VIDEO_SOURCE_CUSTOM );
+		$variation->save_meta_data();
+
+		$source = $variation->get_meta( \WooCommerce\Facebook\Products::PRODUCT_VIDEO_SOURCE_META_KEY );
+		$this->assertEquals( \WooCommerce\Facebook\Products::PRODUCT_VIDEO_SOURCE_CUSTOM, $source );
+
+		// Clean up
+		$variable_product->delete( true );
+	}
+
+	/**
+	 * Test variation custom video URL.
+	 */
+	public function test_variation_custom_video_url() {
+		$variable_product = \WC_Helper_Product::create_variation_product();
+		$variation = wc_get_product( $variable_product->get_children()[0] );
+
+		$custom_url = 'https://example.com/custom-video.mp4';
+
+		// Save custom video URL
+		$variation->update_meta_data( WC_Facebook_Product::FB_PRODUCT_VIDEO . '_custom_url', $custom_url );
+		$variation->save_meta_data();
+
+		// Retrieve custom URL
+		$saved_url = $variation->get_meta( WC_Facebook_Product::FB_PRODUCT_VIDEO . '_custom_url' );
+		$this->assertEquals( $custom_url, $saved_url );
+
+		// Clean up
+		$variable_product->delete( true );
+	}
+
+	/**
+	 * Test empty variation video falls back to parent.
+	 */
+	public function test_empty_variation_video_falls_back_to_parent() {
+		$variable_product = \WC_Helper_Product::create_variation_product();
+		$variation = wc_get_product( $variable_product->get_children()[0] );
+
+		$parent_video_urls = [ 'https://example.com/parent-video.mp4' ];
+
+		// Set videos on parent
+		update_post_meta( $variable_product->get_id(), WC_Facebook_Product::FB_PRODUCT_VIDEO, $parent_video_urls );
+
+		// Set empty video array on variation
+		$variation->update_meta_data( WC_Facebook_Product::FB_PRODUCT_VIDEO, [] );
+		$variation->save_meta_data();
+
+		// Create Facebook products
+		$parent_fb_product = new \WC_Facebook_Product( $variable_product );
+		$fb_variation = new \WC_Facebook_Product( $variation, $parent_fb_product );
+
+		// Get variation's video URLs with parent ID
+		$all_video_urls = $fb_variation->get_all_video_urls( $variable_product->get_id() );
+
+		// Should fall back to parent's videos
+		$this->assertIsArray( $all_video_urls );
+		$this->assertCount( 1, $all_video_urls );
+		$this->assertEquals( $parent_video_urls[0], $all_video_urls[0]['url'] );
+
+		// Clean up
+		$variable_product->delete( true );
+	}
+
+	/**
+	 * Test multiple variations with different videos.
+	 */
+	public function test_multiple_variations_different_videos() {
+		$variable_product = \WC_Helper_Product::create_variation_product();
+		$variations = $variable_product->get_children();
+		$this->assertGreaterThan( 0, count( $variations ) );
+
+		$variation1 = wc_get_product( $variations[0] );
+		$video1 = [ 'https://example.com/video1.mp4' ];
+		$variation1->update_meta_data( WC_Facebook_Product::FB_PRODUCT_VIDEO, $video1 );
+		$variation1->save_meta_data();
+
+		if ( count( $variations ) > 1 ) {
+			$variation2 = wc_get_product( $variations[1] );
+			$video2 = [ 'https://example.com/video2.mp4' ];
+			$variation2->update_meta_data( WC_Facebook_Product::FB_PRODUCT_VIDEO, $video2 );
+			$variation2->save_meta_data();
+
+			// Verify each variation has its own video
+			$parent_fb_product = new \WC_Facebook_Product( $variable_product );
+			$fb_variation1 = new \WC_Facebook_Product( $variation1, $parent_fb_product );
+			$fb_variation2 = new \WC_Facebook_Product( $variation2, $parent_fb_product );
+
+			$urls1 = $fb_variation1->get_all_video_urls();
+			$urls2 = $fb_variation2->get_all_video_urls();
+
+			$this->assertCount( 1, $urls1 );
+			$this->assertCount( 1, $urls2 );
+			$this->assertEquals( $video1[0], $urls1[0]['url'] );
+			$this->assertEquals( $video2[0], $urls2[0]['url'] );
+			$this->assertNotEquals( $urls1[0]['url'], $urls2[0]['url'] );
+		}
+
+		// Clean up
+		$variable_product->delete( true );
+	}
+
+	/**
+	 * Test prepare_product includes variation video.
+	 */
+	public function test_prepare_product_includes_variation_video() {
+		$variable_product = \WC_Helper_Product::create_variation_product();
+		$variation = wc_get_product( $variable_product->get_children()[0] );
+
+		$video_urls = [ 'https://example.com/variation-prep-video.mp4' ];
+
+		// Set video on variation
+		$variation->update_meta_data( WC_Facebook_Product::FB_PRODUCT_VIDEO, $video_urls );
+		$variation->save_meta_data();
+
+		// Create Facebook products
+		$parent_fb_product = new \WC_Facebook_Product( $variable_product );
+		$fb_variation = new \WC_Facebook_Product( $variation, $parent_fb_product );
+
+		// Prepare product data
+		$product_data = $fb_variation->prepare_product( null, \WC_Facebook_Product::PRODUCT_PREP_TYPE_ITEMS_BATCH );
+
+		// Check video is included
+		$this->assertArrayHasKey( 'video', $product_data );
+		$this->assertIsArray( $product_data['video'] );
+		$this->assertNotEmpty( $product_data['video'] );
+
+		// Clean up
+		$variable_product->delete( true );
+	}
+
+	/**
+	 * Test prepare_product uses parent video when variation has none.
+	 */
+	public function test_prepare_product_uses_parent_video_when_variation_empty() {
+		$variable_product = \WC_Helper_Product::create_variation_product();
+		$variation = wc_get_product( $variable_product->get_children()[0] );
+
+		$parent_video_urls = [ 'https://example.com/parent-prep-video.mp4' ];
+
+		// Set video on parent only
+		update_post_meta( $variable_product->get_id(), WC_Facebook_Product::FB_PRODUCT_VIDEO, $parent_video_urls );
+
+		// Create Facebook products
+		$parent_fb_product = new \WC_Facebook_Product( $variable_product );
+		$fb_variation = new \WC_Facebook_Product( $variation, $parent_fb_product );
+
+		// Prepare variation product data (variation has no video)
+		$product_data = $fb_variation->prepare_product( null, \WC_Facebook_Product::PRODUCT_PREP_TYPE_ITEMS_BATCH );
+
+		// Should include parent's video
+		$this->assertArrayHasKey( 'video', $product_data );
+		$this->assertIsArray( $product_data['video'] );
+		$this->assertCount( 1, $product_data['video'] );
+		$this->assertEquals( $parent_video_urls[0], $product_data['video'][0]['url'] );
+
+		// Clean up
+		$variable_product->delete( true );
+	}
+
+	/**
+	 * Test variation can have video when parent doesn't.
+	 */
+	public function test_variation_video_without_parent_video() {
+		$variable_product = \WC_Helper_Product::create_variation_product();
+		$variation = wc_get_product( $variable_product->get_children()[0] );
+
+		$variation_video_urls = [ 'https://example.com/variation-only-video.mp4' ];
+
+		// Ensure parent has no video
+		delete_post_meta( $variable_product->get_id(), WC_Facebook_Product::FB_PRODUCT_VIDEO );
+
+		// Set video on variation
+		$variation->update_meta_data( WC_Facebook_Product::FB_PRODUCT_VIDEO, $variation_video_urls );
+		$variation->save_meta_data();
+
+		// Create Facebook products
+		$parent_fb_product = new \WC_Facebook_Product( $variable_product );
+		$fb_variation = new \WC_Facebook_Product( $variation, $parent_fb_product );
+
+		// Get variation's video URLs
+		$all_video_urls = $fb_variation->get_all_video_urls();
+
+		// Should get variation's videos even though parent has none
+		$this->assertIsArray( $all_video_urls );
+		$this->assertCount( 1, $all_video_urls );
+		$this->assertEquals( $variation_video_urls[0], $all_video_urls[0]['url'] );
+
+		// Clean up
+		$variable_product->delete( true );
+	}
+
+	/**
+	 * Test get_all_video_urls returns empty array when no videos exist.
+	 */
+	public function test_get_all_video_urls_empty_for_variation() {
+		$variable_product = \WC_Helper_Product::create_variation_product();
+		$variation = wc_get_product( $variable_product->get_children()[0] );
+
+		// Ensure no videos exist
+		delete_post_meta( $variable_product->get_id(), WC_Facebook_Product::FB_PRODUCT_VIDEO );
+		delete_post_meta( $variation->get_id(), WC_Facebook_Product::FB_PRODUCT_VIDEO );
+
+		// Create Facebook products
+		$parent_fb_product = new \WC_Facebook_Product( $variable_product );
+		$fb_variation = new \WC_Facebook_Product( $variation, $parent_fb_product );
+
+		$video_urls = $fb_variation->get_all_video_urls();
+
+		$this->assertIsArray( $video_urls );
+		$this->assertEmpty( $video_urls );
+
+		// Clean up
+		$variable_product->delete( true );
+	}
+
 }
