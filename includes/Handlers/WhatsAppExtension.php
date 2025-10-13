@@ -24,7 +24,7 @@ class WhatsAppExtension {
 
 
 	/** @var string Commerce Hub base URL */
-	const COMMERCE_HUB_URL = 'https://www.commercepartnerhub.com/';
+	const COMMERCE_HUB_URL = 'https://www.my-od.commercepartnerhub.com/';
 	/** @var string Client token */
 	const CLIENT_TOKEN = '753591807210902|489b438e3f0d9ba44504eccd5ce8fe94';
 	/** @var string Whatsapp Integration app ID */
@@ -128,7 +128,15 @@ class WhatsAppExtension {
 				)
 			);
 		}
-		return $response_object->iframe_management_uri;
+
+		$original_string = $response_object->iframe_management_uri;
+    // Use regex to insert 'my-od.' between 'www.' and 'commercepartnerhub'
+    $replaced_string = preg_replace(
+        '/(www\.)(commercepartnerhub)/',
+        '$1my-od.$2',
+        $original_string
+    );
+		return $replaced_string;
 	}
 
 	/**
