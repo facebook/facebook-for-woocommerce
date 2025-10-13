@@ -1040,12 +1040,32 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 					'content_name' => wp_json_encode( $product_names ),
 					'contents'     => wp_json_encode( $contents ),
 					'content_type' => $content_type,
+					// Use the actual transaction currency stored on the order
 					'value'        => $order->get_total(),
-					'currency'     => get_woocommerce_currency(),
+					'currency'     => $order->get_currency(),
 					'order_id'     => $order_id,
 				),
 				'user_data'   => $this->get_user_data_from_billing_address( $order ),
 			);
+
+		/**
+		 * Allow last-mile override of the currency used for events.
+		 *
+		 * @param string          $currency
+		 * @param string          $event_name
+		 * @param \WC_Order|null  $order
+		 */
+		$event_data['custom_data']['currency'] = apply_filters(
+			'facebook_for_woocommerce_event_currency',
+			$event_data['custom_data']['currency'],
+			$event_name,
+			$order
+		);
+
+		// (Optional) Normalize value to numeric for robustness
+		if ( isset( $event_data['custom_data']['value'] ) ) {
+			$event_data['custom_data']['value'] = (float) $event_data['custom_data']['value'];
+		}
 
 			$event = new Event( $event_data );
 
@@ -1085,10 +1105,19 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 					'custom_data' => array(
 						'sign_up_fee' => $subscription->get_sign_up_fee(),
 						'value'       => $subscription->get_total(),
-						'currency'    => get_woocommerce_currency(),
+						// Use subscription/order currency, not store default
+						'currency'    => ( method_exists( $subscription, 'get_currency' ) ? $subscription->get_currency() : get_woocommerce_currency() ),
 					),
 					'user_data'   => $this->pixel->get_user_info(),
 				);
+
+			// Same currency override hook for Subscribe
+			$event_data['custom_data']['currency'] = apply_filters(
+				'facebook_for_woocommerce_event_currency',
+				$event_data['custom_data']['currency'],
+				$event_name,
+				null
+			);
 
 				$event = new Event( $event_data );
 
@@ -1128,6 +1157,15 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 		 */
 		protected function send_api_event( Event $event, bool $send_now = true ) {
 			$this->tracked_events[] = $event;
+
+		/**
+		 * Filter the Event payload before sending to Meta.
+		 * This allows integrators to adjust custom_data (currency/value/contents) per event
+		 * without forking the plugin.
+		 *
+		 * @param Event $event
+		 */
+		$event = apply_filters( 'facebook_for_woocommerce_before_send_api_event', $event );
 
 			if ( $send_now ) {
 				try {
