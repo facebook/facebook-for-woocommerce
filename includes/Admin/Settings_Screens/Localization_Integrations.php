@@ -414,9 +414,7 @@ class Localization_Integrations extends Abstract_Settings_Screen {
 
 		// Handle language feed actions
 		if ( wp_verify_nonce( $nonce, 'localization_test_action' ) ) {
-			if ( $action === 'download_sample' ) {
-				$this->download_sample_csv();
-			} elseif ( $action === 'download_language_csv' ) {
+			if ( $action === 'download_language_csv' ) {
 				$language_code = sanitize_text_field( $_GET['language'] ?? '' );
 				if ( $language_code ) {
 					$this->download_language_csv( $language_code );
@@ -619,65 +617,6 @@ class Localization_Integrations extends Abstract_Settings_Screen {
 		<?php
 	}
 
-	/**
-	 * Download sample CSV file using existing generation methods
-	 *
-	 * @since 3.6.0
-	 */
-	private function download_sample_csv() {
-		try {
-			$feed_data = new LanguageFeedData();
-
-			// Create sample data manually
-			$sample_data = [
-				[
-					'id' => 'wc_post_id_123',
-					'override' => 'es_XX',
-					'title' => 'Camiseta Azul Premium',
-					'description' => 'Una camiseta azul de alta calidad hecha de algodón 100% orgánico. Perfecta para uso diario.',
-					'link' => 'https://example.com/es/producto/camiseta-azul-premium',
-				],
-				[
-					'id' => 'wc_post_id_124',
-					'override' => 'es_XX',
-					'title' => 'Pantalones Vaqueros Clásicos',
-					'description' => 'Pantalones vaqueros de corte clásico con un ajuste cómodo. Disponibles en varios tamaños.',
-					'link' => 'https://example.com/es/producto/pantalones-vaqueros-clasicos',
-				],
-				[
-					'id' => 'wc_post_id_125',
-					'override' => 'fr_XX',
-					'title' => 'T-shirt Bleu Premium',
-					'description' => 'Un t-shirt bleu de haute qualité fabriqué en coton 100% biologique. Parfait pour un usage quotidien.',
-					'link' => 'https://example.com/fr/produit/t-shirt-bleu-premium',
-				],
-			];
-
-			// Create a sample CSV result structure with basic columns
-			$sample_csv_result = [
-				'data' => $sample_data,
-				'columns' => ['id', 'override', 'title', 'description', 'link'],
-				'translated_fields' => ['name', 'description']
-			];
-
-			$csv_content = $feed_data->convert_to_csv_string( $sample_csv_result );
-
-			// Clear any output buffers
-			if ( ob_get_level() ) {
-				ob_end_clean();
-			}
-
-			// Set headers for download
-			header( 'Content-Type: text/csv; charset=utf-8' );
-			header( 'Content-Disposition: attachment; filename="sample_localization_feed.csv"' );
-			header( 'Content-Length: ' . strlen( $csv_content ) );
-
-			echo $csv_content;
-			exit;
-		} catch ( \Exception $e ) {
-			wp_die( 'Error generating sample CSV: ' . $e->getMessage() );
-		}
-	}
 
 	/**
 	 * Download language-specific CSV file using existing generation methods
@@ -688,12 +627,10 @@ class Localization_Integrations extends Abstract_Settings_Screen {
 		try {
 			// Use the existing generation system
 			$feed_data = new LanguageFeedData();
-			$header_row = $feed_data->get_csv_header_for_columns(['id', 'override']);
-			$feed_writer = new \WooCommerce\Facebook\Feed\Localization\LanguageOverrideFeedWriter( $language_code, $header_row );
-			$feed_handler = new \WooCommerce\Facebook\Feed\Localization\LanguageOverrideFeedHandler( $feed_data, $feed_writer );
+			$feed_writer = new \WooCommerce\Facebook\Feed\Localization\LanguageOverrideFeedWriter( $language_code );
 
-			// Generate the feed file using the existing write method
-			$success = $feed_handler->write_language_feed_file( $language_code );
+			// Generate the feed file using the refactored write method
+			$success = $feed_writer->write_language_feed_file( $feed_data, $language_code );
 
 			if ( ! $success ) {
 				wp_die(
@@ -757,11 +694,9 @@ class Localization_Integrations extends Abstract_Settings_Screen {
 			$results = [];
 			foreach ( $languages as $language_code ) {
 				try {
-					$header_row = $feed_data->get_csv_header_for_columns(['id', 'override']);
-					$feed_writer = new \WooCommerce\Facebook\Feed\Localization\LanguageOverrideFeedWriter( $language_code, $header_row );
-					$feed_handler = new \WooCommerce\Facebook\Feed\Localization\LanguageOverrideFeedHandler( $feed_data, $feed_writer );
+					$feed_writer = new \WooCommerce\Facebook\Feed\Localization\LanguageOverrideFeedWriter( $language_code );
 
-					$success = $feed_handler->write_language_feed_file( $language_code );
+					$success = $feed_writer->write_language_feed_file( $feed_data, $language_code );
 
 					if ( $success ) {
 						$file_path = $feed_writer->get_file_path( $language_code );
@@ -859,6 +794,52 @@ class Localization_Integrations extends Abstract_Settings_Screen {
 	}
 
 	/**
+	 * Map translated field names to Facebook CSV column names
+	 *
+	 * This mirrors the same method in LanguageFeedData to ensure consistency
+	 * between what's shown in the admin and what's in the CSV.
+	 *
+	 * @param array $translated_fields Array of translated field names
+	 * @return array Array of Facebook CSV column names
+	 * @since 3.6.0
+	 */
+	private function map_translated_fields_to_csv_columns( array $translated_fields ): array {
+		// Mapping from WPML field names to Facebook CSV column names
+		$field_mapping = [
+			'name' => 'title',
+			'description' => 'description',
+			'short_description' => 'description', // Both map to description
+			'rich_text_description' => 'description', // Also maps to description
+			'brand' => 'brand',
+			'mpn' => 'mpn',
+			'condition' => 'condition',
+			'size' => 'size',
+			'color' => 'color',
+			'pattern' => 'pattern',
+			'age_group' => 'age_group',
+			'gender' => 'gender',
+			'material' => 'material',
+			'price' => 'price',
+			'product_categories' => 'product_type',
+			'image_id' => 'image_link',
+			'gallery_image_ids' => 'additional_image_link',
+			'link' => 'link',
+		];
+
+		$csv_columns = [];
+		foreach ( $translated_fields as $field ) {
+			if ( isset( $field_mapping[ $field ] ) ) {
+				$csv_columns[] = $field_mapping[ $field ];
+			}
+		}
+
+		// Remove duplicates and ensure required columns
+		$csv_columns = array_unique( $csv_columns );
+
+		return $csv_columns;
+	}
+
+	/**
 	 * Render product test section
 	 *
 	 * @since 3.6.0
@@ -897,12 +878,14 @@ class Localization_Integrations extends Abstract_Settings_Screen {
 							$languages = $has_translations ? array_keys( $details['translations'] ) : [];
 							$default_language = $details['default_language'] ?? 'Unknown';
 
-							// Get translated fields summary
+							// Get translated fields summary using the same mapping as CSV generation
 							$translated_fields_summary = [];
 							if ( isset( $details['translated_fields'] ) ) {
 								foreach ( $details['translated_fields'] as $lang => $fields ) {
 									if ( ! empty( $fields ) ) {
-										$translated_fields_summary[] = $lang . ': ' . implode( ', ', $fields );
+										// Use the same field mapping logic as CSV generation
+										$mapped_fields = $this->map_translated_fields_to_csv_columns( $fields );
+										$translated_fields_summary[] = $lang . ': ' . implode( ', ', $mapped_fields );
 									}
 								}
 							}

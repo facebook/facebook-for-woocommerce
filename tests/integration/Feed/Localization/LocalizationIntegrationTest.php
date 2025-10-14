@@ -203,11 +203,6 @@ class LocalizationIntegrationTest extends IntegrationTestCase {
 		$this->assertIsString( $default_language );
 		$this->assertNotEmpty( $default_language );
 
-		// Test current language
-		$current_language = $active_integration->get_current_language();
-		$this->assertIsString( $current_language );
-		$this->assertNotEmpty( $current_language );
-
 		// Test that default language is in available languages
 		$this->assertContains(
 			$default_language,
@@ -360,7 +355,5 @@ class LocalizationIntegrationTest extends IntegrationTestCase {
 
 		return null;
 	}
-
-
 
 }

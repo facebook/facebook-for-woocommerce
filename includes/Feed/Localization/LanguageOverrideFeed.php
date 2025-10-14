@@ -51,30 +51,13 @@ class LanguageOverrideFeed {
 	 */
 	public function __construct() {
 		// Avoid circular dependency by checking option directly instead of calling integration method
+		// Also avoid Logger::log() calls in constructor to prevent circular dependency
 		if ( 'yes' !== get_option( 'wc_facebook_language_override_feed_generation_enabled', 'yes' ) ) {
-			Logger::log(
-				'Language override feed initialization skipped - feature disabled in settings',
-				[],
-				array(
-					'should_send_log_to_meta'        => false,
-					'should_save_log_in_woocommerce' => true,
-					'woocommerce_log_level'          => \WC_Log_Levels::DEBUG,
-				)
-			);
 			return;
 		}
 
 		// Check if we have an active localization plugin before proceeding
 		if ( ! IntegrationRegistry::has_active_localization_plugin() ) {
-			Logger::log(
-				'Language override feed initialization skipped - no active localization plugin',
-				[],
-				array(
-					'should_send_log_to_meta'        => false,
-					'should_save_log_in_woocommerce' => true,
-					'woocommerce_log_level'          => \WC_Log_Levels::ERROR,
-				)
-			);
 			return;
 		}
 
@@ -85,15 +68,6 @@ class LanguageOverrideFeed {
 
 		// Ensure we have a valid language code
 		if ( empty( $default_language ) ) {
-			Logger::log(
-				'Language override feed initialization failed - no valid default language',
-				[],
-				array(
-					'should_send_log_to_meta'        => false,
-					'should_save_log_in_woocommerce' => true,
-					'woocommerce_log_level'          => \WC_Log_Levels::ERROR,
-				)
-			);
 			return;
 		}
 
@@ -217,9 +191,8 @@ class LanguageOverrideFeed {
 		foreach ( $languages as $language_code ) {
 			try {
 				// Generate the feed file for this language
-				$header_row = $this->language_feed_data->get_csv_header_for_columns(['id', 'override']);
-				$feed_handler = new LanguageOverrideFeedHandler( $this->language_feed_data, new LanguageOverrideFeedWriter( $language_code, $header_row ) );
-				$success = $feed_handler->write_language_feed_file( $language_code );
+				$language_feed_writer = new LanguageOverrideFeedWriter( $language_code );
+				$success = $language_feed_writer->write_language_feed_file( $this->language_feed_data, $language_code );
 
 				if ( $success ) {
 					$successful_languages[] = $language_code;
@@ -425,14 +398,12 @@ class LanguageOverrideFeed {
 			}
 
 			// Create language-specific feed writer to get file path
-			$header_row = $this->language_feed_data->get_csv_header_for_columns(['id', 'override']);
-			$language_feed_writer = new LanguageOverrideFeedWriter( $language_code, $header_row );
+			$language_feed_writer = new LanguageOverrideFeedWriter( $language_code );
 			$file_path = $language_feed_writer->get_file_path();
 
 			// Regenerate if the file doesn't exist or if explicitly requested
 			if ( ! empty( $_GET['regenerate'] ) || ! file_exists( $file_path ) ) {
-				$feed_handler = new LanguageOverrideFeedHandler( $this->language_feed_data, $language_feed_writer );
-				$success = $feed_handler->write_language_feed_file( $language_code );
+				$success = $language_feed_writer->write_language_feed_file( $this->language_feed_data, $language_code );
 				if ( !$success ) {
 					throw new PluginException( 'Failed to regenerate language feed file', 500 );
 				}

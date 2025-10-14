@@ -38,19 +38,20 @@ class LanguageOverrideFeedWriter extends AbstractFeedFileWriter {
 	 * Constructor.
 	 *
 	 * @param string $language_code Language code for this writer instance
-	 * @param string $header_row CSV header row
 	 * @param string $delimiter Optional. The field delimiter. Default: comma.
 	 * @param string $enclosure Optional. The field enclosure. Default: double quotes.
 	 * @param string $escape_char Optional. The escape character. Default: backslash.
 	 * @since 3.6.0
 	 */
-	public function __construct( string $language_code, string $header_row, string $delimiter = ',', string $enclosure = '"', string $escape_char = '\\' ) {
+	public function __construct( string $language_code, string $delimiter = ',', string $enclosure = '"', string $escape_char = '\\' ) {
 		$this->language_code = $language_code;
 
 		$fb_language_code = \WooCommerce\Facebook\Locale::convert_to_facebook_language_code( $language_code );
 		$feed_name = "language_override_{$fb_language_code}";
 
-		parent::__construct( $feed_name, $header_row, $delimiter, $enclosure, $escape_char );
+		// Use dummy header - real headers will be generated dynamically in write_language_feed_file
+		$dummy_header = 'id,override'; // Minimal required columns
+		parent::__construct( $feed_name, $dummy_header, $delimiter, $enclosure, $escape_char );
 	}
 
 	/**
@@ -129,5 +130,93 @@ class LanguageOverrideFeedWriter extends AbstractFeedFileWriter {
 	 */
 	public function get_language_code(): string {
 		return $this->language_code;
+	}
+
+	/**
+	 * Writes the language override feed file for a specific language.
+	 *
+	 * @param LanguageFeedData $language_feed_data Data source
+	 * @param string $language_code Language code
+	 * @return bool Success status
+	 * @since 3.6.0
+	 */
+	public function write_language_feed_file( LanguageFeedData $language_feed_data, string $language_code ): bool {
+		try {
+			\WooCommerce\Facebook\Framework\Logger::log(
+				'Starting write_language_feed_file',
+				array( 'language_code' => $language_code ),
+				array(
+					'should_send_log_to_meta'        => false,
+					'should_save_log_in_woocommerce' => true,
+					'woocommerce_log_level'          => \WC_Log_Levels::DEBUG,
+				)
+			);
+
+			// Get language feed data
+			$csv_result = $language_feed_data->get_language_csv_data( $language_code, 5000, 0 );
+
+			if ( empty( $csv_result['data'] ) ) {
+				\WooCommerce\Facebook\Framework\Logger::log(
+					'No data available for language',
+					array( 'language_code' => $language_code ),
+					array(
+						'should_send_log_to_meta'        => false,
+						'should_save_log_in_woocommerce' => true,
+						'woocommerce_log_level'          => \WC_Log_Levels::INFO,
+					)
+				);
+				// Still create an empty file with headers
+				$csv_result = array(
+					'data' => array(),
+					'columns' => array( 'id', 'override' )
+				);
+			}
+
+			$columns = $csv_result['columns'];
+
+			// DYNAMIC HEADER GENERATION: Override the dummy header with actual columns
+			$this->header_row = implode( ',', $columns );
+
+			// Prepare data in the format expected by the writer
+			$data = array();
+			foreach ( $csv_result['data'] as $row_data ) {
+				$row = array();
+				foreach ( $columns as $column ) {
+					$row[] = $row_data[ $column ] ?? '';
+				}
+				$data[] = $row;
+			}
+
+			// Use the inherited write_feed_file method from AbstractFeedFileWriter
+			$this->write_feed_file( $data );
+
+			\WooCommerce\Facebook\Framework\Logger::log(
+				'Language feed file written successfully',
+				array( 'language_code' => $language_code ),
+				array(
+					'should_send_log_to_meta'        => false,
+					'should_save_log_in_woocommerce' => true,
+					'woocommerce_log_level'          => \WC_Log_Levels::DEBUG,
+				)
+			);
+
+			return true;
+
+		} catch ( \Exception $e ) {
+			\WooCommerce\Facebook\Framework\Logger::log(
+				'Exception in write_language_feed_file',
+				array(
+					'language_code' => $language_code,
+					'exception_message' => $e->getMessage(),
+				),
+				array(
+					'should_send_log_to_meta'        => true,
+					'should_save_log_in_woocommerce' => true,
+					'woocommerce_log_level'          => \WC_Log_Levels::ERROR,
+				),
+				$e
+			);
+			return false;
+		}
 	}
 }

@@ -334,7 +334,6 @@ class LanguageFeedData {
 			'name' => 'title',
 			'description' => 'description',
 			'short_description' => 'description', // Both map to description
-			'rich_text_description' => 'description', // Also maps to description
 			'brand' => 'brand',
 			'mpn' => 'mpn',
 			'condition' => 'condition',
@@ -344,8 +343,6 @@ class LanguageFeedData {
 			'age_group' => 'age_group',
 			'gender' => 'gender',
 			'material' => 'material',
-			'price' => 'price',
-			'product_categories' => 'product_type',
 			'image_id' => 'image_link',
 			'gallery_image_ids' => 'additional_image_link',
 			'link' => 'link',
@@ -623,10 +620,9 @@ class LanguageFeedData {
 
 			case 'link':
 				if ( in_array( 'link', $product_translated_fields, true ) ) {
-					$value = $this->get_translated_permalink_from_integration(
-						$original_fb_product->get_permalink(),
-						$language_code
-					);
+					// Use the translated product's built-in get_permalink() method
+					// This automatically handles the correct URL structure and translated slugs
+					$value = $translated_fb_product->get_permalink();
 				}
 				break;
 		}
@@ -634,95 +630,8 @@ class LanguageFeedData {
 		return $value;
 	}
 
-	/**
-	 * Convert data array to CSV string with dynamic columns
-	 *
-	 * @param array $csv_result Result from get_language_csv_data containing data and columns
-	 * @return string CSV formatted string
-	 */
-	public function convert_to_csv_string( array $csv_result ): string {
-		if ( empty( $csv_result['data'] ) ) {
-			return $this->get_csv_header_for_columns( ['id', 'override'] );
-		}
 
-		$data = $csv_result['data'];
-		$columns = $csv_result['columns'];
-		$csv_lines = [];
 
-		// Add header with Facebook field descriptions
-		$csv_lines[] = $this->get_csv_header_for_columns( $columns );
-
-		// Add column headers
-		$csv_lines[] = implode( ',', $columns );
-
-		// Add data rows
-		foreach ( $data as $row ) {
-			$csv_lines[] = $this->format_csv_row_dynamic( $row, $columns );
-		}
-
-		return implode( "\n", $csv_lines );
-	}
-
-	/**
-	 * Get CSV header with Facebook field descriptions for dynamic columns
-	 *
-	 * @param array $columns Array of column names
-	 * @return string CSV header lines (multiple lines)
-	 */
-	public function get_csv_header_for_columns( array $columns ): string {
-		$field_descriptions = [
-			'id' => '# Required | A unique content ID for the item. Use the item\'s SKU if you can. Each content ID must appear only once in your catalog. To run dynamic ads this ID must exactly match the content ID for the same item in your Meta Pixel code. Character limit: 100',
-			'override' => '# Required | Language code. Supported codes: https://www.facebook.com/business/help/2144286692311411',
-			'title' => '# Optional | A specific and relevant title for the item. See title specifications: https://www.facebook.com/business/help/2104231189874655 Character limit: 150',
-			'description' => '# Optional | A short and relevant description of the item. Include specific or unique product features like material or color. Use plain text and don\'t enter text in all capital letters. See description specifications: https://www.facebook.com/business/help/2302017289821154 Character limit: 5000',
-			'link' => '# Optional | The URL of the specific product page where people can buy the item.',
-			'brand' => '# Optional | The brand name of the item.',
-			'price' => '# Optional | The price of the item with currency.',
-			'product_type' => '# Optional | The category of the item.',
-			'image_link' => '# Optional | The URL of the main image for the item.',
-			'additional_image_link' => '# Optional | Additional image URLs for the item.',
-		];
-
-		$header_lines = [];
-		foreach ( $columns as $column ) {
-			$header_lines[] = $field_descriptions[ $column ] ?? "# Optional | {$column}";
-		}
-
-		return implode( "\n", $header_lines );
-	}
-
-	/**
-	 * Format a single CSV row with dynamic columns
-	 *
-	 * @param array $row Row data
-	 * @param array $columns Column names in order
-	 * @return string Formatted CSV row
-	 */
-	private function format_csv_row_dynamic( array $row, array $columns ): string {
-		$fields = [];
-		foreach ( $columns as $column ) {
-			$fields[] = $row[ $column ] ?? '';
-		}
-
-		// Use Facebook's CSV formatting approach
-		$escaped_fields = array_map( [ $this, 'format_string_for_csv' ], $fields );
-
-		return implode( ',', $escaped_fields );
-	}
-
-	/**
-	 * Format string for CSV using Facebook's approach
-	 *
-	 * @param string $text Text to format
-	 * @return string Formatted text
-	 */
-	private function format_string_for_csv( $text ): string {
-		if ( (bool) $text ) {
-			return '"' . str_replace( '"', "'", $text ) . '"';
-		} else {
-			return '';
-		}
-	}
 
 	/**
 	 * Format price for CSV using Facebook's approach
@@ -736,22 +645,4 @@ class LanguageFeedData {
 	}
 
 
-	/**
-	 * Get translated permalink using the appropriate integration
-	 *
-	 * @param string $original_url Original product URL
-	 * @param string $language_code Target language code
-	 * @return string Translated URL
-	 */
-	private function get_translated_permalink_from_integration( string $original_url, string $language_code ): string {
-		$integrations = IntegrationRegistry::get_all_localization_integrations();
-
-		foreach ( $integrations as $integration ) {
-			if ( $integration->is_plugin_active() ) {
-				return $integration->get_translated_permalink( $original_url, $language_code );
-			}
-		}
-
-		return $original_url;
-	}
 }

@@ -297,7 +297,6 @@ function initialize_wpml_filters() {
 	// Register WPML's core filters that the integration relies on
 	add_filter( 'wpml_active_languages', __NAMESPACE__ . '\wpml_test_get_active_languages', 10, 2 );
 	add_filter( 'wpml_default_language', __NAMESPACE__ . '\wpml_test_get_default_language' );
-	add_filter( 'wpml_current_language', __NAMESPACE__ . '\wpml_test_get_current_language' );
 	add_filter( 'wpml_object_id', __NAMESPACE__ . '\wpml_test_get_object_id', 10, 4 );
 
 	// Set the current language context
@@ -352,18 +351,6 @@ function wpml_test_get_default_language( $language = null ) {
 
 	$settings = get_option( 'icl_sitepress_settings', [] );
 	return $settings['default_language'] ?? 'en';
-}
-
-/**
- * Mock WPML's wpml_current_language filter for testing
- */
-function wpml_test_get_current_language( $language = null ) {
-	if ( ! is_null( $language ) ) {
-		return $language;
-	}
-
-	// Return the current language from constant or default to English
-	return defined( 'ICL_LANGUAGE_CODE' ) ? ICL_LANGUAGE_CODE : 'en';
 }
 
 /**
