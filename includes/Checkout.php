@@ -186,37 +186,51 @@ class Checkout {
 					);
 				}
 			}
-
+			$use_iframe = (bool) apply_filters( 'facebook_commerce_checkout_use_iframe', false );
 			$checkout_url = wc_get_checkout_url();
-			echo '<!DOCTYPE html>
-			<html lang="en">
-			<head>
-				<meta charset="UTF-8">
-				<meta name="viewport" content="width=device-width, initial-scale=1">
-				<title>Checkout</title>
-				<style>
-					body, html {
-						margin: 0;
-						padding: 0;
-						height: 100%;
-						overflow: hidden;
-					}
-					iframe {
-						width: 100%;
-						height: 100vh;
-						border: none;
-						display: block;
-						max-width: 100%;
-						max-height: 100%;
-						box-sizing: border-box;
-					}
-				</style>
-			</head>
-			<body>
-				<iframe src="' . esc_url( $checkout_url ) . '"></iframe>
-			</body>
-			</html>';
+			if ( $use_iframe ) {
+				echo '<!DOCTYPE html>
+				<html lang="en">
+				<head>
+					<meta charset="UTF-8">
+					<meta name="viewport" content="width=device-width, initial-scale=1">
+					<title>Checkout</title>
+					<style>
+						body, html {
+							margin: 0;
+							padding: 0;
+							height: 100%;
+							overflow: hidden;
+						}
+						iframe {
+							width: 100%;
+							height: 100vh;
+							border: none;
+							display: block;
+							max-width: 100%;
+							max-height: 100%;
+							box-sizing: border-box;
+						}
+					</style>
+				</head>
+				<body>
+					<iframe src="' . esc_url( $checkout_url ) . '"></iframe>
+				</body>
+				</html>';
 
+				exit;
+			}
+			if ( ! headers_sent() ) {
+				wp_safe_redirect( esc_url_raw( $checkout_url ) );
+				exit;
+			}
+
+			// Fallback when headers already sent: force top-level navigation via JS
+			echo '<!doctype html><html><head><meta charset="utf-8"><title>' . esc_html__( 'Redirecting...', 'facebook-for-woocommerce' ) . '</title></head><body>';
+			echo '<script>';
+			echo 'try{ top.location.replace(' . wp_json_encode( $checkout_url ) . '); }catch(e){ window.location.replace(' . wp_json_encode( $checkout_url ) . '); }';
+			echo '</script>';
+			echo '</body></html>';
 			exit;
 		}
 
