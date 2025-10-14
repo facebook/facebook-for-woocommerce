@@ -363,6 +363,10 @@ class WC_Facebook_Loader {
 			return;
 		}
 
+		if ( false !== get_option( 'wc_facebook_svr_flags' ) ) {
+			return;
+		}
+
 		$wp_woo_flags = 0;
 
 		$is_wp_com = self::is_wp_com();
