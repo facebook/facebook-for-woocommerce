@@ -140,6 +140,8 @@ class Shops extends Abstract_Settings_Screen {
 				'sync_navigation_menu_nonce'   => wp_create_nonce( self::ACTION_SYNC_NAVIGATION_MENU ),
 			)
 		);
+
+		wp_enqueue_style( 'wc-facebook-admin-whatsapp-banner', facebook_for_woocommerce()->get_plugin_url() . '/assets/css/admin/facebook-for-woocommerce-whatsapp-banner.css', array(), \WC_Facebookcommerce::VERSION );
 	}
 
 	/**
@@ -149,6 +151,10 @@ class Shops extends Abstract_Settings_Screen {
 	 */
 	public function render() {
 		$is_connected = facebook_for_woocommerce()->get_connection_handler()->is_connected();
+
+		if ( $is_connected ) {
+			$this->render_whatsapp_promo_banner();
+		}
 
 		$this->render_facebook_iframe();
 
@@ -182,7 +188,6 @@ class Shops extends Abstract_Settings_Screen {
 		if ( empty( $iframe_url ) ) {
 			return;
 		}
-
 		?>
 	<div style="display: flex; justify-content: center; max-width: 1200px; margin: 0 auto;">
 		<iframe
@@ -459,5 +464,17 @@ class Shops extends Abstract_Settings_Screen {
 				}
 			});
 		JAVASCRIPT;
+	}
+
+	public static function render_whatsapp_promo_banner() {
+		$should_show_whatsapp_utility_banner = facebook_for_woocommerce()->get_rollout_switches()->is_switch_enabled(
+			RolloutSwitches::WHATSAPP_UTILITY_MESSAGING_BETA_EXPERIENCE
+		);
+		if ( ! $should_show_whatsapp_utility_banner ) {
+			return;
+		}
+		$wa_banner = new \WC_Facebookcommerce_Admin_Banner();
+		$wa_banner->render_banner();
+		$wa_banner->enqueue_banner_script();
 	}
 }
