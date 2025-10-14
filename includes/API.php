@@ -615,6 +615,23 @@ class API extends Base {
 	 * @throws ApiException In case of a general API error or rate limit error.
 	 */
 	public function send_pixel_events( $pixel_id, array $events ) {
+		// 🎯 EVENT MONITORING FOR E2E TESTS
+		// Check if we're in test mode (identified by cookie)
+		$test_id = isset( $_COOKIE['facebook_test_id'] ) ? sanitize_text_field( $_COOKIE['facebook_test_id'] ) : null;
+
+		if ( $test_id && defined( 'WP_DEBUG' ) && WP_DEBUG_LOG ) {
+			foreach ( $events as $event ) {
+				error_log( sprintf(
+					'[FBTEST|%s] CAPI|%s|%s|%s',
+					$test_id,
+					$event->get_name(),    // ✅ Correct method
+					$event->get_id(),      // ✅ Correct method
+					json_encode( $event->get_data() )  // ✅ Get full data
+				) );
+			}
+		}
+		// 🎯 END EVENT MONITORING
+
 		$request = new API\Pixel\Events\Request( $pixel_id, $events );
 		$this->set_response_handler( Response::class );
 		return $this->perform_request( $request );

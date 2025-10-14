@@ -1,0 +1,60 @@
+{
+  "testId": "test-run-1759852150442",
+  "timestamp": "2025-10-07T15:49:19.901Z",
+  "events": {
+    "pixel": [],
+    "capi": [
+      {
+        "type": "capi",
+        "eventName": "PageView",
+        "eventId": "864097ac-a439-4dfa-8e15-1abb0c08f00e",
+        "eventData": {
+          "action_source": "website",
+          "event_time": 1759852150,
+          "event_id": "864097ac-a439-4dfa-8e15-1abb0c08f00e",
+          "event_source_url": "http://wooc-local-test-sitecom.local/",
+          "custom_data": [],
+          "user_data": {
+            "client_ip_address": "::1",
+            "client_user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.7204.23 Safari/537.36",
+            "click_id": "",
+            "browser_id": "",
+            "em": "33e54dec0cd79fc4b5e911c15f836c46ec8d0e452ecd3ca5f707bce0a3540a3b",
+            "external_id": "6b86b273ff34fce19d6b804eff5a3f5747ada4eaa22f1d49c01e52ddb7875b4b"
+          },
+          "event_name": "PageView"
+        },
+        "testId": "test-run-1759852150442",
+        "timestamp": 1759852159901
+      },
+      {
+        "type": "capi",
+        "eventName": "PageView",
+        "eventId": "494335e9-3a85-40e7-a7f7-ea5033b0e256",
+        "eventData": {
+          "action_source": "website",
+          "event_time": 1759852153,
+          "event_id": "494335e9-3a85-40e7-a7f7-ea5033b0e256",
+          "event_source_url": "http://wooc-local-test-sitecom.local/shop/",
+          "custom_data": [],
+          "user_data": {
+            "client_ip_address": "::1",
+            "client_user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.7204.23 Safari/537.36",
+            "click_id": "",
+            "browser_id": "fb.1.1759852151207.952843490958726521",
+            "em": "33e54dec0cd79fc4b5e911c15f836c46ec8d0e452ecd3ca5f707bce0a3540a3b",
+            "external_id": "6b86b273ff34fce19d6b804eff5a3f5747ada4eaa22f1d49c01e52ddb7875b4b"
+          },
+          "event_name": "PageView"
+        },
+        "testId": "test-run-1759852150442",
+        "timestamp": 1759852159901
+      }
+    ]
+  },
+  "summary": {
+    "totalEvents": 2,
+    "pixelEvents": 0,
+    "capiEvents": 2
+  }
+}

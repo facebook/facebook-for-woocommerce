@@ -1,0 +1,13 @@
+{
+  "testId": "test-run-1759851207677",
+  "timestamp": "2025-10-07T15:33:34.272Z",
+  "events": {
+    "pixel": [],
+    "capi": []
+  },
+  "summary": {
+    "totalEvents": 0,
+    "pixelEvents": 0,
+    "capiEvents": 0
+  }
+}

@@ -1,0 +1,60 @@
+{
+  "testId": "test-run-1759851837486",
+  "timestamp": "2025-10-07T15:44:07.457Z",
+  "events": {
+    "pixel": [],
+    "capi": [
+      {
+        "type": "capi",
+        "eventName": "PageView",
+        "eventId": "98f65896-5d63-4663-8cc3-54661324889e",
+        "eventData": {
+          "action_source": "website",
+          "event_time": 1759851837,
+          "event_id": "98f65896-5d63-4663-8cc3-54661324889e",
+          "event_source_url": "http://wooc-local-test-sitecom.local/",
+          "custom_data": [],
+          "user_data": {
+            "client_ip_address": "::1",
+            "client_user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.7204.23 Safari/537.36",
+            "click_id": "",
+            "browser_id": "",
+            "em": "33e54dec0cd79fc4b5e911c15f836c46ec8d0e452ecd3ca5f707bce0a3540a3b",
+            "external_id": "6b86b273ff34fce19d6b804eff5a3f5747ada4eaa22f1d49c01e52ddb7875b4b"
+          },
+          "event_name": "PageView"
+        },
+        "testId": "test-run-1759851837486",
+        "timestamp": 1759851847457
+      },
+      {
+        "type": "capi",
+        "eventName": "PageView",
+        "eventId": "261fbc59-e8bb-4321-9a93-c33193e08910",
+        "eventData": {
+          "action_source": "website",
+          "event_time": 1759851844,
+          "event_id": "261fbc59-e8bb-4321-9a93-c33193e08910",
+          "event_source_url": "http://wooc-local-test-sitecom.local/product/test-product-for-facebook-pixel/",
+          "custom_data": [],
+          "user_data": {
+            "client_ip_address": "::1",
+            "client_user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.7204.23 Safari/537.36",
+            "click_id": "",
+            "browser_id": "fb.1.1759851841684.781177175297729376",
+            "em": "33e54dec0cd79fc4b5e911c15f836c46ec8d0e452ecd3ca5f707bce0a3540a3b",
+            "external_id": "6b86b273ff34fce19d6b804eff5a3f5747ada4eaa22f1d49c01e52ddb7875b4b"
+          },
+          "event_name": "PageView"
+        },
+        "testId": "test-run-1759851837486",
+        "timestamp": 1759851847457
+      }
+    ]
+  },
+  "summary": {
+    "totalEvents": 2,
+    "pixelEvents": 0,
+    "capiEvents": 2
+  }
+}

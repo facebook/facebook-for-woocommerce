@@ -1,0 +1,135 @@
+{
+  "testId": "test-run-1759941824459",
+  "timestamp": "2025-10-08T16:43:54.498Z",
+  "events": {
+    "pixel": [
+      {
+        "type": "pixel_javascript",
+        "args": [
+          "set",
+          "agent",
+          "woocommerce_0-10.2.2-3.5.8",
+          "21602405281339"
+        ],
+        "timestamp": 1759941828775,
+        "testId": "test-run-1759941824459"
+      },
+      {
+        "type": "pixel_javascript",
+        "args": [
+          "track",
+          "PageView",
+          {
+            "source": "woocommerce_0",
+            "version": "10.2.2",
+            "pluginVersion": "3.5.8",
+            "user_data": {
+              "em": "dev-email@wpengine.local",
+              "external_id": "1"
+            }
+          },
+          {
+            "eventID": "399030c5-d768-4bad-87d4-dbd84a1aff97"
+          }
+        ],
+        "timestamp": 1759941828775,
+        "testId": "test-run-1759941824459"
+      },
+      {
+        "type": "pixel_network",
+        "url": "https://connect.facebook.net/en_US/fbevents.js",
+        "method": "GET",
+        "timestamp": 1759941825046,
+        "testId": "test-run-1759941824459"
+      },
+      {
+        "type": "pixel_network",
+        "url": "https://connect.facebook.net/signals/config/21602405281339?v=2.9.234&r=stable&domain=wooc-local-test-sitecom.local&hme=8cc7145f8d1f3cf4631177d0631077d9deb0ae3f644f21ab6cd23c0c201883ea&ex_m=88%2C149%2C129%2C19%2C123%2C62%2C42%2C124%2C69%2C61%2C136%2C77%2C13%2C87%2C27%2C118%2C109%2C67%2C70%2C117%2C133%2C96%2C138%2C7%2C3%2C4%2C6%2C5%2C2%2C78%2C86%2C139%2C215%2C161%2C56%2C220%2C217%2C218%2C49%2C176%2C26%2C66%2C224%2C223%2C164%2C29%2C55%2C8%2C58%2C82%2C83%2C84%2C89%2C113%2C28%2C25%2C116%2C112%2C111%2C130%2C68%2C132%2C131%2C44%2C114%2C54%2C106%2C12%2C135%2C39%2C205%2C207%2C171%2C22%2C23%2C24%2C16%2C17%2C38%2C34%2C36%2C35%2C73%2C79%2C81%2C94%2C122%2C125%2C40%2C95%2C20%2C18%2C100%2C63%2C32%2C127%2C126%2C128%2C119%2C21%2C31%2C53%2C93%2C134%2C64%2C15%2C30%2C186%2C157%2C266%2C203%2C147%2C189%2C182%2C91%2C115%2C72%2C104%2C48%2C41%2C102%2C103%2C108%2C52%2C14%2C110%2C101%2C59%2C43%2C97%2C47%2C50%2C46%2C85%2C137%2C0%2C107%2C11%2C105%2C9%2C1%2C51%2C80%2C57%2C60%2C99%2C76%2C75%2C45%2C120%2C74%2C71%2C65%2C98%2C90%2C37%2C121%2C33%2C92%2C10%2C140",
+        "method": "GET",
+        "timestamp": 1759941825208,
+        "testId": "test-run-1759941824459"
+      },
+      {
+        "type": "pixel_network",
+        "url": "https://connect.facebook.net/en_US/fbevents.js",
+        "method": "GET",
+        "timestamp": 1759941828694,
+        "testId": "test-run-1759941824459"
+      },
+      {
+        "type": "pixel_network",
+        "url": "https://connect.facebook.net/signals/config/21602405281339?v=2.9.234&r=stable&domain=wooc-local-test-sitecom.local&hme=8cc7145f8d1f3cf4631177d0631077d9deb0ae3f644f21ab6cd23c0c201883ea&ex_m=88%2C149%2C129%2C19%2C123%2C62%2C42%2C124%2C69%2C61%2C136%2C77%2C13%2C87%2C27%2C118%2C109%2C67%2C70%2C117%2C133%2C96%2C138%2C7%2C3%2C4%2C6%2C5%2C2%2C78%2C86%2C139%2C215%2C161%2C56%2C220%2C217%2C218%2C49%2C176%2C26%2C66%2C224%2C223%2C164%2C29%2C55%2C8%2C58%2C82%2C83%2C84%2C89%2C113%2C28%2C25%2C116%2C112%2C111%2C130%2C68%2C132%2C131%2C44%2C114%2C54%2C106%2C12%2C135%2C39%2C205%2C207%2C171%2C22%2C23%2C24%2C16%2C17%2C38%2C34%2C36%2C35%2C73%2C79%2C81%2C94%2C122%2C125%2C40%2C95%2C20%2C18%2C100%2C63%2C32%2C127%2C126%2C128%2C119%2C21%2C31%2C53%2C93%2C134%2C64%2C15%2C30%2C186%2C157%2C266%2C203%2C147%2C189%2C182%2C91%2C115%2C72%2C104%2C48%2C41%2C102%2C103%2C108%2C52%2C14%2C110%2C101%2C59%2C43%2C97%2C47%2C50%2C46%2C85%2C137%2C0%2C107%2C11%2C105%2C9%2C1%2C51%2C80%2C57%2C60%2C99%2C76%2C75%2C45%2C120%2C74%2C71%2C65%2C98%2C90%2C37%2C121%2C33%2C92%2C10%2C140",
+        "method": "GET",
+        "timestamp": 1759941828730,
+        "testId": "test-run-1759941824459"
+      },
+      {
+        "type": "pixel_network",
+        "url": "https://www.facebook.com/tr/?id=21602405281339&ev=PageView&dl=http%3A%2F%2Fwooc-local-test-sitecom.local%2Fshop%2F&rl=&if=false&ts=1759941828781&cd[source]=woocommerce_0&cd[version]=10.2.2&cd[pluginVersion]=3.5.8&cd[user_data]=%7B%22em%22%3A%22dev-email%40wpengine.local%22%2C%22external_id%22%3A%221%22%7D&sw=1280&sh=720&cud[em]=***-*****%40********.*****&cud[external_id]=%23&ncud[em]=***-*****%40********.*****&ud[em]=33e54dec0cd79fc4b5e911c15f836c46ec8d0e452ecd3ca5f707bce0a3540a3b&ncud[external_id]=%23&ud[external_id]=6b86b273ff34fce19d6b804eff5a3f5747ada4eaa22f1d49c01e52ddb7875b4b&aud[em]=33e54dec0cd79fc4b5e911c15f836c46ec8d0e452ecd3ca5f707bce0a3540a3b&aud[external_id]=6b86b273ff34fce19d6b804eff5a3f5747ada4eaa22f1d49c01e52ddb7875b4b&v=2.9.234&r=stable&a=woocommerce_0-10.2.2-3.5.8&ec=0&o=4126&fbp=fb.1.1759941828778.43954077610583245&ler=empty&pmd[title]=Shop%20%E2%80%93%20wooc-local-test-site.com&pmd[contents]=%5B%5D&plt=575.8000000044703&it=1759941828722&coo=false&eid=399030c5-d768-4bad-87d4-dbd84a1aff97&expv2[0]=pl0&expv2[1]=el3&expv2[2]=bc1&rqm=GET",
+        "method": "GET",
+        "timestamp": 1759941828783,
+        "testId": "test-run-1759941824459"
+      },
+      {
+        "type": "pixel_network",
+        "url": "https://www.facebook.com/tr/",
+        "method": "POST",
+        "timestamp": 1759941831485,
+        "testId": "test-run-1759941824459"
+      }
+    ],
+    "capi": [
+      {
+        "type": "capi",
+        "eventName": "PageView",
+        "eventId": "7d1ab966-d466-451c-874a-20478fc5485e",
+        "eventData": {
+          "action_source": "website",
+          "event_time": 1759941824,
+          "event_id": "7d1ab966-d466-451c-874a-20478fc5485e",
+          "event_source_url": "http://wooc-local-test-sitecom.local/",
+          "custom_data": [],
+          "user_data": {
+            "client_ip_address": "::1",
+            "client_user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.7204.23 Safari/537.36",
+            "click_id": "",
+            "browser_id": "",
+            "em": "33e54dec0cd79fc4b5e911c15f836c46ec8d0e452ecd3ca5f707bce0a3540a3b",
+            "external_id": "6b86b273ff34fce19d6b804eff5a3f5747ada4eaa22f1d49c01e52ddb7875b4b"
+          },
+          "event_name": "PageView"
+        },
+        "testId": "test-run-1759941824459",
+        "timestamp": 1759941834498
+      },
+      {
+        "type": "capi",
+        "eventName": "PageView",
+        "eventId": "399030c5-d768-4bad-87d4-dbd84a1aff97",
+        "eventData": {
+          "action_source": "website",
+          "event_time": 1759941828,
+          "event_id": "399030c5-d768-4bad-87d4-dbd84a1aff97",
+          "event_source_url": "http://wooc-local-test-sitecom.local/shop/",
+          "custom_data": [],
+          "user_data": {
+            "client_ip_address": "::1",
+            "client_user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.7204.23 Safari/537.36",
+            "click_id": "",
+            "browser_id": "",
+            "em": "33e54dec0cd79fc4b5e911c15f836c46ec8d0e452ecd3ca5f707bce0a3540a3b",
+            "external_id": "6b86b273ff34fce19d6b804eff5a3f5747ada4eaa22f1d49c01e52ddb7875b4b"
+          },
+          "event_name": "PageView"
+        },
+        "testId": "test-run-1759941824459",
+        "timestamp": 1759941834498
+      }
+    ]
+  },
+  "summary": {
+    "totalEvents": 10,
+    "pixelEvents": 8,
+    "capiEvents": 2
+  }
+}
