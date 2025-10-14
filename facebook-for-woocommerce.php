@@ -363,7 +363,7 @@ class WC_Facebook_Loader {
 			return;
 		}
 
-		if ( false !== get_option( 'wc_facebook_svr_flags' ) ) {
+		if ( get_transient( 'wc_facebook_svr_flags_last_update' ) ) {
 			return;
 		}
 
@@ -383,6 +383,7 @@ class WC_Facebook_Loader {
 		}
 
 		update_option( 'wc_facebook_svr_flags', $wp_woo_flags );
+		set_transient( 'wc_facebook_svr_flags_last_update', true, WEEK_IN_SECONDS );
 	}
 
 
