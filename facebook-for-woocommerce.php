@@ -317,9 +317,9 @@ class WC_Facebook_Loader {
 
 
 	private static function is_wp_com() {
-		if ( defined('WPCOMSH_VERSION') && defined( 'IS_ATOMIC' ) && IS_ATOMIC ) {
-          return true;
-	    }
+		if ( defined( 'WPCOMSH_VERSION' ) && defined( 'IS_ATOMIC' ) && IS_ATOMIC ) {
+			return true;
+		}
 		return false;
 	}
 
