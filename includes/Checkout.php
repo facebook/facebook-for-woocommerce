@@ -211,9 +211,28 @@ class Checkout {
 						box-sizing: border-box;
 					}
 				</style>
+				<script>
+					// Prevent lazy loading plugins from interfering with the checkout iframe
+					document.addEventListener("DOMContentLoaded", function() {
+						var iframe = document.querySelector("iframe");
+						if (iframe) {
+							// Ensure the iframe loads immediately
+							iframe.setAttribute("data-no-lazy", "1");
+							iframe.setAttribute("data-skip-lazy", "1");
+							iframe.setAttribute("loading", "eager");
+							iframe.removeAttribute("data-src");
+							iframe.removeAttribute("class");
+							
+							// Force reload if src was changed to placeholder
+							if (iframe.src.includes("data:image/svg+xml")) {
+								iframe.src = "' . esc_url( $checkout_url ) . '";
+							}
+						}
+					});
+				</script>
 			</head>
 			<body>
-				<iframe src="' . esc_url( $checkout_url ) . '"></iframe>
+				<iframe src="' . esc_url( $checkout_url ) . '" data-no-lazy="1" data-skip-lazy="1" loading="eager"></iframe>
 			</body>
 			</html>';
 
