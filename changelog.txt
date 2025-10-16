@@ -1,5 +1,15 @@
 *** Facebook for WooCommerce Changelog ***
 
+= 3.5.10 - 2025-10-14 =
+* Add - Promo Banner for WhatsApp Utility by @woo-ardsouza in #3660
+* Add - Pb fix option 3 by @chc421 in #3617
+* Fix - Fix: Facebook product videos and attributes not saving by @devbodaghe in #3655
+* Tweak - feat: reducing promotions feed overhead by @rithikb24 in #3654
+* Fix - Updated the ajax calls to check if the caller is a legit user by @vahidkay-meta in #3647
+* Add - feat: making product update sync to fb async by @rithikb24 in #3645
+* Dev - Fix/automate stable version prep release by @vahidkay-meta in #3646
+* Fix - Stale pixel fix by @jczhuoMeta in #3640
+
 = 3.5.9 - 2025-09-30 =
 * Tweak - Focus admin user check on order creation capabilities by @iodic in #3643
 * Fix - Added code to exclude purchases registered by the admin user by @vahidkay-meta in #3641
