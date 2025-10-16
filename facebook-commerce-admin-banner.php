@@ -9,7 +9,7 @@
  */
 
 /**
- * Outputs WhatApp utility messaging recruitment admin banner
+ * Outputs WhatApp utility messaging promo banner
  *
  * @since 3.5.2
  */
@@ -18,7 +18,7 @@
  * WhatsApp Admin Banner class for Facebook for WooCommerce.
  */
 class WC_Facebookcommerce_Admin_Banner {
-	const BANNER_ID = 'wc_facebook_admin_banner';
+	const BANNER_ID = 'wc_facebook_promo_banner';
 
 	public function __construct() {
 		add_action(
@@ -63,8 +63,8 @@ class WC_Facebookcommerce_Admin_Banner {
 		check_ajax_referer( self::BANNER_ID, 'nonce' );
 		update_user_meta(
 			get_current_user_id(),
-			self::BANNER_ID,
-			1
+			self::BANNER_ID . '_dismissed',
+			true
 		);
 	}
 
@@ -73,21 +73,20 @@ class WC_Facebookcommerce_Admin_Banner {
 	 */
 	public function render_banner() {
 		// Check if the WhatsApp admin banner should be shown.
-		if ( strtotime( 'now' ) > strtotime( '2025-06-15 23:59:59' ) ) {
-			return;
-		}
-
 		if ( ! current_user_can( 'manage_woocommerce' ) ) {
 			return;
 		}
 
-		if ( get_user_meta(
-			get_current_user_id(),
-			self::BANNER_ID,
-			true
-		) ) {
+		$impressions = (int) get_user_meta( get_current_user_id(), self::BANNER_ID . '_impressions', true );
+		$dismissed   = (bool) get_user_meta( get_current_user_id(), self::BANNER_ID . '_dismissed', true );
+
+		// Check if banner is not dismissed and impressions haven't crossed 3 views
+		if ( ! ( ( $impressions < 3 ) && ! $dismissed ) ) {
 			return;
 		}
+
+		// Update Impressions
+		update_user_meta( get_current_user_id(), self::BANNER_ID . '_impressions', $impressions + 1 );
 
 		$banner_html  = '<div class="fb-wa-banner" data-nonce="' .
 			esc_attr( wp_create_nonce( self::BANNER_ID ) ) .
@@ -102,16 +101,13 @@ class WC_Facebookcommerce_Admin_Banner {
 				)
 			) .
 			'" width="36" height="36" alt="WhatsApp Logo" />';
-		$banner_html .= '<h2>Sign up to test WhatsApp’s new integration with '
-			. 'WooCommerce</h2>';
-		$banner_html .= '<p>We’re launching a brand new WhatsApp integration for '
-			. 'WooCommerce allowing businesses to send order tracking notifications '
-			. 'on WhatsApp. Sign up for a chance to join our testing program and get '
-			. 'early access to this new feature. As a thank you, participants who '
-			. 'complete testing will receive a $500 ad credit.</p>';
+		$banner_html .= '<h2>Try WhatsApp on WooCommerce</h2>';
+		$banner_html .= '<p>Send timely order updates to customers on WhatsApp when '
+			. 'they buy from your store. Connect WhatsApp to WooCommerce to get started '
+			. 'started.</p>';
 		$banner_html .= '<a class="wa-cta-button" '
-			. 'href="https://facebookpso.qualtrics.com/jfe/form/SV_0SVseus9UADOhhQ"'
-			. '>Sign Up</a>';
+			. 'href="' . esc_url( admin_url( 'admin.php?page=wc-whatsapp' ) ) . '"'
+			. '>Get started</a>';
 		$banner_html .= '<a class="wa-close-button" title="Close banner" '
 			. 'href="#"><img src="' .
 			esc_url(

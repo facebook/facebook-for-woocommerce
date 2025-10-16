@@ -10,7 +10,7 @@
  * Description: Grow your business on Facebook! Use this official plugin to help sell more of your products using Facebook. After completing the setup, you'll be ready to create ads that promote your products and you can also create a shop section on your Page where customers can browse your products on Facebook.
  * Author: Facebook
  * Author URI: https://www.facebook.com/
- * Version: 3.5.8
+ * Version: 3.5.9
  * Requires at least: 5.6
  * Requires PHP: 7.4
  * Text Domain: facebook-for-woocommerce
@@ -62,7 +62,7 @@ class WC_Facebook_Loader {
 	/**
 	 * @var string the plugin version. This must be in the main plugin file to be automatically bumped by Woorelease.
 	 */
-	const PLUGIN_VERSION = '3.5.8'; // WRCS: DEFINED_VERSION.
+	const PLUGIN_VERSION = '3.5.9'; // WRCS: DEFINED_VERSION.
 
 	// Minimum PHP version required by this plugin.
 	const MINIMUM_PHP_VERSION = '7.4.0';
@@ -317,11 +317,7 @@ class WC_Facebook_Loader {
 
 
 	private static function is_wp_com() {
-		$api_url       = 'https://public-api.wordpress.com/rest/v1.1/sites/' . wp_parse_url( get_site_url() )['host'];
-		$response      = wp_remote_get( $api_url );
-		$response_body = json_decode( wp_remote_retrieve_body( $response ), true );
-
-		if ( ! is_wp_error( $response ) && isset( $response_body['ID'] ) ) {
+		if ( defined( 'WPCOMSH_VERSION' ) && defined( 'IS_ATOMIC' ) && IS_ATOMIC ) {
 			return true;
 		}
 		return false;
@@ -367,11 +363,9 @@ class WC_Facebook_Loader {
 			return;
 		}
 
-		if ( false !== get_transient( 'wc_facebook_svr_flags_ds' ) ) {
+		if ( get_transient( 'wc_facebook_svr_flags_last_update' ) ) {
 			return;
 		}
-
-		set_transient( 'wc_facebook_svr_flags_ds', 1, HOUR_IN_SECONDS );
 
 		$wp_woo_flags = 0;
 
@@ -389,7 +383,7 @@ class WC_Facebook_Loader {
 		}
 
 		update_option( 'wc_facebook_svr_flags', $wp_woo_flags );
-		set_transient( 'wc_facebook_svr_flags_ds', 1, WEEK_IN_SECONDS );
+		set_transient( 'wc_facebook_svr_flags_last_update', true, WEEK_IN_SECONDS );
 	}
 
 

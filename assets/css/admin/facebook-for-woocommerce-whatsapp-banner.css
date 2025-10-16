@@ -2,7 +2,8 @@
 	display: block;
 	position: relative;
 	box-sizing: border-box;
-	width: 1000px;
+	max-width: 1060px;
+	margin: auto;
 	margin-bottom: 20px;
 	padding: 16px;
 	color: #050505;
@@ -12,29 +13,31 @@
 
 .fb-wa-banner p,
 .fb-wa-banner h2 {
-	font-family: Helvetica, Arial, sans-serif;
+	font-family: Helvetica;
 	font-size: 20px;
+	font-style: normal;
+	font-weight: 400;
 	line-height: 24px;
-	color:#606770;
+	color:#5E6771;
 }
 
 .fb-wa-banner h2 {
-	font-weight: 600;
-	color: #1c1e21;
+	font-weight: 700;
+	color: #1B2327;
 }
 
 .fb-wa-banner .wa-cta-button {
 	display: inline-block;
 	cursor: pointer;
-	border: 1px solid;
+	border: 1px solid #0079FB;
 	width: 151px;
 	border-radius: 6px;
 	text-decoration: none;
 	box-sizing: content-box;
-	font-size: 16px;
+	font-size: 14px;
 	line-height: 34px;
 	-webkit-font-smoothing: antialiased;
-	font-weight: bold;
+	font-weight: 700;
 	justify-content: center;
 	padding: 0 8px;
 	position: relative;
@@ -44,8 +47,8 @@
 	transition: 200ms cubic-bezier(.08, .52, .52, 1) background-color, 200ms cubic-bezier(.08, .52, .52, 1) box-shadow, 200ms cubic-bezier(.08, .52, .52, 1) transform;
 	padding: 0 16px;
 	color: #fff;
-	background-color: #1877f2;
-	border-color: #1877f2;
+	background-color: #0079FB;
+	border-color: #0079FB;
 }
 
 .fb-wa-banner .wa-cta-button:hover {

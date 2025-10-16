@@ -444,6 +444,17 @@ if ( ! class_exists( 'WC_Facebookcommerce_Utils' ) ) :
 		}
 
 		/**
+		 * Checks if the ajax caller is admin and the call is stemming from an active admin session.
+		 *
+		 * @param string $action
+		 * @param string $nonce
+		 * @return bool
+		 */
+		public static function is_legit_ajax_call( $action, $nonce = 'nonce' ) {
+			return self::is_admin_user() && check_ajax_referer( $action, $nonce );
+		}
+
+		/**
 		 * Returns whether AJAX permissions are valid.
 		 *
 		 * @param string $action_text
