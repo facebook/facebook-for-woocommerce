@@ -731,4 +731,223 @@ class AdminTest extends \WP_UnitTestCase {
         // Clean up
         unset($GLOBALS['wc_facebook_commerce']);
     }
+
+	/**
+	 * Test video source field rendering for variations.
+	 */
+	public function test_variation_video_source_field_rendering() {
+		$variable_product = \WC_Helper_Product::create_variation_product();
+		$variation = wc_get_product( $variable_product->get_children()[0] );
+
+		// Set video source to upload
+		$variation->update_meta_data( \WooCommerce\Facebook\Products::PRODUCT_VIDEO_SOURCE_META_KEY, \WooCommerce\Facebook\Products::PRODUCT_VIDEO_SOURCE_UPLOAD );
+		$variation->save_meta_data();
+
+		// Mock the global plugin instance with rollout switches
+		$plugin_mock = $this->getMockBuilder('WC_Facebookcommerce')
+			->disableOriginalConstructor()
+			->getMock();
+
+		$rollout_switches_mock = $this->getMockBuilder('WooCommerce\Facebook\RolloutSwitches')
+			->disableOriginalConstructor()
+			->getMock();
+
+		$rollout_switches_mock->expects($this->any())
+			->method('is_switch_enabled')
+			->willReturn(true);
+
+		$plugin_mock->expects($this->any())
+			->method('get_rollout_switches')
+			->willReturn($rollout_switches_mock);
+
+		$GLOBALS['wc_facebook_commerce'] = $plugin_mock;
+
+		// Capture output
+		ob_start();
+		$this->admin->add_product_variation_edit_fields( 0, array(), $variation );
+		$output = ob_get_clean();
+
+		// Verify video source radio buttons are present
+		$this->assertStringContainsString( 'fb_product_video_source', $output );
+		$this->assertStringContainsString( 'Choose video(s)', $output );
+		$this->assertStringContainsString( 'Use custom video', $output );
+
+		// Clean up
+		$variable_product->delete( true );
+		unset($GLOBALS['wc_facebook_commerce']);
+	}
+
+	/**
+	 * Test video source defaults to upload when not set.
+	 */
+	public function test_variation_video_source_default() {
+		$variable_product = \WC_Helper_Product::create_variation_product();
+		$variation = wc_get_product( $variable_product->get_children()[0] );
+
+		// Don't set video source - should default to upload
+		$video_source = $variation->get_meta( \WooCommerce\Facebook\Products::PRODUCT_VIDEO_SOURCE_META_KEY );
+
+		// Empty meta should allow default to 'upload'
+		$this->assertEmpty( $video_source );
+
+		// Clean up
+		$variable_product->delete( true );
+	}
+
+	/**
+	 * Test custom video URL field for variations.
+	 */
+	public function test_variation_custom_video_url_field() {
+		$variable_product = \WC_Helper_Product::create_variation_product();
+		$variation = wc_get_product( $variable_product->get_children()[0] );
+
+		$custom_url = 'https://example.com/custom-video.mp4';
+
+		// Set custom video URL
+		$variation->update_meta_data( \WC_Facebook_Product::FB_PRODUCT_VIDEO . '_custom_url', $custom_url );
+		$variation->save_meta_data();
+
+		$saved_url = $variation->get_meta( \WC_Facebook_Product::FB_PRODUCT_VIDEO . '_custom_url' );
+		$this->assertEquals( $custom_url, $saved_url );
+
+		// Clean up
+		$variable_product->delete( true );
+	}
+
+	/**
+	 * Test variation video data structure matches simple product video data.
+	 */
+	public function test_variation_video_data_structure_consistency() {
+		// Create simple product
+		$simple_product = \WC_Helper_Product::create_simple_product();
+		$simple_video_urls = [ 'https://example.com/simple-video.mp4' ];
+		update_post_meta( $simple_product->get_id(), \WC_Facebook_Product::FB_PRODUCT_VIDEO, $simple_video_urls );
+
+		// Create variation
+		$variable_product = \WC_Helper_Product::create_variation_product();
+		$variation = wc_get_product( $variable_product->get_children()[0] );
+		$variation_video_urls = [ 'https://example.com/variation-video.mp4' ];
+		$variation->update_meta_data( \WC_Facebook_Product::FB_PRODUCT_VIDEO, $variation_video_urls );
+		$variation->save_meta_data();
+
+		// Get video data
+		$simple_videos = get_post_meta( $simple_product->get_id(), \WC_Facebook_Product::FB_PRODUCT_VIDEO, true );
+		$variation_videos = $variation->get_meta( \WC_Facebook_Product::FB_PRODUCT_VIDEO );
+
+		// Both should be arrays
+		$this->assertIsArray( $simple_videos );
+		$this->assertIsArray( $variation_videos );
+
+		// Both should have same structure
+		$this->assertEquals( $simple_video_urls, $simple_videos );
+		$this->assertEquals( $variation_video_urls, $variation_videos );
+
+		// Clean up
+		$simple_product->delete( true );
+		$variable_product->delete( true );
+	}
+
+	/**
+	 * Test video source meta key is properly stored for variations.
+	 */
+	public function test_video_source_meta_storage_for_variation() {
+		$variable_product = \WC_Helper_Product::create_variation_product();
+		$variation = wc_get_product( $variable_product->get_children()[0] );
+
+		// Test upload source
+		$variation->update_meta_data( \WooCommerce\Facebook\Products::PRODUCT_VIDEO_SOURCE_META_KEY, \WooCommerce\Facebook\Products::PRODUCT_VIDEO_SOURCE_UPLOAD );
+		$variation->save_meta_data();
+
+		$source = get_post_meta( $variation->get_id(), \WooCommerce\Facebook\Products::PRODUCT_VIDEO_SOURCE_META_KEY, true );
+		$this->assertEquals( \WooCommerce\Facebook\Products::PRODUCT_VIDEO_SOURCE_UPLOAD, $source );
+
+		// Test custom source
+		$variation->update_meta_data( \WooCommerce\Facebook\Products::PRODUCT_VIDEO_SOURCE_META_KEY, \WooCommerce\Facebook\Products::PRODUCT_VIDEO_SOURCE_CUSTOM );
+		$variation->save_meta_data();
+
+		$source = get_post_meta( $variation->get_id(), \WooCommerce\Facebook\Products::PRODUCT_VIDEO_SOURCE_META_KEY, true );
+		$this->assertEquals( \WooCommerce\Facebook\Products::PRODUCT_VIDEO_SOURCE_CUSTOM, $source );
+
+		// Clean up
+		$variable_product->delete( true );
+	}
+
+	/**
+	 * Test multiple variations can have different video sources.
+	 */
+	public function test_multiple_variations_different_video_sources() {
+		$variable_product = \WC_Helper_Product::create_variation_product();
+		$variations = $variable_product->get_children();
+
+		$this->assertGreaterThan( 0, count( $variations ) );
+
+		$variation1 = wc_get_product( $variations[0] );
+
+		// Set first variation to upload source
+		$variation1->update_meta_data( \WooCommerce\Facebook\Products::PRODUCT_VIDEO_SOURCE_META_KEY, \WooCommerce\Facebook\Products::PRODUCT_VIDEO_SOURCE_UPLOAD );
+		$variation1->update_meta_data( \WC_Facebook_Product::FB_PRODUCT_VIDEO, [ 'https://example.com/upload.mp4' ] );
+		$variation1->save_meta_data();
+
+		if ( count( $variations ) > 1 ) {
+			$variation2 = wc_get_product( $variations[1] );
+
+			// Set second variation to custom source
+			$variation2->update_meta_data( \WooCommerce\Facebook\Products::PRODUCT_VIDEO_SOURCE_META_KEY, \WooCommerce\Facebook\Products::PRODUCT_VIDEO_SOURCE_CUSTOM );
+			$variation2->update_meta_data( \WC_Facebook_Product::FB_PRODUCT_VIDEO . '_custom_url', 'https://example.com/custom.mp4' );
+			$variation2->save_meta_data();
+
+			// Verify different sources
+			$source1 = $variation1->get_meta( \WooCommerce\Facebook\Products::PRODUCT_VIDEO_SOURCE_META_KEY );
+			$source2 = $variation2->get_meta( \WooCommerce\Facebook\Products::PRODUCT_VIDEO_SOURCE_META_KEY );
+
+			$this->assertEquals( \WooCommerce\Facebook\Products::PRODUCT_VIDEO_SOURCE_UPLOAD, $source1 );
+			$this->assertEquals( \WooCommerce\Facebook\Products::PRODUCT_VIDEO_SOURCE_CUSTOM, $source2 );
+			$this->assertNotEquals( $source1, $source2 );
+		}
+
+		// Clean up
+		$variable_product->delete( true );
+	}
+
+	/**
+	 * Test variation video fields are present in admin output.
+	 */
+	public function test_variation_video_fields_in_admin_output() {
+		$variable_product = \WC_Helper_Product::create_variation_product();
+		$variation = wc_get_product( $variable_product->get_children()[0] );
+
+		// Mock the global plugin instance with rollout switches
+		$plugin_mock = $this->getMockBuilder('WC_Facebookcommerce')
+			->disableOriginalConstructor()
+			->getMock();
+
+		$rollout_switches_mock = $this->getMockBuilder('WooCommerce\Facebook\RolloutSwitches')
+			->disableOriginalConstructor()
+			->getMock();
+
+		$rollout_switches_mock->expects($this->any())
+			->method('is_switch_enabled')
+			->willReturn(true);
+
+		$plugin_mock->expects($this->any())
+			->method('get_rollout_switches')
+			->willReturn($rollout_switches_mock);
+
+		$GLOBALS['wc_facebook_commerce'] = $plugin_mock;
+
+		// Capture output
+		ob_start();
+		$this->admin->add_product_variation_edit_fields( 0, array(), $variation );
+		$output = ob_get_clean();
+
+		// Verify video-related fields are present
+		$this->assertStringContainsString( 'Facebook Product Video', $output );
+		$this->assertStringContainsString( 'fb_product_video_source', $output );
+		$this->assertStringContainsString( 'Choose Video', $output );
+		$this->assertStringContainsString( 'Custom Video URL', $output );
+
+		// Clean up
+		$variable_product->delete( true );
+		unset($GLOBALS['wc_facebook_commerce']);
+	}
 }

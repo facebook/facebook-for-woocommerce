@@ -2212,8 +2212,8 @@ class WC_Facebook_Product {
 
 		$video_urls = $this->get_all_video_urls();
 
-		// If this is a variable product, get the video URLs from the parent product and add them to variations.
-		if ( $this->get_type() === 'variation' ) {
+		// If this is a variation with no videos, fall back to parent product videos
+		if ( $this->get_type() === 'variation' && empty( $video_urls ) ) {
 			$parent_id  = $this->woo_product->get_parent_id();
 			$video_urls = $this->get_all_video_urls( $parent_id );
 		}

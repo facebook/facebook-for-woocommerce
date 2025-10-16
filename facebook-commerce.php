@@ -1095,9 +1095,19 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 			$woo_product->set_product_image( sanitize_text_field( wp_unslash( $_POST[ WC_Facebook_Product::FB_PRODUCT_IMAGE ] ) ) );
 		}
 
+		if ( isset( $_POST['fb_product_video_source'] ) ) {
+			$product->update_meta_data( Products::PRODUCT_VIDEO_SOURCE_META_KEY, sanitize_key( wp_unslash( $_POST['fb_product_video_source'] ) ) );
+			$product->save_meta_data();
+		}
+
 		if ( isset( $_POST[ WC_Facebook_Product::FB_PRODUCT_VIDEO ] ) ) {
 			$attachment_ids = sanitize_text_field( wp_unslash( $_POST[ WC_Facebook_Product::FB_PRODUCT_VIDEO ] ) );
 			$woo_product->set_product_video_urls( $attachment_ids );
+		}
+
+		if ( isset( $_POST[ WC_Facebook_Product::FB_PRODUCT_VIDEO . '_custom_url' ] ) ) {
+			$product->update_meta_data( WC_Facebook_Product::FB_PRODUCT_VIDEO . '_custom_url', esc_url_raw( wp_unslash( $_POST[ WC_Facebook_Product::FB_PRODUCT_VIDEO . '_custom_url' ] ) ) );
+			$product->save_meta_data();
 		}
 
 		$this->save_facebook_product_attributes( $woo_product );
