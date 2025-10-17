@@ -17,7 +17,7 @@
  * Requires Plugins: woocommerce
  * Tested up to: 6.8.1
  * WC requires at least: 6.4
- * WC tested up to: 10.1.2
+ * WC tested up to: 10.2.2
  *
  * @package FacebookCommerce
  */
