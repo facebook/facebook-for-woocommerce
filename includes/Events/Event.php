@@ -270,7 +270,7 @@ class Event {
 			$fbc = wc_clean( wp_unslash( $_COOKIE['_fbc'] ) );
 		}
 
-		if ( empty( $fbc ) && !empty( $_SESSION['_fbc'] ) ) {
+		if ( empty( $fbc ) && ! empty( $_SESSION['_fbc'] ) ) {
 			$fbc = $_SESSION['_fbc']; // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
 		}
 
@@ -279,7 +279,7 @@ class Event {
 			$fbc = $param_builder->getFbc();
 		}
 
-		if ( empty( $fbc ) && !empty( $_REQUEST['fbclid'] ) ) {
+		if ( empty( $fbc ) && ! empty( $_REQUEST['fbclid'] ) ) {
 			$creation_time = time();
 			$fbclid = wc_clean( wp_unslash( $_REQUEST['fbclid'] ) ); // phpcs:ignore WordPress.Security.NonceVerification
 			$fbc = "fb.1.{$creation_time}.{$fbclid}";
