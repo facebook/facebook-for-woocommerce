@@ -55,7 +55,7 @@ class Request extends RESTRequest {
 	 */
 	public function get_param_schema() {
 		return [
-			'integration_config_id'       => [
+			'integration_config_id' => [
 				'type'     => 'string',
 				'required' => true,
 			],
