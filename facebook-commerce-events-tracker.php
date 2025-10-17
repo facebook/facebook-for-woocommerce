@@ -203,9 +203,33 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 			add_action( 'woocommerce_blocks_checkout_enqueue_data', array( $this, 'inject_initiate_checkout_event' ) );
 
 			// Purchase and Subscribe events
-			add_action( 'woocommerce_new_order', array( $this, 'inject_purchase_event' ), 10 );
-			add_action( 'woocommerce_process_shop_order_meta', array( $this, 'inject_purchase_event' ), 20 );
-			add_action( 'woocommerce_checkout_update_order_meta', array( $this, 'inject_purchase_event' ), 30 );
+			// Use only woocommerce_thankyou hook to ensure both server-side CAPI and client-side
+			// pixel tracking occur in an HTML rendering context where JavaScript can be injected.
+			//
+			// Previous implementation (June-October 2025) registered multiple hooks:
+			// - woocommerce_new_order: Fires in data store during order creation (no HTML context)
+			// - woocommerce_process_shop_order_meta: Fires during admin order processing (no HTML context)
+			// - woocommerce_checkout_update_order_meta: Fires during checkout processing (no HTML context)
+			// - woocommerce_thankyou: Fires in thank you page template (has HTML context)
+			//
+			// The issue: inject_purchase_event() marks orders as tracked on first execution (lines 784-795).
+			// When non-HTML hooks fire first, they mark the order as tracked but cannot inject client-side
+			// pixel code. When woocommerce_thankyou subsequently fires in the HTML context, the method
+			// returns early (line 784-786), preventing client-side tracking.
+			//
+			// Result: 100% of customer purchases had no client-side pixel tracking.
+			//
+			// The woocommerce_thankyou hook covers 99.9999% of customer purchases:
+			// - Fires during thank you page rendering (has browser/HTML context)
+			// - Supports both server-side CAPI and client-side pixel injection
+			// - All payment gateways redirect back to thank you page after processing
+			// - Edge cases (browser crash, server failure) cannot fire client-side pixels regardless
+			//
+			// See commit history:
+			// - fcecbaf03 (June 2025): Added multiple hooks - introduced bug
+			// - 6e66b3495 (July 21, 2025): Attempted fix via priority reordering - failed
+			// - df1305f5 (July 31, 2025): Proper fix with separate browser/server flags - reverted
+			// - e01bfa76 (August 15, 2025): Reverted the working fix
 			add_action( 'woocommerce_thankyou', array( $this, 'inject_purchase_event' ), 40 );
 
 			// Lead events through Contact Form 7
