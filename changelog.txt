@@ -1,6 +1,6 @@
 *** Facebook for WooCommerce Changelog ***
 
-= 3.5.11 - 2025-10-17 =
+= 3.5.11 - 2025-10-17 = Revert back to 3.5.9 from 3.5.10
 
 
 = 3.5.9 - 2025-09-30 =
