@@ -1,5 +1,8 @@
 *** Facebook for WooCommerce Changelog ***
 
+= 3.5.11 - 2025-10-17 =
+
+
 = 3.5.9 - 2025-09-30 =
 * Tweak - Focus admin user check on order creation capabilities by @iodic in #3643
 * Fix - Added code to exclude purchases registered by the admin user by @vahidkay-meta in #3641

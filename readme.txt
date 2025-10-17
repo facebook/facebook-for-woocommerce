@@ -41,17 +41,7 @@ To suggest technical improvements, you can raise an issue on our [Github reposit
 
 == Changelog ==
 
-= 3.5.9 - 2025-09-30 =
-* Tweak - Focus admin user check on order creation capabilities by @iodic in #3643
-* Fix - Added code to exclude purchases registered by the admin user by @vahidkay-meta in #3641
-* Add - [WIFI][EZ] Localization Fix on WhatsApp Splash page by @sharunaanandraj in #3642
-* Tweak - Removed get_product_fbid graph api functionality by @vinkmeta in #3624
-* Dev - Plugin availability logging by @rafael-curran in #3637
-* Add - Added complete e2e tests automation framework by @immadhavv in #3634
-* Fix - Fix/issue with set stable tag by @vahidkay-meta in #3636
-* Fix - Removed the new changes by @vahidkay-meta in #3635
-* Tweak - Removed API call to delete products by @vinkmeta in #3623
-* Tweak - Cleanup deprecated product delete functionality by @vinkmeta in #3622
-* Fix - [EZ] Error Message for Customer Events API call by @woo-ardsouza in #3630
+= 3.5.11 - 2025-10-17 =
+
 
 [See changelog for all versions](https://raw.githubusercontent.com/facebook/facebook-for-woocommerce/refs/heads/main/changelog.txt).
