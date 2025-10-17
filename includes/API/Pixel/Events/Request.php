@@ -75,7 +75,8 @@ class Request extends API\Request {
 
 			// These are valid field names, so when they're provided they
 			// create event validation issues.
-			// unset these no matter what.			unset( $event_data['user_data']['click_id'] );
+			// unset these no matter what.
+			unset( $event_data['user_data']['click_id'] );
 			unset( $event_data['user_data']['browser_id'] );
 
 			$data['data'][] = array_filter( $event_data );
