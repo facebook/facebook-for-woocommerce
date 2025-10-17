@@ -33,6 +33,8 @@ class WhatsAppConnection {
 	const OPTION_WA_PHONE_NUMBER_ID = 'wc_facebook_wa_phone_number_id';
 	/** @var string the whatsapp installation id option name */
 	const OPTION_WA_INSTALLATION_ID = 'wc_facebook_wa_installation_id';
+	/** @var string the whatsapp integration config id option name */
+	const OPTION_WA_INTEGRATION_CONFIG_ID = 'wc_facebook_wa_integration_config_id';
 
 
 
