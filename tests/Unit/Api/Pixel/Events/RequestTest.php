@@ -46,6 +46,10 @@ class RequestTest extends WP_UnitTestCase {
 		$this->assertArrayHasKey( 'user_data', $event_data );
 		$this->assertArrayHasKey( 'fbc', $event_data['user_data'] );
 		$this->assertArrayHasKey( 'fbp', $event_data['user_data'] );
+		
+		// Verify the values are correctly converted
+		$this->assertEquals( 'fb.1.1234567890.AbCdEfGh', $event_data['user_data']['fbc'] );
+		$this->assertEquals( 'fb.1.1234567890.987654321', $event_data['user_data']['fbp'] );
 	}
 
 	/**
@@ -71,9 +75,11 @@ class RequestTest extends WP_UnitTestCase {
 		// Ensure no legacy parameter names are present in the request
 		$this->assertArrayNotHasKey( 'click_id', $event_data['user_data'] );
 		$this->assertArrayNotHasKey( 'browser_id', $event_data['user_data'] );
-		// Ensure they were converted to fbc/fbp
+		// Ensure they were converted to fbc/fbp with correct values
 		$this->assertArrayHasKey( 'fbc', $event_data['user_data'] );
 		$this->assertArrayHasKey( 'fbp', $event_data['user_data'] );
+		$this->assertEquals( 'fb.1.1234567890.AbCdEfGh', $event_data['user_data']['fbc'] );
+		$this->assertEquals( 'fb.1.1234567890.987654321', $event_data['user_data']['fbp'] );
 	}
 
 	/**
@@ -140,9 +146,9 @@ class RequestTest extends WP_UnitTestCase {
 	}
 
 	/**
-	 * Test that empty click_id and browser_id values are handled correctly (filtered out).
+	 * Test that empty string click_id and browser_id values are handled correctly (filtered out).
 	 */
-	public function test_request_filters_empty_values() {
+	public function test_request_filters_empty_string_values() {
 		$pixel_id = 'test_pixel_id_123';
 		
 		$event = new Event( array(
@@ -160,13 +166,124 @@ class RequestTest extends WP_UnitTestCase {
 		
 		$event_data = $data['data'][0];
 		
-		// Empty click_id and browser_id should not result in fbc/fbp being added
-		// But em should still be present (though hashed)
+		// Empty string click_id and browser_id should not result in fbc/fbp being added
+		// The ! empty() check in Request should prevent conversion
 		$this->assertArrayHasKey( 'user_data', $event_data );
 		$this->assertArrayHasKey( 'em', $event_data['user_data'] );
 		
-		// Empty strings are filtered by array_filter, so these keys may not exist
-		// This is expected behavior to keep the API payload clean
+		// Empty strings are filtered by array_filter, so fbc/fbp keys should not exist
+		// or if they do exist, they should be empty and filtered out
+		if ( isset( $event_data['user_data']['fbc'] ) ) {
+			$this->fail( 'fbc should not be present when click_id is empty string' );
+		}
+		if ( isset( $event_data['user_data']['fbp'] ) ) {
+			$this->fail( 'fbp should not be present when browser_id is empty string' );
+		}
+	}
+
+	/**
+	 * Test that null click_id and browser_id values are handled correctly (filtered out).
+	 */
+	public function test_request_filters_null_values() {
+		$pixel_id = 'test_pixel_id_123';
+		
+		$event = new Event( array(
+			'event_name'  => 'Purchase',
+			'custom_data' => array( 'value' => '99.99' ),
+			'user_data'   => array(
+				'click_id' => null,
+				'browser_id' => null,
+				'em'  => 'test@example.com',
+			),
+		) );
+		
+		$request = new Request( $pixel_id, array( $event ) );
+		$data = $request->get_data();
+		
+		$event_data = $data['data'][0];
+		
+		// Null click_id and browser_id should not result in fbc/fbp being added
+		// The ! empty() check in Request should prevent conversion
+		$this->assertArrayHasKey( 'user_data', $event_data );
+		$this->assertArrayHasKey( 'em', $event_data['user_data'] );
+		
+		// Null values are filtered by array_filter, so fbc/fbp keys should not exist
+		if ( isset( $event_data['user_data']['fbc'] ) ) {
+			$this->fail( 'fbc should not be present when click_id is null' );
+		}
+		if ( isset( $event_data['user_data']['fbp'] ) ) {
+			$this->fail( 'fbp should not be present when browser_id is null' );
+		}
+	}
+
+	/**
+	 * Test that only click_id is converted when browser_id is empty.
+	 */
+	public function test_request_converts_only_click_id_when_browser_id_empty() {
+		$pixel_id = 'test_pixel_id_123';
+		
+		$event = new Event( array(
+			'event_name'  => 'Purchase',
+			'custom_data' => array( 'value' => '99.99' ),
+			'user_data'   => array(
+				'click_id' => 'fb.1.1234567890.ValidClickId',
+				'browser_id' => '',
+				'em'  => 'test@example.com',
+			),
+		) );
+		
+		$request = new Request( $pixel_id, array( $event ) );
+		$data = $request->get_data();
+		
+		$event_data = $data['data'][0];
+		
+		// Only fbc should be present, not fbp
+		$this->assertArrayHasKey( 'fbc', $event_data['user_data'] );
+		$this->assertEquals( 'fb.1.1234567890.ValidClickId', $event_data['user_data']['fbc'] );
+		
+		// fbp should not be present
+		if ( isset( $event_data['user_data']['fbp'] ) ) {
+			$this->fail( 'fbp should not be present when browser_id is empty' );
+		}
+		
+		// Legacy parameters should be removed
+		$this->assertArrayNotHasKey( 'click_id', $event_data['user_data'] );
+		$this->assertArrayNotHasKey( 'browser_id', $event_data['user_data'] );
+	}
+
+	/**
+	 * Test that only browser_id is converted when click_id is null.
+	 */
+	public function test_request_converts_only_browser_id_when_click_id_null() {
+		$pixel_id = 'test_pixel_id_123';
+		
+		$event = new Event( array(
+			'event_name'  => 'Purchase',
+			'custom_data' => array( 'value' => '99.99' ),
+			'user_data'   => array(
+				'click_id' => null,
+				'browser_id' => 'fb.1.1234567890.ValidBrowserId',
+				'em'  => 'test@example.com',
+			),
+		) );
+		
+		$request = new Request( $pixel_id, array( $event ) );
+		$data = $request->get_data();
+		
+		$event_data = $data['data'][0];
+		
+		// Only fbp should be present, not fbc
+		$this->assertArrayHasKey( 'fbp', $event_data['user_data'] );
+		$this->assertEquals( 'fb.1.1234567890.ValidBrowserId', $event_data['user_data']['fbp'] );
+		
+		// fbc should not be present
+		if ( isset( $event_data['user_data']['fbc'] ) ) {
+			$this->fail( 'fbc should not be present when click_id is null' );
+		}
+		
+		// Legacy parameters should be removed
+		$this->assertArrayNotHasKey( 'click_id', $event_data['user_data'] );
+		$this->assertArrayNotHasKey( 'browser_id', $event_data['user_data'] );
 	}
 
 	/**
