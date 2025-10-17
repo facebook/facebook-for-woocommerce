@@ -285,6 +285,15 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 
 			$this->send_api_event( $event, false );
 
+			// Add PageView_Test event with non-blocking call
+			$test_event_data = array(
+				'event_name' => 'PageView_Test',
+				'user_data'  => $this->pixel->get_user_info(),
+			);
+			$test_event = new Event( $test_event_data );
+
+			$this->send_api_event_immediately( $test_event );
+
 			$event_data['event_id'] = $event->get_id();
 
 			$this->pixel->inject_event( $event_name, $event_data );
@@ -1137,6 +1146,25 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 				}
 			} else {
 				$this->pending_events[] = $event;
+			}
+		}
+
+
+		/**
+		 * Sends an API event immediately without queuing.
+		 *
+		 * @since 3.5.11
+		 *
+		 * @param Event $event event object
+		 */
+		protected function send_api_event_async( Event $event ) {
+			$this->tracked_events[] = $event;
+
+			try {
+				$pixel_id = facebook_for_woocommerce()->get_integration()->get_facebook_pixel_id();
+				facebook_for_woocommerce()->get_api()->send_pixel_events_async( $pixel_id, array( $event ) );
+			} catch ( \Exception $exception ) {
+				facebook_for_woocommerce()->log( 'Could not send ' . $event->get_name() . ' event: ' . $exception->getMessage() );
 			}
 		}
 

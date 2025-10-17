@@ -621,6 +621,28 @@ class API extends Base {
 	}
 
 	/**
+	 * Sends Pixel events asynchronously (non-blocking).
+	 *
+	 * @since 3.5.11
+	 *
+	 * @param string  $pixel_id pixel ID
+	 * @param Event[] $events events to send
+	 * @return Response
+	 * @throws Framework\SV_WC_API_Exception
+	 */
+	public function send_pixel_events_async( $pixel_id, array $events ) {
+
+		$request = new API\Pixel\Events\Request( $pixel_id, $events );
+
+		// Set non-blocking mode
+		$request->set_blocking( false );
+
+		$this->set_response_handler( Response::class );
+
+		return $this->perform_request( $request );
+	}
+
+	/**
 	 * @param string $key_project The key project.
 	 * @return Response
 	 * @throws ApiException In case of network request error.
