@@ -143,9 +143,7 @@ class Handler extends AbstractRESTEndpoint {
 			$options = $this->map_params_to_options( $request_data );
 			$this->update_settings( $options );
 			wc_get_logger()->info(
-				sprintf(
-					__( 'Update Integration Config in Settings for WhatsApp Utility Messages Integration Successful.', 'facebook-for-woocommerce' ),
-				)
+				__( 'Update Integration Config in Settings for WhatsApp Utility Messages Integration Successful.', 'facebook-for-woocommerce' ),
 			);
 
 			return $this->success_response(
@@ -157,7 +155,7 @@ class Handler extends AbstractRESTEndpoint {
 			wc_get_logger()->info(
 				sprintf(
 					/* translators: %s $error_message */
-					__( 'Failed to handle_update_integration_config for WhatsApp Utility Messages Integration. Exception: %1%s', 'facebook-for-woocommerce' ),
+					__( 'Failed to handle_update_integration_config for WhatsApp Utility Messages Integration. Exception: %s', 'facebook-for-woocommerce' ),
 					$e->getMessage(),
 				)
 			);
