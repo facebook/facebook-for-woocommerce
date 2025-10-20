@@ -615,26 +615,52 @@ class API extends Base {
 	 * @throws ApiException In case of a general API error or rate limit error.
 	 */
 	public function send_pixel_events( $pixel_id, array $events ) {
-		// 🎯 EVENT MONITORING FOR E2E TESTS
-		// Check if we're in test mode (identified by cookie)
-		$test_id = isset( $_COOKIE['facebook_test_id'] ) ? sanitize_text_field( $_COOKIE['facebook_test_id'] ) : null;
+		try {
+			$test_id = isset( $_COOKIE['facebook_test_id'] ) ? sanitize_text_field( $_COOKIE['facebook_test_id'] ) : null;
 
-		if ( $test_id && defined( 'WP_DEBUG' ) && WP_DEBUG_LOG ) {
-			foreach ( $events as $event ) {
-				error_log( sprintf(
-					'[FBTEST|%s] CAPI|%s|%s|%s',
-					$test_id,
-					$event->get_name(),    // ✅ Correct method
-					$event->get_id(),      // ✅ Correct method
-					json_encode( $event->get_data() )  // ✅ Get full data
-				) );
+			if ( $test_id && defined( 'WP_DEBUG' ) && WP_DEBUG && defined( 'WP_DEBUG_LOG' ) && WP_DEBUG_LOG ) {
+				foreach ( $events as $event ) {
+					if ( is_object( $event ) && method_exists( $event, 'get_name' ) && method_exists( $event, 'get_id' ) && method_exists( $event, 'get_data' ) ) {
+						error_log( sprintf(
+							'[FBTEST|%s] CAPI|%s|%s|%s',
+							$test_id,
+							$event->get_name(),
+							$event->get_id(),
+							json_encode( $event->get_data() )
+						) );
+					}
+				}
 			}
+		} catch ( \Throwable $e ) {
+			// Silently fail
 		}
-		// 🎯 END EVENT MONITORING
 
 		$request = new API\Pixel\Events\Request( $pixel_id, $events );
+
+		// Send test_event_code to Facebook for validation
+		// if ( $test_id = isset( $_COOKIE['facebook_test_id'] ) ? sanitize_text_field( $_COOKIE['facebook_test_id'] ) : null ) {
+			$request->set_params( array_merge( $request->get_params(), array( 'test_event_code' => "TEST27057" ) ) );
+		// }
+
 		$this->set_response_handler( Response::class );
-		return $this->perform_request( $request );
+
+		// DEBUG: Log what we're sending to Facebook
+		error_log( sprintf(
+			'[FB-CAPI-DEBUG] Sending to Facebook - Pixel: %s, Events: %d, Params: %s',
+			$pixel_id,
+			count( $events ),
+			json_encode( $request->get_params() )
+		) );
+
+		$response = $this->perform_request( $request );
+
+		// DEBUG: Log Facebook's response
+		error_log( sprintf(
+			'[FB-CAPI-DEBUG] Facebook Response: %s',
+			json_encode( $response )
+		) );
+
+		return $response;
 	}
 
 	/**
