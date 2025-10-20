@@ -2262,7 +2262,7 @@ class WC_Facebook_Product {
 		}
 
 		// Add plugin version to product data
-		$product_data['plugin_version'] = facebook_for_woocommerce()->get_version();
+		$product_data['woo_plugin_version'] = facebook_for_woocommerce()->get_version();
 
 		// Only use checkout URLs if they exist.
 		$checkout_url = $this->build_checkout_url( $product_url );
