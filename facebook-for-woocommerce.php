@@ -317,11 +317,7 @@ class WC_Facebook_Loader {
 
 
 	private static function is_wp_com() {
-		$api_url       = 'https://public-api.wordpress.com/rest/v1.1/sites/' . wp_parse_url( get_site_url() )['host'];
-		$response      = wp_remote_get( $api_url );
-		$response_body = json_decode( wp_remote_retrieve_body( $response ), true );
-
-		if ( ! is_wp_error( $response ) && isset( $response_body['ID'] ) ) {
+		if ( defined( 'WPCOMSH_VERSION' ) && defined( 'IS_ATOMIC' ) && IS_ATOMIC ) {
 			return true;
 		}
 		return false;
@@ -367,11 +363,9 @@ class WC_Facebook_Loader {
 			return;
 		}
 
-		if ( false !== get_transient( 'wc_facebook_svr_flags_ds' ) ) {
+		if ( get_transient( 'wc_facebook_svr_flags_last_update' ) ) {
 			return;
 		}
-
-		set_transient( 'wc_facebook_svr_flags_ds', 1, HOUR_IN_SECONDS );
 
 		$wp_woo_flags = 0;
 
@@ -389,7 +383,7 @@ class WC_Facebook_Loader {
 		}
 
 		update_option( 'wc_facebook_svr_flags', $wp_woo_flags );
-		set_transient( 'wc_facebook_svr_flags_ds', 1, WEEK_IN_SECONDS );
+		set_transient( 'wc_facebook_svr_flags_last_update', true, WEEK_IN_SECONDS );
 	}
 
 
