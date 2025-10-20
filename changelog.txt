@@ -1,5 +1,8 @@
 *** Facebook for WooCommerce Changelog ***
 
+= 3.5.12 - 2025-10-20 =
+* Fix - Fix click_id API validation error by @devbodaghe in #3668
+
 = 3.5.10 - 2025-10-14 =
 * Add - Promo Banner for WhatsApp Utility by @woo-ardsouza in #3660
 * Add - Pb fix option 3 by @chc421 in #3617
