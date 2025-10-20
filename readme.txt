@@ -43,5 +43,13 @@ To suggest technical improvements, you can raise an issue on our [Github reposit
 
 = 3.5.12 - 2025-10-20 =
 * Fix - Fix click_id API validation error by @devbodaghe in #3668
+* Add - Promo Banner for WhatsApp Utility by @woo-ardsouza in #3660
+* Add - Pb fix option 3 by @chc421 in #3617
+* Fix - Fix: Facebook product videos and attributes not saving by @devbodaghe in #3655
+* Tweak - feat: reducing promotions feed overhead by @rithikb24 in #3654
+* Fix - Updated the ajax calls to check if the caller is a legit user by @vahidkay-meta in #3647
+* Add - feat: making product update sync to fb async by @rithikb24 in #3645
+* Dev - Fix/automate stable version prep release by @vahidkay-meta in #3646
+* Fix - Stale pixel fix by @jczhuoMeta in #3640
 
 [See changelog for all versions](https://raw.githubusercontent.com/facebook/facebook-for-woocommerce/refs/heads/main/changelog.txt).
