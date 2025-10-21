@@ -135,6 +135,32 @@ class Global_Attributes_Banner {
 	}
 
 	/**
+	 * Check if a WooCommerce attribute still exists.
+	 *
+	 * @param string $attribute_name Attribute name (without pa_ prefix).
+	 * @return bool True if the attribute exists, false otherwise.
+	 */
+	private function attribute_exists( $attribute_name ) {
+		// Check if the taxonomy exists (attributes use pa_{name} taxonomy)
+		$taxonomy_name = 'pa_' . $attribute_name;
+		
+		if ( ! taxonomy_exists( $taxonomy_name ) ) {
+			return false;
+		}
+
+		// Also verify it's a registered WooCommerce attribute
+		global $wpdb;
+		$attribute_exists = $wpdb->get_var(
+			$wpdb->prepare(
+				"SELECT attribute_id FROM {$wpdb->prefix}woocommerce_attribute_taxonomies WHERE attribute_name = %s",
+				$attribute_name
+			)
+		);
+
+		return ! empty( $attribute_exists );
+	}
+
+	/**
 	 * Check if an attribute name maps to a Meta field.
 	 *
 	 * @param string $attribute_name Attribute name (without pa_ prefix).
@@ -195,7 +221,15 @@ class Global_Attributes_Banner {
 		}
 
 		$attribute_name = $banner_data['attribute_name'];
-		$display_name   = ucfirst( str_replace( array( '_', '-' ), ' ', $attribute_name ) );
+
+		// Check if the attribute still exists - if deleted, clear transient and return early
+		if ( ! $this->attribute_exists( $attribute_name ) ) {
+			delete_transient( 'fb_new_unmapped_attribute_banner' );
+			delete_transient( 'fb_show_banner_now' );
+			return;
+		}
+
+		$display_name = ucfirst( str_replace( array( '_', '-' ), ' ', $attribute_name ) );
 
 		// Build the mapper URL
 		$mapper_url = add_query_arg(
