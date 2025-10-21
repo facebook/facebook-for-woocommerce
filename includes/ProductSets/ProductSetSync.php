@@ -249,7 +249,7 @@ class ProductSetSync {
 	 *
 	 * @param \WP_Term $wc_category The WooCommerce category object.
 	 */
-	private function sync_products_in_category( $wc_category ) {
+	protected function sync_products_in_category( $wc_category ) {
 		if ( ! $wc_category instanceof \WP_Term ) {
 			return;
 		}
