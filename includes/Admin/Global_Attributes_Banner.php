@@ -143,7 +143,7 @@ class Global_Attributes_Banner {
 	private function attribute_exists( $attribute_name ) {
 		// Check if the taxonomy exists (attributes use pa_{name} taxonomy)
 		$taxonomy_name = 'pa_' . $attribute_name;
-		
+
 		if ( ! taxonomy_exists( $taxonomy_name ) ) {
 			return false;
 		}
