@@ -536,7 +536,7 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 		 *
 		 * @since 2.0.0
 		 *
-		 * @return Event
+		 * @return Event|null
 		 */
 		private function get_search_event() {
 			global $wp_query;
@@ -549,7 +549,8 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 				$contents     = array();
 				$total_value  = 0.00;
 
-				if ( empty( $wp_query->posts ) ) {
+				// Don't fire search events for empty search results to avoid missing content_id warnings
+				if ( empty( $wp_query->posts ) || 0 === absint( $wp_query->found_posts ) ) {
 					return null;
 				}
 
