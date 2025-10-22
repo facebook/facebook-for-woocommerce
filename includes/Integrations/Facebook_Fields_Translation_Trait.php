@@ -9,24 +9,24 @@ namespace WooCommerce\Facebook\Integrations;
  * This trait contains the common logic for analyzing which Facebook-specific
  * fields are translated between original and translated products. It mirrors
  * the exact approach used in WC_Facebook_Product::prepare_product() to ensure
- * we only check fields that are actually sent to Meta/Facebook.
+ * consistency.
  *
  * @since 3.6.0
  */
 trait Facebook_Fields_Translation_Trait {
 
 	/**
-	 * Get which Facebook meta fields are translated between original and translated product
+	 * Get fields that have different values between original and translated products.
 	 *
-	 * Mirrors the exact approach used in WC_Facebook_Product::prepare_product() to ensure
-	 * we only check fields that are actually sent to Meta/Facebook.
+	 * Compares Facebook-specific fields between original and translated products
+	 * to determine which fields have been translated.
 	 *
 	 * @param int $original_id Original product ID
 	 * @param int $translated_id Translated product ID
 	 * @param string $target_language Target language code for permalink translation (optional)
 	 * @return array Array of field names that have different values
 	 */
-	protected function get_translated_fields( int $original_id, int $translated_id, string $target_language = null ): array {
+	protected function get_translated_fields( int $original_id, int $translated_id, ?string $target_language = null ): array {
 		$original_product = wc_get_product( $original_id );
 		$translated_product = wc_get_product( $translated_id );
 
@@ -64,11 +64,9 @@ trait Facebook_Fields_Translation_Trait {
 					$original_str = (string) $original_value;
 					$translated_str = (string) $translated_value;
 
-					// Compare values (trim whitespace and check for meaningful differences)
-					// Also ensure we're not comparing empty values
-					if ( trim( $original_str ) !== trim( $translated_str ) &&
-						 ! empty( trim( $translated_str ) ) &&
-						 ! empty( trim( $original_str ) ) ) {
+					// FIXED: Only require translated value to be non-empty
+					// This allows detecting when a field was translated from empty to non-empty
+					if ( trim( $original_str ) !== trim( $translated_str ) && ! empty( trim( $translated_str ) ) ) {
 						$translated_fields[] = $field_name;
 					}
 				}

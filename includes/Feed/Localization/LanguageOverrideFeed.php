@@ -483,18 +483,6 @@ class LanguageOverrideFeed {
 	}
 
 	/**
-	 * Alias method for backward compatibility with debug scripts.
-	 *
-	 * @param string $language_code Language code
-	 * @return string
-	 * @since 3.6.0
-	 */
-	public function get_language_feed_data_url( string $language_code ): string {
-		return $this->get_language_feed_url( $language_code );
-	}
-
-
-	/**
 	 * Upload language override feeds to Facebook for all available languages.
 	 * This mirrors Feed.php's send_request_to_upload_feed but handles multiple languages.
 	 *

@@ -70,15 +70,25 @@ if [[ $WC_VERSION == 'latest' ]]; then
   WC_VERSION=$WC_LATEST_VERSION
 fi
 
-# Get latest Polylang version
+# Get latest Polylang version (from GitHub tags)
 if [[ $POLYLANG_VERSION == 'latest' ]]; then
-  download https://api.wordpress.org/plugins/info/1.0/polylang.json "${TMPDIR}/polylang-latest.json"
-  POLYLANG_LATEST_VERSION=$(grep -o '"version":"[^"]*' "${TMPDIR}/polylang-latest.json" | sed 's/"version":"//')
-  if [[ -z "$POLYLANG_LATEST_VERSION" ]]; then
-    echo "Latest Polylang version could not be found"
-    exit 1
+  # Use GitHub API to get the latest tag
+  download https://api.github.com/repos/polylang/polylang/tags "${TMPDIR}/polylang-latest.json"
+  POLYLANG_LATEST_VERSION=$(grep -o '"name": *"[^"]*' "${TMPDIR}/polylang-latest.json" | head -1 | sed 's/"name": *"//' | sed 's/"//')
+
+  # Check for GitHub API rate limit error
+  if grep -q "API rate limit exceeded" "${TMPDIR}/polylang-latest.json" 2>/dev/null; then
+    echo "Warning: GitHub API rate limit exceeded. Using fallback version 3.7.3"
+    POLYLANG_VERSION="3.7.3"
+  elif [[ -z "$POLYLANG_LATEST_VERSION" ]]; then
+    echo "Latest Polylang version could not be found from GitHub"
+    echo "Debug: Contents of ${TMPDIR}/polylang-latest.json:"
+    head -5 "${TMPDIR}/polylang-latest.json"
+    echo "Using fallback version 3.7.3"
+    POLYLANG_VERSION="3.7.3"
+  else
+    POLYLANG_VERSION=$POLYLANG_LATEST_VERSION
   fi
-  POLYLANG_VERSION=$POLYLANG_LATEST_VERSION
 fi
 
 set -ex
@@ -246,20 +256,27 @@ install_polylang() {
     mkdir -p "$POLYLANG_DIR"
     echo "Installing Polylang ($POLYLANG_VERSION)."
 
-    # Download Polylang from WordPress.org
-    download "https://downloads.wordpress.org/plugin/polylang.${POLYLANG_VERSION}.zip" "${TMPDIR}/polylang.zip"
+    # Clone Polylang from GitHub
+    POLYLANG_TMPDIR="${TMPDIR}/polylang-${POLYLANG_VERSION}"
+    rm -rf "${POLYLANG_TMPDIR}"
+    git clone --quiet --depth=1 --branch="$POLYLANG_VERSION" https://github.com/polylang/polylang.git "$POLYLANG_TMPDIR"
 
-    # Extract the plugin
-    unzip -q "${TMPDIR}/polylang.zip" -d "${TMPDIR}"
+    # Install composer for Polylang and build
+    cd "$POLYLANG_TMPDIR"
+    if [ -f "composer.json" ]; then
+      composer build --ignore-platform-reqs --no-interaction
+    else
+      echo "Warning: No composer.json found in Polylang repository"
+    fi
 
-    # Move to the plugins directory
-    mv "${TMPDIR}/polylang"/* "$POLYLANG_DIR"
+    # Move built plugin to plugins directory
+    mv "${POLYLANG_TMPDIR}"/* "$POLYLANG_DIR"
     touch "$POLYLANG_VERSION_FILE"
 
     # Clean up
-    rm -f "${TMPDIR}/polylang.zip"
-    rm -rf "${TMPDIR}/polylang"
+    rm -rf "${POLYLANG_TMPDIR}"
 
+    cd -
     echo "Polylang ($POLYLANG_VERSION) installed successfully."
   else
     echo "Polylang ($POLYLANG_VERSION) already installed."

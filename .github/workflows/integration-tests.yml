@@ -14,7 +14,7 @@ jobs:
   integration-tests:
     name: Integration Tests
     runs-on: ubuntu-latest
-    
+
     permissions:
       contents: read
       pull-requests: write
@@ -62,7 +62,7 @@ jobs:
         continue-on-error: true
         run: |
           composer install --prefer-dist --no-progress --no-suggest || composer install --prefer-dist --no-progress --no-suggest --ignore-platform-reqs || echo "::warning::Composer installation failed, tests may be skipped"
-          
+
           # Check if vendor directory exists and has content
           if [ -d "vendor" ] && [ "$(ls -A vendor)" ]; then
             echo "composer_installed=true" >> $GITHUB_OUTPUT
@@ -75,21 +75,25 @@ jobs:
         id: setup-wp
         continue-on-error: true
         run: |
-          # Install WordPress test suite (latest stable)
-          bash bin/install-wp-tests.sh wordpress_test wp_user wp_pass 127.0.0.1:3306 latest || echo "::warning::WordPress test suite installation failed"
-          
-          # Install WooCommerce (latest stable)
-          mkdir -p /tmp/wordpress/wp-content/plugins/woocommerce
-          if ! curl -L https://github.com/woocommerce/woocommerce/archive/refs/heads/trunk.tar.gz | tar xz --strip-components=1 -C /tmp/wordpress/wp-content/plugins/woocommerce; then
-            echo "::error::Failed to install WooCommerce"
-          fi
-          
+          # Install WordPress test suite with WooCommerce and Polylang for localization tests
+          # Parameters: db-name db-user db-pass db-host wp-version wc-version polylang-version skip-db-creation
+          bash bin/install-wp-tests.sh wordpress_test wp_user wp_pass 127.0.0.1:3306 latest latest latest || echo "::warning::WordPress test suite installation failed"
+
           # Install Facebook for WooCommerce plugin
           cp -r . /tmp/wordpress/wp-content/plugins/facebook-for-woocommerce
-          
+
           # Check if setup was successful
           if [ -d "/tmp/wordpress" ] && [ -d "/tmp/wordpress/wp-content/plugins/woocommerce" ]; then
             echo "wp_setup_success=true" >> $GITHUB_OUTPUT
+
+            # Check if Polylang was installed for localization tests
+            if [ -d "/tmp/wordpress/wp-content/plugins/polylang" ]; then
+              echo "✅ Polylang installed - localization integration tests will run" >> $GITHUB_STEP_SUMMARY
+              echo "polylang_available=true" >> $GITHUB_OUTPUT
+            else
+              echo "ℹ️ Polylang not installed - localization tests will be skipped" >> $GITHUB_STEP_SUMMARY
+              echo "polylang_available=false" >> $GITHUB_OUTPUT
+            fi
           else
             echo "wp_setup_success=false" >> $GITHUB_OUTPUT
           fi
@@ -113,7 +117,16 @@ jobs:
           WP_TESTS_DIR: /tmp/wordpress-tests-lib
           WP_CORE_DIR: /tmp/wordpress
           WC_DIR: /tmp/wordpress/wp-content/plugins/woocommerce
+          FB_TEST_PLUGIN: ${{ steps.setup-wp.outputs.polylang_available == 'true' && 'polylang' || '' }}
         run: |
+          # Set environment variable for localization tests
+          if [[ "${{ steps.setup-wp.outputs.polylang_available }}" == "true" ]]; then
+            echo "Running integration tests with Polylang support..."
+            export FB_TEST_PLUGIN=polylang
+          else
+            echo "Running integration tests without localization plugin..."
+          fi
+
           # Run integration tests with verbose output
           if ./vendor/bin/phpunit --testsuite=integration --verbose --debug; then
             echo "tests_passed=true" >> $GITHUB_OUTPUT
@@ -121,7 +134,7 @@ jobs:
             echo "tests_passed=false" >> $GITHUB_OUTPUT
             echo "::warning::Integration tests failed"
           fi
-          
+
       - name: Run Integration Tests with Coverage
         if: steps.setup-wp.outputs.wp_setup_success == 'true'
         continue-on-error: true
@@ -150,19 +163,19 @@ jobs:
           echo "**WordPress:** Latest Stable" >> $GITHUB_STEP_SUMMARY
           echo "**WooCommerce:** Latest Stable" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          
+
           if [[ "${{ steps.install-composer.outputs.composer_installed }}" == "true" ]]; then
             echo "✅ Composer dependencies installed" >> $GITHUB_STEP_SUMMARY
           else
             echo "❌ Composer dependencies failed" >> $GITHUB_STEP_SUMMARY
           fi
-          
+
           if [[ "${{ steps.setup-wp.outputs.wp_setup_success }}" == "true" ]]; then
             echo "✅ WordPress test environment setup" >> $GITHUB_STEP_SUMMARY
           else
             echo "❌ WordPress test environment failed" >> $GITHUB_STEP_SUMMARY
           fi
-          
+
           if [[ "${{ steps.run-tests.outputs.tests_passed }}" == "true" ]]; then
             echo "✅ Integration tests passed" >> $GITHUB_STEP_SUMMARY
           elif [[ "${{ steps.run-tests.outputs.tests_passed }}" == "false" ]]; then
@@ -194,4 +207,4 @@ jobs:
 
       - name: Skip tests notification
         if: steps.install-composer.outputs.composer_installed != 'true' || steps.setup-wp.outputs.wp_setup_success != 'true'
-        run: echo "::warning::Skipping integration tests due to setup issues" 
+        run: echo "::warning::Skipping integration tests due to setup issues"

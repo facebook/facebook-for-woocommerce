@@ -42,6 +42,11 @@ if ( ! defined( 'PLL_ADMIN' ) ) {
 	define( 'PLL_ADMIN', true );
 }
 
+// Prevent textdomain loading issues
+if ( ! defined( 'PLL_SETTINGS_MODULES' ) ) {
+	define( 'PLL_SETTINGS_MODULES', false );
+}
+
 tests_add_filter( 'muplugins_loaded', function () {
 	load_plugins();
 } );
@@ -84,6 +89,10 @@ function install_woocommerce() {
 
 	WC_Install::install();
 
+	// Force database schema update
+	update_option( 'woocommerce_db_version', WC()->version );
+	update_option( 'woocommerce_version', WC()->version );
+
 	// Initialize the WC Admin extension.
 	if ( class_exists( '\Automattic\WooCommerce\Internal\Admin\Install' ) ) {
 		\Automattic\WooCommerce\Internal\Admin\Install::create_tables();
@@ -92,6 +101,14 @@ function install_woocommerce() {
 		\Automattic\WooCommerce\Admin\Install::create_tables();
 		\Automattic\WooCommerce\Admin\Install::create_events();
 	}
+
+	// Force WooCommerce database update if needed
+	if ( WC()->version !== get_option( 'woocommerce_db_version' ) ) {
+		WC_Install::update_db_version();
+	}
+
+	// Create WooCommerce pages
+	WC_Install::create_pages();
 
 	// Reload capabilities after install, see https://core.trac.wordpress.org/ticket/28374.
 	$GLOBALS['wp_roles'] = null; // phpcs:ignore WordPress.WP.GlobalVariablesOverride.Prohibited
@@ -151,7 +168,7 @@ function activate_polylang() {
 }
 
 /**
- * Set up a basic English language for Polylang testing
+ * Set up English and Spanish languages for Polylang testing
  */
 function setup_basic_polylang_language() {
 	// Set up minimal Polylang options
@@ -176,36 +193,105 @@ function setup_basic_polylang_language() {
 		update_option( 'polylang', $default_options );
 	}
 
-	// Use Polylang's API to add English language if available
-	if ( isset( $GLOBALS['polylang'] ) && is_object( $GLOBALS['polylang'] ) ) {
-		if ( property_exists( $GLOBALS['polylang'], 'model' ) && is_object( $GLOBALS['polylang']->model ) ) {
-			$model = $GLOBALS['polylang']->model;
+	// Create language taxonomy terms directly since Polylang's API might not be ready
+	$languages_to_add = [
+		[
+			'name'        => 'English',
+			'slug'        => 'en',
+			'locale'      => 'en_US',
+			'rtl'         => false,
+			'term_group'  => 1,
+			'flag'        => 'us',
+		],
+		[
+			'name'        => 'Español',
+			'slug'        => 'es',
+			'locale'      => 'es_ES',
+			'rtl'         => false,
+			'term_group'  => 2,
+			'flag'        => 'es',
+		],
+		[
+			'name'        => 'Français',
+			'slug'        => 'fr',
+			'locale'      => 'fr_FR',
+			'rtl'         => false,
+			'term_group'  => 3,
+			'flag'        => 'fr',
+		],
+		[
+			'name'        => 'Deutsch',
+			'slug'        => 'de',
+			'locale'      => 'de_DE',
+			'rtl'         => false,
+			'term_group'  => 4,
+			'flag'        => 'de',
+		]
+	];
 
-			if ( property_exists( $model, 'languages' ) && is_object( $model->languages ) && method_exists( $model->languages, 'add' ) ) {
-				// Check if English language already exists
-				$existing_languages = $model->languages->get_list();
-				$english_exists = false;
+	foreach ( $languages_to_add as $lang_data ) {
+		// Prepare language data as Polylang expects it (serialized in description field)
+		$language_description = serialize([
+			'locale' => $lang_data['locale'],
+			'rtl' => $lang_data['rtl'] ? 1 : 0,
+			'flag_code' => $lang_data['flag']
+		]);
 
-				foreach ( $existing_languages as $lang ) {
-					if ( $lang->slug === 'en' ) {
-						$english_exists = true;
-						break;
-					}
-				}
+		// Create language term with proper description data
+		$term_result = wp_insert_term( $lang_data['name'], 'language', [
+			'slug' => $lang_data['slug'],
+			'description' => $language_description
+		]);
 
-				if ( ! $english_exists ) {
-					$model->languages->add( [
-						'name' => 'English',
-						'slug' => 'en',
-						'locale' => 'en_US',
-						'rtl' => false,
-						'term_group' => 1,
-						'flag' => 'us',
-						'no_default_cat' => true,
-					] );
-				}
+		if ( ! is_wp_error( $term_result ) ) {
+			$term_id = $term_result['term_id'];
+
+			// Set term group (used by Polylang internally)
+			wp_update_term( $term_id, 'language', [ 'term_group' => $lang_data['term_group'] ] );
+
+			// Create corresponding post_language and term_language taxonomy terms
+			foreach ( [ 'post_language', 'term_language' ] as $taxonomy ) {
+				wp_insert_term( 'pll_' . $lang_data['slug'], $taxonomy, [
+					'slug' => 'pll_' . $lang_data['slug'],
+					'description' => 'Language term for ' . $lang_data['name']
+				]);
 			}
 		}
+	}
+
+	// Set default language in options - this is crucial for pll_default_language() to work
+	$polylang_options = get_option( 'polylang', [] );
+	$polylang_options['default_lang'] = 'en';
+	update_option( 'polylang', $polylang_options );
+
+	// Also ensure the Polylang global object has the right options if it's initialized
+	if ( isset( $GLOBALS['polylang'] ) && is_object( $GLOBALS['polylang'] ) ) {
+		if ( property_exists( $GLOBALS['polylang'], 'options' ) && is_object( $GLOBALS['polylang']->options ) ) {
+			// Force the options to include our default language
+			if ( method_exists( $GLOBALS['polylang']->options, 'set' ) ) {
+				$GLOBALS['polylang']->options->set( 'default_lang', 'en' );
+			}
+		}
+	}
+
+	echo "DEBUG: Set up English and Spanish languages for Polylang testing\n";
+
+	// Debug: Check if languages are properly accessible
+	if ( function_exists( 'pll_languages_list' ) ) {
+		$languages = pll_languages_list( [ 'fields' => '' ] );
+		if ( $languages ) {
+			echo "DEBUG: Found " . count( $languages ) . " languages in Polylang\n";
+			foreach ( $languages as $lang ) {
+				echo "  - {$lang->name} ({$lang->slug}) - {$lang->locale}\n";
+			}
+		} else {
+			echo "DEBUG: pll_languages_list() returned empty result\n";
+		}
+	}
+
+	if ( function_exists( 'pll_default_language' ) ) {
+		$default = pll_default_language();
+		echo "DEBUG: Default language from pll_default_language(): " . var_export( $default, true ) . "\n";
 	}
 }
 
