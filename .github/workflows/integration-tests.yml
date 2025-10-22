@@ -57,6 +57,11 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-composer-
 
+      - name: Install System Dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y subversion
+
       - name: Install Composer dependencies
         id: install-composer
         continue-on-error: true
