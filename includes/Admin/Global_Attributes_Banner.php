@@ -152,7 +152,7 @@ class Global_Attributes_Banner {
 		global $wpdb;
 		$attribute_exists = $wpdb->get_var(
 			$wpdb->prepare(
-				"SELECT attribute_id FROM {$wpdb->prefix}woocommerce_attribute_taxonomies WHERE attribute_name = %s",
+				"SELECT attribute_id FROM {$wpdb->prefix}woocommerce_attribute_taxonomies WHERE attribute_name = %s LIMIT 1",
 				$attribute_name
 			)
 		);
