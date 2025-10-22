@@ -135,12 +135,12 @@ class Global_Attributes_Banner {
 	}
 
 	/**
-	 * Check if a WooCommerce attribute still exists.
+	 * Check if a WooCommerce taxonomy attribute still exists.
 	 *
 	 * @param string $attribute_name Attribute name (without pa_ prefix).
-	 * @return bool True if the attribute exists, false otherwise.
+	 * @return bool True if the taxonomy attribute exists, false otherwise.
 	 */
-	private function attribute_exists( $attribute_name ) {
+	private function taxonomy_attribute_exists( $attribute_name ) {
 		// Check if the taxonomy exists (attributes use pa_{name} taxonomy)
 		$taxonomy_name = 'pa_' . $attribute_name;
 
@@ -223,7 +223,7 @@ class Global_Attributes_Banner {
 		$attribute_name = $banner_data['attribute_name'];
 
 		// Check if the attribute still exists - if deleted, clear transient and return early
-		if ( ! $this->attribute_exists( $attribute_name ) ) {
+		if ( ! $this->taxonomy_attribute_exists( $attribute_name ) ) {
 			delete_transient( 'fb_new_unmapped_attribute_banner' );
 			delete_transient( 'fb_show_banner_now' );
 			return;
