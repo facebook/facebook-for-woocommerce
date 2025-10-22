@@ -93,10 +93,10 @@ jobs:
 
             # Check if Polylang was installed for localization tests
             if [ -d "/tmp/wordpress/wp-content/plugins/polylang" ]; then
-              echo "✅ Polylang installed - localization integration tests will run" >> $GITHUB_STEP_SUMMARY
+              echo "Polylang installed - localization integration tests will run" >> $GITHUB_STEP_SUMMARY
               echo "polylang_available=true" >> $GITHUB_OUTPUT
             else
-              echo "ℹ️ Polylang not installed - localization tests will be skipped" >> $GITHUB_STEP_SUMMARY
+              echo "Polylang not installed - localization tests will be skipped" >> $GITHUB_STEP_SUMMARY
               echo "polylang_available=false" >> $GITHUB_OUTPUT
             fi
           else
@@ -162,7 +162,7 @@ jobs:
       - name: Create Test Summary
         if: always()
         run: |
-          echo "## 🧪 Integration Test Results" >> $GITHUB_STEP_SUMMARY
+          echo "## Integration Test Results" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "**PHP Version:** 7.4" >> $GITHUB_STEP_SUMMARY
           echo "**WordPress:** Latest Stable" >> $GITHUB_STEP_SUMMARY
@@ -170,23 +170,23 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY
 
           if [[ "${{ steps.install-composer.outputs.composer_installed }}" == "true" ]]; then
-            echo "✅ Composer dependencies installed" >> $GITHUB_STEP_SUMMARY
+            echo "Composer dependencies installed" >> $GITHUB_STEP_SUMMARY
           else
-            echo "❌ Composer dependencies failed" >> $GITHUB_STEP_SUMMARY
+            echo "Composer dependencies failed" >> $GITHUB_STEP_SUMMARY
           fi
 
           if [[ "${{ steps.setup-wp.outputs.wp_setup_success }}" == "true" ]]; then
-            echo "✅ WordPress test environment setup" >> $GITHUB_STEP_SUMMARY
+            echo "WordPress test environment setup" >> $GITHUB_STEP_SUMMARY
           else
-            echo "❌ WordPress test environment failed" >> $GITHUB_STEP_SUMMARY
+            echo "WordPress test environment failed" >> $GITHUB_STEP_SUMMARY
           fi
 
           if [[ "${{ steps.run-tests.outputs.tests_passed }}" == "true" ]]; then
-            echo "✅ Integration tests passed" >> $GITHUB_STEP_SUMMARY
+            echo "Integration tests passed" >> $GITHUB_STEP_SUMMARY
           elif [[ "${{ steps.run-tests.outputs.tests_passed }}" == "false" ]]; then
-            echo "❌ Integration tests failed" >> $GITHUB_STEP_SUMMARY
+            echo "Integration tests failed" >> $GITHUB_STEP_SUMMARY
           else
-            echo "⚠️ Integration tests skipped" >> $GITHUB_STEP_SUMMARY
+            echo "Integration tests skipped" >> $GITHUB_STEP_SUMMARY
           fi
 
       - name: Archive Test Results
