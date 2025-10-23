@@ -3,7 +3,7 @@ Contributors: facebook
 Tags: meta, facebook, conversions api, catalog sync, ads
 Requires at least: 5.6
 Tested up to: 6.8.3
-Stable tag: 3.5.9
+Stable tag: 3.5.11
 Requires PHP: 7.4
 MySQL: 5.6 or greater
 License: GPLv2 or later
@@ -41,7 +41,8 @@ To suggest technical improvements, you can raise an issue on our [Github reposit
 
 == Changelog ==
 
-= 3.5.10 - 2025-10-14 =
+= 3.5.12 - 2025-10-20 =
+* Fix - Fix click_id API validation error by @devbodaghe in #3668
 * Add - Promo Banner for WhatsApp Utility by @woo-ardsouza in #3660
 * Add - Pb fix option 3 by @chc421 in #3617
 * Fix - Fix: Facebook product videos and attributes not saving by @devbodaghe in #3655
