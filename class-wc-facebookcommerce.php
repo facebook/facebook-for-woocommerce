@@ -158,7 +158,6 @@ class WC_Facebookcommerce extends WooCommerce\Facebook\Framework\Plugin {
 		);
 		$this->init();
 		$this->init_admin();
-
 	}
 
 	/**
@@ -291,7 +290,6 @@ class WC_Facebookcommerce extends WooCommerce\Facebook\Framework\Plugin {
 			0
 		);
 	}
-
 
 
 	/**
