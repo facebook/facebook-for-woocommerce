@@ -235,7 +235,7 @@ class fbproductTest extends \WooCommerce\Facebook\Tests\AbstractWPUnitTestWithSa
 		$sale_price,
 		$sale_price_start_date,
 		$sale_price_end_date,
-		$regular_price, 
+		$regular_price,
 		$expected_sale_price,
 		$expected_sale_price_for_batch,
 		$expected_sale_price_effective_date,
@@ -1490,7 +1490,7 @@ class fbproductTest extends \WooCommerce\Facebook\Tests\AbstractWPUnitTestWithSa
 			}
 
 			// Override prepare_product to ensure proper material format
-			public function prepare_product($retailer_id = null, $type_to_prepare_for = self::PRODUCT_PREP_TYPE_ITEMS_BATCH) {
+			public function prepare_product($retailer_id = null, $type_to_prepare_for = self::PRODUCT_PREP_TYPE_ITEMS_BATCH, $manual_sync_timestamp = null) {
 				// Get base product data
 				$data = [];
 				$data['id'] = $this->woo_product->get_id();
@@ -1564,7 +1564,7 @@ class fbproductTest extends \WooCommerce\Facebook\Tests\AbstractWPUnitTestWithSa
 			}
 
 			// Override prepare_product to ensure proper testing
-			public function prepare_product($retailer_id = null, $type_to_prepare_for = self::PRODUCT_PREP_TYPE_ITEMS_BATCH) {
+			public function prepare_product($retailer_id = null, $type_to_prepare_for = self::PRODUCT_PREP_TYPE_ITEMS_BATCH, $manual_sync_timestamp = null) {
 				// Basic product data
 				$data = [];
 				$data['id'] = $this->woo_product->get_id();
@@ -1610,14 +1610,14 @@ class fbproductTest extends \WooCommerce\Facebook\Tests\AbstractWPUnitTestWithSa
 		// Create a variable product with variation
 		$variable_product = \WC_Helper_Product::create_variation_product();
 		$variation = wc_get_product($variable_product->get_children()[0]);
-		
+
 		// Create Facebook product
 		$parent_fb_product = new \WC_Facebook_Product($variable_product);
 		$fb_product = new \WC_Facebook_Product($variation, $parent_fb_product);
 
 		// Set image source to multiple
 		update_post_meta($variation->get_id(), \WooCommerce\Facebook\Products::PRODUCT_IMAGE_SOURCE_META_KEY, 'multiple');
-		
+
 		// Mock attachment IDs and their URLs using WordPress functions
 		$attachment_ids = '123,456,789';
 		update_post_meta($variation->get_id(), \WC_Facebook_Product::FB_PRODUCT_IMAGES, $attachment_ids);
@@ -1648,7 +1648,7 @@ class fbproductTest extends \WooCommerce\Facebook\Tests\AbstractWPUnitTestWithSa
 		// Create a variable product with variation
 		$variable_product = \WC_Helper_Product::create_variation_product();
 		$variation = wc_get_product($variable_product->get_children()[0]);
-		
+
 		// Create Facebook product
 		$parent_fb_product = new \WC_Facebook_Product($variable_product);
 		$fb_product = new \WC_Facebook_Product($variation, $parent_fb_product);
@@ -1669,7 +1669,7 @@ class fbproductTest extends \WooCommerce\Facebook\Tests\AbstractWPUnitTestWithSa
 		// Create a variable product with variation
 		$variable_product = \WC_Helper_Product::create_variation_product();
 		$variation = wc_get_product($variable_product->get_children()[0]);
-		
+
 		// Create Facebook product
 		$parent_fb_product = new \WC_Facebook_Product($variable_product);
 		$fb_product = new \WC_Facebook_Product($variation, $parent_fb_product);
@@ -1690,14 +1690,14 @@ class fbproductTest extends \WooCommerce\Facebook\Tests\AbstractWPUnitTestWithSa
 		// Create a variable product with variation
 		$variable_product = \WC_Helper_Product::create_variation_product();
 		$variation = wc_get_product($variable_product->get_children()[0]);
-		
+
 		// Create Facebook product
 		$parent_fb_product = new \WC_Facebook_Product($variable_product);
 		$fb_product = new \WC_Facebook_Product($variation, $parent_fb_product);
 
 		// Set image source to multiple with malformed data
 		update_post_meta($variation->get_id(), \WooCommerce\Facebook\Products::PRODUCT_IMAGE_SOURCE_META_KEY, 'multiple');
-		
+
 		// Test with leading/trailing commas
 		update_post_meta($variation->get_id(), \WC_Facebook_Product::FB_PRODUCT_IMAGES, ',123,456,');
 		$meta_value = get_post_meta($variation->get_id(), \WC_Facebook_Product::FB_PRODUCT_IMAGES, true);
@@ -1728,7 +1728,7 @@ class fbproductTest extends \WooCommerce\Facebook\Tests\AbstractWPUnitTestWithSa
 		// Create a variable product with variation
 		$variable_product = \WC_Helper_Product::create_variation_product();
 		$variation = wc_get_product($variable_product->get_children()[0]);
-		
+
 		// Create Facebook product
 		$parent_fb_product = new \WC_Facebook_Product($variable_product);
 		$fb_product = new \WC_Facebook_Product($variation, $parent_fb_product);
@@ -1762,11 +1762,11 @@ class fbproductTest extends \WooCommerce\Facebook\Tests\AbstractWPUnitTestWithSa
 		// Create a variable product with variation
 		$variable_product = \WC_Helper_Product::create_variation_product();
 		$variation = wc_get_product($variable_product->get_children()[0]);
-		
+
 		// Set multiple images on parent
 		update_post_meta($variable_product->get_id(), \WC_Facebook_Product::FB_PRODUCT_IMAGES, '111,222,333');
 		update_post_meta($variable_product->get_id(), \WooCommerce\Facebook\Products::PRODUCT_IMAGE_SOURCE_META_KEY, 'multiple');
-		
+
 		// Set different images on variation
 		update_post_meta($variation->get_id(), \WC_Facebook_Product::FB_PRODUCT_IMAGES, '444,555,666');
 		update_post_meta($variation->get_id(), \WooCommerce\Facebook\Products::PRODUCT_IMAGE_SOURCE_META_KEY, 'multiple');
@@ -1833,11 +1833,11 @@ class fbproductTest extends \WooCommerce\Facebook\Tests\AbstractWPUnitTestWithSa
 
 		// Set multiple images with large dataset
 		update_post_meta($variation->get_id(), \WC_Facebook_Product::FB_PRODUCT_IMAGES, $large_dataset);
-		
+
 		// Verify large dataset is stored correctly
 		$stored_images = get_post_meta($variation->get_id(), \WC_Facebook_Product::FB_PRODUCT_IMAGES, true);
 		$this->assertEquals($large_dataset, $stored_images);
-		
+
 		// Verify we can split it back correctly
 		$stored_array = array_map('trim', explode(',', $stored_images));
 		$this->assertEquals(20, count($stored_array));
