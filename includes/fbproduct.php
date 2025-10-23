@@ -1719,11 +1719,12 @@ class WC_Facebook_Product {
 	/**
 	 * Gets product data to send to Facebook.
 	 *
-	 * @param string $retailer_id the retailer ID of the product
-	 * @param string $type_to_prepare_for whether the data is going to be used in a feed upload, an items_batch update or a direct api call
+	 * @param string   $retailer_id            the retailer ID of the product
+	 * @param string   $type_to_prepare_for    whether the data is going to be used in a feed upload, an items_batch update or a direct api call
+	 * @param int|null $manual_sync_timestamp  Optional timestamp for manual sync to use as external_update_time
 	 * @return array
 	 */
-	public function prepare_product( $retailer_id = null, $type_to_prepare_for = self::PRODUCT_PREP_TYPE_NORMAL ) {
+	public function prepare_product( $retailer_id = null, $type_to_prepare_for = self::PRODUCT_PREP_TYPE_NORMAL, $manual_sync_timestamp = null ) {
 
 		// Directly sync mapped attributes BEFORE preparing product data
 		if ( class_exists( ProductAttributeMapper::class ) ) {
@@ -2248,16 +2249,21 @@ class WC_Facebook_Product {
 			$product_data['gtin'] = $this->woo_product->get_global_unique_id();
 		}
 
-		$date_modified = $this->woo_product->get_date_modified();
-		if ( $date_modified ) {
-			$external_update_time = (int) $date_modified->getTimestamp();
-			$last_change_time = (int) $this->woo_product->get_meta( '_last_change_time' );
+		// Use manual sync timestamp if provided, otherwise use product's date modified
+		if ( $manual_sync_timestamp ) {
+			$product_data['external_update_time'] = $manual_sync_timestamp;
+		} else {
+			$date_modified = $this->woo_product->get_date_modified();
+			if ( $date_modified ) {
+				$external_update_time = (int) $date_modified->getTimestamp();
+				$last_change_time = (int) $this->woo_product->get_meta( '_last_change_time' );
 
-			// Use the newer timestamp if _last_change_time is valid, otherwise use external_update_time
-			if ( $last_change_time > 0 ) {
-				$product_data['external_update_time'] = max( $external_update_time, $last_change_time );
-			} else {
-				$product_data['external_update_time'] = $external_update_time;
+				// Use the newer timestamp if _last_change_time is valid, otherwise use external_update_time
+				if ( $last_change_time > 0 ) {
+					$product_data['external_update_time'] = max( $external_update_time, $last_change_time );
+				} else {
+					$product_data['external_update_time'] = $external_update_time;
+				}
 			}
 		}
 

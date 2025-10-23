@@ -34,6 +34,9 @@ class Sync {
 	/** @var array the array of requests to schedule for sync */
 	protected $requests = array();
 
+	/** @var int|null manual sync timestamp for external_update_time */
+	protected $manual_sync_timestamp = null;
+
 
 	/**
 	 * Sync constructor.
@@ -75,10 +78,17 @@ class Sync {
 	 * @see \WC_Facebook_Product_Feed::write_product_feed_file()
 	 *
 	 * @since 2.0.0
+	 *
+	 * @param int|null $manual_sync_timestamp Optional timestamp for manual sync to use as external_update_time
 	 */
-	public function create_or_update_all_products() {
+	public function create_or_update_all_products( $manual_sync_timestamp = null ) {
 		$profiling_logger = facebook_for_woocommerce()->get_profiling_logger();
 		$profiling_logger->start( 'create_or_update_all_products' );
+
+		// Store manual sync timestamp if provided
+		if ( $manual_sync_timestamp ) {
+			$this->manual_sync_timestamp = $manual_sync_timestamp;
+		}
 
 		// Queue up these IDs for sync. they will only be included in the final requests if they should be synced.
 		$this->create_or_update_products( \WC_Facebookcommerce_Utils::get_all_product_ids_for_sync() );
@@ -228,7 +238,15 @@ class Sync {
 		if ( ! empty( $this->requests ) ) {
 
 			$job_handler = facebook_for_woocommerce()->get_products_sync_background_handler();
-			$job         = $job_handler->create_job( array( 'requests' => $this->requests ) );
+
+			$job_data = array( 'requests' => $this->requests );
+
+			// Include manual sync timestamp if present
+			if ( $this->manual_sync_timestamp ) {
+				$job_data['manual_sync_timestamp'] = $this->manual_sync_timestamp;
+			}
+
+			$job = $job_handler->create_job( $job_data );
 
 			$job_handler->dispatch();
 
