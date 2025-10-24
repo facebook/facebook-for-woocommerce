@@ -536,7 +536,7 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 		 *
 		 * @since 2.0.0
 		 *
-		 * @return Event
+		 * @return Event|null
 		 */
 		private function get_search_event() {
 			global $wp_query;
@@ -548,10 +548,6 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 				$product_ids  = array();
 				$contents     = array();
 				$total_value  = 0.00;
-
-				if ( empty( $wp_query->posts ) ) {
-					return null;
-				}
 
 				foreach ( $wp_query->posts as $post ) {
 
@@ -574,6 +570,10 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 						$content_type = 'product_group';
 					}
 				}
+			// Don't fire search events if no products were found after filtering
+			if ( empty( $product_ids ) ) {
+				return null;
+			}
 
 				$event_data = array(
 					'event_name'  => 'Search',
