@@ -549,11 +549,6 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 				$contents     = array();
 				$total_value  = 0.00;
 
-				// Don't fire search events for empty search results to avoid missing content_id warnings
-				if ( empty( $wp_query->posts ) || 0 === absint( $wp_query->found_posts ) ) {
-					return null;
-				}
-
 				foreach ( $wp_query->posts as $post ) {
 
 					$product = wc_get_product( $post );
@@ -575,6 +570,10 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 						$content_type = 'product_group';
 					}
 				}
+			// Don't fire search events if no products were found after filtering
+			if ( empty( $product_ids ) ) {
+				return null;
+			}
 
 				$event_data = array(
 					'event_name'  => 'Search',
