@@ -114,6 +114,7 @@ class ProductValidator {
 		$this->validate_product_status();
 		$this->validate_product_visibility();
 		$this->validate_product_terms();
+		$this->validate_product_sync_issues();
 	}
 
 	/**
@@ -397,6 +398,24 @@ class ProductValidator {
 		// No more than MAX_NUMBER_OF_ATTRIBUTES_IN_VARIATION ar allowed to be used.
 		if ( $used_attributes_count > self::MAX_NUMBER_OF_ATTRIBUTES_IN_VARIATION ) {
 			throw new ProductInvalidException( __( 'Too many attributes selected for product. Use 4 or less.', 'facebook-for-woocommerce' ) );
+		}
+	}
+
+	/**
+	 * Validates the product for any sync issues before attempting to synchronize with Facebook.
+	 *
+	 * This function checks the product for various conditions that may prevent it from being properly synced,
+	 * such as missing required fields or invalid data. If any issues are found, they are collected and can be
+	 * used to prevent the sync or notify the user.
+	 *
+	 * @throws ProductExcludedException If the product is excluded from synchronization.
+	 */
+	protected function validate_product_sync_issues() {
+		$issues = get_post_meta( $this->product->get_id(), '_fb_sync_issues', true );
+		if ( ! empty( $issues['warnings'] ) && is_array( $issues['warnings'] ) ) {
+			$messages = implode( '; ', $issues['warnings'] );
+			/* translators: %s: List of sync issue messages. */
+			throw new ProductExcludedException( sprintf( __( 'Sync issues: %s', 'facebook-for-woocommerce' ), $messages ) );
 		}
 	}
 }
