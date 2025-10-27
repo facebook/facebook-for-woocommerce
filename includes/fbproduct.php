@@ -751,9 +751,9 @@ class WC_Facebook_Product {
 		// If no description is found from meta or variation, get from post
 		if ( empty( $description ) ) {
 			$post         = $this->get_post_data();
-			$post_content = WC_Facebookcommerce_Utils::clean_string( $post->post_content );
-			$post_excerpt = WC_Facebookcommerce_Utils::clean_string( $post->post_excerpt );
-			$post_title   = WC_Facebookcommerce_Utils::clean_string( $post->post_title );
+			$post_content = WC_Facebookcommerce_Utils::clean_string( apply_filters( 'the_content', $post->post_content ) );
+			$post_excerpt = WC_Facebookcommerce_Utils::clean_string( get_the_excerpt( $post ) );
+			$post_title   = WC_Facebookcommerce_Utils::clean_string( get_the_title( $post ) );
 
 			// Prioritize content, then excerpt, then title
 			if ( ! empty( $post_content ) ) {
