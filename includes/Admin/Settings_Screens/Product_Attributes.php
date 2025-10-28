@@ -86,7 +86,7 @@ class Product_Attributes extends Abstract_Settings_Screen {
 		wp_enqueue_script(
 			'facebook-for-woocommerce-product-attributes',
 			facebook_for_woocommerce()->get_asset_build_dir_url() . '/admin/product-attributes.js',
-			array( 'jquery', 'jquery-tiptip', 'wc-enhanced-select' ),
+			array( 'jquery', 'wc-jquery-tiptip', 'wc-enhanced-select' ),
 			\WC_Facebookcommerce::PLUGIN_VERSION,
 			true // Load in footer
 		);
