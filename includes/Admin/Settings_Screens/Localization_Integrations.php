@@ -808,22 +808,12 @@ class Localization_Integrations extends Abstract_Settings_Screen {
 		$field_mapping = [
 			'name' => 'title',
 			'description' => 'description',
-			'short_description' => 'description', // Both map to description
-			'rich_text_description' => 'description', // Also maps to description
-			'brand' => 'brand',
-			'mpn' => 'mpn',
-			'condition' => 'condition',
-			'size' => 'size',
-			'color' => 'color',
-			'pattern' => 'pattern',
-			'age_group' => 'age_group',
-			'gender' => 'gender',
-			'material' => 'material',
-			'price' => 'price',
-			'product_categories' => 'product_type',
+			'short_description' => 'short_description',
+			'rich_text_description' => 'rich_text_description',
 			'image_id' => 'image_link',
 			'gallery_image_ids' => 'additional_image_link',
 			'link' => 'link',
+			'video' => 'video',
 		];
 
 		$csv_columns = [];
