@@ -333,19 +333,12 @@ class LanguageFeedData {
 		$field_mapping = [
 			'name' => 'title',
 			'description' => 'description',
-			'short_description' => 'description', // Both map to description
-			'brand' => 'brand',
-			'mpn' => 'mpn',
-			'condition' => 'condition',
-			'size' => 'size',
-			'color' => 'color',
-			'pattern' => 'pattern',
-			'age_group' => 'age_group',
-			'gender' => 'gender',
-			'material' => 'material',
+			'short_description' => 'short_description',
+			'rich_text_description' => 'rich_text_description',
 			'image_id' => 'image_link',
 			'gallery_image_ids' => 'additional_image_link',
 			'link' => 'link',
+			'video' => 'video',
 		];
 
 		$csv_columns = [];
@@ -504,9 +497,8 @@ class LanguageFeedData {
 				break;
 
 			case 'description':
-				if ( in_array( 'description', $product_translated_fields, true ) ||
-					 in_array( 'short_description', $product_translated_fields, true ) ||
-					 in_array( 'rich_text_description', $product_translated_fields, true ) ) {
+				if ( in_array( 'description', $product_translated_fields, true ) ) {
+					// Use get_fb_description() to match main feed behavior (strips HTML tags)
 					$description = $translated_fb_product->get_fb_description();
 					$value = \WooCommerce\Facebook\Framework\Helper::str_truncate(
 						$description,
@@ -515,28 +507,23 @@ class LanguageFeedData {
 				}
 				break;
 
-			case 'brand':
-				if ( in_array( 'brand', $product_translated_fields, true ) ) {
-					$brand = $translated_fb_product->get_fb_brand();
+			case 'short_description':
+				if ( in_array( 'short_description', $product_translated_fields, true ) ) {
+					$short_description = $translated_fb_product->get_fb_short_description();
 					$value = \WooCommerce\Facebook\Framework\Helper::str_truncate(
-						\WC_Facebookcommerce_Utils::clean_string( $brand ),
-						100
+						$short_description,
+						\WC_Facebook_Product::MAX_DESCRIPTION_LENGTH
 					);
 				}
 				break;
 
-			case 'price':
-				if ( in_array( 'price', $product_translated_fields, true ) ) {
-					$price = $translated_fb_product->get_fb_price();
-					$currency = get_woocommerce_currency();
-					$value = $this->format_price_for_csv( $price, $currency );
-				}
-				break;
-
-			case 'product_type':
-				if ( in_array( 'product_categories', $product_translated_fields, true ) ) {
-					$categories = \WC_Facebookcommerce_Utils::get_product_categories( $translated_fb_product->get_id() );
-					$value = \WC_Facebookcommerce_Utils::clean_string( $categories['categories'] ?? '' );
+			case 'rich_text_description':
+				if ( in_array( 'rich_text_description', $product_translated_fields, true ) ) {
+					$rich_text_description = $translated_fb_product->get_rich_text_description();
+					$value = \WooCommerce\Facebook\Framework\Helper::str_truncate(
+						$rich_text_description,
+						\WC_Facebook_Product::MAX_DESCRIPTION_LENGTH
+					);
 				}
 				break;
 
@@ -555,66 +542,13 @@ class LanguageFeedData {
 				}
 				break;
 
-			// Handle other Facebook attributes
-			case 'mpn':
-				if ( in_array( 'mpn', $product_translated_fields, true ) ) {
-					$mpn = $translated_fb_product->get_fb_mpn();
-					$value = \WooCommerce\Facebook\Framework\Helper::str_truncate(
-						\WC_Facebookcommerce_Utils::clean_string( $mpn ),
-						100
-					);
-				}
-				break;
-
-			case 'condition':
-				if ( in_array( 'condition', $product_translated_fields, true ) ) {
-					$value = $translated_fb_product->get_fb_condition();
-				}
-				break;
-
-			case 'size':
-				if ( in_array( 'size', $product_translated_fields, true ) ) {
-					$size = $translated_fb_product->get_fb_size();
-					$value = \WC_Facebookcommerce_Utils::clean_string( $size );
-				}
-				break;
-
-			case 'color':
-				if ( in_array( 'color', $product_translated_fields, true ) ) {
-					$color = $translated_fb_product->get_fb_color();
-					$value = \WC_Facebookcommerce_Utils::clean_string( $color );
-				}
-				break;
-
-			case 'pattern':
-				if ( in_array( 'pattern', $product_translated_fields, true ) ) {
-					$pattern = $translated_fb_product->get_fb_pattern();
-					$value = \WooCommerce\Facebook\Framework\Helper::str_truncate(
-						\WC_Facebookcommerce_Utils::clean_string( $pattern ),
-						100
-					);
-				}
-				break;
-
-			case 'age_group':
-				if ( in_array( 'age_group', $product_translated_fields, true ) ) {
-					$value = $translated_fb_product->get_fb_age_group();
-				}
-				break;
-
-			case 'gender':
-				if ( in_array( 'gender', $product_translated_fields, true ) ) {
-					$value = $translated_fb_product->get_fb_gender();
-				}
-				break;
-
-			case 'material':
-				if ( in_array( 'material', $product_translated_fields, true ) ) {
-					$material = $translated_fb_product->get_fb_material();
-					$value = \WooCommerce\Facebook\Framework\Helper::str_truncate(
-						\WC_Facebookcommerce_Utils::clean_string( $material ),
-						100
-					);
+			case 'video':
+				if ( in_array( 'video', $product_translated_fields, true ) ) {
+					$video_urls = $translated_fb_product->get_all_video_urls();
+					if ( ! empty( $video_urls ) ) {
+						// Format video URLs as JSON array of objects with 'url' key, matching main feed format
+						$value = wp_json_encode( $video_urls );
+					}
 				}
 				break;
 

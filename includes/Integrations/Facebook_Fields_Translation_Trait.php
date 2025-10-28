@@ -87,24 +87,17 @@ trait Facebook_Fields_Translation_Trait {
 	protected function get_facebook_field_mapping(): array {
 		return [
 			// Basic product information
-			'name' => 'get_name',  // Use get_name() which delegates to WooCommerce product
+			'name' => 'get_name',
 			'description' => 'get_fb_description',
 			'short_description' => 'get_fb_short_description',
-
-			// Facebook-specific attributes
-			'brand' => 'get_fb_brand',
-			'mpn' => 'get_fb_mpn',
-			'condition' => 'get_fb_condition',
-			'size' => 'get_fb_size',
-			'color' => 'get_fb_color',
-			'pattern' => 'get_fb_pattern',
-			'age_group' => 'get_fb_age_group',
-			'gender' => 'get_fb_gender',
-			'material' => 'get_fb_material',
+			'rich_text_description' => 'get_rich_text_description',
 
 			// Images
 			'image_id' => 'get_all_image_urls',
 			'gallery_image_ids' => 'get_all_image_urls',
+
+			// Video
+			'video' => 'get_all_video_urls',
 
 			// Product link
 			'link' => 'get_permalink',
