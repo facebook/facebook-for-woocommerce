@@ -2250,7 +2250,7 @@ class WC_Facebook_Product {
 		}
 
 		// Use manual sync timestamp if provided, otherwise use product's date modified
-		if ( $manual_sync_timestamp ) {
+		if ( $manual_sync_timestamp !== null ) {
 			$product_data['external_update_time'] = $manual_sync_timestamp;
 		} else {
 			$date_modified = $this->woo_product->get_date_modified();
