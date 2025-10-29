@@ -166,6 +166,22 @@ class LanguageOverrideFeed {
 
 
 	/**
+	 * Regenerates language override feeds (required for AJAX and scheduled actions).
+	 * This method is called by the WordPress action scheduler and AJAX handlers.
+	 * It regenerates all language feeds and triggers the upload hook.
+	 *
+	 * @since 3.6.0
+	 */
+	public function regenerate_feed(): void {
+		// Call the main regeneration method
+		$this->regenerate_all_language_feeds();
+
+		// Trigger the feed generation completion action
+		// This allows the upload process to happen via the established hook system
+		do_action( self::FEED_GEN_COMPLETE_ACTION . static::get_data_stream_name() );
+	}
+
+	/**
 	 * Regenerates language override feeds for all available languages.
 	 * Uses the feed handler directly instead of the feed generator to create
 	 * multiple language files in a single action.
