@@ -190,11 +190,9 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 			add_action( 'woocommerce_add_to_cart', array( $this, 'inject_add_to_cart_event' ), 40, 4 );
 			// AddToCart while AJAX is enabled
 			add_action( 'woocommerce_ajax_added_to_cart', array( $this, 'add_filter_for_add_to_cart_fragments' ) );
-			// AddToCart while using redirect to cart page
-			if ( 'yes' === get_option( 'woocommerce_cart_redirect_after_add', 'no' ) ) {
-				add_action( 'wp_head', array( WC_Facebookcommerce_Utils::class, 'print_deferred_events' ) );
-				add_action( 'shutdown', array( WC_Facebookcommerce_Utils::class, 'save_deferred_events' ) );
-			}
+			// Used to defer events
+			add_action( 'wp_head', array( WC_Facebookcommerce_Utils::class, 'print_deferred_events' ) );
+			add_action( 'shutdown', array( WC_Facebookcommerce_Utils::class, 'save_deferred_events' ) );
 
 			// InitiateCheckout events
 			add_action( 'woocommerce_after_checkout_form', array( $this, 'inject_initiate_checkout_event' ) );

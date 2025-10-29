@@ -298,9 +298,14 @@ class WC_Facebookcommerce_Pixel {
 			// If we have add to cart redirect enabled, we must defer the AddToCart events to render them the next page load.
 			$is_redirect    = 'yes' === get_option( 'woocommerce_cart_redirect_after_add', 'no' );
 			$is_add_to_cart = 'AddToCart' === $event_name;
+			$is_purchase 	= 'Purchase' === $event_name;
 			if ( $is_redirect && $is_add_to_cart ) {
 				WC_Facebookcommerce_Utils::add_deferred_event( $code );
-			} else {
+			} elseif( $is_purchase ) {
+				WC_Facebookcommerce_Utils::add_deferred_event( $code);
+				WC_Facebookcommerce_Utils::wc_enqueue_js( $code );
+			}
+			else {
 				WC_Facebookcommerce_Utils::wc_enqueue_js( $code );
 			}
 		} else {
