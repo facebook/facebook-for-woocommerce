@@ -170,7 +170,7 @@ class Background extends BackgroundJobHandler {
 	 * @since 2.0.0
 	 *
 	 * @param string           $prefixed_product_id prefixed product ID
-	 * @param object|\stdClass $job                 job object
+	 * @param object|\stdClass $job                 job object used to extract manual_sync_timestamp for manual full sync.
 	 * @return array|null
 	 * @throws PluginException In case no product was found.
 	 */
@@ -185,7 +185,10 @@ class Background extends BackgroundJobHandler {
 		// Extract manual sync timestamp from job if present
 		$manual_sync_timestamp = null;
 		if ( $job && isset( $job->manual_sync_timestamp ) ) {
-			$manual_sync_timestamp = $job->manual_sync_timestamp;
+			// Validate as numeric and ensure positive integer
+			if ( is_numeric( $job->manual_sync_timestamp ) && (int) $job->manual_sync_timestamp > 0 ) {
+				$manual_sync_timestamp = (int) $job->manual_sync_timestamp;
+			}
 		}
 
 		$request = null;

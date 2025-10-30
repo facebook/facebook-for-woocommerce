@@ -242,7 +242,7 @@ class Sync {
 			$job_data = array( 'requests' => $this->requests );
 
 			// Include manual sync timestamp if present
-			if ( $this->manual_sync_timestamp !== null ) {
+			if ( isset( $this->manual_sync_timestamp ) ) {
 				$job_data['manual_sync_timestamp'] = $this->manual_sync_timestamp;
 			}
 
