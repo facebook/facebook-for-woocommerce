@@ -71,7 +71,7 @@ function generateProductName(productType) {
   const now = new Date();
   const timestamp = now.toISOString().replace(/[:.]/g, '-').slice(0, 19);
   const runId = process.env.GITHUB_RUN_ID || 'local';
-  return `Test ${productType} Product E2E ${timestamp}-${runId}`;
+  return `Test ${productType.toUpperCase()} Product E2E ${timestamp}-${runId}`;
 }
 
 // Helper function to generate unique SKU for any product type
@@ -175,6 +175,53 @@ async function validateFacebookSync(productId, productName, waitSeconds = 10) {
   }
 }
 
+// Helper function to create a test product programmatically via WooCommerce API (much faster than UI)
+async function createTestProduct(options = {}) {
+  const productType = options.productType || 'simple';
+  const productName = options.productName || generateProductName(productType);
+  const sku = options.sku || generateUniqueSKU(productType);
+  const price = options.price || '19.99';
+  const stock = options.stock || '10';
+
+  console.log(`📦 Creating simple product via WooCommerce API: "${productName}"...`);
+
+  try {
+    const { exec } = require('child_process');
+    const { promisify } = require('util');
+    const execAsync = promisify(exec);
+
+    // Call the product creator PHP script
+    const { stdout } = await execAsync(
+      `php e2e-product-creator.php "${productType}" "${productName}" ${price} ${stock} "${sku}"`,
+      { cwd: __dirname }
+    );
+
+    const result = JSON.parse(stdout);
+
+    if (result.success) {
+      console.log(`✅ ${result.message}`);
+      console.log(`   Name: ${result.product_name}`);
+      console.log(`   SKU: ${result.sku}`);
+      console.log(`   Price: ${result.price}`);
+      console.log(`   Stock: ${result.stock}`);
+
+      return {
+        productId: result.product_id,
+        productName: result.product_name,
+        price: result.price,
+        stock: result.stock,
+        sku: result.sku
+      };
+    } else {
+      throw new Error(`Product creation failed: ${result.error}`);
+    }
+
+  } catch (error) {
+    console.log(`❌ Failed to create simple product: ${error.message}`);
+    throw error;
+  }
+}
+
 module.exports = {
   baseURL,
   username,
@@ -189,5 +236,6 @@ module.exports = {
   checkForPhpErrors,
   logTestStart,
   logTestEnd,
-  validateFacebookSync
+  validateFacebookSync,
+  createTestProduct
 };

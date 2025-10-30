@@ -3,11 +3,13 @@ const {
   baseURL,
   loginToWordPress,
   safeScreenshot,
+  cleanupProduct,
   extractProductIdFromUrl,
   checkForPhpErrors,
   logTestStart,
   logTestEnd,
-  validateFacebookSync
+  validateFacebookSync,
+  createTestProduct
 } = require('./test-helpers');
 
 test.describe('Facebook for WooCommerce - Product Modification E2E Tests', () => {
@@ -23,20 +25,30 @@ test.describe('Facebook for WooCommerce - Product Modification E2E Tests', () =>
 
   test('Edit simple product and verify Facebook sync', async ({ page }, testInfo) => {
     let productId = null;
+    let createdProductId = null;
     let originalName = '';
     let originalPrice = '';
     let originalDescription = '';
     let originalStock = '';
 
     try {
-      // Step 1: Go to Products page
+      const createdProduct = await createTestProduct({
+        type: 'simple',
+        price: '25.00',
+        stock: '20'
+      });
+
+      createdProductId = createdProduct.productId;
+      console.log(`✅ Created product ID ${createdProductId} for editing test`);
+
+      // Go to Products page
       console.log('📋 Navigating to Products page...');
       await page.goto(`${baseURL}/wp-admin/edit.php?post_type=product`, {
         waitUntil: 'networkidle',
         timeout: 120000
       });
 
-      // Step 2: Filter by Simple product type
+      // Filter by Simple product type
       console.log('🔍 Filtering by Simple product type...');
       const productTypeFilter = page.locator('select#dropdown_product_type');
       if (await productTypeFilter.isVisible({ timeout: 10000 })) {
@@ -50,9 +62,6 @@ test.describe('Facebook for WooCommerce - Product Modification E2E Tests', () =>
         console.log('⚠️ Product type filter not found, proceeding without filter');
       }
 
-      // Step 3: Find and click on first simple product
-      console.log('🔍 Looking for first simple product...');
-
       // Wait for products table to load
       const hasProductsTable = await page.locator('.wp-list-table').isVisible({ timeout: 120000 });
       if (hasProductsTable) {
@@ -61,27 +70,31 @@ test.describe('Facebook for WooCommerce - Product Modification E2E Tests', () =>
         console.log('⚠️ Products table not found');
       }
 
+      // Find and click on first simple product
+      console.log('🔍 Looking for simple product...');
+
       // Get the first product row
       const firstProductRow = page.locator('.wp-list-table tbody tr.iedit').first();
+      await firstProductRow.isVisible({ timeout: 10000 });
+      // Extract product name from the row
+      const productNameElement = firstProductRow.locator('.row-title');
+      originalName = await productNameElement.textContent();
+      console.log(`✅ Found existing product: "${originalName}"`);
 
-      if (await firstProductRow.isVisible({ timeout: 10000 })) {
-        // Extract product name from the row
-        const productNameElement = firstProductRow.locator('.row-title');
-        originalName = await productNameElement.textContent();
-        console.log(`✅ Found product: "${originalName}"`);
+      // Click on product name to edit
+      await productNameElement.click();
+      await page.waitForLoadState('networkidle', { timeout: 120000 });
+      console.log('✅ Opened product editor');
 
-        // Click on product name to edit
-        await productNameElement.click();
-        await page.waitForLoadState('networkidle', { timeout: 120000 });
-        console.log('✅ Opened product editor');
+      // Extract product ID from URL
+      const currentUrl = page.url();
+      productId = extractProductIdFromUrl(currentUrl);
 
-        // Extract product ID from URL
-        const currentUrl = page.url();
-        productId = extractProductIdFromUrl(currentUrl);
-        console.log(`✅ Editing product ID: ${productId}`);
-      } else {
-        throw new Error('No simple products found to edit');
+      if (productId !== createdProductId) {
+        console.warn(`⚠️ Selected Product ID from URL: (${productId}) does not match created test product ID: (${createdProductId}). This could indicate failure to cleanup previous test run.`);
       }
+
+      console.log(`✅ Editing product ID: ${productId}`);
 
       // Step 4: Store original values before editing
       console.log('📝 Storing original product values...');
@@ -224,6 +237,11 @@ test.describe('Facebook for WooCommerce - Product Modification E2E Tests', () =>
       await safeScreenshot(page, 'simple-product-edit-test-failure.png');
       logTestEnd(testInfo, false);
       throw error;
+    } finally {
+      // Cleanup created product if we created one for this test
+      if (createdProductId) {
+        await cleanupProduct(createdProductId);
+      }
     }
   });
 });
