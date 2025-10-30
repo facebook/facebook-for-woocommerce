@@ -181,6 +181,78 @@ async function validateFacebookSync(productId, productName, waitSeconds = 10) {
   }
 }
 
+// Helper function to perform quick edit on a product
+async function quickEditProduct(page, productId, changes) {
+  console.log(`✏️ Quick editing product ${productId}...`);
+
+  try {
+    // Navigate to products list
+    await page.goto(`${baseURL}/wp-admin/edit.php?post_type=product`, {
+      waitUntil: 'networkidle',
+      timeout: 120000
+    });
+
+    // Find the product row by ID - WooCommerce uses post-{id} as the row ID
+    const productRow = page.locator(`#post-${productId}`);
+
+    if (!await productRow.isVisible({ timeout: 10000 })) {
+      throw new Error(`Product row for ID ${productId} not found`);
+    }
+
+    console.log(`✅ Found product row for ID ${productId}`);
+
+    // Hover over the row to reveal action links
+    await productRow.hover();
+    await page.waitForTimeout(500);
+
+    // Click the "Quick Edit" button
+    const quickEditButton = productRow.locator('.editinline');
+    if (!await quickEditButton.isVisible({ timeout: 5000 })) {
+      throw new Error('Quick Edit button not visible');
+    }
+
+    await quickEditButton.click();
+    console.log('✅ Clicked Quick Edit button');
+
+    // Wait for the quick edit form to appear
+    await page.waitForSelector(`#edit-${productId}`, { timeout: 10000 });
+    console.log('✅ Quick edit form loaded');
+
+    // Apply changes
+    if (changes.name) {
+      const nameField = page.locator(`#edit-${productId} input[name="post_title"]`);
+      await nameField.waitFor({ state: 'visible', timeout: 5000 });
+      await nameField.clear();
+      await nameField.fill(changes.name);
+      console.log(`✅ Changed name to: ${changes.name}`);
+    }
+
+    if (changes.price) {
+      const priceField = page.locator(`#edit-${productId} input[name="_regular_price"]`);
+      await priceField.waitFor({ state: 'visible', timeout: 5000 });
+      await priceField.clear();
+      await priceField.fill(changes.price);
+      console.log(`✅ Changed price to: ${changes.price}`);
+    }
+
+    // Click the "Update" button to save changes
+    const updateButton = page.locator(`#edit-${productId} .button.save`);
+    await updateButton.waitFor({ state: 'visible', timeout: 5000 });
+    await updateButton.click();
+    console.log('✅ Clicked Update button');
+
+    // Wait for the product list to reload after save
+    await page.waitForLoadState('networkidle', { timeout: 60000 });
+    await page.waitForTimeout(2000);
+
+    console.log('✅ Quick edit completed successfully');
+
+  } catch (error) {
+    console.log(`⚠️ Quick edit failed: ${error.message}`);
+    throw error;
+  }
+}
+
 test.describe('Facebook for WooCommerce - Product Creation E2E Tests', () => {
 
   test.beforeEach(async ({ page }, testInfo) => {
@@ -335,6 +407,129 @@ test.describe('Facebook for WooCommerce - Product Creation E2E Tests', () => {
       await cleanupProduct(productId);
     }
   }
+  });
+
+  test('Quick edit simple product and validate Facebook sync', async ({ page }, testInfo) => {
+    let productId = null;
+    try {
+      // Step 1: Create a simple product first
+      await page.goto(`${baseURL}/wp-admin/post-new.php?post_type=product`, {
+        waitUntil: 'networkidle',
+        timeout: 120000
+      });
+
+      await page.waitForSelector('#title', { timeout: 120000 });
+
+      const originalProductName = generateProductName('Simple-QuickEdit');
+      await page.fill('#title', originalProductName);
+
+      // Add description
+      try {
+        console.log('🔄 Attempting to add product description...');
+        const visualTab = page.locator('#content-tmce');
+        if (await visualTab.isVisible({ timeout: 5000 })) {
+          await visualTab.click();
+          await page.waitForTimeout(2000);
+
+          const tinyMCEFrame = page.locator('#content_ifr');
+          if (await tinyMCEFrame.isVisible({ timeout: 5000 })) {
+            const frameContent = tinyMCEFrame.contentFrame();
+            const bodyElement = frameContent.locator('body');
+            if (await bodyElement.isVisible({ timeout: 5000 })) {
+              await bodyElement.fill('This is a test product for quick edit testing.');
+              console.log('✅ Added description via TinyMCE editor');
+            }
+          }
+        }
+      } catch (editorError) {
+        console.log(`⚠️ Content editor issue: ${editorError.message} - continuing without description`);
+      }
+
+      console.log('✅ Basic product details filled');
+
+      // Scroll to product data section
+      await page.locator('#woocommerce-product-data').scrollIntoViewIfNeeded();
+
+      // Click on Inventory tab and set SKU
+      await page.click('li.inventory_tab a');
+      await page.waitForTimeout(1000);
+
+      const skuField = page.locator('#_sku');
+      if (await skuField.isVisible({ timeout: 120000 })) {
+        const uniqueSku = generateUniqueSKU('quickedit');
+        await skuField.fill(uniqueSku);
+        console.log(`✅ Set unique SKU: ${uniqueSku}`);
+      }
+
+      // Set original price
+      const originalPrice = '19.99';
+      const regularPriceField = page.locator('#_regular_price');
+      if (await regularPriceField.isVisible({ timeout: 120000 })) {
+        await regularPriceField.fill(originalPrice);
+        console.log(`✅ Set original price: ${originalPrice}`);
+      }
+
+      // Publish product
+      await publishProduct(page);
+
+      // Extract product ID
+      const currentUrl = page.url();
+      productId = extractProductIdFromUrl(currentUrl);
+
+      // Verify no PHP errors
+      await checkForPhpErrors(page);
+
+      // Step 2: Validate initial sync
+      console.log('📋 Validating initial sync to Facebook...');
+      const initialResult = await validateFacebookSync(productId, originalProductName, 10);
+      expect(initialResult['success']).toBe(true);
+      console.log('✅ Initial sync validated successfully');
+
+      // Step 3: Perform quick edit - change name and price
+      const updatedProductName = originalProductName + ' - Updated';
+      const updatedPrice = '29.99';
+
+      await quickEditProduct(page, productId, {
+        name: updatedProductName,
+        price: updatedPrice
+      });
+
+      console.log(`✅ Quick edit completed: name="${updatedProductName}", price="${updatedPrice}"`);
+
+      // Step 4: Wait for Facebook sync after quick edit
+      console.log('⏳ Waiting for Facebook sync after quick edit...');
+      await page.waitForTimeout(2000); // Brief wait before validation
+
+      // Step 5: Validate sync with updated values
+      console.log('📋 Validating Facebook sync after quick edit...');
+      const updatedResult = await validateFacebookSync(productId, updatedProductName, 15);
+
+      // Assert sync succeeded
+      expect(updatedResult['success']).toBe(true);
+      console.log('✅ Facebook sync validation after quick edit passed');
+
+      // Step 6: Verify specific field updates
+      // The validator already checks that WooCommerce fields match Facebook fields
+      // If validation passed, it means name and price are synced correctly
+      if (updatedResult['mismatches'] && updatedResult['mismatches'].length > 0) {
+        console.log('❌ Field mismatches found:', updatedResult['mismatches']);
+        throw new Error('Product fields did not sync correctly after quick edit');
+      }
+
+      console.log('✅ Quick edit test completed successfully - name and price synced correctly');
+      logTestEnd(testInfo, true);
+
+    } catch (error) {
+      console.log(`⚠️ Quick edit test failed: ${error.message}`);
+      await safeScreenshot(page, 'quick-edit-simple-product-failure.png');
+      logTestEnd(testInfo, false);
+      throw error;
+    } finally {
+      // Cleanup
+      if (productId) {
+        await cleanupProduct(productId);
+      }
+    }
   });
 
   test('Create variable product with WooCommerce', async ({ page }, testInfo) => {
