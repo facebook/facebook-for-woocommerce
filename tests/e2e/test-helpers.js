@@ -175,6 +175,52 @@ async function validateFacebookSync(productId, productName, waitSeconds = 10) {
   }
 }
 
+// Helper function to create a simple product programmatically via WooCommerce API (much faster than UI)
+async function createSimpleProduct(options = {}) {
+  const productName = options.productName || generateProductName('Simple');
+  const price = options.price || '19.99';
+  const stock = options.stock || '10';
+  const sku = options.sku || generateUniqueSKU('simple');
+
+  console.log(`📦 Creating simple product via WooCommerce API: "${productName}"...`);
+
+  try {
+    const { exec } = require('child_process');
+    const { promisify } = require('util');
+    const execAsync = promisify(exec);
+
+    // Call the product creator PHP script
+    const { stdout } = await execAsync(
+      `php e2e-product-creator.php simple "${productName}" ${price} ${stock} "${sku}"`,
+      { cwd: __dirname }
+    );
+
+    const result = JSON.parse(stdout);
+
+    if (result.success) {
+      console.log(`✅ ${result.message}`);
+      console.log(`   Name: ${result.product_name}`);
+      console.log(`   SKU: ${result.sku}`);
+      console.log(`   Price: ${result.price}`);
+      console.log(`   Stock: ${result.stock}`);
+
+      return {
+        productId: result.product_id,
+        productName: result.product_name,
+        price: result.price,
+        stock: result.stock,
+        sku: result.sku
+      };
+    } else {
+      throw new Error(`Product creation failed: ${result.error}`);
+    }
+
+  } catch (error) {
+    console.log(`❌ Failed to create simple product: ${error.message}`);
+    throw error;
+  }
+}
+
 module.exports = {
   baseURL,
   username,
@@ -189,5 +235,6 @@ module.exports = {
   checkForPhpErrors,
   logTestStart,
   logTestEnd,
-  validateFacebookSync
+  validateFacebookSync,
+  createSimpleProduct
 };
