@@ -63,8 +63,8 @@ class Product_Categories {
 				array(
 					'jquery',
 					'wc-backbone-modal',
-					'jquery-blockui',
-					'jquery-tiptip',
+					'wc-jquery-blockui',
+					'wc-jquery-tiptip',
 					'facebook-for-woocommerce-modal',
 				),
 				\WC_Facebookcommerce::PLUGIN_VERSION,

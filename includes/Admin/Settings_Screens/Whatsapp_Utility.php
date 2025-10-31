@@ -70,7 +70,7 @@ class Whatsapp_Utility extends Abstract_Settings_Screen {
 		wp_enqueue_script(
 			'facebook-for-woocommerce-connect-whatsapp',
 			facebook_for_woocommerce()->get_asset_build_dir_url() . '/admin/whatsapp-connection.js',
-			array( 'jquery', 'jquery-blockui', 'jquery-tiptip', 'wc-enhanced-select' ),
+			array( 'jquery', 'wc-jquery-blockui', 'wc-jquery-tiptip', 'wc-enhanced-select' ),
 			\WC_Facebookcommerce::PLUGIN_VERSION
 		);
 		$waba_id            = get_option( 'wc_facebook_wa_integration_waba_id', '' );
@@ -90,7 +90,7 @@ class Whatsapp_Utility extends Abstract_Settings_Screen {
 		wp_enqueue_script(
 			'facebook-for-woocommerce-whatsapp-consent',
 			facebook_for_woocommerce()->get_asset_build_dir_url() . '/admin/whatsapp-consent.js',
-			array( 'jquery', 'jquery-blockui', 'jquery-tiptip', 'wc-enhanced-select' ),
+			array( 'jquery', 'wc-jquery-blockui', 'wc-jquery-tiptip', 'wc-enhanced-select' ),
 			\WC_Facebookcommerce::PLUGIN_VERSION
 		);
 		$consent_collection_enabled = get_option( 'wc_facebook_whatsapp_consent_collection_setting_status', null ) === 'enabled';
@@ -111,7 +111,7 @@ class Whatsapp_Utility extends Abstract_Settings_Screen {
 		wp_enqueue_script(
 			'facebook-for-woocommerce-whatsapp-billing',
 			facebook_for_woocommerce()->get_asset_build_dir_url() . '/admin/whatsapp-billing.js',
-			array( 'jquery', 'jquery-blockui', 'jquery-tiptip', 'wc-enhanced-select' ),
+			array( 'jquery', 'wc-jquery-blockui', 'wc-jquery-tiptip', 'wc-enhanced-select' ),
 			\WC_Facebookcommerce::PLUGIN_VERSION
 		);
 		wp_localize_script(
@@ -136,7 +136,7 @@ class Whatsapp_Utility extends Abstract_Settings_Screen {
 		wp_enqueue_script(
 			'facebook-for-woocommerce-whatsapp-events',
 			facebook_for_woocommerce()->get_asset_build_dir_url() . '/admin/whatsapp-events.js',
-			array( 'jquery', 'jquery-blockui', 'jquery-tiptip', 'wc-enhanced-select' ),
+			array( 'jquery', 'wc-jquery-blockui', 'wc-jquery-tiptip', 'wc-enhanced-select' ),
 			\WC_Facebookcommerce::PLUGIN_VERSION
 		);
 		wp_localize_script(
@@ -163,7 +163,7 @@ class Whatsapp_Utility extends Abstract_Settings_Screen {
 		wp_enqueue_script(
 			'facebook-for-woocommerce-whatsapp-finish',
 			facebook_for_woocommerce()->get_asset_build_dir_url() . '/admin/whatsapp-finish.js',
-			array( 'jquery', 'jquery-blockui', 'jquery-tiptip', 'wc-enhanced-select' ),
+			array( 'jquery', 'wc-jquery-blockui', 'wc-jquery-tiptip', 'wc-enhanced-select' ),
 			\WC_Facebookcommerce::PLUGIN_VERSION
 		);
 			wp_localize_script(
@@ -182,7 +182,7 @@ class Whatsapp_Utility extends Abstract_Settings_Screen {
 		wp_enqueue_script(
 			'facebook-for-woocommerce-whatsapp-consent-remove',
 			facebook_for_woocommerce()->get_asset_build_dir_url() . '/admin/whatsapp-consent-remove.js',
-			array( 'jquery', 'jquery-blockui', 'jquery-tiptip', 'wc-enhanced-select' ),
+			array( 'jquery', 'wc-jquery-blockui', 'wc-jquery-tiptip', 'wc-enhanced-select' ),
 			\WC_Facebookcommerce::PLUGIN_VERSION
 		);
 		wp_localize_script(
@@ -199,7 +199,7 @@ class Whatsapp_Utility extends Abstract_Settings_Screen {
 		wp_enqueue_script(
 			'facebook-for-woocommerce-whatsapp-templates',
 			facebook_for_woocommerce()->get_asset_build_dir_url() . '/admin/whatsapp-templates.js',
-			array( 'jquery', 'jquery-blockui', 'jquery-tiptip', 'wc-enhanced-select' ),
+			array( 'jquery', 'wc-jquery-blockui', 'wc-jquery-tiptip', 'wc-enhanced-select' ),
 			\WC_Facebookcommerce::PLUGIN_VERSION
 		);
 		wp_localize_script(
@@ -216,7 +216,7 @@ class Whatsapp_Utility extends Abstract_Settings_Screen {
 		wp_enqueue_script(
 			'facebook-for-woocommerce-whatsapp-disconnect',
 			facebook_for_woocommerce()->get_asset_build_dir_url() . '/admin/whatsapp-disconnect.js',
-			array( 'jquery', 'jquery-blockui', 'jquery-tiptip', 'wc-enhanced-select' ),
+			array( 'jquery', 'wc-jquery-blockui', 'wc-jquery-tiptip', 'wc-enhanced-select' ),
 			\WC_Facebookcommerce::PLUGIN_VERSION
 		);
 		wp_localize_script(

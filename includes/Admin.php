@@ -137,7 +137,7 @@ class Admin {
 				wp_enqueue_script(
 					'facebook-for-woocommerce-modal',
 					facebook_for_woocommerce()->get_asset_build_dir_url() . '/admin/modal.js',
-					array( 'jquery', 'wc-backbone-modal', 'jquery-blockui' ),
+					array( 'jquery', 'wc-backbone-modal', 'wc-jquery-blockui' ),
 					\WC_Facebookcommerce::PLUGIN_VERSION,
 					false
 				);
@@ -174,7 +174,7 @@ class Admin {
 				wp_enqueue_script(
 					'facebook-for-woocommerce-products-admin',
 					facebook_for_woocommerce()->get_asset_build_dir_url() . '/admin/products-admin.js',
-					[ 'jquery', 'wc-backbone-modal', 'jquery-blockui', 'facebook-for-woocommerce-modal' ],
+					[ 'jquery', 'wc-backbone-modal', 'wc-jquery-blockui', 'facebook-for-woocommerce-modal' ],
 					\WC_Facebookcommerce::PLUGIN_VERSION,
 					false
 				);

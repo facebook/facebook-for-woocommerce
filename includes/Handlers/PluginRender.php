@@ -55,13 +55,13 @@ class PluginRender {
 		wp_enqueue_script(
 			'facebook-for-woocommerce-modal',
 			facebook_for_woocommerce()->get_asset_build_dir_url() . '/admin/modal.js',
-			array( 'jquery', 'wc-backbone-modal', 'jquery-blockui' ),
+			array( 'jquery', 'wc-backbone-modal', 'wc-jquery-blockui' ),
 			\WC_Facebookcommerce::PLUGIN_VERSION
 		);
 		wp_enqueue_script(
 			'facebook-for-woocommerce-plugin-update',
 			facebook_for_woocommerce()->get_asset_build_dir_url() . '/admin/plugin-rendering.js',
-			array( 'jquery', 'wc-backbone-modal', 'jquery-blockui', 'jquery-tiptip', 'facebook-for-woocommerce-modal', 'wc-enhanced-select' ),
+			array( 'jquery', 'wc-backbone-modal', 'wc-jquery-blockui', 'wc-jquery-tiptip', 'facebook-for-woocommerce-modal', 'wc-enhanced-select' ),
 			\WC_Facebookcommerce::PLUGIN_VERSION,
 		);
 		wp_localize_script(
