@@ -86,7 +86,7 @@ class Sync {
 		$profiling_logger->start( 'create_or_update_all_products' );
 
 		// Store manual sync timestamp if provided
-		if ( $manual_sync_timestamp !== null ) {
+		if ( null !== $manual_sync_timestamp ) {
 			$this->manual_sync_timestamp = $manual_sync_timestamp;
 		}
 
