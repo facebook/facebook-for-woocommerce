@@ -231,9 +231,7 @@ class AJAX {
 			}
 
 			// Step 1: Trigger feed regeneration for all languages
-			error_log("AJAX Debug: About to call regenerate_feed()");
-			$language_feed->regenerate_feed();
-			error_log("AJAX Debug: regenerate_feed() completed");
+			$language_feed->regenerate_all_language_feeds();
 
 			// Step 2: The regenerate_feed() method automatically triggers the upload hook:
 			// do_action( self::FEED_GEN_COMPLETE_ACTION . static::get_data_stream_name() );
