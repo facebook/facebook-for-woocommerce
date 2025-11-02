@@ -17,6 +17,7 @@ use WC_Facebookcommerce_Utils;
 use WooCommerce\Facebook\Utilities\Heartbeat;
 use WooCommerce\Facebook\Framework\Logger;
 use WooCommerce\Facebook\Framework\LogHandlerBase;
+use WooCommerce\Facebook\Handlers\PluginRender;
 use WooCommerce\Facebook\Integrations\IntegrationRegistry;
 
 /**
@@ -151,7 +152,7 @@ class Update {
 		// Send the request to the Meta server with the latest plugin version.
 		try {
 			$external_business_id         = $plugin->get_connection_handler()->get_external_business_id();
-			$is_woo_all_product_opted_out = $plugin->get_plugin_render_handler()->is_master_sync_on() === false;
+			$is_woo_all_product_opted_out = PluginRender::is_master_sync_on() === false;
 			$response                     = $plugin->get_api()->update_plugin_version_configuration( $external_business_id, $is_woo_all_product_opted_out, WC_Facebookcommerce_Utils::PLUGIN_VERSION );
 			if ( $response->has_api_error() ) {
 				// If the request fails, we should retry it in the next heartbeat.

@@ -250,6 +250,13 @@ class Event {
 
 	/**
 	 * Gets the click ID from the cookie or the query parameter.
+	 * In order, rely on:
+	 * 1. If an _fbc cookie is set
+	 * 2. If we have stored fbc in the session
+	 * 3. The FBC result from param builder
+	 * 4. Construct our own FBC
+	 *
+	 * The resulting value is stored in the session for future requests.
 	 *
 	 * @see https://developers.facebook.com/docs/marketing-api/server-side-api/parameters/fbp-and-fbc#fbp-and-fbc-parameters
 	 *
@@ -261,22 +268,39 @@ class Event {
 		$fbc = '';
 		if ( ! empty( $_COOKIE['_fbc'] ) ) {
 			$fbc = wc_clean( wp_unslash( $_COOKIE['_fbc'] ) );
-		} elseif ( isset( $_REQUEST['fbclid'] ) ) {
+		}
+
+		if ( empty( $fbc ) && ! empty( $_SESSION['_fbc'] ) ) {
+			$fbc = $_SESSION['_fbc']; // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
+		}
+
+		if ( empty( $fbc ) ) {
+			$param_builder = \WC_Facebookcommerce_EventsTracker::get_param_builder();
+			$fbc = $param_builder->getFbc();
+		}
+
+		if ( empty( $fbc ) && ! empty( $_REQUEST['fbclid'] ) ) {
 			$creation_time = time();
 			$fbclid = wc_clean( wp_unslash( $_REQUEST['fbclid'] ) ); // phpcs:ignore WordPress.Security.NonceVerification
 			$fbc = "fb.1.{$creation_time}.{$fbclid}";
-		} elseif ( isset( $_SESSION['_fbc'] ) ) {
-			$fbc = $_SESSION['_fbc']; // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
 		}
-		if ( $fbc ) {
+
+		if ( ! empty( $fbc ) ) {
 			$_SESSION['_fbc'] = $fbc;
 		}
-		return $fbc;
+		// Return null instead of empty string
+		return ! empty( $fbc ) ? $fbc : null;
 	}
 
 
 	/**
 	 * Gets the browser ID from the cookie.
+	 * In order, rely on:
+	 * 1. If an _fbp cookie is set
+	 * 2. If we have stored fbp in the session
+	 * 3. The FBP result from param builder
+	 *
+	 * The resulting value is stored in the session for future requests.
 	 *
 	 * @since 2.0.0
 	 *
@@ -284,12 +308,21 @@ class Event {
 	 */
 	protected function get_browser_id() {
 		$fbp = ! empty( $_COOKIE['_fbp'] ) ? wc_clean( wp_unslash( $_COOKIE['_fbp'] ) ) : '';
-		if ( $fbp ) {
-			$_SESSION['_fbp'] = $fbp;
-		} elseif ( isset( $_SESSION['_fbp'] ) ) {
+
+		if ( empty( $fbp ) && ! empty( $_SESSION['_fbp'] ) ) {
 			$fbp = $_SESSION['_fbp']; // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
 		}
-		return $fbp;
+
+		if ( empty( $fbp ) ) {
+			$param_builder = \WC_Facebookcommerce_EventsTracker::get_param_builder();
+			$fbp = $param_builder->getFbp();
+		}
+
+		if ( ! empty( $fbp ) ) {
+			$_SESSION['_fbp'] = $fbp;
+		}
+		// Return null instead of empty string
+		return ! empty( $fbp ) ? $fbp : null;
 	}
 
 

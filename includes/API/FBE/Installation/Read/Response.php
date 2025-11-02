@@ -19,7 +19,20 @@ class Response extends API\Response {
 	 * @return string
 	 */
 	public function get_pixel_id() {
-		return $this->get_data()['pixel_id'] ?? '';
+		$data = $this->get_data();
+
+		// First, try to get pixel ID from installed_features with feature_type "pixel"
+		if ( ! empty( $data['installed_features'] ) && is_array( $data['installed_features'] ) ) {
+			foreach ( $data['installed_features'] as $feature ) {
+				if ( isset( $feature['feature_type'], $feature['connected_assets']['pixel_id'] ) &&
+					 'pixel' === $feature['feature_type'] ) {
+					return $feature['connected_assets']['pixel_id'];
+				}
+			}
+		}
+
+		// Fallback to top-level pixel_id for backwards compatibility
+		return $data['pixel_id'] ?? '';
 	}
 
 

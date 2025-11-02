@@ -48,14 +48,100 @@ class ReadInstallationResponseTest extends AbstractWPUnitTestWithOptionIsolation
 	}
 
 	/**
-	 * Test get_pixel_id method.
+	 * Test get_pixel_id method fallback to top-level pixel_id.
 	 */
 	public function test_get_pixel_id() {
-		$installation_data = [ 'pixel_id' => 'pixel_id_123' ];
+		$installation_data = [ 'pixel_id' => '1800969360764642' ];
 		$data              = json_encode( [ 'data' => [ $installation_data ] ] );
 		$response          = new Response( $data );
 
-		$this->assertEquals( 'pixel_id_123', $response->get_pixel_id() );
+		$this->assertEquals( '1800969360764642', $response->get_pixel_id() );
+	}
+
+	/**
+	 * Test get_pixel_id method prioritizes installed_features pixel over top-level.
+	 */
+	public function test_get_pixel_id_from_installed_features() {
+		$installation_data = [
+			'pixel_id' => '1800969360764642', // Stale pixel ID
+			'installed_features' => [
+				[
+					'feature_type' => 'external_client',
+					'connected_assets' => [
+						'pixel_id' => '1800969360764642'
+					]
+				],
+				[
+					'feature_type' => 'pixel',
+					'connected_assets' => [
+						'pixel_id' => '1626962704583880' // Current pixel ID
+					]
+				],
+				[
+					'feature_type' => 'ads',
+					'connected_assets' => [
+						'pixel_id' => '1626962704583880'
+					]
+				]
+			]
+		];
+		$data              = json_encode( [ 'data' => [ $installation_data ] ] );
+		$response          = new Response( $data );
+
+		$this->assertEquals( '1626962704583880', $response->get_pixel_id() );
+	}
+
+	/**
+	 * Test get_pixel_id method falls back when no pixel feature found.
+	 */
+	public function test_get_pixel_id_fallback_when_no_pixel_feature() {
+		$installation_data = [
+			'pixel_id' => '1800969360764642',
+			'installed_features' => [
+				[
+					'feature_type' => 'external_client',
+					'connected_assets' => [
+						'pixel_id' => '1626962704583880'
+					]
+				],
+				[
+					'feature_type' => 'ads',
+					'connected_assets' => [
+						'pixel_id' => '1626962704583880'
+					]
+				]
+			]
+		];
+		$data              = json_encode( [ 'data' => [ $installation_data ] ] );
+		$response          = new Response( $data );
+
+		$this->assertEquals( '1800969360764642', $response->get_pixel_id() );
+	}
+
+	/**
+	 * Test get_pixel_id method handles malformed installed_features gracefully.
+	 */
+	public function test_get_pixel_id_with_malformed_installed_features() {
+		$installation_data = [
+			'pixel_id' => '1800969360764642',
+			'installed_features' => [
+				[
+					'feature_type' => 'pixel',
+					// Missing connected_assets
+				],
+				[
+					'feature_type' => 'pixel',
+					'connected_assets' => [
+						// Missing pixel_id
+						'other_field' => 'value'
+					]
+				]
+			]
+		];
+		$data              = json_encode( [ 'data' => [ $installation_data ] ] );
+		$response          = new Response( $data );
+
+		$this->assertEquals( '1800969360764642', $response->get_pixel_id() );
 	}
 
 	/**

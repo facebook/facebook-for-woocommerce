@@ -63,19 +63,21 @@ class Request extends API\Request {
 
 			$event_data = $event->get_data();
 
-			if ( isset( $event_data['user_data']['click_id'] ) ) {
+			if ( ! empty( $event_data['user_data']['click_id'] ) ) {
 
 				$event_data['user_data']['fbc'] = $event_data['user_data']['click_id'];
-
-				unset( $event_data['user_data']['click_id'] );
 			}
 
-			if ( isset( $event_data['user_data']['browser_id'] ) ) {
+			if ( ! empty( $event_data['user_data']['browser_id'] ) ) {
 
 				$event_data['user_data']['fbp'] = $event_data['user_data']['browser_id'];
-
-				unset( $event_data['user_data']['browser_id'] );
 			}
+
+			// These are valid field names, so when they're provided they
+			// create event validation issues.
+			// unset these no matter what.
+			unset( $event_data['user_data']['click_id'] );
+			unset( $event_data['user_data']['browser_id'] );
 
 			$data['data'][] = array_filter( $event_data );
 		}

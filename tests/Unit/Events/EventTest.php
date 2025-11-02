@@ -347,4 +347,97 @@ class EventTest extends AbstractWPUnitTestWithOptionIsolationAndSafeFiltering {
 		$this->assertEquals( '10.0.0.1', $data['user_data']['client_ip_address'] );
 		$this->assertEquals( 'Custom User Agent', $data['user_data']['client_user_agent'] );
 	}
+
+	/**
+	 * Test that click_id is stored internally in Event.
+	 */
+	public function test_click_id_stored_internally() {
+		$event = new Event();
+		$user_data = $event->get_user_data();
+		
+		// Event uses click_id internally, which will be converted to fbc by Request class
+		$this->assertArrayHasKey( 'click_id', $user_data );
+	}
+
+	/**
+	 * Test that browser_id is stored internally in Event.
+	 */
+	public function test_browser_id_stored_internally() {
+		$event = new Event();
+		$user_data = $event->get_user_data();
+		
+		// Event uses browser_id internally, which will be converted to fbp by Request class
+		$this->assertArrayHasKey( 'browser_id', $user_data );
+	}
+
+	/**
+	 * Test that custom click_id value is preserved in Event.
+	 */
+	public function test_custom_click_id_value_preserved() {
+		$custom_click_id = 'fb.1.1234567890.AbCdEfGh';
+		$event = new Event( array( 'user_data' => array( 'click_id' => $custom_click_id ) ) );
+		$user_data = $event->get_user_data();
+		
+		$this->assertEquals( $custom_click_id, $user_data['click_id'] );
+	}
+
+	/**
+	 * Test that custom browser_id value is preserved in Event.
+	 */
+	public function test_custom_browser_id_value_preserved() {
+		$custom_browser_id = 'fb.1.1234567890.987654321';
+		$event = new Event( array( 'user_data' => array( 'browser_id' => $custom_browser_id ) ) );
+		$user_data = $event->get_user_data();
+		
+		$this->assertEquals( $custom_browser_id, $user_data['browser_id'] );
+	}
+
+	/**
+	 * Test that click_id and browser_id are not hashed (they are not PII).
+	 */
+	public function test_click_id_browser_id_not_hashed() {
+		$custom_click_id = 'fb.1.1234567890.AbCdEfGh';
+		$custom_browser_id = 'fb.1.1234567890.987654321';
+		$event = new Event( array( 
+			'user_data' => array( 
+				'click_id' => $custom_click_id,
+				'browser_id' => $custom_browser_id,
+			) 
+		) );
+		$user_data = $event->get_user_data();
+		
+		// Verify these are not hashed (should be the same value)
+		$this->assertEquals( $custom_click_id, $user_data['click_id'] );
+		$this->assertEquals( $custom_browser_id, $user_data['browser_id'] );
+		// Verify they are not 64 characters (SHA256 hash length)
+		$this->assertNotEquals( 64, strlen( $user_data['click_id'] ) );
+		$this->assertNotEquals( 64, strlen( $user_data['browser_id'] ) );
+	}
+
+	/**
+	 * Test that fbc/fbp provided as input are stored as-is (for backward compatibility).
+	 * Note: The Request class will handle conversion from click_id/browser_id to fbc/fbp.
+	 */
+	public function test_fbc_fbp_input_stored() {
+		$custom_fbc = 'fb.1.1234567890.AbCdEfGh';
+		$custom_fbp = 'fb.1.1234567890.987654321';
+		$event_data = array(
+			'event_name'  => 'Purchase',
+			'custom_data' => array( 'value' => '100.00' ),
+			'user_data'   => array(
+				'em' => 'test@example.com',
+				'fbc' => $custom_fbc,
+				'fbp' => $custom_fbp,
+			),
+		);
+		
+		$event = new Event( $event_data );
+		$data = $event->get_data();
+		
+		// When fbc/fbp are provided, they're stored as-is
+		$this->assertArrayHasKey( 'fbc', $data['user_data'] );
+		$this->assertArrayHasKey( 'fbp', $data['user_data'] );
+		$this->assertEquals( $custom_fbc, $data['user_data']['fbc'] );
+		$this->assertEquals( $custom_fbp, $data['user_data']['fbp'] );
+	}
 } 

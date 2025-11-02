@@ -139,13 +139,14 @@ class AJAX {
 	 * @since 2.0.0
 	 */
 	public function sync_products() {
+		if ( ! \WC_Facebookcommerce_Utils::is_legit_ajax_call( Shops::ACTION_SYNC_PRODUCTS ) ) {
+			wp_send_json_error( 'Permission denied' );
+		}
 		// Allow opt-out of full batch-API sync, for example if store has a large number of products.
 		if ( ! facebook_for_woocommerce()->get_integration()->allow_full_batch_api_sync() ) {
 			wp_send_json_error( __( 'Full product sync disabled by filter.', 'facebook-for-woocommerce' ) );
 			return;
 		}
-
-		check_admin_referer( Product_Sync::ACTION_SYNC_PRODUCTS, 'nonce' );
 
 		try {
 			facebook_for_woocommerce()->get_products_sync_handler()->create_or_update_all_products();
@@ -163,8 +164,9 @@ class AJAX {
 	 * @since 3.5.0
 	 */
 	public function sync_coupons() {
-		check_admin_referer( Shops::ACTION_SYNC_COUPONS, 'nonce' );
-
+		if ( ! \WC_Facebookcommerce_Utils::is_legit_ajax_call( Shops::ACTION_SYNC_COUPONS ) ) {
+			wp_send_json_error( 'Permission denied' );
+		}
 		try {
 			facebook_for_woocommerce()->feed_manager->get_feed_instance( 'promotions' )->regenerate_feed();
 			wp_send_json_success();
@@ -181,8 +183,9 @@ class AJAX {
 	 * @since 3.5.0
 	 */
 	public function sync_shipping_profiles() {
-		check_admin_referer( Shops::ACTION_SYNC_SHIPPING_PROFILES, 'nonce' );
-
+		if ( ! \WC_Facebookcommerce_Utils::is_legit_ajax_call( Shops::ACTION_SYNC_SHIPPING_PROFILES ) ) {
+			wp_send_json_error( 'Permission denied' );
+		}
 		try {
 			facebook_for_woocommerce()->feed_manager->get_feed_instance( 'shipping_profiles' )->regenerate_feed();
 			wp_send_json_success();
@@ -199,7 +202,9 @@ class AJAX {
 	 * @since 3.5.0
 	 */
 	public function sync_navigation_menu() {
-		check_admin_referer( Shops::ACTION_SYNC_NAVIGATION_MENU, 'nonce' );
+		if ( ! \WC_Facebookcommerce_Utils::is_legit_ajax_call( Shops::ACTION_SYNC_NAVIGATION_MENU ) ) {
+			wp_send_json_error( 'Permission denied' );
+		}
 
 		try {
 			facebook_for_woocommerce()->feed_manager->get_feed_instance( 'navigation_menu' )->regenerate_feed();
@@ -296,7 +301,9 @@ class AJAX {
 	 * @since 2.0.0
 	 */
 	public function get_sync_status() {
-		check_admin_referer( Product_Sync::ACTION_GET_SYNC_STATUS, 'nonce' );
+		if ( ! \WC_Facebookcommerce_Utils::is_legit_ajax_call( Product_Sync::ACTION_GET_SYNC_STATUS ) ) {
+			wp_send_json_error( 'Permission denied' );
+		}
 
 		$remaining_products = 0;
 
