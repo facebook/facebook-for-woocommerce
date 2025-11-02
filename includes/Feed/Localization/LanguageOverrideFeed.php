@@ -86,8 +86,7 @@ class LanguageOverrideFeed {
 		if ( 'yes' === get_transient( $flag_name ) ) {
 			return;
 		}
-		// TESTING ONLY: Using 15-minute transient to match feed generation interval. In production, this should be HOUR_IN_SECONDS.
-		set_transient( $flag_name, 'yes', 15 * MINUTE_IN_SECONDS );
+		set_transient( $flag_name, 'yes', HOUR_IN_SECONDS );
 
 		$integration   = facebook_for_woocommerce()->get_integration();
 		$configured_ok = $integration && $integration->is_configured();
@@ -350,8 +349,7 @@ class LanguageOverrideFeed {
 		 *
 		 * @param int $interval the frequency with which the language override feed data is generated, in seconds.
 		 */
-		// TESTING ONLY: Using 15-minute generation for testing purposes. In production, this should be DAY_IN_SECONDS (daily).
-		return apply_filters( 'wc_facebook_language_override_feed_generation_interval', 15 * MINUTE_IN_SECONDS ); // Every 15 minutes for testing
+		return apply_filters( 'wc_facebook_language_override_feed_generation_interval', DAY_IN_SECONDS );
 	}
 
 	/**
