@@ -1304,6 +1304,13 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 	 * @param WC_Facebook_Product|null $woo_product product object
 	 */
 	public function on_variable_product_publish( $wp_id, $woo_product = null ) {
+		// Prevent duplicate syncs within the same request cycle
+		$sync_lock_key = 'fb_product_sync_lock_' . $wp_id;
+		if ( get_transient( $sync_lock_key ) ) {
+			return; // Already syncing in this request
+		}
+		set_transient( $sync_lock_key, true, 2 ); // 2 second lock
+
 		if ( ! $woo_product instanceof \WC_Facebook_Product ) {
 			$woo_product = new \WC_Facebook_Product( $wp_id );
 		}
@@ -1338,6 +1345,13 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 	 * @return int|mixed|void|null
 	 */
 	public function on_simple_product_publish( $wp_id, $woo_product = null, &$parent_product = null ) {
+		// Prevent duplicate syncs within the same request cycle
+		$sync_lock_key = 'fb_product_sync_lock_' . $wp_id;
+		if ( get_transient( $sync_lock_key ) ) {
+			return; // Already syncing in this request
+		}
+		set_transient( $sync_lock_key, true, 2 ); // 2 second lock
+
 		if ( ! $woo_product instanceof \WC_Facebook_Product ) {
 			$woo_product = new \WC_Facebook_Product( $wp_id, $parent_product );
 		}
