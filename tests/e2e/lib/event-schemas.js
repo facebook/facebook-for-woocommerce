@@ -1,0 +1,58 @@
+/**
+ * Event Schemas - Field definitions only
+ * Based on: https://docs.google.com/spreadsheets/d/1fQvDwgHgq2jz1M_zfvKzW4PR8c_OgmsIJbGrRk1zMjY
+ *
+ * Common validations (timestamp, fbp, etc.) are handled in EventValidator.js
+ */
+
+module.exports = {
+    PageView: {
+        required: {
+            pixel: ['eventName', 'eventId', 'pixelId', 'timestamp'],
+            capi: ['event_name', 'event_id', 'event_time', 'action_source', 'user_data']
+        },
+        custom_data: []
+    },
+
+    ViewContent: {
+        required: {
+            pixel: ['eventName', 'eventId', 'pixelId', 'timestamp', 'custom_data'],
+            capi: ['event_name', 'event_id', 'event_time', 'action_source', 'user_data', 'custom_data']
+        },
+        custom_data: ['content_ids', 'content_type', 'content_name', 'value','contents' , 'content_category','currency']
+    },
+
+    AddToCart: {
+        required: {
+            pixel: ['eventName', 'eventId', 'pixelId', 'timestamp', 'custom_data'],
+            capi: ['event_name', 'event_id', 'event_time', 'action_source', 'user_data', 'custom_data']
+        },
+        custom_data: ['content_ids', 'content_type', 'content_name', 'value', 'currency']
+    },
+
+    InitiateCheckout: {
+        required: {
+            pixel: ['eventName', 'eventId', 'pixelId', 'timestamp', 'custom_data'],
+            capi: ['event_name', 'event_id', 'event_time', 'action_source', 'user_data', 'custom_data']
+        },
+        custom_data: ['content_ids', 'content_type', 'num_items', 'value', 'currency']
+    },
+
+    Purchase: {
+        required: {
+            pixel: ['eventName', 'eventId', 'pixelId', 'timestamp', 'custom_data'],
+            capi: ['event_name', 'event_id', 'event_time', 'action_source', 'user_data', 'custom_data']
+        },
+        custom_data: ['content_ids', 'content_type', 'value', 'currency']
+        // Note: order_id is optional/custom field
+    },
+
+    ViewCategory: {
+        required: {
+            pixel: ['eventName', 'eventId', 'pixelId', 'timestamp', 'custom_data'],
+            capi: ['event_name', 'event_id', 'event_time', 'action_source', 'user_data', 'custom_data']
+        },
+        custom_data: ['content_name', 'content_category','content_ids','content_type', 'contents' ]
+    }
+    // TODO add Search, Subscribe, Lead
+};

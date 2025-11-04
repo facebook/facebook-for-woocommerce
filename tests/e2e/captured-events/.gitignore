@@ -1,0 +1,5 @@
+# Ignore all captured event files
+*.json
+
+# But keep this directory in git
+!.gitignore

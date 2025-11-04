@@ -605,6 +605,27 @@ class API extends Base {
 	}
 
 	/**
+	 * Logs CAPI event to test framework if test cookie is present.
+	 *
+	 * @param Event $event event object
+	 */
+	private function log_event_for_tests( Event $event ) {
+		// Check if we're in test mode (test ID cookie set)
+		if ( empty( $_COOKIE['facebook_test_id'] ) ) {
+			return;
+		}
+
+		$test_id = sanitize_text_field( wp_unslash( $_COOKIE['facebook_test_id'] ) );
+
+		// Load logger class and log directly (no HTTP overhead)
+		$logger_file = plugin_dir_path( __FILE__ ) . '../tests/e2e/lib/Logger.php';
+		if ( file_exists( $logger_file ) ) {
+			require_once $logger_file;
+			\E2E_Event_Logger::log_event( $test_id, 'capi', $event->get_data() );
+		}
+	}
+
+	/**
 	 * Sends Pixel events.
 	 *
 	 * @since 2.0.0
@@ -615,50 +636,23 @@ class API extends Base {
 	 * @throws ApiException In case of a general API error or rate limit error.
 	 */
 	public function send_pixel_events( $pixel_id, array $events ) {
-		try {
-			$test_id = isset( $_COOKIE['facebook_test_id'] ) ? sanitize_text_field( $_COOKIE['facebook_test_id'] ) : null;
-
-			if ( $test_id && defined( 'WP_DEBUG' ) && WP_DEBUG && defined( 'WP_DEBUG_LOG' ) && WP_DEBUG_LOG ) {
-				foreach ( $events as $event ) {
-					if ( is_object( $event ) && method_exists( $event, 'get_name' ) && method_exists( $event, 'get_id' ) && method_exists( $event, 'get_data' ) ) {
-						error_log( sprintf(
-							'[FBTEST|%s] CAPI|%s|%s|%s',
-							$test_id,
-							$event->get_name(),
-							$event->get_id(),
-							json_encode( $event->get_data() )
-						) );
-					}
-				}
-			}
-		} catch ( \Throwable $e ) {
-			// Silently fail
-		}
-
 		$request = new API\Pixel\Events\Request( $pixel_id, $events );
-
-		// Send test_event_code to Facebook for validation
-		// if ( $test_id = isset( $_COOKIE['facebook_test_id'] ) ? sanitize_text_field( $_COOKIE['facebook_test_id'] ) : null ) {
-			$request->set_params( array_merge( $request->get_params(), array( 'test_event_code' => "TEST27057" ) ) );
-		// }
-
+		$request->set_params( array_merge( $request->get_params(), array( 'test_event_code' => "TEST27057" ) ) );
 		$this->set_response_handler( Response::class );
-
-		// DEBUG: Log what we're sending to Facebook
-		error_log( sprintf(
-			'[FB-CAPI-DEBUG] Sending to Facebook - Pixel: %s, Events: %d, Params: %s',
-			$pixel_id,
-			count( $events ),
-			json_encode( $request->get_params() )
-		) );
 
 		$response = $this->perform_request( $request );
 
-		// DEBUG: Log Facebook's response
-		error_log( sprintf(
-			'[FB-CAPI-DEBUG] Facebook Response: %s',
-			json_encode( $response )
-		) );
+		try{
+			// Log to E2E test framework if successful
+			if ( $response && ! $response->has_api_error() ) {
+				foreach ( $events as $event ) {
+					$this->log_event_for_tests( $event );
+				}
+			}
+		}
+		catch ( Exception $e ) {
+			// Do nothing
+		}
 
 		return $response;
 	}
