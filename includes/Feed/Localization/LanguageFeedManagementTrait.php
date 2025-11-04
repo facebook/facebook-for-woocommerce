@@ -220,28 +220,24 @@ trait LanguageFeedManagementTrait {
 	/**
 	 * Generate a consistent file name for language override feeds.
 	 * This provides a single source of truth for file naming across all language feed operations.
+	 * Uses the feed secret hash (like the main product feed) to ensure the same filename is reused.
 	 *
 	 * @param string $language_code Language code (e.g., 'es_ES', 'fr_FR')
-	 * @param bool $for_facebook_api Whether this file name is for Facebook API feed creation (uses timestamp)
+	 * @param bool $for_facebook_api Whether this file name is for Facebook API feed creation
 	 * @param bool $is_temp_file Whether this is for a temporary file
 	 * @return string File name
 	 * @since 3.6.0
 	 */
 	public static function generate_language_feed_filename( string $language_code, bool $for_facebook_api = false, bool $is_temp_file = false ): string {
 		$fb_language_code = \WooCommerce\Facebook\Locale::convert_to_facebook_language_code( $language_code );
+		$feed_secret = \WooCommerce\Facebook\Products\Feed::get_feed_secret();
 
-		if ( $for_facebook_api ) {
-			// For Facebook API feed creation - use timestamp for uniqueness
-			$timestamp = date( 'Y-m-d_H-i-s' );
-			return "facebook_language_feed_{$fb_language_code}_{$timestamp}.csv";
-		} else {
-			// For local file storage - use feed secret for consistency with other feeds
-			$feed_secret = \WooCommerce\Facebook\Products\Feed::get_feed_secret();
-			$prefix = $is_temp_file ? 'temp_' : '';
-			$hash_suffix = $is_temp_file ? wp_hash( $feed_secret ) : $feed_secret;
+		// Use the same filename generation logic for both local and Facebook API
+		// This matches the main product feed behavior which reuses the same file
+		$prefix = $is_temp_file ? 'temp_' : '';
+		$hash_suffix = wp_hash( $feed_secret );
 
-			return "facebook_language_feed_{$prefix}{$fb_language_code}_{$hash_suffix}.csv";
-		}
+		return "facebook_language_feed_{$prefix}{$fb_language_code}_{$hash_suffix}.csv";
 	}
 
 	/**
