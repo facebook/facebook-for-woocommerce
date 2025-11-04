@@ -12,6 +12,7 @@ namespace WooCommerce\Facebook\API\Plugin\WhatsAppSettings;
 
 use WooCommerce\Facebook\API\Plugin\AbstractRESTEndpoint;
 use WooCommerce\Facebook\API\Plugin\WhatsAppSettings\Update\Request as UpdateRequest;
+use WooCommerce\Facebook\API\Plugin\WhatsAppSettings\UpdateIntegrationConfig\Request as UpdateIntegrationConfigRequest;
 use WooCommerce\Facebook\API\Plugin\WhatsAppSettings\Uninstall\Request as UninstallRequest;
 use WooCommerce\Facebook\Handlers\WhatsAppConnection;
 
@@ -38,6 +39,16 @@ class Handler extends AbstractRESTEndpoint {
 			[
 				'methods'             => \WP_REST_Server::CREATABLE,
 				'callback'            => [ $this, 'handle_update' ],
+				'permission_callback' => [ $this, 'permission_callback' ],
+			]
+		);
+
+		register_rest_route(
+			$this->get_namespace(),
+			'whatsapp_settings/update/integration_config',
+			[
+				'methods'             => \WP_REST_Server::CREATABLE,
+				'callback'            => [ $this, 'handle_update_integration_config' ],
 				'permission_callback' => [ $this, 'permission_callback' ],
 			]
 		);
@@ -106,6 +117,56 @@ class Handler extends AbstractRESTEndpoint {
 	}
 
 	/**
+	 * Handle the update integration config settings request.
+	 *
+	 * @since 3.5.10
+	 * @http_method POST
+	 * @description Update integration config in plugin settings
+	 *
+	 * @param \WP_REST_Request $wp_request The WordPress request object.
+	 * @return \WP_REST_Response
+	 */
+	public function handle_update_integration_config( \WP_REST_Request $wp_request ): \WP_REST_Response {
+		try {
+			$request           = new UpdateIntegrationConfigRequest( $wp_request );
+			$request_data      = $request->get_data();
+			$validation_result = $request->validate();
+
+			if ( is_wp_error( $validation_result ) ) {
+				return $this->error_response(
+					$validation_result->get_error_message(),
+					400
+				);
+			}
+
+			// Map parameters to options and update settings
+			$options = $this->map_params_to_options( $request_data );
+			$this->update_settings( $options );
+			wc_get_logger()->info(
+				__( 'Update Integration Config in Settings for WhatsApp Utility Messages Integration Successful.', 'facebook-for-woocommerce' ),
+			);
+
+			return $this->success_response(
+				[
+					'message' => __( 'Integration Config in WhatsApp settings updated successfully', 'facebook-for-woocommerce' ),
+				]
+			);
+		} catch ( \Exception $e ) {
+			wc_get_logger()->info(
+				sprintf(
+					/* translators: %s $error_message */
+					__( 'Failed to handle_update_integration_config for WhatsApp Utility Messages Integration. Exception: %s', 'facebook-for-woocommerce' ),
+					$e->getMessage(),
+				)
+			);
+			return $this->error_response(
+				$e->getMessage(),
+				500
+			);
+		}
+	}
+
+	/**
 	 * Maps request parameters to WooCommerce settings options.
 	 *
 	 * @since 3.5.0
@@ -134,6 +195,10 @@ class Handler extends AbstractRESTEndpoint {
 
 		if ( ! empty( $params['phone_number_id'] ) ) {
 			$options[ WhatsAppConnection::OPTION_WA_PHONE_NUMBER_ID ] = $params['phone_number_id'];
+		}
+
+		if ( ! empty( $params['integration_config_id'] ) ) {
+			$options[ WhatsAppConnection::OPTION_WA_INTEGRATION_CONFIG_ID ] = $params['integration_config_id'];
 		}
 
 		return $options;
@@ -169,6 +234,7 @@ class Handler extends AbstractRESTEndpoint {
 			WhatsAppConnection::OPTION_WA_BUSINESS_ID,
 			WhatsAppConnection::OPTION_WA_WABA_ID,
 			WhatsAppConnection::OPTION_WA_PHONE_NUMBER_ID,
+			WhatsAppConnection::OPTION_WA_INTEGRATION_CONFIG_ID,
 		];
 
 		foreach ( $options as $option ) {
