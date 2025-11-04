@@ -199,6 +199,16 @@ class LanguageOverrideFeed {
 			return;
 		}
 
+		Logger::log(
+			'Generating language override feeds',
+			[ 'languages' => $languages ],
+			array(
+				'should_send_log_to_meta'        => false,
+				'should_save_log_in_woocommerce' => true,
+				'woocommerce_log_level'          => \WC_Log_Levels::INFO,
+			)
+		);
+
 		$successful_languages = [];
 		$failed_languages = [];
 
@@ -241,11 +251,11 @@ class LanguageOverrideFeed {
 			}
 		}
 
-		// Log summary only if there are failures
+		// Log completion
 		if ( ! empty( $failed_languages ) ) {
 			Logger::log(
 				sprintf(
-					'Language override feed regeneration completed with failures. Success: %d, Failed: %d (%s)',
+					'Language override feeds generated with failures. Success: %d, Failed: %d (%s)',
 					count( $successful_languages ),
 					count( $failed_languages ),
 					implode( ', ', $failed_languages )
@@ -258,6 +268,16 @@ class LanguageOverrideFeed {
 					'should_send_log_to_meta'        => false,
 					'should_save_log_in_woocommerce' => true,
 					'woocommerce_log_level'          => \WC_Log_Levels::WARNING,
+				)
+			);
+		} else {
+			Logger::log(
+				'Language override feeds generated',
+				[ 'count' => count( $successful_languages ) ],
+				array(
+					'should_send_log_to_meta'        => false,
+					'should_save_log_in_woocommerce' => true,
+					'woocommerce_log_level'          => \WC_Log_Levels::INFO,
 				)
 			);
 		}
@@ -503,51 +523,13 @@ class LanguageOverrideFeed {
 	 * @since 3.6.0
 	 */
 	public function upload_language_override_feeds() {
-		Logger::log(
-			'Hook triggered: upload_language_override_feeds called',
-			[],
-			array(
-				'should_send_log_to_meta'        => false,
-				'should_save_log_in_woocommerce' => true,
-				'woocommerce_log_level'          => \WC_Log_Levels::DEBUG,
-			)
-		);
-
 		if ( ! IntegrationRegistry::has_active_localization_plugin() ) {
-			Logger::log(
-				'upload_language_override_feeds skipped - no active localization plugin',
-				[],
-				array(
-					'should_send_log_to_meta'        => false,
-					'should_save_log_in_woocommerce' => true,
-					'woocommerce_log_level'          => \WC_Log_Levels::DEBUG,
-				)
-			);
 			return;
 		}
 
 		$languages = $this->language_feed_data->get_available_languages();
 
-		Logger::log(
-			'upload_language_override_feeds - starting uploads for languages',
-			['languages' => $languages],
-			array(
-				'should_send_log_to_meta'        => false,
-				'should_save_log_in_woocommerce' => true,
-				'woocommerce_log_level'          => \WC_Log_Levels::DEBUG,
-			)
-		);
-
 		foreach ( $languages as $language_code ) {
-			Logger::log(
-				'upload_language_override_feeds - uploading language',
-				['language_code' => $language_code],
-				array(
-					'should_send_log_to_meta'        => false,
-					'should_save_log_in_woocommerce' => true,
-					'woocommerce_log_level'          => \WC_Log_Levels::DEBUG,
-				)
-			);
 			$this->upload_single_language_feed( $language_code );
 		}
 	}
@@ -575,40 +557,20 @@ class LanguageOverrideFeed {
 
 			facebook_for_woocommerce()->get_api()->create_product_feed_upload( $feed_id, $data );
 
-			Logger::log(
-				'Language override feed uploaded successfully.',
-				array(
-					'event'      => 'language_feed_upload',
-					'event_type' => 'upload_single_language_feed',
-					'extra_data' => [
-						'language_code' => $language_code,
-						'feed_id' => $feed_id,
-						'feed_url' => $this->get_language_feed_url( $language_code ),
-					],
-				),
-				array(
-					'should_send_log_to_meta'        => true,
-					'should_save_log_in_woocommerce' => false,
-					'woocommerce_log_level'          => \WC_Log_Levels::DEBUG,
-				)
-			);
+			// Successful upload - no log needed (matches main feed behavior)
 
 		} catch ( \Exception $exception ) {
 			Logger::log(
-				'Language override feed upload failed.',
+				'Language override feed upload failed: ' . $exception->getMessage(),
 				array(
-					'event'      => 'language_feed_upload',
-					'event_type' => 'upload_single_language_feed',
-					'extra_data' => [
-						'language_code' => $language_code,
-					],
+					'language_code' => $language_code,
 				),
 				array(
-					'should_send_log_to_meta'        => true,
-					'should_save_log_in_woocommerce' => false,
-					'woocommerce_log_level'          => \WC_Log_Levels::DEBUG,
+					'should_send_log_to_meta'        => false,
+					'should_save_log_in_woocommerce' => true,
+					'woocommerce_log_level'          => \WC_Log_Levels::ERROR,
 				),
-				$exception,
+				$exception
 			);
 		}
 	}

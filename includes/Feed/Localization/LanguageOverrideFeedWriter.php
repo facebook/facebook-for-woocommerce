@@ -142,16 +142,6 @@ class LanguageOverrideFeedWriter extends AbstractFeedFileWriter {
 	 */
 	public function write_language_feed_file( LanguageFeedData $language_feed_data, string $language_code ): bool {
 		try {
-			\WooCommerce\Facebook\Framework\Logger::log(
-				'Starting write_language_feed_file',
-				array( 'language_code' => $language_code ),
-				array(
-					'should_send_log_to_meta'        => false,
-					'should_save_log_in_woocommerce' => true,
-					'woocommerce_log_level'          => \WC_Log_Levels::DEBUG,
-				)
-			);
-
 			// Get language feed data
 			$csv_result = $language_feed_data->get_language_csv_data( $language_code, 5000, 0 );
 
@@ -190,32 +180,9 @@ class LanguageOverrideFeedWriter extends AbstractFeedFileWriter {
 			// Use the inherited write_feed_file method from AbstractFeedFileWriter
 			$this->write_feed_file( $data );
 
-			\WooCommerce\Facebook\Framework\Logger::log(
-				'Language feed file written successfully',
-				array( 'language_code' => $language_code ),
-				array(
-					'should_send_log_to_meta'        => false,
-					'should_save_log_in_woocommerce' => true,
-					'woocommerce_log_level'          => \WC_Log_Levels::DEBUG,
-				)
-			);
-
 			return true;
 
 		} catch ( \Exception $e ) {
-			\WooCommerce\Facebook\Framework\Logger::log(
-				'Exception in write_language_feed_file',
-				array(
-					'language_code' => $language_code,
-					'exception_message' => $e->getMessage(),
-				),
-				array(
-					'should_send_log_to_meta'        => true,
-					'should_save_log_in_woocommerce' => true,
-					'woocommerce_log_level'          => \WC_Log_Levels::ERROR,
-				),
-				$e
-			);
 			return false;
 		}
 	}

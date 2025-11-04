@@ -80,10 +80,27 @@ class Localization_Integrations extends Abstract_Settings_Screen {
 	 * @since 3.5.5
 	 */
 	public function render() {
-		$integrations = IntegrationRegistry::get_all_localization_integrations();
+		try {
+			$integrations = IntegrationRegistry::get_all_localization_integrations();
+		} catch ( \Exception $e ) {
+			echo '<div class="notice notice-error"><p>';
+			echo esc_html__( 'Error loading localization integrations: ', 'facebook-for-woocommerce' );
+			echo esc_html( $e->getMessage() );
+			echo '</p></div>';
+			error_log( 'Facebook for WooCommerce - Localization Integrations Error: ' . $e->getMessage() );
+			$integrations = [];
+		}
 
 		// Handle test actions
-		$this->handle_test_actions();
+		try {
+			$this->handle_test_actions();
+		} catch ( \Exception $e ) {
+			echo '<div class="notice notice-error"><p>';
+			echo esc_html__( 'Error handling test actions: ', 'facebook-for-woocommerce' );
+			echo esc_html( $e->getMessage() );
+			echo '</p></div>';
+			error_log( 'Facebook for WooCommerce - Test Actions Error: ' . $e->getMessage() );
+		}
 
 		?>
 		<div class="wc-facebook-localization-integrations">
@@ -135,12 +152,20 @@ class Localization_Integrations extends Abstract_Settings_Screen {
 							</td>
 						</tr>
 					<?php else : ?>
-						<?php foreach ( $integrations as $key => $integration ) : ?>
+					<?php foreach ( $integrations as $key => $integration ) : ?>
 							<?php
-							$status = $this->get_integration_status( $integration );
-							$version = $integration->get_plugin_version();
-							$languages = $integration->get_available_languages();
-							$default_language = $integration->get_default_language();
+							try {
+								$status = $this->get_integration_status( $integration );
+								$version = $integration->get_plugin_version();
+								$languages = $integration->get_available_languages();
+								$default_language = $integration->get_default_language();
+							} catch ( \Exception $e ) {
+								$status = 'error';
+								$version = '';
+								$languages = [];
+								$default_language = '';
+								error_log( 'Facebook for WooCommerce - Error getting integration data for ' . $key . ': ' . $e->getMessage() );
+							}
 							?>
 							<tr>
 								<td class="column-name column-primary">
@@ -431,10 +456,20 @@ class Localization_Integrations extends Abstract_Settings_Screen {
 	 * @since 3.6.0
 	 */
 	private function render_test_section() {
-		$feed_data = new LanguageFeedData();
-		$has_plugins = IntegrationRegistry::has_active_localization_plugin();
-		$languages = $feed_data->get_available_languages();
-		$active_plugins = IntegrationRegistry::get_active_localization_plugins();
+		try {
+			$feed_data = new LanguageFeedData();
+			$has_plugins = IntegrationRegistry::has_active_localization_plugin();
+			$languages = $feed_data->get_available_languages();
+			$active_plugins = IntegrationRegistry::get_active_localization_plugins();
+		} catch ( \Exception $e ) {
+			?>
+			<div class="notice notice-error">
+				<p><?php echo esc_html__( 'Error loading test section: ', 'facebook-for-woocommerce' ); ?><?php echo esc_html( $e->getMessage() ); ?></p>
+			</div>
+			<?php
+			error_log( 'Facebook for WooCommerce - Test Section Error: ' . $e->getMessage() );
+			return;
+		}
 
 		?>
 		<div class="wc-facebook-test-section" style="background: #f9f9f9; border: 1px solid #ddd; border-radius: 4px; padding: 20px; margin-bottom: 20px;">
@@ -450,85 +485,6 @@ class Localization_Integrations extends Abstract_Settings_Screen {
 					<p><strong>❌ <?php esc_html_e( 'No Active Plugins:', 'facebook-for-woocommerce' ); ?></strong> <?php esc_html_e( 'Install WPML or Polylang to test translation extraction.', 'facebook-for-woocommerce' ); ?></p>
 				<?php endif; ?>
 			</div>
-
-			<!-- Product Test -->
-			<?php $this->render_product_test_section( $feed_data ); ?>
-
-			<!-- Language CSV Generation -->
-			<?php if ( $has_plugins && ! empty( $languages ) ) : ?>
-				<div style="margin-top: 20px;">
-					<h4><?php esc_html_e( 'Generate Language Override CSV Files', 'facebook-for-woocommerce' ); ?></h4>
-					<p><?php esc_html_e( 'Generate CSV files containing actual translated product data for Facebook language override feeds. Files use Facebook\'s override format (e.g., es_XX, fr_XX) as required by Facebook\'s catalog specifications.', 'facebook-for-woocommerce' ); ?></p>
-
-					<?php
-					$feed_data = new LanguageFeedData();
-					$statistics = $feed_data->get_language_feed_statistics();
-					?>
-
-					<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 15px; margin: 15px 0;">
-						<?php foreach ( $languages as $language_code ) : ?>
-							<?php
-							$stats = $statistics[ $language_code ] ?? [];
-							$product_count = $stats['translated_products_count'] ?? 0;
-							$estimated_size = $stats['estimated_csv_size'] ?? 'Unknown';
-
-							// Get the Facebook override format for display
-							$facebook_override = \WooCommerce\Facebook\Locale::convert_to_facebook_language_code( $language_code );
-
-							$nonce = wp_create_nonce( 'localization_test_action' );
-							$download_url = add_query_arg( [
-								'page' => 'wc-facebook',
-								'tab' => 'localization_integrations',
-								'action' => 'download_language_csv',
-								'language' => $language_code,
-								'_wpnonce' => $nonce,
-							], admin_url( 'admin.php' ) );
-							?>
-							<div style="border: 1px solid #ddd; border-radius: 4px; padding: 15px; background: white;">
-								<h5 style="margin: 0 0 10px 0; color: #0073aa;"><?php echo esc_html( $facebook_override ); ?></h5>
-								<div style="font-size: 11px; color: #999; margin-bottom: 8px;"><?php printf( esc_html__( 'Language: %s', 'facebook-for-woocommerce' ), esc_html( $language_code ) ); ?></div>
-								<div style="font-size: 13px; color: #666; margin-bottom: 10px;">
-									<div><strong><?php esc_html_e( 'Products:', 'facebook-for-woocommerce' ); ?></strong> <?php echo esc_html( $product_count ); ?></div>
-									<div><strong><?php esc_html_e( 'Est. Size:', 'facebook-for-woocommerce' ); ?></strong> <?php echo esc_html( $estimated_size ); ?></div>
-								</div>
-								<?php if ( $product_count > 0 ) : ?>
-									<a href="<?php echo esc_url( $download_url ); ?>" class="button button-secondary" style="width: 100%;">
-										<?php esc_html_e( 'Download CSV', 'facebook-for-woocommerce' ); ?>
-									</a>
-								<?php else : ?>
-									<button class="button button-secondary" disabled style="width: 100%;">
-										<?php esc_html_e( 'No Translations', 'facebook-for-woocommerce' ); ?>
-									</button>
-								<?php endif; ?>
-							</div>
-						<?php endforeach; ?>
-					</div>
-
-					<?php
-					$total_languages_with_products = count( array_filter( $statistics, function( $stats ) {
-						return ( $stats['translated_products_count'] ?? 0 ) > 0;
-					}));
-					?>
-
-					<?php if ( $total_languages_with_products > 1 ) : ?>
-						<div style="margin-top: 15px; padding: 15px; background: #f0f8ff; border: 1px solid #0073aa; border-radius: 4px;">
-							<h5 style="margin: 0 0 10px 0;"><?php esc_html_e( 'Download All Languages', 'facebook-for-woocommerce' ); ?></h5>
-							<p style="margin: 0 0 10px 0; font-size: 13px;"><?php printf( esc_html__( 'Download CSV files for all %d languages with translated products as a ZIP archive.', 'facebook-for-woocommerce' ), $total_languages_with_products ); ?></p>
-							<?php
-							$download_all_url = add_query_arg( [
-								'page' => 'wc-facebook',
-								'tab' => 'localization_integrations',
-								'action' => 'download_all_csvs',
-								'_wpnonce' => $nonce,
-							], admin_url( 'admin.php' ) );
-							?>
-							<a href="<?php echo esc_url( $download_all_url ); ?>" class="button button-primary">
-								<?php esc_html_e( 'Download All as ZIP', 'facebook-for-woocommerce' ); ?>
-							</a>
-						</div>
-					<?php endif; ?>
-				</div>
-			<?php endif; ?>
 
 			<!-- Language Feed Sync -->
 			<?php if ( $has_plugins && ! empty( $languages ) ) : ?>
@@ -835,8 +791,18 @@ class Localization_Integrations extends Abstract_Settings_Screen {
 	 * @since 3.6.0
 	 */
 	private function render_product_test_section( LanguageFeedData $feed_data ) {
-		// Get products from default language using the new method
-		$product_ids = $feed_data->get_products_from_default_language( 5 );
+		try {
+			// Get products from default language using the new method
+			$product_ids = $feed_data->get_products_from_default_language( 5 );
+		} catch ( \Exception $e ) {
+			?>
+			<div class="notice notice-error" style="margin: 10px 0;">
+				<p><?php echo esc_html__( 'Error loading product test section: ', 'facebook-for-woocommerce' ); ?><?php echo esc_html( $e->getMessage() ); ?></p>
+			</div>
+			<?php
+			error_log( 'Facebook for WooCommerce - Product Test Section Error: ' . $e->getMessage() );
+			return;
+		}
 
 		?>
 		<div style="margin-bottom: 20px;">
@@ -860,10 +826,15 @@ class Localization_Integrations extends Abstract_Settings_Screen {
 					<tbody>
 						<?php foreach ( $product_ids as $product_id ) : ?>
 							<?php
-							$product = wc_get_product( $product_id );
-							if ( ! $product ) continue;
+							try {
+								$product = wc_get_product( $product_id );
+								if ( ! $product ) continue;
 
-							$details = $feed_data->get_product_translation_details( $product_id );
+								$details = $feed_data->get_product_translation_details( $product_id );
+							} catch ( \Exception $e ) {
+								error_log( 'Facebook for WooCommerce - Error getting product details for ID ' . $product_id . ': ' . $e->getMessage() );
+								continue;
+							}
 							$has_translations = ! empty( $details['translations'] );
 							$languages = $has_translations ? array_keys( $details['translations'] ) : [];
 							$default_language = $details['default_language'] ?? 'Unknown';

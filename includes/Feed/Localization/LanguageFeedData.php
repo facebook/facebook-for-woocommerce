@@ -283,18 +283,6 @@ class LanguageFeedData {
 	// CSV FORMATTING AND GENERATION METHODS
 	// ===========================================
 
-
-	/**
-	 * Get Facebook product ID in the same format as the main feed
-	 *
-	 * @param \WC_Facebook_Product $fb_product Facebook product object
-	 * @return string Facebook product ID
-	 */
-	private function get_facebook_product_id( \WC_Facebook_Product $fb_product ): string {
-		// Use the same ID format as the main Facebook feed
-		return \WC_Facebookcommerce_Utils::get_fb_retailer_id( $fb_product );
-	}
-
 	/**
 	 * Get all unique translated fields across all products for a language
 	 *
@@ -420,12 +408,13 @@ class LanguageFeedData {
 			$original_fb_product = new \WC_Facebook_Product( $original_product );
 			$translated_fb_product = new \WC_Facebook_Product( $translated_product );
 
-			// Generate Facebook product ID (same format as main feed)
-			$facebook_id = $this->get_facebook_product_id( $original_fb_product );
+			// Use product ID to match external_variant_id from main feed
+			// Facebook's Catalog API uses external_variant_id as the content_id (see fbproduct.php line 1776)
+			$product_id = (string) $original_fb_product->get_id();
 
 			// Start with required columns
 			$csv_row = [
-				'id' => $facebook_id,
+				'id' => $product_id,
 				'override' => \WooCommerce\Facebook\Locale::convert_to_facebook_language_code( $language_code ),
 			];
 
