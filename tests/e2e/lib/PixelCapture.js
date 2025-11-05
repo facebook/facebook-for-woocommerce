@@ -26,12 +26,23 @@ class PixelCapture {
         }
 
         this.isCapturing = true;
+        console.log(`  🎯 Filtering for event: ${this.eventName}`);
+
+        let responsesChecked = 0;
+        let facebookRequestsSeen = 0;
 
         // Capture Pixel events and responses
         this.page.on('response', async (response) => {
             if (!this.isCapturing) return;
 
+            responsesChecked++;
             const url = response.url();
+
+            // DEBUG: Log all facebook.com requests
+            if (url.includes('facebook.com')) {
+                facebookRequestsSeen++;
+                console.log(`DEBUG_E2E: Facebook request seen: ${url.substring(0, 100)}...`);
+            }
 
             // Filter by facebook.com/tr AND ev parameter matching expected event
             if (url.includes('facebook.com/tr') && url.includes(`ev=${this.eventName}`)) {
@@ -52,6 +63,11 @@ class PixelCapture {
                 }
             }
         });
+
+        // Log stats after page load
+        setTimeout(() => {
+            console.log(`DEBUG_E2E: Checked ${responsesChecked} responses, ${facebookRequestsSeen} facebook.com requests`);
+        }, 5000);
 
         console.log('🎬 Pixel capture started');
     }
