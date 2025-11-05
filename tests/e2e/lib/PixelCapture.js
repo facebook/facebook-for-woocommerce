@@ -28,23 +28,37 @@ class PixelCapture {
         this.isCapturing = true;
         console.log(`  🎯 Filtering for event: ${this.eventName}`);
 
-        // Capture Pixel events and responses
+        // Capture Pixel REQUESTS (before they're sent)
+        this.page.on('request', async (request) => {
+            if (!this.isCapturing) return;
+
+            const url = request.url();
+
+            // DEBUG: Log all facebook.com requests
+            if (url.includes('facebook.com')) {
+                console.log(`DEBUG_E2E: 🔵 Facebook REQUEST: ${url.substring(0, 150)}...`);
+            }
+
+            // Check if this is our pixel event
+            if (url.includes('facebook.com/tr') && url.includes(`ev=${this.eventName}`)) {
+                console.log('✅ Pixel event REQUEST captured (waiting for response...)');
+            }
+        });
+
+        // Capture Pixel RESPONSES
         this.page.on('response', async (response) => {
             if (!this.isCapturing) return;
 
             const url = response.url();
 
-            // DEBUG: Log ALL responses to see what's happening
-            console.log(`DEBUG_E2E: Response: ${url.substring(0, 80)}`);
-
-            // DEBUG: Log all facebook.com requests
+            // DEBUG: Log all facebook.com responses
             if (url.includes('facebook.com')) {
-                console.log(`DEBUG_E2E: ⚡ Facebook request seen: ${url.substring(0, 150)}...`);
+                console.log(`DEBUG_E2E: 🟢 Facebook RESPONSE: ${url.substring(0, 150)}... [${response.status()}]`);
             }
 
             // Filter by facebook.com/tr AND ev parameter matching expected event
             if (url.includes('facebook.com/tr') && url.includes(`ev=${this.eventName}`)) {
-                console.log('✅ Pixel event captured');
+                console.log('✅ Pixel event RESPONSE captured');
 
                 try {
                     const request = response.request();
