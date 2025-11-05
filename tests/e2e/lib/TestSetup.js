@@ -5,20 +5,6 @@
 const PixelCapture = require('./PixelCapture');
 const config = require('../config/test-config');
 // After login, before starting pixel capture
-static async verifyPluginActive(page) {
-    await page.goto('/');
-
-    // Check if pixel script is in HTML
-    const pixelScript = await page.evaluate(() => {
-        return document.documentElement.innerHTML.includes('facebook.com/tr');
-    });
-
-    console.log(`  Plugin Active: ${pixelScript ? '✅ YES' : '❌ NO - Pixel script not found!'}`);
-
-    if (!pixelScript) {
-        throw new Error('Facebook for WooCommerce plugin is not active or configured');
-    }
-}
 
 class TestSetup {
     static async init(page, eventName) {
@@ -86,6 +72,21 @@ class TestSetup {
             console.log('\n');
         }
     }
+    static async verifyPluginActive(page) {
+    await page.goto('/');
+
+    // Check if pixel script is in HTML
+    const pixelScript = await page.evaluate(() => {
+        return document.documentElement.innerHTML.includes('facebook.com/tr');
+    });
+
+    console.log(`  Plugin Active: ${pixelScript ? '✅ YES' : '❌ NO - Pixel script not found!'}`);
+
+    if (!pixelScript) {
+        throw new Error('Facebook for WooCommerce plugin is not active or configured');
+    }
+}
+
 }
 
 module.exports = TestSetup;

@@ -167,6 +167,8 @@ jobs:
           wp option update wc_facebook_has_authorized_pages_read_engagement "yes" --allow-root
           wp option update wc_facebook_enable_product_sync "yes" --allow-root
           wp option update wc_facebook_page_id  "${{ secrets.FB_PAGE_ID }}" --allow-root
+          wp option update wc_facebook_enable_pixel "yes" --allow-root
+          wp option update wc_facebook_enable_advanced_matching "yes" --allow-root
           # Activate the plugin (this triggers automatic sync)
           wp plugin activate facebook-for-woocommerce --allow-root
 
@@ -195,18 +197,13 @@ jobs:
                 echo 'Access Token: ' . (\$connection->get_access_token() ? 'Present' : 'Missing') . PHP_EOL;
                 echo 'External Business ID: ' . \$connection->get_external_business_id() . PHP_EOL;
                 echo 'Business Manager ID: ' . \$connection->get_business_manager_id() . PHP_EOL;
+                echo 'Pixel ID: ' . get_option('wc_facebook_pixel_id') . PHP_EOL;
 
-                \$pixel_id = get_option('wc_facebook_pixel_id');
-                echo 'Pixel ID: ' . \$pixel_id . PHP_EOL;
-
-                echo PHP_EOL . '=== Verifying Pixel Script Injection ===' . PHP_EOL;
-                ob_start();
-                do_action('wp_head');
-                \$head_output = ob_get_clean();
-                if (strpos(\$head_output, 'fbq') !== false) {
-                    echo '✅ Pixel script found in wp_head' . PHP_EOL;
-                } else {
-                    echo '❌ Pixel script NOT found in wp_head' . PHP_EOL;
+                // Check if pixel install is set
+                \$pixel_install = get_option('wc_facebook_pixel_install_time');
+                if (empty(\$pixel_install)) {
+                    update_option('wc_facebook_pixel_install_time', time());
+                    echo '✅ Set pixel install time' . PHP_EOL;
                 }
             } else {
                 echo 'Facebook plugin not loaded properly';
