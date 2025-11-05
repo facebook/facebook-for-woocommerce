@@ -10,8 +10,10 @@ export default defineConfig({
   // Global test timeout - increased to 5 minutes for complex WordPress operations
   timeout: 300000,
   use: {
-    baseURL: process.env.WORDPRESS_URL || 'http://wooc-local-test-sitecom.local',
     trace: 'on-first-retry',
+    baseURL: process.env.WORDPRESS_URL ,
+    // Run headed in CI if DEBUG_HEADED=1 is set (for debugging)
+    headless: false,
     screenshot: 'only-on-failure',
     video: 'retain-on-failure',
     // Ignore SSL errors for local development

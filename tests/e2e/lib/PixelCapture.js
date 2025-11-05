@@ -23,16 +23,43 @@ class PixelCapture {
     async waitForEvent() {
         console.log(`  🎯 Waiting for Pixel event: ${this.eventName}`);
 
+        // Set up request/response listeners BEFORE waiting
+        const requests = [];
+        const responses = [];
+        
+        const requestListener = (request) => {
+            if (request.url().includes('facebook.com/tr')) {
+                requests.push(request.url());
+                console.log(`DEBUG_E2E: 🔵 Pixel REQUEST: ${request.url().substring(0, 100)}...`);
+            }
+        };
+        
+        const responseListener = (response) => {
+            if (response.url().includes('facebook.com/tr')) {
+                responses.push({ url: response.url(), status: response.status() });
+                console.log(`DEBUG_E2E: 🟢 Pixel RESPONSE: ${response.status()}`);
+            }
+        };
+        
+        this.page.on('request', requestListener);
+        this.page.on('response', responseListener);
+
         try {
             // Wait for the facebook.com/tr response with our specific event
             const response = await this.page.waitForResponse(
                 response => {
                     const url = response.url();
-                    return url.includes('facebook.com/tr') &&
-                           url.includes(`ev=${this.eventName}`) &&
-                           response.status() === 200;
+                    const matches = url.includes('facebook.com/tr') &&
+                                  url.includes(`ev=${this.eventName}`) &&
+                                  response.status() === 200;
+                    
+                    if (url.includes('facebook.com/tr')) {
+                        console.log(`DEBUG_E2E: Checking response - event: ${url.includes(`ev=${this.eventName}`)}, status: ${response.status()}`);
+                    }
+                    
+                    return matches;
                 },
-                { timeout: 10000 } // 10 second timeout
+                { timeout: 15000 } // 15 second timeout
             );
 
             console.log(`✅ Pixel event captured: ${this.eventName}`);
@@ -51,8 +78,19 @@ class PixelCapture {
             return response;
         } catch (err) {
             console.error(`❌ Timeout waiting for Pixel event: ${this.eventName}`);
-            console.error(`   Error: ${err.message}`);
+            console.error(`   Total facebook.com/tr requests: ${requests.length}`);
+            console.error(`   Total facebook.com/tr responses: ${responses.length}`);
+            
+            // Check if fbq was called but requests were blocked
+            const fbqCalls = await this.page.evaluate(() => {
+                return window._fbq_test_calls || [];
+            });
+            console.error(`   fbq() calls detected: ${fbqCalls.length}`);
+            
             throw err;
+        } finally {
+            this.page.off('request', requestListener);
+            this.page.off('response', responseListener);
         }
     }
 

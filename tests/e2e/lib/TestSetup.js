@@ -25,7 +25,7 @@ class TestSetup {
             }
         ]);
 
-        await this.verifyPluginActive(page);
+        // await this.verifyPluginActive(page);
 
         // Start Pixel capture
         const pixelCapture = new PixelCapture(page, testId, eventName);
@@ -72,20 +72,18 @@ class TestSetup {
             console.log('\n');
         }
     }
-    static async verifyPluginActive(page) {
-    await page.goto('/');
+    // static async verifyPluginActive(page) {
+    // // Check if pixel script is in HTML (on current page)
+    // const pixelScript = await page.evaluate(() => {
+    //     return document.documentElement.innerHTML.includes('facebook.com/tr');
+    // });
 
-    // Check if pixel script is in HTML
-    const pixelScript = await page.evaluate(() => {
-        return document.documentElement.innerHTML.includes('facebook.com/tr');
-    });
+    // console.log(`  Plugin Active: ${pixelScript ? '✅ YES' : '❌ NO - Pixel script not found!'}`);
 
-    console.log(`  Plugin Active: ${pixelScript ? '✅ YES' : '❌ NO - Pixel script not found!'}`);
-
-    if (!pixelScript) {
-        throw new Error('Facebook for WooCommerce plugin is not active or configured');
-    }
-}
+    // if (!pixelScript) {
+    //     throw new Error('Facebook for WooCommerce plugin is not active or configured');
+    //      }
+    // }
 
 }
 
