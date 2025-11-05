@@ -37,11 +37,11 @@ class PixelCapture {
                 try {
                     const request = response.request();
                     const eventData = this.parsePixelEvent(request.url());
-                      
+
                     // Add response status to event data
                     eventData.api_status = response.status();
                     eventData.api_ok = response.ok();
-                      
+
                     await this.logToServer(eventData);
                     console.log(`   Event: ${eventData.eventName}, ID: ${eventData.eventId || 'none'}, API: ${response.status()}`);
                 } catch (err) {
@@ -117,21 +117,41 @@ class PixelCapture {
     }
 
     /**
-     * Log event to server (Logger.php HTTP endpoint)
+     * Log event using Logger.php (direct PHP call from Node.js)
      */
     async logToServer(eventData) {
-        await this.page.evaluate(async ({ testId, eventData }) => {
-            await fetch('/wp-content/plugins/facebook-for-woocommerce/tests/e2e/lib/Logger.php', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    testId: testId,
-                    eventType: 'pixel',
-                    eventData: eventData
-                })
-            });
-        }, { testId: this.testId, eventData });
+        const { exec } = require('child_process');
+        const { promisify } = require('util');
+        const execAsync = promisify(exec);
+        const path = require('path');
+
+        const loggerPath = path.join(__dirname, 'Logger.php');
+        const jsonData = JSON.stringify({
+            testId: this.testId,
+            eventType: 'pixel',
+            eventData: eventData
+        }).replace(/"/g, '\\"'); // Escape quotes for shell
+
+        try {
+            await execAsync(`php -r "require_once('${loggerPath}'); E2E_Event_Logger::log_event('${this.testId}', 'pixel', json_decode('${jsonData}', true)['eventData']);"`);
+        } catch (err) {
+            console.error('Failed to log event via Logger.php:', err.message);
+        }
     }
+    // HTTP call to logger
+    // async logToServer(eventData) {
+    //     await this.page.evaluate(async ({ testId, eventData }) => {
+    //         await fetch('/wp-content/plugins/facebook-for-woocommerce/tests/e2e/lib/Logger.php', {
+    //             method: 'POST',
+    //             headers: { 'Content-Type': 'application/json' },
+    //             body: JSON.stringify({
+    //                 testId: testId,
+    //                 eventType: 'pixel',
+    //                 eventData: eventData
+    //             })
+    //         });
+    //     }, { testId: this.testId, eventData });
+    // }
 
 }
 

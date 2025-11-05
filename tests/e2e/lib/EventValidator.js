@@ -24,6 +24,7 @@ class EventValidator {
 
     async validate(eventName, page = null) {
         if (!this.events) await this.load();
+        await this.checkDebugLog();
 
         console.log(`\n  🔍 Validating ${eventName}...`);
 
@@ -259,14 +260,18 @@ class EventValidator {
             errors.push(`Content IDs mismatch: Pixel=${pIdsStr} vs CAPI=${cIdsStr}`);
         }
     }
+
+    async checkDebugLog() {
+        const debugLogPath = '/tmp/wordpress/wp-content/debug.log';
+        try {
+            const data = await fs.readFile(debugLogPath, 'utf8');
+            if (/fatal|error|warning/i.test(data)) {
+                throw new Error('❌ Debug log errors detected');
+            }
+        } catch (err) {
+            if (err.code !== 'ENOENT') throw err;
+        }
+    }
 }
 
 module.exports = EventValidator;
-
-
-// cd /tmp/wordpress
-// if [ -f wp-content/debug.log ]; then
-// if grep -i "fatal\|error\|warning" wp-content/debug.log; then
-// echo "❌ Debug log errors detected"
-// exit 1
-// fi
