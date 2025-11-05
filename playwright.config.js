@@ -12,6 +12,8 @@ export default defineConfig({
   use: {
     trace: 'on-first-retry',
     baseURL: process.env.WORDPRESS_URL ,
+    // Run headed to see what's happening
+    headless: false,
     screenshot: 'only-on-failure',
     video: 'retain-on-failure',
     // Ignore SSL errors for local development

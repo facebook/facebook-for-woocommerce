@@ -212,7 +212,7 @@ jobs:
             } else {
                 echo 'Facebook plugin not loaded properly';
             }" --allow-root
-              
+
           echo ""
           echo "=== Checking if Pixel code is in homepage HTML ==="
           curl -s http://localhost:8080 | grep -o "fbq('init'" || echo "❌ fbq not found in HTML"
@@ -229,12 +229,17 @@ jobs:
           chmod 777 /tmp/wordpress/wp-content/plugins/facebook-for-woocommerce/tests/e2e/captured-events
 
 
+      - name: Install Xvfb for headed browser
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y xvfb
+
       - name: Run E2E tests
         env:
           WORDPRESS_URL: http://localhost:8080
           WP_USERNAME: admin
           WP_PASSWORD: admin
-        run: npm run test:e2e
+        run: xvfb-run --auto-servernum npm run test:e2e
 
       - name: Check for PHP errors
         if: always()
