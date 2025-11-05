@@ -114,6 +114,8 @@ class PixelCapture {
             user_data: finalUserData,
             timestamp: Date.now()
         };
+    }
+
     /**
      * Log event via Logger.php (reuses file locking)
      */
