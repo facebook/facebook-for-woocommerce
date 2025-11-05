@@ -140,7 +140,7 @@ function logTestEnd(testInfo, success = true) {
 }
 
 // Helper function to validate Facebook sync
-async function validateFacebookSync(productId, productName, waitSeconds = 10) {
+async function validateFacebookSync(productId, productName, waitSeconds = 30) {
   if (!productId) {
     console.log('⚠️ No product ID provided for Facebook sync validation');
     return null;
@@ -148,7 +148,7 @@ async function validateFacebookSync(productId, productName, waitSeconds = 10) {
 
   const displayName = productName ? `"${productName}" (ID: ${productId})` : `ID: ${productId}`;
   console.log(`🔍 Validating Facebook sync for product ${displayName}...`);
-
+  // loop and retry 3 times?
   try {
     const { exec } = require('child_process');
     const { promisify } = require('util');
