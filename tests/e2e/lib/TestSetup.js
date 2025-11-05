@@ -25,7 +25,7 @@ class TestSetup {
             }
         ]);
 
-        verifyPluginActive(page);
+        await this.verifyPluginActive(page);
 
         // Start Pixel capture
         const pixelCapture = new PixelCapture(page, testId, eventName);
