@@ -29,6 +29,13 @@ export default defineConfig({
         // Increased timeouts for WordPress admin operations
         actionTimeout: 180000,
         navigationTimeout: 180000,
+        // Mask automation flags to prevent pixel detection
+        launchOptions: {
+          args: [
+            '--disable-blink-features=AutomationControlled',
+            '--disable-dev-shm-usage',
+          ]
+        },
       },
     },
   ],
