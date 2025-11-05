@@ -239,7 +239,7 @@ class EventValidator {
         if (!capiFbp) {
             errors.push(`CAPI missing browser_id (fbp)`);
         }
-        
+
         if (pixelFbp && capiFbp && pixelFbp !== capiFbp) {
             errors.push(`FBP mismatch: ${pixelFbp} vs ${capiFbp}`);
         }

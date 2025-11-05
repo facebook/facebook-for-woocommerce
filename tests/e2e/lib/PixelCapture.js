@@ -30,19 +30,7 @@ class PixelCapture {
 
         // Capture Pixel REQUESTS (before they're sent)
         this.page.on('request', async (request) => {
-            if (!this.isCapturing) return;
-
-            const url = request.url();
-
-            // DEBUG: Log all facebook.com requests
-            if (url.includes('facebook.com')) {
-                console.log(`DEBUG_E2E: 🔵 Facebook REQUEST: ${url.substring(0, 150)}...`);
-            }
-
-            // Check if this is our pixel event
-            if (url.includes('facebook.com/tr') && url.includes(`ev=${this.eventName}`)) {
-                console.log('✅ Pixel event REQUEST captured (waiting for response...)');
-            }
+            console.log(`DEBUG_E2E: REQUEST: ${request.url().substring(0, 80)}`);
         });
 
         // Capture Pixel RESPONSES
