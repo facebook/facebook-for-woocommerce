@@ -12,8 +12,6 @@ export default defineConfig({
   use: {
     trace: 'on-first-retry',
     baseURL: process.env.WORDPRESS_URL ,
-    // Run headed in CI if DEBUG_HEADED=1 is set (for debugging)
-    headless: false,
     screenshot: 'only-on-failure',
     video: 'retain-on-failure',
     // Ignore SSL errors for local development
