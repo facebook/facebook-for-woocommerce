@@ -162,13 +162,15 @@ jobs:
           wp option update wc_facebook_business_manager_id "${{ secrets.FB_BUSINESS_MANAGER_ID }}" --allow-root
           wp option update wc_facebook_external_business_id "${{ secrets.FB_EXTERNAL_BUSINESS_ID }}" --allow-root
           wp option update wc_facebook_product_catalog_id "${{ secrets.FB_PRODUCT_CATALOG_ID }}" --allow-root
-          wp option update wc_facebook_pixel_id "${{ secrets.FB_PIXEL_ID }}" --allow-root
           wp option update wc_facebook_has_connected_fbe_2 "yes" --allow-root
           wp option update wc_facebook_has_authorized_pages_read_engagement "yes" --allow-root
           wp option update wc_facebook_enable_product_sync "yes" --allow-root
           wp option update wc_facebook_page_id  "${{ secrets.FB_PAGE_ID }}" --allow-root
+          wp option update wc_facebook_enable_server_to_server "yes" --allow-root
           wp option update wc_facebook_enable_pixel "yes" --allow-root
+          wp option update wc_facebook_pixel_id "${{ secrets.FB_PIXEL_ID }}" --allow-root
           wp option update wc_facebook_enable_advanced_matching "yes" --allow-root
+
           # Activate the plugin (this triggers automatic sync)
           wp plugin activate facebook-for-woocommerce --allow-root
 
