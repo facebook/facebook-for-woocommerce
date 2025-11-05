@@ -162,11 +162,15 @@ jobs:
           wp option update wc_facebook_business_manager_id "${{ secrets.FB_BUSINESS_MANAGER_ID }}" --allow-root
           wp option update wc_facebook_external_business_id "${{ secrets.FB_EXTERNAL_BUSINESS_ID }}" --allow-root
           wp option update wc_facebook_product_catalog_id "${{ secrets.FB_PRODUCT_CATALOG_ID }}" --allow-root
-          wp option update wc_facebook_pixel_id "${{ secrets.FB_PIXEL_ID }}" --allow-root
           wp option update wc_facebook_has_connected_fbe_2 "yes" --allow-root
           wp option update wc_facebook_has_authorized_pages_read_engagement "yes" --allow-root
           wp option update wc_facebook_enable_product_sync "yes" --allow-root
           wp option update wc_facebook_page_id  "${{ secrets.FB_PAGE_ID }}" --allow-root
+          wp option update wc_facebook_enable_server_to_server "yes" --allow-root
+          wp option update wc_facebook_enable_pixel "yes" --allow-root
+          wp option update wc_facebook_pixel_id "${{ secrets.FB_PIXEL_ID }}" --allow-root
+          wp option update wc_facebook_enable_advanced_matching "yes" --allow-root
+
           # Activate the plugin (this triggers automatic sync)
           wp plugin activate facebook-for-woocommerce --allow-root
 
@@ -195,6 +199,14 @@ jobs:
                 echo 'Access Token: ' . (\$connection->get_access_token() ? 'Present' : 'Missing') . PHP_EOL;
                 echo 'External Business ID: ' . \$connection->get_external_business_id() . PHP_EOL;
                 echo 'Business Manager ID: ' . \$connection->get_business_manager_id() . PHP_EOL;
+                echo 'Pixel ID: ' . get_option('wc_facebook_pixel_id') . PHP_EOL;
+
+                // Check if pixel install is set
+                \$pixel_install = get_option('wc_facebook_pixel_install_time');
+                if (empty(\$pixel_install)) {
+                    update_option('wc_facebook_pixel_install_time', time());
+                    echo '✅ Set pixel install time' . PHP_EOL;
+                }
             } else {
                 echo 'Facebook plugin not loaded properly';
             }" --allow-root
@@ -203,6 +215,12 @@ jobs:
         run: |
           npm install
           npx playwright install chromium
+
+      - name: Debug captured-events directory
+        run: |
+          mkdir -p /tmp/wordpress/wp-content/plugins/facebook-for-woocommerce/tests/e2e/captured-events
+          chmod 777 /tmp/wordpress/wp-content/plugins/facebook-for-woocommerce/tests/e2e/captured-events
+
 
       - name: Run E2E tests
         env:

@@ -605,6 +605,27 @@ class API extends Base {
 	}
 
 	/**
+	 * Logs CAPI event to test framework if test cookie is present.
+	 *
+	 * @param Event $event event object
+	 */
+	private function log_event_for_tests( Event $event ) {
+		// Check if we're in test mode (test ID cookie set)
+		if ( empty( $_COOKIE['facebook_test_id'] ) ) {
+			return;
+		}
+
+		$test_id = sanitize_text_field( wp_unslash( $_COOKIE['facebook_test_id'] ) );
+
+		// Load logger class and log directly (no HTTP overhead)
+		$logger_file = plugin_dir_path( __FILE__ ) . '../tests/e2e/lib/Logger.php';
+		if ( file_exists( $logger_file ) ) {
+			require_once $logger_file;
+			\E2E_Event_Logger::log_event( $test_id, 'capi', $event->get_data() );
+		}
+	}
+
+	/**
 	 * Sends Pixel events.
 	 *
 	 * @since 2.0.0
@@ -616,8 +637,24 @@ class API extends Base {
 	 */
 	public function send_pixel_events( $pixel_id, array $events ) {
 		$request = new API\Pixel\Events\Request( $pixel_id, $events );
+		$request->set_params( array_merge( $request->get_params(), array( 'test_event_code' => "TEST27057" ) ) );
 		$this->set_response_handler( Response::class );
-		return $this->perform_request( $request );
+
+		$response = $this->perform_request( $request );
+
+		try{
+			// Log to E2E test framework if successful
+			if ( $response && ! $response->has_api_error() ) {
+				foreach ( $events as $event ) {
+					$this->log_event_for_tests( $event );
+				}
+			}
+		}
+		catch ( Exception $e ) {
+			// Do nothing
+		}
+
+		return $response;
 	}
 
 	/**
