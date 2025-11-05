@@ -38,8 +38,8 @@ class EventValidator {
 
         const errors = [];
 
-        if (pixel.length === 0) errors.push(`No Pixel ${eventName}`);
-        if (capi.length === 0) errors.push(`No CAPI ${eventName}`);
+        if (pixel.length === 0) errors.push(`No Pixel event found - ${eventName}`);
+        if (capi.length === 0) errors.push(`No CAPI event found - ${eventName}`);
         if (pixel.length === 0 || capi.length === 0) {
             return { passed: false, errors };
         }
@@ -266,9 +266,7 @@ module.exports = EventValidator;
 
 // cd /tmp/wordpress
 // if [ -f wp-content/debug.log ]; then
-// echo "=== PHP Debug Log ==="
-// cat wp-content/debug.log
 // if grep -i "fatal\|error\|warning" wp-content/debug.log; then
-// echo "❌ PHP errors detected"
+// echo "❌ Debug log errors detected"
 // exit 1
 // fi
