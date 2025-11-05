@@ -204,6 +204,12 @@ jobs:
           npm install
           npx playwright install chromium
 
+      - name: Debug captured-events directory
+        run: |
+          mkdir -p /tmp/wordpress/wp-content/plugins/facebook-for-woocommerce/tests/e2e/captured-events
+          chmod 777 /tmp/wordpress/wp-content/plugins/facebook-for-woocommerce/tests/e2e/captured-events
+
+
       - name: Run E2E tests
         env:
           WORDPRESS_URL: http://localhost:8080

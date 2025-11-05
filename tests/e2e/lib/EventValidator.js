@@ -262,3 +262,13 @@ class EventValidator {
 }
 
 module.exports = EventValidator;
+
+
+// cd /tmp/wordpress
+// if [ -f wp-content/debug.log ]; then
+// echo "=== PHP Debug Log ==="
+// cat wp-content/debug.log
+// if grep -i "fatal\|error\|warning" wp-content/debug.log; then
+// echo "❌ PHP errors detected"
+// exit 1
+// fi
