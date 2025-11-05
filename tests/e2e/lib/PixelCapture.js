@@ -114,29 +114,43 @@ class PixelCapture {
             user_data: finalUserData,
             timestamp: Date.now()
         };
-    }
-
     /**
-     * Log event using Logger.php (direct PHP call from Node.js)
+     * Log event via Logger.php (reuses file locking)
      */
     async logToServer(eventData) {
-        const { exec } = require('child_process');
-        const { promisify } = require('util');
-        const execAsync = promisify(exec);
+        const { spawn } = require('child_process');
         const path = require('path');
 
+        console.log(`DEBUG_E2E: Logging event for testId: ${this.testId}`); // DEBUG_E2E
+
         const loggerPath = path.join(__dirname, 'Logger.php');
-        const jsonData = JSON.stringify({
+        const jsonInput = JSON.stringify({
             testId: this.testId,
             eventType: 'pixel',
             eventData: eventData
-        }).replace(/"/g, '\\"'); // Escape quotes for shell
+        });
 
-        try {
-            await execAsync(`php -r "require_once('${loggerPath}'); E2E_Event_Logger::log_event('${this.testId}', 'pixel', json_decode('${jsonData}', true)['eventData']);"`);
-        } catch (err) {
-            console.error('Failed to log event via Logger.php:', err.message);
-        }
+        // Call Logger.php via PHP, pass JSON via stdin
+        const php = spawn('php', ['-r', `
+            require_once('${loggerPath}');
+            $input = json_decode(file_get_contents('php://stdin'), true);
+            E2E_Event_Logger::log_event($input['testId'], $input['eventType'], $input['eventData']);
+        `]);
+
+        php.stdin.write(jsonInput);
+        php.stdin.end();
+
+        php.stderr.on('data', (data) => {
+            console.log(`DEBUG_E2E: PHP stderr: ${data}`); // DEBUG_E2E
+        });
+
+        php.on('close', (code) => {
+            if (code === 0) {
+                console.log(`DEBUG_E2E: Event logged via Logger.php`); // DEBUG_E2E
+            } else {
+                console.error(`DEBUG_E2E: PHP failed with code ${code}`); // DEBUG_E2E
+            }
+        });
     }
     // HTTP call to logger
     // async logToServer(eventData) {
