@@ -33,14 +33,30 @@ class PixelCapture {
         const fbqLoaded = await this.page.evaluate(() => typeof window.fbq !== 'undefined');
         console.log(`DEBUG_E2E: fbq loaded: ${fbqLoaded}`);
 
+        // DEBUG: Listen to ALL requests
+        this.page.on('request', (request) => {
+            const url = request.url();
+            if (url.includes('facebook.com')) {
+                console.log(`DEBUG_E2E: 🔵 Facebook REQUEST: ${url.substring(0, 100)}...`);
+            }
+        });
+
+        // DEBUG: Listen to request failures
+        this.page.on('requestfailed', (request) => {
+            const url = request.url();
+            if (url.includes('facebook.com')) {
+                console.log(`DEBUG_E2E: ❌ Facebook REQUEST FAILED: ${url.substring(0, 100)}... Error: ${request.failure().errorText}`);
+            }
+        });
+
         // Capture Pixel RESPONSES
         this.page.on('response', async (response) => {
             if (!this.isCapturing) return;
 
             const url = response.url();
 
-            // DEBUG: Log all facebook.com responses
-            if (url.includes('facebook.com')) {
+            // DEBUG: Log ALL responses (not just facebook.com)
+            if (url.includes('facebook.com') || url.includes('fbcdn')) {
                 console.log(`DEBUG_E2E: 🟢 Facebook RESPONSE: ${url.substring(0, 150)}... [${response.status()}]`);
             }
 
