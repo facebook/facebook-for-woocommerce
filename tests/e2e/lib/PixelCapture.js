@@ -28,10 +28,25 @@ class PixelCapture {
         this.isCapturing = true;
         console.log(`  🎯 Filtering for event: ${this.eventName}`);
 
-        // DEBUG: Check if fbq is loaded
+        // DEBUG: Check if fbq is loaded and Pixel code is in HTML
         await this.page.waitForTimeout(1000);
-        const fbqLoaded = await this.page.evaluate(() => typeof window.fbq !== 'undefined');
-        console.log(`DEBUG_E2E: fbq loaded: ${fbqLoaded}`);
+        const fbqDebug = await this.page.evaluate(() => {
+            return {
+                fbqLoaded: typeof window.fbq !== 'undefined',
+                pixelIdInHtml: document.documentElement.innerHTML.includes('facebook.com/tr?id='),
+                pixelScriptCount: document.querySelectorAll('script[src*="connect.facebook.net"]').length,
+                fbqQueueLength: window.fbq && window.fbq._fbq ? window.fbq._fbq.queue?.length : 0,
+                pixelId: document.documentElement.innerHTML.match(/fbq\('init',\s*'(\d+)'/)?.[1] || 'not found'
+            };
+        });
+        console.log(`DEBUG_E2E: fbq status:`, JSON.stringify(fbqDebug));
+        
+        // Also check for console errors
+        this.page.on('console', msg => {
+            if (msg.type() === 'error') {
+                console.log(`DEBUG_E2E: 🔴 Console Error: ${msg.text()}`);
+            }
+        });
 
         // DEBUG: Listen to ALL requests
         this.page.on('request', (request) => {
