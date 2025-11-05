@@ -14,11 +14,35 @@ class EventValidator {
     }
 
     async load() {
-        const data = await fs.readFile(this.filePath, 'utf8');
-        this.events = JSON.parse(data);
-        if (!this.events) {
-            throw new Error(`No events found for test ID: ${this.testId}`);
+        // Load from separate pixel and capi files
+        const pixelFilePath = path.join(__dirname, '../captured-events', `pixel-${this.testId}.json`);
+        const capiFilePath = path.join(__dirname, '../captured-events', `capi-${this.testId}.json`);
+
+        let pixelEvents = [];
+        let capiEvents = [];
+
+        // Load pixel events
+        try {
+            const pixelData = await fs.readFile(pixelFilePath, 'utf8');
+            pixelEvents = JSON.parse(pixelData);
+        } catch (err) {
+            console.log(`⚠️  No pixel events file: ${pixelFilePath}`);
         }
+
+        // Load capi events
+        try {
+            const capiData = await fs.readFile(capiFilePath, 'utf8');
+            capiEvents = JSON.parse(capiData);
+        } catch (err) {
+            console.log(`⚠️  No capi events file: ${capiFilePath}`);
+        }
+
+        this.events = {
+            testId: this.testId,
+            pixel: pixelEvents,
+            capi: capiEvents
+        };
+
         return this.events;
     }
 
@@ -209,6 +233,13 @@ class EventValidator {
         const pixelFbp = pixel.user_data?.fbp;
         const capiFbp = capi.user_data?.browser_id;
 
+        if (!pixelFbp) {
+            errors.push(`Pixel missing fbp`);
+        }
+        if (!capiFbp) {
+            errors.push(`CAPI missing browser_id (fbp)`);
+        }
+        
         if (pixelFbp && capiFbp && pixelFbp !== capiFbp) {
             errors.push(`FBP mismatch: ${pixelFbp} vs ${capiFbp}`);
         }

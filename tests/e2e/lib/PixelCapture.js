@@ -9,9 +9,10 @@
  */
 
 class PixelCapture {
-    constructor(page, testId) {
+    constructor(page, testId, eventName) {
         this.page = page;
         this.testId = testId;
+        this.eventName = eventName;
         this.isCapturing = false;
     }
 
@@ -31,7 +32,9 @@ class PixelCapture {
             if (!this.isCapturing) return;
 
             const url = response.url();
-            if (url.includes('facebook.com/tr')) {
+
+            // Filter by facebook.com/tr AND ev parameter matching expected event
+            if (url.includes('facebook.com/tr') && url.includes(`ev=${this.eventName}`)) {
                 console.log('✅ Pixel event captured');
 
                 try {
@@ -98,6 +101,12 @@ class PixelCapture {
             }
         });
 
+        // Extract fbp (Facebook Browser ID) from top-level parameter
+        const fbp = urlObj.searchParams.get('fbp');
+        if (fbp) {
+            userData.fbp = fbp;
+        }
+
         // Extract user_data from custom_data if present (it's sent as cd[user_data])
         let finalUserData = userData;
         if (customData.user_data) {
@@ -117,42 +126,40 @@ class PixelCapture {
     }
 
     /**
-     * Log event via Logger.php (reuses file locking)
+     * Log event to separate pixel file (no race condition with CAPI)
      */
     async logToServer(eventData) {
-        const { spawn } = require('child_process');
+        const fs = require('fs').promises;
         const path = require('path');
 
-        console.log(`DEBUG_E2E: Logging event for testId: ${this.testId}`); // DEBUG_E2E
+        console.log(`DEBUG_E2E: Logging pixel event for testId: ${this.testId}`); // DEBUG_E2E
 
-        const loggerPath = path.join(__dirname, 'Logger.php');
-        const jsonInput = JSON.stringify({
-            testId: this.testId,
-            eventType: 'pixel',
-            eventData: eventData
-        });
+        const capturedDir = path.join(__dirname, '../captured-events');
 
-        // Call Logger.php via PHP, pass JSON via stdin
-        const php = spawn('php', ['-r', `
-            require_once('${loggerPath}');
-            $input = json_decode(file_get_contents('php://stdin'), true);
-            E2E_Event_Logger::log_event($input['testId'], $input['eventType'], $input['eventData']);
-        `]);
+        try {
+            await fs.mkdir(capturedDir, { recursive: true });
+            console.log(`DEBUG_E2E: Using directory: ${capturedDir}`); // DEBUG_E2E
+        } catch (err) {
+            console.error(`DEBUG_E2E: Cannot create dir: ${err.message}`); // DEBUG_E2E
+            return;
+        }
 
-        php.stdin.write(jsonInput);
-        php.stdin.end();
+        const filePath = path.join(capturedDir, `pixel-${this.testId}.json`);
+        console.log(`DEBUG_E2E: Writing to: ${filePath}`); // DEBUG_E2E
 
-        php.stderr.on('data', (data) => {
-            console.log(`DEBUG_E2E: PHP stderr: ${data}`); // DEBUG_E2E
-        });
+        try {
+            let events = [];
+            try {
+                const contents = await fs.readFile(filePath, 'utf8');
+                events = JSON.parse(contents);
+            } catch {}
 
-        php.on('close', (code) => {
-            if (code === 0) {
-                console.log(`DEBUG_E2E: Event logged via Logger.php`); // DEBUG_E2E
-            } else {
-                console.error(`DEBUG_E2E: PHP failed with code ${code}`); // DEBUG_E2E
-            }
-        });
+            events.push(eventData);
+            await fs.writeFile(filePath, JSON.stringify(events, null, 2));
+            console.log(`DEBUG_E2E: Event logged successfully`); // DEBUG_E2E
+        } catch (err) {
+            console.error(`DEBUG_E2E: Write failed: ${err.message}`); // DEBUG_E2E
+        }
     }
     // HTTP call to logger
     // async logToServer(eventData) {

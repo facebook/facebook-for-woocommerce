@@ -6,10 +6,11 @@ const PixelCapture = require('./PixelCapture');
 const config = require('../config/test-config');
 
 class TestSetup {
-    static async init(page, testName) {
+    static async init(page, eventName) {
+        const testName = eventName.toLowerCase();
         const testId = `${testName}-${Date.now()}`;
 
-        console.log(`\n Testing: ${testName.toUpperCase()}`);
+        console.log(`\n Testing: ${eventName.toUpperCase()}`);
 
         // Login first
         await this.login(page);
@@ -24,7 +25,7 @@ class TestSetup {
         ]);
 
         // Start Pixel capture
-        const pixelCapture = new PixelCapture(page, testId);
+        const pixelCapture = new PixelCapture(page, testId, eventName);
         await pixelCapture.start();
 
         return { testId, pixelCapture };
@@ -36,7 +37,7 @@ class TestSetup {
         // Check if already logged in
         const loginForm = await page.locator('#loginform').count();
         if (loginForm === 0) {
-            await page.goto('/');
+            // await page.goto('/');
             return;
         }
 
@@ -47,9 +48,6 @@ class TestSetup {
         await page.waitForLoadState('networkidle');
 
         console.log('  ✅ Logged In');
-
-        await page.goto('/');
-        console.log('  ✅ Returned to homepage');
     }
 
     static async wait(ms = 2000) {
@@ -63,7 +61,7 @@ class TestSetup {
             console.log(`\n❌ ${eventName}: FAILED`);
             console.log(`\nErrors:`);
             result.errors.forEach(err => console.log(`  - ${err}`));
-            
+
             // Dump event data on failure
             console.log(`\n📊 Event Data:`);
             console.log(`\nPixel Event:`, JSON.stringify(result.pixel, null, 2));

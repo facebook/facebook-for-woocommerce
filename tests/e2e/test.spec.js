@@ -7,7 +7,7 @@ const TestSetup = require('./lib/TestSetup');
 const EventValidator = require('./lib/EventValidator');
 
 test('PageView', async ({ page }) => {
-    const { testId } = await TestSetup.init(page, 'pageview');
+    const { testId } = await TestSetup.init(page, 'PageView');
 
     await page.goto('/');
     await TestSetup.wait();
@@ -21,7 +21,7 @@ test('PageView', async ({ page }) => {
 
 test('ViewContent', async ({ page }) => {
     // TODO needs to have an existing product
-    const { testId } = await TestSetup.init(page, 'viewcontent');
+    const { testId } = await TestSetup.init(page, 'ViewContent');
 
     await page.goto('/product/testp/');
     await TestSetup.wait();
@@ -35,7 +35,7 @@ test('ViewContent', async ({ page }) => {
 
 test('AddToCart', async ({ page }) => {
     // TODO needs to have an existing product
-    const { testId } = await TestSetup.init(page, 'addtocart');
+    const { testId } = await TestSetup.init(page, 'AddToCart');
 
     await page.goto('/product/testp/');
     await page.click('.single_add_to_cart_button');
@@ -49,7 +49,7 @@ test('AddToCart', async ({ page }) => {
 });
 
 test('ViewCategory', async ({ page }) => {
-    const { testId } = await TestSetup.init(page, 'viewcategory');
+    const { testId } = await TestSetup.init(page, 'ViewCategory');
 
     await page.goto('/product-category/uncategorized/');
     await TestSetup.wait();
