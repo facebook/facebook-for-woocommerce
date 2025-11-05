@@ -28,10 +28,10 @@ class PixelCapture {
         this.isCapturing = true;
         console.log(`  🎯 Filtering for event: ${this.eventName}`);
 
-        // Capture Pixel REQUESTS (before they're sent)
-        this.page.on('request', async (request) => {
-            console.log(`DEBUG_E2E: REQUEST: ${request.url().substring(0, 80)}`);
-        });
+        // DEBUG: Check if fbq is loaded
+        await this.page.waitForTimeout(1000);
+        const fbqLoaded = await this.page.evaluate(() => typeof window.fbq !== 'undefined');
+        console.log(`DEBUG_E2E: fbq loaded: ${fbqLoaded}`);
 
         // Capture Pixel RESPONSES
         this.page.on('response', async (response) => {
