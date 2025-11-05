@@ -7,10 +7,13 @@ const TestSetup = require('./lib/TestSetup');
 const EventValidator = require('./lib/EventValidator');
 
 test('PageView', async ({ page }) => {
-    const { testId } = await TestSetup.init(page, 'PageView');
+    const { testId, pixelCapture } = await TestSetup.init(page, 'PageView');
 
-    await page.goto('/');
-    await TestSetup.wait();
+    // Start navigation and wait for Pixel event
+    await Promise.all([
+        pixelCapture.waitForEvent(), // Wait for the event
+        page.goto('/')                // Trigger the event
+    ]);
 
     const validator = new EventValidator(testId);
     const result = await validator.validate('PageView', page);
@@ -21,10 +24,12 @@ test('PageView', async ({ page }) => {
 
 test('ViewContent', async ({ page }) => {
     // TODO needs to have an existing product
-    const { testId } = await TestSetup.init(page, 'ViewContent');
+    const { testId, pixelCapture } = await TestSetup.init(page, 'ViewContent');
 
-    await page.goto('/product/testp/');
-    await TestSetup.wait();
+    await Promise.all([
+        pixelCapture.waitForEvent(),
+        page.goto('/product/testp/')
+    ]);
 
     const validator = new EventValidator(testId);
     const result = await validator.validate('ViewContent', page);
@@ -35,11 +40,14 @@ test('ViewContent', async ({ page }) => {
 
 test('AddToCart', async ({ page }) => {
     // TODO needs to have an existing product
-    const { testId } = await TestSetup.init(page, 'AddToCart');
+    const { testId, pixelCapture } = await TestSetup.init(page, 'AddToCart');
 
     await page.goto('/product/testp/');
-    await page.click('.single_add_to_cart_button');
-    await TestSetup.wait();
+
+    await Promise.all([
+        pixelCapture.waitForEvent(),
+        page.click('.single_add_to_cart_button')
+    ]);
 
     const validator = new EventValidator(testId);
     const result = await validator.validate('AddToCart', page);
@@ -49,11 +57,12 @@ test('AddToCart', async ({ page }) => {
 });
 
 test('ViewCategory', async ({ page }) => {
-    const { testId } = await TestSetup.init(page, 'ViewCategory');
+    const { testId, pixelCapture } = await TestSetup.init(page, 'ViewCategory');
 
-    await page.goto('/product-category/uncategorized/');
-    await TestSetup.wait();
-
+    await Promise.all([
+        pixelCapture.waitForEvent(),
+        page.goto('/product-category/uncategorized/')
+    ]);
     const validator = new EventValidator(testId);
     const result = await validator.validate('ViewCategory', page);
 

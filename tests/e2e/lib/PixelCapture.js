@@ -17,46 +17,56 @@ class PixelCapture {
     }
 
     /**
-     * Start capturing Pixel events
+     * Wait for the specific Pixel event to be sent and captured
+     * Returns a promise that resolves when the event is captured
+     */
+    async waitForEvent() {
+        console.log(`  🎯 Waiting for Pixel event: ${this.eventName}`);
+
+        try {
+            // Wait for the facebook.com/tr response with our specific event
+            const response = await this.page.waitForResponse(
+                response => {
+                    const url = response.url();
+                    return url.includes('facebook.com/tr') &&
+                           url.includes(`ev=${this.eventName}`) &&
+                           response.status() === 200;
+                },
+                { timeout: 10000 } // 10 second timeout
+            );
+
+            console.log(`✅ Pixel event captured: ${this.eventName}`);
+
+            // Parse and log the event
+            const request = response.request();
+            const eventData = this.parsePixelEvent(request.url());
+
+            // Add response status to event data
+            eventData.api_status = response.status();
+            eventData.api_ok = response.ok();
+
+            await this.logToServer(eventData);
+            console.log(`   Event ID: ${eventData.eventId || 'none'}, API: ${response.status()}`);
+
+            return response;
+        } catch (err) {
+            console.error(`❌ Timeout waiting for Pixel event: ${this.eventName}`);
+            console.error(`   Error: ${err.message}`);
+            throw err;
+        }
+    }
+
+    /**
+     * Start capturing Pixel events (for debugging)
      */
     async start() {
         if (this.isCapturing) {
-            console.warn('⚠️  Already capturing Pixel events');
             return;
         }
 
         this.isCapturing = true;
-        console.log(`  🎯 Filtering for event: ${this.eventName}`);
 
-        // DEBUG: Check if fbq is loaded and Pixel code is in HTML
-        await this.page.waitForTimeout(1000);
-        const fbqDebug = await this.page.evaluate(() => {
-            return {
-                fbqLoaded: typeof window.fbq !== 'undefined',
-                pixelIdInHtml: document.documentElement.innerHTML.includes('facebook.com/tr?id='),
-                pixelScriptCount: document.querySelectorAll('script[src*="connect.facebook.net"]').length,
-                fbqQueueLength: window.fbq && window.fbq._fbq ? window.fbq._fbq.queue?.length : 0,
-                pixelId: document.documentElement.innerHTML.match(/fbq\('init',\s*'(\d+)'/)?.[1] || 'not found'
-            };
-        });
-        console.log(`DEBUG_E2E: fbq status:`, JSON.stringify(fbqDebug));
-        
-        // Also check for console errors
-        this.page.on('console', msg => {
-            if (msg.type() === 'error') {
-                console.log(`DEBUG_E2E: 🔴 Console Error: ${msg.text()}`);
-            }
-        });
-
-        // DEBUG: Listen to ALL requests
-        this.page.on('request', (request) => {
-            const url = request.url();
-            if (url.includes('facebook.com')) {
-                console.log(`DEBUG_E2E: 🔵 Facebook REQUEST: ${url.substring(0, 100)}...`);
-            }
-        });
-
-        // DEBUG: Listen to request failures
+        // Log request failures for debugging
         this.page.on('requestfailed', (request) => {
             const url = request.url();
             if (url.includes('facebook.com')) {
@@ -64,34 +74,10 @@ class PixelCapture {
             }
         });
 
-        // Capture Pixel RESPONSES
-        this.page.on('response', async (response) => {
-            if (!this.isCapturing) return;
-
-            const url = response.url();
-
-            // DEBUG: Log ALL responses (not just facebook.com)
-            if (url.includes('facebook.com') || url.includes('fbcdn')) {
-                console.log(`DEBUG_E2E: 🟢 Facebook RESPONSE: ${url.substring(0, 150)}... [${response.status()}]`);
-            }
-
-            // Filter by facebook.com/tr AND ev parameter matching expected event
-            if (url.includes('facebook.com/tr') && url.includes(`ev=${this.eventName}`)) {
-                console.log('✅ Pixel event RESPONSE captured');
-
-                try {
-                    const request = response.request();
-                    const eventData = this.parsePixelEvent(request.url());
-
-                    // Add response status to event data
-                    eventData.api_status = response.status();
-                    eventData.api_ok = response.ok();
-
-                    await this.logToServer(eventData);
-                    console.log(`   Event: ${eventData.eventName}, ID: ${eventData.eventId || 'none'}, API: ${response.status()}`);
-                } catch (err) {
-                    console.error('❌ Failed to log Pixel event:', err.message);
-                }
+        // Also check for console errors
+        this.page.on('console', msg => {
+            if (msg.type() === 'error') {
+                console.log(`DEBUG_E2E: 🔴 Console Error: ${msg.text()}`);
             }
         });
 

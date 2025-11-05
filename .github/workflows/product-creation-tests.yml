@@ -200,6 +200,8 @@ jobs:
                 echo 'External Business ID: ' . \$connection->get_external_business_id() . PHP_EOL;
                 echo 'Business Manager ID: ' . \$connection->get_business_manager_id() . PHP_EOL;
                 echo 'Pixel ID: ' . get_option('wc_facebook_pixel_id') . PHP_EOL;
+                echo 'Pixel Enabled: ' . get_option('wc_facebook_enable_pixel') . PHP_EOL;
+                echo 'S2S Enabled: ' . get_option('wc_facebook_enable_server_to_server') . PHP_EOL;
 
                 // Check if pixel install is set
                 \$pixel_install = get_option('wc_facebook_pixel_install_time');
@@ -210,6 +212,11 @@ jobs:
             } else {
                 echo 'Facebook plugin not loaded properly';
             }" --allow-root
+              
+          echo ""
+          echo "=== Checking if Pixel code is in homepage HTML ==="
+          curl -s http://localhost:8080 | grep -o "fbq('init'" || echo "❌ fbq not found in HTML"
+          curl -s http://localhost:8080 | grep -o "facebook.com/tr?id=" || echo "❌ Pixel IMG tag not found"
 
       - name: Install Playwright
         run: |
