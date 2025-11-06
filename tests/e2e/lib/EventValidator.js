@@ -25,16 +25,26 @@ class EventValidator {
         try {
             const pixelData = await fs.readFile(pixelFilePath, 'utf8');
             pixelEvents = JSON.parse(pixelData);
+            console.log(`✅ Loaded pixel events from: ${pixelFilePath}`);
         } catch (err) {
-            console.log(`⚠️  No pixel events file: ${pixelFilePath}`);
+            if (err.code === 'ENOENT') {
+                console.log(`⚠️  Pixel events file not found: ${pixelFilePath}`);
+            } else {
+                console.error(`❌ Error reading pixel events: ${err.message}`);
+            }
         }
 
         // Load capi events
         try {
             const capiData = await fs.readFile(capiFilePath, 'utf8');
             capiEvents = JSON.parse(capiData);
+            console.log(`✅ Loaded CAPI events from: ${capiFilePath}`);
         } catch (err) {
-            console.log(`⚠️  No capi events file: ${capiFilePath}`);
+            if (err.code === 'ENOENT') {
+                console.log(`⚠️  CAPI events file not found: ${capiFilePath}`);
+            } else {
+                console.error(`❌ Error reading CAPI events: ${err.message}`);
+            }
         }
 
         this.events = {
