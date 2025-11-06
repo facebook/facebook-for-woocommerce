@@ -233,14 +233,6 @@ jobs:
             echo '✅ Integration settings updated' . PHP_EOL;
           " --allow-root
 
-          # Add debugging directly to the plugin file
-          echo "=== Adding E2E Debug Logging to plugin ==="
-
-          # Add logging at the EventsTracker constructor
-          sed -i '/class WC_Facebookcommerce_EventsTracker/a \        public function __construct($integration) {\n                error_log("E2E_DEBUG: EventsTracker __construct called");\n                parent::__construct($integration);\n        }' /tmp/wordpress/wp-content/plugins/facebook-for-woocommerce/facebook-commerce-events-tracker.php || true
-
-          # Add logging to inject_base_pixel
-          sed -i 's/public function inject_base_pixel() {/public function inject_base_pixel() {\n\t\terror_log("E2E_DEBUG: inject_base_pixel called, is_pixel_enabled=" . ($this->is_pixel_enabled() ? "YES" : "NO"));/' /tmp/wordpress/wp-content/plugins/facebook-for-woocommerce/facebook-commerce-events-tracker.php || true
 
           # Activate the plugin (this triggers automatic sync)
           wp plugin activate facebook-for-woocommerce --allow-root
@@ -254,7 +246,7 @@ jobs:
               echo '✅ Integration pre-initialized' . PHP_EOL;
             }
           " --allow-root
-          
+
           # Create a customer (non-admin) user for testing
           # Pixel tracking excludes admin users by default!
           wp user create customer customer@test.com --role=customer --user_pass=password --allow-root || echo "Customer user already exists"
