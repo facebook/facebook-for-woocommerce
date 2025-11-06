@@ -21,17 +21,30 @@ class PixelCapture {
         // Dump cookies before waiting for event
         await this.dumpPageCookies('Before Event');
 
-        // Debug: Check if Pixel script is loaded and fbq exists
-        await this.debugPixelSetup();
+        // Track ALL facebook.com requests for debugging
+        const allFBRequests = [];
+        this.page.on('request', request => {
+            const url = request.url();
+            if (url.includes('facebook.com') || url.includes('facebook.net')) {
+                allFBRequests.push({
+                    url: url.substring(0, 200),
+                    type: request.resourceType(),
+                    method: request.method()
+                });
+                console.log(`   [Request] FB: ${request.resourceType()} ${request.method()} ${url.substring(0, 150)}...`);
+            }
+        });
 
         try {
             // Wait for the facebook.com/tr response with our specific event
             const response = await this.page.waitForResponse(
                 response => {
                     const url = response.url();
-                    return url.includes('facebook.com/') &&
-                            // url.includes('trigger') &&
-                           url.includes(`ev=${this.eventName}`);
+                    const matches = url.includes('facebook.com/') && url.includes(`ev=${this.eventName}`);
+                    if (url.includes('facebook.com/')) {
+                        console.log(`   [Response] FB: ${url.substring(0, 150)}... (matches: ${matches})`);
+                    }
+                    return matches;
                 },
                 { timeout: 15000 } // 15 second timeout
             );
@@ -57,10 +70,17 @@ class PixelCapture {
         } catch (err) {
             if (err.message && err.message.includes('Timeout')) {
                 console.error(`❌ Timeout: Pixel event ${this.eventName} not captured within 15 seconds`);
-                
+                console.log(`   [Debug] Total FB requests captured: ${allFBRequests.length}`);
+                if (allFBRequests.length > 0) {
+                    console.log(`   [Debug] FB requests made:`);
+                    allFBRequests.forEach(req => console.log(`     - ${req.type} ${req.method}: ${req.url}`));
+                } else {
+                    console.error(`   ⚠️  NO facebook.com requests were made at all!`);
+                }
+
                 // Debug: Check what happened
                 await this.debugTimeoutIssue();
-                
+
                 throw new Error(`Pixel event ${this.eventName} did not fire within timeout`);
             }
             console.error(`❌ Error capturing Pixel event: ${err.message}`);
@@ -102,7 +122,7 @@ class PixelCapture {
     async debugTimeoutIssue() {
         try {
             console.log(`\n   🔍 Debugging timeout issue...`);
-            
+
             // Check console errors
             const consoleErrors = await this.page.evaluate(() => {
                 // Can't access console history, but we can check for errors
@@ -111,7 +131,7 @@ class PixelCapture {
 
             // Check if any facebook requests were made at all
             console.log(`   [Debug] Checking if ANY facebook.com requests were made...`);
-            
+
             // Re-check pixel setup
             const pixelInfo = await this.page.evaluate(() => {
                 return {
