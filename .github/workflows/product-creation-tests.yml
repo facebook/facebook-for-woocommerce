@@ -243,11 +243,29 @@ jobs:
               // Force get_integration() to run which will initialize EventsTracker
               facebook_for_woocommerce()->get_integration();
               echo '✅ Integration pre-initialized' . PHP_EOL;
-
+              
+              // Debug: Check the actual option value
+              \$pixel_option = get_option('wc_facebook_pixel_id');
+              echo 'wc_facebook_pixel_id option value: ' . (\$pixel_option ? \$pixel_option : 'EMPTY!') . PHP_EOL;
+              
               // Check what Pixel Event class returns for pixel_id
               if (class_exists('WC_Facebookcommerce_Pixel_Event')) {
                 \$pixel_id = WC_Facebookcommerce_Pixel_Event::get_pixel_id();
                 echo 'Pixel ID from Event class: ' . (\$pixel_id ? \$pixel_id : 'EMPTY!') . PHP_EOL;
+                
+                // Also check integration directly
+                \$integration = facebook_for_woocommerce()->get_integration();
+                \$pixel_from_integration = \$integration->get_facebook_pixel_id();
+                echo 'Pixel ID from Integration: ' . (\$pixel_from_integration ? \$pixel_from_integration : 'EMPTY!') . PHP_EOL;
+                
+                // Debug: Check the integration settings array
+                \$integration_settings = get_option('woocommerce_woocommerce_facebook_for_woocommerce_settings', array());
+                echo 'Integration settings array keys: ' . implode(', ', array_keys(\$integration_settings)) . PHP_EOL;
+                if (isset(\$integration_settings['facebook_pixel_id'])) {
+                  echo 'Integration settings [facebook_pixel_id]: ' . \$integration_settings['facebook_pixel_id'] . PHP_EOL;
+                } else {
+                  echo '❌ facebook_pixel_id NOT in integration settings!' . PHP_EOL;
+                }
               }
             }
           " --allow-root
