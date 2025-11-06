@@ -40,6 +40,10 @@ class TestSetup {
         return { testId, pixelCapture };
     }
 
+    /**
+     * Login as customer (non-admin) user
+     * Pixel tracking is disabled for admin users, so we need to test as a customer
+     */
     static async login(page) {
         await page.goto('/wp-login.php');
 
@@ -50,13 +54,13 @@ class TestSetup {
             return;
         }
 
-        // Login
-        await page.fill('#user_login', config.WP_USERNAME);
-        await page.fill('#user_pass', config.WP_PASSWORD);
+        // Login as customer (not admin!) because pixel excludes admin users
+        await page.fill('#user_login', config.WP_CUSTOMER_USERNAME);
+        await page.fill('#user_pass', config.WP_CUSTOMER_PASSWORD);
         await page.click('#wp-submit');
         await page.waitForLoadState('networkidle');
 
-        console.log('  ✅ Logged In');
+        console.log('  ✅ Logged In as customer (non-admin)');
     }
 
     /**

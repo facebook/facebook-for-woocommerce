@@ -254,6 +254,11 @@ jobs:
               echo '✅ Integration pre-initialized' . PHP_EOL;
             }
           " --allow-root
+          
+          # Create a customer (non-admin) user for testing
+          # Pixel tracking excludes admin users by default!
+          wp user create customer customer@test.com --role=customer --user_pass=password --allow-root || echo "Customer user already exists"
+          echo "✅ Customer user created/verified"
 
 
       - name: Verify WordPress setup

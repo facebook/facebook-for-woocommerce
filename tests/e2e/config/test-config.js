@@ -6,12 +6,16 @@
  */
 
 const WORDPRESS_URL = process.env.WORDPRESS_URL || 'http://localhost:8080';
-const WP_USERNAME = process.env.WP_USERNAME || 'admin';
-const WP_PASSWORD = process.env.WP_PASSWORD || 'admin';
+const WP_ADMIN_USERNAME = process.env.WP_ADMIN_USERNAME || 'admin';
+const WP_ADMIN_PASSWORD = process.env.WP_ADMIN_PASSWORD || 'admin';
+const WP_CUSTOMER_USERNAME = process.env.WP_CUSTOMER_USERNAME || 'customer';
+const WP_CUSTOMER_PASSWORD = process.env.WP_CUSTOMER_PASSWORD || 'password';
 const WORDPRESS_PATH = '/tmp/wordpress/wp-load.php';
 module.exports = {
     WORDPRESS_URL,
-    WP_USERNAME,
-    WP_PASSWORD,
+    WP_ADMIN_USERNAME,
+    WP_ADMIN_PASSWORD,
+    WP_CUSTOMER_USERNAME,
+    WP_CUSTOMER_PASSWORD,
     WORDPRESS_PATH
 };
