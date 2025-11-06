@@ -66,14 +66,14 @@ class TestSetup {
         try {
             const cookies = await page.context().cookies();
             console.log(`\n🍪 Cookies [${context}]: ${cookies.length} total`);
-            
+
             // Filter for Facebook-related cookies
-            const fbCookies = cookies.filter(c => 
-                c.name.startsWith('_fb') || 
-                c.name.startsWith('fb') || 
+            const fbCookies = cookies.filter(c =>
+                c.name.includes('_fb') ||
+                c.name.includes('fb') ||
                 c.domain.includes('facebook')
             );
-            
+
             if (fbCookies.length > 0) {
                 console.log(`   Facebook cookies: ${fbCookies.length}`);
                 fbCookies.forEach(c => {
@@ -82,7 +82,7 @@ class TestSetup {
             } else {
                 console.log(`   ⚠️  No Facebook cookies found`);
             }
-            
+
             // Show test cookie
             const testCookie = cookies.find(c => c.name === 'facebook_test_id');
             if (testCookie) {
@@ -90,7 +90,7 @@ class TestSetup {
             } else {
                 console.log(`   ⚠️  No test cookie found`);
             }
-            
+
             // Show WordPress auth cookies
             const wpCookies = cookies.filter(c => 
                 c.name.includes('wordpress') || 
@@ -98,11 +98,11 @@ class TestSetup {
                 c.name === 'wp_lang'
             );
             if (wpCookies.length > 0) {
-                console.log(`   WordPress cookies: ${wpCookies.length}`);
+                console.log(`   WordPress cookies: ${wpCookies.length} (${wpCookies.map(c => c.name).join(', ')})`);
             } else {
                 console.log(`   ⚠️  No WordPress cookies found`);
             }
-            
+
         } catch (err) {
             console.error(`   ❌ Error dumping cookies: ${err.message}`);
         }

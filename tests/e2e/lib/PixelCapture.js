@@ -21,6 +21,9 @@ class PixelCapture {
         // Dump cookies before waiting for event
         await this.dumpPageCookies('Before Event');
 
+        // Debug: Check if Pixel script is loaded and fbq exists
+        await this.debugPixelSetup();
+
         try {
             // Wait for the facebook.com/tr response with our specific event
             const response = await this.page.waitForResponse(
@@ -30,7 +33,7 @@ class PixelCapture {
                             // url.includes('trigger') &&
                            url.includes(`ev=${this.eventName}`);
                 },
-                { timeout: 15000 } // 10 second timeout
+                { timeout: 15000 } // 15 second timeout
             );
 
             console.log(`✅ Pixel event captured: ${this.eventName}`);
@@ -51,13 +54,77 @@ class PixelCapture {
                 throw err;
             }
 
-          } catch (err) {
+        } catch (err) {
             if (err.message && err.message.includes('Timeout')) {
                 console.error(`❌ Timeout: Pixel event ${this.eventName} not captured within 15 seconds`);
+                
+                // Debug: Check what happened
+                await this.debugTimeoutIssue();
+                
                 throw new Error(`Pixel event ${this.eventName} did not fire within timeout`);
             }
             console.error(`❌ Error capturing Pixel event: ${err.message}`);
             throw err;
+        }
+    }
+
+    /**
+     * Debug Pixel setup - Check if Pixel script is loaded
+     */
+    async debugPixelSetup() {
+        try {
+            const pixelInfo = await this.page.evaluate(() => {
+                return {
+                    fbqExists: typeof window.fbq !== 'undefined',
+                    fbqVersion: window.fbq ? window.fbq.version : null,
+                    pixelScriptInPage: document.documentElement.innerHTML.includes('facebook.com/tr'),
+                    pixelScriptInHead: !!document.querySelector('script[src*="connect.facebook.net"]'),
+                    hasPixelId: document.documentElement.innerHTML.includes('fbq(\'init\''),
+                };
+            });
+
+            console.log(`   [Debug] fbq function exists: ${pixelInfo.fbqExists ? '✅' : '❌'}`);
+            console.log(`   [Debug] Pixel script in page: ${pixelInfo.pixelScriptInPage ? '✅' : '❌'}`);
+            console.log(`   [Debug] Pixel script loaded: ${pixelInfo.pixelScriptInHead ? '✅' : '❌'}`);
+            console.log(`   [Debug] Pixel initialized: ${pixelInfo.hasPixelId ? '✅' : '❌'}`);
+
+            if (!pixelInfo.fbqExists) {
+                console.error(`   ⚠️  WARNING: fbq() function not found! Pixel won't fire.`);
+            }
+        } catch (err) {
+            console.error(`   [Debug] Error checking pixel setup: ${err.message}`);
+        }
+    }
+
+    /**
+     * Debug timeout issue - Check what went wrong
+     */
+    async debugTimeoutIssue() {
+        try {
+            console.log(`\n   🔍 Debugging timeout issue...`);
+            
+            // Check console errors
+            const consoleErrors = await this.page.evaluate(() => {
+                // Can't access console history, but we can check for errors
+                return window._pixelErrors || [];
+            });
+
+            // Check if any facebook requests were made at all
+            console.log(`   [Debug] Checking if ANY facebook.com requests were made...`);
+            
+            // Re-check pixel setup
+            const pixelInfo = await this.page.evaluate(() => {
+                return {
+                    fbqExists: typeof window.fbq !== 'undefined',
+                    pageUrl: window.location.href,
+                };
+            });
+
+            console.log(`   [Debug] Current URL: ${pixelInfo.pageUrl}`);
+            console.log(`   [Debug] fbq still exists: ${pixelInfo.fbqExists ? 'Yes' : 'No'}`);
+
+        } catch (err) {
+            console.error(`   [Debug] Error during timeout debugging: ${err.message}`);
         }
     }
 
@@ -68,8 +135,8 @@ class PixelCapture {
         try {
             const cookies = await this.page.context().cookies();
             const fbCookies = cookies.filter(c =>
-                c.name.startsWith('_fb') ||
-                c.name.startsWith('fb') ||
+                c.name.includes('_fb') ||
+                c.name.includes('fb') ||
                 c.name === 'facebook_test_id'
             );
 
