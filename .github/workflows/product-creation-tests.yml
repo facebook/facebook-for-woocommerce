@@ -51,6 +51,46 @@ jobs:
           php-version: '8.1'
           extensions: mysqli, zip, gd, curl, dom, imagick, fileinfo, mbstring
 
+      - name: Install and configure Nginx
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y nginx php8.1-fpm
+          
+          # Stop default nginx
+          sudo systemctl stop nginx
+          
+          # Create Nginx config for WordPress
+          sudo tee /etc/nginx/sites-available/wordpress > /dev/null <<'EOF'
+          server {
+              listen 8080;
+              server_name localhost;
+              root /tmp/wordpress;
+              index index.php index.html;
+
+              location / {
+                  try_files $uri $uri/ /index.php?$args;
+              }
+
+              location ~ \.php$ {
+                  include snippets/fastcgi-php.conf;
+                  fastcgi_pass unix:/run/php/php8.1-fpm.sock;
+                  fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
+                  include fastcgi_params;
+              }
+
+              location ~ /\.ht {
+                  deny all;
+              }
+          }
+          EOF
+          
+          # Enable the site
+          sudo ln -sf /etc/nginx/sites-available/wordpress /etc/nginx/sites-enabled/wordpress
+          sudo rm -f /etc/nginx/sites-enabled/default
+          
+          # Test nginx config
+          sudo nginx -t
+
       - name: Create WordPress test environment
         run: |
           # Create WordPress directory
@@ -89,12 +129,22 @@ jobs:
           EOF
 
 
-      - name: Start PHP server
+      - name: Start Nginx and PHP-FPM
         run: |
-          cd /tmp/wordpress
-          php -S localhost:8080 -t . &
-          echo $! > /tmp/php-server.pid
-          sleep 5
+          # Start PHP-FPM
+          sudo systemctl start php8.1-fpm
+          sudo systemctl status php8.1-fpm --no-pager
+          
+          # Start Nginx
+          sudo systemctl start nginx
+          sudo systemctl status nginx --no-pager
+          
+          # Wait for services
+          sleep 3
+          
+          # Test if site is accessible
+          curl -f http://localhost:8080 || (echo "❌ Site not accessible" && exit 1)
+          echo "✅ Nginx and PHP-FPM started successfully"
 
       - name: Install WP-CLI
         run: |
@@ -263,40 +313,6 @@ jobs:
           grep -q "fbq('init'" /tmp/homepage.html && echo "✅ fbq('init') FOUND" || echo "❌ fbq('init') NOT FOUND"
           grep -q "fbq('track', 'PageView')" /tmp/homepage.html && echo "✅ fbq('track', 'PageView') FOUND" || echo "❌ fbq('track', 'PageView') NOT FOUND"
           grep -q "facebook.com/tr?id=" /tmp/homepage.html && echo "✅ Pixel IMG tag FOUND" || echo "❌ Pixel IMG tag NOT FOUND"
-
-          echo ""
-          echo "=== Adding debug marker to plugin file ==="
-          # Add a debug comment to the EventsTracker to see if it's loading
-          echo '<!-- FB4WC: EventsTracker Loaded -->' >> /tmp/wordpress/wp-content/plugins/facebook-for-woocommerce/facebook-commerce-events-tracker.php
-
-          # Make a second request to see if the marker appears
-          curl -s http://localhost:8080 > /tmp/homepage2.html
-          grep -q "FB4WC: EventsTracker Loaded" /tmp/homepage2.html && echo "✅ EventsTracker file IS being included" || echo "❌ EventsTracker file NOT being included"
-
-          echo ""
-          echo "=== Checking EventsTracker during HTTP request ==="
-          wp eval "
-            // Hook into init to check if EventsTracker is created
-            add_action('init', function() {
-              \$integration = facebook_for_woocommerce()->get_integration();
-              \$reflection = new ReflectionClass(\$integration);
-              \$property = \$reflection->getProperty('events_tracker');
-              \$property->setAccessible(true);
-              \$tracker = \$property->getValue(\$integration);
-              error_log('=== E2E DEBUG: EventsTracker during init: ' . (is_object(\$tracker) ? 'YES' : 'NO'));
-            }, 999);
-
-            // Simulate a frontend request
-            do_action('init');
-            do_action('wp_head');
-          " --allow-root
-
-          # Check WordPress debug log for our message
-          if [ -f /tmp/wordpress/wp-content/debug.log ]; then
-            echo ""
-            echo "=== Debug Log Output ==="
-            grep "E2E DEBUG" /tmp/wordpress/wp-content/debug.log || echo "No E2E debug messages found"
-          fi
 
       - name: Install Playwright
         run: |
