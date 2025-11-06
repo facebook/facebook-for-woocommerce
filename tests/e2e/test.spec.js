@@ -9,29 +9,12 @@ const EventValidator = require('./lib/EventValidator');
 test('PageView', async ({ page }) => {
     const { testId, pixelCapture } = await TestSetup.init(page, 'PageView');
 
-    await page.goto('/');
-    
-    // Debug: Check what's actually in the HTML
-    const htmlContent = await page.content();
-    console.log('\n🔍 Checking HTML content:');
-    console.log('   fbq(\'init\') present:', htmlContent.includes('fbq(\'init\'') ? '✅' : '❌');
-    console.log('   fbq(\'track\', \'PageView\') present:', htmlContent.includes('fbq(\'track\', \'PageView\')') ? '✅' : '❌');
-    
-    // Debug: Check if pixel code is there at all
-    if (htmlContent.includes('fbq')) {
-        console.log('   ✅ fbq is in HTML');
-        // Extract the pixel code section
-        const fbqMatches = htmlContent.match(/fbq\([^)]+\)/g);
-        if (fbqMatches) {
-            console.log('   📝 fbq calls found:');
-            fbqMatches.slice(0, 5).forEach(call => console.log(`      - ${call}`));
-        }
-    } else {
-        console.log('   ❌ NO fbq in HTML at all!');
-    }
-    
-    await pixelCapture.waitForEvent();
-    
+    // CRITICAL: Start waiting BEFORE navigating because pixel fires during page load!
+    await Promise.all([
+        pixelCapture.waitForEvent(),
+        page.goto('/')
+    ]);
+
     const validator = new EventValidator(testId);
     const result = await validator.validate('PageView', page);
 
