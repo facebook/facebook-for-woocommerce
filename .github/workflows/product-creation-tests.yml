@@ -173,9 +173,12 @@ jobs:
             --admin_email=test@example.com \
             --allow-root
 
-      - name: Install WooCommerce
-        run: |
-          cd /tmp/wordpress
+          echo "WordPress installed successfully"
+
+          # CRITICAL: Install and activate a theme!
+          # Without a theme, wp_head() is not called and pixel code won't be injected
+          wp theme install twentytwentyfour --activate --allow-root
+          echo "✅ Theme activated (required for wp_head hook)"
           wp plugin install woocommerce --activate --allow-root
 
           # Basic WooCommerce setup
