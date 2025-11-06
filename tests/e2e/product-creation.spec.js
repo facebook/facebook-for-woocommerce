@@ -12,7 +12,10 @@ const {
   logTestStart,
   logTestEnd,
   validateFacebookSync,
-  setProductDescription
+  setProductDescription,
+  createTestProduct,
+  quickEditProductPrice,
+  verifyProductPrice
 } = require('./test-helpers');
 
 test.describe('Facebook for WooCommerce - Product Creation E2E Tests', () => {
@@ -419,6 +422,67 @@ test.describe('Facebook for WooCommerce - Product Creation E2E Tests', () => {
       console.log(`⚠️ Plugin activation test failed: ${error.message}`);
       logTestEnd(testInfo, false);
       throw error;
+    }
+  });
+
+  test('Quick Edit product price and verify sync', async ({ page }, testInfo) => {
+    let productId = null;
+    let productName = null;
+
+    try {
+      console.log('📋 Step 1: Create test product programmatically');
+      const productResult = await createTestProduct({
+        productType: 'simple',
+        price: '19.99',
+        stock: '10'
+      });
+
+      productId = productResult.productId;
+      productName = productResult.productName;
+      console.log(`✅ Product created with ID ${productId}`);
+
+      console.log('📋 Step 2: Navigate to products list page');
+      await page.goto(`${baseURL}/wp-admin/edit.php?post_type=product`, {
+        waitUntil: 'networkidle',
+        timeout: 120000
+      });
+      console.log('✅ Products list page loaded');
+
+      console.log('📋 Step 3: Quick Edit product price');
+      const quickEditSuccess = await quickEditProductPrice(page, productId, productName, '29.99');
+      expect(quickEditSuccess).toBe(true);
+      console.log('✅ Quick Edit completed successfully');
+
+      console.log('📋 Step 4: Verify price updated in WooCommerce');
+      await page.waitForTimeout(2000);
+      const priceVerification = await verifyProductPrice(productId, '29.99');
+      expect(priceVerification.success).toBe(true);
+      console.log('✅ Price verified in WooCommerce database');
+
+      console.log('📋 Step 5: Verify price synced to Facebook catalog');
+      await page.waitForTimeout(3000);
+      const syncResult = await validateFacebookSync(productId, productName, 15);
+      expect(syncResult.success).toBe(true);
+      console.log('✅ Facebook sync verification successful');
+
+      console.log('📋 Step 6: Check for PHP errors');
+      await checkForPhpErrors(page);
+      console.log('✅ No PHP errors detected');
+
+      console.log('✅ Quick Edit product price test completed successfully');
+      logTestEnd(testInfo, true);
+
+    } catch (error) {
+      console.log(`❌ Quick Edit test failed: ${error.message}`);
+      await safeScreenshot(page, 'quick-edit-test-failure.png');
+      logTestEnd(testInfo, false);
+      throw error;
+    } finally {
+      if (productId) {
+        console.log('📋 Step 7: Cleanup - Delete test product');
+        await cleanupProduct(productId);
+        console.log('✅ Product cleanup completed');
+      }
     }
   });
 

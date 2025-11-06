@@ -276,6 +276,151 @@ async function createTestProduct(options = {}) {
   }
 }
 
+// Helper function to quick edit product price from products list page
+async function quickEditProductPrice(page, productId, productName, newPrice) {
+  console.log(`✏️ Quick editing product price to ${newPrice}...`);
+
+  try {
+    // Navigate to products list page if not already there
+    const currentUrl = page.url();
+    if (!currentUrl.includes('edit.php?post_type=product')) {
+      await page.goto(`${baseURL}/wp-admin/edit.php?post_type=product`, {
+        waitUntil: 'networkidle',
+        timeout: 120000
+      });
+    }
+
+    // Wait for the products table to load
+    await page.waitForSelector('.wp-list-table', { timeout: 120000 });
+
+    // Locate the product row by ID
+    const productRow = page.locator(`#post-${productId}`);
+
+    // Check if product exists
+    const isVisible = await productRow.isVisible({ timeout: 10000 });
+    if (!isVisible) {
+      throw new Error(`Product with ID ${productId} not found in products list`);
+    }
+
+    console.log(`✅ Found product row for ID ${productId}`);
+
+    // Hover over the row to reveal action links
+    await productRow.hover();
+    await page.waitForTimeout(1000);
+
+    // Click the "Quick Edit" link
+    const quickEditLink = productRow.locator('.editinline');
+    await quickEditLink.click();
+    console.log('✅ Clicked Quick Edit link');
+
+    // Wait for the inline edit form to appear
+    await page.waitForSelector('.inline-edit-row', { state: 'visible', timeout: 10000 });
+    await page.waitForTimeout(1000);
+    console.log('✅ Quick Edit form appeared');
+
+    // Fill in the new regular price in the Quick Edit form
+    const priceField = page.locator('.inline-edit-row input[name="_regular_price"]');
+    await priceField.waitFor({ state: 'visible', timeout: 10000 });
+    await priceField.clear();
+    await priceField.fill(newPrice);
+    console.log(`✅ Entered new price: ${newPrice}`);
+
+    // Click the "Update" button
+    const updateButton = page.locator('.inline-edit-row button.save');
+    await updateButton.click();
+    console.log('✅ Clicked Update button');
+
+    // Wait for the update to complete - look for the row to refresh
+    await page.waitForTimeout(3000);
+
+    // Verify the inline edit form has closed
+    const isFormClosed = await page.locator('.inline-edit-row').isHidden({ timeout: 10000 });
+    if (isFormClosed) {
+      console.log('✅ Quick Edit form closed - update completed');
+      return true;
+    } else {
+      console.warn('⚠️ Quick Edit form still visible - update may have failed');
+      return false;
+    }
+
+  } catch (error) {
+    console.log(`❌ Quick Edit failed: ${error.message}`);
+    throw error;
+  }
+}
+
+// Helper function to verify product price from WooCommerce database
+async function verifyProductPrice(productId, expectedPrice) {
+  if (!productId) {
+    console.warn('⚠️ No product ID provided for price verification');
+    return null;
+  }
+
+  console.log(`🔍 Verifying product price for ID ${productId}...`);
+
+  try {
+    const { exec } = require('child_process');
+    const { promisify } = require('util');
+    const execAsync = promisify(exec);
+
+    // Query WooCommerce database for the product price
+    const phpScript = `
+      require_once('/tmp/wordpress/wp-load.php');
+      $product = wc_get_product(${productId});
+      if ($product) {
+        echo json_encode([
+          'success' => true,
+          'product_id' => ${productId},
+          'regular_price' => $product->get_regular_price(),
+          'price' => $product->get_price()
+        ]);
+      } else {
+        echo json_encode([
+          'success' => false,
+          'error' => 'Product not found'
+        ]);
+      }
+    `;
+
+    const { stdout } = await execAsync(
+      `php -r "${phpScript.replace(/"/g, '\\"').replace(/\n/g, ' ')}"`,
+      { cwd: __dirname }
+    );
+
+    const result = JSON.parse(stdout);
+
+    if (result.success) {
+      const actualPrice = result.regular_price;
+      console.log(`📊 Product ID ${productId}:`);
+      console.log(`   Regular Price: ${actualPrice}`);
+      console.log(`   Expected Price: ${expectedPrice}`);
+
+      const pricesMatch = parseFloat(actualPrice) === parseFloat(expectedPrice);
+      if (pricesMatch) {
+        console.log('✅ Price verification successful - prices match');
+      } else {
+        console.log(`❌ Price mismatch - expected ${expectedPrice}, got ${actualPrice}`);
+      }
+
+      return {
+        success: pricesMatch,
+        actualPrice: actualPrice,
+        expectedPrice: expectedPrice
+      };
+    } else {
+      console.log(`❌ Price verification failed: ${result.error}`);
+      return {
+        success: false,
+        error: result.error
+      };
+    }
+
+  } catch (error) {
+    console.log(`⚠️ Price verification error: ${error.message}`);
+    return null;
+  }
+}
+
 module.exports = {
   baseURL,
   username,
@@ -292,5 +437,7 @@ module.exports = {
   logTestEnd,
   validateFacebookSync,
   createTestProduct,
-  setProductDescription
+  setProductDescription,
+  quickEditProductPrice,
+  verifyProductPrice
 };
