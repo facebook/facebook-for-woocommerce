@@ -318,15 +318,16 @@ async function quickEditProductPrice(page, productId, productName, newPrice) {
     await page.waitForTimeout(1000);
     console.log('✅ Quick Edit form appeared');
 
-    // Fill in the new regular price in the Quick Edit form using specific XPath
-    const priceField = page.locator('//*[@id="woocommerce-fields"]/div[1]/label[1]/span[2]/input');
+    // Fill in the new regular price in the Quick Edit form
+    // Use .first() to ensure we only target the visible inline edit row
+    const priceField = page.locator('.inline-edit-row input[name="_regular_price"]').first();
     await priceField.waitFor({ state: 'visible', timeout: 10000 });
     await priceField.clear();
     await priceField.fill(newPrice);
     console.log(`✅ Entered new price: ${newPrice}`);
 
-    // Click the "Update" button using dynamic XPath with product ID
-    const updateButton = page.locator(`//*[@id="edit-${productId}"]/td/div/div/button[1]`);
+    // Click the "Update" button
+    const updateButton = page.locator('.inline-edit-row button.save').first();
     await updateButton.click();
     console.log('✅ Clicked Update button');
 
