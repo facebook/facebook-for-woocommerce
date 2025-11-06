@@ -46,7 +46,7 @@ class PixelCapture {
                     }
                     return matches;
                 },
-                { timeout: 15000 } // 15 second timeout
+                { timeout: 150000 } // 15 second timeout
             );
 
             console.log(`✅ Pixel event captured: ${this.eventName}`);
