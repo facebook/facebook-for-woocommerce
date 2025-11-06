@@ -211,6 +211,19 @@ jobs:
                     update_option('wc_facebook_pixel_install_time', time());
                     echo '✅ Set pixel install time' . PHP_EOL;
                 }
+
+                // Force initialize integration to trigger EventsTracker
+                echo PHP_EOL . '=== Forcing Integration Initialization ===' . PHP_EOL;
+                \$integration = facebook_for_woocommerce()->get_integration();
+                echo 'Integration loaded: ' . (is_object(\$integration) ? 'YES' : 'NO') . PHP_EOL;
+                echo 'Integration Pixel ID: ' . \$integration->get_facebook_pixel_id() . PHP_EOL;
+
+                // Check EventsTracker
+                \$reflection = new ReflectionClass(\$integration);
+                \$property = \$reflection->getProperty('events_tracker');
+                \$property->setAccessible(true);
+                \$tracker = \$property->getValue(\$integration);
+                echo 'EventsTracker instantiated: ' . (is_object(\$tracker) ? 'YES' : 'NO') . PHP_EOL;
             } else {
                 echo 'Facebook plugin not loaded properly';
             }" --allow-root
