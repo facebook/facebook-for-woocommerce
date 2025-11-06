@@ -229,9 +229,38 @@ jobs:
             }" --allow-root
 
           echo ""
-          echo "=== Checking if Pixel code is in homepage HTML ==="
-          curl -s http://localhost:8080 | grep -o "fbq('init'" || echo "❌ fbq not found in HTML"
-          curl -s http://localhost:8080 | grep -o "facebook.com/tr?id=" || echo "❌ Pixel IMG tag not found"
+          echo "=== Testing HTTP request to trigger init hook ==="
+          curl -s http://localhost:8080 > /tmp/homepage.html
+
+          echo "Checking if pixel code exists in HTML..."
+          grep -q "fbq('init'" /tmp/homepage.html && echo "✅ fbq('init') FOUND" || echo "❌ fbq('init') NOT FOUND"
+          grep -q "fbq('track', 'PageView')" /tmp/homepage.html && echo "✅ fbq('track', 'PageView') FOUND" || echo "❌ fbq('track', 'PageView') NOT FOUND"
+          grep -q "facebook.com/tr?id=" /tmp/homepage.html && echo "✅ Pixel IMG tag FOUND" || echo "❌ Pixel IMG tag NOT FOUND"
+
+          echo ""
+          echo "=== Checking EventsTracker during HTTP request ==="
+          wp eval "
+            // Hook into init to check if EventsTracker is created
+            add_action('init', function() {
+              \$integration = facebook_for_woocommerce()->get_integration();
+              \$reflection = new ReflectionClass(\$integration);
+              \$property = \$reflection->getProperty('events_tracker');
+              \$property->setAccessible(true);
+              \$tracker = \$property->getValue(\$integration);
+              error_log('=== E2E DEBUG: EventsTracker during init: ' . (is_object(\$tracker) ? 'YES' : 'NO'));
+            }, 999);
+
+            // Simulate a frontend request
+            do_action('init');
+            do_action('wp_head');
+          " --allow-root
+
+          # Check WordPress debug log for our message
+          if [ -f /tmp/wordpress/wp-content/debug.log ]; then
+            echo ""
+            echo "=== Debug Log Output ==="
+            grep "E2E DEBUG" /tmp/wordpress/wp-content/debug.log || echo "No E2E debug messages found"
+          fi
 
       - name: Install Playwright
         run: |
