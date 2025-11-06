@@ -6,13 +6,39 @@ const { test, expect } = require('@playwright/test');
 const TestSetup = require('./lib/TestSetup');
 const EventValidator = require('./lib/EventValidator');
 
+// DIAGNOSTIC TEST - Check if pixel code exists in HTML
+test('DIAGNOSTIC: Pixel code in HTML', async ({ page }) => {
+    await TestSetup.login(page);
+    await page.goto('/');
+    await page.waitForLoadState('networkidle');
+
+    const html = await page.content();
+
+    console.log('\n🔍 DIAGNOSTIC: Checking HTML for pixel code...');
+    const hasInit = html.includes("fbq('init'") || html.includes('fbq("init"');
+    const hasTrackPageView = html.includes("fbq('track', 'PageView')") || html.includes('fbq("track", "PageView")');
+    const hasFbScript = html.includes('connect.facebook.net');
+
+    console.log(`   Pixel script (connect.facebook.net): ${hasFbScript ? '✅ YES' : '❌ NO'}`);
+    console.log(`   fbq('init'): ${hasInit ? '✅ YES' : '❌ NO'}`);
+    console.log(`   fbq('track', 'PageView'): ${hasTrackPageView ? '✅ YES' : '❌ NO'}`);
+
+    if (!hasInit || !hasTrackPageView) {
+        console.log('\n❌ PIXEL CODE NOT FOUND IN HTML');
+        console.log('   This means the plugin is not rendering the tracking code at all.');
+        console.log('   Check: Plugin active? Settings saved? Theme has wp_head()?');
+    }
+
+    expect(hasInit).toBe(true);
+    expect(hasTrackPageView).toBe(true);
+});
+
 test('PageView', async ({ page }) => {
     const { testId, pixelCapture } = await TestSetup.init(page, 'PageView');
 
-    // CRITICAL: Start waiting BEFORE navigating because pixel fires during page load!
     await Promise.all([
         pixelCapture.waitForEvent(),
-        page.goto('/')
+        page.goto('/').then(() => page.waitForLoadState('networkidle'))
     ]);
 
     const validator = new EventValidator(testId);
