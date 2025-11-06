@@ -171,8 +171,15 @@ jobs:
           wp option update wc_facebook_pixel_id "${{ secrets.FB_PIXEL_ID }}" --allow-root
           wp option update wc_facebook_enable_advanced_matching "yes" --allow-root
 
+          # Create a customer (non-admin) user for testing
+          # Pixel tracking excludes admin users by default!
+          wp user create customer customer@test.com --role=customer --user_pass=password --allow-root || echo "Customer user already exists"
+          echo "✅ Customer user created/verified"
+          
           # Activate the plugin (this triggers automatic sync)
           wp plugin activate facebook-for-woocommerce --allow-root
+
+          
 
 
       - name: Verify WordPress setup
