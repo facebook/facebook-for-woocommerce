@@ -209,4 +209,172 @@ test.describe('Facebook for WooCommerce - Product Modification E2E Tests', () =>
       }
     }
   });
+
+  test('Edit variable product and verify Facebook Sync', async ({ page }, testInfo) => {
+    let productId = null;
+    let createdProductId = null;
+    let originalName = '';
+
+    try {
+      const createdProduct = await createTestProduct({
+        productType: 'variable',
+        price: '103.00'
+      });
+
+      createdProductId = createdProduct.productId;
+      console.log(`✅ Created variable product ID ${createdProductId} with ${createdProduct.variationCount || 0} variations`);
+
+      // Go to Products page
+      console.log('📋 Navigating to Products page...');
+      await page.goto(`${baseURL}/wp-admin/edit.php?post_type=product`, {
+        waitUntil: 'networkidle',
+        timeout: 120000
+      });
+
+      // Filter by Variable product type
+      console.log('🔍 Filtering by Variable product type...');
+      const productTypeFilter = page.locator('select#dropdown_product_type');
+      if (await productTypeFilter.isVisible({ timeout: 10000 })) {
+        const filterButton = page.locator("#post-query-submit");
+        await productTypeFilter.selectOption('variable');
+        await filterButton.click();
+
+        await page.waitForTimeout(2000);
+        console.log('✅ Filtered by Variable product type');
+      } else {
+        console.warn('⚠️ Product type filter not found, proceeding without filter');
+      }
+
+      // Wait for products table to load
+      const hasProductsTable = await page.locator('.wp-list-table').isVisible({ timeout: 120000 });
+      if (hasProductsTable) {
+        console.log('✅ WooCommerce products page loaded successfully');
+      } else {
+        console.warn('⚠️ Products table not found');
+      }
+
+      // Find and click on first variable product
+      console.log('🔍 Looking for variable product...');
+
+      // Get the first product row
+      const firstProductRow = page.locator('.wp-list-table tbody tr.iedit').first();
+      await firstProductRow.isVisible({ timeout: 10000 });
+      // Extract product name from the row
+      const productNameElement = firstProductRow.locator('.row-title');
+      originalName = await productNameElement.textContent();
+      console.log(`✅ Found existing product: "${originalName}"`);
+
+      // Click on product name to edit
+      await productNameElement.click();
+      await page.waitForLoadState('networkidle', { timeout: 120000 });
+      console.log('✅ Opened product editor');
+
+      // Extract product ID from URL
+      const currentUrl = page.url();
+      productId = extractProductIdFromUrl(currentUrl);
+
+      if (productId !== createdProductId) {
+        console.warn(`⚠️ Selected Product ID from URL: (${productId}) does not match created test product ID: (${createdProductId}). This could indicate failure to cleanup previous test run.`);
+      }
+
+      console.log(`✅ Editing variable product ID: ${productId}`);
+
+      // Store original values before editing
+      console.log('📝 Storing original product values...');
+
+      // Get original title
+      const titleField = page.locator('#title');
+      if (await titleField.isVisible({ timeout: 5000 })) {
+        originalName = await titleField.inputValue();
+        console.log(`Original title: "${originalName}"`);
+      }
+
+      // Edit product attributes
+      console.log('✏️ Editing variable product attributes...');
+
+      // Generate unique values for editing
+      const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+      const newTitle = `${originalName} - EDITED ${timestamp}`;
+      const newPrice = (parseFloat('10.00') + 5).toFixed(2);
+
+      // Edit title
+      await titleField.scrollIntoViewIfNeeded();
+      await titleField.fill(newTitle);
+      console.log(`✅ Updated title to: "${newTitle}"`);
+
+      // Click on Variations tab
+      console.log('📝 Editing variation prices using bulk actions...');
+      const variationsTab = page.locator('li.variations_tab a');
+
+      await variationsTab.isVisible({ timeout: 2000 });
+      await variationsTab.click();
+      await page.waitForTimeout(2000);
+      console.log('✅ Opened Variations tab');
+
+      // Setup popup/prompt handler before selecting the option (popup appears immediately on selection)
+      page.on('dialog', async dialog => {
+        console.log(`📢 Dialog appeared: ${dialog.message()}`);
+        await dialog.accept(newPrice);
+        console.log(`✅ Entered new price in popup: ${newPrice}`);
+      });
+
+      const expandAllButton = page.getByRole('link', { name: 'Expand' }).first();
+      await expandAllButton.isVisible({ timeout: 2000 });
+      await expandAllButton.click();
+      await page.waitForTimeout(2000);
+      console.log('✅ Expanded all variations');
+
+      // Select bulk action "Set regular prices"
+      const bulkActionsSelect = page.locator('select.variation_actions');
+      await bulkActionsSelect.isVisible({ timeout: 2000 })
+      // Select the option - this triggers the popup immediately
+      await bulkActionsSelect.selectOption('variable_regular_price');
+
+      // Wait for dialog to appear and be handled
+      await page.waitForTimeout(2000);
+
+      // Click "Save changes" button for variations
+      const saveVariationsButton = page.locator('button.save-variation-changes');
+      if (await saveVariationsButton.isVisible({ timeout: 2000 }) && await saveVariationsButton.isEnabled({ timeout: 2000 })) {
+        await saveVariationsButton.click();
+        await page.waitForTimeout(2000);
+        console.log('✅ Clicked "Save changes" for variations');
+      }
+
+      // Click Update button
+      await publishProduct(page);
+
+      // Verify no PHP errors after update
+      await checkForPhpErrors(page);
+      console.log('✅ No PHP errors detected after update');
+
+      // Validate Facebook sync after editing
+      console.log('🔄 Validating Facebook sync after edit...');
+      const result = await validateFacebookSync(productId, newTitle, 60);
+      expect(result['success']).toBe(true);
+
+      // Verify the changes were saved
+      console.log('🔍 Verifying changes were saved...');
+      await page.reload({ waitUntil: 'networkidle', timeout: 120000 });
+
+      const updatedTitle = await titleField.inputValue();
+      expect(updatedTitle).toBe(newTitle);
+      console.log('✅ Title change verified');
+
+      console.log('✅ Variable product edit test completed successfully');
+      logTestEnd(testInfo, true);
+
+    } catch (error) {
+      console.log(`❌ Variable product edit test failed: ${error.message}`);
+      await safeScreenshot(page, 'variable-product-edit-test-failure.png');
+      logTestEnd(testInfo, false);
+      throw error;
+    } finally {
+      // Cleanup created product if we created one for this test
+      if (createdProductId) {
+        await cleanupProduct(createdProductId);
+      }
+    }
+  });
+
 });
