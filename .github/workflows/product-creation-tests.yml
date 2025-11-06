@@ -310,7 +310,20 @@ jobs:
           grep -q "woocommerce" /tmp/homepage.html && echo "✅ WooCommerce assets found" || echo "❌ WooCommerce NOT loaded"
 
           echo "Checking if pixel code exists in HTML..."
-          grep -q "fbq('init'" /tmp/homepage.html && echo "✅ fbq('init') FOUND" || echo "❌ fbq('init') NOT FOUND"
+          if grep -q "fbq('init'" /tmp/homepage.html; then
+            echo "✅ fbq('init') FOUND"
+            # Show the actual pixel code
+            echo "   Pixel init code:"
+            grep -A 2 "fbq('init'" /tmp/homepage.html | head -n 3
+          else
+            echo "❌ fbq('init') NOT FOUND"
+            # Check if fbq exists at all
+            if grep -q "fbq" /tmp/homepage.html; then
+              echo "   BUT 'fbq' string exists in HTML"
+              grep "fbq" /tmp/homepage.html | head -n 5
+            fi
+          fi
+          
           grep -q "fbq('track', 'PageView')" /tmp/homepage.html && echo "✅ fbq('track', 'PageView') FOUND" || echo "❌ fbq('track', 'PageView') NOT FOUND"
           grep -q "facebook.com/tr?id=" /tmp/homepage.html && echo "✅ Pixel IMG tag FOUND" || echo "❌ Pixel IMG tag NOT FOUND"
 
