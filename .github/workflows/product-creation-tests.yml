@@ -233,7 +233,6 @@ jobs:
             echo '✅ Integration settings updated' . PHP_EOL;
           " --allow-root
 
-
           # Activate the plugin (this triggers automatic sync)
           wp plugin activate facebook-for-woocommerce --allow-root
 
@@ -244,6 +243,12 @@ jobs:
               // Force get_integration() to run which will initialize EventsTracker
               facebook_for_woocommerce()->get_integration();
               echo '✅ Integration pre-initialized' . PHP_EOL;
+
+              // Check what Pixel Event class returns for pixel_id
+              if (class_exists('WC_Facebookcommerce_Pixel_Event')) {
+                \$pixel_id = WC_Facebookcommerce_Pixel_Event::get_pixel_id();
+                echo 'Pixel ID from Event class: ' . (\$pixel_id ? \$pixel_id : 'EMPTY!') . PHP_EOL;
+              }
             }
           " --allow-root
 
