@@ -314,20 +314,19 @@ async function quickEditProductPrice(page, productId, productName, newPrice) {
     console.log('✅ Clicked Quick Edit link');
 
     // Wait for the inline edit form to appear
-    await page.waitForSelector('.inline-edit-row', { state: 'visible', timeout: 10000 });
+    await page.waitForSelector('#inline-edit', { state: 'visible', timeout: 10000 });
     await page.waitForTimeout(1000);
     console.log('✅ Quick Edit form appeared');
 
     // Fill in the new regular price in the Quick Edit form
-    // Use .first() to ensure we only target the visible inline edit row
-    const priceField = page.locator('.inline-edit-row input[name="_regular_price"]').first();
+    const priceField = page.locator('#inline-edit input[name="_regular_price"]');
     await priceField.waitFor({ state: 'visible', timeout: 10000 });
     await priceField.clear();
     await priceField.fill(newPrice);
     console.log(`✅ Entered new price: ${newPrice}`);
 
     // Click the "Update" button
-    const updateButton = page.locator('.inline-edit-row button.save').first();
+    const updateButton = page.locator('#inline-edit button.save');
     await updateButton.click();
     console.log('✅ Clicked Update button');
 
@@ -335,7 +334,7 @@ async function quickEditProductPrice(page, productId, productName, newPrice) {
     await page.waitForTimeout(3000);
 
     // Verify the inline edit form has closed
-    const isFormClosed = await page.locator('.inline-edit-row').isHidden({ timeout: 10000 });
+    const isFormClosed = await page.locator('#inline-edit').isHidden({ timeout: 10000 });
     if (isFormClosed) {
       console.log('✅ Quick Edit form closed - update completed');
       return true;
