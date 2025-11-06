@@ -6,8 +6,8 @@
  */
 
 const WORDPRESS_URL = process.env.WORDPRESS_URL || 'http://localhost:8080';
-const WP_USERNAME = process.env.WP_USERNAME || 'admin';
-const WP_PASSWORD = process.env.WP_PASSWORD || 'admin';
+const WP_USERNAME = process.env.WP_USERNAME || 'customer';
+const WP_PASSWORD = process.env.WP_PASSWORD || 'password';
 const WORDPRESS_PATH = '/tmp/wordpress/wp-load.php';
 module.exports = {
     WORDPRESS_URL,
