@@ -241,7 +241,7 @@ jobs:
 
           # Create a customer (non-admin) user for testing
           # Pixel tracking excludes admin users by default!
-          wp user create customer customer@test.com --role=customer --user_pass=password --allow-root || echo "Customer user already exists"
+          wp user create customer customer@test.com --role=customer --user_pass=Password@54321 --allow-root || echo "Customer user already exists"
           echo "✅ Customer user created/verified"
 
           # Test if we can reach Facebook endpoints at all
