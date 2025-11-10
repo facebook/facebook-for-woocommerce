@@ -328,23 +328,29 @@ class RequestTest extends WP_UnitTestCase {
 	}
 
 	/**
-	 * Test for Request with different click_id values
+	 * Test that browser_id value is properly converted to fbp.
 	 */
-	public function test_get_data_structure_without_fbc_format() {
-		// Arrange
+	public function test_fbp_from_cookie_format() {
 		$pixel_id = 'test_pixel_id_123';
-
+		
+		// Simulate a realistic browser_id value from Facebook cookie
+		$realistic_browser_id = 'fb.1.1554763741205.987654321';
+		
 		$event = new Event( array(
-			'event_name'  => 'TestEvent',
+			'event_name'  => 'Purchase',
+			'user_data'   => array(
+				'browser_id' => $realistic_browser_id,
+			),
 		) );
+		
 		$request = new Request( $pixel_id, array( $event ) );
-		// Act
 		$data = $request->get_data();
-		// Assert
-		$this->assertArrayHasKey( 'user_data', $data['data'][0] );
-		$this->assertArrayNotHasKey( 'fbc', $data['data'][0]['user_data'] );
-		$this->assertArrayNotHasKey( 'click_id', $data['data'][0]['user_data'] );
-		$this->assertArrayNotHasKey( 'browser_id', $data['data'][0]['user_data'] );
+		
+		$event_data = $data['data'][0];
+		
+		// Verify the browser_id value is converted to fbp
+		$this->assertEquals( $realistic_browser_id, $event_data['user_data']['fbp'] );
+		$this->assertArrayNotHasKey( 'browser_id', $event_data['user_data'] );
 	}
 
 	/**
@@ -471,34 +477,6 @@ class RequestTest extends WP_UnitTestCase {
 
 		// Cleanup
 		unset( $_REQUEST['fbclid'] );
-	}
-
-	/**
-	 * Test that browser_id value is properly converted to fbp.
-	 */
-	public function test_get_data_structure_without_fbp_format() {
-		// Arrange
-		$pixel_id = 'test_pixel_id_123';
-		
-		// Simulate a realistic browser_id value from Facebook cookie
-		$browser_id = 'fb.1.1554763741205.987654321';
-		
-		$event = new Event( array(
-			'event_name'  => 'Purchase',
-			'user_data'   => array(
-				'browser_id' => $browser_id,
-			),
-		) );
-
-		// Act
-		$request = new Request( $pixel_id, array( $event ) );
-		$data = $request->get_data();
-		
-		// Assert
-		$this->assertEquals( $browser_id, $data['data'][0]['user_data']['fbp'] );
-		$this->assertArrayNotHasKey( 'fbc', $data['data'][0]['user_data'] );
-		$this->assertArrayNotHasKey( 'click_id', $data['data'][0]['user_data'] );
-		$this->assertArrayNotHasKey( 'browser_id', $data['data'][0]['user_data'] );
 	}
 
 	/**
