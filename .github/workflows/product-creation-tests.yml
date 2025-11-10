@@ -175,10 +175,11 @@ jobs:
 
           echo "WordPress installed successfully"
 
-          # CRITICAL: Install and activate a theme!
-          # Without a theme, wp_head() is not called and pixel code won't be injected
-          wp theme install twentytwentyfour --activate --allow-root
-          echo "✅ Theme activated (required for wp_head hook)"
+          # CRITICAL: Install and activate a CLASSIC theme (not block theme)!
+          # Block themes like twentytwentyfour don't always call wp_footer() properly
+          # Storefront is a classic WooCommerce theme that properly calls wp_head() and wp_footer()
+          wp theme install storefront --activate --allow-root
+          echo "✅ Storefront theme activated (classic theme with proper wp_head/wp_footer hooks)"
           wp plugin install woocommerce --activate --allow-root
 
           # Basic WooCommerce setup
