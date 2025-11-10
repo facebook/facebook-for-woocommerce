@@ -326,11 +326,28 @@ test.describe('Facebook for WooCommerce - Product Modification E2E Tests', () =>
         console.log('⚠️ Price column not visible, skipping UI verification');
       }
 
-      // Step 12: Validate Facebook sync
+      // Step 12: Validate Facebook sync and verify price was updated
       console.log('🔄 Validating Facebook sync after Quick Edit...');
       const result = await validateFacebookSync(productId, null, 60);
+
+      // Check overall sync success
       expect(result['success']).toBe(true);
       console.log('✅ Facebook sync validated successfully');
+
+      // Verify the price field specifically - should have NO mismatches for price
+      const priceMismatches = Object.values(result['mismatches'] || {}).filter(
+        mismatch => mismatch.field === 'price'
+      );
+
+      if (priceMismatches.length > 0) {
+        const mismatch = priceMismatches[0];
+        console.error(`❌ Price mismatch detected!`);
+        console.error(`   WooCommerce price: ${mismatch.woocommerce_value}`);
+        console.error(`   Facebook price: ${mismatch.facebook_value}`);
+        throw new Error(`Price not synced correctly to Facebook. Expected ${newPrice} but Facebook has ${mismatch.facebook_value}`);
+      }
+
+      console.log(`✅ Price change ($${originalPrice} → $${newPrice}) successfully synced to Facebook`);
 
       // Step 13: Check for PHP errors
       await checkForPhpErrors(page);
