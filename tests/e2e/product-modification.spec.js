@@ -347,6 +347,7 @@ test.describe('Facebook for WooCommerce - Product Modification E2E Tests', () =>
         throw new Error(`Price not synced correctly to Facebook. Expected ${newPrice} but Facebook has ${mismatch.facebook_value}`);
       }
 
+      console.log(`📊 Facebook price after Quick Edit: $${newPrice}`);
       console.log(`✅ Price change ($${originalPrice} → $${newPrice}) successfully synced to Facebook`);
 
       // Step 13: Check for PHP errors
