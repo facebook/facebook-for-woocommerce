@@ -64,7 +64,7 @@ class WhatsAppExtension {
 				'app_id'                => self::APP_ID,
 				'app_owner_business_id' => self::TP_BUSINESS_ID,
 				'external_business_id'  => $external_wa_id,
-				'locale' => get_user_locale() ?? self::DEFAULT_LANGUAGE,
+				'locale'                => get_user_locale() ?? self::DEFAULT_LANGUAGE,
 			),
 			self::COMMERCE_HUB_URL . 'whatsapp_utility_integration/splash/'
 		);
@@ -181,7 +181,14 @@ class WhatsAppExtension {
 			$refund_value,
 			$currency
 		);
-		$options            = array(
+		$event_base_object  = array(
+			'id'   => "#{$order_id}",
+			'type' => $event,
+		);
+		if ( ! empty( $event_object ) ) {
+			$event_base_object[ $event_lowercase ] = $event_object;
+		}
+		$options = array(
 			'headers' => array(
 				'Authorization' => 'Bearer ' . $bisu_token,
 			),
@@ -193,11 +200,7 @@ class WhatsAppExtension {
 					'country_code' => $country_code,
 					'language'     => get_user_locale(),
 				),
-				'event'    => array(
-					'id'             => "#{$order_id}",
-					'type'           => $event,
-					$event_lowercase => $event_object,
-				),
+				'event'    => $event_base_object,
 			),
 			'timeout' => 3000, // 5 minutes
 		);
@@ -251,6 +254,8 @@ class WhatsAppExtension {
 					'amount_1000' => $refund_value,
 					'currency'    => $currency,
 				);
+			default:
+				return array();
 		}
 	}
 }
