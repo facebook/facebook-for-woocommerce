@@ -356,49 +356,47 @@ class RequestTest extends WP_UnitTestCase {
 	/**
 	 * Test for Request with different click_id values
 	 */
-	public function test_get_data_structure_with_fbc_format() {
+	public function test_get_data_structure_with_fbc_format_cookie() {
 		$test_fbc = 'fb.1.1234567890.Test';
 		$pixel_id = 'test_pixel_id_123';
 
-		// Case 1: click_id existed in cookie
-		// Arrange
+		// Case: click_id existed in cookie
 		$_COOKIE['_fbc'] = $test_fbc;
-		$event = new Event( array(
-			'event_name'  => 'TestEvent',
-		) );
+		$event = new Event( array( 'event_name' => 'TestEvent' ) );
 		$request = new Request( $pixel_id, array( $event ) );
-		// Act
 		$data = $request->get_data();
-		// Assert
+
 		$this->assertArrayHasKey( 'user_data', $data['data'][0] );
 		$this->assertArrayHasKey( 'fbc', $data['data'][0]['user_data'] );
 		$this->assertEquals( $test_fbc, $data['data'][0]['user_data']['fbc'] );
 		$this->assertArrayNotHasKey( 'click_id', $data['data'][0]['user_data'] );
 		$this->assertArrayNotHasKey( 'browser_id', $data['data'][0]['user_data'] );
 
-		// Cleanup
 		unset( $_COOKIE['_fbc'] );
+	}
 
+	public function test_get_data_structure_with_fbc_format_session() {
+		$test_fbc = 'fb.1.1234567890.Test';
+		$pixel_id = 'test_pixel_id_123';
 
-		// Case 2: click_id generated from session
+		// Case: click_id generated from session
 		$_SESSION['_fbc'] = $test_fbc;
-		$event = new Event( array(
-			'event_name'  => 'TestEvent',
-		) );
+		$event = new Event( array( 'event_name' => 'TestEvent' ) );
 		$request = new Request( $pixel_id, array( $event ) );
-		// Act
 		$data = $request->get_data();
-		// Assert
+
 		$this->assertArrayHasKey( 'fbc', $data['data'][0]['user_data'] );
 		$this->assertEquals( $test_fbc, $data['data'][0]['user_data']['fbc'] );
 		$this->assertArrayNotHasKey( 'click_id', $data['data'][0]['user_data'] );
 		$this->assertArrayNotHasKey( 'browser_id', $data['data'][0]['user_data'] );
-		// Cleanup
-		unset( $_SESSION['_fbc'] );
 
-		// Case 3: click_id generated from parambuilder
-		// Arrange
+		unset( $_SESSION['_fbc'] );
+	}
+
+	public function test_get_data_structure_with_fbc_format_param_builder() {
 		$test_pb_fbc = 'fb.1.1234567890.Test.AQ'; // parambuilder fbc signature
+		$pixel_id = 'test_pixel_id_123';
+
 		$mock_param_builder = new class($test_pb_fbc) {
 			private $fbc;
 			public function __construct($fbc) {
@@ -408,25 +406,23 @@ class RequestTest extends WP_UnitTestCase {
 				return $this->fbc;
 			}
 		};
-		// If the real WC_Facebookcommerce_EventsTracker class exists, inject our mock ParamBuilder
+
+		// Inject mock ParamBuilder before creating the Event so Event::get_click_id() picks it up
 		$original_param_builder = null;
 		if ( class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) {
 			$ref = new \ReflectionClass( 'WC_Facebookcommerce_EventsTracker' );
 			if ( $ref->hasProperty( 'param_builder' ) ) {
 				$prop = $ref->getProperty( 'param_builder' );
 				$prop->setAccessible( true );
-				// save original value to restore later
 				$original_param_builder = $prop->getValue();
 				$prop->setValue( null, $mock_param_builder );
 			}
 		}
-		$event = new Event( array(
-			'event_name'  => 'TestEvent',
-		) );
+
+		$event = new Event( array( 'event_name' => 'TestEvent' ) );
 		$request = new Request( $pixel_id, array( $event ) );
-		// Act
 		$data = $request->get_data();
-		// Assert
+
 		$this->assertArrayHasKey( 'user_data', $data['data'][0] );
 		$this->assertArrayHasKey( 'fbc', $data['data'][0]['user_data'] );
 		$this->assertEquals( $test_pb_fbc, $data['data'][0]['user_data']['fbc'] );
@@ -437,11 +433,16 @@ class RequestTest extends WP_UnitTestCase {
 		if ( isset( $prop ) ) {
 			$prop->setValue( null, $original_param_builder );
 		}
+	}
 
-		// Case 4: click_id existed in request parameter
-		// Arrange
+	public function test_get_data_structure_with_fbc_format_request_param() {
+		$test_fbc = 'fb.1.1234567890.Test';
+		$pixel_id = 'test_pixel_id_123';
+
+		// Case: click_id existed in request parameter
 		$_REQUEST['fbclid'] = $test_fbc;
 
+		// Ensure param_builder doesn't override the fbclid-derived fbc
 		$original_param_builder = null;
 		if ( class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) {
 			$ref = new \ReflectionClass( 'WC_Facebookcommerce_EventsTracker' );
@@ -452,6 +453,7 @@ class RequestTest extends WP_UnitTestCase {
 				$prop->setValue( null, null );
 			}
 		}
+
 		if ( isset( $_COOKIE['_fbc'] ) ) {
 			unset( $_COOKIE['_fbc'] );
 		}
@@ -459,24 +461,21 @@ class RequestTest extends WP_UnitTestCase {
 			unset( $_SESSION['_fbc'] );
 		}
 
-		$event = new Event( array(
-			'event_name'  => 'TestEvent',
-		) );
+		$event = new Event( array( 'event_name' => 'TestEvent' ) );
 		$request = new Request( $pixel_id, array( $event ) );
-
-		// Act
 		$data = $request->get_data();
-		// Assert
+
 		$this->assertArrayHasKey( 'user_data', $data['data'][0] );
 		$this->assertArrayHasKey( 'fbc', $data['data'][0]['user_data'] );
-		// Expected format: fb.1.{timestamp}.{fbclid}
 		$fbc_value = $data['data'][0]['user_data']['fbc'];
 		$this->assertMatchesRegularExpression('/^fb\.1\.\d+\.' . preg_quote( $test_fbc, '/' ) . '$/', $fbc_value );
 		$this->assertArrayNotHasKey( 'click_id', $data['data'][0]['user_data'] );
 		$this->assertArrayNotHasKey( 'browser_id', $data['data'][0]['user_data'] );
 
-		// Cleanup
 		unset( $_REQUEST['fbclid'] );
+		if ( isset( $prop ) ) {
+			$prop->setValue( null, $original_param_builder );
+		}
 	}
 
 	/**
