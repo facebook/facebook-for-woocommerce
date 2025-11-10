@@ -287,7 +287,8 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 
 			$event_data['event_id'] = $event->get_id();
 
-			$this->pixel->inject_event( $event_name, $event_data );
+			// Output PageView directly (not via wc_enqueue_js which needs wp_footer)
+			echo $this->pixel->get_event_script( $event_name, $event_data );
 		}
 
 

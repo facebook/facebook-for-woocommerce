@@ -35,11 +35,11 @@ public function __construct( $user_info, $aam_settings ) {
     if ( ! $this->is_pixel_enabled() ) {  // ⚠️ CRITICAL CHECK
         return;
     }
-    
+
     $this->pixel          = new \WC_Facebookcommerce_Pixel( $user_info );
     $this->aam_settings   = $aam_settings;
     $this->tracked_events = array();
-    
+
     $this->param_builder_server_setup();
     $this->add_hooks();  // ⚠️ Hooks are added here!
 }
@@ -52,9 +52,9 @@ public function __construct( $user_info, $aam_settings ) {
 private function is_pixel_enabled() {
     if ( null === $this->is_pixel_enabled ) {
         // Filter can disable pixel
-        $this->is_pixel_enabled = (bool) apply_filters( 
-            'facebook_for_woocommerce_integration_pixel_enabled', 
-            true 
+        $this->is_pixel_enabled = (bool) apply_filters(
+            'facebook_for_woocommerce_integration_pixel_enabled',
+            true
         );
     }
     return $this->is_pixel_enabled;
@@ -75,36 +75,36 @@ private function add_hooks() {
     // BASE PIXEL CODE - Most critical
     add_action( 'wp_head', array( $this, 'inject_base_pixel' ) );
     add_action( 'wp_footer', array( $this, 'inject_base_pixel_noscript' ) );
-    
+
     // CAPI Param Builder
     add_action( 'wp_enqueue_scripts', array( $this, 'param_builder_client_setup' ) );
-    
+
     // ViewContent for individual products
     add_action( 'woocommerce_after_single_product', array( $this, 'inject_view_content_event' ) );
-    
+
     // ViewCategory events
     add_action( 'woocommerce_after_shop_loop', array( $this, 'inject_view_category_event' ) );
-    
+
     // Search events
     add_action( 'pre_get_posts', array( $this, 'inject_search_event' ) );
-    
+
     // AddToCart events
     add_action( 'woocommerce_add_to_cart', array( $this, 'inject_add_to_cart_event' ), 40, 4 );
     add_action( 'woocommerce_ajax_added_to_cart', array( $this, 'add_filter_for_add_to_cart_fragments' ) );
-    
+
     // InitiateCheckout events
     add_action( 'woocommerce_after_checkout_form', array( $this, 'inject_initiate_checkout_event' ) );
     add_action( 'woocommerce_blocks_checkout_enqueue_data', array( $this, 'inject_initiate_checkout_event' ) );
-    
+
     // Purchase events (multiple hooks for different checkout flows)
     add_action( 'woocommerce_new_order', array( $this, 'inject_purchase_event' ), 10 );
     add_action( 'woocommerce_process_shop_order_meta', array( $this, 'inject_purchase_event' ), 20 );
     add_action( 'woocommerce_checkout_update_order_meta', array( $this, 'inject_purchase_event' ), 30 );
     add_action( 'woocommerce_thankyou', array( $this, 'inject_purchase_event' ), 40 );
-    
+
     // Lead events (Contact Form 7)
     add_action( 'wpcf7_contact_form', array( $this, 'inject_lead_event_hook' ), 11 );
-    
+
     // Flush pending events
     add_action( 'shutdown', array( $this, 'send_pending_events' ) );
 }
@@ -115,7 +115,7 @@ private function add_hooks() {
 ## Event Types & Triggers
 
 ### 1. PageView Event
-**Trigger:** Every page load  
+**Trigger:** Every page load
 **Location:** Lines 273-291
 
 **Flow:**
@@ -130,31 +130,31 @@ private function add_hooks() {
 - Already rendered (cache check at line 148)
 
 ### 2. ViewContent Event
-**Trigger:** Single product page view  
+**Trigger:** Single product page view
 **Location:** Lines 629-685
 
 **Flow:**
 ```php
 public function inject_view_content_event() {
     global $post;
-    
+
     // ⚠️ CHECK 1: Pixel enabled?
     if ( ! $this->is_pixel_enabled() || ! isset( $post->ID ) ) {
         return;
     }
-    
+
     // ⚠️ CHECK 2: Valid product?
     $product = wc_get_product( $post->ID );
     if ( ! $product instanceof \WC_Product ) {
         return;
     }
-    
+
     // Build event data...
     $event = new Event( $event_data );
-    
+
     // Send to Facebook API (server-side)
     $this->send_api_event( $event );
-    
+
     // Inject JavaScript (client-side)
     $this->pixel->inject_event( 'ViewContent', $event_data );
 }
@@ -166,7 +166,7 @@ public function inject_view_content_event() {
 - Product object invalid (deleted, wrong post type, etc.)
 
 ### 3. ViewCategory Event
-**Trigger:** Product category archive pages  
+**Trigger:** Product category archive pages
 **Location:** Lines 297-361
 
 **🚨 CONDITION #5 - ViewCategory Won't Fire If:**
@@ -175,7 +175,7 @@ public function inject_view_content_event() {
 - No products in query: `$wp_query->posts` is empty
 
 ### 4. Search Event
-**Trigger:** Product search results  
+**Trigger:** Product search results
 **Location:** Lines 494-621
 
 **Complex Flow with Special Session Handling:**
@@ -187,16 +187,16 @@ public function inject_search_event( $query ) {
     if ( ! $this->is_pixel_enabled() || ! $query->is_main_query() ) {
         return;
     }
-    
+
     // ⚠️ CHECK 2: Must be product search in frontend
-    if ( ! is_admin() && is_search() && '' !== get_search_query() 
+    if ( ! is_admin() && is_search() && '' !== get_search_query()
          && 'product' === get_query_var( 'post_type' ) ) {
-        
+
         // ⚠️ CHECK 3: Prevent duplicate
         if ( $this->pixel->is_last_event( 'Search' ) ) {
             return;
         }
-        
+
         add_action( 'template_redirect', array( $this, 'send_search_event' ), 5 );
         add_action( 'woocommerce_before_shop_loop', array( $this, 'actually_inject_search_event' ) );
     }
@@ -205,17 +205,17 @@ public function inject_search_event( $query ) {
 // PHASE 2: Build search event
 private function get_search_event() {
     global $wp_query;
-    
+
     // ⚠️ CHECK 4: Must have results
     if ( empty( $wp_query->posts ) ) {
         return null;  // Event not created!
     }
-    
+
     // Build event from search results...
 }
 ```
 
-**Special Case: Single Search Result Redirect**  
+**Special Case: Single Search Result Redirect**
 **Location:** Lines 381-389
 
 When WooCommerce redirects to product page on single search result:
@@ -234,7 +234,7 @@ When WooCommerce redirects to product page on single search result:
 - Session not available for single-result redirect case
 
 ### 5. AddToCart Event
-**Trigger:** Product added to cart  
+**Trigger:** Product added to cart
 **Location:** Lines 698-825
 
 **Flow:**
@@ -244,27 +244,27 @@ public function inject_add_to_cart_event( $cart_item_key, $product_id, $quantity
     if ( ! $this->is_pixel_enabled() || ! $product_id || ! $quantity ) {
         return;
     }
-    
+
     // ⚠️ CHECK 2: Cart item must exist
     // Protection against other plugins cloning WC_Cart
     $cart = WC()->cart;
     if ( ! isset( $cart->cart_contents[ $cart_item_key ] ) ) {
         return;
     }
-    
+
     // ⚠️ CHECK 3: Valid product object
     $product = wc_get_product( $variation_id ?: $product_id );
     if ( ! $product instanceof \WC_Product ) {
         return;
     }
-    
+
     // Create event, send to API, inject JS
     $event = new Event( $event_data );
     $this->send_api_event( $event );
-    
+
     // Store event ID in session for AJAX deduplication
     WC()->session->set( 'facebook_for_woocommerce_add_to_cart_event_id', $event->get_id() );
-    
+
     $this->pixel->inject_event( 'AddToCart', $event_data );
 }
 ```
@@ -287,20 +287,20 @@ public function inject_add_to_cart_event( $cart_item_key, $product_id, $quantity
 - Redirect enabled but deferred events fail to save
 
 ### 6. InitiateCheckout Event
-**Trigger:** Customer reaches checkout page  
+**Trigger:** Customer reaches checkout page
 **Location:** Lines 888-932
 
 **Flow:**
 ```php
 public function inject_initiate_checkout_event() {
     // ⚠️ CHECK 1: Multiple conditions
-    if ( ! $this->is_pixel_enabled() 
-         || null === WC()->cart 
-         || WC()->cart->get_cart_contents_count() === 0 
+    if ( ! $this->is_pixel_enabled()
+         || null === WC()->cart
+         || WC()->cart->get_cart_contents_count() === 0
          || $this->pixel->is_last_event( 'InitiateCheckout' ) ) {
         return;
     }
-    
+
     // Build event with cart data...
     // If single item, include category
     $event = new Event( $event_data );
@@ -316,7 +316,7 @@ public function inject_initiate_checkout_event() {
 - Already fired (is_last_event check prevents duplicates)
 
 ### 7. Purchase Event
-**Trigger:** Order completion  
+**Trigger:** Order completion
 **Location:** Lines 951-1059
 
 **Most Complex Event - Multiple Hooks:**
@@ -332,48 +332,48 @@ public function inject_purchase_event( $order_id ) {
     if ( \WC_Facebookcommerce_Utils::is_admin_user() ) {
         return;
     }
-    
+
     // ⚠️ CHECK 2: Pixel enabled
     if ( ! $this->is_pixel_enabled() ) {
         return;
     }
-    
+
     // ⚠️ CHECK 3: Valid order
     $order = wc_get_order( $order_id );
     if ( ! $order ) {
         return;
     }
-    
+
     // ⚠️ CHECK 4: Order status must be valid
     $valid_purchase_order_states = array( 'processing', 'completed', 'on-hold', 'pending' );
     $order_state = $order->get_status();
     if ( ! in_array( $order_state, $valid_purchase_order_states, true ) ) {
         return;
     }
-    
+
     // ⚠️ CHECK 5: Prevent duplicate tracking
-    $purchase_tracked_flag = '_wc_' . facebook_for_woocommerce()->get_id() 
+    $purchase_tracked_flag = '_wc_' . facebook_for_woocommerce()->get_id()
                            . '_purchase_tracked_' . $order_id;
-    
-    if ( 'yes' === get_transient( $purchase_tracked_flag ) 
+
+    if ( 'yes' === get_transient( $purchase_tracked_flag )
          || $order->meta_exists( '_meta_purchase_tracked' ) ) {
         return;  // Already tracked!
     }
-    
+
     // Mark as tracked
     set_transient( $purchase_tracked_flag, 'yes', 45 * MINUTE_IN_SECONDS );
     $order->add_meta_data( '_meta_purchase_tracked', true, true );
     $order->save();
-    
+
     // Log which hook triggered it
     $hook_name = current_action();
     Logger::log( 'Purchase event fired for order ' . $order_id . ' by hook ' . $hook_name );
-    
+
     // Build event, send to API, inject JS
     $event = new Event( $event_data );
     $this->send_api_event( $event );
     $this->pixel->inject_event( $event_name, $event_data );
-    
+
     // Also check for subscription events
     $this->inject_subscribe_event( $order_id );
 }
@@ -388,7 +388,7 @@ public function inject_purchase_event( $order_id ) {
 - User data extraction fails
 
 ### 8. Subscribe Event
-**Trigger:** Order contains subscription products  
+**Trigger:** Order contains subscription products
 **Location:** Lines 1071-1101
 
 **🚨 CONDITION #10 - Subscribe Event Won't Fire If:**
@@ -398,7 +398,7 @@ public function inject_purchase_event( $order_id ) {
 - Order has no subscriptions
 
 ### 9. Lead Event
-**Trigger:** Contact Form 7 submission  
+**Trigger:** Contact Form 7 submission
 **Location:** Lines 1105-1118
 
 **🚨 CONDITION #11 - Lead Event Won't Fire If:**
@@ -417,14 +417,14 @@ public function inject_purchase_event( $order_id ) {
 ```php
 public function pixel_base_code() {
     $pixel_id = self::get_pixel_id();
-    
+
     // ⚠️ CHECK: Must have pixel ID and not already rendered
     if ( empty( $pixel_id ) || ! empty( self::$render_cache[ self::PIXEL_RENDER ] ) ) {
         return '';  // Nothing injected!
     }
-    
+
     self::$render_cache[ self::PIXEL_RENDER ] = true;  // Prevent duplicate
-    
+
     // Output FB Pixel base script
     // Output pixel init with user_info (Advanced Matching)
     // Add event placeholder for AJAX events
@@ -461,14 +461,14 @@ public function pixel_base_code() {
 ```php
 protected function send_api_event( Event $event, bool $send_now = true ) {
     $this->tracked_events[] = $event;  // Keep track
-    
+
     if ( $send_now ) {
         try {
             facebook_for_woocommerce()
                 ->get_api()
-                ->send_pixel_events( 
-                    facebook_for_woocommerce()->get_integration()->get_facebook_pixel_id(), 
-                    array( $event ) 
+                ->send_pixel_events(
+                    facebook_for_woocommerce()->get_integration()->get_facebook_pixel_id(),
+                    array( $event )
                 );
         } catch ( ApiException $exception ) {
             facebook_for_woocommerce()->log( 'Could not send Pixel event: ' . $exception->getMessage() );
@@ -498,12 +498,12 @@ protected function prepare_data( $data ) {
             'user_data'        => array(),
         )
     );
-    
+
     // Add referrer if available
     if ( isset( $_SERVER['HTTP_REFERER'] ) ) {
         $this->data['referrer_url'] = ...;
     }
-    
+
     $this->prepare_user_data( $this->data['user_data'] );
 }
 ```
@@ -521,7 +521,7 @@ protected function prepare_user_data( $data ) {
             'browser_id'        => $this->get_browser_id(),   // _fbp cookie
         )
     );
-    
+
     // Normalize and hash PII data
     $this->data['user_data'] = Normalizer::normalize_array( ... );
     $this->data['user_data'] = $this->hash_pii_data( ... );  // SHA256
@@ -616,15 +616,15 @@ protected function prepare_user_data( $data ) {
 ```php
 private function get_user_data_from_billing_address( $order ) {
     // ⚠️ CHECK 1: AAM enabled?
-    if ( null === $this->aam_settings 
+    if ( null === $this->aam_settings
          || ! $this->aam_settings->get_enable_automatic_matching() ) {
         return array();  // No user data sent!
     }
-    
+
     // Extract user data from order
     $user_data = $this->pixel->get_user_info();
     // ... update with billing data
-    
+
     // ⚠️ CHECK 2: Filter by enabled fields
     foreach ( $user_data as $field => $value ) {
         if ( null === $value || '' === $value ||
@@ -633,7 +633,7 @@ private function get_user_data_from_billing_address( $order ) {
             unset( $user_data[ $field ] );  // Field removed!
         }
     }
-    
+
     return $user_data;
 }
 ```
@@ -652,7 +652,7 @@ private function get_user_data_from_billing_address( $order ) {
 public function param_builder_server_setup() {
     try {
         $cookie_to_set = self::get_param_builder()->getCookiesToSet();
-        
+
         // ⚠️ CHECK: Headers not sent?
         if ( ! headers_sent() ) {
             foreach ( $cookie_to_set as $cookie ) {
@@ -680,7 +680,7 @@ public function param_builder_client_setup() {
     if ( ! facebook_for_woocommerce()->get_connection_handler()->is_connected() ) {
         return;  // Script not loaded!
     }
-    
+
     wp_enqueue_script(
         'facebook-capi-param-builder',
         'https://capi-automation.s3.us-east-2.amazonaws.com/public/client_js/capiParamBuilder/clientParamBuilder.bundle.js',

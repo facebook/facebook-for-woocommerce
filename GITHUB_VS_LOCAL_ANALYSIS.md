@@ -87,7 +87,7 @@ public static function get_options() {
 ```
 
 **The Problem:**
-- Your workflow sets: `wc_facebook_pixel_id` 
+- Your workflow sets: `wc_facebook_pixel_id`
 - Plugin reads from: `facebook_config['pixel_id']`
 - **These are DIFFERENT options!**
 
@@ -139,7 +139,7 @@ You DO check this! But look at the output - if it says "Connected: NO", the CAPI
 **Why it might fail:**
 Looking at how connection is determined, it checks for:
 - Access token
-- External business ID  
+- External business ID
 - Business manager ID
 
 **The Fix:**
@@ -200,7 +200,7 @@ wp eval "
 public function param_builder_server_setup() {
     try {
         $cookie_to_set = self::get_param_builder()->getCookiesToSet();
-        
+
         if ( ! headers_sent() ) {  // ⚠️ Might be true in tests!
             foreach ( $cookie_to_set as $cookie ) {
                 setcookie( ... );
@@ -248,17 +248,17 @@ EOF
 ```php
 public function pixel_base_code() {
     $pixel_id = self::get_pixel_id();
-    
+
     // ⚠️ CHECK 1: Empty pixel ID
     if ( empty( $pixel_id ) ) {
         return '';  // Nothing rendered!
     }
-    
+
     // ⚠️ CHECK 2: Already rendered
     if ( ! empty( self::$render_cache[ self::PIXEL_RENDER ] ) ) {
         return '';  // Already rendered!
     }
-    
+
     self::$render_cache[ self::PIXEL_RENDER ] = true;
     // ...
 }
@@ -304,7 +304,7 @@ echo 'EventsTracker instantiated: ' . (is_object(\$tracker) ? 'YES' : 'NO') . PH
 public static function build_from_pixel_id( $pixel_id ) {
     $url      = self::get_url( $pixel_id );
     $response = wp_remote_get( $url );  // ⚠️ Network request to Facebook!
-    
+
     if ( is_wp_error( $response ) ) {
         return null;  // ❌ Fails silently!
     }
@@ -374,7 +374,7 @@ Add product creation to workflow:
 - name: Create test product
   run: |
     cd /tmp/wordpress
-    
+
     # Create a simple product
     wp eval "
       \$product = new WC_Product_Simple();
@@ -387,7 +387,7 @@ Add product creation to workflow:
       \$product->set_catalog_visibility('visible');
       \$product->set_stock_status('instock');
       \$product_id = \$product->save();
-      
+
       echo 'Test product created: ID=' . \$product_id . PHP_EOL;
       echo 'Product URL: ' . get_permalink(\$product_id) . PHP_EOL;
     " --allow-root
@@ -412,13 +412,13 @@ Add a delay and force reinitialization:
 - name: Force plugin initialization
   run: |
     cd /tmp/wordpress
-    
+
     # Sleep to let everything settle
     sleep 5
-    
+
     # Force a full page load to trigger all init hooks
     curl -s http://localhost:8080 > /dev/null
-    
+
     # Verify pixel init via WP-CLI
     wp eval "
       do_action('init');
@@ -480,7 +480,7 @@ public static function get_pixel_id() {
 Check your GitHub Actions logs for the "Verify Facebook for WooCommerce setup" step (line 267-304).
 Look for this line:
 ```
-Pixel ID: 
+Pixel ID:
 ```
 If it's blank, that confirms Issue #1!
 
@@ -496,7 +496,7 @@ If it's blank, that confirms Issue #1!
 - name: Configure Facebook Pixel (CRITICAL FIX)
   run: |
     cd /tmp/wordpress
-    
+
     # Set the correct option that the plugin actually reads from
     wp eval "
       \$config = array(
@@ -507,7 +507,7 @@ If it's blank, that confirms Issue #1!
       );
       update_option('facebook_config', \$config);
       echo '✅ facebook_config option updated' . PHP_EOL;
-      
+
       // Verify it was saved
       \$saved = get_option('facebook_config');
       echo 'Saved pixel_id: ' . (\$saved['pixel_id'] ?? 'NONE') . PHP_EOL;
@@ -521,7 +521,7 @@ If it's blank, that confirms Issue #1!
 - name: Create test products
   run: |
     cd /tmp/wordpress
-    
+
     wp eval "
       // Create main test product
       \$product = new WC_Product_Simple();
@@ -535,13 +535,13 @@ If it's blank, that confirms Issue #1!
       \$product->set_stock_status('instock');
       \$product->set_manage_stock(false);
       \$product_id = \$product->save();
-      
+
       echo 'Product created: ' . \$product_id . PHP_EOL;
       echo 'Product URL: ' . get_permalink(\$product_id) . PHP_EOL;
-      
+
       // Assign to 'uncategorized' category for ViewCategory tests
       wp_set_object_terms(\$product_id, 'uncategorized', 'product_cat');
-      
+
       echo '✅ Test product ready for tests' . PHP_EOL;
     " --allow-root
 ```
@@ -566,14 +566,14 @@ EOF
 - name: Force WordPress initialization
   run: |
     cd /tmp/wordpress
-    
+
     # Sleep to let WordPress settle
     sleep 3
-    
+
     # Trigger a full page load to initialize all hooks
     echo "Triggering WordPress initialization..."
     curl -s http://localhost:8080 > /tmp/init_response.html
-    
+
     # Force WordPress hooks
     wp eval "
       do_action('init');
@@ -590,33 +590,33 @@ EOF
 - name: Verify Facebook setup (ENHANCED)
   run: |
     cd /tmp/wordpress
-    
+
     echo "=== Checking facebook_config Option ==="
     wp option get facebook_config --allow-root --format=json | jq . || echo "facebook_config not found!"
-    
+
     echo ""
     echo "=== Checking Integration Settings ==="
     wp option get woocommerce_woocommerce_facebook_for_woocommerce_settings --allow-root --format=json | jq . || echo "Integration settings not found!"
-    
+
     echo ""
     echo "=== Checking Plugin Status ==="
     wp eval "
       if (function_exists('facebook_for_woocommerce')) {
         \$integration = facebook_for_woocommerce()->get_integration();
-        
+
         echo 'Integration loaded: YES' . PHP_EOL;
         echo 'get_facebook_pixel_id(): [' . \$integration->get_facebook_pixel_id() . ']' . PHP_EOL;
-        
+
         // Check WC_Facebookcommerce_Pixel::get_pixel_id()
         echo 'WC_Facebookcommerce_Pixel::get_pixel_id(): [' . WC_Facebookcommerce_Pixel::get_pixel_id() . ']' . PHP_EOL;
-        
+
         // Check EventsTracker
         \$reflection = new ReflectionClass(\$integration);
         \$property = \$reflection->getProperty('events_tracker');
         \$property->setAccessible(true);
         \$tracker = \$property->getValue(\$integration);
         echo 'EventsTracker exists: ' . (is_object(\$tracker) ? 'YES' : 'NO') . PHP_EOL;
-        
+
         if (!is_object(\$tracker)) {
           echo '❌ CRITICAL: EventsTracker not created! No events will fire!' . PHP_EOL;
           exit(1);
@@ -626,11 +626,11 @@ EOF
         exit(1);
       }
     " --allow-root
-    
+
     echo ""
     echo "=== Checking Pixel Code in HTML ==="
     curl -s http://localhost:8080 > /tmp/homepage.html
-    
+
     if grep -q "fbq('init'" /tmp/homepage.html; then
       echo "✅ fbq('init') FOUND in HTML"
       grep "fbq('init'" /tmp/homepage.html | head -n 1
@@ -639,7 +639,7 @@ EOF
       echo "This means pixel_base_code() returned empty!"
       exit 1
     fi
-    
+
     if grep -q "fbq('track', 'PageView')" /tmp/homepage.html; then
       echo "✅ PageView event FOUND"
     else
@@ -658,7 +658,7 @@ Here's what your workflow should look like after applying all fixes:
 - name: Configure Facebook Pixel (CRITICAL FIX)
   run: |
     cd /tmp/wordpress
-    
+
     # CRITICAL: Set facebook_config option (what the plugin actually reads)
     wp eval "
       \$config = array(
@@ -668,11 +668,11 @@ Here's what your workflow should look like after applying all fixes:
         'access_token' => '${{ secrets.FB_ACCESS_TOKEN }}'
       );
       update_option('facebook_config', \$config);
-      
+
       \$saved = get_option('facebook_config');
       echo '✅ facebook_config saved. Pixel ID: ' . (\$saved['pixel_id'] ?? 'NONE') . PHP_EOL;
     " --allow-root
-    
+
     # Also set integration settings
     wp eval "
       \$settings = get_option('woocommerce_woocommerce_facebook_for_woocommerce_settings', array());
@@ -682,7 +682,7 @@ Here's what your workflow should look like after applying all fixes:
       update_option('woocommerce_woocommerce_facebook_for_woocommerce_settings', \$settings);
       echo '✅ Integration settings updated' . PHP_EOL;
     " --allow-root
-    
+
     # Set legacy options for backward compatibility
     wp option update wc_facebook_pixel_id "${{ secrets.FB_PIXEL_ID }}" --allow-root
     wp option update wc_facebook_enable_pixel "yes" --allow-root
@@ -694,16 +694,16 @@ Here's what your workflow should look like after applying all fixes:
 - name: Activate plugin and initialize
   run: |
     cd /tmp/wordpress
-    
+
     # Activate plugin
     wp plugin activate facebook-for-woocommerce --allow-root
-    
+
     # Wait for activation to complete
     sleep 3
-    
+
     # Force WordPress initialization
     curl -s http://localhost:8080 > /dev/null
-    
+
     # Trigger WordPress hooks
     wp eval "
       do_action('init');
@@ -714,13 +714,13 @@ Here's what your workflow should look like after applying all fixes:
 - name: Create customer user and test products
   run: |
     cd /tmp/wordpress
-    
+
     # Create customer user
     wp user create customer customer@test.com \
       --role=customer \
       --user_pass=Password@54321 \
       --allow-root || echo "Customer already exists"
-    
+
     # Create test product
     wp eval "
       \$product = new WC_Product_Simple();
@@ -739,17 +739,17 @@ Here's what your workflow should look like after applying all fixes:
 - name: Verify Facebook setup (ENHANCED)
   run: |
     cd /tmp/wordpress
-    
+
     echo "=== facebook_config Option ==="
     wp option get facebook_config --allow-root
-    
+
     echo ""
     echo "=== Checking Pixel ID via Plugin ==="
     wp eval "
       if (function_exists('facebook_for_woocommerce')) {
         echo 'Pixel ID from get_facebook_pixel_id(): [' . facebook_for_woocommerce()->get_integration()->get_facebook_pixel_id() . ']' . PHP_EOL;
         echo 'Pixel ID from WC_Facebookcommerce_Pixel: [' . WC_Facebookcommerce_Pixel::get_pixel_id() . ']' . PHP_EOL;
-        
+
         if (empty(WC_Facebookcommerce_Pixel::get_pixel_id())) {
           echo '❌ CRITICAL: Pixel ID is empty!' . PHP_EOL;
           exit(1);
@@ -757,11 +757,11 @@ Here's what your workflow should look like after applying all fixes:
         echo '✅ Pixel ID configured correctly' . PHP_EOL;
       }
     " --allow-root
-    
+
     echo ""
     echo "=== Checking HTML Output ==="
     curl -s http://localhost:8080 > /tmp/homepage.html
-    
+
     if ! grep -q "fbq('init'" /tmp/homepage.html; then
       echo "❌ CRITICAL: No pixel code in HTML!"
       exit 1
