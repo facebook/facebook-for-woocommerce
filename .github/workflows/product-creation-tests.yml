@@ -236,6 +236,23 @@ jobs:
             echo '✅ Integration settings updated' . PHP_EOL;
           " --allow-root
 
+          # CRITICAL FIX: Set facebook_config option (what the plugin actually reads)
+          wp eval "
+            \$config = array(
+              'pixel_id' => '${{ secrets.FB_PIXEL_ID }}',
+              'use_pii' => 1,
+              'use_s2s' => true,
+              'access_token' => '${{ secrets.FB_ACCESS_TOKEN }}'
+            );
+            update_option('facebook_config', \$config);
+            \$saved = get_option('facebook_config');
+            if (empty(\$saved['pixel_id'])) {
+              echo '❌ FAILED to save pixel ID to facebook_config!' . PHP_EOL;
+              exit(1);
+            }
+            echo '✅ facebook_config saved. Pixel ID: ' . \$saved['pixel_id'] . PHP_EOL;
+          " --allow-root
+
           # Activate the plugin (this triggers automatic sync)
           wp plugin activate facebook-for-woocommerce --allow-root
 
@@ -243,6 +260,22 @@ jobs:
           # Pixel tracking excludes admin users by default!
           wp user create customer customer@test.com --role=customer --user_pass=Password@54321 --allow-root || echo "Customer user already exists"
           echo "✅ Customer user created/verified"
+
+          # Create test product for ViewContent/AddToCart tests
+          wp eval "
+            \$product = new WC_Product_Simple();
+            \$product->set_name('TestP');
+            \$product->set_slug('testp');
+            \$product->set_regular_price('19.99');
+            \$product->set_description('Test product for E2E tests');
+            \$product->set_status('publish');
+            \$product->set_catalog_visibility('visible');
+            \$product->set_stock_status('instock');
+            \$product->set_manage_stock(false);
+            \$product_id = \$product->save();
+            wp_set_object_terms(\$product_id, 'uncategorized', 'product_cat');
+            echo '✅ Test product created. URL: ' . get_permalink(\$product_id) . PHP_EOL;
+          " --allow-root
 
           # Test if we can reach Facebook endpoints at all
           echo ""
@@ -312,6 +345,10 @@ jobs:
 
           echo "Checking if WooCommerce is loaded..."
           grep -q "woocommerce" /tmp/homepage.html && echo "✅ WooCommerce assets found" || echo "❌ WooCommerce NOT loaded"
+          
+          echo "Checking if theme header/footer are present..."
+          grep -q "wp_head" /tmp/homepage.html && echo "✅ wp_head marker found" || echo "⚠️  No wp_head marker"
+          grep -q "wp_footer" /tmp/homepage.html && echo "✅ wp_footer marker found" || echo "⚠️  No wp_footer marker"
 
           echo "Checking if pixel code exists in HTML..."
           if grep -q "fbq('init'" /tmp/homepage.html; then
@@ -325,11 +362,18 @@ jobs:
             if grep -q "fbq" /tmp/homepage.html; then
               echo "   BUT 'fbq' string exists in HTML"
               grep "fbq" /tmp/homepage.html | head -n 5
+            else
+              echo "   ❌ NO 'fbq' string in HTML at all - plugin hooks not firing!"
             fi
           fi
 
           grep -q "fbq('track', 'PageView')" /tmp/homepage.html && echo "✅ fbq('track', 'PageView') FOUND" || echo "❌ fbq('track', 'PageView') NOT FOUND"
           grep -q "facebook.com/tr?id=" /tmp/homepage.html && echo "✅ Pixel IMG tag FOUND" || echo "❌ Pixel IMG tag NOT FOUND"
+          
+          echo ""
+          echo "=== Checking actual HTML output size ==="
+          wc -c /tmp/homepage.html
+          head -n 50 /tmp/homepage.html
 
           # Check debug log for our E2E markers
           echo ""
