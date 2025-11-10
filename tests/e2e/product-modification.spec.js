@@ -209,4 +209,146 @@ test.describe('Facebook for WooCommerce - Product Modification E2E Tests', () =>
       }
     }
   });
+
+  test('Quick Edit simple product price and verify Facebook sync', async ({ page }, testInfo) => {
+    let productId = null;
+    let createdProductId = null;
+    let originalPrice = '50.00';
+    let newPrice = '75.00';
+
+    try {
+      // Step 1: Create test product with initial price
+      console.log('🔧 Creating test product for Quick Edit test...');
+      const createdProduct = await createTestProduct({
+        type: 'simple',
+        price: originalPrice,
+        stock: '100'
+      });
+
+      createdProductId = createdProduct.productId;
+      productId = createdProductId;
+      console.log(`✅ Created product ID ${createdProductId} with price $${originalPrice}`);
+
+      // Step 2: Navigate to Products page
+      console.log('📋 Navigating to Products page...');
+      await page.goto(`${baseURL}/wp-admin/edit.php?post_type=product`, {
+        waitUntil: 'networkidle',
+        timeout: 120000
+      });
+
+      // Step 3: Filter by Simple product type
+      console.log('🔍 Filtering by Simple product type...');
+      const productTypeFilter = page.locator('select#dropdown_product_type');
+      if (await productTypeFilter.isVisible({ timeout: 10000 })) {
+        const filterButton = page.locator("#post-query-submit");
+        await productTypeFilter.selectOption('simple');
+        await filterButton.click();
+
+        await page.waitForTimeout(2000);
+        console.log('✅ Filtered by Simple product type');
+      } else {
+        console.warn('⚠️ Product type filter not found, proceeding without filter');
+      }
+
+      // Step 4: Wait for products table to load
+      const hasProductsTable = await page.locator('.wp-list-table').isVisible({ timeout: 120000 });
+      if (!hasProductsTable) {
+        throw new Error('Products table not found');
+      }
+      console.log('✅ Products table loaded successfully');
+
+      // Step 5: Find the product row
+      console.log('🔍 Looking for test product...');
+      const productRow = page.locator('.wp-list-table tbody tr.iedit').first();
+      await productRow.waitFor({ state: 'visible', timeout: 10000 });
+
+      const productNameElement = productRow.locator('.row-title');
+      const productName = await productNameElement.textContent();
+      console.log(`✅ Found product: "${productName}"`);
+
+      // Step 6: Trigger Quick Edit
+      console.log('📝 Triggering Quick Edit...');
+      await productRow.hover();
+
+      // Click the Quick Edit button
+      const quickEditLink = productRow.locator('.row-actions .editinline');
+      await quickEditLink.waitFor({ state: 'visible', timeout: 5000 });
+      await quickEditLink.click();
+      console.log('✅ Clicked Quick Edit link');
+
+      // Step 7: Wait for Quick Edit form to appear
+      console.log('⏳ Waiting for Quick Edit form...');
+      const quickEditRow = page.locator('.inline-edit-row').first();
+      await quickEditRow.waitFor({ state: 'visible', timeout: 10000 });
+      console.log('✅ Quick Edit form appeared');
+
+      // Step 8: Update the price
+      console.log(`💰 Updating price from $${originalPrice} to $${newPrice}...`);
+      const regularPriceField = quickEditRow.locator('input[name="_regular_price"]');
+      await regularPriceField.waitFor({ state: 'visible', timeout: 5000 });
+
+      // Clear the field and enter new price
+      await regularPriceField.clear();
+      await regularPriceField.fill(newPrice);
+      console.log(`✅ Entered new price: $${newPrice}`);
+
+      // Step 9: Save changes by clicking Update button
+      console.log('💾 Saving changes...');
+      const updateButton = quickEditRow.locator('.inline-edit-save .button-primary');
+      await updateButton.waitFor({ state: 'visible', timeout: 5000 });
+      await updateButton.click();
+      console.log('✅ Clicked Update button');
+
+      // Step 10: Wait for the inline editor to close
+      console.log('⏳ Waiting for Quick Edit form to close...');
+      await quickEditRow.waitFor({ state: 'hidden', timeout: 10000 });
+      console.log('✅ Quick Edit form closed');
+
+      // Wait a moment for the table row to update
+      await page.waitForTimeout(2000);
+
+      // Step 11: Verify price change in UI
+      console.log('🔍 Verifying price change in products table...');
+      // Reload the page to ensure we see the updated data
+      await page.reload({ waitUntil: 'networkidle', timeout: 120000 });
+
+      // Find the product row again and check the price column
+      const updatedProductRow = page.locator('.wp-list-table tbody tr.iedit').first();
+      const priceColumn = updatedProductRow.locator('.price');
+
+      if (await priceColumn.isVisible({ timeout: 5000 })) {
+        const displayedPrice = await priceColumn.textContent();
+        console.log(`✅ Price column shows: ${displayedPrice}`);
+        // The price might be formatted with currency symbol, so we just check it contains our new price
+        expect(displayedPrice).toContain(newPrice);
+        console.log('✅ Price change verified in UI');
+      } else {
+        console.log('⚠️ Price column not visible, skipping UI verification');
+      }
+
+      // Step 12: Validate Facebook sync
+      console.log('🔄 Validating Facebook sync after Quick Edit...');
+      const result = await validateFacebookSync(productId, null, 60);
+      expect(result['success']).toBe(true);
+      console.log('✅ Facebook sync validated successfully');
+
+      // Step 13: Check for PHP errors
+      await checkForPhpErrors(page);
+      console.log('✅ No PHP errors detected');
+
+      console.log('✅ Quick Edit product price test completed successfully');
+      logTestEnd(testInfo, true);
+
+    } catch (error) {
+      console.log(`❌ Quick Edit product price test failed: ${error.message}`);
+      await safeScreenshot(page, 'quick-edit-price-test-failure.png');
+      logTestEnd(testInfo, false);
+      throw error;
+    } finally {
+      // Step 14: Cleanup
+      if (createdProductId) {
+        await cleanupProduct(createdProductId);
+      }
+    }
+  });
 });
