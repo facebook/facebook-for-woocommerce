@@ -418,7 +418,7 @@ class WC_Facebook_Product_Feed {
 	public function get_product_feed_header_row() {
 		return 'id,title,description,image_link,link,product_type,' .
 		'brand,price,availability,item_group_id,checkout_url,' .
-		'additional_image_link,sale_price_effective_date,sale_price,condition,' .
+		'additional_image_link,video,sale_price_effective_date,sale_price,condition,' .
 		'visibility,gender,color,size,pattern,google_product_category,default_product,' .
 		'variant,gtin,quantity_to_sell_on_facebook,custom_label_4,rich_text_description,internal_label,' .
 		'external_variant_id, is_woo_all_products_sync' . PHP_EOL;
@@ -566,6 +566,7 @@ class WC_Facebook_Product_Feed {
 		$item_group_id . ',' .
 		static::get_value_from_product_data( $product_data, 'checkout_url' ) . ',' .
 		static::format_additional_image_url( static::get_value_from_product_data( $product_data, 'additional_image_urls' ) ) . ',' .
+		static::format_video_urls_for_feed( static::get_value_from_product_data( $product_data, 'video' ) ) . ',' .
 		static::format_string_for_feed( $sale_price_effective_date ) . ',' .
 		static::format_string_for_feed( $sale_price ) . ',new,' .
 		static::format_string_for_feed( static::get_value_from_product_data( $product_data, 'visibility' ) ) . ',' .
@@ -598,6 +599,31 @@ class WC_Facebook_Product_Feed {
 		} else {
 			return '';
 		}
+	}
+
+	/**
+	 * Formats video URLs for the product feed.
+	 *
+	 * @param array $video_urls Array of video URL objects with 'url' key
+	 * @return string Formatted video URLs string for feed
+	 */
+	private static function format_video_urls_for_feed( $video_urls ) {
+		if ( ! empty( $video_urls ) && is_array( $video_urls ) ) {
+			// Extract URL strings from the array of objects
+			$urls = array_map(
+				function ( $video ) {
+					return isset( $video['url'] ) ? $video['url'] : '';
+				},
+				$video_urls
+			);
+			// Filter out empty URLs
+			$urls = array_filter( $urls );
+			if ( ! empty( $urls ) ) {
+				// Return comma-separated URLs wrapped in quotes
+				return '"' . implode( ',', $urls ) . '"';
+			}
+		}
+		return '';
 	}
 
 	private static function format_string_for_feed( $text ) {

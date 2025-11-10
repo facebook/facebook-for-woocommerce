@@ -1991,6 +1991,98 @@ class fbproductTest extends \WooCommerce\Facebook\Tests\AbstractWPUnitTestWithSa
 	}
 
 	/**
+	 * Test get_all_video_urls returns custom video URL when video source is set to 'custom'.
+	 */
+	public function test_get_all_video_urls_with_custom_video_source() {
+		$variable_product = \WC_Helper_Product::create_variation_product();
+		$variation = wc_get_product( $variable_product->get_children()[0] );
+
+		$custom_url = 'https://example.com/custom-video.mp4';
+
+		// Set video source to 'custom'
+		$variation->update_meta_data( \WooCommerce\Facebook\Products::PRODUCT_VIDEO_SOURCE_META_KEY, \WooCommerce\Facebook\Products::PRODUCT_VIDEO_SOURCE_CUSTOM );
+		// Save custom video URL
+		$variation->update_meta_data( WC_Facebook_Product::FB_PRODUCT_VIDEO . '_custom_url', $custom_url );
+		$variation->save_meta_data();
+
+		// Create Facebook product
+		$parent_fb_product = new \WC_Facebook_Product( $variable_product );
+		$fb_variation = new \WC_Facebook_Product( $variation, $parent_fb_product );
+
+		// Get all video URLs
+		$video_urls = $fb_variation->get_all_video_urls();
+
+		// Should return the custom video URL
+		$this->assertIsArray( $video_urls );
+		$this->assertCount( 1, $video_urls );
+		$this->assertEquals( $custom_url, $video_urls[0]['url'] );
+
+		// Clean up
+		$variable_product->delete( true );
+	}
+
+	/**
+	 * Test get_all_video_urls returns custom video URL for simple products when video source is set to 'custom'.
+	 */
+	public function test_get_all_video_urls_with_custom_video_source_simple_product() {
+		$simple_product = \WC_Helper_Product::create_simple_product();
+
+		$custom_url = 'https://example.com/simple-custom-video.mp4';
+
+		// Set video source to 'custom'
+		$simple_product->update_meta_data( \WooCommerce\Facebook\Products::PRODUCT_VIDEO_SOURCE_META_KEY, \WooCommerce\Facebook\Products::PRODUCT_VIDEO_SOURCE_CUSTOM );
+		// Save custom video URL
+		$simple_product->update_meta_data( WC_Facebook_Product::FB_PRODUCT_VIDEO . '_custom_url', $custom_url );
+		$simple_product->save_meta_data();
+
+		// Create Facebook product
+		$fb_product = new \WC_Facebook_Product( $simple_product );
+
+		// Get all video URLs
+		$video_urls = $fb_product->get_all_video_urls();
+
+		// Should return the custom video URL
+		$this->assertIsArray( $video_urls );
+		$this->assertCount( 1, $video_urls );
+		$this->assertEquals( $custom_url, $video_urls[0]['url'] );
+
+		// Clean up
+		$simple_product->delete( true );
+	}
+
+	/**
+	 * Test prepare_product includes custom video URL when video source is 'custom'.
+	 */
+	public function test_prepare_product_includes_custom_video_url() {
+		$variable_product = \WC_Helper_Product::create_variation_product();
+		$variation = wc_get_product( $variable_product->get_children()[0] );
+
+		$custom_url = 'https://example.com/custom-video-prepare.mp4';
+
+		// Set video source to 'custom'
+		$variation->update_meta_data( \WooCommerce\Facebook\Products::PRODUCT_VIDEO_SOURCE_META_KEY, \WooCommerce\Facebook\Products::PRODUCT_VIDEO_SOURCE_CUSTOM );
+		// Save custom video URL
+		$variation->update_meta_data( WC_Facebook_Product::FB_PRODUCT_VIDEO . '_custom_url', $custom_url );
+		$variation->save_meta_data();
+
+		// Create Facebook products
+		$parent_fb_product = new \WC_Facebook_Product( $variable_product );
+		$fb_variation = new \WC_Facebook_Product( $variation, $parent_fb_product );
+
+		// Prepare product data
+		$product_data = $fb_variation->prepare_product( null, \WC_Facebook_Product::PRODUCT_PREP_TYPE_ITEMS_BATCH );
+
+		// Check video is included with correct URL
+		$this->assertArrayHasKey( 'video', $product_data );
+		$this->assertIsArray( $product_data['video'] );
+		$this->assertCount( 1, $product_data['video'] );
+		$this->assertEquals( $custom_url, $product_data['video'][0]['url'] );
+
+		// Clean up
+		$variable_product->delete( true );
+	}
+
+	/**
 	 * Test empty variation video falls back to parent.
 	 */
 	public function test_empty_variation_video_falls_back_to_parent() {
@@ -2169,6 +2261,66 @@ class fbproductTest extends \WooCommerce\Facebook\Tests\AbstractWPUnitTestWithSa
 
 		$this->assertIsArray( $video_urls );
 		$this->assertEmpty( $video_urls );
+
+		// Clean up
+		$variable_product->delete( true );
+	}
+
+	/**
+	 * Test that custom video URLs are included in feed preparation.
+	 */
+	public function test_custom_video_url_included_in_feed_prep() {
+		$simple_product = \WC_Helper_Product::create_simple_product();
+		$custom_url = 'https://example.com/feed-video.mp4';
+
+		// Set video source to 'custom'
+		$simple_product->update_meta_data( \WooCommerce\Facebook\Products::PRODUCT_VIDEO_SOURCE_META_KEY, \WooCommerce\Facebook\Products::PRODUCT_VIDEO_SOURCE_CUSTOM );
+		// Save custom video URL
+		$simple_product->update_meta_data( \WC_Facebook_Product::FB_PRODUCT_VIDEO . '_custom_url', $custom_url );
+		$simple_product->save_meta_data();
+
+		// Create Facebook product
+		$fb_product = new \WC_Facebook_Product( $simple_product );
+
+		// Prepare product for feed
+		$product_data = $fb_product->prepare_product( null, \WC_Facebook_Product::PRODUCT_PREP_TYPE_FEED );
+
+		// Check video is included with correct URL
+		$this->assertArrayHasKey( 'video', $product_data );
+		$this->assertIsArray( $product_data['video'] );
+		$this->assertCount( 1, $product_data['video'] );
+		$this->assertEquals( $custom_url, $product_data['video'][0]['url'] );
+
+		// Clean up
+		$simple_product->delete( true );
+	}
+
+	/**
+	 * Test that variation custom video URLs are included in feed preparation.
+	 */
+	public function test_variation_custom_video_url_included_in_feed_prep() {
+		$variable_product = \WC_Helper_Product::create_variation_product();
+		$variation = wc_get_product( $variable_product->get_children()[0] );
+		$custom_url = 'https://example.com/variation-feed-video.mp4';
+
+		// Set video source to 'custom'
+		$variation->update_meta_data( \WooCommerce\Facebook\Products::PRODUCT_VIDEO_SOURCE_META_KEY, \WooCommerce\Facebook\Products::PRODUCT_VIDEO_SOURCE_CUSTOM );
+		// Save custom video URL
+		$variation->update_meta_data( \WC_Facebook_Product::FB_PRODUCT_VIDEO . '_custom_url', $custom_url );
+		$variation->save_meta_data();
+
+		// Create Facebook products
+		$parent_fb_product = new \WC_Facebook_Product( $variable_product );
+		$fb_variation = new \WC_Facebook_Product( $variation, $parent_fb_product );
+
+		// Prepare product for feed
+		$product_data = $fb_variation->prepare_product( null, \WC_Facebook_Product::PRODUCT_PREP_TYPE_FEED );
+
+		// Check video is included with correct URL
+		$this->assertArrayHasKey( 'video', $product_data );
+		$this->assertIsArray( $product_data['video'] );
+		$this->assertCount( 1, $product_data['video'] );
+		$this->assertEquals( $custom_url, $product_data['video'][0]['url'] );
 
 		// Clean up
 		$variable_product->delete( true );

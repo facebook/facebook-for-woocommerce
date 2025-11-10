@@ -1499,7 +1499,8 @@ class Admin {
 					'class'         => sprintf( 'enable-if-sync-enabled product-video-source-field show-if-product-video-source-%s', Products::PRODUCT_VIDEO_SOURCE_CUSTOM ),
 					'wrapper_class' => 'form-row form-row-full',
 					'desc_tip'      => true,
-					'description'   => __( 'Please enter an absolute URL (e.g. https://domain.com/video.mp4).', 'facebook-for-woocommerce' ),
+					'description'   => __( 'Please enter an absolute URL (e.g. https://domain.com/video.mp4). The URL must be publicly accessible for Facebook to display the video in Commerce Manager.', 'facebook-for-woocommerce' ),
+					'type'          => 'url',
 				)
 			);
 
@@ -1719,7 +1720,16 @@ class Admin {
 		}
 		$posted_param = 'variable_' . \WC_Facebook_Product::FB_PRODUCT_VIDEO . '_custom_url';
 	// phpcs:ignore WordPress.Security.NonceVerification.Missing -- Nonce verification is handled in save_product_variation_edit_fields method
-		$custom_video_url = isset( $_POST[ $posted_param ][ $index ] ) ? esc_url_raw( wp_unslash( $_POST[ $posted_param ][ $index ] ) ) : null;
+		$custom_video_url_raw = isset( $_POST[ $posted_param ][ $index ] ) ? esc_url_raw( wp_unslash( $_POST[ $posted_param ][ $index ] ) ) : null;
+		// Validate the custom video URL if provided
+		$custom_video_url = null;
+		if ( ! empty( $custom_video_url_raw ) ) {
+			$custom_video_url_raw = trim( $custom_video_url_raw );
+			// Only save if it's a valid URL
+			if ( filter_var( $custom_video_url_raw, FILTER_VALIDATE_URL ) ) {
+				$custom_video_url = $custom_video_url_raw;
+			}
+		}
 		// Fix: Look for the actual POST key format that WooCommerce generates
 		$posted_param = 'variable_' . \WC_Facebook_Product::FB_PRODUCT_IMAGES . $index;
 		// phpcs:ignore WordPress.Security.NonceVerification.Missing -- Nonce verification is handled in save_product_variation_edit_fields method
