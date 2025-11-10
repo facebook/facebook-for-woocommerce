@@ -199,26 +199,37 @@
 
 /* Hide product video source fields by default - JavaScript will show the selected one */
 .product-video-source-field {
-	display: none;
+	display: none !important;
 }
 
-/* Show the selected product video source field */
-.product-video-source-field.show-if-product-video-source-upload,
-.product-video-source-field.show-if-product-video-source-custom {
-	display: block;
+/* For variations, only show when .show class is added by JavaScript */
+.woocommerce_variation .product-video-source-field.show {
+	display: block !important;
 }
 
-/* But the button paragraph should be inline */
-p.product-video-source-field.show-if-product-video-source-upload,
-p.product-video-source-field.show-if-product-video-source-custom {
+/* But the button paragraph should be inline when shown */
+.woocommerce_variation p.product-video-source-field.show {
 	display: inline-block !important;
 	vertical-align: top;
 	margin: 0 !important;
 	padding-top: 10px;
 }
 
-/* Video thumbnails should appear on new line */
-div.product-video-source-field {
+/* Video thumbnails should appear on new line when shown */
+.woocommerce_variation div.product-video-source-field.show {
+	clear: both;
+	display: block !important;
+}
+
+/* For simple products (not in variations) */
+#facebook_options p.product-video-source-field.show {
+	display: inline-block !important;
+	vertical-align: top;
+	margin: 0 !important;
+	padding-top: 10px;
+}
+
+#facebook_options div.product-video-source-field.show {
 	clear: both;
 	display: block !important;
 }
@@ -283,10 +294,6 @@ div.product-video-source-field {
 .woocommerce_variation .fb-product-video-source-field .wc-radios li:first-child label button {
 	margin-left: 8px;
 	vertical-align: middle;
-}
-
-.woocommerce_variation .product-video-source-field.show {
-	display: block !important;
 }
 
 /* Specifically hide multiple images thumbnails when not selected */

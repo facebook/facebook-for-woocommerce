@@ -565,22 +565,13 @@ jQuery( document ).ready( function( $ ) {
 		let $container  = $( this ).closest( '.woocommerce_options_panel, .wc-metabox-content' );
 		let videoSource = $( this ).val();
 
-		// Hide all product-video-source-field form wrappers and buttons
-		$container.find( '.product-video-source-field' ).closest( '.form-field' ).hide();
-		$container.find( '.product-video-source-field' ).hide();
+		// Hide all product-video-source-field elements and their form-field wrappers
+		$container.find( '.product-video-source-field' ).removeClass( 'show' ).closest( '.form-field' ).hide();
+		$container.find( '.product-video-source-field' ).removeClass( 'show' );
 
-		// Show only the selected video source field form wrapper and buttons
-		$container.find( `.show-if-product-video-source-${videoSource}` ).closest( '.form-field' ).show();
-		$container.find( `.show-if-product-video-source-${videoSource}` ).show();
-
-		// For variations, also handle the class-based approach
-		if ( $container.hasClass( 'wc-metabox-content' ) ) {
-			// Remove 'show' class from all product-video-source-field elements
-			$container.find( '.product-video-source-field' ).removeClass( 'show' );
-
-			// Add 'show' class to the selected video source field
-			$container.find( `.show-if-product-video-source-${videoSource}` ).addClass( 'show' );
-		}
+		// Show only the selected video source field and its form-field wrapper
+		$container.find( `.show-if-product-video-source-${videoSource}` ).addClass( 'show' ).closest( '.form-field' ).show();
+		$container.find( `.show-if-product-video-source-${videoSource}` ).addClass( 'show' );
 	} );
 
 	// Move Choose Video button inline with first radio option
