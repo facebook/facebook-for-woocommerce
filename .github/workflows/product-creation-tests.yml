@@ -244,6 +244,12 @@ jobs:
           wp user create customer customer@test.com --role=customer --user_pass=password --allow-root || echo "Customer user already exists"
           echo "✅ Customer user created/verified"
 
+          # Test if we can reach Facebook endpoints at all
+          echo ""
+          echo "=== Testing Facebook Endpoint Connectivity ==="
+          curl -I https://www.facebook.com/tr 2>&1 | head -n 5 || echo "❌ Cannot reach facebook.com/tr"
+          curl -I https://connect.facebook.net 2>&1 | head -n 5 || echo "❌ Cannot reach connect.facebook.net"
+
 
       - name: Verify WordPress setup
         run: |
@@ -356,7 +362,10 @@ jobs:
           WORDPRESS_URL: http://localhost:8080
           WP_USERNAME: admin
           WP_PASSWORD: admin
-        run: xvfb-run --auto-servernum npm run test:e2e
+        run: |
+          # run: xvfb-run --auto-servernum npm run test:e2e
+          # Run with headed browser to ensure cookies work (some privacy features block in headless)
+          xvfb-run --auto-servernum npx playwright test --headed
 
       - name: Check for PHP errors
         if: always()

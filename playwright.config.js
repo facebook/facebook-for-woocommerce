@@ -36,6 +36,8 @@ export default defineConfig({
           args: [
             '--disable-blink-features=AutomationControlled',
             '--disable-dev-shm-usage',
+            '--disable-web-security',  // Allow third-party cookies/requests
+            '--disable-features=BlockThirdPartyCookies',  // Critical for pixel tracking
           ]
         },
       },

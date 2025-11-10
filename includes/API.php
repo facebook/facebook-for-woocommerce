@@ -612,6 +612,8 @@ class API extends Base {
 	private function log_event_for_tests( Event $event ) {
 		// Check if we're in test mode (test ID cookie set)
 		if ( empty( $_COOKIE['facebook_test_id'] ) ) {
+			// log error our capi
+
 			return;
 		}
 

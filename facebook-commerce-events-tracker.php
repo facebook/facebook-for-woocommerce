@@ -172,9 +172,6 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 			add_action( 'wp_head', array( $this, 'inject_base_pixel' ) );
 			add_action( 'wp_footer', array( $this, 'inject_base_pixel_noscript' ) );
 
-			// inject PageView event
-			add_action( 'wp_head', array( $this, 'inject_page_view_event' ) );
-
 			// set up CAPI Param Builder libraries
 			add_action( 'wp_enqueue_scripts', array( $this, 'param_builder_client_setup' ) );
 
