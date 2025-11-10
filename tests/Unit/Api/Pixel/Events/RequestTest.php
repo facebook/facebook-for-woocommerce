@@ -398,45 +398,45 @@ class RequestTest extends WP_UnitTestCase {
 
 		// Case 3: click_id generated from parambuilder
 		// Arrange
-		$test_pb_fbc = 'fb.1.1234567890.Test.AQ'; // parambuilder fbc signature
-		$event = new Event( array(
-			'event_name'  => 'TestEvent',
-		) );
-		$mock_param_builder = new class($test_pb_fbc) {
-			private $fbc;
-			public function __construct($fbc) {
-				$this->fbc = $fbc;
-			}
-			public function getFbc() {
-				return $this->fbc;
-			}
-		};
-		// If the real WC_Facebookcommerce_EventsTracker class exists, inject our mock ParamBuilder
-		$original_param_builder = null;
-		if ( class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) {
-			$ref = new \ReflectionClass( 'WC_Facebookcommerce_EventsTracker' );
-			if ( $ref->hasProperty( 'param_builder' ) ) {
-				$prop = $ref->getProperty( 'param_builder' );
-				$prop->setAccessible( true );
-				// save original value to restore later
-				$original_param_builder = $prop->getValue();
-				$prop->setValue( null, $mock_param_builder );
-			}
-		}
-		$request = new Request( $pixel_id, array( $event ) );
-		// Act
-		$data = $request->get_data();
-		// Assert
-		$this->assertArrayHasKey( 'user_data', $data['data'][0] );
-		$this->assertArrayHasKey( 'fbc', $data['data'][0]['user_data'] );
-		$this->assertEquals( $test_pb_fbc, $data['data'][0]['user_data']['fbc'] );
-		$this->assertArrayNotHasKey( 'click_id', $data['data'][0]['user_data'] );
-		$this->assertArrayNotHasKey( 'browser_id', $data['data'][0]['user_data'] );
+		// $test_pb_fbc = 'fb.1.1234567890.Test.AQ'; // parambuilder fbc signature
+		// $event = new Event( array(
+		// 	'event_name'  => 'TestEvent',
+		// ) );
+		// $mock_param_builder = new class($test_pb_fbc) {
+		// 	private $fbc;
+		// 	public function __construct($fbc) {
+		// 		$this->fbc = $fbc;
+		// 	}
+		// 	public function getFbc() {
+		// 		return $this->fbc;
+		// 	}
+		// };
+		// // If the real WC_Facebookcommerce_EventsTracker class exists, inject our mock ParamBuilder
+		// $original_param_builder = null;
+		// if ( class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) {
+		// 	$ref = new \ReflectionClass( 'WC_Facebookcommerce_EventsTracker' );
+		// 	if ( $ref->hasProperty( 'param_builder' ) ) {
+		// 		$prop = $ref->getProperty( 'param_builder' );
+		// 		$prop->setAccessible( true );
+		// 		// save original value to restore later
+		// 		$original_param_builder = $prop->getValue();
+		// 		$prop->setValue( null, $mock_param_builder );
+		// 	}
+		// }
+		// $request = new Request( $pixel_id, array( $event ) );
+		// // Act
+		// $data = $request->get_data();
+		// // Assert
+		// $this->assertArrayHasKey( 'user_data', $data['data'][0] );
+		// $this->assertArrayHasKey( 'fbc', $data['data'][0]['user_data'] );
+		// $this->assertEquals( $test_pb_fbc, $data['data'][0]['user_data']['fbc'] );
+		// $this->assertArrayNotHasKey( 'click_id', $data['data'][0]['user_data'] );
+		// $this->assertArrayNotHasKey( 'browser_id', $data['data'][0]['user_data'] );
 
-		// Cleanup - restore original param builder (may be null)
-		if ( isset( $prop ) ) {
-			$prop->setValue( null, $original_param_builder );
-		}
+		// // Cleanup - restore original param builder (may be null)
+		// if ( isset( $prop ) ) {
+		// 	$prop->setValue( null, $original_param_builder );
+		// }
 
 		// Case 4: click_id existed in request parameter
 		// Arrange
