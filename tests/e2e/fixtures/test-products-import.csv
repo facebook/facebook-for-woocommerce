@@ -1,0 +1,4 @@
+Type,SKU,Name,Published,Regular price,Stock,Description,Categories
+simple,E2E-CSV-TEST-001,Test CSV Product Alpha,1,29.99,50,"This is a test product imported via CSV for E2E testing. Product Alpha.",Clothing
+simple,E2E-CSV-TEST-002,Test CSV Product Beta,1,39.99,75,"This is a test product imported via CSV for E2E testing. Product Beta.",Clothing
+simple,E2E-CSV-TEST-003,Test CSV Product Gamma,1,49.99,100,"This is a test product imported via CSV for E2E testing. Product Gamma.",Accessories
