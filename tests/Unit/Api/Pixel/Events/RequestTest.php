@@ -584,7 +584,6 @@ class RequestTest extends WP_UnitTestCase {
 			$prop->setValue( null, $original_param_builder );
 		}
 	}
-
 }
 
 
