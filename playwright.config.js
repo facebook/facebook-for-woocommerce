@@ -25,9 +25,9 @@ export default defineConfig({
 
   projects: [
     {
-      name: 'chromium',
+      name: 'firefox',
       use: {
-        ...devices['Desktop Chrome'],
+        ...devices['Desktop Firefox'],
         // Increased timeouts for WordPress admin operations
         actionTimeout: 180000,
         navigationTimeout: 180000,
