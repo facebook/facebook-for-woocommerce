@@ -1127,7 +1127,7 @@ class Admin {
 
 				// Render the Facebook Product Video field with radio buttons
 				$this->render_facebook_product_video_field( $video_urls );
-				
+
 				woocommerce_wp_text_input(
 					array(
 						'id'          => \WC_Facebook_Product::FB_PRODUCT_PRICE,
@@ -1151,7 +1151,7 @@ class Admin {
 						'value' => '',
 					)
 				);
-			?>
+				?>
 			</div>
 
 			<div class='wc_facebook_commerce_fields'>
