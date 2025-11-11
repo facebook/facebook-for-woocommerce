@@ -271,10 +271,10 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 		 * Triggers the PageView event
 		 */
 		public function inject_page_view_event() {
-			error_log( 'E2E_DEBUG: inject_page_view_event() called' );
-		
+			echo "\n<!-- E2E_DEBUG: inject_page_view_event() called -->\n";
+
 			if ( ! $this->is_pixel_enabled() ) {
-				error_log( 'E2E_DEBUG: Pixel NOT enabled, returning early' );
+				echo "<!-- E2E_DEBUG: Pixel NOT enabled, returning early -->\n";
 				return;
 			}
 
@@ -285,16 +285,16 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 			);
 
 			$event = new Event( $event_data );
-			error_log( 'E2E_DEBUG: Event object created, ID: ' . $event->get_id() );
+			echo "<!-- E2E_DEBUG: Event object created, ID: " . esc_html( $event->get_id() ) . " -->\n";
 
 			$this->send_api_event( $event, false );
-			error_log( 'E2E_DEBUG: send_api_event() called (pending)' );
+			echo "<!-- E2E_DEBUG: send_api_event() called (pending) -->\n";
 
 			$event_data['event_id'] = $event->get_id();
 
-			error_log( 'E2E_DEBUG: About to call inject_event()' );
+			echo "<!-- E2E_DEBUG: About to call inject_event() -->\n";
 			$this->pixel->inject_event( $event_name, $event_data );
-			error_log( 'E2E_DEBUG: inject_event() completed' );
+			echo "<!-- E2E_DEBUG: inject_event() completed -->\n";
 		}
 
 
