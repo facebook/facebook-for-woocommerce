@@ -23,29 +23,95 @@ test.describe('Facebook for WooCommerce - CSV Product Import E2E Tests', () => {
     const importedProductIds = [];
 
     try {
+      // Step 0: Verify WordPress admin is accessible
+      console.log('🔍 Step 0: Verifying WordPress admin is accessible...');
+      await page.goto(`${baseURL}/wp-admin/`, {
+        waitUntil: 'domcontentloaded',
+        timeout: 60000
+      });
+      const adminTitle = await page.title();
+      console.log('Admin page title:', adminTitle);
+      if (adminTitle.includes('Log In')) {
+        throw new Error('Not logged in! Login may have failed.');
+      }
+      console.log('✅ WordPress admin is accessible');
+
       // Step 1: Navigate to Products page
       console.log('📦 Step 1: Navigating to Products page...');
       await page.goto(`${baseURL}/wp-admin/edit.php?post_type=product`, {
-        waitUntil: 'networkidle',
+        waitUntil: 'domcontentloaded',
         timeout: 120000
       });
-      await page.waitForSelector('.wp-list-table', { timeout: 120000 });
+
+      // Add debugging to see what page we actually landed on
+      console.log('Current URL:', page.url());
+      console.log('Page title:', await page.title());
+
+      // Take a screenshot to debug what's showing
+      await safeScreenshot(page, 'products-page-before-wait.png');
+
+      // Check if we're on the right page before waiting for the table
+      const currentUrl = page.url();
+      if (!currentUrl.includes('edit.php?post_type=product')) {
+        console.log('⚠️ Not on products page! Current URL:', currentUrl);
+        throw new Error(`Expected to be on products page, but got: ${currentUrl}`);
+      }
+
+      // Try a more flexible selector approach
+      try {
+        // Wait for either the products table OR any WooCommerce admin content
+        await Promise.race([
+          page.waitForSelector('.wp-list-table', { timeout: 30000 }),
+          page.waitForSelector('#wpbody-content', { timeout: 30000 }),
+          page.waitForSelector('.wrap', { timeout: 30000 })
+        ]);
+        console.log('✅ Products page content loaded');
+
+        // Verify the products table is actually there
+        const hasProductsTable = await page.locator('.wp-list-table').isVisible().catch(() => false);
+        if (hasProductsTable) {
+          console.log('✅ Products table detected');
+        } else {
+          console.log('⚠️ Products table not visible, but page loaded');
+        }
+      } catch (error) {
+        console.log('❌ Failed to load products page elements');
+        await safeScreenshot(page, 'products-page-load-failure.png');
+        const html = await page.content();
+        console.log('Page HTML snippet:', html.substring(0, 500));
+        throw error;
+      }
+
       console.log('✅ Products page loaded');
 
       // Step 2: Click Import button
       console.log('📤 Step 2: Navigating to CSV Import wizard...');
-      const importButton = page.locator('a.page-title-action:has-text("Import")');
-      await importButton.waitFor({ state: 'visible', timeout: 120000 });
+      // Try multiple selector strategies for the Import button
+      const importButton = page.locator('a.page-title-action:has-text("Import")').first();
+      await importButton.waitFor({ state: 'visible', timeout: 30000 });
+      await safeScreenshot(page, 'before-import-click.png');
       await importButton.click();
-      await page.waitForLoadState('networkidle', { timeout: 120000 });
+      await page.waitForLoadState('domcontentloaded', { timeout: 120000 });
+      await page.waitForTimeout(2000);
       console.log('✅ Import wizard opened');
+      console.log('Current URL:', page.url());
+      await safeScreenshot(page, 'import-wizard-opened.png');
 
       // Step 3: Upload CSV file
       console.log('📁 Step 3: Uploading CSV file...');
 
-      // Wait for file upload form
-      const fileInput = page.locator('input[type="file"][name="import"]');
-      await fileInput.waitFor({ state: 'visible', timeout: 120000 });
+      // Wait for file upload form - try multiple selectors
+      let fileInput;
+      try {
+        fileInput = page.locator('input[type="file"][name="import"]').first();
+        await fileInput.waitFor({ state: 'attached', timeout: 30000 });
+        console.log('✅ File input found via name="import"');
+      } catch (error) {
+        console.log('⚠️ Primary file input selector failed, trying #upload...');
+        fileInput = page.locator('#upload');
+        await fileInput.waitFor({ state: 'attached', timeout: 30000 });
+        console.log('✅ File input found via #upload');
+      }
 
       // Upload the test CSV file
       const csvPath = path.join(__dirname, 'fixtures', 'test-products-import.csv');
@@ -53,11 +119,15 @@ test.describe('Facebook for WooCommerce - CSV Product Import E2E Tests', () => {
       console.log(`✅ CSV file selected: ${csvPath}`);
 
       // Click Continue button
-      const continueButton = page.locator('button[type="submit"].button-next, button.button-next');
-      await continueButton.waitFor({ state: 'visible', timeout: 120000 });
+      const continueButton = page.locator('button[type="submit"].button-next, button.button-next').first();
+      await continueButton.waitFor({ state: 'visible', timeout: 30000 });
+      await safeScreenshot(page, 'before-continue-click.png');
       await continueButton.click();
-      await page.waitForLoadState('networkidle', { timeout: 120000 });
+      await page.waitForLoadState('domcontentloaded', { timeout: 120000 });
+      await page.waitForTimeout(3000);
       console.log('✅ Proceeded to column mapping');
+      console.log('Current URL:', page.url());
+      await safeScreenshot(page, 'column-mapping-page.png');
 
       // Step 4: Verify column mapping
       console.log('🗺️ Step 4: Verifying column mapping...');
@@ -83,19 +153,25 @@ test.describe('Facebook for WooCommerce - CSV Product Import E2E Tests', () => {
       }
 
       // Click Continue to proceed to import
-      const continueButton2 = page.locator('button[type="submit"].button-next, button.button-next');
-      await continueButton2.waitFor({ state: 'visible', timeout: 120000 });
+      const continueButton2 = page.locator('button[type="submit"].button-next, button.button-next').first();
+      await continueButton2.waitFor({ state: 'visible', timeout: 30000 });
+      await safeScreenshot(page, 'before-second-continue-click.png');
       await continueButton2.click();
-      await page.waitForLoadState('networkidle', { timeout: 120000 });
+      await page.waitForLoadState('domcontentloaded', { timeout: 120000 });
+      await page.waitForTimeout(3000);
       console.log('✅ Proceeded to import confirmation');
+      console.log('Current URL:', page.url());
+      await safeScreenshot(page, 'import-confirmation-page.png');
 
       // Step 5: Run the importer
       console.log('⚙️ Step 5: Running import process...');
 
       // Click "Run the importer" button
-      const runImporterButton = page.locator('button.button-primary:has-text("Run the importer"), button:has-text("Run the importer")');
-      await runImporterButton.waitFor({ state: 'visible', timeout: 120000 });
+      const runImporterButton = page.locator('button.button-primary:has-text("Run the importer"), button:has-text("Run the importer")').first();
+      await runImporterButton.waitFor({ state: 'visible', timeout: 30000 });
+      await safeScreenshot(page, 'before-run-importer-click.png');
       await runImporterButton.click();
+      console.log('✅ Clicked Run the importer button');
 
       // Wait for import to complete - this might take a while
       await page.waitForTimeout(10000);
@@ -120,10 +196,12 @@ test.describe('Facebook for WooCommerce - CSV Product Import E2E Tests', () => {
       // Step 6: Navigate back to products page and find imported products
       console.log('🔍 Step 6: Locating imported products...');
       await page.goto(`${baseURL}/wp-admin/edit.php?post_type=product`, {
-        waitUntil: 'networkidle',
+        waitUntil: 'domcontentloaded',
         timeout: 120000
       });
       await page.waitForTimeout(3000);
+      await safeScreenshot(page, 'products-page-after-import.png');
+      console.log('Current URL:', page.url());
 
       // Search for each imported product by SKU
       const testSKUs = ['E2E-CSV-TEST-001', 'E2E-CSV-TEST-002', 'E2E-CSV-TEST-003'];
@@ -141,7 +219,7 @@ test.describe('Facebook for WooCommerce - CSV Product Import E2E Tests', () => {
 
         const searchButton = page.locator('#search-submit');
         await searchButton.click();
-        await page.waitForLoadState('networkidle', { timeout: 120000 });
+        await page.waitForLoadState('domcontentloaded', { timeout: 60000 });
         await page.waitForTimeout(2000);
 
         // Find product in the table
