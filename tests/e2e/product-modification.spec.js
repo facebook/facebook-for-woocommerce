@@ -211,7 +211,6 @@ test.describe('Facebook for WooCommerce - Product Modification E2E Tests', () =>
   });
 
   test('Quick Edit simple product price and verify Facebook sync', async ({ page }, testInfo) => {
-    let productId = null;
     let createdProductId = null;
     let originalPrice = '50.00';
     let newPrice = '75.00';
@@ -226,7 +225,6 @@ test.describe('Facebook for WooCommerce - Product Modification E2E Tests', () =>
       });
 
       createdProductId = createdProduct.productId;
-      productId = createdProductId;
       console.log(`✅ Created product ID ${createdProductId} with price $${originalPrice}`);
 
       // Step 2: Navigate to Products page
@@ -328,7 +326,7 @@ test.describe('Facebook for WooCommerce - Product Modification E2E Tests', () =>
 
       // Step 12: Validate Facebook sync and verify price was updated
       console.log('🔄 Validating Facebook sync after Quick Edit...');
-      const result = await validateFacebookSync(productId, null, 60);
+      const result = await validateFacebookSync(createdProductId, null, 60);
 
       // Verify the price field specifically - should have NO mismatches for price
       const priceMismatches = Object.values(result['mismatches'] || {}).filter(
