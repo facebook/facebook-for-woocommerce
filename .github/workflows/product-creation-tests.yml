@@ -177,8 +177,8 @@ jobs:
 
           # CRITICAL: Install and activate a theme!
           # Without a theme, wp_head() is not called and pixel code won't be injected
-          wp theme install twentytwentyfive --activate --allow-root
-          echo "✅ Theme activated (required for wp_head hook)"
+           wp theme install storefront --activate --allow-root
+          echo "✅ Storefront theme activated (classic theme with proper wp_head/wp_footer hooks)"
           wp plugin install woocommerce --activate --allow-root
 
           # Basic WooCommerce setup
@@ -252,6 +252,11 @@ jobs:
             }
             echo '✅ facebook_config saved. Pixel ID: ' . \$saved['pixel_id'] . PHP_EOL;
           " --allow-root
+
+          # Create debug.log file and make it writable
+          touch wp-content/debug.log
+          chmod 666 wp-content/debug.log
+          echo "✅ debug.log created and writable"
 
           # Activate the plugin (this triggers automatic sync)
           wp plugin activate facebook-for-woocommerce --allow-root
@@ -367,23 +372,7 @@ jobs:
             fi
           fi
 
-          if grep -q "fbq('track', 'PageView')" /tmp/homepage.html; then
-            echo "✅ fbq('track', 'PageView') FOUND"
-            echo "   PageView tracking code:"
-            grep -B 2 -A 2 "fbq('track', 'PageView')" /tmp/homepage.html | head -n 5
-          else
-            echo "❌ fbq('track', 'PageView') NOT FOUND"
-            echo ""
-            echo "🔍 CRITICAL: PageView event code missing from HTML!"
-            echo "   This means inject_page_view_event() is not outputting the code"
-            echo ""
-            echo "   Searching for ALL fbq calls in HTML:"
-            grep -o "fbq([^)]*)" /tmp/homepage.html | sort | uniq || echo "   No fbq calls found"
-            echo ""
-            echo "   Checking if WooCommerce enqueue worked (look for wc-facebook):"
-            grep -i "wc-facebook\|woocommerce.*facebook" /tmp/homepage.html || echo "   No WC-Facebook scripts found"
-          fi
-
+          grep -q "fbq('track', 'PageView')" /tmp/homepage.html && echo "✅ fbq('track', 'PageView') FOUND" || echo "❌ fbq('track', 'PageView') NOT FOUND"
           grep -q "facebook.com/tr?id=" /tmp/homepage.html && echo "✅ Pixel IMG tag FOUND" || echo "❌ Pixel IMG tag NOT FOUND"
 
           echo ""
