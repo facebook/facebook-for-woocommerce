@@ -175,11 +175,10 @@ jobs:
 
           echo "WordPress installed successfully"
 
-          # CRITICAL: Install and activate a CLASSIC theme (not block theme)!
-          # Block themes like twentytwentyfour don't always call wp_footer() properly
-          # Storefront is a classic WooCommerce theme that properly calls wp_head() and wp_footer()
-          wp theme install storefront --activate --allow-root
-          echo "✅ Storefront theme activated (classic theme with proper wp_head/wp_footer hooks)"
+          # CRITICAL: Install and activate a theme!
+          # Without a theme, wp_head() is not called and pixel code won't be injected
+          wp theme install twentytwentyfive --activate --allow-root
+          echo "✅ Theme activated (required for wp_head hook)"
           wp plugin install woocommerce --activate --allow-root
 
           # Basic WooCommerce setup
@@ -346,7 +345,7 @@ jobs:
 
           echo "Checking if WooCommerce is loaded..."
           grep -q "woocommerce" /tmp/homepage.html && echo "✅ WooCommerce assets found" || echo "❌ WooCommerce NOT loaded"
-          
+
           echo "Checking if theme header/footer are present..."
           grep -q "wp_head" /tmp/homepage.html && echo "✅ wp_head marker found" || echo "⚠️  No wp_head marker"
           grep -q "wp_footer" /tmp/homepage.html && echo "✅ wp_footer marker found" || echo "⚠️  No wp_footer marker"
@@ -384,9 +383,9 @@ jobs:
             echo "   Checking if WooCommerce enqueue worked (look for wc-facebook):"
             grep -i "wc-facebook\|woocommerce.*facebook" /tmp/homepage.html || echo "   No WC-Facebook scripts found"
           fi
-          
+
           grep -q "facebook.com/tr?id=" /tmp/homepage.html && echo "✅ Pixel IMG tag FOUND" || echo "❌ Pixel IMG tag NOT FOUND"
-          
+
           echo ""
           echo "=== Checking actual HTML output size ==="
           wc -c /tmp/homepage.html
