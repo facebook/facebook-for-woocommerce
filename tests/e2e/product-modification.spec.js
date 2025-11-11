@@ -187,34 +187,11 @@ test.describe('Facebook for WooCommerce - Product Modification E2E Tests', () =>
       console.log(`✅ Created product ID ${createdProductId} with price $${originalPrice}`);
 
       // Step 2: Navigate to Products page
-      console.log('📋 Navigating to Products page...');
-      await page.goto(`${baseURL}/wp-admin/edit.php?post_type=product`, {
-        waitUntil: 'networkidle',
-        timeout: 120000
-      });
-
       // Step 3: Filter by Simple product type
-      console.log('🔍 Filtering by Simple product type...');
-      const productTypeFilter = page.locator('select#dropdown_product_type');
-      if (await productTypeFilter.isVisible({ timeout: 10000 })) {
-        const filterButton = page.locator("#post-query-submit");
-        await productTypeFilter.selectOption('simple');
-        await filterButton.click();
-
-        await page.waitForTimeout(2000);
-        console.log('✅ Filtered by Simple product type');
-      } else {
-        console.warn('⚠️ Product type filter not found, proceeding without filter');
-      }
-
       // Step 4: Wait for products table to load
-      const hasProductsTable = await page.locator('.wp-list-table').isVisible({ timeout: 120000 });
-      if (!hasProductsTable) {
-        throw new Error('Products table not found');
-      }
-      console.log('✅ Products table loaded successfully');
+      await filterProducts(page, 'simple');
 
-      // Step 5: Find the product row
+      // Step 5: Find the product row and trigger quick edit
       console.log('🔍 Looking for test product...');
       const productRow = page.locator('.wp-list-table tbody tr.iedit').first();
       await productRow.waitFor({ state: 'visible', timeout: 10000 });

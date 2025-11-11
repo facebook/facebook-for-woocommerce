@@ -224,7 +224,8 @@ async function clickFirstProduct(page) {
   await firstProductRow.isVisible({ timeout: 10000 });
   // Extract product name from the row
   const productNameElement = firstProductRow.locator('.row-title');
-  console.log(`✅ Found product: "${await productNameElement.textContent()}"`);
+  const productName = await productNameElement.textContent();
+  console.log(`✅ Found product: "${productName}"`);
 
   // Click on product name to edit
   await productNameElement.click();
