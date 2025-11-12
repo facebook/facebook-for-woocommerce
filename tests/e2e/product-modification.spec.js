@@ -194,7 +194,7 @@ test.describe('Facebook for WooCommerce - Product Modification E2E Tests', () =>
       // Step 5: Find the product row and trigger quick edit
       console.log('🔍 Looking for test product...');
       const productRow = page.locator('.wp-list-table tbody tr.iedit').first();
-      await productRow.waitFor({ state: 'visible', timeout: 10000 });
+      await productRow.waitFor({ state: 'visible', timeout: 5000 });
 
       const productNameElement = productRow.locator('.row-title');
       const productName = await productNameElement.textContent();
@@ -213,7 +213,7 @@ test.describe('Facebook for WooCommerce - Product Modification E2E Tests', () =>
       // Step 7: Wait for Quick Edit form to appear
       console.log('⏳ Waiting for Quick Edit form...');
       const quickEditRow = page.locator('.inline-edit-row').first();
-      await quickEditRow.waitFor({ state: 'visible', timeout: 10000 });
+      await quickEditRow.waitFor({ state: 'visible', timeout: 5000 });
       console.log('✅ Quick Edit form appeared');
 
       // Step 8: Update the price
@@ -357,8 +357,7 @@ test.describe('Facebook for WooCommerce - Product Modification E2E Tests', () =>
       // Click on Variations tab
       console.log('📝 Editing variation prices using bulk actions...');
       const variationsTab = page.locator('li.variations_tab a');
-
-      await variationsTab.isVisible({ timeout: 2000 });
+      await variationsTab.waitFor({ state: 'visible', timeout: 2000 });
       await variationsTab.click();
       await page.waitForTimeout(2000);
       console.log('✅ Opened Variations tab');
@@ -376,14 +375,14 @@ test.describe('Facebook for WooCommerce - Product Modification E2E Tests', () =>
       });
 
       const expandAllButton = page.getByRole('link', { name: 'Expand' }).first();
-      await expandAllButton.isVisible({ timeout: 2000 });
+      await expandAllButton.waitFor({ state: 'visible', timeout: 2000 });
       await expandAllButton.click();
       await page.waitForTimeout(2000);
       console.log('✅ Expanded all variations');
 
       // Select bulk action "Set regular prices"
       const bulkActionsSelect = page.locator('select.variation_actions');
-      await bulkActionsSelect.isVisible({ timeout: 2000 })
+      await bulkActionsSelect.waitFor({ state: 'visible', timeout: 2000 });
       // Select the option - this triggers the popup immediately
       await bulkActionsSelect.selectOption('variable_regular_price');
 
@@ -424,12 +423,12 @@ test.describe('Facebook for WooCommerce - Product Modification E2E Tests', () =>
       // Validate that the new price is showing in the UI for all variations
       console.log('🔍 Validating new price for all variations in the UI...');
       // After reload, go to Variations tab again
-      await variationsTab.isVisible({ timeout: 2000 });
+      await variationsTab.waitFor({ state: 'visible', timeout: 2000 });
       await variationsTab.click();
       await page.waitForTimeout(2000);
 
       // Expand all variations to check their prices
-      await expandAllButton.isVisible({ timeout: 2000 });
+      await expandAllButton.waitFor({ state: 'visible', timeout: 2000 });
       await expandAllButton.click();
       await page.waitForTimeout(2000);
 
@@ -441,7 +440,7 @@ test.describe('Facebook for WooCommerce - Product Modification E2E Tests', () =>
       for (let i = 0; i < count; i++) {
         const variationRow = variationRows.nth(i);
         const priceField = variationRow.locator('input[name*="variable_regular_price"]');
-        await priceField.isVisible({ timeout: 2000 });
+        await priceField.waitFor({ state: 'visible', timeout: 2000 });
         const priceValue = await priceField.inputValue();
         expect(priceValue).toBe(newPrice);
         console.log(`✅ Variation ${i + 1} price verified: ${priceValue}`);
