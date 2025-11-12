@@ -43,24 +43,31 @@ test('DIAGNOSTIC: Pixel code in HTML', async ({ page }) => {
 test('PageView', async ({ page }) => {
     const { testId, pixelCapture } = await TestSetup.init(page, 'PageView');
 
-    // SPOOF DOMAIN: Modify headers for Facebook requests to bypass localhost restrictions
-    const SPOOFED_DOMAIN = 'wooc-local-test-sitecom.local'; // Use a whitelisted domain from your FB pixel settings
+    // Capture console logs and errors
+    page.on('console', msg => console.log(`   [Browser ${msg.type()}] ${msg.text()}`));
+    page.on('pageerror', err => console.error(`   [Browser Error] ${err.message}`));
 
-    await page.route('**facebook.com/**', async (route) => {
+    // CRITICAL: Set up domain spoofing BEFORE any navigation
+    const SPOOFED_DOMAIN = 'wooc-local-test-sitecom.local'; // Change to your whitelisted domain
+
+    await page.route('**/*facebook.com*/**', async (route) => {
         const request = route.request();
-        const headers = {
-            ...request.headers(),
-            'Origin': `https://${SPOOFED_DOMAIN}`,
-            'Referer': `https://${SPOOFED_DOMAIN}/`
-        };
-
-        // Also modify the URL to replace localhost domain if present
         let url = request.url();
+
+        console.log(`   [Intercepting] ${request.method()} ${url.substring(0, 100)}...`);
+
+        // Replace domain=localhost with spoofed domain
         url = url.replace(/domain=localhost/g, `domain=${SPOOFED_DOMAIN}`);
 
-        console.log(`   [Spoofing] ${request.method()} to ${url.substring(0, 100)}...`);
+        const headers = {
+            ...request.headers(),
+            'origin': `https://${SPOOFED_DOMAIN}`,
+            'referer': `https://${SPOOFED_DOMAIN}/`,
+        };
 
-        await route.continue({ headers, url });
+        console.log(`   [Spoofed to] ${url.substring(0, 100)}...`);
+
+        await route.continue({ url, headers });
     });
 
     await Promise.all([
@@ -68,7 +75,17 @@ test('PageView', async ({ page }) => {
         page.goto('/').then(async () => {
             await page.waitForLoadState('networkidle');
             await page.waitForFunction(() => typeof jQuery !== 'undefined' && jQuery.isReady);
-            await page.waitForTimeout(500);
+            await page.waitForTimeout(1000);
+
+            // Debug: Check what fbq actually did
+            const fbqDebug = await page.evaluate(() => {
+                return {
+                    exists: typeof window.fbq !== 'undefined',
+                    loaded: window.fbq?.loaded,
+                    queue: window.fbq?.queue?.length || 0
+                };
+            });
+            console.log(`   [fbq status]`, fbqDebug);
         })
     ]);
 
