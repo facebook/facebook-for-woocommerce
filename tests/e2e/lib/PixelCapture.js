@@ -37,16 +37,39 @@ class PixelCapture {
 
         try {
             // Wait for the facebook.com/tr response with our specific event
+            // Modern pixel uses POST requests, so check both URL params and POST body
             const response = await this.page.waitForResponse(
-                response => {
+                async response => {
                     const url = response.url();
-                    const matches = url.includes('facebook.com/') && url.includes(`ev=${this.eventName}`);
-                    if (url.includes('facebook.com/')) {
-                        console.log(`   [Response] FB: ${url.substring(0, 150)}... (matches: ${matches})`);
+
+                    // Must be a facebook.com/tr request
+                    if (!url.includes('facebook.com/tr')) {
+                        return false;
                     }
-                    return matches;
+
+                    // Check GET request (legacy/noscript)
+                    if (url.includes(`ev=${this.eventName}`)) {
+                        console.log(`   [Response] FB GET: ${url.substring(0, 150)}... (✅ matches)`);
+                        return true;
+                    }
+
+                    // Check POST request body (modern pixel)
+                    const request = response.request();
+                    if (request.method() === 'POST') {
+                        try {
+                            const postData = request.postData();
+                            if (postData && postData.includes(this.eventName)) {
+                                console.log(`   [Response] FB POST to /tr/ (✅ contains ${this.eventName})`);
+                                return true;
+                            }
+                        } catch (err) {
+                            // Sometimes postData() isn't available
+                        }
+                    }
+
+                    return false;
                 },
-                { timeout: 150000 } // 15 second timeout
+                { timeout: 15000 } // 15 second timeout
             );
 
             console.log(`✅ Pixel event captured: ${this.eventName}`);
