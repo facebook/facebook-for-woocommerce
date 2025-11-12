@@ -16,12 +16,19 @@ test('DIAGNOSTIC: Pixel code in HTML', async ({ page }) => {
 
     console.log('\n🔍 DIAGNOSTIC: Checking HTML for pixel code...');
     const hasInit = html.includes("fbq('init'") || html.includes('fbq("init"');
-    const hasTrackPageView = html.includes("fbq('track', 'PageView')") || html.includes('fbq("track", "PageView")');
+    // Match PageView with flexible whitespace (multiline formatting)
+    const hasTrackPageView = /fbq\s*\(\s*['"](track|pageview)['"]\s*,\s*['"]PageView['"]/i.test(html);
     const hasFbScript = html.includes('connect.facebook.net');
+    const hasPageView = html.includes('PageView');
+    const haspageview = html.includes('pageview');
+
 
     console.log(`   Pixel script (connect.facebook.net): ${hasFbScript ? '✅ YES' : '❌ NO'}`);
     console.log(`   fbq('init'): ${hasInit ? '✅ YES' : '❌ NO'}`);
     console.log(`   fbq('track', 'PageView'): ${hasTrackPageView ? '✅ YES' : '❌ NO'}`);
+    console.log(`PageView: ${hasPageView ? '✅ YES' : '❌ NO'}`);
+    console.log(`pageview: ${haspageview ? '✅ YES' : '❌ NO'}`);
+
 
     if (!hasInit || !hasTrackPageView) {
         console.log('\n❌ PIXEL CODE NOT FOUND IN HTML');
