@@ -20,7 +20,7 @@ test('DIAGNOSTIC: Pixel code in HTML', async ({ page }) => {
     const hasTrackPageView = /fbq\s*\(\s*['"](track|pageview)['"]\s*,\s*['"]PageView['"]/i.test(html);
     const hasFbScript = html.includes('connect.facebook.net');
     const hasPageView = html.includes('PageView');
-    const haspageview = html.includes('pageview');
+    // const haspageview = html.includes('pageview');
 
 
     console.log(`   Pixel script (connect.facebook.net): ${hasFbScript ? '✅ YES' : '❌ NO'}`);
@@ -45,7 +45,13 @@ test('PageView', async ({ page }) => {
 
     await Promise.all([
         pixelCapture.waitForEvent(),
-        page.goto('/').then(() => page.waitForLoadState('networkidle'))
+        page.goto('/').then(async () => {
+            await page.waitForLoadState('networkidle');
+            // Wait for jQuery to load and execute (it's deferred)
+            await page.waitForFunction(() => typeof jQuery !== 'undefined' && jQuery.isReady);
+            // Extra small delay to ensure jQuery ready callbacks execute
+            await page.waitForTimeout(500);
+        })
     ]);
 
     const validator = new EventValidator(testId);
