@@ -356,7 +356,7 @@ class RequestTest extends WP_UnitTestCase {
 	/**
 	 * Test for Request with different click_id values
 	 */
-	public function test_get_data_structure_with_fbc_format_cookie() {
+	public function given_cookie_fbc_exists_when_event_is_created_then_event_fbc_equals_cookies_fbc() {
 		$test_fbc = 'fb.1.1234567890.Test';
 		$pixel_id = 'test_pixel_id_123';
 
@@ -375,7 +375,7 @@ class RequestTest extends WP_UnitTestCase {
 		unset( $_COOKIE['_fbc'] );
 	}
 
-	public function test_get_data_structure_with_fbc_format_session() {
+	public function given_session_fbc_exists_when_event_is_created_then_event_fbc_equals_session_fbc() {
 		$test_fbc = 'fb.1.1234567890.Test';
 		$pixel_id = 'test_pixel_id_123';
 
@@ -393,7 +393,7 @@ class RequestTest extends WP_UnitTestCase {
 		unset( $_SESSION['_fbc'] );
 	}
 
-	public function test_get_data_structure_with_fbc_format_param_builder() {
+	public function given_param_builder_fbc_when_event_is_created_then_event_fbc_equals_param_builder_fbc() {
 		$test_pb_fbc = 'fb.1.1234567890.Test.AQ'; // parambuilder fbc signature
 		$pixel_id = 'test_pixel_id_123';
 
@@ -435,7 +435,7 @@ class RequestTest extends WP_UnitTestCase {
 		}
 	}
 
-	public function test_get_data_structure_with_fbc_format_request_param() {
+	public function given_request_fbclid_when_event_is_created_then_event_fbc_contains_fbclid() {
 		$test_fbc = 'fb.1.1234567890.Test';
 		$pixel_id = 'test_pixel_id_123';
 
@@ -481,7 +481,7 @@ class RequestTest extends WP_UnitTestCase {
 	/**
 	 * Test for Request with different browser_id (fbp) values
 	 */
-	public function test_get_data_structure_with_fbp_format_cookie() {
+	public function given_cookie_fbp_exists_when_event_is_created_then_event_fbp_equals_cookies_fbp() {
 		$test_fbp = 'fb.1.1234567890.TestFBP';
 		$pixel_id = 'test_pixel_id_123';
 
@@ -506,7 +506,7 @@ class RequestTest extends WP_UnitTestCase {
 		unset( $_COOKIE['_fbp'] );
 	}
 
-	public function test_get_data_structure_with_fbp_format_session() {
+	public function given_session_fbp_exists_when_event_is_created_then_event_fbp_equals_session_fbp() {
 		$test_fbp = 'fb.1.1234567890.TestFBP';
 		$pixel_id = 'test_pixel_id_123';
 
@@ -529,7 +529,7 @@ class RequestTest extends WP_UnitTestCase {
 		unset( $_SESSION['_fbp'] );
 	}
 
-	public function test_get_data_structure_with_fbp_format_param_builder() {
+	public function given_param_builder_fbp_when_event_is_created_then_event_fbp_equals_param_builder_fbp() {
 		$test_pb_fbp = 'fb.1.1234567890.ParamFBP';
 		$pixel_id = 'test_pixel_id_123';
 
