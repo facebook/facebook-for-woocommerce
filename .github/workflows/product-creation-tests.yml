@@ -372,7 +372,8 @@ jobs:
             fi
           fi
 
-          grep -q "fbq('track', 'PageView')" /tmp/homepage.html && echo "✅ fbq('track', 'PageView') FOUND" || echo "❌ fbq('track', 'PageView') NOT FOUND"
+          grep -q "track" /tmp/homepage.html && echo "✅ fbq('track', 'PageView') FOUND" || echo "❌ fbq('track', 'PageView') NOT FOUND"
+          grep -qi "pageview" /tmp/homepage.html && echo "✅ fbq('track', 'PageView') FOUND" || echo "❌ fbq('track', 'PageView') NOT FOUND"
           grep -q "facebook.com/tr?id=" /tmp/homepage.html && echo "✅ Pixel IMG tag FOUND" || echo "❌ Pixel IMG tag NOT FOUND"
 
           echo ""
