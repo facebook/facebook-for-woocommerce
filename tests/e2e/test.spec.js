@@ -43,6 +43,10 @@ test('DIAGNOSTIC: Pixel code in HTML', async ({ page }) => {
 test('PageView', async ({ page }) => {
     const { testId, pixelCapture } = await TestSetup.init(page, 'PageView');
 
+    // Capture console logs and errors
+    page.on('console', msg => console.log(`   [Browser Console] ${msg.type()}: ${msg.text()}`));
+    page.on('pageerror', err => console.error(`   [Browser Error] ${err.message}`));
+
     await Promise.all([
         pixelCapture.waitForEvent(),
         page.goto('/').then(async () => {
@@ -51,6 +55,17 @@ test('PageView', async ({ page }) => {
             await page.waitForFunction(() => typeof jQuery !== 'undefined' && jQuery.isReady);
             // Extra small delay to ensure jQuery ready callbacks execute
             await page.waitForTimeout(500);
+
+            // Check if fbq was actually called
+            const fbqCalled = await page.evaluate(() => {
+                return {
+                    fbqExists: typeof window.fbq !== 'undefined',
+                    fbqQueue: window.fbq && window.fbq.queue ? window.fbq.queue.length : 0,
+                    fbqLoaded: window.fbq && window.fbq.loaded,
+                    lastCall: window._fbq_test_last_call || 'none'
+                };
+            });
+            console.log(`   [Debug] fbq status:`, fbqCalled);
         })
     ]);
 
