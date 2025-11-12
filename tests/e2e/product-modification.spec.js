@@ -44,7 +44,7 @@ test.describe('Facebook for WooCommerce - Product Modification E2E Tests', () =>
       createdProductId = createdProduct.productId;
       console.log(`✅ Created product ID ${createdProductId} for editing test`);
 
-      await filterProducts(page, 'simple');
+      await filterProducts(page, 'simple', createdProduct.sku);
       await clickFirstProduct(page);
 
       // Extract product ID from URL
@@ -189,7 +189,7 @@ test.describe('Facebook for WooCommerce - Product Modification E2E Tests', () =>
       // Step 2: Navigate to Products page
       // Step 3: Filter by Simple product type
       // Step 4: Wait for products table to load
-      await filterProducts(page, 'simple');
+      await filterProducts(page, 'simple', createdProduct.sku);
 
       // Step 5: Find the product row and trigger quick edit
       console.log('🔍 Looking for test product...');
@@ -318,7 +318,7 @@ test.describe('Facebook for WooCommerce - Product Modification E2E Tests', () =>
       createdProductId = createdProduct.productId;
       console.log(`✅ Created variable product ID ${createdProductId} for editing test`);
 
-      await filterProducts(page, 'variable');
+      await filterProducts(page, 'variable', createdProduct.sku);
       await clickFirstProduct(page);
 
       // Extract product ID from URL

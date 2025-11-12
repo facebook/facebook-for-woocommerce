@@ -187,7 +187,7 @@ async function setProductDescription(page, newDescription) {
 }
 
 // Helper function to route to products table and filter by product type
-async function filterProducts(page, productType) {
+async function filterProducts(page, productType, productSKU = null) {
   // Go to Products page
   console.log('📋 Navigating to Products page...');
   await page.goto(`${baseURL}/wp-admin/edit.php?post_type=product`, {
@@ -207,6 +207,21 @@ async function filterProducts(page, productType) {
     console.log('✅ Filtered by product type');
   } else {
     console.warn('⚠️ Product type filter not found, proceeding without filter');
+  }
+
+  // If productSKU is provided, search for it
+  if (productSKU) {
+    console.log(`🔍 Searching for product with SKU: ${productSKU}`);
+    const searchBox = page.locator('#post-search-input');
+    if (await searchBox.isVisible({ timeout: 10000 })) {
+      await searchBox.fill(productSKU);
+      const searchButton = page.locator('#search-submit');
+      await searchButton.click();
+      await page.waitForTimeout(2000);
+      console.log('✅ Searched for product by SKU');
+    } else {
+      console.warn('⚠️ Search box not found, cannot search by SKU');
+    }
   }
 
   // Wait for products table to load
