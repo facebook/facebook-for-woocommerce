@@ -43,29 +43,32 @@ test('DIAGNOSTIC: Pixel code in HTML', async ({ page }) => {
 test('PageView', async ({ page }) => {
     const { testId, pixelCapture } = await TestSetup.init(page, 'PageView');
 
-    // Capture console logs and errors
-    page.on('console', msg => console.log(`   [Browser Console] ${msg.type()}: ${msg.text()}`));
-    page.on('pageerror', err => console.error(`   [Browser Error] ${err.message}`));
+    // SPOOF DOMAIN: Modify headers for Facebook requests to bypass localhost restrictions
+    const SPOOFED_DOMAIN = 'wooc-local-test-sitecom.local'; // Use a whitelisted domain from your FB pixel settings
+
+    await page.route('**facebook.com/**', async (route) => {
+        const request = route.request();
+        const headers = {
+            ...request.headers(),
+            'Origin': `https://${SPOOFED_DOMAIN}`,
+            'Referer': `https://${SPOOFED_DOMAIN}/`
+        };
+
+        // Also modify the URL to replace localhost domain if present
+        let url = request.url();
+        url = url.replace(/domain=localhost/g, `domain=${SPOOFED_DOMAIN}`);
+
+        console.log(`   [Spoofing] ${request.method()} to ${url.substring(0, 100)}...`);
+
+        await route.continue({ headers, url });
+    });
 
     await Promise.all([
         pixelCapture.waitForEvent(),
         page.goto('/').then(async () => {
             await page.waitForLoadState('networkidle');
-            // Wait for jQuery to load and execute (it's deferred)
             await page.waitForFunction(() => typeof jQuery !== 'undefined' && jQuery.isReady);
-            // Extra small delay to ensure jQuery ready callbacks execute
             await page.waitForTimeout(500);
-
-            // Check if fbq was actually called
-            const fbqCalled = await page.evaluate(() => {
-                return {
-                    fbqExists: typeof window.fbq !== 'undefined',
-                    fbqQueue: window.fbq && window.fbq.queue ? window.fbq.queue.length : 0,
-                    fbqLoaded: window.fbq && window.fbq.loaded,
-                    lastCall: window._fbq_test_last_call || 'none'
-                };
-            });
-            console.log(`   [Debug] fbq status:`, fbqCalled);
         })
     ]);
 
