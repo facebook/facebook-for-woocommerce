@@ -56,6 +56,10 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y nginx php8.1-fpm
 
+          # Add hosts entry for whitelisted domain
+          echo "127.0.0.1 wooc-local-test-sitecom.local" | sudo tee -a /etc/hosts
+          echo "✅ Added hosts entry for wooc-local-test-sitecom.local"
+
           # Stop default nginx
           sudo systemctl stop nginx
 
@@ -63,7 +67,7 @@ jobs:
           sudo tee /etc/nginx/sites-available/wordpress > /dev/null <<'EOF'
           server {
               listen 8080;
-              server_name localhost;
+              server_name wooc-local-test-sitecom.local;
               root /tmp/wordpress;
               index index.php index.html;
 
@@ -166,7 +170,7 @@ jobs:
         run: |
           cd /tmp/wordpress
           wp core install \
-            --url=http://localhost:8080 \
+            --url=http://wooc-local-test-sitecom.local:8080 \
             --title="E2E Test Site" \
             --admin_user=admin \
             --admin_password=admin \
@@ -411,11 +415,13 @@ jobs:
 
       - name: Run E2E tests
         env:
-          WORDPRESS_URL: http://localhost:8080
+          WORDPRESS_URL: http://wooc-local-test-sitecom.local:8080
           WP_USERNAME: admin
           WP_PASSWORD: admin
         run: |
-          # run: xvfb-run --auto-servernum npm run test:e2e
+          # Verify domain is accessible
+          curl -I http://wooc-local-test-sitecom.local:8080 || echo "⚠️ Domain check failed, but continuing..."
+
           # Run with headed browser to ensure cookies work (some privacy features block in headless)
           xvfb-run --auto-servernum npx playwright test --headed
 
