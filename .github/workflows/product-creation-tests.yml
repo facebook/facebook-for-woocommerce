@@ -394,6 +394,8 @@ jobs:
         run: |
           npm install
           npx playwright install chromium
+          npx playwright install-deps chromium
+
 
       - name: Debug captured-events directory
         run: |
