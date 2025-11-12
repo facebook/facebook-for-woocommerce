@@ -265,6 +265,26 @@ jobs:
           # Activate the plugin (this triggers automatic sync)
           wp plugin activate facebook-for-woocommerce --allow-root
 
+          # Install CAPI event logger for E2E tests (single file, super simple!)
+          echo "=== Installing E2E CAPI event logger ==="
+          mkdir -p wp-content/mu-plugins
+          cp wp-content/plugins/facebook-for-woocommerce/tests/e2e/e2e-capi-logger.php wp-content/mu-plugins/
+
+          # Make sure captured-events directory exists and is writable
+          mkdir -p wp-content/plugins/facebook-for-woocommerce/tests/e2e/captured-events
+          chmod 777 wp-content/plugins/facebook-for-woocommerce/tests/e2e/captured-events
+
+          # Verify setup
+          echo "✅ CAPI logger installed to mu-plugins"
+          wp eval "
+            if (function_exists('log_event_for_tests')) {
+              echo '✅ log_event_for_tests() function is available globally' . PHP_EOL;
+            } else {
+              echo '❌ ERROR: log_event_for_tests() not found' . PHP_EOL;
+              exit(1);
+            }
+          " --allow-root
+
           # Create a customer (non-admin) user for testing
           # Pixel tracking excludes admin users by default!
           wp user create customer customer@test.com --role=customer --user_pass=Password@54321 --allow-root || echo "Customer user already exists"
