@@ -259,7 +259,7 @@ jobs:
 
           # Create debug.log file and make it writable
           touch wp-content/debug.log
-          chmod 666 wp-content/debug.log
+          chmod 777 wp-content/debug.log
           echo "✅ debug.log created and writable"
 
           # Activate the plugin (this triggers automatic sync)
@@ -441,9 +441,19 @@ jobs:
         run: |
           # Verify domain is accessible
           curl -I http://wooc-local-test-sitecom.local:8080 || echo "⚠️ Domain check failed, but continuing..."
-
+          
           # Run with headed browser to ensure cookies work (some privacy features block in headless)
           xvfb-run --auto-servernum npx playwright test --headed
+
+      - name: Print debug.log (ALWAYS)
+        if: always()
+        run: |
+          echo "=== FULL DEBUG LOG ==="
+          if [ -f /tmp/wordpress/wp-content/debug.log ]; then
+            cat /tmp/wordpress/wp-content/debug.log
+          else
+            echo "⚠️ No debug.log file found"
+          fi
 
       - name: Check for PHP errors
         if: always()
