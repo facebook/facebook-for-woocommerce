@@ -27,7 +27,7 @@ test('DIAGNOSTIC: Pixel code in HTML', async ({ page }) => {
     console.log(`   fbq('init'): ${hasInit ? '✅ YES' : '❌ NO'}`);
     console.log(`   fbq('track', 'PageView'): ${hasTrackPageView ? '✅ YES' : '❌ NO'}`);
     console.log(`PageView: ${hasPageView ? '✅ YES' : '❌ NO'}`);
-    console.log(`pageview: ${haspageview ? '✅ YES' : '❌ NO'}`);
+    // console.log(`pageview: ${haspageview ? '✅ YES' : '❌ NO'}`);
 
 
     if (!hasInit || !hasTrackPageView) {
