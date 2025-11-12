@@ -438,9 +438,16 @@ jobs:
           WORDPRESS_URL: http://wooc-local-test-sitecom.local:8080
           WP_USERNAME: admin
           WP_PASSWORD: admin
+          E2E_CAPTURED_EVENTS_DIR: /home/runner/work/facebook-for-woocommerce/facebook-for-woocommerce/tests/e2e/captured-events
         run: |
           # Verify domain is accessible
           curl -I http://wooc-local-test-sitecom.local:8080 || echo "⚠️ Domain check failed, but continuing..."
+          
+          # Create captured-events directory in workspace (where tests run)
+          mkdir -p /home/runner/work/facebook-for-woocommerce/facebook-for-woocommerce/tests/e2e/captured-events
+          chmod 777 /home/runner/work/facebook-for-woocommerce/facebook-for-woocommerce/tests/e2e/captured-events
+          
+          echo "✅ Captured events directory: $E2E_CAPTURED_EVENTS_DIR"
           
           # Run with headed browser to ensure cookies work (some privacy features block in headless)
           xvfb-run --auto-servernum npx playwright test --headed

@@ -25,7 +25,8 @@ class E2E_Event_Logger {
         
         error_log("DEBUG_E2E: log_event called - testId: $testId, eventType: $eventType"); // DEBUG_E2E
         
-        $capturedDir = dirname(__DIR__) . '/captured-events';
+        // Use env var if set (for CI), otherwise use local path
+        $capturedDir = getenv('E2E_CAPTURED_EVENTS_DIR') ?: dirname(__DIR__) . '/captured-events';
         
         if (!file_exists($capturedDir) && !@mkdir($capturedDir, 0755, true)) {
             error_log("DEBUG_E2E: FAILED - Cannot create dir: $capturedDir"); // DEBUG_E2E
