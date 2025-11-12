@@ -43,28 +43,14 @@ test('DIAGNOSTIC: Pixel code in HTML', async ({ page }) => {
 test('PageView', async ({ page }) => {
     const { testId, pixelCapture } = await TestSetup.init(page, 'PageView');
 
-    // Capture console logs and errors (filter out the traffic permission warning)
+    // Capture console logs and errors (filter out noise)
     page.on('console', msg => {
         const text = msg.text();
-        if (!text.includes('traffic permission settings')) {
+        if (!text.includes('traffic permission') && !text.includes('JQMIGRATE')) {
             console.log(`   [Browser ${msg.type()}] ${text}`);
         }
     });
     page.on('pageerror', err => console.error(`   [Browser Error] ${err.message}`));
-
-    // BYPASS: Intercept Facebook's config request and replace domain=localhost
-    await page.route('**/connect.facebook.net/**', async (route) => {
-        const request = route.request();
-        let url = request.url();
-
-        // Replace domain=localhost with whitelisted domain
-        if (url.includes('domain=localhost')) {
-            url = url.replace(/domain=localhost/g, 'domain=wooc-local-test-sitecom.local');
-            console.log(`   [BYPASS] Modified FB config URL to use whitelisted domain`);
-        }
-
-        await route.continue({ url });
-    });
 
     await Promise.all([
         pixelCapture.waitForEvent(),
@@ -78,7 +64,8 @@ test('PageView', async ({ page }) => {
                 return {
                     exists: typeof window.fbq !== 'undefined',
                     loaded: window.fbq?.loaded,
-                    queue: window.fbq?.queue?.length || 0
+                    queue: window.fbq?.queue?.length || 0,
+                    currentDomain: window.location.hostname
                 };
             });
             console.log(`   [fbq status]`, fbqDebug);
