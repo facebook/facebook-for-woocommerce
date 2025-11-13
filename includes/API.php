@@ -610,20 +610,41 @@ class API extends Base {
 	 * @param Event $event event object
 	 */
 	private function log_event_for_tests( Event $event ) {
+		error_log( '=== E2E: log_event_for_tests called ===' );
+		error_log( 'E2E: Event name: ' . $event->get_name() );
+		error_log( 'E2E: Checking for facebook_test_id cookie...' );
+		error_log( 'E2E: Cookies available: ' . print_r( array_keys( $_COOKIE ), true ) );
+		
 		// Check if we're in test mode (test ID cookie set)
 		if ( empty( $_COOKIE['facebook_test_id'] ) ) {
-			// log error our capi
-
+			error_log( 'E2E: NO facebook_test_id cookie found - NOT logging event' );
 			return;
 		}
 
 		$test_id = sanitize_text_field( wp_unslash( $_COOKIE['facebook_test_id'] ) );
+		error_log( 'E2E: Test ID found: ' . $test_id );
 
 		// Load logger class and log directly (no HTTP overhead)
 		$logger_file = plugin_dir_path( __FILE__ ) . '../tests/e2e/lib/Logger.php';
+		$resolved_path = realpath( $logger_file );
+		error_log( 'E2E: Logger file path: ' . $logger_file );
+		error_log( 'E2E: Resolved logger path: ' . ( $resolved_path ? $resolved_path : 'FAILED TO RESOLVE' ) );
+		error_log( 'E2E: Logger file exists: ' . ( file_exists( $logger_file ) ? 'YES' : 'NO' ) );
+		error_log( 'E2E: __FILE__ is: ' . __FILE__ );
+		error_log( 'E2E: plugin_dir_path(__FILE__) is: ' . plugin_dir_path( __FILE__ ) );
+		
 		if ( file_exists( $logger_file ) ) {
 			require_once $logger_file;
-			\E2E_Event_Logger::log_event( $test_id, 'capi', $event->get_data() );
+			error_log( 'E2E: ✅ Logger file loaded successfully' );
+			error_log( 'E2E: Logging CAPI event: ' . $event->get_name() );
+			
+			$event_data = $event->get_data();
+			error_log( 'E2E: Event data retrieved, keys: ' . print_r( array_keys( $event_data ), true ) );
+			
+			$result = \E2E_Event_Logger::log_event( $test_id, 'capi', $event_data );
+			error_log( 'E2E: log_event returned: ' . ( $result ? 'TRUE (success)' : 'FALSE (failed)' ) );
+		} else {
+			error_log( 'E2E: ❌ ERROR - Logger file NOT FOUND at: ' . $logger_file );
 		}
 	}
 

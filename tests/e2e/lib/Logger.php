@@ -12,7 +12,7 @@ class E2E_Event_Logger {
     /**
      * Log CAPI event to JSON file (simple array of events)
      *
-     * @param string $testId Test identifier  
+     * @param string $testId Test identifier
      * @param string $eventType 'capi' (pixel writes separately)
      * @param array $eventData Event data to log
      * @return bool Success
@@ -22,19 +22,21 @@ class E2E_Event_Logger {
             error_log("DEBUG_E2E: Missing testId or eventType"); // DEBUG_E2E
             return false;
         }
-        
+
         error_log("DEBUG_E2E: log_event called - testId: $testId, eventType: $eventType"); // DEBUG_E2E
-        
-        // Use env var if set (for CI), otherwise use local path
-        $capturedDir = getenv('E2E_CAPTURED_EVENTS_DIR') ?: dirname(__DIR__) . '/captured-events';
-        
+
+        // __DIR__ is /path-to-plugin/tests/e2e/lib
+        // dirname(__DIR__) is /path-to-plugin/tests/e2e
+        // So we append /captured-events to get /path-to-plugin/tests/e2e/captured-events
+        $capturedDir = dirname(__DIR__) . '/captured-events';
+
         if (!file_exists($capturedDir) && !@mkdir($capturedDir, 0755, true)) {
             error_log("DEBUG_E2E: FAILED - Cannot create dir: $capturedDir"); // DEBUG_E2E
             return false;
         }
-        
+
         error_log("DEBUG_E2E: Using dir: $capturedDir"); // DEBUG_E2E
-        
+
         $filePath = $capturedDir . '/' . $eventType . '-' . $testId . '.json';
         error_log("DEBUG_E2E: Writing to: $filePath"); // DEBUG_E2E
 
@@ -51,7 +53,7 @@ class E2E_Event_Logger {
 
         // Write back
         $success = file_put_contents($filePath, json_encode($events, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES));
-        
+
         if ($success) {
             error_log("DEBUG_E2E: Event logged successfully"); // DEBUG_E2E
         } else {
