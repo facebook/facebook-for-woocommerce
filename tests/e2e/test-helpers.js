@@ -279,13 +279,13 @@ async function validateFacebookSync(productId, productName, waitSeconds = 10) {
     if (result.success) {
       console.log(`🎉 Facebook Sync Validation Succeeded for ${displayName}:`);
     } else {
-      console.log(`❌ Facebook sync validation Failed: ${result.error}. Check debug logs above.`);
+      console.warn(`⚠️ Facebook sync validation Failed: ${result.error}. Check debug logs above.`);
     }
 
     return result;
 
   } catch (error) {
-    console.log(`⚠️ Facebook sync validation error: ${error.message}`);
+    console.warn(`⚠️ Facebook sync validation error: ${error.message}`);
     return null;
   }
 }
