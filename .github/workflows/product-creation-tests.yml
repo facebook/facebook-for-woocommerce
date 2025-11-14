@@ -485,8 +485,8 @@ jobs:
       - name: Run E2E tests
         env:
           WORDPRESS_URL: http://wooc-local-test-sitecom.local:8080
-          WP_USERNAME: admin
-          WP_PASSWORD: admin
+          WP_CUSTOMER_USERNAME: admin
+          WP_CUSTOMER_PASSWORD: admin
         run: |
           # Verify domain is accessible
           curl -I http://wooc-local-test-sitecom.local:8080 || echo "⚠️ Domain check failed, but continuing..."

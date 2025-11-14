@@ -610,41 +610,19 @@ class API extends Base {
 	 * @param Event $event event object
 	 */
 	private function log_event_for_tests( Event $event ) {
-		error_log( '=== E2E: log_event_for_tests called ===' );
-		error_log( 'E2E: Event name: ' . $event->get_name() );
-		error_log( 'E2E: Checking for facebook_test_id cookie...' );
-		error_log( 'E2E: Cookies available: ' . print_r( array_keys( $_COOKIE ), true ) );
-		
 		// Check if we're in test mode (test ID cookie set)
 		if ( empty( $_COOKIE['facebook_test_id'] ) ) {
-			error_log( 'E2E: NO facebook_test_id cookie found - NOT logging event' );
 			return;
 		}
 
 		$test_id = sanitize_text_field( wp_unslash( $_COOKIE['facebook_test_id'] ) );
-		error_log( 'E2E: Test ID found: ' . $test_id );
 
 		// Load logger class and log directly (no HTTP overhead)
 		$logger_file = plugin_dir_path( __FILE__ ) . '../tests/e2e/lib/Logger.php';
-		$resolved_path = realpath( $logger_file );
-		error_log( 'E2E: Logger file path: ' . $logger_file );
-		error_log( 'E2E: Resolved logger path: ' . ( $resolved_path ? $resolved_path : 'FAILED TO RESOLVE' ) );
-		error_log( 'E2E: Logger file exists: ' . ( file_exists( $logger_file ) ? 'YES' : 'NO' ) );
-		error_log( 'E2E: __FILE__ is: ' . __FILE__ );
-		error_log( 'E2E: plugin_dir_path(__FILE__) is: ' . plugin_dir_path( __FILE__ ) );
 		
 		if ( file_exists( $logger_file ) ) {
 			require_once $logger_file;
-			error_log( 'E2E: ✅ Logger file loaded successfully' );
-			error_log( 'E2E: Logging CAPI event: ' . $event->get_name() );
-			
-			$event_data = $event->get_data();
-			error_log( 'E2E: Event data retrieved, keys: ' . print_r( array_keys( $event_data ), true ) );
-			
-			$result = \E2E_Event_Logger::log_event( $test_id, 'capi', $event_data );
-			error_log( 'E2E: log_event returned: ' . ( $result ? 'TRUE (success)' : 'FALSE (failed)' ) );
-		} else {
-			error_log( 'E2E: ❌ ERROR - Logger file NOT FOUND at: ' . $logger_file );
+			\E2E_Event_Logger::log_event( $test_id, 'capi', $event->get_data() );
 		}
 	}
 
@@ -659,37 +637,23 @@ class API extends Base {
 	 * @throws ApiException In case of a general API error or rate limit error.
 	 */
 	public function send_pixel_events( $pixel_id, array $events ) {
-		error_log( '🚀 E2E: send_pixel_events CALLED with ' . count( $events ) . ' event(s)' );
-		
 		$request = new API\Pixel\Events\Request( $pixel_id, $events );
 		$request->set_params( array_merge( $request->get_params(), array( 'test_event_code' => "TEST27057" ) ) );
 		$this->set_response_handler( Response::class );
 
-		error_log( '🌐 E2E: About to perform API request to Facebook' );
 		$response = $this->perform_request( $request );
-		error_log( '✅ E2E: API request completed. Has error: ' . ( $response->has_api_error() ? 'YES' : 'NO' ) );
 
-		try{
+		try {
 			// Log to E2E test framework if successful
 			if ( $response && ! $response->has_api_error() ) {
-				error_log( '📝 E2E: API response successful, logging ' . count( $events ) . ' event(s) to test framework' );
 				foreach ( $events as $event ) {
-					error_log( '📝 E2E: Calling log_event_for_tests for event: ' . $event->get_name() );
 					$this->log_event_for_tests( $event );
 				}
-			} else {
-				error_log( '❌ E2E: API response has error, NOT logging to test framework' );
-				if ( $response ) {
-					error_log( '❌ E2E: Error code: ' . $response->get_api_error_code() );
-					error_log( '❌ E2E: Error message: ' . $response->get_api_error_message() );
-				}
 			}
-		}
-		catch ( \Exception $e ) {
-			error_log( '❌ E2E: Exception in log_event_for_tests: ' . $e->getMessage() );
+		} catch ( \Exception $e ) {
+			// Silently fail - don't break production for test logging
 		}
 
-		error_log( '🏁 E2E: send_pixel_events COMPLETED' );
 		return $response;
 	}
 

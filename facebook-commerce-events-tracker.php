@@ -271,10 +271,7 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 		 * Triggers the PageView event
 		 */
 		public function inject_page_view_event() {
-			echo "\n<!-- E2E_DEBUG: inject_page_view_event() called -->\n";
-
 			if ( ! $this->is_pixel_enabled() ) {
-				echo "<!-- E2E_DEBUG: Pixel NOT enabled, returning early -->\n";
 				return;
 			}
 
@@ -285,16 +282,12 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 			);
 
 			$event = new Event( $event_data );
-			echo "<!-- E2E_DEBUG: Event object created, ID: " . esc_html( $event->get_id() ) . " -->\n";
 
 			$this->send_api_event( $event, false );
-			echo "<!-- E2E_DEBUG: send_api_event() called (pending) -->\n";
 
 			$event_data['event_id'] = $event->get_id();
 
-			echo "<!-- E2E_DEBUG: About to call inject_event() -->\n";
 			$this->pixel->inject_event( $event_name, $event_data );
-			echo "<!-- E2E_DEBUG: inject_event() completed -->\n";
 		}
 
 
@@ -1328,22 +1321,15 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 		 * Send pending events.
 		 */
 		public function send_pending_events() {
-			error_log( '🔄 E2E: send_pending_events() CALLED on shutdown hook' );
-
 			$pending_events = $this->get_pending_events();
-			error_log( '🔄 E2E: Pending events count: ' . count( $pending_events ) );
 
 			if ( empty( $pending_events ) ) {
-				error_log( '⚠️  E2E: No pending events to send' );
 				return;
 			}
 
-			error_log( '📤 E2E: Processing ' . count( $pending_events ) . ' pending event(s)' );
 			foreach ( $pending_events as $event ) {
-				error_log( '📤 E2E: Sending pending event: ' . $event->get_name() );
 				$this->send_api_event( $event );
 			}
-			error_log( '✅ E2E: send_pending_events() COMPLETED' );
 		}
 	}
 

@@ -79,39 +79,86 @@ test('PageView', async ({ page }) => {
     expect(result.passed).toBe(true);
 });
 
-// test('ViewContent', async ({ page }) => {
-//     // TODO needs to have an existing product
-//     const { testId, pixelCapture } = await TestSetup.init(page, 'ViewContent');
+test('ViewContent', async ({ page }) => {
+    const { testId, pixelCapture } = await TestSetup.init(page, 'ViewContent');
 
-//     await Promise.all([
-//         pixelCapture.waitForEvent(),
-//         page.goto('/product/testp/')
-//     ]);
+    // Capture console logs and errors (filter out noise)
+    page.on('console', msg => {
+        const text = msg.text();
+        if (!text.includes('traffic permission') && !text.includes('JQMIGRATE')) {
+            console.log(`   [Browser ${msg.type()}] ${text}`);
+        }
+    });
+    page.on('pageerror', err => console.error(`   [Browser Error] ${err.message}`));
 
-//     const validator = new EventValidator(testId);
-//     const result = await validator.validate('ViewContent', page);
+    await Promise.all([
+        pixelCapture.waitForEvent(),
+        page.goto('/product/testp/').then(async () => {
+            await page.waitForLoadState('networkidle');
+            await page.waitForFunction(() => typeof jQuery !== 'undefined' && jQuery.isReady);
+            await page.waitForTimeout(1000);
 
-//     TestSetup.logResult('ViewContent', result);
-//     expect(result.passed).toBe(true);
-// });
+            // Debug: Check what fbq actually did
+            const fbqDebug = await page.evaluate(() => {
+                return {
+                    exists: typeof window.fbq !== 'undefined',
+                    loaded: window.fbq?.loaded,
+                    queue: window.fbq?.queue?.length || 0,
+                    currentDomain: window.location.hostname
+                };
+            });
+            console.log(`   [fbq status]`, fbqDebug);
+        })
+    ]);
 
-// test('AddToCart', async ({ page }) => {
-//     // TODO needs to have an existing product
-//     const { testId, pixelCapture } = await TestSetup.init(page, 'AddToCart');
+    const validator = new EventValidator(testId);
+    const result = await validator.validate('ViewContent', page);
 
-//     await page.goto('/product/testp/');
+    TestSetup.logResult('ViewContent', result);
+    expect(result.passed).toBe(true);
+});
 
-//     await Promise.all([
-//         pixelCapture.waitForEvent(),
-//         page.click('.single_add_to_cart_button')
-//     ]);
+test('AddToCart', async ({ page }) => {
+    const { testId, pixelCapture } = await TestSetup.init(page, 'AddToCart');
 
-//     const validator = new EventValidator(testId);
-//     const result = await validator.validate('AddToCart', page);
+    // Capture console logs and errors (filter out noise)
+    page.on('console', msg => {
+        const text = msg.text();
+        if (!text.includes('traffic permission') && !text.includes('JQMIGRATE')) {
+            console.log(`   [Browser ${msg.type()}] ${text}`);
+        }
+    });
+    page.on('pageerror', err => console.error(`   [Browser Error] ${err.message}`));
 
-//     TestSetup.logResult('AddToCart', result);
-//     expect(result.passed).toBe(true);
-// });
+    await page.goto('/product/testp/');
+    await page.waitForLoadState('networkidle');
+    await page.waitForFunction(() => typeof jQuery !== 'undefined' && jQuery.isReady);
+    await page.waitForTimeout(500);
+
+    await Promise.all([
+        pixelCapture.waitForEvent(),
+        page.click('.single_add_to_cart_button').then(async () => {
+            await page.waitForTimeout(1000);
+
+            // Debug: Check what fbq actually did
+            const fbqDebug = await page.evaluate(() => {
+                return {
+                    exists: typeof window.fbq !== 'undefined',
+                    loaded: window.fbq?.loaded,
+                    queue: window.fbq?.queue?.length || 0,
+                    currentDomain: window.location.hostname
+                };
+            });
+            console.log(`   [fbq status]`, fbqDebug);
+        })
+    ]);
+
+    const validator = new EventValidator(testId);
+    const result = await validator.validate('AddToCart', page);
+
+    TestSetup.logResult('AddToCart', result);
+    expect(result.passed).toBe(true);
+});
 
 // test('ViewCategory - DEBUG', async ({ page }) => {
 //     const { testId } = await TestSetup.init(page, 'ViewCategory');

@@ -39,37 +39,23 @@ class PixelCapture {
             // Wait for the facebook.com/tr response with our specific event
             // Modern pixel uses POST requests, so check both URL params and POST body
             const response = await this.page.waitForResponse(
-                async response => {
+                response => {
                     const url = response.url();
 
-                    // Must be a facebook.com/tr request
-                    if (!url.includes('facebook.com/tr')) {
+                    // Must be a Facebook pixel request (either /tr or /privacy_sandbox/pixel)
+                    if (!url.includes('facebook.com')) {
                         return false;
                     }
 
-                    // Check GET request (legacy/noscript)
+                    // Check if URL contains our event name (ev=EventName)
                     if (url.includes(`ev=${this.eventName}`)) {
-                        console.log(`   [Response] FB GET: ${url.substring(0, 150)}... (✅ matches)`);
+                        console.log(`   [Response] ✅ Matched: ${url.substring(0, 150)}...`);
                         return true;
-                    }
-
-                    // Check POST request body (modern pixel)
-                    const request = response.request();
-                    if (request.method() === 'POST') {
-                        try {
-                            const postData = request.postData();
-                            if (postData && postData.includes(this.eventName)) {
-                                console.log(`   [Response] FB POST to /tr/ (✅ contains ${this.eventName})`);
-                                return true;
-                            }
-                        } catch (err) {
-                            // Sometimes postData() isn't available
-                        }
                     }
 
                     return false;
                 },
-                { timeout: 15000 } // 15 second timeout
+                { timeout: 15000 }
             );
 
             console.log(`✅ Pixel event captured: ${this.eventName}`);
