@@ -461,4 +461,133 @@ test.describe('Facebook for WooCommerce - Product Modification E2E Tests', () =>
     }
   });
 
+  test('Edit Facebook-specific options for simple product', async ({ page }, testInfo) => {
+    let productId = null;
+
+    try {
+      // Create a test product programmatically (faster than UI)
+      console.log('📦 Creating test simple product...');
+      const { productId: createdId, productName, sku } = await createTestProduct({
+        productType: 'simple',
+        price: '19.99',
+        stock: '10'
+      });
+      productId = createdId;
+      console.log(`✅ Created product ${productId} with SKU: ${sku}`);
+
+      // Navigate to Products page
+      console.log('📋 Navigating to Products page...');
+      await page.goto(`${baseURL}/wp-admin/edit.php?post_type=product`, {
+        waitUntil: 'networkidle',
+        timeout: 120000
+      });
+
+      await filterProducts(page, 'simple', sku);
+      await clickFirstProduct(page);
+
+      // Check for any PHP errors on the page
+      await checkForPhpErrors(page);
+
+      // Click on "Facebook" tab in product data
+      console.log('🔵 Clicking on Facebook tab...');
+      const facebookTab = page.locator('.wc-tabs li.fb_commerce_tab_options a, a[href="#fb_commerce_tab"]');
+
+      // Scroll to product data section first
+      await page.locator('#woocommerce-product-data').scrollIntoViewIfNeeded();
+
+      // Check if Facebook tab exists
+      const facebookTabExists = await facebookTab.isVisible({ timeout: 10000 }).catch(() => false);
+
+      if (!facebookTabExists) {
+        console.warn('⚠️ Facebook tab not found. This might indicate:');
+        console.warn('   - Facebook for WooCommerce plugin not properly activated');
+        console.warn('   - Plugin not connected to Facebook catalog');
+        console.warn('   - Tab selector needs updating');
+
+        // Take screenshot for debugging
+        await safeScreenshot(page, 'facebook-tab-not-found.png');
+
+        // Try to find any tab that might be Facebook-related
+        const allTabs = await page.locator('.wc-tabs li a').all();
+        console.log(`Found ${allTabs.length} tabs in product data`);
+
+        for (let i = 0; i < allTabs.length; i++) {
+          const tabText = await allTabs[i].textContent();
+          console.log(`  Tab ${i}: ${tabText}`);
+        }
+
+        throw new Error('Facebook tab not found in product data metabox');
+      }
+
+      await facebookTab.click();
+      await page.waitForTimeout(2000); // Wait for tab content to load
+      console.log('✅ Facebook tab opened');
+
+      // TODO: Add Facebook description
+      //console.log('📝 Setting Facebook description...');
+      // await setProductDescription(page, `Facebook-specific description for ${productName}`);
+
+      // Add Facebook Price
+      console.log('💰 Adding Facebook price...');
+      const fbPrice = '24.99';
+      const fbPriceField = page.locator('#fb_product_price, input[name="fb_product_price"]');
+
+      if (await fbPriceField.isVisible({ timeout: 5000 })) {
+        await fbPriceField.fill(fbPrice);
+        console.log(`✅ Facebook price set: $${fbPrice}`);
+      } else {
+        console.warn('⚠️ Facebook price field not found');
+      }
+
+      // Set custom Facebook product image
+      console.log('🖼️ Setting custom Facebook product image...');
+
+      // Look for "Use custom image" option
+      const useCustomImageRadio = page.locator('input[type="radio"][value="custom"], input[name="fb_product_image_source"][value="custom"]');
+
+      await useCustomImageRadio.waitFor({ state: 'visible', timeout: 5000 });
+      await useCustomImageRadio.click();
+      console.log('✅ Selected "Use custom image" option');
+
+      // Add custom image URL
+      const customImageUrl = 'https://www.facebook.com/images/fb_icon_325x325.png';
+      const customImageField = page.locator('#fb_product_image, input[name="fb_product_image"]');
+
+      await customImageField.waitFor({ state: 'visible', timeout: 5000 });
+      await customImageField.fill(customImageUrl);
+      console.log(`✅ Custom image URL set: ${customImageUrl}`);
+
+      // Click Update button
+      console.log('💾 Updating product...');
+      await publishProduct(page);
+
+
+      // Check for any errors on the page
+      await checkForPhpErrors(page);
+      console.log('✅ No errors detected on page');
+
+      // Validate Facebook sync
+      console.log('🔍 Validating Facebook catalog sync...');
+      const syncResult = await validateFacebookSync(productId, productName, 60);
+      expect(syncResult.success).toBe(true);
+
+      // Take final screenshot
+      await safeScreenshot(page, 'facebook-options-update-success.png');
+
+      // Mark test as successful
+      logTestEnd(testInfo, true);
+
+    } catch (error) {
+      console.error(`❌ Test failed: ${error.message}`);
+      await safeScreenshot(page, 'facebook-options-edit-test-failure.png');
+      logTestEnd(testInfo, false);
+      throw error;
+    } finally {
+      // Cleanup: Delete test product
+      // if (productId) {
+      //   await cleanupProduct(productId);
+      // }
+    }
+  });
+
 });

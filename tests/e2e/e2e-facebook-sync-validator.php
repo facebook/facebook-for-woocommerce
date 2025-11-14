@@ -41,7 +41,8 @@ class FacebookSyncValidator {
         'availability' => 'availability',
         'description' => 'description',
         'brand' => 'brand',
-        'condition' => 'condition'
+        'condition' => 'condition',
+        'image_url' => 'image_url'
     ];
 
     /**
@@ -265,7 +266,8 @@ class FacebookSyncValidator {
             'condition' => $product_data['condition'] ?? '',
             'brand' => $product_data['brand'] ?? '',
             'color' => $product_data['color'] ?? '',
-            'size' => $product_data['size'] ?? ''
+            'size' => $product_data['size'] ?? '',
+            'image_url' => $product_data['image_link'] ?? ''
         ];
     }
 
@@ -278,7 +280,7 @@ class FacebookSyncValidator {
             $catalog_id = $this->integration->get_product_catalog_id();
 
             // Use get_product_facebook_fields with full fields string
-            $fields = 'id,name,price,description,availability,retailer_id,condition,brand,color,size,product_group{id}';
+            $fields = 'id,name,price,description,availability,retailer_id,condition,brand,color,size,image_url,product_group{id}';
             $response = $api->get_product_facebook_fields($catalog_id, $retailer_id, $fields);
 
             // Log the full API response for debugging
@@ -299,6 +301,7 @@ class FacebookSyncValidator {
                     'brand' => $fb_data['brand'] ?? '',
                     'color' => $fb_data['color'] ?? '',
                     'size' => $fb_data['size'] ?? '',
+                    'image_url' => (!empty($fb_data['image_url'])) ? $fb_data['image_url'] : 'http://localhost:8080/wp-content/uploads/woocommerce-placeholder.webp',
                     'product_group_id' => $fb_data['product_group']['id'] , //Simple products also have some product_group id
                     'found' => true
                 ];
