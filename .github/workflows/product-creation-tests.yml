@@ -464,6 +464,8 @@ jobs:
 
       - name: Install Playwright
         run: |
+          # Install in the WordPress plugin directory (where we'll run tests from)
+          cd /tmp/wordpress/wp-content/plugins/facebook-for-woocommerce
           npm install
           npx playwright install chromium
           npx playwright install-deps chromium
