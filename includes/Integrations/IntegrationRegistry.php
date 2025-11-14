@@ -22,8 +22,6 @@ class IntegrationRegistry {
 	private static $localization_integrations = [
 		'polylang' => Polylang::class,
 		'wpml' => WPML::class,
-		// Future integrations can be added here:
-		// 'translatepress' => TranslatePress::class,
 	];
 
 	/**
@@ -153,21 +151,23 @@ class IntegrationRegistry {
 	}
 
 	/**
-	 * Get active localization plugin names
+	 * Get the first active localization integration
 	 *
-	 * @return array Array of active plugin names
+	 * Returns the first integration that has an active plugin (regardless of configuration).
+	 * This is useful for getting language information even if the integration isn't fully configured.
+	 *
+	 * @return Abstract_Localization_Integration|null The first active integration or null if none active
 	 */
-	public static function get_active_localization_plugins(): array {
-		$active_plugins = [];
+	public static function get_active_localization_integration(): ?Abstract_Localization_Integration {
 		$integrations = self::get_all_localization_integrations();
 
 		foreach ( $integrations as $integration ) {
 			if ( $integration->is_plugin_active() ) {
-				$active_plugins[] = $integration->get_plugin_name();
+				return $integration;
 			}
 		}
 
-		return $active_plugins;
+		return null;
 	}
 
 	/**
