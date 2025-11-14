@@ -153,16 +153,41 @@ test('PageView', async ({ page }) => {
 //     expect(pixelEvents.length).toBeGreaterThan(0);
 // });
 
-// test.skip('ViewCategory', async ({ page }) => {
-//     const { testId, pixelCapture } = await TestSetup.init(page, 'ViewCategory');
+test('ViewCategory', async ({ page }) => {
+    const { testId, pixelCapture } = await TestSetup.init(page, 'ViewCategory');
 
-//     await Promise.all([
-//         pixelCapture.waitForEvent(),
-//         page.goto('/product-category/uncategorized/')
-//     ]);
-//     const validator = new EventValidator(testId);
-//     const result = await validator.validate('ViewCategory', page);
+    // Capture console logs and errors (filter out noise)
+    page.on('console', msg => {
+        const text = msg.text();
+        if (!text.includes('traffic permission') && !text.includes('JQMIGRATE')) {
+            console.log(`   [Browser ${msg.type()}] ${text}`);
+        }
+    });
+    page.on('pageerror', err => console.error(`   [Browser Error] ${err.message}`));
 
-//     TestSetup.logResult('ViewCategory', result);
-//     expect(result.passed).toBe(true);
-// });
+    await Promise.all([
+        pixelCapture.waitForEvent(),
+        page.goto('/product-category/uncategorized/').then(async () => {
+            await page.waitForLoadState('networkidle');
+            await page.waitForFunction(() => typeof jQuery !== 'undefined' && jQuery.isReady);
+            await page.waitForTimeout(1000);
+
+            // Debug: Check what fbq actually did
+            const fbqDebug = await page.evaluate(() => {
+                return {
+                    exists: typeof window.fbq !== 'undefined',
+                    loaded: window.fbq?.loaded,
+                    queue: window.fbq?.queue?.length || 0,
+                    currentDomain: window.location.hostname
+                };
+            });
+            console.log(`   [fbq status]`, fbqDebug);
+        })
+    ]);
+
+    const validator = new EventValidator(testId);
+    const result = await validator.validate('ViewCategory', page);
+
+    TestSetup.logResult('ViewCategory', result);
+    expect(result.passed).toBe(true);
+});

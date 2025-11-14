@@ -659,24 +659,37 @@ class API extends Base {
 	 * @throws ApiException In case of a general API error or rate limit error.
 	 */
 	public function send_pixel_events( $pixel_id, array $events ) {
+		error_log( '🚀 E2E: send_pixel_events CALLED with ' . count( $events ) . ' event(s)' );
+		
 		$request = new API\Pixel\Events\Request( $pixel_id, $events );
 		$request->set_params( array_merge( $request->get_params(), array( 'test_event_code' => "TEST27057" ) ) );
 		$this->set_response_handler( Response::class );
 
+		error_log( '🌐 E2E: About to perform API request to Facebook' );
 		$response = $this->perform_request( $request );
+		error_log( '✅ E2E: API request completed. Has error: ' . ( $response->has_api_error() ? 'YES' : 'NO' ) );
 
 		try{
 			// Log to E2E test framework if successful
 			if ( $response && ! $response->has_api_error() ) {
+				error_log( '📝 E2E: API response successful, logging ' . count( $events ) . ' event(s) to test framework' );
 				foreach ( $events as $event ) {
+					error_log( '📝 E2E: Calling log_event_for_tests for event: ' . $event->get_name() );
 					$this->log_event_for_tests( $event );
+				}
+			} else {
+				error_log( '❌ E2E: API response has error, NOT logging to test framework' );
+				if ( $response ) {
+					error_log( '❌ E2E: Error code: ' . $response->get_api_error_code() );
+					error_log( '❌ E2E: Error message: ' . $response->get_api_error_message() );
 				}
 			}
 		}
-		catch ( Exception $e ) {
-			// Do nothing
+		catch ( \Exception $e ) {
+			error_log( '❌ E2E: Exception in log_event_for_tests: ' . $e->getMessage() );
 		}
 
+		error_log( '🏁 E2E: send_pixel_events COMPLETED' );
 		return $response;
 	}
 
