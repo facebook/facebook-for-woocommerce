@@ -262,6 +262,60 @@ jobs:
           chmod 777 wp-content/debug.log
           echo "✅ debug.log created and writable"
 
+          # VERIFY wp-config.php has debug settings
+          echo ""
+          echo "=== Verifying wp-config.php Debug Settings ==="
+          if grep -q "WP_DEBUG.*true" wp-config.php; then
+            echo "✅ WP_DEBUG is enabled"
+          else
+            echo "❌ WP_DEBUG is NOT enabled!"
+            exit 1
+          fi
+
+          if grep -q "WP_DEBUG_LOG.*true" wp-config.php; then
+            echo "✅ WP_DEBUG_LOG is enabled"
+          else
+            echo "❌ WP_DEBUG_LOG is NOT enabled!"
+            exit 1
+          fi
+
+          # Test error_log is working
+          echo ""
+          echo "=== Testing error_log() function ==="
+          wp eval "error_log('🧪 TEST: error_log() is working from WP-CLI');" --allow-root
+
+          if [ -f wp-content/debug.log ] && grep -q "error_log() is working" wp-content/debug.log; then
+            echo "✅ error_log() writes to debug.log successfully"
+            echo "   Content:"
+            tail -n 1 wp-content/debug.log
+          else
+            echo "❌ error_log() is NOT writing to debug.log!"
+            echo "   This means our E2E logs won't work either!"
+            exit 1
+          fi
+
+          # Test PHP can write to debug.log via web request
+          echo ""
+          echo "=== Testing error_log() via HTTP request ==="
+          echo "<?php error_log('🧪 TEST: error_log() is working from HTTP request'); echo 'Test complete'; ?>" > wp-content/test-error-log.php
+
+          curl -s http://localhost:8080/wp-content/test-error-log.php > /dev/null
+          sleep 1
+
+          if grep -q "error_log() is working from HTTP request" wp-content/debug.log; then
+            echo "✅ error_log() works from HTTP requests"
+            echo "   Content:"
+            tail -n 1 wp-content/debug.log
+          else
+            echo "⚠️  error_log() from HTTP might not work (could be buffering)"
+          fi
+
+          rm -f wp-content/test-error-log.php
+
+          # Clear debug.log for fresh test run
+          echo "" > wp-content/debug.log
+          echo "✅ debug.log cleared for fresh test run"
+
           # Activate the plugin (this triggers automatic sync)
           wp plugin activate facebook-for-woocommerce --allow-root
 
@@ -483,7 +537,7 @@ jobs:
           echo "=== 🔍 SEARCHING FOR ALL debug.log FILES ==="
           echo "Starting comprehensive search..."
           echo ""
-          
+
           # Search in common locations and workspace
           SEARCH_PATHS=(
             "/tmp/wordpress"
@@ -492,7 +546,7 @@ jobs:
             "/tmp"
             "/var/log"
           )
-          
+
           echo "📂 Searching in specific paths:"
           for path in "${SEARCH_PATHS[@]}"; do
             if [ -d "$path" ]; then
@@ -514,7 +568,7 @@ jobs:
               done
             fi
           done
-          
+
           echo ""
           echo "=== 🔍 WIDE SYSTEM SEARCH (may take a moment) ==="
           # Wider search from root, excluding common system dirs that would slow it down
@@ -533,14 +587,14 @@ jobs:
             tail -n 50 "$file"
             echo ""
           done || echo "⚠️  System-wide search completed or had permission issues"
-          
+
           echo ""
           echo "=== 🔍 CHECKING captured-events DIRECTORY ==="
           EVENTS_DIRS=(
             "/tmp/wordpress/wp-content/plugins/facebook-for-woocommerce/tests/e2e/captured-events"
             "${{ github.workspace }}/tests/e2e/captured-events"
           )
-          
+
           for dir in "${EVENTS_DIRS[@]}"; do
             if [ -d "$dir" ]; then
               echo "📂 Contents of: $dir"
@@ -556,7 +610,7 @@ jobs:
               echo "❌ Directory not found: $dir"
             fi
           done
-          
+
           echo ""
           echo "=== SEARCH COMPLETE ==="
 

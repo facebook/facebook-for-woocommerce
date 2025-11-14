@@ -1328,17 +1328,22 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 		 * Send pending events.
 		 */
 		public function send_pending_events() {
+			error_log( '🔄 E2E: send_pending_events() CALLED on shutdown hook' );
 
 			$pending_events = $this->get_pending_events();
+			error_log( '🔄 E2E: Pending events count: ' . count( $pending_events ) );
 
 			if ( empty( $pending_events ) ) {
+				error_log( '⚠️  E2E: No pending events to send' );
 				return;
 			}
 
+			error_log( '📤 E2E: Processing ' . count( $pending_events ) . ' pending event(s)' );
 			foreach ( $pending_events as $event ) {
-
+				error_log( '📤 E2E: Sending pending event: ' . $event->get_name() );
 				$this->send_api_event( $event );
 			}
+			error_log( '✅ E2E: send_pending_events() COMPLETED' );
 		}
 	}
 
