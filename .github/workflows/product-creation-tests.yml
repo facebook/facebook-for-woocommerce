@@ -489,22 +489,17 @@ jobs:
           # Verify domain is accessible
           curl -I http://wooc-local-test-sitecom.local:8080 || echo "⚠️ Domain check failed, but continuing..."
 
-          # CRITICAL: Link WordPress plugin's captured-events to workspace (so both PHP and tests can access same dir)
-          WORKSPACE_EVENTS_DIR="${{ github.workspace }}/tests/e2e/captured-events"
-          WP_EVENTS_DIR="/tmp/wordpress/wp-content/plugins/facebook-for-woocommerce/tests/e2e/captured-events"
-
-          # Create in workspace
-          mkdir -p "$WORKSPACE_EVENTS_DIR"
-          chmod 777 "$WORKSPACE_EVENTS_DIR"
-
-          # Remove WP dir and symlink to workspace
-          rm -rf "$WP_EVENTS_DIR"
-          ln -s "$WORKSPACE_EVENTS_DIR" "$WP_EVENTS_DIR"
-
-          echo "✅ Symlinked: $WP_EVENTS_DIR -> $WORKSPACE_EVENTS_DIR"
+          # SIMPLIFIED: Just create the directory where PHP writes
+          # Both PHP and tests will use the SAME directory in the WordPress plugin
+          EVENTS_DIR="/tmp/wordpress/wp-content/plugins/facebook-for-woocommerce/tests/e2e/captured-events"
+          mkdir -p "$EVENTS_DIR"
+          chmod 777 "$EVENTS_DIR"
+          
+          echo "✅ Events directory created: $EVENTS_DIR"
           ls -la /tmp/wordpress/wp-content/plugins/facebook-for-woocommerce/tests/e2e/ | grep captured
 
-          # Run with headed browser to ensure cookies work (some privacy features block in headless)
+          # Run tests FROM the WordPress plugin directory (not workspace)
+          cd /tmp/wordpress/wp-content/plugins/facebook-for-woocommerce
           xvfb-run --auto-servernum npx playwright test --headed
 
       - name: Print debug.log (ALWAYS)
