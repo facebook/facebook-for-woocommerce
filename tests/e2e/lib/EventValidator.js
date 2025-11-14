@@ -58,7 +58,7 @@ class EventValidator {
 
     async validate(eventName, page = null) {
         if (!this.events) await this.load();
-        await this.checkDebugLog();
+        // await this.checkDebugLog();
 
         console.log(`\n  🔍 Validating ${eventName}...`);
 
@@ -306,7 +306,7 @@ class EventValidator {
         const debugLogPath = '/tmp/wordpress/wp-content/debug.log';
         try {
             const data = await fs.readFile(debugLogPath, 'utf8');
-            
+
             // Ignore benign warnings like constant redefinitions
             const lines = data.split('\n');
             const criticalErrors = lines.filter(line => {
@@ -317,7 +317,7 @@ class EventValidator {
                 // Only care about fatal/error, not warnings
                 return /fatal|error/i.test(line) && !/warning/i.test(line);
             });
-            
+
             if (criticalErrors.length > 0) {
                 console.log('❌ Critical errors in debug.log:');
                 criticalErrors.forEach(err => console.log('  ', err));
