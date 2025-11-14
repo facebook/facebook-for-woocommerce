@@ -64,15 +64,10 @@ class LanguageFeedData {
 	 * @return string|null Default language code or null if not available
 	 */
 	public function get_default_language(): ?string {
-		$integrations = IntegrationRegistry::get_all_localization_integrations();
+		$integration = IntegrationRegistry::get_active_localization_integration();
 
-		foreach ( $integrations as $integration ) {
-			if ( $integration->is_plugin_active() ) {
-				$default = $integration->get_default_language();
-				if ( $default ) {
-					return $default;
-				}
-			}
+		if ( $integration ) {
+			return $integration->get_default_language();
 		}
 
 		return null;
@@ -88,12 +83,10 @@ class LanguageFeedData {
 	 * @return array Array of product IDs from the default language
 	 */
 	public function get_products_from_default_language( int $limit = 10, int $offset = 0 ): array {
-		$integrations = IntegrationRegistry::get_all_localization_integrations();
+		$integration = IntegrationRegistry::get_active_localization_integration();
 
-		foreach ( $integrations as $integration ) {
-			if ( $integration->is_plugin_active() ) {
-				return $integration->get_products_from_default_language( $limit, $offset );
-			}
+		if ( $integration ) {
+			return $integration->get_products_from_default_language( $limit, $offset );
 		}
 
 		// Fallback: get regular products if no localization plugin is active
@@ -117,12 +110,10 @@ class LanguageFeedData {
 	 * @return array Detailed translation information
 	 */
 	public function get_product_translation_details( int $product_id ): array {
-		$integrations = IntegrationRegistry::get_all_localization_integrations();
+		$integration = IntegrationRegistry::get_active_localization_integration();
 
-		foreach ( $integrations as $integration ) {
-			if ( $integration->is_plugin_active() ) {
-				return $integration->get_product_translation_details( $product_id );
-			}
+		if ( $integration ) {
+			return $integration->get_product_translation_details( $product_id );
 		}
 
 		// Fallback: return basic structure if no localization plugin is active
@@ -408,38 +399,93 @@ class LanguageFeedData {
 			$original_fb_product = new \WC_Facebook_Product( $original_product );
 			$translated_fb_product = new \WC_Facebook_Product( $translated_product );
 
-			// Use product ID to match external_variant_id from main feed
-			// Facebook's Catalog API uses external_variant_id as the content_id (see fbproduct.php line 1776)
-			$product_id = (string) $original_fb_product->get_id();
+			// Determine the ID based on product type (matching catalog backend logic):
+			// - Simple products: Use just the woo_id
+			// - Variable products: Iterate through each variation and use the variation woo_id
+			if ( $original_product->is_type( 'variable' ) ) {
+				// For variable products, build the translated content once (it's the same for all variations)
+				$translated_content = [
+					'override' => \WooCommerce\Facebook\Locale::convert_to_facebook_language_code( $language_code ),
+				];
 
-			// Start with required columns
-			$csv_row = [
-				'id' => $product_id,
-				'override' => \WooCommerce\Facebook\Locale::convert_to_facebook_language_code( $language_code ),
-			];
-
-			// Add dynamic columns based on what's actually translated
-			foreach ( $csv_columns as $column ) {
-				$csv_row[ $column ] = $this->get_translated_field_value(
-					$column,
-					$original_fb_product,
-					$translated_fb_product,
-					$product_translated_fields,
-					$language_code
-				);
-			}
-
-			// Only add row if at least one translatable field has content
-			$has_content = false;
-			foreach ( $csv_columns as $column ) {
-				if ( ! empty( $csv_row[ $column ] ) ) {
-					$has_content = true;
-					break;
+				// Build translated field values once (they're shared across all variations)
+				foreach ( $csv_columns as $column ) {
+					$translated_content[ $column ] = $this->get_translated_field_value(
+						$column,
+						$original_fb_product,
+						$translated_fb_product,
+						$product_translated_fields,
+						$language_code
+					);
 				}
-			}
 
-			if ( $has_content ) {
-				$csv_data[] = $csv_row;
+				// Check if at least one translatable field has content
+				$has_content = false;
+				foreach ( $csv_columns as $column ) {
+					if ( ! empty( $translated_content[ $column ] ) ) {
+						$has_content = true;
+						break;
+					}
+				}
+
+				// If there's no translated content, skip this entire variable product
+				if ( ! $has_content ) {
+					continue;
+				}
+
+				// Now iterate through variations and create a row for each with the same content
+				$variations = $original_product->get_children();
+
+				foreach ( $variations as $variation_id ) {
+					$variation = wc_get_product( $variation_id );
+					if ( ! $variation ) {
+						continue; // Skip invalid variations
+					}
+
+					// Use WooCommerce product ID for variation
+					$variation_id = (string) $variation->get_id();
+
+					// Create row with the variation ID and reuse the translated content
+					$csv_row = array_merge(
+						[ 'id' => $variation_id ],
+						$translated_content
+					);
+
+					$csv_data[] = $csv_row;
+				}
+			} else {
+				// Simple product: Use WooCommerce product ID
+				$product_id = (string) $original_product->get_id();
+
+				// Start with required columns
+				$csv_row = [
+					'id' => $product_id,
+					'override' => \WooCommerce\Facebook\Locale::convert_to_facebook_language_code( $language_code ),
+				];
+
+				// Add dynamic columns based on what's actually translated
+				foreach ( $csv_columns as $column ) {
+					$csv_row[ $column ] = $this->get_translated_field_value(
+						$column,
+						$original_fb_product,
+						$translated_fb_product,
+						$product_translated_fields,
+						$language_code
+					);
+				}
+
+				// Only add row if at least one translatable field has content
+				$has_content = false;
+				foreach ( $csv_columns as $column ) {
+					if ( ! empty( $csv_row[ $column ] ) ) {
+						$has_content = true;
+						break;
+					}
+				}
+
+				if ( $has_content ) {
+					$csv_data[] = $csv_row;
+				}
 			}
 		}
 

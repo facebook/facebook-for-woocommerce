@@ -141,49 +141,96 @@ class WC_Facebook_WPML_Injector {
 				}
 			}
 
+			// Count how many languages are currently set to VISIBLE
+			$visible_languages_count = count(
+				array_filter(
+					$settings,
+					function ( $status ) {
+						return FB_WPML_Language_Status::VISIBLE === $status;
+					}
+				)
+			);
+
+			// Check if user has legacy multi-language setup (2+ languages visible)
+			$has_legacy_setup = $visible_languages_count >= 2;
+
 			?>
 			<div id="lang-sec-fb" class="wpml-section wpml-section-languages">
 				<div class="wpml-section-header">
 					<h3><?php esc_html_e( 'Facebook Visibility', 'facebook-for-woocommerce' ); ?></h3>
 				</div>
 				<div class="wpml-section-content">
-					<?php esc_html_e( 'WooCommerce Products with languages that are selected here will be visible to customers who see your Facebook Shop.', 'facebook-for-woocommerce' ); ?>
+					<?php if ( $has_legacy_setup ) : ?>
+						<?php // Legacy users - show the form so they can manage existing setup ?>
+						<?php esc_html_e( 'WooCommerce Products with languages that are selected here will be visible to customers who see your Facebook Shop.', 'facebook-for-woocommerce' ); ?>
 
-					<div class="wpml-section-content-inner">
-						<form id="icl_fb_woo" name="icl_fb_woo" action="">
+						<div class="wpml-section-content-inner">
+							<form id="icl_fb_woo" name="icl_fb_woo" action="">
 
-							<?php foreach ( $settings as $language => $set ) : ?>
+								<?php foreach ( $settings as $language => $set ) : ?>
 
-								<p>
-									<label>
-										<input type="checkbox" id="icl_fb_woo_chk" name="<?php echo esc_attr( $language ); ?>" <?php checked( $set, FB_WPML_Language_Status::VISIBLE ); ?>>
-										<?php echo isset( $active_languages[ $language ]['native_name'] ) ? esc_html( $active_languages[ $language ]['native_name'] ) : esc_html( $language ); ?>
-									</label>
+									<p>
+										<label>
+											<input type="checkbox" id="icl_fb_woo_chk" name="<?php echo esc_attr( $language ); ?>" <?php checked( $set, FB_WPML_Language_Status::VISIBLE ); ?>>
+											<?php echo isset( $active_languages[ $language ]['native_name'] ) ? esc_html( $active_languages[ $language ]['native_name'] ) : esc_html( $language ); ?>
+										</label>
+									</p>
+
+								<?php endforeach; ?>
+
+								<?php // TODO: restore success message removed in e7f290f when FBE 2.0 changes are available {WV 2020-04-27} ?>
+								<p class="icl_ajx_response_fb" id="icl_ajx_response_fb" hidden="true"><?php esc_html_e( "Saved. An automated sync from Facebook will run every hour to update the catalog with any changes you've made.", 'facebook-for-woocommerce' ); ?></p>
+
+								<p class="buttons-wrap">
+									<input
+										class="button button-primary"
+										name="save"
+										value="<?php esc_attr_e( 'Save', 'facebook-for-woocommerce' ); ?>"
+										type="submit"
+									/>
 								</p>
-
-							<?php endforeach; ?>
-
-							<?php // TODO: restore success message removed in e7f290f when FBE 2.0 changes are available {WV 2020-04-27} ?>
-							<p class="icl_ajx_response_fb" id="icl_ajx_response_fb" hidden="true"><?php esc_html_e( "Saved. An automated sync from Facebook will run every hour to update the catalog with any changes you've made.", 'facebook-for-woocommerce' ); ?></p>
-
-							<p class="buttons-wrap">
-								<input
-									class="button button-primary"
-									name="save"
-									value="<?php esc_attr_e( 'Save', 'facebook-for-woocommerce' ); ?>"
-									type="submit"
-								/>
-							</p>
-						</form>
-						<script type="text/javascript">
-							addLoadEvent( function() {
-								jQuery( '#icl_fb_woo' ).submit( iclSaveForm );
-								jQuery( '#icl_fb_woo' ).submit( function() {
-									jQuery( '#icl_ajx_response_fb' ).show();
+							</form>
+							<script type="text/javascript">
+								addLoadEvent( function() {
+									jQuery( '#icl_fb_woo' ).submit( iclSaveForm );
+									jQuery( '#icl_fb_woo' ).submit( function() {
+										jQuery( '#icl_ajx_response_fb' ).show();
+									} );
 								} );
-							} );
-						</script>
-					</div>
+							</script>
+
+							<div style="margin-top: 20px; padding: 15px; background: #fff3cd; border-left: 4px solid #856404; border-radius: 3px;">
+								<p style="margin: 0; color: #856404;">
+									<strong><?php esc_html_e( 'Notice:', 'facebook-for-woocommerce' ); ?></strong>
+									<?php esc_html_e( 'You are using a legacy multi-language configuration. These settings will continue to work for backward compatibility, but are not eligible for the new Language Override Feeds feature.', 'facebook-for-woocommerce' ); ?>
+								</p>
+							</div>
+						</div>
+					<?php else : ?>
+						<?php // New users or eligible users - hide the form and show migration message ?>
+						<div class="wpml-section-content-inner">
+							<div style="padding: 20px; background: #f0f8ff; border-left: 4px solid #0073aa; border-radius: 3px;">
+								<p style="margin: 0 0 10px 0; font-size: 14px; color: #333;">
+									<strong><?php esc_html_e( 'Language Visibility settings have been replaced with Language Override Feeds.', 'facebook-for-woocommerce' ); ?></strong>
+								</p>
+								<p style="margin: 0 0 10px 0; color: #666;">
+									<?php
+									printf(
+										/* translators: %1$s: opening link tag, %2$s: closing link tag */
+										esc_html__( 'Visit the %1$sFacebook for WooCommerce settings%2$s to configure Language Override Feeds and sync multilingual product data to Facebook.', 'facebook-for-woocommerce' ),
+										'<a href="' . esc_url( admin_url( 'admin.php?page=wc-facebook&tab=localization_integrations' ) ) . '">',
+										'</a>'
+									);
+									?>
+								</p>
+								<p style="margin: 0;">
+									<a href="<?php echo esc_url( admin_url( 'admin.php?page=wc-facebook&tab=localization_integrations' ) ); ?>" class="button button-primary">
+										<?php esc_html_e( 'Configure Language Override Feeds', 'facebook-for-woocommerce' ); ?>
+									</a>
+								</p>
+							</div>
+						</div>
+					<?php endif; ?>
 				</div>
 			</div>
 			<?php

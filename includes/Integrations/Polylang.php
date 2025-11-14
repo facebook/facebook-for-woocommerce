@@ -442,4 +442,50 @@ class Polylang extends Abstract_Localization_Integration {
 
 		return $data;
 	}
+
+	/**
+	 * Get the integration status.
+	 *
+	 * Returns a status string indicating the current state of the integration:
+	 * - "Active" - Plugin is active and properly configured
+	 * - "Installed" - Plugin is installed but not active
+	 * - "Not Available" - Plugin is not installed
+	 * - "Misconfigured" - Plugin is active but missing required configuration
+	 *
+	 * Note: Polylang does not have a "legacy multi-language setup" concept like WPML,
+	 * so it cannot be "Ineligible".
+	 *
+	 * @return string Integration status
+	 * @since 3.6.0
+	 */
+	public function get_integration_status(): string {
+		// Check if plugin is installed
+		if ( ! $this->is_plugin_installed() ) {
+			return 'Not Available';
+		}
+
+		// Check if plugin is active
+		if ( ! $this->is_plugin_active() ) {
+			return 'Installed';
+		}
+
+		// Check if properly configured (has default language)
+		if ( ! $this->is_available() ) {
+			return 'Misconfigured';
+		}
+
+		return 'Active';
+	}
+
+	/**
+	 * Checks if this integration is eligible for language override feeds.
+	 *
+	 * Polylang is always eligible (no legacy multi-language setup like WPML).
+	 *
+	 * @return bool Always true for Polylang
+	 * @since 3.6.0
+	 */
+	public function is_eligible_for_language_override_feeds(): bool {
+		return true;
+	}
 }

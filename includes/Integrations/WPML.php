@@ -267,9 +267,94 @@ class WPML extends Abstract_Localization_Integration {
 		if ( $this->is_plugin_active() ) {
 			$data['languages'] = $this->get_available_languages();
 			$data['default_language'] = $this->get_default_language();
+			$data['has_legacy_multi_language_setup'] = $this->has_legacy_multi_language_setup();
 		}
 
 		return $data;
+	}
+
+	/**
+	 * Get the integration status.
+	 *
+	 * Returns a status string indicating the current state of the integration:
+	 * - "Active" - Plugin is active and properly configured
+	 * - "Active - Ineligible" - Plugin is active but using legacy multi-language setup (ineligible for override feeds)
+	 * - "Installed" - Plugin is installed but not active
+	 * - "Not Available" - Plugin is not installed
+	 * - "Misconfigured" - Plugin is active but missing required configuration
+	 *
+	 * @return string Integration status
+	 * @since 3.6.0
+	 */
+	public function get_integration_status(): string {
+		// Check if plugin is installed
+		if ( ! $this->is_plugin_installed() ) {
+			return 'Not Available';
+		}
+
+		// Check if plugin is active
+		if ( ! $this->is_plugin_active() ) {
+			return 'Installed';
+		}
+
+		// Check if properly configured (has default language)
+		if ( ! $this->is_available() ) {
+			return 'Misconfigured';
+		}
+
+		// Check if using legacy multi-language setup
+		if ( $this->has_legacy_multi_language_setup() ) {
+			return 'Active - Ineligible';
+		}
+
+		return 'Active';
+	}
+
+	/**
+	 * Checks if WPML is using the legacy multi-language setup (syncing translations as separate products).
+	 *
+	 * Legacy WPML users who have multiple languages selected in fb_wmpl_language_visibility
+	 * should NOT use language override feeds to prevent duplicate products.
+	 *
+	 * @return bool True if using legacy multi-language setup
+	 * @since 3.6.0
+	 */
+	public function has_legacy_multi_language_setup(): bool {
+		// Only check if WPML is active
+		if ( ! $this->is_plugin_active() ) {
+			return false;
+		}
+
+		// Check the fb_wmpl_language_visibility option (from fbwpml.php)
+		$wpml_settings = get_option( 'fb_wmpl_language_visibility', array() );
+
+		if ( empty( $wpml_settings ) || ! is_array( $wpml_settings ) ) {
+			return false;
+		}
+
+		// Count how many languages are set to VISIBLE
+		// FB_WPML_Language_Status::VISIBLE = 1
+		$visible_languages = array_filter(
+			$wpml_settings,
+			function ( $status ) {
+				return 1 === $status;
+			}
+		);
+
+		// If more than 1 language is visible, they're using legacy multi-language sync
+		return count( $visible_languages ) > 1;
+	}
+
+	/**
+	 * Checks if this integration is eligible for language override feeds.
+	 *
+	 * WPML is ineligible if using legacy multi-language setup.
+	 *
+	 * @return bool True if eligible for language override feeds
+	 * @since 3.6.0
+	 */
+	public function is_eligible_for_language_override_feeds(): bool {
+		return ! $this->has_legacy_multi_language_setup();
 	}
 
 }
