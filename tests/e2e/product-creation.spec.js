@@ -1,185 +1,19 @@
 const { test, expect } = require('@playwright/test');
-
-// Test configuration from environment variables
-const baseURL = process.env.WORDPRESS_URL || 'http://localhost:8080';
-const username = process.env.WP_USERNAME || 'admin';
-const password = process.env.WP_PASSWORD || 'admin';
-
-// Helper function for reliable login
-async function loginToWordPress(page) {
-  // Navigate to login page
-  await page.goto(`${baseURL}/wp-admin/`, { waitUntil: 'networkidle', timeout: 120000 });
-
-  // Check if we're already logged in
-  const isLoggedIn = await page.locator('#wpcontent').isVisible({ timeout: 5000 });
-  if (isLoggedIn) {
-    console.log('✅ Already logged in');
-    return;
-  }
-
-  // Fill login form - wait longer for login elements
-  console.log('🔐 Logging in to WordPress...');
-  await page.waitForSelector('#user_login', { timeout: 120000 });
-  await page.fill('#user_login', username);
-  await page.fill('#user_pass', password);
-  await page.click('#wp-submit');
-
-  // Wait for login to complete
-  await page.waitForLoadState('networkidle', { timeout: 120000 });
-  console.log('✅ Login completed');
-}
-
-// Helper function to safely take screenshots
-async function safeScreenshot(page, path) {
-  try {
-    // Check if page is still available
-    if (page && !page.isClosed()) {
-      await page.screenshot({ path, fullPage: true });
-      console.log(`✅ Screenshot saved: ${path}`);
-    } else {
-      console.log('⚠️ Cannot take screenshot - page is closed');
-    }
-  } catch (error) {
-    console.log(`⚠️ Screenshot failed: ${error.message}`);
-  }
-}
-
-// cleanup function - Delete created product from WooCommerce
-async function cleanupProduct(productId) {
-  if (!productId) return;
-
-  console.log(`🧹 Cleaning up product ${productId}...`);
-
-  try {
-    const { exec } = require('child_process');
-    const { promisify } = require('util');
-    const execAsync = promisify(exec);
-
-    const { stdout } = await execAsync(
-      `php -r "require_once('/tmp/wordpress/wp-load.php'); wp_delete_post(${productId}, true);"`,
-      { cwd: __dirname }
-    );
-
-    console.log(`✅ Product ${productId} deleted from WooCommerce`);
-  } catch (error) {
-    console.log(`⚠️ Cleanup failed: ${error.message}`);
-  }
-}
-
-// Helper function to generate product name with timestamp and instance ID
-function generateProductName(productType) {
-  const now = new Date();
-  const timestamp = now.toISOString().replace(/[:.]/g, '-').slice(0, 19);
-  const runId = process.env.GITHUB_RUN_ID || 'local';
-  return `Test ${productType} Product E2E ${timestamp}-${runId}`;
-}
-
-// Helper function to generate unique SKU for any product type
-function generateUniqueSKU(productType) {
-  const runId = process.env.GITHUB_RUN_ID || 'local';
-  const randomSuffix = Math.random().toString(36).substring(2, 8);
-  return `E2E-${productType.toUpperCase()}-${runId}-${randomSuffix}`;
-}
-
-// Helper function to extract product ID from URL
-function extractProductIdFromUrl(url) {
-  const urlMatch = url.match(/post=(\d+)/);
-  const productId = urlMatch ? parseInt(urlMatch[1]) : null;
-  console.log(`✅ Extracted Product ID: ${productId}`);
-  return productId;
-}
-
-// Helper function to publish product
-async function publishProduct(page) {
-  try {
-    await page.locator('#publishing-action').scrollIntoViewIfNeeded();
-    const publishButton = page.locator('#publish');
-    if (await publishButton.isVisible({ timeout: 120000 })) {
-      await publishButton.click();
-      await page.waitForTimeout(3000);
-      console.log('✅ Published product');
-      return true;
-    }
-  } catch (error) {
-    console.log('⚠️ Publish step may be slow, continuing with error check');
-    return false;
-  }
-}
-
-// Helper function to check for PHP errors
-async function checkForPhpErrors(page) {
-  const pageContent = await page.content();
-  expect(pageContent).not.toContain('Fatal error');
-  expect(pageContent).not.toContain('Parse error');
-}
-
-// Helper function to wait for manual inspection
-async function waitForManualInspection(page, seconds = 60) {
-  console.log(`⏳ Waiting ${seconds} seconds to allow manual catalog inspection...`);
-  await page.waitForTimeout(seconds * 1000);
-}
-
-// Helper function to mark test start
-function logTestStart(testInfo) {
-  const testName = testInfo.title;
-  console.log('\n' + '='.repeat(80));
-  console.log(`🚀 STARTING TEST: ${testName}`);
-  console.log('='.repeat(80));
-}
-
-// Helper function to mark test end
-function logTestEnd(testInfo, success = true) {
-  const testName = testInfo.title;
-  console.log('='.repeat(80));
-  if (success) {
-    console.log(`✅ TEST SUCCESS: ${testName} ✅`);
-  } else {
-    console.log(`❌ TEST FAILED: ${testName}`);
-  }
-  console.log('='.repeat(80) + '\n');
-}
-
-// Helper function to validate Facebook sync
-async function validateFacebookSync(productId, productName, waitSeconds = 10) {
-  if (!productId) {
-    console.log('⚠️ No product ID provided for Facebook sync validation');
-    return null;
-  }
-
-  const displayName = productName ? `"${productName}" (ID: ${productId})` : `ID: ${productId}`;
-  console.log(`🔍 Validating Facebook sync for product ${displayName}...`);
-
-  try {
-    const { exec } = require('child_process');
-    const { promisify } = require('util');
-    const execAsync = promisify(exec);
-
-    // Call the Facebook sync validator
-    const { stdout, stderr } = await execAsync(
-      `php e2e-facebook-sync-validator.php ${productId} ${waitSeconds}`,
-      { cwd: __dirname }
-    );
-
-    // 📄 DUMP RAW JSON OUTPUT FROM VALIDATOR
-    console.log('📄 OUTPUT FROM FACEBOOK SYNC VALIDATOR:');
-    console.log(stdout);
-
-    const result = JSON.parse(stdout);
-
-    // Display results
-    if (result.success) {
-      console.log(`🎉 Facebook Sync Validation Succeeded for ${displayName}:`);
-    } else {
-      console.log(`❌ Facebook sync validation Failed: ${result.error}. Check debug logs above.`);
-    }
-
-    return result;
-
-  } catch (error) {
-    console.log(`⚠️ Facebook sync validation error: ${error.message}`);
-    return null;
-  }
-}
+const {
+  baseURL,
+  loginToWordPress,
+  safeScreenshot,
+  cleanupProduct,
+  generateProductName,
+  generateUniqueSKU,
+  extractProductIdFromUrl,
+  publishProduct,
+  checkForPhpErrors,
+  logTestStart,
+  logTestEnd,
+  validateFacebookSync,
+  setProductDescription
+} = require('./test-helpers');
 
 test.describe('Facebook for WooCommerce - Product Creation E2E Tests', () => {
 
@@ -209,56 +43,7 @@ test.describe('Facebook for WooCommerce - Product Creation E2E Tests', () => {
       const productName = generateProductName('Simple');
       await page.fill('#title', productName);
 
-      // Try to add content - handle different editor types
-      try {
-        console.log('🔄 Attempting to add product description...');
-
-        // First, try the visual/TinyMCE editor
-        const visualTab = page.locator('#content-tmce');
-        if (await visualTab.isVisible({ timeout: 5000 })) {
-          await visualTab.click();
-          await page.waitForTimeout(2000);
-
-          // Check if TinyMCE iframe exists
-          const tinyMCEFrame = page.locator('#content_ifr');
-          if (await tinyMCEFrame.isVisible({ timeout: 5000 })) {
-            // This is an iframe-based editor (TinyMCE)
-            const frameContent = tinyMCEFrame.contentFrame();
-            const bodyElement = frameContent.locator('body');
-            if (await bodyElement.isVisible({ timeout: 5000 })) {
-              await bodyElement.fill('This is a test product created during E2E testing.');
-              console.log('✅ Added description via TinyMCE editor');
-            }
-          }
-        } else {
-          // Try text/HTML tab
-          const textTab = page.locator('#content-html');
-          if (await textTab.isVisible({ timeout: 5000 })) {
-            await textTab.click();
-            await page.waitForTimeout(1000);
-
-            // Regular textarea
-            const contentTextarea = page.locator('#content');
-            if (await contentTextarea.isVisible({ timeout: 5000 })) {
-              await contentTextarea.fill('This is a test product created during E2E testing.');
-              console.log('✅ Added description via text editor');
-            }
-          } else {
-            // Try block editor if present
-            const blockEditor = page.locator('.wp-block-post-content, .block-editor-writing-flow');
-            if (await blockEditor.isVisible({ timeout: 5000 })) {
-              await blockEditor.click();
-              await page.keyboard.type('This is a test product created during E2E testing.');
-              console.log('✅ Added description via block editor');
-            } else {
-              console.log('⚠️ No content editor found - skipping description');
-            }
-          }
-        }
-      } catch (editorError) {
-        console.log(`⚠️ Content editor issue: ${editorError.message} - continuing without description`);
-      }
-
+      await setProductDescription(page, "This is a test simple product.");
       console.log('✅ Basic product details filled');
 
       // Scroll to product data section
@@ -297,10 +82,10 @@ test.describe('Facebook for WooCommerce - Product Creation E2E Tests', () => {
         } else if (await facebookImageField.isVisible({ timeout: 10000 })) {
           console.log('✅ Facebook image field found');
         } else {
-          console.log('⚠️ No Facebook-specific fields found - plugin may not be fully activated');
+          console.warn('⚠️ No Facebook-specific fields found - plugin may not be fully activated');
         }
       } catch (error) {
-        console.log('⚠️ Facebook field detection inconclusive - this is not necessarily an error');
+        console.warn('⚠️ Facebook field detection inconclusive - this is not necessarily an error');
       }
 
       // Set product status to published and save
@@ -445,7 +230,7 @@ test.describe('Facebook for WooCommerce - Product Creation E2E Tests', () => {
     await checkForPhpErrors(page);
 
     // Validate sync to Meta catalog and fields from Meta
-    const result = await validateFacebookSync(productId, productName,20);
+    const result = await validateFacebookSync(productId, productName, 20);
     expect(result['success']).toBe(true);
 
     // await waitForManualInspection(page);
@@ -478,12 +263,12 @@ test.describe('Facebook for WooCommerce - Product Creation E2E Tests', () => {
       // Check if Facebook plugin is listed
       const pageContent = await page.content();
       const hasFacebookPlugin = pageContent.includes('Facebook for WooCommerce') ||
-                               pageContent.includes('facebook-for-woocommerce');
+        pageContent.includes('facebook-for-woocommerce');
 
       if (hasFacebookPlugin) {
         console.log('✅ Facebook for WooCommerce plugin detected');
       } else {
-        console.log('⚠️ Facebook for WooCommerce plugin not found in plugins list');
+        console.warn('⚠️ Facebook for WooCommerce plugin not found in plugins list');
       }
 
       // Verify no PHP errors
@@ -519,7 +304,7 @@ test.describe('Facebook for WooCommerce - Product Creation E2E Tests', () => {
       if (hasProductsTable) {
         console.log('✅ WooCommerce products page loaded successfully');
       } else {
-        console.log('⚠️ Products table not found');
+        console.warn('⚠️ Products table not found');
       }
 
       console.log('✅ Product list test completed');
@@ -619,7 +404,7 @@ test.describe('Facebook for WooCommerce - Product Creation E2E Tests', () => {
           }
         }
       } else {
-        console.log('⚠️ Facebook plugin not found in plugins list');
+        console.warn('⚠️ Facebook plugin not found in plugins list');
       }
 
       // Verify no PHP errors after plugin operations
@@ -636,4 +421,5 @@ test.describe('Facebook for WooCommerce - Product Creation E2E Tests', () => {
       throw error;
     }
   });
+
 });

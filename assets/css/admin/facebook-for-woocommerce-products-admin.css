@@ -86,20 +86,26 @@
 	right: 12px;
 }
 
-#woocommerce-product-data #fb_product_video_selected_thumbnails p.video-thumbnail {
+#woocommerce-product-data #fb_product_video_selected_thumbnails p.video-thumbnail,
+#woocommerce-product-data .fb-product-video-thumbnails p.video-thumbnail {
     margin-bottom: 10px;
     display: flex;
     align-items: center;
 }
 
-#woocommerce-product-data #fb_product_video_selected_thumbnails p.video-thumbnail img {
-    height: 20px;
-    width: 20px;
+#woocommerce-product-data #fb_product_video_selected_thumbnails p.video-thumbnail img,
+#woocommerce-product-data .fb-product-video-thumbnails p.video-thumbnail img {
+    height: 40px;
+    width: 40px;
     margin-right: 10px;
+    object-fit: cover;
+    border: 1px solid #ddd;
+    border-radius: 3px;
 }
 
-#woocommerce-product-data #fb_product_video_selected_thumbnails p.video-thumbnail span {
-	margin-right: 10px;
+#woocommerce-product-data #fb_product_video_selected_thumbnails p.video-thumbnail span,
+#woocommerce-product-data .fb-product-video-thumbnails p.video-thumbnail span {
+	margin-right: auto;
 	overflow: hidden;
 	text-overflow: ellipsis;
 	display: -webkit-box;
@@ -108,13 +114,23 @@
 	white-space: normal;
 	line-height: 1.2em;
 	max-height: 2.4em;
+	flex: 1;
 }
 
-#woocommerce-product-data #fb_product_video_selected_thumbnails p.video-thumbnail a.remove-video {
+#woocommerce-product-data #fb_product_video_selected_thumbnails p.video-thumbnail a.remove-video,
+#woocommerce-product-data .fb-product-video-thumbnails p.video-thumbnail a.remove-video {
 	color: red;
     font-weight: 400;
     line-height: 26px;
     text-decoration: none;
+    font-size: 13px;
+    flex-shrink: 0;
+    margin-left: 10px;
+}
+
+#woocommerce-product-data #fb_product_video_selected_thumbnails p.video-thumbnail a.remove-video:hover,
+#woocommerce-product-data .fb-product-video-thumbnails p.video-thumbnail a.remove-video:hover {
+    color: #d63638;
 }
 
 .fb-product-video-media-frame .media-toolbar-secondary select.attachment-filters {
@@ -179,6 +195,105 @@
 /* Show the selected product image source field */
 .woocommerce_variation .product-image-source-field.show {
 	display: block !important;
+}
+
+/* Hide product video source fields by default - JavaScript will show the selected one */
+.product-video-source-field {
+	display: none !important;
+}
+
+/* For variations, only show when .show class is added by JavaScript */
+.woocommerce_variation .product-video-source-field.show {
+	display: block !important;
+}
+
+/* But the button paragraph should be inline when shown */
+.woocommerce_variation p.product-video-source-field.show {
+	display: inline-block !important;
+	vertical-align: top;
+	margin: 0 !important;
+	padding-top: 10px;
+}
+
+/* Video thumbnails should appear on new line when shown */
+.woocommerce_variation div.product-video-source-field.show {
+	clear: both;
+	display: block !important;
+}
+
+/* For simple products (not in variations) */
+#facebook_options p.product-video-source-field.show {
+	display: inline-block !important;
+	vertical-align: top;
+	margin: 0 !important;
+	padding-top: 10px;
+}
+
+#facebook_options div.product-video-source-field.show {
+	clear: both;
+	display: block !important;
+}
+
+/* Video source field styling - matches image section */
+.fb-product-video-source-field .wc-radios {
+	width: auto;
+}
+
+#woocommerce-product-data .fb-product-video-source-field .wc-radios li {
+	margin-bottom: 0;
+}
+
+#woocommerce-product-data .fb-product-video-source-field .wc-radios li:last-child {
+	padding-bottom: 0;
+}
+
+/* Hide the button wrapper since button is moved inline via JS */
+.fb-product-video-source-field + p.product-video-source-field {
+	display: none !important;
+}
+
+/* Button inside label styling */
+.fb-product-video-source-field .wc-radios li:first-child label button {
+	margin-left: 8px;
+	vertical-align: middle;
+}
+
+/* For variations - matches image section styling */
+.woocommerce_variation .fb-product-video-source-field {
+	margin: 1em 0;
+}
+
+.woocommerce_variation .fb-product-video-source-field legend {
+	float: left;
+	padding-inline-start: 0;
+	padding-inline-end: 0;
+}
+
+.woocommerce_variation .fb-product-video-source-field .woocommerce-help-tip {
+	float: left;
+	margin-left: 4px;
+	vertical-align: top;
+}
+
+.woocommerce_variation .fb-product-video-source-field .wc-radios {
+	clear: both;
+	width: auto;
+}
+
+/* Add padding-top for first radio button in variation video fields */
+#woocommerce-product-data .woocommerce_variation .fb-product-video-source-field .wc-radios li:first-child {
+	padding-top: 10px;
+}
+
+/* Hide the button wrapper in variations since button is moved inline via JS */
+.woocommerce_variation .fb-product-video-source-field + p.product-video-source-field {
+	display: none !important;
+}
+
+/* Button inside label styling for variations */
+.woocommerce_variation .fb-product-video-source-field .wc-radios li:first-child label button {
+	margin-left: 8px;
+	vertical-align: middle;
 }
 
 /* Specifically hide multiple images thumbnails when not selected */

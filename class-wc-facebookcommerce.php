@@ -114,9 +114,6 @@ class WC_Facebookcommerce extends WooCommerce\Facebook\Framework\Plugin {
 	/** @var WooCommerce\Facebook\Handlers\WebHook webhook handler */
 	private $webhook_handler;
 
-	/** @var WooCommerce\Facebook\Handlers\Whatsapp_WebHook whatsapp webhook handler */
-	private $whatsapp_webhook_handler;
-
 	/** @var WooCommerce\Facebook\Commerce commerce handler */
 	private $commerce_handler;
 
@@ -249,7 +246,6 @@ class WC_Facebookcommerce extends WooCommerce\Facebook\Framework\Plugin {
 			new WooCommerce\Facebook\Handlers\WhatsAppExtension();
 			new WooCommerce\Facebook\Handlers\MetaExtension();
 			$this->webhook_handler          = new WooCommerce\Facebook\Handlers\WebHook();
-			$this->whatsapp_webhook_handler = new WooCommerce\Facebook\Handlers\Whatsapp_Webhook();
 			$this->tracker                  = new WooCommerce\Facebook\Utilities\Tracker();
 			$this->rollout_switches         = new WooCommerce\Facebook\RolloutSwitches( $this );
 

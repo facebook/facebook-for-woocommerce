@@ -21,6 +21,10 @@ class WC_Facebookcommerce_Iframe_Whatsapp_Utility_Event {
 		'processing' => 'ORDER_PLACED',
 		'completed'  => 'ORDER_FULFILLED',
 		'refunded'   => 'ORDER_REFUNDED',
+		'pending'    => 'ORDER_PENDING_PAYMENT',
+		'on-hold'    => 'ORDER_ON_HOLD',
+		'cancelled'  => 'ORDER_CANCELLED',
+		'failed'     => 'ORDER_PAYMENT_FAILED',
 	);
 
 	/** @var \WC_Facebookcommerce */

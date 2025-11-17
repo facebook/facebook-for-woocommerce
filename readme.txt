@@ -3,7 +3,7 @@ Contributors: facebook
 Tags: meta, facebook, conversions api, catalog sync, ads
 Requires at least: 5.6
 Tested up to: 6.8.3
-Stable tag: 3.5.11
+Stable tag: 3.5.12
 Requires PHP: 7.4
 MySQL: 5.6 or greater
 License: GPLv2 or later
@@ -41,15 +41,16 @@ To suggest technical improvements, you can raise an issue on our [Github reposit
 
 == Changelog ==
 
-= 3.5.12 - 2025-10-20 =
+= 3.5.13 - 2025-11-10 =
+* Fix - [Woo-Alpha][Deprecate][1/n] Remove WhatsApp Webhook from Woo by @sharunaanandraj in #3693
+* Dev - Enhance E2E testing infrastructure for WooCommerce product workflows and add tests for product modification/edit flow by @ashiqursuperfly in #3692
+* Fix - Fix: Prevent integer overflow in Facebook product IDs by @sol-loup in #3688
+* Add - Feature/ Update Integration Config Endpoint by @olu-meta in #3665
+* Add - feat: logging plugin versions for better tracking by @rithikb24 in #3677
+* Fix - Fix: CRON error calling is_master_sync_on() on null plugin_render_han… by @devbodaghe in #3676
+* Fix - removing external-time from feed job by @rithikb24 in #3673
 * Fix - Fix click_id API validation error by @devbodaghe in #3668
-* Add - Promo Banner for WhatsApp Utility by @woo-ardsouza in #3660
-* Add - Pb fix option 3 by @chc421 in #3617
-* Fix - Fix: Facebook product videos and attributes not saving by @devbodaghe in #3655
-* Tweak - feat: reducing promotions feed overhead by @rithikb24 in #3654
-* Fix - Updated the ajax calls to check if the caller is a legit user by @vahidkay-meta in #3647
-* Add - feat: making product update sync to fb async by @rithikb24 in #3645
-* Dev - Fix/automate stable version prep release by @vahidkay-meta in #3646
-* Fix - Stale pixel fix by @jczhuoMeta in #3640
+* Fix - Update checkout page to prevent lazy loading plugin interference by @carterbuce in #3664
+* Fix - Fix/Optimize is wp com detection by @ukilla in #3661
 
 [See changelog for all versions](https://raw.githubusercontent.com/facebook/facebook-for-woocommerce/refs/heads/main/changelog.txt).

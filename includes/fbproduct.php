@@ -463,30 +463,43 @@ class WC_Facebook_Product {
 			$product = wc_get_product( $parent_id );
 		}
 
-		$attached_videos = get_attached_media( 'video', $this->id );
+		// Check the video source to determine which meta key to use
+		$video_source = $product->get_meta( \WooCommerce\Facebook\Products::PRODUCT_VIDEO_SOURCE_META_KEY );
 
-		$custom_video_urls = $product->get_meta( self::FB_PRODUCT_VIDEO );
-
-		if ( empty( $attached_videos ) && empty( $custom_video_urls ) ) {
+		// If video source is 'custom', get the custom video URL
+		if ( \WooCommerce\Facebook\Products::PRODUCT_VIDEO_SOURCE_CUSTOM === $video_source ) {
+			$custom_video_url = trim( $product->get_meta( self::FB_PRODUCT_VIDEO . '_custom_url' ) );
+			if ( ! empty( $custom_video_url ) && filter_var( $custom_video_url, FILTER_VALIDATE_URL ) ) {
+				$video_urls[] = array( 'url' => $custom_video_url );
+			}
 			return $video_urls;
 		}
 
-		// Add custom video URLs to the list
-		if ( ! empty( $custom_video_urls ) && is_array( $custom_video_urls ) ) {
-			foreach ( $custom_video_urls as $custom_url ) {
-				$custom_url = trim( $custom_url );
-				if ( ! empty( $custom_url ) ) {
-					$video_urls[] = array( 'url' => $custom_url );
+		// Otherwise, use uploaded videos (default behavior)
+		$attached_videos = get_attached_media( 'video', $this->id );
+
+		$uploaded_video_urls = $product->get_meta( self::FB_PRODUCT_VIDEO );
+
+		if ( empty( $attached_videos ) && empty( $uploaded_video_urls ) ) {
+			return $video_urls;
+		}
+
+		// Add uploaded video URLs to the list
+		if ( is_array( $uploaded_video_urls ) ) {
+			foreach ( $uploaded_video_urls as $video_url ) {
+				$video_url = trim( $video_url );
+				if ( ! empty( $video_url ) ) {
+					$video_urls[] = array( 'url' => $video_url );
 				}
 			}
 		}
 
-		// Add attached video URLs to the list, excluding duplicates from custom video URLs
+		// Add attached video URLs to the list, excluding duplicates from uploaded video URLs
 		if ( ! empty( $attached_videos ) ) {
-			$custom_video_url_set = array_flip( array_column( $video_urls, 'url' ) );
+			$uploaded_video_url_set = array_flip( array_column( $video_urls, 'url' ) );
 			foreach ( $attached_videos as $video ) {
 				$url = wp_get_attachment_url( $video->ID );
-				if ( $url && ! isset( $custom_video_url_set[ $url ] ) ) {
+				if ( $url && ! isset( $uploaded_video_url_set[ $url ] ) ) {
 					$video_urls[] = array( 'url' => $url );
 				}
 			}
@@ -2212,8 +2225,8 @@ class WC_Facebook_Product {
 
 		$video_urls = $this->get_all_video_urls();
 
-		// If this is a variable product, get the video URLs from the parent product and add them to variations.
-		if ( $this->get_type() === 'variation' ) {
+		// If this is a variation with no videos, fall back to parent product videos
+		if ( $this->get_type() === 'variation' && empty( $video_urls ) ) {
 			$parent_id  = $this->woo_product->get_parent_id();
 			$video_urls = $this->get_all_video_urls( $parent_id );
 		}
