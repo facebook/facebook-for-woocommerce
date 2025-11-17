@@ -63,9 +63,27 @@ trait Facebook_Fields_Translation_Trait {
 						// Store original language
 						$original_lang = apply_filters( 'wpml_current_language', null );
 
-						// Extract language code from locale (e.g., 'fr_FR' -> 'fr')
-						$lang_parts = explode( '_', $target_language );
-						$wpml_lang_code = $lang_parts[0];
+						// Get the correct WPML language code for this locale
+						// Need to map from full locale (e.g., 'zh_CN', 'zh_TW') to WPML code
+						$wpml_languages = apply_filters( 'wpml_active_languages', null );
+						$wpml_lang_code = null;
+
+						if ( is_array( $wpml_languages ) ) {
+							// Search for the language that matches this locale
+							foreach ( $wpml_languages as $code => $language_data ) {
+								$locale = $language_data['default_locale'] ?? $code;
+								if ( $locale === $target_language ) {
+									$wpml_lang_code = $code;
+									break;
+								}
+							}
+						}
+
+						// Fallback: extract language code from locale
+						if ( ! $wpml_lang_code ) {
+							$lang_parts = explode( '_', $target_language );
+							$wpml_lang_code = $lang_parts[0];
+						}
 
 						// Switch to target language
 						do_action( 'wpml_switch_language', $wpml_lang_code );

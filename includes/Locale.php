@@ -401,6 +401,16 @@ class Locale {
 		$language_parts = explode( '_', $locale_code );
 		$language = strtolower( $language_parts[0] );
 
+		// Handle special cases for Chinese FIRST (before generic mappings)
+		// This is critical because we need to distinguish zh_CN from zh_TW
+		if ( $language === 'zh' && isset( $language_parts[1] ) ) {
+			$region = strtoupper( $language_parts[1] );
+			if ( in_array( $region, [ 'TW', 'HK', 'MO' ] ) ) {
+				return 'zh_TW'; // Traditional Chinese
+			}
+			return 'zh_CN'; // Simplified Chinese (default)
+		}
+
 		// Check if this language uses the _XX format
 		if ( in_array( $language, self::$facebook_xx_languages, true ) ) {
 			return $language . '_XX';
@@ -409,15 +419,6 @@ class Locale {
 		// Check if we have a specific Facebook override value for this language
 		if ( isset( self::$facebook_override_values[ $language ] ) ) {
 			return self::$facebook_override_values[ $language ];
-		}
-
-		// Handle special cases for Chinese
-		if ( $language === 'zh' && isset( $language_parts[1] ) ) {
-			$region = strtoupper( $language_parts[1] );
-			if ( in_array( $region, [ 'TW', 'HK', 'MO' ] ) ) {
-				return 'zh_TW'; // Traditional Chinese
-			}
-			return 'zh_CN'; // Simplified Chinese (default)
 		}
 
 		// Fallback: return the original code if no mapping found
@@ -438,18 +439,19 @@ class Locale {
 		$language_parts = explode( '_', $language_code );
 		$language = strtolower( $language_parts[0] );
 
-		// Check if we have a specific Facebook override value for this language
-		if ( isset( self::$facebook_override_values[ $language ] ) ) {
-			return self::$facebook_override_values[ $language ];
-		}
-
-		// Handle special cases for Chinese
+		// Handle special cases for Chinese FIRST (before generic mappings)
+		// This is critical because we need to distinguish zh_CN from zh_TW
 		if ( $language === 'zh' && isset( $language_parts[1] ) ) {
 			$region = strtoupper( $language_parts[1] );
 			if ( in_array( $region, [ 'TW', 'HK', 'MO' ] ) ) {
 				return 'zh_TW'; // Traditional Chinese
 			}
 			return 'zh_CN'; // Simplified Chinese (default)
+		}
+
+		// Check if we have a specific Facebook override value for this language
+		if ( isset( self::$facebook_override_values[ $language ] ) ) {
+			return self::$facebook_override_values[ $language ];
 		}
 
 		// If no mapping found, throw an exception
