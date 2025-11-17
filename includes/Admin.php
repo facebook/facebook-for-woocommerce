@@ -1028,7 +1028,9 @@ class Admin {
 		$price                 = get_post_meta( $post->ID, \WC_Facebook_Product::FB_PRODUCT_PRICE, true );
 		$image_source          = get_post_meta( $post->ID, Products::PRODUCT_IMAGE_SOURCE_META_KEY, true );
 		$image                 = get_post_meta( $post->ID, \WC_Facebook_Product::FB_PRODUCT_IMAGE, true );
+		$video_source          = get_post_meta( $post->ID, Products::PRODUCT_VIDEO_SOURCE_META_KEY, true );
 		$video_urls            = get_post_meta( $post->ID, \WC_Facebook_Product::FB_PRODUCT_VIDEO, true );
+		$custom_video_url      = get_post_meta( $post->ID, \WC_Facebook_Product::FB_PRODUCT_VIDEO . '_custom_url', true );
 		$fb_brand              = get_post_meta( $post->ID, \WC_Facebook_Product::FB_BRAND, true ) ? get_post_meta( $post->ID, \WC_Facebook_Product::FB_BRAND, true ) : get_post_meta( $post->ID, '_wc_facebook_enhanced_catalog_attributes_brand', true );
 		$fb_mpn                = get_post_meta( $post->ID, \WC_Facebook_Product::FB_MPN, true );
 		$fb_condition          = get_post_meta( $post->ID, \WC_Facebook_Product::FB_PRODUCT_CONDITION, true );
@@ -1068,12 +1070,9 @@ class Admin {
 				?>
 			</div>
 
-			<?php
-			if ( $product && $product->is_type( 'variable' ) ) {
-				// Render video field only for variable products
-				$this->render_facebook_product_video_field( $video_urls );
-			}
-			?>
+		<?php
+		// Video fields are now rendered in the options_group section with radio buttons
+		?>
 
 
 			<div class='options_group hide_if_variable'>
@@ -1126,7 +1125,7 @@ class Admin {
 					)
 				);
 
-				// Render the Facebook Product Video field at Product level
+				// Render the Facebook Product Video field with radio buttons
 				$this->render_facebook_product_video_field( $video_urls );
 
 				woocommerce_wp_text_input(
@@ -1348,12 +1347,15 @@ class Admin {
 		}
 
 		// Get variation meta values
-		$description  = $this->get_product_variation_meta( $variation, \WC_Facebookcommerce_Integration::FB_RICH_TEXT_DESCRIPTION, $parent );
-		$price        = $this->get_product_variation_meta( $variation, \WC_Facebook_Product::FB_PRODUCT_PRICE, $parent );
-		$image_url    = $this->get_product_variation_meta( $variation, \WC_Facebook_Product::FB_PRODUCT_IMAGE, $parent );
-		$image_source = $variation->get_meta( Products::PRODUCT_IMAGE_SOURCE_META_KEY );
-		$image_urls   = $this->get_product_variation_meta( $variation, \WC_Facebook_Product::FB_PRODUCT_IMAGES, $parent );
-		$fb_mpn       = $this->get_product_variation_meta( $variation, \WC_Facebook_Product::FB_MPN, $parent );
+		$description       = $this->get_product_variation_meta( $variation, \WC_Facebookcommerce_Integration::FB_RICH_TEXT_DESCRIPTION, $parent );
+		$price             = $this->get_product_variation_meta( $variation, \WC_Facebook_Product::FB_PRODUCT_PRICE, $parent );
+		$image_url         = $this->get_product_variation_meta( $variation, \WC_Facebook_Product::FB_PRODUCT_IMAGE, $parent );
+		$image_source      = $variation->get_meta( Products::PRODUCT_IMAGE_SOURCE_META_KEY );
+		$image_urls        = $this->get_product_variation_meta( $variation, \WC_Facebook_Product::FB_PRODUCT_IMAGES, $parent );
+		$video_source      = $variation->get_meta( Products::PRODUCT_VIDEO_SOURCE_META_KEY );
+		$video_urls        = $this->get_product_variation_meta( $variation, \WC_Facebook_Product::FB_PRODUCT_VIDEO, $parent );
+		$custom_video_url  = $variation->get_meta( \WC_Facebook_Product::FB_PRODUCT_VIDEO . '_custom_url' );
+		$fb_mpn            = $this->get_product_variation_meta( $variation, \WC_Facebook_Product::FB_MPN, $parent );
 
 		?>
 		<div class="facebook-metabox wc-metabox closed">
@@ -1424,22 +1426,100 @@ class Admin {
 
 				$this->render_facebook_product_images_field( $image_ids_array, $index, $variation->get_id() );
 
-				woocommerce_wp_text_input(
+				// Render Facebook Product Video field with radio buttons for variations
+				woocommerce_wp_radio(
 					array(
-						'id'            => sprintf( 'variable_%s%s', \WC_Facebook_Product::FB_PRODUCT_PRICE, $index ),
-						'name'          => sprintf( 'variable_%s[%s]', \WC_Facebook_Product::FB_PRODUCT_PRICE, $index ),
-						'label'         => sprintf(
-						/* translators: Placeholders %1$s - WC currency symbol */
-							__( 'Facebook Price (%1$s)', 'facebook-for-woocommerce' ),
-							get_woocommerce_currency_symbol()
-						),
+						'id'            => "variable_fb_product_video_source$index",
+						'name'          => "variable_fb_product_video_source[$index]",
+						'label'         => __( 'Facebook Product Video', 'facebook-for-woocommerce' ),
 						'desc_tip'      => true,
-						'description'   => __( 'Custom price for product on Facebook. Please enter in monetary decimal (.) format without thousand separators and currency symbols. If blank, product price will be used.', 'facebook-for-woocommerce' ),
-						'value'         => wc_format_decimal( $price ),
-						'class'         => 'enable-if-sync-enabled',
-						'wrapper_class' => 'form-row form-full',
+						'description'   => __( 'Choose the product video that should be synced to the Facebook catalog and displayed for this variation.', 'facebook-for-woocommerce' ),
+						'options'       => array(
+							Products::PRODUCT_VIDEO_SOURCE_UPLOAD => __( 'Choose video(s)', 'facebook-for-woocommerce' ),
+							Products::PRODUCT_VIDEO_SOURCE_CUSTOM => __( 'Use custom video', 'facebook-for-woocommerce' ),
+						),
+						'value'         => $video_source ? $video_source : Products::PRODUCT_VIDEO_SOURCE_UPLOAD,
+						'class'         => 'enable-if-sync-enabled js-fb-product-video-source',
+						'wrapper_class' => 'fb-product-video-source-field',
 					)
 				);
+
+				// Add Choose Video button inline with first radio option
+				?>
+		<p class="form-field product-video-source-field show-if-product-video-source-<?php echo esc_attr( Products::PRODUCT_VIDEO_SOURCE_UPLOAD ); ?>">
+			<button type="button" class="button fb-open-video-library enable-if-sync-enabled" data-variation-index="<?php echo esc_attr( $index ); ?>" data-variation-id="<?php echo esc_attr( $variation->get_id() ); ?>"><?php esc_html_e( 'Choose Video', 'facebook-for-woocommerce' ); ?></button>
+		</p>
+		<div id="fb_product_video_selected_thumbnails_<?php echo esc_attr( $index ); ?>" class="fb-product-video-thumbnails product-video-source-field <?php echo esc_attr( 'show-if-product-video-source-' . Products::PRODUCT_VIDEO_SOURCE_UPLOAD ); ?>" >
+			<?php
+				$attachment_ids = [];
+				$video_urls_array = ! empty( $video_urls ) && is_string( $video_urls ) ? explode( ',', $video_urls ) : ( is_array( $video_urls ) ? $video_urls : [] );
+			if ( ! empty( $video_urls_array ) && is_array( $video_urls_array ) ) {
+				foreach ( $video_urls_array as $video_url ) {
+					$attachment_id = attachment_url_to_postid( $video_url );
+					if ( $attachment_id ) {
+						$attachment_ids[] = $attachment_id;
+						// Get the video thumbnail URL
+						$thumbnail_url = wp_get_attachment_image_url( $attachment_id, 'thumbnail' );
+						if ( ! $thumbnail_url ) {
+							// Fallback to a default icon if no thumbnail is available
+							$thumbnail_url = esc_url( wp_mime_type_icon( 'video' ) );
+						}
+						// Get filename
+						$filename = basename( get_attached_file( $attachment_id ) );
+						?>
+							<p class="form-field video-thumbnail">
+								<img src="<?php echo esc_url( $thumbnail_url ); ?>">
+								<span data-attachment-id="<?php echo esc_attr( $attachment_id ); ?>"><?php echo esc_html( $filename ); ?></span>
+								<a href="#" class="remove-video" data-attachment-id="<?php echo esc_attr( $attachment_id ); ?>" data-variation-index="<?php echo esc_attr( $index ); ?>"><?php esc_html_e( 'Remove', 'facebook-for-woocommerce' ); ?></a>
+							</p>
+							<?php
+					}
+				}
+			}
+			?>
+		</div>
+		<?php
+		// hidden input to store attachment IDs for variations
+		woocommerce_wp_hidden_input(
+			[
+				'id'    => 'variable_' . \WC_Facebook_Product::FB_PRODUCT_VIDEO . $index,
+				'name'  => 'variable_' . \WC_Facebook_Product::FB_PRODUCT_VIDEO . $index,
+				'value' => esc_attr( implode( ',', $attachment_ids ) ),
+				'class' => sprintf( 'product-video-source-field show-if-product-video-source-%s', Products::PRODUCT_VIDEO_SOURCE_UPLOAD ),
+			]
+		);
+
+			// Render custom video URL field (shown when "Use custom video" is selected)
+			woocommerce_wp_text_input(
+				array(
+					'id'            => sprintf( 'variable_%s_custom_url%s', \WC_Facebook_Product::FB_PRODUCT_VIDEO, $index ),
+					'name'          => sprintf( 'variable_%s_custom_url[%s]', \WC_Facebook_Product::FB_PRODUCT_VIDEO, $index ),
+					'label'         => __( 'Custom Video URL', 'facebook-for-woocommerce' ),
+					'value'         => $custom_video_url,
+					'class'         => sprintf( 'enable-if-sync-enabled product-video-source-field show-if-product-video-source-%s', Products::PRODUCT_VIDEO_SOURCE_CUSTOM ),
+					'wrapper_class' => 'form-row form-row-full',
+					'desc_tip'      => true,
+					'description'   => __( 'Please enter an absolute URL (e.g. https://domain.com/video.mp4). The URL must be publicly accessible for Facebook to display the video in Commerce Manager.', 'facebook-for-woocommerce' ),
+					'type'          => 'url',
+				)
+			);
+
+			woocommerce_wp_text_input(
+				array(
+					'id'            => sprintf( 'variable_%s%s', \WC_Facebook_Product::FB_PRODUCT_PRICE, $index ),
+					'name'          => sprintf( 'variable_%s[%s]', \WC_Facebook_Product::FB_PRODUCT_PRICE, $index ),
+					'label'         => sprintf(
+					/* translators: Placeholders %1$s - WC currency symbol */
+						__( 'Facebook Price (%1$s)', 'facebook-for-woocommerce' ),
+						get_woocommerce_currency_symbol()
+					),
+					'desc_tip'      => true,
+					'description'   => __( 'Custom price for product on Facebook. Please enter in monetary decimal (.) format without thousand separators and currency symbols. If blank, product price will be used.', 'facebook-for-woocommerce' ),
+					'value'         => wc_format_decimal( $price ),
+					'class'         => 'enable-if-sync-enabled',
+					'wrapper_class' => 'form-row form-full',
+				)
+			);
 
 				woocommerce_wp_text_input(
 					array(
@@ -1454,7 +1534,7 @@ class Admin {
 					)
 				);
 
-				?>
+		?>
 			</div>
 		</div>
 
@@ -1616,9 +1696,40 @@ class Admin {
 		$posted_param = 'variable_' . \WC_Facebook_Product::FB_PRODUCT_IMAGE;
 		// phpcs:ignore WordPress.Security.NonceVerification.Missing -- Nonce verification is handled in save_product_variation_edit_fields method
 		$image_url    = isset( $_POST[ $posted_param ][ $index ] ) ? esc_url_raw( wp_unslash( $_POST[ $posted_param ][ $index ] ) ) : null;
-		$posted_param = 'variable_' . \WC_Facebook_Product::FB_PRODUCT_VIDEO;
+		$posted_param = 'variable_fb_product_video_source';
 		// phpcs:ignore WordPress.Security.NonceVerification.Missing -- Nonce verification is handled in save_product_variation_edit_fields method
-		$video_urls   = isset( $_POST[ $posted_param ][ $index ] ) ? esc_url_raw( wp_unslash( $_POST[ $posted_param ][ $index ] ) ) : [];
+		$video_source = isset( $_POST[ $posted_param ][ $index ] ) ? sanitize_key( wp_unslash( $_POST[ $posted_param ][ $index ] ) ) : '';
+		// Use the same pattern as FB_PRODUCT_IMAGES - flat key with index appended
+		$posted_param = 'variable_' . \WC_Facebook_Product::FB_PRODUCT_VIDEO . $index;
+	// phpcs:ignore WordPress.Security.NonceVerification.Missing -- Nonce verification is handled in save_product_variation_edit_fields method
+		$video_ids_raw = isset( $_POST[ $posted_param ] ) ? sanitize_text_field( wp_unslash( $_POST[ $posted_param ] ) ) : '';
+		// Convert attachment IDs to URLs (same logic as WC_Facebook_Product::set_product_video_urls)
+		if ( ! empty( $video_ids_raw ) ) {
+			$video_urls_array = array_filter(
+				array_map(
+					function ( $id ) {
+						$id = trim( $id );
+						return $id ? wp_get_attachment_url( $id ) : false;
+					},
+					explode( ',', $video_ids_raw )
+				)
+			);
+			$video_urls = $video_urls_array; // Store as array like simple products do
+		} else {
+			$video_urls = array();
+		}
+		$posted_param = 'variable_' . \WC_Facebook_Product::FB_PRODUCT_VIDEO . '_custom_url';
+	// phpcs:ignore WordPress.Security.NonceVerification.Missing -- Nonce verification is handled in save_product_variation_edit_fields method
+		$custom_video_url_raw = isset( $_POST[ $posted_param ][ $index ] ) ? esc_url_raw( wp_unslash( $_POST[ $posted_param ][ $index ] ) ) : null;
+		// Validate the custom video URL if provided
+		$custom_video_url = null;
+		if ( ! empty( $custom_video_url_raw ) ) {
+			$custom_video_url_raw = trim( $custom_video_url_raw );
+			// Only save if it's a valid URL
+			if ( filter_var( $custom_video_url_raw, FILTER_VALIDATE_URL ) ) {
+				$custom_video_url = $custom_video_url_raw;
+			}
+		}
 		// Fix: Look for the actual POST key format that WooCommerce generates
 		$posted_param = 'variable_' . \WC_Facebook_Product::FB_PRODUCT_IMAGES . $index;
 		// phpcs:ignore WordPress.Security.NonceVerification.Missing -- Nonce verification is handled in save_product_variation_edit_fields method
@@ -1633,7 +1744,9 @@ class Admin {
 			'fb_mpn'            => $fb_mpn,
 			'image_source'      => $image_source,
 			'image_url'         => $image_url,
+			'video_source'      => $video_source,
 			'video_urls'        => $video_urls,
+			'custom_video_url'  => $custom_video_url,
 			'image_ids'         => $image_ids,
 			'price'             => $price,
 		);
@@ -1651,7 +1764,9 @@ class Admin {
 		$variation->update_meta_data( Products::PRODUCT_IMAGE_SOURCE_META_KEY, $data['image_source'] );
 		$variation->update_meta_data( \WC_Facebook_Product::FB_MPN, $data['fb_mpn'] );
 		$variation->update_meta_data( \WC_Facebook_Product::FB_PRODUCT_IMAGE, $data['image_url'] );
+		$variation->update_meta_data( Products::PRODUCT_VIDEO_SOURCE_META_KEY, $data['video_source'] );
 		$variation->update_meta_data( \WC_Facebook_Product::FB_PRODUCT_VIDEO, $data['video_urls'] );
+		$variation->update_meta_data( \WC_Facebook_Product::FB_PRODUCT_VIDEO . '_custom_url', $data['custom_video_url'] );
 		$variation->update_meta_data( \WC_Facebook_Product::FB_PRODUCT_IMAGES, $data['image_ids'] );
 		$variation->update_meta_data( \WC_Facebook_Product::FB_PRODUCT_PRICE, $data['price'] );
 		$variation->save_meta_data();
