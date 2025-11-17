@@ -68,12 +68,8 @@ class Settings {
 	}
 
 	public function add_extra_screens(): void {
-		$rollout_switches                      = $this->plugin->get_rollout_switches();
-		$is_connected                          = $this->plugin->get_connection_handler()->is_connected();
-		$is_whatsapp_utility_messaging_enabled = $rollout_switches->is_switch_enabled( RolloutSwitches::WHATSAPP_UTILITY_MESSAGING );
-		if ( true === $is_connected && true === $is_whatsapp_utility_messaging_enabled ) {
-			$this->screens[ Settings_Screens\Whatsapp_Utility::ID ] = new Settings_Screens\Whatsapp_Utility();
-		}
+		$rollout_switches = $this->plugin->get_rollout_switches();
+		$is_connected     = $this->plugin->get_connection_handler()->is_connected();
 
 		$is_woo_all_products_sync_enbaled = $this->plugin->get_rollout_switches()->is_switch_enabled(
 			RolloutSwitches::SWITCH_WOO_ALL_PRODUCTS_SYNC_ENABLED

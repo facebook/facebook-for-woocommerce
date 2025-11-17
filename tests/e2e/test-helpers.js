@@ -137,7 +137,7 @@ function logTestEnd(testInfo, success = true) {
 async function setProductDescription(page, newDescription) {
   // Try to add description - handle different editor types
   try {
-    console.log('🔄 Attempting to add product description...');
+    console.log('🔄 Attempting to set product description...');
 
     // First, try the visual/TinyMCE editor
     const visualTab = page.locator('#content-tmce');
@@ -186,6 +186,67 @@ async function setProductDescription(page, newDescription) {
   }
 }
 
+// Helper function to route to products table and filter by product type
+async function filterProducts(page, productType, productSKU = null) {
+  // Go to Products page
+  console.log('📋 Navigating to Products page...');
+  await page.goto(`${baseURL}/wp-admin/edit.php?post_type=product`, {
+    waitUntil: 'networkidle',
+    timeout: 120000
+  });
+
+  // Filter by product type
+  console.log('🔍 Filtering by Simple product type...');
+  const productTypeFilter = page.locator('select#dropdown_product_type');
+  if (await productTypeFilter.isVisible({ timeout: 10000 })) {
+    const filterButton = page.locator("#post-query-submit");
+    await productTypeFilter.selectOption(productType.toLowerCase());
+    await filterButton.click();
+
+    await page.waitForTimeout(2000);
+    console.log('✅ Filtered by product type');
+  } else {
+    console.warn('⚠️ Product type filter not found, proceeding without filter');
+  }
+
+  // If productSKU is provided, search for it
+  if (productSKU) {
+    console.log(`🔍 Searching for product with SKU: ${productSKU}`);
+    const searchBox = page.locator('#post-search-input');
+    if (await searchBox.isVisible({ timeout: 10000 })) {
+      await searchBox.fill(productSKU);
+      const searchButton = page.locator('#search-submit');
+      await searchButton.click();
+      await page.waitForTimeout(2000);
+      console.log('✅ Searched for product by SKU');
+    } else {
+      console.warn('⚠️ Search box not found, cannot search by SKU');
+    }
+  }
+
+  // Wait for products table to load
+  const hasProductsTable = await page.locator('.wp-list-table').isVisible({ timeout: 120000 });
+  if (hasProductsTable) {
+    console.log('✅ WooCommerce products page loaded successfully');
+  } else {
+    console.warn('⚠️ Products table not found');
+  }
+}
+
+// Helper function to click the first visible product from products table
+async function clickFirstProduct(page) {
+  const firstProductRow = page.locator('.wp-list-table tbody tr.iedit').first();
+  await firstProductRow.isVisible({ timeout: 10000 });
+  // Extract product name from the row
+  const productNameElement = firstProductRow.locator('.row-title');
+  const productName = await productNameElement.textContent();
+  console.log(`✅ Found product: "${productName}"`);
+
+  // Click on product name to edit
+  await productNameElement.click();
+  await page.waitForLoadState('networkidle', { timeout: 120000 });
+  console.log('✅ Opened product editor');
+}
 
 // Helper function to validate Facebook sync
 async function validateFacebookSync(productId, productName, waitSeconds = 10) {
@@ -218,13 +279,13 @@ async function validateFacebookSync(productId, productName, waitSeconds = 10) {
     if (result.success) {
       console.log(`🎉 Facebook Sync Validation Succeeded for ${displayName}:`);
     } else {
-      console.log(`❌ Facebook sync validation Failed: ${result.error}. Check debug logs above.`);
+      console.warn(`⚠️ Facebook sync validation Failed: ${result.error}. Check debug logs above.`);
     }
 
     return result;
 
   } catch (error) {
-    console.log(`⚠️ Facebook sync validation error: ${error.message}`);
+    console.warn(`⚠️ Facebook sync validation error: ${error.message}`);
     return null;
   }
 }
@@ -256,8 +317,15 @@ async function createTestProduct(options = {}) {
       console.log(`✅ ${result.message}`);
       console.log(`   Name: ${result.product_name}`);
       console.log(`   SKU: ${result.sku}`);
-      console.log(`   Price: ${result.price}`);
-      console.log(`   Stock: ${result.stock}`);
+
+      if (productType === 'simple') {
+        console.log(`   Price: ${result.price}`);
+        console.log(`   Stock: ${result.stock}`);
+      }
+      else {
+        console.log(`   Variations: ${result.variation_count}`);
+        console.log(`   VariationIds: ${result.variation_ids}`);
+      }
 
       return {
         productId: result.product_id,
@@ -292,5 +360,7 @@ module.exports = {
   logTestEnd,
   validateFacebookSync,
   createTestProduct,
-  setProductDescription
+  setProductDescription,
+  filterProducts,
+  clickFirstProduct
 };

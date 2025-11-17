@@ -251,9 +251,6 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 	/** @var WC_Facebook_Product_Feed instance. */
 	private $fbproductfeed;
 
-	/** @var WC_Facebookcommerce_Whatsapp_Utility_Event instance. */
-	private $wa_utility_event_processor;
-
 	/** @var WC_Facebookcommerce_Iframe_Whatsapp_Utility_Event instance. */
 	private $wa_iframe_utility_event_processor;
 
@@ -410,9 +407,6 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 
 		// Ensure product is deleted from FB when status is changed to draft.
 		add_action( 'publish_to_draft', array( $this, 'delete_draft_product' ) );
-
-		// Init Whatsapp Utility Event Processor
-		$this->wa_utility_event_processor = $this->load_whatsapp_utility_event_processor();
 
 		// Track programmatic changes that don't update post_modified
 		add_action( 'updated_post_meta', array( $this, 'update_product_last_change_time' ), 10, 4 );
@@ -867,11 +861,11 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 
 		// Restore context
 		$product_id = $sync_data['product_id'];
-		$_POST = $sync_data['post_data']; // Restore $_POST data
+		$_POST      = $sync_data['post_data']; // Restore $_POST data
 
 		return array(
 			'product_id' => $product_id,
-			'success' => true,
+			'success'    => true,
 		);
 	}
 
@@ -906,7 +900,7 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 		// phpcs:disable WordPress.Security.NonceVerification.Missing
 		$sync_data = array(
 			'product_id' => $wp_id,
-			'post_data' => $_POST,
+			'post_data'  => $_POST,
 		);
 		// phpcs:enable WordPress.Security.NonceVerification.Missing
 
@@ -3188,21 +3182,6 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 		delete_option( 'fb_test_pass' );
 		printf( wp_json_encode( $response ) );
 		wp_die();
-	}
-
-	/**
-	 * Init WhatsApp Utility Event Processor.
-	 *
-	 * @return void
-	 */
-	public function load_whatsapp_utility_event_processor() {
-		// Attempt to load WhatsApp Utility Event Processor
-		include_once 'facebook-commerce-whatsapp-utility-event.php';
-		if ( class_exists( 'WC_Facebookcommerce_Whatsapp_Utility_Event' ) ) {
-			if ( ! isset( $this->wa_utility_event_processor ) ) {
-				$this->wa_utility_event_processor = new WC_Facebookcommerce_Whatsapp_Utility_Event( $this );
-			}
-		}
 	}
 
 	/**
