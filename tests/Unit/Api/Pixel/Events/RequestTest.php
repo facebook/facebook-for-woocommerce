@@ -354,43 +354,42 @@ class RequestTest extends WP_UnitTestCase {
 	}
 
 	/**
-	 * Test for Request with different click_id values
+	 * Data provider for fbc/fbp from cookie and session tests.
+	 *
+	 * @return array Test cases with format: [global_type, global_key, field_name, test_value]
 	 */
-	public function given_cookie_fbc_exists_when_event_is_created_then_event_fbc_equals_cookies_fbc() {
-		$test_fbc = 'fb.1.1234567890.Test';
+	public function fbc_fbp_sources_provider() {
+		return array(
+			'fbc from cookie' => array( '_COOKIE', '_fbc', 'fbc', 'fb.1.1234567890.Test' ),
+			'fbc from session' => array( '_SESSION', '_fbc', 'fbc', 'fb.1.1234567890.Test' ),
+			'fbp from cookie' => array( '_COOKIE', '_fbp', 'fbp', 'fb.1.1234567890.TestFBP' ),
+			'fbp from session' => array( '_SESSION', '_fbp', 'fbp', 'fb.1.1234567890.TestFBP' ),
+		);
+	}
+
+	/**
+	 * Test that fbc/fbp values from cookies and sessions are properly included in event data.
+	 *
+	 * @dataProvider fbc_fbp_sources_provider
+	 */
+	public function test_fbc_fbp_from_cookie_and_session( $global_type, $global_key, $field_name, $test_value ) {
 		$pixel_id = 'test_pixel_id_123';
 
-		// Case: click_id existed in cookie
-		$_COOKIE['_fbc'] = $test_fbc;
+		// Set the global variable ($_COOKIE or $_SESSION)
+		$GLOBALS[$global_type][$global_key] = $test_value;
+
 		$event = new Event( array( 'event_name' => 'TestEvent' ) );
 		$request = new Request( $pixel_id, array( $event ) );
 		$data = $request->get_data();
 
 		$this->assertArrayHasKey( 'user_data', $data['data'][0] );
-		$this->assertArrayHasKey( 'fbc', $data['data'][0]['user_data'] );
-		$this->assertEquals( $test_fbc, $data['data'][0]['user_data']['fbc'] );
+		$this->assertArrayHasKey( $field_name, $data['data'][0]['user_data'] );
+		$this->assertEquals( $test_value, $data['data'][0]['user_data'][$field_name] );
 		$this->assertArrayNotHasKey( 'click_id', $data['data'][0]['user_data'] );
 		$this->assertArrayNotHasKey( 'browser_id', $data['data'][0]['user_data'] );
 
-		unset( $_COOKIE['_fbc'] );
-	}
-
-	public function given_session_fbc_exists_when_event_is_created_then_event_fbc_equals_session_fbc() {
-		$test_fbc = 'fb.1.1234567890.Test';
-		$pixel_id = 'test_pixel_id_123';
-
-		// Case: click_id generated from session
-		$_SESSION['_fbc'] = $test_fbc;
-		$event = new Event( array( 'event_name' => 'TestEvent' ) );
-		$request = new Request( $pixel_id, array( $event ) );
-		$data = $request->get_data();
-
-		$this->assertArrayHasKey( 'fbc', $data['data'][0]['user_data'] );
-		$this->assertEquals( $test_fbc, $data['data'][0]['user_data']['fbc'] );
-		$this->assertArrayNotHasKey( 'click_id', $data['data'][0]['user_data'] );
-		$this->assertArrayNotHasKey( 'browser_id', $data['data'][0]['user_data'] );
-
-		unset( $_SESSION['_fbc'] );
+		// Cleanup
+		unset( $GLOBALS[$global_type][$global_key] );
 	}
 
 	public function given_param_builder_fbc_when_event_is_created_then_event_fbc_equals_param_builder_fbc() {
