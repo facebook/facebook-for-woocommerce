@@ -20,7 +20,7 @@ class RequestTest extends WP_UnitTestCase {
 	 */
 	public function test_request_data_contains_fbc_fbp() {
 		$pixel_id = 'test_pixel_id_123';
-		
+
 		$event = new Event( array(
 			'event_name'  => 'Purchase',
 			'custom_data' => array( 'value' => '99.99' ),
@@ -30,23 +30,23 @@ class RequestTest extends WP_UnitTestCase {
 				'em'  => 'test@example.com',
 			),
 		) );
-		
+
 		$request = new Request( $pixel_id, array( $event ) );
 		$data = $request->get_data();
-		
+
 		// Verify the data structure
 		$this->assertIsArray( $data );
 		$this->assertArrayHasKey( 'data', $data );
 		$this->assertArrayHasKey( 'partner_agent', $data );
-		
+
 		// Verify event data contains fbc and fbp (converted from click_id and browser_id)
 		$this->assertCount( 1, $data['data'] );
 		$event_data = $data['data'][0];
-		
+
 		$this->assertArrayHasKey( 'user_data', $event_data );
 		$this->assertArrayHasKey( 'fbc', $event_data['user_data'] );
 		$this->assertArrayHasKey( 'fbp', $event_data['user_data'] );
-		
+
 		// Verify the values are correctly converted
 		$this->assertEquals( 'fb.1.1234567890.AbCdEfGh', $event_data['user_data']['fbc'] );
 		$this->assertEquals( 'fb.1.1234567890.987654321', $event_data['user_data']['fbp'] );
@@ -57,7 +57,7 @@ class RequestTest extends WP_UnitTestCase {
 	 */
 	public function test_request_data_no_legacy_parameters() {
 		$pixel_id = 'test_pixel_id_123';
-		
+
 		$event = new Event( array(
 			'event_name'  => 'AddToCart',
 			'custom_data' => array( 'value' => '49.99' ),
@@ -66,12 +66,12 @@ class RequestTest extends WP_UnitTestCase {
 				'browser_id' => 'fb.1.1234567890.987654321',
 			),
 		) );
-		
+
 		$request = new Request( $pixel_id, array( $event ) );
 		$data = $request->get_data();
-		
+
 		$event_data = $data['data'][0];
-		
+
 		// Ensure no legacy parameter names are present in the request
 		$this->assertArrayNotHasKey( 'click_id', $event_data['user_data'] );
 		$this->assertArrayNotHasKey( 'browser_id', $event_data['user_data'] );
@@ -87,7 +87,7 @@ class RequestTest extends WP_UnitTestCase {
 	 */
 	public function test_request_handles_multiple_events() {
 		$pixel_id = 'test_pixel_id_123';
-		
+
 		$event1 = new Event( array(
 			'event_name'  => 'ViewContent',
 			'user_data'   => array(
@@ -95,7 +95,7 @@ class RequestTest extends WP_UnitTestCase {
 				'browser_id' => 'fb.1.1234567890.Event1FBP',
 			),
 		) );
-		
+
 		$event2 = new Event( array(
 			'event_name'  => 'AddToCart',
 			'user_data'   => array(
@@ -103,13 +103,13 @@ class RequestTest extends WP_UnitTestCase {
 				'browser_id' => 'fb.1.1234567890.Event2FBP',
 			),
 		) );
-		
+
 		$request = new Request( $pixel_id, array( $event1, $event2 ) );
 		$data = $request->get_data();
-		
+
 		// Verify both events are present
 		$this->assertCount( 2, $data['data'] );
-		
+
 		// Verify first event (click_id/browser_id should be converted to fbc/fbp)
 		$this->assertEquals( 'ViewContent', $data['data'][0]['event_name'] );
 		$this->assertEquals( 'fb.1.1234567890.Event1FBC', $data['data'][0]['user_data']['fbc'] );
@@ -354,62 +354,94 @@ class RequestTest extends WP_UnitTestCase {
 	}
 
 	/**
-	 * Test for Request with different click_id values
+	 * Data provider for fbc/fbp from cookie and session tests.
+	 *
+	 * @return array Test cases with format: [global_type, global_key, field_name, test_value]
 	 */
-	public function given_cookie_fbc_exists_when_event_is_created_then_event_fbc_equals_cookies_fbc() {
-		$test_fbc = 'fb.1.1234567890.Test';
+	public function fbc_fbp_sources_provider() {
+		return array(
+			'fbc from cookie' => array( '_COOKIE', '_fbc', 'fbc', 'fb.1.1234567890.Test' ),
+			'fbc from session' => array( '_SESSION', '_fbc', 'fbc', 'fb.1.1234567890.Test' ),
+			'fbp from cookie' => array( '_COOKIE', '_fbp', 'fbp', 'fb.1.1234567890.TestFBP' ),
+			'fbp from session' => array( '_SESSION', '_fbp', 'fbp', 'fb.1.1234567890.TestFBP' ),
+		);
+	}
+
+	/**
+	 * Test that fbc/fbp values from cookies and sessions are properly included in event data.
+	 *
+	 * @dataProvider fbc_fbp_sources_provider
+	 */
+	public function test_fbc_fbp_from_cookie_and_session( $global_type, $global_key, $field_name, $test_value ) {
 		$pixel_id = 'test_pixel_id_123';
 
-		// Case: click_id existed in cookie
-		$_COOKIE['_fbc'] = $test_fbc;
+		$GLOBALS[$global_type][$global_key] = $test_value;
+
 		$event = new Event( array( 'event_name' => 'TestEvent' ) );
 		$request = new Request( $pixel_id, array( $event ) );
 		$data = $request->get_data();
 
 		$this->assertArrayHasKey( 'user_data', $data['data'][0] );
-		$this->assertArrayHasKey( 'fbc', $data['data'][0]['user_data'] );
-		$this->assertEquals( $test_fbc, $data['data'][0]['user_data']['fbc'] );
+		$this->assertArrayHasKey( $field_name, $data['data'][0]['user_data'] );
+		$this->assertEquals( $test_value, $data['data'][0]['user_data'][$field_name] );
 		$this->assertArrayNotHasKey( 'click_id', $data['data'][0]['user_data'] );
 		$this->assertArrayNotHasKey( 'browser_id', $data['data'][0]['user_data'] );
 
-		unset( $_COOKIE['_fbc'] );
+		unset( $GLOBALS[$global_type][$global_key] );
 	}
 
 	/**
-	 * Test that fbc from session is properly included in event data.
+	 * Data provider for param_builder tests.
+	 *
+	 * @return array Test cases with format: [field_name, test_value, getter_method, additional_methods]
 	 */
-	public function test_fbc_from_session() {
-		$test_fbc = 'fb.1.1234567890.Test';
-		$pixel_id = 'test_pixel_id_123';
-
-		$_SESSION['_fbc'] = $test_fbc;
-		$event = new Event( array( 'event_name' => 'TestEvent' ) );
-		$request = new Request( $pixel_id, array( $event ) );
-		$data = $request->get_data();
-
-		$this->assertArrayHasKey( 'fbc', $data['data'][0]['user_data'], 'Event should contain fbc from session' );
-		$this->assertEquals( $test_fbc, $data['data'][0]['user_data']['fbc'], 'Event fbc should equal session fbc value' );
-		$this->assertArrayNotHasKey( 'click_id', $data['data'][0]['user_data'], 'Legacy click_id should not be present' );
-		$this->assertArrayNotHasKey( 'browser_id', $data['data'][0]['user_data'], 'Legacy browser_id should not be present' );
-
-		unset( $_SESSION['_fbc'] );
+	public function param_builder_provider() {
+		return array(
+			'fbc from param_builder' => array(
+				'fbc',
+				'fb.1.1234567890.Test.AQ',
+				'getFbc',
+				array(),
+			),
+			'fbp from param_builder' => array(
+				'fbp',
+				'fb.1.1234567890.ParamFBP',
+				'getFbp',
+				array( 'getFbc' => null ),
+			),
+		);
 	}
 
-	public function given_param_builder_fbc_when_event_is_created_then_event_fbc_equals_param_builder_fbc() {
-		$test_pb_fbc = 'fb.1.1234567890.Test.AQ'; // parambuilder fbc signature
+	/**
+	 * Test that fbc/fbp values from param_builder are properly included in event data.
+	 *
+	 * @dataProvider param_builder_provider
+	 */
+	public function test_param_builder_values( $field_name, $test_value, $getter_method, $additional_methods ) {
 		$pixel_id = 'test_pixel_id_123';
 
-		$mock_param_builder = new class($test_pb_fbc) {
-			private $fbc;
-			public function __construct($fbc) {
-				$this->fbc = $fbc;
+		$mock_param_builder = new class( $test_value, $getter_method, $additional_methods ) {
+			private $value;
+			private $getter;
+			private $methods;
+
+			public function __construct( $value, $getter, $methods ) {
+				$this->value = $value;
+				$this->getter = $getter;
+				$this->methods = $methods;
 			}
-			public function getFbc() {
-				return $this->fbc;
+
+			public function __call( $name, $arguments ) {
+				if ( $name === $this->getter ) {
+					return $this->value;
+				}
+				if ( isset( $this->methods[ $name ] ) ) {
+					return $this->methods[ $name ];
+				}
+				return null;
 			}
 		};
 
-		// Inject mock ParamBuilder before creating the Event so Event::get_click_id() picks it up
 		$original_param_builder = null;
 		if ( class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) {
 			$ref = new \ReflectionClass( 'WC_Facebookcommerce_EventsTracker' );
@@ -421,23 +453,29 @@ class RequestTest extends WP_UnitTestCase {
 			}
 		}
 
+		if ( isset( $_COOKIE[ '_' . $field_name ] ) ) {
+			unset( $_COOKIE[ '_' . $field_name ] );
+		}
+		if ( isset( $_SESSION[ '_' . $field_name ] ) ) {
+			unset( $_SESSION[ '_' . $field_name ] );
+		}
+
 		$event = new Event( array( 'event_name' => 'TestEvent' ) );
 		$request = new Request( $pixel_id, array( $event ) );
 		$data = $request->get_data();
 
 		$this->assertArrayHasKey( 'user_data', $data['data'][0] );
-		$this->assertArrayHasKey( 'fbc', $data['data'][0]['user_data'] );
-		$this->assertEquals( $test_pb_fbc, $data['data'][0]['user_data']['fbc'] );
+		$this->assertArrayHasKey( $field_name, $data['data'][0]['user_data'] );
+		$this->assertEquals( $test_value, $data['data'][0]['user_data'][ $field_name ] );
 		$this->assertArrayNotHasKey( 'click_id', $data['data'][0]['user_data'] );
 		$this->assertArrayNotHasKey( 'browser_id', $data['data'][0]['user_data'] );
 
-		// Cleanup - restore original param builder (may be null)
 		if ( isset( $prop ) ) {
 			$prop->setValue( null, $original_param_builder );
 		}
 	}
 
-	public function given_request_fbclid_when_event_is_created_then_event_fbc_contains_fbclid() {
+	public function test_fbc_from_fbclid() {
 		$test_fbc = 'fb.1.1234567890.Test';
 		$pixel_id = 'test_pixel_id_123';
 
@@ -480,112 +518,4 @@ class RequestTest extends WP_UnitTestCase {
 		}
 	}
 
-	/**
-	 * Test for Request with different browser_id (fbp) values
-	 */
-	public function given_cookie_fbp_exists_when_event_is_created_then_event_fbp_equals_cookies_fbp() {
-		$test_fbp = 'fb.1.1234567890.TestFBP';
-		$pixel_id = 'test_pixel_id_123';
-
-		// Case: browser_id existed in cookie
-		$_COOKIE['_fbp'] = $test_fbp;
-		$event = new Event( array(
-			'event_name'  => 'TestEvent',
-		) );
-		$request = new Request( $pixel_id, array( $event ) );
-		$data = $request->get_data();
-
-		$this->assertIsArray( $data );
-		$this->assertArrayHasKey( 'data', $data );
-		$this->assertCount( 1, $data['data'] );
-		$this->assertArrayHasKey( 'user_data', $data['data'][0] );
-		$this->assertArrayHasKey( 'fbp', $data['data'][0]['user_data'] );
-		$this->assertEquals( $test_fbp, $data['data'][0]['user_data']['fbp'] );
-		$this->assertArrayNotHasKey( 'browser_id', $data['data'][0]['user_data'] );
-		$this->assertArrayNotHasKey( 'click_id', $data['data'][0]['user_data'] );
-
-		// Cleanup
-		unset( $_COOKIE['_fbp'] );
-	}
-
-	public function given_session_fbp_exists_when_event_is_created_then_event_fbp_equals_session_fbp() {
-		$test_fbp = 'fb.1.1234567890.TestFBP';
-		$pixel_id = 'test_pixel_id_123';
-
-		// Case: browser_id generated from session
-		$_SESSION['_fbp'] = $test_fbp;
-		$event = new Event( array(
-			'event_name'  => 'TestEvent',
-		) );
-		$request = new Request( $pixel_id, array( $event ) );
-		$data = $request->get_data();
-
-		$this->assertCount( 1, $data['data'] );
-		$this->assertArrayHasKey( 'user_data', $data['data'][0] );
-		$this->assertArrayHasKey( 'fbp', $data['data'][0]['user_data'] );
-		$this->assertEquals( $test_fbp, $data['data'][0]['user_data']['fbp'] );
-		$this->assertArrayNotHasKey( 'browser_id', $data['data'][0]['user_data'] );
-		$this->assertArrayNotHasKey( 'click_id', $data['data'][0]['user_data'] );
-
-		// Cleanup
-		unset( $_SESSION['_fbp'] );
-	}
-
-	public function given_param_builder_fbp_when_event_is_created_then_event_fbp_equals_param_builder_fbp() {
-		$test_pb_fbp = 'fb.1.1234567890.ParamFBP';
-		$pixel_id = 'test_pixel_id_123';
-
-		$mock_param_builder = new class($test_pb_fbp) {
-			private $fbp;
-			public function __construct($fbp) {
-				$this->fbp = $fbp;
-			}
-			public function getFbp() {
-				return $this->fbp;
-			}
-			public function getFbc() {
-				return null;
-			}
-		};
-
-		// Inject mock param builder before creating the Event so Event::get_browser_id() picks it up
-		$original_param_builder = null;
-		if ( class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) {
-			$ref = new \ReflectionClass( 'WC_Facebookcommerce_EventsTracker' );
-			if ( $ref->hasProperty( 'param_builder' ) ) {
-				$prop = $ref->getProperty( 'param_builder' );
-				$prop->setAccessible( true );
-				$original_param_builder = $prop->getValue();
-				$prop->setValue( null, $mock_param_builder );
-			}
-		}
-
-		// Ensure no cookie/session value takes precedence
-		if ( isset( $_COOKIE['_fbp'] ) ) {
-			unset( $_COOKIE['_fbp'] );
-		}
-		if ( isset( $_SESSION['_fbp'] ) ) {
-			unset( $_SESSION['_fbp'] );
-		}
-
-		$event = new Event( array(
-			'event_name'  => 'TestEvent',
-		) );
-		$request = new Request( $pixel_id, array( $event ) );
-		$data = $request->get_data();
-
-		$this->assertCount( 1, $data['data'] );
-		$this->assertArrayHasKey( 'user_data', $data['data'][0] );
-		$this->assertArrayHasKey( 'fbp', $data['data'][0]['user_data'] );
-		$this->assertEquals( $test_pb_fbp, $data['data'][0]['user_data']['fbp'] );
-		$this->assertArrayNotHasKey( 'browser_id', $data['data'][0]['user_data'] );
-		$this->assertArrayNotHasKey( 'click_id', $data['data'][0]['user_data'] );
-
-		// Cleanup - restore original param builder
-		if ( isset( $prop ) ) {
-			$prop->setValue( null, $original_param_builder );
-		}
-	}
 }
-
-
