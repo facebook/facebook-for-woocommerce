@@ -55,86 +55,16 @@ trait Facebook_Fields_Translation_Trait {
 
 				// Special handling for permalinks - switch language context to get correct URL
 				if ( $field_name === 'link' && $target_language ) {
-					$switched_lang = false;
-					$original_lang = null;
-
-					// Try WPML language switching
-					if ( has_filter( 'wpml_current_language' ) ) {
-						// Store original language
-						$original_lang = apply_filters( 'wpml_current_language', null );
-
-						// Get the correct WPML language code for this locale
-						// Need to map from full locale (e.g., 'zh_CN', 'zh_TW') to WPML code
-						$wpml_languages = apply_filters( 'wpml_active_languages', null );
-						$wpml_lang_code = null;
-
-						if ( is_array( $wpml_languages ) ) {
-							// Search for the language that matches this locale
-							foreach ( $wpml_languages as $code => $language_data ) {
-								$locale = $language_data['default_locale'] ?? $code;
-								if ( $locale === $target_language ) {
-									$wpml_lang_code = $code;
-									break;
-								}
-							}
-						}
-
-						// Fallback: extract language code from locale
-						if ( ! $wpml_lang_code ) {
-							$lang_parts = explode( '_', $target_language );
-							$wpml_lang_code = $lang_parts[0];
-						}
-
-						// Switch to target language
-						do_action( 'wpml_switch_language', $wpml_lang_code );
-						$switched_lang = true;
-					}
-					// Try Polylang language switching
-					elseif ( function_exists( 'pll_current_language' ) && function_exists( 'PLL' ) ) {
-						$polylang = PLL();
-						if ( $polylang && method_exists( $polylang, 'curlang' ) ) {
-							// Store original language
-							$original_lang = $polylang->curlang ? $polylang->curlang->slug : null;
-
-							// Extract language code from locale
-							$lang_parts = explode( '_', $target_language );
-							$pll_lang_code = $lang_parts[0];
-
-							// Get the language object
-							$pll_language = null;
-							foreach ( $polylang->model->get_languages_list() as $lang ) {
-								if ( $lang->slug === $pll_lang_code ) {
-									$pll_language = $lang;
-									break;
-								}
-							}
-
-							if ( $pll_language ) {
-								$polylang->curlang = $pll_language;
-								$switched_lang = true;
-							}
-						}
-					}
+					// Use integration's language switching methods
+					$original_lang = $this->switch_to_language( $target_language );
+					$switched_lang = $original_lang !== null;
 				}
 
 				$translated_value = $translated_fb_product->$method();
 
 				// Switch back to original language after getting permalink
-				if ( $field_name === 'link' && $target_language && isset( $switched_lang ) && $switched_lang ) {
-					if ( has_filter( 'wpml_current_language' ) && $original_lang ) {
-						do_action( 'wpml_switch_language', $original_lang );
-					}
-					elseif ( function_exists( 'pll_default_language' ) && function_exists( 'PLL' ) ) {
-						$polylang = PLL();
-						if ( $polylang && method_exists( $polylang, 'curlang' ) && $original_lang ) {
-							foreach ( $polylang->model->get_languages_list() as $lang ) {
-								if ( $lang->slug === $original_lang ) {
-									$polylang->curlang = $lang;
-									break;
-								}
-							}
-						}
-					}
+				if ( $field_name === 'link' && $target_language && isset( $switched_lang ) && $switched_lang && isset( $original_lang ) ) {
+					$this->restore_language( $original_lang );
 				}
 
 				// Handle array values

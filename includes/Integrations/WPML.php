@@ -116,6 +116,82 @@ class WPML extends Abstract_Localization_Integration {
 	}
 
 	/**
+	 * Get the language code for a specific product
+	 *
+	 * @param int $product_id Product ID
+	 * @return string|null Language code or null if not found
+	 */
+	public function get_product_language( int $product_id ): ?string {
+		if ( ! $this->is_plugin_active() ) {
+			return null;
+		}
+
+		// Use WPML filter to get product language details
+		$language_details = apply_filters( 'wpml_post_language_details', null, $product_id );
+
+		if ( $language_details && isset( $language_details['language_code'] ) ) {
+			return $language_details['language_code'];
+		}
+
+		return null;
+	}
+
+	/**
+	 * Switch to a specific language context
+	 *
+	 * @param string $locale Full locale code (e.g., 'es_ES', 'zh_CN')
+	 * @return string|null The previous language code if successful, null otherwise
+	 */
+	public function switch_to_language( string $locale ): ?string {
+		if ( ! $this->is_plugin_active() ) {
+			return null;
+		}
+
+		// Store original language
+		$original_lang = apply_filters( 'wpml_current_language', null );
+
+		// Get the WPML language code for this locale
+		$wpml_languages = apply_filters( 'wpml_active_languages', null );
+		$wpml_lang_code = null;
+
+		if ( is_array( $wpml_languages ) ) {
+			// Search for the language that matches this locale
+			foreach ( $wpml_languages as $code => $language_data ) {
+				$locale_match = $language_data['default_locale'] ?? $code;
+				if ( $locale_match === $locale ) {
+					$wpml_lang_code = $code;
+					break;
+				}
+			}
+		}
+
+		// Fallback: extract language code from locale
+		if ( ! $wpml_lang_code ) {
+			$lang_parts = explode( '_', $locale );
+			$wpml_lang_code = $lang_parts[0];
+		}
+
+		// Switch to target language
+		do_action( 'wpml_switch_language', $wpml_lang_code );
+
+		return $original_lang;
+	}
+
+	/**
+	 * Restore a previous language context
+	 *
+	 * @param string $language_code The language code to restore
+	 * @return void
+	 */
+	public function restore_language( string $language_code ): void {
+		if ( ! $this->is_plugin_active() ) {
+			return;
+		}
+
+		do_action( 'wpml_switch_language', $language_code );
+	}
+
+	/**
 	 * Get products from the default language
 	 *
 	 * Uses WPML's API to find products that are in the default language.

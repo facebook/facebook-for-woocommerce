@@ -117,17 +117,18 @@ class LocaleLanguageOverrideTest extends AbstractWPUnitTestWithSafeFiltering {
 	/**
 	 * Test Chinese special case handling.
 	 *
-	 * Note: convert_to_facebook_language_code() returns zh_CN for all Chinese variants.
-	 * The special case logic for Traditional Chinese (TW/HK/MO) only exists in
-	 * convert_to_facebook_override_value().
+	 * Facebook supports both zh_CN (Simplified) and zh_TW (Traditional) Chinese.
+	 * The code distinguishes between them based on the region code.
 	 */
 	public function test_convert_chinese_variants() {
-		// All Chinese variants map to zh_CN in convert_to_facebook_language_code
+		// Simplified Chinese variants (default)
 		$this->assertEquals( 'zh_CN', Locale::convert_to_facebook_language_code( 'zh_CN' ) );
-		$this->assertEquals( 'zh_CN', Locale::convert_to_facebook_language_code( 'zh_TW' ) );
-		$this->assertEquals( 'zh_CN', Locale::convert_to_facebook_language_code( 'zh_HK' ) );
-		$this->assertEquals( 'zh_CN', Locale::convert_to_facebook_language_code( 'zh_MO' ) );
 		$this->assertEquals( 'zh_CN', Locale::convert_to_facebook_language_code( 'zh_SG' ) );
+
+		// Traditional Chinese variants
+		$this->assertEquals( 'zh_TW', Locale::convert_to_facebook_language_code( 'zh_TW' ) );
+		$this->assertEquals( 'zh_TW', Locale::convert_to_facebook_language_code( 'zh_HK' ) );
+		$this->assertEquals( 'zh_TW', Locale::convert_to_facebook_language_code( 'zh_MO' ) );
 	}
 
 	/**
@@ -183,8 +184,8 @@ class LocaleLanguageOverrideTest extends AbstractWPUnitTestWithSafeFiltering {
 	 * This method is stricter than convert_to_facebook_language_code and
 	 * throws exceptions for unsupported languages.
 	 *
-	 * Note: The Chinese special case handling in the code is unreachable because
-	 * 'zh' is in the mapping array and returns zh_CN before reaching the special case logic.
+	 * Note: The special case Chinese handling runs BEFORE the mapping array check,
+	 * so it properly distinguishes between Simplified (zh_CN) and Traditional (zh_TW).
 	 */
 	public function test_convert_to_facebook_override_value_for_supported_languages() {
 		// _XX languages
@@ -196,11 +197,15 @@ class LocaleLanguageOverrideTest extends AbstractWPUnitTestWithSafeFiltering {
 		$this->assertEquals( 'de_DE', Locale::convert_to_facebook_override_value( 'de_DE' ) );
 		$this->assertEquals( 'it_IT', Locale::convert_to_facebook_override_value( 'it_IT' ) );
 
-		// Chinese - all variants return zh_CN (special case code is unreachable)
+		// Chinese - special case handling distinguishes variants
+		// Simplified Chinese (default)
 		$this->assertEquals( 'zh_CN', Locale::convert_to_facebook_override_value( 'zh_CN' ) );
-		$this->assertEquals( 'zh_CN', Locale::convert_to_facebook_override_value( 'zh_TW' ) );
-		$this->assertEquals( 'zh_CN', Locale::convert_to_facebook_override_value( 'zh_HK' ) );
-		$this->assertEquals( 'zh_CN', Locale::convert_to_facebook_override_value( 'zh_MO' ) );
+		$this->assertEquals( 'zh_CN', Locale::convert_to_facebook_override_value( 'zh_SG' ) );
+
+		// Traditional Chinese
+		$this->assertEquals( 'zh_TW', Locale::convert_to_facebook_override_value( 'zh_TW' ) );
+		$this->assertEquals( 'zh_TW', Locale::convert_to_facebook_override_value( 'zh_HK' ) );
+		$this->assertEquals( 'zh_TW', Locale::convert_to_facebook_override_value( 'zh_MO' ) );
 	}
 
 	/**
