@@ -102,12 +102,13 @@ class Localization_Integrations extends Abstract_Settings_Screen {
 			if ( ! empty( $settings ) ) {
 				?>
 				<form method="post" id="wc_facebook_localization_settings_form">
+					<input type="hidden" name="screen_id" value="<?php echo esc_attr( $this->get_id() ); ?>">
 					<?php
 					woocommerce_admin_fields( $settings );
-					wp_nonce_field( 'wc_facebook_localization_settings', 'wc_facebook_localization_settings_nonce' );
+					wp_nonce_field( 'wc_facebook_admin_save_' . $this->get_id() . '_settings' );
 					?>
 					<p class="submit">
-						<input name="save" class="button-primary woocommerce-save-button" type="submit" value="<?php esc_attr_e( 'Save changes', 'facebook-for-woocommerce' ); ?>" />
+						<input name="save_<?php echo esc_attr( $this->get_id() ); ?>_settings" class="button-primary woocommerce-save-button" type="submit" value="<?php esc_attr_e( 'Save changes', 'facebook-for-woocommerce' ); ?>" />
 					</p>
 				</form>
 				<?php
@@ -369,7 +370,7 @@ class Localization_Integrations extends Abstract_Settings_Screen {
 			$description .= '<br><strong style="color: #856404;">' . __( 'This integration is not eligible for Language Override Feeds. You have a legacy multi-language setup with multiple languages selected. Language Override Feeds are only available for new configurations.', 'facebook-for-woocommerce' ) . '</strong>';
 		}
 
-		return array(
+		$settings = array(
 			array(
 				'title' => __( 'Language Override Feed Settings', 'facebook-for-woocommerce' ),
 				'type'  => 'title',
@@ -382,14 +383,19 @@ class Localization_Integrations extends Abstract_Settings_Screen {
 				'id'      => \WC_Facebookcommerce_Integration::OPTION_LANGUAGE_OVERRIDE_FEED_GENERATION_ENABLED,
 				'default' => 'yes',
 				'type'    => 'checkbox',
-				'disabled' => ! $is_eligible, // Disable if not available or not eligible (legacy WPML)
-				'custom_attributes' => ! $is_eligible ? array( 'disabled' => 'disabled' ) : array(),
 			),
 			array(
 				'type' => 'sectionend',
 				'id'   => 'wc_facebook_language_override_feed_settings'
 			),
 		);
+
+		// Only add disabled attribute if not eligible
+		if ( ! $is_eligible ) {
+			$settings[1]['custom_attributes'] = array( 'disabled' => 'disabled' );
+		}
+
+		return $settings;
 	}
 
 	/**
@@ -398,16 +404,9 @@ class Localization_Integrations extends Abstract_Settings_Screen {
 	 * @since 3.5.5
 	 */
 	public function save() {
-		// Check if this is a settings save request
-		if ( isset( $_POST['save'] ) && wp_verify_nonce( $_POST['wc_facebook_localization_settings_nonce'] ?? '', 'wc_facebook_localization_settings' ) ) {
-			$settings = $this->get_settings();
-			woocommerce_update_options( $settings );
-
-			// Add admin notice for successful save
-			add_action( 'admin_notices', function() {
-				echo '<div class="notice notice-success is-dismissible"><p>' . esc_html__( 'Language override feed settings saved.', 'facebook-for-woocommerce' ) . '</p></div>';
-			});
-		}
+		// The parent Settings class handles the nonce verification and calls this method
+		// We just need to use woocommerce_update_options with our settings
+		woocommerce_update_options( $this->get_settings() );
 	}
 
 	/**

@@ -537,12 +537,52 @@ class LanguageOverrideFeed {
 	/**
 	 * Upload a single language override feed to Facebook.
 	 * This mirrors Feed.php's send_request_to_upload_feed but for a specific language.
+	 * Only uploads if the feed file exists and has actual product data.
 	 *
 	 * @param string $language_code Language code (e.g., 'es_ES', 'fr_FR')
 	 * @since 3.6.0
 	 */
 	private function upload_single_language_feed( string $language_code ) {
 		try {
+			// Check if feed file exists and has data before attempting upload
+			$language_feed_writer = new LanguageOverrideFeedWriter( $language_code );
+			$file_path = $language_feed_writer->get_file_path();
+
+			// Skip upload if file doesn't exist
+			if ( ! file_exists( $file_path ) ) {
+				Logger::log(
+					'Skipping language feed upload: file does not exist',
+					array(
+						'language_code' => $language_code,
+						'expected_path' => $file_path,
+					),
+					array(
+						'should_send_log_to_meta'        => false,
+						'should_save_log_in_woocommerce' => true,
+						'woocommerce_log_level'          => \WC_Log_Levels::DEBUG,
+					)
+				);
+				return;
+			}
+
+			// Skip upload if file is empty or only contains headers (< 100 bytes)
+			$file_size = filesize( $file_path );
+			if ( $file_size < 100 ) {
+				Logger::log(
+					'Skipping language feed upload: file is too small (likely only headers)',
+					array(
+						'language_code' => $language_code,
+						'file_size' => $file_size,
+					),
+					array(
+						'should_send_log_to_meta'        => false,
+						'should_save_log_in_woocommerce' => true,
+						'woocommerce_log_level'          => \WC_Log_Levels::DEBUG,
+					)
+				);
+				return;
+			}
+
 			// Step 1: Create or get the language override feed configuration using trait method
 			$feed_id = $this->retrieve_or_create_language_feed_id( $language_code );
 
