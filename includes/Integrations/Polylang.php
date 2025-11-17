@@ -135,6 +135,88 @@ class Polylang extends Abstract_Localization_Integration {
 	}
 
 	/**
+	 * Get the language code for a specific product
+	 *
+	 * @param int $product_id Product ID
+	 * @return string|null Language code or null if not found
+	 */
+	public function get_product_language( int $product_id ): ?string {
+		if ( ! $this->is_plugin_active() ) {
+			return null;
+		}
+
+		// Use Polylang function to get product language slug
+		return pll_get_post_language( $product_id );
+	}
+
+	/**
+	 * Switch to a specific language context
+	 *
+	 * @param string $locale Full locale code (e.g., 'es_ES', 'zh_CN')
+	 * @return string|null The previous language slug if successful, null otherwise
+	 */
+	public function switch_to_language( string $locale ): ?string {
+		if ( ! $this->is_plugin_active() ) {
+			return null;
+		}
+
+		$polylang = PLL();
+		if ( ! $polylang || ! method_exists( $polylang, 'curlang' ) ) {
+			return null;
+		}
+
+		// Store original language
+		$original_lang = $polylang->curlang ? $polylang->curlang->slug : null;
+
+		// Get Polylang language slug for the locale
+		$polylang_slug = $this->get_polylang_slug_for_locale( $locale );
+		if ( ! $polylang_slug ) {
+			return null;
+		}
+
+		// Get the language object
+		$pll_language = null;
+		foreach ( $polylang->model->get_languages_list() as $lang ) {
+			if ( $lang->slug === $polylang_slug ) {
+				$pll_language = $lang;
+				break;
+			}
+		}
+
+		if ( $pll_language ) {
+			$polylang->curlang = $pll_language;
+			return $original_lang;
+		}
+
+		return null;
+	}
+
+	/**
+	 * Restore a previous language context
+	 *
+	 * @param string $language_slug The language slug to restore
+	 * @return void
+	 */
+	public function restore_language( string $language_slug ): void {
+		if ( ! $this->is_plugin_active() ) {
+			return;
+		}
+
+		$polylang = PLL();
+		if ( ! $polylang || ! method_exists( $polylang, 'curlang' ) ) {
+			return;
+		}
+
+		// Find the language object for this slug
+		foreach ( $polylang->model->get_languages_list() as $lang ) {
+			if ( $lang->slug === $language_slug ) {
+				$polylang->curlang = $lang;
+				break;
+			}
+		}
+	}
+
+	/**
 	 * Check if Polylang Pro features are available
 	 *
 	 * @return bool True if Polylang Pro is active
