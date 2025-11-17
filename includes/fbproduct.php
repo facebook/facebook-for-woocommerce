@@ -467,16 +467,13 @@ class WC_Facebook_Product {
 		$video_source = $product->get_meta( \WooCommerce\Facebook\Products::PRODUCT_VIDEO_SOURCE_META_KEY );
 
 		// If video source is 'custom', get the custom video URL
-		if ( \WooCommerce\Facebook\Products::PRODUCT_VIDEO_SOURCE_CUSTOM === $video_source ) {
-			$custom_video_url = $product->get_meta( self::FB_PRODUCT_VIDEO . '_custom_url' );
-			if ( ! empty( $custom_video_url ) ) {
-				$custom_video_url = trim( $custom_video_url );
-				if ( ! empty( $custom_video_url ) && filter_var( $custom_video_url, FILTER_VALIDATE_URL ) ) {
-					$video_urls[] = array( 'url' => $custom_video_url );
-				}
-			}
-			return $video_urls;
+	if ( \WooCommerce\Facebook\Products::PRODUCT_VIDEO_SOURCE_CUSTOM === $video_source ) {
+		$custom_video_url = trim( $product->get_meta( self::FB_PRODUCT_VIDEO . '_custom_url' ) );
+		if ( ! empty( $custom_video_url ) && filter_var( $custom_video_url, FILTER_VALIDATE_URL ) ) {
+			$video_urls[] = array( 'url' => $custom_video_url );
 		}
+		return $video_urls;
+	}
 
 		// Otherwise, use uploaded videos (default behavior)
 		$attached_videos = get_attached_media( 'video', $this->id );
@@ -487,14 +484,14 @@ class WC_Facebook_Product {
 			return $video_urls;
 		}
 
-		// Add uploaded video URLs to the list
-		if ( ! empty( $uploaded_video_urls ) && is_array( $uploaded_video_urls ) ) {
-			foreach ( $uploaded_video_urls as $video_url ) {
-				$video_url = trim( $video_url );
-				if ( ! empty( $video_url ) ) {
-					$video_urls[] = array( 'url' => $video_url );
-				}
+	// Add uploaded video URLs to the list
+	if ( is_array( $uploaded_video_urls ) ) {
+		foreach ( $uploaded_video_urls as $video_url ) {
+			$video_url = trim( $video_url );
+			if ( ! empty( $video_url ) ) {
+				$video_urls[] = array( 'url' => $video_url );
 			}
+		}
 		}
 
 		// Add attached video URLs to the list, excluding duplicates from uploaded video URLs

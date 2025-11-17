@@ -565,29 +565,17 @@ jQuery( document ).ready( function( $ ) {
 		let $container  = $( this ).closest( '.woocommerce_options_panel, .wc-metabox-content' );
 		let videoSource = $( this ).val();
 
-		// Hide all product-video-source-field elements and their form-field wrappers
-		$container.find( '.product-video-source-field' ).removeClass( 'show' ).closest( '.form-field' ).hide();
-		$container.find( '.product-video-source-field' ).removeClass( 'show' );
+	// Hide all product-video-source-field elements and their form-field wrappers
+	$container.find( '.product-video-source-field' ).removeClass( 'show' ).closest( '.form-field' ).hide();
 
-		// Show only the selected video source field and its form-field wrapper
-		$container.find( `.show-if-product-video-source-${videoSource}` ).addClass( 'show' ).closest( '.form-field' ).show();
-		$container.find( `.show-if-product-video-source-${videoSource}` ).addClass( 'show' );
+	// Show only the selected video source field and its form-field wrapper
+	$container.find( `.show-if-product-video-source-${videoSource}` ).addClass( 'show' ).closest( '.form-field' ).show();
 	} );
 
 	// Move Choose Video button inline with first radio option
 	function moveVideoButtonInline() {
-		// For simple products
-		$('#facebook_options .fb-product-video-source-field .wc-radios li:first-child label').each(function() {
-			let $label = $(this);
-			let $button = $label.closest('.fb-product-video-source-field').next('p.product-video-source-field').find('button');
-			
-			if ($button.length && !$label.find('button').length) {
-				$label.append(' ').append($button);
-			}
-		});
-
-		// For variations
-		$('.woocommerce_variation .fb-product-video-source-field .wc-radios li:first-child label').each(function() {
+		// For simple products and variations
+		$('#facebook_options .fb-product-video-source-field .wc-radios li:first-child label, .woocommerce_variation .fb-product-video-source-field .wc-radios li:first-child label').each(function() {
 			let $label = $(this);
 			let $button = $label.closest('.fb-product-video-source-field').next('p.product-video-source-field').find('button');
 			
@@ -1086,20 +1074,24 @@ jQuery( document ).ready( function( $ ) {
 				}
 			});
 
-			// Add new video thumbnails
-			selection.each(function (attachment) {
-				attachment = attachment.toJSON();
-				// Validate that the attachment is a video
-				if (newIds.includes(attachment.id) && attachment.mime && attachment.mime.startsWith('video/')) {
-					const $videoThumbnail = createVariationVideoThumbnail(attachment, variationIndex);
-					$container.append($videoThumbnail);
-					if (!attachmentIds.includes(attachment.id)) {
-						attachmentIds.push(attachment.id);
-					}
-				} else if (newIds.includes(attachment.id) && (!attachment.mime || !attachment.mime.startsWith('video/'))) {
-					alert('Please select a valid video file.');
+		// Add new video thumbnails
+		selection.each(function (attachment) {
+			attachment = attachment.toJSON();
+			
+			const isAttachmentIdIncluded = newIds.includes(attachment.id);
+			const isAttachmentVideo = attachment.mime && attachment.mime.startsWith('video/');
+			
+			// Validate that the attachment is a video
+			if (isAttachmentIdIncluded && isAttachmentVideo) {
+				const $videoThumbnail = createVariationVideoThumbnail(attachment, variationIndex);
+				$container.append($videoThumbnail);
+				if (!attachmentIds.includes(attachment.id)) {
+					attachmentIds.push(attachment.id);
 				}
-			});
+			} else if (isAttachmentIdIncluded && !isAttachmentVideo) {
+				alert('Please select a valid video file.');
+			}
+		});
 
 			$hiddenField.val(attachmentIds.join(','));
 		}
