@@ -1,5 +1,17 @@
 *** Facebook for WooCommerce Changelog ***
 
+= 3.5.13 - 2025-11-10 =
+* Fix - [Woo-Alpha][Deprecate][1/n] Remove WhatsApp Webhook from Woo by @sharunaanandraj in #3693
+* Dev - Enhance E2E testing infrastructure for WooCommerce product workflows and add tests for product modification/edit flow by @ashiqursuperfly in #3692
+* Fix - Fix: Prevent integer overflow in Facebook product IDs by @sol-loup in #3688
+* Add - Feature/ Update Integration Config Endpoint by @olu-meta in #3665
+* Add - feat: logging plugin versions for better tracking by @rithikb24 in #3677
+* Fix - Fix: CRON error calling is_master_sync_on() on null plugin_render_han… by @devbodaghe in #3676
+* Fix - removing external-time from feed job by @rithikb24 in #3673
+* Fix - Fix click_id API validation error by @devbodaghe in #3668
+* Fix - Update checkout page to prevent lazy loading plugin interference by @carterbuce in #3664
+* Fix - Fix/Optimize is wp com detection by @ukilla in #3661
+
 = 3.5.12 - 2025-10-20 =
 * Fix - Fix click_id API validation error by @devbodaghe in #3668
 * Add - Promo Banner for WhatsApp Utility by @woo-ardsouza in #3660
