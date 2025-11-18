@@ -484,8 +484,6 @@ test.describe('Facebook for WooCommerce - Product Modification E2E Tests', () =>
 
       await filterProducts(page, 'simple', sku);
       await clickFirstProduct(page);
-
-      // Check for any PHP errors on the page
       await checkForPhpErrors(page);
 
       // Click on "Facebook" tab in product data
@@ -502,7 +500,6 @@ test.describe('Facebook for WooCommerce - Product Modification E2E Tests', () =>
         console.warn('⚠️ Facebook tab not found. This might indicate:');
         console.warn('   - Facebook for WooCommerce plugin not properly activated');
         console.warn('   - Plugin not connected to Facebook catalog');
-        console.warn('   - Tab selector needs updating');
 
         // Take screenshot for debugging
         await safeScreenshot(page, 'facebook-tab-not-found.png');
@@ -522,10 +519,6 @@ test.describe('Facebook for WooCommerce - Product Modification E2E Tests', () =>
       await facebookTab.click();
       await page.waitForTimeout(2000); // Wait for tab content to load
       console.log('✅ Facebook tab opened');
-
-      // TODO: Add Facebook description
-      //console.log('📝 Setting Facebook description...');
-      // await setProductDescription(page, `Facebook-specific description for ${productName}`);
 
       // Add Facebook Price
       console.log('💰 Adding Facebook price...');
@@ -561,7 +554,6 @@ test.describe('Facebook for WooCommerce - Product Modification E2E Tests', () =>
       console.log('💾 Updating product...');
       await publishProduct(page);
 
-
       // Check for any errors on the page
       await checkForPhpErrors(page);
       console.log('✅ No errors detected on page');
@@ -583,10 +575,9 @@ test.describe('Facebook for WooCommerce - Product Modification E2E Tests', () =>
       logTestEnd(testInfo, false);
       throw error;
     } finally {
-      // Cleanup: Delete test product
-      // if (productId) {
-      //   await cleanupProduct(productId);
-      // }
+      if (productId) {
+        await cleanupProduct(productId);
+      }
     }
   });
 
