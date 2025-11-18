@@ -51,10 +51,6 @@ class AJAX {
 		// sync navigation menu via AJAX
 		add_action( 'wp_ajax_wc_facebook_sync_navigation_menu', array( $this, 'sync_navigation_menu' ) );
 
-
-		// sync language override feeds with direct URL upload via AJAX
-		add_action( 'wp_ajax_wc_facebook_sync_language_feeds_direct_url', array( $this, 'sync_language_feeds_direct_url' ) );
-
 		// get the current sync status
 		add_action( 'wp_ajax_wc_facebook_get_sync_status', array( $this, 'get_sync_status' ) );
 
@@ -185,85 +181,6 @@ class AJAX {
 			wp_send_json_error( $exception->getMessage() );
 		}
 	}
-
-
-	/**
-	 * Syncs language override feeds using direct URL upload via AJAX.
-	 * Uses the hook system to trigger feed generation and upload.
-	 *
-	 * @internal
-	 *
-	 * @since 3.6.0
-	 */
-	public function sync_language_feeds_direct_url() {
-		check_admin_referer( 'wc_facebook_sync_language_feeds_direct_url', 'nonce' );
-
-		try {
-			// Get the language feed instance
-			$language_feed = facebook_for_woocommerce()->get_language_override_feed();
-
-			if ( ! $language_feed ) {
-				wp_send_json_error( __( 'Language override feed instance not available.', 'facebook-for-woocommerce' ) );
-				return;
-			}
-
-			// Check if there are languages available
-			$feed_data = new \WooCommerce\Facebook\Feed\Localization\LanguageFeedData();
-			$languages = $feed_data->get_available_languages();
-
-			if ( empty( $languages ) ) {
-				wp_send_json_error( __( 'No languages available for direct URL upload.', 'facebook-for-woocommerce' ) );
-				return;
-			}
-
-			// Get or create feed IDs for each language to show them in the response
-			$feed_ids = array();
-			foreach ( $languages as $language_code ) {
-				try {
-					$feed_id = $language_feed->retrieve_or_create_language_feed_id( $language_code );
-					if ( ! empty( $feed_id ) ) {
-						$feed_ids[ $language_code ] = $feed_id;
-					}
-				} catch ( \Exception $e ) {
-					// Log error but don't fail the entire sync
-					error_log( "Could not retrieve feed ID for {$language_code}: " . $e->getMessage() );
-				}
-			}
-
-			// Step 1: Trigger feed regeneration for all languages
-			$language_feed->regenerate_all_language_feeds();
-
-			// Step 2: The regenerate_feed() method automatically triggers the upload hook:
-			// do_action( self::FEED_GEN_COMPLETE_ACTION . static::get_data_stream_name() );
-			// which calls send_request_to_upload_feed() -> upload_language_override_feeds()
-
-			// This provides the same functionality as the previous manual approach but uses
-			// the established hook system that's already used for scheduled feeds.
-
-			$message = sprintf(
-				__( 'Language feeds generated and uploaded via hook system. %d languages processed. Feed generation and upload completed using the same system as scheduled feeds.', 'facebook-for-woocommerce' ),
-				count( $languages )
-			);
-
-			// Add feed IDs to the message if we have any
-			if ( ! empty( $feed_ids ) ) {
-				$feed_list = array();
-				foreach ( $feed_ids as $lang => $feed_id ) {
-					$feed_list[] = strtoupper( $lang ) . ': ' . $feed_id;
-				}
-				$message .= ' ' . sprintf(
-					__( 'Feed IDs: %s', 'facebook-for-woocommerce' ),
-					implode( ', ', $feed_list )
-				);
-			}
-
-			wp_send_json_success( $message );
-
-		} catch ( \Exception $exception ) {
-			wp_send_json_error( $exception->getMessage() );
-		}
-	}
-
 
 	/**
 	 * Gets the current sync status.
