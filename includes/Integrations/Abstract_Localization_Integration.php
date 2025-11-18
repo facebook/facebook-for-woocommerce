@@ -8,7 +8,6 @@ namespace WooCommerce\Facebook\Integrations;
  *
  * Provides a common interface for integrating with various WordPress
  * localization/multilingual plugins like Polylang, WPML, etc.
- *
  */
 abstract class Abstract_Localization_Integration {
 
@@ -134,7 +133,7 @@ abstract class Abstract_Localization_Integration {
 			'default_language' => $this->get_default_language(),
 			'translations' => [],
 			'translation_status' => [],
-			'translated_fields' => []
+			'translated_fields' => [],
 		];
 	}
 

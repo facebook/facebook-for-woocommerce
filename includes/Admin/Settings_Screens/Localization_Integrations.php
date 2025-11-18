@@ -375,7 +375,7 @@ class Localization_Integrations extends Abstract_Settings_Screen {
 				'title' => __( 'Language Override Feed Settings', 'facebook-for-woocommerce' ),
 				'type'  => 'title',
 				'desc'  => __( 'Configure language override feed generation settings.', 'facebook-for-woocommerce' ),
-				'id'    => 'wc_facebook_language_override_feed_settings'
+				'id'    => 'wc_facebook_language_override_feed_settings',
 			),
 			array(
 				'title'   => __( 'Enable Language Override Feeds', 'facebook-for-woocommerce' ),
@@ -386,7 +386,7 @@ class Localization_Integrations extends Abstract_Settings_Screen {
 			),
 			array(
 				'type' => 'sectionend',
-				'id'   => 'wc_facebook_language_override_feed_settings'
+				'id'   => 'wc_facebook_language_override_feed_settings',
 			),
 		);
 
@@ -552,7 +552,7 @@ class Localization_Integrations extends Abstract_Settings_Screen {
 						$total_languages_with_products = count(
 							array_filter(
 								$statistics,
-								function( $stats ) {
+								function ( $stats ) {
 									return ( $stats['translated_products_count'] ?? 0 ) > 0;
 								}
 							)
@@ -765,7 +765,7 @@ class Localization_Integrations extends Abstract_Settings_Screen {
 							$results[ $language_code ] = [
 								'success' => true,
 								'file_path' => $file_path,
-								'filename' => $filename
+								'filename' => $filename,
 							];
 						}
 					}
@@ -805,7 +805,7 @@ class Localization_Integrations extends Abstract_Settings_Screen {
 			$zip_filename = 'facebook_language_feeds_' . date( 'Y-m-d_H-i-s' ) . '.zip';
 			$temp_zip_path = sys_get_temp_dir() . '/' . $zip_filename;
 
-			if ( $zip->open( $temp_zip_path, \ZipArchive::CREATE ) !== TRUE ) {
+			if ( $zip->open( $temp_zip_path, \ZipArchive::CREATE ) !== true ) {
 				wp_die(
 					esc_html__( 'Failed to create ZIP file.', 'facebook-for-woocommerce' ),
 					esc_html__( 'ZIP Creation Error', 'facebook-for-woocommerce' ),
@@ -932,7 +932,9 @@ class Localization_Integrations extends Abstract_Settings_Screen {
 							<?php
 							try {
 								$product = wc_get_product( $product_id );
-								if ( ! $product ) continue;
+								if ( ! $product ) {
+									continue;
+								}
 
 								$details = $feed_data->get_product_translation_details( $product_id );
 							} catch ( \Exception $e ) {
@@ -998,7 +1000,4 @@ class Localization_Integrations extends Abstract_Settings_Screen {
 		</div>
 		<?php
 	}
-
-
-
 }

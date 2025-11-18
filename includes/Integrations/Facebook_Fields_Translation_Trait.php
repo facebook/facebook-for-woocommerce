@@ -21,8 +21,8 @@ trait Facebook_Fields_Translation_Trait {
 	 * Compares Facebook-specific fields between original and translated products
 	 * to determine which fields have been translated.
 	 *
-	 * @param int $original_id Original product ID
-	 * @param int $translated_id Translated product ID
+	 * @param int    $original_id Original product ID
+	 * @param int    $translated_id Translated product ID
 	 * @param string $target_language Target language code for permalink translation (optional)
 	 * @return array Array of field names that have different values
 	 */

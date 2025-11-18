@@ -187,7 +187,6 @@ trait LanguageFeedManagementTrait {
 			if ( $response && isset( $response['id'] ) ) {
 				return $response['id'];
 			}
-
 		} catch ( \Exception $exception ) {
 			Logger::log(
 				'Could not create language override feed: ' . $exception->getMessage(),
@@ -223,8 +222,8 @@ trait LanguageFeedManagementTrait {
 	 * Uses the feed secret hash (like the main product feed) to ensure the same filename is reused.
 	 *
 	 * @param string $language_code Language code (e.g., 'es_ES', 'fr_FR')
-	 * @param bool $for_facebook_api Whether this file name is for Facebook API feed creation
-	 * @param bool $is_temp_file Whether this is for a temporary file
+	 * @param bool   $for_facebook_api Whether this file name is for Facebook API feed creation
+	 * @param bool   $is_temp_file Whether this is for a temporary file
 	 * @return string File name
 	 * @since 3.6.0
 	 */

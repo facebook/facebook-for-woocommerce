@@ -8,7 +8,6 @@ namespace WooCommerce\Facebook\Integrations;
  *
  * Handles integration with the Polylang multilingual plugin to manage
  * product synchronization based on language settings.
- *
  */
 class Polylang extends Abstract_Localization_Integration {
 
@@ -56,7 +55,7 @@ class Polylang extends Abstract_Localization_Integration {
 			'pll_get_post',
 			'pll_get_post_translations',
 			'pll_save_post_translations',
-			'pll_set_post_language'  // Required for creating product translations
+			'pll_set_post_language',  // Required for creating product translations
 		];
 
 		foreach ( $required_functions as $function ) {
@@ -310,7 +309,7 @@ class Polylang extends Abstract_Localization_Integration {
 			'product_id' => $product_id,
 			'default_language' => $this->get_default_language(),
 			'translations' => [],
-			'translation_status' => []
+			'translation_status' => [],
 		];
 
 		// Get the mapping between full locales and Polylang language slugs
@@ -436,7 +435,7 @@ class Polylang extends Abstract_Localization_Integration {
 			// Create translation relationship
 			$translations_array = [
 				$default_slug => $original_product_id,
-				$target_slug => $translated_product_id
+				$target_slug => $translated_product_id,
 			];
 
 			pll_save_post_translations( $translations_array );
@@ -469,7 +468,7 @@ class Polylang extends Abstract_Localization_Integration {
 				'en_US' => 'en',
 				'es_ES' => 'es',
 				'fr_FR' => 'fr',
-				'de_DE' => 'de'
+				'de_DE' => 'de',
 			];
 
 			if ( isset( $locale_to_slug_map[ $locale ] ) ) {
