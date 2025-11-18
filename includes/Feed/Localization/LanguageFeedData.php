@@ -49,9 +49,12 @@ class LanguageFeedData {
 		$default_language = $this->get_default_language();
 
 		if ( $default_language ) {
-			$all_languages = array_filter( $all_languages, function( $lang ) use ( $default_language ) {
-				return $lang !== $default_language;
-			});
+			$all_languages = array_filter(
+				$all_languages,
+				function ( $lang ) use ( $default_language ) {
+					return $lang !== $default_language;
+				}
+			);
 		}
 
 		return array_values( $all_languages );
@@ -122,7 +125,7 @@ class LanguageFeedData {
 			'default_language' => null,
 			'translations' => [],
 			'translation_status' => [],
-			'translated_fields' => []
+			'translated_fields' => [],
 		];
 	}
 
@@ -212,14 +215,15 @@ class LanguageFeedData {
 								}
 								break;
 						}
-						if ( $has_content ) break;
+						if ( $has_content ) {
+							break;
+						}
 					}
 				}
 
 				if ( $has_content ) {
 					$count++;
 				}
-
 			} catch ( Exception $e ) {
 				// Skip products that can't create Facebook products
 				continue;
@@ -278,7 +282,7 @@ class LanguageFeedData {
 	 * Get all unique translated fields across all products for a language
 	 *
 	 * @param string $language_code Language code
-	 * @param int $limit Maximum number of products to check
+	 * @param int    $limit Maximum number of products to check
 	 * @return array Array of unique field names that have translations
 	 */
 	public function get_translated_fields_for_language( string $language_code, int $limit = 100 ): array {
@@ -337,15 +341,15 @@ class LanguageFeedData {
 	 * Extract translation data and convert to CSV format for a specific language
 	 *
 	 * @param string $language_code Language code (e.g., 'es_ES', 'fr_FR')
-	 * @param int $limit Maximum number of products to process
-	 * @param int $offset Offset for pagination
+	 * @param int    $limit Maximum number of products to process
+	 * @param int    $offset Offset for pagination
 	 * @return array CSV data ready for conversion to CSV string with dynamic columns
 	 */
 	public function get_language_csv_data( string $language_code, int $limit = 100, int $offset = 0 ): array {
 		if ( ! IntegrationRegistry::has_active_localization_plugin() ) {
 			return [
 				'data' => [],
-				'columns' => ['id', 'override'],
+				'columns' => [ 'id', 'override' ],
 				'translated_fields' => [],
 			];
 		}
@@ -491,7 +495,7 @@ class LanguageFeedData {
 
 		return [
 			'data' => $csv_data,
-			'columns' => array_merge( ['id', 'override'], $csv_columns ),
+			'columns' => array_merge( [ 'id', 'override' ], $csv_columns ),
 			'translated_fields' => $translated_fields,
 		];
 	}
@@ -499,11 +503,11 @@ class LanguageFeedData {
 	/**
 	 * Get the value for a specific translated field using Facebook product methods
 	 *
-	 * @param string $column CSV column name
+	 * @param string               $column CSV column name
 	 * @param \WC_Facebook_Product $original_fb_product Original Facebook product
 	 * @param \WC_Facebook_Product $translated_fb_product Translated Facebook product
-	 * @param array $product_translated_fields Fields that are translated for this product
-	 * @param string $language_code Target language code for permalink translation
+	 * @param array                $product_translated_fields Fields that are translated for this product
+	 * @param string               $language_code Target language code for permalink translation
 	 * @return string Field value with proper validation and cleaning
 	 */
 	private function get_translated_field_value(
@@ -605,13 +609,11 @@ class LanguageFeedData {
 	/**
 	 * Format price for CSV using Facebook's approach
 	 *
-	 * @param int $price Price in cents
+	 * @param int    $price Price in cents
 	 * @param string $currency Currency code
 	 * @return string Formatted price
 	 */
 	private function format_price_for_csv( $price, $currency ): string {
 		return (string) ( round( $price / 100.0, 2 ) ) . ' ' . $currency;
 	}
-
-
 }

@@ -8,7 +8,6 @@ namespace WooCommerce\Facebook\Integrations;
  *
  * Handles integration with the WPML multilingual plugin to manage
  * product synchronization based on language settings.
- *
  */
 class WPML extends Abstract_Localization_Integration {
 
@@ -282,7 +281,7 @@ class WPML extends Abstract_Localization_Integration {
 			'product_id' => $product_id,
 			'default_language' => $this->get_default_language(),
 			'translations' => [],
-			'translation_status' => []
+			'translation_status' => [],
 		];
 
 		// Get the mapping between full locales and WPML language codes
@@ -432,5 +431,4 @@ class WPML extends Abstract_Localization_Integration {
 	public function is_eligible_for_language_override_feeds(): bool {
 		return ! $this->has_legacy_multi_language_setup();
 	}
-
 }

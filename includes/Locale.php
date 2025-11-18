@@ -509,6 +509,4 @@ class Locale {
 	public static function get_language_override_mapping(): array {
 		return self::$facebook_override_values;
 	}
-
-
 }

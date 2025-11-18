@@ -379,23 +379,23 @@ class LanguageOverrideFeed {
 	 */
 	public function should_skip_feed(): bool {
 		// Check if language override feed generation is enabled
-		if (!$this->is_language_override_feed_generation_enabled()) {
+		if ( ! $this->is_language_override_feed_generation_enabled() ) {
 			return true;
 		}
 
 		$connection_handler = facebook_for_woocommerce()->get_connection_handler();
 
 		// Check connection methods
-		$has_valid_connection = !empty($connection_handler->get_commerce_partner_integration_id()) ||
-		                       !empty($connection_handler->get_commerce_merchant_settings_id()) ||
-		                       !empty($connection_handler->get_access_token());
+		$has_valid_connection = ! empty( $connection_handler->get_commerce_partner_integration_id() ) ||
+							   ! empty( $connection_handler->get_commerce_merchant_settings_id() ) ||
+							   ! empty( $connection_handler->get_access_token() );
 
-		if (!$has_valid_connection) {
+		if ( ! $has_valid_connection ) {
 			return true;
 		}
 
 		// Check localization plugin
-		if (!IntegrationRegistry::has_active_localization_plugin()) {
+		if ( ! IntegrationRegistry::has_active_localization_plugin() ) {
 			return true;
 		}
 
@@ -438,7 +438,7 @@ class LanguageOverrideFeed {
 			// Regenerate if the file doesn't exist or if explicitly requested
 			if ( ! empty( $_GET['regenerate'] ) || ! file_exists( $file_path ) ) {
 				$success = $language_feed_writer->write_language_feed_file( $this->language_feed_data, $language_code );
-				if ( !$success ) {
+				if ( ! $success ) {
 					throw new PluginException( 'Failed to regenerate language feed file', 500 );
 				}
 			}

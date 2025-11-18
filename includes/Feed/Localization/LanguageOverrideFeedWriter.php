@@ -136,7 +136,7 @@ class LanguageOverrideFeedWriter extends AbstractFeedFileWriter {
 	 * Writes the language override feed file for a specific language.
 	 *
 	 * @param LanguageFeedData $language_feed_data Data source
-	 * @param string $language_code Language code
+	 * @param string           $language_code Language code
 	 * @return bool Success status
 	 * @since 3.6.0
 	 */
@@ -158,7 +158,7 @@ class LanguageOverrideFeedWriter extends AbstractFeedFileWriter {
 				// Still create an empty file with headers
 				$csv_result = array(
 					'data' => array(),
-					'columns' => array( 'id', 'override' )
+					'columns' => array( 'id', 'override' ),
 				);
 			}
 
