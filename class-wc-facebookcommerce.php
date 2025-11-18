@@ -394,6 +394,18 @@ class WC_Facebookcommerce extends WooCommerce\Facebook\Framework\Plugin {
 		if ( ! $this->get_integration() || ! $this->get_integration()->is_debug_mode_enabled() ) {
 			return;
 		}
+
+		// Maybe remove headers from the debug log.
+		if ( ! $this->get_integration()->are_headers_requested_for_debug() ) {
+			unset( $request['headers'] );
+			unset( $response['headers'] );
+		}
+
+		$this->log( $this->get_api_log_message( $request ), $log_id );
+
+		if ( ! empty( $response ) ) {
+			$this->log( $this->get_api_log_message( $response ), $log_id );
+		}
 	}
 
 	/**
@@ -693,7 +705,7 @@ class WC_Facebookcommerce extends WooCommerce\Facebook\Framework\Plugin {
 	 * @since 2.3.4
 	 *
 	 * @return string
-	**/
+	 */
 	public function get_asset_build_dir_url() {
 		return $this->get_plugin_url() . '/assets/build';
 	}
@@ -713,7 +725,6 @@ class WC_Facebookcommerce extends WooCommerce\Facebook\Framework\Plugin {
 	 * Gets the connection handler.
 	 *
 	 * @return WooCommerce\Facebook\RolloutSwitches
-	 * @since 3.6.0
 	 */
 	public function get_rollout_switches() {
 		return $this->rollout_switches;

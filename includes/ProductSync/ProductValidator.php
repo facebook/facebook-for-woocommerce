@@ -414,43 +414,33 @@ class ProductValidator {
 		$product_to_check = $this->product_parent ? $this->product_parent : $this->product;
 		$product_id = $product_to_check->get_id();
 
-		facebook_for_woocommerce()->log( sprintf( '[ProductValidator::validate_product_language] Starting language validation for product ID: %d', $product_id ) );
-
 		// Only validate language if language override feed generation is enabled
 		// Use the integration method instead of get_option() to handle all necessary checks
 		$is_language_feed_enabled = $this->integration->is_language_override_feed_generation_enabled();
-		facebook_for_woocommerce()->log( sprintf( '[ProductValidator::validate_product_language] Language override feed enabled: %s', $is_language_feed_enabled ? 'true' : 'false' ) );
 
 		if ( ! $is_language_feed_enabled ) {
-			facebook_for_woocommerce()->log( '[ProductValidator::validate_product_language] Language override feeds disabled - skipping validation' );
 			return;
 		}
 
 		$integration = \WooCommerce\Facebook\Integrations\IntegrationRegistry::get_active_localization_integration();
-		facebook_for_woocommerce()->log( sprintf( '[ProductValidator::validate_product_language] Active localization integration: %s', $integration ? get_class( $integration ) : 'none' ) );
 
 		// If no localization plugin is active, skip language validation
 		if ( ! $integration ) {
-			facebook_for_woocommerce()->log( '[ProductValidator::validate_product_language] No localization plugin active - skipping validation' );
 			return;
 		}
 
 		$default_language = $integration->get_default_language();
-		facebook_for_woocommerce()->log( sprintf( '[ProductValidator::validate_product_language] Default language: %s', $default_language ?: 'null' ) );
 
 		// If we can't determine the default language, skip validation to avoid blocking sync
 		if ( ! $default_language ) {
-			facebook_for_woocommerce()->log( '[ProductValidator::validate_product_language] Unable to determine default language - skipping validation' );
 			return;
 		}
 
 		// Get the product's language using the integration's method
 		$product_language = $integration->get_product_language( $product_id );
-		facebook_for_woocommerce()->log( sprintf( '[ProductValidator::validate_product_language] Product language from integration: %s', $product_language ?: 'null' ) );
 
 		// If we can't determine the product's language, skip validation to avoid blocking sync
 		if ( ! $product_language ) {
-			facebook_for_woocommerce()->log( '[ProductValidator::validate_product_language] Unable to determine product language - skipping validation' );
 			return;
 		}
 
@@ -459,22 +449,7 @@ class ProductValidator {
 		$default_lang_code = $this->extract_language_code( $default_language );
 		$product_lang_code = $this->extract_language_code( $product_language );
 
-		facebook_for_woocommerce()->log( sprintf(
-			'[ProductValidator::validate_product_language] Language comparison - Default: "%s" (extracted: "%s") vs Product: "%s" (extracted: "%s")',
-			$default_language,
-			$default_lang_code,
-			$product_language,
-			$product_lang_code
-		) );
-
 		if ( $product_lang_code !== $default_lang_code ) {
-			facebook_for_woocommerce()->log( sprintf(
-				'[ProductValidator::validate_product_language] BLOCKING SYNC - Product (ID: %d) language "%s" does not match default language "%s"',
-				$product_id,
-				$product_language,
-				$default_language
-			) );
-
 			throw new ProductExcludedException(
 				sprintf(
 					/* translators: 1: product language, 2: default language */
@@ -484,12 +459,6 @@ class ProductValidator {
 				)
 			);
 		}
-
-		facebook_for_woocommerce()->log( sprintf(
-			'[ProductValidator::validate_product_language] VALIDATION PASSED - Product (ID: %d) is in default language "%s"',
-			$product_id,
-			$default_language
-		) );
 	}
 
 	/**
