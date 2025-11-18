@@ -102,6 +102,7 @@ trait LanguageFeedManagementTrait {
 	 * the language override feed ID for a specific language.
 	 *
 	 * @param string $language_code Language code
+	 * @throws \Exception If catalog operations fail.
 	 * @return string Feed ID
 	 * @since 3.6.0
 	 */
@@ -162,6 +163,7 @@ trait LanguageFeedManagementTrait {
 	 * Creates a new language override feed on Facebook.
 	 *
 	 * @param string $language_code Language code
+	 * @throws \Exception If feed creation fails.
 	 * @return string Feed ID
 	 * @since 3.6.0
 	 */

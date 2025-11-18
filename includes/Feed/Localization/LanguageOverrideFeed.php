@@ -175,8 +175,11 @@ class LanguageOverrideFeed {
 		// Call the main regeneration method
 		$this->regenerate_all_language_feeds();
 
-		// Trigger the feed generation completion action
-		// This allows the upload process to happen via the established hook system
+		/**
+		 * Fires after language override feed generation is completed.
+		 *
+		 * @since 3.6.0
+		 */
 		do_action( self::FEED_GEN_COMPLETE_ACTION . static::get_data_stream_name() );
 	}
 
@@ -492,7 +495,7 @@ class LanguageOverrideFeed {
 					'woocommerce_log_level'          => \WC_Log_Levels::ERROR,
 				)
 			);
-			status_header( $exception->getCode() ?: 500 );
+			status_header( $exception->getCode() ? $exception->getCode() : 500 );
 		}
 
 		exit;
@@ -540,6 +543,7 @@ class LanguageOverrideFeed {
 	 * Only uploads if the feed file exists and has actual product data.
 	 *
 	 * @param string $language_code Language code (e.g., 'es_ES', 'fr_FR')
+	 * @throws \Exception If feed creation/retrieval fails or API upload fails.
 	 * @since 3.6.0
 	 */
 	private function upload_single_language_feed( string $language_code ) {

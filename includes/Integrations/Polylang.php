@@ -146,7 +146,7 @@ class Polylang extends Abstract_Localization_Integration {
 
 		// Use Polylang function to get product language slug
 		$language = pll_get_post_language( $product_id );
-		return $language !== false ? $language : null;
+		return false !== $language ? $language : null;
 	}
 
 	/**

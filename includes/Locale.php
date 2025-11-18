@@ -403,7 +403,7 @@ class Locale {
 
 		// Handle special cases for Chinese FIRST (before generic mappings)
 		// This is critical because we need to distinguish zh_CN from zh_TW
-		if ( $language === 'zh' && isset( $language_parts[1] ) ) {
+		if ( 'zh' === $language && isset( $language_parts[1] ) ) {
 			$region = strtoupper( $language_parts[1] );
 			if ( in_array( $region, [ 'TW', 'HK', 'MO' ] ) ) {
 				return 'zh_TW'; // Traditional Chinese
@@ -432,7 +432,7 @@ class Locale {
 	 * @since 3.6.0
 	 * @param string $language_code Language code (e.g., 'es_ES', 'fr_FR')
 	 * @return string Facebook override value (e.g., 'es_XX', 'fr_XX')
-	 * @throws \WooCommerce\Facebook\Framework\Plugin\Exception If the language is not supported by Facebook
+	 * @throws \WooCommerce\Facebook\Framework\Plugin\Exception If the language is not supported by Facebook.
 	 */
 	public static function convert_to_facebook_override_value( string $language_code ): string {
 		// Extract the language part (before the underscore)
@@ -441,7 +441,7 @@ class Locale {
 
 		// Handle special cases for Chinese FIRST (before generic mappings)
 		// This is critical because we need to distinguish zh_CN from zh_TW
-		if ( $language === 'zh' && isset( $language_parts[1] ) ) {
+		if ( 'zh' === $language && isset( $language_parts[1] ) ) {
 			$region = strtoupper( $language_parts[1] );
 			if ( in_array( $region, [ 'TW', 'HK', 'MO' ] ) ) {
 				return 'zh_TW'; // Traditional Chinese
@@ -457,6 +457,7 @@ class Locale {
 		// If no mapping found, throw an exception
 		throw new \WooCommerce\Facebook\Framework\Plugin\Exception(
 			sprintf(
+				/* translators: %s: Language code */
 				__( 'Language Feed not supported for override value: %s', 'facebook-for-woocommerce' ),
 				$language_code
 			),

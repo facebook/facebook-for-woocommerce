@@ -101,6 +101,7 @@ class LanguageOverrideFeedWriter extends AbstractFeedFileWriter {
 	 * This gets called by the parent's write_feed_file orchestration method.
 	 *
 	 * @param array $data The data to write to the feed file.
+	 * @throws \WooCommerce\Facebook\Framework\Plugin\Exception If file operations fail.
 	 * @since 3.6.0
 	 */
 	public function write_temp_feed_file( array $data ): void {

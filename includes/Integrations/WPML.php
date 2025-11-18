@@ -66,7 +66,7 @@ class WPML extends Abstract_Localization_Integration {
 			return [];
 		}
 
-		// Use WPML filter to get active languages
+		/** Use WPML filter to get active languages */
 		$languages = apply_filters( 'wpml_active_languages', null );
 		if ( is_array( $languages ) ) {
 			$locales = [];
@@ -94,14 +94,14 @@ class WPML extends Abstract_Localization_Integration {
 			return null;
 		}
 
-		// Use WPML filter to get default language
+		/** Use WPML filter to get default language */
 		$default_code = apply_filters( 'wpml_default_language', null );
 
 		if ( ! $default_code ) {
 			return null;
 		}
 
-		// Get the full locale for the default language
+		/** Get the full locale for the default language */
 		$languages = apply_filters( 'wpml_active_languages', null );
 		if ( is_array( $languages ) && isset( $languages[ $default_code ] ) ) {
 			$language_data = $languages[ $default_code ];
@@ -125,7 +125,7 @@ class WPML extends Abstract_Localization_Integration {
 			return null;
 		}
 
-		// Use WPML filter to get product language details
+		/** Use WPML filter to get product language details */
 		$language_details = apply_filters( 'wpml_post_language_details', null, $product_id );
 
 		if ( $language_details && isset( $language_details['language_code'] ) ) {
@@ -146,10 +146,10 @@ class WPML extends Abstract_Localization_Integration {
 			return null;
 		}
 
-		// Store original language
+		/** Store original language */
 		$original_lang = apply_filters( 'wpml_current_language', null );
 
-		// Get the WPML language code for this locale
+		/** Get the WPML language code for this locale */
 		$wpml_languages = apply_filters( 'wpml_active_languages', null );
 		$wpml_lang_code = null;
 
@@ -170,7 +170,7 @@ class WPML extends Abstract_Localization_Integration {
 			$wpml_lang_code = $lang_parts[0];
 		}
 
-		// Switch to target language
+		/** Switch to target language */
 		do_action( 'wpml_switch_language', $wpml_lang_code );
 
 		return $original_lang;
@@ -210,7 +210,7 @@ class WPML extends Abstract_Localization_Integration {
 			return [];
 		}
 
-		// Get the WPML language code for the default language
+		/** Get the WPML language code for the default language */
 		$wpml_languages = apply_filters( 'wpml_active_languages', null );
 		$default_language_code = null;
 
@@ -244,7 +244,7 @@ class WPML extends Abstract_Localization_Integration {
 		$default_language_products = [];
 
 		foreach ( $all_products as $product_id ) {
-			// Use WPML filter to check if this product is in the default language
+			/** Use WPML filter to check if this product is in the default language */
 			$product_language = apply_filters( 'wpml_post_language_details', null, $product_id );
 
 			if ( $product_language && isset( $product_language['language_code'] ) ) {
@@ -284,7 +284,7 @@ class WPML extends Abstract_Localization_Integration {
 			'translation_status' => [],
 		];
 
-		// Get the mapping between full locales and WPML language codes
+		/** Get the mapping between full locales and WPML language codes */
 		$wpml_languages = apply_filters( 'wpml_active_languages', null );
 		if ( ! is_array( $wpml_languages ) ) {
 			return $details;
@@ -310,14 +310,14 @@ class WPML extends Abstract_Localization_Integration {
 			// Get the WPML language code for this locale
 			$wpml_code = $locale_to_code_map[ $full_locale ] ?? $full_locale;
 
-			// Get translated product ID using the WPML language code
+			/** Get translated product ID using the WPML language code */
 			$translated_id = apply_filters( 'wpml_object_id', $product_id, 'post', false, $wpml_code );
 
 			if ( $translated_id && $translated_id !== $product_id ) {
 				// Store using the full locale as the key
 				$details['translations'][ $full_locale ] = $translated_id;
 
-				// Get translation status using WPML's API with the WPML code
+				/** Get translation status using WPML's API with the WPML code */
 				$translation_status = apply_filters( 'wpml_translation_status', null, $product_id, $wpml_code );
 				$details['translation_status'][ $full_locale ] = $translation_status;
 
