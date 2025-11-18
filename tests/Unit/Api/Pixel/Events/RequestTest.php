@@ -356,26 +356,196 @@ class RequestTest extends WP_UnitTestCase {
 	/**
 	 * Data provider for fbc/fbp from cookie and session tests.
 	 *
-	 * @return array Test cases with format: [global_type, global_key, field_name, test_value]
+	 * Tests the priority order for fbc/fbp values from multiple sources:
+	 * - For fbc: cookie > session > param_builder > request (fbclid)
+	 * - For fbp: cookie > session > param_builder
+	 *
+	 * @return array Test cases with format: [field_name, cookie_value, session_value, parambuilder_value, request_value, expected_value]
 	 */
 	public function fbc_fbp_sources_provider() {
 		return array(
-			'fbc from cookie' => array( '_COOKIE', '_fbc', 'fbc', 'fb.1.1234567890.Test' ),
-			'fbc from session' => array( '_SESSION', '_fbc', 'fbc', 'fb.1.1234567890.Test' ),
-			'fbp from cookie' => array( '_COOKIE', '_fbp', 'fbp', 'fb.1.1234567890.TestFBP' ),
-			'fbp from session' => array( '_SESSION', '_fbp', 'fbp', 'fb.1.1234567890.TestFBP' ),
+			// Test individual sources
+			'fbc from cookie only' => array(
+				'fbc',
+				'fb.1.1234567890.CookieFBC',
+				null,
+				null,
+				null,
+				'fb.1.1234567890.CookieFBC',
+			),
+			'fbc from session only' => array(
+				'fbc',
+				null,
+				'fb.1.1234567890.SessionFBC',
+				null,
+				null,
+				'fb.1.1234567890.SessionFBC',
+			),
+			'fbc from param_builder only' => array(
+				'fbc',
+				null,
+				null,
+				'fb.1.1234567890.ParamBuilderFBC',
+				null,
+				'fb.1.1234567890.ParamBuilderFBC',
+			),
+			'fbp from cookie only' => array(
+				'fbp',
+				'fb.1.1234567890.CookieFBP',
+				null,
+				null,
+				null,
+				'fb.1.1234567890.CookieFBP',
+			),
+			'fbp from session only' => array(
+				'fbp',
+				null,
+				'fb.1.1234567890.SessionFBP',
+				null,
+				null,
+				'fb.1.1234567890.SessionFBP',
+			),
+			'fbp from param_builder only' => array(
+				'fbp',
+				null,
+				null,
+				'fb.1.1234567890.ParamBuilderFBP',
+				null,
+				'fb.1.1234567890.ParamBuilderFBP',
+			),
+			// Test priority: cookie > session
+			'fbc cookie takes priority over session' => array(
+				'fbc',
+				'fb.1.1234567890.CookieFBC',
+				'fb.1.1234567890.SessionFBC',
+				null,
+				null,
+				'fb.1.1234567890.CookieFBC',
+			),
+			'fbp cookie takes priority over session' => array(
+				'fbp',
+				'fb.1.1234567890.CookieFBP',
+				'fb.1.1234567890.SessionFBP',
+				null,
+				null,
+				'fb.1.1234567890.CookieFBP',
+			),
+			// Test priority: cookie > param_builder
+			'fbc cookie takes priority over param_builder' => array(
+				'fbc',
+				'fb.1.1234567890.CookieFBC',
+				null,
+				'fb.1.1234567890.ParamBuilderFBC',
+				null,
+				'fb.1.1234567890.CookieFBC',
+			),
+			'fbp cookie takes priority over param_builder' => array(
+				'fbp',
+				'fb.1.1234567890.CookieFBP',
+				null,
+				'fb.1.1234567890.ParamBuilderFBP',
+				null,
+				'fb.1.1234567890.CookieFBP',
+			),
+			// Test priority: session > param_builder
+			'fbc session takes priority over param_builder' => array(
+				'fbc',
+				null,
+				'fb.1.1234567890.SessionFBC',
+				'fb.1.1234567890.ParamBuilderFBC',
+				null,
+				'fb.1.1234567890.SessionFBC',
+			),
+			'fbp session takes priority over param_builder' => array(
+				'fbp',
+				null,
+				'fb.1.1234567890.SessionFBP',
+				'fb.1.1234567890.ParamBuilderFBP',
+				null,
+				'fb.1.1234567890.SessionFBP',
+			),
+			// Test all sources present: cookie should win
+			'fbc cookie takes priority over all other sources' => array(
+				'fbc',
+				'fb.1.1234567890.CookieFBC',
+				'fb.1.1234567890.SessionFBC',
+				'fb.1.1234567890.ParamBuilderFBC',
+				null,
+				'fb.1.1234567890.CookieFBC',
+			),
+			'fbp cookie takes priority over all other sources' => array(
+				'fbp',
+				'fb.1.1234567890.CookieFBP',
+				'fb.1.1234567890.SessionFBP',
+				'fb.1.1234567890.ParamBuilderFBP',
+				null,
+				'fb.1.1234567890.CookieFBP',
+			),
 		);
 	}
 
 	/**
-	 * Test that fbc/fbp values from cookies and sessions are properly included in event data.
+	 * Test that fbc/fbp values from cookies, sessions, and param_builder are properly handled with correct priority.
+	 *
+	 * This test verifies the priority order for fbc/fbp values:
+	 * - For fbc: cookie > session > param_builder > request (fbclid)
+	 * - For fbp: cookie > session > param_builder
 	 *
 	 * @dataProvider fbc_fbp_sources_provider
 	 */
-	public function test_fbc_fbp_from_cookie_and_session( $global_type, $global_key, $field_name, $test_value ) {
+	public function test_fbc_fbp_from_cookie_and_session( $field_name, $cookie_value, $session_value, $parambuilder_value, $request_value, $expected_value ) {
 		$pixel_id = 'test_pixel_id_123';
 
-		$GLOBALS[$global_type][$global_key] = $test_value;
+		// Set up cookie value if provided
+		if ( null !== $cookie_value ) {
+			$_COOKIE[ '_' . $field_name ] = $cookie_value;
+		} else {
+			unset( $_COOKIE[ '_' . $field_name ] );
+		}
+
+		// Set up session value if provided
+		if ( null !== $session_value ) {
+			$_SESSION[ '_' . $field_name ] = $session_value;
+		} else {
+			unset( $_SESSION[ '_' . $field_name ] );
+		}
+
+		// Set up param_builder mock if value is provided
+		$original_param_builder = null;
+		if ( null !== $parambuilder_value && class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) {
+			$mock_param_builder = new class( $field_name, $parambuilder_value ) {
+				private $field;
+				private $value;
+
+				public function __construct( $field, $value ) {
+					$this->field = $field;
+					$this->value = $value;
+				}
+
+				public function getFbc() {
+					return $this->field === 'fbc' ? $this->value : null;
+				}
+
+				public function getFbp() {
+					return $this->field === 'fbp' ? $this->value : null;
+				}
+			};
+
+			$ref = new \ReflectionClass( 'WC_Facebookcommerce_EventsTracker' );
+			if ( $ref->hasProperty( 'param_builder' ) ) {
+				$prop = $ref->getProperty( 'param_builder' );
+				$prop->setAccessible( true );
+				$original_param_builder = $prop->getValue();
+				$prop->setValue( null, $mock_param_builder );
+			}
+		}
+
+		// Set up request value if provided (for fbc from fbclid)
+		if ( null !== $request_value && 'fbc' === $field_name ) {
+			$_REQUEST['fbclid'] = $request_value;
+		} else {
+			unset( $_REQUEST['fbclid'] );
+		}
 
 		$event = new Event( array( 'event_name' => 'TestEvent' ) );
 		$request = new Request( $pixel_id, array( $event ) );
@@ -383,11 +553,18 @@ class RequestTest extends WP_UnitTestCase {
 
 		$this->assertArrayHasKey( 'user_data', $data['data'][0] );
 		$this->assertArrayHasKey( $field_name, $data['data'][0]['user_data'] );
-		$this->assertEquals( $test_value, $data['data'][0]['user_data'][$field_name] );
+		$this->assertEquals( $expected_value, $data['data'][0]['user_data'][$field_name] );
 		$this->assertArrayNotHasKey( 'click_id', $data['data'][0]['user_data'] );
 		$this->assertArrayNotHasKey( 'browser_id', $data['data'][0]['user_data'] );
 
-		unset( $GLOBALS[$global_type][$global_key] );
+		// Clean up
+		unset( $_COOKIE[ '_' . $field_name ] );
+		unset( $_SESSION[ '_' . $field_name ] );
+		unset( $_REQUEST['fbclid'] );
+
+		if ( isset( $prop ) ) {
+			$prop->setValue( null, $original_param_builder );
+		}
 	}
 
 	/**
