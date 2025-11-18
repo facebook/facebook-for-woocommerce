@@ -177,7 +177,7 @@ class Localization_Integrations extends Abstract_Settings_Screen {
 									</div>
 								</td>
 								<td class="column-status">
-									<?php echo $this->render_status_badge( $status ); ?>
+									<?php echo wp_kses_post( $this->render_status_badge( $status ) ); ?>
 								</td>
 								<td class="column-version">
 									<?php echo $version ? esc_html( $version ) : '<span class="na">—</span>'; ?>
@@ -419,17 +419,17 @@ class Localization_Integrations extends Abstract_Settings_Screen {
 			return;
 		}
 
-		$action = sanitize_text_field( $_GET['action'] );
-		$nonce = sanitize_text_field( $_GET['_wpnonce'] );
+		$action = sanitize_text_field( wp_unslash( $_GET['action'] ) );
+		$nonce = sanitize_text_field( wp_unslash( $_GET['_wpnonce'] ) );
 
 		// Handle language feed actions
 		if ( wp_verify_nonce( $nonce, 'localization_test_action' ) ) {
-			if ( $action === 'download_language_csv' ) {
-				$language_code = sanitize_text_field( $_GET['language'] ?? '' );
+			if ( 'download_language_csv' === $action ) {
+				$language_code = sanitize_text_field( wp_unslash( $_GET['language'] ?? '' ) );
 				if ( $language_code ) {
 					$this->download_language_csv( $language_code );
 				}
-			} elseif ( $action === 'download_all_csvs' ) {
+			} elseif ( 'download_all_csvs' === $action ) {
 				$this->download_all_language_csvs();
 			}
 		}
@@ -568,7 +568,7 @@ class Localization_Integrations extends Abstract_Settings_Screen {
 							<p style="margin: 0 0 10px 0; font-size: 13px;">
 								<?php
 								/* translators: %d: number of languages */
-								printf( esc_html__( 'Download CSV files for all %d languages with translated products as a ZIP archive.', 'facebook-for-woocommerce' ), $total_languages_with_products );
+								printf( esc_html__( 'Download CSV files for all %d languages with translated products as a ZIP archive.', 'facebook-for-woocommerce' ), esc_html( $total_languages_with_products ) );
 								?>
 							</p>
 							<?php
@@ -682,6 +682,7 @@ class Localization_Integrations extends Abstract_Settings_Screen {
 	 * Download language-specific CSV file using existing generation methods
 	 *
 	 * @since 3.6.0
+	 * @param string $language_code The language code for the CSV file.
 	 */
 	private function download_language_csv( string $language_code ) {
 		try {
@@ -726,9 +727,9 @@ class Localization_Integrations extends Abstract_Settings_Screen {
 
 			// Stream the file directly from disk
 			readfile( $file_path );
-			exit;
+			return;
 		} catch ( \Exception $e ) {
-			wp_die( 'Error generating language CSV: ' . $e->getMessage() );
+			wp_die( esc_html( 'Error generating language CSV: ' . $e->getMessage() ) );
 		}
 	}
 
@@ -802,7 +803,7 @@ class Localization_Integrations extends Abstract_Settings_Screen {
 
 			// Create ZIP file
 			$zip = new \ZipArchive();
-			$zip_filename = 'facebook_language_feeds_' . date( 'Y-m-d_H-i-s' ) . '.zip';
+			$zip_filename = 'facebook_language_feeds_' . gmdate( 'Y-m-d_H-i-s' ) . '.zip';
 			$temp_zip_path = sys_get_temp_dir() . '/' . $zip_filename;
 
 			if ( $zip->open( $temp_zip_path, \ZipArchive::CREATE ) !== true ) {
@@ -817,7 +818,7 @@ class Localization_Integrations extends Abstract_Settings_Screen {
 			foreach ( $results as $language_code => $result ) {
 				if ( $result['success'] && file_exists( $result['file_path'] ) ) {
 					$file_content = file_get_contents( $result['file_path'] );
-					if ( $file_content !== false ) {
+					if ( false !== $file_content ) {
 						$zip->addFromString( $result['filename'], $file_content );
 						$files_added++;
 					}
@@ -826,7 +827,7 @@ class Localization_Integrations extends Abstract_Settings_Screen {
 
 			$zip->close();
 
-			if ( $files_added === 0 ) {
+			if ( 0 === $files_added ) {
 				unlink( $temp_zip_path );
 				wp_die(
 					esc_html__( 'No valid CSV files to include in ZIP.', 'facebook-for-woocommerce' ),
@@ -849,7 +850,7 @@ class Localization_Integrations extends Abstract_Settings_Screen {
 			unlink( $temp_zip_path ); // Clean up temp file
 			exit;
 		} catch ( \Exception $e ) {
-			wp_die( 'Error generating ZIP file: ' . $e->getMessage() );
+			wp_die( esc_html( 'Error generating ZIP file: ' . $e->getMessage() ) );
 		}
 	}
 
@@ -893,6 +894,7 @@ class Localization_Integrations extends Abstract_Settings_Screen {
 	 * Render product test section
 	 *
 	 * @since 3.6.0
+	 * @param LanguageFeedData $feed_data The feed data object.
 	 */
 	private function render_product_test_section( LanguageFeedData $feed_data ) {
 		try {
@@ -915,7 +917,12 @@ class Localization_Integrations extends Abstract_Settings_Screen {
 			<?php if ( empty( $product_ids ) ) : ?>
 				<p><?php esc_html_e( 'No products found in the default language. Create some products to test translation extraction.', 'facebook-for-woocommerce' ); ?></p>
 			<?php else : ?>
-				<p><?php printf( esc_html__( 'Testing translation extraction with %d products from the default language:', 'facebook-for-woocommerce' ), count( $product_ids ) ); ?></p>
+				<p>
+					<?php
+					/* translators: %d: number of products */
+					printf( esc_html__( 'Testing translation extraction with %d products from the default language:', 'facebook-for-woocommerce' ), count( $product_ids ) );
+					?>
+				</p>
 
 				<table class="wp-list-table widefat fixed striped" style="margin-top: 10px;">
 					<thead>

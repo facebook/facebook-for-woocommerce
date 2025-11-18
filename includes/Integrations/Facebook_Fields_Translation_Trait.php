@@ -54,16 +54,16 @@ trait Facebook_Fields_Translation_Trait {
 				$original_value = $original_fb_product->$method();
 
 				// Special handling for permalinks - switch language context to get correct URL
-				if ( $field_name === 'link' && $target_language ) {
+				if ( 'link' === $field_name && $target_language ) {
 					// Use integration's language switching methods
 					$original_lang = $this->switch_to_language( $target_language );
-					$switched_lang = $original_lang !== null;
+					$switched_lang = null !== $original_lang;
 				}
 
 				$translated_value = $translated_fb_product->$method();
 
 				// Switch back to original language after getting permalink
-				if ( $field_name === 'link' && $target_language && isset( $switched_lang ) && $switched_lang && isset( $original_lang ) ) {
+				if ( 'link' === $field_name && $target_language && isset( $switched_lang ) && $switched_lang && isset( $original_lang ) ) {
 					$this->restore_language( $original_lang );
 				}
 
