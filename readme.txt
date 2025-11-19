@@ -42,6 +42,6 @@ To suggest technical improvements, you can raise an issue on our [Github reposit
 == Changelog ==
 
 = 3.5.14 - 2025-11-19 =
-
+* Tweak - Adjust ParamBuilder to pixel integration
 
 [See changelog for all versions](https://raw.githubusercontent.com/facebook/facebook-for-woocommerce/refs/heads/main/changelog.txt).
