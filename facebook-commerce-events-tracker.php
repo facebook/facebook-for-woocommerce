@@ -82,14 +82,17 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 				try {
 					$site_url = get_site_url();
 					self::$param_builder = new \FacebookAds\ParamBuilder( array( $site_url ) );
-					self::$param_builder->processRequest(
-						$site_url,
-						$_GET,
-						$_COOKIE,
-						isset( $_SERVER['HTTP_REFERER'] ) ?
-						sanitize_text_field( wp_unslash( $_SERVER['HTTP_REFERER'] ) ) :
-						null
-					);
+
+					if ( (bool) apply_filters( 'facebook_for_woocommerce_integration_pixel_enabled', true ) ) {
+						self::$param_builder->processRequest(
+							$site_url,
+							$_GET,
+							$_COOKIE,
+							isset( $_SERVER['HTTP_REFERER'] ) ?
+							sanitize_text_field( wp_unslash( $_SERVER['HTTP_REFERER'] ) ) :
+							null
+						);
+					}
 				} catch ( \Exception $exception ) {
 					Logger::log(
 						'Error initializing CAPI Parameter Builder: ' . $exception->getMessage(),
@@ -111,6 +114,11 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 		 */
 		public function param_builder_server_setup() {
 			try {
+
+				if ( ! (bool) apply_filters( 'facebook_for_woocommerce_integration_pixel_enabled', true ) ) {
+					return;
+				}
+
 				$cookie_to_set = self::get_param_builder()->getCookiesToSet();
 
 				if ( ! headers_sent() ) {
