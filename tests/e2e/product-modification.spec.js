@@ -13,7 +13,8 @@ const {
   setProductDescription,
   filterProducts,
   clickFirstProduct,
-  publishProduct
+  publishProduct,
+  openFacebookOptions
 } = require('./test-helpers');
 
 test.describe('Facebook for WooCommerce - Product Modification E2E Tests', () => {
@@ -134,7 +135,7 @@ test.describe('Facebook for WooCommerce - Product Modification E2E Tests', () =>
 
       // Validate Facebook sync after editing
       console.log('🔄 Validating Facebook sync after edit...');
-      const result = await validateFacebookSync(productId, newTitle, 60);
+      const result = await validateFacebookSync(productId, newTitle, 20);
       expect(result['success']).toBe(true);
 
       // Verify the changes were saved
@@ -262,7 +263,7 @@ test.describe('Facebook for WooCommerce - Product Modification E2E Tests', () =>
 
       // Step 12: Validate Facebook sync and verify price was updated
       console.log('🔄 Validating Facebook sync after Quick Edit...');
-      const result = await validateFacebookSync(createdProductId, null, 60);
+      const result = await validateFacebookSync(createdProductId, null, 20);
 
       // Verify the price field specifically - should have NO mismatches for price
       const priceMismatches = Object.values(result['mismatches'] || {}).filter(
@@ -391,7 +392,7 @@ test.describe('Facebook for WooCommerce - Product Modification E2E Tests', () =>
 
       // Click "Save changes" button for variations
       const saveVariationsButton = page.locator('button.save-variation-changes');
-      if(await saveVariationsButton.isVisible({ timeout: 2000 }) && await saveVariationsButton.isEnabled({ timeout: 2000 })) {
+      if (await saveVariationsButton.isVisible({ timeout: 2000 }) && await saveVariationsButton.isEnabled({ timeout: 2000 })) {
         await saveVariationsButton.click();
         await page.waitForTimeout(2000);
         console.log('✅ Clicked "Save changes" for variations');
@@ -409,7 +410,7 @@ test.describe('Facebook for WooCommerce - Product Modification E2E Tests', () =>
 
       // Validate Facebook sync after editing
       console.log('🔄 Validating Facebook sync after edit...');
-      const result = await validateFacebookSync(productId, newTitle, 60);
+      const result = await validateFacebookSync(productId, newTitle, 20);
       expect(result['success']).toBe(true);
 
       // Verify the changes were saved
@@ -475,51 +476,10 @@ test.describe('Facebook for WooCommerce - Product Modification E2E Tests', () =>
       productId = createdId;
       console.log(`✅ Created product ${productId} with SKU: ${sku}`);
 
-      // Navigate to Products page
-      console.log('📋 Navigating to Products page...');
-      await page.goto(`${baseURL}/wp-admin/edit.php?post_type=product`, {
-        waitUntil: 'networkidle',
-        timeout: 120000
-      });
-
       await filterProducts(page, 'simple', sku);
       await clickFirstProduct(page);
       await checkForPhpErrors(page);
-
-      // Click on "Facebook" tab in product data
-      console.log('🔵 Clicking on Facebook tab...');
-      const facebookTab = page.locator('.wc-tabs li.fb_commerce_tab_options a, a[href="#fb_commerce_tab"]');
-
-      // Scroll to product data section first
-      await page.locator('#woocommerce-product-data').scrollIntoViewIfNeeded();
-
-      // Check if Facebook tab exists
-      const facebookTabExists = await facebookTab.isVisible({ timeout: 10000 }).catch(() => false);
-
-      if (!facebookTabExists) {
-        console.warn('⚠️ Facebook tab not found. This might indicate:');
-        console.warn('   - Facebook for WooCommerce plugin not properly activated');
-        console.warn('   - Plugin not connected to Facebook catalog');
-
-        // Take screenshot for debugging
-        await safeScreenshot(page, 'facebook-tab-not-found.png');
-
-        // Try to find any tab that might be Facebook-related
-        const allTabs = await page.locator('.wc-tabs li a').all();
-        console.log(`Found ${allTabs.length} tabs in product data`);
-
-        for (let i = 0; i < allTabs.length; i++) {
-          const tabText = await allTabs[i].textContent();
-          console.log(`  Tab ${i}: ${tabText}`);
-        }
-
-        throw new Error('Facebook tab not found in product data metabox');
-      }
-
-      await facebookTab.click();
-      await page.waitForTimeout(2000); // Wait for tab content to load
-      console.log('✅ Facebook tab opened');
-
+      await openFacebookOptions(page);
       // Add Facebook Price
       console.log('💰 Adding Facebook price...');
       const fbPrice = '24.99';
@@ -560,7 +520,7 @@ test.describe('Facebook for WooCommerce - Product Modification E2E Tests', () =>
 
       // Validate Facebook sync
       console.log('🔍 Validating Facebook catalog sync...');
-      const syncResult = await validateFacebookSync(productId, productName, 60);
+      const syncResult = await validateFacebookSync(productId, productName, 20);
       expect(syncResult.success).toBe(true);
 
       // Take final screenshot
@@ -572,6 +532,131 @@ test.describe('Facebook for WooCommerce - Product Modification E2E Tests', () =>
     } catch (error) {
       console.error(`❌ Test failed: ${error.message}`);
       await safeScreenshot(page, 'facebook-options-edit-test-failure.png');
+      logTestEnd(testInfo, false);
+      throw error;
+    } finally {
+      if (productId) {
+        await cleanupProduct(productId);
+      }
+    }
+  });
+
+  test('Edit Facebook-specific options for variable product', async ({ page }, testInfo) => {
+    let productId = null;
+    let originalPrice = '29.99';
+
+    try {
+      // Create a test variable product programmatically
+      console.log('📦 Creating test variable product...');
+      const { productId: createdId, productName, sku } = await createTestProduct({
+        productType: 'variable',
+        price: originalPrice
+      });
+      productId = createdId;
+      console.log(`✅ Created variable product ${productId} with SKU: ${sku}`);
+
+      await filterProducts(page, 'variable', sku);
+      await clickFirstProduct(page);
+      await checkForPhpErrors(page);
+
+      // Click on Variations tab first
+      console.log('📝 Opening Variations tab...');
+      const variationsTab = page.locator('li.variations_tab a');
+      await variationsTab.waitFor({ state: 'visible', timeout: 5000 });
+      await variationsTab.click();
+      await page.waitForTimeout(2000);
+      console.log('✅ Opened Variations tab');
+
+      // Expand all variations
+      const expandAllButton = page.getByRole('link', { name: 'Expand' }).first();
+      await expandAllButton.waitFor({ state: 'visible', timeout: 5000 });
+      await expandAllButton.click();
+      await page.waitForTimeout(2000);
+      console.log('✅ Expanded all variations');
+
+      // Get all variation rows
+      const variationRows = page.locator('.woocommerce_variation');
+      const variationCount = await variationRows.count();
+      console.log(`📊 Found ${variationCount} variations`);
+
+      // Edit Facebook-specific fields for each variation
+      for (let i = 0; i < variationCount; i++) {
+        const variationRow = variationRows.nth(i);
+        console.log(` Editing variation ${i + 1}...`);
+
+        // Scroll variation into view
+        await variationRow.scrollIntoViewIfNeeded();
+
+        // Set Facebook Brand
+        const fbPriceField = variationRow.locator(`#variable_fb_product_price${i}`);
+        if (await fbPriceField.isVisible({ timeout: 5000 })) {
+          const newPrice = (parseFloat(originalPrice || '10.00') + (i+1)).toFixed(2);
+          await fbPriceField.fill(newPrice);
+          console.log(`  ✅ Set Facebook price: ${newPrice}`);
+        } else {
+          console.warn(`  ⚠️ Facebook price field not found for variation ${i + 1}`);
+        }
+
+        // Set Custom Facebook Image
+        const customImageRadioBtn = variationRow.getByRole('radio', { name: 'Use custom image' }).first()
+        if (await customImageRadioBtn.isVisible({ timeout: 5000 })) {
+          await customImageRadioBtn.scrollIntoViewIfNeeded();
+          await customImageRadioBtn.click();
+          const customImageField = variationRow.locator(`#variable_fb_product_image${i}`);
+          const customImageUrl = 'https://www.facebook.com/images/fb_icon_325x325.png';
+          if (await customImageField.isVisible({ timeout: 5000 })) {
+            await customImageField.fill(customImageUrl);
+            console.log(`  ✅ Set Custom Image for variation ${i + 1}`);
+          } else {
+            console.warn(`  ⚠️ Custom Image field not found for variation ${i + 1}`);
+          }
+        } else {
+          console.warn(`  ⚠️ Custom Image Radiobutton not found for variation ${i + 1}`);
+        }
+      }
+
+      // Save variation changes
+      console.log('\n💾 Saving variation changes...');
+      const saveVariationsButton = page.locator('button.save-variation-changes');
+      if (await saveVariationsButton.isVisible({ timeout: 5000 }) && await saveVariationsButton.isEnabled({ timeout: 5000 })) {
+        await saveVariationsButton.click();
+        await page.waitForTimeout(3000);
+        console.log('✅ Saved variation changes');
+      } else {
+        console.warn('⚠️ "Save changes" button not visible or enabled, skipping');
+      }
+
+      await openFacebookOptions(page);
+      console.log('✅ Updating Global Facebook Options brand, size');
+      const fbBrandField = page.locator('#fb_brand');
+      await fbBrandField.waitFor({ state: 'visible', timeout: 5000 });
+      await fbBrandField.fill('FBOptionsUpdateTestBrand');
+
+      const fbSizeField = page.locator('#fb_size');
+      await fbSizeField.waitFor({ state: 'visible', timeout: 5000 });
+      await fbSizeField.fill('XXXL');
+
+      // Click Update button for the product
+      await publishProduct(page);
+
+      // Check for any errors on the page
+      await checkForPhpErrors(page);
+      console.log('✅ No errors detected on page');
+
+      // Validate Facebook sync
+      console.log('🔍 Validating Facebook catalog sync...');
+      const syncResult = await validateFacebookSync(productId, productName, 20);
+      expect(syncResult.success).toBe(true);
+
+      // Take final screenshot
+      await safeScreenshot(page, 'facebook-options-variable-update-success.png');
+      // Mark test as successful
+      console.log('✅ Variable product Facebook options edit test completed successfully');
+      logTestEnd(testInfo, true);
+
+    } catch (error) {
+      console.error(`❌ Test failed: ${error.message}`);
+      await safeScreenshot(page, 'facebook-options-variable-edit-test-failure.png');
       logTestEnd(testInfo, false);
       throw error;
     } finally {
