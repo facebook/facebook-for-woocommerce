@@ -327,7 +327,7 @@ class Shops extends Abstract_Settings_Screen {
 	 */
 	public function get_settings(): array {
 		// Get the parent settings (debug mode, meta diagnosis, etc.)
-		$parent_settings = self::get_settings_with_title_static( __( '', 'facebook-for-woocommerce' ) );
+		$parent_settings = self::get_settings_with_title_static( '' );
 
 		// Get the localization settings
 		$localization_settings = $this->get_localization_settings();
