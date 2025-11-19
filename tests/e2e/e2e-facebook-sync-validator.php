@@ -41,7 +41,8 @@ class FacebookSyncValidator {
         'availability' => 'availability',
         'description' => 'description',
         'brand' => 'brand',
-        'condition' => 'condition'
+        'condition' => 'condition',
+        'image_url' => 'image_url'
     ];
 
     /**
@@ -265,7 +266,8 @@ class FacebookSyncValidator {
             'condition' => $product_data['condition'] ?? '',
             'brand' => $product_data['brand'] ?? '',
             'color' => $product_data['color'] ?? '',
-            'size' => $product_data['size'] ?? ''
+            'size' => $product_data['size'] ?? '',
+            'image_url' => $product_data['image_link'] ?? ''
         ];
     }
 
@@ -273,46 +275,58 @@ class FacebookSyncValidator {
      * Fetch Facebook data via API
      */
     private function fetchFacebookData($retailer_id, $context = 'simple') {
-        try {
-            $api = facebook_for_woocommerce()->get_api();
-            $catalog_id = $this->integration->get_product_catalog_id();
+        $api = facebook_for_woocommerce()->get_api();
+        $catalog_id = $this->integration->get_product_catalog_id();
+        $fields = 'id,name,price,description,availability,retailer_id,condition,brand,color,size,image_url,product_group{id}';
 
-            // Use get_product_facebook_fields with full fields string
-            $fields = 'id,name,price,description,availability,retailer_id,condition,brand,color,size,product_group{id}';
-            $response = $api->get_product_facebook_fields($catalog_id, $retailer_id, $fields);
+        $max_retries = 6;
+        $retry_count = 0;
 
-            // Log the full API response for debugging
-            // $this->debug("Facebook API response for {$retailer_id}: " . json_encode($response, JSON_PRETTY_PRINT));
+        do {
+            try {
+                $response = $api->get_product_facebook_fields($catalog_id, $retailer_id, $fields);
 
-            if ($response && $response->response_data && isset($response->response_data['data'][0])) {
-                $fb_data = $response->response_data['data'][0];
-                $this->debug("Successfully fetched Facebook data for {$retailer_id}");
+                if ($response && $response->response_data && isset($response->response_data['data'][0])) {
+                    $fb_data = $response->response_data['data'][0];
+                    $this->debug(
+                        $retry_count === 0
+                            ? "Successfully fetched Facebook data for {$retailer_id}"
+                            : "Successfully fetched Facebook data for {$retailer_id} on retry #" . ($retry_count + 1)
+                    );
 
-                return [
-                    'id' => $fb_data['id'] ?? null,
-                    'name' => $fb_data['name'] ?? '',
-                    'price' => $fb_data['price'] ?? '',
-                    'description' => $fb_data['description'] ?? '',
-                    'availability' => $fb_data['availability'] ?? '',
-                    'retailer_id' => $fb_data['retailer_id'] ?? '',
-                    'condition' => $fb_data['condition'] ?? '',
-                    'brand' => $fb_data['brand'] ?? '',
-                    'color' => $fb_data['color'] ?? '',
-                    'size' => $fb_data['size'] ?? '',
-                    'product_group_id' => $fb_data['product_group']['id'] , //Simple products also have some product_group id
-                    'found' => true
-                ];
-
-            } else {
-                $this->debug("No Facebook data found for retailer_id: {$retailer_id}");
-                return ['found' => false];
+                    return [
+                        'id' => $fb_data['id'] ?? null,
+                        'name' => $fb_data['name'] ?? '',
+                        'price' => $fb_data['price'] ?? '',
+                        'description' => $fb_data['description'] ?? '',
+                        'availability' => $fb_data['availability'] ?? '',
+                        'retailer_id' => $fb_data['retailer_id'] ?? '',
+                        'condition' => $fb_data['condition'] ?? '',
+                        'brand' => $fb_data['brand'] ?? '',
+                        'color' => $fb_data['color'] ?? '',
+                        'size' => $fb_data['size'] ?? '',
+                        'image_url' => (!empty($fb_data['image_url'])) ? $fb_data['image_url'] : 'http://localhost:8080/wp-content/uploads/woocommerce-placeholder.webp',
+                        'product_group_id' => $fb_data['product_group']['id'] ?? null,
+                        'found' => true
+                    ];
+                }
+            } catch (Exception $e) {
+                $this->debug("Facebook API error for {$retailer_id}: " . $e->getMessage());
+                return ['found' => false, 'error' => $e->getMessage()];
             }
 
-        } catch (Exception $e) {
-            $this->debug("Facebook API error for {$retailer_id}: " . $e->getMessage());
-            return ['found' => false, 'error' => $e->getMessage()];
-        }
+            $retry_count++;
+            if ($retry_count < $max_retries) {
+                $backoff_seconds = pow(2, $retry_count);
+                $this->debug("Facebook API retry attempt #{$retry_count} for retailer_id: {$retailer_id} (waiting {$backoff_seconds}s)");
+                sleep($backoff_seconds);
+            }
+        } while ($retry_count < $max_retries);
+
+        $this->debug("No Facebook data found for retailer_id: {$retailer_id}");
+        return ['found' => false];
     }
+
 
     /**
      * Check if products are synced to Facebook (unified for both simple and variable)
