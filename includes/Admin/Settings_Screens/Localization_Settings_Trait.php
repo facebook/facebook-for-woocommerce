@@ -59,12 +59,6 @@ trait Localization_Settings_Trait {
 
 		$settings = array(
 			array(
-				'title' => __( 'Language Override Feeds', 'facebook-for-woocommerce' ),
-				'type'  => 'title',
-				'desc'  => __( 'Configure language override feed generation settings for multilingual product catalogs.', 'facebook-for-woocommerce' ),
-				'id'    => 'wc_facebook_language_override_feed_settings',
-			),
-			array(
 				'title'   => __( 'Enable language override feeds', 'facebook-for-woocommerce' ),
 				'desc'    => $description,
 				'id'      => \WC_Facebookcommerce_Integration::OPTION_LANGUAGE_OVERRIDE_FEED_GENERATION_ENABLED,
