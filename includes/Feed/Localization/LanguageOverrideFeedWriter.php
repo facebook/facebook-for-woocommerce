@@ -138,13 +138,18 @@ class LanguageOverrideFeedWriter extends AbstractFeedFileWriter {
 	 *
 	 * @param LanguageFeedData $language_feed_data Data source
 	 * @param string           $language_code Language code
-	 * @return bool Success status
+	 * @return array {
+	 *     @type bool $success Success status
+	 *     @type int  $count   Number of products written to the feed
+	 * }
 	 * @since 3.6.0
 	 */
-	public function write_language_feed_file( LanguageFeedData $language_feed_data, string $language_code ): bool {
+	public function write_language_feed_file( LanguageFeedData $language_feed_data, string $language_code ): array {
 		try {
 			// Get language feed data
 			$csv_result = $language_feed_data->get_language_csv_data( $language_code, 5000, 0 );
+
+			$product_count = count( $csv_result['data'] ?? [] );
 
 			if ( empty( $csv_result['data'] ) ) {
 				\WooCommerce\Facebook\Framework\Logger::log(
@@ -181,10 +186,16 @@ class LanguageOverrideFeedWriter extends AbstractFeedFileWriter {
 			// Use the inherited write_feed_file method from AbstractFeedFileWriter
 			$this->write_feed_file( $data );
 
-			return true;
+			return array(
+				'success' => true,
+				'count'   => $product_count,
+			);
 
 		} catch ( \Exception $e ) {
-			return false;
+			return array(
+				'success' => false,
+				'count'   => 0,
+			);
 		}
 	}
 }
