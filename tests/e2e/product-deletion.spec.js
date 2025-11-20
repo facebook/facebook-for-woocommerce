@@ -158,7 +158,7 @@ test.describe('Facebook for WooCommerce - Product Deletion E2E Tests', () => {
           console.warn('⚠️ "Sync now" button not found');
       }
 
-      const simpleProductValidationResult = await validateFacebookSync(simpleProductId, simpleProduct.productName, 60);
+      const simpleProductValidationResult = await validateFacebookSync(simpleProductId, simpleProduct.productName, 5);
       expect(simpleProductValidationResult['success']).toBe(false);
       // Check if any debug message contains the expected text about 0 products and 0 mismatches
       expect(
@@ -168,7 +168,7 @@ test.describe('Facebook for WooCommerce - Product Deletion E2E Tests', () => {
         )
       ).toBe(true);
 
-      const variableProductValidationResult = await validateFacebookSync(variableProductId, variableProduct.productName, 60);
+      const variableProductValidationResult = await validateFacebookSync(variableProductId, variableProduct.productName, 5);
       expect(variableProductValidationResult['success']).toBe(false);
       expect(
         variableProductValidationResult['debug'].some(

@@ -279,7 +279,7 @@ class FacebookSyncValidator {
         $catalog_id = $this->integration->get_product_catalog_id();
         $fields = 'id,name,price,description,availability,retailer_id,condition,brand,color,size,image_url,product_group{id}';
 
-        $max_retries = 6;
+        $max_retries = 7;
         $retry_count = 0;
 
         do {
