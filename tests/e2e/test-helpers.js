@@ -270,7 +270,7 @@ async function validateFacebookSync(productId, productName, waitSeconds = 10) {
   }
 
   const displayName = productName ? `"${productName}" (ID: ${productId})` : `ID: ${productId}`;
-  console.log(`🔍 Validating Facebook sync for product ${displayName}...`);
+  console.log(`🔍 Validating Facebook sync for product ${displayName} (max wait: ${waitSeconds}s)...`);
 
   try {
     const { exec } = require('child_process');

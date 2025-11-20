@@ -100,7 +100,7 @@ test.describe('Facebook for WooCommerce - Product Creation E2E Tests', () => {
       await checkForPhpErrors(page);
 
       // Validate sync to Meta catalog and fields from Meta
-      const result = await validateFacebookSync(productId, productName);
+      const result = await validateFacebookSync(productId, productName, 5);
       expect(result['success']).toBe(true);
 
       console.log('✅ Simple product creation test completed successfully');
@@ -230,7 +230,7 @@ test.describe('Facebook for WooCommerce - Product Creation E2E Tests', () => {
     await checkForPhpErrors(page);
 
     // Validate sync to Meta catalog and fields from Meta
-    const result = await validateFacebookSync(productId, productName, 20);
+    const result = await validateFacebookSync(productId, productName, 5);
     expect(result['success']).toBe(true);
 
     // await waitForManualInspection(page);
