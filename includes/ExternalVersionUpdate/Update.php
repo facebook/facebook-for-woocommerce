@@ -92,6 +92,8 @@ class Update {
 				$excluded_product_tags = $term_query->get_terms();
 			}
 
+			$language_feed_stats = get_transient( self::TRANSIENT_LANGUAGE_FEED_STATS );
+
 			$context  = array(
 				'flow_name'  => 'plugin_updates',
 				'flow_step'  => 'send_plugin_updates',
@@ -104,7 +106,7 @@ class Update {
 					'opted_out_woo_all_products'  => get_option( self::MASTER_SYNC_OPT_OUT_TIME ),
 					'active_plugins'              => wp_json_encode( IntegrationRegistry::get_all_active_plugin_data() ),
 					'language_override_enabled'   => get_option( \WC_Facebookcommerce_Integration::OPTION_LANGUAGE_OVERRIDE_FEED_GENERATION_ENABLED, 'no' ),
-					'language_feed_stats'         => wp_json_encode( get_transient( self::TRANSIENT_LANGUAGE_FEED_STATS ) ?: [] ),
+					'language_feed_stats'         => wp_json_encode( is_array( $language_feed_stats ) ? $language_feed_stats : [] ),
 				],
 			);
 			$context  = [ LogHandlerBase::set_core_log_context( $context ) ];
