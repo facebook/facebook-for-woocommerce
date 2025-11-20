@@ -82,6 +82,7 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 				try {
 					$site_url = get_site_url();
 					self::$param_builder = new \FacebookAds\ParamBuilder( array( $site_url ) );
+
 					self::$param_builder->processRequest(
 						$site_url,
 						$_GET,
@@ -111,6 +112,11 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 		 */
 		public function param_builder_server_setup() {
 			try {
+
+				if ( ! (bool) apply_filters( 'facebook_for_woocommerce_integration_pixel_enabled', true ) ) {
+					return;
+				}
+
 				$cookie_to_set = self::get_param_builder()->getCookiesToSet();
 
 				if ( ! headers_sent() ) {
