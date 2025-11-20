@@ -1091,7 +1091,7 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 					'custom_data' => array(
 						'sign_up_fee' => $subscription->get_sign_up_fee(),
 						'value'       => $subscription->get_total(),
-						'currency'    => (method_exists( $subscription, 'get_currency' ) ? $subscription->get_currency() : get_woocommerce_currency() ),
+						'currency'    => ( method_exists( $subscription, 'get_currency' ) ? $subscription->get_currency() : get_woocommerce_currency() ),
 					),
 					'user_data'   => $this->pixel->get_user_info(),
 				);
