@@ -214,16 +214,21 @@ class LanguageOverrideFeed {
 
 		$successful_languages = [];
 		$failed_languages = [];
+		$language_stats = [];
 
 		// Generate feed file for each language using the feed handler directly
 		foreach ( $languages as $language_code ) {
 			try {
 				// Generate the feed file for this language
 				$language_feed_writer = new LanguageOverrideFeedWriter( $language_code );
-				$success = $language_feed_writer->write_language_feed_file( $this->language_feed_data, $language_code );
+				$result = $language_feed_writer->write_language_feed_file( $this->language_feed_data, $language_code );
 
-				if ( $success ) {
+				if ( $result['success'] ) {
 					$successful_languages[] = $language_code;
+					$language_stats[ $language_code ] = [
+						'translated_products' => $result['count'],
+						'last_generated'      => time(),
+					];
 				} else {
 					$failed_languages[] = $language_code;
 					Logger::log(
@@ -282,6 +287,16 @@ class LanguageOverrideFeed {
 					'should_save_log_in_woocommerce' => true,
 					'woocommerce_log_level'          => \WC_Log_Levels::INFO,
 				)
+			);
+		}
+
+		// Send language feed statistics directly to Meta via commerce_3p_platform_event
+		if ( ! empty( $language_stats ) ) {
+			// Cache the stats in a transient for the hourly telemetry to use
+			set_transient(
+				\WooCommerce\Facebook\ExternalVersionUpdate\Update::TRANSIENT_LANGUAGE_FEED_STATS,
+				$language_stats,
+				\WooCommerce\Facebook\ExternalVersionUpdate\Update::TRANSIENT_LANGUAGE_FEED_STATS_LIFETIME
 			);
 		}
 

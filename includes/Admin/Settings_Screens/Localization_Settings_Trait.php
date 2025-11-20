@@ -35,6 +35,11 @@ trait Localization_Settings_Trait {
 		$is_available = $integration && $integration->is_available();
 		$is_eligible = $is_available && method_exists( $integration, 'is_eligible_for_language_override_feeds' ) && $integration->is_eligible_for_language_override_feeds();
 
+		// Hide the entire section for ineligible sites (legacy multi-language setups)
+		if ( ! $is_eligible ) {
+			return array();
+		}
+
 		// Get current setting value or set default intelligently
 		$current_value = get_option( \WC_Facebookcommerce_Integration::OPTION_LANGUAGE_OVERRIDE_FEED_GENERATION_ENABLED );
 
@@ -53,11 +58,14 @@ trait Localization_Settings_Trait {
 
 		if ( ! $is_available ) {
 			$description .= '<br><strong style="color: #dc3232;">' . __( 'No localization plugin is active and properly configured. Install and activate WPML or Polylang with a default language set.', 'facebook-for-woocommerce' ) . '</strong>';
-		} elseif ( ! $is_eligible ) {
-			$description .= '<br><strong style="color: #856404;">' . __( 'This integration is not eligible for Language Override Feeds. You have a legacy multi-language setup with multiple languages selected. Language Override Feeds are only available for new configurations.', 'facebook-for-woocommerce' ) . '</strong>';
 		}
 
 		$settings = array(
+			array(
+				'title' => '',
+				'type'  => 'title',
+				'id'    => 'wc_facebook_language_override_feed_settings',
+			),
 			array(
 				'title'   => __( 'Enable language override feeds', 'facebook-for-woocommerce' ),
 				'desc'    => $description,
@@ -74,11 +82,6 @@ trait Localization_Settings_Trait {
 				'id'   => 'wc_facebook_language_override_feed_settings',
 			),
 		);
-
-		// Only add disabled attribute if not eligible
-		if ( ! $is_eligible ) {
-			$settings[1]['custom_attributes'] = array( 'disabled' => 'disabled' );
-		}
 
 		return $settings;
 	}
