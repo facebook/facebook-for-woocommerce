@@ -757,4 +757,22 @@ class API extends Base {
 		$this->set_response_handler( API\CommerceIntegration\Configuration\Update\Response::class );
 		return $this->perform_request( $request );
 	}
+
+	public function get_batch_status( string $catalog_id, string $batch_handle ) {
+		$endpoint = sprintf( '/%s/check_batch_request_status', $catalog_id );
+
+		$query_params = array( 'handle' => $batch_handle );
+
+		$url = $endpoint . '?' . http_build_query( $query_params );
+
+		$request = new Request(
+			$url,
+			'GET'
+		);
+
+		$this->set_response_handler( API\ProductCatalog\ProductGroups\Read\Response::class );
+		$response = $this->perform_request( $request );
+
+		return $response;
+	}
 }
