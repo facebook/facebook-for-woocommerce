@@ -25,6 +25,7 @@ use WooCommerce\Facebook\Utilities\Background_Handle_Virtual_Products_Variations
 use WooCommerce\Facebook\Utilities\Background_Remove_Duplicate_Visibility_Meta;
 use WooCommerce\Facebook\Utilities\DebugTools;
 use WooCommerce\Facebook\Utilities\Heartbeat;
+use WooCommerce\Facebook\Feed\Localization\LanguageOverrideFeed;
 
 /**
  * Class WC_Facebookcommerce
@@ -76,6 +77,9 @@ class WC_Facebookcommerce extends WooCommerce\Facebook\Framework\Plugin {
 
 	/** @var WooCommerce\Facebook\Products\Feed product feed handler */
 	private $product_feed;
+
+	/** @var WooCommerce\Facebook\Feed\Localization\LanguageOverrideFeed language override feed handler */
+	private $language_override_feed;
 
 	/** @var WooCommerce\Facebook\Feed\FeedManager Entrypoint and creates all other feeds */
 	public $feed_manager;
@@ -206,6 +210,7 @@ class WC_Facebookcommerce extends WooCommerce\Facebook\Framework\Plugin {
 			$this->feed_manager                     = new WooCommerce\Facebook\Feed\FeedManager();
 			$this->checkout                         = new WooCommerce\Facebook\Checkout();
 			$this->product_feed                     = new WooCommerce\Facebook\Products\Feed();
+			$this->language_override_feed           = new WooCommerce\Facebook\Feed\Localization\LanguageOverrideFeed();
 			$this->products_stock_handler           = new WooCommerce\Facebook\Products\Stock();
 			$this->products_sync_handler            = new WooCommerce\Facebook\Products\Sync();
 			$this->sync_background_handler          = new WooCommerce\Facebook\Products\Sync\Background();
@@ -703,6 +708,17 @@ class WC_Facebookcommerce extends WooCommerce\Facebook\Framework\Plugin {
 	 */
 	public function get_asset_build_dir_url() {
 		return $this->get_plugin_url() . '/assets/build';
+	}
+
+
+	/**
+	 * Gets the language override feed handler.
+	 *
+	 * @since 3.6.0
+	 * @return WooCommerce\Facebook\Feed\Localization\LanguageOverrideFeed|null
+	 */
+	public function get_language_override_feed() {
+		return $this->language_override_feed;
 	}
 
 	/**
