@@ -50,12 +50,12 @@ test.describe('Facebook for WooCommerce - Product Deletion E2E Tests', () => {
       // Navigate to Products page
       console.log('📋 Navigating to Products page...');
       await page.goto(`${baseURL}/wp-admin/edit.php?post_type=product`, {
-        waitUntil: 'networkidle',
-        timeout: 120000
+        waitUntil: 'domcontentloaded',
+        timeout: 60000
       });
 
       // Wait for products table to load
-      const hasProductsTable = await page.locator('.wp-list-table').isVisible({ timeout: 120000 });
+      const hasProductsTable = await page.locator('.wp-list-table').isVisible({ timeout: 60000 });
       if (!hasProductsTable) {
         throw new Error('Products table not found');
       }
@@ -113,7 +113,7 @@ test.describe('Facebook for WooCommerce - Product Deletion E2E Tests', () => {
       console.log('✅ Clicked Apply button');
 
       // Wait for the page to reload after bulk action
-      await page.waitForLoadState('networkidle', { timeout: 120000 });
+      await page.waitForLoadState('networkidle', { timeout: 60000 });
       await page.waitForTimeout(2000);
       console.log('✅ Products moved to trash');
 
@@ -122,8 +122,8 @@ test.describe('Facebook for WooCommerce - Product Deletion E2E Tests', () => {
 
       // First, navigate to Marketing > Facebook page
       await page.goto(`${baseURL}/wp-admin/admin.php?page=wc-facebook`, {
-          waitUntil: 'networkidle',
-          timeout: 120000
+          waitUntil: 'domcontentloaded',
+          timeout: 60000
       });
       console.log('✅ Navigated to Facebook page');
 
