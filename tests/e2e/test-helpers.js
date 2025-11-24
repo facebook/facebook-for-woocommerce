@@ -249,7 +249,7 @@ async function clickFirstProduct(page) {
 }
 
 // Helper function to validate Facebook sync
-async function validateFacebookSync(productId, productName, waitSeconds = 10) {
+async function validateFacebookSync(productId, productName, waitSeconds = 10, maxRetries = 6) {
   if (!productId) {
     console.warn('⚠️ No product ID provided for Facebook sync validation');
     return null;
@@ -265,7 +265,7 @@ async function validateFacebookSync(productId, productName, waitSeconds = 10) {
 
     // Call the Facebook sync validator
     const { stdout, stderr } = await execAsync(
-      `php e2e-facebook-sync-validator.php ${productId} ${waitSeconds}`,
+      `php e2e-facebook-sync-validator.php ${productId} ${waitSeconds} ${maxRetries}`,
       { cwd: __dirname }
     );
 

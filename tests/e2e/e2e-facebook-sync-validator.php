@@ -30,6 +30,7 @@ class FacebookSyncValidator {
     private $product;
     private $integration;
     private $result;
+    private $max_retries;
 
     /**
      * Field mappings between WooCommerce and Facebook fields
@@ -56,8 +57,9 @@ class FacebookSyncValidator {
     /**
      * Initialize the validator and verify dependencies
      */
-    public function __construct($product_id, $wait_seconds = 5) {
+    public function __construct($product_id, $wait_seconds = 5, $max_retries = 6) {
         $this->product_id = (int)$product_id;
+        $this->max_retries = (int)$max_retries;
         $this->result = [
             'success' => false,
             'product_id' => $this->product_id,
@@ -279,7 +281,6 @@ class FacebookSyncValidator {
         $catalog_id = $this->integration->get_product_catalog_id();
         $fields = 'id,name,price,description,availability,retailer_id,condition,brand,color,size,image_url,product_group{id}';
 
-        $max_retries = 6;
         $retry_count = 0;
 
         do {
@@ -316,12 +317,12 @@ class FacebookSyncValidator {
             }
 
             $retry_count++;
-            if ($retry_count < $max_retries) {
+            if ($retry_count < $this->max_retries) {
                 $backoff_seconds = pow(2, $retry_count);
                 $this->debug("Facebook API retry attempt #{$retry_count} for retailer_id: {$retailer_id} (waiting {$backoff_seconds}s)");
                 sleep($backoff_seconds);
             }
-        } while ($retry_count < $max_retries);
+        } while ($retry_count < $this->max_retries);
 
         $this->debug("No Facebook data found for retailer_id: {$retailer_id}");
         return ['found' => false];
@@ -496,13 +497,14 @@ if (php_sapi_name() === 'cli') {
     try {
         $product_id = isset($argv[1]) ? (int)$argv[1] : null;
         $wait_seconds = isset($argv[2]) ? (int)$argv[2] : 10;
+        $max_retries = isset($argv[3]) ? (int)$argv[3] : 6;
 
         if (!$product_id) {
             echo json_encode(['success' => false, 'error' => 'Product ID required']);
             exit(1);
         }
 
-        $validator = new FacebookSyncValidator($product_id, $wait_seconds);
+        $validator = new FacebookSyncValidator($product_id, $wait_seconds, $max_retries);
         $result = $validator->validate();
         echo $validator->getJsonResult();
 
