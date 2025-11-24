@@ -8,7 +8,7 @@ const password = process.env.WP_PASSWORD || 'admin';
 // Helper function for reliable login
 async function loginToWordPress(page) {
   // Navigate to login page
-  await page.goto(`${baseURL}/wp-admin/`, { waitUntil: 'networkidle', timeout: 120000 });
+  await page.goto(`${baseURL}/wp-admin/`, { waitUntil: 'domcontentloaded', timeout: 60000 });
 
   // Check if we're already logged in
   const isLoggedIn = await page.locator('#wpcontent').isVisible({ timeout: 5000 });
@@ -19,13 +19,13 @@ async function loginToWordPress(page) {
 
   // Fill login form - wait longer for login elements
   console.log('🔐 Logging in to WordPress...');
-  await page.waitForSelector('#user_login', { timeout: 120000 });
+  await page.waitForSelector('#user_login', { timeout: 60000 });
   await page.fill('#user_login', username);
   await page.fill('#user_pass', password);
   await page.click('#wp-submit');
 
   // Wait for login to complete
-  await page.waitForLoadState('networkidle', { timeout: 120000 });
+  await page.waitForLoadState('networkidle', { timeout: 60000 });
   console.log('✅ Login completed');
 }
 
@@ -94,7 +94,7 @@ async function publishProduct(page) {
   try {
     await page.locator('#publishing-action').scrollIntoViewIfNeeded();
     const publishButton = page.locator('#publish');
-    if (await publishButton.isVisible({ timeout: 120000 })) {
+    if (await publishButton.isVisible({ timeout: 60000 })) {
       await publishButton.click();
       await page.waitForTimeout(3000);
       console.log('✅ Published product');
@@ -191,8 +191,8 @@ async function filterProducts(page, productType, productSKU = null) {
   // Go to Products page
   console.log('📋 Navigating to Products page...');
   await page.goto(`${baseURL}/wp-admin/edit.php?post_type=product`, {
-    waitUntil: 'networkidle',
-    timeout: 120000
+    waitUntil: 'domcontentloaded',
+    timeout: 60000
   });
 
   // Filter by product type
@@ -225,7 +225,7 @@ async function filterProducts(page, productType, productSKU = null) {
   }
 
   // Wait for products table to load
-  const hasProductsTable = await page.locator('.wp-list-table').isVisible({ timeout: 120000 });
+  const hasProductsTable = await page.locator('.wp-list-table').isVisible({ timeout: 60000 });
   if (hasProductsTable) {
     console.log('✅ WooCommerce products page loaded successfully');
   } else {
@@ -244,7 +244,7 @@ async function clickFirstProduct(page) {
 
   // Click on product name to edit
   await productNameElement.click();
-  await page.waitForLoadState('networkidle', { timeout: 120000 });
+  await page.waitForLoadState('domcontentloaded', { timeout: 60000 });
   console.log('✅ Opened product editor');
 }
 

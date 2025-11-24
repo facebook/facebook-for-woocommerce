@@ -140,7 +140,7 @@ test.describe('Facebook for WooCommerce - Product Modification E2E Tests', () =>
 
       // Verify the changes were saved
       console.log('🔍 Verifying changes were saved...');
-      await page.reload({ waitUntil: 'networkidle', timeout: 120000 });
+      await page.reload({ waitUntil: 'domcontentloaded', timeout: 60000 });
 
       const updatedTitle = await titleField.inputValue();
       expect(updatedTitle).toBe(newTitle);
@@ -245,7 +245,7 @@ test.describe('Facebook for WooCommerce - Product Modification E2E Tests', () =>
       // Step 11: Verify price change in UI
       console.log('🔍 Verifying price change in products table...');
       // Reload the page to ensure we see the updated data
-      await page.reload({ waitUntil: 'networkidle', timeout: 120000 });
+      await page.reload({ waitUntil: 'domcontentloaded', timeout: 60000 });
 
       // Find the product row again and check the price column
       const updatedProductRow = page.locator('.wp-list-table tbody tr.iedit').first();
@@ -415,7 +415,7 @@ test.describe('Facebook for WooCommerce - Product Modification E2E Tests', () =>
 
       // Verify the changes were saved
       console.log('🔍 Verifying changes were saved...');
-      await page.reload({ waitUntil: 'networkidle', timeout: 120000 });
+      await page.reload({ waitUntil: 'domcontentloaded', timeout: 60000 });
 
       const updatedTitle = await titleField.inputValue();
       expect(updatedTitle).toBe(newTitle);
