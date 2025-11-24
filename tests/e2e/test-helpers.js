@@ -51,6 +51,7 @@ async function cleanupProduct(productId) {
   console.log(`🧹 Cleaning up product ${productId}...`);
 
   try {
+    const startTime = new Date();
     const { exec } = require('child_process');
     const { promisify } = require('util');
     const execAsync = promisify(exec);
@@ -59,7 +60,8 @@ async function cleanupProduct(productId) {
       `php -r "require_once('/tmp/wordpress/wp-load.php'); wp_delete_post(${productId}, true);"`,
       { cwd: __dirname }
     );
-
+    const endTime = new Date();
+    console.log(`⏱️ Cleanup took ${endTime - startTime}ms`);
     console.log(`✅ Product ${productId} deleted from WooCommerce`);
   } catch (error) {
     console.log(`⚠️ Cleanup failed: ${error.message}`);
@@ -301,6 +303,7 @@ async function createTestProduct(options = {}) {
   console.log(`📦 Creating "${productType}" product via WooCommerce API: "${productName}"...`);
 
   try {
+    const startTime = Date.now();
     const { exec } = require('child_process');
     const { promisify } = require('util');
     const execAsync = promisify(exec);
@@ -326,6 +329,9 @@ async function createTestProduct(options = {}) {
         console.log(`   Variations: ${result.variation_count}`);
         console.log(`   VariationIds: ${result.variation_ids}`);
       }
+
+      const endTime = Date.now();
+      console.log(`⏱️ Test Product creation took ${endTime - startTime}ms`);
 
       return {
         productId: result.product_id,
