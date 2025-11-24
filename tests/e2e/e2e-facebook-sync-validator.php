@@ -319,7 +319,7 @@ class FacebookSyncValidator {
             $retry_count++;
             if ($retry_count < $this->max_retries) {
                 $backoff_seconds = pow(2, $retry_count);
-                $this->debug("Facebook API retry attempt #{$retry_count} for retailer_id: {$retailer_id} (waiting {$backoff_seconds}s)");
+                $this->debug("Facebook API retry attempt #{$retry_count}/${$this->max_retries} for retailer_id: {$retailer_id} (waiting {$backoff_seconds}s)");
                 sleep($backoff_seconds);
             }
         } while ($retry_count < $this->max_retries);
