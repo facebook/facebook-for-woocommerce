@@ -98,7 +98,7 @@ class RequestIntegrationTest extends IntegrationTestCase {
 	 *
 	 * Note: This test makes a REAL HTTP request to Facebook API.
 	 */
-	public function test_send_http_request_with_custom_fbc_fbp() {
+	public function test_Given_Single_Purcahse_Event_When_SendingEvent_Then_RequestContainsValues() {
 		$pixel_id = $this->get_test_pixel_id();
 
 		// Custom fbc and fbp values we want to send
@@ -158,93 +158,15 @@ class RequestIntegrationTest extends IntegrationTestCase {
 				$response_data = $response->response_data;
 				$this->assertIsArray( $response_data );
 			}
-		} catch ( \WooCommerce\Facebook\Framework\Api\Exception $e ) {
-			// Expected if using invalid credentials
-			error_log( 'Expected API Exception with custom fbc/fbp: ' . $e->getMessage() );
-			$this->assertInstanceOf( 'WooCommerce\Facebook\Framework\Api\Exception', $e );
-			$this->assertTrue( true, 'HTTP request with custom fbc/fbp was sent successfully' );
 		} catch ( \Exception $e ) {
 			$this->fail( 'Unexpected exception: ' . $e->getMessage() );
 		}
 	}
 
 	/**
-	 * Test creating a custom Request object and inspecting its data before sending
-	 *
-	 * This test shows how to manually create a Request, set custom user_data,
-	 * inspect the request data structure, and send it via HTTP.
-	 */
-	public function test_create_custom_request_and_send_http() {
-		$pixel_id = $this->get_test_pixel_id();
-
-		// Create event with custom user data including fbc/fbp
-		$custom_fbc = 'fb.1.1234567890.CustomTestFBC';
-		$custom_fbp = 'fb.1.1234567890.CustomTestFBP';
-
-		$event = new Event( array(
-			'event_name'  => 'ViewContent',
-			'event_time'  => time(),
-			'custom_data' => array(
-				'content_ids'  => array( 'product_456' ),
-				'content_type' => 'product',
-				'value'        => '149.99',
-				'currency'     => 'USD',
-			),
-			'user_data'   => array(
-				'em'                   => 'custom@example.com',
-				'ph'                   => '1234567890',
-				'client_ip_address'    => '192.168.1.1',
-				'client_user_agent'    => 'Custom User Agent',
-				'click_id'             => $custom_fbc,
-				'browser_id'           => $custom_fbp,
-			),
-		) );
-
-		// Create the Request object
-		$request = new Request( $pixel_id, array( $event ) );
-
-		// Inspect the request data before sending
-		$request_data = $request->get_data();
-
-		error_log( 'Custom Request Data Structure: ' . print_r( $request_data, true ) );
-
-		// Verify the structure
-		$this->assertIsArray( $request_data );
-		$this->assertArrayHasKey( 'data', $request_data );
-		$this->assertArrayHasKey( 'partner_agent', $request_data );
-		$this->assertCount( 1, $request_data['data'] );
-
-		// Verify event data
-		$event_data = $request_data['data'][0];
-		$this->assertEquals( 'ViewContent', $event_data['event_name'] );
-		$this->assertArrayHasKey( 'custom_data', $event_data );
-		$this->assertArrayHasKey( 'user_data', $event_data );
-
-		// Verify custom fbc/fbp are set correctly
-		$user_data = $event_data['user_data'];
-		$this->assertEquals( $custom_fbc, $user_data['fbc'] );
-		$this->assertEquals( $custom_fbp, $user_data['fbp'] );
-
-		// Now send the request via HTTP
-		try {
-			$response = $this->api->send_pixel_events( $pixel_id, array( $event ) );
-
-			$this->assertInstanceOf( 'WooCommerce\Facebook\API\Response', $response );
-			error_log( 'Custom Request HTTP Response: ' . print_r( $response->response_data, true ) );
-
-			if ( $this->has_valid_credentials ) {
-				$this->assertIsArray( $response->response_data );
-			}
-		} catch ( \WooCommerce\Facebook\Framework\Api\Exception $e ) {
-			error_log( 'Custom Request sent, auth failed: ' . $e->getMessage() );
-			$this->assertTrue( true, 'Custom Request HTTP request sent successfully' );
-		}
-	}
-
-	/**
 	 * Test sending multiple events in a single HTTP request (batch)
 	 */
-	public function test_send_multiple_events_real_http_request() {
+	public function test_Given_Multiple_Events_When_SendingBatch_Then_RequestSucceeds() {
 		$pixel_id = $this->get_test_pixel_id();
 
 		// Create multiple events with custom fbc/fbp values
@@ -284,13 +206,6 @@ class RequestIntegrationTest extends IntegrationTestCase {
 			// Log response for debugging
 			error_log( 'Facebook Pixel API Batch Response: ' . print_r( $response->response_data, true ) );
 
-		} catch ( \WooCommerce\Facebook\Framework\Api\Exception $e ) {
-			// Expected if using invalid credentials
-			error_log( 'Expected API Exception (batch): ' . $e->getMessage() );
-
-			// Verify the request was sent (even if auth failed)
-			$this->assertInstanceOf( 'WooCommerce\Facebook\Framework\Api\Exception', $e );
-			$this->assertTrue( true, 'Batch HTTP request was sent successfully' );
 		} catch ( \Exception $e ) {
 			$this->fail( 'Unexpected exception in batch request: ' . $e->getMessage() );
 		}
