@@ -10,22 +10,25 @@ async function loginToWordPress(page) {
   // Navigate to login page
   await page.goto(`${baseURL}/wp-admin/`, { waitUntil: 'domcontentloaded', timeout: 60000 });
 
-  // Check if we're already logged in
-  const isLoggedIn = await page.locator('#wpcontent').isVisible({ timeout: 5000 });
+  // Check if we're already logged in by waiting for either login form or admin content
+  const loggedInContent = page.locator('#wpcontent');
+  const loginForm = page.locator('#user_login');
+
+  const isLoggedIn = await loggedInContent.isVisible({ timeout: 2000 }).catch(() => false);
   if (isLoggedIn) {
     console.log('✅ Already logged in');
     return;
   }
 
-  // Fill login form - wait longer for login elements
+  // Fill login form
   console.log('🔐 Logging in to WordPress...');
-  await page.waitForSelector('#user_login', { timeout: 60000 });
-  await page.fill('#user_login', username);
-  await page.fill('#user_pass', password);
-  await page.click('#wp-submit');
+  await loginForm.waitFor({ state: 'visible', timeout: 60000 });
+  await loginForm.fill(username);
+  await page.locator('#user_pass').fill(password);
+  await page.locator('#wp-submit').click();
 
-  // Wait for login to complete
-  await page.waitForLoadState('networkidle', { timeout: 60000 });
+  // Wait for login to complete by waiting for admin content
+  await loggedInContent.waitFor({ state: 'visible', timeout: 60000 });
   console.log('✅ Login completed');
 }
 
@@ -96,14 +99,14 @@ async function publishProduct(page) {
   try {
     await page.locator('#publishing-action').scrollIntoViewIfNeeded();
     const publishButton = page.locator('#publish');
-    if (await publishButton.isVisible({ timeout: 60000 })) {
+    if (await publishButton.isVisible({ timeout: 10000 })) {
       await publishButton.click();
-      await page.waitForTimeout(3000);
+      await page.waitForTimeout(3000); // Wait for publish to complete
       console.log('✅ Published product');
       return true;
     }
   } catch (error) {
-    console.warn('⚠️ Publish step may be slow, continuing with error check');
+    console.warn(`⚠️ Publish step may be slow, continuing with error check ${error.message}`);
     return false;
   }
 }
@@ -137,52 +140,52 @@ function logTestEnd(testInfo, success = true) {
 
 // Helper function to reliably set product description
 async function setProductDescription(page, newDescription) {
-  // Try to add description - handle different editor types
   try {
     console.log('🔄 Attempting to set product description...');
 
     // First, try the visual/TinyMCE editor
     const visualTab = page.locator('#content-tmce');
-    if (await visualTab.isVisible({ timeout: 5000 })) {
-      await visualTab.click();
-      await page.waitForTimeout(2000);
+    const isVisualTabVisible = await visualTab.isVisible({ timeout: 2000 }).catch(() => false);
 
-      // Check if TinyMCE iframe exists
+    if (isVisualTabVisible) {
+      await visualTab.click();
+
+      // Wait for TinyMCE iframe to be ready
       const tinyMCEFrame = page.locator('#content_ifr');
-      if (await tinyMCEFrame.isVisible({ timeout: 5000 })) {
-        // This is an iframe-based editor (TinyMCE)
-        const frameContent = tinyMCEFrame.contentFrame();
-        const bodyElement = frameContent.locator('body');
-        if (await bodyElement.isVisible({ timeout: 5000 })) {
-          await bodyElement.fill(newDescription);
-          console.log('✅ Added description via TinyMCE editor');
-        }
-      }
+      await tinyMCEFrame.waitFor({ state: 'visible', timeout: 5000 });
+
+      const frameContent = tinyMCEFrame.contentFrame();
+      const bodyElement = frameContent.locator('body');
+      await bodyElement.waitFor({ state: 'visible', timeout: 5000 });
+      await bodyElement.fill(newDescription);
+      console.log('✅ Added description via TinyMCE editor');
     } else {
       // Try text/HTML tab
       const textTab = page.locator('#content-html');
-      if (await textTab.isVisible({ timeout: 5000 })) {
-        await textTab.click();
-        await page.waitForTimeout(1000);
+      const isTextTabVisible = await textTab.isVisible({ timeout: 2000 }).catch(() => false);
 
-        // Regular textarea
+      if (isTextTabVisible) {
+        await textTab.click();
+
+        // Wait for textarea to be ready
         const contentTextarea = page.locator('#content');
-        if (await contentTextarea.isVisible({ timeout: 5000 })) {
-          await contentTextarea.fill(newDescription);
-          console.log('✅ Added description via text editor');
-        }
+        await contentTextarea.waitFor({ state: 'visible', timeout: 3000 });
+        await contentTextarea.fill(newDescription);
+        console.log('✅ Added description via text editor');
       } else {
         // Try block editor if present
         const blockEditor = page.locator('.wp-block-post-content, .block-editor-writing-flow');
-        if (await blockEditor.isVisible({ timeout: 5000 })) {
+        const isBlockEditorVisible = await blockEditor.isVisible({ timeout: 2000 }).catch(() => false);
+
+        if (isBlockEditorVisible) {
           await blockEditor.click();
           await page.keyboard.type(newDescription);
           console.log('✅ Added description via block editor');
         } else {
           console.warn('⚠️ No content editor found - skipping description');
         }
+      }
     }
-  }
   } catch (editorError) {
     console.warn(`⚠️ Content editor issue: ${editorError.message} - continuing without description`);
   }
@@ -204,8 +207,7 @@ async function filterProducts(page, productType, productSKU = null) {
     const filterButton = page.locator("#post-query-submit");
     await productTypeFilter.selectOption(productType.toLowerCase());
     await filterButton.click();
-
-    await page.waitForTimeout(2000);
+    await page.waitForLoadState('domcontentloaded');
     console.log('✅ Filtered by product type');
   } else {
     console.warn('⚠️ Product type filter not found, proceeding without filter');
@@ -219,7 +221,7 @@ async function filterProducts(page, productType, productSKU = null) {
       await searchBox.fill(productSKU);
       const searchButton = page.locator('#search-submit');
       await searchButton.click();
-      await page.waitForTimeout(2000);
+      await page.waitForLoadState('domcontentloaded');
       console.log('✅ Searched for product by SKU');
     } else {
       console.warn('⚠️ Search box not found, cannot search by SKU');
@@ -227,7 +229,7 @@ async function filterProducts(page, productType, productSKU = null) {
   }
 
   // Wait for products table to load
-  const hasProductsTable = await page.locator('.wp-list-table').isVisible({ timeout: 60000 });
+  const hasProductsTable = await page.locator('.wp-list-table').isVisible({ timeout: 10000 });
   if (hasProductsTable) {
     console.log('✅ WooCommerce products page loaded successfully');
   } else {
@@ -383,7 +385,7 @@ async function openFacebookOptions(page) {
   }
 
   await facebookTab.click();
-  await page.waitForTimeout(2000); // Wait for tab content to load
+  await page.waitForLoadState('domcontentloaded');
   console.log('✅ Opened Product Facebook options tab');
 }
 
