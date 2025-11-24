@@ -88,7 +88,7 @@ function generateUniqueSKU(productType) {
 function extractProductIdFromUrl(url) {
   const urlMatch = url.match(/post=(\d+)/);
   const productId = urlMatch ? parseInt(urlMatch[1]) : null;
-  console.log(`✅ Extracted Product ID: ${productId}`);
+  console.log(`✅ Extracted Product ID: ${productId} from URL: ${url}`);
   return productId;
 }
 
@@ -116,9 +116,42 @@ async function publishProduct(page) {
 
 // Helper function to check for PHP errors
 async function checkForPhpErrors(page) {
-  const pageContent = await page.content();
-  expect(pageContent).not.toContain('Fatal error');
-  expect(pageContent).not.toContain('Parse error');
+  const errors = [];
+
+  // Suppress known errors that are not relevant to test
+  const whitelist = [
+    'Connection lost. Saving has been disabled until you are reconnected. This post is being backed up in your browser, just in case.'
+  ];
+
+  // 1. Check for WordPress admin error notices
+  const errorNotices = await page.locator('.notice.notice-error, .error').all();
+  if (errorNotices.length > 0) {
+    for (const notice of errorNotices) {
+      const text = (await notice.textContent()).trim();
+      if (text === '' || whitelist.includes(text)) continue;
+      errors.push({ type: 'error_notice', message: text });
+    }
+  }
+
+  // 2. Check for PHP fatal error screen
+  const fatalErrorScreen = await page.locator('#error-page, .wp-die-message').isVisible().catch(() => false);
+  if (fatalErrorScreen) {
+    const errorText = await page.locator('#error-page, .wp-die-message').textContent().trim();
+    if (errorText === '' || whitelist.includes(errorText)) return;
+    errors.push({ type: 'fatal_error', message: errorText });
+  }
+
+  // 3. Check if admin content failed to load
+  const adminContentVisible = await page.locator('#wpcontent').isVisible({ timeout: 5000 }).catch(() => false);
+  if (!adminContentVisible) {
+    errors.push({ type: 'load_failure', message: 'Admin content (#wpcontent) failed to load' });
+  }
+
+  // If any errors found, throw with details
+  if (errors.length > 0) {
+    const errorMessages = errors.map(e => `- [${e.type}] ${e.message}`).join('\n');
+    throw new Error(`PHP errors:\n${errorMessages}`);
+  }
 }
 
 // Helper function to mark test start

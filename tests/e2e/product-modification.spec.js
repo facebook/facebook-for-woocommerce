@@ -495,6 +495,7 @@ test.describe('Facebook for WooCommerce - Product Modification E2E Tests', () =>
       // Add Facebook Price
       console.log('💰 Adding Facebook price...');
       const fbPrice = '24.99';
+      const fbPriceField = page.locator('#fb_product_price, input[name="fb_product_price"]');
       await fbPriceField.fill(fbPrice);
       console.log(`✅ Facebook price set: $${fbPrice}`);
 

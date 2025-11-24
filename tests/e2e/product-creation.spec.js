@@ -118,158 +118,158 @@ test.describe('Facebook for WooCommerce - Product Creation E2E Tests', () => {
       logTestEnd(testInfo, false);
       throw error;
     } finally {
-    // Cleanup irrespective of test result
-    if (productId) {
-      await cleanupProduct(productId);
+      // Cleanup irrespective of test result
+      if (productId) {
+        await cleanupProduct(productId);
+      }
     }
-  }
   });
 
   test('Create variable product with WooCommerce', async ({ page }, testInfo) => {
-  let productId = null;
+    let productId = null;
     try {
 
-    // Step 1: Navigate to add new product
-    await page.goto(`${baseURL}/wp-admin/post-new.php?post_type=product`, {
-      waitUntil: 'domcontentloaded',
-      timeout: 120000
-    });
+      // Step 1: Navigate to add new product
+      await page.goto(`${baseURL}/wp-admin/post-new.php?post_type=product`, {
+        waitUntil: 'domcontentloaded',
+        timeout: 120000
+      });
 
-    // Step 2: Fill product title
-    const titleField = page.locator('#title');
-    await titleField.waitFor({ state: 'visible', timeout: 120000 });
-    const productName = generateProductName('Variable');
-    await titleField.fill(productName);
+      // Step 2: Fill product title
+      const titleField = page.locator('#title');
+      await titleField.waitFor({ state: 'visible', timeout: 120000 });
+      const productName = generateProductName('Variable');
+      await titleField.fill(productName);
 
-    // Step 2.1: Add product description (human-like interaction)
-    await setProductDescription(page, 'This is a test variable product with multiple variations.');
+      // Step 2.1: Add product description (human-like interaction)
+      await setProductDescription(page, 'This is a test variable product with multiple variations.');
 
-     // Set up dialog handler for WooCommerce tour popup
-    page.on('dialog', async dialog => {
-      await dialog.accept();
-      console.log('✅ Dialog accepted');
-    });
+      // Set up dialog handler for WooCommerce tour popup
+      page.on('dialog', async dialog => {
+        await dialog.accept();
+        console.log('✅ Dialog accepted');
+      });
 
-    // Step 3: Set product type to variable
-    await page.selectOption('#product-type', 'variable');
-    console.log('✅ Set product type to variable');
+      // Step 3: Set product type to variable
+      await page.selectOption('#product-type', 'variable');
+      console.log('✅ Set product type to variable');
 
-    // Step 3.5: Set unique SKU for parent product
-    const uniqueParentSku = generateUniqueSKU('variable');
-    await page.locator('#_sku').fill(uniqueParentSku);
-    console.log(`✅ Set unique parent SKU: ${uniqueParentSku}`);
+      // Step 3.5: Set unique SKU for parent product
+      const uniqueParentSku = generateUniqueSKU('variable');
+      await page.locator('#_sku').fill(uniqueParentSku);
+      console.log(`✅ Set unique parent SKU: ${uniqueParentSku}`);
 
-    // Step 4: Tell browser to directly click popup
-    await page.evaluate(() => document.querySelector('button.woocommerce-tour-kit-step-navigation__done-btn')?.click());
+      // Step 4: Tell browser to directly click popup
+      await page.evaluate(() => document.querySelector('button.woocommerce-tour-kit-step-navigation__done-btn')?.click());
 
-    // Step 5: Add attributes
-    // Go to Attributes tab
-    const attributesTab = page.locator('li.attribute_tab a[href="#product_attributes"]');
-    await attributesTab.click();
+      // Step 5: Add attributes
+      // Go to Attributes tab
+      const attributesTab = page.locator('li.attribute_tab a[href="#product_attributes"]');
+      await attributesTab.click();
 
-    // Wait for attributes panel to be visible
-    const attributesPanel = page.locator('#product_attributes');
-    await attributesPanel.waitFor({ state: 'visible', timeout: 5000 });
-    // Add name & value
-    const attributeNameField = page.locator('input.attribute_name[name="attribute_names[0]"]');
-    await attributeNameField.waitFor({ state: 'visible', timeout: 5000 });
-    await attributeNameField.fill('Color');
+      // Wait for attributes panel to be visible
+      const attributesPanel = page.locator('#product_attributes');
+      await attributesPanel.waitFor({ state: 'visible', timeout: 5000 });
+      // Add name & value
+      const attributeNameField = page.locator('input.attribute_name[name="attribute_names[0]"]');
+      await attributeNameField.waitFor({ state: 'visible', timeout: 5000 });
+      await attributeNameField.fill('Color');
 
-    const attributeValuesField = page.locator('textarea[name="attribute_values[0]"]');
-    await attributeValuesField.fill('Red|Blue|Green');
+      const attributeValuesField = page.locator('textarea[name="attribute_values[0]"]');
+      await attributeValuesField.fill('Red|Blue|Green');
 
-    // Use tab to enable Save Attributes button
-    await attributeValuesField.press('Tab');
+      // Use tab to enable Save Attributes button
+      await attributeValuesField.press('Tab');
 
-    const saveAttributesButton = page.locator('button.save_attributes.button-primary');
-    await saveAttributesButton.click();
+      const saveAttributesButton = page.locator('button.save_attributes.button-primary');
+      await saveAttributesButton.click();
 
-    // Wait for save to complete by checking for the attributes being updated
-    await page.waitForLoadState('domcontentloaded');
-    console.log('✅ Saved attributes');
-
-    // Step 6: Generate variations
-    // Go to Variations tab
-    const variationsTab = page.locator('a[href="#variable_product_options"]');
-    await variationsTab.click();
-
-    // Wait for variations panel to be visible
-    const variationsPanel = page.locator('#variable_product_options');
-    await variationsPanel.waitFor({ state: 'visible', timeout: 5000 });
-
-    // Click "Generate variations" button
-    const generateVariationsButton = page.locator('button.generate_variations');
-    await generateVariationsButton.click();
-
-    // Wait for variations to be generated by checking for first variation element
-    await page.locator('.woocommerce_variation').first().waitFor({ state: 'visible', timeout: 15000 });
-
-    // Verify variations were created
-    const variationsCount = await page.locator('.woocommerce_variation').count();
-    console.log(`✅ Generated ${variationsCount} variations`);
-
-    if (variationsCount > 0) {
-      // Step 7: Set prices for variations
-      // Click "Add price" button first
-      const addPriceBtn = page.locator('button.add_price_for_variations');
-      await addPriceBtn.waitFor({ state: 'visible', timeout: 10000 });
-      await addPriceBtn.click();
-      console.log('✅ Clicked "Add price" button');
-
-      // Add bulk price
-      const priceInput = page.locator('input.components-text-control__input.wc_input_variations_price');
-      await priceInput.waitFor({ state: 'visible', timeout: 10000 });
-      await priceInput.click();        // ✅ Focus the field
-      await priceInput.clear();        // ✅ Clear existing content
-      await priceInput.type('29.99', { delay: 100 }); // ✅ Type with delays = triggers all JS events
-
-      // Click "Add prices" button to apply the price
-      const addPricesBtn = page.locator('button.add_variations_price_button.button-primary');
-      await addPricesBtn.waitFor({ state: 'visible', timeout: 10000 });
-      await addPricesBtn.click();
-
-      // Wait for the price operation to complete
+      // Wait for save to complete by checking for the attributes being updated
       await page.waitForLoadState('domcontentloaded');
-      console.log('✅ Bulk price added successfully');
+      console.log('✅ Saved attributes');
+
+      // Step 6: Generate variations
+      // Go to Variations tab
+      const variationsTab = page.locator('a[href="#variable_product_options"]');
+      await variationsTab.click();
+
+      // Wait for variations panel to be visible
+      const variationsPanel = page.locator('#variable_product_options');
+      await variationsPanel.waitFor({ state: 'visible', timeout: 5000 });
+
+      // Click "Generate variations" button
+      const generateVariationsButton = page.locator('button.generate_variations');
+      await generateVariationsButton.click();
+
+      // Wait for variations to be generated by checking for first variation element
+      await page.locator('.woocommerce_variation').first().waitFor({ state: 'visible', timeout: 15000 });
+
+      // Verify variations were created
+      const variationsCount = await page.locator('.woocommerce_variation').count();
+      console.log(`✅ Generated ${variationsCount} variations`);
+
+      if (variationsCount > 0) {
+        // Step 7: Set prices for variations
+        // Click "Add price" button first
+        const addPriceBtn = page.locator('button.add_price_for_variations');
+        await addPriceBtn.waitFor({ state: 'visible', timeout: 10000 });
+        await addPriceBtn.click();
+        console.log('✅ Clicked "Add price" button');
+
+        // Add bulk price
+        const priceInput = page.locator('input.components-text-control__input.wc_input_variations_price');
+        await priceInput.waitFor({ state: 'visible', timeout: 10000 });
+        await priceInput.click();        // ✅ Focus the field
+        await priceInput.clear();        // ✅ Clear existing content
+        await priceInput.type('29.99', { delay: 100 }); // ✅ Type with delays = triggers all JS events
+
+        // Click "Add prices" button to apply the price
+        const addPricesBtn = page.locator('button.add_variations_price_button.button-primary');
+        await addPricesBtn.waitFor({ state: 'visible', timeout: 10000 });
+        await addPricesBtn.click();
+
+        // Wait for the price operation to complete
+        await page.waitForLoadState('domcontentloaded');
+        console.log('✅ Bulk price added successfully');
+      }
+
+      //  Step 8: Publish product
+      await publishProduct(page);
+      // Verify success
+      const pageContent = await page.content();
+      expect(pageContent).not.toContain('Fatal error');
+      expect(pageContent).not.toContain('Parse error');
+
+      console.log('✅ Variable product created successfully!');
+
+      // Extract product ID from URL after publish
+      const currentUrl = page.url();
+      productId = extractProductIdFromUrl(currentUrl);
+
+      // Verify no PHP fatal errors
+      await checkForPhpErrors(page);
+
+      // Validate sync to Meta catalog and fields from Meta
+      const result = await validateFacebookSync(productId, productName, 5);
+      expect(result['success']).toBe(true);
+
+      // await waitForManualInspection(page);
+
+      logTestEnd(testInfo, true);
+
+    } catch (error) {
+      console.log(`❌ Variable product test failed: ${error.message}`);
+      logTestEnd(testInfo, false);
+      await safeScreenshot(page, 'variable-product-test-failure.png');
+      throw error;
     }
-
-    //  Step 8: Publish product
-    await publishProduct(page);
-    // Verify success
-    const pageContent = await page.content();
-    expect(pageContent).not.toContain('Fatal error');
-    expect(pageContent).not.toContain('Parse error');
-
-    console.log('✅ Variable product created successfully!');
-
-    // Extract product ID from URL after publish
-    const currentUrl = page.url();
-    productId = extractProductIdFromUrl(currentUrl);
-
-    // Verify no PHP fatal errors
-    await checkForPhpErrors(page);
-
-    // Validate sync to Meta catalog and fields from Meta
-    const result = await validateFacebookSync(productId, productName, 5);
-    expect(result['success']).toBe(true);
-
-    // await waitForManualInspection(page);
-
-    logTestEnd(testInfo, true);
-
-  } catch (error) {
-    console.log(`❌ Variable product test failed: ${error.message}`);
-    logTestEnd(testInfo, false);
-    await safeScreenshot(page, 'variable-product-test-failure.png');
-    throw error;
-  }
-  finally {
-    // Cleanup irrespective of test result
-    if (productId) {
-      await cleanupProduct(productId);
+    finally {
+      // Cleanup irrespective of test result
+      if (productId) {
+        await cleanupProduct(productId);
+      }
     }
-  }
-});
+  });
 
   test('Test WordPress admin and Facebook plugin presence', async ({ page }, testInfo) => {
 
@@ -338,6 +338,8 @@ test.describe('Facebook for WooCommerce - Product Creation E2E Tests', () => {
 
   test('Quick PHP error check across key pages', async ({ page }, testInfo) => {
 
+    const allErrors = []; // Collect all errors here
+
     try {
       const pagesToCheck = [
         { path: '/wp-admin/', name: 'Dashboard' },
@@ -345,34 +347,65 @@ test.describe('Facebook for WooCommerce - Product Creation E2E Tests', () => {
         { path: '/wp-admin/plugins.php', name: 'Plugins' }
       ];
 
+      // Check each page
       for (const pageInfo of pagesToCheck) {
         try {
-          console.log(`🔍 Checking ${pageInfo.name} page...`);
-          await page.goto(`${baseURL}${pageInfo.path}`, {
+          console.log(`🔍 Checking ${pageInfo.path} page...`);
+
+          // Navigate to the page
+          const response = await page.goto(`${baseURL}${pageInfo.path}`, {
             waitUntil: 'domcontentloaded',
             timeout: 120000
           });
 
-          // Verify admin content loaded
-          await page.locator('#wpcontent').waitFor({ state: 'visible', timeout: 120000 });
+          // Check HTTP status
+          const status = response.status();
+          if (status >= 500) {
+            allErrors.push({
+              page: pageInfo.name,
+              pagePath: pageInfo.path,
+              error: `HTTP ${status} - Server error`
+            });
+            console.error(`❌ [${pageInfo.path}] HTTP Status: ${status}`);
+          }
 
-          const pageContent = await page.content();
+          // Use the helper function to check for PHP errors
+          await checkForPhpErrors(page);
 
-          // Check for PHP errors
-          expect(pageContent).not.toContain('Fatal error');
-          expect(pageContent).not.toContain('Parse error');
-          expect(pageContent).not.toContain('Warning: ');
-
-          console.log(`✅ ${pageInfo.name} page loaded without errors`);
+          console.log(`✅ [${pageInfo.path}] No errors detected`);
 
         } catch (error) {
-          console.log(`⚠️ ${pageInfo.name} page check failed: ${error.message}`);
+          // Collect error instead of throwing immediately
+          allErrors.push({
+            page: pageInfo.name,
+            pagePath: pageInfo.path,
+            error: error.message
+          });
+          console.error(`❌ [${pageInfo.path}] ${error.message}`);
+          await safeScreenshot(page, `php-error-check-${pageInfo.name.toLowerCase()}-failure.png`);
         }
       }
 
+      // After checking all pages, throw if any errors were found
+      if (allErrors.length > 0) {
+        // Create detailed error report
+        allErrors.forEach((errorInfo, index) => {
+          console.error(`\n${index + 1}. ${errorInfo.pagePath}:`);
+          console.error(`${errorInfo.error}`);
+        });
+
+        logTestEnd(testInfo, false);
+        throw new Error(`❌ Found ${allErrors.length} errors on ${pagesToCheck.length} page(s). See detailed report above.`);
+      }
+
+      console.log('✅ All pages passed PHP error checks');
       logTestEnd(testInfo, true);
+
     } catch (error) {
-      logTestEnd(testInfo, false);
+      if (allErrors.length === 0) {
+        // Only log as failed if we haven't already logged
+        logTestEnd(testInfo, false);
+      }
       throw error;
     }
   });
