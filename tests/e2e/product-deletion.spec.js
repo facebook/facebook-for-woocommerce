@@ -50,7 +50,7 @@ test.describe('Facebook for WooCommerce - Product Deletion E2E Tests', () => {
       // Validate initial sync
       const simpleProductPreDeleteResult = await validateFacebookSync(simpleProductId, simpleProduct.productName, 5);
       expect(simpleProductPreDeleteResult['success']).toBe(true);
-      const variableProductPreDeleteResult = await validateFacebookSync(variableProductId, variableProduct.productName, 5);
+      const variableProductPreDeleteResult = await validateFacebookSync(variableProductId, variableProduct.productName, 5, 8);
       expect(variableProductPreDeleteResult['success']).toBe(true);
       console.log('✅ Initial sync validation successful. Both products are synced to Facebook.')
 
@@ -62,7 +62,7 @@ test.describe('Facebook for WooCommerce - Product Deletion E2E Tests', () => {
       });
 
       // Wait for products table to load
-      const hasProductsTable = await page.locator('.wp-list-table').isVisible({ timeout: 60000 });
+      const hasProductsTable = await page.locator('.wp-list-table').isVisible({ timeout: 10000 });
       if (!hasProductsTable) {
         throw new Error('Products table not found');
       }
@@ -121,7 +121,6 @@ test.describe('Facebook for WooCommerce - Product Deletion E2E Tests', () => {
 
       // Wait for the page to reload after bulk action
       await page.waitForLoadState('networkidle', { timeout: 60000 });
-      await page.waitForTimeout(2000);
       console.log('✅ Products moved to trash');
 
       // Navigate to Marketing > Facebook > Troubleshooting
