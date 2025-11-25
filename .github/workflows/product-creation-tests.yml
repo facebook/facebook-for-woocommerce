@@ -149,7 +149,7 @@ jobs:
           sleep 3
 
           # Test if site is accessible
-          curl -f http://localhost:8080 || (echo "❌ Site not accessible" && exit 1)
+          curl -f http://wooc-local-test-sitecom.local:8080 || (echo "❌ Site not accessible" && exit 1)
           echo "✅ Nginx and PHP-FPM started successfully"
 
       - name: Install WP-CLI
@@ -181,9 +181,8 @@ jobs:
 
           echo "WordPress installed successfully"
 
-          # CRITICAL: Install and activate a theme!
           # Without a theme, wp_head() is not called and pixel code won't be injected
-           wp theme install storefront --activate --allow-root
+          wp theme install storefront --activate --allow-root
           echo "✅ Storefront theme activated (classic theme with proper wp_head/wp_footer hooks)"
           wp plugin install woocommerce --activate --allow-root
 
@@ -496,7 +495,7 @@ jobs:
           EVENTS_DIR="/tmp/wordpress/wp-content/plugins/facebook-for-woocommerce/tests/e2e/captured-events"
           mkdir -p "$EVENTS_DIR"
           chmod 777 "$EVENTS_DIR"
-          
+
           echo "✅ Events directory created: $EVENTS_DIR"
           ls -la /tmp/wordpress/wp-content/plugins/facebook-for-woocommerce/tests/e2e/ | grep captured
 

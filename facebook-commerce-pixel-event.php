@@ -292,29 +292,20 @@ class WC_Facebookcommerce_Pixel {
 	 * phpcs:disable WordPress.Security.EscapeOutput.OutputNotEscaped
 	 */
 	public function inject_event( $event_name, $params, $method = 'track' ) {
-		echo "\n<!-- E2E_DEBUG: inject_event() called for: " . esc_html( $event_name ) . " -->\n";
-
 		if ( WC_Facebookcommerce_Utils::is_woocommerce_integration() ) {
-			echo "<!-- E2E_DEBUG: is_woocommerce_integration = TRUE -->\n";
 			$code = $this->get_event_code( $event_name, self::build_params( $params, $event_name ), $method );
-			echo "<!-- E2E_DEBUG: Event code generated (first 100 chars): " . esc_html( substr( $code, 0, 100 ) ) . "... -->\n";
 
 			// If we have add to cart redirect enabled, we must defer the AddToCart events to render them the next page load.
 			$is_redirect    = 'yes' === get_option( 'woocommerce_cart_redirect_after_add', 'no' );
 			$is_add_to_cart = 'AddToCart' === $event_name;
 			if ( $is_redirect && $is_add_to_cart ) {
-				echo "<!-- E2E_DEBUG: Adding to deferred events -->\n";
 				WC_Facebookcommerce_Utils::add_deferred_event( $code );
 			} else {
-				echo "<!-- E2E_DEBUG: Enqueueing via wc_enqueue_js() -->\n";
 				WC_Facebookcommerce_Utils::wc_enqueue_js( $code );
-				echo "<!-- E2E_DEBUG: wc_enqueue_js() completed -->\n";
 			}
 		} else {
-			echo "<!-- E2E_DEBUG: is_woocommerce_integration = FALSE, printing directly -->\n";
 			printf( $this->get_event_script( $event_name, self::build_params( $params, $event_name ), $method ) ); // phpcs:ignore WordPress.XSS.EscapeOutput.OutputNotEscaped
 		}
-		echo "<!-- E2E_DEBUG: inject_event() finished -->\n";
 	}
 
 		/**
