@@ -605,6 +605,87 @@ class API extends Base {
 	}
 
 	/**
+	 * Logs CAPI events to test framework if test cookie is present.
+	 *
+	 * This method handles all E2E test logging with complete error handling
+	 * to ensure test logging never breaks production code.
+	 *
+	 * @param Response $response API response object
+	 * @param Event[]  $events array of event objects
+	 */
+	private function log_events_for_tests( $response, array $events ) {
+		try {
+			// Single debug logging check - used throughout this function
+			$debug_enabled = defined( 'WP_DEBUG' ) && WP_DEBUG && defined( 'WP_DEBUG_LOG' ) && WP_DEBUG_LOG;
+
+			// Only log if response is successful
+			if ( ! $response || $response->has_api_error() ) {
+				if ( $debug_enabled ) {
+					if ( ! $response ) {
+						error_log( 'Facebook for WooCommerce E2E: CAPI response is null - cannot log test events' );
+					} else {
+						$error_code    = $response->get_api_error_code();
+						$error_type    = $response->get_api_error_type();
+						$error_message = $response->get_api_error_message();
+						$user_message  = $response->get_user_error_message();
+						error_log( sprintf(
+							'Facebook for WooCommerce E2E: CAPI response has error - Code: %s, Type: %s, Message: %s, User Message: %s',
+							$error_code ?: 'N/A',
+							$error_type ?: 'N/A',
+							$error_message ?: 'N/A',
+							$user_message ?: 'N/A'
+						) );
+					}
+				}
+				return;
+			}
+
+			// Load E2E test configuration
+			$config_file = dirname( plugin_dir_path( __FILE__ ) ) . '/tests/e2e/config/php-config.php';
+			if ( ! file_exists( $config_file ) ) {
+				if ( $debug_enabled ) {
+					error_log( 'Facebook for WooCommerce E2E: Test config file not found at ' . $config_file );
+				}
+				return;
+			}
+
+			require_once $config_file;
+
+			// Check if we're in test mode (test ID cookie set)
+			$cookie_name = defined( 'FB_E2E_TEST_COOKIE_NAME' ) ? FB_E2E_TEST_COOKIE_NAME : 'facebook_test_id';
+			if ( empty( $_COOKIE[ $cookie_name ] ) ) {
+				return;
+			}
+
+			$test_id = sanitize_text_field( wp_unslash( $_COOKIE[ $cookie_name ] ) );
+
+			// Get logger file path from config
+			$plugin_root = dirname( plugin_dir_path( __FILE__ ) );
+			$logger_path = defined( 'FB_E2E_LOGGER_PATH' ) ? FB_E2E_LOGGER_PATH : '/tests/e2e/lib/Logger.php';
+			$logger_file = $plugin_root . $logger_path;
+
+			if ( ! file_exists( $logger_file ) ) {
+				if ( $debug_enabled ) {
+					error_log( 'Facebook for WooCommerce E2E: Logger file not found at ' . $logger_file );
+				}
+				return;
+			}
+
+			require_once $logger_file;
+
+			// Log each event
+			foreach ( $events as $event ) {
+				\E2E_Event_Logger::log_event( $test_id, 'capi', $event->get_data() );
+			}
+
+		} catch ( \Exception $e ) {
+			if ( $debug_enabled ) {
+				error_log( 'Facebook for WooCommerce E2E: Test logging failed - ' . $e->getMessage() );
+			}
+		}
+	}
+
+	/**
 	 * Sends Pixel events.
 	 *
 	 * @since 2.0.0
@@ -616,8 +697,20 @@ class API extends Base {
 	 */
 	public function send_pixel_events( $pixel_id, array $events ) {
 		$request = new API\Pixel\Events\Request( $pixel_id, $events );
+		
+		// Add test event code if defined (set via FB_TEST_EVENT_CODE environment variable)
+		if ( defined( 'FB_TEST_EVENT_CODE' ) && ! empty( FB_TEST_EVENT_CODE ) ) {
+			$request->set_params( array_merge( $request->get_params(), array( 'test_event_code' => FB_TEST_EVENT_CODE ) ) );
+		}
+		
 		$this->set_response_handler( Response::class );
-		return $this->perform_request( $request );
+
+		$response = $this->perform_request( $request );
+
+		// Log to E2E test framework - fully self-contained with error handling
+		$this->log_events_for_tests( $response, $events );
+
+		return $response;
 	}
 
 	/**
