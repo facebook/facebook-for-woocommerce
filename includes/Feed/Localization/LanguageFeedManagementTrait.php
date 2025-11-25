@@ -132,7 +132,7 @@ trait LanguageFeedManagementTrait {
 		}
 
 		$fb_language_code = \WooCommerce\Facebook\Locale::convert_to_facebook_language_code( $language_code );
-		$expected_feed_name = sprintf( '%s Language Override Feed (%s)', get_bloginfo( 'name' ), strtoupper( $fb_language_code ) );
+		$expected_feed_name = sprintf( 'WooCommerce Language Override Feed (%s)', strtoupper( $fb_language_code ) );
 
 		foreach ( $feed_nodes as $feed ) {
 			try {
@@ -251,6 +251,6 @@ trait LanguageFeedManagementTrait {
 	 */
 	public static function generate_language_feed_name( string $language_code ): string {
 		$fb_language_code = \WooCommerce\Facebook\Locale::convert_to_facebook_language_code( $language_code );
-		return sprintf( '%s Language Override Feed (%s)', get_bloginfo( 'name' ), strtoupper( $fb_language_code ) );
+		return sprintf( 'WooCommerce Language Override Feed (%s)', strtoupper( $fb_language_code ) );
 	}
 }
