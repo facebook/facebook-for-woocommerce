@@ -91,6 +91,24 @@ class RequestIntegrationTest extends IntegrationTestCase {
 	}
 
 	/**
+	 * Check if valid credentials are set, and skip test with instructions if not
+	 *
+	 * @return void
+	 */
+	private function require_valid_credentials(): void {
+		if ( ! $this->has_valid_credentials ) {
+			$message = "\n" .
+				"========================================\n" .
+				"To run this test with valid credentials, set:\n" .
+				"export FB_TEST_ACCESS_TOKEN=\"your_real_token\"\n" .
+				"export FB_TEST_PIXEL_ID=\"your_real_pixel_id\"\n" .
+				"========================================";
+
+			$this->markTestSkipped( $message );
+		}
+	}
+
+	/**
 	 * Test sending HTTP request with custom fbc and fbp values in user_data
 	 *
 	 * This test demonstrates how to create a Request with custom fbc/fbp values
@@ -99,6 +117,8 @@ class RequestIntegrationTest extends IntegrationTestCase {
 	 * Note: This test makes a REAL HTTP request to Facebook API.
 	 */
 	public function test_Given_Single_Purcahse_Event_When_SendingEvent_Then_RequestContainsValues() {
+		$this->require_valid_credentials();
+
 		$pixel_id = $this->get_test_pixel_id();
 
 		// Custom fbc and fbp values we want to send
@@ -167,6 +187,8 @@ class RequestIntegrationTest extends IntegrationTestCase {
 	 * Test sending multiple events in a single HTTP request (batch)
 	 */
 	public function test_Given_Multiple_Events_When_SendingBatch_Then_RequestSucceeds() {
+		$this->require_valid_credentials();
+
 		$pixel_id = $this->get_test_pixel_id();
 
 		// Create multiple events with custom fbc/fbp values
