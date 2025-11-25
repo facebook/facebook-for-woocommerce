@@ -22,7 +22,6 @@ on:
 env:
   # Test environment configuration
   TEST_SITE_HOST: ${{ secrets.TEST_SITE_HOST || 'wooc-local-test-sitecom.local' }}
-  TEST_SITE_PORT: ${{ secrets.TEST_SITE_PORT || '8080' }}
 
 jobs:
   e2e-tests:
@@ -256,7 +255,7 @@ jobs:
           wp option get siteurl --allow-root
 
           # Test if site is accessible
-          curl -f http://${{ env.TEST_SITE_HOST }}:${{ env.TEST_SITE_PORT }} || exit 1
+          curl -f http://${{ env.TEST_SITE_HOST }} || exit 1
 
       - name: Verify Facebook for WooCommerce setup
         run: |
@@ -302,7 +301,7 @@ jobs:
       - name: Run E2E tests
         if: false
         env:
-          WORDPRESS_URL: http://${{ env.TEST_SITE_HOST }}:${{ env.TEST_SITE_PORT }}
+          WORDPRESS_URL: http://${{ env.TEST_SITE_HOST }}
           WP_USERNAME: admin
           WP_PASSWORD: admin
         run: |
@@ -311,7 +310,7 @@ jobs:
 
       - name: Create test product for CAPI Pixel E2E tests
         env:
-          WORDPRESS_URL: http://${{ env.TEST_SITE_HOST }}:${{ env.TEST_SITE_PORT }}
+          WORDPRESS_URL: http://${{ env.TEST_SITE_HOST }}
           WP_USERNAME: admin
           WP_PASSWORD: admin
         run: |
