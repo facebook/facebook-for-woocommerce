@@ -204,11 +204,22 @@ class Product_Sync extends Abstract_Settings_Screen {
 		$integration              = facebook_for_woocommerce()->get_integration();
 		$previous_product_cat_ids = $integration->get_excluded_product_category_ids();
 		$previous_product_tag_ids = $integration->get_excluded_product_tag_ids();
+
+		// Store the previous global GPC value before saving
+		$previous_global_gpc = Commerce::get_default_google_product_category_id();
+
 		parent::save();
+
 		// when settings are saved, if there are new excluded categories/terms we should exclude corresponding products from sync
 		$new_product_cat_ids = array_diff( $integration->get_excluded_product_category_ids(), $previous_product_cat_ids );
 		$new_product_tag_ids = array_diff( $integration->get_excluded_product_tag_ids(), $previous_product_tag_ids );
 		$this->disable_sync_for_excluded_products( $new_product_cat_ids, $new_product_tag_ids );
+
+		// Check if the global default Google Product Category has changed
+		$new_global_gpc = Commerce::get_default_google_product_category_id();
+		if ( $previous_global_gpc !== $new_global_gpc ) {
+			$this->sync_products_with_global_gpc();
+		}
 	}
 
 
@@ -235,6 +246,91 @@ class Product_Sync extends Abstract_Settings_Screen {
 				'include'  => $product_tag_ids,
 			)
 		);
+	}
+
+
+	/**
+	 * Syncs products that inherit the global default Google Product Category.
+	 *
+	 * Products inherit the global default GPC when they have:
+	 * - No product-level GPC metadata
+	 * - No category-level GPC metadata (from their assigned categories)
+	 *
+	 * @since 3.5.13
+	 */
+	private function sync_products_with_global_gpc() {
+		// Get all product categories that have a GPC set
+		$categories_with_gpc = get_terms(
+			array(
+				'taxonomy'   => 'product_cat',
+				'hide_empty' => false,
+				'meta_query' => array(
+					array(
+						'key'     => Products::GOOGLE_PRODUCT_CATEGORY_META_KEY,
+						'compare' => 'EXISTS',
+					),
+				),
+				'fields'     => 'ids',
+			)
+		);
+
+		// Query for products that would inherit the global default
+		$query_args = array(
+			'limit'  => -1,
+			'return' => 'ids',
+			'status' => 'publish',
+			'meta_query' => array(
+				array(
+					'key'     => Products::GOOGLE_PRODUCT_CATEGORY_META_KEY,
+					'compare' => 'NOT EXISTS',
+				),
+			),
+		);
+
+		// Exclude products that belong to categories with their own GPC
+		if ( ! empty( $categories_with_gpc ) ) {
+			$query_args['category'] = array();
+			// Get all category IDs
+			$all_categories = get_terms(
+				array(
+					'taxonomy'   => 'product_cat',
+					'hide_empty' => false,
+					'fields'     => 'ids',
+				)
+			);
+			// Only include products from categories without GPC
+			$query_args['category'] = array_diff( $all_categories, $categories_with_gpc );
+
+			// If all categories have GPC, no products inherit the global default
+			if ( empty( $query_args['category'] ) ) {
+				return;
+			}
+		}
+
+		$product_ids = wc_get_products( $query_args );
+
+		if ( ! empty( $product_ids ) ) {
+			$sync_product_ids = array();
+
+			foreach ( $product_ids as $product_id ) {
+				$product = wc_get_product( $product_id );
+
+				if ( ! $product instanceof \WC_Product ) {
+					continue;
+				}
+
+				if ( $product instanceof \WC_Product_Variable ) {
+					// For variable products, sync the variations
+					$sync_product_ids = array_merge( $sync_product_ids, $product->get_children() );
+				} else {
+					$sync_product_ids[] = $product_id;
+				}
+			}
+
+			if ( ! empty( $sync_product_ids ) ) {
+				facebook_for_woocommerce()->get_products_sync_handler()->create_or_update_products( $sync_product_ids );
+			}
+		}
 	}
 
 
