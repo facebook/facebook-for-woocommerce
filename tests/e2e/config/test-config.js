@@ -18,7 +18,7 @@ module.exports = {
     WP_CUSTOMER_PASSWORD: process.env.WP_CUSTOMER_PASSWORD || 'Password@54321',
 
     // Test product/category URLs (relative to WORDPRESS_URL)
-    // TEST_PRODUCT_URL: '/product/testp/',
+    TEST_PRODUCT_URL: '/product/testp/',
     TEST_CATEGORY_URL: '/product-category/uncategorized/',
 
     // Test event identifier cookie name

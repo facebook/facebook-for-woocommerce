@@ -6,34 +6,6 @@ const { test, expect } = require('@playwright/test');
 const TestSetup = require('./lib/TestSetup');
 const EventValidator = require('./lib/EventValidator');
 const config = require('./config/test-config');
-const { createTestProduct, cleanupProduct } = require('./test-helpers');
-
-// Configure test to run serially (not in parallel)
-// This ensures all tests share the same product created in beforeAll()
-test.describe.configure({ mode: 'serial' });
-
-// Store test product info globally for all tests
-let testProduct = null;
-
-// Setup: Create test product before all tests
-test.beforeAll(async () => {
-    console.log('\n🔧 SETUP: Creating test product...');
-    testProduct = await createTestProduct({
-        productName: 'testp',
-        price: '19.99',
-        stock: '10'
-    });
-    console.log(`✅ Test product ready: ${testProduct.productName} (ID: ${testProduct.productId})\n`);
-});
-
-// Teardown: Delete test product after all tests
-test.afterAll(async () => {
-    if (testProduct?.productId) {
-        console.log('\n🧹 TEARDOWN: Cleaning up test product...');
-        await cleanupProduct(testProduct.productId);
-        console.log('✅ Test product cleaned up\n');
-    }
-});
 
 // DIAGNOSTIC TEST - Check if pixel code exists in HTML
 test('DIAGNOSTIC: Pixel code in HTML', async ({ page }) => {
@@ -82,12 +54,9 @@ test('PageView', async ({ page }) => {
 test('ViewContent', async ({ page }) => {
     const { testId, pixelCapture } = await TestSetup.init(page, 'ViewContent');
 
-    // Use the actual product URL from the created product
-    const productUrl = `/product/${testProduct.productName}/`;
-
     await Promise.all([
         pixelCapture.waitForEvent(),
-        page.goto(productUrl).then(() => TestSetup.waitForPageReady(page))
+        page.goto(config.TEST_PRODUCT_URL).then(() => TestSetup.waitForPageReady(page))
     ]);
 
     const validator = new EventValidator(testId);
@@ -100,10 +69,7 @@ test('ViewContent', async ({ page }) => {
 test('AddToCart', async ({ page }) => {
     const { testId, pixelCapture } = await TestSetup.init(page, 'AddToCart');
 
-    // Use the actual product URL from the created product
-    const productUrl = `/product/${testProduct.productName}/`;
-
-    await page.goto(productUrl);
+    await page.goto(config.TEST_PRODUCT_URL);
     await TestSetup.waitForPageReady(page, 500);
 
     await Promise.all([
