@@ -334,15 +334,19 @@ jobs:
             echo '✅ Test product created. URL: ' . get_permalink(\$product_id) . PHP_EOL;
           " --allow-root
 
+      - name: Install Xvfb for headed browser
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y xvfb
 
       - name: Run CAPI Pixel E2E tests
         env:
           WORDPRESS_URL: http://${{ env.TEST_SITE_HOST }}
-          WP_CUSTOMER_USERNAME: customer
-          WP_CUSTOMER_PASSWORD: Password@54321
+          WP_CUSTOMER_USERNAME: admin
+          WP_CUSTOMER_PASSWORD: admin
         run: |
           cd /tmp/wordpress/wp-content/plugins/facebook-for-woocommerce
-          npx playwright test events-test.spec.js
+          xvfb-run --auto-servernum npx playwright test events-test.spec.js --headed
 
       - name: Check for PHP errors, and dump debug log
         if: always()
