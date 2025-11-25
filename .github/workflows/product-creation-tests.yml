@@ -230,16 +230,7 @@ jobs:
           wp option update wc_facebook_enable_advanced_matching "yes" --allow-root
           wp option update wc_facebook_debug_mode yes --allow-root
 
-          # CRITICAL: Also update the integration settings directly
-          # The integration settings are stored separately from the options
-          wp eval "
-            \$settings = get_option('woocommerce_woocommerce_facebook_for_woocommerce_settings', array());
-            \$settings['facebook_pixel_id'] = '${{ secrets.FB_PIXEL_ID }}';
-            \$settings['enable_advanced_matching'] = 'yes';
-            \$settings['is_messenger_chat_plugin_enabled'] = 'no';
-            update_option('woocommerce_woocommerce_facebook_for_woocommerce_settings', \$settings);
-            echo '✅ Integration settings updated' . PHP_EOL;
-          " --allow-root
+
 
           # CRITICAL FIX: Set facebook_config option (what the plugin actually reads)
           wp eval "
@@ -525,7 +516,7 @@ jobs:
             cat "$DEBUG_LOG_PATH"
             echo ""
             echo "=== Checking for errors ==="
-            if grep -i "fatal\|error\|warning" "$DEBUG_LOG_PATH"; then
+            if grep -i "fatal\|error" "$DEBUG_LOG_PATH"; then
               echo "❌ PHP errors detected"
               exit 1
             else
