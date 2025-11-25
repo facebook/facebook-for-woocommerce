@@ -112,13 +112,60 @@ jobs:
           chmod 777 /tmp/wordpress/wp-content/debug.log
           echo "✅ debug.log created and writable"
 
-      - name: Start PHP server
+      - name: Install and configure Nginx with PHP-FPM
         run: |
-          cd /tmp/wordpress
-          # Listen on all interfaces (0.0.0.0) so wooc-local-test-sitecom.local can reach it
-          php -S 0.0.0.0:8080 -t . &
-          echo $! > /tmp/php-server.pid
-          sleep 5
+          # Install nginx and PHP-FPM
+          sudo apt-get update
+          sudo apt-get install -y nginx php8.1-fpm
+
+          # Stop default nginx
+          sudo systemctl stop nginx
+
+          # Create nginx config for WordPress
+          sudo tee /etc/nginx/sites-available/wordpress > /dev/null <<'EOF'
+          server {
+              listen 8080;
+              server_name ${{ env.TEST_SITE_HOST }};
+
+              root /tmp/wordpress;
+              index index.php index.html;
+
+              # WordPress permalinks
+              location / {
+                  try_files $uri $uri/ /index.php?$args;
+              }
+
+              # PHP handling
+              location ~ \.php$ {
+                  include snippets/fastcgi-php.conf;
+                  fastcgi_pass unix:/var/run/php/php8.1-fpm.sock;
+                  fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
+                  include fastcgi_params;
+              }
+
+              # Deny access to sensitive files
+              location ~ /\. {
+                  deny all;
+              }
+          }
+          EOF
+
+          # Enable site and disable default
+          sudo rm -f /etc/nginx/sites-enabled/default
+          sudo ln -s /etc/nginx/sites-available/wordpress /etc/nginx/sites-enabled/
+
+          # Test nginx config
+          sudo nginx -t
+
+          # Start services
+          sudo systemctl start php8.1-fpm
+          sudo systemctl start nginx
+
+          echo "✅ Nginx and PHP-FPM started"
+
+          # Verify services are running
+          sudo systemctl status nginx --no-pager
+          sudo systemctl status php8.1-fpm --no-pager
 
       - name: Install WP-CLI
         run: |
@@ -204,7 +251,7 @@ jobs:
           wp option update wc_facebook_has_authorized_pages_read_engagement "yes" --allow-root
           wp option update wc_facebook_enable_product_sync "yes" --allow-root
           wp option update wc_facebook_page_id  "${{ secrets.FB_PAGE_ID }}" --allow-root
-          
+
           # Activate the plugin (this triggers automatic sync)
           wp plugin activate facebook-for-woocommerce --allow-root
 
@@ -306,7 +353,7 @@ jobs:
           # Try to access product URL
           echo "=== Testing Product URL ==="
           PRODUCT_PAGE=$(curl -s http://${{ env.TEST_SITE_HOST }}:${{ env.TEST_SITE_PORT }}/product/testp/)
-          
+
           # Check if page loaded
           if echo "$PRODUCT_PAGE" | grep -q "testp"; then
             echo "✅ Product page loads"
@@ -314,7 +361,7 @@ jobs:
             echo "❌ Product page doesn't load properly"
             exit 1
           fi
-          
+
           # Check if WooCommerce product template is rendering
           if echo "$PRODUCT_PAGE" | grep -q "woocommerce-product"; then
             echo "✅ WooCommerce product template detected"
@@ -322,7 +369,7 @@ jobs:
             echo "❌ WooCommerce product template NOT detected!"
             echo "This means woocommerce_after_single_product hook won't fire"
           fi
-          
+
           # Check if add to cart button exists
           if echo "$PRODUCT_PAGE" | grep -q "single_add_to_cart_button"; then
             echo "✅ Add to cart button found"
