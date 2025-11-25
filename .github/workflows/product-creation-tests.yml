@@ -193,7 +193,11 @@ jobs:
       - name: Install WooCommerce
         run: |
           cd /tmp/wordpress
+          wp plugin install woocommerce --activate --allow-root
+          
+          # Install Storefront theme (official WooCommerce theme with all hooks)
           wp theme install storefront --activate --allow-root
+          echo "✅ Storefront theme installed and activated"
           wp plugin install woocommerce --activate --allow-root
 
           # Basic WooCommerce setup
