@@ -8,6 +8,10 @@ const EventValidator = require('./lib/EventValidator');
 const config = require('./config/test-config');
 const { createTestProduct, cleanupProduct } = require('./test-helpers');
 
+// Configure test to run serially (not in parallel)
+// This ensures all tests share the same product created in beforeAll()
+test.describe.configure({ mode: 'serial' });
+
 // Store test product info globally for all tests
 let testProduct = null;
 
@@ -78,9 +82,12 @@ test('PageView', async ({ page }) => {
 test('ViewContent', async ({ page }) => {
     const { testId, pixelCapture } = await TestSetup.init(page, 'ViewContent');
 
+    // Use the actual product URL from the created product
+    const productUrl = `/product/${testProduct.productName}/`;
+
     await Promise.all([
         pixelCapture.waitForEvent(),
-        page.goto(config.TEST_PRODUCT_URL).then(() => TestSetup.waitForPageReady(page))
+        page.goto(productUrl).then(() => TestSetup.waitForPageReady(page))
     ]);
 
     const validator = new EventValidator(testId);
@@ -93,7 +100,10 @@ test('ViewContent', async ({ page }) => {
 test('AddToCart', async ({ page }) => {
     const { testId, pixelCapture } = await TestSetup.init(page, 'AddToCart');
 
-    await page.goto(config.TEST_PRODUCT_URL);
+    // Use the actual product URL from the created product
+    const productUrl = `/product/${testProduct.productName}/`;
+
+    await page.goto(productUrl);
     await TestSetup.waitForPageReady(page, 500);
 
     await Promise.all([
