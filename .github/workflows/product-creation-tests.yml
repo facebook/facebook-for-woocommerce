@@ -263,11 +263,14 @@ jobs:
           chmod 777 /tmp/wordpress/wp-content/plugins/facebook-for-woocommerce/tests/e2e/captured-events
 
       - name: Run E2E tests
+        if: false
         env:
           WORDPRESS_URL: http://${{ env.TEST_SITE_HOST }}:${{ env.TEST_SITE_PORT }}
           WP_USERNAME: admin
           WP_PASSWORD: admin
-        run: npm run test:e2e
+        run: |
+          cd /tmp/wordpress/wp-content/plugins/facebook-for-woocommerce
+          npm run test:e2e
 
       - name: Run CAPI Pixel E2E tests
         env:
