@@ -19,6 +19,22 @@ class PixelCapture {
     async waitForEvent() {
         console.log(`🎯 Waiting for Pixel event: ${this.eventName}...`);
 
+        // Track ALL facebook requests for debugging
+        const allFBRequests = [];
+        const requestListener = request => {
+            const url = request.url();
+            if (url.includes('facebook.com') || url.includes('facebook.net')) {
+                allFBRequests.push({
+                    url: url.substring(0, 200),
+                    type: request.resourceType(),
+                    method: request.method()
+                });
+                console.log(`   📡 FB Request: ${request.resourceType()} ${request.method()} ${url.substring(0, 100)}...`);
+            }
+        };
+
+        this.page.on('request', requestListener);
+
         try {
             // Wait for the request (more reliable than waitForResponse for custom events)
             const request = await this.page.waitForRequest(
@@ -36,7 +52,11 @@ class PixelCapture {
                     }
 
                     // Check if URL contains our event name
-                    return url.includes(`ev=${this.eventName}`);
+                    const matches = url.includes(`ev=${this.eventName}`);
+                    if (matches) {
+                        console.log(`   ✅ MATCHED: ${url.substring(0, 150)}...`);
+                    }
+                    return matches;
                 },
                 { timeout: config.PIXEL_EVENT_TIMEOUT }
             );
@@ -64,10 +84,26 @@ class PixelCapture {
             await this.logToServer(eventData);
 
         } catch (err) {
+            // Remove listener before throwing
+            this.page.off('request', requestListener);
+
             if (err.message?.includes('Timeout')) {
+                console.error(`❌ Timeout: Pixel event ${this.eventName} not captured within ${config.PIXEL_EVENT_TIMEOUT}ms`);
+                console.log(`   📊 Total FB requests captured: ${allFBRequests.length}`);
+                if (allFBRequests.length > 0) {
+                    console.log(`   📋 FB requests made:`);
+                    allFBRequests.forEach(req => console.log(`      - ${req.type} ${req.method}: ${req.url}`));
+                } else {
+                    console.error(`   ⚠️  NO facebook requests were made at all!`);
+                }
                 throw new Error(`Pixel event ${this.eventName} did not fire within timeout`);
             }
             throw err;
+        } finally {
+            // Clean up listener
+            this.page.off('request', requestListener);
+        }
+    }
         }
     }
 
