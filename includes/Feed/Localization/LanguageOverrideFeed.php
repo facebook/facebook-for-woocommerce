@@ -32,7 +32,7 @@ class LanguageOverrideFeed {
 	use LanguageFeedManagementTrait;
 
 	/** @var string the feed name for creating a new feed by this plugin */
-	const FEED_NAME_TEMPLATE = '%s Language Override Feed (%s)';
+	const FEED_NAME_TEMPLATE = 'WooCommerce Language Override Feed (%s)';
 
 	/** @var \WooCommerce\Facebook\Feed\Localization\LanguageFeedData */
 	private $language_feed_data;
