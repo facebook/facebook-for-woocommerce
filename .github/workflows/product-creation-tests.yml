@@ -295,6 +295,25 @@ jobs:
             echo '✅ Test product created. URL: ' . get_permalink(\$product_id) . PHP_EOL;
           " --allow-root
 
+      - name: Verify test product exists
+        run: |
+          cd /tmp/wordpress
+          echo "=== Verifying Test Product ==="
+          # Check if product exists
+          wp post list --post_type=product --format=table --allow-root
+          
+          # Try to access product URL
+          echo "=== Testing Product URL ==="
+          curl -I http://${{ env.TEST_SITE_HOST }}:${{ env.TEST_SITE_PORT }}/product/testp/ || echo "❌ Product page not accessible"
+          
+          # Check permalink structure
+          echo "=== Permalink Structure ==="
+          wp option get permalink_structure --allow-root
+          
+          # Flush rewrite rules just in case
+          wp rewrite flush --allow-root
+          echo "✅ Rewrite rules flushed"
+
       - name: Run CAPI Pixel E2E tests
         env:
           WORDPRESS_URL: http://${{ env.TEST_SITE_HOST }}:${{ env.TEST_SITE_PORT }}
