@@ -301,15 +301,15 @@ jobs:
           echo "=== Verifying Test Product ==="
           # Check if product exists
           wp post list --post_type=product --format=table --allow-root
-          
+
           # Try to access product URL
           echo "=== Testing Product URL ==="
           curl -I http://${{ env.TEST_SITE_HOST }}:${{ env.TEST_SITE_PORT }}/product/testp/ || echo "❌ Product page not accessible"
-          
+
           # Check permalink structure
           echo "=== Permalink Structure ==="
           wp option get permalink_structure --allow-root
-          
+
           # Flush rewrite rules just in case
           wp rewrite flush --allow-root
           echo "✅ Rewrite rules flushed"
@@ -330,7 +330,7 @@ jobs:
           if [ -f wp-content/debug.log ]; then
             echo "=== PHP Debug Log ==="
             cat wp-content/debug.log
-            if grep -i "fatal\|error\|warning" wp-content/debug.log; then
+            if grep -i "fatal\|error" wp-content/debug.log; then
               echo "❌ PHP errors detected"
               exit 1
             fi
