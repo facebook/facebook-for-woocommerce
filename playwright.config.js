@@ -30,14 +30,14 @@ export default defineConfig({
         actionTimeout: 180000,
         navigationTimeout: 180000,
         // Mask automation flags to prevent pixel detection
-        // launchOptions: {
-        //   args: [
-        //     '--disable-blink-features=AutomationControlled',
-        //     '--disable-dev-shm-usage',
-        //     '--disable-web-security',  // Allow third-party cookies/requests
-        //     '--disable-features=BlockThirdPartyCookies',  // Critical for pixel tracking
-        //   ]
-        // },
+        launchOptions: {
+          args: [
+            '--disable-blink-features=AutomationControlled',
+            '--disable-dev-shm-usage',
+            '--disable-web-security',  // Allow third-party cookies/requests
+            '--disable-features=BlockThirdPartyCookies',  // Critical for pixel tracking
+          ]
+        },
       },
     },
   ],
