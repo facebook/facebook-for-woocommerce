@@ -104,8 +104,6 @@ class PixelCapture {
             this.page.off('request', requestListener);
         }
     }
-        }
-    }
 
     /**
      * Parse Pixel event from URL
