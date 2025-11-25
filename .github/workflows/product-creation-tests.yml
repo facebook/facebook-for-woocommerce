@@ -205,33 +205,6 @@ jobs:
           wp option update wc_facebook_enable_product_sync "yes" --allow-root
           wp option update wc_facebook_page_id  "${{ secrets.FB_PAGE_ID }}" --allow-root
           
-          # CRITICAL: Update integration settings directly
-          wp eval "
-            \$settings = get_option('woocommerce_woocommerce_facebook_for_woocommerce_settings', array());
-            \$settings['facebook_pixel_id'] = '${{ secrets.FB_PIXEL_ID }}';
-            \$settings['enable_advanced_matching'] = 'yes';
-            \$settings['is_messenger_chat_plugin_enabled'] = 'no';
-            update_option('woocommerce_woocommerce_facebook_for_woocommerce_settings', \$settings);
-            echo '✅ Integration settings updated' . PHP_EOL;
-          " --allow-root
-
-          # CRITICAL: Set facebook_config option (what the plugin actually reads for pixel)
-          wp eval "
-            \$config = array(
-              'pixel_id' => '${{ secrets.FB_PIXEL_ID }}',
-              'use_pii' => 1,
-              'use_s2s' => true,
-              'access_token' => '${{ secrets.FB_ACCESS_TOKEN }}'
-            );
-            update_option('facebook_config', \$config);
-            \$saved = get_option('facebook_config');
-            if (empty(\$saved['pixel_id'])) {
-              echo '❌ FAILED to save pixel ID to facebook_config!' . PHP_EOL;
-              exit(1);
-            }
-            echo '✅ facebook_config saved. Pixel ID: ' . \$saved['pixel_id'] . PHP_EOL;
-          " --allow-root
-          
           # Activate the plugin (this triggers automatic sync)
           wp plugin activate facebook-for-woocommerce --allow-root
 
@@ -332,7 +305,30 @@ jobs:
 
           # Try to access product URL
           echo "=== Testing Product URL ==="
-          curl -I http://${{ env.TEST_SITE_HOST }}:${{ env.TEST_SITE_PORT }}/product/testp/ || echo "❌ Product page not accessible"
+          PRODUCT_PAGE=$(curl -s http://${{ env.TEST_SITE_HOST }}:${{ env.TEST_SITE_PORT }}/product/testp/)
+          
+          # Check if page loaded
+          if echo "$PRODUCT_PAGE" | grep -q "testp"; then
+            echo "✅ Product page loads"
+          else
+            echo "❌ Product page doesn't load properly"
+            exit 1
+          fi
+          
+          # Check if WooCommerce product template is rendering
+          if echo "$PRODUCT_PAGE" | grep -q "woocommerce-product"; then
+            echo "✅ WooCommerce product template detected"
+          else
+            echo "❌ WooCommerce product template NOT detected!"
+            echo "This means woocommerce_after_single_product hook won't fire"
+          fi
+          
+          # Check if add to cart button exists
+          if echo "$PRODUCT_PAGE" | grep -q "single_add_to_cart_button"; then
+            echo "✅ Add to cart button found"
+          else
+            echo "❌ Add to cart button NOT found!"
+          fi
 
           # Check permalink structure
           echo "=== Permalink Structure ==="
