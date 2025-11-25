@@ -103,7 +103,6 @@ class RequestIntegrationTest extends IntegrationTestCase {
 				"export FB_TEST_ACCESS_TOKEN=\"your_real_token\"\n" .
 				"export FB_TEST_PIXEL_ID=\"your_real_pixel_id\"\n" .
 				"========================================";
-
 			$this->markTestSkipped( $message );
 		}
 	}
