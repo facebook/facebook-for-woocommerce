@@ -77,18 +77,16 @@ test.describe('Facebook for WooCommerce - Product Modification E2E Tests', () =>
 
       // Get original stock quantity
       await page.click('li.inventory_tab a');
-      await page.waitForTimeout(1000);
 
       const stockField = page.locator('#_stock');
       const trackStockCheckBox = page.locator('#_manage_stock');
-      if (await trackStockCheckBox.isVisible({ timeout: 2000 })) {
-        if (!(await trackStockCheckBox.isChecked())) {
-          await trackStockCheckBox.check();
-        }
-        if (await stockField.isVisible({ timeout: 2000 })) {
-          originalStock = await stockField.inputValue();
-          console.log(`Original stock: "${originalStock}"`);
-        }
+      await trackStockCheckBox.waitFor({ state: 'visible', timeout: 5000 });
+      if (!(await trackStockCheckBox.isChecked())) {
+        await trackStockCheckBox.check();
+      }
+      if (await stockField.isVisible({ timeout: 2000 })) {
+        originalStock = await stockField.inputValue();
+        console.log(`Original stock: "${originalStock}"`);
       }
 
       // Edit product attributes
@@ -108,7 +106,7 @@ test.describe('Facebook for WooCommerce - Product Modification E2E Tests', () =>
 
       // Edit price
       await page.click('li.general_tab a');
-      await page.waitForTimeout(1000);
+      await regularPriceField.waitFor({ state: 'visible', timeout: 5000 });
       await regularPriceField.scrollIntoViewIfNeeded();
       await regularPriceField.fill(newPrice);
       console.log(`✅ Updated price to: ${newPrice}`);
@@ -118,13 +116,10 @@ test.describe('Facebook for WooCommerce - Product Modification E2E Tests', () =>
 
       // Edit stock quantity
       await page.click('li.inventory_tab a');
-      await page.waitForTimeout(1000);
-
-      if (await stockField.isVisible({ timeout: 5000 })) {
-        await stockField.scrollIntoViewIfNeeded();
-        await stockField.fill(newStock);
-        console.log(`✅ Updated stock to: ${newStock}`);
-      }
+      await stockField.waitFor({ state: 'visible', timeout: 5000 });
+      await stockField.scrollIntoViewIfNeeded();
+      await stockField.fill(newStock);
+      console.log(`✅ Updated stock to: ${newStock}`);
 
       // Click Update button
       await publishProduct(page);
