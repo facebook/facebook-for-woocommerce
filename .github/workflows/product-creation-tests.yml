@@ -342,8 +342,8 @@ jobs:
       - name: Run CAPI Pixel E2E tests
         env:
           WORDPRESS_URL: http://${{ env.TEST_SITE_HOST }}
-          WP_CUSTOMER_USERNAME: admin
-          WP_CUSTOMER_PASSWORD: admin
+          WP_CUSTOMER_USERNAME: customer
+          WP_CUSTOMER_PASSWORD: Password@54321
         run: |
           cd /tmp/wordpress/wp-content/plugins/facebook-for-woocommerce
           xvfb-run --auto-servernum npx playwright test events-test.spec.js --headed
