@@ -188,7 +188,12 @@ jobs:
           # Create a customer (non-admin) user for testing
           # Pixel tracking excludes admin users by default!
           wp user create customer customer@test.com --role=customer --user_pass=Password@54321 --allow-root || echo "Customer user already exists"
-          echo "✅ Customer user created/verified"
+
+          # Grant read capability to customer role (for viewing products/categories)
+          # This ensures customer can see shop pages, products, and categories
+          wp cap add customer read --allow-root
+
+          echo "✅ Customer user created with proper capabilities"
 
       - name: Install WooCommerce
         run: |
@@ -205,6 +210,11 @@ jobs:
           wp option update woocommerce_default_country "US:CA" --allow-root
           wp option update woocommerce_store_postcode "12345" --allow-root
           wp option update woocommerce_currency "USD" --allow-root
+
+          # Make site live (disable "Coming Soon" mode)
+          wp option update woocommerce_coming_soon "no" --allow-root
+          wp option update woocommerce_store_pages_only "no" --allow-root
+          echo "✅ WooCommerce site set to LIVE mode"
 
       - name: Install Facebook for WooCommerce plugin
         run: |
@@ -332,8 +342,8 @@ jobs:
       - name: Run CAPI Pixel E2E tests
         env:
           WORDPRESS_URL: http://${{ env.TEST_SITE_HOST }}
-          WP_CUSTOMER_USERNAME: admin
-          WP_CUSTOMER_PASSWORD: admin
+          WP_CUSTOMER_USERNAME: customer
+          WP_CUSTOMER_PASSWORD: Password@54321
         run: |
           cd /tmp/wordpress/wp-content/plugins/facebook-for-woocommerce
           xvfb-run --auto-servernum npx playwright test events-test*.spec.js --headed
