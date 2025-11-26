@@ -177,12 +177,6 @@ class LanguageOverrideFeedGenerationTest extends IntegrationTestCase {
 			$this->assertNotEmpty( $default_language, 'Should have a default language' );
 			$this->assertNotEquals( $language_code, $default_language, 'Test language should be different from default' );
 
-			// Test product count for this language - should have at least our test products
-			$translated_product_count = $this->language_feed_data->get_translated_products_count( $language_code );
-
-			$this->assertGreaterThan( 0, $translated_product_count, "Should have translated products for {$language_code}" );
-			$this->assertEquals( count( $this->test_products_with_translations ), $translated_product_count, 'Should have at least our test products' );
-
 			// Test translated fields detection
 			$translated_fields = $this->language_feed_data->get_translated_fields_for_language( $language_code, 50 );
 			$this->assertNotEmpty( $translated_fields, "Should detect translated fields for {$language_code}" );

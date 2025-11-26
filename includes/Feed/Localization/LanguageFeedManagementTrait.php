@@ -66,15 +66,6 @@ trait LanguageFeedManagementTrait {
 		$feed_id = $this->request_and_filter_language_feed_id( $language_code );
 		if ( $feed_id ) {
 			$this->store_language_feed_id( $language_code, $feed_id );
-			Logger::log(
-				'Language Feed: feed_id = ' . $feed_id . ', queried and selected from Meta API.',
-				[],
-				array(
-					'should_send_log_to_meta'        => false,
-					'should_save_log_in_woocommerce' => true,
-					'woocommerce_log_level'          => \WC_Log_Levels::DEBUG,
-				)
-			);
 			return $feed_id;
 		}
 
@@ -82,15 +73,6 @@ trait LanguageFeedManagementTrait {
 		$feed_id = $this->create_language_feed_id( $language_code );
 		if ( $feed_id ) {
 			$this->store_language_feed_id( $language_code, $feed_id );
-			Logger::log(
-				'Language Feed: feed_id = ' . $feed_id . ', created a new feed via Meta API.',
-				[],
-				array(
-					'should_send_log_to_meta'        => false,
-					'should_save_log_in_woocommerce' => true,
-					'woocommerce_log_level'          => \WC_Log_Levels::DEBUG,
-				)
-			);
 			return $feed_id;
 		}
 

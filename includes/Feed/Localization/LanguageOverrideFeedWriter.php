@@ -152,15 +152,6 @@ class LanguageOverrideFeedWriter extends AbstractFeedFileWriter {
 			$product_count = count( $csv_result['data'] ?? [] );
 
 			if ( empty( $csv_result['data'] ) ) {
-				\WooCommerce\Facebook\Framework\Logger::log(
-					'No data available for language',
-					array( 'language_code' => $language_code ),
-					array(
-						'should_send_log_to_meta'        => false,
-						'should_save_log_in_woocommerce' => true,
-						'woocommerce_log_level'          => \WC_Log_Levels::INFO,
-					)
-				);
 				// Still create an empty file with headers
 				$csv_result = array(
 					'data' => array(),

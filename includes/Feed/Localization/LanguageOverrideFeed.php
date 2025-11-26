@@ -153,16 +153,6 @@ class LanguageOverrideFeed {
 
 		// Unschedule all actions for this feed type
 		as_unschedule_all_actions( $schedule_action_hook_name );
-
-		Logger::log(
-			'Language override feed generation unscheduled.',
-			[],
-			array(
-				'should_send_log_to_meta'        => false,
-				'should_save_log_in_woocommerce' => true,
-				'woocommerce_log_level'          => \WC_Log_Levels::DEBUG,
-			)
-		);
 	}
 
 
@@ -203,16 +193,6 @@ class LanguageOverrideFeed {
 		if ( empty( $languages ) ) {
 			return;
 		}
-
-		Logger::log(
-			'Generating language override feeds',
-			[ 'languages' => $languages ],
-			array(
-				'should_send_log_to_meta'        => false,
-				'should_save_log_in_woocommerce' => true,
-				'woocommerce_log_level'          => \WC_Log_Levels::INFO,
-			)
-		);
 
 		$successful_languages = [];
 		$failed_languages = [];
@@ -278,16 +258,6 @@ class LanguageOverrideFeed {
 					'should_send_log_to_meta'        => false,
 					'should_save_log_in_woocommerce' => true,
 					'woocommerce_log_level'          => \WC_Log_Levels::WARNING,
-				)
-			);
-		} else {
-			Logger::log(
-				'Language override feeds generated',
-				[ 'count' => count( $successful_languages ) ],
-				array(
-					'should_send_log_to_meta'        => false,
-					'should_save_log_in_woocommerce' => true,
-					'woocommerce_log_level'          => \WC_Log_Levels::INFO,
 				)
 			);
 		}
@@ -429,16 +399,6 @@ class LanguageOverrideFeed {
 	 * @throws PluginException If the feed secret is invalid, file is not readable, or other errors occur.
 	 */
 	public function handle_feed_data_request(): void {
-		Logger::log(
-			'Facebook is requesting a language override feed.',
-			[],
-			array(
-				'should_send_log_to_meta'        => false,
-				'should_save_log_in_woocommerce' => true,
-				'woocommerce_log_level'          => \WC_Log_Levels::DEBUG,
-			)
-		);
-
 		try {
 			// Get the language code from the request
 			$language_code = Helper::get_requested_value( 'language' );
@@ -484,15 +444,6 @@ class LanguageOverrideFeed {
 
 			// fpassthru might be disabled in some hosts (like Flywheel)
 			if ( \WC_Facebookcommerce_Utils::is_fpassthru_disabled() || ! @fpassthru( $file ) ) {
-				Logger::log(
-					'fpassthru is disabled: getting file contents',
-					[],
-					array(
-						'should_send_log_to_meta'        => false,
-						'should_save_log_in_woocommerce' => true,
-						'woocommerce_log_level'          => \WC_Log_Levels::DEBUG,
-					)
-				);
 				$contents = @stream_get_contents( $file );
 				if ( ! $contents ) {
 					throw new PluginException( 'Could not get language feed file contents', 500 );
@@ -571,18 +522,6 @@ class LanguageOverrideFeed {
 
 			// Skip upload if file doesn't exist
 			if ( ! file_exists( $file_path ) ) {
-				Logger::log(
-					'Skipping language feed upload: file does not exist',
-					array(
-						'language_code' => $language_code,
-						'expected_path' => $file_path,
-					),
-					array(
-						'should_send_log_to_meta'        => false,
-						'should_save_log_in_woocommerce' => true,
-						'woocommerce_log_level'          => \WC_Log_Levels::DEBUG,
-					)
-				);
 				return;
 			}
 
