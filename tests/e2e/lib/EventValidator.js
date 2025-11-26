@@ -4,7 +4,6 @@
 
 const fs = require('fs').promises;
 const path = require('path');
-const config = require('../config/test-config');
 const EVENT_SCHEMAS = require('./event-schemas');
 
 class EventValidator {
@@ -293,7 +292,7 @@ class EventValidator {
      * Check WordPress debug log for critical errors
      */
     async checkDebugLog() {
-        const debugLogPath = path.join(config.WORDPRESS_PATH, 'wp-content/debug.log');
+        const debugLogPath = process.env.WP_DEBUG_LOG;
         try {
             const data = await fs.readFile(debugLogPath, 'utf8');
             const lines = data.split('\n');

@@ -29,8 +29,16 @@ env:
   FB_E2E_TEST_COOKIE_NAME: 'facebook_test_id'
   FB_E2E_LOGGER_PATH: '/tests/e2e/lib/Logger.php'
   FB_E2E_CAPTURED_EVENTS_DIR: '/tests/e2e/captured-events'
-  CUSTOMER_USERNAME: customer
-  CUSTOMER_PASSWORD: Password@54321
+  WP_CUSTOMER_USERNAME: customer
+  WP_CUSTOMER_PASSWORD: Password@54321
+  WORDPRESS_URL: http://${{ env.TEST_SITE_HOST }}:8080
+  TEST_PRODUCT_URL: '/product/testp/'
+  TEST_CATEGORY_URL: '/product-category/uncategorized/'
+  WP_ADMIN_USERNAME: admin
+  WP_ADMIN_PASSWORD: admin
+  PIXEL_EVENT_TIMEOUT: 15000
+  PAGE_LOAD_TIMEOUT: 120000
+
 
 jobs:
   e2e-tests:
@@ -285,7 +293,6 @@ jobs:
 
       - name: Create test product for CAPI Pixel E2E tests
         env:
-          WORDPRESS_URL: http://${{ env.TEST_SITE_HOST }}:8080
           WP_USERNAME: admin
           WP_PASSWORD: admin
         run: |
@@ -313,7 +320,6 @@ jobs:
 
       - name: Run E2E tests
         env:
-          WORDPRESS_URL: http://${{ env.TEST_SITE_HOST }}:8080
           WP_USERNAME: admin
           WP_PASSWORD: admin
         run: |
@@ -321,10 +327,6 @@ jobs:
           npx playwright test "product-.*\.spec\.js"
 
       - name: Run CAPI Pixel E2E tests
-        env:
-          WORDPRESS_URL: http://${{ env.TEST_SITE_HOST }}:8080
-          WP_CUSTOMER_USERNAME: ${{ env.CUSTOMER_USERNAME }}
-          WP_CUSTOMER_PASSWORD: ${{ env.CUSTOMER_PASSWORD }}
         run: |
           cd ${{ env.PLUGIN_PATH }}
           xvfb-run --auto-servernum npx playwright test events-test*.spec.js --headed

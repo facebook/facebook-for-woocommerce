@@ -3,7 +3,6 @@
  */
 
 const PixelCapture = require('./PixelCapture');
-const config = require('../config/test-config');
 
 class TestSetup {
     static async init(page, eventName) {
@@ -16,9 +15,9 @@ class TestSetup {
 
         // Set test cookie for CAPI logging
         await page.context().addCookies([{
-            name: config.TEST_COOKIE_NAME,
+            name: process.env.FB_E2E_TEST_COOKIE_NAME,
             value: testId,
-            url: config.WORDPRESS_URL
+            url: process.env.WORDPRESS_URL
         }]);
 
         const pixelCapture = new PixelCapture(page, testId, eventName);
@@ -64,8 +63,8 @@ class TestSetup {
         }
 
         // Login as customer (not admin!) because pixel excludes admin users
-        await page.fill('#user_login', config.WP_CUSTOMER_USERNAME);
-        await page.fill('#user_pass', config.WP_CUSTOMER_PASSWORD);
+        await page.fill('#user_login', process.env.WP_CUSTOMER_USERNAME );
+        await page.fill('#user_pass', process.env.WP_CUSTOMER_PASSWORD);
         await page.click('#wp-submit');
         await page.waitForLoadState('networkidle');
 

@@ -2,8 +2,6 @@
  * PixelCapture - Captures Pixel events from browser
  */
 
-const config = require('../config/test-config');
-
 class PixelCapture {
     constructor(page, testId, eventName) {
         this.page = page;
@@ -34,7 +32,7 @@ class PixelCapture {
                     // Check if URL contains our event name
                     return url.includes(`ev=${this.eventName}`);
                 },
-                { timeout: config.PIXEL_EVENT_TIMEOUT }
+                { timeout: parseInt(process.env.PIXEL_EVENT_TIMEOUT || '15000', 10) }
             );
 
             console.log(`✅ Pixel event captured: ${this.eventName}`);
@@ -52,7 +50,7 @@ class PixelCapture {
 
         } catch (err) {
             if (err.message?.includes('Timeout')) {
-                throw new Error(`❌ Pixel event ${this.eventName} did not fire within ${config.PIXEL_EVENT_TIMEOUT}ms`);
+                throw new Error(`❌ Pixel event ${this.eventName} did not fire within ${parseInt(process.env.PIXEL_EVENT_TIMEOUT || '15000', 10)}ms`);
             }
             throw err;
         }
