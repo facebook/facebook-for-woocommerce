@@ -54,10 +54,9 @@ test('PageView', async ({ page }) => {
 test('ViewContent', async ({ page }) => {
     const { testId, pixelCapture } = await TestSetup.init(page, 'ViewContent');
 
-    console.log(`   🌐 Navigating to: ${config.TEST_PRODUCT_URL}`);
     await Promise.all([
         pixelCapture.waitForEvent(),
-        page.goto(config.TEST_PRODUCT_URL).then(async (response) => {
+        page.goto(process.env.TEST_PRODUCT_URL).then(async (response) => {
             await TestSetup.waitForPageReady(page);
         })
     ]);
@@ -72,7 +71,7 @@ test('ViewContent', async ({ page }) => {
 test('AddToCart', async ({ page }) => {
     const { testId, pixelCapture } = await TestSetup.init(page, 'AddToCart');
 
-    await page.goto(config.TEST_PRODUCT_URL);
+    await page.goto(process.env.TEST_PRODUCT_URL);
     await TestSetup.waitForPageReady(page, 500);
 
     await Promise.all([
@@ -94,7 +93,7 @@ test('ViewCategory', async ({ page }) => {
 
     await Promise.all([
         pixelCapture.waitForEvent(),
-        page.goto(config.TEST_CATEGORY_URL).then(() => TestSetup.waitForPageReady(page))
+        page.goto(process.env.TEST_CATEGORY_URL).then(() => TestSetup.waitForPageReady(page))
     ]);
 
     const validator = new EventValidator(testId);
