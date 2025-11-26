@@ -213,7 +213,7 @@ jobs:
           WP_USERNAME: admin
           WP_PASSWORD: admin
         run: |
-          cd /tmp/wordpress/wp-content/plugins/facebook-for-woocommerce
+          cd /tmp/wordpress
           npx playwright test "catalog-.*\.spec\.js"
 
       - name: Check for PHP errors
