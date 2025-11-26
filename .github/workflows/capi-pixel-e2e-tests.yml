@@ -182,19 +182,6 @@ jobs:
             --admin_email=test@example.com \
             --allow-root
 
-      - name: Create wp non admin user
-        run: |
-          cd /tmp/wordpress
-          # Create a customer (non-admin) user for testing
-          # Pixel tracking excludes admin users by default!
-          wp user create customer customer@test.com --role=customer --user_pass=Password@54321 --allow-root || echo "Customer user already exists"
-
-          # Grant read capability to customer role (for viewing products/categories)
-          # This ensures customer can see shop pages, products, and categories
-          wp cap add customer read --allow-root
-
-          echo "✅ Customer user created with proper capabilities"
-
       - name: Install WooCommerce
         run: |
           cd /tmp/wordpress
@@ -215,6 +202,20 @@ jobs:
           wp option update woocommerce_coming_soon "no" --allow-root
           wp option update woocommerce_store_pages_only "no" --allow-root
           echo "✅ WooCommerce site set to LIVE mode"
+
+      - name: Create wp non admin user
+        run: |
+          cd /tmp/wordpress
+          # Create a customer (non-admin) user for testing
+          # Pixel tracking excludes admin users by default!
+          # Note: customer role is created by WooCommerce, so this step must run AFTER WooCommerce installation
+          wp user create customer customer@test.com --role=customer --user_pass=Password@54321 --allow-root || echo "Customer user already exists"
+
+          # Grant read capability to customer role (for viewing products/categories)
+          # This ensures customer can see shop pages, products, and categories
+          wp cap add customer read --allow-root
+
+          echo "✅ Customer user created with proper capabilities"
 
       - name: Install Facebook for WooCommerce plugin
         run: |
