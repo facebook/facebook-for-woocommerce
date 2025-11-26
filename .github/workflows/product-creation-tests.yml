@@ -21,7 +21,7 @@ on:
 
 env:
   # Test environment configuration
-  TEST_SITE_HOST: ${{ secrets.TEST_SITE_HOST || 'wooc-local-test-sitecom.local' }}
+  TEST_SITE_HOST: ${{ secrets.TEST_SITE_HOST }}
   FB_TEST_EVENT_CODE: ${{ secrets.FB_TEST_EVENT_CODE }}
   WORDPRESS_PATH: '/tmp/wordpress'
   WP_DEBUG_LOG: '/tmp/wordpress/wp-content/debug.log'
@@ -31,7 +31,7 @@ env:
   FB_E2E_CAPTURED_EVENTS_DIR: '/tests/e2e/captured-events'
   WP_CUSTOMER_USERNAME: customer
   WP_CUSTOMER_PASSWORD: Password@54321
-  WORDPRESS_URL: http://${{ env.TEST_SITE_HOST }}:8080
+  WORDPRESS_URL: http://${{ secrets.TEST_SITE_HOST }}:8080
   TEST_PRODUCT_URL: '/product/testp/'
   TEST_CATEGORY_URL: '/product-category/uncategorized/'
   WP_ADMIN_USERNAME: admin
