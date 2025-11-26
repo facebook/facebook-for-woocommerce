@@ -156,7 +156,26 @@ class IntegrationRegistry {
 	 * Returns the first integration that has an active plugin (regardless of configuration).
 	 * This is useful for getting language information even if the integration isn't fully configured.
 	 *
+	 * **Multiple Localization Plugins:**
+	 * Integrations are checked in the order they appear in $localization_integrations array:
+	 * 1. Polylang (checked first)
+	 * 2. WPML (checked second)
+	 *
+	 * If both plugins are somehow active, only Polylang's integration will be returned and used.
+	 *
+	 * **In Practice:**
+	 * Based on telemetry data from Facebook for WooCommerce users, ZERO sites have both
+	 * WPML and Polylang activated simultaneously. This is because:
+	 * - WPML throws a fatal error during initialization if Polylang is already active
+	 * - If Polylang is activated after WPML, WPML's functionality is disabled
+	 *
+	 * **Plugin Conflicts:**
+	 * The order of precedence (Polylang first) is intentional but rarely matters in practice
+	 * due to the plugin conflicts mentioned above. If conflicts are resolved in future versions
+	 * of these plugins, this method will consistently return Polylang when both are active.
+	 *
 	 * @return Abstract_Localization_Integration|null The first active integration or null if none active
+	 * @since 3.6.0
 	 */
 	public static function get_active_localization_integration(): ?Abstract_Localization_Integration {
 		$integrations = self::get_all_localization_integrations();

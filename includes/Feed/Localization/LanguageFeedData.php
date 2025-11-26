@@ -129,151 +129,6 @@ class LanguageFeedData {
 		];
 	}
 
-	/**
-	 * Get total count of products with translations for a specific language
-	 *
-	 * Uses the same logic as CSV generation to ensure consistency
-	 *
-	 * @param string $language_code Language code
-	 * @return int Total count of products with translations
-	 */
-	public function get_translated_products_count( string $language_code ): int {
-		if ( ! IntegrationRegistry::has_active_localization_plugin() ) {
-			return 0;
-		}
-
-		// Use the same filtering logic as CSV generation for consistency
-		// Use a large limit instead of -1 to avoid issues with unlimited queries
-		$all_product_ids = $this->get_products_from_default_language( 10000, 0 );
-		$count = 0;
-
-		foreach ( $all_product_ids as $product_id ) {
-			// Apply the same validation as CSV generation
-			$original_product = wc_get_product( $product_id );
-			if ( ! $original_product ) {
-				continue;
-			}
-
-			// Use Facebook's product sync validator if available (same as CSV generation)
-			if ( function_exists( 'facebook_for_woocommerce' ) ) {
-				$sync_validator = facebook_for_woocommerce()->get_product_sync_validator( $original_product );
-				if ( ! $sync_validator->passes_all_checks() ) {
-					continue;
-				}
-			}
-
-			$details = $this->get_product_translation_details( $product_id );
-
-			if ( empty( $details['translations'] ) || ! isset( $details['translations'][ $language_code ] ) ) {
-				continue;
-			}
-
-			$translated_id = $details['translations'][ $language_code ];
-			$product_translated_fields = $details['translated_fields'][ $language_code ] ?? [];
-
-			// Only include products that have actual translated content (same as CSV generation)
-			if ( empty( $product_translated_fields ) ) {
-				continue;
-			}
-
-			$translated_product = wc_get_product( $translated_id );
-			if ( ! $translated_product ) {
-				continue;
-			}
-
-			// Verify that at least one translated field has actual content
-			try {
-				if ( ! class_exists( 'WC_Facebook_Product' ) ) {
-					require_once WC_FACEBOOKCOMMERCE_PLUGIN_DIR . '/includes/fbproduct.php';
-				}
-
-				$translated_fb_product = new \WC_Facebook_Product( $translated_product );
-
-				// Check if at least one translated field has actual content
-				$has_content = false;
-				$field_mapping = [
-					'name' => 'title',
-					'description' => 'description',
-					'short_description' => 'description',
-					'rich_text_description' => 'description',
-				];
-
-				foreach ( $product_translated_fields as $field ) {
-					if ( isset( $field_mapping[ $field ] ) ) {
-						$csv_column = $field_mapping[ $field ];
-						switch ( $csv_column ) {
-							case 'title':
-								$value = $translated_fb_product->get_name();
-								if ( ! empty( $value ) ) {
-									$has_content = true;
-								}
-								break;
-							case 'description':
-								$value = $translated_fb_product->get_fb_description();
-								if ( ! empty( $value ) ) {
-									$has_content = true;
-								}
-								break;
-						}
-						if ( $has_content ) {
-							break;
-						}
-					}
-				}
-
-				if ( $has_content ) {
-					$count++;
-				}
-			} catch ( Exception $e ) {
-				// Skip products that can't create Facebook products
-				continue;
-			}
-		}
-
-		return $count;
-	}
-
-
-	/**
-	 * Get statistics for language feeds
-	 *
-	 * @return array Statistics for all available languages
-	 */
-	public function get_language_feed_statistics(): array {
-		$languages = $this->get_available_languages();
-		$statistics = [];
-
-		foreach ( $languages as $language_code ) {
-			$count = $this->get_translated_products_count( $language_code );
-			$statistics[ $language_code ] = [
-				'language_code' => $language_code,
-				'translated_products_count' => $count,
-				'estimated_csv_size' => $this->estimate_csv_size( $count ),
-			];
-		}
-
-		return $statistics;
-	}
-
-	/**
-	 * Estimate CSV file size based on product count
-	 *
-	 * @param int $product_count Number of products
-	 * @return string Human-readable file size estimate
-	 */
-	private function estimate_csv_size( int $product_count ): string {
-		// Rough estimate: ~200 bytes per product row (including headers)
-		$estimated_bytes = ( $product_count * 200 ) + 1000; // Add 1KB for headers
-
-		if ( $estimated_bytes < 1024 ) {
-			return $estimated_bytes . ' B';
-		} elseif ( $estimated_bytes < 1048576 ) {
-			return round( $estimated_bytes / 1024, 1 ) . ' KB';
-		} else {
-			return round( $estimated_bytes / 1048576, 1 ) . ' MB';
-		}
-	}
-
 	// ===========================================
 	// CSV FORMATTING AND GENERATION METHODS
 	// ===========================================
@@ -339,6 +194,18 @@ class LanguageFeedData {
 
 	/**
 	 * Extract translation data and convert to CSV format for a specific language
+	 *
+	 * This method processes products from the default language and generates CSV rows
+	 * for Facebook's language override feed. It handles both simple and variable products.
+	 *
+	 * **Variable Product Behavior:**
+	 * For variable products, localization plugins do NOT support direct 1:1 variation-level
+	 * translations. Instead, this method:
+	 * 1. Gets the translated parent product content (title, description, images)
+	 * 2. Applies that translated content to ALL variations of the original product
+	 * 3. Each variation gets its own CSV row with the same translated parent content
+	 *
+	 * Note: Multiple plugin handling is managed by IntegrationRegistry::get_active_localization_integration()
 	 *
 	 * @param string $language_code Language code (e.g., 'es_ES', 'fr_FR')
 	 * @param int    $limit Maximum number of products to process
