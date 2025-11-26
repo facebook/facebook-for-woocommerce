@@ -590,7 +590,7 @@ test.describe('Facebook for WooCommerce - Product Modification E2E Tests', () =>
         // Set Facebook Brand
         const fbPriceField = variationRow.locator(`#variable_fb_product_price${i}`);
         if (await fbPriceField.isVisible({ timeout: 5000 })) {
-          const newPrice = (parseFloat(originalPrice || '10.00') + (i+1)).toFixed(2);
+          const newPrice = (parseFloat(originalPrice || '10.00') + (i + 1)).toFixed(2);
           await fbPriceField.fill(newPrice);
           console.log(`  ✅ Set Facebook price: ${newPrice}`);
         } else {
@@ -657,6 +657,80 @@ test.describe('Facebook for WooCommerce - Product Modification E2E Tests', () =>
     } catch (error) {
       console.error(`❌ Test failed: ${error.message}`);
       await safeScreenshot(page, 'facebook-options-variable-edit-test-failure.png');
+      logTestEnd(testInfo, false);
+      throw error;
+    } finally {
+      if (productId) {
+        await cleanupProduct(productId);
+      }
+    }
+  });
+
+  test('Mark product as Out of stock and verify Facebook sync', async ({ page }, testInfo) => {
+    let productId = null;
+
+    try {
+      // Create a test product programmatically
+      console.log('📦 Creating test simple product...');
+      const { productId: createdId, productName, sku } = await createTestProduct({
+        productType: 'simple',
+        price: '15.00',
+        stock: '50'
+      });
+      productId = createdId;
+      console.log(`✅ Created product ${productId} with SKU: ${sku}`);
+
+      // Find and click on the created product
+      console.log(`🔍 Looking for product with SKU: ${sku}...`);
+      await filterProducts(page, 'simple', sku);
+      await clickFirstProduct(page);
+
+      const currentUrl = page.url();
+      const urlProductId = extractProductIdFromUrl(currentUrl);
+      console.log(`✅ Editing product ID: ${urlProductId}`);
+
+      // Click on Inventory tab
+      console.log('📦 Opening Inventory tab...');
+      const inventoryTab = page.locator('li.inventory_tab a');
+      await inventoryTab.waitFor({ state: 'visible', timeout: 5000 });
+      await inventoryTab.click();
+      console.log('✅ Opened Inventory tab');
+
+      // Set stock status to "Out of stock"
+      console.log('📝 Setting stock status to "Out of stock"...');
+      const trackStockCheckBox = page.locator('#_manage_stock');
+      if (await trackStockCheckBox.isVisible({ timeout: 2000 })) {
+        if ((await trackStockCheckBox.isChecked())) {
+          await trackStockCheckBox.uncheck();
+        }
+      }
+      const stockStatusSelect = page.locator('input[name="_stock_status"][value="outofstock"]')
+      await stockStatusSelect.waitFor({ state: 'visible', timeout: 5000 });
+      await stockStatusSelect.scrollIntoViewIfNeeded();
+      await stockStatusSelect.click();
+      console.log('✅ Set stock status to "Out of stock"');
+
+      // Click Update button
+      console.log('💾 Updating product...');
+      await publishProduct(page);
+
+      // Verify no PHP errors after update
+      await checkForPhpErrors(page);
+      console.log('✅ No PHP errors detected after update');
+
+      // Validate Facebook sync
+      console.log('🔄 Validating Facebook sync after stock status change...');
+      const syncResult = await validateFacebookSync(productId, productName);
+      expect(syncResult.success).toBe(true);
+      expect(syncResult['raw_data']['facebook_data'][0]['availability']).toBe('out of stock');
+      console.log('✅ Facebook sync validated successfully');
+
+      console.log('✅ Mark product as Out of stock test completed successfully');
+      logTestEnd(testInfo, true);
+
+    } catch (error) {
+      console.error(`❌ Test failed: ${error.message}`);
+      await safeScreenshot(page, 'product-out-of-stock-test-failure.png');
       logTestEnd(testInfo, false);
       throw error;
     } finally {

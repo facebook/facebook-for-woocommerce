@@ -4,6 +4,7 @@ const { expect } = require('@playwright/test');
 const baseURL = process.env.WORDPRESS_URL || 'http://localhost:8080';
 const username = process.env.WP_USERNAME || 'admin';
 const password = process.env.WP_PASSWORD || 'admin';
+const wpSitePath = process.env.WP_SITE_PATH || '/tmp/wordpress';
 
 // Helper function for reliable login
 async function loginToWordPress(page) {
@@ -60,7 +61,7 @@ async function cleanupProduct(productId) {
     const execAsync = promisify(exec);
 
     const { stdout } = await execAsync(
-      `php -r "require_once('/tmp/wordpress/wp-load.php'); wp_delete_post(${productId}, true);"`,
+      `php -r "require_once('${wpSitePath}/wp-load.php'); wp_delete_post(${productId}, true);"`,
       { cwd: __dirname }
     );
     const endTime = new Date();
@@ -229,12 +230,7 @@ async function filterProducts(page, productType, productSKU = null) {
   }
 
   // Wait for products table to load
-  const hasProductsTable = await page.locator('.wp-list-table').isVisible({ timeout: 10000 });
-  if (hasProductsTable) {
-    console.log('✅ WooCommerce products page loaded successfully');
-  } else {
-    console.warn('⚠️ Products table not found');
-  }
+  await page.locator('.wp-list-table').waitFor({ state: 'visible', timeout: 10000 });
 }
 
 // Helper function to click the first visible product from products table
@@ -273,11 +269,12 @@ async function validateFacebookSync(productId, productName, waitSeconds = 10, ma
       { cwd: __dirname }
     );
 
+    const result = JSON.parse(stdout);
     // 📄 DUMP RAW JSON OUTPUT FROM VALIDATOR
     console.log('📄 OUTPUT FROM FACEBOOK SYNC VALIDATOR:');
-    console.log(stdout);
-
-    const result = JSON.parse(stdout);
+    // Log everything in result except result["raw_data"]
+    const { raw_data, ...resultWithoutRawData } = result;
+    console.log(JSON.stringify(resultWithoutRawData, null, 2));
 
     // Display results
     if (result.success) {
