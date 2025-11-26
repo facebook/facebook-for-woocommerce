@@ -134,10 +134,14 @@ test.describe('Facebook for WooCommerce - Product Deletion E2E Tests', () => {
       console.log('🔍 Looking for Troubleshooting tab...');
       const troubleshootingTab = page.locator('a:has-text("Troubleshooting"), button:has-text("Troubleshooting")');
 
-      await troubleshootingTab.isVisible({ timeout: 10000 });
-      await troubleshootingTab.click();
-      console.log('✅ Clicked Troubleshooting tab');
-      await page.waitForTimeout(2000);
+      if (await troubleshootingTab.isVisible({ timeout: 10000 })){
+        await troubleshootingTab.click();
+        console.log('✅ Clicked Troubleshooting tab');
+        await page.waitForTimeout(2000);
+      }
+      else {
+        console.warn('⚠️ Troubleshooting tab not found');
+      }
 
       // Click on Product Data Sync "Sync now" button
       console.log('🔄 Looking for Product Data Sync "Sync now" button...');

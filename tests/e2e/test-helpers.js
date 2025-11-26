@@ -344,6 +344,43 @@ async function createTestProduct(options = {}) {
   }
 }
 
+// Helper function to open Facebook options tab in product data
+async function openFacebookOptions(page) {
+  // Click on "Facebook" tab in product data
+  console.log('🔵 Clicking on Facebook tab...');
+  const facebookTab = page.locator('.wc-tabs li.fb_commerce_tab_options a, a[href="#fb_commerce_tab"]');
+
+  // Scroll to product data section first
+  await page.locator('#woocommerce-product-data').scrollIntoViewIfNeeded();
+
+  // Check if Facebook tab exists
+  const facebookTabExists = await facebookTab.isVisible({ timeout: 10000 }).catch(() => false);
+
+  if (!facebookTabExists) {
+    console.warn('⚠️ Facebook tab not found. This might indicate:');
+    console.warn('   - Facebook for WooCommerce plugin not properly activated');
+    console.warn('   - Plugin not connected to Facebook catalog');
+
+    // Take screenshot for debugging
+    await safeScreenshot(page, 'facebook-tab-not-found.png');
+
+    // Try to find any tab that might be Facebook-related
+    const allTabs = await page.locator('.wc-tabs li a').all();
+    console.log(`Found ${allTabs.length} tabs in product data`);
+
+    for (let i = 0; i < allTabs.length; i++) {
+      const tabText = await allTabs[i].textContent();
+      console.log(`  Tab ${i}: ${tabText}`);
+    }
+
+    throw new Error('Facebook tab not found in product data metabox');
+  }
+
+  await facebookTab.click();
+  await page.waitForTimeout(2000); // Wait for tab content to load
+  console.log('✅ Opened Product Facebook options tab');
+}
+
 module.exports = {
   baseURL,
   username,
@@ -362,5 +399,6 @@ module.exports = {
   createTestProduct,
   setProductDescription,
   filterProducts,
-  clickFirstProduct
+  clickFirstProduct,
+  openFacebookOptions
 };

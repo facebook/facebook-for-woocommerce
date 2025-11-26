@@ -12,14 +12,6 @@ const jQueryUIAdminFileNames = [
 	'settings-commerce',
 	'settings-sync',
 	'enhanced-settings-sync',
-    'whatsapp-billing',
-    'whatsapp-connection',
-    'whatsapp-consent',
-    'whatsapp-templates',
-    'whatsapp-finish',
-    'whatsapp-consent-remove',
-    'whatsapp-disconnect',
-    'whatsapp-events',
 	'plugin-rendering'
 ];
 

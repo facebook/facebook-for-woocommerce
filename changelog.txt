@@ -1,5 +1,8 @@
 *** Facebook for WooCommerce Changelog ***
 
+= 3.5.14 - 2025-11-19 =
+* Tweak - Adjust ParamBuilder to pixel integration
+
 = 3.5.13 - 2025-11-10 =
 * Fix - [Woo-Alpha][Deprecate][1/n] Remove WhatsApp Webhook from Woo by @sharunaanandraj in #3693
 * Dev - Enhance E2E testing infrastructure for WooCommerce product workflows and add tests for product modification/edit flow by @ashiqursuperfly in #3692
