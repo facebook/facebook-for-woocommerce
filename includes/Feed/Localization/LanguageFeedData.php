@@ -446,8 +446,8 @@ class LanguageFeedData {
 						continue; // Skip invalid variations
 					}
 
-					// Use WooCommerce product ID for variation
-					$variation_id = (string) $variation->get_id();
+					// Get product ID based on content ID migration rollout switch
+					$variation_id = $this->get_product_id( $variation );
 
 					// Create row with the variation ID and reuse the translated content
 					$csv_row = array_merge(
@@ -458,8 +458,8 @@ class LanguageFeedData {
 					$csv_data[] = $csv_row;
 				}
 			} else {
-				// Simple product: Use WooCommerce product ID
-				$product_id = (string) $original_product->get_id();
+				// Get product ID based on content ID migration rollout switch
+				$product_id = $this->get_product_id( $original_product );
 
 				// Start with required columns
 				$csv_row = [
@@ -615,5 +615,27 @@ class LanguageFeedData {
 	 */
 	private function format_price_for_csv( $price, $currency ): string {
 		return (string) ( round( $price / 100.0, 2 ) ) . ' ' . $currency;
+	}
+
+	/**
+	 * Get the product ID based on the content ID migration rollout switch
+	 *
+	 * @param \WC_Product $product Product object
+	 * @return string Product ID (either simple ID or retailer ID based on GK)
+	 */
+	private function get_product_id( \WC_Product $product ): string {
+		// Check if content ID migration is enabled
+		if ( function_exists( 'facebook_for_woocommerce' ) ) {
+			$rollout_switches = facebook_for_woocommerce()->get_rollout_switches();
+			if ( $rollout_switches && $rollout_switches->is_switch_enabled(
+				\WooCommerce\Facebook\RolloutSwitches::SWITCH_CONTENT_ID_MIGRATION_ENABLED
+			) ) {
+				// New behavior: Use simple WooCommerce ID
+				return (string) $product->get_id();
+			}
+		}
+
+		// Old behavior: Use Facebook retailer ID format
+		return \WC_Facebookcommerce_Utils::get_fb_retailer_id( $product );
 	}
 }

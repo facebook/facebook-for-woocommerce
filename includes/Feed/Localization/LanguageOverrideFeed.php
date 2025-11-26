@@ -89,13 +89,15 @@ class LanguageOverrideFeed {
 		set_transient( $flag_name, 'yes', HOUR_IN_SECONDS );
 
 		$integration   = facebook_for_woocommerce()->get_integration();
-		$configured_ok = $integration && $integration->is_configured();
+		$connection_handler = facebook_for_woocommerce()->get_connection_handler();
+		// Language feeds only require an active connection, not a Facebook Page ID
+		$is_connected = $connection_handler && $connection_handler->is_connected();
 
 		// Only schedule feed job if store has not opted out of product sync.
-		$store_allows_sync = ( $configured_ok && $integration->is_product_sync_enabled() ) || $integration->is_woo_all_products_enabled();
+		$store_allows_sync = ( $is_connected && $integration->is_product_sync_enabled() ) || $integration->is_woo_all_products_enabled();
 
 		// Only schedule if has not opted out of language override feed generation.
-		$store_allows_language_feeds = $configured_ok && $this->is_language_override_feed_generation_enabled();
+		$store_allows_language_feeds = $is_connected && $this->is_language_override_feed_generation_enabled();
 
 		$schedule_action_hook_name = self::GENERATE_FEED_ACTION . static::get_data_stream_name();
 
@@ -103,7 +105,7 @@ class LanguageOverrideFeed {
 			as_unschedule_all_actions( $schedule_action_hook_name );
 
 			$message = '';
-			if ( ! $configured_ok ) {
+			if ( ! $is_connected ) {
 				$message = 'Integration not configured.';
 			} elseif ( ! $store_allows_language_feeds ) {
 				$message = 'Store does not allow language override feeds.';
@@ -574,24 +576,6 @@ class LanguageOverrideFeed {
 					array(
 						'language_code' => $language_code,
 						'expected_path' => $file_path,
-					),
-					array(
-						'should_send_log_to_meta'        => false,
-						'should_save_log_in_woocommerce' => true,
-						'woocommerce_log_level'          => \WC_Log_Levels::DEBUG,
-					)
-				);
-				return;
-			}
-
-			// Skip upload if file is empty or only contains headers (< 100 bytes)
-			$file_size = filesize( $file_path );
-			if ( $file_size < 100 ) {
-				Logger::log(
-					'Skipping language feed upload: file is too small (likely only headers)',
-					array(
-						'language_code' => $language_code,
-						'file_size' => $file_size,
 					),
 					array(
 						'should_send_log_to_meta'        => false,
