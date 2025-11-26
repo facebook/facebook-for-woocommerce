@@ -341,7 +341,7 @@ jobs:
         if: always()
         with:
           name: playwright-report
-          path: playwright-report/
+          path: /tmp/wordpress/wp-content/plugins/facebook-for-woocommerce/playwright-report/
           retention-days: 7
 
       - name: Upload PHP logs
@@ -357,5 +357,5 @@ jobs:
         if: failure()
         with:
           name: test-failures
-          path: test-results/
+          path: /tmp/wordpress/wp-content/plugins/facebook-for-woocommerce/test-results/
           retention-days: 7
