@@ -312,7 +312,7 @@ jobs:
           WP_PASSWORD: admin
         run: |
           cd /tmp/wordpress/wp-content/plugins/facebook-for-woocommerce
-          npx playwright test "catalog-.*\.spec\.js"
+          npx playwright test "product-.*\.spec\.js"
 
       - name: Run CAPI Pixel E2E tests
         env:

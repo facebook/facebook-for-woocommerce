@@ -19,88 +19,42 @@ class PixelCapture {
     async waitForEvent() {
         console.log(`🎯 Waiting for Pixel event: ${this.eventName}...`);
 
-        // Track ALL facebook requests for debugging
-        const allFBRequests = [];
-        const requestListener = request => {
-            const url = request.url();
-            if (url.includes('facebook.com') || url.includes('facebook.net')) {
-                allFBRequests.push({
-                    url: url.substring(0, 200),
-                    type: request.resourceType(),
-                    method: request.method()
-                });
-            }
-        };
-
-        this.page.on('request', requestListener);
-
         try {
-            // Wait for the request (more reliable than waitForResponse for custom events)
+            // Wait for the Facebook Pixel request with our event name
             const request = await this.page.waitForRequest(
                 request => {
                     const url = request.url();
 
                     // Must be a Facebook pixel request
-                    if (!url.includes('facebook.com')) {
-                        return false;
-                    }
+                    if (!url.includes('facebook.com')) return false;
 
                     // Must be a tracking endpoint (/tr/ or /privacy_sandbox/pixel)
-                    if (!url.includes('/tr/') && !url.includes('/privacy_sandbox/pixel')) {
-                        return false;
-                    }
+                    if (!url.includes('/tr/') && !url.includes('/privacy_sandbox/pixel')) return false;
 
                     // Check if URL contains our event name
-                    const matches = url.includes(`ev=${this.eventName}`);
-                    if (matches) {
-                        console.log(`   ✅ MATCHED: ${url.substring(0, 150)}...`);
-                    }
-                    return matches;
+                    return url.includes(`ev=${this.eventName}`);
                 },
                 { timeout: config.PIXEL_EVENT_TIMEOUT }
             );
 
             console.log(`✅ Pixel event captured: ${this.eventName}`);
 
-            // Get the response to validate status
+            // Parse and validate the event
             const response = await request.response();
             const eventData = this.parsePixelEvent(request.url());
 
             // Add response status
-            if (response) {
-                eventData.api_status = response.status();
-                eventData.api_ok = response.ok();
-
-                if (!response.ok()) {
-                    console.warn(`   ⚠️  Response status: ${response.status()} - Not OK`);
-                }
-            } else {
-                eventData.api_status = 'N/A';
-                eventData.api_ok = true;
-            }
+            eventData.api_status = response ? response.status() : 'N/A';
+            eventData.api_ok = response ? response.ok() : false;
 
             console.log(`   Event ID: ${eventData.eventId || 'none'}, API: ${eventData.api_status}`);
             await this.logToServer(eventData);
 
         } catch (err) {
-            // Remove listener before throwing
-            this.page.off('request', requestListener);
-
             if (err.message?.includes('Timeout')) {
-                console.error(`❌ Timeout: Pixel event ${this.eventName} not captured within ${config.PIXEL_EVENT_TIMEOUT}ms`);
-                console.log(`   📊 Total FB requests captured: ${allFBRequests.length}`);
-                if (allFBRequests.length > 0) {
-                    console.log(`   📋 FB requests made:`);
-                    allFBRequests.forEach(req => console.log(`      - ${req.type} ${req.method}: ${req.url}`));
-                } else {
-                    console.error(`   ⚠️  NO facebook requests were made at all!`);
-                }
-                throw new Error(`Pixel event ${this.eventName} did not fire within timeout`);
+                throw new Error(`❌ Pixel event ${this.eventName} did not fire within ${config.PIXEL_EVENT_TIMEOUT}ms`);
             }
             throw err;
-        } finally {
-            // Clean up listener
-            this.page.off('request', requestListener);
         }
     }
 
