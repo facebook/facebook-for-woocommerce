@@ -9,7 +9,7 @@
  */
 
 // Bootstrap WordPress
-$wp_path = '/tmp/wordpress/wp-load.php';
+$wp_path = (getenv('WP_SITE_PATH') ?: '/tmp/wordpress') . '/wp-load.php';
 
 if (!file_exists($wp_path)) {
     echo json_encode([
@@ -146,6 +146,7 @@ class FacebookSyncValidator {
 
             // Step 1: Get both platform data (WooCommerce + Facebook)
             $data = $this->getBothPlatformData($actual_type);
+            $this->result['raw_data'] = $data;
 
             // Step 2: Check sync status using fetched Facebook data
             $this->checkSyncStatus($data);
