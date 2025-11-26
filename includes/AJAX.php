@@ -182,7 +182,6 @@ class AJAX {
 		}
 	}
 
-
 	/**
 	 * Gets the current sync status.
 	 *

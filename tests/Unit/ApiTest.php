@@ -973,4 +973,41 @@ class ApiTest extends \WooCommerce\Facebook\Tests\AbstractWPUnitTestWithSafeFilt
 		$response = $this->api->read_product_set_item( $product_catalog_id, $retailer_id );
 		$this->assertFalse( $response->has_api_error() );
 	}
+
+	/**
+	 * Tests create language override feed upload request to Facebook.
+	 *
+	 * @return void
+	 * @throws ApiException In case of network request error.
+	 */
+	public function test_create_language_override_upload_request() {
+		$product_feed_id = '1068839467367301';
+		$language_code = 'es_XX';
+
+		$data = [
+			'url' => 'http://example.com/?wc-api=wc_facebook_get_language_feed_data&language=' . $language_code . '&secret=c4b8c3c46145aac6519e3f8a28bc86f2',
+		];
+
+		$response = function( $result, $parsed_args, $url ) use ( $product_feed_id ) {
+			$this->assertEquals( 'POST', $parsed_args['method'] );
+			$this->assertEquals( "{$this->endpoint}{$this->version}/{$product_feed_id}/uploads", $url );
+
+			// Verify the request body contains the language override URL
+			$body_data = json_decode( $parsed_args['body'], true );
+			$this->assertStringContainsString( 'wc_facebook_get_language_feed_data', $body_data['url'] );
+			$this->assertStringContainsString( 'language=es_XX', $body_data['url'] );
+
+			return [
+				'body'     => '{"id":"lang_upload_12345","validation_status":["success"]}',
+				'response' => [
+					'code'    => 200,
+					'message' => 'OK',
+				],
+			];
+		};
+		$this->add_filter_with_safe_teardown( 'pre_http_request', $response, 10, 3 );
+
+		$response = $this->api->create_product_feed_upload( $product_feed_id, $data );
+		$this->assertFalse( $response->has_api_error() );
+	}
 }

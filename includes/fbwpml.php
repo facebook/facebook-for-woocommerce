@@ -141,6 +141,24 @@ class WC_Facebook_WPML_Injector {
 				}
 			}
 
+			// Count how many languages are currently set to VISIBLE
+			$visible_languages_count = count(
+				array_filter(
+					$settings,
+					function ( $status ) {
+						return FB_WPML_Language_Status::VISIBLE === $status;
+					}
+				)
+			);
+
+			// Check if user has legacy multi-language setup (2+ languages visible)
+			$has_legacy_setup = $visible_languages_count >= 2;
+
+			// Don't show the section at all for new/eligible users
+			if ( ! $has_legacy_setup ) {
+				return;
+			}
+
 			?>
 			<div id="lang-sec-fb" class="wpml-section wpml-section-languages">
 				<div class="wpml-section-header">

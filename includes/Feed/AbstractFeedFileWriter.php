@@ -320,7 +320,7 @@ abstract class AbstractFeedFileWriter {
 			}
 
 			if ( ! empty( $this->header_row ) ) {
-				$headers = str_getcsv( $this->header_row );
+				$headers = str_getcsv( $this->header_row, $this->delimiter, $this->enclosure, $this->escape_char );
 				if ( fputcsv( $temp_feed_file, $headers, $this->delimiter, $this->enclosure, $this->escape_char ) === false ) {
 					throw new PluginException( "Failed to write header row to {$temp_file_path}.", 500 );
 				}

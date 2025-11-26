@@ -114,6 +114,7 @@ class ProductValidator {
 		$this->validate_product_status();
 		$this->validate_product_visibility();
 		$this->validate_product_terms();
+		$this->validate_product_language();
 	}
 
 	/**
@@ -398,5 +399,79 @@ class ProductValidator {
 		if ( $used_attributes_count > self::MAX_NUMBER_OF_ATTRIBUTES_IN_VARIATION ) {
 			throw new ProductInvalidException( __( 'Too many attributes selected for product. Use 4 or less.', 'facebook-for-woocommerce' ) );
 		}
+	}
+
+	/**
+	 * Validate if the product is in the default language when a localization plugin is active.
+	 *
+	 * Only products in the default language should be synced to the main product catalog.
+	 * Translated products are handled separately via language override feeds.
+	 *
+	 * @throws ProductExcludedException If product is not in the default language.
+	 */
+	protected function validate_product_language() {
+		// Get the product to check (use parent for variations)
+		$product_to_check = $this->product_parent ? $this->product_parent : $this->product;
+		$product_id = $product_to_check->get_id();
+
+		// Only validate language if language override feed generation is enabled
+		// Use the integration method instead of get_option() to handle all necessary checks
+		$is_language_feed_enabled = $this->integration->is_language_override_feed_generation_enabled();
+
+		if ( ! $is_language_feed_enabled ) {
+			return;
+		}
+
+		$integration = \WooCommerce\Facebook\Integrations\IntegrationRegistry::get_active_localization_integration();
+
+		// If no localization plugin is active, skip language validation
+		if ( ! $integration ) {
+			return;
+		}
+
+		$default_language = $integration->get_default_language();
+
+		// If we can't determine the default language, skip validation to avoid blocking sync
+		if ( ! $default_language ) {
+			return;
+		}
+
+		// Get the product's language using the integration's method
+		$product_language = $integration->get_product_language( $product_id );
+
+		// If we can't determine the product's language, skip validation to avoid blocking sync
+		if ( ! $product_language ) {
+			return;
+		}
+
+		// Compare product language with default language
+		// Use Locale utility to extract language code for consistent comparison
+		$default_lang_code = $this->extract_language_code( $default_language );
+		$product_lang_code = $this->extract_language_code( $product_language );
+
+		if ( $product_lang_code !== $default_lang_code ) {
+			throw new ProductExcludedException(
+				sprintf(
+					/* translators: 1: product language, 2: default language */
+					__( 'Product is in language "%1$s" but only default language "%2$s" products are synced to the main catalog.', 'facebook-for-woocommerce' ),
+					$product_language,
+					$default_language
+				)
+			);
+		}
+	}
+
+	/**
+	 * Extract language code from locale string.
+	 *
+	 * Converts locale format (en_US) to language code (en) for consistent comparison.
+	 * This uses the same logic as Locale::convert_to_facebook_language_code().
+	 *
+	 * @param string $locale_or_language Locale string or language code.
+	 * @return string Language code (lowercase).
+	 */
+	private function extract_language_code( string $locale_or_language ): string {
+		$parts = explode( '_', $locale_or_language );
+		return strtolower( $parts[0] );
 	}
 }
