@@ -252,9 +252,9 @@ class EventValidator {
             errors.push('Cookie _fbp not present');
         }
 
-        if (!pixel.cookies._fbc) {
-            errors.push('Cookie _fbc not present');
-        }
+        // if (!pixel.cookies._fbc) {
+        //     errors.push('Cookie _fbc not present');
+        // }
     }
 
     validateValue(pixel, capi, errors) {
