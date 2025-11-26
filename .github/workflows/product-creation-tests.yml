@@ -318,6 +318,11 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y xvfb
 
+      - name: Run CAPI Pixel E2E tests
+        run: |
+          cd ${{ env.PLUGIN_PATH }}
+          xvfb-run --auto-servernum npx playwright test events-test*.spec.js --headed
+
       - name: Run E2E tests
         env:
           WP_USERNAME: admin
@@ -325,11 +330,6 @@ jobs:
         run: |
           cd ${{ env.PLUGIN_PATH }}
           npx playwright test "product-.*\.spec\.js"
-
-      - name: Run CAPI Pixel E2E tests
-        run: |
-          cd ${{ env.PLUGIN_PATH }}
-          xvfb-run --auto-servernum npx playwright test events-test*.spec.js --headed
 
       - name: Check for PHP errors, and dump debug log
         if: always()

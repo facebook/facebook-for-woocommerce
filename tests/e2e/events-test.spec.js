@@ -5,7 +5,6 @@
 const { test, expect } = require('@playwright/test');
 const TestSetup = require('./lib/TestSetup');
 const EventValidator = require('./lib/EventValidator');
-const config = require('./config/test-config');
 
 // DIAGNOSTIC TEST - Check if pixel code exists in HTML
 test('DIAGNOSTIC: Pixel code in HTML', async ({ page }) => {
