@@ -55,23 +55,11 @@ test('ViewContent', async ({ page }) => {
     const { testId, pixelCapture } = await TestSetup.init(page, 'ViewContent');
 
     console.log(`   🌐 Navigating to: ${config.TEST_PRODUCT_URL}`);
-    
+
     await Promise.all([
         pixelCapture.waitForEvent(),
         page.goto(config.TEST_PRODUCT_URL).then(async (response) => {
             console.log(`   📄 Page loaded: ${response.status()} ${response.url()}`);
-            
-            // Check if pixel code exists on this page
-            const hasPixelCode = await page.evaluate(() => {
-                return {
-                    fbqExists: typeof window.fbq !== 'undefined',
-                    hasFbScript: document.documentElement.innerHTML.includes('connect.facebook.net'),
-                    hasInit: document.documentElement.innerHTML.includes("fbq('init'"),
-                };
-            });
-            
-            console.log(`   🔍 Pixel on product page:`, hasPixelCode);
-            
             await TestSetup.waitForPageReady(page);
         })
     ]);
