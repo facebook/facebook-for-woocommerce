@@ -82,6 +82,7 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 				try {
 					$site_url = get_site_url();
 					self::$param_builder = new \FacebookAds\ParamBuilder( array( $site_url ) );
+
 					self::$param_builder->processRequest(
 						$site_url,
 						$_GET,
@@ -111,6 +112,11 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 		 */
 		public function param_builder_server_setup() {
 			try {
+
+				if ( ! (bool) apply_filters( 'facebook_for_woocommerce_integration_pixel_enabled', true ) ) {
+					return;
+				}
+
 				$cookie_to_set = self::get_param_builder()->getCookiesToSet();
 
 				if ( ! headers_sent() ) {
@@ -1041,7 +1047,7 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 					'contents'     => wp_json_encode( $contents ),
 					'content_type' => $content_type,
 					'value'        => $order->get_total(),
-					'currency'     => get_woocommerce_currency(),
+					'currency'     => ( method_exists( $order, 'get_currency' ) ? $order->get_currency() : get_woocommerce_currency() ),
 					'order_id'     => $order_id,
 				),
 				'user_data'   => $this->get_user_data_from_billing_address( $order ),
@@ -1085,7 +1091,7 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 					'custom_data' => array(
 						'sign_up_fee' => $subscription->get_sign_up_fee(),
 						'value'       => $subscription->get_total(),
-						'currency'    => get_woocommerce_currency(),
+						'currency'    => ( method_exists( $subscription, 'get_currency' ) ? $subscription->get_currency() : get_woocommerce_currency() ),
 					),
 					'user_data'   => $this->pixel->get_user_info(),
 				);
