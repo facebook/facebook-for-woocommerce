@@ -307,7 +307,7 @@ jobs:
 
       - name: Run E2E tests
         env:
-          WORDPRESS_URL: http://localhost:8080
+          WORDPRESS_URL: http://${{ env.TEST_SITE_HOST }}:8080
           WP_USERNAME: admin
           WP_PASSWORD: admin
         run: |
