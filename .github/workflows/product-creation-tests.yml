@@ -22,13 +22,19 @@ on:
 env:
   # Test environment configuration
   TEST_SITE_HOST: ${{ secrets.TEST_SITE_HOST || 'wooc-local-test-sitecom.local' }}
+  FB_TEST_EVENT_CODE: ${{ secrets.FB_TEST_EVENT_CODE }}
+  WORDPRESS_PATH: '/tmp/wordpress'
+  WP_DEBUG_LOG: '/tmp/wordpress/wp-content/debug.log'
+  PLUGIN_PATH: '/tmp/wordpress/wp-content/plugins/facebook-for-woocommerce'
+  FB_E2E_TEST_COOKIE_NAME: 'facebook_test_id'
+  FB_E2E_LOGGER_PATH: '/tests/e2e/lib/Logger.php'
+  FB_E2E_CAPTURED_EVENTS_DIR: '/tests/e2e/captured-events'
+  CUSTOMER_USERNAME: customer
+  CUSTOMER_PASSWORD: Password@54321
 
 jobs:
   e2e-tests:
     runs-on: ubuntu-latest
-
-    env:
-      FB_TEST_EVENT_CODE: ${{ secrets.FB_TEST_EVENT_CODE }} || 'TEST27057'
 
     services:
       mysql:
@@ -64,6 +70,13 @@ jobs:
           echo "127.0.0.1 ${{ env.TEST_SITE_HOST }}" | sudo tee -a /etc/hosts
           echo "✅ Added hosts entry for ${{ env.TEST_SITE_HOST }}"
 
+      - name: Wordpress debug log file setup
+        run: |
+          # Create debug.log file and make it writable
+          touch ${{ env.WP_DEBUG_LOG }}
+          chmod 777 ${{ env.WP_DEBUG_LOG }}
+          echo "✅ debug.log created and writable"
+
       - name: Create WordPress test environment
         run: |
           # Create WordPress directory
@@ -87,9 +100,9 @@ jobs:
           // Debug settings
           define('WP_DEBUG', true);
           define('WP_DEBUG_LOG', true);
-          define('WP_DEBUG_LOG', '/tmp/wordpress/wp-content/debug.log');
+          define('WP_DEBUG_LOG', '${{ env.WP_DEBUG_LOG }}');
           define('WP_DEBUG_DISPLAY', false);
-          @ini_set('error_log', '/tmp/wordpress/wp-content/debug.log');
+          @ini_set('error_log', '${{ env.WP_DEBUG_LOG }}');
           @ini_set('log_errors', 'On');
 
           // Security keys (for testing only)
@@ -104,17 +117,9 @@ jobs:
 
           EOF
 
-      - name: Wordpress debug log file setup
-        run: |
-          # Create debug.log file and make it writable
-          touch /tmp/wordpress/wp-content/debug.log
-          chmod 777 /tmp/wordpress/wp-content/debug.log
-          echo "✅ debug.log created and writable"
-
-
       - name: Start PHP server
         run: |
-          cd /tmp/wordpress
+          cd ${{ env.WORDPRESS_PATH }}
           php -S 0.0.0.0:8080 -t . &
           echo $! > /tmp/php-server.pid
           sleep 5
@@ -138,7 +143,7 @@ jobs:
 
       - name: Install WordPress
         run: |
-          cd /tmp/wordpress
+          cd ${{ env.WORDPRESS_PATH }}
           wp core install \
             --url=http://${{ env.TEST_SITE_HOST }}:8080 \
             --title="E2E Test Site" \
@@ -149,7 +154,7 @@ jobs:
 
       - name: Install WooCommerce
         run: |
-          cd /tmp/wordpress
+          cd ${{ env.WORDPRESS_PATH }}
 
           # Install Storefront theme (official WooCommerce theme with all hooks)
           wp theme install storefront --activate --allow-root
@@ -170,7 +175,7 @@ jobs:
 
       - name: Create wp non admin user
         run: |
-          cd /tmp/wordpress
+          cd ${{ env.WORDPRESS_PATH }}
           # Create a customer (non-admin) user for testing
           # Pixel tracking excludes admin users by default!
           # Note: customer role is created by WooCommerce, so this step must run AFTER WooCommerce installation
@@ -184,7 +189,7 @@ jobs:
 
       - name: Install Facebook for WooCommerce plugin
         run: |
-          cd /tmp/wordpress
+          cd ${{ env.WORDPRESS_PATH }}
 
           # Use marketplace version if flag is true
           if [ "${{ inputs.use-marketplace-version }}" = "true" ]; then
@@ -196,11 +201,11 @@ jobs:
             cp -r ${{ github.workspace }} wp-content/plugins/facebook-for-woocommerce/
 
             # Install Composer dependencies for the plugin
-            cd wp-content/plugins/facebook-for-woocommerce
+            cd ${{ env.PLUGIN_PATH }}
             if [ -f composer.json ]; then
               composer install --no-dev --optimize-autoloader
             fi
-            cd /tmp/wordpress
+            cd ${{ env.WORDPRESS_PATH }}
           fi
 
           # Configure Facebook connection before activation
@@ -225,7 +230,7 @@ jobs:
 
       - name: Verify WordPress setup
         run: |
-          cd /tmp/wordpress
+          cd ${{ env.WORDPRESS_PATH }}
           echo "=== WordPress Info ==="
           wp core version --allow-root
           echo "=== Active Plugins ==="
@@ -238,7 +243,7 @@ jobs:
 
       - name: Verify Facebook for WooCommerce setup
         run: |
-          cd /tmp/wordpress
+          cd ${{ env.WORDPRESS_PATH }}
           echo "=== Facebook for WooCommerce Info ==="
           wp eval "
             if (function_exists('facebook_for_woocommerce')) {
@@ -267,15 +272,15 @@ jobs:
       - name: Install Playwright
         run: |
           # Install in the WordPress plugin directory (where we'll run tests from)
-          cd /tmp/wordpress/wp-content/plugins/facebook-for-woocommerce
+          cd ${{ env.PLUGIN_PATH }}
           npm install
           npx playwright install chromium
           npx playwright install-deps chromium
 
       - name: Setup captured-events directory
         run: |
-          mkdir -p /tmp/wordpress/wp-content/plugins/facebook-for-woocommerce/tests/e2e/captured-events
-          chmod 777 /tmp/wordpress/wp-content/plugins/facebook-for-woocommerce/tests/e2e/captured-events
+          mkdir -p ${{ env.PLUGIN_PATH }}/tests/e2e/captured-events
+          chmod 777 ${{ env.PLUGIN_PATH }}/tests/e2e/captured-events
 
       - name: Create test product for CAPI Pixel E2E tests
         env:
@@ -283,7 +288,7 @@ jobs:
           WP_USERNAME: admin
           WP_PASSWORD: admin
         run: |
-          cd /tmp/wordpress
+          cd ${{ env.WORDPRESS_PATH }}
           # Create test product for ViewContent/AddToCart tests
           wp eval "
             \$product = new WC_Product_Simple();
@@ -311,22 +316,22 @@ jobs:
           WP_USERNAME: admin
           WP_PASSWORD: admin
         run: |
-          cd /tmp/wordpress/wp-content/plugins/facebook-for-woocommerce
+          cd ${{ env.PLUGIN_PATH }}
           npx playwright test "product-.*\.spec\.js"
 
       - name: Run CAPI Pixel E2E tests
         env:
           WORDPRESS_URL: http://${{ env.TEST_SITE_HOST }}:8080
-          WP_CUSTOMER_USERNAME: customer
-          WP_CUSTOMER_PASSWORD: Password@54321
+          WP_CUSTOMER_USERNAME: ${{ env.CUSTOMER_USERNAME }}
+          WP_CUSTOMER_PASSWORD: ${{ env.CUSTOMER_PASSWORD }}
         run: |
-          cd /tmp/wordpress/wp-content/plugins/facebook-for-woocommerce
+          cd ${{ env.PLUGIN_PATH }}
           xvfb-run --auto-servernum npx playwright test events-test*.spec.js --headed
 
       - name: Check for PHP errors, and dump debug log
         if: always()
         run: |
-          cd /tmp/wordpress
+          cd ${{ env.WORDPRESS_PATH }}
           if [ -f wp-content/debug.log ]; then
             if grep -i "fatal\|error" wp-content/debug.log; then
               echo "❌ PHP errors detected"
@@ -341,7 +346,7 @@ jobs:
         if: always()
         with:
           name: playwright-report
-          path: /tmp/wordpress/wp-content/plugins/facebook-for-woocommerce/playwright-report/
+          path: ${{ env.PLUGIN_PATH }}/playwright-report/
           retention-days: 7
 
       - name: Upload PHP logs
@@ -349,7 +354,7 @@ jobs:
         if: always()
         with:
           name: php-debug-logs
-          path: /tmp/wordpress/wp-content/debug.log
+          path: ${{ env.WP_DEBUG_LOG }}
           retention-days: 7
 
       - name: Upload test videos/screenshots
@@ -357,5 +362,5 @@ jobs:
         if: failure()
         with:
           name: test-failures
-          path: /tmp/wordpress/wp-content/plugins/facebook-for-woocommerce/test-results/
+          path: ${{ env.PLUGIN_PATH }}/test-results/
           retention-days: 7
