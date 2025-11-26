@@ -70,13 +70,6 @@ jobs:
           echo "127.0.0.1 ${{ env.TEST_SITE_HOST }}" | sudo tee -a /etc/hosts
           echo "✅ Added hosts entry for ${{ env.TEST_SITE_HOST }}"
 
-      - name: Wordpress debug log file setup
-        run: |
-          # Create debug.log file and make it writable
-          touch ${{ env.WP_DEBUG_LOG }}
-          chmod 777 ${{ env.WP_DEBUG_LOG }}
-          echo "✅ debug.log created and writable"
-
       - name: Create WordPress test environment
         run: |
           # Create WordPress directory
@@ -116,6 +109,14 @@ jobs:
           define('NONCE_SALT',       'testing-salt-4');
 
           EOF
+
+      - name: Wordpress debug log file setup
+        run: |
+          # Create debug.log file and make it writable
+          touch ${{ env.WP_DEBUG_LOG }}
+          chmod 777 ${{ env.WP_DEBUG_LOG }}
+          echo "✅ debug.log created and writable"
+
 
       - name: Start PHP server
         run: |
