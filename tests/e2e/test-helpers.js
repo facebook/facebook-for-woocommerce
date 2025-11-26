@@ -280,7 +280,7 @@ async function validateFacebookSync(productId, productName, waitSeconds = 10, ma
     if (result.success) {
       console.log(`🎉 Facebook Sync Validation Succeeded for ${displayName}:`);
     } else {
-      console.warn(`⚠️ Facebook sync validation Failed: ${result.error}. Check debug logs above.`);
+      console.warn(`⚠️ Facebook Sync Validation Failed.\nDepending on the test case, this may or may not be an actual error. Check the debug logs above.`);
     }
 
     return result;
