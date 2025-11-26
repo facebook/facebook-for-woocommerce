@@ -29,7 +29,6 @@ class PixelCapture {
                     type: request.resourceType(),
                     method: request.method()
                 });
-                console.log(`   📡 FB Request: ${request.resourceType()} ${request.method()} ${url.substring(0, 100)}...`);
             }
         };
 

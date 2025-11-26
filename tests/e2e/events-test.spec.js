@@ -39,6 +39,7 @@ test('DIAGNOSTIC: Pixel code in HTML', async ({ page }) => {
 test('PageView', async ({ page }) => {
     const { testId, pixelCapture } = await TestSetup.init(page, 'PageView');
 
+    console.log(`   🌐 Navigating to homepage`);
     await Promise.all([
         pixelCapture.waitForEvent(),
         page.goto('/').then(() => TestSetup.waitForPageReady(page))
@@ -55,11 +56,9 @@ test('ViewContent', async ({ page }) => {
     const { testId, pixelCapture } = await TestSetup.init(page, 'ViewContent');
 
     console.log(`   🌐 Navigating to: ${config.TEST_PRODUCT_URL}`);
-
     await Promise.all([
         pixelCapture.waitForEvent(),
         page.goto(config.TEST_PRODUCT_URL).then(async (response) => {
-            console.log(`   📄 Page loaded: ${response.status()} ${response.url()}`);
             await TestSetup.waitForPageReady(page);
         })
     ]);
