@@ -355,7 +355,6 @@ test.describe('Facebook for WooCommerce - Product Modification E2E Tests', () =>
       const variationsTab = page.locator('li.variations_tab a');
       await variationsTab.waitFor({ state: 'visible', timeout: 2000 });
       await variationsTab.click();
-      await page.waitForTimeout(2000);
       console.log('✅ Opened Variations tab');
 
       // Setup popup/prompt handler before selecting the option (popup appears immediately on selection)
@@ -373,7 +372,6 @@ test.describe('Facebook for WooCommerce - Product Modification E2E Tests', () =>
       const expandAllButton = page.getByRole('link', { name: 'Expand' }).first();
       await expandAllButton.waitFor({ state: 'visible', timeout: 2000 });
       await expandAllButton.click();
-      await page.waitForTimeout(2000);
       console.log('✅ Expanded all variations');
 
       // Select bulk action "Set regular prices"
@@ -389,7 +387,7 @@ test.describe('Facebook for WooCommerce - Product Modification E2E Tests', () =>
       const saveVariationsButton = page.locator('button.save-variation-changes');
       if (await saveVariationsButton.isVisible({ timeout: 2000 }) && await saveVariationsButton.isEnabled({ timeout: 2000 })) {
         await saveVariationsButton.click();
-        await page.waitForTimeout(2000);
+        await page.waitForLoadState('domcontentloaded');
         console.log('✅ Clicked "Save changes" for variations');
       }
       else {
@@ -421,12 +419,10 @@ test.describe('Facebook for WooCommerce - Product Modification E2E Tests', () =>
       // After reload, go to Variations tab again
       await variationsTab.waitFor({ state: 'visible', timeout: 2000 });
       await variationsTab.click();
-      await page.waitForTimeout(2000);
 
       // Expand all variations to check their prices
       await expandAllButton.waitFor({ state: 'visible', timeout: 2000 });
       await expandAllButton.click();
-      await page.waitForTimeout(2000);
 
       // Get all variation rows
       const variationRows = page.locator('.woocommerce_variation');
@@ -559,14 +555,12 @@ test.describe('Facebook for WooCommerce - Product Modification E2E Tests', () =>
       const variationsTab = page.locator('li.variations_tab a');
       await variationsTab.waitFor({ state: 'visible', timeout: 5000 });
       await variationsTab.click();
-      await page.waitForTimeout(2000);
       console.log('✅ Opened Variations tab');
 
       // Expand all variations
       const expandAllButton = page.getByRole('link', { name: 'Expand' }).first();
       await expandAllButton.waitFor({ state: 'visible', timeout: 5000 });
       await expandAllButton.click();
-      await page.waitForTimeout(2000);
       console.log('✅ Expanded all variations');
 
       // Get all variation rows
@@ -615,7 +609,7 @@ test.describe('Facebook for WooCommerce - Product Modification E2E Tests', () =>
       const saveVariationsButton = page.locator('button.save-variation-changes');
       if (await saveVariationsButton.isVisible({ timeout: 5000 }) && await saveVariationsButton.isEnabled({ timeout: 5000 })) {
         await saveVariationsButton.click();
-        await page.waitForTimeout(3000);
+        await page.waitForLoadState('domcontentloaded');
         console.log('✅ Saved variation changes');
       } else {
         console.warn('⚠️ "Save changes" button not visible or enabled, skipping');
