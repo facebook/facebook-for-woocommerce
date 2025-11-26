@@ -152,6 +152,7 @@ class EventValidator {
 
         this.validateTimestamp(p, c, errors);
         this.validateFbp(p, c, errors);
+        this.validateCookies(p, errors)
 
         if (schema.custom_data && schema.custom_data.length > 0) {
             if (schema.custom_data.includes('value')) {
@@ -241,6 +242,21 @@ class EventValidator {
         }
     }
 
+    validateCookies(pixel, errors) {
+        if (!pixel.cookies) {
+            errors.push('Pixel event missing cookies field');
+            return;
+        }
+
+        if (!pixel.cookies._fbp) {
+            errors.push('Cookie _fbp not present');
+        }
+
+        if (!pixel.cookies._fbc) {
+            errors.push('Cookie _fbc not present');
+        }
+    }
+
     validateValue(pixel, capi, errors) {
         const pVal = pixel.custom_data?.value;
         const cVal = capi.custom_data?.value;
@@ -315,3 +331,5 @@ class EventValidator {
 }
 
 module.exports = EventValidator;
+
+// TODO: verify fbp , fbc cookies are present (first capture them in PixelCapture.js)

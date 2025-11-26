@@ -39,7 +39,7 @@ class PixelCapture {
 
             // Parse and validate the event
             const response = await request.response();
-            const eventData = this.parsePixelEvent(request.url());
+            const eventData = await this.parsePixelEvent(request.url());
 
             // Add response status
             eventData.api_status = response ? response.status() : 'N/A';
@@ -57,9 +57,23 @@ class PixelCapture {
     }
 
     /**
+     * Get all cookies from the browser
+     */
+     async getAllCookies() {
+        const cookies = await this.page.context().cookies();
+        const cookieMap = {};
+
+        cookies.forEach(cookie => {
+            cookieMap[cookie.name] = cookie.value;
+        });
+
+        return cookieMap;
+    }
+
+    /**
      * Parse Pixel event from URL
      */
-    parsePixelEvent(url) {
+    async parsePixelEvent(url) {
         const urlObj = new URL(url);
 
         // Extract basic fields
@@ -99,12 +113,16 @@ class PixelCapture {
             userData.fbp = fbp;
         }
 
+        // Capture all cookies
+        const cookies = await this.getAllCookies();
+
         return {
             eventName: eventName,
             eventId: eventId,
             pixelId: pixelId,
             custom_data: customData,
             user_data: userData,
+            cookies: cookies,
             timestamp: Date.now()
         };
     }

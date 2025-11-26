@@ -656,7 +656,7 @@ class API extends Base {
 			}
 
 		} catch ( \Exception $e ) {
-				error_log( 'Facebook for WooCommerce E2E: Test logging failed - ' . $e->getMessage() );
+			// Silent failure - never break production
 		}
 	}
 
@@ -674,9 +674,14 @@ class API extends Base {
 		$request = new API\Pixel\Events\Request( $pixel_id, $events );
 
 		// For E2E tests
-		$test_event_code = getenv( 'FB_TEST_EVENT_CODE' );
-		if ( $test_event_code ) {
-			$request->set_params( array_merge( $request->get_params(), array( 'test_event_code' => $test_event_code ) ) );
+		try {
+			$test_event_code = getenv( 'FB_TEST_EVENT_CODE' );
+			$cookie_name     = getenv( 'FB_E2E_TEST_COOKIE_NAME' );
+			if ( $test_event_code && $cookie_name && ! empty( $_COOKIE[ $cookie_name ] ) ) {
+				$request->set_params( array_merge( $request->get_params(), array( 'test_event_code' => $test_event_code ) ) );
+			}
+		} catch ( \Exception $e ) {
+			// Silent failure - never break production
 		}
 
 		$this->set_response_handler( Response::class );
