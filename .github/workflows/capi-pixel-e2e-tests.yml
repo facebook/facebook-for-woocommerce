@@ -112,6 +112,7 @@ jobs:
           echo "✅ debug.log created and writable"
 
       - name: Install and configure Nginx
+        if: false
         run: |
           # Install nginx and PHP-FPM
           sudo apt-get update
@@ -155,6 +156,14 @@ jobs:
 
           echo "Nginx started on port 80"
 
+      - name: Start PHP server
+        run: |
+          cd /tmp/wordpress
+          php -S 0.0.0.0:8080 -t . &
+          echo $! > /tmp/php-server.pid
+          sleep 5
+          echo "✅ PHP server started on port 8080"
+
       - name: Install WP-CLI
         run: |
           echo "=== Installing WP-CLI ==="
@@ -175,7 +184,7 @@ jobs:
         run: |
           cd /tmp/wordpress
           wp core install \
-            --url=http://${{ env.TEST_SITE_HOST }} \
+            --url=http://${{ env.TEST_SITE_HOST }}:8080 \
             --title="E2E Test Site" \
             --admin_user=admin \
             --admin_password=admin \
@@ -269,7 +278,7 @@ jobs:
           wp option get siteurl --allow-root
 
           # Test if site is accessible
-          curl -f http://${{ env.TEST_SITE_HOST }} || exit 1
+          curl -f http://${{ env.TEST_SITE_HOST }}:8080 || exit 1
 
       - name: Verify Facebook for WooCommerce setup
         run: |
@@ -314,7 +323,7 @@ jobs:
 
       - name: Create test product for CAPI Pixel E2E tests
         env:
-          WORDPRESS_URL: http://${{ env.TEST_SITE_HOST }}
+          WORDPRESS_URL: http://${{ env.TEST_SITE_HOST }}:8080
           WP_USERNAME: admin
           WP_PASSWORD: admin
         run: |
@@ -342,7 +351,7 @@ jobs:
 
       - name: Run CAPI Pixel E2E tests
         env:
-          WORDPRESS_URL: http://${{ env.TEST_SITE_HOST }}
+          WORDPRESS_URL: http://${{ env.TEST_SITE_HOST }}:8080
           WP_CUSTOMER_USERNAME: customer
           WP_CUSTOMER_PASSWORD: Password@54321
         run: |
