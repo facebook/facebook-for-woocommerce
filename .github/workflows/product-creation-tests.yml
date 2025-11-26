@@ -217,7 +217,7 @@ jobs:
           WP_PASSWORD: admin
         run: |
           cd /tmp/wordpress/wp-content/plugins/facebook-for-woocommerce
-          npx playwright test catalog-.*\.spec\.js
+          npx playwright test "catalog-.*\.spec\.js"
 
       - name: Check for PHP errors
         if: always()
