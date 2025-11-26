@@ -212,7 +212,9 @@ jobs:
           WORDPRESS_URL: http://localhost:8080
           WP_USERNAME: admin
           WP_PASSWORD: admin
-        run: npx playwright test catalog-*.spec.js
+        run: |
+          cd /tmp/wordpress/wp-content/plugins/facebook-for-woocommerce
+          npx playwright test catalog-*.spec.js
 
       - name: Check for PHP errors
         if: always()

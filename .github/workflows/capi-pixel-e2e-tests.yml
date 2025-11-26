@@ -1,4 +1,4 @@
-name: Product Creation E2E Tests
+name: CAPI Pixel E2E Tests
 
 on:
   # make this workflow reusable and take in marketplace version as input
