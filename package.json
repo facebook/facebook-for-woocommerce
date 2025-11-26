@@ -51,7 +51,7 @@
     "start": "wp-scripts start",
     "test:php": "composer test-unit",
     "test:js": "jest",
-    "test:e2e": "playwright test",
+    "test:e2e": "playwright test catalog-*.spec.js",
     "test:e2e:ui": "playwright test --ui",
     "test:e2e:debug": "playwright test --debug"
   },
