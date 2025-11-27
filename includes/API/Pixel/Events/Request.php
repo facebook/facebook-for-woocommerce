@@ -79,7 +79,18 @@ class Request extends API\Request {
 			unset( $event_data['user_data']['click_id'] );
 			unset( $event_data['user_data']['browser_id'] );
 
-			$data['data'][] = array_filter( $event_data );
+		  $data['data'][] = array_filter( $event_data );
+		}
+
+		// For E2E tests - add test_event_code to request body
+		try {
+			$test_event_code = getenv( 'FB_TEST_EVENT_CODE' );
+			$cookie_name     = getenv( 'FB_E2E_TEST_COOKIE_NAME' );
+			if ( $test_event_code && $cookie_name && ! empty( $_COOKIE[ $cookie_name ] ) ) {
+				$data['test_event_code'] = $test_event_code;
+			}
+		} catch ( \Exception $e ) {
+			// Silent failure
 		}
 
 		/**
