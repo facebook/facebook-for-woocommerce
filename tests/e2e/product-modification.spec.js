@@ -14,7 +14,8 @@ const {
   filterProducts,
   clickFirstProduct,
   publishProduct,
-  openFacebookOptions
+  openFacebookOptions,
+  setProductTitle
 } = require('./test-helpers');
 
 test.describe('Facebook for WooCommerce - Product Modification E2E Tests', () => {
@@ -43,6 +44,9 @@ test.describe('Facebook for WooCommerce - Product Modification E2E Tests', () =>
       });
 
       createdProductId = createdProduct.productId;
+      originalName = createdProduct.productName;
+      originalPrice = createdProduct.price;
+      originalStock = createdProduct.stock;
       console.log(`✅ Created product ID ${createdProductId} for editing test`);
 
       await filterProducts(page, 'simple', createdProduct.sku);
@@ -58,37 +62,6 @@ test.describe('Facebook for WooCommerce - Product Modification E2E Tests', () =>
 
       console.log(`✅ Editing product ID: ${productId}`);
 
-      // Store original values before editing
-      console.log('📝 Storing original product values...');
-
-      // Get original title
-      const titleField = page.locator('#title');
-      if (await titleField.isVisible({ timeout: 5000 })) {
-        originalName = await titleField.inputValue();
-        console.log(`Original title: "${originalName}"`);
-      }
-
-      // Get original price
-      const regularPriceField = page.locator('#_regular_price');
-      if (await regularPriceField.isVisible({ timeout: 5000 })) {
-        originalPrice = await regularPriceField.inputValue();
-        console.log(`Original price: "${originalPrice}"`);
-      }
-
-      // Get original stock quantity
-      await page.click('li.inventory_tab a');
-
-      const stockField = page.locator('#_stock');
-      const trackStockCheckBox = page.locator('#_manage_stock');
-      await trackStockCheckBox.waitFor({ state: 'visible', timeout: 5000 });
-      if (!(await trackStockCheckBox.isChecked())) {
-        await trackStockCheckBox.check();
-      }
-      if (await stockField.isVisible({ timeout: 2000 })) {
-        originalStock = await stockField.inputValue();
-        console.log(`Original stock: "${originalStock}"`);
-      }
-
       // Edit product attributes
       console.log('✏️ Editing product attributes...');
 
@@ -99,23 +72,26 @@ test.describe('Facebook for WooCommerce - Product Modification E2E Tests', () =>
       const newStock = (parseInt(originalStock || '10', 10) + 5).toString();
       const newDescription = `This is a test product with a description updated on: ${timestamp}`;
 
-      // Edit title
-      await titleField.scrollIntoViewIfNeeded();
-      await titleField.fill(newTitle);
-      console.log(`✅ Updated title to: "${newTitle}"`);
+      // Edit title and description
+      await setProductTitle(page, newTitle);
+      await setProductDescription(page, newDescription);
 
       // Edit price
       await page.click('li.general_tab a');
+      const regularPriceField = page.locator('#_regular_price');
       await regularPriceField.waitFor({ state: 'visible', timeout: 5000 });
       await regularPriceField.scrollIntoViewIfNeeded();
       await regularPriceField.fill(newPrice);
       console.log(`✅ Updated price to: ${newPrice}`);
 
-      // Edit description
-      await setProductDescription(page, newDescription);
-
       // Edit stock quantity
       await page.click('li.inventory_tab a');
+      const stockField = page.locator('#_stock');
+      const trackStockCheckBox = page.locator('#_manage_stock');
+      await trackStockCheckBox.waitFor({ state: 'visible', timeout: 5000 });
+      if (!(await trackStockCheckBox.isChecked())) {
+        await trackStockCheckBox.check();
+      }
       await stockField.waitFor({ state: 'visible', timeout: 5000 });
       await stockField.scrollIntoViewIfNeeded();
       await stockField.fill(newStock);
@@ -137,6 +113,8 @@ test.describe('Facebook for WooCommerce - Product Modification E2E Tests', () =>
       console.log('🔍 Verifying changes were saved...');
       await page.reload({ waitUntil: 'domcontentloaded', timeout: 60000 });
 
+      const titleField = page.locator('#title');
+      titleField.waitFor({ state: 'visible', timeout: 5000 });
       const updatedTitle = await titleField.inputValue();
       expect(updatedTitle).toBe(newTitle);
       console.log('✅ Title change verified');
@@ -312,6 +290,7 @@ test.describe('Facebook for WooCommerce - Product Modification E2E Tests', () =>
       });
 
       createdProductId = createdProduct.productId;
+      originalName = createdProduct.productName;
       console.log(`✅ Created variable product ID ${createdProductId} for editing test`);
 
       await filterProducts(page, 'variable', createdProduct.sku);
@@ -327,16 +306,6 @@ test.describe('Facebook for WooCommerce - Product Modification E2E Tests', () =>
 
       console.log(`✅ Editing variable product ID: ${productId}`);
 
-      // Store original values before editing
-      console.log('📝 Storing original product values...');
-
-      // Get original title
-      const titleField = page.locator('#title');
-      if (await titleField.isVisible({ timeout: 5000 })) {
-        originalName = await titleField.inputValue();
-        console.log(`Original title: "${originalName}"`);
-      }
-
       // Edit product attributes
       console.log('✏️ Editing variable product attributes...');
 
@@ -346,9 +315,7 @@ test.describe('Facebook for WooCommerce - Product Modification E2E Tests', () =>
       const newPrice = (parseFloat('103.00') + 5).toFixed(2);
 
       // Edit title
-      await titleField.scrollIntoViewIfNeeded();
-      await titleField.fill(newTitle);
-      console.log(`✅ Updated title to: "${newTitle}"`);
+      await setProductTitle(page, newTitle);
 
       // Click on Variations tab
       console.log('📝 Editing variation prices using bulk actions...');
@@ -410,6 +377,8 @@ test.describe('Facebook for WooCommerce - Product Modification E2E Tests', () =>
       console.log('🔍 Verifying changes were saved...');
       await page.reload({ waitUntil: 'domcontentloaded', timeout: 60000 });
 
+      const titleField = page.locator('#title');
+      titleField.waitFor({ state: 'visible', timeout: 5000 });
       const updatedTitle = await titleField.inputValue();
       expect(updatedTitle).toBe(newTitle);
       console.log('✅ Title change verified');

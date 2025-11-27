@@ -386,6 +386,15 @@ async function openFacebookOptions(page) {
   console.log('✅ Opened Product Facebook options tab');
 }
 
+// Helper function to quickly edit title and description of a product
+async function setProductTitle(page, newTitle) {
+  const titleField = page.locator('#title');
+  titleField.waitFor({ state: 'visible', timeout: 5000 });
+  await titleField.scrollIntoViewIfNeeded();
+  await titleField.fill(newTitle);
+  console.log(`✅ Updated title to: "${newTitle}"`);
+}
+
 module.exports = {
   baseURL,
   username,
@@ -405,5 +414,6 @@ module.exports = {
   setProductDescription,
   filterProducts,
   clickFirstProduct,
-  openFacebookOptions
+  openFacebookOptions,
+  setProductTitle
 };
