@@ -336,9 +336,14 @@ jobs:
         run: |
           cd ${{ env.WORDPRESS_PATH }}
           if [ -f wp-content/debug.log ]; then
-            if grep -i "fatal\|error" wp-content/debug.log; then
-              echo "❌ PHP errors detected"
+            # Capture PHP errors in a variable (excluding WordPress cron warnings)
+            PHP_ERRORS=$(grep -i "fatal\|error" wp-content/debug.log | grep -vi "cron reschedule" || true)
+            if [ -n "$PHP_ERRORS" ]; then
+              echo "❌ PHP errors detected:"
+              echo "$PHP_ERRORS"
               exit 1
+            else
+              echo "✅ No critical PHP errors found"
             fi
           else
             echo "✅ No debug log found - no PHP errors"
