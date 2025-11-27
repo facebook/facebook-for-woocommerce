@@ -12,6 +12,7 @@ const {
   logTestStart,
   logTestEnd,
   validateFacebookSync,
+  setProductTitle,
   setProductDescription
 } = require('./test-helpers');
 
@@ -38,10 +39,8 @@ test.describe('Facebook for WooCommerce - Product Creation E2E Tests', () => {
       });
 
       // Wait for the product editor to load
-      await page.waitForSelector('#title', { timeout: 60000 });
-
       const productName = generateProductName('Simple');
-      await page.fill('#title', productName);
+      await setProductTitle(page, productName);
 
       await setProductDescription(page, "This is a test simple product.");
       console.log('✅ Basic product details filled');
@@ -133,16 +132,10 @@ test.describe('Facebook for WooCommerce - Product Creation E2E Tests', () => {
     });
 
     // Step 2: Fill product title
-    await page.waitForSelector('#title', { timeout: 60000 });
     const productName = generateProductName('Variable');
-    await page.fill('#title', productName);
-
+    await setProductTitle(page, productName);
     // Step 2.1: Add product description (human-like interaction)
-    await page.click('#content-tmce'); // Click Visual tab
-    await page.waitForTimeout(1000);
-    const frameContent = page.locator('#content_ifr').contentFrame();
-    await frameContent.locator('body').click(); // Click in the editor
-    await frameContent.locator('body').type('This is a test variable product with multiple variations.');
+    await setProductDescription(page, "This is a test variable product with multiple variations.");
 
      // Set up dialog handler for WooCommerce tour popup
     page.on('dialog', async dialog => {
