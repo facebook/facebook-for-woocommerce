@@ -151,7 +151,7 @@ test.describe('Facebook for WooCommerce - Product Deletion E2E Tests', () => {
 
       // Click on Product Data Sync "Sync now" button
       console.log('🔄 Looking for Product Data Sync "Sync now" button...');
-      const syncNowButton = page.locator('#wc-facebook-enhanced-settings-sync-products');
+      const syncNowButton = page.locator('#woocommerce-facebook-settings-sync-products');
 
       if (await syncNowButton.isVisible({ timeout: 10000 })) {
           await syncNowButton.click();
