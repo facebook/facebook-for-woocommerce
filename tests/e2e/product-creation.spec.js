@@ -33,12 +33,12 @@ test.describe('Facebook for WooCommerce - Product Creation E2E Tests', () => {
 
       // Navigate to add new product page
       await page.goto(`${baseURL}/wp-admin/post-new.php?post_type=product`, {
-        waitUntil: 'networkidle',
-        timeout: 120000
+        waitUntil: 'domcontentloaded',
+        timeout: 60000
       });
 
       // Wait for the product editor to load
-      await page.waitForSelector('#title', { timeout: 120000 });
+      await page.waitForSelector('#title', { timeout: 60000 });
 
       const productName = generateProductName('Simple');
       await page.fill('#title', productName);
@@ -55,7 +55,7 @@ test.describe('Facebook for WooCommerce - Product Creation E2E Tests', () => {
 
       // Set SKU to ensure unique retailer ID
       const skuField = page.locator('#_sku');
-      if (await skuField.isVisible({ timeout: 120000 })) {
+      if (await skuField.isVisible({ timeout: 10000 })) {
         const uniqueSku = generateUniqueSKU('simple');
         await skuField.fill(uniqueSku);
         console.log(`✅ Set unique SKU: ${uniqueSku}`);
@@ -63,7 +63,7 @@ test.describe('Facebook for WooCommerce - Product Creation E2E Tests', () => {
 
       // Set regular price
       const regularPriceField = page.locator('#_regular_price');
-      if (await regularPriceField.isVisible({ timeout: 120000 })) {
+      if (await regularPriceField.isVisible({ timeout: 10000 })) {
         await regularPriceField.fill('19.99');
         console.log('✅ Set regular price');
       }
@@ -100,7 +100,7 @@ test.describe('Facebook for WooCommerce - Product Creation E2E Tests', () => {
       await checkForPhpErrors(page);
 
       // Validate sync to Meta catalog and fields from Meta
-      const result = await validateFacebookSync(productId, productName);
+      const result = await validateFacebookSync(productId, productName, 5);
       expect(result['success']).toBe(true);
 
       console.log('✅ Simple product creation test completed successfully');
@@ -128,12 +128,12 @@ test.describe('Facebook for WooCommerce - Product Creation E2E Tests', () => {
 
     // Step 1: Navigate to add new product
     await page.goto(`${baseURL}/wp-admin/post-new.php?post_type=product`, {
-      waitUntil: 'networkidle',
-      timeout: 120000
+      waitUntil: 'domcontentloaded',
+      timeout: 60000
     });
 
     // Step 2: Fill product title
-    await page.waitForSelector('#title', { timeout: 120000 });
+    await page.waitForSelector('#title', { timeout: 60000 });
     const productName = generateProductName('Variable');
     await page.fill('#title', productName);
 
@@ -230,7 +230,7 @@ test.describe('Facebook for WooCommerce - Product Creation E2E Tests', () => {
     await checkForPhpErrors(page);
 
     // Validate sync to Meta catalog and fields from Meta
-    const result = await validateFacebookSync(productId, productName, 20);
+    const result = await validateFacebookSync(productId, productName, 5, 8);
     expect(result['success']).toBe(true);
 
     // await waitForManualInspection(page);
@@ -256,8 +256,8 @@ test.describe('Facebook for WooCommerce - Product Creation E2E Tests', () => {
     try {
       // Navigate to plugins page with increased timeout
       await page.goto(`${baseURL}/wp-admin/plugins.php`, {
-        waitUntil: 'networkidle',
-        timeout: 120000
+        waitUntil: 'domcontentloaded',
+        timeout: 60000
       });
 
       // Check if Facebook plugin is listed
@@ -290,8 +290,8 @@ test.describe('Facebook for WooCommerce - Product Creation E2E Tests', () => {
     try {
       // Go to Products list with increased timeout
       await page.goto(`${baseURL}/wp-admin/edit.php?post_type=product`, {
-        waitUntil: 'networkidle',
-        timeout: 120000
+        waitUntil: 'domcontentloaded',
+        timeout: 60000
       });
 
       // Verify no PHP errors on products page
@@ -300,7 +300,7 @@ test.describe('Facebook for WooCommerce - Product Creation E2E Tests', () => {
       expect(pageContent).not.toContain('Parse error');
 
       // Check if WooCommerce is working
-      const hasProductsTable = await page.locator('.wp-list-table').isVisible({ timeout: 120000 });
+      const hasProductsTable = await page.locator('.wp-list-table').isVisible({ timeout: 10000 });
       if (hasProductsTable) {
         console.log('✅ WooCommerce products page loaded successfully');
       } else {
@@ -330,8 +330,8 @@ test.describe('Facebook for WooCommerce - Product Creation E2E Tests', () => {
         try {
           console.log(`🔍 Checking ${pageInfo.name} page...`);
           await page.goto(`${baseURL}${pageInfo.path}`, {
-            waitUntil: 'networkidle',
-            timeout: 120000
+            waitUntil: 'domcontentloaded',
+            timeout: 60000
           });
 
           const pageContent = await page.content();
@@ -342,7 +342,7 @@ test.describe('Facebook for WooCommerce - Product Creation E2E Tests', () => {
           expect(pageContent).not.toContain('Warning: ');
 
           // Verify admin content loaded
-          await page.locator('#wpcontent').isVisible({ timeout: 120000 });
+          await page.locator('#wpcontent').isVisible({ timeout: 10000 });
 
           console.log(`✅ ${pageInfo.name} page loaded without errors`);
 
@@ -364,23 +364,23 @@ test.describe('Facebook for WooCommerce - Product Creation E2E Tests', () => {
 
       // Navigate to plugins page
       await page.goto(`${baseURL}/wp-admin/plugins.php`, {
-        waitUntil: 'networkidle',
-        timeout: 120000
+        waitUntil: 'domcontentloaded',
+        timeout: 60000
       });
 
       // Look for Facebook plugin row
       const pluginRow = page.locator('tr[data-slug="facebook-for-woocommerce"], tr:has-text("Facebook for WooCommerce")').first();
 
-      if (await pluginRow.isVisible({ timeout: 120000 })) {
+      if (await pluginRow.isVisible({ timeout: 10000 })) {
         console.log('✅ Facebook plugin found');
 
         // Check if plugin is currently active
-        const isActive = await pluginRow.locator('.active').isVisible({ timeout: 120000 });
+        const isActive = await pluginRow.locator('.active').isVisible({ timeout: 10000 });
 
         if (isActive) {
           console.log('Plugin is active, testing deactivation...');
           const deactivateLink = pluginRow.locator('a:has-text("Deactivate")');
-          if (await deactivateLink.isVisible({ timeout: 120000 })) {
+          if (await deactivateLink.isVisible({ timeout: 10000 })) {
             await deactivateLink.click();
             await page.waitForTimeout(2000);
             console.log('✅ Plugin deactivated');
@@ -388,7 +388,7 @@ test.describe('Facebook for WooCommerce - Product Creation E2E Tests', () => {
             // Now test reactivation
             await page.waitForTimeout(1000);
             const reactivateLink = pluginRow.locator('a:has-text("Activate")');
-            if (await reactivateLink.isVisible({ timeout: 120000 })) {
+            if (await reactivateLink.isVisible({ timeout: 10000 })) {
               await reactivateLink.click();
               await page.waitForTimeout(2000);
               console.log('✅ Plugin reactivated');
@@ -397,7 +397,7 @@ test.describe('Facebook for WooCommerce - Product Creation E2E Tests', () => {
         } else {
           console.log('Plugin is inactive, testing activation...');
           const activateLink = pluginRow.locator('a:has-text("Activate")');
-          if (await activateLink.isVisible({ timeout: 120000 })) {
+          if (await activateLink.isVisible({ timeout: 10000 })) {
             await activateLink.click();
             await page.waitForTimeout(2000);
             console.log('✅ Plugin activated');
