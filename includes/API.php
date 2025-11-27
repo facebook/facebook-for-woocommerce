@@ -673,17 +673,6 @@ class API extends Base {
 	public function send_pixel_events( $pixel_id, array $events ) {
 		$request = new API\Pixel\Events\Request( $pixel_id, $events );
 
-		// For E2E tests
-		try {
-			$test_event_code = getenv( 'FB_TEST_EVENT_CODE' );
-			$cookie_name     = getenv( 'FB_E2E_TEST_COOKIE_NAME' );
-			if ( $test_event_code && $cookie_name && ! empty( $_COOKIE[ $cookie_name ] ) ) {
-				$request->set_params( array_merge( $request->get_params(), array( 'test_event_code' => $test_event_code ) ) );
-			}
-		} catch ( \Exception $e ) {
-			// Silent failure - never break production
-		}
-
 		$this->set_response_handler( Response::class );
 
 		$response = $this->perform_request( $request );
