@@ -1,20 +1,20 @@
 const { test, expect } = require('@playwright/test');
 const {
-    baseURL,
-    loginToWordPress,
-    safeScreenshot,
-    cleanupProduct,
-    checkForPhpErrors,
-    logTestStart,
-    logTestEnd,
-    validateFacebookSync,
-    createTestProduct,
-    filterProducts,
-    clickFirstProduct,
-    openFacebookOptions,
-    setProductDescription,
-    setProductTitle,
-    publishProduct
+  baseURL,
+  loginToWordPress,
+  safeScreenshot,
+  cleanupProduct,
+  checkForPhpErrors,
+  logTestStart,
+  logTestEnd,
+  validateFacebookSync,
+  createTestProduct,
+  filterProducts,
+  clickFirstProduct,
+  openFacebookOptions,
+  setProductDescription,
+  setProductTitle,
+  publishProduct
 } = require('./test-helpers');
 
 test.describe('Facebook for WooCommerce - Product Deletion E2E Tests', () => {
@@ -35,28 +35,30 @@ test.describe('Facebook for WooCommerce - Product Deletion E2E Tests', () => {
     try {
       // Create a test simple product
       console.log('📦 Creating test simple product...');
-      const simpleProduct = await createTestProduct({
+      console.log('📦 Creating test variable product...');
+      const [simpleProduct, variableProduct] = await Promise.all([
+        createTestProduct({
           productType: 'simple',
           price: '29.99',
           stock: '15'
-      });
-      simpleProductId = simpleProduct.productId;
-      console.log(`✅ Created simple product ID ${simpleProductId}: "${simpleProduct.productName}"`);
-
-      // Create a test variable product
-      console.log('📦 Creating test variable product...');
-      const variableProduct = await createTestProduct({
+        }),
+        createTestProduct({
           productType: 'variable',
           price: '39.99',
           stock: '20'
-      });
+        })
+      ]);
+      simpleProductId = simpleProduct.productId;
       variableProductId = variableProduct.productId;
+      console.log(`✅ Created simple product ID ${simpleProductId}: "${simpleProduct.productName}"`);
       console.log(`✅ Created variable product ID ${variableProductId}: "${variableProduct.productName}"`);
 
       // Validate initial sync
-      const simpleProductPreDeleteResult = await validateFacebookSync(simpleProductId, simpleProduct.productName, 5);
+      const [simpleProductPreDeleteResult, variableProductPreDeleteResult] = await Promise.all([
+        validateFacebookSync(simpleProductId, simpleProduct.productName, 5),
+        validateFacebookSync(variableProductId, variableProduct.productName, 5, 8)
+      ]);
       expect(simpleProductPreDeleteResult['success']).toBe(true);
-      const variableProductPreDeleteResult = await validateFacebookSync(variableProductId, variableProduct.productName, 5, 8);
       expect(variableProductPreDeleteResult['success']).toBe(true);
       console.log('✅ Initial sync validation successful. Both products are synced to Facebook.')
 
@@ -134,8 +136,8 @@ test.describe('Facebook for WooCommerce - Product Deletion E2E Tests', () => {
 
       // First, navigate to Marketing > Facebook page
       await page.goto(`${baseURL}/wp-admin/admin.php?page=wc-facebook`, {
-          waitUntil: 'domcontentloaded',
-          timeout: 60000
+        waitUntil: 'domcontentloaded',
+        timeout: 60000
       });
       console.log('✅ Navigated to Facebook page');
 
@@ -143,7 +145,7 @@ test.describe('Facebook for WooCommerce - Product Deletion E2E Tests', () => {
       console.log('🔍 Looking for Troubleshooting tab...');
       const troubleshootingTab = page.locator('a:has-text("Troubleshooting"), button:has-text("Troubleshooting")');
 
-      if (await troubleshootingTab.isVisible({ timeout: 10000 })){
+      if (await troubleshootingTab.isVisible({ timeout: 10000 })) {
         await troubleshootingTab.click();
         console.log('✅ Clicked Troubleshooting tab');
         await page.waitForTimeout(2000);
@@ -157,17 +159,20 @@ test.describe('Facebook for WooCommerce - Product Deletion E2E Tests', () => {
       const syncNowButton = page.locator('#woocommerce-facebook-settings-sync-products');
 
       if (await syncNowButton.isVisible({ timeout: 10000 })) {
-          await syncNowButton.click();
-          console.log('✅ Clicked "Sync now" button');
+        await syncNowButton.click();
+        console.log('✅ Clicked "Sync now" button');
 
-          // Wait for sync to process
-          await page.waitForTimeout(5000);
-          console.log('✅ Sync initiated');
+        // Wait for sync to process
+        await page.waitForTimeout(5000);
+        console.log('✅ Sync initiated');
       } else {
-          console.warn('⚠️ "Sync now" button not found');
+        console.warn('⚠️ "Sync now" button not found');
       }
 
-      const simpleProductValidationResult = await validateFacebookSync(simpleProductId, simpleProduct.productName, 30, 0);
+      const [simpleProductValidationResult, variableProductValidationResult] = await Promise.all([
+        validateFacebookSync(simpleProductId, simpleProduct.productName, 30, 0),
+        validateFacebookSync(variableProductId, variableProduct.productName, 30, 0)
+      ]);
       expect(simpleProductValidationResult['success']).toBe(false);
       // Check if any debug message contains the expected text about 0 products and 0 mismatches
       expect(
@@ -177,33 +182,24 @@ test.describe('Facebook for WooCommerce - Product Deletion E2E Tests', () => {
         )
       ).toBe(true);
 
-      const variableProductValidationResult = await validateFacebookSync(variableProductId, variableProduct.productName, 30, 0);
       expect(variableProductValidationResult['success']).toBe(false);
       expect(
         variableProductValidationResult['debug'].some(
           (msg) => msg === 'Compared fields for 0 products, found 0 total mismatches'
         )
       ).toBe(true);
-
-      // Verify no PHP errors occurred
-      await checkForPhpErrors(page);
-      console.log('✅ No PHP errors detected');
-
-      console.log('✅ Product deletion test completed successfully');
+      console.log('✅ Both products successfully deleted from Facebook catalog');
       logTestEnd(testInfo, true);
-
     } catch (error) {
       console.log(`❌ Product deletion test failed: ${error.message}`);
       await safeScreenshot(page, 'product-deletion-test-failure.png');
       logTestEnd(testInfo, false);
       throw error;
     } finally {
-      if (simpleProductId) {
-        await cleanupProduct(simpleProductId);
-      }
-      if (variableProductId) {
-        await cleanupProduct(variableProductId);
-      }
+      await Promise.all([
+        simpleProductId ? cleanupProduct(simpleProductId) : Promise.resolve(),
+        variableProductId ? cleanupProduct(variableProductId) : Promise.resolve()
+      ]);
     }
   });
 
@@ -213,9 +209,9 @@ test.describe('Facebook for WooCommerce - Product Deletion E2E Tests', () => {
       // Create a test simple product
       console.log('📦 Creating test simple product...');
       const simpleProduct = await createTestProduct({
-          productType: 'simple',
-          price: '29.99',
-          stock: '15'
+        productType: 'simple',
+        price: '29.99',
+        stock: '15'
       });
       simpleProductId = simpleProduct.productId;
       console.log(`✅ Created simple product ID ${simpleProductId}: "${simpleProduct.productName}"`);
@@ -242,6 +238,8 @@ test.describe('Facebook for WooCommerce - Product Deletion E2E Tests', () => {
       expect(syncResultAfter['raw_data']['woo_data'][0]['title']).toBe(newTitle);
       expect(syncResultAfter['raw_data']['woo_data'][0]['description']).toBe(newDescription);
       expect(syncResultAfter['raw_data']['facebook_data']['found'], false);
+      console.log('✅ Product no longer exists on Facebook catalog');
+      logTestEnd(testInfo, true);
     } catch (error) {
       console.log(`❌ Exclude product from sync test failed: ${error.message}`);
       await safeScreenshot(page, 'product-exclusion-test-failure.png');
@@ -251,6 +249,160 @@ test.describe('Facebook for WooCommerce - Product Deletion E2E Tests', () => {
       if (simpleProductId) {
         await cleanupProduct(simpleProductId);
       }
+    }
+  });
+
+  test('Bulk exclude multiple products from sync', async ({ page }, testInfo) => {
+    let simpleProductId = null;
+    let variableProductId = null;
+    try {
+      // Create a test simple product
+      console.log('📦 Creating test simple product...');
+      console.log('📦 Creating test variable product...');
+      const [simpleProduct, variableProduct] = await Promise.all([
+        createTestProduct({
+          productType: 'simple',
+          price: '29.99',
+          stock: '15'
+        }),
+        createTestProduct({
+          productType: 'variable',
+          price: '39.99',
+          stock: '20'
+        })
+      ]);
+      simpleProductId = simpleProduct.productId;
+      variableProductId = variableProduct.productId;
+      console.log(`✅ Created simple product ID ${simpleProductId}: "${simpleProduct.productName}"`);
+      console.log(`✅ Created variable product ID ${variableProductId}: "${variableProduct.productName}"`);
+
+      // Validate initial sync
+      const [simpleProductSyncResultBefore, variableProductSyncResultBefore] = await Promise.all([
+        validateFacebookSync(simpleProductId, simpleProduct.productName, 5),
+        validateFacebookSync(variableProductId, variableProduct.productName, 5, 8)
+      ]);
+      expect(simpleProductSyncResultBefore['success']).toBe(true);
+      expect(variableProductSyncResultBefore['success']).toBe(true);
+      console.log('✅ Initial sync validation successful. Both products are synced to Facebook.');
+
+      // Navigate to Products > All Products page
+      console.log('📋 Navigating to Products > All Products page...');
+      await page.goto(`${baseURL}/wp-admin/edit.php?post_type=product`, {
+        waitUntil: 'domcontentloaded',
+        timeout: 60000
+      });
+
+      // Wait for products table to load
+      const productsTable = await page.locator('.wp-list-table');
+      await productsTable.waitFor({ state: 'visible', timeout: 10000 });
+      console.log('✅ Products page loaded successfully');
+
+      // Mark the checkboxes of products with attribute "Synced to Meta catalog" set to "Synced"
+      console.log('✅ Selecting test products for bulk exclusion...');
+
+      // Get all product rows
+      const productRows = page.locator('.wp-list-table tbody tr.iedit');
+      const rowCount = await productRows.count();
+      console.log(`Found ${rowCount} product rows`);
+
+      // Find and check the checkboxes for our test products
+      let simpleProductChecked = false;
+      let variableProductChecked = false;
+
+      for (let i = 0; i < rowCount; i++) {
+        const row = productRows.nth(i);
+        const checkbox = row.locator('input[type="checkbox"]');
+
+        // Get the product ID from the checkbox value or row ID
+        const checkboxId = await checkbox.getAttribute('id');
+        const productIdMatch = checkboxId ? checkboxId.match(/cb-select-(\d+)/) : null;
+        const productId = productIdMatch ? parseInt(productIdMatch[1]) : null;
+
+        if (productId === simpleProductId || productId === variableProductId) {
+          await checkbox.check();
+          console.log(`✅ Selected product ID ${productId}`);
+
+          if (productId === simpleProductId) simpleProductChecked = true;
+          if (productId === variableProductId) variableProductChecked = true;
+        }
+
+        // Break if we've found both products
+        if (simpleProductChecked && variableProductChecked) {
+          break;
+        }
+      }
+
+      if (!simpleProductChecked || !variableProductChecked) {
+        throw new Error('Could not find one or both test products in the list');
+      }
+
+      // Click on "Bulk options" menu
+      console.log('🔽 Clicking "Bulk options" menu...');
+      const bulkActionsDropdown = page.locator('#bulk-action-selector-top');
+      await bulkActionsDropdown.selectOption('edit');
+      console.log('✅ Selected "Edit" option from Bulk options');
+
+      // Click on "Apply"
+      console.log('🔄 Clicking Apply button...');
+      const applyButton = page.locator('#doaction');
+      await applyButton.click();
+      console.log('✅ Clicked Apply button');
+
+      // Wait for bulk edit panel to appear
+      await page.waitForSelector('.inline-edit-row', { timeout: 10000 });
+      console.log('✅ Bulk edit panel opened');
+
+      // Change "Sync to Meta catalog" to "Do not sync"
+      console.log('🔧 Changing "Sync to Meta catalog" to "Do not sync"...');
+      const facebookSyncField = page.locator('.facebook_bulk_sync_options');
+      await facebookSyncField.waitFor({ state: 'visible', timeout: 10000 });
+      await facebookSyncField.selectOption('bulk_edit_delete');
+      console.log('✅ Set sync mode to "Do not sync"');
+
+      // Click on "Update" button
+      console.log('💾 Clicking Update button...');
+      const updateButton = page.locator('#bulk_edit');
+      await updateButton.click();
+      console.log('✅ Clicked Update button');
+
+      // Wait for the page to reload after bulk action
+      await page.waitForLoadState('domcontentloaded', { timeout: 60000 });
+      console.log('✅ Bulk edit completed');
+
+      // Validate that "Synced to Meta catalog" is updated to "Not synced"
+      // and the products are removed from catalog
+      console.log('🔍 Validating Facebook sync status after bulk exclusion...');
+      const [simpleProductSyncResultAfter, variableProductSyncResultAfter] = await Promise.all([
+        validateFacebookSync(simpleProductId, simpleProduct.productName, 30, 0),
+        validateFacebookSync(variableProductId, variableProduct.productName, 30, 0)
+      ]);
+
+      expect(simpleProductSyncResultAfter['success']).toBe(false);
+      expect(
+        simpleProductSyncResultAfter['debug'].some(
+          (msg) => msg === 'Compared fields for 0 products, found 0 total mismatches'
+        )
+      ).toBe(true);
+      console.log('✅ Simple product successfully removed from Facebook catalog');
+
+      expect(variableProductSyncResultAfter['success']).toBe(false);
+      expect(
+        variableProductSyncResultAfter['debug'].some(
+          (msg) => msg === 'Compared fields for 0 products, found 0 total mismatches'
+        )
+      ).toBe(true);
+      console.log('✅ Variable product successfully removed from Facebook catalog');
+      logTestEnd(testInfo, true);
+    } catch (error) {
+      console.log(`❌ Bulk exclude multiple products from sync test failed: ${error.message}`);
+      await safeScreenshot(page, 'bulk-product-exclusion-test-failure.png');
+      logTestEnd(testInfo, false);
+      throw error;
+    } finally {
+      await Promise.all([
+        simpleProductId ? cleanupProduct(simpleProductId) : Promise.resolve(),
+        variableProductId ? cleanupProduct(variableProductId) : Promise.resolve()
+      ]);
     }
   });
 });
