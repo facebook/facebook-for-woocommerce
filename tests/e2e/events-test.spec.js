@@ -45,6 +45,7 @@ test('PageView', async ({ page }) => {
     ]);
 
     const validator = new EventValidator(testId);
+    await validator.checkDebugLog();
     const result = await validator.validate('PageView', page);
 
     TestSetup.logResult('PageView', result);
@@ -62,6 +63,7 @@ test('ViewContent', async ({ page }) => {
     ]);
 
     const validator = new EventValidator(testId);
+    await validator.checkDebugLog();
     const result = await validator.validate('ViewContent', page);
 
     TestSetup.logResult('ViewContent', result);
@@ -82,6 +84,7 @@ test('AddToCart', async ({ page }) => {
     ]);
 
     const validator = new EventValidator(testId);
+    await validator.checkDebugLog();
     const result = await validator.validate('AddToCart', page);
 
     TestSetup.logResult('AddToCart', result);
@@ -97,6 +100,7 @@ test('ViewCategory', async ({ page }) => {
     ]);
 
     const validator = new EventValidator(testId);
+    await validator.checkDebugLog();
     const result = await validator.validate('ViewCategory', page);
 
     TestSetup.logResult('ViewCategory', result);

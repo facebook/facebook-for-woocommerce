@@ -72,6 +72,40 @@ class EventValidator {
 
         const errors = [];
 
+        const countCheckResult = this.validateEventCounts(pixel, capi, eventName, errors);
+        if (!countCheckResult.passed) {
+            return countCheckResult;
+        }
+        // If we do not do this check, the rest of the validations will fail cos of mismatched counts
+
+        const p = pixel[0];
+        const c = capi[0];
+
+        this.validateRequiredFields(p, c, schema, errors);
+        this.validateCustomDataFields(p, c, schema, errors);
+        this.validateDeduplication(p, c, errors);
+
+        console.log(`  ✓ Running data validators...`);
+
+        this.validateTimestamp(p, c, errors); // TODO: do we need this?
+        this.validateFbp(p, c, errors);
+        this.validateCookies(p, errors)
+        this.validateValue(p, c, schema, errors);
+        this.validateContentIds(p, c, schema, errors);
+        await this.validatePhpErrors(page, errors);
+
+        this.validatePixelResponse(p, errors); // if response was 200 OK or not.
+        // CAPI we do not need to check this response status, as we log it only if it is successful response. it will be caught in lengthcheck and details will be in debug.log
+
+        return {
+            passed: errors.length === 0,
+            errors,
+            pixel: p,
+            capi: c
+        };
+    }
+
+    validateEventCounts(pixel, capi, eventName, errors) {
         if (pixel.length === 0) errors.push(`No Pixel event found - ${eventName}`);
         if (capi.length === 0) errors.push(`No CAPI event found - ${eventName}`);
         if (pixel.length === 0 || capi.length === 0) {
@@ -80,13 +114,14 @@ class EventValidator {
 
         if (pixel.length != capi.length) {
             errors.push(`Event count mismatch: Pixel=${pixel.length}, CAPI=${capi.length}`);
+            console.log(`Number of Pixel and CAPI events do not match. Check debug log file and captured packets to see more info. `);
             return { passed: false, errors };
         }
 
-        const p = pixel[0];
-        const c = capi[0];
+        return { passed: true };
+    }
 
-        // Check required top-level fields
+    validateRequiredFields(p, c, schema, errors) {
         console.log(`  ✓ Checking required fields...`);
         let pixelFieldsMissing = 0;
         let capiFieldsMissing = 0;
@@ -108,8 +143,9 @@ class EventValidator {
         if (pixelFieldsMissing === 0 && capiFieldsMissing === 0) {
             console.log(`    ✓ All required fields present`);
         }
+    }
 
-        // Check custom_data fields
+    validateCustomDataFields(p, c, schema, errors) {
         if (schema.custom_data && schema.custom_data.length > 0) {
             console.log(`  ✓ Checking custom_data fields...`);
             let customFieldsMissing = 0;
@@ -132,8 +168,9 @@ class EventValidator {
                 console.log(`    ✓ All custom_data fields present`);
             }
         }
+    }
 
-        // Check dedup (event_id matching)
+    validateDeduplication(p, c, errors) {
         console.log(`  ✓ Checking event deduplication...`);
         if (!p.eventId) errors.push('Pixel missing event_id');
         if (!c.event_id) errors.push('CAPI missing event_id');
@@ -145,32 +182,21 @@ class EventValidator {
                 errors.push(`Event IDs mismatch: ${p.eventId} vs ${c.event_id}`);
             }
         }
+    }
 
-        // Run common validators
-        console.log(`  ✓ Running data validators...`);
-        const validatorErrors = errors.length;
-
-        this.validateTimestamp(p, c, errors);
-        this.validateFbp(p, c, errors);
-        this.validateCookies(p, errors)
-
-        if (schema.custom_data && schema.custom_data.length > 0) {
-            if (schema.custom_data.includes('value')) {
-                this.validateValue(p, c, errors);
-            }
-            if (schema.custom_data.includes('content_ids')) {
-                this.validateContentIds(p, c, errors);
-            }
-        }
-
-        if (errors.length === validatorErrors) {
-            console.log(`    ✓ All data validators passed`);
-        }
-
-        // Check for PHP errors if page is provided
+    async validatePhpErrors(page, errors) {
         if (page) {
             console.log(`  ✓ Checking for PHP errors...`);
-            const phpErrors = await this.checkPhpErrors(page);
+            const pageContent = await page.content();
+            const phpErrors = [];
+
+            if (pageContent.includes('Fatal error')) {
+                phpErrors.push('PHP Fatal error detected on page');
+            }
+            if (pageContent.includes('Parse error')) {
+                phpErrors.push('PHP Parse error detected on page');
+            }
+
             if (phpErrors.length > 0) {
                 console.log(`    ✗ PHP errors found: ${phpErrors.length}`);
                 phpErrors.forEach(err => errors.push(err));
@@ -178,8 +204,9 @@ class EventValidator {
                 console.log(`    ✓ No PHP errors`);
             }
         }
+    }
 
-        // Check Pixel API response
+    validatePixelResponse(p, errors) {
         console.log(`  ✓ Checking Pixel response...`);
         if (p.api_status) {
             if (p.api_status === 200 && p.api_ok) {
@@ -189,30 +216,6 @@ class EventValidator {
                 console.log(`    ✗ Pixel API: ${p.api_status}`);
             }
         }
-
-        return {
-            passed: errors.length === 0,
-            errors,
-            pixel: p,
-            capi: c
-        };
-    }
-
-    /**
-     * Check for PHP errors on the page
-     */
-    async checkPhpErrors(page) {
-        const pageContent = await page.content();
-        const phpErrors = [];
-
-        if (pageContent.includes('Fatal error')) {
-            phpErrors.push('PHP Fatal error detected on page');
-        }
-        if (pageContent.includes('Parse error')) {
-            phpErrors.push('PHP Parse error detected on page');
-        }
-
-        return phpErrors;
     }
 
     // Common validation methods
@@ -255,52 +258,58 @@ class EventValidator {
         // if (!pixel.cookies._fbc) {
         //     errors.push('Cookie _fbc not present');
         // }
+        // TODO: do we need to check _fbc?
     }
 
-    validateValue(pixel, capi, errors) {
-        const pVal = pixel.custom_data?.value;
-        const cVal = capi.custom_data?.value;
+    validateValue(pixel, capi, schema, errors) {
+        if (schema.custom_data && schema.custom_data.length > 0) {
+            if (schema.custom_data.includes('value')) {
+                const pVal = pixel.custom_data?.value;
+                const cVal = capi.custom_data?.value;
 
-        if (pVal !== undefined && cVal !== undefined) {
-            const diff = Math.abs(parseFloat(pVal) - parseFloat(cVal));
-            if (diff >= 0.01) {
-                errors.push(`Value mismatch: ${pVal} vs ${cVal}`);
+                if (pVal !== undefined && cVal !== undefined) {
+                    const diff = Math.abs(parseFloat(pVal) - parseFloat(cVal));
+                    if (diff >= 0.01) {
+                        errors.push(`Value mismatch: ${pVal} vs ${cVal}`);
+                    }
+                }
             }
         }
     }
 
-    validateContentIds(pixel, capi, errors) {
-        let pIds = pixel.custom_data?.content_ids;
-        let cIds = capi.custom_data?.content_ids;
+    validateContentIds(pixel, capi, schema, errors) {
+        if (schema.custom_data && schema.custom_data.length > 0) {
+            if (schema.custom_data.includes('content_ids')) {
+                let pIds = pixel.custom_data?.content_ids;
+                let cIds = capi.custom_data?.content_ids;
 
-        if (!pIds || !cIds) return;
+                if (!pIds || !cIds) return;
 
-        // Normalize both to arrays for comparison
-        // CAPI sends as JSON string (e.g., '["45"]'), Pixel sends as array (e.g., ['45'])
-        if (typeof cIds === 'string') {
-            try {
-                cIds = JSON.parse(cIds);
-            } catch (e) {
-                errors.push(`CAPI content_ids invalid JSON: ${cIds}`);
-                return;
+                if (typeof cIds === 'string') {
+                    try {
+                        cIds = JSON.parse(cIds);
+                    } catch (e) {
+                        errors.push(`CAPI content_ids invalid JSON: ${cIds}`);
+                        return;
+                    }
+                }
+
+                if (typeof pIds === 'string') {
+                    try {
+                        pIds = JSON.parse(pIds);
+                    } catch (e) {
+                        errors.push(`Pixel content_ids invalid JSON: ${pIds}`);
+                        return;
+                    }
+                }
+
+                const pIdsStr = JSON.stringify(pIds);
+                const cIdsStr = JSON.stringify(cIds);
+
+                if (pIdsStr !== cIdsStr) {
+                    errors.push(`Content IDs mismatch: Pixel=${pIdsStr} vs CAPI=${cIdsStr}`);
+                }
             }
-        }
-
-        if (typeof pIds === 'string') {
-            try {
-                pIds = JSON.parse(pIds);
-            } catch (e) {
-                errors.push(`Pixel content_ids invalid JSON: ${pIds}`);
-                return;
-            }
-        }
-
-        // Now both should be arrays, compare them
-        const pIdsStr = JSON.stringify(pIds);
-        const cIdsStr = JSON.stringify(cIds);
-
-        if (pIdsStr !== cIdsStr) {
-            errors.push(`Content IDs mismatch: Pixel=${pIdsStr} vs CAPI=${cIdsStr}`);
         }
     }
 
