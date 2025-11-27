@@ -8,7 +8,13 @@ const {
     logTestStart,
     logTestEnd,
     validateFacebookSync,
-    createTestProduct
+    createTestProduct,
+    filterProducts,
+    clickFirstProduct,
+    openFacebookOptions,
+    setProductDescription,
+    setProductTitle,
+    publishProduct
 } = require('./test-helpers');
 
 test.describe('Facebook for WooCommerce - Product Deletion E2E Tests', () => {
@@ -133,9 +139,6 @@ test.describe('Facebook for WooCommerce - Product Deletion E2E Tests', () => {
       });
       console.log('✅ Navigated to Facebook page');
 
-      // Wait for the page to load
-      await page.waitForTimeout(2000);
-
       // Click on Troubleshooting tab
       console.log('🔍 Looking for Troubleshooting tab...');
       const troubleshootingTab = page.locator('a:has-text("Troubleshooting"), button:has-text("Troubleshooting")');
@@ -200,6 +203,53 @@ test.describe('Facebook for WooCommerce - Product Deletion E2E Tests', () => {
       }
       if (variableProductId) {
         await cleanupProduct(variableProductId);
+      }
+    }
+  });
+
+  test('Exclude product from sync', async ({ page }, testInfo) => {
+    let simpleProductId = null;
+    try {
+      // Create a test simple product
+      console.log('📦 Creating test simple product...');
+      const simpleProduct = await createTestProduct({
+          productType: 'simple',
+          price: '29.99',
+          stock: '15'
+      });
+      simpleProductId = simpleProduct.productId;
+      console.log(`✅ Created simple product ID ${simpleProductId}: "${simpleProduct.productName}"`);
+
+      const syncResultBefore = await validateFacebookSync(simpleProductId, simpleProduct.productName);
+      expect(syncResultBefore['success']).toBe(true);
+      console.log('✅ Initial sync validation successful.')
+
+      await filterProducts(page, 'simple', simpleProduct.sku);
+      await clickFirstProduct(page);
+      await checkForPhpErrors(page);
+      await openFacebookOptions(page);
+
+      const facebookSyncField = page.locator('#wc_facebook_sync_mode');
+      await facebookSyncField.selectOption('sync_disabled');
+      const newTitle = `${simpleProduct.productName}-out-of-sync`;
+      await setProductTitle(page, newTitle);
+      const newDescription = 'This product is out of sync with Facebook';
+      await setProductDescription(page, newDescription);
+      await publishProduct(page);
+
+      const syncResultAfter = await validateFacebookSync(simpleProductId, simpleProduct.productName, 30, 0);
+      expect(syncResultAfter['success']).toBe(false);
+      expect(syncResultAfter['raw_data']['woo_data'][0]['title']).toBe(newTitle);
+      expect(syncResultAfter['raw_data']['woo_data'][0]['description']).toBe(newDescription);
+      expect(syncResultAfter['raw_data']['facebook_data']['found'], false);
+    } catch (error) {
+      console.log(`❌ Exclude product from sync test failed: ${error.message}`);
+      await safeScreenshot(page, 'product-exclusion-test-failure.png');
+      logTestEnd(testInfo, false);
+      throw error;
+    } finally {
+      if (simpleProductId) {
+        await cleanupProduct(simpleProductId);
       }
     }
   });
