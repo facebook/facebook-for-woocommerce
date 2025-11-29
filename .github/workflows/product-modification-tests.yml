@@ -1,4 +1,4 @@
-name: Product Creation E2E Tests (Set 1)
+name: Product Modification E2E Tests
 
 on:
   # make this workflow reusable and take in marketplace version as input
@@ -209,7 +209,7 @@ jobs:
           WORDPRESS_URL: http://localhost:8080
           WP_USERNAME: admin
           WP_PASSWORD: admin
-        run: npm run test:e2e:set1
+        run: npm run test:e2e:set2
 
       - name: Check for PHP errors
         if: always()
@@ -230,7 +230,7 @@ jobs:
         uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: playwright-report
+          name: playwright-report-modification
           path: playwright-report/
           retention-days: 7
 
@@ -238,7 +238,7 @@ jobs:
         uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: php-debug-logs
+          name: php-debug-logs-modification
           path: /tmp/wordpress/wp-content/debug.log
           retention-days: 7
 
@@ -246,6 +246,6 @@ jobs:
         uses: actions/upload-artifact@v4
         if: failure()
         with:
-          name: test-failures
+          name: test-failures-modification
           path: test-results/
           retention-days: 7
