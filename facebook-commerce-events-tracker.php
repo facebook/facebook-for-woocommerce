@@ -746,6 +746,14 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 				'user_data'   => $this->pixel->get_user_info(),
 			);
 
+			$cogs = CostOfGoods::calculate_cogs_for_products( [ $product ] );
+
+			if ( false !== $cogs ) {
+				$price_excluding_tax = wc_get_price_excluding_tax($product) * $quantity;
+				$cost_of_goods = $cogs * $quantity;
+				$event_data['custom_data']['net_revenue'] = $price_excluding_tax - $cost_of_goods;
+			}
+
 			$event = new WooCommerce\Facebook\Events\Event( $event_data );
 
 			$this->send_api_event( $event );
@@ -1060,7 +1068,9 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 			$cogs = CostOfGoods::calculate_cogs_for_products( $products );
 
 			if ( false !== $cogs ) {
-				$event_data['custom_data']['net_revenue'] = $cogs;
+				$price_excluding_tax = $order->get_subtotal();
+				$cost_of_goods = $cogs;
+				$event_data['custom_data']['net_revenue'] = $price_excluding_tax - $cost_of_goods;
 			}
 
 			$event = new Event( $event_data );

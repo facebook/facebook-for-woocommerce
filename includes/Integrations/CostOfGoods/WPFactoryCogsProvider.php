@@ -37,7 +37,7 @@ class WPFactoryCogsProvider extends AbstractCogsProvider {
 
 	public static function is_available() {
 
-		// This method is loaded whether
+		// This method exists if the wpfactory cogs plugin exists
 		return function_exists( 'alg_wc_cog' );
 	}
 }
