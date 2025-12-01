@@ -19,7 +19,10 @@ defined( 'ABSPATH' ) || exit;
  */
 class CostOfGoods {
 
+	/** @var array to cache the available cogs integrations. */
 	private static $available_integrations = array();
+
+	/** @var bool to cache whether provider availability has been evaluated or not. */
 	private static $already_fetched = false;
 
 	public static function calculate_cogs_for_products( $products ) {
@@ -50,7 +53,7 @@ class CostOfGoods {
 	public static function get_supported_integrations() {
 
 		return array(
-			'WooC'	  => 'WooCCogsProvider',
+			'WooC'      => 'WooCCogsProvider',
 			'WPFactory' => 'WPFactoryCogsProvider',
 		);
 	}

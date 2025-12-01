@@ -13,14 +13,48 @@ use WooCommerce\Facebook\Tests\AbstractWPUnitTestWithOptionIsolationAndSafeFilte
  */
 class WooCCogsProviderTest extends AbstractWPUnitTestWithOptionIsolationAndSafeFiltering {
 
+	public function given_no_cogs_providers_available_when_calculate_method_called_then_false_is_returned() {
+		$reflection = new \ReflectionClass( CostOfGoods::class );
+		$property = $reflection->getProperty('available_integrations');
+		$property->setValue([]);
+		$property = $reflection->getProperty('already_fetched');
+		$property->setValue(true);
+
+		$this->assertFalse(CostOfGoods::calculate_cogs_for_products([]));
+	}
+
 	public function setUp(): void {
 
-		// Mock WC_Facebookcommerce_Utils::is_woocommerce_integration
+		// // Mock WC_Facebookcommerce_Utils::is_woocommerce_integration
+		// if ( ! class_exists( 'WC_Facebookcommerce_Utils' ) ) {
+		// 	eval( 'class WC_Facebookcommerce_Utils {
+		// 		public static function is_woocommerce_integration() { return true; }
+		// 	}' );
+		// }
+		// // Mock WC_Product
+		// if ( ! class_exists( 'WC_Product' ) ) {
+		// 	eval( 'class WC_Product {
+		// 		public function get_cogs_total_value() { return 88.88; }
+		// 	}' );
+		// }
+		// // Mock get_option
+		// if ( ! function_exists( 'get_option' ) ) {
+		// 	eval( 'function get_option($key) {
+		// 		if ($key === "woocommerce_feature_cost_of_goods_sold_enabled") return "yes";
+		// 		return null;
+		// 	}' );
+		// }
+	}
+	
+	public function given_() {
 		if ( ! class_exists( 'WC_Facebookcommerce_Utils' ) ) {
 			eval( 'class WC_Facebookcommerce_Utils {
 				public static function is_woocommerce_integration() { return true; }
 			}' );
+		} else {
+			
 		}
+
 		// Mock WC_Product
 		if ( ! class_exists( 'WC_Product' ) ) {
 			eval( 'class WC_Product {
@@ -34,8 +68,10 @@ class WooCCogsProviderTest extends AbstractWPUnitTestWithOptionIsolationAndSafeF
 				return null;
 			}' );
 		}
+
+
 	}
-	
+
 	public function testIsAvailableReturnsTrueWhenAllConditionsMet() {
 		$this->assertTrue( WooCCogsProvider::is_available() );
 	}

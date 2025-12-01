@@ -749,7 +749,7 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 			$cogs = CostOfGoods::calculate_cogs_for_products( [ $product ] );
 
 			if ( false !== $cogs ) {
-				$price_excluding_tax = wc_get_price_excluding_tax($product) * $quantity;
+				$price_excluding_tax = wc_get_price_excluding_tax( $product ) * $quantity;
 				$cost_of_goods = $cogs * $quantity;
 				$event_data['custom_data']['net_revenue'] = $price_excluding_tax - $cost_of_goods;
 			}
@@ -1025,7 +1025,7 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 			$contents      = array();
 			$product_ids   = array( array() );
 			$product_names = array();
-			$products	   = array();
+			$products      = array();
 
 			foreach ( $order->get_items() as $item ) {
 
