@@ -14,8 +14,17 @@ use WooCommerce\Facebook\Tests\AbstractWPUnitTestWithOptionIsolationAndSafeFilte
  */
 class CostOfGoodsTest extends AbstractWPUnitTestWithOptionIsolationAndSafeFiltering {
 
-	public function setUp(): void {
-		// Mock providers
+	public function given_no_cogs_providers_available_when_calculate_method_called_then_false_is_returned() {
+		$reflection = new \ReflectionClass( CostOfGoods::class );
+		$property = $reflection->getProperty('available_integrations');
+		$property->setValue([]);
+		$property = $reflection->getProperty('already_fetched');
+		$property->setValue(true);
+
+		$this->assertFalse(CostOfGoods::calculate_cogs_for_products([]));
+	}
+
+	public function given_cogs_provider_available_when_no_products_provided_then_false_is_returned() {
 		$cogs_provider_mock = $this->createMock( AbstractCogsProvider::class );
 		$cogs_provider_mock->method( 'get_cogs_value' )->willReturn( 10 );
 		
@@ -25,48 +34,62 @@ class CostOfGoodsTest extends AbstractWPUnitTestWithOptionIsolationAndSafeFilter
 		$property->setValue([$cogs_provider_mock]);
 		$property = $reflection->getProperty('already_fetched');
 		$property->setValue(true);
+
+		$this->assertFalse(CostOfGoods::calculate_cogs_for_products([]));
 	}
 
-	public function testCalculateCogsForProductsReturnsSum() {
+	public function given_cogs_provider_available_when_a_product_provided_then_cogs_is_returned() {
+		$product = $this->createMock(stdClass::class);
+		$cogs_provider_mock = $this->createMock( AbstractCogsProvider::class );
+		$cogs_provider_mock->method( 'get_cogs_value' )->willReturn( 10 );
+		
+		// Patch get_cogs_providers to return our mock
+		$reflection = new \ReflectionClass( CostOfGoods::class );
+		$property = $reflection->getProperty('available_integrations');
+		$property->setValue([$cogs_provider_mock]);
+		$property = $reflection->getProperty('already_fetched');
+		$property->setValue(true);
+
+		$this->assertEqual(CostOfGoods::calculate_cogs_for_products([$product]), 10);
+	}
+
+	public function given_cogs_provider_available_when_multiple_products_provided_and_all_have_cogs_then_sum_cogs_is_returned() {
 		$product1 = $this->createMock(stdClass::class);
 		$product2 = $this->createMock(stdClass::class);
 
-		$result = CostOfGoods::calculate_cogs_for_products([$product1, $product2]);
+		$cogs_provider_mock = $this->createMock( AbstractCogsProvider::class );
+		$cogs_provider_mock->method( 'get_cogs_value' )->with($product1)->willReturn( 10 );
+		$cogs_provider_mock->method( 'get_cogs_value' )->with($product2)->willReturn( 20 );
 		
-		$this->assertEquals(20, $result);
-	}
-
-	public function Given_Cogs_Exists_for_Product_When_calculate_method_is_called_Then_it_returns_correct_value()
-	{
-		$this->assertFalse(true);
-	}
-
-	public function Given_Cogs_Does_Not_Exist_for_Product_When_calculate_method_is_called_Then_it_returns_false()
-	{
-		$this->assertFalse(true);
-	}
-
-	public function Given_cogs_doesnt_exist_for_one_product_in_an_order_When_calculate_method_is_called_Then_false_is_returned()
-	{
-
-		$this->assertFalse(true);
-	}
-
-	public function testCalculateCogsForProductsReturnsFalseIfProviderNotAvailable() {
-		// Patch get_cogs_providers to return empty
+		// Patch get_cogs_providers to return our mock
 		$reflection = new \ReflectionClass( CostOfGoods::class );
 		$property = $reflection->getProperty('available_integrations');
-		$property->setValue([]);
+		$property->setValue([$cogs_provider_mock]);
 		$property = $reflection->getProperty('already_fetched');
 		$property->setValue(true);
-		
-		$product = $this->createMock(stdClass::class);
-		$result = CostOfGoods::calculate_cogs_for_products([$product]);
 
-		$this->assertFalse($result);
+		$this->assertEqual(CostOfGoods::calculate_cogs_for_products([$product1, $product2]), 30);
 	}
 
-	public function testGetSupportedIntegrationsReturnsArray() {
+	public function given_cogs_provider_available_when_multiple_products_provided_but_one_does_not_have_cogs_then_false_is_returned() {
+		$product1 = $this->createMock(stdClass::class);
+		$product2 = $this->createMock(stdClass::class);
+
+		$cogs_provider_mock = $this->createMock( AbstractCogsProvider::class );
+		$cogs_provider_mock->method( 'get_cogs_value' )->with($product1)->willReturn( 10 );
+		$cogs_provider_mock->method( 'get_cogs_value' )->with($product2)->willReturn( 0 );
+		
+		// Patch get_cogs_providers to return our mock
+		$reflection = new \ReflectionClass( CostOfGoods::class );
+		$property = $reflection->getProperty('available_integrations');
+		$property->setValue([$cogs_provider_mock]);
+		$property = $reflection->getProperty('already_fetched');
+		$property->setValue(true);
+
+		$this->assertFalse(CostOfGoods::calculate_cogs_for_products([$product1, $product2]));
+	}
+
+	public function only_wooc_and_wpfactory_integrations_are_supported() {
 
 		$expected = [
 			'WooC'      => 'WooCCogsProvider',

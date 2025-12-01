@@ -28,6 +28,10 @@ class CostOfGoods {
 			return false;
 		}
 
+		if ( empty( $products ) ) {
+			return false;
+		}
+
 		$order_cogs = 0;
 		foreach ( $products as $product ) {
 
