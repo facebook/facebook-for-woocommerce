@@ -135,12 +135,12 @@ test.describe('Facebook for WooCommerce - Product Modification E2E Tests', () =>
 
       // Validate Facebook sync after editing
       console.log('🔄 Validating Facebook sync after edit...');
-      const result = await validateFacebookSync(productId, newTitle, 20);
+      const result = await validateFacebookSync(productId, newTitle);
       expect(result['success']).toBe(true);
 
       // Verify the changes were saved
       console.log('🔍 Verifying changes were saved...');
-      await page.reload({ waitUntil: 'networkidle', timeout: 120000 });
+      await page.reload({ waitUntil: 'domcontentloaded', timeout: 60000 });
 
       const updatedTitle = await titleField.inputValue();
       expect(updatedTitle).toBe(newTitle);
@@ -245,7 +245,7 @@ test.describe('Facebook for WooCommerce - Product Modification E2E Tests', () =>
       // Step 11: Verify price change in UI
       console.log('🔍 Verifying price change in products table...');
       // Reload the page to ensure we see the updated data
-      await page.reload({ waitUntil: 'networkidle', timeout: 120000 });
+      await page.reload({ waitUntil: 'domcontentloaded', timeout: 60000 });
 
       // Find the product row again and check the price column
       const updatedProductRow = page.locator('.wp-list-table tbody tr.iedit').first();
@@ -263,7 +263,7 @@ test.describe('Facebook for WooCommerce - Product Modification E2E Tests', () =>
 
       // Step 12: Validate Facebook sync and verify price was updated
       console.log('🔄 Validating Facebook sync after Quick Edit...');
-      const result = await validateFacebookSync(createdProductId, null, 20);
+      const result = await validateFacebookSync(createdProductId, createdProduct.productName);
 
       // Verify the price field specifically - should have NO mismatches for price
       const priceMismatches = Object.values(result['mismatches'] || {}).filter(
@@ -410,12 +410,12 @@ test.describe('Facebook for WooCommerce - Product Modification E2E Tests', () =>
 
       // Validate Facebook sync after editing
       console.log('🔄 Validating Facebook sync after edit...');
-      const result = await validateFacebookSync(productId, newTitle, 20);
+      const result = await validateFacebookSync(productId, newTitle, 30);
       expect(result['success']).toBe(true);
 
       // Verify the changes were saved
       console.log('🔍 Verifying changes were saved...');
-      await page.reload({ waitUntil: 'networkidle', timeout: 120000 });
+      await page.reload({ waitUntil: 'domcontentloaded', timeout: 60000 });
 
       const updatedTitle = await titleField.inputValue();
       expect(updatedTitle).toBe(newTitle);
@@ -520,7 +520,7 @@ test.describe('Facebook for WooCommerce - Product Modification E2E Tests', () =>
 
       // Validate Facebook sync
       console.log('🔍 Validating Facebook catalog sync...');
-      const syncResult = await validateFacebookSync(productId, productName, 20);
+      const syncResult = await validateFacebookSync(productId, productName);
       expect(syncResult.success).toBe(true);
 
       // Take final screenshot
@@ -645,7 +645,7 @@ test.describe('Facebook for WooCommerce - Product Modification E2E Tests', () =>
 
       // Validate Facebook sync
       console.log('🔍 Validating Facebook catalog sync...');
-      const syncResult = await validateFacebookSync(productId, productName, 20);
+      const syncResult = await validateFacebookSync(productId, productName, 30);
       expect(syncResult.success).toBe(true);
 
       // Take final screenshot
