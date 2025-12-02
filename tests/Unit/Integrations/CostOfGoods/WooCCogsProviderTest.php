@@ -15,7 +15,7 @@ use WooCommerce\Facebook\Tests\AbstractWPUnitTestWithOptionIsolationAndSafeFilte
  */
 class WooCCogsProviderTest extends AbstractWPUnitTestWithOptionIsolationAndSafeFiltering {
 
-	public function given_no_cogs_providers_available_when_calculate_method_called_then_false_is_returned() {
+	public function test_given_no_cogs_providers_available_when_calculate_method_called_then_false_is_returned() {
 		$reflection = new \ReflectionClass( WooCCogsProvider::class );
 		$property = $reflection->getProperty('available_integrations');
 		$property->setValue([]);
@@ -26,7 +26,7 @@ class WooCCogsProviderTest extends AbstractWPUnitTestWithOptionIsolationAndSafeF
 	}
 
 	public function setUp(): void {
-		
+
 		// // Mock WC_Facebookcommerce_Utils::is_woocommerce_integration
 		// if ( ! class_exists( 'WC_Facebookcommerce_Utils' ) ) {
 		// 	eval( 'class WC_Facebookcommerce_Utils {
@@ -48,7 +48,7 @@ class WooCCogsProviderTest extends AbstractWPUnitTestWithOptionIsolationAndSafeF
 		// }
 	}
 	
-	public function given_provider_is_unavailable_when_instantiated_then_exception_thrown() {
+	public function test_given_provider_is_unavailable_when_instantiated_then_exception_thrown() {
 		$reflection = new \ReflectionClass( WooCCogsProvider::class );
 		$property = $reflection->getProperty('is_available');
 		$property->setValue(false);
@@ -56,7 +56,7 @@ class WooCCogsProviderTest extends AbstractWPUnitTestWithOptionIsolationAndSafeF
 		$this->expectException( \IntegrationIsNotAvailableException::class );
 	}
 
-	public function given_product_has_cogs_value_when_get_cogs_value_is_called_then_correct_value_returned() {
+	public function test_given_product_has_cogs_value_when_get_cogs_value_is_called_then_correct_value_returned() {
 		$product = $this->createMock( stdClass::class );
 		$product->method( 'get_cogs_total_value' )->willReturn( 10 );
 		
@@ -69,7 +69,7 @@ class WooCCogsProviderTest extends AbstractWPUnitTestWithOptionIsolationAndSafeF
 		$this->assertEqual(10, $value);
 	}
 
-	public function given_woo_integration_is_not_available_when_is_available_called_then_it_returns_false() {
+	public function test_given_woo_integration_is_not_available_when_is_available_called_then_it_returns_false() {
 		if ( class_exists( 'WC_Facebookcommerce_Utils' ) ) {
 			\WC_Facebookcommerce_Utils::staticExpects($this->any())->method('is_woocommerce_integration')->willReturn(false);
 		} else {
@@ -85,7 +85,6 @@ class WooCCogsProviderTest extends AbstractWPUnitTestWithOptionIsolationAndSafeF
 
 	/* is_available = false, if:
 		- is_woo_integration is false
-		- WC_Product doesn't exist
 		- WC_Product->get_cogs_total_value returns null
 		- false is returned from: wc_get_container()->get( 'Automattic\WooCommerce\Internal\Features\FeaturesController' )->feature_is_enabled( 'cost_of_goods_sold' )
 		- false is returned from get_option('woocommerce_feature_cost_of_goods_sold_enabled')

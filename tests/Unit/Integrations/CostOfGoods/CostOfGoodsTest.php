@@ -14,7 +14,7 @@ use WooCommerce\Facebook\Tests\AbstractWPUnitTestWithOptionIsolationAndSafeFilte
  */
 class CostOfGoodsTest extends AbstractWPUnitTestWithOptionIsolationAndSafeFiltering {
 
-	public function given_no_cogs_providers_available_when_calculate_method_called_then_false_is_returned() {
+	public function test_given_no_cogs_providers_available_when_calculate_method_called_then_false_is_returned() {
 		$reflection = new \ReflectionClass( CostOfGoods::class );
 		$property = $reflection->getProperty('available_integrations');
 		$property->setValue([]);
@@ -24,7 +24,7 @@ class CostOfGoodsTest extends AbstractWPUnitTestWithOptionIsolationAndSafeFilter
 		$this->assertFalse(CostOfGoods::calculate_cogs_for_products([]));
 	}
 
-	public function given_cogs_provider_available_when_no_products_provided_then_false_is_returned() {
+	public function test_given_cogs_provider_available_when_no_products_provided_then_false_is_returned() {
 		$cogs_provider_mock = $this->createMock( AbstractCogsProvider::class );
 		$cogs_provider_mock->method( 'get_cogs_value' )->willReturn( 10 );
 		
@@ -38,7 +38,7 @@ class CostOfGoodsTest extends AbstractWPUnitTestWithOptionIsolationAndSafeFilter
 		$this->assertFalse(CostOfGoods::calculate_cogs_for_products([]));
 	}
 
-	public function given_cogs_provider_available_when_a_product_provided_then_cogs_is_returned() {
+	public function test_given_cogs_provider_available_when_a_product_provided_then_cogs_is_returned() {
 		$product = $this->createMock(stdClass::class);
 		$cogs_provider_mock = $this->createMock( AbstractCogsProvider::class );
 		$cogs_provider_mock->method( 'get_cogs_value' )->willReturn( 10 );
@@ -53,7 +53,7 @@ class CostOfGoodsTest extends AbstractWPUnitTestWithOptionIsolationAndSafeFilter
 		$this->assertEqual(CostOfGoods::calculate_cogs_for_products([$product]), 10);
 	}
 
-	public function given_cogs_provider_available_when_multiple_products_provided_and_all_have_cogs_then_sum_cogs_is_returned() {
+	public function test_given_cogs_provider_available_when_multiple_products_provided_and_all_have_cogs_then_sum_cogs_is_returned() {
 		$product1 = $this->createMock(stdClass::class);
 		$product2 = $this->createMock(stdClass::class);
 
@@ -71,7 +71,7 @@ class CostOfGoodsTest extends AbstractWPUnitTestWithOptionIsolationAndSafeFilter
 		$this->assertEqual(CostOfGoods::calculate_cogs_for_products([$product1, $product2]), 30);
 	}
 
-	public function given_cogs_provider_available_when_multiple_products_provided_but_one_does_not_have_cogs_then_false_is_returned() {
+	public function test_given_cogs_provider_available_when_multiple_products_provided_but_one_does_not_have_cogs_then_false_is_returned() {
 		$product1 = $this->createMock(stdClass::class);
 		$product2 = $this->createMock(stdClass::class);
 
@@ -89,7 +89,7 @@ class CostOfGoodsTest extends AbstractWPUnitTestWithOptionIsolationAndSafeFilter
 		$this->assertFalse(CostOfGoods::calculate_cogs_for_products([$product1, $product2]));
 	}
 
-	public function only_wooc_and_wpfactory_integrations_are_supported() {
+	public function test_only_wooc_and_wpfactory_integrations_are_supported() {
 
 		$expected = [
 			'WooC'      => 'WooCCogsProvider',
