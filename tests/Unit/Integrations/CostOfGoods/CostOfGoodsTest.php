@@ -16,7 +16,7 @@ class CostOfGoodsTest extends AbstractWPUnitTestWithOptionIsolationAndSafeFilter
 
 	public function test_given_no_cogs_providers_available_when_calculate_method_called_then_false_is_returned() {
 		$reflection = new \ReflectionClass( CostOfGoods::class );
-		$reflection->setStaticPropertyValue('available_integrations', [$]);
+		$reflection->setStaticPropertyValue('available_integrations', []);
 		$reflection->setStaticPropertyValue('already_fetched', true);
 
 		$this->assertFalse(CostOfGoods::calculate_cogs_for_products([]));
