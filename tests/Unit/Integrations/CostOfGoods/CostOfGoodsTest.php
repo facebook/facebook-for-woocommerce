@@ -46,7 +46,7 @@ class CostOfGoodsTest extends AbstractWPUnitTestWithOptionIsolationAndSafeFilter
 		$reflection->setStaticPropertyValue('available_integrations', [$cogs_provider_mock]);
 		$reflection->setStaticPropertyValue('already_fetched', true);
 
-		$this->assertEqual(CostOfGoods::calculate_cogs_for_products([$product]), 10);
+		$this->assertEquals(CostOfGoods::calculate_cogs_for_products([$product]), 10);
 	}
 
 	public function test_given_cogs_provider_available_when_multiple_products_provided_and_all_have_cogs_then_sum_cogs_is_returned() {
@@ -62,7 +62,7 @@ class CostOfGoodsTest extends AbstractWPUnitTestWithOptionIsolationAndSafeFilter
 		$reflection->setStaticPropertyValue('available_integrations', [$cogs_provider_mock]);
 		$reflection->setStaticPropertyValue('already_fetched', true);
 
-		$this->assertEqual(CostOfGoods::calculate_cogs_for_products([$product1, $product2]), 30);
+		$this->assertEquals(CostOfGoods::calculate_cogs_for_products([$product1, $product2]), 30);
 	}
 
 	public function test_given_cogs_provider_available_when_multiple_products_provided_but_one_does_not_have_cogs_then_false_is_returned() {
