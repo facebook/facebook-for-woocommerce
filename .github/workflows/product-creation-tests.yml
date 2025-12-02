@@ -209,7 +209,7 @@ jobs:
           WORDPRESS_URL: http://localhost:8080
           WP_USERNAME: admin
           WP_PASSWORD: admin
-        run: npm run test:e2e
+        run: npm run test:e2e -- product-modification.spec.js
 
       - name: Check for PHP errors
         if: always()

@@ -269,7 +269,19 @@ async function validateFacebookSync(productId, productName, waitSeconds = 10, ma
       { cwd: __dirname }
     );
 
-    const result = JSON.parse(stdout);
+    // Log any errors output from the PHP script
+    if (stderr && stderr.trim().length > 0) {
+      console.warn(`⚠️ PHP script error output:\n${stderr}`);
+    }
+
+    let result;
+    try {
+      result = JSON.parse(stdout);
+    } catch (jsonError) {
+      console.error('❌ Failed to parse JSON from PHP script stdout:', stdout);
+      throw jsonError;
+    }
+
     // 📄 DUMP RAW JSON OUTPUT FROM VALIDATOR
     console.log('📄 OUTPUT FROM FACEBOOK SYNC VALIDATOR:');
     // Log everything in result except result["raw_data"]
@@ -281,6 +293,9 @@ async function validateFacebookSync(productId, productName, waitSeconds = 10, ma
       console.log(`🎉 Facebook Sync Validation Succeeded for ${displayName}:`);
     } else {
       console.warn(`⚠️ Facebook Sync Validation Failed.\nDepending on the test case, this may or may not be an actual error. Check the debug logs above.`);
+      if (result.error) {
+        console.warn(`⚠️ Error from PHP script: ${result.error}`);
+      }
     }
 
     return result;
