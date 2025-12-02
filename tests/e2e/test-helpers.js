@@ -382,7 +382,8 @@ async function openFacebookOptions(page) {
   }
 
   await facebookTab.click();
-  await page.waitForLoadState('domcontentloaded');
+  const facebookSyncField = page.locator('#wc_facebook_sync_mode');
+  facebookSyncField.waitFor({ state: 'visible', timeout: 5000 });
   console.log('✅ Opened Product Facebook options tab');
 }
 
