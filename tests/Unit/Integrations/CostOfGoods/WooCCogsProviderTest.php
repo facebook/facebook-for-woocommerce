@@ -50,8 +50,7 @@ class WooCCogsProviderTest extends AbstractWPUnitTestWithOptionIsolationAndSafeF
 	
 	public function test_given_provider_is_unavailable_when_instantiated_then_exception_thrown() {
 		$reflection = new \ReflectionClass( WooCCogsProvider::class );
-		$property = $reflection->getProperty('is_available');
-		$property->setValue(false);
+		$reflection->setStaticPropertyValue('is_available', false);
 		$instance = $reflection->newInstance();
 		$this->expectException( \IntegrationIsNotAvailableException::class );
 	}
