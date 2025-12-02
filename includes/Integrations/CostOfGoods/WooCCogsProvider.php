@@ -54,7 +54,7 @@ class WooCCogsProvider extends AbstractCogsProvider {
 			$set_prop_method->invokeArgs( $instance, array( 'cogs_value', '100.0' ) );
 
 			if ( ! method_exists( $instance, 'get_cogs_total_value' ) || (
-					null === $instance->get_cogs_value()
+					null === $instance->get_cogs_total_value()
 				)
 			) {
 				return false;

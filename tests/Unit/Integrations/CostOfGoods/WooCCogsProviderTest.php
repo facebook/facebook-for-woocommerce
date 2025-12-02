@@ -69,6 +69,29 @@ class WooCCogsProviderTest extends AbstractWPUnitTestWithOptionIsolationAndSafeF
 		$this->assertEqual(10, $value);
 	}
 
+	public function given_woo_integration_is_not_available_when_is_available_called_then_it_returns_false() {
+		if ( class_exists( 'WC_Facebookcommerce_Utils' ) ) {
+			\WC_Facebookcommerce_Utils::staticExpects($this->any())->method('is_woocommerce_integration')->willReturn(false);
+		} else {
+			$this->assertTrue(false);
+			eval( 'class WC_Facebookcommerce_Utils {
+				public static function is_woocommerce_integration() { return true; }
+			}' );
+		}
+		$reflection = new \ReflectionClass( WooCCogsProvider::class );
+		$instance = $reflection->newInstance();
+		$this->expectException( \IntegrationIsNotAvailableException::class );
+	}
+
+	/* is_available = false, if:
+		- is_woo_integration is false
+		- WC_Product doesn't exist
+		- WC_Product->get_cogs_total_value returns null
+		- false is returned from: wc_get_container()->get( 'Automattic\WooCommerce\Internal\Features\FeaturesController' )->feature_is_enabled( 'cost_of_goods_sold' )
+		- false is returned from get_option('woocommerce_feature_cost_of_goods_sold_enabled')
+
+		
+*/
 	public function given_() {
 		if ( ! class_exists( 'WC_Facebookcommerce_Utils' ) ) {
 			eval( 'class WC_Facebookcommerce_Utils {
