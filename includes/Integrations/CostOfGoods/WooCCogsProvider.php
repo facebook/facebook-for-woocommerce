@@ -24,7 +24,7 @@ class WooCCogsProvider extends AbstractCogsProvider {
 
 	/** @var string Name of the integration. */
 	const INTEGRATION_NAME = 'WooCommerce Cost of Goods';
-	
+
 	/** @var bool to cache whether this provider is available. */
 	private static $is_available = null;
 
@@ -43,14 +43,14 @@ class WooCCogsProvider extends AbstractCogsProvider {
 
 	public static function is_available() {
 
-		$func = function() {
+		$func = function () {
 			if ( ! \WC_Facebookcommerce_Utils::is_woocommerce_integration() || ! class_exists( 'WC_Product' ) ) {
 				return false;
 			}
 
-			$reflection 	= new ReflectionClass( 'WC_Product' );
+			$reflection      = new ReflectionClass( 'WC_Product' );
 			$set_prop_method = $reflection->getMethod( 'set_prop' );
-			$instance 		= $reflection->newInstanceWithoutConstructor();
+			$instance        = $reflection->newInstanceWithoutConstructor();
 			$set_prop_method->invokeArgs( $instance, array( 'cogs_value', '100.0' ) );
 
 			if ( ! method_exists( $instance, 'get_cogs_total_value' ) || (

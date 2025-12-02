@@ -48,7 +48,21 @@ class CogsIntegrationTests extends IntegrationTestCase {
 
 		$this->disable_facebook_sync();
 	}
+public function Given_Cogs_Exists_for_Product_When_calculate_method_is_called_Then_it_returns_correct_value()
+	{
+		$this->assertFalse(true);
+	}
 
+	public function Given_Cogs_Does_Not_Exist_for_Product_When_calculate_method_is_called_Then_it_returns_false()
+	{
+		$this->assertFalse(true);
+	}
+
+	public function Given_cogs_doesnt_exist_for_one_product_in_an_order_When_calculate_method_is_called_Then_false_is_returned()
+	{
+
+		$this->assertFalse(true);
+	}
 	/**
 	 * Placeholder. These tests should be added:
 	 * 1. Testing WooC integration with older WooC versions
