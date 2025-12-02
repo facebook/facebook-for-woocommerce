@@ -26,7 +26,7 @@ class WooCCogsProviderTest extends AbstractWPUnitTestWithOptionIsolationAndSafeF
 	}
 
 	public function setUp(): void {
-
+		
 		// // Mock WC_Facebookcommerce_Utils::is_woocommerce_integration
 		// if ( ! class_exists( 'WC_Facebookcommerce_Utils' ) ) {
 		// 	eval( 'class WC_Facebookcommerce_Utils {
