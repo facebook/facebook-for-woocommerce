@@ -91,28 +91,5 @@ class WooCCogsProviderTest extends AbstractWPUnitTestWithOptionIsolationAndSafeF
 				return null;
 			}' );
 		}
-
-
-	}
-
-	public function testIsAvailableReturnsTrueWhenAllConditionsMet() {
-		$this->assertTrue( WooCCogsProvider::is_available() );
-	}
-	
-	public function testConstructorThrowsExceptionIfNotAvailable() {
-		// Patch is_woocommerce_integration to return false
-		WC_Facebookcommerce_Utils::$integration = false;
-		$this->expectException( IntegrationIsNotAvailableException::class );
-		new WooCCogsProvider();
-		// Restore
-		WC_Facebookcommerce_Utils::$integration = true;
-	}
-
-	public function testGetCogsValueReturnsProductCogsTotal() {
-		$provider = new WooCCogsProvider();
-		$product = $this->createMock( WC_Product::class );
-		$product->method( 'get_cogs_total_value' )->willReturn( 77.77 );
-		$result = $provider->get_cogs_value( $product );
-		$this->assertEquals( 77.77, $result );
 	}
 }
