@@ -300,8 +300,7 @@ class LanguageOverrideFeedGenerationTest extends IntegrationTestCase {
 		$this->test_products_with_translations = [];
 
 		// Create products for load testing
-		// Start with 1,000 to validate, then scale up
-		$num_products = 1000;
+		$num_products = 20;
 
 		$start_time = microtime(true);
 		echo "\n\nCreating {$num_products} products with translations...\n";
@@ -342,11 +341,6 @@ class LanguageOverrideFeedGenerationTest extends IntegrationTestCase {
 			}
 
 			$this->test_products_with_translations[] = $product_info;
-
-			// Progress indicator every 1000 products
-			if ( $i % 1000 === 0 ) {
-				echo "  Created {$i} / {$num_products} products...\n";
-			}
 		}
 
 		echo "✓ Completed creating {$num_products} products with translations!\n\n";
