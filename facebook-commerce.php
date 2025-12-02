@@ -2868,6 +2868,11 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 	 * @since 3.6.0
 	 */
 	public function is_language_override_feed_generation_enabled() {
+
+		if ( ! facebook_for_woocommerce()->get_rollout_switches()->is_switch_enabled( \WooCommerce\Facebook\RolloutSwitches::SWITCH_LANGUAGE_OVERRIDE_FEED_ENABLED ) ) {
+			return false;
+		}
+
 		// Check if localization integration is available and eligible
 		$integration = \WooCommerce\Facebook\Integrations\IntegrationRegistry::get_active_localization_integration();
 

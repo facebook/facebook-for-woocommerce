@@ -231,7 +231,7 @@ class Polylang extends Abstract_Localization_Integration {
 	 * Uses Polylang's API to find products that are in the default language.
 	 * This ensures we're working with the original products, not translations.
 	 *
-	 * @param int $limit Maximum number of products to return
+	 * @param int $limit Maximum number of products to return (-1 for all products, matching legacy feed behavior)
 	 * @param int $offset Offset for pagination
 	 * @return array Array of product IDs from the default language
 	 */
@@ -264,7 +264,7 @@ class Polylang extends Abstract_Localization_Integration {
 			$default_language_slug = $default_language_locale;
 		}
 
-		// Get published products
+		// Get published products - use legacy approach when $limit = -1
 		$args = [
 			'post_type' => 'product',
 			'post_status' => 'publish',

@@ -85,8 +85,8 @@ class LanguageOverrideFeedGenerationTest extends IntegrationTestCase {
 		// SIMPLIFIED TEST - JUST TEST SPANISH
 		$language_code = 'es_ES';
 
-		// Step 1: Generate feed data
-		$csv_result = $this->language_feed_data->get_language_csv_data( $language_code, 100, 0 );
+		// Step 1: Generate feed data (using -1 to fetch ALL products, matching legacy feed behavior)
+		$csv_result = $this->language_feed_data->get_language_csv_data( $language_code, -1, 0 );
 
 		$this->assertArrayHasKey( 'data', $csv_result, 'CSV result should have data array' );
 		$this->assertArrayHasKey( 'columns', $csv_result, 'CSV result should have columns array' );
@@ -99,8 +99,21 @@ class LanguageOverrideFeedGenerationTest extends IntegrationTestCase {
 
 			// Step 2: Create language feed writer and generate CSV file
 			$language_feed_writer = new LanguageOverrideFeedWriter( $language_code );
-			$success = $language_feed_writer->write_language_feed_file( $this->language_feed_data, $language_code );
-			$this->assertTrue( $success, "Language feed file should be written successfully for {$language_code}" );
+			$result = $language_feed_writer->write_language_feed_file( $this->language_feed_data, $language_code );
+
+			// Assert the result structure
+			$this->assertIsArray( $result, "Language feed file write should return an array for {$language_code}" );
+			$this->assertArrayHasKey( 'success', $result, "Result should have 'success' key" );
+			$this->assertArrayHasKey( 'count', $result, "Result should have 'count' key" );
+			$this->assertTrue( $result['success'], "Language feed file should be written successfully for {$language_code}" );
+
+			// Assert the count matches the number of test products
+			$expected_count = count( $this->test_products_with_translations );
+			$this->assertEquals(
+				$expected_count,
+				$result['count'],
+				"Feed should contain {$expected_count} products (created {$expected_count} test products)"
+			);
 
 			// Step 3: Verify file creation and content
 			$file_path = $language_feed_writer->get_file_path();
@@ -177,8 +190,8 @@ class LanguageOverrideFeedGenerationTest extends IntegrationTestCase {
 			$this->assertNotEmpty( $default_language, 'Should have a default language' );
 			$this->assertNotEquals( $language_code, $default_language, 'Test language should be different from default' );
 
-			// Test translated fields detection
-			$translated_fields = $this->language_feed_data->get_translated_fields_for_language( $language_code, 50 );
+			// Test translated fields detection (using -1 to check ALL products)
+			$translated_fields = $this->language_feed_data->get_translated_fields_for_language( $language_code, -1 );
 			$this->assertNotEmpty( $translated_fields, "Should detect translated fields for {$language_code}" );
 
 			// Should include the fields we specifically translated
@@ -187,8 +200,8 @@ class LanguageOverrideFeedGenerationTest extends IntegrationTestCase {
 				$this->assertContains( $expected_field, $translated_fields, "Should detect {$expected_field} as translated field" );
 			}
 
-			// Test CSV data generation with detailed validation
-			$csv_result = $this->language_feed_data->get_language_csv_data( $language_code, 50, 0 );
+			// Test CSV data generation with detailed validation (using -1 to fetch ALL products)
+			$csv_result = $this->language_feed_data->get_language_csv_data( $language_code, -1, 0 );
 
 			$this->assertNotEmpty( $csv_result['data'], "Should generate CSV data for {$language_code}" );
 			$this->assertArrayHasKey( 'columns', $csv_result, 'Should have columns definition' );
@@ -286,29 +299,24 @@ class LanguageOverrideFeedGenerationTest extends IntegrationTestCase {
 		// Create test products with translations
 		$this->test_products_with_translations = [];
 
-		// Product 1: Complete translation
-		$product1 = $this->create_simple_product([
-			'name' => 'Complete Translation Test Product',
-			'description' => 'This product has complete translations in all test languages.',
-			'short_description' => 'Complete translation test.',
-			'regular_price' => '25.99',
-			'status' => 'publish',
-			'catalog_visibility' => 'visible'
-		]);
+		// Create products for load testing
+		// Start with 1,000 to validate, then scale up
+		$num_products = 1000;
 
-		// Product 2: Another complete translation with different content
-		$product2 = $this->create_simple_product([
-			'name' => 'Second Translation Test Product',
-			'description' => 'This is the second product for testing comprehensive translations.',
-			'short_description' => 'Second translation test.',
-			'regular_price' => '35.99',
-			'status' => 'publish',
-			'catalog_visibility' => 'visible'
-		]);
+		$start_time = microtime(true);
+		echo "\n\nCreating {$num_products} products with translations...\n";
+		echo "Started at: " . date('H:i:s') . "\n";
 
-		$test_products = [ $product1, $product2 ];
+		for ( $i = 1; $i <= $num_products; $i++ ) {
+			$product = $this->create_simple_product([
+				'name' => "Load Test Product #{$i}",
+				'description' => "This is load test product number {$i} for testing large catalog feed generation.",
+				'short_description' => "Load test product #{$i}.",
+				'regular_price' => sprintf( '%.2f', 10 + ( $i % 100 ) ),
+				'status' => 'publish',
+				'catalog_visibility' => 'visible'
+			]);
 
-		foreach ( $test_products as $index => $product ) {
 			$product_info = [
 				'original_id' => $product->get_id(),
 				'translations' => []
@@ -316,7 +324,11 @@ class LanguageOverrideFeedGenerationTest extends IntegrationTestCase {
 
 			foreach ( $this->test_languages as $target_language ) {
 				// Create language-specific content
-				$translated_data = $this->createTranslatedContent( $index + 1, $target_language );
+				$translated_data = [
+					'name' => "Producto de Prueba Número {$i}",
+					'description' => "Esta es la descripción del producto de prueba número {$i}.",
+					'short_description' => "Producto de prueba #{$i}."
+				];
 
 				// Create translation using integration
 				$translated_id = $active_integration->create_product_translation(
@@ -330,7 +342,14 @@ class LanguageOverrideFeedGenerationTest extends IntegrationTestCase {
 			}
 
 			$this->test_products_with_translations[] = $product_info;
+
+			// Progress indicator every 1000 products
+			if ( $i % 1000 === 0 ) {
+				echo "  Created {$i} / {$num_products} products...\n";
+			}
 		}
+
+		echo "✓ Completed creating {$num_products} products with translations!\n\n";
 	}
 
 	/**

@@ -50,28 +50,41 @@ class LanguageOverrideFeed {
 	 * @since 3.6.0
 	 */
 	public function __construct() {
-		// Avoid circular dependency by checking option directly instead of calling integration method
-		// Also avoid Logger::log() calls in constructor to prevent circular dependency
-		if ( 'yes' !== get_option( 'wc_facebook_language_override_feed_generation_enabled', 'yes' ) ) {
+		try {
+			// Avoid circular dependency by checking option directly instead of calling integration method
+			// Also avoid Logger::log() calls in constructor to prevent circular dependency
+			if ( 'yes' !== get_option( 'wc_facebook_language_override_feed_generation_enabled', 'yes' ) ) {
+				return;
+			}
+
+			// Check if we have an active localization plugin before proceeding
+			if ( ! IntegrationRegistry::has_active_localization_plugin() ) {
+				return;
+			}
+
+			$this->language_feed_data = new LanguageFeedData();
+
+			// Get the default language from the active localization plugin
+			$default_language = $this->language_feed_data->get_default_language();
+
+			// Ensure we have a valid language code
+			if ( empty( $default_language ) ) {
+				return;
+			}
+
+			$this->add_hooks();
+
+		} catch ( \Throwable $e ) {
+			// Log the error but don't break the plugin
+			if ( function_exists( 'error_log' ) ) {
+				error_log(
+					'Facebook for WooCommerce - Language Override Feed initialization failed: ' .
+					$e->getMessage() . ' in ' . $e->getFile() . ':' . $e->getLine()
+				);
+			}
+			// Silently fail - the feature just won't be available
 			return;
 		}
-
-		// Check if we have an active localization plugin before proceeding
-		if ( ! IntegrationRegistry::has_active_localization_plugin() ) {
-			return;
-		}
-
-		$this->language_feed_data = new LanguageFeedData();
-
-		// Get the default language from the active localization plugin
-		$default_language = $this->language_feed_data->get_default_language();
-
-		// Ensure we have a valid language code
-		if ( empty( $default_language ) ) {
-			return;
-		}
-
-		$this->add_hooks();
 	}
 
 

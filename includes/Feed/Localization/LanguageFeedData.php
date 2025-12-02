@@ -81,7 +81,7 @@ class LanguageFeedData {
 	 *
 	 * Uses the first active localization plugin to get products from the default language.
 	 *
-	 * @param int $limit Maximum number of products to return
+	 * @param int $limit Maximum number of products to return (-1 for all products, legacy feed behavior)
 	 * @param int $offset Offset for pagination
 	 * @return array Array of product IDs from the default language
 	 */

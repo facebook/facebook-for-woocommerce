@@ -196,7 +196,7 @@ class WPML extends Abstract_Localization_Integration {
 	 * Uses WPML's API to find products that are in the default language.
 	 * This ensures we're working with the original products, not translations.
 	 *
-	 * @param int $limit Maximum number of products to return
+	 * @param int $limit Maximum number of products to return (-1 for all products, matching legacy feed behavior)
 	 * @param int $offset Offset for pagination
 	 * @return array Array of product IDs from the default language
 	 */
@@ -229,16 +229,28 @@ class WPML extends Abstract_Localization_Integration {
 			$default_language_code = $default_language_locale;
 		}
 
-		// Get published products - use a larger batch size to account for translations
-		// We need to get more products initially because some will be filtered out
-		$batch_size = max( $limit * 3, 50 ); // Get 3x the requested amount or minimum 50
-		$args = [
-			'post_type' => 'product',
-			'post_status' => 'publish',
-			'posts_per_page' => $batch_size,
-			'offset' => $offset,
-			'fields' => 'ids',
-		];
+		// Get published products - use legacy approach when $limit = -1
+		if ( $limit === -1 ) {
+			// Legacy feed behavior: Get ALL products at once (no limit)
+			$args = [
+				'post_type' => 'product',
+				'post_status' => 'publish',
+				'posts_per_page' => -1,
+				'offset' => $offset,
+				'fields' => 'ids',
+			];
+		} else {
+			// Use a larger batch size to account for translations
+			// We need to get more products initially because some will be filtered out
+			$batch_size = max( $limit * 3, 50 ); // Get 3x the requested amount or minimum 50
+			$args = [
+				'post_type' => 'product',
+				'post_status' => 'publish',
+				'posts_per_page' => $batch_size,
+				'offset' => $offset,
+				'fields' => 'ids',
+			];
+		}
 
 		$all_products = get_posts( $args );
 		$default_language_products = [];
@@ -252,8 +264,8 @@ class WPML extends Abstract_Localization_Integration {
 				if ( $product_language['language_code'] === $default_language_code ) {
 					$default_language_products[] = $product_id;
 
-					// Stop when we have enough products
-					if ( count( $default_language_products ) >= $limit ) {
+					// Stop when we have enough products (unless $limit = -1, which means get all)
+					if ( $limit !== -1 && count( $default_language_products ) >= $limit ) {
 						break;
 					}
 				}

@@ -146,8 +146,8 @@ class LanguageOverrideFeedWriter extends AbstractFeedFileWriter {
 	 */
 	public function write_language_feed_file( LanguageFeedData $language_feed_data, string $language_code ): array {
 		try {
-			// Get language feed data
-			$csv_result = $language_feed_data->get_language_csv_data( $language_code, 5000, 0 );
+			// Get ALL language feed data (no limit, matching legacy feed approach)
+			$csv_result = $language_feed_data->get_language_csv_data( $language_code, -1, 0 );
 
 			$product_count = count( $csv_result['data'] ?? [] );
 

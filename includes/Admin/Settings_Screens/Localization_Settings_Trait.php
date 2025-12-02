@@ -30,6 +30,11 @@ trait Localization_Settings_Trait {
 	 * @return array
 	 */
 	protected function get_localization_settings(): array {
+		// Hide settings if rollout switch is disabled
+		if ( ! facebook_for_woocommerce()->get_rollout_switches()->is_switch_enabled( \WooCommerce\Facebook\RolloutSwitches::SWITCH_LANGUAGE_OVERRIDE_FEED_ENABLED ) ) {
+			return array();
+		}
+
 		// Get active localization integration to determine setting state
 		$integration = IntegrationRegistry::get_active_localization_integration();
 		$is_available = $integration && $integration->is_available();

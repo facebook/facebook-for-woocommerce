@@ -31,6 +31,7 @@ class RolloutSwitches {
 	public const SWITCH_OFFER_MANAGEMENT_ENABLED            = 'offer_management_enabled';
 	public const SWITCH_MULTIPLE_IMAGES_ENABLED             = 'woo_variant_multiple_images_enabled';
 	public const SWITCH_CONTENT_ID_MIGRATION_ENABLED        = 'enable_woocommerce_content_id_migration';
+	public const SWITCH_LANGUAGE_OVERRIDE_FEED_ENABLED      = 'wooc_language_override_feed';
 	private const SETTINGS_KEY                              = 'wc_facebook_for_woocommerce_rollout_switches';
 	public const CAPI_EVENT_LOGGING_ENABLED                 = 'enable_woocommerce_capi_event_logging';
 
@@ -42,6 +43,7 @@ class RolloutSwitches {
 		self::WHATSAPP_UTILITY_MESSAGING_BETA_EXPERIENCE,
 		self::CAPI_EVENT_LOGGING_ENABLED,
 		self::SWITCH_CONTENT_ID_MIGRATION_ENABLED,
+		self::SWITCH_LANGUAGE_OVERRIDE_FEED_ENABLED,
 	);
 
 	public function __construct( \WC_Facebookcommerce $plugin ) {

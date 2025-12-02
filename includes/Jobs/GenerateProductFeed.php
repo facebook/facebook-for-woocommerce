@@ -100,9 +100,9 @@ class GenerateProductFeed extends AbstractChainedJob {
 
 		// Add language parameter to prevent Polylang/WPML from filtering by current language context
 		$integration = \WooCommerce\Facebook\Integrations\IntegrationRegistry::get_active_localization_integration();
-		$is_language_feed_enabled = facebook_for_woocommerce()->get_integration()->get_option( \WC_Facebookcommerce_Integration::OPTION_LANGUAGE_OVERRIDE_FEED_GENERATION_ENABLED );
+		$is_language_feed_enabled = facebook_for_woocommerce()->get_integration()->is_language_override_feed_generation_enabled();
 
-		if ( $integration && 'yes' === $is_language_feed_enabled ) {
+		if ( $integration && $is_language_feed_enabled ) {
 			// When localization plugin is active AND language override feeds are enabled,
 			// only retrieve default language products
 			$default_language = $integration->get_default_language();
