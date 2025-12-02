@@ -3,7 +3,9 @@ declare( strict_types=1 );
 
 namespace WooCommerce\Facebook\Tests\Unit\Integrations;
 
+use stdClass;
 use WooCommerce\Facebook\Integrations\CostOfGoods\WooCCogsProvider;
+use WooCommerce\Facebook\Integrations\IntegrationIsNotAvailableException;
 use WooCommerce\Facebook\Tests\AbstractWPUnitTestWithOptionIsolationAndSafeFiltering;
 
 /**
@@ -14,7 +16,7 @@ use WooCommerce\Facebook\Tests\AbstractWPUnitTestWithOptionIsolationAndSafeFilte
 class WooCCogsProviderTest extends AbstractWPUnitTestWithOptionIsolationAndSafeFiltering {
 
 	public function given_no_cogs_providers_available_when_calculate_method_called_then_false_is_returned() {
-		$reflection = new \ReflectionClass( CostOfGoods::class );
+		$reflection = new \ReflectionClass( WooCCogsProvider::class );
 		$property = $reflection->getProperty('available_integrations');
 		$property->setValue([]);
 		$property = $reflection->getProperty('already_fetched');
@@ -46,13 +48,34 @@ class WooCCogsProviderTest extends AbstractWPUnitTestWithOptionIsolationAndSafeF
 		// }
 	}
 	
+	public function given_provider_is_unavailable_when_instantiated_then_exception_thrown() {
+		$reflection = new \ReflectionClass( WooCCogsProvider::class );
+		$property = $reflection->getProperty('is_available');
+		$property->setValue(false);
+		$instance = $reflection->newInstance();
+		$this->expectException( \IntegrationIsNotAvailableException::class );
+	}
+
+	public function given_product_has_cogs_value_when_get_cogs_value_is_called_then_correct_value_returned() {
+		$product = $this->createMock( stdClass::class );
+		$product->method( 'get_cogs_total_value' )->willReturn( 10 );
+		
+		$reflection = new \ReflectionClass( WooCCogsProvider::class );
+		$property = $reflection->getProperty('is_available');
+		$property->setValue(true);
+		$instance = $reflection->newInstance();
+
+		$value = $instance->get_cogs_total_value($product);
+		$this->assertEqual(10, $value);
+	}
+
 	public function given_() {
 		if ( ! class_exists( 'WC_Facebookcommerce_Utils' ) ) {
 			eval( 'class WC_Facebookcommerce_Utils {
 				public static function is_woocommerce_integration() { return true; }
 			}' );
 		} else {
-			
+
 		}
 
 		// Mock WC_Product
