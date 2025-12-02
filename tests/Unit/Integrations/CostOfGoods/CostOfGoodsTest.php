@@ -16,10 +16,8 @@ class CostOfGoodsTest extends AbstractWPUnitTestWithOptionIsolationAndSafeFilter
 
 	public function test_given_no_cogs_providers_available_when_calculate_method_called_then_false_is_returned() {
 		$reflection = new \ReflectionClass( CostOfGoods::class );
-		$property = $reflection->getProperty('available_integrations');
-		$property->setValue([]);
-		$property = $reflection->getProperty('already_fetched');
-		$property->setValue(true);
+		$reflection->setStaticPropertyValue('available_integrations', [$]);
+		$reflection->setStaticPropertyValue('already_fetched', true);
 
 		$this->assertFalse(CostOfGoods::calculate_cogs_for_products([]));
 	}
@@ -30,11 +28,9 @@ class CostOfGoodsTest extends AbstractWPUnitTestWithOptionIsolationAndSafeFilter
 		
 		// Patch get_cogs_providers to return our mock
 		$reflection = new \ReflectionClass( CostOfGoods::class );
-		$property = $reflection->getProperty('available_integrations');
-		$property->setValue([$cogs_provider_mock]);
-		$property = $reflection->getProperty('already_fetched');
-		$property->setValue(true);
-
+		$reflection->setStaticPropertyValue('available_integrations', [$cogs_provider_mock]);
+		$reflection->setStaticPropertyValue('already_fetched', true);
+		
 		$this->assertFalse(CostOfGoods::calculate_cogs_for_products([]));
 	}
 
@@ -45,10 +41,8 @@ class CostOfGoodsTest extends AbstractWPUnitTestWithOptionIsolationAndSafeFilter
 		
 		// Patch get_cogs_providers to return our mock
 		$reflection = new \ReflectionClass( CostOfGoods::class );
-		$property = $reflection->getProperty('available_integrations');
-		$property->setValue([$cogs_provider_mock]);
-		$property = $reflection->getProperty('already_fetched');
-		$property->setValue(true);
+		$reflection->setStaticPropertyValue('available_integrations', [$cogs_provider_mock]);
+		$reflection->setStaticPropertyValue('already_fetched', true);
 
 		$this->assertEqual(CostOfGoods::calculate_cogs_for_products([$product]), 10);
 	}
@@ -63,10 +57,8 @@ class CostOfGoodsTest extends AbstractWPUnitTestWithOptionIsolationAndSafeFilter
 		
 		// Patch get_cogs_providers to return our mock
 		$reflection = new \ReflectionClass( CostOfGoods::class );
-		$property = $reflection->getProperty('available_integrations');
-		$property->setValue([$cogs_provider_mock]);
-		$property = $reflection->getProperty('already_fetched');
-		$property->setValue(true);
+		$reflection->setStaticPropertyValue('available_integrations', [$cogs_provider_mock]);
+		$reflection->setStaticPropertyValue('already_fetched', true);
 
 		$this->assertEqual(CostOfGoods::calculate_cogs_for_products([$product1, $product2]), 30);
 	}
@@ -81,15 +73,13 @@ class CostOfGoodsTest extends AbstractWPUnitTestWithOptionIsolationAndSafeFilter
 		
 		// Patch get_cogs_providers to return our mock
 		$reflection = new \ReflectionClass( CostOfGoods::class );
-		$property = $reflection->getProperty('available_integrations');
-		$property->setValue([$cogs_provider_mock]);
-		$property = $reflection->getProperty('already_fetched');
-		$property->setValue(true);
+		$reflection->setStaticPropertyValue('available_integrations', [$cogs_provider_mock]);
+		$reflection->setStaticPropertyValue('already_fetched', true);
 
 		$this->assertFalse(CostOfGoods::calculate_cogs_for_products([$product1, $product2]));
 	}
 
-	public function test_only_wooc_and_wpfactory_integrations_are_supported() {
+	public function only_wooc_and_wpfactory_integrations_are_supported() {
 
 		$expected = [
 			'WooC'      => 'WooCCogsProvider',
