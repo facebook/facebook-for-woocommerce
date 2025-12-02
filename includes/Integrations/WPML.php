@@ -230,7 +230,7 @@ class WPML extends Abstract_Localization_Integration {
 		}
 
 		// Get published products - use legacy approach when $limit = -1
-		if ( $limit === -1 ) {
+		if ( -1 === $limit ) {
 			// Legacy feed behavior: Get ALL products at once (no limit)
 			$args = [
 				'post_type' => 'product',
@@ -265,7 +265,7 @@ class WPML extends Abstract_Localization_Integration {
 					$default_language_products[] = $product_id;
 
 					// Stop when we have enough products (unless $limit = -1, which means get all)
-					if ( $limit !== -1 && count( $default_language_products ) >= $limit ) {
+					if ( -1 !== $limit && count( $default_language_products ) >= $limit ) {
 						break;
 					}
 				}
