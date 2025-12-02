@@ -332,10 +332,9 @@ jobs:
       - name: Check for PHP errors, and dump debug log
         if: always()
         run: |
-          cd ${{ env.WORDPRESS_PATH }}
-          if [ -f wp-content/debug.log ]; then
+          if [ -f ${{ env.WP_DEBUG_LOG }} ]; then
             # Capture PHP errors in a variable (excluding WordPress cron warnings)
-            PHP_ERRORS=$(grep -i "fatal\|error" wp-content/debug.log | grep -vi "cron reschedule" || true)
+            PHP_ERRORS=$(grep -i "fatal\|error" ${{ env.WP_DEBUG_LOG }} | grep -v "Cron reschedule event error for hook: facebook_for_woocommerce_5_minute_heartbeat_cron" || true)
             if [ -n "$PHP_ERRORS" ]; then
               echo "❌ PHP errors detected:"
               echo "$PHP_ERRORS"
