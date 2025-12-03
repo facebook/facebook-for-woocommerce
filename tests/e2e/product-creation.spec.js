@@ -1,4 +1,5 @@
 const { test, expect } = require('@playwright/test');
+const { TIMEOUTS } = require('./test-constants');
 const {
   baseURL,
   loginToWordPress,
@@ -35,7 +36,7 @@ test.describe('Facebook for WooCommerce - Product Creation E2E Tests', () => {
       // Navigate to add new product page
       await page.goto(`${baseURL}/wp-admin/post-new.php?post_type=product`, {
         waitUntil: 'domcontentloaded',
-        timeout: 60000
+        timeout: TIMEOUTS.NAVIGATION
       });
 
       // Wait for the product editor to load
@@ -50,11 +51,11 @@ test.describe('Facebook for WooCommerce - Product Creation E2E Tests', () => {
 
       // Click on Inventory tab
       await page.click('li.inventory_tab a');
-      await page.waitForTimeout(1000); // Wait for tab content to load
+      await page.waitForTimeout(TIMEOUTS.WAIT_SHORT); // Wait for tab content to load
 
       // Set SKU to ensure unique retailer ID
       const skuField = page.locator('#_sku');
-      if (await skuField.isVisible({ timeout: 10000 })) {
+      if (await skuField.isVisible({ timeout: TIMEOUTS.ELEMENT_LONG })) {
         const uniqueSku = generateUniqueSKU('simple');
         await skuField.fill(uniqueSku);
         console.log(`✅ Set unique SKU: ${uniqueSku}`);
@@ -62,7 +63,7 @@ test.describe('Facebook for WooCommerce - Product Creation E2E Tests', () => {
 
       // Set regular price
       const regularPriceField = page.locator('#_regular_price');
-      if (await regularPriceField.isVisible({ timeout: 10000 })) {
+      if (await regularPriceField.isVisible({ timeout: TIMEOUTS.ELEMENT_LONG })) {
         await regularPriceField.fill('19.99');
         console.log('✅ Set regular price');
       }
@@ -74,11 +75,11 @@ test.describe('Facebook for WooCommerce - Product Creation E2E Tests', () => {
         const facebookPriceField = page.locator('label:has-text("Facebook Price"), input[name*="facebook_price"]').first();
         const facebookImageField = page.locator('legend:has-text("Facebook Product Image"), input[name*="facebook_image"]').first();
 
-        if (await facebookSyncField.isVisible({ timeout: 10000 })) {
+        if (await facebookSyncField.isVisible({ timeout: TIMEOUTS.ELEMENT_LONG })) {
           console.log('✅ Facebook for WooCommerce fields detected');
-        } else if (await facebookPriceField.isVisible({ timeout: 10000 })) {
+        } else if (await facebookPriceField.isVisible({ timeout: TIMEOUTS.ELEMENT_LONG })) {
           console.log('✅ Facebook price field found');
-        } else if (await facebookImageField.isVisible({ timeout: 10000 })) {
+        } else if (await facebookImageField.isVisible({ timeout: TIMEOUTS.ELEMENT_LONG })) {
           console.log('✅ Facebook image field found');
         } else {
           console.warn('⚠️ No Facebook-specific fields found - plugin may not be fully activated');
@@ -128,7 +129,7 @@ test.describe('Facebook for WooCommerce - Product Creation E2E Tests', () => {
     // Step 1: Navigate to add new product
     await page.goto(`${baseURL}/wp-admin/post-new.php?post_type=product`, {
       waitUntil: 'domcontentloaded',
-      timeout: 60000
+      timeout: TIMEOUTS.NAVIGATION
     });
 
     // Step 2: Fill product title
@@ -158,23 +159,23 @@ test.describe('Facebook for WooCommerce - Product Creation E2E Tests', () => {
     // Step 5: Add attributes
     // Go to Attributes tab
     await page.click('li.attribute_tab a[href="#product_attributes"]');
-    await page.waitForTimeout(2000);
+    await page.waitForTimeout(TIMEOUTS.WAIT_MEDIUM);
     // Add name & value
     await page.fill('input.attribute_name[name="attribute_names[0]"]', 'Color');
     await page.fill('textarea[name="attribute_values[0]"]', 'Red|Blue|Green');
     // Use tab to enable Save Attributes button
     await page.locator('#product_attributes .woocommerce_attribute textarea[name^="attribute_values"]').press('Tab');
     await page.click('button.save_attributes.button-primary');
-    await page.waitForTimeout(5000);
+    await page.waitForTimeout(TIMEOUTS.WAIT_LONG);
     console.log('✅ Saved attributes');
 
     // Step 6: Generate variations
     // Go to Variations tab
     await page.click('a[href="#variable_product_options"]');
-    await page.waitForTimeout(2000);
+    await page.waitForTimeout(TIMEOUTS.WAIT_MEDIUM);
     // Click "Generate variations" button
     await page.click('button.generate_variations');
-    await page.waitForTimeout(8000);
+    await page.waitForTimeout(TIMEOUTS.WAIT_EXTRA_LONG);
     // Verify variations were created
     const variationsCount = await page.locator('.woocommerce_variation').count();
     console.log(`✅ Generated ${variationsCount} variations`);
@@ -183,31 +184,31 @@ test.describe('Facebook for WooCommerce - Product Creation E2E Tests', () => {
       // Step 7: Set prices for variations
       // Click "Add price" button first
       const addPriceBtn = page.locator('button.add_price_for_variations');
-      await addPriceBtn.waitFor({ state: 'visible', timeout: 10000 });
+      await addPriceBtn.waitFor({ state: 'visible', timeout: TIMEOUTS.ELEMENT_LONG });
       await addPriceBtn.click();
       console.log('✅ Clicked "Add price" button');
 
       // Wait for price input field to appear
-      await page.waitForTimeout(2000);
+      await page.waitForTimeout(TIMEOUTS.WAIT_MEDIUM);
 
       // Add bulk price
       const priceInput = page.locator('input.components-text-control__input.wc_input_variations_price');
-      await priceInput.waitFor({ state: 'visible', timeout: 10000 });
+      await priceInput.waitFor({ state: 'visible', timeout: TIMEOUTS.ELEMENT_LONG });
       await priceInput.click();        // ✅ Focus the field
       await priceInput.clear();        // ✅ Clear existing content
       await priceInput.type('29.99', { delay: 100 }); // ✅ Type with delays = triggers all JS events
 
       // Click "Add prices" button to apply the price
       const addPricesBtn = page.locator('button.add_variations_price_button.button-primary');
-      await addPricesBtn.waitFor({ state: 'visible', timeout: 10000 });
+      await addPricesBtn.waitFor({ state: 'visible', timeout: TIMEOUTS.ELEMENT_LONG });
       await addPricesBtn.click();
-      await page.waitForTimeout(3000);
+      await page.waitForTimeout(TIMEOUTS.WAIT_STANDARD);
       console.log('✅ Bulk price added successfully');
     }
 
     //  Step 8: Publish product
     await page.click('#publish');
-    await page.waitForTimeout(5000);
+    await page.waitForTimeout(TIMEOUTS.WAIT_LONG);
     // Verify success
     const pageContent = await page.content();
     expect(pageContent).not.toContain('Fatal error');
@@ -250,7 +251,7 @@ test.describe('Facebook for WooCommerce - Product Creation E2E Tests', () => {
       // Navigate to plugins page with increased timeout
       await page.goto(`${baseURL}/wp-admin/plugins.php`, {
         waitUntil: 'domcontentloaded',
-        timeout: 60000
+        timeout: TIMEOUTS.NAVIGATION
       });
 
       // Check if Facebook plugin is listed
@@ -284,7 +285,7 @@ test.describe('Facebook for WooCommerce - Product Creation E2E Tests', () => {
       // Go to Products list with increased timeout
       await page.goto(`${baseURL}/wp-admin/edit.php?post_type=product`, {
         waitUntil: 'domcontentloaded',
-        timeout: 60000
+        timeout: TIMEOUTS.NAVIGATION
       });
 
       // Verify no PHP errors on products page
@@ -293,7 +294,7 @@ test.describe('Facebook for WooCommerce - Product Creation E2E Tests', () => {
       expect(pageContent).not.toContain('Parse error');
 
       // Check if WooCommerce is working
-      const hasProductsTable = await page.locator('.wp-list-table').isVisible({ timeout: 10000 });
+      const hasProductsTable = await page.locator('.wp-list-table').isVisible({ timeout: TIMEOUTS.ELEMENT_LONG });
       if (hasProductsTable) {
         console.log('✅ WooCommerce products page loaded successfully');
       } else {
@@ -324,7 +325,7 @@ test.describe('Facebook for WooCommerce - Product Creation E2E Tests', () => {
           console.log(`🔍 Checking ${pageInfo.name} page...`);
           await page.goto(`${baseURL}${pageInfo.path}`, {
             waitUntil: 'domcontentloaded',
-            timeout: 60000
+            timeout: TIMEOUTS.NAVIGATION
           });
 
           const pageContent = await page.content();
@@ -335,7 +336,7 @@ test.describe('Facebook for WooCommerce - Product Creation E2E Tests', () => {
           expect(pageContent).not.toContain('Warning: ');
 
           // Verify admin content loaded
-          await page.locator('#wpcontent').isVisible({ timeout: 10000 });
+          await page.locator('#wpcontent').isVisible({ timeout: TIMEOUTS.ELEMENT_LONG });
 
           console.log(`✅ ${pageInfo.name} page loaded without errors`);
 
@@ -358,41 +359,41 @@ test.describe('Facebook for WooCommerce - Product Creation E2E Tests', () => {
       // Navigate to plugins page
       await page.goto(`${baseURL}/wp-admin/plugins.php`, {
         waitUntil: 'domcontentloaded',
-        timeout: 60000
+        timeout: TIMEOUTS.NAVIGATION
       });
 
       // Look for Facebook plugin row
       const pluginRow = page.locator('tr[data-slug="facebook-for-woocommerce"], tr:has-text("Facebook for WooCommerce")').first();
 
-      if (await pluginRow.isVisible({ timeout: 10000 })) {
+      if (await pluginRow.isVisible({ timeout: TIMEOUTS.ELEMENT_LONG })) {
         console.log('✅ Facebook plugin found');
 
         // Check if plugin is currently active
-        const isActive = await pluginRow.locator('.active').isVisible({ timeout: 10000 });
+        const isActive = await pluginRow.locator('.active').isVisible({ timeout: TIMEOUTS.ELEMENT_LONG });
 
         if (isActive) {
           console.log('Plugin is active, testing deactivation...');
           const deactivateLink = pluginRow.locator('a:has-text("Deactivate")');
-          if (await deactivateLink.isVisible({ timeout: 10000 })) {
+          if (await deactivateLink.isVisible({ timeout: TIMEOUTS.ELEMENT_LONG })) {
             await deactivateLink.click();
-            await page.waitForTimeout(2000);
+            await page.waitForTimeout(TIMEOUTS.WAIT_MEDIUM);
             console.log('✅ Plugin deactivated');
 
             // Now test reactivation
-            await page.waitForTimeout(1000);
+            await page.waitForTimeout(TIMEOUTS.WAIT_SHORT);
             const reactivateLink = pluginRow.locator('a:has-text("Activate")');
-            if (await reactivateLink.isVisible({ timeout: 10000 })) {
+            if (await reactivateLink.isVisible({ timeout: TIMEOUTS.ELEMENT_LONG })) {
               await reactivateLink.click();
-              await page.waitForTimeout(2000);
+              await page.waitForTimeout(TIMEOUTS.WAIT_MEDIUM);
               console.log('✅ Plugin reactivated');
             }
           }
         } else {
           console.log('Plugin is inactive, testing activation...');
           const activateLink = pluginRow.locator('a:has-text("Activate")');
-          if (await activateLink.isVisible({ timeout: 10000 })) {
+          if (await activateLink.isVisible({ timeout: TIMEOUTS.ELEMENT_LONG })) {
             await activateLink.click();
-            await page.waitForTimeout(2000);
+            await page.waitForTimeout(TIMEOUTS.WAIT_MEDIUM);
             console.log('✅ Plugin activated');
           }
         }
