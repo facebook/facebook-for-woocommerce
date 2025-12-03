@@ -34,8 +34,12 @@ class CogsIntegrationTests extends IntegrationTestCase
 	}
 
 	private function enable_cogs_in_woo_settings() {
+		$res = 1;
 		if ( get_option( 'woocommerce_feature_cogs_enabled', 'no' ) !== 'yes' ) {
-			update_option( 'woocommerce_feature_cogs_enabled', 'yes' );
+			$res = update_option( 'woocommerce_feature_cogs_enabled', 'yes' );
+		}
+		if ( ! $res ) {
+			throw new \Exception('Unable to enable COGS');
 		}
 	}
 
