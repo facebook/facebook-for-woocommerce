@@ -19,6 +19,12 @@ on:
   pull_request:
     branches: [ main, master, develop ]
 
+env:
+  WORDPRESS_URL: 'http://localhost:8080'
+  WORDPRESS_PATH: '/tmp/wordpress'
+  WP_USERNAME: admin
+  WP_PASSWORD: admin
+
 jobs:
   e2e-tests:
     runs-on: ubuntu-latest
@@ -135,6 +141,11 @@ jobs:
           wp option update woocommerce_store_postcode "12345" --allow-root
           wp option update woocommerce_currency "USD" --allow-root
 
+      - name: Install WPC Composite Products plugin
+        run: |
+          cd /tmp/wordpress
+          wp plugin install wpc-composite-products --activate --allow-root
+
       - name: Install Facebook for WooCommerce plugin
         run: |
           cd /tmp/wordpress
@@ -210,10 +221,6 @@ jobs:
           npx playwright install chromium
 
       - name: Run E2E tests
-        env:
-          WORDPRESS_URL: http://localhost:8080
-          WP_USERNAME: admin
-          WP_PASSWORD: admin
         run: npm run test:e2e
 
       - name: Check for PHP errors
