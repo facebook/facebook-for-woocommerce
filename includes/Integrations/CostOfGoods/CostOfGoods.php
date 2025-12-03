@@ -41,6 +41,10 @@ class CostOfGoods {
 			return 4;
 		}
 
+		if (count(self::$available_integrations ) != count( self::get_cogs_providers() ) ) {
+			return 5;
+		}
+
 		$order_cogs = 0;
 		foreach ( $products as $product ) {
 
