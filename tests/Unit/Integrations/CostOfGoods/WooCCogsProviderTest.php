@@ -47,7 +47,7 @@ class WooCCogsProviderTest extends AbstractWPUnitTestWithOptionIsolationAndSafeF
 	}
 	
 	public function test_given_provider_is_unavailable_when_instantiated_then_exception_thrown() {
-		$product = $this->createMock( stdClass::class );
+		$product = $this->createMock( WC_Product::class );
 		$reflection = new \ReflectionClass( WooCCogsProvider::class );
 		$reflection->setStaticPropertyValue('is_available', false);
 		$instance = $reflection->newInstance();
@@ -57,7 +57,7 @@ class WooCCogsProviderTest extends AbstractWPUnitTestWithOptionIsolationAndSafeF
 	}
 
 	public function test_given_product_has_cogs_value_when_get_cogs_value_is_called_then_correct_value_returned() {
-		$product = $this->createMock( stdClass::class );
+		$product = $this->createMock( WC_Product::class );
 		$product->method( 'get_cogs_total_value' )->willReturn( 10 );
 		
 		$reflection = new \ReflectionClass( WooCCogsProvider::class );

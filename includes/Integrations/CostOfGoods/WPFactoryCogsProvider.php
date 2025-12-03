@@ -28,7 +28,7 @@ class WPFactoryCogsProvider extends AbstractCogsProvider {
 		if ( ! self::is_available() ) {
 			throw new IntegrationIsNotAvailableException( self::INTEGRATION_NAME );
 		}
-		
+
 		// for WPFactory simple & variable product cost is retrieved by the same following method
 		return alg_wc_cog()->core->products->get_product_cost( $product->get_id() );
 	}
