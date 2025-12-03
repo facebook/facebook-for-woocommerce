@@ -50,10 +50,11 @@ test.describe('Facebook for WooCommerce - Product Creation E2E Tests', () => {
 
       // Click on Inventory tab
       await page.click('li.inventory_tab a');
-      await page.waitForTimeout(1000); // Wait for tab content to load
+      // Wait for inventory tab content to be visible
+      const skuField = page.locator('#_sku');
+      await skuField.waitFor({ state: 'visible', timeout: 5000 });
 
       // Set SKU to ensure unique retailer ID
-      const skuField = page.locator('#_sku');
       if (await skuField.isVisible({ timeout: 10000 })) {
         const uniqueSku = generateUniqueSKU('simple');
         await skuField.fill(uniqueSku);
@@ -158,23 +159,30 @@ test.describe('Facebook for WooCommerce - Product Creation E2E Tests', () => {
     // Step 5: Add attributes
     // Go to Attributes tab
     await page.click('li.attribute_tab a[href="#product_attributes"]');
-    await page.waitForTimeout(2000);
+    // Wait for attributes panel to be visible
+    await page.locator('#product_attributes').waitFor({ state: 'visible', timeout: 5000 });
     // Add name & value
     await page.fill('input.attribute_name[name="attribute_names[0]"]', 'Color');
     await page.fill('textarea[name="attribute_values[0]"]', 'Red|Blue|Green');
     // Use tab to enable Save Attributes button
     await page.locator('#product_attributes .woocommerce_attribute textarea[name^="attribute_values"]').press('Tab');
     await page.click('button.save_attributes.button-primary');
-    await page.waitForTimeout(5000);
+    // Wait for AJAX save to complete - look for enabled variations tab or success state
+    await page.waitForResponse(
+      response => response.url().includes('admin-ajax.php') && response.status() === 200,
+      { timeout: 10000 }
+    ).catch(() => page.waitForLoadState('networkidle', { timeout: 5000 }));
     console.log('✅ Saved attributes');
 
     // Step 6: Generate variations
     // Go to Variations tab
     await page.click('a[href="#variable_product_options"]');
-    await page.waitForTimeout(2000);
+    // Wait for variations panel to be visible
+    await page.locator('#variable_product_options').waitFor({ state: 'visible', timeout: 5000 });
     // Click "Generate variations" button
     await page.click('button.generate_variations');
-    await page.waitForTimeout(8000);
+    // Wait for variations to be generated - check for variation elements to appear
+    await page.locator('.woocommerce_variation').first().waitFor({ state: 'visible', timeout: 15000 });
     // Verify variations were created
     const variationsCount = await page.locator('.woocommerce_variation').count();
     console.log(`✅ Generated ${variationsCount} variations`);
@@ -187,12 +195,11 @@ test.describe('Facebook for WooCommerce - Product Creation E2E Tests', () => {
       await addPriceBtn.click();
       console.log('✅ Clicked "Add price" button');
 
-      // Wait for price input field to appear
-      await page.waitForTimeout(2000);
+      // Wait for price input field to appear - it slides in after button click
+      const priceInput = page.locator('input.components-text-control__input.wc_input_variations_price');
+      await priceInput.waitFor({ state: 'visible', timeout: 5000 });
 
       // Add bulk price
-      const priceInput = page.locator('input.components-text-control__input.wc_input_variations_price');
-      await priceInput.waitFor({ state: 'visible', timeout: 10000 });
       await priceInput.click();        // ✅ Focus the field
       await priceInput.clear();        // ✅ Clear existing content
       await priceInput.type('29.99', { delay: 100 }); // ✅ Type with delays = triggers all JS events
@@ -201,13 +208,18 @@ test.describe('Facebook for WooCommerce - Product Creation E2E Tests', () => {
       const addPricesBtn = page.locator('button.add_variations_price_button.button-primary');
       await addPricesBtn.waitFor({ state: 'visible', timeout: 10000 });
       await addPricesBtn.click();
-      await page.waitForTimeout(3000);
+      // Wait for AJAX request to complete - check for network idle or success state
+      await page.waitForLoadState('networkidle', { timeout: 10000 }).catch(() => {});
       console.log('✅ Bulk price added successfully');
     }
 
     //  Step 8: Publish product
     await page.click('#publish');
-    await page.waitForTimeout(5000);
+    // Wait for publish to complete - check for success notice or URL change
+    await Promise.race([
+      page.locator('.notice-success, .updated').waitFor({ state: 'visible', timeout: 15000 }),
+      page.waitForURL(/post\.php\?post=\d+&action=edit/, { timeout: 15000 })
+    ]).catch(() => page.waitForLoadState('networkidle', { timeout: 5000 }));
     // Verify success
     const pageContent = await page.content();
     expect(pageContent).not.toContain('Fatal error');
@@ -375,15 +387,18 @@ test.describe('Facebook for WooCommerce - Product Creation E2E Tests', () => {
           const deactivateLink = pluginRow.locator('a:has-text("Deactivate")');
           if (await deactivateLink.isVisible({ timeout: 10000 })) {
             await deactivateLink.click();
-            await page.waitForTimeout(2000);
+            // Wait for page reload after deactivation
+            await page.waitForLoadState('domcontentloaded', { timeout: 10000 });
             console.log('✅ Plugin deactivated');
 
             // Now test reactivation
-            await page.waitForTimeout(1000);
             const reactivateLink = pluginRow.locator('a:has-text("Activate")');
+            // Wait for the activate link to appear (plugin row updates after deactivation)
+            await reactivateLink.waitFor({ state: 'visible', timeout: 5000 });
             if (await reactivateLink.isVisible({ timeout: 10000 })) {
               await reactivateLink.click();
-              await page.waitForTimeout(2000);
+              // Wait for page reload after activation
+              await page.waitForLoadState('domcontentloaded', { timeout: 10000 });
               console.log('✅ Plugin reactivated');
             }
           }
@@ -392,7 +407,8 @@ test.describe('Facebook for WooCommerce - Product Creation E2E Tests', () => {
           const activateLink = pluginRow.locator('a:has-text("Activate")');
           if (await activateLink.isVisible({ timeout: 10000 })) {
             await activateLink.click();
-            await page.waitForTimeout(2000);
+            // Wait for page reload after activation
+            await page.waitForLoadState('domcontentloaded', { timeout: 10000 });
             console.log('✅ Plugin activated');
           }
         }

@@ -148,7 +148,8 @@ test.describe('Facebook for WooCommerce - Product Deletion E2E Tests', () => {
       if (await troubleshootingTab.isVisible({ timeout: 10000 })) {
         await troubleshootingTab.click();
         console.log('✅ Clicked Troubleshooting tab');
-        await page.waitForTimeout(2000);
+        // Wait for troubleshooting panel to load - look for sync button or panel content
+        await page.locator('#woocommerce-facebook-settings-sync-products').waitFor({ state: 'visible', timeout: 10000 }).catch(() => {});
       }
       else {
         console.warn('⚠️ Troubleshooting tab not found');
@@ -162,8 +163,11 @@ test.describe('Facebook for WooCommerce - Product Deletion E2E Tests', () => {
         await syncNowButton.click();
         console.log('✅ Clicked "Sync now" button');
 
-        // Wait for sync to process
-        await page.waitForTimeout(5000);
+        // Wait for sync to process - look for success notice, network activity, or button state change
+        await Promise.race([
+          page.locator('.notice-success, .updated').waitFor({ state: 'visible', timeout: 10000 }),
+          page.waitForLoadState('networkidle', { timeout: 10000 })
+        ]).catch(() => {});
         console.log('✅ Sync initiated');
       } else {
         console.warn('⚠️ "Sync now" button not found');
