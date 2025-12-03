@@ -4,30 +4,9 @@ declare( strict_types=1 );
 namespace WooCommerce\Facebook\Tests\Integration\COGS;
 
 use WooCommerce\Facebook\Tests\Integration\IntegrationTestCase;
-use WooCommerce\Facebook\API\Pixel\Events\Request;
-use WooCommerce\Facebook\API;
-use WooCommerce\Facebook\Events\Event;
+use WC_Product_Variation;
+use WC_Product_Attribute;
 
-/**
- * Integration tests for Pixel Events API Request.
- *
- * RUNNING THE TESTS:
- * ==================
- * Basic testing (test credentials - auth will fail but validates HTTP layer):
- *   ./run-tests-php82.sh --testsuite=integration --filter=RequestIntegrationTest
- *
- * Full integration testing (with valid Facebook credentials):
- *   export FB_TEST_ACCESS_TOKEN="your_real_token"
- *   export FB_TEST_PIXEL_ID="your_real_pixel_id"
- *   ./run-tests-php82.sh --testsuite=integration --filter=RequestIntegrationTest
- *
- *  * Steps to get your TEST_ACCESS_TOKEN
- *  1. Go to events manager
- *  2. Select "Datasets" tab from left panel
- *  3. Select your business
- *  4. Go to the Test events tab -> Graph API Explorer
- *  5. Copy Access Token
- */
 class CogsIntegrationTests extends IntegrationTestCase {
 
 	/**
@@ -189,13 +168,13 @@ public function given_woo_integration_is_not_available_when_is_available_called_
 
 	private function set_up_variable_product () {
 
-		$size_attribute = new \WC_Product_Attribute();
+		$size_attribute = new WC_Product_Attribute();
 		$size_attribute->set_name( 'Size' );
 		$size_attribute->set_options( [ 'Small', 'Medium', 'Large' ] );
 		$size_attribute->set_visible( true );
 		$size_attribute->set_variation( true );
 
-		$color_attribute = new \WC_Product_Attribute();
+		$color_attribute = new WC_Product_Attribute();
 		$color_attribute->set_name( 'Color' );
 		$color_attribute->set_options( [ 'Red', 'Blue', 'Black' ] );
 		$color_attribute->set_visible( true );
@@ -214,7 +193,7 @@ public function given_woo_integration_is_not_available_when_is_available_called_
 
 		$created_variations = [];
 		foreach ( $variations as $variation_data ) {
-			$variation = new \WC_Product_Variation();
+			$variation = new WC_Product_Variation();
 			$variation->set_parent_id( $variable_product->get_id() );
 			$variation->set_attributes( $variation_data['attributes'] );
 			$variation->set_regular_price( $variation_data['price'] );

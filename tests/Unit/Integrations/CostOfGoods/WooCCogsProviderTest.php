@@ -23,11 +23,10 @@ class WooCCogsProviderTest extends AbstractWPUnitTestWithOptionIsolationAndSafeF
 	}
 	
 	public function test_given_provider_is_unavailable_when_instantiated_then_exception_thrown() {
-		$product = $this->createMock( WC_Product::class );
 		$reflection = new \ReflectionClass( WooCCogsProvider::class );
 		$reflection->setStaticPropertyValue('is_available', false);
 		try{
-			$instance = $reflection->newInstance();
+			$reflection->newInstance();
 			$this->assertFalse(true, 'Exception was expected but not thrown');
 		} catch (IntegrationIsNotAvailableException $e) {
 			$this->assertTrue(true, 'Exception was thrown properly');

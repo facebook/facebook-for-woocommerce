@@ -25,11 +25,10 @@ class WPFactoryCogsProviderTest extends AbstractWPUnitTestWithOptionIsolationAnd
 	}
 	
 	public function test_given_provider_is_unavailable_when_instantiated_then_exception_thrown() {
-		$product = $this->createMock( WC_Product::class );
 		$reflection = new \ReflectionClass( WPFactoryCogsProvider::class );
 		$reflection->setStaticPropertyValue('is_available', false);
 		try{
-			$instance = $reflection->newInstance();
+			$reflection->newInstance();
 			$this->assertFalse(true, 'Exception was expected but not thrown');
 		} catch (IntegrationIsNotAvailableException $e) {
 			$this->assertTrue(true, 'Exception was thrown properly');
@@ -40,13 +39,13 @@ class WPFactoryCogsProviderTest extends AbstractWPUnitTestWithOptionIsolationAnd
 		$product = $this->createMock( WC_Product::class );
 		$product->method( 'get_cogs_total_value' )->willReturn( 10.0 );
 		
-		if ( ! function_exists( 'alg_wc_cog_is_plugin_active' ) ) {
+		if ( ! function_exists( 'alg_wc_cog' ) ) {
 			function alg_wc_cog() {
 				$ret = new stdClass();
 				$ret->core = new stdClass();
 				$ret->core->products = new class {
 					public function get_product_cost($p) {
-						return 10.0;
+						return $p->get_cogs_total_value();
 					}
 				};
 				return $ret;

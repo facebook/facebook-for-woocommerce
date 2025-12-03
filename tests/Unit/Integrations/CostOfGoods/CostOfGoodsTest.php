@@ -7,7 +7,6 @@ namespace WooCommerce\Facebook\Tests\Unit\Integrations;
 use WooCommerce\Facebook\Integrations\CostOfGoods\CostOfGoods;
 use WooCommerce\Facebook\Integrations\CostOfGoods\AbstractCogsProvider;
 use WooCommerce\Facebook\Tests\AbstractWPUnitTestWithOptionIsolationAndSafeFiltering;
-use \stdClass;
 use WC_Product;
 /**
  * Unit tests for CostsOfGoods class.
