@@ -48,7 +48,7 @@ class WPFactoryCogsProviderTest extends AbstractWPUnitTestWithOptionIsolationAnd
 					public function get_product_cost($p) {
 						return 10.0;
 					}
-				}();
+				};
 				return $ret;
 			}
 		}
