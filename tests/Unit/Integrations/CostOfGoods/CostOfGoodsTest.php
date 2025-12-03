@@ -26,7 +26,7 @@ class CostOfGoodsTest extends AbstractWPUnitTestWithOptionIsolationAndSafeFilter
 
 	public function test_given_cogs_provider_available_when_no_products_provided_then_false_is_returned() {
 		$cogs_provider_mock = $this->createMock( AbstractCogsProvider::class );
-		$cogs_provider_mock->method( 'get_cogs_value' )->willReturn( 10 );
+		$cogs_provider_mock->method( 'get_cogs_value' )->willReturn( 10.0 );
 		
 		// Patch get_cogs_providers to return our mock
 		$reflection = new \ReflectionClass( CostOfGoods::class );
@@ -39,43 +39,43 @@ class CostOfGoodsTest extends AbstractWPUnitTestWithOptionIsolationAndSafeFilter
 	public function test_given_cogs_provider_available_when_a_product_provided_then_cogs_is_returned() {
 		$product = $this->createMock(WC_Product::class);
 		$cogs_provider_mock = $this->createMock( AbstractCogsProvider::class );
-		$cogs_provider_mock->method( 'get_cogs_value' )->willReturn( 10 );
+		$cogs_provider_mock->method( 'get_cogs_value' )->willReturn( 10.0 );
 		
 		// Patch get_cogs_providers to return our mock
 		$reflection = new \ReflectionClass( CostOfGoods::class );
 		$reflection->setStaticPropertyValue('available_integrations', [$cogs_provider_mock]);
 		$reflection->setStaticPropertyValue('already_fetched', true);
 
-		$this->assertEquals(CostOfGoods::calculate_cogs_for_products([$product]), 10);
+		$this->assertEquals(10.0, CostOfGoods::calculate_cogs_for_products([$product]));
 	}
 
 	public function test_given_cogs_provider_available_when_multiple_products_provided_and_all_have_cogs_then_sum_cogs_is_returned() {
 		$product1 = $this->createMock(WC_Product::class);
-		$product1->method('get_cogs_total_value')->willReturn(10);
+		$product1->method('get_cogs_total_value')->willReturn(10.0);
 		$product2 = $this->createMock(WC_Product::class);
-		$product2->method('get_cogs_total_value')->willReturn(20);
+		$product2->method('get_cogs_total_value')->willReturn(20.0);
 		
 		$cogs_provider_mock = $this->createMock( AbstractCogsProvider::class );
-		$cogs_provider_mock->expects($this->exactly($product1))->method('get_cogs_value')->willReturn( 10 );
-		$cogs_provider_mock->expects($this->exactly($product2))->method('get_cogs_value')->willReturn( 20 );
+		$cogs_provider_mock->expects($this->exactly($product1))->method('get_cogs_value')->willReturn( 10.0 );
+		$cogs_provider_mock->expects($this->exactly($product2))->method('get_cogs_value')->willReturn( 20.0 );
 		
 		// Patch get_cogs_providers to return our mock
 		$reflection = new \ReflectionClass( CostOfGoods::class );
 		$reflection->setStaticPropertyValue('available_integrations', [$cogs_provider_mock]);
 		$reflection->setStaticPropertyValue('already_fetched', true);
 
-		$this->assertEquals(30, CostOfGoods::calculate_cogs_for_products([$product1, $product2]));
+		$this->assertEquals(30.0, CostOfGoods::calculate_cogs_for_products([$product1, $product2]));
 	}
 
 	public function test_given_cogs_provider_available_when_multiple_products_provided_but_one_does_not_have_cogs_then_false_is_returned() {
 		$product1 = $this->createMock(WC_Product::class);
-		$product1->method('get_cogs_total_value')->willReturn(10);
+		$product1->method('get_cogs_total_value')->willReturn(10.0);
 		$product2 = $this->createMock(WC_Product::class);
-		$product2->method('get_cogs_total_value')->willReturn(0);
+		$product2->method('get_cogs_total_value')->willReturn(0.0);
 		
 		$cogs_provider_mock = $this->createMock( AbstractCogsProvider::class );
-		$cogs_provider_mock->expects($this->exactly($product1))->method('get_cogs_value')->willReturn( 10 );
-		$cogs_provider_mock->expects($this->exactly($product2))->method('get_cogs_value')->willReturn( 0 );
+		$cogs_provider_mock->expects($this->exactly($product1))->method('get_cogs_value')->willReturn( 10.0 );
+		$cogs_provider_mock->expects($this->exactly($product2))->method('get_cogs_value')->willReturn( 0.0 );
 		
 		// Patch get_cogs_providers to return our mock
 		$reflection = new \ReflectionClass( CostOfGoods::class );
