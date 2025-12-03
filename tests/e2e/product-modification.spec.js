@@ -212,8 +212,8 @@ test.describe('Facebook for WooCommerce - Product Modification E2E Tests', () =>
       await quickEditRow.waitFor({ state: 'hidden', timeout: 10000 });
       console.log('✅ Quick Edit form closed');
 
-      // Wait a moment for the table row to update
-      await page.waitForTimeout(2000);
+      // Wait for the table row to update - check for network idle or wait for row to be visible again
+      await page.waitForLoadState('networkidle', { timeout: 10000 }).catch(() => {});
 
       // Step 11: Verify price change in UI
       console.log('🔍 Verifying price change in products table...');
@@ -347,8 +347,8 @@ test.describe('Facebook for WooCommerce - Product Modification E2E Tests', () =>
       // Select the option - this triggers the popup immediately
       await bulkActionsSelect.selectOption('variable_regular_price');
 
-      // Wait for dialog to appear and be handled
-      await page.waitForTimeout(2000);
+      // Wait for dialog to appear and be handled - wait for dialog event
+      await page.waitForEvent('dialog', { timeout: 5000 }).catch(() => {});
 
       // Click "Save changes" button for variations
       const saveVariationsButton = page.locator('button.save-variation-changes');

@@ -102,8 +102,21 @@ async function publishProduct(page) {
     const publishButton = page.locator('#publish');
     if (await publishButton.isVisible({ timeout: 10000 })) {
       await publishButton.click();
-      await page.waitForTimeout(3000); // Wait for publish to complete
-      console.log('✅ Published product');
+
+      // Wait for publish to complete - look for success message or URL change
+      try {
+        await Promise.race([
+          // Wait for success message
+          page.locator('.notice-success, .updated').waitFor({ state: 'visible', timeout: 15000 }),
+          // Or wait for URL to change (indicating page reload after publish)
+          page.waitForURL(/post\.php\?post=\d+&action=edit/, { timeout: 15000 })
+        ]);
+        console.log('✅ Published product');
+      } catch (waitError) {
+        // Fallback: if neither condition is met, wait for network to be idle
+        await page.waitForLoadState('networkidle', { timeout: 10000 }).catch(() => {});
+        console.log('✅ Published product (fallback wait)');
+      }
       return true;
     }
   } catch (error) {
