@@ -17,22 +17,23 @@ use stdClass;
  */
 class WPFactoryCogsProviderTest extends AbstractWPUnitTestWithOptionIsolationAndSafeFiltering
 {
-
 	public function setUp(): void
 	{
 		parent::setUp();
 
 		if ( ! function_exists( 'alg_wc_cog' ) ) {
-			function alg_wc_cog() {
-				$ret = new stdClass();
-				$ret->core = new stdClass();
-				$ret->core->products = new class {
-					public function get_product_cost($p) {
-						return $p->get_cogs_total_value();
-					}
-				};
-				return $ret;
-			}
+			eval('
+				function alg_wc_cog() {
+					$ret = new stdClass();
+					$ret->core = new stdClass();
+					$ret->core->products = new class {
+						public function get_product_cost($p) {
+							return $p->get_cogs_total_value();
+						}
+					};
+					return $ret;
+				}
+				');
 		}
 	}
 	public function test_given_no_cogs_providers_available_when_calculate_method_called_then_false_is_returned() {
