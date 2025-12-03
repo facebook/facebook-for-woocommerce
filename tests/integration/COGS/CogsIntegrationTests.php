@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace WooCommerce\Facebook\Tests\Integration\COGS;
 
 use WooCommerce\Facebook\Tests\Integration\IntegrationTestCase;
+use WooCommerce\Facebook\Integrations\CostOfGoods\WooCCogsProvider;
 use WC_Product_Variation;
 use WC_Product_Attribute;
 
@@ -27,7 +28,9 @@ class CogsIntegrationTests extends IntegrationTestCase
 	public function setUp(): void
 	{
 		parent::setUp();
-
+		if ( get_option( 'woocommerce_feature_cogs_enabled', 'no' ) !== 'yes' ) {
+			update_option( 'woocommerce_feature_cogs_enabled', 'yes' );
+		}
 		$this->disable_facebook_sync();
 	}
 
@@ -37,7 +40,12 @@ class CogsIntegrationTests extends IntegrationTestCase
 
 	public function test_given_cogs_exists_for_product_When_calculate_method_is_called_then_it_returns_correct_value()
 	{
-		$this->assertFalse(true);
+		$prod = new WC_Product();
+		$prod->set_cogs_value(100.0);
+
+		$test = new WooCCogsProvider();
+		$value = $test->get_cogs_value($prod);
+		$this->assertEquals(100.0, $value);
 	}
 	// public function test_given_cogs_provider_available_when_multiple_products_provided_and_all_have_cogs_then_sum_cogs_is_returned() {
 	// 		$product1 = $this->createMock(WC_Product::class);
