@@ -62,7 +62,7 @@ test('PageView with fbclid', async ({ page }) => {
     console.log(`   🌐 Navigating to homepage`);
     // Set up listener BEFORE triggering the action (prevents race condition)
     const eventPromise = pixelCapture.waitForEvent();
-    await page.goto('/?fbclid=${process.env.TEST_FBCLID}');
+    await page.goto(`/?fbclid=${process.env.TEST_FBCLID}`);
     await TestSetup.waitForPageReady(page);
     await eventPromise;
 
@@ -131,10 +131,5 @@ test('ViewCategory', async ({ page }) => {
     expect(result.passed).toBe(true);
 });
 
-test.afterAll(async () => {
-    // Delete test product if it exists
-    if (process.env.TEST_PRODUCT_ID) {
-        await cleanupProduct(process.env.TEST_PRODUCT_ID);
-    }
-    // captured events will be cleared in github workflow directly after uploading
-});
+// Cleanup is handled by GitHub workflow after all tests complete
+// This ensures product exists for all tests even if some fail

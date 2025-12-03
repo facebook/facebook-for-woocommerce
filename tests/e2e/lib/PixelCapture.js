@@ -26,8 +26,8 @@ class PixelCapture {
                     // Must be a Facebook pixel request
                     if (!url.includes('facebook.com')) return false;
 
-                    // Must be a tracking endpoint (/tr/ or /privacy_sandbox/pixel)
-                    if (!url.includes('/tr/') && !url.includes('/privacy_sandbox/pixel')) return false;
+                    // Must be a tracking endpoint (/tr/)
+                    if (!url.includes('/tr/')) return false;
 
                     // Check if URL contains our event name
                     return url.includes(`ev=${this.eventName}`);

@@ -327,6 +327,17 @@ jobs:
           cd ${{ env.PLUGIN_PATH }}
           xvfb-run --auto-servernum npx playwright test events-test*.spec.js --headed
 
+      - name: Cleanup test product
+        if: always()
+        run: |
+          cd ${{ env.WORDPRESS_PATH }}
+          if [ -n "${{ env.TEST_PRODUCT_ID }}" ]; then
+            wp post delete ${{ env.TEST_PRODUCT_ID }} --force --allow-root
+            echo "✅ Test product ${{ env.TEST_PRODUCT_ID }} deleted"
+          else
+            echo "ℹ️ No test product to delete"
+          fi
+
       - name: Run E2E tests
         env:
           WP_USERNAME: admin
