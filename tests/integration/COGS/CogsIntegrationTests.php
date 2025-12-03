@@ -139,6 +139,18 @@ class CogsIntegrationTests extends IntegrationTestCase
 		}
 	}
 
+	public function given_product_has_cogs_value_when_get_cogs_value_is_called_then_correct_value_returned() {
+		$product = $this->createMock( WC_Product::class );
+		$product->method( 'get_cogs_total_value' )->willReturn( 10.0 );
+		
+		$reflection = new \ReflectionClass( WPFactoryCogsProvider::class );
+		$reflection->setStaticPropertyValue('is_available', null);
+		$instance = $reflection->newInstance();
+		
+		$value = $instance->get_cogs_value($product);
+		$this->assertEquals(10.0, $value);
+	}
+
 	public function given_woo_integration_is_not_available_when_is_available_called_then_it_returns_false()
 	{
 		if (class_exists('WC_Facebookcommerce_Utils')) {
