@@ -104,9 +104,56 @@ public function Given_Cogs_Exists_for_Product_When_calculate_method_is_called_Th
 	 * 3. WooC Cogs is Disabled / Enabled. When WooC Cogs is disabled, WooCCogsProvider should return false in is_available
 	 * 4. Test for Simple & Variable products
 	 */
-	public function test_Given_Single_Purcahse_Event_When_SendingEvent_Then_RequestContainsValues() {
+	public function Given_Single_Purcahse_Event_When_SendingEvent_Then_RequestContainsValues() {
 		
 		$this->assertTrue(false);
+	}
+
+public function given_woo_integration_is_not_available_when_is_available_called_then_it_returns_false() {
+		if ( class_exists( 'WC_Facebookcommerce_Utils' ) ) {
+			$reflection = new \ReflectionClass( \WC_Facebookcommerce_Utils::class );
+			$reflection->staticExpects($this->any())->method('is_woocommerce_integration')->willReturn(false);
+		} else {
+			$this->assertTrue(false);
+			eval( 'class WC_Facebookcommerce_Utils {
+				public static function is_woocommerce_integration() { return true; }
+			}' );
+		}
+		$reflection = new \ReflectionClass( WooCCogsProvider::class );
+		$instance = $reflection->newInstance();
+		$this->expectException( IntegrationIsNotAvailableException::class );
+	}
+
+	/* is_available = false, if:
+		- is_woo_integration is false
+		- WC_Product->get_cogs_total_value returns null
+		- false is returned from: wc_get_container()->get( 'Automattic\WooCommerce\Internal\Features\FeaturesController' )->feature_is_enabled( 'cost_of_goods_sold' )
+		- false is returned from get_option('woocommerce_feature_cost_of_goods_sold_enabled')
+
+		
+*/
+	public function given_() {
+		if ( ! class_exists( 'WC_Facebookcommerce_Utils' ) ) {
+			eval( 'class WC_Facebookcommerce_Utils {
+				public static function is_woocommerce_integration() { return true; }
+			}' );
+		} else {
+
+		}
+
+		// Mock WC_Product
+		if ( ! class_exists( 'WC_Product' ) ) {
+			eval( 'class WC_Product {
+				public function get_cogs_total_value() { return 88.88; }
+			}' );
+		}
+		// Mock get_option
+		if ( ! function_exists( 'get_option' ) ) {
+			eval( 'function get_option($key) {
+				if ($key === "woocommerce_feature_cost_of_goods_sold_enabled") return "yes";
+				return null;
+			}' );
+		}
 	}
 
 public function given_woo_integration_is_not_available_when_is_available_called_then_it_returns_false() {

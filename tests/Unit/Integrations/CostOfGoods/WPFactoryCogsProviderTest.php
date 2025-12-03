@@ -5,6 +5,10 @@ namespace WooCommerce\Facebook\Tests\Unit\Integrations;
 
 use WooCommerce\Facebook\Integrations\CostOfGoods\WPFactoryCogsProvider;
 use WooCommerce\Facebook\Tests\AbstractWPUnitTestWithOptionIsolationAndSafeFiltering;
+use WooCommerce\Facebook\Integrations\CostOfGoods\CostOfGoods;
+use WooCommerce\Facebook\Integrations\IntegrationIsNotAvailableException;
+use WC_Product;
+use stdClass;
 
 /**
  * Unit tests for WPFactory CostsOfGoods class.
@@ -13,56 +17,44 @@ use WooCommerce\Facebook\Tests\AbstractWPUnitTestWithOptionIsolationAndSafeFilte
  */
 class WPFactoryCogsProviderTest extends AbstractWPUnitTestWithOptionIsolationAndSafeFiltering
 {
-	// public function setUp(): void
-	// {
-	// 	// Mock the global function alg_wc_cog
-	// 	if (!function_exists('alg_wc_cog')) {
-	// 		eval('function alg_wc_cog() {
-	// 			return (object)[
-	// 				"core" => (object)[
-	// 					"products" => (object)[
-	// 						"get_product_cost" => function($id) { return 42; }
-	// 					]
-	// 				]
-	// 			];
-	// 		}');
-	// 	}
-	// }
+	public function test_given_no_cogs_providers_available_when_calculate_method_called_then_false_is_returned() {
+		$reflection = new \ReflectionClass( WPFactoryCogsProvider::class );
+		$reflection->setStaticPropertyValue('is_available', true);
+		
+		$this->assertFalse(CostOfGoods::calculate_cogs_for_products([]));
+	}
 	
-	// public function testIsAvailableReturnsTrueWhenAlgWcCogExists()
-	// {
-	// 	$this->assertTrue(WPFactoryCogsProvider::is_available());
-	// }
+	public function test_given_provider_is_unavailable_when_instantiated_then_exception_thrown() {
+		$product = $this->createMock( WC_Product::class );
+		$reflection = new \ReflectionClass( WPFactoryCogsProvider::class );
+		$reflection->setStaticPropertyValue('is_available', false);
+		try{
+			$instance = $reflection->newInstance();
+			$this->assertFalse(true, 'Exception was expected but not thrown');
+		} catch (IntegrationIsNotAvailableException $e) {
+			$this->assertTrue(true, 'Exception was thrown properly');
+		}
+	}
 
-	// public function testConstructorThrowsExceptionIfNotAvailable()
-	// {
-	// 	// Temporarily remove alg_wc_cog
-	// 	runkit_function_remove('alg_wc_cog');
-	// 	$this->expectException(IntegrationIsNotAvailableException::class);
-	// 	new WPFactoryCogsProvider();
-	// 	// Restore alg_wc_cog
-	// 	$this->setUp();
-	// }
-
-	// public function testGetCogsValueReturnsProductCost()
-	// {
-	// 	$provider = new WPFactoryCogsProvider();
-	// 	$product = $this->createMock(stdClass::class);
-	// 	$product->method('get_id')->willReturn(123);
-	// 	// Patch alg_wc_cog()->core->products->get_product_cost to return a value
+	public function test_given_product_has_cogs_value_when_get_cogs_value_is_called_then_correct_value_returned() {
+		$product = $this->createMock( WC_Product::class );
+		$product->method( 'get_cogs_total_value' )->willReturn( 10.0 );
 		
-	// 	$alg_wc_cog = alg_wc_cog();
-	// 	$alg_wc_cog->core->products->get_product_cost = function($id) {
-	// 		return 99.99;
-	// 	};
-		
-	// 	// Use reflection to set the closure
-	// 	$alg_wc_cog->core->products->get_product_cost = function($id) {
-	// 		return 99.99;
-	// 	};
+		if ( ! function_exists( 'alg_wc_cog_is_plugin_active' ) ) {
+			function alg_wc_cog() {
+				$ret = new stdClass();
+				$ret->core = new stdClass();
+				$ret->core->products = new class {
+					public function get_product_cost($p) {
+						return 10.0;
+					}
+				}();
+				return $ret;
+			}
+		}
+		$instance = new WPFactoryCogsProvider();
 
-	// 	// Simulate the call
-	// 	$result = $provider->get_cogs_value($product);
-	// 	$this->assertEquals(99.99, $result);
-	// }
+		$value = $instance->get_cogs_value($product);
+		$this->assertEquals(10.0, $value);
+	}
 }
