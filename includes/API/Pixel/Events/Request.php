@@ -79,7 +79,7 @@ class Request extends API\Request {
 			unset( $event_data['user_data']['click_id'] );
 			unset( $event_data['user_data']['browser_id'] );
 
-		  $data['data'][] = array_filter( $event_data );
+		    $data['data'][] = array_filter( $event_data );
 		}
 
 		/**
