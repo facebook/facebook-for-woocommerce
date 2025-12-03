@@ -42,10 +42,11 @@ test('PageView', async ({ page }) => {
     const { testId, pixelCapture } = await TestSetup.init(page, 'PageView');
 
     console.log(`   🌐 Navigating to homepage`);
-    await Promise.all([
-        pixelCapture.waitForEvent(),
-        page.goto('/').then(() => TestSetup.waitForPageReady(page))
-    ]);
+    // Set up listener BEFORE triggering the action (prevents race condition)
+    const eventPromise = pixelCapture.waitForEvent();
+    await page.goto('/');
+    await TestSetup.waitForPageReady(page);
+    await eventPromise;
 
     const validator = new EventValidator(testId);
     await validator.checkDebugLog();
@@ -58,12 +59,12 @@ test('PageView', async ({ page }) => {
 test('ViewContent', async ({ page }) => {
     const { testId, pixelCapture } = await TestSetup.init(page, 'ViewContent');
 
-    await Promise.all([
-        pixelCapture.waitForEvent(),
-        page.goto(process.env.TEST_PRODUCT_URL).then(async (response) => {
-            await TestSetup.waitForPageReady(page);
-        })
-    ]);
+    console.log(`   📦 Navigating to product page`);
+    // Set up listener BEFORE triggering the action (prevents race condition)
+    const eventPromise = pixelCapture.waitForEvent();
+    await page.goto(process.env.TEST_PRODUCT_URL);
+    await TestSetup.waitForPageReady(page);
+    await eventPromise;
 
     const validator = new EventValidator(testId);
     await validator.checkDebugLog();
@@ -79,12 +80,12 @@ test('AddToCart', async ({ page }) => {
     await page.goto(process.env.TEST_PRODUCT_URL);
     await TestSetup.waitForPageReady(page, 500);
 
-    await Promise.all([
-        pixelCapture.waitForEvent(),
-        page.click('.single_add_to_cart_button').then(async () => {
-            await page.waitForTimeout(1000);
-        })
-    ]);
+    console.log(`   🛒 Clicking Add to Cart`);
+    // Set up listener BEFORE triggering the action (prevents race condition)
+    const eventPromise = pixelCapture.waitForEvent();
+    await page.click('.single_add_to_cart_button');
+    await page.waitForTimeout(1000);
+    await eventPromise;
 
     const validator = new EventValidator(testId);
     await validator.checkDebugLog();
@@ -97,10 +98,12 @@ test('AddToCart', async ({ page }) => {
 test('ViewCategory', async ({ page }) => {
     const { testId, pixelCapture } = await TestSetup.init(page, 'ViewCategory');
 
-    await Promise.all([
-        pixelCapture.waitForEvent(),
-        page.goto(process.env.TEST_CATEGORY_URL).then(() => TestSetup.waitForPageReady(page))
-    ]);
+    console.log(`   📂 Navigating to category page`);
+    // Set up listener BEFORE triggering the action (prevents race condition)
+    const eventPromise = pixelCapture.waitForEvent();
+    await page.goto(process.env.TEST_CATEGORY_URL);
+    await TestSetup.waitForPageReady(page);
+    await eventPromise;
 
     const validator = new EventValidator(testId);
     await validator.checkDebugLog();
@@ -112,6 +115,8 @@ test('ViewCategory', async ({ page }) => {
 
 test.afterAll(async () => {
     // Delete test product if it exists
-    await cleanupProduct(process.env.TEST_PRODUCT_ID);
+    if (process.env.TEST_PRODUCT_ID) {
+        await cleanupProduct(process.env.TEST_PRODUCT_ID);
+    }
     // captured events will be cleared in github workflow directly after uploading
 });
