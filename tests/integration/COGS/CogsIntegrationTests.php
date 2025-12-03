@@ -52,8 +52,42 @@ public function Given_Cogs_Exists_for_Product_When_calculate_method_is_called_Th
 	{
 		$this->assertFalse(true);
 	}
+// public function test_given_cogs_provider_available_when_multiple_products_provided_and_all_have_cogs_then_sum_cogs_is_returned() {
+// 		$product1 = $this->createMock(WC_Product::class);
+// 		$product1->method('get_cogs_total_value')->willReturn(10.0);
+// 		$product2 = $this->createMock(WC_Product::class);
+// 		$product2->method('get_cogs_total_value')->willReturn(20.0);
+		
+// 		$cogs_provider_mock = $this->createMock( AbstractCogsProvider::class );
+// 		$cogs_provider_mock->method('get_cogs_value')->willReturn( 10.0 );
+// 		$cogs_provider_mock->expects($this->exactly($product2))->method('get_cogs_value')->willReturn( 20.0 );
+		
+// 		// Patch get_cogs_providers to return our mock
+// 		$reflection = new \ReflectionClass( CostOfGoods::class );
+// 		$reflection->setStaticPropertyValue('available_integrations', [$cogs_provider_mock]);
+// 		$reflection->setStaticPropertyValue('already_fetched', true);
 
-	public function Given_Cogs_Does_Not_Exist_for_Product_When_calculate_method_is_called_Then_it_returns_false()
+// 		$this->assertEquals(30.0, CostOfGoods::calculate_cogs_for_products([$product1, $product2]));
+// 	}
+
+// 	public function test_given_cogs_provider_available_when_multiple_products_provided_but_one_does_not_have_cogs_then_false_is_returned() {
+// 		$product1 = $this->createMock(WC_Product::class);
+// 		$product1->method('get_cogs_total_value')->willReturn(10.0);
+// 		$product2 = $this->createMock(WC_Product::class);
+// 		$product2->method('get_cogs_total_value')->willReturn(0.0);
+		
+// 		$cogs_provider_mock = $this->createMock( AbstractCogsProvider::class );
+// 		$cogs_provider_mock->expects($this->exactly($product1))->method('get_cogs_value')->willReturn( 10.0 );
+// 		$cogs_provider_mock->expects($this->exactly($product2))->method('get_cogs_value')->willReturn( 0.0 );
+		
+// 		// Patch get_cogs_providers to return our mock
+// 		$reflection = new \ReflectionClass( CostOfGoods::class );
+// 		$reflection->setStaticPropertyValue('available_integrations', [$cogs_provider_mock]);
+// 		$reflection->setStaticPropertyValue('already_fetched', true);
+
+// 		$this->assertFalse(CostOfGoods::calculate_cogs_for_products([$product1, $product2]));
+// 	}
+	public function Given_Cogs_Does_Not_Exist_for_A_Product_When_calculate_method_is_called_Then_it_returns_false()
 	{
 		$this->assertFalse(true);
 	}

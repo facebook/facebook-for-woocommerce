@@ -50,27 +50,30 @@ class WooCCogsProviderTest extends AbstractWPUnitTestWithOptionIsolationAndSafeF
 		$product = $this->createMock( WC_Product::class );
 		$reflection = new \ReflectionClass( WooCCogsProvider::class );
 		$reflection->setStaticPropertyValue('is_available', false);
-		$instance = $reflection->newInstance();
-		
-		$instance->get_cogs_value($product);
-		$this->expectException( IntegrationIsNotAvailableException::class );
+		try{
+			$instance = $reflection->newInstance();
+			$this->assertFalse(true, 'Exception was expected but not thrown');
+		} catch (IntegrationIsNotAvailableException $e) {
+			$this->assertTrue(true, 'Exception was thrown properly');
+		}
 	}
 
 	public function test_given_product_has_cogs_value_when_get_cogs_value_is_called_then_correct_value_returned() {
 		$product = $this->createMock( WC_Product::class );
-		$product->method( 'get_cogs_total_value' )->willReturn( 10 );
+		$product->method( 'get_cogs_total_value' )->willReturn( 10.0 );
 		
 		$reflection = new \ReflectionClass( WooCCogsProvider::class );
 		$reflection->setStaticPropertyValue('is_available', true);
 		$instance = $reflection->newInstance();
 
 		$value = $instance->get_cogs_value($product);
-		$this->assertEqual(10, $value);
+		$this->assertEqual(10.0, $value);
 	}
 
 	public function test_given_woo_integration_is_not_available_when_is_available_called_then_it_returns_false() {
 		if ( class_exists( 'WC_Facebookcommerce_Utils' ) ) {
-			\WC_Facebookcommerce_Utils::staticExpects($this->any())->method('is_woocommerce_integration')->willReturn(false);
+			$reflection = new \ReflectionClass( \WC_Facebookcommerce_Utils::class );
+			$reflection->staticExpects($this->any())->method('is_woocommerce_integration')->willReturn(false);
 		} else {
 			$this->assertTrue(false);
 			eval( 'class WC_Facebookcommerce_Utils {
