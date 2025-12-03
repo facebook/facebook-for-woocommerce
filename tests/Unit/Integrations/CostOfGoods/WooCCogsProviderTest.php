@@ -17,11 +17,9 @@ class WooCCogsProviderTest extends AbstractWPUnitTestWithOptionIsolationAndSafeF
 
 	public function test_given_no_cogs_providers_available_when_calculate_method_called_then_false_is_returned() {
 		$reflection = new \ReflectionClass( WooCCogsProvider::class );
-		$property = $reflection->getProperty('available_integrations');
-		$property->setValue([]);
-		$property = $reflection->getProperty('already_fetched');
-		$property->setValue(true);
-
+		$reflection->setStaticPropertyValue('available_integrations', []);
+		$reflection->setStaticPropertyValue('already_fetched', true);
+		
 		$this->assertFalse(CostOfGoods::calculate_cogs_for_products([]));
 	}
 
@@ -60,8 +58,7 @@ class WooCCogsProviderTest extends AbstractWPUnitTestWithOptionIsolationAndSafeF
 		$product->method( 'get_cogs_total_value' )->willReturn( 10 );
 		
 		$reflection = new \ReflectionClass( WooCCogsProvider::class );
-		$property = $reflection->getProperty('is_available');
-		$property->setValue(true);
+		$reflection->setStaticPropertyValue('is_available', true);
 		$instance = $reflection->newInstance();
 
 		$value = $instance->get_cogs_total_value($product);
