@@ -66,7 +66,8 @@ class RolloutSwitches {
 
 		try {
 			$external_business_id = $this->plugin->get_connection_handler()->get_external_business_id();
-			$switches             = $this->plugin->get_api()->get_rollout_switches( $external_business_id );
+			$catalog_id           = $this->plugin->get_integration()->get_product_catalog_id();
+			$switches             = $this->plugin->get_api()->get_rollout_switches( $external_business_id, $catalog_id );
 			$data                 = $switches->get_data();
 			if ( empty( $data ) ) {
 				throw new Exception( 'Empty data' );

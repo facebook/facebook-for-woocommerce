@@ -299,21 +299,24 @@ class API extends Base {
 	 * Gets rollout switches
 	 *
 	 * @param string $external_business_id
+	 * @param string|null $catalog_id Optional catalog ID
 	 * @return API\FBE\RolloutSwitches\Response
 	 * @throws ApiException In case of a general API error or rate limit error.
 	 */
-	public function get_rollout_switches( string $external_business_id ) {
+	public function get_rollout_switches( string $external_business_id, ?string $catalog_id = null ) {
 		if ( ! $this->get_access_token() ) {
 			return null;
 		}
 
-		$request = new API\FBE\RolloutSwitches\Request( $external_business_id );
-		$request->set_params(
-			array(
-				'access_token'             => $this->get_access_token(),
-				'fbe_external_business_id' => $external_business_id,
-			)
+		$request = new API\FBE\RolloutSwitches\Request( $external_business_id, $catalog_id );
+		$params  = array(
+			'access_token'             => $this->get_access_token(),
+			'fbe_external_business_id' => $external_business_id,
 		);
+		if ( ! empty( $catalog_id ) ) {
+			$params['catalog_id'] = $catalog_id;
+		}
+		$request->set_params( $params );
 		$this->set_response_handler( API\FBE\RolloutSwitches\Response::class );
 		return $this->perform_request( $request );
 	}

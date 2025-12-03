@@ -54,7 +54,10 @@ class Shops extends Abstract_Settings_Screen {
 		add_action( 'admin_notices', array( $this, 'add_notices' ) );
 		add_action( 'admin_footer', array( $this, 'render_message_handler' ) );
 		add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_admin_scripts' ) );
-		add_action( 'woocommerce_admin_field_localization_plugin_status', array( $this, 'render_localization_plugin_status' ) );
+		// Only register this action once across all settings screens that use the trait
+		if ( ! has_action( 'woocommerce_admin_field_localization_plugin_status' ) ) {
+			add_action( 'woocommerce_admin_field_localization_plugin_status', array( $this, 'render_localization_plugin_status' ) );
+		}
 	}
 
 	/**

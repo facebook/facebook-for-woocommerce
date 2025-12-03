@@ -48,7 +48,10 @@ class Product_Sync extends Abstract_Settings_Screen {
 		add_action( 'woocommerce_admin_field_product_sync_title', array( $this, 'render_title' ) );
 		add_action( 'woocommerce_admin_field_product_sync_google_product_categories', array( $this, 'render_google_product_category_field' ) );
 		add_action( 'woocommerce_admin_field_product_sync_catalog_display', array( $this, 'render_catalog_display' ) );
-		add_action( 'woocommerce_admin_field_localization_plugin_status', array( $this, 'render_localization_plugin_status' ) );
+		// Only register this action once across all settings screens that use the trait
+		if ( ! has_action( 'woocommerce_admin_field_localization_plugin_status' ) ) {
+			add_action( 'woocommerce_admin_field_localization_plugin_status', array( $this, 'render_localization_plugin_status' ) );
+		}
 	}
 
 	/**
