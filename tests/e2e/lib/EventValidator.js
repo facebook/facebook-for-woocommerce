@@ -235,7 +235,7 @@ class EventValidator {
 
     validateFbp(pixel, capi, errors) {
         const pixelFbp = pixel.user_data?.fbp;
-        const capiFbp = capi.user_data?.browser_id;
+        const capiFbp = capi.user_data?.fbp;
 
         if (!pixelFbp) {
             errors.push(`Pixel missing fbp`);

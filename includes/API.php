@@ -607,10 +607,10 @@ class API extends Base {
 	/**
 	 * Logs CAPI events to test framework only in CI env , and only if test cookie is present.
 	 *
-	 * @param Response $response API response object
-	 * @param Event[]  $events array of event objects
+	 * @param Response            $response API response object
+	 * @param API\Pixel\Events\Request $request The request object containing transformed event data
 	 */
-	public function log_events_for_tests( $response, array $events ) {
+	public function log_events_for_tests( $response, $request ) {
 		try {
 			$cookie_name = getenv( 'FB_E2E_TEST_COOKIE_NAME' );
 
@@ -645,8 +645,14 @@ class API extends Base {
 
 			$test_id = sanitize_text_field( wp_unslash( $_COOKIE[ $cookie_name ] ) );
 
-			foreach ( $events as $event ) {
-				\E2E_Event_Logger::log_event( $test_id, 'capi', $event->get_data() );
+			// Get the transformed data directly from the request object
+			$request_data = $request->get_data();
+
+			// Log each transformed event
+			if ( isset( $request_data['data'] ) && is_array( $request_data['data'] ) ) {
+				foreach ( $request_data['data'] as $transformed_event ) {
+					\E2E_Event_Logger::log_event( $test_id, 'capi', $transformed_event );
+				}
 			}
 
 		} catch ( \Exception $e ) {
@@ -672,7 +678,7 @@ class API extends Base {
 		$response = $this->perform_request( $request );
 
 		// Log to E2E test framework
-		$this->log_events_for_tests( $response, $events );
+		$this->log_events_for_tests( $response, $request );
 
 		return $response;
 	}
