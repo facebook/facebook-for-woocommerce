@@ -605,41 +605,48 @@ class API extends Base {
 	}
 
 	/**
-	 * Logs CAPI events to test framework if test cookie is present.
+	 * Logs CAPI events to test framework only in CI env , and only if test cookie is present.
 	 *
 	 * @param Response $response API response object
 	 * @param Event[]  $events array of event objects
 	 */
-	private function log_events_for_tests( $response, array $events ) {
+	public function log_events_for_tests( $response, array $events ) {
+		// Only run in GitHub Actions CI with debug mode
+		if ( ! getenv( 'GITHUB_ACTIONS' ) || ! defined( 'WP_DEBUG' ) || ! WP_DEBUG ) {
+			return;
+		}
+
 		try {
 			$cookie_name = getenv( 'FB_E2E_TEST_COOKIE_NAME' );
+			$logger_path = getenv( 'FB_E2E_LOGGER_PATH' );
+
+			// Only run if both env vars configured (only set in CI)
+			if ( empty( $cookie_name ) || empty( $logger_path ) ) {
+				error_log( 'Facebook for WooCommerce E2E: Skipping test logging - env vars not configured' );
+				return;
+			}
 
 			if ( empty( $_COOKIE[ $cookie_name ] ) ) {
-				error_log( 'Facebook for WooCommerce E2E: Cookie with facebook_test_id not available' );
+				error_log( 'Facebook for WooCommerce E2E: Skipping test logging - test cookie not configured' );
 				return;
 			}
 
-			//  log errors if response is unsuccessful
-			if ( ! $response || $response->has_api_error() ) {
-					if ( ! $response ) {
-						error_log( 'Facebook for WooCommerce E2E: CAPI response is null - cannot log test events' );
-					} else {
-						$error_code    = $response->get_api_error_code();
-						$error_type    = $response->get_api_error_type();
-						$error_message = $response->get_api_error_message();
-						$user_message  = $response->get_user_error_message();
-						error_log( sprintf(
-							'Facebook for WooCommerce E2E: CAPI response has error - Code: %s, Type: %s, Message: %s, User Message: %s',
-							$error_code ?: 'N/A',
-							$error_type ?: 'N/A',
-							$error_message ?: 'N/A',
-							$user_message ?: 'N/A'
-						) );
-					}
+			if ( ! $response ) {
+				error_log( 'Facebook for WooCommerce E2E: CAPI response is null - cannot log test events' );
 				return;
 			}
 
-			$logger_path = getenv( 'FB_E2E_LOGGER_PATH' );
+			if ( $response->has_api_error() ) {
+				error_log( sprintf(
+					'Facebook for WooCommerce E2E: CAPI response has error - Code: %s, Type: %s, Message: %s, User Message: %s',
+					$response->get_api_error_code() ?: 'N/A',
+					$response->get_api_error_type() ?: 'N/A',
+					$response->get_api_error_message() ?: 'N/A',
+					$response->get_user_error_message() ?: 'N/A'
+				) );
+				return;
+			}
+
 			$logger_file = dirname( plugin_dir_path( __FILE__ ) ) . $logger_path;
 
 			if ( ! file_exists( $logger_file ) ) {
@@ -656,7 +663,7 @@ class API extends Base {
 			}
 
 		} catch ( \Exception $e ) {
-			// Silent failure - never break production
+			error_log( sprintf( 'Facebook for WooCommerce E2E: CAPI event capturing failed with exception: %s', $e->getMessage() ) );
 		}
 	}
 
