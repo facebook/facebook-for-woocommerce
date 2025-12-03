@@ -51,8 +51,10 @@ class CogsIntegrationTests extends IntegrationTestCase
 
 		$test1 = wc_get_container()->get( 'Automattic\WooCommerce\Internal\Features\FeaturesController' )->feature_is_enabled( 'cost_of_goods_sold' );
 		$test2 = function_exists( 'get_option' ) && ( 'yes' === get_option( 'woocommerce_feature_cost_of_goods_sold_enabled' ) );
-
-		$this->assertTrue(false, 'Val1: ' . ($test1 ? 'Yes' : 'No') . ', Val2: ' . ($test2 ? 'Yes' : 'No'));
+		wc_get_container()->get( 'Automattic\WooCommerce\Internal\Features\FeaturesController' )->change_feature_enable('cost_of_goods_sold', true);
+		$test3 = wc_get_container()->get( 'Automattic\WooCommerce\Internal\Features\FeaturesController' )->feature_is_enabled( 'cost_of_goods_sold' );
+		$test4 = function_exists( 'get_option' ) && ( 'yes' === get_option( 'woocommerce_feature_cost_of_goods_sold_enabled' ) );
+		$this->assertTrue(false, 'Val1: ' . ($test1 ? 'Yes' : 'No') . ', Val2: ' . ($test2 ? 'Yes' : 'No'). ', Val3: ' . ($test3 ? 'Yes' : 'No'). ', Val4: ' . ($test4 ? 'Yes' : 'No'));
 
 		$this->assertTrue(WooCCogsProvider::is_available());
 
