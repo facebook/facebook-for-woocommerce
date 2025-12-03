@@ -3,13 +3,6 @@ declare( strict_types=1 );
 
 namespace WooCommerce\Facebook\Tests\Unit\Integrations;
 
-use WooCommerce\Facebook\Integrations\CostOfGoods\WPFactoryCogsProvider;
-use WooCommerce\Facebook\Tests\AbstractWPUnitTestWithOptionIsolationAndSafeFiltering;
-use WooCommerce\Facebook\Integrations\CostOfGoods\CostOfGoods;
-use WooCommerce\Facebook\Integrations\IntegrationIsNotAvailableException;
-use WC_Product;
-use stdClass;
-
 if ( ! function_exists( 'alg_wc_cog' ) ) {
 	$GLOBALS['alg_wc_cog']='alg_wc_cog';
 	function alg_wc_cog() {
@@ -23,6 +16,13 @@ if ( ! function_exists( 'alg_wc_cog' ) ) {
 		return $ret;
 	}
 }
+
+use WooCommerce\Facebook\Integrations\CostOfGoods\WPFactoryCogsProvider;
+use WooCommerce\Facebook\Tests\AbstractWPUnitTestWithOptionIsolationAndSafeFiltering;
+use WooCommerce\Facebook\Integrations\CostOfGoods\CostOfGoods;
+use WooCommerce\Facebook\Integrations\IntegrationIsNotAvailableException;
+use WC_Product;
+use stdClass;
 
 /**
  * Unit tests for WPFactory CostsOfGoods class.
@@ -53,8 +53,10 @@ class WPFactoryCogsProviderTest extends AbstractWPUnitTestWithOptionIsolationAnd
 		$product = $this->createMock( WC_Product::class );
 		$product->method( 'get_cogs_total_value' )->willReturn( 10.0 );
 		
-		$instance = new WPFactoryCogsProvider();
-
+		$reflection = new \ReflectionClass( WPFactoryCogsProvider::class );
+		$reflection->setStaticPropertyValue('is_available', null);
+		$instance = $reflection->newInstance();
+		
 		$value = $instance->get_cogs_value($product);
 		$this->assertEquals(10.0, $value);
 	}
