@@ -1,12 +1,11 @@
 <?php
 /**
- * Logger - Single file for all event logging
+ * Logger - Event logging for CAPI E2E tests
  *
  * Usage:
- * 1. HTTP endpoint (for Pixel from browser): POST to this file
- * 2. Direct call (for CAPI from PHP): require + call log_event()
+ * 1. For Pixel events: PixelCapture.js writes directly to filesystem. Does not use this class
+ * 2. For CAPI events: PHP code calls E2E_Event_Logger::log_event()
  */
-
 class E2E_Event_Logger {
 
     /**
@@ -22,7 +21,6 @@ class E2E_Event_Logger {
             return false;
         }
 
-        // __DIR__ is /path-to-plugin/tests/e2e/lib
         // dirname(__DIR__) is /path-to-plugin/tests/e2e
         // So we append /captured-events to get /path-to-plugin/tests/e2e/captured-events
         $capturedDir = dirname(__DIR__) . '/captured-events';
