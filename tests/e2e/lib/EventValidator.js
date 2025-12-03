@@ -87,11 +87,12 @@ class EventValidator {
 
         console.log(`  ✓ Running data validators...`);
 
-        this.validateTimestamp(p, c, errors); // TODO: do we need this?
+        this.validateTimestamp(p, c, errors);
         this.validateFbp(p, c, errors);
         this.validateCookies(p, errors)
         this.validateValue(p, c, schema, errors);
         this.validateContentIds(p, c, schema, errors);
+        this.validateUserData(p, c, errors);
         await this.validatePhpErrors(page, errors);
 
         this.validatePixelResponse(p, errors); // if response was 200 OK or not.
@@ -313,6 +314,32 @@ class EventValidator {
         }
     }
 
+    validateUserData(pixel, capi, errors) {
+        this.validatePII(pixel, capi, errors, 'em');
+        this.validatePII(pixel, capi, errors, 'external_id');
+    }
+
+    validatePII(pixel, capi, errors, field_name) {
+        const pixelValue = pixel.user_data?.[field_name];
+        const capiValue = capi.user_data?.[field_name];
+
+        if (pixelValue || capiValue) {
+            // Check both exist
+            if (!pixelValue) errors.push(`Pixel missing hashed ${field_name}`);
+            if (!capiValue) errors.push(`CAPI missing hashed ${field_name}`);
+
+            // Check they match
+            if (pixelValue && capiValue && pixelValue !== capiValue) {
+                errors.push(`Hashed ${field_name} mismatch: ${pixelValue} vs ${capiValue}`);
+            }
+
+            // Check proper SHA256 format (64 hex chars)
+            if (pixelValue && !/^[a-f0-9]{64}$/.test(pixelValue)) {
+                errors.push(`Pixel ${field_name} not properly SHA256 hashed`);
+            }
+        }
+    }
+
     /**
      * Check WordPress debug log for critical errors
      */
@@ -340,5 +367,3 @@ class EventValidator {
 }
 
 module.exports = EventValidator;
-
-// TODO: verify fbp , fbc cookies are present (first capture them in PixelCapture.js)
