@@ -33,6 +33,7 @@ env:
   WORDPRESS_URL: http://${{ secrets.TEST_SITE_HOST }}:8080
   TEST_PRODUCT_URL: '/product/testp/'
   TEST_CATEGORY_URL: '/product-category/uncategorized/'
+  TEST_FBCLID='IwAR123TestClickId456'
   WP_ADMIN_USERNAME: admin
   WP_ADMIN_PASSWORD: admin
   PIXEL_EVENT_TIMEOUT: 30000

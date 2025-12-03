@@ -7,10 +7,11 @@ const path = require('path');
 const EVENT_SCHEMAS = require('./event-schemas');
 
 class EventValidator {
-    constructor(testId) {
+    constructor(testId, fbc=false) {
         this.testId = testId;
         this.filePath = path.join(__dirname, '../captured-events', `${testId}.json`);
         this.events = null;
+        this.fbc = fbc;
     }
 
     async load() {
@@ -89,7 +90,7 @@ class EventValidator {
 
         this.validateTimestamp(p, c, errors);
         this.validateFbp(p, c, errors);
-        this.validateCookies(p, errors)
+        this.validateCookies(p, c, errors)
         this.validateValue(p, c, schema, errors);
         this.validateContentIds(p, c, schema, errors);
         this.validateUserData(p, c, errors);
@@ -249,7 +250,7 @@ class EventValidator {
         }
     }
 
-    validateCookies(pixel, errors) {
+    validateCookies(pixel, capi, errors) {
         if (!pixel.cookies) {
             errors.push('Pixel event missing cookies field');
             return;
@@ -259,10 +260,23 @@ class EventValidator {
             errors.push('Cookie _fbp not present');
         }
 
-        // if (!pixel.cookies._fbc) {
-        //     errors.push('Cookie _fbc not present');
-        // }
-        // TODO: do we need to check _fbc?
+        // Check _fbc (only when expected)
+        if (!this.fbc) return;
+
+        if (!pixel.cookies._fbc) {
+            errors.push('Cookie _fbc not present in Pixel event');
+        }
+        if (!capi.user_data?.fbc) {
+            errors.push('fbc not present in CAPI event user data');
+        }
+        if (pixel.cookies._fbc && capi.user_data?.fbc && pixel.cookies._fbc !== capi.user_data.fbc) {
+            errors.push(`Cookie _fbc mismatch: ${pixel.cookies._fbc} vs ${capi.user_data.fbc}`);
+        }
+
+        // Success message if all checks passed
+        if (pixel.cookies._fbc && capi.user_data?.fbc && pixel.cookies._fbc === capi.user_data.fbc) {
+            console.log(`  ✓ Cookie _fbc present and matches: ${pixel.cookies._fbc}`);
+        }
     }
 
     validateValue(pixel, capi, schema, errors) {

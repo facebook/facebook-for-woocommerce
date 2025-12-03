@@ -56,6 +56,24 @@ test('PageView', async ({ page }) => {
     expect(result.passed).toBe(true);
 });
 
+test('PageView with fbclid', async ({ page }) => {
+    const { testId, pixelCapture } = await TestSetup.init(page, 'PageView');
+
+    console.log(`   🌐 Navigating to homepage`);
+    // Set up listener BEFORE triggering the action (prevents race condition)
+    const eventPromise = pixelCapture.waitForEvent();
+    await page.goto('/?fbclid=${process.env.TEST_FBCLID}');
+    await TestSetup.waitForPageReady(page);
+    await eventPromise;
+
+    const validator = new EventValidator(testId, true); // expects fbc
+    await validator.checkDebugLog();
+    const result = await validator.validate('PageView', page);
+
+    TestSetup.logResult('PageView', result);
+    expect(result.passed).toBe(true);
+});
+
 test('ViewContent', async ({ page }) => {
     const { testId, pixelCapture } = await TestSetup.init(page, 'ViewContent');
 
