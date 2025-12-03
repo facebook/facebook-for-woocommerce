@@ -45,9 +45,10 @@ class CogsIntegrationTests extends IntegrationTestCase
 	{
 		$this->enable_cogs_in_woo_settings();
 
-		$prod = new WC_Product();
-		$prod->set_cogs_value(100.0);
-		$value = CostOfGoods::calculate_cogs_for_products([$prod]);
+		$product = $this->create_simple_product();
+		update_post_meta($product->get_id(), '_wc_cogs_cost', 100.0);
+		
+		$value = CostOfGoods::calculate_cogs_for_products([$product]);
 		$this->assertEquals(100.0, $value);
 	}
 	// public function test_given_cogs_provider_available_when_multiple_products_provided_and_all_have_cogs_then_sum_cogs_is_returned() {
