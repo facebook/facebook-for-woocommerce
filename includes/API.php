@@ -607,8 +607,8 @@ class API extends Base {
 	/**
 	 * Logs CAPI events to test framework only in CI env , and only if test cookie is present.
 	 *
-	 * @param Response            $response API response object
-	 * @param API\Pixel\Events\Request $request The request object containing transformed event data
+	 * @param Response                 $response API response object
+	 * @param API\Pixel\Events\Request $request  The request object containing transformed event data
 	 */
 	public function log_events_for_tests( $response, $request ) {
 		try {
@@ -625,13 +625,15 @@ class API extends Base {
 				return;
 			}
 			if ( $response->has_api_error() ) {
-				error_log( sprintf(
-					'Facebook for WooCommerce E2E: CAPI response has error - Code: %s, Type: %s, Message: %s, User Message: %s',
-					$response->get_api_error_code() ?: 'N/A',
-					$response->get_api_error_type() ?: 'N/A',
-					$response->get_api_error_message() ?: 'N/A',
-					$response->get_user_error_message() ?: 'N/A'
-				) );
+				error_log(
+					sprintf(
+						'Facebook for WooCommerce E2E: CAPI response has error - Code: %s, Type: %s, Message: %s, User Message: %s',
+						$response->get_api_error_code() ? $response->get_api_error_code() : 'N/A',
+						$response->get_api_error_type() ? $response->get_api_error_type() : 'N/A',
+						$response->get_api_error_message() ? $response->get_api_error_message() : 'N/A',
+						$response->get_user_error_message() ? $response->get_user_error_message() : 'N/A'
+					)
+				);
 				return;
 			}
 
@@ -654,7 +656,6 @@ class API extends Base {
 					\E2E_Event_Logger::log_event( $test_id, 'capi', $transformed_event );
 				}
 			}
-
 		} catch ( \Exception $e ) {
 			error_log( sprintf( 'Facebook for WooCommerce E2E: CAPI event capturing failed with exception: %s', $e->getMessage() ) );
 		}
