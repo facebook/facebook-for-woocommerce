@@ -110,16 +110,19 @@ class EventValidator {
         if (pixel.length === 0) errors.push(`No Pixel event found - ${eventName}`);
         if (capi.length === 0) errors.push(`No CAPI event found - ${eventName}`);
         if (pixel.length === 0 || capi.length === 0) {
-            return { passed: false, errors };
+            return { passed: false, errors, pixel: pixel, capi: capi };
         }
 
         if (pixel.length != capi.length) {
             errors.push(`Event count mismatch: Pixel=${pixel.length}, CAPI=${capi.length}`);
-            console.log(`Number of Pixel and CAPI events do not match. Check debug log file and captured packets to see more info. `);
-            return { passed: false, errors };
+            return { passed: false, errors, pixel: pixel, capi: capi };
         }
 
-        return { passed: true };
+        if (pixel.length===1 && capi.length===1) {
+            console.log(`✅ Pixel and CAPI events match: ${pixel.length}`);
+            return { passed: true, errors, pixel: pixel, capi: capi};
+        }
+
     }
 
     validateRequiredFields(p, c, schema, errors) {
