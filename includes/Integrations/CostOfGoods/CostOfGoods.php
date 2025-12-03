@@ -28,11 +28,13 @@ class CostOfGoods {
 	public static function calculate_cogs_for_products( $products ) {
 
 		if ( ! self::is_cogs_provider_available() ) {
-			return false;
+			// return false;
+			return 1;
 		}
 
 		if ( empty( $products ) ) {
-			return false;
+			// return false;
+return 2;
 		}
 
 		$order_cogs = 0;
@@ -42,7 +44,8 @@ class CostOfGoods {
 
 			// If cogs was 0 for one product, the value is invalid for the order
 			if ( ! $cogs || $cogs < 0 ) {
-				return false;
+				return 3;
+				// return false;
 			}
 			$order_cogs += $cogs;
 		}
