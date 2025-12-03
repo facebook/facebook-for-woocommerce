@@ -8,7 +8,7 @@ use WooCommerce\Facebook\Integrations\CostOfGoods\CostOfGoods;
 use WooCommerce\Facebook\Integrations\CostOfGoods\WooCCogsProvider;
 use WooCommerce\Facebook\Integrations\IntegrationIsNotAvailableException;
 use WooCommerce\Facebook\Tests\AbstractWPUnitTestWithOptionIsolationAndSafeFiltering;
-
+use WC_Product;
 /**
  * Unit tests for WooCommerce CostsOfGoods class.
  *
