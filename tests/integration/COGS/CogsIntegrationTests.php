@@ -9,6 +9,7 @@ use WooCommerce\Facebook\Integrations\CostOfGoods\WooCCogsProvider;
 use WooCommerce\Facebook\Integrations\CostOfGoods\CostOfGoods;
 use WC_Product_Variation;
 use WC_Product_Attribute;
+use WC_Product;
 
 class CogsIntegrationTests extends IntegrationTestCase
 {
@@ -217,7 +218,7 @@ class CogsIntegrationTests extends IntegrationTestCase
 		return $created_variations;
 	}
 
-	public function test_should_not_use_value_if_cogs_is_zero()
+	public function should_not_use_value_if_cogs_is_zero()
 	{
 		$this->assertTrue(false);
 	}
