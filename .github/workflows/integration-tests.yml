@@ -33,7 +33,7 @@ jobs:
 
     steps:
       - name: Install SVN
-        run: sudo apt-get install subversion-y
+        run: sudo apt-get install subversion -y
 
       - name: Checkout code
         uses: actions/checkout@v4
