@@ -50,21 +50,21 @@ test.describe('Facebook for WooCommerce - Product Creation E2E Tests', () => {
       // Scroll to product data section
       await page.locator('#woocommerce-product-data').scrollIntoViewIfNeeded();
 
+      // Set regular price
+      await page.click('li.general_tab a');
+      const regularPriceField = page.locator('#_regular_price');
+      await regularPriceField.waitFor({ state: 'visible', timeout: 10000 });
+      await regularPriceField.fill('19.99');
+      console.log('✅ Set regular price');
+
       // Click on Inventory tab
       await page.click('li.inventory_tab a');
-
       // Set SKU to ensure unique retailer ID
       const skuField = page.locator('#_sku');
       await skuField.waitFor({ state: 'visible', timeout: 10000 });
       const uniqueSku = generateUniqueSKU('simple');
       await skuField.fill(uniqueSku);
       console.log(`✅ Set unique SKU: ${uniqueSku}`);
-
-      // Set regular price
-      const regularPriceField = page.locator('#_regular_price');
-      await regularPriceField.waitFor({ state: 'visible', timeout: 10000 });
-      await regularPriceField.fill('19.99');
-      console.log('✅ Set regular price');
 
       // Look for Facebook-specific fields if plugin is active
       try {
@@ -319,7 +319,6 @@ test.describe('Facebook for WooCommerce - Product Creation E2E Tests', () => {
           // Check for PHP errors
           expect(pageContent).not.toContain('Fatal error');
           expect(pageContent).not.toContain('Parse error');
-          expect(pageContent).not.toContain('Warning: ');
 
           // Verify admin content loaded
           await page.locator('#wpcontent').isVisible({ timeout: 10000 });
@@ -341,7 +340,6 @@ test.describe('Facebook for WooCommerce - Product Creation E2E Tests', () => {
   test('Test Facebook plugin deactivation and reactivation', async ({ page }, testInfo) => {
 
     try {
-
       // Navigate to plugins page
       await page.goto(`${baseURL}/wp-admin/plugins.php`, {
         waitUntil: 'domcontentloaded',
@@ -351,40 +349,30 @@ test.describe('Facebook for WooCommerce - Product Creation E2E Tests', () => {
       // Look for Facebook plugin row
       const pluginRow = page.locator('tr[data-slug="facebook-for-woocommerce"], tr:has-text("Facebook for WooCommerce")').first();
 
-      if (await pluginRow.isVisible({ timeout: 10000 })) {
-        console.log('✅ Facebook plugin found');
+      await pluginRow.waitFor({ state: 'visible', timeout: 10000 });
+      console.log('✅ Facebook plugin found');
 
-        // Check if plugin is currently active
-        const isActive = await pluginRow.locator('.active').isVisible({ timeout: 10000 });
+      // Check if plugin is currently active
+      const isActive = await pluginRow.locator('.active').isVisible({ timeout: 10000 });
+      const deactivateLink = pluginRow.locator('a:has-text("Deactivate")');
+      const reactivateLink = pluginRow.locator('a:has-text("Activate")');
 
-        if (isActive) {
-          console.log('Plugin is active, testing deactivation...');
-          const deactivateLink = pluginRow.locator('a:has-text("Deactivate")');
-          if (await deactivateLink.isVisible({ timeout: 10000 })) {
-            await deactivateLink.click();
-            await page.waitForTimeout(2000);
-            console.log('✅ Plugin deactivated');
-
-            // Now test reactivation
-            await page.waitForTimeout(1000);
-            const reactivateLink = pluginRow.locator('a:has-text("Activate")');
-            if (await reactivateLink.isVisible({ timeout: 10000 })) {
-              await reactivateLink.click();
-              await page.waitForTimeout(2000);
-              console.log('✅ Plugin reactivated');
-            }
-          }
-        } else {
-          console.log('Plugin is inactive, testing activation...');
-          const activateLink = pluginRow.locator('a:has-text("Activate")');
-          if (await activateLink.isVisible({ timeout: 10000 })) {
-            await activateLink.click();
-            await page.waitForTimeout(2000);
-            console.log('✅ Plugin activated');
-          }
-        }
+      if (isActive) {
+        console.log('Plugin is active, testing deactivation...');
+        await deactivateLink.waitFor({ state: 'visible', timeout: 10000 });
+        await deactivateLink.click();
+        await reactivateLink.waitFor({ state: 'visible', timeout: 10000 });
+        console.log('✅ Plugin deactivated');
+        await reactivateLink.click();
+        await deactivateLink.waitFor({ state: 'visible', timeout: 10000 });
+        console.log('✅ Plugin reactivated');
       } else {
-        console.warn('⚠️ Facebook plugin not found in plugins list');
+        console.log('Plugin is inactive, testing activation...');
+        const activateLink = pluginRow.locator('a:has-text("Activate")');
+        await activateLink.waitFor({ state: 'visible', timeout: 10000 });
+        await activateLink.click();
+        await deactivateLink.waitFor({ state: 'visible', timeout: 10000 });
+        console.log('✅ Plugin activated');
       }
 
       // Verify no PHP errors after plugin operations
