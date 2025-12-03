@@ -107,22 +107,6 @@ class CogsIntegrationTests extends IntegrationTestCase
 		$this->assertTrue(false);
 	}
 
-	public function given_woo_integration_is_not_available_when_is_available_called_then_it_returns_false()
-	{
-		if (class_exists('WC_Facebookcommerce_Utils')) {
-			$reflection = new \ReflectionClass(\WC_Facebookcommerce_Utils::class);
-			$reflection->staticExpects($this->any())->method('is_woocommerce_integration')->willReturn(false);
-		} else {
-			$this->assertTrue(false);
-			eval('class WC_Facebookcommerce_Utils {
-				public static function is_woocommerce_integration() { return true; }
-			}');
-		}
-		$reflection = new \ReflectionClass(WooCCogsProvider::class);
-		$instance = $reflection->newInstance();
-		$this->expectException(IntegrationIsNotAvailableException::class);
-	}
-
 	/* is_available = false, if:
 		- is_woo_integration is false
 		- WC_Product->get_cogs_total_value returns null

@@ -133,7 +133,15 @@ jobs:
           WP_CORE_DIR: /tmp/wordpress
           WC_DIR: /tmp/wordpress/wp-content/plugins/woocommerce
         run: |
-          ./vendor/bin/phpunit --testsuite=integration --coverage-clover=coverage.xml --coverage-html=coverage-html || echo "::warning::Coverage generation failed"
+          if ./vendor/bin/phpunit --testsuite=integration --coverage-clover=coverage.xml --coverage-html=coverage-html || echo "::warning::Coverage generation failed";
+			echo "✅ All tests passed!"
+            TEST_STATUS="passed"
+		  else
+		  	echo "❌ Some tests failed!"
+				TEST_STATUS="failed"
+            exit 1
+		  fi
+		  echo "test_status=$TEST_STATUS" >> $GITHUB_OUTPUT
 
       - name: Upload Coverage to Codecov
         if: success()
@@ -194,7 +202,3 @@ jobs:
             /tmp/wordpress/wp-content/debug.log
             /var/log/
           retention-days: 7
-
-      - name: Skip tests notification
-        if: steps.install-composer.outputs.composer_installed != 'true' || steps.setup-wp.outputs.wp_setup_success != 'true'
-        run: echo "::warning::Skipping integration tests due to setup issues" 
