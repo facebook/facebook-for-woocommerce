@@ -34,7 +34,11 @@ class CostOfGoods {
 
 		if ( empty( $products ) ) {
 			// return false;
-return 2;
+			return 2;
+		}
+
+		if (count( self::get_cogs_providers() ) == 0) {
+			return 4;
 		}
 
 		$order_cogs = 0;
