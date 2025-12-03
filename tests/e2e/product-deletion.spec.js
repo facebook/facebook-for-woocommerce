@@ -1,6 +1,9 @@
 const { test, expect } = require('@playwright/test');
 const {
   baseURL,
+  TIMEOUTS,
+  DELAYS,
+  SELECTORS,
   loginToWordPress,
   safeScreenshot,
   cleanupProduct,
@@ -14,7 +17,8 @@ const {
   openFacebookOptions,
   setProductDescription,
   setProductTitle,
-  publishProduct
+  publishProduct,
+  selectProductsByIds
 } = require('./test-helpers');
 
 test.describe('Facebook for WooCommerce - Product Deletion E2E Tests', () => {
