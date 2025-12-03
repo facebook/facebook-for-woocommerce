@@ -4,6 +4,7 @@ declare( strict_types=1 );
 namespace WooCommerce\Facebook\Tests\Unit\Integrations;
 
 use stdClass;
+use WooCommerce\Facebook\Integrations\CostOfGoods\CostOfGoods;
 use WooCommerce\Facebook\Integrations\CostOfGoods\WooCCogsProvider;
 use WooCommerce\Facebook\Integrations\IntegrationIsNotAvailableException;
 use WooCommerce\Facebook\Tests\AbstractWPUnitTestWithOptionIsolationAndSafeFiltering;
