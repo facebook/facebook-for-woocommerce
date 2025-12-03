@@ -605,6 +605,63 @@ class API extends Base {
 	}
 
 	/**
+	 * Logs CAPI events to test framework only in CI env , and only if test cookie is present.
+	 *
+	 * @param Response                 $response API response object
+	 * @param API\Pixel\Events\Request $request  The request object containing transformed event data
+	 */
+	public function log_events_for_tests( $response, $request ) {
+		try {
+			$cookie_name = getenv( 'FB_E2E_TEST_COOKIE_NAME' );
+
+			if ( empty( $_COOKIE[ $cookie_name ] ) ) {
+				// Test cookie is not present. Do not log events.
+				return;
+			}
+
+			// Log unsuccessful response
+			if ( ! $response ) {
+				error_log( 'Facebook for WooCommerce E2E: CAPI response is null - cannot log test events' );
+				return;
+			}
+			if ( $response->has_api_error() ) {
+				error_log(
+					sprintf(
+						'Facebook for WooCommerce E2E: CAPI response has error - Code: %s, Type: %s, Message: %s, User Message: %s',
+						$response->get_api_error_code() ? $response->get_api_error_code() : 'N/A',
+						$response->get_api_error_type() ? $response->get_api_error_type() : 'N/A',
+						$response->get_api_error_message() ? $response->get_api_error_message() : 'N/A',
+						$response->get_user_error_message() ? $response->get_user_error_message() : 'N/A'
+					)
+				);
+				return;
+			}
+
+			$logger_path = getenv( 'FB_E2E_LOGGER_PATH' );
+			$logger_file = dirname( plugin_dir_path( __FILE__ ) ) . $logger_path;
+			if ( ! file_exists( $logger_file ) ) {
+				error_log( 'Facebook for WooCommerce E2E: Test logging failed - Logger file not found' );
+				return;
+			}
+			require_once $logger_file;
+
+			$test_id = sanitize_text_field( wp_unslash( $_COOKIE[ $cookie_name ] ) );
+
+			// Get the transformed data directly from the request object
+			$request_data = $request->get_data();
+
+			// Log each transformed event
+			if ( isset( $request_data['data'] ) && is_array( $request_data['data'] ) ) {
+				foreach ( $request_data['data'] as $transformed_event ) {
+					\E2E_Event_Logger::log_event( $test_id, 'capi', $transformed_event );
+				}
+			}
+		} catch ( \Exception $e ) {
+			error_log( sprintf( 'Facebook for WooCommerce E2E: CAPI event capturing failed with exception: %s', $e->getMessage() ) );
+		}
+	}
+
+	/**
 	 * Sends Pixel events.
 	 *
 	 * @since 2.0.0
@@ -616,8 +673,15 @@ class API extends Base {
 	 */
 	public function send_pixel_events( $pixel_id, array $events ) {
 		$request = new API\Pixel\Events\Request( $pixel_id, $events );
+
 		$this->set_response_handler( Response::class );
-		return $this->perform_request( $request );
+
+		$response = $this->perform_request( $request );
+
+		// Log to E2E test framework
+		$this->log_events_for_tests( $response, $request );
+
+		return $response;
 	}
 
 	/**
