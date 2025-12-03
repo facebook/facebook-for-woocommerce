@@ -34,13 +34,7 @@ class CogsIntegrationTests extends IntegrationTestCase
 	}
 
 	private function enable_cogs_in_woo_settings() {
-		$res = 1;
-		if ( get_option( 'woocommerce_feature_cogs_enabled', 'no' ) !== 'yes' ) {
-			$res = update_option( 'woocommerce_feature_cogs_enabled', 'yes' );
-		}
-		if ( ! $res ) {
-			throw new \Exception('Unable to enable COGS');
-		}
+		wc_get_container()->get( 'Automattic\WooCommerce\Internal\Features\FeaturesController' )->change_feature_enable('cost_of_goods_sold', true);
 	}
 
 	private function disable_cogs_in_woo_settings() {}
@@ -48,13 +42,6 @@ class CogsIntegrationTests extends IntegrationTestCase
 	public function test_given_cogs_exists_for_product_when_calculate_method_is_called_then_it_returns_correct_value()
 	{
 		$this->enable_cogs_in_woo_settings();
-
-		$test1 = wc_get_container()->get( 'Automattic\WooCommerce\Internal\Features\FeaturesController' )->feature_is_enabled( 'cost_of_goods_sold' );
-		$test2 = function_exists( 'get_option' ) && ( 'yes' === get_option( 'woocommerce_feature_cost_of_goods_sold_enabled' ) );
-		wc_get_container()->get( 'Automattic\WooCommerce\Internal\Features\FeaturesController' )->change_feature_enable('cost_of_goods_sold', true);
-		$test3 = wc_get_container()->get( 'Automattic\WooCommerce\Internal\Features\FeaturesController' )->feature_is_enabled( 'cost_of_goods_sold' );
-		$test4 = function_exists( 'get_option' ) && ( 'yes' === get_option( 'woocommerce_feature_cost_of_goods_sold_enabled' ) );
-		$this->assertTrue(false, 'Val1: ' . ($test1 ? 'Yes' : 'No') . ', Val2: ' . ($test2 ? 'Yes' : 'No'). ', Val3: ' . ($test3 ? 'Yes' : 'No'). ', Val4: ' . ($test4 ? 'Yes' : 'No'));
 
 		$this->assertTrue(WooCCogsProvider::is_available());
 
