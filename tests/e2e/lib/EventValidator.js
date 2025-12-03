@@ -352,9 +352,6 @@ class EventValidator {
             const data = await fs.readFile(debugLogPath, 'utf8');
             const lines = data.split('\n');
             const criticalErrors = lines.filter(line => {
-                if (line.includes('Constant') && line.includes('already defined')) {
-                    return false;
-                }
                 return /fatal|error/i.test(line) && !/warning/i.test(line);
             });
 
