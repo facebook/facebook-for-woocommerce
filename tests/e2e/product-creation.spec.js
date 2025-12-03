@@ -13,7 +13,9 @@ const {
   logTestEnd,
   validateFacebookSync,
   setProductTitle,
-  setProductDescription
+  setProductDescription,
+  createTestProduct,
+  exactSearchSelect2Container
 } = require('./test-helpers');
 
 test.describe('Facebook for WooCommerce - Product Creation E2E Tests', () => {
@@ -114,135 +116,135 @@ test.describe('Facebook for WooCommerce - Product Creation E2E Tests', () => {
       logTestEnd(testInfo, false);
       throw error;
     } finally {
-    // Cleanup irrespective of test result
-    if (productId) {
-      await cleanupProduct(productId);
+      // Cleanup irrespective of test result
+      if (productId) {
+        await cleanupProduct(productId);
+      }
     }
-  }
   });
 
   test('Create variable product with WooCommerce', async ({ page }, testInfo) => {
-  let productId = null;
+    let productId = null;
     try {
 
-    // Step 1: Navigate to add new product
-    await page.goto(`${baseURL}/wp-admin/post-new.php?post_type=product`, {
-      waitUntil: 'domcontentloaded',
-      timeout: 60000
-    });
+      // Step 1: Navigate to add new product
+      await page.goto(`${baseURL}/wp-admin/post-new.php?post_type=product`, {
+        waitUntil: 'domcontentloaded',
+        timeout: 60000
+      });
 
-    // Step 2: Fill product title
-    const productName = generateProductName('Variable');
-    await setProductTitle(page, productName);
-    // Step 2.1: Add product description (human-like interaction)
-    await setProductDescription(page, "This is a test variable product with multiple variations.");
+      // Step 2: Fill product title
+      const productName = generateProductName('Variable');
+      await setProductTitle(page, productName);
+      // Step 2.1: Add product description (human-like interaction)
+      await setProductDescription(page, "This is a test variable product with multiple variations.");
 
-     // Set up dialog handler for WooCommerce tour popup
-    page.on('dialog', async dialog => {
-      await dialog.accept();
-      console.log('✅ Dialog accepted');
-    });
+      // Set up dialog handler for WooCommerce tour popup
+      page.on('dialog', async dialog => {
+        await dialog.accept();
+        console.log('✅ Dialog accepted');
+      });
 
-    // Step 3: Set product type to variable
-    await page.selectOption('#product-type', 'variable');
-    console.log('✅ Set product type to variable');
+      // Step 3: Set product type to variable
+      await page.selectOption('#product-type', 'variable');
+      console.log('✅ Set product type to variable');
 
-    // Step 3.5: Set unique SKU for parent product
-    const uniqueParentSku = generateUniqueSKU('variable');
-    await page.locator('#_sku').fill(uniqueParentSku);
-    console.log(`✅ Set unique parent SKU: ${uniqueParentSku}`);
+      // Step 3.5: Set unique SKU for parent product
+      const uniqueParentSku = generateUniqueSKU('variable');
+      await page.locator('#_sku').fill(uniqueParentSku);
+      console.log(`✅ Set unique parent SKU: ${uniqueParentSku}`);
 
-    // Step 4: Tell browser to directly click popup
-    await page.evaluate(() => document.querySelector('button.woocommerce-tour-kit-step-navigation__done-btn')?.click());
+      // Step 4: Tell browser to directly click popup
+      await page.evaluate(() => document.querySelector('button.woocommerce-tour-kit-step-navigation__done-btn')?.click());
 
-    // Step 5: Add attributes
-    // Go to Attributes tab
-    await page.click('li.attribute_tab a[href="#product_attributes"]');
-    await page.waitForTimeout(2000);
-    // Add name & value
-    await page.fill('input.attribute_name[name="attribute_names[0]"]', 'Color');
-    await page.fill('textarea[name="attribute_values[0]"]', 'Red|Blue|Green');
-    // Use tab to enable Save Attributes button
-    await page.locator('#product_attributes .woocommerce_attribute textarea[name^="attribute_values"]').press('Tab');
-    await page.click('button.save_attributes.button-primary');
-    await page.waitForTimeout(5000);
-    console.log('✅ Saved attributes');
-
-    // Step 6: Generate variations
-    // Go to Variations tab
-    await page.click('a[href="#variable_product_options"]');
-    await page.waitForTimeout(2000);
-    // Click "Generate variations" button
-    await page.click('button.generate_variations');
-    await page.waitForTimeout(8000);
-    // Verify variations were created
-    const variationsCount = await page.locator('.woocommerce_variation').count();
-    console.log(`✅ Generated ${variationsCount} variations`);
-
-    if (variationsCount > 0) {
-      // Step 7: Set prices for variations
-      // Click "Add price" button first
-      const addPriceBtn = page.locator('button.add_price_for_variations');
-      await addPriceBtn.waitFor({ state: 'visible', timeout: 10000 });
-      await addPriceBtn.click();
-      console.log('✅ Clicked "Add price" button');
-
-      // Wait for price input field to appear
+      // Step 5: Add attributes
+      // Go to Attributes tab
+      await page.click('li.attribute_tab a[href="#product_attributes"]');
       await page.waitForTimeout(2000);
+      // Add name & value
+      await page.fill('input.attribute_name[name="attribute_names[0]"]', 'Color');
+      await page.fill('textarea[name="attribute_values[0]"]', 'Red|Blue|Green');
+      // Use tab to enable Save Attributes button
+      await page.locator('#product_attributes .woocommerce_attribute textarea[name^="attribute_values"]').press('Tab');
+      await page.click('button.save_attributes.button-primary');
+      await page.waitForTimeout(5000);
+      console.log('✅ Saved attributes');
 
-      // Add bulk price
-      const priceInput = page.locator('input.components-text-control__input.wc_input_variations_price');
-      await priceInput.waitFor({ state: 'visible', timeout: 10000 });
-      await priceInput.click();        // ✅ Focus the field
-      await priceInput.clear();        // ✅ Clear existing content
-      await priceInput.type('29.99', { delay: 100 }); // ✅ Type with delays = triggers all JS events
+      // Step 6: Generate variations
+      // Go to Variations tab
+      await page.click('a[href="#variable_product_options"]');
+      await page.waitForTimeout(2000);
+      // Click "Generate variations" button
+      await page.click('button.generate_variations');
+      await page.waitForTimeout(8000);
+      // Verify variations were created
+      const variationsCount = await page.locator('.woocommerce_variation').count();
+      console.log(`✅ Generated ${variationsCount} variations`);
 
-      // Click "Add prices" button to apply the price
-      const addPricesBtn = page.locator('button.add_variations_price_button.button-primary');
-      await addPricesBtn.waitFor({ state: 'visible', timeout: 10000 });
-      await addPricesBtn.click();
-      await page.waitForTimeout(3000);
-      console.log('✅ Bulk price added successfully');
+      if (variationsCount > 0) {
+        // Step 7: Set prices for variations
+        // Click "Add price" button first
+        const addPriceBtn = page.locator('button.add_price_for_variations');
+        await addPriceBtn.waitFor({ state: 'visible', timeout: 10000 });
+        await addPriceBtn.click();
+        console.log('✅ Clicked "Add price" button');
+
+        // Wait for price input field to appear
+        await page.waitForTimeout(2000);
+
+        // Add bulk price
+        const priceInput = page.locator('input.components-text-control__input.wc_input_variations_price');
+        await priceInput.waitFor({ state: 'visible', timeout: 10000 });
+        await priceInput.click();        // ✅ Focus the field
+        await priceInput.clear();        // ✅ Clear existing content
+        await priceInput.type('29.99', { delay: 100 }); // ✅ Type with delays = triggers all JS events
+
+        // Click "Add prices" button to apply the price
+        const addPricesBtn = page.locator('button.add_variations_price_button.button-primary');
+        await addPricesBtn.waitFor({ state: 'visible', timeout: 10000 });
+        await addPricesBtn.click();
+        await page.waitForTimeout(3000);
+        console.log('✅ Bulk price added successfully');
+      }
+
+      //  Step 8: Publish product
+      await page.click('#publish');
+      await page.waitForTimeout(5000);
+      // Verify success
+      const pageContent = await page.content();
+      expect(pageContent).not.toContain('Fatal error');
+      expect(pageContent).not.toContain('Parse error');
+
+      console.log('✅ Variable product created successfully!');
+
+      // Extract product ID from URL after publish
+      const currentUrl = page.url();
+      productId = extractProductIdFromUrl(currentUrl);
+
+      // Verify no PHP fatal errors
+      await checkForPhpErrors(page);
+
+      // Validate sync to Meta catalog and fields from Meta
+      const result = await validateFacebookSync(productId, productName, 5, 8);
+      expect(result['success']).toBe(true);
+
+      // await waitForManualInspection(page);
+
+      logTestEnd(testInfo, true);
+
+    } catch (error) {
+      console.log(`❌ Variable product test failed: ${error.message}`);
+      logTestEnd(testInfo, false);
+      await safeScreenshot(page, 'variable-product-test-failure.png');
+      throw error;
     }
-
-    //  Step 8: Publish product
-    await page.click('#publish');
-    await page.waitForTimeout(5000);
-    // Verify success
-    const pageContent = await page.content();
-    expect(pageContent).not.toContain('Fatal error');
-    expect(pageContent).not.toContain('Parse error');
-
-    console.log('✅ Variable product created successfully!');
-
-    // Extract product ID from URL after publish
-    const currentUrl = page.url();
-    productId = extractProductIdFromUrl(currentUrl);
-
-    // Verify no PHP fatal errors
-    await checkForPhpErrors(page);
-
-    // Validate sync to Meta catalog and fields from Meta
-    const result = await validateFacebookSync(productId, productName, 5, 8);
-    expect(result['success']).toBe(true);
-
-    // await waitForManualInspection(page);
-
-    logTestEnd(testInfo, true);
-
-  } catch (error) {
-    console.log(`❌ Variable product test failed: ${error.message}`);
-    logTestEnd(testInfo, false);
-    await safeScreenshot(page, 'variable-product-test-failure.png');
-    throw error;
-  }
-  finally {
-    // Cleanup irrespective of test result
-    if (productId) {
-      await cleanupProduct(productId);
+    finally {
+      // Cleanup irrespective of test result
+      if (productId) {
+        await cleanupProduct(productId);
+      }
     }
-  }
-});
+  });
 
   test('Test WordPress admin and Facebook plugin presence', async ({ page }, testInfo) => {
 
@@ -414,5 +416,139 @@ test.describe('Facebook for WooCommerce - Product Creation E2E Tests', () => {
       throw error;
     }
   });
+
+  test('Create Composite product with WPC plugin', async ({ page }, testInfo) => {
+    let simpleProductId = null;
+    let variableProductId = null;
+    let compositeProductId = null;
+    const hintText = 'Search for a product…';
+    try {
+      console.log('📦 Creating test components...');
+      const [simpleProduct, variableProduct] = await Promise.all([
+        createTestProduct({
+          productType: 'simple',
+          price: '29.99',
+          stock: '15'
+        }),
+        createTestProduct({
+          productType: 'variable',
+          price: '49.99',
+          stock: '20'
+        })
+      ]);
+      simpleProductId = simpleProduct.productId;
+      variableProductId = variableProduct.productId;
+
+      // Navigate to add new product page
+      await page.goto(`${baseURL}/wp-admin/post-new.php?post_type=product`, {
+        waitUntil: 'domcontentloaded',
+        timeout: 60000
+      });
+
+      // Add product name
+      const productName = generateProductName('Composite');
+      await setProductTitle(page, productName);
+      await setProductDescription(page, "This is a test composite product with multiple components.");
+
+      // Set product type to "Smart composite"
+      await page.selectOption('#product-type', { label: 'Smart composite' });
+      const componentsTab = await page.locator('li.composite_options');
+      await componentsTab.waitFor({ state: 'visible', timeout: 10000 });
+      console.log('✅ Product type set to Smart composite');
+
+      // Wait for product data section to load
+      await page.locator('#woocommerce-product-data').scrollIntoViewIfNeeded();
+
+      // In "General" tab add "Regular price"
+      await page.click('li.general_tab a');
+      const regularPriceField = page.locator('#_regular_price');
+      await regularPriceField.waitFor({ state: 'visible', timeout: 10000 });
+      await regularPriceField.fill('49.99');
+      console.log('✅ Set regular price');
+
+      // Go to "Components" tab
+      await componentsTab.click();
+      const addComponentBtn = page.locator('.wooco_add_component');
+      await addComponentBtn.waitFor({ state: 'visible', timeout: 10000 });
+      console.log('✅ Switched to Components tab');
+
+      const simpleComponentNameField = page.locator('.wooco_component_name_val').first();
+      const variableComponentNameField = page.locator('.wooco_component_name_val').nth(1);
+      console.log('✅ Make room for two components');
+      await addComponentBtn.click();
+      await simpleComponentNameField.waitFor({ state: 'visible', timeout: 10000 });
+      await variableComponentNameField.waitFor({ state: 'visible', timeout: 10000 });
+
+      // Enter product name in component
+      await simpleComponentNameField.fill('Simple Component');
+      console.log('✅ Simple Component name entered');
+
+      const simpleComponentDescField = page.locator('.wooco_component_desc_val').first();
+      await simpleComponentDescField.waitFor({ state: 'visible', timeout: 10000 });
+      await simpleComponentDescField.fill('This is the simple component description');
+      console.log('✅ Simple Component description entered');
+
+      const simpleComponentSourceField = page.locator('.wooco_component_type.wooco_component_type_val').first();
+      await simpleComponentSourceField.selectOption('products');
+      const simpleComponentSelect2Container = page.getByRole('textbox', { name: hintText }).first();
+      await exactSearchSelect2Container(page, simpleComponentSelect2Container, simpleProduct.sku);
+
+      await variableComponentNameField.scrollIntoViewIfNeeded();
+      await variableComponentNameField.fill('Variable Component');
+      console.log('✅ Variable Component name entered');
+
+      const variableComponentDescField = page.locator('.wooco_component_desc_val').nth(1);
+      await variableComponentDescField.waitFor({ state: 'visible', timeout: 10000 });
+      await variableComponentDescField.fill('This is the variable component description');
+      console.log('✅ Variable Component description entered');
+
+      const variableComponentSourceField = page.locator('.wooco_component_type.wooco_component_type_val').nth(1);
+      await variableComponentSourceField.selectOption('products');
+      const variableComponentSelect2Container = page.getByRole('textbox', { name: hintText }).first();
+      await exactSearchSelect2Container(page, variableComponentSelect2Container, variableProduct.sku);
+
+      // Click on "Save components" button
+      const saveComponentsBtn = page.locator('button:has-text("Save components"), .save_composite_data, #publish').first();
+      await saveComponentsBtn.waitFor({ state: 'visible', timeout: 10000 });
+      await saveComponentsBtn.click();
+      console.log('✅ Components saved');
+
+      const pricingStrategy = page.locator('#wooco_pricing');
+      await pricingStrategy.waitFor({ state: 'visible', timeout: 10000 });
+      await pricingStrategy.selectOption('include');
+
+      // Publish product
+      await publishProduct(page);
+      console.log('✅ Product published');
+
+      // Extract product ID from URL after publish
+      const currentUrl = page.url();
+      compositeProductId = extractProductIdFromUrl(currentUrl);
+
+      // Verify no PHP fatal errors
+      await checkForPhpErrors(page);
+
+      // Validate sync to Meta catalog and fields from Meta
+      const result = await validateFacebookSync(compositeProductId, productName, 5, 8);
+      expect(result['success']).toBe(true);
+
+      console.log('✅ Composite product creation test completed successfully');
+      logTestEnd(testInfo, true);
+
+    } catch (error) {
+      console.log(`⚠️ Composite product test failed: ${error.message}`);
+      await safeScreenshot(page, 'composite-product-test-failure.png');
+      logTestEnd(testInfo, false);
+      throw error;
+    } finally {
+      // Cleanup irrespective of test result
+      await Promise.all([
+        simpleProductId ? cleanupProduct(simpleProductId) : Promise.resolve(),
+        variableProductId ? cleanupProduct(variableProductId) : Promise.resolve(),
+        compositeProductId ? cleanupProduct(compositeProductId) : Promise.resolve()
+      ]);
+    }
+  });
+
 
 });

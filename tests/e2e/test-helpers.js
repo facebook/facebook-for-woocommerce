@@ -1,10 +1,10 @@
 const { expect } = require('@playwright/test');
 
 // Test configuration from environment variables
-const baseURL = process.env.WORDPRESS_URL || 'http://localhost:8080';
-const username = process.env.WP_USERNAME || 'admin';
-const password = process.env.WP_PASSWORD || 'admin';
-const wpSitePath = process.env.WP_SITE_PATH || '/tmp/wordpress';
+const baseURL = process.env.WORDPRESS_URL;
+const username = process.env.WP_USERNAME;
+const password = process.env.WP_PASSWORD;
+const wpSitePath = process.env.WORDPRESS_PATH;
 
 // Helper function for reliable login
 async function loginToWordPress(page) {
@@ -396,6 +396,28 @@ async function setProductTitle(page, newTitle) {
   console.log(`✅ Updated title to: "${newTitle}"`);
 }
 
+// Click on the Select2 container to open the dropdown
+async function exactSearchSelect2Container(page, locator, searchValue) {
+  await locator.waitFor({ state: 'visible', timeout: 10000 });
+  await locator.click();
+  await locator.focus();
+  // Wait for 1 second to allow the Select2 dropdown to fully render after clicking.
+  // Cannot use waitForLoadState('domcontentloaded') here because Select2 dropdown
+  // is rendered dynamically via JavaScript without triggering a page load event.
+  // The dropdown animation and DOM insertion happen asynchronously within the same page.
+  await page.waitForTimeout(1000);
+
+  // Now locate and fill the search field
+  await locator.pressSequentially(searchValue, { delay: 100 });
+
+  // Select first result if available
+  const firstResult = page.getByRole('option', { name: searchValue }).first();
+  await firstResult.waitFor({ state: 'visible', timeout: 15000 });
+  await firstResult.click();
+  await page.waitForLoadState('domcontentloaded');
+  console.log(`✅ Selected ${searchValue} from Select2 dropdown`);
+}
+
 module.exports = {
   baseURL,
   username,
@@ -416,5 +438,6 @@ module.exports = {
   filterProducts,
   clickFirstProduct,
   openFacebookOptions,
-  setProductTitle
+  setProductTitle,
+  exactSearchSelect2Container
 };

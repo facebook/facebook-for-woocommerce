@@ -9,7 +9,8 @@
  */
 
 // Bootstrap WordPress
-$wp_path = (getenv('WP_SITE_PATH') ?: '/tmp/wordpress') . '/wp-load.php';
+$wp_path = getenv('WORDPRESS_PATH') . '/wp-load.php';
+$wp_url = getenv('WORDPRESS_URL');
 
 if (!file_exists($wp_path)) {
     echo json_encode([
@@ -278,6 +279,8 @@ class FacebookSyncValidator {
      * Fetch Facebook data via API
      */
     private function fetchFacebookData($retailer_id, $context = 'simple') {
+        global $wp_url;
+
         $api = facebook_for_woocommerce()->get_api();
         $catalog_id = $this->integration->get_product_catalog_id();
         $fields = 'id,name,price,description,availability,retailer_id,condition,brand,color,size,image_url,product_group{id}';
@@ -307,7 +310,7 @@ class FacebookSyncValidator {
                         'brand' => $fb_data['brand'] ?? '',
                         'color' => $fb_data['color'] ?? '',
                         'size' => $fb_data['size'] ?? '',
-                        'image_url' => (!empty($fb_data['image_url'])) ? $fb_data['image_url'] : 'http://localhost:8080/wp-content/uploads/woocommerce-placeholder.webp',
+                        'image_url' => (!empty($fb_data['image_url'])) ? $fb_data['image_url'] : ($wp_url . '/wp-content/uploads/woocommerce-placeholder.webp'),
                         'product_group_id' => $fb_data['product_group']['id'] ?? null,
                         'found' => true
                     ];
