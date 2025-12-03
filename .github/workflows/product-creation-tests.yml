@@ -296,7 +296,7 @@ jobs:
         run: |
           cd ${{ env.WORDPRESS_PATH }}
           # Create test product for ViewContent/AddToCart tests
-          wp eval "
+          PRODUCT_ID=$(wp eval "
             \$product = new WC_Product_Simple();
             \$product->set_name('TestP');
             \$product->set_slug('testp');
@@ -308,8 +308,11 @@ jobs:
             \$product->set_manage_stock(false);
             \$product_id = \$product->save();
             wp_set_object_terms(\$product_id, 'uncategorized', 'product_cat');
-            echo '✅ Test product created. URL: ' . get_permalink(\$product_id) . PHP_EOL;
-          " --allow-root
+            echo \$product_id;
+          " --allow-root)
+
+          echo "TEST_PRODUCT_ID=$PRODUCT_ID" >> $GITHUB_ENV
+          echo "✅ Test product created. ID: $PRODUCT_ID"
 
       - name: Install Xvfb for headed browser
         run: |
@@ -317,6 +320,8 @@ jobs:
           sudo apt-get install -y xvfb
 
       - name: Run CAPI Pixel E2E tests
+        env:
+          TEST_PRODUCT_ID: ${{ env.TEST_PRODUCT_ID }}
         run: |
           cd ${{ env.PLUGIN_PATH }}
           xvfb-run --auto-servernum npx playwright test events-test*.spec.js --headed
@@ -353,6 +358,25 @@ jobs:
           name: playwright-report
           path: ${{ env.PLUGIN_PATH }}/playwright-report/
           retention-days: 7
+
+      - name: Upload captured events
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: CAPI Pixel Captured events
+          path: ${{ env.PLUGIN_PATH }}${{ env.FB_E2E_CAPTURED_EVENTS_DIR }}
+          retention-days: 7
+
+      - name: Cleanup captured events directory
+        if: always()
+        run: |
+          TARGET_DIR="${{ env.PLUGIN_PATH }}${{ env.FB_E2E_CAPTURED_EVENTS_DIR }}"
+          if [ -d "$TARGET_DIR" ]; then
+            rm -rf "$TARGET_DIR"
+            echo "✅ Deleted captured events directory: $TARGET_DIR"
+          else
+            echo "ℹ️ Captured events directory not found: $TARGET_DIR"
+          fi
 
       - name: Upload PHP logs
         uses: actions/upload-artifact@v4

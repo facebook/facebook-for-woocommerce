@@ -5,6 +5,9 @@
 const { test, expect } = require('@playwright/test');
 const TestSetup = require('./lib/TestSetup');
 const EventValidator = require('./lib/EventValidator');
+const {
+  cleanupProduct
+} = require('./test-helpers');
 
 // DIAGNOSTIC TEST - Check if pixel code exists in HTML
 test('DIAGNOSTIC: Pixel code in HTML', async ({ page }) => {
@@ -105,4 +108,10 @@ test('ViewCategory', async ({ page }) => {
 
     TestSetup.logResult('ViewCategory', result);
     expect(result.passed).toBe(true);
+});
+
+test.afterAll(async () => {
+    // Delete test product if it exists
+    await cleanupProduct(process.env.TEST_PRODUCT_ID);
+    // captured events will be cleared in github workflow directly after uploading
 });
