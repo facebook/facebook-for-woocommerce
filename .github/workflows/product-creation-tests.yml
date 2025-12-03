@@ -127,7 +127,7 @@ jobs:
       - name: Start PHP server
         run: |
           cd ${{ env.WORDPRESS_PATH }}
-          php -S 0.0.0.0:8080 -t . &
+          php -S 127.0.0.1:8080 -t . &
           echo $! > /tmp/php-server.pid
           sleep 5
           echo "✅ PHP server started on port 8080"
