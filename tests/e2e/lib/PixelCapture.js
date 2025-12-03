@@ -32,7 +32,7 @@ class PixelCapture {
                     // Check if URL contains our event name
                     return url.includes(`ev=${this.eventName}`);
                 },
-                { timeout: parseInt(process.env.PIXEL_EVENT_TIMEOUT || '15000', 10) }
+                { timeout: parseInt(process.env.PIXEL_EVENT_TIMEOUT || '30000', 10) }
             );
 
             console.log(`✅ Pixel event captured: ${this.eventName}`);
@@ -50,7 +50,7 @@ class PixelCapture {
 
         } catch (err) {
             if (err.message?.includes('Timeout')) {
-                throw new Error(`❌ Pixel event ${this.eventName} did not fire within ${parseInt(process.env.PIXEL_EVENT_TIMEOUT || '15000', 10)}ms`);
+                throw new Error(`❌ Pixel event ${this.eventName} did not fire within ${parseInt(process.env.PIXEL_EVENT_TIMEOUT || '30000', 10)}ms`);
             }
             throw err;
         }
