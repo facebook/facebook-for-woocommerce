@@ -48,18 +48,6 @@ class WooCCogsProvider extends AbstractCogsProvider {
 				return false;
 			}
 
-			$reflection      = new ReflectionClass( 'WC_Product' );
-			$set_prop_method = $reflection->getMethod( 'set_prop' );
-			$instance        = $reflection->newInstanceWithoutConstructor();
-			$set_prop_method->invokeArgs( $instance, array( 'cogs_value', '100.0' ) );
-
-			if ( ! method_exists( $instance, 'get_cogs_total_value' ) || (
-					null === $instance->get_cogs_total_value()
-				)
-			) {
-				return false;
-			}
-
 			if ( function_exists( 'wc_get_container' ) && class_exists( 'Automattic\WooCommerce\Internal\Features\FeaturesController' ) ) {
 				return wc_get_container()->get( 'Automattic\WooCommerce\Internal\Features\FeaturesController' )->feature_is_enabled( 'cost_of_goods_sold' );
 			}
