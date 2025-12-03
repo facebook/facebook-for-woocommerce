@@ -11,6 +11,7 @@ use WC_Product;
 use stdClass;
 
 if ( ! function_exists( 'alg_wc_cog' ) ) {
+	$GLOBALS['alg_wc_cog']='alg_wc_cog';
 	function alg_wc_cog() {
 		$ret = new stdClass();
 		$ret->core = new stdClass();
