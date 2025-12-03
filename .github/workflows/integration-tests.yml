@@ -170,6 +170,7 @@ jobs:
             echo "✅ Integration tests passed" >> $GITHUB_STEP_SUMMARY
           elif [[ "${{ steps.run-tests.outputs.tests_passed }}" == "false" ]]; then
             echo "❌ Integration tests failed" >> $GITHUB_STEP_SUMMARY
+            exit 1
           else
             echo "⚠️ Integration tests skipped" >> $GITHUB_STEP_SUMMARY
           fi
