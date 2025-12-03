@@ -194,6 +194,10 @@ jobs:
           wp cap add customer read --allow-root
 
           echo "✅ Customer user created with proper capabilities"
+      - name: Install WPC Composite Products plugin
+        run: |
+          cd /tmp/wordpress
+          wp plugin install wpc-composite-products --activate --allow-root
 
       - name: Install Facebook for WooCommerce plugin
         run: |
@@ -256,7 +260,11 @@ jobs:
           wp eval "
             if (function_exists('facebook_for_woocommerce')) {
                 \$connection = facebook_for_woocommerce()->get_connection_handler();
-                echo 'Connected: ' . (\$connection->is_connected() ? 'YES' : 'NO') . PHP_EOL;
+                if (!\$connection->is_connected()) {
+                    echo '❌ Facebook plugin is NOT connected' . PHP_EOL;
+                    exit(1);
+                }
+                echo 'Connected: YES' . PHP_EOL;
                 echo 'Access Token: ' . (\$connection->get_access_token() ? 'Present' : 'Missing') . PHP_EOL;
                 echo 'External Business ID: ' . \$connection->get_external_business_id() . PHP_EOL;
                 echo 'Business Manager ID: ' . \$connection->get_business_manager_id() . PHP_EOL;
@@ -265,7 +273,8 @@ jobs:
                 echo 'S2S Enabled: ' . get_option('wc_facebook_enable_server_to_server') . PHP_EOL;
                 echo 'Debug Mode: ' . get_option('wc_facebook_debug_mode') . PHP_EOL;
             } else {
-                echo 'Facebook plugin not loaded properly';
+                echo '❌ Facebook plugin not loaded properly' . PHP_EOL;
+                exit(1);
             }" --allow-root
 
           # VERIFY wp-config.php has debug settings

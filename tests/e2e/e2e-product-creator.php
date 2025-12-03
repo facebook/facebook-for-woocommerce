@@ -15,7 +15,7 @@
  * also set $wp_path to the path of your local wp-load.php file: /Users/<unixname>/Local Sites/<sitename>/app/public/wp-load.php
  */
 
-$wp_path = '/tmp/wordpress/wp-load.php';
+$wp_path = getenv('WORDPRESS_PATH') . '/wp-load.php';
 
 if (!file_exists($wp_path)) {
     echo json_encode([

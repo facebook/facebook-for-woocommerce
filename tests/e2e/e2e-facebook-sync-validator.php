@@ -9,7 +9,8 @@
  */
 
 // Bootstrap WordPress
-$wp_path = '/tmp/wordpress/wp-load.php';
+$wp_path = getenv('WORDPRESS_PATH') . '/wp-load.php';
+$wp_url = getenv('WORDPRESS_URL');
 
 if (!file_exists($wp_path)) {
     echo json_encode([
@@ -30,6 +31,7 @@ class FacebookSyncValidator {
     private $product;
     private $integration;
     private $result;
+    private $max_retries;
 
     /**
      * Field mappings between WooCommerce and Facebook fields
@@ -56,8 +58,9 @@ class FacebookSyncValidator {
     /**
      * Initialize the validator and verify dependencies
      */
-    public function __construct($product_id, $wait_seconds = 5) {
+    public function __construct($product_id, $wait_seconds = 5, $max_retries = 6) {
         $this->product_id = (int)$product_id;
+        $this->max_retries = (int)$max_retries;
         $this->result = [
             'success' => false,
             'product_id' => $this->product_id,
@@ -144,6 +147,7 @@ class FacebookSyncValidator {
 
             // Step 1: Get both platform data (WooCommerce + Facebook)
             $data = $this->getBothPlatformData($actual_type);
+            $this->result['raw_data'] = $data;
 
             // Step 2: Check sync status using fetched Facebook data
             $this->checkSyncStatus($data);
@@ -275,11 +279,12 @@ class FacebookSyncValidator {
      * Fetch Facebook data via API
      */
     private function fetchFacebookData($retailer_id, $context = 'simple') {
+        global $wp_url;
+
         $api = facebook_for_woocommerce()->get_api();
         $catalog_id = $this->integration->get_product_catalog_id();
         $fields = 'id,name,price,description,availability,retailer_id,condition,brand,color,size,image_url,product_group{id}';
 
-        $max_retries = 6;
         $retry_count = 0;
 
         do {
@@ -305,7 +310,7 @@ class FacebookSyncValidator {
                         'brand' => $fb_data['brand'] ?? '',
                         'color' => $fb_data['color'] ?? '',
                         'size' => $fb_data['size'] ?? '',
-                        'image_url' => (!empty($fb_data['image_url'])) ? $fb_data['image_url'] : 'http://localhost:8080/wp-content/uploads/woocommerce-placeholder.webp',
+                        'image_url' => (!empty($fb_data['image_url'])) ? $fb_data['image_url'] : ($wp_url . '/wp-content/uploads/woocommerce-placeholder.webp'),
                         'product_group_id' => $fb_data['product_group']['id'] ?? null,
                         'found' => true
                     ];
@@ -316,12 +321,12 @@ class FacebookSyncValidator {
             }
 
             $retry_count++;
-            if ($retry_count < $max_retries) {
+            if ($retry_count < $this->max_retries) {
                 $backoff_seconds = pow(2, $retry_count);
-                $this->debug("Facebook API retry attempt #{$retry_count} for retailer_id: {$retailer_id} (waiting {$backoff_seconds}s)");
+                $this->debug("Facebook API retry attempt #{$retry_count} of {$this->max_retries} for retailer_id: {$retailer_id} (waiting {$backoff_seconds}s)");
                 sleep($backoff_seconds);
             }
-        } while ($retry_count < $max_retries);
+        } while ($retry_count < $this->max_retries);
 
         $this->debug("No Facebook data found for retailer_id: {$retailer_id}");
         return ['found' => false];
@@ -496,13 +501,14 @@ if (php_sapi_name() === 'cli') {
     try {
         $product_id = isset($argv[1]) ? (int)$argv[1] : null;
         $wait_seconds = isset($argv[2]) ? (int)$argv[2] : 10;
+        $max_retries = isset($argv[3]) ? (int)$argv[3] : 6;
 
         if (!$product_id) {
             echo json_encode(['success' => false, 'error' => 'Product ID required']);
             exit(1);
         }
 
-        $validator = new FacebookSyncValidator($product_id, $wait_seconds);
+        $validator = new FacebookSyncValidator($product_id, $wait_seconds, $max_retries);
         $result = $validator->validate();
         echo $validator->getJsonResult();
 
