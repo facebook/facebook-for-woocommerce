@@ -23,14 +23,12 @@ class WPFactoryCogsProvider extends AbstractCogsProvider {
 
 	const INTEGRATION_NAME = 'WooCommerce Cost of Goods by WPFactory';
 
-	public function __construct() {
+	public function get_cogs_value( $product ) {
 
 		if ( ! self::is_available() ) {
 			throw new IntegrationIsNotAvailableException( self::INTEGRATION_NAME );
 		}
-	}
-
-	public function get_cogs_value( $product ) {
+		
 		// for WPFactory simple & variable product cost is retrieved by the same following method
 		return alg_wc_cog()->core->products->get_product_cost( $product->get_id() );
 	}
