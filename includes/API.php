@@ -298,7 +298,7 @@ class API extends Base {
 	/**
 	 * Gets rollout switches
 	 *
-	 * @param string $external_business_id
+	 * @param string      $external_business_id
 	 * @param string|null $catalog_id Optional catalog ID
 	 * @return API\FBE\RolloutSwitches\Response
 	 * @throws ApiException In case of a general API error or rate limit error.
