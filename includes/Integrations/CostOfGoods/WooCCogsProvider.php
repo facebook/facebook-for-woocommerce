@@ -44,7 +44,7 @@ class WooCCogsProvider extends AbstractCogsProvider {
 	public static function is_available() {
 
 		$func = function () {
-			if ( ! \WC_Facebookcommerce_Utils::is_woocommerce_integration() || ! class_exists( 'WC_Product' ) ) {
+			if ( ! \WC_Facebookcommerce_Utils::is_woocommerce_integration() ) {
 				return false;
 			}
 

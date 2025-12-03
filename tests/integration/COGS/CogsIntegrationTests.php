@@ -49,6 +49,11 @@ class CogsIntegrationTests extends IntegrationTestCase
 	{
 		$this->enable_cogs_in_woo_settings();
 
+		$test1 = wc_get_container()->get( 'Automattic\WooCommerce\Internal\Features\FeaturesController' )->feature_is_enabled( 'cost_of_goods_sold' );
+		$test2 = function_exists( 'get_option' ) && ( 'yes' === get_option( 'woocommerce_feature_cost_of_goods_sold_enabled' ) );
+
+		$this->assertTrue(false, 'Val1: '. $test1 . ', Val2: ' . $test2);
+
 		$this->assertTrue(WooCCogsProvider::is_available());
 
 		$product = $this->create_simple_product();
