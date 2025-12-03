@@ -17,6 +17,24 @@ use stdClass;
  */
 class WPFactoryCogsProviderTest extends AbstractWPUnitTestWithOptionIsolationAndSafeFiltering
 {
+
+	public function setUp(): void
+	{
+		parent::setUp();
+
+		if ( ! function_exists( 'alg_wc_cog' ) ) {
+			function alg_wc_cog() {
+				$ret = new stdClass();
+				$ret->core = new stdClass();
+				$ret->core->products = new class {
+					public function get_product_cost($p) {
+						return $p->get_cogs_total_value();
+					}
+				};
+				return $ret;
+			}
+		}
+	}
 	public function test_given_no_cogs_providers_available_when_calculate_method_called_then_false_is_returned() {
 		$reflection = new \ReflectionClass( WPFactoryCogsProvider::class );
 		$reflection->setStaticPropertyValue('is_available', true);
@@ -39,18 +57,6 @@ class WPFactoryCogsProviderTest extends AbstractWPUnitTestWithOptionIsolationAnd
 		$product = $this->createMock( WC_Product::class );
 		$product->method( 'get_cogs_total_value' )->willReturn( 10.0 );
 		
-		if ( ! function_exists( 'alg_wc_cog' ) ) {
-			function alg_wc_cog() {
-				$ret = new stdClass();
-				$ret->core = new stdClass();
-				$ret->core->products = new class {
-					public function get_product_cost($p) {
-						return $p->get_cogs_total_value();
-					}
-				};
-				return $ret;
-			}
-		}
 		$instance = new WPFactoryCogsProvider();
 
 		$value = $instance->get_cogs_value($product);
