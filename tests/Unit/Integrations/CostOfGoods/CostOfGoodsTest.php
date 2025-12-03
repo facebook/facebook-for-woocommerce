@@ -58,8 +58,6 @@ class CostOfGoodsTest extends AbstractWPUnitTestWithOptionIsolationAndSafeFilter
 		$cogs_provider_mock = $this->createMock( AbstractCogsProvider::class );
 		$cogs_provider_mock->expects($this->exactly($product1))->method('get_cogs_value')->willReturn( 10 );
 		$cogs_provider_mock->expects($this->exactly($product2))->method('get_cogs_value')->willReturn( 20 );
-		// $cogs_provider_mock->method( 'get_cogs_value' )->with($product1)->willReturn( 10 );
-		// $cogs_provider_mock->method( 'get_cogs_value' )->with($product2)->willReturn( 20 );
 		
 		// Patch get_cogs_providers to return our mock
 		$reflection = new \ReflectionClass( CostOfGoods::class );
@@ -71,11 +69,13 @@ class CostOfGoodsTest extends AbstractWPUnitTestWithOptionIsolationAndSafeFilter
 
 	public function test_given_cogs_provider_available_when_multiple_products_provided_but_one_does_not_have_cogs_then_false_is_returned() {
 		$product1 = $this->createMock(stdClass::class);
+		$product1->method('get_cogs_total_value')->willReturn(10);
 		$product2 = $this->createMock(stdClass::class);
-
+		$product2->method('get_cogs_total_value')->willReturn(0);
+		
 		$cogs_provider_mock = $this->createMock( AbstractCogsProvider::class );
-		$cogs_provider_mock->method( 'get_cogs_value' )->with($product1)->willReturn( 10 );
-		$cogs_provider_mock->method( 'get_cogs_value' )->with($product2)->willReturn( 0 );
+		$cogs_provider_mock->expects($this->exactly($product1))->method('get_cogs_value')->willReturn( 10 );
+		$cogs_provider_mock->expects($this->exactly($product2))->method('get_cogs_value')->willReturn( 0 );
 		
 		// Patch get_cogs_providers to return our mock
 		$reflection = new \ReflectionClass( CostOfGoods::class );

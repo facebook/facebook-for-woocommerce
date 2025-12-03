@@ -61,7 +61,7 @@ class WooCCogsProviderTest extends AbstractWPUnitTestWithOptionIsolationAndSafeF
 		$reflection->setStaticPropertyValue('is_available', true);
 		$instance = $reflection->newInstance();
 
-		$value = $instance->get_cogs_total_value($product);
+		$value = $instance->get_cogs_value($product);
 		$this->assertEqual(10, $value);
 	}
 
