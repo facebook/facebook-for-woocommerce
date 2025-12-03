@@ -52,22 +52,19 @@ test.describe('Facebook for WooCommerce - Product Creation E2E Tests', () => {
 
       // Click on Inventory tab
       await page.click('li.inventory_tab a');
-      await page.waitForTimeout(1000); // Wait for tab content to load
 
       // Set SKU to ensure unique retailer ID
       const skuField = page.locator('#_sku');
-      if (await skuField.isVisible({ timeout: 10000 })) {
-        const uniqueSku = generateUniqueSKU('simple');
-        await skuField.fill(uniqueSku);
-        console.log(`✅ Set unique SKU: ${uniqueSku}`);
-      }
+      await skuField.waitFor({ state: 'visible', timeout: 10000 });
+      const uniqueSku = generateUniqueSKU('simple');
+      await skuField.fill(uniqueSku);
+      console.log(`✅ Set unique SKU: ${uniqueSku}`);
 
       // Set regular price
       const regularPriceField = page.locator('#_regular_price');
-      if (await regularPriceField.isVisible({ timeout: 10000 })) {
-        await regularPriceField.fill('19.99');
-        console.log('✅ Set regular price');
-      }
+      await regularPriceField.waitFor({ state: 'visible', timeout: 10000 });
+      await regularPriceField.fill('19.99');
+      console.log('✅ Set regular price');
 
       // Look for Facebook-specific fields if plugin is active
       try {
@@ -160,75 +157,63 @@ test.describe('Facebook for WooCommerce - Product Creation E2E Tests', () => {
       // Step 5: Add attributes
       // Go to Attributes tab
       await page.click('li.attribute_tab a[href="#product_attributes"]');
-      await page.waitForTimeout(2000);
+      await page.locator('input.attribute_name[name="attribute_names[0]"]').waitFor({ state: 'visible', timeout: 10000 });
       // Add name & value
       await page.fill('input.attribute_name[name="attribute_names[0]"]', 'Color');
       await page.fill('textarea[name="attribute_values[0]"]', 'Red|Blue|Green');
       // Use tab to enable Save Attributes button
       await page.locator('#product_attributes .woocommerce_attribute textarea[name^="attribute_values"]').press('Tab');
       await page.click('button.save_attributes.button-primary');
-      await page.waitForTimeout(5000);
+      await page.waitForFunction(() => {
+        return document.querySelector('.woocommerce_attribute.wc-metabox.postbox.closed') !== null;
+      }, { timeout: 5000 });
       console.log('✅ Saved attributes');
 
       // Step 6: Generate variations
       // Go to Variations tab
       await page.click('a[href="#variable_product_options"]');
-      await page.waitForTimeout(2000);
       // Click "Generate variations" button
+      await page.locator('button.generate_variations').waitFor({ state: 'visible', timeout: 10000 });
       await page.click('button.generate_variations');
-      await page.waitForTimeout(8000);
+      // Wait until at least one variation is present
+      await page.waitForFunction(() => {
+        return document.querySelectorAll('.woocommerce_variation').length === 3;
+      }, { timeout: 15000 });
       // Verify variations were created
       const variationsCount = await page.locator('.woocommerce_variation').count();
+      expect(variationsCount).toBe(3);
       console.log(`✅ Generated ${variationsCount} variations`);
 
-      if (variationsCount > 0) {
-        // Step 7: Set prices for variations
-        // Click "Add price" button first
-        const addPriceBtn = page.locator('button.add_price_for_variations');
-        await addPriceBtn.waitFor({ state: 'visible', timeout: 10000 });
-        await addPriceBtn.click();
-        console.log('✅ Clicked "Add price" button');
+      // Step 7: Set prices for variations
+      // Click "Add price" button first
+      const addPriceBtn = page.locator('button.add_price_for_variations');
+      await addPriceBtn.waitFor({ state: 'visible', timeout: 10000 });
+      await addPriceBtn.click();
+      console.log('✅ Clicked "Add price" button');
 
-        // Wait for price input field to appear
-        await page.waitForTimeout(2000);
+      // Add bulk price
+      const priceInput = page.locator('input.components-text-control__input.wc_input_variations_price');
+      await priceInput.waitFor({ state: 'visible', timeout: 10000 });
+      await priceInput.click();        // ✅ Focus the field
+      await priceInput.clear();        // ✅ Clear existing content
+      await priceInput.pressSequentially('29.99', { delay: 100 }); // ✅ Type with delays = triggers all JS events
 
-        // Add bulk price
-        const priceInput = page.locator('input.components-text-control__input.wc_input_variations_price');
-        await priceInput.waitFor({ state: 'visible', timeout: 10000 });
-        await priceInput.click();        // ✅ Focus the field
-        await priceInput.clear();        // ✅ Clear existing content
-        await priceInput.type('29.99', { delay: 100 }); // ✅ Type with delays = triggers all JS events
+      // Click "Add prices" button to apply the price
+      const addPricesBtn = page.locator('button.add_variations_price_button.button-primary');
+      await addPricesBtn.waitFor({ state: 'visible', timeout: 10000 });
+      await addPricesBtn.click();
+      console.log('✅ Bulk price added successfully');
 
-        // Click "Add prices" button to apply the price
-        const addPricesBtn = page.locator('button.add_variations_price_button.button-primary');
-        await addPricesBtn.waitFor({ state: 'visible', timeout: 10000 });
-        await addPricesBtn.click();
-        await page.waitForTimeout(3000);
-        console.log('✅ Bulk price added successfully');
-      }
-
-      //  Step 8: Publish product
-      await page.click('#publish');
-      await page.waitForTimeout(5000);
-      // Verify success
-      const pageContent = await page.content();
-      expect(pageContent).not.toContain('Fatal error');
-      expect(pageContent).not.toContain('Parse error');
-
-      console.log('✅ Variable product created successfully!');
+      await publishProduct(page);
+      await checkForPhpErrors(page);
 
       // Extract product ID from URL after publish
       const currentUrl = page.url();
       productId = extractProductIdFromUrl(currentUrl);
 
-      // Verify no PHP fatal errors
-      await checkForPhpErrors(page);
-
       // Validate sync to Meta catalog and fields from Meta
       const result = await validateFacebookSync(productId, productName, 5, 8);
       expect(result['success']).toBe(true);
-
-      // await waitForManualInspection(page);
 
       logTestEnd(testInfo, true);
 
@@ -421,6 +406,7 @@ test.describe('Facebook for WooCommerce - Product Creation E2E Tests', () => {
     let simpleProductId = null;
     let variableProductId = null;
     let compositeProductId = null;
+    // Notice the Unicode horizontal ellipsis (U+2026) at the end, which is a single character ("…") instead of three periods ("..."). This is commonly used in UI text to indicate continuation or expectation.
     const hintText = 'Search for a product…';
     try {
       console.log('📦 Creating test components...');
