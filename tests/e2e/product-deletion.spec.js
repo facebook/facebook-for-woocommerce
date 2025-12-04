@@ -67,11 +67,11 @@ test.describe('Facebook for WooCommerce - Product Deletion E2E Tests', () => {
       console.log('📋 Navigating to Products page...');
       await page.goto(`${baseURL}/wp-admin/edit.php?post_type=product`, {
         waitUntil: 'domcontentloaded',
-        timeout: TIMEOUTS.NAVIGATION
+        timeout: TIMEOUTS.MAX
       });
 
       // Wait for products table to load
-      const hasProductsTable = await page.locator('.wp-list-table').isVisible({ timeout: TIMEOUTS.ELEMENT_LONG });
+      const hasProductsTable = await page.locator('.wp-list-table').isVisible({ timeout: TIMEOUTS.LONG });
       if (!hasProductsTable) {
         throw new Error('Products table not found');
       }
@@ -129,7 +129,7 @@ test.describe('Facebook for WooCommerce - Product Deletion E2E Tests', () => {
       console.log('✅ Clicked Apply button');
 
       // Wait for the page to reload after bulk action
-      await page.waitForLoadState('networkidle', { timeout: TIMEOUTS.NAVIGATION });
+      await page.waitForLoadState('networkidle', { timeout: TIMEOUTS.MAX });
       console.log('✅ Products moved to trash');
 
       // Navigate to Marketing > Facebook > Troubleshooting
@@ -138,7 +138,7 @@ test.describe('Facebook for WooCommerce - Product Deletion E2E Tests', () => {
       // First, navigate to Marketing > Facebook page
       await page.goto(`${baseURL}/wp-admin/admin.php?page=wc-facebook`, {
         waitUntil: 'domcontentloaded',
-        timeout: TIMEOUTS.NAVIGATION
+        timeout: TIMEOUTS.MAX
       });
       console.log('✅ Navigated to Facebook page');
 
@@ -146,10 +146,10 @@ test.describe('Facebook for WooCommerce - Product Deletion E2E Tests', () => {
       console.log('🔍 Looking for Troubleshooting tab...');
       const troubleshootingTab = page.locator('a:has-text("Troubleshooting"), button:has-text("Troubleshooting")');
 
-      if (await troubleshootingTab.isVisible({ timeout: TIMEOUTS.ELEMENT_LONG })) {
+      if (await troubleshootingTab.isVisible({ timeout: TIMEOUTS.LONG })) {
         await troubleshootingTab.click();
         console.log('✅ Clicked Troubleshooting tab');
-        await page.waitForTimeout(TIMEOUTS.WAIT_MEDIUM);
+        await page.waitForTimeout(TIMEOUTS.NORMAL);
       }
       else {
         console.warn('⚠️ Troubleshooting tab not found');
@@ -159,12 +159,12 @@ test.describe('Facebook for WooCommerce - Product Deletion E2E Tests', () => {
       console.log('🔄 Looking for Product Data Sync "Sync now" button...');
       const syncNowButton = page.locator('#woocommerce-facebook-settings-sync-products');
 
-      if (await syncNowButton.isVisible({ timeout: TIMEOUTS.ELEMENT_LONG })) {
+      if (await syncNowButton.isVisible({ timeout: TIMEOUTS.LONG })) {
         await syncNowButton.click();
         console.log('✅ Clicked "Sync now" button');
 
         // Wait for sync to process
-        await page.waitForTimeout(TIMEOUTS.WAIT_LONG);
+        await page.waitForTimeout(TIMEOUTS.MEDIUM);
         console.log('✅ Sync initiated');
       } else {
         console.warn('⚠️ "Sync now" button not found');
@@ -290,12 +290,12 @@ test.describe('Facebook for WooCommerce - Product Deletion E2E Tests', () => {
       console.log('📋 Navigating to Products > All Products page...');
       await page.goto(`${baseURL}/wp-admin/edit.php?post_type=product`, {
         waitUntil: 'domcontentloaded',
-        timeout: TIMEOUTS.NAVIGATION
+        timeout: TIMEOUTS.MAX
       });
 
       // Wait for products table to load
       const productsTable = await page.locator('.wp-list-table');
-      await productsTable.waitFor({ state: 'visible', timeout: TIMEOUTS.ELEMENT_LONG });
+      await productsTable.waitFor({ state: 'visible', timeout: TIMEOUTS.LONG });
       console.log('✅ Products page loaded successfully');
 
       // Mark the checkboxes of products with attribute "Synced to Meta catalog" set to "Synced"
@@ -350,13 +350,13 @@ test.describe('Facebook for WooCommerce - Product Deletion E2E Tests', () => {
       console.log('✅ Clicked Apply button');
 
       // Wait for bulk edit panel to appear
-      await page.waitForSelector('.inline-edit-row', { timeout: TIMEOUTS.ELEMENT_LONG });
+      await page.waitForSelector('.inline-edit-row', { timeout: TIMEOUTS.LONG });
       console.log('✅ Bulk edit panel opened');
 
       // Change "Sync to Meta catalog" to "Do not sync"
       console.log('🔧 Changing "Sync to Meta catalog" to "Do not sync"...');
       const facebookSyncField = page.locator('.facebook_bulk_sync_options');
-      await facebookSyncField.waitFor({ state: 'visible', timeout: TIMEOUTS.ELEMENT_LONG });
+      await facebookSyncField.waitFor({ state: 'visible', timeout: TIMEOUTS.LONG });
       await facebookSyncField.selectOption('bulk_edit_delete');
       console.log('✅ Set sync mode to "Do not sync"');
 
@@ -367,7 +367,7 @@ test.describe('Facebook for WooCommerce - Product Deletion E2E Tests', () => {
       console.log('✅ Clicked Update button');
 
       // Wait for the page to reload after bulk action
-      await page.waitForLoadState('domcontentloaded', { timeout: TIMEOUTS.NAVIGATION });
+      await page.waitForLoadState('domcontentloaded', { timeout: TIMEOUTS.MAX });
       console.log('✅ Bulk edit completed');
 
       // Validate that "Synced to Meta catalog" is updated to "Not synced"
