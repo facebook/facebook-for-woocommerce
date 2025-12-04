@@ -26,7 +26,7 @@ class WooCCogsProvider extends AbstractCogsProvider {
 	const INTEGRATION_NAME = 'WooCommerce Cost of Goods';
 
 	/** @var bool to cache whether this provider is available. */
-	private static $is_available = null;
+	private static $is_cogs_available = null;
 
 	public function __construct() {
 
@@ -44,38 +44,20 @@ class WooCCogsProvider extends AbstractCogsProvider {
 	public static function is_available() {
 
 		$func = function () {
-			// if ( ! \WC_Facebookcommerce_Utils::is_woocommerce_integration() ) {
-			// 	return 1;
-			// }
-
-			// if ( wc_get_container()->get( 'Automattic\WooCommerce\Internal\Features\FeaturesController' )->feature_is_enabled( 'cost_of_goods_sold' ) ) {
-			// 	return 2;
-			// } else {
-			// 	return 3;
-			// }
-
-			if ( function_exists( 'wc_get_container' ) && class_exists( 'Automattic\WooCommerce\Internal\Features\FeaturesController' ) ) {
-				// return wc_get_container()->get( 'Automattic\WooCommerce\Internal\Features\FeaturesController' )->feature_is_enabled( 'cost_of_goods_sold' );
-				if ( wc_get_container()->get( 'Automattic\WooCommerce\Internal\Features\FeaturesController' )->feature_is_enabled( 'cost_of_goods_sold' ) ) {
-					return 2;
-				} else {
-					return 3;
-				}
-			} else {
-				return 4;
+			if ( ! \WC_Facebookcommerce_Utils::is_woocommerce_integration() ) {
+				return false;
 			}
 
-			// if ( function_exists( 'get_option' ) && ( 'yes' === get_option( 'woocommerce_feature_cost_of_goods_sold_enabled' ) ) ){
-			// 	return 4;
-			// } else {
-			// 	return 5;
-			// }
-			return 6;
+			if ( function_exists( 'wc_get_container' ) && class_exists( 'Automattic\WooCommerce\Internal\Features\FeaturesController' ) ) {
+				return wc_get_container()->get( 'Automattic\WooCommerce\Internal\Features\FeaturesController' )->feature_is_enabled( 'cost_of_goods_sold' );
+			} 
+
+			return function_exists( 'get_option' ) && ( 'yes' === get_option( 'woocommerce_feature_cost_of_goods_sold_enabled' ) );
 		};
 
-		if ( null === self::$is_available ) {
-			self::$is_available = $func();
+		if ( null === self::$is_cogs_available ) {
+			self::$is_cogs_available = $func();
 		}
-		return $func();
+		return self::$is_cogs_available;
 	}
 }
