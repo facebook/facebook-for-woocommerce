@@ -536,7 +536,7 @@ test.describe('Facebook for WooCommerce - Product Creation E2E Tests', () => {
     }
   });
 
-  test.only('Create category and sync products to catalog as set', async ({ page }, testInfo) => {
+  test('Create category and sync products to catalog as set', async ({ page }, testInfo) => {
     let product1Id = null;
     let product2Id = null;
     let categoryId = null;
@@ -551,7 +551,7 @@ test.describe('Facebook for WooCommerce - Product Creation E2E Tests', () => {
           stock: '10'
         }),
         createTestProduct({
-          productType: 'simple',
+          productType: 'variable',
           price: '34.99',
           stock: '15'
         })
@@ -568,10 +568,7 @@ test.describe('Facebook for WooCommerce - Product Creation E2E Tests', () => {
       console.log('✅ Navigated to Categories page');
 
       // Generate unique category name
-      const now = new Date();
-      const timestamp = now.toISOString().replace(/[:.]/g, '-').slice(0, 19);
-      const runId = process.env.GITHUB_RUN_ID || 'local';
-      const categoryName = `Test Category E2E ${timestamp}-${runId}`;
+      const categoryName = generateUniqueSKU('Category');
       const categoryDescription = 'This is a test category for E2E testing';
 
       // Enter category data
@@ -591,10 +588,6 @@ test.describe('Facebook for WooCommerce - Product Creation E2E Tests', () => {
       await addCategoryBtn.click();
       await page.waitForLoadState('domcontentloaded');
       console.log('✅ Clicked Add new category button');
-
-      // Wait for success message and extract category ID
-      const successMessage = page.locator('.notice-success, #message');
-      await successMessage.waitFor({ state: 'visible', timeout: 10000 });
 
       // Extract category ID from the page
       const categoryRow = page.locator(`tr:has-text("${categoryName}")`).first();
@@ -655,13 +648,34 @@ test.describe('Facebook for WooCommerce - Product Creation E2E Tests', () => {
       // verify that the products are still synced and belong to the category
       const [product1Result, product2Result, categoryResult] = await Promise.all([
         validateFacebookSync(product1Id, product1.productName, 5),
-        validateFacebookSync(product2Id, product2.productName, 5),
+        validateFacebookSync(product2Id, product2.productName, 5, 8),
         validateCategorySync(categoryId, categoryName, 5)
       ]);
 
+      expect(categoryResult['success']).toBe(true);
+      console.log(categoryResult['raw_data']['facebook_data']);
+      console.log('✅ Category sync validated');
       expect(product1Result['success']).toBe(true);
+      console.log(product1Result['raw_data']['facebook_data'][0]['product_sets']);
+      const isProduct1InCorrectProductSet = product1Result['raw_data']['facebook_data'][0]['product_sets'].some(
+        set => {
+          return Number(categoryId) === Number(set.retailer_id) && Number(set.id) === Number(categoryResult['facebook_product_set_id'])
+        }
+      );
+      expect(isProduct1InCorrectProductSet).toBe(true);
       console.log('✅ Product 1 sync validated');
       expect(product2Result['success']).toBe(true);
+      const isProduct2InCorrectProductSet = product2Result['raw_data']['facebook_data'].some(
+        product => {
+          return product['product_sets'].some(
+            set => {
+              console.log(set);
+              return Number(categoryId) === Number(set.retailer_id) && Number(set.id) === Number(categoryResult['facebook_product_set_id'])
+            }
+          )
+        }
+      );
+      expect(isProduct2InCorrectProductSet).toBe(true);
       console.log('✅ Product 2 sync validated');
 
       await page.goto(`${baseURL}/wp-admin/post.php?post=${product1Id}&action=edit`, {

@@ -285,7 +285,7 @@ class FacebookSyncValidator {
 
         $api = facebook_for_woocommerce()->get_api();
         $catalog_id = $this->integration->get_product_catalog_id();
-        $fields = 'id,name,price,description,availability,retailer_id,condition,brand,color,size,image_url,product_group{id},product_sets{id}';
+        $fields = 'id,name,price,description,availability,retailer_id,condition,brand,color,size,image_url,product_group{id},product_sets{id,retailer_id}';
 
         $retry_count = 0;
 
@@ -314,6 +314,7 @@ class FacebookSyncValidator {
                         'size' => $fb_data['size'] ?? '',
                         'image_url' => (!empty($fb_data['image_url'])) ? $fb_data['image_url'] : ($wp_url . '/wp-content/uploads/woocommerce-placeholder.webp'),
                         'product_group_id' => $fb_data['product_group']['id'] ?? null,
+                        'product_sets' => $fb_data['product_sets']['data'],
                         'found' => true
                     ];
                 }
