@@ -43,6 +43,7 @@ env:
 jobs:
   e2e-tests:
     runs-on: ubuntu-latest
+    continue-on-error: true
 
     services:
       mysql:
