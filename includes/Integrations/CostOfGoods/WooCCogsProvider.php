@@ -26,22 +26,17 @@ class WooCCogsProvider extends AbstractCogsProvider {
 	const INTEGRATION_NAME = 'WooCommerce Cost of Goods';
 
 	/** @var bool to cache whether this provider is available. */
-	private static $is_cogs_available = null;
+	private $is_cogs_available = null;
 
-	public function __construct() {
-
+	public function get_cogs_value( $product ) {
 		if ( ! self::is_available() ) {
 			throw new IntegrationIsNotAvailableException( self::INTEGRATION_NAME );
 		}
-	}
-
-	public function get_cogs_value( $product ) {
-
 		// We must use cogs_total as that'll have the correct value for Simple & Variable products
 		return $product->get_cogs_total_value();
 	}
 
-	public static function is_available() {
+	public function is_available(): bool {
 
 		$func = function () {
 			if ( ! \WC_Facebookcommerce_Utils::is_woocommerce_integration() ) {
@@ -55,9 +50,9 @@ class WooCCogsProvider extends AbstractCogsProvider {
 			return function_exists( 'get_option' ) && ( 'yes' === get_option( 'woocommerce_feature_cost_of_goods_sold_enabled' ) );
 		};
 
-		if ( null === self::$is_cogs_available ) {
-			self::$is_cogs_available = $func();
+		if ( null === $this->is_cogs_available ) {
+			$this->is_cogs_available = $func();
 		}
-		return self::$is_cogs_available;
+		return $this->is_cogs_available;
 	}
 }

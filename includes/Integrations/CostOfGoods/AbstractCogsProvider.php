@@ -20,9 +20,7 @@ defined( 'ABSPATH' ) || exit;
 abstract class AbstractCogsProvider {
 	const INTEGRATION_NAME = '';
 
-	public static function is_available() {
-		return false;
-	}
+	public abstract function is_available() : bool;
 
 	abstract public function get_cogs_value( $product );
 }

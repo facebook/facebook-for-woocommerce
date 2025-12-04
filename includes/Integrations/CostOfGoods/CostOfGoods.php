@@ -63,8 +63,9 @@ class CostOfGoods {
 			self::$available_integrations = array();
 			foreach ( self::get_supported_integrations() as $integration => $class_name ) {
 				$class = 'WooCommerce\\Facebook\\Integrations\\CostOfGoods\\' . $class_name;
-				if ( $class::is_available() ) {
-					self::$available_integrations[] = new $class();
+				$instance = new $class();
+				if ( $instance->is_available() ) {
+					self::$available_integrations[] = $instance;
 				}
 			}
 			self::$already_fetched = true;
