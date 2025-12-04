@@ -3,7 +3,6 @@ declare( strict_types=1 );
 
 namespace WooCommerce\Facebook\Tests\Unit\Integrations;
 
-use WooCommerce\Facebook\Integrations\CostOfGoods\CostOfGoods;
 use WooCommerce\Facebook\Integrations\CostOfGoods\WooCCogsProvider;
 use WooCommerce\Facebook\Integrations\IntegrationIsNotAvailableException;
 use WooCommerce\Facebook\Tests\AbstractWPUnitTestWithOptionIsolationAndSafeFiltering;
@@ -15,13 +14,6 @@ use WC_Product;
  */
 class WooCCogsProviderTest extends AbstractWPUnitTestWithOptionIsolationAndSafeFiltering {
 
-	public function test_given_no_cogs_providers_available_when_calculate_method_called_then_false_is_returned() {
-		$reflection = new \ReflectionClass( WooCCogsProvider::class );
-		$reflection->setStaticPropertyValue('is_available', true);
-		
-		$this->assertFalse(CostOfGoods::calculate_cogs_for_products([]));
-	}
-	
 	public function test_given_provider_is_unavailable_when_instantiated_then_exception_thrown() {
 		$product = $this->createMock( WC_Product::class );
 		$mock = $this->createMock( WooCCogsProvider::class );

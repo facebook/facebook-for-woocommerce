@@ -20,14 +20,14 @@ defined( 'ABSPATH' ) || exit;
 class CostOfGoods {
 
 	/** @var array to cache the available cogs integrations. */
-	private static $available_integrations = array();
+	private $available_integrations = array();
 
 	/** @var bool to cache whether provider availability has been evaluated or not. */
-	private static $already_fetched = false;
+	private $already_fetched = false;
 
-	public static function calculate_cogs_for_products( $products ) {
+	public function calculate_cogs_for_products( $products ) {
 
-		if ( ! self::is_cogs_provider_available() ) {
+		if ( ! $this->is_cogs_provider_available() ) {
 			return false;
 		}
 
@@ -38,7 +38,7 @@ class CostOfGoods {
 		$order_cogs = 0;
 		foreach ( $products as $product ) {
 
-			$cogs = self::get_cogs_for_product( $product );
+			$cogs = $this->get_cogs_for_product( $product );
 
 			// If cogs was 0 for one product, the value is invalid for the order
 			if ( ! $cogs || $cogs < 0 ) {
@@ -50,7 +50,7 @@ class CostOfGoods {
 		return $order_cogs;
 	}
 
-	public static function get_supported_integrations() {
+	public function get_supported_integrations() {
 
 		return array(
 			'WooC'      => 'WooCCogsProvider',
@@ -58,24 +58,24 @@ class CostOfGoods {
 		);
 	}
 
-	private static function get_cogs_providers() {
-		if ( ! self::$already_fetched ) {
-			self::$available_integrations = array();
-			foreach ( self::get_supported_integrations() as $integration => $class_name ) {
+	private function get_cogs_providers() {
+		if ( ! $this->already_fetched ) {
+			$this->available_integrations = array();
+			foreach ( $this->get_supported_integrations() as $integration => $class_name ) {
 				$class = 'WooCommerce\\Facebook\\Integrations\\CostOfGoods\\' . $class_name;
 				$instance = new $class();
 				if ( $instance->is_available() ) {
-					self::$available_integrations[] = $instance;
+					$this->available_integrations[] = $instance;
 				}
 			}
-			self::$already_fetched = true;
+			$this->already_fetched = true;
 		}
-		return self::$available_integrations;
+		return $this->available_integrations;
 	}
 
-	private static function get_cogs_for_product( $product ) {
+	private function get_cogs_for_product( $product ) {
 
-		$cogs_providers = self::get_cogs_providers();
+		$cogs_providers = $this->get_cogs_providers();
 		foreach ( $cogs_providers as $provider ) {
 			$cogs = $provider->get_cogs_value( $product );
 			if ( is_numeric( $cogs ) && $cogs > 0 ) {
@@ -86,7 +86,7 @@ class CostOfGoods {
 		return false;
 	}
 
-	private static function is_cogs_provider_available() {
-		return count( self::get_cogs_providers() ) > 0;
+	private function is_cogs_provider_available() {
+		return count( $this->get_cogs_providers() ) > 0;
 	}
 }

@@ -20,6 +20,7 @@ defined( 'ABSPATH' ) || exit;
 abstract class AbstractCogsProvider {
 	const INTEGRATION_NAME = '';
 
+	/** @var ?bool to cache the availablity of this integration. */
 	private $is_cogs_available = null;
 
 	abstract protected function get_availability(): bool;

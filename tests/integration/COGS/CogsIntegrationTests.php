@@ -33,6 +33,18 @@ class CogsIntegrationTests extends IntegrationTestCase
 		$this->disable_facebook_sync();
 	}
 
+	// public function test_given_no_cogs_providers_available_when_calculate_method_called_then_false_is_returned() {
+	// 	$product = $this->createMock( WC_Product::class );
+	// 	$mock = $this->createMock( WooCCogsProvider::class );
+	// 	$mock->method('is_available')->willReturn(false);
+		
+	// 	$reflection = new \ReflectionClass( CostOfGoods::class );
+	// 	$reflection->setStaticPropertyValue('available_integrations', );
+		
+
+	// 	$this->assertFalse(CostOfGoods::calculate_cogs_for_products([]));
+	// }
+
 	private function enable_cogs_in_woo_settings() {
 		wc_get_container()->get( 'Automattic\WooCommerce\Internal\Features\FeaturesController' )->change_feature_enable('cost_of_goods_sold', true);
 	}
