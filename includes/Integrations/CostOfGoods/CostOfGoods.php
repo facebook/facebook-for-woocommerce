@@ -28,34 +28,21 @@ class CostOfGoods {
 	public static function calculate_cogs_for_products( $products ) {
 
 		if ( ! self::is_cogs_provider_available() ) {
-			// return false;
-			return 1;
+			return false;
 		}
 
 		if ( empty( $products ) ) {
-			// return false;
-			return 2;
-		}
-
-		if (count( self::get_cogs_providers() ) == 0) {
-			return 4;
-		}
-
-		if (count(self::$available_integrations ) != count( self::get_cogs_providers() ) ) {
-			return 5;
+			return false;
 		}
 
 		$order_cogs = 0;
 		foreach ( $products as $product ) {
 
 			$cogs = self::get_cogs_for_product( $product );
-			if ($cogs == -1) {
-				return 6;
-			}
+
 			// If cogs was 0 for one product, the value is invalid for the order
 			if ( ! $cogs || $cogs < 0 ) {
-				return 3;
-				// return false;
+				return false;
 			}
 			$order_cogs += $cogs;
 		}
@@ -88,18 +75,13 @@ class CostOfGoods {
 	private static function get_cogs_for_product( $product ) {
 
 		$cogs_providers = self::get_cogs_providers();
-		$test = false;
 		foreach ( $cogs_providers as $provider ) {
-			$test = true;
 			$cogs = $provider->get_cogs_value( $product );
 			if ( is_numeric( $cogs ) && $cogs > 0 ) {
 				return $cogs;
 			}
 		}
 
-		if ( ! $test ) {
-			return -1;
-		}
 		return false;
 	}
 

@@ -39,69 +39,77 @@ class CogsIntegrationTests extends IntegrationTestCase
 
 	private function disable_cogs_in_woo_settings() {}
 
-	public function test_given_cogs_exists_for_product_when_calculate_method_is_called_then_it_returns_correct_value()
+	public function test_given_wooc_cogs_does_not_exist_for_product_when_calculate_method_is_called_then_it_returns_false()
 	{
 		$this->enable_cogs_in_woo_settings();
-
-		$this->assertTrue(WooCCogsProvider::is_available());
+		$this->assertTrue(WooCCogsProvider::is_available(), 'WooC COGS is expected to be enabled');
 
 		$product = $this->create_simple_product();
-		$product->update_meta_data('_cost_of_goods', floatval(100.0));
-		$product->update_meta_data('cogs_value', floatval(200.0));
-		$product->set_cogs_value(450.0);
 		$product->save();
 
-		$this->assertFalse($product->get_cogs_value() == null, 'cogs is not enabled at a product level');
-
-		$this->assertEquals(100.0, $product->get_cogs_total_value());
+		$this->assertEquals(0, $product->get_cogs_total_value(), 'Incorrect value is set for Product WooC COGS');
 
 		$value = CostOfGoods::calculate_cogs_for_products([$product]);
-		$this->assertEquals(100.0, $value);
-	}
-	// public function test_given_cogs_provider_available_when_multiple_products_provided_and_all_have_cogs_then_sum_cogs_is_returned() {
-	// 		$product1 = $this->createMock(WC_Product::class);
-	// 		$product1->method('get_cogs_total_value')->willReturn(10.0);
-	// 		$product2 = $this->createMock(WC_Product::class);
-	// 		$product2->method('get_cogs_total_value')->willReturn(20.0);
-
-	// 		$cogs_provider_mock = $this->createMock( AbstractCogsProvider::class );
-	// 		$cogs_provider_mock->method('get_cogs_value')->willReturn( 10.0 );
-	// 		$cogs_provider_mock->expects($this->exactly($product2))->method('get_cogs_value')->willReturn( 20.0 );
-
-	// 		// Patch get_cogs_providers to return our mock
-	// 		$reflection = new \ReflectionClass( CostOfGoods::class );
-	// 		$reflection->setStaticPropertyValue('available_integrations', [$cogs_provider_mock]);
-	// 		$reflection->setStaticPropertyValue('already_fetched', true);
-
-	// 		$this->assertEquals(30.0, CostOfGoods::calculate_cogs_for_products([$product1, $product2]));
-	// 	}
-
-	// 	public function test_given_cogs_provider_available_when_multiple_products_provided_but_one_does_not_have_cogs_then_false_is_returned() {
-	// 		$product1 = $this->createMock(WC_Product::class);
-	// 		$product1->method('get_cogs_total_value')->willReturn(10.0);
-	// 		$product2 = $this->createMock(WC_Product::class);
-	// 		$product2->method('get_cogs_total_value')->willReturn(0.0);
-
-	// 		$cogs_provider_mock = $this->createMock( AbstractCogsProvider::class );
-	// 		$cogs_provider_mock->expects($this->exactly($product1))->method('get_cogs_value')->willReturn( 10.0 );
-	// 		$cogs_provider_mock->expects($this->exactly($product2))->method('get_cogs_value')->willReturn( 0.0 );
-
-	// 		// Patch get_cogs_providers to return our mock
-	// 		$reflection = new \ReflectionClass( CostOfGoods::class );
-	// 		$reflection->setStaticPropertyValue('available_integrations', [$cogs_provider_mock]);
-	// 		$reflection->setStaticPropertyValue('already_fetched', true);
-
-	// 		$this->assertFalse(CostOfGoods::calculate_cogs_for_products([$product1, $product2]));
-	// 	}
-	public function Given_Cogs_Does_Not_Exist_for_A_Product_When_calculate_method_is_called_Then_it_returns_false()
-	{
-		$this->assertFalse(true);
+		$this->assertEquals(false, $value);
 	}
 
-	public function Given_cogs_doesnt_exist_for_one_product_in_an_order_When_calculate_method_is_called_Then_false_is_returned()
+	public function test_given_wooc_cogs_exists_for_product_when_calculate_method_is_called_then_it_returns_correct_value()
 	{
+		$this->enable_cogs_in_woo_settings();
+		$this->assertTrue(WooCCogsProvider::is_available(), 'WooC COGS is expected to be enabled');
 
-		$this->assertFalse(true);
+		$cogs_value = 100.0;
+
+		$product = $this->create_simple_product();
+		$product->set_cogs_value($cogs_value);
+		$product->save();
+
+		$this->assertEquals($cogs_value, $product->get_cogs_total_value(), 'Incorrect value is set for Product WooC COGS');
+
+		$value = CostOfGoods::calculate_cogs_for_products([$product]);
+		$this->assertEquals($cogs_value, $value);
+	}
+
+	public function test_given_wooc_cogs_provider_available_when_multiple_products_provided_and_all_have_cogs_then_sum_cogs_is_returned() {
+		$this->enable_cogs_in_woo_settings();
+		$this->assertTrue(WooCCogsProvider::is_available(), 'WooC COGS is expected to be enabled');
+
+		$product1_cogs_value = 100.0;
+		$product2_cogs_value = 150.0;
+
+		$product1 = $this->create_simple_product();
+		$product1->set_cogs_value($product1_cogs_value);
+		$product1->save();
+
+		$product2 = $this->create_simple_product();
+		$product2->set_cogs_value($product2_cogs_value);
+		$product2->save();
+
+		$this->assertEquals($product1_cogs_value, $product1->get_cogs_total_value());
+		$this->assertEquals($product2_cogs_value, $product2->get_cogs_total_value());
+
+		$value = CostOfGoods::calculate_cogs_for_products([$product1, $product2]);
+		$this->assertEquals($product1_cogs_value + $product2_cogs_value, $value);
+		}
+
+	public function test_given_wooc_cogs_provider_available_when_multiple_products_provided_but_one_does_not_have_cogs_then_false_is_returned() {
+		$this->enable_cogs_in_woo_settings();
+		$this->assertTrue(WooCCogsProvider::is_available(), 'WooC COGS is expected to be enabled');
+
+		$product1_cogs_value = 100.0;
+		
+		$product1 = $this->create_simple_product();
+		$product1->set_cogs_value($product1_cogs_value);
+		$product1->save();
+
+		$product2 = $this->create_simple_product();
+		$product2->save();
+
+		$this->assertEquals($product1_cogs_value, $product1->get_cogs_total_value(), 'Incorrect value is set for Product WooC COGS');
+		$this->assertEquals(0, $product2->get_cogs_total_value(), 'Incorrect value is set for Product WooC COGS');
+
+		$value = CostOfGoods::calculate_cogs_for_products([$product1, $product2]);
+		$this->assertEquals(false, $value);
 	}
 	/**
 	 * Placeholder. These tests should be added:
