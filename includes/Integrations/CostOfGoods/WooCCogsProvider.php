@@ -45,14 +45,20 @@ class WooCCogsProvider extends AbstractCogsProvider {
 
 		$func = function () {
 			if ( ! \WC_Facebookcommerce_Utils::is_woocommerce_integration() ) {
-				return false;
+				return 1;
 			}
 
 			if ( function_exists( 'wc_get_container' ) && class_exists( 'Automattic\WooCommerce\Internal\Features\FeaturesController' ) ) {
 				return wc_get_container()->get( 'Automattic\WooCommerce\Internal\Features\FeaturesController' )->feature_is_enabled( 'cost_of_goods_sold' );
+			} else {
+				return 2;
 			}
 
-			return function_exists( 'get_option' ) && ( 'yes' === get_option( 'woocommerce_feature_cost_of_goods_sold_enabled' ) );
+			if ( function_exists( 'get_option' ) && ( 'yes' === get_option( 'woocommerce_feature_cost_of_goods_sold_enabled' ) ) ){
+				return true;
+			} else {
+				return 3;
+			}
 		};
 
 		if ( null === self::$is_available ) {
