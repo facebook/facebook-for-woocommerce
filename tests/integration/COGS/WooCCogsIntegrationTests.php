@@ -7,6 +7,7 @@ namespace WooCommerce\Facebook\Tests\Integration\COGS;
 use WooCommerce\Facebook\Tests\Integration\IntegrationTestCase;
 use WooCommerce\Facebook\Integrations\CostOfGoods\WooCCogsProvider;
 use WooCommerce\Facebook\Integrations\CostOfGoods\CostOfGoods;
+use WooCommerce\Facebook\Integrations\IntegrationIsNotAvailableException;
 use WC_Product_Variation;
 use WC_Product_Variable;
 
@@ -35,8 +36,11 @@ class WooCCogsIntegrationTests extends IntegrationTestCase
 
 	public function test_given_wooc_cogs_is_disabled_when_wooc_provider_is_available_called_then_it_returns_false() {
 		$this->disable_cogs_in_woo_settings();
-		$this->assertFalse((new WooCCogsProvider())->is_available(), 'WooC COGS is expected to be disabled');
+		$instance = new WooCCogsProvider();
+		$this->assertFalse($instance->is_available(), 'WooC COGS is expected to be disabled');
 		$this->assertFalse(function_exists( 'get_option' ) && ( 'yes' === get_option( 'woocommerce_feature_cost_of_goods_sold_enabled' ) ), 'woocommerce_feature_cost_of_goods_sold_enabled is expected to be disabled');
+		$this->expectException(IntegrationIsNotAvailableException::class);
+		$instance->get_cogs_value($this->create_simple_product());
 	}
 
 	public function test_given_wooc_cogs_is_enabled_when_wooc_provider_is_available_called_then_it_returns_true() {
