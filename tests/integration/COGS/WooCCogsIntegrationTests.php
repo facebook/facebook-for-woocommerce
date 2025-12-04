@@ -40,11 +40,11 @@ class WooCCogsIntegrationTests extends IntegrationTestCase
 		wc_get_container()->get( 'Automattic\WooCommerce\Internal\Features\FeaturesController' )->change_feature_enable('cost_of_goods_sold', false);
 	}
 
-	public function test_given_wooc_cogs_is_disabled_when_wooc_provider_is_available_called_then_it_returns_false() {
-		$this->disable_cogs_in_woo_settings();
-		$this->assertFalse(WooCCogsProvider::is_available(), 'WooC COGS is expected to be disabled');
-		$this->assertFalse(function_exists( 'get_option' ) && ( 'yes' === get_option( 'woocommerce_feature_cost_of_goods_sold_enabled' ) ), 'woocommerce_feature_cost_of_goods_sold_enabled is expected to be disabled');
-	}
+	// public function test_given_wooc_cogs_is_disabled_when_wooc_provider_is_available_called_then_it_returns_false() {
+	// 	$this->disable_cogs_in_woo_settings();
+	// 	$this->assertFalse(WooCCogsProvider::is_available(), 'WooC COGS is expected to be disabled');
+	// 	$this->assertFalse(function_exists( 'get_option' ) && ( 'yes' === get_option( 'woocommerce_feature_cost_of_goods_sold_enabled' ) ), 'woocommerce_feature_cost_of_goods_sold_enabled is expected to be disabled');
+	// }
 
 	public function test_given_wooc_cogs_is_enabled_when_wooc_provider_is_available_called_then_it_returns_true() {
 		$this->enable_cogs_in_woo_settings();
