@@ -134,6 +134,35 @@ jobs:
           sleep 5
           echo "✅ PHP server started on port 8080"
 
+      - name: Create Facebook Catalog
+        run: |
+          # Install jq if not available
+          if ! command -v jq &> /dev/null; then
+            echo "Installing jq..."
+            sudo apt-get update -qq
+            sudo apt-get install -y jq
+          fi
+
+          echo "Creating Facebook product catalog..."
+          RESPONSE=$(curl -s -X POST \
+            "https://graph.facebook.com/v21.0/${{ secrets.FB_BUSINESS_MANAGER_ID }}/owned_product_catalogs" \
+            -d "name=Test-Catalog" \
+            -d "vertical=commerce" \
+            -d "access_token=${{ secrets.FB_ACCESS_TOKEN_NEW }}" )
+
+          echo "Response: $RESPONSE"
+
+          CATALOG_ID=$(echo "$RESPONSE" | jq -r '.id')
+
+          if [ -z "$CATALOG_ID" ] || [ "$CATALOG_ID" = "null" ]; then
+            echo "❌ Failed to create catalog or extract catalog ID"
+            echo "Response: $RESPONSE"
+            exit 1
+          fi
+
+          echo "✅ Created catalog with ID: $CATALOG_ID"
+          echo "FB_PRODUCT_CATALOG_ID=$CATALOG_ID" >> $GITHUB_ENV
+
       - name: Install WP-CLI
         run: |
           echo "=== Installing WP-CLI ==="
@@ -222,11 +251,11 @@ jobs:
           fi
 
           # Configure Facebook connection before activation
-          wp option update wc_facebook_access_token "${{ secrets.FB_ACCESS_TOKEN }}" --allow-root
-          wp option update wc_facebook_merchant_access_token "${{ secrets.FB_ACCESS_TOKEN }}" --allow-root
+          wp option update wc_facebook_access_token "${{ secrets.FB_ACCESS_TOKEN_NEW }}" --allow-root
+          wp option update wc_facebook_merchant_access_token "${{ secrets.FB_ACCESS_TOKEN_NEW }}" --allow-root
           wp option update wc_facebook_business_manager_id "${{ secrets.FB_BUSINESS_MANAGER_ID }}" --allow-root
           wp option update wc_facebook_external_business_id "${{ secrets.FB_EXTERNAL_BUSINESS_ID }}" --allow-root
-          wp option update wc_facebook_product_catalog_id "${{ secrets.FB_PRODUCT_CATALOG_ID }}" --allow-root
+          wp option update wc_facebook_product_catalog_id "${{ env.FB_PRODUCT_CATALOG_ID }}" --allow-root
           wp option update wc_facebook_pixel_id "${{ secrets.FB_PIXEL_ID }}" --allow-root
           wp option update wc_facebook_enable_server_to_server "yes" --allow-root
           wp option update wc_facebook_enable_pixel "yes" --allow-root
@@ -465,3 +494,28 @@ jobs:
           name: test-failures
           path: ${{ env.PLUGIN_PATH }}/test-results/
           retention-days: 7
+
+      - name: Cleanup - Delete Facebook Catalog
+        if: always()
+        run: |
+          if [ -z "${{ env.FB_PRODUCT_CATALOG_ID }}" ]; then
+            echo "⚠️ No catalog ID found, skipping cleanup"
+            exit 0
+          fi
+
+          echo "Deleting test catalog ID: ${{ env.FB_PRODUCT_CATALOG_ID }}..."
+          RESPONSE=$(curl -s -X DELETE \
+            "https://graph.facebook.com/v21.0/${{ env.FB_PRODUCT_CATALOG_ID }}?access_token=${{ secrets.FB_ACCESS_TOKEN_NEW }}")
+
+          echo "Response: $RESPONSE"
+
+          SUCCESS=$(echo "$RESPONSE" | jq -r '.success')
+
+          if [ "$SUCCESS" = "true" ]; then
+            echo "✅ Successfully deleted test catalog"
+          else
+            echo "⚠️ Failed to delete catalog or unexpected response"
+            echo "Response: $RESPONSE"
+            # Don't fail the workflow on cleanup errors
+            exit 0
+          fi
