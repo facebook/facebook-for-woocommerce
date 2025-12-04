@@ -401,6 +401,19 @@ class Locale {
 		$language_parts = explode( '_', $locale_code );
 		$language = strtolower( $language_parts[0] );
 
+		// Special cases where WordPress/Polylang language codes don't match Facebook's expected codes
+		// These must be handled BEFORE other mappings
+		$special_mappings = [
+			'nb' => 'no_XX',  // Norwegian Bokmål (nb_NO → no_XX)
+			'nn' => 'no_XX',  // Norwegian Nynorsk (nn_NO → no_XX)
+			'ck' => 'cb_IQ',  // Central Kurdish (ckb → cb_IQ)
+			'ce' => 'cx_PH',  // Cebuano (ceb → cx_PH)
+		];
+
+		if ( isset( $special_mappings[ $language ] ) ) {
+			return $special_mappings[ $language ];
+		}
+
 		// Handle special cases for Chinese FIRST (before generic mappings)
 		// This is critical because we need to distinguish zh_CN from zh_TW
 		if ( 'zh' === $language && isset( $language_parts[1] ) ) {
