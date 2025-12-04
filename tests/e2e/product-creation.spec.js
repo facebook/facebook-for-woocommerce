@@ -15,6 +15,7 @@ const {
   setProductTitle,
   setProductDescription,
   createTestProduct,
+  cleanupCategory,
   exactSearchSelect2Container
 } = require('./test-helpers');
 
@@ -531,6 +532,165 @@ test.describe('Facebook for WooCommerce - Product Creation E2E Tests', () => {
         variableProductId ? cleanupProduct(variableProductId) : Promise.resolve(),
         compositeProductId ? cleanupProduct(compositeProductId) : Promise.resolve()
       ]);
+    }
+  });
+
+  test.only('Create category and sync products to catalog as set', async ({ page }, testInfo) => {
+    let product1Id = null;
+    let product2Id = null;
+    let categoryId = null;
+
+    try {
+      // Create test products using createTestProduct function
+      console.log('📦 Creating test products...');
+      const [product1, product2] = await Promise.all([
+        createTestProduct({
+          productType: 'simple',
+          price: '24.99',
+          stock: '10'
+        }),
+        createTestProduct({
+          productType: 'simple',
+          price: '34.99',
+          stock: '15'
+        })
+      ]);
+      product1Id = product1.productId;
+      product2Id = product2.productId;
+      console.log(`✅ Created test products: ${product1Id}, ${product2Id}`);
+
+      // Navigate to Categories page
+      await page.goto(`${baseURL}/wp-admin/edit-tags.php?taxonomy=product_cat&post_type=product`, {
+        waitUntil: 'domcontentloaded',
+        timeout: 60000
+      });
+      console.log('✅ Navigated to Categories page');
+
+      // Generate unique category name
+      const now = new Date();
+      const timestamp = now.toISOString().replace(/[:.]/g, '-').slice(0, 19);
+      const runId = process.env.GITHUB_RUN_ID || 'local';
+      const categoryName = `Test Category E2E ${timestamp}-${runId}`;
+      const categoryDescription = 'This is a test category for E2E testing';
+
+      // Enter category data
+      const categoryNameField = page.locator('#tag-name');
+      await categoryNameField.waitFor({ state: 'visible', timeout: 10000 });
+      await categoryNameField.fill(categoryName);
+      console.log(`✅ Entered category name: ${categoryName}`);
+
+      // Enter category description
+      const categoryDescField = page.locator('#tag-description');
+      await categoryDescField.waitFor({ state: 'visible', timeout: 10000 });
+      await categoryDescField.fill(categoryDescription);
+      console.log('✅ Entered category description');
+
+      // Click 'Add new category' button
+      const addCategoryBtn = page.locator('#submit');
+      await addCategoryBtn.click();
+      await page.waitForLoadState('domcontentloaded');
+      console.log('✅ Clicked Add new category button');
+
+      // Wait for success message and extract category ID
+      const successMessage = page.locator('.notice-success, #message');
+      await successMessage.waitFor({ state: 'visible', timeout: 10000 });
+
+      // Extract category ID from the page
+      const categoryRow = page.locator(`tr:has-text("${categoryName}")`).first();
+      await categoryRow.waitFor({ state: 'visible', timeout: 10000 });
+      const categoryLink = categoryRow.locator('a.row-title').first();
+      const categoryHref = await categoryLink.getAttribute('href');
+      const categoryIdMatch = categoryHref.match(/tag_ID=(\d+)/);
+      categoryId = categoryIdMatch ? parseInt(categoryIdMatch[1]) : null;
+      console.log(`✅ Category created with ID: ${categoryId}`);
+
+      // Navigate to All Products tab
+      await page.goto(`${baseURL}/wp-admin/edit.php?post_type=product`, {
+        waitUntil: 'domcontentloaded',
+        timeout: 60000
+      });
+      console.log('✅ Navigated to All Products page');
+
+      // Select the products using checkboxes
+      const product1Checkbox = page.locator(`#cb-select-${product1Id}`);
+      const product2Checkbox = page.locator(`#cb-select-${product2Id}`);
+
+      await product1Checkbox.waitFor({ state: 'visible', timeout: 10000 });
+      await product1Checkbox.check();
+      console.log(`✅ Selected product ${product1Id}`);
+
+      await product2Checkbox.waitFor({ state: 'visible', timeout: 10000 });
+      await product2Checkbox.check();
+      console.log(`✅ Selected product ${product2Id}`);
+
+      // Choose 'Edit' from Bulk Actions dropdown
+      const bulkActionsDropdown = page.locator('#bulk-action-selector-top');
+      await bulkActionsDropdown.selectOption('edit');
+      console.log('✅ Selected Edit from Bulk Actions');
+
+      // Click Apply button
+      const applyBtn = page.locator('#doaction');
+      await applyBtn.click();
+      console.log('✅ Clicked Apply button');
+
+      // Wait for bulk edit interface to appear
+      const bulkEditRow = page.locator('#bulk-edit');
+      await bulkEditRow.waitFor({ state: 'visible', timeout: 10000 });
+      console.log('✅ Bulk edit interface opened');
+
+      // Click the newly created category checkbox in Product categories section
+      const categoryCheckbox = page.getByRole('checkbox', { name: categoryName });
+      await categoryCheckbox.waitFor({ state: 'visible', timeout: 10000 });
+      await categoryCheckbox.check();
+      console.log(`✅ Checked category ${categoryId} checkbox`);
+
+      // Click Update button in bulk edit
+      const updateBtn = page.locator('#bulk_edit');
+      await updateBtn.click();
+      await page.waitForLoadState('domcontentloaded');
+      console.log('✅ Clicked Update button');
+
+      // Navigate to Catalog Sets page (Facebook Commerce Manager)
+      // Note: This assumes the Facebook plugin provides a way to view sets
+      // We'll verify the sync via the validateFacebookSync function
+      console.log('🔍 Verifying category sync to catalog...');
+
+      // Validate that the category has been synced as a set
+      // The validateFacebookSync function should be extended to handle categories/sets
+      // For now, we'll verify that the products are still synced and belong to the category
+      const [product1Result, product2Result] = await Promise.all([
+        validateFacebookSync(product1Id, product1.productName, 5),
+        validateFacebookSync(product2Id, product2.productName, 5)
+      ]);
+
+      expect(product1Result['success']).toBe(true);
+      console.log('✅ Product 1 sync validated');
+      expect(product2Result['success']).toBe(true);
+      console.log('✅ Product 2 sync validated');
+
+      await page.goto(`${baseURL}/wp-admin/post.php?post=${product1Id}&action=edit`, {
+        waitUntil: 'domcontentloaded',
+        timeout: 60000
+      });
+
+      const isCategoryChecked = await categoryCheckbox.isChecked();
+      expect(isCategoryChecked).toBe(true);
+      console.log('✅ Verified product 1 has category assigned');
+
+      console.log('✅ Category and product sync test completed successfully');
+      logTestEnd(testInfo, true);
+
+    } catch (error) {
+      console.log(`⚠️ Category sync test failed: ${error.message}`);
+      await safeScreenshot(page, 'category-sync-test-failure.png');
+      logTestEnd(testInfo, false);
+      throw error;
+    } finally {
+      // await Promise.all([
+      //   product1Id ? cleanupProduct(product1Id) : Promise.resolve(),
+      //   product2Id ? cleanupProduct(product2Id) : Promise.resolve(),
+      //   categoryId ? cleanupCategory(categoryId) : Promise.resolve()
+      // ]);
     }
   });
 

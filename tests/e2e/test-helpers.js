@@ -418,6 +418,24 @@ async function exactSearchSelect2Container(page, locator, searchValue) {
   console.log(`✅ Selected ${searchValue} from Select2 dropdown`);
 }
 
+async function cleanupCategory(categoryId) {
+  console.log(`🧹 Cleaning up category ${categoryId}...`);
+  try {
+    const startTime = new Date();
+    const { exec } = require('child_process');
+    const { promisify } = require('util');
+    const execAsync = promisify(exec);
+    await execAsync(
+      `php -r "require_once('${wpSitePath}/wp-load.php'); wp_delete_term(${categoryId}, 'product_cat');"`,
+      { cwd: __dirname }
+    );
+    console.log(`⏱️ Cleanup took ${new Date() - startTime}ms`);
+    console.log(`✅ Category ${categoryId} deleted`);
+  } catch (error) {
+    console.log(`⚠️ Category cleanup failed: ${error.message}`);
+  }
+}
+
 module.exports = {
   baseURL,
   username,
@@ -425,6 +443,7 @@ module.exports = {
   loginToWordPress,
   safeScreenshot,
   cleanupProduct,
+  cleanupCategory,
   generateProductName,
   generateUniqueSKU,
   extractProductIdFromUrl,
