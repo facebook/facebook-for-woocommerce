@@ -22,12 +22,6 @@ class CostOfGoodsTest extends AbstractWPUnitTestWithOptionIsolationAndSafeFilter
 		$this->assertFalse($mock->calculate_cogs_for_products([]));
 	}
 
-// $wpfmock = $this->createMock( WPFactoryCogsProvider::class );
-// 		$wpfmock->method('is_available')->willReturn(true);
-		
-// 		$cogsmock = $this->createMock( CostOfGoods::class );
-// 		$cogsmock->method('get_cogs_providers')->willReturn([$wpfmock]);
-
 	public function test_given_cogs_provider_available_when_no_products_provided_then_false_is_returned() {
 		
 		$cogs_provider_mock = $this->createMock( AbstractCogsProvider::class );

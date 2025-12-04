@@ -42,13 +42,10 @@ class WPFactoryCogsProviderTest extends AbstractWPUnitTestWithOptionIsolationAnd
 	
 	public function test_given_provider_is_unavailable_when_instantiated_then_exception_thrown() {
 		$product = $this->createMock( WC_Product::class );
+		$this->expectException(IntegrationIsNotAvailableException::class);
+
 		$wpfmock = $this->createMock( WPFactoryCogsProvider::class );
 		$wpfmock->method('is_available')->willReturn(false);
-		try{
-			$wpfmock->get_cogs_value($product);
-			$this->assertFalse(true, 'Exception was expected but not thrown');
-		} catch (IntegrationIsNotAvailableException $e) {
-			$this->assertTrue(true, 'Exception was thrown properly');
-		}
+		$wpfmock->get_cogs_value($product);
 	}
 }
