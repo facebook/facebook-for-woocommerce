@@ -25,9 +25,6 @@ class WooCCogsProvider extends AbstractCogsProvider {
 	/** @var string Name of the integration. */
 	const INTEGRATION_NAME = 'WooCommerce Cost of Goods';
 
-	/** @var bool to cache whether this provider is available. */
-	private $is_cogs_available = null;
-
 	public function get_cogs_value( $product ) {
 		if ( ! self::is_available() ) {
 			throw new IntegrationIsNotAvailableException( self::INTEGRATION_NAME );
@@ -36,23 +33,15 @@ class WooCCogsProvider extends AbstractCogsProvider {
 		return $product->get_cogs_total_value();
 	}
 
-	public function is_available(): bool {
-
-		$func = function () {
-			if ( ! \WC_Facebookcommerce_Utils::is_woocommerce_integration() ) {
-				return false;
-			}
-
-			if ( function_exists( 'wc_get_container' ) && class_exists( 'Automattic\WooCommerce\Internal\Features\FeaturesController' ) ) {
-				return wc_get_container()->get( 'Automattic\WooCommerce\Internal\Features\FeaturesController' )->feature_is_enabled( 'cost_of_goods_sold' );
-			} 
-
-			return function_exists( 'get_option' ) && ( 'yes' === get_option( 'woocommerce_feature_cost_of_goods_sold_enabled' ) );
-		};
-
-		if ( null === $this->is_cogs_available ) {
-			$this->is_cogs_available = $func();
+	protected function get_availability(): bool {
+		if ( ! \WC_Facebookcommerce_Utils::is_woocommerce_integration() ) {
+			return false;
 		}
-		return $this->is_cogs_available;
+
+		if ( function_exists( 'wc_get_container' ) && class_exists( 'Automattic\WooCommerce\Internal\Features\FeaturesController' ) ) {
+			return wc_get_container()->get( 'Automattic\WooCommerce\Internal\Features\FeaturesController' )->feature_is_enabled( 'cost_of_goods_sold' );
+		} 
+
+		return function_exists( 'get_option' ) && ( 'yes' === get_option( 'woocommerce_feature_cost_of_goods_sold_enabled' ) );
 	}
 }

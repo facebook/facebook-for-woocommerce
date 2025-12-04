@@ -23,9 +23,6 @@ class WPFactoryCogsProvider extends AbstractCogsProvider {
 
 	const INTEGRATION_NAME = 'WooCommerce Cost of Goods by WPFactory';
 
-	/** @var bool to cache whether this provider is available. */
-	private $is_cogs_available = null;
-
 	public function get_cogs_value( $product ) {
 		if ( ! self::is_available() ) {
 			throw new IntegrationIsNotAvailableException( self::INTEGRATION_NAME );
@@ -34,11 +31,8 @@ class WPFactoryCogsProvider extends AbstractCogsProvider {
 		return alg_wc_cog()->core->products->get_product_cost( $product->get_id() );
 	}
 
-	public function is_available(): bool {
+	public function get_availability(): bool {
 
-		if ( null === $this->is_cogs_available ) {
-			$this->is_cogs_available = function_exists( 'alg_wc_cog' );
-		}
-		return $this->is_cogs_available;
+		return function_exists( 'alg_wc_cog' );
 	}
 }
