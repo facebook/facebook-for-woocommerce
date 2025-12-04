@@ -49,6 +49,8 @@ class CogsIntegrationTests extends IntegrationTestCase
 		update_post_meta($product->get_id(), '_wc_cogs_cost', 100.0);
 		$product->save();
 
+		$this->assertEquals(100.0, $product->get_cogs_total_value());
+
 		$value = CostOfGoods::calculate_cogs_for_products([$product]);
 		$this->assertEquals(100.0, $value);
 	}
