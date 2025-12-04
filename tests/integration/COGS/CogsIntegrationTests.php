@@ -46,8 +46,8 @@ class CogsIntegrationTests extends IntegrationTestCase
 		$this->assertTrue(WooCCogsProvider::is_available());
 
 		$product = $this->create_simple_product();
-		$product->update_post_meta('_cost_of_goods', floatval(100.0));
-		$product->update_post_meta('cogs_value', floatval(200.0));
+		$product->update_meta_data('_cost_of_goods', floatval(100.0));
+		$product->update_meta_data('cogs_value', floatval(200.0));
 		$product->save();
 
 		$this->assertTrue($product->get_cogs_value() == null, 'cogs is not enabled at a product level');
