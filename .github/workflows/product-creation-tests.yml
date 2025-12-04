@@ -355,6 +355,35 @@ jobs:
           cd ${{ env.PLUGIN_PATH }}
           npx playwright test "product-.*\.spec\.js"
 
+      - name: Disconnect from catalog
+        if: always()
+        run: |
+          cd ${{ env.WORDPRESS_PATH }}
+          wp eval "
+            if (function_exists('facebook_for_woocommerce')) {
+                \$connection = facebook_for_woocommerce()->get_connection_handler();
+                if (\$connection->is_connected()) {
+                    \$connection->disconnect();
+                    echo '✅ Disconnected from catalog' . PHP_EOL;
+                } else {
+                    echo 'ℹ️ Already disconnected' . PHP_EOL;
+                }
+            }" --allow-root
+
+      - name: Verify disconnection
+        if: always()
+        run: |
+          cd ${{ env.WORDPRESS_PATH }}
+          wp eval "
+            if (function_exists('facebook_for_woocommerce')) {
+                \$connection = facebook_for_woocommerce()->get_connection_handler();
+                if (\$connection->is_connected()) {
+                    echo '❌ Still connected' . PHP_EOL;
+                    exit(1);
+                }
+                echo '✅ Verified disconnected' . PHP_EOL;
+            }" --allow-root
+
       - name: Check for PHP errors, and dump debug log
         if: always()
         run: |
