@@ -25,6 +25,12 @@ class Background extends BackgroundJobHandler {
 	/** @var string data key */
 	protected $data_key = 'requests';
 
+	public function __construct() {
+		parent::__construct();
+
+		add_action( 'facebook_sync_poll_handle', array( $this, 'handle_poll_action' ), 10, 1 );
+	}
+
 	/**
 	 * Processes a job.
 	 *
@@ -251,7 +257,171 @@ class Background extends BackgroundJobHandler {
 		$facebook_catalog_id = facebook_for_woocommerce()->get_integration()->get_product_catalog_id();
 		$response            = facebook_for_woocommerce()->get_api()->send_item_updates( $facebook_catalog_id, $requests );
 		$response_handles    = $response->handles;
-		$handles             = ( isset( $response_handles ) && is_array( $response_handles ) ) ? $response_handles : array();
+		$handles   = ( isset( $response_handles ) && is_array( $response_handles ) ) ? $response_handles : array();
+
+		foreach ( $handles as $handle ) {
+			set_transient( 'facebook_batch_handle_' . $handle, $requests, 12 * HOUR_IN_SECONDS );
+
+			if ( function_exists( 'as_schedule_single_action' ) ) {
+				as_schedule_single_action( time() + 60, 'facebook_sync_poll_handle', array( $handle ) );
+			} else {
+				wp_schedule_single_event( time() + 60, 'facebook_sync_poll_handle', array( $handle ) );
+			}
+		}
+
 		return $handles;
+	}
+
+
+	/**
+	 * Poll Facebook API for the batch job status using the handle.
+	 *
+	 * @param string $handle The batch handle returned by Facebook.
+	 * @return array|null Returns status data array on success, or null on failure.
+	 */
+	public function poll_batch_status( string $handle ): ?array {
+		try {
+			$catalog_id = facebook_for_woocommerce()->get_integration()->get_product_catalog_id();
+			$response = facebook_for_woocommerce()->get_api()->get_batch_status( $catalog_id, $handle );
+
+			return $response->get_full_response();
+
+		} catch ( \Exception $e ) {
+			error_log( 'Exception in poll_batch_status: ' . $e->getMessage() );
+			facebook_for_woocommerce()->log( 'Error polling batch status for handle ' . $handle . ': ' . $e->getMessage() );
+			return null;
+		}
+	}
+
+
+	/**
+	 * Callback triggered by scheduled action to poll batch status.
+	 *
+	 * @param string $handle The batch handle to poll.
+	 */
+	public function handle_poll_action( string $handle ) {
+		$statuses = $this->poll_batch_status( $handle );
+
+		if ( ! is_array( $statuses ) || empty( $statuses ) ) {
+			return;
+		}
+
+		foreach ( $statuses as $status ) {
+
+			if ( isset( $status['status'] ) && 'IN_PROGRESS' === $status['status'] ) {
+				if ( function_exists( 'as_schedule_single_action' ) ) {
+					as_schedule_single_action( time() + 60, 'facebook_sync_poll_handle', array( $handle ) );
+				} else {
+					wp_schedule_single_event( time() + 60, 'facebook_sync_poll_handle', array( $handle ) );
+				}
+				return;
+			}
+
+			$this->process_batch_status_results( $status, $handle );
+		}
+
+		delete_transient( 'facebook_batch_handle_' . $handle );
+	}
+
+
+	/**
+	 * Processes the results of a batch status update for product synchronization.
+	 *
+	 * This method handles the status array returned from a batch operation,
+	 * performing any necessary actions based on the results and the provided handle.
+	 *
+	 * @param array  $status  The status results from the batch operation.
+	 * @param string $handle The unique identifier for the batch process.
+	 */
+	protected function process_batch_status_results( array $status, string $handle ) {
+		if ( isset( $status[0] ) && is_array( $status[0] ) && isset( $status[0]['status'] ) ) {
+			foreach ( $status as $single_status ) {
+				$this->process_batch_status_results( $single_status, $handle );
+			}
+			return;
+		}
+
+		$warnings = $status['warnings'] ?? [];
+		$errors   = $status['errors'] ?? [];
+		$issues_by_id = [];
+
+		foreach ( array_merge( $warnings, $errors ) as $entry ) {
+			$product_id_str = $entry['id'] ?? '';
+			$post_id = null;
+
+			if ( preg_match( '/wc_post_id_(\d+)/', $product_id_str, $matches ) ) {
+				$post_id = (int) $matches[1];
+			} elseif ( is_numeric( $product_id_str ) ) {
+				$post_id = (int) $product_id_str;
+			} else {
+				$sku_parts = explode( '_', $product_id_str );
+				$last_part = end( $sku_parts );
+				if ( count( $sku_parts ) > 1 && is_numeric( $last_part ) ) {
+					$post_id = (int) $last_part;
+				} else {
+					$post_id = wc_get_product_id_by_sku( $product_id_str );
+				}
+			}
+
+			if ( $post_id ) {
+				$issues_by_id[ $post_id ]['warnings'][] = $entry['message'];
+			}
+		}
+
+		foreach ( $issues_by_id as $post_id => $issues ) {
+			update_post_meta(
+				$post_id,
+				'_fb_sync_issues',
+				array(
+					'status'   => $status['status'] ?? 'UNKNOWN',
+					'warnings' => $issues['warnings'] ?? [],
+					'handle'   => $handle,
+				)
+			);
+		}
+
+		$posts_with_issues = get_posts(
+			array(
+				'post_type'      => 'product',
+				'posts_per_page' => -1,
+				'post_status'    => 'any',
+				'meta_key'       => '_fb_sync_issues',
+				'fields'         => 'ids',
+			)
+		);
+
+		$batch_requests = get_transient( 'facebook_batch_handle_' . $handle );
+		$batched_product_ids = [];
+
+		if ( is_array( $batch_requests ) ) {
+			foreach ( $batch_requests as $req ) {
+				if ( isset( $req['data']['id'] ) ) {
+					$id = $req['data']['id'];
+
+					if ( preg_match( '/wc_post_id_(\d+)/', $id, $matches ) ) {
+						$batched_product_ids[] = (int) $matches[1];
+					} elseif ( is_numeric( $id ) ) {
+						$batched_product_ids[] = (int) $id;
+					} else {
+						$sku_parts = explode( '_', $id );
+						$last_part = end( $sku_parts );
+						if ( count( $sku_parts ) > 1 && is_numeric( $last_part ) ) {
+							$batched_product_ids[] = (int) $last_part;
+						} else {
+							$product_id = wc_get_product_id_by_sku( $id );
+							if ( $product_id ) {
+								$batched_product_ids[] = (int) $product_id;
+							}
+						}
+					}
+				}
+			}
+		}
+
+		foreach ( $posts_with_issues as $post_id ) {
+			if ( in_array( $post_id, $batched_product_ids, true ) && ! isset( $issues_by_id[ $post_id ] ) ) {
+				delete_post_meta( $post_id, '_fb_sync_issues' );
+			}
+		}
 	}
 }
