@@ -22,14 +22,16 @@ class WPFactoryCogsIntegrationTests extends IntegrationTestCase
 		$response = wp_remote_get( 'https://downloads.wordpress.org/plugin/cost-of-goods-for-woocommerce.zip' );
 		$plugin_zip = wp_upload_bits( 'cost-of-goods-for-woocommerce.zip', null, wp_remote_retrieve_body( $response ) );
 		if ( ! class_exists( 'Plugin_Upgrader ' ) ) {
-			include_once ABSPATH .'wp-admin/includes/class-plugin-upgrader.php';
+			include_once ABSPATH . 'wp-admin/includes/class-wp-upgrader.php';
+			include_once ABSPATH . 'wp-admin/includes/class-plugin-upgrader.php';
 		}
 		$upgrader = new Plugin_Upgrader();
 		$result = $upgrader->install( $plugin_zip['file'] );
-		// Check for errors
+		
 		if ( is_wp_error( $result ) ) {
 			throw new \Exception('Cannot install/enable WPFactory plugin');
 		}
+		
 		$this->disable_facebook_sync();
 	}
 
@@ -40,15 +42,22 @@ class WPFactoryCogsIntegrationTests extends IntegrationTestCase
 		activate_plugin( 'cost-of-goods-for-woocommerce/cost-of-goods-for-woocommerce.php' );
 	}
 
-	private function disable_cogs_in_woo_settings() {
-		
-	}
-
 	public function test_wpfactory() {
 		$this->enable_wpfactory_cogs_plugin();
 		$instance = new WPFactoryCogsProvider();
 
 		$this->assertTrue($instance->is_available(), 'WPFactory is not active');
+	}
+
+	public function test_given_wpfactory_cogs_is_disabled_when_wpfactory_provider_is_available_called_then_it_returns_false() {
+		$this->assertFalse((new WPFactoryCogsProvider())->is_available(), 'WPFactory COGS is expected to be disabled');
+		$this->expectException(IntegrationIsNotAvailableException::class);
+		$instance->get_cogs_value($this->create_simple_product());
+	}
+
+	public function test_given_wpfactory_cogs_is_enabled_when_wpfactory_provider_is_available_called_then_it_returns_true() {
+		$this->enable_cogs_in_woo_settings();
+		$this->assertTrue((new WPFactoryCogsProvider())->is_available(), 'WPFactory COGS is expected to be enabled');
 	}
 
 	/**
