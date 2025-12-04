@@ -166,17 +166,6 @@ class WooCCogsIntegrationTests extends IntegrationTestCase
 
 		$this->assertEquals($cogs_value, (new CostOfGoods())->calculate_cogs_for_products([$product]));
 	}
-	/**
-	 * Placeholder. These tests should be added:
-	 * 1. Testing WooC integration with older WooC versions
-	 * 2. WPFactory plugin is installed but inactive
-	 * 3. WooC Cogs is Disabled / Enabled. When WooC Cogs is disabled, WooCCogsProvider should return false in is_available
-	 * 4. Test for Simple & Variable products
-	 */
-	public function Given_Single_Purcahse_Event_When_SendingEvent_Then_RequestContainsValues() // Should be an E2E test
-	{
-		$this->assertTrue(false);
-	}
 
 	/**
 	 * Clean up after each test
