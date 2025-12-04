@@ -20,10 +20,10 @@ defined( 'ABSPATH' ) || exit;
 class CostOfGoods {
 
 	/** @var array to cache the available cogs integrations. */
-	private $available_integrations = array();
+	protected $available_integrations = array();
 
 	/** @var bool to cache whether provider availability has been evaluated or not. */
-	private $already_fetched = false;
+	protected $already_fetched = false;
 
 	public function calculate_cogs_for_products( $products ) {
 
@@ -58,7 +58,7 @@ class CostOfGoods {
 		);
 	}
 
-	private function get_cogs_providers() {
+	protected function get_cogs_providers() {
 		if ( ! $this->already_fetched ) {
 			$this->available_integrations = array();
 			foreach ( $this->get_supported_integrations() as $integration => $class_name ) {
@@ -73,7 +73,7 @@ class CostOfGoods {
 		return $this->available_integrations;
 	}
 
-	private function get_cogs_for_product( $product ) {
+	protected function get_cogs_for_product( $product ) {
 
 		$cogs_providers = $this->get_cogs_providers();
 		foreach ( $cogs_providers as $provider ) {
@@ -86,7 +86,7 @@ class CostOfGoods {
 		return false;
 	}
 
-	private function is_cogs_provider_available() {
+	protected function is_cogs_provider_available() {
 		return count( $this->get_cogs_providers() ) > 0;
 	}
 }

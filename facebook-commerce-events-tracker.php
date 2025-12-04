@@ -52,6 +52,7 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 		/** @var bool whether the pixel should be enabled */
 		private $is_pixel_enabled;
 
+		/** @var CostOfGoods CostOfGoods provider instance. Used to calculate the profit margin */
 		private $cogs_provider;
 
 		/**
