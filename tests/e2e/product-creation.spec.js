@@ -17,6 +17,7 @@ const {
   createTestProduct,
   exactSearchSelect2Container
 } = require('./test-helpers');
+const { TIMEOUTS } = require('./tests-constants');
 
 test.describe('Facebook for WooCommerce - Product Creation E2E Tests', () => {
 
@@ -37,7 +38,7 @@ test.describe('Facebook for WooCommerce - Product Creation E2E Tests', () => {
       // Navigate to add new product page
       await page.goto(`${baseURL}/wp-admin/post-new.php?post_type=product`, {
         waitUntil: 'domcontentloaded',
-        timeout: 60000
+        timeout: TIMEOUTS.MAX
       });
 
       // Wait for the product editor to load
@@ -53,7 +54,7 @@ test.describe('Facebook for WooCommerce - Product Creation E2E Tests', () => {
       // Set regular price
       await page.click('li.general_tab a');
       const regularPriceField = page.locator('#_regular_price');
-      await regularPriceField.waitFor({ state: 'visible', timeout: 10000 });
+      await regularPriceField.waitFor({ state: 'visible', timeout: TIMEOUTS.LONG });
       await regularPriceField.fill('19.99');
       console.log('✅ Set regular price');
 
@@ -61,7 +62,7 @@ test.describe('Facebook for WooCommerce - Product Creation E2E Tests', () => {
       await page.click('li.inventory_tab a');
       // Set SKU to ensure unique retailer ID
       const skuField = page.locator('#_sku');
-      await skuField.waitFor({ state: 'visible', timeout: 10000 });
+      await skuField.waitFor({ state: 'visible', timeout: TIMEOUTS.LONG });
       const uniqueSku = generateUniqueSKU('simple');
       await skuField.fill(uniqueSku);
       console.log(`✅ Set unique SKU: ${uniqueSku}`);
@@ -73,11 +74,11 @@ test.describe('Facebook for WooCommerce - Product Creation E2E Tests', () => {
         const facebookPriceField = page.locator('label:has-text("Facebook Price"), input[name*="facebook_price"]').first();
         const facebookImageField = page.locator('legend:has-text("Facebook Product Image"), input[name*="facebook_image"]').first();
 
-        if (await facebookSyncField.isVisible({ timeout: 10000 })) {
+        if (await facebookSyncField.isVisible({ timeout: TIMEOUTS.LONG })) {
           console.log('✅ Facebook for WooCommerce fields detected');
-        } else if (await facebookPriceField.isVisible({ timeout: 10000 })) {
+        } else if (await facebookPriceField.isVisible({ timeout: TIMEOUTS.LONG })) {
           console.log('✅ Facebook price field found');
-        } else if (await facebookImageField.isVisible({ timeout: 10000 })) {
+        } else if (await facebookImageField.isVisible({ timeout: TIMEOUTS.LONG })) {
           console.log('✅ Facebook image field found');
         } else {
           console.warn('⚠️ No Facebook-specific fields found - plugin may not be fully activated');
@@ -157,7 +158,7 @@ test.describe('Facebook for WooCommerce - Product Creation E2E Tests', () => {
       // Step 5: Add attributes
       // Go to Attributes tab
       await page.click('li.attribute_tab a[href="#product_attributes"]');
-      await page.locator('input.attribute_name[name="attribute_names[0]"]').waitFor({ state: 'visible', timeout: 10000 });
+      await page.locator('input.attribute_name[name="attribute_names[0]"]').waitFor({ state: 'visible', timeout: TIMEOUTS.LONG });
       // Add name & value
       await page.fill('input.attribute_name[name="attribute_names[0]"]', 'Color');
       await page.fill('textarea[name="attribute_values[0]"]', 'Red|Blue|Green');
@@ -166,19 +167,19 @@ test.describe('Facebook for WooCommerce - Product Creation E2E Tests', () => {
       await page.click('button.save_attributes.button-primary');
       await page.waitForFunction(() => {
         return document.querySelector('.woocommerce_attribute.wc-metabox.postbox.closed') !== null;
-      }, { timeout: 5000 });
+      }, { timeout: TIMEOUTS.MEDIUM });
       console.log('✅ Saved attributes');
 
       // Step 6: Generate variations
       // Go to Variations tab
       await page.click('a[href="#variable_product_options"]');
       // Click "Generate variations" button
-      await page.locator('button.generate_variations').waitFor({ state: 'visible', timeout: 10000 });
+      await page.locator('button.generate_variations').waitFor({ state: 'visible', timeout: TIMEOUTS.LONG });
       await page.click('button.generate_variations');
       // Wait until at least one variation is present
       await page.waitForFunction(() => {
         return document.querySelectorAll('.woocommerce_variation').length === 3;
-      }, { timeout: 15000 });
+      }, { timeout: TIMEOUTS.LONG });
       // Verify variations were created
       const variationsCount = await page.locator('.woocommerce_variation').count();
       expect(variationsCount).toBe(3);
@@ -187,20 +188,20 @@ test.describe('Facebook for WooCommerce - Product Creation E2E Tests', () => {
       // Step 7: Set prices for variations
       // Click "Add price" button first
       const addPriceBtn = page.locator('button.add_price_for_variations');
-      await addPriceBtn.waitFor({ state: 'visible', timeout: 10000 });
+      await addPriceBtn.waitFor({ state: 'visible', timeout: TIMEOUTS.LONG });
       await addPriceBtn.click();
       console.log('✅ Clicked "Add price" button');
 
       // Add bulk price
       const priceInput = page.locator('input.components-text-control__input.wc_input_variations_price');
-      await priceInput.waitFor({ state: 'visible', timeout: 10000 });
+      await priceInput.waitFor({ state: 'visible', timeout: TIMEOUTS.LONG });
       await priceInput.click();        // ✅ Focus the field
       await priceInput.clear();        // ✅ Clear existing content
       await priceInput.pressSequentially('29.99', { delay: 100 }); // ✅ Type with delays = triggers all JS events
 
       // Click "Add prices" button to apply the price
       const addPricesBtn = page.locator('button.add_variations_price_button.button-primary');
-      await addPricesBtn.waitFor({ state: 'visible', timeout: 10000 });
+      await addPricesBtn.waitFor({ state: 'visible', timeout: TIMEOUTS.LONG });
       await addPricesBtn.click();
       console.log('✅ Bulk price added successfully');
 
@@ -280,7 +281,7 @@ test.describe('Facebook for WooCommerce - Product Creation E2E Tests', () => {
       expect(pageContent).not.toContain('Parse error');
 
       // Check if WooCommerce is working
-      const hasProductsTable = await page.locator('.wp-list-table').isVisible({ timeout: 10000 });
+      const hasProductsTable = await page.locator('.wp-list-table').isVisible({ timeout: TIMEOUTS.LONG });
       if (hasProductsTable) {
         console.log('✅ WooCommerce products page loaded successfully');
       } else {
@@ -321,7 +322,7 @@ test.describe('Facebook for WooCommerce - Product Creation E2E Tests', () => {
           expect(pageContent).not.toContain('Parse error');
 
           // Verify admin content loaded
-          await page.locator('#wpcontent').isVisible({ timeout: 10000 });
+          await page.locator('#wpcontent').isVisible({ timeout: TIMEOUTS.LONG });
 
           console.log(`✅ ${pageInfo.name} page loaded without errors`);
 
@@ -349,29 +350,29 @@ test.describe('Facebook for WooCommerce - Product Creation E2E Tests', () => {
       // Look for Facebook plugin row
       const pluginRow = page.locator('tr[data-slug="facebook-for-woocommerce"], tr:has-text("Facebook for WooCommerce")').first();
 
-      await pluginRow.waitFor({ state: 'visible', timeout: 10000 });
+      await pluginRow.waitFor({ state: 'visible', timeout: TIMEOUTS.LONG });
       console.log('✅ Facebook plugin found');
 
       // Check if plugin is currently active
-      const isActive = await pluginRow.locator('.active').isVisible({ timeout: 10000 });
+      const isActive = await pluginRow.locator('.active').isVisible({ timeout: TIMEOUTS.LONG });
       const deactivateLink = pluginRow.locator('a:has-text("Deactivate")');
       const reactivateLink = pluginRow.locator('a:has-text("Activate")');
 
       if (isActive) {
         console.log('Plugin is active, testing deactivation...');
-        await deactivateLink.waitFor({ state: 'visible', timeout: 10000 });
+        await deactivateLink.waitFor({ state: 'visible', timeout: TIMEOUTS.LONG });
         await deactivateLink.click();
-        await reactivateLink.waitFor({ state: 'visible', timeout: 10000 });
+        await reactivateLink.waitFor({ state: 'visible', timeout: TIMEOUTS.LONG });
         console.log('✅ Plugin deactivated');
         await reactivateLink.click();
-        await deactivateLink.waitFor({ state: 'visible', timeout: 10000 });
+        await deactivateLink.waitFor({ state: 'visible', timeout: TIMEOUTS.LONG });
         console.log('✅ Plugin reactivated');
       } else {
         console.log('Plugin is inactive, testing activation...');
         const activateLink = pluginRow.locator('a:has-text("Activate")');
-        await activateLink.waitFor({ state: 'visible', timeout: 10000 });
+        await activateLink.waitFor({ state: 'visible', timeout: TIMEOUTS.LONG });
         await activateLink.click();
-        await deactivateLink.waitFor({ state: 'visible', timeout: 10000 });
+        await deactivateLink.waitFor({ state: 'visible', timeout: TIMEOUTS.LONG });
         console.log('✅ Plugin activated');
       }
 
@@ -427,7 +428,7 @@ test.describe('Facebook for WooCommerce - Product Creation E2E Tests', () => {
       // Set product type to "Smart composite"
       await page.selectOption('#product-type', { label: 'Smart composite' });
       const componentsTab = await page.locator('li.composite_options');
-      await componentsTab.waitFor({ state: 'visible', timeout: 10000 });
+      await componentsTab.waitFor({ state: 'visible', timeout: TIMEOUTS.LONG });
       console.log('✅ Product type set to Smart composite');
 
       // Wait for product data section to load
@@ -436,29 +437,29 @@ test.describe('Facebook for WooCommerce - Product Creation E2E Tests', () => {
       // In "General" tab add "Regular price"
       await page.click('li.general_tab a');
       const regularPriceField = page.locator('#_regular_price');
-      await regularPriceField.waitFor({ state: 'visible', timeout: 10000 });
+      await regularPriceField.waitFor({ state: 'visible', timeout: TIMEOUTS.LONG });
       await regularPriceField.fill('49.99');
       console.log('✅ Set regular price');
 
       // Go to "Components" tab
       await componentsTab.click();
       const addComponentBtn = page.locator('.wooco_add_component');
-      await addComponentBtn.waitFor({ state: 'visible', timeout: 10000 });
+      await addComponentBtn.waitFor({ state: 'visible', timeout: TIMEOUTS.LONG });
       console.log('✅ Switched to Components tab');
 
       const simpleComponentNameField = page.locator('.wooco_component_name_val').first();
       const variableComponentNameField = page.locator('.wooco_component_name_val').nth(1);
       console.log('✅ Make room for two components');
       await addComponentBtn.click();
-      await simpleComponentNameField.waitFor({ state: 'visible', timeout: 10000 });
-      await variableComponentNameField.waitFor({ state: 'visible', timeout: 10000 });
+      await simpleComponentNameField.waitFor({ state: 'visible', timeout: TIMEOUTS.LONG });
+      await variableComponentNameField.waitFor({ state: 'visible', timeout: TIMEOUTS.LONG });
 
       // Enter product name in component
       await simpleComponentNameField.fill('Simple Component');
       console.log('✅ Simple Component name entered');
 
       const simpleComponentDescField = page.locator('.wooco_component_desc_val').first();
-      await simpleComponentDescField.waitFor({ state: 'visible', timeout: 10000 });
+      await simpleComponentDescField.waitFor({ state: 'visible', timeout: TIMEOUTS.LONG });
       await simpleComponentDescField.fill('This is the simple component description');
       console.log('✅ Simple Component description entered');
 
@@ -472,7 +473,7 @@ test.describe('Facebook for WooCommerce - Product Creation E2E Tests', () => {
       console.log('✅ Variable Component name entered');
 
       const variableComponentDescField = page.locator('.wooco_component_desc_val').nth(1);
-      await variableComponentDescField.waitFor({ state: 'visible', timeout: 10000 });
+      await variableComponentDescField.waitFor({ state: 'visible', timeout: TIMEOUTS.LONG });
       await variableComponentDescField.fill('This is the variable component description');
       console.log('✅ Variable Component description entered');
 
@@ -483,12 +484,12 @@ test.describe('Facebook for WooCommerce - Product Creation E2E Tests', () => {
 
       // Click on "Save components" button
       const saveComponentsBtn = page.locator('button:has-text("Save components"), .save_composite_data, #publish').first();
-      await saveComponentsBtn.waitFor({ state: 'visible', timeout: 10000 });
+      await saveComponentsBtn.waitFor({ state: 'visible', timeout: TIMEOUTS.LONG });
       await saveComponentsBtn.click();
       console.log('✅ Components saved');
 
       const pricingStrategy = page.locator('#wooco_pricing');
-      await pricingStrategy.waitFor({ state: 'visible', timeout: 10000 });
+      await pricingStrategy.waitFor({ state: 'visible', timeout: TIMEOUTS.LONG });
       await pricingStrategy.selectOption('include');
 
       // Publish product
