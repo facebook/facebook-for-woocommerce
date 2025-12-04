@@ -30,11 +30,9 @@ class WooCCogsProviderTest extends AbstractWPUnitTestWithOptionIsolationAndSafeF
 		$product = $this->createMock( WC_Product::class );
 		$product->method( 'get_cogs_total_value' )->willReturn( 10.0 );
 		
-		$reflection = new \ReflectionClass( WooCCogsProvider::class );
-		$reflection->setStaticPropertyValue('is_available', true);
-		$instance = $reflection->newInstance();
-
-		$value = $instance->get_cogs_value($product);
-		$this->assertEquals(10.0, $value);
+		$mock = $this->createMock( WooCCogsProvider::class );
+		$mock->method('is_available')->willReturn(true);
+		
+		$this->assertEquals(10.0, $mock->get_cogs_value($product));
 	}
 }

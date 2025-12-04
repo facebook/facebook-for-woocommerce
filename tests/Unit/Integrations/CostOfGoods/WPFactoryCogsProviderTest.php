@@ -32,17 +32,20 @@ use stdClass;
 class WPFactoryCogsProviderTest extends AbstractWPUnitTestWithOptionIsolationAndSafeFiltering
 {
 	public function test_given_no_cogs_providers_available_when_calculate_method_called_then_false_is_returned() {
-		$reflection = new \ReflectionClass( WPFactoryCogsProvider::class );
-		$reflection->setStaticPropertyValue('is_available', true);
+		$wpfmock = $this->createMock( WPFactoryCogsProvider::class );
+		$wpfmock->method('is_available')->willReturn(true);
 		
-		$this->assertFalse(CostOfGoods::calculate_cogs_for_products([]));
+		$cogsmock = $this->createMock( CostOfGoods::class );
+		$cogsmock->method('get_cogs_providers')->willReturn([$wpfmock]);
+		$this->assertFalse($cogsmock->calculate_cogs_for_products([]));
 	}
 	
 	public function test_given_provider_is_unavailable_when_instantiated_then_exception_thrown() {
-		$reflection = new \ReflectionClass( WPFactoryCogsProvider::class );
-		$reflection->setStaticPropertyValue('is_available', false);
+		$product = $this->createMock( WC_Product::class );
+		$wpfmock = $this->createMock( WPFactoryCogsProvider::class );
+		$wpfmock->method('is_available')->willReturn(false);
 		try{
-			$reflection->newInstance();
+			$wpfmock->get_cogs_value($product);
 			$this->assertFalse(true, 'Exception was expected but not thrown');
 		} catch (IntegrationIsNotAvailableException $e) {
 			$this->assertTrue(true, 'Exception was thrown properly');
