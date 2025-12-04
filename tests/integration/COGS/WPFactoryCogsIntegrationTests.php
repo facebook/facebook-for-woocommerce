@@ -10,7 +10,6 @@ use WooCommerce\Facebook\Integrations\CostOfGoods\CostOfGoods;
 use WooCommerce\Facebook\Integrations\IntegrationIsNotAvailableException;
 use WC_Product_Variation;
 use WC_Product_Variable;
-use \Plugin_Upgrader;
 
 class WPFactoryCogsIntegrationTests extends IntegrationTestCase
 {
@@ -22,7 +21,10 @@ class WPFactoryCogsIntegrationTests extends IntegrationTestCase
 		parent::setUp();
 		$response = wp_remote_get( 'https://downloads.wordpress.org/plugin/cost-of-goods-for-woocommerce.zip' );
 		$plugin_zip = wp_upload_bits( 'cost-of-goods-for-woocommerce.zip', null, wp_remote_retrieve_body( $response ) );
-		$upgrader = new \Plugin_Upgrader();
+		if ( ! class_exists( 'Plugin_Upgrader ' ) ) {
+			include_once ABSPATH .'wp-admin/includes/class-plugin-upgrader.php';
+		}
+		$upgrader = new Plugin_Upgrader();
 		$result = $upgrader->install( $plugin_zip['file'] );
 		// Check for errors
 		if ( is_wp_error( $result ) ) {
