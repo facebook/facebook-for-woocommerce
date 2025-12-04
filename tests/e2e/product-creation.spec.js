@@ -12,6 +12,7 @@ const {
   logTestStart,
   logTestEnd,
   validateFacebookSync,
+  validateCategorySync,
   setProductTitle,
   setProductDescription,
   createTestProduct,
@@ -650,17 +651,12 @@ test.describe('Facebook for WooCommerce - Product Creation E2E Tests', () => {
       await page.waitForLoadState('domcontentloaded');
       console.log('✅ Clicked Update button');
 
-      // Navigate to Catalog Sets page (Facebook Commerce Manager)
-      // Note: This assumes the Facebook plugin provides a way to view sets
-      // We'll verify the sync via the validateFacebookSync function
-      console.log('🔍 Verifying category sync to catalog...');
-
       // Validate that the category has been synced as a set
-      // The validateFacebookSync function should be extended to handle categories/sets
-      // For now, we'll verify that the products are still synced and belong to the category
-      const [product1Result, product2Result] = await Promise.all([
+      // verify that the products are still synced and belong to the category
+      const [product1Result, product2Result, categoryResult] = await Promise.all([
         validateFacebookSync(product1Id, product1.productName, 5),
-        validateFacebookSync(product2Id, product2.productName, 5)
+        validateFacebookSync(product2Id, product2.productName, 5),
+        validateCategorySync(categoryId, categoryName, 5)
       ]);
 
       expect(product1Result['success']).toBe(true);
@@ -686,11 +682,11 @@ test.describe('Facebook for WooCommerce - Product Creation E2E Tests', () => {
       logTestEnd(testInfo, false);
       throw error;
     } finally {
-      // await Promise.all([
-      //   product1Id ? cleanupProduct(product1Id) : Promise.resolve(),
-      //   product2Id ? cleanupProduct(product2Id) : Promise.resolve(),
-      //   categoryId ? cleanupCategory(categoryId) : Promise.resolve()
-      // ]);
+      await Promise.all([
+        product1Id ? cleanupProduct(product1Id) : Promise.resolve(),
+        product2Id ? cleanupProduct(product2Id) : Promise.resolve(),
+        categoryId ? cleanupCategory(categoryId) : Promise.resolve()
+      ]);
     }
   });
 

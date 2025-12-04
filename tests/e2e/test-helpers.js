@@ -291,6 +291,58 @@ async function validateFacebookSync(productId, productName, waitSeconds = 10, ma
   }
 }
 
+// Helper function to validate category sync to Facebook product set
+async function validateCategorySync(categoryId, categoryName = null, waitSeconds = 10, maxRetries = 6) {
+  if (!categoryId) {
+    console.warn('⚠️ No category ID provided for sync validation');
+    return null;
+  }
+
+  const displayName = categoryName
+    ? `"${categoryName}" (ID: ${categoryId})`
+    : `ID: ${categoryId}`;
+  console.log(`🔍 Validating category sync for ${displayName}...`);
+
+  try {
+      const { exec } = require('child_process');
+      const { promisify } = require('util');
+      const execAsync = promisify(exec);
+
+      // Call the validator with --type=category flag
+      const { stdout, stderr } = await execAsync(
+          `php e2e-facebook-sync-validator.php --type=category ${categoryId} ${waitSeconds} ${maxRetries}`,
+          { cwd: __dirname }
+      );
+
+      const result = JSON.parse(stdout);
+
+      // Log results
+      console.log('📄 OUTPUT FROM CATEGORY SYNC VALIDATOR:');
+      const { debug, raw_data, ...resultWithoutDebug } = result;
+      console.log(JSON.stringify(resultWithoutDebug, null, 2));
+
+      if (result.success) {
+          console.log(`🎉 Category Sync Validation Succeeded for ${displayName}`);
+          console.log(`   Product Set ID: ${result.facebook_product_set_id}`);
+          console.log(`   Retailer ID: ${result.retailer_id}`);
+      } else {
+          console.warn(`⚠️ Category Sync Validation Failed for ${displayName}`);
+          if (result.error) {
+              console.warn(`   Error: ${result.error}`);
+          }
+          if (result.mismatches && Object.keys(result.mismatches).length > 0) {
+              console.warn(`   Mismatches: ${Object.keys(result.mismatches).length}`);
+          }
+      }
+
+      return result;
+
+  } catch (error) {
+      console.warn(`⚠️ Category sync validation error: ${error.message}`);
+      return null;
+  }
+}
+
 // Helper function to create a test product programmatically via WooCommerce API (much faster than UI)
 async function createTestProduct(options = {}) {
   const productType = options.productType || 'simple';
@@ -452,6 +504,7 @@ module.exports = {
   logTestStart,
   logTestEnd,
   validateFacebookSync,
+  validateCategorySync,
   createTestProduct,
   setProductDescription,
   filterProducts,
