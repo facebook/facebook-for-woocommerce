@@ -65,6 +65,6 @@ class WooCCogsProvider extends AbstractCogsProvider {
 		if ( null === self::$is_available ) {
 			self::$is_available = $func();
 		}
-		return self::$is_available;
+		return $func();
 	}
 }
