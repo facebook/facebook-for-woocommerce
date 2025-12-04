@@ -22,8 +22,7 @@ class WPFactoryCogsIntegrationTests extends IntegrationTestCase
 		$response = wp_remote_get( 'https://downloads.wordpress.org/plugin/cost-of-goods-for-woocommerce.zip' );
 		$plugin_zip = wp_upload_bits( 'cost-of-goods-for-woocommerce.zip', null, wp_remote_retrieve_body( $response ) );
 		if ( ! class_exists( 'Plugin_Upgrader ' ) ) {
-			include_once ABSPATH . 'wp-admin/includes/class-wp-upgrader.php';
-			include_once ABSPATH . 'wp-admin/includes/class-plugin-upgrader.php';
+			require_once ABSPATH . 'wp-admin/includes/admin.php';
 		}
 		$upgrader = new Plugin_Upgrader();
 		$result = $upgrader->install( $plugin_zip['file'] );
