@@ -52,6 +52,8 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 		/** @var bool whether the pixel should be enabled */
 		private $is_pixel_enabled;
 
+		private $cogs_provider;
+
 		/**
 		 * @var \FacebookAds\ParamBuilder|null shared ParamBuilder instance
 		 */
@@ -76,6 +78,7 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 
 			$this->param_builder_server_setup();
 			$this->add_hooks();
+			$this->cogs_provider = new CostOfGoods();
 		}
 
 		public static function get_param_builder() {
@@ -746,7 +749,7 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 				'user_data'   => $this->pixel->get_user_info(),
 			);
 
-			$cogs = CostOfGoods::calculate_cogs_for_products( [ $product ] );
+			$cogs = $this->cogs_provider->calculate_cogs_for_products( [ $product ] );
 
 			if ( false !== $cogs ) {
 				$price_excluding_tax = wc_get_price_excluding_tax( $product ) * $quantity;
@@ -1065,7 +1068,7 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 				'user_data'   => $this->get_user_data_from_billing_address( $order ),
 			);
 
-			$cogs = CostOfGoods::calculate_cogs_for_products( $products );
+			$cogs = $this->cogs_provider->calculate_cogs_for_products( $products );
 
 			if ( false !== $cogs ) {
 				$price_excluding_tax = $order->get_subtotal();
