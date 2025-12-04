@@ -39,14 +39,12 @@ class WPFactoryCogsIntegrationTests extends IntegrationTestCase
 	}
 
 	private function enable_wpfactory_cogs_plugin() {
-		// wc_get_container()
-		// ->get( 'Automattic\WooCommerce\Internal\Features\FeaturesController' )
-		// ->change_feature_enable('cost_of_goods_sold', true);
 		activate_plugin( 'cost-of-goods-for-woocommerce/cost-of-goods-for-woocommerce.php' );
 	}
 
 	public function test_given_wpfactory_cogs_is_disabled_when_wpfactory_provider_is_available_called_then_it_returns_false() {
-		$this->assertFalse((new WPFactoryCogsProvider())->is_available(), 'WPFactory COGS is expected to be disabled');
+		$instance = new WPFactoryCogsProvider();
+		$this->assertFalse($instance->is_available(), 'WPFactory COGS is expected to be disabled');
 		$this->expectException(IntegrationIsNotAvailableException::class);
 		$instance->get_cogs_value($this->create_simple_product());
 	}
