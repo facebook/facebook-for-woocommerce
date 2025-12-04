@@ -48,6 +48,7 @@ class CogsIntegrationTests extends IntegrationTestCase
 		$product = $this->create_simple_product();
 		$product->update_meta_data('_cost_of_goods', floatval(100.0));
 		$product->update_meta_data('cogs_value', floatval(200.0));
+		$product->set_cogs_value(450.0);
 		$product->save();
 
 		$this->assertTrue($product->get_cogs_value() == null, 'cogs is not enabled at a product level');
