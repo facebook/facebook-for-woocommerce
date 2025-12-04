@@ -25,6 +25,7 @@ class WPFactoryCogsIntegrationTests extends IntegrationTestCase
 		if ( ! class_exists( 'Plugin_Upgrader ' ) ) {
 			require_once ABSPATH . 'wp-admin/includes/admin.php';
 			require_once ABSPATH . 'wp-admin/includes/plugin.php';
+			include_once ABSPATH . 'wp-admin/includes/class-wp-upgrader.php';
 			require_once ABSPATH . 'wp-admin/includes/class-plugin-upgrader.php';
 		}
 		$upgrader = new \Plugin_Upgrader();
