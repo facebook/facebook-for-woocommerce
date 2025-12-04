@@ -33,11 +33,15 @@ class WooCCogsIntegrationTests extends IntegrationTestCase
 	}
 
 	private function enable_cogs_in_woo_settings() {
-		wc_get_container()->get( 'Automattic\WooCommerce\Internal\Features\FeaturesController' )->change_feature_enable('cost_of_goods_sold', true);
+		wc_get_container()
+		->get( 'Automattic\WooCommerce\Internal\Features\FeaturesController' )
+		->change_feature_enable('cost_of_goods_sold', true);
 	}
 
 	private function disable_cogs_in_woo_settings() {
-		wc_get_container()->get( 'Automattic\WooCommerce\Internal\Features\FeaturesController' )->change_feature_enable('cost_of_goods_sold', false);
+		wc_get_container()
+		->get( 'Automattic\WooCommerce\Internal\Features\FeaturesController' )
+		->change_feature_enable('cost_of_goods_sold', false);
 	}
 
 	// public function test_given_wooc_cogs_is_disabled_when_wooc_provider_is_available_called_then_it_returns_false() {
@@ -151,8 +155,7 @@ class WooCCogsIntegrationTests extends IntegrationTestCase
 
 		$this->assertEquals(0, $product->get_cogs_total_value(), 'Incorrect value is set for Product WooC COGS');
 
-		$value = CostOfGoods::calculate_cogs_for_products([$product]);
-		$this->assertEquals(false, $value);
+		$this->assertEquals(false, CostOfGoods::calculate_cogs_for_products([$product]));
 	}
 
 	public function test_given_cogs_exists_for_variable_product_when_calculate_method_is_called_then_it_returns_correct_value()
@@ -166,10 +169,9 @@ class WooCCogsIntegrationTests extends IntegrationTestCase
 		$product->set_cogs_value($cogs_value);
 		$product->save();
 
-		$this->assertEquals(0, $product->get_cogs_total_value(), 'Incorrect value is set for Product WooC COGS');
+		$this->assertEquals($cogs_value, $product->get_cogs_total_value(), 'Incorrect value is set for Product WooC COGS');
 
-		$value = CostOfGoods::calculate_cogs_for_products([$product]);
-		$this->assertEquals(false, $value);
+		$this->assertEquals($cogs_value, CostOfGoods::calculate_cogs_for_products([$product]));
 	}
 	/**
 	 * Placeholder. These tests should be added:
