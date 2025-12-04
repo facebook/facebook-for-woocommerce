@@ -59,6 +59,7 @@ class WooCCogsProvider extends AbstractCogsProvider {
 			} else {
 				return 3;
 			}
+			return 4;
 		};
 
 		if ( null === self::$is_available ) {
