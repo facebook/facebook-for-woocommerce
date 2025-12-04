@@ -44,27 +44,32 @@ class WooCCogsProvider extends AbstractCogsProvider {
 	public static function is_available() {
 
 		$func = function () {
-			if ( ! \WC_Facebookcommerce_Utils::is_woocommerce_integration() ) {
-				return 1;
-			}
-
-			if ( wc_get_container()->get( 'Automattic\WooCommerce\Internal\Features\FeaturesController' )->feature_is_enabled( 'cost_of_goods_sold' ) ) {
-				return 2;
-			} else {
-				return 3;
-			}
-
-			// if ( function_exists( 'wc_get_container' ) && class_exists( 'Automattic\WooCommerce\Internal\Features\FeaturesController' ) ) {
-			// 	return wc_get_container()->get( 'Automattic\WooCommerce\Internal\Features\FeaturesController' )->feature_is_enabled( 'cost_of_goods_sold' );
-			// } else {
-			// 	return 2;
+			// if ( ! \WC_Facebookcommerce_Utils::is_woocommerce_integration() ) {
+			// 	return 1;
 			// }
 
-			if ( function_exists( 'get_option' ) && ( 'yes' === get_option( 'woocommerce_feature_cost_of_goods_sold_enabled' ) ) ){
-				return 4;
+			// if ( wc_get_container()->get( 'Automattic\WooCommerce\Internal\Features\FeaturesController' )->feature_is_enabled( 'cost_of_goods_sold' ) ) {
+			// 	return 2;
+			// } else {
+			// 	return 3;
+			// }
+
+			if ( function_exists( 'wc_get_container' ) && class_exists( 'Automattic\WooCommerce\Internal\Features\FeaturesController' ) ) {
+				// return wc_get_container()->get( 'Automattic\WooCommerce\Internal\Features\FeaturesController' )->feature_is_enabled( 'cost_of_goods_sold' );
+				if ( wc_get_container()->get( 'Automattic\WooCommerce\Internal\Features\FeaturesController' )->feature_is_enabled( 'cost_of_goods_sold' ) ) {
+					return 2;
+				} else {
+					return 3;
+				}
 			} else {
-				return 5;
+				return 4;
 			}
+
+			// if ( function_exists( 'get_option' ) && ( 'yes' === get_option( 'woocommerce_feature_cost_of_goods_sold_enabled' ) ) ){
+			// 	return 4;
+			// } else {
+			// 	return 5;
+			// }
 			return 6;
 		};
 

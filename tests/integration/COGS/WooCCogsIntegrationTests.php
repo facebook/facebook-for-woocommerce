@@ -52,8 +52,8 @@ class WooCCogsIntegrationTests extends IntegrationTestCase
 
 	public function test_given_wooc_cogs_is_enabled_when_wooc_provider_is_available_called_then_it_returns_true() {
 		$this->enable_cogs_in_woo_settings();
-		// $this->assertTrue(function_exists( 'get_option' ) && ( 'yes' === get_option( 'woocommerce_feature_cost_of_goods_sold_enabled' ) ), 'woocommerce_feature_cost_of_goods_sold_enabled is expected to be enabled');
-		$this->assertEquals(10, WooCCogsProvider::is_available(), 'WooC COGS is expected to be enabled');
+		$this->assertTrue(function_exists( 'get_option' ) && ( 'yes' === get_option( 'woocommerce_feature_cost_of_goods_sold_enabled' ) ), 'woocommerce_feature_cost_of_goods_sold_enabled is expected to be enabled');
+		$this->assertTrue(WooCCogsProvider::is_available(), 'WooC COGS is expected to be enabled');
 	}
 
 	// Simple Product tests
