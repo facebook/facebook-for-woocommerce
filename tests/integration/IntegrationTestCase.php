@@ -128,6 +128,7 @@ abstract class IntegrationTestCase extends WP_UnitTestCase {
 			'stock_quantity' => 100,
 			'status' => 'publish',
 			'catalog_visibility' => 'visible',
+			'cogs_value' => 300.0,
 		];
 		
 		$args = array_merge( $defaults, $args );
