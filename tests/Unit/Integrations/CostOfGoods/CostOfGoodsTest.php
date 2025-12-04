@@ -16,7 +16,10 @@ use WC_Product;
 class CostOfGoodsTest extends AbstractWPUnitTestWithOptionIsolationAndSafeFiltering {
 
 	public function test_given_no_cogs_providers_available_when_calculate_method_called_then_false_is_returned() {
-		$mock = $this->getMockBuilder(CostOfGoods::class)->getMock();
+		$mock = $this->getMockBuilder(CostOfGoods::class)
+		->onlyMethods(['get_cogs_providers'])
+		->disableOriginalConstructor()
+		->getMock();
 		// $mock = $this->createMock( CostOfGoods::class );
 		$mock->method('get_cogs_providers')->willReturn([]);
 		
