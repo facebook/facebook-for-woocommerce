@@ -174,15 +174,6 @@ class WooCCogsIntegrationTests extends IntegrationTestCase
 		$this->assertTrue(false);
 	}
 
-	/* is_available = false, if:
-		- is_woo_integration is false
-		- WC_Product->get_cogs_total_value returns null
-		- false is returned from: wc_get_container()->get( 'Automattic\WooCommerce\Internal\Features\FeaturesController' )->feature_is_enabled( 'cost_of_goods_sold' )
-		- false is returned from get_option('woocommerce_feature_cost_of_goods_sold_enabled')
-
-		
-*/
-
 	/**
 	 * Clean up after each test
 	 */

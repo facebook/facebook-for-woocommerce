@@ -26,6 +26,14 @@ class WooCCogsProviderTest extends AbstractWPUnitTestWithOptionIsolationAndSafeF
 		}
 	}
 
+	public function test_test(){
+		$product = $this->createMock( WC_Product::class );
+		$mock = $this->createMock( WooCCogsProvider::class );
+		$mock->method('get_availability')->willReturn(false);
+
+		$mock->get_cogs_value($product);
+	}
+
 	public function test_given_product_has_cogs_value_when_get_cogs_value_is_called_then_correct_value_returned() {
 		$product = $this->createMock( WC_Product::class );
 		$product->method( 'get_cogs_total_value' )->willReturn( 10.0 );
