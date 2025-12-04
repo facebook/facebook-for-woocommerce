@@ -49,7 +49,9 @@ class CostOfGoods {
 		foreach ( $products as $product ) {
 
 			$cogs = self::get_cogs_for_product( $product );
-
+			if ($cogs == -1) {
+				return 6;
+			}
 			// If cogs was 0 for one product, the value is invalid for the order
 			if ( ! $cogs || $cogs < 0 ) {
 				return 3;
@@ -86,14 +88,18 @@ class CostOfGoods {
 	private static function get_cogs_for_product( $product ) {
 
 		$cogs_providers = self::get_cogs_providers();
-
+		$test = false;
 		foreach ( $cogs_providers as $provider ) {
+			$test = true;
 			$cogs = $provider->get_cogs_value( $product );
 			if ( is_numeric( $cogs ) && $cogs > 0 ) {
 				return $cogs;
 			}
 		}
 
+		if ( ! $test ) {
+			return -1;
+		}
 		return false;
 	}
 
