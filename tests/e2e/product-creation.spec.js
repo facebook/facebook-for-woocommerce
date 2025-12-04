@@ -440,6 +440,14 @@ test.describe('Facebook for WooCommerce - Product Creation E2E Tests', () => {
       await regularPriceField.fill('49.99');
       console.log('✅ Set regular price');
 
+      await page.click('li.inventory_tab a');
+      // Set SKU to ensure unique retailer ID
+      const skuField = page.locator('#_sku');
+      await skuField.waitFor({ state: 'visible', timeout: 10000 });
+      const uniqueSku = generateUniqueSKU('simple');
+      await skuField.fill(uniqueSku);
+      console.log(`✅ Set unique SKU: ${uniqueSku}`);
+
       // Go to "Components" tab
       await componentsTab.click();
       const addComponentBtn = page.locator('.wooco_add_component');
