@@ -17,10 +17,9 @@ class CostOfGoodsTest extends AbstractWPUnitTestWithOptionIsolationAndSafeFilter
 
 	public function test_given_no_cogs_providers_available_when_calculate_method_called_then_false_is_returned() {
 		$mock = $this->getMockBuilder(CostOfGoods::class)
-		->onlyMethods(['get_cogs_providers'])
-		->disableOriginalConstructor()
-		->getMock();
-		// $mock = $this->createMock( CostOfGoods::class );
+			->onlyMethods(['get_cogs_providers'])
+			->disableOriginalConstructor()
+			->getMock();
 		$mock->method('get_cogs_providers')->willReturn([]);
 		
 		$this->assertFalse($mock->calculate_cogs_for_products([]));
@@ -31,7 +30,10 @@ class CostOfGoodsTest extends AbstractWPUnitTestWithOptionIsolationAndSafeFilter
 		$cogs_provider_mock = $this->createMock( AbstractCogsProvider::class );
 		$cogs_provider_mock->method( 'get_cogs_value' )->willReturn( 10.0 );
 
-		$mock = $this->createMock( CostOfGoods::class );
+		$mock = $this->getMockBuilder(CostOfGoods::class)
+			->onlyMethods(['get_cogs_providers'])
+			->disableOriginalConstructor()
+			->getMock();
 		$mock->method('get_cogs_providers')->willReturn([$cogs_provider_mock]);
 		
 		$this->assertFalse($mock->calculate_cogs_for_products([]));
@@ -42,7 +44,10 @@ class CostOfGoodsTest extends AbstractWPUnitTestWithOptionIsolationAndSafeFilter
 		$cogs_provider_mock = $this->createMock( AbstractCogsProvider::class );
 		$cogs_provider_mock->method( 'get_cogs_value' )->willReturn( 0 );
 		
-		$mock = $this->createMock( CostOfGoods::class );
+		$mock = $this->getMockBuilder(CostOfGoods::class)
+			->onlyMethods(['get_cogs_providers'])
+			->disableOriginalConstructor()
+			->getMock();
 		$mock->method('get_cogs_providers')->willReturn([$cogs_provider_mock]);
 		
 		$this->assertFalse($mock->calculate_cogs_for_products([$product]));
@@ -53,7 +58,10 @@ class CostOfGoodsTest extends AbstractWPUnitTestWithOptionIsolationAndSafeFilter
 		$cogs_provider_mock = $this->createMock( AbstractCogsProvider::class );
 		$cogs_provider_mock->method( 'get_cogs_value' )->willReturn( 10.0 );
 		
-		$mock = $this->createMock( CostOfGoods::class );
+		$mock = $this->getMockBuilder(CostOfGoods::class)
+			->onlyMethods(['get_cogs_providers'])
+			->disableOriginalConstructor()
+			->getMock();
 		$mock->method('get_cogs_providers')->willReturn([$cogs_provider_mock]);
 
 		$this->assertEquals(10.0, $mock->calculate_cogs_for_products([$product]));
