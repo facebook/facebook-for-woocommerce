@@ -191,6 +191,47 @@ class WPML extends Abstract_Localization_Integration {
 	}
 
 	/**
+	 * Get the plugin-specific language identifier for a given locale
+	 *
+	 * Converts a full locale (e.g., 'es_ES') to WPML's language code.
+	 *
+	 * @param string $locale Full locale code (e.g., 'es_ES', 'fr_FR')
+	 * @return string|null WPML language code or null if not found
+	 */
+	protected function get_plugin_language_identifier( string $locale ): ?string {
+		$wpml_languages = apply_filters( 'wpml_active_languages', null );
+
+		if ( is_array( $wpml_languages ) ) {
+			foreach ( $wpml_languages as $code => $language_data ) {
+				$language_locale = $language_data['default_locale'] ?? $code;
+				if ( $language_locale === $locale ) {
+					return $code;
+				}
+			}
+		}
+
+		// Fallback: use the locale as the code
+		return $locale;
+	}
+
+	/**
+	 * Check if a product is in a specific language
+	 *
+	 * @param int    $product_id Product ID to check
+	 * @param string $language_identifier WPML language code
+	 * @return bool True if product is in the specified language
+	 */
+	protected function is_product_in_language( int $product_id, string $language_identifier ): bool {
+		$product_language = apply_filters( 'wpml_post_language_details', null, $product_id );
+
+		if ( $product_language && isset( $product_language['language_code'] ) ) {
+			return $product_language['language_code'] === $language_identifier;
+		}
+
+		return false;
+	}
+
+	/**
 	 * Get products from the default language
 	 *
 	 * Uses WPML's API to find products that are in the default language.
@@ -205,69 +246,45 @@ class WPML extends Abstract_Localization_Integration {
 			return [];
 		}
 
-		$default_language_locale = $this->get_default_language(); // This now returns full locale
+		$default_language_locale = $this->get_default_language();
 		if ( ! $default_language_locale ) {
 			return [];
 		}
 
-		/** Get the WPML language code for the default language */
-		$wpml_languages = apply_filters( 'wpml_active_languages', null );
-		$default_language_code = null;
-
-		if ( is_array( $wpml_languages ) ) {
-			foreach ( $wpml_languages as $code => $language_data ) {
-				$locale = $language_data['default_locale'] ?? $code;
-				if ( $locale === $default_language_locale ) {
-					$default_language_code = $code;
-					break;
-				}
-			}
+		// Get plugin-specific language identifier for the default language
+		$default_language_identifier = $this->get_plugin_language_identifier( $default_language_locale );
+		if ( ! $default_language_identifier ) {
+			return [];
 		}
 
-		// Fallback: if we can't find the mapping, try using the locale as the code
-		if ( ! $default_language_code ) {
-			$default_language_code = $default_language_locale;
-		}
-
-		// Get published products - use legacy approach when $limit = -1
-		if ( -1 === $limit ) {
-			// Legacy feed behavior: Get ALL products at once (no limit)
-			$args = [
-				'post_type' => 'product',
-				'post_status' => 'publish',
-				'posts_per_page' => -1,
-				'offset' => $offset,
-				'fields' => 'ids',
-			];
-		} else {
-			// Use a larger batch size to account for translations
-			// We need to get more products initially because some will be filtered out
+		// Use a larger batch size to account for translations when limit is specified
+		// We need to get more products initially because some will be filtered out
+		if ( -1 !== $limit ) {
 			$batch_size = max( $limit * 3, 50 ); // Get 3x the requested amount or minimum 50
-			$args = [
-				'post_type' => 'product',
-				'post_status' => 'publish',
-				'posts_per_page' => $batch_size,
-				'offset' => $offset,
-				'fields' => 'ids',
-			];
+		} else {
+			$batch_size = $limit; // Use -1 for all products (legacy approach)
 		}
+
+		// Query products
+		$args = [
+			'post_type' => 'product',
+			'post_status' => 'publish',
+			'posts_per_page' => $batch_size,
+			'offset' => $offset,
+			'fields' => 'ids',
+		];
 
 		$all_products = get_posts( $args );
 		$default_language_products = [];
 
+		// Filter products using plugin-specific language check
 		foreach ( $all_products as $product_id ) {
-			/** Use WPML filter to check if this product is in the default language */
-			$product_language = apply_filters( 'wpml_post_language_details', null, $product_id );
+			if ( $this->is_product_in_language( $product_id, $default_language_identifier ) ) {
+				$default_language_products[] = $product_id;
 
-			if ( $product_language && isset( $product_language['language_code'] ) ) {
-				// Only include products that are in the default language (compare WPML codes)
-				if ( $product_language['language_code'] === $default_language_code ) {
-					$default_language_products[] = $product_id;
-
-					// Stop when we have enough products (unless $limit = -1, which means get all)
-					if ( -1 !== $limit && count( $default_language_products ) >= $limit ) {
-						break;
-					}
+				// Stop when we have enough products (unless $limit = -1, which means get all)
+				if ( -1 !== $limit && count( $default_language_products ) >= $limit ) {
+					break;
 				}
 			}
 		}

@@ -34,8 +34,8 @@ class LanguageOverrideFeed {
 	/** @var string the feed name for creating a new feed by this plugin */
 	const FEED_NAME_TEMPLATE = 'WooCommerce Language Override Feed (%s)';
 
-	/** @var \WooCommerce\Facebook\Feed\Localization\LanguageFeedData */
-	private $language_feed_data;
+	/** @var \WooCommerce\Facebook\Feed\Localization\LanguageFeedData|null Lazy-loaded data handler */
+	private $language_feed_data = null;
 
 	/** Action constants */
 	const GENERATE_FEED_ACTION = 'wc_facebook_regenerate_feed_';
@@ -47,44 +47,29 @@ class LanguageOverrideFeed {
 	/**
 	 * Constructor
 	 *
+	 * Follows the same pattern as Products\Feed - only registers hooks in constructor.
+	 * Data objects are instantiated on-demand when actually needed.
+	 *
 	 * @since 3.6.0
 	 */
 	public function __construct() {
-		try {
-			// Avoid circular dependency by checking option directly instead of calling integration method
-			// Also avoid Logger::log() calls in constructor to prevent circular dependency
-			if ( 'yes' !== get_option( 'wc_facebook_language_override_feed_generation_enabled', 'yes' ) ) {
-				return;
-			}
+		$this->add_hooks();
+	}
 
-			// Check if we have an active localization plugin before proceeding
-			if ( ! IntegrationRegistry::has_active_localization_plugin() ) {
-				return;
-			}
-
+	/**
+	 * Get the language feed data handler (lazy-loaded).
+	 *
+	 * Only instantiates LanguageFeedData when it's actually needed,
+	 * following the same pattern as Products\Feed.
+	 *
+	 * @return LanguageFeedData
+	 * @since 3.6.0
+	 */
+	private function get_language_feed_data(): LanguageFeedData {
+		if ( null === $this->language_feed_data ) {
 			$this->language_feed_data = new LanguageFeedData();
-
-			// Get the default language from the active localization plugin
-			$default_language = $this->language_feed_data->get_default_language();
-
-			// Ensure we have a valid language code
-			if ( empty( $default_language ) ) {
-				return;
-			}
-
-			$this->add_hooks();
-
-		} catch ( \Throwable $e ) {
-			// Log the error but don't break the plugin
-			if ( function_exists( 'error_log' ) ) {
-				error_log(
-					'Facebook for WooCommerce - Language Override Feed initialization failed: ' .
-					$e->getMessage() . ' in ' . $e->getFile() . ':' . $e->getLine()
-				);
-			}
-			// Silently fail - the feature just won't be available
-			return;
 		}
+		return $this->language_feed_data;
 	}
 
 
@@ -201,7 +186,7 @@ class LanguageOverrideFeed {
 		}
 
 		// Get all available languages
-		$languages = $this->language_feed_data->get_available_languages();
+		$languages = $this->get_language_feed_data()->get_available_languages();
 
 		if ( empty( $languages ) ) {
 			return;
@@ -216,7 +201,7 @@ class LanguageOverrideFeed {
 			try {
 				// Generate the feed file for this language
 				$language_feed_writer = new LanguageOverrideFeedWriter( $language_code );
-				$result = $language_feed_writer->write_language_feed_file( $this->language_feed_data, $language_code );
+				$result = $language_feed_writer->write_language_feed_file( $this->get_language_feed_data(), $language_code );
 
 				if ( $result['success'] ) {
 					$successful_languages[] = $language_code;
@@ -429,7 +414,8 @@ class LanguageOverrideFeed {
 			$file_path = $language_feed_writer->get_file_path();
 
 			// Regenerate if the file doesn't exist or if explicitly requested
-			if ( ! empty( $_GET['regenerate'] ) || ! file_exists( $file_path ) ) {
+			$regenerate = Helper::get_requested_value( 'regenerate' );
+			if ( ! empty( $regenerate ) || ! file_exists( $file_path ) ) {
 				$success = $language_feed_writer->write_language_feed_file( $this->language_feed_data, $language_code );
 				if ( ! $success ) {
 					throw new PluginException( 'Failed to regenerate language feed file', 500 );
@@ -511,7 +497,7 @@ class LanguageOverrideFeed {
 			return;
 		}
 
-		$languages = $this->language_feed_data->get_available_languages();
+		$languages = $this->get_language_feed_data()->get_available_languages();
 
 		foreach ( $languages as $language_code ) {
 			$this->upload_single_language_feed( $language_code );

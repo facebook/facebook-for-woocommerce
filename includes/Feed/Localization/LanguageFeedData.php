@@ -3,12 +3,6 @@ declare( strict_types=1 );
 
 namespace WooCommerce\Facebook\Feed\Localization;
 
-// Manually include the integration classes
-require_once __DIR__ . '/../../Integrations/Abstract_Localization_Integration.php';
-require_once __DIR__ . '/../../Integrations/IntegrationRegistry.php';
-require_once __DIR__ . '/../../Integrations/WPML.php';
-require_once __DIR__ . '/../../Integrations/Polylang.php';
-
 use WooCommerce\Facebook\Integrations\IntegrationRegistry;
 use WooCommerce\Facebook\Framework\Logger;
 

@@ -226,6 +226,30 @@ class Polylang extends Abstract_Localization_Integration {
 	}
 
 	/**
+	 * Get the plugin-specific language identifier for a given locale
+	 *
+	 * Converts a full locale (e.g., 'es_ES') to Polylang's language slug.
+	 *
+	 * @param string $locale Full locale code (e.g., 'es_ES', 'fr_FR')
+	 * @return string|null Polylang language slug or null if not found
+	 */
+	protected function get_plugin_language_identifier( string $locale ): ?string {
+		return $this->get_polylang_slug_for_locale( $locale );
+	}
+
+	/**
+	 * Check if a product is in a specific language
+	 *
+	 * @param int    $product_id Product ID to check
+	 * @param string $language_identifier Polylang language slug
+	 * @return bool True if product is in the specified language
+	 */
+	protected function is_product_in_language( int $product_id, string $language_identifier ): bool {
+		$product_language = pll_get_post_language( $product_id );
+		return $product_language && $product_language === $language_identifier;
+	}
+
+	/**
 	 * Get products from the default language
 	 *
 	 * Uses Polylang's API to find products that are in the default language.
@@ -236,59 +260,8 @@ class Polylang extends Abstract_Localization_Integration {
 	 * @return array Array of product IDs from the default language
 	 */
 	public function get_products_from_default_language( int $limit = 10, int $offset = 0 ): array {
-		if ( ! $this->is_plugin_active() ) {
-			return [];
-		}
-
-		$default_language_locale = $this->get_default_language(); // This now returns full locale
-		if ( ! $default_language_locale ) {
-			return [];
-		}
-
-		// Get the Polylang language slug for the default language
-		$polylang_languages = pll_languages_list( [ 'fields' => '' ] );
-		$default_language_slug = null;
-
-		if ( is_array( $polylang_languages ) ) {
-			foreach ( $polylang_languages as $language ) {
-				$locale = $language->locale ?? $language->slug;
-				if ( $locale === $default_language_locale ) {
-					$default_language_slug = $language->slug;
-					break;
-				}
-			}
-		}
-
-		// Fallback: if we can't find the mapping, try using the locale as the slug
-		if ( ! $default_language_slug ) {
-			$default_language_slug = $default_language_locale;
-		}
-
-		// Get published products - use legacy approach when $limit = -1
-		$args = [
-			'post_type' => 'product',
-			'post_status' => 'publish',
-			'posts_per_page' => $limit,
-			'offset' => $offset,
-			'fields' => 'ids',
-		];
-
-		$all_products = get_posts( $args );
-		$default_language_products = [];
-
-		foreach ( $all_products as $product_id ) {
-			// Use Polylang function to check if this product is in the default language
-			$product_language = pll_get_post_language( $product_id );
-
-			if ( $product_language ) {
-				// Only include products that are in the default language
-				if ( $product_language === $default_language_slug ) {
-					$default_language_products[] = $product_id;
-				}
-			}
-		}
-
-		return $default_language_products;
+		// Use parent implementation with template method pattern
+		return parent::get_products_from_default_language( $limit, $offset );
 	}
 
 	/**

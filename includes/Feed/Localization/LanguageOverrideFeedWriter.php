@@ -183,6 +183,24 @@ class LanguageOverrideFeedWriter extends AbstractFeedFileWriter {
 			);
 
 		} catch ( \Exception $e ) {
+			// Log the error to Meta
+			if ( class_exists( '\WooCommerce\Facebook\Framework\Logger' ) ) {
+				\WooCommerce\Facebook\Framework\Logger::log(
+					sprintf( 'Failed to write language feed file for %s: %s', $language_code, $e->getMessage() ),
+					array(
+						'language_code' => $language_code,
+						'exception_message' => $e->getMessage(),
+						'exception_trace' => $e->getTraceAsString(),
+					),
+					array(
+						'should_send_log_to_meta'        => true,
+						'should_save_log_in_woocommerce' => true,
+						'woocommerce_log_level'          => \WC_Log_Levels::ERROR,
+					),
+					$e
+				);
+			}
+
 			return array(
 				'success' => false,
 				'count'   => 0,
