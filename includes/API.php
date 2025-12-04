@@ -619,7 +619,14 @@ class API extends Base {
 				RolloutSwitches::CAPI_EVENT_LOGGING_ENABLED
 			);
 
+			// Debug: Log switch status
+			error_log( sprintf(
+				'[FB_CAPI_DEBUG] Rollout switch check - CAPI_EVENT_LOGGING_ENABLED: %s',
+				$is_capi_event_logging_enabled ? 'ENABLED' : 'DISABLED'
+			) );
+
 			if ( ! $is_capi_event_logging_enabled ) {
+				error_log( '[FB_CAPI_DEBUG] CAPI event logging is DISABLED by rollout switch - returning early' );
 				return;
 			}
 
