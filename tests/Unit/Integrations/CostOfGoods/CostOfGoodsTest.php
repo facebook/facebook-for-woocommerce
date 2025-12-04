@@ -35,6 +35,19 @@ class CostOfGoodsTest extends AbstractWPUnitTestWithOptionIsolationAndSafeFilter
 		$this->assertFalse(CostOfGoods::calculate_cogs_for_products([]));
 	}
 
+	public function test_given_cogs_provider_available_when_returned_cogs_value_is_zero_then_false_is_returned() {
+		$product = $this->createMock(WC_Product::class);
+		$cogs_provider_mock = $this->createMock( AbstractCogsProvider::class );
+		$cogs_provider_mock->method( 'get_cogs_value' )->willReturn( 0 );
+		
+		// Patch get_cogs_providers to return our mock
+		$reflection = new \ReflectionClass( CostOfGoods::class );
+		$reflection->setStaticPropertyValue('available_integrations', [$cogs_provider_mock]);
+		$reflection->setStaticPropertyValue('already_fetched', true);
+		
+		$this->assertFalse(CostOfGoods::calculate_cogs_for_products([$product]));
+	}
+
 	public function test_given_cogs_provider_available_when_a_product_provided_then_cogs_is_returned() {
 		$product = $this->createMock(WC_Product::class);
 		$cogs_provider_mock = $this->createMock( AbstractCogsProvider::class );
