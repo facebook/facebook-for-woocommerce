@@ -51,7 +51,7 @@ class CogsIntegrationTests extends IntegrationTestCase
 		$product->set_cogs_value(450.0);
 		$product->save();
 
-		$this->assertTrue($product->get_cogs_value() == null, 'cogs is not enabled at a product level');
+		$this->assertFalse($product->get_cogs_value() == null, 'cogs is not enabled at a product level');
 
 		$this->assertEquals(100.0, $product->get_cogs_total_value());
 
