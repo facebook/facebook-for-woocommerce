@@ -18,6 +18,8 @@ use WooCommerce\Facebook\API\Response;
 use WooCommerce\Facebook\Events\Event;
 use WooCommerce\Facebook\Framework\Api\Base;
 use WooCommerce\Facebook\Framework\Api\Exception as ApiException;
+use WooCommerce\Facebook\Framework\Logger;
+use WooCommerce\Facebook\RolloutSwitches;
 
 /**
  * API handler.
@@ -612,36 +614,44 @@ class API extends Base {
 	 */
 	public function log_events_for_tests( $response, $request ) {
 		try {
-			$cookie_name = getenv( 'FB_E2E_TEST_COOKIE_NAME' );
+			// Check if rollout switch is enabled
+			$is_capi_event_logging_enabled = $this->get_plugin()->get_rollout_switches()->is_switch_enabled(
+				RolloutSwitches::CAPI_EVENT_LOGGING_ENABLED
+			);
 
+			if ( ! $is_capi_event_logging_enabled ) {
+				return;
+			}
+
+			// Check if test cookie is present
+			$cookie_name = getenv( 'FB_E2E_TEST_COOKIE_NAME' );
 			if ( empty( $_COOKIE[ $cookie_name ] ) ) {
 				// Test cookie is not present. Do not log events.
 				return;
 			}
 
-			// Log unsuccessful response
+			// Validate response
 			if ( ! $response ) {
-				error_log( 'Facebook for WooCommerce E2E: CAPI response is null - cannot log test events' );
-				return;
+				throw new \Exception( 'CAPI response is null - cannot log test events' );
 			}
+
 			if ( $response->has_api_error() ) {
-				error_log(
+				throw new \Exception(
 					sprintf(
-						'Facebook for WooCommerce E2E: CAPI response has error - Code: %s, Type: %s, Message: %s, User Message: %s',
+						'CAPI response has error - Code: %s, Type: %s, Message: %s, User Message: %s',
 						$response->get_api_error_code() ? $response->get_api_error_code() : 'N/A',
 						$response->get_api_error_type() ? $response->get_api_error_type() : 'N/A',
 						$response->get_api_error_message() ? $response->get_api_error_message() : 'N/A',
 						$response->get_user_error_message() ? $response->get_user_error_message() : 'N/A'
 					)
 				);
-				return;
 			}
 
+			// Validate logger file exists
 			$logger_path = getenv( 'FB_E2E_LOGGER_PATH' );
 			$logger_file = dirname( plugin_dir_path( __FILE__ ) ) . $logger_path;
 			if ( ! file_exists( $logger_file ) ) {
-				error_log( 'Facebook for WooCommerce E2E: Test logging failed - Logger file not found' );
-				return;
+				throw new \Exception( 'Test logging failed - Logger file not found at: ' . $logger_file );
 			}
 			require_once $logger_file;
 
@@ -657,7 +667,21 @@ class API extends Base {
 				}
 			}
 		} catch ( \Exception $e ) {
-			error_log( sprintf( 'Facebook for WooCommerce E2E: CAPI event capturing failed with exception: %s', $e->getMessage() ) );
+			Logger::log(
+				'Facebook for WooCommerce E2E: CAPI event capturing failed',
+				array(
+					'event'      => 'capi_test_event_logging_error',
+					'extra_data' => array(
+						'error_message' => $e->getMessage(),
+					),
+				),
+				array(
+					'should_send_log_to_meta'        => true,
+					'should_save_log_in_woocommerce' => true,
+					'woocommerce_log_level'          => \WC_Log_Levels::WARNING,
+				),
+				$e
+			);
 		}
 	}
 
