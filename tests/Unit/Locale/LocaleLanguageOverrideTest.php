@@ -84,16 +84,14 @@ class LocaleLanguageOverrideTest extends AbstractWPUnitTestWithSafeFiltering {
 	/**
 	 * Test _XX language conversion for Norwegian variants.
 	 *
-	 * Note: Only 'no' (without region) converts to no_XX. Regional variants like
-	 * nb_NO and nn_NO are mapped to their standard override values.
+	 * Facebook uses no_XX for all Norwegian language variants, including
+	 * Norwegian Bokmål (nb_NO) and Norwegian Nynorsk (nn_NO).
 	 */
 	public function test_convert_norwegian_variants_to_xx_format() {
-		// Only 'no' without region converts to no_XX
+		// All Norwegian variants convert to no_XX
 		$this->assertEquals( 'no_XX', Locale::convert_to_facebook_language_code( 'no_NO' ) );
-
-		// Regional variants have their own mappings
-		$this->assertEquals( 'nb_NO', Locale::convert_to_facebook_language_code( 'nb_NO' ) );
-		$this->assertEquals( 'nn_NO', Locale::convert_to_facebook_language_code( 'nn_NO' ) );
+		$this->assertEquals( 'no_XX', Locale::convert_to_facebook_language_code( 'nb_NO' ) );
+		$this->assertEquals( 'no_XX', Locale::convert_to_facebook_language_code( 'nn_NO' ) );
 	}
 
 	/**
