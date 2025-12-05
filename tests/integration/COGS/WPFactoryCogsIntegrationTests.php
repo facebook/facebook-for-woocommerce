@@ -72,7 +72,7 @@ class WPFactoryCogsIntegrationTests extends IntegrationTestCase
 
 		// Fire plugins_loaded for just this plugin
 		do_action('plugins_loaded');
-
+		do_action('alg_wc_cog_on_activation');
 		// Restore original hooks
 		$wp_filter['plugins_loaded'] = $backup;
 	}
