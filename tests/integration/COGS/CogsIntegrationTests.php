@@ -33,6 +33,10 @@ class CogsIntegrationTests extends IntegrationTestCase
 		$this->disable_facebook_sync();
 	}
 
+	public function test_given_no_cogs_providers_available_when_calculate_method_called_then_false_is_returned() {
+		$this->assertFalse(new CostOfGoods(array())->calculate_cogs_for_products($this->create_simple_product()));
+	}
+
 	// public function test_given_no_cogs_providers_available_when_calculate_method_called_then_false_is_returned() {
 	// 	$product = $this->createMock( WC_Product::class );
 	// 	$mock = $this->createMock( WooCCogsProvider::class );

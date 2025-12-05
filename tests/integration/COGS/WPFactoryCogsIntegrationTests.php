@@ -62,6 +62,19 @@ class WPFactoryCogsIntegrationTests extends IntegrationTestCase
 			activate_plugin( self::PLUGIN_FILE_PATH );
 			$this->assertTrue(is_plugin_active(self::PLUGIN_FILE_PATH));
 		}
+		global $wp_filter;
+
+		// Backup all plugins_loaded hooks
+		$backup = $wp_filter['plugins_loaded'] ?? null;
+
+		// Remove all hooks temporarily
+		unset($wp_filter['plugins_loaded']);
+
+		// Fire plugins_loaded for just this plugin
+		do_action('plugins_loaded');
+
+		// Restore original hooks
+		$wp_filter['plugins_loaded'] = $backup;
 	}
 
 	public function test_given_wpfactory_cogs_is_disabled_when_wpfactory_provider_is_available_called_then_it_returns_false() {
