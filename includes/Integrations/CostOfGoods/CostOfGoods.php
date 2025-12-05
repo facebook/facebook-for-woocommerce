@@ -28,9 +28,9 @@ class CostOfGoods {
 	/** @var array used as an input of the supported integrations. */
 	protected $supported_integrations;
 
-	public function __construct( $supported_integrations = self::get_supported_integrations() )
+	public function __construct( $supported_integrations = null )
 	{
-		$this->supported_integrations = $supported_integrations;
+		$this->supported_integrations = ( null === $supported_integrations ) ? self::get_supported_integrations() : $supported_integrations;
 	}
 
 	public function calculate_cogs_for_products( $products ) {
