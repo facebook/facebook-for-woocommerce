@@ -18,12 +18,17 @@ class WPFactoryCogsIntegrationTests extends IntegrationTestCase
 	 */
 	public function setUp(): void
 	{
-		$abspath = '/tmp/wordpress/';
 		parent::setUp();
+		$abspath = '/tmp/wordpress/';
+		require_once $abspath . 'wp-admin/includes/plugin-install.php';
+		$active_plugins = get_option('active_plugins', []);
+		if (!in_array('woocommerce/woocommerce.php', $active_plugins, true)) {
+			$active_plugins[] = 'woocommerce/woocommerce.php';
+			update_option('active_plugins', $active_plugins);
+		}
 		var_dump('==========SetUp==============');
 		var_dump('==========START==============');
 		if ( ! file_exists( '/tmp/wordpress/wp-content/plugins/cost-of-goods-for-woocommerce/cost-of-goods-for-woocommerce.php' ) ) {
-			require_once $abspath . 'wp-admin/includes/plugin-install.php';
 			require_once $abspath . 'wp-admin/includes/admin.php';
 			include_once $abspath . 'wp-admin/includes/class-wp-upgrader.php';
 			require_once $abspath . 'wp-admin/includes/class-plugin-upgrader.php';
