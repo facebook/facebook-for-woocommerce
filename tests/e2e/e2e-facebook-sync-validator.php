@@ -1,11 +1,13 @@
 <?php
 /**
- *  E2E Facebook Sync Validator - For Simple & Variable Products
+ * E2E Facebook Sync Validator - For Products & Categories
  *
- * Validates product sync between WooCommerce and Facebook with comprehensive debugging
- * Follows same flow pattern for both product types: getData -> checkSync -> compareFields
+ * Validates sync between WooCommerce and Facebook with comprehensive debugging
+ * Follows same flow pattern for all entity types: getData -> checkSync -> compareFields
  *
- * Usage: php e2e-facebook-sync-validator.php <product_id> [wait_seconds]
+ * Usage:
+ *   Products:   php e2e-facebook-sync-validator.php <product_id> [wait_seconds] [max_retries]
+ *   Categories: php e2e-facebook-sync-validator.php --type=category <category_id> [wait_seconds] [max_retries]
  */
 
 // Bootstrap WordPress
@@ -283,7 +285,7 @@ class FacebookSyncValidator {
 
         $api = facebook_for_woocommerce()->get_api();
         $catalog_id = $this->integration->get_product_catalog_id();
-        $fields = 'id,name,price,description,availability,retailer_id,condition,brand,color,size,image_url,product_group{id}';
+        $fields = 'id,name,price,description,availability,retailer_id,condition,brand,color,size,image_url,product_group{id},product_sets{id,retailer_id}';
 
         $retry_count = 0;
 
@@ -312,6 +314,7 @@ class FacebookSyncValidator {
                         'size' => $fb_data['size'] ?? '',
                         'image_url' => (!empty($fb_data['image_url'])) ? $fb_data['image_url'] : ($wp_url . '/wp-content/uploads/woocommerce-placeholder.webp'),
                         'product_group_id' => $fb_data['product_group']['id'] ?? null,
+                        'product_sets' => $fb_data['product_sets']['data'],
                         'found' => true
                     ];
                 }
@@ -496,19 +499,332 @@ class FacebookSyncValidator {
     }
 }
 
+/**
+ * Category Sync Validator Class
+ *
+ * Validates WooCommerce category sync to Facebook product sets
+ */
+class CategorySyncValidator {
+
+    private $category_id;
+    private $category;
+    private $integration;
+    private $result;
+    private $max_retries;
+
+    /**
+     * Field mappings between WooCommerce category and Facebook product set
+     */
+    private const FIELD_MAPPINGS = [
+        'name' => 'name',
+        'retailer_id' => 'retailer_id'
+    ];
+
+    /**
+     * Helper method to add debug messages
+     */
+    private function debug($message) {
+        $this->result['debug'][] = $message;
+    }
+
+    /**
+     * Initialize the validator and verify dependencies
+     */
+    public function __construct($category_id, $wait_seconds = 5, $max_retries = 6) {
+        $this->category_id = (int)$category_id;
+        $this->max_retries = (int)$max_retries;
+        $this->result = [
+            'success' => false,
+            'category_id' => $this->category_id,
+            'term_taxonomy_id' => null,
+            'sync_status' => 'unknown',
+            'retailer_id' => null,
+            'facebook_product_set_id' => null,
+            'mismatches' => [],
+            'debug' => [],
+            'error' => null
+        ];
+
+        // Wait for Facebook processing
+        if ($wait_seconds > 0) {
+            sleep($wait_seconds);
+            $this->debug("Waited {$wait_seconds} seconds before validation");
+        }
+
+        $this->validateDependencies();
+        $this->initializeCategory();
+        $this->initializeIntegration();
+    }
+
+    /**
+     * Check if required functions are available
+     */
+    private function validateDependencies() {
+        if (!function_exists('get_term')) {
+            throw new Exception('WordPress term functions not available');
+        }
+        if (!function_exists('facebook_for_woocommerce')) {
+            throw new Exception('Facebook plugin not loaded');
+        }
+        if (!$this->category_id) {
+            throw new Exception('Category ID required');
+        }
+    }
+
+    /**
+     * Initialize category
+     */
+    private function initializeCategory() {
+        $this->debug("Initializing category: {$this->category_id}");
+        $this->category = get_term($this->category_id, 'product_cat');
+
+        if (is_wp_error($this->category) || !$this->category) {
+            throw new Exception("Category {$this->category_id} not found");
+        }
+
+        $this->result['term_taxonomy_id'] = $this->category->term_taxonomy_id;
+        $this->debug("Initialized category: {$this->category->name} (term_taxonomy_id: {$this->category->term_taxonomy_id})");
+    }
+
+    /**
+     * Set up Facebook API integration and verify configuration
+     */
+    private function initializeIntegration() {
+        $this->integration = facebook_for_woocommerce()->get_integration();
+        if (!$this->integration) {
+            throw new Exception('Facebook integration not available');
+        }
+        if (!$this->integration->is_configured()) {
+            throw new Exception('Facebook integration not configured');
+        }
+        $this->debug('Facebook integration initialized and configured');
+    }
+
+    /**
+     * Main validation method - validates sync between WooCommerce category and Facebook product set
+     */
+    public function validate() {
+        try {
+            // Step 1: Get WooCommerce category data
+            $woo_data = $this->getCategoryData();
+            $this->debug("Extracted WooCommerce category data");
+
+            // Step 2: Fetch Facebook product set data
+            $retailer_id = $this->getRetailerId($this->category);
+            $this->result['retailer_id'] = $retailer_id;
+            $fb_data = $this->fetchFacebookProductSetData($retailer_id);
+
+            $this->result['raw_data'] = [
+                'woo_data' => $woo_data,
+                'facebook_data' => $fb_data
+            ];
+            // Step 3: Check sync status
+            $this->checkSyncStatus($woo_data, $fb_data);
+
+            // Step 4: Compare fields if synced
+            if ($fb_data['found']) {
+                $this->compareFields($woo_data, $fb_data);
+            }
+
+            // Set success based on sync status and no mismatches
+            $this->result['success'] = (
+                $this->result['sync_status'] === 'synced' &&
+                count($this->result['mismatches']) === 0
+            );
+
+        } catch (Exception $e) {
+            $this->result['error'] = $e->getMessage();
+            $this->debug("Validation failed: " . $e->getMessage());
+        }
+
+        return $this->result;
+    }
+
+    /**
+     * Extract WooCommerce category data
+     */
+    private function getCategoryData() {
+        $external_url = get_term_link($this->category, 'product_cat');
+
+        // Handle WP_Error from get_term_link
+        if (is_wp_error($external_url)) {
+            $external_url = '';
+        }
+
+        return [
+            'name' => $this->category->name,
+            'description' => $this->category->description ?? '',
+            'external_url' => $external_url,
+            'retailer_id' => $this->getRetailerId($this->category),
+            'term_taxonomy_id' => $this->category->term_taxonomy_id
+        ];
+    }
+
+    /**
+     * Get retailer ID for category (uses term_taxonomy_id)
+     */
+    private function getRetailerId($category) {
+        // Important: Categories use term_taxonomy_id as retailer_id (not term_id)
+        return (string)$category->term_taxonomy_id;
+    }
+
+    /**
+     * Fetch Facebook product set data via API with retry logic
+     */
+    private function fetchFacebookProductSetData($retailer_id) {
+        $api = facebook_for_woocommerce()->get_api();
+        $catalog_id = $this->integration->get_product_catalog_id();
+        $retry_count = 0;
+
+        do {
+            try {
+                $response = $api->read_product_set_item($catalog_id, $retailer_id);
+                $product_set_id = $response->get_product_set_id();
+
+                if ($product_set_id) {
+                    $this->debug(
+                        $retry_count === 0
+                            ? "Successfully fetched product set for retailer_id: {$retailer_id}"
+                            : "Successfully fetched product set on retry #" . ($retry_count + 1)
+                    );
+
+                    // Get full product set data from response
+                    $response_data = $response->response_data["data"];
+                    $product_set_data = is_array($response_data) && isset($response_data[0]) ? $response_data[0] : null;
+
+                    if ($product_set_data) {
+                        // Parse metadata if it's a JSON string
+                        $metadata = [];
+                        if (isset($product_set_data['metadata'])) {
+                            $metadata = is_string($product_set_data['metadata'])
+                                ? json_decode($product_set_data['metadata'], true)
+                                : $product_set_data['metadata'];
+                        }
+
+                        return [
+                            'id' => $product_set_id,
+                            'name' => $product_set_data['name'] ?? '',
+                            'retailer_id' => $product_set_data['retailer_id'] ?? '',
+                            'found' => true
+                        ];
+                    }
+                }
+
+            } catch (Exception $e) {
+                $this->debug("Facebook API error for retailer_id {$retailer_id}: " . $e->getMessage());
+            }
+
+            $retry_count++;
+            if ($retry_count < $this->max_retries) {
+                $backoff_seconds = pow(2, $retry_count);
+                $this->debug("Retry attempt #{$retry_count} of {$this->max_retries} for retailer_id: {$retailer_id} (waiting {$backoff_seconds}s)");
+                sleep($backoff_seconds);
+            }
+
+        } while ($retry_count < $this->max_retries);
+
+        $this->debug("No product set found for retailer_id: {$retailer_id} after {$this->max_retries} retries");
+        return ['found' => false];
+    }
+
+    /**
+     * Check if category is synced as product set
+     */
+    private function checkSyncStatus($woo_data, $fb_data) {
+        if ($fb_data['found']) {
+            $this->result['sync_status'] = 'synced';
+            $this->result['facebook_product_set_id'] = $fb_data['id'];
+            $this->debug("Category is synced as product set: {$fb_data['id']}");
+        } else {
+            $this->result['sync_status'] = 'not_synced';
+            $this->debug("Category is NOT synced to Facebook");
+        }
+    }
+
+    /**
+     * Compare fields between WooCommerce category and Facebook product set
+     */
+    private function compareFields($woo_data, $fb_data) {
+        $mismatches = [];
+
+        foreach (self::FIELD_MAPPINGS as $woo_field => $fb_field) {
+            $woo_value = $woo_data[$woo_field] ?? '';
+            $fb_value = $fb_data[$fb_field] ?? '';
+
+            $normalized_woo = $this->normalizeValue($woo_value);
+            $normalized_fb = $this->normalizeValue($fb_value);
+
+            if ($normalized_woo !== $normalized_fb) {
+                $this->debug("MISMATCH {$woo_field}: WooCommerce='{$woo_value}' vs Facebook='{$fb_value}'");
+
+                $mismatches["{$this->category_id}_{$woo_field}"] = [
+                    'field' => $woo_field,
+                    'woocommerce_value' => $woo_value,
+                    'facebook_value' => $fb_value
+                ];
+            }
+        }
+
+        $this->result['mismatches'] = $mismatches;
+        $this->debug("Compared fields, found " . count($mismatches) . " mismatches");
+    }
+
+    /**
+     * Normalize values for comparison
+     */
+    private function normalizeValue($value) {
+        // Handle WP_Error objects
+        if (is_wp_error($value)) {
+            return '';
+        }
+        return trim(strtolower((string)$value));
+    }
+
+    /**
+     * Get JSON result
+     */
+    public function getJsonResult() {
+        return json_encode($this->result, JSON_PRETTY_PRINT);
+    }
+}
+
 // Main execution when called directly
 if (php_sapi_name() === 'cli') {
     try {
-        $product_id = isset($argv[1]) ? (int)$argv[1] : null;
-        $wait_seconds = isset($argv[2]) ? (int)$argv[2] : 10;
-        $max_retries = isset($argv[3]) ? (int)$argv[3] : 6;
+        // Check if --type=category flag is present
+        $is_category = in_array('--type=category', $argv);
 
-        if (!$product_id) {
-            echo json_encode(['success' => false, 'error' => 'Product ID required']);
-            exit(1);
+        if ($is_category) {
+            // Category validation mode
+            // Usage: php e2e-facebook-sync-validator.php --type=category <category_id> [wait_seconds] [max_retries]
+
+            $category_id = isset($argv[2]) ? (int)$argv[2] : null;
+            $wait_seconds = isset($argv[3]) ? (int)$argv[3] : 10;
+            $max_retries = isset($argv[4]) ? (int)$argv[4] : 6;
+
+            if (!$category_id) {
+                echo json_encode(['success' => false, 'error' => 'Category ID required']);
+                exit(1);
+            }
+
+            $validator = new CategorySyncValidator($category_id, $wait_seconds, $max_retries);
+
+        } else {
+            // Product validation mode (existing - unchanged)
+            // Usage: php e2e-facebook-sync-validator.php <product_id> [wait_seconds] [max_retries]
+
+            $product_id = isset($argv[1]) ? (int)$argv[1] : null;
+            $wait_seconds = isset($argv[2]) ? (int)$argv[2] : 10;
+            $max_retries = isset($argv[3]) ? (int)$argv[3] : 6;
+
+            if (!$product_id) {
+                echo json_encode(['success' => false, 'error' => 'Product ID required']);
+                exit(1);
+            }
+
+            $validator = new FacebookSyncValidator($product_id, $wait_seconds, $max_retries);
         }
 
-        $validator = new FacebookSyncValidator($product_id, $wait_seconds, $max_retries);
         $result = $validator->validate();
         echo $validator->getJsonResult();
 
