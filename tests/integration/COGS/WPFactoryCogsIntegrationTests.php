@@ -44,6 +44,8 @@ class WPFactoryCogsIntegrationTests extends IntegrationTestCase
 		$res = activate_plugin( 'cost-of-goods-for-woocommerce/cost-of-goods-for-woocommerce.php' );
 		$this->assertEquals(null, $res);
 		require_once WP_PLUGIN_DIR . '/cost-of-goods-for-woocommerce/cost-of-goods-for-woocommerce.php';
+		do_action( 'before_woocommerce_init' );
+    	do_action( 'woocommerce_init' );
 	}
 
 	public function test_given_wpfactory_cogs_is_disabled_when_wpfactory_provider_is_available_called_then_it_returns_false() {
