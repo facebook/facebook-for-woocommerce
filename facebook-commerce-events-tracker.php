@@ -12,6 +12,7 @@ use WooCommerce\Facebook\Events\Event;
 use WooCommerce\Facebook\Framework\Api\Exception as ApiException;
 use WooCommerce\Facebook\Framework\Helper;
 use WooCommerce\Facebook\Framework\Logger;
+use WooCommerce\Facebook\Integrations\CostOfGoods\CostOfGoods;
 
 if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 
@@ -51,6 +52,9 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 		/** @var bool whether the pixel should be enabled */
 		private $is_pixel_enabled;
 
+		/** @var CostOfGoods CostOfGoods provider instance. Used to calculate the profit margin */
+		private $cogs_provider;
+
 		/**
 		 * @var \FacebookAds\ParamBuilder|null shared ParamBuilder instance
 		 */
@@ -75,6 +79,7 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 
 			$this->param_builder_server_setup();
 			$this->add_hooks();
+			$this->cogs_provider = new CostOfGoods();
 		}
 
 		public static function get_param_builder() {
@@ -745,6 +750,14 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 				'user_data'   => $this->pixel->get_user_info(),
 			);
 
+			$cogs = $this->cogs_provider->calculate_cogs_for_products( [ $product ] );
+
+			if ( false !== $cogs ) {
+				$price_excluding_tax = wc_get_price_excluding_tax( $product ) * $quantity;
+				$cost_of_goods = $cogs * $quantity;
+				$event_data['custom_data']['net_revenue'] = $price_excluding_tax - $cost_of_goods;
+			}
+
 			$event = new WooCommerce\Facebook\Events\Event( $event_data );
 
 			$this->send_api_event( $event );
@@ -1016,12 +1029,14 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 			$contents      = array();
 			$product_ids   = array( array() );
 			$product_names = array();
+			$products      = array();
 
 			foreach ( $order->get_items() as $item ) {
 
 				$product = $item->get_product();
 
 				if ( $product ) {
+					$products[] = $product;
 					$product_ids[]   = \WC_Facebookcommerce_Utils::get_fb_content_ids( $product );
 					$product_names[] = \WC_Facebookcommerce_Utils::clean_string( $product->get_title() );
 
@@ -1038,6 +1053,7 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 					$contents[] = $content;
 				}
 			}
+
 			// Advanced matching information is extracted from the order
 			$event_data = array(
 				'event_name'  => $event_name,
@@ -1046,12 +1062,20 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 					'content_name' => wp_json_encode( $product_names ),
 					'contents'     => wp_json_encode( $contents ),
 					'content_type' => $content_type,
-					'value'        => $order->get_total(),
+					'value'        => $order->get_subtotal(),
 					'currency'     => ( method_exists( $order, 'get_currency' ) ? $order->get_currency() : get_woocommerce_currency() ),
 					'order_id'     => $order_id,
 				),
 				'user_data'   => $this->get_user_data_from_billing_address( $order ),
 			);
+
+			$cogs = $this->cogs_provider->calculate_cogs_for_products( $products );
+
+			if ( false !== $cogs ) {
+				$price_excluding_tax = $order->get_subtotal();
+				$cost_of_goods = $cogs;
+				$event_data['custom_data']['net_revenue'] = $price_excluding_tax - $cost_of_goods;
+			}
 
 			$event = new Event( $event_data );
 

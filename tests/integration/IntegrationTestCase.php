@@ -97,6 +97,14 @@ abstract class IntegrationTestCase extends WP_UnitTestCase {
 		delete_transient( '_wc_facebook_for_woocommerce_refresh_business_configuration' );
 	}
 
+	protected function mark_plugin_as_active( $plugin ): void {
+		$active_plugins = get_option('active_plugins', []);
+		if (!in_array( $plugin , $active_plugins, true)) {
+			$active_plugins[] = $plugin;
+			update_option('active_plugins', $active_plugins);
+		}
+	}
+
 	/**
 	 * Clear all products from database
 	 */

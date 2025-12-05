@@ -1,0 +1,261 @@
+<?php
+
+declare(strict_types=1);
+
+namespace WooCommerce\Facebook\Tests\Integration\COGS;
+
+use WooCommerce\Facebook\Tests\Integration\IntegrationTestCase;
+use WooCommerce\Facebook\Integrations\CostOfGoods\WooCCogsProvider;
+use WooCommerce\Facebook\Integrations\CostOfGoods\CostOfGoods;
+use WC_Product_Variation;
+use WC_Product_Attribute;
+use WC_Product;
+
+class CogsIntegrationTests extends IntegrationTestCase
+{
+
+	/**
+	 * @var API
+	 */
+	private $api;
+
+	/**
+	 * @var bool Whether we have valid credentials for full integration testing
+	 */
+	private $has_valid_credentials = false;
+
+	/**
+	 * Set up test environment
+	 */
+	public function setUp(): void
+	{
+		parent::setUp();
+		$this->disable_facebook_sync();
+	}
+
+	public function test_given_no_cogs_providers_available_when_calculate_method_called_then_false_is_returned() {
+		$this->assertFalse((new CostOfGoods(array()))->calculate_cogs_for_products($this->create_simple_product()));
+	}
+
+	// public function test_given_no_cogs_providers_available_when_calculate_method_called_then_false_is_returned() {
+	// 	$product = $this->createMock( WC_Product::class );
+	// 	$mock = $this->createMock( WooCCogsProvider::class );
+	// 	$mock->method('is_available')->willReturn(false);
+		
+	// 	$reflection = new \ReflectionClass( CostOfGoods::class );
+	// 	$reflection->setStaticPropertyValue('available_integrations', );
+		
+
+	// 	$this->assertFalse(CostOfGoods::calculate_cogs_for_products([]));
+	// }
+
+	private function enable_cogs_in_woo_settings() {
+		wc_get_container()->get( 'Automattic\WooCommerce\Internal\Features\FeaturesController' )->change_feature_enable('cost_of_goods_sold', true);
+	}
+
+	private function disable_cogs_in_woo_settings() {
+		wc_get_container()->get( 'Automattic\WooCommerce\Internal\Features\FeaturesController' )->change_feature_enable('cost_of_goods_sold', false);
+	}
+
+	// If both WooC and WPF are available, WooC result is returned
+	
+
+	// public function test_given_wooc_cogs_is_disabled_when_wooc_provider_is_available_called_then_it_returns_false() {
+	// 	$this->disable_cogs_in_woo_settings();
+	// 	$this->assertFalse(WooCCogsProvider::is_available(), 'WooC COGS is expected to be disabled');
+	// 	$this->assertFalse(function_exists( 'get_option' ) && ( 'yes' === get_option( 'woocommerce_feature_cost_of_goods_sold_enabled' ) ), 'woocommerce_feature_cost_of_goods_sold_enabled is expected to be disabled');
+	// }
+
+	// public function test_given_wooc_cogs_is_enabled_when_wooc_provider_is_available_called_then_it_returns_true() {
+	// 	$this->enable_cogs_in_woo_settings();
+	// 	$this->assertTrue(WooCCogsProvider::is_available(), 'WooC COGS is expected to be enabled');
+	// 	$this->assertTrue(function_exists( 'get_option' ) && ( 'yes' === get_option( 'woocommerce_feature_cost_of_goods_sold_enabled' ) ), 'woocommerce_feature_cost_of_goods_sold_enabled is expected to be enabled');
+	// }
+
+	// public function test_given_cogs_does_not_exist_for_product_when_calculate_method_is_called_then_it_returns_false()
+	// {
+	// 	$this->enable_cogs_in_woo_settings();
+	// 	$product = $this->create_simple_product();
+	// 	$product->save();
+
+	// 	$this->assertEquals(0, $product->get_cogs_total_value(), 'Incorrect value is set for Product WooC COGS');
+
+	// 	$value = CostOfGoods::calculate_cogs_for_products([$product]);
+	// 	$this->assertEquals(false, $value);
+	// }
+
+	// public function test_given_cogs_exists_for_product_when_calculate_method_is_called_then_it_returns_correct_value()
+	// {
+	// 	$this->enable_cogs_in_woo_settings();
+	// 	$cogs_value = 100.0;
+
+	// 	$product = $this->create_simple_product();
+	// 	$product->set_cogs_value($cogs_value);
+	// 	$product->save();
+
+	// 	$this->assertEquals($cogs_value, $product->get_cogs_total_value(), 'Incorrect value is set for Product WooC COGS');
+
+	// 	$value = CostOfGoods::calculate_cogs_for_products([$product]);
+	// 	$this->assertEquals($cogs_value, $value);
+	// }
+
+	// public function test_given_cogs_provider_available_when_multiple_products_provided_and_all_have_cogs_then_sum_cogs_is_returned() {
+	// 	$this->enable_cogs_in_woo_settings();
+
+	// 	$product1_cogs_value = 100.0;
+	// 	$product2_cogs_value = 150.0;
+
+	// 	$product1 = $this->create_simple_product();
+	// 	$product1->set_cogs_value($product1_cogs_value);
+	// 	$product1->save();
+
+	// 	$product2 = $this->create_simple_product();
+	// 	$product2->set_cogs_value($product2_cogs_value);
+	// 	$product2->save();
+
+	// 	$this->assertEquals($product1_cogs_value, $product1->get_cogs_total_value());
+	// 	$this->assertEquals($product2_cogs_value, $product2->get_cogs_total_value());
+
+	// 	$value = CostOfGoods::calculate_cogs_for_products([$product1, $product2]);
+	// 	$this->assertEquals($product1_cogs_value + $product2_cogs_value, $value);
+	// }
+
+	// public function test_given_cogs_provider_available_when_multiple_products_provided_but_one_does_not_have_cogs_then_false_is_returned() {
+	// 	$this->enable_cogs_in_woo_settings();
+
+	// 	$product1_cogs_value = 100.0;
+		
+	// 	$product1 = $this->create_simple_product();
+	// 	$product1->set_cogs_value($product1_cogs_value);
+	// 	$product1->save();
+
+	// 	$product2 = $this->create_simple_product();
+	// 	$product2->save();
+
+	// 	$this->assertEquals($product1_cogs_value, $product1->get_cogs_total_value(), 'Incorrect value is set for Product WooC COGS');
+	// 	$this->assertEquals(0, $product2->get_cogs_total_value(), 'Incorrect value is set for Product WooC COGS');
+
+	// 	$value = CostOfGoods::calculate_cogs_for_products([$product1, $product2]);
+	// 	$this->assertEquals(false, $value);
+	// }
+	/**
+	 * Placeholder. These tests should be added:
+	 * 1. Testing WooC integration with older WooC versions
+	 * 2. WPFactory plugin is installed but inactive
+	 * 3. WooC Cogs is Disabled / Enabled. When WooC Cogs is disabled, WooCCogsProvider should return false in is_available
+	 * 4. Test for Simple & Variable products
+	 */
+	public function Given_Single_Purcahse_Event_When_SendingEvent_Then_RequestContainsValues() // Should be an E2E test
+	{
+		$this->assertTrue(false);
+	}
+
+	
+
+	public function given_product_has_cogs_value_when_get_cogs_value_is_called_then_correct_value_returned() {
+		$product = $this->createMock( WC_Product::class );
+		$product->method( 'get_cogs_total_value' )->willReturn( 10.0 );
+		
+		$reflection = new \ReflectionClass( WPFactoryCogsProvider::class );
+		$reflection->setStaticPropertyValue('is_available', null);
+		$instance = $reflection->newInstance();
+		
+		$value = $instance->get_cogs_value($product);
+		$this->assertEquals(10.0, $value);
+	}
+
+	public function given_woo_integration_is_not_available_when_is_available_called_then_it_returns_false()
+	{
+		if (class_exists('WC_Facebookcommerce_Utils')) {
+			\WC_Facebookcommerce_Utils::staticExpects($this->any())->method('is_woocommerce_integration')->willReturn(false);
+		} else {
+			$this->assertTrue(false);
+			eval('class WC_Facebookcommerce_Utils {
+				public static function is_woocommerce_integration() { return true; }
+			}');
+		}
+		$reflection = new \ReflectionClass(WooCCogsProvider::class);
+		$instance = $reflection->newInstance();
+		$this->expectException(\IntegrationIsNotAvailableException::class);
+	}
+
+	/* is_available = false, if:
+		- is_woo_integration is false
+		- WC_Product->get_cogs_total_value returns null
+		- false is returned from: wc_get_container()->get( 'Automattic\WooCommerce\Internal\Features\FeaturesController' )->feature_is_enabled( 'cost_of_goods_sold' )
+		- false is returned from get_option('woocommerce_feature_cost_of_goods_sold_enabled')
+
+		
+*/
+
+	
+
+	private function set_up_variable_product()
+	{
+
+		$size_attribute = new WC_Product_Attribute();
+		$size_attribute->set_name('Size');
+		$size_attribute->set_options(['Small', 'Medium', 'Large']);
+		$size_attribute->set_visible(true);
+		$size_attribute->set_variation(true);
+
+		$color_attribute = new WC_Product_Attribute();
+		$color_attribute->set_name('Color');
+		$color_attribute->set_options(['Red', 'Blue', 'Black']);
+		$color_attribute->set_visible(true);
+		$color_attribute->set_variation(true);
+
+		$variable_product = $this->create_variable_product([
+			'Size' => $size_attribute,
+			'Color' => $color_attribute
+		]);
+
+		$variations = [
+			['attributes' => ['size' => 'Small', 'color' => 'Red'], 'price' => '29.99'],
+			['attributes' => ['size' => 'Medium', 'color' => 'Blue'], 'price' => '34.99'],
+			['attributes' => ['size' => 'Large', 'color' => 'Black'], 'price' => '39.99']
+		];
+
+		$created_variations = [];
+		foreach ($variations as $variation_data) {
+			$variation = new WC_Product_Variation();
+			$variation->set_parent_id($variable_product->get_id());
+			$variation->set_attributes($variation_data['attributes']);
+			$variation->set_regular_price($variation_data['price']);
+			$variation->set_status('publish');
+			$variation->save();
+			$created_variations[] = $variation;
+		}
+
+		return $created_variations;
+	}
+
+	public function should_not_use_value_if_cogs_is_zero()
+	{
+		$this->assertTrue(false);
+	}
+
+	private function set_up_simple_products($count)
+	{
+		$this->disable_facebook_sync();
+		$products = [];
+
+		for ($i = 1; $i <= $count; $i++) {
+			$products[] = $this->create_simple_product([
+				'name' => "Simple Product {$i}",
+				'regular_price' => (10 + $i) . '.99',
+				'sku' => "Simple-{$i}",
+				'status' => 'publish'
+			]);
+		}
+		return $products;
+	}
+
+	/**
+	 * Clean up after each test
+	 */
+	public function tearDown(): void
+	{
+		parent::tearDown();
+	}
+}
