@@ -8,6 +8,7 @@
 	convertWarningsToExceptions="true"
 	convertDeprecationsToExceptions="true"
 	defaultTestSuite="unit"
+	processIsolation="true"
 >
 	<testsuites>
 		<testsuite name="unit">
