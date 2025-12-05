@@ -101,7 +101,8 @@ class WPFactoryCogsIntegrationTests extends IntegrationTestCase
 		$cogs_value = 100.0;
 
 		$product = $this->create_simple_product();
-		update_post_meta($product->id, '_alg_wc_cog_cost', $cogs_value);
+		$product->update_meta_data( '_alg_wc_cog_cost', $cogs_value );
+		$product->save();
 		
 		$value = (new CostOfGoods(array('WPFactory' => 'WPFactoryCogsProvider')))->calculate_cogs_for_products([$product]);
 		$this->assertEquals($cogs_value, $value);
