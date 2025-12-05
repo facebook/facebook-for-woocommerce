@@ -65,7 +65,7 @@ class EventValidator {
         const schema = EVENT_SCHEMAS[eventName];
         if (!schema) throw new Error(`No schema for: ${eventName}`);
 
-        const pixel = this.events.pixel.filter(e => e.eventName === eventName);
+        const pixel = this.events.pixel.filter(e => e.event_name === eventName);
         const capi = this.events.capi.filter(e => e.event_name === eventName);
 
         console.log(`   Pixel events found: ${pixel.length}`);
@@ -182,14 +182,14 @@ class EventValidator {
 
     validateDeduplication(p, c, errors) {
         console.log(`  ✓ Checking event deduplication...`);
-        if (!p.eventId) errors.push('Pixel missing event_id');
+        if (!p.event_id) errors.push('Pixel missing event_id');
         if (!c.event_id) errors.push('CAPI missing event_id');
 
-        if (p.eventId && c.event_id) {
-            if (p.eventId === c.event_id) {
-                console.log(`    ✓ Event IDs match: ${p.eventId}`);
+        if (p.event_id && c.event_id) {
+            if (p.event_id === c.event_id) {
+                console.log(`    ✓ Event IDs match: ${p.event_id}`);
             } else {
-                errors.push(`Event IDs mismatch: ${p.eventId} vs ${c.event_id}`);
+                errors.push(`Event IDs mismatch: ${p.event_id} vs ${c.event_id}`);
             }
         }
     }

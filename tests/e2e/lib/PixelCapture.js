@@ -45,7 +45,7 @@ class PixelCapture {
             eventData.api_status = response ? response.status() : 'N/A';
             eventData.api_ok = response ? response.ok() : false;
 
-            console.log(`   Event ID: ${eventData.eventId || 'none'}, API: ${eventData.api_status}`);
+            console.log(`   Event ID: ${eventData.event_id || 'none'}, API: ${eventData.api_status}`);
             await this.logToServer(eventData);
 
         } catch (err) {
@@ -77,9 +77,9 @@ class PixelCapture {
         const urlObj = new URL(url);
 
         // Extract basic fields
-        const eventName = urlObj.searchParams.get('ev') || 'Unknown';
-        const eventId = urlObj.searchParams.get('eid') || null;
-        const pixelId = urlObj.searchParams.get('id') || 'Unknown';
+        const event_name = urlObj.searchParams.get('ev') || 'Unknown';
+        const event_id = urlObj.searchParams.get('eid') || null;
+        const pixel_id = urlObj.searchParams.get('id') || 'Unknown';
 
         // Extract custom_data (cd[...]) and user_data (ud[...])
         const customData = {};
@@ -117,9 +117,9 @@ class PixelCapture {
         const cookies = await this.getAllCookies();
 
         return {
-            eventName: eventName,
-            eventId: eventId,
-            pixelId: pixelId,
+            event_name: event_name,
+            event_id: event_id,
+            pixel_id: pixel_id,
             custom_data: customData,
             user_data: userData,
             cookies: cookies,

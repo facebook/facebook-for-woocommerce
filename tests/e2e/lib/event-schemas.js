@@ -5,7 +5,7 @@
 module.exports = {
     PageView: {
         required: {
-            pixel: ['eventName', 'eventId', 'pixelId', 'timestamp'],
+            pixel: ['event_name', 'event_id', 'pixel_id', 'timestamp'],
             capi: ['event_name', 'event_id', 'event_time', 'action_source', 'user_data']
         },
         custom_data: []
@@ -13,7 +13,7 @@ module.exports = {
 
     ViewContent: {
         required: {
-            pixel: ['eventName', 'eventId', 'pixelId', 'timestamp', 'custom_data'],
+            pixel: ['event_name', 'event_id', 'pixel_id', 'timestamp', 'custom_data'],
             capi: ['event_name', 'event_id', 'event_time', 'action_source', 'user_data', 'custom_data']
         },
         custom_data: ['content_ids', 'content_type', 'content_name', 'value','contents' , 'content_category','currency']
@@ -21,7 +21,7 @@ module.exports = {
 
     AddToCart: {
         required: {
-            pixel: ['eventName', 'eventId', 'pixelId', 'timestamp', 'custom_data'],
+            pixel: ['event_name', 'event_id', 'pixel_id', 'timestamp', 'custom_data'],
             capi: ['event_name', 'event_id', 'event_time', 'action_source', 'user_data', 'custom_data']
         },
         custom_data: ['content_ids', 'content_type', 'content_name', 'value', 'currency']
@@ -29,7 +29,7 @@ module.exports = {
 
     InitiateCheckout: {
         required: {
-            pixel: ['eventName', 'eventId', 'pixelId', 'timestamp', 'custom_data'],
+            pixel: ['event_name', 'event_id', 'pixel_id', 'timestamp', 'custom_data'],
             capi: ['event_name', 'event_id', 'event_time', 'action_source', 'user_data', 'custom_data']
         },
         custom_data: ['content_ids', 'content_type', 'num_items', 'value', 'currency']
@@ -37,7 +37,7 @@ module.exports = {
 
     Purchase: {
         required: {
-            pixel: ['eventName', 'eventId', 'pixelId', 'timestamp', 'custom_data'],
+            pixel: ['event_name', 'event_id', 'pixel_id', 'timestamp', 'custom_data'],
             capi: ['event_name', 'event_id', 'event_time', 'action_source', 'user_data', 'custom_data']
         },
         custom_data: ['content_ids', 'content_type', 'value', 'currency']
@@ -46,7 +46,7 @@ module.exports = {
 
     ViewCategory: {
         required: {
-            pixel: ['eventName', 'eventId', 'pixelId', 'timestamp', 'custom_data'],
+            pixel: ['event_name', 'event_id', 'pixel_id', 'timestamp', 'custom_data'],
             capi: ['event_name', 'event_id', 'event_time', 'action_source', 'user_data', 'custom_data']
         },
         custom_data: ['content_name', 'content_category','content_ids','content_type', 'contents' ]
