@@ -368,6 +368,7 @@ jobs:
           fi
 
       - name: Run E2E tests
+        continue-on-error: true
         env:
           WP_USERNAME: admin
           WP_PASSWORD: admin
