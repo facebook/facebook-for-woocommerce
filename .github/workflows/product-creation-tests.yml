@@ -239,6 +239,17 @@ jobs:
           # Activate the plugin (this triggers automatic sync)
           wp plugin activate facebook-for-woocommerce --allow-root
 
+      - name: Initialize rollout switches for E2E tests
+        run: |
+            cd ${{ env.WORDPRESS_PATH }}
+            # Force initialize rollout switches - this would normally happen on heartbeat
+            wp eval "
+              if (function_exists('facebook_for_woocommerce')) {
+                  \$plugin = facebook_for_woocommerce();
+                  \$rollout_switches = \$plugin->get_rollout_switches();
+                  \$rollout_switches->init();
+                  echo '✅ Rollout switches initialized' . PHP_EOL;
+              }" --allow-root
 
       - name: Verify WordPress setup
         run: |
