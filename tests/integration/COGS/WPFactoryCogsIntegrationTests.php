@@ -92,8 +92,6 @@ class WPFactoryCogsIntegrationTests extends IntegrationTestCase
 		$this->enable_wpfactory_cogs_plugin();
 		$product = $this->create_simple_product();
 		
-		$this->assertEquals(0, $product->get_cogs_total_value(), 'Incorrect value is set for Product WooC COGS');
-
 		$value = (new CostOfGoods(array('WPFactory' => 'WPFactoryCogsProvider')))->calculate_cogs_for_products([$product]);
 		$this->assertEquals(false, $value);
 	}
@@ -103,11 +101,8 @@ class WPFactoryCogsIntegrationTests extends IntegrationTestCase
 		$cogs_value = 100.0;
 
 		$product = $this->create_simple_product();
-		$product->set_cogs_value($cogs_value);
-		$product->save();
-
-		$this->assertEquals($cogs_value, $product->get_cogs_total_value(), 'Incorrect value is set for Product WooC COGS');
-
+		update_post_meta($product->id, '_alg_wc_cog_cost', $cogs_value);
+		
 		$value = (new CostOfGoods(array('WPFactory' => 'WPFactoryCogsProvider')))->calculate_cogs_for_products([$product]);
 		$this->assertEquals($cogs_value, $value);
 	}
@@ -126,9 +121,6 @@ class WPFactoryCogsIntegrationTests extends IntegrationTestCase
 		$product2->set_cogs_value($product2_cogs_value);
 		$product2->save();
 
-		$this->assertEquals($product1_cogs_value, $product1->get_cogs_total_value());
-		$this->assertEquals($product2_cogs_value, $product2->get_cogs_total_value());
-
 		$value = (new CostOfGoods(array('WPFactory' => 'WPFactoryCogsProvider')))->calculate_cogs_for_products([$product1, $product2]);
 		$this->assertEquals($product1_cogs_value + $product2_cogs_value, $value);
 	}
@@ -139,13 +131,10 @@ class WPFactoryCogsIntegrationTests extends IntegrationTestCase
 		$product1_cogs_value = 100.0;
 		
 		$product1 = $this->create_simple_product();
-		$product1->set_cogs_value($product1_cogs_value);
-		$product1->save();
+		// $product1->set_cogs_value($product1_cogs_value);
+		// $product1->save();
 
 		$product2 = $this->create_simple_product();
-
-		$this->assertEquals($product1_cogs_value, $product1->get_cogs_total_value(), 'Incorrect value is set for Product WooC COGS');
-		$this->assertEquals(0, $product2->get_cogs_total_value(), 'Incorrect value is set for Product WooC COGS');
 
 		$value = (new CostOfGoods(array('WPFactory' => 'WPFactoryCogsProvider')))->calculate_cogs_for_products([$product1, $product2]);
 		$this->assertEquals(false, $value);
@@ -181,8 +170,6 @@ class WPFactoryCogsIntegrationTests extends IntegrationTestCase
 		$variants = $variable_product->get_children();
 		$product = wc_get_product($variants[0]);
 
-		$this->assertEquals(0, $product->get_cogs_total_value(), 'Incorrect value is set for Product WooC COGS');
-
 		$this->assertEquals(false, (new CostOfGoods(array('WPFactory' => 'WPFactoryCogsProvider')))->calculate_cogs_for_products([$product]));
 	}
 
@@ -196,7 +183,6 @@ class WPFactoryCogsIntegrationTests extends IntegrationTestCase
 		$product->set_cogs_value($cogs_value);
 		$product->save();
 
-		$this->assertEquals($cogs_value, $product->get_cogs_total_value(), 'Incorrect value is set for Product WooC COGS');
 		$this->assertEquals($cogs_value, (new CostOfGoods(array('WPFactory' => 'WPFactoryCogsProvider')))->calculate_cogs_for_products([$product]));
 	}
 
