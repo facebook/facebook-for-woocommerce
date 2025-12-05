@@ -36,9 +36,10 @@ class WPFactoryCogsIntegrationTests extends IntegrationTestCase
 		if ( is_wp_error( $result ) ) {
 			throw new \Exception('Cannot install/enable WPFactory plugin');
 		}
+		var_dump('========================');
 		var_dump( file_exists( '/tmp/wordpress/wp-content/plugins/cost-of-goods-for-woocommerce/cost-of-goods-for-woocommerce.php' ) );
 		var_dump( ABSPATH );
-		die;
+		var_dump('========================');
 		$this->disable_facebook_sync();
 	}
 
@@ -48,6 +49,9 @@ class WPFactoryCogsIntegrationTests extends IntegrationTestCase
 		require_once '/tmp/wordpress/wp-content/plugins/cost-of-goods-for-woocommerce/cost-of-goods-for-woocommerce.php';
 		$res = activate_plugin( 'cost-of-goods-for-woocommerce/cost-of-goods-for-woocommerce.php' );
 		$this->assertEquals(null, $res);
+		var_dump('========================');
+		var_dump(function_exists('alg_wc_cog'));
+		var_dump('========================');
 		// do_action( 'before_woocommerce_init' );
     	// do_action( 'woocommerce_init' );
 	}
