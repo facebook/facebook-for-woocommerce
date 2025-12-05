@@ -611,6 +611,9 @@ class API extends Base {
 	 *
 	 * @param Response                 $response API response object
 	 * @param API\Pixel\Events\Request $request  The request object containing transformed event data
+	 * @return void
+	 *
+	 * @throws \Exception Internal exceptions are caught and logged, not propagated to caller.
 	 */
 	public function log_events_for_tests( $response, $request ) {
 		try {
