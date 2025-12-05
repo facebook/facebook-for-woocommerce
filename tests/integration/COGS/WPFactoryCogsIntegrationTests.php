@@ -20,21 +20,21 @@ class WPFactoryCogsIntegrationTests extends IntegrationTestCase
 	{
 		$abspath = '/tmp/wordpress/';
 		parent::setUp();
-		// require_once '/tmp/wordpress-tests-lib/includes/bootstrap.php';
-		$response = wp_remote_get( 'https://downloads.wordpress.org/plugin/cost-of-goods-for-woocommerce.zip' );
-		$plugin_zip = wp_upload_bits( 'cost-of-goods-for-woocommerce.zip', null, wp_remote_retrieve_body( $response ) );
-		
-		require_once $abspath . 'wp-admin/includes/plugin-install.php';
-		require_once $abspath . 'wp-admin/includes/admin.php';
-		include_once $abspath . 'wp-admin/includes/class-wp-upgrader.php';
-		require_once $abspath . 'wp-admin/includes/class-plugin-upgrader.php';
-		require_once $abspath . 'wp-admin/includes/plugin.php';
-		
-		$upgrader = new \Plugin_Upgrader();
-		$result = $upgrader->install( $plugin_zip['file'] );
-		
-		if ( is_wp_error( $result ) ) {
-			throw new \Exception('Cannot install/enable WPFactory plugin');
+		if ( ! file_exists( '/tmp/wordpress/wp-content/plugins/cost-of-goods-for-woocommerce/cost-of-goods-for-woocommerce.php' ) ) {
+			require_once $abspath . 'wp-admin/includes/plugin-install.php';
+			require_once $abspath . 'wp-admin/includes/admin.php';
+			include_once $abspath . 'wp-admin/includes/class-wp-upgrader.php';
+			require_once $abspath . 'wp-admin/includes/class-plugin-upgrader.php';
+			require_once $abspath . 'wp-admin/includes/plugin.php';
+			
+			$response = wp_remote_get( 'https://downloads.wordpress.org/plugin/cost-of-goods-for-woocommerce.zip' );
+			$plugin_zip = wp_upload_bits( 'cost-of-goods-for-woocommerce.zip', null, wp_remote_retrieve_body( $response ) );
+			$upgrader = new \Plugin_Upgrader();
+			$result = $upgrader->install( $plugin_zip['file'] );
+			
+			if ( is_wp_error( $result ) ) {
+				throw new \Exception('Cannot install/enable WPFactory plugin');
+			}
 		}
 		var_dump('==========SetUp==============');
 		var_dump('==========START==============');
@@ -49,6 +49,7 @@ class WPFactoryCogsIntegrationTests extends IntegrationTestCase
 		var_dump('==========enable_wpfactory_cogs_plugin==============');
 		var_dump('==========START==============');
 		var_dump('Is woo active?' . (is_plugin_active('woocommerce/woocommerce.php') ? 'YES' : 'NO'));
+		var_dump('Is woo integration?' . (\WC_Facebookcommerce_Utils::is_woocommerce_integration() ? 'YES' : 'NO'));
 		var_dump('Is wpfactory active?' . (is_plugin_active('cost-of-goods-for-woocommerce/cost-of-goods-for-woocommerce.php') ? 'YES' : 'NO'));
 		var_dump('==========END==============');
 		$res = activate_plugin( 'cost-of-goods-for-woocommerce/cost-of-goods-for-woocommerce.php' );
