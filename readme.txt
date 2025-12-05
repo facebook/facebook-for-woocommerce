@@ -3,7 +3,7 @@ Contributors: facebook
 Tags: meta, facebook, conversions api, catalog sync, ads
 Requires at least: 5.6
 Tested up to: 6.8.3
-Stable tag: 3.5.13
+Stable tag: 3.5.14
 Requires PHP: 7.4
 MySQL: 5.6 or greater
 License: GPLv2 or later
@@ -41,7 +41,26 @@ To suggest technical improvements, you can raise an issue on our [Github reposit
 
 == Changelog ==
 
-= 3.5.14 - 2025-11-19 =
-* Tweak - Adjust ParamBuilder to pixel integration
+= 3.5.15 - 2025-12-05 =
+* Add - Adding Language Override Feeds for Products by @rafael-curran in #3713
+* Add - Automated CAPI/Pixel E2E testing by @immadhavv in #3738
+* Dev - set unique SKU for composite product E2E test by @ashiqursuperfly in #3741
+* Add - continue on error temporarily for e2e tests by @immadhavv in #3742
+* Dev - add E2E test for composite product creation by @ashiqursuperfly in #3734
+* Dev - Add E2E tests for product sync exclusion by @ashiqursuperfly in #3732
+* Dev - Add E2E test for managing product stock by @ashiqursuperfly in #3731
+* Dev - misc improvements to playwright test suite by @ashiqursuperfly in #3723
+* Add - add e2e test by @chc421 in #3722
+* Add - Feature/Purchase use order currency by @ukilla in #3720
+* Dev - add E2E test editing variable product FB options by @ashiqursuperfly in #3719
+* Dev - Add E2E test for simple product FB options edit flow by @ashiqursuperfly in #3709
+* Add - Request unit test by @chc421 in #3702
+* Add - Feature/add fb video by @devbodaghe in #3657
+* Add - [Code Cleanup] Remove WhatsApp Integration Alpha PHP Code by @woo-ardsouza in #3708
+* Dev - Add E2E test for simple and variable product delete flow by @ashiqursuperfly in #3705
+* Dev - add E2E test for variable product edit flow by @ashiqursuperfly in #3699
+* Add - Remove WooCommerce call to Message Events Post API by @woo-ardsouza in #3704
+* Add - quick edit testing by @rithikb24 in #3701
+* Add - [WIFI][Customer Events] Support additional order statuses by @woo-ardsouza in #3700
 
 [See changelog for all versions](https://raw.githubusercontent.com/facebook/facebook-for-woocommerce/refs/heads/main/changelog.txt).
