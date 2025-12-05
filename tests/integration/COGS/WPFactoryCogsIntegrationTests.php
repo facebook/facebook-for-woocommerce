@@ -40,7 +40,7 @@ class WPFactoryCogsIntegrationTests extends IntegrationTestCase
 		var_dump('==========START==============');
 		var_dump('Upgrader install result:' . $result);
 		var_dump( file_exists( '/tmp/wordpress/wp-content/plugins/cost-of-goods-for-woocommerce/cost-of-goods-for-woocommerce.php' ) );
-		var_dump( get_included_files() );
+		// var_dump( get_included_files() );
 		var_dump('==========END==============');
 		$this->disable_facebook_sync();
 	}
@@ -48,8 +48,8 @@ class WPFactoryCogsIntegrationTests extends IntegrationTestCase
 	private function enable_wpfactory_cogs_plugin() {
 		var_dump('==========enable_wpfactory_cogs_plugin==============');
 		var_dump('==========START==============');
-		var_dump('Is woo active?' . is_plugin_active('woocommerce/woocommerce.php') ? 'YES' : 'NO');
-		var_dump('Is wpfactory active?' . is_plugin_active('cost-of-goods-for-woocommerce/cost-of-goods-for-woocommerce.php') ? 'YES' : 'NO');
+		var_dump('Is woo active?' . (is_plugin_active('woocommerce/woocommerce.php') ? 'YES' : 'NO'));
+		var_dump('Is wpfactory active?' . (is_plugin_active('cost-of-goods-for-woocommerce/cost-of-goods-for-woocommerce.php') ? 'YES' : 'NO'));
 		var_dump('==========END==============');
 		$res = activate_plugin( 'cost-of-goods-for-woocommerce/cost-of-goods-for-woocommerce.php' );
 		$this->assertEquals(null, $res);
@@ -61,8 +61,8 @@ class WPFactoryCogsIntegrationTests extends IntegrationTestCase
 		var_dump( get_included_files() );
 		var_dump('==========END==============');
 		var_dump('==========START==============');
-		var_dump('Is woo active?' . is_plugin_active('woocommerce/woocommerce.php') ? 'YES' : 'NO');
-		var_dump('Is wpfactory active?' . is_plugin_active('cost-of-goods-for-woocommerce/cost-of-goods-for-woocommerce.php') ? 'YES' : 'NO');
+		var_dump('Is woo active?' . (is_plugin_active('woocommerce/woocommerce.php') ? 'YES' : 'NO'));
+		var_dump('Is wpfactory active?' . (is_plugin_active('cost-of-goods-for-woocommerce/cost-of-goods-for-woocommerce.php') ? 'YES' : 'NO'));
 		var_dump('==========END==============');
 		// do_action( 'before_woocommerce_init' );
     	// do_action( 'woocommerce_init' );
