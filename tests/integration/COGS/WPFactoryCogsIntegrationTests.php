@@ -37,6 +37,7 @@ class WPFactoryCogsIntegrationTests extends IntegrationTestCase
 			throw new \Exception('Cannot install/enable WPFactory plugin');
 		}
 		var_dump( file_exists( '/tmp/wordpress/wp-content/plugins/cost-of-goods-for-woocommerce/cost-of-goods-for-woocommerce.php' ) );
+		var_dump( ABSPATH );
 		die;
 		$this->disable_facebook_sync();
 	}
