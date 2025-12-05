@@ -20,6 +20,8 @@ class WPFactoryCogsIntegrationTests extends IntegrationTestCase
 	{
 		$abspath = '/tmp/wordpress/';
 		parent::setUp();
+		var_dump('==========SetUp==============');
+		var_dump('==========START==============');
 		if ( ! file_exists( '/tmp/wordpress/wp-content/plugins/cost-of-goods-for-woocommerce/cost-of-goods-for-woocommerce.php' ) ) {
 			require_once $abspath . 'wp-admin/includes/plugin-install.php';
 			require_once $abspath . 'wp-admin/includes/admin.php';
@@ -35,11 +37,9 @@ class WPFactoryCogsIntegrationTests extends IntegrationTestCase
 			if ( is_wp_error( $result ) ) {
 				throw new \Exception('Cannot install/enable WPFactory plugin');
 			}
+			var_dump('Upgrader install result:' . $result);
 		}
-		var_dump('==========SetUp==============');
-		var_dump('==========START==============');
-		var_dump('Upgrader install result:' . $result);
-		var_dump( file_exists( '/tmp/wordpress/wp-content/plugins/cost-of-goods-for-woocommerce/cost-of-goods-for-woocommerce.php' ) );
+		var_dump( 'cogs file exists: '. file_exists( '/tmp/wordpress/wp-content/plugins/cost-of-goods-for-woocommerce/cost-of-goods-for-woocommerce.php' ) );
 		// var_dump( get_included_files() );
 		var_dump('==========END==============');
 		$this->disable_facebook_sync();
