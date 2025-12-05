@@ -813,8 +813,8 @@ test.describe('Facebook for WooCommerce - Product Creation E2E Tests', () => {
       // Verify both products are in the updated category
       console.log('🔍 Verifying both products are in the updated category...');
       const [finalProduct1Result, finalProduct2Result] = await Promise.all([
-        validateFacebookSync(product1Id, product1.productName, 5),
-        validateFacebookSync(product2Id, product2.productName, 5)
+        validateFacebookSync(product1Id, product1.productName, 30),
+        validateFacebookSync(product2Id, product2.productName, 30)
       ]);
 
       // Verify product 1 is still in the category

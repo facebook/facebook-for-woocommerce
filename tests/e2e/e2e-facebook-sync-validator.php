@@ -700,7 +700,10 @@ class CategorySyncValidator {
 
                     // Get full product set data from response
                     $response_data = $response->response_data["data"];
-                    $product_set_data = is_array($response_data) && isset($response_data[0]) ? $response_data[0] : null;
+                    $product_set_data = is_array($response_data) && !empty($response_data) ?
+                        array_values(array_filter($response_data, function($item) {
+                            return isset($this->category->name) && $item['name'] === $this->category->name;
+                        }))[0] : null;
 
                     if ($product_set_data) {
                         // Parse metadata if it's a JSON string
