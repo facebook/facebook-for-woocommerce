@@ -115,11 +115,11 @@ class WPFactoryCogsIntegrationTests extends IntegrationTestCase
 		$product2_cogs_value = 150.0;
 
 		$product1 = $this->create_simple_product();
-		$product1->set_cogs_value($product1_cogs_value);
+		$product1->update_meta_data( '_alg_wc_cog_cost', $product1_cogs_value );
 		$product1->save();
 
 		$product2 = $this->create_simple_product();
-		$product2->set_cogs_value($product2_cogs_value);
+		$product2->update_meta_data( '_alg_wc_cog_cost', $product2_cogs_value );
 		$product2->save();
 
 		$value = (new CostOfGoods(array('WPFactory' => 'WPFactoryCogsProvider')))->calculate_cogs_for_products([$product1, $product2]);
@@ -132,8 +132,8 @@ class WPFactoryCogsIntegrationTests extends IntegrationTestCase
 		$product1_cogs_value = 100.0;
 		
 		$product1 = $this->create_simple_product();
-		// $product1->set_cogs_value($product1_cogs_value);
-		// $product1->save();
+		$product1->update_meta_data( '_alg_wc_cog_cost', $product1_cogs_value );
+		$product1->save();
 
 		$product2 = $this->create_simple_product();
 
@@ -181,7 +181,7 @@ class WPFactoryCogsIntegrationTests extends IntegrationTestCase
 		$variable_product = $this->create_variable_product_with_variations();
 		$variants = $variable_product->get_children();
 		$product = wc_get_product($variants[0]);
-		$product->set_cogs_value($cogs_value);
+		$product->update_meta_data( '_alg_wc_cog_cost', $cogs_value );
 		$product->save();
 
 		$this->assertEquals($cogs_value, (new CostOfGoods(array('WPFactory' => 'WPFactoryCogsProvider')))->calculate_cogs_for_products([$product]));
