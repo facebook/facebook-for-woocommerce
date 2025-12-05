@@ -57,7 +57,7 @@ class WPFactoryCogsIntegrationTests extends IntegrationTestCase
 		$res = activate_plugin( 'cost-of-goods-for-woocommerce/cost-of-goods-for-woocommerce.php' );
 		$this->assertEquals(null, $res);
 		var_dump('==========START==============');
-		var_dump('function_exists(alg_wc_cog): ' . function_exists('alg_wc_cog'));
+		var_dump('function_exists(alg_wc_cog): ' . (function_exists('alg_wc_cog') ? 'YES' : 'NO'));
 		var_dump( get_included_files() );
 		var_dump('==========END==============');
 		var_dump('==========START==============');
