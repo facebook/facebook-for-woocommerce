@@ -47,6 +47,7 @@ class WPFactoryCogsIntegrationTests extends IntegrationTestCase
 
 	public function test_given_wpfactory_cogs_is_disabled_when_wpfactory_provider_is_available_called_then_it_returns_false() {
 		$instance = new WPFactoryCogsProvider();
+		$this->assertTrue(is_plugin_active('cost-of-goods-for-woocommerce/cost-of-goods-for-woocommerce.php'));
 		$this->assertFalse($instance->is_available(), 'WPFactory COGS is expected to be disabled');
 		$this->expectException(IntegrationIsNotAvailableException::class);
 		$instance->get_cogs_value($this->create_simple_product());
@@ -175,6 +176,7 @@ class WPFactoryCogsIntegrationTests extends IntegrationTestCase
 	 */
 	public function tearDown(): void
 	{
+		deactivate_plugins( 'cost-of-goods-for-woocommerce/cost-of-goods-for-woocommerce.php' );
 		parent::tearDown();
 	}
 }
