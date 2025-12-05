@@ -304,42 +304,42 @@ async function validateCategorySync(categoryId, categoryName = null, waitSeconds
   console.log(`🔍 Validating category sync for ${displayName}...`);
 
   try {
-      const { exec } = require('child_process');
-      const { promisify } = require('util');
-      const execAsync = promisify(exec);
+    const { exec } = require('child_process');
+    const { promisify } = require('util');
+    const execAsync = promisify(exec);
 
-      // Call the validator with --type=category flag
-      const { stdout, stderr } = await execAsync(
-          `php e2e-facebook-sync-validator.php --type=category ${categoryId} ${waitSeconds} ${maxRetries}`,
-          { cwd: __dirname }
-      );
+    // Call the validator with --type=category flag
+    const { stdout, stderr } = await execAsync(
+      `php e2e-facebook-sync-validator.php --type=category ${categoryId} ${waitSeconds} ${maxRetries}`,
+      { cwd: __dirname }
+    );
 
-      const result = JSON.parse(stdout);
+    const result = JSON.parse(stdout);
 
-      // Log results
-      console.log('📄 OUTPUT FROM CATEGORY SYNC VALIDATOR:');
-      const { debug, raw_data, ...resultWithoutDebug } = result;
-      console.log(JSON.stringify(resultWithoutDebug, null, 2));
+    // Log results
+    console.log('📄 OUTPUT FROM CATEGORY SYNC VALIDATOR:');
+    const { debug, raw_data, ...resultWithoutDebug } = result;
+    console.log(JSON.stringify(resultWithoutDebug, null, 2));
 
-      if (result.success) {
-          console.log(`🎉 Category Sync Validation Succeeded for ${displayName}`);
-          console.log(`   Product Set ID: ${result.facebook_product_set_id}`);
-          console.log(`   Retailer ID: ${result.retailer_id}`);
-      } else {
-          console.warn(`⚠️ Category Sync Validation Failed for ${displayName}`);
-          if (result.error) {
-              console.warn(`   Error: ${result.error}`);
-          }
-          if (result.mismatches && Object.keys(result.mismatches).length > 0) {
-              console.warn(`   Mismatches: ${Object.keys(result.mismatches).length}`);
-          }
+    if (result.success) {
+      console.log(`🎉 Category Sync Validation Succeeded for ${displayName}`);
+      console.log(`   Product Set ID: ${result.facebook_product_set_id}`);
+      console.log(`   Retailer ID: ${result.retailer_id}`);
+    } else {
+      console.warn(`⚠️ Category Sync Validation Failed for ${displayName}`);
+      if (result.error) {
+        console.warn(`   Error: ${result.error}`);
       }
+      if (result.mismatches && Object.keys(result.mismatches).length > 0) {
+        console.warn(`   Mismatches: ${Object.keys(result.mismatches).length}`);
+      }
+    }
 
-      return result;
+    return result;
 
   } catch (error) {
-      console.warn(`⚠️ Category sync validation error: ${error.message}`);
-      return null;
+    console.warn(`⚠️ Category sync validation error: ${error.message}`);
+    return null;
   }
 }
 
@@ -350,6 +350,7 @@ async function createTestProduct(options = {}) {
   const sku = options.sku || generateUniqueSKU(productType);
   const price = options.price || '19.99';
   const stock = options.stock || '10';
+  const categoryIds = options.categoryIds || [];
 
   console.log(`📦 Creating "${productType}" product via WooCommerce API: "${productName}"...`);
 
@@ -360,8 +361,9 @@ async function createTestProduct(options = {}) {
     const execAsync = promisify(exec);
 
     // Call the product creator PHP script
+    const categoryIdsJson = JSON.stringify(categoryIds);
     const { stdout } = await execAsync(
-      `php e2e-product-creator.php "${productType}" "${productName}" ${price} ${stock} "${sku}"`,
+      `php e2e-product-creator.php "${productType}" "${productName}" ${price} ${stock} "${sku}" '${categoryIdsJson}'`,
       { cwd: __dirname }
     );
 
@@ -379,6 +381,10 @@ async function createTestProduct(options = {}) {
       else {
         console.log(`   Variations: ${result.variation_count}`);
         console.log(`   VariationIds: ${result.variation_ids}`);
+      }
+
+      if (categoryIds.length > 0) {
+        console.log(`   Categories: ${categoryIds.join(', ')}`);
       }
 
       const endTime = Date.now();
@@ -488,6 +494,56 @@ async function cleanupCategory(categoryId) {
   }
 }
 
+// Helper function to create a test category programmatically via WooCommerce API
+async function createTestCategory(options = {}) {
+  const categoryName = options.categoryName || generateUniqueSKU('Category');
+  const categoryDescription = options.description || 'Test category for E2E testing';
+
+  console.log(`📁 Creating category via WooCommerce API: "${categoryName}"...`);
+
+  try {
+    const startTime = Date.now();
+    const { exec } = require('child_process');
+    const { promisify } = require('util');
+    const execAsync = promisify(exec);
+
+    // Create category using WP CLI
+    const { stdout } = await execAsync(
+      `php -r "require_once('${wpSitePath}/wp-load.php'); ` +
+      `\\$term = wp_insert_term('${categoryName}', 'product_cat', array('description' => '${categoryDescription}')); ` +
+      `if (is_wp_error(\\$term)) { echo json_encode(array('success' => false, 'error' => \\$term->get_error_message())); } ` +
+      `else { ` +
+      `  \\$category_id = \\$term['term_id']; ` +
+      `  \\$category = get_term(\\$category_id, 'product_cat'); ` +
+      `  echo json_encode(array('success' => true, 'category_id' => \\$category_id, 'category_name' => \\$category->name, 'message' => 'Category created successfully')); ` +
+      `}"`,
+      { cwd: __dirname }
+    );
+
+    const result = JSON.parse(stdout);
+
+    if (result.success) {
+      console.log(`✅ ${result.message}`);
+      console.log(`   Name: ${result.category_name}`);
+      console.log(`   ID: ${result.category_id}`);
+
+      const endTime = Date.now();
+      console.log(`⏱️ Category creation took ${endTime - startTime}ms`);
+
+      return {
+        categoryId: result.category_id,
+        categoryName: result.category_name
+      };
+    } else {
+      throw new Error(`Category creation failed: ${result.error}`);
+    }
+
+  } catch (error) {
+    console.log(`❌ Failed to create test category: ${error.message}`);
+    throw error;
+  }
+}
+
 module.exports = {
   baseURL,
   username,
@@ -506,6 +562,7 @@ module.exports = {
   validateFacebookSync,
   validateCategorySync,
   createTestProduct,
+  createTestCategory,
   setProductDescription,
   filterProducts,
   clickFirstProduct,

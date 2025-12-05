@@ -35,7 +35,7 @@ class E2EProductCreator {
     /**
      * Create a simple product
      */
-    public static function createSimpleProduct($name, $sku, $price = 19.99, $stock = 10) {
+    public static function createSimpleProduct($name, $sku, $price = 19.99, $stock = 10, $category_ids = []) {
         try {
             // Verify WooCommerce is available
             if (!function_exists('wc_get_product')) {
@@ -62,6 +62,11 @@ class E2EProductCreator {
             $product->set_stock_quantity($stock);
             $product->set_stock_status('instock');
 
+            // Set categories if provided
+            if (!empty($category_ids)) {
+                $product->set_category_ids($category_ids);
+            }
+
             // Save product
             $product_id = $product->save();
 
@@ -76,6 +81,7 @@ class E2EProductCreator {
                 'sku' => $product->get_sku(),
                 'price' => $product->get_price(),
                 'stock' => $product->get_stock_quantity(),
+                'category_ids' => $category_ids,
                 'message' => "Simple product created successfully with ID: {$product_id}"
             ];
 
@@ -182,9 +188,11 @@ if (php_sapi_name() === 'cli') {
         $price = isset($argv[3]) ? floatval($argv[3]) : 19.99;
         $stock = isset($argv[4]) ? intval($argv[4]) : 10;
         $sku = isset($argv[5]) ? $argv[5] : null;
+        $category_ids_json = isset($argv[6]) ? $argv[6] : '[]';
+        $category_ids = json_decode($category_ids_json, true) ?: [];
 
         if ($product_type === 'simple') {
-            $result = E2EProductCreator::createSimpleProduct($name, $sku, $price, $stock);
+            $result = E2EProductCreator::createSimpleProduct($name, $sku, $price, $stock, $category_ids);
         } elseif ($product_type === 'variable') {
             $result = E2EProductCreator::createVariableProduct($name, $sku, $price);
         } else {
