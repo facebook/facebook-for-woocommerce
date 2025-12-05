@@ -13,28 +13,28 @@ use WC_Product_Variable;
 
 class WPFactoryCogsIntegrationTests extends IntegrationTestCase
 {
+	const PLUGIN_DOWNLOAD_URL = 'https://downloads.wordpress.org/plugin/cost-of-goods-for-woocommerce.zip';
+
+	const PLUGIN_FILE_PATH = 'cost-of-goods-for-woocommerce/cost-of-goods-for-woocommerce.php';
+
+	const WOOCOMMERCE_PLUGIN_FILE_PATH = 'woocommerce/woocommerce.php';
 	/**
 	 * Set up test environment
 	 */
 	public function setUp(): void
 	{
 		parent::setUp();
-		$abspath = '/tmp/wordpress/';
-		require_once $abspath . 'wp-admin/includes/plugin-install.php';
-		$active_plugins = get_option('active_plugins', []);
-		if (!in_array('woocommerce/woocommerce.php', $active_plugins, true)) {
-			$active_plugins[] = 'woocommerce/woocommerce.php';
-			update_option('active_plugins', $active_plugins);
-		}
-		var_dump('==========SetUp==============');
-		var_dump('==========START==============');
-		if ( ! file_exists( '/tmp/wordpress/wp-content/plugins/cost-of-goods-for-woocommerce/cost-of-goods-for-woocommerce.php' ) ) {
-			require_once $abspath . 'wp-admin/includes/admin.php';
-			include_once $abspath . 'wp-admin/includes/class-wp-upgrader.php';
-			require_once $abspath . 'wp-admin/includes/class-plugin-upgrader.php';
-			require_once $abspath . 'wp-admin/includes/plugin.php';
+		require_once ABSPATH . 'wp-admin/includes/plugin-install.php';
+		
+		$this->mark_plugin_as_active(self::WOOCOMMERCE_PLUGIN_FILE_PATH);
+
+		if ( ! file_exists( WP_PLUGIN_DIR . '/' . self::PLUGIN_FILE_PATH ) ) {
+			require_once ABSPATH . 'wp-admin/includes/admin.php';
+			include_once ABSPATH . 'wp-admin/includes/class-wp-upgrader.php';
+			require_once ABSPATH . 'wp-admin/includes/class-plugin-upgrader.php';
+			require_once ABSPATH . 'wp-admin/includes/plugin.php';
 			
-			$response = wp_remote_get( 'https://downloads.wordpress.org/plugin/cost-of-goods-for-woocommerce.zip' );
+			$response = wp_remote_get( self::PLUGIN_DOWNLOAD_URL );
 			$plugin_zip = wp_upload_bits( 'cost-of-goods-for-woocommerce.zip', null, wp_remote_retrieve_body( $response ) );
 			$upgrader = new \Plugin_Upgrader();
 			$result = $upgrader->install( $plugin_zip['file'] );
@@ -42,36 +42,20 @@ class WPFactoryCogsIntegrationTests extends IntegrationTestCase
 			if ( is_wp_error( $result ) ) {
 				throw new \Exception('Cannot install/enable WPFactory plugin');
 			}
-			var_dump('Upgrader install result:' . $result);
 		}
-		var_dump( 'cogs file exists: '. file_exists( '/tmp/wordpress/wp-content/plugins/cost-of-goods-for-woocommerce/cost-of-goods-for-woocommerce.php' ) );
-		// var_dump( get_included_files() );
-		var_dump('==========END==============');
 		$this->disable_facebook_sync();
 	}
 
 	private function enable_wpfactory_cogs_plugin() {
-		var_dump('==========enable_wpfactory_cogs_plugin==============');
-		var_dump('==========START==============');
-		var_dump('Is woo active?' . (is_plugin_active('woocommerce/woocommerce.php') ? 'YES' : 'NO'));
-		var_dump('Is woo integration?' . (\WC_Facebookcommerce_Utils::is_woocommerce_integration() ? 'YES' : 'NO'));
-		var_dump('Is wpfactory active?' . (is_plugin_active('cost-of-goods-for-woocommerce/cost-of-goods-for-woocommerce.php') ? 'YES' : 'NO'));
-		var_dump('==========END==============');
-		$res = activate_plugin( 'cost-of-goods-for-woocommerce/cost-of-goods-for-woocommerce.php' );
-		$this->assertEquals(null, $res);
-		require_once '/tmp/wordpress/wp-content/plugins/cost-of-goods-for-woocommerce/cost-of-goods-for-woocommerce.php';
-		$res = activate_plugin( 'cost-of-goods-for-woocommerce/cost-of-goods-for-woocommerce.php' );
-		$this->assertEquals(null, $res);
-		var_dump('==========START==============');
-		var_dump('function_exists(alg_wc_cog): ' . (function_exists('alg_wc_cog') ? 'YES' : 'NO'));
-		var_dump( get_included_files() );
-		var_dump('==========END==============');
-		var_dump('==========START==============');
-		var_dump('Is woo active?' . (is_plugin_active('woocommerce/woocommerce.php') ? 'YES' : 'NO'));
-		var_dump('Is wpfactory active?' . (is_plugin_active('cost-of-goods-for-woocommerce/cost-of-goods-for-woocommerce.php') ? 'YES' : 'NO'));
-		var_dump('==========END==============');
-		// do_action( 'before_woocommerce_init' );
-    	// do_action( 'woocommerce_init' );
+		$this->assertTrue(function_exists('is_plugin_active'));
+		$this->assertTrue(is_plugin_active(self::WOOCOMMERCE_PLUGIN_FILE_PATH));
+		$is_wpfactory_active = is_plugin_active(self::PLUGIN_FILE_PATH);
+		if ( ! $is_wpfactory_active ) {
+			$this->assertTrue(function_exists('activate_plugin'));
+			require_once WP_PLUGIN_DIR . '/' . self::PLUGIN_FILE_PATH;
+			activate_plugin( self::PLUGIN_FILE_PATH );
+			$this->assertTrue(is_plugin_active(self::PLUGIN_FILE_PATH));
+		}
 	}
 
 	public function test_given_wpfactory_cogs_is_disabled_when_wpfactory_provider_is_available_called_then_it_returns_false() {
