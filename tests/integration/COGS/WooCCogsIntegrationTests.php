@@ -57,7 +57,7 @@ class WooCCogsIntegrationTests extends IntegrationTestCase
 		
 		$this->assertEquals(0, $product->get_cogs_total_value(), 'Incorrect value is set for Product WooC COGS');
 
-		$value = (new CostOfGoods())->calculate_cogs_for_products([$product]);
+		$value = (new CostOfGoods(array('WooC' => 'WooCCogsProvider')))->calculate_cogs_for_products([$product]);
 		$this->assertEquals(false, $value);
 	}
 
@@ -72,7 +72,7 @@ class WooCCogsIntegrationTests extends IntegrationTestCase
 
 		$this->assertEquals($cogs_value, $product->get_cogs_total_value(), 'Incorrect value is set for Product WooC COGS');
 
-		$value = (new CostOfGoods())->calculate_cogs_for_products([$product]);
+		$value = (new CostOfGoods(array('WooC' => 'WooCCogsProvider')))->calculate_cogs_for_products([$product]);
 		$this->assertEquals($cogs_value, $value);
 	}
 
@@ -93,7 +93,7 @@ class WooCCogsIntegrationTests extends IntegrationTestCase
 		$this->assertEquals($product1_cogs_value, $product1->get_cogs_total_value());
 		$this->assertEquals($product2_cogs_value, $product2->get_cogs_total_value());
 
-		$value = (new CostOfGoods())->calculate_cogs_for_products([$product1, $product2]);
+		$value = (new CostOfGoods(array('WooC' => 'WooCCogsProvider')))->calculate_cogs_for_products([$product1, $product2]);
 		$this->assertEquals($product1_cogs_value + $product2_cogs_value, $value);
 	}
 
@@ -111,7 +111,7 @@ class WooCCogsIntegrationTests extends IntegrationTestCase
 		$this->assertEquals($product1_cogs_value, $product1->get_cogs_total_value(), 'Incorrect value is set for Product WooC COGS');
 		$this->assertEquals(0, $product2->get_cogs_total_value(), 'Incorrect value is set for Product WooC COGS');
 
-		$value = (new CostOfGoods())->calculate_cogs_for_products([$product1, $product2]);
+		$value = (new CostOfGoods(array('WooC' => 'WooCCogsProvider')))->calculate_cogs_for_products([$product1, $product2]);
 		$this->assertEquals(false, $value);
 	}
 
@@ -148,7 +148,7 @@ class WooCCogsIntegrationTests extends IntegrationTestCase
 
 		$this->assertEquals(0, $product->get_cogs_total_value(), 'Incorrect value is set for Product WooC COGS');
 
-		$this->assertEquals(false, (new CostOfGoods())->calculate_cogs_for_products([$product]));
+		$this->assertEquals(false, (new CostOfGoods(array('WooC' => 'WooCCogsProvider')))->calculate_cogs_for_products([$product]));
 	}
 
 	public function test_given_cogs_exists_for_variable_product_when_calculate_method_is_called_then_it_returns_correct_value()
@@ -164,7 +164,7 @@ class WooCCogsIntegrationTests extends IntegrationTestCase
 
 		$this->assertEquals($cogs_value, $product->get_cogs_total_value(), 'Incorrect value is set for Product WooC COGS');
 
-		$this->assertEquals($cogs_value, (new CostOfGoods())->calculate_cogs_for_products([$product]));
+		$this->assertEquals($cogs_value, (new CostOfGoods(array('WooC' => 'WooCCogsProvider')))->calculate_cogs_for_products([$product]));
 	}
 
 	/**

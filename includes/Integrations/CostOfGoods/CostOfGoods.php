@@ -25,6 +25,13 @@ class CostOfGoods {
 	/** @var bool to cache whether provider availability has been evaluated or not. */
 	protected $already_fetched = false;
 
+	protected $supported_integrations;
+
+	public function __construct( $supported_integrations = self::get_supported_integrations() )
+	{
+		$this->supported_integrations = $supported_integrations;
+	}
+
 	public function calculate_cogs_for_products( $products ) {
 
 		if ( ! $this->is_cogs_provider_available() ) {
@@ -50,7 +57,7 @@ class CostOfGoods {
 		return $order_cogs;
 	}
 
-	public function get_supported_integrations() {
+	public static function get_supported_integrations() {
 
 		return array(
 			'WooC'      => 'WooCCogsProvider',
@@ -61,7 +68,7 @@ class CostOfGoods {
 	protected function get_cogs_providers() {
 		if ( ! $this->already_fetched ) {
 			$this->available_integrations = array();
-			foreach ( $this->get_supported_integrations() as $integration => $class_name ) {
+			foreach ( $this->supported_integrations as $integration => $class_name ) {
 				$class = 'WooCommerce\\Facebook\\Integrations\\CostOfGoods\\' . $class_name;
 				$instance = new $class();
 				if ( $instance->is_available() ) {
