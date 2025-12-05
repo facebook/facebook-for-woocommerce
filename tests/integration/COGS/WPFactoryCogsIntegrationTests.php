@@ -50,10 +50,15 @@ class WPFactoryCogsIntegrationTests extends IntegrationTestCase
 	}
 
 	private function enable_wpfactory_cogs_plugin() {
+		global $wp_filter;
+
+		// Backup all plugins_loaded hooks
+		$backup = $wp_filter['plugins_loaded'] ?? null;
+		// Remove all hooks temporarily
+		unset($wp_filter['plugins_loaded']);
 
 		$this->assertTrue(function_exists('is_plugin_active'));
 		$this->assertTrue(is_plugin_active(self::WOOCOMMERCE_PLUGIN_FILE_PATH));
-		
 		$is_wpfactory_active = is_plugin_active(self::PLUGIN_FILE_PATH);
 		
 		if ( ! $is_wpfactory_active ) {
@@ -62,15 +67,7 @@ class WPFactoryCogsIntegrationTests extends IntegrationTestCase
 			activate_plugin( self::PLUGIN_FILE_PATH );
 			$this->assertTrue(is_plugin_active(self::PLUGIN_FILE_PATH));
 		}
-		global $wp_filter;
-
-		// Backup all plugins_loaded hooks
-		$backup = $wp_filter['plugins_loaded'] ?? null;
-
-		// Remove all hooks temporarily
-		unset($wp_filter['plugins_loaded']);
-
-		// Fire plugins_loaded for just this plugin
+				// Fire plugins_loaded for just this plugin
 		do_action('plugins_loaded');
 		do_action('alg_wc_cog_on_activation');
 		// Restore original hooks
