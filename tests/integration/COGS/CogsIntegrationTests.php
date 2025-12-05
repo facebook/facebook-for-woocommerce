@@ -34,7 +34,7 @@ class CogsIntegrationTests extends IntegrationTestCase
 	}
 
 	public function test_given_no_cogs_providers_available_when_calculate_method_called_then_false_is_returned() {
-		$this->assertFalse(new CostOfGoods(array())->calculate_cogs_for_products($this->create_simple_product()));
+		$this->assertFalse((new CostOfGoods(array()))->calculate_cogs_for_products($this->create_simple_product()));
 	}
 
 	// public function test_given_no_cogs_providers_available_when_calculate_method_called_then_false_is_returned() {
