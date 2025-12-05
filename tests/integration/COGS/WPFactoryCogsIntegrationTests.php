@@ -18,12 +18,15 @@ class WPFactoryCogsIntegrationTests extends IntegrationTestCase
 	const PLUGIN_FILE_PATH = 'cost-of-goods-for-woocommerce/cost-of-goods-for-woocommerce.php';
 
 	const WOOCOMMERCE_PLUGIN_FILE_PATH = 'woocommerce/woocommerce.php';
+	
+	private $original_active_plugins;
 	/**
 	 * Set up test environment
 	 */
 	public function setUp(): void
 	{
 		parent::setUp();
+		$this->original_active_plugins = get_option('active_plugins', []);
 		require_once ABSPATH . 'wp-admin/includes/plugin-install.php';
 		
 		$this->mark_plugin_as_active(self::WOOCOMMERCE_PLUGIN_FILE_PATH);
@@ -189,7 +192,12 @@ class WPFactoryCogsIntegrationTests extends IntegrationTestCase
 	 */
 	public function tearDown(): void
 	{
-		deactivate_plugins( 'cost-of-goods-for-woocommerce/cost-of-goods-for-woocommerce.php' );
+		deactivate_plugins( self::PLUGIN_FILE_PATH );
+		update_option('active_plugins', $this->original_active_plugins);
+    
+		global $wpdb;
+		$wpdb->query("DELETE FROM {$wpdb->postmeta} WHERE meta_key = '_wc_cog_cost'");
+		delete_option('wc_cog_settings');
 		parent::tearDown();
 	}
 }
