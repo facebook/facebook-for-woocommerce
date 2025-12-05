@@ -38,6 +38,7 @@ class WPFactoryCogsIntegrationTests extends IntegrationTestCase
 		}
 		var_dump('==========SetUp==============');
 		var_dump('==========START==============');
+		var_dump('Upgrader install result:' . $result);
 		var_dump( file_exists( '/tmp/wordpress/wp-content/plugins/cost-of-goods-for-woocommerce/cost-of-goods-for-woocommerce.php' ) );
 		var_dump( get_included_files() );
 		var_dump('==========END==============');
