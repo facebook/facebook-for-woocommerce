@@ -38,7 +38,7 @@ class WPFactoryCogsIntegrationTests extends IntegrationTestCase
 		}
 		var_dump('========================');
 		var_dump( file_exists( '/tmp/wordpress/wp-content/plugins/cost-of-goods-for-woocommerce/cost-of-goods-for-woocommerce.php' ) );
-		var_dump( ABSPATH );
+		var_dump( get_included_files() );
 		var_dump('========================');
 		$this->disable_facebook_sync();
 	}
@@ -51,6 +51,7 @@ class WPFactoryCogsIntegrationTests extends IntegrationTestCase
 		$this->assertEquals(null, $res);
 		var_dump('========================');
 		var_dump(function_exists('alg_wc_cog'));
+		var_dump( get_included_files() );
 		var_dump('========================');
 		// do_action( 'before_woocommerce_init' );
     	// do_action( 'woocommerce_init' );
