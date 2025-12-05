@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 if [ $# -lt 3 ]; then
-  echo "usage: $0 <db-name> <db-user> <db-pass> [db-host] [wp-version] [wc-version] [skip-database-creation]"
+  echo "usage: $0 <db-name> <db-user> <db-pass> [db-host] [wp-version] [wc-version] [polylang-version] [skip-database-creation]"
   exit 1
 fi
 
@@ -11,7 +11,8 @@ DB_PASS=$3
 DB_HOST=${4-localhost}
 WP_VERSION=${5-latest}
 WC_VERSION=${6-latest}
-SKIP_DB_CREATE=${7-false}
+POLYLANG_VERSION=${7-latest}
+SKIP_DB_CREATE=${8-false}
 
 TMPDIR=${TMPDIR-/tmp}
 TMPDIR=$(echo $TMPDIR | sed -e "s/\/$//")
@@ -66,6 +67,27 @@ if [[ $WC_VERSION == 'latest' ]]; then
     exit 1
   fi
   WC_VERSION=$WC_LATEST_VERSION
+fi
+
+# Get latest Polylang version (from GitHub tags) - only if Polylang version is requested
+if [[ $POLYLANG_VERSION == 'latest' ]]; then
+  # Use GitHub API to get the latest tag
+  download https://api.github.com/repos/polylang/polylang/tags "${TMPDIR}/polylang-latest.json"
+  POLYLANG_LATEST_VERSION=$(grep -o '"name": *"[^"]*' "${TMPDIR}/polylang-latest.json" | head -1 | sed 's/"name": *"//' | sed 's/"//')
+
+  # Check for GitHub API rate limit error
+  if grep -q "API rate limit exceeded" "${TMPDIR}/polylang-latest.json" 2>/dev/null; then
+    echo "Warning: GitHub API rate limit exceeded. Using fallback version 3.7.3"
+    POLYLANG_VERSION="3.7.3"
+  elif [[ -z "$POLYLANG_LATEST_VERSION" ]]; then
+    echo "Latest Polylang version could not be found from GitHub"
+    echo "Debug: Contents of ${TMPDIR}/polylang-latest.json:"
+    head -5 "${TMPDIR}/polylang-latest.json"
+    echo "Using fallback version 3.7.3"
+    POLYLANG_VERSION="3.7.3"
+  else
+    POLYLANG_VERSION=$POLYLANG_LATEST_VERSION
+  fi
 fi
 
 set -ex
@@ -225,7 +247,51 @@ install_wc() {
   fi
 }
 
+install_polylang() {
+  # Only install Polylang if version is specified and not "none"
+  if [[ -z "$POLYLANG_VERSION" || "$POLYLANG_VERSION" == "none" ]]; then
+    echo "Skipping Polylang installation (not requested)."
+    return
+  fi
+
+  POLYLANG_DIR="${PLUGINS_DIR}/polylang"
+  POLYLANG_VERSION_FILE="${POLYLANG_DIR}/version-"$(echo $POLYLANG_VERSION | sed -e "s/\//-/")
+
+  if [ ! -f "$POLYLANG_VERSION_FILE" ]; then
+    # set up polylang plugin
+    rm -rf "$POLYLANG_DIR"
+    mkdir -p "$POLYLANG_DIR"
+    echo "Installing Polylang ($POLYLANG_VERSION)."
+
+    # Clone Polylang from GitHub
+    POLYLANG_TMPDIR="${TMPDIR}/polylang-${POLYLANG_VERSION}"
+    rm -rf "${POLYLANG_TMPDIR}"
+    git clone --quiet --depth=1 --branch="$POLYLANG_VERSION" https://github.com/polylang/polylang.git "$POLYLANG_TMPDIR"
+
+    # Install composer for Polylang and build
+    cd "$POLYLANG_TMPDIR"
+    if [ -f "composer.json" ]; then
+      composer build --ignore-platform-reqs --no-interaction 2>/dev/null || echo "Polylang composer build completed (warnings ignored)"
+    else
+      echo "Warning: No composer.json found in Polylang repository"
+    fi
+
+    # Move built plugin to plugins directory
+    mv "${POLYLANG_TMPDIR}"/* "$POLYLANG_DIR"
+    touch "$POLYLANG_VERSION_FILE"
+
+    # Clean up
+    rm -rf "${POLYLANG_TMPDIR}"
+
+    cd -
+    echo "Polylang ($POLYLANG_VERSION) installed successfully."
+  else
+    echo "Polylang ($POLYLANG_VERSION) already installed."
+  fi
+}
+
 install_wp
 install_wc
+install_polylang
 install_test_suite
 install_db

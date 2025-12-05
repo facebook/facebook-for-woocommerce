@@ -91,14 +91,31 @@ class GenerateProductFeed extends AbstractChainedJob {
 		 * filter out variable products in ::get_items_for_batch() because if a batch only contains variable products
 		 * the job will end prematurely thinking it has nothing more to process.
 		 */
-		$products       = wc_get_products(
-			array(
-				'type'    => array( 'simple', 'variation' ),
-				'include' => $items,
-				'orderby' => 'none',
-				'limit'   => $this->get_batch_size(),
-			)
+		$query_args = array(
+			'type'    => array( 'simple', 'variation' ),
+			'include' => $items,
+			'orderby' => 'none',
+			'limit'   => $this->get_batch_size(),
 		);
+
+		// Add language parameter to prevent Polylang/WPML from filtering by current language context
+		$integration = \WooCommerce\Facebook\Integrations\IntegrationRegistry::get_active_localization_integration();
+		$is_language_feed_enabled = facebook_for_woocommerce()->get_integration()->is_language_override_feed_generation_enabled();
+
+		if ( $integration && $is_language_feed_enabled ) {
+			// When localization plugin is active AND language override feeds are enabled,
+			// only retrieve default language products
+			$default_language = $integration->get_default_language();
+			if ( $default_language ) {
+				$query_args['lang'] = $default_language;
+			}
+		} else {
+			// When no localization plugin is active OR language override feeds are disabled,
+			// retrieve all products
+			$query_args['lang'] = 'all';
+		}
+
+		$products       = wc_get_products( $query_args );
 		$feed_handler   = new \WC_Facebook_Product_Feed();
 		$temp_feed_file = fopen( $feed_handler->get_temp_file_path(), 'a' );
 		$feed_handler->write_products_feed_to_temp_file( $products, $temp_feed_file );

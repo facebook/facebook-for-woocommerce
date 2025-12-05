@@ -182,6 +182,36 @@ class Tracker {
 		 */
 		$data['extensions']['facebook-for-woocommerce']['new-feed-generator-enabled'] = wc_bool_to_string( facebook_for_woocommerce()->get_integration()->is_new_style_feed_generation_enabled() );
 
+		/**
+		 * Language override feed tracking (Phase 1 metrics).
+		 *
+		 * @since 3.6.0
+		 */
+		// 1. Language override feed enabled status
+		$language_feed_enabled = get_option( \WC_Facebookcommerce_Integration::OPTION_LANGUAGE_OVERRIDE_FEED_GENERATION_ENABLED, 'no' );
+		$data['extensions']['facebook-for-woocommerce']['language-override-feeds-enabled'] = wc_bool_to_string( 'yes' === $language_feed_enabled );
+
+		// 2. Active localization plugin + version
+		$integration = \WooCommerce\Facebook\Integrations\IntegrationRegistry::get_active_localization_integration();
+		$data['extensions']['facebook-for-woocommerce']['localization-plugin'] = $integration ? $integration->get_plugin_name() : 'none';
+		$data['extensions']['facebook-for-woocommerce']['localization-plugin-version'] = $integration ? $integration->get_plugin_version() : '';
+
+		// 3. Number of available languages
+		if ( $integration && method_exists( $integration, 'get_available_languages' ) ) {
+			try {
+				$feed_data = new \WooCommerce\Facebook\Feed\Localization\LanguageFeedData();
+				$languages = $feed_data->get_available_languages();
+				$data['extensions']['facebook-for-woocommerce']['language-feed-count'] = count( $languages );
+				$data['extensions']['facebook-for-woocommerce']['language-feed-codes'] = implode( ',', $languages );
+			} catch ( \Exception $e ) {
+				$data['extensions']['facebook-for-woocommerce']['language-feed-count'] = 0;
+				$data['extensions']['facebook-for-woocommerce']['language-feed-codes'] = '';
+			}
+		} else {
+			$data['extensions']['facebook-for-woocommerce']['language-feed-count'] = 0;
+			$data['extensions']['facebook-for-woocommerce']['language-feed-codes'] = '';
+		}
+
 		return $data;
 	}
 
