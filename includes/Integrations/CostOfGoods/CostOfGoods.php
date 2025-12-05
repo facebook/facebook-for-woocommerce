@@ -25,6 +25,7 @@ class CostOfGoods {
 	/** @var bool to cache whether provider availability has been evaluated or not. */
 	protected $already_fetched = false;
 
+	/** @var array used as an input of the supported integrations. */
 	protected $supported_integrations;
 
 	public function __construct( $supported_integrations = self::get_supported_integrations() )
