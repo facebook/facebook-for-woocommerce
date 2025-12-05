@@ -551,9 +551,14 @@ class CategorySyncValidator {
             $this->debug("Waited {$wait_seconds} seconds before validation");
         }
 
-        $this->validateDependencies();
-        $this->initializeCategory();
         $this->initializeIntegration();
+        $this->validateDependencies();
+
+        // Initialize category - if it fails, we still allow validation to continue
+        // but it will fail gracefully in the validate() method
+        if (!$this->initializeCategory()) {
+            return;
+        }
     }
 
     /**
@@ -579,11 +584,16 @@ class CategorySyncValidator {
         $this->category = get_term($this->category_id, 'product_cat');
 
         if (is_wp_error($this->category) || !$this->category) {
-            throw new Exception("Category {$this->category_id} not found");
+            $this->result['success'] = false;
+            $this->result['error'] = "Category {$this->category_id} not found in WooCommerce";
+            $this->result['message'] = "The category does not exist in WooCommerce. It may have been deleted.";
+            $this->debug("Category {$this->category_id} not found in WooCommerce");
+            return false;
         }
 
         $this->result['term_taxonomy_id'] = $this->category->term_taxonomy_id;
         $this->debug("Initialized category: {$this->category->name} (term_taxonomy_id: {$this->category->term_taxonomy_id})");
+        return true;
     }
 
     /**
@@ -652,11 +662,11 @@ class CategorySyncValidator {
         }
 
         return [
-            'name' => $this->category->name,
+            'name' => $this->category->name ?? '',
             'description' => $this->category->description ?? '',
-            'external_url' => $external_url,
-            'retailer_id' => $this->getRetailerId($this->category),
-            'term_taxonomy_id' => $this->category->term_taxonomy_id
+            'external_url' => $external_url ?? '',
+            'retailer_id' => $this->getRetailerId($this->category) ?? '',
+            'term_taxonomy_id' => $this->category->term_taxonomy_id ?? ''
         ];
     }
 
@@ -665,7 +675,7 @@ class CategorySyncValidator {
      */
     private function getRetailerId($category) {
         // Important: Categories use term_taxonomy_id as retailer_id (not term_id)
-        return (string)$category->term_taxonomy_id;
+        return isset($category->term_taxonomy_id) ? (string)$category->term_taxonomy_id : $this->category_id;
     }
 
     /**
