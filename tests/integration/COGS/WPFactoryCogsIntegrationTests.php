@@ -18,17 +18,17 @@ class WPFactoryCogsIntegrationTests extends IntegrationTestCase
 	 */
 	public function setUp(): void
 	{
+		$abspath = '/tmp/wordpress/';
 		parent::setUp();
-		$slug = 'cost-of-goods-for-woocommerce';
 		require_once '/tmp/wordpress-tests-lib/includes/bootstrap.php';
 		$response = wp_remote_get( 'https://downloads.wordpress.org/plugin/cost-of-goods-for-woocommerce.zip' );
 		$plugin_zip = wp_upload_bits( 'cost-of-goods-for-woocommerce.zip', null, wp_remote_retrieve_body( $response ) );
 		if ( ! class_exists( 'Plugin_Upgrader ' ) ) {
-			require_once ABSPATH . 'wp-admin/includes/plugin-install.php';
-			require_once ABSPATH . 'wp-admin/includes/admin.php';
-			include_once ABSPATH . 'wp-admin/includes/class-wp-upgrader.php';
-			require_once ABSPATH . 'wp-admin/includes/class-plugin-upgrader.php';
-			require_once ABSPATH . 'wp-admin/includes/plugin.php';
+			require_once $abspath . 'wp-admin/includes/plugin-install.php';
+			require_once $abspath . 'wp-admin/includes/admin.php';
+			include_once $abspath . 'wp-admin/includes/class-wp-upgrader.php';
+			require_once $abspath . 'wp-admin/includes/class-plugin-upgrader.php';
+			require_once $abspath . 'wp-admin/includes/plugin.php';
 		}
 		$upgrader = new \Plugin_Upgrader();
 		$result = $upgrader->install( $plugin_zip['file'] );
@@ -43,7 +43,7 @@ class WPFactoryCogsIntegrationTests extends IntegrationTestCase
 	private function enable_wpfactory_cogs_plugin() {
 		$res = activate_plugin( 'cost-of-goods-for-woocommerce/cost-of-goods-for-woocommerce.php' );
 		$this->assertEquals(null, $res);
-		require_once WP_PLUGIN_DIR . '/cost-of-goods-for-woocommerce/cost-of-goods-for-woocommerce.php';
+		require_once '/tmp/wordpress/wp-content/plugins' . '/cost-of-goods-for-woocommerce/cost-of-goods-for-woocommerce.php';
 		do_action( 'before_woocommerce_init' );
     	do_action( 'woocommerce_init' );
 	}
