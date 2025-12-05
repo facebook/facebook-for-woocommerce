@@ -119,6 +119,11 @@ class EventValidator {
             return { passed: false, errors, pixel: pixel, capi: capi };
         }
 
+        if (pixel.length === capi.length && pixel.length>1) {
+            errors.push(`Multiple events detected: Pixel=${pixel.length}, CAPI=${capi.length}`);
+            return { passed: false, errors, pixel: pixel, capi: capi };
+        }
+
         if (pixel.length===1 && capi.length===1) {
             console.log(`✅ Pixel and CAPI events match: ${pixel.length}`);
             return { passed: true, errors, pixel: pixel, capi: capi};
