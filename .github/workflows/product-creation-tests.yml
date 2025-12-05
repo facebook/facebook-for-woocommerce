@@ -81,8 +81,8 @@ jobs:
       - name: Create WordPress test environment
         run: |
           # Create WordPress directory
-          mkdir -p /tmp/wordpress
-          cd /tmp/wordpress
+          mkdir -p ${{ env.WORDPRESS_PATH }}
+          cd ${{ env.WORDPRESS_PATH }}
 
           # Download WordPress
           curl -O https://wordpress.org/latest.tar.gz
@@ -196,7 +196,7 @@ jobs:
           echo "✅ Customer user created with proper capabilities"
       - name: Install WPC Composite Products plugin
         run: |
-          cd /tmp/wordpress
+          cd ${{ env.WORDPRESS_PATH }}
           wp plugin install wpc-composite-products --activate --allow-root
 
       - name: Install Facebook for WooCommerce plugin
