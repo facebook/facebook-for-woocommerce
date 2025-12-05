@@ -14,6 +14,7 @@
 			<directory suffix=".php">./tests/Unit</directory>
 		</testsuite>
 		<testsuite name="integration">
+			<file>./tests/integration/COGS/WooCCogsIntegrationTests.php</file>
 			<directory suffix=".php">./tests/integration</directory>
 		</testsuite>
 	</testsuites>
