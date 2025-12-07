@@ -9,6 +9,31 @@
 class E2E_Event_Logger {
 
     /**
+     * Normalize custom_data fields to proper types
+     *
+     * @param array $data Event data
+     * @return array Normalized event data
+     */
+    private static function normalize_event_data($data) {
+
+        if (!isset($data['custom_data'])) {
+            return $data;
+        }
+
+
+        array_walk_recursive($data['custom_data'], function(&$value) {
+            if (is_string($value)) {
+                $decoded = json_decode($value, true);
+                if (json_last_error() === JSON_ERROR_NONE && $decoded !== $value) {
+                    $value = $decoded;
+                }
+            }
+        });
+
+        return $data;
+    }
+
+    /**
      * Log CAPI event to JSON file (simple array of events)
      *
      * @param string $testId Test identifier
@@ -37,6 +62,10 @@ class E2E_Event_Logger {
             $contents = file_get_contents($filePath);
             $events = json_decode($contents, true) ?: [];
         }
+
+        // Normalize event data before storing
+        $eventData = self::normalize_event_data($eventData);
+
 
         // Add event with timestamp
         $eventData['capturedAt'] = microtime(true) * 1000;
