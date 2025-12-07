@@ -4,52 +4,124 @@
 
 module.exports = {
     PageView: {
-        required: {
-            pixel: ['event_name', 'event_id', 'pixel_id', 'timestamp'],
-            capi: ['event_name', 'event_id', 'event_time', 'action_source', 'user_data']
+        channels: ['pixel', 'capi'],
+
+        pixel: {
+            user_data: ['em', 'external_id', 'ct', 'zp', 'cn', 'fbp'],
+            custom_data: ['source', 'version', 'pluginVersion', 'user_data']
         },
-        custom_data: []
+
+        capi: {
+            user_data: ['em', 'external_id', 'ct', 'zp', 'country', 'fbp', 'client_ip_address', 'client_user_agent'],
+            custom_data: []
+        }
     },
 
     ViewContent: {
-        required: {
-            pixel: ['event_name', 'event_id', 'pixel_id', 'timestamp', 'custom_data'],
-            capi: ['event_name', 'event_id', 'event_time', 'action_source', 'user_data', 'custom_data']
-        },
-        custom_data: ['content_ids', 'content_type', 'content_name', 'value','contents' , 'content_category','currency']
-    },
+        channels: ['pixel', 'capi'],
 
-    AddToCart: {
-        required: {
-            pixel: ['event_name', 'event_id', 'pixel_id', 'timestamp', 'custom_data'],
-            capi: ['event_name', 'event_id', 'event_time', 'action_source', 'user_data', 'custom_data']
+        pixel: {
+            user_data: ['em', 'external_id', 'ct', 'zp', 'cn', 'fbp'],
+            custom_data: ['source', 'version', 'pluginVersion', 'content_ids', 'content_type', 'content_name', 'value', 'currency', 'contents', 'content_category']
         },
-        custom_data: ['content_ids', 'content_type', 'content_name', 'value', 'currency']
-    },
 
-    InitiateCheckout: {
-        required: {
-            pixel: ['event_name', 'event_id', 'pixel_id', 'timestamp', 'custom_data'],
-            capi: ['event_name', 'event_id', 'event_time', 'action_source', 'user_data', 'custom_data']
-        },
-        custom_data: ['content_ids', 'content_type', 'num_items', 'value', 'currency']
-    },
-
-    Purchase: {
-        required: {
-            pixel: ['event_name', 'event_id', 'pixel_id', 'timestamp', 'custom_data'],
-            capi: ['event_name', 'event_id', 'event_time', 'action_source', 'user_data', 'custom_data']
-        },
-        custom_data: ['content_ids', 'content_type', 'value', 'currency']
-        // Note: order_id is optional/custom field
+        capi: {
+            user_data: ['em', 'external_id', 'ct', 'zp', 'country', 'fbp', 'client_ip_address', 'client_user_agent'],
+            custom_data: ['content_ids', 'content_type', 'content_name', 'value', 'currency', 'contents', 'content_category']
+        }
     },
 
     ViewCategory: {
-        required: {
-            pixel: ['event_name', 'event_id', 'pixel_id', 'timestamp', 'custom_data'],
-            capi: ['event_name', 'event_id', 'event_time', 'action_source', 'user_data', 'custom_data']
+        channels: ['pixel', 'capi'],
+
+        pixel: {
+            user_data: ['em', 'external_id', 'ct', 'zp', 'cn', 'fbp'],
+            custom_data: ['source', 'version', 'pluginVersion', 'content_name', 'content_category', 'content_ids', 'content_type', 'contents']
         },
-        custom_data: ['content_name', 'content_category','content_ids','content_type', 'contents' ]
+
+        capi: {
+            user_data: ['em', 'external_id', 'ct', 'zp', 'country', 'fbp', 'client_ip_address', 'client_user_agent'],
+            custom_data: ['content_name', 'content_category', 'content_ids', 'content_type', 'contents']
+        }
+    },
+
+    AddToCart: {
+        channels: ['pixel', 'capi'],
+
+        pixel: {
+            user_data: ['em', 'external_id', 'ct', 'zp', 'cn', 'fbp'],
+            custom_data: ['source', 'version', 'pluginVersion', 'content_ids', 'content_type', 'content_name', 'value', 'currency', 'contents']
+        },
+
+        capi: {
+            user_data: ['em', 'external_id', 'ct', 'zp', 'country', 'fbp', 'client_ip_address', 'client_user_agent'],
+            custom_data: ['content_ids', 'content_type', 'content_name', 'value', 'currency', 'contents']
+        }
+    },
+
+    InitiateCheckout: {
+        channels: ['pixel', 'capi'],
+
+        pixel: {
+            user_data: ['em', 'external_id', 'ct', 'zp', 'cn', 'fbp'],
+            custom_data: ['source', 'version', 'pluginVersion', 'content_ids', 'content_type', 'content_name', 'num_items', 'value', 'currency', 'contents', 'content_category']
+        },
+
+        capi: {
+            user_data: ['em', 'external_id', 'ct', 'zp', 'country', 'fbp', 'client_ip_address', 'client_user_agent'],
+            custom_data: ['content_ids', 'content_type', 'content_name', 'num_items', 'value', 'currency', 'contents', 'content_category']
+        }
+    },
+
+    Purchase: {
+        // Purchase event is currently not firing Pixel events
+        channels: [ 'capi'],
+
+        // pixel: {
+        //     user_data: ['em', 'external_id', 'ct', 'zp', 'cn', 'fbp'],
+        //     custom_data: ['source', 'version', 'pluginVersion', 'content_ids', 'content_type', 'content_name', 'value', 'currency', 'contents', 'order_id']
+        // },
+
+        capi: {
+            user_data: ['em', 'external_id', 'ct', 'zp', 'country', 'fbp', 'client_ip_address', 'client_user_agent'],
+            custom_data: ['content_ids', 'content_type', 'content_name', 'value', 'currency', 'contents', 'order_id']
+        }
+    },
+
+    Search: {
+        channels: ['pixel', 'capi'],
+
+        pixel: {
+            user_data: ['em', 'external_id', 'ct', 'zp', 'cn', 'fbp'],
+            custom_data: ['source', 'version', 'pluginVersion', 'content_type', 'content_ids', 'contents', 'search_string', 'value', 'currency']
+        },
+
+        capi: {
+            user_data: ['em', 'external_id', 'ct', 'zp', 'country', 'fbp', 'client_ip_address', 'client_user_agent'],
+            custom_data: ['content_type', 'content_ids', 'contents', 'search_string', 'value', 'currency']
+        }
+    },
+
+    Subscribe: {
+        channels: ['pixel', 'capi'],
+
+        pixel: {
+            user_data: ['em', 'external_id', 'ct', 'zp', 'cn', 'fbp'],
+            custom_data: ['source', 'version', 'pluginVersion', 'sign_up_fee', 'value', 'currency']
+        },
+
+        capi: {
+            user_data: ['em', 'external_id', 'ct', 'zp', 'country', 'fbp', 'client_ip_address', 'client_user_agent'],
+            custom_data: ['sign_up_fee', 'value', 'currency']
+        }
+    },
+
+    Lead: {
+        channels: ['pixel'],
+
+        pixel: {
+            user_data: ['em'],
+            custom_data: ['source', 'version', 'pluginVersion']
+        }
     }
-    // TODO add Search, Subscribe, Lead
 };

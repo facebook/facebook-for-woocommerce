@@ -82,8 +82,10 @@ class EventValidator {
         const p = pixel[0];
         const c = capi[0];
 
-        this.validateRequiredFields(p, c, schema, errors);
-        this.validateCustomDataFields(p, c, schema, errors);
+        this.validateFieldsExistence(eventName, 'pixel', 'user_data', p, errors);
+        this.validateFieldsExistence(eventName, 'pixel', 'custom_data', p, errors);
+        this.validateFieldsExistence(eventName, 'capi', 'user_data', c, errors);
+        this.validateFieldsExistence(eventName, 'capi', 'custom_data', c, errors);
         this.validateDeduplication(p, c, errors);
 
         console.log(`  ✓ Running data validators...`);
@@ -91,8 +93,8 @@ class EventValidator {
         this.validateTimestamp(p, c, errors);
         this.validateFbp(p, c, errors);
         this.validateCookies(p, c, errors)
-        this.validateValue(p, c, schema, errors);
-        this.validateContentIds(p, c, schema, errors);
+        this.validateDataMatch(p, c, eventName, 'custom_data', errors);
+        this.validateDataMatch(p, c, eventName, 'user_data', errors);
         this.validateUserData(p, c, errors);
         await this.validatePhpErrors(page, errors);
 
@@ -131,52 +133,33 @@ class EventValidator {
 
     }
 
-    validateRequiredFields(p, c, schema, errors) {
-        console.log(`  ✓ Checking required fields...`);
-        let pixelFieldsMissing = 0;
-        let capiFieldsMissing = 0;
-
-        schema.required.pixel.forEach(field => {
-            if (!(field in p) || p[field] == null) {
-                errors.push(`Pixel field missing: ${field}`);
-                pixelFieldsMissing++;
-            }
-        });
-
-        schema.required.capi.forEach(field => {
-            if (!(field in c) || c[field] == null) {
-                errors.push(`CAPI field missing: ${field}`);
-                capiFieldsMissing++;
-            }
-        });
-
-        if (pixelFieldsMissing === 0 && capiFieldsMissing === 0) {
-            console.log(`    ✓ All required fields present`);
+    validateFieldsExistence(eventName, dataSource, dataType, eventData, errors) {
+        const eventSchema = EVENT_SCHEMAS[eventName];
+        if (!eventSchema || !eventSchema[dataSource] || !eventSchema[dataSource][dataType]) {
+            return;
         }
-    }
 
-    validateCustomDataFields(p, c, schema, errors) {
-        if (schema.custom_data && schema.custom_data.length > 0) {
-            console.log(`  ✓ Checking custom_data fields...`);
-            let customFieldsMissing = 0;
+        const expectedFields = eventSchema[dataSource][dataType];
+        if (expectedFields.length === 0) {
+            return;
+        }
 
-            schema.custom_data.forEach(field => {
-                const pixelHas = p.custom_data && field in p.custom_data && p.custom_data[field] != null;
-                const capiHas = c.custom_data && field in c.custom_data && c.custom_data[field] != null;
+        const actualData = eventData[dataType];
+        if (!actualData) {
+            errors.push(`${dataSource} ${dataType} missing`);
+            return;
+        }
 
-                if (!pixelHas) {
-                    errors.push(`Pixel custom_data missing: ${field}`);
-                    customFieldsMissing++;
-                }
-                if (!capiHas) {
-                    errors.push(`CAPI custom_data missing: ${field}`);
-                    customFieldsMissing++;
-                }
-            });
-
-            if (customFieldsMissing === 0) {
-                console.log(`    ✓ All custom_data fields present`);
+        let missing = 0;
+        expectedFields.forEach(field => {
+            if (!(field in actualData) || actualData[field] == null) {
+                errors.push(`${dataSource} ${dataType}.${field} missing`);
+                missing++;
             }
+        });
+
+        if (missing === 0) {
+            console.log(`  ✓ ${dataSource} ${dataType}: All ${expectedFields.length} fields present`);
         }
     }
 
@@ -236,6 +219,8 @@ class EventValidator {
 
         if (diff >= 30000) {
             errors.push(`Timestamp mismatch: ${diff}ms (max 30s)`);
+        } else {
+            console.log(`  ✓ Timestamp match (${diff}ms)`);
         }
     }
 
@@ -252,6 +237,8 @@ class EventValidator {
 
         if (pixelFbp && capiFbp && pixelFbp !== capiFbp) {
             errors.push(`FBP mismatch: ${pixelFbp} vs ${capiFbp}`);
+        } else if (pixelFbp && capiFbp) {
+            console.log(`  ✓ FBP match: ${pixelFbp}`);
         }
     }
 
@@ -264,7 +251,7 @@ class EventValidator {
         if (!pixel.cookies._fbp) {
             errors.push('Cookie _fbp not present');
         }
-
+        // TODO needs some fixing for non fbc cases i think
         // Check _fbc (only when expected)
         if (!this.fbc) return;
 
@@ -284,55 +271,53 @@ class EventValidator {
         }
     }
 
-    validateValue(pixel, capi, schema, errors) {
-        if (schema.custom_data && schema.custom_data.length > 0) {
-            if (schema.custom_data.includes('value')) {
-                const pVal = pixel.custom_data?.value;
-                const cVal = capi.custom_data?.value;
-
-                if (pVal !== undefined && cVal !== undefined) {
-                    const diff = Math.abs(parseFloat(pVal) - parseFloat(cVal));
-                    if (diff >= 0.01) {
-                        errors.push(`Value mismatch: ${pVal} vs ${cVal}`);
-                    }
-                }
-            }
+    validateDataMatch(pixel, capi, eventName, dataType, errors) {
+        const eventSchema = EVENT_SCHEMAS[eventName];
+        if (!eventSchema || !eventSchema.channels.includes('pixel') || !eventSchema.channels.includes('capi')) {
+            return;
         }
-    }
 
-    validateContentIds(pixel, capi, schema, errors) {
-        if (schema.custom_data && schema.custom_data.length > 0) {
-            if (schema.custom_data.includes('content_ids')) {
-                let pIds = pixel.custom_data?.content_ids;
-                let cIds = capi.custom_data?.content_ids;
+        const pixelData = pixel[dataType];
+        const capiData = capi[dataType];
 
-                if (!pIds || !cIds) return;
+        if (!pixelData || !capiData) {
+            return;
+        }
 
-                if (typeof cIds === 'string') {
-                    try {
-                        cIds = JSON.parse(cIds);
-                    } catch (e) {
-                        errors.push(`CAPI content_ids invalid JSON: ${cIds}`);
-                        return;
-                    }
+        const commonFields = eventSchema.pixel[dataType].filter(f => eventSchema.capi[dataType].includes(f));
+        if (commonFields.length === 0) {
+            return;
+        }
+
+        let mismatches = 0;
+        commonFields.forEach(field => {
+            const pVal = pixelData[field];
+            const cVal = capiData[field];
+
+            if (pVal === undefined || cVal === undefined) return;
+
+            const normalize = (val) => {
+                let v = typeof val === 'string' ? (() => { try { return JSON.parse(val); } catch { return val; } })() : val;
+                
+                if (v && typeof v === 'object' && !Array.isArray(v)) {
+                    const keys = Object.keys(v);
+                    if (keys.every((k, i) => k === String(i))) v = keys.map(k => v[k]);
                 }
+                
+                return Array.isArray(v) ? [...v].sort((a, b) => JSON.stringify(a).localeCompare(JSON.stringify(b))) : v;
+            };
 
-                if (typeof pIds === 'string') {
-                    try {
-                        pIds = JSON.parse(pIds);
-                    } catch (e) {
-                        errors.push(`Pixel content_ids invalid JSON: ${pIds}`);
-                        return;
-                    }
-                }
+            const pStr = JSON.stringify(normalize(pVal));
+            const cStr = JSON.stringify(normalize(cVal));
 
-                const pIdsStr = JSON.stringify(pIds);
-                const cIdsStr = JSON.stringify(cIds);
-
-                if (pIdsStr !== cIdsStr) {
-                    errors.push(`Content IDs mismatch: Pixel=${pIdsStr} vs CAPI=${cIdsStr}`);
-                }
+            if (pStr !== cStr) {
+                errors.push(`${dataType}.${field} mismatch: Pixel=${pStr} vs CAPI=${cStr}`);
+                mismatches++;
             }
+        });
+
+        if (mismatches === 0) {
+            console.log(`  ✓ ${dataType}: ${commonFields.length} common fields match`);
         }
     }
 
@@ -358,6 +343,10 @@ class EventValidator {
             // Check proper SHA256 format (64 hex chars)
             if (pixelValue && !/^[a-f0-9]{64}$/.test(pixelValue)) {
                 errors.push(`Pixel ${field_name} not properly SHA256 hashed`);
+            }
+
+            if (pixelValue && capiValue && pixelValue === capiValue && /^[a-f0-9]{64}$/.test(pixelValue)) {
+                console.log(`  ✓ ${field_name} hashed correctly and matches`);
             }
         }
     }
