@@ -1,4 +1,5 @@
 const { expect } = require('@playwright/test');
+const { TIMEOUTS } = require('./time-constants');
 
 // Test configuration from environment variables
 const baseURL = process.env.WORDPRESS_URL;
@@ -9,13 +10,13 @@ const wpSitePath = process.env.WORDPRESS_PATH;
 // Helper function for reliable login
 async function loginToWordPress(page) {
   // Navigate to login page
-  await page.goto(`${baseURL}/wp-admin/`, { waitUntil: 'domcontentloaded', timeout: 60000 });
+  await page.goto(`${baseURL}/wp-admin/`, { waitUntil: 'domcontentloaded', timeout: TIMEOUTS.MAX });
 
   // Check if we're already logged in by waiting for either login form or admin content
   const loggedInContent = page.locator('#wpcontent');
   const loginForm = page.locator('#user_login');
 
-  const isLoggedIn = await loggedInContent.isVisible({ timeout: 2000 }).catch(() => false);
+  const isLoggedIn = await loggedInContent.isVisible({ timeout: TIMEOUTS.NORMAL }).catch(() => false);
   if (isLoggedIn) {
     console.log('✅ Already logged in');
     return;
@@ -23,13 +24,13 @@ async function loginToWordPress(page) {
 
   // Fill login form
   console.log('🔐 Logging in to WordPress...');
-  await loginForm.waitFor({ state: 'visible', timeout: 60000 });
+  await loginForm.waitFor({ state: 'visible', timeout: TIMEOUTS.MAX });
   await loginForm.fill(username);
   await page.locator('#user_pass').fill(password);
   await page.locator('#wp-submit').click();
 
   // Wait for login to complete by waiting for admin content
-  await loggedInContent.waitFor({ state: 'visible', timeout: 60000 });
+  await loggedInContent.waitFor({ state: 'visible', timeout: TIMEOUTS.MAX });
   console.log('✅ Login completed');
 }
 
@@ -100,9 +101,9 @@ async function publishProduct(page) {
   try {
     await page.locator('#publishing-action').scrollIntoViewIfNeeded();
     const publishButton = page.locator('#publish');
-    if (await publishButton.isVisible({ timeout: 10000 })) {
+    if (await publishButton.isVisible({ timeout: TIMEOUTS.LONG })) {
       await publishButton.click();
-      await page.waitForTimeout(3000); // Wait for publish to complete
+      await page.waitForTimeout(TIMEOUTS.NORMAL + TIMEOUTS.SHORT); // Wait for publish to complete
       console.log('✅ Published product');
       return true;
     }
@@ -146,37 +147,37 @@ async function setProductDescription(page, newDescription) {
 
     // First, try the visual/TinyMCE editor
     const visualTab = page.locator('#content-tmce');
-    const isVisualTabVisible = await visualTab.isVisible({ timeout: 2000 }).catch(() => false);
+    const isVisualTabVisible = await visualTab.isVisible({ timeout: TIMEOUTS.NORMAL }).catch(() => false);
 
     if (isVisualTabVisible) {
       await visualTab.click();
 
       // Wait for TinyMCE iframe to be ready
       const tinyMCEFrame = page.locator('#content_ifr');
-      await tinyMCEFrame.waitFor({ state: 'visible', timeout: 5000 });
+      await tinyMCEFrame.waitFor({ state: 'visible', timeout: TIMEOUTS.MEDIUM });
 
       const frameContent = tinyMCEFrame.contentFrame();
       const bodyElement = frameContent.locator('body');
-      await bodyElement.waitFor({ state: 'visible', timeout: 5000 });
+      await bodyElement.waitFor({ state: 'visible', timeout: TIMEOUTS.MEDIUM });
       await bodyElement.fill(newDescription);
       console.log('✅ Added description via TinyMCE editor');
     } else {
       // Try text/HTML tab
       const textTab = page.locator('#content-html');
-      const isTextTabVisible = await textTab.isVisible({ timeout: 2000 }).catch(() => false);
+      const isTextTabVisible = await textTab.isVisible({ timeout: TIMEOUTS.NORMAL }).catch(() => false);
 
       if (isTextTabVisible) {
         await textTab.click();
 
         // Wait for textarea to be ready
         const contentTextarea = page.locator('#content');
-        await contentTextarea.waitFor({ state: 'visible', timeout: 3000 });
+        await contentTextarea.waitFor({ state: 'visible', timeout: TIMEOUTS.NORMAL + TIMEOUTS.SHORT });
         await contentTextarea.fill(newDescription);
         console.log('✅ Added description via text editor');
       } else {
         // Try block editor if present
         const blockEditor = page.locator('.wp-block-post-content, .block-editor-writing-flow');
-        const isBlockEditorVisible = await blockEditor.isVisible({ timeout: 2000 }).catch(() => false);
+        const isBlockEditorVisible = await blockEditor.isVisible({ timeout: TIMEOUTS.NORMAL }).catch(() => false);
 
         if (isBlockEditorVisible) {
           await blockEditor.click();
@@ -198,13 +199,13 @@ async function filterProducts(page, productType, productSKU = null) {
   console.log('📋 Navigating to Products page...');
   await page.goto(`${baseURL}/wp-admin/edit.php?post_type=product`, {
     waitUntil: 'domcontentloaded',
-    timeout: 60000
+    timeout: TIMEOUTS.MAX
   });
 
   // Filter by product type
   console.log('🔍 Filtering by Simple product type...');
   const productTypeFilter = page.locator('select#dropdown_product_type');
-  if (await productTypeFilter.isVisible({ timeout: 10000 })) {
+  if (await productTypeFilter.isVisible({ timeout: TIMEOUTS.LONG })) {
     const filterButton = page.locator("#post-query-submit");
     await productTypeFilter.selectOption(productType.toLowerCase());
     await filterButton.click();
@@ -218,7 +219,7 @@ async function filterProducts(page, productType, productSKU = null) {
   if (productSKU) {
     console.log(`🔍 Searching for product with SKU: ${productSKU}`);
     const searchBox = page.locator('#post-search-input');
-    if (await searchBox.isVisible({ timeout: 10000 })) {
+    if (await searchBox.isVisible({ timeout: TIMEOUTS.LONG })) {
       await searchBox.fill(productSKU);
       const searchButton = page.locator('#search-submit');
       await searchButton.click();
@@ -230,13 +231,13 @@ async function filterProducts(page, productType, productSKU = null) {
   }
 
   // Wait for products table to load
-  await page.locator('.wp-list-table').waitFor({ state: 'visible', timeout: 10000 });
+  await page.locator('.wp-list-table').waitFor({ state: 'visible', timeout: TIMEOUTS.LONG });
 }
 
 // Helper function to click the first visible product from products table
 async function clickFirstProduct(page) {
   const firstProductRow = page.locator('.wp-list-table tbody tr.iedit').first();
-  await firstProductRow.isVisible({ timeout: 10000 });
+  await firstProductRow.isVisible({ timeout: TIMEOUTS.LONG });
   // Extract product name from the row
   const productNameElement = firstProductRow.locator('.row-title');
   const productName = await productNameElement.textContent();
@@ -244,7 +245,7 @@ async function clickFirstProduct(page) {
 
   // Click on product name to edit
   await productNameElement.click();
-  await page.waitForLoadState('domcontentloaded', { timeout: 60000 });
+  await page.waitForLoadState('domcontentloaded', { timeout: TIMEOUTS.MAX });
   console.log('✅ Opened product editor');
 }
 
@@ -417,7 +418,7 @@ async function openFacebookOptions(page) {
   await page.locator('#woocommerce-product-data').scrollIntoViewIfNeeded();
 
   // Check if Facebook tab exists
-  const facebookTabExists = await facebookTab.isVisible({ timeout: 10000 }).catch(() => false);
+  const facebookTabExists = await facebookTab.isVisible({ timeout: TIMEOUTS.LONG }).catch(() => false);
 
   if (!facebookTabExists) {
     console.warn('⚠️ Facebook tab not found. This might indicate:');
@@ -441,14 +442,14 @@ async function openFacebookOptions(page) {
 
   await facebookTab.click();
   const facebookSyncField = page.locator('#wc_facebook_sync_mode');
-  facebookSyncField.waitFor({ state: 'visible', timeout: 5000 });
+  facebookSyncField.waitFor({ state: 'visible', timeout: TIMEOUTS.MEDIUM });
   console.log('✅ Opened Product Facebook options tab');
 }
 
 // Helper function to quickly edit title and description of a product
 async function setProductTitle(page, newTitle) {
   const titleField = page.locator('#title');
-  titleField.waitFor({ state: 'visible', timeout: 5000 });
+  titleField.waitFor({ state: 'visible', timeout: TIMEOUTS.MEDIUM });
   await titleField.scrollIntoViewIfNeeded();
   await titleField.fill(newTitle);
   console.log(`✅ Updated title to: "${newTitle}"`);
@@ -456,21 +457,21 @@ async function setProductTitle(page, newTitle) {
 
 // Click on the Select2 container to open the dropdown
 async function exactSearchSelect2Container(page, locator, searchValue) {
-  await locator.waitFor({ state: 'visible', timeout: 10000 });
+  await locator.waitFor({ state: 'visible', timeout: TIMEOUTS.LONG });
   await locator.click();
   await locator.focus();
   // Wait for 1 second to allow the Select2 dropdown to fully render after clicking.
   // Cannot use waitForLoadState('domcontentloaded') here because Select2 dropdown
   // is rendered dynamically via JavaScript without triggering a page load event.
   // The dropdown animation and DOM insertion happen asynchronously within the same page.
-  await page.waitForTimeout(1000);
+  await page.waitForTimeout(TIMEOUTS.SHORT);
 
   // Now locate and fill the search field
   await locator.pressSequentially(searchValue, { delay: 100 });
 
   // Select first result if available
   const firstResult = page.getByRole('option', { name: searchValue }).first();
-  await firstResult.waitFor({ state: 'visible', timeout: 15000 });
+  await firstResult.waitFor({ state: 'visible', timeout: TIMEOUTS.LONG + TIMEOUTS.MEDIUM });
   await firstResult.click();
   await page.waitForLoadState('domcontentloaded');
   console.log(`✅ Selected ${searchValue} from Select2 dropdown`);

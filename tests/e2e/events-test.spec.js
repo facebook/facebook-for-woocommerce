@@ -3,6 +3,7 @@
  */
 
 const { test, expect } = require('@playwright/test');
+const { TIMEOUTS } = require('./time-constants');
 const TestSetup = require('./lib/TestSetup');
 const EventValidator = require('./lib/EventValidator');
 const {
@@ -73,7 +74,7 @@ test('AddToCart', async ({ page }) => {
     // Set up listener BEFORE triggering the action (prevents race condition)
     const eventPromise = pixelCapture.waitForEvent();
     await page.click('.single_add_to_cart_button');
-    await page.waitForTimeout(1000);
+    await page.waitForTimeout(TIMEOUTS.SHORT);
     await eventPromise;
 
     const validator = new EventValidator(testId);

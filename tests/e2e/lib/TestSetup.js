@@ -2,6 +2,7 @@
  * TestSetup - Test initialization and utilities
  */
 
+const { TIMEOUTS } = require('../time-constants');
 const PixelCapture = require('./PixelCapture');
 
 class TestSetup {
@@ -42,7 +43,7 @@ class TestSetup {
     /**
      * Wait for page to be fully loaded and ready
      */
-    static async waitForPageReady(page, timeout = 1000) {
+    static async waitForPageReady(page, timeout = TIMEOUTS.SHORT) {
         await page.waitForLoadState('networkidle');
         await page.waitForFunction(() => typeof jQuery !== 'undefined' && jQuery.isReady);
         await page.waitForTimeout(timeout);
@@ -71,7 +72,7 @@ class TestSetup {
         console.log('  ✅ Logged In as customer (non-admin)');
     }
 
-    static async wait(ms = 2000) {
+    static async wait(ms = TIMEOUTS.NORMAL) {
         await new Promise(resolve => setTimeout(resolve, ms));
     }
 
