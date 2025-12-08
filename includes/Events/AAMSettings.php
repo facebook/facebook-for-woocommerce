@@ -67,12 +67,7 @@ class AAMSettings {
 	 */
 	public static function build_from_pixel_id( $pixel_id ) {
 		$url      = self::get_url( $pixel_id );
-		$response = wp_remote_get(
-			$url,
-			array(
-				'timeout' => 15, // Increased from default 5s for slow environments
-			)
-		);
+		$response = wp_remote_get( $url );
 
 		if ( is_wp_error( $response ) ) {
 			return null;
