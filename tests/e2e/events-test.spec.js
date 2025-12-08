@@ -153,12 +153,15 @@ test('Purchase', async ({ page }) => {
     }
 
     await page.fill('#email', 'test@example.com');
+    await page.waitForSelector('#shipping-country', { state: 'visible', timeout: 5000 });
     await page.selectOption('#shipping-country', 'US');
     await page.fill('#shipping-first_name', 'Test');
     await page.fill('#shipping-last_name', 'User');
     await page.fill('#shipping-address_1', '123 Main Street');
     await page.fill('#shipping-city', 'Los Angeles');
+    await page.waitForSelector('#shipping-state', { state: 'visible', timeout: 5000 });
     await page.selectOption('#shipping-state', 'CA');
+    await page.waitForTimeout(1000); // Wait for WooCommerce to validate state selection
     await page.fill('#shipping-postcode', '90210');
     await page.fill('#shipping-phone', '3105551234');
 
