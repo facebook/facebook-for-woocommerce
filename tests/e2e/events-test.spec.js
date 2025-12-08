@@ -147,22 +147,16 @@ test('Purchase', async ({ page }) => {
     // Scroll to checkout form
     await page.locator('#email').scrollIntoViewIfNeeded();
 
-    // Check if Edit button exists (address already saved) and click it
-    const editButton = page.locator('.wc-block-components-address-card__edit[aria-controls="shipping"]');
-    const useDifferentAddress = page.locator('#shipping-option-use-different-address');
-    
-    if (await editButton.isVisible()) {
-        console.log(`   ✏️ Clicking Edit button to reveal address fields`);
-        await editButton.click();
-        await page.waitForTimeout(1000);
-    } else if (await useDifferentAddress.isVisible()) {
-        console.log(`   📦 Checking use different shipping address`);
-        await useDifferentAddress.check();
+    // Check "Ship to a different address" to reveal shipping fields
+    const shipToDifferent = page.locator('#shipping-option-ship-to-different-address');
+    if (await shipToDifferent.isVisible()) {
+        console.log(`   📦 Checking "Ship to a different address"`);
+        await shipToDifferent.check();
         await page.waitForTimeout(1000);
     }
 
     await page.fill('#email', 'test@example.com');
-    
+
     // Try to find shipping-country, dump HTML if it fails
     try {
         await page.waitForSelector('#shipping-country', { state: 'visible', timeout: 10000 });
@@ -176,7 +170,7 @@ test('Purchase', async ({ page }) => {
         console.log(`   📄 HTML dumped to: ${dumpPath}`);
         throw error;
     }
-    
+
     await page.locator('#shipping-country').scrollIntoViewIfNeeded();
     await page.selectOption('#shipping-country', 'US');
     await page.fill('#shipping-first_name', 'Test');
