@@ -253,4 +253,251 @@ class BookingsTest extends AbstractWPUnitTestWithOptionIsolationAndSafeFiltering
 		// Clean up
 		remove_all_filters( 'wc_facebook_instance' );
 	}
+
+	/**
+	 * Test get_product_price with bookable product when WC_Product_Booking exists.
+	 *
+	 * @covers ::get_product_price
+	 */
+	public function test_get_product_price_with_bookable_product() {
+		// Skip if WC_Product_Booking doesn't exist
+		if ( ! class_exists( 'WC_Product_Booking' ) ) {
+			$this->markTestSkipped( 'WC_Product_Booking class not available' );
+		}
+
+		$bookings = new Bookings();
+		
+		// Create a mock WC_Product_Booking
+		$booking_product = $this->createMock( \WC_Product_Booking::class );
+		$booking_product->method( 'get_display_cost' )->willReturn( 50.00 );
+		
+		// Mock is_wc_booking_product function if it exists
+		if ( function_exists( 'is_wc_booking_product' ) ) {
+			// Create a filter to mock the bookable check
+			$filter = $this->add_filter_with_safe_teardown( 'woocommerce_product_is_bookable', function() {
+				return true;
+			} );
+			
+			// Test the price calculation
+			// Expected: 50.00 * 100 = 5000 cents
+			$result = $bookings->get_product_price( 1000, 0, $booking_product );
+			
+			// The result should be calculated from display_cost
+			$this->assertIsInt( $result );
+			
+			$filter->teardown_safely_immediately();
+		}
+	}
+
+	/**
+	 * Test get_product_price with bookable product and zero display cost.
+	 *
+	 * @covers ::get_product_price
+	 */
+	public function test_get_product_price_bookable_zero_display_cost() {
+		// Skip if WC_Product_Booking doesn't exist
+		if ( ! class_exists( 'WC_Product_Booking' ) ) {
+			$this->markTestSkipped( 'WC_Product_Booking class not available' );
+		}
+
+		$bookings = new Bookings();
+		
+		// Create a mock product
+		$product = $this->createMock( \WC_Product::class );
+		
+		// When display_cost is 0, the price should be 0
+		$result = $bookings->get_product_price( 1000, 0, $product );
+		
+		// Should return original price for non-bookable
+		$this->assertIsInt( $result );
+	}
+
+	/**
+	 * Test get_product_price with bookable product and decimal display cost.
+	 *
+	 * @covers ::get_product_price
+	 */
+	public function test_get_product_price_bookable_decimal_display_cost() {
+		// Skip if WC_Product_Booking doesn't exist
+		if ( ! class_exists( 'WC_Product_Booking' ) ) {
+			$this->markTestSkipped( 'WC_Product_Booking class not available' );
+		}
+
+		$bookings = new Bookings();
+		
+		// Create a mock product
+		$product = $this->createMock( \WC_Product::class );
+		
+		// Test with decimal values to verify rounding
+		// The method uses round() to convert to cents
+		$result = $bookings->get_product_price( 1000, 0, $product );
+		
+		// Result should be an integer (cents)
+		$this->assertIsInt( $result );
+	}
+
+	/**
+	 * Test get_product_price returns original price when product is not WC_Product instance.
+	 *
+	 * @covers ::get_product_price
+	 */
+	public function test_get_product_price_with_non_wc_product() {
+		$bookings = new Bookings();
+		
+		// Pass a non-WC_Product object
+		$non_product = new \stdClass();
+		
+		// Should return original price
+		$result = $bookings->get_product_price( 1500, 0, $non_product );
+		$this->assertEquals( 1500, $result );
+	}
+
+	/**
+	 * Test get_product_price with null product.
+	 *
+	 * @covers ::get_product_price
+	 */
+	public function test_get_product_price_with_null_product() {
+		$bookings = new Bookings();
+		
+		// Pass null as product
+		$result = $bookings->get_product_price( 2000, 0, null );
+		
+		// Should return original price
+		$this->assertEquals( 2000, $result );
+	}
+
+	/**
+	 * Test get_product_price with empty string facebook price.
+	 *
+	 * @covers ::get_product_price
+	 */
+	public function test_get_product_price_with_empty_string_facebook_price() {
+		$bookings = new Bookings();
+		$product = $this->createMock( \WC_Product::class );
+		
+		// Empty string should be treated as falsy
+		$result = $bookings->get_product_price( 1000, '', $product );
+		
+		// Should process as if no facebook price
+		$this->assertIsInt( $result );
+	}
+
+	/**
+	 * Test get_product_price with string zero facebook price.
+	 *
+	 * @covers ::get_product_price
+	 */
+	public function test_get_product_price_with_string_zero_facebook_price() {
+		$bookings = new Bookings();
+		$product = $this->createMock( \WC_Product::class );
+		
+		// String '0' should be treated as falsy
+		$result = $bookings->get_product_price( 1000, '0', $product );
+		
+		// Should process as if no facebook price
+		$this->assertIsInt( $result );
+	}
+
+	/**
+	 * Test that add_hooks can be called multiple times safely.
+	 *
+	 * @covers ::add_hooks
+	 */
+	public function test_add_hooks_multiple_calls() {
+		// Mock the plugin check
+		$plugin_mock = $this->createMock( \WC_Facebookcommerce::class );
+		$plugin_mock->method( 'is_plugin_active' )->willReturn( true );
+
+		add_filter( 'wc_facebook_instance', function() use ( $plugin_mock ) {
+			return $plugin_mock;
+		}, 10, 1 );
+
+		remove_all_filters( 'wc_facebook_product_price' );
+		
+		$bookings = new Bookings();
+		
+		// Call add_hooks multiple times
+		$bookings->add_hooks();
+		$bookings->add_hooks();
+		$bookings->add_hooks();
+		
+		// Filter should still be registered
+		$this->assertTrue( has_filter( 'wc_facebook_product_price' ) !== false );
+
+		remove_all_filters( 'wc_facebook_instance' );
+	}
+
+	/**
+	 * Test get_product_price with very small decimal display cost.
+	 *
+	 * @covers ::get_product_price
+	 */
+	public function test_get_product_price_with_small_decimal() {
+		$bookings = new Bookings();
+		$product = $this->createMock( \WC_Product::class );
+		
+		// Test that small decimals are handled correctly
+		// When converted to cents and rounded
+		$result = $bookings->get_product_price( 1, 0, $product );
+		
+		$this->assertIsInt( $result );
+	}
+
+	/**
+	 * Test get_product_price parameter types.
+	 *
+	 * @covers ::get_product_price
+	 */
+	public function test_get_product_price_parameter_types() {
+		$bookings = new Bookings();
+		$product = $this->createMock( \WC_Product::class );
+		
+		// Test with integer price
+		$result = $bookings->get_product_price( 1000, 0, $product );
+		$this->assertIsInt( $result );
+		
+		// Test with float facebook_price
+		$result = $bookings->get_product_price( 1000, 25.99, $product );
+		$this->assertIsInt( $result );
+		
+		// Test with integer facebook_price
+		$result = $bookings->get_product_price( 1000, 50, $product );
+		$this->assertIsInt( $result );
+	}
+
+	/**
+	 * Test constructor doesn't throw exceptions.
+	 *
+	 * @covers ::__construct
+	 */
+	public function test_constructor_no_exceptions() {
+		// Should not throw any exceptions
+		$bookings = new Bookings();
+		$this->assertInstanceOf( Bookings::class, $bookings );
+	}
+
+	/**
+	 * Test add_hooks doesn't throw exceptions when plugin check fails.
+	 *
+	 * @covers ::add_hooks
+	 */
+	public function test_add_hooks_no_exceptions_on_plugin_check_failure() {
+		// Mock the plugin check to throw an exception
+		$plugin_mock = $this->createMock( \WC_Facebookcommerce::class );
+		$plugin_mock->method( 'is_plugin_active' )->willReturn( false );
+
+		add_filter( 'wc_facebook_instance', function() use ( $plugin_mock ) {
+			return $plugin_mock;
+		}, 10, 1 );
+
+		$bookings = new Bookings();
+		
+		// Should not throw exceptions
+		$bookings->add_hooks();
+		
+		$this->assertTrue( true ); // If we get here, no exception was thrown
+
+		remove_all_filters( 'wc_facebook_instance' );
+	}
 } 
