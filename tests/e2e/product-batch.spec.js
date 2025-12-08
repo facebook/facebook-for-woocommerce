@@ -27,26 +27,27 @@ test.describe('Facebook for WooCommerce - Product Batch Import E2E Tests', () =>
 
   test('Import products via feed file and verify Facebook sync', async ({ page }, testInfo) => {
     let feedFilePath = null;
+    let feedProductCount = 5;
     const feedCategorySlug = generateUniqueSKU('FeedCategory');
     let importedProductIds = [];
 
     try {
-      // Step 1: Generate product feed CSV file
-      console.log('📝 Step 1: Generating product feed CSV file...');
-      const feedData = await generateProductFeedCSV(5, 0.2, feedCategorySlug); // 10 products, 30% variable
+      // Generate product feed CSV file
+      console.log('📝 Generating product feed CSV file...');
+      const feedData = await generateProductFeedCSV(feedProductCount, 0.2, feedCategorySlug);
       feedFilePath = feedData.filePath;
       console.log(`✅ Feed file generated with ${feedData.productCount} products`);
 
-      // Step 2: Navigate to WooCommerce import page
-      console.log('📦 Step 2: Navigating to WooCommerce import page...');
+      // Navigate to WooCommerce import page
+      console.log('📦 Navigating to WooCommerce import page...');
       await page.goto(`${baseURL}/wp-admin/edit.php?post_type=product&page=product_importer`, {
         waitUntil: 'domcontentloaded',
         timeout: TIMEOUTS.MAX
       });
       console.log('✅ Navigated to import page');
 
-      // Step 3: Upload feed file
-      console.log('📤 Step 3: Uploading feed file...');
+      // Upload feed file
+      console.log('📤 Uploading feed file...');
 
       // Wait for file input to be available
       const fileInput = page.locator('input[type="file"][name="import"]');
@@ -67,7 +68,7 @@ test.describe('Facebook for WooCommerce - Product Batch Import E2E Tests', () =>
       console.log('✅ Column mapping page loaded');
 
       // Step 4: Map columns and continue
-      console.log('🗺️ Step 4: Mapping columns...');
+      console.log('🗺️ Mapping columns...');
 
       // The WooCommerce importer should auto-map columns based on header names
       // Click "Continue" to proceed with the mapped columns
@@ -76,8 +77,8 @@ test.describe('Facebook for WooCommerce - Product Batch Import E2E Tests', () =>
       await runImportButton.click();
       console.log('✅ Started import process');
 
-      // Step 5: Wait for import to complete
-      console.log('⏳ Step 5: Waiting for import to complete...');
+      // Wait for import to complete
+      console.log('⏳ Waiting for import to complete...');
 
       // Wait for import completion message or progress indicator
       const importComplete = page.locator('.woocommerce-importer-done, .wc-importer-done');
@@ -87,8 +88,8 @@ test.describe('Facebook for WooCommerce - Product Batch Import E2E Tests', () =>
       // Verify no PHP errors on import completion page
       await checkForPhpErrors(page);
 
-      // Step 6: Navigate to imported products
-      console.log('📋 Step 6: Navigating to imported products...');
+      //  Navigate to imported products
+      console.log('📋 Navigating to imported products...');
       await page.goto(`${baseURL}/wp-admin/edit.php?post_type=product&product_cat=${feedCategorySlug}`, {
         waitUntil: 'domcontentloaded',
         timeout: TIMEOUTS.MAX
@@ -98,9 +99,6 @@ test.describe('Facebook for WooCommerce - Product Batch Import E2E Tests', () =>
       const productRows = page.locator('.wp-list-table tbody tr.iedit');
       const productCount = await productRows.count();
       console.log(`📊 Found ${productCount} imported products in WooCommerce`);
-
-      // Verify we imported the expected number of products
-      expect(productCount).toBeGreaterThan(0);
 
       // Extract product IDs from URLs
       for (let i = 0; i < Math.min(productCount, 5); i++) { // Test first 5 products
@@ -113,34 +111,13 @@ test.describe('Facebook for WooCommerce - Product Batch Import E2E Tests', () =>
         }
       }
 
+      // Verify we imported the expected number of products
+      expect(productCount).toBe(feedProductCount);
+      expect(importedProductIds.length).toBe(feedProductCount);
       console.log(`✅ Extracted ${importedProductIds.length} product IDs for validation`);
 
-      // Step 7: Open Facebook settings through Marketing tab
-      console.log('🔵 Step 7: Opening Facebook settings through Marketing tab...');
-
-      // Navigate to Marketing > Facebook
-      await page.goto(`${baseURL}/wp-admin/admin.php?page=wc-admin&path=/marketing`, {
-        waitUntil: 'domcontentloaded',
-        timeout: TIMEOUTS.MAX
-      });
-
-      // Look for Facebook menu item
-      const facebookMenuItem = page.locator('a[href*="facebook"], li:has-text("Facebook")').first();
-      if (await facebookMenuItem.isVisible({ timeout: TIMEOUTS.LONG })) {
-        await facebookMenuItem.click();
-        await page.waitForLoadState('domcontentloaded', { timeout: TIMEOUTS.MAX });
-        console.log('✅ Opened Facebook settings');
-      } else {
-        // Alternative: Direct navigation to Facebook settings
-        await page.goto(`${baseURL}/wp-admin/admin.php?page=wc-facebook`, {
-          waitUntil: 'domcontentloaded',
-          timeout: TIMEOUTS.MAX
-        });
-        console.log('✅ Navigated directly to Facebook settings');
-      }
-
-      // Step 8: Validate Facebook sync for imported products
-      console.log('🔍 Step 9: Validating Facebook sync for imported products...');
+      // Validate Facebook sync for imported products
+      console.log('🔍 Validating Facebook sync for imported products...');
 
       // Validate sync for a sample of imported products
       const productsToValidate = importedProductIds
@@ -183,11 +160,6 @@ test.describe('Facebook for WooCommerce - Product Batch Import E2E Tests', () =>
 
       expect(syncSuccessCount).toBe(productsToValidate.length);
 
-      // Step 9: Navigate to Facebook Catalog (informational - actual validation done above)
-      console.log('\n📱 Step 10: Facebook Catalog verification (completed via API above)');
-      console.log('   Note: Products are verified in Facebook catalog via API calls');
-      console.log('   Manual verification: Visit https://business.facebook.com/commerce/catalogs/');
-
       console.log('\n✅ Product batch import and Facebook sync test completed successfully');
       logTestEnd(testInfo, true);
 
@@ -203,7 +175,7 @@ test.describe('Facebook for WooCommerce - Product Batch Import E2E Tests', () =>
       }
 
       if (importedProductIds.length > 0) {
-        console.log(`\n📝 Note: ${importedProductIds.length} test products were imported`);
+        console.log(`\n📝 ${importedProductIds.length} test products were imported`);
         console.log(`  Category: ${feedCategorySlug}`);
 
         const cleanupPromises = importedProductIds.map((productId) => {

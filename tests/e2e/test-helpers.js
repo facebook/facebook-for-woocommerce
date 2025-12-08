@@ -117,9 +117,9 @@ async function publishProduct(page) {
   console.log('Clicked Publish button');
   let publishSuccess = true;
   await page.waitForURL(/\/wp-admin\/post\.php\?post=\d+/, { timeout: TIMEOUTS.LONG }).catch(() => {
-      console.warn('⚠️ URL did not change after publishing. Current URL: ' + page.url())
-      publishSuccess = false;
-    }
+    console.warn('⚠️ URL did not change after publishing. Current URL: ' + page.url())
+    publishSuccess = false;
+  }
   );
 
   if (!publishSuccess) {
@@ -708,77 +708,74 @@ async function generateProductFeedCSV(productCount = 10, variableProductPercenta
       '', // External URL
       '', // Button text
       '0', // Position
-      'Size', // Attribute 1 name
-      'Small, Medium, Large', // Attribute 1 value(s)
+      'Color', // Attribute 1 name
+      'Red, Blue, Green', // Attribute 1 value(s)
       '1', // Attribute 1 visible
       '1', // Attribute 1 global
-      'Color', // Attribute 2 name
-      'Red, Blue', // Attribute 2 value(s)
-      '1', // Attribute 2 visible
-      '1' // Attribute 2 global
+      '', // Attribute 2 name
+      '', // Attribute 2 value(s)
+      '', // Attribute 2 visible
+      '' // Attribute 2 global
     ]);
 
     // Generate variations for this variable product
-    const sizes = ['Small', 'Medium', 'Large'];
-    const colors = ['Red', 'Blue'];
+    const colors = ['Red', 'Blue', 'Green'];
     let position = 1;
 
-    for (const size of sizes) {
-      for (const color of colors) {
-        productId++;
-        const variationPrice = (parseFloat(basePrice) + Math.random() * 10).toFixed(2);
+    for (const color of colors) {
+      productId++;
+      const variationPrice = (parseFloat(basePrice) + Math.random() * 10).toFixed(2);
 
-        rows.push([
-          productId, // ID
-          'variation', // Type
-          `${sku}-${size}-${color}`, // SKU
-          `${name} - ${size}, ${color}`, // Name
-          '1', // Published
-          '0', // Is featured?
-          'visible', // Visibility in catalog
-          '', // Short description
-          `Variation: ${size}, ${color}`, // Description
-          '', // Date sale price starts
-          '', // Date sale price ends
-          'taxable', // Tax status
-          'parent', // Tax class
-          '1', // In stock?
-          Math.floor(Math.random() * 50 + 5), // Stock
-          '', // Low stock amount
-          '0', // Backorders allowed?
-          '0', // Sold individually?
-          '', // Weight (kg)
-          '', // Length (cm)
-          '', // Width (cm)
-          '', // Height (cm)
-          '0', // Allow customer reviews?
-          '', // Purchase note
-          '', // Sale price
-          variationPrice, // Regular price
-          '', // Categories
-          '', // Tags
-          '', // Shipping class
-          '', // Images
-          '', // Download limit
-          '', // Download expiry days
-          `id:${parentId}`, // Parent
-          '', // Grouped products
-          '', // Upsells
-          '', // Cross-sells
-          '', // External URL
-          '', // Button text
-          position, // Position
-          'Size', // Attribute 1 name
-          size, // Attribute 1 value(s)
-          '', // Attribute 1 visible
-          '1', // Attribute 1 global
-          'Color', // Attribute 2 name
-          color, // Attribute 2 value(s)
-          '', // Attribute 2 visible
-          '1' // Attribute 2 global
-        ]);
-        position++;
-      }
+      rows.push([
+        productId, // ID
+        'variation', // Type
+        `${sku}-${color}`, // SKU
+        `${name} - ${color}`, // Name
+        '1', // Published
+        '0', // Is featured?
+        'visible', // Visibility in catalog
+        '', // Short description
+        `Variation: ${color}`, // Description
+        '', // Date sale price starts
+        '', // Date sale price ends
+        'taxable', // Tax status
+        'parent', // Tax class
+        '1', // In stock?
+        Math.floor(Math.random() * 50 + 5), // Stock
+        '', // Low stock amount
+        '0', // Backorders allowed?
+        '0', // Sold individually?
+        '', // Weight (kg)
+        '', // Length (cm)
+        '', // Width (cm)
+        '', // Height (cm)
+        '0', // Allow customer reviews?
+        '', // Purchase note
+        '', // Sale price
+        variationPrice, // Regular price
+        '', // Categories
+        '', // Tags
+        '', // Shipping class
+        '', // Images
+        '', // Download limit
+        '', // Download expiry days
+        `id:${parentId}`, // Parent
+        '', // Grouped products
+        '', // Upsells
+        '', // Cross-sells
+        '', // External URL
+        '', // Button text
+        position, // Position
+        'Color', // Attribute 1 name
+        color, // Attribute 1 value(s)
+        '', // Attribute 1 visible
+        '1', // Attribute 1 global
+        '', // Attribute 2 name
+        '', // Attribute 2 value(s)
+        '', // Attribute 2 visible
+        '' // Attribute 2 global
+      ]);
+      position++;
     }
   }
 
