@@ -198,7 +198,25 @@ jobs:
           # This ensures customer can see shop pages, products, and categories
           wp cap add customer read --allow-root
 
-          echo "✅ Customer user created with proper capabilities"
+          # Get customer user ID once and store it
+          CUSTOMER_ID=$(wp user get customer@test.com --field=ID --allow-root)
+          echo "Customer User ID: $CUSTOMER_ID"
+
+          # Add billing address to customer user for comprehensive event testing
+          # This ensures address fields (ct, zp, country) are captured in Pixel/CAPI events
+          wp user meta update $CUSTOMER_ID billing_first_name "Test" --allow-root
+          wp user meta update $CUSTOMER_ID billing_last_name "Customer" --allow-root
+          wp user meta update $CUSTOMER_ID billing_company "" --allow-root
+          wp user meta update $CUSTOMER_ID billing_address_1 "123 Test Street" --allow-root
+          wp user meta update $CUSTOMER_ID billing_address_2 "" --allow-root
+          wp user meta update $CUSTOMER_ID billing_city "San Francisco" --allow-root
+          wp user meta update $CUSTOMER_ID billing_state "CA" --allow-root
+          wp user meta update $CUSTOMER_ID billing_postcode "94102" --allow-root
+          wp user meta update $CUSTOMER_ID billing_country "US" --allow-root
+          wp user meta update $CUSTOMER_ID billing_email "customer@test.com" --allow-root
+          wp user meta update $CUSTOMER_ID billing_phone "4155551234" --allow-root
+
+          echo "✅ Customer user created with billing address for event testing"
       - name: Install WPC Composite Products plugin
         run: |
           cd ${{ env.WORDPRESS_PATH }}
