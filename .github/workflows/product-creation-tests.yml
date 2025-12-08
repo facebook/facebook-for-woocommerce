@@ -190,21 +190,20 @@ jobs:
         run: |
           cd ${{ env.WORDPRESS_PATH }}
 
-          # Install WP Mail Logging to catch emails without sending (no SMTP needed)
-          wp plugin install wp-mail-logging --activate --allow-root
-          echo "✅ WP Mail Logging installed (emails won't actually send)"
-
           wp plugin install contact-form-7 --activate --allow-root
           echo "✅ Contact Form 7 plugin installed and activated"
 
-          # Create a contact form using WP-CLI
+          # Create a contact form with mail disabled (for E2E testing without mail server)
           wp eval '
           $form_title = "E2E Test Contact Form";
           $form_content = "<label> Your Name\n    [text* your-name] </label>\n\n<label> Your Email\n    [email* your-email] </label>\n\n<label> Message\n    [textarea your-message] </label>\n\n[submit \"Send\"]";
 
           $form = WPCF7_ContactForm::get_template();
           $form->set_title( $form_title );
-          $form->set_properties( array( "form" => $form_content ) );
+          $form->set_properties( array(
+              "form" => $form_content,
+              "mail" => array("active" => false)  // Skip mail sending for E2E tests
+          ));
           $form->save();
 
           echo "Contact Form ID: " . $form->id();
@@ -214,7 +213,7 @@ jobs:
           wp post create --post_type=page --post_title="Contact" \
             --post_content='[contact-form-7 id="1" title="E2E Test Contact Form"]' \
             --post_status=publish --allow-root
-          echo "✅ Contact Form 7 configured with contact page at /contact"
+          echo "✅ Contact Form 7 configured with contact page at /contact and mail disabled "
 
       - name: Create wp non admin user
         run: |
