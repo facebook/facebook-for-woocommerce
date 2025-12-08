@@ -26,15 +26,22 @@ async function loginToWordPress(page) {
   console.log('🔐 Logging in to WordPress...');
   await loginForm.waitFor({ state: 'visible', timeout: TIMEOUTS.MAX });
   await loginForm.fill(username);
+  console.log('✅ Filled username');
   await page.locator('#user_pass').fill(password);
+  console.log('✅ Filled password');
   const loginButton = page.locator('#wp-submit');
-  loginButton.waitFor({ state: 'visible', timeout: TIMEOUTS.MAX });
-  loginButton.waitFor({ state: 'attached', timeout: TIMEOUTS.MAX });
+  await loginButton.waitFor({ state: 'visible', timeout: TIMEOUTS.MAX });
+  console.log('✅ Found login button');
+  await loginButton.waitFor({ state: 'attached', timeout: TIMEOUTS.MAX });
+  console.log('✅ Login button is attached');
   await loginButton.click();
+  console.log('✅ Clicked login button');
+
+  await page.waitForLoadState('domcontentloaded', { timeout: TIMEOUTS.MAX });
 
   // Wait for login to complete by waiting for admin content
   await loggedInContent.waitFor({ state: 'visible', timeout: TIMEOUTS.MAX });
-  console.log('✅ Login completed');
+  console.log('✅ Login completed ' + page.url());
 }
 
 // Helper function to safely take screenshots
@@ -108,9 +115,23 @@ async function publishProduct(page) {
   await publishButton.waitFor({ state: 'attached', timeout: TIMEOUTS.LONG });
   await publishButton.click();
   console.log('Clicked Publish button');
-  await page.waitForURL(/\/wp-admin\/post\.php\?post=\d+&action=edit$/, { timeout: TIMEOUTS.MAX });
-  await page.waitForLoadState('domcontentloaded', { timeout: TIMEOUTS.MAX });
+  let publishSuccess = true;
+  await page.waitForURL(/\/wp-admin\/post\.php\?post=\d+/, { timeout: TIMEOUTS.LONG }).catch(() => {
+      console.warn('⚠️ URL did not change after publishing. Current URL: ' + page.url())
+      publishSuccess = false;
+    }
+  );
 
+  if (!publishSuccess) {
+    console.warn(`⚠️ Encountered Wordpress Publish button bug. Clicking Publish did not change url. Current url: ${page.url()} Clicking Publish button again`);
+    await publishButton.click();
+    await page.waitForTimeout(TIMEOUTS.MEDIUM);
+  }
+
+  let updateButton = page.getByRole('button', { name: 'Update' });
+  await updateButton.waitFor({ state: 'visible', timeout: TIMEOUTS.LONG });
+
+  await page.waitForLoadState('domcontentloaded', { timeout: TIMEOUTS.MAX });
   console.log('✅ Published product');
   return true;
 }
