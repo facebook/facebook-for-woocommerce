@@ -3,11 +3,12 @@
  */
 
 class PixelCapture {
-    constructor(page, testId, eventName) {
+    constructor(page, testId, eventName, expectZeroEvents = false) {
         this.page = page;
         this.testId = testId;
         this.eventName = eventName;
         this.isCapturing = false;
+        this.expectZeroEvents = expectZeroEvents;
     }
 
     /**
@@ -49,6 +50,11 @@ class PixelCapture {
 
         } catch (err) {
             if (err.message?.includes('Timeout')) {
+                // For negative tests, timeout means no event fired (which is expected)
+                if (this.expectZeroEvents) {
+                    console.log(`✅ No Pixel event fired (as expected for negative test)`);
+                    return;
+                }
                 throw new Error(`❌ Pixel event ${this.eventName} did not fire within ${parseInt(process.env.PIXEL_EVENT_TIMEOUT || '30000', 10)}ms`);
             }
             throw err;

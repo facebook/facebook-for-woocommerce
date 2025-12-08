@@ -5,7 +5,7 @@
 const PixelCapture = require('./PixelCapture');
 
 class TestSetup {
-    static async init(page, eventName) {
+    static async init(page, eventName, expectZeroEvents = false) {
         const testName = eventName.toLowerCase();
         const testId = `${testName}-${Date.now()}`;
 
@@ -20,7 +20,7 @@ class TestSetup {
             url: process.env.WORDPRESS_URL
         }]);
 
-        const pixelCapture = new PixelCapture(page, testId, eventName);
+        const pixelCapture = new PixelCapture(page, testId, eventName, expectZeroEvents);
         this.setupBrowserLogging(page);
 
         return { testId, pixelCapture };

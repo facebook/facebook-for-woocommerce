@@ -70,7 +70,7 @@ class AAMSettings {
 		$response = wp_remote_get(
 			$url,
 			array(
-				'timeout' => 15, // Increased from default 5s for CI environments
+				'timeout' => 15, // Increased from default 5s for slow environments
 			)
 		);
 
