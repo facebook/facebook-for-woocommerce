@@ -190,6 +190,10 @@ jobs:
         run: |
           cd ${{ env.WORDPRESS_PATH }}
 
+          # Install WP Mail Logging to catch emails without sending (no SMTP needed)
+          wp plugin install wp-mail-logging --activate --allow-root
+          echo "✅ WP Mail Logging installed (emails won't actually send)"
+
           wp plugin install contact-form-7 --activate --allow-root
           echo "✅ Contact Form 7 plugin installed and activated"
 
