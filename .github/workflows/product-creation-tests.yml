@@ -186,6 +186,32 @@ jobs:
           wp option update woocommerce_cod_settings '{"enabled":"yes","title":"Cash on delivery","description":"Pay with cash upon delivery."}' --format=json --allow-root
           echo "✅ Cash on Delivery payment gateway enabled"
 
+      - name: Install configure Contact Form 7 for Lead event testing
+        run: |
+          cd ${{ env.WORDPRESS_PATH }}
+
+          wp plugin install contact-form-7 --activate --allow-root
+          echo "✅ Contact Form 7 plugin installed and activated"
+
+          # Create a contact form using WP-CLI
+          wp eval '
+          $form_title = "E2E Test Contact Form";
+          $form_content = "<label> Your Name\n    [text* your-name] </label>\n\n<label> Your Email\n    [email* your-email] </label>\n\n<label> Message\n    [textarea your-message] </label>\n\n[submit \"Send\"]";
+
+          $form = WPCF7_ContactForm::get_template();
+          $form->set_title( $form_title );
+          $form->set_properties( array( "form" => $form_content ) );
+          $form->save();
+
+          echo "Contact Form ID: " . $form->id();
+          ' --allow-root
+
+          # Create a Contact page with the form shortcode
+          wp post create --post_type=page --post_title="Contact" \
+            --post_content='[contact-form-7 id="1" title="E2E Test Contact Form"]' \
+            --post_status=publish --allow-root
+          echo "✅ Contact Form 7 configured with contact page at /contact"
+
       - name: Create wp non admin user
         run: |
           cd ${{ env.WORDPRESS_PATH }}
