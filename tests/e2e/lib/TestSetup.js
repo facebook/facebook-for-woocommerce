@@ -68,7 +68,27 @@ class TestSetup {
         await page.click('#wp-submit');
         await page.waitForLoadState('networkidle');
 
-        console.log('  ✅ Logged In as customer (non-admin)');
+        // CRITICAL: Wait for redirect to complete and ensure we're logged in
+        // WordPress redirects to /wp-admin/ after login
+        await page.waitForTimeout(1000);
+
+        // Verify login succeeded by checking for WordPress admin bar or profile link
+        const isLoggedIn = await page.locator('#wpadminbar').count() > 0 ||
+                          await page.locator('body.logged-in').count() > 0;
+
+        if (!isLoggedIn) {
+            throw new Error('❌ Login failed - user not authenticated');
+        }
+
+        // Log all cookies to verify WordPress auth cookies are set
+        const cookies = await page.context().cookies();
+        const wpCookies = cookies.filter(c => c.name.includes('wordpress_logged_in') || c.name.includes('wordpress_'));
+        console.log(`  ✅ Logged In as customer (non-admin)`);
+        console.log(`  ℹ️  WordPress auth cookies: ${wpCookies.length} found`);
+
+        if (wpCookies.length === 0) {
+            console.warn('  ⚠️  WARNING: No WordPress authentication cookies detected!');
+        }
     }
 
     static async wait(ms = 2000) {
