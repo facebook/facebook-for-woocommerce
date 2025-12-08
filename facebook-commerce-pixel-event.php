@@ -121,15 +121,19 @@ class WC_Facebookcommerce_Pixel {
 		 *
 		 * @param string $js_code
 		 */
-		return apply_filters(
-			'facebook_woocommerce_pixel_init',
-			sprintf(
-				"fbq('init', '%s', %s, %s);\n",
-				esc_js( self::get_pixel_id() ),
-				wp_json_encode( $this->user_info, JSON_PRETTY_PRINT | JSON_FORCE_OBJECT ),
-				wp_json_encode( array( 'agent' => $agent_string ), JSON_PRETTY_PRINT | JSON_FORCE_OBJECT )
-			)
+		$init_code = sprintf(
+			"fbq('init', '%s', %s, %s);\n",
+			esc_js( self::get_pixel_id() ),
+			wp_json_encode( $this->user_info, JSON_PRETTY_PRINT | JSON_FORCE_OBJECT ),
+			wp_json_encode( array( 'agent' => $agent_string ), JSON_PRETTY_PRINT | JSON_FORCE_OBJECT )
 		);
+
+		// E2E DEBUG: Log the exact fbq init code being generated
+		error_log( 'E2E DEBUG - Pixel Init Code Generated:' );
+		error_log( $init_code );
+		error_log( 'E2E DEBUG - User Info JSON: ' . wp_json_encode( $this->user_info ) );
+
+		return apply_filters( 'facebook_woocommerce_pixel_init', $init_code );
 	}
 
 

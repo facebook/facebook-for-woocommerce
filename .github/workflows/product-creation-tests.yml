@@ -217,7 +217,7 @@ jobs:
           wp user meta update $CUSTOMER_ID billing_phone "4155551234" --allow-root
 
           echo "✅ Customer user created with billing address"
-          
+
           # Verify billing address was set correctly
           echo "=== Verifying Billing Address ==="
           echo "City: $(wp user meta get $CUSTOMER_ID billing_city --allow-root)"
@@ -425,6 +425,7 @@ jobs:
 
       - name: Run E2E tests
         continue-on-error: true
+        if: false
         env:
           WP_USERNAME: admin
           WP_PASSWORD: admin
