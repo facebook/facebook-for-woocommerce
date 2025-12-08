@@ -9,8 +9,8 @@ const {
   cleanupProduct
 } = require('./test-helpers');
 
-test('PageView', async ({ page }) => {
-    const { testId, pixelCapture } = await TestSetup.init(page, 'PageView');
+test('PageView', async ({ page }, testInfo) => {
+    const { testId, pixelCapture } = await TestSetup.init(page, 'PageView', testInfo);
 
     console.log(`   🌐 Navigating to homepage`);
     // Set up listener BEFORE triggering the action (prevents race condition)
@@ -27,8 +27,8 @@ test('PageView', async ({ page }) => {
     expect(result.passed).toBe(true);
 });
 
-test('PageView with fbclid', async ({ page }) => {
-    const { testId, pixelCapture } = await TestSetup.init(page, 'PageView');
+test('PageView with fbclid', async ({ page }, testInfo) => {
+    const { testId, pixelCapture } = await TestSetup.init(page, 'PageView',  testInfo);
 
     console.log(`   🌐 Navigating to homepage`);
     // Set up listener BEFORE triggering the action (prevents race condition)
@@ -45,8 +45,8 @@ test('PageView with fbclid', async ({ page }) => {
     expect(result.passed).toBe(true);
 });
 
-test('ViewContent', async ({ page }) => {
-    const { testId, pixelCapture } = await TestSetup.init(page, 'ViewContent');
+test('ViewContent', async ({ page }, testInfo) => {
+    const { testId, pixelCapture } = await TestSetup.init(page, 'ViewContent',  testInfo);
 
     console.log(`   📦 Navigating to product page`);
     // Set up listener BEFORE triggering the action (prevents race condition)
@@ -63,8 +63,8 @@ test('ViewContent', async ({ page }) => {
     expect(result.passed).toBe(true);
 });
 
-test('AddToCart', async ({ page }) => {
-    const { testId, pixelCapture } = await TestSetup.init(page, 'AddToCart');
+test('AddToCart', async ({ page }, testInfo) => {
+    const { testId, pixelCapture } = await TestSetup.init(page, 'AddToCart',  testInfo);
 
     await page.goto(process.env.TEST_PRODUCT_URL);
     await TestSetup.waitForPageReady(page, 500);
@@ -84,8 +84,8 @@ test('AddToCart', async ({ page }) => {
     expect(result.passed).toBe(true);
 });
 
-test('ViewCategory', async ({ page }) => {
-    const { testId, pixelCapture } = await TestSetup.init(page, 'ViewCategory');
+test('ViewCategory', async ({ page }, testInfo) => {
+    const { testId, pixelCapture } = await TestSetup.init(page, 'ViewCategory',  testInfo);
 
     console.log(`   📂 Navigating to category page`);
     // Set up listener BEFORE triggering the action (prevents race condition)
@@ -102,8 +102,8 @@ test('ViewCategory', async ({ page }) => {
     expect(result.passed).toBe(true);
 });
 
-test('InitiateCheckout', async ({ page }) => {
-    const { testId, pixelCapture } = await TestSetup.init(page, 'InitiateCheckout');
+test('InitiateCheckout', async ({ page }, testInfo) => {
+    const { testId, pixelCapture } = await TestSetup.init(page, 'InitiateCheckout',  testInfo);
 
     await page.goto(process.env.TEST_PRODUCT_URL);
     await TestSetup.waitForPageReady(page, 500);
@@ -127,9 +127,9 @@ test('InitiateCheckout', async ({ page }) => {
     expect(result.passed).toBe(true);
 });
 
-test('Purchase', async ({ page }) => {
+test('Purchase', async ({ page }, testInfo) => {
   // maybe clear cart before the test?
-    const { testId, pixelCapture } = await TestSetup.init(page, 'Purchase');
+    const { testId, pixelCapture } = await TestSetup.init(page, 'Purchase',  testInfo);
 
     await page.goto(process.env.TEST_PRODUCT_URL);
     await TestSetup.waitForPageReady(page, 500);
@@ -178,8 +178,8 @@ test('Purchase', async ({ page }) => {
     expect(result.passed).toBe(true);
 });
 
-test('Purchase - Multiple Place Order Clicks', async ({ page }) => {
-    const { testId, pixelCapture } = await TestSetup.init(page, 'Purchase');
+test('Purchase - Multiple Place Order Clicks', async ({ page }, testInfo) => {
+    const { testId, pixelCapture } = await TestSetup.init(page, 'Purchase',  testInfo);
 
     await page.goto(process.env.TEST_PRODUCT_URL);
     await TestSetup.waitForPageReady(page, 500);
@@ -232,8 +232,8 @@ test('Purchase - Multiple Place Order Clicks', async ({ page }) => {
     expect(result.passed).toBe(true);
 });
 
-test('Search', async ({ page }) => {
-    const { testId, pixelCapture } = await TestSetup.init(page, 'Search');
+test('Search', async ({ page }, testInfo) => {
+    const { testId, pixelCapture } = await TestSetup.init(page, 'Search',  testInfo);
 
     console.log(`   🏠 Navigating to homepage`);
     await page.goto('/');
@@ -259,8 +259,8 @@ test('Search', async ({ page }) => {
     expect(result.passed).toBe(true);
 });
 
-test('Search - No Results', async ({ page }) => {
-    const { testId, pixelCapture } = await TestSetup.init(page, 'Search', true); // expectZeroEvents=true
+test('Search - No Results', async ({ page }, testInfo) => {
+    const { testId, pixelCapture } = await TestSetup.init(page, 'Search', testInfo, true); // expectZeroEvents=true
 
     console.log(`   🏠 Navigating to homepage`);
     await page.goto('/');
@@ -289,8 +289,8 @@ test('Search - No Results', async ({ page }) => {
 });
 
 
-test('Lead', async ({ page }) => {
-    const { testId, pixelCapture } = await TestSetup.init(page, 'Lead');
+test('Lead', async ({ page }, testInfo) => {
+    const { testId, pixelCapture } = await TestSetup.init(page, 'Lead',  testInfo);
 
     console.log(`   📄 Navigating to Contact page`);
     await page.goto('/contact');
@@ -318,7 +318,7 @@ test('Lead', async ({ page }) => {
     // Wait for CF7 submission response (shows success/error message)
     console.log(`   ⏳ Waiting for form submission response...`);
     await page.waitForSelector('.wpcf7-response-output', { timeout: 10000 });
-    
+
     // Check if submission was successful
     const responseText = await page.locator('.wpcf7-response-output').textContent();
     console.log(`   📬 Form response: ${responseText.trim()}`);

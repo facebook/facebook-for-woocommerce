@@ -5,11 +5,12 @@
 const PixelCapture = require('./PixelCapture');
 
 class TestSetup {
-    static async init(page, eventName, expectZeroEvents = false) {
+    static async init(page, eventName, testInfo, expectZeroEvents = false) {
         const testName = eventName.toLowerCase();
         const testId = `${testName}-${Date.now()}`;
 
-        console.log(`\n Testing: ${eventName.toUpperCase()}`);
+        const displayName = testInfo?.title || eventName;
+        console.log(`\n Testing: ${displayName}`);
 
         await this.login(page);
 
