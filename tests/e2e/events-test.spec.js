@@ -142,25 +142,13 @@ test('Purchase', async ({ page }) => {
     await page.goto('/checkout');
     await TestSetup.waitForPageReady(page);
 
-    console.log(`   📝 Filling checkout form`);
+    // Scroll down to see checkout form in video
+    await page.evaluate(() => window.scrollBy(0, 400));
+    await page.waitForTimeout(1000);
 
-    // Customer has saved address - billing = shipping by default in WooCommerce
-    // No need for separate shipping fields, just use billing
-    await page.fill('#email', 'test@example.com');
-
-    // Billing fields are already visible
-    await page.selectOption('#billing-country', 'US');
-    await page.waitForTimeout(500); // Wait for state dropdown to load
-    await page.fill('#billing-first_name', 'Test');
-    await page.fill('#billing-last_name', 'User');
-    await page.fill('#billing-address_1', '123 Main Street');
-    await page.fill('#billing-city', 'Los Angeles');
-    await page.selectOption('#billing-state', 'CA');
-    await page.fill('#billing-postcode', '90210');
-    await page.fill('#billing-phone', '3105551234');
-
-    console.log(`   🚚 Waiting for checkout to process address`);
-    await page.waitForTimeout(2000); // Give WooCommerce time to validate address and load shipping
+    console.log(`   ℹ️ Using saved billing address (no need to fill)`);
+    // Customer already has billing address saved from workflow setup
+    // WooCommerce automatically uses it - no need to edit or fill anything
 
     console.log(`   💰 Selecting Cash on Delivery`);
     // Wait for the payment methods section to load, then click the label (the input is hidden by CSS)

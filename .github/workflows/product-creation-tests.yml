@@ -216,7 +216,18 @@ jobs:
           wp user meta update $CUSTOMER_ID billing_email "customer@test.com" --allow-root
           wp user meta update $CUSTOMER_ID billing_phone "4155551234" --allow-root
 
-          echo "✅ Customer user created with billing address"
+          # Set shipping address same as billing (WooCommerce stores them separately)
+          wp user meta update $CUSTOMER_ID shipping_first_name "Test" --allow-root
+          wp user meta update $CUSTOMER_ID shipping_last_name "Customer" --allow-root
+          wp user meta update $CUSTOMER_ID shipping_company "" --allow-root
+          wp user meta update $CUSTOMER_ID shipping_address_1 "123 Test Street" --allow-root
+          wp user meta update $CUSTOMER_ID shipping_address_2 "" --allow-root
+          wp user meta update $CUSTOMER_ID shipping_city "San Francisco" --allow-root
+          wp user meta update $CUSTOMER_ID shipping_state "CA" --allow-root
+          wp user meta update $CUSTOMER_ID shipping_postcode "94102" --allow-root
+          wp user meta update $CUSTOMER_ID shipping_country "US" --allow-root
+
+          echo "✅ Customer user created with billing and shipping address"
 
           # Verify billing address was set correctly
           echo "=== Verifying Billing Address ==="
