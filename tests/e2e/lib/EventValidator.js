@@ -72,34 +72,44 @@ class EventValidator {
         console.log(`   CAPI events found: ${capi.length}`);
 
         const errors = [];
-
         const countCheckResult = this.validateEventCounts(pixel, capi, eventName, errors);
         if (!countCheckResult.passed) {
             return countCheckResult;
         }
         // If we do not do this check, the rest of the validations will fail cos of mismatched counts
 
-        const p = pixel[0];
-        const c = capi[0];
+        const p = pixel[0] || null;
+        const c = capi[0] || null;
+        const hasPixel = schema.channels.includes('pixel');
+        const hasCapi = schema.channels.includes('capi');
 
-        this.validateFieldsExistence(eventName, 'pixel', 'user_data', p, errors);
-        this.validateFieldsExistence(eventName, 'pixel', 'custom_data', p, errors);
-        this.validateFieldsExistence(eventName, 'capi', 'user_data', c, errors);
-        this.validateFieldsExistence(eventName, 'capi', 'custom_data', c, errors);
-        this.validateDeduplication(p, c, errors);
+        // Validate fields for each channel in schema
+        if (hasPixel && p) {
+            this.validateFieldsExistence(eventName, 'pixel', 'user_data', p, errors);
+            this.validateFieldsExistence(eventName, 'pixel', 'custom_data', p, errors);
+        }
+        if (hasCapi && c) {
+            this.validateFieldsExistence(eventName, 'capi', 'user_data', c, errors);
+            this.validateFieldsExistence(eventName, 'capi', 'custom_data', c, errors);
+        }
 
         console.log(`  ✓ Running data validators...`);
 
-        this.validateTimestamp(p, c, errors);
-        this.validateFbp(p, c, errors);
-        this.validateCookies(p, c, errors)
-        this.validateDataMatch(p, c, eventName, 'custom_data', errors);
-        this.validateDataMatch(p, c, eventName, 'user_data', errors);
-        this.validateUserData(p, c, errors);
+        // Cross-channel validations (only when both channels exist)
+        if (hasPixel && hasCapi && p && c) {
+            this.validateDeduplication(p, c, errors);
+            this.validateTimestamp(p, c, errors);
+            this.validateFbp(p, c, errors);
+            this.validateCookies(p, c, errors);
+            this.validateDataMatch(p, c, eventName, 'custom_data', errors);
+            this.validateDataMatch(p, c, eventName, 'user_data', errors);
+            this.validateUserData(p, c, errors);
+        }
+
         await this.validatePhpErrors(page, errors);
 
-        this.validatePixelResponse(p, errors); // if response was 200 OK or not.
-        // CAPI we do not need to check this response status, as we log it only if it is successful response. it will be caught in lengthcheck and details will be in debug.log
+        // Channel-specific validations
+        if (hasPixel && p) this.validatePixelResponse(p, errors);
 
         return {
             passed: errors.length === 0,
@@ -110,27 +120,26 @@ class EventValidator {
     }
 
     validateEventCounts(pixel, capi, eventName, errors) {
-        if (pixel.length === 0) errors.push(`No Pixel event found - ${eventName}`);
-        if (capi.length === 0) errors.push(`No CAPI event found - ${eventName}`);
-        if (pixel.length === 0 || capi.length === 0) {
-            return { passed: false, errors, pixel: pixel, capi: capi };
+        const schema = EVENT_SCHEMAS[eventName];
+        
+        // Check positive path: expect exactly 1 event for each channel in schema
+        if (schema.channels.includes('pixel') && pixel.length !== 1) {
+            errors.push(`Expected 1 Pixel event, found ${pixel.length}`);
+        }
+        if (schema.channels.includes('capi') && capi.length !== 1) {
+            errors.push(`Expected 1 CAPI event, found ${capi.length}`);
         }
 
-        if (pixel.length != capi.length) {
-            errors.push(`Event count mismatch: Pixel=${pixel.length}, CAPI=${capi.length}`);
-            return { passed: false, errors, pixel: pixel, capi: capi };
+        if (errors.length === 0) {
+            console.log(`  ✓ Event counts match`);
         }
 
-        if (pixel.length === capi.length && pixel.length>1) {
-            errors.push(`Multiple events detected: Pixel=${pixel.length}, CAPI=${capi.length}`);
-            return { passed: false, errors, pixel: pixel, capi: capi };
-        }
-
-        if (pixel.length===1 && capi.length===1) {
-            console.log(`✅ Pixel and CAPI events match: ${pixel.length}`);
-            return { passed: true, errors, pixel: pixel, capi: capi};
-        }
-
+        return {
+            passed: errors.length === 0,
+            errors,
+            pixel,
+            capi
+        };
     }
 
     validateFieldsExistence(eventName, dataSource, dataType, eventData, errors) {
@@ -298,12 +307,12 @@ class EventValidator {
 
             const normalize = (val) => {
                 let v = typeof val === 'string' ? (() => { try { return JSON.parse(val); } catch { return val; } })() : val;
-                
+
                 if (v && typeof v === 'object' && !Array.isArray(v)) {
                     const keys = Object.keys(v);
                     if (keys.every((k, i) => k === String(i))) v = keys.map(k => v[k]);
                 }
-                
+
                 return Array.isArray(v) ? [...v].sort((a, b) => JSON.stringify(a).localeCompare(JSON.stringify(b))) : v;
             };
 

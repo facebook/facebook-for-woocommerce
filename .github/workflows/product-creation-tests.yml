@@ -182,6 +182,10 @@ jobs:
           wp option update woocommerce_store_pages_only "no" --allow-root
           echo "✅ WooCommerce site set to LIVE mode"
 
+          # Enable Cash on Delivery payment gateway
+          wp option update woocommerce_cod_settings '{"enabled":"yes","title":"Cash on delivery","description":"Pay with cash upon delivery."}' --format=json --allow-root
+          echo "✅ Cash on Delivery payment gateway enabled"
+
       - name: Create wp non admin user
         run: |
           cd ${{ env.WORDPRESS_PATH }}
