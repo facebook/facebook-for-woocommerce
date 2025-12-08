@@ -81,15 +81,6 @@ class TestSetup {
             throw new Error('❌ Login failed - user not authenticated');
         }
 
-        // Log all cookies to verify WordPress auth cookies are set
-        const cookies = await page.context().cookies();
-        const wpCookies = cookies.filter(c => c.name.includes('wordpress_logged_in') || c.name.includes('wordpress_'));
-        console.log(`  ✅ Logged In as customer (non-admin)`);
-        console.log(`  ℹ️  WordPress auth cookies: ${wpCookies.length} found`);
-
-        if (wpCookies.length === 0) {
-            console.warn('  ⚠️  WARNING: No WordPress authentication cookies detected!');
-        }
     }
 
     static async wait(ms = 2000) {
