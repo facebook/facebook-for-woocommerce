@@ -27,7 +27,10 @@ async function loginToWordPress(page) {
   await loginForm.waitFor({ state: 'visible', timeout: TIMEOUTS.MAX });
   await loginForm.fill(username);
   await page.locator('#user_pass').fill(password);
-  await page.locator('#wp-submit').click();
+  const loginButton = page.locator('#wp-submit');
+  loginButton.waitFor({ state: 'visible', timeout: TIMEOUTS.MAX });
+  loginButton.waitFor({ state: 'attached', timeout: TIMEOUTS.MAX });
+  await loginButton.click();
 
   // Wait for login to complete by waiting for admin content
   await loggedInContent.waitFor({ state: 'visible', timeout: TIMEOUTS.MAX });
@@ -90,6 +93,7 @@ function generateUniqueSKU(productType) {
 
 // Helper function to extract product ID from URL
 function extractProductIdFromUrl(url) {
+  console.log(`🔍 Extracting Product ID from URL: ${url}`);
   const urlMatch = url.match(/post=(\d+)/);
   const productId = urlMatch ? parseInt(urlMatch[1]) : null;
   console.log(`✅ Extracted Product ID: ${productId}`);
@@ -98,19 +102,17 @@ function extractProductIdFromUrl(url) {
 
 // Helper function to publish product
 async function publishProduct(page) {
-  try {
-    await page.locator('#publishing-action').scrollIntoViewIfNeeded();
-    const publishButton = page.locator('#publish');
-    if (await publishButton.isVisible({ timeout: TIMEOUTS.LONG })) {
-      await publishButton.click();
-      await page.waitForTimeout(TIMEOUTS.NORMAL + TIMEOUTS.SHORT); // Wait for publish to complete
-      console.log('✅ Published product');
-      return true;
-    }
-  } catch (error) {
-    console.warn(`⚠️ Publish step may be slow, continuing with error check ${error.message}`);
-    return false;
-  }
+  await page.locator('#publishing-action').scrollIntoViewIfNeeded();
+  const publishButton = page.locator('#publish');
+  await publishButton.waitFor({ state: 'visible', timeout: TIMEOUTS.LONG });
+  await publishButton.waitFor({ state: 'attached', timeout: TIMEOUTS.LONG });
+  await publishButton.click();
+  console.log('Clicked Publish button');
+  await page.waitForURL(/\/wp-admin\/post\.php\?post=\d+&action=edit$/, { timeout: TIMEOUTS.MAX });
+  await page.waitForLoadState('domcontentloaded', { timeout: TIMEOUTS.MAX });
+
+  console.log('✅ Published product');
+  return true;
 }
 
 // Helper function to check for PHP errors
