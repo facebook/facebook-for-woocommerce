@@ -142,16 +142,6 @@ class WC_Facebookcommerce_Pixel {
 		 */
 	public function pixel_base_code() {
 
-
-		/**
-		 * Gets the Facebook Pixel code scripts.
-		 *
-		 * @return string HTML scripts
-		 *
-		 * phpcs:disable WordPress.Security.EscapeOutput.OutputNotEscaped
-		 */
-	public function pixel_base_code() {
-
 		$pixel_id = self::get_pixel_id();
 
 		// Bail if no ID or already rendered.
