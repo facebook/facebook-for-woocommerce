@@ -216,7 +216,15 @@ jobs:
           wp user meta update $CUSTOMER_ID billing_email "customer@test.com" --allow-root
           wp user meta update $CUSTOMER_ID billing_phone "4155551234" --allow-root
 
-          echo "✅ Customer user created with billing address for event testing"
+          echo "✅ Customer user created with billing address"
+
+          # Verify billing address was set correctly
+          echo "=== Verifying Billing Address ==="
+          echo "City: $(wp user meta get $CUSTOMER_ID billing_city --allow-root)"
+          echo "State: $(wp user meta get $CUSTOMER_ID billing_state --allow-root)"
+          echo "Postcode: $(wp user meta get $CUSTOMER_ID billing_postcode --allow-root)"
+          echo "Country: $(wp user meta get $CUSTOMER_ID billing_country --allow-root)"
+          echo "Email: $(wp user meta get $CUSTOMER_ID billing_email --allow-root)"
       - name: Install WPC Composite Products plugin
         run: |
           cd ${{ env.WORDPRESS_PATH }}
