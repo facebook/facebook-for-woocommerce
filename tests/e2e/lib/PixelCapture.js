@@ -16,7 +16,6 @@ class PixelCapture {
      */
     async waitForEvent() {
         console.log(`🎯 Waiting for Pixel event: ${this.eventName}...`);
-
         try {
             // Wait for the Facebook Pixel request with our event name
             const request = await this.page.waitForRequest(
@@ -26,8 +25,8 @@ class PixelCapture {
                     // Must be a Facebook pixel request
                     if (!url.includes('facebook.com')) return false;
 
-                    // Must be a tracking endpoint (/tr/)
-                    if (!url.includes('/tr/')) return false;
+                    // Must be a tracking endpoint (/tr/ OR /privacy_sandbox/)
+                    if (!url.includes('/tr/') && !url.includes('/privacy_sandbox/')) return false;
 
                     // Check if URL contains our event name
                     return url.includes(`ev=${this.eventName}`);

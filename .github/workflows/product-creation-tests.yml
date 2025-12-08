@@ -226,30 +226,6 @@ jobs:
           echo "Country: $(wp user meta get $CUSTOMER_ID billing_country --allow-root)"
           echo "Email: $(wp user meta get $CUSTOMER_ID billing_email --allow-root)"
 
-          # # Add billing address to customer user for comprehensive event testing
-          # # This ensures address fields (ct, zp, country) are captured in Pixel/CAPI events
-          # wp user meta update $CUSTOMER_ID billing_first_name "Test" --allow-root
-          # wp user meta update $CUSTOMER_ID billing_last_name "Customer" --allow-root
-          # wp user meta update $CUSTOMER_ID billing_company "" --allow-root
-          # wp user meta update $CUSTOMER_ID billing_address_1 "123 Test Street" --allow-root
-          # wp user meta update $CUSTOMER_ID billing_address_2 "" --allow-root
-          # wp user meta update $CUSTOMER_ID billing_city "San Francisco" --allow-root
-          # wp user meta update $CUSTOMER_ID billing_state "CA" --allow-root
-          # wp user meta update $CUSTOMER_ID billing_postcode "94102" --allow-root
-          # wp user meta update $CUSTOMER_ID billing_country "US" --allow-root
-          # wp user meta update $CUSTOMER_ID billing_email "customer@test.com" --allow-root
-          # wp user meta update $CUSTOMER_ID billing_phone "4155551234" --allow-root
-
-          # echo "✅ Customer user created with billing address"
-
-          # # Verify billing address was set correctly
-          # echo "=== Verifying Billing Address ==="
-          # echo "City: $(wp user meta get $CUSTOMER_ID billing_city --allow-root)"
-          # echo "State: $(wp user meta get $CUSTOMER_ID billing_state --allow-root)"
-          # echo "Postcode: $(wp user meta get $CUSTOMER_ID billing_postcode --allow-root)"
-          # echo "Country: $(wp user meta get $CUSTOMER_ID billing_country --allow-root)"
-          # echo "Email: $(wp user meta get $CUSTOMER_ID billing_email --allow-root)"
-
       - name: Install WPC Composite Products plugin
         run: |
           cd ${{ env.WORDPRESS_PATH }}
@@ -315,6 +291,22 @@ jobs:
               update_option('wc_facebook_for_woocommerce_rollout_switches', \$switches);
               echo '✅ CAPI event logging enabled for E2E tests' . PHP_EOL;
               " --allow-root
+
+            # CRITICAL FIX: Mock AAMSettings for E2E tests
+            # In GitHub CI, wp_remote_get() to connect.facebook.net fails (network/DNS/firewall)
+            # This causes AAMSettings to be null, which filters out ct, zp, cn fields from user_data
+            # Solution: Pre-cache valid AAMSettings so network fetch is skipped
+            wp eval "
+              \$pixel_id = get_option('wc_facebook_pixel_id');
+              \$aam_settings_json = json_encode([
+                  'pixelId' => \$pixel_id,
+                  'enableAutomaticMatching' => true,
+                  'enabledAutomaticMatchingFields' => ['em', 'fn', 'ln', 'ph', 'ge', 'db', 'ct', 'st', 'zp', 'country', 'external_id']
+              ]);
+              set_transient('wc_facebook_aam_settings', \$aam_settings_json, 10 * MINUTE_IN_SECONDS);
+              echo '✅ AAMSettings cached for E2E tests with all fields enabled' . PHP_EOL;
+              echo 'AAM Config: ' . \$aam_settings_json . PHP_EOL;
+            " --allow-root
 
       - name: Verify WordPress setup
         run: |
