@@ -213,6 +213,9 @@ class EventValidator {
         if (p.api_status) {
             if (p.api_status === 200 && p.api_ok) {
                 console.log(`    ✓ Pixel API: 200 OK`);
+            } else if (p.api_status === 'N/A') {
+                // N/A is valid - Facebook Pixel uses sendBeacon() which doesn't return responses
+                console.log(`    ✓ Pixel API: N/A (sendBeacon - no response expected)`);
             } else {
                 errors.push(`Pixel API failed: HTTP ${p.api_status}`);
                 console.log(`    ✗ Pixel API: ${p.api_status}`);
