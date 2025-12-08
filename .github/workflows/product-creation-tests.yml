@@ -190,30 +190,39 @@ jobs:
         run: |
           cd ${{ env.WORDPRESS_PATH }}
 
+          # Start MailHog fake SMTP server (catches emails without sending)
+          docker run -d --name mailhog -p 1025:1025 -p 8025:8025 mailhog/mailhog
+          echo "✅ MailHog SMTP server started on port 1025"
+
+          # Configure WordPress to use MailHog SMTP
+          wp config set WPMS_ON true --raw --allow-root
+          wp config set WPMS_SMTP_HOST 127.0.0.1 --allow-root
+          wp config set WPMS_SMTP_PORT 1025 --allow-root
+          wp config set WPMS_SMTP_AUTH false --raw --allow-root
+          echo "✅ WordPress configured to use MailHog SMTP"
+
+          # Install and activate Contact Form 7
           wp plugin install contact-form-7 --activate --allow-root
           echo "✅ Contact Form 7 plugin installed and activated"
 
-          # Create a contact form with mail disabled (for E2E testing without mail server)
+          # Create a contact form
           wp eval '
           $form_title = "E2E Test Contact Form";
           $form_content = "<label> Your Name\n    [text* your-name] </label>\n\n<label> Your Email\n    [email* your-email] </label>\n\n<label> Message\n    [textarea your-message] </label>\n\n[submit \"Send\"]";
 
           $form = WPCF7_ContactForm::get_template();
           $form->set_title( $form_title );
-          $form->set_properties( array(
-              "form" => $form_content,
-              "mail" => array("active" => false)  // Skip mail sending for E2E tests
-          ));
+          $form->set_properties( array( "form" => $form_content ) );
           $form->save();
 
           echo "Contact Form ID: " . $form->id();
           ' --allow-root
 
-          # Create a Contact page with the form shortcode
+          # Create Contact page with form shortcode
           wp post create --post_type=page --post_title="Contact" \
             --post_content='[contact-form-7 id="1" title="E2E Test Contact Form"]' \
             --post_status=publish --allow-root
-          echo "✅ Contact Form 7 configured with contact page at /contact and mail disabled "
+          echo "✅ Contact Form 7 configured with MailHog SMTP"
 
       - name: Create wp non admin user
         run: |
