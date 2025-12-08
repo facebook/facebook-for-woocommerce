@@ -16,6 +16,7 @@ const {
   setProductTitle,
   setProductDescription,
   createTestProduct,
+  createTestCategory,
   cleanupCategory,
   exactSearchSelect2Container
 } = require('./test-helpers');
@@ -704,5 +705,271 @@ test.describe('Facebook for WooCommerce - Product Creation E2E Tests', () => {
     }
   });
 
+  test('Update existing category and verify Facebook sync', async ({ page }, testInfo) => {
+    let product1Id = null;
+    let product2Id = null;
+    let categoryId = null;
+
+    try {
+      // Step 1: Create a test category via API
+      console.log('📁 Creating test category via API...');
+      const categoryData = await createTestCategory({
+        description: 'Test category for name update testing'
+      });
+      categoryId = categoryData.categoryId;
+      const originalCategoryName = categoryData.categoryName;
+
+      // Step 2: Create first product and attach it to the category via API
+      console.log('📦 Creating first product and attaching to category via API...');
+      const product1 = await createTestProduct({
+        productType: 'simple',
+        price: '19.99',
+        stock: '12',
+        categoryIds: [categoryId]
+      });
+      product1Id = product1.productId;
+      console.log(`✅ Created product 1: ${product1.productName} (ID: ${product1Id}) with category ${categoryId}`);
+
+      // Step 3: Validate category sync with one product
+      console.log('🔍 Validating initial sync...');
+      const initialCategoryResult = await validateCategorySync(categoryId, originalCategoryName, 5);
+      expect(initialCategoryResult['success']).toBe(true);
+      console.log('✅ Initial category sync validated with one product');
+
+      // Store the Facebook product set ID for later verification
+      const facebookProductSetId = initialCategoryResult['facebook_product_set_id'];
+      console.log(`📊 Facebook Product Set ID: ${facebookProductSetId}`);
+
+      // Validate product 1 is in the category
+      const product1InitialResult = await validateFacebookSync(product1Id, product1.productName, 5);
+      expect(product1InitialResult['success']).toBe(true);
+      const isProduct1InInitialSet = product1InitialResult['raw_data']['facebook_data'][0]['product_sets'].some(
+        set => Number(categoryId) === Number(set.retailer_id) && Number(set.id) === Number(facebookProductSetId)
+      );
+      expect(isProduct1InInitialSet).toBe(true);
+      console.log('✅ Product 1 validated in category product set');
+
+      // Step 4: Update category name via UI
+      console.log(`📝 Updating category name via UI...`);
+      const updatedCategoryName = generateUniqueSKU('UpdatedCategory');
+
+      // Navigate to Categories page
+      await page.goto(`${baseURL}/wp-admin/edit-tags.php?taxonomy=product_cat&post_type=product`, {
+        waitUntil: 'domcontentloaded',
+        timeout: 60000
+      });
+      console.log('✅ Navigated to Categories page');
+
+      // Click on the category row to edit
+      const categoryRow = page.locator(`tr#tag-${categoryId}`);
+      await categoryRow.waitFor({ state: 'visible', timeout: 10000 });
+      const editLink = categoryRow.locator('a.row-title').first();
+      await editLink.click();
+      await page.waitForLoadState('domcontentloaded');
+      console.log('✅ Opened category edit page');
+
+      // Update the category name
+      const categoryNameField = page.locator('#name');
+      await categoryNameField.waitFor({ state: 'visible', timeout: 10000 });
+      await categoryNameField.clear();
+      await categoryNameField.fill(updatedCategoryName);
+      console.log(`✅ Entered new category name: ${updatedCategoryName}`);
+
+      // Click Update button to save changes
+      const updateBtn = page.getByRole('button', { name: 'Update' });
+      await updateBtn.click();
+      await page.waitForLoadState('domcontentloaded');
+      console.log('✅ Category name updated in UI');
+
+      // Step 5: Create second product and add it to the category
+      console.log('📦 Creating second product and adding to category...');
+      const product2 = await createTestProduct({
+        productType: 'simple',
+        price: '29.99',
+        stock: '8',
+        categoryIds: [categoryId]
+      });
+      product2Id = product2.productId;
+
+      // Step 6: Validate the name change synced to Facebook AND both products are in the category
+      console.log('🔍 Step 6: Validating category name change synced to Facebook...');
+      const updatedCategoryResult = await validateCategorySync(categoryId, updatedCategoryName, 5);
+
+      // Verify category sync with updated name
+      expect(updatedCategoryResult['success']).toBe(true);
+      console.log('📊 Updated Category Facebook data:');
+      console.log(updatedCategoryResult['raw_data']['facebook_data']);
+      console.log('✅ Updated category name sync validated');
+
+      // Verify the product set ID remains the same
+      expect(updatedCategoryResult['facebook_product_set_id']).toBe(facebookProductSetId);
+      console.log('✅ Verified product set ID remained consistent after name change');
+
+      // Verify the name is updated in Facebook
+      const facebookCategoryName = updatedCategoryResult['raw_data']['facebook_data']['name'];
+      expect(facebookCategoryName).toBe(updatedCategoryName);
+      console.log(`✅ Verified category name updated in Facebook: "${facebookCategoryName}"`);
+
+      // Verify both products are in the updated category
+      console.log('🔍 Verifying both products are in the updated category...');
+      const [finalProduct1Result, finalProduct2Result] = await Promise.all([
+        validateFacebookSync(product1Id, product1.productName, 30),
+        validateFacebookSync(product2Id, product2.productName, 30)
+      ]);
+
+      // Verify product 1 is still in the category
+      expect(finalProduct1Result['success']).toBe(true);
+      const isProduct1InSet = finalProduct1Result['raw_data']['facebook_data'][0]['product_sets'].some(
+        set => {
+          return Number(categoryId) === Number(set.retailer_id) && Number(set.id) === Number(facebookProductSetId)
+        }
+      );
+      expect(isProduct1InSet).toBe(true);
+      console.log('✅ Product 1 still in the updated category');
+
+      // Verify product 2 is in the category
+      expect(finalProduct2Result['success']).toBe(true);
+      const isProduct2InSet = finalProduct2Result['raw_data']['facebook_data'][0]['product_sets'].some(
+        set => {
+          return Number(categoryId) === Number(set.retailer_id) && Number(set.id) === Number(facebookProductSetId)
+        }
+      );
+      expect(isProduct2InSet).toBe(true);
+      console.log('✅ Product 2 is now in the updated category');
+      logTestEnd(testInfo, true);
+    } catch (error) {
+      console.log(`⚠️ Update category test failed: ${error.message}`);
+      await safeScreenshot(page, 'update-category-name-test-failure.png');
+      logTestEnd(testInfo, false);
+      throw error;
+    } finally {
+      await Promise.all([
+        product1Id ? cleanupProduct(product1Id) : Promise.resolve(),
+        product2Id ? cleanupProduct(product2Id) : Promise.resolve(),
+        categoryId ? cleanupCategory(categoryId) : Promise.resolve()
+      ]);
+      console.log('🧹 Cleanup completed');
+    }
+  });
+
+  test('Delete category and verify removal from Facebook catalog', async ({ page }, testInfo) => {
+    let productId = null;
+    let categoryId = null;
+
+    try {
+      // Step 1: Create a test category via API
+      console.log('📁 Step 1: Creating test category via API...');
+      const categoryData = await createTestCategory({
+        description: 'Test category for deletion testing'
+      });
+      categoryId = categoryData.categoryId;
+      const categoryName = categoryData.categoryName;
+
+      // Step 2: Create a product and attach it to the category via API
+      console.log('📦 Step 2: Creating product and attaching to category via API...');
+      const product = await createTestProduct({
+        productType: 'simple',
+        price: '24.99',
+        stock: '15',
+        categoryIds: [categoryId]
+      });
+      productId = product.productId;
+      console.log(`✅ Created product: ${product.productName} (ID: ${productId}) with category ${categoryId}`);
+
+      // Step 3: Perform initial validation
+      console.log('🔍 Step 3: Performing initial validation...');
+      const initialCategoryResult = await validateCategorySync(categoryId, categoryName, 5);
+      expect(initialCategoryResult['success']).toBe(true);
+      console.log('✅ Initial category sync validated');
+
+      const facebookProductSetId = initialCategoryResult['facebook_product_set_id'];
+      console.log(`📊 Facebook Product Set ID: ${facebookProductSetId}`);
+
+      // Validate product is in the category
+      const initialProductResult = await validateFacebookSync(productId, product.productName, 5);
+      expect(initialProductResult['success']).toBe(true);
+      const isProductInInitialSet = initialProductResult['raw_data']['facebook_data'][0]['product_sets'].some(
+        set => Number(categoryId) === Number(set.retailer_id)
+      );
+      expect(isProductInInitialSet).toBe(true);
+      console.log('✅ Product validated in category product set');
+
+      // Step 4: Delete the test category via UI
+      console.log('🗑️ Step 4: Deleting category via UI...');
+
+      // Navigate to Categories page
+      await page.goto(`${baseURL}/wp-admin/edit-tags.php?taxonomy=product_cat&post_type=product`, {
+        waitUntil: 'domcontentloaded',
+        timeout: 60000
+      });
+      console.log('✅ Navigated to Categories page');
+
+      // Find the category row
+      const categoryRow = page.locator(`tr#tag-${categoryId}`);
+      await categoryRow.waitFor({ state: 'visible', timeout: 10000 });
+
+      // Hover over the category row to reveal the delete link
+      await categoryRow.hover();
+
+      // Click the Delete link
+      const deleteLink = categoryRow.locator('a.delete-tag');
+      await deleteLink.waitFor({ state: 'visible', timeout: 10000 });
+
+      // Set up dialog handler to confirm deletion
+      page.on('dialog', async dialog => {
+        console.log(`📝 Dialog message: ${dialog.message()}`);
+        await dialog.accept();
+        console.log('✅ Confirmed deletion dialog');
+      });
+
+      await deleteLink.click();
+      await page.waitForLoadState('domcontentloaded');
+      console.log(`✅ Deleted category ${categoryId} from UI`);
+
+      // Step 5: Validate the category no longer exists in Facebook catalog
+      console.log('🔍 Step 5: Validating category removal from Facebook...');
+      const deletedCategoryResult = await validateCategorySync(categoryId, categoryName, 5);
+      expect(deletedCategoryResult['success']).toBe(false);
+      console.log('✅ Verified category no longer syncs to Facebook');
+
+      // Step 6: Check the product no longer belongs to the category/product set
+      console.log('🔍 Step 6: Verifying product no longer belongs to the category...');
+      const finalProductResult = await validateFacebookSync(productId, product.productName, 5);
+      expect(finalProductResult['success']).toBe(true);
+
+      // Check if product still has the deleted category in its product sets
+      const isProductStillInSet = finalProductResult['raw_data']['facebook_data'][0]['product_sets'].some(
+        set => Number(categoryId) === Number(set.retailer_id)
+      );
+      expect(isProductStillInSet).toBe(false);
+      console.log('✅ Verified product no longer belongs to the deleted category');
+
+      // Verify in the UI that the category is no longer assigned to the product
+      await page.goto(`${baseURL}/wp-admin/post.php?post=${productId}&action=edit`, {
+        waitUntil: 'domcontentloaded',
+        timeout: 60000
+      });
+
+      const categoryCheckbox = page.getByRole('checkbox', { name: categoryName });
+      const categoryExists = await categoryCheckbox.isVisible({ timeout: 5000 }).catch(() => false);
+      expect(categoryExists).toBe(false);
+      console.log('✅ Verified category no longer appears in product edit UI');
+
+      console.log('✅ Category deletion test completed successfully');
+      logTestEnd(testInfo, true);
+
+    } catch (error) {
+      console.log(`⚠️ Category deletion test failed: ${error.message}`);
+      await safeScreenshot(page, 'category-deletion-test-failure.png');
+      logTestEnd(testInfo, false);
+      throw error;
+    } finally {
+      // Cleanup product (category already deleted in the test)
+      await Promise.all([
+        productId ? cleanupProduct(productId) : Promise.resolve()
+      ]);
+      console.log('🧹 Cleanup completed');
+    }
+  });
 
 });
