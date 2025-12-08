@@ -144,44 +144,20 @@ test('Purchase', async ({ page }) => {
 
     console.log(`   📝 Filling checkout form`);
 
-    // Scroll to checkout form
-    await page.locator('#email').scrollIntoViewIfNeeded();
-
-    // Check "Ship to a different address" to reveal shipping fields
-    const shipToDifferent = page.locator('#shipping-option-ship-to-different-address');
-    if (await shipToDifferent.isVisible()) {
-        console.log(`   📦 Checking "Ship to a different address"`);
-        await shipToDifferent.check();
-        await page.waitForTimeout(1000);
-    }
-
+    // Customer has saved address - billing = shipping by default in WooCommerce
+    // No need for separate shipping fields, just use billing
     await page.fill('#email', 'test@example.com');
 
-    // Try to find shipping-country, dump HTML if it fails
-    try {
-        await page.waitForSelector('#shipping-country', { state: 'visible', timeout: 10000 });
-    } catch (error) {
-        console.log('   ⚠️ shipping-country not found, dumping HTML...');
-        const html = await page.content();
-        const fs = require('fs').promises;
-        const path = require('path');
-        const dumpPath = path.join(__dirname, 'captured-events', `checkout-html-${testId}.html`);
-        await fs.writeFile(dumpPath, html);
-        console.log(`   📄 HTML dumped to: ${dumpPath}`);
-        throw error;
-    }
-
-    await page.locator('#shipping-country').scrollIntoViewIfNeeded();
-    await page.selectOption('#shipping-country', 'US');
-    await page.fill('#shipping-first_name', 'Test');
-    await page.fill('#shipping-last_name', 'User');
-    await page.fill('#shipping-address_1', '123 Main Street');
-    await page.fill('#shipping-city', 'Los Angeles');
-    await page.waitForSelector('#shipping-state', { state: 'visible', timeout: 5000 });
-    await page.selectOption('#shipping-state', 'CA');
-    await page.waitForTimeout(1000); // Wait for WooCommerce to validate state selection
-    await page.fill('#shipping-postcode', '90210');
-    await page.fill('#shipping-phone', '3105551234');
+    // Billing fields are already visible
+    await page.selectOption('#billing-country', 'US');
+    await page.waitForTimeout(500); // Wait for state dropdown to load
+    await page.fill('#billing-first_name', 'Test');
+    await page.fill('#billing-last_name', 'User');
+    await page.fill('#billing-address_1', '123 Main Street');
+    await page.fill('#billing-city', 'Los Angeles');
+    await page.selectOption('#billing-state', 'CA');
+    await page.fill('#billing-postcode', '90210');
+    await page.fill('#billing-phone', '3105551234');
 
     console.log(`   🚚 Waiting for checkout to process address`);
     await page.waitForTimeout(2000); // Give WooCommerce time to validate address and load shipping
