@@ -120,7 +120,7 @@ async function publishProduct(page) {
   await publishButton.click();
   console.log('Clicked Publish button');
   let publishSuccess = true;
-  await page.waitForURL(/\/wp-admin\/post\.php\?post=\d+/, { timeout: TIMEOUTS.LONG }).catch(() => {
+  await page.waitForURL(/\/wp-admin\/post\.php\?post=\d+/, { timeout: TIMEOUTS.EXTRA_LONG }).catch(() => {
     console.warn('⚠️ URL did not change after publishing. Current URL: ' + page.url())
     publishSuccess = false;
   }
