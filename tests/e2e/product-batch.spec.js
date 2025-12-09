@@ -1,7 +1,10 @@
 const { test, expect } = require('@playwright/test');
+const { execSync } = require('child_process');
+
 const { TIMEOUTS } = require('./time-constants');
 const {
   baseURL,
+  wpSitePath,
   loginToWordPress,
   safeScreenshot,
   checkForPhpErrors,
@@ -248,13 +251,11 @@ test.describe('Facebook for WooCommerce - Product Batch Import E2E Tests', () =>
 
       // Step 3: Get imported product IDs for cleanup using WP-CLI
       console.log('\n📊 Step 3: Collecting imported product IDs via WP-CLI...');
-      const { execSync } = require('child_process');
-      const wpPath = process.env.WORDPRESS_PATH;
 
       // Get all product IDs in this category using WP-CLI
       const productIdsJson = execSync(
         `wp post list --post_type=product --product_cat=${categorySlug} --fields=ID --format=json`,
-        { cwd: wpPath, encoding: 'utf8' }
+        { cwd: wpSitePath, encoding: 'utf8' }
       );
 
       const productIdsData = JSON.parse(productIdsJson);
