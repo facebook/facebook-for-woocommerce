@@ -39,6 +39,24 @@ env:
   PIXEL_EVENT_TIMEOUT: 30000
   PAGE_LOAD_TIMEOUT: 120000
 
+  # Customer Billing/Shipping Address
+  TEST_USER_FIRST_NAME: Test
+  TEST_USER_LAST_NAME: Customer
+  TEST_USER_ADDRESS_1: '123 Test Street'
+  TEST_USER_ADDRESS_2: ''
+  TEST_USER_CITY: 'San Francisco'
+  TEST_USER_STATE: CA
+  TEST_USER_POSTCODE: '94102'
+  TEST_USER_COUNTRY: US
+  TEST_USER_PHONE: '4155551234'
+
+  # Store Configuration
+  STORE_ADDRESS: '123 Test Street'
+  STORE_CITY: 'Test City'
+  STORE_COUNTRY: 'US:CA'
+  STORE_POSTCODE: '12345'
+  STORE_CURRENCY: USD
+
 
 jobs:
   e2e-tests:
@@ -171,16 +189,20 @@ jobs:
           wp plugin install woocommerce --activate --allow-root
 
           # Basic WooCommerce setup
-          wp option update woocommerce_store_address "123 Test Street" --allow-root
-          wp option update woocommerce_store_city "Test City" --allow-root
-          wp option update woocommerce_default_country "US:CA" --allow-root
-          wp option update woocommerce_store_postcode "12345" --allow-root
-          wp option update woocommerce_currency "USD" --allow-root
+          wp option update woocommerce_store_address "${{ env.STORE_ADDRESS }}" --allow-root
+          wp option update woocommerce_store_city "${{ env.STORE_CITY }}" --allow-root
+          wp option update woocommerce_default_country "${{ env.STORE_COUNTRY }}" --allow-root
+          wp option update woocommerce_store_postcode "${{ env.STORE_POSTCODE }}" --allow-root
+          wp option update woocommerce_currency "${{ env.STORE_CURRENCY }}" --allow-root
 
           # Make site live (disable "Coming Soon" mode)
           wp option update woocommerce_coming_soon "no" --allow-root
           wp option update woocommerce_store_pages_only "no" --allow-root
           echo "✅ WooCommerce site set to LIVE mode"
+
+          # Enable Cash on Delivery payment gateway
+          wp option update woocommerce_cod_settings '{"enabled":"yes","title":"Cash on delivery","description":"Pay with cash upon delivery."}' --format=json --allow-root
+          echo "✅ Cash on Delivery payment gateway enabled"
 
       - name: Create wp non admin user
         run: |
@@ -194,7 +216,45 @@ jobs:
           # This ensures customer can see shop pages, products, and categories
           wp cap add customer read --allow-root
 
-          echo "✅ Customer user created with proper capabilities"
+          # Get customer user ID once and store it
+          CUSTOMER_ID=$(wp user get customer@test.com --field=ID --allow-root)
+          echo "Customer User ID: $CUSTOMER_ID"
+
+          # Add billing address to customer user for comprehensive event testing
+          # This ensures address fields (ct, zp, country) are captured in Pixel/CAPI events
+          wp user meta update $CUSTOMER_ID billing_first_name "${{ env.TEST_USER_FIRST_NAME }}" --allow-root
+          wp user meta update $CUSTOMER_ID billing_last_name "${{ env.TEST_USER_LAST_NAME }}" --allow-root
+          wp user meta update $CUSTOMER_ID billing_company "" --allow-root
+          wp user meta update $CUSTOMER_ID billing_address_1 "${{ env.TEST_USER_ADDRESS_1 }}" --allow-root
+          wp user meta update $CUSTOMER_ID billing_address_2 "${{ env.TEST_USER_ADDRESS_2 }}" --allow-root
+          wp user meta update $CUSTOMER_ID billing_city "${{ env.TEST_USER_CITY }}" --allow-root
+          wp user meta update $CUSTOMER_ID billing_state "${{ env.TEST_USER_STATE }}" --allow-root
+          wp user meta update $CUSTOMER_ID billing_postcode "${{ env.TEST_USER_POSTCODE }}" --allow-root
+          wp user meta update $CUSTOMER_ID billing_country "${{ env.TEST_USER_COUNTRY }}" --allow-root
+          wp user meta update $CUSTOMER_ID billing_email "${{ env.WP_CUSTOMER_EMAIL }}" --allow-root
+          wp user meta update $CUSTOMER_ID billing_phone "${{ env.TEST_USER_PHONE }}" --allow-root
+
+          # Set shipping address same as billing (WooCommerce stores them separately)
+          wp user meta update $CUSTOMER_ID shipping_first_name "${{ env.TEST_USER_FIRST_NAME }}" --allow-root
+          wp user meta update $CUSTOMER_ID shipping_last_name "${{ env.TEST_USER_LAST_NAME }}" --allow-root
+          wp user meta update $CUSTOMER_ID shipping_company "" --allow-root
+          wp user meta update $CUSTOMER_ID shipping_address_1 "${{ env.TEST_USER_ADDRESS_1 }}" --allow-root
+          wp user meta update $CUSTOMER_ID shipping_address_2 "${{ env.TEST_USER_ADDRESS_2 }}" --allow-root
+          wp user meta update $CUSTOMER_ID shipping_city "${{ env.TEST_USER_CITY }}" --allow-root
+          wp user meta update $CUSTOMER_ID shipping_state "${{ env.TEST_USER_STATE }}" --allow-root
+          wp user meta update $CUSTOMER_ID shipping_postcode "${{ env.TEST_USER_POSTCODE }}" --allow-root
+          wp user meta update $CUSTOMER_ID shipping_country "${{ env.TEST_USER_COUNTRY }}" --allow-root
+
+          echo "✅ Customer user created with billing and shipping address"
+
+          # Verify billing address was set correctly
+          echo "=== Verifying Billing Address ==="
+          echo "City: $(wp user meta get $CUSTOMER_ID billing_city --allow-root)"
+          echo "State: $(wp user meta get $CUSTOMER_ID billing_state --allow-root)"
+          echo "Postcode: $(wp user meta get $CUSTOMER_ID billing_postcode --allow-root)"
+          echo "Country: $(wp user meta get $CUSTOMER_ID billing_country --allow-root)"
+          echo "Email: $(wp user meta get $CUSTOMER_ID billing_email --allow-root)"
+
       - name: Install WPC Composite Products plugin
         run: |
           cd ${{ env.WORDPRESS_PATH }}

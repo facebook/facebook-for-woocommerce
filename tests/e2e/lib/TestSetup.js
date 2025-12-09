@@ -6,11 +6,12 @@ const { TIMEOUTS } = require('../time-constants');
 const PixelCapture = require('./PixelCapture');
 
 class TestSetup {
-    static async init(page, eventName) {
+    static async init(page, eventName, testInfo, expectZeroEvents = false) {
         const testName = eventName.toLowerCase();
         const testId = `${testName}-${Date.now()}`;
 
-        console.log(`\n Testing: ${eventName.toUpperCase()}`);
+        const displayName = testInfo?.title || eventName;
+        console.log(`\n Testing: ${displayName}`);
 
         await this.login(page);
 
@@ -21,7 +22,7 @@ class TestSetup {
             url: process.env.WORDPRESS_URL
         }]);
 
-        const pixelCapture = new PixelCapture(page, testId, eventName);
+        const pixelCapture = new PixelCapture(page, testId, eventName, expectZeroEvents);
         this.setupBrowserLogging(page);
 
         return { testId, pixelCapture };
@@ -69,7 +70,18 @@ class TestSetup {
         await page.click('#wp-submit');
         await page.waitForLoadState('networkidle');
 
-        console.log('  ✅ Logged In as customer (non-admin)');
+        // CRITICAL: Wait for redirect to complete and ensure we're logged in
+        // WordPress redirects to /wp-admin/ after login
+        await page.waitForTimeout(1000);
+
+        // Verify login succeeded by checking for WordPress admin bar or profile link
+        const isLoggedIn = await page.locator('#wpadminbar').count() > 0 ||
+                          await page.locator('body.logged-in').count() > 0;
+
+        if (!isLoggedIn) {
+            throw new Error('❌ Login failed - user not authenticated');
+        }
+
     }
 
     static async wait(ms = TIMEOUTS.NORMAL) {

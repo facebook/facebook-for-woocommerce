@@ -5,11 +5,12 @@
 const { TIMEOUTS } = require('../time-constants');
 
 class PixelCapture {
-    constructor(page, testId, eventName) {
+    constructor(page, testId, eventName, expectZeroEvents = false) {
         this.page = page;
         this.testId = testId;
         this.eventName = eventName;
         this.isCapturing = false;
+        this.expectZeroEvents = expectZeroEvents;
     }
 
     /**
@@ -18,7 +19,6 @@ class PixelCapture {
      */
     async waitForEvent() {
         console.log(`🎯 Waiting for Pixel event: ${this.eventName}...`);
-
         try {
             // Wait for the Facebook Pixel request with our event name
             const request = await this.page.waitForRequest(
@@ -28,8 +28,8 @@ class PixelCapture {
                     // Must be a Facebook pixel request
                     if (!url.includes('facebook.com')) return false;
 
-                    // Must be a tracking endpoint (/tr/)
-                    if (!url.includes('/tr/')) return false;
+                    // Must be a tracking endpoint (/tr/ OR /privacy_sandbox/)
+                    if (!url.includes('/tr/') && !url.includes('/privacy_sandbox/')) return false;
 
                     // Check if URL contains our event name
                     return url.includes(`ev=${this.eventName}`);
@@ -52,6 +52,11 @@ class PixelCapture {
 
         } catch (err) {
             if (err.message?.includes('Timeout')) {
+                // For negative tests, timeout means no event fired (which is expected)
+                if (this.expectZeroEvents) {
+                    console.log(`✅ No Pixel event fired (as expected for negative test)`);
+                    return;
+                }
                 throw new Error(`❌ Pixel event ${this.eventName} did not fire within ${parseInt(process.env.PIXEL_EVENT_TIMEOUT || TIMEOUTS.EXTRA_LONG.toString(), 10)}ms`);
             }
             throw err;
