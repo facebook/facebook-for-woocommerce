@@ -239,10 +239,10 @@ test('ViewContent - No Consent (expects NO events)', async ({ page }, testInfo) 
     const { promisify } = require('util');
     const execAsync = promisify(exec);
 
-    console.log(`   🚫 Disabling event tracking (simulating user consent = NO)`);
-    // Set the option to disable tracking
+    console.log(`   🚫 Disabling pixel (simulating user consent = NO)`);
+    // Simply disable the pixel via the plugin's own setting
     await execAsync(
-        `wp option update wc_facebook_e2e_disable_tracking yes --allow-root`,
+        `wp option update wc_facebook_enable_pixel no --allow-root`,
         { cwd: process.env.WORDPRESS_PATH }
     );
 
@@ -261,10 +261,10 @@ test('ViewContent - No Consent (expects NO events)', async ({ page }, testInfo) 
     TestSetup.logResult('ViewContent (No Consent)', result);
     expect(result.passed).toBe(true);
 
-    // Re-enable tracking for other tests
-    console.log(`   ✅ Re-enabling event tracking for remaining tests`);
+    // Re-enable pixel for other tests
+    console.log(`   ✅ Re-enabling pixel for remaining tests`);
     await execAsync(
-        `wp option delete wc_facebook_e2e_disable_tracking --allow-root`,
+        `wp option update wc_facebook_enable_pixel yes --allow-root`,
         { cwd: process.env.WORDPRESS_PATH }
     );
 });
