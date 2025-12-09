@@ -289,6 +289,43 @@ test('Search - No Results', async ({ page }, testInfo) => {
     expect(result.passed).toBe(true);
 });
 
+test('ViewContent - No Consent (expects NO events)', async ({ page }, testInfo) => {
+    const { exec } = require('child_process');
+    const { promisify } = require('util');
+    const execAsync = promisify(exec);
+
+    console.log(`   🚫 Disabling event tracking (simulating user consent = NO)`);
+    // Disable tracking by creating a mu-plugin that filters out events
+    const { stdout } = await execAsync(
+        `php disable-tracking-consent.php disable`,
+        { cwd: __dirname }
+    );
+    console.log(`   ${JSON.parse(stdout).message}`);
+
+    const { testId, pixelCapture } = await TestSetup.init(page, 'ViewContent', testInfo, true); // expectZeroEvents=true
+
+    console.log(`   📦 Navigating to product page (expecting NO events)`);
+    const eventPromise = pixelCapture.waitForEvent(); // Will succeed if no event fires
+    await page.goto(process.env.TEST_PRODUCT_URL);
+    await TestSetup.waitForPageReady(page);
+    await eventPromise;
+
+    const validator = new EventValidator(testId, false, true); // expectZeroEvents=true
+    await validator.checkDebugLog();
+    const result = await validator.validate('ViewContent', page);
+
+    TestSetup.logResult('ViewContent (No Consent)', result);
+    expect(result.passed).toBe(true);
+
+    // Re-enable tracking for other tests
+    console.log(`   ✅ Re-enabling event tracking for remaining tests`);
+    const { stdout: enableStdout } = await execAsync(
+        `php disable-tracking-consent.php enable`,
+        { cwd: __dirname }
+    );
+    console.log(`   ${JSON.parse(enableStdout).message}`);
+});
+
 // Lead event is not tested as it needs an SMTP server etc
 // NOTE: Subscribe test is skipped because it requires WooCommerce Paid Subscriptions
 // Free alternatives (YITH, Subscriptio) use different APIs incompatible with facebook-for-woocommerce
