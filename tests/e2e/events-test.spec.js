@@ -289,53 +289,8 @@ test('Search - No Results', async ({ page }, testInfo) => {
     expect(result.passed).toBe(true);
 });
 
-
-test('Lead', async ({ page }, testInfo) => {
-    const { testId, pixelCapture } = await TestSetup.init(page, 'Lead',  testInfo);
-
-    console.log(`   📄 Navigating to Contact page`);
-    await page.goto('/contact');
-    await TestSetup.waitForPageReady(page);
-
-    // Verify Contact Form 7 is loaded on the page
-    const formExists = await page.locator('.wpcf7-form').count() > 0;
-    if (!formExists) {
-        throw new Error('❌ Contact Form 7 form not found on /contact page');
-    }
-    console.log(`   ✅ Contact Form 7 form detected`);
-
-    console.log(`   📝 Filling contact form`);
-    // Contact Form 7 uses standard input fields
-    await page.fill('input[name="your-name"]', 'Test User');
-    await page.fill('input[name="your-email"]', 'test-lead@example.com');
-    await page.fill('textarea[name="your-message"]', 'This is a test message for E2E testing.');
-
-    console.log(`   📨 Submitting form`);
-    // Set up listener BEFORE triggering the action
-    const eventPromise = pixelCapture.waitForEvent();
-
-    await page.click('input[type="submit"]');
-
-    // Wait for CF7 submission response (shows success/error message)
-    console.log(`   ⏳ Waiting for form submission response...`);
-    await page.waitForSelector('.wpcf7-response-output', { timeout: 10000 });
-
-    // Check if submission was successful
-    const responseText = await page.locator('.wpcf7-response-output').textContent();
-    console.log(`   📬 Form response: ${responseText.trim()}`);
-
-    await eventPromise;
-
-    const validator = new EventValidator(testId);
-    await validator.checkDebugLog();
-    const result = await validator.validate('Lead', page);
-
-    TestSetup.logResult('Lead', result);
-    expect(result.passed).toBe(true);
-});
-
-
-// NOTE: Subscribe test is skipped because it requires WooCommerce Subscriptions (paid plugin $199/year)
+// Lead event is not tested as it needs an SMTP server etc
+// NOTE: Subscribe test is skipped because it requires WooCommerce Paid Subscriptions
 // Free alternatives (YITH, Subscriptio) use different APIs incompatible with facebook-for-woocommerce
 // The plugin specifically checks for wcs_get_subscriptions_for_order() which only exists in the official plugin
 
