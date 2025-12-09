@@ -545,6 +545,272 @@ async function createTestCategory(options = {}) {
   }
 }
 
+/**
+ * Generate a test CSV file for product import
+ * @param {number} productCount - Number of products to include in CSV
+ * @param {string} skuPrefix - Prefix for SKU to ensure uniqueness
+ * @returns {object} - { csvPath: string, csvData: array, products: array, skuPattern: string }
+ */
+async function generateTestProductCSV(productCount = 2, skuPrefix = null) {
+  const fs = require('fs');
+  const path = require('path');
+  const runId = process.env.GITHUB_RUN_ID || 'local';
+  const randomSuffix = Math.random().toString(36).substring(2, 8);
+  const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+
+  // Generate SKU pattern for cleanup
+  const skuPattern = skuPrefix || `E2E-CSV-${runId}-${randomSuffix}`;
+
+  console.log(`📄 Generating CSV file with ${productCount} products...`);
+  console.log(`   SKU Pattern: ${skuPattern}-*`);
+
+  // CSV headers matching WooCommerce import format
+  const headers = [
+    'ID', 'Type', 'SKU', 'Name', 'Published', 'Is featured?', 'Visibility in catalog',
+    'Short description', 'Description', 'Date sale price starts', 'Date sale price ends',
+    'Tax status', 'Tax class', 'In stock?', 'Stock', 'Backorders allowed?', 'Sold individually?',
+    'Weight (lbs)', 'Length (in)', 'Width (in)', 'Height (in)', 'Allow customer reviews?',
+    'Purchase note', 'Sale price', 'Regular price', 'Categories', 'Tags', 'Shipping class',
+    'Images', 'Download limit', 'Download expiry days', 'Parent', 'Grouped products',
+    'Upsells', 'Cross-sells', 'External URL', 'Button text', 'Position',
+    'Attribute 1 name', 'Attribute 1 value(s)', 'Attribute 1 visible', 'Attribute 1 global',
+    'Attribute 2 name', 'Attribute 2 value(s)', 'Attribute 2 visible', 'Attribute 2 global',
+    'Meta: _wpcom_is_markdown', 'Download 1 name', 'Download 1 URL', 'Download 2 name', 'Download 2 URL'
+  ];
+
+  // Generate product data
+  const products = [];
+  const csvRows = [headers.join(',')];
+
+  for (let i = 1; i <= productCount; i++) {
+    const sku = `${skuPattern}-${i}`;
+    const name = `Test CSV Product ${timestamp}-${i}`;
+    const price = (20 + i * 5).toFixed(2);
+
+    const product = {
+      sku: sku,
+      name: name,
+      price: price,
+      stock: '10',
+      type: 'simple'
+    };
+    products.push(product);
+
+    // Create CSV row with all 50 columns
+    const row = [
+      '', // ID (empty for new products)
+      'simple', // Type
+      sku, // SKU
+      name, // Name
+      '1', // Published
+      '0', // Is featured?
+      'visible', // Visibility in catalog
+      'Test product from CSV import', // Short description
+      '"Test product created via E2E CSV import test. This product should sync to Facebook Commerce Manager automatically."', // Description
+      '', // Date sale price starts
+      '', // Date sale price ends
+      'taxable', // Tax status
+      '', // Tax class
+      '1', // In stock?
+      '10', // Stock
+      '0', // Backorders allowed?
+      '0', // Sold individually?
+      '0.5', // Weight (lbs)
+      '10', // Length (in)
+      '5', // Width (in)
+      '3', // Height (in)
+      '1', // Allow customer reviews?
+      '', // Purchase note
+      '', // Sale price
+      price, // Regular price
+      'Clothing > Tshirts', // Categories
+      '', // Tags
+      '', // Shipping class
+      '', // Images
+      '', // Download limit
+      '', // Download expiry days
+      '', // Parent
+      '', // Grouped products
+      '', // Upsells
+      '', // Cross-sells
+      '', // External URL
+      '', // Button text
+      '0', // Position
+      '', // Attribute 1 name
+      '', // Attribute 1 value(s)
+      '', // Attribute 1 visible
+      '', // Attribute 1 global
+      '', // Attribute 2 name
+      '', // Attribute 2 value(s)
+      '', // Attribute 2 visible
+      '', // Attribute 2 global
+      '1', // Meta: _wpcom_is_markdown
+      '', // Download 1 name
+      '', // Download 1 URL
+      '', // Download 2 name
+      '' // Download 2 URL
+    ];
+
+    csvRows.push(row.join(','));
+  }
+
+  // Write CSV to /tmp directory
+  const csvPath = `/tmp/test-products-${timestamp}-${randomSuffix}.csv`;
+  const csvContent = csvRows.join('\n');
+  fs.writeFileSync(csvPath, csvContent);
+
+  console.log(`✅ Generated CSV file: ${csvPath}`);
+  console.log(`   Products: ${products.length}`);
+
+  return {
+    csvPath: csvPath,
+    csvContent: csvContent,
+    products: products,
+    skuPattern: skuPattern
+  };
+}
+
+/**
+ * Navigate to WooCommerce product import page and upload CSV
+ * @param {Page} page - Playwright page object
+ * @param {string} csvFilePath - Path to CSV file to upload
+ * @returns {Promise<object>} - { success: boolean, importedCount: number }
+ */
+async function importProductCSV(page, csvFilePath) {
+  console.log('📤 Starting CSV import process...');
+
+  // Navigate to Products page
+  await page.goto(`${baseURL}/wp-admin/edit.php?post_type=product`, {
+    waitUntil: 'domcontentloaded',
+    timeout: TIMEOUTS.MAX
+  });
+  console.log('✅ Navigated to Products page');
+
+  // Click "Import" button
+  const importLink = page.locator('a.page-title-action:has-text("Import")');
+  await importLink.waitFor({ state: 'visible', timeout: TIMEOUTS.LONG });
+  await importLink.click();
+  await page.waitForLoadState('domcontentloaded');
+  console.log('✅ Clicked Import button');
+
+  // Upload CSV file
+  const fileInput = page.locator('input[type="file"]#upload');
+  await fileInput.waitFor({ state: 'visible', timeout: TIMEOUTS.LONG });
+  await fileInput.setInputFiles(csvFilePath);
+  console.log(`✅ Selected CSV file: ${csvFilePath}`);
+
+  // Click "Continue" to proceed
+  const continueButton = page.locator('button[type="submit"][name="save_step"], button:has-text("Continue")').first();
+  await continueButton.waitFor({ state: 'visible', timeout: TIMEOUTS.LONG });
+  await continueButton.click();
+  await page.waitForLoadState('domcontentloaded');
+  console.log('✅ Clicked Continue button');
+
+  // Wait for column mapping page and click "Run the importer"
+  await page.waitForTimeout(TIMEOUTS.NORMAL); // Wait for mapping page to load
+  const runImporterButton = page.locator('button[type="submit"]:has-text("Run the importer"), button.button:has-text("Run the importer")').first();
+  await runImporterButton.waitFor({ state: 'visible', timeout: TIMEOUTS.LONG });
+  await runImporterButton.click();
+  console.log('✅ Clicked Run the importer button');
+
+  // Wait for import to complete
+  await page.waitForSelector('.woocommerce-importer-done, .woocommerce-message', {
+    timeout: TIMEOUTS.MAX,
+    state: 'visible'
+  });
+  console.log('✅ Import completed');
+
+  // Extract imported count from success message
+  const successMessage = await page.locator('.woocommerce-importer-done, .woocommerce-message').textContent();
+  const countMatch = successMessage.match(/(\d+)\s+product/i);
+  const importedCount = countMatch ? parseInt(countMatch[1]) : 0;
+
+  console.log(`✅ Import result: ${importedCount} products imported`);
+
+  return {
+    success: true,
+    importedCount: importedCount
+  };
+}
+
+/**
+ * Clean up multiple products by SKU pattern
+ * @param {string} skuPattern - SKU pattern to match (e.g., "E2E-CSV-12345-")
+ * @returns {Promise<number>} - Number of products deleted
+ */
+async function cleanupProductsBySkuPattern(skuPattern) {
+  console.log(`🧹 Cleaning up products with SKU pattern: ${skuPattern}*`);
+
+  try {
+    const { exec } = require('child_process');
+    const { promisify } = require('util');
+    const execAsync = promisify(exec);
+
+    // Query and delete products by SKU pattern using PHP
+    const { stdout } = await execAsync(
+      `php -r "require_once('${wpSitePath}/wp-load.php'); ` +
+      `\\$args = array('post_type' => 'product', 'posts_per_page' => -1, 'meta_query' => array(array('key' => '_sku', 'value' => '${skuPattern}', 'compare' => 'LIKE'))); ` +
+      `\\$products = get_posts(\\$args); ` +
+      `\\$count = 0; ` +
+      `foreach (\\$products as \\$product) { ` +
+      `  wp_delete_post(\\$product->ID, true); ` +
+      `  \\$count++; ` +
+      `} ` +
+      `echo \\$count;"`,
+      { cwd: __dirname }
+    );
+
+    const deletedCount = parseInt(stdout.trim());
+    console.log(`✅ Deleted ${deletedCount} products`);
+    return deletedCount;
+
+  } catch (error) {
+    console.log(`⚠️ Cleanup failed: ${error.message}`);
+    return 0;
+  }
+}
+
+/**
+ * Get product IDs by SKU values
+ * @param {array} skus - Array of SKU strings to look up
+ * @returns {Promise<array>} - Array of product IDs
+ */
+async function getProductIdsBySku(skus) {
+  console.log(`🔍 Looking up product IDs for ${skus.length} SKUs...`);
+
+  try {
+    const { exec } = require('child_process');
+    const { promisify } = require('util');
+    const execAsync = promisify(exec);
+
+    // Build SKU list for PHP query
+    const skuList = skus.map(sku => `'${sku}'`).join(',');
+
+    // Query products by SKU using PHP
+    const { stdout } = await execAsync(
+      `php -r "require_once('${wpSitePath}/wp-load.php'); ` +
+      `\\$skus = array(${skuList}); ` +
+      `\\$product_ids = array(); ` +
+      `foreach (\\$skus as \\$sku) { ` +
+      `  \\$product_id = wc_get_product_id_by_sku(\\$sku); ` +
+      `  if (\\$product_id) { ` +
+      `    \\$product_ids[] = \\$product_id; ` +
+      `  } ` +
+      `} ` +
+      `echo json_encode(\\$product_ids);"`,
+      { cwd: __dirname }
+    );
+
+    const productIds = JSON.parse(stdout);
+    console.log(`✅ Found ${productIds.length} product IDs`);
+    return productIds;
+
+  } catch (error) {
+    console.log(`❌ Failed to lookup product IDs: ${error.message}`);
+    throw error;
+  }
+}
+
 module.exports = {
   baseURL,
   username,
@@ -569,5 +835,10 @@ module.exports = {
   clickFirstProduct,
   openFacebookOptions,
   setProductTitle,
-  exactSearchSelect2Container
+  exactSearchSelect2Container,
+  // CSV import helpers
+  generateTestProductCSV,
+  importProductCSV,
+  cleanupProductsBySkuPattern,
+  getProductIdsBySku
 };
