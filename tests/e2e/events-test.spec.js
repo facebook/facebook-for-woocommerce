@@ -233,6 +233,42 @@ test('Purchase - Multiple Place Order Clicks', async ({ page }, testInfo) => {
     expect(result.passed).toBe(true);
 });
 
+
+test('ViewContent - No Consent (expects NO events)', async ({ page }, testInfo) => {
+    const { exec } = require('child_process');
+    const { promisify } = require('util');
+    const execAsync = promisify(exec);
+
+    console.log(`   🚫 Disabling event tracking (simulating user consent = NO)`);
+    // Set the option to disable tracking
+    await execAsync(
+        `wp option update wc_facebook_e2e_disable_tracking yes --allow-root`,
+        { cwd: process.env.WORDPRESS_PATH }
+    );
+
+    const { testId, pixelCapture } = await TestSetup.init(page, 'ViewContent', testInfo, true); // expectZeroEvents=true
+
+    console.log(`   📦 Navigating to product page (expecting NO events)`);
+    const eventPromise = pixelCapture.waitForEvent(); // Will succeed if no event fires
+    await page.goto(process.env.TEST_PRODUCT_URL);
+    await TestSetup.waitForPageReady(page);
+    await eventPromise;
+
+    const validator = new EventValidator(testId, false, true); // expectZeroEvents=true
+    await validator.checkDebugLog();
+    const result = await validator.validate('ViewContent', page);
+
+    TestSetup.logResult('ViewContent (No Consent)', result);
+    expect(result.passed).toBe(true);
+
+    // Re-enable tracking for other tests
+    console.log(`   ✅ Re-enabling event tracking for remaining tests`);
+    await execAsync(
+        `wp option delete wc_facebook_e2e_disable_tracking --allow-root`,
+        { cwd: process.env.WORDPRESS_PATH }
+    );
+});
+
 test('Search', async ({ page }, testInfo) => {
     const { testId, pixelCapture } = await TestSetup.init(page, 'Search',  testInfo);
 
@@ -287,43 +323,6 @@ test('Search - No Results', async ({ page }, testInfo) => {
 
     TestSetup.logResult('Search (No Results)', result);
     expect(result.passed).toBe(true);
-});
-
-test('ViewContent - No Consent (expects NO events)', async ({ page }, testInfo) => {
-    const { exec } = require('child_process');
-    const { promisify } = require('util');
-    const execAsync = promisify(exec);
-
-    console.log(`   🚫 Disabling event tracking (simulating user consent = NO)`);
-    // Disable tracking by creating a mu-plugin that filters out events
-    const { stdout } = await execAsync(
-        `php disable-tracking-consent.php disable`,
-        { cwd: __dirname }
-    );
-    console.log(`   ${JSON.parse(stdout).message}`);
-
-    const { testId, pixelCapture } = await TestSetup.init(page, 'ViewContent', testInfo, true); // expectZeroEvents=true
-
-    console.log(`   📦 Navigating to product page (expecting NO events)`);
-    const eventPromise = pixelCapture.waitForEvent(); // Will succeed if no event fires
-    await page.goto(process.env.TEST_PRODUCT_URL);
-    await TestSetup.waitForPageReady(page);
-    await eventPromise;
-
-    const validator = new EventValidator(testId, false, true); // expectZeroEvents=true
-    await validator.checkDebugLog();
-    const result = await validator.validate('ViewContent', page);
-
-    TestSetup.logResult('ViewContent (No Consent)', result);
-    expect(result.passed).toBe(true);
-
-    // Re-enable tracking for other tests
-    console.log(`   ✅ Re-enabling event tracking for remaining tests`);
-    const { stdout: enableStdout } = await execAsync(
-        `php disable-tracking-consent.php enable`,
-        { cwd: __dirname }
-    );
-    console.log(`   ${JSON.parse(enableStdout).message}`);
 });
 
 // Lead event is not tested as it needs an SMTP server etc

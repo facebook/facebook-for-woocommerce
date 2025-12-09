@@ -321,6 +321,30 @@ jobs:
               echo '✅ CAPI event logging enabled for E2E tests' . PHP_EOL;
               " --allow-root
 
+      - name: Setup consent testing helper
+        run: |
+          cd ${{ env.WORDPRESS_PATH }}
+          # Create mu-plugins directory if it doesn't exist
+          mkdir -p wp-content/mu-plugins
+
+          # Create a must-use plugin that disables tracking when a specific option is set
+          # This allows E2E tests to simulate user consent = NO
+          cat > wp-content/mu-plugins/e2e-consent-helper.php << 'EOF'
+          <?php
+          /**
+           * E2E Consent Helper - Must-use plugin for testing
+           * Disables Facebook tracking when 'wc_facebook_e2e_disable_tracking' option is set
+           */
+          add_filter('facebook_for_woocommerce_integration_pixel_enabled', function($enabled) {
+              if (get_option('wc_facebook_e2e_disable_tracking') === 'yes') {
+                  return false;
+              }
+              return $enabled;
+          }, 99);
+          EOF
+
+          echo '✅ E2E consent testing helper installed'
+
       - name: Verify WordPress setup
         run: |
           cd ${{ env.WORDPRESS_PATH }}
