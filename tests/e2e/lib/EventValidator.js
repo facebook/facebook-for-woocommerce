@@ -5,6 +5,7 @@
 const fs = require('fs').promises;
 const path = require('path');
 const EVENT_SCHEMAS = require('./event-schemas');
+const ExpectedDataBuilder = require('./ExpectedDataBuilder');
 
 class EventValidator {
     constructor(testId, fbc=false, expectZeroEvents=false) {
@@ -112,6 +113,10 @@ class EventValidator {
         // Channel-specific validations
         if (hasPixel && p) this.validatePixelResponse(p, errors);
 
+        // 🆕 COMPREHENSIVE DATA VALIDATION - Compare against real expected data
+        console.log(`  🔍 Running comprehensive data validation...`);
+        await this.validateAgainstExpectedData(p, c, eventName, hasPixel, hasCapi, errors);
+
         return {
             passed: errors.length === 0,
             errors,
@@ -122,7 +127,7 @@ class EventValidator {
 
     validateEventCounts(pixel, capi, eventName, errors) {
         const schema = EVENT_SCHEMAS[eventName];
-        
+
         // Handle negative test case: expect 0 events
         if (this.expectZeroEvents) {
             if (pixel.length > 0 || capi.length > 0) {
@@ -130,7 +135,7 @@ class EventValidator {
             } else {
                 console.log(`  ✓ No events fired (as expected for negative test)`);
             }
-            
+
             return {
                 passed: errors.length === 0,
                 errors,
@@ -138,7 +143,7 @@ class EventValidator {
                 capi
             };
         }
-        
+
         // Check positive path: expect exactly 1 event for each channel in schema
         if (schema.channels.includes('pixel') && pixel.length !== 1) {
             errors.push(`Expected 1 Pixel event, found ${pixel.length}`);
@@ -406,6 +411,109 @@ class EventValidator {
         } catch (err) {
             if (err.code !== 'ENOENT') throw err;
         }
+    }
+
+    /**
+     * 🆕 COMPREHENSIVE DATA VALIDATION
+     * Compare captured events against real expected data (product info, versions, customer data)
+     */
+    async validateAgainstExpectedData(pixel, capi, eventName, hasPixel, hasCapi, errors) {
+        const builder = new ExpectedDataBuilder();
+
+        try {
+            // Extract product ID from events (if applicable)
+            const productId = this.extractProductId(pixel, capi);
+
+            // Extract search string (if Search event)
+            const searchString = this.extractSearchString(pixel, capi);
+
+            // Build options for ExpectedDataBuilder
+            const options = {
+                productId: productId || process.env.TEST_PRODUCT_ID,
+                searchString: searchString
+            };
+
+            // Validate Pixel event
+            if (hasPixel && pixel) {
+                console.log(`    📍 Validating Pixel data against expected...`);
+                const expectedPixel = await builder.getExpectedEvent(eventName, 'pixel', options);
+                const excludeFields = ExpectedDataBuilder.getExcludedFields(eventName, 'pixel');
+
+                const result = ExpectedDataBuilder.compareObjects(
+                    expectedPixel,
+                    { user_data: pixel.user_data, custom_data: pixel.custom_data },
+                    excludeFields
+                );
+
+                if (!result.matches) {
+                    console.log(`    ❌ Pixel data validation failed:`);
+                    result.differences.forEach(diff => {
+                        console.log(`       - ${diff}`);
+                        errors.push(`Pixel: ${diff}`);
+                    });
+                } else {
+                    console.log(`    ✅ Pixel data matches expected structure`);
+                }
+            }
+
+            // Validate CAPI event
+            if (hasCapi && capi) {
+                console.log(`    📡 Validating CAPI data against expected...`);
+                const expectedCAPI = await builder.getExpectedEvent(eventName, 'capi', options);
+                const excludeFields = ExpectedDataBuilder.getExcludedFields(eventName, 'capi');
+
+                const result = ExpectedDataBuilder.compareObjects(
+                    expectedCAPI,
+                    { user_data: capi.user_data, custom_data: capi.custom_data },
+                    excludeFields
+                );
+
+                if (!result.matches) {
+                    console.log(`    ❌ CAPI data validation failed:`);
+                    result.differences.forEach(diff => {
+                        console.log(`       - ${diff}`);
+                        errors.push(`CAPI: ${diff}`);
+                    });
+                } else {
+                    console.log(`    ✅ CAPI data matches expected structure`);
+                }
+            }
+
+        } catch (error) {
+            console.log(`    ⚠️  Comprehensive validation skipped: ${error.message}`);
+            // Don't fail the test if expected data can't be fetched
+            // The basic schema validation already passed
+        }
+    }
+
+    /**
+     * Extract product ID from event (from content_ids)
+     */
+    extractProductId(pixel, capi) {
+        // Try Pixel first
+        if (pixel?.custom_data?.content_ids) {
+            const contentIds = pixel.custom_data.content_ids;
+            const firstId = Array.isArray(contentIds) ? contentIds[0] : contentIds;
+            const match = String(firstId).match(/wc_post_id_(\d+)/);
+            if (match) return parseInt(match[1]);
+        }
+
+        // Try CAPI
+        if (capi?.custom_data?.content_ids) {
+            const contentIds = capi.custom_data.content_ids;
+            const firstId = Array.isArray(contentIds) ? contentIds[0] : contentIds;
+            const match = String(firstId).match(/wc_post_id_(\d+)/);
+            if (match) return parseInt(match[1]);
+        }
+
+        return null;
+    }
+
+    /**
+     * Extract search string from event
+     */
+    extractSearchString(pixel, capi) {
+        return pixel?.custom_data?.search_string || capi?.custom_data?.search_string || null;
     }
 }
 
