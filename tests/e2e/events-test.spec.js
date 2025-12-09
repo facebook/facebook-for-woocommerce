@@ -68,7 +68,7 @@ test('AddToCart', async ({ page }, testInfo) => {
     const { testId, pixelCapture } = await TestSetup.init(page, 'AddToCart',  testInfo);
 
     await page.goto(process.env.TEST_PRODUCT_URL);
-    await TestSetup.waitForPageReady(page, 500);
+    await TestSetup.waitForPageReady(page, TIMEOUTS.INSTANT);
 
     console.log(`   🛒 Clicking Add to Cart`);
     // Set up listener BEFORE triggering the action (prevents race condition)
@@ -107,11 +107,11 @@ test('InitiateCheckout', async ({ page }, testInfo) => {
     const { testId, pixelCapture } = await TestSetup.init(page, 'InitiateCheckout',  testInfo);
 
     await page.goto(process.env.TEST_PRODUCT_URL);
-    await TestSetup.waitForPageReady(page, 500);
+    await TestSetup.waitForPageReady(page, TIMEOUTS.INSTANT);
 
     console.log(`   🛒 Adding product to cart`);
     await page.click('.single_add_to_cart_button');
-    await page.waitForTimeout(1000);
+    await page.waitForTimeout(TIMEOUTS.SHORT);
 
     console.log(`   💳 Navigating to checkout`);
     // Set up listener BEFORE triggering the action (prevents race condition)
@@ -133,11 +133,11 @@ test('Purchase', async ({ page }, testInfo) => {
     const { testId, pixelCapture } = await TestSetup.init(page, 'Purchase',  testInfo);
 
     await page.goto(process.env.TEST_PRODUCT_URL);
-    await TestSetup.waitForPageReady(page, 500);
+    await TestSetup.waitForPageReady(page, TIMEOUTS.INSTANT);
 
     console.log(`   🛒 Adding product to cart`);
     await page.click('.single_add_to_cart_button');
-    await page.waitForTimeout(1000);
+    await page.waitForTimeout(TIMEOUTS.SHORT);
 
     console.log(`   💳 Navigating to checkout`);
     await page.goto('/checkout');
@@ -145,7 +145,7 @@ test('Purchase', async ({ page }, testInfo) => {
 
     // Scroll down to see checkout form in video
     await page.evaluate(() => window.scrollBy(0, 400));
-    await page.waitForTimeout(1000);
+    await page.waitForTimeout(TIMEOUTS.SHORT);
 
     console.log(`   ℹ️ Using saved billing address (no need to fill)`);
     // Customer already has billing address saved from workflow setup
@@ -153,9 +153,9 @@ test('Purchase', async ({ page }, testInfo) => {
 
     console.log(`   💰 Selecting Cash on Delivery`);
     // Wait for the payment methods section to load, then click the label (the input is hidden by CSS)
-    await page.waitForSelector('.wc-block-components-radio-control__option[for="radio-control-wc-payment-method-options-cod"]', { state: 'visible', timeout: 10000 });
+    await page.waitForSelector('.wc-block-components-radio-control__option[for="radio-control-wc-payment-method-options-cod"]', { state: 'visible', timeout: TIMEOUTS.LONG });
     await page.click('label[for="radio-control-wc-payment-method-options-cod"]');
-    await page.waitForTimeout(500);
+    await page.waitForTimeout(TIMEOUTS.INSTANT);
 
     console.log(`   ✅ Placing order`);
     // Scroll to place order button to ensure it's visible
@@ -166,10 +166,10 @@ test('Purchase', async ({ page }, testInfo) => {
 
     // Wait for order processing and redirect (can take time with payment processing)
     console.log(`   ⏳ Waiting for order to process...`);
-    await page.waitForURL('**/checkout/order-received/**', { timeout: 30000 });
+    await page.waitForURL('**/checkout/order-received/**', { timeout: TIMEOUTS.EXTRA_LONG });
 
 
-    await page.waitForTimeout(3000); // Give time for order to process and CAPI event to fire
+    await page.waitForTimeout(TIMEOUTS.NORMAL); // Give time for order to process and CAPI event to fire
 
     const validator = new EventValidator(testId);
     await validator.checkDebugLog();
@@ -183,11 +183,11 @@ test('Purchase - Multiple Place Order Clicks', async ({ page }, testInfo) => {
     const { testId, pixelCapture } = await TestSetup.init(page, 'Purchase',  testInfo);
 
     await page.goto(process.env.TEST_PRODUCT_URL);
-    await TestSetup.waitForPageReady(page, 500);
+    await TestSetup.waitForPageReady(page, TIMEOUTS.INSTANT);
 
     console.log(`   🛒 Adding product to cart`);
     await page.click('.single_add_to_cart_button');
-    await page.waitForTimeout(1000);
+    await page.waitForTimeout(TIMEOUTS.SHORT);
 
     console.log(`   💳 Navigating to checkout`);
     await page.goto('/checkout');
@@ -195,16 +195,16 @@ test('Purchase - Multiple Place Order Clicks', async ({ page }, testInfo) => {
 
     // Scroll down to see checkout form in video
     await page.evaluate(() => window.scrollBy(0, 400));
-    await page.waitForTimeout(1000);
+    await page.waitForTimeout(TIMEOUTS.SHORT);
 
     console.log(`   ℹ️ Using saved billing address (no need to fill)`);
     // Customer already has billing address saved from workflow setup
     // WooCommerce automatically uses it - no need to edit or fill anything
 
     console.log(`   💰 Selecting Cash on Delivery`);
-    await page.waitForSelector('.wc-block-components-radio-control__option[for="radio-control-wc-payment-method-options-cod"]', { state: 'visible', timeout: 10000 });
+    await page.waitForSelector('.wc-block-components-radio-control__option[for="radio-control-wc-payment-method-options-cod"]', { state: 'visible', timeout: TIMEOUTS.LONG });
     await page.click('label[for="radio-control-wc-payment-method-options-cod"]');
-    await page.waitForTimeout(500);
+    await page.waitForTimeout(TIMEOUTS.INSTANT);
 
     console.log(`   ✅ Clicking Place Order button multiple times (testing deduplication)`);
     await page.locator('.wc-block-components-checkout-place-order-button').scrollIntoViewIfNeeded();
@@ -221,8 +221,8 @@ test('Purchase - Multiple Place Order Clicks', async ({ page }, testInfo) => {
     await placeOrderButton.click({force: true}).catch(() => {}); // Might fail if already processing
 
     console.log(`   ⏳ Waiting for order to process...`);
-    await page.waitForURL('**/checkout/order-received/**', { timeout: 30000 });
-    await page.waitForTimeout(3000);
+    await page.waitForURL('**/checkout/order-received/**', { timeout: TIMEOUTS.EXTRA_LONG });
+    await page.waitForTimeout(TIMEOUTS.NORMAL);
 
     const validator = new EventValidator(testId);
     await validator.checkDebugLog();
