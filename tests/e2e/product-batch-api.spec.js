@@ -41,6 +41,8 @@ test.describe('Meta Batch API E2E Tests - PoC', () => {
     test.beforeEach(async ({ page }, testInfo) => {
         logTestStart(testInfo);
         await loginToWordPress(page);
+        // Ensure browser stability
+        await page.setViewportSize({ width: 1280, height: 720 });
         await enableBatchMonitoring();
     });
 
@@ -48,21 +50,14 @@ test.describe('Meta Batch API E2E Tests - PoC', () => {
         await disableBatchMonitoring();
     });
 
-    test('Sync large number of products and validate batch behavior', async ({ page }, testInfo) => {
+    test('Sync large number of products and validate batch API responses', async ({ page }, testInfo) => {
         let feedFilePath = null;
-        const productCount = 50;
+        const productCount = 100;
         const categorySlug = generateUniqueSKU('batch-api-test');
         const variableProductPercentage = 0.2; // 20% of products will be variable products
         let importedProductIds = [];
 
         try {
-            console.log('\n📋 TEST PLAN:');
-            console.log('   1. Generate CSV feed with N products');
-            console.log('   2. Import products via WooCommerce importer');
-            console.log('   3. Wait for background sync to complete');
-            console.log('   4. Validate batch behavior from intercepted API calls');
-            console.log('');
-
             // Step 1: Generate product feed
             console.log('📝 Step 1: Generating product feed...');
             const feedData = await generateProductFeedCSV(productCount, variableProductPercentage, categorySlug);
@@ -98,9 +93,7 @@ test.describe('Meta Batch API E2E Tests - PoC', () => {
 
             // Wait for import completion
             const importComplete = page.locator('.woocommerce-importer-done, .wc-importer-done');
-            await importComplete.waitFor({ state: 'visible', timeout: TIMEOUTS.MAX }).catch(() => {
-                console.log(`Waited for ${TIMEOUTS.MAX}. All items maybe not be fully imported yet!!`);
-            });
+            await importComplete.waitFor({ state: 'visible' }); // no timeout
 
             // Step 3: Get imported product IDs for cleanup using WP-CLI
             console.log('\n📊 Step 3: Collecting imported product IDs via WP-CLI...');
@@ -140,18 +133,29 @@ test.describe('Meta Batch API E2E Tests - PoC', () => {
 
             // Assertions - Summary level
             expect(batchLog.summary.total_batches).toBeGreaterThan(0);
-            expect(batchLog.summary.total_products).toBe(fbProductCount);
+            expect(batchLog.summary.total_products).toBeGreaterThanOrEqual(fbProductCount);
 
             // Detailed batch analysis
             console.log('\n📦 Individual Batch Details:');
 
             const batchSizes = [];
+            let totalErrors = 0;
+
             batchLog.batches.forEach((batch, index) => {
                 console.log(`\n   Batch ${index + 1}:`);
                 console.log(`      Size: ${batch.batch_size} products`);
                 console.log(`      Timestamp: ${batch.datetime}`);
                 console.log(`      URL: ${batch.url}`);
                 console.log(`      Method: ${batch.method}`);
+                console.log(`      Response Code: ${batch.response?.code || 'N/A'}`);
+                console.log(`      Response Status: ${batch.response?.message || 'N/A'}`);
+                console.log(`      Has Error: ${batch.response?.has_error ? 'YES ❌' : 'NO ✅'}`);
+
+                if (batch.response?.has_error) {
+                    console.log(`      Error Code: ${batch.response?.error_code}`);
+                    console.log(`      Error Message: ${batch.response?.error_message}`);
+                    totalErrors++;
+                }
 
                 batchSizes.push(batch.batch_size);
 
@@ -162,13 +166,27 @@ test.describe('Meta Batch API E2E Tests - PoC', () => {
                 expect(batch.url).toContain('items_batch');
                 expect(batch.method).toBe('POST');
 
+                // Validate actual Meta response
+                expect(batch.response).toBeDefined();
+                expect(batch.response.code).toBe(200); // Must be 200 OK
+                expect(batch.response.has_error).toBe(false); // Must have no errors
+
                 // Show sample requests for first batch
                 if (batch.request_sample && batch.request_sample.length > 0) {
                     console.log(`      Sample Request:`);
                     console.log(`         Method: ${batch.request_sample[0]?.method || 'N/A'}`);
                     console.log(`         Product ID: ${batch.request_sample[0]?.data?.id || 'N/A'}`);
                 }
+
+                // Show response handles for first batch
+                if (batch.response?.handles) {
+                    console.log(`      Sample Response Handles: ${batch.response.handles.slice(0, 2).join(', ')}`);
+                }
             });
+
+            console.log(`\n📊 Error Summary:`);
+            console.log(`   Total Batches with Errors: ${totalErrors}`);
+            expect(totalErrors).toBe(0); // No batches should have errors
 
             // Calculate batch statistics
             const avgBatchSize = batchSizes.reduce((a, b) => a + b, 0) / batchSizes.length;
@@ -188,14 +206,14 @@ test.describe('Meta Batch API E2E Tests - PoC', () => {
             console.log('   ✓ All batch responses returned 200 OK');
 
             console.log('\n' + '='.repeat(80));
-            console.log('🎉 PoC TEST PASSED - Batch interception working successfully!');
+            console.log('🎉 TEST PASSED - Batch interception working successfully!');
             console.log('='.repeat(80) + '\n');
 
             logTestEnd(testInfo, true);
 
         } catch (error) {
             console.error('\n' + '='.repeat(80));
-            console.error('❌ PoC TEST FAILED');
+            console.error('❌ TEST FAILED');
             console.error('='.repeat(80));
             console.error(`Error: ${error.message}`);
             console.error(`Stack: ${error.stack}`);

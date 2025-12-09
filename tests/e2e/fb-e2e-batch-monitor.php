@@ -24,7 +24,8 @@ class FB_E2E_Batch_Monitor {
 
         // Only activate if explicitly enabled
         if (get_option('fb_e2e_test_batch_api_monitoring', false)) {
-            add_filter('pre_http_request', [$this, 'intercept_http'], 10, 3);
+            // Use http_response filter to capture actual responses
+            add_filter('http_response', [$this, 'capture_response'], 10, 3);
         }
 
         // Register WP-CLI commands
@@ -34,47 +35,67 @@ class FB_E2E_Batch_Monitor {
     }
 
     /**
-     * Intercept HTTP requests to Meta API
+     * Capture actual responses from Meta API
      */
-    public function intercept_http($preempt, $args, $url) {
-        // Only intercept Meta API batch calls
+    public function capture_response($response, $args, $url) {
+        // Only capture Meta API batch calls
         if (strpos($url, 'graph.facebook.com') === false) {
-            return $preempt;
+            return $response;
         }
 
         if (strpos($url, 'items_batch') === false) {
-            return $preempt;
+            return $response;
         }
 
-        // Parse request body
+        // Parse original request body to get batch size
         $body = json_decode($args['body'] ?? '{}', true);
         $requests = $body['requests'] ?? [];
 
-        // Log batch info
+        // Extract response details
+        $response_code = wp_remote_retrieve_response_code($response);
+        $response_message = wp_remote_retrieve_response_message($response);
+        $response_body = wp_remote_retrieve_body($response);
+        $response_body_decoded = json_decode($response_body, true);
+
+        // Check for errors in response
+        $has_error = false;
+        $error_message = null;
+        $error_code = null;
+
+        if (is_wp_error($response)) {
+            $has_error = true;
+            $error_message = $response->get_error_message();
+            $error_code = $response->get_error_code();
+        } elseif ($response_code !== 200) {
+            $has_error = true;
+            $error_message = "HTTP $response_code: $response_message";
+            $error_code = $response_code;
+        } elseif (isset($response_body_decoded['error'])) {
+            $has_error = true;
+            $error_message = $response_body_decoded['error']['message'] ?? 'Unknown error';
+            $error_code = $response_body_decoded['error']['code'] ?? 'unknown';
+        }
+
+        // Log batch info with response
         $this->log_batch([
             'timestamp' => time(),
             'datetime' => date('Y-m-d H:i:s'),
             'url' => $url,
             'method' => $args['method'] ?? 'POST',
             'batch_size' => count($requests),
-            'request_sample' => array_slice($requests, 0, 2) // First 2 for debugging
+            'request_sample' => array_slice($requests, 0, 2), // First 2 for debugging
+            'response' => [
+                'code' => $response_code,
+                'message' => $response_message,
+                'has_error' => $has_error,
+                'error_message' => $error_message,
+                'error_code' => $error_code,
+                'handles' => $response_body_decoded['handles'] ?? [],
+                'validation_status' => $response_body_decoded['validation_status'] ?? null,
+            ]
         ]);
 
-        // Return mocked successful response
-        return [
-            'response' => [
-                'code' => 200,
-                'message' => 'OK'
-            ],
-            'headers' => [
-                'content-type' => 'application/json'
-            ],
-            'body' => json_encode([
-                'handles' => array_map(function($i) {
-                    return 'mock_handle_' . time() . '_' . $i;
-                }, range(0, count($requests) - 1))
-            ])
-        ];
+        return $response;
     }
 
     /**

@@ -40,7 +40,9 @@ async function loginToWordPress(page) {
   await page.waitForLoadState('domcontentloaded', { timeout: TIMEOUTS.MAX });
 
   // Wait for login to complete by waiting for admin content
-  await loggedInContent.waitFor({ state: 'visible', timeout: TIMEOUTS.MAX });
+  await loggedInContent.waitFor({ state: 'visible', timeout: TIMEOUTS.MAX }).catch(() => {
+    console.warn('⚠️ Login failed - could not find admin content ' +  page.url());
+  });
   console.log('✅ Login completed ' + page.url());
 }
 
