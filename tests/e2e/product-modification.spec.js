@@ -1,4 +1,5 @@
 const { test, expect } = require('@playwright/test');
+const { TIMEOUTS } = require('./time-constants');
 const {
   baseURL,
   loginToWordPress,
@@ -79,7 +80,7 @@ test.describe('Facebook for WooCommerce - Product Modification E2E Tests', () =>
       // Edit price
       await page.click('li.general_tab a');
       const regularPriceField = page.locator('#_regular_price');
-      await regularPriceField.waitFor({ state: 'visible', timeout: 5000 });
+      await regularPriceField.waitFor({ state: 'visible', timeout: TIMEOUTS.MEDIUM });
       await regularPriceField.scrollIntoViewIfNeeded();
       await regularPriceField.fill(newPrice);
       console.log(`✅ Updated price to: ${newPrice}`);
@@ -88,11 +89,11 @@ test.describe('Facebook for WooCommerce - Product Modification E2E Tests', () =>
       await page.click('li.inventory_tab a');
       const stockField = page.locator('#_stock');
       const trackStockCheckBox = page.locator('#_manage_stock');
-      await trackStockCheckBox.waitFor({ state: 'visible', timeout: 5000 });
+      await trackStockCheckBox.waitFor({ state: 'visible', timeout: TIMEOUTS.MEDIUM });
       if (!(await trackStockCheckBox.isChecked())) {
         await trackStockCheckBox.check();
       }
-      await stockField.waitFor({ state: 'visible', timeout: 5000 });
+      await stockField.waitFor({ state: 'visible', timeout: TIMEOUTS.MEDIUM });
       await stockField.scrollIntoViewIfNeeded();
       await stockField.fill(newStock);
       console.log(`✅ Updated stock to: ${newStock}`);
@@ -111,10 +112,10 @@ test.describe('Facebook for WooCommerce - Product Modification E2E Tests', () =>
 
       // Verify the changes were saved
       console.log('🔍 Verifying changes were saved...');
-      await page.reload({ waitUntil: 'domcontentloaded', timeout: 60000 });
+      await page.reload({ waitUntil: 'domcontentloaded', timeout: TIMEOUTS.MAX });
 
       const titleField = page.locator('#title');
-      titleField.waitFor({ state: 'visible', timeout: 5000 });
+      titleField.waitFor({ state: 'visible', timeout: TIMEOUTS.MEDIUM });
       const updatedTitle = await titleField.inputValue();
       expect(updatedTitle).toBe(newTitle);
       console.log('✅ Title change verified');
@@ -168,7 +169,7 @@ test.describe('Facebook for WooCommerce - Product Modification E2E Tests', () =>
       // Step 5: Find the product row and trigger quick edit
       console.log('🔍 Looking for test product...');
       const productRow = page.locator('.wp-list-table tbody tr.iedit').first();
-      await productRow.waitFor({ state: 'visible', timeout: 5000 });
+      await productRow.waitFor({ state: 'visible', timeout: TIMEOUTS.MEDIUM });
 
       const productNameElement = productRow.locator('.row-title');
       const productName = await productNameElement.textContent();
@@ -180,20 +181,20 @@ test.describe('Facebook for WooCommerce - Product Modification E2E Tests', () =>
 
       // Click the Quick Edit button
       const quickEditLink = productRow.locator('.row-actions .editinline');
-      await quickEditLink.waitFor({ state: 'visible', timeout: 5000 });
+      await quickEditLink.waitFor({ state: 'visible', timeout: TIMEOUTS.MEDIUM });
       await quickEditLink.click();
       console.log('✅ Clicked Quick Edit link');
 
       // Step 7: Wait for Quick Edit form to appear
       console.log('⏳ Waiting for Quick Edit form...');
       const quickEditRow = page.locator('.inline-edit-row').first();
-      await quickEditRow.waitFor({ state: 'visible', timeout: 5000 });
+      await quickEditRow.waitFor({ state: 'visible', timeout: TIMEOUTS.MEDIUM });
       console.log('✅ Quick Edit form appeared');
 
       // Step 8: Update the price
       console.log(`💰 Updating price from $${originalPrice} to $${newPrice}...`);
       const regularPriceField = quickEditRow.locator('input[name="_regular_price"]');
-      await regularPriceField.waitFor({ state: 'visible', timeout: 5000 });
+      await regularPriceField.waitFor({ state: 'visible', timeout: TIMEOUTS.MEDIUM });
 
       // Clear the field and enter new price
       await regularPriceField.clear();
@@ -203,28 +204,28 @@ test.describe('Facebook for WooCommerce - Product Modification E2E Tests', () =>
       // Step 9: Save changes by clicking Update button
       console.log('💾 Saving changes...');
       const updateButton = quickEditRow.locator('.inline-edit-save .button-primary');
-      await updateButton.waitFor({ state: 'visible', timeout: 5000 });
+      await updateButton.waitFor({ state: 'visible', timeout: TIMEOUTS.MEDIUM });
       await updateButton.click();
       console.log('✅ Clicked Update button');
 
       // Step 10: Wait for the inline editor to close
       console.log('⏳ Waiting for Quick Edit form to close...');
-      await quickEditRow.waitFor({ state: 'hidden', timeout: 10000 });
+      await quickEditRow.waitFor({ state: 'hidden', timeout: TIMEOUTS.LONG });
       console.log('✅ Quick Edit form closed');
 
       // Wait a moment for the table row to update
-      await page.waitForTimeout(2000);
+      await page.waitForTimeout(TIMEOUTS.NORMAL);
 
       // Step 11: Verify price change in UI
       console.log('🔍 Verifying price change in products table...');
       // Reload the page to ensure we see the updated data
-      await page.reload({ waitUntil: 'domcontentloaded', timeout: 60000 });
+      await page.reload({ waitUntil: 'domcontentloaded', timeout: TIMEOUTS.MAX });
 
       // Find the product row again and check the price column
       const updatedProductRow = page.locator('.wp-list-table tbody tr.iedit').first();
       const priceColumn = updatedProductRow.locator('.price');
 
-      if (await priceColumn.isVisible({ timeout: 5000 })) {
+      if (await priceColumn.isVisible({ timeout: TIMEOUTS.MEDIUM })) {
         const displayedPrice = await priceColumn.textContent();
         console.log(`✅ Price column shows: ${displayedPrice}`);
         // The price might be formatted with currency symbol, so we just check it contains our new price
@@ -320,7 +321,7 @@ test.describe('Facebook for WooCommerce - Product Modification E2E Tests', () =>
       // Click on Variations tab
       console.log('📝 Editing variation prices using bulk actions...');
       const variationsTab = page.locator('li.variations_tab a');
-      await variationsTab.waitFor({ state: 'visible', timeout: 2000 });
+      await variationsTab.waitFor({ state: 'visible', timeout: TIMEOUTS.NORMAL });
       await variationsTab.click();
       console.log('✅ Opened Variations tab');
 
@@ -337,22 +338,22 @@ test.describe('Facebook for WooCommerce - Product Modification E2E Tests', () =>
       });
 
       const expandAllButton = page.getByRole('link', { name: 'Expand' }).first();
-      await expandAllButton.waitFor({ state: 'visible', timeout: 2000 });
+      await expandAllButton.waitFor({ state: 'visible', timeout: TIMEOUTS.NORMAL });
       await expandAllButton.click();
       console.log('✅ Expanded all variations');
 
       // Select bulk action "Set regular prices"
       const bulkActionsSelect = page.locator('select.variation_actions');
-      await bulkActionsSelect.waitFor({ state: 'visible', timeout: 2000 });
+      await bulkActionsSelect.waitFor({ state: 'visible', timeout: TIMEOUTS.NORMAL });
       // Select the option - this triggers the popup immediately
       await bulkActionsSelect.selectOption('variable_regular_price');
 
       // Wait for dialog to appear and be handled
-      await page.waitForTimeout(2000);
+      await page.waitForTimeout(TIMEOUTS.NORMAL);
 
       // Click "Save changes" button for variations
       const saveVariationsButton = page.locator('button.save-variation-changes');
-      if (await saveVariationsButton.isVisible({ timeout: 2000 }) && await saveVariationsButton.isEnabled({ timeout: 2000 })) {
+      if (await saveVariationsButton.isVisible({ timeout: TIMEOUTS.NORMAL }) && await saveVariationsButton.isEnabled({ timeout: TIMEOUTS.NORMAL })) {
         await saveVariationsButton.click();
         await page.waitForLoadState('domcontentloaded');
         console.log('✅ Clicked "Save changes" for variations');
@@ -375,10 +376,10 @@ test.describe('Facebook for WooCommerce - Product Modification E2E Tests', () =>
 
       // Verify the changes were saved
       console.log('🔍 Verifying changes were saved...');
-      await page.reload({ waitUntil: 'domcontentloaded', timeout: 60000 });
+      await page.reload({ waitUntil: 'domcontentloaded', timeout: TIMEOUTS.MAX });
 
       const titleField = page.locator('#title');
-      titleField.waitFor({ state: 'visible', timeout: 5000 });
+      titleField.waitFor({ state: 'visible', timeout: TIMEOUTS.MEDIUM });
       const updatedTitle = await titleField.inputValue();
       expect(updatedTitle).toBe(newTitle);
       console.log('✅ Title change verified');
@@ -386,11 +387,11 @@ test.describe('Facebook for WooCommerce - Product Modification E2E Tests', () =>
       // Validate that the new price is showing in the UI for all variations
       console.log('🔍 Validating new price for all variations in the UI...');
       // After reload, go to Variations tab again
-      await variationsTab.waitFor({ state: 'visible', timeout: 2000 });
+      await variationsTab.waitFor({ state: 'visible', timeout: TIMEOUTS.NORMAL });
       await variationsTab.click();
 
       // Expand all variations to check their prices
-      await expandAllButton.waitFor({ state: 'visible', timeout: 2000 });
+      await expandAllButton.waitFor({ state: 'visible', timeout: TIMEOUTS.NORMAL });
       await expandAllButton.click();
 
       // Get all variation rows
@@ -401,7 +402,7 @@ test.describe('Facebook for WooCommerce - Product Modification E2E Tests', () =>
       for (let i = 0; i < count; i++) {
         const variationRow = variationRows.nth(i);
         const priceField = variationRow.locator('input[name*="variable_regular_price"]');
-        await priceField.waitFor({ state: 'visible', timeout: 2000 });
+        await priceField.waitFor({ state: 'visible', timeout: TIMEOUTS.NORMAL });
         const priceValue = await priceField.inputValue();
         expect(priceValue).toBe(newPrice);
         console.log(`✅ Variation ${i + 1} price verified: ${priceValue}`);
@@ -445,7 +446,7 @@ test.describe('Facebook for WooCommerce - Product Modification E2E Tests', () =>
       const fbPrice = '24.99';
       const fbPriceField = page.locator('#fb_product_price, input[name="fb_product_price"]');
 
-      if (await fbPriceField.isVisible({ timeout: 5000 })) {
+      if (await fbPriceField.isVisible({ timeout: TIMEOUTS.MEDIUM })) {
         await fbPriceField.fill(fbPrice);
         console.log(`✅ Facebook price set: $${fbPrice}`);
       } else {
@@ -458,7 +459,7 @@ test.describe('Facebook for WooCommerce - Product Modification E2E Tests', () =>
       // Look for "Use custom image" option
       const useCustomImageRadio = page.locator('input[type="radio"][value="custom"], input[name="fb_product_image_source"][value="custom"]');
 
-      await useCustomImageRadio.waitFor({ state: 'visible', timeout: 5000 });
+      await useCustomImageRadio.waitFor({ state: 'visible', timeout: TIMEOUTS.MEDIUM });
       await useCustomImageRadio.click();
       console.log('✅ Selected "Use custom image" option');
 
@@ -466,7 +467,7 @@ test.describe('Facebook for WooCommerce - Product Modification E2E Tests', () =>
       const customImageUrl = 'https://www.facebook.com/images/fb_icon_325x325.png';
       const customImageField = page.locator('#fb_product_image, input[name="fb_product_image"]');
 
-      await customImageField.waitFor({ state: 'visible', timeout: 5000 });
+      await customImageField.waitFor({ state: 'visible', timeout: TIMEOUTS.MEDIUM });
       await customImageField.fill(customImageUrl);
       console.log(`✅ Custom image URL set: ${customImageUrl}`);
 
@@ -522,13 +523,13 @@ test.describe('Facebook for WooCommerce - Product Modification E2E Tests', () =>
       // Click on Variations tab first
       console.log('📝 Opening Variations tab...');
       const variationsTab = page.locator('li.variations_tab a');
-      await variationsTab.waitFor({ state: 'visible', timeout: 5000 });
+      await variationsTab.waitFor({ state: 'visible', timeout: TIMEOUTS.MEDIUM });
       await variationsTab.click();
       console.log('✅ Opened Variations tab');
 
       // Expand all variations
       const expandAllButton = page.getByRole('link', { name: 'Expand' }).first();
-      await expandAllButton.waitFor({ state: 'visible', timeout: 5000 });
+      await expandAllButton.waitFor({ state: 'visible', timeout: TIMEOUTS.MEDIUM });
       await expandAllButton.click();
       console.log('✅ Expanded all variations');
 
@@ -547,7 +548,7 @@ test.describe('Facebook for WooCommerce - Product Modification E2E Tests', () =>
 
         // Set Facebook Brand
         const fbPriceField = variationRow.locator(`#variable_fb_product_price${i}`);
-        if (await fbPriceField.isVisible({ timeout: 5000 })) {
+        if (await fbPriceField.isVisible({ timeout: TIMEOUTS.MEDIUM })) {
           const newPrice = (parseFloat(originalPrice || '10.00') + (i + 1)).toFixed(2);
           await fbPriceField.fill(newPrice);
           console.log(`  ✅ Set Facebook price: ${newPrice}`);
@@ -557,12 +558,12 @@ test.describe('Facebook for WooCommerce - Product Modification E2E Tests', () =>
 
         // Set Custom Facebook Image
         const customImageRadioBtn = variationRow.getByRole('radio', { name: 'Use custom image' }).first()
-        if (await customImageRadioBtn.isVisible({ timeout: 5000 })) {
+        if (await customImageRadioBtn.isVisible({ timeout: TIMEOUTS.MEDIUM })) {
           await customImageRadioBtn.scrollIntoViewIfNeeded();
           await customImageRadioBtn.click();
           const customImageField = variationRow.locator(`#variable_fb_product_image${i}`);
           const customImageUrl = 'https://www.facebook.com/images/fb_icon_325x325.png';
-          if (await customImageField.isVisible({ timeout: 5000 })) {
+          if (await customImageField.isVisible({ timeout: TIMEOUTS.MEDIUM })) {
             await customImageField.fill(customImageUrl);
             console.log(`  ✅ Set Custom Image for variation ${i + 1}`);
           } else {
@@ -576,7 +577,7 @@ test.describe('Facebook for WooCommerce - Product Modification E2E Tests', () =>
       // Save variation changes
       console.log('\n💾 Saving variation changes...');
       const saveVariationsButton = page.locator('button.save-variation-changes');
-      if (await saveVariationsButton.isVisible({ timeout: 5000 }) && await saveVariationsButton.isEnabled({ timeout: 5000 })) {
+      if (await saveVariationsButton.isVisible({ timeout: TIMEOUTS.MEDIUM }) && await saveVariationsButton.isEnabled({ timeout: TIMEOUTS.MEDIUM })) {
         await saveVariationsButton.click();
         await page.waitForLoadState('domcontentloaded');
         console.log('✅ Saved variation changes');
@@ -587,11 +588,11 @@ test.describe('Facebook for WooCommerce - Product Modification E2E Tests', () =>
       await openFacebookOptions(page);
       console.log('✅ Updating Global Facebook Options brand, size');
       const fbBrandField = page.locator('#fb_brand');
-      await fbBrandField.waitFor({ state: 'visible', timeout: 5000 });
+      await fbBrandField.waitFor({ state: 'visible', timeout: TIMEOUTS.MEDIUM });
       await fbBrandField.fill('FBOptionsUpdateTestBrand');
 
       const fbSizeField = page.locator('#fb_size');
-      await fbSizeField.waitFor({ state: 'visible', timeout: 5000 });
+      await fbSizeField.waitFor({ state: 'visible', timeout: TIMEOUTS.MEDIUM });
       await fbSizeField.fill('XXXL');
 
       // Click Update button for the product
@@ -650,20 +651,20 @@ test.describe('Facebook for WooCommerce - Product Modification E2E Tests', () =>
       // Click on Inventory tab
       console.log('📦 Opening Inventory tab...');
       const inventoryTab = page.locator('li.inventory_tab a');
-      await inventoryTab.waitFor({ state: 'visible', timeout: 5000 });
+      await inventoryTab.waitFor({ state: 'visible', timeout: TIMEOUTS.MEDIUM });
       await inventoryTab.click();
       console.log('✅ Opened Inventory tab');
 
       // Set stock status to "Out of stock"
       console.log('📝 Setting stock status to "Out of stock"...');
       const trackStockCheckBox = page.locator('#_manage_stock');
-      if (await trackStockCheckBox.isVisible({ timeout: 2000 })) {
+      if (await trackStockCheckBox.isVisible({ timeout: TIMEOUTS.NORMAL })) {
         if ((await trackStockCheckBox.isChecked())) {
           await trackStockCheckBox.uncheck();
         }
       }
       const stockStatusSelect = page.locator('input[name="_stock_status"][value="outofstock"]')
-      await stockStatusSelect.waitFor({ state: 'visible', timeout: 5000 });
+      await stockStatusSelect.waitFor({ state: 'visible', timeout: TIMEOUTS.MEDIUM });
       await stockStatusSelect.scrollIntoViewIfNeeded();
       await stockStatusSelect.click();
       console.log('✅ Set stock status to "Out of stock"');
