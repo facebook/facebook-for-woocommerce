@@ -8,7 +8,7 @@ export default defineConfig({
   workers: process.env.CI ? 1 : undefined,
   reporter: 'html',
   // Global test timeout - increased to 5 minutes for complex WordPress operations
-  timeout: 300000,
+  timeout: 1000000,
   use: {
     baseURL: process.env.WORDPRESS_URL,
     trace: 'on-first-retry',

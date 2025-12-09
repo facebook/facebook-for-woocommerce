@@ -26,12 +26,22 @@ async function loginToWordPress(page) {
   console.log('🔐 Logging in to WordPress...');
   await loginForm.waitFor({ state: 'visible', timeout: TIMEOUTS.MAX });
   await loginForm.fill(username);
+  console.log('✅ Filled username');
   await page.locator('#user_pass').fill(password);
-  await page.locator('#wp-submit').click();
+  console.log('✅ Filled password');
+  const loginButton = page.locator('#wp-submit');
+  await loginButton.waitFor({ state: 'visible', timeout: TIMEOUTS.MAX });
+  console.log('✅ Found login button');
+  await loginButton.waitFor({ state: 'attached', timeout: TIMEOUTS.MAX });
+  console.log('✅ Login button is attached');
+  await loginButton.click();
+  console.log('✅ Clicked login button');
+
+  await page.waitForLoadState('domcontentloaded', { timeout: TIMEOUTS.MAX });
 
   // Wait for login to complete by waiting for admin content
   await loggedInContent.waitFor({ state: 'visible', timeout: TIMEOUTS.MAX });
-  console.log('✅ Login completed');
+  console.log('✅ Login completed ' + page.url());
 }
 
 // Helper function to safely take screenshots
@@ -90,6 +100,7 @@ function generateUniqueSKU(productType) {
 
 // Helper function to extract product ID from URL
 function extractProductIdFromUrl(url) {
+  console.log(`🔍 Extracting Product ID from URL: ${url}`);
   const urlMatch = url.match(/post=(\d+)/);
   const productId = urlMatch ? parseInt(urlMatch[1]) : null;
   console.log(`✅ Extracted Product ID: ${productId}`);
@@ -98,19 +109,31 @@ function extractProductIdFromUrl(url) {
 
 // Helper function to publish product
 async function publishProduct(page) {
-  try {
-    await page.locator('#publishing-action').scrollIntoViewIfNeeded();
-    const publishButton = page.locator('#publish');
-    if (await publishButton.isVisible({ timeout: TIMEOUTS.LONG })) {
-      await publishButton.click();
-      await page.waitForTimeout(TIMEOUTS.NORMAL + TIMEOUTS.SHORT); // Wait for publish to complete
-      console.log('✅ Published product');
-      return true;
-    }
-  } catch (error) {
-    console.warn(`⚠️ Publish step may be slow, continuing with error check ${error.message}`);
-    return false;
+  await page.locator('#publishing-action').scrollIntoViewIfNeeded();
+  const publishButton = page.locator('#publish');
+  await publishButton.waitFor({ state: 'visible', timeout: TIMEOUTS.LONG });
+  await publishButton.waitFor({ state: 'attached', timeout: TIMEOUTS.LONG });
+  await publishButton.click();
+  console.log('Clicked Publish button');
+  let publishSuccess = true;
+  await page.waitForURL(/\/wp-admin\/post\.php\?post=\d+/, { timeout: TIMEOUTS.LONG }).catch(() => {
+    console.warn('⚠️ URL did not change after publishing. Current URL: ' + page.url())
+    publishSuccess = false;
   }
+  );
+
+  if (!publishSuccess) {
+    console.warn(`⚠️ Encountered Wordpress Publish button bug. Clicking Publish did not change url. Current url: ${page.url()} Clicking Publish button again`);
+    await publishButton.click();
+    await page.waitForTimeout(TIMEOUTS.MEDIUM);
+  }
+
+  let updateButton = page.getByRole('button', { name: 'Update' });
+  await updateButton.waitFor({ state: 'visible', timeout: TIMEOUTS.LONG });
+
+  await page.waitForLoadState('domcontentloaded', { timeout: TIMEOUTS.MAX });
+  console.log('✅ Published product');
+  return true;
 }
 
 // Helper function to check for PHP errors
@@ -545,6 +568,261 @@ async function createTestCategory(options = {}) {
   }
 }
 
+// Helper function to generate product feed CSV file
+async function generateProductFeedCSV(productCount = 10, variableProductPercentage = 0.3, categoryName = "feed-test-products") {
+  const fs = require('fs');
+  const path = require('path');
+  const os = require('os');
+
+  console.log(`📝 Generating product feed CSV with ${productCount} products (${Math.round(variableProductPercentage * 100)}% variable)...`);
+
+  // CSV header
+  const headers = [
+    'ID', 'Type', 'SKU', 'Name', 'Published', 'Is featured?', 'Visibility in catalog',
+    'Short description', 'Description', 'Date sale price starts', 'Date sale price ends',
+    'Tax status', 'Tax class', 'In stock?', 'Stock', 'Low stock amount', 'Backorders allowed?',
+    'Sold individually?', 'Weight (kg)', 'Length (cm)', 'Width (cm)', 'Height (cm)',
+    'Allow customer reviews?', 'Purchase note', 'Sale price', 'Regular price', 'Categories',
+    'Tags', 'Shipping class', 'Images', 'Download limit', 'Download expiry days', 'Parent',
+    'Grouped products', 'Upsells', 'Cross-sells', 'External URL', 'Button text', 'Position',
+    'Attribute 1 name', 'Attribute 1 value(s)', 'Attribute 1 visible', 'Attribute 1 global',
+    'Attribute 2 name', 'Attribute 2 value(s)', 'Attribute 2 visible', 'Attribute 2 global'
+  ];
+
+  const rows = [headers];
+  let productId = 1000; // Start from a high ID to avoid conflicts
+  const runId = process.env.GITHUB_RUN_ID || 'local';
+  const timestamp = new Date().getTime();
+
+  // Calculate number of variable products
+  const variableProductCount = Math.floor(productCount * variableProductPercentage);
+  const simpleProductCount = productCount - variableProductCount;
+
+  console.log(`   - ${simpleProductCount} simple products`);
+  console.log(`   - ${variableProductCount} variable products`);
+
+  // Generate simple products
+  for (let i = 0; i < simpleProductCount; i++) {
+    productId++;
+    const sku = generateUniqueSKU('Simple');
+    const name = `Feed Test Simple Product ${i + 1}`;
+    const price = (Math.random() * 50 + 10).toFixed(2); // Random price between 10 and 60
+
+    rows.push([
+      productId, // ID
+      'simple', // Type
+      sku, // SKU
+      name, // Name
+      '1', // Published
+      '0', // Is featured?
+      'visible', // Visibility in catalog
+      `Short description for ${name}`, // Short description
+      `This is a test product created from feed file for E2E testing. Product number ${i + 1}.`, // Description
+      '', // Date sale price starts
+      '', // Date sale price ends
+      'taxable', // Tax status
+      '', // Tax class
+      '1', // In stock?
+      Math.floor(Math.random() * 100 + 10), // Stock (random 10-110)
+      '', // Low stock amount
+      '0', // Backorders allowed?
+      '0', // Sold individually?
+      '', // Weight (kg)
+      '', // Length (cm)
+      '', // Width (cm)
+      '', // Height (cm)
+      '1', // Allow customer reviews?
+      '', // Purchase note
+      '', // Sale price
+      price, // Regular price
+      categoryName, // Categories
+      '', // Tags
+      '', // Shipping class
+      '', // Images
+      '', // Download limit
+      '', // Download expiry days
+      '', // Parent
+      '', // Grouped products
+      '', // Upsells
+      '', // Cross-sells
+      '', // External URL
+      '', // Button text
+      '0', // Position
+      '', // Attribute 1 name
+      '', // Attribute 1 value(s)
+      '', // Attribute 1 visible
+      '', // Attribute 1 global
+      '', // Attribute 2 name
+      '', // Attribute 2 value(s)
+      '', // Attribute 2 visible
+      '' // Attribute 2 global
+    ]);
+  }
+
+  // Generate variable products with variations
+  for (let i = 0; i < variableProductCount; i++) {
+    productId++;
+    const parentId = productId;
+    const sku = generateUniqueSKU('Variable');
+    const name = `Feed Test Variable Product ${i + 1}`;
+    const basePrice = (Math.random() * 50 + 20).toFixed(2);
+
+    // Parent variable product
+    rows.push([
+      parentId, // ID
+      'variable', // Type
+      sku, // SKU
+      name, // Name
+      '1', // Published
+      '0', // Is featured?
+      'visible', // Visibility in catalog
+      `Short description for ${name}`, // Short description
+      `This is a variable test product created from feed file for E2E testing. Product number ${i + 1}.`, // Description
+      '', // Date sale price starts
+      '', // Date sale price ends
+      'taxable', // Tax status
+      '', // Tax class
+      '1', // In stock?
+      '', // Stock
+      '', // Low stock amount
+      '0', // Backorders allowed?
+      '0', // Sold individually?
+      '', // Weight (kg)
+      '', // Length (cm)
+      '', // Width (cm)
+      '', // Height (cm)
+      '1', // Allow customer reviews?
+      '', // Purchase note
+      '', // Sale price
+      '', // Regular price
+      categoryName, // Categories
+      '', // Tags
+      '', // Shipping class
+      '', // Images
+      '', // Download limit
+      '', // Download expiry days
+      '', // Parent
+      '', // Grouped products
+      '', // Upsells
+      '', // Cross-sells
+      '', // External URL
+      '', // Button text
+      '0', // Position
+      'Color', // Attribute 1 name
+      'Red, Blue, Green', // Attribute 1 value(s)
+      '1', // Attribute 1 visible
+      '1', // Attribute 1 global
+      '', // Attribute 2 name
+      '', // Attribute 2 value(s)
+      '', // Attribute 2 visible
+      '' // Attribute 2 global
+    ]);
+
+    // Generate variations for this variable product
+    const colors = ['Red', 'Blue', 'Green'];
+    let position = 1;
+
+    for (const color of colors) {
+      productId++;
+      const variationPrice = (parseFloat(basePrice) + Math.random() * 10).toFixed(2);
+
+      rows.push([
+        productId, // ID
+        'variation', // Type
+        `${sku}-${color}`, // SKU
+        `${name} - ${color}`, // Name
+        '1', // Published
+        '0', // Is featured?
+        'visible', // Visibility in catalog
+        '', // Short description
+        `Variation: ${color}`, // Description
+        '', // Date sale price starts
+        '', // Date sale price ends
+        'taxable', // Tax status
+        'parent', // Tax class
+        '1', // In stock?
+        Math.floor(Math.random() * 50 + 5), // Stock
+        '', // Low stock amount
+        '0', // Backorders allowed?
+        '0', // Sold individually?
+        '', // Weight (kg)
+        '', // Length (cm)
+        '', // Width (cm)
+        '', // Height (cm)
+        '0', // Allow customer reviews?
+        '', // Purchase note
+        '', // Sale price
+        variationPrice, // Regular price
+        '', // Categories
+        '', // Tags
+        '', // Shipping class
+        '', // Images
+        '', // Download limit
+        '', // Download expiry days
+        `id:${parentId}`, // Parent
+        '', // Grouped products
+        '', // Upsells
+        '', // Cross-sells
+        '', // External URL
+        '', // Button text
+        position, // Position
+        'Color', // Attribute 1 name
+        color, // Attribute 1 value(s)
+        '', // Attribute 1 visible
+        '1', // Attribute 1 global
+        '', // Attribute 2 name
+        '', // Attribute 2 value(s)
+        '', // Attribute 2 visible
+        '' // Attribute 2 global
+      ]);
+      position++;
+    }
+  }
+
+  // Convert to CSV format
+  const csvContent = rows.map(row =>
+    row.map(cell => {
+      // Escape quotes and wrap in quotes if contains comma, quote, or newline
+      const cellStr = String(cell);
+      if (cellStr.includes(',') || cellStr.includes('"') || cellStr.includes('\n')) {
+        return `"${cellStr.replace(/"/g, '""')}"`;
+      }
+      return cellStr;
+    }).join(',')
+  ).join('\n');
+
+  // Save to temp directory
+  const tempDir = os.tmpdir();
+  const fileName = `product-feed-${runId}-${timestamp}.csv`;
+  const filePath = path.join(tempDir, fileName);
+
+  fs.writeFileSync(filePath, csvContent, 'utf8');
+
+  console.log(`✅ Generated feed file: ${filePath}`);
+  console.log(`   Total rows: ${rows.length} (including header)`);
+
+  return {
+    filePath,
+    fileName,
+    productCount: rows.length - 1, // Exclude header
+    simpleProductCount,
+    variableProductCount
+  };
+}
+
+// Helper function to delete feed file
+async function deleteFeedFile(filePath) {
+  try {
+    const fs = require('fs');
+    if (fs.existsSync(filePath)) {
+      fs.unlinkSync(filePath);
+      console.log(`✅ Deleted feed file: ${filePath}`);
+    }
+  } catch (error) {
+    console.log(`⚠️ Failed to delete feed file: ${error.message}`);
+  }
+}
+
 module.exports = {
   baseURL,
   username,
@@ -569,5 +847,7 @@ module.exports = {
   clickFirstProduct,
   openFacebookOptions,
   setProductTitle,
-  exactSearchSelect2Container
+  exactSearchSelect2Container,
+  generateProductFeedCSV,
+  deleteFeedFile
 };
