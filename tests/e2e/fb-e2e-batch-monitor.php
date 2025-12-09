@@ -23,13 +23,13 @@ class FB_E2E_Batch_Monitor {
         self::$log_file = '/tmp/fb-batch-monitor.json';
 
         // Only activate if explicitly enabled
-        if (get_option('fb_e2e_monitoring_enabled', false)) {
+        if (get_option('fb_e2e_test_batch_api_monitoring', false)) {
             add_filter('pre_http_request', [$this, 'intercept_http'], 10, 3);
         }
 
         // Register WP-CLI commands
         if (defined('WP_CLI') && WP_CLI) {
-            WP_CLI::add_command('fb-monitor', [$this, 'cli_command']);
+            WP_CLI::add_command('fb-batch-api-monitor', [$this, 'cli_command']);
         }
     }
 
@@ -107,13 +107,13 @@ class FB_E2E_Batch_Monitor {
 
         switch ($action) {
             case 'enable':
-                update_option('fb_e2e_monitoring_enabled', true);
+                update_option('fb_e2e_test_batch_api_monitoring', true);
                 $this->clear_log();
                 WP_CLI::success('Monitoring enabled and log cleared');
                 break;
 
             case 'disable':
-                update_option('fb_e2e_monitoring_enabled', false);
+                update_option('fb_e2e_test_batch_api_monitoring', false);
                 WP_CLI::success('Monitoring disabled');
                 break;
 
@@ -131,7 +131,7 @@ class FB_E2E_Batch_Monitor {
                 break;
 
             case 'status':
-                $enabled = get_option('fb_e2e_monitoring_enabled', false);
+                $enabled = get_option('fb_e2e_test_batch_api_monitoring', false);
                 $status = $enabled ? 'ENABLED' : 'DISABLED';
                 WP_CLI::line("Monitoring: $status");
                 if (file_exists(self::$log_file)) {

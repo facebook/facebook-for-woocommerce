@@ -12,7 +12,7 @@ const logFilePath = '/tmp/fb-batch-monitor.json';
 async function enableBatchMonitoring() {
     console.log('🔍 Enabling batch monitoring...');
     try {
-        execSync('wp fb-monitor enable', { cwd: wpPath, stdio: 'inherit' });
+        execSync('wp fb-batch-api-monitor enable', { cwd: wpPath, stdio: 'inherit' });
         console.log('✅ Monitoring enabled');
     } catch (error) {
         console.error('❌ Failed to enable monitoring:', error.message);
@@ -26,7 +26,7 @@ async function enableBatchMonitoring() {
 async function disableBatchMonitoring() {
     console.log('🔇 Disabling batch monitoring...');
     try {
-        execSync('wp fb-monitor disable', { cwd: wpPath, stdio: 'inherit' });
+        execSync('wp fb-batch-api-monitor disable', { cwd: wpPath, stdio: 'inherit' });
         console.log('✅ Monitoring disabled');
     } catch (error) {
         console.warn('⚠️ Failed to disable monitoring:', error.message);
@@ -172,7 +172,7 @@ function getBatchLogPath() {
  */
 function getMonitoringStatus() {
     try {
-        const output = execSync('wp fb-monitor status', {
+        const output = execSync('wp fb-batch-api-monitor status', {
             cwd: wpPath,
             encoding: 'utf8'
         });
