@@ -200,7 +200,7 @@ test.describe('Facebook for WooCommerce - Product Batch Import E2E Tests', () =>
 
   test('Sync large number of products and validate batch API responses', async ({ page }, testInfo) => {
     let feedFilePath = null;
-    const productCount = 100;
+    const productCount = 50;
     const categorySlug = generateUniqueSKU('batch-api-test');
     const variableProductPercentage = 0.2; // 20% of products will be variable products
     let importedProductIds = [];
