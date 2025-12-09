@@ -99,25 +99,64 @@ class FB_E2E_Batch_Monitor {
     }
 
     /**
-     * Append batch info to log file
+     * Append batch info to log file with file locking to prevent race conditions
      */
     private function log_batch($batch_info) {
-        $log = ['batches' => [], 'summary' => []];
+        $max_retries = 10;
+        $retry_count = 0;
 
-        if (file_exists(self::$log_file)) {
-            $existing = file_get_contents(self::$log_file);
-            $log = json_decode($existing, true) ?: $log;
+        while ($retry_count < $max_retries) {
+            // Open file for reading and writing; create if not exists
+            $fp = fopen(self::$log_file, 'c+');
+
+            if (!$fp) {
+                error_log('[FB Monitor] Failed to open log file: ' . self::$log_file);
+                return;
+            }
+
+            // Try to acquire exclusive lock (LOCK_EX blocks until available)
+            if (flock($fp, LOCK_EX)) {
+                // Read current contents while holding lock
+                rewind($fp);
+                $contents = stream_get_contents($fp);
+
+                $log = ['batches' => [], 'summary' => []];
+                if (!empty($contents)) {
+                    $decoded = json_decode($contents, true);
+                    if ($decoded !== null) {
+                        $log = $decoded;
+                    }
+                }
+
+                // Append new batch info
+                $log['batches'][] = $batch_info;
+                $log['summary'] = [
+                    'total_batches' => count($log['batches']),
+                    'total_products' => array_sum(array_column($log['batches'], 'batch_size')),
+                    'first_batch_time' => $log['batches'][0]['datetime'] ?? null,
+                    'last_batch_time' => $batch_info['datetime']
+                ];
+
+                // Write back to file
+                ftruncate($fp, 0); // Clear file contents
+                rewind($fp);
+                fwrite($fp, json_encode($log, JSON_PRETTY_PRINT));
+                fflush($fp); // Ensure data is written
+
+                // Release lock
+                flock($fp, LOCK_UN);
+                fclose($fp);
+
+                return; // Success!
+            }
+
+            // Failed to get lock (shouldn't happen with LOCK_EX, but just in case)
+            fclose($fp);
+            $retry_count++;
+            usleep(50000); // Wait 50ms before retry
         }
 
-        $log['batches'][] = $batch_info;
-        $log['summary'] = [
-            'total_batches' => count($log['batches']),
-            'total_products' => array_sum(array_column($log['batches'], 'batch_size')),
-            'first_batch_time' => $log['batches'][0]['datetime'] ?? null,
-            'last_batch_time' => $batch_info['datetime']
-        ];
-
-        file_put_contents(self::$log_file, json_encode($log, JSON_PRETTY_PRINT));
+        error_log('[FB Monitor] Failed to acquire file lock after ' . $max_retries . ' retries');
     }
 
     /**
