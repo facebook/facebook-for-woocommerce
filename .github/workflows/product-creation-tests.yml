@@ -441,7 +441,7 @@ jobs:
           TEST_PRODUCT_ID: ${{ env.TEST_PRODUCT_ID }}
         run: |
           cd ${{ env.PLUGIN_PATH }}
-          xvfb-run --auto-servernum npx playwright test events-test*.spec.js --headed
+          xvfb-run --auto-servernum npx playwright test events-test*.spec.js --headed --project=chromium-wp-customer
 
       - name: Run Plugin level tests
         env:
@@ -473,7 +473,7 @@ jobs:
           WP_PASSWORD: admin
         run: |
           cd ${{ env.PLUGIN_PATH }}
-          npx playwright test "product-.*\.spec\.js"
+          npx playwright test "product-.*\.spec\.js" --project=chromium-wp-admin
 
 
       - name: Disconnect from catalog

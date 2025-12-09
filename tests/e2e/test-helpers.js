@@ -22,6 +22,8 @@ async function loginToWordPress(page) {
     return;
   }
 
+  console.log('🔐 Playwright global login to WordPress may have failed. Attempting to login again...');
+
   // Fill login form
   console.log('🔐 Logging in to WordPress...');
   await loginForm.waitFor({ state: 'visible', timeout: TIMEOUTS.MAX });
