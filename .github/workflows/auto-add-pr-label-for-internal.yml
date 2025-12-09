@@ -15,10 +15,9 @@ jobs:
             const pr = context.payload.pull_request;
             const prNumber = pr.number;
             const prTitle = pr.title || '';
-            const prBody = pr.body || '';
             const sourceBranch = pr.head.ref || '';
 
-            // Fetch existing PR labels upfront (used for both checks)
+            // Fetch existing PR labels upfront
             const { data: labels } = await github.rest.issues.listLabelsOnIssue({
               owner: context.repo.owner,
               repo: context.repo.repo,
@@ -27,23 +26,14 @@ jobs:
 
             const labelNames = labels.map(label => label.name);
 
-            // Detect internal (Meta/Facebook) PRs by:
-            // 1. Codemod patterns in title/body OR
-            // 2. Source branch matches export-D.* AND has fb-exported or meta-exported label
-            const isCodemodPR =
-              prTitle.includes('[AI Codemod]') &&
-              prTitle.includes('[DevmateWooCommerceGenerateTests]') &&
-              prBody.includes('DevmateWooCommerceGenerateTests');
-
+            // Detect exported PRs from Meta/Facebook by:
+            // Source branch matches export-D.* AND has fb-exported or meta-exported label
             const isExportedPR =
               /^export-D/.test(sourceBranch) &&
               (labelNames.includes('fb-exported') || labelNames.includes('meta-exported'));
 
-            const isInternalPR = isCodemodPR || isExportedPR;
-
-            if (isInternalPR) {
-              const prType = isCodemodPR ? 'codemod' : 'exported';
-              console.log(`✅ Detected ${prType} PR #${prNumber}: ${prTitle}`);
+            if (isExportedPR) {
+              console.log(`   Detected exported PR #${prNumber}: ${prTitle}`);
               console.log(`   Source branch: ${sourceBranch}`);
               console.log(`   Labels: ${labelNames.join(', ')}`);
 
@@ -59,10 +49,10 @@ jobs:
                   issue_number: prNumber,
                   labels: ['changelog: add']
                 });
-                console.log('✅ Added "changelog: add" label to internal PR');
+                console.log(' Added "changelog: add" label to internal PR');
               } else {
-                console.log('ℹ️  PR already has a changelog label, skipping');
+                console.log('  PR already has a changelog label, skipping');
               }
             } else {
-              console.log(`ℹ️  PR #${prNumber} is not an internal PR, skipping auto-labeling`);
+              console.log(`  PR #${prNumber} is not an internal PR, skipping auto-labeling`);
             }
