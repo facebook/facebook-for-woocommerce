@@ -1,0 +1,54 @@
+name: Auto-label Codemod PRs
+
+on:
+  pull_request:
+    types: [opened, reopened]
+
+jobs:
+  label-codemod-prs:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Add changelog label to codemod PRs
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const pr = context.payload.pull_request;
+            const prNumber = pr.number;
+            const prTitle = pr.title || '';
+            const prBody = pr.body || '';
+
+            // Detect codemod PRs by title/body patterns
+            const isCodemodPR =
+              prTitle.includes('[AI Codemod]') &&
+              prTitle.includes('[DevmateWooCommerceGenerateTests]') &&
+              prBody.includes('DevmateWooCommerceGenerateTests')
+
+            if (isCodemodPR) {
+              console.log(` Detected codemod PR #${prNumber}: ${prTitle}`);
+
+              // Check if PR already has a changelog label
+              const { data: labels } = await github.rest.issues.listLabelsOnIssue({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: prNumber
+              });
+
+              const hasChangelogLabel = labels.some(label =>
+                label.name.startsWith('changelog:')
+              );
+
+              if (!hasChangelogLabel) {
+                // Add "changelog: chore" label (appropriate for test additions)
+                await github.rest.issues.addLabels({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: prNumber,
+                  labels: ['changelog: chore']
+                });
+                console.log('Added "changelog: chore" label to codemod PR');
+              } else {
+                console.log('PR already has a changelog label, skipping');
+              }
+            } else {
+              console.log(`PR #${prNumber} is not a codemod PR, skipping auto-labeling`);
+            }
