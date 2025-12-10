@@ -9,6 +9,8 @@ export default defineConfig({
   reporter: 'html',
   // Global test timeout - increased to 5 minutes for complex WordPress operations
   timeout: 1000000,
+  // Global setup to authenticate once
+  globalSetup: './tests/e2e/global-setup.js',
   use: {
     baseURL: process.env.WORDPRESS_URL,
     trace: 'on-first-retry',
@@ -23,14 +25,25 @@ export default defineConfig({
 
   projects: [
     {
-      name: 'chromium',
+      name: 'chromium-wp-admin',
       use: {
         ...devices['Desktop Chrome'],
         // Increased timeouts for WordPress admin operations
         actionTimeout: 180000,
         navigationTimeout: 180000,
+        storageState: './tests/e2e/.auth/admin.json'
       },
     },
+    {
+      name: 'chromium-wp-customer',
+      use: {
+        ...devices['Desktop Chrome'],
+        // Increased timeouts for WordPress admin operations
+        actionTimeout: 180000,
+        navigationTimeout: 180000,
+        storageState: './tests/e2e/.auth/customer.json'
+      },
+    }
   ],
 
   // Only look for E2E test files, ignore Jest tests

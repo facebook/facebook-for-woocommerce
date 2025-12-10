@@ -53,3 +53,5 @@ wp-config.php
 *login-failure-attempt*.png
 *test-failure*.png
 *debug*.png
+
+/tests/e2e/.auth/

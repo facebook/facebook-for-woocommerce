@@ -13,8 +13,6 @@ class TestSetup {
         const displayName = testInfo?.title || eventName;
         console.log(`\n Testing: ${displayName}`);
 
-        await this.login(page);
-
         // Set test cookie for CAPI logging
         await page.context().addCookies([{
             name: process.env.FB_E2E_TEST_COOKIE_NAME,

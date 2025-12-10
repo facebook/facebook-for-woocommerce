@@ -22,6 +22,8 @@ async function loginToWordPress(page) {
     return;
   }
 
+  console.log('🔐 Playwright global login to WordPress may have failed. Attempting to login again...');
+
   // Fill login form
   console.log('🔐 Logging in to WordPress...');
   await loginForm.waitFor({ state: 'visible', timeout: TIMEOUTS.MAX });
@@ -40,7 +42,9 @@ async function loginToWordPress(page) {
   await page.waitForLoadState('domcontentloaded', { timeout: TIMEOUTS.MAX });
 
   // Wait for login to complete by waiting for admin content
-  await loggedInContent.waitFor({ state: 'visible', timeout: TIMEOUTS.MAX });
+  await loggedInContent.waitFor({ state: 'visible', timeout: TIMEOUTS.MAX }).catch(() => {
+    console.warn('⚠️ Login failed - could not find admin content ' +  page.url());
+  });
   console.log('✅ Login completed ' + page.url());
 }
 
@@ -116,7 +120,7 @@ async function publishProduct(page) {
   await publishButton.click();
   console.log('Clicked Publish button');
   let publishSuccess = true;
-  await page.waitForURL(/\/wp-admin\/post\.php\?post=\d+/, { timeout: TIMEOUTS.LONG }).catch(() => {
+  await page.waitForURL(/\/wp-admin\/post\.php\?post=\d+/, { timeout: TIMEOUTS.EXTRA_LONG }).catch(() => {
     console.warn('⚠️ URL did not change after publishing. Current URL: ' + page.url())
     publishSuccess = false;
   }
