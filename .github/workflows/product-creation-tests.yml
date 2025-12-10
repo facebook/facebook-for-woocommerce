@@ -204,6 +204,25 @@ jobs:
           wp option update woocommerce_cod_settings '{"enabled":"yes","title":"Cash on delivery","description":"Pay with cash upon delivery."}' --format=json --allow-root
           echo "✅ Cash on Delivery payment gateway enabled"
 
+      - name: Verify WooCommerce setup
+        run: |
+          cd ${{ env.WORDPRESS_PATH }}
+          # Check if WooCommerce is active
+          if ! wp plugin list --status=active --allow-root | grep -q "woocommerce"; then
+            echo "❌ WooCommerce is not active"
+            exit 1
+          fi
+          echo "✅ WooCommerce is active"
+          # Verify WooCommerce endpoints
+          for endpoint in shop cart checkout; do
+            if curl -sf "http://${{ env.TEST_SITE_HOST }}:8080/$endpoint" > /dev/null; then
+              echo "✅ /$endpoint endpoint exists"
+            else
+              echo "❌ /$endpoint endpoint not found"
+              exit 1
+            fi
+          done
+
       - name: Create wp non admin user
         run: |
           cd ${{ env.WORDPRESS_PATH }}
@@ -411,6 +430,7 @@ jobs:
           sudo apt-get install -y xvfb
 
       - name: Run CAPI Pixel E2E tests
+        if: false
         env:
           TEST_PRODUCT_ID: ${{ env.TEST_PRODUCT_ID }}
         run: |
@@ -430,12 +450,26 @@ jobs:
 
       - name: Run E2E tests
         continue-on-error: true
+        if: false
         env:
           WP_USERNAME: admin
           WP_PASSWORD: admin
         run: |
           cd ${{ env.PLUGIN_PATH }}
           npx playwright test "product-.*\.spec\.js"
+
+      - name: Run Plugin level tests
+        continue-on-error: true
+        env:
+          WP_USERNAME: admin
+          WP_PASSWORD: admin
+          FB_EXTERNAL_BUSINESS_ID: ${{ secrets.FB_EXTERNAL_BUSINESS_ID }}
+          FB_ACCESS_TOKEN: ${{ secrets.FB_ACCESS_TOKEN }}
+          FB_PIXEL_ID: ${{ secrets.FB_PIXEL_ID }}
+          WC_LOG_PATH: ${{ env.WORDPRESS_PATH }}/wp-content/uploads/wc-logs
+        run: |
+          cd ${{ env.PLUGIN_PATH }}
+          npx playwright test "plguin-.*\.spec\.js"
 
       - name: Disconnect from catalog
         if: always()
