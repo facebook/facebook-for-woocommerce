@@ -861,6 +861,82 @@ async function ensureDebugModeEnabled(page) {
   }
 }
 
+// Helper function to check WooCommerce logs for errors
+async function checkWooCommerceLogs() {
+  const { execSync } = require('child_process');
+  console.log('🔍 Checking WooCommerce logs for errors...');
+
+  const today = new Date().toISOString().split('T')[0];
+  const logsDir = process.env.WC_LOG_PATH;
+
+  if (!logsDir) {
+    throw new Error('❌ WC_LOG_PATH environment variable not set');
+  }
+
+  console.log(`📁 Looking for logs in: ${logsDir}`);
+
+  // Find today's log file
+  const logFile = execSync(
+    `find "${logsDir}" -name "facebook_for_woocommerce-${today}*.log" 2>/dev/null | head -1`,
+    { encoding: 'utf8' }
+  ).trim();
+
+  if (!logFile) {
+    console.log(`⚠️ No log file found for today (${today}) - plugin may not have logged yet`);
+    return { success: true, message: 'No log file found' };
+  }
+
+  console.log(`📄 Checking: ${logFile}`);
+  const errors = [];
+
+  // Check for fatal errors (case insensitive)
+  const fatalCount = execSync(
+    `grep -ic "fatal" "${logFile}" || echo 0`,
+    { encoding: 'utf8' }
+  ).trim();
+
+  if (parseInt(fatalCount) > 0) {
+    const fatalLines = execSync(`grep -i "fatal" "${logFile}"`, { encoding: 'utf8' });
+    errors.push(`❌ Found ${fatalCount} fatal error(s):\n${fatalLines}`);
+  }
+
+  // Check for non-200 response codes with context
+  const nonOkCodesCheck = execSync(
+    `grep -n "^code: " "${logFile}" | grep -v "^code: 200" || true`,
+    { encoding: 'utf8' }
+  ).trim();
+
+  if (nonOkCodesCheck) {
+    console.log(`\n⚠️ Found non-200 response codes. Showing context:\n`);
+
+    // Extract line numbers and show context (5 lines before and after each)
+    const lines = nonOkCodesCheck.split('\n');
+    for (const line of lines) {
+      const lineNum = line.split(':')[0];
+      if (lineNum) {
+        console.log(`\n========== Around line ${lineNum} ==========`);
+        const context = execSync(
+          `sed -n '${Math.max(1, parseInt(lineNum) - 5)},${parseInt(lineNum) + 5}p' "${logFile}"`,
+          { encoding: 'utf8' }
+        );
+        console.log(context);
+      }
+    }
+
+    errors.push(`❌ Found non-200 response codes (see context above)`);
+  }
+
+  if (errors.length > 0) {
+    console.log('\n' + errors.join('\n\n'));
+    return { success: false, errors };
+  }
+
+  console.log('✅ Log validation PASSED');
+  console.log('   - No fatal errors');
+  console.log('   - All response codes are 200 OK');
+  return { success: true };
+}
+
 module.exports = {
   baseURL,
   username,
@@ -888,5 +964,6 @@ module.exports = {
   exactSearchSelect2Container,
   generateProductFeedCSV,
   deleteFeedFile,
-  ensureDebugModeEnabled
+  ensureDebugModeEnabled,
+  checkWooCommerceLogs
 };

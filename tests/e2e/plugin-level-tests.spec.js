@@ -2,7 +2,7 @@ const { test, expect } = require('@playwright/test');
 const { execSync } = require('child_process');
 const { TIMEOUTS } = require('./time-constants');
 
-const {loginToWordPress,logTestStart,ensureDebugModeEnabled} = require('./test-helpers');
+const {loginToWordPress,logTestStart,ensureDebugModeEnabled,checkWooCommerceLogs} = require('./test-helpers');
 
 test.describe('WooCommerce Plugin level tests', () => {
 
@@ -345,5 +345,12 @@ test.describe('WooCommerce Plugin level tests', () => {
     console.log('✅ All connection checks passed');
   });
 
+  test('Check WooCommerce logs for fatal errors and non-200 responses', async () => {
+    const result = await checkWooCommerceLogs();
+    
+    if (!result.success) {
+      throw new Error('Log validation failed');
+    }
+  });
 
 });
