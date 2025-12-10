@@ -383,7 +383,7 @@ test.describe('WooCommerce Plugin level tests', () => {
     if (!logsDir) {
       // Check if we're in CI (absolute path) or local (relative path)
       const fs = require('fs');
-      const ciPath = `${process.env.WORDPRESS_PATH'}/wp-content/uploads/wc-logs`;
+      const ciPath = `${process.env.WORDPRESS_PATH}/wp-content/uploads/wc-logs`;
       const localPath = '../../../wp-content/uploads/wc-logs';
 
       logsDir = fs.existsSync(ciPath) ? ciPath : localPath;
