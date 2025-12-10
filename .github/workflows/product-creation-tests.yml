@@ -143,6 +143,13 @@ jobs:
           chmod 777 ${{ env.WP_DEBUG_LOG }}
           echo "✅ debug.log created and writable"
 
+      - name: WooCommerce logs directory setup
+        run: |
+          # Create WooCommerce logs directory and make it writable
+          mkdir -p ${{ env.WORDPRESS_PATH }}/wp-content/uploads/wc-logs
+          chmod 777 ${{ env.WORDPRESS_PATH }}/wp-content/uploads/wc-logs
+          echo "✅ wc-logs directory created and writable"
+
 
       - name: Start PHP server
         run: |
@@ -203,6 +210,25 @@ jobs:
           # Enable Cash on Delivery payment gateway
           wp option update woocommerce_cod_settings '{"enabled":"yes","title":"Cash on delivery","description":"Pay with cash upon delivery."}' --format=json --allow-root
           echo "✅ Cash on Delivery payment gateway enabled"
+
+      - name: Verify WooCommerce setup
+        run: |
+          cd ${{ env.WORDPRESS_PATH }}
+          # Check if WooCommerce is active
+          if ! wp plugin list --status=active --allow-root | grep -q "woocommerce"; then
+            echo "❌ WooCommerce is not active"
+            exit 1
+          fi
+          echo "✅ WooCommerce is active"
+          # Verify WooCommerce endpoints
+          for endpoint in shop cart checkout; do
+            if curl -sf "http://${{ env.TEST_SITE_HOST }}:8080/$endpoint" > /dev/null; then
+              echo "✅ /$endpoint endpoint exists"
+            else
+              echo "❌ /$endpoint endpoint not found"
+              exit 1
+            fi
+          done
 
       - name: Create wp non admin user
         run: |
@@ -417,6 +443,18 @@ jobs:
           cd ${{ env.PLUGIN_PATH }}
           xvfb-run --auto-servernum npx playwright test events-test*.spec.js --headed
 
+      - name: Run Plugin level tests
+        env:
+          WP_USERNAME: admin
+          WP_PASSWORD: admin
+          FB_EXTERNAL_BUSINESS_ID: ${{ secrets.FB_EXTERNAL_BUSINESS_ID }}
+          FB_ACCESS_TOKEN: ${{ secrets.FB_ACCESS_TOKEN }}
+          FB_PIXEL_ID: ${{ secrets.FB_PIXEL_ID }}
+          WC_LOG_PATH: ${{ env.WORDPRESS_PATH }}/wp-content/uploads/wc-logs
+        run: |
+          cd ${{ env.PLUGIN_PATH }}
+          npx playwright test "plugin-.*\.spec\.js"
+
       - name: Cleanup test product
         if: always()
         run: |
@@ -436,6 +474,7 @@ jobs:
         run: |
           cd ${{ env.PLUGIN_PATH }}
           npx playwright test "product-.*\.spec\.js"
+
 
       - name: Disconnect from catalog
         if: always()
