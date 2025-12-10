@@ -49,24 +49,48 @@ function readBatchLog() {
 /**
  * Wait for batch log to have expected number of products or timeout after timeoutMS
  */
-async function waitForBatchLogProducts(expectedCount, timeoutMs = 60000) {
+async function waitForBatchLogProducts(expectedCount, expectedProductType, timeoutMs = 60000) {
     const startTime = Date.now();
     const checkInterval = 2000; // Check every 2 seconds
 
     console.log(`⏳ Waiting for ${expectedCount} products in batch log...`);
+    console.log(`   Product type filter: ${expectedProductType}`);
     console.log(`   Timeout: ${timeoutMs / 1000}s`);
 
     while (Date.now() - startTime < timeoutMs) {
         try {
             const log = readBatchLog();
-            const totalProducts = log.summary?.total_products || 0;
+
+            // Filter batches by product type
+            const filteredBatches = log.batches.filter(batch => {
+                // Check if any request sample in this batch matches the expected product type
+                if (!batch.request_sample || !Array.isArray(batch.request_sample)) {
+                    return false;
+                }
+                return batch.request_sample.some(sample =>
+                    sample?.data?.product_type === expectedProductType
+                );
+            });
+
+            // Calculate total based on filtered batches
+            const totalProducts = filteredBatches.reduce((sum, batch) => sum + (batch.batch_size || 0), 0);
 
             if (totalProducts >= expectedCount) {
                 console.log(`✅ Found ${totalProducts} products in log (expected ${expectedCount})`);
-                return log;
+
+                // Return filtered log with recalculated summary
+                return {
+                    batches: filteredBatches,
+                    summary: {
+                        total_batches: filteredBatches.length,
+                        total_products: totalProducts,
+                        first_batch_time: filteredBatches[0]?.datetime || null,
+                        last_batch_time: filteredBatches[filteredBatches.length - 1]?.datetime || null
+                    }
+                };
             }
 
-            console.log(`   Current: ${totalProducts}/${expectedCount} products (${log.summary?.total_batches || 0} batches)`);
+            console.log(`   Current: ${totalProducts}/${expectedCount} products (${filteredBatches.length} batches)`);
         } catch (error) {
             console.log(`   Waiting for log file... (${error.message})`);
         }
@@ -79,13 +103,24 @@ async function waitForBatchLogProducts(expectedCount, timeoutMs = 60000) {
     let currentCount = 0;
     try {
         const log = readBatchLog();
-        currentCount = log.summary?.total_products || 0;
+
+        // Apply same filtering for error message
+        const filteredBatches = log.batches.filter(batch => {
+            if (!batch.request_sample || !Array.isArray(batch.request_sample)) {
+                return false;
+            }
+            return batch.request_sample.some(sample =>
+                sample?.data?.product_type === expectedProductType
+            );
+        });
+
+        currentCount = filteredBatches.reduce((sum, batch) => sum + (batch.batch_size || 0), 0);
     } catch (error) {
         // Log file doesn't exist yet
     }
 
     throw new Error(
-        `Timeout after ${elapsed}ms: Expected ${expectedCount} products, but only found ${currentCount}`
+        `Timeout after ${elapsed}ms: Expected ${expectedCount} products with type "${expectedProductType}", but only found ${currentCount}`
     );
 }
 
