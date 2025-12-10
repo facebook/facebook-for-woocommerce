@@ -98,7 +98,7 @@ class CostOfGoodsTest extends AbstractWPUnitTestWithOptionIsolationAndSafeFilter
 		$this->assertEquals(20.0, $mock->calculate_cogs_for_products([$this->create_cogs_data_input($product,2)]));
 	}
 
-	public function only_wooc_and_wpfactory_integrations_are_supported() {
+	public function test_ensure_only_wooc_and_wpfactory_integrations_are_supported() {
 		$expected = [
 			'WooC'      => 'WooCCogsProvider',
 			'WPFactory' => 'WPFactoryCogsProvider',

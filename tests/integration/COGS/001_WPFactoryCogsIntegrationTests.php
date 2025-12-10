@@ -123,7 +123,7 @@ class WPFactoryCogsIntegrationTests extends CogsIntegrationTestsBase
 	{
 		deactivate_plugins( self::PLUGIN_FILE_PATH );
 		global $wpdb;
-		$wpdb->query("DELETE FROM {$wpdb->postmeta} WHERE meta_key = '_wc_cog_cost'");
+		$wpdb->query("DELETE FROM {$wpdb->postmeta} WHERE meta_key = '_alg_wc_cog_cost'");
 		delete_option('wc_cog_settings');
 		parent::tearDown();
 	}

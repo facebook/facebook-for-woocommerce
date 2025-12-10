@@ -37,18 +37,18 @@ class CostOfGoods {
 		$this->supported_integrations = $supported_integrations;
 	}
 
-	public function calculate_cogs_for_products( $product_quanities ) {
+	public function calculate_cogs_for_products( $product_quantities ) {
 
 		if ( ! $this->is_cogs_provider_available() ) {
 			return false;
 		}
 
-		if ( empty( $product_quanities ) ) {
+		if ( empty( $product_quantities ) ) {
 			return false;
 		}
 
 		$order_cogs = 0;
-		foreach ( $product_quanities as $tuple ) {
+		foreach ( $product_quantities as $tuple ) {
 			if ( ! is_array( $tuple ) || ! ( isset( $tuple['product'] ) || isset( $tuple['qty'] ) ) ) {
 				throw new IncorrectCogsInputStructure();
 			}
