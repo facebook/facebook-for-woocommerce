@@ -437,6 +437,18 @@ jobs:
           cd ${{ env.PLUGIN_PATH }}
           xvfb-run --auto-servernum npx playwright test events-test*.spec.js --headed
 
+      - name: Run Plugin level tests
+        env:
+          WP_USERNAME: admin
+          WP_PASSWORD: admin
+          FB_EXTERNAL_BUSINESS_ID: ${{ secrets.FB_EXTERNAL_BUSINESS_ID }}
+          FB_ACCESS_TOKEN: ${{ secrets.FB_ACCESS_TOKEN }}
+          FB_PIXEL_ID: ${{ secrets.FB_PIXEL_ID }}
+          WC_LOG_PATH: ${{ env.WORDPRESS_PATH }}/wp-content/uploads/wc-logs
+        run: |
+          cd ${{ env.PLUGIN_PATH }}
+          npx playwright test "plugin-.*\.spec\.js"
+
       - name: Cleanup test product
         if: always()
         run: |
@@ -458,18 +470,6 @@ jobs:
           cd ${{ env.PLUGIN_PATH }}
           npx playwright test "product-.*\.spec\.js"
 
-      - name: Run Plugin level tests
-        continue-on-error: true
-        env:
-          WP_USERNAME: admin
-          WP_PASSWORD: admin
-          FB_EXTERNAL_BUSINESS_ID: ${{ secrets.FB_EXTERNAL_BUSINESS_ID }}
-          FB_ACCESS_TOKEN: ${{ secrets.FB_ACCESS_TOKEN }}
-          FB_PIXEL_ID: ${{ secrets.FB_PIXEL_ID }}
-          WC_LOG_PATH: ${{ env.WORDPRESS_PATH }}/wp-content/uploads/wc-logs
-        run: |
-          cd ${{ env.PLUGIN_PATH }}
-          npx playwright test "plguin-.*\.spec\.js"
 
       - name: Disconnect from catalog
         if: always()
