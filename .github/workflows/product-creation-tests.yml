@@ -143,6 +143,13 @@ jobs:
           chmod 777 ${{ env.WP_DEBUG_LOG }}
           echo "✅ debug.log created and writable"
 
+      - name: WooCommerce logs directory setup
+        run: |
+          # Create WooCommerce logs directory and make it writable
+          mkdir -p ${{ env.WORDPRESS_PATH }}/wp-content/uploads/wc-logs
+          chmod 777 ${{ env.WORDPRESS_PATH }}/wp-content/uploads/wc-logs
+          echo "✅ wc-logs directory created and writable"
+
 
       - name: Start PHP server
         run: |

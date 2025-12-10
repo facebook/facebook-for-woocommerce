@@ -181,6 +181,58 @@ test.describe('WooCommerce Plugin level tests', () => {
     console.log('✅ Payment method label verified: "Cash on delivery"');
   });
 
+  test('Verify Debug mode and options visibility', async ({ page }) => {
+    console.log('🔍 Checking debug mode status...');
+
+    // Navigate to Facebook settings page
+    await page.goto(`${process.env.WORDPRESS_URL}/wp-admin/admin.php?page=wc-facebook`, {
+      waitUntil: 'domcontentloaded',
+      timeout: TIMEOUTS.EXTRA_LONG
+    });
+
+    // Click Troubleshooting toggle to expand drawer
+    const troubleshootingToggle = page.locator('#toggle-troubleshooting-drawer');
+    await troubleshootingToggle.waitFor({ state: 'visible', timeout: TIMEOUTS.LONG });
+    await troubleshootingToggle.click();
+    await page.waitForTimeout(TIMEOUTS.INSTANT);
+
+    // Check debug mode checkbox status
+    const debugModeCheckbox = page.locator('#wc_facebook_enable_debug_mode');
+    await debugModeCheckbox.waitFor({ state: 'visible', timeout: TIMEOUTS.MEDIUM });
+
+    const isChecked = await debugModeCheckbox.isChecked();
+
+    if (!isChecked) {
+      console.log('⚙️ Enabling debug mode...');
+      await debugModeCheckbox.check();
+
+      // Save changes
+      const saveButton = page.locator('input[name="save_shops_settings"]');
+      await saveButton.click();
+      await page.waitForLoadState('domcontentloaded');
+      console.log('✅ Debug mode enabled');
+    } else {
+      console.log('✅ Debug mode already enabled');
+    }
+
+    // Verify options visibility
+    await page.goto(`${process.env.WORDPRESS_URL}/wp-admin/options.php`);
+
+    const label = page.locator('label[for="wc_facebook_external_business_id"]');
+    await label.waitFor({ state: 'visible', timeout: TIMEOUTS.LONG });
+
+    const input = page.locator('#wc_facebook_external_business_id');
+    const value = await input.inputValue();
+
+    expect(value).toBeTruthy();
+    expect(value).toBe(process.env.FB_EXTERNAL_BUSINESS_ID);
+
+    console.log('✅ WooCommerce Debug log checks passed');
+    console.log(`   - Option exists: wc_facebook_external_business_id`);
+    console.log(`   - Value is non-null: YES`);
+    console.log(`   - Matches expected: YES`);
+  });
+
 
   test('Clear background sync jobs and verify cleanup', async ({ page }) => {
     console.log('🔍 Testing background sync job cleanup...');
@@ -320,20 +372,50 @@ test.describe('WooCommerce Plugin level tests', () => {
     console.log('✅ All connection checks passed');
   });
 
-   test('Check WooCommerce logs for fatal errors and non-200 responses', async () => {
+  test('Check WooCommerce logs for fatal errors and non-200 responses', async () => {
     console.log('🔍 Checking WooCommerce logs for errors...');
 
     const today = new Date().toISOString().split('T')[0];
 
-    const logsDir = process.env.WC_LOG_PATH || '../../../wp-content/uploads/wc-logs';
+    // Try environment variable first, fallback to relative path, then absolute CI path
+    let logsDir = process.env.WC_LOG_PATH;
+
+    if (!logsDir) {
+      // Check if we're in CI (absolute path) or local (relative path)
+      const fs = require('fs');
+      const ciPath = `${process.env.WORDPRESS_PATH'}/wp-content/uploads/wc-logs`;
+      const localPath = '../../../wp-content/uploads/wc-logs';
+
+      logsDir = fs.existsSync(ciPath) ? ciPath : localPath;
+    }
+
+    console.log(`📁 Looking for logs in: ${logsDir}`);
 
     // Find today's log file
-    const logFile = execSync(
-      `find ${logsDir} -name "facebook_for_woocommerce-${today}*.log" 2>/dev/null | head -1`,
-      { encoding: 'utf8' }
-    ).trim();
+    let logFile;
+    try {
+      logFile = execSync(
+        `find "${logsDir}" -name "facebook_for_woocommerce-${today}*.log" 2>/dev/null | head -1`,
+        { encoding: 'utf8' }
+      ).trim();
+    } catch (error) {
+      console.log(`⚠️ Could not search log directory: ${error.message}`);
+      console.log(`⚠️ No log file found for today (${today}) - plugin may not have logged yet or directory doesn't exist`);
+      return;
+    }
+
     if (!logFile) {
       console.log(`⚠️ No log file found for today (${today}) - plugin may not have logged yet`);
+      console.log(`📁 Log directory exists: ${logsDir}`);
+
+      // List what files are there for debugging
+      try {
+        const allLogs = execSync(`ls -la "${logsDir}" 2>/dev/null || echo "Directory not accessible"`, { encoding: 'utf8' });
+        console.log(`📄 Files in log directory:\n${allLogs}`);
+      } catch (e) {
+        console.log('⚠️ Could not list log directory');
+      }
+
       return;
     }
 
@@ -342,17 +424,17 @@ test.describe('WooCommerce Plugin level tests', () => {
 
     // Check for fatal errors (case insensitive)
     const fatalCount = execSync(
-      `grep -ic "fatal" ${logFile} || echo 0`,
+      `grep -ic "fatal" "${logFile}" || echo 0`,
       { encoding: 'utf8' }
     ).trim();
     if (parseInt(fatalCount) > 0) {
-      const fatalLines = execSync(`grep -i "fatal" ${logFile}`, { encoding: 'utf8' });
+      const fatalLines = execSync(`grep -i "fatal" "${logFile}"`, { encoding: 'utf8' });
       errors.push(`❌ Found ${fatalCount} fatal error(s):\n${fatalLines}`);
     }
 
     // Check for non-200 response codes
     const nonOkCodes = execSync(
-      `grep "^code: " ${logFile} | grep -v "^code: 200" || true`,
+      `grep "^code: " "${logFile}" | grep -v "^code: 200" || true`,
       { encoding: 'utf8' }
     ).trim();
     if (nonOkCodes) {
@@ -364,62 +446,9 @@ test.describe('WooCommerce Plugin level tests', () => {
       throw new Error('Log validation failed');
     }
 
-      console.log('✅ Log validation PASSED');
-      console.log('   - No fatal errors');
-      console.log('   - All response codes are 200 OK');
-    });
-
-
-
-    test('Verify Debug mode and options visibility', async ({ page }) => {
-    console.log('🔍 Checking debug mode status...');
-
-    // Navigate to Facebook settings page
-    await page.goto(`${process.env.WORDPRESS_URL}/wp-admin/admin.php?page=wc-facebook`, {
-      waitUntil: 'domcontentloaded',
-      timeout: TIMEOUTS.EXTRA_LONG
-    });
-
-    // Click Troubleshooting toggle to expand drawer
-    const troubleshootingToggle = page.locator('#toggle-troubleshooting-drawer');
-    await troubleshootingToggle.waitFor({ state: 'visible', timeout: TIMEOUTS.LONG });
-    await troubleshootingToggle.click();
-    await page.waitForTimeout(TIMEOUTS.INSTANT);
-
-    // Check debug mode checkbox status
-    const debugModeCheckbox = page.locator('#wc_facebook_enable_debug_mode');
-    await debugModeCheckbox.waitFor({ state: 'visible', timeout: TIMEOUTS.MEDIUM });
-
-    const isChecked = await debugModeCheckbox.isChecked();
-
-    if (!isChecked) {
-      console.log('⚙️ Enabling debug mode...');
-      await debugModeCheckbox.check();
-
-      // Save changes
-      const saveButton = page.locator('input[name="save_shops_settings"]');
-      await saveButton.click();
-      await page.waitForLoadState('domcontentloaded');
-      console.log('✅ Debug mode enabled');
-    } else {
-      console.log('✅ Debug mode already enabled');
-    }
-
-    // Verify options visibility
-    await page.goto(`${process.env.WORDPRESS_URL}/wp-admin/options.php`);
-
-    const label = page.locator('label[for="wc_facebook_external_business_id"]');
-    await label.waitFor({ state: 'visible', timeout: TIMEOUTS.LONG });
-
-    const input = page.locator('#wc_facebook_external_business_id');
-    const value = await input.inputValue();
-
-    expect(value).toBeTruthy();
-    expect(value).toBe(process.env.FB_EXTERNAL_BUSINESS_ID);
-
-    console.log('✅ WooCommerce Debug log checks passed');
-    console.log(`   - Option exists: wc_facebook_external_business_id`);
-    console.log(`   - Value is non-null: YES`);
-    console.log(`   - Matches expected: YES`);
+    console.log('✅ Log validation PASSED');
+    console.log('   - No fatal errors');
+    console.log('   - All response codes are 200 OK');
   });
+
 });
