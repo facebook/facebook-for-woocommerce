@@ -376,46 +376,22 @@ test.describe('WooCommerce Plugin level tests', () => {
     console.log('🔍 Checking WooCommerce logs for errors...');
 
     const today = new Date().toISOString().split('T')[0];
-
-    // Try environment variable first, fallback to relative path, then absolute CI path
-    let logsDir = process.env.WC_LOG_PATH;
-
+    const logsDir = process.env.WC_LOG_PATH;
+    
     if (!logsDir) {
-      // Check if we're in CI (absolute path) or local (relative path)
-      const fs = require('fs');
-      const ciPath = `${process.env.WORDPRESS_PATH}/wp-content/uploads/wc-logs`;
-      const localPath = '../../../wp-content/uploads/wc-logs';
-
-      logsDir = fs.existsSync(ciPath) ? ciPath : localPath;
+      throw new Error('❌ WC_LOG_PATH environment variable not set');
     }
-
+    
     console.log(`📁 Looking for logs in: ${logsDir}`);
 
     // Find today's log file
-    let logFile;
-    try {
-      logFile = execSync(
-        `find "${logsDir}" -name "facebook_for_woocommerce-${today}*.log" 2>/dev/null | head -1`,
-        { encoding: 'utf8' }
-      ).trim();
-    } catch (error) {
-      console.log(`⚠️ Could not search log directory: ${error.message}`);
-      console.log(`⚠️ No log file found for today (${today}) - plugin may not have logged yet or directory doesn't exist`);
-      return;
-    }
+    const logFile = execSync(
+      `find "${logsDir}" -name "facebook_for_woocommerce-${today}*.log" 2>/dev/null | head -1`,
+      { encoding: 'utf8' }
+    ).trim();
 
     if (!logFile) {
       console.log(`⚠️ No log file found for today (${today}) - plugin may not have logged yet`);
-      console.log(`📁 Log directory exists: ${logsDir}`);
-
-      // List what files are there for debugging
-      try {
-        const allLogs = execSync(`ls -la "${logsDir}" 2>/dev/null || echo "Directory not accessible"`, { encoding: 'utf8' });
-        console.log(`📄 Files in log directory:\n${allLogs}`);
-      } catch (e) {
-        console.log('⚠️ Could not list log directory');
-      }
-
       return;
     }
 
@@ -427,18 +403,36 @@ test.describe('WooCommerce Plugin level tests', () => {
       `grep -ic "fatal" "${logFile}" || echo 0`,
       { encoding: 'utf8' }
     ).trim();
+    
     if (parseInt(fatalCount) > 0) {
       const fatalLines = execSync(`grep -i "fatal" "${logFile}"`, { encoding: 'utf8' });
       errors.push(`❌ Found ${fatalCount} fatal error(s):\n${fatalLines}`);
     }
 
-    // Check for non-200 response codes
-    const nonOkCodes = execSync(
-      `grep "^code: " "${logFile}" | grep -v "^code: 200" || true`,
+    // Check for non-200 response codes with context
+    const nonOkCodesCheck = execSync(
+      `grep -n "^code: " "${logFile}" | grep -v "^code: 200" || true`,
       { encoding: 'utf8' }
     ).trim();
-    if (nonOkCodes) {
-      errors.push(`❌ Found non-200 response codes:\n${nonOkCodes}`);
+    
+    if (nonOkCodesCheck) {
+      console.log(`\n⚠️ Found non-200 response codes. Showing context:\n`);
+      
+      // Extract line numbers and show context (5 lines before and after each)
+      const lines = nonOkCodesCheck.split('\n');
+      for (const line of lines) {
+        const lineNum = line.split(':')[0];
+        if (lineNum) {
+          console.log(`\n========== Around line ${lineNum} ==========`);
+          const context = execSync(
+            `sed -n '${Math.max(1, parseInt(lineNum) - 5)},${parseInt(lineNum) + 5}p' "${logFile}"`,
+            { encoding: 'utf8' }
+          );
+          console.log(context);
+        }
+      }
+      
+      errors.push(`❌ Found non-200 response codes (see context above)`);
     }
 
     if (errors.length > 0) {
