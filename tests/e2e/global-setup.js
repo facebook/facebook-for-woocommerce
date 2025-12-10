@@ -4,12 +4,12 @@ const { TIMEOUTS } = require('./time-constants');
 const baseURL = process.env.WORDPRESS_URL;
 
 // Admin credentials
-const adminUsername = process.env.WP_USERNAME || 'admin';
-const adminPassword = process.env.WP_PASSWORD || 'admin';
+const adminUsername = process.env.WP_USERNAME;
+const adminPassword = process.env.WP_PASSWORD;
 
 // Customer credentials
-const customerUsername = process.env.WP_CUSTOMER_USERNAME || 'customer';
-const customerPassword = process.env.WP_CUSTOMER_PASSWORD || 'Password@54321';
+const customerUsername = process.env.WP_CUSTOMER_USERNAME;
+const customerPassword = process.env.WP_CUSTOMER_PASSWORD;
 
 async function globalSetup() {
   console.log('🔐 Global Setup: Authenticating users...');
