@@ -43,7 +43,7 @@ class FB_E2E_Batch_Monitor {
             return $response;
         }
 
-        if (strpos($url, 'items_batch') === false) {
+        if (strpos($url, 'items_batch') === false || $args['method'] !== 'POST') {
             return $response;
         }
 
@@ -81,7 +81,7 @@ class FB_E2E_Batch_Monitor {
             'timestamp' => time(),
             'datetime' => date('Y-m-d H:i:s'),
             'url' => $url,
-            'method' => $args['method'] ?? 'POST',
+            'method' => $args['method'],
             'batch_size' => count($requests),
             'request_sample' => array_slice($requests, 0, 2), // First 2 for debugging
             'response' => [

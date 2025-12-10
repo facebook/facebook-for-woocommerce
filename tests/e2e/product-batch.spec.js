@@ -285,7 +285,7 @@ test.describe('Facebook for WooCommerce - Product Batch Import E2E Tests', () =>
 
       // Assertions - Summary level
       expect(batchLog.summary.total_batches).toBeGreaterThan(0);
-      expect(batchLog.summary.total_products).toBeGreaterThanOrEqual(fbProductCount);
+      expect(batchLog.summary.total_products).toBe(fbProductCount);
 
       // Detailed batch analysis
       console.log('\n📦 Individual Batch Details:');
@@ -312,11 +312,11 @@ test.describe('Facebook for WooCommerce - Product Batch Import E2E Tests', () =>
         batchSizes.push(batch.batch_size);
 
         // Assertions - Per batch
-        expect(batch.batch_size).toBeGreaterThan(0);
-        expect(batch.batch_size).toBeLessThanOrEqual(100); // Meta's documented limit
         expect(batch.url).toContain('graph.facebook.com');
         expect(batch.url).toContain('items_batch');
         expect(batch.method).toBe('POST');
+        expect(batch.batch_size).toBeGreaterThan(0);
+        expect(batch.batch_size).toBeLessThanOrEqual(100); // Meta's documented limit
 
         // Validate actual Meta response
         expect(batch.response).toBeDefined();

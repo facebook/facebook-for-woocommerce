@@ -1,10 +1,8 @@
 const { execSync } = require('child_process');
 const fs = require('fs');
-const os = require('os');
 const path = require('path');
 
 const wpPath = process.env.WORDPRESS_PATH;
-const logFilePath = '/tmp/fb-batch-monitor.json';
 
 /**
  * Enable batch monitoring via WP-CLI
@@ -34,26 +32,22 @@ async function disableBatchMonitoring() {
 }
 
 /**
- * Read the batch monitor log file
+ * Read the batch monitor log via WP-CLI (single source of truth)
  */
 function readBatchLog() {
-    if (!fs.existsSync(logFilePath)) {
-        throw new Error(`Batch log file not found at ${logFilePath}`);
+    try {
+        const output = execSync('wp fb-batch-api-monitor get-log', {
+            cwd: wpPath,
+            encoding: 'utf8'
+        });
+        return JSON.parse(output);
+    } catch (error) {
+        throw new Error(`Failed to read batch log: ${error.message}`);
     }
-
-    const content = fs.readFileSync(logFilePath, 'utf8');
-    return JSON.parse(content);
 }
 
 /**
- * Check if log file exists and has data
- */
-function hasBatchLog() {
-    return fs.existsSync(logFilePath);
-}
-
-/**
- * Wait for batch log to have expected number of products
+ * Wait for batch log to have expected number of products or timeout after timeoutMS
  */
 async function waitForBatchLogProducts(expectedCount, timeoutMs = 60000) {
     const startTime = Date.now();
@@ -61,25 +55,20 @@ async function waitForBatchLogProducts(expectedCount, timeoutMs = 60000) {
 
     console.log(`⏳ Waiting for ${expectedCount} products in batch log...`);
     console.log(`   Timeout: ${timeoutMs / 1000}s`);
-    console.log(`   Log file: ${logFilePath}`);
 
     while (Date.now() - startTime < timeoutMs) {
-        if (fs.existsSync(logFilePath)) {
-            try {
-                const log = readBatchLog();
-                const totalProducts = log.summary?.total_products || 0;
+        try {
+            const log = readBatchLog();
+            const totalProducts = log.summary?.total_products || 0;
 
-                if (totalProducts >= expectedCount) {
-                    console.log(`✅ Found ${totalProducts} products in log (expected ${expectedCount})`);
-                    return log;
-                }
-
-                console.log(`   Current: ${totalProducts}/${expectedCount} products (${log.summary?.total_batches || 0} batches)`);
-            } catch (error) {
-                console.log(`   Error reading log: ${error.message}`);
+            if (totalProducts >= expectedCount) {
+                console.log(`✅ Found ${totalProducts} products in log (expected ${expectedCount})`);
+                return log;
             }
-        } else {
-            console.log(`   Log file does not exist yet...`);
+
+            console.log(`   Current: ${totalProducts}/${expectedCount} products (${log.summary?.total_batches || 0} batches)`);
+        } catch (error) {
+            console.log(`   Waiting for log file... (${error.message})`);
         }
 
         await new Promise(resolve => setTimeout(resolve, checkInterval));
@@ -88,9 +77,11 @@ async function waitForBatchLogProducts(expectedCount, timeoutMs = 60000) {
     // Timeout reached
     const elapsed = Date.now() - startTime;
     let currentCount = 0;
-    if (fs.existsSync(logFilePath)) {
+    try {
         const log = readBatchLog();
         currentCount = log.summary?.total_products || 0;
+    } catch (error) {
+        // Log file doesn't exist yet
     }
 
     throw new Error(
@@ -151,23 +142,6 @@ async function uninstallMonitoringPlugin() {
 }
 
 /**
- * Clear the batch log file
- */
-function clearBatchLog() {
-    if (fs.existsSync(logFilePath)) {
-        fs.unlinkSync(logFilePath);
-        console.log('🧹 Batch log file cleared');
-    }
-}
-
-/**
- * Get the path to the batch log file
- */
-function getBatchLogPath() {
-    return logFilePath;
-}
-
-/**
  * Check monitoring status via WP-CLI
  */
 function getMonitoringStatus() {
@@ -186,12 +160,8 @@ module.exports = {
     enableBatchMonitoring,
     disableBatchMonitoring,
     readBatchLog,
-    hasBatchLog,
     waitForBatchLogProducts,
     installMonitoringPlugin,
     uninstallMonitoringPlugin,
-    clearBatchLog,
-    getBatchLogPath,
-    getMonitoringStatus,
-    logFilePath
+    getMonitoringStatus
 };
