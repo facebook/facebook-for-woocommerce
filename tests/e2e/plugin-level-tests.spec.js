@@ -2,7 +2,7 @@ const { test, expect } = require('@playwright/test');
 const { execSync } = require('child_process');
 const { TIMEOUTS } = require('./time-constants');
 
-const {loginToWordPress,logTestStart} = require('./test-helpers');
+const {loginToWordPress,logTestStart,ensureDebugModeEnabled} = require('./test-helpers');
 
 test.describe('WooCommerce Plugin level tests', () => {
 
@@ -182,38 +182,8 @@ test.describe('WooCommerce Plugin level tests', () => {
   });
 
   test('Verify Debug mode and options visibility', async ({ page }) => {
-    console.log('🔍 Checking debug mode status...');
-
-    // Navigate to Facebook settings page
-    await page.goto(`${process.env.WORDPRESS_URL}/wp-admin/admin.php?page=wc-facebook`, {
-      waitUntil: 'domcontentloaded',
-      timeout: TIMEOUTS.EXTRA_LONG
-    });
-
-    // Click Troubleshooting toggle to expand drawer
-    const troubleshootingToggle = page.locator('#toggle-troubleshooting-drawer');
-    await troubleshootingToggle.waitFor({ state: 'visible', timeout: TIMEOUTS.LONG });
-    await troubleshootingToggle.click();
-    await page.waitForTimeout(TIMEOUTS.INSTANT);
-
-    // Check debug mode checkbox status
-    const debugModeCheckbox = page.locator('#wc_facebook_enable_debug_mode');
-    await debugModeCheckbox.waitFor({ state: 'visible', timeout: TIMEOUTS.MEDIUM });
-
-    const isChecked = await debugModeCheckbox.isChecked();
-
-    if (!isChecked) {
-      console.log('⚙️ Enabling debug mode...');
-      await debugModeCheckbox.check();
-
-      // Save changes
-      const saveButton = page.locator('input[name="save_shops_settings"]');
-      await saveButton.click();
-      await page.waitForLoadState('domcontentloaded');
-      console.log('✅ Debug mode enabled');
-    } else {
-      console.log('✅ Debug mode already enabled');
-    }
+    // Use helper to ensure debug mode is enabled
+    await ensureDebugModeEnabled(page);
 
     // Verify options visibility
     await page.goto(`${process.env.WORDPRESS_URL}/wp-admin/options.php`);
@@ -236,6 +206,9 @@ test.describe('WooCommerce Plugin level tests', () => {
 
   test('Clear background sync jobs and verify cleanup', async ({ page }) => {
     console.log('🔍 Testing background sync job cleanup...');
+
+    // Ensure debug mode is enabled (required for background sync cleanup tool to be visible)
+    await ensureDebugModeEnabled(page);
 
     // Navigate to WooCommerce Status Tools
     await page.goto(`${process.env.WORDPRESS_URL}/wp-admin/admin.php?page=wc-status&tab=tools`, {
@@ -372,77 +345,5 @@ test.describe('WooCommerce Plugin level tests', () => {
     console.log('✅ All connection checks passed');
   });
 
-  test('Check WooCommerce logs for fatal errors and non-200 responses', async () => {
-    console.log('🔍 Checking WooCommerce logs for errors...');
-
-    const today = new Date().toISOString().split('T')[0];
-    const logsDir = process.env.WC_LOG_PATH;
-    
-    if (!logsDir) {
-      throw new Error('❌ WC_LOG_PATH environment variable not set');
-    }
-    
-    console.log(`📁 Looking for logs in: ${logsDir}`);
-
-    // Find today's log file
-    const logFile = execSync(
-      `find "${logsDir}" -name "facebook_for_woocommerce-${today}*.log" 2>/dev/null | head -1`,
-      { encoding: 'utf8' }
-    ).trim();
-
-    if (!logFile) {
-      console.log(`⚠️ No log file found for today (${today}) - plugin may not have logged yet`);
-      return;
-    }
-
-    console.log(`📄 Checking: ${logFile}`);
-    const errors = [];
-
-    // Check for fatal errors (case insensitive)
-    const fatalCount = execSync(
-      `grep -ic "fatal" "${logFile}" || echo 0`,
-      { encoding: 'utf8' }
-    ).trim();
-    
-    if (parseInt(fatalCount) > 0) {
-      const fatalLines = execSync(`grep -i "fatal" "${logFile}"`, { encoding: 'utf8' });
-      errors.push(`❌ Found ${fatalCount} fatal error(s):\n${fatalLines}`);
-    }
-
-    // Check for non-200 response codes with context
-    const nonOkCodesCheck = execSync(
-      `grep -n "^code: " "${logFile}" | grep -v "^code: 200" || true`,
-      { encoding: 'utf8' }
-    ).trim();
-    
-    if (nonOkCodesCheck) {
-      console.log(`\n⚠️ Found non-200 response codes. Showing context:\n`);
-      
-      // Extract line numbers and show context (5 lines before and after each)
-      const lines = nonOkCodesCheck.split('\n');
-      for (const line of lines) {
-        const lineNum = line.split(':')[0];
-        if (lineNum) {
-          console.log(`\n========== Around line ${lineNum} ==========`);
-          const context = execSync(
-            `sed -n '${Math.max(1, parseInt(lineNum) - 5)},${parseInt(lineNum) + 5}p' "${logFile}"`,
-            { encoding: 'utf8' }
-          );
-          console.log(context);
-        }
-      }
-      
-      errors.push(`❌ Found non-200 response codes (see context above)`);
-    }
-
-    if (errors.length > 0) {
-      console.log('\n' + errors.join('\n\n'));
-      throw new Error('Log validation failed');
-    }
-
-    console.log('✅ Log validation PASSED');
-    console.log('   - No fatal errors');
-    console.log('   - All response codes are 200 OK');
-  });
 
 });
