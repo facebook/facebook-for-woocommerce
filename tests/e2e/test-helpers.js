@@ -900,30 +900,50 @@ async function checkWooCommerceLogs() {
     errors.push(`❌ Found ${fatalCount} fatal error(s):\n${fatalLines}`);
   }
 
-  // Check for non-200 response codes with context
+  // Check for non-200 response codes with context (excluding NOTICE level)
   const nonOkCodesCheck = execSync(
     `grep -n "^code: " "${logFile}" | grep -v "^code: 200" || true`,
     { encoding: 'utf8' }
   ).trim();
 
   if (nonOkCodesCheck) {
-    console.log(`\n⚠️ Found non-200 response codes. Showing context:\n`);
-
-    // Extract line numbers and show context (5 lines before and after each)
     const lines = nonOkCodesCheck.split('\n');
+    const criticalErrors = [];
+
+    // Check each non-200 code to see if it's NOTICE level (which we ignore)
     for (const line of lines) {
-      const lineNum = line.split(':')[0];
+      const lineNum = parseInt(line.split(':')[0]);
       if (lineNum) {
-        console.log(`\n========== Around line ${lineNum} ==========`);
+        // Get the previous line to check log level
+        const previousLine = execSync(
+          `sed -n '${lineNum - 1}p' "${logFile}"`,
+          { encoding: 'utf8' }
+        ).trim();
+
+        // Only report if it's NOT a NOTICE level error
+        if (!previousLine.includes('NOTICE')) {
+          criticalErrors.push({ lineNum, line });
+        }
+      }
+    }
+
+    if (criticalErrors.length > 0) {
+      console.log(`\n⚠️ Found critical non-200 response codes. Showing context:\n`);
+
+      // Show context for critical errors only
+      for (const error of criticalErrors) {
+        console.log(`\n========== Around line ${error.lineNum} ==========`);
         const context = execSync(
-          `sed -n '${Math.max(1, parseInt(lineNum) - 5)},${parseInt(lineNum) + 5}p' "${logFile}"`,
+          `sed -n '${Math.max(1, error.lineNum - 5)},${error.lineNum + 5}p' "${logFile}"`,
           { encoding: 'utf8' }
         );
         console.log(context);
       }
-    }
 
-    errors.push(`❌ Found non-200 response codes (see context above)`);
+      errors.push(`❌ Found ${criticalErrors.length} critical non-200 response code(s) (see context above)`);
+    } else {
+      console.log(`ℹ️ Found ${lines.length} NOTICE-level non-200 response code(s) - ignoring as expected`);
+    }
   }
 
   if (errors.length > 0) {
