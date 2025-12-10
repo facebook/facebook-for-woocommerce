@@ -49,7 +49,7 @@ class CostOfGoods {
 
 		$order_cogs = 0;
 		foreach ( $product_quantities as $tuple ) {
-			if ( ! is_array( $tuple ) || ! ( isset( $tuple['product'] ) || isset( $tuple['qty'] ) ) ) {
+			if ( ! is_array( $tuple ) || ! isset( $tuple['product'], $tuple['qty'] ) ) {
 				throw new IncorrectCogsInputStructure();
 			}
 			$product = $tuple['product'];
