@@ -14,7 +14,7 @@ const {
   getProductIdsBySku
 } = require('./test-helpers');
 
-test.describe('Facebook for WooCommerce - CSV Product Import E2E Tests', () => {
+test.describe('Facebook for WooCommerce -- CSV Product Import E2E Tests', () => {
 
   test.beforeEach(async ({ page }, testInfo) => {
     logTestStart(testInfo);
