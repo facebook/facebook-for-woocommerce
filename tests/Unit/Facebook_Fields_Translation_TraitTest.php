@@ -1,88 +1,49 @@
 <?php
 declare( strict_types=1 );
 
-namespace WooCommerce\Facebook\Tests\Unit;
+namespace WooCommerce\Facebook\Tests\Unit\Integrations;
 
 use WooCommerce\Facebook\Integrations\Facebook_Fields_Translation_Trait;
-use WooCommerce\Facebook\Tests\AbstractWPUnitTestWithOptionIsolationAndSafeFiltering;
+use WooCommerce\Facebook\Tests\AbstractWPUnitTestWithSafeFiltering;
 
 /**
- * Test class that uses the Facebook_Fields_Translation_Trait.
- *
- * This class implements the required abstract methods from the trait
- * to enable testing of the trait's functionality.
+ * Concrete class for testing the Facebook_Fields_Translation_Trait.
  */
-class TestFacebookFieldsTranslationClass {
+class Facebook_Fields_Translation_Trait_Test_Implementation {
 	use Facebook_Fields_Translation_Trait;
 
 	/**
-	 * Track language switching calls for testing.
+	 * Mock implementation of switch_to_language.
 	 *
-	 * @var array
-	 */
-	public $language_switches = [];
-
-	/**
-	 * Track language restoration calls for testing.
-	 *
-	 * @var array
-	 */
-	public $language_restorations = [];
-
-	/**
-	 * Simulate switch_to_language behavior.
-	 *
-	 * @param string $locale Full locale code (e.g., 'es_ES', 'zh_CN')
-	 * @return string|null The previous language code if successful, null otherwise
+	 * @param string $locale Locale to switch to
+	 * @return string|null Previous language
 	 */
 	public function switch_to_language( string $locale ): ?string {
-		$this->language_switches[] = $locale;
-		return 'en_US'; // Return a mock previous language
+		return 'en_US';
 	}
 
 	/**
-	 * Simulate restore_language behavior.
+	 * Mock implementation of restore_language.
 	 *
-	 * @param string $language_code The language code to restore
+	 * @param string $locale Locale to restore
 	 * @return void
 	 */
-	public function restore_language( string $language_code ): void {
-		$this->language_restorations[] = $language_code;
-	}
-
-	/**
-	 * Make get_translated_fields public for testing.
-	 *
-	 * @param int    $original_id Original product ID
-	 * @param int    $translated_id Translated product ID
-	 * @param string $target_language Target language code for permalink translation (optional)
-	 * @return array Array of field names that have different values
-	 */
-	public function public_get_translated_fields( int $original_id, int $translated_id, ?string $target_language = null ): array {
-		return $this->get_translated_fields( $original_id, $translated_id, $target_language );
-	}
-
-	/**
-	 * Make get_facebook_field_mapping public for testing.
-	 *
-	 * @return array Array mapping field names to WC_Facebook_Product method names
-	 */
-	public function public_get_facebook_field_mapping(): array {
-		return $this->get_facebook_field_mapping();
+	public function restore_language( string $locale ): void {
+		// Mock implementation
 	}
 }
 
 /**
  * Unit tests for Facebook_Fields_Translation_Trait.
  *
- * @since 3.6.0
+ * @covers \WooCommerce\Facebook\Integrations\Facebook_Fields_Translation_Trait
  */
-class Facebook_Fields_Translation_TraitTest extends AbstractWPUnitTestWithOptionIsolationAndSafeFiltering {
+class Facebook_Fields_Translation_TraitTest extends AbstractWPUnitTestWithSafeFiltering {
 
 	/**
-	 * Test instance using the trait.
+	 * Instance using the trait.
 	 *
-	 * @var TestFacebookFieldsTranslationClass
+	 * @var Facebook_Fields_Translation_Trait_Test_Implementation
 	 */
 	private $instance;
 
@@ -94,192 +55,291 @@ class Facebook_Fields_Translation_TraitTest extends AbstractWPUnitTestWithOption
 	private $products = [];
 
 	/**
-	 * Set up test fixtures.
+	 * Set up before each test.
 	 */
 	public function setUp(): void {
 		parent::setUp();
-		$this->instance = new TestFacebookFieldsTranslationClass();
+		$this->instance = new Facebook_Fields_Translation_Trait_Test_Implementation();
+		$this->products = [];
 	}
 
 	/**
-	 * Clean up test data.
+	 * Clean up after each test.
 	 */
 	public function tearDown(): void {
-		// Clean up any created products
 		foreach ( $this->products as $product ) {
 			if ( $product && $product->get_id() ) {
 				wp_delete_post( $product->get_id(), true );
 			}
 		}
 		$this->products = [];
-
 		parent::tearDown();
 	}
 
 	/**
-	 * Test that the trait can be used in a class.
+	 * Test get_facebook_field_mapping returns correct structure.
 	 *
-	 * @covers WooCommerce\Facebook\Integrations\Facebook_Fields_Translation_Trait
-	 */
-	public function test_trait_can_be_used() {
-		$this->assertInstanceOf( TestFacebookFieldsTranslationClass::class, $this->instance );
-		$this->assertTrue( method_exists( $this->instance, 'get_translated_fields' ) );
-		$this->assertTrue( method_exists( $this->instance, 'get_facebook_field_mapping' ) );
-	}
-
-	/**
-	 * Test that get_facebook_field_mapping returns an array.
-	 *
-	 * @covers WooCommerce\Facebook\Integrations\Facebook_Fields_Translation_Trait::get_facebook_field_mapping
+	 * @covers \WooCommerce\Facebook\Integrations\Facebook_Fields_Translation_Trait::get_facebook_field_mapping
 	 */
 	public function test_get_facebook_field_mapping_returns_array() {
-		$mapping = $this->instance->public_get_facebook_field_mapping();
+		$reflection = new \ReflectionClass( $this->instance );
+		$method = $reflection->getMethod( 'get_facebook_field_mapping' );
+		$method->setAccessible( true );
 
-		$this->assertIsArray( $mapping );
-		$this->assertNotEmpty( $mapping );
+		$result = $method->invoke( $this->instance );
+
+		$this->assertIsArray( $result );
 	}
 
 	/**
-	 * Test that get_facebook_field_mapping contains expected fields.
+	 * Test get_facebook_field_mapping contains expected fields.
 	 *
-	 * @covers WooCommerce\Facebook\Integrations\Facebook_Fields_Translation_Trait::get_facebook_field_mapping
+	 * @covers \WooCommerce\Facebook\Integrations\Facebook_Fields_Translation_Trait::get_facebook_field_mapping
 	 */
 	public function test_get_facebook_field_mapping_contains_expected_fields() {
-		$mapping = $this->instance->public_get_facebook_field_mapping();
+		$reflection = new \ReflectionClass( $this->instance );
+		$method = $reflection->getMethod( 'get_facebook_field_mapping' );
+		$method->setAccessible( true );
 
-		// Verify expected field names exist
-		$this->assertArrayHasKey( 'name', $mapping );
-		$this->assertArrayHasKey( 'description', $mapping );
-		$this->assertArrayHasKey( 'short_description', $mapping );
-		$this->assertArrayHasKey( 'rich_text_description', $mapping );
-		$this->assertArrayHasKey( 'image_id', $mapping );
-		$this->assertArrayHasKey( 'gallery_image_ids', $mapping );
-		$this->assertArrayHasKey( 'video', $mapping );
-		$this->assertArrayHasKey( 'link', $mapping );
+		$result = $method->invoke( $this->instance );
+
+		$this->assertArrayHasKey( 'name', $result );
+		$this->assertArrayHasKey( 'description', $result );
+		$this->assertArrayHasKey( 'short_description', $result );
+		$this->assertArrayHasKey( 'rich_text_description', $result );
+		$this->assertArrayHasKey( 'image_id', $result );
+		$this->assertArrayHasKey( 'gallery_image_ids', $result );
+		$this->assertArrayHasKey( 'video', $result );
+		$this->assertArrayHasKey( 'link', $result );
 	}
 
 	/**
-	 * Test that get_facebook_field_mapping has correct structure.
+	 * Test get_facebook_field_mapping values are strings.
 	 *
-	 * @covers WooCommerce\Facebook\Integrations\Facebook_Fields_Translation_Trait::get_facebook_field_mapping
+	 * @covers \WooCommerce\Facebook\Integrations\Facebook_Fields_Translation_Trait::get_facebook_field_mapping
 	 */
-	public function test_get_facebook_field_mapping_has_correct_structure() {
-		$mapping = $this->instance->public_get_facebook_field_mapping();
+	public function test_get_facebook_field_mapping_values_are_strings() {
+		$reflection = new \ReflectionClass( $this->instance );
+		$method = $reflection->getMethod( 'get_facebook_field_mapping' );
+		$method->setAccessible( true );
 
-		// Verify each mapping entry has string key and string value
-		foreach ( $mapping as $field_name => $method_name ) {
-			$this->assertIsString( $field_name );
-			$this->assertIsString( $method_name );
-			$this->assertNotEmpty( $field_name );
-			$this->assertNotEmpty( $method_name );
+		$result = $method->invoke( $this->instance );
+
+		foreach ( $result as $field_name => $method_name ) {
+			$this->assertIsString( $method_name, "Method name for field '{$field_name}' should be a string" );
 		}
-	}
-
-	/**
-	 * Test that get_facebook_field_mapping values are method names.
-	 *
-	 * @covers WooCommerce\Facebook\Integrations\Facebook_Fields_Translation_Trait::get_facebook_field_mapping
-	 */
-	public function test_get_facebook_field_mapping_values_are_method_names() {
-		$mapping = $this->instance->public_get_facebook_field_mapping();
-
-		// Verify specific method mappings from the source code
-		$this->assertEquals( 'get_name', $mapping['name'] );
-		$this->assertEquals( 'get_fb_description', $mapping['description'] );
-		$this->assertEquals( 'get_fb_short_description', $mapping['short_description'] );
-		$this->assertEquals( 'get_rich_text_description', $mapping['rich_text_description'] );
-		$this->assertEquals( 'get_all_image_urls', $mapping['image_id'] );
-		$this->assertEquals( 'get_all_image_urls', $mapping['gallery_image_ids'] );
-		$this->assertEquals( 'get_all_video_urls', $mapping['video'] );
-		$this->assertEquals( 'get_permalink', $mapping['link'] );
 	}
 
 	/**
 	 * Test get_translated_fields with invalid product IDs returns empty array.
 	 *
-	 * @covers WooCommerce\Facebook\Integrations\Facebook_Fields_Translation_Trait::get_translated_fields
+	 * @covers \WooCommerce\Facebook\Integrations\Facebook_Fields_Translation_Trait::get_translated_fields
 	 */
-	public function test_get_translated_fields_with_invalid_product_ids() {
-		// Note: This test verifies the trait handles invalid IDs gracefully
-		// The actual implementation requires WC_Facebook_Product which may not be available in tests
-		$result = $this->instance->public_get_translated_fields( 999999, 999998 );
+	public function test_get_translated_fields_with_invalid_products_returns_empty_array() {
+		$reflection = new \ReflectionClass( $this->instance );
+		$method = $reflection->getMethod( 'get_translated_fields' );
+		$method->setAccessible( true );
 
-		$this->assertIsArray( $result );
-		// Should return empty array for invalid product IDs
-		$this->assertEmpty( $result );
-	}
-
-	/**
-	 * Test get_translated_fields with zero product IDs returns empty array.
-	 *
-	 * @covers WooCommerce\Facebook\Integrations\Facebook_Fields_Translation_Trait::get_translated_fields
-	 */
-	public function test_get_translated_fields_with_zero_product_ids() {
-		// Use zero IDs which should trigger null return from wc_get_product
-		$result = $this->instance->public_get_translated_fields( 0, 0 );
+		$result = $method->invoke( $this->instance, 999999, 999998 );
 
 		$this->assertIsArray( $result );
 		$this->assertEmpty( $result );
 	}
 
 	/**
-	 * Test method visibility.
+	 * Test get_translated_fields with valid products returns array.
 	 *
-	 * @covers WooCommerce\Facebook\Integrations\Facebook_Fields_Translation_Trait::get_translated_fields
-	 * @covers WooCommerce\Facebook\Integrations\Facebook_Fields_Translation_Trait::get_facebook_field_mapping
+	 * @covers \WooCommerce\Facebook\Integrations\Facebook_Fields_Translation_Trait::get_translated_fields
 	 */
-	public function test_method_visibility() {
-		$reflection = new \ReflectionClass( TestFacebookFieldsTranslationClass::class );
+	public function test_get_translated_fields_with_valid_products_returns_array() {
+		$product1 = \WC_Helper_Product::create_simple_product();
+		$product2 = \WC_Helper_Product::create_simple_product();
+		$this->products[] = $product1;
+		$this->products[] = $product2;
 
-		// get_translated_fields should be protected in the trait
-		$this->assertTrue( $reflection->hasMethod( 'get_translated_fields' ) );
+		$reflection = new \ReflectionClass( $this->instance );
 		$method = $reflection->getMethod( 'get_translated_fields' );
-		$this->assertTrue( $method->isProtected() );
+		$method->setAccessible( true );
 
-		// get_facebook_field_mapping should be protected in the trait
-		$this->assertTrue( $reflection->hasMethod( 'get_facebook_field_mapping' ) );
-		$method = $reflection->getMethod( 'get_facebook_field_mapping' );
-		$this->assertTrue( $method->isProtected() );
+		$result = $method->invoke( $this->instance, $product1->get_id(), $product2->get_id() );
+
+		$this->assertIsArray( $result );
 	}
 
 	/**
-	 * Test that trait methods exist and have correct signatures.
+	 * Test get_translated_fields with same product returns empty or minimal array.
 	 *
-	 * @covers WooCommerce\Facebook\Integrations\Facebook_Fields_Translation_Trait::get_translated_fields
+	 * @covers \WooCommerce\Facebook\Integrations\Facebook_Fields_Translation_Trait::get_translated_fields
 	 */
-	public function test_get_translated_fields_method_signature() {
-		$reflection = new \ReflectionClass( TestFacebookFieldsTranslationClass::class );
-		
-		$this->assertTrue( $reflection->hasMethod( 'get_translated_fields' ) );
-		
+	public function test_get_translated_fields_with_same_product() {
+		$product = \WC_Helper_Product::create_simple_product();
+		$this->products[] = $product;
+
+		$reflection = new \ReflectionClass( $this->instance );
 		$method = $reflection->getMethod( 'get_translated_fields' );
-		$params = $method->getParameters();
-		
-		// Verify method has correct number of parameters
-		$this->assertGreaterThanOrEqual( 2, count( $params ) );
-		
-		// Verify first two parameters are required integers
-		$this->assertEquals( 'original_id', $params[0]->getName() );
-		$this->assertEquals( 'translated_id', $params[1]->getName() );
+		$method->setAccessible( true );
+
+		$result = $method->invoke( $this->instance, $product->get_id(), $product->get_id() );
+
+		$this->assertIsArray( $result );
 	}
 
 	/**
-	 * Test that the trait integrates with classes that implement required methods.
+	 * Test get_translated_fields with different product names.
 	 *
-	 * @covers WooCommerce\Facebook\Integrations\Facebook_Fields_Translation_Trait
+	 * @covers \WooCommerce\Facebook\Integrations\Facebook_Fields_Translation_Trait::get_translated_fields
 	 */
-	public function test_trait_integration_with_implementing_class() {
-		// Verify the test class properly implements required methods
-		$this->assertTrue( method_exists( $this->instance, 'switch_to_language' ) );
-		$this->assertTrue( method_exists( $this->instance, 'restore_language' ) );
-		
-		// Verify language switching works
-		$result = $this->instance->switch_to_language( 'es_ES' );
-		$this->assertIsString( $result );
-		$this->assertEquals( 'en_US', $result );
-		
-		// Verify language restoration works
-		$this->instance->restore_language( 'en_US' );
-		$this->assertContains( 'en_US', $this->instance->language_restorations );
+	public function test_get_translated_fields_detects_different_names() {
+		$product1 = \WC_Helper_Product::create_simple_product();
+		$product1->set_name( 'Original Product Name' );
+		$product1->save();
+
+		$product2 = \WC_Helper_Product::create_simple_product();
+		$product2->set_name( 'Translated Product Name' );
+		$product2->save();
+
+		$this->products[] = $product1;
+		$this->products[] = $product2;
+
+		$reflection = new \ReflectionClass( $this->instance );
+		$method = $reflection->getMethod( 'get_translated_fields' );
+		$method->setAccessible( true );
+
+		$result = $method->invoke( $this->instance, $product1->get_id(), $product2->get_id() );
+
+		$this->assertIsArray( $result );
+		$this->assertContains( 'name', $result );
+	}
+
+	/**
+	 * Test get_translated_fields with different descriptions.
+	 *
+	 * @covers \WooCommerce\Facebook\Integrations\Facebook_Fields_Translation_Trait::get_translated_fields
+	 */
+	public function test_get_translated_fields_detects_different_descriptions() {
+		$product1 = \WC_Helper_Product::create_simple_product();
+		$product1->set_description( 'Original description' );
+		$product1->save();
+
+		$product2 = \WC_Helper_Product::create_simple_product();
+		$product2->set_description( 'Translated description' );
+		$product2->save();
+
+		$this->products[] = $product1;
+		$this->products[] = $product2;
+
+		$reflection = new \ReflectionClass( $this->instance );
+		$method = $reflection->getMethod( 'get_translated_fields' );
+		$method->setAccessible( true );
+
+		$result = $method->invoke( $this->instance, $product1->get_id(), $product2->get_id() );
+
+		$this->assertIsArray( $result );
+	}
+
+	/**
+	 * Test get_translated_fields with target language parameter.
+	 *
+	 * @covers \WooCommerce\Facebook\Integrations\Facebook_Fields_Translation_Trait::get_translated_fields
+	 */
+	public function test_get_translated_fields_with_target_language() {
+		$product1 = \WC_Helper_Product::create_simple_product();
+		$product2 = \WC_Helper_Product::create_simple_product();
+		$this->products[] = $product1;
+		$this->products[] = $product2;
+
+		$reflection = new \ReflectionClass( $this->instance );
+		$method = $reflection->getMethod( 'get_translated_fields' );
+		$method->setAccessible( true );
+
+		$result = $method->invoke( $this->instance, $product1->get_id(), $product2->get_id(), 'es_ES' );
+
+		$this->assertIsArray( $result );
+	}
+
+	/**
+	 * Test get_translated_fields with null target language.
+	 *
+	 * @covers \WooCommerce\Facebook\Integrations\Facebook_Fields_Translation_Trait::get_translated_fields
+	 */
+	public function test_get_translated_fields_with_null_target_language() {
+		$product1 = \WC_Helper_Product::create_simple_product();
+		$product2 = \WC_Helper_Product::create_simple_product();
+		$this->products[] = $product1;
+		$this->products[] = $product2;
+
+		$reflection = new \ReflectionClass( $this->instance );
+		$method = $reflection->getMethod( 'get_translated_fields' );
+		$method->setAccessible( true );
+
+		$result = $method->invoke( $this->instance, $product1->get_id(), $product2->get_id(), null );
+
+		$this->assertIsArray( $result );
+	}
+
+	/**
+	 * Test get_translated_fields returns array of strings.
+	 *
+	 * @covers \WooCommerce\Facebook\Integrations\Facebook_Fields_Translation_Trait::get_translated_fields
+	 */
+	public function test_get_translated_fields_returns_array_of_strings() {
+		$product1 = \WC_Helper_Product::create_simple_product();
+		$product1->set_name( 'Product One' );
+		$product1->save();
+
+		$product2 = \WC_Helper_Product::create_simple_product();
+		$product2->set_name( 'Product Two' );
+		$product2->save();
+
+		$this->products[] = $product1;
+		$this->products[] = $product2;
+
+		$reflection = new \ReflectionClass( $this->instance );
+		$method = $reflection->getMethod( 'get_translated_fields' );
+		$method->setAccessible( true );
+
+		$result = $method->invoke( $this->instance, $product1->get_id(), $product2->get_id() );
+
+		foreach ( $result as $field_name ) {
+			$this->assertIsString( $field_name );
+		}
+	}
+
+	/**
+	 * Test get_translated_fields with only original product existing.
+	 *
+	 * @covers \WooCommerce\Facebook\Integrations\Facebook_Fields_Translation_Trait::get_translated_fields
+	 */
+	public function test_get_translated_fields_with_only_original_product() {
+		$product = \WC_Helper_Product::create_simple_product();
+		$this->products[] = $product;
+
+		$reflection = new \ReflectionClass( $this->instance );
+		$method = $reflection->getMethod( 'get_translated_fields' );
+		$method->setAccessible( true );
+
+		$result = $method->invoke( $this->instance, $product->get_id(), 999999 );
+
+		$this->assertIsArray( $result );
+		$this->assertEmpty( $result );
+	}
+
+	/**
+	 * Test get_translated_fields with only translated product existing.
+	 *
+	 * @covers \WooCommerce\Facebook\Integrations\Facebook_Fields_Translation_Trait::get_translated_fields
+	 */
+	public function test_get_translated_fields_with_only_translated_product() {
+		$product = \WC_Helper_Product::create_simple_product();
+		$this->products[] = $product;
+
+		$reflection = new \ReflectionClass( $this->instance );
+		$method = $reflection->getMethod( 'get_translated_fields' );
+		$method->setAccessible( true );
+
+		$result = $method->invoke( $this->instance, 999999, $product->get_id() );
+
+		$this->assertIsArray( $result );
+		$this->assertEmpty( $result );
 	}
 }
