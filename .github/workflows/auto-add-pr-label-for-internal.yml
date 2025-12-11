@@ -1,0 +1,58 @@
+name: Auto-label Internal PRs
+
+on:
+  pull_request:
+    types: [opened, reopened]
+
+jobs:
+  label-internal-prs:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Add changelog label to internal PRs
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const pr = context.payload.pull_request;
+            const prNumber = pr.number;
+            const prTitle = pr.title || '';
+            const sourceBranch = pr.head.ref || '';
+
+            // Fetch existing PR labels upfront
+            const { data: labels } = await github.rest.issues.listLabelsOnIssue({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: prNumber
+            });
+
+            const labelNames = labels.map(label => label.name);
+
+            // Detect exported PRs from Meta/Facebook by:
+            // Source branch matches export-D.* AND has fb-exported or meta-exported label
+            const isExportedPR =
+              /^export-D/.test(sourceBranch) &&
+              (labelNames.includes('fb-exported') || labelNames.includes('meta-exported'));
+
+            if (isExportedPR) {
+              console.log(`   Detected exported PR #${prNumber}: ${prTitle}`);
+              console.log(`   Source branch: ${sourceBranch}`);
+              console.log(`   Labels: ${labelNames.join(', ')}`);
+
+              const hasChangelogLabel = labelNames.some(label =>
+                label.startsWith('changelog:')
+              );
+
+              if (!hasChangelogLabel) {
+                // Add "changelog: add" label (appropriate for internal changes)
+                await github.rest.issues.addLabels({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: prNumber,
+                  labels: ['changelog: add']
+                });
+                console.log(' Added "changelog: add" label to internal PR');
+              } else {
+                console.log('  PR already has a changelog label, skipping');
+              }
+            } else {
+              console.log(`  PR #${prNumber} is not an internal PR, skipping auto-labeling`);
+            }
