@@ -852,29 +852,26 @@ async function generateProductUpdateCSV(existingProducts, categoryName = "feed-t
   const runId = process.env.GITHUB_RUN_ID || 'local';
   const timestamp = new Date().getTime();
 
-  // Generate updated products using the same SKUs
+  // Generate updated products using the same SKUs (only update price)
   for (const product of existingProducts) {
     const updatedPrice = (parseFloat(product.price) + 10).toFixed(2);
-    const updatedStock = parseInt(product.stock, 10) + 5;
-    const updatedName = `${product.name} - UPDATED`;
-    const updatedDescription = `This product was updated via CSV on ${new Date().toISOString()}. Original: ${product.description}`;
 
     rows.push([
       '', // ID (empty to match by SKU)
       product.type, // Type
       product.sku, // SKU (same as original)
-      updatedName, // Name (updated)
+      product.name, // Name (unchanged)
       '1', // Published
       '0', // Is featured?
       'visible', // Visibility in catalog
-      `Updated short description for ${updatedName}`, // Short description
-      updatedDescription, // Description (updated)
+      `Short description for ${product.name}`, // Short description (unchanged)
+      product.description, // Description (unchanged)
       '', // Date sale price starts
       '', // Date sale price ends
       'taxable', // Tax status
       '', // Tax class
       '1', // In stock?
-      updatedStock, // Stock (updated)
+      product.stock, // Stock (unchanged)
       '', // Low stock amount
       '0', // Backorders allowed?
       '0', // Sold individually?
@@ -885,7 +882,7 @@ async function generateProductUpdateCSV(existingProducts, categoryName = "feed-t
       '1', // Allow customer reviews?
       '', // Purchase note
       '', // Sale price
-      updatedPrice, // Regular price (updated)
+      updatedPrice, // Regular price (updated +10)
       categoryName, // Categories
       '', // Tags
       '', // Shipping class

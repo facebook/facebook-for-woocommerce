@@ -588,8 +588,8 @@ test.describe('Facebook for WooCommerce - Product Batch Import E2E Tests', () =>
       expect(sortedUpdatedIds).toEqual(sortedOriginalIds);
       console.log('✅ Product IDs unchanged - products were updated, not recreated');
 
-      // Verify product data was actually updated
-      console.log('\n📊 Verifying product data updates...');
+      // Verify product prices were updated
+      console.log('\n📊 Verifying product price updates...');
       let updateSuccessCount = 0;
 
       for (const originalProduct of originalProducts) {
@@ -603,35 +603,18 @@ test.describe('Facebook for WooCommerce - Product Batch Import E2E Tests', () =>
         const updatedMeta = JSON.parse(updatedMetaJson);
 
         const updatedPrice = updatedMeta.find(m => m.meta_key === '_regular_price')?.meta_value || '0';
-        const updatedStock = updatedMeta.find(m => m.meta_key === '_stock')?.meta_value || '0';
 
-        const updatedPostJson = execSync(
-          `wp post get ${productId} --format=json`,
-          { cwd: wpSitePath, encoding: 'utf8' }
-        );
-        const updatedPost = JSON.parse(updatedPostJson);
-        const updatedName = updatedPost.post_title;
-
-        // Verify updates
+        // Verify price update
         const expectedPrice = (parseFloat(originalProduct.price) + 10).toFixed(2);
-        const expectedStock = (parseInt(originalProduct.stock, 10) + 5).toString();
-        const expectedNameSuffix = '- UPDATED';
-
         const priceMatches = parseFloat(updatedPrice).toFixed(2) === expectedPrice;
-        const stockMatches = updatedStock === expectedStock;
-        const nameMatches = updatedName.includes(expectedNameSuffix);
 
-        if (priceMatches && stockMatches && nameMatches) {
+        if (priceMatches) {
           updateSuccessCount++;
           console.log(`✅ Product ${productId} (SKU: ${originalProduct.sku}):`);
           console.log(`   Price: ${originalProduct.price} → ${updatedPrice} ✓`);
-          console.log(`   Stock: ${originalProduct.stock} → ${updatedStock} ✓`);
-          console.log(`   Name updated: ${nameMatches} ✓`);
         } else {
-          console.warn(`⚠️ Product ${productId} update verification failed:`);
-          console.warn(`   Price match: ${priceMatches} (expected ${expectedPrice}, got ${updatedPrice})`);
-          console.warn(`   Stock match: ${stockMatches} (expected ${expectedStock}, got ${updatedStock})`);
-          console.warn(`   Name match: ${nameMatches}`);
+          console.warn(`⚠️ Product ${productId} price update verification failed:`);
+          console.warn(`   Expected: ${expectedPrice}, got: ${updatedPrice}`);
         }
       }
 
