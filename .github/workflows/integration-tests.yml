@@ -32,6 +32,9 @@ jobs:
         options: --health-cmd="mysqladmin ping" --health-interval=10s --health-timeout=5s --health-retries=3
 
     steps:
+      - name: Install SVN
+        run: sudo apt-get install subversion -y
+
       - name: Checkout code
         uses: actions/checkout@v4
         with:
@@ -183,6 +186,7 @@ jobs:
             echo "✅ Integration tests passed" >> $GITHUB_STEP_SUMMARY
           elif [[ "${{ steps.run-tests.outputs.tests_passed }}" == "false" ]]; then
             echo "❌ Integration tests failed" >> $GITHUB_STEP_SUMMARY
+            exit 1
           else
             echo "⏭️ Integration tests skipped" >> $GITHUB_STEP_SUMMARY
           fi
@@ -207,7 +211,3 @@ jobs:
             /tmp/wordpress/wp-content/debug.log
             /var/log/
           retention-days: 7
-
-      - name: Skip tests notification
-        if: steps.install-composer.outputs.composer_installed != 'true' || steps.setup-wp.outputs.wp_setup_success != 'true'
-        run: echo "::warning::Skipping integration tests due to setup issues"
