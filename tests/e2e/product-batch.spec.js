@@ -15,6 +15,7 @@ const {
   deleteFeedFile,
   generateUniqueSKU,
   cleanupProduct,
+  cleanupCategory,
   generateProductUpdateCSV
 } = require('./test-helpers');
 
@@ -618,6 +619,13 @@ test.describe('Facebook for WooCommerce - Product Batch Import E2E Tests', () =>
         await Promise.all(cleanupPromises);
         console.log(`Cleaned up ${importedProductIds.length} test products`);
       }
+
+      // Clean up the test category
+      const feedCategoryId = execSync(
+        `wp term list product_cat --slug=${feedCategorySlug} --field=term_id`,
+        { encoding: 'utf-8' }
+      ).trim();
+      await cleanupCategory(feedCategoryId);
     }
   });
 
