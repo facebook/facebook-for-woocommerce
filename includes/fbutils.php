@@ -483,6 +483,18 @@ if ( ! class_exists( 'WC_Facebookcommerce_Utils' ) ) :
 		}
 
 		/**
+		 * Truncates a float value to the number of points.
+		 *
+		 * @param float $value input value
+		 * @param int   $points number of floating points
+		 * @return float
+		 */
+		public static function truncate_float_number( float $value, int $points = 2 ) {
+			$zeros = pow( 10, $points );
+			return floor( $value * $zeros ) / $zeros;
+		}
+
+		/**
 		 * Returns true if id is a positive non-zero integer.
 		 *
 		 * @param string $pixel_id

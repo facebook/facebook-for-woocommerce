@@ -200,6 +200,12 @@ test.describe('Facebook for WooCommerce - Product Batch Import E2E Tests', () =>
         await Promise.all(cleanupPromises);
         console.log(`✅ Cleaned up ${importedProductIds.length} feed test products`);
       }
+
+      const feedCategoryId = execSync(
+        `wp term list product_cat --slug=${feedCategorySlug} --field=term_id`,
+        { encoding: 'utf-8' }
+      ).trim();
+      await cleanupCategory(feedCategoryId);
     }
   });
 
@@ -398,6 +404,11 @@ test.describe('Facebook for WooCommerce - Product Batch Import E2E Tests', () =>
         const successCount = results.filter(r => r.success).length;
         console.log(`✅ Cleanup completed: ${successCount}/${importedProductIds.length} products deleted`);
       }
+      const feedCategoryId = execSync(
+        `wp term list product_cat --slug=${categorySlug} --field=term_id`,
+        { encoding: 'utf-8' }
+      ).trim();
+      await cleanupCategory(feedCategoryId);
     }
   });
 
