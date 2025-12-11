@@ -827,6 +827,118 @@ async function deleteFeedFile(filePath) {
   }
 }
 
+// Helper function to generate product update CSV based on existing SKUs
+async function generateProductUpdateCSV(existingProducts, categoryName = "feed-test-products") {
+  const fs = require('fs');
+  const path = require('path');
+  const os = require('os');
+
+  console.log(`📝 Generating product update CSV with ${existingProducts.length} products...`);
+
+  // CSV header
+  const headers = [
+    'ID', 'Type', 'SKU', 'Name', 'Published', 'Is featured?', 'Visibility in catalog',
+    'Short description', 'Description', 'Date sale price starts', 'Date sale price ends',
+    'Tax status', 'Tax class', 'In stock?', 'Stock', 'Low stock amount', 'Backorders allowed?',
+    'Sold individually?', 'Weight (kg)', 'Length (cm)', 'Width (cm)', 'Height (cm)',
+    'Allow customer reviews?', 'Purchase note', 'Sale price', 'Regular price', 'Categories',
+    'Tags', 'Shipping class', 'Images', 'Download limit', 'Download expiry days', 'Parent',
+    'Grouped products', 'Upsells', 'Cross-sells', 'External URL', 'Button text', 'Position',
+    'Attribute 1 name', 'Attribute 1 value(s)', 'Attribute 1 visible', 'Attribute 1 global',
+    'Attribute 2 name', 'Attribute 2 value(s)', 'Attribute 2 visible', 'Attribute 2 global'
+  ];
+
+  const rows = [headers];
+  const runId = process.env.GITHUB_RUN_ID || 'local';
+  const timestamp = new Date().getTime();
+
+  // Generate updated products using the same SKUs
+  for (const product of existingProducts) {
+    const updatedPrice = (parseFloat(product.price) + 10).toFixed(2);
+    const updatedStock = parseInt(product.stock, 10) + 5;
+    const updatedName = `${product.name} - UPDATED`;
+    const updatedDescription = `This product was updated via CSV on ${new Date().toISOString()}. Original: ${product.description}`;
+
+    rows.push([
+      '', // ID (empty to match by SKU)
+      product.type, // Type
+      product.sku, // SKU (same as original)
+      updatedName, // Name (updated)
+      '1', // Published
+      '0', // Is featured?
+      'visible', // Visibility in catalog
+      `Updated short description for ${updatedName}`, // Short description
+      updatedDescription, // Description (updated)
+      '', // Date sale price starts
+      '', // Date sale price ends
+      'taxable', // Tax status
+      '', // Tax class
+      '1', // In stock?
+      updatedStock, // Stock (updated)
+      '', // Low stock amount
+      '0', // Backorders allowed?
+      '0', // Sold individually?
+      '', // Weight (kg)
+      '', // Length (cm)
+      '', // Width (cm)
+      '', // Height (cm)
+      '1', // Allow customer reviews?
+      '', // Purchase note
+      '', // Sale price
+      updatedPrice, // Regular price (updated)
+      categoryName, // Categories
+      '', // Tags
+      '', // Shipping class
+      '', // Images
+      '', // Download limit
+      '', // Download expiry days
+      '', // Parent
+      '', // Grouped products
+      '', // Upsells
+      '', // Cross-sells
+      '', // External URL
+      '', // Button text
+      '0', // Position
+      '', // Attribute 1 name
+      '', // Attribute 1 value(s)
+      '', // Attribute 1 visible
+      '', // Attribute 1 global
+      '', // Attribute 2 name
+      '', // Attribute 2 value(s)
+      '', // Attribute 2 visible
+      '' // Attribute 2 global
+    ]);
+  }
+
+  // Convert to CSV format
+  const csvContent = rows.map(row =>
+    row.map(cell => {
+      // Escape quotes and wrap in quotes if contains comma, quote, or newline
+      const cellStr = String(cell);
+      if (cellStr.includes(',') || cellStr.includes('"') || cellStr.includes('\n')) {
+        return `"${cellStr.replace(/"/g, '""')}"`;
+      }
+      return cellStr;
+    }).join(',')
+  ).join('\n');
+
+  // Save to temp directory
+  const tempDir = os.tmpdir();
+  const fileName = `product-update-${runId}-${timestamp}.csv`;
+  const filePath = path.join(tempDir, fileName);
+
+  fs.writeFileSync(filePath, csvContent, 'utf8');
+
+  console.log(`✅ Generated update feed file: ${filePath}`);
+  console.log(`   Total rows: ${rows.length} (including header)`);
+
+  return {
+    filePath,
+    fileName,
+    productCount: rows.length - 1 // Exclude header
+  };
+}
+
 // Helper function to ensure debug mode is enabled
 async function ensureDebugModeEnabled(page) {
   console.log('🔍 Checking debug mode status...');
@@ -892,5 +1004,6 @@ module.exports = {
   exactSearchSelect2Container,
   generateProductFeedCSV,
   deleteFeedFile,
+  generateProductUpdateCSV,
   ensureDebugModeEnabled
 };

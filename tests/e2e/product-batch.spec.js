@@ -14,7 +14,8 @@ const {
   generateProductFeedCSV,
   deleteFeedFile,
   generateUniqueSKU,
-  cleanupProduct
+  cleanupProduct,
+  generateProductUpdateCSV
 } = require('./test-helpers');
 
 const {
@@ -395,6 +396,317 @@ test.describe('Facebook for WooCommerce - Product Batch Import E2E Tests', () =>
         const results = await Promise.all(cleanupPromises);
         const successCount = results.filter(r => r.success).length;
         console.log(`✅ Cleanup completed: ${successCount}/${importedProductIds.length} products deleted`);
+      }
+    }
+  });
+
+  test('Update existing products via CSV and verify Facebook sync', async ({ page }, testInfo) => {
+    let initialFeedFilePath = null;
+    let updateFeedFilePath = null;
+    const feedProductCount = 5;
+    const feedCategorySlug = generateUniqueSKU('UpdateCategory');
+    let importedProductIds = [];
+    let originalProducts = [];
+
+    try {
+      // Phase 1: Import initial products
+      console.log('\n📦 PHASE 1: Initial Product Import');
+      console.log('='.repeat(80));
+
+      // Generate initial product feed CSV file
+      console.log('📝 Generating initial product feed CSV file...');
+      const initialFeedData = await generateProductFeedCSV(feedProductCount, 0, feedCategorySlug);
+      initialFeedFilePath = initialFeedData.filePath;
+      console.log(`✅ Feed file generated with ${initialFeedData.productCount} products`);
+
+      // Navigate to WooCommerce import page
+      console.log('📦 Navigating to WooCommerce import page...');
+      await page.goto(`${baseURL}/wp-admin/edit.php?post_type=product&page=product_importer`, {
+        waitUntil: 'domcontentloaded',
+        timeout: TIMEOUTS.MAX
+      });
+
+      // Upload initial feed file
+      console.log('📤 Uploading initial feed file...');
+      const fileInput = page.locator('input[type="file"][name="import"]');
+      await fileInput.waitFor({ state: 'visible', timeout: TIMEOUTS.LONG });
+      await fileInput.setInputFiles(initialFeedFilePath);
+      console.log('✅ File selected');
+
+      // Click "Continue" button to proceed with import
+      const continueButton = page.locator('button[type="submit"][name="save_step"], button.button-next');
+      await continueButton.waitFor({ state: 'visible', timeout: TIMEOUTS.LONG });
+      await continueButton.click();
+      console.log('✅ Clicked Continue button');
+
+      // Wait for column mapping page
+      await page.waitForLoadState('domcontentloaded', { timeout: TIMEOUTS.MAX });
+      console.log('✅ Column mapping page loaded');
+
+      // Map columns and continue
+      console.log('🗺️ Mapping columns...');
+      const runImportButton = page.locator('button[type="submit"][name="save_step"], button.button-next');
+      await runImportButton.waitFor({ state: 'visible', timeout: TIMEOUTS.LONG });
+      await runImportButton.click();
+      console.log('✅ Started initial import process');
+
+      // Wait for import to complete
+      console.log('⏳ Waiting for initial import to complete...');
+      const importComplete = page.locator('.woocommerce-importer-done, .wc-importer-done');
+      await importComplete.waitFor({ state: 'visible', timeout: TIMEOUTS.EXTRA_LONG + TIMEOUTS.LONG });
+      console.log('✅ Initial import completed');
+
+      // Verify no PHP errors
+      await checkForPhpErrors(page);
+
+      // Navigate to imported products and collect data
+      console.log('📋 Collecting initial product data...');
+      await page.goto(`${baseURL}/wp-admin/edit.php?post_type=product&product_cat=${feedCategorySlug}`, {
+        waitUntil: 'domcontentloaded',
+        timeout: TIMEOUTS.MAX
+      });
+
+      // Get list of imported product IDs and data using WP-CLI
+      const productDataJson = execSync(
+        `wp post list --post_type=product --product_cat=${feedCategorySlug} --fields=ID,post_title --format=json`,
+        { cwd: wpSitePath, encoding: 'utf8' }
+      );
+
+      const productData = JSON.parse(productDataJson);
+
+      for (const item of productData) {
+        const productId = item.ID;
+        importedProductIds.push(productId);
+
+        // Get product details using WP-CLI
+        const productMetaJson = execSync(
+          `wp post meta list ${productId} --format=json`,
+          { cwd: wpSitePath, encoding: 'utf8' }
+        );
+        const productMeta = JSON.parse(productMetaJson);
+
+        const sku = productMeta.find(m => m.meta_key === '_sku')?.meta_value || '';
+        const price = productMeta.find(m => m.meta_key === '_regular_price')?.meta_value || '0';
+        const stock = productMeta.find(m => m.meta_key === '_stock')?.meta_value || '0';
+
+        originalProducts.push({
+          id: productId,
+          sku: sku,
+          name: item.post_title,
+          price: price,
+          stock: stock,
+          type: 'simple',
+          description: `This is a test product created from feed file for E2E testing.`
+        });
+      }
+
+      console.log(`✅ Collected data for ${originalProducts.length} products`);
+      expect(originalProducts.length).toBe(feedProductCount);
+
+      // Phase 2: Generate and import update CSV
+      console.log('\n📝 PHASE 2: Product Update via CSV');
+      console.log('='.repeat(80));
+
+      console.log('📝 Generating product update CSV...');
+      const updateFeedData = await generateProductUpdateCSV(originalProducts, feedCategorySlug);
+      updateFeedFilePath = updateFeedData.filePath;
+      console.log(`✅ Update feed file generated with ${updateFeedData.productCount} products`);
+
+      // Navigate to WooCommerce import page again
+      console.log('📦 Navigating to WooCommerce import page for update...');
+      await page.goto(`${baseURL}/wp-admin/edit.php?post_type=product&page=product_importer`, {
+        waitUntil: 'domcontentloaded',
+        timeout: TIMEOUTS.MAX
+      });
+
+      // Upload update feed file
+      console.log('📤 Uploading update feed file...');
+      const updateFileInput = page.locator('input[type="file"][name="import"]');
+      await updateFileInput.waitFor({ state: 'visible', timeout: TIMEOUTS.LONG });
+      await updateFileInput.setInputFiles(updateFeedFilePath);
+      console.log('✅ Update file selected');
+
+      // Check the "Update existing products" checkbox
+      console.log('✅ Checking "Update existing products" checkbox...');
+      const updateExistingCheckbox = page.locator('input#woocommerce-importer-update-existing');
+      await updateExistingCheckbox.waitFor({ state: 'visible', timeout: TIMEOUTS.LONG });
+      await updateExistingCheckbox.check();
+
+      // Verify it's checked
+      const isChecked = await updateExistingCheckbox.isChecked();
+      expect(isChecked).toBe(true);
+      console.log('✅ "Update existing products" checkbox is checked');
+
+      // Click "Continue" button
+      const updateContinueButton = page.locator('button[type="submit"][name="save_step"], button.button-next');
+      await updateContinueButton.waitFor({ state: 'visible', timeout: TIMEOUTS.LONG });
+      await updateContinueButton.click();
+      console.log('✅ Clicked Continue button for update');
+
+      // Wait for column mapping page
+      await page.waitForLoadState('domcontentloaded', { timeout: TIMEOUTS.MAX });
+      console.log('✅ Column mapping page loaded');
+
+      // Map columns and continue
+      console.log('🗺️ Mapping columns for update...');
+      const runUpdateImportButton = page.locator('button[type="submit"][name="save_step"], button.button-next');
+      await runUpdateImportButton.waitFor({ state: 'visible', timeout: TIMEOUTS.LONG });
+      await runUpdateImportButton.click();
+      console.log('✅ Started update import process');
+
+      // Wait for import to complete
+      console.log('⏳ Waiting for update import to complete...');
+      const updateImportComplete = page.locator('.woocommerce-importer-done, .wc-importer-done');
+      await updateImportComplete.waitFor({ state: 'visible', timeout: TIMEOUTS.EXTRA_LONG + TIMEOUTS.LONG });
+      console.log('✅ Update import completed');
+
+      // Verify no PHP errors
+      await checkForPhpErrors(page);
+
+      // Phase 3: Validate updates
+      console.log('\n🔍 PHASE 3: Validation');
+      console.log('='.repeat(80));
+
+      // Verify product count remains the same (no duplicates)
+      const updatedProductDataJson = execSync(
+        `wp post list --post_type=product --product_cat=${feedCategorySlug} --fields=ID --format=json`,
+        { cwd: wpSitePath, encoding: 'utf8' }
+      );
+      const updatedProductData = JSON.parse(updatedProductDataJson);
+      const updatedProductIds = updatedProductData.map(item => item.ID);
+
+      console.log(`📊 Product count validation:`);
+      console.log(`   Original: ${importedProductIds.length} products`);
+      console.log(`   After update: ${updatedProductIds.length} products`);
+
+      expect(updatedProductIds.length).toBe(feedProductCount);
+      console.log('✅ Product count unchanged - no duplicates created');
+
+      // Verify product IDs remain the same (products were updated, not created)
+      const sortedOriginalIds = [...importedProductIds].sort((a, b) => a - b);
+      const sortedUpdatedIds = [...updatedProductIds].sort((a, b) => a - b);
+      expect(sortedUpdatedIds).toEqual(sortedOriginalIds);
+      console.log('✅ Product IDs unchanged - products were updated, not recreated');
+
+      // Verify product data was actually updated
+      console.log('\n📊 Verifying product data updates...');
+      let updateSuccessCount = 0;
+
+      for (const originalProduct of originalProducts) {
+        const productId = originalProduct.id;
+
+        // Get updated product details
+        const updatedMetaJson = execSync(
+          `wp post meta list ${productId} --format=json`,
+          { cwd: wpSitePath, encoding: 'utf8' }
+        );
+        const updatedMeta = JSON.parse(updatedMetaJson);
+
+        const updatedPrice = updatedMeta.find(m => m.meta_key === '_regular_price')?.meta_value || '0';
+        const updatedStock = updatedMeta.find(m => m.meta_key === '_stock')?.meta_value || '0';
+
+        const updatedPostJson = execSync(
+          `wp post get ${productId} --format=json`,
+          { cwd: wpSitePath, encoding: 'utf8' }
+        );
+        const updatedPost = JSON.parse(updatedPostJson);
+        const updatedName = updatedPost.post_title;
+
+        // Verify updates
+        const expectedPrice = (parseFloat(originalProduct.price) + 10).toFixed(2);
+        const expectedStock = (parseInt(originalProduct.stock, 10) + 5).toString();
+        const expectedNameSuffix = '- UPDATED';
+
+        const priceMatches = parseFloat(updatedPrice).toFixed(2) === expectedPrice;
+        const stockMatches = updatedStock === expectedStock;
+        const nameMatches = updatedName.includes(expectedNameSuffix);
+
+        if (priceMatches && stockMatches && nameMatches) {
+          updateSuccessCount++;
+          console.log(`✅ Product ${productId} (SKU: ${originalProduct.sku}):`);
+          console.log(`   Price: ${originalProduct.price} → ${updatedPrice} ✓`);
+          console.log(`   Stock: ${originalProduct.stock} → ${updatedStock} ✓`);
+          console.log(`   Name updated: ${nameMatches} ✓`);
+        } else {
+          console.warn(`⚠️ Product ${productId} update verification failed:`);
+          console.warn(`   Price match: ${priceMatches} (expected ${expectedPrice}, got ${updatedPrice})`);
+          console.warn(`   Stock match: ${stockMatches} (expected ${expectedStock}, got ${updatedStock})`);
+          console.warn(`   Name match: ${nameMatches}`);
+        }
+      }
+
+      console.log(`\n📊 Update Validation Summary:`);
+      console.log(`   ✅ Successful: ${updateSuccessCount}/${originalProducts.length}`);
+      expect(updateSuccessCount).toBe(originalProducts.length);
+
+      // Validate Facebook sync for updated products
+      console.log('\n🔍 Validating Facebook sync for updated products...');
+
+      let syncSuccessCount = 0;
+      let syncFailCount = 0;
+
+      const validationPromises = importedProductIds.map((productId) => {
+        return validateFacebookSync(productId, null, 5, 8)
+          .then((result) => ({ productId, result }))
+          .catch((err) => ({ productId, error: err }));
+      });
+
+      const validationResults = await Promise.all(validationPromises);
+
+      for (const { productId, result, error } of validationResults) {
+        if (error) {
+          syncFailCount++;
+          console.warn(`⚠️ Product ${productId} sync validation errored: ${error?.message || error}`);
+          continue;
+        }
+
+        if (result && result.success) {
+          syncSuccessCount++;
+          console.log(`✅ Product ${productId} synced successfully to Facebook`);
+          expect(result.facebook_id).toBeTruthy();
+          console.log(`   Facebook Product ID: ${result.facebook_id}`);
+        } else {
+          syncFailCount++;
+          console.warn(`⚠️ Product ${productId} sync validation failed or pending`);
+        }
+      }
+
+      console.log(`\n📊 Facebook Sync Validation Summary:`);
+      console.log(`   ✅ Successful: ${syncSuccessCount}`);
+      console.log(`   ⚠️ Failed/Pending: ${syncFailCount}`);
+      console.log(`   ⏳ Total: ${importedProductIds.length}`);
+
+      expect(syncSuccessCount).toBe(importedProductIds.length);
+
+      console.log('\n✅ Product CSV update and Facebook sync test completed successfully');
+      logTestEnd(testInfo, true);
+
+    } catch (error) {
+      console.log(`❌ Product CSV update test failed: ${error.message}`);
+      await safeScreenshot(page, 'product-csv-update-failure.png');
+      logTestEnd(testInfo, false);
+      throw error;
+    } finally {
+      // Cleanup: Delete feed files
+      if (initialFeedFilePath) {
+        await deleteFeedFile(initialFeedFilePath);
+      }
+      if (updateFeedFilePath) {
+        await deleteFeedFile(updateFeedFilePath);
+      }
+
+      // Cleanup products
+      if (importedProductIds.length > 0) {
+        console.log(`\n📝 ${importedProductIds.length} test products were imported`);
+        console.log(`  Category: ${feedCategorySlug}`);
+
+        const cleanupPromises = importedProductIds.map((productId) => {
+          return cleanupProduct(productId)
+            .then((result) => ({ productId, result }))
+            .catch((err) => ({ productId, error: err }));
+        });
+        await Promise.all(cleanupPromises);
+        console.log(`✅ Cleaned up ${importedProductIds.length} test products`);
       }
     }
   });
