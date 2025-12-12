@@ -40,6 +40,7 @@ env:
   PAGE_LOAD_TIMEOUT: 120000
 
   # Customer Billing/Shipping Address
+  WP_CUSTOMER_EMAIL: 'customer@test.com'
   TEST_USER_FIRST_NAME: Test
   TEST_USER_LAST_NAME: Customer
   TEST_USER_ADDRESS_1: '123 Test Street'
@@ -241,14 +242,14 @@ jobs:
           # Create a customer (non-admin) user for testing
           # Pixel tracking excludes admin users by default!
           # Note: customer role is created by WooCommerce, so this step must run AFTER WooCommerce installation
-          wp user create ${{ env.WP_CUSTOMER_USERNAME}} customer@test.com --role=customer --user_pass=${{ env.WP_CUSTOMER_PASSWORD }} --allow-root || echo "Customer user already exists"
+          wp user create ${{ env.WP_CUSTOMER_USERNAME}} ${{ env.WP_CUSTOMER_EMAIL }} --role=customer --user_pass=${{ env.WP_CUSTOMER_PASSWORD }} --allow-root || echo "Customer user already exists"
 
           # Grant read capability to customer role (for viewing products/categories)
           # This ensures customer can see shop pages, products, and categories
           wp cap add customer read --allow-root
 
           # Get customer user ID once and store it
-          CUSTOMER_ID=$(wp user get customer@test.com --field=ID --allow-root)
+          CUSTOMER_ID=$(wp user get ${{ env.WP_CUSTOMER_EMAIL }} --field=ID --allow-root)
           echo "Customer User ID: $CUSTOMER_ID"
 
           # Add billing address to customer user for comprehensive event testing
@@ -441,9 +442,9 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y xvfb
 
-      - name: Configure Postmark, send test mail, verify delivery
-        env:
+      - name: Configure Postmark
         run: |
+          cd ${{ env.WORDPRESS_PATH }}
           echo "Installing Post SMTP plugin..."
           wp plugin install post-smtp --activate
 

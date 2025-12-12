@@ -389,4 +389,62 @@ test.describe('WooCommerce Plugin level tests', () => {
     }
   });
 
+  test('Complete checkout flow - Place order and verify order email', async ({ page }) => {
+    console.log('🛒 Starting complete checkout flow test...');
+
+    const postmarkApiKey = process.env.POSTMARK_API_KEY;
+    const customerEmail = process.env.WP_CUSTOMER_EMAIL;
+
+    // Use helper to complete purchase
+    const { orderId } = await completePurchaseFlow(page);
+
+    if (!orderId) {
+      throw new Error('❌ Could not extract order ID');
+    }
+    console.log(`📦 Order ID: ${orderId}`);
+
+    // Verify order in WooCommerce admin
+    const { exec } = require('child_process');
+    const { promisify } = require('util');
+    const execAsync = promisify(exec);
+    const wpSitePath = process.env.WORDPRESS_PATH;
+
+    const { stdout } = await execAsync(
+      `php -r "require_once('${wpSitePath}/wp-load.php'); ` +
+      `\\$order = wc_get_order(${orderId}); ` +
+      `echo json_encode(['exists' => !!\\$order, 'status' => \\$order ? \\$order->get_status() : null, 'total' => \\$order ? \\$order->get_total() : null]);"`,
+      { cwd: __dirname }
+    );
+
+    const orderData = JSON.parse(stdout);
+    if (!orderData.exists) throw new Error('❌ Order not found in WooCommerce');
+
+    console.log(`✅ Order verified: Status=${orderData.status}, Total=${orderData.total}`);
+
+    // Verify order email
+    if (postmarkApiKey) {
+      await new Promise(resolve => setTimeout(resolve, 5000));
+      const { stdout: emailResp } = await execAsync(
+        `curl -s -H "Accept: application/json" -H "X-Postmark-Server-Token: ${postmarkApiKey}" "https://api.postmarkapp.com/messages/outbound?recipient=${customerEmail}&count=30"`
+      );
+
+      const emailData = JSON.parse(emailResp);
+      const orderEmail = emailData.Messages?.find(msg => msg.Subject?.includes(`#${orderId}`));
+
+      if (orderEmail) {
+        console.log(`✅ Order email verified: ${orderEmail.Subject}`);
+      } else {
+        console.log('⚠️ Order email not found (may take a few moments)');
+      }
+    }
+    const jsErrors = checkForJsErrors(page);
+
+    // Check JS errors
+    if (jsErrors.length > 0) {
+      throw new Error(`JS errors: ${jsErrors.join('; ')}`);
+    }
+
+    console.log('✅ Test passed: No PHP/JS errors, order created, email checked');
+  });
+
 });

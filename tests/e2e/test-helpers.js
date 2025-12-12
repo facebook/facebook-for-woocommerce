@@ -1116,7 +1116,11 @@ async function completePurchaseFlow(page, productUrl = null) {
   const orderReceivedUrl = page.url();
   console.log(`   ✅ Order completed: ${orderReceivedUrl}`);
 
-  return orderReceivedUrl;
+  // Extract order ID from URL
+  const orderIdMatch = orderReceivedUrl.match(/order-received\/(\d+)/);
+  const orderId = orderIdMatch ? orderIdMatch[1] : null;
+
+  return { orderReceivedUrl, orderId };
 }
 
 module.exports = {
