@@ -286,6 +286,38 @@ jobs:
           cd ${{ env.WORDPRESS_PATH }}
           wp plugin install wpc-composite-products --activate --allow-root
 
+      - name: Select Meta Business Assets
+        run: |
+          # Parse the JSON array of business assets
+          ASSETS='${{ secrets.FB_TEST_META_BUSINESS_ASSETS }}'
+
+          # Get the array length
+          ARRAY_LENGTH=$(echo "$ASSETS" | jq 'length')
+          echo "Total available business asset sets: $ARRAY_LENGTH"
+
+          # Use run_number as selector - it's sequential (1, 2, 3, ...) across all workflow runs
+          # This ensures each concurrent run gets a different business asset set
+          SELECTOR="${{ github.run_number }}"
+          echo "Using GitHub Run Number as selector: $SELECTOR"
+
+          # Calculate index using modulo
+          INDEX=$((SELECTOR % ARRAY_LENGTH))
+          echo "Selected asset set index: $INDEX"
+
+          # Extract the selected asset set
+          SELECTED_ASSET=$(echo "$ASSETS" | jq -c ".[$INDEX]")
+
+          # Extract individual values and set as outputs
+          # Set environment variables for subsequent steps
+          echo "FB_ACCESS_TOKEN=$(echo "$SELECTED_ASSET" | jq -r '.wc_facebook_access_token')" >> $GITHUB_ENV
+          echo "FB_BUSINESS_MANAGER_ID=$(echo "$SELECTED_ASSET" | jq -r '.wc_facebook_business_manager_id')" >> $GITHUB_ENV
+          echo "FB_EXTERNAL_BUSINESS_ID=$(echo "$SELECTED_ASSET" | jq -r '.wc_facebook_external_business_id')" >> $GITHUB_ENV
+          echo "FB_PRODUCT_CATALOG_ID=$(echo "$SELECTED_ASSET" | jq -r '.wc_facebook_product_catalog_id')" >> $GITHUB_ENV
+          echo "FB_PIXEL_ID=$(echo "$SELECTED_ASSET" | jq -r '.wc_facebook_pixel_id')" >> $GITHUB_ENV
+          echo "FB_PAGE_ID=$(echo "$SELECTED_ASSET" | jq -r '.wc_facebook_page_id')" >> $GITHUB_ENV
+
+          echo "✅ Selected business asset set $INDEX for this run"
+
       - name: Install Facebook for WooCommerce plugin
         run: |
           cd ${{ env.WORDPRESS_PATH }}
@@ -307,13 +339,14 @@ jobs:
             cd ${{ env.WORDPRESS_PATH }}
           fi
 
-          # Configure Facebook connection before activation
-          wp option update wc_facebook_access_token "${{ secrets.FB_ACCESS_TOKEN }}" --allow-root
-          wp option update wc_facebook_merchant_access_token "${{ secrets.FB_ACCESS_TOKEN }}" --allow-root
-          wp option update wc_facebook_business_manager_id "${{ secrets.FB_BUSINESS_MANAGER_ID }}" --allow-root
-          wp option update wc_facebook_external_business_id "${{ secrets.FB_EXTERNAL_BUSINESS_ID }}" --allow-root
-          wp option update wc_facebook_product_catalog_id "${{ secrets.FB_PRODUCT_CATALOG_ID }}" --allow-root
-          wp option update wc_facebook_pixel_id "${{ secrets.FB_PIXEL_ID }}" --allow-root
+          # Configure Facebook connection before activation using selected business assets
+          wp option update wc_facebook_access_token "${{ env.FB_ACCESS_TOKEN }}" --allow-root
+          wp option update wc_facebook_merchant_access_token "${{ env.FB_ACCESS_TOKEN }}" --allow-root
+          wp option update wc_facebook_business_manager_id "${{ env.FB_BUSINESS_MANAGER_ID }}" --allow-root
+          wp option update wc_facebook_external_business_id "${{ env.FB_EXTERNAL_BUSINESS_ID }}" --allow-root
+          wp option update wc_facebook_product_catalog_id "${{ env.FB_PRODUCT_CATALOG_ID }}" --allow-root
+          wp option update wc_facebook_pixel_id "${{ env.FB_PIXEL_ID }}" --allow-root
+          wp option update wc_facebook_page_id "${{ env.FB_PAGE_ID }}" --allow-root
           wp option update wc_facebook_enable_server_to_server "yes" --allow-root
           wp option update wc_facebook_enable_pixel "yes" --allow-root
           wp option update wc_facebook_enable_advanced_matching "yes" --allow-root
@@ -321,7 +354,6 @@ jobs:
           wp option update wc_facebook_has_connected_fbe_2 "yes" --allow-root
           wp option update wc_facebook_has_authorized_pages_read_engagement "yes" --allow-root
           wp option update wc_facebook_enable_product_sync "yes" --allow-root
-          wp option update wc_facebook_page_id  "${{ secrets.FB_PAGE_ID }}" --allow-root
 
           # Activate the plugin (this triggers automatic sync)
           wp plugin activate facebook-for-woocommerce --allow-root
@@ -440,9 +472,9 @@ jobs:
         env:
           WP_USERNAME: admin
           WP_PASSWORD: admin
-          FB_EXTERNAL_BUSINESS_ID: ${{ secrets.FB_EXTERNAL_BUSINESS_ID }}
-          FB_ACCESS_TOKEN: ${{ secrets.FB_ACCESS_TOKEN }}
-          FB_PIXEL_ID: ${{ secrets.FB_PIXEL_ID }}
+          FB_EXTERNAL_BUSINESS_ID: ${{ env.FB_EXTERNAL_BUSINESS_ID }}
+          FB_ACCESS_TOKEN: ${{ env.FB_ACCESS_TOKEN }}
+          FB_PIXEL_ID: ${{ env.FB_PIXEL_ID }}
           WC_LOG_PATH: ${{ env.WORDPRESS_PATH }}/wp-content/uploads/wc-logs
         run: |
           cd ${{ env.PLUGIN_PATH }}
