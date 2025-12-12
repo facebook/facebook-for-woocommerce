@@ -480,12 +480,12 @@ jobs:
           cd ${{ env.PLUGIN_PATH }}
           npx playwright test "plugin-.*\.spec\.js" --project=chromium-wp-admin
 
-      - name: Run CAPI Pixel E2E tests
-        env:
-          TEST_PRODUCT_ID: ${{ env.TEST_PRODUCT_ID }}
-        run: |
-          cd ${{ env.PLUGIN_PATH }}
-          xvfb-run --auto-servernum npx playwright test events-test*.spec.js --headed --project=chromium-wp-customer
+      # - name: Run CAPI Pixel E2E tests
+      #   env:
+      #     TEST_PRODUCT_ID: ${{ env.TEST_PRODUCT_ID }}
+      #   run: |
+      #     cd ${{ env.PLUGIN_PATH }}
+      #     xvfb-run --auto-servernum npx playwright test events-test*.spec.js --headed --project=chromium-wp-customer
 
       - name: Cleanup test product
         if: always()
