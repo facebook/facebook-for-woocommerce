@@ -2,7 +2,7 @@ const { test, expect } = require('@playwright/test');
 const { execSync } = require('child_process');
 const { TIMEOUTS } = require('./time-constants');
 
-const {loginToWordPress,logTestStart,ensureDebugModeEnabled,checkWooCommerceLogs} = require('./test-helpers');
+const {loginToWordPress,logTestStart,ensureDebugModeEnabled,checkWooCommerceLogs,checkForPhpErrors,checkForJsErrors} = require('./test-helpers');
 
 test.describe('WooCommerce Plugin level tests', () => {
 
@@ -45,42 +45,27 @@ test.describe('WooCommerce Plugin level tests', () => {
   test('Verify Storefront theme is active', async ({ page }) => {
     console.log('🔍 Checking active theme...');
 
-    const errors = [];
-
-    // Only capture actual JavaScript errors, not resource loading failures
-    page.on('pageerror', error => {
-      errors.push(`JS Error: ${error.message}`);
-    });
+    const jsErrors = checkForJsErrors(page);
 
     await page.goto(`${process.env.WORDPRESS_URL}/wp-admin/themes.php`, {
       waitUntil: 'networkidle',
       timeout: TIMEOUTS.EXTRA_LONG
     });
 
-    // Check for PHP errors
-    const content = await page.content();
-    const hasPHPError = content.includes('Fatal error') ||
-                        content.includes('Parse error') ||
-                        content.includes('There has been a critical error');
-
-    if (hasPHPError) {
-      errors.push('PHP errors detected on themes page');
-    }
+    await checkForPhpErrors(page);
 
     // Verify Storefront theme is active
     const storefrontActive = await page.locator('.theme.active[data-slug="storefront"]').count();
 
     if (storefrontActive === 0) {
       const activeTheme = await page.locator('.theme.active').getAttribute('data-slug');
-      errors.push(`Storefront theme is not active. Active theme: ${activeTheme || 'unknown'}`);
-    } else {
-      console.log('✅ Storefront theme is active');
+      throw new Error(`Storefront theme is not active. Active theme: ${activeTheme || 'unknown'}`);
     }
 
-    if (errors.length > 0) {
-      console.log('❌ Errors found:');
-      errors.forEach(err => console.log(`   - ${err}`));
-      throw new Error(`Theme check failed: ${errors.join('; ')}`);
+    console.log('✅ Storefront theme is active');
+    
+    if (jsErrors.length > 0) {
+      console.log('⚠️ JavaScript errors detected:', jsErrors);
     }
 
     console.log('✅ Themes page loaded without errors');

@@ -147,6 +147,15 @@ async function checkForPhpErrors(page) {
   expect(pageContent).not.toContain('Parse error');
 }
 
+// Helper function to check for JavaScript errors
+function checkForJsErrors(page) {
+  const errors = [];
+  page.on('pageerror', error => {
+    errors.push(`JS Error: ${error.message}`);
+  });
+  return errors;
+}
+
 // Helper function to mark test start
 function logTestStart(testInfo) {
   const testName = testInfo.title;
@@ -1070,6 +1079,46 @@ async function checkWooCommerceLogs() {
   return { success: true };
 }
 
+// Helper function to complete a purchase flow
+async function completePurchaseFlow(page, productUrl = null) {
+  const url = productUrl || process.env.TEST_PRODUCT_URL;
+
+  console.log(`   📦 Navigating to product page`);
+  await page.goto(url, { waitUntil: 'domcontentloaded', timeout: TIMEOUTS.EXTRA_LONG });
+
+  console.log(`   🛒 Adding product to cart`);
+  await page.click('.single_add_to_cart_button');
+  await page.waitForTimeout(TIMEOUTS.SHORT);
+
+  console.log(`   💳 Navigating to checkout`);
+  await page.goto('/checkout', { waitUntil: 'domcontentloaded', timeout: TIMEOUTS.EXTRA_LONG });
+  await page.evaluate(() => window.scrollBy(0, 400));
+  await page.waitForTimeout(TIMEOUTS.SHORT);
+
+  console.log(`   ℹ️ Using saved billing address`);
+
+  console.log(`   💰 Selecting Cash on Delivery`);
+  await page.waitForSelector('.wc-block-components-radio-control__option[for="radio-control-wc-payment-method-options-cod"]', {
+    state: 'visible',
+    timeout: TIMEOUTS.LONG
+  });
+  await page.click('label[for="radio-control-wc-payment-method-options-cod"]');
+  await page.waitForTimeout(TIMEOUTS.INSTANT);
+
+  console.log(`   ✅ Placing order`);
+  await page.locator('.wc-block-components-checkout-place-order-button').scrollIntoViewIfNeeded();
+  await page.click('.wc-block-components-checkout-place-order-button');
+
+  console.log(`   ⏳ Waiting for order to process...`);
+  await page.waitForURL('**/checkout/order-received/**', { timeout: TIMEOUTS.EXTRA_LONG });
+  await page.waitForTimeout(TIMEOUTS.NORMAL);
+
+  const orderReceivedUrl = page.url();
+  console.log(`   ✅ Order completed: ${orderReceivedUrl}`);
+
+  return orderReceivedUrl;
+}
+
 module.exports = {
   baseURL,
   username,
@@ -1097,8 +1146,9 @@ module.exports = {
   exactSearchSelect2Container,
   generateProductFeedCSV,
   deleteFeedFile,
-  ensureDebugModeEnabled,
-  checkWooCommerceLogs
   generateProductUpdateCSV,
-  ensureDebugModeEnabled
+  ensureDebugModeEnabled,
+  checkWooCommerceLogs,
+  completePurchaseFlow,
+  checkForJsErrors
 };
