@@ -347,7 +347,7 @@ test.describe('WooCommerce Plugin level tests', () => {
 
   test('Check WooCommerce logs for fatal errors and non-200 responses', async () => {
     const result = await checkWooCommerceLogs();
-    
+
     if (!result.success) {
       throw new Error('Log validation failed');
     }

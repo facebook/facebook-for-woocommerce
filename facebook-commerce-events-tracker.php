@@ -12,6 +12,7 @@ use WooCommerce\Facebook\Events\Event;
 use WooCommerce\Facebook\Framework\Api\Exception as ApiException;
 use WooCommerce\Facebook\Framework\Helper;
 use WooCommerce\Facebook\Framework\Logger;
+use WooCommerce\Facebook\Integrations\CostOfGoods\CostOfGoods;
 
 if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 
@@ -51,6 +52,9 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 		/** @var bool whether the pixel should be enabled */
 		private $is_pixel_enabled;
 
+		/** @var CostOfGoods CostOfGoods provider instance. Used to calculate the profit margin */
+		private $cogs_provider;
+
 		/**
 		 * @var \FacebookAds\ParamBuilder|null shared ParamBuilder instance
 		 */
@@ -75,6 +79,7 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 
 			$this->param_builder_server_setup();
 			$this->add_hooks();
+			$this->cogs_provider = new CostOfGoods();
 		}
 
 		public static function get_param_builder() {
@@ -1016,6 +1021,7 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 			$contents      = array();
 			$product_ids   = array( array() );
 			$product_names = array();
+			$products      = array();
 
 			foreach ( $order->get_items() as $item ) {
 
@@ -1030,6 +1036,11 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 					}
 
 					$quantity = $item->get_quantity();
+					$products[] = array(
+						'product' => $product,
+						'qty' => $quantity,
+					);
+
 					$content  = new \stdClass();
 
 					$content->id       = \WC_Facebookcommerce_Utils::get_fb_retailer_id( $product );
@@ -1038,6 +1049,7 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 					$contents[] = $content;
 				}
 			}
+
 			// Advanced matching information is extracted from the order
 			$event_data = array(
 				'event_name'  => $event_name,
@@ -1052,6 +1064,20 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 				),
 				'user_data'   => $this->get_user_data_from_billing_address( $order ),
 			);
+
+			$cogs = $this->cogs_provider->calculate_cogs_for_products( $products );
+
+			if ( false !== $cogs ) {
+				$order_value_excluding_tax_including_discounts = $order->get_total()
+					- $order->get_total_tax()
+					- $order->get_shipping_total()
+					- $order->get_shipping_tax();
+
+				$net_profit = $order_value_excluding_tax_including_discounts - $cogs;
+				if ( $net_profit > 0 ) {
+					$event_data['custom_data']['net_revenue'] = \WC_Facebookcommerce_Utils::truncate_float_number( $net_profit, 2 );
+				}
+			}
 
 			$event = new Event( $event_data );
 

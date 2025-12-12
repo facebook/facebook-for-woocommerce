@@ -34,8 +34,8 @@ env:
   TEST_PRODUCT_URL: '/product/testp/'
   TEST_CATEGORY_URL: '/product-category/uncategorized/'
   TEST_FBCLID: 'IwAR123TestClickId456'
-  WP_ADMIN_USERNAME: admin
-  WP_ADMIN_PASSWORD: admin
+  WP_USERNAME: admin
+  WP_PASSWORD: admin
   PIXEL_EVENT_TIMEOUT: 30000
   PAGE_LOAD_TIMEOUT: 120000
 
@@ -436,12 +436,24 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y xvfb
 
+      - name: Run Plugin level tests
+        env:
+          WP_USERNAME: admin
+          WP_PASSWORD: admin
+          FB_EXTERNAL_BUSINESS_ID: ${{ secrets.FB_EXTERNAL_BUSINESS_ID }}
+          FB_ACCESS_TOKEN: ${{ secrets.FB_ACCESS_TOKEN }}
+          FB_PIXEL_ID: ${{ secrets.FB_PIXEL_ID }}
+          WC_LOG_PATH: ${{ env.WORDPRESS_PATH }}/wp-content/uploads/wc-logs
+        run: |
+          cd ${{ env.PLUGIN_PATH }}
+          npx playwright test "plugin-.*\.spec\.js" --project=chromium-wp-admin
+
       - name: Run CAPI Pixel E2E tests
         env:
           TEST_PRODUCT_ID: ${{ env.TEST_PRODUCT_ID }}
         run: |
           cd ${{ env.PLUGIN_PATH }}
-          xvfb-run --auto-servernum npx playwright test events-test*.spec.js --headed
+          xvfb-run --auto-servernum npx playwright test events-test*.spec.js --headed --project=chromium-wp-customer
 
       - name: Run Plugin level tests
         env:
@@ -473,7 +485,8 @@ jobs:
           WP_PASSWORD: admin
         run: |
           cd ${{ env.PLUGIN_PATH }}
-          npx playwright test "product-.*\.spec\.js"
+          npx playwright test "product-.*\.spec\.js" --project=chromium-wp-admin
+
 
 
       - name: Disconnect from catalog
