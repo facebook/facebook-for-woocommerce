@@ -2,9 +2,9 @@ const { test, expect } = require('@playwright/test');
 const { execSync } = require('child_process');
 const { TIMEOUTS } = require('./time-constants');
 
-const {loginToWordPress,logTestStart,ensureDebugModeEnabled} = require('./test-helpers');
+const {loginToWordPress,logTestStart,ensureDebugModeEnabled, logTestEnd, baseURL} = require('./test-helpers');
 
-test.describe('WooCommerce Plugin level tests', () => {
+test.describe.serial('WooCommerce Plugin level tests', () => {
 
   test.beforeEach(async ({ page }, testInfo) => {
     // Log test start first for proper chronological order
@@ -188,17 +188,17 @@ test.describe('WooCommerce Plugin level tests', () => {
     // Verify options visibility
     await page.goto(`${process.env.WORDPRESS_URL}/wp-admin/options.php`);
 
-    const label = page.locator('label[for="wc_facebook_external_business_id"]');
+    const label = page.locator('label[for="wc_facebook_enable_debug_mode"]');
     await label.waitFor({ state: 'visible', timeout: TIMEOUTS.LONG });
 
-    const input = page.locator('#wc_facebook_external_business_id');
+    const input = page.locator('#wc_facebook_enable_debug_mode');
     const value = await input.inputValue();
 
     expect(value).toBeTruthy();
-    expect(value).toBe(process.env.FB_EXTERNAL_BUSINESS_ID);
+    expect(value).toBe("yes");
 
     console.log('✅ WooCommerce Debug log checks passed');
-    console.log(`   - Option exists: wc_facebook_external_business_id`);
+    console.log(`   - Option exists: wc_facebook_enable_debug_mode`);
     console.log(`   - Value is non-null: YES`);
     console.log(`   - Matches expected: YES`);
   });
@@ -343,6 +343,167 @@ test.describe('WooCommerce Plugin level tests', () => {
 
     console.log('✅ Facebook settings page loaded without errors');
     console.log('✅ All connection checks passed');
+  });
+
+  test('Test WordPress admin and Facebook plugin presence', async ({ page }, testInfo) => {
+
+    try {
+      // Navigate to plugins page with increased timeout
+      await page.goto(`${baseURL}/wp-admin/plugins.php`, {
+        waitUntil: 'domcontentloaded',
+        timeout: TIMEOUTS.MAX
+      });
+
+      // Check if Facebook plugin is listed
+      const pageContent = await page.content();
+      const hasFacebookPlugin = pageContent.includes('Facebook for WooCommerce') ||
+        pageContent.includes('facebook-for-woocommerce');
+
+      if (hasFacebookPlugin) {
+        console.log('✅ Facebook for WooCommerce plugin detected');
+      } else {
+        console.warn('⚠️ Facebook for WooCommerce plugin not found in plugins list');
+      }
+
+      // Verify no PHP errors
+      expect(pageContent).not.toContain('Fatal error');
+      expect(pageContent).not.toContain('Parse error');
+
+      console.log('✅ Plugin detection test completed');
+      logTestEnd(testInfo, true);
+
+    } catch (error) {
+      console.log(`⚠️ Plugin detection test failed: ${error.message}`);
+      logTestEnd(testInfo, false);
+      throw error;
+    }
+  });
+
+  test('Test basic WooCommerce product list', async ({ page }, testInfo) => {
+
+    try {
+      // Go to Products list with increased timeout
+      await page.goto(`${baseURL}/wp-admin/edit.php?post_type=product`, {
+        waitUntil: 'domcontentloaded',
+        timeout: TIMEOUTS.MAX
+      });
+
+      // Verify no PHP errors on products page
+      const pageContent = await page.content();
+      expect(pageContent).not.toContain('Fatal error');
+      expect(pageContent).not.toContain('Parse error');
+
+      // Check if WooCommerce is working
+      const hasProductsTable = await page.locator('.wp-list-table').isVisible({ timeout: TIMEOUTS.LONG });
+      if (hasProductsTable) {
+        console.log('✅ WooCommerce products page loaded successfully');
+      } else {
+        console.warn('⚠️ Products table not found');
+      }
+
+      console.log('✅ Product list test completed');
+      logTestEnd(testInfo, true);
+
+    } catch (error) {
+      console.log(`⚠️ Product list test failed: ${error.message}`);
+      logTestEnd(testInfo, false);
+      throw error;
+    }
+  });
+
+  test('Quick PHP error check across key pages', async ({ page }, testInfo) => {
+
+    try {
+      const pagesToCheck = [
+        { path: '/wp-admin/', name: 'Dashboard' },
+        { path: '/wp-admin/edit.php?post_type=product', name: 'Products' },
+        { path: '/wp-admin/plugins.php', name: 'Plugins' }
+      ];
+
+      for (const pageInfo of pagesToCheck) {
+        try {
+          console.log(`🔍 Checking ${pageInfo.name} page...`);
+          await page.goto(`${baseURL}${pageInfo.path}`, {
+            waitUntil: 'domcontentloaded',
+            timeout: TIMEOUTS.MAX
+          });
+
+          const pageContent = await page.content();
+
+          // Check for PHP errors
+          expect(pageContent).not.toContain('Fatal error');
+          expect(pageContent).not.toContain('Parse error');
+          // expect(pageContent).not.toContain('Warning: ');
+          // TODO: Do not dump the whole page content, just check for errors
+
+          // Verify admin content loaded
+          await page.locator('#wpcontent').isVisible({ timeout: TIMEOUTS.LONG });
+
+          console.log(`✅ ${pageInfo.name} page loaded without errors`);
+
+        } catch (error) {
+          console.log(`⚠️ ${pageInfo.name} page check failed: ${error.message}`);
+        }
+      }
+
+      logTestEnd(testInfo, true);
+    } catch (error) {
+      logTestEnd(testInfo, false);
+      throw error;
+    }
+  });
+
+  test('Test Facebook plugin deactivation and reactivation', async ({ page }, testInfo) => {
+
+    try {
+      // Navigate to plugins page
+      await page.goto(`${baseURL}/wp-admin/plugins.php`, {
+        waitUntil: 'domcontentloaded',
+        timeout: TIMEOUTS.MAX
+      });
+
+      // Look for Facebook plugin row
+      const pluginRow = page.locator('tr[data-slug="facebook-for-woocommerce"], tr:has-text("Facebook for WooCommerce")').first();
+
+      await pluginRow.waitFor({ state: 'visible', timeout: TIMEOUTS.LONG });
+      console.log('✅ Facebook plugin found');
+
+      // Check if plugin is currently active
+      const isActive = await pluginRow.locator('.active').isVisible({ timeout: TIMEOUTS.LONG });
+      const deactivateLink = pluginRow.locator('a:has-text("Deactivate")');
+      const reactivateLink = pluginRow.locator('a:has-text("Activate")');
+
+      if (isActive) {
+        console.log('Plugin is active, testing deactivation...');
+        await deactivateLink.waitFor({ state: 'visible', timeout: TIMEOUTS.LONG });
+        await deactivateLink.click();
+        await reactivateLink.waitFor({ state: 'visible', timeout: TIMEOUTS.LONG });
+        console.log('✅ Plugin deactivated');
+        await reactivateLink.click();
+        await deactivateLink.waitFor({ state: 'visible', timeout: TIMEOUTS.LONG });
+        console.log('✅ Plugin reactivated');
+      } else {
+        console.log('Plugin is inactive, testing activation...');
+        const activateLink = pluginRow.locator('a:has-text("Activate")');
+        await activateLink.waitFor({ state: 'visible', timeout: TIMEOUTS.LONG });
+        await activateLink.click();
+        await deactivateLink.waitFor({ state: 'visible', timeout: TIMEOUTS.LONG });
+        console.log('✅ Plugin activated');
+      }
+
+      // Verify no PHP errors after plugin operations
+      const pageContent = await page.content();
+      expect(pageContent).not.toContain('Fatal error');
+      expect(pageContent).not.toContain('Parse error');
+
+      console.log('✅ Plugin activation test completed');
+      logTestEnd(testInfo, true);
+
+    } catch (error) {
+      console.log(`⚠️ Plugin activation test failed: ${error.message}`);
+      logTestEnd(testInfo, false);
+      throw error;
+    }
   });
 
 

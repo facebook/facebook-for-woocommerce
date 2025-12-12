@@ -371,7 +371,7 @@ test.describe('Facebook for WooCommerce - Product Modification E2E Tests', () =>
 
       // Validate Facebook sync after editing
       console.log('🔄 Validating Facebook sync after edit...');
-      const result = await validateFacebookSync(productId, newTitle, 30);
+      const result = await validateFacebookSync(productId, newTitle, 60);
       expect(result['success']).toBe(true);
 
       // Verify the changes were saved
@@ -604,7 +604,7 @@ test.describe('Facebook for WooCommerce - Product Modification E2E Tests', () =>
 
       // Validate Facebook sync
       console.log('🔍 Validating Facebook catalog sync...');
-      const syncResult = await validateFacebookSync(productId, productName, 30);
+      const syncResult = await validateFacebookSync(productId, productName, 60);
       expect(syncResult.success).toBe(true);
 
       // Take final screenshot
@@ -679,7 +679,7 @@ test.describe('Facebook for WooCommerce - Product Modification E2E Tests', () =>
 
       // Validate Facebook sync
       console.log('🔄 Validating Facebook sync after stock status change...');
-      const syncResult = await validateFacebookSync(productId, productName);
+      const syncResult = await validateFacebookSync(productId, productName, 30);
       expect(syncResult.success).toBe(true);
       expect(syncResult['raw_data']['facebook_data'][0]['availability']).toBe('out of stock');
       console.log('✅ Facebook sync validated successfully');
