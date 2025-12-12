@@ -253,4 +253,143 @@ class BookingsTest extends AbstractWPUnitTestWithOptionIsolationAndSafeFiltering
 		// Clean up
 		remove_all_filters( 'wc_facebook_instance' );
 	}
+
+	/**
+	 * Test get_product_price return type is always integer.
+	 */
+	public function test_get_product_price_return_type_is_integer() {
+		$bookings = new Bookings();
+		$product = $this->createMock( \WC_Product::class );
+		
+		// Test various inputs all return integers
+		$test_cases = [
+			[ 'price' => 0, 'facebook_price' => 0 ],
+			[ 'price' => 100, 'facebook_price' => 0 ],
+			[ 'price' => 999999, 'facebook_price' => 0 ],
+			[ 'price' => 1000, 'facebook_price' => 500 ],
+		];
+		
+		foreach ( $test_cases as $case ) {
+			$result = $bookings->get_product_price( $case['price'], $case['facebook_price'], $product );
+			$this->assertIsInt( $result, "Expected integer for price={$case['price']}, facebook_price={$case['facebook_price']}" );
+		}
+	}
+
+	/**
+	 * Test that get_product_price method has correct signature.
+	 */
+	public function test_get_product_price_method_signature() {
+		$reflection = new \ReflectionClass( Bookings::class );
+		$method = $reflection->getMethod( 'get_product_price' );
+		
+		// Verify method is public
+		$this->assertTrue( $method->isPublic() );
+		
+		// Verify method has 3 parameters
+		$this->assertEquals( 3, $method->getNumberOfParameters() );
+		
+		// Verify parameter names
+		$parameters = $method->getParameters();
+		$this->assertEquals( 'price', $parameters[0]->getName() );
+		$this->assertEquals( 'facebook_price', $parameters[1]->getName() );
+		$this->assertEquals( 'product', $parameters[2]->getName() );
+	}
+
+	/**
+	 * Test that add_hooks method is public and callable.
+	 */
+	public function test_add_hooks_method_is_public() {
+		$reflection = new \ReflectionClass( Bookings::class );
+		$method = $reflection->getMethod( 'add_hooks' );
+		
+		// Verify method is public
+		$this->assertTrue( $method->isPublic() );
+		
+		// Verify method has no required parameters
+		$this->assertEquals( 0, $method->getNumberOfRequiredParameters() );
+	}
+
+	/**
+	 * Test that is_bookable_product is private.
+	 */
+	public function test_is_bookable_product_is_private() {
+		$reflection = new \ReflectionClass( Bookings::class );
+		$method = $reflection->getMethod( 'is_bookable_product' );
+		
+		// Verify method is private
+		$this->assertTrue( $method->isPrivate() );
+		
+		// Verify method has 1 parameter
+		$this->assertEquals( 1, $method->getNumberOfParameters() );
+	}
+
+	/**
+	 * Test get_product_price with empty string facebook price.
+	 */
+	public function test_get_product_price_with_empty_string_facebook_price() {
+		$bookings = new Bookings();
+		$product = $this->createMock( \WC_Product::class );
+		
+		// Empty string is falsy, so should trigger bookable product check
+		$result = $bookings->get_product_price( 1000, '', $product );
+		
+		// Should return original price for non-bookable product
+		$this->assertEquals( 1000, $result );
+		$this->assertIsInt( $result );
+	}
+
+	/**
+	 * Test get_product_price with boolean false facebook price.
+	 */
+	public function test_get_product_price_with_false_facebook_price() {
+		$bookings = new Bookings();
+		$product = $this->createMock( \WC_Product::class );
+		
+		// False is falsy, so should trigger bookable product check
+		$result = $bookings->get_product_price( 1000, false, $product );
+		
+		// Should return original price for non-bookable product
+		$this->assertEquals( 1000, $result );
+		$this->assertIsInt( $result );
+	}
+
+	/**
+	 * Test that constructor doesn't throw exceptions.
+	 */
+	public function test_constructor_no_exceptions() {
+		// Should not throw any exceptions
+		$bookings = new Bookings();
+		$this->assertInstanceOf( Bookings::class, $bookings );
+		
+		// Create multiple instances
+		$bookings2 = new Bookings();
+		$this->assertInstanceOf( Bookings::class, $bookings2 );
+	}
+
+	/**
+	 * Test get_product_price preserves price when conditions not met.
+	 */
+	public function test_get_product_price_preserves_original_price() {
+		$bookings = new Bookings();
+		$product = $this->createMock( \WC_Product::class );
+		
+		// Test that original price is preserved in various scenarios
+		$original_price = 12345;
+		
+		// With facebook price set
+		$result = $bookings->get_product_price( $original_price, 100, $product );
+		$this->assertEquals( $original_price, $result );
+		
+		// With non-bookable product
+		$result = $bookings->get_product_price( $original_price, 0, $product );
+		$this->assertEquals( $original_price, $result );
+	}
+
+	/**
+	 * Test that class has correct namespace.
+	 */
+	public function test_class_namespace() {
+		$reflection = new \ReflectionClass( Bookings::class );
+		$this->assertEquals( 'WooCommerce\Facebook\Integrations', $reflection->getNamespaceName() );
+	}
 } 
