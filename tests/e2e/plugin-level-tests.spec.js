@@ -63,7 +63,7 @@ test.describe('WooCommerce Plugin level tests', () => {
     }
 
     console.log('✅ Storefront theme is active');
-    
+
     if (jsErrors.length > 0) {
       console.log('⚠️ JavaScript errors detected:', jsErrors);
     }
@@ -335,6 +335,57 @@ test.describe('WooCommerce Plugin level tests', () => {
 
     if (!result.success) {
       throw new Error('Log validation failed');
+    }
+  });
+
+  test('Send test email via Postmark and verify delivery', async () => {
+    console.log('📧 Sending test email via wp_mail...');
+
+    const testRecipient = process.env.TEST_RECIPIENT ;
+    const postmarkApiKey = process.env.POSTMARK_API_KEY;
+
+    if (!postmarkApiKey) {
+      console.log('⚠️ POSTMARK_API_KEY not set - skipping test');
+      return;
+    }
+
+    try {
+      // Send test email using wp_mail
+      const { exec } = require('child_process');
+      const { promisify } = require('util');
+      const execAsync = promisify(exec);
+
+      const wpSitePath = process.env.WORDPRESS_PATH;
+      await execAsync(
+        `php -r "require_once('${wpSitePath}/wp-load.php'); wp_mail('${testRecipient}', 'CI Test Email', 'This is a CI test from WordPress via Postmark.');"`,
+        { cwd: __dirname }
+      );
+
+      console.log('✅ Email sent via wp_mail');
+
+      // Wait for Postmark to process
+      console.log('⏳ Waiting for Postmark to process...');
+      await new Promise(resolve => setTimeout(resolve, 5000));
+
+      // Verify delivery via Postmark API
+      console.log('🔍 Verifying delivery via Postmark API...');
+      const curlCommand = `curl -s -H "Accept: application/json" -H "X-Postmark-Server-Token: ${postmarkApiKey}" "https://api.postmarkapp.com/messages/outbound?recipient=${testRecipient}"`;
+
+      const { stdout } = await execAsync(curlCommand);
+
+      console.log('📄 Postmark API response:');
+      console.log(stdout);
+
+      // Check if email was delivered
+      if (stdout.includes('Delivered')) {
+        console.log('✅ Email delivery verified');
+      } else {
+        throw new Error('❌ Email delivery failed - no "Delivered" status found in response');
+      }
+
+    } catch (error) {
+      console.error('❌ Email test failed:', error.message);
+      throw error;
     }
   });
 
