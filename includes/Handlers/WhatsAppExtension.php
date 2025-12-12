@@ -140,7 +140,8 @@ class WhatsAppExtension {
 	 * @param string $order_details_link Order Details Link
 	 * @param string $phone_number Customer phone number
 	 * @param string $first_name Customer first name
-	 * @param int    $refund_value Amount refunded to the Customer
+	* @param int    $refund_value Amount refunded to the Customer
+	* @param array  $order_payload Optional order payload with extra order fields
 	 * @param string $currency Currency code
 	 * @param string $country_code Customer country code
 	 *
@@ -156,7 +157,8 @@ class WhatsAppExtension {
 		$first_name,
 		$refund_value,
 		$currency,
-		$country_code
+		$country_code,
+		$order_payload = array()
 	) {
 		$whatsapp_connection = $plugin->get_whatsapp_connection_handler();
 		$is_connected        = $whatsapp_connection->is_connected();
@@ -181,6 +183,16 @@ class WhatsAppExtension {
 			$refund_value,
 			$currency
 		);
+		// If an order payload is provided, merge it under an `order` key
+		if ( ! empty( $order_payload ) ) {
+			if ( ! is_array( $event_object ) ) {
+				$event_object = array();
+			}
+			// Only add if not already present — user requested "add if not available"
+			if ( empty( $event_object['order'] ) ) {
+				$event_object['order'] = $order_payload;
+			}
+		}
 		$event_base_object  = array(
 			'id'   => "#{$order_id}",
 			'type' => $event,
