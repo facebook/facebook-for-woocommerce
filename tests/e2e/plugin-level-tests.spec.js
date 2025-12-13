@@ -4,7 +4,7 @@ const { TIMEOUTS } = require('./time-constants');
 
 const {loginToWordPress,logTestStart,ensureDebugModeEnabled} = require('./test-helpers');
 
-test.describe('WooCommerce Plugin level tests', () => {
+test.describe.serial('WooCommerce Plugin level tests', () => {
 
   test.beforeEach(async ({ page }, testInfo) => {
     // Log test start first for proper chronological order
