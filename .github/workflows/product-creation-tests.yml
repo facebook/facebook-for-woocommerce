@@ -307,14 +307,29 @@ jobs:
           # Extract the selected asset set
           SELECTED_ASSET=$(echo "$ASSETS" | jq -c ".[$INDEX]")
 
-          # Extract individual values and set as outputs
+          # Extract values into variables
+          ACCESS_TOKEN=$(echo "$SELECTED_ASSET" | jq -r '.wc_facebook_access_token')
+          BUSINESS_MANAGER_ID=$(echo "$SELECTED_ASSET" | jq -r '.wc_facebook_business_manager_id')
+          EXTERNAL_BUSINESS_ID=$(echo "$SELECTED_ASSET" | jq -r '.wc_facebook_external_business_id')
+          PRODUCT_CATALOG_ID=$(echo "$SELECTED_ASSET" | jq -r '.wc_facebook_product_catalog_id')
+          PIXEL_ID=$(echo "$SELECTED_ASSET" | jq -r '.wc_facebook_pixel_id')
+          PAGE_ID=$(echo "$SELECTED_ASSET" | jq -r '.wc_facebook_page_id')
+
+          # Mask all sensitive values to prevent them from appearing in logs
+          echo "::add-mask::$ACCESS_TOKEN"
+          echo "::add-mask::$BUSINESS_MANAGER_ID"
+          echo "::add-mask::$EXTERNAL_BUSINESS_ID"
+          echo "::add-mask::$PRODUCT_CATALOG_ID"
+          echo "::add-mask::$PIXEL_ID"
+          echo "::add-mask::$PAGE_ID"
+
           # Set environment variables for subsequent steps
-          echo "FB_ACCESS_TOKEN=$(echo "$SELECTED_ASSET" | jq -r '.wc_facebook_access_token')" >> $GITHUB_ENV
-          echo "FB_BUSINESS_MANAGER_ID=$(echo "$SELECTED_ASSET" | jq -r '.wc_facebook_business_manager_id')" >> $GITHUB_ENV
-          echo "FB_EXTERNAL_BUSINESS_ID=$(echo "$SELECTED_ASSET" | jq -r '.wc_facebook_external_business_id')" >> $GITHUB_ENV
-          echo "FB_PRODUCT_CATALOG_ID=$(echo "$SELECTED_ASSET" | jq -r '.wc_facebook_product_catalog_id')" >> $GITHUB_ENV
-          echo "FB_PIXEL_ID=$(echo "$SELECTED_ASSET" | jq -r '.wc_facebook_pixel_id')" >> $GITHUB_ENV
-          echo "FB_PAGE_ID=$(echo "$SELECTED_ASSET" | jq -r '.wc_facebook_page_id')" >> $GITHUB_ENV
+          echo "FB_ACCESS_TOKEN=$ACCESS_TOKEN" >> $GITHUB_ENV
+          echo "FB_BUSINESS_MANAGER_ID=$BUSINESS_MANAGER_ID" >> $GITHUB_ENV
+          echo "FB_EXTERNAL_BUSINESS_ID=$EXTERNAL_BUSINESS_ID" >> $GITHUB_ENV
+          echo "FB_PRODUCT_CATALOG_ID=$PRODUCT_CATALOG_ID" >> $GITHUB_ENV
+          echo "FB_PIXEL_ID=$PIXEL_ID" >> $GITHUB_ENV
+          echo "FB_PAGE_ID=$PAGE_ID" >> $GITHUB_ENV
 
           echo "✅ Selected business asset set $INDEX for this run"
 
