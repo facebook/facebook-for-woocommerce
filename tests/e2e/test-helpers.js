@@ -1080,8 +1080,8 @@ async function checkWooCommerceLogs() {
 }
 
 // Helper function to complete a purchase flow
-async function completePurchaseFlow(page, productUrl = null) {
-  const url = productUrl || process.env.TEST_PRODUCT_URL;
+async function completePurchaseFlow(page) {
+  const url = process.env.TEST_PRODUCT_URL;
 
   console.log(`   📦 Navigating to product page`);
   await page.goto(url, { waitUntil: 'domcontentloaded', timeout: TIMEOUTS.EXTRA_LONG });
@@ -1123,6 +1123,298 @@ async function completePurchaseFlow(page, productUrl = null) {
   return { orderReceivedUrl, orderId };
 }
 
+// Helper function to verify email delivery via Postmark API
+async function verifyPostmarkDelivery(recipient, options = {}) {
+  const postmarkApiKey = process.env.POSTMARK_API_KEY;
+  const waitSeconds = options.waitSeconds || 5000;
+  const subjectFilter = options.subjectFilter || null;
+
+  if (!postmarkApiKey) {
+    console.log('⚠️ POSTMARK_API_KEY not set - skipping email verification');
+    return null;
+  }
+
+  console.log('⏳ Waiting for Postmark to process...');
+  await new Promise(resolve => setTimeout(resolve, waitSeconds));
+
+  console.log('🔍 Verifying delivery via Postmark API...');
+  const { exec } = require('child_process');
+  const { promisify } = require('util');
+  const execAsync = promisify(exec);
+
+  const curlCommand = `curl -s -H "Accept: application/json" -H "X-Postmark-Server-Token: ${postmarkApiKey}" "https://api.postmarkapp.com/messages/outbound?recipient=${recipient}&count=30"`;
+
+  const { stdout } = await execAsync(curlCommand);
+
+  console.log('📄 Postmark API response:');
+  console.log(stdout);
+
+  const emailData = JSON.parse(stdout);
+
+  // If subject filter is provided, find specific email
+  if (subjectFilter) {
+    const email = emailData.Messages?.find(msg => msg.Subject?.includes(subjectFilter));
+    if (email) {
+      console.log(`✅ Email verified: ${email.Subject}`);
+      expect(email.Status).toBe('Delivered');
+      return email;
+    } else {
+      console.log(`⚠️ Email with subject "${subjectFilter}" not found`);
+      return null;
+    }
+  }
+
+  // Otherwise, just check for any delivered email
+  if (stdout.includes('Delivered')) {
+    console.log('✅ Email delivery verified');
+    return emailData;
+  } else {
+    throw new Error('❌ Email delivery failed - no "Delivered" status found in response');
+  }
+}
+
+// Helper function to disconnect from Facebook and verify cleanup
+async function disconnectAndVerify() {
+  console.log('🔌 Initiating Facebook disconnection...');
+
+  const { exec } = require('child_process');
+  const { promisify } = require('util');
+  const execAsync = promisify(exec);
+
+  // Step 1: Verify connected before disconnect
+  console.log('📋 Checking connection status before disconnect...');
+  const { stdout: beforeStatus } = await execAsync(
+    `php -r "require_once('${wpSitePath}/wp-load.php');
+    \\$conn = facebook_for_woocommerce()->get_connection_handler();
+    echo json_encode([
+      'connected' => \\$conn->is_connected(),
+      'pixel_id' => get_option('wc_facebook_pixel_id'),
+      'access_token' => get_option('wc_facebook_access_token')
+    ]);"`,
+    { cwd: __dirname }
+  );
+
+  const before = JSON.parse(beforeStatus);
+
+  if (!before.connected) {
+    throw new Error('❌ Already disconnected - cannot test disconnect flow');
+  }
+
+  console.log('✅ Verified connected state:');
+  console.log(`   - Connected: ${before.connected}`);
+  console.log(`   - Pixel ID: ${before.pixel_id || 'EMPTY'}`);
+  console.log(`   - Access Token: ${before.access_token ? 'Present' : 'Missing'}`);
+
+  // Step 2: Execute disconnect
+  console.log('🔌 Executing disconnect...');
+  await execAsync(
+    `php -r "require_once('${wpSitePath}/wp-load.php');
+    facebook_for_woocommerce()->get_connection_handler()->disconnect();"`,
+    { cwd: __dirname }
+  );
+  console.log('✅ Disconnect executed');
+
+  // Step 3: Verify disconnection
+  console.log('🔍 Verifying disconnection...');
+  const { stdout: afterStatus } = await execAsync(
+    `php -r "require_once('${wpSitePath}/wp-load.php');
+    \\$conn = facebook_for_woocommerce()->get_connection_handler();
+    echo json_encode([
+      'connected' => \\$conn->is_connected(),
+      'pixel_id' => get_option('wc_facebook_pixel_id'),
+      'facebook_config' => get_option('facebook_config'),
+      'access_token' => get_option('wc_facebook_access_token'),
+      'merchant_access_token' => get_option('wc_facebook_merchant_access_token'),
+      'external_business_id' => \\$conn->get_external_business_id()
+    ]);"`,
+    { cwd: __dirname }
+  );
+
+  const after = JSON.parse(afterStatus);
+
+  // Validate disconnection
+  const failures = [];
+
+  if (after.connected !== false) {
+    failures.push('Connection handler still reports connected');
+  }
+
+  if (after.pixel_id) {
+    failures.push(`Pixel ID not cleared: ${after.pixel_id}`);
+  }
+
+  if (after.facebook_config) {
+    failures.push('Facebook config option not deleted');
+  }
+
+  if (after.access_token) {
+    failures.push('Access token not cleared');
+  }
+
+  if (after.merchant_access_token) {
+    failures.push('Merchant access token not cleared');
+  }
+
+  if (after.external_business_id) {
+    failures.push('External business ID not cleared');
+  }
+
+  if (failures.length > 0) {
+    throw new Error('❌ Disconnection verification failed:\n   - ' + failures.join('\n   - '));
+  }
+
+  console.log('✅ Disconnection verified successfully:');
+  console.log(`   - Connected: ${after.connected}`);
+  console.log(`   - Pixel ID: ${after.pixel_id || 'CLEARED'}`);
+  console.log(`   - Facebook Config: ${after.facebook_config || 'DELETED'}`);
+  console.log(`   - Access Token: ${after.access_token || 'CLEARED'}`);
+  console.log(`   - Merchant Token: ${after.merchant_access_token || 'CLEARED'}`);
+  console.log(`   - External Business ID: ${after.external_business_id || 'CLEARED'}`);
+
+  return {
+    before,
+    after,
+    success: true
+  };
+}
+
+// Helper function to reconnect to Facebook (mimics workflow setup)
+async function reconnectAndVerify() {
+  console.log('🔄 Initiating Facebook reconnection...');
+
+  const { exec } = require('child_process');
+  const { promisify } = require('util');
+  const execAsync = promisify(exec);
+
+  // Get required credentials from environment
+  const credentials = {
+    accessToken: process.env.FB_ACCESS_TOKEN,
+    businessManagerId: process.env.FB_BUSINESS_MANAGER_ID,
+    externalBusinessId: process.env.FB_EXTERNAL_BUSINESS_ID,
+    productCatalogId: process.env.FB_PRODUCT_CATALOG_ID,
+    pixelId: process.env.FB_PIXEL_ID,
+    pageId: process.env.FB_PAGE_ID
+  };
+
+  // Step 1: Verify disconnected state
+  console.log('📋 Verifying disconnected state before reconnect...');
+  const { stdout: beforeStatus } = await execAsync(
+    `php -r "require_once('${wpSitePath}/wp-load.php');
+    \\$conn = facebook_for_woocommerce()->get_connection_handler();
+    echo json_encode(['connected' => \\$conn->is_connected()]);"`,
+    { cwd: __dirname }
+  );
+
+  const before = JSON.parse(beforeStatus);
+  if (before.connected) {
+    throw new Error('❌ Already connected - cannot test reconnect flow');
+  }
+  console.log('✅ Verified disconnected state');
+
+  // Step 2: Deactivate plugin before setting options
+  console.log('🔄 Deactivating plugin...');
+  await execAsync(
+    `php -r "require_once('${wpSitePath}/wp-load.php');
+    deactivate_plugins('facebook-for-woocommerce/facebook-for-woocommerce.php');"`,
+    { cwd: __dirname }
+  );
+  console.log('✅ Plugin deactivated');
+
+  // Step 3: Set all connection options while plugin is inactive
+  console.log('⚙️ Setting connection options...');
+  const options = [
+    ['wc_facebook_access_token', credentials.accessToken],
+    ['wc_facebook_merchant_access_token', credentials.accessToken],
+    ['wc_facebook_business_manager_id', credentials.businessManagerId],
+    ['wc_facebook_external_business_id', credentials.externalBusinessId],
+    ['wc_facebook_product_catalog_id', credentials.productCatalogId],
+    ['wc_facebook_pixel_id', credentials.pixelId],
+    ['wc_facebook_page_id', credentials.pageId],
+    ['wc_facebook_enable_server_to_server', 'yes'],
+    ['wc_facebook_enable_pixel', 'yes'],
+    ['wc_facebook_enable_advanced_matching', 'yes'],
+    ['wc_facebook_debug_mode', 'yes'],
+    ['wc_facebook_has_connected_fbe_2', 'yes'],
+    ['wc_facebook_has_authorized_pages_read_engagement', 'yes'],
+    ['wc_facebook_enable_product_sync', 'yes']
+  ];
+
+  for (const [optionName, optionValue] of options) {
+    await execAsync(
+      `php -r "require_once('${wpSitePath}/wp-load.php'); update_option('${optionName}', '${optionValue}');"`,
+      { cwd: __dirname }
+    );
+  }
+  console.log(`✅ Set ${options.length} connection options`);
+
+  // Step 4: Activate plugin to trigger initialization with new options
+  console.log('🔄 Activating plugin to initialize connection...');
+  await execAsync(
+    `php -r "require_once('${wpSitePath}/wp-load.php');
+    activate_plugin('facebook-for-woocommerce/facebook-for-woocommerce.php');"`,
+    { cwd: __dirname }
+  );
+  console.log('✅ Plugin activated');
+
+  // Step 5: Verify reconnection
+  console.log('🔍 Verifying reconnection...');
+  const { stdout: afterStatus } = await execAsync(
+    `php -r "require_once('${wpSitePath}/wp-load.php');
+    \\$conn = facebook_for_woocommerce()->get_connection_handler();
+    echo json_encode([
+      'connected' => \\$conn->is_connected(),
+      'pixel_id' => get_option('wc_facebook_pixel_id'),
+      'access_token' => get_option('wc_facebook_access_token'),
+      'external_business_id' => \\$conn->get_external_business_id(),
+      'catalog_id' => get_option('wc_facebook_product_catalog_id')
+    ]);"`,
+    { cwd: __dirname }
+  );
+
+  const after = JSON.parse(afterStatus);
+
+  // Validate reconnection
+  const failures = [];
+
+  if (after.connected !== true) {
+    failures.push('Connection handler reports not connected');
+  }
+
+  if (!after.pixel_id || after.pixel_id !== credentials.pixelId) {
+    failures.push(`Pixel ID mismatch. Expected: ${credentials.pixelId}, Got: ${after.pixel_id || 'EMPTY'}`);
+  }
+
+  if (!after.access_token) {
+    failures.push('Access token not set');
+  }
+
+  if (!after.external_business_id || after.external_business_id !== credentials.externalBusinessId) {
+    failures.push(`External Business ID mismatch. Expected: ${credentials.externalBusinessId}, Got: ${after.external_business_id || 'EMPTY'}`);
+  }
+
+  if (!after.catalog_id || after.catalog_id !== credentials.productCatalogId) {
+    failures.push(`Catalog ID mismatch. Expected: ${credentials.productCatalogId}, Got: ${after.catalog_id || 'EMPTY'}`);
+  }
+
+  if (failures.length > 0) {
+    throw new Error('❌ Reconnection verification failed:\n   - ' + failures.join('\n   - '));
+  }
+
+  console.log('✅ Reconnection verified successfully:');
+  console.log(`   - Connected: ${after.connected}`);
+  console.log(`   - Pixel ID: ${after.pixel_id}`);
+  console.log(`   - External Business ID: ${after.external_business_id}`);
+  console.log(`   - Catalog ID: ${after.catalog_id}`);
+  console.log(`   - Access Token: Present`);
+
+  return {
+    before,
+    after,
+    success: true,
+    credentials
+  };
+}
+
 module.exports = {
   baseURL,
   username,
@@ -1154,5 +1446,8 @@ module.exports = {
   ensureDebugModeEnabled,
   checkWooCommerceLogs,
   completePurchaseFlow,
-  checkForJsErrors
+  checkForJsErrors,
+  verifyPostmarkDelivery,
+  disconnectAndVerify,
+  reconnectAndVerify
 };

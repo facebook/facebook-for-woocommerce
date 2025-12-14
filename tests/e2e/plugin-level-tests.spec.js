@@ -2,7 +2,7 @@ const { test, expect } = require('@playwright/test');
 const { execSync } = require('child_process');
 const { TIMEOUTS } = require('./time-constants');
 
-const {loginToWordPress,logTestStart,ensureDebugModeEnabled,checkWooCommerceLogs,checkForPhpErrors,checkForJsErrors} = require('./test-helpers');
+const {loginToWordPress,logTestStart,ensureDebugModeEnabled,checkWooCommerceLogs,checkForPhpErrors,checkForJsErrors,verifyPostmarkDelivery,completePurchaseFlow,disconnectAndVerify,reconnectAndVerify} = require('./test-helpers');
 
 test.describe('WooCommerce Plugin level tests', () => {
 
@@ -48,7 +48,7 @@ test.describe('WooCommerce Plugin level tests', () => {
     const jsErrors = checkForJsErrors(page);
 
     await page.goto(`${process.env.WORDPRESS_URL}/wp-admin/themes.php`, {
-      waitUntil: 'networkidle',
+      waitUntil: 'domcontentloaded',
       timeout: TIMEOUTS.EXTRA_LONG
     });
 
@@ -291,39 +291,27 @@ test.describe('WooCommerce Plugin level tests', () => {
     // Check Facebook settings page loads without errors
     console.log('🔍 Checking Marketing > Facebook page...');
 
-    const errors = [];
-
-    // Only capture actual JavaScript errors, not resource loading failures
-    page.on('pageerror', error => {
-      errors.push(`JS Error: ${error.message}`);
-    });
+    // Set up JS error tracking BEFORE navigation
+    const jsErrors = checkForJsErrors(page);
 
     await page.goto(`${process.env.WORDPRESS_URL}/wp-admin/admin.php?page=wc-facebook`, {
-      waitUntil: 'networkidle',
+      waitUntil: 'domcontentloaded',
       timeout: TIMEOUTS.EXTRA_LONG
     });
 
-    // Verify no fatal PHP errors
-    const content = await page.content();
-    const hasPHPError = content.includes('Fatal error') ||
-                        content.includes('Parse error') ||
-                        content.includes('There has been a critical error');
-
-    if (hasPHPError) {
-      errors.push('PHP errors detected on page');
-    }
+    // Check for PHP errors using helper
+    await checkForPhpErrors(page);
 
     // Verify page loaded properly (look for Facebook branding or settings)
     const pageLoaded = await page.locator('.wc-facebook-settings, #wc-facebook-settings-page, .facebook-for-woocommerce').count() > 0;
 
     if (!pageLoaded) {
-      errors.push('Facebook settings page did not load properly');
+      throw new Error('Facebook settings page did not load properly');
     }
 
-    if (errors.length > 0) {
-      console.log('❌ Errors found:');
-      errors.forEach(err => console.log(`   - ${err}`));
-      throw new Error(`Facebook settings page validation failed: ${errors.join('; ')}`);
+    // Check for JS errors
+    if (jsErrors.length > 0) {
+      throw new Error(`JS errors on Facebook settings page: ${jsErrors.join('; ')}`);
     }
 
     console.log('✅ Facebook settings page loaded without errors');
@@ -363,25 +351,8 @@ test.describe('WooCommerce Plugin level tests', () => {
 
       console.log('✅ Email sent via wp_mail');
 
-      // Wait for Postmark to process
-      console.log('⏳ Waiting for Postmark to process...');
-      await new Promise(resolve => setTimeout(resolve, 5000));
-
-      // Verify delivery via Postmark API
-      console.log('🔍 Verifying delivery via Postmark API...');
-      const curlCommand = `curl -s -H "Accept: application/json" -H "X-Postmark-Server-Token: ${postmarkApiKey}" "https://api.postmarkapp.com/messages/outbound?recipient=${testRecipient}"`;
-
-      const { stdout } = await execAsync(curlCommand);
-
-      console.log('📄 Postmark API response:');
-      console.log(stdout);
-
-      // Check if email was delivered
-      if (stdout.includes('Delivered')) {
-        console.log('✅ Email delivery verified');
-      } else {
-        throw new Error('❌ Email delivery failed - no "Delivered" status found in response');
-      }
+      // Use helper to verify email delivery
+      await verifyPostmarkDelivery(testRecipient);
 
     } catch (error) {
       console.error('❌ Email test failed:', error.message);
@@ -394,6 +365,9 @@ test.describe('WooCommerce Plugin level tests', () => {
 
     const postmarkApiKey = process.env.POSTMARK_API_KEY;
     const customerEmail = process.env.WP_CUSTOMER_EMAIL;
+
+    // Set up JS error tracking BEFORE purchase flow
+    const jsErrors = checkForJsErrors(page);
 
     // Use helper to complete purchase
     const { orderId } = await completePurchaseFlow(page);
@@ -421,30 +395,67 @@ test.describe('WooCommerce Plugin level tests', () => {
 
     console.log(`✅ Order verified: Status=${orderData.status}, Total=${orderData.total}`);
 
-    // Verify order email
+    // Verify order email using helper
     if (postmarkApiKey) {
-      await new Promise(resolve => setTimeout(resolve, 5000));
-      const { stdout: emailResp } = await execAsync(
-        `curl -s -H "Accept: application/json" -H "X-Postmark-Server-Token: ${postmarkApiKey}" "https://api.postmarkapp.com/messages/outbound?recipient=${customerEmail}&count=30"`
-      );
-
-      const emailData = JSON.parse(emailResp);
-      const orderEmail = emailData.Messages?.find(msg => msg.Subject?.includes(`#${orderId}`));
-
-      if (orderEmail) {
-        console.log(`✅ Order email verified: ${orderEmail.Subject}`);
-      } else {
-        console.log('⚠️ Order email not found (may take a few moments)');
-      }
+      await verifyPostmarkDelivery(customerEmail, { subjectFilter: `#${orderId}` });
     }
-    const jsErrors = checkForJsErrors(page);
 
-    // Check JS errors
+    // Check JS errors that occurred during purchase flow
     if (jsErrors.length > 0) {
       throw new Error(`JS errors: ${jsErrors.join('; ')}`);
     }
 
     console.log('✅ Test passed: No PHP/JS errors, order created, email checked');
+  });
+
+  test('Delete connection and verify pixel removal (programmatic)', async ({ page }) => {
+    console.log('🔌 Testing programmatic disconnect and verification...');
+
+    // Step 1: Disconnect and verify
+    const result = await disconnectAndVerify();
+
+    // Step 2: Reconnect and verify
+    const reconnectResult = await reconnectAndVerify();
+
+    // Assertions on disconnect
+    expect(result.success).toBe(true);
+    expect(result.before.connected).toBe(true);
+    expect(result.after.connected).toBe(false);
+
+    // Assertions on reconnect
+    expect(reconnectResult.success).toBe(true);
+    expect(reconnectResult.before.connected).toBe(false);
+    expect(reconnectResult.after.connected).toBe(true);
+
+    // Step 3: Verify Marketing > Facebook page loads properly after reconnection
+    console.log('🔍 Verifying Marketing > Facebook page loads after reconnection...');
+
+    // Set up JS error tracking before navigation
+    const jsErrors = checkForJsErrors(page);
+
+    // Navigate to Marketing > Facebook page
+    await page.goto(`${process.env.WORDPRESS_URL}/wp-admin/admin.php?page=wc-facebook`, {
+      waitUntil: 'domcontentloaded',
+      timeout: TIMEOUTS.EXTRA_LONG
+    });
+
+    // Check for PHP errors using helper
+    await checkForPhpErrors(page);
+
+    // Verify page loaded properly
+    const pageLoaded = await page.locator('.wc-facebook-settings, #wc-facebook-settings-page, .facebook-for-woocommerce').count() > 0;
+
+    if (!pageLoaded) {
+      throw new Error('Facebook settings page did not load properly after reconnect');
+    }
+
+    // Check for JS errors
+    if (jsErrors.length > 0) {
+      throw new Error(`JS errors on Facebook settings page: ${jsErrors.join('; ')}`);
+    }
+
+    console.log('✅ Marketing > Facebook page loaded successfully after reconnection');
+    console.log('🎉 Disconnect and reconnect test passed!');
   });
 
 });
