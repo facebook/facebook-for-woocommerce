@@ -159,16 +159,20 @@ class Shops extends Abstract_Settings_Screen {
 	 * @since 3.5.0
 	 */
 	public function render() {
-		$is_connected = facebook_for_woocommerce()->get_connection_handler()->is_connected();
+		try {
+			$is_connected = facebook_for_woocommerce()->get_connection_handler()->is_connected();
+			
+			if ( $is_connected ) {
+				$this->render_whatsapp_promo_banner();
+			}
 
-		if ( $is_connected ) {
-			$this->render_whatsapp_promo_banner();
-		}
+			$this->render_facebook_iframe();
 
-		$this->render_facebook_iframe();
-
-		if ( $is_connected ) {
-			$this->render_troubleshooting_button_and_drawer();
+			if ( $is_connected ) {
+				$this->render_troubleshooting_button_and_drawer();
+			}
+		} catch ( \Exception $e ) {
+			error_log( 'Facebook for WooCommerce - Shops render error: ' . $e->getMessage() );
 		}
 	}
 

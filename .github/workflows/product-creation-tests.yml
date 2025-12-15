@@ -584,6 +584,36 @@ jobs:
             echo "✅ No debug log found - no PHP errors"
           fi
 
+      - name: Check WooCommerce logs for non-200 response codes
+        if: always()
+        run: |
+          TODAY=$(date +%d-%b-%Y)
+          WC_LOG="${{ env.WORDPRESS_PATH }}/wp-content/uploads/wc-logs/facebook_for_woocommerce-${TODAY}*.log"
+
+          if ls $WC_LOG 1> /dev/null 2>&1; then
+            # Search for lines with "code:" and check if any are non-200
+            NON_200_ERRORS=$(grep -n "code:" $WC_LOG | grep -v "code: 200" || true)
+            if [ -n "$NON_200_ERRORS" ]; then
+              echo "❌ Non-200 response codes detected in WooCommerce logs:"
+              echo "$NON_200_ERRORS" | while IFS= read -r line; do
+                LINE_NUM=$(echo "$line" | cut -d: -f1)
+                START_LINE=$((LINE_NUM - 2))
+                END_LINE=$((LINE_NUM + 2))
+                if [ $START_LINE -lt 1 ]; then
+                  START_LINE=1
+                fi
+                echo "--- Context around line $LINE_NUM ---"
+                sed -n "${START_LINE},${END_LINE}p" $WC_LOG
+                echo ""
+              done
+              exit 1
+            else
+              echo "✅ All response codes are 200"
+            fi
+          else
+            echo "✅ No WooCommerce log found for today"
+          fi
+
       - name: Upload test results
         uses: actions/upload-artifact@v4
         if: always()
@@ -617,6 +647,14 @@ jobs:
         with:
           name: php-debug-logs
           path: ${{ env.WP_DEBUG_LOG }}
+          retention-days: 7
+
+      - name: Upload WooCommerce logs
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: woocommerce-logs
+          path: ${{ env.WORDPRESS_PATH }}/wp-content/uploads/wc-logs/facebook_for_woocommerce-*.log
           retention-days: 7
 
       - name: Upload test videos/screenshots
