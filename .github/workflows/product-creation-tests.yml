@@ -24,7 +24,6 @@ env:
   TEST_SITE_HOST: ${{ secrets.TEST_SITE_HOST }}
   WORDPRESS_PATH: '/tmp/wordpress'
   WP_DEBUG_LOG: '/tmp/wordpress/wp-content/debug.log'
-  WC_LOG_PATH: ${{ env.WORDPRESS_PATH }}/wp-content/uploads/wc-logs
   PLUGIN_PATH: '/tmp/wordpress/wp-content/plugins/facebook-for-woocommerce'
   FB_E2E_TEST_COOKIE_NAME: 'facebook_test_id'
   FB_E2E_LOGGER_PATH: '/tests/e2e/lib/Logger.php'
@@ -153,7 +152,7 @@ jobs:
       - name: Check logs baseline (before plugin activation)
         run: |
           TODAY=$(date +%d-%b-%Y)
-          WC_LOG="${{ env.WC_LOG_PATH }}/facebook_for_woocommerce-${TODAY}*.log"
+          WC_LOG="${{ env.WORDPRESS_PATH }}/wp-content/uploads/wc-logs/facebook_for_woocommerce-${TODAY}*.log"
 
           # Check WC log exists
           ls $WC_LOG 1> /dev/null 2>&1 && echo "WC_LOG_EXISTS_BEFORE=1" >> $GITHUB_ENV || echo "WC_LOG_EXISTS_BEFORE=0" >> $GITHUB_ENV
@@ -349,7 +348,7 @@ jobs:
       - name: Verify no new errors after plugin activation
         run: |
           TODAY=$(date +%d-%b-%Y)
-          WC_LOG="${{ env.WC_LOG_PATH }}/facebook_for_woocommerce-${TODAY}*.log"
+          WC_LOG="${{ env.WORDPRESS_PATH }}/wp-content/uploads/wc-logs/facebook_for_woocommerce-${TODAY}*.log"
 
           # Check if WC log appeared after activation
           if ls $WC_LOG 1> /dev/null 2>&1; then
@@ -512,6 +511,7 @@ jobs:
           FB_EXTERNAL_BUSINESS_ID: ${{ secrets.FB_EXTERNAL_BUSINESS_ID }}
           FB_ACCESS_TOKEN: ${{ secrets.FB_ACCESS_TOKEN }}
           FB_PIXEL_ID: ${{ secrets.FB_PIXEL_ID }}
+          WC_LOG_PATH: ${{ env.WORDPRESS_PATH }}/wp-content/uploads/wc-logs
         run: |
           cd ${{ env.PLUGIN_PATH }}
           npx playwright test "plugin-.*\.spec\.js" --project=chromium-wp-admin
