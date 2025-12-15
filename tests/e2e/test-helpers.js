@@ -1099,18 +1099,23 @@ async function completePurchaseFlow(page) {
   console.log(`   📝 Filling billing address from environment variables`);
 
   // Fill in billing details from environment variables
-  await page.fill('#billing-first_name', process.env.TEST_USER_FIRST_NAME || 'Test');
-  await page.fill('#billing-last_name', process.env.TEST_USER_LAST_NAME || 'Customer');
-  await page.fill('#billing-address_1', process.env.TEST_USER_ADDRESS_1 || '123 Test Street');
-  await page.fill('#billing-city', process.env.TEST_USER_CITY || 'San Francisco');
-  await page.fill('#billing-postcode', process.env.TEST_USER_POSTCODE || '94102');
+  await page.fill('#billing-first_name', process.env.TEST_USER_FIRST_NAME );
+  await page.fill('#billing-last_name', process.env.TEST_USER_LAST_NAME);
+  await page.fill('#billing-address_1', process.env.TEST_USER_ADDRESS_1 );
+  await page.fill('#billing-city', process.env.TEST_USER_CITY );
 
   // Select country (US)
-  await page.selectOption('#billing-country', process.env.TEST_USER_COUNTRY || 'US');
+  await page.selectOption('#billing-country', process.env.TEST_USER_COUNTRY);
   await page.waitForTimeout(TIMEOUTS.INSTANT); // Wait for state dropdown to populate
 
   // Select state (CA)
-  await page.selectOption('#billing-state', process.env.TEST_USER_STATE || 'CA');
+  await page.selectOption('#billing-state', process.env.TEST_USER_STATE  );
+  await page.waitForTimeout(TIMEOUTS.INSTANT); // Wait for postcode field to be ready
+
+  // Fill postcode (wait for it to be ready first)
+  const postcodeField = page.locator('#billing-postcode');
+  await postcodeField.waitFor({ state: 'visible', timeout: TIMEOUTS.NORMAL });
+  await postcodeField.fill(process.env.TEST_USER_POSTCODE );
 
   // Fill phone (optional)
   if (process.env.TEST_USER_PHONE) {
