@@ -49,6 +49,7 @@ env:
   TEST_USER_POSTCODE: '94102'
   TEST_USER_COUNTRY: US
   TEST_USER_PHONE: '4155551234'
+  WP_CUSTOMER_EMAIL: customer@test.com
 
   # Store Configuration
   STORE_ADDRESS: '123 Test Street'
@@ -236,14 +237,14 @@ jobs:
           # Create a customer (non-admin) user for testing
           # Pixel tracking excludes admin users by default!
           # Note: customer role is created by WooCommerce, so this step must run AFTER WooCommerce installation
-          wp user create ${{ env.WP_CUSTOMER_USERNAME}} customer@test.com --role=customer --user_pass=${{ env.WP_CUSTOMER_PASSWORD }} --allow-root || echo "Customer user already exists"
+          wp user create ${{ env.WP_CUSTOMER_USERNAME}} ${{ env.WP_CUSTOMER_EMAIL }} --role=customer --user_pass=${{ env.WP_CUSTOMER_PASSWORD }} --allow-root || echo "Customer user already exists"
 
           # Grant read capability to customer role (for viewing products/categories)
           # This ensures customer can see shop pages, products, and categories
           wp cap add customer read --allow-root
 
           # Get customer user ID once and store it
-          CUSTOMER_ID=$(wp user get customer@test.com --field=ID --allow-root)
+          CUSTOMER_ID=$(wp user get ${{ env.WP_CUSTOMER_EMAIL }} --field=ID --allow-root)
           echo "Customer User ID: $CUSTOMER_ID"
 
           # Add billing address to customer user for comprehensive event testing
