@@ -22,6 +22,9 @@ if (!file_exists($wp_path)) {
 
 require_once($wp_path);
 
+// Load E2E API extension for catalog queries
+require_once(__DIR__ . '/E2E_API_Extension.php');
+
 /**
  * E2E Test Helpers Class
  */
@@ -85,7 +88,14 @@ class E2ETestHelpers {
                 throw new Exception('Facebook for WooCommerce plugin not loaded');
             }
 
-            $api = facebook_for_woocommerce()->get_api();
+            // Get the existing API instance and extract its access token
+            $existing_api = facebook_for_woocommerce()->get_api();
+            $access_token = $existing_api->get_access_token();
+
+            // Create our extended API instance with the same access token
+            $api = new \WooCommerce\Facebook\Tests\E2E\E2E_API_Extension($access_token);
+
+            // Get catalog ID
             $integration = facebook_for_woocommerce()->get_integration();
             $catalog_id = $integration->get_product_catalog_id();
 
@@ -93,15 +103,8 @@ class E2ETestHelpers {
                 throw new Exception('Product catalog ID not found');
             }
 
-            // Create a simple GET request to query products with limit=1
-            $request = new \WooCommerce\Facebook\API\Request("/{$catalog_id}/products", 'GET');
-            $request->set_params(['limit' => 1]);
-
-            // Perform the request through the API
-            $response = $api->perform_request($request);
-
-            // Get the response body
-            $body = $response->get_data();
+            // Query products using our extended API method
+            $body = $api->query_catalog_products($catalog_id, 1);
 
             // Response format: { 'data': [...] } or { 'data': [] }
             $product_count = isset($body['data']) ? count($body['data']) : 0;
