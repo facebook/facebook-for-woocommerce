@@ -40,7 +40,7 @@ env:
   PAGE_LOAD_TIMEOUT: 120000
 
   # Customer Billing/Shipping Address
-  WP_CUSTOMER_EMAIL: 'customer@test.com'
+  WP_CUSTOMER_EMAIL: 'nmadhav@meta.com'
   TEST_USER_FIRST_NAME: Test
   TEST_USER_LAST_NAME: Customer
   TEST_USER_ADDRESS_1: '123 Test Street'

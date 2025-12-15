@@ -1156,8 +1156,7 @@ async function completePurchaseFlow(page) {
 // Helper function to verify email delivery via Postmark API
 async function verifyPostmarkDelivery(recipient, options = {}) {
   const postmarkApiKey = process.env.POSTMARK_API_KEY;
-  const waitSeconds = options.waitSeconds || 5000;
-  const subjectFilter = options.subjectFilter || null;
+  const runId = options.runId || process.env.GITHUB_RUN_ID || `local-${Date.now()}`;
 
   if (!postmarkApiKey) {
     console.log('⚠️ POSTMARK_API_KEY not set - skipping email verification');
@@ -1165,7 +1164,7 @@ async function verifyPostmarkDelivery(recipient, options = {}) {
   }
 
   console.log('⏳ Waiting for Postmark to process...');
-  await new Promise(resolve => setTimeout(resolve, waitSeconds));
+  await new Promise(resolve => setTimeout(resolve, TIMEOUTS.LONG));
 
   console.log('🔍 Verifying delivery via Postmark API...');
   const { exec } = require('child_process');
@@ -1179,27 +1178,12 @@ async function verifyPostmarkDelivery(recipient, options = {}) {
   console.log('📄 Postmark API response:');
   console.log(stdout);
 
-  const emailData = JSON.parse(stdout);
-
-  // If subject filter is provided, find specific email
-  if (subjectFilter) {
-    const email = emailData.Messages?.find(msg => msg.Subject?.includes(subjectFilter));
-    if (email) {
-      console.log(`✅ Email verified: ${email.Subject}`);
-      expect(email.Status).toBe('Delivered');
-      return email;
-    } else {
-      console.log(`⚠️ Email with subject "${subjectFilter}" not found`);
-      return null;
-    }
-  }
-
-  // Otherwise, just check for any delivered email
-  if (stdout.includes('Delivered')) {
-    console.log('✅ Email delivery verified');
-    return emailData;
+  // Simple regex match for run ID in the response
+  if (stdout.includes(runId)) {
+    console.log(`✅ Email verified: Found run ID "${runId}" in response`);
+    return JSON.parse(stdout);
   } else {
-    throw new Error('❌ Email delivery failed - no "Delivered" status found in response');
+    throw new Error(`❌ Email with run ID "${runId}" not found in Postmark response`);
   }
 }
 

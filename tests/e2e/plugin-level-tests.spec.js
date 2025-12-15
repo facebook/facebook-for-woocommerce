@@ -348,6 +348,7 @@ test.describe('WooCommerce Plugin level tests', () => {
 
     const testRecipient = process.env.TEST_RECIPIENT ;
     const postmarkApiKey = process.env.POSTMARK_API_KEY;
+    const runId = process.env.GITHUB_RUN_ID || `local-${Date.now()}`;
 
     if (!postmarkApiKey) {
       console.log('⚠️ POSTMARK_API_KEY not set - skipping test');
@@ -355,21 +356,24 @@ test.describe('WooCommerce Plugin level tests', () => {
     }
 
     try {
-      // Send test email using wp_mail
+      // Send test email using wp_mail with run ID in subject
       const { exec } = require('child_process');
       const { promisify } = require('util');
       const execAsync = promisify(exec);
 
       const wpSitePath = process.env.WORDPRESS_PATH;
+      const emailSubject = `CI Test Email - Run ${runId}`;
+      const emailBody = `This is a CI test from WordPress via Postmark. GitHub Run ID: ${runId}`;
+      
       await execAsync(
-        `php -r "require_once('${wpSitePath}/wp-load.php'); wp_mail('${testRecipient}', 'CI Test Email', 'This is a CI test from WordPress via Postmark.');"`,
+        `php -r "require_once('${wpSitePath}/wp-load.php'); wp_mail('${testRecipient}', '${emailSubject}', '${emailBody}');"`,
         { cwd: __dirname }
       );
 
-      console.log('✅ Email sent via wp_mail');
+      console.log(`✅ Email sent via wp_mail with subject: ${emailSubject}`);
 
-      // Use helper to verify email delivery
-      await verifyPostmarkDelivery(testRecipient);
+      // Use helper to verify email delivery with run ID
+      await verifyPostmarkDelivery(testRecipient, { runId });
 
     } catch (error) {
       console.error('❌ Email test failed:', error.message);
