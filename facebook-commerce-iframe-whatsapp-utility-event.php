@@ -123,7 +123,7 @@ class WC_Facebookcommerce_Iframe_Whatsapp_Utility_Event {
 		}
 		// Items
 		$order_payload['items'] = array();
-		foreach ( $order->get_items() as $item ) {
+		foreach ( $order->get_items() as $item_id => $item ) {
 			$product = $item->get_product();
 			$image   = '';
 			if ( is_object( $item ) && method_exists( $item, 'get_image' ) ) {

@@ -161,6 +161,7 @@ class WhatsAppExtension {
 		$order_payload = array()
 	) {
 		$whatsapp_connection = $plugin->get_whatsapp_connection_handler();
+	
 		$is_connected        = $whatsapp_connection->is_connected();
 		if ( ! $is_connected ) {
 			wc_get_logger()->info(
@@ -216,6 +217,18 @@ class WhatsAppExtension {
 			),
 			'timeout' => 3000, // 5 minutes
 		);
+
+		// Debug: log order payload (if provided) so integrators can inspect the data sent.
+		if ( ! empty( $order_payload ) ) {
+			wc_get_logger()->info(
+				sprintf(
+					/* translators: %s $order_id %s $order_payload */
+					__( 'WhatsApp order payload for Order id %1$s: %2$s', 'facebook-for-woocommerce' ),
+					$order_id,
+					wp_json_encode( $order_payload )
+				)
+			);
+		}
 
 		$response        = wp_remote_post( $base_url, $options );
 		$status_code     = wp_remote_retrieve_response_code( $response );
