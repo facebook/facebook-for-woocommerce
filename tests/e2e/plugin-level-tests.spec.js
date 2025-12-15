@@ -408,7 +408,7 @@ test.describe('WooCommerce Plugin level tests', () => {
     console.log('✅ Test passed: No PHP/JS errors, order created, email checked');
   });
 
-  test('Delete connection and verify pixel removal (programmatic)', async ({ page }) => {
+  test('Disconnect and Reconnect', async ({ page }) => {
     console.log('🔌 Testing programmatic disconnect and verification...');
 
     // Step 1: Disconnect and verify
@@ -456,6 +456,70 @@ test.describe('WooCommerce Plugin level tests', () => {
 
     console.log('✅ Marketing > Facebook page loaded successfully after reconnection');
     console.log('🎉 Disconnect and reconnect test passed!');
+  });
+
+  test('Reset connection settings via WooCommerce Status Tools', async ({ page }) => {
+    console.log('🔄 Testing Reset connection settings...');
+
+    // Navigate to WooCommerce Status Tools
+    await page.goto(`${process.env.WORDPRESS_URL}/wp-admin/admin.php?page=wc-status&tab=tools`, {
+      waitUntil: 'domcontentloaded',
+      timeout: TIMEOUTS.EXTRA_LONG
+    });
+
+    // Handle confirmation dialog
+    page.once('dialog', async dialog => {
+      console.log(`✅ Confirming dialog: ${dialog.message()}`);
+      await dialog.accept();
+    });
+
+    // Click Reset settings button
+    console.log('🔘 Clicking Reset settings button...');
+    const resetButton = page.locator('.wc_facebook_settings_reset input[type="submit"]');
+    await resetButton.waitFor({ state: 'visible', timeout: TIMEOUTS.LONG });
+    await resetButton.click();
+
+    // Wait for page refresh with _wpnonce in URL
+    await page.waitForURL('**/_wpnonce=**', { timeout: TIMEOUTS.LONG });
+    await page.waitForLoadState('domcontentloaded');
+    console.log('✅ Page refreshed with nonce');
+
+    // Navigate to options page to verify reset
+    await page.goto(`${process.env.WORDPRESS_URL}/wp-admin/options.php`, {
+      waitUntil: 'domcontentloaded',
+      timeout: TIMEOUTS.EXTRA_LONG
+    });
+
+    // List of Facebook options that should be empty
+    const fbOptions = [
+      'wc_facebook_access_token',
+      'wc_facebook_page_access_token',
+      'wc_facebook_merchant_access_token',
+      'wc_facebook_system_user_id',
+      'wc_facebook_business_manager_id',
+      'wc_facebook_ad_account_id',
+      'wc_facebook_instagram_business_id',
+      'wc_facebook_commerce_merchant_settings_id',
+      'wc_facebook_external_business_id',
+      'wc_facebook_commerce_partner_integration_id',
+      'wc_facebook_page_id',
+      'wc_facebook_pixel_id',
+      'wc_facebook_product_catalog_id'
+    ];
+
+    // Check each option is empty
+    console.log('🔍 Verifying all Facebook options are cleared...');
+    for (const option of fbOptions) {
+      const input = page.locator(`#${option}`);
+      const value = await input.inputValue();
+
+      if (value !== '') {
+        throw new Error(`❌ ${option} not cleared. Value: ${value}`);
+      }
+    }
+
+    console.log('✅ All Facebook connection options cleared');
+    console.log('🎉 Reset connection settings test passed!');
   });
 
 });
