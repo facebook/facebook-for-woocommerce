@@ -59,9 +59,9 @@ env:
   STORE_CURRENCY: USD
 
   # Postmark configuration
-  POSTMARK_FROM_EMAIL: "noreply@example.com"
+  POSTMARK_FROM_EMAIL: "nmadhav@meta.com"
   POSTMARK_FROM_NAME: "Github Test Sender"
-  TEST_RECIPIENT: "test@example.com"
+  TEST_RECIPIENT: "nmadhav@meta.com"
   POSTMARK_API_KEY: ${{ secrets.POSTMARK_API_KEY }}
 
 jobs:
