@@ -1290,8 +1290,15 @@ async function disconnectAndVerify() {
     failures.push('Merchant access token not cleared');
   }
 
-  if (after.external_business_id) {
-    failures.push('External business ID not cleared');
+  // Check external_business_id from the raw option value, not from get_external_business_id()
+  // because get_external_business_id() auto-regenerates if empty
+  const externalBusinessIdOption = execSync(
+    `php -r "require_once('${wpSitePath}/wp-load.php'); echo get_option('wc_facebook_external_business_id', '');"`,
+    { encoding: 'utf8', cwd: __dirname }
+  ).trim();
+
+  if (externalBusinessIdOption) {
+    failures.push(`External business ID not cleared (raw option value: ${externalBusinessIdOption})`);
   }
 
   if (failures.length > 0) {
