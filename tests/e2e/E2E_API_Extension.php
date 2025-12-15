@@ -22,6 +22,8 @@ class E2E_API_Extension extends API {
         $this->set_response_handler(\WooCommerce\Facebook\API\Response::class);
         
         $response = $this->perform_request($request);
-        return $response->get_data();
+        
+        // Return the response_data property directly (it's public)
+        return $response->response_data;
     }
 }
