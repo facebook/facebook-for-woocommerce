@@ -89,9 +89,19 @@ class E2ETestHelpers {
             $integration = facebook_for_woocommerce()->get_integration();
             $catalog_id = $integration->get_product_catalog_id();
 
-            // Query catalog directly using Graph API: GET /{catalog_id}/products?limit=1
-            $response = $api->get_client()->get('/' . $catalog_id . '/products?limit=1');
-            $body = $response->getDecodedBody();
+            if (empty($catalog_id)) {
+                throw new Exception('Product catalog ID not found');
+            }
+
+            // Create a simple GET request to query products with limit=1
+            $request = new \WooCommerce\Facebook\API\Request("/{$catalog_id}/products", 'GET');
+            $request->set_params(['limit' => 1]);
+
+            // Perform the request through the API
+            $response = $api->perform_request($request);
+
+            // Get the response body
+            $body = $response->get_data();
 
             // Response format: { 'data': [...] } or { 'data': [] }
             $product_count = isset($body['data']) ? count($body['data']) : 0;
