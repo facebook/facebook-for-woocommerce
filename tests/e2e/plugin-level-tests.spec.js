@@ -2,7 +2,7 @@ const { test, expect } = require('@playwright/test');
 const { execSync } = require('child_process');
 const { TIMEOUTS } = require('./time-constants');
 
-const {loginToWordPress,logTestStart,ensureDebugModeEnabled,checkWooCommerceLogs,checkForPhpErrors,checkForJsErrors,verifyPostmarkDelivery,completePurchaseFlow,disconnectAndVerify,reconnectAndVerify,verifyProductsFacebookFieldsCleared} = require('./test-helpers');
+const {loginToWordPress,logTestStart,ensureDebugModeEnabled,checkWooCommerceLogs,checkForPhpErrors,checkForJsErrors,verifyPostmarkDelivery,completePurchaseFlow,disconnectAndVerify,reconnectAndVerify,verifyProductsFacebookFieldsCleared,verifyFacebookCatalogEmpty} = require('./test-helpers');
 
 test.describe('WooCommerce Plugin level tests', () => {
 
@@ -458,7 +458,77 @@ test.describe('WooCommerce Plugin level tests', () => {
     console.log('🎉 Disconnect and reconnect test passed!');
   });
 
-  test('Reset connection settings via WooCommerce Status Tools', async ({ page }) => {
+  test('Reset all products Facebook settings via WooCommerce Status Tools', async ({ page }) => {
+    console.log('🔄 Testing Reset all products Facebook settings...');
+
+    // Navigate to WooCommerce Status Tools
+    await page.goto(`${process.env.WORDPRESS_URL}/wp-admin/admin.php?page=wc-status&tab=tools`, {
+      waitUntil: 'domcontentloaded',
+      timeout: TIMEOUTS.EXTRA_LONG
+    });
+
+    // Handle confirmation dialog
+    page.once('dialog', async dialog => {
+      console.log(`✅ Confirming dialog: ${dialog.message()}`);
+      await dialog.accept();
+    });
+
+    // Click Reset products Facebook settings button
+    console.log('🔘 Clicking Reset products Facebook settings button...');
+    const resetButton = page.locator('.reset_all_product_fb_settings input[type="submit"]');
+    await resetButton.waitFor({ state: 'visible', timeout: TIMEOUTS.LONG });
+    await resetButton.click();
+
+    // Wait for page refresh with _wpnonce in URL
+    await page.waitForURL('**/_wpnonce=**', { timeout: TIMEOUTS.LONG });
+    await page.waitForLoadState('domcontentloaded');
+    console.log('✅ Page refreshed with nonce');
+
+    // Verify all product Facebook fields are cleared using helper
+    const result = await verifyProductsFacebookFieldsCleared();
+
+    expect(result.success).toBe(true);
+    console.log('🎉 Reset all products Facebook settings test passed!');
+  });
+
+  test('Delete all products from Facebook Catalog', async ({ page }) => {
+    console.log('🗑️ Testing Delete all products from catalog...');
+
+    // Navigate to WooCommerce Status Tools
+    await page.goto(`${process.env.WORDPRESS_URL}/wp-admin/admin.php?page=wc-status&tab=tools`, {
+      waitUntil: 'domcontentloaded',
+      timeout: TIMEOUTS.EXTRA_LONG
+    });
+
+    // Handle confirmation dialog
+    page.once('dialog', async dialog => {
+      console.log(`✅ Confirming dialog: ${dialog.message()}`);
+      await dialog.accept();
+    });
+
+    // Click Delete all products button
+    console.log('🔘 Clicking Delete all products button...');
+    const deleteButton = page.locator('.wc_facebook_delete_all_products input[type="submit"]');
+    await deleteButton.waitFor({ state: 'visible', timeout: TIMEOUTS.LONG });
+    await deleteButton.click();
+
+    // Wait for page refresh with _wpnonce in URL
+    await page.waitForURL('**/_wpnonce=**', { timeout: TIMEOUTS.LONG });
+    await page.waitForLoadState('domcontentloaded');
+    console.log('✅ Page refreshed with nonce');
+
+    // Wait for deletion to propagate to Facebook servers
+    console.log(`⏳ Waiting ${TIMEOUTS.MAX / 1000} seconds for deletion to propagate to Facebook...`);
+    await page.waitForTimeout(TIMEOUTS.MAX);
+
+    // Verify Facebook catalog is empty using helper
+    const result = await verifyFacebookCatalogEmpty();
+
+    expect(result.success).toBe(true);
+    console.log('🎉 Delete all products from catalog test passed!');
+  });
+
+   test('Reset connection settings via WooCommerce Status Tools', async ({ page }) => {
     console.log('🔄 Testing Reset connection settings...');
 
     // Navigate to WooCommerce Status Tools
@@ -520,39 +590,6 @@ test.describe('WooCommerce Plugin level tests', () => {
 
     console.log('✅ All Facebook connection options cleared');
     console.log('🎉 Reset connection settings test passed!');
-  });
-
-  test('Reset all products Facebook settings via WooCommerce Status Tools', async ({ page }) => {
-    console.log('🔄 Testing Reset all products Facebook settings...');
-
-    // Navigate to WooCommerce Status Tools
-    await page.goto(`${process.env.WORDPRESS_URL}/wp-admin/admin.php?page=wc-status&tab=tools`, {
-      waitUntil: 'domcontentloaded',
-      timeout: TIMEOUTS.EXTRA_LONG
-    });
-
-    // Handle confirmation dialog
-    page.once('dialog', async dialog => {
-      console.log(`✅ Confirming dialog: ${dialog.message()}`);
-      await dialog.accept();
-    });
-
-    // Click Reset products Facebook settings button
-    console.log('🔘 Clicking Reset products Facebook settings button...');
-    const resetButton = page.locator('.reset_all_product_fb_settings input[type="submit"]');
-    await resetButton.waitFor({ state: 'visible', timeout: TIMEOUTS.LONG });
-    await resetButton.click();
-
-    // Wait for page refresh with _wpnonce in URL
-    await page.waitForURL('**/_wpnonce=**', { timeout: TIMEOUTS.LONG });
-    await page.waitForLoadState('domcontentloaded');
-    console.log('✅ Page refreshed with nonce');
-
-    // Verify all product Facebook fields are cleared using helper
-    const result = await verifyProductsFacebookFieldsCleared();
-    
-    expect(result.success).toBe(true);
-    console.log('🎉 Reset all products Facebook settings test passed!');
   });
 
 });

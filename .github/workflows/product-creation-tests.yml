@@ -497,6 +497,14 @@ jobs:
             }
           }'
 
+      - name: Run CAPI Pixel E2E tests
+        if: false
+        env:
+          TEST_PRODUCT_ID: ${{ env.TEST_PRODUCT_ID }}
+        run: |
+          cd ${{ env.PLUGIN_PATH }}
+          xvfb-run --auto-servernum npx playwright test events-test*.spec.js --headed --project=chromium-wp-customer
+
       - name: Run Plugin level tests
         env:
           WP_USERNAME: admin
@@ -507,14 +515,6 @@ jobs:
         run: |
           cd ${{ env.PLUGIN_PATH }}
           npx playwright test "plugin-.*\.spec\.js" --project=chromium-wp-admin
-
-      - name: Run CAPI Pixel E2E tests
-        if: false
-        env:
-          TEST_PRODUCT_ID: ${{ env.TEST_PRODUCT_ID }}
-        run: |
-          cd ${{ env.PLUGIN_PATH }}
-          xvfb-run --auto-servernum npx playwright test events-test*.spec.js --headed --project=chromium-wp-customer
 
       - name: Cleanup test product
         if: always()
@@ -536,8 +536,6 @@ jobs:
         run: |
           cd ${{ env.PLUGIN_PATH }}
           npx playwright test "product-.*\.spec\.js" --project=chromium-wp-admin
-
-
 
       - name: Disconnect from catalog
         if: always()
