@@ -1415,6 +1415,59 @@ async function reconnectAndVerify() {
   };
 }
 
+// Helper function to verify all products have Facebook fields cleared
+async function verifyProductsFacebookFieldsCleared() {
+  console.log('🔍 Verifying all product Facebook fields are cleared...');
+
+  const { exec } = require('child_process');
+  const { promisify } = require('util');
+  const execAsync = promisify(exec);
+
+  const { stdout } = await execAsync(
+    `php -r "require_once('${wpSitePath}/wp-load.php');
+    \\$products = get_posts(['post_type' => ['product', 'product_variation'], 'posts_per_page' => -1]);
+    \\$issues = [];
+
+    foreach (\\$products as \\$product) {
+      \\$meta = get_post_meta(\\$product->ID);
+      \\$fb_fields = [];
+
+      foreach (\\$meta as \\$key => \\$value) {
+        if (strpos(\\$key, 'fb_') === 0 || strpos(\\$key, '_fb_') === 0 || strpos(\\$key, 'facebook_') === 0) {
+          if (!empty(\\$value[0])) {
+            \\$fb_fields[\\$key] = \\$value[0];
+          }
+        }
+      }
+
+      if (!empty(\\$fb_fields)) {
+        \\$issues[] = ['id' => \\$product->ID, 'type' => \\$product->post_type, 'fields' => \\$fb_fields];
+      }
+    }
+
+    echo json_encode(['total' => count(\\$products), 'issues' => \\$issues]);"`,
+    { cwd: __dirname }
+  );
+
+  const result = JSON.parse(stdout);
+
+  console.log(`✅ Checked ${result.total} products and variations`);
+
+  if (result.issues.length > 0) {
+    console.log(`❌ Found ${result.issues.length} products with Facebook fields not cleared:`);
+    result.issues.forEach(issue => {
+      console.log(`   - Product ID ${issue.id} (${issue.type}):`);
+      Object.entries(issue.fields).forEach(([key, value]) => {
+        console.log(`     • ${key}: ${value}`);
+      });
+    });
+    throw new Error(`${result.issues.length} products still have Facebook fields`);
+  }
+
+  console.log('✅ All product Facebook fields cleared');
+  return { success: true, total: result.total };
+}
+
 module.exports = {
   baseURL,
   username,
@@ -1449,5 +1502,6 @@ module.exports = {
   checkForJsErrors,
   verifyPostmarkDelivery,
   disconnectAndVerify,
-  reconnectAndVerify
+  reconnectAndVerify,
+  verifyProductsFacebookFieldsCleared
 };
