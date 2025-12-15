@@ -98,6 +98,7 @@ class WC_Facebookcommerce_Iframe_Whatsapp_Utility_Event {
 		}
 		$currency      = $order->get_currency();
 		$refund_amount = $total_refund * 1000;
+<<<<<<< HEAD
 		// Build order payload with additional fields requested by WA API
 		$order_payload = array();
 		// Order status
@@ -123,7 +124,7 @@ class WC_Facebookcommerce_Iframe_Whatsapp_Utility_Event {
 		}
 		// Items
 		$order_payload['items'] = array();
-		foreach ( $order->get_items() as $item ) {
+		foreach ( $order->get_items() as $item_id => $item ) {
 			$product = $item->get_product();
 			$image   = '';
 			if ( is_object( $item ) && method_exists( $item, 'get_image' ) ) {
@@ -147,6 +148,8 @@ class WC_Facebookcommerce_Iframe_Whatsapp_Utility_Event {
 				),
 			);
 		}
+=======
+>>>>>>> parent of f4305d67 (adding more order data)
 		if ( empty( $phone_number ) || empty( $event ) || empty( $first_name ) ) {
 			wc_get_logger()->info(
 				sprintf(
@@ -157,6 +160,6 @@ class WC_Facebookcommerce_Iframe_Whatsapp_Utility_Event {
 			);
 			return;
 		}
-		WhatsAppExtension::process_whatsapp_utility_message_event( $this->plugin, $event, $order_id, $order_details_link, $phone_number, $first_name, $refund_amount, $currency, $country_code, $order_payload );
+		WhatsAppExtension::process_whatsapp_utility_message_event( $this->plugin, $event, $order_id, $order_details_link, $phone_number, $first_name, $refund_amount, $currency, $country_code );
 	}
 }

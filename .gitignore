@@ -55,3 +55,5 @@ wp-config.php
 *debug*.png
 
 /tests/e2e/.auth/
+package-lock.json
+package.json

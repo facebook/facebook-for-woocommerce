@@ -140,8 +140,7 @@ class WhatsAppExtension {
 	 * @param string $order_details_link Order Details Link
 	 * @param string $phone_number Customer phone number
 	 * @param string $first_name Customer first name
-	* @param int    $refund_value Amount refunded to the Customer
-	* @param array  $order_payload Optional order payload with extra order fields
+	 * @param int    $refund_value Amount refunded to the Customer
 	 * @param string $currency Currency code
 	 * @param string $country_code Customer country code
 	 *
@@ -157,10 +156,10 @@ class WhatsAppExtension {
 		$first_name,
 		$refund_value,
 		$currency,
-		$country_code,
-		$order_payload = array()
+		$country_code
 	) {
 		$whatsapp_connection = $plugin->get_whatsapp_connection_handler();
+	
 		$is_connected        = $whatsapp_connection->is_connected();
 		if ( ! $is_connected ) {
 			wc_get_logger()->info(
@@ -183,16 +182,6 @@ class WhatsAppExtension {
 			$refund_value,
 			$currency
 		);
-		// If an order payload is provided, merge it under an `order` key
-		if ( ! empty( $order_payload ) ) {
-			if ( ! is_array( $event_object ) ) {
-				$event_object = array();
-			}
-			// Only add if not already present — user requested "add if not available"
-			if ( empty( $event_object['order'] ) ) {
-				$event_object['order'] = $order_payload;
-			}
-		}
 		$event_base_object  = array(
 			'id'   => "#{$order_id}",
 			'type' => $event,
@@ -216,6 +205,18 @@ class WhatsAppExtension {
 			),
 			'timeout' => 3000, // 5 minutes
 		);
+
+		// Debug: log order payload (if provided) so integrators can inspect the data sent.
+		if ( ! empty( $order_payload ) ) {
+			wc_get_logger()->info(
+				sprintf(
+					/* translators: %s $order_id %s $order_payload */
+					__( 'WhatsApp order payload for Order id %1$s: %2$s', 'facebook-for-woocommerce' ),
+					$order_id,
+					wp_json_encode( $order_payload )
+				)
+			);
+		}
 
 		$response        = wp_remote_post( $base_url, $options );
 		$status_code     = wp_remote_retrieve_response_code( $response );
