@@ -237,7 +237,7 @@ test.describe('WooCommerce Plugin level tests', () => {
 
 
   test('Verify Facebook for WooCommerce plugin connection', async ({ page }) => {
-    console.log('🔍 Verifying Facebook plugin connection...');
+    console.log('🔍 Verifying Facebook p\lugin connection...');
 
     const expectedAccessToken = process.env.FB_ACCESS_TOKEN;
     const expectedPixelId = process.env.FB_PIXEL_ID;

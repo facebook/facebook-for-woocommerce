@@ -337,6 +337,7 @@ jobs:
           wp option update wc_facebook_enable_pixel "yes" --allow-root
           wp option update wc_facebook_enable_advanced_matching "yes" --allow-root
           wp option update wc_facebook_debug_mode yes --allow-root
+          wp option update wc_facebook_enable_debug_mode yes --allow-root
           wp option update wc_facebook_has_connected_fbe_2 "yes" --allow-root
           wp option update wc_facebook_has_authorized_pages_read_engagement "yes" --allow-root
           wp option update wc_facebook_enable_product_sync "yes" --allow-root
