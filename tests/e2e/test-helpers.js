@@ -1167,7 +1167,7 @@ async function verifyPostmarkDelivery(recipient, options = {}) {
   const { promisify } = require('util');
   const execAsync = promisify(exec);
 
-  const curlCommand = `curl -s -H "Accept: application/json" -H "X-Postmark-Server-Token: ${postmarkApiKey}" "https://api.postmarkapp.com/messages/outbound?recipient=${recipient}&count=30"`;
+  const curlCommand = `curl -s -H "Accept: application/json" -H "X-Postmark-Server-Token: ${postmarkApiKey}" "https://api.postmarkapp.com/messages/outbound?recipient=${recipient}&count=30&offset=0"`;
 
   const { stdout } = await execAsync(curlCommand);
 
