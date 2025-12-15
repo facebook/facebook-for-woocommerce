@@ -17,6 +17,10 @@ class E2E_API_Extension extends API {
     public function query_catalog_products($catalog_id, $limit = 1) {
         $request = new \WooCommerce\Facebook\API\Request("/{$catalog_id}/products", 'GET');
         $request->set_params(['limit' => $limit]);
+        
+        // Set response handler before performing request
+        $this->set_response_handler(\WooCommerce\Facebook\API\Response::class);
+        
         $response = $this->perform_request($request);
         return $response->get_data();
     }

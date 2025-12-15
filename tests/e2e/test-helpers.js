@@ -1292,6 +1292,7 @@ async function disconnectAndVerify() {
 
   // Check external_business_id from the raw option value, not from get_external_business_id()
   // because get_external_business_id() auto-regenerates if empty
+  const { execSync } = require('child_process');
   const externalBusinessIdOption = execSync(
     `php -r "require_once('${wpSitePath}/wp-load.php'); echo get_option('wc_facebook_external_business_id', '');"`,
     { encoding: 'utf8', cwd: __dirname }
