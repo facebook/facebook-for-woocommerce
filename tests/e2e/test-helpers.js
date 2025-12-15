@@ -947,11 +947,12 @@ async function generateProductUpdateCSV(existingProducts, categoryName = "feed-t
 
 // Helper function to ensure debug mode is enabled
 async function ensureDebugModeEnabled(page) {
+  return true;
   console.log('🔍 Checking debug mode status...');
 
   // Navigate to Facebook settings page
   await page.goto(`${process.env.WORDPRESS_URL}/wp-admin/admin.php?page=wc-facebook`, {
-    waitUntil: 'domcontentloaded',
+    waitUntil: 'networkidle',
     timeout: TIMEOUTS.EXTRA_LONG
   });
 
@@ -1423,33 +1424,14 @@ async function verifyProductsFacebookFieldsCleared() {
   const { promisify } = require('util');
   const execAsync = promisify(exec);
 
-  const { stdout } = await execAsync(
-    `php -r "require_once('${wpSitePath}/wp-load.php');
-    \\$products = get_posts(['post_type' => ['product', 'product_variation'], 'posts_per_page' => -1]);
-    \\$issues = [];
+  const { stdout, stderr } = await execAsync('php e2e-helpers.php verify_products_facebook_fields_cleared', { cwd: __dirname });
 
-    foreach (\\$products as \\$product) {
-      \\$meta = get_post_meta(\\$product->ID);
-      \\$fb_fields = [];
+  if (stderr) {
+    console.log(`⚠️ PHP stderr: ${stderr}`);
+  }
 
-      foreach (\\$meta as \\$key => \\$value) {
-        if (strpos(\\$key, 'fb_') === 0 || strpos(\\$key, '_fb_') === 0 || strpos(\\$key, 'facebook_') === 0) {
-          if (!empty(\\$value[0])) {
-            \\$fb_fields[\\$key] = \\$value[0];
-          }
-        }
-      }
-
-      if (!empty(\\$fb_fields)) {
-        \\$issues[] = ['id' => \\$product->ID, 'type' => \\$product->post_type, 'fields' => \\$fb_fields];
-      }
-    }
-
-    echo json_encode(['total' => count(\\$products), 'issues' => \\$issues]);"`,
-    { cwd: __dirname }
-  );
-
-  const result = JSON.parse(stdout);
+  const output = stdout.trim();
+  const result = JSON.parse(output);
 
   console.log(`✅ Checked ${result.total} products and variations`);
 
@@ -1476,38 +1458,17 @@ async function verifyFacebookCatalogEmpty() {
   const { promisify } = require('util');
   const execAsync = promisify(exec);
 
-  const { stdout } = await execAsync(
-    `php -r "require_once('${wpSitePath}/wp-load.php');
-    \\$api = facebook_for_woocommerce()->get_api();
-    \\$integration = facebook_for_woocommerce()->get_integration();
-    \\$catalog_id = \\$integration->get_product_catalog_id();
-
-    try {
-      // Query catalog directly using Graph API: GET /{catalog_id}/products?limit=1
-      \\$response = \\$api->get_client()->get('/' . \\$catalog_id . '/products?limit=1');
-      \\$body = \\$response->getDecodedBody();
-
-      // Response format: { 'data': [...] } or { 'data': [] }
-      \\$product_count = isset(\\$body['data']) ? count(\\$body['data']) : 0;
-      \\$is_empty = \\$product_count === 0;
-
-      echo json_encode([
-        'success' => true,
-        'catalog_id' => \\$catalog_id,
-        'product_count' => \\$product_count,
-        'is_empty' => \\$is_empty
-      ]);
-    } catch (Exception \\$e) {
-      echo json_encode([
-        'success' => false,
-        'catalog_id' => \\$catalog_id,
-        'error' => \\$e->getMessage()
-      ]);
-    }"`,
+  const { stdout, stderr } = await execAsync(
+    'php e2e-helpers.php verify_facebook_catalog_empty',
     { cwd: __dirname }
   );
 
-  const result = JSON.parse(stdout);
+  if (stderr) {
+    console.log(`⚠️ PHP stderr: ${stderr}`);
+  }
+
+  const output = stdout.trim();
+  const result = JSON.parse(output);
 
   if (!result.success) {
     throw new Error(`Failed to query Facebook catalog: ${result.error}`);

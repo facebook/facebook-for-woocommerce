@@ -473,16 +473,17 @@ test.describe('WooCommerce Plugin level tests', () => {
       await dialog.accept();
     });
 
-    // Click Reset products Facebook settings button
+    // Click Reset products Facebook settings button and wait for navigation
     console.log('🔘 Clicking Reset products Facebook settings button...');
     const resetButton = page.locator('.reset_all_product_fb_settings input[type="submit"]');
     await resetButton.waitFor({ state: 'visible', timeout: TIMEOUTS.LONG });
-    await resetButton.click();
-
-    // Wait for page refresh with _wpnonce in URL
-    await page.waitForURL('**/_wpnonce=**', { timeout: TIMEOUTS.LONG });
-    await page.waitForLoadState('domcontentloaded');
-    console.log('✅ Page refreshed with nonce');
+    
+    await Promise.all([
+      page.waitForLoadState('domcontentloaded'),
+      resetButton.click()
+    ]);
+    
+    console.log('✅ Page reloaded after reset action');
 
     // Verify all product Facebook fields are cleared using helper
     const result = await verifyProductsFacebookFieldsCleared();
