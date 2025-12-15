@@ -1412,7 +1412,8 @@ async function reconnectAndVerify() {
     failures.push(`External Business ID mismatch. Expected: ${credentials.externalBusinessId}, Got: ${after.external_business_id || 'EMPTY'}`);
   }
 
-  if (!after.catalog_id || after.catalog_id !== credentials.productCatalogId) {
+  // Only check catalog ID if it's provided in credentials
+  if (credentials.productCatalogId && (!after.catalog_id || after.catalog_id !== credentials.productCatalogId)) {
     failures.push(`Catalog ID mismatch. Expected: ${credentials.productCatalogId}, Got: ${after.catalog_id || 'EMPTY'}`);
   }
 

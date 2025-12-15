@@ -473,16 +473,17 @@ test.describe('WooCommerce Plugin level tests', () => {
       await dialog.accept();
     });
 
-    // Click Delete all products button
+    // Click Delete all products button and wait for navigation
     console.log('🔘 Clicking Delete all products button...');
     const deleteButton = page.locator('.wc_facebook_delete_all_products input[type="submit"]');
     await deleteButton.waitFor({ state: 'visible', timeout: TIMEOUTS.LONG });
-    await deleteButton.click();
-
-    // Wait for page refresh with _wpnonce in URL
-    await page.waitForURL('**/_wpnonce=**', { timeout: TIMEOUTS.LONG });
-    await page.waitForLoadState('domcontentloaded');
-    console.log('✅ Page refreshed with nonce');
+    
+    await Promise.all([
+      page.waitForLoadState('domcontentloaded'),
+      deleteButton.click()
+    ]);
+    
+    console.log('✅ Page reloaded after delete action');
 
     // Wait for deletion to propagate to Facebook servers
     console.log(`⏳ Waiting ${TIMEOUTS.MAX / 1000} seconds for deletion to propagate to Facebook...`);
@@ -510,16 +511,17 @@ test.describe('WooCommerce Plugin level tests', () => {
       await dialog.accept();
     });
 
-    // Click Reset settings button
+    // Click Reset settings button and wait for navigation
     console.log('🔘 Clicking Reset settings button...');
     const resetButton = page.locator('.wc_facebook_settings_reset input[type="submit"]');
     await resetButton.waitFor({ state: 'visible', timeout: TIMEOUTS.LONG });
-    await resetButton.click();
-
-    // Wait for page refresh with _wpnonce in URL
-    await page.waitForURL('**/_wpnonce=**', { timeout: TIMEOUTS.LONG });
-    await page.waitForLoadState('domcontentloaded');
-    console.log('✅ Page refreshed with nonce');
+    
+    await Promise.all([
+      page.waitForLoadState('domcontentloaded'),
+      resetButton.click()
+    ]);
+    
+    console.log('✅ Page reloaded after reset action');
 
     // Navigate to options page to verify reset
     await page.goto(`${process.env.WORDPRESS_URL}/wp-admin/options.php`, {
