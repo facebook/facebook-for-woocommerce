@@ -372,9 +372,9 @@ if ( ! class_exists( 'WC_Facebookcommerce_Utils' ) ) :
 		 */
 		public static function get_user_info( $aam_settings ) {
 			$current_user = wp_get_current_user();
-
+			error_log( 'User info: ' . $current_user->ID );
 			if ( null === $aam_settings || ! $aam_settings->get_enable_automatic_matching() ) {
-				// User not logged in or pixel not configured with automatic advance matching
+				error_log( 'Pixel not configured with automatic advance matching' );
 				return [];
 			} else {
 				$user_data = array();
@@ -392,6 +392,11 @@ if ( ! class_exists( 'WC_Facebookcommerce_Utils' ) ) :
 					$user_data['country'] = get_user_meta( $user_id, 'billing_country', true );
 					$user_data['st']      = get_user_meta( $user_id, 'billing_state', true );
 					$user_data['ph']      = get_user_meta( $user_id, 'billing_phone', true );
+					error_log( 'User info: ' . $user_data['ct'] . ', ' . $user_data['ph'] . ', ' . $user_data['st'] . ', ' . $user_data['zp'] );
+				}
+				else{
+					error_log( 'User not logged in' );
+					error_log( 'User info: ' . $current_user->ID );
 				}
 
 				// Each field that is not present in AAM settings or is empty is deleted from user data

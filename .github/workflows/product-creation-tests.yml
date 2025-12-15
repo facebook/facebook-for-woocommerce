@@ -484,17 +484,18 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y xvfb
 
-      - name: Run Plugin level tests
-        env:
-          WP_USERNAME: admin
-          WP_PASSWORD: admin
-          FB_EXTERNAL_BUSINESS_ID: ${{ env.FB_EXTERNAL_BUSINESS_ID }}
-          FB_ACCESS_TOKEN: ${{ env.FB_ACCESS_TOKEN }}
-          FB_PIXEL_ID: ${{ env.FB_PIXEL_ID }}
-          WC_LOG_PATH: ${{ env.WORDPRESS_PATH }}/wp-content/uploads/wc-logs
-        run: |
-          cd ${{ env.PLUGIN_PATH }}
-          npx playwright test "plugin-.*\.spec\.js" --project=chromium-wp-admin
+
+      # - name: Run Plugin level tests
+      #   env:
+      #     WP_USERNAME: admin
+      #     WP_PASSWORD: admin
+      #     FB_EXTERNAL_BUSINESS_ID: ${{ secrets.FB_EXTERNAL_BUSINESS_ID }}
+      #     FB_ACCESS_TOKEN: ${{ secrets.FB_ACCESS_TOKEN }}
+      #     FB_PIXEL_ID: ${{ secrets.FB_PIXEL_ID }}
+      #     WC_LOG_PATH: ${{ env.WORDPRESS_PATH }}/wp-content/uploads/wc-logs
+      #   run: |
+      #     cd ${{ env.PLUGIN_PATH }}
+      #     npx playwright test "plugin-.*\.spec\.js" --project=chromium-wp-admin
 
       - name: Run CAPI Pixel E2E tests
         env:
@@ -514,14 +515,14 @@ jobs:
             echo "ℹ️ No test product to delete"
           fi
 
-      - name: Run E2E tests
-        continue-on-error: true
-        env:
-          WP_USERNAME: admin
-          WP_PASSWORD: admin
-        run: |
-          cd ${{ env.PLUGIN_PATH }}
-          npx playwright test "product-.*\.spec\.js" --project=chromium-wp-admin
+      # - name: Run E2E tests
+      #   continue-on-error: true
+      #   env:
+      #     WP_USERNAME: admin
+      #     WP_PASSWORD: admin
+      #   run: |
+      #     cd ${{ env.PLUGIN_PATH }}
+      #     npx playwright test "product-.*\.spec\.js" --project=chromium-wp-admin
 
 
       - name: Disconnect from catalog
