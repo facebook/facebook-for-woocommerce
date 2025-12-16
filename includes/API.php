@@ -657,6 +657,7 @@ class API extends Base {
 					)
 				);
 			}
+			error_log( 'E2E testing::  No error in response!' );
 
 			// Validate logger file exists
 			$logger_path = getenv( 'FB_E2E_LOGGER_PATH' );
@@ -665,15 +666,20 @@ class API extends Base {
 				throw new \Exception( 'Test logging failed - Logger file not found at: ' . $logger_file );
 			}
 			require_once $logger_file;
+			error_log( 'E2E testing::  logger file exists!' );
 
 			$test_id = sanitize_text_field( wp_unslash( $_COOKIE[ $cookie_name ] ) );
 
 			// Get the transformed data directly from the request object
 			$request_data = $request->get_data();
 
+			error_log( 'E2E testing::  Got request data!' );
+
 			// Log each transformed event
 			if ( isset( $request_data['data'] ) && is_array( $request_data['data'] ) ) {
 				foreach ( $request_data['data'] as $transformed_event ) {
+					error_log( 'E2E testing::  Logging ' . $transformed_event );
+
 					\E2E_Event_Logger::log_event( $test_id, 'capi', $transformed_event );
 				}
 			}
