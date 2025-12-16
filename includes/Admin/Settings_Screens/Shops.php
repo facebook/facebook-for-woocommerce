@@ -16,12 +16,17 @@ use WooCommerce\Facebook\Admin\Abstract_Settings_Screen;
 use WooCommerce\Facebook\Framework\Api\Exception as ApiException;
 use WooCommerce\Facebook\RolloutSwitches;
 
+// Include the localization trait
+require_once __DIR__ . '/Localization_Settings_Trait.php';
+
 /**
  * Shops settings screen object.
  *
  * @since 3.5.0
  */
 class Shops extends Abstract_Settings_Screen {
+
+	use Localization_Settings_Trait;
 
 	/** @var string */
 	const ID = 'shops';
@@ -49,6 +54,10 @@ class Shops extends Abstract_Settings_Screen {
 		add_action( 'admin_notices', array( $this, 'add_notices' ) );
 		add_action( 'admin_footer', array( $this, 'render_message_handler' ) );
 		add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_admin_scripts' ) );
+		// Only register this action once across all settings screens that use the trait
+		if ( ! has_action( 'woocommerce_admin_field_localization_plugin_status' ) ) {
+			add_action( 'woocommerce_admin_field_localization_plugin_status', array( $this, 'render_localization_plugin_status' ) );
+		}
 	}
 
 	/**
@@ -282,6 +291,7 @@ class Shops extends Abstract_Settings_Screen {
 					</tr>
 				</tbody>
 			</table>
+
 			<?php parent::render(); ?>
 		</div>
 	</div>
@@ -319,8 +329,14 @@ class Shops extends Abstract_Settings_Screen {
 	 * @since 3.5.0
 	 */
 	public function get_settings(): array {
-		//phpcs:ignore WordPress.WP.I18n.NoEmptyStrings
-		return self::get_settings_with_title_static( __( '', 'facebook-for-woocommerce' ) );
+		// Get the parent settings (debug mode, meta diagnosis, etc.)
+		$parent_settings = self::get_settings_with_title_static( '' );
+
+		// Get the localization settings
+		$localization_settings = $this->get_localization_settings();
+
+		// Merge both settings arrays
+		return array_merge( $parent_settings, $localization_settings );
 	}
 
 	/**
