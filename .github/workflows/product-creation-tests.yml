@@ -498,7 +498,6 @@ jobs:
           }'
 
       - name: Run CAPI Pixel E2E tests
-        if: false
         env:
           TEST_PRODUCT_ID: ${{ env.TEST_PRODUCT_ID }}
         run: |
@@ -529,7 +528,6 @@ jobs:
           fi
 
       - name: Run E2E tests
-        if: false
         continue-on-error: true
         env:
           WP_USERNAME: admin

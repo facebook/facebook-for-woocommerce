@@ -364,7 +364,7 @@ test.describe('WooCommerce Plugin level tests', () => {
       const wpSitePath = process.env.WORDPRESS_PATH;
       const emailSubject = `CI Test Email - Run ${runId}`;
       const emailBody = `This is a CI test from WordPress via Postmark. GitHub Run ID: ${runId}`;
-      
+
       await execAsync(
         `php -r "require_once('${wpSitePath}/wp-load.php'); wp_mail('${testRecipient}', '${emailSubject}', '${emailBody}');"`,
         { cwd: __dirname }
@@ -546,10 +546,10 @@ test.describe('WooCommerce Plugin level tests', () => {
     // Check for JS errors
     if (jsErrors.length > 0) {
       // Filter out known non-critical errors
-      const criticalErrors = jsErrors.filter(error => 
+      const criticalErrors = jsErrors.filter(error =>
         !error.includes('WC_Facebook_Google_Product_Category_Fields is not defined')
       );
-      
+
       // Log all errors for visibility
       jsErrors.forEach(error => {
         if (error.includes('WC_Facebook_Google_Product_Category_Fields is not defined')) {
@@ -558,7 +558,7 @@ test.describe('WooCommerce Plugin level tests', () => {
           console.error(`❌ JS error: ${error}`);
         }
       });
-      
+
       // Only throw if there are critical errors
       if (criticalErrors.length > 0) {
         throw new Error(`JS errors on Facebook settings page: ${criticalErrors.join('; ')}`);
@@ -632,6 +632,13 @@ test.describe('WooCommerce Plugin level tests', () => {
 
     console.log('✅ All Facebook connection options cleared');
     console.log('🎉 Reset connection settings test passed!');
+
+    const reconnectResult = await reconnectAndVerify();
+    // Assertions on reconnect
+    expect(reconnectResult.success).toBe(true);
+    expect(reconnectResult.before.connected).toBe(false);
+    expect(reconnectResult.after.connected).toBe(true);
+
   });
 
 });
