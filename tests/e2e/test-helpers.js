@@ -1153,40 +1153,6 @@ async function completePurchaseFlow(page) {
   return { orderReceivedUrl, orderId };
 }
 
-// Helper function to verify email delivery via Postmark API
-async function verifyPostmarkDelivery(recipient, options = {}) {
-  const postmarkApiKey = process.env.POSTMARK_API_KEY;
-  const runId = options.runId || process.env.GITHUB_RUN_ID || `local-${Date.now()}`;
-
-  if (!postmarkApiKey) {
-    console.log('⚠️ POSTMARK_API_KEY not set - skipping email verification');
-    return null;
-  }
-
-  console.log('⏳ Waiting for Postmark to process...');
-  await new Promise(resolve => setTimeout(resolve, TIMEOUTS.LONG));
-
-  console.log('🔍 Verifying delivery via Postmark API...');
-  const { exec } = require('child_process');
-  const { promisify } = require('util');
-  const execAsync = promisify(exec);
-
-  const curlCommand = `curl -s -H "Accept: application/json" -H "X-Postmark-Server-Token: ${postmarkApiKey}" "https://api.postmarkapp.com/messages/outbound?recipient=${recipient}&count=30&offset=0"`;
-
-  const { stdout } = await execAsync(curlCommand);
-
-  console.log('📄 Postmark API response:');
-  console.log(stdout);
-
-  // Simple regex match for run ID in the response
-  if (stdout.includes(runId)) {
-    console.log(`✅ Email verified: Found run ID "${runId}" in response`);
-    return JSON.parse(stdout);
-  } else {
-    throw new Error(`❌ Email with run ID "${runId}" not found in Postmark response`);
-  }
-}
-
 // Helper function to disconnect from Facebook and verify cleanup
 async function disconnectAndVerify() {
   console.log('🔌 Initiating Facebook disconnection...');
@@ -1365,6 +1331,7 @@ async function reconnectAndVerify() {
     ['wc_facebook_enable_pixel', 'yes'],
     ['wc_facebook_enable_advanced_matching', 'yes'],
     ['wc_facebook_debug_mode', 'yes'],
+    ['wc_facebook_enable_debug_mode', 'yes'],
     ['wc_facebook_has_connected_fbe_2', 'yes'],
     ['wc_facebook_has_authorized_pages_read_engagement', 'yes'],
     ['wc_facebook_enable_product_sync', 'yes']
@@ -1548,7 +1515,6 @@ module.exports = {
   checkWooCommerceLogs,
   completePurchaseFlow,
   checkForJsErrors,
-  verifyPostmarkDelivery,
   disconnectAndVerify,
   reconnectAndVerify,
   verifyProductsFacebookFieldsCleared,

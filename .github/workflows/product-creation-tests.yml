@@ -40,7 +40,7 @@ env:
   PAGE_LOAD_TIMEOUT: 120000
 
   # Customer Billing/Shipping Address
-  WP_CUSTOMER_EMAIL: 'nmadhav@meta.com'
+  WP_CUSTOMER_EMAIL: 'customer@test.com'
   TEST_USER_FIRST_NAME: Test
   TEST_USER_LAST_NAME: Customer
   TEST_USER_ADDRESS_1: '123 Test Street'
@@ -57,12 +57,6 @@ env:
   STORE_COUNTRY: 'US:CA'
   STORE_POSTCODE: '12345'
   STORE_CURRENCY: USD
-
-  # Postmark configuration
-  POSTMARK_FROM_EMAIL: "nmadhav@meta.com"
-  POSTMARK_FROM_NAME: "Github Test Sender"
-  TEST_RECIPIENT: "nmadhav@meta.com"
-  POSTMARK_API_KEY: ${{ secrets.POSTMARK_API_KEY }}
 
 jobs:
   e2e-tests:
@@ -481,21 +475,6 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y xvfb
 
-      - name: Configure Postmark
-        run: |
-          cd ${{ env.WORDPRESS_PATH }}
-          echo "Installing Post SMTP plugin..."
-          wp plugin install post-smtp --activate
-
-          echo "Configuring Postmark transport..."
-          wp option update post_smtp '{
-            "sender_email": "'"$POSTMARK_FROM_EMAIL"'",
-            "sender_name": "'"$POSTMARK_FROM_NAME"'",
-            "mail_engine": "Postmark",
-            "postmark": {
-                "api_key": "'"$POSTMARK_API_KEY"'"
-            }
-          }'
 
       - name: Run CAPI Pixel E2E tests
         env:

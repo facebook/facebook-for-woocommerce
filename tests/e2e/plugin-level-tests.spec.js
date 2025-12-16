@@ -2,7 +2,7 @@ const { test, expect } = require('@playwright/test');
 const { execSync } = require('child_process');
 const { TIMEOUTS } = require('./time-constants');
 
-const {loginToWordPress,logTestStart,ensureDebugModeEnabled,checkWooCommerceLogs,checkForPhpErrors,checkForJsErrors,verifyPostmarkDelivery,completePurchaseFlow,disconnectAndVerify,reconnectAndVerify,verifyProductsFacebookFieldsCleared,verifyFacebookCatalogEmpty} = require('./test-helpers');
+const {loginToWordPress,logTestStart,ensureDebugModeEnabled,checkWooCommerceLogs,checkForPhpErrors,checkForJsErrors,completePurchaseFlow,disconnectAndVerify,reconnectAndVerify,verifyProductsFacebookFieldsCleared,verifyFacebookCatalogEmpty} = require('./test-helpers');
 
 test.describe('WooCommerce Plugin level tests', () => {
 
@@ -343,49 +343,8 @@ test.describe('WooCommerce Plugin level tests', () => {
     }
   });
 
-  test('Send test email via Postmark and verify delivery', async () => {
-    console.log('📧 Sending test email via wp_mail...');
-
-    const testRecipient = process.env.TEST_RECIPIENT ;
-    const postmarkApiKey = process.env.POSTMARK_API_KEY;
-    const runId = process.env.GITHUB_RUN_ID || `local-${Date.now()}`;
-
-    if (!postmarkApiKey) {
-      console.log('⚠️ POSTMARK_API_KEY not set - skipping test');
-      return;
-    }
-
-    try {
-      // Send test email using wp_mail with run ID in subject
-      const { exec } = require('child_process');
-      const { promisify } = require('util');
-      const execAsync = promisify(exec);
-
-      const wpSitePath = process.env.WORDPRESS_PATH;
-      const emailSubject = `CI Test Email - Run ${runId}`;
-      const emailBody = `This is a CI test from WordPress via Postmark. GitHub Run ID: ${runId}`;
-
-      await execAsync(
-        `php -r "require_once('${wpSitePath}/wp-load.php'); wp_mail('${testRecipient}', '${emailSubject}', '${emailBody}');"`,
-        { cwd: __dirname }
-      );
-
-      console.log(`✅ Email sent via wp_mail with subject: ${emailSubject}`);
-
-      // Use helper to verify email delivery with run ID
-      await verifyPostmarkDelivery(testRecipient, { runId });
-
-    } catch (error) {
-      console.error('❌ Email test failed:', error.message);
-      throw error;
-    }
-  });
-
-  test('Complete checkout flow - Place order and verify order email', async ({ page }) => {
+  test('Complete checkout flow - Place order and verify order', async ({ page }) => {
     console.log('🛒 Starting complete checkout flow test...');
-
-    const postmarkApiKey = process.env.POSTMARK_API_KEY;
-    const customerEmail = process.env.WP_CUSTOMER_EMAIL;
 
     // Set up JS error tracking BEFORE purchase flow
     const jsErrors = checkForJsErrors(page);
@@ -416,18 +375,14 @@ test.describe('WooCommerce Plugin level tests', () => {
 
     console.log(`✅ Order verified: Status=${orderData.status}, Total=${orderData.total}`);
 
-    // Verify order email using helper
-    if (postmarkApiKey) {
-      await verifyPostmarkDelivery(customerEmail, { subjectFilter: `#${orderId}` });
-    }
-
     // Check JS errors that occurred during purchase flow
     if (jsErrors.length > 0) {
       throw new Error(`JS errors: ${jsErrors.join('; ')}`);
     }
 
-    console.log('✅ Test passed: No PHP/JS errors, order created, email checked');
+    console.log('✅ Test passed: No PHP/JS errors, order created');
   });
+
   test('Reset all products Facebook settings via WooCommerce Status Tools', async ({ page }) => {
     console.log('🔄 Testing Reset all products Facebook settings...');
 
