@@ -66,7 +66,7 @@ class E2ETestHelpers {
             }
 
             return [
-                'success' => true,
+                'success' => empty($issues),
                 'total' => count($products),
                 'issues' => $issues
             ];
@@ -79,51 +79,6 @@ class E2ETestHelpers {
         }
     }
 
-    /**
-     * Verify Facebook catalog is empty
-     */
-    public static function verifyFacebookCatalogEmpty() {
-        try {
-            if (!function_exists('facebook_for_woocommerce')) {
-                throw new Exception('Facebook for WooCommerce plugin not loaded');
-            }
-
-            // Get the existing API instance and extract its access token
-            $existing_api = facebook_for_woocommerce()->get_api();
-            $access_token = $existing_api->get_access_token();
-
-            // Create our extended API instance with the same access token
-            $api = new \WooCommerce\Facebook\Tests\E2E\E2E_API_Extension($access_token);
-
-            // Get catalog ID
-            $integration = facebook_for_woocommerce()->get_integration();
-            $catalog_id = $integration->get_product_catalog_id();
-
-            if (empty($catalog_id)) {
-                throw new Exception('Product catalog ID not found');
-            }
-
-            // Query products using our extended API method
-            $body = $api->query_catalog_products($catalog_id, 1);
-
-            // Response format: { 'data': [...] } or { 'data': [] }
-            $product_count = isset($body['data']) ? count($body['data']) : 0;
-            $is_empty = $product_count === 0;
-
-            return [
-                'success' => true,
-                'catalog_id' => $catalog_id,
-                'product_count' => $product_count,
-                'is_empty' => $is_empty
-            ];
-
-        } catch (Exception $e) {
-            return [
-                'success' => false,
-                'error' => 'Exception: ' . $e->getMessage()
-            ];
-        }
-    }
 }
 
 // Main execution when called directly

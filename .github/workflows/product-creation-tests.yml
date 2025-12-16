@@ -148,7 +148,7 @@ jobs:
 
       - name: Check logs baseline (before plugin activation)
         run: |
-          TODAY=$(date +%d-%b-%Y)
+          TODAY=$(date +%Y-%m-%d)
           WC_LOG="${{ env.WORDPRESS_PATH }}/wp-content/uploads/wc-logs/facebook_for_woocommerce-${TODAY}*.log"
 
           # Check WC log exists
@@ -345,7 +345,7 @@ jobs:
 
       - name: Verify no new errors after plugin activation
         run: |
-          TODAY=$(date +%d-%b-%Y)
+          TODAY=$(date +%Y-%m-%d)
           WC_LOG="${{ env.WORDPRESS_PATH }}/wp-content/uploads/wc-logs/facebook_for_woocommerce-${TODAY}*.log"
 
           # Check if WC log appeared after activation
@@ -563,36 +563,6 @@ jobs:
             fi
           else
             echo "✅ No debug log found - no PHP errors"
-          fi
-
-      - name: Check WooCommerce logs for non-200 response codes
-        if: always()
-        run: |
-          TODAY=$(date +%d-%b-%Y)
-          WC_LOG="${{ env.WORDPRESS_PATH }}/wp-content/uploads/wc-logs/facebook_for_woocommerce-${TODAY}*.log"
-
-          if ls $WC_LOG 1> /dev/null 2>&1; then
-            # Search for lines with "code:" and check if any are non-200
-            NON_200_ERRORS=$(grep -n "code:" $WC_LOG | grep -v "code: 200" || true)
-            if [ -n "$NON_200_ERRORS" ]; then
-              echo "❌ Non-200 response codes detected in WooCommerce logs:"
-              echo "$NON_200_ERRORS" | while IFS= read -r line; do
-                LINE_NUM=$(echo "$line" | cut -d: -f1)
-                START_LINE=$((LINE_NUM - 2))
-                END_LINE=$((LINE_NUM + 2))
-                if [ $START_LINE -lt 1 ]; then
-                  START_LINE=1
-                fi
-                echo "--- Context around line $LINE_NUM ---"
-                sed -n "${START_LINE},${END_LINE}p" $WC_LOG
-                echo ""
-              done
-              exit 1
-            else
-              echo "✅ All response codes are 200"
-            fi
-          else
-            echo "✅ No WooCommerce log found for today"
           fi
 
       - name: Upload test results

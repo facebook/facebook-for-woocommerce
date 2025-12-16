@@ -2,7 +2,7 @@ const { test, expect } = require('@playwright/test');
 const { execSync } = require('child_process');
 const { TIMEOUTS } = require('./time-constants');
 
-const {loginToWordPress,logTestStart,ensureDebugModeEnabled,checkWooCommerceLogs,checkForPhpErrors,checkForJsErrors,completePurchaseFlow,disconnectAndVerify,reconnectAndVerify,verifyProductsFacebookFieldsCleared,verifyFacebookCatalogEmpty} = require('./test-helpers');
+const {loginToWordPress,logTestStart,ensureDebugModeEnabled,checkWooCommerceLogs,checkForPhpErrors,checkForJsErrors,completePurchaseFlow,disconnectAndVerify,reconnectAndVerify,verifyProductsFacebookFieldsCleared} = require('./test-helpers');
 
 test.describe('WooCommerce Plugin level tests', () => {
 
@@ -246,7 +246,7 @@ test.describe('WooCommerce Plugin level tests', () => {
 
 
   test('Verify Facebook for WooCommerce plugin connection', async ({ page }) => {
-    console.log('🔍 Verifying Facebook p\lugin connection...');
+    console.log('🔍 Verifying Facebook plugin connection...');
 
     const expectedAccessToken = process.env.FB_ACCESS_TOKEN;
     const expectedPixelId = process.env.FB_PIXEL_ID;
@@ -328,14 +328,6 @@ test.describe('WooCommerce Plugin level tests', () => {
     console.log('✅ All connection checks passed');
   });
 
-  test('Check WooCommerce logs for fatal errors and non-200 responses', async () => {
-    const result = await checkWooCommerceLogs();
-
-    if (!result.success) {
-      throw new Error('Log validation failed');
-    }
-  });
-
   test('Complete checkout flow - Place order and verify order', async ({ page }) => {
     console.log('🛒 Starting complete checkout flow test...');
 
@@ -409,45 +401,6 @@ test.describe('WooCommerce Plugin level tests', () => {
     expect(result.success).toBe(true);
     console.log('🎉 Reset all products Facebook settings test passed!');
   });
-
-  test.skip('Delete all products from Facebook Catalog', async ({ page }) => {
-    console.log('🗑️ Testing Delete all products from catalog...');
-
-    // Navigate to WooCommerce Status Tools
-    await page.goto(`${process.env.WORDPRESS_URL}/wp-admin/admin.php?page=wc-status&tab=tools`, {
-      waitUntil: 'domcontentloaded',
-      timeout: TIMEOUTS.EXTRA_LONG
-    });
-
-    // Handle confirmation dialog
-    page.once('dialog', async dialog => {
-      console.log(`✅ Confirming dialog: ${dialog.message()}`);
-      await dialog.accept();
-    });
-
-    // Click Delete all products button and wait for navigation
-    console.log('🔘 Clicking Delete all products button...');
-    const deleteButton = page.locator('.wc_facebook_delete_all_products input[type="submit"]');
-    await deleteButton.waitFor({ state: 'visible', timeout: TIMEOUTS.LONG });
-
-    await Promise.all([
-      page.waitForLoadState('domcontentloaded'),
-      deleteButton.click()
-    ]);
-
-    console.log('✅ Page reloaded after delete action');
-
-    // Wait for deletion to propagate to Facebook servers
-    console.log(`⏳ Waiting ${TIMEOUTS.MAX / 1000} seconds for deletion to propagate to Facebook...`);
-    await page.waitForTimeout(TIMEOUTS.MAX);
-
-    // Verify Facebook catalog is empty using helper
-    const result = await verifyFacebookCatalogEmpty();
-
-    expect(result.success).toBe(true);
-    console.log('🎉 Delete all products from catalog test passed!');
-  });
-
 
 
   test('Disconnect and Reconnect', async ({ page }) => {
@@ -571,6 +524,14 @@ test.describe('WooCommerce Plugin level tests', () => {
     expect(reconnectResult.before.connected).toBe(false);
     expect(reconnectResult.after.connected).toBe(true);
 
+  });
+
+  test('Check WooCommerce logs for fatal errors and non-200 responses', async () => {
+    const result = await checkWooCommerceLogs();
+
+    if (!result.success) {
+      throw new Error('Log validation failed');
+    }
   });
 
 });

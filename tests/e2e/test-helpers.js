@@ -1425,40 +1425,7 @@ async function verifyProductsFacebookFieldsCleared() {
   return { success: true, total: result.total };
 }
 
-// Helper function to verify Facebook catalog is empty
-async function verifyFacebookCatalogEmpty() {
-  console.log('🔍 Verifying Facebook catalog is empty...');
 
-  const { exec } = require('child_process');
-  const { promisify } = require('util');
-  const execAsync = promisify(exec);
-
-  const { stdout, stderr } = await execAsync(
-    'php e2e-helpers.php verify_facebook_catalog_empty',
-    { cwd: __dirname }
-  );
-
-  if (stderr) {
-    console.log(`⚠️ PHP stderr: ${stderr}`);
-  }
-
-  const output = stdout.trim();
-  const result = JSON.parse(output);
-
-  if (!result.success) {
-    throw new Error(`Failed to query Facebook catalog: ${result.error}`);
-  }
-
-  console.log(`📊 Catalog ID: ${result.catalog_id}`);
-  console.log(`📦 Products found: ${result.product_count}`);
-
-  if (!result.is_empty) {
-    throw new Error(`❌ Catalog is not empty! Found ${result.product_count} product(s)`);
-  }
-
-  console.log('✅ Facebook catalog is empty');
-  return { success: true, catalog_id: result.catalog_id };
-}
 
 module.exports = {
   baseURL,
@@ -1495,6 +1462,5 @@ module.exports = {
   checkForJsErrors,
   disconnectAndVerify,
   reconnectAndVerify,
-  verifyProductsFacebookFieldsCleared,
-  verifyFacebookCatalogEmpty
+  verifyProductsFacebookFieldsCleared
 };
