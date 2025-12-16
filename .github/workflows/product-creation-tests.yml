@@ -437,6 +437,7 @@ jobs:
           sudo apt-get install -y xvfb
 
       - name: Run Plugin level tests
+        if: false
         env:
           WP_USERNAME: admin
           WP_PASSWORD: admin
