@@ -647,13 +647,25 @@ class API extends Base {
 			error_log( 'E2E testing:: Response is valid!' );
 
 			if ( $response->has_api_error() ) {
+				$error_code    = $response->get_api_error_code() ? $response->get_api_error_code() : 'N/A';
+				$error_type    = $response->get_api_error_type() ? $response->get_api_error_type() : 'N/A';
+				$error_message = $response->get_api_error_message() ? $response->get_api_error_message() : 'N/A';
+				$user_message  = $response->get_user_error_message() ? $response->get_user_error_message() : 'N/A';
+
+				// Log the error details for debugging
+				error_log( 'E2E testing:: CAPI API Error Detected!' );
+				error_log( sprintf( 'E2E testing:: Error Code: %s', $error_code ) );
+				error_log( sprintf( 'E2E testing:: Error Type: %s', $error_type ) );
+				error_log( sprintf( 'E2E testing:: Error Message: %s', $error_message ) );
+				error_log( sprintf( 'E2E testing:: User Message: %s', $user_message ) );
+
 				throw new \Exception(
 					sprintf(
 						'CAPI response has error - Code: %s, Type: %s, Message: %s, User Message: %s',
-						$response->get_api_error_code() ? $response->get_api_error_code() : 'N/A',
-						$response->get_api_error_type() ? $response->get_api_error_type() : 'N/A',
-						$response->get_api_error_message() ? $response->get_api_error_message() : 'N/A',
-						$response->get_user_error_message() ? $response->get_user_error_message() : 'N/A'
+						$error_code,
+						$error_type,
+						$error_message,
+						$user_message
 					)
 				);
 			}
