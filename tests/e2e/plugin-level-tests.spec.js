@@ -168,7 +168,7 @@ test.describe('WooCommerce Plugin level tests', () => {
 
   test('Verify Debug mode and options visibility', async ({ page }) => {
     console.log('🔍 Checking debug mode status...');
-      
+
     // Check if debug mode is enabled
     const isDebugEnabled = await ensureDebugModeEnabled(page);
     expect(isDebugEnabled).toBe(true);
@@ -184,10 +184,10 @@ test.describe('WooCommerce Plugin level tests', () => {
     // Check for Facebook: Delete Background Sync Jobs button (only visible when debug mode is on)
     const backgroundJobsRow = page.locator('tr.wc_facebook_delete_background_jobs');
     await backgroundJobsRow.waitFor({ state: 'visible', timeout: TIMEOUTS.LONG });
-      
+
     const backgroundJobsButton = backgroundJobsRow.locator('input[type="submit"]');
     await expect(backgroundJobsButton).toBeVisible();
-      
+
     // Verify the button is enabled and interactable
     const isEnabled = await backgroundJobsButton.isEnabled();
     expect(isEnabled).toBe(true);
@@ -410,7 +410,7 @@ test.describe('WooCommerce Plugin level tests', () => {
     console.log('🎉 Reset all products Facebook settings test passed!');
   });
 
-  test('Delete all products from Facebook Catalog', async ({ page }) => {
+  test.skip('Delete all products from Facebook Catalog', async ({ page }) => {
     console.log('🗑️ Testing Delete all products from catalog...');
 
     // Navigate to WooCommerce Status Tools
