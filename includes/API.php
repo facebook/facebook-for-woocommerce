@@ -628,6 +628,7 @@ class API extends Base {
 			if ( ! $is_capi_event_logging_enabled ) {
 				return;
 			}
+			error_log( 'E2E testing:: $is_capi_event_logging_enabled true!' );
 
 			// Check if test cookie is present
 			$cookie_name = getenv( 'FB_E2E_TEST_COOKIE_NAME' );
@@ -635,11 +636,15 @@ class API extends Base {
 				// Test cookie is not present. Do not log events.
 				return;
 			}
+			error_log( 'E2E testing::  Cookie is present!' );
+
 
 			// Validate response
 			if ( ! $response ) {
 				throw new \Exception( 'CAPI response is null - cannot log test events' );
 			}
+
+			error_log( 'E2E testing:: Response is valid!' );
 
 			if ( $response->has_api_error() ) {
 				throw new \Exception(
@@ -702,6 +707,7 @@ class API extends Base {
 	 * @throws ApiException In case of a general API error or rate limit error.
 	 */
 	public function send_pixel_events( $pixel_id, array $events ) {
+		error_log( 'E2E testing::  send_pixel_events called!' );
 		$request = new API\Pixel\Events\Request( $pixel_id, $events );
 
 		$this->set_response_handler( Response::class );
