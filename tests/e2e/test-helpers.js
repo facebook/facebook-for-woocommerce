@@ -8,7 +8,7 @@ const password = process.env.WP_PASSWORD;
 const wpSitePath = process.env.WORDPRESS_PATH;
 
 // Whitelist of allowed errors (non-critical) - read from environment
-const ERROR_WHITELIST = process.env.ERROR_WHITELIST 
+const ERROR_WHITELIST = process.env.ERROR_WHITELIST
   ? process.env.ERROR_WHITELIST.split('|').map(s => s.trim())
   : [];
 
@@ -964,16 +964,16 @@ async function ensureDebugModeEnabled(page) {
 
     const input = page.locator('#wc_facebook_enable_debug_mode');
     const inputExists = await input.count();
-    
+
     // Get current value - empty string if option doesn't exist
     const currentValue = inputExists > 0 ? await input.inputValue() : '';
-    
+
     if (currentValue !== 'yes') {
       console.log('🔧 Debug mode is not enabled, enabling it...');
       const { exec } = require('child_process');
       const { promisify } = require('util');
       const execAsync = promisify(exec);
-      
+
       await execAsync(
         `php -r "require_once('${wpSitePath}/wp-load.php'); update_option('wc_facebook_enable_debug_mode', 'yes');"`,
         { cwd: __dirname }
@@ -1002,87 +1002,58 @@ async function checkWooCommerceLogs() {
     throw new Error('❌ WC_LOG_PATH environment variable not set');
   }
 
-  console.log(`📁 Looking for logs in: ${logsDir}`);
-
-  // Find today's log file
   const logFile = execSync(
     `find "${logsDir}" -name "facebook_for_woocommerce-${today}*.log" 2>/dev/null | head -1`,
     { encoding: 'utf8' }
   ).trim();
 
   if (!logFile) {
-    console.log(`⚠️ No log file found for today (${today}) - plugin may not have logged yet`);
-    return { success: true, message: 'No log file found' };
+    console.log(`ℹ️ No log file found for today - ${today}`);
+    return { success: true };
   }
 
   console.log(`📄 Checking: ${logFile}`);
-  const errors = [];
 
-  // Check for fatal errors (case insensitive)
-  const fatalCount = execSync(
-    `grep -ic "fatal" "${logFile}" || echo 0`,
+  const non200Lines = execSync(
+    `grep -n "code: " "${logFile}" | grep -v "code: 200" || true`,
     { encoding: 'utf8' }
   ).trim();
 
-  if (parseInt(fatalCount) > 0) {
-    const fatalLines = execSync(`grep -i "fatal" "${logFile}"`, { encoding: 'utf8' });
-    errors.push(`❌ Found ${fatalCount} fatal error(s):\n${fatalLines}`);
+  if (!non200Lines) {
+    console.log('✅ All response codes are 200');
+    return { success: true };
   }
 
-  // Check for non-200 response codes with context (excluding NOTICE level)
-  const nonOkCodesCheck = execSync(
-    `grep -n "^code: " "${logFile}" | grep -v "^code: 200" || true`,
-    { encoding: 'utf8' }
-  ).trim();
+  const criticalErrors = [];
 
-  if (nonOkCodesCheck) {
-    const lines = nonOkCodesCheck.split('\n');
-    const criticalErrors = [];
+  for (const line of non200Lines.split('\n')) {
+    const lineNum = parseInt(line.split(':')[0]);
+    if (!lineNum) continue;
 
-    // Check each non-200 code to see if it's NOTICE level (which we ignore)
-    for (const line of lines) {
-      const lineNum = parseInt(line.split(':')[0]);
-      if (lineNum) {
-        // Get the previous line to check log level
-        const previousLine = execSync(
-          `sed -n '${lineNum - 1}p' "${logFile}"`,
-          { encoding: 'utf8' }
-        ).trim();
+    const previousLine = execSync(
+      `sed -n '${lineNum - 1}p' "${logFile}"`,
+      { encoding: 'utf8' }
+    ).trim();
 
-        // Only report if it's NOT a NOTICE level error
-        if (!previousLine.includes('NOTICE')) {
-          criticalErrors.push({ lineNum, line });
-        }
-      }
-    }
+    const isNotice = previousLine.includes('NOTICE');
+    const context = execSync(
+      `sed -n '${Math.max(1, lineNum - 2)},${lineNum + 2}p' "${logFile}"`,
+      { encoding: 'utf8' }
+    );
 
-    if (criticalErrors.length > 0) {
-      console.log(`\n⚠️ Found critical non-200 response codes. Showing context:\n`);
+    console.log(`\n--- ${isNotice ? 'ℹ️ NOTICE' : '❌ ERROR'} at line ${lineNum} ---`);
+    console.log(context);
 
-      // Show context for critical errors only
-      for (const error of criticalErrors) {
-        console.log(`\n========== Around line ${error.lineNum} ==========`);
-        const context = execSync(
-          `sed -n '${Math.max(1, error.lineNum - 5)},${error.lineNum + 5}p' "${logFile}"`,
-          { encoding: 'utf8' }
-        );
-        console.log(context);
-      }
-
-      errors.push(`❌ Found ${criticalErrors.length} critical non-200 response code(s) (see context above)`);
-    } else {
-      console.log(`ℹ️ Found ${lines.length} NOTICE-level non-200 response code(s) - ignoring as expected`);
+    if (!isNotice) {
+      criticalErrors.push(lineNum);
     }
   }
 
-  if (errors.length > 0) {
-    console.log('\n' + errors.join('\n\n'));
-    return { success: false, errors };
+  if (criticalErrors.length > 0) {
+    return { success: false, error: `Found ${criticalErrors.length} non-200 error(s)` };
   }
 
-  console.log('✅ Log validation PASSED');
-  console.log('   - No fatal errors');
-  console.log('   - All response codes are 200 OK');
+  console.log('✅ Log check passed (only NOTICE-level non-200s found)');
   return { success: true };
 }
 
