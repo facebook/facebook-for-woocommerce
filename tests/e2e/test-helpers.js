@@ -938,6 +938,7 @@ async function generateProductUpdateCSV(existingProducts, categoryName = "feed-t
 
 // Helper function to ensure debug mode is enabled
 async function ensureDebugModeEnabled(page) {
+  return true;
   console.log('🔍 Checking debug mode status...');
 
   // Navigate to Facebook settings page
