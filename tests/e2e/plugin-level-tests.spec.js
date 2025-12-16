@@ -167,25 +167,34 @@ test.describe('WooCommerce Plugin level tests', () => {
   });
 
   test('Verify Debug mode and options visibility', async ({ page }) => {
-    // Use helper to ensure debug mode is enabled
-    await ensureDebugModeEnabled(page);
+    console.log('🔍 Checking debug mode status...');
+      
+    // Check if debug mode is enabled
+    const isDebugEnabled = await ensureDebugModeEnabled(page);
+    expect(isDebugEnabled).toBe(true);
+    console.log('✅ Debug mode is enabled');
 
-    // Verify options visibility
-    await page.goto(`${process.env.WORDPRESS_URL}/wp-admin/options.php`);
+    // Navigate to WooCommerce Status Tools to verify debug-only button is visible
+    console.log('🔍 Navigating to WooCommerce Status Tools...');
+    await page.goto(`${process.env.WORDPRESS_URL}/wp-admin/admin.php?page=wc-status&tab=tools`, {
+      waitUntil: 'domcontentloaded',
+      timeout: TIMEOUTS.EXTRA_LONG
+    });
 
-    const label = page.locator('label[for="wc_facebook_external_business_id"]');
-    await label.waitFor({ state: 'visible', timeout: TIMEOUTS.LONG });
+    // Check for Facebook: Delete Background Sync Jobs button (only visible when debug mode is on)
+    const backgroundJobsRow = page.locator('tr.wc_facebook_delete_background_jobs');
+    await backgroundJobsRow.waitFor({ state: 'visible', timeout: TIMEOUTS.LONG });
+      
+    const backgroundJobsButton = backgroundJobsRow.locator('input[type="submit"]');
+    await expect(backgroundJobsButton).toBeVisible();
+      
+    // Verify the button is enabled and interactable
+    const isEnabled = await backgroundJobsButton.isEnabled();
+    expect(isEnabled).toBe(true);
 
-    const input = page.locator('#wc_facebook_external_business_id');
-    const value = await input.inputValue();
-
-    expect(value).toBeTruthy();
-    expect(value).toBe(process.env.FB_EXTERNAL_BUSINESS_ID);
-
-    console.log('✅ WooCommerce Debug log checks passed');
-    console.log(`   - Option exists: wc_facebook_external_business_id`);
-    console.log(`   - Value is non-null: YES`);
-    console.log(`   - Matches expected: YES`);
+    console.log('✅ Debug mode verification passed');
+    console.log('   - Debug mode enabled: YES');
+    console.log('   - Background sync jobs button visible: YES');
   });
 
 

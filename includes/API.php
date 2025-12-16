@@ -628,7 +628,6 @@ class API extends Base {
 			if ( ! $is_capi_event_logging_enabled ) {
 				return;
 			}
-			error_log( 'E2E testing:: $is_capi_event_logging_enabled true!' );
 
 			// Check if test cookie is present
 			$cookie_name = getenv( 'FB_E2E_TEST_COOKIE_NAME' );
@@ -636,40 +635,23 @@ class API extends Base {
 				// Test cookie is not present. Do not log events.
 				return;
 			}
-			error_log( 'E2E testing::  Cookie is present!' );
-
 
 			// Validate response
 			if ( ! $response ) {
 				throw new \Exception( 'CAPI response is null - cannot log test events' );
 			}
 
-			error_log( 'E2E testing:: Response is valid!' );
-
 			if ( $response->has_api_error() ) {
-				$error_code    = $response->get_api_error_code() ? $response->get_api_error_code() : 'N/A';
-				$error_type    = $response->get_api_error_type() ? $response->get_api_error_type() : 'N/A';
-				$error_message = $response->get_api_error_message() ? $response->get_api_error_message() : 'N/A';
-				$user_message  = $response->get_user_error_message() ? $response->get_user_error_message() : 'N/A';
-
-				// Log the error details for debugging
-				error_log( 'E2E testing:: CAPI API Error Detected!' );
-				error_log( sprintf( 'E2E testing:: Error Code: %s', $error_code ) );
-				error_log( sprintf( 'E2E testing:: Error Type: %s', $error_type ) );
-				error_log( sprintf( 'E2E testing:: Error Message: %s', $error_message ) );
-				error_log( sprintf( 'E2E testing:: User Message: %s', $user_message ) );
-
 				throw new \Exception(
 					sprintf(
 						'CAPI response has error - Code: %s, Type: %s, Message: %s, User Message: %s',
-						$error_code,
-						$error_type,
-						$error_message,
-						$user_message
+						$response->get_api_error_code() ? $response->get_api_error_code() : 'N/A',
+						$response->get_api_error_type() ? $response->get_api_error_type() : 'N/A',
+						$response->get_api_error_message() ? $response->get_api_error_message() : 'N/A',
+						$response->get_user_error_message() ? $response->get_user_error_message() : 'N/A'
 					)
 				);
 			}
-			error_log( 'E2E testing::  No error in response!' );
 
 			// Validate logger file exists
 			$logger_path = getenv( 'FB_E2E_LOGGER_PATH' );
@@ -678,20 +660,15 @@ class API extends Base {
 				throw new \Exception( 'Test logging failed - Logger file not found at: ' . $logger_file );
 			}
 			require_once $logger_file;
-			error_log( 'E2E testing::  logger file exists!' );
 
 			$test_id = sanitize_text_field( wp_unslash( $_COOKIE[ $cookie_name ] ) );
 
 			// Get the transformed data directly from the request object
 			$request_data = $request->get_data();
 
-			error_log( 'E2E testing::  Got request data!' );
-
 			// Log each transformed event
 			if ( isset( $request_data['data'] ) && is_array( $request_data['data'] ) ) {
 				foreach ( $request_data['data'] as $transformed_event ) {
-					error_log( 'E2E testing::  Logging ' . $transformed_event );
-
 					\E2E_Event_Logger::log_event( $test_id, 'capi', $transformed_event );
 				}
 			}
@@ -725,7 +702,6 @@ class API extends Base {
 	 * @throws ApiException In case of a general API error or rate limit error.
 	 */
 	public function send_pixel_events( $pixel_id, array $events ) {
-		error_log( 'E2E testing::  send_pixel_events called!' );
 		$request = new API\Pixel\Events\Request( $pixel_id, $events );
 
 		$this->set_response_handler( Response::class );

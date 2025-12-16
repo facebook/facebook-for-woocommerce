@@ -947,40 +947,37 @@ async function generateProductUpdateCSV(existingProducts, categoryName = "feed-t
 
 // Helper function to ensure debug mode is enabled
 async function ensureDebugModeEnabled(page) {
-  return true;
-  console.log('🔍 Checking debug mode status...');
+  try {
+    await page.goto(`${process.env.WORDPRESS_URL}/wp-admin/options.php`, {
+      waitUntil: 'domcontentloaded',
+      timeout: TIMEOUTS.EXTRA_LONG
+    });
 
-  // Navigate to Facebook settings page
-  await page.goto(`${process.env.WORDPRESS_URL}/wp-admin/admin.php?page=wc-facebook`, {
-    waitUntil: 'networkidle',
-    timeout: TIMEOUTS.EXTRA_LONG
-  });
+    const input = page.locator('#wc_facebook_enable_debug_mode');
+    const inputExists = await input.count();
+    
+    // Get current value - empty string if option doesn't exist
+    const currentValue = inputExists > 0 ? await input.inputValue() : '';
+    
+    if (currentValue !== 'yes') {
+      console.log('🔧 Debug mode is not enabled, enabling it...');
+      const { exec } = require('child_process');
+      const { promisify } = require('util');
+      const execAsync = promisify(exec);
+      
+      await execAsync(
+        `php -r "require_once('${wpSitePath}/wp-load.php'); update_option('wc_facebook_enable_debug_mode', 'yes');"`,
+        { cwd: __dirname }
+      );
+      console.log('✅ Debug mode enabled');
+    } else {
+      console.log('✅ Debug mode already enabled');
+    }
 
-  // Click Troubleshooting toggle to expand drawer
-  const troubleshootingToggle = page.locator('#toggle-troubleshooting-drawer');
-  await troubleshootingToggle.waitFor({ state: 'visible', timeout: TIMEOUTS.LONG });
-  await troubleshootingToggle.click();
-  await page.waitForTimeout(TIMEOUTS.INSTANT);
-
-  // Check debug mode checkbox status
-  const debugModeCheckbox = page.locator('#wc_facebook_enable_debug_mode');
-  await debugModeCheckbox.waitFor({ state: 'visible', timeout: TIMEOUTS.MEDIUM });
-
-  const isChecked = await debugModeCheckbox.isChecked();
-
-  if (!isChecked) {
-    console.log('⚙️ Enabling debug mode...');
-    await debugModeCheckbox.check();
-
-    // Save changes
-    const saveButton = page.locator('input[name="save_shops_settings"]');
-    await saveButton.click();
-    await page.waitForLoadState('domcontentloaded');
-    console.log('✅ Debug mode enabled');
-    return false; // Was not enabled, now is
-  } else {
-    console.log('✅ Debug mode already enabled');
-    return true; // Was already enabled
+    return true;
+  } catch (error) {
+    console.error(`❌ Error ensuring debug mode: ${error.message}`);
+    return false;
   }
 }
 
