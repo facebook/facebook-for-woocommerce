@@ -318,26 +318,10 @@ test.describe('WooCommerce Plugin level tests', () => {
       throw new Error('Facebook settings page did not load properly');
     }
 
-    // Check for JS errors
+    // Check for JS errors (already filtered at helper level)
     if (jsErrors.length > 0) {
-      // Filter out known non-critical errors
-      const criticalErrors = jsErrors.filter(error =>
-        !error.includes('WC_Facebook_Google_Product_Category_Fields is not defined')
-      );
-
-      // Log all errors for visibility
-      jsErrors.forEach(error => {
-        if (error.includes('WC_Facebook_Google_Product_Category_Fields is not defined')) {
-          console.log(`ℹ️ Non-critical JS error (ignored): ${error}`);
-        } else {
-          console.error(`❌ JS error: ${error}`);
-        }
-      });
-
-      // Only throw if there are critical errors
-      if (criticalErrors.length > 0) {
-        throw new Error(`JS errors on Facebook settings page: ${criticalErrors.join('; ')}`);
-      }
+      console.error(`❌ JS errors: ${jsErrors.join('; ')}`);
+      throw new Error(`JS errors on Facebook settings page: ${jsErrors.join('; ')}`);
     }
 
     console.log('✅ Facebook settings page loaded without errors');
@@ -507,26 +491,10 @@ test.describe('WooCommerce Plugin level tests', () => {
       throw new Error('Facebook settings page did not load properly after reconnect');
     }
 
-    // Check for JS errors
+    // Check for JS errors (already filtered at helper level)
     if (jsErrors.length > 0) {
-      // Filter out known non-critical errors
-      const criticalErrors = jsErrors.filter(error =>
-        !error.includes('WC_Facebook_Google_Product_Category_Fields is not defined')
-      );
-
-      // Log all errors for visibility
-      jsErrors.forEach(error => {
-        if (error.includes('WC_Facebook_Google_Product_Category_Fields is not defined')) {
-          console.log(`ℹ️ Non-critical JS error (ignored): ${error}`);
-        } else {
-          console.error(`❌ JS error: ${error}`);
-        }
-      });
-
-      // Only throw if there are critical errors
-      if (criticalErrors.length > 0) {
-        throw new Error(`JS errors on Facebook settings page: ${criticalErrors.join('; ')}`);
-      }
+      console.error(`❌ JS errors: ${jsErrors.join('; ')}`);
+      throw new Error(`JS errors on Facebook settings page: ${jsErrors.join('; ')}`);
     }
 
     console.log('✅ Marketing > Facebook page loaded successfully after reconnection');

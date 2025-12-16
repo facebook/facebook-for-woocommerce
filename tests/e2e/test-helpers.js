@@ -7,6 +7,11 @@ const username = process.env.WP_USERNAME;
 const password = process.env.WP_PASSWORD;
 const wpSitePath = process.env.WORDPRESS_PATH;
 
+// Whitelist of allowed errors (non-critical) - read from environment
+const ERROR_WHITELIST = process.env.ERROR_WHITELIST 
+  ? process.env.ERROR_WHITELIST.split('|').map(s => s.trim())
+  : [];
+
 // Helper function for reliable login
 async function loginToWordPress(page) {
   // Navigate to login page
@@ -151,7 +156,11 @@ async function checkForPhpErrors(page) {
 function checkForJsErrors(page) {
   const errors = [];
   page.on('pageerror', error => {
-    errors.push(`JS Error: ${error.message}`);
+    const errorMsg = `JS Error: ${error.message}`;
+    // Only add if not in whitelist
+    if (!ERROR_WHITELIST.some(whitelisted => errorMsg.includes(whitelisted))) {
+      errors.push(errorMsg);
+    }
   });
   return errors;
 }
@@ -1484,6 +1493,7 @@ module.exports = {
   baseURL,
   username,
   password,
+  ERROR_WHITELIST,
   loginToWordPress,
   safeScreenshot,
   cleanupProduct,

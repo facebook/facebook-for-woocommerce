@@ -58,6 +58,9 @@ env:
   STORE_POSTCODE: '12345'
   STORE_CURRENCY: USD
 
+  # Error Whitelist (pipe-separated list of allowed non-critical errors)
+  ERROR_WHITELIST: 'WC_Facebook_Google_Product_Category_Fields is not defined'
+
 jobs:
   e2e-tests:
     runs-on: ubuntu-latest
