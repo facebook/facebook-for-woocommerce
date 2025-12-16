@@ -493,6 +493,7 @@ jobs:
           FB_EXTERNAL_BUSINESS_ID: ${{ secrets.FB_EXTERNAL_BUSINESS_ID }}
           FB_ACCESS_TOKEN: ${{ secrets.FB_ACCESS_TOKEN }}
           FB_PIXEL_ID: ${{ secrets.FB_PIXEL_ID }}
+          FB_PRODUCT_CATALOG_ID: ${{ secrets.FB_PRODUCT_CATALOG_ID }}
           WC_LOG_PATH: ${{ env.WORDPRESS_PATH }}/wp-content/uploads/wc-logs
         run: |
           cd ${{ env.PLUGIN_PATH }}
