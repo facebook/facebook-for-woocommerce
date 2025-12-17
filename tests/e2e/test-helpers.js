@@ -998,18 +998,18 @@ async function checkWooCommerceLogs() {
   if (non200Lines) {
     console.log(`❌ Found non-200 response codes in log file: ${logFile}`);
     console.log('Please check WooCommerce logs in Github Artifacts');
-    
+
     // Check for critical log levels (ERROR, CRITICAL, ALERT, EMERGENCY)
     const criticalLogs = execSync(
       `grep -E "^[0-9T:+-]+ (ERROR|CRITICAL|ALERT|EMERGENCY) " "${logFile}" || true`,
       { encoding: 'utf8' }
     ).trim();
-    
+
     if (criticalLogs) {
       console.log('\n❌ CRITICAL ERRORS FOUND IN LOGS:');
       console.log(criticalLogs);
     }
-    
+
     return { success: false, error: 'Non-200 response codes found' };
   }
 
@@ -1190,9 +1190,19 @@ async function reconnectAndVerify() {
     await execWP(`update_option('${name}', '${value}');`);
   }
 
+  // Debug: Verify options were set BEFORE activation
+  console.log('🔍 Verifying options BEFORE plugin activation...');
+  const catalogBeforeActivation = await execWP(`echo get_option('wc_facebook_product_catalog_id');`);
+  console.log(`   Catalog ID before activation: ${catalogBeforeActivation.stdout.trim() || 'EMPTY!'}`);
+
   // Step 4: Activate plugin to trigger initialization with new options
   console.log('🔄 Activating plugin to initialize connection...');
   await execWP(`activate_plugin('facebook-for-woocommerce/facebook-for-woocommerce.php');`);
+
+  // Debug: Verify options were set AFTER activation
+  console.log('🔍 Verifying options AFTER plugin activation...');
+  const catalogAfterActivation = await execWP(`echo get_option('wc_facebook_product_catalog_id');`);
+  console.log(`   Catalog ID after activation: ${catalogAfterActivation.stdout.trim() || 'EMPTY!'}`);
 
   // Verify reconnection
   const after = await getConnectionStatus();

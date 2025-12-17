@@ -67,6 +67,7 @@ env:
   FB_PIXEL_ID: ${{ secrets.FB_PIXEL_ID }}
   FB_PRODUCT_CATALOG_ID: ${{ secrets.FB_PRODUCT_CATALOG_ID }}
   FB_PAGE_ID: ${{ secrets.FB_PAGE_ID }}
+  FB_BUSINESS_MANAGER_ID: ${{ secrets.FB_BUSINESS_MANAGER_ID }}
 
 jobs:
   e2e-tests:
