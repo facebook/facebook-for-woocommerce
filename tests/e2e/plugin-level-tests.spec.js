@@ -564,7 +564,7 @@ test.describe('WooCommerce Plugin level tests', () => {
       await installPlugin(plugin.slug);
 
       // 2. Edit test product price
-      const newPrice = 234.56;
+      const newPrice = "234.56";
       const { productId } = await editTestProductPrice(page, newPrice);
 
       // 3. Validate Facebook sync
