@@ -1092,6 +1092,7 @@ async function getConnectionStatus() {
     echo json_encode([
       'connected' => \\$conn->is_connected(),
       'pixel_id' => get_option('wc_facebook_pixel_id'),
+      'catalog_id' => get_option('wc_facebook_product_catalog_id'),
       'facebook_config' => get_option('facebook_config'),
       'access_token' => get_option('wc_facebook_access_token'),
       'merchant_access_token' => get_option('wc_facebook_merchant_access_token'),
