@@ -1190,19 +1190,9 @@ async function reconnectAndVerify() {
     await execWP(`update_option('${name}', '${value}');`);
   }
 
-  // Debug: Verify options were set BEFORE activation
-  console.log('🔍 Verifying options BEFORE plugin activation...');
-  const catalogBeforeActivation = await execWP(`echo get_option('wc_facebook_product_catalog_id');`);
-  console.log(`   Catalog ID before activation: ${catalogBeforeActivation.stdout.trim() || 'EMPTY!'}`);
-
   // Step 4: Activate plugin to trigger initialization with new options
   console.log('🔄 Activating plugin to initialize connection...');
   await execWP(`activate_plugin('facebook-for-woocommerce/facebook-for-woocommerce.php');`);
-
-  // Debug: Verify options were set AFTER activation
-  console.log('🔍 Verifying options AFTER plugin activation...');
-  const catalogAfterActivation = await execWP(`echo get_option('wc_facebook_product_catalog_id');`);
-  console.log(`   Catalog ID after activation: ${catalogAfterActivation.stdout.trim() || 'EMPTY!'}`);
 
   // Verify reconnection
   const after = await getConnectionStatus();
