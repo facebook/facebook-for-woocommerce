@@ -1274,12 +1274,35 @@ async function verifyProductsFacebookFieldsCleared() {
 
 
 
+// Helper function to install and activate a plugin from wordpress.org
+async function installPlugin(slug) {
+  console.log(`📦 Installing plugin: ${slug}...`);
+  
+  // Install and activate via WP-CLI (can't use execWP - this is CLI, not PHP)
+  await execAsync(
+    `cd ${wpSitePath} && wp plugin install ${slug} --activate --allow-root 2>&1`,
+    { cwd: __dirname }
+  );
+  
+  // Verify plugin is active using WordPress - is_plugin_active returns bool
+  const { stdout } = await execWP(
+    `echo is_plugin_active('${slug}/${slug}.php') ? '1' : '0';`
+  );
+  
+  if (stdout.trim() !== '1') {
+    throw new Error(`Plugin ${slug} failed to activate`);
+  }
+  
+  console.log(`✅ ${slug} installed and active`);
+}
+
 module.exports = {
   baseURL,
   username,
   password,
   ERROR_WHITELIST,
   execWP,
+  installPlugin,
   loginToWordPress,
   safeScreenshot,
   cleanupProduct,

@@ -1,8 +1,32 @@
 const { test, expect } = require('@playwright/test');
-const { execSync } = require('child_process');
 const { TIMEOUTS } = require('./time-constants');
 
-const {loginToWordPress,logTestStart,ensureDebugModeEnabled,checkWooCommerceLogs,checkForPhpErrors,checkForJsErrors,completePurchaseFlow,disconnectAndVerify,reconnectAndVerify,verifyProductsFacebookFieldsCleared,execWP} = require('./test-helpers');
+const {loginToWordPress,logTestStart,ensureDebugModeEnabled,checkWooCommerceLogs,checkForPhpErrors,checkForJsErrors,completePurchaseFlow,disconnectAndVerify,reconnectAndVerify,verifyProductsFacebookFieldsCleared,validateFacebookSync,publishProduct,installPlugin,execWP} = require('./test-helpers');
+
+// Plugins to test compatibility with
+const COMPAT_PLUGINS = [
+  { slug: 'wordfence', name: 'Wordfence Security' }
+];
+
+// Helper: Edit test product price and return product info
+async function editTestProductPrice(page, newPrice) {
+  const productId = process.env.TEST_PRODUCT_ID;
+  if (!productId) throw new Error('TEST_PRODUCT_ID not set');
+
+  await page.goto(`${process.env.WORDPRESS_URL}/wp-admin/post.php?post=${productId}&action=edit`, {
+    waitUntil: 'domcontentloaded',
+    timeout: TIMEOUTS.EXTRA_LONG
+  });
+
+  await page.click('li.general_tab a');
+  const priceField = page.locator('#_regular_price');
+  await priceField.waitFor({ state: 'visible', timeout: TIMEOUTS.MEDIUM });
+  await priceField.fill(newPrice);
+  console.log(`✅ Updated price to: ${newPrice}`);
+
+  await publishProduct(page);
+  return { productId, price: newPrice };
+}
 
 test.describe('WooCommerce Plugin level tests', () => {
 
@@ -530,5 +554,37 @@ test.describe('WooCommerce Plugin level tests', () => {
       throw new Error('Log validation failed');
     }
   });
+
+  // Plugin compatibility tests
+  for (const plugin of COMPAT_PLUGINS) {
+    test(`Plugin compatibility: ${plugin.name} - edit, sync, purchase`, async ({ page }) => {
+      const jsErrors = checkForJsErrors(page);
+
+      // 1. Install plugin
+      await installPlugin(plugin.slug);
+
+      // 2. Edit test product price
+      const newPrice = 234.56;
+      const { productId } = await editTestProductPrice(page, newPrice);
+
+      // 3. Validate Facebook sync
+      const syncResult = await validateFacebookSync(productId, 'TestP');
+      expect(syncResult.success).toBe(true);
+      console.log(`✅ Sync validated for ${plugin.name}`);
+
+      // 4. Complete a purchase
+      const { orderId } = await completePurchaseFlow(page);
+      expect(orderId).toBeTruthy();
+      console.log(`✅ Purchase completed: Order ${orderId}`);
+
+      // 5. Check for errors
+      await checkForPhpErrors(page);
+      if (jsErrors.length > 0) {
+        throw new Error(`JS errors with ${plugin.name}: ${jsErrors.join('; ')}`);
+      }
+
+      console.log(`🎉 ${plugin.name} compatibility test passed!`);
+    });
+  }
 
 });
