@@ -126,7 +126,6 @@ class DebugToolsTest extends AbstractWPUnitTestWithOptionIsolationAndSafeFilteri
 		$this->assertArrayHasKey( 'wc_facebook_settings_reset', $result );
 		$this->assertArrayHasKey( 'wc_facebook_delete_background_jobs', $result );
 		$this->assertArrayHasKey( 'reset_all_product_fb_settings', $result );
-		$this->assertArrayHasKey( 'wc_facebook_delete_all_products', $result );
 		
 		// Check tool structure
 		$this->assertArrayHasKey( 'name', $result['wc_facebook_settings_reset'] );
@@ -138,7 +137,6 @@ class DebugToolsTest extends AbstractWPUnitTestWithOptionIsolationAndSafeFilteri
 		$this->assertIsCallable( $result['wc_facebook_settings_reset']['callback'] );
 		$this->assertIsCallable( $result['wc_facebook_delete_background_jobs']['callback'] );
 		$this->assertIsCallable( $result['reset_all_product_fb_settings']['callback'] );
-		$this->assertIsCallable( $result['wc_facebook_delete_all_products']['callback'] );
 	}
 
 	/**
@@ -251,36 +249,6 @@ class DebugToolsTest extends AbstractWPUnitTestWithOptionIsolationAndSafeFilteri
 	}
 
 	/**
-	 * Test delete_all_products method.
-	 */
-	public function test_delete_all_products() {
-		$debug_tools = new DebugTools();
-		
-		// Create a mock job with queue_start method
-		$mock_job = $this->getMockBuilder( \stdClass::class )
-			->addMethods( ['queue_start'] )
-			->getMock();
-		$mock_job->expects( $this->once() )->method( 'queue_start' );
-		
-		// Mock the job manager
-		$mock_job_manager = new \stdClass();
-		$mock_job_manager->delete_all_products = $mock_job;
-		
-		$mock_plugin = $this->createMock( \WC_Facebookcommerce::class );
-		$mock_plugin->job_manager = $mock_job_manager;
-		
-		// Use filter to override the instance
-		$this->add_filter_with_safe_teardown( 'wc_facebook_instance', function() use ( $mock_plugin ) {
-			return $mock_plugin;
-		} );
-		
-		$result = $debug_tools->delete_all_products();
-		
-		// Check result message
-		$this->assertEquals( 'Delete products from Facebook catalog job started!', $result );
-	}
-
-	/**
 	 * Test tool descriptions and labels.
 	 */
 	public function test_tool_descriptions_and_labels() {
@@ -319,11 +287,6 @@ class DebugToolsTest extends AbstractWPUnitTestWithOptionIsolationAndSafeFilteri
 		$this->assertEquals( 'Facebook: Reset all products', $result['reset_all_product_fb_settings']['name'] );
 		$this->assertEquals( 'Reset products Facebook settings', $result['reset_all_product_fb_settings']['button'] );
 		$this->assertStringContainsString( 'reset Facebook settings for all products', $result['reset_all_product_fb_settings']['desc'] );
-		
-		// Test delete all products tool
-		$this->assertEquals( 'Facebook: Delete all products from your Facebook Catalog', $result['wc_facebook_delete_all_products']['name'] );
-		$this->assertEquals( 'Delete all products', $result['wc_facebook_delete_all_products']['button'] );
-		$this->assertStringContainsString( 'delete all products from', $result['wc_facebook_delete_all_products']['desc'] );
 	}
 
 	/**
@@ -366,6 +329,6 @@ class DebugToolsTest extends AbstractWPUnitTestWithOptionIsolationAndSafeFilteri
 		$this->assertArrayHasKey( 'wc_facebook_settings_reset', $result );
 		$this->assertArrayHasKey( 'wc_facebook_delete_background_jobs', $result );
 		$this->assertArrayHasKey( 'reset_all_product_fb_settings', $result );
-		$this->assertArrayHasKey( 'wc_facebook_delete_all_products', $result );
+		
 	}
 } 
