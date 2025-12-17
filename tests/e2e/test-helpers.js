@@ -1216,17 +1216,44 @@ async function reconnectAndVerify() {
 async function verifyProductsFacebookFieldsCleared() {
   console.log('🔍 Verifying all product Facebook fields are cleared...');
 
-  const { stdout, stderr } = await execAsync(
-    'php e2e-helpers.php verify_products_facebook_fields_cleared',
-    { cwd: __dirname }
-  );
+  const { stdout } = await execWP(`
+    \\$products = get_posts([
+      'post_type' => ['product', 'product_variation'],
+      'posts_per_page' => -1,
+      'post_status' => 'any'
+    ]);
 
-  if (stderr) {
-    console.log(`⚠️ PHP stderr: ${stderr}`);
-  }
+    \\$issues = [];
 
-  const output = stdout.trim();
-  const result = JSON.parse(output);
+    foreach (\\$products as \\$product) {
+      \\$meta = get_post_meta(\\$product->ID);
+      \\$fb_fields = [];
+
+      foreach (\\$meta as \\$key => \\$value) {
+        if (strpos(\\$key, 'fb_') === 0 || strpos(\\$key, '_fb_') === 0 || strpos(\\$key, 'facebook_') === 0) {
+          if (!empty(\\$value[0])) {
+            \\$fb_fields[\\$key] = \\$value[0];
+          }
+        }
+      }
+
+      if (!empty(\\$fb_fields)) {
+        \\$issues[] = [
+          'id' => \\$product->ID,
+          'type' => \\$product->post_type,
+          'fields' => \\$fb_fields
+        ];
+      }
+    }
+
+    echo json_encode([
+      'success' => empty(\\$issues),
+      'total' => count(\\$products),
+      'issues' => \\$issues
+    ]);
+  `);
+
+  const result = JSON.parse(stdout);
 
   console.log(`✅ Checked ${result.total} products and variations`);
 
