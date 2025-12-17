@@ -61,6 +61,13 @@ env:
   # Error Whitelist (pipe-separated list of allowed non-critical errors)
   ERROR_WHITELIST: 'WC_Facebook_Google_Product_Category_Fields is not defined'
 
+  # Facebook Configuration
+  FB_EXTERNAL_BUSINESS_ID: ${{ secrets.FB_EXTERNAL_BUSINESS_ID }}
+  FB_ACCESS_TOKEN: ${{ secrets.FB_ACCESS_TOKEN }}
+  FB_PIXEL_ID: ${{ secrets.FB_PIXEL_ID }}
+  FB_PRODUCT_CATALOG_ID: ${{ secrets.FB_PRODUCT_CATALOG_ID }}
+  FB_PAGE_ID: ${{ secrets.FB_PAGE_ID }}
+
 jobs:
   e2e-tests:
     runs-on: ubuntu-latest
@@ -145,19 +152,6 @@ jobs:
           touch ${{ env.WP_DEBUG_LOG }}
           chmod 777 ${{ env.WP_DEBUG_LOG }}
           echo "✅ debug.log created and writable"
-
-      - name: Check logs baseline (before plugin activation)
-        run: |
-          TODAY=$(date +%Y-%m-%d)
-          WC_LOG="${{ env.WORDPRESS_PATH }}/wp-content/uploads/wc-logs/facebook_for_woocommerce-${TODAY}*.log"
-
-          # Check WC log exists
-          ls $WC_LOG 1> /dev/null 2>&1 && echo "WC_LOG_EXISTS_BEFORE=1" >> $GITHUB_ENV || echo "WC_LOG_EXISTS_BEFORE=0" >> $GITHUB_ENV
-
-          # Count debug.log errors
-          BEFORE_ERRORS=$(grep -i "fatal\|error" "${{ env.WP_DEBUG_LOG }}" | grep -v "Cron reschedule event error for hook: facebook_for_woocommerce_5_minute_heartbeat_cron" | wc -l || echo "0")
-          echo "BEFORE_ERRORS=$BEFORE_ERRORS" >> $GITHUB_ENV
-          echo "📝 Baseline: WC log exists=${{ env.WC_LOG_EXISTS_BEFORE }}, debug.log errors=$BEFORE_ERRORS"
 
       - name: WooCommerce logs directory setup
         run: |
@@ -302,6 +296,33 @@ jobs:
           cd ${{ env.WORDPRESS_PATH }}
           wp plugin install wpc-composite-products --activate --allow-root
 
+      - name: Check logs baseline (before plugin activation)
+        run: |
+          TODAY=$(date +%Y-%m-%d)
+
+          # Find WC log file
+          WC_LOG_FILE=$(find "${{ env.WORDPRESS_PATH }}/wp-content/uploads/wc-logs/" -name "facebook_for_woocommerce-${TODAY}*.log" -type f 2>/dev/null | head -1)
+
+          # Check WC log if exists
+          if [ -n "$WC_LOG_FILE" ]; then
+            NON_200=$(grep "code: " "$WC_LOG_FILE" | grep -v "code: 200" || true)
+            if [ -n "$NON_200" ]; then
+              echo "❌ FAIL: Found non-200 codes in $WC_LOG_FILE:"
+              echo "$NON_200"
+              exit 1
+            fi
+          fi
+
+          # Check debug.log
+          ERRORS=$(grep -i "fatal\|error" "${{ env.WP_DEBUG_LOG }}" | grep -v "Cron reschedule event error" || true)
+          if [ -n "$ERRORS" ]; then
+            echo "❌ FAIL: Found errors in ${{ env.WP_DEBUG_LOG }}:"
+            echo "$ERRORS"
+            exit 1
+          fi
+
+          echo "✅ PASS: No errors in logs"
+
       - name: Install Facebook for WooCommerce plugin
         run: |
           cd ${{ env.WORDPRESS_PATH }}
@@ -346,27 +367,29 @@ jobs:
       - name: Verify no new errors after plugin activation
         run: |
           TODAY=$(date +%Y-%m-%d)
-          WC_LOG="${{ env.WORDPRESS_PATH }}/wp-content/uploads/wc-logs/facebook_for_woocommerce-${TODAY}*.log"
 
-          # Check if WC log appeared after activation
-          if ls $WC_LOG 1> /dev/null 2>&1; then
-            if [ "${{ env.WC_LOG_EXISTS_BEFORE }}" = "0" ]; then
-              echo "❌ FAIL: facebook_for_woocommerce WC log appeared after plugin activation!"
-              cat $WC_LOG
+          # Find WC log file
+          WC_LOG_FILE=$(find "${{ env.WORDPRESS_PATH }}/wp-content/uploads/wc-logs/" -name "facebook_for_woocommerce-${TODAY}*.log" -type f 2>/dev/null | head -1)
+
+          # Check WC log if exists
+          if [ -n "$WC_LOG_FILE" ]; then
+            NON_200=$(grep "code: " "$WC_LOG_FILE" | grep -v "code: 200" || true)
+            if [ -n "$NON_200" ]; then
+              echo "❌ FAIL: Found non-200 codes in $WC_LOG_FILE:"
+              echo "$NON_200"
               exit 1
             fi
           fi
 
-          # Check debug.log for new errors
-          AFTER_ERRORS=$(grep -i "fatal\|error" "${{ env.WP_DEBUG_LOG }}" | grep -v "Cron reschedule event error for hook: facebook_for_woocommerce_5_minute_heartbeat_cron" | wc -l || echo "0")
-
-          if [ "$AFTER_ERRORS" -gt "${{ env.BEFORE_ERRORS }}" ]; then
-            echo "❌ FAIL: Found new error/fatal entries in debug.log!"
-            grep -i "fatal\|error" "${{ env.WP_DEBUG_LOG }}" | grep -v "Cron reschedule event error for hook: facebook_for_woocommerce_5_minute_heartbeat_cron"
+          # Check debug.log
+          ERRORS=$(grep -i "fatal\|error" "${{ env.WP_DEBUG_LOG }}" | grep -v "Cron reschedule event error" || true)
+          if [ -n "$ERRORS" ]; then
+            echo "❌ FAIL: Found errors in ${{ env.WP_DEBUG_LOG }}:"
+            echo "$ERRORS"
             exit 1
           fi
 
-          echo "✅ PASS: No new errors in logs"
+          echo "✅ PASS: No errors in logs"
 
       - name: Initialize rollout switches for E2E tests
         run: |
@@ -488,12 +511,6 @@ jobs:
 
       - name: Run Plugin level tests
         env:
-          WP_USERNAME: admin
-          WP_PASSWORD: admin
-          FB_EXTERNAL_BUSINESS_ID: ${{ secrets.FB_EXTERNAL_BUSINESS_ID }}
-          FB_ACCESS_TOKEN: ${{ secrets.FB_ACCESS_TOKEN }}
-          FB_PIXEL_ID: ${{ secrets.FB_PIXEL_ID }}
-          FB_PRODUCT_CATALOG_ID: ${{ secrets.FB_PRODUCT_CATALOG_ID }}
           WC_LOG_PATH: ${{ env.WORDPRESS_PATH }}/wp-content/uploads/wc-logs
         run: |
           cd ${{ env.PLUGIN_PATH }}
@@ -512,9 +529,6 @@ jobs:
 
       - name: Run E2E tests
         continue-on-error: true
-        env:
-          WP_USERNAME: admin
-          WP_PASSWORD: admin
         run: |
           cd ${{ env.PLUGIN_PATH }}
           npx playwright test "product-.*\.spec\.js" --project=chromium-wp-admin

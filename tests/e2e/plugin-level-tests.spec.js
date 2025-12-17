@@ -2,7 +2,7 @@ const { test, expect } = require('@playwright/test');
 const { execSync } = require('child_process');
 const { TIMEOUTS } = require('./time-constants');
 
-const {loginToWordPress,logTestStart,ensureDebugModeEnabled,checkWooCommerceLogs,checkForPhpErrors,checkForJsErrors,completePurchaseFlow,disconnectAndVerify,reconnectAndVerify,verifyProductsFacebookFieldsCleared} = require('./test-helpers');
+const {loginToWordPress,logTestStart,ensureDebugModeEnabled,checkWooCommerceLogs,checkForPhpErrors,checkForJsErrors,completePurchaseFlow,disconnectAndVerify,reconnectAndVerify,verifyProductsFacebookFieldsCleared,execWP} = require('./test-helpers');
 
 test.describe('WooCommerce Plugin level tests', () => {
 
@@ -254,11 +254,15 @@ test.describe('WooCommerce Plugin level tests', () => {
     // Verify connection via PHP script (following pattern from other e2e scripts)
     let connection;
     try {
-      const { exec } = require('child_process');
-      const { promisify } = require('util');
-      const execAsync = promisify(exec);
-
-      const { stdout, stderr } = await execAsync('php e2e-connection-checker.php', { cwd: __dirname });
+      const { stdout, stderr } = await execWP(
+        `\\$conn = facebook_for_woocommerce()->get_connection_handler();
+        echo json_encode([
+          'connected' => \\$conn->is_connected(),
+          'pixel_id' => get_option('wc_facebook_pixel_id'),
+          'access_token' => get_option('wc_facebook_access_token'),
+          'error' => null
+        ]);`
+      );
 
       if (stderr) {
         console.log(`⚠️ PHP stderr: ${stderr}`);
@@ -343,16 +347,13 @@ test.describe('WooCommerce Plugin level tests', () => {
     console.log(`📦 Order ID: ${orderId}`);
 
     // Verify order in WooCommerce admin
-    const { exec } = require('child_process');
-    const { promisify } = require('util');
-    const execAsync = promisify(exec);
-    const wpSitePath = process.env.WORDPRESS_PATH;
-
-    const { stdout } = await execAsync(
-      `php -r "require_once('${wpSitePath}/wp-load.php'); ` +
-      `\\$order = wc_get_order(${orderId}); ` +
-      `echo json_encode(['exists' => !!\\$order, 'status' => \\$order ? \\$order->get_status() : null, 'total' => \\$order ? \\$order->get_total() : null]);"`,
-      { cwd: __dirname }
+    const { stdout } = await execWP(
+      `\\$order = wc_get_order(${orderId});
+      echo json_encode([
+        'exists' => !!\\$order,
+        'status' => \\$order ? \\$order->get_status() : null,
+        'total' => \\$order ? \\$order->get_total() : null
+      ]);`
     );
 
     const orderData = JSON.parse(stdout);
@@ -388,10 +389,8 @@ test.describe('WooCommerce Plugin level tests', () => {
     const resetButton = page.locator('.reset_all_product_fb_settings input[type="submit"]');
     await resetButton.waitFor({ state: 'visible', timeout: TIMEOUTS.LONG });
 
-    await Promise.all([
-      page.waitForLoadState('domcontentloaded'),
-      resetButton.click()
-    ]);
+    await resetButton.click();
+    await page.waitForLoadState('domcontentloaded', { timeout: TIMEOUTS.EXTRA_LONG });
 
     console.log('✅ Page reloaded after reset action');
 
@@ -474,10 +473,8 @@ test.describe('WooCommerce Plugin level tests', () => {
     const resetButton = page.locator('.wc_facebook_settings_reset input[type="submit"]');
     await resetButton.waitFor({ state: 'visible', timeout: TIMEOUTS.LONG });
 
-    await Promise.all([
-      page.waitForLoadState('domcontentloaded'),
-      resetButton.click()
-    ]);
+    await resetButton.click();
+    await page.waitForLoadState('domcontentloaded', { timeout: TIMEOUTS.EXTRA_LONG });
 
     console.log('✅ Page reloaded after reset action');
 
