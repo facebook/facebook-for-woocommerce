@@ -55,13 +55,6 @@ class DebugTools {
 			'callback' => [ $this, 'reset_all_product_fb_settings' ],
 		];
 
-		$tools['wc_facebook_delete_all_products'] = [
-			'name'     => __( 'Facebook: Delete all products from your Facebook Catalog', 'facebook-for-woocommerce' ),
-			'button'   => __( 'Delete all products', 'facebook-for-woocommerce' ),
-			'desc'     => __( 'This tool will delete all products from  your Facebook Catalog.', 'facebook-for-woocommerce' ),
-			'callback' => [ $this, 'delete_all_products' ],
-		];
-
 		return $tools;
 	}
 
@@ -104,17 +97,5 @@ class DebugTools {
 	public function reset_all_product_fb_settings() {
 		facebook_for_woocommerce()->job_manager->reset_all_product_fb_settings->queue_start();
 		return esc_html__( 'Reset products Facebook settings job started!', 'facebook-for-woocommerce' );
-	}
-
-	/**
-	 * Delete products from Facebook catalog.
-	 *
-	 * @since 3.0.5
-	 *
-	 * @return string
-	 */
-	public function delete_all_products() {
-		facebook_for_woocommerce()->job_manager->delete_all_products->queue_start();
-		return esc_html__( 'Delete products from Facebook catalog job started!', 'facebook-for-woocommerce' );
 	}
 }
