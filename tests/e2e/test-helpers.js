@@ -1,11 +1,29 @@
 const { expect } = require('@playwright/test');
 const { TIMEOUTS } = require('./time-constants');
+const { exec } = require('child_process');
+const { promisify } = require('util');
+
+// Promisified exec for async/await usage
+const execAsync = promisify(exec);
 
 // Test configuration from environment variables
 const baseURL = process.env.WORDPRESS_URL;
 const username = process.env.WP_USERNAME;
 const password = process.env.WP_PASSWORD;
 const wpSitePath = process.env.WORDPRESS_PATH;
+
+// Whitelist of allowed errors (non-critical) - read from environment
+const ERROR_WHITELIST = process.env.ERROR_WHITELIST
+  ? process.env.ERROR_WHITELIST.split('|').map(s => s.trim())
+  : [];
+
+// Helper function to execute WordPress PHP commands
+async function execWP(phpCode) {
+  return execAsync(
+    `php -r "require_once('${wpSitePath}/wp-load.php'); ${phpCode}"`,
+    { cwd: __dirname }
+  );
+}
 
 // Helper function for reliable login
 async function loginToWordPress(page) {
@@ -71,14 +89,7 @@ async function cleanupProduct(productId) {
 
   try {
     const startTime = new Date();
-    const { exec } = require('child_process');
-    const { promisify } = require('util');
-    const execAsync = promisify(exec);
-
-    const { stdout } = await execAsync(
-      `php -r "require_once('${wpSitePath}/wp-load.php'); wp_delete_post(${productId}, true);"`,
-      { cwd: __dirname }
-    );
+    await execWP(`wp_delete_post(${productId}, true);`);
     const endTime = new Date();
     console.log(`⏱️ Cleanup took ${endTime - startTime}ms`);
     console.log(`✅ Product ${productId} deleted from WooCommerce`);
@@ -145,6 +156,19 @@ async function checkForPhpErrors(page) {
   const pageContent = await page.content();
   expect(pageContent).not.toContain('Fatal error');
   expect(pageContent).not.toContain('Parse error');
+}
+
+// Helper function to check for JavaScript errors
+function checkForJsErrors(page) {
+  const errors = [];
+  page.on('pageerror', error => {
+    const errorMsg = `JS Error: ${error.message}`;
+    // Only add if not in whitelist
+    if (!ERROR_WHITELIST.some(whitelisted => errorMsg.includes(whitelisted))) {
+      errors.push(errorMsg);
+    }
+  });
+  return errors;
 }
 
 // Helper function to mark test start
@@ -287,11 +311,6 @@ async function validateFacebookSync(productId, productName, waitSeconds = 10, ma
   console.log(`🔍 Validating Facebook sync for product ${displayName}...`);
 
   try {
-    const { exec } = require('child_process');
-    const { promisify } = require('util');
-    const execAsync = promisify(exec);
-
-    // Call the Facebook sync validator
     const { stdout, stderr } = await execAsync(
       `php e2e-facebook-sync-validator.php ${productId} ${waitSeconds} ${maxRetries}`,
       { cwd: __dirname }
@@ -332,10 +351,6 @@ async function validateCategorySync(categoryId, categoryName = null, waitSeconds
   console.log(`🔍 Validating category sync for ${displayName}...`);
 
   try {
-    const { exec } = require('child_process');
-    const { promisify } = require('util');
-    const execAsync = promisify(exec);
-
     // Call the validator with --type=category flag
     const { stdout, stderr } = await execAsync(
       `php e2e-facebook-sync-validator.php --type=category ${categoryId} ${waitSeconds} ${maxRetries}`,
@@ -384,9 +399,6 @@ async function createTestProduct(options = {}) {
 
   try {
     const startTime = Date.now();
-    const { exec } = require('child_process');
-    const { promisify } = require('util');
-    const execAsync = promisify(exec);
 
     // Call the product creator PHP script
     const categoryIdsJson = JSON.stringify(categoryIds);
@@ -508,13 +520,7 @@ async function cleanupCategory(categoryId) {
   console.log(`🧹 Cleaning up category ${categoryId}...`);
   try {
     const startTime = new Date();
-    const { exec } = require('child_process');
-    const { promisify } = require('util');
-    const execAsync = promisify(exec);
-    await execAsync(
-      `php -r "require_once('${wpSitePath}/wp-load.php'); wp_delete_term(${categoryId}, 'product_cat');"`,
-      { cwd: __dirname }
-    );
+    await execWP(`wp_delete_term(${categoryId}, 'product_cat');`);
     console.log(`⏱️ Cleanup took ${new Date() - startTime}ms`);
     console.log(`✅ Category ${categoryId} deleted`);
   } catch (error) {
@@ -531,21 +537,16 @@ async function createTestCategory(options = {}) {
 
   try {
     const startTime = Date.now();
-    const { exec } = require('child_process');
-    const { promisify } = require('util');
-    const execAsync = promisify(exec);
 
     // Create category using WP CLI
-    const { stdout } = await execAsync(
-      `php -r "require_once('${wpSitePath}/wp-load.php'); ` +
+    const { stdout } = await execWP(
       `\\$term = wp_insert_term('${categoryName}', 'product_cat', array('description' => '${categoryDescription}')); ` +
       `if (is_wp_error(\\$term)) { echo json_encode(array('success' => false, 'error' => \\$term->get_error_message())); } ` +
       `else { ` +
       `  \\$category_id = \\$term['term_id']; ` +
       `  \\$category = get_term(\\$category_id, 'product_cat'); ` +
       `  echo json_encode(array('success' => true, 'category_id' => \\$category_id, 'category_name' => \\$category->name, 'message' => 'Category created successfully')); ` +
-      `}"`,
-      { cwd: __dirname }
+      `}`
     );
 
     const result = JSON.parse(stdout);
@@ -938,46 +939,347 @@ async function generateProductUpdateCSV(existingProducts, categoryName = "feed-t
 
 // Helper function to ensure debug mode is enabled
 async function ensureDebugModeEnabled(page) {
-  console.log('🔍 Checking debug mode status...');
+  try {
+    await page.goto(`${process.env.WORDPRESS_URL}/wp-admin/options.php`, {
+      waitUntil: 'domcontentloaded',
+      timeout: TIMEOUTS.EXTRA_LONG
+    });
 
-  // Navigate to Facebook settings page
-  await page.goto(`${process.env.WORDPRESS_URL}/wp-admin/admin.php?page=wc-facebook`, {
-    waitUntil: 'domcontentloaded',
-    timeout: TIMEOUTS.EXTRA_LONG
-  });
+    const input = page.locator('#wc_facebook_enable_debug_mode');
+    const inputExists = await input.count();
 
-  // Click Troubleshooting toggle to expand drawer
-  const troubleshootingToggle = page.locator('#toggle-troubleshooting-drawer');
-  await troubleshootingToggle.waitFor({ state: 'visible', timeout: TIMEOUTS.LONG });
-  await troubleshootingToggle.click();
-  await page.waitForTimeout(TIMEOUTS.INSTANT);
+    // Get current value - empty string if option doesn't exist
+    const currentValue = inputExists > 0 ? await input.inputValue() : '';
 
-  // Check debug mode checkbox status
-  const debugModeCheckbox = page.locator('#wc_facebook_enable_debug_mode');
-  await debugModeCheckbox.waitFor({ state: 'visible', timeout: TIMEOUTS.MEDIUM });
+    if (currentValue !== 'yes') {
+      console.log('🔧 Debug mode is not enabled, enabling it...');
+      await execWP(`update_option('wc_facebook_enable_debug_mode', 'yes');`);
+      console.log('✅ Debug mode enabled');
+    } else {
+      console.log('✅ Debug mode already enabled');
+    }
 
-  const isChecked = await debugModeCheckbox.isChecked();
-
-  if (!isChecked) {
-    console.log('⚙️ Enabling debug mode...');
-    await debugModeCheckbox.check();
-
-    // Save changes
-    const saveButton = page.locator('input[name="save_shops_settings"]');
-    await saveButton.click();
-    await page.waitForLoadState('domcontentloaded');
-    console.log('✅ Debug mode enabled');
-    return false; // Was not enabled, now is
-  } else {
-    console.log('✅ Debug mode already enabled');
-    return true; // Was already enabled
+    return true;
+  } catch (error) {
+    console.error(`❌ Error ensuring debug mode: ${error.message}`);
+    return false;
   }
 }
+
+// Helper function to check WooCommerce logs for errors
+async function checkWooCommerceLogs() {
+  const { execSync } = require('child_process');
+  console.log('🔍 Checking WooCommerce logs for errors...');
+
+  const today = new Date().toISOString().split('T')[0];
+  const logsDir = process.env.WC_LOG_PATH;
+
+  if (!logsDir) {
+    throw new Error('❌ WC_LOG_PATH environment variable not set');
+  }
+
+  const logFile = execSync(
+    `find "${logsDir}" -name "facebook_for_woocommerce-${today}*.log" 2>/dev/null | head -1`,
+    { encoding: 'utf8' }
+  ).trim();
+
+  if (!logFile) {
+    console.log(`ℹ️ No log file found for today - ${today}`);
+    return { success: true };
+  }
+
+  console.log(`📄 Checking: ${logFile}`);
+
+  const non200Lines = execSync(
+    `grep -n "code: " "${logFile}" | grep -v "code: 200" || true`,
+    { encoding: 'utf8' }
+  ).trim();
+
+  if (non200Lines) {
+    console.log(`❌ Found non-200 response codes in log file: ${logFile}`);
+    console.log('Please check WooCommerce logs in Github Artifacts');
+
+    // Check for critical log levels (ERROR, CRITICAL, ALERT, EMERGENCY)
+    const criticalLogs = execSync(
+      `grep -E "^[0-9T:+-]+ (ERROR|CRITICAL|ALERT|EMERGENCY) " "${logFile}" || true`,
+      { encoding: 'utf8' }
+    ).trim();
+
+    if (criticalLogs) {
+      console.log('\n❌ CRITICAL ERRORS FOUND IN LOGS:');
+      console.log(criticalLogs);
+    }
+
+    return { success: false, error: 'Non-200 response codes found' };
+  }
+
+  console.log('✅ All response codes are 200');
+  return { success: true };
+}
+
+// Helper function to complete a purchase flow
+async function completePurchaseFlow(page) {
+  const url = process.env.TEST_PRODUCT_URL;
+
+  console.log(`   📦 Navigating to product page`);
+  await page.goto(url, { waitUntil: 'domcontentloaded', timeout: TIMEOUTS.EXTRA_LONG });
+
+  console.log(`   🛒 Adding product to cart`);
+  await page.click('.single_add_to_cart_button');
+  await page.waitForTimeout(TIMEOUTS.SHORT);
+
+  console.log(`   💳 Navigating to checkout`);
+  await page.goto('/checkout', { waitUntil: 'domcontentloaded', timeout: TIMEOUTS.EXTRA_LONG });
+  await page.evaluate(() => window.scrollBy(0, 400));
+
+  console.log(`   📝 Filling billing address from environment variables`);
+
+  // Fill in billing details from environment variables
+  await page.fill('#billing-first_name', process.env.TEST_USER_FIRST_NAME );
+  await page.fill('#billing-last_name', process.env.TEST_USER_LAST_NAME);
+  await page.fill('#billing-address_1', process.env.TEST_USER_ADDRESS_1 );
+  await page.fill('#billing-city', process.env.TEST_USER_CITY );
+
+  // Select country (US)
+  await page.selectOption('#billing-country', process.env.TEST_USER_COUNTRY);
+  await page.waitForTimeout(TIMEOUTS.INSTANT); // Wait for state dropdown to populate
+
+  // Select state (CA)
+  await page.selectOption('#billing-state', process.env.TEST_USER_STATE  );
+  await page.waitForTimeout(TIMEOUTS.INSTANT); // Wait for postcode field to be ready
+
+  // Fill postcode (wait for it to be ready first)
+  const postcodeField = page.locator('#billing-postcode');
+  await postcodeField.waitFor({ state: 'visible', timeout: TIMEOUTS.NORMAL });
+  await postcodeField.fill(process.env.TEST_USER_POSTCODE );
+
+  // Fill phone (optional)
+  if (process.env.TEST_USER_PHONE) {
+    await page.fill('#billing-phone', process.env.TEST_USER_PHONE);
+  }
+
+  console.log(`   ✅ Billing address filled`);
+
+  console.log(`   💰 Selecting Cash on Delivery`);
+  await page.waitForSelector('.wc-block-components-radio-control__option[for="radio-control-wc-payment-method-options-cod"]', {
+    state: 'visible',
+    timeout: TIMEOUTS.LONG
+  });
+  await page.click('label[for="radio-control-wc-payment-method-options-cod"]');
+  await page.waitForTimeout(TIMEOUTS.INSTANT);
+
+  console.log(`   ✅ Placing order`);
+  await page.locator('.wc-block-components-checkout-place-order-button').scrollIntoViewIfNeeded();
+
+  console.log(`   ⏳ Waiting for order to process...`);
+  await page.click('.wc-block-components-checkout-place-order-button');
+  await page.waitForURL(/\/checkout\/order-received\/\d+/, { timeout: TIMEOUTS.EXTRA_LONG });
+
+  const orderReceivedUrl = page.url();
+  console.log(`   ✅ Order completed: ${orderReceivedUrl}`);
+
+  // Extract order ID from URL
+  const orderIdMatch = orderReceivedUrl.match(/order-received\/(\d+)/);
+  const orderId = orderIdMatch ? orderIdMatch[1] : null;
+
+  return { orderReceivedUrl, orderId };
+}
+
+// Helper to get connection status
+async function getConnectionStatus() {
+  const { stdout } = await execWP(
+    `\\$conn = facebook_for_woocommerce()->get_connection_handler();
+    echo json_encode([
+      'connected' => \\$conn->is_connected(),
+      'pixel_id' => get_option('wc_facebook_pixel_id'),
+      'catalog_id' => get_option('wc_facebook_product_catalog_id'),
+      'facebook_config' => get_option('facebook_config'),
+      'access_token' => get_option('wc_facebook_access_token'),
+      'merchant_access_token' => get_option('wc_facebook_merchant_access_token'),
+      'external_business_id' => \\$conn->get_external_business_id()
+    ]);`
+  );
+  return JSON.parse(stdout);
+}
+
+// Helper function to disconnect from Facebook and verify cleanup
+async function disconnectAndVerify() {
+  console.log('🔌 Disconnecting from Facebook...');
+
+  const before = await getConnectionStatus();
+  if (!before.connected) {
+    console.log('⚠️ Already disconnected');
+    return { before, after: before, success: true, skipped: true };
+  }
+
+  // Execute disconnect
+  await execWP(`facebook_for_woocommerce()->get_connection_handler()->disconnect();`);
+
+  // Poll until disconnected (max 5 attempts)
+  let after;
+  for (let i = 0; i < 5; i++) {
+    await new Promise(resolve => setTimeout(resolve, TIMEOUTS.LONG));
+    after = await getConnectionStatus();
+
+    const isDisconnected = !after.connected && !after.pixel_id && !after.access_token && !after.facebook_config && !after.merchant_access_token;
+    if (isDisconnected) {
+      console.log(`✅ Disconnected after ${i + 1} attempt(s)`);
+      break;
+    }
+  }
+
+  // Validate disconnection - check for any issues
+  const failures = [];
+
+  if (after.connected) failures.push('Still connected');
+  if (after.pixel_id) failures.push('Pixel ID not cleared');
+  if (after.facebook_config) failures.push('Config not deleted');
+  if (after.access_token) failures.push('Access token not cleared');
+  if (after.merchant_access_token) failures.push('Merchant token not cleared');
+  if (after.external_business_id === before.external_business_id) failures.push('External ID not changed');
+
+  if (failures.length > 0) {
+    throw new Error('❌ Disconnection failed:\n   - ' + failures.join('\n   - '));
+  }
+
+  console.log('✅ Disconnection verified');
+  return { before, after, success: true };
+}
+
+// Helper function to reconnect to Facebook (mimics workflow setup)
+async function reconnectAndVerify() {
+  console.log('🔄 Reconnecting to Facebook...');
+
+  const before = await getConnectionStatus();
+  if (before.connected) {
+    console.log('⚠️ Already connected');
+    return { before, after: before, success: true, skipped: true };
+  }
+
+  const creds = {
+    accessToken: process.env.FB_ACCESS_TOKEN,
+    businessManagerId: process.env.FB_BUSINESS_MANAGER_ID,
+    externalBusinessId: process.env.FB_EXTERNAL_BUSINESS_ID,
+    productCatalogId: process.env.FB_PRODUCT_CATALOG_ID,
+    pixelId: process.env.FB_PIXEL_ID,
+    pageId: process.env.FB_PAGE_ID
+  };
+
+  // Deactivate, set options, reactivate
+  await execWP(`deactivate_plugins('facebook-for-woocommerce/facebook-for-woocommerce.php');`);
+
+  const options = [
+    ['wc_facebook_access_token', creds.accessToken],
+    ['wc_facebook_merchant_access_token', creds.accessToken],
+    ['wc_facebook_business_manager_id', creds.businessManagerId],
+    ['wc_facebook_external_business_id', creds.externalBusinessId],
+    ['wc_facebook_product_catalog_id', creds.productCatalogId],
+    ['wc_facebook_pixel_id', creds.pixelId],
+    ['wc_facebook_page_id', creds.pageId],
+    ['wc_facebook_enable_server_to_server', 'yes'],
+    ['wc_facebook_enable_pixel', 'yes'],
+    ['wc_facebook_enable_advanced_matching', 'yes'],
+    ['wc_facebook_debug_mode', 'yes'],
+    ['wc_facebook_enable_debug_mode', 'yes'],
+    ['wc_facebook_has_connected_fbe_2', 'yes'],
+    ['wc_facebook_has_authorized_pages_read_engagement', 'yes'],
+    ['wc_facebook_enable_product_sync', 'yes']
+  ];
+
+  for (const [name, value] of options) {
+    await execWP(`update_option('${name}', '${value}');`);
+  }
+
+  // Step 4: Activate plugin to trigger initialization with new options
+  console.log('🔄 Activating plugin to initialize connection...');
+  await execWP(`activate_plugin('facebook-for-woocommerce/facebook-for-woocommerce.php');`);
+
+  // Verify reconnection
+  const after = await getConnectionStatus();
+  const failures = [];
+
+  if (!after.connected) failures.push('Not connected');
+  if (after.pixel_id !== creds.pixelId) failures.push(`Pixel ID mismatch (expected: ${creds.pixelId}, got: ${after.pixel_id})`);
+  if (!after.access_token) failures.push('Access token missing');
+  if (after.external_business_id !== creds.externalBusinessId) failures.push(`External ID mismatch (expected: ${creds.externalBusinessId}, got: ${after.external_business_id})`);
+  if (after.catalog_id !== creds.productCatalogId) failures.push(`Catalog ID mismatch (expected: ${creds.productCatalogId}, got: ${after.catalog_id})`);
+
+  if (failures.length > 0) {
+    throw new Error('❌ Reconnection failed:\n   - ' + failures.join('\n   - '));
+  }
+
+  console.log('✅ Reconnection verified');
+  return { before, after, success: true, credentials: creds };
+}
+
+// Helper function to verify all products have Facebook fields cleared
+async function verifyProductsFacebookFieldsCleared() {
+  console.log('🔍 Verifying all product Facebook fields are cleared...');
+
+  const { stdout } = await execWP(`
+    \\$products = get_posts([
+      'post_type' => ['product', 'product_variation'],
+      'posts_per_page' => -1,
+      'post_status' => 'any'
+    ]);
+
+    \\$issues = [];
+
+    foreach (\\$products as \\$product) {
+      \\$meta = get_post_meta(\\$product->ID);
+      \\$fb_fields = [];
+
+      foreach (\\$meta as \\$key => \\$value) {
+        if (strpos(\\$key, 'fb_') === 0 || strpos(\\$key, '_fb_') === 0 || strpos(\\$key, 'facebook_') === 0) {
+          if (!empty(\\$value[0])) {
+            \\$fb_fields[\\$key] = \\$value[0];
+          }
+        }
+      }
+
+      if (!empty(\\$fb_fields)) {
+        \\$issues[] = [
+          'id' => \\$product->ID,
+          'type' => \\$product->post_type,
+          'fields' => \\$fb_fields
+        ];
+      }
+    }
+
+    echo json_encode([
+      'success' => empty(\\$issues),
+      'total' => count(\\$products),
+      'issues' => \\$issues
+    ]);
+  `);
+
+  const result = JSON.parse(stdout);
+
+  console.log(`✅ Checked ${result.total} products and variations`);
+
+  if (result.issues.length > 0) {
+    console.log(`❌ Found ${result.issues.length} products with Facebook fields not cleared:`);
+    result.issues.forEach(issue => {
+      console.log(`   - Product ID ${issue.id} (${issue.type}):`);
+      Object.entries(issue.fields).forEach(([key, value]) => {
+        console.log(`     • ${key}: ${value}`);
+      });
+    });
+    throw new Error(`${result.issues.length} products still have Facebook fields`);
+  }
+
+  console.log('✅ All product Facebook fields cleared');
+  return { success: true, total: result.total };
+}
+
+
 
 module.exports = {
   baseURL,
   username,
   password,
+  ERROR_WHITELIST,
+  execWP,
   loginToWordPress,
   safeScreenshot,
   cleanupProduct,
@@ -1002,5 +1304,11 @@ module.exports = {
   generateProductFeedCSV,
   deleteFeedFile,
   generateProductUpdateCSV,
-  ensureDebugModeEnabled
+  ensureDebugModeEnabled,
+  checkWooCommerceLogs,
+  completePurchaseFlow,
+  checkForJsErrors,
+  disconnectAndVerify,
+  reconnectAndVerify,
+  verifyProductsFacebookFieldsCleared
 };
