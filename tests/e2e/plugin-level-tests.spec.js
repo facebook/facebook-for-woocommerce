@@ -5,7 +5,9 @@ const {loginToWordPress,logTestStart,ensureDebugModeEnabled,checkWooCommerceLogs
 
 // Plugins to test compatibility with
 const COMPAT_PLUGINS = [
-  { slug: 'wordfence', name: 'Wordfence Security' }
+  { slug: 'wordfence', name: 'Wordfence Security' },
+  { slug: 'litespeed-cache', name: 'LiteSpeed Cache' },
+  { slug: 'subscriptions-for-woocommerce', name: 'Subscriptions For WooCommerce' },
 ];
 
 test.describe('WooCommerce Plugin level tests', () => {
