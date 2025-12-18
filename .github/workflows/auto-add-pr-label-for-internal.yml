@@ -28,11 +28,9 @@ jobs:
 
             // Detect exported PRs from Meta/Facebook by:
             // 1. Source branch matches export-D.* pattern
-            // 2. Has fb-exported and meta-exported label
-            // 3. Title contains DevmateWooCommerceGenerateTests (LIMITING to CodeMod PRs for now)
+            // 2. Title contains DevmateWooCommerceGenerateTests (LIMITING to CodeMod PRs for now)
             const isExportedPR =
               /^export-D/.test(sourceBranch) &&
-              labelNames.includes('fb-exported') && labelNames.includes('meta-exported') &&
               prTitle.includes('DevmateWooCommerceGenerateTests');
 
             if (isExportedPR) {
