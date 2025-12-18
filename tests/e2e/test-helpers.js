@@ -1018,8 +1018,8 @@ async function checkWooCommerceLogs() {
 }
 
 // Helper function to complete a purchase flow
-async function completePurchaseFlow(page) {
-  const url = process.env.TEST_PRODUCT_URL;
+async function completePurchaseFlow(page, productUrl = null) {
+  const url = productUrl || process.env.TEST_PRODUCT_URL;
 
   console.log(`   📦 Navigating to product page`);
   await page.goto(url, { waitUntil: 'domcontentloaded', timeout: TIMEOUTS.EXTRA_LONG });
