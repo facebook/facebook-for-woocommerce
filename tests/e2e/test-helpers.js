@@ -1020,8 +1020,8 @@ async function checkWooCommerceLogs() {
 }
 
 // Helper function to complete a purchase flow
-async function completePurchaseFlow(page) {
-  const url = process.env.TEST_PRODUCT_URL;
+async function completePurchaseFlow(page, productUrl = null) {
+  const url = productUrl || process.env.TEST_PRODUCT_URL;
 
   console.log(`   📦 Navigating to product page`);
   await page.goto(url, { waitUntil: 'domcontentloaded', timeout: TIMEOUTS.EXTRA_LONG });
@@ -1036,6 +1036,11 @@ async function completePurchaseFlow(page) {
 
   console.log(`   📝 Filling billing address from environment variables`);
 
+  // Skip form fill if billing address already saved (Edit button visible)
+  const editButton = page.locator('.wc-block-components-address-card__edit[aria-label="Edit billing address"]');
+  if (await editButton.isVisible({ timeout: TIMEOUTS.SHORT }).catch(() => false)) {
+    console.log(`   ✅ Billing address already saved, skipping form fill`);
+  } else {
   // Fill in billing details from environment variables
   await page.fill('#billing-first_name', process.env.TEST_USER_FIRST_NAME );
   await page.fill('#billing-last_name', process.env.TEST_USER_LAST_NAME);
@@ -1061,6 +1066,7 @@ async function completePurchaseFlow(page) {
   }
 
   console.log(`   ✅ Billing address filled`);
+  }
 
   console.log(`   💰 Selecting Cash on Delivery`);
   await page.waitForSelector('.wc-block-components-radio-control__option[for="radio-control-wc-payment-method-options-cod"]', {
@@ -1276,12 +1282,35 @@ async function verifyProductsFacebookFieldsCleared() {
 
 
 
+// Helper function to install and activate a plugin from wordpress.org
+async function installPlugin(slug) {
+  console.log(`📦 Installing plugin: ${slug}...`);
+  
+  // Install and activate via WP-CLI (can't use execWP - this is CLI, not PHP)
+  await execAsync(
+    `cd ${wpSitePath} && wp plugin install ${slug} --activate --allow-root 2>&1`,
+    { cwd: __dirname }
+  );
+  
+  // Verify plugin is active using WordPress - is_plugin_active returns bool
+  const { stdout } = await execWP(
+    `echo is_plugin_active('${slug}/${slug}.php') ? '1' : '0';`
+  );
+  
+  if (stdout.trim() !== '1') {
+    throw new Error(`Plugin ${slug} failed to activate`);
+  }
+  
+  console.log(`✅ ${slug} installed and active`);
+}
+
 module.exports = {
   baseURL,
   username,
   password,
   ERROR_WHITELIST,
   execWP,
+  installPlugin,
   loginToWordPress,
   safeScreenshot,
   cleanupProduct,

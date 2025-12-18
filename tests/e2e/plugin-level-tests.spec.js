@@ -1,8 +1,14 @@
 const { test, expect } = require('@playwright/test');
-const { execSync } = require('child_process');
 const { TIMEOUTS } = require('./time-constants');
 
-const {loginToWordPress,logTestStart,ensureDebugModeEnabled,checkWooCommerceLogs,checkForPhpErrors,checkForJsErrors,completePurchaseFlow,disconnectAndVerify,reconnectAndVerify,verifyProductsFacebookFieldsCleared,execWP,logTestEnd,baseURL,generateUniqueSKU,createTestProduct,filterProducts,clickFirstProduct,publishProduct,validateFacebookSync,cleanupProduct,safeScreenshot,exactSearchSelect2Container} = require('./test-helpers');
+const {loginToWordPress,logTestStart,logTestEnd,ensureDebugModeEnabled,checkWooCommerceLogs,checkForPhpErrors,checkForJsErrors,completePurchaseFlow,disconnectAndVerify,reconnectAndVerify,verifyProductsFacebookFieldsCleared,validateFacebookSync,publishProduct,installPlugin,execWP,createTestProduct,cleanupProduct,baseURL,generateUniqueSKU,filterProducts,clickFirstProduct,safeScreenshot,exactSearchSelect2Container} = require('./test-helpers');
+
+// Plugins to test compatibility with
+const COMPAT_PLUGINS = [
+  { slug: 'wordfence', name: 'Wordfence Security' },
+  { slug: 'litespeed-cache', name: 'LiteSpeed Cache' },
+  { slug: 'subscriptions-for-woocommerce', name: 'Subscriptions For WooCommerce' },
+];
 
 test.describe.serial('WooCommerce Plugin level tests', () => {
 
@@ -527,6 +533,70 @@ test.describe.serial('WooCommerce Plugin level tests', () => {
 
     if (!result.success) {
       throw new Error('Log validation failed');
+    }
+  });
+
+  // Plugin compatibility test
+  test('Plugin compatibility: edit, sync, purchase with third-party plugins', async ({ page }) => {
+    let createdProductId = null;
+
+    try {
+      // Create ONE test product for all plugin tests
+      const createdProduct = await createTestProduct({
+        type: 'simple',
+        price: '25.00',
+        stock: '100'
+      });
+      createdProductId = createdProduct.productId;
+      console.log(`✅ Created test product ID: ${createdProductId}`);
+
+      // Test each plugin
+      for (const plugin of COMPAT_PLUGINS) {
+        console.log(`\n🔌 Testing with ${plugin.name}...`);
+        const jsErrors = checkForJsErrors(page);
+
+        // 1. Install plugin
+        await installPlugin(plugin.slug);
+
+        // 2. Edit product price
+        const newPrice = (20 + Math.random() * 10).toFixed(2);
+        await page.goto(`${process.env.WORDPRESS_URL}/wp-admin/post.php?post=${createdProductId}&action=edit`, {
+          waitUntil: 'domcontentloaded',
+          timeout: TIMEOUTS.EXTRA_LONG
+        });
+        await page.click('li.general_tab a');
+        const priceField = page.locator('#_regular_price');
+        await priceField.waitFor({ state: 'visible', timeout: TIMEOUTS.MEDIUM });
+        await priceField.fill(newPrice);
+        await publishProduct(page);
+        console.log(`✅ Updated price to: ${newPrice}`);
+
+        // 3. Validate Facebook sync and verify price synced
+        const syncResult = await validateFacebookSync(createdProductId, createdProduct.productName, 60);
+        expect(syncResult.success).toBe(true);
+        // strips all non-numeric characters (like $) from the price
+        const fbPrice = syncResult['raw_data']['facebook_data'][0]['price'].replace(/[^0-9.]/g, '');
+        expect(fbPrice).toBe(newPrice);
+        console.log(`✅ Sync validated - price synced correctly`);
+
+        // 4. Complete a purchase using the helper
+        const productUrl = `${process.env.WORDPRESS_URL}/?p=${createdProductId}`;
+        const { orderId } = await completePurchaseFlow(page, productUrl);
+        expect(orderId).toBeTruthy();
+        console.log(`✅ Purchase completed: Order ${orderId}`);
+
+        // 5. Check for errors after each plugin
+        await checkForPhpErrors(page);
+        if (jsErrors.length > 0) {
+          throw new Error(`JS errors with ${plugin.name}: ${jsErrors.join('; ')}`);
+        }
+        console.log(`🎉 ${plugin.name} compatibility passed!`);
+      }
+
+    } finally {
+      if (createdProductId) {
+        await cleanupProduct(createdProductId);
+      }
     }
   });
 
