@@ -573,7 +573,7 @@ test.describe('WooCommerce Plugin level tests', () => {
         console.log(`✅ Updated price to: ${newPrice}`);
 
         // 3. Validate Facebook sync and verify price synced
-        const syncResult = await validateFacebookSync(createdProductId, createdProduct.productName, 30);
+        const syncResult = await validateFacebookSync(createdProductId, createdProduct.productName, 60);
         expect(syncResult.success).toBe(true);
         // strips all non-numeric characters (like $) from the price
         const fbPrice = syncResult['raw_data']['facebook_data'][0]['price'].replace(/[^0-9.]/g, '');
