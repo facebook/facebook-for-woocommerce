@@ -547,7 +547,7 @@ test.describe.serial('WooCommerce Plugin level tests', () => {
             timeout: TIMEOUTS.MAX
           });
 
-          checkForPhpErrors(page);
+          await checkForPhpErrors(page);
 
           // Verify admin content loaded
           await page.locator('#wpcontent').isVisible({ timeout: TIMEOUTS.LONG });
@@ -605,7 +605,7 @@ test.describe.serial('WooCommerce Plugin level tests', () => {
       }
 
       // Verify no PHP errors after plugin operations
-      checkForPhpErrors(page);
+      await checkForPhpErrors(page);
 
       console.log('✅ Plugin activation test completed');
       logTestEnd(testInfo, true);
@@ -637,7 +637,7 @@ test.describe.serial('WooCommerce Plugin level tests', () => {
         console.warn('⚠️ Facebook for WooCommerce plugin not found in plugins list');
       }
 
-      checkForPhpErrors(page);
+      await checkForPhpErrors(page);
 
       console.log('✅ Plugin detection test completed');
       logTestEnd(testInfo, true);
