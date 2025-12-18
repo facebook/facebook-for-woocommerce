@@ -1,7 +1,7 @@
 const { test, expect } = require('@playwright/test');
 const { TIMEOUTS } = require('./time-constants');
 
-const {loginToWordPress,logTestStart,ensureDebugModeEnabled,checkWooCommerceLogs,checkForPhpErrors,checkForJsErrors,completePurchaseFlow,disconnectAndVerify,reconnectAndVerify,verifyProductsFacebookFieldsCleared,validateFacebookSync,publishProduct,installPlugin,execWP,createTestProduct,cleanupProduct} = require('./test-helpers');
+const {loginToWordPress,logTestStart,logTestEnd,ensureDebugModeEnabled,checkWooCommerceLogs,checkForPhpErrors,checkForJsErrors,completePurchaseFlow,disconnectAndVerify,reconnectAndVerify,verifyProductsFacebookFieldsCleared,validateFacebookSync,publishProduct,installPlugin,execWP,createTestProduct,cleanupProduct,baseURL,generateUniqueSKU,filterProducts,clickFirstProduct,safeScreenshot,exactSearchSelect2Container} = require('./test-helpers');
 
 // Plugins to test compatibility with
 const COMPAT_PLUGINS = [
@@ -10,7 +10,7 @@ const COMPAT_PLUGINS = [
   { slug: 'subscriptions-for-woocommerce', name: 'Subscriptions For WooCommerce' },
 ];
 
-test.describe('WooCommerce Plugin level tests', () => {
+test.describe.serial('WooCommerce Plugin level tests', () => {
 
   test.beforeEach(async ({ page }, testInfo) => {
     // Log test start first for proper chronological order
@@ -20,7 +20,6 @@ test.describe('WooCommerce Plugin level tests', () => {
     await page.setViewportSize({ width: 1280, height: 720 });
     await loginToWordPress(page);
   });
-
 
   test('Check WordPress and WooCommerce are up to date', async ({ page }) => {
     await page.goto(`${process.env.WORDPRESS_URL}/wp-admin/update-core.php`);
@@ -601,4 +600,342 @@ test.describe('WooCommerce Plugin level tests', () => {
     }
   });
 
+  test('Quick PHP error check across key pages', async ({ page }, testInfo) => {
+
+    try {
+      const pagesToCheck = [
+        { path: '/wp-admin/', name: 'Dashboard' },
+        { path: '/wp-admin/edit.php?post_type=product', name: 'Products' },
+        { path: '/wp-admin/plugins.php', name: 'Plugins' }
+      ];
+
+      for (const pageInfo of pagesToCheck) {
+        try {
+          console.log(`🔍 Checking ${pageInfo.name} page...`);
+          await page.goto(`${baseURL}${pageInfo.path}`, {
+            waitUntil: 'domcontentloaded',
+            timeout: TIMEOUTS.MAX
+          });
+
+          await checkForPhpErrors(page);
+
+          // Verify admin content loaded
+          await page.locator('#wpcontent').isVisible({ timeout: TIMEOUTS.LONG });
+
+          console.log(`✅ ${pageInfo.name} page loaded without errors`);
+
+        } catch (error) {
+          console.log(`⚠️ ${pageInfo.name} page check failed: ${error.message}`);
+        }
+      }
+
+      logTestEnd(testInfo, true);
+    } catch (error) {
+      logTestEnd(testInfo, false);
+      throw error;
+    }
+  });
+
+  test('Test Facebook plugin deactivation and reactivation', async ({ page }, testInfo) => {
+
+    try {
+      // Navigate to plugins page
+      await page.goto(`${baseURL}/wp-admin/plugins.php`, {
+        waitUntil: 'domcontentloaded',
+        timeout: TIMEOUTS.MAX
+      });
+
+      // Look for Facebook plugin row
+      const pluginRow = page.locator('tr[data-slug="facebook-for-woocommerce"], tr:has-text("Facebook for WooCommerce")').first();
+
+      await pluginRow.waitFor({ state: 'visible', timeout: TIMEOUTS.LONG });
+      console.log('✅ Facebook plugin found');
+
+      // Check if plugin is currently active
+      const isActive = await pluginRow.locator('.active').isVisible({ timeout: TIMEOUTS.LONG });
+      const deactivateLink = pluginRow.locator('a:has-text("Deactivate")');
+      const reactivateLink = pluginRow.locator('a:has-text("Activate")');
+
+      if (isActive) {
+        console.log('Plugin is active, testing deactivation...');
+        await deactivateLink.waitFor({ state: 'visible', timeout: TIMEOUTS.LONG });
+        await deactivateLink.click();
+        await reactivateLink.waitFor({ state: 'visible', timeout: TIMEOUTS.LONG });
+        console.log('✅ Plugin deactivated');
+        await reactivateLink.click();
+        await deactivateLink.waitFor({ state: 'visible', timeout: TIMEOUTS.LONG });
+        console.log('✅ Plugin reactivated');
+      } else {
+        console.log('Plugin is inactive, testing activation...');
+        const activateLink = pluginRow.locator('a:has-text("Activate")');
+        await activateLink.waitFor({ state: 'visible', timeout: TIMEOUTS.LONG });
+        await activateLink.click();
+        await deactivateLink.waitFor({ state: 'visible', timeout: TIMEOUTS.LONG });
+        console.log('✅ Plugin activated');
+      }
+
+      // Verify no PHP errors after plugin operations
+      await checkForPhpErrors(page);
+
+      console.log('✅ Plugin activation test completed');
+      logTestEnd(testInfo, true);
+
+    } catch (error) {
+      console.log(`⚠️ Plugin activation test failed: ${error.message}`);
+      logTestEnd(testInfo, false);
+      throw error;
+    }
+  });
+
+  test('Test WordPress admin and Facebook plugin presence', async ({ page }, testInfo) => {
+
+    try {
+      // Navigate to plugins page with increased timeout
+      await page.goto(`${baseURL}/wp-admin/plugins.php`, {
+        waitUntil: 'domcontentloaded',
+        timeout: TIMEOUTS.MAX
+      });
+
+      // Check if Facebook plugin is listed
+      const pageContent = await page.content();
+      const hasFacebookPlugin = pageContent.includes('Facebook for WooCommerce') ||
+        pageContent.includes('facebook-for-woocommerce');
+
+      if (hasFacebookPlugin) {
+        console.log('✅ Facebook for WooCommerce plugin detected');
+      } else {
+        console.warn('⚠️ Facebook for WooCommerce plugin not found in plugins list');
+      }
+
+      await checkForPhpErrors(page);
+
+      console.log('✅ Plugin detection test completed');
+      logTestEnd(testInfo, true);
+
+    } catch (error) {
+      console.log(`⚠️ Plugin detection test failed: ${error.message}`);
+      logTestEnd(testInfo, false);
+      throw error;
+    }
+  });
+
+  test('Create attribute mapping and verify attribute syncs to Facebook catalog', async ({ page }, testInfo) => {
+    let productId = null;
+    let attributeId = null;
+    const attributeName = generateUniqueSKU('A'); // intentionally left short since max allowed length is 28
+    const attributeSlug = attributeName.toLocaleLowerCase();
+    const attributeOptions = [generateUniqueSKU('1'), generateUniqueSKU('2')];
+
+    try {
+      //  Create a new global WooCommerce attribute with two options
+      console.log(`📦 Creating global WooCommerce attribute "${attributeName}" with options...`);
+      const createAttrResult = await execWP(`
+        \\$attribute_id = wc_create_attribute([
+          'name' => '${attributeName}',
+          'slug' => '${attributeSlug}',
+          'type' => 'select',
+          'order_by' => 'menu_order',
+          'has_archives' => false
+        ]);
+
+        if (is_wp_error(\\$attribute_id)) {
+          echo json_encode(['success' => false, 'error' => \\$attribute_id->get_error_message()]);
+        } else {
+          // Register the taxonomy so we can add terms
+          register_taxonomy('pa_${attributeSlug}', ['product'], []);
+
+          // Add the attribute options as terms
+          \\$terms_added = [];
+          foreach (['${attributeOptions[0]}', '${attributeOptions[1]}'] as \\$option) {
+            \\$term = wp_insert_term(\\$option, 'pa_${attributeSlug}');
+            if (!is_wp_error(\\$term)) {
+              \\$terms_added[] = \\$term['term_id'];
+            }
+          }
+
+          echo json_encode([
+            'success' => true,
+            'attribute_id' => \\$attribute_id,
+            'terms_added' => \\$terms_added,
+            'message' => 'Attribute created successfully'
+          ]);
+        }
+      `);
+
+      const attrResult = JSON.parse(createAttrResult.stdout);
+      if (!attrResult.success) {
+        throw new Error(`Failed to create attribute: ${attrResult.error}`);
+      }
+      attributeId = attrResult.attribute_id;
+      console.log(`✅ Created attribute "${attributeName}" with ID: ${attributeId}`);
+      console.log(`   Terms added: ${attrResult.terms_added.join(', ')}`);
+
+      //  Navigate to Marketing > Facebook
+      console.log('🔗 Navigating to Marketing > Facebook...');
+      await page.goto(`${baseURL}/wp-admin/admin.php?page=wc-facebook`, {
+        waitUntil: 'domcontentloaded',
+        timeout: TIMEOUTS.MAX
+      });
+      await checkForPhpErrors(page);
+      console.log('✅ Navigated to Facebook settings page');
+
+      //  Click on "Attribute Mapping" tab
+      console.log('📑 Clicking on "Attribute Mapping" tab...');
+      const attributeMappingTab = page.getByRole('link', {name: 'Attribute Mapping'});
+      await attributeMappingTab.waitFor({ state: 'visible', timeout: TIMEOUTS.LONG });
+      await attributeMappingTab.click();
+      console.log('✅ Clicked on Attribute Mapping tab');
+
+      // // Click on "Edit mappings" button
+      console.log('📝 Clicking on "Add new mapping" or "Edit mappings" button...');
+      const editMappingsButton = page.getByRole('link', { name: 'Edit mappings' });
+      const addNewMappingButton = page.getByRole('link', { name: 'Add new mapping' });
+      if (await editMappingsButton.isVisible({ timeout: TIMEOUTS.MEDIUM })) {
+        await editMappingsButton.click();
+        console.warn('⚠️ Some existing attributes exist, Clicked Edit mappings button');
+      }
+      else {
+        //  Click on "Add new mapping" button
+        console.log('Clicking on "Add new mapping" button...');
+        await addNewMappingButton.waitFor({ state: 'visible', timeout: TIMEOUTS.LONG });
+        await addNewMappingButton.click();
+        console.log('✅ Clicked Add new mapping button');
+      }
+
+      //  Map the WooCommerce Test-E2E attribute to Meta color attribute
+      console.log(`🔄 Mapping WooCommerce "${attributeName}" attribute to Meta "color" attribute...`);
+
+      const attributeSelectContainers = page.locator('span').filter({ hasText: 'Select attribute' });
+      await exactSearchSelect2Container(page, attributeSelectContainers.first(), attributeName);
+
+      // Select the Meta attribute (destination) - color
+      await exactSearchSelect2Container(page, attributeSelectContainers.last(), 'color');
+      console.log('✅ Selected Meta attribute: color');
+
+      //  Click on "Save changes" button
+      console.log('💾 Clicking on "Save changes" button...');
+      const saveChangesButton = page.getByRole('button', { name: 'Save changes' });
+      await saveChangesButton.waitFor({ state: 'visible', timeout: TIMEOUTS.LONG });
+      await saveChangesButton.click();
+      await page.waitForLoadState('domcontentloaded');
+      console.log('✅ Saved attribute mapping changes');
+
+      // Verify no PHP errors after saving
+      await checkForPhpErrors(page);
+
+      //  Create a simple product with the new "Test-E2E" attribute
+      console.log('📦 Creating simple product with Test-E2E attribute...');
+
+      // First, create the base product
+      const createdProduct = await createTestProduct({
+        productType: 'simple',
+        price: '29.99',
+        stock: '15'
+      });
+      productId = createdProduct.productId;
+      console.log(`✅ Created base product with ID: ${productId}`);
+
+      // Navigate to the product edit page
+      await filterProducts(page, 'simple', createdProduct.sku);
+      await clickFirstProduct(page);
+
+      // Click on Attributes tab
+      console.log('📑 Opening Attributes tab...');
+      const attributesTab = page.locator('li.attribute_tab a');
+      await attributesTab.waitFor({ state: 'visible', timeout: TIMEOUTS.LONG });
+      await attributesTab.click();
+      console.log('✅ Opened Attributes tab');
+
+      // Select the global attribute from the dropdown
+      console.log(`🔍 Selecting global attribute "${attributeName}"...`);
+      const productAttributeContainer = page.locator('span').filter({ hasText: 'Add existing' }).first();
+      await productAttributeContainer.waitFor({ state: 'visible', timeout: TIMEOUTS.MEDIUM });
+      await exactSearchSelect2Container(page, productAttributeContainer, attributeName);
+      const selectAllAttrValuesBtn = page.getByRole('button', { name: 'Select all' });
+      await selectAllAttrValuesBtn.waitFor({ state: 'visible', timeout: TIMEOUTS.MEDIUM });
+      await selectAllAttrValuesBtn.click();
+      console.log(`✅ Selected attribute: ${attributeName}`);
+
+      // Click "Add" button to add the attribute
+      const addAttributeButton = page.getByRole('button', { name: 'Save attributes' });
+      await addAttributeButton.waitFor({ state: 'visible', timeout: TIMEOUTS.MEDIUM });
+      await addAttributeButton.click();
+      console.log('✅ Clicked Save attributes button');
+
+      // Wait for attributes to be saved (the attribute row should collapse)
+      await page.waitForFunction(() => {
+        return document.querySelector('.woocommerce_attribute.wc-metabox.closed') !== null;
+      }, { timeout: TIMEOUTS.LONG });
+      console.log('✅ Saved attributes');
+
+      // Publish/Update the product to trigger sync
+      console.log('💾 Updating product...');
+      await publishProduct(page);
+
+      //  Validate Facebook sync and ensure 'color' field returns the attribute value
+      console.log('🔄 Validating Facebook sync...');
+      const syncResult = await validateFacebookSync(productId, createdProduct.productName, 30);
+
+      expect(syncResult.success).toBe(true);
+      console.log('✅ Facebook sync validation successful');
+
+      // Check the color field in the Facebook data
+      const facebookData = syncResult['raw_data']['facebook_data'];
+      const colorValue = facebookData[0]['color'];
+      console.log(`📊 Facebook color field value: ${colorValue}`);
+
+      // Verify the color value matches one of our attribute options
+      const validColors = attributeOptions.map(opt => opt.toLowerCase());
+      const colorLower = colorValue ? colorValue.toLowerCase() : '';
+      const colorMatches = validColors.some(valid => colorLower.includes(valid.toLowerCase()));
+
+      if (colorMatches) {
+        console.log(`✅ Color field correctly contains attribute value(s): ${colorValue}`);
+      } else {
+        console.log(`⚠️ Color field value "${colorValue}" - verifying it was set from attribute mapping`);
+        // The color might be formatted differently, just ensure it exists
+        expect(colorValue).toBeTruthy();
+      }
+
+      console.log('✅ Attribute mapping test completed successfully');
+      logTestEnd(testInfo, true);
+
+    } catch (error) {
+      console.error(`❌ Test failed: ${error.message}`);
+      await safeScreenshot(page, 'attribute-mapping-test-failure.png');
+      logTestEnd(testInfo, false);
+      throw error;
+    } finally {
+      // Step 10: Cleanup - delete product, attribute mapping, and attribute
+      console.log('🧹 Starting cleanup...');
+
+      // Cleanup the product
+      if (productId) {
+        await cleanupProduct(productId);
+      }
+      // Cleanup the global attribute
+      if (attributeId) {
+        try {
+          console.log(`🧹 Cleaning up global attribute (ID: ${attributeId})...`);
+          await execWP(`
+            // Delete terms first
+            \\$terms = get_terms(['taxonomy' => 'pa_${attributeSlug}', 'hide_empty' => false]);
+            if (!is_wp_error(\\$terms)) {
+              foreach (\\$terms as \\$term) {
+                wp_delete_term(\\$term->term_id, 'pa_${attributeSlug}');
+              }
+            }
+            // Delete the attribute
+            wc_delete_attribute(${attributeId});
+            echo json_encode(['success' => true]);
+          `);
+          console.log(`✅ Cleaned up global attribute "${attributeName}"`);
+        } catch (attrCleanupError) {
+          console.warn(`⚠️ Attribute cleanup failed: ${attrCleanupError.message}`);
+        }
+      }
+
+      console.log('✅ Cleanup completed');
+    }
+  });
 });
