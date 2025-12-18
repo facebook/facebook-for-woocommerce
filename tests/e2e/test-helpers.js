@@ -497,8 +497,10 @@ async function setProductTitle(page, newTitle) {
 // Click on the Select2 container to open the dropdown
 async function exactSearchSelect2Container(page, locator, searchValue) {
   await locator.waitFor({ state: 'visible', timeout: TIMEOUTS.LONG });
-  await locator.click();
+  await locator.scrollIntoViewIfNeeded();
   await locator.focus();
+  await page.waitForTimeout(TIMEOUTS.MEDIUM); // Wait for Select2 dropdown to open
+  await locator.click();
   // Wait for 1 second to allow the Select2 dropdown to fully render after clicking.
   // Cannot use waitForLoadState('domcontentloaded') here because Select2 dropdown
   // is rendered dynamically via JavaScript without triggering a page load event.
