@@ -652,9 +652,9 @@ test.describe.serial('WooCommerce Plugin level tests', () => {
   test('Create attribute mapping and verify attribute syncs to Facebook catalog', async ({ page }, testInfo) => {
     let productId = null;
     let attributeId = null;
-    const attributeName = generateUniqueSKU('test-e2e');
+    const attributeName = generateUniqueSKU('A'); // intentionally left short since max allowed length is 28
     const attributeSlug = attributeName.toLocaleLowerCase();
-    const attributeOptions = [generateUniqueSKU('test-e2e-one'), generateUniqueSKU('test-e2e-two')];
+    const attributeOptions = [generateUniqueSKU('1'), generateUniqueSKU('2')];
 
     try {
       //  Create a new global WooCommerce attribute with two options
@@ -817,9 +817,7 @@ test.describe.serial('WooCommerce Plugin level tests', () => {
       // Verify the color value matches one of our attribute options
       const validColors = attributeOptions.map(opt => opt.toLowerCase());
       const colorLower = colorValue ? colorValue.toLowerCase() : '';
-      const colorMatches = validColors.some(valid => colorLower.includes(valid.toLowerCase())) ||
-                          colorLower.includes('test-e2e-one') ||
-                          colorLower.includes('test-e2e-two');
+      const colorMatches = validColors.some(valid => colorLower.includes(valid.toLowerCase()));
 
       if (colorMatches) {
         console.log(`✅ Color field correctly contains attribute value(s): ${colorValue}`);
