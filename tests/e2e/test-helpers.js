@@ -1034,6 +1034,11 @@ async function completePurchaseFlow(page, productUrl = null) {
 
   console.log(`   📝 Filling billing address from environment variables`);
 
+  // Skip form fill if billing address already saved (Edit button visible)
+  const editButton = page.locator('.wc-block-components-address-card__edit[aria-label="Edit billing address"]');
+  if (await editButton.isVisible({ timeout: TIMEOUTS.SHORT }).catch(() => false)) {
+    console.log(`   ✅ Billing address already saved, skipping form fill`);
+  } else {
   // Fill in billing details from environment variables
   await page.fill('#billing-first_name', process.env.TEST_USER_FIRST_NAME );
   await page.fill('#billing-last_name', process.env.TEST_USER_LAST_NAME);
@@ -1059,6 +1064,7 @@ async function completePurchaseFlow(page, productUrl = null) {
   }
 
   console.log(`   ✅ Billing address filled`);
+  }
 
   console.log(`   💰 Selecting Cash on Delivery`);
   await page.waitForSelector('.wc-block-components-radio-control__option[for="radio-control-wc-payment-method-options-cod"]', {
