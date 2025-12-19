@@ -1280,28 +1280,91 @@ async function verifyProductsFacebookFieldsCleared() {
   return { success: true, total: result.total };
 }
 
-
-
 // Helper function to install and activate a plugin from wordpress.org
 async function installPlugin(slug) {
   console.log(`📦 Installing plugin: ${slug}...`);
-  
+
   // Install and activate via WP-CLI (can't use execWP - this is CLI, not PHP)
   await execAsync(
     `cd ${wpSitePath} && wp plugin install ${slug} --activate --allow-root 2>&1`,
     { cwd: __dirname }
   );
-  
+
   // Verify plugin is active using WordPress - is_plugin_active returns bool
   const { stdout } = await execWP(
     `echo is_plugin_active('${slug}/${slug}.php') ? '1' : '0';`
   );
-  
+
   if (stdout.trim() !== '1') {
     throw new Error(`Plugin ${slug} failed to activate`);
   }
-  
+
   console.log(`✅ ${slug} installed and active`);
+}
+
+// Helper function to create a subscription product using Subscriptions For WooCommerce plugin
+async function createSubscriptionProduct(options = {}) {
+  const productName = options.productName || generateProductName('subscription');
+  const sku = options.sku || generateUniqueSKU('subscription');
+  const price = options.price || '29.99';
+  const stock = options.stock || '100';
+  const subscriptionInterval = options.subscriptionInterval || 'month';
+  const subscriptionNumber = options.subscriptionNumber || 1;
+  const categoryIds = options.categoryIds || [];
+
+  console.log(`📦 Creating subscription product via PHP: "${productName}"...`);
+  console.log(`   Subscription: Every ${subscriptionNumber} ${subscriptionInterval}(s)`);
+
+  try {
+    const startTime = Date.now();
+
+    // Call the product creator PHP script with subscription type
+    const categoryIdsJson = JSON.stringify(categoryIds);
+    const { stdout, stderr } = await execAsync(
+      `php e2e-product-creator.php "subscription" "${productName}" ${price} ${stock} "${sku}" '${categoryIdsJson}' "${subscriptionInterval}" ${subscriptionNumber}`,
+      { cwd: __dirname }
+    );
+
+    if (stderr) {
+      console.log(`⚠️ PHP stderr: ${stderr}`);
+    }
+
+    const result = JSON.parse(stdout);
+
+    if (result.success) {
+      console.log(`✅ ${result.message}`);
+      console.log(`   Name: ${result.product_name}`);
+      console.log(`   SKU: ${result.sku}`);
+      console.log(`   Price: ${result.price}`);
+      console.log(`   Stock: ${result.stock}`);
+      console.log(`   Subscription: ${result.subscription_number} ${result.subscription_interval}(s)`);
+      console.log(`   URL: ${result.product_url}`);
+
+      if (categoryIds.length > 0) {
+        console.log(`   Categories: ${categoryIds.join(', ')}`);
+      }
+
+      const endTime = Date.now();
+      console.log(`⏱️ Subscription Product creation took ${endTime - startTime}ms`);
+
+      return {
+        productId: result.product_id,
+        productName: result.product_name,
+        productUrl: result.product_url,
+        price: result.price,
+        stock: result.stock,
+        sku: result.sku,
+        subscriptionInterval: result.subscription_interval,
+        subscriptionNumber: result.subscription_number
+      };
+    } else {
+      throw new Error(`Subscription product creation failed: ${result.error}`);
+    }
+
+  } catch (error) {
+    console.log(`❌ Failed to create subscription product: ${error.message}`);
+    throw error;
+  }
 }
 
 module.exports = {
@@ -1326,6 +1389,7 @@ module.exports = {
   validateCategorySync,
   createTestProduct,
   createTestCategory,
+  createSubscriptionProduct,
   setProductDescription,
   filterProducts,
   clickFirstProduct,
