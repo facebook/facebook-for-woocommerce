@@ -1178,8 +1178,10 @@ async function reconnectAndVerify(options = {}) {
   };
 
   // Deactivate, set options, reactivate
+  console.log('   Deactivating plugin...');
   await execWP(`deactivate_plugins('facebook-for-woocommerce/facebook-for-woocommerce.php');`);
 
+  console.log('   Setting options...');
   const dbOptions = [
     ['wc_facebook_access_token', creds.accessToken],
     ['wc_facebook_merchant_access_token', creds.accessToken],
@@ -1297,6 +1299,7 @@ async function installPlugin(slug) {
   );
 
   // Verify plugin is active
+  console.log(`   Verifying activation...`);
   const { stdout } = await execWP(
     `echo is_plugin_active('${slug}/${slug}.php') ? '1' : '0';`
   );
@@ -1324,17 +1327,21 @@ async function uninstallPlugin(slug) {
 
 // Helper to install mu-plugin that disables pixel tracking
 async function installPixelBlockerMuPlugin() {
+  console.log('🔧 Installing pixel blocker mu-plugin...');
   const muPluginDir = `${wpSitePath}/wp-content/mu-plugins`;
   const muPluginFile = `${muPluginDir}/e2e-pixel-blocker.php`;
   const code = `<?php\nadd_filter('facebook_for_woocommerce_integration_pixel_enabled', '__return_false', 999);\n`;
 
+  console.log(`   Creating mu-plugins dir: ${muPluginDir}`);
   await execAsync(`mkdir -p "${muPluginDir}"`, { cwd: __dirname });
+  console.log(`   Writing filter to: ${muPluginFile}`);
   await execAsync(`echo '${code}' > "${muPluginFile}"`, { cwd: __dirname });
-  console.log('🚫 Pixel blocker mu-plugin installed');
+  console.log('✅ Pixel blocker mu-plugin installed');
 }
 
 // Helper to remove the pixel blocker mu-plugin
 async function removePixelBlockerMuPlugin() {
+  console.log('🧹 Removing pixel blocker mu-plugin...');
   const muPluginFile = `${wpSitePath}/wp-content/mu-plugins/e2e-pixel-blocker.php`;
   await execAsync(`rm -f "${muPluginFile}"`, { cwd: __dirname });
   console.log('✅ Pixel blocker mu-plugin removed');

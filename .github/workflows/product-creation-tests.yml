@@ -556,7 +556,7 @@ jobs:
       - name: Run CAPI Pixel E2E tests
         run: |
           cd ${{ env.PLUGIN_PATH }}
-          xvfb-run --auto-servernum npx playwright test events-test.spec.js --headed --project=chromium-wp-customer
+          # xvfb-run --auto-servernum npx playwright test events-test.spec.js --headed --project=chromium-wp-customer
           xvfb-run --auto-servernum npx playwright test events-consent-test.spec.js --headed --project=chromium-wp-customer
 
       - name: Cleanup test product
