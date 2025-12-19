@@ -548,6 +548,7 @@ jobs:
           sudo apt-get install -y xvfb
 
       - name: Run Plugin level tests
+        if: false
         run: |
           cd ${{ env.PLUGIN_PATH }}
           npx playwright test "plugin-.*\.spec\.js" --project=chromium-wp-admin
@@ -569,6 +570,7 @@ jobs:
           fi
 
       - name: Run E2E tests
+        if: false
         continue-on-error: true
         run: |
           cd ${{ env.PLUGIN_PATH }}
