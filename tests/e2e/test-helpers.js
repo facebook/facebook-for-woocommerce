@@ -1357,6 +1357,13 @@ async function removePixelBlockerMuPlugin() {
   console.log('✅ Pixel blocker mu-plugin removed');
 }
 
+// Helper to deactivate the FB plugin
+async function deactivatePlugin() {
+  console.log('🔌 Deactivating plugin...');
+  await execWP(`deactivate_plugins('facebook-for-woocommerce/facebook-for-woocommerce.php');`);
+  console.log('✅ Plugin deactivated');
+}
+
 module.exports = {
   baseURL,
   username,
@@ -1365,6 +1372,7 @@ module.exports = {
   execWP,
   installPlugin,
   uninstallPlugin,
+  deactivatePlugin,
   installPixelBlockerMuPlugin,
   removePixelBlockerMuPlugin,
   loginToWordPress,

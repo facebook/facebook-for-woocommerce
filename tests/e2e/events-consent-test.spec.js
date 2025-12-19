@@ -1,8 +1,8 @@
 /**
  * Consent Test - Validates pixel is blocked when filter returns false
- * 
+ *
  * This test runs SEPARATELY after all other events tests because it
- * uninstalls/reinstalls the plugin which would break parallel tests.
+ * deactivates/reactivates the plugin which would break parallel tests.
  */
 
 const { test, expect } = require('@playwright/test');
@@ -11,25 +11,22 @@ const EventValidator = require('./lib/EventValidator');
 
 test('ViewContent - No Consent (pixel disabled)', async ({ page }, testInfo) => {
     const {
-      uninstallPlugin,
-      installPlugin,
+      disconnectAndVerify,
+      deactivatePlugin,
       installPixelBlockerMuPlugin,
       removePixelBlockerMuPlugin,
       reconnectAndVerify
     } = require('./test-helpers');
 
-    // 1. Uninstall plugin
-    await uninstallPlugin('facebook-for-woocommerce');
+    // 1. Disconnect and deactivate plugin
+    await disconnectAndVerify();
+    await deactivatePlugin();
 
     // 2. Install mu-plugin (filter returns false)
     console.log('🔧 Installing pixel blocker mu-plugin...');
     await installPixelBlockerMuPlugin();
 
-    // 3. Reinstall plugin
-    console.log('📦 Reinstalling plugin...');
-    await installPlugin('facebook-for-woocommerce');
-    
-    console.log('🔄 Reconnecting with pixel/s2s disabled...');
+    // 3. Reconnect (which reactivates plugin with filter in place)
     await reconnectAndVerify({ enablePixel: 'no', enableS2S: 'no' });
 
     // 4. Run test - expect NO events
