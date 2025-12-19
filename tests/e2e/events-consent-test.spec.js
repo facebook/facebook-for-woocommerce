@@ -18,17 +18,20 @@ test('ViewContent - No Consent (pixel disabled)', async ({ page }, testInfo) => 
       reconnectAndVerify
     } = require('./test-helpers');
 
-    // 1. Deactivate plugin
+    // 1. Clear any existing _fbp/_fbc cookies from previous tests
+    console.log('🍪 Clearing existing FB cookies...');
+    await page.context().clearCookies();
+
+    // 2. Deactivate plugin
     await deactivatePlugin();
 
-    // 2. Install mu-plugin (filter returns false)
-    console.log('🔧 Installing pixel blocker mu-plugin...');
+    // 3. Install mu-plugin (filter returns false)
     await installPixelBlockerMuPlugin();
 
-    // 3. Reactivate plugin (filter now in place before EventsTracker constructor runs)
+    // 4. Reactivate plugin (filter now in place before EventsTracker constructor runs)
     await activatePlugin();
 
-    // 4. Run test - expect NO events
+    // 5. Run test - expect NO events
     console.log('🧪 Initializing test...');
     const { testId, pixelCapture } = await TestSetup.init(page, 'ViewContent', testInfo, true);
 
@@ -46,17 +49,17 @@ test('ViewContent - No Consent (pixel disabled)', async ({ page }, testInfo) => 
     TestSetup.logResult('ViewContent (No Consent)', result);
     expect(result.passed).toBe(true);
 
-    // 5. Validate cookies - _fbp and _fbc should NOT exist
-    console.log('🍪 Checking cookies...');
+    // 6. Validate cookies - _fbp and _fbc should NOT exist after page load
+    console.log('🍪 Checking cookies were not set...');
     const cookies = await page.context().cookies();
     const fbp = cookies.find(c => c.name === '_fbp');
     const fbc = cookies.find(c => c.name === '_fbc');
 
     expect(fbp).toBeUndefined();
     expect(fbc).toBeUndefined();
-    console.log('✅ No _fbp or _fbc cookies (correct)');
+    console.log('✅ No _fbp or _fbc cookies (correct - fbevents.js did not load)');
 
-    // 6. Cleanup - remove mu-plugin and restore connection
+    // 7. Cleanup - remove mu-plugin and restore connection
     console.log('🧹 Cleaning up...');
     await removePixelBlockerMuPlugin();
     await reconnectAndVerify({ enablePixel: 'yes', enableS2S: 'yes' });
