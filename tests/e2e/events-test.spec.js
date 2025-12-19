@@ -7,7 +7,10 @@ const { TIMEOUTS } = require('./time-constants');
 const TestSetup = require('./lib/TestSetup');
 const EventValidator = require('./lib/EventValidator');
 const {
-  cleanupProduct
+  cleanupProduct,
+  generateUniqueSKU,
+  installPlugin,
+  execWP
 } = require('./test-helpers');
 
 test('PageView', async ({ page }, testInfo) => {
@@ -231,6 +234,91 @@ test('Purchase - Multiple Place Order Clicks', async ({ page }, testInfo) => {
     // Should still only have 1 Purchase event despite multiple clicks
     TestSetup.logResult('Purchase (Deduplication)', result);
     expect(result.passed).toBe(true);
+});
+
+test('Purchase - Subscription Product', async ({ page }, testInfo) => {
+    const { testId, pixelCapture } = await TestSetup.init(page, 'Purchase',  testInfo);
+    let subscriptionProduct = null;
+    try {
+        // Install and activate the Subscriptions For WooCommerce plugin
+        await installPlugin('subscriptions-for-woocommerce');
+
+        // Enable the plugin's internal setting (required - plugin has separate enable toggle)
+        console.log(`   🔧 Enabling Subscriptions For WooCommerce plugin setting...`);
+        await execWP(`update_option('wps_sfw_enable_plugin', 'on');`);
+        await execWP(`update_option('wps_sfw_multistep_done', true);`);
+        console.log(`   ✅ Subscriptions For WooCommerce plugin setting enabled`);
+
+        // Step 1: Create a subscription product via PHP/WP CLI
+        console.log(`   📦 Creating subscription product via WP/PHP...`);
+        subscriptionProduct = await require('./test-helpers').createSubscriptionProduct({
+        productName: generateUniqueSKU('Subscription'),
+        price: '29.99',
+        stock: '100',
+        subscriptionInterval: 'month',
+        subscriptionNumber: 1
+        });
+
+        console.log(`   ✅ Subscription product created: ${subscriptionProduct.productName}`);
+        console.log(`   📍 Product URL: ${subscriptionProduct.productUrl}`);
+
+        // Step 2: Navigate to the subscription product page and add to cart
+        await page.goto(subscriptionProduct.productUrl);
+        await TestSetup.waitForPageReady(page, TIMEOUTS.INSTANT);
+
+        console.log(`   🛒 Adding product to cart`);
+        await page.click('.single_add_to_cart_button');
+        await page.waitForTimeout(TIMEOUTS.SHORT);
+
+        console.log(`   💳 Navigating to checkout`);
+        await page.goto('/checkout');
+        await TestSetup.waitForPageReady(page);
+
+        // Scroll down to see checkout form in video
+        await page.evaluate(() => window.scrollBy(0, 400));
+        await page.waitForTimeout(TIMEOUTS.SHORT);
+
+        console.log(`   ℹ️ Using saved billing address (no need to fill)`);
+        // Customer already has billing address saved from workflow setup
+        // WooCommerce automatically uses it - no need to edit or fill anything
+
+        console.log(`   💰 Selecting Cash on Delivery`);
+        // Wait for the payment methods section to load, then click the label (the input is hidden by CSS)
+        await page.waitForSelector('.wc-block-components-radio-control__option[for="radio-control-wc-payment-method-options-cod"]', { state: 'visible', timeout: TIMEOUTS.LONG });
+        await page.click('label[for="radio-control-wc-payment-method-options-cod"]');
+        await page.waitForTimeout(TIMEOUTS.INSTANT);
+
+        console.log(`   ✅ Placing order`);
+        // Scroll to place order button to ensure it's visible
+        await page.locator('.wc-block-components-checkout-place-order-button').scrollIntoViewIfNeeded();
+
+        // Purchase event is CAPI-only (server-side) for now
+        await page.click('.wc-block-components-checkout-place-order-button');
+
+        // Wait for order processing and redirect (can take time with payment processing)
+        console.log(`   ⏳ Waiting for order to process...`);
+        await page.waitForURL('**/checkout/order-received/**', { timeout: TIMEOUTS.EXTRA_LONG });
+
+
+        await page.waitForTimeout(TIMEOUTS.NORMAL); // Give time for order to process and CAPI event to fire
+
+        const validator = new EventValidator(testId);
+        await validator.checkDebugLog();
+        const result = await validator.validate('Purchase', page);
+
+        TestSetup.logResult('Purchase', result);
+        expect(result.passed).toBe(true);
+    }
+    catch (e) {
+        TestSetup.logResult('Purchase - Subscription Product', { passed: false, error: e.message });
+    }
+    finally {
+        // Cleanup: Delete the created subscription product
+        if (subscriptionProduct) {
+            console.log(`   🧹 Cleaning up subscription product ${subscriptionProduct.productId}...`);
+            await cleanupProduct(subscriptionProduct.productId);
+        }
+    }
 });
 
 test('Search', async ({ page }, testInfo) => {

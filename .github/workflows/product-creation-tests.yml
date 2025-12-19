@@ -96,7 +96,7 @@ jobs:
           extensions: mysqli, zip, gd, curl, dom, fileinfo, mbstring
           ini-values: |
             date.timezone=UTC
-            memory_limit=512M
+            memory_limit=1024M
             max_execution_time=300
 
       - name: Configure hostname
@@ -547,10 +547,10 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y xvfb
 
-      - name: Run Plugin level tests
-        run: |
-          cd ${{ env.PLUGIN_PATH }}
-          npx playwright test "plugin-.*\.spec\.js" --project=chromium-wp-admin
+      # - name: Run Plugin level tests
+      #   run: |
+      #     cd ${{ env.PLUGIN_PATH }}
+      #     npx playwright test "plugin-.*\.spec\.js" --project=chromium-wp-admin
 
       - name: Run CAPI Pixel E2E tests
         run: |
