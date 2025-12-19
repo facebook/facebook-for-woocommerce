@@ -1220,7 +1220,7 @@ async function reconnectAndVerify(options = {}) {
 
   // Step 4: Activate plugin to trigger initialization with new options
   console.log('🔄 Activating plugin to initialize connection...');
-  await execWP(`('facebook-for-woocommerce/facebook-for-woocommerce.php');`);
+  await execWP(`activate_plugins('facebook-for-woocommerce/facebook-for-woocommerce.php');`);
 
   // Verify reconnection
   const after = await getConnectionStatus();
@@ -1378,6 +1378,13 @@ async function deactivatePlugin() {
   console.log('✅ Plugin deactivated');
 }
 
+// Helper to just activate the FB plugin (no validation)
+async function activatePlugin() {
+  console.log('🔌 Activating plugin...');
+  await execWP(`activate_plugins('facebook-for-woocommerce/facebook-for-woocommerce.php');`);
+  console.log('✅ Plugin activated');
+}
+
 module.exports = {
   baseURL,
   username,
@@ -1387,6 +1394,7 @@ module.exports = {
   installPlugin,
   uninstallPlugin,
   deactivatePlugin,
+  activatePlugin,
   installPixelBlockerMuPlugin,
   removePixelBlockerMuPlugin,
   loginToWordPress,

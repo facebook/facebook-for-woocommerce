@@ -11,23 +11,22 @@ const EventValidator = require('./lib/EventValidator');
 
 test('ViewContent - No Consent (pixel disabled)', async ({ page }, testInfo) => {
     const {
-      disconnectAndVerify,
       deactivatePlugin,
+      activatePlugin,
       installPixelBlockerMuPlugin,
       removePixelBlockerMuPlugin,
       reconnectAndVerify
     } = require('./test-helpers');
 
-    // 1. Disconnect and deactivate plugin
-    await disconnectAndVerify();
+    // 1. Deactivate plugin
     await deactivatePlugin();
 
     // 2. Install mu-plugin (filter returns false)
     console.log('🔧 Installing pixel blocker mu-plugin...');
     await installPixelBlockerMuPlugin();
 
-    // 3. Reconnect (which reactivates plugin with filter in place)
-    await reconnectAndVerify({ enablePixel: 'no', enableS2S: 'no' });
+    // 3. Reactivate plugin (filter now in place before EventsTracker constructor runs)
+    await activatePlugin();
 
     // 4. Run test - expect NO events
     console.log('🧪 Initializing test...');
@@ -57,7 +56,7 @@ test('ViewContent - No Consent (pixel disabled)', async ({ page }, testInfo) => 
     expect(fbc).toBeUndefined();
     console.log('✅ No _fbp or _fbc cookies (correct)');
 
-    // 6. Cleanup
+    // 6. Cleanup - remove mu-plugin and restore connection
     console.log('🧹 Cleaning up...');
     await removePixelBlockerMuPlugin();
     await reconnectAndVerify({ enablePixel: 'yes', enableS2S: 'yes' });
