@@ -1155,8 +1155,12 @@ async function disconnectAndVerify() {
 }
 
 // Helper function to reconnect to Facebook (mimics workflow setup)
-async function reconnectAndVerify() {
-  console.log('🔄 Reconnecting to Facebook...');
+// enablePixel and enableS2S default to 'yes', pass 'no' to disable
+async function reconnectAndVerify(options = {}) {
+  const enablePixel = options.enablePixel ?? 'yes';
+  const enableS2S = options.enableS2S ?? 'yes';
+
+  console.log(`🔄 Reconnecting to Facebook (pixel=${enablePixel}, s2s=${enableS2S})...`);
 
   const before = await getConnectionStatus();
   if (before.connected) {
@@ -1176,7 +1180,7 @@ async function reconnectAndVerify() {
   // Deactivate, set options, reactivate
   await execWP(`deactivate_plugins('facebook-for-woocommerce/facebook-for-woocommerce.php');`);
 
-  const options = [
+  const dbOptions = [
     ['wc_facebook_access_token', creds.accessToken],
     ['wc_facebook_merchant_access_token', creds.accessToken],
     ['wc_facebook_business_manager_id', creds.businessManagerId],
@@ -1184,8 +1188,8 @@ async function reconnectAndVerify() {
     ['wc_facebook_product_catalog_id', creds.productCatalogId],
     ['wc_facebook_pixel_id', creds.pixelId],
     ['wc_facebook_page_id', creds.pageId],
-    ['wc_facebook_enable_server_to_server', 'yes'],
-    ['wc_facebook_enable_pixel', 'yes'],
+    ['wc_facebook_enable_server_to_server', enableS2S],
+    ['wc_facebook_enable_pixel', enablePixel],
     ['wc_facebook_enable_advanced_matching', 'yes'],
     ['wc_facebook_debug_mode', 'yes'],
     ['wc_facebook_enable_debug_mode', 'yes'],
@@ -1194,7 +1198,7 @@ async function reconnectAndVerify() {
     ['wc_facebook_enable_product_sync', 'yes']
   ];
 
-  for (const [name, value] of options) {
+  for (const [name, value] of dbOptions) {
     await execWP(`update_option('${name}', '${value}');`);
   }
 
@@ -1285,23 +1289,55 @@ async function verifyProductsFacebookFieldsCleared() {
 // Helper function to install and activate a plugin from wordpress.org
 async function installPlugin(slug) {
   console.log(`📦 Installing plugin: ${slug}...`);
-  
-  // Install and activate via WP-CLI (can't use execWP - this is CLI, not PHP)
+
+  // Install and activate via WP-CLI
   await execAsync(
     `cd ${wpSitePath} && wp plugin install ${slug} --activate --allow-root 2>&1`,
     { cwd: __dirname }
   );
-  
-  // Verify plugin is active using WordPress - is_plugin_active returns bool
+
+  // Verify plugin is active
   const { stdout } = await execWP(
     `echo is_plugin_active('${slug}/${slug}.php') ? '1' : '0';`
   );
-  
+
   if (stdout.trim() !== '1') {
     throw new Error(`Plugin ${slug} failed to activate`);
   }
-  
+
   console.log(`✅ ${slug} installed and active`);
+}
+
+// Helper function to uninstall a plugin
+async function uninstallPlugin(slug) {
+  console.log(`🗑️ Uninstalling plugin: ${slug}...`);
+  await execAsync(
+    `cd ${wpSitePath} && wp plugin deactivate ${slug} --allow-root 2>&1 || true`,
+    { cwd: __dirname }
+  );
+  await execAsync(
+    `cd ${wpSitePath} && wp plugin uninstall ${slug} --allow-root 2>&1 || true`,
+    { cwd: __dirname }
+  );
+  console.log(`✅ ${slug} uninstalled`);
+}
+
+// Helper to install mu-plugin that disables pixel tracking
+async function installPixelBlockerMuPlugin() {
+  const muPluginDir = `${wpSitePath}/wp-content/mu-plugins`;
+  const muPluginFile = `${muPluginDir}/e2e-pixel-blocker.php`;
+  const code = `<?php\nadd_filter('facebook_for_woocommerce_integration_pixel_enabled', '__return_false', 999);\n`;
+
+  await execAsync(`mkdir -p "${muPluginDir}"`, { cwd: __dirname });
+  await execAsync(`echo '${code}' > "${muPluginFile}"`, { cwd: __dirname });
+  console.log('🚫 Pixel blocker mu-plugin installed');
+}
+
+// Helper to remove the pixel blocker mu-plugin
+async function removePixelBlockerMuPlugin() {
+  const muPluginFile = `${wpSitePath}/wp-content/mu-plugins/e2e-pixel-blocker.php`;
+  await execAsync(`rm -f "${muPluginFile}"`, { cwd: __dirname });
+  console.log('✅ Pixel blocker mu-plugin removed');
 }
 
 module.exports = {
@@ -1311,6 +1347,9 @@ module.exports = {
   ERROR_WHITELIST,
   execWP,
   installPlugin,
+  uninstallPlugin,
+  installPixelBlockerMuPlugin,
+  removePixelBlockerMuPlugin,
   loginToWordPress,
   safeScreenshot,
   cleanupProduct,
