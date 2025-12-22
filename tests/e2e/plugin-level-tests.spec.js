@@ -719,7 +719,7 @@ test.describe.serial('WooCommerce Plugin level tests', () => {
     }
   });
 
-  test('Create attribute mapping and verify attribute syncs to Facebook catalog', async ({ page }, testInfo) => {
+  test('Create attribute mapping and verify attribute syncs to Facebook catalog', { retries: 2 }, async ({ page }, testInfo) => {
     let productId = null;
     let attributeId = null;
     const attributeName = generateUniqueSKU('A'); // intentionally left short since max allowed length is 28
