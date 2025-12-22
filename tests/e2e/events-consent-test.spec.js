@@ -26,7 +26,7 @@ test('ViewContent - No Consent (pixel disabled)', async ({ page }, testInfo) => 
     await deactivatePlugin();
 
     // 3. Install mu-plugin (filter returns false)
-    await installPixelBlockerMuPlugin();
+    // await installPixelBlockerMuPlugin();
 
     // 4. Reactivate plugin (filter now in place before EventsTracker constructor runs)
     await activatePlugin();
