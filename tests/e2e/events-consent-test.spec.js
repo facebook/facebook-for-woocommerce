@@ -26,7 +26,7 @@ test('ViewContent - No Consent (pixel disabled)', async ({ page }, testInfo) => 
     await deactivatePlugin();
 
     // 3. Install mu-plugin (filter returns false)
-    // await installPixelBlockerMuPlugin();
+    await installPixelBlockerMuPlugin();
 
     // 4. Reactivate plugin (filter now in place before EventsTracker constructor runs)
     await activatePlugin();
@@ -47,7 +47,7 @@ test('ViewContent - No Consent (pixel disabled)', async ({ page }, testInfo) => 
     const result = await validator.validate('ViewContent', page);
 
     TestSetup.logResult('ViewContent (No Consent)', result);
-    // expect(result.passed).toBe(true);
+    expect(result.passed).toBe(true);
 
     // 6. Validate cookies - _fbp and _fbc should NOT exist after page load
     console.log('🍪 Checking cookies were not set...');

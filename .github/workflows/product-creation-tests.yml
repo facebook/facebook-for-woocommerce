@@ -548,7 +548,6 @@ jobs:
           sudo apt-get install -y xvfb
 
       - name: Run Plugin level tests
-        if: false
         run: |
           cd ${{ env.PLUGIN_PATH }}
           npx playwright test "plugin-.*\.spec\.js" --project=chromium-wp-admin
@@ -556,7 +555,7 @@ jobs:
       - name: Run CAPI Pixel E2E tests
         run: |
           cd ${{ env.PLUGIN_PATH }}
-          # xvfb-run --auto-servernum npx playwright test events-test.spec.js --headed --project=chromium-wp-customer
+          xvfb-run --auto-servernum npx playwright test events-test.spec.js --headed --project=chromium-wp-customer
           xvfb-run --auto-servernum npx playwright test events-consent-test.spec.js --headed --project=chromium-wp-customer
 
       - name: Cleanup test product
@@ -571,8 +570,6 @@ jobs:
           fi
 
       - name: Run E2E tests
-        if: false
-        continue-on-error: true
         run: |
           cd ${{ env.PLUGIN_PATH }}
           npx playwright test "product-.*\.spec\.js" --project=chromium-wp-admin
