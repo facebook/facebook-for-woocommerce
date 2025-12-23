@@ -96,7 +96,7 @@ jobs:
           extensions: mysqli, zip, gd, curl, dom, fileinfo, mbstring
           ini-values: |
             date.timezone=UTC
-            memory_limit=512M
+            memory_limit=1024M
             max_execution_time=300
 
       - name: Configure hostname
@@ -547,16 +547,17 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y xvfb
 
-      - name: Run Plugin level tests
+      - name: Run Plugin level tests (sequential)
         run: |
           cd ${{ env.PLUGIN_PATH }}
-          npx playwright test "plugin-.*\.spec\.js" --project=chromium-wp-admin
+          npx playwright test plugin-level-tests.spec.js --project=chromium-wp-admin --workers=1
 
-      - name: Run CAPI Pixel E2E tests
+      - name: Run CAPI Pixel E2E tests (sequential)
         run: |
           cd ${{ env.PLUGIN_PATH }}
-          xvfb-run --auto-servernum npx playwright test events-test.spec.js --headed --project=chromium-wp-customer
-          xvfb-run --auto-servernum npx playwright test events-consent-test.spec.js --headed --project=chromium-wp-customer
+          xvfb-run --auto-servernum npx playwright test events-test.spec.js --headed --project=chromium-wp-customer --workers=1
+          xvfb-run --auto-servernum npx playwright test events-consent-test.spec.js --headed --project=chromium-wp-customer  --workers=1
+
 
       - name: Cleanup test product
         if: always()
@@ -569,10 +570,20 @@ jobs:
             echo "ℹ️ No test product to delete"
           fi
 
-      - name: Run E2E tests
+      - name: Run Product CRUD tests (parallel)
         run: |
           cd ${{ env.PLUGIN_PATH }}
-          npx playwright test "product-.*\.spec\.js" --project=chromium-wp-admin
+          npx playwright test "product-(creation|modification|deletion).spec.js" --project=chromium-wp-admin --workers=2
+
+      - name: Run Product Batch tests (sequential)
+        run: |
+          cd ${{ env.PLUGIN_PATH }}
+          npx playwright test product-batch.spec.js --project=chromium-wp-admin --workers=1
+
+      - name: Run Product Category tests (sequential)
+        run: |
+          cd ${{ env.PLUGIN_PATH }}
+          npx playwright test product-category.spec.js --project=chromium-wp-admin --workers=1
 
       - name: Disconnect from catalog
         if: always()

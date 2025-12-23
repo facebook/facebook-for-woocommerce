@@ -15,7 +15,7 @@ const {
     cleanupCategory
 } = require('./test-helpers');
 
-test.describe.serial('Facebook for WooCommerce - Product Category E2E Tests', () => {
+test.describe('Facebook for WooCommerce - Product Category E2E Tests', () => {
 
     test.beforeEach(async ({ page }, testInfo) => {
         // Log test start first for proper chronological order

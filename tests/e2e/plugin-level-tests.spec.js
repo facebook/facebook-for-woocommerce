@@ -10,7 +10,7 @@ const COMPAT_PLUGINS = [
   { slug: 'subscriptions-for-woocommerce', name: 'Subscriptions For WooCommerce' },
 ];
 
-test.describe.serial('WooCommerce Plugin level tests', () => {
+test.describe('WooCommerce Plugin level tests', () => {
 
   test.beforeEach(async ({ page }, testInfo) => {
     // Log test start first for proper chronological order
