@@ -557,6 +557,7 @@ jobs:
           cd ${{ env.PLUGIN_PATH }}
           xvfb-run --auto-servernum npx playwright test events-test.spec.js --headed --project=chromium-wp-customer --workers=1
 
+
       - name: Cleanup test product
         if: always()
         run: |

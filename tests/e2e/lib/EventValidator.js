@@ -395,7 +395,13 @@ class EventValidator {
             const data = await fs.readFile(debugLogPath, 'utf8');
             const lines = data.split('\n');
             const criticalErrors = lines.filter(line => {
-                return /fatal|error/i.test(line) && !/warning/i.test(line);
+                // Must contain fatal or error (case insensitive)
+                if (!/fatal|error/i.test(line)) return false;
+                // Exclude warnings
+                if (/warning/i.test(line)) return false;
+                // Exclude known non-critical errors (same as workflow)
+                if (/Cron reschedule event error/i.test(line)) return false;
+                return true;
             });
 
             if (criticalErrors.length > 0) {

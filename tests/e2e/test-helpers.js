@@ -1096,16 +1096,30 @@ async function completePurchaseFlow(page, productUrl = null) {
 // Helper to get connection status
 async function getConnectionStatus() {
   const { stdout } = await execWP(
-    `\\$conn = facebook_for_woocommerce()->get_connection_handler();
-    echo json_encode([
-      'connected' => \\$conn->is_connected(),
-      'pixel_id' => get_option('wc_facebook_pixel_id'),
-      'catalog_id' => get_option('wc_facebook_product_catalog_id'),
-      'facebook_config' => get_option('facebook_config'),
-      'access_token' => get_option('wc_facebook_access_token'),
-      'merchant_access_token' => get_option('wc_facebook_merchant_access_token'),
-      'external_business_id' => \\$conn->get_external_business_id()
-    ]);`
+    `if (!function_exists('facebook_for_woocommerce')) {
+      echo json_encode([
+        'connected' => false,
+        'plugin_active' => false,
+        'pixel_id' => get_option('wc_facebook_pixel_id'),
+        'catalog_id' => get_option('wc_facebook_product_catalog_id'),
+        'facebook_config' => get_option('facebook_config'),
+        'access_token' => get_option('wc_facebook_access_token'),
+        'merchant_access_token' => get_option('wc_facebook_merchant_access_token'),
+        'external_business_id' => null
+      ]);
+    } else {
+      \\$conn = facebook_for_woocommerce()->get_connection_handler();
+      echo json_encode([
+        'connected' => \\$conn->is_connected(),
+        'plugin_active' => true,
+        'pixel_id' => get_option('wc_facebook_pixel_id'),
+        'catalog_id' => get_option('wc_facebook_product_catalog_id'),
+        'facebook_config' => get_option('facebook_config'),
+        'access_token' => get_option('wc_facebook_access_token'),
+        'merchant_access_token' => get_option('wc_facebook_merchant_access_token'),
+        'external_business_id' => \\$conn->get_external_business_id()
+      ]);
+    }`
   );
   return JSON.parse(stdout);
 }
@@ -1155,8 +1169,12 @@ async function disconnectAndVerify() {
 }
 
 // Helper function to reconnect to Facebook (mimics workflow setup)
-async function reconnectAndVerify() {
-  console.log('🔄 Reconnecting to Facebook...');
+// enablePixel and enableS2S default to 'yes', pass 'no' to disable
+async function reconnectAndVerify(options = {}) {
+  const enablePixel = options.enablePixel ?? 'yes';
+  const enableS2S = options.enableS2S ?? 'yes';
+
+  console.log(`🔄 Reconnecting to Facebook (pixel=${enablePixel}, s2s=${enableS2S})...`);
 
   const before = await getConnectionStatus();
   if (before.connected) {
@@ -1174,9 +1192,11 @@ async function reconnectAndVerify() {
   };
 
   // Deactivate, set options, reactivate
+  console.log('   Deactivating plugin...');
   await execWP(`deactivate_plugins('facebook-for-woocommerce/facebook-for-woocommerce.php');`);
 
-  const options = [
+  console.log('   Setting options...');
+  const dbOptions = [
     ['wc_facebook_access_token', creds.accessToken],
     ['wc_facebook_merchant_access_token', creds.accessToken],
     ['wc_facebook_business_manager_id', creds.businessManagerId],
@@ -1184,8 +1204,8 @@ async function reconnectAndVerify() {
     ['wc_facebook_product_catalog_id', creds.productCatalogId],
     ['wc_facebook_pixel_id', creds.pixelId],
     ['wc_facebook_page_id', creds.pageId],
-    ['wc_facebook_enable_server_to_server', 'yes'],
-    ['wc_facebook_enable_pixel', 'yes'],
+    ['wc_facebook_enable_server_to_server', enableS2S],
+    ['wc_facebook_enable_pixel', enablePixel],
     ['wc_facebook_enable_advanced_matching', 'yes'],
     ['wc_facebook_debug_mode', 'yes'],
     ['wc_facebook_enable_debug_mode', 'yes'],
@@ -1194,13 +1214,13 @@ async function reconnectAndVerify() {
     ['wc_facebook_enable_product_sync', 'yes']
   ];
 
-  for (const [name, value] of options) {
+  for (const [name, value] of dbOptions) {
     await execWP(`update_option('${name}', '${value}');`);
   }
 
   // Step 4: Activate plugin to trigger initialization with new options
   console.log('🔄 Activating plugin to initialize connection...');
-  await execWP(`activate_plugin('facebook-for-woocommerce/facebook-for-woocommerce.php');`);
+  await execWP(`activate_plugins('facebook-for-woocommerce/facebook-for-woocommerce.php');`);
 
   // Verify reconnection
   const after = await getConnectionStatus();
@@ -1285,23 +1305,84 @@ async function verifyProductsFacebookFieldsCleared() {
 // Helper function to install and activate a plugin from wordpress.org
 async function installPlugin(slug) {
   console.log(`📦 Installing plugin: ${slug}...`);
-  
-  // Install and activate via WP-CLI (can't use execWP - this is CLI, not PHP)
+
+  // Install and activate via WP-CLI
   await execAsync(
     `cd ${wpSitePath} && wp plugin install ${slug} --activate --allow-root 2>&1`,
     { cwd: __dirname }
   );
-  
-  // Verify plugin is active using WordPress - is_plugin_active returns bool
+
+  // Verify plugin is active
+  console.log(`   Verifying activation...`);
   const { stdout } = await execWP(
     `echo is_plugin_active('${slug}/${slug}.php') ? '1' : '0';`
   );
-  
+
   if (stdout.trim() !== '1') {
     throw new Error(`Plugin ${slug} failed to activate`);
   }
-  
+
   console.log(`✅ ${slug} installed and active`);
+}
+
+// Helper function to uninstall a plugin
+async function uninstallPlugin(slug) {
+  console.log(`🗑️ Uninstalling plugin: ${slug}...`);
+  await execAsync(
+    `cd ${wpSitePath} && wp plugin deactivate ${slug} --allow-root 2>&1 || true`,
+    { cwd: __dirname }
+  );
+  await execAsync(
+    `cd ${wpSitePath} && wp plugin uninstall ${slug} --allow-root 2>&1 || true`,
+    { cwd: __dirname }
+  );
+  console.log(`✅ ${slug} uninstalled`);
+}
+
+// Helper to install mu-plugin that disables pixel tracking
+async function installPixelBlockerMuPlugin() {
+  const fs = require('fs');
+  const path = require('path');
+
+  console.log('🔧 Installing pixel blocker mu-plugin...');
+  const muPluginDir = `${wpSitePath}/wp-content/mu-plugins`;
+  const muPluginFile = `${muPluginDir}/e2e-pixel-blocker.php`;
+  const code = `<?php\nadd_filter('facebook_for_woocommerce_integration_pixel_enabled', '__return_false', 999);\n`;
+
+  console.log(`   Creating dir: ${muPluginDir}`);
+  fs.mkdirSync(muPluginDir, { recursive: true });
+
+  console.log(`   Writing: ${muPluginFile}`);
+  fs.writeFileSync(muPluginFile, code);
+
+  console.log('✅ Pixel blocker mu-plugin installed');
+}
+
+// Helper to remove the pixel blocker mu-plugin
+async function removePixelBlockerMuPlugin() {
+  const fs = require('fs');
+
+  console.log('🧹 Removing pixel blocker mu-plugin...');
+  const muPluginFile = `${wpSitePath}/wp-content/mu-plugins/e2e-pixel-blocker.php`;
+
+  if (fs.existsSync(muPluginFile)) {
+    fs.unlinkSync(muPluginFile);
+  }
+  console.log('✅ Pixel blocker mu-plugin removed');
+}
+
+// Helper to deactivate the FB plugin
+async function deactivatePlugin() {
+  console.log('🔌 Deactivating plugin...');
+  await execWP(`deactivate_plugins('facebook-for-woocommerce/facebook-for-woocommerce.php');`);
+  console.log('✅ Plugin deactivated');
+}
+
+// Helper to just activate the FB plugin (no validation)
+async function activatePlugin() {
+  console.log('🔌 Activating plugin...');
+  await execWP(`activate_plugins('facebook-for-woocommerce/facebook-for-woocommerce.php');`);
+  console.log('✅ Plugin activated');
 }
 
 module.exports = {
@@ -1311,6 +1392,11 @@ module.exports = {
   ERROR_WHITELIST,
   execWP,
   installPlugin,
+  uninstallPlugin,
+  deactivatePlugin,
+  activatePlugin,
+  installPixelBlockerMuPlugin,
+  removePixelBlockerMuPlugin,
   loginToWordPress,
   safeScreenshot,
   cleanupProduct,
