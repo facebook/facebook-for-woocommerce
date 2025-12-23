@@ -874,54 +874,27 @@ test.describe('WooCommerce Plugin level tests', () => {
 
       //  Validate Facebook sync and ensure 'color' field returns the attribute value
       console.log('🔄 Validating Facebook sync...');
-      const maxRetries = 3;
-      let lastError = null;
+      const syncResult = await validateFacebookSync(productId, createdProduct.productName, 30);
 
-      for (let attempt = 1; attempt <= maxRetries; attempt++) {
-        try {
-          console.log(`   Attempt ${attempt}/${maxRetries}...`);
-          const syncResult = await validateFacebookSync(productId, createdProduct.productName, 30);
+      expect(syncResult.success).toBe(true);
+      console.log('✅ Facebook sync validation successful');
 
-          if (!syncResult.success) {
-            throw new Error('Facebook sync validation failed');
-          }
-          console.log('✅ Facebook sync validation successful');
+      // Check the color field in the Facebook data
+      const facebookData = syncResult['raw_data']['facebook_data'];
+      const colorValue = facebookData[0]['color'];
+      console.log(`📊 Facebook color field value: ${colorValue}`);
 
-          // Check the color field in the Facebook data
-          const facebookData = syncResult['raw_data']['facebook_data'];
-          const colorValue = facebookData[0]['color'];
-          console.log(`📊 Facebook color field value: ${colorValue}`);
+      // Verify the color value matches one of our attribute options
+      const validColors = attributeOptions.map(opt => opt.toLowerCase());
+      const colorLower = colorValue ? colorValue.toLowerCase() : '';
+      const colorMatches = validColors.some(valid => colorLower.includes(valid.toLowerCase()));
 
-          // Verify the color value matches one of our attribute options
-          const validColors = attributeOptions.map(opt => opt.toLowerCase());
-          const colorLower = colorValue ? colorValue.toLowerCase() : '';
-          const colorMatches = validColors.some(valid => colorLower.includes(valid.toLowerCase()));
-
-          if (colorMatches) {
-            console.log(`✅ Color field correctly contains attribute value(s): ${colorValue}`);
-          } else {
-            console.log(`⚠️ Color field value "${colorValue}" - verifying it was set from attribute mapping`);
-            if (!colorValue) {
-              //The color might be formatted differently, just ensure it exists
-              throw new Error('Color value is empty');
-            }
-          }
-
-          // Success - exit retry loop
-          lastError = null;
-          break;
-        } catch (retryError) {
-          lastError = retryError;
-          console.log(`   ⚠️ Attempt ${attempt} failed: ${retryError.message}`);
-          if (attempt < maxRetries) {
-            console.log(`   Waiting 10s before retry...`);
-            await page.waitForTimeout(TIMEOUTS.LONG);
-          }
-        }
-      }
-
-      if (lastError) {
-        throw lastError;
+      if (colorMatches) {
+        console.log(`✅ Color field correctly contains attribute value(s): ${colorValue}`);
+      } else {
+        console.log(`⚠️ Color field value "${colorValue}" - verifying it was set from attribute mapping`);
+        // The color might be formatted differently, just ensure it exists
+        expect(colorValue).toBeTruthy();
       }
 
       console.log('✅ Attribute mapping test completed successfully');
