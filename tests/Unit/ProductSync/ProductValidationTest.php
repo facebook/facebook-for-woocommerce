@@ -875,10 +875,24 @@ class ProductValidatorTest extends AbstractWPUnitTestWithOptionIsolationAndSafeF
 
 		$validator = new ProductValidator( $this->integration, $this->product );
 
-		// We expect _doing_it_wrong to be called, which triggers a warning
-		// We'll use error suppression and check the return value
-		$result = @$validator->facebook_product;
+		// Track if _doing_it_wrong was called
+		$doing_it_wrong_called = false;
+		$this->add_filter_with_safe_teardown(
+			'doing_it_wrong_trigger_error',
+			function( $trigger, $function_name ) use ( &$doing_it_wrong_called ) {
+				if ( '__get' === $function_name ) {
+					$doing_it_wrong_called = true;
+				}
+				return false; // Prevent the actual error from being triggered
+			},
+			10,
+			2
+		);
 
+		$result = $validator->facebook_product;
+
+		// Verify the deprecation warning was triggered
+		$this->assertTrue( $doing_it_wrong_called, 'Expected _doing_it_wrong to be called for facebook_product property access' );
 		// Should return the facebook_product object despite the deprecation warning
 		$this->assertInstanceOf( \WC_Facebook_Product::class, $result );
 	}
@@ -891,8 +905,13 @@ class ProductValidatorTest extends AbstractWPUnitTestWithOptionIsolationAndSafeF
 
 		$validator = new ProductValidator( $this->integration, $this->product );
 
-		// Suppress the deprecation warning and check the value
-		$facebook_product = @$validator->facebook_product;
+		// Suppress the deprecation notice for this test since we only care about the return value
+		$this->add_filter_with_safe_teardown(
+			'doing_it_wrong_trigger_error',
+			'__return_false'
+		);
+
+		$facebook_product = $validator->facebook_product;
 
 		$this->assertNotNull( $facebook_product );
 		$this->assertInstanceOf( \WC_Facebook_Product::class, $facebook_product );
