@@ -242,4 +242,250 @@ class AAMSettingsTest extends AbstractWPUnitTestWithOptionIsolationAndSafeFilter
 		$this->assertEquals( [ 'em' ], $settings->get_enabled_automatic_matching_fields() );
 		$this->assertEquals( '123', $settings->get_pixel_id() );
 	}
+
+	/**
+	 * Test build_from_pixel_id with successful response.
+	 *
+	 * @covers AAMSettings::build_from_pixel_id
+	 */
+	public function test_build_from_pixel_id_with_successful_response() {
+		$pixel_id = '1234567890';
+		$expected_url = 'https://connect.facebook.net/signals/config/json/' . $pixel_id;
+		
+		$response_body = [
+			'matchingConfig' => [
+				'enableAutomaticMatching' => true,
+				'enabledAutomaticMatchingFields' => [ 'em', 'fn' ],
+			],
+		];
+		
+		$filter = $this->add_filter_with_safe_teardown(
+			'pre_http_request',
+			function( $preempt, $args, $url ) use ( $expected_url, $response_body ) {
+				if ( $url === $expected_url ) {
+					return [
+						'body' => wp_json_encode( $response_body ),
+						'response' => [ 'code' => 200 ],
+					];
+				}
+				return $preempt;
+			},
+			10,
+			3
+		);
+		
+		$settings = AAMSettings::build_from_pixel_id( $pixel_id );
+		
+		$this->assertInstanceOf( AAMSettings::class, $settings );
+		$this->assertTrue( $settings->get_enable_automatic_matching() );
+		$this->assertEquals( [ 'em', 'fn' ], $settings->get_enabled_automatic_matching_fields() );
+		$this->assertEquals( $pixel_id, $settings->get_pixel_id() );
+		
+		$filter->teardown_safely_immediately();
+	}
+
+	/**
+	 * Test build_from_pixel_id with WP_Error.
+	 *
+	 * @covers AAMSettings::build_from_pixel_id
+	 */
+	public function test_build_from_pixel_id_with_wp_error() {
+		$pixel_id = '1234567890';
+		$expected_url = 'https://connect.facebook.net/signals/config/json/' . $pixel_id;
+		
+		$filter = $this->add_filter_with_safe_teardown(
+			'pre_http_request',
+			function( $preempt, $args, $url ) use ( $expected_url ) {
+				if ( $url === $expected_url ) {
+					return new \WP_Error( 'http_request_failed', 'Connection timeout' );
+				}
+				return $preempt;
+			},
+			10,
+			3
+		);
+		
+		$settings = AAMSettings::build_from_pixel_id( $pixel_id );
+		
+		$this->assertNull( $settings );
+		
+		$filter->teardown_safely_immediately();
+	}
+
+	/**
+	 * Test build_from_pixel_id with error message in response.
+	 *
+	 * @covers AAMSettings::build_from_pixel_id
+	 */
+	public function test_build_from_pixel_id_with_error_message_in_response() {
+		$pixel_id = '1234567890';
+		$expected_url = 'https://connect.facebook.net/signals/config/json/' . $pixel_id;
+		
+		$response_body = [
+			'errorMessage' => 'Invalid pixel ID',
+		];
+		
+		$filter = $this->add_filter_with_safe_teardown(
+			'pre_http_request',
+			function( $preempt, $args, $url ) use ( $expected_url, $response_body ) {
+				if ( $url === $expected_url ) {
+					return [
+						'body' => wp_json_encode( $response_body ),
+						'response' => [ 'code' => 400 ],
+					];
+				}
+				return $preempt;
+			},
+			10,
+			3
+		);
+		
+		$settings = AAMSettings::build_from_pixel_id( $pixel_id );
+		
+		$this->assertNull( $settings );
+		
+		$filter->teardown_safely_immediately();
+	}
+
+	/**
+	 * Test build_from_pixel_id with missing matching config.
+	 *
+	 * @covers AAMSettings::build_from_pixel_id
+	 */
+	public function test_build_from_pixel_id_with_missing_matching_config() {
+		$pixel_id = '1234567890';
+		$expected_url = 'https://connect.facebook.net/signals/config/json/' . $pixel_id;
+		
+		$response_body = [
+			'someOtherData' => 'value',
+		];
+		
+		$filter = $this->add_filter_with_safe_teardown(
+			'pre_http_request',
+			function( $preempt, $args, $url ) use ( $expected_url, $response_body ) {
+				if ( $url === $expected_url ) {
+					return [
+						'body' => wp_json_encode( $response_body ),
+						'response' => [ 'code' => 200 ],
+					];
+				}
+				return $preempt;
+			},
+			10,
+			3
+		);
+		
+		$settings = AAMSettings::build_from_pixel_id( $pixel_id );
+		
+		$this->assertNull( $settings );
+		
+		$filter->teardown_safely_immediately();
+	}
+
+	/**
+	 * Test build_from_pixel_id with invalid JSON response.
+	 *
+	 * @covers AAMSettings::build_from_pixel_id
+	 */
+	public function test_build_from_pixel_id_with_invalid_json_response() {
+		$pixel_id = '1234567890';
+		$expected_url = 'https://connect.facebook.net/signals/config/json/' . $pixel_id;
+		
+		$filter = $this->add_filter_with_safe_teardown(
+			'pre_http_request',
+			function( $preempt, $args, $url ) use ( $expected_url ) {
+				if ( $url === $expected_url ) {
+					return [
+						'body' => 'invalid json {{{',
+						'response' => [ 'code' => 200 ],
+					];
+				}
+				return $preempt;
+			},
+			10,
+			3
+		);
+		
+		$settings = AAMSettings::build_from_pixel_id( $pixel_id );
+		
+		$this->assertNull( $settings );
+		
+		$filter->teardown_safely_immediately();
+	}
+
+	/**
+	 * Test build_from_pixel_id with empty response.
+	 *
+	 * @covers AAMSettings::build_from_pixel_id
+	 */
+	public function test_build_from_pixel_id_with_empty_response() {
+		$pixel_id = '1234567890';
+		$expected_url = 'https://connect.facebook.net/signals/config/json/' . $pixel_id;
+		
+		$filter = $this->add_filter_with_safe_teardown(
+			'pre_http_request',
+			function( $preempt, $args, $url ) use ( $expected_url ) {
+				if ( $url === $expected_url ) {
+					return [
+						'body' => '',
+						'response' => [ 'code' => 200 ],
+					];
+				}
+				return $preempt;
+			},
+			10,
+			3
+		);
+		
+		$settings = AAMSettings::build_from_pixel_id( $pixel_id );
+		
+		$this->assertNull( $settings );
+		
+		$filter->teardown_safely_immediately();
+	}
+
+	/**
+	 * Test build_from_pixel_id with complete matching config.
+	 *
+	 * @covers AAMSettings::build_from_pixel_id
+	 */
+	public function test_build_from_pixel_id_with_complete_matching_config() {
+		$pixel_id = '9876543210';
+		$expected_url = 'https://connect.facebook.net/signals/config/json/' . $pixel_id;
+		
+		$response_body = [
+			'matchingConfig' => [
+				'enableAutomaticMatching' => true,
+				'enabledAutomaticMatchingFields' => [ 'em', 'fn', 'ln', 'ph', 'ct', 'st', 'zp', 'country' ],
+			],
+			'otherData' => 'should be ignored',
+		];
+		
+		$filter = $this->add_filter_with_safe_teardown(
+			'pre_http_request',
+			function( $preempt, $args, $url ) use ( $expected_url, $response_body ) {
+				if ( $url === $expected_url ) {
+					return [
+						'body' => wp_json_encode( $response_body ),
+						'response' => [ 'code' => 200 ],
+					];
+				}
+				return $preempt;
+			},
+			10,
+			3
+		);
+		
+		$settings = AAMSettings::build_from_pixel_id( $pixel_id );
+		
+		$this->assertInstanceOf( AAMSettings::class, $settings );
+		$this->assertTrue( $settings->get_enable_automatic_matching() );
+		$this->assertEquals( 
+			[ 'em', 'fn', 'ln', 'ph', 'ct', 'st', 'zp', 'country' ], 
+			$settings->get_enabled_automatic_matching_fields() 
+		);
+		$this->assertEquals( $pixel_id, $settings->get_pixel_id() );
+		
+		$filter->teardown_safely_immediately();
+	}
 } 
