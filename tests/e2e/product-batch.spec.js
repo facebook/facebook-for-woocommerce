@@ -453,11 +453,6 @@ test.describe('Facebook for WooCommerce - Product Batch Import E2E Tests', () =>
 
       await checkForPhpErrors(page);
 
-      await page.goto(`${baseURL}/wp-admin/edit.php?post_type=product&product_cat=${feedCategorySlug}`, {
-        waitUntil: 'domcontentloaded',
-        timeout: TIMEOUTS.MAX
-      });
-
       const productDataJson = execSync(
         `wp post list --post_type=product --product_cat=${feedCategorySlug} --fields=ID,post_title --format=json`,
         { cwd: wpSitePath, encoding: 'utf8' }
