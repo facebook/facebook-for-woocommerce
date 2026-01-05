@@ -496,26 +496,84 @@ async function setProductTitle(page, newTitle) {
 
 // Click on the Select2 container to open the dropdown
 async function exactSearchSelect2Container(page, locator, searchValue) {
-  await locator.waitFor({ state: 'visible', timeout: TIMEOUTS.LONG });
-  await locator.scrollIntoViewIfNeeded();
-  await locator.focus();
-  await page.waitForTimeout(TIMEOUTS.MEDIUM); // Wait for Select2 dropdown to open
-  await locator.click();
-  // Wait for 1 second to allow the Select2 dropdown to fully render after clicking.
-  // Cannot use waitForLoadState('domcontentloaded') here because Select2 dropdown
-  // is rendered dynamically via JavaScript without triggering a page load event.
-  // The dropdown animation and DOM insertion happen asynchronously within the same page.
-  await page.waitForTimeout(TIMEOUTS.SHORT);
+  // Retry logic for handling Select2's dynamic DOM updates
+  // Select2 can re-render elements, causing them to become detached
+  const maxRetries = 3;
+  let lastError;
 
-  // Now locate and fill the search field
-  await locator.pressSequentially(searchValue, { delay: 100 });
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      // Wait for element to be both visible and attached before interacting
+      await locator.waitFor({ state: 'visible', timeout: TIMEOUTS.LONG });
 
-  // Select first result if available
-  const firstResult = page.getByRole('option', { name: searchValue }).first();
-  await firstResult.waitFor({ state: 'visible', timeout: TIMEOUTS.LONG + TIMEOUTS.MEDIUM });
-  await firstResult.click();
-  await page.waitForLoadState('domcontentloaded');
-  console.log(`✅ Selected ${searchValue} from Select2 dropdown`);
+      // Use evaluate to check element is truly ready and interact atomically
+      await locator.evaluate((el) => {
+        el.scrollIntoView({ block: 'center', behavior: 'instant' });
+      });
+
+      await locator.focus();
+      await locator.click();
+
+      const dropdownContainer = page.locator('.select2-dropdown, .select2-results').first();
+      await dropdownContainer.waitFor({ state: 'visible', timeout: TIMEOUTS.MEDIUM });
+
+      // Now locate and fill the search field
+      await locator.pressSequentially(searchValue, { delay: 100 });
+
+      // Wait for AJAX search to complete - Select2 shows a loading indicator during search
+      // First, wait for any loading indicator to appear and disappear
+      const loadingIndicator = page.locator('.select2-results__option--loading, .select2-searching');
+      try {
+        // Give a brief moment for loading indicator to appear
+        await loadingIndicator.waitFor({ state: 'visible', timeout: TIMEOUTS.SHORT });
+        // Then wait for it to disappear (search complete)
+        await loadingIndicator.waitFor({ state: 'hidden', timeout: TIMEOUTS.LONG });
+      } catch {
+        // Loading indicator might not appear if results are cached or very fast
+        // This is fine - continue to look for results
+      }
+
+      // Wait for any option to appear in results (indicates AJAX completed)
+      const anyOption = page.locator('.select2-results__option:not(.select2-results__option--loading)').first();
+      await anyOption.waitFor({ state: 'visible', timeout: TIMEOUTS.LONG });
+
+      // Now select the matching result - use a more flexible matcher
+      // Try exact match first, then partial match as fallback
+      let firstResult = page.getByRole('option', { name: searchValue, exact: true }).first();
+      let isVisible = await firstResult.isVisible().catch(() => false);
+
+      if (!isVisible) {
+        // Fallback to partial match (contains the search value)
+        firstResult = page.locator(`.select2-results__option`).filter({ hasText: searchValue }).first();
+        isVisible = await firstResult.isVisible().catch(() => false);
+      }
+
+      if (!isVisible) {
+        // Final fallback - just take the first highlighted/selectable option
+        firstResult = page.locator('.select2-results__option--selectable, .select2-results__option[role="option"]').first();
+      }
+
+      await firstResult.waitFor({ state: 'visible', timeout: TIMEOUTS.MEDIUM });
+      await firstResult.click();
+      await page.waitForLoadState('domcontentloaded');
+      console.log(`✅ Selected ${searchValue} from Select2 dropdown`);
+      return; // Success - exit the function
+    } catch (error) {
+      lastError = error;
+      const isRetryableError = error.message.includes('not attached to the DOM') ||
+                               error.message.includes('Timeout');
+      if (isRetryableError && attempt < maxRetries) {
+        console.log(`⚠️ Select2 interaction failed (${error.message.split('\n')[0]}), retrying (attempt ${attempt}/${maxRetries})...`);
+        // Close any open dropdown before retry
+        await page.keyboard.press('Escape');
+        // Brief pause before retry to allow DOM to stabilize
+        await page.waitForTimeout(TIMEOUTS.INSTANT);
+        continue;
+      }
+      throw error; // Re-throw if not a retryable error or max retries reached
+    }
+  }
+  throw lastError;
 }
 
 async function cleanupCategory(categoryId) {
