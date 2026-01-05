@@ -87,10 +87,9 @@ jobs:
 
       - name: Check coverage threshold
         if: steps.phpunit.outputs.test_status == 'passed'
-        continue-on-error: true
         run: |
           COVERAGE="${{ steps.phpunit.outputs.coverage_summary }}"
-          MIN_THRESHOLD=40
+          MIN_THRESHOLD=35
 
           echo "📈 Coverage: $COVERAGE%"
           echo "🎯 Threshold: $MIN_THRESHOLD%"
