@@ -94,6 +94,12 @@ class ProductsTest extends AbstractWPUnitTestWithOptionIsolationAndSafeFiltering
 		$this->variation->set_regular_price( '24.99' );
 		$this->variation->set_attributes( array( 'color' => 'Red' ) );
 		$this->variation->save();
+
+		// Force sync the variable product's children cache so get_children() returns the variation
+		\WC_Product_Variable::sync( $this->variable_product->get_id() );
+
+		// Reload the variable product to ensure it has the updated children
+		$this->variable_product = wc_get_product( $this->variable_product->get_id() );
 	}
 
 	/**
