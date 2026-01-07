@@ -369,7 +369,13 @@ class FacebookCommerceTest extends \WooCommerce\Facebook\Tests\AbstractWPUnitTes
 	 */
 	public function test_ajax_check_feed_upload_status() {
 		ob_start();
-		$this->integration->ajax_check_feed_upload_status();
+
+		try {
+			$this->integration->ajax_check_feed_upload_status();
+		} catch ( WPDieException $e ) {
+			// Expected - AJAX handlers call wp_die()
+		}
+
 		$output = ob_get_clean();
 
 		$response = json_decode( $output, true );
