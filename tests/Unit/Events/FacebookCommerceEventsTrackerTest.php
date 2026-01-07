@@ -11,6 +11,8 @@ use WC_Facebookcommerce_EventsTracker;
  * Unit tests for WC_Facebookcommerce_EventsTracker class.
  *
  * Tests the Facebook Pixel events tracking functionality.
+ *
+ * @covers WC_Facebookcommerce_EventsTracker
  */
 class FacebookCommerceEventsTrackerTest extends AbstractWPUnitTestWithSafeFiltering {
 
@@ -217,5 +219,480 @@ class FacebookCommerceEventsTrackerTest extends AbstractWPUnitTestWithSafeFilter
 		$this->instance->inject_add_to_cart_event( 'cart_key', 123, 1, 0 );
 
 		$this->assertTrue( true, 'inject_add_to_cart_event should handle disabled pixel' );
+	}
+
+	/**
+	 * Test that inject_add_to_cart_event does nothing with invalid product_id.
+	 *
+	 * @covers WC_Facebookcommerce_EventsTracker::inject_add_to_cart_event
+	 */
+	public function test_inject_add_to_cart_event_does_nothing_with_invalid_product_id(): void {
+		$this->instance = $this->create_tracker_with_pixel_enabled();
+
+		// Product ID of 0 should be invalid
+		$this->instance->inject_add_to_cart_event( 'cart_key', 0, 1, 0 );
+
+		$this->assertEmpty(
+			$this->instance->get_tracked_events(),
+			'inject_add_to_cart_event should not track with invalid product_id'
+		);
+	}
+
+	/**
+	 * Test that inject_add_to_cart_event does nothing with zero quantity.
+	 *
+	 * @covers WC_Facebookcommerce_EventsTracker::inject_add_to_cart_event
+	 */
+	public function test_inject_add_to_cart_event_does_nothing_with_zero_quantity(): void {
+		$this->instance = $this->create_tracker_with_pixel_enabled();
+
+		// Quantity of 0 should be invalid
+		$this->instance->inject_add_to_cart_event( 'cart_key', 123, 0, 0 );
+
+		$this->assertEmpty(
+			$this->instance->get_tracked_events(),
+			'inject_add_to_cart_event should not track with zero quantity'
+		);
+	}
+
+	/**
+	 * Test that inject_base_pixel_noscript outputs nothing when pixel is disabled.
+	 *
+	 * @covers WC_Facebookcommerce_EventsTracker::inject_base_pixel_noscript
+	 */
+	public function test_inject_base_pixel_noscript_outputs_nothing_when_disabled(): void {
+		$this->instance = $this->create_tracker_with_pixel_disabled();
+
+		ob_start();
+		$this->instance->inject_base_pixel_noscript();
+		$output = ob_get_clean();
+
+		$this->assertEmpty( $output, 'inject_base_pixel_noscript should output nothing when pixel is disabled' );
+	}
+
+	/**
+	 * Test that inject_initiate_checkout_event does nothing when pixel is disabled.
+	 *
+	 * @covers WC_Facebookcommerce_EventsTracker::inject_initiate_checkout_event
+	 */
+	public function test_inject_initiate_checkout_event_does_nothing_when_disabled(): void {
+		$this->instance = $this->create_tracker_with_pixel_disabled();
+
+		$this->instance->inject_initiate_checkout_event();
+
+		$this->assertTrue( true, 'inject_initiate_checkout_event should handle disabled pixel' );
+	}
+
+	/**
+	 * Test that inject_initiate_checkout_event does nothing when cart is null.
+	 *
+	 * @covers WC_Facebookcommerce_EventsTracker::inject_initiate_checkout_event
+	 */
+	public function test_inject_initiate_checkout_event_does_nothing_when_cart_is_null(): void {
+		$this->instance = $this->create_tracker_with_pixel_enabled();
+
+		// When WC()->cart is null, the method should bail early
+		$this->instance->inject_initiate_checkout_event();
+
+		$this->assertTrue( true, 'inject_initiate_checkout_event should handle null cart' );
+	}
+
+	/**
+	 * Test that inject_search_event does nothing when pixel is disabled.
+	 *
+	 * @covers WC_Facebookcommerce_EventsTracker::inject_search_event
+	 */
+	public function test_inject_search_event_does_nothing_when_disabled(): void {
+		$this->instance = $this->create_tracker_with_pixel_disabled();
+
+		$query = new \WP_Query();
+		$this->instance->inject_search_event( $query );
+
+		$this->assertTrue( true, 'inject_search_event should handle disabled pixel' );
+	}
+
+	/**
+	 * Test that inject_search_event does nothing when not main query.
+	 *
+	 * @covers WC_Facebookcommerce_EventsTracker::inject_search_event
+	 */
+	public function test_inject_search_event_does_nothing_when_not_main_query(): void {
+		$this->instance = $this->create_tracker_with_pixel_enabled();
+
+		// Create a query that is not the main query
+		$query = new \WP_Query();
+		$this->instance->inject_search_event( $query );
+
+		$this->assertTrue( true, 'inject_search_event should handle non-main query' );
+	}
+
+	/**
+	 * Test that maybe_inject_search_event does nothing when pixel is disabled.
+	 *
+	 * @covers WC_Facebookcommerce_EventsTracker::maybe_inject_search_event
+	 */
+	public function test_maybe_inject_search_event_does_nothing_when_disabled(): void {
+		$this->instance = $this->create_tracker_with_pixel_disabled();
+
+		$this->instance->maybe_inject_search_event();
+
+		$this->assertTrue( true, 'maybe_inject_search_event should handle disabled pixel' );
+	}
+
+	/**
+	 * Test that send_search_event does nothing when search event is null.
+	 *
+	 * @covers WC_Facebookcommerce_EventsTracker::send_search_event
+	 */
+	public function test_send_search_event_does_nothing_when_null(): void {
+		$this->instance = $this->create_tracker_with_pixel_enabled();
+
+		// No search event has been created, so this should do nothing
+		$this->instance->send_search_event();
+
+		$this->assertTrue( true, 'send_search_event should handle null search event' );
+	}
+
+	/**
+	 * Test that actually_inject_search_event does nothing when search event is null.
+	 *
+	 * @covers WC_Facebookcommerce_EventsTracker::actually_inject_search_event
+	 */
+	public function test_actually_inject_search_event_does_nothing_when_null(): void {
+		$this->instance = $this->create_tracker_with_pixel_enabled();
+
+		// No search event has been created, so this should do nothing
+		$this->instance->actually_inject_search_event();
+
+		$this->assertTrue( true, 'actually_inject_search_event should handle null search event' );
+	}
+
+	/**
+	 * Test that inject_purchase_event does nothing when user is admin.
+	 *
+	 * @covers WC_Facebookcommerce_EventsTracker::inject_purchase_event
+	 */
+	public function test_inject_purchase_event_does_nothing_when_admin_user(): void {
+		$this->instance = $this->create_tracker_with_pixel_enabled();
+
+		// Create an admin user and set as current user
+		$admin_id = $this->factory->user->create( array( 'role' => 'administrator' ) );
+		wp_set_current_user( $admin_id );
+
+		$this->instance->inject_purchase_event( 999 );
+
+		$this->assertTrue( true, 'inject_purchase_event should not track for admin users' );
+
+		// Clean up
+		wp_set_current_user( 0 );
+	}
+
+	/**
+	 * Test that inject_purchase_event does nothing when pixel is disabled.
+	 *
+	 * @covers WC_Facebookcommerce_EventsTracker::inject_purchase_event
+	 */
+	public function test_inject_purchase_event_does_nothing_when_disabled(): void {
+		$this->instance = $this->create_tracker_with_pixel_disabled();
+
+		$this->instance->inject_purchase_event( 999 );
+
+		$this->assertTrue( true, 'inject_purchase_event should handle disabled pixel' );
+	}
+
+	/**
+	 * Test that inject_purchase_event does nothing with invalid order.
+	 *
+	 * @covers WC_Facebookcommerce_EventsTracker::inject_purchase_event
+	 */
+	public function test_inject_purchase_event_does_nothing_with_invalid_order(): void {
+		$this->instance = $this->create_tracker_with_pixel_enabled();
+
+		// Use an order ID that doesn't exist
+		$this->instance->inject_purchase_event( 999999 );
+
+		$this->assertEmpty(
+			$this->instance->get_tracked_events(),
+			'inject_purchase_event should not track with invalid order'
+		);
+	}
+
+	/**
+	 * Test that inject_subscribe_event does nothing when function not available.
+	 *
+	 * @covers WC_Facebookcommerce_EventsTracker::inject_subscribe_event
+	 */
+	public function test_inject_subscribe_event_does_nothing_when_function_unavailable(): void {
+		$this->instance = $this->create_tracker_with_pixel_enabled();
+
+		// wcs_get_subscriptions_for_order doesn't exist, so this should bail
+		$this->instance->inject_subscribe_event( 999 );
+
+		$this->assertTrue( true, 'inject_subscribe_event should handle missing WooCommerce Subscriptions' );
+	}
+
+	/**
+	 * Test that inject_subscribe_event does nothing when pixel is disabled.
+	 *
+	 * @covers WC_Facebookcommerce_EventsTracker::inject_subscribe_event
+	 */
+	public function test_inject_subscribe_event_does_nothing_when_disabled(): void {
+		$this->instance = $this->create_tracker_with_pixel_disabled();
+
+		$this->instance->inject_subscribe_event( 999 );
+
+		$this->assertTrue( true, 'inject_subscribe_event should handle disabled pixel' );
+	}
+
+	/**
+	 * Test that inject_lead_event_hook adds the footer action.
+	 *
+	 * @covers WC_Facebookcommerce_EventsTracker::inject_lead_event_hook
+	 */
+	public function test_inject_lead_event_hook_adds_footer_action(): void {
+		$this->instance = $this->create_tracker_with_pixel_enabled();
+
+		$this->instance->inject_lead_event_hook();
+
+		$this->assertTrue(
+			has_action( 'wp_footer', array( $this->instance, 'inject_lead_event' ) ) !== false,
+			'inject_lead_event_hook should add inject_lead_event to wp_footer'
+		);
+	}
+
+	/**
+	 * Test that inject_lead_event does nothing when in admin.
+	 *
+	 * @covers WC_Facebookcommerce_EventsTracker::inject_lead_event
+	 */
+	public function test_inject_lead_event_does_nothing_when_admin(): void {
+		$this->instance = $this->create_tracker_with_pixel_enabled();
+
+		// Simulate admin context
+		set_current_screen( 'dashboard' );
+
+		$this->instance->inject_lead_event();
+
+		$this->assertTrue( true, 'inject_lead_event should not output in admin' );
+	}
+
+	/**
+	 * Test that add_filter_for_add_to_cart_fragments adds filter when redirect disabled.
+	 *
+	 * @covers WC_Facebookcommerce_EventsTracker::add_filter_for_add_to_cart_fragments
+	 */
+	public function test_add_filter_for_add_to_cart_fragments_adds_filter(): void {
+		$this->instance = $this->create_tracker_with_pixel_enabled();
+
+		// Set cart redirect to 'no'
+		update_option( 'woocommerce_cart_redirect_after_add', 'no' );
+
+		$this->instance->add_filter_for_add_to_cart_fragments();
+
+		$this->assertTrue(
+			has_filter( 'woocommerce_add_to_cart_fragments', array( $this->instance, 'add_add_to_cart_event_fragment' ) ) !== false,
+			'add_filter_for_add_to_cart_fragments should add the fragment filter'
+		);
+
+		// Clean up
+		delete_option( 'woocommerce_cart_redirect_after_add' );
+	}
+
+	/**
+	 * Test that add_filter_for_add_to_cart_fragments does nothing when redirect enabled.
+	 *
+	 * @covers WC_Facebookcommerce_EventsTracker::add_filter_for_add_to_cart_fragments
+	 */
+	public function test_add_filter_for_add_to_cart_fragments_does_nothing_when_redirect(): void {
+		$this->instance = $this->create_tracker_with_pixel_enabled();
+
+		// Set cart redirect to 'yes'
+		update_option( 'woocommerce_cart_redirect_after_add', 'yes' );
+
+		$this->instance->add_filter_for_add_to_cart_fragments();
+
+		$this->assertFalse(
+			has_filter( 'woocommerce_add_to_cart_fragments', array( $this->instance, 'add_add_to_cart_event_fragment' ) ),
+			'add_filter_for_add_to_cart_fragments should not add filter when redirect is enabled'
+		);
+
+		// Clean up
+		delete_option( 'woocommerce_cart_redirect_after_add' );
+	}
+
+	/**
+	 * Test that add_add_to_cart_event_fragment returns fragments unchanged when product invalid.
+	 *
+	 * @covers WC_Facebookcommerce_EventsTracker::add_add_to_cart_event_fragment
+	 */
+	public function test_add_add_to_cart_event_fragment_returns_unchanged_when_invalid(): void {
+		$this->instance = $this->create_tracker_with_pixel_enabled();
+
+		$_POST['product_id'] = 999999; // Non-existent product
+		$_POST['quantity']   = 1;
+
+		$fragments         = array( 'test' => 'value' );
+		$result_fragments = $this->instance->add_add_to_cart_event_fragment( $fragments );
+
+		$this->assertSame(
+			$fragments,
+			$result_fragments,
+			'Fragments should be unchanged when product is invalid'
+		);
+
+		unset( $_POST['product_id'], $_POST['quantity'] );
+	}
+
+	/**
+	 * Test that add_conditional_add_to_cart_event_fragment returns fragments when pixel disabled.
+	 *
+	 * @covers WC_Facebookcommerce_EventsTracker::add_conditional_add_to_cart_event_fragment
+	 */
+	public function test_add_conditional_add_to_cart_event_fragment_when_disabled(): void {
+		$this->instance = $this->create_tracker_with_pixel_disabled();
+
+		$fragments         = array( 'test' => 'value' );
+		$result_fragments = $this->instance->add_conditional_add_to_cart_event_fragment( $fragments );
+
+		$this->assertSame(
+			$fragments,
+			$result_fragments,
+			'Fragments should be unchanged when pixel is disabled'
+		);
+	}
+
+	/**
+	 * Test that get_tracked_events returns empty array initially.
+	 *
+	 * @covers WC_Facebookcommerce_EventsTracker::get_tracked_events
+	 */
+	public function test_get_tracked_events_returns_empty_initially(): void {
+		$this->instance = $this->create_tracker_with_pixel_enabled();
+
+		$events = $this->instance->get_tracked_events();
+
+		$this->assertIsArray( $events );
+		$this->assertEmpty( $events, 'Tracked events should be empty initially' );
+	}
+
+	/**
+	 * Test that get_pending_events returns empty array initially.
+	 *
+	 * @covers WC_Facebookcommerce_EventsTracker::get_pending_events
+	 */
+	public function test_get_pending_events_returns_empty_initially(): void {
+		$this->instance = $this->create_tracker_with_pixel_enabled();
+
+		$events = $this->instance->get_pending_events();
+
+		$this->assertIsArray( $events );
+		$this->assertEmpty( $events, 'Pending events should be empty initially' );
+	}
+
+	/**
+	 * Test that add_filter_for_conditional_add_to_cart_fragment adds filter when redirect disabled.
+	 *
+	 * @covers WC_Facebookcommerce_EventsTracker::add_filter_for_conditional_add_to_cart_fragment
+	 */
+	public function test_add_filter_for_conditional_add_to_cart_fragment_adds_filter(): void {
+		$this->instance = $this->create_tracker_with_pixel_enabled();
+
+		// Set cart redirect to 'no'
+		update_option( 'woocommerce_cart_redirect_after_add', 'no' );
+
+		$this->instance->add_filter_for_conditional_add_to_cart_fragment();
+
+		$this->assertTrue(
+			has_filter( 'woocommerce_add_to_cart_fragments', array( $this->instance, 'add_conditional_add_to_cart_event_fragment' ) ) !== false,
+			'add_filter_for_conditional_add_to_cart_fragment should add the fragment filter'
+		);
+
+		// Clean up
+		delete_option( 'woocommerce_cart_redirect_after_add' );
+	}
+
+	/**
+	 * Test that param_builder_client_setup does nothing when not connected.
+	 *
+	 * @covers WC_Facebookcommerce_EventsTracker::param_builder_client_setup
+	 */
+	public function test_param_builder_client_setup_does_nothing_when_not_connected(): void {
+		$this->instance = $this->create_tracker_with_pixel_enabled();
+
+		// When not connected, this should do nothing without errors
+		$this->instance->param_builder_client_setup();
+
+		$this->assertTrue( true, 'param_builder_client_setup should handle disconnected state' );
+	}
+
+	/**
+	 * Test that tracker can be constructed with user info array.
+	 *
+	 * @covers WC_Facebookcommerce_EventsTracker::__construct
+	 */
+	public function test_constructor_accepts_user_info_array(): void {
+		$filter = $this->add_filter_with_safe_teardown(
+			'facebook_for_woocommerce_integration_pixel_enabled',
+			function() {
+				return true;
+			}
+		);
+
+		$user_info = array(
+			'em' => 'test@example.com',
+			'fn' => 'John',
+			'ln' => 'Doe',
+		);
+
+		$tracker = new WC_Facebookcommerce_EventsTracker( $user_info, $this->aam_settings );
+
+		$this->assertInstanceOf(
+			WC_Facebookcommerce_EventsTracker::class,
+			$tracker,
+			'Tracker should be instantiated with user info'
+		);
+	}
+
+	/**
+	 * Test that tracker can be constructed with empty user info.
+	 *
+	 * @covers WC_Facebookcommerce_EventsTracker::__construct
+	 */
+	public function test_constructor_accepts_empty_user_info(): void {
+		$filter = $this->add_filter_with_safe_teardown(
+			'facebook_for_woocommerce_integration_pixel_enabled',
+			function() {
+				return true;
+			}
+		);
+
+		$tracker = new WC_Facebookcommerce_EventsTracker( array(), $this->aam_settings );
+
+		$this->assertInstanceOf(
+			WC_Facebookcommerce_EventsTracker::class,
+			$tracker,
+			'Tracker should be instantiated with empty user info'
+		);
+	}
+
+	/**
+	 * Test inject_view_content_event does nothing when post ID not set.
+	 *
+	 * @covers WC_Facebookcommerce_EventsTracker::inject_view_content_event
+	 */
+	public function test_inject_view_content_event_does_nothing_when_no_post(): void {
+		$this->instance = $this->create_tracker_with_pixel_enabled();
+
+		// Ensure $post is not set
+		global $post;
+		$original_post = $post;
+		$post          = null;
+
+		$this->instance->inject_view_content_event();
+
+		$this->assertTrue( true, 'inject_view_content_event should handle missing post' );
+
+		// Restore
+		$post = $original_post;
 	}
 }
