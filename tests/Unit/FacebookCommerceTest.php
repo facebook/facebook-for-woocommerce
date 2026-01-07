@@ -81,9 +81,15 @@ class FacebookCommerceTest extends \WooCommerce\Facebook\Tests\AbstractWPUnitTes
 
 		$this->integration->schedule_product_sync( $product->get_id() );
 
-		// Check that WordPress cron event was scheduled
-		$scheduled = wp_next_scheduled( 'wc_facebook_async_sync' );
-		$this->assertNotFalse( $scheduled );
+		// Check that a transient was created for the sync data
+		global $wpdb;
+		$transient_count = $wpdb->get_var(
+			$wpdb->prepare(
+				"SELECT COUNT(*) FROM {$wpdb->options} WHERE option_name LIKE %s",
+				'%_transient_fb_sync_data_' . $product->get_id() . '_%'
+			)
+		);
+		$this->assertGreaterThan( 0, $transient_count );
 	}
 
 	/**
@@ -314,7 +320,11 @@ class FacebookCommerceTest extends \WooCommerce\Facebook\Tests\AbstractWPUnitTes
 	 * @return void
 	 */
 	public function test_is_meta_diagnosis_disabled() {
-		add_option( WC_Facebookcommerce_Integration::SETTING_ENABLE_META_DIAGNOSIS, 'no' );
+		// Delete first to ensure the constructor's default setting doesn't interfere
+		delete_option( WC_Facebookcommerce_Integration::SETTING_ENABLE_META_DIAGNOSIS );
+
+		// Update to 'no' after deleting
+		update_option( WC_Facebookcommerce_Integration::SETTING_ENABLE_META_DIAGNOSIS, 'no' );
 
 		$result = $this->integration->is_meta_diagnosis_enabled();
 
