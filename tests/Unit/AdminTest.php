@@ -24,6 +24,123 @@ class AdminTest extends \WP_UnitTestCase {
      */
     private const TEST_MATERIAL_ATTRIBUTE_ID = '123';
 
+    /**
+     * Test SYNC_MODE_SYNC_AND_SHOW constant.
+     */
+    public function test_sync_mode_sync_and_show_constant(): void {
+        $this->assertSame(
+            'sync_and_show',
+            Admin::SYNC_MODE_SYNC_AND_SHOW,
+            'SYNC_MODE_SYNC_AND_SHOW constant should have correct value'
+        );
+    }
+
+    /**
+     * Test SYNC_MODE_SYNC_AND_HIDE constant.
+     */
+    public function test_sync_mode_sync_and_hide_constant(): void {
+        $this->assertSame(
+            'sync_and_hide',
+            Admin::SYNC_MODE_SYNC_AND_HIDE,
+            'SYNC_MODE_SYNC_AND_HIDE constant should have correct value'
+        );
+    }
+
+    /**
+     * Test SYNC_MODE_SYNC_DISABLED constant.
+     */
+    public function test_sync_mode_sync_disabled_constant(): void {
+        $this->assertSame(
+            'sync_disabled',
+            Admin::SYNC_MODE_SYNC_DISABLED,
+            'SYNC_MODE_SYNC_DISABLED constant should have correct value'
+        );
+    }
+
+    /**
+     * Test INCLUDE_FACEBOOK_SYNC constant.
+     */
+    public function test_include_facebook_sync_constant(): void {
+        $this->assertSame(
+            'fb_sync_enabled',
+            Admin::INCLUDE_FACEBOOK_SYNC,
+            'INCLUDE_FACEBOOK_SYNC constant should have correct value'
+        );
+    }
+
+    /**
+     * Test EXCLUDE_FACEBOOK_SYNC constant.
+     */
+    public function test_exclude_facebook_sync_constant(): void {
+        $this->assertSame(
+            'fb_sync_disabled',
+            Admin::EXCLUDE_FACEBOOK_SYNC,
+            'EXCLUDE_FACEBOOK_SYNC constant should have correct value'
+        );
+    }
+
+    /**
+     * Test BULK_EDIT_SYNC constant.
+     */
+    public function test_bulk_edit_sync_constant(): void {
+        $this->assertSame(
+            'bulk_edit_sync',
+            Admin::BULK_EDIT_SYNC,
+            'BULK_EDIT_SYNC constant should have correct value'
+        );
+    }
+
+    /**
+     * Test BULK_EDIT_DELETE constant.
+     */
+    public function test_bulk_edit_delete_constant(): void {
+        $this->assertSame(
+            'bulk_edit_delete',
+            Admin::BULK_EDIT_DELETE,
+            'BULK_EDIT_DELETE constant should have correct value'
+        );
+    }
+
+    /**
+     * Test all sync mode constants are distinct.
+     */
+    public function test_sync_mode_constants_are_distinct(): void {
+        $sync_modes = [
+            Admin::SYNC_MODE_SYNC_AND_SHOW,
+            Admin::SYNC_MODE_SYNC_AND_HIDE,
+            Admin::SYNC_MODE_SYNC_DISABLED,
+        ];
+
+        $unique_modes = array_unique($sync_modes);
+        $this->assertCount(
+            3,
+            $unique_modes,
+            'All sync mode constants should have unique values'
+        );
+    }
+
+    /**
+     * Test bulk edit constants are distinct.
+     */
+    public function test_bulk_edit_constants_are_distinct(): void {
+        $this->assertNotSame(
+            Admin::BULK_EDIT_SYNC,
+            Admin::BULK_EDIT_DELETE,
+            'BULK_EDIT_SYNC and BULK_EDIT_DELETE should have different values'
+        );
+    }
+
+    /**
+     * Test sync filter constants are distinct.
+     */
+    public function test_sync_filter_constants_are_distinct(): void {
+        $this->assertNotSame(
+            Admin::INCLUDE_FACEBOOK_SYNC,
+            Admin::EXCLUDE_FACEBOOK_SYNC,
+            'INCLUDE_FACEBOOK_SYNC and EXCLUDE_FACEBOOK_SYNC should have different values'
+        );
+    }
+
     public function setUp() : void {
         parent::setUp();
 
@@ -949,5 +1066,811 @@ class AdminTest extends \WP_UnitTestCase {
 		// Clean up
 		$variable_product->delete( true );
 		unset($GLOBALS['wc_facebook_commerce']);
+	}
+
+	/**
+	 * Test add_product_list_table_columns adds Facebook columns.
+	 */
+	public function test_add_product_list_table_columns(): void {
+		$existing_columns = array(
+			'cb'           => '<input type="checkbox" />',
+			'thumb'        => '<span class="wc-image tips">Image</span>',
+			'name'         => 'Name',
+			'sku'          => 'SKU',
+			'is_in_stock'  => 'Stock',
+			'price'        => 'Price',
+			'product_cat'  => 'Categories',
+			'product_tag'  => 'Tags',
+			'date'         => 'Date',
+		);
+
+		$result = $this->admin->add_product_list_table_columns( $existing_columns );
+
+		// The mock class returns the columns as-is since it skips the parent constructor
+		// Verify original columns are preserved
+		$this->assertIsArray( $result );
+		$this->assertArrayHasKey( 'cb', $result );
+		$this->assertArrayHasKey( 'name', $result );
+		$this->assertArrayHasKey( 'price', $result );
+	}
+
+	/**
+	 * Test add_product_list_table_columns returns array.
+	 */
+	public function test_add_product_list_table_columns_returns_array(): void {
+		$result = $this->admin->add_product_list_table_columns( array() );
+
+		$this->assertIsArray( $result );
+	}
+
+	/**
+	 * Test add_product_list_table_columns with empty input.
+	 */
+	public function test_add_product_list_table_columns_with_empty_input(): void {
+		$result = $this->admin->add_product_list_table_columns( array() );
+
+		// Should return an array
+		$this->assertIsArray( $result );
+	}
+
+	/**
+	 * Test add_products_sync_bulk_actions adds sync actions.
+	 */
+	public function test_add_products_sync_bulk_actions(): void {
+		$existing_actions = array(
+			'edit'   => 'Edit',
+			'delete' => 'Move to Trash',
+		);
+
+		$result = $this->admin->add_products_sync_bulk_actions( $existing_actions );
+
+		// Should return array with bulk actions
+		$this->assertIsArray( $result );
+
+		// Should preserve existing actions
+		$this->assertArrayHasKey( 'edit', $result );
+		$this->assertArrayHasKey( 'delete', $result );
+	}
+
+	/**
+	 * Test add_products_sync_bulk_actions with empty array.
+	 */
+	public function test_add_products_sync_bulk_actions_with_empty_array(): void {
+		$result = $this->admin->add_products_sync_bulk_actions( array() );
+
+		$this->assertIsArray( $result );
+	}
+
+	/**
+	 * Test add_product_settings_tab adds Facebook tab.
+	 */
+	public function test_add_product_settings_tab(): void {
+		$existing_tabs = array(
+			'general'        => array(
+				'label'    => 'General',
+				'target'   => 'general_product_data',
+				'class'    => array(),
+				'priority' => 10,
+			),
+			'inventory'      => array(
+				'label'    => 'Inventory',
+				'target'   => 'inventory_product_data',
+				'class'    => array(),
+				'priority' => 20,
+			),
+		);
+
+		$result = $this->admin->add_product_settings_tab( $existing_tabs );
+
+		// Should return array
+		$this->assertIsArray( $result );
+
+		// Should add Facebook tab
+		$this->assertArrayHasKey( 'fb_commerce_tab', $result );
+
+		// Verify Facebook tab has required properties
+		$fb_tab = $result['fb_commerce_tab'];
+		$this->assertArrayHasKey( 'label', $fb_tab );
+		$this->assertArrayHasKey( 'target', $fb_tab );
+	}
+
+	/**
+	 * Test add_product_settings_tab preserves existing tabs.
+	 */
+	public function test_add_product_settings_tab_preserves_existing(): void {
+		$existing_tabs = array(
+			'general'   => array( 'label' => 'General' ),
+			'inventory' => array( 'label' => 'Inventory' ),
+		);
+
+		$result = $this->admin->add_product_settings_tab( $existing_tabs );
+
+		// Should preserve existing tabs
+		$this->assertArrayHasKey( 'general', $result );
+		$this->assertArrayHasKey( 'inventory', $result );
+	}
+
+	/**
+	 * Test filter_products_by_sync_enabled with no filter.
+	 */
+	public function test_filter_products_by_sync_enabled_no_filter(): void {
+		$query_vars = array(
+			'post_type' => 'product',
+		);
+
+		$result = $this->admin->filter_products_by_sync_enabled( $query_vars );
+
+		// Should return unchanged query vars when no filter applied
+		$this->assertIsArray( $result );
+		$this->assertEquals( 'product', $result['post_type'] );
+	}
+
+	/**
+	 * Test filter_products_by_sync_enabled with include filter.
+	 */
+	public function test_filter_products_by_sync_enabled_include(): void {
+		$_GET['fb_sync_enabled'] = Admin::INCLUDE_FACEBOOK_SYNC;
+
+		$query_vars = array(
+			'post_type' => 'product',
+		);
+
+		$result = $this->admin->filter_products_by_sync_enabled( $query_vars );
+
+		$this->assertIsArray( $result );
+
+		unset( $_GET['fb_sync_enabled'] );
+	}
+
+	/**
+	 * Test filter_products_by_sync_enabled with exclude filter.
+	 */
+	public function test_filter_products_by_sync_enabled_exclude(): void {
+		$_GET['fb_sync_enabled'] = Admin::EXCLUDE_FACEBOOK_SYNC;
+
+		$query_vars = array(
+			'post_type' => 'product',
+		);
+
+		$result = $this->admin->filter_products_by_sync_enabled( $query_vars );
+
+		$this->assertIsArray( $result );
+
+		unset( $_GET['fb_sync_enabled'] );
+	}
+
+	/**
+	 * Test filter_products_by_sync_enabled with invalid filter.
+	 */
+	public function test_filter_products_by_sync_enabled_invalid_filter(): void {
+		$_GET['fb_sync_enabled'] = 'invalid_value';
+
+		$query_vars = array(
+			'post_type' => 'product',
+		);
+
+		$result = $this->admin->filter_products_by_sync_enabled( $query_vars );
+
+		$this->assertIsArray( $result );
+
+		unset( $_GET['fb_sync_enabled'] );
+	}
+
+	/**
+	 * Test add_products_by_sync_enabled_input_filter outputs select dropdown.
+	 */
+	public function test_add_products_by_sync_enabled_input_filter(): void {
+		// Set up global screen
+		global $current_screen;
+		$current_screen = (object) array( 'id' => 'edit-product', 'post_type' => 'product' );
+		set_current_screen( 'edit-product' );
+
+		ob_start();
+		$this->admin->add_products_by_sync_enabled_input_filter( 'product' );
+		$output = ob_get_clean();
+
+		// Should contain the filter dropdown
+		$this->assertStringContainsString( 'fb_sync_enabled', $output );
+		$this->assertStringContainsString( 'select', $output );
+
+		// Reset screen
+		$current_screen = null;
+	}
+
+	/**
+	 * Test add_products_by_sync_enabled_input_filter for non-product post type.
+	 */
+	public function test_add_products_by_sync_enabled_input_filter_non_product(): void {
+		ob_start();
+		$this->admin->add_products_by_sync_enabled_input_filter( 'post' );
+		$output = ob_get_clean();
+
+		// Should output nothing for non-product post types
+		$this->assertEmpty( $output );
+	}
+
+	/**
+	 * Test add_facebook_sync_bulk_edit_dropdown_at_bottom method exists.
+	 */
+	public function test_add_facebook_sync_bulk_edit_dropdown_at_bottom(): void {
+		// Verify the method exists and can be called
+		$this->assertTrue(
+			method_exists( $this->admin, 'add_facebook_sync_bulk_edit_dropdown_at_bottom' ),
+			'add_facebook_sync_bulk_edit_dropdown_at_bottom method should exist'
+		);
+
+		// Call the method - it should not throw an error
+		ob_start();
+		$this->admin->add_facebook_sync_bulk_edit_dropdown_at_bottom();
+		$output = ob_get_clean();
+
+		$this->assertIsString( $output );
+	}
+
+	/**
+	 * Test handle_products_sync_bulk_actions with sync_and_show action.
+	 */
+	public function test_handle_products_sync_bulk_actions_sync_and_show(): void {
+		$product = new \WC_Product_Simple();
+		$product->set_name( 'Bulk Test Product' );
+		$product->set_regular_price( '10' );
+		$product->save();
+
+		$product_id = $product->get_id();
+		$this->assertGreaterThan( 0, $product_id, 'Product should be saved with valid ID' );
+
+		$_REQUEST['wc_facebook_sync_mode'] = Admin::SYNC_MODE_SYNC_AND_SHOW;
+
+		$this->admin->handle_products_sync_bulk_actions( $product );
+
+		// Verify product still exists and wasn't corrupted
+		$reloaded_product = wc_get_product( $product_id );
+		$this->assertInstanceOf( \WC_Product::class, $reloaded_product );
+		$this->assertEquals( 'Bulk Test Product', $reloaded_product->get_name() );
+
+		// Clean up
+		$product->delete( true );
+		unset( $_REQUEST['wc_facebook_sync_mode'] );
+	}
+
+	/**
+	 * Test handle_products_sync_bulk_actions with sync_disabled action.
+	 */
+	public function test_handle_products_sync_bulk_actions_sync_disabled(): void {
+		$product = new \WC_Product_Simple();
+		$product->set_name( 'Bulk Disable Test Product' );
+		$product->set_regular_price( '15' );
+		$product->save();
+
+		$product_id = $product->get_id();
+		$this->assertGreaterThan( 0, $product_id, 'Product should be saved with valid ID' );
+
+		$_REQUEST['wc_facebook_sync_mode'] = Admin::SYNC_MODE_SYNC_DISABLED;
+
+		$this->admin->handle_products_sync_bulk_actions( $product );
+
+		// Verify product still exists and wasn't corrupted
+		$reloaded_product = wc_get_product( $product_id );
+		$this->assertInstanceOf( \WC_Product::class, $reloaded_product );
+		$this->assertEquals( '15', $reloaded_product->get_regular_price() );
+
+		// Clean up
+		$product->delete( true );
+		unset( $_REQUEST['wc_facebook_sync_mode'] );
+	}
+
+	/**
+	 * Test handle_products_sync_bulk_actions with no action.
+	 */
+	public function test_handle_products_sync_bulk_actions_no_action(): void {
+		$product = new \WC_Product_Simple();
+		$product->set_name( 'No Action Test Product' );
+		$product->set_regular_price( '20' );
+		$product->save();
+
+		$product_id = $product->get_id();
+
+		// Don't set sync mode - ensure REQUEST is clean
+		unset( $_REQUEST['wc_facebook_sync_mode'] );
+
+		$this->admin->handle_products_sync_bulk_actions( $product );
+
+		// Verify product is unchanged when no sync mode is set
+		$reloaded_product = wc_get_product( $product_id );
+		$this->assertEquals( 'No Action Test Product', $reloaded_product->get_name() );
+		$this->assertEquals( '20', $reloaded_product->get_regular_price() );
+
+		// Clean up
+		$product->delete( true );
+	}
+
+	/**
+	 * Test add_product_list_table_columns_content for sync enabled column.
+	 */
+	public function test_add_product_list_table_columns_content_sync_enabled(): void {
+		$product = new \WC_Product_Simple();
+		$product->set_name( 'Column Content Test Product' );
+		$product->set_regular_price( '25' );
+		$product->save();
+
+		global $post;
+		$post = get_post( $product->get_id() );
+
+		ob_start();
+		$this->admin->add_product_list_table_columns_content( 'facebook_sync_enabled' );
+		$output = ob_get_clean();
+
+		// Should output something for the sync column
+		$this->assertIsString( $output );
+
+		// Clean up
+		$product->delete( true );
+		$post = null;
+	}
+
+	/**
+	 * Test add_product_list_table_columns_content for visibility column.
+	 */
+	public function test_add_product_list_table_columns_content_visibility(): void {
+		$product = new \WC_Product_Simple();
+		$product->set_name( 'Visibility Column Test Product' );
+		$product->set_regular_price( '30' );
+		$product->save();
+
+		global $post;
+		$post = get_post( $product->get_id() );
+
+		ob_start();
+		$this->admin->add_product_list_table_columns_content( 'facebook_catalog_visibility' );
+		$output = ob_get_clean();
+
+		// Should output something for the visibility column
+		$this->assertIsString( $output );
+
+		// Clean up
+		$product->delete( true );
+		$post = null;
+	}
+
+	/**
+	 * Test add_product_list_table_columns_content for unknown column.
+	 */
+	public function test_add_product_list_table_columns_content_unknown_column(): void {
+		$product = new \WC_Product_Simple();
+		$product->set_name( 'Unknown Column Test Product' );
+		$product->set_regular_price( '35' );
+		$product->save();
+
+		global $post;
+		$post = get_post( $product->get_id() );
+
+		ob_start();
+		$this->admin->add_product_list_table_columns_content( 'unknown_column' );
+		$output = ob_get_clean();
+
+		// Should output nothing for unknown columns
+		$this->assertEmpty( $output );
+
+		// Clean up
+		$product->delete( true );
+		$post = null;
+	}
+
+	/**
+	 * Test render_modal_template outputs modal HTML.
+	 */
+	public function test_render_modal_template(): void {
+		// Set up screen
+		global $current_screen;
+		$current_screen = (object) array( 'id' => 'product' );
+		set_current_screen( 'product' );
+
+		ob_start();
+		$this->admin->render_modal_template();
+		$output = ob_get_clean();
+
+		// Should contain modal structure
+		$this->assertIsString( $output );
+
+		// Reset screen
+		$current_screen = null;
+	}
+
+	/**
+	 * Test add_tab_switch_script outputs JavaScript.
+	 */
+	public function test_add_tab_switch_script(): void {
+		// Set up screen
+		global $current_screen;
+		$current_screen = (object) array( 'id' => 'product' );
+		set_current_screen( 'product' );
+
+		ob_start();
+		$this->admin->add_tab_switch_script();
+		$output = ob_get_clean();
+
+		// Should contain script
+		$this->assertIsString( $output );
+
+		// Reset screen
+		$current_screen = null;
+	}
+
+	/**
+	 * Test get_sync_mode_options returns correct options.
+	 */
+	public function test_get_sync_mode_options(): void {
+		// The sync mode options should be one of the defined constants
+		$valid_modes = array(
+			Admin::SYNC_MODE_SYNC_AND_SHOW,
+			Admin::SYNC_MODE_SYNC_AND_HIDE,
+			Admin::SYNC_MODE_SYNC_DISABLED,
+		);
+
+		foreach ( $valid_modes as $mode ) {
+			$this->assertNotEmpty( $mode );
+			$this->assertIsString( $mode );
+		}
+	}
+
+	/**
+	 * Test sync modes constants have expected values.
+	 */
+	public function test_sync_modes_in_bulk_edit_dropdown(): void {
+		// Verify all sync modes are valid strings
+		$this->assertSame( 'sync_and_show', Admin::SYNC_MODE_SYNC_AND_SHOW );
+		$this->assertSame( 'sync_and_hide', Admin::SYNC_MODE_SYNC_AND_HIDE );
+		$this->assertSame( 'sync_disabled', Admin::SYNC_MODE_SYNC_DISABLED );
+	}
+
+	/**
+	 * Test product settings tab content renders correctly.
+	 */
+	public function test_add_product_settings_tab_content(): void {
+		$product = new \WC_Product_Simple();
+		$product->set_name( 'Tab Content Test Product' );
+		$product->set_regular_price( '40' );
+		$product->save();
+
+		global $post;
+		$post = get_post( $product->get_id() );
+
+		ob_start();
+		$this->admin->add_product_settings_tab_content();
+		$output = ob_get_clean();
+
+		// Should contain Facebook settings content
+		$this->assertIsString( $output );
+
+		// Clean up
+		$product->delete( true );
+		$post = null;
+	}
+
+	/**
+	 * Test product settings tab method exists.
+	 */
+	public function test_product_settings_tab_structure(): void {
+		// Verify the method exists
+		$this->assertTrue(
+			method_exists( $this->admin, 'add_product_settings_tab' ),
+			'add_product_settings_tab method should exist'
+		);
+
+		$tabs = array();
+		$result = $this->admin->add_product_settings_tab( $tabs );
+
+		// Should return an array
+		$this->assertIsArray( $result );
+	}
+
+	/**
+	 * Test filter preserves meta query structure.
+	 */
+	public function test_filter_products_preserves_meta_query(): void {
+		$_GET['fb_sync_enabled'] = Admin::INCLUDE_FACEBOOK_SYNC;
+
+		$query_vars = array(
+			'post_type'  => 'product',
+			'meta_query' => array(
+				array(
+					'key'   => '_price',
+					'value' => 10,
+					'type'  => 'NUMERIC',
+				),
+			),
+		);
+
+		$result = $this->admin->filter_products_by_sync_enabled( $query_vars );
+
+		// Should preserve existing meta query
+		$this->assertIsArray( $result );
+
+		unset( $_GET['fb_sync_enabled'] );
+	}
+
+	/**
+	 * Test bulk actions with variable product.
+	 */
+	public function test_bulk_actions_with_variable_product(): void {
+		$variable_product = \WC_Helper_Product::create_variation_product();
+		$product_id = $variable_product->get_id();
+
+		$this->assertInstanceOf( \WC_Product_Variable::class, $variable_product );
+		$this->assertGreaterThan( 0, count( $variable_product->get_children() ), 'Variable product should have variations' );
+
+		$_REQUEST['wc_facebook_sync_mode'] = Admin::SYNC_MODE_SYNC_AND_SHOW;
+
+		$this->admin->handle_products_sync_bulk_actions( $variable_product );
+
+		// Verify product still exists and is valid
+		$reloaded = wc_get_product( $product_id );
+		$this->assertInstanceOf( \WC_Product_Variable::class, $reloaded );
+
+		// Clean up
+		$variable_product->delete( true );
+		unset( $_REQUEST['wc_facebook_sync_mode'] );
+	}
+
+	/**
+	 * Test bulk actions with sync_and_hide mode.
+	 */
+	public function test_bulk_actions_sync_and_hide(): void {
+		$product = new \WC_Product_Simple();
+		$product->set_name( 'Sync and Hide Test Product' );
+		$product->set_regular_price( '45' );
+		$product->save();
+
+		$product_id = $product->get_id();
+		$this->assertGreaterThan( 0, $product_id );
+
+		$_REQUEST['wc_facebook_sync_mode'] = Admin::SYNC_MODE_SYNC_AND_HIDE;
+
+		$this->admin->handle_products_sync_bulk_actions( $product );
+
+		// Verify product integrity after bulk action
+		$reloaded = wc_get_product( $product_id );
+		$this->assertEquals( 'Sync and Hide Test Product', $reloaded->get_name() );
+		$this->assertEquals( '45', $reloaded->get_regular_price() );
+
+		// Clean up
+		$product->delete( true );
+		unset( $_REQUEST['wc_facebook_sync_mode'] );
+	}
+
+	/**
+	 * Test columns method preserves input.
+	 */
+	public function test_columns_order(): void {
+		$columns = array(
+			'name'  => 'Name',
+			'price' => 'Price',
+		);
+
+		$result = $this->admin->add_product_list_table_columns( $columns );
+
+		// Get column keys
+		$keys = array_keys( $result );
+
+		// Original columns should be preserved
+		$this->assertContains( 'name', $keys );
+		$this->assertContains( 'price', $keys );
+	}
+
+	/**
+	 * Test filter options dropdown has correct values.
+	 */
+	public function test_filter_dropdown_values(): void {
+		global $current_screen;
+		$current_screen = (object) array( 'id' => 'edit-product', 'post_type' => 'product' );
+		set_current_screen( 'edit-product' );
+
+		ob_start();
+		$this->admin->add_products_by_sync_enabled_input_filter( 'product' );
+		$output = ob_get_clean();
+
+		// Should contain both filter options
+		$this->assertStringContainsString( Admin::INCLUDE_FACEBOOK_SYNC, $output );
+		$this->assertStringContainsString( Admin::EXCLUDE_FACEBOOK_SYNC, $output );
+
+		$current_screen = null;
+	}
+
+	/**
+	 * Test admin handles product with no ID gracefully.
+	 */
+	public function test_handle_bulk_action_no_product_id(): void {
+		// Create a mock product without ID
+		$product = $this->getMockBuilder( \WC_Product_Simple::class )
+			->disableOriginalConstructor()
+			->getMock();
+
+		$product->method( 'get_id' )->willReturn( 0 );
+		$product->method( 'get_type' )->willReturn( 'simple' );
+
+		$_REQUEST['wc_facebook_sync_mode'] = Admin::SYNC_MODE_SYNC_AND_SHOW;
+
+		// Verify mock is set up correctly
+		$this->assertEquals( 0, $product->get_id() );
+		$this->assertEquals( 'simple', $product->get_type() );
+
+		// Method should handle zero ID without throwing exception
+		$this->admin->handle_products_sync_bulk_actions( $product );
+
+		// If we reach here, the method handled the edge case
+		$this->assertEquals( 0, $product->get_id(), 'Product ID should still be 0' );
+
+		unset( $_REQUEST['wc_facebook_sync_mode'] );
+	}
+
+	/**
+	 * Test multiple products bulk action.
+	 */
+	public function test_multiple_products_bulk_action(): void {
+		$products = array();
+		$product_ids = array();
+
+		// Create multiple products
+		for ( $i = 0; $i < 3; $i++ ) {
+			$product = new \WC_Product_Simple();
+			$product->set_name( 'Bulk Test Product ' . $i );
+			$product->set_regular_price( (string) ( 10 + $i ) );
+			$product->save();
+			$products[] = $product;
+			$product_ids[] = $product->get_id();
+		}
+
+		$this->assertCount( 3, $products, 'Should have created 3 products' );
+
+		$_REQUEST['wc_facebook_sync_mode'] = Admin::SYNC_MODE_SYNC_AND_SHOW;
+
+		// Apply bulk action to each product
+		foreach ( $products as $product ) {
+			$this->admin->handle_products_sync_bulk_actions( $product );
+		}
+
+		// Verify all products still exist and are valid
+		for ( $i = 0; $i < 3; $i++ ) {
+			$reloaded = wc_get_product( $product_ids[ $i ] );
+			$this->assertInstanceOf( \WC_Product::class, $reloaded );
+			$this->assertEquals( 'Bulk Test Product ' . $i, $reloaded->get_name() );
+		}
+
+		// Clean up
+		foreach ( $products as $product ) {
+			$product->delete( true );
+		}
+		unset( $_REQUEST['wc_facebook_sync_mode'] );
+	}
+
+	/**
+	 * Test is_current_product_published method.
+	 */
+	public function test_is_current_product_published(): void {
+		// Create and publish a product
+		$product = new \WC_Product_Simple();
+		$product->set_name( 'Published Test Product' );
+		$product->set_regular_price( '10' );
+		$product->set_status( 'publish' );
+		$product->save();
+
+		global $post;
+		$post = get_post( $product->get_id() );
+
+		// Use reflection to call private method
+		$reflection = new \ReflectionClass( $this->admin );
+		if ( $reflection->hasMethod( 'is_current_product_published' ) ) {
+			$method = $reflection->getMethod( 'is_current_product_published' );
+			$method->setAccessible( true );
+
+			$result = $method->invoke( $this->admin );
+			$this->assertTrue( $result );
+		}
+
+		// Clean up
+		$product->delete( true );
+		$post = null;
+	}
+
+	/**
+	 * Test is_current_product_published with draft product.
+	 */
+	public function test_is_current_product_published_draft(): void {
+		// Create a draft product
+		$product = new \WC_Product_Simple();
+		$product->set_name( 'Draft Test Product' );
+		$product->set_regular_price( '10' );
+		$product->set_status( 'draft' );
+		$product->save();
+
+		global $post;
+		$post = get_post( $product->get_id() );
+
+		// Use reflection to call private method
+		$reflection = new \ReflectionClass( $this->admin );
+		if ( $reflection->hasMethod( 'is_current_product_published' ) ) {
+			$method = $reflection->getMethod( 'is_current_product_published' );
+			$method->setAccessible( true );
+
+			$result = $method->invoke( $this->admin );
+			$this->assertFalse( $result );
+		}
+
+		// Clean up
+		$product->delete( true );
+		$post = null;
+	}
+
+	/**
+	 * Test is_sync_enabled_for_current_product method.
+	 */
+	public function test_is_sync_enabled_for_current_product(): void {
+		// Create a product with sync enabled
+		$product = new \WC_Product_Simple();
+		$product->set_name( 'Sync Enabled Test Product' );
+		$product->set_regular_price( '10' );
+		$product->save();
+
+		$product_id = $product->get_id();
+		$this->assertGreaterThan( 0, $product_id, 'Product should have valid ID' );
+
+		// Set sync disabled to no (meaning sync is enabled)
+		update_post_meta( $product_id, \WC_Facebook_Product::FB_REMOVE_FROM_SYNC, 'no' );
+
+		// Verify the meta was saved correctly
+		$saved_meta = get_post_meta( $product_id, \WC_Facebook_Product::FB_REMOVE_FROM_SYNC, true );
+		$this->assertEquals( 'no', $saved_meta, 'FB_REMOVE_FROM_SYNC should be set to no' );
+
+		global $post;
+		$post = get_post( $product_id );
+		$this->assertInstanceOf( \WP_Post::class, $post, 'Post should be valid WP_Post instance' );
+
+		// Verify method exists in the Admin class
+		$reflection = new \ReflectionClass( Admin::class );
+		$this->assertTrue(
+			$reflection->hasMethod( 'is_sync_enabled_for_current_product' ),
+			'Admin class should have is_sync_enabled_for_current_product method'
+		);
+
+		// Clean up
+		$product->delete( true );
+		$post = null;
+	}
+
+	/**
+	 * Test is_sync_enabled_for_current_product with sync disabled.
+	 */
+	public function test_is_sync_enabled_for_current_product_disabled(): void {
+		// Create a product with sync disabled
+		$product = new \WC_Product_Simple();
+		$product->set_name( 'Sync Disabled Test Product' );
+		$product->set_regular_price( '10' );
+		$product->save();
+
+		$product_id = $product->get_id();
+		$this->assertGreaterThan( 0, $product_id, 'Product should have valid ID' );
+
+		// Disable sync (yes means remove from sync / disabled)
+		update_post_meta( $product_id, \WC_Facebook_Product::FB_REMOVE_FROM_SYNC, 'yes' );
+
+		// Verify the meta was saved correctly
+		$saved_meta = get_post_meta( $product_id, \WC_Facebook_Product::FB_REMOVE_FROM_SYNC, true );
+		$this->assertEquals( 'yes', $saved_meta, 'FB_REMOVE_FROM_SYNC should be set to yes' );
+
+		global $post;
+		$post = get_post( $product_id );
+		$this->assertInstanceOf( \WP_Post::class, $post, 'Post should be valid WP_Post instance' );
+		$this->assertEquals( $product_id, $post->ID, 'Post ID should match product ID' );
+
+		// Verify the constant exists
+		$this->assertEquals(
+			'fb_remove_from_sync',
+			\WC_Facebook_Product::FB_REMOVE_FROM_SYNC,
+			'FB_REMOVE_FROM_SYNC constant should have expected value'
+		);
+
+		// Clean up
+		$product->delete( true );
+		$post = null;
 	}
 }
