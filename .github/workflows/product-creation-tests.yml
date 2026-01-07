@@ -19,6 +19,10 @@ on:
   pull_request:
     branches: [ main, master, develop ]
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 env:
   # Test environment configuration
   TEST_SITE_HOST: ${{ secrets.TEST_SITE_HOST }}

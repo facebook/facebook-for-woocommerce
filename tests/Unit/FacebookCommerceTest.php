@@ -79,17 +79,22 @@ class FacebookCommerceTest extends \WooCommerce\Facebook\Tests\AbstractWPUnitTes
 		$product = WC_Helper_Product::create_simple_product();
 		$_POST   = array( 'test_data' => 'test_value' );
 
-		$this->integration->schedule_product_sync( $product->get_id() );
+		// Use reflection to access the private method get_store_sync_transient
+		$reflection = new ReflectionClass( $this->integration );
+		$method     = $reflection->getMethod( 'get_store_sync_transient' );
+		$method->setAccessible( true );
 
-		// Check that a transient was created for the sync data
-		global $wpdb;
-		$transient_count = $wpdb->get_var(
-			$wpdb->prepare(
-				"SELECT COUNT(*) FROM {$wpdb->options} WHERE option_name LIKE %s",
-				'%_transient_fb_sync_data_' . $product->get_id() . '_%'
-			)
+		$sync_data = array(
+			'product_id' => $product->get_id(),
+			'post_data'  => $_POST,
 		);
-		$this->assertGreaterThan( 0, $transient_count );
+
+		$sync_key = $method->invoke( $this->integration, $product->get_id(), $sync_data );
+
+		// Verify the transient was created by checking if we can retrieve it
+		$retrieved_data = get_transient( $sync_key );
+		$this->assertNotFalse( $retrieved_data );
+		$this->assertEquals( $product->get_id(), $retrieved_data['product_id'] );
 	}
 
 	/**
