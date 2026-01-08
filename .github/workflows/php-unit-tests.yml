@@ -94,8 +94,9 @@ jobs:
           MIN_THRESHOLD=40
 
           # Higher threshold for release branches
-          # Matches: release/X.Y.Z, release/X.Y.Z/publish, etc.
-          if [[ "${{ github.ref }}" =~ ^refs/heads/release/ ]]; then
+          # For pushes: check github.ref (e.g., refs/heads/release/1.0.0)
+          # For PRs: check github.base_ref (the target branch, e.g., release/1.0.0)
+          if [[ "${{ github.ref }}" =~ ^refs/heads/release/ ]] || [[ "${{ github.base_ref }}" =~ ^release/ ]]; then
             MIN_THRESHOLD=45
             echo "🚀 Release branch detected - using higher coverage threshold"
           fi
