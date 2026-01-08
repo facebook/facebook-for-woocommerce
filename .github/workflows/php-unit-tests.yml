@@ -89,7 +89,16 @@ jobs:
         if: steps.phpunit.outputs.test_status == 'passed'
         run: |
           COVERAGE="${{ steps.phpunit.outputs.coverage_summary }}"
-          MIN_THRESHOLD=35
+
+          # Default threshold for regular PRs
+          MIN_THRESHOLD=40
+
+          # Higher threshold for release branches
+          # Matches: release/X.Y.Z, release/X.Y.Z/publish, etc.
+          if [[ "${{ github.ref }}" =~ ^refs/heads/release/ ]]; then
+            MIN_THRESHOLD=45
+            echo "🚀 Release branch detected - using higher coverage threshold"
+          fi
 
           echo "📈 Coverage: $COVERAGE%"
           echo "🎯 Threshold: $MIN_THRESHOLD%"
