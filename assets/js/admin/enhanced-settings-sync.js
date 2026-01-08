@@ -139,4 +139,22 @@ jQuery(document).ready(function($) {
 			button.prop('disabled', false);
 		});
 	});
+
+	$('#wc_facebook_excluded_emails, #wc_facebook_excluded_ips').select2({
+		tags: true,
+		tokenSeparators: [',', ' '],
+		width: 'resolve',
+		placeholder: 'Type and hit space or comma to add',
+		createTag: function(params) {
+			var term = $.trim(params.term);
+			if (term === '') {
+				return null;
+			}
+			return {
+				id: term,
+				text: term,
+				newTag: true
+			};
+		}
+	});
 });
