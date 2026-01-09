@@ -18,6 +18,9 @@ on:
           default: false
   pull_request:
     branches: [ main, master, develop ]
+  schedule:
+    # Run daily at 8am UTC (only runs when required secrets are configured)
+    - cron: '0 8 * * *'
 
 env:
   # Test environment configuration
@@ -63,7 +66,36 @@ env:
   ERROR_WHITELIST: 'WC_Facebook_Google_Product_Category_Fields is not defined'
 
 jobs:
+  # Job to check if secrets are configured and emit warning if not
+  check-secrets:
+    runs-on: ubuntu-latest
+    outputs:
+      secrets-configured: ${{ steps.check.outputs.configured }}
+    steps:
+      - name: Check if required secrets are configured
+        id: check
+        env:
+          TEST_SITE_HOST: ${{ secrets.TEST_SITE_HOST }}
+          FB_TEST_META_BUSINESS_ASSETS: ${{ secrets.FB_TEST_META_BUSINESS_ASSETS }}
+          EVENT_NAME: ${{ github.event_name }}
+          REPO_OWNER: ${{ github.repository_owner }}
+        run: |
+          if [ -n "$TEST_SITE_HOST" ] && [ -n "$FB_TEST_META_BUSINESS_ASSETS" ]; then
+            echo "configured=true" >> $GITHUB_OUTPUT
+            echo "✅ Required secrets are configured"
+          else
+            echo "configured=false" >> $GITHUB_OUTPUT
+            # Fail if this is a scheduled run on the facebook repository
+            if [ "$EVENT_NAME" = "schedule" ] && [ "$REPO_OWNER" = "facebook" ]; then
+              echo "::error title=E2E Tests Failed::Scheduled run on facebook repository but required secrets (TEST_SITE_HOST, FB_TEST_META_BUSINESS_ASSETS) are not configured."
+              exit 1
+            fi
+            echo "::warning title=E2E Tests Skipped::E2E tests require TEST_SITE_HOST and FB_TEST_META_BUSINESS_ASSETS secrets to be configured. After merge, E2E tests will run daily to validate functionality."
+          fi
+
   e2e-tests:
+    needs: check-secrets
+    if: ${{ needs.check-secrets.outputs.secrets-configured == 'true' }}
     runs-on: ubuntu-latest
 
     services:
