@@ -88,6 +88,8 @@ class WC_Facebookcommerce_Iframe_Whatsapp_Utility_Event {
 		$shipping_phone_number = $order->get_shipping_phone();
 		$phone_number          = $billing_phone_number ?? $shipping_phone_number;
 		// Get Country Code from Billing and Shipping Country to override Country Calling Code
+		// prefer billing info when billing phone is present
+		$should_use_billing_info = ! empty( $billing_phone_number );
 		$country_code = $should_use_billing_info ? $order->get_billing_country() : $order->get_shipping_country();
 		// Get Customer first name
 		$first_name = $order->get_billing_first_name();
@@ -97,7 +99,21 @@ class WC_Facebookcommerce_Iframe_Whatsapp_Utility_Event {
 			$total_refund += $refund->get_amount();
 		}
 		$currency      = $order->get_currency();
-		$refund_amount = $total_refund * 1000;
+		// Normalize refund amount to cents for consistency (offset = 100)
+		$refund_amount = (int) round( $total_refund * 100 );
+
+		// Additional order metadata
+		$order_status = $order->get_status();
+		$order_url = ( method_exists( $order, 'get_view_order_url' ) ? $order->get_view_order_url() : $order_details_link );
+		$shipping_method = ( method_exists( $order, 'get_shipping_method' ) ? $order->get_shipping_method() : '' );
+		$order_date_obj = ( method_exists( $order, 'get_date_created' ) ? $order->get_date_created() : null );
+		$order_date_iso = $order_date_obj ? $order_date_obj->date( 'c' ) : null;
+		$order_meta = array(
+			'order_status' => $order_status,
+			'order_url' => $order_url,
+			'shipping_method' => $shipping_method,
+			'order_date' => $order_date_iso,
+		);
 		if ( empty( $phone_number ) || empty( $event ) || empty( $first_name ) ) {
 			wc_get_logger()->info(
 				sprintf(
@@ -108,6 +124,6 @@ class WC_Facebookcommerce_Iframe_Whatsapp_Utility_Event {
 			);
 			return;
 		}
-		WhatsAppExtension::process_whatsapp_utility_message_event( $this->plugin, $event, $order_id, $order_details_link, $phone_number, $first_name, $refund_amount, $currency, $country_code );
+		WhatsAppExtension::process_whatsapp_utility_message_event( $this->plugin, $event, $order_id, $order_details_link, $phone_number, $first_name, $refund_amount, $currency, $country_code, $order_meta );
 	}
 }

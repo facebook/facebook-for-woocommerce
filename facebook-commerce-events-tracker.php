@@ -1045,12 +1045,26 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 
 					$content->id       = \WC_Facebookcommerce_Utils::get_fb_retailer_id( $product );
 					$content->quantity = $quantity;
+					// Add per-item fields: name, image, and amount (value with offset in cents)
+					$content->name = $item->get_name();
+					$image_id = ( method_exists( $product, 'get_image_id' ) ? $product->get_image_id() : 0 );
+					$content->image = $image_id ? wp_get_attachment_image_url( $image_id, 'full' ) : '';
+					$content->amount = array(
+						'value'  => (float) $item->get_total(),
+						'offset' => 100,
+					);
 
 					$contents[] = $content;
 				}
 			}
 
 			// Advanced matching information is extracted from the order
+			// Compute order-level metadata
+			$order_url = ( method_exists( $order, 'get_view_order_url' ) ? $order->get_view_order_url() : $order->get_checkout_order_received_url() );
+			$shipping_method = ( method_exists( $order, 'get_shipping_method' ) ? $order->get_shipping_method() : '' );
+			$order_date_obj = ( method_exists( $order, 'get_date_created' ) ? $order->get_date_created() : null );
+			$order_date_iso = $order_date_obj ? $order_date_obj->date( 'c' ) : null;
+
 			$event_data = array(
 				'event_name'  => $event_name,
 				'custom_data' => array(
@@ -1061,6 +1075,10 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 					'value'        => $order->get_total(),
 					'currency'     => ( method_exists( $order, 'get_currency' ) ? $order->get_currency() : get_woocommerce_currency() ),
 					'order_id'     => $order_id,
+					'order_status' => $order->get_status(),
+					'order_url'    => $order_url,
+					'shipping_method' => $shipping_method,
+					'order_date'   => $order_date_iso,
 				),
 				'user_data'   => $this->get_user_data_from_billing_address( $order ),
 			);
