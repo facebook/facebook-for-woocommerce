@@ -5,11 +5,12 @@ possible.
 ## Pull Requests
 We actively welcome your pull requests.
 
-1. Fork the repo and create your branch from `develop`.
-2. If you've added code that should be tested, add tests.
-3. If you've changed APIs, update the documentation.
+1. Clone the repository and create your branch from `main`.
+2. If you have added code that should be tested, add tests.
+3. If you have changed APIs, update the documentation.
 4. Make sure your code lints.
 5. If you haven't already, complete the Contributor License Agreement ("CLA").
+6. Push your branch to GitHub and open a pull request from it, making sure to follow the guidelines for the pull request description.
 
 ## Contributor License Agreement ("CLA")
 In order to accept your pull request, we need you to submit a CLA. You only need
@@ -25,7 +26,7 @@ Facebook has a [bounty program](https://www.facebook.com/whitehat/) for the safe
 disclosure of security bugs. In those cases, please go through the process
 outlined on that page and do not file a public issue.
 
-## Coding Guidelines and Development 
+## Coding Guidelines and Development
 * Ensure you stick to the [WordPress Coding Standards](https://make.wordpress.org/core/handbook/best-practices/coding-standards/php/)
 * Whenever possible please fix pre-existing code standards errors in the files that you change. It is ok to skip that for larger files or complex fixes.
 * Ensure that your code supports the minimum supported versions of PHP and WordPress; this is shown at the top of the `readme.txt` file.
