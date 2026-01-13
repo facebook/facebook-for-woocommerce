@@ -30,8 +30,8 @@ env:
   WC_LOG_PATH: '/tmp/wordpress/wp-content/uploads/wc-logs/'
   PLUGIN_PATH: '/tmp/wordpress/wp-content/plugins/facebook-for-woocommerce'
   FB_E2E_TEST_COOKIE_NAME: 'facebook_test_id'
-  FB_E2E_LOGGER_PATH: '/tests/e2e/lib/Logger.php'
-  FB_E2E_CAPTURED_EVENTS_DIR: '/tests/e2e/captured-events'
+  FB_E2E_LOGGER_PATH: '/tests/e2e/helpers/php/event-logger.php'
+  FB_E2E_CAPTURED_EVENTS_DIR: '/tests/e2e/helpers/captured-events'
   WP_CUSTOMER_USERNAME: customer
   WP_CUSTOMER_PASSWORD: Password@54321
   WORDPRESS_URL: http://${{ secrets.TEST_SITE_HOST }}:8080

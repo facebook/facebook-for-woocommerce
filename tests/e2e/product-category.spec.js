@@ -1,6 +1,6 @@
 const { test, expect } = require('@playwright/test');
-const { TIMEOUTS } = require('./time-constants');
 const {
+    TIMEOUTS,
     baseURL,
     loginToWordPress,
     safeScreenshot,
@@ -12,8 +12,9 @@ const {
     validateCategorySync,
     createTestProduct,
     createTestCategory,
-    cleanupCategory
-} = require('./test-helpers');
+    cleanupCategory,
+    execWP
+} = require('./helpers/js');
 
 test.describe('Facebook for WooCommerce - Product Category E2E Tests', () => {
 
