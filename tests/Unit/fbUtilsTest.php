@@ -300,4 +300,42 @@ class fbUtilsTest extends \WP_UnitTestCase {
 			);
 		}
 	}
+
+	/**
+	 * Test get_product_category_ids returns array for valid product
+	 */
+	public function test_get_product_category_ids_returns_array_for_valid_product() {
+		$result = \WC_Facebookcommerce_Utils::get_product_category_ids($this->product->get_id());
+		$this->assertIsArray($result);
+	}
+
+	/**
+	 * Test get_product_category_ids returns empty array for invalid product ID
+	 */
+	public function test_get_product_category_ids_returns_empty_array_for_invalid_product() {
+		$result = \WC_Facebookcommerce_Utils::get_product_category_ids(999999999);
+		$this->assertIsArray($result);
+		$this->assertEmpty($result);
+	}
+
+	/**
+	 * Test get_product_category_ids returns category IDs for product with categories
+	 */
+	public function test_get_product_category_ids_returns_category_ids() {
+		// Create a category
+		$category_id = wp_insert_term('Test Category', 'product_cat');
+		$category_id = $category_id['term_id'];
+
+		// Assign category to product
+		$this->product->set_category_ids([$category_id]);
+		$this->product->save();
+
+		$result = \WC_Facebookcommerce_Utils::get_product_category_ids($this->product->get_id());
+
+		$this->assertIsArray($result);
+		$this->assertContains($category_id, $result);
+
+		// Cleanup
+		wp_delete_term($category_id, 'product_cat');
+	}
 }
