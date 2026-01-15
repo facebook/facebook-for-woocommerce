@@ -284,7 +284,7 @@ class AdminNoticeHandler {
 		<?php
 		$javascript = ob_get_clean();
 
-		wc_enqueue_js( $javascript );
+		enqueue_inline_js( $javascript );
 	}
 
 

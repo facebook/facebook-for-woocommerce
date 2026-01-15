@@ -301,7 +301,7 @@ class WC_Facebookcommerce_Pixel {
 			if ( $is_redirect && $is_add_to_cart ) {
 				WC_Facebookcommerce_Utils::add_deferred_event( $code );
 			} else {
-				WC_Facebookcommerce_Utils::wc_enqueue_js( $code );
+				WC_Facebookcommerce_Utils::enqueue_inline_js( $code );
 			}
 		} else {
 			printf( $this->get_event_script( $event_name, self::build_params( $params, $event_name ), $method ) ); // phpcs:ignore WordPress.XSS.EscapeOutput.OutputNotEscaped
