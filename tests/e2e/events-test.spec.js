@@ -3,12 +3,17 @@
  */
 
 const { test, expect } = require('@playwright/test');
-const { TIMEOUTS } = require('./time-constants');
-const TestSetup = require('./lib/TestSetup');
-const EventValidator = require('./lib/EventValidator');
 const {
-  cleanupProduct
-} = require('./test-helpers');
+  TIMEOUTS,
+  TestSetup,
+  EventValidator,
+  cleanupProduct,
+  deactivatePlugin,
+  activatePlugin,
+  installPixelBlockerMuPlugin,
+  removePixelBlockerMuPlugin,
+  reconnectAndVerify
+} = require('./helpers/js');
 
 test('PageView', async ({ page }, testInfo) => {
     const { testId, pixelCapture } = await TestSetup.init(page, 'PageView', testInfo);
@@ -291,14 +296,6 @@ test('Search - No Results', async ({ page }, testInfo) => {
 
 
 test('ViewContent - No Consent (pixel disabled)', async ({ page }, testInfo) => {
-    const {
-      deactivatePlugin,
-      activatePlugin,
-      installPixelBlockerMuPlugin,
-      removePixelBlockerMuPlugin,
-      reconnectAndVerify
-    } = require('./test-helpers');
-
     // 1. Clear any existing _fbp/_fbc cookies from previous tests
     console.log('🍪 Clearing existing FB cookies...');
     await page.context().clearCookies();

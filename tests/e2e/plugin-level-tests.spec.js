@@ -1,7 +1,30 @@
 const { test, expect } = require('@playwright/test');
-const { TIMEOUTS } = require('./time-constants');
-
-const {loginToWordPress,logTestStart,logTestEnd,ensureDebugModeEnabled,checkWooCommerceLogs,checkForPhpErrors,checkForJsErrors,completePurchaseFlow,disconnectAndVerify,reconnectAndVerify,verifyProductsFacebookFieldsCleared,validateFacebookSync,publishProduct,installPlugin,execWP,createTestProduct,cleanupProduct,baseURL,generateUniqueSKU,filterProducts,clickFirstProduct,safeScreenshot,exactSearchSelect2Container} = require('./test-helpers');
+const {
+  TIMEOUTS,
+  baseURL,
+  loginToWordPress,
+  logTestStart,
+  logTestEnd,
+  ensureDebugModeEnabled,
+  checkWooCommerceLogs,
+  checkForPhpErrors,
+  checkForJsErrors,
+  completePurchaseFlow,
+  disconnectAndVerify,
+  reconnectAndVerify,
+  verifyProductsFacebookFieldsCleared,
+  validateFacebookSync,
+  publishProduct,
+  installPlugin,
+  execWP,
+  createTestProduct,
+  cleanupProduct,
+  generateUniqueSKU,
+  filterProducts,
+  clickFirstProduct,
+  safeScreenshot,
+  exactSearchSelect2Container
+} = require('./helpers/js');
 
 // Plugins to test compatibility with
 const COMPAT_PLUGINS = [

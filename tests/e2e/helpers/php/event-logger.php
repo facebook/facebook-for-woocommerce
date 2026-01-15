@@ -1,9 +1,11 @@
 <?php
 /**
- * Logger - Event logging for CAPI E2E tests
+ * Event Logger - Event logging for CAPI E2E tests
+ *
+ * Location: tests/e2e/helpers/php/event-logger.php
  *
  * Usage:
- * 1. For Pixel events: PixelCapture.js writes directly to filesystem. Does not use this class
+ * 1. For Pixel events: helpers/js/events/capture.js writes directly to filesystem. Does not use this class
  * 2. For CAPI events: PHP code calls E2E_Event_Logger::log_event()
  */
 class E2E_Event_Logger {

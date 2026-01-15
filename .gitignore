@@ -49,7 +49,7 @@ wp-config.php
 # Playwright test artifacts
 /test-results/
 /playwright-report/
-/tests/e2e/captured-events/*.json
+/tests/e2e/helpers/captured-events/*.json
 *login-failure-attempt*.png
 *test-failure*.png
 *debug*.png

@@ -4,6 +4,18 @@
  * Description: Intercepts Meta API batch requests during E2E tests
  * Version: 1.0.0-poc
  * Author: E2E Test Suite
+ *
+ * Location: tests/e2e/helpers/php/batch-monitor-plugin.php
+ *
+ * Usage: This plugin should be symlinked or copied to the WordPress mu-plugins directory
+ * to enable batch API monitoring during E2E tests.
+ *
+ * WP-CLI Commands:
+ *   wp fb-batch-api-monitor enable  - Enable monitoring and clear log
+ *   wp fb-batch-api-monitor disable - Disable monitoring
+ *   wp fb-batch-api-monitor get-log - Get the captured batch log
+ *   wp fb-batch-api-monitor clear   - Clear the log
+ *   wp fb-batch-api-monitor status  - Check monitoring status
  */
 
 if (!defined('ABSPATH')) exit;

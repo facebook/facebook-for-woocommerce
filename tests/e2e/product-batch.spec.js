@@ -1,8 +1,8 @@
 const { test, expect } = require('@playwright/test');
 const { execSync } = require('child_process');
 
-const { TIMEOUTS } = require('./time-constants');
 const {
+  TIMEOUTS,
   baseURL,
   wpSitePath,
   loginToWordPress,
@@ -16,17 +16,14 @@ const {
   generateUniqueSKU,
   cleanupProduct,
   cleanupCategory,
-  generateProductUpdateCSV
-} = require('./test-helpers');
-
-const {
+  generateProductUpdateCSV,
   enableBatchMonitoring,
   disableBatchMonitoring,
   readBatchLog,
   waitForBatchLogProducts,
   installMonitoringPlugin,
   uninstallMonitoringPlugin
-} = require('./batch-monitor-helpers');
+} = require('./helpers/js');
 
 test.describe('Facebook for WooCommerce - Product Batch Import E2E Tests', () => {
 
