@@ -49,7 +49,8 @@ class Background extends BackgroundJobHandler {
 			$job->status                = 'processing';
 			$job->started_processing_at = current_time( 'mysql' );
 
-			$job = $this->update_job( $job );
+			// Invalidate cache when status changes to processing
+			$job = $this->update_job( $job, true );
 		}
 
 		$data_key = $this->data_key;

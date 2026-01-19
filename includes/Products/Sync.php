@@ -254,12 +254,15 @@ class Sync {
 	/**
 	 * Determines whether a sync is currently in progress.
 	 *
+	 * This method uses caching to avoid expensive database queries.
+	 * The cache is automatically invalidated when jobs are created, updated, or completed.
+	 * On frontend requests, this always returns false to avoid expensive queries.
+	 *
 	 * @since 2.0.0
 	 *
 	 * @return bool
 	 */
 	public static function is_sync_in_progress() {
-
 		$jobs = facebook_for_woocommerce()->get_products_sync_background_handler()->get_jobs(
 			array(
 				'status' => 'processing',

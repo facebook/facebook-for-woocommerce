@@ -68,7 +68,12 @@ class DebugTools {
 	public function clean_up_old_background_sync_options() {
 		global $wpdb;
 
-		$wpdb->query( "DELETE FROM {$wpdb->options} WHERE option_name LIKE '%wc_facebook_background_product_sync%'" );
+		// Delete job entries (but not cache transients which use different pattern)
+		$wpdb->query( "DELETE FROM {$wpdb->options} WHERE option_name LIKE 'wc_facebook_background_product_sync_job_%'" );
+
+		// Invalidate the queue cache since we deleted jobs directly from the database
+		delete_transient( 'wc_facebook_background_product_sync_queue_empty' );
+		delete_transient( 'wc_facebook_background_product_sync_sync_in_progress' );
 
 		return __( 'Background sync jobs have been deleted.', 'facebook-for-woocommerce' );
 	}
