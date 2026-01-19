@@ -229,6 +229,8 @@ abstract class BackgroundJobHandler extends AsyncRequest {
 	protected function invalidate_queue_cache() {
 		delete_transient( $this->queue_empty_cache_key );
 		delete_transient( $this->sync_in_progress_cache_key );
+		// Also clear the is_sync_in_progress cache used by Sync class
+		delete_transient( 'wc_facebook_sync_in_progress' );
 	}
 
 
@@ -543,28 +545,14 @@ abstract class BackgroundJobHandler extends AsyncRequest {
 		$args = wp_parse_args(
 			$args,
 			[
-				'order'     => 'DESC',
-				'orderby'   => 'option_id',
-				'use_cache' => true,
+				'order'   => 'DESC',
+				'orderby' => 'option_id',
 			]
 		);
 
 		// Skip expensive query on frontend - only needed in admin/ajax/cron contexts
 		if ( ! is_admin() && ! wp_doing_ajax() && ! wp_doing_cron() ) {
 			return null; // Return no jobs on frontend to avoid query
-		}
-
-		// For status=processing queries, use cache to avoid expensive queries
-		$cache_key = null;
-		if ( $args['use_cache'] && ! empty( $args['status'] ) ) {
-			$statuses = (array) $args['status'];
-			if ( count( $statuses ) === 1 && 'processing' === $statuses[0] ) {
-				$cache_key = $this->sync_in_progress_cache_key;
-				$cached    = get_transient( $cache_key );
-				if ( false !== $cached ) {
-					return 'has_jobs' === $cached ? [ (object) [ 'cached' => true ] ] : null;
-				}
-			}
 		}
 
 		$replacements = [ $this->identifier . '_job_%' ];
@@ -596,10 +584,6 @@ abstract class BackgroundJobHandler extends AsyncRequest {
 		$results = $wpdb->get_col( $query );
 
 		if ( empty( $results ) ) {
-			// Cache the empty result for processing status queries - invalidated when job status changes
-			if ( $cache_key ) {
-				set_transient( $cache_key, 'no_jobs', 0 );
-			}
 			return null;
 		}
 
@@ -612,11 +596,6 @@ abstract class BackgroundJobHandler extends AsyncRequest {
 			/** This filter is documented above */
 			$job    = apply_filters( "{$this->identifier}_returned_job", $job );
 			$jobs[] = $job;
-		}
-
-		// Cache the result for processing status queries - invalidated when job status changes
-		if ( $cache_key ) {
-			set_transient( $cache_key, 'has_jobs', 0 );
 		}
 
 		return $jobs;

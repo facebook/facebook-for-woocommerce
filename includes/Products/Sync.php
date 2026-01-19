@@ -263,12 +263,30 @@ class Sync {
 	 * @return bool
 	 */
 	public static function is_sync_in_progress() {
+		// On frontend, skip the check entirely - visitors don't need sync status
+		if ( ! is_admin() && ! wp_doing_ajax() && ! wp_doing_cron() ) {
+			return false;
+		}
+
+		// Check cache first
+		$cache_key = 'wc_facebook_sync_in_progress';
+		$cached    = get_transient( $cache_key );
+		if ( false !== $cached ) {
+			return 'yes' === $cached;
+		}
+
+		// Query for processing jobs
 		$jobs = facebook_for_woocommerce()->get_products_sync_background_handler()->get_jobs(
 			array(
 				'status' => 'processing',
 			)
 		);
 
-		return ! empty( $jobs );
+		$in_progress = ! empty( $jobs );
+
+		// Cache the result - invalidated when job status changes
+		set_transient( $cache_key, $in_progress ? 'yes' : 'no', 0 );
+
+		return $in_progress;
 	}
 }
