@@ -167,9 +167,13 @@ class BackgroundJobHandlerTest extends AbstractWPUnitTestWithOptionIsolationAndS
 	}
 
 	/**
-	 * Test that get_jobs() caches processing status queries
+	 * Test that get_jobs() returns null when no jobs exist in admin context
+	 * 
+	 * Note: get_jobs() does NOT have caching - caching is implemented at the
+	 * higher level in is_sync_in_progress() in Sync.php. The get_jobs() method
+	 * only has a frontend guard.
 	 */
-	public function test_get_jobs_caches_processing_status_query() {
+	public function test_get_jobs_returns_null_when_no_jobs_in_admin() {
 		// Simulate admin context
 		set_current_screen( 'dashboard' );
 
@@ -177,52 +181,48 @@ class BackgroundJobHandlerTest extends AbstractWPUnitTestWithOptionIsolationAndS
 		$jobs = $this->handler->get_jobs( [ 'status' => 'processing' ] );
 		$this->assertNull( $jobs, 'Should return null when no processing jobs' );
 
-		// Verify cache was set
-		$cached = get_transient( 'test_background_job_sync_in_progress' );
-		$this->assertEquals( 'no_jobs', $cached, 'Cache should contain "no_jobs"' );
+		// Clean up
+		set_current_screen( null );
+	}
+
+	/**
+	 * Test that get_jobs() queries database in admin context (no caching in get_jobs)
+	 * 
+	 * Caching for sync status is handled by is_sync_in_progress() in Sync.php,
+	 * not by get_jobs() directly.
+	 */
+	public function test_get_jobs_queries_database_in_admin() {
+		// Simulate admin context
+		set_current_screen( 'dashboard' );
+
+		// Call get_jobs - should query database directly
+		$jobs = $this->handler->get_jobs( [ 'status' => 'processing' ] );
+		
+		// No jobs exist, should return null
+		$this->assertNull( $jobs, 'Should return null when no jobs exist' );
 
 		// Clean up
 		set_current_screen( null );
 	}
 
 	/**
-	 * Test that get_jobs() uses cached result for processing status
+	 * Test that get_jobs() returns jobs when they exist
 	 */
-	public function test_get_jobs_uses_cache_for_processing_status() {
+	public function test_get_jobs_returns_jobs_when_they_exist() {
 		// Simulate admin context
 		set_current_screen( 'dashboard' );
 
-		// Set cache manually to indicate jobs exist
-		set_transient( 'test_background_job_sync_in_progress', 'has_jobs', 0 );
+		// Create a test job
+		$job = $this->handler->create_job( [
+			'test_data' => 'value',
+		] );
+		$this->assertNotNull( $job, 'Job should be created' );
 
-		// Call should return cached indicator
-		$jobs = $this->handler->get_jobs( [ 'status' => 'processing' ] );
-		$this->assertNotNull( $jobs, 'Should return non-null from cache' );
+		// get_jobs should find it (queued status by default)
+		$jobs = $this->handler->get_jobs( [ 'status' => 'queued' ] );
+		$this->assertNotNull( $jobs, 'Should return jobs when they exist' );
 		$this->assertIsArray( $jobs, 'Should return array' );
 		$this->assertNotEmpty( $jobs, 'Should return non-empty array' );
-
-		// Clean up
-		set_current_screen( null );
-	}
-
-	/**
-	 * Test that get_jobs() can bypass cache when use_cache is false
-	 */
-	public function test_get_jobs_can_bypass_cache() {
-		// Simulate admin context
-		set_current_screen( 'dashboard' );
-
-		// Set cache manually
-		set_transient( 'test_background_job_sync_in_progress', 'has_jobs', 0 );
-
-		// Call with use_cache=false should query database
-		$jobs = $this->handler->get_jobs( [
-			'status'    => 'processing',
-			'use_cache' => false,
-		] );
-
-		// Since there are no actual jobs, should return null despite cache
-		$this->assertNull( $jobs, 'Should return null when bypassing cache with no actual jobs' );
 
 		// Clean up
 		set_current_screen( null );
