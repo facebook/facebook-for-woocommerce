@@ -19,7 +19,7 @@
     "composer/installers": "~1.0",
     "woocommerce/grow": "dev-compat-checker",
     "firebase/php-jwt": "^6.10",
-    "facebook/capi-param-builder-php": "^1.0.1"
+    "facebook/capi-param-builder-php": "^1.2.0"
   },
   "require-dev": {
     "composer/installers": "^1.7.0",

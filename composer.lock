@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "b893d11fc146c4af223557f99ee67187",
+    "content-hash": "5d38278705ac132a13d5b808afb8a3a1",
     "packages": [
         {
             "name": "composer/installers",
@@ -159,16 +159,16 @@
         },
         {
             "name": "facebook/capi-param-builder-php",
-            "version": "1.0.1",
+            "version": "1.2.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/facebook/capi-param-builder.git",
-                "reference": "b9ddd734c11a44d99f0d71913255a70cbc43b35b"
+                "reference": "3839636d4ef5f582e24c20aba5ae70f6ad9ca13a"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/facebook/capi-param-builder/zipball/b9ddd734c11a44d99f0d71913255a70cbc43b35b",
-                "reference": "b9ddd734c11a44d99f0d71913255a70cbc43b35b",
+                "url": "https://api.github.com/repos/facebook/capi-param-builder/zipball/3839636d4ef5f582e24c20aba5ae70f6ad9ca13a",
+                "reference": "3839636d4ef5f582e24c20aba5ae70f6ad9ca13a",
                 "shasum": ""
             },
             "require": {
@@ -187,9 +187,9 @@
             "description": "Parameter builder SDK for Conversion API events",
             "support": {
                 "issues": "https://github.com/facebook/capi-param-builder/issues",
-                "source": "https://github.com/facebook/capi-param-builder/tree/v1.0.1"
+                "source": "https://github.com/facebook/capi-param-builder/tree/v1.2.0"
             },
-            "time": "2025-08-04T23:12:03+00:00"
+            "time": "2025-10-31T17:58:28+00:00"
         },
         {
             "name": "firebase/php-jwt",
