@@ -335,7 +335,7 @@ class WC_Facebook_Product {
 		if ( is_callable( 'get_post' ) ) {
 			return get_post( $this->id );
 		} else {
-			return $this->get_post_data();
+			return null;
 		}
 	}
 
