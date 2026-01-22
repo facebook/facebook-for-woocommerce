@@ -247,7 +247,7 @@ if ( ! class_exists( 'WC_Facebookcommerce_Utils' ) ) :
 			$product = wc_get_product( $wpid );
 
 			if ( ! $product ) {
-				return 'Invalid product ID';
+				return [];
 			}
 
 			return $product->get_category_ids();
