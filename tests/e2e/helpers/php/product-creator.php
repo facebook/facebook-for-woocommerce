@@ -2,8 +2,10 @@
 /**
  * E2E Product Creator - Creates WooCommerce products programmatically for testing
  *
- * Usage: php e2e-product-creator.php <product_type> [name] [price] [stock]
- * Example: php e2e-product-creator.php simple "Test Product" 19.99 10
+ * Location: tests/e2e/helpers/php/product-creator.php
+ *
+ * Usage: php helpers/php/product-creator.php <product_type> [name] [price] [stock]
+ * Example: php helpers/php/product-creator.php simple "Test Product" 19.99 10
  */
 
 // Bootstrap WordPress
