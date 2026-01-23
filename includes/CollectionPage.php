@@ -4,25 +4,27 @@
  * New URL Example: /fbcollection/?clicked_product_id=SKU123_123&shown_product_ids=SKU456_456,SKU789_789
  */
 
-namespace Facebook\WooCommerce;
+namespace WooCommerce\Facebook;
 
 use WooCommerce\Facebook\Framework\Logger;
 
 defined( 'ABSPATH' ) || exit;
 
 /**
- * Commerce Page Override class for handling /fbcollection/ endpoint
+ * Collection Page class for handling /fbcollection/ endpoint
  */
-class Commerce_Page_Override {
+class CollectionPage {
 
-	const REWRITE_VERSION = '1.0.0';  // Bump this ONLY when rewrite rules change.
+	/** @var string the website url suffix for the collection page */
+	const ENDPOINT_PATH='/fbcollection/';
+
+	/** @var string the field that should be used for sync'ing the collection page endpoint */
+	const PRODUCT_FEED_FIELD='custom_label_4';
 
 	public function __construct() {
 		add_action( 'init', [ $this, 'register_rewrite_rule' ] );
 		add_filter( 'query_vars', [ $this, 'add_query_vars' ] );
 		add_action( 'woocommerce_product_query', [ $this, 'modify_product_query' ] );
-		add_action( 'plugins_loaded', [ $this, 'check_and_trigger_flush' ] );
-		add_action( 'init', [ $this, 'flush_rewrite_if_needed' ] );
 	}
 
 	/**
@@ -109,26 +111,6 @@ class Commerce_Page_Override {
 		} else {
 			$query->set( 'orderby', 'popularity' );
 			$query->set( 'posts_per_page', 8 );
-		}
-	}
-
-	/**
-	 * Versioned Rewrite Rules Flush on Upgrade.
-	 */
-	public function check_and_trigger_flush() {
-		$stored_version = get_option( 'fbwcommerce_rewrites_flushed' );
-		if ( self::REWRITE_VERSION !== $stored_version ) {
-			update_option( 'fbwcommerce_flush_needed', true );
-			update_option( 'fbwcommerce_rewrites_flushed', self::REWRITE_VERSION );
-		}
-	}
-
-	public function flush_rewrite_if_needed() {
-		// This function checks if a flush is required (flagged by check_and_trigger_flush)
-		// If the flag is set, it flushes rewrite rules and deletes the flag to avoid repeat flushes.
-		if ( get_option( 'fbwcommerce_flush_needed' ) ) {
-			flush_rewrite_rules();
-			delete_option( 'fbwcommerce_flush_needed' );
 		}
 	}
 }

@@ -9,7 +9,6 @@
  */
 
 require_once __DIR__ . '/includes/fbutils.php';
-require_once __DIR__ . '/includes/fbcollection.php';
 
 use Automattic\WooCommerce\Admin\Features\Features as WooAdminFeatures;
 use Automattic\WooCommerce\Admin\Features\OnboardingTasks\TaskLists;
@@ -114,6 +113,9 @@ class WC_Facebookcommerce extends WooCommerce\Facebook\Framework\Plugin {
 	/** @var WooCommerce\Facebook\Handlers\WebHook webhook handler */
 	private $webhook_handler;
 
+	/** @var WooCommerce\Facebook\Commerce_Page_Handler class, which handles the fbcollection endpoint */
+	private $fbcollection_handler;
+
 	/** @var WooCommerce\Facebook\Commerce commerce handler */
 	private $commerce_handler;
 
@@ -192,9 +194,7 @@ class WC_Facebookcommerce extends WooCommerce\Facebook\Framework\Plugin {
 		// Hook the setup task. The hook admin_init is not triggered when the WC fetches the tasks using the endpoint: wp-json/wc-admin/onboarding/tasks and hence hooking into init.
 		add_action( 'init', array( $this, 'add_setup_task' ), 20 );
 		add_action( 'admin_notices', array( $this, 'add_inbox_notes' ) );
-		if ( class_exists( '\Facebook\WooCommerce\Commerce_Page_Override' ) ) {
-			new \Facebook\WooCommerce\Commerce_Page_Override();
-		}
+
 		add_filter(
 			'wc_' . self::PLUGIN_ID . '_http_request_args',
 			array( $this, 'force_user_agent_in_latin' )
@@ -219,14 +219,13 @@ class WC_Facebookcommerce extends WooCommerce\Facebook\Framework\Plugin {
 			$this->commerce_handler                 = new WooCommerce\Facebook\Commerce();
 			$this->fb_categories                    = new WooCommerce\Facebook\Products\FBCategories();
 			$this->external_version_update          = new WooCommerce\Facebook\ExternalVersionUpdate\Update();
-
+			$this->fbcollection_handler				= new WooCommerce\Facebook\CollectionPage();
 			if ( wp_doing_ajax() ) {
 				$this->ajax = new WooCommerce\Facebook\AJAX();
 			}
 
 			// Load integrations.
-			require_once __DIR__ . '/includes/fbwpml.php';
-			new WC_Facebook_WPML_Injector();
+			new WooCommerce\Facebook\WPMLInjector();
 			new BookingsIntegration();
 
 			if ( 'yes' !== get_option( 'wc_facebook_background_handle_virtual_products_variations_complete', 'no' ) ) {
