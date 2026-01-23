@@ -59,23 +59,23 @@ const {
 } = require('./categories/crud');
 
 // =============================================================================
-// Facebook
+// Facebook Plugin
 // =============================================================================
 const {
   validateFacebookSync,
   validateCategorySync
-} = require('./facebook/sync');
+} = require('./plugin/sync');
 
 const {
   getConnectionStatus,
   disconnectAndVerify,
   reconnectAndVerify,
   verifyProductsFacebookFieldsCleared
-} = require('./facebook/connection');
+} = require('./plugin/connection');
 
 const {
   openFacebookOptions
-} = require('./facebook/options');
+} = require('./plugin/options');
 
 // =============================================================================
 // WordPress
