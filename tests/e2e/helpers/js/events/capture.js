@@ -24,7 +24,7 @@ class PixelCapture {
           const url = request.url();
           const parsedUrl = new URL(url);
 
-          if (!parsedUrl.hostname.includes('facebook.com')) return false;
+          if (!parsedUrl.hostname.endsWith('.facebook.com')) return false;
           if (!parsedUrl.pathname.includes('/tr/') && !parsedUrl.pathname.includes('/privacy_sandbox/')) return false;
           return parsedUrl.search.includes(`ev=${this.eventName}`);
         },
