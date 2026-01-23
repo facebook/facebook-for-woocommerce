@@ -335,7 +335,7 @@ class WC_Facebook_Product {
 		if ( is_callable( 'get_post' ) ) {
 			return get_post( $this->id );
 		} else {
-			return $this->get_post_data();
+			return null;
 		}
 	}
 
@@ -763,7 +763,10 @@ class WC_Facebook_Product {
 
 		// If no description is found from meta or variation, get from post
 		if ( empty( $description ) ) {
-			$post         = $this->get_post_data();
+			$post = $this->get_post_data();
+			if ( ! $post ) {
+				return apply_filters( 'facebook_for_woocommerce_fb_product_description', '', $this->id );
+			}
 			$post_content = WC_Facebookcommerce_Utils::clean_string( $post->post_content );
 			$post_excerpt = WC_Facebookcommerce_Utils::clean_string( $post->post_excerpt );
 			$post_title   = WC_Facebookcommerce_Utils::clean_string( $post->post_title );
@@ -839,7 +842,10 @@ class WC_Facebook_Product {
 		}
 
 		// Use the product's short description (excerpt) from WooCommerce
-		$post         = $this->get_post_data();
+		$post = $this->get_post_data();
+		if ( ! $post ) {
+			return apply_filters( 'facebook_for_woocommerce_fb_product_short_description', '', $this->id );
+		}
 		$post_excerpt = WC_Facebookcommerce_Utils::clean_string( $post->post_excerpt );
 
 		if ( ! empty( $post_excerpt ) ) {
