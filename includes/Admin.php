@@ -15,6 +15,7 @@ use WooCommerce\Facebook\Framework\Helper;
 use WooCommerce\Facebook\ProductAttributeMapper;
 use WooCommerce\Facebook\RolloutSwitches;
 use Automattic\WooCommerce\Utilities\OrderUtil;
+use WooCommerce\Facebook\Admin\Products as AdminProducts;
 
 defined( 'ABSPATH' ) || exit;
 
@@ -117,6 +118,14 @@ class Admin {
 		add_action( 'wp_ajax_get_facebook_product_data', array( $this, 'ajax_get_facebook_product_data' ) );
 
 		add_action( 'wp_ajax_sync_facebook_attributes', array( $this, 'ajax_sync_facebook_attributes' ) );
+
+		// add integrations
+		add_action( 'wp_loaded', array( $this, 'add_integrations' ) );
+
+		// AJAX handlers for progressive category loading
+		add_action( 'wp_ajax_wc_facebook_load_category_children', array( $this, 'ajax_load_category_children' ) );
+		add_action( 'wp_ajax_wc_facebook_get_category_path', array( $this, 'ajax_get_category_path' ) );
+		add_action( 'wp_ajax_wc_facebook_find_category_id_from_name', array( $this, 'ajax_find_category_id_from_name' ) );
 	}
 
 	/**
@@ -141,14 +150,25 @@ class Admin {
 					\WC_Facebookcommerce::PLUGIN_VERSION,
 					false
 				);
+				// enqueue select2 for our category fields
+				wp_enqueue_script( 'select2' );
 
 				// enqueue google product category select
 				wp_enqueue_script(
 					'wc-facebook-google-product-category-fields',
 					facebook_for_woocommerce()->get_asset_build_dir_url() . '/admin/google-product-category-fields.js',
-					array( 'jquery' ),
+					array( 'jquery', 'select2' ),
 					\WC_Facebookcommerce::PLUGIN_VERSION,
 					false
+				);
+
+				// Localize script with nonce for AJAX requests
+				wp_localize_script(
+					'wc-facebook-google-product-category-fields',
+					'wc_facebook_google_product_category_fields_params',
+					array(
+						'nonce' => wp_create_nonce( 'wc_facebook_category_nonce' ),
+					)
 				);
 
 				wp_localize_script(
@@ -631,7 +651,9 @@ class Admin {
 	 * @param string $product_edit the product metadata that is being edited.
 	 */
 	public function handle_products_sync_bulk_actions( $product_edit ) {
+		// phpcs:disable WordPress.Security.NonceVerification.Recommended -- Bulk actions are handled by WooCommerce core with nonce verification
 		$sync_mode = isset( $_GET['facebook_bulk_sync_options'] ) ? (string) sanitize_text_field( wp_unslash( $_GET['facebook_bulk_sync_options'] ) ) : null;
+		// phpcs:enable WordPress.Security.NonceVerification.Recommended
 
 		if ( $sync_mode ) {
 			/** @var \WC_Product[] $enabling_sync_virtual_products virtual products that are being included */
@@ -2555,5 +2577,142 @@ class Admin {
 			wp_send_json_success( $synced_fields );
 		}
 		wp_send_json_error( 'Invalid product ID' );
+	}
+
+	/**
+	 * AJAX handler to load children categories for a given parent ID.
+	 *
+	 * @since 2.1.0
+	 */
+	public function ajax_load_category_children() {
+		// Verify nonce
+		if ( ! isset( $_POST['nonce'] ) || ! wp_verify_nonce( sanitize_key( wp_unslash( $_POST['nonce'] ) ), 'wc_facebook_category_nonce' ) ) {
+			wp_die( 'Security check failed' );
+		}
+
+		if ( ! isset( $_POST['parent_id'] ) ) {
+			wp_send_json_error( 'Missing parent ID' );
+		}
+
+		$parent_id = sanitize_text_field( wp_unslash( $_POST['parent_id'] ) );
+
+		$facebook_category_handler = facebook_for_woocommerce()->get_facebook_category_handler();
+
+		if ( ! $facebook_category_handler ) {
+			wp_send_json_error( 'Category handler not available' );
+		}
+
+		$all_categories = $facebook_category_handler->get_categories();
+		$children       = array();
+
+		foreach ( $all_categories as $category_id => $category ) {
+			if ( isset( $category['parent'] ) && $category['parent'] === $parent_id ) {
+				$children[ $category_id ] = $category;
+			}
+		}
+
+		wp_send_json_success( $children );
+	}
+
+	/**
+	 * AJAX handler to get category path for a given category ID.
+	 *
+	 * @since 2.1.0
+	 */
+	public function ajax_get_category_path() {
+		check_ajax_referer( 'wc_facebook_category_nonce', 'nonce' );
+
+		if ( ! isset( $_POST['category_id'] ) ) {
+			wp_send_json_error( 'Missing category ID' );
+		}
+
+		$category_id = sanitize_text_field( wp_unslash( $_POST['category_id'] ) );
+
+		if ( empty( $category_id ) ) {
+			wp_send_json_error( 'Invalid category ID' );
+		}
+
+		$facebook_category_handler = facebook_for_woocommerce()->get_facebook_category_handler();
+
+		if ( ! $facebook_category_handler ) {
+			wp_send_json_error( 'Category handler not available' );
+		}
+
+		$all_categories = $facebook_category_handler->get_categories();
+
+		// Build the path from child to root
+		$path              = array();
+		$current_id        = $category_id;
+		$categories_needed = array(); // Categories that need to be loaded on frontend
+
+		while ( $current_id && isset( $all_categories[ $current_id ] ) ) {
+			array_unshift( $path, $current_id ); // Add to beginning of array
+			$categories_needed[ $current_id ] = $all_categories[ $current_id ];
+			$current_id                       = $all_categories[ $current_id ]['parent'];
+		}
+
+		wp_send_json_success(
+			array(
+				'path'       => $path,
+				'categories' => $categories_needed,
+			)
+		);
+	}
+
+	/**
+	 * AJAX handler to find category ID from category name.
+	 *
+	 * @since 2.1.0
+	 */
+	public function ajax_find_category_id_from_name() {
+		check_ajax_referer( 'wc_facebook_category_nonce', 'nonce' );
+
+		if ( ! isset( $_POST['category_name_path'] ) ) {
+			wp_send_json_error( 'Missing category name' );
+		}
+
+		$category_name_path = sanitize_text_field( wp_unslash( $_POST['category_name_path'] ) );
+
+		if ( empty( $category_name_path ) ) {
+			wp_send_json_error( 'Invalid category name' );
+		}
+
+		$facebook_category_handler = facebook_for_woocommerce()->get_facebook_category_handler();
+
+		if ( ! $facebook_category_handler ) {
+			wp_send_json_error( 'Category handler not available' );
+		}
+
+		$all_categories = $facebook_category_handler->get_categories();
+
+		// Try to find the category by exact path match
+		$found_category_id = null;
+
+		// First, try exact match of the full path
+		foreach ( $all_categories as $category_id => $category ) {
+			if ( isset( $category['label'] ) && $category['label'] === $category_name_path ) {
+				$found_category_id = $category_id;
+				break;
+			}
+		}
+
+		// If not found, try to match the last part of the path (leaf category)
+		if ( ! $found_category_id ) {
+			$path_parts = explode( ' > ', $category_name_path );
+			$leaf_name  = trim( end( $path_parts ) );
+
+			foreach ( $all_categories as $category_id => $category ) {
+				if ( isset( $category['label'] ) && $category['label'] === $leaf_name ) {
+					$found_category_id = $category_id;
+					break;
+				}
+			}
+		}
+
+		if ( $found_category_id ) {
+			wp_send_json_success( array( 'category_id' => $found_category_id ) );
+		} else {
+			wp_send_json_error( 'Category not found: ' . $category_name_path );
+		}
 	}
 }
