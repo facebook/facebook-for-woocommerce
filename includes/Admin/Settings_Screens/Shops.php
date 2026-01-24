@@ -130,6 +130,9 @@ class Shops extends Abstract_Settings_Screen {
 
 		wp_enqueue_style( 'wc-facebook-admin-shops-settings', facebook_for_woocommerce()->get_plugin_url() . '/assets/css/admin/facebook-for-woocommerce-shops.css', array(), \WC_Facebookcommerce::VERSION );
 
+		wp_enqueue_script( 'select2' );
+		wp_enqueue_style( 'select2' );
+
 		wp_enqueue_script(
 			'wc-facebook-enhanced-settings-sync',
 			facebook_for_woocommerce()->get_asset_build_dir_url() . '/admin/enhanced-settings-sync.js',
@@ -351,6 +354,18 @@ class Shops extends Abstract_Settings_Screen {
 			RolloutSwitches::SWITCH_OFFER_MANAGEMENT_ENABLED
 		);
 
+		$existing_emails = get_option( 'wc_facebook_excluded_emails', [] );
+		if ( is_string( $existing_emails ) ) {
+			$existing_emails = array_map( 'trim', explode( ',', $existing_emails ) );
+		}
+		$existing_email_options = array_combine( $existing_emails, $existing_emails );
+
+		$existing_ips = get_option( 'wc_facebook_excluded_ips', [] );
+		if ( is_string( $existing_ips ) ) {
+			$existing_ips = array_map( 'trim', explode( ',', $existing_ips ) );
+		}
+		$existing_ip_options = array_combine( $existing_ips, $existing_ips );
+
 		$title_array = [
 			'title' => $title,
 			'type'  => 'title',
@@ -373,6 +388,44 @@ class Shops extends Abstract_Settings_Screen {
 				'desc'     => __( 'Log plugin events for debugging.', 'facebook-for-woocommerce' ),
 				/* translators: %s URL to the documentation page. */
 				'desc_tip' => sprintf( __( 'Only enable this if you are experiencing problems with the plugin. <a href="%s" target="_blank">Learn more</a>.', 'facebook-for-woocommerce' ), 'https://woocommerce.com/document/facebook-for-woocommerce/#debug-tools' ),
+				'default'  => 'no',
+			],
+
+			[
+				'title'    => __( 'Exclude Emails from Purchase Events', 'facebook-for-woocommerce' ),
+				'desc'     => __( 'Comma-separated list of email addresses. Orders from these will not trigger a Facebook Purchase event.', 'facebook-for-woocommerce' ),
+				'id'       => 'wc_facebook_excluded_emails',
+				'type'     => 'multiselect',
+				'default'  => '',
+				'class'    => 'wc-enhanced-select',
+				'custom_attributes' => [
+					'multiple' => 'multiple',
+				],
+				'tags' => true,
+				'css'      => 'width: 50%;',
+				'options'  => $existing_email_options,
+			],
+
+			[
+				'title'    => __( 'Exclude IPs from Purchase Events', 'facebook-for-woocommerce' ),
+				'desc'     => __( 'Comma-separated list of IP addresses. Orders from these will not trigger a Facebook Purchase event.', 'facebook-for-woocommerce' ),
+				'id'       => 'wc_facebook_excluded_ips',
+				'type'     => 'multiselect',
+				'default'  => '',
+				'class'    => 'wc-enhanced-select',
+				'custom_attributes' => [
+					'multiple' => 'multiple',
+				],
+				'tags' => true,
+				'css'      => 'width: 50%;',
+				'options'  => $existing_ip_options,
+			],
+
+			[
+				'title'    => __( 'Exclude Admin User Purchases', 'facebook-for-woocommerce' ),
+				'desc'     => __( 'If enabled, orders placed by admin users will not trigger a Facebook Purchase event.', 'facebook-for-woocommerce' ),
+				'id'       => 'wc_facebook_exclude_admin_purchases',
+				'type'     => 'checkbox',
 				'default'  => 'no',
 			],
 		];
