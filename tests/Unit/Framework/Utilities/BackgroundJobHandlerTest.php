@@ -511,11 +511,110 @@ class TestableBackgroundJobHandler extends BackgroundJobHandler {
 	}
 
 	/**
-	 * Override is_process_request to control in tests
+	 * Override is_process_request to control in tests.
+	 *
+	 * In the actual BackgroundJobHandler, this method checks if the current request
+	 * is a background processing request by checking if $_REQUEST['action'] matches
+	 * the handler's identifier. For unit tests, we return false to simulate
+	 * non-background-process requests.
 	 */
 	protected function is_process_request() {
 		return false;
 	}
+}
+
+
+/**
+ * Unit tests for the is_process_request() method behavior.
+ *
+ * Note: The actual is_process_request() method checks $_REQUEST['action']
+ * which is difficult to test in PHPUnit without modifying superglobals.
+ * These tests verify the method exists and the logic is correct.
+ */
+class IsProcessRequestTest extends AbstractWPUnitTestWithOptionIsolationAndSafeFiltering {
+
+	/**
+	 * Test that is_process_request returns false when no action is set
+	 */
+	public function test_is_process_request_returns_false_when_no_action() {
+		// Ensure $_REQUEST['action'] is not set
+		unset( $_REQUEST['action'] );
+
+		$handler = new TestableBackgroundJobHandlerForProcessRequest();
+		$result  = $this->invokeMethod( $handler, 'is_process_request' );
+
+		$this->assertFalse( $result, 'Should return false when no action is set' );
+	}
+
+	/**
+	 * Test that is_process_request returns false when action doesn't match
+	 */
+	public function test_is_process_request_returns_false_when_action_mismatch() {
+		$_REQUEST['action'] = 'some_other_action';
+
+		$handler = new TestableBackgroundJobHandlerForProcessRequest();
+		$result  = $this->invokeMethod( $handler, 'is_process_request' );
+
+		$this->assertFalse( $result, 'Should return false when action does not match identifier' );
+
+		// Clean up
+		unset( $_REQUEST['action'] );
+	}
+
+	/**
+	 * Test that is_process_request returns true when action matches identifier
+	 */
+	public function test_is_process_request_returns_true_when_action_matches() {
+		$handler            = new TestableBackgroundJobHandlerForProcessRequest();
+		$_REQUEST['action'] = 'test_background_job'; // Matches the handler's identifier
+
+		$result = $this->invokeMethod( $handler, 'is_process_request' );
+
+		$this->assertTrue( $result, 'Should return true when action matches identifier' );
+
+		// Clean up
+		unset( $_REQUEST['action'] );
+	}
+
+	/**
+	 * Helper to invoke protected/private methods
+	 */
+	private function invokeMethod( $object, $methodName, array $parameters = [] ) {
+		$reflection = new \ReflectionClass( get_class( $object ) );
+		$method     = $reflection->getMethod( $methodName );
+		$method->setAccessible( true );
+
+		return $method->invokeArgs( $object, $parameters );
+	}
+}
+
+/**
+ * Testable implementation that uses the real is_process_request() method
+ */
+class TestableBackgroundJobHandlerForProcessRequest extends BackgroundJobHandler {
+
+	protected $prefix = 'test';
+	protected $action = 'background_job';
+
+	/**
+	 * Constructor - skip parent hooks for testing
+	 */
+	public function __construct() {
+		$this->identifier                 = $this->prefix . '_' . $this->action;
+		$this->cron_hook_identifier       = $this->identifier . '_cron';
+		$this->cron_interval_identifier   = $this->identifier . '_cron_interval';
+		$this->queue_empty_cache_key      = $this->identifier . '_queue_empty';
+		$this->sync_in_progress_cache_key = $this->identifier . '_sync_in_progress';
+	}
+
+	/**
+	 * Required abstract method implementation
+	 */
+	protected function process_item( $item, $job ) {
+		return $item;
+	}
+
+	// Note: We DON'T override is_process_request() here to test the real implementation
 }
 
 

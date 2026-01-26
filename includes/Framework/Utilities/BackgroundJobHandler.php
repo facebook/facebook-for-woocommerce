@@ -180,7 +180,9 @@ abstract class BackgroundJobHandler extends AsyncRequest {
 	 * @return bool True if queue is empty, false otherwise
 	 */
 	protected function is_queue_empty() {
-		// Skip expensive query on frontend - only needed in admin/ajax/cron contexts
+		// Skip expensive query on frontend - only needed in admin/ajax/cron/process contexts.
+		// The method runs if ANY of these is true: is_admin(), wp_doing_ajax(), wp_doing_cron(), or is_process_request().
+		// On pure frontend requests (none of those conditions), we return true to skip the expensive query.
 		if ( ! is_admin() && ! wp_doing_ajax() && ! wp_doing_cron() && ! $this->is_process_request() ) {
 			return true; // Assume empty on frontend to avoid query
 		}
@@ -213,8 +215,8 @@ abstract class BackgroundJobHandler extends AsyncRequest {
 
 		$is_empty = intval( $count ) === 0;
 
-		// Cache the result indefinitely - it will be invalidated when job status changes
-		set_transient( $this->queue_empty_cache_key, $is_empty ? 'empty' : 'not_empty', 0 );
+		// Cache the result for 1 hour as a safety net - it will be invalidated when job status changes
+		set_transient( $this->queue_empty_cache_key, $is_empty ? 'empty' : 'not_empty', HOUR_IN_SECONDS );
 
 		return $is_empty;
 	}
@@ -231,6 +233,21 @@ abstract class BackgroundJobHandler extends AsyncRequest {
 		delete_transient( $this->sync_in_progress_cache_key );
 		// Also clear the is_sync_in_progress cache used by Sync class
 		delete_transient( 'wc_facebook_sync_in_progress' );
+	}
+
+
+	/**
+	 * Check whether the current request is a background process request.
+	 *
+	 * Checks if the request action matches this handler's identifier,
+	 * indicating it's an actual background processing request.
+	 *
+	 * @since 3.5.0
+	 * @return bool True if this is a background process request, false otherwise
+	 */
+	protected function is_process_request() {
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Nonce verified in maybe_handle()
+		return isset( $_REQUEST['action'] ) && $_REQUEST['action'] === $this->identifier;
 	}
 
 
@@ -550,7 +567,9 @@ abstract class BackgroundJobHandler extends AsyncRequest {
 			]
 		);
 
-		// Skip expensive query on frontend - only needed in admin/ajax/cron contexts
+		// Skip expensive query on frontend - only needed in admin/ajax/cron contexts.
+		// The method runs if ANY of these is true: is_admin(), wp_doing_ajax(), or wp_doing_cron().
+		// On pure frontend requests (none of those conditions), we return null to skip the expensive query.
 		if ( ! is_admin() && ! wp_doing_ajax() && ! wp_doing_cron() ) {
 			return null; // Return no jobs on frontend to avoid query
 		}
