@@ -219,7 +219,7 @@ class WC_Facebookcommerce extends WooCommerce\Facebook\Framework\Plugin {
 			$this->commerce_handler                 = new WooCommerce\Facebook\Commerce();
 			$this->fb_categories                    = new WooCommerce\Facebook\Products\FBCategories();
 			$this->external_version_update          = new WooCommerce\Facebook\ExternalVersionUpdate\Update();
-			$this->fbcollection_handler				= new WooCommerce\Facebook\CollectionPage();
+			$this->fbcollection_handler             = new WooCommerce\Facebook\CollectionPage();
 			if ( wp_doing_ajax() ) {
 				$this->ajax = new WooCommerce\Facebook\AJAX();
 			}
