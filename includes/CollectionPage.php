@@ -16,10 +16,10 @@ defined( 'ABSPATH' ) || exit;
 class CollectionPage {
 
 	/** @var string the website url suffix for the collection page */
-	const ENDPOINT_PATH='/fbcollection/';
+	const ENDPOINT_PATH = '/fbcollection/';
 
 	/** @var string the field that should be used for sync'ing the collection page endpoint */
-	const PRODUCT_FEED_FIELD='custom_label_4';
+	const PRODUCT_FEED_FIELD = 'custom_label_4';
 
 	public function __construct() {
 		add_action( 'init', [ $this, 'register_rewrite_rule' ] );
