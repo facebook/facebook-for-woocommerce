@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Facebook Commerce Recommendation Override for /fbcollection/
  * New URL Example: /fbcollection/?clicked_product_id=SKU123_123&shown_product_ids=SKU456_456,SKU789_789
@@ -8,30 +9,32 @@ namespace WooCommerce\Facebook;
 
 use WooCommerce\Facebook\Framework\Logger;
 
-defined( 'ABSPATH' ) || exit;
+defined('ABSPATH') || exit;
 
 /**
  * Collection Page class for handling /fbcollection/ endpoint
  */
-class CollectionPage {
-
+class CollectionPage
+{
 	/** @var string the website url suffix for the collection page */
 	const ENDPOINT_PATH = '/fbcollection/';
 
 	/** @var string the field that should be used for sync'ing the collection page endpoint */
 	const PRODUCT_FEED_FIELD = 'custom_label_4';
 
-	public function __construct() {
-		add_action( 'init', [ $this, 'register_rewrite_rule' ] );
-		add_filter( 'query_vars', [ $this, 'add_query_vars' ] );
-		add_action( 'woocommerce_product_query', [ $this, 'modify_product_query' ] );
+	public function __construct()
+	{
+		add_action('init', [$this, 'register_rewrite_rule']);
+		add_filter('query_vars', [$this, 'add_query_vars']);
+		add_action('woocommerce_product_query', [$this, 'modify_product_query']);
 	}
 
 	/**
 	 * Register /fbcollection/ as a virtual WooCommerce archive page.
 	 */
-	public function register_rewrite_rule() {
-		add_rewrite_rule( '^fbcollection/?$', 'index.php?post_type=product&custom_fbcollection_page=1', 'top' );
+	public function register_rewrite_rule()
+	{
+		add_rewrite_rule('^fbcollection/?$', 'index.php?post_type=product&custom_fbcollection_page=1', 'top');
 	}
 
 	/**
@@ -40,7 +43,8 @@ class CollectionPage {
 	 * @param array $vars Query variables.
 	 * @return array
 	 */
-	public function add_query_vars( $vars ) {
+	public function add_query_vars($vars)
+	{
 		$vars[] = 'custom_fbcollection_page';
 		return $vars;
 	}
@@ -50,14 +54,15 @@ class CollectionPage {
 	 *
 	 * @param WP_Query $query The WooCommerce product query.
 	 */
-	public function modify_product_query( $query ) {
-		if ( 1 !== intval( get_query_var( 'custom_fbcollection_page' ) ) ) {
+	public function modify_product_query($query)
+	{
+		if (1 !== intval(get_query_var('custom_fbcollection_page'))) {
 			return;
 		}
 
 		// Debug logger to verify query filtering triggers
 		Logger::log(
-			'FBCollection Query Triggered: ' . print_r( $_GET, true ),
+			'FBCollection Query Triggered: ' . print_r($_GET, true),
 			[],
 			array(
 				'should_send_log_to_meta'        => false,
@@ -66,51 +71,164 @@ class CollectionPage {
 			)
 		);
 
-		// Helper to extract product_id from retailer_id format
-		$extract_product_id = function ( $retailer_id ) {
-			if ( false !== strpos( $retailer_id, '_' ) ) {
-				$parts = explode( '_', $retailer_id );
-				return absint( end( $parts ) );
-			}
-			return absint( $retailer_id );
-		};
-
-		// Parse clicked_product_id
-		$clicked_product_id_raw = sanitize_text_field( wp_unslash( $_GET['clicked_product_id'] ?? '' ) );
-		$clicked_product_id     = $extract_product_id( $clicked_product_id_raw );
-
-		// Parse shown_product_ids
-		$shown_product_ids_raw = explode( ',', sanitize_text_field( wp_unslash( $_GET['shown_product_ids'] ?? '' ) ) );
-		$shown_product_ids     = array_map( $extract_product_id, array_map( 'sanitize_text_field', $shown_product_ids_raw ) );
-		$shown_product_ids     = array_filter( $shown_product_ids ); // Remove empty/invalid
-		$shown_product_ids     = array_slice( $shown_product_ids, 0, 30 ); // Limit to 30
-
 		$final_product_ids = [];
 
-		if ( $clicked_product_id && 'product' === get_post_type( $clicked_product_id ) ) {
-			$final_product_ids[] = $clicked_product_id;
+		// Parse clicked_product_id
+		$clicked_product_id_raw = sanitize_text_field(wp_unslash($_GET['clicked_product_id'] ?? ''));
+		$clicked_product_id     = $this->extract_woo_id_from_retailer_id($clicked_product_id_raw);
+
+		if ($clicked_product_id) {
+			$product_id = $this->get_product_id_handle_variations($clicked_product_id);
+			if ( false !== $product_id ) {
+				$clicked_product_id = $product_id;
+				$final_product_ids[] = $clicked_product_id;
+			}
 		}
 
-		$valid_shown_ids = array_filter(
-			$shown_product_ids,
-			function ( $id ) use ( $clicked_product_id ) {
-				if ( $clicked_product_id === $id ) {
-					return false;
-				}
-				$product = wc_get_product( $id );
-				return $product && $product->is_visible();
-			}
+		// Parse shown_product_ids
+		$shown_product_ids_raw = explode(',', sanitize_text_field(wp_unslash($_GET['shown_product_ids'] ?? '')));
+		$shown_product_ids     = array_map( array ( $this, 'extract_woo_id_from_retailer_id' ), array_map('sanitize_text_field', $shown_product_ids_raw));
+		$shown_product_ids     = array_unique(array_filter($shown_product_ids)); // Remove empty/invalid
+		$shown_product_ids     = array_slice($shown_product_ids, 0, 30); // Limit to 30
+
+		$shown_product_ids = array_filter(
+			array_filter(
+				array_unique(
+					array_map( 
+						array( $this, 'get_product_id_handle_variations' ), 
+						$shown_product_ids 
+						)
+					)
+				),
+			fn($id) => $clicked_product_id !== $id
 		);
 
-		$final_product_ids = array_merge( $final_product_ids, $valid_shown_ids );
-
-		if ( ! empty( $final_product_ids ) ) {
-			$query->set( 'post__in', $final_product_ids );
-			$query->set( 'orderby', 'post__in' );
-			$query->set( 'posts_per_page', count( $final_product_ids ) );
+		$final_product_ids = array_merge( $final_product_ids, $shown_product_ids );
+		
+		if (! empty($final_product_ids)) {
+			$query->set('post__in', $final_product_ids);
+			$query->set('orderby', 'post__in');
+			$query->set('posts_per_page', count($final_product_ids));
 		} else {
-			$query->set( 'orderby', 'popularity' );
-			$query->set( 'posts_per_page', 8 );
+			$query->set('orderby', 'popularity');
+			$query->set('posts_per_page', 8);
 		}
+	}
+
+	/**
+	 * Translate a product ID for multi-language sites (WPML/Polylang).
+	 *
+	 * @param int $product_id The original product ID.
+	 * @return int The translated product ID for the current language, or original if no translation.
+	 */
+	private function translate_product_id( $product_id ) {
+		if ( ! $product_id ) {
+			return $product_id;
+		}
+
+		// WPML support - auto-detect post type to handle both products and variations
+		if ( has_filter( 'wpml_object_id' ) ) {
+			$post_type = get_post_type( $product_id );
+			if ( $post_type ) {
+				$translated_id = apply_filters( 'wpml_object_id', $product_id, $post_type, true );
+				if ( $translated_id ) {
+					return $translated_id;
+				}
+			}
+		}
+
+		// Polylang support
+		if ( function_exists( 'pll_get_post' ) ) {
+			$translated_id = pll_get_post( $product_id );
+			if ( $translated_id ) {
+				return $translated_id;
+			}
+		}
+
+		return $product_id;
+	}
+
+	/**
+	 * Get the displayable product ID, handling variations and translations.
+	 * Converts variations to their parent products since archive pages display parent products only.
+	 * Bundle/composite products are returned as-is if they are valid visible products.
+	 *
+	 * @param int $product_id The product ID (could be variation, bundle, composite, etc.).
+	 * @return int|false The displayable product ID, or false if invalid/not visible.
+	 */
+	private function get_product_id_handle_variations( $product_id ) {
+		if ( ! $product_id ) {
+			return false;
+		}
+
+		// Translate for multi-language support
+		$product_id = $this->translate_product_id( $product_id );
+
+		$product = wc_get_product( $product_id );
+
+		if ( ! $product ) {
+			return false;
+		}
+
+		// Handle variations - return parent variable product
+		if ( $product->is_type( 'variation' ) ) {
+			$parent_id = $product->get_parent_id();
+			if ( $parent_id ) {
+				$parent_id = $this->translate_product_id( $parent_id );
+				$product = wc_get_product( $parent_id );
+				if ( $product ) {
+					$product_id = $parent_id;
+				} else {
+					return false;
+				}
+			} else {
+				return false;
+			}
+		}
+
+		// For all other product types (simple, variable, bundle, composite, grouped, external, etc.)
+		// check visibility and return as-is if valid
+		if ( ! $product->is_visible() ) {
+			return false;
+		}
+
+		return $product_id;
+	}
+
+	/**                                                                                     
+	 * Extracts the WooCommerce product ID from a Facebook retailer ID.                     
+	 *                                                                                      
+	 * @param string $retailer_id The retailer ID (e.g., "GTIN-12345_789_63", "SKU123_456_63", "wc_post_id_63").     
+	 * @return int|false The WooCommerce product ID, or false if invalid.                   
+	 */
+	private function extract_woo_id_from_retailer_id( $retailer_id )
+	{
+		if ( empty( $retailer_id ) || ! is_string( $retailer_id ) ) {
+			return false;
+		}
+
+		$retailer_id = trim( $retailer_id );
+
+		// If it's already just a number, return it                                         
+		if ( ctype_digit( $retailer_id ) ) {
+			return absint( $retailer_id );
+		}
+
+		// Find the last underscore position                                                
+		$last_underscore = strrpos( $retailer_id, '_' );
+
+		if ( false === $last_underscore ) {
+			return false;
+		}
+
+		// Extract everything after the last underscore                                     
+		$woo_id = substr( $retailer_id, $last_underscore + 1 );
+
+		// Validate it's a positive integer                                                 
+		if ( ! ctype_digit( $woo_id ) || '' === $woo_id ) {
+			return false;
+		}
+
+		return absint( $woo_id );
 	}
 }
