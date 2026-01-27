@@ -105,8 +105,8 @@ class WC_Facebookcommerce_Pixel {
 
 		self::$hooks_initialized = true;
 
-		// Load any deferred events from previous page.
-		self::load_deferred_static_events();
+		// Deferred events from previous page are loaded via WC_Facebookcommerce_Utils::print_deferred_events()
+		// which is hooked to wp_head in facebook-commerce-events-tracker.php.
 
 		add_action( 'wp_enqueue_scripts', array( __CLASS__, 'enqueue_pixel_events_script' ) );
 
@@ -185,74 +185,6 @@ class WC_Facebookcommerce_Pixel {
 		}
 
 		self::$static_events[] = $event_data;
-	}
-
-	/**
-	 * Adds an event to be fired on the NEXT page load (deferred).
-	 * Stores event data (not code) in a transient for isolated execution.
-	 *
-	 * @param string $event_name The name of the event to track.
-	 * @param array  $params     Event parameters.
-	 * @param string $method     The fbq method to use (track, trackCustom, etc.).
-	 * @param string $event_id   Optional event ID for deduplication.
-	 */
-	public static function add_deferred_static_event( $event_name, $params, $method = 'track', $event_id = '' ) {
-		$event_data = array(
-			'name'   => $event_name,
-			'params' => $params,
-			'method' => $method,
-		);
-
-		if ( ! empty( $event_id ) ) {
-			$event_data['eventId'] = $event_id;
-		}
-
-		// Get existing deferred events from transient.
-		$transient_key   = self::get_deferred_events_transient_key();
-		$deferred_events = get_transient( $transient_key );
-
-		if ( ! is_array( $deferred_events ) ) {
-			$deferred_events = array();
-		}
-
-		$deferred_events[] = $event_data;
-
-		// Store in transient for next page load.
-		set_transient( $transient_key, $deferred_events, DAY_IN_SECONDS );
-	}
-
-	/**
-	 * Loads deferred events from transient and adds them to static events.
-	 * Called on page load to fire events that were deferred from previous page.
-	 */
-	public static function load_deferred_static_events() {
-		$transient_key   = self::get_deferred_events_transient_key();
-		$deferred_events = get_transient( $transient_key );
-
-		if ( ! empty( $deferred_events ) && is_array( $deferred_events ) ) {
-			foreach ( $deferred_events as $event ) {
-				self::$static_events[] = $event;
-			}
-
-			// Clear the transient after loading.
-			delete_transient( $transient_key );
-		}
-	}
-
-	/**
-	 * Gets the transient key for storing deferred events.
-	 * Uses user/session ID to prevent cross-user issues.
-	 *
-	 * @return string Transient key.
-	 */
-	private static function get_deferred_events_transient_key() {
-		$user_id = get_current_user_id();
-
-		if ( ! $user_id && WC()->session ) {
-			$user_id = WC()->session->get_customer_id();
-		}
-
-		return 'wc_facebook_deferred_pixel_events_' . $user_id;
 	}
 
 	/**
@@ -535,7 +467,16 @@ class WC_Facebookcommerce_Pixel {
 			$is_redirect    = 'yes' === get_option( 'woocommerce_cart_redirect_after_add', 'no' );
 			$is_add_to_cart = 'AddToCart' === $event_name;
 			if ( $is_redirect && $is_add_to_cart ) {
-				self::add_deferred_static_event( $event_name, $event_params, $method, $event_id );
+				// Use existing deferred events mechanism from WC_Facebookcommerce_Utils.
+				$event_data = array(
+					'name'   => $event_name,
+					'params' => $event_params,
+					'method' => $method,
+				);
+				if ( ! empty( $event_id ) ) {
+					$event_data['eventId'] = $event_id;
+				}
+				WC_Facebookcommerce_Utils::add_deferred_event( $event_data );
 			} else {
 				// Queue event for isolated external script execution.
 				// For AJAX AddToCart, the fragment mechanism (add_add_to_cart_event_fragment)

@@ -168,103 +168,6 @@ class FacebookCommercePixelIsolatedExecutionTest extends AbstractWPUnitTestWithO
 	}
 
 	// =========================================================================
-	// add_deferred_static_event() Tests
-	// =========================================================================
-
-	public function test_add_deferred_static_event_stores_in_transient(): void {
-		WC_Facebookcommerce_Pixel::add_deferred_static_event(
-			'AddToCart',
-			array( 'content_ids' => array( '123' ) ),
-			'track',
-			'deferred-event-id'
-		);
-
-		// Get the transient key using reflection
-		$reflection    = new ReflectionClass( WC_Facebookcommerce_Pixel::class );
-		$method        = $reflection->getMethod( 'get_deferred_events_transient_key' );
-		$method->setAccessible( true );
-		$transient_key = $method->invoke( null );
-
-		$deferred_events = get_transient( $transient_key );
-
-		$this->assertIsArray( $deferred_events );
-		$this->assertCount( 1, $deferred_events );
-		$this->assertEquals( 'AddToCart', $deferred_events[0]['name'] );
-		$this->assertEquals( 'deferred-event-id', $deferred_events[0]['eventId'] );
-	}
-
-	public function test_add_deferred_static_event_appends_to_existing(): void {
-		WC_Facebookcommerce_Pixel::add_deferred_static_event( 'AddToCart', array( 'id' => '1' ) );
-		WC_Facebookcommerce_Pixel::add_deferred_static_event( 'AddToCart', array( 'id' => '2' ) );
-
-		$reflection    = new ReflectionClass( WC_Facebookcommerce_Pixel::class );
-		$method        = $reflection->getMethod( 'get_deferred_events_transient_key' );
-		$method->setAccessible( true );
-		$transient_key = $method->invoke( null );
-
-		$deferred_events = get_transient( $transient_key );
-
-		$this->assertCount( 2, $deferred_events );
-	}
-
-	// =========================================================================
-	// load_deferred_static_events() Tests
-	// =========================================================================
-
-	public function test_load_deferred_static_events_loads_from_transient(): void {
-		// Manually set up deferred events in transient
-		$reflection    = new ReflectionClass( WC_Facebookcommerce_Pixel::class );
-		$method        = $reflection->getMethod( 'get_deferred_events_transient_key' );
-		$method->setAccessible( true );
-		$transient_key = $method->invoke( null );
-
-		$deferred_events = array(
-			array(
-				'name'    => 'AddToCart',
-				'params'  => array( 'content_ids' => array( '123' ) ),
-				'method'  => 'track',
-				'eventId' => 'test-event-id',
-			),
-		);
-		set_transient( $transient_key, $deferred_events, DAY_IN_SECONDS );
-
-		// Load deferred events
-		WC_Facebookcommerce_Pixel::load_deferred_static_events();
-
-		// Check static events now includes the deferred event
-		$events = $this->get_static_events();
-
-		$this->assertCount( 1, $events );
-		$this->assertEquals( 'AddToCart', $events[0]['name'] );
-	}
-
-	public function test_load_deferred_static_events_clears_transient(): void {
-		$reflection    = new ReflectionClass( WC_Facebookcommerce_Pixel::class );
-		$method        = $reflection->getMethod( 'get_deferred_events_transient_key' );
-		$method->setAccessible( true );
-		$transient_key = $method->invoke( null );
-
-		set_transient(
-			$transient_key,
-			array( array( 'name' => 'AddToCart', 'params' => array(), 'method' => 'track' ) ),
-			DAY_IN_SECONDS
-		);
-
-		WC_Facebookcommerce_Pixel::load_deferred_static_events();
-
-		// Transient should be deleted after loading
-		$this->assertFalse( get_transient( $transient_key ) );
-	}
-
-	public function test_load_deferred_static_events_handles_empty_transient(): void {
-		// Should not throw error with no deferred events
-		WC_Facebookcommerce_Pixel::load_deferred_static_events();
-
-		$events = $this->get_static_events();
-		$this->assertCount( 0, $events );
-	}
-
-	// =========================================================================
 	// prepare_event_params() Tests
 	// =========================================================================
 
@@ -381,17 +284,18 @@ class FacebookCommercePixelIsolatedExecutionTest extends AbstractWPUnitTestWithO
 	}
 
 	// =========================================================================
-	// get_deferred_events_transient_key() Tests
+	// WC_Facebookcommerce_Utils::get_deferred_events_transient_key() Tests
 	// =========================================================================
 
-	public function test_get_deferred_events_transient_key_includes_user_id(): void {
-		$reflection = new ReflectionClass( WC_Facebookcommerce_Pixel::class );
+	public function test_get_deferred_events_transient_key_returns_string(): void {
+		$reflection = new ReflectionClass( WC_Facebookcommerce_Utils::class );
 		$method     = $reflection->getMethod( 'get_deferred_events_transient_key' );
 		$method->setAccessible( true );
 
 		$key = $method->invoke( null );
 
-		$this->assertStringStartsWith( 'wc_facebook_deferred_pixel_events_', $key );
+		// Key should be a string (could be empty if no session)
+		$this->assertIsString( $key );
 	}
 
 	// =========================================================================

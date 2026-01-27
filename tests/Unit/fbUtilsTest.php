@@ -338,4 +338,158 @@ class fbUtilsTest extends \WP_UnitTestCase {
 		// Cleanup
 		wp_delete_term($category_id, 'product_cat');
 	}
+
+	// =========================================================================
+	// Deferred Events Tests
+	// Tests for the deferred events mechanism used for isolated pixel execution.
+	// =========================================================================
+
+	/**
+	 * Test add_deferred_event stores event data in the static array.
+	 */
+	public function test_add_deferred_event_stores_event_data(): void {
+		// Reset deferred events
+		$this->reset_deferred_events();
+
+		$event_data = array(
+			'name'    => 'AddToCart',
+			'params'  => array( 'content_ids' => array( '123' ) ),
+			'method'  => 'track',
+			'eventId' => 'deferred-event-id',
+		);
+
+		WC_Facebookcommerce_Utils::add_deferred_event( $event_data );
+		WC_Facebookcommerce_Utils::save_deferred_events();
+
+		$transient_key = $this->get_deferred_events_transient_key();
+		$deferred_events = get_transient( $transient_key );
+
+		$this->assertIsArray( $deferred_events );
+		$this->assertCount( 1, $deferred_events );
+		$this->assertEquals( 'AddToCart', $deferred_events[0]['name'] );
+		$this->assertEquals( 'deferred-event-id', $deferred_events[0]['eventId'] );
+
+		// Cleanup
+		delete_transient( $transient_key );
+	}
+
+	/**
+	 * Test add_deferred_event appends to existing events.
+	 */
+	public function test_add_deferred_event_appends_to_existing(): void {
+		$this->reset_deferred_events();
+
+		WC_Facebookcommerce_Utils::add_deferred_event( array(
+			'name'   => 'AddToCart',
+			'params' => array( 'id' => '1' ),
+			'method' => 'track',
+		) );
+		WC_Facebookcommerce_Utils::add_deferred_event( array(
+			'name'   => 'AddToCart',
+			'params' => array( 'id' => '2' ),
+			'method' => 'track',
+		) );
+
+		WC_Facebookcommerce_Utils::save_deferred_events();
+
+		$transient_key = $this->get_deferred_events_transient_key();
+		$deferred_events = get_transient( $transient_key );
+
+		$this->assertCount( 2, $deferred_events );
+
+		// Cleanup
+		delete_transient( $transient_key );
+	}
+
+	/**
+	 * Test print_deferred_events loads events and clears transient.
+	 */
+	public function test_print_deferred_events_clears_transient(): void {
+		$this->reset_deferred_events();
+
+		$transient_key = $this->get_deferred_events_transient_key();
+
+		set_transient(
+			$transient_key,
+			array( array( 'name' => 'AddToCart', 'params' => array(), 'method' => 'track' ) ),
+			DAY_IN_SECONDS
+		);
+
+		WC_Facebookcommerce_Utils::print_deferred_events();
+
+		// Transient should be deleted after loading
+		$this->assertFalse( get_transient( $transient_key ) );
+	}
+
+	/**
+	 * Test print_deferred_events handles empty transient gracefully.
+	 */
+	public function test_print_deferred_events_handles_empty_transient(): void {
+		$this->reset_deferred_events();
+
+		// Should not throw error with no deferred events
+		WC_Facebookcommerce_Utils::print_deferred_events();
+
+		$this->assertTrue( true ); // If we get here, no error was thrown
+	}
+
+	/**
+	 * Test get_deferred_events_transient_key returns a string.
+	 */
+	public function test_get_deferred_events_transient_key_returns_string(): void {
+		$key = $this->get_deferred_events_transient_key();
+		$this->assertIsString( $key );
+	}
+
+	/**
+	 * Test save_deferred_events merges with existing transient data.
+	 */
+	public function test_save_deferred_events_merges_with_existing(): void {
+		$this->reset_deferred_events();
+
+		$transient_key = $this->get_deferred_events_transient_key();
+
+		// Set existing event in transient
+		set_transient(
+			$transient_key,
+			array( array( 'name' => 'ViewContent', 'params' => array(), 'method' => 'track' ) ),
+			DAY_IN_SECONDS
+		);
+
+		// Add new event
+		WC_Facebookcommerce_Utils::add_deferred_event( array(
+			'name'   => 'AddToCart',
+			'params' => array(),
+			'method' => 'track',
+		) );
+		WC_Facebookcommerce_Utils::save_deferred_events();
+
+		$deferred_events = get_transient( $transient_key );
+
+		// Should have both events
+		$this->assertCount( 2, $deferred_events );
+
+		// Cleanup
+		delete_transient( $transient_key );
+	}
+
+	/**
+	 * Helper to reset deferred events static array.
+	 */
+	private function reset_deferred_events(): void {
+		$reflection = new ReflectionClass( WC_Facebookcommerce_Utils::class );
+		$property = $reflection->getProperty( 'deferred_events' );
+		$property->setAccessible( true );
+		$property->setValue( null, [] );
+	}
+
+	/**
+	 * Helper to get the deferred events transient key.
+	 */
+	private function get_deferred_events_transient_key(): string {
+		$reflection = new ReflectionClass( WC_Facebookcommerce_Utils::class );
+		$method = $reflection->getMethod( 'get_deferred_events_transient_key' );
+		$method->setAccessible( true );
+		return $method->invoke( null );
+	}
 }

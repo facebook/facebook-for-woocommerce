@@ -89,7 +89,6 @@
             var params = eventData.params;
 
             // Fire the event with eventID as 4th argument for deduplication
-            // See: https://developers.facebook.com/docs/meta-pixel/advanced/deduplicate-pixel-and-server-events
             if (eventData.eventId) {
                 fbq(eventData.method, eventData.name, params, {eventID: eventData.eventId});
             } else {
