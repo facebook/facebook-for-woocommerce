@@ -5,6 +5,8 @@
 
 namespace WooCommerce\Facebook\Framework;
 
+use WC_Facebookcommerce_Utils;
+
 defined( 'ABSPATH' ) || exit;
 
 /**
@@ -284,7 +286,7 @@ class AdminNoticeHandler {
 		<?php
 		$javascript = ob_get_clean();
 
-		enqueue_inline_js( $javascript );
+		WC_Facebookcommerce_Utils::enqueue_inline_js( $javascript );
 	}
 
 
