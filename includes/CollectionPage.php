@@ -14,16 +14,14 @@ defined('ABSPATH') || exit;
 /**
  * Collection Page class for handling /fbcollection/ endpoint
  */
-class CollectionPage
-{
+class CollectionPage {
 	/** @var string the website url suffix for the collection page */
 	const ENDPOINT_PATH = '/fbcollection/';
 
 	/** @var string the field that should be used for sync'ing the collection page endpoint */
 	const PRODUCT_FEED_FIELD = 'custom_label_4';
 
-	public function __construct()
-	{
+	public function __construct() {
 		add_action('init', [$this, 'register_rewrite_rule']);
 		add_filter('query_vars', [$this, 'add_query_vars']);
 		add_action('woocommerce_product_query', [$this, 'modify_product_query']);
@@ -32,8 +30,7 @@ class CollectionPage
 	/**
 	 * Register /fbcollection/ as a virtual WooCommerce archive page.
 	 */
-	public function register_rewrite_rule()
-	{
+	public function register_rewrite_rule() {
 		add_rewrite_rule('^fbcollection/?$', 'index.php?post_type=product&custom_fbcollection_page=1', 'top');
 	}
 
@@ -43,8 +40,7 @@ class CollectionPage
 	 * @param array $vars Query variables.
 	 * @return array
 	 */
-	public function add_query_vars($vars)
-	{
+	public function add_query_vars($vars) {
 		$vars[] = 'custom_fbcollection_page';
 		return $vars;
 	}
@@ -54,8 +50,7 @@ class CollectionPage
 	 *
 	 * @param WP_Query $query The WooCommerce product query.
 	 */
-	public function modify_product_query($query)
-	{
+	public function modify_product_query($query) {
 		if (1 !== intval(get_query_var('custom_fbcollection_page'))) {
 			return;
 		}
@@ -201,8 +196,7 @@ class CollectionPage
 	 * @param string $retailer_id The retailer ID (e.g., "GTIN-12345_789_63", "SKU123_456_63", "wc_post_id_63").     
 	 * @return int|false The WooCommerce product ID, or false if invalid.                   
 	 */
-	private function extract_woo_id_from_retailer_id( $retailer_id )
-	{
+	private function extract_woo_id_from_retailer_id( $retailer_id ) {
 		if ( empty( $retailer_id ) || ! is_string( $retailer_id ) ) {
 			return false;
 		}
