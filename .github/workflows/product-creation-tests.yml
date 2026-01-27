@@ -603,7 +603,7 @@ jobs:
       - name: Run Product CRUD tests (PARALLEL - each test isolates its own data)
         run: |
           cd ${{ env.PLUGIN_PATH }}
-          npx playwright test product-creation.spec.js product-modification.spec.js product-deletion.spec.js --project=chromium-wp-admin --workers=4
+          npx playwright test product-creation.spec.js product-modification.spec.js product-deletion.spec.js --project=chromium-wp-admin --workers=8
 
       - name: Run Product Batch tests (sequential - heavy catalog operations)
         run: |
