@@ -60,13 +60,23 @@ if ( ! class_exists( 'WC_Facebookcommerce_Utils' ) ) :
 		/**
 		 * Prints deferred events into page header.
 		 *
+		 * Uses isolated execution context via WC_Facebookcommerce_Pixel::add_static_event()
+		 * instead of inline script to prevent JS errors from other plugins breaking pixel tracking.
+		 *
 		 * @since 3.1.6
 		 */
 		public static function print_deferred_events() {
 			$deferred_events = static::load_deferred_events();
 
 			if ( ! empty( $deferred_events ) ) {
-				echo '<script>' . implode( PHP_EOL, $deferred_events ) . '</script>'; //phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped --- Printing hardcoded JS tracking code.
+				foreach ( $deferred_events as $event ) {
+					\WC_Facebookcommerce_Pixel::add_static_event(
+						$event['name'],
+						$event['params'],
+						$event['method'] ?? 'track',
+						$event['eventId'] ?? ''
+					);
+				}
 			}
 		}
 
@@ -95,12 +105,15 @@ if ( ! class_exists( 'WC_Facebookcommerce_Utils' ) ) :
 		/**
 		 * Adds event into the list of events to be saved/rendered.
 		 *
+		 * Uses isolated execution context - stores event data (not JS code)
+		 * which is later emitted via WC_Facebookcommerce_Pixel::add_static_event().
+		 *
 		 * @since 3.1.6
 		 *
-		 * @param string $code Generated JS code string w/o a script tag.
+		 * @param array $event_data Event data array with keys: name, params, method, eventId.
 		 */
-		public static function add_deferred_event( string $code ): void {
-			static::$deferred_events[] = $code;
+		public static function add_deferred_event( array $event_data ): void {
+			static::$deferred_events[] = $event_data;
 		}
 
 		/**
