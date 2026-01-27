@@ -23,7 +23,7 @@
   },
   "require-dev": {
     "composer/installers": "^1.7.0",
-    "woocommerce/woocommerce-sniffs": "1.0.0",
+    "woocommerce/woocommerce-sniffs": "^1.0.0",
     "sirbrillig/phpcs-changed": "^2.11.1",
     "phpunit/phpunit": "^9.6",
     "yoast/phpunit-polyfills": "^2.0",
