@@ -594,6 +594,150 @@ class Connection {
 
 
 	/**
+	 * Completely resets the Facebook connection.
+	 *
+	 * This method deletes ALL Facebook-related WordPress options from the database,
+	 * returning the plugin to a fresh installation state. This is more comprehensive
+	 * than disconnect() which only clears connection tokens.
+	 *
+	 * @since 3.0.0
+	 */
+	public function reset_connection() {
+		// First perform the standard disconnect
+		$this->disconnect();
+
+		// Delete all connection-related options
+		delete_option( self::OPTION_ACCESS_TOKEN );
+		delete_option( self::OPTION_MERCHANT_ACCESS_TOKEN );
+		delete_option( self::OPTION_PAGE_ACCESS_TOKEN );
+		delete_option( self::OPTION_EXTERNAL_BUSINESS_ID );
+		delete_option( self::OPTION_BUSINESS_MANAGER_ID );
+		delete_option( self::OPTION_AD_ACCOUNT_ID );
+		delete_option( self::OPTION_SYSTEM_USER_ID );
+		delete_option( self::OPTION_COMMERCE_MANAGER_ID );
+		delete_option( self::OPTION_INSTAGRAM_BUSINESS_ID );
+		delete_option( self::OPTION_COMMERCE_MERCHANT_SETTINGS_ID );
+		delete_option( self::OPTION_COMMERCE_PARTNER_INTEGRATION_ID );
+
+		// Delete integration settings
+		delete_option( \WC_Facebookcommerce_Integration::OPTION_PRODUCT_CATALOG_ID );
+		delete_option( \WC_Facebookcommerce_Integration::OPTION_EXTERNAL_MERCHANT_SETTINGS_ID );
+		delete_option( \WC_Facebookcommerce_Integration::OPTION_FEED_ID );
+		delete_option( \WC_Facebookcommerce_Integration::OPTION_UPLOAD_ID );
+		delete_option( \WC_Facebookcommerce_Integration::OPTION_JS_SDK_VERSION );
+		delete_option( \WC_Facebookcommerce_Integration::OPTION_PIXEL_INSTALL_TIME );
+		delete_option( \WC_Facebookcommerce_Integration::SETTING_FACEBOOK_PAGE_ID );
+		delete_option( \WC_Facebookcommerce_Integration::SETTING_FACEBOOK_PIXEL_ID );
+		delete_option( \WC_Facebookcommerce_Integration::SETTING_ENABLE_PRODUCT_SYNC );
+		delete_option( \WC_Facebookcommerce_Integration::SETTING_EXCLUDED_PRODUCT_CATEGORY_IDS );
+		delete_option( \WC_Facebookcommerce_Integration::SETTING_EXCLUDED_PRODUCT_TAG_IDS );
+		delete_option( \WC_Facebookcommerce_Integration::SETTING_PRODUCT_DESCRIPTION_MODE );
+		delete_option( \WC_Facebookcommerce_Integration::SETTING_SCHEDULED_RESYNC_OFFSET );
+		delete_option( \WC_Facebookcommerce_Integration::SETTING_ENABLE_META_DIAGNOSIS );
+		delete_option( \WC_Facebookcommerce_Integration::SETTING_ENABLE_DEBUG_MODE );
+		delete_option( \WC_Facebookcommerce_Integration::SETTING_ENABLE_NEW_STYLE_FEED_GENERATOR );
+		delete_option( \WC_Facebookcommerce_Integration::SETTING_ENABLE_FACEBOOK_MANAGED_COUPONS );
+		delete_option( \WC_Facebookcommerce_Integration::SETTING_REQUEST_HEADERS_IN_DEBUG_MODE );
+		delete_option( \WC_Facebookcommerce_Integration::SETTING_ENABLE_ADVANCED_MATCHING );
+		delete_option( \WC_Facebookcommerce_Integration::SETTING_USE_S2S );
+		delete_option( \WC_Facebookcommerce_Integration::SETTING_ACCESS_TOKEN );
+
+		// Delete connection status flags
+		delete_option( \WC_Facebookcommerce_Integration::OPTION_HAS_CONNECTED_FBE_2 );
+		delete_option( \WC_Facebookcommerce_Integration::OPTION_HAS_AUTHORIZED_PAGES_READ_ENGAGEMENT );
+		delete_option( \WC_Facebookcommerce_Integration::OPTION_ENABLE_MESSENGER );
+		delete_option( \WC_Facebookcommerce_Integration::OPTION_PROFILES );
+		delete_option( \WC_Facebookcommerce_Integration::OPTION_INSTALLED_FEATURES );
+
+		// Delete legacy options
+		delete_option( \WC_Facebookcommerce_Integration::OPTION_LEGACY_FEED_FILE_GENERATION_ENABLED );
+		delete_option( \WC_Facebookcommerce_Integration::OPTION_LANGUAGE_OVERRIDE_FEED_GENERATION_ENABLED );
+		delete_option( 'woocommerce_facebookcommerce_settings' );
+
+		// Clear pixel configuration
+		if ( class_exists( 'WC_Facebookcommerce_Pixel' ) ) {
+			delete_option( \WC_Facebookcommerce_Pixel::SETTINGS_KEY );
+		}
+
+		// Clear any cached data
+		wp_cache_flush();
+
+		/**
+		 * Fires after the Facebook connection has been completely reset.
+		 *
+		 * @since 3.0.0
+		 */
+		do_action( 'wc_facebook_connection_reset' );
+	}
+
+
+	/**
+	 * Resets only the connection-related options.
+	 *
+	 * This method deletes only the core connection tokens and IDs, but preserves
+	 * other settings like product sync preferences, excluded categories, debug mode, etc.
+	 * Use this when you want to reconnect to Facebook without losing your configuration.
+	 *
+	 * @since 3.0.0
+	 */
+	public function reset_connection_only() {
+		// Clear connection tokens and IDs
+		$this->update_access_token( '' );
+		$this->update_page_access_token( '' );
+		$this->update_merchant_access_token( '' );
+		$this->update_system_user_id( '' );
+		$this->update_business_manager_id( '' );
+		$this->update_ad_account_id( '' );
+		$this->update_instagram_business_id( '' );
+		$this->update_commerce_merchant_settings_id( '' );
+		$this->update_external_business_id( '' );
+		$this->update_commerce_partner_integration_id( '' );
+
+		// Delete connection-related options that aren't cleared by update methods
+		delete_option( self::OPTION_ACCESS_TOKEN );
+		delete_option( self::OPTION_MERCHANT_ACCESS_TOKEN );
+		delete_option( self::OPTION_PAGE_ACCESS_TOKEN );
+		delete_option( self::OPTION_EXTERNAL_BUSINESS_ID );
+		delete_option( self::OPTION_BUSINESS_MANAGER_ID );
+		delete_option( self::OPTION_AD_ACCOUNT_ID );
+		delete_option( self::OPTION_SYSTEM_USER_ID );
+		delete_option( self::OPTION_COMMERCE_MANAGER_ID );
+		delete_option( self::OPTION_INSTAGRAM_BUSINESS_ID );
+		delete_option( self::OPTION_COMMERCE_MERCHANT_SETTINGS_ID );
+		delete_option( self::OPTION_COMMERCE_PARTNER_INTEGRATION_ID );
+
+		// Clear page and pixel IDs (these are tied to the connection)
+		update_option( \WC_Facebookcommerce_Integration::SETTING_FACEBOOK_PAGE_ID, '' );
+		update_option( \WC_Facebookcommerce_Integration::SETTING_FACEBOOK_PIXEL_ID, '' );
+
+		// Clear catalog and merchant IDs (these are connection-specific)
+		facebook_for_woocommerce()->get_integration()->update_product_catalog_id( '' );
+		delete_option( \WC_Facebookcommerce_Integration::OPTION_EXTERNAL_MERCHANT_SETTINGS_ID );
+
+		// Clear connection status flags
+		delete_option( \WC_Facebookcommerce_Integration::OPTION_HAS_CONNECTED_FBE_2 );
+		delete_option( \WC_Facebookcommerce_Integration::OPTION_HAS_AUTHORIZED_PAGES_READ_ENGAGEMENT );
+		delete_option( \WC_Facebookcommerce_Integration::OPTION_PROFILES );
+		delete_option( \WC_Facebookcommerce_Integration::OPTION_INSTALLED_FEATURES );
+
+		// Clear pixel configuration
+		if ( class_exists( 'WC_Facebookcommerce_Pixel' ) ) {
+			delete_option( \WC_Facebookcommerce_Pixel::SETTINGS_KEY );
+		}
+
+		// Clear any cached data
+		wp_cache_flush();
+
+		/**
+		 * Fires after the Facebook connection options have been reset.
+		 *
+		 * @since 3.0.0
+		 */
+		do_action( 'wc_facebook_connection_only_reset' );
+	}
+
+
+	/**
 	 * Retrieves the configured page access token remotely.
 	 *
 	 * @since 2.1.0
