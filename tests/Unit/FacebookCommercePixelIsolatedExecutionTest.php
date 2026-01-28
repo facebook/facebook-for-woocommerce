@@ -350,4 +350,306 @@ class FacebookCommercePixelIsolatedExecutionTest extends AbstractWPUnitTestWithO
 		$this->assertEquals( $original_params['value'], $params['value'] );
 		$this->assertEquals( $original_params['currency'], $params['currency'] );
 	}
+
+	// =========================================================================
+	// add_deferred_static_event() Tests
+	// =========================================================================
+
+	public function test_add_deferred_static_event_stores_event_data(): void {
+		$this->reset_deferred_events();
+
+		WC_Facebookcommerce_Pixel::add_deferred_static_event(
+			'AddToCart',
+			array(
+				'content_ids'  => array( '123' ),
+				'content_type' => 'product',
+			),
+			'track',
+			'deferred-event-123'
+		);
+
+		WC_Facebookcommerce_Utils::save_deferred_events();
+
+		$transient_key   = $this->get_deferred_events_transient_key();
+		$deferred_events = get_transient( $transient_key );
+
+		$this->assertIsArray( $deferred_events );
+		$this->assertCount( 1, $deferred_events );
+		$this->assertIsArray( $deferred_events[0] );
+		$this->assertEquals( 'AddToCart', $deferred_events[0]['name'] );
+		$this->assertEquals( 'track', $deferred_events[0]['method'] );
+		$this->assertEquals( 'deferred-event-123', $deferred_events[0]['eventId'] );
+
+		// Cleanup
+		delete_transient( $transient_key );
+	}
+
+	public function test_add_deferred_static_event_without_event_id(): void {
+		$this->reset_deferred_events();
+
+		WC_Facebookcommerce_Pixel::add_deferred_static_event(
+			'ViewContent',
+			array( 'content_ids' => array( '456' ) )
+		);
+
+		WC_Facebookcommerce_Utils::save_deferred_events();
+
+		$transient_key   = $this->get_deferred_events_transient_key();
+		$deferred_events = get_transient( $transient_key );
+
+		$this->assertCount( 1, $deferred_events );
+		$this->assertArrayNotHasKey( 'eventId', $deferred_events[0] );
+
+		// Cleanup
+		delete_transient( $transient_key );
+	}
+
+	public function test_add_deferred_static_event_with_custom_method(): void {
+		$this->reset_deferred_events();
+
+		WC_Facebookcommerce_Pixel::add_deferred_static_event(
+			'CustomEvent',
+			array( 'key' => 'value' ),
+			'trackCustom'
+		);
+
+		WC_Facebookcommerce_Utils::save_deferred_events();
+
+		$transient_key   = $this->get_deferred_events_transient_key();
+		$deferred_events = get_transient( $transient_key );
+
+		$this->assertCount( 1, $deferred_events );
+		$this->assertEquals( 'trackCustom', $deferred_events[0]['method'] );
+
+		// Cleanup
+		delete_transient( $transient_key );
+	}
+
+	// =========================================================================
+	// inject_event() with Rollout Switch Tests
+	// =========================================================================
+
+	public function test_inject_event_uses_isolated_execution_when_switch_enabled(): void {
+		$this->reset_static_properties();
+		$this->enable_isolated_pixel_execution_switch();
+
+		$pixel = new WC_Facebookcommerce_Pixel();
+		$pixel->inject_event(
+			'ViewContent',
+			array(
+				'content_ids'  => array( 'PROD123' ),
+				'content_type' => 'product',
+				'value'        => 49.99,
+				'currency'     => 'USD',
+			)
+		);
+
+		// Event should be in static_events (isolated execution)
+		$events = $this->get_static_events();
+
+		$this->assertCount( 1, $events );
+		$this->assertEquals( 'ViewContent', $events[0]['name'] );
+		$this->assertEquals( 'track', $events[0]['method'] );
+
+		// Cleanup
+		$this->disable_isolated_pixel_execution_switch();
+	}
+
+	public function test_inject_event_sets_last_event_when_switch_enabled(): void {
+		$this->reset_static_properties();
+		$this->enable_isolated_pixel_execution_switch();
+
+		$pixel = new WC_Facebookcommerce_Pixel();
+		$pixel->inject_event( 'Purchase', array( 'value' => 100 ) );
+
+		$this->assertTrue( $pixel->is_last_event( 'Purchase' ) );
+
+		// Cleanup
+		$this->disable_isolated_pixel_execution_switch();
+	}
+
+	public function test_inject_event_uses_legacy_execution_when_switch_disabled(): void {
+		$this->reset_static_properties();
+		$this->disable_isolated_pixel_execution_switch();
+
+		// Mock wc_enqueue_js to capture the code
+		global $wc_queued_js;
+		$wc_queued_js = '';
+
+		$pixel = new WC_Facebookcommerce_Pixel();
+		$pixel->inject_event(
+			'ViewContent',
+			array(
+				'content_ids'  => array( 'PROD456' ),
+				'content_type' => 'product',
+			)
+		);
+
+		// Event should NOT be in static_events (legacy uses wc_enqueue_js)
+		$events = $this->get_static_events();
+		$this->assertCount( 0, $events );
+
+		// wc_queued_js should have the JS code
+		$this->assertStringContainsString( 'fbq', $wc_queued_js );
+		$this->assertStringContainsString( 'ViewContent', $wc_queued_js );
+	}
+
+	public function test_inject_event_defers_add_to_cart_with_redirect_when_switch_enabled(): void {
+		$this->reset_static_properties();
+		$this->reset_deferred_events();
+		$this->enable_isolated_pixel_execution_switch();
+
+		// Enable cart redirect
+		update_option( 'woocommerce_cart_redirect_after_add', 'yes' );
+
+		$pixel = new WC_Facebookcommerce_Pixel();
+		$pixel->inject_event(
+			'AddToCart',
+			array( 'content_ids' => array( 'CART123' ) )
+		);
+
+		// Event should NOT be in static_events (deferred)
+		$events = $this->get_static_events();
+		$this->assertCount( 0, $events );
+
+		// Save and check deferred events
+		WC_Facebookcommerce_Utils::save_deferred_events();
+		$transient_key   = $this->get_deferred_events_transient_key();
+		$deferred_events = get_transient( $transient_key );
+
+		$this->assertIsArray( $deferred_events );
+		$this->assertCount( 1, $deferred_events );
+		$this->assertIsArray( $deferred_events[0] ); // Should be array format (isolated)
+		$this->assertEquals( 'AddToCart', $deferred_events[0]['name'] );
+
+		// Cleanup
+		update_option( 'woocommerce_cart_redirect_after_add', 'no' );
+		delete_transient( $transient_key );
+		$this->disable_isolated_pixel_execution_switch();
+	}
+
+	public function test_inject_event_defers_add_to_cart_with_redirect_when_switch_disabled(): void {
+		$this->reset_static_properties();
+		$this->reset_deferred_events();
+		$this->disable_isolated_pixel_execution_switch();
+
+		// Enable cart redirect
+		update_option( 'woocommerce_cart_redirect_after_add', 'yes' );
+
+		$pixel = new WC_Facebookcommerce_Pixel();
+		$pixel->inject_event(
+			'AddToCart',
+			array( 'content_ids' => array( 'CART456' ) )
+		);
+
+		// Save and check deferred events
+		WC_Facebookcommerce_Utils::save_deferred_events();
+		$transient_key   = $this->get_deferred_events_transient_key();
+		$deferred_events = get_transient( $transient_key );
+
+		$this->assertIsArray( $deferred_events );
+		$this->assertCount( 1, $deferred_events );
+		$this->assertIsString( $deferred_events[0] ); // Should be string format (legacy)
+		$this->assertStringContainsString( 'fbq', $deferred_events[0] );
+		$this->assertStringContainsString( 'AddToCart', $deferred_events[0] );
+
+		// Cleanup
+		update_option( 'woocommerce_cart_redirect_after_add', 'no' );
+		delete_transient( $transient_key );
+	}
+
+	public function test_inject_event_does_not_defer_non_add_to_cart_with_redirect(): void {
+		$this->reset_static_properties();
+		$this->reset_deferred_events();
+		$this->enable_isolated_pixel_execution_switch();
+
+		// Enable cart redirect
+		update_option( 'woocommerce_cart_redirect_after_add', 'yes' );
+
+		$pixel = new WC_Facebookcommerce_Pixel();
+		$pixel->inject_event(
+			'ViewContent',
+			array( 'content_ids' => array( 'VIEW123' ) )
+		);
+
+		// ViewContent should NOT be deferred even with redirect enabled
+		$events = $this->get_static_events();
+		$this->assertCount( 1, $events );
+		$this->assertEquals( 'ViewContent', $events[0]['name'] );
+
+		// Cleanup
+		update_option( 'woocommerce_cart_redirect_after_add', 'no' );
+		$this->disable_isolated_pixel_execution_switch();
+	}
+
+	public function test_inject_event_does_not_defer_add_to_cart_without_redirect(): void {
+		$this->reset_static_properties();
+		$this->reset_deferred_events();
+		$this->enable_isolated_pixel_execution_switch();
+
+		// Disable cart redirect
+		update_option( 'woocommerce_cart_redirect_after_add', 'no' );
+
+		$pixel = new WC_Facebookcommerce_Pixel();
+		$pixel->inject_event(
+			'AddToCart',
+			array( 'content_ids' => array( 'CART789' ) )
+		);
+
+		// AddToCart should NOT be deferred without redirect
+		$events = $this->get_static_events();
+		$this->assertCount( 1, $events );
+		$this->assertEquals( 'AddToCart', $events[0]['name'] );
+
+		// Cleanup
+		$this->disable_isolated_pixel_execution_switch();
+	}
+
+	// =========================================================================
+	// Helper Methods
+	// =========================================================================
+
+	/**
+	 * Enable the isolated pixel execution rollout switch.
+	 */
+	private function enable_isolated_pixel_execution_switch(): void {
+		update_option(
+			'wc_facebook_for_woocommerce_rollout_switches',
+			array(
+				\WooCommerce\Facebook\RolloutSwitches::SWITCH_ISOLATED_PIXEL_EXECUTION_ENABLED => 'yes',
+			)
+		);
+	}
+
+	/**
+	 * Disable the isolated pixel execution rollout switch.
+	 */
+	private function disable_isolated_pixel_execution_switch(): void {
+		update_option(
+			'wc_facebook_for_woocommerce_rollout_switches',
+			array(
+				\WooCommerce\Facebook\RolloutSwitches::SWITCH_ISOLATED_PIXEL_EXECUTION_ENABLED => 'no',
+			)
+		);
+	}
+
+	/**
+	 * Reset deferred events static array.
+	 */
+	private function reset_deferred_events(): void {
+		$reflection = new ReflectionClass( WC_Facebookcommerce_Utils::class );
+		$property   = $reflection->getProperty( 'deferred_events' );
+		$property->setAccessible( true );
+		$property->setValue( null, array() );
+	}
+
+	/**
+	 * Get the deferred events transient key.
+	 */
+	private function get_deferred_events_transient_key(): string {
+		$reflection = new ReflectionClass( WC_Facebookcommerce_Utils::class );
+		$method     = $reflection->getMethod( 'get_deferred_events_transient_key' );
+		$method->setAccessible( true );
+		return $method->invoke( null );
+	}
 }
