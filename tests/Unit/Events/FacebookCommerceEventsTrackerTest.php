@@ -417,6 +417,438 @@ class FacebookCommerceEventsTrackerTest extends AbstractWPUnitTestWithSafeFilter
 		);
 	}
 
+	// =========================================================================
+	// inject_purchase_event() Context-Specific Event Firing Tests
+	// =========================================================================
+
+	/**
+	 * Test that inject_purchase_event sets server flag when called from server hook.
+	 *
+	 * @covers WC_Facebookcommerce_EventsTracker::inject_purchase_event
+	 */
+	public function test_inject_purchase_event_sets_server_flag_for_server_context(): void {
+		$this->instance = $this->create_tracker_with_pixel_enabled();
+		$order          = $this->create_test_order();
+
+		// Simulate server hook (woocommerce_new_order)
+		$this->simulate_hook_context( 'woocommerce_new_order', function() use ( $order ) {
+			$this->instance->inject_purchase_event( $order->get_id() );
+		} );
+
+		// Reload order to get fresh meta
+		$order = wc_get_order( $order->get_id() );
+
+		// Server flag should be set
+		$this->assertTrue(
+			$order->meta_exists( WC_Facebookcommerce_EventsTracker::META_PURCHASE_TRACKED_SERVER ),
+			'Server flag should be set when called from server hook'
+		);
+
+		// Browser flag should NOT be set
+		$this->assertFalse(
+			$order->meta_exists( WC_Facebookcommerce_EventsTracker::META_PURCHASE_TRACKED_BROWSER ),
+			'Browser flag should NOT be set when called from server hook'
+		);
+
+		// Clean up
+		$order->delete( true );
+	}
+
+	/**
+	 * Test that inject_purchase_event sets browser flag when called from woocommerce_thankyou hook.
+	 *
+	 * @covers WC_Facebookcommerce_EventsTracker::inject_purchase_event
+	 */
+	public function test_inject_purchase_event_sets_browser_flag_for_browser_context(): void {
+		$this->instance = $this->create_tracker_with_pixel_enabled();
+		$order          = $this->create_test_order();
+
+		// Simulate browser hook (woocommerce_thankyou)
+		$this->simulate_hook_context( 'woocommerce_thankyou', function() use ( $order ) {
+			$this->instance->inject_purchase_event( $order->get_id() );
+		} );
+
+		// Reload order to get fresh meta
+		$order = wc_get_order( $order->get_id() );
+
+		// Browser flag should be set
+		$this->assertTrue(
+			$order->meta_exists( WC_Facebookcommerce_EventsTracker::META_PURCHASE_TRACKED_BROWSER ),
+			'Browser flag should be set when called from woocommerce_thankyou hook'
+		);
+
+		// Server flag should NOT be set
+		$this->assertFalse(
+			$order->meta_exists( WC_Facebookcommerce_EventsTracker::META_PURCHASE_TRACKED_SERVER ),
+			'Server flag should NOT be set when called from browser hook'
+		);
+
+		// Clean up
+		$order->delete( true );
+	}
+
+	/**
+	 * Test that inject_purchase_event skips duplicate server events.
+	 *
+	 * @covers WC_Facebookcommerce_EventsTracker::inject_purchase_event
+	 */
+	public function test_inject_purchase_event_skips_duplicate_server_event(): void {
+		$this->instance = $this->create_tracker_with_pixel_enabled();
+		$order          = $this->create_test_order();
+
+		// First server call should succeed
+		$this->simulate_hook_context( 'woocommerce_new_order', function() use ( $order ) {
+			$this->instance->inject_purchase_event( $order->get_id() );
+		} );
+
+		// Reload order to get fresh meta
+		$order = wc_get_order( $order->get_id() );
+
+		// Capture the event_id from first call
+		$first_event_id = $order->get_meta( WC_Facebookcommerce_EventsTracker::META_EVENT_ID );
+		$this->assertNotEmpty( $first_event_id, 'Event ID should be set after first call' );
+
+		// Second server call (from different hook) should be skipped due to server flag
+		$this->simulate_hook_context( 'woocommerce_checkout_update_order_meta', function() use ( $order ) {
+			$this->instance->inject_purchase_event( $order->get_id() );
+		} );
+
+		// Reload order again
+		$order = wc_get_order( $order->get_id() );
+
+		// Event ID should remain the same (not overwritten by second call)
+		$second_event_id = $order->get_meta( WC_Facebookcommerce_EventsTracker::META_EVENT_ID );
+		$this->assertEquals(
+			$first_event_id,
+			$second_event_id,
+			'Event ID should not change after duplicate server call is skipped'
+		);
+
+		// Clean up
+		$order->delete( true );
+	}
+
+	/**
+	 * Test that inject_purchase_event skips duplicate browser events.
+	 *
+	 * @covers WC_Facebookcommerce_EventsTracker::inject_purchase_event
+	 */
+	public function test_inject_purchase_event_skips_duplicate_browser_event(): void {
+		$this->instance = $this->create_tracker_with_pixel_enabled();
+		$order          = $this->create_test_order();
+
+		// First browser call should succeed
+		$this->simulate_hook_context( 'woocommerce_thankyou', function() use ( $order ) {
+			$this->instance->inject_purchase_event( $order->get_id() );
+		} );
+
+		// Reload order
+		$order = wc_get_order( $order->get_id() );
+
+		// Browser flag should be set
+		$this->assertTrue(
+			$order->meta_exists( WC_Facebookcommerce_EventsTracker::META_PURCHASE_TRACKED_BROWSER ),
+			'Browser flag should be set after first call'
+		);
+
+		// Pre-set a marker to detect if second call processes
+		$order->add_meta_data( '_test_marker_before_second_call', 'set', true );
+		$order->save();
+
+		// Second browser call should be skipped
+		$this->simulate_hook_context( 'woocommerce_thankyou', function() use ( $order ) {
+			$this->instance->inject_purchase_event( $order->get_id() );
+		} );
+
+		// The marker should still exist (second call was skipped, no new meta operations)
+		$order = wc_get_order( $order->get_id() );
+		$this->assertTrue(
+			$order->meta_exists( '_test_marker_before_second_call' ),
+			'Second browser call should be skipped due to existing browser flag'
+		);
+
+		// Clean up
+		$order->delete( true );
+	}
+
+	/**
+	 * Test that inject_purchase_event allows both server and browser events for the same order.
+	 *
+	 * @covers WC_Facebookcommerce_EventsTracker::inject_purchase_event
+	 */
+	public function test_inject_purchase_event_allows_one_server_and_one_browser_event(): void {
+		$this->instance = $this->create_tracker_with_pixel_enabled();
+		$order          = $this->create_test_order();
+
+		// Server call should succeed
+		$this->simulate_hook_context( 'woocommerce_new_order', function() use ( $order ) {
+			$this->instance->inject_purchase_event( $order->get_id() );
+		} );
+
+		// Reload order
+		$order = wc_get_order( $order->get_id() );
+
+		// Server flag should be set
+		$this->assertTrue(
+			$order->meta_exists( WC_Facebookcommerce_EventsTracker::META_PURCHASE_TRACKED_SERVER ),
+			'Server flag should be set after server call'
+		);
+
+		// Browser flag should NOT be set yet
+		$this->assertFalse(
+			$order->meta_exists( WC_Facebookcommerce_EventsTracker::META_PURCHASE_TRACKED_BROWSER ),
+			'Browser flag should NOT be set yet'
+		);
+
+		// Browser call should ALSO succeed (different context)
+		$this->simulate_hook_context( 'woocommerce_thankyou', function() use ( $order ) {
+			$this->instance->inject_purchase_event( $order->get_id() );
+		} );
+
+		// Reload order
+		$order = wc_get_order( $order->get_id() );
+
+		// Now both flags should be set
+		$this->assertTrue(
+			$order->meta_exists( WC_Facebookcommerce_EventsTracker::META_PURCHASE_TRACKED_SERVER ),
+			'Server flag should still be set'
+		);
+		$this->assertTrue(
+			$order->meta_exists( WC_Facebookcommerce_EventsTracker::META_PURCHASE_TRACKED_BROWSER ),
+			'Browser flag should now be set after browser call'
+		);
+
+		// Clean up
+		$order->delete( true );
+	}
+
+	/**
+	 * Test that inject_purchase_event shares the same event_id across browser and server contexts.
+	 *
+	 * @covers WC_Facebookcommerce_EventsTracker::inject_purchase_event
+	 */
+	public function test_inject_purchase_event_shares_event_id_across_contexts(): void {
+		$this->instance = $this->create_tracker_with_pixel_enabled();
+		$order          = $this->create_test_order();
+
+		// Server call first
+		$this->simulate_hook_context( 'woocommerce_new_order', function() use ( $order ) {
+			$this->instance->inject_purchase_event( $order->get_id() );
+		} );
+
+		// Get event_id after server call
+		$order           = wc_get_order( $order->get_id() );
+		$server_event_id = $order->get_meta( WC_Facebookcommerce_EventsTracker::META_EVENT_ID );
+
+		$this->assertNotEmpty( $server_event_id, 'Event ID should be set after server call' );
+
+		// Browser call second
+		$this->simulate_hook_context( 'woocommerce_thankyou', function() use ( $order ) {
+			$this->instance->inject_purchase_event( $order->get_id() );
+		} );
+
+		// Get event_id after browser call
+		$order            = wc_get_order( $order->get_id() );
+		$browser_event_id = $order->get_meta( WC_Facebookcommerce_EventsTracker::META_EVENT_ID );
+
+		// Event IDs should be identical for deduplication
+		$this->assertEquals(
+			$server_event_id,
+			$browser_event_id,
+			'Event ID should be shared across server and browser contexts for deduplication'
+		);
+
+		// Clean up
+		$order->delete( true );
+	}
+
+	/**
+	 * Test that inject_purchase_event respects transient-based deduplication for server context.
+	 *
+	 * @covers WC_Facebookcommerce_EventsTracker::inject_purchase_event
+	 */
+	public function test_inject_purchase_event_transient_deduplication_for_server(): void {
+		$this->instance = $this->create_tracker_with_pixel_enabled();
+		$order          = $this->create_test_order();
+		$order_id       = $order->get_id();
+
+		// Pre-set the transient to simulate a previous call
+		$transient_key = '_wc_' . facebook_for_woocommerce()->get_id() . '_purchase_tracked_' . $order_id . '_server';
+		set_transient( $transient_key, 'yes', 45 * MINUTE_IN_SECONDS );
+
+		// Server call should be skipped due to transient
+		$this->simulate_hook_context( 'woocommerce_new_order', function() use ( $order ) {
+			$this->instance->inject_purchase_event( $order->get_id() );
+		} );
+
+		// Reload order
+		$order = wc_get_order( $order_id );
+
+		// No meta should be set (call was skipped due to transient)
+		$this->assertFalse(
+			$order->meta_exists( WC_Facebookcommerce_EventsTracker::META_PURCHASE_TRACKED_SERVER ),
+			'Server call should be skipped when transient already exists'
+		);
+
+		// Clean up
+		delete_transient( $transient_key );
+		$order->delete( true );
+	}
+
+	/**
+	 * Test that inject_purchase_event respects transient-based deduplication for browser context.
+	 *
+	 * @covers WC_Facebookcommerce_EventsTracker::inject_purchase_event
+	 */
+	public function test_inject_purchase_event_transient_deduplication_for_browser(): void {
+		$this->instance = $this->create_tracker_with_pixel_enabled();
+		$order          = $this->create_test_order();
+		$order_id       = $order->get_id();
+
+		// Pre-set the transient to simulate a previous call
+		$transient_key = '_wc_' . facebook_for_woocommerce()->get_id() . '_purchase_tracked_' . $order_id . '_browser';
+		set_transient( $transient_key, 'yes', 45 * MINUTE_IN_SECONDS );
+
+		// Browser call should be skipped due to transient
+		$this->simulate_hook_context( 'woocommerce_thankyou', function() use ( $order ) {
+			$this->instance->inject_purchase_event( $order->get_id() );
+		} );
+
+		// Reload order
+		$order = wc_get_order( $order_id );
+
+		// No meta should be set (call was skipped due to transient)
+		$this->assertFalse(
+			$order->meta_exists( WC_Facebookcommerce_EventsTracker::META_PURCHASE_TRACKED_BROWSER ),
+			'Browser call should be skipped when transient already exists'
+		);
+
+		// Clean up
+		delete_transient( $transient_key );
+		$order->delete( true );
+	}
+
+	/**
+	 * Test that inject_purchase_event does not fire for invalid order states.
+	 *
+	 * @covers WC_Facebookcommerce_EventsTracker::inject_purchase_event
+	 */
+	public function test_inject_purchase_event_skips_invalid_order_states(): void {
+		$this->instance = $this->create_tracker_with_pixel_enabled();
+		$order          = $this->create_test_order();
+
+		// Set order to an invalid state (failed)
+		$order->set_status( 'failed' );
+		$order->save();
+
+		// Server call should be skipped due to invalid order state
+		$this->simulate_hook_context( 'woocommerce_new_order', function() use ( $order ) {
+			$this->instance->inject_purchase_event( $order->get_id() );
+		} );
+
+		// Reload order
+		$order = wc_get_order( $order->get_id() );
+
+		// No meta should be set (call was skipped due to invalid state)
+		$this->assertFalse(
+			$order->meta_exists( WC_Facebookcommerce_EventsTracker::META_PURCHASE_TRACKED ),
+			'Purchase event should be skipped for failed orders'
+		);
+
+		// Clean up
+		$order->delete( true );
+	}
+
+	/**
+	 * Test that inject_purchase_event fires for valid order states.
+	 *
+	 * @dataProvider valid_order_states_provider
+	 * @covers WC_Facebookcommerce_EventsTracker::inject_purchase_event
+	 *
+	 * @param string $order_state The order state to test.
+	 */
+	public function test_inject_purchase_event_fires_for_valid_order_states( string $order_state ): void {
+		$this->instance = $this->create_tracker_with_pixel_enabled();
+		$order          = $this->create_test_order();
+
+		// Set order to the test state
+		$order->set_status( $order_state );
+		$order->save();
+
+		// Server call should succeed
+		$this->simulate_hook_context( 'woocommerce_new_order', function() use ( $order ) {
+			$this->instance->inject_purchase_event( $order->get_id() );
+		} );
+
+		// Reload order
+		$order = wc_get_order( $order->get_id() );
+
+		// Meta should be set
+		$this->assertTrue(
+			$order->meta_exists( WC_Facebookcommerce_EventsTracker::META_PURCHASE_TRACKED ),
+			"Purchase event should fire for orders with status: {$order_state}"
+		);
+
+		// Clean up
+		$order->delete( true );
+	}
+
+	/**
+	 * Data provider for valid order states.
+	 *
+	 * @return array Test cases with valid order states.
+	 */
+	public function valid_order_states_provider(): array {
+		return array(
+			'processing' => array( 'processing' ),
+			'completed'  => array( 'completed' ),
+			'on-hold'    => array( 'on-hold' ),
+			'pending'    => array( 'pending' ),
+		);
+	}
+
+	// =========================================================================
+	// Helper Methods for inject_purchase_event Tests
+	// =========================================================================
+
+	/**
+	 * Create a test WooCommerce order with valid data.
+	 *
+	 * @return \WC_Order The created order.
+	 */
+	private function create_test_order(): \WC_Order {
+		$order = wc_create_order();
+		$order->set_status( 'processing' );
+		$order->set_total( 99.99 );
+		$order->set_currency( 'USD' );
+		$order->set_billing_email( 'test@example.com' );
+		$order->set_billing_first_name( 'Test' );
+		$order->set_billing_last_name( 'User' );
+		$order->save();
+
+		return $order;
+	}
+
+	/**
+	 * Simulate a WordPress hook context for testing.
+	 *
+	 * This temporarily sets up a hook and executes the callback within that context,
+	 * so current_action() returns the expected hook name.
+	 *
+	 * @param string   $hook_name The hook name to simulate.
+	 * @param callable $callback  The callback to execute within the hook context.
+	 */
+	private function simulate_hook_context( string $hook_name, callable $callback ): void {
+		// Add a temporary action that will execute our callback
+		add_action( $hook_name, $callback );
+
+		// Trigger the action (this sets current_action() correctly)
+		do_action( $hook_name );
+
+		// Remove the temporary action
+		remove_action( $hook_name, $callback );
+	}
+
 	/**
 	 * Test that inject_subscribe_event does nothing when function not available.
 	 *
