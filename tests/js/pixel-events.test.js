@@ -262,16 +262,16 @@ describe('Pixel Events - Isolated Execution Context', function () {
         });
     });
 
-    describe('fireStaticEvents function', function () {
-        it('should fire all events in staticEvents array', function () {
-            const staticEvents = [
+    describe('fireQueuedEvents function', function () {
+        it('should fire all events in eventQueue array', function () {
+            const eventQueue = [
                 { name: 'ViewContent', params: { id: '1' }, method: 'track' },
                 { name: 'AddToCart', params: { id: '2' }, method: 'track' },
                 { name: 'Purchase', params: { id: '3' }, method: 'track' },
             ];
 
-            // Simulate fireStaticEvents
-            staticEvents.forEach((event) => {
+            // Simulate fireQueuedEvents
+            eventQueue.forEach((event) => {
                 global.fbq(event.method, event.name, event.params);
             });
 
@@ -281,21 +281,21 @@ describe('Pixel Events - Isolated Execution Context', function () {
             expect(mockFbq).toHaveBeenNthCalledWith(3, 'track', 'Purchase', { id: '3' });
         });
 
-        it('should handle empty staticEvents array', function () {
-            const staticEvents = [];
+        it('should handle empty eventQueue array', function () {
+            const eventQueue = [];
 
-            staticEvents.forEach((event) => {
+            eventQueue.forEach((event) => {
                 global.fbq(event.method, event.name, event.params);
             });
 
             expect(mockFbq).not.toHaveBeenCalled();
         });
 
-        it('should handle null staticEvents', function () {
-            const staticEvents = null;
+        it('should handle null eventQueue', function () {
+            const eventQueue = null;
 
-            // Simulate the check in fireStaticEvents
-            if (!staticEvents || !Array.isArray(staticEvents)) {
+            // Simulate the check in fireQueuedEvents
+            if (!eventQueue || !Array.isArray(eventQueue)) {
                 // Early return
                 return;
             }
@@ -304,7 +304,7 @@ describe('Pixel Events - Isolated Execution Context', function () {
         });
 
         it('should continue firing events even if one fails', function () {
-            const staticEvents = [
+            const eventQueue = [
                 { name: 'ViewContent', params: { id: '1' }, method: 'track' },
                 { name: 'BrokenEvent', params: null, method: 'track' }, // This might cause issues
                 { name: 'AddToCart', params: { id: '3' }, method: 'track' },
@@ -312,8 +312,8 @@ describe('Pixel Events - Isolated Execution Context', function () {
 
             let successCount = 0;
 
-            // Simulate fireStaticEvents with error handling per event
-            staticEvents.forEach((event) => {
+            // Simulate fireQueuedEvents with error handling per event
+            eventQueue.forEach((event) => {
                 try {
                     global.fbq(event.method, event.name, event.params);
                     successCount++;
@@ -339,23 +339,23 @@ describe('Pixel Events - Isolated Execution Context', function () {
         it('should process valid wc_facebook_pixel_data', function () {
             global.wc_facebook_pixel_data = {
                 pixelId: '123456789',
-                staticEvents: [
+                eventQueue: [
                     { name: 'ViewContent', params: {}, method: 'track' },
                 ],
                 agentString: 'woocommerce-1.0.0',
             };
 
             expect(global.wc_facebook_pixel_data.pixelId).toBe('123456789');
-            expect(global.wc_facebook_pixel_data.staticEvents.length).toBe(1);
+            expect(global.wc_facebook_pixel_data.eventQueue.length).toBe(1);
         });
 
-        it('should handle missing staticEvents in data', function () {
+        it('should handle missing eventQueue in data', function () {
             global.wc_facebook_pixel_data = {
                 pixelId: '123456789',
                 agentString: 'woocommerce-1.0.0',
             };
 
-            const events = global.wc_facebook_pixel_data.staticEvents;
+            const events = global.wc_facebook_pixel_data.eventQueue;
             const shouldSkip = !events || !Array.isArray(events);
 
             expect(shouldSkip).toBe(true);
@@ -512,7 +512,7 @@ describe('Pixel Events - Isolated Execution Context', function () {
             // This simulates the structure passed by wp_localize_script
             global.wc_facebook_pixel_data = {
                 pixelId: '123456789',
-                staticEvents: [
+                eventQueue: [
                     {
                         name: 'ViewContent',
                         params: {
@@ -529,7 +529,7 @@ describe('Pixel Events - Isolated Execution Context', function () {
             };
 
             const data = global.wc_facebook_pixel_data;
-            const event = data.staticEvents[0];
+            const event = data.eventQueue[0];
 
             expect(event.name).toBe('ViewContent');
             expect(event.eventId).toBe('php-generated-uuid-123');
@@ -539,7 +539,7 @@ describe('Pixel Events - Isolated Execution Context', function () {
         it('should handle AddToCart deferred event structure', function () {
             global.wc_facebook_pixel_data = {
                 pixelId: '123456789',
-                staticEvents: [
+                eventQueue: [
                     {
                         name: 'AddToCart',
                         params: {
@@ -555,7 +555,7 @@ describe('Pixel Events - Isolated Execution Context', function () {
                 agentString: 'woocommerce-facebook-for-woocommerce-3.0.0',
             };
 
-            const event = global.wc_facebook_pixel_data.staticEvents[0];
+            const event = global.wc_facebook_pixel_data.eventQueue[0];
 
             // Fire the event with eventID as 4th argument (correct approach)
             if (event.eventId) {

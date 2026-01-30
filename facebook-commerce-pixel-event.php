@@ -53,7 +53,7 @@ class WC_Facebookcommerce_Pixel {
 	 *
 	 * @var array Queued events array.
 	 */
-	private static $static_events = [];
+	private static $event_queue = [];
 
 	/**
 	 * Whether external script has been enqueued.
@@ -140,11 +140,11 @@ class WC_Facebookcommerce_Pixel {
 	}
 
 	/**
-	 * Passes static events data to the frontend JavaScript.
+	 * Passes queued event data to the frontend JavaScript.
 	 * Uses wp_localize_script() to pass data (not code) to the external script.
 	 */
 	public static function localize_pixel_events_data() {
-		if ( ! self::$script_enqueued || empty( self::$static_events ) ) {
+		if ( ! self::$script_enqueued || empty( self::$event_queue ) ) {
 			return;
 		}
 
@@ -154,15 +154,15 @@ class WC_Facebookcommerce_Pixel {
 			'wc-facebook-pixel-events',
 			'wc_facebook_pixel_data',
 			array(
-				'pixelId'      => esc_js( $pixel_id ),
-				'staticEvents' => self::$static_events,
-				'agentString'  => Event::get_platform_identifier(),
+				'pixelId'     => esc_js( $pixel_id ),
+				'eventQueue'  => self::$event_queue,
+				'agentString' => Event::get_platform_identifier(),
 			)
 		);
 	}
 
 	/**
-	 * Adds an event to the static events array for immediate frontend execution.
+	 * Enqueue an event for isolated script execution.
 	 * Events are stored as DATA, not executable code.
 	 *
 	 * @param string $event_name The name of the event to track.
@@ -170,7 +170,7 @@ class WC_Facebookcommerce_Pixel {
 	 * @param string $method     The fbq method to use (track, trackCustom, etc.).
 	 * @param string $event_id   Optional event ID for deduplication.
 	 */
-	public static function add_static_event( $event_name, $params, $method = 'track', $event_id = '' ) {
+	public static function enqueue_event( $event_name, $params, $method = 'track', $event_id = '' ) {
 		// Initialize hooks if not already done.
 		self::init_external_js_hooks();
 
@@ -184,19 +184,19 @@ class WC_Facebookcommerce_Pixel {
 			$event_data['eventId'] = $event_id;
 		}
 
-		self::$static_events[] = $event_data;
+		self::$event_queue[] = $event_data;
 	}
 
 	/**
-	 * Adds an event to the deferred events queue for next page load.
-	 * Used for isolated pixel execution when events need to be deferred (e.g., AddToCart with redirect).
+	 * Enqueue an event for deferred execution on next page load.
+	 * Used when events need to be deferred (e.g., AddToCart with redirect).
 	 *
 	 * @param string $event_name The name of the event to track.
 	 * @param array  $params     Event parameters.
 	 * @param string $method     The fbq method to use (track, trackCustom, etc.).
 	 * @param string $event_id   Optional event ID for deduplication.
 	 */
-	public static function add_deferred_static_event( $event_name, $params, $method = 'track', $event_id = '' ) {
+	public static function enqueue_deferred_event( $event_name, $params, $method = 'track', $event_id = '' ) {
 		$event_data = array(
 			'name'   => $event_name,
 			'params' => $params,
@@ -502,10 +502,10 @@ class WC_Facebookcommerce_Pixel {
 
 				if ( $is_deferred ) {
 					// Store event data for next page load.
-					self::add_deferred_static_event( $event_name, $event_params, $method, $event_id );
+					self::enqueue_deferred_event( $event_name, $event_params, $method, $event_id );
 				} else {
 					// Queue event for this page's external script.
-					self::add_static_event( $event_name, $event_params, $method, $event_id );
+					self::enqueue_event( $event_name, $event_params, $method, $event_id );
 				}
 			} else {
 				// Legacy execution: Use wc_enqueue_js for inline script.
