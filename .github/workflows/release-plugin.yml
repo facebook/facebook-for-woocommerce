@@ -10,7 +10,7 @@ jobs:
     runs-on: ubuntu-latest
     environment: Deployment
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Get NPM Version
         id: package-version
@@ -30,7 +30,7 @@ jobs:
           tools: composer
       
       - name: Setup Node.js
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v6
         with:
           node-version-file: 'package.json'
           cache-dependency-path: './package-lock.json'
@@ -74,7 +74,7 @@ jobs:
           echo "EOF" >> $GITHUB_ENV
 
       - name: Store built plugin
-        uses: actions/upload-artifact@master
+        uses: actions/upload-artifact@v6
         with:
           name: facebook-for-woocommerce
           path: facebook-for-woocommerce.zip
@@ -114,7 +114,7 @@ jobs:
           svn commit -m "Deploy new version ${{ steps.package-version.outputs.current-version}}" --username "$SVN_USERNAME" --password "$SVN_PASSWORD" --no-auth-cache --non-interactive
 
       - name: Create a new release on GitHub
-        uses: actions/github-script@v7
+        uses: actions/github-script@v8
         env:
           VERSION: ${{ steps.package-version.outputs.current-version}}
           COMMIT_SHA: ${{ github.sha }}
@@ -170,7 +170,7 @@ jobs:
             fs.writeFileSync(releaseIdFile, release.data.id.toString());
             
       - name: Upload release ID as artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: release-id
           path: release-id.txt
