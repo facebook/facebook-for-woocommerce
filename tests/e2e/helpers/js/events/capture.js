@@ -22,10 +22,11 @@ class PixelCapture {
       const request = await this.page.waitForRequest(
         request => {
           const url = request.url();
+          const parsedUrl = new URL(url);
 
-          if (!url.includes('facebook.com')) return false;
-          if (!url.includes('/tr/') && !url.includes('/privacy_sandbox/')) return false;
-          return url.includes(`ev=${this.eventName}`);
+          if (!parsedUrl.hostname.endsWith('.facebook.com')) return false;
+          if (!parsedUrl.pathname.includes('/tr/') && !parsedUrl.pathname.includes('/privacy_sandbox/')) return false;
+          return parsedUrl.search.includes(`ev=${this.eventName}`);
         },
         { timeout: parseInt(process.env.PIXEL_EVENT_TIMEOUT || TIMEOUTS.EXTRA_LONG.toString(), 10) }
       );
