@@ -73,11 +73,14 @@ jobs:
           done < "$readme_file"
           echo "EOF" >> $GITHUB_ENV
 
+      - name: Extract built plugin for artifact upload
+        run: unzip facebook-for-woocommerce.zip -d artifact-contents
+
       - name: Store built plugin
-        uses: actions/upload-artifact@master
+        uses: actions/upload-artifact@v4
         with:
           name: facebook-for-woocommerce
-          path: facebook-for-woocommerce.zip
+          path: artifact-contents/facebook-for-woocommerce
 
       - name: Install SVN
         run: sudo apt-get install subversion -y

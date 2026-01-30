@@ -45,12 +45,15 @@ jobs:
       - name: Build plugin
         run: npm run build
       
+      - name: Extract built plugin for artifact upload
+        run: unzip facebook-for-woocommerce.zip -d artifact-contents
+      
       - name: Store built plugin
-        uses: actions/upload-artifact@master
+        uses: actions/upload-artifact@v4
         continue-on-error: true
         with:
           name: facebook-for-woocommerce
-          path: facebook-for-woocommerce.zip
+          path: artifact-contents/facebook-for-woocommerce
           
       - name: Check if build succeeded
         id: check_build

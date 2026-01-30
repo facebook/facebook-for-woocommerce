@@ -7,28 +7,26 @@
  *
  * @package FacebookCommerce
  *
- * phpcs:disable Squiz.Commenting.ClassComment.Missing
- * phpcs:disable Generic.Files.OneObjectStructurePerFile.MultipleFound
  * phpcs:disable Squiz.Commenting.VariableComment.Missing
  * phpcs:disable WordPress.NamingConventions.ValidVariableName.VariableNotSnakeCase
  */
 
+namespace WooCommerce\Facebook;
+
 defined( 'ABSPATH' ) || exit;
 
-class FB_WPML_Language_Status {
-	const VISIBLE    = 1;
-	const HIDDEN     = 2;
-	const NOT_SYNCED = 0;
-}
+/**
+ * WPML Injector class for Facebook integration.
+ */
+class WPMLInjector {
 
-class WC_Facebook_WPML_Injector {
 	public static $settings     = null;
 	public static $default_lang = null;
 	const OPTION                = 'fb_wmpl_language_visibility';
 
 
 	/**
-	 * Constructor for WC_Facebook_WPML_Injector class.
+	 * Constructor for Facebook_WPML_Injector class.
 	 */
 	public function __construct() {
 
@@ -86,7 +84,7 @@ class WC_Facebook_WPML_Injector {
 		}
 
 		// Hide products from non-active languages, of if the language status isn't visible.
-		$should_hide = ! isset( self::$settings[ $language_code ] ) || FB_WPML_Language_Status::VISIBLE !== self::$settings[ $language_code ];
+		$should_hide = ! isset( self::$settings[ $language_code ] ) || WPMLLanguageStatus::VISIBLE !== self::$settings[ $language_code ];
 
 		return (bool) apply_filters( 'wc_facebook_wpml_should_hide_product', $should_hide, $product_id, $product_lang );
 	}
@@ -102,7 +100,7 @@ class WC_Facebook_WPML_Injector {
 			$settings         = array();
 			foreach ( $active_languages as $lang ) {
 				$settings[ $lang ] = 'on' === $REQUEST[ $lang ] ?
-				FB_WPML_Language_Status::VISIBLE : FB_WPML_Language_Status::HIDDEN;
+				WPMLLanguageStatus::VISIBLE : WPMLLanguageStatus::HIDDEN;
 			}
 
 			update_option( 'fb_wmpl_language_visibility', $settings, false );
@@ -133,11 +131,11 @@ class WC_Facebook_WPML_Injector {
 
 				$settings = array_fill_keys(
 					array_keys( $active_languages ),
-					FB_WPML_Language_Status::HIDDEN
+					WPMLLanguageStatus::HIDDEN
 				);
 
 				if ( self::$default_lang ) {
-					$settings[ self::$default_lang ] = FB_WPML_Language_Status::VISIBLE;
+					$settings[ self::$default_lang ] = WPMLLanguageStatus::VISIBLE;
 				}
 			}
 
@@ -146,7 +144,7 @@ class WC_Facebook_WPML_Injector {
 				array_filter(
 					$settings,
 					function ( $status ) {
-						return FB_WPML_Language_Status::VISIBLE === $status;
+						return WPMLLanguageStatus::VISIBLE === $status;
 					}
 				)
 			);
@@ -174,7 +172,7 @@ class WC_Facebook_WPML_Injector {
 
 								<p>
 									<label>
-										<input type="checkbox" id="icl_fb_woo_chk" name="<?php echo esc_attr( $language ); ?>" <?php checked( $set, FB_WPML_Language_Status::VISIBLE ); ?>>
+										<input type="checkbox" id="icl_fb_woo_chk" name="<?php echo esc_attr( $language ); ?>" <?php checked( $set, WPMLLanguageStatus::VISIBLE ); ?>>
 										<?php echo isset( $active_languages[ $language ]['native_name'] ) ? esc_html( $active_languages[ $language ]['native_name'] ) : esc_html( $language ); ?>
 									</label>
 								</p>

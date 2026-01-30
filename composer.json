@@ -23,7 +23,7 @@
   },
   "require-dev": {
     "composer/installers": "^1.7.0",
-    "woocommerce/woocommerce-sniffs": "1.0.0",
+    "woocommerce/woocommerce-sniffs": "^1.0.0",
     "sirbrillig/phpcs-changed": "^2.11.1",
     "phpunit/phpunit": "^9.6",
     "yoast/phpunit-polyfills": "^2.0",
@@ -33,7 +33,23 @@
     "psr-4": {
       "WooCommerce\\Facebook\\": "includes",
       "WooCommerce\\Facebook\\Feed\\": ["includes/Feed", "includes/Feed/Promotions", "includes/Feed/RatingsAndReviews", "includes/Feed/ShippingProfiles", "includes/Feed/NavigationMenu"]
-    }
+    },
+    "classmap": [
+      "includes/fbproduct.php",
+      "includes/fbproductfeed.php",
+      "includes/fbbackground.php",
+      "includes/fbutils.php",
+      "includes/fbasync.php",
+      "includes/Logger/Logger.php"
+    ],
+    "exclude-from-classmap": [
+      "includes/fbproduct.php",
+      "includes/fbproductfeed.php",
+      "includes/fbbackground.php",
+      "includes/fbutils.php",
+      "includes/fbasync.php",
+      "includes/Logger/Logger.php"
+    ]
   },
   "autoload-dev": {
     "psr-4": {
