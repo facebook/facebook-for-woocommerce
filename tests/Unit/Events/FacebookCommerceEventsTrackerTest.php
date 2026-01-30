@@ -832,21 +832,28 @@ class FacebookCommerceEventsTrackerTest extends AbstractWPUnitTestWithSafeFilter
 	/**
 	 * Simulate a WordPress hook context for testing.
 	 *
-	 * This temporarily sets up a hook and executes the callback within that context,
-	 * so current_action() returns the expected hook name.
+	 * This manipulates WordPress's internal filter stack so that current_action()
+	 * returns the expected hook name, without actually triggering the hook.
 	 *
 	 * @param string   $hook_name The hook name to simulate.
 	 * @param callable $callback  The callback to execute within the hook context.
 	 */
 	private function simulate_hook_context( string $hook_name, callable $callback ): void {
-		// Add a temporary action that will execute our callback
-		add_action( $hook_name, $callback );
+		global $wp_current_filter;
 
-		// Trigger the action (this sets current_action() correctly)
-		do_action( $hook_name );
+		// Save the current filter stack
+		$original_filter = $wp_current_filter;
 
-		// Remove the temporary action
-		remove_action( $hook_name, $callback );
+		// Push our hook onto the filter stack so current_action() returns it
+		$wp_current_filter[] = $hook_name;
+
+		try {
+			// Execute the callback
+			$callback();
+		} finally {
+			// Restore the original filter stack
+			$wp_current_filter = $original_filter;
+		}
 	}
 
 	/**
