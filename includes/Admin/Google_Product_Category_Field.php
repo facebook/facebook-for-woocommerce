@@ -10,6 +10,8 @@
 
 namespace WooCommerce\Facebook\Admin;
 
+use WC_Facebookcommerce_Utils;
+
 defined( 'ABSPATH' ) || exit;
 
 /**
@@ -33,6 +35,6 @@ class Google_Product_Category_Field {
 			wp_json_encode( $facebook_category_handler->get_categories() ),
 			esc_js( $input_id )
 		);
-		wc_enqueue_js( $facebook_category_fields );
+		WC_Facebookcommerce_Utils::enqueue_inline_js( $facebook_category_fields );
 	}
 }
