@@ -430,7 +430,7 @@ class fbUtilsTest extends \WP_UnitTestCase {
 	 */
 	public function test_print_deferred_events_handles_isolated_format(): void {
 		$this->reset_deferred_events();
-		$this->reset_pixel_static_events();
+		$this->reset_pixel_event_queue();
 
 		$transient_key = $this->get_deferred_events_transient_key();
 
@@ -446,13 +446,13 @@ class fbUtilsTest extends \WP_UnitTestCase {
 
 		WC_Facebookcommerce_Utils::print_deferred_events();
 
-		// Check that events were added to WC_Facebookcommerce_Pixel::$static_events
-		$static_events = $this->get_pixel_static_events();
+		// Check that events were added to WC_Facebookcommerce_Pixel::$event_queue
+		$event_queue = $this->get_pixel_event_queue();
 
-		$this->assertCount( 2, $static_events );
-		$this->assertEquals( 'AddToCart', $static_events[0]['name'] );
-		$this->assertEquals( 'ViewContent', $static_events[1]['name'] );
-		$this->assertEquals( 'evt-123', $static_events[1]['eventId'] );
+		$this->assertCount( 2, $event_queue );
+		$this->assertEquals( 'AddToCart', $event_queue[0]['name'] );
+		$this->assertEquals( 'ViewContent', $event_queue[1]['name'] );
+		$this->assertEquals( 'evt-123', $event_queue[1]['eventId'] );
 
 		// Transient should be deleted
 		$this->assertFalse( get_transient( $transient_key ) );
@@ -496,7 +496,7 @@ class fbUtilsTest extends \WP_UnitTestCase {
 	 */
 	public function test_print_deferred_events_handles_mixed_formats(): void {
 		$this->reset_deferred_events();
-		$this->reset_pixel_static_events();
+		$this->reset_pixel_event_queue();
 
 		$transient_key = $this->get_deferred_events_transient_key();
 
@@ -519,10 +519,10 @@ class fbUtilsTest extends \WP_UnitTestCase {
 		$this->assertStringContainsString( '<script>', $output );
 		$this->assertStringContainsString( $js_code, $output );
 
-		// Isolated event should be in static_events
-		$static_events = $this->get_pixel_static_events();
-		$this->assertCount( 1, $static_events );
-		$this->assertEquals( 'AddToCart', $static_events[0]['name'] );
+		// Isolated event should be in event_queue
+		$event_queue = $this->get_pixel_event_queue();
+		$this->assertCount( 1, $event_queue );
+		$this->assertEquals( 'AddToCart', $event_queue[0]['name'] );
 
 		// Transient should be deleted
 		$this->assertFalse( get_transient( $transient_key ) );
@@ -605,7 +605,7 @@ class fbUtilsTest extends \WP_UnitTestCase {
 	 */
 	public function test_print_deferred_events_uses_default_method(): void {
 		$this->reset_deferred_events();
-		$this->reset_pixel_static_events();
+		$this->reset_pixel_event_queue();
 
 		$transient_key = $this->get_deferred_events_transient_key();
 
@@ -618,10 +618,10 @@ class fbUtilsTest extends \WP_UnitTestCase {
 
 		WC_Facebookcommerce_Utils::print_deferred_events();
 
-		$static_events = $this->get_pixel_static_events();
+		$event_queue = $this->get_pixel_event_queue();
 
-		$this->assertCount( 1, $static_events );
-		$this->assertEquals( 'track', $static_events[0]['method'] );
+		$this->assertCount( 1, $event_queue );
+		$this->assertEquals( 'track', $event_queue[0]['method'] );
 	}
 
 	/**
@@ -629,7 +629,7 @@ class fbUtilsTest extends \WP_UnitTestCase {
 	 */
 	public function test_print_deferred_events_handles_missing_event_id(): void {
 		$this->reset_deferred_events();
-		$this->reset_pixel_static_events();
+		$this->reset_pixel_event_queue();
 
 		$transient_key = $this->get_deferred_events_transient_key();
 
@@ -642,15 +642,15 @@ class fbUtilsTest extends \WP_UnitTestCase {
 
 		WC_Facebookcommerce_Utils::print_deferred_events();
 
-		$static_events = $this->get_pixel_static_events();
+		$event_queue = $this->get_pixel_event_queue();
 
-		$this->assertCount( 1, $static_events );
+		$this->assertCount( 1, $event_queue );
 		// eventId should not be set when empty
-		$this->assertArrayNotHasKey( 'eventId', $static_events[0] );
+		$this->assertArrayNotHasKey( 'eventId', $event_queue[0] );
 	}
 
 	/**
-	 * Helper to reset deferred events static array.
+	 * Helper to reset deferred events array.
 	 */
 	private function reset_deferred_events(): void {
 		$reflection = new ReflectionClass( WC_Facebookcommerce_Utils::class );
@@ -660,11 +660,11 @@ class fbUtilsTest extends \WP_UnitTestCase {
 	}
 
 	/**
-	 * Helper to reset pixel static events array.
+	 * Helper to reset pixel event queue array.
 	 */
-	private function reset_pixel_static_events(): void {
+	private function reset_pixel_event_queue(): void {
 		$reflection = new ReflectionClass( WC_Facebookcommerce_Pixel::class );
-		$property = $reflection->getProperty( 'static_events' );
+		$property = $reflection->getProperty( 'event_queue' );
 		$property->setAccessible( true );
 		$property->setValue( null, [] );
 
@@ -675,11 +675,11 @@ class fbUtilsTest extends \WP_UnitTestCase {
 	}
 
 	/**
-	 * Helper to get pixel static events via reflection.
+	 * Helper to get pixel event queue via reflection.
 	 */
-	private function get_pixel_static_events(): array {
+	private function get_pixel_event_queue(): array {
 		$reflection = new ReflectionClass( WC_Facebookcommerce_Pixel::class );
-		$property = $reflection->getProperty( 'static_events' );
+		$property = $reflection->getProperty( 'event_queue' );
 		$property->setAccessible( true );
 		return $property->getValue();
 	}
