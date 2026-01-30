@@ -62,7 +62,7 @@ if ( ! class_exists( 'WC_Facebookcommerce_Utils' ) ) :
 		 *
 		 * Supports both legacy (JS code string) and isolated execution (event data array) formats.
 		 * - Legacy format (switch OFF): Outputs inline <script> tag with JS code
-		 * - Isolated format (switch ON): Uses WC_Facebookcommerce_Pixel::add_static_event()
+		 * - Isolated format (switch ON): Uses WC_Facebookcommerce_Pixel::enqueue_event()
 		 *
 		 * @since 3.1.6
 		 */
@@ -87,7 +87,7 @@ if ( ! class_exists( 'WC_Facebookcommerce_Utils' ) ) :
 
 			// Handle isolated execution events (event data arrays)
 			foreach ( $isolated_events as $event ) {
-				WC_Facebookcommerce_Pixel::add_static_event(
+				WC_Facebookcommerce_Pixel::enqueue_event(
 					$event['name'],
 					$event['params'],
 					$event['method'] ?? 'track',

@@ -41,10 +41,10 @@ class FacebookCommercePixelIsolatedExecutionTest extends AbstractWPUnitTestWithO
 	private function reset_static_properties(): void {
 		$reflection = new ReflectionClass( WC_Facebookcommerce_Pixel::class );
 
-		// Reset $static_events
-		$static_events = $reflection->getProperty( 'static_events' );
-		$static_events->setAccessible( true );
-		$static_events->setValue( null, [] );
+		// Reset $event_queue
+		$event_queue = $reflection->getProperty( 'event_queue' );
+		$event_queue->setAccessible( true );
+		$event_queue->setValue( null, [] );
 
 		// Reset $script_enqueued
 		$script_enqueued = $reflection->getProperty( 'script_enqueued' );
@@ -68,21 +68,21 @@ class FacebookCommercePixelIsolatedExecutionTest extends AbstractWPUnitTestWithO
 	}
 
 	/**
-	 * Helper to get static events via reflection.
+	 * Helper to get event queue via reflection.
 	 */
-	private function get_static_events(): array {
-		$reflection    = new ReflectionClass( WC_Facebookcommerce_Pixel::class );
-		$static_events = $reflection->getProperty( 'static_events' );
-		$static_events->setAccessible( true );
-		return $static_events->getValue();
+	private function get_event_queue(): array {
+		$reflection  = new ReflectionClass( WC_Facebookcommerce_Pixel::class );
+		$event_queue = $reflection->getProperty( 'event_queue' );
+		$event_queue->setAccessible( true );
+		return $event_queue->getValue();
 	}
 
 	// =========================================================================
-	// add_static_event() Tests
+	// enqueue_event() Tests
 	// =========================================================================
 
-	public function test_add_static_event_adds_event_to_queue(): void {
-		WC_Facebookcommerce_Pixel::add_static_event(
+	public function test_enqueue_event_adds_event_to_queue(): void {
+		WC_Facebookcommerce_Pixel::enqueue_event(
 			'ViewContent',
 			array(
 				'content_ids'  => array( '123' ),
@@ -92,7 +92,7 @@ class FacebookCommercePixelIsolatedExecutionTest extends AbstractWPUnitTestWithO
 			)
 		);
 
-		$events = $this->get_static_events();
+		$events = $this->get_event_queue();
 
 		$this->assertCount( 1, $events );
 		$this->assertEquals( 'ViewContent', $events[0]['name'] );
@@ -100,52 +100,52 @@ class FacebookCommercePixelIsolatedExecutionTest extends AbstractWPUnitTestWithO
 		$this->assertEquals( array( '123' ), $events[0]['params']['content_ids'] );
 	}
 
-	public function test_add_static_event_with_custom_method(): void {
-		WC_Facebookcommerce_Pixel::add_static_event(
+	public function test_enqueue_event_with_custom_method(): void {
+		WC_Facebookcommerce_Pixel::enqueue_event(
 			'CustomEvent',
 			array( 'key' => 'value' ),
 			'trackCustom'
 		);
 
-		$events = $this->get_static_events();
+		$events = $this->get_event_queue();
 
 		$this->assertCount( 1, $events );
 		$this->assertEquals( 'trackCustom', $events[0]['method'] );
 	}
 
-	public function test_add_static_event_with_event_id(): void {
-		WC_Facebookcommerce_Pixel::add_static_event(
+	public function test_enqueue_event_with_event_id(): void {
+		WC_Facebookcommerce_Pixel::enqueue_event(
 			'AddToCart',
 			array( 'content_ids' => array( '456' ) ),
 			'track',
 			'abc123-event-id'
 		);
 
-		$events = $this->get_static_events();
+		$events = $this->get_event_queue();
 
 		$this->assertCount( 1, $events );
 		$this->assertArrayHasKey( 'eventId', $events[0] );
 		$this->assertEquals( 'abc123-event-id', $events[0]['eventId'] );
 	}
 
-	public function test_add_static_event_without_event_id_does_not_include_key(): void {
-		WC_Facebookcommerce_Pixel::add_static_event(
+	public function test_enqueue_event_without_event_id_does_not_include_key(): void {
+		WC_Facebookcommerce_Pixel::enqueue_event(
 			'ViewContent',
 			array( 'content_ids' => array( '789' ) )
 		);
 
-		$events = $this->get_static_events();
+		$events = $this->get_event_queue();
 
 		$this->assertCount( 1, $events );
 		$this->assertArrayNotHasKey( 'eventId', $events[0] );
 	}
 
-	public function test_add_static_event_multiple_events(): void {
-		WC_Facebookcommerce_Pixel::add_static_event( 'ViewContent', array( 'id' => '1' ) );
-		WC_Facebookcommerce_Pixel::add_static_event( 'AddToCart', array( 'id' => '2' ) );
-		WC_Facebookcommerce_Pixel::add_static_event( 'Purchase', array( 'id' => '3' ) );
+	public function test_enqueue_event_multiple_events(): void {
+		WC_Facebookcommerce_Pixel::enqueue_event( 'ViewContent', array( 'id' => '1' ) );
+		WC_Facebookcommerce_Pixel::enqueue_event( 'AddToCart', array( 'id' => '2' ) );
+		WC_Facebookcommerce_Pixel::enqueue_event( 'Purchase', array( 'id' => '3' ) );
 
-		$events = $this->get_static_events();
+		$events = $this->get_event_queue();
 
 		$this->assertCount( 3, $events );
 		$this->assertEquals( 'ViewContent', $events[0]['name'] );
@@ -153,7 +153,7 @@ class FacebookCommercePixelIsolatedExecutionTest extends AbstractWPUnitTestWithO
 		$this->assertEquals( 'Purchase', $events[2]['name'] );
 	}
 
-	public function test_add_static_event_initializes_hooks(): void {
+	public function test_enqueue_event_initializes_hooks(): void {
 		// Hooks should not be initialized yet
 		$reflection        = new ReflectionClass( WC_Facebookcommerce_Pixel::class );
 		$hooks_initialized = $reflection->getProperty( 'hooks_initialized' );
@@ -162,7 +162,7 @@ class FacebookCommercePixelIsolatedExecutionTest extends AbstractWPUnitTestWithO
 		$this->assertFalse( $hooks_initialized->getValue() );
 
 		// Adding an event should initialize hooks
-		WC_Facebookcommerce_Pixel::add_static_event( 'ViewContent', array() );
+		WC_Facebookcommerce_Pixel::enqueue_event( 'ViewContent', array() );
 
 		$this->assertTrue( $hooks_initialized->getValue() );
 	}
@@ -302,8 +302,8 @@ class FacebookCommercePixelIsolatedExecutionTest extends AbstractWPUnitTestWithO
 	// Event Data Structure Tests
 	// =========================================================================
 
-	public function test_static_event_has_correct_structure(): void {
-		WC_Facebookcommerce_Pixel::add_static_event(
+	public function test_queued_event_has_correct_structure(): void {
+		WC_Facebookcommerce_Pixel::enqueue_event(
 			'ViewContent',
 			array(
 				'content_ids'  => array( 'SKU123' ),
@@ -315,7 +315,7 @@ class FacebookCommercePixelIsolatedExecutionTest extends AbstractWPUnitTestWithO
 			'unique-event-123'
 		);
 
-		$events = $this->get_static_events();
+		$events = $this->get_event_queue();
 		$event  = $events[0];
 
 		// Verify structure matches what pixel-events.js expects
@@ -331,7 +331,7 @@ class FacebookCommercePixelIsolatedExecutionTest extends AbstractWPUnitTestWithO
 		$this->assertIsString( $event['eventId'] );
 	}
 
-	public function test_static_event_params_are_preserved(): void {
+	public function test_queued_event_params_are_preserved(): void {
 		$original_params = array(
 			'content_ids'   => array( 'SKU123', 'SKU456' ),
 			'content_type'  => 'product',
@@ -341,9 +341,9 @@ class FacebookCommercePixelIsolatedExecutionTest extends AbstractWPUnitTestWithO
 			'num_items'     => 2,
 		);
 
-		WC_Facebookcommerce_Pixel::add_static_event( 'Purchase', $original_params );
+		WC_Facebookcommerce_Pixel::enqueue_event( 'Purchase', $original_params );
 
-		$events = $this->get_static_events();
+		$events = $this->get_event_queue();
 		$params = $events[0]['params'];
 
 		$this->assertEquals( $original_params['content_ids'], $params['content_ids'] );
@@ -352,13 +352,13 @@ class FacebookCommercePixelIsolatedExecutionTest extends AbstractWPUnitTestWithO
 	}
 
 	// =========================================================================
-	// add_deferred_static_event() Tests
+	// enqueue_deferred_event() Tests
 	// =========================================================================
 
-	public function test_add_deferred_static_event_stores_event_data(): void {
+	public function test_enqueue_deferred_event_stores_event_data(): void {
 		$this->reset_deferred_events();
 
-		WC_Facebookcommerce_Pixel::add_deferred_static_event(
+		WC_Facebookcommerce_Pixel::enqueue_deferred_event(
 			'AddToCart',
 			array(
 				'content_ids'  => array( '123' ),
@@ -384,10 +384,10 @@ class FacebookCommercePixelIsolatedExecutionTest extends AbstractWPUnitTestWithO
 		delete_transient( $transient_key );
 	}
 
-	public function test_add_deferred_static_event_without_event_id(): void {
+	public function test_enqueue_deferred_event_without_event_id(): void {
 		$this->reset_deferred_events();
 
-		WC_Facebookcommerce_Pixel::add_deferred_static_event(
+		WC_Facebookcommerce_Pixel::enqueue_deferred_event(
 			'ViewContent',
 			array( 'content_ids' => array( '456' ) )
 		);
@@ -404,10 +404,10 @@ class FacebookCommercePixelIsolatedExecutionTest extends AbstractWPUnitTestWithO
 		delete_transient( $transient_key );
 	}
 
-	public function test_add_deferred_static_event_with_custom_method(): void {
+	public function test_enqueue_deferred_event_with_custom_method(): void {
 		$this->reset_deferred_events();
 
-		WC_Facebookcommerce_Pixel::add_deferred_static_event(
+		WC_Facebookcommerce_Pixel::enqueue_deferred_event(
 			'CustomEvent',
 			array( 'key' => 'value' ),
 			'trackCustom'
@@ -444,8 +444,8 @@ class FacebookCommercePixelIsolatedExecutionTest extends AbstractWPUnitTestWithO
 			)
 		);
 
-		// Event should be in static_events (isolated execution)
-		$events = $this->get_static_events();
+		// Event should be in event_queue (isolated execution)
+		$events = $this->get_event_queue();
 
 		$this->assertCount( 1, $events );
 		$this->assertEquals( 'ViewContent', $events[0]['name'] );
@@ -485,8 +485,8 @@ class FacebookCommercePixelIsolatedExecutionTest extends AbstractWPUnitTestWithO
 			)
 		);
 
-		// Event should NOT be in static_events (legacy uses wc_enqueue_js)
-		$events = $this->get_static_events();
+		// Event should NOT be in event_queue (legacy uses wc_enqueue_js)
+		$events = $this->get_event_queue();
 		$this->assertCount( 0, $events );
 
 		// wc_queued_js should have the JS code
@@ -508,8 +508,8 @@ class FacebookCommercePixelIsolatedExecutionTest extends AbstractWPUnitTestWithO
 			array( 'content_ids' => array( 'CART123' ) )
 		);
 
-		// Event should NOT be in static_events (deferred)
-		$events = $this->get_static_events();
+		// Event should NOT be in event_queue (deferred)
+		$events = $this->get_event_queue();
 		$this->assertCount( 0, $events );
 
 		// Save and check deferred events
@@ -573,7 +573,7 @@ class FacebookCommercePixelIsolatedExecutionTest extends AbstractWPUnitTestWithO
 		);
 
 		// ViewContent should NOT be deferred even with redirect enabled
-		$events = $this->get_static_events();
+		$events = $this->get_event_queue();
 		$this->assertCount( 1, $events );
 		$this->assertEquals( 'ViewContent', $events[0]['name'] );
 
@@ -597,7 +597,7 @@ class FacebookCommercePixelIsolatedExecutionTest extends AbstractWPUnitTestWithO
 		);
 
 		// AddToCart should NOT be deferred without redirect
-		$events = $this->get_static_events();
+		$events = $this->get_event_queue();
 		$this->assertCount( 1, $events );
 		$this->assertEquals( 'AddToCart', $events[0]['name'] );
 

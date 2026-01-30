@@ -103,10 +103,10 @@
     }
 
     /**
-     * Fire all static events from PHP
+     * Fire all queued events from PHP
      */
-    function fireStaticEvents() {
-        var events = data.staticEvents;
+    function fireQueuedEvents() {
+        var events = data.eventQueue;
 
         if (!events || !Array.isArray(events)) {
             return;
@@ -116,9 +116,12 @@
             try {
                 fireEvent(events[i]);
             } catch (e) {
-                logWarning('fireStaticEvents loop error:', e);
+                logWarning('fireQueuedEvents loop error:', e);
             }
         }
+
+        // Clear events after firing to prevent duplicate firing
+        data.eventQueue = [];
     }
 
     /**
@@ -126,9 +129,9 @@
      */
     function init() {
         if (document.readyState === 'complete') {
-            fireStaticEvents();
+            fireQueuedEvents();
         } else {
-            window.addEventListener('load', fireStaticEvents);
+            window.addEventListener('load', fireQueuedEvents);
         }
     }
 
