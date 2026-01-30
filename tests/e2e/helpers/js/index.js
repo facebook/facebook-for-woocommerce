@@ -93,7 +93,9 @@ const {
   deactivatePlugin,
   activatePlugin,
   installPixelBlockerMuPlugin,
-  removePixelBlockerMuPlugin
+  removePixelBlockerMuPlugin,
+  installJsErrorSimulatorMuPlugin,
+  removeJsErrorSimulatorMuPlugin
 } = require('./wordpress/plugins');
 
 // =============================================================================
@@ -196,7 +198,9 @@ const wordpress = {
   deactivatePlugin,
   activatePlugin,
   installPixelBlockerMuPlugin,
-  removePixelBlockerMuPlugin
+  removePixelBlockerMuPlugin,
+  installJsErrorSimulatorMuPlugin,
+  removeJsErrorSimulatorMuPlugin
 };
 
 const checkout = {
@@ -292,6 +296,8 @@ module.exports = {
   activatePlugin,
   installPixelBlockerMuPlugin,
   removePixelBlockerMuPlugin,
+  installJsErrorSimulatorMuPlugin,
+  removeJsErrorSimulatorMuPlugin,
 
   // Checkout
   completePurchaseFlow,
