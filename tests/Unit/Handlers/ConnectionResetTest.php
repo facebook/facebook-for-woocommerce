@@ -5,7 +5,7 @@ namespace WooCommerce\Facebook\Tests\Unit\Handlers;
 
 use WooCommerce\Facebook\Handlers\Connection;
 use WooCommerce\Facebook\Handlers\MetaExtension;
-use WooCommerce\Facebook\Tests\AbstractWPUnitTestWithOptionIsolationAndSafeFiltering;
+use WooCommerce\Facebook\Tests\AbstractWPUnitTestWithSafeFiltering;
 
 /**
  * Unit tests for Connection reset functionality.
@@ -13,9 +13,12 @@ use WooCommerce\Facebook\Tests\AbstractWPUnitTestWithOptionIsolationAndSafeFilte
  * Tests the reset_connection() and reset_connection_only() methods to ensure
  * they properly delete all expected Facebook options from the database.
  *
+ * Note: This test uses actual database operations (not option isolation)
+ * because we need to test that delete_option() actually removes options.
+ *
  * @since 3.0.0
  */
-class ConnectionResetTest extends AbstractWPUnitTestWithOptionIsolationAndSafeFiltering {
+class ConnectionResetTest extends AbstractWPUnitTestWithSafeFiltering {
 
 	/**
 	 * @var \WC_Facebookcommerce|\PHPUnit\Framework\MockObject\MockObject
@@ -138,6 +141,20 @@ class ConnectionResetTest extends AbstractWPUnitTestWithOptionIsolationAndSafeFi
 		foreach ( $this->settings_options as $option ) {
 			update_option( $option, 'test_value_' . $option );
 		}
+	}
+
+	/**
+	 * Asserts that an option has been cleared (either deleted or set to empty string).
+	 *
+	 * @param string $option The option name to check.
+	 * @param string $message Optional assertion message.
+	 */
+	private function assertOptionCleared( string $option, string $message = '' ): void {
+		$value = get_option( $option, false );
+		$this->assertTrue(
+			$value === false || $value === '',
+			$message ?: "Option '{$option}' should be cleared (either deleted or empty string)"
+		);
 	}
 
 	/**

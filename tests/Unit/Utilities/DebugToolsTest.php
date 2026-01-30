@@ -62,8 +62,12 @@ class DebugToolsTest extends AbstractWPUnitTestWithOptionIsolationAndSafeFilteri
 		
 		$result = $debug_tools->add_debug_tool( $tools );
 		
-		// Should return unchanged tools array
-		$this->assertEquals( $tools, $result );
+		// Should add the two always-visible reset tools
+		$this->assertArrayHasKey( 'wc_facebook_reset_connection_only', $result );
+		$this->assertArrayHasKey( 'wc_facebook_reset_all_settings', $result );
+		
+		// Should have exactly 2 tools (the always-visible ones)
+		$this->assertCount( 2, $result );
 	}
 
 	/**
@@ -92,8 +96,12 @@ class DebugToolsTest extends AbstractWPUnitTestWithOptionIsolationAndSafeFilteri
 		
 		$result = $debug_tools->add_debug_tool( $tools );
 		
-		// Should return unchanged tools array
-		$this->assertEquals( $tools, $result );
+		// Should add the two always-visible reset tools
+		$this->assertArrayHasKey( 'wc_facebook_reset_connection_only', $result );
+		$this->assertArrayHasKey( 'wc_facebook_reset_all_settings', $result );
+		
+		// Should have exactly 2 tools (the always-visible ones)
+		$this->assertCount( 2, $result );
 	}
 
 	/**
@@ -273,8 +281,8 @@ class DebugToolsTest extends AbstractWPUnitTestWithOptionIsolationAndSafeFilteri
 		
 		$result = $debug_tools->add_debug_tool( $tools );
 		
-		// Test reset settings tool
-		$this->assertEquals( 'Facebook: Reset connection settings', $result['wc_facebook_settings_reset']['name'] );
+		// Test reset settings tool (legacy)
+		$this->assertEquals( 'Facebook: Reset connection settings (legacy)', $result['wc_facebook_settings_reset']['name'] );
 		$this->assertEquals( 'Reset settings', $result['wc_facebook_settings_reset']['button'] );
 		$this->assertStringContainsString( 'clear your Facebook settings', $result['wc_facebook_settings_reset']['desc'] );
 		

@@ -572,19 +572,20 @@ class Connection {
 	 * @since 2.0.0
 	 */
 	public function disconnect() {
-		$this->update_access_token( '' );
-		$this->update_page_access_token( '' );
-		$this->update_merchant_access_token( '' );
-		$this->update_system_user_id( '' );
-		$this->update_business_manager_id( '' );
-		$this->update_ad_account_id( '' );
-		$this->update_instagram_business_id( '' );
-		$this->update_commerce_merchant_settings_id( '' );
-		$this->update_external_business_id( '' );
-		$this->update_commerce_partner_integration_id( '' );
-		update_option( \WC_Facebookcommerce_Integration::SETTING_FACEBOOK_PAGE_ID, '' );
-		update_option( \WC_Facebookcommerce_Integration::SETTING_FACEBOOK_PIXEL_ID, '' );
-		facebook_for_woocommerce()->get_integration()->update_product_catalog_id( '' );
+		// Delete all connection tokens and IDs
+		delete_option( self::OPTION_ACCESS_TOKEN );
+		delete_option( self::OPTION_PAGE_ACCESS_TOKEN );
+		delete_option( self::OPTION_MERCHANT_ACCESS_TOKEN );
+		delete_option( self::OPTION_SYSTEM_USER_ID );
+		delete_option( self::OPTION_BUSINESS_MANAGER_ID );
+		delete_option( self::OPTION_AD_ACCOUNT_ID );
+		delete_option( self::OPTION_INSTAGRAM_BUSINESS_ID );
+		delete_option( self::OPTION_COMMERCE_MERCHANT_SETTINGS_ID );
+		delete_option( self::OPTION_EXTERNAL_BUSINESS_ID );
+		delete_option( self::OPTION_COMMERCE_PARTNER_INTEGRATION_ID );
+		delete_option( \WC_Facebookcommerce_Integration::SETTING_FACEBOOK_PAGE_ID );
+		delete_option( \WC_Facebookcommerce_Integration::SETTING_FACEBOOK_PIXEL_ID );
+		delete_option( \WC_Facebookcommerce_Integration::OPTION_PRODUCT_CATALOG_ID );
 
 		// Clear facebook_config option to stop pixel tracking and prevent stale data
 		if ( class_exists( 'WC_Facebookcommerce_Pixel' ) ) {
@@ -681,19 +682,7 @@ class Connection {
 	 * @since 3.0.0
 	 */
 	public function reset_connection_only() {
-		// Clear connection tokens and IDs
-		$this->update_access_token( '' );
-		$this->update_page_access_token( '' );
-		$this->update_merchant_access_token( '' );
-		$this->update_system_user_id( '' );
-		$this->update_business_manager_id( '' );
-		$this->update_ad_account_id( '' );
-		$this->update_instagram_business_id( '' );
-		$this->update_commerce_merchant_settings_id( '' );
-		$this->update_external_business_id( '' );
-		$this->update_commerce_partner_integration_id( '' );
-
-		// Delete connection-related options that aren't cleared by update methods
+		// Delete all connection tokens and IDs
 		delete_option( self::OPTION_ACCESS_TOKEN );
 		delete_option( self::OPTION_MERCHANT_ACCESS_TOKEN );
 		delete_option( self::OPTION_PAGE_ACCESS_TOKEN );
@@ -706,12 +695,12 @@ class Connection {
 		delete_option( self::OPTION_COMMERCE_MERCHANT_SETTINGS_ID );
 		delete_option( self::OPTION_COMMERCE_PARTNER_INTEGRATION_ID );
 
-		// Clear page and pixel IDs (these are tied to the connection)
-		update_option( \WC_Facebookcommerce_Integration::SETTING_FACEBOOK_PAGE_ID, '' );
-		update_option( \WC_Facebookcommerce_Integration::SETTING_FACEBOOK_PIXEL_ID, '' );
+		// Delete page and pixel IDs (these are tied to the connection)
+		delete_option( \WC_Facebookcommerce_Integration::SETTING_FACEBOOK_PAGE_ID );
+		delete_option( \WC_Facebookcommerce_Integration::SETTING_FACEBOOK_PIXEL_ID );
 
-		// Clear catalog and merchant IDs (these are connection-specific)
-		facebook_for_woocommerce()->get_integration()->update_product_catalog_id( '' );
+		// Delete catalog and merchant IDs (these are connection-specific)
+		delete_option( \WC_Facebookcommerce_Integration::OPTION_PRODUCT_CATALOG_ID );
 		delete_option( \WC_Facebookcommerce_Integration::OPTION_EXTERNAL_MERCHANT_SETTINGS_ID );
 
 		// Clear connection status flags
