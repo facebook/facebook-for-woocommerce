@@ -33,7 +33,15 @@
     "psr-4": {
       "WooCommerce\\Facebook\\": "includes",
       "WooCommerce\\Facebook\\Feed\\": ["includes/Feed", "includes/Feed/Promotions", "includes/Feed/RatingsAndReviews", "includes/Feed/ShippingProfiles", "includes/Feed/NavigationMenu"]
-    }
+    },
+    "exclude-from-classmap": [
+      "includes/fbproduct.php",
+      "includes/fbproductfeed.php",
+      "includes/fbbackground.php",
+      "includes/fbutils.php",
+      "includes/fbasync.php",
+      "includes/Logger/Logger.php"
+    ]
   },
   "autoload-dev": {
     "psr-4": {

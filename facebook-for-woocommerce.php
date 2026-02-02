@@ -103,10 +103,15 @@ class WC_Facebook_Loader {
 	protected function __construct() {
 
 		register_activation_hook( __FILE__, array( $this, 'activation_check' ) );
+		register_deactivation_hook( __FILE__, array( $this, 'deactivation_cleanup' ) );
 
 		add_action( 'admin_init', array( $this, 'check_environment' ) );
 
 		add_action( 'admin_notices', array( $this, 'admin_notices' ), 15 );
+
+		// Flush rewrite rules if flagged (runs once after activation/upgrade).
+		// Priority 99 ensures all rewrite rules are registered before flushing.
+		add_action( 'init', array( $this, 'maybe_flush_rewrite_rules' ), 99 );
 
 		// If the environment check fails, initialize the plugin.
 		if ( $this->is_environment_compatible() ) {
@@ -200,6 +205,49 @@ class WC_Facebook_Loader {
 			$this->deactivate_plugin();
 
 			wp_die( esc_html( self::PLUGIN_NAME . ' could not be activated. ' . $this->get_environment_message() ) );
+		}
+
+		// Flag that rewrite rules need to be flushed on next init.
+		update_option( 'facebook_for_woocommerce_flush_rewrite_rules', 'yes' );
+	}
+
+
+	/**
+	 * Handles plugin deactivation cleanup.
+	 *
+	 * Flushes rewrite rules to remove custom endpoints like /fbcollection/.
+	 *
+	 * @internal
+	 *
+	 * @since 3.5.0
+	 */
+	public function deactivation_cleanup() {
+		flush_rewrite_rules();
+		delete_option( 'facebook_for_woocommerce_rewrite_version' );
+	}
+
+
+	/**
+	 * Flush rewrite rules if the flag is set.
+	 *
+	 * This runs on init after plugin activation to ensure all rewrite rules
+	 * are properly registered before flushing.
+	 *
+	 * @internal
+	 *
+	 * @since 3.5.0
+	 */
+	public function maybe_flush_rewrite_rules() {
+		$stored_version = get_option( 'facebook_for_woocommerce_rewrite_version' );
+
+		// Flush if activation flag is set OR if plugin version has changed (plugin upgrade).
+		$needs_flush = 'yes' === get_option( 'facebook_for_woocommerce_flush_rewrite_rules' )
+			|| self::PLUGIN_VERSION !== $stored_version;
+
+		if ( $needs_flush ) {
+			flush_rewrite_rules();
+			delete_option( 'facebook_for_woocommerce_flush_rewrite_rules' );
+			update_option( 'facebook_for_woocommerce_rewrite_version', self::PLUGIN_VERSION );
 		}
 	}
 
