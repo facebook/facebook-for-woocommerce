@@ -138,20 +138,35 @@ if ( ! class_exists( 'WC_Facebookcommerce_Utils' ) ) :
 		}
 
 		/**
-		 * WooCommerce 2.1 support for wc_enqueue_js.
+		 * Enqueue inline js directly.
 		 *
 		 * @since 1.2.1
 		 *
 		 * @param string $code
 		 */
-		public static function wc_enqueue_js( $code ) {
+		public static function enqueue_inline_js( $code ) {
 			global $wc_queued_js;
 
-			// Immediately renders code in the footer.
-			if ( function_exists( 'wc_enqueue_js' ) && empty( $wc_queued_js ) ) {
-				wc_enqueue_js( $code );
-			} else {
+			$handle = 'facebook-for-woocommerce-inline';
+
+			if ( ! function_exists( 'wp_add_inline_script' ) ) {
 				$wc_queued_js = $code . "\n" . $wc_queued_js;
+			} else {
+				static $registered = false;
+				if ( ! $registered ) {
+					if ( ! wp_script_is( $handle, 'registered' ) ) {
+						$version = defined( 'WC_VERSION' ) ? WC_VERSION : false;
+						wp_register_script( $handle, '', array(), $version, true );
+					}
+					wp_enqueue_script( $handle );
+					$registered = true;
+				}
+
+				if ( ! is_string( $code ) || '' === trim( $code ) ) {
+					return;
+				}
+
+				wp_add_inline_script( $handle, $code );
 			}
 		}
 
