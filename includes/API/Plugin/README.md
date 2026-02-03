@@ -1,6 +1,6 @@
-# Facebook for WooCommerce REST API
+# Meta for WooCommerce REST API
 
-This document outlines how to work with the REST API system in the Facebook for WooCommerce plugin.
+This document outlines how to work with the REST API system in the Meta for WooCommerce plugin.
 
 ## Architecture Overview
 

@@ -5,7 +5,7 @@
  * This source code is licensed under the license found in the
  * LICENSE file in the root directory of this source tree.
  *
- * @package FacebookCommerce
+ * @package MetaCommerce
  */
 
 namespace WooCommerce\Facebook\Admin;
@@ -70,7 +70,7 @@ class Enhanced_Settings {
 		if ( $is_connected ) {
 			if ( $is_woo_all_products_sync_enbaled ) {
 				$screens = array(
-					Settings_Screens\Shops::ID        => new Settings_Screens\Shops(),
+					Settings_Screens\Shops::ID => new Settings_Screens\Shops(),
 					Settings_Screens\Product_Attributes::ID => new Settings_Screens\Product_Attributes(),
 				);
 			} else {
@@ -98,8 +98,8 @@ class Enhanced_Settings {
 	 * @return void
 	 */
 	public function add_extra_screens(): void {
-		$rollout_switches                      = $this->plugin->get_rollout_switches();
-		$is_connected                          = $this->plugin->get_connection_handler()->is_connected();
+		$rollout_switches = $this->plugin->get_rollout_switches();
+		$is_connected     = $this->plugin->get_connection_handler()->is_connected();
 	}
 
 	/**
@@ -112,7 +112,7 @@ class Enhanced_Settings {
 
 		add_submenu_page(
 			$root_menu_item,
-			__( 'Facebook for WooCommerce', 'facebook-for-woocommerce' ),
+			__( 'Meta for WooCommerce', 'facebook-for-woocommerce' ),
 			__( 'Facebook', 'facebook-for-woocommerce' ),
 			'manage_woocommerce',
 			self::PAGE_ID,
@@ -168,7 +168,7 @@ class Enhanced_Settings {
 					'id'        => self::PAGE_ID,
 					'screen_id' => $screen_id,
 					'path'      => add_query_arg( 'page', self::PAGE_ID, 'admin.php' ),
-					'title'     => [ __( 'Facebook for WooCommerce', 'facebook-for-woocommerce' ) ],
+					'title'     => [ __( 'Meta for WooCommerce', 'facebook-for-woocommerce' ) ],
 				)
 			);
 		}
@@ -184,7 +184,7 @@ class Enhanced_Settings {
 		$screen      = $this->get_screen( $current_tab );
 
 		Logger::log(
-			'User visited the Facebook for WooCommerce settings' . $current_tab . 'tab',
+			'User visited the Meta for WooCommerce settings' . $current_tab . 'tab',
 			array(
 				'flow_name' => 'settings',
 				'flow_step' => $current_tab . '_tab_rendered',
@@ -210,7 +210,7 @@ class Enhanced_Settings {
 	}
 
 	/**
-	 * Renders the Facebook for WooCommerce extension navigation tabs.
+	 * Renders the Meta for WooCommerce extension navigation tabs.
 	 *
 	 * @since 3.5.0
 	 *

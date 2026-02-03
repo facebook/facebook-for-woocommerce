@@ -1,5 +1,5 @@
 /**
- * Tests for Multiple Images functionality in Facebook for WooCommerce
+ * Tests for Multiple Images functionality in Meta for WooCommerce
  * 
  * These tests cover the JavaScript functionality for adding, removing, and managing
  * multiple images for product variations in the WooCommerce admin.

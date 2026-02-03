@@ -5,7 +5,7 @@
  * This source code is licensed under the license found in the
  * LICENSE file in the root directory of this source tree.
  *
- * @package FacebookCommerce
+ * @package MetaCommerce
  */
 
 use WooCommerce\Facebook\Admin;
@@ -28,7 +28,7 @@ require_once 'facebook-commerce-admin-notice.php';
 /**
  * Class WC_Facebookcommerce_Integration
  *
- * This class is the main integration class for Facebook for WooCommerce.
+ * This class is the main integration class for Meta for WooCommerce.
  */
 class WC_Facebookcommerce_Integration extends WC_Integration {
 
@@ -221,7 +221,7 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 	// TODO: this constant is no longer used and can probably be removed {WV 2020-01-21}.
 	public const FB_VARIANT_IMAGE = 'fb_image';
 
-	public const FB_ADMIN_MESSAGE_PREPEND = '<b>Facebook for WooCommerce</b><br/>';
+	public const FB_ADMIN_MESSAGE_PREPEND = '<b>Meta for WooCommerce</b><br/>';
 
 	public const FB_SYNC_IN_PROGRESS = 'fb_sync_in_progress';
 	public const FB_SYNC_REMAINING   = 'fb_sync_remaining';
@@ -273,7 +273,7 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 
 		$this->id                 = WC_Facebookcommerce::INTEGRATION_ID;
 		$this->method_title       = __(
-			'Facebook for WooCommerce',
+			'Meta for WooCommerce',
 			'facebook-for-woocommerce'
 		);
 		$this->method_description = __(
@@ -2727,7 +2727,7 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 	}
 
 	/**
-	 * Determines whether Facebook for WooCommerce is configured.
+	 * Determines whether Meta for WooCommerce is configured.
 	 *
 	 * @return bool
 	 * @since 1.10.0
@@ -2941,7 +2941,7 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 	public function maybe_display_facebook_api_messages() {
 		$error_msg = get_transient( 'facebook_plugin_api_error' );
 		if ( $error_msg ) {
-			$message = '<strong>' . __( 'Facebook for WooCommerce error:', 'facebook-for-woocommerce' ) . '</strong></br>' . $error_msg;
+			$message = '<strong>' . __( 'Meta for WooCommerce error:', 'facebook-for-woocommerce' ) . '</strong></br>' . $error_msg;
 			// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
 			echo $this->get_message_html( $message );
 			delete_transient( 'facebook_plugin_api_error' );

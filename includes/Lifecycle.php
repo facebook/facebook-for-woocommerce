@@ -5,7 +5,7 @@
  * This source code is licensed under the license found in the
  * LICENSE file in the root directory of this source tree.
  *
- * @package FacebookCommerce
+ * @package MetaCommerce
  */
 
 namespace WooCommerce\Facebook;
@@ -15,7 +15,7 @@ defined( 'ABSPATH' ) || exit;
 use WooCommerce\Facebook\ProductSets\LegacyProductSetMigration;
 
 /**
- * The Facebook for WooCommerce plugin lifecycle handler.
+ * The Meta for WooCommerce plugin lifecycle handler.
  *
  * @since 1.10.0
  *
@@ -90,7 +90,7 @@ class Lifecycle extends Framework\Lifecycle {
 
 
 	/**
-	 * Migrates Facebook for WooCommerce options used in version 1.9.x to the options and settings used in 1.10.x.
+	 * Migrates Meta for WooCommerce options used in version 1.9.x to the options and settings used in 1.10.x.
 	 *
 	 * Some users who upgraded from 1.9.x to 1.10.0 ended up with an incomplete upgrade and could have configured the plugin from scratch after that.
 	 * This routine will update the options and settings only if a previous value does not exists.

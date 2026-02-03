@@ -11,7 +11,7 @@ use WC_Product_Variation;
 use WooCommerce\Facebook\Products;
 
 /**
- * Base integration test case for Facebook for WooCommerce.
+ * Base integration test case for Meta for WooCommerce.
  *
  * Provides common functionality for integration tests including:
  * - WordPress/WooCommerce setup

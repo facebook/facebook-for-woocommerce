@@ -5,7 +5,7 @@
  * This source code is licensed under the license found in the
  * LICENSE file in the root directory of this source tree.
  *
- * @package FacebookCommerce
+ * @package MetaCommerce
  */
 
 defined( 'ABSPATH' ) || exit;
@@ -865,7 +865,7 @@ if ( ! class_exists( 'WC_Facebookcommerce_Utils' ) ) :
 					 * The Facebook API expects a comma-separated list of attributes in `additional_variant_attribute` field.
 					 * https://developers.facebook.com/docs/marketing-api/catalog/reference/
 					 * This means that WooCommerce product attributes included in this field should avoid the comma (`,`) character.
-					 * Facebook for WooCommerce replaces any `,` with a space by default.
+					 * Meta for WooCommerce replaces any `,` with a space by default.
 					 * This filter allows a site to provide a different replacement string.
 					 *
 					 * @since 2.5.0

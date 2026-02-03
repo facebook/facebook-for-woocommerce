@@ -5,13 +5,13 @@
  * This source code is licensed under the license found in the
  * LICENSE file in the root directory of this source tree.
  *
- * @package FacebookCommerce
+ * @package MetaCommerce
  */
 
 /**
  * Class WC_Facebook_Admin_Notice
  *
- * Adds a dismissible global admin notice for Facebook for WooCommerce.
+ * Adds a dismissible global admin notice for Meta for WooCommerce.
  *
  * @since 3.5.2
  */

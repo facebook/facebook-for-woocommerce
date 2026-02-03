@@ -5,7 +5,7 @@
  * This source code is licensed under the license found in the
  * LICENSE file in the root directory of this source tree.
  *
- * @package FacebookCommerce
+ * @package MetaCommerce
  *
  * Note: If you encounter issues with form submission, check the error logs.
  * Form processing happens in the process_form_submission() method.

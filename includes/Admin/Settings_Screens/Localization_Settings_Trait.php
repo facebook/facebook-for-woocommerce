@@ -5,7 +5,7 @@
  * This source code is licensed under the license found in the
  * LICENSE file in the root directory of this source tree.
  *
- * @package FacebookCommerce
+ * @package MetaCommerce
  */
 
 namespace WooCommerce\Facebook\Admin\Settings_Screens;
@@ -116,7 +116,7 @@ trait Localization_Settings_Trait {
 				</td>
 			</tr>
 			<?php
-			error_log( 'Facebook for WooCommerce - Localization Integrations Error: ' . $e->getMessage() );
+			error_log( 'Meta for WooCommerce - Localization Integrations Error: ' . $e->getMessage() );
 			return;
 		}
 
@@ -126,7 +126,7 @@ trait Localization_Settings_Trait {
 			try {
 				$languages = $feed_data->get_available_languages();
 			} catch ( \Exception $e ) {
-				error_log( 'Facebook for WooCommerce - Error getting available languages: ' . $e->getMessage() );
+				error_log( 'Meta for WooCommerce - Error getting available languages: ' . $e->getMessage() );
 			}
 		}
 		?>
@@ -162,7 +162,7 @@ trait Localization_Settings_Trait {
 								$status = 'error';
 								$version = '';
 								$default_language = '';
-								error_log( 'Facebook for WooCommerce - Error getting integration data: ' . $e->getMessage() );
+								error_log( 'Meta for WooCommerce - Error getting integration data: ' . $e->getMessage() );
 							}
 							?>
 							<tr>
