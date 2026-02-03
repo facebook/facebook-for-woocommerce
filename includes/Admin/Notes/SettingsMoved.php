@@ -4,7 +4,7 @@
  *
  * Adds a note to merchant's inbox about Facebook Menu being moved to Marketing menu.
  *
- * @package FacebookCommerce
+ * @package MetaCommerce
  */
 
 namespace WooCommerce\Facebook\Admin\Notes;

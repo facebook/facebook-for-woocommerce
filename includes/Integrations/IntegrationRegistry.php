@@ -164,7 +164,7 @@ class IntegrationRegistry {
 	 * If both plugins are somehow active, only Polylang's integration will be returned and used.
 	 *
 	 * **In Practice:**
-	 * Based on telemetry data from Facebook for WooCommerce users, ZERO sites have both
+	 * Based on telemetry data from Meta for WooCommerce users, ZERO sites have both
 	 * WPML and Polylang activated simultaneously. This is because:
 	 * - WPML throws a fatal error during initialization if Polylang is already active
 	 * - If Polylang is activated after WPML, WPML's functionality is disabled

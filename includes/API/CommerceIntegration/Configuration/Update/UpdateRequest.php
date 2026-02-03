@@ -22,7 +22,7 @@ class UpdateRequest extends API\Request {
 	 * The request is used to update the configuration settings between WooCommerce and Facebook's Commerce platform.
 	 *
 	 * @param string      $commerce_integration_id The ID of the commerce integration to update
-	 * @param string|null $extension_version The version of the Facebook for WooCommerce extension
+	 * @param string|null $extension_version The version of the Meta for WooCommerce extension
 	 * @param string|null $admin_url The admin URL of the WooCommerce site
 	 * @param string|null $country_code ISO2 country code
 	 * @param string|null $currency ISO currency code

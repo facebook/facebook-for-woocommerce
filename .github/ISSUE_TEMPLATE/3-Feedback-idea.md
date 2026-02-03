@@ -1,6 +1,6 @@
 ---
 name: "💡 Feedback or idea"
-about: "Have an idea for how to improve Facebook for WooCommerce? Let us know!"
+about: "Have an idea for how to improve Meta for WooCommerce? Let us know!"
 title: ''
 labels: ''
 assignees: ''
@@ -9,9 +9,9 @@ assignees: ''
 
 ## Feature requests
 
-If you have an idea for how we could improve Facebook for WooCommerce, please let us know by [contacting our support team](https://woocommerce.com/my-account/contact-support/)! We'd love to learn more about the problem you're facing and how Facebook for WooCommerce could help solve it.
+If you have an idea for how we could improve Meta for WooCommerce, please let us know by [contacting our support team](https://woocommerce.com/my-account/contact-support/)! We'd love to learn more about the problem you're facing and how Meta for WooCommerce could help solve it.
 
-Check the [Facebook for WooCommerce feature requests](https://woocommerce.com/feature-requests/facebook/) to see and vote on ideas.
+Check the [Meta for WooCommerce feature requests](https://woocommerce.com/feature-requests/facebook/) to see and vote on ideas.
 
 ## Developers
 

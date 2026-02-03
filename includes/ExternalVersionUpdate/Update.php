@@ -5,7 +5,7 @@
  * This source code is licensed under the license found in the
  * LICENSE file in the root directory of this source tree.
  *
- * @package FacebookCommerce
+ * @package MetaCommerce
  */
 
 namespace WooCommerce\Facebook\ExternalVersionUpdate;
@@ -21,7 +21,7 @@ use WooCommerce\Facebook\Handlers\PluginRender;
 use WooCommerce\Facebook\Integrations\IntegrationRegistry;
 
 /**
- * Facebook for WooCommerce External Plugin Version Update.
+ * Meta for WooCommerce External Plugin Version Update.
  *
  * Whenever this plugin gets updated, we need to inform the Meta server of the new version.
  * This is done by sending a request to the Meta server with the new version number.

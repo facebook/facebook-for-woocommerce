@@ -5,7 +5,7 @@
  * This source code is licensed under the license found in the
  * LICENSE file in the root directory of this source tree.
  *
- * @package FacebookCommerce
+ * @package MetaCommerce
  */
 
 namespace WooCommerce\Facebook\Events;
@@ -34,7 +34,7 @@ class Event {
 	 * @return array {
 	 *     @type string source 'woocommerce'
 	 *     @type string version WooCommerce's version
-	 *     @type string pluginVersion Facebook for WooCommerce's version
+	 *     @type string pluginVersion Meta for WooCommerce's version
 	 * }
 	 */
 	public static function get_version_info() {

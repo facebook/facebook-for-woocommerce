@@ -19,7 +19,7 @@ const {
   exactSearchSelect2Container
 } = require('./helpers/js');
 
-test.describe('Facebook for WooCommerce - Product Creation E2E Tests', () => {
+test.describe('Meta for WooCommerce - Product Creation E2E Tests', () => {
 
   test.beforeEach(async ({ page }, testInfo) => {
     // Log test start first for proper chronological order
@@ -75,7 +75,7 @@ test.describe('Facebook for WooCommerce - Product Creation E2E Tests', () => {
         const facebookImageField = page.locator('legend:has-text("Facebook Product Image"), input[name*="facebook_image"]').first();
 
         if (await facebookSyncField.isVisible({ timeout: TIMEOUTS.LONG })) {
-          console.log('✅ Facebook for WooCommerce fields detected');
+          console.log('✅ Meta for WooCommerce fields detected');
         } else if (await facebookPriceField.isVisible({ timeout: TIMEOUTS.LONG })) {
           console.log('✅ Facebook price field found');
         } else if (await facebookImageField.isVisible({ timeout: TIMEOUTS.LONG })) {

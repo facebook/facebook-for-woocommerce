@@ -1,4 +1,4 @@
-# Contributing to Facebook for WooCommerce
+# Contributing to Meta for WooCommerce
 We want to make contributing to this project as easy and transparent as
 possible.
 
@@ -33,6 +33,6 @@ outlined on that page and do not file a public issue.
 * Please avoid modifying the changelog directly or updating the .pot files.
 
 ## License
-By contributing to Facebook for WooCommerce, you agree that your contributions
+By contributing to Meta for WooCommerce, you agree that your contributions
 will be licensed under the LICENSE file in the root directory of
 this source tree.

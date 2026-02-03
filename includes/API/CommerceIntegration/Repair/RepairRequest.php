@@ -24,7 +24,7 @@ class RepairRequest extends API\Request {
 	 * @param string $fbe_external_business_id The external business ID associated with the Facebook Business Extension
 	 * @param string $shop_domain The domain of the WooCommerce site
 	 * @param string $admin_url The admin URL of the WooCommerce site
-	 * @param string $extension_version The version of the Facebook for WooCommerce extension
+	 * @param string $extension_version The version of the Meta for WooCommerce extension
 	 * @param string $platform_type The type of the integration method
 	 */
 	public function __construct( $fbe_external_business_id, $shop_domain, $admin_url, $extension_version, $platform_type = 'SELF_SERVE_PLATFORM' ) {
