@@ -76,7 +76,7 @@ class WC_Facebook_Loader {
 	// SkyVerge plugin framework version used by this plugin.
 	const FRAMEWORK_VERSION = '5.10.0';
 
-// The plugin name, for displaying notices.
+	// The plugin name, for displaying notices.
 	const PLUGIN_NAME = 'Meta for WooCommerce';
 
 
@@ -406,8 +406,8 @@ class WC_Facebook_Loader {
 	private static function set_wc_facebook_svr_flags() {
 
 		if ( ! function_exists( 'update_option' ) ||
-			 ! function_exists( 'get_transient' ) ||
-			 ! function_exists( 'set_transient' ) ) {
+			! function_exists( 'get_transient' ) ||
+			! function_exists( 'set_transient' ) ) {
 			return;
 		}
 

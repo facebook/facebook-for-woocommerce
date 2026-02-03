@@ -92,7 +92,7 @@ class Settings {
 
 		add_submenu_page(
 			$root_menu_item,
-__( 'Meta for WooCommerce', 'facebook-for-woocommerce' ),
+			__( 'Meta for WooCommerce', 'facebook-for-woocommerce' ),
 			__( 'Facebook', 'facebook-for-woocommerce' ),
 			'manage_woocommerce',
 			self::PAGE_ID,
@@ -144,7 +144,7 @@ __( 'Meta for WooCommerce', 'facebook-for-woocommerce' ),
 		);
 
 		if ( is_callable( 'wc_admin_connect_page' ) ) {
-$crumbs = array(
+			$crumbs = array(
 				__( 'Meta for WooCommerce', 'facebook-for-woocommerce' ),
 			);
 			//phpcs:ignore WordPress.Security.NonceVerification.Recommended

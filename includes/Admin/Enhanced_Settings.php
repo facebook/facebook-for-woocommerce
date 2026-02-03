@@ -70,7 +70,7 @@ class Enhanced_Settings {
 		if ( $is_connected ) {
 			if ( $is_woo_all_products_sync_enbaled ) {
 				$screens = array(
-					Settings_Screens\Shops::ID        => new Settings_Screens\Shops(),
+					Settings_Screens\Shops::ID => new Settings_Screens\Shops(),
 					Settings_Screens\Product_Attributes::ID => new Settings_Screens\Product_Attributes(),
 				);
 			} else {
@@ -98,8 +98,8 @@ class Enhanced_Settings {
 	 * @return void
 	 */
 	public function add_extra_screens(): void {
-		$rollout_switches                      = $this->plugin->get_rollout_switches();
-		$is_connected                          = $this->plugin->get_connection_handler()->is_connected();
+		$rollout_switches = $this->plugin->get_rollout_switches();
+		$is_connected     = $this->plugin->get_connection_handler()->is_connected();
 	}
 
 	/**
@@ -112,7 +112,7 @@ class Enhanced_Settings {
 
 		add_submenu_page(
 			$root_menu_item,
-__( 'Meta for WooCommerce', 'facebook-for-woocommerce' ),
+			__( 'Meta for WooCommerce', 'facebook-for-woocommerce' ),
 			__( 'Facebook', 'facebook-for-woocommerce' ),
 			'manage_woocommerce',
 			self::PAGE_ID,
