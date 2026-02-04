@@ -146,6 +146,18 @@ jobs:
           sed -i -E "s/^  \"version\":[[:space:]]*\"[^\"]*\"[[:space:]]*,/  \"version\": \"$NEW_VERSION\",/" "package.json"
           git diff
 
+      - name: Update composer.json
+        env:
+          NEW_VERSION: ${{ steps.set_version.outputs.new_version }}
+        run: |
+          # Add or update version field after the "name" field in composer.json
+          if grep -q '"version":' composer.json; then
+            sed -i -E "s/\"version\":[[:space:]]*\"[^\"]*\"/\"version\": \"$NEW_VERSION\"/" "composer.json"
+          else
+            sed -i -E "s/(\"name\":[[:space:]]*\"[^\"]*\",)/\1\n  \"version\": \"$NEW_VERSION\",/" "composer.json"
+          fi
+          git diff
+
       - name: Update facebook-for-woocommerce.php
         env:
           NEW_VERSION: ${{ steps.set_version.outputs.new_version }}

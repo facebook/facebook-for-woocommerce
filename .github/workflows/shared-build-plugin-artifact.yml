@@ -53,7 +53,7 @@ jobs:
         continue-on-error: true
         with:
           name: facebook-for-woocommerce
-          path: artifact-contents/facebook-for-woocommerce
+          path: artifact-contents
           
       - name: Check if build succeeded
         id: check_build
