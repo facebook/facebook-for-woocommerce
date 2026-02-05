@@ -32,8 +32,8 @@ class WhatsAppExtension {
 	/** @var string Whatsapp Tech Provider Business ID */
 	const TP_BUSINESS_ID = '1421860479064677';
 	/** @var string base url for meta stefi endpoint */
-	const BASE_STEFI_ENDPOINT_URL = 'https://api.49694.od.facebook.com';
-	// const BASE_STEFI_ENDPOINT_URL = 'https://api.facebook.com';
+	// const BASE_STEFI_ENDPOINT_URL = 'https://api.11978.od.facebook.com';
+	const BASE_STEFI_ENDPOINT_URL = 'https://api.facebook.com';
 	/** @var string Default language for Library Template */
 	const DEFAULT_LANGUAGE = 'en';
 
@@ -266,7 +266,7 @@ class WhatsAppExtension {
 					$line_total = isset( $item['line_total'] ) ? $item['line_total'] : ( method_exists( $item, 'get_total' ) ? $item->get_total() : null );
 					if ( null !== $line_total ) {
 						// line_total is in base currency units; convert to cents then *10 to approximate _1000 scale
-						$amount_1000 = (int) round( ( (float) $line_total * 100 ) * 10 );
+						$amount_1000 = (int) round( ( (float) $line_total * 100 ) );
 					}
 					$item_name = is_object( $item ) && method_exists( $item, 'get_name' ) ? $item->get_name() : ( is_array( $item ) && isset( $item['name'] ) ? $item['name'] : '' );
 					$item_qty  = is_object( $item ) && method_exists( $item, 'get_quantity' ) ? $item->get_quantity() : ( is_array( $item ) && isset( $item['qty'] ) ? $item['qty'] : 1 );
@@ -282,7 +282,7 @@ class WhatsAppExtension {
 						'name' => $item_name,
 						'quantity' => $item_qty,
 						'amount_1000' => $amount_1000,
-						'image_url' => $image_url,
+						'image_url' => 'https://cdnmedia.dsc-cricket.com.au/media/catalog/product/cache/ead9833944ee19ab74f6785fdc9a346d/f/l/flip-pro-english-willow-cricket-bat.jpg',
 					);
 				}
 			}
