@@ -13,6 +13,7 @@ namespace WooCommerce\Facebook\Handlers;
 defined( 'ABSPATH' ) || exit;
 
 use WP_Error;
+use WooCommerce\Facebook\RolloutSwitches;
 
 /**
  * Handles Meta WhatsApp Utility Extension functionality and configuration.
@@ -143,6 +144,7 @@ class WhatsAppExtension {
 	 * @param int    $refund_value Amount refunded to the Customer
 	 * @param string $currency Currency code
 	 * @param string $country_code Customer country code
+	 * @param array  $order_metadata Optional order metadata used to build rich order status
 	 *
 	 * @return string
 	 * @since 3.5.0
@@ -156,7 +158,8 @@ class WhatsAppExtension {
 		$first_name,
 		$refund_value,
 		$currency,
-		$country_code
+		$country_code,
+		$order_metadata = array()
 	) {
 		$whatsapp_connection = $plugin->get_whatsapp_connection_handler();
 		$is_connected        = $whatsapp_connection->is_connected();
@@ -187,6 +190,21 @@ class WhatsAppExtension {
 		);
 		if ( ! empty( $event_object ) ) {
 			$event_base_object[ $event_lowercase ] = $event_object;
+		}
+		// Attach rich_order_status only when rollout switch enabled and order_metadata provided.
+		try {
+			if ( ! empty( $order_metadata )
+				&& isset( $plugin )
+				&& method_exists( $plugin, 'get_rollout_switches' )
+				&& $plugin->get_rollout_switches()->is_switch_enabled( RolloutSwitches::SWITCH_WOOCOMMERCE_ENABLE_RICH_ORDER )
+			) {
+				$rich_status = self::build_rich_order_status( $order_metadata );
+				if ( ! empty( $rich_status ) ) {
+					$event_base_object['rich_order_status'] = $rich_status;
+				}
+			}
+		} catch ( \Throwable $e ) {
+			facebook_for_woocommerce()->log( 'Failed attaching rich_order_status for order ' . $order_id . ': ' . $e->getMessage() );
 		}
 		$options = array(
 			'headers' => array(
@@ -229,6 +247,56 @@ class WhatsAppExtension {
 			);
 		}
 		return;
+	}
+
+	/**
+	 * Build the rich_order_status array from order metadata.
+	 *
+	 * @param array $order_metadata
+	 * @return array
+	 */
+	public static function build_rich_order_status( $order_metadata ) {
+		$rich = array();
+		$rich['order_url']       = $order_metadata['order_url'] ?? '';
+		$rich['order_date']      = $order_metadata['order_date'] ?? '';
+		$rich['currency']        = $order_metadata['currency'] ?? '';
+		$rich['shipping_method'] = $order_metadata['shipping_method'] ?? '';
+		$rich['items']           = array();
+
+		if ( ! empty( $order_metadata['items'] ) && is_array( $order_metadata['items'] ) ) {
+			foreach ( $order_metadata['items'] as $it ) {
+				$item_arr = array();
+				$item_arr['name']     = $it['name'] ?? ( $it['product_name'] ?? '' );
+				$item_arr['quantity'] = isset( $it['quantity'] ) ? intval( $it['quantity'] ) : 1;
+
+				// Ensure `amount_1000` is present for the server consumer.
+				// Derived from numeric `amount`.
+				if ( isset( $it['amount'] ) ) {
+					// Derive from numeric amount; scale to cents per current server expectation.
+					$item_arr['amount_1000'] = (int) round( (float) $it['amount'] * 100 );
+				}
+
+				$image_url = '';
+				if ( ! empty( $it['product_id'] ) ) {
+					try {
+						$product = wc_get_product( $it['product_id'] );
+						if ( $product ) {
+							$image_id = method_exists( $product, 'get_image_id' ) ? $product->get_image_id() : 0;
+							if ( $image_id ) {
+								$img = wp_get_attachment_image_url( $image_id, 'full' );
+								$image_url = $img ? $img : wp_get_attachment_url( $image_id );
+							}
+						}
+					} catch ( \Throwable $e ) {
+						facebook_for_woocommerce()->log( 'Failed fetching product image for item ' . ( isset( $it['product_id'] ) ? $it['product_id'] : '' ) . ': ' . $e->getMessage() );
+					}
+				}
+				$item_arr['image_url'] = $image_url;
+				$rich['items'][] = $item_arr;
+			}
+		}
+
+		return $rich;
 	}
 
 	/**
