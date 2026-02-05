@@ -103,10 +103,11 @@ jobs:
           cd woocommerce_svn
           rm -rf trunk
           cp ../facebook-for-woocommerce.zip ./
-          echo "Unzipping the atrifact"
+          echo "Unzipping the artifact"
           unzip facebook-for-woocommerce.zip
           mv facebook-for-woocommerce trunk
           rm facebook-for-woocommerce.zip
+          find trunk -type d -name ".github" -exec rm -rf {} +
           svn add --force .
           svn st | grep ^! | awk '{print $2}' | xargs -r svn rm
           svn status

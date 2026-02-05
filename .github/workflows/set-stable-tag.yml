@@ -22,6 +22,58 @@ jobs:
         id: package-version
         uses: martinbeentjes/npm-get-version-action@v1.3.1
 
+      - name: Compare marketplace artifacts
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ steps.package-version.outputs.current-version }}
+        run: |
+          set -e
+
+          TEMP_DIR=$(mktemp -d)
+          trap "rm -rf $TEMP_DIR" EXIT
+
+          echo "Comparing Facebook for WooCommerce v$VERSION"
+
+          # Download from WordPress.org
+          curl -sL "https://downloads.wordpress.org/plugin/facebook-for-woocommerce.zip" -o "$TEMP_DIR/marketplace.zip"
+
+          # Download GitHub artifact
+          RUN_ID=$(gh run list --repo woocommerce/facebook-for-woocommerce --workflow build-plugin-artifact.yml --branch "release/$VERSION" --status success --limit 1 --json databaseId --jq '.[0].databaseId')
+          if [ -z "$RUN_ID" ] || [ "$RUN_ID" = "null" ]; then
+              echo "❌ No successful build found for release/$VERSION"
+              exit 1
+          fi
+          gh run download "$RUN_ID" --repo woocommerce/facebook-for-woocommerce --dir "$TEMP_DIR/artifact"
+
+          # Find and prepare GitHub zip
+          ARTIFACT_ZIP=$(find "$TEMP_DIR/artifact" -name "*.zip" -type f | head -1)
+          if [ -z "$ARTIFACT_ZIP" ]; then
+              PLUGIN_FILE=$(find "$TEMP_DIR/artifact" -name "facebook-for-woocommerce.php" -type f | head -1)
+              if [ -n "$PLUGIN_FILE" ]; then
+                  PLUGIN_DIR=$(dirname "$PLUGIN_FILE")
+                  (cd "$(dirname "$PLUGIN_DIR")" && zip -rq "$TEMP_DIR/github.zip" "$(basename "$PLUGIN_DIR")")
+                  ARTIFACT_ZIP="$TEMP_DIR/github.zip"
+              fi
+          fi
+          [ -z "$ARTIFACT_ZIP" ] && echo "❌ No artifact found" && exit 1
+
+          # Extract and compare
+          mkdir -p "$TEMP_DIR/wp" "$TEMP_DIR/gh"
+          unzip -q "$TEMP_DIR/marketplace.zip" -d "$TEMP_DIR/wp"
+          unzip -q "$ARTIFACT_ZIP" -d "$TEMP_DIR/gh"
+
+          # Compare directories (ignore POT-Creation-Date timestamps)
+          echo "Comparing archives..."
+          DIFF_OUTPUT=$(diff -rq "$TEMP_DIR/wp" "$TEMP_DIR/gh" 2>&1 | grep -v "POT-Creation-Date" || true)
+
+          if [ -n "$DIFF_OUTPUT" ]; then
+              echo "❌ Differences found:"
+              echo "$DIFF_OUTPUT"
+              exit 1
+          fi
+
+          echo "✅ Artifacts match"
+
       - name: Validate Git tag
         run: |
           git fetch --tags
