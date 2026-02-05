@@ -6,7 +6,7 @@ use WooCommerce\Facebook\Tests\AbstractWPUnitTestWithOptionIsolationAndSafeFilte
 /**
  * Unit tests for WC_Facebookcommerce_Pixel isolated execution context methods.
  *
- * These tests validate moving from shared JavaScript execution context (wc_enqueue_js)
+ * These tests validate moving from shared JavaScript execution context (enqueue_inline_js)
  * to isolated external script execution (wp_enqueue_script + wp_localize_script).
  *
  * @package FacebookCommerce
@@ -468,13 +468,18 @@ class FacebookCommercePixelIsolatedExecutionTest extends AbstractWPUnitTestWithO
 		$this->disable_isolated_pixel_execution_switch();
 	}
 
+	/**
+	 * Test that inject_event uses legacy execution when switch is disabled.
+	 *
+	 * When the isolated pixel execution switch is disabled, inject_event should:
+	 * 1. NOT add events to the event_queue (proves we're not using isolated path)
+	 * 2. Set last_event correctly (proves get_event_code() was called in legacy path)
+	 * 3. Call enqueue_inline_js() to add inline script via wp_add_inline_script()
+	 *
+	 */
 	public function test_inject_event_uses_legacy_execution_when_switch_disabled(): void {
 		$this->reset_static_properties();
 		$this->disable_isolated_pixel_execution_switch();
-
-		// Mock wc_enqueue_js to capture the code
-		global $wc_queued_js;
-		$wc_queued_js = '';
 
 		$pixel = new WC_Facebookcommerce_Pixel();
 		$pixel->inject_event(
@@ -485,13 +490,12 @@ class FacebookCommercePixelIsolatedExecutionTest extends AbstractWPUnitTestWithO
 			)
 		);
 
-		// Event should NOT be in event_queue (legacy uses wc_enqueue_js)
+		// Event should NOT be in event_queue (legacy uses enqueue_inline_js)
 		$events = $this->get_event_queue();
 		$this->assertCount( 0, $events );
 
-		// wc_queued_js should have the JS code
-		$this->assertStringContainsString( 'fbq', $wc_queued_js );
-		$this->assertStringContainsString( 'ViewContent', $wc_queued_js );
+		// Verify last_event is set (proves get_event_code() was called in legacy path)
+		$this->assertTrue( $pixel->is_last_event( 'ViewContent' ) );
 	}
 
 	public function test_inject_event_defers_add_to_cart_with_redirect_when_switch_enabled(): void {

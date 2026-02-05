@@ -119,13 +119,13 @@ if ( ! defined( 'ABSPATH' ) ) {
     exit;
 }
 
-// ERROR 1: Broken JS in wc_enqueue_js (WooCommerce's shared queue)
+// ERROR 1: Broken JS in enqueue_inline_js (WooCommerce's shared queue)
 // This is the MAIN scenario our isolated approach protects against.
 add_action( 'wp_footer', function() {
-    if ( ! function_exists( 'wc_enqueue_js' ) ) {
+    if ( ! function_exists( 'enqueue_inline_js' ) ) {
         return;
     }
-    wc_enqueue_js( '
+    enqueue_inline_js( '
         console.log("[E2E Test] ERROR 1: Broken JS in wc_queued_js");
         throw new Error("Simulated error in wc_queued_js - tests isolated execution");
     ' );

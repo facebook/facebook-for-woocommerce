@@ -468,7 +468,7 @@ class WC_Facebookcommerce_Pixel {
 	 * Supports two execution modes controlled by rollout switch:
 	 * - Isolated execution (switch ON): Uses external JS via wp_localize_script() to prevent
 	 *   other plugins' JavaScript errors from breaking pixel tracking.
-	 * - Legacy execution (switch OFF): Uses wc_enqueue_js() for inline script output.
+	 * - Legacy execution (switch OFF): Uses enqueue_inline_js() for inline script output.
 	 *
 	 * @see \WC_Facebookcommerce_Pixel::build_event()
 	 *
@@ -508,14 +508,14 @@ class WC_Facebookcommerce_Pixel {
 					self::enqueue_event( $event_name, $event_params, $method, $event_id );
 				}
 			} else {
-				// Legacy execution: Use wc_enqueue_js for inline script.
+				// Legacy execution: Use enqueue_inline_js for inline script.
 				$code = $this->get_event_code( $event_name, self::build_params( $params, $event_name ), $method );
 
 				if ( $is_deferred ) {
 					// Store JS code string for inline script at print time.
 					WC_Facebookcommerce_Utils::add_deferred_event( $code );
 				} else {
-					WC_Facebookcommerce_Utils::wc_enqueue_js( $code );
+					WC_Facebookcommerce_Utils::enqueue_inline_js( $code );
 				}
 			}
 		} else {
