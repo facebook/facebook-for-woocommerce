@@ -30,6 +30,8 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 	 * This class is responsible for tracking events and sending them to Facebook.
 	 */
 	class WC_Facebookcommerce_EventsTracker {
+		/** @var bool disable VO while product is not GA */
+		const IS_VO_ENABLED = false;
 
 		/** @var \WC_Facebookcommerce_Pixel instance */
 		private $pixel;
@@ -1065,17 +1067,19 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 				'user_data'   => $this->get_user_data_from_billing_address( $order ),
 			);
 
-			$cogs = $this->cogs_provider->calculate_cogs_for_products( $products );
+			if ( self::IS_VO_ENABLED ) {
+				$cogs = $this->cogs_provider->calculate_cogs_for_products( $products );
 
-			if ( false !== $cogs ) {
-				$order_value_excluding_tax_including_discounts = $order->get_total()
-					- $order->get_total_tax()
-					- $order->get_shipping_total()
-					- $order->get_shipping_tax();
+				if ( false !== $cogs ) {
+					$order_value_excluding_tax_including_discounts = $order->get_total()
+						- $order->get_total_tax()
+						- $order->get_shipping_total()
+						- $order->get_shipping_tax();
 
-				$net_profit = $order_value_excluding_tax_including_discounts - $cogs;
-				if ( $net_profit > 0 ) {
-					$event_data['custom_data']['net_revenue'] = \WC_Facebookcommerce_Utils::truncate_float_number( $net_profit, 2 );
+					$net_profit = $order_value_excluding_tax_including_discounts - $cogs;
+					if ( $net_profit > 0 ) {
+						$event_data['custom_data']['net_revenue'] = \WC_Facebookcommerce_Utils::truncate_float_number( $net_profit, 2 );
+					}
 				}
 			}
 
