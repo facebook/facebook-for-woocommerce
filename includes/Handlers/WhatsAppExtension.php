@@ -318,8 +318,14 @@ class WhatsAppExtension {
 					'tracking_url' => $order_details_link,
 				);
 			case 'ORDER_REFUNDED':
+				// Provide both amount_1000 (backwards compatibility) and an amount object (value/offset)
+				$amt_1000 = isset( $refund_value ) ? (int) round( $refund_value ) : 0;
 				return array(
-					'amount_1000' => $refund_value,
+					'amount_1000' => $amt_1000,
+					'amount'      => array(
+						'value'  => (float) round( $amt_1000 / 1000, 2 ),
+						'offset' => 100,
+					),
 					'currency'    => $currency,
 				);
 			default:
