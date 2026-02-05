@@ -33,6 +33,9 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 		/** @var bool disable VO while product is not GA */
 		const IS_VO_ENABLED = false;
 
+		/** @var string URL for the client-side CAPI param builder script */
+		const CAPI_PARAM_BUILDER_JS_URL = 'https://capi-automation.s3.us-east-2.amazonaws.com/public/client_js/capiParamBuilder/clientParamBuilder.bundle.js';
+
 		/** @var \WC_Facebookcommerce_Pixel instance */
 		private $pixel;
 
@@ -266,7 +269,7 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 
 			wp_enqueue_script(
 				'facebook-capi-param-builder',
-				'https://capi-automation.s3.us-east-2.amazonaws.com/public/client_js/capiParamBuilder/clientParamBuilder.bundle.js',
+				self::CAPI_PARAM_BUILDER_JS_URL,
 				array(),
 				null,
 				true
