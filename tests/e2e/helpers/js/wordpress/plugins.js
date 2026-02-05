@@ -99,11 +99,90 @@ async function removePixelBlockerMuPlugin() {
   console.log('✅ Pixel blocker mu-plugin removed');
 }
 
+/**
+ * Install mu-plugin that simulates JS errors from other plugins.
+ * Tests that our isolated pixel event execution still works when other plugins break.
+ */
+async function installJsErrorSimulatorMuPlugin() {
+  console.log('🔧 Installing JS error simulator mu-plugin...');
+  const muPluginDir = `${wpSitePath}/wp-content/mu-plugins`;
+  const muPluginFile = `${muPluginDir}/e2e-js-error-simulator.php`;
+
+  const code = `<?php
+/**
+ * Plugin Name: E2E JS Error Simulator
+ * Description: Simulates JS errors from other plugins to test isolated pixel event execution.
+ * Version: 1.0.0
+ */
+
+if ( ! defined( 'ABSPATH' ) ) {
+    exit;
+}
+
+// ERROR 1: Broken JS in wc_enqueue_js (WooCommerce's shared queue)
+// This is the MAIN scenario our isolated approach protects against.
+add_action( 'wp_footer', function() {
+    if ( ! function_exists( 'wc_enqueue_js' ) ) {
+        return;
+    }
+    wc_enqueue_js( '
+        console.log("[E2E Test] ERROR 1: Broken JS in wc_queued_js");
+        throw new Error("Simulated error in wc_queued_js - tests isolated execution");
+    ' );
+}, 5 );
+
+// ERROR 2: Broken inline JS in footer (common in poorly coded plugins)
+add_action( 'wp_footer', function() {
+    ?>
+    <script>
+        console.log("[E2E Test] ERROR 2: Broken inline script in wp_footer");
+        throw new Error("Simulated error from another plugin's inline script");
+    </script>
+    <?php
+}, 15 );
+
+// ERROR 3: Broken JS in jQuery document ready
+add_action( 'wp_footer', function() {
+    ?>
+    <script>
+        jQuery(document).ready(function($) {
+            console.log("[E2E Test] ERROR 3: Broken jQuery document.ready handler");
+            throw new Error("Simulated error in jQuery document.ready");
+        });
+    </script>
+    <?php
+}, 20 );
+`;
+
+  console.log(`   Creating dir: ${muPluginDir}`);
+  fs.mkdirSync(muPluginDir, { recursive: true });
+
+  console.log(`   Writing: ${muPluginFile}`);
+  fs.writeFileSync(muPluginFile, code);
+
+  console.log('✅ JS error simulator mu-plugin installed');
+}
+
+/**
+ * Remove the JS error simulator mu-plugin
+ */
+async function removeJsErrorSimulatorMuPlugin() {
+  console.log('🧹 Removing JS error simulator mu-plugin...');
+  const muPluginFile = `${wpSitePath}/wp-content/mu-plugins/e2e-js-error-simulator.php`;
+
+  if (fs.existsSync(muPluginFile)) {
+    fs.unlinkSync(muPluginFile);
+  }
+  console.log('✅ JS error simulator mu-plugin removed');
+}
+
 module.exports = {
   installPlugin,
   uninstallPlugin,
   deactivatePlugin,
   activatePlugin,
   installPixelBlockerMuPlugin,
-  removePixelBlockerMuPlugin
+  removePixelBlockerMuPlugin,
+  installJsErrorSimulatorMuPlugin,
+  removeJsErrorSimulatorMuPlugin
 };
