@@ -9,6 +9,7 @@
  */
 
 use WooCommerce\Facebook\Events\Event;
+use WooCommerce\Facebook\RolloutSwitches;
 use WooCommerce\Facebook\Framework\Api\Exception as ApiException;
 use WooCommerce\Facebook\Framework\Helper;
 use WooCommerce\Facebook\Framework\Logger;
@@ -1060,6 +1061,14 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 			$product_names = array();
 			$products      = array();
 
+			// Determine if rich-order rollout is enabled for debugging
+			try {
+				$rollout_switches = facebook_for_woocommerce()->get_rollout_switches();
+				$rich_order_rollout = isset( $rollout_switches ) && $rollout_switches->is_switch_enabled( RolloutSwitches::SWITCH_WOOCOMMERCE_ENABLE_RICH_ORDER );
+			} catch ( \Throwable $e ) {
+				facebook_for_woocommerce()->log( 'Error checking rich order rollout switch: ' . $e->getMessage() );
+			}
+
 			foreach ( $order->get_items() as $item ) {
 
 				$product = $item->get_product();
@@ -1083,6 +1092,19 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 					$content->id       = \WC_Facebookcommerce_Utils::get_fb_retailer_id( $product );
 					$content->quantity = $quantity;
 
+					// Add per-item fields when rich order rollout is enabled
+					try {
+						$rollout_switches = facebook_for_woocommerce()->get_rollout_switches();
+						if ( isset( $rollout_switches ) && $rollout_switches->is_switch_enabled( RolloutSwitches::SWITCH_WOOCOMMERCE_ENABLE_RICH_ORDER ) ) {
+							$content->name = $item->get_name();
+							$image_id = ( method_exists( $product, 'get_image_id' ) ? $product->get_image_id() : 0 );
+							$content->image = $image_id ? wp_get_attachment_image_url( $image_id, 'full' ) : '';
+							$content->amount = (float) $item->get_total();
+						}
+					} catch ( \Throwable $e ) {
+						facebook_for_woocommerce()->log( 'Error adding rich per-item fields for order ' . $order_id . ': ' . $e->getMessage() );
+					}
+
 					$contents[] = $content;
 				}
 			}
@@ -1102,6 +1124,23 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 				'user_data'   => $this->get_user_data_from_billing_address( $order ),
 				'event_id'    => $event_id,
 			);
+
+			// Add order-level metadata when rollout switch enabled
+			try {
+				$rollout_switches = facebook_for_woocommerce()->get_rollout_switches();
+				if ( isset( $rollout_switches ) && $rollout_switches->is_switch_enabled( RolloutSwitches::SWITCH_WOOCOMMERCE_ENABLE_RICH_ORDER ) ) {
+					$order_url = ( method_exists( $order, 'get_view_order_url' ) ? $order->get_view_order_url() : $order->get_checkout_order_received_url() );
+					$shipping_method = ( method_exists( $order, 'get_shipping_method' ) ? $order->get_shipping_method() : '' );
+					$order_date_obj = ( method_exists( $order, 'get_date_created' ) ? $order->get_date_created() : null );
+					$order_date_iso = $order_date_obj ? $order_date_obj->date( 'c' ) : null;
+					$event_data['custom_data']['order_status'] = $order->get_status();
+					$event_data['custom_data']['order_url'] = $order_url;
+					$event_data['custom_data']['shipping_method'] = $shipping_method;
+					$event_data['custom_data']['order_date'] = $order_date_iso;
+				}
+			} catch ( \Throwable $e ) {
+				facebook_for_woocommerce()->log( 'Error adding order-level rich metadata for order ' . $order_id . ': ' . $e->getMessage() );
+			}
 
 			if ( self::IS_VO_ENABLED ) {
 				$cogs = $this->cogs_provider->calculate_cogs_for_products( $products );
