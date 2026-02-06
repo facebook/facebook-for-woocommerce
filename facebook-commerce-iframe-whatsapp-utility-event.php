@@ -109,32 +109,47 @@ class WC_Facebookcommerce_Iframe_Whatsapp_Utility_Event {
 			);
 			return;
 		}
-		// Build a minimal order_metadata only when the rich-order rollout switch is enabled.
+		// Check if rich-order rollout switch is enabled once and build metadata accordingly
+		$is_rich_order_enabled = false;
 		$order_metadata = array();
-		$rollout_switches = null;
 		if ( isset( $this->plugin ) && method_exists( $this->plugin, 'get_rollout_switches' ) ) {
 			$rollout_switches = $this->plugin->get_rollout_switches();
-		}
-		if ( isset( $rollout_switches ) && $rollout_switches->is_switch_enabled( RolloutSwitches::SWITCH_WOOCOMMERCE_ENABLE_RICH_ORDER ) ) {
-			$order_metadata = array(
-				'order_url'       => ( method_exists( $order, 'get_view_order_url' ) ? $order->get_view_order_url() : $order->get_checkout_order_received_url() ),
-				'order_date'      => ( method_exists( $order, 'get_date_created' ) ? ( $order->get_date_created() ? $order->get_date_created()->date( 'c' ) : '' ) : '' ),
-				'currency'        => $currency,
-				'shipping_method' => ( method_exists( $order, 'get_shipping_method' ) ? $order->get_shipping_method() : '' ),
-				'items'           => array(),
-			);
-			foreach ( $order->get_items() as $item ) {
-				$product_id = method_exists( $item, 'get_product_id' ) ? $item->get_product_id() : ( isset( $item['product_id'] ) ? $item['product_id'] : 0 );
-				$item_total = method_exists( $item, 'get_total' ) ? $item->get_total() : ( isset( $item['line_total'] ) ? $item['line_total'] : 0 );
-				$order_metadata['items'][] = array(
-					'product_id' => $product_id,
-					'name'       => method_exists( $item, 'get_name' ) ? $item->get_name() : ( isset( $item['name'] ) ? $item['name'] : '' ),
-					'quantity'   => method_exists( $item, 'get_quantity' ) ? $item->get_quantity() : ( isset( $item['qty'] ) ? $item['qty'] : 1 ),
-					'amount'     => $item_total,
-				);
+			if ( isset( $rollout_switches ) && $rollout_switches->is_switch_enabled( RolloutSwitches::SWITCH_WOOCOMMERCE_ENABLE_RICH_ORDER ) ) {
+				$is_rich_order_enabled = true;
+				$order_metadata = self::build_order_metadata( $order, $currency );
 			}
 		}
 
-		WhatsAppExtension::process_whatsapp_utility_message_event( $this->plugin, $event, $order_id, $order_details_link, $phone_number, $first_name, $refund_amount, $currency, $country_code, $order_metadata );
+		WhatsAppExtension::process_whatsapp_utility_message_event( $this->plugin, $event, $order_id, $order_details_link, $phone_number, $first_name, $refund_amount, $currency, $country_code, $order_metadata, $is_rich_order_enabled );
+	}
+
+	/**
+	 * Build order metadata from WooCommerce order object.
+	 *
+	 * @param \WC_Order $order The WooCommerce order object.
+	 * @param string    $currency The order currency code.
+	 * @return array Order metadata with keys: order_url, order_date, currency, shipping_method, items.
+	 */
+	private static function build_order_metadata( $order, $currency ) {
+		$order_metadata = array(
+			'order_url'       => ( method_exists( $order, 'get_view_order_url' ) ? $order->get_view_order_url() : $order->get_checkout_order_received_url() ),
+			'order_date'      => ( method_exists( $order, 'get_date_created' ) ? ( $order->get_date_created() ? $order->get_date_created()->date( 'c' ) : '' ) : '' ),
+			'currency'        => $currency,
+			'shipping_method' => ( method_exists( $order, 'get_shipping_method' ) ? $order->get_shipping_method() : '' ),
+			'items'           => array(),
+		);
+
+		foreach ( $order->get_items() as $item ) {
+			$product_id = method_exists( $item, 'get_product_id' ) ? $item->get_product_id() : ( isset( $item['product_id'] ) ? $item['product_id'] : 0 );
+			$item_total = method_exists( $item, 'get_total' ) ? $item->get_total() : ( isset( $item['line_total'] ) ? $item['line_total'] : 0 );
+			$order_metadata['items'][] = array(
+				'product_id' => $product_id,
+				'name'       => method_exists( $item, 'get_name' ) ? $item->get_name() : ( isset( $item['name'] ) ? $item['name'] : '' ),
+				'quantity'   => method_exists( $item, 'get_quantity' ) ? $item->get_quantity() : ( isset( $item['qty'] ) ? $item['qty'] : 1 ),
+				'amount'     => $item_total,
+			);
+		}
+
+		return $order_metadata;
 	}
 }
