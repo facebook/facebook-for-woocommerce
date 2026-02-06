@@ -73,6 +73,11 @@ if ( ! class_exists( 'WC_Facebookcommerce_Utils' ) ) :
 				return;
 			}
 
+			// Check if isolated pixel execution is enabled
+			$is_isolated_execution_enabled = facebook_for_woocommerce()->get_rollout_switches()->is_switch_enabled(
+				\WooCommerce\Facebook\RolloutSwitches::SWITCH_ISOLATED_PIXEL_EXECUTION_ENABLED
+			);
+
 			// Separate events by type
 			$legacy_events   = array();
 			$isolated_events = array();
@@ -85,14 +90,16 @@ if ( ! class_exists( 'WC_Facebookcommerce_Utils' ) ) :
 				}
 			}
 
-			// Handle isolated execution events (event data arrays)
-			foreach ( $isolated_events as $event ) {
-				WC_Facebookcommerce_Pixel::enqueue_event(
-					$event['name'],
-					$event['params'],
-					$event['method'] ?? 'track',
-					$event['eventId'] ?? ''
-				);
+			// Handle isolated execution events (event data arrays) - only if switch is enabled
+			if ( $is_isolated_execution_enabled ) {
+				foreach ( $isolated_events as $event ) {
+					WC_Facebookcommerce_Pixel::enqueue_event(
+						$event['name'],
+						$event['params'],
+						$event['method'] ?? 'track',
+						$event['eventId'] ?? ''
+					);
+				}
 			}
 
 			// Handle legacy events (JS code strings) - combine into single script tag

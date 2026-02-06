@@ -617,24 +617,18 @@ class FacebookCommercePixelIsolatedExecutionTest extends AbstractWPUnitTestWithO
 	 * Enable the isolated pixel execution rollout switch.
 	 */
 	private function enable_isolated_pixel_execution_switch(): void {
-		update_option(
-			'wc_facebook_for_woocommerce_rollout_switches',
-			array(
-				\WooCommerce\Facebook\RolloutSwitches::SWITCH_ISOLATED_PIXEL_EXECUTION_ENABLED => 'yes',
-			)
-		);
+		$options = get_option( 'wc_facebook_for_woocommerce_rollout_switches', array() );
+		$options[ \WooCommerce\Facebook\RolloutSwitches::SWITCH_ISOLATED_PIXEL_EXECUTION_ENABLED ] = 'yes';
+		update_option( 'wc_facebook_for_woocommerce_rollout_switches', $options );
 	}
 
 	/**
 	 * Disable the isolated pixel execution rollout switch.
 	 */
 	private function disable_isolated_pixel_execution_switch(): void {
-		update_option(
-			'wc_facebook_for_woocommerce_rollout_switches',
-			array(
-				\WooCommerce\Facebook\RolloutSwitches::SWITCH_ISOLATED_PIXEL_EXECUTION_ENABLED => 'no',
-			)
-		);
+		$options = get_option( 'wc_facebook_for_woocommerce_rollout_switches', array() );
+		$options[ \WooCommerce\Facebook\RolloutSwitches::SWITCH_ISOLATED_PIXEL_EXECUTION_ENABLED ] = 'no';
+		update_option( 'wc_facebook_for_woocommerce_rollout_switches', $options );
 	}
 
 	/**
