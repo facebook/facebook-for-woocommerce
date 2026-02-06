@@ -9,7 +9,7 @@ class fbUtilsTest extends \WP_UnitTestCase {
 
     public function setUp(): void {
         parent::setUp();
-        
+
         // Create a simple product for testing
         $this->product = new \WC_Product_Simple();
         $this->product->set_name('Test Product');
@@ -23,7 +23,7 @@ class fbUtilsTest extends \WP_UnitTestCase {
         if ($this->product && $this->product->get_id()) {
             wp_delete_post($this->product->get_id(), true);
         }
-        
+
         parent::tearDown();
     }
 
@@ -32,7 +32,7 @@ class fbUtilsTest extends \WP_UnitTestCase {
         $expectedOutput = 'Hello World!';
         $actualOutput = WC_Facebookcommerce_Utils::clean_string($string, true);
         $this->assertEquals($expectedOutput, $actualOutput);
-    } 
+    }
 
     public function testKeepHtmlTags() {
         $string = '<p>Hello World!</p>';
@@ -262,17 +262,17 @@ class fbUtilsTest extends \WP_UnitTestCase {
 
 		// Test that attribute summary is detected and skipped
 		$short_description = $fb_product->get_fb_short_description();
-		
+
 		// Should not return the attribute summary
 		$this->assertNotEquals('1: kids, Color: Red', $short_description);
-		
+
 		// Should return empty string since no valid short description found
 		$this->assertEquals('', $short_description);
 
 		// Test with a real description that shouldn't be detected as attribute summary
 		$post_data->post_excerpt = 'This is a real product description with features.';
 		$fb_product->set_mock_post_data($post_data);
-		
+
 		$short_description = $fb_product->get_fb_short_description();
 		$this->assertEquals('This is a real product description with features.', $short_description);
 	}
@@ -337,5 +337,394 @@ class fbUtilsTest extends \WP_UnitTestCase {
 
 		// Cleanup
 		wp_delete_term($category_id, 'product_cat');
+	}
+
+	// =========================================================================
+	// Deferred Events Tests
+	// Tests for the deferred events mechanism.
+	// Supports both legacy (JS code string) and isolated execution (event data array) formats.
+	// =========================================================================
+
+	/**
+	 * Test add_deferred_event stores event data array (isolated execution format).
+	 */
+	public function test_add_deferred_event_stores_event_data_array(): void {
+		$this->reset_deferred_events();
+
+		$event_data = array(
+			'name'    => 'AddToCart',
+			'params'  => array( 'content_ids' => array( '123' ) ),
+			'method'  => 'track',
+			'eventId' => 'deferred-event-id',
+		);
+
+		WC_Facebookcommerce_Utils::add_deferred_event( $event_data );
+		WC_Facebookcommerce_Utils::save_deferred_events();
+
+		$transient_key = $this->get_deferred_events_transient_key();
+		$deferred_events = get_transient( $transient_key );
+
+		$this->assertIsArray( $deferred_events );
+		$this->assertCount( 1, $deferred_events );
+		$this->assertIsArray( $deferred_events[0] );
+		$this->assertEquals( 'AddToCart', $deferred_events[0]['name'] );
+		$this->assertEquals( 'deferred-event-id', $deferred_events[0]['eventId'] );
+
+		// Cleanup
+		delete_transient( $transient_key );
+	}
+
+	/**
+	 * Test add_deferred_event stores JS code string (legacy format).
+	 */
+	public function test_add_deferred_event_stores_legacy_js_string(): void {
+		$this->reset_deferred_events();
+
+		$js_code = "/* WooCommerce Facebook Integration Event Tracking */\nfbq('track', 'AddToCart', {});";
+
+		WC_Facebookcommerce_Utils::add_deferred_event( $js_code );
+		WC_Facebookcommerce_Utils::save_deferred_events();
+
+		$transient_key = $this->get_deferred_events_transient_key();
+		$deferred_events = get_transient( $transient_key );
+
+		$this->assertIsArray( $deferred_events );
+		$this->assertCount( 1, $deferred_events );
+		$this->assertIsString( $deferred_events[0] );
+		$this->assertStringContainsString( 'fbq', $deferred_events[0] );
+
+		// Cleanup
+		delete_transient( $transient_key );
+	}
+
+	/**
+	 * Test add_deferred_event appends multiple events.
+	 */
+	public function test_add_deferred_event_appends_to_existing(): void {
+		$this->reset_deferred_events();
+
+		WC_Facebookcommerce_Utils::add_deferred_event( array(
+			'name'   => 'AddToCart',
+			'params' => array( 'id' => '1' ),
+			'method' => 'track',
+		) );
+		WC_Facebookcommerce_Utils::add_deferred_event( array(
+			'name'   => 'AddToCart',
+			'params' => array( 'id' => '2' ),
+			'method' => 'track',
+		) );
+
+		WC_Facebookcommerce_Utils::save_deferred_events();
+
+		$transient_key = $this->get_deferred_events_transient_key();
+		$deferred_events = get_transient( $transient_key );
+
+		$this->assertCount( 2, $deferred_events );
+
+		// Cleanup
+		delete_transient( $transient_key );
+	}
+
+	/**
+	 * Test print_deferred_events handles isolated execution format (event data arrays).
+	 */
+	public function test_print_deferred_events_handles_isolated_format(): void {
+		$this->reset_deferred_events();
+		$this->reset_pixel_event_queue();
+		$this->enable_isolated_pixel_execution_switch();
+
+		$transient_key = $this->get_deferred_events_transient_key();
+
+		// Store isolated execution format events (arrays)
+		set_transient(
+			$transient_key,
+			array(
+				array( 'name' => 'AddToCart', 'params' => array( 'id' => '1' ), 'method' => 'track' ),
+				array( 'name' => 'ViewContent', 'params' => array( 'id' => '2' ), 'method' => 'track', 'eventId' => 'evt-123' ),
+			),
+			DAY_IN_SECONDS
+		);
+
+		WC_Facebookcommerce_Utils::print_deferred_events();
+
+		// Check that events were added to WC_Facebookcommerce_Pixel::$event_queue
+		$event_queue = $this->get_pixel_event_queue();
+
+		$this->assertCount( 2, $event_queue );
+		$this->assertEquals( 'AddToCart', $event_queue[0]['name'] );
+		$this->assertEquals( 'ViewContent', $event_queue[1]['name'] );
+		$this->assertEquals( 'evt-123', $event_queue[1]['eventId'] );
+
+		// Transient should be deleted
+		$this->assertFalse( get_transient( $transient_key ) );
+
+		// Cleanup
+		$this->disable_isolated_pixel_execution_switch();
+	}
+
+	/**
+	 * Test print_deferred_events handles legacy format (JS code strings).
+	 */
+	public function test_print_deferred_events_handles_legacy_format(): void {
+		$this->reset_deferred_events();
+
+		$transient_key = $this->get_deferred_events_transient_key();
+
+		// Store legacy format events (strings)
+		$js_code_1 = "fbq('track', 'AddToCart', {});";
+		$js_code_2 = "fbq('track', 'ViewContent', {});";
+
+		set_transient(
+			$transient_key,
+			array( $js_code_1, $js_code_2 ),
+			DAY_IN_SECONDS
+		);
+
+		// Capture output
+		ob_start();
+		WC_Facebookcommerce_Utils::print_deferred_events();
+		$output = ob_get_clean();
+
+		// Should output a single script tag with both events combined
+		$this->assertStringContainsString( '<script>', $output );
+		$this->assertStringContainsString( '</script>', $output );
+		$this->assertStringContainsString( $js_code_1, $output );
+		$this->assertStringContainsString( $js_code_2, $output );
+
+		// Transient should be deleted
+		$this->assertFalse( get_transient( $transient_key ) );
+	}
+
+	/**
+	 * Test print_deferred_events handles mixed formats (both arrays and strings).
+	 */
+	public function test_print_deferred_events_handles_mixed_formats(): void {
+		$this->reset_deferred_events();
+		$this->reset_pixel_event_queue();
+		$this->enable_isolated_pixel_execution_switch();
+
+		$transient_key = $this->get_deferred_events_transient_key();
+
+		// Store mixed format events
+		$js_code = "fbq('track', 'Purchase', {});";
+		$event_array = array( 'name' => 'AddToCart', 'params' => array( 'id' => '1' ), 'method' => 'track' );
+
+		set_transient(
+			$transient_key,
+			array( $js_code, $event_array ),
+			DAY_IN_SECONDS
+		);
+
+		// Capture output
+		ob_start();
+		WC_Facebookcommerce_Utils::print_deferred_events();
+		$output = ob_get_clean();
+
+		// Legacy event should be in script output
+		$this->assertStringContainsString( '<script>', $output );
+		$this->assertStringContainsString( $js_code, $output );
+
+		// Isolated event should be in event_queue
+		$event_queue = $this->get_pixel_event_queue();
+		$this->assertCount( 1, $event_queue );
+		$this->assertEquals( 'AddToCart', $event_queue[0]['name'] );
+
+		// Transient should be deleted
+		$this->assertFalse( get_transient( $transient_key ) );
+
+		// Cleanup
+		$this->disable_isolated_pixel_execution_switch();
+	}
+
+	/**
+	 * Test print_deferred_events clears transient after loading.
+	 */
+	public function test_print_deferred_events_clears_transient(): void {
+		$this->reset_deferred_events();
+
+		$transient_key = $this->get_deferred_events_transient_key();
+
+		set_transient(
+			$transient_key,
+			array( array( 'name' => 'AddToCart', 'params' => array(), 'method' => 'track' ) ),
+			DAY_IN_SECONDS
+		);
+
+		WC_Facebookcommerce_Utils::print_deferred_events();
+
+		// Transient should be deleted after loading
+		$this->assertFalse( get_transient( $transient_key ) );
+	}
+
+	/**
+	 * Test print_deferred_events handles empty transient gracefully.
+	 */
+	public function test_print_deferred_events_handles_empty_transient(): void {
+		$this->reset_deferred_events();
+
+		// Should not throw error with no deferred events
+		WC_Facebookcommerce_Utils::print_deferred_events();
+
+		$this->assertTrue( true ); // If we get here, no error was thrown
+	}
+
+	/**
+	 * Test get_deferred_events_transient_key returns a string.
+	 */
+	public function test_get_deferred_events_transient_key_returns_string(): void {
+		$key = $this->get_deferred_events_transient_key();
+		$this->assertIsString( $key );
+	}
+
+	/**
+	 * Test save_deferred_events merges with existing transient data.
+	 */
+	public function test_save_deferred_events_merges_with_existing(): void {
+		$this->reset_deferred_events();
+
+		$transient_key = $this->get_deferred_events_transient_key();
+
+		// Set existing event in transient
+		set_transient(
+			$transient_key,
+			array( array( 'name' => 'ViewContent', 'params' => array(), 'method' => 'track' ) ),
+			DAY_IN_SECONDS
+		);
+
+		// Add new event
+		WC_Facebookcommerce_Utils::add_deferred_event( array(
+			'name'   => 'AddToCart',
+			'params' => array(),
+			'method' => 'track',
+		) );
+		WC_Facebookcommerce_Utils::save_deferred_events();
+
+		$deferred_events = get_transient( $transient_key );
+
+		// Should have both events
+		$this->assertCount( 2, $deferred_events );
+
+		// Cleanup
+		delete_transient( $transient_key );
+	}
+
+	/**
+	 * Test print_deferred_events uses default method when not specified.
+	 */
+	public function test_print_deferred_events_uses_default_method(): void {
+		$this->reset_deferred_events();
+		$this->reset_pixel_event_queue();
+		$this->enable_isolated_pixel_execution_switch();
+
+		$transient_key = $this->get_deferred_events_transient_key();
+
+		// Store event without method specified
+		set_transient(
+			$transient_key,
+			array( array( 'name' => 'AddToCart', 'params' => array() ) ),
+			DAY_IN_SECONDS
+		);
+
+		WC_Facebookcommerce_Utils::print_deferred_events();
+
+		$event_queue = $this->get_pixel_event_queue();
+
+		$this->assertCount( 1, $event_queue );
+		$this->assertEquals( 'track', $event_queue[0]['method'] );
+
+		// Cleanup
+		$this->disable_isolated_pixel_execution_switch();
+	}
+
+	/**
+	 * Test print_deferred_events uses empty eventId when not specified.
+	 */
+	public function test_print_deferred_events_handles_missing_event_id(): void {
+		$this->reset_deferred_events();
+		$this->reset_pixel_event_queue();
+		$this->enable_isolated_pixel_execution_switch();
+
+		$transient_key = $this->get_deferred_events_transient_key();
+
+		// Store event without eventId
+		set_transient(
+			$transient_key,
+			array( array( 'name' => 'AddToCart', 'params' => array(), 'method' => 'track' ) ),
+			DAY_IN_SECONDS
+		);
+
+		WC_Facebookcommerce_Utils::print_deferred_events();
+
+		$event_queue = $this->get_pixel_event_queue();
+
+		$this->assertCount( 1, $event_queue );
+		// eventId should not be set when empty
+		$this->assertArrayNotHasKey( 'eventId', $event_queue[0] );
+
+		// Cleanup
+		$this->disable_isolated_pixel_execution_switch();
+	}
+
+	/**
+	 * Helper to reset deferred events array.
+	 */
+	private function reset_deferred_events(): void {
+		$reflection = new ReflectionClass( WC_Facebookcommerce_Utils::class );
+		$property = $reflection->getProperty( 'deferred_events' );
+		$property->setAccessible( true );
+		$property->setValue( null, [] );
+	}
+
+	/**
+	 * Helper to reset pixel event queue array.
+	 */
+	private function reset_pixel_event_queue(): void {
+		$reflection = new ReflectionClass( WC_Facebookcommerce_Pixel::class );
+		$property = $reflection->getProperty( 'event_queue' );
+		$property->setAccessible( true );
+		$property->setValue( null, [] );
+
+		// Also reset hooks_initialized
+		$hooks_initialized = $reflection->getProperty( 'hooks_initialized' );
+		$hooks_initialized->setAccessible( true );
+		$hooks_initialized->setValue( null, false );
+	}
+
+	/**
+	 * Helper to get pixel event queue via reflection.
+	 */
+	private function get_pixel_event_queue(): array {
+		$reflection = new ReflectionClass( WC_Facebookcommerce_Pixel::class );
+		$property = $reflection->getProperty( 'event_queue' );
+		$property->setAccessible( true );
+		return $property->getValue();
+	}
+
+	/**
+	 * Helper to get the deferred events transient key.
+	 */
+	private function get_deferred_events_transient_key(): string {
+		$reflection = new ReflectionClass( WC_Facebookcommerce_Utils::class );
+		$method = $reflection->getMethod( 'get_deferred_events_transient_key' );
+		$method->setAccessible( true );
+		return $method->invoke( null );
+	}
+
+	/**
+	 * Enable the isolated pixel execution rollout switch.
+	 */
+	private function enable_isolated_pixel_execution_switch(): void {
+		$options = get_option( 'wc_facebook_for_woocommerce_rollout_switches', array() );
+		$options[ \WooCommerce\Facebook\RolloutSwitches::SWITCH_ISOLATED_PIXEL_EXECUTION_ENABLED ] = 'yes';
+		update_option( 'wc_facebook_for_woocommerce_rollout_switches', $options );
+	}
+
+	/**
+	 * Disable the isolated pixel execution rollout switch.
+	 */
+	private function disable_isolated_pixel_execution_switch(): void {
+		$options = get_option( 'wc_facebook_for_woocommerce_rollout_switches', array() );
+		$options[ \WooCommerce\Facebook\RolloutSwitches::SWITCH_ISOLATED_PIXEL_EXECUTION_ENABLED ] = 'no';
+		update_option( 'wc_facebook_for_woocommerce_rollout_switches', $options );
 	}
 }

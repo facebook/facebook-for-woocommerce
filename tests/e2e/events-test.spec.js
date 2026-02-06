@@ -12,6 +12,8 @@ const {
   activatePlugin,
   installPixelBlockerMuPlugin,
   removePixelBlockerMuPlugin,
+  installJsErrorSimulatorMuPlugin,
+  removeJsErrorSimulatorMuPlugin,
   reconnectAndVerify
 } = require('./helpers/js');
 
@@ -79,7 +81,9 @@ test('AddToCart', async ({ page }, testInfo) => {
     // Set up listener BEFORE triggering the action (prevents race condition)
     const eventPromise = pixelCapture.waitForEvent();
     await page.click('.single_add_to_cart_button');
-    await page.waitForTimeout(TIMEOUTS.SHORT);
+
+    // Wait for page to reload (form submission) and become ready
+    await page.waitForLoadState('networkidle');
     await eventPromise;
 
     const validator = new EventValidator(testId);
@@ -348,6 +352,105 @@ test('ViewContent - No Consent (pixel disabled)', async ({ page }, testInfo) => 
 // NOTE: Subscribe test is skipped because it requires WooCommerce Paid Subscriptions
 // Free alternatives (YITH, Subscriptio) use different APIs incompatible with facebook-for-woocommerce
 // The plugin specifically checks for wcs_get_subscriptions_for_order() which only exists in the official plugin
+
+// =============================================================================
+// Isolated Execution Context Tests (Gap 1 Fix)
+// =============================================================================
+// These tests verify that pixel events fire even when other plugins have JS errors.
+// This validates the fix for Gap 1: Shared JavaScript Execution Context.
+
+test('ViewContent - Isolated Execution (with JS errors from other plugins)', async ({ page }, testInfo) => {
+    console.log('🧪 Testing isolated event execution with simulated plugin errors...');
+
+    // 1. Install the JS error simulator mu-plugin
+    await installJsErrorSimulatorMuPlugin();
+
+    try {
+        // 2. Initialize test
+        const { testId, pixelCapture } = await TestSetup.init(page, 'ViewContent', testInfo);
+
+        // 3. Set up console error listener to verify errors are being thrown
+        const consoleErrors = [];
+        page.on('console', msg => {
+            if (msg.type() === 'error' || msg.text().includes('[E2E Test]')) {
+                consoleErrors.push(msg.text());
+            }
+        });
+
+        // 4. Navigate to product page
+        console.log('   📦 Navigating to product page (with 3 simulated JS errors active)...');
+        const eventPromise = pixelCapture.waitForEvent();
+        await page.goto(process.env.TEST_PRODUCT_URL);
+        await TestSetup.waitForPageReady(page);
+        await eventPromise;
+
+        // 5. Verify that errors were indeed thrown (simulator is working)
+        console.log(`   🔍 Console messages captured: ${consoleErrors.length}`);
+        const simulatorErrors = consoleErrors.filter(msg => msg.includes('[E2E Test]'));
+        console.log(`   ⚠️ Simulator errors detected: ${simulatorErrors.length}`);
+
+        if (simulatorErrors.length === 0) {
+            console.warn('   ⚠️ Warning: No simulator errors detected - simulator may not be active');
+        }
+
+        // 6. Validate that ViewContent event STILL fired despite JS errors
+        console.log('   ✅ Validating ViewContent event fired despite JS errors...');
+        const validator = new EventValidator(testId);
+        await validator.checkDebugLog();
+        const result = await validator.validate('ViewContent', page);
+
+        TestSetup.logResult('ViewContent (Isolated Execution)', result);
+        expect(result.passed).toBe(true);
+
+        console.log('   🎉 SUCCESS: Pixel events fire even with other plugins\' JS errors!');
+
+    } finally {
+        // 7. Always cleanup - remove the error simulator
+        console.log('   🧹 Cleaning up JS error simulator...');
+        await removeJsErrorSimulatorMuPlugin();
+    }
+});
+
+test('AddToCart - Isolated Execution (with JS errors from other plugins)', async ({ page }, testInfo) => {
+    console.log('🧪 Testing AddToCart isolated execution with simulated plugin errors...');
+
+    // 1. Install the JS error simulator mu-plugin
+    await installJsErrorSimulatorMuPlugin();
+
+    try {
+        // 2. Initialize test
+        const { testId, pixelCapture } = await TestSetup.init(page, 'AddToCart', testInfo);
+
+        // 3. Navigate to product page first
+        await page.goto(process.env.TEST_PRODUCT_URL);
+        await TestSetup.waitForPageReady(page, TIMEOUTS.INSTANT);
+
+        // 4. Click Add to Cart (with 3 simulated JS errors active)
+        console.log('   🛒 Clicking Add to Cart (with 3 simulated JS errors active)...');
+        const eventPromise = pixelCapture.waitForEvent();
+        await page.click('.single_add_to_cart_button');
+
+        // Wait for page to reload (form submission) and become ready
+        await page.waitForLoadState('networkidle');
+        await eventPromise;
+
+        // 5. Validate that AddToCart event fired despite JS errors
+        console.log('   ✅ Validating AddToCart event fired despite JS errors...');
+        const validator = new EventValidator(testId);
+        await validator.checkDebugLog();
+        const result = await validator.validate('AddToCart', page);
+
+        TestSetup.logResult('AddToCart (Isolated Execution)', result);
+        expect(result.passed).toBe(true);
+
+        console.log('   🎉 SUCCESS: AddToCart fires even with other plugins\' JS errors!');
+
+    } finally {
+        // 6. Always cleanup
+        console.log('   🧹 Cleaning up JS error simulator...');
+        await removeJsErrorSimulatorMuPlugin();
+    }
+});
 
 // Cleanup is handled by GitHub workflow after all tests complete
 // This ensures product exists for all tests even if some fail
