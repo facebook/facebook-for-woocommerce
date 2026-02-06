@@ -9,7 +9,7 @@ class fbUtilsTest extends \WP_UnitTestCase {
 
     public function setUp(): void {
         parent::setUp();
-        
+
         // Create a simple product for testing
         $this->product = new \WC_Product_Simple();
         $this->product->set_name('Test Product');
@@ -23,7 +23,7 @@ class fbUtilsTest extends \WP_UnitTestCase {
         if ($this->product && $this->product->get_id()) {
             wp_delete_post($this->product->get_id(), true);
         }
-        
+
         parent::tearDown();
     }
 
@@ -32,7 +32,7 @@ class fbUtilsTest extends \WP_UnitTestCase {
         $expectedOutput = 'Hello World!';
         $actualOutput = WC_Facebookcommerce_Utils::clean_string($string, true);
         $this->assertEquals($expectedOutput, $actualOutput);
-    } 
+    }
 
     public function testKeepHtmlTags() {
         $string = '<p>Hello World!</p>';
@@ -262,17 +262,17 @@ class fbUtilsTest extends \WP_UnitTestCase {
 
 		// Test that attribute summary is detected and skipped
 		$short_description = $fb_product->get_fb_short_description();
-		
+
 		// Should not return the attribute summary
 		$this->assertNotEquals('1: kids, Color: Red', $short_description);
-		
+
 		// Should return empty string since no valid short description found
 		$this->assertEquals('', $short_description);
 
 		// Test with a real description that shouldn't be detected as attribute summary
 		$post_data->post_excerpt = 'This is a real product description with features.';
 		$fb_product->set_mock_post_data($post_data);
-		
+
 		$short_description = $fb_product->get_fb_short_description();
 		$this->assertEquals('This is a real product description with features.', $short_description);
 	}
@@ -431,6 +431,7 @@ class fbUtilsTest extends \WP_UnitTestCase {
 	public function test_print_deferred_events_handles_isolated_format(): void {
 		$this->reset_deferred_events();
 		$this->reset_pixel_event_queue();
+		$this->enable_isolated_pixel_execution_switch();
 
 		$transient_key = $this->get_deferred_events_transient_key();
 
@@ -456,6 +457,9 @@ class fbUtilsTest extends \WP_UnitTestCase {
 
 		// Transient should be deleted
 		$this->assertFalse( get_transient( $transient_key ) );
+
+		// Cleanup
+		$this->disable_isolated_pixel_execution_switch();
 	}
 
 	/**
@@ -497,6 +501,7 @@ class fbUtilsTest extends \WP_UnitTestCase {
 	public function test_print_deferred_events_handles_mixed_formats(): void {
 		$this->reset_deferred_events();
 		$this->reset_pixel_event_queue();
+		$this->enable_isolated_pixel_execution_switch();
 
 		$transient_key = $this->get_deferred_events_transient_key();
 
@@ -526,6 +531,9 @@ class fbUtilsTest extends \WP_UnitTestCase {
 
 		// Transient should be deleted
 		$this->assertFalse( get_transient( $transient_key ) );
+
+		// Cleanup
+		$this->disable_isolated_pixel_execution_switch();
 	}
 
 	/**
@@ -606,6 +614,7 @@ class fbUtilsTest extends \WP_UnitTestCase {
 	public function test_print_deferred_events_uses_default_method(): void {
 		$this->reset_deferred_events();
 		$this->reset_pixel_event_queue();
+		$this->enable_isolated_pixel_execution_switch();
 
 		$transient_key = $this->get_deferred_events_transient_key();
 
@@ -622,6 +631,9 @@ class fbUtilsTest extends \WP_UnitTestCase {
 
 		$this->assertCount( 1, $event_queue );
 		$this->assertEquals( 'track', $event_queue[0]['method'] );
+
+		// Cleanup
+		$this->disable_isolated_pixel_execution_switch();
 	}
 
 	/**
@@ -630,6 +642,7 @@ class fbUtilsTest extends \WP_UnitTestCase {
 	public function test_print_deferred_events_handles_missing_event_id(): void {
 		$this->reset_deferred_events();
 		$this->reset_pixel_event_queue();
+		$this->enable_isolated_pixel_execution_switch();
 
 		$transient_key = $this->get_deferred_events_transient_key();
 
@@ -647,6 +660,9 @@ class fbUtilsTest extends \WP_UnitTestCase {
 		$this->assertCount( 1, $event_queue );
 		// eventId should not be set when empty
 		$this->assertArrayNotHasKey( 'eventId', $event_queue[0] );
+
+		// Cleanup
+		$this->disable_isolated_pixel_execution_switch();
 	}
 
 	/**
@@ -692,5 +708,23 @@ class fbUtilsTest extends \WP_UnitTestCase {
 		$method = $reflection->getMethod( 'get_deferred_events_transient_key' );
 		$method->setAccessible( true );
 		return $method->invoke( null );
+	}
+
+	/**
+	 * Enable the isolated pixel execution rollout switch.
+	 */
+	private function enable_isolated_pixel_execution_switch(): void {
+		$options = get_option( 'wc_facebook_for_woocommerce_rollout_switches', array() );
+		$options[ \WooCommerce\Facebook\RolloutSwitches::SWITCH_ISOLATED_PIXEL_EXECUTION_ENABLED ] = 'yes';
+		update_option( 'wc_facebook_for_woocommerce_rollout_switches', $options );
+	}
+
+	/**
+	 * Disable the isolated pixel execution rollout switch.
+	 */
+	private function disable_isolated_pixel_execution_switch(): void {
+		$options = get_option( 'wc_facebook_for_woocommerce_rollout_switches', array() );
+		$options[ \WooCommerce\Facebook\RolloutSwitches::SWITCH_ISOLATED_PIXEL_EXECUTION_ENABLED ] = 'no';
+		update_option( 'wc_facebook_for_woocommerce_rollout_switches', $options );
 	}
 }
