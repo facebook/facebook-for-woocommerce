@@ -145,6 +145,7 @@ class WhatsAppExtension {
 	 * @param string $currency Currency code
 	 * @param string $country_code Customer country code
 	 * @param array  $order_metadata Optional order metadata used to build rich order status
+	 * @param bool   $is_rich_order_enabled Whether rich order rollout switch is enabled
 	 *
 	 * @return string
 	 * @since 3.5.0
@@ -159,7 +160,8 @@ class WhatsAppExtension {
 		$refund_value,
 		$currency,
 		$country_code,
-		$order_metadata = array()
+		$order_metadata = array(),
+		$is_rich_order_enabled = false
 	) {
 		$whatsapp_connection = $plugin->get_whatsapp_connection_handler();
 		$is_connected        = $whatsapp_connection->is_connected();
@@ -192,19 +194,15 @@ class WhatsAppExtension {
 			$event_base_object[ $event_lowercase ] = $event_object;
 		}
 		// Attach rich_order_status only when rollout switch enabled and order_metadata provided.
-		try {
-			if ( ! empty( $order_metadata )
-				&& isset( $plugin )
-				&& method_exists( $plugin, 'get_rollout_switches' )
-				&& $plugin->get_rollout_switches()->is_switch_enabled( RolloutSwitches::SWITCH_WOOCOMMERCE_ENABLE_RICH_ORDER )
-			) {
+		if ( $is_rich_order_enabled && ! empty( $order_metadata ) ) {
+			try {
 				$rich_status = self::build_rich_order_status( $order_metadata );
 				if ( ! empty( $rich_status ) ) {
 					$event_base_object['rich_order_status'] = $rich_status;
 				}
+			} catch ( \Throwable $e ) {
+				facebook_for_woocommerce()->log( 'Failed attaching rich_order_status for order ' . $order_id . ': ' . $e->getMessage() );
 			}
-		} catch ( \Throwable $e ) {
-			facebook_for_woocommerce()->log( 'Failed attaching rich_order_status for order ' . $order_id . ': ' . $e->getMessage() );
 		}
 		$options = array(
 			'headers' => array(
@@ -252,8 +250,8 @@ class WhatsAppExtension {
 	/**
 	 * Build the rich_order_status array from order metadata.
 	 *
-	 * @param array $order_metadata
-	 * @return array
+	 * @param array $order_metadata The order metadata containing order details.
+	 * @return array An array with keys: order_url, order_date, currency, shipping_method, items (each item has: name, quantity, amount_1000, image_url)
 	 */
 	public static function build_rich_order_status( $order_metadata ) {
 		$rich = array();
@@ -264,22 +262,22 @@ class WhatsAppExtension {
 		$rich['items']           = array();
 
 		if ( ! empty( $order_metadata['items'] ) && is_array( $order_metadata['items'] ) ) {
-			foreach ( $order_metadata['items'] as $it ) {
+			foreach ( $order_metadata['items'] as $order_item ) {
 				$item_arr = array();
-				$item_arr['name']     = $it['name'] ?? ( $it['product_name'] ?? '' );
-				$item_arr['quantity'] = isset( $it['quantity'] ) ? intval( $it['quantity'] ) : 1;
+				$item_arr['name']     = $order_item['name'] ?? ( $order_item['product_name'] ?? '' );
+				$item_arr['quantity'] = isset( $order_item['quantity'] ) ? intval( $order_item['quantity'] ) : 1;
 
 				// Ensure `amount_1000` is present for the server consumer.
 				// Derived from numeric `amount`.
-				if ( isset( $it['amount'] ) ) {
+				if ( isset( $order_item['amount'] ) ) {
 					// Derive from numeric amount; scale to cents per current server expectation.
-					$item_arr['amount_1000'] = (int) round( (float) $it['amount'] * 100 );
+					$item_arr['amount_1000'] = (int) round( (float) $order_item['amount'] * 100 );
 				}
 
 				$image_url = '';
-				if ( ! empty( $it['product_id'] ) ) {
+				if ( ! empty( $order_item['product_id'] ) ) {
 					try {
-						$product = wc_get_product( $it['product_id'] );
+						$product = wc_get_product( $order_item['product_id'] );
 						if ( $product ) {
 							$image_id = method_exists( $product, 'get_image_id' ) ? $product->get_image_id() : 0;
 							if ( $image_id ) {
@@ -288,7 +286,7 @@ class WhatsAppExtension {
 							}
 						}
 					} catch ( \Throwable $e ) {
-						facebook_for_woocommerce()->log( 'Failed fetching product image for item ' . ( isset( $it['product_id'] ) ? $it['product_id'] : '' ) . ': ' . $e->getMessage() );
+						facebook_for_woocommerce()->log( 'Failed fetching product image for item ' . ( isset( $order_item['product_id'] ) ? $order_item['product_id'] : '' ) . ': ' . $e->getMessage() );
 					}
 				}
 				$item_arr['image_url'] = $image_url;
@@ -318,14 +316,8 @@ class WhatsAppExtension {
 					'tracking_url' => $order_details_link,
 				);
 			case 'ORDER_REFUNDED':
-				// Provide both amount_1000 (backwards compatibility) and an amount object (value/offset)
-				$amt_1000 = isset( $refund_value ) ? (int) round( $refund_value ) : 0;
 				return array(
-					'amount_1000' => $amt_1000,
-					'amount'      => array(
-						'value'  => (float) round( $amt_1000 / 1000, 2 ),
-						'offset' => 100,
-					),
+					'amount_1000' => $refund_value,
 					'currency'    => $currency,
 				);
 			default:
