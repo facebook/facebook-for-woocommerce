@@ -200,14 +200,6 @@ if ( ! class_exists( 'WC_Facebookcommerce_Utils' ) ) :
 		public static function get_fb_retailer_id( $woo_product ) {
 			$woo_id = $woo_product->get_id();
 
-			/*
-			* Call $woo_product->get_id() instead of ->id to account for Variable
-			* products, which have their own variant_ids.
-			*/
-			$fb_retailer_id = $woo_product->get_sku() ?
-				$woo_product->get_sku() . '_' . $woo_id :
-				self::FB_RETAILER_ID_PREFIX . $woo_id;
-
 			/**
 			 * Filter facebook retailer id value.
 			 *
@@ -218,7 +210,7 @@ if ( ! class_exists( 'WC_Facebookcommerce_Utils' ) ) :
 			 * @param string     Facebook Retailer ID.
 			 * @param WC_Product WooCommerce product.
 			 */
-			return apply_filters( 'wc_facebook_fb_retailer_id', $fb_retailer_id, $woo_product );
+			return apply_filters( 'wc_facebook_fb_retailer_id', $woo_id, $woo_product );
 		}
 
 		/**
