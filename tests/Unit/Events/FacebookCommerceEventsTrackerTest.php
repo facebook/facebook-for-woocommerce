@@ -486,17 +486,20 @@ class FacebookCommerceEventsTrackerTest extends AbstractWPUnitTestWithSafeFilter
 		$order->set_total( 100 );
 		$order->save();
 
-		// Simulate browser hook by calling inject_purchase_event via do_action
-		// This sets current_action() to 'woocommerce_thankyou'
+		// Simulate that server context already ran and set the server meta
+		$order->add_meta_data( '_meta_purchase_tracked_server', true, true );
+		$order->save();
+
+		// Simulate browser hook (thank you page) - should NOT send CAPI since server already did
 		add_action( 'woocommerce_thankyou', array( $this->instance, 'inject_purchase_event' ), 40 );
-		do_action( 'woocommerce_new_order', $order->get_id(), $order );
+		do_action( 'woocommerce_thankyou', $order->get_id() );
 		remove_action( 'woocommerce_thankyou', array( $this->instance, 'inject_purchase_event' ), 40 );
 
 		$tracked_events = $this->instance->get_tracked_events();
 
 		$this->assertEmpty(
 			$tracked_events,
-			'inject_purchase_event should NOT track CAPI event for browser context'
+			'inject_purchase_event should NOT track CAPI event for browser context when server already tracked'
 		);
 
 		// Clean up

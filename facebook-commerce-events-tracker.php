@@ -68,7 +68,6 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 		/**
 		 * Order meta keys used by the tracker.
 		 */
-		const META_PURCHASE_TRACKED         = '_meta_purchase_tracked'; // Legacy flag kept for compatibility; logic uses context-specific flags
 		const META_PURCHASE_TRACKED_BROWSER = '_meta_purchase_tracked_browser';
 		const META_PURCHASE_TRACKED_SERVER  = '_meta_purchase_tracked_server';
 		const META_EVENT_ID                 = '_meta_event_id';
@@ -997,6 +996,9 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 			// Determine if this is a browser or server event.
 			$is_browser = 'woocommerce_thankyou' === $hook_name;
 
+			// Capture whether CAPI has already been sent before we set any meta.
+			$capi_already_sent = $order->meta_exists( self::META_PURCHASE_TRACKED_SERVER );
+
 			// If the event is triggered by a hook that is not related to the browser, it is a server event.
 			$meta_flag = $is_browser ? self::META_PURCHASE_TRACKED_BROWSER : self::META_PURCHASE_TRACKED_SERVER;
 
@@ -1033,13 +1035,10 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 				$order->add_meta_data( self::META_EVENT_ID, $event_id, true );
 			}
 
-			// Set flags before sending to prefer “at most once” over retry-ability.
-			$order->add_meta_data( self::META_PURCHASE_TRACKED, true, true );
-
 			// Mark the order as tracked for the session.
 			set_transient( $purchase_tracked_flag, 'yes', 45 * MINUTE_IN_SECONDS );
 
-			// Legacy flag retained for backward compatibility.
+			// Mark the order as tracked for the context (browser or server).
 			$order->add_meta_data( $meta_flag, true, true );
 
 			// Save the metadata.
@@ -1122,10 +1121,8 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 
 			$event = new Event( $event_data );
 
-			// Only send CAPI event for server context to avoid duplicate API calls.
-			// Browser context will inject the pixel event for client-side tracking.
-			// Both share the same event_id for deduplication on Facebook's side.
-			if ( ! $is_browser ) {
+			// Send CAPI event if not already sent. Events with the same event_id get deduplicated on Meta's side.
+			if ( ! $capi_already_sent ) {
 				$this->send_api_event( $event );
 			}
 
