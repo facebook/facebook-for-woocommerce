@@ -42,6 +42,9 @@ class Update {
 	/** @var int Transient lifetime for language feed stats cache (2 weeks) */
 	const TRANSIENT_LANGUAGE_FEED_STATS_LIFETIME = 2 * WEEK_IN_SECONDS;
 
+	/** @var string Option name for caching the collection page compatibility check */
+	const COLLECTIONPAGE_COMPAT_OPTION = 'wc_facebook_collectionpage_compat';
+
 	/**
 	 * Update class constructor.
 	 *
@@ -98,15 +101,16 @@ class Update {
 				'flow_name'  => 'plugin_updates',
 				'flow_step'  => 'send_plugin_updates',
 				'extra_data' => [
-					'is_multisite'                => is_multisite(),
-					'is_product_sync_enabled'     => facebook_for_woocommerce()->get_integration()->is_product_sync_enabled(),
-					'excluded_product_categories' => wp_json_encode( $excluded_product_categories ),
-					'excluded_product_tags'       => wp_json_encode( $excluded_product_tags ),
-					'published_product_count'     => facebook_for_woocommerce()->get_integration()->get_product_count(),
-					'opted_out_woo_all_products'  => get_option( self::MASTER_SYNC_OPT_OUT_TIME ),
-					'active_plugins'              => wp_json_encode( IntegrationRegistry::get_all_active_plugin_data() ),
-					'language_override_enabled'   => get_option( \WC_Facebookcommerce_Integration::OPTION_LANGUAGE_OVERRIDE_FEED_GENERATION_ENABLED, 'no' ),
-					'language_feed_stats'         => wp_json_encode( is_array( $language_feed_stats ) ? $language_feed_stats : [] ),
+					'is_multisite'                         => is_multisite(),
+					'is_product_sync_enabled'              => facebook_for_woocommerce()->get_integration()->is_product_sync_enabled(),
+					'excluded_product_categories'          => wp_json_encode( $excluded_product_categories ),
+					'excluded_product_tags'                => wp_json_encode( $excluded_product_tags ),
+					'published_product_count'              => facebook_for_woocommerce()->get_integration()->get_product_count(),
+					'opted_out_woo_all_products'           => get_option( self::MASTER_SYNC_OPT_OUT_TIME ),
+					'active_plugins'                       => wp_json_encode( IntegrationRegistry::get_all_active_plugin_data() ),
+					'language_override_enabled'            => get_option( \WC_Facebookcommerce_Integration::OPTION_LANGUAGE_OVERRIDE_FEED_GENERATION_ENABLED, 'no' ),
+					'language_feed_stats'                  => wp_json_encode( is_array( $language_feed_stats ) ? $language_feed_stats : [] ),
+					'is_collectionpage_reliably_available' => $this->is_collectionpage_reliably_available(),
 				],
 			);
 			$context  = [ LogHandlerBase::set_core_log_context( $context ) ];
@@ -182,5 +186,74 @@ class Update {
 			// If the request fails, we should retry it in the next heartbeat.
 			return false;
 		}
+	}
+
+	/**
+	 * Returns whether the /fbcollection/ page will reliably render on this site.
+	 * Result is computed once per plugin version and cached in a WP option.
+	 *
+	 * @return bool
+	 */
+	private function is_collectionpage_reliably_available(): bool {
+		$current_version = defined( '\WooCommerce\Facebook\PLUGIN_VERSION' )
+			? \WooCommerce\Facebook\PLUGIN_VERSION
+			: facebook_for_woocommerce()->get_version();
+
+		$cached = get_option( self::COLLECTIONPAGE_COMPAT_OPTION, [] );
+
+		if ( is_array( $cached ) && ( $cached['version'] ?? '' ) === $current_version && isset( $cached['result'] ) ) {
+			return (bool) $cached['result'];
+		}
+
+		$result = $this->check_collectionpage_compatibility();
+
+		update_option(
+			self::COLLECTIONPAGE_COMPAT_OPTION,
+			[
+				'version' => $current_version,
+				'result'  => $result,
+			],
+			false
+		);
+
+		return $result;
+	}
+
+	/**
+	 * Runs the actual compatibility checks for the collection page.
+	 *
+	 * @return bool True if the collection page is expected to work reliably.
+	 */
+	private function check_collectionpage_compatibility(): bool {
+		// Plain permalinks — rewrite rules won't work at all.
+		if ( '' === get_option( 'permalink_structure' ) ) {
+			return false;
+		}
+
+		// Block/FSE themes bypass the PHP archive template and woocommerce_product_query hook.
+		if ( wp_is_block_theme() ) {
+			return false;
+		}
+
+		// Headless — no server-side frontend rendering.
+		if ( class_exists( 'WPGraphQL' ) || defined( 'FAUSTWP_FILE' ) ) {
+			return false;
+		}
+
+		// Elementor Pro has a custom template for the product archive.
+		if ( class_exists( '\ElementorPro\Modules\ThemeBuilder\Module' ) ) {
+			$conditions = get_option( 'elementor_pro_theme_builder_conditions', [] );
+			foreach ( $conditions as $template_conditions ) {
+				foreach ( (array) $template_conditions as $condition ) {
+					if ( is_string( $condition )
+						&& str_contains( $condition, 'product' )
+						&& str_contains( $condition, 'archive' ) ) {
+						return false;
+					}
+				}
+			}
+		}
+
+		return true;
 	}
 }
