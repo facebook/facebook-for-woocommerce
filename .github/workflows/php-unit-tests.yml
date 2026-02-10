@@ -37,9 +37,11 @@ jobs:
         uses: woocommerce/grow/prepare-mysql@actions-v1
 
       - name: Install WP tests
+        env:
+          POLYLANG_VERSION: ${{ startsWith(format('{0}', matrix.php), '7.4') && '3.7.7' || 'latest' }}
         run: |
           chmod +x ./bin/install-wp-tests.sh
-          ./bin/install-wp-tests.sh wordpress_test root root localhost ${{ matrix.wp-version }} ${{ matrix.wc-version }}
+          ./bin/install-wp-tests.sh wordpress_test root root localhost ${{ matrix.wp-version }} ${{ matrix.wc-version }} $POLYLANG_VERSION
 
       - name: Run PHP unit tests with coverage
         id: phpunit
