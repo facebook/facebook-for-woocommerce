@@ -593,7 +593,8 @@ class WCFacebookCommerceIntegrationTest extends \WooCommerce\Facebook\Tests\Abst
 			->with(
 				array_map(
 					function ( $id ) {
-						return 'wc_post_id_' . $id;
+						$variation = wc_get_product( $id );
+						return \WC_Facebookcommerce_Utils::get_fb_retailer_id( $variation );
 					},
 					$parent_to_delete->get_children()
 				)
