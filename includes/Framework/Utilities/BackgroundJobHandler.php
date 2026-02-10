@@ -58,6 +58,12 @@ abstract class BackgroundJobHandler extends AsyncRequest {
 	/** @var string debug message, used by the system status tool */
 	protected $debug_message;
 
+	/** @var string transient key for caching queue empty status */
+	protected $queue_empty_cache_key;
+
+	/** @var string transient key for caching sync in progress status */
+	protected $sync_in_progress_cache_key;
+
 
 	/**
 	 * Initiate new background job handler
@@ -66,8 +72,10 @@ abstract class BackgroundJobHandler extends AsyncRequest {
 	 */
 	public function __construct() {
 		parent::__construct();
-		$this->cron_hook_identifier     = $this->identifier . '_cron';
-		$this->cron_interval_identifier = $this->identifier . '_cron_interval';
+		$this->cron_hook_identifier       = $this->identifier . '_cron';
+		$this->cron_interval_identifier   = $this->identifier . '_cron_interval';
+		$this->queue_empty_cache_key      = $this->identifier . '_queue_empty';
+		$this->sync_in_progress_cache_key = $this->identifier . '_sync_in_progress';
 		$this->add_hooks();
 	}
 
@@ -165,10 +173,26 @@ abstract class BackgroundJobHandler extends AsyncRequest {
 	/**
 	 * Check whether job queue is empty or not
 	 *
+	 * Uses transient caching to avoid expensive database queries on every request.
+	 * The cache is invalidated when jobs are created, updated, or completed.
+	 *
 	 * @since 4.4.0
 	 * @return bool True if queue is empty, false otherwise
 	 */
 	protected function is_queue_empty() {
+		// Skip expensive query on frontend - only needed in admin/ajax/cron/process contexts.
+		// The method runs if ANY of these is true: is_admin(), wp_doing_ajax(), wp_doing_cron(), or is_process_request().
+		// On pure frontend requests (none of those conditions), we return true to skip the expensive query.
+		if ( ! is_admin() && ! wp_doing_ajax() && ! wp_doing_cron() && ! $this->is_process_request() ) {
+			return true; // Assume empty on frontend to avoid query
+		}
+
+		// Check cache first
+		$cached = get_transient( $this->queue_empty_cache_key );
+		if ( false !== $cached ) {
+			return 'empty' === $cached;
+		}
+
 		global $wpdb;
 
 		$key = $this->identifier . '_job_%';
@@ -189,7 +213,41 @@ abstract class BackgroundJobHandler extends AsyncRequest {
 			)
 		);
 
-		return intval( $count ) === 0;
+		$is_empty = intval( $count ) === 0;
+
+		// Cache the result for 1 hour as a safety net - it will be invalidated when job status changes
+		set_transient( $this->queue_empty_cache_key, $is_empty ? 'empty' : 'not_empty', HOUR_IN_SECONDS );
+
+		return $is_empty;
+	}
+
+	/**
+	 * Invalidate the queue empty cache.
+	 *
+	 * Should be called when job status changes (create, update, complete, fail, delete).
+	 *
+	 * @since 3.5.0
+	 */
+	protected function invalidate_queue_cache() {
+		delete_transient( $this->queue_empty_cache_key );
+		delete_transient( $this->sync_in_progress_cache_key );
+		// Also clear the is_sync_in_progress cache used by Sync class
+		delete_transient( 'wc_facebook_sync_in_progress' );
+	}
+
+
+	/**
+	 * Check whether the current request is a background process request.
+	 *
+	 * Checks if the request action matches this handler's identifier,
+	 * indicating it's an actual background processing request.
+	 *
+	 * @since 3.5.0
+	 * @return bool True if this is a background process request, false otherwise
+	 */
+	protected function is_process_request() {
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Nonce verified in maybe_handle()
+		return isset( $_REQUEST['action'] ) && $_REQUEST['action'] === $this->identifier;
 	}
 
 
@@ -396,6 +454,9 @@ abstract class BackgroundJobHandler extends AsyncRequest {
 			]
 		);
 
+		// Invalidate cache since a new job was created
+		$this->invalidate_queue_cache();
+
 		$job = new \stdClass();
 
 		foreach ( $attrs as $key => $value ) {
@@ -480,6 +541,9 @@ abstract class BackgroundJobHandler extends AsyncRequest {
 	/**
 	 * Gets jobs.
 	 *
+	 * Uses transient caching for common queries (like checking for processing jobs)
+	 * to avoid expensive database queries on every request.
+	 *
 	 * @since 4.4.2
 	 *
 	 * @param array $args {
@@ -488,6 +552,7 @@ abstract class BackgroundJobHandler extends AsyncRequest {
 	 *     @type string|array $status Job status(es) to include
 	 *     @type string $order ASC or DESC. Defaults to DESC
 	 *     @type string $orderby Field to order by. Defaults to option_id
+	 *     @type bool $use_cache Whether to use caching. Defaults to true.
 	 * }
 	 * @return \stdClass[]|object[]|null Found jobs or null if none found
 	 */
@@ -501,6 +566,13 @@ abstract class BackgroundJobHandler extends AsyncRequest {
 				'orderby' => 'option_id',
 			]
 		);
+
+		// Skip expensive query on frontend - only needed in admin/ajax/cron contexts.
+		// The method runs if ANY of these is true: is_admin(), wp_doing_ajax(), or wp_doing_cron().
+		// On pure frontend requests (none of those conditions), we return null to skip the expensive query.
+		if ( ! is_admin() && ! wp_doing_ajax() && ! wp_doing_cron() ) {
+			return null; // Return no jobs on frontend to avoid query
+		}
 
 		$replacements = [ $this->identifier . '_job_%' ];
 		$status_query = '';
@@ -615,7 +687,8 @@ abstract class BackgroundJobHandler extends AsyncRequest {
 			$job->status                = 'processing';
 			$job->started_processing_at = current_time( 'mysql' );
 
-			$job = $this->update_job( $job );
+			// Invalidate cache when status changes to processing
+			$job = $this->update_job( $job, true );
 		}
 
 		$data_key = $this->data_key;
@@ -684,9 +757,11 @@ abstract class BackgroundJobHandler extends AsyncRequest {
 	 * @since 4.4.0
 	 *
 	 * @param \stdClass|object|string $job Job instance or ID
+	 * @param bool                    $invalidate_cache Whether to invalidate the queue cache. Defaults to false
+	 *                                                   to avoid cache thrashing during progress updates.
 	 * @return \stdClass|object|false on failure
 	 */
-	public function update_job( $job ) {
+	public function update_job( $job, $invalidate_cache = false ) {
 		if ( is_string( $job ) ) {
 			$job = $this->get_job( $job );
 		}
@@ -695,6 +770,13 @@ abstract class BackgroundJobHandler extends AsyncRequest {
 		}
 		$job->updated_at = current_time( 'mysql' );
 		$this->update_job_option( $job );
+
+		// Only invalidate cache when explicitly requested (e.g., status changes)
+		// to avoid cache thrashing during frequent progress updates
+		if ( $invalidate_cache ) {
+			$this->invalidate_queue_cache();
+		}
+
 		/**
 		 * Runs when a job is updated.
 		 *
@@ -725,6 +807,10 @@ abstract class BackgroundJobHandler extends AsyncRequest {
 		$job->status       = 'completed';
 		$job->completed_at = current_time( 'mysql' );
 		$this->update_job_option( $job );
+
+		// Invalidate cache since job status changed
+		$this->invalidate_queue_cache();
+
 		/**
 		 * Runs when a job is completed.
 		 *
@@ -763,6 +849,10 @@ abstract class BackgroundJobHandler extends AsyncRequest {
 			$job->failure_reason = $reason;
 		}
 		$this->update_job_option( $job );
+
+		// Invalidate cache since job status changed
+		$this->invalidate_queue_cache();
+
 		/**
 		 * Runs when a job is failed.
 		 *
@@ -792,6 +882,10 @@ abstract class BackgroundJobHandler extends AsyncRequest {
 			return false;
 		}
 		$wpdb->delete( $wpdb->options, [ 'option_name' => "{$this->identifier}_job_{$job->id}" ] );
+
+		// Invalidate cache since a job was deleted
+		$this->invalidate_queue_cache();
+
 		/**
 		* Runs after a job is deleted.
 		*

@@ -146,10 +146,11 @@ class DebugToolsTest extends AbstractWPUnitTestWithOptionIsolationAndSafeFilteri
 		global $wpdb;
 		
 		// Insert test options directly into database
+		// Use correct naming pattern: wc_facebook_background_product_sync_job_{id}
 		$wpdb->insert( 
 			$wpdb->options, 
 			[
-				'option_name' => 'wc_facebook_background_product_sync_1',
+				'option_name' => 'wc_facebook_background_product_sync_job_abc123',
 				'option_value' => 'test_value_1',
 				'autoload' => 'yes'
 			]
@@ -157,7 +158,7 @@ class DebugToolsTest extends AbstractWPUnitTestWithOptionIsolationAndSafeFilteri
 		$wpdb->insert( 
 			$wpdb->options, 
 			[
-				'option_name' => 'wc_facebook_background_product_sync_2',
+				'option_name' => 'wc_facebook_background_product_sync_job_def456',
 				'option_value' => 'test_value_2',
 				'autoload' => 'yes'
 			]
@@ -177,9 +178,9 @@ class DebugToolsTest extends AbstractWPUnitTestWithOptionIsolationAndSafeFilteri
 		// Check result message
 		$this->assertEquals( 'Background sync jobs have been deleted.', $result );
 		
-		// Verify background sync options were deleted
-		$sync_option_1 = $wpdb->get_var( "SELECT option_value FROM {$wpdb->options} WHERE option_name = 'wc_facebook_background_product_sync_1'" );
-		$sync_option_2 = $wpdb->get_var( "SELECT option_value FROM {$wpdb->options} WHERE option_name = 'wc_facebook_background_product_sync_2'" );
+		// Verify background sync job options were deleted
+		$sync_option_1 = $wpdb->get_var( "SELECT option_value FROM {$wpdb->options} WHERE option_name = 'wc_facebook_background_product_sync_job_abc123'" );
+		$sync_option_2 = $wpdb->get_var( "SELECT option_value FROM {$wpdb->options} WHERE option_name = 'wc_facebook_background_product_sync_job_def456'" );
 		$this->assertNull( $sync_option_1 );
 		$this->assertNull( $sync_option_2 );
 		
@@ -189,6 +190,25 @@ class DebugToolsTest extends AbstractWPUnitTestWithOptionIsolationAndSafeFilteri
 		
 		// Clean up
 		$wpdb->delete( $wpdb->options, [ 'option_name' => 'other_option' ] );
+	}
+
+	/**
+	 * Test clean_up_old_background_sync_options also invalidates cache transients.
+	 */
+	public function test_clean_up_old_background_sync_options_invalidates_cache() {
+		// Set up cache transients that would be used by the background job handler
+		set_transient( 'wc_facebook_background_product_sync_queue_empty', 'not_empty', 0 );
+		set_transient( 'wc_facebook_background_product_sync_sync_in_progress', 'has_jobs', 0 );
+
+		$debug_tools = new DebugTools();
+		$debug_tools->clean_up_old_background_sync_options();
+
+		// Verify cache transients were cleared
+		$queue_cache = get_transient( 'wc_facebook_background_product_sync_queue_empty' );
+		$sync_cache  = get_transient( 'wc_facebook_background_product_sync_sync_in_progress' );
+
+		$this->assertFalse( $queue_cache, 'Queue empty cache should be invalidated' );
+		$this->assertFalse( $sync_cache, 'Sync in progress cache should be invalidated' );
 	}
 
 	/**
