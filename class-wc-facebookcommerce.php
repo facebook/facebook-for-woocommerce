@@ -190,6 +190,7 @@ class WC_Facebookcommerce extends WooCommerce\Facebook\Framework\Plugin {
 
 		add_action( 'woocommerce_init', array( $this, 'add_whatsapp_consent_block_checkout_fields' ) );
 		add_filter( 'woocommerce_checkout_fields', array( $this, 'add_whatsapp_consent_classic_checkout_fields' ) );
+		add_action('wp_footer', array( $this, 'simple_woocommerce_modal'));
 
 		// Hook the setup task. The hook admin_init is not triggered when the WC fetches the tasks using the endpoint: wp-json/wc-admin/onboarding/tasks and hence hooking into init.
 		add_action( 'init', array( $this, 'add_setup_task' ), 20 );
@@ -289,6 +290,33 @@ class WC_Facebookcommerce extends WooCommerce\Facebook\Framework\Plugin {
 			0
 		);
 	}
+
+	function simple_woocommerce_modal() {
+    ?>
+    <style>
+        .woo-modal { display:none; position:fixed; z-index:9999; left:0; top:0; width:100%; height:100%; background:rgba(0,0,0,0.6); }
+        .woo-modal-content { background:#fff; margin:15% auto; padding:30px; max-width:450px; border-radius:8px; text-align:center; }
+        .woo-modal-close { float:right; font-size:24px; cursor:pointer; }
+    </style>
+
+    <div id="woo-modal" class="woo-modal">
+        <div class="woo-modal-content">
+            <span class="woo-modal-close">&times;</span>
+            <h2>Welcome!</h2>
+            <p>Get 10% off your first order!</p>
+        </div>
+    </div>
+
+    <script>
+    jQuery(function($){
+        setTimeout(function(){ $('#woo-modal').fadeIn(); }, 2000);
+        $('.woo-modal-close, .woo-modal').click(function(e){
+            if(e.target === this) $('#woo-modal').fadeOut();
+        });
+    });
+    </script>
+    <?php
+}
 
 
 	/**
