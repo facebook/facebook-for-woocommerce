@@ -78,8 +78,8 @@ class WCFacebookCommerceIntegrationTest extends \WooCommerce\Facebook\Tests\Abst
 			->willReturn( $this->api );
 		$this->facebook_for_woocommerce->method('get_rollout_switches')
 			->willReturn($this->rollout_switches);
-		
-		
+
+
 
 		$this->integration = new WC_Facebookcommerce_Integration( $this->facebook_for_woocommerce );
 
@@ -551,7 +551,7 @@ class WCFacebookCommerceIntegrationTest extends \WooCommerce\Facebook\Tests\Abst
 		// Verify Facebook-specific fields were saved
 		$facebook_product_to_update = new WC_Facebook_Product( $product_to_update->get_id() );
 		$updated_product_data = $facebook_product_to_update->prepare_product(null, \WC_Facebook_Product::PRODUCT_PREP_TYPE_ITEMS_BATCH );
-		
+
 		$this->assertEquals( 'Facebook product description.', get_post_meta( $facebook_product_to_update->get_id(), WC_Facebook_Product::FB_PRODUCT_DESCRIPTION, true ) );
 		$this->assertEquals( 'Facebook product description.', get_post_meta( $facebook_product_to_update->get_id(), WC_Facebook_Product::FB_RICH_TEXT_DESCRIPTION, true ) );
 
@@ -593,7 +593,8 @@ class WCFacebookCommerceIntegrationTest extends \WooCommerce\Facebook\Tests\Abst
 			->with(
 				array_map(
 					function ( $id ) {
-						return 'wc_post_id_' . $id;
+						$variation = wc_get_product( $id );
+						return \WC_Facebookcommerce_Utils::get_fb_retailer_id( $variation );
 					},
 					$parent_to_delete->get_children()
 				)
@@ -853,7 +854,7 @@ class WCFacebookCommerceIntegrationTest extends \WooCommerce\Facebook\Tests\Abst
 
 		$this->integration->on_product_publish( $product->get_id() );
 	}
-	
+
 	/**
 	 * Tests update of existing variable product.
 	 *
@@ -965,7 +966,7 @@ class WCFacebookCommerceIntegrationTest extends \WooCommerce\Facebook\Tests\Abst
 				$requests
 			)
 			->willReturn( new API\ProductCatalog\ItemsBatch\Create\Response( '{"handles":"abcxyz"}' ) );
-		
+
 		/**
 		 * In this update we are removing the dependency on fbid.
 		 * Hence if the handles exist, then the return is an empty string.
@@ -1984,7 +1985,7 @@ class WCFacebookCommerceIntegrationTest extends \WooCommerce\Facebook\Tests\Abst
 			WC_Facebookcommerce_Integration::SETTING_EXCLUDED_PRODUCT_TAG_IDS,
 			[ ]
 		);
-		
+
 		$tags = $this->integration->get_excluded_product_tag_ids();
 
 		$this->assertEquals( [  ], $tags );
@@ -2708,7 +2709,7 @@ class WCFacebookCommerceIntegrationTest extends \WooCommerce\Facebook\Tests\Abst
 		$product->add_meta_data( WC_Facebookcommerce_Integration::FB_PRODUCT_ITEM_ID, 'some-facebook-product-group-id' );
 		$product->add_meta_data( Products::VISIBILITY_META_KEY, 'no' );
 		$product->save_meta_data();
-	
+
 		$sync_handler = $this->createMock( Products\Sync::class );
 		$sync_handler->expects( $this->once() )
 			->method( 'create_or_update_products' )
