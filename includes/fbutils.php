@@ -210,7 +210,7 @@ if ( ! class_exists( 'WC_Facebookcommerce_Utils' ) ) :
 			 * @param string     Facebook Retailer ID.
 			 * @param WC_Product WooCommerce product.
 			 */
-			return apply_filters( 'wc_facebook_fb_retailer_id', $woo_id, $woo_product );
+			return apply_filters( 'wc_facebook_fb_retailer_id', (string) $woo_id, $woo_product );
 		}
 
 		/**
