@@ -2,7 +2,7 @@
 /**
  * Test file for variation custom video URL functionality
  *
- * @package FacebookCommerce
+ * @package MetaCommerce
  */
 
 namespace WooCommerce\Facebook\Tests\Unit;

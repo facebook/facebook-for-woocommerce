@@ -5,11 +5,11 @@
  * This source code is licensed under the license found in the
  * LICENSE file in the root directory of this source tree.
  *
- * Plugin Name: Facebook for WooCommerce
+ * Plugin Name: Meta for WooCommerce
  * Plugin URI: https://github.com/woocommerce/facebook-for-woocommerce/
- * Description: Grow your business on Facebook! Use this official plugin to help sell more of your products using Facebook. After completing the setup, you'll be ready to create ads that promote your products and you can also create a shop section on your Page where customers can browse your products on Facebook.
- * Author: Facebook
- * Author URI: https://www.facebook.com/
+ * Description: Grow your business on Meta platforms! Use this official plugin to help sell more of your products using Facebook and Instagram. After completing the setup, you'll be ready to create ads that promote your products and you can also create a shop section on your Page where customers can browse your products.
+ * Author: Meta
+ * Author URI: https://www.meta.com/
  * Version: 3.5.16
  * Requires at least: 5.6
  * Requires PHP: 7.4
@@ -19,7 +19,7 @@
  * WC requires at least: 6.4
  * WC tested up to: 10.3.6
  *
- * @package FacebookCommerce
+ * @package MetaCommerce
  */
 
 require_once __DIR__ . '/vendor/autoload.php';
@@ -77,7 +77,7 @@ class WC_Facebook_Loader {
 	const FRAMEWORK_VERSION = '5.10.0';
 
 	// The plugin name, for displaying notices.
-	const PLUGIN_NAME = 'Facebook for WooCommerce';
+	const PLUGIN_NAME = 'Meta for WooCommerce';
 
 
 	/**

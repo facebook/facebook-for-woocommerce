@@ -25,7 +25,7 @@ const {
   uninstallMonitoringPlugin
 } = require('./helpers/js');
 
-test.describe('Facebook for WooCommerce - Product Batch Import E2E Tests', () => {
+test.describe('Meta for WooCommerce - Product Batch Import E2E Tests', () => {
 
   test.beforeEach(async ({ page }, testInfo) => {
     // Log test start first for proper chronological order

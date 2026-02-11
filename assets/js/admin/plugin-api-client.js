@@ -1,7 +1,7 @@
 /**
  * Facebook for WooCommerce API
  *
- * @package FacebookCommerce
+ * @package MetaCommerce
  */
 
 /* global jQuery, fb_api_data */
