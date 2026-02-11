@@ -35,7 +35,7 @@ class DependenciesTest extends AbstractWPUnitTestWithOptionIsolationAndSafeFilte
 		$this->plugin = $this->createMock( Plugin::class );
 		
 		// Set up basic plugin mock methods
-		$this->plugin->method( 'get_plugin_name' )->willReturn( 'Facebook for WooCommerce' );
+		$this->plugin->method( 'get_plugin_name' )->willReturn( 'Meta for WooCommerce' );
 		$this->plugin->method( 'get_id' )->willReturn( 'facebook_for_woocommerce' );
 		$this->plugin->method( 'get_id_dasherized' )->willReturn( 'facebook-for-woocommerce' );
 		

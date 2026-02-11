@@ -1,4 +1,4 @@
-*** Facebook for WooCommerce Changelog ***
+*** Meta for WooCommerce Changelog ***
 
 = 3.5.16 - 2026-02-03 =
 * Fix - Fix/collection page bugs - Batch 1 by @vahidkay-meta in #3837

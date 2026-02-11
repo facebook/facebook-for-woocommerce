@@ -19,7 +19,7 @@ async function openFacebookOptions(page) {
 
   if (!facebookTabExists) {
     console.warn('⚠️ Facebook tab not found. This might indicate:');
-    console.warn('   - Facebook for WooCommerce plugin not properly activated');
+    console.warn('   - Meta for WooCommerce plugin not properly activated');
     console.warn('   - Plugin not connected to Facebook catalog');
 
     await safeScreenshot(page, 'facebook-tab-not-found.png');

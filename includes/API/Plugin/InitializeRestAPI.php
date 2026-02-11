@@ -2,7 +2,7 @@
 /**
  * REST API Initialization
  *
- * @package FacebookCommerce
+ * @package MetaCommerce
  */
 
 namespace WooCommerce\Facebook\API\Plugin;
