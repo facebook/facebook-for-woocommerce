@@ -92,7 +92,7 @@ class Settings {
 
 		add_submenu_page(
 			$root_menu_item,
-			__( 'Facebook for WooCommerce', 'facebook-for-woocommerce' ),
+			__( 'Meta for WooCommerce', 'facebook-for-woocommerce' ),
 			__( 'Facebook', 'facebook-for-woocommerce' ),
 			'manage_woocommerce',
 			self::PAGE_ID,
@@ -145,7 +145,7 @@ class Settings {
 
 		if ( is_callable( 'wc_admin_connect_page' ) ) {
 			$crumbs = array(
-				__( 'Facebook for WooCommerce', 'facebook-for-woocommerce' ),
+				__( 'Meta for WooCommerce', 'facebook-for-woocommerce' ),
 			);
 			//phpcs:ignore WordPress.Security.NonceVerification.Recommended
 			if ( ! empty( $_GET['tab'] ) ) {
@@ -196,7 +196,7 @@ class Settings {
 	}
 
 	/**
-	 * Render the Facebook for WooCommerce extension navigation tabs.
+	 * Render the Meta for WooCommerce extension navigation tabs.
 	 *
 	 * @since 3.3.0
 	 *

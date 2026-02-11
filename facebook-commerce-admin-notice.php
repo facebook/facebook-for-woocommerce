@@ -11,7 +11,7 @@
 /**
  * Class WC_Facebook_Admin_Notice
  *
- * Adds a dismissible global admin notice for Facebook for WooCommerce.
+ * Adds a dismissible global admin notice for Meta for WooCommerce.
  *
  * @since 3.5.2
  */

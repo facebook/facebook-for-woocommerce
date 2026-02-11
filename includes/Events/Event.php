@@ -34,7 +34,7 @@ class Event {
 	 * @return array {
 	 *     @type string source 'woocommerce'
 	 *     @type string version WooCommerce's version
-	 *     @type string pluginVersion Facebook for WooCommerce's version
+	 *     @type string pluginVersion Meta for WooCommerce's version
 	 * }
 	 */
 	public static function get_version_info() {

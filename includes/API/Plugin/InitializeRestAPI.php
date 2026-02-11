@@ -97,7 +97,7 @@ class InitializeRestAPI {
 				}
 			} catch ( \Exception $e ) {
 				// Log error but continue with other requests
-				error_log( 'Facebook for WooCommerce: Error creating request class ' . $request_class . ': ' . $e->getMessage() );
+				error_log( 'Meta for WooCommerce: Error creating request class ' . $request_class . ': ' . $e->getMessage() );
 			}
 		}
 		return $api_definitions;
