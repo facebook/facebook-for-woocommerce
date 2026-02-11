@@ -10,5 +10,8 @@
 
 namespace WooCommerce\Facebook\FBSignedData;
 
+/**
+ * Exception class for JWTExpiredException.
+ */
 class JWTExpiredException extends \UnexpectedValueException {
 }

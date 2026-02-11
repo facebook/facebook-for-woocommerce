@@ -10,5 +10,8 @@
 
 namespace WooCommerce\Facebook\FBSignedData;
 
+/**
+ * Exception class for JWTSignatureInvalidException.
+ */
 class JWTSignatureInvalidException extends \UnexpectedValueException {
 }

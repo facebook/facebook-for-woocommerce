@@ -109,13 +109,17 @@ class JWTCodec {
 	 * @param string $private_key The PEM-encoded private key.
 	 * @param string $algorithm   The signing algorithm (e.g. 'ES256').
 	 * @return string The JWT string.
+	 * @throws \DomainException In case no product found.
 	 */
 	public static function encode( array $payload, string $private_key, string $algorithm ): string {
 		if ( ! isset( self::SUPPORTED_ALGS[ $algorithm ] ) ) {
 			throw new \DomainException( 'Algorithm not supported: ' . $algorithm );
 		}
 
-		$header   = [ 'typ' => 'JWT', 'alg' => $algorithm ];
+		$header   = [
+			'typ' => 'JWT',
+			'alg' => $algorithm,
+		];
 		$segments = [];
 
 		$segments[] = self::urlsafe_b64_encode( (string) wp_json_encode( $header ) );
