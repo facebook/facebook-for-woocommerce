@@ -26,7 +26,9 @@ class E2E_Event_Logger {
         array_walk_recursive($data['custom_data'], function(&$value) {
             if (is_string($value)) {
                 $decoded = json_decode($value, true);
-                if (json_last_error() === JSON_ERROR_NONE && $decoded !== $value) {
+                // Only replace if the decoded value is an array/object (i.e., it was a JSON-encoded structure).
+                // Don't replace scalar strings like "11" with integer 11.
+                if (json_last_error() === JSON_ERROR_NONE && is_array($decoded)) {
                     $value = $decoded;
                 }
             }
