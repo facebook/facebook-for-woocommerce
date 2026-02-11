@@ -8,7 +8,7 @@
  */
 
 use WooCommerce\Facebook\Tests\AbstractWPUnitTestWithOptionIsolationAndSafeFiltering;
-use Firebase\JWT\JWT;
+use WooCommerce\Facebook\FBSignedData\JWTCodec;
 use WooCommerce\Facebook\FBSignedData\PublicKeyStorageHelper;
 use WooCommerce\Facebook\FBSignedData\FBPublicKey;
 use WooCommerce\Facebook\OfferManagement\OfferManagementEndpointBase;
@@ -57,8 +57,7 @@ abstract class OfferManagementAPITestBase extends AbstractWPUnitTestWithOptionIs
 		$request = new WP_REST_Request($method, $route);
 
 
-		// @todo Remove error suppression once firebase/php-jwt fixes the implicitly nullable parameters (PHP 8.4).
-		$jwt = @JWT::encode($params, $this->private_key, 'ES256');
+		$jwt = JWTCodec::encode($params, $this->private_key, 'ES256');
 		$encoded_params = ['jwt_params' => $jwt];
 
 		if ('POST' === $method) {
