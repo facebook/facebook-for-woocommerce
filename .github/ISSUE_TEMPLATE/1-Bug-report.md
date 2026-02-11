@@ -1,6 +1,6 @@
 ---
 name: "🐛 Bug report"
-about: "Report a bug or security issue in the Facebook for WooCommerce extension."
+about: "Report a bug or security issue in the Meta for WooCommerce extension."
 title: ''
 labels: ''
 assignees: ''
@@ -10,8 +10,8 @@ assignees: ''
 ## 🔎 Isolate the bug
 <!-- Mark completed isolation steps with an [X] -->
 
-- [ ] I have confirmed this occurs in the most recent version of WordPress, WooCommerce, and Facebook for WooCommerce.
-- [ ] I have confirmed this occurs when only WooCommerce and Facebook for WooCommerce are active and when using a default WordPress or WooCommerce theme.
+- [ ] I have confirmed this occurs in the most recent version of WordPress, WooCommerce, and Meta for WooCommerce.
+- [ ] I have confirmed this occurs when only WooCommerce and Meta for WooCommerce are active and when using a default WordPress or WooCommerce theme.
 
 ## ✍️ Describe the bug
 <!-- Describe the bug in detail. Feel free to add appropriate screenshots that display the bug! -->
