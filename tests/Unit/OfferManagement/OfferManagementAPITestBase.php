@@ -57,7 +57,8 @@ abstract class OfferManagementAPITestBase extends AbstractWPUnitTestWithOptionIs
 		$request = new WP_REST_Request($method, $route);
 
 
-		$jwt = JWT::encode($params, $this->private_key, 'ES256');
+		// @todo Remove error suppression once firebase/php-jwt fixes the implicitly nullable parameters (PHP 8.4).
+		$jwt = @JWT::encode($params, $this->private_key, 'ES256');
 		$encoded_params = ['jwt_params' => $jwt];
 
 		if ('POST' === $method) {
