@@ -2727,7 +2727,7 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 	}
 
 	/**
-	 * Determines whether Facebook for WooCommerce is configured.
+	 * Determines whether Meta for WooCommerce is configured.
 	 *
 	 * @return bool
 	 * @since 1.10.0

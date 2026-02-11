@@ -18,7 +18,7 @@ defined( 'ABSPATH' ) || exit;
 
 /**
  * The rollout switches is used to control available
- * features in the Facebook for WooCommerce plugin.
+ * features in the Meta for WooCommerce plugin.
  */
 class RolloutSwitches {
 	/** @var \WC_Facebookcommerce commerce handler */

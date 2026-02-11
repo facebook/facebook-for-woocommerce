@@ -209,7 +209,7 @@ class Global_Attributes_Banner {
 		?>
 		<div class="notice notice-info is-dismissible fb-unmapped-attribute-banner" style="position: relative;">
 			<p>
-				<strong><?php esc_html_e( 'Facebook for WooCommerce', 'facebook-for-woocommerce' ); ?></strong>
+				<strong><?php esc_html_e( 'Meta for WooCommerce', 'facebook-for-woocommerce' ); ?></strong>
 			</p>
 			<p>
 				<?php

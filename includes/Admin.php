@@ -1360,7 +1360,7 @@ class Admin {
 		?>
 		<div class="facebook-metabox wc-metabox closed">
 			<h3>
-				<strong><?php esc_html_e( 'Facebook for WooCommerce', 'facebook-for-woocommerce' ); ?></strong>
+				<strong><?php esc_html_e( 'Meta for WooCommerce', 'facebook-for-woocommerce' ); ?></strong>
 				<div class="handlediv" aria-label="<?php esc_attr_e( 'Click to toggle', 'facebook-for-woocommerce' ); ?>"></div>
 			</h3>
 			<div class="wc-metabox-content" style="display: none;">
@@ -1810,7 +1810,7 @@ class Admin {
 				<div class="wc-backbone-modal-content">
 					<section class="wc-backbone-modal-main" role="main">
 						<header class="wc-backbone-modal-header">
-							<h1><?php esc_html_e( 'Facebook for WooCommerce', 'facebook-for-woocommerce' ); ?></h1>
+							<h1><?php esc_html_e( 'Meta for WooCommerce', 'facebook-for-woocommerce' ); ?></h1>
 							<button class="modal-close modal-close-link dashicons dashicons-no-alt">
 								<span class="screen-reader-text"><?php esc_html_e( 'Close modal panel', 'facebook-for-woocommerce' ); ?></span>
 							</button>
