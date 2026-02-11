@@ -114,7 +114,8 @@ class RequestVerification {
 
 	private static function decode_jwt_with_public_key( string $jwt, FBPublicKey $fb_public_key ): array {
 		$jwt_key  = new Key( $fb_public_key->get_key(), $fb_public_key->get_algorithm() );
-		$jwt_data = JWT::decode( $jwt, $jwt_key );
+		// @todo Remove error suppression once firebase/php-jwt fixes the implicitly nullable $headers parameter (PHP 8.4).
+		$jwt_data = @JWT::decode( $jwt, $jwt_key );
 		return json_decode( wp_json_encode( $jwt_data ), true );
 	}
 
