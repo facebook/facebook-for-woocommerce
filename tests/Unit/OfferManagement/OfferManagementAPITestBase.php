@@ -20,7 +20,7 @@ use WooCommerce\Facebook\RolloutSwitches;
 /**
  * Class FBPublicKeyTest
  */
-class OfferManagementAPITestBase extends AbstractWPUnitTestWithOptionIsolationAndSafeFiltering
+abstract class OfferManagementAPITestBase extends AbstractWPUnitTestWithOptionIsolationAndSafeFiltering
 {
     const CATALOG_ID = 'test_catalog_id';
 	const KEY_NAME = 'test_key_name';

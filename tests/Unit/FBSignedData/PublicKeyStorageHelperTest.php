@@ -132,7 +132,7 @@ class PublicKeyStorageHelperTest extends AbstractWPUnitTestWithOptionIsolationAn
 	/**
 	 * Test that get_current_public_key returns null when option is not set.
 	 *
-	 * @covers PublicKeyStorageHelper::get_current_public_key
+	 * @covers \WooCommerce\Facebook\FBSignedData\PublicKeyStorageHelper::get_current_public_key
 	 */
 	public function test_get_current_public_key_when_not_set(): void {
 		$this->assertFalse(get_option(PublicKeyStorageHelper::SETTING_CURRENT_PUBLIC_KEY));
@@ -142,7 +142,7 @@ class PublicKeyStorageHelperTest extends AbstractWPUnitTestWithOptionIsolationAn
 	/**
 	 * Test that get_next_public_key returns null when option is not set.
 	 *
-	 * @covers PublicKeyStorageHelper::get_next_public_key
+	 * @covers \WooCommerce\Facebook\FBSignedData\PublicKeyStorageHelper::get_next_public_key
 	 */
 	public function test_get_next_public_key_when_not_set(): void {
 		$this->assertFalse(get_option(PublicKeyStorageHelper::SETTING_NEXT_PUBLIC_KEY));
@@ -152,7 +152,7 @@ class PublicKeyStorageHelperTest extends AbstractWPUnitTestWithOptionIsolationAn
 	/**
 	 * Test that get_current_public_key returns null with invalid data.
 	 *
-	 * @covers PublicKeyStorageHelper::get_current_public_key
+	 * @covers \WooCommerce\Facebook\FBSignedData\PublicKeyStorageHelper::get_current_public_key
 	 */
 	public function test_get_current_public_key_with_invalid_data(): void {
 		// Test with non-array data
@@ -204,7 +204,7 @@ class PublicKeyStorageHelperTest extends AbstractWPUnitTestWithOptionIsolationAn
 	/**
 	 * Test that get_next_public_key returns null with invalid data.
 	 *
-	 * @covers PublicKeyStorageHelper::get_next_public_key
+	 * @covers \WooCommerce\Facebook\FBSignedData\PublicKeyStorageHelper::get_next_public_key
 	 */
 	public function test_get_next_public_key_with_invalid_data(): void {
 		// Test with non-array data
@@ -256,7 +256,7 @@ class PublicKeyStorageHelperTest extends AbstractWPUnitTestWithOptionIsolationAn
 	/**
 	 * Test that keys are not stored when project name is empty.
 	 *
-	 * @covers PublicKeyStorageHelper::request_and_store_public_key
+	 * @covers \WooCommerce\Facebook\FBSignedData\PublicKeyStorageHelper::request_and_store_public_key
 	 */
 	public function test_request_and_store_with_empty_project_name(): void {
 		$this->assertFalse(get_option(PublicKeyStorageHelper::SETTING_CURRENT_PUBLIC_KEY));
@@ -275,7 +275,7 @@ class PublicKeyStorageHelperTest extends AbstractWPUnitTestWithOptionIsolationAn
 	/**
 	 * Test that keys with missing required fields are not stored.
 	 *
-	 * @covers PublicKeyStorageHelper::request_and_store_public_key
+	 * @covers \WooCommerce\Facebook\FBSignedData\PublicKeyStorageHelper::request_and_store_public_key
 	 */
 	public function test_request_and_store_with_missing_key_fields(): void {
 		// Test with missing 'key' field
@@ -309,7 +309,7 @@ class PublicKeyStorageHelperTest extends AbstractWPUnitTestWithOptionIsolationAn
 	/**
 	 * Test that keys with empty string values are not stored.
 	 *
-	 * @covers PublicKeyStorageHelper::request_and_store_public_key
+	 * @covers \WooCommerce\Facebook\FBSignedData\PublicKeyStorageHelper::request_and_store_public_key
 	 */
 	public function test_request_and_store_with_empty_string_values(): void {
 		// Test with empty key string
@@ -346,7 +346,7 @@ class PublicKeyStorageHelperTest extends AbstractWPUnitTestWithOptionIsolationAn
 	/**
 	 * Test that get_current_public_key returns correct FBPublicKey object.
 	 *
-	 * @covers PublicKeyStorageHelper::get_current_public_key
+	 * @covers \WooCommerce\Facebook\FBSignedData\PublicKeyStorageHelper::get_current_public_key
 	 */
 	public function test_get_current_public_key_returns_correct_fbpublickey_object(): void {
 		$key_data = array_merge(self::MOCK_CURRENT_PUBLIC_KEY, ['project' => self::PROJECT_NAME]);
@@ -364,7 +364,7 @@ class PublicKeyStorageHelperTest extends AbstractWPUnitTestWithOptionIsolationAn
 	/**
 	 * Test that get_next_public_key returns correct FBPublicKey object.
 	 *
-	 * @covers PublicKeyStorageHelper::get_next_public_key
+	 * @covers \WooCommerce\Facebook\FBSignedData\PublicKeyStorageHelper::get_next_public_key
 	 */
 	public function test_get_next_public_key_returns_correct_fbpublickey_object(): void {
 		$key_data = array_merge(self::MOCK_NEXT_PUBLIC_KEY, ['project' => self::PROJECT_NAME]);
@@ -382,7 +382,7 @@ class PublicKeyStorageHelperTest extends AbstractWPUnitTestWithOptionIsolationAn
 	/**
 	 * Test storing only current key when next key is null.
 	 *
-	 * @covers PublicKeyStorageHelper::request_and_store_public_key
+	 * @covers \WooCommerce\Facebook\FBSignedData\PublicKeyStorageHelper::request_and_store_public_key
 	 */
 	public function test_request_and_store_only_current_key(): void {
 		$this->assertFalse(get_option(PublicKeyStorageHelper::SETTING_CURRENT_PUBLIC_KEY));
@@ -406,7 +406,7 @@ class PublicKeyStorageHelperTest extends AbstractWPUnitTestWithOptionIsolationAn
 	/**
 	 * Test storing only next key when current key is null.
 	 *
-	 * @covers PublicKeyStorageHelper::request_and_store_public_key
+	 * @covers \WooCommerce\Facebook\FBSignedData\PublicKeyStorageHelper::request_and_store_public_key
 	 */
 	public function test_request_and_store_only_next_key(): void {
 		$this->assertFalse(get_option(PublicKeyStorageHelper::SETTING_CURRENT_PUBLIC_KEY));
@@ -430,7 +430,7 @@ class PublicKeyStorageHelperTest extends AbstractWPUnitTestWithOptionIsolationAn
 	/**
 	 * Test that existing valid keys are not overwritten by invalid data.
 	 *
-	 * @covers PublicKeyStorageHelper::request_and_store_public_key
+	 * @covers \WooCommerce\Facebook\FBSignedData\PublicKeyStorageHelper::request_and_store_public_key
 	 */
 	public function test_existing_valid_keys_not_overwritten_by_invalid_data(): void {
 		// First, store valid keys

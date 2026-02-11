@@ -770,7 +770,7 @@ class ProductFeedTest extends AbstractWPUnitTestWithOptionIsolationAndSafeFilter
 	/**
 	 * Test product feed instance can be created.
 	 *
-	 * @covers \WC_Facebook_Product_Feed::__construct
+	 * @covers \WC_Facebook_Product_Feed
 	 */
 	public function test_product_feed_can_be_instantiated(): void {
 		$feed = new WC_Facebook_Product_Feed();
@@ -1020,8 +1020,6 @@ class ProductFeedTest extends AbstractWPUnitTestWithOptionIsolationAndSafeFilter
 
 	/**
 	 * Test the mock class can log feed progress.
-	 *
-	 * @covers WC_Facebook_Product_Feed_Test_Mock::log_feed_progress
 	 */
 	public function test_mock_class_log_feed_progress(): void {
 		$mock_feed = new WC_Facebook_Product_Feed_Test_Mock();
@@ -1035,8 +1033,6 @@ class ProductFeedTest extends AbstractWPUnitTestWithOptionIsolationAndSafeFilter
 
 	/**
 	 * Test the mock class get_product_wpid returns test value.
-	 *
-	 * @covers WC_Facebook_Product_Feed_Test_Mock::get_product_wpid
 	 */
 	public function test_mock_class_get_product_wpid(): void {
 		WC_Facebook_Product_Feed_Test_Mock::$product_post_wpid = 123;
@@ -1052,8 +1048,6 @@ class ProductFeedTest extends AbstractWPUnitTestWithOptionIsolationAndSafeFilter
 
 	/**
 	 * Test the mock class get_product_wpid returns null by default.
-	 *
-	 * @covers WC_Facebook_Product_Feed_Test_Mock::get_product_wpid
 	 */
 	public function test_mock_class_get_product_wpid_default(): void {
 		WC_Facebook_Product_Feed_Test_Mock::$product_post_wpid = null;
