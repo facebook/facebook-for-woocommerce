@@ -207,7 +207,10 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 
 			// AddToCart events
 			add_action( 'woocommerce_add_to_cart', array( $this, 'inject_add_to_cart_event' ), 40, 4 );
-			// AddToCart while AJAX is enabled
+			// AddToCart while AJAX is enabled - add data attributes for click handler
+			add_filter( 'woocommerce_loop_add_to_cart_args', array( $this, 'add_product_data_to_add_to_cart_button' ), 10, 2 );
+			// Ensure pixel-events.js is loaded on shop pages for click handlers
+			add_action( 'wp_enqueue_scripts', array( $this, 'enqueue_pixel_events_script_for_shop' ) );
 			add_action( 'woocommerce_ajax_added_to_cart', array( $this, 'add_filter_for_add_to_cart_fragments' ) );
 			// AddToCart while using redirect to cart page
 			if ( 'yes' === get_option( 'woocommerce_cart_redirect_after_add', 'no' ) ) {
@@ -738,6 +741,10 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 				return;
 			}
 
+			// Check if we have a pre-generated event ID from the click handler
+			// This ensures pixel (client) and CAPI (server) use the same event ID for deduplication
+			$pre_generated_event_id = \WC_Facebookcommerce_Pixel::get_product_event_id( $product_id );
+
 			$event_data = array(
 				'event_name'  => 'AddToCart',
 				'custom_data' => array(
@@ -758,15 +765,17 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 				'user_data'   => $this->pixel->get_user_info(),
 			);
 
+			// Use pre-generated event ID if available, otherwise Event will generate one
+			if ( $pre_generated_event_id ) {
+				$event_data['event_id'] = $pre_generated_event_id;
+			}
+
 			$event = new WooCommerce\Facebook\Events\Event( $event_data );
 
 			$this->send_api_event( $event );
 
 			// send the event ID to prevent duplication
 			$event_data['event_id'] = $event->get_id();
-
-			// store the ID in the session to be sent in AJAX JS event tracking as well
-			WC()->session->set( 'facebook_for_woocommerce_add_to_cart_event_id', $event->get_id() );
 
 			$this->pixel->inject_event( 'AddToCart', $event_data );
 		}
@@ -785,6 +794,165 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 
 			if ( 'no' === get_option( 'woocommerce_cart_redirect_after_add', 'no' ) ) {
 				add_filter( 'woocommerce_add_to_cart_fragments', array( $this, 'add_add_to_cart_event_fragment' ) );
+			}
+		}
+
+		/**
+		 * Adds product data to add-to-cart button for pixel click handler.
+		 *
+		 * This collects product data that will be passed to JavaScript via wp_localize_script.
+		 * The click handler will look up product data by product_id.
+		 *
+		 * @internal
+		 *
+		 * @since 3.5.0
+		 *
+		 * @param array      $args    Add to cart button args.
+		 * @param WC_Product $product Product object.
+		 * @return array
+		 */
+		public function add_product_data_to_add_to_cart_button( $args, $product ) {
+			if ( ! $product instanceof \WC_Product ) {
+				return $args;
+			}
+
+			// Skip if not a simple product (variable products need selection first)
+			if ( ! $product->is_type( 'simple' ) ) {
+				return $args;
+			}
+
+			// Pre-generate event ID for deduplication between pixel (client) and CAPI (server)
+			$event_id = \WooCommerce\Facebook\Events\Event::generate_event_id();
+
+			$product_id   = $product->get_id();
+			$content_ids  = \WC_Facebookcommerce_Utils::get_fb_content_ids( $product );
+			$content_name = \WC_Facebookcommerce_Utils::clean_string( $product->get_title() );
+			$retailer_id  = \WC_Facebookcommerce_Utils::get_fb_retailer_id( $product );
+			$value        = (float) $product->get_price();
+			$currency     = get_woocommerce_currency();
+
+			// Store product data for JavaScript via wp_localize_script
+			\WC_Facebookcommerce_Pixel::add_product_data_for_pixel(
+				$product_id,
+				array(
+					'event_id'     => $event_id,
+					'content_ids'  => $content_ids,
+					'content_name' => $content_name,
+					'content_type' => 'product',
+					'contents'     => array(
+						array(
+							'id'       => $retailer_id,
+							'quantity' => 1,
+						),
+					),
+					'value'        => $value,
+					'currency'     => $currency,
+				)
+			);
+
+			// Also add data attributes to button for WooCommerce Blocks compatibility
+			if ( ! isset( $args['attributes'] ) ) {
+				$args['attributes'] = array();
+			}
+
+			$args['attributes']['data-fb-event-id']     = $event_id;
+			$args['attributes']['data-fb-content-ids']  = wp_json_encode( $content_ids );
+			$args['attributes']['data-fb-content-name'] = $content_name;
+			$args['attributes']['data-fb-content-type'] = 'product';
+			$args['attributes']['data-fb-value']        = $value;
+			$args['attributes']['data-fb-currency']     = $currency;
+
+			return $args;
+		}
+
+		/**
+		 * Enqueues the pixel events script on shop pages for click handlers.
+		 *
+		 * This ensures the script is loaded even when no events are queued,
+		 * so the AddToCart click handler can fire immediately.
+		 *
+		 * @internal
+		 *
+		 * @since 3.5.0
+		 */
+		public function enqueue_pixel_events_script_for_shop() {
+			// Only on shop/archive pages where AJAX add-to-cart is used
+			if ( ! is_shop() && ! is_product_category() && ! is_product_tag() ) {
+				return;
+			}
+
+			// Directly enqueue the script
+			\WC_Facebookcommerce_Pixel::enqueue_pixel_events_script();
+
+			// Also need to add the footer hook for localization
+			add_action( 'wp_footer', array( \WC_Facebookcommerce_Pixel::class, 'localize_pixel_events_data' ), 5 );
+
+			// Collect product data for all products on the page
+			add_action( 'wp_footer', array( $this, 'collect_shop_product_data' ), 1 );
+		}
+
+		/**
+		 * Collects product data for products displayed on the current page.
+		 *
+		 * Uses the main WP query to only collect data for products actually
+		 * shown on this page, not all products in the store.
+		 *
+		 * @internal
+		 *
+		 * @since 3.5.0
+		 */
+		public function collect_shop_product_data() {
+			global $wp_query;
+
+			// Only process if we have posts in the main query
+			if ( empty( $wp_query->posts ) ) {
+				return;
+			}
+
+			foreach ( $wp_query->posts as $post ) {
+				// Skip non-product posts
+				if ( 'product' !== get_post_type( $post ) ) {
+					continue;
+				}
+
+				$product = wc_get_product( $post->ID );
+
+				if ( ! $product instanceof \WC_Product ) {
+					continue;
+				}
+
+				// Skip non-simple products (variable products need selection first)
+				if ( ! $product->is_type( 'simple' ) ) {
+					continue;
+				}
+
+				$product_id = $product->get_id();
+
+				// Skip if already collected via filter
+				if ( \WC_Facebookcommerce_Pixel::get_product_event_id( $product_id ) ) {
+					continue;
+				}
+
+				// Pre-generate event ID for deduplication
+				$event_id = \WooCommerce\Facebook\Events\Event::generate_event_id();
+
+				\WC_Facebookcommerce_Pixel::add_product_data_for_pixel(
+					$product_id,
+					array(
+						'event_id'     => $event_id,
+						'content_ids'  => \WC_Facebookcommerce_Utils::get_fb_content_ids( $product ),
+						'content_name' => \WC_Facebookcommerce_Utils::clean_string( $product->get_title() ),
+						'content_type' => 'product',
+						'contents'     => array(
+							array(
+								'id'       => \WC_Facebookcommerce_Utils::get_fb_retailer_id( $product ),
+								'quantity' => 1,
+							),
+						),
+						'value'        => (float) $product->get_price(),
+						'currency'     => get_woocommerce_currency(),
+					)
+				);
 			}
 		}
 

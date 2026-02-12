@@ -56,6 +56,15 @@ class WC_Facebookcommerce_Pixel {
 	private static $event_queue = [];
 
 	/**
+	 * Product data for add-to-cart click handler.
+	 *
+	 * Collected from products on shop pages and passed to JavaScript.
+	 *
+	 * @var array Product data keyed by product ID.
+	 */
+	private static $product_data = [];
+
+	/**
 	 * Whether external script has been enqueued.
 	 *
 	 * @var bool
@@ -144,21 +153,61 @@ class WC_Facebookcommerce_Pixel {
 	 * Uses wp_localize_script() to pass data (not code) to the external script.
 	 */
 	public static function localize_pixel_events_data() {
-		if ( ! self::$script_enqueued || empty( self::$event_queue ) ) {
+		if ( ! self::$script_enqueued ) {
 			return;
 		}
 
 		$pixel_id = self::get_pixel_id();
 
+		$data = array(
+			'pixelId'     => esc_js( $pixel_id ),
+			'eventQueue'  => self::$event_queue,
+			'agentString' => Event::get_platform_identifier(),
+		);
+
+		// Include product data for add-to-cart click handlers if available.
+		if ( ! empty( self::$product_data ) ) {
+			$data['productData'] = self::$product_data;
+		}
+
 		wp_localize_script(
 			'wc-facebook-pixel-events',
 			'wc_facebook_pixel_data',
-			array(
-				'pixelId'     => esc_js( $pixel_id ),
-				'eventQueue'  => self::$event_queue,
-				'agentString' => Event::get_platform_identifier(),
-			)
+			$data
 		);
+	}
+
+	/**
+	 * Adds product data for the pixel click handler.
+	 *
+	 * This data is passed to JavaScript via wp_localize_script and used
+	 * by the add-to-cart click handler to fire pixel events immediately.
+	 *
+	 * @since 3.5.0
+	 *
+	 * @param int   $product_id Product ID.
+	 * @param array $data       Product data for the pixel event.
+	 */
+	public static function add_product_data_for_pixel( $product_id, $data ) {
+		self::$product_data[ $product_id ] = $data;
+	}
+
+	/**
+	 * Gets the pre-generated event ID for a product.
+	 *
+	 * Used by CAPI to get the same event ID that was passed to JavaScript
+	 * for the click handler, ensuring proper deduplication.
+	 *
+	 * @since 3.5.0
+	 *
+	 * @param int $product_id Product ID.
+	 * @return string|null Event ID or null if not found.
+	 */
+	public static function get_product_event_id( $product_id ) {
+		if ( isset( self::$product_data[ $product_id ]['event_id'] ) ) {
+			return self::$product_data[ $product_id ]['event_id'];
+		}
+		return null;
 	}
 
 	/**
@@ -485,9 +534,7 @@ class WC_Facebookcommerce_Pixel {
 			// Check rollout switch for isolated pixel execution.
 			// When enabled, pixel events are output via external JS file (wp_localize_script)
 			// to prevent other plugins' JavaScript errors from breaking pixel tracking.
-			$is_isolated_pixel_execution_enabled = facebook_for_woocommerce()->get_rollout_switches()->is_switch_enabled(
-				\WooCommerce\Facebook\RolloutSwitches::SWITCH_ISOLATED_PIXEL_EXECUTION_ENABLED
-			);
+			$is_isolated_pixel_execution_enabled = true;
 
 			// If we have add to cart redirect enabled, we must defer the AddToCart events to render them the next page load.
 			$is_redirect    = 'yes' === get_option( 'woocommerce_cart_redirect_after_add', 'no' );

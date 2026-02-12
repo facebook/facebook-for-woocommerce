@@ -89,7 +89,7 @@ class Event {
 			array(
 				'action_source'    => 'website',
 				'event_time'       => time(),
-				'event_id'         => $this->generate_event_id(),
+				'event_id'         => self::generate_event_id(),
 				'event_source_url' => $this->get_current_url(),
 				'custom_data'      => array(),
 				'user_data'        => array(),
@@ -166,7 +166,7 @@ class Event {
 	 * @return string
 	 */
 // phpcs:disable
-	protected function generate_event_id() {
+	public static function generate_event_id() {
 		try {
 			$data = random_bytes( 16 );
 			$data[6] = chr( ord( $data[6] ) & 0x0f | 0x40 ); // set version to 0100
