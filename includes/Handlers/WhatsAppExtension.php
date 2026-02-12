@@ -254,12 +254,13 @@ class WhatsAppExtension {
 	 * @return array An array with keys: order_url, order_date, currency, shipping_method, items (each item has: name, quantity, amount_1000, image_url)
 	 */
 	public static function build_rich_order_status( $order_metadata ) {
-		$rich = array();
-		$rich['order_url']       = $order_metadata['order_url'] ?? '';
-		$rich['order_date']      = $order_metadata['order_date'] ?? '';
-		$rich['currency']        = $order_metadata['currency'] ?? '';
-		$rich['shipping_method'] = $order_metadata['shipping_method'] ?? '';
-		$rich['items']           = array();
+		$rich_status_object = array(
+			'order_url'       => $order_metadata['order_url'] ?? '',
+			'order_date'      => $order_metadata['order_date'] ?? '',
+			'currency'        => $order_metadata['currency'] ?? '',
+			'shipping_method' => $order_metadata['shipping_method'] ?? '',
+			'items'           => array(),
+		);
 
 		if ( ! empty( $order_metadata['items'] ) && is_array( $order_metadata['items'] ) ) {
 			foreach ( $order_metadata['items'] as $order_item ) {
@@ -279,7 +280,7 @@ class WhatsAppExtension {
 					try {
 						$product = wc_get_product( $order_item['product_id'] );
 						if ( $product ) {
-							$image_id = method_exists( $product, 'get_image_id' ) ? $product->get_image_id() : 0;
+							$image_id = method_exists( $product, 'get_image_id' ) ? $product->get_image_id() : null;
 							if ( $image_id ) {
 								$img = wp_get_attachment_image_url( $image_id, 'full' );
 								$image_url = $img ? $img : wp_get_attachment_url( $image_id );
@@ -290,11 +291,11 @@ class WhatsAppExtension {
 					}
 				}
 				$item_arr['image_url'] = $image_url;
-				$rich['items'][] = $item_arr;
+				$rich_status_object['items'][] = $item_arr;
 			}
 		}
 
-		return $rich;
+		return $rich_status_object;
 	}
 
 	/**

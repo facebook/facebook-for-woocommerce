@@ -139,13 +139,14 @@ class WC_Facebookcommerce_Iframe_Whatsapp_Utility_Event {
 			'items'           => array(),
 		);
 
-		foreach ( $order->get_items() as $item ) {
+		$items = method_exists( $order, 'get_items' ) ? $order->get_items() : array();
+		foreach ( $items as $item ) {
 			$product_id = method_exists( $item, 'get_product_id' ) ? $item->get_product_id() : ( isset( $item['product_id'] ) ? $item['product_id'] : 0 );
 			$item_total = method_exists( $item, 'get_total' ) ? $item->get_total() : ( isset( $item['line_total'] ) ? $item['line_total'] : 0 );
 			$order_metadata['items'][] = array(
 				'product_id' => $product_id,
 				'name'       => method_exists( $item, 'get_name' ) ? $item->get_name() : ( isset( $item['name'] ) ? $item['name'] : '' ),
-				'quantity'   => method_exists( $item, 'get_quantity' ) ? $item->get_quantity() : ( isset( $item['qty'] ) ? $item['qty'] : 1 ),
+				'quantity'   => method_exists( $item, 'get_quantity' ) ? $item->get_quantity() : ( isset( $item['qty'] ) ? $item['qty'] : null ),
 				'amount'     => $item_total,
 			);
 		}
