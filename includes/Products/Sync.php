@@ -134,7 +134,11 @@ class Sync {
 	 */
 	public function create_or_update_products( array $product_ids ) {
 		foreach ( $product_ids as $product_id ) {
-			$this->requests[ $this->get_product_index( $product_id ) ] = self::ACTION_UPDATE;
+			$index = $this->get_product_index( $product_id );
+			// Don't overwrite a pending DELETE with an UPDATE — deletion takes priority.
+			if ( ! isset( $this->requests[ $index ] ) || self::ACTION_DELETE !== $this->requests[ $index ] ) {
+				$this->requests[ $index ] = self::ACTION_UPDATE;
+			}
 		}
 	}
 
