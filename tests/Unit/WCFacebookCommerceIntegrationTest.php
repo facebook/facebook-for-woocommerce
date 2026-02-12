@@ -300,7 +300,7 @@ class WCFacebookCommerceIntegrationTest extends \WooCommerce\Facebook\Tests\Abst
 			$expected_output[ $variation_id ] = 'some-facebook-api-product-item-id-' . $variation_id;
 			$facebook_output[]                = [
 				'id'          => 'some-facebook-api-product-item-id-' . $variation_id,
-				'retailer_id' => $variation_id,
+				'retailer_id' => (string) $variation_id,
 			];
 		}
 		/* From Product Meta or FB API. */
