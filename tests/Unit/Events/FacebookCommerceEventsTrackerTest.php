@@ -69,6 +69,17 @@ class FacebookCommerceEventsTrackerTest extends AbstractWPUnitTestWithSafeFilter
 	}
 
 	/**
+	 * Remove all purchase-related hooks registered by the tracker constructor.
+	 * Call this before creating orders to prevent hooks from firing during order creation.
+	 */
+	private function remove_purchase_hooks(): void {
+		remove_action( 'woocommerce_new_order', array( $this->instance, 'inject_purchase_event' ), 10 );
+		remove_action( 'woocommerce_process_shop_order_meta', array( $this->instance, 'inject_purchase_event' ), 20 );
+		remove_action( 'woocommerce_checkout_update_order_meta', array( $this->instance, 'inject_purchase_event' ), 30 );
+		remove_action( 'woocommerce_thankyou', array( $this->instance, 'inject_purchase_event' ), 40 );
+	}
+
+	/**
 	 * Create an instance of the events tracker with pixel disabled.
 	 *
 	 * @return WC_Facebookcommerce_EventsTracker
@@ -415,6 +426,125 @@ class FacebookCommerceEventsTrackerTest extends AbstractWPUnitTestWithSafeFilter
 			$this->instance->get_tracked_events(),
 			'inject_purchase_event should not track with invalid order'
 		);
+	}
+
+	/**
+	 * Test that inject_purchase_event sends CAPI event for server context.
+	 *
+	 * When triggered by a server-side hook (e.g., woocommerce_new_order),
+	 * the method should send a CAPI event.
+	 *
+	 * @covers WC_Facebookcommerce_EventsTracker::inject_purchase_event
+	 */
+	public function test_inject_purchase_event_sends_capi_for_server_context(): void {
+		$this->instance = $this->create_tracker_with_pixel_enabled();
+		$this->remove_purchase_hooks();
+
+		// Create a valid order with processing status
+		$order = wc_create_order();
+		$order->set_status( 'processing' );
+		$order->set_total( 100 );
+		$order->save();
+
+		// Simulate server hook by calling inject_purchase_event via do_action
+		// This sets current_action() to 'woocommerce_new_order'
+		add_action( 'woocommerce_new_order', array( $this->instance, 'inject_purchase_event' ), 10 );
+		do_action( 'woocommerce_new_order', $order->get_id(), $order );
+		remove_action( 'woocommerce_new_order', array( $this->instance, 'inject_purchase_event' ), 10 );
+
+		$tracked_events = $this->instance->get_tracked_events();
+
+		$this->assertNotEmpty(
+			$tracked_events,
+			'inject_purchase_event should track CAPI event for server context'
+		);
+		$this->assertCount(
+			1,
+			$tracked_events,
+			'inject_purchase_event should track exactly one CAPI event for server context'
+		);
+
+		// Clean up
+		$order->delete( true );
+	}
+
+	/**
+	 * Test that inject_purchase_event does NOT send CAPI event for browser context.
+	 *
+	 * When triggered by the browser-side hook (woocommerce_thankyou),
+	 * the method should NOT send a CAPI event (only inject pixel).
+	 *
+	 * @covers WC_Facebookcommerce_EventsTracker::inject_purchase_event
+	 */
+	public function test_inject_purchase_event_does_not_send_capi_for_browser_context(): void {
+		$this->instance = $this->create_tracker_with_pixel_enabled();
+		$this->remove_purchase_hooks();
+
+		// Create a valid order with processing status
+		$order = wc_create_order();
+		$order->set_status( 'processing' );
+		$order->set_total( 100 );
+		$order->save();
+
+		// Simulate that server context already ran and set the server meta
+		$order->add_meta_data( '_meta_purchase_tracked_server', true, true );
+		$order->save();
+
+		// Simulate browser hook (thank you page) - should NOT send CAPI since server already did
+		add_action( 'woocommerce_thankyou', array( $this->instance, 'inject_purchase_event' ), 40 );
+		do_action( 'woocommerce_thankyou', $order->get_id() );
+		remove_action( 'woocommerce_thankyou', array( $this->instance, 'inject_purchase_event' ), 40 );
+
+		$tracked_events = $this->instance->get_tracked_events();
+
+		$this->assertEmpty(
+			$tracked_events,
+			'inject_purchase_event should NOT track CAPI event for browser context when server already tracked'
+		);
+
+		// Clean up
+		$order->delete( true );
+	}
+
+
+	/**
+	 * Test that inject_purchase_event only sends one CAPI event when both hooks fire.
+	 *
+	 * When both server and browser hooks fire (typical checkout flow),
+	 * only one CAPI event should be sent (from server context).
+	 *
+	 * @covers WC_Facebookcommerce_EventsTracker::inject_purchase_event
+	 */
+	public function test_inject_purchase_event_sends_single_capi_for_full_checkout_flow(): void {
+		$this->instance = $this->create_tracker_with_pixel_enabled();
+		$this->remove_purchase_hooks();
+
+		// Create a valid order with processing status
+		$order = wc_create_order();
+		$order->set_status( 'processing' );
+		$order->set_total( 100 );
+		$order->save();
+
+		// Simulate server hook first (as happens in real checkout)
+		add_action( 'woocommerce_new_order', array( $this->instance, 'inject_purchase_event' ), 10 );
+		do_action( 'woocommerce_new_order', $order->get_id(), $order );
+		remove_action( 'woocommerce_new_order', array( $this->instance, 'inject_purchase_event' ), 10 );
+
+		// Simulate browser hook second (thank you page)
+		add_action( 'woocommerce_thankyou', array( $this->instance, 'inject_purchase_event' ), 40 );
+		do_action( 'woocommerce_thankyou', $order->get_id() );
+		remove_action( 'woocommerce_thankyou', array( $this->instance, 'inject_purchase_event' ), 40 );
+
+		$tracked_events = $this->instance->get_tracked_events();
+
+		$this->assertCount(
+			1,
+			$tracked_events,
+			'inject_purchase_event should track exactly one CAPI event when both server and browser hooks fire'
+		);
+
+		// Clean up
+		$order->delete( true );
 	}
 
 	/**
