@@ -266,7 +266,7 @@ class WhatsAppExtension {
 			foreach ( $order_metadata['items'] as $order_item ) {
 				$item_arr = array();
 				$item_arr['name']     = $order_item['name'] ?? ( $order_item['product_name'] ?? '' );
-				$item_arr['quantity'] = isset( $order_item['quantity'] ) ? intval( $order_item['quantity'] ) : 1;
+				$item_arr['quantity'] = isset( $order_item['quantity'] ) ? intval( $order_item['quantity'] ) : null;
 
 				// Ensure `amount_1000` is present for the server consumer.
 				// Derived from numeric `amount`.
