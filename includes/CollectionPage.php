@@ -35,6 +35,7 @@ class CollectionPage {
 		add_action( 'init', [ $this, 'register_rewrite_rule' ] );
 		add_filter( 'query_vars', [ $this, 'add_query_vars' ] );
 		add_action( 'woocommerce_product_query', [ $this, 'modify_product_query' ] );
+		add_filter( 'woocommerce_loop_display_mode', [ $this, 'force_products_display_mode' ] );
 	}
 
 	/**
@@ -53,6 +54,21 @@ class CollectionPage {
 	public function add_query_vars( $vars ) {
 		$vars[] = 'custom_fbcollection_page';
 		return $vars;
+	}
+
+	/**
+	 * Force "products" display mode on the fbcollection page.
+	 * Prevents the WooCommerce "Shop page display" setting from showing
+	 * product categories instead of the intended product list.
+	 *
+	 * @param string $display_mode The current display mode.
+	 * @return string
+	 */
+	public function force_products_display_mode( $display_mode ) {
+		if ( 1 === intval( get_query_var( 'custom_fbcollection_page' ) ) ) {
+			return 'products';
+		}
+		return $display_mode;
 	}
 
 	/**
