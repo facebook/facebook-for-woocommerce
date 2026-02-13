@@ -284,6 +284,8 @@ class WhatsAppExtension {
 							if ( $image_id ) {
 								$img = wp_get_attachment_image_url( $image_id, 'full' );
 								$image_url = $img ? $img : wp_get_attachment_url( $image_id );
+								// Ensure HTTPS protocol for image URLs
+								$image_url = preg_replace( '/^http:/', 'https:', $image_url );
 							}
 						}
 					} catch ( \Throwable $e ) {
