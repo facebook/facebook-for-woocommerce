@@ -121,17 +121,16 @@ class CollectionPage {
 			$query->set( 'posts_per_page', count( $final_product_ids ) );
 
 			// Prevent WooCommerce core and themes from overriding the product order.
-			add_filter(
-				'woocommerce_get_catalog_ordering_args',
-				function () {
-					return array(
-						'orderby'  => 'post__in',
-						'order'    => 'ASC',
-						'meta_key' => '', // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_key
-					);
-				},
-				PHP_INT_MAX
-			);
+			// Removes itself after first invocation to avoid affecting other queries in the same request.
+			$ordering_override = function ( $args ) use ( &$ordering_override ) {
+				remove_filter( 'woocommerce_get_catalog_ordering_args', $ordering_override, PHP_INT_MAX );
+				return array(
+					'orderby'  => 'post__in',
+					'order'    => 'ASC',
+					'meta_key' => '', // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_key
+				);
+			};
+			add_filter( 'woocommerce_get_catalog_ordering_args', $ordering_override, PHP_INT_MAX );
 		} else {
 			// Log when no valid products found
 			// Only log for the first N occurrences per plugin version (for beta testing)
