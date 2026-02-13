@@ -60,13 +60,51 @@ if ( ! class_exists( 'WC_Facebookcommerce_Utils' ) ) :
 		/**
 		 * Prints deferred events into page header.
 		 *
+		 * Supports both legacy (JS code string) and isolated execution (event data array) formats.
+		 * - Legacy format (switch OFF): Outputs inline <script> tag with JS code
+		 * - Isolated format (switch ON): Uses WC_Facebookcommerce_Pixel::enqueue_event()
+		 *
 		 * @since 3.1.6
 		 */
 		public static function print_deferred_events() {
 			$deferred_events = static::load_deferred_events();
 
-			if ( ! empty( $deferred_events ) ) {
-				echo '<script>' . implode( PHP_EOL, $deferred_events ) . '</script>'; //phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped --- Printing hardcoded JS tracking code.
+			if ( empty( $deferred_events ) ) {
+				return;
+			}
+
+			// Check if isolated pixel execution is enabled
+			$is_isolated_execution_enabled = facebook_for_woocommerce()->get_rollout_switches()->is_switch_enabled(
+				\WooCommerce\Facebook\RolloutSwitches::SWITCH_ISOLATED_PIXEL_EXECUTION_ENABLED
+			);
+
+			// Separate events by type
+			$legacy_events   = array();
+			$isolated_events = array();
+
+			foreach ( $deferred_events as $event ) {
+				if ( is_array( $event ) ) {
+					$isolated_events[] = $event;
+				} else {
+					$legacy_events[] = $event;
+				}
+			}
+
+			// Handle isolated execution events (event data arrays) - only if switch is enabled
+			if ( $is_isolated_execution_enabled ) {
+				foreach ( $isolated_events as $event ) {
+					WC_Facebookcommerce_Pixel::enqueue_event(
+						$event['name'],
+						$event['params'],
+						$event['method'] ?? 'track',
+						$event['eventId'] ?? ''
+					);
+				}
+			}
+
+			// Handle legacy events (JS code strings) - combine into single script tag
+			if ( ! empty( $legacy_events ) ) {
+				echo '<script>' . implode( PHP_EOL, $legacy_events ) . '</script>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped --- Printing hardcoded JS tracking code.
 			}
 		}
 
@@ -95,12 +133,16 @@ if ( ! class_exists( 'WC_Facebookcommerce_Utils' ) ) :
 		/**
 		 * Adds event into the list of events to be saved/rendered.
 		 *
+		 * Supports both legacy (JS code string) and isolated execution (event data array) formats:
+		 * - Legacy format (switch OFF): Pass JS code string from get_event_code()
+		 * - Isolated format (switch ON): Pass event data array with keys: name, params, method, eventId
+		 *
 		 * @since 3.1.6
 		 *
-		 * @param string $code Generated JS code string w/o a script tag.
+		 * @param string|array $event Event data - either JS code string (legacy) or event data array (isolated).
 		 */
-		public static function add_deferred_event( string $code ): void {
-			static::$deferred_events[] = $code;
+		public static function add_deferred_event( $event ): void {
+			static::$deferred_events[] = $event;
 		}
 
 		/**

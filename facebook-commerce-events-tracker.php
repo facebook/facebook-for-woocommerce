@@ -88,6 +88,9 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 			$this->aam_settings   = $aam_settings;
 			$this->tracked_events = array();
 
+			// Initialize external JS hooks early so script is enqueued before wp_enqueue_scripts fires.
+			\WC_Facebookcommerce_Pixel::init_external_js_hooks();
+
 			$this->param_builder_server_setup();
 			$this->add_hooks();
 			$this->cogs_provider = new CostOfGoods();
