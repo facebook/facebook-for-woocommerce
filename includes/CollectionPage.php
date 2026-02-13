@@ -103,6 +103,19 @@ class CollectionPage {
 			$query->set( 'post__in', $final_product_ids );
 			$query->set( 'orderby', 'post__in' );
 			$query->set( 'posts_per_page', count( $final_product_ids ) );
+
+			// Prevent WooCommerce core and themes from overriding the product order.
+			add_filter(
+				'woocommerce_get_catalog_ordering_args',
+				function () {
+					return array(
+						'orderby'  => 'post__in',
+						'order'    => 'ASC',
+						'meta_key' => '', // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_key
+					);
+				},
+				PHP_INT_MAX
+			);
 		} else {
 			// Log when no valid products found
 			// Only log for the first N occurrences per plugin version (for beta testing)
