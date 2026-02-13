@@ -300,7 +300,7 @@ class WCFacebookCommerceIntegrationTest extends \WooCommerce\Facebook\Tests\Abst
 			$expected_output[ $variation_id ] = 'some-facebook-api-product-item-id-' . $variation_id;
 			$facebook_output[]                = [
 				'id'          => 'some-facebook-api-product-item-id-' . $variation_id,
-				'retailer_id' => $variation->get_sku() . '_' . $variation_id,
+				'retailer_id' => (string) $variation_id,
 			];
 		}
 		/* From Product Meta or FB API. */
@@ -336,7 +336,7 @@ class WCFacebookCommerceIntegrationTest extends \WooCommerce\Facebook\Tests\Abst
 			$expected_output[ $variation_id ] = 'some-facebook-api-product-item-id-' . $variation_id;
 			$facebook_output[]                = [
 				'id'          => 'some-facebook-api-product-item-id-' . $variation_id,
-				'retailer_id' => $variation->get_sku() . '_' . $variation_id . '_modified',
+				'retailer_id' => $variation_id . '_modified',
 			];
 		}
 		/* From Product Meta or FB API. */
