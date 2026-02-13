@@ -12,13 +12,12 @@ namespace WooCommerce\Facebook\OfferManagement;
 
 defined( 'ABSPATH' ) || exit;
 
-use Doctrine\Instantiator\Exception\UnexpectedValueException;
 use Exception;
-use Firebase\JWT\SignatureInvalidException;
+use UnexpectedValueException;
+use WooCommerce\Facebook\FBSignedData\JWTSignatureInvalidException;
 use WooCommerce\Facebook\FBSignedData\FBPublicKey;
 use WooCommerce\Facebook\FBSignedData\PublicKeyStorageHelper;
-use Firebase\JWT\JWT;
-use Firebase\JWT\Key;
+use WooCommerce\Facebook\FBSignedData\JWTCodec;
 
 
 
@@ -41,7 +40,7 @@ class RequestVerification {
 	public static function decode_jwt_with_retries( string $jwt ): array {
 		// Extract the project header to query for refreshed keys and validate the key name.
 		$b64_body   = explode( '.', $jwt )[1];
-		$body_array = json_decode( JWT::urlsafeB64Decode( $b64_body ), true );
+		$body_array = json_decode( JWTCodec::urlsafe_b64_decode( $b64_body ), true );
 		$key_name   = $body_array[ self::KEY_NAME_FIELD ];
 
 		$public_key = PublicKeyStorageHelper::get_current_public_key();
@@ -84,7 +83,7 @@ class RequestVerification {
 	 * @param null|FBPublicKey $fb_public_key
 	 * @param bool             $should_swallow_retryable_exception Set to true to swallow exceptions if we plan to re-try
 	 * @return array|null
-	 * @throws Exception|SignatureInvalidException|UnexpectedValueException Thrown if not swallowed.
+	 * @throws Exception|JWTSignatureInvalidException|UnexpectedValueException Thrown if not swallowed.
 	 */
 	private static function decode_jwt_retryable( string $jwt, string $jwt_key_name, ?FBPublicKey $fb_public_key, bool $should_swallow_retryable_exception ): ?array {
 		if ( null === $fb_public_key ) {
@@ -106,16 +105,14 @@ class RequestVerification {
 				throw $ex;
 			}
 			self::swallow_or_throw_exception( $ex, $should_swallow_retryable_exception );
-		} catch ( SignatureInvalidException $ex ) {
+		} catch ( JWTSignatureInvalidException $ex ) {
 			self::swallow_or_throw_exception( $ex, $should_swallow_retryable_exception );
 		}
 		return null;
 	}
 
 	private static function decode_jwt_with_public_key( string $jwt, FBPublicKey $fb_public_key ): array {
-		$jwt_key  = new Key( $fb_public_key->get_key(), $fb_public_key->get_algorithm() );
-		$jwt_data = JWT::decode( $jwt, $jwt_key );
-		return json_decode( wp_json_encode( $jwt_data ), true );
+		return JWTCodec::decode( $jwt, $fb_public_key->get_key(), $fb_public_key->get_algorithm() );
 	}
 
 	/**

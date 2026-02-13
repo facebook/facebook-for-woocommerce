@@ -8,7 +8,7 @@
  */
 
 use WooCommerce\Facebook\Tests\AbstractWPUnitTestWithOptionIsolationAndSafeFiltering;
-use Firebase\JWT\JWT;
+use WooCommerce\Facebook\FBSignedData\JWTCodec;
 use WooCommerce\Facebook\FBSignedData\PublicKeyStorageHelper;
 use WooCommerce\Facebook\FBSignedData\FBPublicKey;
 use WooCommerce\Facebook\OfferManagement\OfferManagementEndpointBase;
@@ -20,7 +20,7 @@ use WooCommerce\Facebook\RolloutSwitches;
 /**
  * Class FBPublicKeyTest
  */
-class OfferManagementAPITestBase extends AbstractWPUnitTestWithOptionIsolationAndSafeFiltering
+abstract class OfferManagementAPITestBase extends AbstractWPUnitTestWithOptionIsolationAndSafeFiltering
 {
     const CATALOG_ID = 'test_catalog_id';
 	const KEY_NAME = 'test_key_name';
@@ -57,7 +57,7 @@ class OfferManagementAPITestBase extends AbstractWPUnitTestWithOptionIsolationAn
 		$request = new WP_REST_Request($method, $route);
 
 
-		$jwt = JWT::encode($params, $this->private_key, 'ES256');
+		$jwt = JWTCodec::encode($params, $this->private_key, 'ES256');
 		$encoded_params = ['jwt_params' => $jwt];
 
 		if ('POST' === $method) {

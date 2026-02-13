@@ -12,12 +12,17 @@ concurrency:
 
 jobs:
   integration-tests:
-    name: Integration Tests
+    name: Integration Tests - PHP ${{ matrix.php }}
     runs-on: ubuntu-latest
 
     permissions:
       contents: read
       pull-requests: write
+
+    strategy:
+      fail-fast: false
+      matrix:
+        php: [ '7.4', '8.4' ]
 
     services:
       mysql:
@@ -43,7 +48,7 @@ jobs:
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
         with:
-          php-version: '7.4'
+          php-version: ${{ matrix.php }}
           coverage: xdebug
           ini-values: memory_limit=-1
 
@@ -81,10 +86,12 @@ jobs:
         if: steps.install-composer.outputs.composer_installed == 'true'
         id: setup-wp
         continue-on-error: true
+        env:
+          POLYLANG_VERSION: ${{ startsWith(format('{0}', matrix.php), '7.4') && '3.7.7' || 'latest' }}
         run: |
           # Install WordPress test suite with WooCommerce and Polylang for localization tests
           # Parameters: db-name db-user db-pass db-host wp-version wc-version polylang-version skip-db-creation
-          bash bin/install-wp-tests.sh wordpress_test wp_user wp_pass 127.0.0.1:3306 latest latest 3.7.7 || echo "::warning::WordPress test suite installation failed"
+          bash bin/install-wp-tests.sh wordpress_test wp_user wp_pass 127.0.0.1:3306 latest latest $POLYLANG_VERSION || echo "::warning::WordPress test suite installation failed"
           # Install Facebook for WooCommerce plugin
           cp -r . /tmp/wordpress/wp-content/plugins/facebook-for-woocommerce
 
@@ -157,7 +164,7 @@ jobs:
         with:
           file: ./coverage.xml
           flags: integration
-          name: integration-tests
+          name: integration-tests-php-${{ matrix.php }}
           fail_ci_if_error: false
 
       - name: Create Test Summary
@@ -165,7 +172,7 @@ jobs:
         run: |
           echo "## Integration Test Results" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "**PHP Version:** 7.4" >> $GITHUB_STEP_SUMMARY
+          echo "**PHP Version:** ${{ matrix.php }}" >> $GITHUB_STEP_SUMMARY
           echo "**WordPress:** Latest Stable" >> $GITHUB_STEP_SUMMARY
           echo "**WooCommerce:** Latest Stable" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
@@ -195,7 +202,7 @@ jobs:
         if: failure()
         uses: actions/upload-artifact@v4
         with:
-          name: test-results
+          name: test-results-php-${{ matrix.php }}
           path: |
             tests/
             coverage-html/
@@ -206,7 +213,7 @@ jobs:
         if: failure()
         uses: actions/upload-artifact@v4
         with:
-          name: error-logs
+          name: error-logs-php-${{ matrix.php }}
           path: |
             /tmp/wordpress/wp-content/debug.log
             /var/log/

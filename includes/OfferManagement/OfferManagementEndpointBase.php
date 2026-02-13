@@ -13,7 +13,7 @@ namespace WooCommerce\Facebook\OfferManagement;
 use WC_Coupon;
 use WP_REST_Request;
 use WP_REST_Response;
-use Firebase\JWT\ExpiredException;
+use WooCommerce\Facebook\FBSignedData\JWTExpiredException;
 use WooCommerce\Facebook\RolloutSwitches;
 
 /**
@@ -153,7 +153,7 @@ abstract class OfferManagementEndpointBase {
 	protected function get_decoded_request_params( string $jwt ): ?array {
 		try {
 			$decoded_params = RequestVerification::decode_jwt_with_retries( $jwt );
-		} catch ( ExpiredException $ex ) {
+		} catch ( JWTExpiredException $ex ) {
 			$this->add_error( self::get_error_response_data( self::ERROR_JWT_EXPIRED ) );
 			return null;
 		} catch ( \Exception $ex ) {
