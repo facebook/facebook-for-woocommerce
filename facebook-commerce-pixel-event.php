@@ -162,7 +162,7 @@ class WC_Facebookcommerce_Pixel {
 	}
 
 	/**
-	 * Adds an event to the static events array for frontend execution.
+	 * Adds an event to the static events array for immediate frontend execution.
 	 * Events are stored as DATA, not executable code.
 	 *
 	 * @param string $event_name The name of the event to track.
@@ -185,6 +185,29 @@ class WC_Facebookcommerce_Pixel {
 		}
 
 		self::$static_events[] = $event_data;
+	}
+
+	/**
+	 * Adds an event to the deferred events queue for next page load.
+	 * Used for isolated pixel execution when events need to be deferred (e.g., AddToCart with redirect).
+	 *
+	 * @param string $event_name The name of the event to track.
+	 * @param array  $params     Event parameters.
+	 * @param string $method     The fbq method to use (track, trackCustom, etc.).
+	 * @param string $event_id   Optional event ID for deduplication.
+	 */
+	public static function add_deferred_static_event( $event_name, $params, $method = 'track', $event_id = '' ) {
+		$event_data = array(
+			'name'   => $event_name,
+			'params' => $params,
+			'method' => $method,
+		);
+
+		if ( ! empty( $event_id ) ) {
+			$event_data['eventId'] = $event_id;
+		}
+
+		WC_Facebookcommerce_Utils::add_deferred_event( $event_data );
 	}
 
 	/**
@@ -442,9 +465,10 @@ class WC_Facebookcommerce_Pixel {
 	 * Prints or enqueues the JavaScript code to track an event.
 	 * Preferred method to inject events in a page.
 	 *
-	 * Uses external JS with isolated execution context for WooCommerce integration,
-	 * storing events as data and passing via wp_localize_script().
-	 * This prevents other plugins' JavaScript errors from breaking our pixel tracking.
+	 * Supports two execution modes controlled by rollout switch:
+	 * - Isolated execution (switch ON): Uses external JS via wp_localize_script() to prevent
+	 *   other plugins' JavaScript errors from breaking pixel tracking.
+	 * - Legacy execution (switch OFF): Uses wc_enqueue_js() for inline script output.
 	 *
 	 * @see \WC_Facebookcommerce_Pixel::build_event()
 	 *
@@ -458,30 +482,41 @@ class WC_Facebookcommerce_Pixel {
 		// Note: We will be adding a consent mechanism that checks user consent
 		// before inject_event() is called.
 		if ( WC_Facebookcommerce_Utils::is_woocommerce_integration() ) {
-			$this->last_event = $event_name;
-
-			// Prepare event params: extract event_id, unwrap custom_data, apply build_params.
-			[ 'params' => $event_params, 'event_id' => $event_id ] = self::prepare_event_params( $params, $event_name );
+			// Check rollout switch for isolated pixel execution.
+			// When enabled, pixel events are output via external JS file (wp_localize_script)
+			// to prevent other plugins' JavaScript errors from breaking pixel tracking.
+			$is_isolated_pixel_execution_enabled = facebook_for_woocommerce()->get_rollout_switches()->is_switch_enabled(
+				\WooCommerce\Facebook\RolloutSwitches::SWITCH_ISOLATED_PIXEL_EXECUTION_ENABLED
+			);
 
 			// If we have add to cart redirect enabled, we must defer the AddToCart events to render them the next page load.
 			$is_redirect    = 'yes' === get_option( 'woocommerce_cart_redirect_after_add', 'no' );
 			$is_add_to_cart = 'AddToCart' === $event_name;
-			if ( $is_redirect && $is_add_to_cart ) {
-				// Use existing deferred events mechanism from WC_Facebookcommerce_Utils.
-				$event_data = array(
-					'name'   => $event_name,
-					'params' => $event_params,
-					'method' => $method,
-				);
-				if ( ! empty( $event_id ) ) {
-					$event_data['eventId'] = $event_id;
+			$is_deferred    = $is_redirect && $is_add_to_cart;
+
+			if ( $is_isolated_pixel_execution_enabled ) {
+				// Isolated execution: Use external JS via wp_localize_script.
+				// Set last_event here since we don't call get_event_code() in this path.
+				$this->last_event = $event_name;
+				[ 'params' => $event_params, 'event_id' => $event_id ] = self::prepare_event_params( $params, $event_name );
+
+				if ( $is_deferred ) {
+					// Store event data for next page load.
+					self::add_deferred_static_event( $event_name, $event_params, $method, $event_id );
+				} else {
+					// Queue event for this page's external script.
+					self::add_static_event( $event_name, $event_params, $method, $event_id );
 				}
-				WC_Facebookcommerce_Utils::add_deferred_event( $event_data );
 			} else {
-				// Queue event for isolated external script execution.
-				// For AJAX AddToCart, the fragment mechanism (add_add_to_cart_event_fragment)
-				// handles it separately via get_event_script().
-				self::add_static_event( $event_name, $event_params, $method, $event_id );
+				// Legacy execution: Use wc_enqueue_js for inline script.
+				$code = $this->get_event_code( $event_name, self::build_params( $params, $event_name ), $method );
+
+				if ( $is_deferred ) {
+					// Store JS code string for inline script at print time.
+					WC_Facebookcommerce_Utils::add_deferred_event( $code );
+				} else {
+					WC_Facebookcommerce_Utils::wc_enqueue_js( $code );
+				}
 			}
 		} else {
 			printf( $this->get_event_script( $event_name, self::build_params( $params, $event_name ), $method ) ); // phpcs:ignore WordPress.XSS.EscapeOutput.OutputNotEscaped
@@ -603,29 +638,8 @@ class WC_Facebookcommerce_Pixel {
 		 * @return string
 		 */
 	public static function build_event( $event_name, $params, $method = 'track' ) {
-
-		// Do not send the event name in the params.
-		if ( isset( $params['event_name'] ) ) {
-
-			unset( $params['event_name'] );
-		}
-
-		/**
-		 * If possible, send the event ID to avoid duplication.
-		 *
-		 * @see https://developers.facebook.com/docs/marketing-api/server-side-api/deduplicate-pixel-and-server-side-events#deduplication-best-practices
-		 */
-		if ( isset( $params['event_id'] ) ) {
-
-			$event_id = $params['event_id'];
-			unset( $params['event_id'] );
-		}
-
-		// If custom data is set, send only the custom data.
-		if ( isset( $params['custom_data'] ) ) {
-
-			$params = $params['custom_data'];
-		}
+		// Reuse shared param preparation logic.
+		[ 'params' => $event_params, 'event_id' => $event_id ] = self::prepare_event_params( $params, $event_name );
 
 		if ( ! empty( $event_id ) ) {
 			$event = sprintf(
@@ -637,7 +651,7 @@ class WC_Facebookcommerce_Pixel {
 				self::get_pixel_id(),
 				esc_js( $method ),
 				esc_js( $event_name ),
-				wp_json_encode( self::build_params( $params, $event_name ), JSON_PRETTY_PRINT | JSON_FORCE_OBJECT ),
+				wp_json_encode( $event_params, JSON_PRETTY_PRINT | JSON_FORCE_OBJECT ),
 				wp_json_encode( array( 'eventID' => $event_id ), JSON_PRETTY_PRINT | JSON_FORCE_OBJECT )
 			);
 
@@ -652,7 +666,7 @@ class WC_Facebookcommerce_Pixel {
 					self::get_pixel_id(),
 					esc_js( $method ),
 					esc_js( $event_name ),
-					wp_json_encode( self::build_params( $params, $event_name ), JSON_PRETTY_PRINT | JSON_FORCE_OBJECT )
+					wp_json_encode( $event_params, JSON_PRETTY_PRINT | JSON_FORCE_OBJECT )
 				);
 		}
 
