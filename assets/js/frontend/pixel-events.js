@@ -17,6 +17,8 @@
 
     var data = wc_facebook_pixel_data;
     var firedEvents = {};
+    var retryCount = 0;
+    var maxRetries = 20; // 20 x 100ms = 2 seconds max wait
 
     /**
      * Build event data object for fbq()
@@ -73,15 +75,10 @@
      */
     function fireEvent(event) {
         var eventData = buildEventData(event);
+        console.log("eventData", eventData);
 
         // Skip if already fired (deduplication)
         if (shouldSkipEvent(eventData.eventId)) {
-            return;
-        }
-
-        // Skip if fbq not available
-        if (typeof fbq !== 'function') {
-            logWarning('fbq not available, skipping event:', eventData.name);
             return;
         }
 
@@ -125,17 +122,27 @@
     }
 
     /**
-     * Initialize event firing on page load
+     * Wait for fbq() to be available before firing events.
+     * The FB Pixel SDK loads asynchronously, so fbq may not exist yet.
+     * Retries every 100ms up to maxRetries (2s), then stops gracefully.
      */
     function init() {
-        if (document.readyState === 'complete') {
-            fireQueuedEvents();
-        } else {
-            window.addEventListener('load', fireQueuedEvents);
+        if (typeof fbq !== 'function') {
+            retryCount++;
+            if (retryCount < maxRetries) {
+                setTimeout(init, 100);
+            }
+            return;
         }
+
+        fireQueuedEvents();
     }
 
-    // Start
-    init();
+    // Start — wait for page load, then poll for fbq
+    if (document.readyState === 'complete') {
+        init();
+    } else {
+        window.addEventListener('load', init);
+    }
 
 })();

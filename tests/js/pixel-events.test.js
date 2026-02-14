@@ -148,7 +148,7 @@ describe('Pixel Events - Isolated Execution Context', function () {
         });
     });
 
-    describe('fbq Availability Check', function () {
+    describe('fbq Availability Check and Retry', function () {
         it('should detect when fbq is available', function () {
             global.fbq = jest.fn();
 
@@ -161,12 +161,88 @@ describe('Pixel Events - Isolated Execution Context', function () {
             expect(typeof global.fbq).not.toBe('function');
         });
 
-        it('should handle fbq being undefined gracefully', function () {
+        it('should retry when fbq is not yet available', function () {
+            jest.useFakeTimers();
             delete global.fbq;
 
-            // Simulate the check in fireEvent
-            const fbqAvailable = typeof fbq === 'function';
-            expect(fbqAvailable).toBe(false);
+            var retryCount = 0;
+            var maxRetries = 20;
+            var eventsFired = false;
+
+            function init() {
+                if (typeof global.fbq !== 'function') {
+                    retryCount++;
+                    if (retryCount < maxRetries) {
+                        setTimeout(init, 100);
+                    }
+                    return;
+                }
+                eventsFired = true;
+            }
+
+            init();
+            expect(retryCount).toBe(1);
+            expect(eventsFired).toBe(false);
+
+            // Simulate SDK loading after 300ms
+            jest.advanceTimersByTime(200);
+            expect(retryCount).toBe(3);
+            expect(eventsFired).toBe(false);
+
+            // Now fbq becomes available
+            global.fbq = jest.fn();
+            jest.advanceTimersByTime(100);
+            expect(eventsFired).toBe(true);
+
+            jest.useRealTimers();
+        });
+
+        it('should stop retrying after maxRetries', function () {
+            jest.useFakeTimers();
+            delete global.fbq;
+
+            var retryCount = 0;
+            var maxRetries = 20;
+            var eventsFired = false;
+
+            function init() {
+                if (typeof global.fbq !== 'function') {
+                    retryCount++;
+                    if (retryCount < maxRetries) {
+                        setTimeout(init, 100);
+                    }
+                    return;
+                }
+                eventsFired = true;
+            }
+
+            init();
+            // Run through all retries
+            jest.advanceTimersByTime(maxRetries * 100);
+
+            expect(retryCount).toBe(maxRetries);
+            expect(eventsFired).toBe(false);
+
+            jest.useRealTimers();
+        });
+
+        it('should fire events immediately when fbq is already available', function () {
+            global.fbq = jest.fn();
+
+            var retryCount = 0;
+            var eventsFired = false;
+
+            function init() {
+                if (typeof global.fbq !== 'function') {
+                    retryCount++;
+                    return;
+                }
+                eventsFired = true;
+            }
+
+            init();
+            expect(retryCount).toBe(0);
+            expect(eventsFired).toBe(true);
         });
     });
 
@@ -450,18 +526,22 @@ describe('Pixel Events - Isolated Execution Context', function () {
     });
 
     describe('Console Warning', function () {
-        it('should log warning when fbq is not available', function () {
-            delete global.fbq;
+        it('should log warning when fbq throws an error during event fire', function () {
+            global.fbq = jest.fn(() => {
+                throw new Error('fbq error');
+            });
 
-            // Simulate logWarning
-            if (typeof console !== 'undefined' && console.warn) {
-                console.warn('[FB Pixel]', 'fbq not available, skipping event:', 'ViewContent');
+            // Simulate logWarning from catch block in fireEvent
+            try {
+                global.fbq('track', 'ViewContent', {});
+            } catch (e) {
+                console.warn('[FB Pixel]', 'Event error: ViewContent', e);
             }
 
             expect(consoleWarnSpy).toHaveBeenCalledWith(
                 '[FB Pixel]',
-                'fbq not available, skipping event:',
-                'ViewContent'
+                'Event error: ViewContent',
+                expect.any(Error)
             );
         });
 
