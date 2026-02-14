@@ -75,7 +75,6 @@
      */
     function fireEvent(event) {
         var eventData = buildEventData(event);
-        console.log("eventData", eventData);
 
         // Skip if already fired (deduplication)
         if (shouldSkipEvent(eventData.eventId)) {
