@@ -104,21 +104,22 @@ async function checkWooCommerceLogs() {
     }
 
     console.log('Please check WooCommerce logs in Github Artifacts');
-
-    const criticalLogs = execSync(
-      `grep -E "^[0-9T:+-]+ (ERROR|CRITICAL|ALERT|EMERGENCY) " "${logFile}" || true`,
-      { encoding: 'utf8' }
-    ).trim();
-
-    if (criticalLogs) {
-      console.log('\n❌ CRITICAL ERRORS FOUND IN LOGS:');
-      console.log(criticalLogs);
-    }
-
     return { success: false, error: 'Non-200 response codes found' };
   }
 
-  console.log('✅ All response codes are 200');
+  const criticalLogs = execSync(
+    `grep -E "^[0-9T:+-]+ (ERROR|CRITICAL|ALERT|EMERGENCY) " "${logFile}" || true`,
+    { encoding: 'utf8' }
+  ).trim();
+
+  if (criticalLogs) {
+    console.log('❌ CRITICAL ERRORS FOUND IN LOGS:');
+    console.log(criticalLogs);
+    console.log('Please check WooCommerce logs in Github Artifacts');
+    return { success: false, error: 'Critical errors found in logs' };
+  }
+
+  console.log('✅ No errors found in logs');
   return { success: true };
 }
 

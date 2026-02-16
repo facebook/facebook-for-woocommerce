@@ -22,6 +22,10 @@ on:
     # Run daily at 8am UTC (only runs when required secrets are configured)
     - cron: '0 8 * * *'
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 env:
   # Test environment configuration
   TEST_SITE_HOST: ${{ secrets.TEST_SITE_HOST }}
