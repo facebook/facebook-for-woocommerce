@@ -88,6 +88,21 @@ async function checkWooCommerceLogs() {
     console.log(`❌ Found non-200 response codes in log file: ${logFile}`);
     console.log('Non-200 log lines:');
     console.log(non200Lines);
+
+    // Print surrounding context (10 lines before/after) for each non-200 line
+    const lineNumbers = non200Lines.split('\n').map(l => parseInt(l.split(':')[0], 10)).filter(n => !isNaN(n));
+    for (const lineNum of lineNumbers) {
+      const start = Math.max(1, lineNum - 10);
+      const end = lineNum + 10;
+      console.log(`\n--- Context around line ${lineNum} (lines ${start}-${end}) ---`);
+      const context = execSync(
+        `sed -n '${start},${end}p' "${logFile}"`,
+        { encoding: 'utf8' }
+      ).trim();
+      console.log(context);
+      console.log('--- End context ---');
+    }
+
     console.log('Please check WooCommerce logs in Github Artifacts');
 
     const criticalLogs = execSync(
