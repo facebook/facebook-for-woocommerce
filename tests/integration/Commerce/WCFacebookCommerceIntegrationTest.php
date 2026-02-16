@@ -1,7 +1,7 @@
 <?php
 declare( strict_types=1 );
 
-require_once __DIR__ . '/../../facebook-commerce.php';
+require_once __DIR__ . '/../../../facebook-commerce.php';
 
 use WooCommerce\Facebook\Admin;
 use WooCommerce\Facebook\Admin\Products as AdminProducts;
@@ -300,7 +300,7 @@ class WCFacebookCommerceIntegrationTest extends \WooCommerce\Facebook\Tests\Abst
 			$expected_output[ $variation_id ] = 'some-facebook-api-product-item-id-' . $variation_id;
 			$facebook_output[]                = [
 				'id'          => 'some-facebook-api-product-item-id-' . $variation_id,
-				'retailer_id' => (string) $variation_id,
+				'retailer_id' => \WC_Facebookcommerce_Utils::get_fb_retailer_id( $variation ),
 			];
 		}
 		/* From Product Meta or FB API. */
@@ -336,7 +336,7 @@ class WCFacebookCommerceIntegrationTest extends \WooCommerce\Facebook\Tests\Abst
 			$expected_output[ $variation_id ] = 'some-facebook-api-product-item-id-' . $variation_id;
 			$facebook_output[]                = [
 				'id'          => 'some-facebook-api-product-item-id-' . $variation_id,
-				'retailer_id' => $variation_id . '_modified',
+				'retailer_id' => \WC_Facebookcommerce_Utils::get_fb_retailer_id( $variation ) . '_modified',
 			];
 		}
 		/* From Product Meta or FB API. */
