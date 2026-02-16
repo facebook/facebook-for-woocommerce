@@ -86,6 +86,8 @@ async function checkWooCommerceLogs() {
 
   if (non200Lines) {
     console.log(`❌ Found non-200 response codes in log file: ${logFile}`);
+    console.log('Non-200 log lines:');
+    console.log(non200Lines);
     console.log('Please check WooCommerce logs in Github Artifacts');
 
     const criticalLogs = execSync(
