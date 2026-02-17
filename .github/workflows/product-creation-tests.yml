@@ -401,16 +401,16 @@ jobs:
 
           echo "✅ Selected business asset set $INDEX for this run"
 
-      - name: Install Facebook for WooCommerce plugin
+      - name: Install Meta for WooCommerce plugin
         run: |
           cd ${{ env.WORDPRESS_PATH }}
 
           # Use marketplace version if flag is true
           if [ "${{ inputs.use-marketplace-version }}" = "true" ]; then
-            echo "Installing Facebook for WooCommerce from wordpress.org marketplace"
+            echo "Installing Meta for WooCommerce from wordpress.org marketplace"
             wp plugin install facebook-for-woocommerce --version=dev --allow-root
           else
-            echo "Installing Facebook for WooCommerce from local workspace"
+            echo "Installing Meta for WooCommerce from local workspace"
             # Copy plugin files from the checked out repository root
             cp -r ${{ github.workspace }} wp-content/plugins/facebook-for-woocommerce/
 
@@ -422,7 +422,7 @@ jobs:
             cd ${{ env.WORDPRESS_PATH }}
           fi
 
-          # Configure Facebook connection before activation using selected business assets
+          # Configure Meta connection before activation using selected business assets
           wp option update wc_facebook_access_token "${{ env.FB_ACCESS_TOKEN }}" --allow-root
           wp option update wc_facebook_merchant_access_token "${{ env.FB_ACCESS_TOKEN }}" --allow-root
           wp option update wc_facebook_business_manager_id "${{ env.FB_BUSINESS_MANAGER_ID }}" --allow-root
@@ -505,15 +505,15 @@ jobs:
           # Test if site is accessible
           curl -f http://${{ env.TEST_SITE_HOST }}:8080 || exit 1
 
-      - name: Verify Facebook for WooCommerce setup
+      - name: Verify Meta for WooCommerce setup
         run: |
           cd ${{ env.WORDPRESS_PATH }}
-          echo "=== Facebook for WooCommerce Info ==="
+          echo "=== Meta for WooCommerce Info ==="
           wp eval "
             if (function_exists('facebook_for_woocommerce')) {
                 \$connection = facebook_for_woocommerce()->get_connection_handler();
                 if (!\$connection->is_connected()) {
-                    echo '❌ Facebook plugin is NOT connected' . PHP_EOL;
+                    echo '❌ Meta plugin is NOT connected' . PHP_EOL;
                     exit(1);
                 }
                 echo 'Connected: YES' . PHP_EOL;
@@ -525,7 +525,7 @@ jobs:
                 echo 'S2S Enabled: ' . get_option('wc_facebook_enable_server_to_server') . PHP_EOL;
                 echo 'Debug Mode: ' . get_option('wc_facebook_debug_mode') . PHP_EOL;
             } else {
-                echo '❌ Facebook plugin not loaded properly' . PHP_EOL;
+                echo '❌ Meta plugin not loaded properly' . PHP_EOL;
                 exit(1);
             }" --allow-root
 

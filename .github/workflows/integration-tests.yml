@@ -92,7 +92,7 @@ jobs:
           # Install WordPress test suite with WooCommerce and Polylang for localization tests
           # Parameters: db-name db-user db-pass db-host wp-version wc-version polylang-version skip-db-creation
           bash bin/install-wp-tests.sh wordpress_test wp_user wp_pass 127.0.0.1:3306 latest latest $POLYLANG_VERSION || echo "::warning::WordPress test suite installation failed"
-          # Install Facebook for WooCommerce plugin
+          # Install Meta for WooCommerce plugin
           cp -r . /tmp/wordpress/wp-content/plugins/facebook-for-woocommerce
 
           # Check if setup was successful
