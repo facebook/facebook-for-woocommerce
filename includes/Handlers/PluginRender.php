@@ -300,7 +300,7 @@ class PluginRender {
             </p>
 
             <p>
-                However, we strongly recommend syncing all products to help drive sales and optimize ad performance. Products that aren't synced will not be available for your customers to discover and buy in your ads and shops.
+                However, we strongly recommend syncing all products to help drive sales and optimize ad performance. Products that aren’t synced will not be available for your customers to discover and buy in your ads and shops.
             </p>
 
             <p>
