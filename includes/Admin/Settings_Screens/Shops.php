@@ -92,6 +92,27 @@ class Shops extends Abstract_Settings_Screen {
 	 * @internal
 	 */
 	public function add_notices() {
+		if ( get_transient( 'wc_facebook_connection_invalid' ) ) {
+			$message = sprintf(
+			/* translators: Placeholders: %1$s - <strong> tag, %2$s - </strong> tag, %3$s - <a> tag, %4$s - </a> tag, %5$s - <a> tag, %6$s - </a> tag */
+				__( '%1$sFacebook connection error.%2$s Your access token is no longer valid. This may happen if the system user was unconfirmed, the password was changed, or the app was deauthorized. Please %3$sreconnect your store%4$s to restore functionality, or %5$scontact support%6$s for help.', 'facebook-for-woocommerce' ),
+				'<strong>',
+				'</strong>',
+				'<a href="' . esc_url( facebook_for_woocommerce()->get_settings_url() ) . '">',
+				'</a>',
+				'<a href="' . esc_url( facebook_for_woocommerce()->get_support_url() ) . '" target="_blank">',
+				'</a>'
+			);
+
+			facebook_for_woocommerce()->get_admin_notice_handler()->add_admin_notice(
+				$message,
+				'wc_facebook_connection_invalid',
+				array(
+					'notice_class' => 'error',
+				)
+			);
+		}
+
 		if ( get_transient( 'wc_facebook_connection_failed' ) ) {
 			$message = sprintf(
 			/* translators: Placeholders: %1$s - <strong> tag, %2$s - </strong> tag, %3$s - <a> tag, %4$s - </a> tag, %5$s - <a> tag, %6$s - </a> tag */
@@ -181,14 +202,19 @@ class Shops extends Abstract_Settings_Screen {
 		$connection            = facebook_for_woocommerce()->get_connection_handler();
 		$is_connected          = $connection->is_connected();
 		$merchant_access_token = get_option( 'wc_facebook_merchant_access_token', '' );
+		$connection_invalid    = (bool) get_transient( 'wc_facebook_connection_invalid' );
 
-		if ( ! empty( $merchant_access_token ) && $is_connected ) {
+		if ( ! empty( $merchant_access_token ) && $is_connected && ! $connection_invalid ) {
 			$iframe_url = \WooCommerce\Facebook\Handlers\MetaExtension::generate_iframe_management_url(
 				$connection->get_external_business_id()
 			);
-		} else {
+		}
+
+		// Fall back to the splash/onboarding iframe if the management URL could not be loaded
+		// (e.g. due to an invalid token) or if the store was never connected.
+		if ( empty( $iframe_url ) ) {
 			$iframe_url = \WooCommerce\Facebook\Handlers\MetaExtension::generate_iframe_splash_url(
-				$is_connected,
+				$is_connected && ! $connection_invalid,
 				$connection->get_plugin(),
 				$connection->get_external_business_id()
 			);
