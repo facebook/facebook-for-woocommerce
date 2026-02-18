@@ -117,7 +117,8 @@ class API extends Base {
 		$response = $this->get_response();
 		$request  = $this->get_request();
 		if ( $response && $response->has_api_error() ) {
-			$code = $response->get_api_error_code();
+			$code    = $response->get_api_error_code();
+			$subcode = $response->get_api_error_subcode();
 			// phpcs:ignore Universal.Operators.DisallowShortTernary.Found
 			$message = sprintf( '%s: %s', $response->get_api_error_type(), $response->get_user_error_message() ?: $response->get_api_error_message() );
 			/**
@@ -149,12 +150,41 @@ class API extends Base {
 			}
 
 			/**
-			 * Handle invalid token errors
+			 * Handle invalid token errors.
+			 *
+			 * Error code 190 = OAuthException (invalid/expired access token).
+			 * Error codes 102, 10, 200-299 = other permission/auth errors.
+			 *
+			 * When code 190 is present, the subcode tells us why the token is invalid:
+			 *   452 - Session does not match current stored session
+			 *   458 - App not installed / user has not authorized the application
+			 *   460 - Password has been changed
+			 *   464 - User is not a confirmed user (unconfirmed system user)
+			 *   465 - Sessions for the user are not allowed (wrong business / deleted BISU)
 			 *
 			 * @link https://developers.facebook.com/docs/graph-api/using-graph-api/error-handling#errorcodes
 			 */
 			if ( ( $code >= 200 && $code < 300 ) || in_array( $code, array( 10, 102, 190 ), false ) ) {
 				set_transient( 'wc_facebook_connection_invalid', time(), DAY_IN_SECONDS );
+
+				// Log a specific message for known auth subcodes so merchants/support understand what happened.
+				$auth_subcodes = array(
+					452 => 'Session does not match current stored session. The user may have logged in elsewhere.',
+					458 => 'The app is not installed or the user has not authorized the application.',
+					460 => 'The user\'s password has been changed. A new access token is required.',
+					464 => 'The system user is not confirmed. Please confirm the system user in Business Manager.',
+					465 => 'The system user session is not allowed. The user may belong to a different business or was deleted.',
+				);
+
+				if ( 190 === $code && $subcode && isset( $auth_subcodes[ $subcode ] ) ) {
+					$message = sprintf(
+						'Facebook connection invalid (error %d, subcode %d): %s',
+						$code,
+						$subcode,
+						$auth_subcodes[ $subcode ]
+					);
+					facebook_for_woocommerce()->log( $message );
+				}
 			} else {
 				// this was an unrelated error, so the OAuth connection may still be valid
 				delete_transient( 'wc_facebook_connection_invalid' );

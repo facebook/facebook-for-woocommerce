@@ -86,6 +86,20 @@ class Response extends JSONResponse {
 
 
 	/**
+	 * Gets the API error subcode.
+	 *
+	 * @link https://developers.facebook.com/docs/graph-api/using-graph-api/error-handling#subcode
+	 *
+	 * @since 3.5.17
+	 *
+	 * @return int|null
+	 */
+	public function get_api_error_subcode() {
+		return $this->error['error_subcode'] ?? null;
+	}
+
+
+	/**
 	 * Gets the user error message.
 	 *
 	 * @since 2.1.0
