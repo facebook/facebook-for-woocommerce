@@ -5,7 +5,7 @@
  * This source code is licensed under the license found in the
  * LICENSE file in the root directory of this source tree.
  *
- * @package FacebookCommerce
+ * @package MetaCommerce
  */
 
 namespace WooCommerce\Facebook\Handlers;
@@ -134,7 +134,7 @@ class PluginRender {
 		if ( isset( $screen->id ) && 'marketing_page_wc-facebook' === $screen->id ) {
 			echo '<div id="opt_out_banner" class="' . esc_html( self::get_opt_out_banner_class() ) . '">
             <h4>When you update to version <b>' . esc_html( self::ALL_PRODUCTS_PLUGIN_VERSION ) . '</b> your products will automatically sync to your catalog at Meta catalog</h4>
-            The next time you update your Facebook for WooCommerce plugin, all your products will be synced automatically. This is to help you drive sales and optimize your ad performance. <a href="https://www.facebook.com/business/help/4049935305295468">Learn more about changes to how your products will sync to Meta</a>
+            The next time you update your Meta for WooCommerce plugin, all your products will be synced automatically. This is to help you drive sales and optimize your ad performance. <a href="https://www.facebook.com/business/help/4049935305295468">Learn more about changes to how your products will sync to Meta</a>
                 <p>
                     <a href="edit.php?post_type=product"> Review products </a>
                     <a href="javascript:void(0);" style="text-decoration: underline; cursor: pointer; margin-left: 10px" class="opt_out_of_sync_button"> Opt out of automatic sync</a>
@@ -296,7 +296,7 @@ class PluginRender {
 		return '
             <h4>Opt out of automatic product sync?</h4>
             <p>
-                If you opt out, we will not be syncing your products to your Meta catalog even after you update your Facebook for WooCommerce plugin.
+                If you opt out, we will not be syncing your products to your Meta catalog even after you update your Meta for WooCommerce plugin.
             </p>
 
             <p>

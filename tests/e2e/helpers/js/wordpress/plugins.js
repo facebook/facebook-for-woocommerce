@@ -51,7 +51,7 @@ async function uninstallPlugin(slug) {
 }
 
 /**
- * Deactivate the Facebook for WooCommerce plugin
+ * Deactivate the Meta for WooCommerce plugin
  */
 async function deactivatePlugin() {
   console.log('🔌 Deactivating plugin...');
@@ -60,7 +60,7 @@ async function deactivatePlugin() {
 }
 
 /**
- * Activate the Facebook for WooCommerce plugin
+ * Activate the Meta for WooCommerce plugin
  */
 async function activatePlugin() {
   console.log('🔌 Activating plugin...');

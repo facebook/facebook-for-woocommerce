@@ -20,7 +20,7 @@ async function execWP(phpCode) {
 }
 
 /**
- * Ensure debug mode is enabled for Facebook for WooCommerce
+ * Ensure debug mode is enabled for Meta for WooCommerce
  * @param {import('@playwright/test').Page} page - Playwright page
  * @returns {Promise<boolean>} Success status
  */

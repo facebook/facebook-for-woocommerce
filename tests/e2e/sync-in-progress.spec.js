@@ -20,7 +20,7 @@ const {
   safeScreenshot
 } = require('./test-helpers');
 
-test.describe('Facebook for WooCommerce - Sync In Progress E2E Tests', () => {
+test.describe('Meta for WooCommerce - Sync In Progress E2E Tests', () => {
 
   test.beforeEach(async ({ page }, testInfo) => {
     logTestStart(testInfo);

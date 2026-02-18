@@ -1,7 +1,7 @@
 /**
- * Facebook for WooCommerce API
+ * Meta for WooCommerce API
  *
- * @package FacebookCommerce
+ * @package MetaCommerce
  */
 
 /* global jQuery, fb_api_data */
@@ -10,7 +10,7 @@
     'use strict';
 
     /**
-     * Facebook WooCommerce API Client Factory
+     * Meta WooCommerce API Client Factory
      * Creates an API client with the provided nonce
      * 
      * NONCE is a required argument for all requests! Each calling page must provide a fresh nonce;

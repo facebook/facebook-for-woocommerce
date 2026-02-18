@@ -273,7 +273,7 @@ test.describe('WooCommerce Plugin level tests', () => {
   });
 
 
-  test('Verify Facebook for WooCommerce plugin connection', async ({ page }) => {
+  test('Verify Meta for WooCommerce plugin connection', async ({ page }) => {
     console.log('🔍 Verifying Facebook plugin connection...');
 
     const expectedAccessToken = process.env.FB_ACCESS_TOKEN;
@@ -669,7 +669,7 @@ test.describe('WooCommerce Plugin level tests', () => {
       });
 
       // Look for Facebook plugin row
-      const pluginRow = page.locator('tr[data-slug="facebook-for-woocommerce"], tr:has-text("Facebook for WooCommerce")').first();
+      const pluginRow = page.locator('tr[data-slug="facebook-for-woocommerce"], tr:has-text("Meta for WooCommerce")').first();
 
       await pluginRow.waitFor({ state: 'visible', timeout: TIMEOUTS.LONG });
       console.log('✅ Facebook plugin found');
@@ -721,13 +721,13 @@ test.describe('WooCommerce Plugin level tests', () => {
 
       // Check if Facebook plugin is listed
       const pageContent = await page.content();
-      const hasFacebookPlugin = pageContent.includes('Facebook for WooCommerce') ||
+      const hasFacebookPlugin = pageContent.includes('Meta for WooCommerce') ||
         pageContent.includes('facebook-for-woocommerce');
 
       if (hasFacebookPlugin) {
-        console.log('✅ Facebook for WooCommerce plugin detected');
+        console.log('✅ Meta for WooCommerce plugin detected');
       } else {
-        console.warn('⚠️ Facebook for WooCommerce plugin not found in plugins list');
+        console.warn('⚠️ Meta for WooCommerce plugin not found in plugins list');
       }
 
       await checkForPhpErrors(page);

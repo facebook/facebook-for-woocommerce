@@ -5,7 +5,7 @@
  * This source code is licensed under the license found in the
  * LICENSE file in the root directory of this source tree.
  *
- * @package FacebookCommerce
+ * @package MetaCommerce
  */
 
 require_once __DIR__ . '/includes/fbutils.php';
@@ -29,7 +29,7 @@ use WooCommerce\Facebook\Feed\Localization\LanguageOverrideFeed;
 /**
  * Class WC_Facebookcommerce
  *
- * This class is the main entry point for the Facebook for WooCommerce plugin.
+ * This class is the main entry point for the Meta for WooCommerce plugin.
  */
 class WC_Facebookcommerce extends WooCommerce\Facebook\Framework\Plugin {
 	/** @var string the plugin version */
@@ -695,7 +695,7 @@ class WC_Facebookcommerce extends WooCommerce\Facebook\Framework\Plugin {
 	 * @return string
 	 */
 	public function get_plugin_name() {
-		return __( 'Facebook for WooCommerce', 'facebook-for-woocommerce' );
+		return __( 'Meta for WooCommerce', 'facebook-for-woocommerce' );
 	}
 
 	/**
@@ -871,7 +871,7 @@ class WC_Facebookcommerce extends WooCommerce\Facebook\Framework\Plugin {
 }
 
 /**
- * Gets the Facebook for WooCommerce plugin instance.
+ * Gets the Meta for WooCommerce plugin instance.
  *
  * @since 1.10.0
  *

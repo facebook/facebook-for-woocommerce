@@ -1,5 +1,5 @@
-=== Facebook for WooCommerce ===
-Contributors: facebook
+=== Meta for WooCommerce ===
+Contributors: meta
 Tags: meta, facebook, conversions api, catalog sync, ads
 Requires at least: 5.6
 Tested up to: 6.9
@@ -9,18 +9,18 @@ MySQL: 5.6 or greater
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
-Get the Official Facebook for WooCommerce plugin for powerful ways to help grow your business.
+Get the Official Meta for WooCommerce plugin for powerful ways to help grow your business.
 
 == Description ==
 
-This is the official Facebook for WooCommerce plugin that connects your WooCommerce website to Facebook. With this plugin, you can install the Facebook pixel, and upload your online store catalog, enabling you to easily run dynamic ads.
+This is the official Meta for WooCommerce plugin that connects your WooCommerce website to Facebook. With this plugin, you can install the Facebook pixel, and upload your online store catalog, enabling you to easily run dynamic ads.
 
 
-Marketing on Facebook helps your business build lasting relationships with people, find new customers, and increase sales for your online store. With this Facebook ad extension, reaching the people who matter most to your business is simple. This extension will track the results of your advertising across devices. It will also help you:
+Marketing on Meta platforms helps your business build lasting relationships with people, find new customers, and increase sales for your online store. With this Facebook ad extension, reaching the people who matter most to your business is simple. This extension will track the results of your advertising across devices. It will also help you:
 
 * Maximize your campaign performance. By setting up the Facebook pixel and building your audience, you will optimize your ads for people likely to buy your products, and reach people with relevant ads on Facebook after they’ve visited your website.
 * Find more customers. Connecting your product catalog automatically creates carousel ads that showcase the products you sell and attract more shoppers to your website.
-* Generate sales among your website visitors. When you set up the Facebook pixel and connect your product catalog, you can use dynamic ads to reach shoppers when they’re on Facebook with ads for the products they viewed on your website. This will be included in a future release of Facebook for WooCommerce.
+* Generate sales among your website visitors. When you set up the Facebook pixel and connect your product catalog, you can use dynamic ads to reach shoppers when they're on Facebook with ads for the products they viewed on your website. This will be included in a future release of Meta for WooCommerce.
 
 == Installation ==
 

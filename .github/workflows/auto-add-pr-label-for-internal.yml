@@ -26,7 +26,7 @@ jobs:
 
             const labelNames = labels.map(label => label.name);
 
-            // Detect exported PRs from Meta/Facebook by:
+            // Detect exported PRs from Meta by:
             // 1. Source branch matches export-D.* pattern
             // 2. Title contains DevmateWooCommerceGenerateTests (LIMITING to CodeMod PRs for now)
             const isExportedPR =

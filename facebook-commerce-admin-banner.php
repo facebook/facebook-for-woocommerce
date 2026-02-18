@@ -5,7 +5,7 @@
  * This source code is licensed under the license found in the
  * LICENSE file in the root directory of this source tree.
  *
- * @package FacebookCommerce
+ * @package MetaCommerce
  */
 
 /**
@@ -15,7 +15,7 @@
  */
 
 /**
- * WhatsApp Admin Banner class for Facebook for WooCommerce.
+ * WhatsApp Admin Banner class for Meta for WooCommerce.
  */
 class WC_Facebookcommerce_Admin_Banner {
 	const BANNER_ID = 'wc_facebook_promo_banner';
