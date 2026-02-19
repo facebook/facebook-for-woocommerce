@@ -1,6 +1,6 @@
 <?php
 /**
- * Facebook for WooCommerce.
+ * Meta for WooCommerce.
  */
 
 namespace WooCommerce\Facebook\Framework\Api;

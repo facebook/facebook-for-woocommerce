@@ -1,4 +1,4 @@
-*** Facebook for WooCommerce Changelog ***
+*** Meta for WooCommerce Changelog ***
 
 = 3.5.17 - 2026-02-17 =
 * Fix - Fix - Removed the prefix from retailer id. by @vahidkay-meta in #3858

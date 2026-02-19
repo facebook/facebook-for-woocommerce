@@ -6,7 +6,7 @@ const { TIMEOUTS } = require('../constants/timeouts');
 const { execWP } = require('../wordpress/exec');
 
 /**
- * Get connection status from Facebook for WooCommerce
+ * Get connection status from Meta for WooCommerce
  * @returns {Promise<Object>} Connection status details
  */
 async function getConnectionStatus() {

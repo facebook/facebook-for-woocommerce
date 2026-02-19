@@ -6,7 +6,7 @@ namespace WooCommerce\Facebook\Integrations;
 use WooCommerce\Facebook\WPMLLanguageStatus;
 
 /**
- * WPML integration for Facebook for WooCommerce.
+ * WPML integration for Meta for WooCommerce.
  *
  * Handles integration with the WPML multilingual plugin to manage
  * product synchronization based on language settings.

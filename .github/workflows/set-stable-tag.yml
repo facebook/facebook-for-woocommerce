@@ -32,7 +32,7 @@ jobs:
           TEMP_DIR=$(mktemp -d)
           trap "rm -rf $TEMP_DIR" EXIT
 
-          echo "Comparing Facebook for WooCommerce v$VERSION"
+          echo "Comparing Meta for WooCommerce v$VERSION"
 
           # Download from WordPress.org
           curl -sL "https://downloads.wordpress.org/plugin/facebook-for-woocommerce.zip" -o "$TEMP_DIR/marketplace.zip"
