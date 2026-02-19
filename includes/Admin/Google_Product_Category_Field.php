@@ -31,7 +31,7 @@ class Google_Product_Category_Field {
 	public function render( $input_id ) {
 		$facebook_category_handler = facebook_for_woocommerce()->get_facebook_category_handler();
 		$facebook_category_fields  = sprintf(
-			"window.wc_facebook_google_product_category_fields = new WC_Facebook_Google_Product_Category_Fields( %s, '%s' );",
+			"jQuery( document ).ready( function() { window.wc_facebook_google_product_category_fields = new WC_Facebook_Google_Product_Category_Fields( %s, '%s' ); } );",
 			wp_json_encode( $facebook_category_handler->get_categories() ),
 			esc_js( $input_id )
 		);
