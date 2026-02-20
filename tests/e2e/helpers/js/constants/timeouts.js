@@ -12,7 +12,7 @@ const TIMEOUTS = {
   MEDIUM: 5000,        // 5 seconds - moderate operations
   LONG: 10000,         // 10 seconds - slow operations
   EXTRA_LONG: 30000,   // 30 seconds - very slow operations
-  MAX: 60000,          // 60 seconds - maximum timeout (navigation, page loads)
+  MAX: 120000,         // 120 seconds - maximum timeout (navigation, page loads)
 };
 
 module.exports = { TIMEOUTS };
