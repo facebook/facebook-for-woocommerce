@@ -148,25 +148,216 @@ describe('Pixel Events - Isolated Execution Context', function () {
         });
     });
 
-    describe('fbq Availability Check', function () {
-        it('should detect when fbq is available', function () {
+    describe('fbq Availability and Object.defineProperty Trap', function () {
+        it('should fire events immediately when fbq is already available', function () {
             global.fbq = jest.fn();
 
-            expect(typeof global.fbq).toBe('function');
+            var eventsFired = false;
+
+            function fireQueuedEvents() {
+                eventsFired = true;
+            }
+
+            function init() {
+                if (typeof global.fbq === 'function') {
+                    fireQueuedEvents();
+                    return;
+                }
+            }
+
+            init();
+            expect(eventsFired).toBe(true);
         });
 
-        it('should detect when fbq is not available', function () {
+        it('should set Object.defineProperty trap when fbq is not available', function () {
             delete global.fbq;
 
-            expect(typeof global.fbq).not.toBe('function');
+            var trapSet = false;
+            var originalDefineProperty = Object.defineProperty;
+
+            var definePropertySpy = jest.spyOn(Object, 'defineProperty');
+
+            function init() {
+                if (typeof global.fbq === 'function') {
+                    return;
+                }
+
+                var _fbq = global.fbq;
+                Object.defineProperty(global, 'fbq', {
+                    configurable: true,
+                    enumerable: true,
+                    get: function() { return _fbq; },
+                    set: function(value) {
+                        _fbq = value;
+                    }
+                });
+                trapSet = true;
+            }
+
+            init();
+            expect(trapSet).toBe(true);
+            expect(definePropertySpy).toHaveBeenCalledWith(
+                global,
+                'fbq',
+                expect.objectContaining({
+                    configurable: true,
+                    enumerable: true,
+                })
+            );
+
+            // Clean up
+            Object.defineProperty(global, 'fbq', {
+                configurable: true,
+                enumerable: true,
+                writable: true,
+                value: undefined
+            });
+            delete global.fbq;
+            definePropertySpy.mockRestore();
         });
 
-        it('should handle fbq being undefined gracefully', function () {
+        it('should fire events when fbq is assigned after trap is set', function () {
             delete global.fbq;
 
-            // Simulate the check in fireEvent
-            const fbqAvailable = typeof fbq === 'function';
-            expect(fbqAvailable).toBe(false);
+            var eventsFired = false;
+
+            function fireQueuedEvents() {
+                eventsFired = true;
+            }
+
+            // Set up the trap (simulating init logic)
+            var _fbq = global.fbq;
+            Object.defineProperty(global, 'fbq', {
+                configurable: true,
+                enumerable: true,
+                get: function() { return _fbq; },
+                set: function(value) {
+                    _fbq = value;
+                    if (typeof value === 'function') {
+                        Object.defineProperty(global, 'fbq', {
+                            configurable: true,
+                            enumerable: true,
+                            writable: true,
+                            value: value
+                        });
+                        fireQueuedEvents();
+                    }
+                }
+            });
+
+            expect(eventsFired).toBe(false);
+
+            // Simulate consent manager / FB SDK assigning fbq
+            global.fbq = jest.fn();
+
+            expect(eventsFired).toBe(true);
+        });
+
+        it('should restore fbq to a normal property after trap fires', function () {
+            delete global.fbq;
+
+            var _fbq = global.fbq;
+            Object.defineProperty(global, 'fbq', {
+                configurable: true,
+                enumerable: true,
+                get: function() { return _fbq; },
+                set: function(value) {
+                    _fbq = value;
+                    if (typeof value === 'function') {
+                        Object.defineProperty(global, 'fbq', {
+                            configurable: true,
+                            enumerable: true,
+                            writable: true,
+                            value: value
+                        });
+                    }
+                }
+            });
+
+            var mockFn = jest.fn();
+            global.fbq = mockFn;
+
+            // After trap fires, fbq should be a normal writable property
+            var anotherFn = jest.fn();
+            global.fbq = anotherFn;
+            expect(global.fbq).toBe(anotherFn);
+        });
+
+        it('should not fire events if a non-function value is assigned to fbq', function () {
+            delete global.fbq;
+
+            var eventsFired = false;
+
+            function fireQueuedEvents() {
+                eventsFired = true;
+            }
+
+            var _fbq = global.fbq;
+            Object.defineProperty(global, 'fbq', {
+                configurable: true,
+                enumerable: true,
+                get: function() { return _fbq; },
+                set: function(value) {
+                    _fbq = value;
+                    if (typeof value === 'function') {
+                        Object.defineProperty(global, 'fbq', {
+                            configurable: true,
+                            enumerable: true,
+                            writable: true,
+                            value: value
+                        });
+                        fireQueuedEvents();
+                    }
+                }
+            });
+
+            // Assign a non-function value
+            global.fbq = 'not a function';
+            expect(eventsFired).toBe(false);
+
+            // Now assign a function
+            global.fbq = jest.fn();
+            expect(eventsFired).toBe(true);
+        });
+
+        it('should handle consent manager delayed consent (simulated)', function () {
+            delete global.fbq;
+
+            jest.useFakeTimers();
+            var eventsFired = false;
+
+            function fireQueuedEvents() {
+                eventsFired = true;
+            }
+
+            var _fbq = global.fbq;
+            Object.defineProperty(global, 'fbq', {
+                configurable: true,
+                enumerable: true,
+                get: function() { return _fbq; },
+                set: function(value) {
+                    _fbq = value;
+                    if (typeof value === 'function') {
+                        Object.defineProperty(global, 'fbq', {
+                            configurable: true,
+                            enumerable: true,
+                            writable: true,
+                            value: value
+                        });
+                        fireQueuedEvents();
+                    }
+                }
+            });
+
+            // Simulate 30 seconds passing (user hasn't consented yet)
+            jest.advanceTimersByTime(30000);
+            expect(eventsFired).toBe(false);
+
+            // User clicks "Accept Cookies" — consent manager assigns fbq
+            global.fbq = jest.fn();
+            expect(eventsFired).toBe(true);
+
+            jest.useRealTimers();
         });
     });
 
@@ -450,18 +641,22 @@ describe('Pixel Events - Isolated Execution Context', function () {
     });
 
     describe('Console Warning', function () {
-        it('should log warning when fbq is not available', function () {
-            delete global.fbq;
+        it('should log warning when fbq throws an error during event fire', function () {
+            global.fbq = jest.fn(() => {
+                throw new Error('fbq error');
+            });
 
-            // Simulate logWarning
-            if (typeof console !== 'undefined' && console.warn) {
-                console.warn('[FB Pixel]', 'fbq not available, skipping event:', 'ViewContent');
+            // Simulate logWarning from catch block in fireEvent
+            try {
+                global.fbq('track', 'ViewContent', {});
+            } catch (e) {
+                console.warn('[FB Pixel]', 'Event error: ViewContent', e);
             }
 
             expect(consoleWarnSpy).toHaveBeenCalledWith(
                 '[FB Pixel]',
-                'fbq not available, skipping event:',
-                'ViewContent'
+                'Event error: ViewContent',
+                expect.any(Error)
             );
         });
 
