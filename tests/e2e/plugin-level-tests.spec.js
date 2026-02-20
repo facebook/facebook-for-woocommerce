@@ -397,6 +397,14 @@ test.describe('WooCommerce Plugin level tests', () => {
     console.log('✅ Test passed: No PHP/JS errors, order created');
   });
 
+  test('Check WooCommerce logs for fatal errors and non-200 responses', async () => {
+    const result = await checkWooCommerceLogs();
+
+    if (!result.success) {
+      throw new Error('Log validation failed');
+    }
+  });
+
   test('Reset all products Facebook settings via WooCommerce Status Tools', async ({ page }) => {
     console.log('🔄 Testing Reset all products Facebook settings...');
 
@@ -549,14 +557,6 @@ test.describe('WooCommerce Plugin level tests', () => {
     expect(reconnectResult.before.connected).toBe(false);
     expect(reconnectResult.after.connected).toBe(true);
 
-  });
-
-  test('Check WooCommerce logs for fatal errors and non-200 responses', async () => {
-    const result = await checkWooCommerceLogs();
-
-    if (!result.success) {
-      throw new Error('Log validation failed');
-    }
   });
 
   // Plugin compatibility test

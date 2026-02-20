@@ -22,6 +22,10 @@ on:
     # Run daily at 8am UTC (only runs when required secrets are configured)
     - cron: '0 8 * * *'
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 env:
   # Test environment configuration
   TEST_SITE_HOST: ${{ secrets.TEST_SITE_HOST }}
@@ -93,10 +97,43 @@ jobs:
             echo "::warning title=E2E Tests Skipped::E2E tests require TEST_SITE_HOST and FB_TEST_META_BUSINESS_ASSETS secrets to be configured. After merge, E2E tests will run daily to validate functionality."
           fi
 
+  # Job to resolve currently supported WP and WC versions from the plugin file
+  resolve-versions:
+    runs-on: ubuntu-latest
+    outputs:
+      wp-supported: ${{ steps.versions.outputs.wp-supported }}
+      wc-supported: ${{ steps.versions.outputs.wc-supported }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Read tested up to versions from plugin file
+        id: versions
+        run: |
+          WP_VERSION=$(grep -oP '^\s*\*\s*Tested up to:\s*\K\S+' facebook-for-woocommerce.php)
+          WC_VERSION=$(grep -oP '^\s*\*\s*WC tested up to:\s*\K\S+' facebook-for-woocommerce.php)
+          echo "wp-supported=$WP_VERSION" >> $GITHUB_OUTPUT
+          echo "wc-supported=$WC_VERSION" >> $GITHUB_OUTPUT
+          echo "Resolved versions — WP: $WP_VERSION, WC: $WC_VERSION"
+
   e2e-tests:
-    needs: check-secrets
+    name: E2E Tests - ${{ matrix.label }}
+    needs: [check-secrets, resolve-versions]
     if: ${{ needs.check-secrets.outputs.secrets-configured == 'true' }}
     runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # Currently supported versions (Tested up to in facebook-for-woocommerce.php)
+          - wp-version: ${{ needs.resolve-versions.outputs.wp-supported }}
+            wc-version: ${{ needs.resolve-versions.outputs.wc-supported }}
+            label: 'Currently supported'
+          # Latest available versions
+          - wp-version: 'latest'
+            wc-version: 'latest'
+            label: 'Latest'
 
     services:
       mysql:
@@ -143,8 +180,13 @@ jobs:
           cd ${{ env.WORDPRESS_PATH }}
 
           # Download WordPress
-          curl -O https://wordpress.org/latest.tar.gz
-          tar -xzf latest.tar.gz --strip-components=1
+          if [ "${{ matrix.wp-version }}" = "latest" ]; then
+            curl -O https://wordpress.org/latest.tar.gz
+            tar -xzf latest.tar.gz --strip-components=1
+          else
+            curl -O https://wordpress.org/wordpress-${{ matrix.wp-version }}.tar.gz
+            tar -xzf wordpress-${{ matrix.wp-version }}.tar.gz --strip-components=1
+          fi
 
           # Create wp-config.php
           cp wp-config-sample.php wp-config.php
@@ -232,7 +274,18 @@ jobs:
           # Install Storefront theme (official WooCommerce theme with all hooks)
           wp theme install storefront --activate --allow-root
           echo "✅ Storefront theme installed and activated"
-          wp plugin install woocommerce --activate --allow-root
+          if [ "${{ matrix.wc-version }}" = "latest" ]; then
+            wp plugin install woocommerce --activate --allow-root
+          else
+            # Resolve major.minor to the latest patch version (e.g., 10.5 → 10.5.2)
+            WC_INSTALL_VERSION=$(curl -sf 'https://api.wordpress.org/plugins/info/1.0/woocommerce.json' | jq -r --arg prefix "${{ matrix.wc-version }}." '[.versions | keys[] | select(startswith($prefix)) | select(test("-") | not)] | sort_by(split(".") | map(tonumber)) | last')
+            if [ -z "$WC_INSTALL_VERSION" ] || [ "$WC_INSTALL_VERSION" = "null" ]; then
+              echo "❌ Failed to resolve WC version for ${{ matrix.wc-version }}. Could not fetch version info from wordpress.org or no matching version found."
+              exit 1
+            fi
+            echo "Resolved WC version: ${{ matrix.wc-version }} → $WC_INSTALL_VERSION"
+            wp plugin install woocommerce --version=$WC_INSTALL_VERSION --activate --allow-root
+          fi
 
           # Basic WooCommerce setup
           wp option update woocommerce_store_address "${{ env.STORE_ADDRESS }}" --allow-root
@@ -665,7 +718,7 @@ jobs:
         uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: playwright-report
+          name: playwright-report-${{ matrix.label }}
           path: ${{ env.PLUGIN_PATH }}/playwright-report/
           retention-days: 7
 
@@ -673,7 +726,7 @@ jobs:
         uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: CAPI Pixel Captured events
+          name: captured-events-${{ matrix.label }}
           path: ${{ env.PLUGIN_PATH }}${{ env.FB_E2E_CAPTURED_EVENTS_DIR }}
           retention-days: 7
 
@@ -692,7 +745,7 @@ jobs:
         uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: php-debug-logs
+          name: php-debug-logs-${{ matrix.label }}
           path: ${{ env.WP_DEBUG_LOG }}
           retention-days: 7
 
@@ -700,7 +753,7 @@ jobs:
         uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: woocommerce-logs
+          name: woocommerce-logs-${{ matrix.label }}
           path: ${{ env.WORDPRESS_PATH }}/wp-content/uploads/wc-logs/facebook_for_woocommerce-*.log
           retention-days: 7
 
@@ -708,6 +761,6 @@ jobs:
         uses: actions/upload-artifact@v4
         if: failure()
         with:
-          name: test-failures
+          name: test-failures-${{ matrix.label }}
           path: ${{ env.PLUGIN_PATH }}/test-results/
           retention-days: 7

@@ -222,7 +222,7 @@ test.describe('Meta for WooCommerce - Product Category E2E Tests', () => {
 
             // Step 3: Validate category sync with one product
             console.log('🔍 Validating initial sync...');
-            const initialCategoryResult = await validateCategorySync(categoryId, originalCategoryName, 5);
+            const initialCategoryResult = await validateCategorySync(categoryId, originalCategoryName, 30);
             expect(initialCategoryResult['success']).toBe(true);
             console.log('✅ Initial category sync validated with one product');
 
@@ -231,7 +231,7 @@ test.describe('Meta for WooCommerce - Product Category E2E Tests', () => {
             console.log(`📊 Facebook Product Set ID: ${facebookProductSetId}`);
 
             // Validate product 1 is in the category
-            const product1InitialResult = await validateFacebookSync(product1Id, product1.productName, 5);
+            const product1InitialResult = await validateFacebookSync(product1Id, product1.productName, 30);
             expect(product1InitialResult['success']).toBe(true);
             const isProduct1InInitialSet = product1InitialResult['raw_data']['facebook_data'][0]['product_sets'].some(
                 set => Number(categoryId) === Number(set.retailer_id) && Number(set.id) === Number(facebookProductSetId)

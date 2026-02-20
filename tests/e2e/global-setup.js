@@ -1,5 +1,6 @@
 const { chromium } = require('@playwright/test');
 const { TIMEOUTS } = require('./helpers/js');
+const { execWP } = require('./helpers/js/wordpress/exec');
 
 const baseURL = process.env.WORDPRESS_URL;
 
@@ -80,6 +81,12 @@ async function globalSetup() {
 
   const adminAuthPath = './tests/e2e/.auth/admin.json';
   const customerAuthPath = './tests/e2e/.auth/customer.json';
+
+  // Bump wp_posts auto-increment to a random high number so each test run
+  // creates products with unique IDs that won't collide with stale Facebook catalog data.
+  const startId = Math.floor(Math.random() * 900000) + 100000;
+  await execWP(`global \\$wpdb; \\$wpdb->query('ALTER TABLE ' . \\$wpdb->posts . ' AUTO_INCREMENT = ${startId}');`);
+  console.log(`🔢 Set wp_posts AUTO_INCREMENT to ${startId}`);
 
   // Check if both auth files already exist
   const adminExists = fs.existsSync(adminAuthPath);

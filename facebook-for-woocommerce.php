@@ -15,9 +15,9 @@
  * Requires PHP: 7.4
  * Text Domain: facebook-for-woocommerce
  * Requires Plugins: woocommerce
- * Tested up to: 6.9
+ * Tested up to: 6.9.1
  * WC requires at least: 6.4
- * WC tested up to: 10.5.0
+ * WC tested up to: 10.5
  *
  * @package MetaCommerce
  */
