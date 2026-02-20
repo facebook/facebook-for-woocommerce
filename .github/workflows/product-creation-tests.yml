@@ -278,9 +278,10 @@ jobs:
             wp plugin install woocommerce --activate --allow-root
           else
             # Resolve major.minor to the latest patch version (e.g., 10.5 → 10.5.2)
-            WC_INSTALL_VERSION=$(curl -s 'https://api.wordpress.org/plugins/info/1.0/woocommerce.json' | jq -r --arg prefix "${{ matrix.wc-version }}." '[.versions | keys[] | select(startswith($prefix)) | select(test("-") | not)] | sort_by(split(".") | map(tonumber)) | last')
+            WC_INSTALL_VERSION=$(curl -sf 'https://api.wordpress.org/plugins/info/1.0/woocommerce.json' | jq -r --arg prefix "${{ matrix.wc-version }}." '[.versions | keys[] | select(startswith($prefix)) | select(test("-") | not)] | sort_by(split(".") | map(tonumber)) | last')
             if [ -z "$WC_INSTALL_VERSION" ] || [ "$WC_INSTALL_VERSION" = "null" ]; then
-              WC_INSTALL_VERSION="${{ matrix.wc-version }}"
+              echo "❌ Failed to resolve WC version for ${{ matrix.wc-version }}. Could not fetch version info from wordpress.org or no matching version found."
+              exit 1
             fi
             echo "Resolved WC version: ${{ matrix.wc-version }} → $WC_INSTALL_VERSION"
             wp plugin install woocommerce --version=$WC_INSTALL_VERSION --activate --allow-root
