@@ -35,7 +35,7 @@ class CollectionPage {
 		add_action( 'init', [ $this, 'register_rewrite_rule' ] );
 		add_filter( 'query_vars', [ $this, 'add_query_vars' ] );
 		add_action( 'woocommerce_product_query', [ $this, 'modify_product_query' ] );
-		add_filter( 'woocommerce_loop_display_mode', [ $this, 'force_products_display_mode' ] );
+		add_filter( 'woocommerce_loop_display_mode', [ $this, 'force_products_display_mode' ], PHP_INT_MAX );
 	}
 
 	/**
@@ -122,7 +122,7 @@ class CollectionPage {
 
 			// Prevent WooCommerce core and themes from overriding the product order.
 			// Removes itself after first invocation to avoid affecting other queries in the same request.
-			$ordering_override = function ( $args ) use ( &$ordering_override ) {
+			$ordering_override = function ( $_args ) use ( &$ordering_override ) {
 				remove_filter( 'woocommerce_get_catalog_ordering_args', $ordering_override, PHP_INT_MAX );
 				return array(
 					'orderby'  => 'post__in',
