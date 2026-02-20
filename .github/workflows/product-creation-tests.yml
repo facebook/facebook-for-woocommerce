@@ -631,12 +631,12 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y xvfb
 
-      - name: Run Plugin level tests (sequential)
+      - name: Run Plugin level tests (sequential - mutates plugin state)
         run: |
           cd ${{ env.PLUGIN_PATH }}
           npx playwright test plugin-level-tests.spec.js --project=chromium-wp-admin --workers=1
 
-      - name: Run CAPI Pixel E2E tests (sequential)
+      - name: Run CAPI Pixel E2E tests (sequential - has plugin deactivation test)
         run: |
           cd ${{ env.PLUGIN_PATH }}
           xvfb-run --auto-servernum npx playwright test events-test.spec.js --headed --project=chromium-wp-customer --workers=1
@@ -653,17 +653,17 @@ jobs:
             echo "ℹ️ No test product to delete"
           fi
 
-      - name: Run Product CRUD tests (parallel)
+      - name: Run Product CRUD tests (PARALLEL - each test isolates its own data)
         run: |
           cd ${{ env.PLUGIN_PATH }}
-          npx playwright test "product-(creation|modification|deletion).spec.js" --project=chromium-wp-admin --workers=2
+          npx playwright test product-creation.spec.js product-modification.spec.js product-deletion.spec.js --project=chromium-wp-admin --workers=4
 
-      - name: Run Product Batch tests (sequential)
+      - name: Run Product Batch tests (sequential - heavy catalog operations)
         run: |
           cd ${{ env.PLUGIN_PATH }}
           npx playwright test product-batch.spec.js --project=chromium-wp-admin --workers=1
 
-      - name: Run Product Category tests (sequential)
+      - name: Run Product Category tests (sequential - category sync conflicts)
         run: |
           cd ${{ env.PLUGIN_PATH }}
           npx playwright test product-category.spec.js --project=chromium-wp-admin --workers=1
