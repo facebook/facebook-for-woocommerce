@@ -156,7 +156,7 @@
                         writable: true,
                         value: value
                     });
-                    fireQueuedEvents();
+                    setTimeout(fireQueuedEvents, 0);
                 }
             }
         });
