@@ -253,6 +253,55 @@ describe('Pixel Events - Isolated Execution Context', function () {
             expect(eventsFired).toBe(true);
         });
 
+        it('should defer fireQueuedEvents via setTimeout so fbq init runs first', function () {
+            jest.useFakeTimers();
+            delete global.fbq;
+
+            var callOrder = [];
+
+            function fireQueuedEvents() {
+                callOrder.push('fireQueuedEvents');
+            }
+
+            // Set up the trap with setTimeout (matching actual implementation)
+            var _fbq = global.fbq;
+            Object.defineProperty(global, 'fbq', {
+                configurable: true,
+                enumerable: true,
+                get: function() { return _fbq; },
+                set: function(value) {
+                    _fbq = value;
+                    if (typeof value === 'function') {
+                        Object.defineProperty(global, 'fbq', {
+                            configurable: true,
+                            enumerable: true,
+                            writable: true,
+                            value: value
+                        });
+                        setTimeout(fireQueuedEvents, 0);
+                    }
+                }
+            });
+
+            // Simulate Script 1: SDK snippet assigns fbq (triggers our setter)
+            global.fbq = jest.fn();
+
+            // Simulate Script 2: fbq('init', ...) runs synchronously after Script 1
+            global.fbq('init', '123456789', {});
+            callOrder.push('fbq_init');
+
+            // At this point, init has run but fireQueuedEvents has NOT (still in setTimeout queue)
+            expect(callOrder).toEqual(['fbq_init']);
+
+            // Now advance timers — setTimeout(fireQueuedEvents, 0) runs
+            jest.advanceTimersByTime(0);
+
+            // init ran BEFORE fireQueuedEvents
+            expect(callOrder).toEqual(['fbq_init', 'fireQueuedEvents']);
+
+            jest.useRealTimers();
+        });
+
         it('should restore fbq to a normal property after trap fires', function () {
             delete global.fbq;
 
