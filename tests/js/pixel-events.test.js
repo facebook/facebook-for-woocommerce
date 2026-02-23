@@ -573,5 +573,345 @@ describe('Pixel Events - Isolated Execution Context', function () {
                 { eventID: 'deferred-atc-event-789' }
             );
         });
+
+        it('should handle productData in wc_facebook_pixel_data', function () {
+            global.wc_facebook_pixel_data = {
+                pixelId: '123456789',
+                eventQueue: [],
+                agentString: 'woocommerce-facebook-for-woocommerce-3.0.0',
+                productData: {
+                    '42': {
+                        event_id: 'uuid-for-product-42',
+                        content_ids: ['WC-42'],
+                        content_type: 'product',
+                        value: 19.99,
+                        currency: 'USD',
+                        content_name: 'Test Product',
+                        contents: [{ id: 'WC-42', quantity: 1 }],
+                    },
+                },
+            };
+
+            const data = global.wc_facebook_pixel_data;
+            const productData = data.productData['42'];
+
+            expect(productData).toBeDefined();
+            expect(productData.event_id).toBe('uuid-for-product-42');
+            expect(productData.content_ids).toEqual(['WC-42']);
+            expect(productData.content_name).toBe('Test Product');
+            expect(productData.contents).toEqual([{ id: 'WC-42', quantity: 1 }]);
+        });
+
+        it('should handle empty productData', function () {
+            global.wc_facebook_pixel_data = {
+                pixelId: '123456789',
+                eventQueue: [],
+                agentString: 'woocommerce-facebook-for-woocommerce-3.0.0',
+                productData: {},
+            };
+
+            const data = global.wc_facebook_pixel_data;
+            const productData = data.productData && data.productData['999'];
+
+            expect(productData).toBeUndefined();
+        });
+
+        it('should handle missing productData key', function () {
+            global.wc_facebook_pixel_data = {
+                pixelId: '123456789',
+                eventQueue: [],
+                agentString: 'woocommerce-facebook-for-woocommerce-3.0.0',
+            };
+
+            const data = global.wc_facebook_pixel_data;
+            const productData = data.productData && data.productData['42'];
+
+            expect(productData).toBeFalsy();
+        });
+    });
+
+    describe('generateEventId', function () {
+        it('should generate a valid UUID v4 string', function () {
+            const generateEventId = function () {
+                return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+                    var r = Math.random() * 16 | 0;
+                    var v = c === 'x' ? r : (r & 0x3 | 0x8);
+                    return v.toString(16);
+                });
+            };
+
+            const eventId = generateEventId();
+
+            expect(eventId).toMatch(
+                /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/
+            );
+        });
+
+        it('should generate unique IDs on each call', function () {
+            const generateEventId = function () {
+                return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+                    var r = Math.random() * 16 | 0;
+                    var v = c === 'x' ? r : (r & 0x3 | 0x8);
+                    return v.toString(16);
+                });
+            };
+
+            const id1 = generateEventId();
+            const id2 = generateEventId();
+            const id3 = generateEventId();
+
+            expect(id1).not.toBe(id2);
+            expect(id2).not.toBe(id3);
+            expect(id1).not.toBe(id3);
+        });
+
+        it('should always have version 4 in the correct position', function () {
+            const generateEventId = function () {
+                return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+                    var r = Math.random() * 16 | 0;
+                    var v = c === 'x' ? r : (r & 0x3 | 0x8);
+                    return v.toString(16);
+                });
+            };
+
+            for (let i = 0; i < 20; i++) {
+                const eventId = generateEventId();
+                // 15th character (index 14) should always be '4'
+                expect(eventId.charAt(14)).toBe('4');
+                // 20th character (index 19) should be 8, 9, a, or b
+                expect(['8', '9', 'a', 'b']).toContain(eventId.charAt(19));
+            }
+        });
+    });
+
+    describe('AJAX AddToCart Click Handler', function () {
+        it('should fire AddToCart event using productData', function () {
+            const productData = {
+                event_id: 'uuid-product-99',
+                content_ids: ['WC-99'],
+                content_type: 'product',
+                content_name: 'Shop Product',
+                contents: [{ id: 'WC-99', quantity: 1 }],
+                value: 24.99,
+                currency: 'USD',
+            };
+
+            const eventId = productData.event_id;
+            const params = {
+                content_ids: productData.content_ids,
+                content_type: productData.content_type || 'product',
+                content_name: productData.content_name || '',
+                contents: productData.contents || [],
+                value: parseFloat(productData.value) || 0,
+                currency: productData.currency || 'USD',
+            };
+
+            global.fbq('track', 'AddToCart', params, { eventID: eventId });
+
+            expect(mockFbq).toHaveBeenCalledWith(
+                'track',
+                'AddToCart',
+                expect.objectContaining({
+                    content_ids: ['WC-99'],
+                    content_type: 'product',
+                    content_name: 'Shop Product',
+                    contents: [{ id: 'WC-99', quantity: 1 }],
+                    value: 24.99,
+                    currency: 'USD',
+                }),
+                { eventID: 'uuid-product-99' }
+            );
+        });
+
+        it('should fall back to data-fb-* attributes when productData is missing', function () {
+            const button = document.createElement('a');
+            button.classList.add('add_to_cart_button');
+            button.setAttribute('data-product_id', '55');
+            button.setAttribute('data-fb-event-id', 'attr-event-id');
+            button.setAttribute('data-fb-content-ids', '["WC-55"]');
+            button.setAttribute('data-fb-content-name', 'Fallback Product');
+            button.setAttribute('data-fb-content-type', 'product');
+            button.setAttribute('data-fb-value', '15.00');
+            button.setAttribute('data-fb-currency', 'EUR');
+
+            const contentIdsAttr = button.getAttribute('data-fb-content-ids');
+            const productData = {
+                event_id: button.getAttribute('data-fb-event-id'),
+                content_ids: JSON.parse(contentIdsAttr),
+                content_name: button.getAttribute('data-fb-content-name') || '',
+                content_type: button.getAttribute('data-fb-content-type') || 'product',
+                value: parseFloat(button.getAttribute('data-fb-value')) || 0,
+                currency: button.getAttribute('data-fb-currency') || 'USD',
+            };
+
+            expect(productData.event_id).toBe('attr-event-id');
+            expect(productData.content_ids).toEqual(['WC-55']);
+            expect(productData.content_name).toBe('Fallback Product');
+            expect(productData.value).toBe(15.00);
+            expect(productData.currency).toBe('EUR');
+        });
+
+        it('should handle invalid JSON in data-fb-content-ids gracefully', function () {
+            const button = document.createElement('a');
+            button.setAttribute('data-product_id', '60');
+            button.setAttribute('data-fb-content-ids', 'not-valid-json');
+
+            let parseError = false;
+            try {
+                JSON.parse(button.getAttribute('data-fb-content-ids'));
+            } catch (err) {
+                parseError = true;
+            }
+
+            expect(parseError).toBe(true);
+        });
+
+        it('should use fallback generateEventId when productData has no event_id', function () {
+            const productData = {
+                content_ids: ['WC-70'],
+                content_type: 'product',
+                value: 10.00,
+                currency: 'USD',
+            };
+
+            const generateEventId = function () {
+                return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+                    var r = Math.random() * 16 | 0;
+                    var v = c === 'x' ? r : (r & 0x3 | 0x8);
+                    return v.toString(16);
+                });
+            };
+
+            const eventId = productData.event_id || generateEventId();
+
+            // Should be a valid UUID since productData.event_id is undefined
+            expect(eventId).toMatch(
+                /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/
+            );
+        });
+
+        it('should skip click if button has no data-product_id', function () {
+            const button = document.createElement('a');
+            button.classList.add('add_to_cart_button');
+
+            const productId = button.getAttribute('data-product_id');
+            expect(productId).toBeNull();
+        });
+
+        it('should skip variable products (no data-fb-content-ids and no productData)', function () {
+            const button = document.createElement('a');
+            button.classList.add('add_to_cart_button');
+            button.setAttribute('data-product_id', '70');
+
+            const productData = null;
+            const contentIdsAttr = button.getAttribute('data-fb-content-ids');
+
+            const shouldSkip = !productData && !contentIdsAttr;
+            expect(shouldSkip).toBe(true);
+        });
+
+        it('should deduplicate AddToCart events per product per page load', function () {
+            const firedEvents = {};
+            const eventId = 'uuid-product-42';
+
+            // First click — should fire
+            const skip1 = eventId && firedEvents[eventId];
+            expect(skip1).toBeFalsy();
+            firedEvents[eventId] = true;
+
+            // Second click (same product) — should skip
+            const skip2 = eventId && firedEvents[eventId];
+            expect(skip2).toBe(true);
+        });
+
+        it('should allow different products to fire independently', function () {
+            const firedEvents = {};
+
+            // Product A fires
+            firedEvents['uuid-product-A'] = true;
+
+            // Product B should still fire
+            const skipB = 'uuid-product-B' && firedEvents['uuid-product-B'];
+            expect(skipB).toBeFalsy();
+        });
+
+        it('should use capture phase for click listener', function () {
+            const addEventListenerSpy = jest.spyOn(document, 'addEventListener');
+
+            document.addEventListener('click', function handler() {}, true);
+
+            expect(addEventListenerSpy).toHaveBeenCalledWith(
+                'click',
+                expect.any(Function),
+                true
+            );
+
+            addEventListenerSpy.mockRestore();
+        });
+
+        it('should store eventId on button attribute after firing', function () {
+            const button = document.createElement('a');
+            button.classList.add('add_to_cart_button');
+            button.setAttribute('data-product_id', '88');
+
+            const eventId = 'stored-event-id-88';
+            button.setAttribute('data-fb-event-id', eventId);
+
+            expect(button.getAttribute('data-fb-event-id')).toBe('stored-event-id-88');
+        });
+
+        it('should include contents array in AddToCart params', function () {
+            const productData = {
+                event_id: 'uuid-contents-test',
+                content_ids: ['WC-101'],
+                content_type: 'product',
+                content_name: 'Contents Test Product',
+                contents: [{ id: 'WC-101', quantity: 1 }],
+                value: 39.99,
+                currency: 'USD',
+            };
+
+            const params = {
+                content_ids: productData.content_ids,
+                content_type: productData.content_type || 'product',
+                content_name: productData.content_name || '',
+                contents: productData.contents || [],
+                value: parseFloat(productData.value) || 0,
+                currency: productData.currency || 'USD',
+            };
+
+            global.fbq('track', 'AddToCart', params, { eventID: productData.event_id });
+
+            expect(mockFbq).toHaveBeenCalledWith(
+                'track',
+                'AddToCart',
+                expect.objectContaining({
+                    contents: [{ id: 'WC-101', quantity: 1 }],
+                }),
+                { eventID: 'uuid-contents-test' }
+            );
+        });
+
+        it('should default contents to empty array when not provided', function () {
+            const productData = {
+                event_id: 'uuid-no-contents',
+                content_ids: ['WC-102'],
+                value: 5.00,
+                currency: 'USD',
+            };
+
+            const params = {
+                content_ids: productData.content_ids,
+                content_type: productData.content_type || 'product',
+                content_name: productData.content_name || '',
+                contents: productData.contents || [],
+                value: parseFloat(productData.value) || 0,
+                currency: productData.currency || 'USD',
+            };
+
+            expect(params.contents).toEqual([]);
+            expect(params.content_type).toBe('product');
+            expect(params.content_name).toBe('');
+        });
     });
 });

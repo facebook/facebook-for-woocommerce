@@ -69,6 +69,14 @@ class WC_Facebookcommerce_Pixel {
 	 */
 	private static $hooks_initialized = false;
 
+	/**
+	 * Product data for JS-driven AddToCart on shop/category pages.
+	 * Keyed by product ID, each entry contains event_id, content_ids, etc.
+	 *
+	 * @var array
+	 */
+	private static $product_data = [];
+
 		/**
 		 * User information.
 		 *
@@ -144,20 +152,26 @@ class WC_Facebookcommerce_Pixel {
 	 * Uses wp_localize_script() to pass data (not code) to the external script.
 	 */
 	public static function localize_pixel_events_data() {
-		if ( ! self::$script_enqueued || empty( self::$event_queue ) ) {
+		if ( ! self::$script_enqueued || ( empty( self::$event_queue ) && empty( self::$product_data ) ) ) {
 			return;
 		}
 
 		$pixel_id = self::get_pixel_id();
 
+		$data = array(
+			'pixelId'     => esc_js( $pixel_id ),
+			'eventQueue'  => self::$event_queue,
+			'agentString' => Event::get_platform_identifier(),
+		);
+
+		if ( ! empty( self::$product_data ) ) {
+			$data['productData'] = self::$product_data;
+		}
+
 		wp_localize_script(
 			'wc-facebook-pixel-events',
 			'wc_facebook_pixel_data',
-			array(
-				'pixelId'     => esc_js( $pixel_id ),
-				'eventQueue'  => self::$event_queue,
-				'agentString' => Event::get_platform_identifier(),
-			)
+			$data
 		);
 	}
 
@@ -892,12 +906,32 @@ class WC_Facebookcommerce_Pixel {
 		return $fb_options;
 	}
 
-		/**
-		 * Gets the logged in user info
-		 *
-		 * @return string[]
-		 */
+	/**
+	 * Gets the logged in user info
+	 *
+	 * @return string[]
+	 */
 	public function get_user_info() {
 		return $this->user_info;
+	}
+
+	/**
+	 * Store product data for JS-driven AddToCart on shop/category pages.
+	 *
+	 * @param int   $product_id   The product ID.
+	 * @param array $product_data Event data for this product (event_id, content_ids, etc.).
+	 */
+	public static function add_product_data_for_pixel( $product_id, $product_data ) {
+		self::$product_data[ $product_id ] = $product_data;
+	}
+
+	/**
+	 * Get the pre-generated event_id for a product (if collected).
+	 *
+	 * @param int $product_id The product ID.
+	 * @return string|null The event_id or null if not collected.
+	 */
+	public static function get_product_event_id( $product_id ) {
+		return isset( self::$product_data[ $product_id ] ) ? self::$product_data[ $product_id ]['event_id'] : null;
 	}
 }
