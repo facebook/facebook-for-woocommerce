@@ -3,7 +3,7 @@ Contributors: meta
 Tags: meta, facebook, conversions api, catalog sync, ads
 Requires at least: 5.6
 Tested up to: 6.9
-Stable tag: 3.5.16
+Stable tag: 3.5.17
 Requires PHP: 7.4
 MySQL: 5.6 or greater
 License: GPLv2 or later
@@ -41,17 +41,10 @@ To suggest technical improvements, you can raise an issue on our [Github reposit
 
 == Changelog ==
 
-= 3.5.17 - 2026-02-17 =
-* Fix - Fix - Removed the prefix from retailer id. by @vahidkay-meta in #3858
-* Add - [WooCommernce] [Rich Order] Add rich-order payload gating and simplify per-item amount for events. by @ashutoshbondre in #3848
-* Add - Fix pixel event tracking by isolating JS execution context by @cshing-meta in #3835
-* Dev - Tweak - Broke down integration tests to run with PHP7.4 & PHP8.4 by @vahidkay-meta in #3855
-* Fix - Tweak - Added logging to detect if we can reliably use fbcollection by @vahidkay-meta in #3854
-* Fix - Fix duplicate CAPI Purchase events during checkout process by @cshing-meta in #3850
-* Tweak - Optimize Release process, automate marketplace artifact verification by @vahidkay-meta in #3846
-* Fix - Fix performance issue: Cache background sync job queries and skip on … by @devbodaghe in #3823
-* Fix - Fix test with accurate retailer ID by @jarretth in #3852
-* Fix - Pin Polylang version for PHP 7.4 in CI by @jarretth in #3851
-* Tweak - Update parambuilder server version to 1.2.1 by @jarretth in #3844
+= 3.5.18 - 2026-02-24 =
+* Fix - Fix/collection page batch2 by @vahidkay-meta in #3863
+* Dev - Dev - break down e2e tests and automate supported version bumpup by @vahidkay-meta in #3856
+* Fix - Fix Google Product Category dropdowns not rendering on product pages by @rafael-curran in #3866
+* Add - [Rebranding]Update all references of Facebook for WooCommerce to Meta for WooCommerce by @sharunaanandraj in #3865
 
 [See changelog for all versions](https://raw.githubusercontent.com/facebook/facebook-for-woocommerce/refs/heads/main/changelog.txt).
