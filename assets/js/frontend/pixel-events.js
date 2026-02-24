@@ -147,7 +147,6 @@
      */
     function handleAddToCartClick(e) {
         var button = e.target.closest('.add_to_cart_button');
-        console.log("button", button);
         if (!button) return;
 
         var productId = button.getAttribute('data-product_id');
