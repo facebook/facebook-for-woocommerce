@@ -22,6 +22,10 @@ on:
     # Run daily at 8am UTC (only runs when required secrets are configured)
     - cron: '0 8 * * *'
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 env:
   # Test environment configuration
   TEST_SITE_HOST: ${{ secrets.TEST_SITE_HOST }}
@@ -93,10 +97,43 @@ jobs:
             echo "::warning title=E2E Tests Skipped::E2E tests require TEST_SITE_HOST and FB_TEST_META_BUSINESS_ASSETS secrets to be configured. After merge, E2E tests will run daily to validate functionality."
           fi
 
+  # Job to resolve currently supported WP and WC versions from the plugin file
+  resolve-versions:
+    runs-on: ubuntu-latest
+    outputs:
+      wp-supported: ${{ steps.versions.outputs.wp-supported }}
+      wc-supported: ${{ steps.versions.outputs.wc-supported }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Read tested up to versions from plugin file
+        id: versions
+        run: |
+          WP_VERSION=$(grep -oP '^\s*\*\s*Tested up to:\s*\K\S+' facebook-for-woocommerce.php)
+          WC_VERSION=$(grep -oP '^\s*\*\s*WC tested up to:\s*\K\S+' facebook-for-woocommerce.php)
+          echo "wp-supported=$WP_VERSION" >> $GITHUB_OUTPUT
+          echo "wc-supported=$WC_VERSION" >> $GITHUB_OUTPUT
+          echo "Resolved versions — WP: $WP_VERSION, WC: $WC_VERSION"
+
   e2e-tests:
-    needs: check-secrets
+    name: E2E Tests - ${{ matrix.label }}
+    needs: [check-secrets, resolve-versions]
     if: ${{ needs.check-secrets.outputs.secrets-configured == 'true' }}
     runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # Currently supported versions (Tested up to in facebook-for-woocommerce.php)
+          - wp-version: ${{ needs.resolve-versions.outputs.wp-supported }}
+            wc-version: ${{ needs.resolve-versions.outputs.wc-supported }}
+            label: 'Currently supported'
+          # Latest available versions
+          - wp-version: 'latest'
+            wc-version: 'latest'
+            label: 'Latest'
 
     services:
       mysql:
@@ -143,8 +180,13 @@ jobs:
           cd ${{ env.WORDPRESS_PATH }}
 
           # Download WordPress
-          curl -O https://wordpress.org/latest.tar.gz
-          tar -xzf latest.tar.gz --strip-components=1
+          if [ "${{ matrix.wp-version }}" = "latest" ]; then
+            curl -O https://wordpress.org/latest.tar.gz
+            tar -xzf latest.tar.gz --strip-components=1
+          else
+            curl -O https://wordpress.org/wordpress-${{ matrix.wp-version }}.tar.gz
+            tar -xzf wordpress-${{ matrix.wp-version }}.tar.gz --strip-components=1
+          fi
 
           # Create wp-config.php
           cp wp-config-sample.php wp-config.php
@@ -232,7 +274,18 @@ jobs:
           # Install Storefront theme (official WooCommerce theme with all hooks)
           wp theme install storefront --activate --allow-root
           echo "✅ Storefront theme installed and activated"
-          wp plugin install woocommerce --activate --allow-root
+          if [ "${{ matrix.wc-version }}" = "latest" ]; then
+            wp plugin install woocommerce --activate --allow-root
+          else
+            # Resolve major.minor to the latest patch version (e.g., 10.5 → 10.5.2)
+            WC_INSTALL_VERSION=$(curl -sf 'https://api.wordpress.org/plugins/info/1.0/woocommerce.json' | jq -r --arg prefix "${{ matrix.wc-version }}." '[.versions | keys[] | select(startswith($prefix)) | select(test("-") | not)] | sort_by(split(".") | map(tonumber)) | last')
+            if [ -z "$WC_INSTALL_VERSION" ] || [ "$WC_INSTALL_VERSION" = "null" ]; then
+              echo "❌ Failed to resolve WC version for ${{ matrix.wc-version }}. Could not fetch version info from wordpress.org or no matching version found."
+              exit 1
+            fi
+            echo "Resolved WC version: ${{ matrix.wc-version }} → $WC_INSTALL_VERSION"
+            wp plugin install woocommerce --version=$WC_INSTALL_VERSION --activate --allow-root
+          fi
 
           # Basic WooCommerce setup
           wp option update woocommerce_store_address "${{ env.STORE_ADDRESS }}" --allow-root
@@ -401,16 +454,16 @@ jobs:
 
           echo "✅ Selected business asset set $INDEX for this run"
 
-      - name: Install Facebook for WooCommerce plugin
+      - name: Install Meta for WooCommerce plugin
         run: |
           cd ${{ env.WORDPRESS_PATH }}
 
           # Use marketplace version if flag is true
           if [ "${{ inputs.use-marketplace-version }}" = "true" ]; then
-            echo "Installing Facebook for WooCommerce from wordpress.org marketplace"
+            echo "Installing Meta for WooCommerce from wordpress.org marketplace"
             wp plugin install facebook-for-woocommerce --version=dev --allow-root
           else
-            echo "Installing Facebook for WooCommerce from local workspace"
+            echo "Installing Meta for WooCommerce from local workspace"
             # Copy plugin files from the checked out repository root
             cp -r ${{ github.workspace }} wp-content/plugins/facebook-for-woocommerce/
 
@@ -422,7 +475,7 @@ jobs:
             cd ${{ env.WORDPRESS_PATH }}
           fi
 
-          # Configure Facebook connection before activation using selected business assets
+          # Configure Meta connection before activation using selected business assets
           wp option update wc_facebook_access_token "${{ env.FB_ACCESS_TOKEN }}" --allow-root
           wp option update wc_facebook_merchant_access_token "${{ env.FB_ACCESS_TOKEN }}" --allow-root
           wp option update wc_facebook_business_manager_id "${{ env.FB_BUSINESS_MANAGER_ID }}" --allow-root
@@ -505,15 +558,15 @@ jobs:
           # Test if site is accessible
           curl -f http://${{ env.TEST_SITE_HOST }}:8080 || exit 1
 
-      - name: Verify Facebook for WooCommerce setup
+      - name: Verify Meta for WooCommerce setup
         run: |
           cd ${{ env.WORDPRESS_PATH }}
-          echo "=== Facebook for WooCommerce Info ==="
+          echo "=== Meta for WooCommerce Info ==="
           wp eval "
             if (function_exists('facebook_for_woocommerce')) {
                 \$connection = facebook_for_woocommerce()->get_connection_handler();
                 if (!\$connection->is_connected()) {
-                    echo '❌ Facebook plugin is NOT connected' . PHP_EOL;
+                    echo '❌ Meta plugin is NOT connected' . PHP_EOL;
                     exit(1);
                 }
                 echo 'Connected: YES' . PHP_EOL;
@@ -525,7 +578,7 @@ jobs:
                 echo 'S2S Enabled: ' . get_option('wc_facebook_enable_server_to_server') . PHP_EOL;
                 echo 'Debug Mode: ' . get_option('wc_facebook_debug_mode') . PHP_EOL;
             } else {
-                echo '❌ Facebook plugin not loaded properly' . PHP_EOL;
+                echo '❌ Meta plugin not loaded properly' . PHP_EOL;
                 exit(1);
             }" --allow-root
 
@@ -579,6 +632,8 @@ jobs:
           sudo apt-get install -y xvfb
 
       - name: Run Plugin level tests (sequential)
+        env:
+          IS_LATEST_WP: ${{ matrix.wp-version == 'latest' && 'true' || 'false' }}
         run: |
           cd ${{ env.PLUGIN_PATH }}
           npx playwright test plugin-level-tests.spec.js --project=chromium-wp-admin --workers=1
@@ -665,7 +720,7 @@ jobs:
         uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: playwright-report
+          name: playwright-report-${{ matrix.label }}
           path: ${{ env.PLUGIN_PATH }}/playwright-report/
           retention-days: 7
 
@@ -673,7 +728,7 @@ jobs:
         uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: CAPI Pixel Captured events
+          name: captured-events-${{ matrix.label }}
           path: ${{ env.PLUGIN_PATH }}${{ env.FB_E2E_CAPTURED_EVENTS_DIR }}
           retention-days: 7
 
@@ -692,7 +747,7 @@ jobs:
         uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: php-debug-logs
+          name: php-debug-logs-${{ matrix.label }}
           path: ${{ env.WP_DEBUG_LOG }}
           retention-days: 7
 
@@ -700,7 +755,7 @@ jobs:
         uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: woocommerce-logs
+          name: woocommerce-logs-${{ matrix.label }}
           path: ${{ env.WORDPRESS_PATH }}/wp-content/uploads/wc-logs/facebook_for_woocommerce-*.log
           retention-days: 7
 
@@ -708,6 +763,6 @@ jobs:
         uses: actions/upload-artifact@v4
         if: failure()
         with:
-          name: test-failures
+          name: test-failures-${{ matrix.label }}
           path: ${{ env.PLUGIN_PATH }}/test-results/
           retention-days: 7

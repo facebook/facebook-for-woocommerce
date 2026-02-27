@@ -20,7 +20,7 @@ async function execWP(phpCode) {
 }
 
 /**
- * Ensure debug mode is enabled for Facebook for WooCommerce
+ * Ensure debug mode is enabled for Meta for WooCommerce
  * @param {import('@playwright/test').Page} page - Playwright page
  * @returns {Promise<boolean>} Success status
  */
@@ -84,24 +84,66 @@ async function checkWooCommerceLogs() {
     { encoding: 'utf8' }
   ).trim();
 
+  // Known transient Meta API errors that are not plugin bugs
+  const TRANSIENT_ERRORS = [
+    'Another upload already in progress',
+  ];
+
+  // Filter out lines whose surrounding context contains a known transient error
   if (non200Lines) {
-    console.log(`❌ Found non-200 response codes in log file: ${logFile}`);
-    console.log('Please check WooCommerce logs in Github Artifacts');
+    const lineNumbers = non200Lines.split('\n').map(l => parseInt(l.split(':')[0], 10)).filter(n => !isNaN(n));
+    const unexpectedErrors = [];
 
-    const criticalLogs = execSync(
-      `grep -E "^[0-9T:+-]+ (ERROR|CRITICAL|ALERT|EMERGENCY) " "${logFile}" || true`,
-      { encoding: 'utf8' }
-    ).trim();
-
-    if (criticalLogs) {
-      console.log('\n❌ CRITICAL ERRORS FOUND IN LOGS:');
-      console.log(criticalLogs);
+    for (const lineNum of lineNumbers) {
+      const start = Math.max(1, lineNum - 5);
+      const end = lineNum + 5;
+      const context = execSync(
+        `sed -n '${start},${end}p' "${logFile}"`,
+        { encoding: 'utf8' }
+      );
+      const isTransient = TRANSIENT_ERRORS.some(msg => context.includes(msg));
+      if (isTransient) {
+        console.log(`⏭️ Ignoring known transient error at line ${lineNum}: ${TRANSIENT_ERRORS.find(msg => context.includes(msg))}`);
+      } else {
+        unexpectedErrors.push(lineNum);
+      }
     }
 
-    return { success: false, error: 'Non-200 response codes found' };
+    if (unexpectedErrors.length > 0) {
+      console.log(`❌ Found non-200 response codes in log file: ${logFile}`);
+      console.log('Non-200 log lines:');
+      console.log(non200Lines);
+
+      for (const lineNum of unexpectedErrors) {
+        const start = Math.max(1, lineNum - 10);
+        const end = lineNum + 10;
+        console.log(`\n--- Context around line ${lineNum} (lines ${start}-${end}) ---`);
+        const context = execSync(
+          `sed -n '${start},${end}p' "${logFile}"`,
+          { encoding: 'utf8' }
+        ).trim();
+        console.log(context);
+        console.log('--- End context ---');
+      }
+
+      console.log('Please check WooCommerce logs in Github Artifacts');
+      return { success: false, error: 'Non-200 response codes found' };
+    }
   }
 
-  console.log('✅ All response codes are 200');
+  const criticalLogs = execSync(
+    `grep -E "^[0-9T:+-]+ (ERROR|CRITICAL|ALERT|EMERGENCY) " "${logFile}" || true`,
+    { encoding: 'utf8' }
+  ).trim();
+
+  if (criticalLogs) {
+    console.log('❌ CRITICAL ERRORS FOUND IN LOGS:');
+    console.log(criticalLogs);
+    console.log('Please check WooCommerce logs in Github Artifacts');
+    return { success: false, error: 'Critical errors found in logs' };
+  }
+
+  console.log('✅ No errors found in logs');
   return { success: true };
 }
 

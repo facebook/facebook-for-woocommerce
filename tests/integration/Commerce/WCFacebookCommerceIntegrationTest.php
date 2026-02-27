@@ -1,7 +1,7 @@
 <?php
 declare( strict_types=1 );
 
-require_once __DIR__ . '/../../facebook-commerce.php';
+require_once __DIR__ . '/../../../facebook-commerce.php';
 
 use WooCommerce\Facebook\Admin;
 use WooCommerce\Facebook\Admin\Products as AdminProducts;
@@ -300,7 +300,7 @@ class WCFacebookCommerceIntegrationTest extends \WooCommerce\Facebook\Tests\Abst
 			$expected_output[ $variation_id ] = 'some-facebook-api-product-item-id-' . $variation_id;
 			$facebook_output[]                = [
 				'id'          => 'some-facebook-api-product-item-id-' . $variation_id,
-				'retailer_id' => (string) $variation_id,
+				'retailer_id' => \WC_Facebookcommerce_Utils::get_fb_retailer_id( $variation ),
 			];
 		}
 		/* From Product Meta or FB API. */
@@ -336,7 +336,7 @@ class WCFacebookCommerceIntegrationTest extends \WooCommerce\Facebook\Tests\Abst
 			$expected_output[ $variation_id ] = 'some-facebook-api-product-item-id-' . $variation_id;
 			$facebook_output[]                = [
 				'id'          => 'some-facebook-api-product-item-id-' . $variation_id,
-				'retailer_id' => $variation_id . '_modified',
+				'retailer_id' => \WC_Facebookcommerce_Utils::get_fb_retailer_id( $variation ) . '_modified',
 			];
 		}
 		/* From Product Meta or FB API. */
@@ -1166,7 +1166,7 @@ class WCFacebookCommerceIntegrationTest extends \WooCommerce\Facebook\Tests\Abst
 	public function test_display_info_message() {
 		$this->integration->display_info_message( 'Test message.' );
 
-		$this->assertEquals( '<b>Facebook for WooCommerce</b><br/>Test message.', get_transient( 'facebook_plugin_api_info' ) );
+		$this->assertEquals( '<b>Meta for WooCommerce</b><br/>Test message.', get_transient( 'facebook_plugin_api_info' ) );
 	}
 
 	/**
@@ -1177,7 +1177,7 @@ class WCFacebookCommerceIntegrationTest extends \WooCommerce\Facebook\Tests\Abst
 	public function test_display_sticky_message() {
 		$this->integration->display_sticky_message( 'Test message.' );
 
-		$this->assertEquals( '<b>Facebook for WooCommerce</b><br/>Test message.', get_transient( 'facebook_plugin_api_sticky' ) );
+		$this->assertEquals( '<b>Meta for WooCommerce</b><br/>Test message.', get_transient( 'facebook_plugin_api_sticky' ) );
 	}
 
 	/**
@@ -1269,7 +1269,7 @@ class WCFacebookCommerceIntegrationTest extends \WooCommerce\Facebook\Tests\Abst
 
 		$this->assertTrue( is_admin(), 'Current user must be an admin user.' );
 		$this->assertEquals(
-			'<b>Facebook for WooCommerce</b><br/>' .
+			'<b>Meta for WooCommerce</b><br/>' .
 			'Products may be out of Sync with Facebook due to your recent advanced bulk edit.' .
 			' <a href="https://settings.site/settings.php&fb_force_resync=true&remove_sticky=true">Re-Sync them with FB.</a>',
 			get_transient( 'facebook_plugin_api_sticky' )
@@ -1302,7 +1302,7 @@ class WCFacebookCommerceIntegrationTest extends \WooCommerce\Facebook\Tests\Abst
 		$this->integration->display_out_of_sync_message( 'some text to insert into message' );
 
 		$this->assertEquals(
-			'<b>Facebook for WooCommerce</b><br/>' .
+			'<b>Meta for WooCommerce</b><br/>' .
 			'Products may be out of Sync with Facebook due to your recent some text to insert into message.' .
 			' <a href="https://settings.site/settings.php&fb_force_resync=true&remove_sticky=true">Re-Sync them with FB.</a>',
 			get_transient( 'facebook_plugin_api_sticky' )
@@ -1382,7 +1382,7 @@ class WCFacebookCommerceIntegrationTest extends \WooCommerce\Facebook\Tests\Abst
 
 		/* Check produced function output expected. */
 		$this->assertEquals(
-			'<div id="woocommerce_errors" class="error notice is-dismissible"><p>Some error message one.</p><p>Some error message two.</p></div><div class="notice is-dismissible notice-error"><p><strong>Facebook for WooCommerce error:</strong></br>Facebook plugin api error message text.</p></div><div class="notice is-dismissible notice-warning"><p>Facebook plugin api warning text.</p></div><div class="notice is-dismissible notice-success"><p>Facebook plugin api success text.</p></div><div class="notice is-dismissible notice-info"><p>Facebook plugin api info text.</p></div><div class="notice is-dismissible notice-info"><p>Facebook plugin api sticky text.</p></div>',
+			'<div id="woocommerce_errors" class="error notice is-dismissible"><p>Some error message one.</p><p>Some error message two.</p></div><div class="notice is-dismissible notice-error"><p><strong>Meta for WooCommerce error:</strong></br>Facebook plugin api error message text.</p></div><div class="notice is-dismissible notice-warning"><p>Facebook plugin api warning text.</p></div><div class="notice is-dismissible notice-success"><p>Facebook plugin api success text.</p></div><div class="notice is-dismissible notice-info"><p>Facebook plugin api info text.</p></div><div class="notice is-dismissible notice-info"><p>Facebook plugin api sticky text.</p></div>',
 			$output
 		);
 	}
@@ -1405,7 +1405,7 @@ class WCFacebookCommerceIntegrationTest extends \WooCommerce\Facebook\Tests\Abst
 
 		/* Check produced function output expected. */
 		$this->assertEquals(
-			'<div class="notice is-dismissible notice-error"><p><strong>Facebook for WooCommerce error:</strong></br>Facebook plugin api error message text.</p></div><div class="notice is-dismissible notice-warning"><p>Facebook plugin api warning text.</p></div><div class="notice is-dismissible notice-success"><p>Facebook plugin api success text.</p></div><div class="notice is-dismissible notice-info"><p>Facebook plugin api info text.</p></div><div class="notice is-dismissible notice-info"><p>Facebook plugin api sticky text.</p></div>',
+			'<div class="notice is-dismissible notice-error"><p><strong>Meta for WooCommerce error:</strong></br>Facebook plugin api error message text.</p></div><div class="notice is-dismissible notice-warning"><p>Facebook plugin api warning text.</p></div><div class="notice is-dismissible notice-success"><p>Facebook plugin api success text.</p></div><div class="notice is-dismissible notice-info"><p>Facebook plugin api info text.</p></div><div class="notice is-dismissible notice-info"><p>Facebook plugin api sticky text.</p></div>',
 			$output
 		);
 	}
@@ -2437,7 +2437,7 @@ class WCFacebookCommerceIntegrationTest extends \WooCommerce\Facebook\Tests\Abst
 		$this->integration->maybe_display_facebook_api_messages();
 		$output = ob_get_clean();
 
-		$this->assertEquals( '<div class="notice is-dismissible notice-error"><p><strong>Facebook for WooCommerce error:</strong></br>Api error message.</p></div><div class="notice is-dismissible notice-warning"><p>Api warning message.</p></div><div class="notice is-dismissible notice-success"><p>Api success message.</p></div><div class="notice is-dismissible notice-info"><p>Api info message.</p></div><div class="notice is-dismissible notice-info"><p>Api sticky message.</p></div>', $output );
+		$this->assertEquals( '<div class="notice is-dismissible notice-error"><p><strong>Meta for WooCommerce error:</strong></br>Api error message.</p></div><div class="notice is-dismissible notice-warning"><p>Api warning message.</p></div><div class="notice is-dismissible notice-success"><p>Api success message.</p></div><div class="notice is-dismissible notice-info"><p>Api info message.</p></div><div class="notice is-dismissible notice-info"><p>Api sticky message.</p></div>', $output );
 
 		$this->assertEmpty( get_transient( 'facebook_plugin_api_error' ) );
 		$this->assertEmpty( get_transient( 'facebook_plugin_api_warning' ) );

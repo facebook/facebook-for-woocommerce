@@ -4,7 +4,7 @@ declare( strict_types=1 );
 namespace WooCommerce\Facebook\Integrations;
 
 /**
- * Polylang integration for Facebook for WooCommerce.
+ * Polylang integration for Meta for WooCommerce.
  *
  * Handles integration with the Polylang multilingual plugin to manage
  * product synchronization based on language settings.

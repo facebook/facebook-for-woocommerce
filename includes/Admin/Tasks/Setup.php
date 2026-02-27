@@ -4,7 +4,7 @@
  *
  * Adds a set up facebook task to the task list.
  *
- * @package FacebookCommerce
+ * @package MetaCommerce
  */
 
 namespace WooCommerce\Facebook\Admin\Tasks;

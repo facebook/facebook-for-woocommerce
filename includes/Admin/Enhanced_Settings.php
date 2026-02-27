@@ -5,7 +5,7 @@
  * This source code is licensed under the license found in the
  * LICENSE file in the root directory of this source tree.
  *
- * @package FacebookCommerce
+ * @package MetaCommerce
  */
 
 namespace WooCommerce\Facebook\Admin;
@@ -112,7 +112,7 @@ class Enhanced_Settings {
 
 		add_submenu_page(
 			$root_menu_item,
-			__( 'Facebook for WooCommerce', 'facebook-for-woocommerce' ),
+			__( 'Meta for WooCommerce', 'facebook-for-woocommerce' ),
 			__( 'Facebook', 'facebook-for-woocommerce' ),
 			'manage_woocommerce',
 			self::PAGE_ID,
@@ -168,7 +168,7 @@ class Enhanced_Settings {
 					'id'        => self::PAGE_ID,
 					'screen_id' => $screen_id,
 					'path'      => add_query_arg( 'page', self::PAGE_ID, 'admin.php' ),
-					'title'     => [ __( 'Facebook for WooCommerce', 'facebook-for-woocommerce' ) ],
+					'title'     => [ __( 'Meta for WooCommerce', 'facebook-for-woocommerce' ) ],
 				)
 			);
 		}
@@ -184,7 +184,7 @@ class Enhanced_Settings {
 		$screen      = $this->get_screen( $current_tab );
 
 		Logger::log(
-			'User visited the Facebook for WooCommerce settings' . $current_tab . 'tab',
+			'User visited the Meta for WooCommerce settings' . $current_tab . 'tab',
 			array(
 				'flow_name' => 'settings',
 				'flow_step' => $current_tab . '_tab_rendered',
@@ -210,7 +210,7 @@ class Enhanced_Settings {
 	}
 
 	/**
-	 * Renders the Facebook for WooCommerce extension navigation tabs.
+	 * Renders the Meta for WooCommerce extension navigation tabs.
 	 *
 	 * @since 3.5.0
 	 *

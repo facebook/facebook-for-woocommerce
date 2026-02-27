@@ -55,9 +55,9 @@ test.describe('WooCommerce Plugin level tests', () => {
       console.log('❌ WordPress needs update');
     }
 
-    // Check WooCommerce
+    // Check WooCommerce - use exact text match to avoid matching "Meta for WooCommerce"
     const allPluginsUpToDate = await page.locator('p:has-text("Your plugins are all up to date.")').count();
-    const wooInUpdateTable = await page.locator('#update-plugins-table tr:has-text("WooCommerce")').count();
+    const wooInUpdateTable = await page.locator('#update-plugins-table tr td strong:text-is("WooCommerce")').count();
 
     if (allPluginsUpToDate > 0 || wooInUpdateTable === 0) {
       console.log('✅ WooCommerce up to date');
@@ -65,9 +65,13 @@ test.describe('WooCommerce Plugin level tests', () => {
       console.log('❌ WooCommerce needs update');
     }
 
-    expect(wpUpToDate).toBeGreaterThan(0);
-    expect(allPluginsUpToDate > 0 || wooInUpdateTable === 0).toBe(true);
-    console.log('✅ Wordpress and WooCommerce are up to date');
+    if (process.env.IS_LATEST_WP !== 'false') {
+      expect(wpUpToDate).toBeGreaterThan(0);
+      expect(allPluginsUpToDate > 0 || wooInUpdateTable === 0).toBe(true);
+    } else {
+      console.log('⏭️ Skipping version checks (running against pinned versions, not latest)');
+    }
+    console.log('✅ Wordpress and WooCommerce version check complete');
   });
 
   test('Verify Storefront theme is active', async ({ page }) => {
@@ -273,7 +277,7 @@ test.describe('WooCommerce Plugin level tests', () => {
   });
 
 
-  test('Verify Facebook for WooCommerce plugin connection', async ({ page }) => {
+  test('Verify Meta for WooCommerce plugin connection', async ({ page }) => {
     console.log('🔍 Verifying Facebook plugin connection...');
 
     const expectedAccessToken = process.env.FB_ACCESS_TOKEN;
@@ -395,6 +399,14 @@ test.describe('WooCommerce Plugin level tests', () => {
     }
 
     console.log('✅ Test passed: No PHP/JS errors, order created');
+  });
+
+  test('Check WooCommerce logs for fatal errors and non-200 responses', async () => {
+    const result = await checkWooCommerceLogs();
+
+    if (!result.success) {
+      throw new Error('Log validation failed');
+    }
   });
 
   test('Reset all products Facebook settings via WooCommerce Status Tools', async ({ page }) => {
@@ -551,14 +563,6 @@ test.describe('WooCommerce Plugin level tests', () => {
 
   });
 
-  test('Check WooCommerce logs for fatal errors and non-200 responses', async () => {
-    const result = await checkWooCommerceLogs();
-
-    if (!result.success) {
-      throw new Error('Log validation failed');
-    }
-  });
-
   // Plugin compatibility test
   test('Plugin compatibility: edit, sync, purchase with third-party plugins', async ({ page }) => {
     let createdProductId = null;
@@ -669,7 +673,7 @@ test.describe('WooCommerce Plugin level tests', () => {
       });
 
       // Look for Facebook plugin row
-      const pluginRow = page.locator('tr[data-slug="facebook-for-woocommerce"], tr:has-text("Facebook for WooCommerce")').first();
+      const pluginRow = page.locator('tr[data-slug="facebook-for-woocommerce"], tr:has-text("Meta for WooCommerce")').first();
 
       await pluginRow.waitFor({ state: 'visible', timeout: TIMEOUTS.LONG });
       console.log('✅ Facebook plugin found');
@@ -721,13 +725,13 @@ test.describe('WooCommerce Plugin level tests', () => {
 
       // Check if Facebook plugin is listed
       const pageContent = await page.content();
-      const hasFacebookPlugin = pageContent.includes('Facebook for WooCommerce') ||
+      const hasFacebookPlugin = pageContent.includes('Meta for WooCommerce') ||
         pageContent.includes('facebook-for-woocommerce');
 
       if (hasFacebookPlugin) {
-        console.log('✅ Facebook for WooCommerce plugin detected');
+        console.log('✅ Meta for WooCommerce plugin detected');
       } else {
-        console.warn('⚠️ Facebook for WooCommerce plugin not found in plugins list');
+        console.warn('⚠️ Meta for WooCommerce plugin not found in plugins list');
       }
 
       await checkForPhpErrors(page);

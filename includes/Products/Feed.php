@@ -5,7 +5,7 @@
  * This source code is licensed under the license found in the
  * LICENSE file in the root directory of this source tree.
  *
- * @package FacebookCommerce
+ * @package MetaCommerce
  */
 
 namespace WooCommerce\Facebook\Products;
@@ -347,7 +347,7 @@ class Feed {
 		}
 
 		/*
-			We need to detect which feed is the one that was created for Facebook for WooCommerce plugin usage.
+			We need to detect which feed is the one that was created for Meta for WooCommerce plugin usage.
 
 			We are detecting based on the name.
 			- Option 1. Plugin can create this feed name currently.

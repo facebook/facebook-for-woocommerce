@@ -193,7 +193,7 @@ class FacebookSyncValidator {
         $this->debug("Extracted WooCommerce data for simple product");
         // $this->debug("WooCommerce data: " . json_encode($woo_data, JSON_PRETTY_PRINT));
 
-        // Get Facebook data
+        // Get Facebook data using full retailer ID
         $facebook_data = $this->fetchFacebookData($retailer_id, 'simple');
 
         return [
@@ -280,7 +280,7 @@ class FacebookSyncValidator {
     }
 
     /**
-     * Fetch Facebook data via API
+     * Fetch Facebook data via API using the full retailer ID.
      */
     private function fetchFacebookData($retailer_id, $context = 'simple') {
         global $wp_url;
@@ -299,8 +299,8 @@ class FacebookSyncValidator {
                     $fb_data = $response->response_data['data'][0];
                     $this->debug(
                         $retry_count === 0
-                            ? "Successfully fetched Facebook data for {$retailer_id}"
-                            : "Successfully fetched Facebook data for {$retailer_id} on retry #" . ($retry_count + 1)
+                            ? "Successfully fetched Facebook data for retailer_id: {$retailer_id}"
+                            : "Successfully fetched Facebook data for retailer_id: {$retailer_id} on retry #" . ($retry_count + 1)
                     );
 
                     return [
@@ -321,7 +321,7 @@ class FacebookSyncValidator {
                     ];
                 }
             } catch (Exception $e) {
-                $this->debug("Facebook API error for {$retailer_id}: " . $e->getMessage());
+                $this->debug("Facebook API error for retailer_id {$retailer_id}: " . $e->getMessage());
                 return ['found' => false, 'error' => $e->getMessage()];
             }
 

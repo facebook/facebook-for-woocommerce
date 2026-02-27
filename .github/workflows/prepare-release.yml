@@ -166,6 +166,29 @@ jobs:
           sed -i -E "s/^([[:space:]]*const PLUGIN_VERSION = ')[^']*(';.*)/\1$NEW_VERSION\2/" "facebook-for-woocommerce.php"
           git diff
 
+      - name: Update WP and WC tested up to versions
+        run: |
+          # Fetch latest WordPress version and truncate to major.minor
+          LATEST_WP_FULL=$(curl -s 'https://api.wordpress.org/core/version-check/1.7/' | jq -r '.offers[0].version')
+          LATEST_WP=$(echo "$LATEST_WP_FULL" | cut -d. -f1,2)
+          echo "Latest WordPress version: $LATEST_WP_FULL → $LATEST_WP"
+
+          # Fetch latest WooCommerce version and truncate to major.minor
+          LATEST_WC_FULL=$(curl -s 'https://api.wordpress.org/plugins/info/1.0/woocommerce.json' | jq -r '.version')
+          LATEST_WC=$(echo "$LATEST_WC_FULL" | cut -d. -f1,2)
+          echo "Latest WooCommerce version: $LATEST_WC_FULL → $LATEST_WC"
+
+          # Update Tested up to (WordPress) in facebook-for-woocommerce.php
+          sed -i -E "s/^ \* Tested up to:.*/ \* Tested up to: $LATEST_WP/" "facebook-for-woocommerce.php"
+
+          # Update WC tested up to in facebook-for-woocommerce.php
+          sed -i -E "s/^ \* WC tested up to:.*/ \* WC tested up to: $LATEST_WC/" "facebook-for-woocommerce.php"
+
+          # Update Tested up to in readme.txt
+          sed -i -E "s/^Tested up to:.*$/Tested up to: $LATEST_WP/" "readme.txt"
+
+          git diff
+
       - name: Update changelog.txt
         uses: actions/github-script@v7
         env:

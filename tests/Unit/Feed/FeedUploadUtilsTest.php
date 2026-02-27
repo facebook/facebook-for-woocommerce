@@ -4,7 +4,7 @@
  * This source code is licensed under the license found in the
  * LICENSE file in the root directory of this source tree.
  *
- * @package FacebookCommerce
+ * @package MetaCommerce
  */
 
  require_once __DIR__ . '/FeedDataTestBase.php';
@@ -213,7 +213,7 @@ class FeedUploadUtilsTest extends FeedDataTestBase {
 			'end_date_time'                         => '',
 			'coupon_codes'                          => ['coupon-code-1'],
 			'public_coupon_code'                    => '',
-			'target_filter'                         => '{"or":[{"retailer_id":{"eq":"'.$product1->get_id().'"}}]}',
+			'target_filter'                         => '{"or":[{"retailer_id":{"eq":"'. \WC_Facebookcommerce_Utils::get_fb_retailer_id($product1) .'"}}]}',
 			'target_product_retailer_ids'           => '',
 			'target_product_group_retailer_ids'     => '',
 			'target_product_set_retailer_ids'       => '',
@@ -373,7 +373,7 @@ class FeedUploadUtilsTest extends FeedDataTestBase {
 			'end_date_time'                         => '',
 			'coupon_codes'                          => ['coupon-incl-excl'],                // coupon_codes as an array containing the title
 			'public_coupon_code'                    => '',
-			'target_filter'                         => '{"and":[{"or":[{"retailer_id":{"eq":"'.$product1->get_id().'"}},{"retailer_id":{"eq":"'.$product2->get_id().'"}}]},{"and":[{"retailer_id":{"neq":"'.$product3->get_id().'"}}]}]}',
+			'target_filter'                         => '{"and":[{"or":[{"retailer_id":{"eq":"'. \WC_Facebookcommerce_Utils::get_fb_retailer_id($product1) .'"}},{"retailer_id":{"eq":"'. \WC_Facebookcommerce_Utils::get_fb_retailer_id($product2) .'"}}]},{"and":[{"retailer_id":{"neq":"'. \WC_Facebookcommerce_Utils::get_fb_retailer_id($product3) .'"}}]}]}',
 			'target_product_retailer_ids'           => '',
 			'target_product_group_retailer_ids'     => '',
 			'target_product_set_retailer_ids'       => '',
@@ -465,8 +465,8 @@ class FeedUploadUtilsTest extends FeedDataTestBase {
 		// Expected target_filter:
 		// The get_target_filter() function pulls products via wc_get_products() based on the category IDs.
 		// It should return products from the included category (product1 and product2) and products from the excluded category (product3).
-		// The expected JSON string (WC_Facebookcommerce_Utils::get_fb_retailer_id returns the product ID) is:
-		$expected_target_filter = '{"and":[{"or":[{"retailer_id":{"eq":"' . $prod_id1 . '"}},{"retailer_id":{"eq":"' . $prod_id2 . '"}}]},{"and":[{"retailer_id":{"neq":"' . $prod_id3 . '"}}]}]}';
+		// The expected JSON string (assuming WC_Facebookcommerce_Utils::get_fb_retailer_id returns the product id) is:
+		$expected_target_filter = '{"and":[{"or":[{"retailer_id":{"eq":"' . \WC_Facebookcommerce_Utils::get_fb_retailer_id($product1) . '"}},{"retailer_id":{"eq":"' . \WC_Facebookcommerce_Utils::get_fb_retailer_id($product2) . '"}}]},{"and":[{"retailer_id":{"neq":"' . \WC_Facebookcommerce_Utils::get_fb_retailer_id($product3) . '"}}]}]}';
 
 		// Build the expected coupon shape.
 		$expected_coupon = [

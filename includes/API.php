@@ -5,7 +5,7 @@
  * This source code is licensed under the license found in the
  * LICENSE file in the root directory of this source tree.
  *
- * @package FacebookCommerce
+ * @package MetaCommerce
  */
 
 namespace WooCommerce\Facebook;
@@ -704,7 +704,7 @@ class API extends Base {
 			}
 		} catch ( \Exception $e ) {
 			Logger::log(
-				'Facebook for WooCommerce E2E: CAPI event capturing failed',
+				'Meta for WooCommerce E2E: CAPI event capturing failed',
 				array(
 					'event'      => 'capi_test_event_logging_error',
 					'extra_data' => array(
@@ -833,7 +833,7 @@ class API extends Base {
 	 * @param string $fbe_external_business_id The external business ID associated with the Facebook Business Extension
 	 * @param string $shop_domain The domain of the WooCommerce site
 	 * @param string $admin_url The admin URL of the WooCommerce site
-	 * @param string $extension_version The version of the Facebook for WooCommerce extension
+	 * @param string $extension_version The version of the Meta for WooCommerce extension
 	 *
 	 * @return API\Response|API\CommerceIntegration\Repair\Response
 	 * @throws ApiException In case of a general API error or rate limit error.
@@ -848,7 +848,7 @@ class API extends Base {
 	 * Updates the commerce integration configuration.
 	 *
 	 * @param string      $commerce_integration_id The ID of the commerce integration to update
-	 * @param string|null $extension_version The version of the Facebook for WooCommerce extension
+	 * @param string|null $extension_version The version of the Meta for WooCommerce extension
 	 * @param string|null $admin_url The admin URL of the WooCommerce site
 	 * @param string|null $country_code ISO2 country code
 	 * @param string|null $currency ISO currency code
