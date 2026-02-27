@@ -228,6 +228,9 @@ class Handler extends AbstractRESTEndpoint {
 		update_option( 'wc_facebook_has_connected_fbe_2', 'yes' );
 		update_option( 'wc_facebook_has_authorized_pages_read_engagement', 'yes' );
 
+		// Clear any invalid connection flags since we just received fresh tokens
+		delete_transient( 'wc_facebook_connection_invalid' );
+
 		// Set the Messenger chat visibility
 		if ( ! empty( $params['msger_chat'] ) ) {
 			update_option( 'wc_facebook_enable_messenger', wc_bool_to_string( 'yes' === $params['msger_chat'] ) );

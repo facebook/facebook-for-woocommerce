@@ -146,6 +146,9 @@ abstract class Base {
 		// parse the response body and tie it to the request
 		$this->response = $this->get_parsed_response( $this->raw_response_body );
 
+		// allow child classes to validate the parsed response (e.g. token errors, rate limits)
+		$this->do_post_parse_response_validation();
+
 		// fire do_action() so other actors can act on request/response data,
 		// primarily used for logging
 		$this->broadcast_request();
@@ -164,6 +167,20 @@ abstract class Base {
 	protected function get_parsed_response( $raw_response_body ) {
 		$handler_class = $this->get_response_handler();
 		return new $handler_class( $raw_response_body );
+	}
+
+
+	/**
+	 * Validates the parsed response after it has been instantiated.
+	 *
+	 * Child classes can override this to check for API-specific error
+	 * conditions (e.g. invalid tokens, rate limits) and throw exceptions
+	 * or set transients accordingly.
+	 *
+	 * @since 3.5.17
+	 */
+	protected function do_post_parse_response_validation() {
+		// no-op by default — child classes (e.g. API.php) override this
 	}
 
 

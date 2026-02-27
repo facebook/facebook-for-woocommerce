@@ -20,8 +20,15 @@ class ShopsTest extends AbstractWPUnitTestWithOptionIsolationAndSafeFiltering {
      */
     public function setUp(): void {
         parent::setUp();
-        
+
         $this->shops = new Shops();
+
+        // Clear the singleton admin notice handler's notices between tests.
+        $handler = facebook_for_woocommerce()->get_admin_notice_handler();
+        $ref     = new \ReflectionObject( $handler );
+        $prop    = $ref->getProperty( 'admin_notices' );
+        $prop->setAccessible( true );
+        $prop->setValue( $handler, [] );
     }
 
     /**
@@ -176,5 +183,128 @@ class ShopsTest extends AbstractWPUnitTestWithOptionIsolationAndSafeFiltering {
         $this->assertTrue($found_coupon);
         $last_setting = end($settings);
         $this->assertEquals('sectionend', $last_setting['type']);
+    }
+
+    /**
+     * Test that add_notices registers a connection invalid notice when the transient is set.
+     */
+    public function test_add_notices_shows_connection_invalid_notice() {
+        // Set up an admin user so the notice handler allows display.
+        $user_id = $this->factory->user->create( array( 'role' => 'administrator' ) );
+        wp_set_current_user( $user_id );
+
+        set_transient( 'wc_facebook_connection_invalid', time(), DAY_IN_SECONDS );
+
+        $shops = new Shops();
+        $shops->add_notices();
+
+        // Access the admin notice handler's internal notices array.
+        $handler = facebook_for_woocommerce()->get_admin_notice_handler();
+        $ref     = new \ReflectionObject( $handler );
+        $prop    = $ref->getProperty( 'admin_notices' );
+        $prop->setAccessible( true );
+        $notices = $prop->getValue( $handler );
+
+        $this->assertArrayHasKey( 'wc_facebook_connection_invalid', $notices );
+        $this->assertStringContainsString( 'access token is no longer valid', $notices['wc_facebook_connection_invalid']['message'] );
+
+        delete_transient( 'wc_facebook_connection_invalid' );
+    }
+
+    /**
+     * Test that add_notices does NOT register a connection invalid notice when the transient is not set.
+     */
+    public function test_add_notices_skips_connection_invalid_when_transient_not_set() {
+        $user_id = $this->factory->user->create( array( 'role' => 'administrator' ) );
+        wp_set_current_user( $user_id );
+
+        // Ensure transient is not set.
+        delete_transient( 'wc_facebook_connection_invalid' );
+
+        $shops = new Shops();
+        $shops->add_notices();
+
+        $handler = facebook_for_woocommerce()->get_admin_notice_handler();
+        $ref     = new \ReflectionObject( $handler );
+        $prop    = $ref->getProperty( 'admin_notices' );
+        $prop->setAccessible( true );
+        $notices = $prop->getValue( $handler );
+
+        $this->assertArrayNotHasKey( 'wc_facebook_connection_invalid', $notices );
+    }
+
+    /**
+     * Test that the connection invalid notice links to the settings page, not the legacy OAuth URL.
+     */
+    public function test_connection_invalid_notice_links_to_settings_page() {
+        $user_id = $this->factory->user->create( array( 'role' => 'administrator' ) );
+        wp_set_current_user( $user_id );
+
+        set_transient( 'wc_facebook_connection_invalid', time(), DAY_IN_SECONDS );
+
+        $shops = new Shops();
+        $shops->add_notices();
+
+        $handler = facebook_for_woocommerce()->get_admin_notice_handler();
+        $ref     = new \ReflectionObject( $handler );
+        $prop    = $ref->getProperty( 'admin_notices' );
+        $prop->setAccessible( true );
+        $notices = $prop->getValue( $handler );
+
+        $message = $notices['wc_facebook_connection_invalid']['message'];
+
+        // Should link to the settings page.
+        $this->assertStringContainsString( 'page=wc-facebook', $message );
+        // Should NOT link to the legacy OAuth flow.
+        $this->assertStringNotContainsString( 'facebook.com/dialog/oauth', $message );
+
+        delete_transient( 'wc_facebook_connection_invalid' );
+    }
+
+    /**
+     * Test that render_facebook_iframe falls back to splash URL when connection is invalid.
+     */
+    public function test_render_facebook_iframe_shows_splash_when_connection_invalid() {
+        // Set merchant token so the management path would normally be taken.
+        update_option( 'wc_facebook_merchant_access_token', 'test_token' );
+        // Set the connection invalid transient.
+        set_transient( 'wc_facebook_connection_invalid', time(), DAY_IN_SECONDS );
+
+        $shops      = $this->getMockBuilder( Shops::class )->getMock();
+        $reflection = new \ReflectionClass( get_class( $shops ) );
+        $method     = $reflection->getMethod( 'render_facebook_iframe' );
+        $method->setAccessible( true );
+
+        ob_start();
+        $method->invoke( $shops );
+        $output = ob_get_clean();
+
+        // Should show the splash iframe (onboarding), not the management iframe.
+        $this->assertStringContainsString( 'commercepartnerhub.com/commerce_extension/splash', $output );
+
+        delete_transient( 'wc_facebook_connection_invalid' );
+    }
+
+    /**
+     * Test that the splash URL has installed=false when connection is invalid.
+     */
+    public function test_render_facebook_iframe_shows_splash_with_installed_false() {
+        update_option( 'wc_facebook_merchant_access_token', 'test_token' );
+        set_transient( 'wc_facebook_connection_invalid', time(), DAY_IN_SECONDS );
+
+        $shops      = $this->getMockBuilder( Shops::class )->getMock();
+        $reflection = new \ReflectionClass( get_class( $shops ) );
+        $method     = $reflection->getMethod( 'render_facebook_iframe' );
+        $method->setAccessible( true );
+
+        ob_start();
+        $method->invoke( $shops );
+        $output = ob_get_clean();
+
+        // The splash URL should have installed= with an empty or falsy value.
+        // When connection is invalid, we pass false for $is_connected so the iframe shows onboarding.
+        $this->assertStringNotContainsString( 'installed=1', $output );
+
+        delete_transient( 'wc_facebook_connection_invalid' );
     }
 }
