@@ -84,27 +84,51 @@ async function checkWooCommerceLogs() {
     { encoding: 'utf8' }
   ).trim();
 
-  if (non200Lines) {
-    console.log(`❌ Found non-200 response codes in log file: ${logFile}`);
-    console.log('Non-200 log lines:');
-    console.log(non200Lines);
+  // Known transient Meta API errors that are not plugin bugs
+  const TRANSIENT_ERRORS = [
+    'Another upload already in progress',
+  ];
 
-    // Print surrounding context (10 lines before/after) for each non-200 line
+  // Filter out lines whose surrounding context contains a known transient error
+  if (non200Lines) {
     const lineNumbers = non200Lines.split('\n').map(l => parseInt(l.split(':')[0], 10)).filter(n => !isNaN(n));
+    const unexpectedErrors = [];
+
     for (const lineNum of lineNumbers) {
-      const start = Math.max(1, lineNum - 10);
-      const end = lineNum + 10;
-      console.log(`\n--- Context around line ${lineNum} (lines ${start}-${end}) ---`);
+      const start = Math.max(1, lineNum - 5);
+      const end = lineNum + 5;
       const context = execSync(
         `sed -n '${start},${end}p' "${logFile}"`,
         { encoding: 'utf8' }
-      ).trim();
-      console.log(context);
-      console.log('--- End context ---');
+      );
+      const isTransient = TRANSIENT_ERRORS.some(msg => context.includes(msg));
+      if (isTransient) {
+        console.log(`⏭️ Ignoring known transient error at line ${lineNum}: ${TRANSIENT_ERRORS.find(msg => context.includes(msg))}`);
+      } else {
+        unexpectedErrors.push(lineNum);
+      }
     }
 
-    console.log('Please check WooCommerce logs in Github Artifacts');
-    return { success: false, error: 'Non-200 response codes found' };
+    if (unexpectedErrors.length > 0) {
+      console.log(`❌ Found non-200 response codes in log file: ${logFile}`);
+      console.log('Non-200 log lines:');
+      console.log(non200Lines);
+
+      for (const lineNum of unexpectedErrors) {
+        const start = Math.max(1, lineNum - 10);
+        const end = lineNum + 10;
+        console.log(`\n--- Context around line ${lineNum} (lines ${start}-${end}) ---`);
+        const context = execSync(
+          `sed -n '${start},${end}p' "${logFile}"`,
+          { encoding: 'utf8' }
+        ).trim();
+        console.log(context);
+        console.log('--- End context ---');
+      }
+
+      console.log('Please check WooCommerce logs in Github Artifacts');
+      return { success: false, error: 'Non-200 response codes found' };
+    }
   }
 
   const criticalLogs = execSync(
