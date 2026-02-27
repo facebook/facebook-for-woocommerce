@@ -621,7 +621,10 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 
 
 		/**
-		 * Injects a Search event on result pages.
+		 * Injects a Search pixel event on result pages.
+		 *
+		 * CAPI is already sent by send_search_event() on template_redirect.
+		 * This method only handles the browser pixel.
 		 *
 		 * @internal
 		 */
@@ -632,8 +635,6 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 			if ( null === $event ) {
 				return;
 			}
-
-			$this->send_api_event( $event );
 
 			$this->pixel->inject_event(
 				$event->get_name(),
@@ -763,8 +764,7 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 				),
 				'user_data'   => $this->pixel->get_user_info(),
 			);
-
-			$event = new WooCommerce\Facebook\Events\Event( $event_data );
+$event = new WooCommerce\Facebook\Events\Event( $event_data );
 
 			$this->send_api_event( $event );
 
