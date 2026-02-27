@@ -55,9 +55,9 @@ test.describe('WooCommerce Plugin level tests', () => {
       console.log('❌ WordPress needs update');
     }
 
-    // Check WooCommerce
+    // Check WooCommerce - use exact text match to avoid matching "Meta for WooCommerce"
     const allPluginsUpToDate = await page.locator('p:has-text("Your plugins are all up to date.")').count();
-    const wooInUpdateTable = await page.locator('#update-plugins-table tr:has-text("WooCommerce")').count();
+    const wooInUpdateTable = await page.locator('#update-plugins-table tr td strong:text-is("WooCommerce")').count();
 
     if (allPluginsUpToDate > 0 || wooInUpdateTable === 0) {
       console.log('✅ WooCommerce up to date');
@@ -65,9 +65,13 @@ test.describe('WooCommerce Plugin level tests', () => {
       console.log('❌ WooCommerce needs update');
     }
 
-    expect(wpUpToDate).toBeGreaterThan(0);
-    expect(allPluginsUpToDate > 0 || wooInUpdateTable === 0).toBe(true);
-    console.log('✅ Wordpress and WooCommerce are up to date');
+    if (process.env.IS_LATEST_WP !== 'false') {
+      expect(wpUpToDate).toBeGreaterThan(0);
+      expect(allPluginsUpToDate > 0 || wooInUpdateTable === 0).toBe(true);
+    } else {
+      console.log('⏭️ Skipping version checks (running against pinned versions, not latest)');
+    }
+    console.log('✅ Wordpress and WooCommerce version check complete');
   });
 
   test('Verify Storefront theme is active', async ({ page }) => {
