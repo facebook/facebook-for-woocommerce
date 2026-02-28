@@ -158,7 +158,7 @@ class Background extends BackgroundJobHandler {
 		}
 
 		if ( Sync::ACTION_UPDATE === $method ) {
-			$request = $this->process_item_update( $item_id );
+			$request = $this->process_item_update( $item_id, $job );
 		} else {
 			$request = $this->process_item_delete( $item_id );
 		}
@@ -170,11 +170,12 @@ class Background extends BackgroundJobHandler {
 	 *
 	 * @since 2.0.0
 	 *
-	 * @param string $prefixed_product_id prefixed product ID
+	 * @param string           $prefixed_product_id prefixed product ID
+	 * @param object|\stdClass $job                 job object used to extract manual_sync_timestamp for manual full sync.
 	 * @return array|null
 	 * @throws PluginException In case no product was found.
 	 */
-	private function process_item_update( $prefixed_product_id ) {
+	private function process_item_update( $prefixed_product_id, $job = null ) {
 		$product_id = (int) str_replace( Sync::PRODUCT_INDEX_PREFIX, '', $prefixed_product_id );
 		$product    = wc_get_product( $product_id );
 
@@ -182,13 +183,22 @@ class Background extends BackgroundJobHandler {
 			throw new PluginException( "No product found with ID equal to {$product_id}." );
 		}
 
+		// Extract manual sync timestamp from job if present
+		$manual_sync_timestamp = null;
+		if ( $job && isset( $job->manual_sync_timestamp ) ) {
+			// Validate as numeric and ensure positive integer
+			if ( is_numeric( $job->manual_sync_timestamp ) && (int) $job->manual_sync_timestamp > 0 ) {
+				$manual_sync_timestamp = (int) $job->manual_sync_timestamp;
+			}
+		}
+
 		$request = null;
 		if ( ! Products::product_should_be_deleted( $product ) && Products::product_should_be_synced( $product ) ) {
 
 			if ( $product->is_type( 'variation' ) ) {
-				$product_data = \WC_Facebookcommerce_Utils::prepare_product_variation_data_items_batch( $product );
+				$product_data = \WC_Facebookcommerce_Utils::prepare_product_variation_data_items_batch( $product, $manual_sync_timestamp );
 			} else {
-				$product_data = \WC_Facebookcommerce_Utils::prepare_product_data_items_batch( $product );
+				$product_data = \WC_Facebookcommerce_Utils::prepare_product_data_items_batch( $product, $manual_sync_timestamp );
 			}
 
 			// extract the retailer_id
