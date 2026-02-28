@@ -97,14 +97,18 @@ class Products {
 		<p class="form-field">
 			<label for="<?php echo esc_attr( self::FIELD_GOOGLE_PRODUCT_CATEGORY_ID ); ?>">
 				<?php esc_html_e( 'Google Product Category', 'facebook-for-woocommerce' ); ?>
-				<?php echo wc_help_tip( __( 'Choose the Google product category and (optionally) sub-categories associated with this product.', 'facebook-for-woocommerce' ) ); ?>
 			</label>
-			<input
-				id="<?php echo esc_attr( self::FIELD_GOOGLE_PRODUCT_CATEGORY_ID ); ?>"
-				type="hidden"
-				name="<?php echo esc_attr( self::FIELD_GOOGLE_PRODUCT_CATEGORY_ID ); ?>"
-				value="<?php echo esc_attr( Products_Handler::get_google_product_category_id( $product ) ); ?>"
-			/>
+			<span class="wc-facebook-google-product-category-wrapper">
+				<input
+					id="<?php echo esc_attr( self::FIELD_GOOGLE_PRODUCT_CATEGORY_ID ); ?>"
+					type="hidden"
+					name="<?php echo esc_attr( self::FIELD_GOOGLE_PRODUCT_CATEGORY_ID ); ?>"
+					value="<?php echo esc_attr( Products_Handler::get_google_product_category_id( $product ) ); ?>"
+				/>
+				<span class="wc-facebook-google-product-category-help-tip">
+					<?php echo wc_help_tip( __( 'Choose the Google product category and (optionally) sub-categories associated with this product.', 'facebook-for-woocommerce' ) ); ?>
+				</span>
+			</span>
 		</p>
 		<?php
 	}
