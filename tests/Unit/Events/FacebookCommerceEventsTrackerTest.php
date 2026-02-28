@@ -47,6 +47,12 @@ class FacebookCommerceEventsTrackerTest extends AbstractWPUnitTestWithSafeFilter
 		$this->instance     = null;
 		$this->aam_settings = null;
 
+		// Reset static $product_data on WC_Facebookcommerce_Pixel.
+		$ref = new ReflectionClass( \WC_Facebookcommerce_Pixel::class );
+		$prop = $ref->getProperty( 'product_data' );
+		$prop->setAccessible( true );
+		$prop->setValue( null, [] );
+
 		parent::tearDown();
 	}
 
@@ -943,5 +949,175 @@ class FacebookCommerceEventsTrackerTest extends AbstractWPUnitTestWithSafeFilter
 				? 'param_builder_server_setup should complete when pixel is enabled'
 				: 'param_builder_server_setup should return early when pixel is disabled'
 		);
+	}
+
+	// -------------------------------------------------------------------------
+	// Tests for add_product_data_to_add_to_cart_button()
+	// -------------------------------------------------------------------------
+
+	/**
+	 * Helper: create a simple WC product for testing.
+	 *
+	 * @param array $overrides Optional product property overrides.
+	 * @return \WC_Product_Simple
+	 */
+	private function create_simple_product( array $overrides = [] ): \WC_Product_Simple {
+		$product = new \WC_Product_Simple();
+		$product->set_name( $overrides['name'] ?? 'Test Product' );
+		$product->set_regular_price( $overrides['price'] ?? '25.00' );
+		$product->set_sku( $overrides['sku'] ?? 'test-sku-' . uniqid() );
+		$product->save();
+		return $product;
+	}
+
+	/**
+	 * Helper: create a variable WC product for testing.
+	 *
+	 * @return \WC_Product_Variable
+	 */
+	private function create_variable_product(): \WC_Product_Variable {
+		$product = new \WC_Product_Variable();
+		$product->set_name( 'Variable Product' );
+		$product->save();
+		return $product;
+	}
+
+	/**
+	 * Test that add_product_data_to_add_to_cart_button returns args unchanged when pixel is disabled.
+	 *
+	 * @covers WC_Facebookcommerce_EventsTracker::add_product_data_to_add_to_cart_button
+	 */
+	public function test_add_product_data_returns_unchanged_when_pixel_disabled(): void {
+		$this->instance = $this->create_tracker_with_pixel_disabled();
+
+		$product = $this->create_simple_product();
+		$args    = array( 'class' => 'button', 'attributes' => array() );
+
+		$result = $this->instance->add_product_data_to_add_to_cart_button( $args, $product );
+
+		$this->assertSame( $args, $result, 'Args should be unchanged when pixel is disabled' );
+
+		wp_delete_post( $product->get_id(), true );
+	}
+
+	/**
+	 * Test that add_product_data_to_add_to_cart_button returns args unchanged for variable products.
+	 *
+	 * @covers WC_Facebookcommerce_EventsTracker::add_product_data_to_add_to_cart_button
+	 */
+	public function test_add_product_data_skips_variable_products(): void {
+		$this->instance = $this->create_tracker_with_pixel_enabled();
+
+		$product = $this->create_variable_product();
+		$args    = array( 'class' => 'button', 'attributes' => array() );
+
+		$result = $this->instance->add_product_data_to_add_to_cart_button( $args, $product );
+
+		$this->assertSame( $args, $result, 'Args should be unchanged for variable products' );
+		$this->assertNull(
+			\WC_Facebookcommerce_Pixel::get_product_event_id( $product->get_id() ),
+			'No product data should be stored for variable products'
+		);
+
+		wp_delete_post( $product->get_id(), true );
+	}
+
+	/**
+	 * Test that add_product_data_to_add_to_cart_button returns args unchanged when product is in cart.
+	 *
+	 * @covers WC_Facebookcommerce_EventsTracker::add_product_data_to_add_to_cart_button
+	 */
+	public function test_add_product_data_skips_product_already_in_cart(): void {
+		$this->instance = $this->create_tracker_with_pixel_enabled();
+
+		$product = $this->create_simple_product();
+		$args    = array( 'class' => 'button', 'attributes' => array() );
+
+		// Add product to cart.
+		WC()->cart->add_to_cart( $product->get_id() );
+
+		$result = $this->instance->add_product_data_to_add_to_cart_button( $args, $product );
+
+		$this->assertSame( $args, $result, 'Args should be unchanged when product is already in cart' );
+		$this->assertNull(
+			\WC_Facebookcommerce_Pixel::get_product_event_id( $product->get_id() ),
+			'No product data should be stored for products already in cart'
+		);
+
+		// Clean up.
+		WC()->cart->empty_cart();
+		wp_delete_post( $product->get_id(), true );
+	}
+
+	/**
+	 * Test that add_product_data_to_add_to_cart_button adds data-fb-* attributes for a simple product.
+	 *
+	 * @covers WC_Facebookcommerce_EventsTracker::add_product_data_to_add_to_cart_button
+	 */
+	public function test_add_product_data_adds_fb_attributes(): void {
+		$this->instance = $this->create_tracker_with_pixel_enabled();
+
+		$product = $this->create_simple_product( array( 'name' => 'Blue Widget', 'price' => '19.99' ) );
+		$args    = array( 'class' => 'button', 'attributes' => array() );
+
+		$result = $this->instance->add_product_data_to_add_to_cart_button( $args, $product );
+
+		$this->assertArrayHasKey( 'data-fb-event-id', $result['attributes'], 'Should have data-fb-event-id' );
+		$this->assertArrayHasKey( 'data-fb-content-ids', $result['attributes'], 'Should have data-fb-content-ids' );
+		$this->assertArrayHasKey( 'data-fb-content-type', $result['attributes'], 'Should have data-fb-content-type' );
+		$this->assertArrayHasKey( 'data-fb-value', $result['attributes'], 'Should have data-fb-value' );
+		$this->assertArrayHasKey( 'data-fb-currency', $result['attributes'], 'Should have data-fb-currency' );
+		$this->assertArrayHasKey( 'data-fb-content-name', $result['attributes'], 'Should have data-fb-content-name' );
+
+		$this->assertEquals( 'product', $result['attributes']['data-fb-content-type'] );
+		$this->assertEquals( 19.99, $result['attributes']['data-fb-value'] );
+		$this->assertNotEmpty( $result['attributes']['data-fb-event-id'] );
+
+		wp_delete_post( $product->get_id(), true );
+	}
+
+	/**
+	 * Test that add_product_data_to_add_to_cart_button stores product data retrievable via get_product_event_id.
+	 *
+	 * @covers WC_Facebookcommerce_EventsTracker::add_product_data_to_add_to_cart_button
+	 */
+	public function test_add_product_data_stores_event_id(): void {
+		$this->instance = $this->create_tracker_with_pixel_enabled();
+
+		$product = $this->create_simple_product();
+		$args    = array( 'class' => 'button', 'attributes' => array() );
+
+		$result = $this->instance->add_product_data_to_add_to_cart_button( $args, $product );
+
+		$stored_event_id = \WC_Facebookcommerce_Pixel::get_product_event_id( $product->get_id() );
+
+		$this->assertNotNull( $stored_event_id, 'Event ID should be stored after collecting product data' );
+		$this->assertEquals(
+			$result['attributes']['data-fb-event-id'],
+			$stored_event_id,
+			'Stored event_id should match the one in button attributes'
+		);
+
+		wp_delete_post( $product->get_id(), true );
+	}
+
+	/**
+	 * Test that add_product_data_to_add_to_cart_button generates a valid UUID v4 event_id.
+	 *
+	 * @covers WC_Facebookcommerce_EventsTracker::add_product_data_to_add_to_cart_button
+	 */
+	public function test_add_product_data_generates_valid_uuid(): void {
+		$this->instance = $this->create_tracker_with_pixel_enabled();
+
+		$product = $this->create_simple_product();
+		$args    = array( 'class' => 'button', 'attributes' => array() );
+
+		$result   = $this->instance->add_product_data_to_add_to_cart_button( $args, $product );
+		$event_id = $result['attributes']['data-fb-event-id'];
+
+		$uuid_v4_pattern = '/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i';
+		$this->assertMatchesRegularExpression( $uuid_v4_pattern, $event_id, 'Event ID should be a valid UUID v4' );
+
+		wp_delete_post( $product->get_id(), true );
 	}
 }
