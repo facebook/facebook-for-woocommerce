@@ -125,17 +125,48 @@
     }
 
     /**
-     * Initialize event firing on page load
+     * Initialize pixel event handling.
+     *
+     * If fbq() is already available, fires queued events immediately.
+     * If not (e.g. consent manager blocking the SDK), uses Object.defineProperty
+     * to set a trap on window.fbq — our handler fires automatically the moment
+     * fbq is assigned, with zero overhead in between. No polling, no timers.
      */
     function init() {
-        if (document.readyState === 'complete') {
+        if (typeof fbq === 'function') {
             fireQueuedEvents();
-        } else {
-            window.addEventListener('load', fireQueuedEvents);
+            return;
         }
+
+        // fbq doesn't exist yet — watch for it (zero overhead, no timers).
+        // Consent managers block fbq until the
+        // user accepts. This fires the moment they assign window.fbq.
+        var _fbq = window.fbq;
+        Object.defineProperty(window, 'fbq', {
+            configurable: true,
+            enumerable: true,
+            get: function() { return _fbq; },
+            set: function(value) {
+                _fbq = value;
+                if (typeof value === 'function') {
+                    // Restore normal property so FB SDK works normally
+                    Object.defineProperty(window, 'fbq', {
+                        configurable: true,
+                        enumerable: true,
+                        writable: true,
+                        value: value
+                    });
+                    setTimeout(fireQueuedEvents, 0);
+                }
+            }
+        });
     }
 
     // Start
-    init();
+    if (document.readyState === 'complete') {
+        init();
+    } else {
+        window.addEventListener('load', init);
+    }
 
 })();
