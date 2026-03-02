@@ -10,12 +10,12 @@
  * Description: Grow your business on Meta platforms! Use this official plugin to help sell more of your products using Facebook and Instagram. After completing the setup, you'll be ready to create ads that promote your products and you can also create a shop section on your Page where customers can browse your products.
  * Author: Meta
  * Author URI: https://www.meta.com/
- * Version: 3.5.17
+ * Version: 3.5.18
  * Requires at least: 5.6
  * Requires PHP: 7.4
  * Text Domain: facebook-for-woocommerce
  * Requires Plugins: woocommerce
- * Tested up to: 6.9.1
+ * Tested up to: 6.9
  * WC requires at least: 6.4
  * WC tested up to: 10.5
  *
@@ -62,7 +62,7 @@ class WC_Facebook_Loader {
 	/**
 	 * @var string the plugin version. This must be in the main plugin file to be automatically bumped by Woorelease.
 	 */
-	const PLUGIN_VERSION = '3.5.17'; // WRCS: DEFINED_VERSION.
+	const PLUGIN_VERSION = '3.5.18'; // WRCS: DEFINED_VERSION.
 
 	// Minimum PHP version required by this plugin.
 	const MINIMUM_PHP_VERSION = '7.4.0';
