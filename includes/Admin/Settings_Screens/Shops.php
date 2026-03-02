@@ -161,10 +161,6 @@ class Shops extends Abstract_Settings_Screen {
 	public function render() {
 		$is_connected = facebook_for_woocommerce()->get_connection_handler()->is_connected();
 
-		if ( $is_connected ) {
-			$this->render_whatsapp_promo_banner();
-		}
-
 		$this->render_facebook_iframe();
 
 		if ( $is_connected ) {
@@ -480,17 +476,5 @@ class Shops extends Abstract_Settings_Screen {
 				}
 			});
 		JAVASCRIPT;
-	}
-
-	public static function render_whatsapp_promo_banner() {
-		$should_show_whatsapp_utility_banner = facebook_for_woocommerce()->get_rollout_switches()->is_switch_enabled(
-			RolloutSwitches::WHATSAPP_UTILITY_MESSAGING_BETA_EXPERIENCE
-		);
-		if ( ! $should_show_whatsapp_utility_banner ) {
-			return;
-		}
-		$wa_banner = new \WC_Facebookcommerce_Admin_Banner();
-		$wa_banner->render_banner();
-		$wa_banner->enqueue_banner_script();
 	}
 }
