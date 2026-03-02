@@ -42,7 +42,6 @@ class TestableAPI extends API {
 	/**
 	 * Public wrapper to call the protected do_post_parse_response_validation().
 	 *
-	 * @throws ApiException
 	 * @throws Request_Limit_Reached
 	 */
 	public function call_do_post_parse_response_validation(): void {
@@ -59,7 +58,7 @@ class TestableAPI extends API {
  * - Successful responses clear the transient
  * - Non-auth errors clear the transient
  * - Rate limit errors throw Request_Limit_Reached
- * - Token errors throw ApiException
+ * - Token errors do NOT throw (callers handle via response object)
  */
 class PostParseResponseValidationTest extends AbstractWPUnitTestWithOptionIsolationAndSafeFiltering {
 
@@ -117,11 +116,7 @@ class PostParseResponseValidationTest extends AbstractWPUnitTestWithOptionIsolat
 			$this->make_error_response( 190, 464, 'User is not a confirmed user' )
 		);
 
-		try {
-			$api->call_do_post_parse_response_validation();
-		} catch ( ApiException $e ) {
-			// Expected.
-		}
+		$api->call_do_post_parse_response_validation();
 
 		$this->assertNotFalse( get_transient( 'wc_facebook_connection_invalid' ) );
 	}
@@ -134,11 +129,7 @@ class PostParseResponseValidationTest extends AbstractWPUnitTestWithOptionIsolat
 			$this->make_error_response( 190, 460, 'Password has been changed' )
 		);
 
-		try {
-			$api->call_do_post_parse_response_validation();
-		} catch ( ApiException $e ) {
-			// Expected.
-		}
+		$api->call_do_post_parse_response_validation();
 
 		$this->assertNotFalse( get_transient( 'wc_facebook_connection_invalid' ) );
 	}
@@ -151,27 +142,24 @@ class PostParseResponseValidationTest extends AbstractWPUnitTestWithOptionIsolat
 			$this->make_error_response( 190, 452, 'Session does not match' )
 		);
 
-		try {
-			$api->call_do_post_parse_response_validation();
-		} catch ( ApiException $e ) {
-			// Expected.
-		}
+		$api->call_do_post_parse_response_validation();
 
 		$this->assertNotFalse( get_transient( 'wc_facebook_connection_invalid' ) );
 	}
 
 	/**
-	 * Test that a token error (code 190) throws an ApiException.
+	 * Test that a token error (code 190) does NOT throw an ApiException
+	 * but still sets the connection invalid transient.
 	 */
-	public function test_token_error_throws_api_exception(): void {
+	public function test_token_error_does_not_throw_api_exception(): void {
 		$api = $this->make_api_with_response(
 			$this->make_error_response( 190, 464, 'User is not a confirmed user' )
 		);
 
-		$this->expectException( ApiException::class );
-		$this->expectExceptionCode( 190 );
-
+		// Should NOT throw — returns normally so callers can handle the response.
 		$api->call_do_post_parse_response_validation();
+
+		$this->assertNotFalse( get_transient( 'wc_facebook_connection_invalid' ) );
 	}
 
 	/**
@@ -199,11 +187,7 @@ class PostParseResponseValidationTest extends AbstractWPUnitTestWithOptionIsolat
 			$this->make_error_response( 100, 2804019, 'Invalid parameter' )
 		);
 
-		try {
-			$api->call_do_post_parse_response_validation();
-		} catch ( ApiException $e ) {
-			// Expected — non-auth errors still throw.
-		}
+		$api->call_do_post_parse_response_validation();
 
 		$this->assertFalse( get_transient( 'wc_facebook_connection_invalid' ) );
 	}

@@ -105,11 +105,11 @@ class API extends Base {
 	/**
 	 * Validates a response after it has been parsed and instantiated.
 	 *
-	 * Throws an exception if a rate limit or general API error is included in the response.
+	 * Throws an exception if a rate limit error is included in the response.
+	 * Sets the wc_facebook_connection_invalid transient for auth errors.
 	 *
 	 * @since 2.0.0
 	 *
-	 * @throws ApiException In case of an invalid token error.
 	 * @throws API\Exceptions\Request_Limit_Reached In case of a rate limit error.
 	 */
 	protected function do_post_parse_response_validation() {
@@ -195,7 +195,10 @@ class API extends Base {
 				$this->response = $this->perform_request( $request );
 				return;
 			}
-			throw new ApiException( $message, $code );
+
+			// Return without clearing the transient — the error response is still
+			// available via $this->get_response() for callers to inspect.
+			return;
 		}
 		// if we get this far we're connected, so delete any invalid connection flag
 		delete_transient( 'wc_facebook_connection_invalid' );
