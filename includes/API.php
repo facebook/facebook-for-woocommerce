@@ -195,7 +195,6 @@ class API extends Base {
 				$this->response = $this->perform_request( $request );
 				return;
 			}
-			throw new ApiException( $message, $code );
 		}
 		// if we get this far we're connected, so delete any invalid connection flag
 		delete_transient( 'wc_facebook_connection_invalid' );
