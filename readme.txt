@@ -1,6 +1,6 @@
 === Meta for WooCommerce ===
 Contributors: meta
-Tags: meta, facebook, conversions api, catalog sync, ads
+Tags: meta, facebook, whatsapp, conversions api, catalog sync, ads
 Requires at least: 5.6
 Tested up to: 6.9
 Stable tag: 3.5.17
@@ -13,7 +13,7 @@ Get the Official Meta for WooCommerce plugin for powerful ways to help grow your
 
 == Description ==
 
-This is the official Meta for WooCommerce plugin that connects your WooCommerce website to Facebook. With this plugin, you can install the Facebook pixel, and upload your online store catalog, enabling you to easily run dynamic ads.
+This is the official Meta for WooCommerce plugin that connects your WooCommerce website to Facebook, Instagram and WhatsApp. With this plugin, you can install the Facebook pixel, upload your online store catalog, enabling you to easily run dynamic ads and connect your WhatsApp Business account to automatically update customers about their orders.
 
 
 Marketing on Meta platforms helps your business build lasting relationships with people, find new customers, and increase sales for your online store. With this Facebook ad extension, reaching the people who matter most to your business is simple. This extension will track the results of your advertising across devices. It will also help you:
@@ -21,6 +21,7 @@ Marketing on Meta platforms helps your business build lasting relationships with
 * Maximize your campaign performance. By setting up the Facebook pixel and building your audience, you will optimize your ads for people likely to buy your products, and reach people with relevant ads on Facebook after they’ve visited your website.
 * Find more customers. Connecting your product catalog automatically creates carousel ads that showcase the products you sell and attract more shoppers to your website.
 * Generate sales among your website visitors. When you set up the Facebook pixel and connect your product catalog, you can use dynamic ads to reach shoppers when they're on Facebook with ads for the products they viewed on your website. This will be included in a future release of Meta for WooCommerce.
+* Engage with customers on WhatsApp by updating your customers about their orders at every step, freeing up more time for you to focus on your business.
 
 == Installation ==
 

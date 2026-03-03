@@ -4,7 +4,7 @@
 
 **We're excited to announce that the plugin is is now owned by Meta, and we invite the developer community to join us in shaping its future through contributions.**
 
-Grow your business on Facebook and Instagram. Easily promote your products and target accurately using powerful sales and marketing tools. Reach new customers and drive traffic to your website with seamless ad experiences, from discovery to conversion. Automatically sync your eligible products to your Meta catalog, so you can easily create ads right where your customers are.
+Grow your business on Facebook, Instagram and WhatsApp. Easily promote your products and target accurately using powerful sales and marketing tools. Update your customers about their orders on WhatsApp at every step, freeing up more time for you to focus on your business. Reach new customers and drive traffic to your website with seamless ad experiences, from discovery to conversion. Automatically sync your eligible products to your Meta catalog, so you can easily create ads right where your customers are.
 - Help drive better ad performance by setting up a conversion pixel
 - Easily set up your ads with a one-time account connection
 - Sell from one inventory that automatically syncs to your catalog used for ads
