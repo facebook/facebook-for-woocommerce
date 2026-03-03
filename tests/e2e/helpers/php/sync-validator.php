@@ -700,11 +700,29 @@ class CategorySyncValidator {
                             : "Successfully fetched product set on retry #" . ($retry_count + 1)
                     );
 
-                    // Get full product set data from response
+                    // Get full product set data from response.
+                    // The API filters by retailer_id, but retailer_id (term_taxonomy_id) can be
+                    // recycled across test runs, so multiple product sets may share the same
+                    // retailer_id. Prefer the one matching the current category name; fall back
+                    // to the first result so "update name" tests still work when the name hasn't
+                    // propagated yet.
                     $response_data = $response->response_data["data"];
-                    $product_set_data = is_array($response_data) && !empty($response_data)
-                        ? $response_data[0]
-                        : null;
+                    $product_set_data = null;
+                    if (is_array($response_data) && !empty($response_data)) {
+                        // Try name match first
+                        if (isset($this->category->name)) {
+                            foreach ($response_data as $item) {
+                                if (isset($item['name']) && $item['name'] === $this->category->name) {
+                                    $product_set_data = $item;
+                                    break;
+                                }
+                            }
+                        }
+                        // Fall back to first result
+                        if (!$product_set_data) {
+                            $product_set_data = $response_data[0];
+                        }
+                    }
 
                     if ($product_set_data) {
                         // Parse metadata if it's a JSON string
