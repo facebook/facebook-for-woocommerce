@@ -282,50 +282,67 @@ test.describe('Meta for WooCommerce - Product Category E2E Tests', () => {
             product2Id = product2.productId;
 
             // Step 6: Validate the name change synced to Facebook AND both products are in the category
+            // Retry the entire validation block because Facebook API propagation timing
+            // can cause transient failures for name updates and product_set membership.
             console.log('🔍 Step 6: Validating category name change synced to Facebook...');
-            const updatedCategoryResult = await validateCategorySync(categoryId, updatedCategoryName, 5);
+            let updateValidationPassed = false;
+            let lastUpdateError = null;
+            for (let attempt = 1; attempt <= 3; attempt++) {
+                try {
+                    const updatedCategoryResult = await validateCategorySync(categoryId, updatedCategoryName, attempt === 1 ? 30 : 15);
 
-            // Verify category sync with updated name
-            expect(updatedCategoryResult['success']).toBe(true);
-            console.log('📊 Updated Category Facebook data:');
-            console.log(updatedCategoryResult['raw_data']['facebook_data']);
-            console.log('✅ Updated category name sync validated');
+                    // Verify category sync with updated name
+                    expect(updatedCategoryResult['success']).toBe(true);
+                    console.log('📊 Updated Category Facebook data:');
+                    console.log(updatedCategoryResult['raw_data']['facebook_data']);
+                    console.log('✅ Updated category name sync validated');
 
-            // Verify the product set ID remains the same
-            expect(updatedCategoryResult['facebook_product_set_id']).toBe(facebookProductSetId);
-            console.log('✅ Verified product set ID remained consistent after name change');
+                    // Verify the product set ID remains the same
+                    expect(updatedCategoryResult['facebook_product_set_id']).toBe(facebookProductSetId);
+                    console.log('✅ Verified product set ID remained consistent after name change');
 
-            // Verify the name is updated in Facebook
-            const facebookCategoryName = updatedCategoryResult['raw_data']['facebook_data']['name'];
-            expect(facebookCategoryName).toBe(updatedCategoryName);
-            console.log(`✅ Verified category name updated in Facebook: "${facebookCategoryName}"`);
+                    // Verify the name is updated in Facebook
+                    const facebookCategoryName = updatedCategoryResult['raw_data']['facebook_data']['name'];
+                    expect(facebookCategoryName).toBe(updatedCategoryName);
+                    console.log(`✅ Verified category name updated in Facebook: "${facebookCategoryName}"`);
 
-            // Verify both products are in the updated category
-            console.log('🔍 Verifying both products are in the updated category...');
-            const [finalProduct1Result, finalProduct2Result] = await Promise.all([
-                validateFacebookSync(product1Id, product1.productName, 30),
-                validateFacebookSync(product2Id, product2.productName, 30)
-            ]);
+                    // Verify both products are in the updated category
+                    console.log('🔍 Verifying both products are in the updated category...');
+                    const [finalProduct1Result, finalProduct2Result] = await Promise.all([
+                        validateFacebookSync(product1Id, product1.productName, 30),
+                        validateFacebookSync(product2Id, product2.productName, 30)
+                    ]);
 
-            // Verify product 1 is still in the category
-            expect(finalProduct1Result['success']).toBe(true);
-            const isProduct1InSet = finalProduct1Result['raw_data']['facebook_data'][0]['product_sets'].some(
-                set => {
-                    return Number(categoryId) === Number(set.retailer_id) && Number(set.id) === Number(facebookProductSetId)
+                    // Verify product 1 is still in the category
+                    expect(finalProduct1Result['success']).toBe(true);
+                    const isProduct1InSet = finalProduct1Result['raw_data']['facebook_data'][0]['product_sets'].some(
+                        set => {
+                            return Number(categoryId) === Number(set.retailer_id) && Number(set.id) === Number(facebookProductSetId)
+                        }
+                    );
+                    expect(isProduct1InSet).toBe(true);
+                    console.log('✅ Product 1 still in the updated category');
+
+                    // Verify product 2 is in the category
+                    expect(finalProduct2Result['success']).toBe(true);
+                    const isProduct2InSet = finalProduct2Result['raw_data']['facebook_data'][0]['product_sets'].some(
+                        set => {
+                            return Number(categoryId) === Number(set.retailer_id) && Number(set.id) === Number(facebookProductSetId)
+                        }
+                    );
+                    expect(isProduct2InSet).toBe(true);
+                    console.log('✅ Product 2 is now in the updated category');
+
+                    updateValidationPassed = true;
+                    break;
+                } catch (e) {
+                    lastUpdateError = e;
+                    if (attempt < 3) {
+                        console.log(`⚠️ Update validation attempt ${attempt}/3 failed: ${e.message}. Retrying...`);
+                    }
                 }
-            );
-            expect(isProduct1InSet).toBe(true);
-            console.log('✅ Product 1 still in the updated category');
-
-            // Verify product 2 is in the category
-            expect(finalProduct2Result['success']).toBe(true);
-            const isProduct2InSet = finalProduct2Result['raw_data']['facebook_data'][0]['product_sets'].some(
-                set => {
-                    return Number(categoryId) === Number(set.retailer_id) && Number(set.id) === Number(facebookProductSetId)
-                }
-            );
-            expect(isProduct2InSet).toBe(true);
-            console.log('✅ Product 2 is now in the updated category');
+            }
+            if (!updateValidationPassed) throw lastUpdateError;
             logTestEnd(testInfo, true);
         } catch (error) {
             console.log(`⚠️ Update category test failed: ${error.message}`);
@@ -367,8 +384,16 @@ test.describe('Meta for WooCommerce - Product Category E2E Tests', () => {
             console.log(`✅ Created product: ${product.productName} (ID: ${productId}) with category ${categoryId}`);
 
             // Step 3: Perform initial validation
+            // Retry because Facebook API propagation timing can cause transient failures.
             console.log('🔍 Step 3: Performing initial validation...');
-            const initialCategoryResult = await validateCategorySync(categoryId, categoryName, 5);
+            let initialCategoryResult;
+            for (let attempt = 1; attempt <= 3; attempt++) {
+                initialCategoryResult = await validateCategorySync(categoryId, categoryName, attempt === 1 ? 30 : 15);
+                if (initialCategoryResult && initialCategoryResult['success']) break;
+                if (attempt < 3) {
+                    console.log(`⚠️ Initial category sync attempt ${attempt}/3 not yet consistent, retrying...`);
+                }
+            }
             expect(initialCategoryResult['success']).toBe(true);
             console.log('✅ Initial category sync validated');
 
@@ -376,11 +401,21 @@ test.describe('Meta for WooCommerce - Product Category E2E Tests', () => {
             console.log(`📊 Facebook Product Set ID: ${facebookProductSetId}`);
 
             // Validate product is in the category
-            const initialProductResult = await validateFacebookSync(productId, product.productName, 5);
+            let initialProductResult;
+            let isProductInInitialSet = false;
+            for (let attempt = 1; attempt <= 3; attempt++) {
+                initialProductResult = await validateFacebookSync(productId, product.productName, attempt === 1 ? 30 : 15);
+                if (initialProductResult && initialProductResult['success']) {
+                    isProductInInitialSet = initialProductResult['raw_data']['facebook_data'][0]['product_sets'].some(
+                        set => Number(categoryId) === Number(set.retailer_id)
+                    );
+                    if (isProductInInitialSet) break;
+                }
+                if (attempt < 3) {
+                    console.log(`⚠️ Product-in-set check attempt ${attempt}/3 not yet consistent, retrying...`);
+                }
+            }
             expect(initialProductResult['success']).toBe(true);
-            const isProductInInitialSet = initialProductResult['raw_data']['facebook_data'][0]['product_sets'].some(
-                set => Number(categoryId) === Number(set.retailer_id)
-            );
             expect(isProductInInitialSet).toBe(true);
             console.log('✅ Product validated in category product set');
 
