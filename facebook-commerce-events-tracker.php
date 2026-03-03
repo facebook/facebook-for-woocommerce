@@ -221,6 +221,12 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 				add_action( 'shutdown', array( WC_Facebookcommerce_Utils::class, 'save_deferred_events' ) );
 			}
 
+			// Pre-collect product data for JS-driven AddToCart on shop/category pages.
+			add_filter( 'woocommerce_loop_add_to_cart_args', array( $this, 'add_product_data_to_add_to_cart_button' ), 10, 2 );
+
+			// Ensure pixel events script is enqueued on shop/category pages (even without static events).
+			add_action( 'wp_enqueue_scripts', array( $this, 'enqueue_pixel_events_script_for_shop' ) );
+
 			// InitiateCheckout events
 			add_action( 'woocommerce_after_checkout_form', array( $this, 'inject_initiate_checkout_event' ) );
 
@@ -709,6 +715,93 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 			$this->pixel->inject_event( 'ViewContent', $event_data );
 		}
 
+		/**
+		 * Pre-collect product data and attach it to Add to Cart buttons on shop/category pages.
+		 *
+		 * This data is passed to JavaScript via wp_localize_script() so the AddToCart
+		 * pixel event can fire from a click handler before the AJAX request starts.
+		 * The same event_id is used by CAPI (server-side) for deduplication.
+		 *
+		 * @param array       $args    Button arguments from woocommerce_loop_add_to_cart_args filter.
+		 * @param \WC_Product $product The product object.
+		 * @return array Modified button arguments with data-fb-* attributes.
+		 */
+		public function add_product_data_to_add_to_cart_button( $args, $product ) {
+			if ( ! $this->is_pixel_enabled() ) {
+				return $args;
+			}
+
+			// Skip variable products — they require option selection on the product page.
+			if ( $product->is_type( 'variable' ) ) {
+				return $args;
+			}
+
+			$product_id = $product->get_id();
+
+			// Skip if product is already in the cart.
+			// CAPI won't fire AddToCart for products already in cart (WooCommerce doesn't
+			// trigger woocommerce_add_to_cart), so the pixel shouldn't fire either.
+			if ( WC()->cart ) {
+				foreach ( WC()->cart->get_cart() as $cart_item ) {
+					if ( (int) $cart_item['product_id'] === $product_id ) {
+						return $args;
+					}
+				}
+			}
+
+			$event_id     = wp_generate_uuid4();
+			$content_ids  = \WC_Facebookcommerce_Utils::get_fb_content_ids( $product );
+			$value        = $product->get_price();
+			$currency     = get_woocommerce_currency();
+			$content_type = 'product';
+			$retailer_id  = \WC_Facebookcommerce_Utils::get_fb_retailer_id( $product );
+
+			$content_name = \WC_Facebookcommerce_Utils::clean_string( $product->get_title() );
+
+			$product_data = array(
+				'event_id'     => $event_id,
+				'content_ids'  => $content_ids,
+				'content_type' => $content_type,
+				'value'        => $value ? (float) $value : 0,
+				'currency'     => $currency,
+				'content_name' => $content_name,
+				'contents'     => array(
+					array(
+						'id'       => $retailer_id,
+						'quantity' => 1,
+					),
+				),
+				'user_data'    => $this->pixel->get_user_info(),
+			);
+
+			\WC_Facebookcommerce_Pixel::add_product_data_for_pixel( $product_id, $product_data );
+
+			$args['attributes']['data-fb-event-id']    = $event_id;
+			$args['attributes']['data-fb-content-ids']  = wp_json_encode( $content_ids );
+			$args['attributes']['data-fb-content-type'] = $content_type;
+			$args['attributes']['data-fb-value']        = $value ? (float) $value : 0;
+			$args['attributes']['data-fb-currency']     = $currency;
+			$args['attributes']['data-fb-content-name'] = $content_name;
+
+			return $args;
+		}
+
+		/**
+		 * Ensure the pixel events script is enqueued on shop, category, and tag pages.
+		 *
+		 * On these pages there may be no static pixel events (e.g., no ViewContent),
+		 * but the AddToCart click handler still needs the external JS to be loaded.
+		 */
+		public function enqueue_pixel_events_script_for_shop() {
+			if ( ! $this->is_pixel_enabled() ) {
+				return;
+			}
+
+			if ( is_shop() || is_product_category() || is_product_tag() ) {
+				\WC_Facebookcommerce_Pixel::init_external_js_hooks();
+			}
+		}
+
 
 		/**
 		 * Triggers an AddToCart event when a product is added to cart.
@@ -763,6 +856,14 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 				),
 				'user_data'   => $this->pixel->get_user_info(),
 			);
+
+			// If we pre-generated an event_id for the pixel click handler (shop/category pages),
+			// pass it into the constructor so it overrides the auto-generated one.
+			// This ensures CAPI and the browser pixel share the same event_id for deduplication.
+			$pre_generated_event_id = \WC_Facebookcommerce_Pixel::get_product_event_id( $product_id );
+			if ( $pre_generated_event_id ) {
+				$event_data['event_id'] = $pre_generated_event_id;
+			}
 
 			$event = new WooCommerce\Facebook\Events\Event( $event_data );
 

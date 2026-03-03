@@ -125,9 +125,91 @@
     }
 
     /**
+     * Generate a UUID v4 event ID (fallback when PHP doesn't provide one)
+     *
+     * @return {string} UUID v4 string
+     */
+    function generateEventId() {
+        return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+            var r = Math.random() * 16 | 0;
+            var v = c === 'x' ? r : (r & 0x3 | 0x8);
+            return v.toString(16);
+        });
+    }
+
+    /**
+     * Handle AddToCart click on shop/category pages.
+     *
+     * On these pages, WooCommerce uses AJAX (no page reload), but wc_enqueue_js()
+     * adds pixel code to the footer which never re-renders during AJAX.
+     * This fires the pixel event on click, before the AJAX request.
+     * CAPI fires server-side with the same event_id for deduplication.
+     */
+    function handleAddToCartClick(e) {
+        var button = e.target.closest('.add_to_cart_button');
+        if (!button) return;
+
+        var productId = button.getAttribute('data-product_id');
+        if (!productId) return;
+
+        // Look up from PHP-collected product data array
+        var productData = data.productData && data.productData[productId];
+
+        // Fallback: data-fb-* attributes (for dynamically loaded products or WooCommerce Blocks)
+        if (!productData) {
+            var contentIdsAttr = button.getAttribute('data-fb-content-ids');
+            if (!contentIdsAttr) return;
+
+            try {
+                productData = {
+                    event_id: button.getAttribute('data-fb-event-id'),
+                    content_ids: JSON.parse(contentIdsAttr),
+                    content_name: button.getAttribute('data-fb-content-name') || '',
+                    content_type: button.getAttribute('data-fb-content-type') || 'product',
+                    value: parseFloat(button.getAttribute('data-fb-value')) || 0,
+                    currency: button.getAttribute('data-fb-currency') || 'USD'
+                };
+            } catch (err) {
+                logWarning('Failed to parse product data from attributes', err);
+                return;
+            }
+        }
+
+        var eventId = productData.event_id || generateEventId();
+
+        var params = {
+            content_ids: productData.content_ids,
+            content_type: productData.content_type || 'product',
+            content_name: productData.content_name || '',
+            contents: productData.contents || [],
+            value: parseFloat(productData.value) || 0,
+            currency: productData.currency || 'USD'
+        };
+
+        // Store eventId on button for potential reuse
+        button.setAttribute('data-fb-event-id', eventId);
+
+        fireEvent({
+            method: 'track',
+            name: 'AddToCart',
+            params: params,
+            eventId: eventId
+        });
+    }
+
+    /**
+     * Set up AddToCart click handler for shop/category pages.
+     * Uses capture phase to fire before WooCommerce AJAX.
+     */
+    function initAddToCartHandlers() {
+        document.addEventListener('click', handleAddToCartClick, true);
+    }
+
+    /**
      * Initialize event firing on page load
      */
     function init() {
+        initAddToCartHandlers();
         if (document.readyState === 'complete') {
             fireQueuedEvents();
         } else {
