@@ -34,28 +34,9 @@ class WC_Facebookcommerce_Iframe_Whatsapp_Utility_Event {
 	public function __construct( WC_Facebookcommerce $plugin ) {
 		$rollout_switches = $plugin->get_rollout_switches();
 		$this->plugin     = $plugin;
-		if ( ! $this->is_whatsapp_utility_enabled() ) {
-			return;
-		}
 		add_action( 'woocommerce_order_status_changed', array( $this, 'process_wc_order_status_changed' ), 10, 3 );
 	}
 
-
-	/**
-	 * Determines if WhatsApp Utility Messages are enabled
-	 *
-	 * @return bool
-	 */
-	private function is_whatsapp_utility_enabled() {
-		$is_enabled       = false;
-		$rollout_switches = $this->plugin->get_rollout_switches();
-		if ( isset( $rollout_switches ) ) {
-			$is_enabled = $rollout_switches->is_switch_enabled(
-				RolloutSwitches::WHATSAPP_UTILITY_MESSAGING_BETA_EXPERIENCE
-			) ?? false;
-		}
-		return $is_enabled;
-	}
 
 	/**
 	 * Hook to process Order Processing, Order Completed and Order Refunded events for WhatsApp Utility Messages
