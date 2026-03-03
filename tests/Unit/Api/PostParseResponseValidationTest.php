@@ -7,7 +7,6 @@ use WooCommerce\Facebook\API;
 use WooCommerce\Facebook\API\Request;
 use WooCommerce\Facebook\API\Response;
 use WooCommerce\Facebook\API\Exceptions\Request_Limit_Reached;
-use WooCommerce\Facebook\Framework\Api\Exception as ApiException;
 use WooCommerce\Facebook\Tests\AbstractWPUnitTestWithOptionIsolationAndSafeFiltering;
 
 defined( 'ABSPATH' ) || exit;

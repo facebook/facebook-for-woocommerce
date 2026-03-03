@@ -734,7 +734,7 @@ class CategorySyncValidator {
                         }
 
                         return [
-                            'id' => $product_set_id,
+                            'id' => $product_set_data['id'] ?? $product_set_id,
                             'name' => $product_set_data['name'] ?? '',
                             'retailer_id' => $product_set_data['retailer_id'] ?? '',
                             'found' => true
