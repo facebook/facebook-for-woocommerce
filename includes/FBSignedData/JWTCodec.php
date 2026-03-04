@@ -46,9 +46,10 @@ class JWTCodec {
 	 * @param string $algorithm  The expected algorithm (e.g. 'ES256').
 	 * @return array The decoded payload as an associative array.
 	 *
-	 * @throws \UnexpectedValueException    If the JWT is malformed or the algorithm doesn't match.
-	 * @throws JWTSignatureInvalidException If signature verification fails.
-	 * @throws JWTExpiredException          If the token has expired.
+	 * @throws \UnexpectedValueException     If the JWT is malformed or the algorithm doesn't match.
+	 * @throws JWTSignatureInvalidException  If signature verification fails.
+	 * @throws JWTExpiredException           If the token has expired.
+	 * @throws JWTAlgorithmMismatchException If the JWT provided algorithm does not match the decode algorithm.
 	 */
 	public static function decode( string $jwt, string $public_key, string $algorithm ): array {
 		if ( ! isset( self::SUPPORTED_ALGS[ $algorithm ] ) ) {
@@ -77,7 +78,7 @@ class JWTCodec {
 		}
 
 		if ( $header['alg'] !== $algorithm ) {
-			throw new \UnexpectedValueException( 'Incorrect key for this algorithm' );
+			throw new JWTAlgorithmMismatchException( 'Incorrect key for this algorithm' );
 		}
 
 		// Verify signature.
@@ -138,6 +139,30 @@ class JWTCodec {
 		$segments[] = self::urlsafe_b64_encode( $signature );
 
 		return implode( '.', $segments );
+	}
+
+	/**
+	 * Extract the payload from a JWT without verifying the signature.
+	 *
+	 * Validates the JWT structure (three dot-separated segments) and decodes
+	 * the payload, but does not check the signature or expiration.
+	 *
+	 * @param string $jwt The JWT string.
+	 * @return array The decoded payload as an associative array.
+	 * @throws \UnexpectedValueException If the JWT is malformed.
+	 */
+	public static function extract_unverified_payload( string $jwt ): array {
+		$parts = explode( '.', $jwt );
+		if ( count( $parts ) !== 3 ) {
+			throw new \UnexpectedValueException( 'Wrong number of segments' );
+		}
+
+		$payload = json_decode( self::urlsafe_b64_decode( $parts[1] ), true );
+		if ( null === $payload ) {
+			throw new \UnexpectedValueException( 'Invalid claims encoding' );
+		}
+
+		return $payload;
 	}
 
 	/**
