@@ -74,6 +74,28 @@ class OfferManagementJWTErrorTest extends OfferManagementAPITestBase
 
 
 
+	public function test_jwt_missing_key_name(): void {
+		$params = [
+			'payload' => [
+				'offer_codes' => [],
+			],
+			'exp' => time() + 120,
+			'jti' => wp_generate_uuid4(),
+			'aud' => self::CATALOG_ID,
+			// key_name intentionally omitted
+		];
+		$request = $this->setup_offer_management_request(self::ENDPOINT_METHOD, $params);
+		$response = $this->perform_request($request);
+
+		$this->assertEmpty($response->get_data()['data']);
+		$response_errors = $response->get_data()['errors'];
+		$this->assertCount(1, $response_errors);
+		$response_error = $response_errors[0];
+		$this->assertEquals(OfferManagementEndpointBase::ERROR_JWT_DECODE_FAILURE, $response_error['error_type']);
+		$this->assertEquals(null, $response_error['offer_code']);
+		$this->assertEquals(OfferManagementEndpointBase::HTTP_UNAUTHORIZED, $response->get_status());
+	}
+
 	private static function get_request_params(?int $exp = null): array {
 		$exp = $exp ?? time() + 120;
 		return [
