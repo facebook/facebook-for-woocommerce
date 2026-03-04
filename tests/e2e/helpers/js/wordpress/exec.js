@@ -101,9 +101,10 @@ async function checkWooCommerceLogs() {
         `sed -n '${start},${end}p' "${logFile}"`,
         { encoding: 'utf8' }
       );
-      const isTransient = TRANSIENT_ERRORS.some(msg => context.includes(msg));
+      const contextLower = context.toLowerCase();
+      const isTransient = TRANSIENT_ERRORS.some(msg => contextLower.includes(msg.toLowerCase()));
       if (isTransient) {
-        console.log(`⏭️ Ignoring known transient error at line ${lineNum}: ${TRANSIENT_ERRORS.find(msg => context.includes(msg))}`);
+        console.log(`⏭️ Ignoring known transient error at line ${lineNum}: ${TRANSIENT_ERRORS.find(msg => contextLower.includes(msg.toLowerCase()))}`);
       } else {
         unexpectedErrors.push(lineNum);
       }

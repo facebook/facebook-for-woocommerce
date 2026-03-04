@@ -34,7 +34,7 @@ class ConnectApiExceptionTest extends AbstractWPUnitTestWithOptionIsolationAndSa
 	/**
 	 * Test instantiation with default values.
 	 *
-	 * @covers \WooCommerce\Facebook\API\Exceptions\ConnectApiException::__construct
+	 * @covers \WooCommerce\Facebook\API\Exceptions\ConnectApiException
 	 */
 	public function test_instantiation_with_defaults() {
 		$exception = new ConnectApiException();
@@ -47,7 +47,7 @@ class ConnectApiExceptionTest extends AbstractWPUnitTestWithOptionIsolationAndSa
 	/**
 	 * Test instantiation with message only.
 	 *
-	 * @covers \WooCommerce\Facebook\API\Exceptions\ConnectApiException::__construct
+	 * @covers \WooCommerce\Facebook\API\Exceptions\ConnectApiException
 	 */
 	public function test_instantiation_with_message() {
 		$message   = 'Connection to Facebook failed';
@@ -61,7 +61,7 @@ class ConnectApiExceptionTest extends AbstractWPUnitTestWithOptionIsolationAndSa
 	/**
 	 * Test instantiation with message and code.
 	 *
-	 * @covers \WooCommerce\Facebook\API\Exceptions\ConnectApiException::__construct
+	 * @covers \WooCommerce\Facebook\API\Exceptions\ConnectApiException
 	 */
 	public function test_instantiation_with_message_and_code() {
 		$message   = 'Connection to Facebook failed';
@@ -76,7 +76,7 @@ class ConnectApiExceptionTest extends AbstractWPUnitTestWithOptionIsolationAndSa
 	/**
 	 * Test instantiation with all parameters.
 	 *
-	 * @covers \WooCommerce\Facebook\API\Exceptions\ConnectApiException::__construct
+	 * @covers \WooCommerce\Facebook\API\Exceptions\ConnectApiException
 	 */
 	public function test_instantiation_with_all_parameters() {
 		$message   = 'Connection to Facebook failed';
@@ -130,7 +130,7 @@ class ConnectApiExceptionTest extends AbstractWPUnitTestWithOptionIsolationAndSa
 	/**
 	 * Test with special characters in message.
 	 *
-	 * @covers \WooCommerce\Facebook\API\Exceptions\ConnectApiException::__construct
+	 * @covers \WooCommerce\Facebook\API\Exceptions\ConnectApiException
 	 */
 	public function test_with_special_characters_in_message() {
 		$message   = "Connection failed: <script>alert('test')</script> & \"quotes\" 'apostrophes' \n\r\t";
@@ -142,7 +142,7 @@ class ConnectApiExceptionTest extends AbstractWPUnitTestWithOptionIsolationAndSa
 	/**
 	 * Test with Unicode characters in message.
 	 *
-	 * @covers \WooCommerce\Facebook\API\Exceptions\ConnectApiException::__construct
+	 * @covers \WooCommerce\Facebook\API\Exceptions\ConnectApiException
 	 */
 	public function test_with_unicode_characters_in_message() {
 		$message   = 'Connection failed: 你好世界 🌍 émojis';
@@ -154,7 +154,7 @@ class ConnectApiExceptionTest extends AbstractWPUnitTestWithOptionIsolationAndSa
 	/**
 	 * Test with empty message.
 	 *
-	 * @covers \WooCommerce\Facebook\API\Exceptions\ConnectApiException::__construct
+	 * @covers \WooCommerce\Facebook\API\Exceptions\ConnectApiException
 	 */
 	public function test_with_empty_message() {
 		$exception = new ConnectApiException( '' );
@@ -164,7 +164,7 @@ class ConnectApiExceptionTest extends AbstractWPUnitTestWithOptionIsolationAndSa
 	/**
 	 * Test with negative error code.
 	 *
-	 * @covers \WooCommerce\Facebook\API\Exceptions\ConnectApiException::__construct
+	 * @covers \WooCommerce\Facebook\API\Exceptions\ConnectApiException
 	 */
 	public function test_with_negative_error_code() {
 		$exception = new ConnectApiException( 'Error', -1 );
@@ -174,7 +174,7 @@ class ConnectApiExceptionTest extends AbstractWPUnitTestWithOptionIsolationAndSa
 	/**
 	 * Test with large error code.
 	 *
-	 * @covers \WooCommerce\Facebook\API\Exceptions\ConnectApiException::__construct
+	 * @covers \WooCommerce\Facebook\API\Exceptions\ConnectApiException
 	 */
 	public function test_with_large_error_code() {
 		$code      = PHP_INT_MAX;
@@ -185,7 +185,7 @@ class ConnectApiExceptionTest extends AbstractWPUnitTestWithOptionIsolationAndSa
 	/**
 	 * Test exception chaining.
 	 *
-	 * @covers \WooCommerce\Facebook\API\Exceptions\ConnectApiException::__construct
+	 * @covers \WooCommerce\Facebook\API\Exceptions\ConnectApiException
 	 */
 	public function test_exception_chaining() {
 		$rootCause        = new \RuntimeException( 'Root cause' );
@@ -254,7 +254,7 @@ class ConnectApiExceptionTest extends AbstractWPUnitTestWithOptionIsolationAndSa
 	/**
 	 * Test with very long message.
 	 *
-	 * @covers \WooCommerce\Facebook\API\Exceptions\ConnectApiException::__construct
+	 * @covers \WooCommerce\Facebook\API\Exceptions\ConnectApiException
 	 */
 	public function test_with_very_long_message() {
 		$message   = str_repeat( 'Connection failed with detailed error information. ', 100 );
@@ -267,7 +267,7 @@ class ConnectApiExceptionTest extends AbstractWPUnitTestWithOptionIsolationAndSa
 	/**
 	 * Test with null previous exception (explicit null).
 	 *
-	 * @covers \WooCommerce\Facebook\API\Exceptions\ConnectApiException::__construct
+	 * @covers \WooCommerce\Facebook\API\Exceptions\ConnectApiException
 	 */
 	public function test_with_null_previous_exception() {
 		$exception = new ConnectApiException( 'Test', 0, null );
@@ -277,7 +277,7 @@ class ConnectApiExceptionTest extends AbstractWPUnitTestWithOptionIsolationAndSa
 	/**
 	 * Test exception message preservation through chaining.
 	 *
-	 * @covers \WooCommerce\Facebook\API\Exceptions\ConnectApiException::__construct
+	 * @covers \WooCommerce\Facebook\API\Exceptions\ConnectApiException
 	 */
 	public function test_message_preservation_through_chaining() {
 		$rootMessage      = 'Root cause message';
@@ -296,7 +296,7 @@ class ConnectApiExceptionTest extends AbstractWPUnitTestWithOptionIsolationAndSa
 	/**
 	 * Test exception code preservation through chaining.
 	 *
-	 * @covers \WooCommerce\Facebook\API\Exceptions\ConnectApiException::__construct
+	 * @covers \WooCommerce\Facebook\API\Exceptions\ConnectApiException
 	 */
 	public function test_code_preservation_through_chaining() {
 		$rootCode         = 100;
