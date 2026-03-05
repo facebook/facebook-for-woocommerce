@@ -10,7 +10,6 @@
 
 namespace WooCommerce\Facebook\Admin;
 
-use WooCommerce\Facebook\RolloutSwitches;
 use WooCommerce\Facebook\Framework\Logger;
 use WooCommerce\Facebook\Framework\Helper;
 
@@ -82,13 +81,6 @@ class WhatsApp_Integration_Settings {
 	 * @since 3.5.0
 	 */
 	public function add_menu_item() {
-		$rollout_switches                           = $this->plugin->get_rollout_switches();
-		$is_connected                               = $this->plugin->get_connection_handler()->is_connected();
-		$is_whatsapp_utility_messaging_beta_enabled = $rollout_switches->is_switch_enabled( RolloutSwitches::WHATSAPP_UTILITY_MESSAGING_BETA_EXPERIENCE );
-
-		if ( ! $is_connected || ! $is_whatsapp_utility_messaging_beta_enabled ) {
-			return;
-		}
 
 		$root_menu_item = $this->root_menu_item();
 

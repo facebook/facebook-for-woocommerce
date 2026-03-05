@@ -25,7 +25,6 @@ class RolloutSwitches {
 	private \WC_Facebookcommerce $plugin;
 
 	public const SWITCH_ROLLOUT_FEATURES                    = 'rollout_enabled';
-	public const WHATSAPP_UTILITY_MESSAGING_BETA_EXPERIENCE = 'woocommerce_utility_beta_iframe_integration';
 	public const SWITCH_PRODUCT_SETS_SYNC_ENABLED           = 'product_sets_sync_enabled';
 	public const SWITCH_WOO_ALL_PRODUCTS_SYNC_ENABLED       = 'woo_all_products_sync_enabled';
 	public const SWITCH_OFFER_MANAGEMENT_ENABLED            = 'offer_management_enabled';
@@ -43,7 +42,6 @@ class RolloutSwitches {
 		self::SWITCH_OFFER_MANAGEMENT_ENABLED,
 		self::SWITCH_MULTIPLE_IMAGES_ENABLED,
 		self::SWITCH_WOOCOMMERCE_ENABLE_RICH_ORDER,
-		self::WHATSAPP_UTILITY_MESSAGING_BETA_EXPERIENCE,
 		self::CAPI_EVENT_LOGGING_ENABLED,
 		self::SWITCH_CONTENT_ID_MIGRATION_ENABLED,
 		self::SWITCH_LANGUAGE_OVERRIDE_FEED_ENABLED,
