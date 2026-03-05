@@ -55,6 +55,11 @@ abstract class AbstractWPUnitTestWithOptionIsolationAndSafeFiltering extends Abs
 			return $this->filter_pre_update_option( $value, $option_name, $old_value );
 		}, 10, 3);
 
+		// Intercept any attempt to delete an option.
+		$this->add_filter_with_safe_teardown('pre_delete_option', function( $delete, $option_name ) {
+			return $this->filter_pre_delete_option( $delete, $option_name );
+		}, 10, 2);
+
 		// Add specific filters for each option being updated.
         // Note: This requires knowing the option name *before* it's updated.
         // The generic 'pre_update_option' filter above handles cases where
@@ -126,6 +131,27 @@ abstract class AbstractWPUnitTestWithOptionIsolationAndSafeFiltering extends Abs
 		// Returning null or false might also work depending on WP version,
 		// but returning $old_value is documented behavior for short-circuiting.
 		return $old_value;
+	}
+
+	/**
+	 * Filter callback for 'pre_delete_option'.
+	 *
+	 * Intercepts the delete operation, removes the option from the local mock array,
+	 * and allows the actual database deletion to proceed.
+	 *
+	 * @param mixed  $delete      Whether to proceed with deletion. Return null to continue.
+	 * @param string $option_name Name of the option being deleted.
+	 * @return null Always returns null to allow WordPress to proceed with deletion.
+	 */
+	protected function filter_pre_delete_option( $delete, $option_name ) {
+		// If this option is in our mocked array, remove it
+		if ( array_key_exists( $option_name, $this->mocked_options ) ) {
+			unset( $this->mocked_options[ $option_name ] );
+		}
+
+		// Return the original $delete value to allow WordPress to proceed normally
+		// This ensures the actual database deletion happens
+		return $delete;
 	}
 
 	/**

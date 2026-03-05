@@ -29,13 +29,29 @@ class DebugTools {
 	 * @return array
 	 */
 	public function add_debug_tool( $tools ) {
+		// Add connection reset tools (always visible)
+		$tools['wc_facebook_reset_connection_only'] = [
+			'name'     => __( 'Facebook: Reset connection data', 'facebook-for-woocommerce' ),
+			'button'   => __( 'Reset connection', 'facebook-for-woocommerce' ),
+			'desc'     => __( 'This tool will reset only your Facebook connection tokens and IDs, preserving your other settings like product sync preferences, excluded categories, and debug mode. Use this to reconnect without losing your configuration.', 'facebook-for-woocommerce' ),
+			'callback' => [ $this, 'reset_connection_data' ],
+		];
+
+		$tools['wc_facebook_reset_all_settings'] = [
+			'name'     => __( 'Facebook: Reset all settings', 'facebook-for-woocommerce' ),
+			'button'   => __( 'Reset all settings', 'facebook-for-woocommerce' ),
+			'desc'     => __( 'This tool will completely reset ALL Facebook-related settings and connection data, returning the plugin to a fresh installation state. This includes connection tokens, product sync settings, excluded categories, debug mode, and all other configuration. Use this for a complete fresh start.', 'facebook-for-woocommerce' ),
+			'callback' => [ $this, 'reset_all_settings' ],
+		];
+
+		// Only show debug tools when connected and debug mode is enabled
 		if ( ! facebook_for_woocommerce()->get_connection_handler()->is_connected()
 			|| ! facebook_for_woocommerce()->get_integration()->is_debug_mode_enabled() ) {
 			return $tools;
 		}
 
 		$tools['wc_facebook_settings_reset'] = [
-			'name'     => __( 'Facebook: Reset connection settings', 'facebook-for-woocommerce' ),
+			'name'     => __( 'Facebook: Reset connection settings (legacy)', 'facebook-for-woocommerce' ),
 			'button'   => __( 'Reset settings', 'facebook-for-woocommerce' ),
 			'desc'     => __( 'This tool will clear your Facebook settings to reset them, allowing you to rebuild your connection.', 'facebook-for-woocommerce' ),
 			'callback' => [ $this, 'clear_facebook_settings' ],
@@ -77,6 +93,36 @@ class DebugTools {
 		delete_transient( 'wc_facebook_sync_in_progress' );
 
 		return __( 'Background sync jobs have been deleted.', 'facebook-for-woocommerce' );
+	}
+
+	/**
+	 * Resets only the Facebook connection data.
+	 *
+	 * This preserves settings like product sync preferences, excluded categories, etc.
+	 *
+	 * @since 3.0.0
+	 *
+	 * @return string
+	 */
+	public function reset_connection_data() {
+		facebook_for_woocommerce()->get_connection_handler()->reset_connection_only();
+
+		return esc_html__( 'Facebook connection data has been reset. Your other settings have been preserved. You can now reconnect to Facebook.', 'facebook-for-woocommerce' );
+	}
+
+	/**
+	 * Resets all Facebook settings completely.
+	 *
+	 * This deletes ALL Facebook-related options, returning the plugin to a fresh state.
+	 *
+	 * @since 3.0.0
+	 *
+	 * @return string
+	 */
+	public function reset_all_settings() {
+		facebook_for_woocommerce()->get_connection_handler()->reset_connection();
+
+		return esc_html__( 'All Facebook settings have been completely reset. The plugin is now in a fresh installation state.', 'facebook-for-woocommerce' );
 	}
 
 	/**
