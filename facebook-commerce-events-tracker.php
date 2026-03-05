@@ -633,8 +633,6 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 				return;
 			}
 
-			$this->send_api_event( $event );
-
 			$this->pixel->inject_event(
 				$event->get_name(),
 				array(
