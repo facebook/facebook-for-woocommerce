@@ -91,9 +91,9 @@ async function checkWooCommerceLogs() {
 
   // Filter out lines whose surrounding context contains a known transient error
   if (non200Lines) {
-    const lineNumbers = non200Lines.split('\n').map(l => parseInt(l.split(':')[0], 10)).filter(n => !isNaN(n));
     const unexpectedErrors = [];
-
+    // Print surrounding context (10 lines before/after) for each non-200 line
+    const lineNumbers = non200Lines.split('\n').map(l => parseInt(l.split(':')[0], 10)).filter(n => !isNaN(n));
     for (const lineNum of lineNumbers) {
       const start = Math.max(1, lineNum - 5);
       const end = lineNum + 5;

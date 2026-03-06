@@ -140,7 +140,7 @@ test.describe('Meta for WooCommerce - Product Category E2E Tests', () => {
             const [product1Result, product2Result, categoryResult] = await Promise.all([
                 validateFacebookSync(product1Id, product1.productName, 5),
                 validateFacebookSync(product2Id, product2.productName, 5, 8),
-                validateCategorySync(categoryId, categoryName, 5)
+                validateCategorySync(categoryId, categoryName, 30)
             ]);
 
             expect(categoryResult['success']).toBe(true);

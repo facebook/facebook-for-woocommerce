@@ -65,6 +65,30 @@ async function cleanupProduct(productId) {
 }
 
 /**
+ * Batch cleanup/delete multiple products in a single PHP process
+ * @param {number[]} productIds - Array of product IDs to delete
+ */
+async function cleanupProducts(productIds) {
+  if (!productIds || productIds.length === 0) return;
+
+  const validIds = productIds.filter(id => id);
+  if (validIds.length === 0) return;
+
+  console.log(`🧹 Batch cleaning up ${validIds.length} products...`);
+
+  try {
+    const startTime = new Date();
+    const idsPhp = validIds.join(',');
+    await execWP(`foreach ([${idsPhp}] as \\$id) { wp_delete_post(\\$id, true); }`);
+    const endTime = new Date();
+    console.log(`⏱️ Batch cleanup took ${endTime - startTime}ms`);
+    console.log(`✅ ${validIds.length} products deleted from WooCommerce`);
+  } catch (error) {
+    console.log(`⚠️ Batch cleanup failed: ${error.message}`);
+  }
+}
+
+/**
  * Create a test product programmatically via WooCommerce API
  * @param {Object} options - Product options
  * @returns {Promise<Object>} Created product details
@@ -132,5 +156,6 @@ module.exports = {
   generateUniqueSKU,
   extractProductIdFromUrl,
   cleanupProduct,
+  cleanupProducts,
   createTestProduct
 };
