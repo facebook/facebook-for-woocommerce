@@ -228,7 +228,6 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 			add_action( 'woocommerce_blocks_checkout_enqueue_data', array( $this, 'inject_initiate_checkout_event' ) );
 
 			// Purchase and Subscribe events
-			add_action( 'woocommerce_new_order', array( $this, 'inject_purchase_event' ), 10 );
 			add_action( 'woocommerce_process_shop_order_meta', array( $this, 'inject_purchase_event' ), 20 );
 			add_action( 'woocommerce_checkout_update_order_meta', array( $this, 'inject_purchase_event' ), 30 );
 			add_action( 'woocommerce_thankyou', array( $this, 'inject_purchase_event' ), 40 );
