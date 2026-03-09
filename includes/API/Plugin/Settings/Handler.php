@@ -179,9 +179,27 @@ class Handler extends AbstractRESTEndpoint {
 			update_option( \WC_Facebookcommerce_Integration::SETTING_FACEBOOK_PAGE_ID, $params['page_id'] );
 		}
 
-		if ( ! empty( $params['pixel_id'] ) ) {
-			$options[ \WC_Facebookcommerce_Integration::SETTING_FACEBOOK_PIXEL_ID ] = $params['pixel_id'];
-			update_option( \WC_Facebookcommerce_Integration::SETTING_FACEBOOK_PIXEL_ID, $params['pixel_id'] );
+		// Prefer pixel from installed_features if available
+		$pixel_from_features = '';
+
+		if ( ! empty( $params['installed_features'] ) && is_array( $params['installed_features'] ) ) {
+			foreach ( $params['installed_features'] as $feature ) {
+
+				$feature_type = $feature['feature_type'] ?? '';
+				$pixel_id     = $feature['connected_assets']['pixel_id'] ?? '';
+
+				if ( 'pixel' === $feature_type && ! empty( $pixel_id ) ) {
+					$pixel_from_features = $pixel_id;
+					break;
+				}
+			}
+		}
+
+		$pixel_to_use = $pixel_from_features ?: ( $params['pixel_id'] ?? '' );
+
+		if ( ! empty( $pixel_to_use ) ) {
+			$options[ \WC_Facebookcommerce_Integration::SETTING_FACEBOOK_PIXEL_ID ] = $pixel_to_use;
+			update_option( \WC_Facebookcommerce_Integration::SETTING_FACEBOOK_PIXEL_ID, $pixel_to_use );
 		}
 
 		if ( ! empty( $params['product_catalog_id'] ) ) {
