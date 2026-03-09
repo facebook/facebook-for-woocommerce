@@ -282,7 +282,7 @@ class WhatsAppExtension {
 						if ( $product ) {
 							$image_id = method_exists( $product, 'get_image_id' ) ? $product->get_image_id() : null;
 							if ( $image_id ) {
-								$img = wp_get_attachment_image_url( $image_id, 'full' );
+								$img = wp_get_attachment_image_url( $image_id, 'large' );
 								$image_url = $img ? $img : wp_get_attachment_url( $image_id );
 								// Ensure HTTPS protocol for image URLs
 								$image_url = preg_replace( '/^http:/', 'https:', $image_url );
