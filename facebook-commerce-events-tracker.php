@@ -213,8 +213,14 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 
 			// AddToCart events
 			add_action( 'woocommerce_add_to_cart', array( $this, 'inject_add_to_cart_event' ), 40, 4 );
-			// AddToCart while AJAX is enabled
+			// AddToCart while AJAX is enabled (Classic WooCommerce)
 			add_action( 'woocommerce_ajax_added_to_cart', array( $this, 'add_filter_for_add_to_cart_fragments' ) );
+			// AddToCart for WooCommerce Blocks (Store API)
+			if ( did_action( 'woocommerce_blocks_loaded' ) ) {
+				$this->register_store_api_endpoint_data();
+			} else {
+				add_action( 'woocommerce_blocks_loaded', array( $this, 'register_store_api_endpoint_data' ) );
+			}
 			// AddToCart while using redirect to cart page
 			if ( 'yes' === get_option( 'woocommerce_cart_redirect_after_add', 'no' ) ) {
 				add_action( 'wp_head', array( WC_Facebookcommerce_Utils::class, 'print_deferred_events' ) );
@@ -742,23 +748,26 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 				return;
 			}
 
+			// Build custom_data once for reuse
+			$custom_data = array(
+				'content_ids'  => wp_json_encode( \WC_Facebookcommerce_Utils::get_fb_content_ids( $product ) ),
+				'content_name' => \WC_Facebookcommerce_Utils::clean_string( $product->get_title() ),
+				'content_type' => 'product',
+				'contents'     => wp_json_encode(
+					array(
+						array(
+							'id'       => \WC_Facebookcommerce_Utils::get_fb_retailer_id( $product ),
+							'quantity' => $quantity,
+						),
+					)
+				),
+				'value'        => (float) $product->get_price() * $quantity,
+				'currency'     => get_woocommerce_currency(),
+			);
+
 			$event_data = array(
 				'event_name'  => 'AddToCart',
-				'custom_data' => array(
-					'content_ids'  => wp_json_encode( \WC_Facebookcommerce_Utils::get_fb_content_ids( $product ) ),
-					'content_name' => \WC_Facebookcommerce_Utils::clean_string( $product->get_title() ),
-					'content_type' => 'product',
-					'contents'     => wp_json_encode(
-						array(
-							array(
-								'id'       => \WC_Facebookcommerce_Utils::get_fb_retailer_id( $product ),
-								'quantity' => $quantity,
-							),
-						)
-					),
-					'value'        => (float) $product->get_price() * $quantity,
-					'currency'     => get_woocommerce_currency(),
-				),
+				'custom_data' => $custom_data,
 				'user_data'   => $this->pixel->get_user_info(),
 			);
 
@@ -771,6 +780,15 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 
 			// store the ID in the session to be sent in AJAX JS event tracking as well
 			WC()->session->set( 'facebook_for_woocommerce_add_to_cart_event_id', $event->get_id() );
+
+			// Store pending pixel event for WooCommerce Blocks Store API
+			// Reuse custom_data and add event_id for deduplication
+			$pending_pixel_params = array_merge( $custom_data, array( 'event_id' => $event->get_id() ) );
+			$pending_pixel_event  = array(
+				'event'  => 'AddToCart',
+				'params' => $pending_pixel_params,
+			);
+			WC()->session->set( 'facebook_for_woocommerce_pending_pixel_event', $pending_pixel_event );
 
 			$this->pixel->inject_event( 'AddToCart', $event_data );
 		}
@@ -902,6 +920,90 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 
 			return $fragments;
 		}
+
+
+		/**
+		 * Registers endpoint data for WooCommerce Blocks Store API.
+		 *
+		 * This allows us to inject pixel event data into the Store API response
+		 * so that pixel-events.js can read and fire the event for WooCommerce Blocks.
+		 *
+		 * @internal
+		 *
+		 * @since 3.x.x
+		 */
+		public function register_store_api_endpoint_data() {
+			if ( ! function_exists( 'woocommerce_store_api_register_endpoint_data' ) ) {
+				return;
+			}
+
+			woocommerce_store_api_register_endpoint_data(
+				array(
+					'endpoint'        => \Automattic\WooCommerce\StoreApi\Schemas\V1\CartSchema::IDENTIFIER,
+					'namespace'       => 'facebook-for-woocommerce',
+					'data_callback'   => array( $this, 'get_store_api_pixel_event_data' ),
+					'schema_callback' => array( $this, 'get_store_api_pixel_event_schema' ),
+					'schema_type'     => ARRAY_A,
+				)
+			);
+		}
+
+
+		/**
+		 * Returns pixel event data for Store API response.
+		 *
+		 * Called by WooCommerce Blocks Store API to include our data in the cart response.
+		 * The data is read and consumed by pixel-events.js.
+		 *
+		 * @internal
+		 *
+		 * @since 3.x.x
+		 *
+		 * @return array Pixel event data or empty array if no pending event.
+		 */
+		public function get_store_api_pixel_event_data() {
+			if ( ! is_object( WC()->session ) ) {
+				return array();
+			}
+
+			$pending_event = WC()->session->get( 'facebook_for_woocommerce_pending_pixel_event' );
+
+			if ( ! empty( $pending_event ) ) {
+				// Clear the pending event after reading to prevent duplicate firing
+				WC()->session->set( 'facebook_for_woocommerce_pending_pixel_event', null );
+				return $pending_event;
+			}
+
+			return array();
+		}
+
+
+		/**
+		 * Returns schema for pixel event data in Store API.
+		 *
+		 * @internal
+		 *
+		 * @since 3.x.x
+		 *
+		 * @return array Schema definition.
+		 */
+		public function get_store_api_pixel_event_schema() {
+			return array(
+				'event'  => array(
+					'description' => __( 'Facebook Pixel event name', 'facebook-for-woocommerce' ),
+					'type'        => 'string',
+					'context'     => array( 'view', 'edit' ),
+					'readonly'    => true,
+				),
+				'params' => array(
+					'description' => __( 'Facebook Pixel event parameters including event_id for deduplication', 'facebook-for-woocommerce' ),
+					'type'        => 'object',
+					'context'     => array( 'view', 'edit' ),
+					'readonly'    => true,
+				),
+			);
+		}
+
 
 		/**
 		 * Triggers an InitiateCheckout event when customer reaches checkout page.

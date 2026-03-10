@@ -1067,3 +1067,602 @@ describe('Integration: pixel-events.js IIFE', function () {
         expect(mockFbq).toHaveBeenCalledWith('track', 'ViewContent', {});
     });
 });
+
+/**
+ * Tests for WooCommerce Blocks Store API integration
+ */
+describe('Pixel Events - WooCommerce Blocks Store API', function () {
+    let mockFbq;
+    let originalFetch;
+    let consoleWarnSpy;
+
+    beforeEach(function () {
+        // Reset modules
+        jest.resetModules();
+
+        // Create mock fbq function
+        mockFbq = jest.fn();
+        global.fbq = mockFbq;
+
+        // Store original fetch
+        originalFetch = global.fetch;
+
+        // Spy on console.warn
+        consoleWarnSpy = jest.spyOn(console, 'warn').mockImplementation(() => {});
+
+        // Set up basic pixel data
+        global.wc_facebook_pixel_data = {
+            eventQueue: []
+        };
+
+        // Reset document ready state
+        Object.defineProperty(document, 'readyState', {
+            value: 'complete',
+            writable: true,
+        });
+    });
+
+    afterEach(function () {
+        // Restore original fetch
+        global.fetch = originalFetch;
+
+        // Restore console.warn
+        consoleWarnSpy.mockRestore();
+
+        // Clean up globals
+        delete global.wc_facebook_pixel_data;
+        delete global.fbq;
+
+        jest.resetAllMocks();
+    });
+
+    describe('setupFetchInterceptor', function () {
+        it('should wrap window.fetch when available', function () {
+            const mockOriginalFetch = jest.fn().mockResolvedValue({
+                ok: true,
+                clone: () => ({
+                    json: () => Promise.resolve({ extensions: {} })
+                })
+            });
+            global.fetch = mockOriginalFetch;
+
+            // Load the module (sets up interceptor)
+            require('../../assets/js/frontend/pixel-events.js');
+
+            // fetch should now be wrapped
+            expect(global.fetch).not.toBe(mockOriginalFetch);
+        });
+
+        it('should not throw if fetch is not available', function () {
+            delete global.fetch;
+
+            expect(() => {
+                require('../../assets/js/frontend/pixel-events.js');
+            }).not.toThrow();
+        });
+
+        it('should only intercept add-item requests', async function () {
+            const mockResponse = {
+                ok: true,
+                clone: () => ({
+                    json: () => Promise.resolve({
+                        extensions: {
+                            'facebook-for-woocommerce': {
+                                event: 'AddToCart',
+                                params: { value: 29.99, event_id: 'test-123' }
+                            }
+                        }
+                    })
+                })
+            };
+
+            const mockOriginalFetch = jest.fn().mockResolvedValue(mockResponse);
+            global.fetch = mockOriginalFetch;
+
+            // Load the module
+            require('../../assets/js/frontend/pixel-events.js');
+
+            // Call fetch with add-item URL
+            await global.fetch('/wc/store/v1/cart/add-item', { method: 'POST' });
+
+            // Wait for async operations
+            await new Promise(resolve => setTimeout(resolve, 0));
+
+            // Should fire pixel event
+            expect(mockFbq).toHaveBeenCalledWith(
+                'track',
+                'AddToCart',
+                { value: 29.99, event_id: 'test-123' },
+                { eventID: 'test-123' }
+            );
+        });
+
+        it('should not intercept general cart requests', async function () {
+            const mockResponse = {
+                ok: true,
+                clone: () => ({
+                    json: () => Promise.resolve({
+                        extensions: {
+                            'facebook-for-woocommerce': {
+                                event: 'AddToCart',
+                                params: { value: 29.99 }
+                            }
+                        }
+                    })
+                })
+            };
+
+            const mockOriginalFetch = jest.fn().mockResolvedValue(mockResponse);
+            global.fetch = mockOriginalFetch;
+
+            // Load the module
+            require('../../assets/js/frontend/pixel-events.js');
+
+            // Call fetch with general cart URL (not add-item)
+            await global.fetch('/wc/store/v1/cart', { method: 'GET' });
+
+            // Wait for async operations
+            await new Promise(resolve => setTimeout(resolve, 0));
+
+            // Should NOT fire pixel event
+            expect(mockFbq).not.toHaveBeenCalled();
+        });
+
+        it('should not fire pixel if response is not ok', async function () {
+            const mockResponse = {
+                ok: false,
+                clone: () => ({
+                    json: () => Promise.resolve({
+                        extensions: {
+                            'facebook-for-woocommerce': {
+                                event: 'AddToCart',
+                                params: {}
+                            }
+                        }
+                    })
+                })
+            };
+
+            const mockOriginalFetch = jest.fn().mockResolvedValue(mockResponse);
+            global.fetch = mockOriginalFetch;
+
+            // Load the module
+            require('../../assets/js/frontend/pixel-events.js');
+
+            // Call fetch with add-item URL but response.ok = false
+            await global.fetch('/wc/store/v1/cart/add-item', { method: 'POST' });
+
+            // Wait for async operations
+            await new Promise(resolve => setTimeout(resolve, 0));
+
+            // Should NOT fire pixel event
+            expect(mockFbq).not.toHaveBeenCalled();
+        });
+
+        it('should return original response to caller', async function () {
+            const mockResponse = {
+                ok: true,
+                status: 200,
+                data: 'test-data',
+                clone: () => ({
+                    json: () => Promise.resolve({ extensions: {} })
+                })
+            };
+
+            const mockOriginalFetch = jest.fn().mockResolvedValue(mockResponse);
+            global.fetch = mockOriginalFetch;
+
+            // Load the module
+            require('../../assets/js/frontend/pixel-events.js');
+
+            // Call fetch
+            const response = await global.fetch('/wc/store/v1/cart/add-item');
+
+            // Should return the original response
+            expect(response.status).toBe(200);
+            expect(response.data).toBe('test-data');
+        });
+    });
+
+    describe('processStoreApiEvent', function () {
+        it('should fire pixel with correct params from Store API response', async function () {
+            const mockResponse = {
+                ok: true,
+                clone: () => ({
+                    json: () => Promise.resolve({
+                        extensions: {
+                            'facebook-for-woocommerce': {
+                                event: 'AddToCart',
+                                params: {
+                                    content_ids: '["product_123"]',
+                                    content_name: 'Test Product',
+                                    content_type: 'product',
+                                    value: 49.99,
+                                    currency: 'USD',
+                                    event_id: 'fb.1.abc123'
+                                }
+                            }
+                        }
+                    })
+                })
+            };
+
+            const mockOriginalFetch = jest.fn().mockResolvedValue(mockResponse);
+            global.fetch = mockOriginalFetch;
+
+            // Load the module
+            require('../../assets/js/frontend/pixel-events.js');
+
+            // Call fetch with add-item URL
+            await global.fetch('/wc/store/v1/cart/add-item', { method: 'POST' });
+
+            // Wait for async operations
+            await new Promise(resolve => setTimeout(resolve, 0));
+
+            // Verify fbq was called with correct params
+            expect(mockFbq).toHaveBeenCalledWith(
+                'track',
+                'AddToCart',
+                {
+                    content_ids: '["product_123"]',
+                    content_name: 'Test Product',
+                    content_type: 'product',
+                    value: 49.99,
+                    currency: 'USD',
+                    event_id: 'fb.1.abc123'
+                },
+                { eventID: 'fb.1.abc123' }
+            );
+        });
+
+        it('should not fire pixel if no facebook-for-woocommerce extension', async function () {
+            const mockResponse = {
+                ok: true,
+                clone: () => ({
+                    json: () => Promise.resolve({
+                        extensions: {
+                            'other-plugin': { data: 'test' }
+                        }
+                    })
+                })
+            };
+
+            const mockOriginalFetch = jest.fn().mockResolvedValue(mockResponse);
+            global.fetch = mockOriginalFetch;
+
+            // Load the module
+            require('../../assets/js/frontend/pixel-events.js');
+
+            // Call fetch
+            await global.fetch('/wc/store/v1/cart/add-item', { method: 'POST' });
+
+            // Wait for async operations
+            await new Promise(resolve => setTimeout(resolve, 0));
+
+            // Should NOT fire pixel event
+            expect(mockFbq).not.toHaveBeenCalled();
+        });
+
+        it('should not fire pixel if extension data is empty', async function () {
+            const mockResponse = {
+                ok: true,
+                clone: () => ({
+                    json: () => Promise.resolve({
+                        extensions: {
+                            'facebook-for-woocommerce': {}
+                        }
+                    })
+                })
+            };
+
+            const mockOriginalFetch = jest.fn().mockResolvedValue(mockResponse);
+            global.fetch = mockOriginalFetch;
+
+            // Load the module
+            require('../../assets/js/frontend/pixel-events.js');
+
+            // Call fetch
+            await global.fetch('/wc/store/v1/cart/add-item', { method: 'POST' });
+
+            // Wait for async operations
+            await new Promise(resolve => setTimeout(resolve, 0));
+
+            // Should NOT fire pixel event (no event property)
+            expect(mockFbq).not.toHaveBeenCalled();
+        });
+
+        it('should not fire pixel if event property is missing', async function () {
+            const mockResponse = {
+                ok: true,
+                clone: () => ({
+                    json: () => Promise.resolve({
+                        extensions: {
+                            'facebook-for-woocommerce': {
+                                params: { value: 29.99 }
+                                // Missing 'event' property
+                            }
+                        }
+                    })
+                })
+            };
+
+            const mockOriginalFetch = jest.fn().mockResolvedValue(mockResponse);
+            global.fetch = mockOriginalFetch;
+
+            // Load the module
+            require('../../assets/js/frontend/pixel-events.js');
+
+            // Call fetch
+            await global.fetch('/wc/store/v1/cart/add-item', { method: 'POST' });
+
+            // Wait for async operations
+            await new Promise(resolve => setTimeout(resolve, 0));
+
+            // Should NOT fire pixel event
+            expect(mockFbq).not.toHaveBeenCalled();
+        });
+
+        it('should handle JSON parse errors gracefully', async function () {
+            const mockResponse = {
+                ok: true,
+                clone: () => ({
+                    json: () => Promise.reject(new Error('Invalid JSON'))
+                })
+            };
+
+            const mockOriginalFetch = jest.fn().mockResolvedValue(mockResponse);
+            global.fetch = mockOriginalFetch;
+
+            // Load the module
+            require('../../assets/js/frontend/pixel-events.js');
+
+            // Should not throw
+            await expect(
+                global.fetch('/wc/store/v1/cart/add-item', { method: 'POST' })
+            ).resolves.toBeDefined();
+
+            // Should NOT fire pixel event
+            expect(mockFbq).not.toHaveBeenCalled();
+        });
+
+        it('should fire pixel without eventID if event_id is missing', async function () {
+            const mockResponse = {
+                ok: true,
+                clone: () => ({
+                    json: () => Promise.resolve({
+                        extensions: {
+                            'facebook-for-woocommerce': {
+                                event: 'AddToCart',
+                                params: {
+                                    value: 29.99,
+                                    currency: 'USD'
+                                    // No event_id
+                                }
+                            }
+                        }
+                    })
+                })
+            };
+
+            const mockOriginalFetch = jest.fn().mockResolvedValue(mockResponse);
+            global.fetch = mockOriginalFetch;
+
+            // Load the module
+            require('../../assets/js/frontend/pixel-events.js');
+
+            // Call fetch
+            await global.fetch('/wc/store/v1/cart/add-item', { method: 'POST' });
+
+            // Wait for async operations
+            await new Promise(resolve => setTimeout(resolve, 0));
+
+            // Should fire pixel without eventID option
+            expect(mockFbq).toHaveBeenCalledWith(
+                'track',
+                'AddToCart',
+                { value: 29.99, currency: 'USD' }
+            );
+        });
+    });
+
+    describe('deduplication', function () {
+        it('should not fire same event_id twice', async function () {
+            const eventId = 'test-dedup-123';
+            const mockResponse = {
+                ok: true,
+                clone: () => ({
+                    json: () => Promise.resolve({
+                        extensions: {
+                            'facebook-for-woocommerce': {
+                                event: 'AddToCart',
+                                params: { value: 29.99, event_id: eventId }
+                            }
+                        }
+                    })
+                })
+            };
+
+            const mockOriginalFetch = jest.fn().mockResolvedValue(mockResponse);
+            global.fetch = mockOriginalFetch;
+
+            // Load the module
+            require('../../assets/js/frontend/pixel-events.js');
+
+            // Call fetch twice with same event_id
+            await global.fetch('/wc/store/v1/cart/add-item', { method: 'POST' });
+            await new Promise(resolve => setTimeout(resolve, 0));
+
+            await global.fetch('/wc/store/v1/cart/add-item', { method: 'POST' });
+            await new Promise(resolve => setTimeout(resolve, 0));
+
+            // Should only fire once
+            expect(mockFbq).toHaveBeenCalledTimes(1);
+        });
+
+        it('should fire different event_ids separately', async function () {
+            let callCount = 0;
+            const mockOriginalFetch = jest.fn().mockImplementation(() => {
+                callCount++;
+                return Promise.resolve({
+                    ok: true,
+                    clone: () => ({
+                        json: () => Promise.resolve({
+                            extensions: {
+                                'facebook-for-woocommerce': {
+                                    event: 'AddToCart',
+                                    params: { value: 29.99, event_id: `event-${callCount}` }
+                                }
+                            }
+                        })
+                    })
+                });
+            });
+            global.fetch = mockOriginalFetch;
+
+            // Load the module
+            require('../../assets/js/frontend/pixel-events.js');
+
+            // Call fetch twice with different event_ids
+            await global.fetch('/wc/store/v1/cart/add-item', { method: 'POST' });
+            await new Promise(resolve => setTimeout(resolve, 0));
+
+            await global.fetch('/wc/store/v1/cart/add-item', { method: 'POST' });
+            await new Promise(resolve => setTimeout(resolve, 0));
+
+            // Should fire twice (different event_ids)
+            expect(mockFbq).toHaveBeenCalledTimes(2);
+        });
+    });
+
+    describe('URL matching', function () {
+        it('should match /wc/store/v1/cart/add-item', async function () {
+            const mockResponse = {
+                ok: true,
+                clone: () => ({
+                    json: () => Promise.resolve({
+                        extensions: {
+                            'facebook-for-woocommerce': {
+                                event: 'AddToCart',
+                                params: { event_id: 'test-1' }
+                            }
+                        }
+                    })
+                })
+            };
+
+            const mockOriginalFetch = jest.fn().mockResolvedValue(mockResponse);
+            global.fetch = mockOriginalFetch;
+
+            require('../../assets/js/frontend/pixel-events.js');
+
+            await global.fetch('/wc/store/v1/cart/add-item');
+            await new Promise(resolve => setTimeout(resolve, 0));
+
+            expect(mockFbq).toHaveBeenCalled();
+        });
+
+        it('should match /wc/store/cart/add-item (older API version)', async function () {
+            const mockResponse = {
+                ok: true,
+                clone: () => ({
+                    json: () => Promise.resolve({
+                        extensions: {
+                            'facebook-for-woocommerce': {
+                                event: 'AddToCart',
+                                params: { event_id: 'test-2' }
+                            }
+                        }
+                    })
+                })
+            };
+
+            const mockOriginalFetch = jest.fn().mockResolvedValue(mockResponse);
+            global.fetch = mockOriginalFetch;
+
+            require('../../assets/js/frontend/pixel-events.js');
+
+            await global.fetch('/wc/store/cart/add-item');
+            await new Promise(resolve => setTimeout(resolve, 0));
+
+            expect(mockFbq).toHaveBeenCalled();
+        });
+
+        it('should match full URL with domain', async function () {
+            const mockResponse = {
+                ok: true,
+                clone: () => ({
+                    json: () => Promise.resolve({
+                        extensions: {
+                            'facebook-for-woocommerce': {
+                                event: 'AddToCart',
+                                params: { event_id: 'test-3' }
+                            }
+                        }
+                    })
+                })
+            };
+
+            const mockOriginalFetch = jest.fn().mockResolvedValue(mockResponse);
+            global.fetch = mockOriginalFetch;
+
+            require('../../assets/js/frontend/pixel-events.js');
+
+            await global.fetch('https://example.com/wc/store/v1/cart/add-item');
+            await new Promise(resolve => setTimeout(resolve, 0));
+
+            expect(mockFbq).toHaveBeenCalled();
+        });
+
+        it('should NOT match /wc/store/v1/cart (without add-item)', async function () {
+            const mockResponse = {
+                ok: true,
+                clone: () => ({
+                    json: () => Promise.resolve({
+                        extensions: {
+                            'facebook-for-woocommerce': {
+                                event: 'AddToCart',
+                                params: {}
+                            }
+                        }
+                    })
+                })
+            };
+
+            const mockOriginalFetch = jest.fn().mockResolvedValue(mockResponse);
+            global.fetch = mockOriginalFetch;
+
+            require('../../assets/js/frontend/pixel-events.js');
+
+            await global.fetch('/wc/store/v1/cart');
+            await new Promise(resolve => setTimeout(resolve, 0));
+
+            expect(mockFbq).not.toHaveBeenCalled();
+        });
+
+        it('should NOT match /wc/store/v1/cart/remove-item', async function () {
+            const mockResponse = {
+                ok: true,
+                clone: () => ({
+                    json: () => Promise.resolve({
+                        extensions: {
+                            'facebook-for-woocommerce': {
+                                event: 'AddToCart',
+                                params: {}
+                            }
+                        }
+                    })
+                })
+            };
+
+            const mockOriginalFetch = jest.fn().mockResolvedValue(mockResponse);
+            global.fetch = mockOriginalFetch;
+
+            require('../../assets/js/frontend/pixel-events.js');
+
+            await global.fetch('/wc/store/v1/cart/remove-item');
+            await new Promise(resolve => setTimeout(resolve, 0));
+
+            expect(mockFbq).not.toHaveBeenCalled();
+        });
+    });
+});

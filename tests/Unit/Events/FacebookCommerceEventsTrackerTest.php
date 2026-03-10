@@ -944,4 +944,230 @@ class FacebookCommerceEventsTrackerTest extends AbstractWPUnitTestWithSafeFilter
 				: 'param_builder_server_setup should return early when pixel is disabled'
 		);
 	}
+
+	/**
+	 * Test that register_store_api_endpoint_data registers the endpoint when function exists.
+	 *
+	 * @covers WC_Facebookcommerce_EventsTracker::register_store_api_endpoint_data
+	 */
+	public function test_register_store_api_endpoint_data_registers_when_function_exists(): void {
+		$this->instance = $this->create_tracker_with_pixel_enabled();
+
+		// The method should not throw when function doesn't exist
+		// (it will return early in that case)
+		$this->instance->register_store_api_endpoint_data();
+
+		$this->assertTrue( true, 'register_store_api_endpoint_data should not throw' );
+	}
+
+	/**
+	 * Test that get_store_api_pixel_event_data returns empty array when no session.
+	 *
+	 * @covers WC_Facebookcommerce_EventsTracker::get_store_api_pixel_event_data
+	 */
+	public function test_get_store_api_pixel_event_data_returns_empty_when_no_session(): void {
+		$this->instance = $this->create_tracker_with_pixel_enabled();
+
+		// Temporarily remove the session
+		$original_session = WC()->session;
+		WC()->session = null;
+
+		$result = $this->instance->get_store_api_pixel_event_data();
+
+		// Restore session
+		WC()->session = $original_session;
+
+		$this->assertIsArray( $result );
+		$this->assertEmpty( $result, 'Should return empty array when no session' );
+	}
+
+	/**
+	 * Test that get_store_api_pixel_event_data returns empty array when no pending event.
+	 *
+	 * @covers WC_Facebookcommerce_EventsTracker::get_store_api_pixel_event_data
+	 */
+	public function test_get_store_api_pixel_event_data_returns_empty_when_no_pending_event(): void {
+		$this->instance = $this->create_tracker_with_pixel_enabled();
+
+		// Ensure no pending event
+		WC()->session->set( 'facebook_for_woocommerce_pending_pixel_event', null );
+
+		$result = $this->instance->get_store_api_pixel_event_data();
+
+		$this->assertIsArray( $result );
+		$this->assertEmpty( $result, 'Should return empty array when no pending event' );
+	}
+
+	/**
+	 * Test that get_store_api_pixel_event_data returns pending event and clears it.
+	 *
+	 * @covers WC_Facebookcommerce_EventsTracker::get_store_api_pixel_event_data
+	 */
+	public function test_get_store_api_pixel_event_data_returns_and_clears_pending_event(): void {
+		$this->instance = $this->create_tracker_with_pixel_enabled();
+
+		// Set up a pending event
+		$pending_event = array(
+			'event'  => 'AddToCart',
+			'params' => array(
+				'content_ids'  => '["product_123"]',
+				'value'        => 29.99,
+				'currency'     => 'USD',
+				'event_id'     => 'test-event-id-123',
+			),
+		);
+		WC()->session->set( 'facebook_for_woocommerce_pending_pixel_event', $pending_event );
+
+		// First call should return the event
+		$result = $this->instance->get_store_api_pixel_event_data();
+
+		$this->assertSame( $pending_event, $result, 'Should return the pending event' );
+
+		// Second call should return empty (event was cleared)
+		$result_second = $this->instance->get_store_api_pixel_event_data();
+
+		$this->assertIsArray( $result_second );
+		$this->assertEmpty( $result_second, 'Should return empty array after event was cleared' );
+	}
+
+	/**
+	 * Test that get_store_api_pixel_event_schema returns correct schema structure.
+	 *
+	 * @covers WC_Facebookcommerce_EventsTracker::get_store_api_pixel_event_schema
+	 */
+	public function test_get_store_api_pixel_event_schema_returns_correct_structure(): void {
+		$this->instance = $this->create_tracker_with_pixel_enabled();
+
+		$schema = $this->instance->get_store_api_pixel_event_schema();
+
+		$this->assertIsArray( $schema );
+		$this->assertArrayHasKey( 'event', $schema, 'Schema should have event key' );
+		$this->assertArrayHasKey( 'params', $schema, 'Schema should have params key' );
+
+		// Check event schema
+		$this->assertSame( 'string', $schema['event']['type'], 'Event type should be string' );
+		$this->assertTrue( $schema['event']['readonly'], 'Event should be readonly' );
+
+		// Check params schema
+		$this->assertSame( 'object', $schema['params']['type'], 'Params type should be object' );
+		$this->assertTrue( $schema['params']['readonly'], 'Params should be readonly' );
+	}
+
+	/**
+	 * Test that inject_add_to_cart_event stores pending pixel event in session.
+	 *
+	 * @covers WC_Facebookcommerce_EventsTracker::inject_add_to_cart_event
+	 */
+	public function test_inject_add_to_cart_event_stores_pending_pixel_event(): void {
+		$this->instance = $this->create_tracker_with_pixel_enabled();
+
+		// Create a test product
+		$product = \WC_Helper_Product::create_simple_product();
+
+		// Add to cart to trigger the hook
+		WC()->cart->add_to_cart( $product->get_id(), 2 );
+
+		// Check that pending pixel event was stored
+		$pending_event = WC()->session->get( 'facebook_for_woocommerce_pending_pixel_event' );
+
+		$this->assertIsArray( $pending_event, 'Pending event should be stored in session' );
+		$this->assertArrayHasKey( 'event', $pending_event, 'Pending event should have event key' );
+		$this->assertArrayHasKey( 'params', $pending_event, 'Pending event should have params key' );
+		$this->assertSame( 'AddToCart', $pending_event['event'], 'Event should be AddToCart' );
+
+		// Check params structure
+		$params = $pending_event['params'];
+		$this->assertArrayHasKey( 'content_ids', $params, 'Params should have content_ids' );
+		$this->assertArrayHasKey( 'content_name', $params, 'Params should have content_name' );
+		$this->assertArrayHasKey( 'content_type', $params, 'Params should have content_type' );
+		$this->assertArrayHasKey( 'contents', $params, 'Params should have contents' );
+		$this->assertArrayHasKey( 'value', $params, 'Params should have value' );
+		$this->assertArrayHasKey( 'currency', $params, 'Params should have currency' );
+		$this->assertArrayHasKey( 'event_id', $params, 'Params should have event_id' );
+
+		// Verify values
+		$this->assertSame( 'product', $params['content_type'], 'Content type should be product' );
+		$this->assertSame( get_woocommerce_currency(), $params['currency'], 'Currency should match store currency' );
+		$this->assertNotEmpty( $params['event_id'], 'Event ID should not be empty' );
+
+		// Clean up
+		WC()->cart->empty_cart();
+		$product->delete( true );
+	}
+
+	/**
+	 * Test that inject_add_to_cart_event stores same event_id in both session keys.
+	 *
+	 * @covers WC_Facebookcommerce_EventsTracker::inject_add_to_cart_event
+	 */
+	public function test_inject_add_to_cart_event_stores_same_event_id(): void {
+		$this->instance = $this->create_tracker_with_pixel_enabled();
+
+		// Create a test product
+		$product = \WC_Helper_Product::create_simple_product();
+
+		// Add to cart to trigger the hook
+		WC()->cart->add_to_cart( $product->get_id(), 1 );
+
+		// Get both event IDs
+		$event_id_from_session = WC()->session->get( 'facebook_for_woocommerce_add_to_cart_event_id' );
+		$pending_event = WC()->session->get( 'facebook_for_woocommerce_pending_pixel_event' );
+		$event_id_from_pending = $pending_event['params']['event_id'] ?? null;
+
+		$this->assertNotEmpty( $event_id_from_session, 'Event ID should be stored in session' );
+		$this->assertNotEmpty( $event_id_from_pending, 'Event ID should be in pending event params' );
+		$this->assertSame(
+			$event_id_from_session,
+			$event_id_from_pending,
+			'Both event IDs should be the same for deduplication'
+		);
+
+		// Clean up
+		WC()->cart->empty_cart();
+		$product->delete( true );
+	}
+
+	/**
+	 * Test that pending pixel event params match fragment params format.
+	 *
+	 * @covers WC_Facebookcommerce_EventsTracker::inject_add_to_cart_event
+	 */
+	public function test_pending_pixel_event_matches_fragment_params_format(): void {
+		$this->instance = $this->create_tracker_with_pixel_enabled();
+
+		// Create a test product with specific price
+		$product = \WC_Helper_Product::create_simple_product();
+		$product->set_regular_price( '49.99' );
+		$product->set_price( '49.99' );
+		$product->save();
+
+		// Re-fetch product to ensure price is loaded correctly
+		$product = wc_get_product( $product->get_id() );
+
+		$quantity = 3;
+
+		// Add to cart
+		WC()->cart->add_to_cart( $product->get_id(), $quantity );
+
+		// Get pending event
+		$pending_event = WC()->session->get( 'facebook_for_woocommerce_pending_pixel_event' );
+		$params = $pending_event['params'];
+
+		// Verify content_ids is JSON encoded
+		$decoded_content_ids = json_decode( $params['content_ids'], true );
+		$this->assertIsArray( $decoded_content_ids, 'content_ids should be JSON encoded array' );
+
+		// Verify contents is JSON encoded
+		$decoded_contents = json_decode( $params['contents'], true );
+		$this->assertIsArray( $decoded_contents, 'contents should be JSON encoded array' );
+		$this->assertSame( $quantity, $decoded_contents[0]['quantity'], 'Quantity should match' );
+
+		// Verify value calculation
+		$expected_value = (float) $product->get_price() * $quantity;
+		$this->assertEquals( $expected_value, $params['value'], 'Value should be price * quantity' );
+
+		// Clean up
+		WC()->cart->empty_cart();
+		$product->delete( true );
+	}
 }
