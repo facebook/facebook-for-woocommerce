@@ -59,6 +59,10 @@ class WhatsAppExtension {
 			)
 		);
 
+		$external_client_metadata = array(
+			'client_version'                        => $plugin->get_version(),
+		);
+
 		return add_query_arg(
 			array(
 				'access_client_token'   => self::CLIENT_TOKEN,
@@ -66,6 +70,7 @@ class WhatsAppExtension {
 				'app_owner_business_id' => self::TP_BUSINESS_ID,
 				'external_business_id'  => $external_wa_id,
 				'locale'                => get_user_locale() ?? self::DEFAULT_LANGUAGE,
+				'external_client_metadata' => rawurlencode( wp_json_encode( $external_client_metadata ) ),
 			),
 			self::COMMERCE_HUB_URL . 'whatsapp_utility_integration/splash/'
 		);
