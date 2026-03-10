@@ -10,7 +10,7 @@
  * Description: Grow your business on Meta platforms! Use this official plugin to help sell more of your products using Facebook and Instagram. After completing the setup, you'll be ready to create ads that promote your products and you can also create a shop section on your Page where customers can browse your products.
  * Author: Meta
  * Author URI: https://www.meta.com/
- * Version: 3.5.17
+ * Version: 3.5.18
  * Requires at least: 5.6
  * Requires PHP: 7.4
  * Text Domain: facebook-for-woocommerce
