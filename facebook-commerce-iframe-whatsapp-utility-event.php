@@ -86,18 +86,10 @@ class WC_Facebookcommerce_Iframe_Whatsapp_Utility_Event {
 			);
 			return;
 		}
-		// Check if rich-order rollout switch is enabled once and build metadata accordingly
-		$is_rich_order_enabled = false;
-		$order_metadata = array();
-		if ( isset( $this->plugin ) && method_exists( $this->plugin, 'get_rollout_switches' ) ) {
-			$rollout_switches = $this->plugin->get_rollout_switches();
-			if ( isset( $rollout_switches ) && $rollout_switches->is_switch_enabled( RolloutSwitches::SWITCH_WOOCOMMERCE_ENABLE_RICH_ORDER ) ) {
-				$is_rich_order_enabled = true;
-				$order_metadata = self::build_order_metadata( $order, $currency );
-			}
-		}
+		// Always build order metadata for rich order status
+		$order_metadata = self::build_order_metadata( $order, $currency );
 
-		WhatsAppExtension::process_whatsapp_utility_message_event( $this->plugin, $event, $order_id, $order_details_link, $phone_number, $first_name, $refund_amount, $currency, $country_code, $order_metadata, $is_rich_order_enabled );
+		WhatsAppExtension::process_whatsapp_utility_message_event( $this->plugin, $event, $order_id, $order_details_link, $phone_number, $first_name, $refund_amount, $currency, $country_code, $order_metadata );
 	}
 
 	/**

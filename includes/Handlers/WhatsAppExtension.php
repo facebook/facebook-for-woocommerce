@@ -150,7 +150,6 @@ class WhatsAppExtension {
 	 * @param string $currency Currency code
 	 * @param string $country_code Customer country code
 	 * @param array  $order_metadata Optional order metadata used to build rich order status
-	 * @param bool   $is_rich_order_enabled Whether rich order rollout switch is enabled
 	 *
 	 * @return string
 	 * @since 3.5.0
@@ -165,8 +164,7 @@ class WhatsAppExtension {
 		$refund_value,
 		$currency,
 		$country_code,
-		$order_metadata = array(),
-		$is_rich_order_enabled = false
+		$order_metadata = array()
 	) {
 		$whatsapp_connection = $plugin->get_whatsapp_connection_handler();
 		$is_connected        = $whatsapp_connection->is_connected();
@@ -198,8 +196,8 @@ class WhatsAppExtension {
 		if ( ! empty( $event_object ) ) {
 			$event_base_object[ $event_lowercase ] = $event_object;
 		}
-		// Attach rich_order_status only when rollout switch enabled and order_metadata provided.
-		if ( $is_rich_order_enabled && ! empty( $order_metadata ) ) {
+		// Always attach rich_order_status when order_metadata is provided.
+		if ( ! empty( $order_metadata ) ) {
 			try {
 				$rich_status = self::build_rich_order_status( $order_metadata );
 				if ( ! empty( $rich_status ) ) {
