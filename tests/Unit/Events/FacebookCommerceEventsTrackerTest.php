@@ -961,36 +961,12 @@ class FacebookCommerceEventsTrackerTest extends AbstractWPUnitTestWithSafeFilter
 	}
 
 	/**
-	 * Test that get_store_api_pixel_event_data returns empty array when no session.
-	 *
-	 * @covers WC_Facebookcommerce_EventsTracker::get_store_api_pixel_event_data
-	 */
-	public function test_get_store_api_pixel_event_data_returns_empty_when_no_session(): void {
-		$this->instance = $this->create_tracker_with_pixel_enabled();
-
-		// Temporarily remove the session
-		$original_session = WC()->session;
-		WC()->session = null;
-
-		$result = $this->instance->get_store_api_pixel_event_data();
-
-		// Restore session
-		WC()->session = $original_session;
-
-		$this->assertIsArray( $result );
-		$this->assertEmpty( $result, 'Should return empty array when no session' );
-	}
-
-	/**
 	 * Test that get_store_api_pixel_event_data returns empty array when no pending event.
 	 *
 	 * @covers WC_Facebookcommerce_EventsTracker::get_store_api_pixel_event_data
 	 */
 	public function test_get_store_api_pixel_event_data_returns_empty_when_no_pending_event(): void {
 		$this->instance = $this->create_tracker_with_pixel_enabled();
-
-		// Ensure no pending event
-		WC()->session->set( 'facebook_for_woocommerce_pending_pixel_event', null );
 
 		$result = $this->instance->get_store_api_pixel_event_data();
 
@@ -1006,7 +982,7 @@ class FacebookCommerceEventsTrackerTest extends AbstractWPUnitTestWithSafeFilter
 	public function test_get_store_api_pixel_event_data_returns_and_clears_pending_event(): void {
 		$this->instance = $this->create_tracker_with_pixel_enabled();
 
-		// Set up a pending event
+		// Set up a pending event using reflection
 		$pending_event = array(
 			'event'  => 'AddToCart',
 			'params' => array(
@@ -1016,7 +992,11 @@ class FacebookCommerceEventsTrackerTest extends AbstractWPUnitTestWithSafeFilter
 				'event_id'     => 'test-event-id-123',
 			),
 		);
-		WC()->session->set( 'facebook_for_woocommerce_pending_pixel_event', $pending_event );
+
+		$reflection = new ReflectionClass( $this->instance );
+		$property = $reflection->getProperty( 'pending_store_api_pixel_event' );
+		$property->setAccessible( true );
+		$property->setValue( $this->instance, $pending_event );
 
 		// First call should return the event
 		$result = $this->instance->get_store_api_pixel_event_data();
@@ -1067,10 +1047,13 @@ class FacebookCommerceEventsTrackerTest extends AbstractWPUnitTestWithSafeFilter
 		// Add to cart to trigger the hook
 		WC()->cart->add_to_cart( $product->get_id(), 2 );
 
-		// Check that pending pixel event was stored
-		$pending_event = WC()->session->get( 'facebook_for_woocommerce_pending_pixel_event' );
+		// Check that pending pixel event was stored using reflection
+		$reflection = new ReflectionClass( $this->instance );
+		$property = $reflection->getProperty( 'pending_store_api_pixel_event' );
+		$property->setAccessible( true );
+		$pending_event = $property->getValue( $this->instance );
 
-		$this->assertIsArray( $pending_event, 'Pending event should be stored in session' );
+		$this->assertIsArray( $pending_event, 'Pending event should be stored' );
 		$this->assertArrayHasKey( 'event', $pending_event, 'Pending event should have event key' );
 		$this->assertArrayHasKey( 'params', $pending_event, 'Pending event should have params key' );
 		$this->assertSame( 'AddToCart', $pending_event['event'], 'Event should be AddToCart' );
@@ -1096,7 +1079,7 @@ class FacebookCommerceEventsTrackerTest extends AbstractWPUnitTestWithSafeFilter
 	}
 
 	/**
-	 * Test that inject_add_to_cart_event stores same event_id in both session keys.
+	 * Test that inject_add_to_cart_event stores same event_id for deduplication.
 	 *
 	 * @covers WC_Facebookcommerce_EventsTracker::inject_add_to_cart_event
 	 */
@@ -1109,9 +1092,14 @@ class FacebookCommerceEventsTrackerTest extends AbstractWPUnitTestWithSafeFilter
 		// Add to cart to trigger the hook
 		WC()->cart->add_to_cart( $product->get_id(), 1 );
 
-		// Get both event IDs
+		// Get event ID from session (for AJAX fragments)
 		$event_id_from_session = WC()->session->get( 'facebook_for_woocommerce_add_to_cart_event_id' );
-		$pending_event = WC()->session->get( 'facebook_for_woocommerce_pending_pixel_event' );
+
+		// Get event ID from class property (for Store API) using reflection
+		$reflection = new ReflectionClass( $this->instance );
+		$property = $reflection->getProperty( 'pending_store_api_pixel_event' );
+		$property->setAccessible( true );
+		$pending_event = $property->getValue( $this->instance );
 		$event_id_from_pending = $pending_event['params']['event_id'] ?? null;
 
 		$this->assertNotEmpty( $event_id_from_session, 'Event ID should be stored in session' );
@@ -1149,8 +1137,11 @@ class FacebookCommerceEventsTrackerTest extends AbstractWPUnitTestWithSafeFilter
 		// Add to cart
 		WC()->cart->add_to_cart( $product->get_id(), $quantity );
 
-		// Get pending event
-		$pending_event = WC()->session->get( 'facebook_for_woocommerce_pending_pixel_event' );
+		// Get pending event using reflection
+		$reflection = new ReflectionClass( $this->instance );
+		$property = $reflection->getProperty( 'pending_store_api_pixel_event' );
+		$property->setAccessible( true );
+		$pending_event = $property->getValue( $this->instance );
 		$params = $pending_event['params'];
 
 		// Verify content_ids is JSON encoded

@@ -60,6 +60,9 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 		/** @var CostOfGoods CostOfGoods provider instance. Used to calculate the profit margin */
 		private $cogs_provider;
 
+		/** @var array|null Pending pixel event data for Store API response */
+		private $pending_store_api_pixel_event = null;
+
 		/**
 		 * @var \FacebookAds\ParamBuilder|null shared ParamBuilder instance
 		 */
@@ -784,11 +787,10 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 			// Store pending pixel event for WooCommerce Blocks Store API
 			// Reuse custom_data and add event_id for deduplication
 			$pending_pixel_params = array_merge( $custom_data, array( 'event_id' => $event->get_id() ) );
-			$pending_pixel_event  = array(
+			$this->pending_store_api_pixel_event = array(
 				'event'  => 'AddToCart',
 				'params' => $pending_pixel_params,
 			);
-			WC()->session->set( 'facebook_for_woocommerce_pending_pixel_event', $pending_pixel_event );
 
 			$this->pixel->inject_event( 'AddToCart', $event_data );
 		}
@@ -962,15 +964,9 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 		 * @return array Pixel event data or empty array if no pending event.
 		 */
 		public function get_store_api_pixel_event_data() {
-			if ( ! is_object( WC()->session ) ) {
-				return array();
-			}
-
-			$pending_event = WC()->session->get( 'facebook_for_woocommerce_pending_pixel_event' );
-
-			if ( ! empty( $pending_event ) ) {
-				// Clear the pending event after reading to prevent duplicate firing
-				WC()->session->set( 'facebook_for_woocommerce_pending_pixel_event', null );
+			if ( ! empty( $this->pending_store_api_pixel_event ) ) {
+				$pending_event = $this->pending_store_api_pixel_event;
+				$this->pending_store_api_pixel_event = null;
 				return $pending_event;
 			}
 
