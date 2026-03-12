@@ -116,29 +116,8 @@ jobs:
           echo "wc-supported=$WC_VERSION" >> $GITHUB_OUTPUT
           echo "Resolved versions — WP: $WP_VERSION, WC: $WC_VERSION"
 
-  # Job to resolve currently supported WP and WC versions from the plugin file
-  resolve-versions:
-    runs-on: ubuntu-latest
-    outputs:
-      wp-supported: ${{ steps.versions.outputs.wp-supported }}
-      wc-supported: ${{ steps.versions.outputs.wc-supported }}
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Read tested up to versions from plugin file
-        id: versions
-        run: |
-          WP_VERSION=$(grep -oP '^\s*\*\s*Tested up to:\s*\K\S+' facebook-for-woocommerce.php)
-          WC_VERSION=$(grep -oP '^\s*\*\s*WC tested up to:\s*\K\S+' facebook-for-woocommerce.php)
-          echo "wp-supported=$WP_VERSION" >> $GITHUB_OUTPUT
-          echo "wc-supported=$WC_VERSION" >> $GITHUB_OUTPUT
-          echo "Resolved versions — WP: $WP_VERSION, WC: $WC_VERSION"
-
   e2e-tests:
     name: E2E Tests - ${{ matrix.version-label }} - ${{ matrix.test-group }}
-    needs: [check-secrets, resolve-versions]
-    name: E2E Tests - ${{ matrix.label }}
     needs: [check-secrets, resolve-versions]
     if: ${{ needs.check-secrets.outputs.secrets-configured == 'true' }}
     runs-on: ubuntu-latest
@@ -157,19 +136,6 @@ jobs:
             wp-version: 'latest'
             wc-version: 'latest'
             version-label: 'Latest'
-
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          # Currently supported versions (Tested up to in facebook-for-woocommerce.php)
-          - wp-version: ${{ needs.resolve-versions.outputs.wp-supported }}
-            wc-version: ${{ needs.resolve-versions.outputs.wc-supported }}
-            label: 'Currently supported'
-          # Latest available versions
-          - wp-version: 'latest'
-            wc-version: 'latest'
-            label: 'Latest'
 
     services:
       mysql:
@@ -216,13 +182,6 @@ jobs:
           cd ${{ env.WORDPRESS_PATH }}
 
           # Download WordPress
-          if [ "${{ matrix.wp-version }}" = "latest" ]; then
-            curl -O https://wordpress.org/latest.tar.gz
-            tar -xzf latest.tar.gz --strip-components=1
-          else
-            curl -O https://wordpress.org/wordpress-${{ matrix.wp-version }}.tar.gz
-            tar -xzf wordpress-${{ matrix.wp-version }}.tar.gz --strip-components=1
-          fi
           if [ "${{ matrix.wp-version }}" = "latest" ]; then
             curl -O https://wordpress.org/latest.tar.gz
             tar -xzf latest.tar.gz --strip-components=1
@@ -676,14 +635,10 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y xvfb
 
-<<<<<<< Updated upstream
-      - name: Run Plugin level tests (sequential)
-        env:
-          IS_LATEST_WP: ${{ matrix.wp-version == 'latest' && 'true' || 'false' }}
-=======
       - name: Run Plugin & Events tests
         if: matrix.test-group == 'plugin-events'
->>>>>>> Stashed changes
+        env:
+          IS_LATEST_WP: ${{ matrix.wp-version == 'latest' && 'true' || 'false' }}
         run: |
           cd ${{ env.PLUGIN_PATH }}
           npx playwright test plugin-level-tests.spec.js --project=chromium-wp-admin --workers=1
@@ -768,12 +723,7 @@ jobs:
         uses: actions/upload-artifact@v4
         if: always()
         with:
-<<<<<<< Updated upstream
-          name: playwright-report-${{ matrix.label }}
-          name: playwright-report-${{ matrix.label }}
-=======
           name: playwright-report-${{ matrix.version-label }}-${{ matrix.test-group }}
->>>>>>> Stashed changes
           path: ${{ env.PLUGIN_PATH }}/playwright-report/
           retention-days: 7
 
@@ -781,12 +731,7 @@ jobs:
         uses: actions/upload-artifact@v4
         if: always() && matrix.test-group == 'plugin-events'
         with:
-<<<<<<< Updated upstream
-          name: captured-events-${{ matrix.label }}
-          name: captured-events-${{ matrix.label }}
-=======
           name: captured-events-${{ matrix.version-label }}
->>>>>>> Stashed changes
           path: ${{ env.PLUGIN_PATH }}${{ env.FB_E2E_CAPTURED_EVENTS_DIR }}
           retention-days: 7
 
@@ -805,12 +750,7 @@ jobs:
         uses: actions/upload-artifact@v4
         if: always()
         with:
-<<<<<<< Updated upstream
-          name: php-debug-logs-${{ matrix.label }}
-          name: php-debug-logs-${{ matrix.label }}
-=======
           name: php-debug-logs-${{ matrix.version-label }}-${{ matrix.test-group }}
->>>>>>> Stashed changes
           path: ${{ env.WP_DEBUG_LOG }}
           retention-days: 7
 
@@ -818,12 +758,7 @@ jobs:
         uses: actions/upload-artifact@v4
         if: always()
         with:
-<<<<<<< Updated upstream
-          name: woocommerce-logs-${{ matrix.label }}
-          name: woocommerce-logs-${{ matrix.label }}
-=======
           name: woocommerce-logs-${{ matrix.version-label }}-${{ matrix.test-group }}
->>>>>>> Stashed changes
           path: ${{ env.WORDPRESS_PATH }}/wp-content/uploads/wc-logs/facebook_for_woocommerce-*.log
           retention-days: 7
 
@@ -831,11 +766,6 @@ jobs:
         uses: actions/upload-artifact@v4
         if: failure()
         with:
-<<<<<<< Updated upstream
-          name: test-failures-${{ matrix.label }}
-          name: test-failures-${{ matrix.label }}
-=======
           name: test-failures-${{ matrix.version-label }}-${{ matrix.test-group }}
->>>>>>> Stashed changes
           path: ${{ env.PLUGIN_PATH }}/test-results/
           retention-days: 7
