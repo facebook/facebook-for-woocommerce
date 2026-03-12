@@ -2,10 +2,16 @@ name: Set Stable Tag
 
 on: workflow_dispatch
 
+permissions:
+  contents: read
+  pull-requests: write
+
 jobs:
   set-stable-tag:
     runs-on: ubuntu-latest
     environment: Deployment
+    outputs:
+      version: ${{ steps.package-version.outputs.current-version }}
     steps:
       - uses: actions/checkout@v4
 
@@ -130,3 +136,34 @@ jobs:
           svn status
           svn diff
           svn commit -m "Update stable tag for version ${{ steps.package-version.outputs.current-version}}" --username "$SVN_USERNAME" --password "$SVN_PASSWORD" --no-auth-cache --non-interactive
+
+  create-release-pr:
+    needs: set-stable-tag
+    runs-on: ubuntu-latest
+    env:
+      VERSION: ${{ needs.set-stable-tag.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: release/${{ needs.set-stable-tag.outputs.version }}
+
+      - name: Update GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release edit "v$VERSION" \
+            --repo woocommerce/facebook-for-woocommerce \
+            --prerelease=false \
+            --latest
+
+      - name: Create pull request
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release view "v$VERSION" --repo woocommerce/facebook-for-woocommerce --json body --jq '.body' > /tmp/release-notes.md
+          gh pr create \
+            --repo woocommerce/facebook-for-woocommerce \
+            --base main \
+            --head "release/$VERSION" \
+            --title "Release $VERSION" \
+            --body-file /tmp/release-notes.md
