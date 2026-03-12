@@ -22,6 +22,9 @@ on:
     # Run daily at 8am UTC (only runs when required secrets are configured)
     - cron: '0 8 * * *'
 
+permissions:
+  contents: read
+
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
