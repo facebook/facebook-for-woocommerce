@@ -62,13 +62,31 @@ jobs:
           unzip -q "$TEMP_DIR/marketplace.zip" -d "$TEMP_DIR/wp"
           unzip -q "$ARTIFACT_ZIP" -d "$TEMP_DIR/gh"
 
-          # Compare directories (ignore POT-Creation-Date timestamps)
+          # Compare directories (ignore .gitignore)
           echo "Comparing archives..."
-          DIFF_OUTPUT=$(diff -rq "$TEMP_DIR/wp" "$TEMP_DIR/gh" 2>&1 | grep -v "POT-Creation-Date" || true)
+          DIFF_OUTPUT=$(diff -rq --exclude='.gitignore' "$TEMP_DIR/wp" "$TEMP_DIR/gh" 2>&1 || true)
 
-          if [ -n "$DIFF_OUTPUT" ]; then
+          # For .pot files, check if differences are only timestamps
+          REAL_DIFFS=""
+          while IFS= read -r line; do
+              if echo "$line" | grep -q '\.pot '; then
+                  # Extract the two file paths and do a content diff ignoring timestamp lines
+                  FILE_A=$(echo "$line" | sed 's/^Files \(.*\) and .* differ$/\1/')
+                  FILE_B=$(echo "$line" | sed 's/^Files .* and \(.*\) differ$/\1/')
+                  POT_DIFF=$(diff "$FILE_A" "$FILE_B" | grep -v "^[<>] \"POT-Creation-Date:" | grep -v "^[<>] \"PO-Revision-Date:" | grep "^[<>]" || true)
+                  if [ -n "$POT_DIFF" ]; then
+                      REAL_DIFFS="${REAL_DIFFS}${line}\n"
+                  fi
+              else
+                  REAL_DIFFS="${REAL_DIFFS}${line}\n"
+              fi
+          done <<< "$DIFF_OUTPUT"
+
+          REAL_DIFFS=$(echo -e "$REAL_DIFFS" | sed '/^$/d')
+
+          if [ -n "$REAL_DIFFS" ]; then
               echo "❌ Differences found:"
-              echo "$DIFF_OUTPUT"
+              echo "$REAL_DIFFS"
               exit 1
           fi
 
