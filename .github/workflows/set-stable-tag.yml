@@ -38,7 +38,7 @@ jobs:
           curl -sL "https://downloads.wordpress.org/plugin/facebook-for-woocommerce.zip" -o "$TEMP_DIR/marketplace.zip"
 
           # Download GitHub artifact
-          RUN_ID=$(gh run list --repo woocommerce/facebook-for-woocommerce --workflow prepare-release.yml --branch "release/$VERSION" --status success --limit 1 --json databaseId --jq '.[0].databaseId')
+          RUN_ID=$(gh run list --repo woocommerce/facebook-for-woocommerce --workflow prepare-release.yml --status success --json databaseId,displayTitle --jq '.[] | select(.displayTitle | contains("release/'"$VERSION"'")) | .databaseId' | head -1)
           if [ -z "$RUN_ID" ] || [ "$RUN_ID" = "null" ]; then
               echo "❌ No successful build found for release/$VERSION"
               exit 1
