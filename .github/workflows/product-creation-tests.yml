@@ -22,6 +22,9 @@ on:
     # Run daily at 8am UTC (only runs when required secrets are configured)
     - cron: '0 8 * * *'
 
+permissions:
+  contents: read
+
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
@@ -117,7 +120,7 @@ jobs:
           echo "Resolved versions — WP: $WP_VERSION, WC: $WC_VERSION"
 
   e2e-tests:
-    name: E2E Tests - ${{ matrix.label }}
+    name: E2E Tests - ${{ matrix.version-label }} - ${{ matrix.test-group }}
     needs: [check-secrets, resolve-versions]
     if: ${{ needs.check-secrets.outputs.secrets-configured == 'true' }}
     runs-on: ubuntu-latest
@@ -125,15 +128,17 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
+        test-group: ['plugin-events', 'product-crud', 'product-batch', 'product-category']
+        version-set: ['supported', 'latest']
         include:
-          # Currently supported versions (Tested up to in facebook-for-woocommerce.php)
-          - wp-version: ${{ needs.resolve-versions.outputs.wp-supported }}
+          - version-set: 'supported'
+            wp-version: ${{ needs.resolve-versions.outputs.wp-supported }}
             wc-version: ${{ needs.resolve-versions.outputs.wc-supported }}
-            label: 'Currently supported'
-          # Latest available versions
-          - wp-version: 'latest'
+            version-label: 'Currently supported'
+          - version-set: 'latest'
+            wp-version: 'latest'
             wc-version: 'latest'
-            label: 'Latest'
+            version-label: 'Latest'
 
     services:
       mysql:
@@ -278,10 +283,9 @@ jobs:
             wp plugin install woocommerce --activate --allow-root
           else
             # Resolve major.minor to the latest patch version (e.g., 10.5 → 10.5.2)
-            WC_INSTALL_VERSION=$(curl -sf 'https://api.wordpress.org/plugins/info/1.0/woocommerce.json' | jq -r --arg prefix "${{ matrix.wc-version }}." '[.versions | keys[] | select(startswith($prefix)) | select(test("-") | not)] | sort_by(split(".") | map(tonumber)) | last')
+            WC_INSTALL_VERSION=$(curl -s 'https://api.wordpress.org/plugins/info/1.0/woocommerce.json' | jq -r --arg prefix "${{ matrix.wc-version }}." '[.versions | keys[] | select(startswith($prefix)) | select(test("-") | not)] | sort_by(split(".") | map(tonumber)) | last')
             if [ -z "$WC_INSTALL_VERSION" ] || [ "$WC_INSTALL_VERSION" = "null" ]; then
-              echo "❌ Failed to resolve WC version for ${{ matrix.wc-version }}. Could not fetch version info from wordpress.org or no matching version found."
-              exit 1
+              WC_INSTALL_VERSION="${{ matrix.wc-version }}"
             fi
             echo "Resolved WC version: ${{ matrix.wc-version }} → $WC_INSTALL_VERSION"
             wp plugin install woocommerce --version=$WC_INSTALL_VERSION --activate --allow-root
@@ -600,11 +604,13 @@ jobs:
           npx playwright install-deps chromium
 
       - name: Setup captured-events directory
+        if: matrix.test-group == 'plugin-events'
         run: |
           mkdir -p ${{ env.PLUGIN_PATH }}/tests/e2e/captured-events
           chmod 777 ${{ env.PLUGIN_PATH }}/tests/e2e/captured-events
 
       - name: Create test product for CAPI Pixel E2E tests
+        if: matrix.test-group == 'plugin-events'
         run: |
           cd ${{ env.WORDPRESS_PATH }}
           # Create test product for ViewContent/AddToCart tests
@@ -627,25 +633,22 @@ jobs:
           echo "✅ Test product created. ID: $PRODUCT_ID"
 
       - name: Install Xvfb for headed browser
+        if: matrix.test-group == 'plugin-events'
         run: |
           sudo apt-get update
           sudo apt-get install -y xvfb
 
-      - name: Run Plugin level tests (sequential)
+      - name: Run Plugin & Events tests
+        if: matrix.test-group == 'plugin-events'
         env:
           IS_LATEST_WP: ${{ matrix.wp-version == 'latest' && 'true' || 'false' }}
         run: |
           cd ${{ env.PLUGIN_PATH }}
           npx playwright test plugin-level-tests.spec.js --project=chromium-wp-admin --workers=1
-
-      - name: Run CAPI Pixel E2E tests (sequential)
-        run: |
-          cd ${{ env.PLUGIN_PATH }}
           xvfb-run --auto-servernum npx playwright test events-test.spec.js --headed --project=chromium-wp-customer --workers=1
 
-
       - name: Cleanup test product
-        if: always()
+        if: always() && matrix.test-group == 'plugin-events'
         run: |
           cd ${{ env.WORDPRESS_PATH }}
           if [ -n "${{ env.TEST_PRODUCT_ID }}" ]; then
@@ -655,17 +658,20 @@ jobs:
             echo "ℹ️ No test product to delete"
           fi
 
-      - name: Run Product CRUD tests (parallel)
+      - name: Run Product CRUD tests
+        if: matrix.test-group == 'product-crud'
         run: |
           cd ${{ env.PLUGIN_PATH }}
           npx playwright test "product-(creation|modification|deletion).spec.js" --project=chromium-wp-admin --workers=2
 
-      - name: Run Product Batch tests (sequential)
+      - name: Run Product Batch tests
+        if: matrix.test-group == 'product-batch'
         run: |
           cd ${{ env.PLUGIN_PATH }}
           npx playwright test product-batch.spec.js --project=chromium-wp-admin --workers=1
 
-      - name: Run Product Category tests (sequential)
+      - name: Run Product Category tests
+        if: matrix.test-group == 'product-category'
         run: |
           cd ${{ env.PLUGIN_PATH }}
           npx playwright test product-category.spec.js --project=chromium-wp-admin --workers=1
@@ -720,20 +726,20 @@ jobs:
         uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: playwright-report-${{ matrix.label }}
+          name: playwright-report-${{ matrix.version-label }}-${{ matrix.test-group }}
           path: ${{ env.PLUGIN_PATH }}/playwright-report/
           retention-days: 7
 
       - name: Upload captured events
         uses: actions/upload-artifact@v4
-        if: always()
+        if: always() && matrix.test-group == 'plugin-events'
         with:
-          name: captured-events-${{ matrix.label }}
+          name: captured-events-${{ matrix.version-label }}
           path: ${{ env.PLUGIN_PATH }}${{ env.FB_E2E_CAPTURED_EVENTS_DIR }}
           retention-days: 7
 
       - name: Cleanup captured events directory
-        if: always()
+        if: always() && matrix.test-group == 'plugin-events'
         run: |
           TARGET_DIR="${{ env.PLUGIN_PATH }}${{ env.FB_E2E_CAPTURED_EVENTS_DIR }}"
           if [ -d "$TARGET_DIR" ]; then
@@ -747,7 +753,7 @@ jobs:
         uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: php-debug-logs-${{ matrix.label }}
+          name: php-debug-logs-${{ matrix.version-label }}-${{ matrix.test-group }}
           path: ${{ env.WP_DEBUG_LOG }}
           retention-days: 7
 
@@ -755,7 +761,7 @@ jobs:
         uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: woocommerce-logs-${{ matrix.label }}
+          name: woocommerce-logs-${{ matrix.version-label }}-${{ matrix.test-group }}
           path: ${{ env.WORDPRESS_PATH }}/wp-content/uploads/wc-logs/facebook_for_woocommerce-*.log
           retention-days: 7
 
@@ -763,6 +769,6 @@ jobs:
         uses: actions/upload-artifact@v4
         if: failure()
         with:
-          name: test-failures-${{ matrix.label }}
+          name: test-failures-${{ matrix.version-label }}-${{ matrix.test-group }}
           path: ${{ env.PLUGIN_PATH }}/test-results/
           retention-days: 7

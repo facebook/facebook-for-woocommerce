@@ -14,7 +14,7 @@ const {
   generateProductFeedCSV,
   deleteFeedFile,
   generateUniqueSKU,
-  cleanupProduct,
+  cleanupProducts,
   cleanupCategory,
   generateProductUpdateCSV,
   enableBatchMonitoring,
@@ -189,12 +189,7 @@ test.describe('Meta for WooCommerce - Product Batch Import E2E Tests', () => {
         console.log(`\n📝 ${importedProductIds.length} test products were imported`);
         console.log(`  Category: ${feedCategorySlug}`);
 
-        const cleanupPromises = importedProductIds.map((productId) => {
-            return cleanupProduct(productId)
-            .then((result) => ({ productId, result }))
-            .catch((err) => ({ productId, error: err }));
-        });
-        await Promise.all(cleanupPromises);
+        await cleanupProducts(importedProductIds);
         console.log(`✅ Cleaned up ${importedProductIds.length} feed test products`);
       }
 
@@ -392,14 +387,8 @@ test.describe('Meta for WooCommerce - Product Batch Import E2E Tests', () => {
       // Cleanup products
       if (importedProductIds.length > 0) {
         console.log(`\n🧹 Cleaning up ${importedProductIds.length} test products...`);
-        const cleanupPromises = importedProductIds.map((productId) =>
-          cleanupProduct(productId)
-            .then(() => ({ productId, success: true }))
-            .catch((err) => ({ productId, success: false, error: err }))
-        );
-        const results = await Promise.all(cleanupPromises);
-        const successCount = results.filter(r => r.success).length;
-        console.log(`✅ Cleanup completed: ${successCount}/${importedProductIds.length} products deleted`);
+        await cleanupProducts(importedProductIds);
+        console.log(`✅ Cleanup completed: ${importedProductIds.length} products deleted`);
       }
       const feedCategoryId = execSync(
         `wp term list product_cat --slug=${categorySlug} --field=term_id`,
@@ -614,12 +603,7 @@ test.describe('Meta for WooCommerce - Product Batch Import E2E Tests', () => {
       }
 
       if (importedProductIds.length > 0) {
-        const cleanupPromises = importedProductIds.map((productId) => {
-          return cleanupProduct(productId)
-            .then((result) => ({ productId, result }))
-            .catch((err) => ({ productId, error: err }));
-        });
-        await Promise.all(cleanupPromises);
+        await cleanupProducts(importedProductIds);
         console.log(`Cleaned up ${importedProductIds.length} test products`);
       }
 
