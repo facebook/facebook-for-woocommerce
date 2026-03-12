@@ -287,7 +287,6 @@ class FeedUploadUtilsTest extends FeedDataTestBase {
 			'target_product_set_retailer_ids'       => '',
 			'redeem_limit_per_user'                 => 0,
 			'min_subtotal'                          => '0',
-			'min_subtotal'                          => '0',
 			'min_quantity'                          => '',
 			'offer_terms'                           => '',
 			'usage_limit'              			    => 0,
