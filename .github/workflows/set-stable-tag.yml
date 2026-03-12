@@ -153,6 +153,7 @@ jobs:
         run: |
           gh release edit "v$VERSION" \
             --repo woocommerce/facebook-for-woocommerce \
+            --draft=false \
             --prerelease=false \
             --latest
 
