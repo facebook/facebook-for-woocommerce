@@ -2,10 +2,16 @@ name: Set Stable Tag
 
 on: workflow_dispatch
 
+permissions:
+  contents: read
+  pull-requests: write
+
 jobs:
   set-stable-tag:
     runs-on: ubuntu-latest
     environment: Deployment
+    outputs:
+      version: ${{ steps.package-version.outputs.current-version }}
     steps:
       - uses: actions/checkout@v4
 
@@ -38,7 +44,7 @@ jobs:
           curl -sL "https://downloads.wordpress.org/plugin/facebook-for-woocommerce.zip" -o "$TEMP_DIR/marketplace.zip"
 
           # Download GitHub artifact
-          RUN_ID=$(gh run list --repo woocommerce/facebook-for-woocommerce --workflow build-plugin-artifact.yml --branch "release/$VERSION" --status success --limit 1 --json databaseId --jq '.[0].databaseId')
+          RUN_ID=$(gh run list --repo woocommerce/facebook-for-woocommerce --workflow prepare-release.yml --status success --json databaseId,displayTitle --jq '.[] | select(.displayTitle | contains("release/'"$VERSION"'")) | .databaseId' | head -1)
           if [ -z "$RUN_ID" ] || [ "$RUN_ID" = "null" ]; then
               echo "❌ No successful build found for release/$VERSION"
               exit 1
@@ -62,13 +68,31 @@ jobs:
           unzip -q "$TEMP_DIR/marketplace.zip" -d "$TEMP_DIR/wp"
           unzip -q "$ARTIFACT_ZIP" -d "$TEMP_DIR/gh"
 
-          # Compare directories (ignore POT-Creation-Date timestamps)
+          # Compare directories (ignore .gitignore)
           echo "Comparing archives..."
-          DIFF_OUTPUT=$(diff -rq "$TEMP_DIR/wp" "$TEMP_DIR/gh" 2>&1 | grep -v "POT-Creation-Date" || true)
+          DIFF_OUTPUT=$(diff -rq --exclude='.gitignore' "$TEMP_DIR/wp" "$TEMP_DIR/gh" 2>&1 || true)
 
-          if [ -n "$DIFF_OUTPUT" ]; then
+          # For .pot files, check if differences are only timestamps
+          REAL_DIFFS=""
+          while IFS= read -r line; do
+              if echo "$line" | grep -q '\.pot '; then
+                  # Extract the two file paths and do a content diff ignoring timestamp lines
+                  FILE_A=$(echo "$line" | sed 's/^Files \(.*\) and .* differ$/\1/')
+                  FILE_B=$(echo "$line" | sed 's/^Files .* and \(.*\) differ$/\1/')
+                  POT_DIFF=$(diff "$FILE_A" "$FILE_B" | grep -v "^[<>] \"POT-Creation-Date:" | grep -v "^[<>] \"PO-Revision-Date:" | grep "^[<>]" || true)
+                  if [ -n "$POT_DIFF" ]; then
+                      REAL_DIFFS="${REAL_DIFFS}${line}\n"
+                  fi
+              else
+                  REAL_DIFFS="${REAL_DIFFS}${line}\n"
+              fi
+          done <<< "$DIFF_OUTPUT"
+
+          REAL_DIFFS=$(echo -e "$REAL_DIFFS" | sed '/^$/d')
+
+          if [ -n "$REAL_DIFFS" ]; then
               echo "❌ Differences found:"
-              echo "$DIFF_OUTPUT"
+              echo "$REAL_DIFFS"
               exit 1
           fi
 
@@ -112,3 +136,35 @@ jobs:
           svn status
           svn diff
           svn commit -m "Update stable tag for version ${{ steps.package-version.outputs.current-version}}" --username "$SVN_USERNAME" --password "$SVN_PASSWORD" --no-auth-cache --non-interactive
+
+  create-release-pr:
+    needs: set-stable-tag
+    runs-on: ubuntu-latest
+    env:
+      VERSION: ${{ needs.set-stable-tag.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: release/${{ needs.set-stable-tag.outputs.version }}
+
+      - name: Update GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release edit "v$VERSION" \
+            --repo woocommerce/facebook-for-woocommerce \
+            --draft=false \
+            --prerelease=false \
+            --latest
+
+      - name: Create pull request
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release view "v$VERSION" --repo woocommerce/facebook-for-woocommerce --json body --jq '.body' > /tmp/release-notes.md
+          gh pr create \
+            --repo woocommerce/facebook-for-woocommerce \
+            --base main \
+            --head "release/$VERSION" \
+            --title "Release $VERSION" \
+            --body-file /tmp/release-notes.md

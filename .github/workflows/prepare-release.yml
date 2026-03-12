@@ -169,15 +169,13 @@ jobs:
 
       - name: Update WP and WC tested up to versions
         run: |
-          # Fetch latest WordPress version and truncate to major.minor
-          LATEST_WP_FULL=$(curl -s 'https://api.wordpress.org/core/version-check/1.7/' | jq -r '.offers[0].version')
-          LATEST_WP=$(echo "$LATEST_WP_FULL" | cut -d. -f1,2)
-          echo "Latest WordPress version: $LATEST_WP_FULL → $LATEST_WP"
+          # Fetch latest WordPress version (X.Y.Z)
+          LATEST_WP=$(curl -s 'https://api.wordpress.org/core/version-check/1.7/' | jq -r '.offers[0].version')
+          echo "Latest WordPress version: $LATEST_WP"
 
-          # Fetch latest WooCommerce version and truncate to major.minor
-          LATEST_WC_FULL=$(curl -s 'https://api.wordpress.org/plugins/info/1.0/woocommerce.json' | jq -r '.version')
-          LATEST_WC=$(echo "$LATEST_WC_FULL" | cut -d. -f1,2)
-          echo "Latest WooCommerce version: $LATEST_WC_FULL → $LATEST_WC"
+          # Fetch latest WooCommerce version (X.Y.Z)
+          LATEST_WC=$(curl -s 'https://api.wordpress.org/plugins/info/1.0/woocommerce.json' | jq -r '.version')
+          echo "Latest WooCommerce version: $LATEST_WC"
 
           # Update Tested up to (WordPress) in facebook-for-woocommerce.php
           sed -i -E "s/^ \* Tested up to:.*/ \* Tested up to: $LATEST_WP/" "facebook-for-woocommerce.php"
