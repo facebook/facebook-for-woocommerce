@@ -188,9 +188,6 @@ class WC_Facebookcommerce extends WooCommerce\Facebook\Framework\Plugin {
 	public function init() {
 		add_action( 'init', array( $this, 'get_integration' ) );
 
-		add_action( 'woocommerce_init', array( $this, 'add_whatsapp_consent_block_checkout_fields' ) );
-		add_filter( 'woocommerce_checkout_fields', array( $this, 'add_whatsapp_consent_classic_checkout_fields' ) );
-
 		// Hook the setup task. The hook admin_init is not triggered when the WC fetches the tasks using the endpoint: wp-json/wc-admin/onboarding/tasks and hence hooking into init.
 		add_action( 'init', array( $this, 'add_setup_task' ), 20 );
 		add_action( 'admin_notices', array( $this, 'add_inbox_notes' ) );
@@ -795,61 +792,6 @@ class WC_Facebookcommerce extends WooCommerce\Facebook\Framework\Plugin {
 			$current_screen_id = $current_screen->id;
 		}
 		return $current_screen_id;
-	}
-
-	/**
-	 * Add blocks checkout fields to collect whatsapp consent if consent collection is enabled
-	 *
-	 * @since 2.3.0
-	 *
-	 * @param array $fields
-	 *
-	 * @return array
-	 */
-	public function add_whatsapp_consent_block_checkout_fields( $fields ) {
-		if ( get_option( 'wc_facebook_whatsapp_consent_collection_setting_status', 'disabled' ) === 'enabled' ) {
-			woocommerce_register_additional_checkout_field(
-				array(
-					'id'            => 'wc_facebook/whatsapp_consent_checkbox', // id = namespace/field_name
-					'label'         => esc_html( 'Get order updates on WhatsApp' ),
-					'location'      => 'address',
-					'type'          => 'checkbox',
-					'optionalLabel' => esc_html( 'Get order updates on WhatsApp' ),
-				)
-			);
-		}
-		return $fields;
-	}
-
-	/**
-	 * Add classic checkout fields to collect whatsapp consent if consent collection is enabled
-	 *
-	 * @since 2.3.0
-	 *
-	 * @param array $fields
-	 *
-	 * @return array
-	 */
-	public function add_whatsapp_consent_classic_checkout_fields( $fields ) {
-		if ( get_option( 'wc_facebook_whatsapp_consent_collection_setting_status', 'disabled' ) === 'enabled' ) {
-				$fields['billing']['billing_whatsapp_consent']   = array(
-					'label'    => esc_html( 'Get order updates on WhatsApp' ),
-					'type'     => 'checkbox',
-					'required' => false,
-					'class'    => array( 'form-row-wide' ),
-					'default'  => true,
-					'priority' => 101,
-				);
-				$fields['shipping']['shipping_whatsapp_consent'] = array(
-					'label'    => esc_html( 'Get order updates on WhatsApp' ),
-					'type'     => 'checkbox',
-					'required' => false,
-					'class'    => array( 'form-row-wide' ),
-					'default'  => true,
-					'priority' => 101,
-				);
-		}
-		return $fields;
 	}
 
 	/**
