@@ -198,7 +198,7 @@ if ( ! class_exists( 'WC_Facebookcommerce_Utils' ) ) :
 				if ( ! $registered ) {
 					if ( ! wp_script_is( $handle, 'registered' ) ) {
 						$version = defined( 'WC_VERSION' ) ? WC_VERSION : false;
-						wp_register_script( $handle, '', array(), $version, true );
+						wp_register_script( $handle, '', array( 'jquery' ), $version, true );
 					}
 					wp_enqueue_script( $handle );
 					$registered = true;

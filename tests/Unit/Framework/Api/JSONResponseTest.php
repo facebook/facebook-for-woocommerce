@@ -173,6 +173,40 @@ class JSONResponseTest extends AbstractWPUnitTestWithOptionIsolationAndSafeFilte
 	}
 
 	/**
+	 * Test that get_api_error_subcode returns the subcode value when present.
+	 */
+	public function test_get_api_error_subcode_returns_value() {
+		$error = [
+			'error' => [
+				'message' => 'Error validating access token',
+				'type' => 'OAuthException',
+				'code' => 190,
+				'error_subcode' => 464,
+				'error_user_msg' => 'User not confirmed',
+			],
+		];
+		$response = $this->get_test_response( $error );
+
+		$this->assertEquals( 464, $response->get_api_error_subcode() );
+	}
+
+	/**
+	 * Test that get_api_error_subcode returns null when subcode is not present.
+	 */
+	public function test_get_api_error_subcode_returns_null_when_missing() {
+		$error = [
+			'error' => [
+				'message' => 'Something went wrong',
+				'type' => 'OAuthException',
+				'code' => 190,
+			],
+		];
+		$response = $this->get_test_response( $error );
+
+		$this->assertNull( $response->get_api_error_subcode() );
+	}
+
+	/**
 	 * Test with empty JSON.
 	 */
 	public function test_response_with_empty_json() {
