@@ -199,7 +199,7 @@
 
 /* Hide product video source fields by default - JavaScript will show the selected one */
 .product-video-source-field {
-	display: none !important;
+	display: none;
 }
 
 /* For variations, only show when .show class is added by JavaScript */

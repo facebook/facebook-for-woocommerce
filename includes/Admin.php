@@ -1392,7 +1392,7 @@ class Admin {
 					$image_source_options[ Products::PRODUCT_IMAGE_SOURCE_MULTIPLE ] = __( 'Add multiple images', 'facebook-for-woocommerce' );
 				}
 
-				woocommerce_wp_radio(
+				woocommerce_wp_select(
 					array(
 						'id'            => "variable_fb_product_image_source$index",
 						'name'          => "variable_fb_product_image_source[$index]",
@@ -1427,7 +1427,7 @@ class Admin {
 				$this->render_facebook_product_images_field( $image_ids_array, $index, $variation->get_id() );
 
 				// Render Facebook Product Video field with radio buttons for variations
-				woocommerce_wp_radio(
+				woocommerce_wp_select(
 					array(
 						'id'            => "variable_fb_product_video_source$index",
 						'name'          => "variable_fb_product_video_source[$index]",
@@ -1446,9 +1446,11 @@ class Admin {
 
 				// Add Choose Video button inline with first radio option
 				?>
-		<p class="form-field product-video-source-field show-if-product-video-source-<?php echo esc_attr( Products::PRODUCT_VIDEO_SOURCE_UPLOAD ); ?>">
-			<button type="button" class="button fb-open-video-library enable-if-sync-enabled" data-variation-index="<?php echo esc_attr( $index ); ?>" data-variation-id="<?php echo esc_attr( $variation->get_id() ); ?>"><?php esc_html_e( 'Choose Video', 'facebook-for-woocommerce' ); ?></button>
-		</p>
+		<div class="product-video-source-container show-if-product-video-source-<?php echo esc_attr( Products::PRODUCT_VIDEO_SOURCE_UPLOAD ); ?>">
+			<button type="button" class="button fb-open-video-library enable-if-sync-enabled" data-variation-index="<?php echo esc_attr( $index ); ?>" data-variation-id="<?php echo esc_attr( $variation->get_id() ); ?>">
+				<?php esc_html_e( 'Choose Video', 'facebook-for-woocommerce' ); ?>
+			</button>
+		</div>
 		<div id="fb_product_video_selected_thumbnails_<?php echo esc_attr( $index ); ?>" class="fb-product-video-thumbnails product-video-source-field <?php echo esc_attr( 'show-if-product-video-source-' . Products::PRODUCT_VIDEO_SOURCE_UPLOAD ); ?>" >
 			<?php
 				$attachment_ids = [];
