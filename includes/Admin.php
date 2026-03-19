@@ -1446,7 +1446,7 @@ class Admin {
 
 				// Add Choose Video button inline with first radio option
 				?>
-		<div class="product-video-source-container show-if-product-video-source-<?php echo esc_attr( Products::PRODUCT_VIDEO_SOURCE_UPLOAD ); ?>">
+		<div class="product-video-source-field product-video-source-container show-if-product-video-source-<?php echo esc_attr( Products::PRODUCT_VIDEO_SOURCE_UPLOAD ); ?>">
 			<button type="button" class="button fb-open-video-library enable-if-sync-enabled" data-variation-index="<?php echo esc_attr( $index ); ?>" data-variation-id="<?php echo esc_attr( $variation->get_id() ); ?>">
 				<?php esc_html_e( 'Choose Video', 'facebook-for-woocommerce' ); ?>
 			</button>
