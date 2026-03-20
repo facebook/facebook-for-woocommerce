@@ -9,6 +9,7 @@
  */
 
 use WooCommerce\Facebook\Events\Event;
+use WooCommerce\Facebook\Events\FacebookSignalsState;
 
 /**
  * Class WC_Facebookcommerce_Pixel
@@ -335,6 +336,8 @@ class WC_Facebookcommerce_Pixel {
 
 		ob_start();
 
+		$is_held = FacebookSignalsState::is_held();
+
 		?>
 			<script <?php echo self::get_script_attributes(); ?>>
 				!function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?
@@ -346,7 +349,25 @@ class WC_Facebookcommerce_Pixel {
 			<!-- WooCommerce Facebook Integration Begin -->
 			<script <?php echo self::get_script_attributes(); ?>>
 
+				<?php echo self::get_facebook_signals_js(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
+
+				<?php if ( $is_held ) : ?>
+				fbq('consent', 'revoke');
+				<?php endif; ?>
+
 				<?php echo $this->get_pixel_init_code(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
+
+				<?php if ( $is_held ) : ?>
+				FacebookSignals.init({
+					held: true,
+					ajaxUrl: <?php echo wp_json_encode( admin_url( 'admin-ajax.php' ) ); ?>,
+					nonce: <?php echo wp_json_encode( wp_create_nonce( 'facebook_release_signals' ) ); ?>,
+					action: 'facebook_release_signals',
+					pixelId: <?php echo wp_json_encode( self::get_pixel_id() ); ?>
+				});
+				<?php else : ?>
+				FacebookSignals.init({ held: false });
+				<?php endif; ?>
 
 				document.addEventListener( 'DOMContentLoaded', function() {
 					// Insert placeholder for events injected when a product is added to the cart through AJAX.
@@ -393,6 +414,162 @@ class WC_Facebookcommerce_Pixel {
 			<?php
 
 			return ob_get_clean();
+	}
+
+
+	/**
+	 * Gets the inline FacebookSignals JS API definition.
+	 *
+	 * @since 3.6.0
+	 *
+	 * @return string JavaScript code defining window.FacebookSignals.
+	 */
+	private static function get_facebook_signals_js() {
+		// phpcs:disable
+		return <<<'JS'
+window.FacebookSignals = window.FacebookSignals || {
+	_held: false,
+	_queue: [],
+	_config: {},
+	_fbclid: (function() {
+		try {
+			var m = window.location.search.match(/[?&]fbclid=([^&]*)/);
+			return m ? decodeURIComponent(m[1]) : null;
+		} catch(e) { return null; }
+	})(),
+
+	init: function(config) {
+		this._config = config || {};
+		this._held = !!config.held;
+	},
+
+	queueEvent: function(eventData) {
+		if (!eventData || !eventData.event_name) return;
+		eventData.event_time = eventData.event_time || Math.floor(Date.now() / 1000);
+		this._queue.push(eventData);
+	},
+
+	trackEvent: function(name, params, userData) {
+		if (this._held) {
+			this.queueEvent({
+				event_name: name,
+				custom_data: params || {},
+				user_data: userData || {},
+				event_id: (params && params.eventID) || null,
+				event_time: Math.floor(Date.now() / 1000)
+			});
+		} else {
+			if (params && params.eventID) {
+				fbq('track', name, params, { eventID: params.eventID });
+			} else {
+				fbq('track', name, params);
+			}
+		}
+	},
+
+	release: function() {
+		var self = this;
+		if (!self._held || !self._config.ajaxUrl) {
+			return Promise.resolve({ success: true, data: { sent_count: 0 } });
+		}
+
+		var payload = JSON.stringify({
+			security: self._config.nonce,
+			events: self._queue,
+			fbclid: self._fbclid
+		});
+
+		// Pass action as a query parameter so WordPress can route the request.
+		var url = self._config.ajaxUrl +
+			(self._config.ajaxUrl.indexOf('?') === -1 ? '?' : '&') +
+			'action=' + encodeURIComponent(self._config.action);
+
+		return new Promise(function(resolve, reject) {
+			var xhr = new XMLHttpRequest();
+			xhr.open('POST', url, true);
+			xhr.setRequestHeader('Content-Type', 'application/json');
+			xhr.onload = function() {
+				if (xhr.status >= 200 && xhr.status < 300) {
+						try {
+							var resp = JSON.parse(xhr.responseText);
+							self._handleReleaseResponse(resp.data || {});
+							resolve(resp);
+						} catch(e) { reject(e); }
+					} else {
+						reject(new Error('Signal release AJAX failed: ' + xhr.status));
+					}
+				};
+			xhr.onerror = function() { reject(new Error('Network error')); };
+			xhr.send(payload);
+		});
+	},
+
+	_handleReleaseResponse: function(data) {
+		// Set attribution cookies from backend response, using the same domain
+		// that the PHP param_builder_server_setup() uses so both paths produce
+		// a single cookie with consistent scoping (e.g. '.example.com').
+		var domainAttr = data.fbp_domain ? ';domain=' + data.fbp_domain : '';
+		if (data.fbp) {
+			document.cookie = '_fbp=' + data.fbp + ';path=/;max-age=7776000' + domainAttr + ';SameSite=Lax';
+		}
+		if (data.fbc) {
+			document.cookie = '_fbc=' + data.fbc + ';path=/;max-age=7776000' + domainAttr + ';SameSite=Lax';
+		}
+
+		// Re-enable the browser signal path so fbevents.js starts firing.
+		fbq('consent', 'grant');
+
+		// Replay queued events via the pixel.
+		var queue = this._queue;
+		for (var i = 0; i < queue.length; i++) {
+			var ev = queue[i];
+			if (ev.event_id) {
+				fbq('track', ev.event_name, ev.custom_data || {}, { eventID: ev.event_id });
+			} else {
+				fbq('track', ev.event_name, ev.custom_data || {});
+			}
+		}
+
+		// Clear the queue and mark signals as active again.
+		this._queue = [];
+		this._held = false;
+	}
+};
+JS;
+		// phpcs:enable
+	}
+
+
+	/**
+	 * Gets JS code that queues an event via FacebookSignals while signals are held.
+	 *
+	 * Captures PII at event-generation time so it's included when events are replayed.
+	 *
+	 * @since 3.6.0
+	 *
+	 * @param string $event_name The event name.
+	 * @param array  $params     Event parameters including custom_data, user_data, event_id.
+	 * @return string JavaScript code.
+	 */
+	public function get_queued_event_code( $event_name, $params ) {
+		$this->last_event = $event_name;
+
+		$queue_data = array(
+			'event_name'  => $event_name,
+			'custom_data' => isset( $params['custom_data'] ) ? $params['custom_data'] : $params,
+			'event_id'    => isset( $params['event_id'] ) ? $params['event_id'] : null,
+			'event_time'  => time(),
+		);
+
+		if ( isset( $params['user_data'] ) ) {
+			$queue_data['user_data'] = $params['user_data'];
+		}
+
+		return sprintf(
+			"/* %s Facebook Integration Event Queueing */\nFacebookSignals.queueEvent(%s);",
+			\WC_Facebookcommerce_Utils::get_integration_name(),
+			wp_json_encode( $queue_data )
+		);
 	}
 
 
@@ -453,7 +630,13 @@ class WC_Facebookcommerce_Pixel {
 		?>
 			<!-- Facebook Pixel Event Code -->
 			<script <?php echo self::get_script_attributes(); ?>>
-			<?php echo $this->get_event_code( $event_name, $params, $method ); ?>
+			<?php
+			if ( FacebookSignalsState::is_held() ) {
+				echo $this->get_queued_event_code( $event_name, $params ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+			} else {
+				echo $this->get_event_code( $event_name, $params, $method ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+			}
+			?>
 			</script>
 			<!-- End Facebook Pixel Event Code -->
 			<?php
@@ -479,8 +662,20 @@ class WC_Facebookcommerce_Pixel {
 	 * phpcs:disable WordPress.Security.EscapeOutput.OutputNotEscaped
 	 */
 	public function inject_event( $event_name, $params, $method = 'track' ) {
-		// Note: We will be adding a consent mechanism that checks user consent
-		// before inject_event() is called.
+		// When signals are held, queue events in the browser instead of firing them.
+		if ( FacebookSignalsState::is_held() ) {
+			$code = $this->get_queued_event_code( $event_name, $params );
+			if ( WC_Facebookcommerce_Utils::is_woocommerce_integration() ) {
+				WC_Facebookcommerce_Utils::enqueue_inline_js( $code );
+			} else {
+				printf(
+					'<!-- Facebook Pixel Event Code --><script %s>%s</script><!-- End Facebook Pixel Event Code -->',
+					self::get_script_attributes(), // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+					$code // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+				);
+			}
+			return;
+		}
 		if ( WC_Facebookcommerce_Utils::is_woocommerce_integration() ) {
 			// Check rollout switch for isolated pixel execution.
 			// When enabled, pixel events are output via external JS file (wp_localize_script)
@@ -497,7 +692,7 @@ class WC_Facebookcommerce_Pixel {
 			if ( $is_isolated_pixel_execution_enabled ) {
 				// Isolated execution: Use external JS via wp_localize_script.
 				// Set last_event here since we don't call get_event_code() in this path.
-				$this->last_event = $event_name;
+				$this->last_event                                      = $event_name;
 				[ 'params' => $event_params, 'event_id' => $event_id ] = self::prepare_event_params( $params, $event_name );
 
 				if ( $is_deferred ) {
@@ -540,8 +735,29 @@ class WC_Facebookcommerce_Pixel {
 		 */
 	public function get_conditional_event_script( $event_name, $params, $listener, $jsonified_pii ) {
 
-		$code             = self::build_event( $event_name, $params, 'track' );
 		$this->last_event = $event_name;
+
+		// When signals are held, use FacebookSignals.trackEvent() to queue the event.
+		if ( FacebookSignalsState::is_held() ) {
+			$user_data_js = $jsonified_pii ? $jsonified_pii : '{}';
+			ob_start();
+			?>
+			<!-- Facebook Pixel Event Code -->
+			<script <?php echo self::get_script_attributes(); ?>>
+				document.addEventListener( '<?php echo esc_js( $listener ); ?>', function (event) {
+					FacebookSignals.trackEvent(
+						<?php echo wp_json_encode( $event_name ); ?>,
+						<?php echo wp_json_encode( $params ); ?>,
+						<?php echo $user_data_js; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
+					);
+				}, false );
+			</script>
+			<!-- End Facebook Pixel Event Code -->
+			<?php
+			return ob_get_clean();
+		}
+
+		$code = self::build_event( $event_name, $params, 'track' );
 
 		/**
 		 * TODO: use the settings stored by {@see \WC_Facebookcommerce_Integration}.
@@ -604,6 +820,24 @@ class WC_Facebookcommerce_Pixel {
 		 * phpcs:disable WordPress.Security.EscapeOutput.OutputNotEscaped
 		 */
 	public function get_conditional_one_time_event_script( $event_name, $params, $listened_event ) {
+
+		// When signals are held, queue via FacebookSignals.trackEvent().
+		if ( FacebookSignalsState::is_held() ) {
+			$this->last_event = $event_name;
+			ob_start();
+			?>
+			<!-- Facebook Pixel Event Code -->
+			<script <?php echo self::get_script_attributes(); ?>>
+				function handle<?php echo $event_name; ?>Event() {
+					FacebookSignals.trackEvent(<?php echo wp_json_encode( $event_name ); ?>, <?php echo wp_json_encode( $params ); ?>);
+					jQuery( document.body ).off( '<?php echo esc_js( $listened_event ); ?>', handle<?php echo $event_name; ?>Event );
+				}
+				jQuery( document.body ).one( '<?php echo esc_js( $listened_event ); ?>', handle<?php echo $event_name; ?>Event );
+			</script>
+			<!-- End Facebook Pixel Event Code -->
+			<?php
+			return ob_get_clean();
+		}
 
 		$code = $this->get_event_code( $event_name, $params );
 

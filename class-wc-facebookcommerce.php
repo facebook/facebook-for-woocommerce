@@ -147,6 +147,12 @@ class WC_Facebookcommerce extends WooCommerce\Facebook\Framework\Plugin {
 	 */
 	private $debug_tools;
 
+	/** @var WooCommerce\Facebook\Signals */
+	private $signals;
+
+	/** @var WooCommerce\Facebook\Events\ReleaseSignalsAjax */
+	private $release_signals_ajax;
+
 	/**
 	 * Constructs the plugin.
 	 *
@@ -207,22 +213,25 @@ class WC_Facebookcommerce extends WooCommerce\Facebook\Framework\Plugin {
 
 			$this->heartbeat = new Heartbeat( WC()->queue() );
 			$this->heartbeat->init();
-			$this->feed_manager                     = new WooCommerce\Facebook\Feed\FeedManager();
-			$this->checkout                         = new WooCommerce\Facebook\Checkout();
-			$this->product_feed                     = new WooCommerce\Facebook\Products\Feed();
-			$this->language_override_feed           = new WooCommerce\Facebook\Feed\Localization\LanguageOverrideFeed();
-			$this->products_stock_handler           = new WooCommerce\Facebook\Products\Stock();
-			$this->products_sync_handler            = new WooCommerce\Facebook\Products\Sync();
-			$this->sync_background_handler          = new WooCommerce\Facebook\Products\Sync\Background();
-			$this->configuration_detection          = new WooCommerce\Facebook\Feed\FeedConfigurationDetection();
-			$this->product_sets_sync_handler        = new WooCommerce\Facebook\ProductSets\ProductSetSync();
-			$this->commerce_handler                 = new WooCommerce\Facebook\Commerce();
-			$this->fb_categories                    = new WooCommerce\Facebook\Products\FBCategories();
-			$this->external_version_update          = new WooCommerce\Facebook\ExternalVersionUpdate\Update();
-			$this->fbcollection_handler             = new WooCommerce\Facebook\CollectionPage();
+			$this->feed_manager              = new WooCommerce\Facebook\Feed\FeedManager();
+			$this->checkout                  = new WooCommerce\Facebook\Checkout();
+			$this->product_feed              = new WooCommerce\Facebook\Products\Feed();
+			$this->language_override_feed    = new WooCommerce\Facebook\Feed\Localization\LanguageOverrideFeed();
+			$this->products_stock_handler    = new WooCommerce\Facebook\Products\Stock();
+			$this->products_sync_handler     = new WooCommerce\Facebook\Products\Sync();
+			$this->sync_background_handler   = new WooCommerce\Facebook\Products\Sync\Background();
+			$this->configuration_detection   = new WooCommerce\Facebook\Feed\FeedConfigurationDetection();
+			$this->product_sets_sync_handler = new WooCommerce\Facebook\ProductSets\ProductSetSync();
+			$this->commerce_handler          = new WooCommerce\Facebook\Commerce();
+			$this->fb_categories             = new WooCommerce\Facebook\Products\FBCategories();
+			$this->external_version_update   = new WooCommerce\Facebook\ExternalVersionUpdate\Update();
+			$this->fbcollection_handler      = new WooCommerce\Facebook\CollectionPage();
 			if ( wp_doing_ajax() ) {
 				$this->ajax = new WooCommerce\Facebook\AJAX();
 			}
+
+			$this->signals              = new WooCommerce\Facebook\Signals();
+			$this->release_signals_ajax = new WooCommerce\Facebook\Events\ReleaseSignalsAjax();
 
 			// Load integrations.
 			new WooCommerce\Facebook\WPMLInjector();
@@ -244,9 +253,9 @@ class WC_Facebookcommerce extends WooCommerce\Facebook\Framework\Plugin {
 			$this->whatsapp_connection_handler = new WooCommerce\Facebook\Handlers\WhatsAppConnection( $this );
 			new WooCommerce\Facebook\Handlers\WhatsAppExtension();
 			new WooCommerce\Facebook\Handlers\MetaExtension();
-			$this->webhook_handler          = new WooCommerce\Facebook\Handlers\WebHook();
-			$this->tracker                  = new WooCommerce\Facebook\Utilities\Tracker();
-			$this->rollout_switches         = new WooCommerce\Facebook\RolloutSwitches( $this );
+			$this->webhook_handler  = new WooCommerce\Facebook\Handlers\WebHook();
+			$this->tracker          = new WooCommerce\Facebook\Utilities\Tracker();
+			$this->rollout_switches = new WooCommerce\Facebook\RolloutSwitches( $this );
 
 			// Init jobs
 			$this->job_manager = new WooCommerce\Facebook\Jobs\JobManager();
@@ -525,6 +534,17 @@ class WC_Facebookcommerce extends WooCommerce\Facebook\Framework\Plugin {
 	}
 
 	/**
+	 * Gets the signals handler.
+	 *
+	 * @since 3.6.0
+	 *
+	 * @return WooCommerce\Facebook\Signals
+	 */
+	public function get_signals_handler() {
+		return $this->signals;
+	}
+
+	/**
 	 * Gets the connection handler.
 	 *
 	 * @since 2.0.0
@@ -740,7 +760,7 @@ class WC_Facebookcommerce extends WooCommerce\Facebook\Framework\Plugin {
 	 */
 	public function is_plugin_settings() {
 		$page_value = Helper::get_requested_value( 'page' );
-		return is_admin() && in_array( $page_value, [ WooCommerce\Facebook\Admin\Settings::PAGE_ID, WooCommerce\Facebook\Admin\WhatsApp_Integration_Settings::PAGE_ID ] );
+		return is_admin() && in_array( $page_value, [ WooCommerce\Facebook\Admin\Settings::PAGE_ID, WooCommerce\Facebook\Admin\WhatsApp_Integration_Settings::PAGE_ID ], true );
 	}
 
 	/** Utility methods *******************************************************************************************/
