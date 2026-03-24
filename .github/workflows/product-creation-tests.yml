@@ -108,7 +108,7 @@ jobs:
       wc-supported: ${{ steps.versions.outputs.wc-supported }}
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Read tested up to versions from plugin file
         id: versions
@@ -154,7 +154,7 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -723,7 +723,7 @@ jobs:
           fi
 
       - name: Upload test results
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         if: always()
         with:
           name: playwright-report-${{ matrix.version-label }}-${{ matrix.test-group }}
@@ -731,8 +731,8 @@ jobs:
           retention-days: 7
 
       - name: Upload captured events
-        uses: actions/upload-artifact@v4
-        if: always() && matrix.test-group == 'plugin-events'
+        uses: actions/upload-artifact@v5
+        if: always()
         with:
           name: captured-events-${{ matrix.version-label }}
           path: ${{ env.PLUGIN_PATH }}${{ env.FB_E2E_CAPTURED_EVENTS_DIR }}
@@ -750,7 +750,7 @@ jobs:
           fi
 
       - name: Upload PHP logs
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         if: always()
         with:
           name: php-debug-logs-${{ matrix.version-label }}-${{ matrix.test-group }}
@@ -758,7 +758,7 @@ jobs:
           retention-days: 7
 
       - name: Upload WooCommerce logs
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         if: always()
         with:
           name: woocommerce-logs-${{ matrix.version-label }}-${{ matrix.test-group }}
@@ -766,7 +766,7 @@ jobs:
           retention-days: 7
 
       - name: Upload test videos/screenshots
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         if: failure()
         with:
           name: test-failures-${{ matrix.version-label }}-${{ matrix.test-group }}
