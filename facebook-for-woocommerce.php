@@ -524,7 +524,8 @@ class WC_Facebook_Loader {
 
 		$host = wp_parse_url( $url, PHP_URL_HOST );
 
-		return $host && str_ends_with( $host, '.' . self::PLUGIN_NAME_DNS );
+		$suffix = '.' . self::PLUGIN_NAME_DNS;
+		return $host && substr( $host, -strlen( $suffix ) ) === $suffix;
 	}
 
 
