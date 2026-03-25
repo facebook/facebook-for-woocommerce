@@ -694,13 +694,10 @@ class API extends Base {
 	/**
 	 * Sends Pixel events.
 	 *
-	 * By default, the request is non-blocking to avoid adding 2-3+ seconds of
-	 * latency to page generation. The response is not needed for rendering the
-	 * page, so this is a safe fire-and-forget operation.
-	 *
-	 * Use the {@see 'wc_facebook_pixel_events_blocking'} filter to force
-	 * blocking mode when response inspection is required (e.g. debugging,
-	 * E2E test logging).
+	 * By default, the request is blocking (preserving existing behaviour).
+	 * Use the {@see 'wc_facebook_pixel_events_non_blocking'} filter to send
+	 * the request asynchronously, which avoids adding 2-3+ seconds of latency
+	 * to page generation at the cost of losing response introspection.
 	 *
 	 * @since 2.0.0
 	 *
@@ -713,45 +710,46 @@ class API extends Base {
 		$request = new API\Pixel\Events\Request( $pixel_id, $events );
 
 		/**
-		 * Filters whether the Pixel event API request should block page generation.
+		 * Filters whether the Pixel event API request should be non-blocking.
 		 *
-		 * When false (default), the request is sent asynchronously and the page is
-		 * not delayed. Set to true to wait for the response — useful for debugging
-		 * or when E2E test logging needs the API response.
+		 * When true, the HTTP request is sent asynchronously and does not delay
+		 * page generation. The trade-off is that API response data (rate-limit
+		 * headers, validation errors, event-match-quality feedback) is not
+		 * available.
 		 *
 		 * @since 3.6.1
 		 *
-		 * @param bool $blocking Whether the request should be blocking. Default false.
+		 * @param bool $non_blocking Whether the request should be non-blocking. Default false.
 		 */
-		$blocking = (bool) apply_filters( 'wc_facebook_pixel_events_blocking', false );
+		$non_blocking = (bool) apply_filters( 'wc_facebook_pixel_events_non_blocking', false );
 
-		if ( $blocking ) {
-			$this->set_response_handler( Response::class );
+		if ( $non_blocking ) {
+			// Non-blocking: fire-and-forget via wp_safe_remote_post().
+			wp_safe_remote_post(
+				$this->request_uri . "/{$pixel_id}/events",
+				array(
+					'timeout'   => 0.01,
+					'blocking'  => false,
+					'sslverify' => true,
+					'headers'   => array(
+						'Authorization' => "Bearer {$this->access_token}",
+						'Content-Type'  => 'application/json',
+					),
+					'body'      => $request->to_string(),
+				)
+			);
 
-			$response = $this->perform_request( $request );
-
-			// Log to E2E test framework (requires a parsed response).
-			$this->log_events_for_tests( $response, $request );
-
-			return $response;
+			return null;
 		}
 
-		// Non-blocking: fire-and-forget via wp_safe_remote_post().
-		wp_safe_remote_post(
-			$this->request_uri . "/{$pixel_id}/events",
-			array(
-				'timeout'   => 0.01,
-				'blocking'  => false,
-				'sslverify' => true,
-				'headers'   => array(
-					'Authorization' => "Bearer {$this->access_token}",
-					'Content-Type'  => 'application/json',
-				),
-				'body'      => $request->to_string(),
-			)
-		);
+		$this->set_response_handler( Response::class );
 
-		return null;
+		$response = $this->perform_request( $request );
+
+		// Log to E2E test framework (requires a parsed response).
+		$this->log_events_for_tests( $response, $request );
+
+		return $response;
 	}
 
 	/**

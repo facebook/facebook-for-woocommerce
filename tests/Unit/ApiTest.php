@@ -948,12 +948,54 @@ class ApiTest extends \WooCommerce\Facebook\Tests\AbstractWPUnitTestWithSafeFilt
 	}
 
 	/**
-	 * Tests that send_pixel_events sends a non-blocking request by default.
+	 * Tests that send_pixel_events sends a blocking request by default.
+	 *
+	 * @return void
+	 * @throws ApiException In case of a general API error or rate limit error.
+	 */
+	public function test_send_pixel_events_is_blocking_by_default() {
+		$pixel_id = '1964583793745557';
+
+		$response = function ( $result, $parsed_args, $url ) use ( $pixel_id ) {
+			$this->assertStringContainsString( "/{$pixel_id}/events", $url );
+			$this->assertTrue( $parsed_args['blocking'] );
+			return [
+				'body'     => '{"events_received":1}',
+				'response' => [
+					'code'    => 200,
+					'message' => 'OK',
+				],
+			];
+		};
+		$this->add_filter_with_safe_teardown( 'pre_http_request', $response, 10, 3 );
+
+		$event = $this->createMock( \WooCommerce\Facebook\Events\Event::class );
+		$event->method( 'get_data' )->willReturn(
+			[
+				'event_name' => 'ViewContent',
+				'event_time' => time(),
+			]
+		);
+
+		$result = $this->api->send_pixel_events( $pixel_id, [ $event ] );
+
+		$this->assertNotNull( $result );
+	}
+
+	/**
+	 * Tests that send_pixel_events sends a non-blocking request when filter is set.
 	 *
 	 * @return void
 	 */
-	public function test_send_pixel_events_is_non_blocking_by_default() {
+	public function test_send_pixel_events_is_non_blocking_when_filter_enabled() {
 		$pixel_id = '1964583793745557';
+
+		$this->add_filter_with_safe_teardown(
+			'wc_facebook_pixel_events_non_blocking',
+			function () {
+				return true;
+			}
+		);
 
 		$response = function ( $result, $parsed_args, $url ) use ( $pixel_id ) {
 			$this->assertEquals( 'POST', $parsed_args['method'] );
@@ -982,48 +1024,6 @@ class ApiTest extends \WooCommerce\Facebook\Tests\AbstractWPUnitTestWithSafeFilt
 		$result = $this->api->send_pixel_events( $pixel_id, [ $event ] );
 
 		$this->assertNull( $result );
-	}
-
-	/**
-	 * Tests that send_pixel_events sends a blocking request when filter is set.
-	 *
-	 * @return void
-	 * @throws ApiException In case of a general API error or rate limit error.
-	 */
-	public function test_send_pixel_events_is_blocking_when_filter_enabled() {
-		$pixel_id = '1964583793745557';
-
-		$this->add_filter_with_safe_teardown(
-			'wc_facebook_pixel_events_blocking',
-			function () {
-				return true;
-			}
-		);
-
-		$response = function ( $result, $parsed_args, $url ) use ( $pixel_id ) {
-			$this->assertStringContainsString( "/{$pixel_id}/events", $url );
-			$this->assertTrue( $parsed_args['blocking'] );
-			return [
-				'body'     => '{"events_received":1}',
-				'response' => [
-					'code'    => 200,
-					'message' => 'OK',
-				],
-			];
-		};
-		$this->add_filter_with_safe_teardown( 'pre_http_request', $response, 10, 3 );
-
-		$event = $this->createMock( \WooCommerce\Facebook\Events\Event::class );
-		$event->method( 'get_data' )->willReturn(
-			[
-				'event_name' => 'ViewContent',
-				'event_time' => time(),
-			]
-		);
-
-		$result = $this->api->send_pixel_events( $pixel_id, [ $event ] );
-
-		$this->assertNotNull( $result );
 	}
 
 	/**
