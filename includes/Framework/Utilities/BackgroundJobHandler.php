@@ -102,11 +102,18 @@ abstract class BackgroundJobHandler extends AsyncRequest {
 	 * Dispatch
 	 *
 	 * @since 4.4.0
-	 * @return array|\WP_Error
+	 * @return array|\WP_Error|null Null when async requests are disabled.
 	 */
 	public function dispatch() {
 		// schedule the cron healthcheck
 		$this->schedule_event();
+
+		// Respect the action_scheduler_use_async_request_runner filter.
+		// When async HTTP loopback requests are disabled (e.g., server-side cron setups),
+		// skip dispatching and rely on the cron healthcheck to process jobs.
+		if ( ! $this->is_async_request_allowed() ) {
+			return null;
+		}
 
 		// perform remote post
 		return parent::dispatch();
@@ -955,6 +962,14 @@ abstract class BackgroundJobHandler extends AsyncRequest {
 			$this->clear_scheduled_event();
 			exit;
 		}
+
+		// When async HTTP requests are disabled, process jobs directly
+		// in the current cron context instead of dispatching a new HTTP request.
+		if ( ! $this->is_async_request_allowed() ) {
+			$this->handle();
+			exit;
+		}
+
 		$this->dispatch();
 	}
 
@@ -1131,6 +1146,31 @@ abstract class BackgroundJobHandler extends AsyncRequest {
 
 
 	/** Helper Methods ********************************************************/
+
+
+	/**
+	 * Check whether async HTTP loopback requests are allowed.
+	 *
+	 * Respects the `action_scheduler_use_async_request_runner` filter, which site
+	 * administrators can use to disable async HTTP loopback requests (e.g., when
+	 * using server-side cron with DISABLE_WP_CRON). When disabled, background
+	 * jobs are processed directly within WP Cron instead of via loopback HTTP.
+	 *
+	 * @since 3.5.19
+	 * @return bool True if async HTTP requests are allowed, false otherwise.
+	 */
+	protected function is_async_request_allowed() {
+		/**
+		 * Filter whether async HTTP loopback requests should be used for background processing.
+		 *
+		 * This reuses Action Scheduler's filter so that site administrators have a single
+		 * control point for disabling all async HTTP loopback requests.
+		 *
+		 * @since 3.5.19
+		 * @param bool $allow Whether to allow async HTTP requests. Default true.
+		 */
+		return (bool) apply_filters( 'action_scheduler_use_async_request_runner', true );
+	}
 
 
 	/**

@@ -407,6 +407,79 @@ class BackgroundJobHandlerTest extends AbstractWPUnitTestWithOptionIsolationAndS
 	}
 
 	// ==========================================================================
+	// Tests for is_async_request_allowed() / dispatch behavior
+	// ==========================================================================
+
+	/**
+	 * Test that is_async_request_allowed() returns true by default
+	 */
+	public function test_is_async_request_allowed_returns_true_by_default() {
+		$result = $this->invokeMethod( $this->handler, 'is_async_request_allowed' );
+		$this->assertTrue( $result, 'Async requests should be allowed by default' );
+	}
+
+	/**
+	 * Test that is_async_request_allowed() respects action_scheduler_use_async_request_runner filter
+	 */
+	public function test_is_async_request_allowed_respects_filter() {
+		add_filter( 'action_scheduler_use_async_request_runner', '__return_false' );
+
+		$result = $this->invokeMethod( $this->handler, 'is_async_request_allowed' );
+		$this->assertFalse( $result, 'Async requests should be disabled when filter returns false' );
+
+		remove_filter( 'action_scheduler_use_async_request_runner', '__return_false' );
+	}
+
+	/**
+	 * Test that dispatch() skips HTTP request when async is disabled
+	 */
+	public function test_dispatch_skips_http_when_async_disabled() {
+		// Track HTTP requests
+		$http_requests = [];
+		add_filter(
+			'pre_http_request',
+			function ( $_preempt, $args, $url ) use ( &$http_requests ) {
+				$http_requests[] = $url;
+				return [ 'headers' => [], 'body' => '', 'response' => [ 'code' => 200, 'message' => 'OK' ], 'cookies' => [], 'filename' => '' ];
+			},
+			10,
+			3
+		);
+
+		// Disable async requests
+		add_filter( 'action_scheduler_use_async_request_runner', '__return_false' );
+
+		$result = $this->handler->dispatch();
+
+		$this->assertNull( $result, 'dispatch() should return null when async is disabled' );
+		$this->assertEmpty( $http_requests, 'No HTTP requests should be made when async is disabled' );
+
+		remove_filter( 'action_scheduler_use_async_request_runner', '__return_false' );
+	}
+
+	/**
+	 * Test that dispatch() sends HTTP request when async is enabled
+	 */
+	public function test_dispatch_sends_http_when_async_enabled() {
+		// Track HTTP requests
+		$http_requests = [];
+		add_filter(
+			'pre_http_request',
+			function ( $_preempt, $args, $url ) use ( &$http_requests ) {
+				$http_requests[] = $url;
+				return [ 'headers' => [], 'body' => '', 'response' => [ 'code' => 200, 'message' => 'OK' ], 'cookies' => [], 'filename' => '' ];
+			},
+			10,
+			3
+		);
+
+		$result = $this->handler->dispatch();
+
+		$this->assertNotNull( $result, 'dispatch() should return a result when async is enabled' );
+		$this->assertNotEmpty( $http_requests, 'HTTP request should be made when async is enabled' );
+	}
+
+	// ==========================================================================
 	// Tests for invalidate_queue_cache() method
 	// ==========================================================================
 
