@@ -694,24 +694,64 @@ class API extends Base {
 	/**
 	 * Sends Pixel events.
 	 *
+	 * By default, the request is non-blocking to avoid adding 2-3+ seconds of
+	 * latency to page generation. The response is not needed for rendering the
+	 * page, so this is a safe fire-and-forget operation.
+	 *
+	 * Use the {@see 'wc_facebook_pixel_events_blocking'} filter to force
+	 * blocking mode when response inspection is required (e.g. debugging,
+	 * E2E test logging).
+	 *
 	 * @since 2.0.0
 	 *
 	 * @param string  $pixel_id pixel ID
 	 * @param Event[] $events events to send
-	 * @return Response
-	 * @throws ApiException In case of a general API error or rate limit error.
+	 * @return Response|null Response object when blocking, null when non-blocking.
+	 * @throws ApiException In case of a general API error or rate limit error (blocking mode only).
 	 */
 	public function send_pixel_events( $pixel_id, array $events ) {
 		$request = new API\Pixel\Events\Request( $pixel_id, $events );
 
-		$this->set_response_handler( Response::class );
+		/**
+		 * Filters whether the Pixel event API request should block page generation.
+		 *
+		 * When false (default), the request is sent asynchronously and the page is
+		 * not delayed. Set to true to wait for the response — useful for debugging
+		 * or when E2E test logging needs the API response.
+		 *
+		 * @since 3.6.1
+		 *
+		 * @param bool $blocking Whether the request should be blocking. Default false.
+		 */
+		$blocking = (bool) apply_filters( 'wc_facebook_pixel_events_blocking', false );
 
-		$response = $this->perform_request( $request );
+		if ( $blocking ) {
+			$this->set_response_handler( Response::class );
 
-		// Log to E2E test framework
-		$this->log_events_for_tests( $response, $request );
+			$response = $this->perform_request( $request );
 
-		return $response;
+			// Log to E2E test framework (requires a parsed response).
+			$this->log_events_for_tests( $response, $request );
+
+			return $response;
+		}
+
+		// Non-blocking: fire-and-forget via wp_safe_remote_post().
+		wp_safe_remote_post(
+			$this->request_uri . "/{$pixel_id}/events",
+			array(
+				'timeout'   => 0.01,
+				'blocking'  => false,
+				'sslverify' => true,
+				'headers'   => array(
+					'Authorization' => "Bearer {$this->access_token}",
+					'Content-Type'  => 'application/json',
+				),
+				'body'      => $request->to_string(),
+			)
+		);
+
+		return null;
 	}
 
 	/**
