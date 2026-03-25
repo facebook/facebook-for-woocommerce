@@ -554,15 +554,24 @@ JS;
 	public function get_queued_event_code( $event_name, $params ) {
 		$this->last_event = $event_name;
 
-		$queue_data = array(
-			'event_name'  => $event_name,
-			'custom_data' => isset( $params['custom_data'] ) ? $params['custom_data'] : $params,
-			'event_id'    => isset( $params['event_id'] ) ? $params['event_id'] : null,
-			'event_time'  => time(),
-		);
+		$event_id   = isset( $params['event_id'] ) ? $params['event_id'] : null;
+		$queue_data = ! empty( $event_id ) ? FacebookSignalsState::get_queued_event( $event_id ) : null;
 
-		if ( isset( $params['user_data'] ) ) {
-			$queue_data['user_data'] = $params['user_data'];
+		if ( ! is_array( $queue_data ) ) {
+			$queue_data = array(
+				'event_name'  => $event_name,
+				'custom_data' => isset( $params['custom_data'] ) ? $params['custom_data'] : $params,
+				'event_id'    => $event_id,
+				'event_time'  => time(),
+			);
+
+			if ( isset( $params['user_data'] ) ) {
+				$queue_data['user_data'] = $params['user_data'];
+			}
+		}
+
+		if ( empty( $queue_data['event_name'] ) ) {
+			$queue_data['event_name'] = $event_name;
 		}
 
 		return sprintf(

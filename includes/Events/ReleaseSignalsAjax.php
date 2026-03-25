@@ -121,28 +121,7 @@ class ReleaseSignalsAjax {
 				? $this->sanitize_user_data( $event_data['user_data'] )
 				: array();
 
-			if ( ! empty( $fbc ) ) {
-				$user_data['click_id'] = $fbc;
-			}
-			if ( ! empty( $fbp ) ) {
-				$user_data['browser_id'] = $fbp;
-			}
-
-			$server_event_data = array(
-				'event_name'  => sanitize_text_field( $event_data['event_name'] ),
-				'custom_data' => isset( $event_data['custom_data'] ) && is_array( $event_data['custom_data'] )
-					? $this->sanitize_custom_data( $event_data['custom_data'] )
-					: array(),
-				'user_data'   => $user_data,
-			);
-
-			if ( ! empty( $event_data['event_id'] ) ) {
-				$server_event_data['event_id'] = sanitize_text_field( $event_data['event_id'] );
-			}
-
-			if ( ! empty( $event_data['event_time'] ) ) {
-				$server_event_data['event_time'] = absint( $event_data['event_time'] );
-			}
+			$server_event_data = $this->build_server_event_data( $event_data, $user_data, $fbc, $fbp );
 
 			$event = new Event( $server_event_data );
 
@@ -222,7 +201,21 @@ class ReleaseSignalsAjax {
 	 * @return array
 	 */
 	private function sanitize_user_data( $data ) {
-		$allowed_keys = array( 'em', 'fn', 'ln', 'ph', 'ct', 'st', 'zp', 'country', 'external_id' );
+		$allowed_keys = array(
+			'em',
+			'fn',
+			'ln',
+			'ph',
+			'ct',
+			'st',
+			'zp',
+			'country',
+			'external_id',
+			'click_id',
+			'browser_id',
+			'client_ip_address',
+			'client_user_agent',
+		);
 		$sanitized    = array();
 		foreach ( $data as $key => $value ) {
 			$key = sanitize_text_field( $key );
@@ -231,5 +224,53 @@ class ReleaseSignalsAjax {
 			}
 		}
 		return $sanitized;
+	}
+
+	/**
+	 * Builds a sanitized event payload for CAPI delivery.
+	 *
+	 * @param array       $event_data Raw event data from the queue.
+	 * @param array       $user_data Sanitized user data.
+	 * @param string|null $fbc Attribution click ID.
+	 * @param string|null $fbp Attribution browser ID.
+	 * @return array
+	 */
+	private function build_server_event_data( $event_data, $user_data, $fbc, $fbp ) {
+		if ( ! empty( $fbc ) ) {
+			$user_data['click_id'] = $fbc;
+		}
+		if ( ! empty( $fbp ) ) {
+			$user_data['browser_id'] = $fbp;
+		}
+
+		$server_event_data = array(
+			'event_name'  => sanitize_text_field( $event_data['event_name'] ),
+			'custom_data' => isset( $event_data['custom_data'] ) && is_array( $event_data['custom_data'] )
+				? $this->sanitize_custom_data( $event_data['custom_data'] )
+				: array(),
+			'user_data'   => $user_data,
+		);
+
+		if ( ! empty( $event_data['action_source'] ) ) {
+			$server_event_data['action_source'] = sanitize_text_field( $event_data['action_source'] );
+		}
+
+		if ( ! empty( $event_data['event_source_url'] ) ) {
+			$server_event_data['event_source_url'] = esc_url_raw( $event_data['event_source_url'] );
+		}
+
+		if ( ! empty( $event_data['referrer_url'] ) ) {
+			$server_event_data['referrer_url'] = esc_url_raw( $event_data['referrer_url'] );
+		}
+
+		if ( ! empty( $event_data['event_id'] ) ) {
+			$server_event_data['event_id'] = sanitize_text_field( $event_data['event_id'] );
+		}
+
+		if ( ! empty( $event_data['event_time'] ) ) {
+			$server_event_data['event_time'] = absint( $event_data['event_time'] );
+		}
+
+		return $server_event_data;
 	}
 }

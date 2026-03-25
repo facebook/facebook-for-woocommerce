@@ -25,6 +25,9 @@ class FacebookSignalsState {
 	/** @var bool Whether signals are currently held for this request. */
 	private static $held = false;
 
+	/** @var array<string, array> Queued CAPI events keyed by event ID. */
+	private static $queued_events = array();
+
 	/** @var array Attribution data captured while signals are held (e.g. fbclid). */
 	private static $attribution_data = array();
 
@@ -40,6 +43,30 @@ class FacebookSignalsState {
 	 */
 	public static function release() {
 		self::$held = false;
+	}
+
+	/**
+	 * Queue a CAPI event for release when signals are unheld.
+	 *
+	 * @param Event $event Event to queue.
+	 */
+	public static function queue_event( Event $event ) {
+		$event_id = $event->get_id();
+		if ( empty( $event_id ) ) {
+			return;
+		}
+
+		self::$queued_events[ $event_id ] = $event->get_data();
+	}
+
+	/**
+	 * Get a queued CAPI event by event ID.
+	 *
+	 * @param string $event_id Event ID.
+	 * @return array|null
+	 */
+	public static function get_queued_event( $event_id ) {
+		return isset( self::$queued_events[ $event_id ] ) ? self::$queued_events[ $event_id ] : null;
 	}
 
 	/**

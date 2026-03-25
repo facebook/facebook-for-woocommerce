@@ -1310,6 +1310,7 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 			// Skip CAPI sends for frontend requests while signals are held.
 			// Backend/cron events (e.g. admin order status changes) still fire.
 			if ( FacebookSignalsState::is_held() && ! is_admin() && ! wp_doing_cron() ) {
+				FacebookSignalsState::queue_event( $event );
 				return;
 			}
 
