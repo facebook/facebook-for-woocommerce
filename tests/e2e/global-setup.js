@@ -82,11 +82,15 @@ async function globalSetup() {
   const adminAuthPath = './tests/e2e/.auth/admin.json';
   const customerAuthPath = './tests/e2e/.auth/customer.json';
 
-  // Bump wp_posts auto-increment to a random high number so each test run
-  // creates products with unique IDs that won't collide with stale Facebook catalog data.
+  // Bump auto-increment to random high numbers so each test run creates
+  // products and categories with unique IDs that won't collide with stale Facebook catalog data.
   const startId = Math.floor(Math.random() * 900000) + 100000;
+  const termStartId = Math.floor(Math.random() * 900000) + 100000;
   await execWP(`global \\$wpdb; \\$wpdb->query('ALTER TABLE ' . \\$wpdb->posts . ' AUTO_INCREMENT = ${startId}');`);
   console.log(`🔢 Set wp_posts AUTO_INCREMENT to ${startId}`);
+  await execWP(`global \\$wpdb; \\$wpdb->query('ALTER TABLE ' . \\$wpdb->terms . ' AUTO_INCREMENT = ${termStartId}');`);
+  await execWP(`global \\$wpdb; \\$wpdb->query('ALTER TABLE ' . \\$wpdb->term_taxonomy . ' AUTO_INCREMENT = ${termStartId}');`);
+  console.log(`🔢 Set wp_terms/wp_term_taxonomy AUTO_INCREMENT to ${termStartId}`);
 
   // Check if both auth files already exist
   const adminExists = fs.existsSync(adminAuthPath);

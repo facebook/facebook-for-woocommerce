@@ -12,6 +12,7 @@ on:
 permissions:
   contents: write
   pull-requests: write
+  issues: write
 
 jobs:
   prepare-release:
@@ -186,6 +187,148 @@ jobs:
           sed -i -E "s/^Tested up to:.*$/Tested up to: $LATEST_WP/" "readme.txt"
 
           git diff
+
+      - name: Check for WP/WC deprecations affecting the plugin
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # 1. Fetch latest versions (same as previous step)
+          LATEST_WP_FULL=$(curl -s 'https://api.wordpress.org/core/version-check/1.7/' | jq -r '.offers[0].version')
+          LATEST_WP=$(echo "$LATEST_WP_FULL" | cut -d. -f1,2)
+          LATEST_WC_FULL=$(curl -s 'https://api.wordpress.org/plugins/info/1.0/woocommerce.json' | jq -r '.version')
+          LATEST_WC=$(echo "$LATEST_WC_FULL" | cut -d. -f1,2)
+          echo "🔍 Checking deprecations for WP $LATEST_WP / WC $LATEST_WC"
+
+          # 2. Fetch release notes
+          # WooCommerce: from GitHub releases API
+          WC_NOTES=$(curl -s -H "Authorization: token $GH_TOKEN" \
+            "https://api.github.com/repos/woocommerce/woocommerce/releases" \
+            | jq -r --arg ver "$LATEST_WC" '[.[] | select(.tag_name | startswith($ver))][0].body // ""')
+
+          # WordPress: from wordpress.org news REST API
+          WP_NOTES=$(curl -s "https://wordpress.org/news/wp-json/wp/v2/posts?search=${LATEST_WP}&per_page=5" \
+            | jq -r '.[].content.rendered // ""' | sed 's/<[^>]*>//g')
+
+          # WooCommerce developer changelog
+          WC_DEV_NOTES=$(curl -s "https://developer.woocommerce.com/wp-json/wp/v2/posts?search=${LATEST_WC}&per_page=10" \
+            | jq -r '.[].content.rendered // ""' 2>/dev/null | sed 's/<[^>]*>//g' || true)
+
+          ALL_NOTES="${WC_NOTES}
+          ${WP_NOTES}
+          ${WC_DEV_NOTES}"
+
+          # 3. Extract deprecation mentions
+          DEPRECATION_LINES=$(echo "$ALL_NOTES" | grep -i "deprecat" || true)
+
+          if [ -z "$DEPRECATION_LINES" ]; then
+            echo "✅ No deprecation mentions found in WP $LATEST_WP / WC $LATEST_WC release notes"
+            exit 0
+          fi
+
+          echo "📋 Found deprecation mentions in release notes:"
+          echo "$DEPRECATION_LINES"
+
+          # 4. Extract function/hook/class names (backtick-wrapped identifiers)
+          DEPRECATED_NAMES=$(echo "$DEPRECATION_LINES" \
+            | grep -oE '`[a-zA-Z_][a-zA-Z0-9_:]*(\(\))?`' \
+            | tr -d '`' | sed 's/()//' | sort -u || true)
+
+          if [ -z "$DEPRECATED_NAMES" ]; then
+            echo "ℹ️ Deprecation mentions found but no specific function/hook names could be extracted"
+            echo "   Review the release notes manually for WP $LATEST_WP / WC $LATEST_WC"
+            exit 0
+          fi
+
+          echo "🔍 Extracted deprecated identifiers:"
+          echo "$DEPRECATED_NAMES"
+
+          # 5. Search plugin codebase for usage of deprecated items
+          AFFECTED=""
+          while IFS= read -r name; do
+            [ -z "$name" ] && continue
+            MATCHES=$(grep -rl --include="*.php" "$name" includes/ facebook-for-woocommerce.php 2>/dev/null || true)
+            if [ -n "$MATCHES" ]; then
+              FILES=$(echo "$MATCHES" | tr '\n' ', ' | sed 's/,$//')
+              AFFECTED="${AFFECTED}- \`${name}\` found in: ${FILES}\n"
+            fi
+          done <<< "$DEPRECATED_NAMES"
+
+          if [ -z "$AFFECTED" ]; then
+            echo "✅ Deprecated items found in release notes but none are used in this plugin"
+            exit 0
+          fi
+
+          echo "⚠️ Found deprecated items used in the plugin:"
+          echo -e "$AFFECTED"
+
+          # 6. Check for existing GH issue
+          ISSUE_TITLE="[Deprecation Check] WP $LATEST_WP / WC $LATEST_WC"
+
+          # Ensure label exists
+          gh label create "deprecation-check" \
+            --description "Tracks deprecated WP/WC usage found during release" \
+            --color "FBCA04" 2>/dev/null || true
+
+          # Check for closed issue (already addressed / false positive)
+          CLOSED_ISSUE=$(gh issue list \
+            --label "deprecation-check" \
+            --search "\"$ISSUE_TITLE\" in:title" \
+            --state closed \
+            --json url \
+            --jq '.[0].url // ""' 2>/dev/null || true)
+
+          if [ -n "$CLOSED_ISSUE" ]; then
+            echo "⚠️ WARNING: Deprecations detected but already addressed in closed issue:"
+            echo "   $CLOSED_ISSUE"
+            echo "   Proceeding with release."
+            exit 0
+          fi
+
+          # Check for open issue (still unaddressed)
+          OPEN_ISSUE=$(gh issue list \
+            --label "deprecation-check" \
+            --search "\"$ISSUE_TITLE\" in:title" \
+            --state open \
+            --json url \
+            --jq '.[0].url // ""' 2>/dev/null || true)
+
+          if [ -n "$OPEN_ISSUE" ]; then
+            echo "❌ Deprecations detected and tracked in open issue:"
+            echo "   $OPEN_ISSUE"
+            echo "   Address the deprecations and close the issue to unblock the release."
+            exit 1
+          fi
+
+          # Create new issue with details
+          BODY_FILE=$(mktemp)
+          cat > "$BODY_FILE" << EOF
+          ## Deprecation Check: WP $LATEST_WP / WC $LATEST_WC
+
+          The following deprecated functions/hooks/classes were found in the plugin codebase:
+
+          $(echo -e "$AFFECTED")
+
+          ### Deprecation context from release notes
+          \`\`\`
+          $(echo "$DEPRECATION_LINES" | head -20)
+          \`\`\`
+
+          ### Action required
+          Review each usage and update the code to use the recommended replacements.
+          Once addressed (or confirmed as false positive), close this issue to allow the release to proceed.
+
+          _This issue was automatically created by the prepare-release workflow._
+          EOF
+
+          NEW_ISSUE_URL=$(gh issue create \
+            --title "$ISSUE_TITLE" \
+            --label "deprecation-check" \
+            --body-file "$BODY_FILE")
+          rm -f "$BODY_FILE"
+
+          echo "❌ Created deprecation tracking issue: $NEW_ISSUE_URL"
+          echo "   Address the deprecations and close the issue to unblock the release."
+          exit 1
 
       - name: Update changelog.txt
         uses: actions/github-script@v7

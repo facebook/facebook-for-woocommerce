@@ -35,6 +35,7 @@ const {
   generateUniqueSKU,
   extractProductIdFromUrl,
   cleanupProduct,
+  cleanupProducts,
   createTestProduct
 } = require('./products/crud');
 
@@ -164,6 +165,7 @@ const products = {
   generateUniqueSKU,
   extractProductIdFromUrl,
   cleanupProduct,
+  cleanupProducts,
   createTestProduct,
   filterProducts,
   clickFirstProduct,
@@ -254,6 +256,7 @@ module.exports = {
   generateUniqueSKU,
   extractProductIdFromUrl,
   cleanupProduct,
+  cleanupProducts,
   createTestProduct,
 
   // Products - Navigation

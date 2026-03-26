@@ -4,6 +4,9 @@
  * This script fires pixel events in an isolated execution context,
  * ensuring events are sent even if other plugins cause JavaScript errors.
  *
+ * Supports WooCommerce Blocks via Store API fetch interception.
+ * The pixel event data is read from the Store API response extensions.
+ *
  * @package FacebookCommerce
  */
 
@@ -124,6 +127,67 @@
         data.eventQueue = [];
     }
 
+    // =========================================================================
+    // WooCommerce Blocks: Store API approach
+    // =========================================================================
+
+    /**
+     * Process pixel event data from Store API response.
+     *
+     * @param {Object} eventData Event data from Store API extensions
+     */
+    function processStoreApiEvent(eventData) {
+        if (!eventData || !eventData.event) {
+            return;
+        }
+
+        var params = eventData.params || {};
+
+        var event = {
+            method: 'track',
+            name: eventData.event,
+            params: params,
+            eventId: params.event_id || null
+        };
+
+        fireEvent(event);
+    }
+
+    /**
+     * Set up fetch interceptor to capture Store API responses.
+     * Only intercepts cart/add-item requests to fire AddToCart pixel events.
+     */
+    function setupFetchInterceptor() {
+        var originalFetch = window.fetch;
+        if (!originalFetch) {
+            return;
+        }
+
+        window.fetch = function() {
+            var args = arguments;
+            var url = args[0];
+
+            // Only intercept add-item requests (not general cart requests)
+            var isAddToCartRequest = typeof url === 'string' &&
+                (url.indexOf('/wc/store/v1/cart/add-item') !== -1 ||
+                 url.indexOf('/wc/store/cart/add-item') !== -1);
+
+            return originalFetch.apply(this, args).then(function(response) {
+                if (isAddToCartRequest && response.ok) {
+                    // Clone response so we can read it without consuming
+                    response.clone().json().then(function(responseData) {
+                        if (responseData && responseData.extensions && responseData.extensions['facebook-for-woocommerce']) {
+                            processStoreApiEvent(responseData.extensions['facebook-for-woocommerce']);
+                        }
+                    }).catch(function(e) {
+                        logWarning('Store API JSON parse error:', e);
+                    });
+                }
+                return response;
+            });
+        };
+    }
+
     /**
      * Initialize pixel event handling.
      *
@@ -131,8 +195,13 @@
      * If not (e.g. consent manager blocking the SDK), uses Object.defineProperty
      * to set a trap on window.fbq — our handler fires automatically the moment
      * fbq is assigned, with zero overhead in between. No polling, no timers.
+     *
+     * Also sets up Store API interceptor for WooCommerce Blocks AJAX AddToCart.
      */
     function init() {
+        // Set up fetch interceptor for WooCommerce Blocks Store API
+        setupFetchInterceptor();
+
         if (typeof fbq === 'function') {
             fireQueuedEvents();
             return;
