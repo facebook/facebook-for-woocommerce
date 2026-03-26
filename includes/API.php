@@ -728,7 +728,6 @@ class API extends Base {
 			wp_safe_remote_post(
 				$this->request_uri . "/{$pixel_id}/events",
 				array(
-					'timeout'   => 0.01,
 					'blocking'  => false,
 					'sslverify' => true,
 					'headers'   => array(
