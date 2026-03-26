@@ -42,7 +42,7 @@ To suggest technical improvements, you can raise an issue on our [Github reposit
 
 == Changelog ==
 
-= 3.6.1 - 2026-03-24 =
+= 3.6.2 - 2026-03-26 =
 
 
 [See changelog for all versions](https://raw.githubusercontent.com/facebook/facebook-for-woocommerce/refs/heads/main/changelog.txt).
