@@ -147,6 +147,16 @@ jobs:
           sed -i -E "s/^  \"version\":[[:space:]]*\"[^\"]*\"[[:space:]]*,/  \"version\": \"$NEW_VERSION\",/" "package.json"
           git diff
 
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Regenerate package-lock.json
+        run: |
+          npm install --package-lock-only
+          git diff --stat
+
       - name: Update composer.json
         env:
           NEW_VERSION: ${{ steps.set_version.outputs.new_version }}
