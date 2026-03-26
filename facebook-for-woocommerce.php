@@ -437,12 +437,35 @@ class WC_Facebook_Loader {
 
 
 	/**
+	 * Checks if the compatibility check feature is enabled via rollout switch.
+	 *
+	 * Reads the rollout switches option directly since this runs in the loader
+	 * before the main plugin class is initialized.
+	 *
+	 * @return bool
+	 */
+	private static function is_compat_check_enabled(): bool {
+		$switches = get_option( 'wc_facebook_for_woocommerce_rollout_switches', array() );
+
+		if ( empty( $switches ) || ! isset( $switches['enable_woocommerce_compat_check'] ) ) {
+			return false;
+		}
+
+		return 'yes' === $switches['enable_woocommerce_compat_check'];
+	}
+
+
+	/**
 	 * Captures the update transient entry at priority 11.
 	 *
 	 * @param mixed $transient The update_plugins transient value.
 	 * @return mixed
 	 */
 	public function compat_capture_entry( $transient ) {
+		if ( ! self::is_compat_check_enabled() ) {
+			return $transient;
+		}
+
 		if ( ! is_object( $transient ) ) {
 			return $transient;
 		}
@@ -475,6 +498,10 @@ class WC_Facebook_Loader {
 	 * @return mixed
 	 */
 	public function compat_verify_entry( $transient ) {
+		if ( ! self::is_compat_check_enabled() ) {
+			return $transient;
+		}
+
 		if ( ! is_object( $transient ) || empty( $transient->checked ) ) {
 			return $transient;
 		}

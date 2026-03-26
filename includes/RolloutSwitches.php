@@ -32,6 +32,7 @@ class RolloutSwitches {
 	public const SWITCH_CONTENT_ID_MIGRATION_ENABLED        = 'enable_woocommerce_content_id_migration';
 	public const SWITCH_LANGUAGE_OVERRIDE_FEED_ENABLED      = 'wooc_language_override_feed';
 	public const SWITCH_ISOLATED_PIXEL_EXECUTION_ENABLED    = 'enable_woocommerce_isolated_pixel_execution';
+	public const SWITCH_COMPAT_CHECK_ENABLED                = 'enable_woocommerce_compat_check';
 	private const SETTINGS_KEY                              = 'wc_facebook_for_woocommerce_rollout_switches';
 	public const CAPI_EVENT_LOGGING_ENABLED                 = 'enable_woocommerce_capi_event_logging';
 
@@ -44,6 +45,7 @@ class RolloutSwitches {
 		self::SWITCH_CONTENT_ID_MIGRATION_ENABLED,
 		self::SWITCH_LANGUAGE_OVERRIDE_FEED_ENABLED,
 		self::SWITCH_ISOLATED_PIXEL_EXECUTION_ENABLED,
+		self::SWITCH_COMPAT_CHECK_ENABLED,
 	);
 
 	public function __construct( \WC_Facebookcommerce $plugin ) {
