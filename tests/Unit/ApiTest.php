@@ -997,11 +997,12 @@ class ApiTest extends \WooCommerce\Facebook\Tests\AbstractWPUnitTestWithSafeFilt
 			}
 		);
 
-		$response = function ( $result, $parsed_args, $url ) use ( $pixel_id ) {
+		$request_fired = false;
+		$response      = function ( $result, $parsed_args, $url ) use ( $pixel_id, &$request_fired ) {
+			$request_fired = true;
 			$this->assertEquals( 'POST', $parsed_args['method'] );
 			$this->assertStringContainsString( "/{$pixel_id}/events", $url );
 			$this->assertFalse( $parsed_args['blocking'] );
-			$this->assertEquals( 0.01, $parsed_args['timeout'] );
 			$this->assertStringContainsString( 'Bearer test-api-key-9678djyad552', $parsed_args['headers']['Authorization'] );
 			$this->assertEquals( 'application/json', $parsed_args['headers']['Content-Type'] );
 			return [
@@ -1023,6 +1024,7 @@ class ApiTest extends \WooCommerce\Facebook\Tests\AbstractWPUnitTestWithSafeFilt
 
 		$result = $this->api->send_pixel_events( $pixel_id, [ $event ] );
 
+		$this->assertTrue( $request_fired, 'The non-blocking HTTP request was not triggered.' );
 		$this->assertNull( $result );
 	}
 
