@@ -128,7 +128,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        test-group: ['plugin-events', 'product-crud', 'product-batch', 'product-category']
+        test-group: ['plugin-events', 'product-crud', 'product-batch', 'product-category', 'theme-compatibility']
         version-set: ['supported', 'latest']
         include:
           - version-set: 'supported'
@@ -279,6 +279,9 @@ jobs:
           # Install Storefront theme (official WooCommerce theme with all hooks)
           wp theme install storefront --activate --allow-root
           echo "✅ Storefront theme installed and activated"
+          # Install Twenty Twenty-Five theme (default WP theme to ensure compatibility with non-WooCommerce themes)
+          wp theme install twentytwentyfive --allow-root
+          echo "✅ Twenty Twenty-Five theme installed"
           if [ "${{ matrix.wc-version }}" = "latest" ]; then
             wp plugin install woocommerce --activate --allow-root
           else
@@ -608,7 +611,13 @@ jobs:
         run: |
           mkdir -p ${{ env.PLUGIN_PATH }}/tests/e2e/captured-events
           chmod 777 ${{ env.PLUGIN_PATH }}/tests/e2e/captured-events
-
+      - name: Run Theme Compatibility tests
+        if: matrix.test-group == 'theme-compatibility'
+        env:
+          IS_LATEST_WP: ${{ matrix.wp-version == 'latest' && 'true' || 'false' }}
+        run: |
+          cd ${{ env.PLUGIN_PATH }}
+          npx playwright test theme-compatibility.spec.js --project=chromium-wp-admin --workers=1
       - name: Create test product for CAPI Pixel E2E tests
         if: matrix.test-group == 'plugin-events'
         run: |
