@@ -929,12 +929,13 @@ if ( ! class_exists( 'WC_Facebookcommerce_Utils' ) ) :
 		 *
 		 * @since 3.1.7
 		 *
-		 * @param \WC_Product $product product object
+		 * @param \WC_Product $product                product object
+		 * @param int|null    $manual_sync_timestamp  Optional timestamp for manual sync
 		 * @return array
 		 */
-		public static function prepare_product_data_items_batch( $product ) {
+		public static function prepare_product_data_items_batch( $product, $manual_sync_timestamp = null ) {
 			$fb_product = new \WC_Facebook_Product( $product->get_id() );
-			$data       = $fb_product->prepare_product( null, \WC_Facebook_Product::PRODUCT_PREP_TYPE_ITEMS_BATCH );
+			$data       = $fb_product->prepare_product( null, \WC_Facebook_Product::PRODUCT_PREP_TYPE_ITEMS_BATCH, $manual_sync_timestamp );
 			// Products that are not variations use their retailer retailer ID as the retailer product group ID
 			$data['item_group_id'] = $data['retailer_id'];
 
@@ -976,11 +977,12 @@ if ( ! class_exists( 'WC_Facebookcommerce_Utils' ) ) :
 		 *
 		 * @since 3.1.7
 		 *
-		 * @param \WC_Product $product product object
+		 * @param \WC_Product $product                product object
+		 * @param int|null    $manual_sync_timestamp  Optional timestamp for manual sync
 		 * @return array
 		 * @throws PluginException In case no product found.
 		 */
-		public static function prepare_product_variation_data_items_batch( $product ) {
+		public static function prepare_product_variation_data_items_batch( $product, $manual_sync_timestamp = null ) {
 			$parent_product = wc_get_product( $product->get_parent_id() );
 
 			if ( ! $parent_product instanceof \WC_Product ) {
@@ -990,7 +992,7 @@ if ( ! class_exists( 'WC_Facebookcommerce_Utils' ) ) :
 			$fb_parent_product = new \WC_Facebook_Product( $parent_product->get_id() );
 			$fb_product        = new \WC_Facebook_Product( $product->get_id(), $fb_parent_product );
 
-			$data = $fb_product->prepare_product( null, \WC_Facebook_Product::PRODUCT_PREP_TYPE_ITEMS_BATCH );
+			$data = $fb_product->prepare_product( null, \WC_Facebook_Product::PRODUCT_PREP_TYPE_ITEMS_BATCH, $manual_sync_timestamp );
 
 			// Product variations use the parent product's retailer ID as the retailer product group ID
 			// $data['retailer_product_group_id'] = \WC_Facebookcommerce_Utils::get_fb_retailer_id( $parent_product );
