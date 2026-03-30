@@ -38,20 +38,13 @@ test.describe.serial('Theme compatibility checks', () => {
     }
   });
 
-  test.beforeEach(async ({ page }, testInfo) => {
-    logTestStart(testInfo);
-    await page.setViewportSize({ width: 1280, height: 720 });
+	test.beforeEach(async ({ page }, testInfo) => {
+	logTestStart(testInfo);
+	await page.setViewportSize({ width: 1280, height: 720 });
 
-    // Use the customer session for frontend event validation so billing-related
-    // user_data is available when events are validated.
-    await page.goto(`${baseURL}/wp-login.php`, {
-	waitUntil: 'domcontentloaded',
-	timeout: TIMEOUTS.EXTRA_LONG,
+	// Admin context for admin checks
+	await loginToWordPress(page);
 	});
-
-    await TestSetup.login(page);
-  });
-
   test.afterAll(async ({ browser }) => {
     const page = await browser.newPage();
 
@@ -239,6 +232,9 @@ test.describe.serial('Theme compatibility checks', () => {
 });
 
 async function runTrackedEventTest({ page, testInfo, eventName, action, expectFbc = false }) {
+  // Switch to customer context only for event validation
+  await TestSetup.login(page);
+
   const { testId, pixelCapture } = await TestSetup.init(page, eventName, testInfo);
 
   const eventPromise = pixelCapture.waitForEvent();
