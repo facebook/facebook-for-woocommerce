@@ -128,7 +128,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        test-group: ['plugin-events', 'product-crud', 'product-batch', 'product-category', 'theme-compatibility']
+        test-group: ['plugin-events', 'product-crud', 'product-batch', 'product-category', 'theme-compatibility', 'performance-sync']
         version-set: ['supported', 'latest']
         include:
           - version-set: 'supported'
@@ -684,6 +684,12 @@ jobs:
         run: |
           cd ${{ env.PLUGIN_PATH }}
           npx playwright test product-category.spec.js --project=chromium-wp-admin --workers=1
+
+      - name: Run Product Stress Sync tests
+        if: matrix.test-group == 'performance-sync'
+        run: |
+          cd ${{ env.PLUGIN_PATH }}
+          npx playwright test performance-sync.spec.js --project=chromium-wp-admin --workers=1
 
       - name: Disconnect from catalog
         if: always()
