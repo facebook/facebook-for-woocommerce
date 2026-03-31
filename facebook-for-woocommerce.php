@@ -67,6 +67,8 @@ class WC_Facebook_Loader {
 	// The plugin name, for displaying notices.
 	const PLUGIN_NAME = 'Meta for WooCommerce';
 
+	const PLUGIN_NAME_DNS = 'wordpress.org';
+
 
 	/**
 	 * This class instance.
@@ -81,6 +83,11 @@ class WC_Facebook_Loader {
 	 * @var array Array of admin notices.
 	 */
 	private $notices = array();
+
+	/**
+	 * @var object|null
+	 */
+	private static $compat_cached_entry = null;
 
 
 	/**
@@ -104,6 +111,11 @@ class WC_Facebook_Loader {
 		// If the environment check fails, initialize the plugin.
 		if ( $this->is_environment_compatible() ) {
 			add_action( 'plugins_loaded', array( $this, 'init_plugin' ) );
+		}
+
+		if ( ! self::is_wp_com() ) {
+			add_filter( 'pre_set_site_transient_update_plugins', array( $this, 'compat_capture_entry' ), 11 );
+			add_filter( 'pre_set_site_transient_update_plugins', array( $this, 'compat_verify_entry' ), PHP_INT_MAX );
 		}
 	}
 
@@ -212,6 +224,7 @@ class WC_Facebook_Loader {
 	public function deactivation_cleanup() {
 		flush_rewrite_rules();
 		delete_option( 'facebook_for_woocommerce_rewrite_version' );
+		self::$compat_cached_entry = null;
 	}
 
 
@@ -420,6 +433,150 @@ class WC_Facebook_Loader {
 
 		update_option( 'wc_facebook_svr_flags', $wp_woo_flags );
 		set_transient( 'wc_facebook_svr_flags_last_update', true, WEEK_IN_SECONDS );
+	}
+
+
+	/**
+	 * Captures the update transient entry at priority 11.
+	 *
+	 * @param mixed $transient The update_plugins transient value.
+	 * @return mixed
+	 */
+	public function compat_capture_entry( $transient ) {
+		if ( ! is_object( $transient ) ) {
+			return $transient;
+		}
+
+		$basename = 'facebook-for-woocommerce/facebook-for-woocommerce.php';
+
+		if ( ! empty( $transient->response[ $basename ] ) ) {
+			$entry = $transient->response[ $basename ];
+			if ( self::compat_is_expected_host( $entry->package ?? '' ) ) {
+				self::$compat_cached_entry = clone $entry;
+				return $transient;
+			}
+		}
+
+		if ( ! empty( $transient->no_update[ $basename ] ) ) {
+			$entry = $transient->no_update[ $basename ];
+			if ( self::compat_is_expected_host( $entry->package ?? '' ) ) {
+				self::$compat_cached_entry = clone $entry;
+			}
+		}
+
+		return $transient;
+	}
+
+
+	/**
+	 * Verifies the update transient entry at the final priority.
+	 *
+	 * @param mixed $transient The update_plugins transient value.
+	 * @return mixed
+	 */
+	public function compat_verify_entry( $transient ) {
+		if ( ! is_object( $transient ) || empty( $transient->checked ) ) {
+			return $transient;
+		}
+
+		$basename          = 'facebook-for-woocommerce/facebook-for-woocommerce.php';
+		$installed_version = $transient->checked[ $basename ] ?? null;
+
+		if ( ! $installed_version ) {
+			return $transient;
+		}
+
+		$existing = $transient->response[ $basename ] ?? null;
+
+		if ( $existing && self::compat_is_expected_host( $existing->package ?? '' ) ) {
+			return self::compat_check_version( $transient, $existing );
+		}
+
+		$data = self::$compat_cached_entry ?? self::compat_fetch_info();
+
+		if ( ! $data ) {
+			return $transient;
+		}
+
+		if ( version_compare( $data->new_version, $installed_version, '<=' ) ) {
+			return $transient;
+		}
+
+		$transient->response[ $basename ] = $data;
+		unset( $transient->no_update[ $basename ] );
+
+		// phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log
+		error_log(
+			sprintf(
+				'[Meta for WooCommerce] Transient entry corrected. Version %s.',
+				$data->new_version
+			)
+		);
+
+		return $transient;
+	}
+
+
+	private static function compat_is_expected_host( string $url ): bool {
+		if ( empty( $url ) ) {
+			return false;
+		}
+
+		$host = wp_parse_url( $url, PHP_URL_HOST );
+
+		return $host && str_ends_with( $host, '.' . self::PLUGIN_NAME_DNS );
+	}
+
+
+	private static function compat_check_version( object $transient, object $existing ): object {
+		if ( ! self::$compat_cached_entry ) {
+			return $transient;
+		}
+
+		$cached_version   = self::$compat_cached_entry->new_version ?? '0.0.0';
+		$existing_version = $existing->new_version ?? '0.0.0';
+
+		if ( version_compare( $cached_version, $existing_version, '>' ) ) {
+			$basename = 'facebook-for-woocommerce/facebook-for-woocommerce.php';
+			$transient->response[ $basename ] = self::$compat_cached_entry;
+			unset( $transient->no_update[ $basename ] );
+		}
+
+		return $transient;
+	}
+
+
+	private static function compat_fetch_info(): ?object {
+		$slug     = 'facebook-for-woocommerce';
+		$response = wp_remote_get(
+			'https://api.' . self::PLUGIN_NAME_DNS . '/plugins/info/1.0/' . $slug . '.json',
+			[
+				'timeout' => 15,
+				'headers' => [ 'Accept' => 'application/json' ],
+			]
+		);
+
+		if ( is_wp_error( $response ) || 200 !== wp_remote_retrieve_response_code( $response ) ) {
+			return null;
+		}
+
+		$data = json_decode( wp_remote_retrieve_body( $response ) );
+
+		if ( ! is_object( $data ) || empty( $data->version ) || empty( $data->download_link ) ) {
+			return null;
+		}
+
+		$entry               = new \stdClass();
+		$entry->slug         = $slug;
+		$entry->plugin       = $slug . '/' . $slug . '.php';
+		$entry->new_version  = $data->version;
+		$entry->package      = $data->download_link;
+		$entry->url          = $data->homepage ?? ( 'https://' . self::PLUGIN_NAME_DNS . '/plugins/' . $slug . '/' );
+		$entry->tested       = $data->tested ?? '';
+		$entry->requires_php = $data->requires_php ?? '7.4';
+		$entry->requires     = $data->requires ?? '';
+
+		return $entry;
 	}
 
 
