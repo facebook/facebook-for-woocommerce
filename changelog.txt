@@ -1,5 +1,12 @@
 *** Meta for WooCommerce Changelog ***
 
+= 3.6.2 - 2026-03-26 =
+* Dev - minor security fixes and updates
+
+= 3.6.1 - 2026-03-24 =
+* Dev - minor security fixes and updates
+
+
 = 3.6.0 - 2026-03-10 =
 * Add - [WhatsApp Utility WooCommerce] Remove Rollout switch WhatsApp rich order status by @ashutoshbondre in #3884
 * Add - [WhatsApp GA]  Add plugin version when rendering Whatsapp splash page by @sharunaanandraj in #3885
