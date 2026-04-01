@@ -105,6 +105,21 @@ test.describe.serial('Theme compatibility checks', () => {
     });
   });
 
+  test('PageView with fbclid still fires after theme switch', async ({ page }, testInfo) => {
+    await runTrackedEventTest({
+      page,
+      testInfo,
+      eventName: 'PageView',
+      expectFbc: true,
+      action: async ({ page }) => {
+        await page.goto(`${baseURL}/?fbclid=${process.env.TEST_FBCLID}`, {
+          waitUntil: 'domcontentloaded',
+          timeout: TIMEOUTS.EXTRA_LONG,
+        });
+      },
+    });
+  });
+
   test('ViewContent still fires after theme switch', async ({ page }, testInfo) => {
     const productUrl = process.env.TEST_PRODUCT_URL;
     if (!productUrl) {
@@ -134,17 +149,34 @@ test.describe.serial('Theme compatibility checks', () => {
       page,
       testInfo,
       eventName: 'AddToCart',
-      action: async ({ page, pixelCapture }) => {
+      action: async ({ page }) => {
         await page.goto(productUrl, {
           waitUntil: 'domcontentloaded',
           timeout: TIMEOUTS.EXTRA_LONG,
         });
         await TestSetup.waitForPageReady(page, TIMEOUTS.INSTANT);
 
-        const eventPromise = pixelCapture.waitForEvent();
         await page.click('.single_add_to_cart_button');
         await page.waitForLoadState('networkidle');
-        await eventPromise;
+      },
+    });
+  });
+
+  test('ViewCategory still fires after theme switch', async ({ page }, testInfo) => {
+    const categoryUrl = process.env.TEST_CATEGORY_URL;
+    if (!categoryUrl) {
+      throw new Error('TEST_CATEGORY_URL is not set');
+    }
+
+    await runTrackedEventTest({
+      page,
+      testInfo,
+      eventName: 'ViewCategory',
+      action: async ({ page }) => {
+        await page.goto(categoryUrl, {
+          waitUntil: 'domcontentloaded',
+          timeout: TIMEOUTS.EXTRA_LONG,
+        });
       },
     });
   });
@@ -159,7 +191,7 @@ test.describe.serial('Theme compatibility checks', () => {
       page,
       testInfo,
       eventName: 'InitiateCheckout',
-      action: async ({ page, pixelCapture }) => {
+      action: async ({ page }) => {
         await page.goto(productUrl, {
           waitUntil: 'domcontentloaded',
           timeout: TIMEOUTS.EXTRA_LONG,
@@ -169,13 +201,51 @@ test.describe.serial('Theme compatibility checks', () => {
         await page.click('.single_add_to_cart_button');
         await page.waitForTimeout(TIMEOUTS.SHORT);
 
-        const eventPromise = pixelCapture.waitForEvent();
         await page.goto(`${baseURL}/checkout`, {
           waitUntil: 'domcontentloaded',
           timeout: TIMEOUTS.EXTRA_LONG,
         });
         await TestSetup.waitForPageReady(page);
-        await eventPromise;
+      },
+    });
+  });
+
+  test('Search still fires after theme switch', async ({ page }, testInfo) => {
+    await runTrackedEventTest({
+      page,
+      testInfo,
+      eventName: 'Search',
+      action: async ({ page }) => {
+        await page.goto(`${baseURL}/`, {
+          waitUntil: 'domcontentloaded',
+          timeout: TIMEOUTS.EXTRA_LONG,
+        });
+        await TestSetup.waitForPageReady(page);
+
+        const searchInput = page.locator('.search-field').first();
+        await searchInput.fill('test');
+        await searchInput.press('Enter');
+      },
+    });
+  });
+
+  test('Search does not fire for no results after theme switch', async ({ page }, testInfo) => {
+    await runTrackedEventTest({
+      page,
+      testInfo,
+      eventName: 'Search',
+      expectZeroEvents: true,
+      action: async ({ page }) => {
+        await page.goto(`${baseURL}/`, {
+          waitUntil: 'domcontentloaded',
+          timeout: TIMEOUTS.EXTRA_LONG,
+        });
+        await TestSetup.waitForPageReady(page);
+
+        const randomString = `xyzabc239nfjsdn${Date.now()}`;
+        const searchInput = page.locator('.search-field').first();
+        await searchInput.fill(randomString);
+        await searchInput.press('Enter');
       },
     });
   });
@@ -190,6 +260,7 @@ test.describe.serial('Theme compatibility checks', () => {
       page,
       testInfo,
       eventName: 'Purchase',
+      waitForPixel: false,
       action: async ({ page }) => {
         await page.goto(productUrl, {
           waitUntil: 'domcontentloaded',
@@ -229,21 +300,88 @@ test.describe.serial('Theme compatibility checks', () => {
       },
     });
   });
+
+  test('Purchase deduplication still works after theme switch', async ({ page }, testInfo) => {
+    const productUrl = process.env.TEST_PRODUCT_URL;
+    if (!productUrl) {
+      throw new Error('TEST_PRODUCT_URL is not set');
+    }
+
+    await runTrackedEventTest({
+      page,
+      testInfo,
+      eventName: 'Purchase',
+      waitForPixel: false,
+      action: async ({ page }) => {
+        await page.goto(productUrl, {
+          waitUntil: 'domcontentloaded',
+          timeout: TIMEOUTS.EXTRA_LONG,
+        });
+        await TestSetup.waitForPageReady(page, TIMEOUTS.INSTANT);
+
+        await page.click('.single_add_to_cart_button');
+        await page.waitForTimeout(TIMEOUTS.SHORT);
+
+        await page.goto(`${baseURL}/checkout`, {
+          waitUntil: 'domcontentloaded',
+          timeout: TIMEOUTS.EXTRA_LONG,
+        });
+        await TestSetup.waitForPageReady(page);
+
+        await page.evaluate(() => window.scrollBy(0, 400));
+        await page.waitForTimeout(TIMEOUTS.SHORT);
+
+        await page.waitForSelector(
+          '.wc-block-components-radio-control__option[for="radio-control-wc-payment-method-options-cod"]',
+          {
+            state: 'visible',
+            timeout: TIMEOUTS.LONG,
+          }
+        );
+        await page.click('label[for="radio-control-wc-payment-method-options-cod"]');
+        await page.waitForTimeout(TIMEOUTS.INSTANT);
+
+        const placeOrderButton = page.locator('.wc-block-components-checkout-place-order-button');
+        await placeOrderButton.scrollIntoViewIfNeeded();
+        await placeOrderButton.click();
+        await page.waitForTimeout(100);
+        await placeOrderButton.click({ force: true }).catch(() => {});
+        await page.waitForTimeout(100);
+        await placeOrderButton.click({ force: true }).catch(() => {});
+
+        await page.waitForURL('**/checkout/order-received/**', {
+          timeout: TIMEOUTS.EXTRA_LONG,
+        });
+        await page.waitForTimeout(TIMEOUTS.NORMAL);
+      },
+    });
+  });
 });
 
-async function runTrackedEventTest({ page, testInfo, eventName, action, expectFbc = false }) {
+async function runTrackedEventTest({
+  page,
+  testInfo,
+  eventName,
+  action,
+  expectFbc = false,
+  expectZeroEvents = false,
+  waitForPixel = true,
+}) {
   // Switch to customer context only for event validation
   await TestSetup.login(page);
 
-  const { testId, pixelCapture } = await TestSetup.init(page, eventName, testInfo);
+  const { testId, pixelCapture } = await TestSetup.init(page, eventName, testInfo, expectZeroEvents);
 
-  const eventPromise = pixelCapture.waitForEvent();
+  const eventPromise = waitForPixel ? pixelCapture.waitForEvent() : null;
   await action({ page, pixelCapture, testId });
 
   await TestSetup.waitForPageReady(page);
-  await eventPromise;
 
-  const validator = new EventValidator(testId, expectFbc);
+  if (eventPromise) {
+    await eventPromise;
+  }
+
+  const validator = new EventValidator(testId, expectFbc, expectZeroEvents);
   await validator.checkDebugLog();
   const result = await validator.validate(eventName, page);
 
