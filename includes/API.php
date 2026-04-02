@@ -694,21 +694,58 @@ class API extends Base {
 	/**
 	 * Sends Pixel events.
 	 *
+	 * By default, the request is blocking (preserving existing behaviour).
+	 * Use the {@see 'wc_facebook_pixel_events_non_blocking'} filter to send
+	 * the request asynchronously, which avoids adding 2-3+ seconds of latency
+	 * to page generation at the cost of losing response introspection.
+	 *
 	 * @since 2.0.0
 	 *
 	 * @param string  $pixel_id pixel ID
 	 * @param Event[] $events events to send
-	 * @return Response
-	 * @throws ApiException In case of a general API error or rate limit error.
+	 * @return Response|null Response object when blocking, null when non-blocking.
+	 * @throws ApiException In case of a general API error or rate limit error (blocking mode only).
 	 */
 	public function send_pixel_events( $pixel_id, array $events ) {
 		$request = new API\Pixel\Events\Request( $pixel_id, $events );
+
+		/**
+		 * Filters whether the Pixel event API request should be non-blocking.
+		 *
+		 * When true, the HTTP request is sent asynchronously and does not delay
+		 * page generation. The trade-off is that API response data (rate-limit
+		 * headers, validation errors, event-match-quality feedback) is not
+		 * available.
+		 *
+		 * @since 3.6.1
+		 *
+		 * @param bool $non_blocking Whether the request should be non-blocking. Default false.
+		 */
+		$non_blocking = (bool) apply_filters( 'wc_facebook_pixel_events_non_blocking', false );
+
+		if ( $non_blocking ) {
+			// Non-blocking: fire-and-forget via wp_safe_remote_post().
+			wp_safe_remote_post(
+				$this->request_uri . "/{$pixel_id}/events",
+				array(
+					'blocking'  => false,
+					'sslverify' => true,
+					'headers'   => array(
+						'Authorization' => "Bearer {$this->access_token}",
+						'Content-Type'  => 'application/json',
+					),
+					'body'      => $request->to_string(),
+				)
+			);
+
+			return null;
+		}
 
 		$this->set_response_handler( Response::class );
 
 		$response = $this->perform_request( $request );
 
-		// Log to E2E test framework
+		// Log to E2E test framework (requires a parsed response).
 		$this->log_events_for_tests( $response, $request );
 
 		return $response;
