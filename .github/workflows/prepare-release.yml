@@ -20,7 +20,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v5
         with:
             token: ${{ secrets.GITHUB_TOKEN }}
             fetch-depth: 0
@@ -32,44 +32,24 @@ jobs:
         run: echo "new_version=$NEW_VERSION" >> "$GITHUB_OUTPUT"
 
       - name: Check if branch exists
-        uses: actions/github-script@v7
         env:
+          GH_TOKEN: ${{ github.token }}
           NEW_VERSION: ${{ steps.set_version.outputs.new_version }}
-        with:
-          script: |
-            const newVersion = process.env.NEW_VERSION.trim();            
-            const branch = `release/${newVersion}`;
-            const owner = context.repo.owner;
-            const repo = context.repo.repo;
-
-            try {
-              await github.rest.repos.getBranch({
-                owner,
-                repo,
-                branch,
-              });
-
-              core.setFailed(`Branch "${branch}" already exists.`);
-            } catch (error) {
-              if (error.status === 404) {
-                console.log(`✅ Branch "${branch}" does not exist.`);
-              } else {
-                throw error;
-              }
-            }
+        run: |
+          if gh api "repos/${{ github.repository }}/branches/release/$NEW_VERSION" --silent 2>/dev/null; then
+            echo "::error::Branch \"release/$NEW_VERSION\" already exists."
+            exit 1
+          fi
+          echo "✅ Branch \"release/$NEW_VERSION\" does not exist."
 
       - name: Get latest release tag
         id: get_release
-        uses: actions/github-script@v7
-        with:
-          script: |
-            const latestRelease = await github.rest.repos.getLatestRelease({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-            });
-            const tag = latestRelease.data.tag_name;
-            core.setOutput("latest_tag", tag);
-            console.log("Latest release tag:", tag);
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          TAG=$(gh release view --json tagName --jq '.tagName')
+          echo "Latest release tag: $TAG"
+          echo "latest_tag=$TAG" >> "$GITHUB_OUTPUT"
 
       - name: Get commits since latest release
         id: get_commits
@@ -81,53 +61,39 @@ jobs:
 
       - name: Build changelog from PRs
         id: changelog
-        uses: actions/github-script@v7
         env:
+          GH_TOKEN: ${{ github.token }}
           COMMITS: ${{ steps.get_commits.outputs.commits }}
           NEW_VERSION: ${{ steps.set_version.outputs.new_version }}
-        with:
-          script: |
-            const newVersion = process.env.NEW_VERSION.trim();
-            const commits = process.env.COMMITS.trim().split('\n');
-            const changelog = [];
+        run: |
+          CHANGELOG=""
+          while IFS= read -r SHA; do
+            [ -z "$SHA" ] && continue
+            MSG=$(gh api "repos/${{ github.repository }}/commits/$SHA" --jq '.commit.message')
+            PR_NUM=$(echo "$MSG" | grep -oP '\(#\K\d+' | head -1)
+            [ -z "$PR_NUM" ] && continue
 
-            for (const sha of commits) {
-              const commit = await github.rest.repos.getCommit({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                ref: sha,
-              });
+            LABEL=$(gh pr view "$PR_NUM" --json labels --jq '[.labels[].name | select(startswith("changelog:"))][0] // empty' | sed 's/^changelog:[[:space:]]*//')
+            [ -z "$LABEL" ] && continue
+            [ "$(echo "$LABEL" | tr '[:upper:]' '[:lower:]')" = "none" ] && continue
 
-              const msg = commit.data.commit.message;
-              const prMatch = msg.match(/\(#(\d+)\)/);
-              if (!prMatch) {
-                continue;
-              }
+            # Capitalize first letter
+            LABEL="$(echo "${LABEL:0:1}" | tr '[:lower:]' '[:upper:]')${LABEL:1}"
+            PR_TITLE=$(gh pr view "$PR_NUM" --json title --jq '.title')
+            PR_AUTHOR=$(gh pr view "$PR_NUM" --json author --jq '.author.login')
+            CHANGELOG="${CHANGELOG}* ${LABEL} - ${PR_TITLE} by @${PR_AUTHOR} in #${PR_NUM}\n"
+          done <<< "$COMMITS"
 
-              const prNumber = parseInt(prMatch[1], 10);
-              pr = (await github.rest.pulls.get({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                pull_number: prNumber,
-              })).data;
-              const labelPrefix = "changelog:";
-              const changeLogLabels = pr.labels.map(l => l.name).filter((l) => l.startsWith(labelPrefix)).map(l => l.replace(labelPrefix, "").trim());
-              if (changeLogLabels.length === 0){
-                continue;
-              }
+          TODAY=$(date -u +%Y-%m-%d)
+          OUTPUT="= ${NEW_VERSION} - ${TODAY} =\n${CHANGELOG}"
+          echo "$OUTPUT"
 
-              const changeLogLabel = changeLogLabels[0];
-              if (changeLogLabel.toLowerCase() === 'none'){
-                continue;
-              }
-
-              changelog.push(`* ${changeLogLabel.charAt(0).toUpperCase()}${changeLogLabel.slice(1)} - ${pr.title} by @${pr.user.login} in #${prNumber}`);              
-            }
-
-            const date = new Date();
-            const output = `= ${newVersion} - ${date.toISOString().slice(0, 10)} =\n${changelog.join('\n')}\n`;
-            core.setOutput('changelog', output);
-            console.log(output);
+          # Write to output using a file to handle multiline
+          {
+            echo "changelog<<EOF"
+            echo -e "$OUTPUT"
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
 
       - name: Configure Git
         run: |
@@ -331,17 +297,16 @@ jobs:
           exit 1
 
       - name: Update changelog.txt
-        uses: actions/github-script@v7
         env:
           CHANGELOG_TEXT: ${{ steps.changelog.outputs.changelog }}
-        with:
-          script: |
-            const fs = require('fs');
-            const filePath = 'changelog.txt';
-            let content = fs.readFileSync(filePath).toString().split('\n');
-            const newLines = process.env.CHANGELOG_TEXT.split(/\r?\n/);
-            content.splice(2, 0, ...newLines);
-            fs.writeFileSync(filePath, content.join('\n'));
+        run: |
+          # Insert changelog after line 2 of changelog.txt
+          {
+            head -n 2 changelog.txt
+            echo "$CHANGELOG_TEXT"
+            tail -n +3 changelog.txt
+          } > changelog.tmp
+          mv changelog.tmp changelog.txt
 
       - name: Set latest stable version in readme.txt
         run: |
@@ -351,33 +316,38 @@ jobs:
           sed -i -E "s/^(Stable tag:)[[:space:]]*[0-9.]+/\1 $CURRENT_STABLE/" "readme.txt"
 
       - name: Update readme.txt
-        uses: actions/github-script@v7
         env:
           CHANGELOG_TEXT: ${{ steps.changelog.outputs.changelog }}
-        with:
-          script: |
-            const fs = require('fs');
-            const filePath = 'readme.txt';
-            let content = fs.readFileSync(filePath).toString().split('\n');
-            const markerIndex = content.findIndex(line => line.trim().toLowerCase() === '== changelog ==');
-            if (markerIndex === -1) {
-              throw new Error('Marker not found in file');
-            }
+        run: |
+          # Find the "== Changelog ==" marker line number
+          MARKER_LINE=$(grep -in '== changelog ==' readme.txt | head -1 | cut -d: -f1)
+          if [ -z "$MARKER_LINE" ]; then
+            echo "::error::Marker '== Changelog ==' not found in readme.txt"
+            exit 1
+          fi
 
-            function shouldRemove(line) {
-              const trimmed = line.trim();
-              return trimmed === '' || trimmed.startsWith('=') || trimmed.startsWith('*');
-            }
+          # Remove all empty lines, "=" lines, and "*" lines after the marker
+          NEXT_LINE=$((MARKER_LINE + 1))
+          END_LINE=$NEXT_LINE
+          TOTAL=$(wc -l < readme.txt)
+          while [ "$END_LINE" -le "$TOTAL" ]; do
+            LINE=$(sed -n "${END_LINE}p" readme.txt)
+            TRIMMED=$(echo "$LINE" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+            if [ -z "$TRIMMED" ] || [[ "$TRIMMED" == =* ]] || [[ "$TRIMMED" == \** ]]; then
+              END_LINE=$((END_LINE + 1))
+            else
+              break
+            fi
+          done
 
-            let i = markerIndex + 1;
-            // Remove all lines starting with "*" after the marker
-            while (i < content.length && shouldRemove(content[i])) {
-              content.splice(i, 1); // Don't increment i since we're removing current line
-            }
-            const newLines = process.env.CHANGELOG_TEXT.split(/\r?\n/);
-            newLines.unshift("");
-            content.splice(i, 0, ...newLines);
-            fs.writeFileSync(filePath, content.join('\n'));
+          # Rebuild file: before marker (inclusive) + new changelog + rest of file
+          {
+            head -n "$MARKER_LINE" readme.txt
+            echo ""
+            echo "$CHANGELOG_TEXT"
+            tail -n +"$END_LINE" readme.txt
+          } > readme.tmp
+          mv readme.tmp readme.txt
 
       - name: Commit and Push
         env:
