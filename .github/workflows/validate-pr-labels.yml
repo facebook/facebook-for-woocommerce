@@ -13,11 +13,12 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
+          REPO: ${{ github.repository }}
         run: |
-          MATCHING=$(gh pr view "$PR_NUMBER" --json labels --jq '[.labels[].name | select(startswith("changelog:"))] | length')
+          MATCHING=$(gh pr view "$PR_NUMBER" --repo "$REPO" --json labels --jq '[.labels[].name | select(startswith("changelog:"))] | length')
           if [ "$MATCHING" -ne 1 ]; then
             echo "::error::PR must have exactly one changelog label, ${MATCHING} detected."
             exit 1
           fi
-          LABEL=$(gh pr view "$PR_NUMBER" --json labels --jq '[.labels[].name | select(startswith("changelog:"))][0]')
+          LABEL=$(gh pr view "$PR_NUMBER" --repo "$REPO" --json labels --jq '[.labels[].name | select(startswith("changelog:"))][0]')
           echo "✅ Single changelog label: \"$LABEL\""
