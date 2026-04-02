@@ -73,7 +73,6 @@ class FacebookCommerceEventsTrackerTest extends AbstractWPUnitTestWithSafeFilter
 	 * Call this before creating orders to prevent hooks from firing during order creation.
 	 */
 	private function remove_purchase_hooks(): void {
-		remove_action( 'woocommerce_new_order', array( $this->instance, 'inject_purchase_event' ), 10 );
 		remove_action( 'woocommerce_process_shop_order_meta', array( $this->instance, 'inject_purchase_event' ), 20 );
 		remove_action( 'woocommerce_checkout_update_order_meta', array( $this->instance, 'inject_purchase_event' ), 30 );
 		remove_action( 'woocommerce_thankyou', array( $this->instance, 'inject_purchase_event' ), 40 );
@@ -431,7 +430,7 @@ class FacebookCommerceEventsTrackerTest extends AbstractWPUnitTestWithSafeFilter
 	/**
 	 * Test that inject_purchase_event sends CAPI event for server context.
 	 *
-	 * When triggered by a server-side hook (e.g., woocommerce_new_order),
+	 * When triggered by a server-side hook (e.g., woocommerce_checkout_update_order_meta),
 	 * the method should send a CAPI event.
 	 *
 	 * @covers WC_Facebookcommerce_EventsTracker::inject_purchase_event
@@ -440,17 +439,19 @@ class FacebookCommerceEventsTrackerTest extends AbstractWPUnitTestWithSafeFilter
 		$this->instance = $this->create_tracker_with_pixel_enabled();
 		$this->remove_purchase_hooks();
 
-		// Create a valid order with processing status
+		// Create a valid order with processing status and add a product
+		$product = WC_Helper_Product::create_simple_product();
 		$order = wc_create_order();
+		$order->add_product( $product, 1 );
 		$order->set_status( 'processing' );
 		$order->set_total( 100 );
 		$order->save();
 
 		// Simulate server hook by calling inject_purchase_event via do_action
-		// This sets current_action() to 'woocommerce_new_order'
-		add_action( 'woocommerce_new_order', array( $this->instance, 'inject_purchase_event' ), 10 );
-		do_action( 'woocommerce_new_order', $order->get_id(), $order );
-		remove_action( 'woocommerce_new_order', array( $this->instance, 'inject_purchase_event' ), 10 );
+		// This sets current_action() to 'woocommerce_checkout_update_order_meta'
+		add_action( 'woocommerce_checkout_update_order_meta', array( $this->instance, 'inject_purchase_event' ), 30 );
+		do_action( 'woocommerce_checkout_update_order_meta', $order->get_id(), array() );
+		remove_action( 'woocommerce_checkout_update_order_meta', array( $this->instance, 'inject_purchase_event' ), 30 );
 
 		$tracked_events = $this->instance->get_tracked_events();
 
@@ -465,6 +466,7 @@ class FacebookCommerceEventsTrackerTest extends AbstractWPUnitTestWithSafeFilter
 		);
 
 		// Clean up
+		$product->delete( true );
 		$order->delete( true );
 	}
 
@@ -519,16 +521,18 @@ class FacebookCommerceEventsTrackerTest extends AbstractWPUnitTestWithSafeFilter
 		$this->instance = $this->create_tracker_with_pixel_enabled();
 		$this->remove_purchase_hooks();
 
-		// Create a valid order with processing status
+		// Create a valid order with processing status and add a product
+		$product = WC_Helper_Product::create_simple_product();
 		$order = wc_create_order();
+		$order->add_product( $product, 1 );
 		$order->set_status( 'processing' );
 		$order->set_total( 100 );
 		$order->save();
 
 		// Simulate server hook first (as happens in real checkout)
-		add_action( 'woocommerce_new_order', array( $this->instance, 'inject_purchase_event' ), 10 );
-		do_action( 'woocommerce_new_order', $order->get_id(), $order );
-		remove_action( 'woocommerce_new_order', array( $this->instance, 'inject_purchase_event' ), 10 );
+		add_action( 'woocommerce_checkout_update_order_meta', array( $this->instance, 'inject_purchase_event' ), 30 );
+		do_action( 'woocommerce_checkout_update_order_meta', $order->get_id(), array() );
+		remove_action( 'woocommerce_checkout_update_order_meta', array( $this->instance, 'inject_purchase_event' ), 30 );
 
 		// Simulate browser hook second (thank you page)
 		add_action( 'woocommerce_thankyou', array( $this->instance, 'inject_purchase_event' ), 40 );
@@ -544,6 +548,7 @@ class FacebookCommerceEventsTrackerTest extends AbstractWPUnitTestWithSafeFilter
 		);
 
 		// Clean up
+		$product->delete( true );
 		$order->delete( true );
 	}
 
