@@ -128,7 +128,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        test-group: ['plugin-events', 'product-crud', 'product-batch', 'product-category', 'theme-compatibility', 'performance-sync']
+        test-group: ['plugin-events', 'product-crud', 'variable-product-depth', 'product-batch', 'product-category', 'theme-compatibility', 'performance-sync']
         version-set: ['supported', 'latest']
         include:
           - version-set: 'supported'
@@ -672,6 +672,12 @@ jobs:
         run: |
           cd ${{ env.PLUGIN_PATH }}
           npx playwright test "product-(creation|modification|deletion).spec.js" --project=chromium-wp-admin --workers=2
+
+      - name: Run Variable Product Depth tests
+        if: matrix.test-group == 'variable-product-depth'
+        run: |
+          cd ${{ env.PLUGIN_PATH }}
+          npx playwright test variable-product-depth.spec.js --project=chromium-wp-admin --workers=1
 
       - name: Run Product Batch tests
         if: matrix.test-group == 'product-batch'
