@@ -440,4 +440,388 @@ class EventTest extends AbstractWPUnitTestWithOptionIsolationAndSafeFiltering {
 		$this->assertEquals( $custom_fbc, $data['user_data']['fbc'] );
 		$this->assertEquals( $custom_fbp, $data['user_data']['fbp'] );
 	}
+
+	/**
+	 * Test get_current_url with normal request (non-AJAX).
+	 *
+	 * @covers \WooCommerce\Facebook\Events\Event::get_current_url
+	 */
+	public function test_get_current_url_normal_request() {
+		$_SERVER['REQUEST_URI'] = '/test-page?param=value';
+		
+		$event = new Event();
+		$data = $event->get_data();
+		
+		$this->assertArrayHasKey( 'event_source_url', $data );
+		$this->assertIsString( $data['event_source_url'] );
+		$this->assertStringContainsString( '/test-page', $data['event_source_url'] );
+		
+		unset( $_SERVER['REQUEST_URI'] );
+	}
+
+	/**
+	 * Test get_current_url with AJAX request.
+	 *
+	 * @covers \WooCommerce\Facebook\Events\Event::get_current_url
+	 */
+	public function test_get_current_url_ajax_request() {
+		// Mock wp_doing_ajax to return true
+		$filter = $this->add_filter_with_safe_teardown( 'wp_doing_ajax', function() {
+			return true;
+		} );
+		
+		// Mock wp_get_raw_referer
+		$referer_filter = $this->add_filter_with_safe_teardown( 'wp_get_raw_referer', function() {
+			return 'https://example.com/ajax-referer';
+		} );
+		
+		$event = new Event();
+		$data = $event->get_data();
+		
+		$this->assertArrayHasKey( 'event_source_url', $data );
+		$this->assertIsString( $data['event_source_url'] );
+		
+		$filter->teardown_safely_immediately();
+		$referer_filter->teardown_safely_immediately();
+	}
+
+	/**
+	 * Test HTTP_REFERER is included in event data.
+	 *
+	 * @covers \WooCommerce\Facebook\Events\Event::prepare_data
+	 */
+	public function test_http_referer_included_in_data() {
+		$_SERVER['HTTP_REFERER'] = 'https://google.com/search?q=test';
+		
+		$event = new Event();
+		$data = $event->get_data();
+		
+		$this->assertArrayHasKey( 'referrer_url', $data );
+		$this->assertEquals( 'https://google.com/search?q=test', $data['referrer_url'] );
+		
+		unset( $_SERVER['HTTP_REFERER'] );
+	}
+
+	/**
+	 * Test HTTP_REFERER not set.
+	 *
+	 * @covers \WooCommerce\Facebook\Events\Event::prepare_data
+	 */
+	public function test_http_referer_not_set() {
+		// Ensure HTTP_REFERER is not set
+		if ( isset( $_SERVER['HTTP_REFERER'] ) ) {
+			unset( $_SERVER['HTTP_REFERER'] );
+		}
+		
+		$event = new Event();
+		$data = $event->get_data();
+		
+		$this->assertArrayNotHasKey( 'referrer_url', $data );
+	}
+
+	/**
+	 * Test get_client_user_agent with value.
+	 *
+	 * @covers \WooCommerce\Facebook\Events\Event::get_client_user_agent
+	 */
+	public function test_get_client_user_agent_with_value() {
+		$_SERVER['HTTP_USER_AGENT'] = 'Mozilla/5.0 Test Browser';
+		
+		$event = new Event();
+		$user_data = $event->get_user_data();
+		
+		$this->assertArrayHasKey( 'client_user_agent', $user_data );
+		$this->assertEquals( 'Mozilla/5.0 Test Browser', $user_data['client_user_agent'] );
+		
+		unset( $_SERVER['HTTP_USER_AGENT'] );
+	}
+
+	/**
+	 * Test get_client_user_agent when not set.
+	 *
+	 * @covers \WooCommerce\Facebook\Events\Event::get_client_user_agent
+	 */
+	public function test_get_client_user_agent_empty() {
+		// Ensure HTTP_USER_AGENT is not set
+		if ( isset( $_SERVER['HTTP_USER_AGENT'] ) ) {
+			unset( $_SERVER['HTTP_USER_AGENT'] );
+		}
+		
+		$event = new Event();
+		$user_data = $event->get_user_data();
+		
+		$this->assertArrayHasKey( 'client_user_agent', $user_data );
+		$this->assertEquals( '', $user_data['client_user_agent'] );
+	}
+
+	/**
+	 * Test get_click_id from cookie.
+	 *
+	 * @covers \WooCommerce\Facebook\Events\Event::get_click_id
+	 */
+	public function test_get_click_id_from_cookie() {
+		$_COOKIE['_fbc'] = 'fb.1.1234567890.test_fbclid';
+		
+		$event = new Event();
+		$user_data = $event->get_user_data();
+		
+		$this->assertArrayHasKey( 'click_id', $user_data );
+		$this->assertEquals( 'fb.1.1234567890.test_fbclid', $user_data['click_id'] );
+		
+		unset( $_COOKIE['_fbc'] );
+		if ( isset( $_SESSION['_fbc'] ) ) {
+			unset( $_SESSION['_fbc'] );
+		}
+	}
+
+	/**
+	 * Test get_click_id from fbclid query parameter.
+	 *
+	 * @covers \WooCommerce\Facebook\Events\Event::get_click_id
+	 */
+	public function test_get_click_id_from_fbclid_param() {
+		// Ensure no cookie is set
+		if ( isset( $_COOKIE['_fbc'] ) ) {
+			unset( $_COOKIE['_fbc'] );
+		}
+		if ( isset( $_SESSION['_fbc'] ) ) {
+			unset( $_SESSION['_fbc'] );
+		}
+		
+		$_REQUEST['fbclid'] = 'test_fbclid_value';
+		
+		$event = new Event();
+		$user_data = $event->get_user_data();
+		
+		$this->assertArrayHasKey( 'click_id', $user_data );
+		$this->assertIsString( $user_data['click_id'] );
+		$this->assertStringStartsWith( 'fb.1.', $user_data['click_id'] );
+		$this->assertStringContainsString( 'test_fbclid_value', $user_data['click_id'] );
+		
+		unset( $_REQUEST['fbclid'] );
+		if ( isset( $_SESSION['_fbc'] ) ) {
+			unset( $_SESSION['_fbc'] );
+		}
+	}
+
+	/**
+	 * Test get_click_id returns null when not available.
+	 *
+	 * @covers \WooCommerce\Facebook\Events\Event::get_click_id
+	 */
+	public function test_get_click_id_returns_null_when_not_available() {
+		// Ensure no cookie, session, or request param is set
+		if ( isset( $_COOKIE['_fbc'] ) ) {
+			unset( $_COOKIE['_fbc'] );
+		}
+		if ( isset( $_SESSION['_fbc'] ) ) {
+			unset( $_SESSION['_fbc'] );
+		}
+		if ( isset( $_REQUEST['fbclid'] ) ) {
+			unset( $_REQUEST['fbclid'] );
+		}
+		
+		$event = new Event();
+		$user_data = $event->get_user_data();
+		
+		$this->assertArrayHasKey( 'click_id', $user_data );
+		// Should be null when not available
+		$this->assertNull( $user_data['click_id'] );
+	}
+
+	/**
+	 * Test get_browser_id from cookie.
+	 *
+	 * @covers \WooCommerce\Facebook\Events\Event::get_browser_id
+	 */
+	public function test_get_browser_id_from_cookie() {
+		$_COOKIE['_fbp'] = 'fb.1.1234567890.987654321';
+		
+		$event = new Event();
+		$user_data = $event->get_user_data();
+		
+		$this->assertArrayHasKey( 'browser_id', $user_data );
+		$this->assertEquals( 'fb.1.1234567890.987654321', $user_data['browser_id'] );
+		
+		unset( $_COOKIE['_fbp'] );
+		if ( isset( $_SESSION['_fbp'] ) ) {
+			unset( $_SESSION['_fbp'] );
+		}
+	}
+
+	/**
+	 * Test get_browser_id returns null when not available.
+	 *
+	 * @covers \WooCommerce\Facebook\Events\Event::get_browser_id
+	 */
+	public function test_get_browser_id_returns_null_when_not_available() {
+		// Ensure no cookie or session is set
+		if ( isset( $_COOKIE['_fbp'] ) ) {
+			unset( $_COOKIE['_fbp'] );
+		}
+		if ( isset( $_SESSION['_fbp'] ) ) {
+			unset( $_SESSION['_fbp'] );
+		}
+		
+		$event = new Event();
+		$user_data = $event->get_user_data();
+		
+		$this->assertArrayHasKey( 'browser_id', $user_data );
+		// Should be null when not available
+		$this->assertNull( $user_data['browser_id'] );
+	}
+
+	/**
+	 * Test get_version_info with agent flags option set.
+	 *
+	 * @covers \WooCommerce\Facebook\Events\Event::get_version_info
+	 * @covers \WooCommerce\Facebook\Events\Event::get_agent_flags
+	 */
+	public function test_get_version_info_with_agent_flags() {
+		update_option( 'wc_facebook_svr_flags', 'test_flag' );
+		
+		$version_info = Event::get_version_info();
+		
+		$this->assertIsArray( $version_info );
+		$this->assertArrayHasKey( 'source', $version_info );
+		$this->assertEquals( 'woocommerce_test_flag', $version_info['source'] );
+		
+		delete_option( 'wc_facebook_svr_flags' );
+	}
+
+	/**
+	 * Test get_version_info without agent flags option.
+	 *
+	 * @covers \WooCommerce\Facebook\Events\Event::get_version_info
+	 * @covers \WooCommerce\Facebook\Events\Event::get_agent_flags
+	 */
+	public function test_get_version_info_without_agent_flags() {
+		// Ensure option is not set or is false
+		delete_option( 'wc_facebook_svr_flags' );
+		
+		$version_info = Event::get_version_info();
+		
+		$this->assertIsArray( $version_info );
+		$this->assertArrayHasKey( 'source', $version_info );
+		$this->assertEquals( 'woocommerce_0', $version_info['source'] );
+	}
+
+	/**
+	 * Test get_platform_identifier with agent flags.
+	 *
+	 * @covers \WooCommerce\Facebook\Events\Event::get_platform_identifier
+	 * @covers \WooCommerce\Facebook\Events\Event::get_agent_flags
+	 */
+	public function test_get_platform_identifier_with_agent_flags() {
+		update_option( 'wc_facebook_svr_flags', 'custom' );
+		
+		$identifier = Event::get_platform_identifier();
+		
+		$this->assertIsString( $identifier );
+		$this->assertStringContainsString( 'woocommerce_custom', $identifier );
+		
+		delete_option( 'wc_facebook_svr_flags' );
+	}
+
+	/**
+	 * Test action_source default value.
+	 *
+	 * @covers \WooCommerce\Facebook\Events\Event::prepare_data
+	 */
+	public function test_action_source_default_value() {
+		$event = new Event();
+		$data = $event->get_data();
+		
+		$this->assertArrayHasKey( 'action_source', $data );
+		$this->assertEquals( 'website', $data['action_source'] );
+	}
+
+	/**
+	 * Test custom action_source value.
+	 *
+	 * @covers \WooCommerce\Facebook\Events\Event::prepare_data
+	 */
+	public function test_action_source_custom_value() {
+		$event = new Event( array( 'action_source' => 'app' ) );
+		$data = $event->get_data();
+		
+		$this->assertArrayHasKey( 'action_source', $data );
+		$this->assertEquals( 'app', $data['action_source'] );
+	}
+
+	/**
+	 * Test event_source_url is in data.
+	 *
+	 * @covers \WooCommerce\Facebook\Events\Event::prepare_data
+	 */
+	public function test_event_source_url_in_data() {
+		$event = new Event();
+		$data = $event->get_data();
+		
+		$this->assertArrayHasKey( 'event_source_url', $data );
+		$this->assertIsString( $data['event_source_url'] );
+		$this->assertNotEmpty( $data['event_source_url'] );
+	}
+
+	/**
+	 * Test custom event_source_url.
+	 *
+	 * @covers \WooCommerce\Facebook\Events\Event::prepare_data
+	 */
+	public function test_custom_event_source_url() {
+		$event = new Event( array( 'event_source_url' => 'https://custom.com/page' ) );
+		$data = $event->get_data();
+		
+		$this->assertArrayHasKey( 'event_source_url', $data );
+		$this->assertEquals( 'https://custom.com/page', $data['event_source_url'] );
+	}
+
+	/**
+	 * Test empty user_data fields are normalized.
+	 *
+	 * @covers \WooCommerce\Facebook\Events\Event::prepare_user_data
+	 */
+	public function test_empty_user_data_fields_normalized() {
+		$user_data = array(
+			'em' => '',
+			'fn' => '',
+			'ln' => '',
+		);
+		
+		$event = new Event( array( 'user_data' => $user_data ) );
+		$result_data = $event->get_user_data();
+		
+		// Empty strings should be normalized to null
+		$this->assertNull( $result_data['em'] );
+		$this->assertNull( $result_data['fn'] );
+		$this->assertNull( $result_data['ln'] );
+	}
+
+	/**
+	 * Test get_data returns complete structure.
+	 *
+	 * @covers \WooCommerce\Facebook\Events\Event::get_data
+	 */
+	public function test_get_data_returns_complete_structure() {
+		$event = new Event();
+		$data = $event->get_data();
+		
+		$this->assertIsArray( $data );
+		
+		// Verify all required keys exist
+		$this->assertArrayHasKey( 'action_source', $data );
+		$this->assertArrayHasKey( 'event_time', $data );
+		$this->assertArrayHasKey( 'event_id', $data );
+		$this->assertArrayHasKey( 'event_source_url', $data );
+		$this->assertArrayHasKey( 'custom_data', $data );
+		$this->assertArrayHasKey( 'user_data', $data );
+		
+		// Verify types
+		$this->assertIsString( $data['action_source'] );
+		$this->assertIsInt( $data['event_time'] );
+		$this->assertIsString( $data['event_id'] );
+		$this->assertIsString( $data['event_source_url'] );
+		$this->assertIsArray( $data['custom_data'] );
+		$this->assertIsArray( $data['user_data'] );
+	}
 } 
