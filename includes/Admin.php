@@ -46,6 +46,9 @@ class Admin {
 	/** @var string the "exclude" sync mode for bulk edit */
 	const BULK_EDIT_DELETE = 'bulk_edit_delete';
 
+	/** @var string message ID for dismissing the WordPress.com update notice */
+	const ADMIN_DISMISS_WPCOM_UPDATE_NOTICE = 'dismiss_wpcom_update_notice';
+
 	/** @var Product_Categories the product category admin handler */
 	protected $product_categories;
 
@@ -72,6 +75,13 @@ class Admin {
 
 		// enqueue admin scripts
 		add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_scripts' ) );
+
+		// handle dismiss action for WordPress.com update notice (runs before admin_notices)
+		add_action( 'admin_init', array( $this, 'handle_wpcom_update_notice_dismiss' ) );
+
+		// add admin notice about WordPress.com automatic updates ending (always check, regardless of connection status)
+		// Note: check is deferred to admin_notices time so the dismiss handler (admin_init) runs first
+		add_action( 'admin_notices', array( $this, 'maybe_show_wpcom_update_notice' ) );
 
 		$plugin = facebook_for_woocommerce();
 		// only alter the admin UI if the plugin is connected to Facebook and ready to sync products
@@ -2555,5 +2565,109 @@ class Admin {
 			wp_send_json_success( $synced_fields );
 		}
 		wp_send_json_error( 'Invalid product ID' );
+	}
+
+	/**
+	 * Conditionally displays the WordPress.com update notice.
+	 *
+	 * Registered as the admin_notices callback so the check runs after admin_init,
+	 * which is where the dismiss handler saves user meta. Evaluating in the
+	 * constructor would cause the notice to flash once on the dismiss redirect page.
+	 *
+	 * @since 3.5.3
+	 *
+	 * @return void
+	 */
+	public function maybe_show_wpcom_update_notice(): void {
+		if ( $this->should_show_wpcom_update_notice() ) {
+			$this->wpcom_update_notice();
+		}
+	}
+
+	/**
+	 * Determines whether the WordPress.com update notice should be shown.
+	 *
+	 * @since 3.5.3
+	 *
+	 * @return bool Whether the WordPress.com update notice should be shown.
+	 */
+	public function should_show_wpcom_update_notice() {
+		if ( 1 !== (int) get_option( 'is_wordpress_com_hosted' ) ) {
+			return false;
+		}
+
+		return ! get_user_meta(
+			get_current_user_id(),
+			self::ADMIN_DISMISS_WPCOM_UPDATE_NOTICE,
+			true
+		);
+	}
+
+	/**
+	 * Returns the WordPress.com update notice message.
+	 *
+	 * @since 3.5.3
+	 *
+	 * @return string The WordPress.com update notice message.
+	 */
+	public function get_wpcom_update_notice_message() {
+		$plugin_url = 'https://wordpress.org/plugins/facebook-for-woocommerce/';
+		return sprintf(
+			/* translators: %s: WordPress.org plugin page URL */
+			__(
+				'After April 30th, 2026, Meta for WooCommerce will no longer receive automatic updates on WordPress.com-hosted websites. <a href="%s">Download the latest version from WordPress.org</a> and install it manually via <strong>Plugins</strong> &rsaquo; <strong>Add New Plugin</strong> &rsaquo; <strong>Upload Plugin</strong> to ensure you receive future updates.',
+				'facebook-for-woocommerce'
+			),
+			esc_url( $plugin_url )
+		);
+	}
+
+	/**
+	 * Displays a notice about WordPress.com automatic updates ending.
+	 *
+	 * Uses an onClick dismiss button that triggers a page reload with a GET parameter,
+	 * ensuring the dismissal is saved server-side before the notice re-renders.
+	 *
+	 * @since 3.5.3
+	 *
+	 * @return void
+	 */
+	public function wpcom_update_notice() {
+		printf(
+			'
+<div class="notice notice-warning is-dismissible">
+	<p>%s</p>
+	<button
+		type="button"
+		class="notice-dismiss"
+		onClick="location.href=\'%s\'">
+		<span class="screen-reader-text">%s</span>
+	</button>
+</div>
+			',
+			wp_kses_post( $this->get_wpcom_update_notice_message() ),
+			esc_url( add_query_arg( self::ADMIN_DISMISS_WPCOM_UPDATE_NOTICE, '1' ) ),
+			esc_html__( 'Dismiss this notice.', 'facebook-for-woocommerce' )
+		);
+	}
+
+	/**
+	 * Handles the dismiss action for the WordPress.com update notice.
+	 *
+	 * @since 3.5.3
+	 *
+	 * @return void
+	 */
+	public function handle_wpcom_update_notice_dismiss() {
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		if ( ! isset( $_GET[ self::ADMIN_DISMISS_WPCOM_UPDATE_NOTICE ] ) ) {
+			return;
+		}
+
+		update_user_meta(
+			get_current_user_id(),
+			self::ADMIN_DISMISS_WPCOM_UPDATE_NOTICE,
+			1
+		);
 	}
 }
