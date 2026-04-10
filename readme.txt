@@ -3,7 +3,7 @@ Contributors: meta
 Tags: meta, facebook, whatsapp, conversions api, catalog sync
 Requires at least: 5.6
 Tested up to: 6.9.4
-Stable tag: 3.6.0
+Stable tag: 3.6.2
 Requires PHP: 7.4
 MySQL: 5.6 or greater
 License: GPLv2 or later
@@ -42,7 +42,12 @@ To suggest technical improvements, you can raise an issue on our [Github reposit
 
 == Changelog ==
 
-= 3.6.2 - 2026-03-26 =
-* Dev - minor security fixes and updates
+= 3.6.3 - 2026-04-10 =
+* Fix - Fix minimatch vulnerability (CVE-2026-27903) by @vahidkay-meta in #3897
+* Fix - Added checks and safeguards. by @vahidkay-meta in #3887
+* Dev - Migrate CAPI Param Builder script to unpkg CDN by @cshing-meta in #3895
+* Dev - Bump tar-fs from 3.1.0 to 3.1.2 by @mrharel in #3896
+* Add - Add WooCommerce Blocks Store API support for AddToCart Pixel events by @cshing-meta in #3888
+* Dev - Dev/break down e2e tests and automate supported version bumpup by @vahidkay-meta in #3876
 
 [See changelog for all versions](https://raw.githubusercontent.com/facebook/facebook-for-woocommerce/refs/heads/main/changelog.txt).
