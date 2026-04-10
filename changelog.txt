@@ -1,5 +1,13 @@
 *** Meta for WooCommerce Changelog ***
 
+= 3.6.3 - 2026-04-10 =
+* Fix - Fix minimatch vulnerability (CVE-2026-27903) by @vahidkay-meta in #3897
+* Fix - Added checks and safeguards. by @vahidkay-meta in #3887
+* Dev - Migrate CAPI Param Builder script to unpkg CDN by @cshing-meta in #3895
+* Dev - Bump tar-fs from 3.1.0 to 3.1.2 by @mrharel in #3896
+* Add - Add WooCommerce Blocks Store API support for AddToCart Pixel events by @cshing-meta in #3888
+* Dev - Dev/break down e2e tests and automate supported version bumpup by @vahidkay-meta in #3876
+
 = 3.6.0 - 2026-03-10 =
 * Add - [WhatsApp Utility WooCommerce] Remove Rollout switch WhatsApp rich order status by @ashutoshbondre in #3884
 * Add - [WhatsApp GA]  Add plugin version when rendering Whatsapp splash page by @sharunaanandraj in #3885
