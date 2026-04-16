@@ -14,6 +14,8 @@ class CompatibilityCheckTest extends AbstractWPUnitTestWithSafeFiltering {
 	public function setUp(): void {
 		parent::setUp();
 		$this->loader = \WC_Facebook_Loader::instance();
+		// Enable the compat check rollout switch for tests.
+		update_option( 'wc_facebook_for_woocommerce_rollout_switches', [ 'enable_woocommerce_compat_check' => 'yes' ] );
 	}
 
 	public function tearDown(): void {
@@ -21,6 +23,7 @@ class CompatibilityCheckTest extends AbstractWPUnitTestWithSafeFiltering {
 		$ref = new \ReflectionProperty( \WC_Facebook_Loader::class, 'compat_cached_entry' );
 		$ref->setAccessible( true );
 		$ref->setValue( null, null );
+		delete_option( 'wc_facebook_for_woocommerce_rollout_switches' );
 		parent::tearDown();
 	}
 
@@ -329,5 +332,61 @@ class CompatibilityCheckTest extends AbstractWPUnitTestWithSafeFiltering {
 
 		$this->assertEquals( '3.6.0', $result->response[ $this->basename ]->new_version );
 		$this->assertStringContainsString( 'downloads.wordpress.org', $result->response[ $this->basename ]->package );
+	}
+
+	// ─── rollout switch tests ───
+
+	public function test_capture_skips_when_rollout_switch_disabled() {
+		update_option( 'wc_facebook_for_woocommerce_rollout_switches', [ 'enable_woocommerce_compat_check' => 'no' ] );
+
+		$transient = $this->make_transient();
+		$transient->response[ $this->basename ] = $this->make_wporg_entry( '3.6.0' );
+
+		$result = $this->loader->compat_capture_entry( $transient );
+
+		// Should return transient unchanged without caching.
+		$this->assertSame( $transient, $result );
+
+		// Verify nothing was cached by running verify with a tampered transient.
+		$this->add_filter_with_safe_teardown( 'pre_http_request', function () {
+			return new \WP_Error( 'timeout', 'Request timed out' );
+		}, 10, 3 );
+
+		update_option( 'wc_facebook_for_woocommerce_rollout_switches', [ 'enable_woocommerce_compat_check' => 'yes' ] );
+
+		$tampered = $this->make_transient();
+		$verify   = $this->loader->compat_verify_entry( $tampered );
+
+		$this->assertArrayNotHasKey( $this->basename, $verify->response );
+	}
+
+	public function test_verify_skips_when_rollout_switch_disabled() {
+		// First capture with switch enabled.
+		$transient = $this->make_transient();
+		$transient->response[ $this->basename ] = $this->make_wporg_entry( '3.6.0' );
+		$this->loader->compat_capture_entry( $transient );
+
+		// Now disable the switch.
+		update_option( 'wc_facebook_for_woocommerce_rollout_switches', [ 'enable_woocommerce_compat_check' => 'no' ] );
+
+		$tampered = $this->make_transient( '3.5.18' );
+		$tampered->response[ $this->basename ] = $this->make_woocom_entry( '3.5.18' );
+
+		$result = $this->loader->compat_verify_entry( $tampered );
+
+		// Should not correct the tampered entry.
+		$this->assertEquals( '3.5.18', $result->response[ $this->basename ]->new_version );
+		$this->assertStringContainsString( 'woocommerce.com', $result->response[ $this->basename ]->package );
+	}
+
+	public function test_verify_skips_when_rollout_switch_option_missing() {
+		delete_option( 'wc_facebook_for_woocommerce_rollout_switches' );
+
+		$tampered = $this->make_transient( '3.5.18' );
+		$tampered->response[ $this->basename ] = $this->make_woocom_entry( '3.5.18' );
+
+		$result = $this->loader->compat_verify_entry( $tampered );
+
+		$this->assertEquals( '3.5.18', $result->response[ $this->basename ]->new_version );
 	}
 }

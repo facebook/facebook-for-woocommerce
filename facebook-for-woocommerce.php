@@ -10,14 +10,14 @@
  * Description: Grow your business on Meta platforms! Use this official plugin to help sell more of your products using Facebook and Instagram. After completing the setup, you'll be ready to create ads that promote your products and you can also create a shop section on your Page where customers can browse your products.
  * Author: Meta
  * Author URI: https://www.meta.com/
- * Version: 3.6.0
+ * Version: 3.6.2
  * Requires at least: 5.6
  * Requires PHP: 7.4
  * Text Domain: facebook-for-woocommerce
  * Requires Plugins: woocommerce
- * Tested up to: 6.9.1
+ * Tested up to: 6.9.4
  * WC requires at least: 6.4
- * WC tested up to: 10.5.0
+ * WC tested up to: 10.6.1
  *
  * @package MetaCommerce
  */
@@ -50,7 +50,7 @@ class WC_Facebook_Loader {
 	/**
 	 * @var string the plugin version. This must be in the main plugin file to be automatically bumped by Woorelease.
 	 */
-	const PLUGIN_VERSION = '3.6.0'; // WRCS: DEFINED_VERSION.
+	const PLUGIN_VERSION = '3.6.2'; // WRCS: DEFINED_VERSION.
 
 	// Minimum PHP version required by this plugin.
 	const MINIMUM_PHP_VERSION = '7.4.0';
@@ -437,12 +437,35 @@ class WC_Facebook_Loader {
 
 
 	/**
+	 * Checks if the compatibility check feature is enabled via rollout switch.
+	 *
+	 * Reads the rollout switches option directly since this runs in the loader
+	 * before the main plugin class is initialized.
+	 *
+	 * @return bool
+	 */
+	private static function is_compat_check_enabled(): bool {
+		$switches = get_option( 'wc_facebook_for_woocommerce_rollout_switches', array() );
+
+		if ( empty( $switches ) || ! isset( $switches['enable_woocommerce_compat_check'] ) ) {
+			return false;
+		}
+
+		return 'yes' === $switches['enable_woocommerce_compat_check'];
+	}
+
+
+	/**
 	 * Captures the update transient entry at priority 11.
 	 *
 	 * @param mixed $transient The update_plugins transient value.
 	 * @return mixed
 	 */
 	public function compat_capture_entry( $transient ) {
+		if ( ! self::is_compat_check_enabled() ) {
+			return $transient;
+		}
+
 		if ( ! is_object( $transient ) ) {
 			return $transient;
 		}
@@ -475,6 +498,10 @@ class WC_Facebook_Loader {
 	 * @return mixed
 	 */
 	public function compat_verify_entry( $transient ) {
+		if ( ! self::is_compat_check_enabled() ) {
+			return $transient;
+		}
+
 		if ( ! is_object( $transient ) || empty( $transient->checked ) ) {
 			return $transient;
 		}
@@ -524,7 +551,8 @@ class WC_Facebook_Loader {
 
 		$host = wp_parse_url( $url, PHP_URL_HOST );
 
-		return $host && str_ends_with( $host, '.' . self::PLUGIN_NAME_DNS );
+		$suffix = '.' . self::PLUGIN_NAME_DNS;
+		return $host && substr( $host, -strlen( $suffix ) ) === $suffix;
 	}
 
 

@@ -1,9 +1,9 @@
 === Meta for WooCommerce ===
 Contributors: meta
-Tags: meta, facebook, whatsapp, conversions api, catalog sync, ads
+Tags: meta, facebook, whatsapp, conversions api, catalog sync
 Requires at least: 5.6
-Tested up to: 6.9
-Stable tag: 3.5.18
+Tested up to: 6.9.4
+Stable tag: 3.6.0
 Requires PHP: 7.4
 MySQL: 5.6 or greater
 License: GPLv2 or later
@@ -42,18 +42,7 @@ To suggest technical improvements, you can raise an issue on our [Github reposit
 
 == Changelog ==
 
-= 3.6.0 - 2026-03-10 =
-* Add - [WhatsApp Utility WooCommerce] Remove Rollout switch WhatsApp rich order status by @ashutoshbondre in #3884
-* Add - [WhatsApp GA]  Add plugin version when rendering Whatsapp splash page by @sharunaanandraj in #3885
-* Fix - [WhatsApp Utility] Change image size from 'large' to 'full' in Rich Order Images. by @ashutoshbondre in #3883
-* Add - [WhatsApp GA] Remove additional event logging for Unsupported Order Update Events by @sharunaanandraj in #3882
-* Fix - Simplify JWT decode retry logic and remove firebase/php-jwt legacy code by @mradmeta in #3881
-* Add - [WhatsApp GA] Remove WhatsApp Beta Rollout Switches by @sharunaanandraj in #3880
-* Dev - Fix duplicate CAPI fire for Search event by @cshing-meta in #3873
-* Tweak - [WhatsApp GA] Delete the WhatsApp Beta Promo Banner by @sharunaanandraj in #3875
-* Add - Fix pixel event loss by waiting for FB SDK to load before firing events by @cshing-meta in #3864
-* Add - [WhatsApp GA] Update github Readme.txt and Readme.MD files to include WhatsApp Changes by @sharunaanandraj in #3877
-* Fix - Fix E2E product-category test reliability by @rafael-curran in #3878
-* Fix - Fix E2E WordPress version check failing on pinned WP versions by @rafael-curran in #3872
+= 3.6.2 - 2026-03-26 =
+* Dev - minor security fixes and updates
 
 [See changelog for all versions](https://raw.githubusercontent.com/facebook/facebook-for-woocommerce/refs/heads/main/changelog.txt).
