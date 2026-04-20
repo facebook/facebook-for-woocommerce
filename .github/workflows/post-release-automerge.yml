@@ -10,10 +10,31 @@ on:
       - closed
     branches:
       - trunk
+  pull_request_target:
+    types:
+      - opened
+      - reopened
+      - synchronize
+      - ready_for_review
 
 jobs:
   automerge_trunk:
     name: Automerge released trunk
+    if: github.event_name == 'pull_request' && github.event.action == 'closed' && github.event.pull_request.merged == true && github.base_ref == 'trunk'
     runs-on: ubuntu-latest
     steps:
       - uses: woocommerce/grow/automerge-released-trunk@actions-v1
+
+  enable_dependabot_auto_merge:
+    name: Enable auto-merge for Dependabot PRs
+    if: github.event_name == 'pull_request_target' && github.event.pull_request.user.login == 'dependabot[bot]' && github.event.pull_request.draft == false
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - name: Enable GitHub auto-merge (squash)
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_URL: ${{ github.event.pull_request.html_url }}
+        run: gh pr merge --auto --squash "$PR_URL"
