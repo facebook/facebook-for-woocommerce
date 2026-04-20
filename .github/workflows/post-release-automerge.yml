@@ -27,7 +27,7 @@ jobs:
 
   enable_dependabot_auto_merge:
     name: Enable auto-merge for Dependabot PRs
-    if: github.event_name == 'pull_request_target' && github.event.pull_request.user.login == 'dependabot[bot]' && github.event.pull_request.draft == false
+    if: github.event_name == 'pull_request_target' && github.event.pull_request.user.login == 'dependabot[bot]' && github.event.pull_request.draft == false && vars.DEPENDABOT_AUTOMERGE_ENABLED == 'true'
     runs-on: ubuntu-latest
     permissions:
       contents: write
