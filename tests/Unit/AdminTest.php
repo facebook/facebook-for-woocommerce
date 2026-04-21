@@ -141,6 +141,180 @@ class AdminTest extends \WP_UnitTestCase {
         );
     }
 
+    /**
+     * Test ADMIN_DISMISS_WPCOM_UPDATE_NOTICE constant.
+     */
+    public function test_admin_dismiss_wpcom_update_notice_constant(): void {
+        $this->assertSame(
+            'dismiss_wpcom_update_notice',
+            Admin::ADMIN_DISMISS_WPCOM_UPDATE_NOTICE,
+            'ADMIN_DISMISS_WPCOM_UPDATE_NOTICE constant should have correct value'
+        );
+    }
+
+    /**
+     * Tests that the WordPress.com update notice message includes manual install steps.
+     */
+    public function test_wpcom_update_notice_message_includes_manual_install_steps(): void {
+        $admin = $this->createAdminInstance();
+
+        $message = $admin->get_wpcom_update_notice_message();
+
+        $this->assertStringContainsString(
+            'After April 30th, 2026',
+            $message
+        );
+        $this->assertStringContainsString(
+            'wordpress.org/plugins/facebook-for-woocommerce/',
+            $message
+        );
+        $this->assertStringContainsString(
+            'Upload Plugin',
+            $message
+        );
+    }
+
+    /**
+     * Tests that the WordPress.com update notice is shown only for
+     * WordPress.com-hosted sites when it has not been dismissed.
+     */
+    public function test_wpcom_update_notice_visibility_for_hosted_sites(): void {
+        update_option( 'is_wordpress_com_hosted', 1 );
+
+        $admin = $this->createAdminInstance();
+
+        $this->assertTrue( $admin->should_show_wpcom_update_notice() );
+    }
+
+    /**
+     * Tests that the WordPress.com update notice is hidden for
+     * non-WordPress.com-hosted sites.
+     */
+    public function test_wpcom_update_notice_hidden_for_non_hosted_sites(): void {
+        update_option( 'is_wordpress_com_hosted', 0 );
+
+        $admin = $this->createAdminInstance();
+
+        $this->assertFalse( $admin->should_show_wpcom_update_notice() );
+    }
+
+    /**
+     * Tests that the WordPress.com update notice is hidden when the option is not set.
+     */
+    public function test_wpcom_update_notice_hidden_when_option_not_set(): void {
+        delete_option( 'is_wordpress_com_hosted' );
+
+        $admin = $this->createAdminInstance();
+
+        $this->assertFalse( $admin->should_show_wpcom_update_notice() );
+    }
+
+    /**
+     * Tests that the WordPress.com update notice is hidden after dismissal.
+     */
+    public function test_wpcom_update_notice_hidden_after_dismiss(): void {
+        $user_id = self::factory()->user->create();
+        wp_set_current_user( $user_id );
+
+        update_option( 'is_wordpress_com_hosted', 1 );
+        delete_user_meta( $user_id, Admin::ADMIN_DISMISS_WPCOM_UPDATE_NOTICE );
+
+        $admin = $this->createAdminInstance();
+
+        // Initially should show
+        $this->assertTrue( $admin->should_show_wpcom_update_notice() );
+
+        // Simulate dismissal
+        update_user_meta( $user_id, Admin::ADMIN_DISMISS_WPCOM_UPDATE_NOTICE, 1 );
+
+        // Should now be hidden
+        $this->assertFalse( $admin->should_show_wpcom_update_notice() );
+    }
+
+    /**
+     * Tests that handle_wpcom_update_notice_dismiss saves user meta when GET param is present.
+     */
+    public function test_handle_wpcom_update_notice_dismiss_saves_meta(): void {
+        $user_id = self::factory()->user->create();
+        wp_set_current_user( $user_id );
+        delete_user_meta( $user_id, Admin::ADMIN_DISMISS_WPCOM_UPDATE_NOTICE );
+
+        // Set GET parameter
+        $_GET[ Admin::ADMIN_DISMISS_WPCOM_UPDATE_NOTICE ] = '1';
+
+        $admin = $this->createAdminInstance();
+        $admin->handle_wpcom_update_notice_dismiss();
+
+        // Verify meta was saved
+        $this->assertEquals(
+            '1',
+            get_user_meta( $user_id, Admin::ADMIN_DISMISS_WPCOM_UPDATE_NOTICE, true )
+        );
+
+        // Cleanup
+        unset( $_GET[ Admin::ADMIN_DISMISS_WPCOM_UPDATE_NOTICE ] );
+    }
+
+    /**
+     * Tests that handle_wpcom_update_notice_dismiss does nothing when GET param is absent.
+     */
+    public function test_handle_wpcom_update_notice_dismiss_no_action_without_get(): void {
+        $user_id = get_current_user_id();
+        delete_user_meta( $user_id, Admin::ADMIN_DISMISS_WPCOM_UPDATE_NOTICE );
+
+        // Ensure GET parameter is not set
+        unset( $_GET[ Admin::ADMIN_DISMISS_WPCOM_UPDATE_NOTICE ] );
+
+        $admin = $this->createAdminInstance();
+        $admin->handle_wpcom_update_notice_dismiss();
+
+        // Verify meta was not saved
+        $this->assertEmpty(
+            get_user_meta( $user_id, Admin::ADMIN_DISMISS_WPCOM_UPDATE_NOTICE, true )
+        );
+    }
+
+    /**
+     * Tests that maybe_show_wpcom_update_notice outputs the notice when conditions are met,
+     * and suppresses it after dismissal — verifying the dismiss/render ordering is correct.
+     */
+    public function test_maybe_show_wpcom_update_notice_suppresses_after_dismiss(): void {
+        $user_id = self::factory()->user->create();
+        wp_set_current_user( $user_id );
+
+        update_option( 'is_wordpress_com_hosted', 1 );
+        delete_user_meta( $user_id, Admin::ADMIN_DISMISS_WPCOM_UPDATE_NOTICE );
+
+        $admin = $this->createAdminInstance();
+
+        // Before dismiss: should output the notice
+        ob_start();
+        $admin->maybe_show_wpcom_update_notice();
+        $output = ob_get_clean();
+        $this->assertStringContainsString( 'notice-warning', $output );
+
+        // Simulate what handle_wpcom_update_notice_dismiss does on admin_init
+        update_user_meta( $user_id, Admin::ADMIN_DISMISS_WPCOM_UPDATE_NOTICE, 1 );
+
+        // After dismiss: maybe_show_wpcom_update_notice must produce no output
+        // (this is what runs on admin_notices, after admin_init has saved the meta)
+        ob_start();
+        $admin->maybe_show_wpcom_update_notice();
+        $output = ob_get_clean();
+        $this->assertEmpty( $output, 'Notice must not render after dismissal — dismiss handler runs on admin_init, before admin_notices' );
+    }
+
+    /**
+     * Creates a testable Admin instance without triggering the full constructor.
+     */
+    private function createAdminInstance(): Admin {
+        return new class() extends Admin {
+            public function __construct() {
+                // Skip parent constructor to avoid dependencies
+            }
+        };
+    }
+
     public function setUp() : void {
         parent::setUp();
 

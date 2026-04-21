@@ -3,7 +3,7 @@ name: Set Stable Tag
 on: workflow_dispatch
 
 permissions:
-  contents: read
+  contents: write
   pull-requests: write
 
 jobs:
@@ -44,12 +44,12 @@ jobs:
           curl -sL "https://downloads.wordpress.org/plugin/facebook-for-woocommerce.zip" -o "$TEMP_DIR/marketplace.zip"
 
           # Download GitHub artifact
-          RUN_ID=$(gh run list --repo woocommerce/facebook-for-woocommerce --workflow prepare-release.yml --status success --json databaseId,displayTitle --jq '.[] | select(.displayTitle | contains("release/'"$VERSION"'")) | .databaseId' | head -1)
+          RUN_ID=$(gh run list --repo facebook/facebook-for-woocommerce --workflow prepare-release.yml --branch "release/$VERSION" --status success --json databaseId --jq '.[0].databaseId')
           if [ -z "$RUN_ID" ] || [ "$RUN_ID" = "null" ]; then
               echo "❌ No successful build found for release/$VERSION"
               exit 1
           fi
-          gh run download "$RUN_ID" --repo woocommerce/facebook-for-woocommerce --dir "$TEMP_DIR/artifact"
+          gh run download "$RUN_ID" --repo facebook/facebook-for-woocommerce --dir "$TEMP_DIR/artifact"
 
           # Find and prepare GitHub zip
           ARTIFACT_ZIP=$(find "$TEMP_DIR/artifact" -name "*.zip" -type f | head -1)
@@ -152,19 +152,27 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           gh release edit "v$VERSION" \
-            --repo woocommerce/facebook-for-woocommerce \
+            --repo facebook/facebook-for-woocommerce \
             --draft=false \
             --prerelease=false \
             --latest
 
-      - name: Create pull request
+      - name: Create or update pull request
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh release view "v$VERSION" --repo woocommerce/facebook-for-woocommerce --json body --jq '.body' > /tmp/release-notes.md
-          gh pr create \
-            --repo woocommerce/facebook-for-woocommerce \
-            --base main \
-            --head "release/$VERSION" \
-            --title "Release $VERSION" \
-            --body-file /tmp/release-notes.md
+          gh release view "v$VERSION" --repo facebook/facebook-for-woocommerce --json body --jq '.body' > /tmp/release-notes.md
+          EXISTING_PR=$(gh pr list --repo facebook/facebook-for-woocommerce --head "release/$VERSION" --base main --json number --jq '.[0].number')
+          if [ -n "$EXISTING_PR" ]; then
+            gh pr edit "$EXISTING_PR" \
+              --repo facebook/facebook-for-woocommerce \
+              --title "Release $VERSION" \
+              --body-file /tmp/release-notes.md
+          else
+            gh pr create \
+              --repo facebook/facebook-for-woocommerce \
+              --base main \
+              --head "release/$VERSION" \
+              --title "Release $VERSION" \
+              --body-file /tmp/release-notes.md
+          fi

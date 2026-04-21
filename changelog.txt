@@ -1,5 +1,13 @@
 *** Meta for WooCommerce Changelog ***
 
+= 3.6.3 - 2026-04-10 =
+* Fix - Fix minimatch vulnerability (CVE-2026-27903) by @vahidkay-meta in #3897
+* Fix - Added checks and safeguards. by @vahidkay-meta in #3887
+* Dev - Migrate CAPI Param Builder script to unpkg CDN by @cshing-meta in #3895
+* Dev - Bump tar-fs from 3.1.0 to 3.1.2 by @mrharel in #3896
+* Add - Add WooCommerce Blocks Store API support for AddToCart Pixel events by @cshing-meta in #3888
+* Dev - Dev/break down e2e tests and automate supported version bumpup by @vahidkay-meta in #3876
+
 = 3.6.2 - 2026-03-26 =
 * Dev - minor security fixes and updates
 
@@ -26,7 +34,6 @@
 * Dev - Dev - break down e2e tests and automate supported version bumpup by @vahidkay-meta in #3856
 * Fix - Fix Google Product Category dropdowns not rendering on product pages by @rafael-curran in #3866
 * Add - [Rebranding]Update all references of Facebook for WooCommerce to Meta for WooCommerce by @sharunaanandraj in #3865
-
 = 3.5.17 - 2026-02-17 =
 * Fix - Fix - Removed the prefix from retailer id. by @vahidkay-meta in #3858
 * Add - [WooCommernce] [Rich Order] Add rich-order payload gating and simplify per-item amount for events. by @ashutoshbondre in #3848

@@ -105,7 +105,42 @@ async function validateCategorySync(categoryId, categoryName = null, waitSeconds
   }
 }
 
+/**
+ * Process pending Facebook sync background jobs directly.
+ *
+ * The background job handler normally dispatches via a loopback HTTP request
+ * to admin-ajax.php, which doesn't work on single-threaded PHP servers (like
+ * the built-in dev server used in CI). This function bypasses the loopback by
+ * invoking the job handler directly via CLI.
+ *
+ * @returns {Promise<Object>} Processing result
+ */
+async function processPendingSyncJobs() {
+  console.log('🔄 Processing pending Facebook sync background jobs...');
+
+  try {
+    const phpDir = path.resolve(__dirname, '../../php');
+    const { stdout, stderr } = await execAsync(
+      'php process-sync-jobs.php',
+      { cwd: phpDir, timeout: 120000 }
+    );
+
+    const result = JSON.parse(stdout);
+    if (result.success) {
+      console.log(`✅ Processed ${result.jobs_processed} sync job(s)`);
+    } else {
+      console.warn(`⚠️ Sync job processing issue: ${result.message}`);
+    }
+    return result;
+
+  } catch (error) {
+    console.warn(`⚠️ Sync job processing error: ${error.message}`);
+    return { success: false, error: error.message };
+  }
+}
+
 module.exports = {
   validateFacebookSync,
+  processPendingSyncJobs,
   validateCategorySync
 };

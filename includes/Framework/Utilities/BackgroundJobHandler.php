@@ -636,6 +636,9 @@ abstract class BackgroundJobHandler extends AsyncRequest {
 		do {
 			// Get next job in the queue
 			$job = $this->get_job();
+			if ( ! $job ) {
+				break;
+			}
 			// handle PHP errors from here on out
 			register_shutdown_function( [ $this, 'handle_shutdown' ], $job );
 			// Start processing

@@ -124,7 +124,7 @@ jobs:
         run: |
           gh release create "v$VERSION" \
             facebook-for-woocommerce.zip \
-            --repo woocommerce/facebook-for-woocommerce \
+            --repo facebook/facebook-for-woocommerce \
             --target "${{ github.sha }}" \
             --title "Release $VERSION" \
             --notes "$RELEASE_NOTES" \
