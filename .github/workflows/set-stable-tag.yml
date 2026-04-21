@@ -1,6 +1,14 @@
 name: Set Stable Tag
 
-on: workflow_dispatch
+on:
+  workflow_dispatch:
+    branches:
+      - 'release/p*/release'
+    inputs:
+      instructions:
+        description: 'Choose from branches that follow this pattern: release/p*/release'
+        required: false
+        default: ''
 
 permissions:
   contents: write
@@ -19,8 +27,8 @@ jobs:
         run: |
           echo "Current ref: ${{ github.ref }}"
           BRANCH="${{ github.ref }}"
-          if [[ ! $BRANCH == refs/heads/release/*/publish ]]; then
-            echo "❌ This workflow can only be run on release/*/publish branches."
+          if [[ ! $BRANCH == refs/heads/release/p*/release ]]; then
+            echo "❌ This workflow can only be run on release/p*/release branches."
             exit 1
           fi
 
