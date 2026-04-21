@@ -8,6 +8,9 @@ on:
       version:
         description: "Version number to be released"
         required: true
+  push:
+    branches:
+      - 'release/[0-9]+.[0-9]+.[0-9]+'
 
 permissions:
   contents: write
@@ -17,6 +20,7 @@ permissions:
 jobs:
   prepare-release:
     name: Prepare Release
+    if: github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -390,6 +394,7 @@ jobs:
 
   build-and-upload:
     needs: prepare-release
+    if: always() && (needs.prepare-release.result == 'success' || needs.prepare-release.result == 'skipped')
     uses: ./.github/workflows/shared-build-plugin-artifact.yml
     with:
-      ref: ${{ format('refs/heads/release/{0}', github.event.inputs.version) }}
+      ref: ${{ github.event_name == 'push' && github.ref || format('refs/heads/release/{0}', github.event.inputs.version) }}
