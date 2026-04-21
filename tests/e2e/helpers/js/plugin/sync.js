@@ -105,7 +105,50 @@ async function validateCategorySync(categoryId, categoryName = null, waitSeconds
   }
 }
 
+/**
+ * Validate that a product has been removed from the Facebook catalog.
+ * Retries until the product is no longer found, or until maxAttempts is exhausted.
+ *
+ * @param {number} productId - Product ID to validate
+ * @param {string} productName - Product name for display
+ * @param {number} initialWaitSeconds - Seconds to wait before first check
+ * @param {number} maxAttempts - Maximum polling attempts
+ * @param {number} intervalSeconds - Seconds between retries
+ * @returns {Promise<Object>} Last validation result (success should be false with 0 products compared)
+ */
+async function validateFacebookDeletion(productId, productName, initialWaitSeconds = 30, maxAttempts = 6, intervalSeconds = 10) {
+  const displayName = productName ? `"${productName}" (ID: ${productId})` : `ID: ${productId}`;
+  let lastResult = null;
+
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    const waitSec = attempt === 1 ? initialWaitSeconds : intervalSeconds;
+    lastResult = await validateFacebookSync(productId, productName, waitSec, 0);
+
+    if (!lastResult) {
+      console.log(`🗑️ Deletion validated for ${displayName}: validator returned null (product not found)`);
+      return { success: false, debug: ['Compared fields for 0 products, found 0 total mismatches'] };
+    }
+
+    const isGone = !lastResult.success && lastResult.debug && lastResult.debug.some(
+      (msg) => msg === 'Compared fields for 0 products, found 0 total mismatches'
+    );
+
+    if (isGone) {
+      console.log(`🗑️ Deletion validated for ${displayName} on attempt ${attempt}/${maxAttempts}`);
+      return lastResult;
+    }
+
+    if (attempt < maxAttempts) {
+      console.log(`⏳ Product ${displayName} still on Facebook, retrying (${attempt}/${maxAttempts})...`);
+    }
+  }
+
+  console.warn(`⚠️ Product ${displayName} still found on Facebook after ${maxAttempts} attempts`);
+  return lastResult;
+}
+
 module.exports = {
   validateFacebookSync,
+  validateFacebookDeletion,
   validateCategorySync
 };

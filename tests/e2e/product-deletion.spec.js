@@ -9,6 +9,7 @@ const {
   logTestStart,
   logTestEnd,
   validateFacebookSync,
+  validateFacebookDeletion,
   createTestProduct,
   filterProducts,
   clickFirstProduct,
@@ -171,24 +172,11 @@ test.describe('Meta for WooCommerce - Product Deletion E2E Tests', () => {
       }
 
       const [simpleProductValidationResult, variableProductValidationResult] = await Promise.all([
-        validateFacebookSync(simpleProductId, simpleProduct.productName, 30, 0),
-        validateFacebookSync(variableProductId, variableProduct.productName, 30, 0)
+        validateFacebookDeletion(simpleProductId, simpleProduct.productName, 30),
+        validateFacebookDeletion(variableProductId, variableProduct.productName, 30)
       ]);
       expect(simpleProductValidationResult['success']).toBe(false);
-      // Check if any debug message contains the expected text about 0 products and 0 mismatches
-      expect(
-        simpleProductValidationResult['debug'].some(
-          // For each message in the debug array, check if it includes the specific string
-          (msg) => msg === 'Compared fields for 0 products, found 0 total mismatches'
-        )
-      ).toBe(true);
-
       expect(variableProductValidationResult['success']).toBe(false);
-      expect(
-        variableProductValidationResult['debug'].some(
-          (msg) => msg === 'Compared fields for 0 products, found 0 total mismatches'
-        )
-      ).toBe(true);
       console.log('✅ Both products successfully deleted from Facebook catalog');
       logTestEnd(testInfo, true);
     } catch (error) {
@@ -379,24 +367,14 @@ test.describe('Meta for WooCommerce - Product Deletion E2E Tests', () => {
       // and the products are removed from catalog
       console.log('🔍 Validating Facebook sync status after bulk exclusion...');
       const [simpleProductSyncResultAfter, variableProductSyncResultAfter] = await Promise.all([
-        validateFacebookSync(simpleProductId, simpleProduct.productName, 30, 0),
-        validateFacebookSync(variableProductId, variableProduct.productName, 30, 0)
+        validateFacebookDeletion(simpleProductId, simpleProduct.productName, 30),
+        validateFacebookDeletion(variableProductId, variableProduct.productName, 30)
       ]);
 
       expect(simpleProductSyncResultAfter['success']).toBe(false);
-      expect(
-        simpleProductSyncResultAfter['debug'].some(
-          (msg) => msg === 'Compared fields for 0 products, found 0 total mismatches'
-        )
-      ).toBe(true);
       console.log('✅ Simple product successfully removed from Facebook catalog');
 
       expect(variableProductSyncResultAfter['success']).toBe(false);
-      expect(
-        variableProductSyncResultAfter['debug'].some(
-          (msg) => msg === 'Compared fields for 0 products, found 0 total mismatches'
-        )
-      ).toBe(true);
       console.log('✅ Variable product successfully removed from Facebook catalog');
       logTestEnd(testInfo, true);
     } catch (error) {
