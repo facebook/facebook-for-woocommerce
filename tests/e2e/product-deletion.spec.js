@@ -9,7 +9,7 @@ const {
   logTestStart,
   logTestEnd,
   validateFacebookSync,
-  validateFacebookDeletion,
+  processPendingSyncJobs,
   createTestProduct,
   filterProducts,
   clickFirstProduct,
@@ -133,47 +133,15 @@ test.describe('Meta for WooCommerce - Product Deletion E2E Tests', () => {
       await page.waitForLoadState('networkidle', { timeout: TIMEOUTS.MAX });
       console.log('✅ Products moved to trash');
 
-      // Navigate to Marketing > Facebook > Troubleshooting
-      console.log('🔧 Navigating to Marketing > Facebook > Troubleshooting...');
-
-      // First, navigate to Marketing > Facebook page
-      await page.goto(`${baseURL}/wp-admin/admin.php?page=wc-facebook`, {
-        waitUntil: 'domcontentloaded',
-        timeout: TIMEOUTS.MAX
-      });
-      console.log('✅ Navigated to Facebook page');
-
-      // Click on Troubleshooting tab
-      console.log('🔍 Looking for Troubleshooting tab...');
-      const troubleshootingTab = page.locator('a:has-text("Troubleshooting"), button:has-text("Troubleshooting")');
-
-      if (await troubleshootingTab.isVisible({ timeout: TIMEOUTS.LONG })) {
-        await troubleshootingTab.click();
-        console.log('✅ Clicked Troubleshooting tab');
-        await page.waitForTimeout(TIMEOUTS.NORMAL);
-      }
-      else {
-        console.warn('⚠️ Troubleshooting tab not found');
-      }
-
-      // Click on Product Data Sync "Sync now" button
-      console.log('🔄 Looking for Product Data Sync "Sync now" button...');
-      const syncNowButton = page.locator('#woocommerce-facebook-settings-sync-products');
-
-      if (await syncNowButton.isVisible({ timeout: TIMEOUTS.LONG })) {
-        await syncNowButton.click();
-        console.log('✅ Clicked "Sync now" button');
-
-        // Wait for sync to process
-        await page.waitForTimeout(TIMEOUTS.MEDIUM);
-        console.log('✅ Sync initiated');
-      } else {
-        console.warn('⚠️ "Sync now" button not found');
-      }
+      // Process the pending DELETE sync jobs directly.
+      // The background job handler dispatches via a loopback HTTP request which
+      // doesn't work on single-threaded PHP servers (like the built-in dev
+      // server used in CI), so we invoke the job handler directly via CLI.
+      await processPendingSyncJobs();
 
       const [simpleProductValidationResult, variableProductValidationResult] = await Promise.all([
-        validateFacebookDeletion(simpleProductId, simpleProduct.productName, 30),
-        validateFacebookDeletion(variableProductId, variableProduct.productName, 30)
+        validateFacebookSync(simpleProductId, simpleProduct.productName, 30, 0),
+        validateFacebookSync(variableProductId, variableProduct.productName, 30, 0)
       ]);
       expect(simpleProductValidationResult['success']).toBe(false);
       expect(variableProductValidationResult['success']).toBe(false);
@@ -221,6 +189,10 @@ test.describe('Meta for WooCommerce - Product Deletion E2E Tests', () => {
       const newDescription = 'This product is out of sync with Facebook';
       await setProductDescription(page, newDescription);
       await publishProduct(page);
+
+      // Process the pending DELETE sync job directly (loopback doesn't work
+      // on single-threaded PHP servers in CI).
+      await processPendingSyncJobs();
 
       const syncResultAfter = await validateFacebookSync(simpleProductId, simpleProduct.productName, 30, 0);
       expect(syncResultAfter['success']).toBe(false);
@@ -363,12 +335,15 @@ test.describe('Meta for WooCommerce - Product Deletion E2E Tests', () => {
       await page.waitForLoadState('domcontentloaded', { timeout: TIMEOUTS.MAX });
       console.log('✅ Bulk edit completed');
 
-      // Validate that "Synced to Meta catalog" is updated to "Not synced"
-      // and the products are removed from catalog
+      // Process the pending DELETE sync jobs directly (loopback doesn't work
+      // on single-threaded PHP servers in CI).
+      await processPendingSyncJobs();
+
+      // Validate that products are removed from the Facebook catalog
       console.log('🔍 Validating Facebook sync status after bulk exclusion...');
       const [simpleProductSyncResultAfter, variableProductSyncResultAfter] = await Promise.all([
-        validateFacebookDeletion(simpleProductId, simpleProduct.productName, 30),
-        validateFacebookDeletion(variableProductId, variableProduct.productName, 30)
+        validateFacebookSync(simpleProductId, simpleProduct.productName, 30, 0),
+        validateFacebookSync(variableProductId, variableProduct.productName, 30, 0)
       ]);
 
       expect(simpleProductSyncResultAfter['success']).toBe(false);

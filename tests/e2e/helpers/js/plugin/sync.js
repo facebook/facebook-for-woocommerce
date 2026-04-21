@@ -106,49 +106,41 @@ async function validateCategorySync(categoryId, categoryName = null, waitSeconds
 }
 
 /**
- * Validate that a product has been removed from the Facebook catalog.
- * Retries until the product is no longer found, or until maxAttempts is exhausted.
+ * Process pending Facebook sync background jobs directly.
  *
- * @param {number} productId - Product ID to validate
- * @param {string} productName - Product name for display
- * @param {number} initialWaitSeconds - Seconds to wait before first check
- * @param {number} maxAttempts - Maximum polling attempts
- * @param {number} intervalSeconds - Seconds between retries
- * @returns {Promise<Object>} Last validation result (success should be false with 0 products compared)
+ * The background job handler normally dispatches via a loopback HTTP request
+ * to admin-ajax.php, which doesn't work on single-threaded PHP servers (like
+ * the built-in dev server used in CI). This function bypasses the loopback by
+ * invoking the job handler directly via CLI.
+ *
+ * @returns {Promise<Object>} Processing result
  */
-async function validateFacebookDeletion(productId, productName, initialWaitSeconds = 30, maxAttempts = 6, intervalSeconds = 10) {
-  const displayName = productName ? `"${productName}" (ID: ${productId})` : `ID: ${productId}`;
-  let lastResult = null;
+async function processPendingSyncJobs() {
+  console.log('🔄 Processing pending Facebook sync background jobs...');
 
-  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
-    const waitSec = attempt === 1 ? initialWaitSeconds : intervalSeconds;
-    lastResult = await validateFacebookSync(productId, productName, waitSec, 0);
-
-    if (!lastResult) {
-      console.log(`🗑️ Deletion validated for ${displayName}: validator returned null (product not found)`);
-      return { success: false, debug: ['Compared fields for 0 products, found 0 total mismatches'] };
-    }
-
-    const isGone = !lastResult.success && lastResult.debug && lastResult.debug.some(
-      (msg) => msg === 'Compared fields for 0 products, found 0 total mismatches'
+  try {
+    const phpDir = path.resolve(__dirname, '../../php');
+    const { stdout, stderr } = await execAsync(
+      'php process-sync-jobs.php',
+      { cwd: phpDir, timeout: 120000 }
     );
 
-    if (isGone) {
-      console.log(`🗑️ Deletion validated for ${displayName} on attempt ${attempt}/${maxAttempts}`);
-      return lastResult;
+    const result = JSON.parse(stdout);
+    if (result.success) {
+      console.log(`✅ Processed ${result.jobs_processed} sync job(s)`);
+    } else {
+      console.warn(`⚠️ Sync job processing issue: ${result.message}`);
     }
+    return result;
 
-    if (attempt < maxAttempts) {
-      console.log(`⏳ Product ${displayName} still on Facebook, retrying (${attempt}/${maxAttempts})...`);
-    }
+  } catch (error) {
+    console.warn(`⚠️ Sync job processing error: ${error.message}`);
+    return { success: false, error: error.message };
   }
-
-  console.warn(`⚠️ Product ${displayName} still found on Facebook after ${maxAttempts} attempts`);
-  return lastResult;
 }
 
 module.exports = {
   validateFacebookSync,
-  validateFacebookDeletion,
+  processPendingSyncJobs,
   validateCategorySync
 };

@@ -64,7 +64,7 @@ const {
 // =============================================================================
 const {
   validateFacebookSync,
-  validateFacebookDeletion,
+  processPendingSyncJobs,
   validateCategorySync
 } = require('./plugin/sync');
 
@@ -183,7 +183,7 @@ const categories = {
 
 const facebook = {
   validateFacebookSync,
-  validateFacebookDeletion,
+  processPendingSyncJobs,
   validateCategorySync,
   getConnectionStatus,
   disconnectAndVerify,
@@ -277,7 +277,7 @@ module.exports = {
 
   // Facebook - Sync
   validateFacebookSync,
-  validateFacebookDeletion,
+  processPendingSyncJobs,
   validateCategorySync,
 
   // Facebook - Connection
