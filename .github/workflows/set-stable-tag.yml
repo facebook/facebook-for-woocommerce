@@ -3,7 +3,7 @@ name: Set Stable Tag
 on: workflow_dispatch
 
 permissions:
-  contents: read
+  contents: write
   pull-requests: write
 
 jobs:
@@ -157,14 +157,22 @@ jobs:
             --prerelease=false \
             --latest
 
-      - name: Create pull request
+      - name: Create or update pull request
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           gh release view "v$VERSION" --repo facebook/facebook-for-woocommerce --json body --jq '.body' > /tmp/release-notes.md
-          gh pr create \
-            --repo facebook/facebook-for-woocommerce \
-            --base main \
-            --head "release/$VERSION" \
-            --title "Release $VERSION" \
-            --body-file /tmp/release-notes.md
+          EXISTING_PR=$(gh pr list --repo facebook/facebook-for-woocommerce --head "release/$VERSION" --base main --json number --jq '.[0].number')
+          if [ -n "$EXISTING_PR" ]; then
+            gh pr edit "$EXISTING_PR" \
+              --repo facebook/facebook-for-woocommerce \
+              --title "Release $VERSION" \
+              --body-file /tmp/release-notes.md
+          else
+            gh pr create \
+              --repo facebook/facebook-for-woocommerce \
+              --base main \
+              --head "release/$VERSION" \
+              --title "Release $VERSION" \
+              --body-file /tmp/release-notes.md
+          fi
