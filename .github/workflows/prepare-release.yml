@@ -1,5 +1,5 @@
 name: "Prepare New Release"
-run-name: Prepare New Release release/${{ github.event.inputs.version }}` from by @${{ github.actor }}
+run-name: Prepare New Release ${{ github.event.inputs.version && format('release/{0}', github.event.inputs.version) || github.ref_name }} by @${{ github.actor }}
 
 
 on:
