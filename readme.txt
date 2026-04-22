@@ -1,5 +1,5 @@
 === Meta for WooCommerce ===
-Contributors: meta
+Contributors: Facebook
 Tags: meta, facebook, whatsapp, conversions api, catalog sync
 Requires at least: 5.6
 Tested up to: 6.9.4
