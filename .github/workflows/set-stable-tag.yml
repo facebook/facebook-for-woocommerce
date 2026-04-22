@@ -6,7 +6,7 @@ on:
       - 'release/p*/publish'
     inputs:
       instructions:
-        description: 'Choose from branches that follow this pattern: release/p*/release'
+        description: 'Choose from branches that follow this pattern: release/p*/publish'
         required: false
         default: ''
 
