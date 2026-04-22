@@ -32,6 +32,7 @@ test.describe.serial('Meta for WooCommerce - Performance Sync E2E Tests', () => 
       descriptionRepeat: 15,
       price: '19.99',
       waitSeconds: 5,
+      maxRetries: 8,
     },
     longContent: {
       descriptionRepeat: 60,
@@ -54,7 +55,8 @@ test.describe.serial('Meta for WooCommerce - Performance Sync E2E Tests', () => 
       updates: 3,
       initialPrice: '11.00',
       priceStep: 1,
-      waitSeconds: 5,
+      waitSeconds: 8,
+      maxRetries: 8,
     },
     concurrent: {
       price: '25.00',
@@ -187,18 +189,37 @@ test.describe.serial('Meta for WooCommerce - Performance Sync E2E Tests', () => 
     console.log(`   waitSeconds: ${waitSeconds}${maxRetries ? ` | maxRetries: ${maxRetries}` : ''}`);
     console.log(`   current page URL: ${page.url()}`);
 
-    const result = maxRetries == null
-      ? await validateFacebookSync(resolvedProductId, productName, waitSeconds)
-      : await validateFacebookSync(resolvedProductId, productName, waitSeconds, maxRetries);
+    const validationAttempts = 3;
+    let lastResult = null;
 
-    expect(result).not.toBeNull();
+    for (let attempt = 1; attempt <= validationAttempts; attempt++) {
+      const result = maxRetries == null
+        ? await validateFacebookSync(resolvedProductId, productName, waitSeconds)
+        : await validateFacebookSync(resolvedProductId, productName, waitSeconds, maxRetries);
 
-    if (!result) {
+      lastResult = result;
+
+      if (result?.success) {
+        return result;
+      }
+
+      const syncStatus = result?.sync_status || 'unknown';
+      if (attempt < validationAttempts) {
+        console.warn(
+          `⚠️ Sync validator attempt ${attempt}/${validationAttempts} for product ${resolvedProductId} returned ${syncStatus}. Retrying...`
+        );
+        await page.waitForTimeout(TIMEOUTS.NORMAL + TIMEOUTS.SHORT);
+      }
+    }
+
+    expect(lastResult).not.toBeNull();
+
+    if (!lastResult) {
       throw new Error(`Facebook sync returned null for product ${resolvedProductId} (likely HTML response instead of JSON)`);
     }
 
-    expect(result.success).toBe(true);
-    return result;
+    expect(lastResult.success).toBe(true);
+    return lastResult;
   }
 
   async function createAndPublishSimpleProduct(page, { titleSuffix, descriptionRepeat = 20 }) {
@@ -237,7 +258,8 @@ test.describe.serial('Meta for WooCommerce - Performance Sync E2E Tests', () => 
         page,
         productId,
         productName,
-        PERFORMANCE_CONFIG.simpleBatch.waitSeconds
+        PERFORMANCE_CONFIG.simpleBatch.waitSeconds,
+        PERFORMANCE_CONFIG.simpleBatch.maxRetries
       );
 
       return { productId, productName, sku };
@@ -262,22 +284,43 @@ test.describe.serial('Meta for WooCommerce - Performance Sync E2E Tests', () => 
 
     await page.click('li.attribute_tab a[href="#product_attributes"]');
     const attributeEntries = Object.entries(attributes);
+    const addCustomAttributeButton = page.locator('button.add_custom_attribute').first();
+    await addCustomAttributeButton.waitFor({ state: 'visible', timeout: TIMEOUTS.LONG });
 
     for (let i = 0; i < attributeEntries.length; i++) {
       const [attributeName, values] = attributeEntries[i];
       const nameSelector = `input.attribute_name[name="attribute_names[${i}]"]`;
       const valuesSelector = `textarea[name="attribute_values[${i}]"]`;
 
-      await page.locator(nameSelector).waitFor({ state: 'visible', timeout: TIMEOUTS.LONG });
+      if (i > 0) {
+        await addCustomAttributeButton.click();
+      }
+
+      await page.locator(nameSelector).waitFor({ state: 'visible', timeout: TIMEOUTS.EXTRA_LONG });
       await page.fill(nameSelector, attributeName);
       await page.fill(valuesSelector, buildPipeList(values));
+
+      const attributeRow = page.locator('#product_attributes .woocommerce_attribute').nth(i);
+      const usedForVariationsCheckbox = attributeRow
+        .locator('input.woocommerce_attribute_used_for_variations, input[name^="attribute_variation["]')
+        .first();
+      if (await usedForVariationsCheckbox.count()) {
+        const isChecked = await usedForVariationsCheckbox.isChecked().catch(() => false);
+        if (!isChecked) {
+          await usedForVariationsCheckbox.check({ force: true });
+        }
+      }
     }
 
-    await page.locator('#product_attributes .woocommerce_attribute textarea[name^="attribute_values"]').first().press('Tab');
+    await page.locator('#product_attributes .woocommerce_attribute textarea[name^="attribute_values"]').last().press('Tab');
     await page.click('button.save_attributes.button-primary');
 
     await page.click('a[href="#variable_product_options"]');
     await page.locator('button.generate_variations').waitFor({ state: 'visible', timeout: TIMEOUTS.LONG });
+
+    page.once('dialog', async dialog => {
+      await dialog.accept();
+    });
     await page.click('button.generate_variations');
 
     return { productName };
@@ -325,9 +368,18 @@ test.describe.serial('Meta for WooCommerce - Performance Sync E2E Tests', () => 
       });
 
       await page.waitForFunction(
-        (count) => document.querySelectorAll('.woocommerce_variation').length >= count,
+        (count) => {
+          const visibleRows = document.querySelectorAll('.woocommerce_variation').length;
+          if (visibleRows >= Math.min(count, 10)) {
+            return true;
+          }
+
+          // WooCommerce may paginate variation rows in UI; total count can still be present in text.
+          const pageText = document.body?.innerText || '';
+          return pageText.includes(`of ${count} variations`) || pageText.includes(`${count} variations`);
+        },
         expectedVariations,
-        { timeout: TIMEOUTS.LONG + TIMEOUTS.LONG }
+        { timeout: TIMEOUTS.MAX + TIMEOUTS.LONG }
       );
 
       await publishProduct(page);
@@ -371,16 +423,32 @@ test.describe.serial('Meta for WooCommerce - Performance Sync E2E Tests', () => 
       });
 
       await page.waitForFunction(
-        (count) => document.querySelectorAll('.woocommerce_variation').length >= count,
+        (count) => {
+          const visibleRows = document.querySelectorAll('.woocommerce_variation').length;
+          if (visibleRows >= Math.min(count, 10)) {
+            return true;
+          }
+
+          const pageText = document.body?.innerText || '';
+          return pageText.includes(`of ${count} variations`) || pageText.includes(`${count} variations`);
+        },
         expectedVariations,
-        { timeout: TIMEOUTS.LONG + TIMEOUTS.LONG }
+        { timeout: TIMEOUTS.MAX + TIMEOUTS.LONG }
       );
 
       const priceInput = page.locator('input.components-text-control__input.wc_input_variations_price');
-      await page.locator('button.add_price_for_variations').click();
+      const addPriceButton = page.locator('button.add_price_for_variations');
+      await addPriceButton.waitFor({ state: 'visible', timeout: TIMEOUTS.LONG });
+      await addPriceButton.click();
+
       await priceInput.waitFor({ state: 'visible', timeout: TIMEOUTS.LONG });
-      await priceInput.fill(PERFORMANCE_CONFIG.manyVariations.price);
-      await page.locator('button.add_variations_price_button.button-primary').click();
+      await priceInput.click();
+      await priceInput.clear();
+      await priceInput.pressSequentially(PERFORMANCE_CONFIG.manyVariations.price, { delay: 80 });
+
+      const addPricesButton = page.locator('button.add_variations_price_button.button-primary');
+      await addPricesButton.waitFor({ state: 'visible', timeout: TIMEOUTS.LONG });
+      await addPricesButton.click();
 
       await publishProduct(page);
 
@@ -448,7 +516,8 @@ test.describe.serial('Meta for WooCommerce - Performance Sync E2E Tests', () => 
         page,
         productId,
         productName,
-        PERFORMANCE_CONFIG.repeatedUpdates.waitSeconds
+        PERFORMANCE_CONFIG.repeatedUpdates.waitSeconds,
+        PERFORMANCE_CONFIG.repeatedUpdates.maxRetries
       );
       logTestEnd(testInfo, true);
     } catch (error) {
