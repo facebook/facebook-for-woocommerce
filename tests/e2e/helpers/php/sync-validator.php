@@ -12,19 +12,22 @@
  *   Categories: php helpers/php/sync-validator.php --type=category <category_id> [wait_seconds] [max_retries]
  */
 
-// Bootstrap WordPress
-$wp_path = getenv('WORDPRESS_PATH') . '/wp-load.php';
+// Bootstrap WordPress only when not already loaded (e.g. direct php execution).
 $wp_url = getenv('WORDPRESS_URL');
 
-if (!file_exists($wp_path)) {
-    echo json_encode([
-        'success' => false,
-        'error' => 'WordPress not found at: ' . $wp_path
-    ]);
-    exit(1);
-}
+if (!defined('ABSPATH')) {
+    $wp_path = getenv('WORDPRESS_PATH') . '/wp-load.php';
 
-require_once($wp_path);
+    if (!file_exists($wp_path)) {
+        echo json_encode([
+            'success' => false,
+            'error' => 'WordPress not found at: ' . $wp_path
+        ]);
+        exit(1);
+    }
+
+    require_once($wp_path);
+}
 
 /**
  * Facebook Sync Validator Class
@@ -268,7 +271,8 @@ class FacebookSyncValidator {
             'id' => $product->get_id(),  // Always include id for both simple and variable products
             'title' => $product_data['title'] ?? $product->get_name(),
             'price' => $product_data['price'] ?? $product->get_regular_price(),
-            'description' => $this->truncateText($product_data['description'] ?? '', 100),
+            // Keep full description to avoid false mismatches on long-content performance tests.
+            'description' => $product_data['description'] ?? '',
             'availability' => $product_data['availability'] ?? '',
             'retailer_id' => $retailer_id,
             'condition' => $product_data['condition'] ?? '',
@@ -820,19 +824,22 @@ class CategorySyncValidator {
     }
 }
 
-// Main execution when called directly
-if (php_sapi_name() === 'cli') {
+// Main execution when called directly.
+// Skip auto-run when included from WP-CLI eval context.
+if (php_sapi_name() === 'cli' && !defined('E2E_SYNC_VALIDATOR_SKIP_MAIN')) {
     try {
+        $cli_argv = isset($argv) && is_array($argv) ? $argv : (isset($_SERVER['argv']) && is_array($_SERVER['argv']) ? $_SERVER['argv'] : []);
+
         // Check if --type=category flag is present
-        $is_category = in_array('--type=category', $argv);
+        $is_category = in_array('--type=category', $cli_argv, true);
 
         if ($is_category) {
             // Category validation mode
             // Usage: php e2e-facebook-sync-validator.php --type=category <category_id> [wait_seconds] [max_retries]
 
-            $category_id = isset($argv[2]) ? (int)$argv[2] : null;
-            $wait_seconds = isset($argv[3]) ? (int)$argv[3] : 10;
-            $max_retries = isset($argv[4]) ? (int)$argv[4] : 6;
+            $category_id = isset($cli_argv[2]) ? (int)$cli_argv[2] : null;
+            $wait_seconds = isset($cli_argv[3]) ? (int)$cli_argv[3] : 10;
+            $max_retries = isset($cli_argv[4]) ? (int)$cli_argv[4] : 6;
 
             if (!$category_id) {
                 echo json_encode(['success' => false, 'error' => 'Category ID required']);
@@ -845,9 +852,9 @@ if (php_sapi_name() === 'cli') {
             // Product validation mode (existing - unchanged)
             // Usage: php e2e-facebook-sync-validator.php <product_id> [wait_seconds] [max_retries]
 
-            $product_id = isset($argv[1]) ? (int)$argv[1] : null;
-            $wait_seconds = isset($argv[2]) ? (int)$argv[2] : 10;
-            $max_retries = isset($argv[3]) ? (int)$argv[3] : 6;
+            $product_id = isset($cli_argv[1]) ? (int)$cli_argv[1] : null;
+            $wait_seconds = isset($cli_argv[2]) ? (int)$cli_argv[2] : 10;
+            $max_retries = isset($cli_argv[3]) ? (int)$cli_argv[3] : 6;
 
             if (!$product_id) {
                 echo json_encode(['success' => false, 'error' => 'Product ID required']);
