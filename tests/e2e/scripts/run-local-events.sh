@@ -9,24 +9,24 @@ set -euo pipefail
 # - Runs playwright with deterministic workers
 
 ROOT_DIR="$(cd "$(dirname "$0")/../../.." && pwd)"
-WP_PATH_DEFAULT="/Users/ur/Local Sites/test-facebook-for-woocommerce/app/public"
 
-WORDPRESS_PATH="${WORDPRESS_PATH:-$WP_PATH_DEFAULT}"
-WORDPRESS_URL="${WORDPRESS_URL:-http://test-facebook-for-woocommerce.local}"
-WP_USERNAME="${WP_USERNAME:-admin}"
-WP_PASSWORD="${WP_PASSWORD:-admin}"
-WP_CUSTOMER_USERNAME="${WP_CUSTOMER_USERNAME:-customer}"
-WP_CUSTOMER_PASSWORD="${WP_CUSTOMER_PASSWORD:-customer}"
+# Read runtime configuration directly from current process environment.
+WORDPRESS_PATH="${WORDPRESS_PATH:-}"
+WORDPRESS_URL="${WORDPRESS_URL:-}"
+WP_USERNAME="${WP_USERNAME:-}"
+WP_PASSWORD="${WP_PASSWORD:-}"
+WP_CUSTOMER_USERNAME="${WP_CUSTOMER_USERNAME:-}"
+WP_CUSTOMER_PASSWORD="${WP_CUSTOMER_PASSWORD:-}"
 
-TEST_PRODUCT_URL="${TEST_PRODUCT_URL:-${WORDPRESS_URL%/}/product/beanie/}"
-TEST_CATEGORY_URL="${TEST_CATEGORY_URL:-${WORDPRESS_URL%/}/product-category/clothing/accessories/}"
-TEST_FBCLID="${TEST_FBCLID:-IwAR123TestClickId456}"
+TEST_PRODUCT_URL="${TEST_PRODUCT_URL:-}"
+TEST_CATEGORY_URL="${TEST_CATEGORY_URL:-}"
+TEST_FBCLID="${TEST_FBCLID:-}"
 
-FB_E2E_TEST_COOKIE_NAME="${FB_E2E_TEST_COOKIE_NAME:-facebook_test_id}"
-FB_E2E_LOGGER_PATH="${FB_E2E_LOGGER_PATH:-/tests/e2e/helpers/php/event-logger.php}"
+FB_E2E_TEST_COOKIE_NAME="${FB_E2E_TEST_COOKIE_NAME:-}"
+FB_E2E_LOGGER_PATH="${FB_E2E_LOGGER_PATH:-}"
 
-WP_DEBUG_LOG="${WP_DEBUG_LOG:-$WORDPRESS_PATH/wp-content/debug.log}"
-WC_LOG_PATH="${WC_LOG_PATH:-$WORDPRESS_PATH/wp-content/uploads/wc-logs}"
+WP_DEBUG_LOG="${WP_DEBUG_LOG:-}"
+WC_LOG_PATH="${WC_LOG_PATH:-}"
 
 WORKERS="${WORKERS:-1}"
 PROJECT="${PROJECT:-chromium-wp-customer}"
@@ -59,6 +59,14 @@ Usage: tests/e2e/scripts/run-local-events.sh [options]
   --quiet-pixel      Disable PIXEL_DEBUG_LOGGER
   --fresh-auth       Rebuild Playwright auth state before run (default)
   --keep-auth        Keep existing auth state
+
+Required environment variables:
+  WORDPRESS_PATH, WORDPRESS_URL
+  WP_USERNAME, WP_PASSWORD
+  WP_CUSTOMER_USERNAME, WP_CUSTOMER_PASSWORD
+  TEST_PRODUCT_URL, TEST_CATEGORY_URL, TEST_FBCLID
+  FB_E2E_TEST_COOKIE_NAME, FB_E2E_LOGGER_PATH
+  WP_DEBUG_LOG, WC_LOG_PATH
 USAGE
       exit 0
       ;;
@@ -68,6 +76,28 @@ USAGE
       ;;
   esac
 done
+
+require_env() {
+  local name="$1"
+  if [[ -z "${!name:-}" ]]; then
+    echo "❌ Missing required environment variable: $name" >&2
+    exit 1
+  fi
+}
+
+require_env WORDPRESS_PATH
+require_env WORDPRESS_URL
+require_env WP_USERNAME
+require_env WP_PASSWORD
+require_env WP_CUSTOMER_USERNAME
+require_env WP_CUSTOMER_PASSWORD
+require_env TEST_PRODUCT_URL
+require_env TEST_CATEGORY_URL
+require_env TEST_FBCLID
+require_env FB_E2E_TEST_COOKIE_NAME
+require_env FB_E2E_LOGGER_PATH
+require_env WP_DEBUG_LOG
+require_env WC_LOG_PATH
 
 if [[ ! -d "$WORDPRESS_PATH" ]]; then
   echo "❌ WORDPRESS_PATH does not exist: $WORDPRESS_PATH"
