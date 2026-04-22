@@ -18,27 +18,122 @@ class PixelCapture {
    */
   async waitForEvent() {
     console.log(`🎯 Waiting for Pixel event: ${this.eventName}...`);
+
+    const debugEnabled = ['1', 'true', 'yes'].includes((process.env.PIXEL_DEBUG_LOGGER || '').toLowerCase());
+    const debugRequestLogger = (request) => {
+      if (!debugEnabled) return;
+
+      try {
+        const parsedUrl = new URL(request.url());
+        const host = parsedUrl.hostname;
+        const isFacebookHost = host === 'facebook.com' || host.endsWith('.facebook.com');
+        if (!isFacebookHost) return;
+
+        const isPixelPath = parsedUrl.pathname.includes('/tr') || parsedUrl.pathname.includes('/privacy_sandbox');
+        if (!isPixelPath) return;
+
+        const ev = parsedUrl.searchParams.get('ev') || '(none-in-query)';
+        const eid = parsedUrl.searchParams.get('eid') || '(none)';
+        const body = request.postData() || '';
+        const bodyPreview = body ? body.slice(0, 180).replace(/\s+/g, ' ') : '';
+
+        console.log(
+          `📡 [PixelDebug] ${request.method()} ${host}${parsedUrl.pathname} ev=${ev} eid=${eid} body=${bodyPreview || '(empty)'}`
+        );
+      } catch (_) {
+        // ignore debug parser failures
+      }
+    };
+
+    const context = this.page.context();
+    context.on('request', debugRequestLogger);
+
     try {
-      const request = await this.page.waitForRequest(
-        request => {
-          const url = request.url();
-          const parsedUrl = new URL(url);
+      const timeoutMs = parseInt(process.env.PIXEL_EVENT_TIMEOUT || TIMEOUTS.EXTRA_LONG.toString(), 10);
+      const deadline = Date.now() + timeoutMs;
 
-          if (!parsedUrl.hostname.endsWith('.facebook.com')) return false;
-          if (!parsedUrl.pathname.includes('/tr/') && !parsedUrl.pathname.includes('/privacy_sandbox/')) return false;
-          return parsedUrl.search.includes(`ev=${this.eventName}`);
-        },
-        { timeout: parseInt(process.env.PIXEL_EVENT_TIMEOUT || TIMEOUTS.EXTRA_LONG.toString(), 10) }
-      );
+      const scoreEvent = (eventData) => {
+        const userCount = Object.keys(eventData.user_data || {}).length;
+        const customCount = Object.keys(eventData.custom_data || {}).length;
+        let score = 0;
+        if (eventData.event_id) score += 5;
+        if (eventData.pixel_id && eventData.pixel_id !== 'SB') score += 3;
+        score += Math.min(userCount, 10);
+        score += Math.min(customCount, 10);
+        return score;
+      };
 
-      console.log(`✅ Pixel event captured: ${this.eventName}`);
+      const isRichEnough = (eventData) => {
+        const userCount = Object.keys(eventData.user_data || {}).length;
+        const customCount = Object.keys(eventData.custom_data || {}).length;
+        return !!eventData.event_id && eventData.pixel_id !== 'SB' && (userCount >= 2 || customCount >= 2);
+      };
 
-      const response = await request.response();
-      const eventData = await this.parsePixelEvent(request.url());
+      const queuedRequests = [];
+      const queueListener = (request) => {
+        try {
+          const parsedUrl = new URL(request.url());
+          const host = parsedUrl.hostname;
+          const isFacebookHost = host === 'facebook.com' || host.endsWith('.facebook.com');
+          if (!isFacebookHost) return;
 
-      eventData.api_status = response ? response.status() : 'N/A';
-      eventData.api_ok = response ? response.ok() : false;
+          const isPixelPath = parsedUrl.pathname.includes('/tr') || parsedUrl.pathname.includes('/privacy_sandbox');
+          if (!isPixelPath) return;
 
+          queuedRequests.push(request);
+        } catch (_) {
+          // ignore
+        }
+      };
+
+      context.on('request', queueListener);
+
+      let best = null;
+      let bestForExpectedEvent = null;
+
+      try {
+        while (Date.now() < deadline) {
+          if (queuedRequests.length === 0) {
+            await new Promise((resolve) => setTimeout(resolve, 40));
+            continue;
+          }
+
+          const request = queuedRequests.shift();
+          const response = await request.response();
+          const eventData = await this.parsePixelEvent(request.url(), request, this.eventName);
+          eventData.api_status = response ? response.status() : 'N/A';
+          eventData.api_ok = response ? response.ok() : false;
+
+          const score = scoreEvent(eventData);
+          if (!best || score > best.score) {
+            best = { request, eventData, score };
+          }
+
+          if (eventData.event_name === this.eventName) {
+            if (!bestForExpectedEvent || score > bestForExpectedEvent.score) {
+              bestForExpectedEvent = { request, eventData, score };
+            }
+
+            if (isRichEnough(eventData)) {
+              break;
+            }
+          }
+        }
+      } finally {
+        context.off('request', queueListener);
+      }
+
+      const chosen = bestForExpectedEvent || best;
+      if (!chosen) {
+        throw new Error(`❌ Pixel event ${this.eventName} did not fire within ${timeoutMs}ms`);
+      }
+
+      const eventData = chosen.eventData;
+      if (eventData.event_name !== this.eventName) {
+        throw new Error(`❌ Pixel event ${this.eventName} not found within ${timeoutMs}ms (best match was ${eventData.event_name || 'unknown'})`);
+      }
+
+      console.log(`✅ Pixel event captured: ${this.eventName} (pixel_id=${eventData.pixel_id || 'unknown'}, score=${chosen.score})`);
       console.log(`   Event ID: ${eventData.event_id || 'none'}, API: ${eventData.api_status}`);
       await this.logToServer(eventData);
 
@@ -51,6 +146,8 @@ class PixelCapture {
         throw new Error(`❌ Pixel event ${this.eventName} did not fire within ${parseInt(process.env.PIXEL_EVENT_TIMEOUT || TIMEOUTS.EXTRA_LONG.toString(), 10)}ms`);
       }
       throw err;
+    } finally {
+      context.off('request', debugRequestLogger);
     }
   }
 
@@ -71,17 +168,17 @@ class PixelCapture {
   /**
    * Parse Pixel event from URL
    */
-  async parsePixelEvent(url) {
+  async parsePixelEvent(url, request = null, expectedEventName = null) {
     const urlObj = new URL(url);
 
-    const event_name = urlObj.searchParams.get('ev') || 'Unknown';
-    const event_id = urlObj.searchParams.get('eid') || null;
-    const pixel_id = urlObj.searchParams.get('id') || 'Unknown';
+    let event_name = urlObj.searchParams.get('ev') || 'Unknown';
+    let event_id = urlObj.searchParams.get('eid') || null;
+    let pixel_id = urlObj.searchParams.get('id') || 'Unknown';
 
     const customData = {};
     const userData = {};
 
-    urlObj.searchParams.forEach((value, key) => {
+    const ingestParam = (key, value) => {
       if (key.startsWith('cd[')) {
         const cdKey = key.replace('cd[', '').replace(']', '');
         const decodedValue = decodeURIComponent(value);
@@ -95,15 +192,107 @@ class PixelCapture {
             customData[cdKey] = decodedValue;
           }
         }
-      } else if (key.startsWith('ud[')) {
-        const udKey = key.replace('ud[', '').replace(']', '');
-        userData[udKey] = decodeURIComponent(value);
+      } else if (key.startsWith('ud[') || key.startsWith('aud[')) {
+        const normalized = key.startsWith('aud[') ? key.replace('aud[', '') : key.replace('ud[', '');
+        const udKey = normalized.replace(']', '');
+        // Prefer explicit ud[*], but accept aud[*] as fallback when ud[*] isn't present.
+        if (key.startsWith('ud[') || !userData[udKey]) {
+          userData[udKey] = decodeURIComponent(value);
+        }
+      } else if (key === 'ev' && event_name === 'Unknown') {
+        event_name = decodeURIComponent(value);
+      } else if (key === 'eid' && !event_id) {
+        event_id = decodeURIComponent(value);
+      } else if (key === 'id' && pixel_id === 'Unknown') {
+        pixel_id = decodeURIComponent(value);
+      } else if (key === 'fbp' && !userData.fbp) {
+        userData.fbp = decodeURIComponent(value);
       }
-    });
+    };
 
-    const fbp = urlObj.searchParams.get('fbp');
-    if (fbp) {
-      userData.fbp = fbp;
+    urlObj.searchParams.forEach((value, key) => ingestParam(key, value));
+
+    const body = request?.postData?.() || '';
+    if (body) {
+      // application/x-www-form-urlencoded payload
+      if (body.includes('=')) {
+        const form = new URLSearchParams(body);
+        for (const key of form.keys()) {
+          const values = form.getAll(key);
+          values.forEach((value) => ingestParam(key, value));
+        }
+      }
+
+      // multipart/form-data payload (robust boundary split)
+      if (body.includes('name="')) {
+        const firstLine = body.split(/\r?\n/, 1)[0] || '';
+        const boundary = firstLine.startsWith('--') ? firstLine.trim() : '';
+
+        if (boundary) {
+          const parts = body.split(boundary);
+          for (const rawPart of parts) {
+            const part = rawPart.trim();
+            if (!part || part === '--') continue;
+
+            const nameMatch = part.match(/name="([^"]+)"/);
+            if (!nameMatch) continue;
+
+            const key = nameMatch[1];
+            const valueBlock = part.split(/\r?\n\r?\n/)[1] || '';
+            const value = valueBlock.replace(/\r?\n--$/, '').trim();
+            if (!value) continue;
+
+            ingestParam(key, value);
+          }
+        }
+
+        // Regex fallback for odd multipart serializations.
+        const multipartRegex = /name="([^"]+)"\r?\n(?:[^\n]*\r?\n)*\r?\n([\s\S]*?)(?=\r?\n--)/g;
+        let match;
+        while ((match = multipartRegex.exec(body)) !== null) {
+          const key = match[1];
+          const value = (match[2] || '').trim();
+          if (!key || !value) continue;
+          ingestParam(key, value);
+        }
+      }
+    }
+
+    if (event_name === 'Unknown' && expectedEventName) {
+      event_name = expectedEventName;
+    }
+
+    // If event name is not explicitly present in request payload, infer it from event-specific custom_data keys.
+    // Keep this conservative: only override when inference agrees with expectedEventName.
+    if (event_name === 'PageView' && expectedEventName) {
+      let inferredEventName = null;
+
+      if (customData.search_string !== undefined) {
+        inferredEventName = 'Search';
+      } else if (customData.content_category !== undefined && customData.content_name !== undefined
+        && customData.value === undefined && customData.currency === undefined) {
+        inferredEventName = 'ViewCategory';
+      } else if (customData.content_category !== undefined && customData.content_name !== undefined
+        && customData.value !== undefined && customData.currency !== undefined) {
+        inferredEventName = 'ViewContent';
+      } else if (customData.num_items !== undefined) {
+        inferredEventName = 'InitiateCheckout';
+      }
+
+      if (inferredEventName && inferredEventName === expectedEventName) {
+        event_name = inferredEventName;
+      }
+    }
+
+    // Honor expected event when we clearly have event-specific payload but transport omitted ev.
+    if (expectedEventName && event_name !== expectedEventName) {
+      const hasViewCategoryShape = customData.content_category !== undefined && customData.content_name !== undefined
+        && customData.contents !== undefined && customData.content_ids !== undefined
+        && customData.value === undefined && customData.currency === undefined;
+
+      if (expectedEventName === 'ViewCategory' && hasViewCategoryShape) {
+        event_name = expectedEventName;
+      }
     }
 
     const cookies = await this.getAllCookies();
