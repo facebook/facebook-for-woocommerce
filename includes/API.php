@@ -671,8 +671,12 @@ class API extends Base {
 				return;
 			}
 
-			// Check if test cookie is present
+			// Check if test cookie is present.
+			// getenv() can be empty in some local PHP-FPM setups, so keep a safe default.
 			$cookie_name = getenv( 'FB_E2E_TEST_COOKIE_NAME' );
+			if ( empty( $cookie_name ) ) {
+				$cookie_name = 'facebook_test_id';
+			}
 			if ( empty( $_COOKIE[ $cookie_name ] ) ) {
 				// Test cookie is not present. Do not log events.
 				return;
@@ -695,8 +699,15 @@ class API extends Base {
 				);
 			}
 
-			// Validate logger file exists
+			// Validate logger file exists.
+			// getenv() can be empty in local setups; fall back to plugin-relative default.
 			$logger_path = getenv( 'FB_E2E_LOGGER_PATH' );
+			if ( empty( $logger_path ) ) {
+				$logger_path = '/tests/e2e/helpers/php/event-logger.php';
+			}
+			if ( '/' !== substr( $logger_path, 0, 1 ) ) {
+				$logger_path = '/' . $logger_path;
+			}
 			$logger_file = dirname( plugin_dir_path( __FILE__ ) ) . $logger_path;
 			if ( ! file_exists( $logger_file ) ) {
 				throw new \Exception( 'Test logging failed - Logger file not found at: ' . $logger_file );
