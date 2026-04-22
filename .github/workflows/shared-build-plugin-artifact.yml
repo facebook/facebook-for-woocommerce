@@ -20,7 +20,7 @@ jobs:
       pull-requests: write
     
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           ref: ${{ inputs.ref }}
       
@@ -31,7 +31,7 @@ jobs:
           tools: composer
       
       - name: Setup Node.js
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
           node-version-file: 'package.json'
           cache-dependency-path: './package-lock.json'
@@ -49,7 +49,7 @@ jobs:
         run: unzip facebook-for-woocommerce.zip -d artifact-contents
       
       - name: Store built plugin
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         continue-on-error: true
         with:
           name: facebook-for-woocommerce
@@ -70,89 +70,43 @@ jobs:
         
       - name: Post build info comment on PR
         if: inputs.pr_number
-        uses: actions/github-script@v6
         env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PR_NUMBER: ${{ inputs.pr_number }}
-        with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          script: |
-            // Get PR number from pull_request event
-            const prNumber = Number(process.env.PR_NUMBER);
-            console.log(`Preparing build info for PR #${prNumber}`);
-            
-            const runUrl = `https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
-            const timestamp = new Date().toISOString();
-            const commitSha = context.sha.substring(0, 7);
-            
-            // Create build info comment
-            let commentBody = '';
-            if ("${{ steps.check_build.outputs.build_success }}" === "true") {
-              commentBody = "## 📦 Latest Plugin Build\n\n" +
-                `**Built at:** ${timestamp}\n` +
-                `**Commit:** ${commitSha}\n` +
-                `**Size:** ${{ steps.check_build.outputs.filesize }}\n\n` +
-                `**Download:** [Click here to download the plugin](${runUrl})\n\n` +
-                `_To download: Click the link above → Scroll to bottom → Download "facebook-for-woocommerce" artifact_`;
-            } else {
-              commentBody = "## ❌ Plugin Build Failed\n\n" +
-                `**Attempted at:** ${timestamp}\n` +
-                `**Commit:** ${commitSha}\n\n` +
-                `Please check the [workflow logs](${runUrl}) for more information.`;
-            }
-            
-            // Add build info to workflow summary regardless
-            core.summary
-              .addHeading(("${{ steps.check_build.outputs.build_success }}" === "true") ? 
-                "📦 Latest Plugin Build" : "❌ Plugin Build Failed")
-              .addRaw(commentBody)
-              .write();
-            
-            // Look for an existing comment from this workflow
-            const commentMarker = '## 📦 Latest Plugin Build';
-            const failMarker = '## ❌ Plugin Build Failed';
-            
-            let existingCommentId = null;
-            
-            try {
-              const comments = await github.rest.issues.listComments({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                issue_number: prNumber
-              });
-              
-              // Look for comments that contain our markers
-              for (const comment of comments.data) {
-                if (comment.body.includes(commentMarker) || comment.body.includes(failMarker)) {
-                  existingCommentId = comment.id;
-                  break;
-                }
-              }
-            } catch (error) {
-              console.log(`Error listing comments: ${error.message}`);
-            }
-            
-            // Update or create comment
-            try {
-              if (existingCommentId) {
-                // Update existing comment
-                await github.rest.issues.updateComment({
-                  owner: context.repo.owner,
-                  repo: context.repo.repo,
-                  comment_id: existingCommentId,
-                  body: commentBody
-                });
-                console.log(`Updated existing comment ID: ${existingCommentId}`);
-              } else {
-                // Create new comment if no existing one found
-              await github.rest.issues.createComment({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                issue_number: prNumber,
-                body: commentBody
-              });
-                console.log("Created new comment");
-              }
-            } catch (error) {
-              console.log("Unable to update or create comment. Build information is still available in the workflow summary.");
-              console.log(`Error details: ${error.message}`);
-            } 
+          BUILD_SUCCESS: ${{ steps.check_build.outputs.build_success }}
+          FILESIZE: ${{ steps.check_build.outputs.filesize }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          COMMIT_SHA: ${{ github.sha }}
+        run: |
+          TIMESTAMP=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+          SHORT_SHA=${COMMIT_SHA:0:7}
+
+          if [ "$BUILD_SUCCESS" = "true" ]; then
+            COMMENT_BODY="## 📦 Latest Plugin Build
+
+          **Built at:** ${TIMESTAMP}
+          **Commit:** ${SHORT_SHA}
+          **Size:** ${FILESIZE}
+
+          **Download:** [Click here to download the plugin](${RUN_URL})
+
+          _To download: Click the link above → Scroll to bottom → Download \"facebook-for-woocommerce\" artifact_"
+          else
+            COMMENT_BODY="## ❌ Plugin Build Failed
+
+          **Attempted at:** ${TIMESTAMP}
+          **Commit:** ${SHORT_SHA}
+
+          Please check the [workflow logs](${RUN_URL}) for more information."
+          fi
+
+          # Find existing build comment and update or create
+          EXISTING_ID=$(gh api "repos/${{ github.repository }}/issues/${PR_NUMBER}/comments" --paginate --jq '.[] | select(.body | test("## 📦 Latest Plugin Build|## ❌ Plugin Build Failed")) | .id' | head -1)
+
+          if [ -n "$EXISTING_ID" ]; then
+            gh api "repos/${{ github.repository }}/issues/comments/${EXISTING_ID}" -X PATCH -f body="$COMMENT_BODY" || echo "Unable to update comment."
+            echo "Updated existing comment ID: $EXISTING_ID"
+          else
+            gh pr comment "$PR_NUMBER" --body "$COMMENT_BODY" || echo "Unable to create comment. Build information is still available in the workflow summary."
+            echo "Created new comment"
+          fi

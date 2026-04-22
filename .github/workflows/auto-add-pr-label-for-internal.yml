@@ -9,60 +9,26 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Add changelog label to internal CodeMod PRs
-        uses: actions/github-script@v7
-        with:
-          script: |
-            const pr = context.payload.pull_request;
-            const prNumber = pr.number;
-            const prTitle = pr.title || '';
-            const sourceBranch = pr.head.ref || '';
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          PR_TITLE: ${{ github.event.pull_request.title }}
+          SOURCE_BRANCH: ${{ github.event.pull_request.head.ref }}
+        run: |
+          # Detect exported PRs from Meta by:
+          # 1. Source branch matches export-D.* pattern
+          # 2. Title contains DevmateWooCommerceGenerateTests (LIMITING to CodeMod PRs for now)
+          if [[ "$SOURCE_BRANCH" =~ ^export-D ]] && [[ "$PR_TITLE" == *"DevmateWooCommerceGenerateTests"* ]]; then
+            echo "Detected exported PR #$PR_NUMBER: $PR_TITLE"
+            echo "Source branch: $SOURCE_BRANCH"
 
-            // Fetch existing PR labels upfront
-            const { data: labels } = await github.rest.issues.listLabelsOnIssue({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number: prNumber
-            });
-
-            const labelNames = labels.map(label => label.name);
-
-            // Detect exported PRs from Meta by:
-            // 1. Source branch matches export-D.* pattern
-            // 2. Title contains DevmateWooCommerceGenerateTests (LIMITING to CodeMod PRs for now)
-            const isExportedPR =
-              /^export-D/.test(sourceBranch) &&
-              prTitle.includes('DevmateWooCommerceGenerateTests');
-
-            if (isExportedPR) {
-              console.log(`   Detected exported PR #${prNumber}: ${prTitle}`);
-              console.log(`   Source branch: ${sourceBranch}`);
-              console.log(`   Labels: ${labelNames.join(', ')}`);
-
-              // Re-fetch labels to avoid race condition where another workflow
-              // may have added a changelog label between initial fetch and this check
-              const { data: currentLabels } = await github.rest.issues.listLabelsOnIssue({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                issue_number: prNumber
-              });
-              const currentLabelNames = currentLabels.map(label => label.name);
-
-              const hasChangelogLabel = currentLabelNames.some(label =>
-                label.startsWith('changelog:')
-              );
-
-              if (!hasChangelogLabel) {
-                // Add "changelog: none" label
-                await github.rest.issues.addLabels({
-                  owner: context.repo.owner,
-                  repo: context.repo.repo,
-                  issue_number: prNumber,
-                  labels: ['changelog: none']
-                });
-                console.log(' Added "changelog: none" label to internal PR');
-              } else {
-                console.log('  PR already has a changelog label, skipping');
-              }
-            } else {
-              console.log(`  PR #${prNumber} is not an internal PR, skipping auto-labeling`);
-            }
+            HAS_CHANGELOG=$(gh pr view "$PR_NUMBER" --json labels --jq '[.labels[].name | select(startswith("changelog:"))] | length')
+            if [ "$HAS_CHANGELOG" -eq 0 ]; then
+              gh pr edit "$PR_NUMBER" --add-label "changelog: none"
+              echo "Added \"changelog: none\" label to internal PR"
+            else
+              echo "PR already has a changelog label, skipping"
+            fi
+          else
+            echo "PR #$PR_NUMBER is not an internal PR, skipping auto-labeling"
+          fi
