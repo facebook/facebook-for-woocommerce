@@ -948,6 +948,87 @@ class ApiTest extends \WooCommerce\Facebook\Tests\AbstractWPUnitTestWithSafeFilt
 	}
 
 	/**
+	 * Tests that send_pixel_events sends a blocking request by default.
+	 *
+	 * @return void
+	 * @throws ApiException In case of a general API error or rate limit error.
+	 */
+	public function test_send_pixel_events_is_blocking_by_default() {
+		$pixel_id = '1964583793745557';
+
+		$response = function ( $result, $parsed_args, $url ) use ( $pixel_id ) {
+			$this->assertStringContainsString( "/{$pixel_id}/events", $url );
+			$this->assertTrue( $parsed_args['blocking'] );
+			return [
+				'body'     => '{"events_received":1}',
+				'response' => [
+					'code'    => 200,
+					'message' => 'OK',
+				],
+			];
+		};
+		$this->add_filter_with_safe_teardown( 'pre_http_request', $response, 10, 3 );
+
+		$event = $this->createMock( \WooCommerce\Facebook\Events\Event::class );
+		$event->method( 'get_data' )->willReturn(
+			[
+				'event_name' => 'ViewContent',
+				'event_time' => time(),
+			]
+		);
+
+		$result = $this->api->send_pixel_events( $pixel_id, [ $event ] );
+
+		$this->assertNotNull( $result );
+	}
+
+	/**
+	 * Tests that send_pixel_events sends a non-blocking request when filter is set.
+	 *
+	 * @return void
+	 */
+	public function test_send_pixel_events_is_non_blocking_when_filter_enabled() {
+		$pixel_id = '1964583793745557';
+
+		$this->add_filter_with_safe_teardown(
+			'wc_facebook_pixel_events_non_blocking',
+			function () {
+				return true;
+			}
+		);
+
+		$request_fired = false;
+		$response      = function ( $result, $parsed_args, $url ) use ( $pixel_id, &$request_fired ) {
+			$request_fired = true;
+			$this->assertEquals( 'POST', $parsed_args['method'] );
+			$this->assertStringContainsString( "/{$pixel_id}/events", $url );
+			$this->assertFalse( $parsed_args['blocking'] );
+			$this->assertStringContainsString( 'Bearer test-api-key-9678djyad552', $parsed_args['headers']['Authorization'] );
+			$this->assertEquals( 'application/json', $parsed_args['headers']['Content-Type'] );
+			return [
+				'response' => [
+					'code'    => 200,
+					'message' => 'OK',
+				],
+			];
+		};
+		$this->add_filter_with_safe_teardown( 'pre_http_request', $response, 10, 3 );
+
+		$event = $this->createMock( \WooCommerce\Facebook\Events\Event::class );
+		$event->method( 'get_data' )->willReturn(
+			[
+				'event_name' => 'ViewContent',
+				'event_time' => time(),
+			]
+		);
+
+		$result = $this->api->send_pixel_events( $pixel_id, [ $event ] );
+
+		$this->assertTrue( $request_fired, 'The non-blocking HTTP request was not triggered.' );
+		$this->assertNull( $result );
+	}
+
+	/**
 	 * Tests read product set request to Facebook.
 	 *
 	 * @return void
