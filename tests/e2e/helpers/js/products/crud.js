@@ -2,11 +2,64 @@
  * Product CRUD helpers for E2E tests
  */
 
-const { exec } = require('child_process');
+const { exec, execSync } = require('child_process');
 const { promisify } = require('util');
+const path = require('path');
 
 const execAsync = promisify(exec);
 const { execWP } = require('../wordpress/exec');
+
+function shellEscape(value) {
+  return `'${String(value).replace(/'/g, `'"'"'`)}'`;
+}
+
+function varToPhpString(value) {
+  return `'${String(value).replace(/\\/g, '\\\\').replace(/'/g, "\\'")}'`;
+}
+
+function parseJsonFromOutput(stdout) {
+  const trimmed = (stdout || '').trim();
+  if (!trimmed) {
+    throw new Error('Empty product creator output');
+  }
+
+  const firstBrace = trimmed.indexOf('{');
+  const lastBrace = trimmed.lastIndexOf('}');
+  if (firstBrace === -1 || lastBrace === -1 || lastBrace < firstBrace) {
+    throw new Error(`No JSON object found in product creator output: ${trimmed.slice(0, 240)}`);
+  }
+
+  return JSON.parse(trimmed.slice(firstBrace, lastBrace + 1));
+}
+
+function buildProductCreatorCommand(productType, productName, price, stock, sku, categoryIds) {
+  const wordpressPath = process.env.WORDPRESS_PATH;
+  if (!wordpressPath) {
+    throw new Error('WORDPRESS_PATH is required for product creator');
+  }
+
+  const phpBin = process.env.PHP_BIN || 'php';
+  const wpCliPath = process.env.WP_CLI_PATH || execSync('command -v wp', { encoding: 'utf8' }).trim();
+  const creatorFile = path.resolve(__dirname, '../../php/product-creator.php');
+  const categoryIdsJson = JSON.stringify(categoryIds || []);
+
+  const phpSnippet = [
+    "define('E2E_PRODUCT_CREATOR_SKIP_MAIN', true);",
+    `require ${varToPhpString(creatorFile)};`,
+    `\$productType = ${varToPhpString(productType)};`,
+    `\$name = ${varToPhpString(productName)};`,
+    `\$price = ${Number(price)};`,
+    `\$stock = ${Number(stock)};`,
+    `\$sku = ${varToPhpString(sku)};`,
+    `\$categoryIds = json_decode(${varToPhpString(categoryIdsJson)}, true) ?: [];`,
+    `if (\$productType === 'simple') { \$result = E2EProductCreator::createSimpleProduct(\$name, \$sku, \$price, \$stock, \$categoryIds); }`,
+    `elseif (\$productType === 'variable') { \$result = E2EProductCreator::createVariableProduct(\$name, \$sku, \$price); }`,
+    `else { \$result = ['success' => false, 'error' => 'Unsupported product type: ' . \$productType . ". Use 'simple' or 'variable'."]; }`,
+    'echo json_encode(\$result);',
+  ].join(' ');
+
+  return `${phpBin} -n ${shellEscape(wpCliPath)} eval ${shellEscape(phpSnippet)} --path=${shellEscape(wordpressPath)} --allow-root`;
+}
 
 /**
  * Generate a product name with timestamp and instance ID
@@ -106,13 +159,13 @@ async function createTestProduct(options = {}) {
   try {
     const startTime = Date.now();
 
-    const categoryIdsJson = JSON.stringify(categoryIds);
-    const { stdout } = await execAsync(
-      `php ../../php/product-creator.php "${productType}" "${productName}" ${price} ${stock} "${sku}" '${categoryIdsJson}'`,
-      { cwd: __dirname }
-    );
+    const command = buildProductCreatorCommand(productType, productName, price, stock, sku, categoryIds);
+    const { stdout } = await execAsync(command, {
+      cwd: __dirname,
+      env: process.env,
+    });
 
-    const result = JSON.parse(stdout);
+    const result = parseJsonFromOutput(stdout);
 
     if (result.success) {
       console.log(`✅ ${result.message}`);
