@@ -89,9 +89,36 @@ test.describe.serial('Variable Product Depth Tests', () => {
 
   async function openVariationsTab(page) {
     const variationsTab = page.locator('li.variations_tab a, a[href="#variable_product_options"]').first();
-    await variationsTab.waitFor({ state: 'visible', timeout: TIMEOUTS.LONG });
-    await variationsTab.click();
-    await page.locator('#variable_product_options').waitFor({ state: 'visible', timeout: TIMEOUTS.LONG });
+
+    for (let attempt = 1; attempt <= 3; attempt++) {
+      await variationsTab.waitFor({ state: 'visible', timeout: TIMEOUTS.LONG });
+      await variationsTab.scrollIntoViewIfNeeded();
+
+      if (attempt === 1) {
+        await variationsTab.click();
+      } else {
+        await variationsTab.click({ force: true });
+      }
+
+      try {
+        // Prefer waiting for actionable controls instead of panel class/style,
+        // since Woo can keep "hidden" class while content is still interactable.
+        const actionableControl = page.locator(
+          '#variable_product_options button.generate_variations, '
+          + '#variable_product_options button.add_variation, '
+          + '#variable_product_options button.save-variation-changes'
+        ).first();
+        await actionableControl.waitFor({ state: 'visible', timeout: TIMEOUTS.LONG });
+        return;
+      } catch (error) {
+        if (attempt === 3) {
+          throw error;
+        }
+
+        console.warn(`⚠️ openVariationsTab attempt ${attempt}/3 could not reveal controls; retrying...`);
+        await page.waitForTimeout(TIMEOUTS.SHORT);
+      }
+    }
   }
 
   async function expandAllVariations(page) {
@@ -254,17 +281,36 @@ test.describe.serial('Variable Product Depth Tests', () => {
     }
   }
 
-  async function validateVariableProductSync(productId, productName) {
-    const result = await validateFacebookSync(
-      productId,
-      productName,
-      VARIABLE_PRODUCT_CONFIG.syncWaitSeconds,
-      VARIABLE_PRODUCT_CONFIG.syncMaxRetries
-    );
+  async function validateVariableProductSync(productId, productName, options = {}) {
+    const attempts = options.attempts || 1;
+    const waitBetweenAttemptsMs = options.waitBetweenAttemptsMs || (TIMEOUTS.NORMAL + TIMEOUTS.SHORT);
 
-    expect(result).not.toBeNull();
-    expect(result.success).toBe(true);
-    return result;
+    let lastResult = null;
+
+    for (let attempt = 1; attempt <= attempts; attempt++) {
+      const result = await validateFacebookSync(
+        productId,
+        productName,
+        VARIABLE_PRODUCT_CONFIG.syncWaitSeconds,
+        VARIABLE_PRODUCT_CONFIG.syncMaxRetries
+      );
+
+      lastResult = result;
+
+      if (result?.success) {
+        break;
+      }
+
+      if (attempt < attempts) {
+        const syncStatus = result?.sync_status || 'unknown';
+        console.warn(`⚠️ Variable sync validation attempt ${attempt}/${attempts} for product ${productId} returned ${syncStatus}. Retrying...`);
+        await new Promise((resolve) => setTimeout(resolve, waitBetweenAttemptsMs));
+      }
+    }
+
+    expect(lastResult).not.toBeNull();
+    expect(lastResult.success).toBe(true);
+    return lastResult;
   }
 
   function assertVariationAttributeMapping(syncResult, expectedCount) {
@@ -340,11 +386,32 @@ test.describe.serial('Variable Product Depth Tests', () => {
   }
 
   async function goToProductEditPage(page, productId) {
-    await page.goto(`${baseURL}/wp-admin/post.php?post=${productId}&action=edit`, {
-      waitUntil: 'domcontentloaded',
-      timeout: TIMEOUTS.MAX,
-    });
-    await waitForProductEditor(page);
+    const targetUrl = `${baseURL}/wp-admin/post.php?post=${productId}&action=edit`;
+
+    // Avoid redundant navigation when WP already keeps us on the same editor URL.
+    if (page.url().includes(`/wp-admin/post.php?post=${productId}&action=edit`)) {
+      await waitForProductEditor(page);
+      return;
+    }
+
+    for (let attempt = 1; attempt <= 3; attempt++) {
+      try {
+        await page.goto(targetUrl, {
+          waitUntil: 'domcontentloaded',
+          timeout: TIMEOUTS.MAX,
+        });
+        await waitForProductEditor(page);
+        return;
+      } catch (error) {
+        const isAborted = String(error?.message || '').includes('net::ERR_ABORTED');
+        if (!isAborted || attempt === 3) {
+          throw error;
+        }
+
+        console.warn(`⚠️ goToProductEditPage attempt ${attempt}/3 hit ERR_ABORTED; retrying...`);
+        await page.waitForTimeout(500 * attempt);
+      }
+    }
   }
 
   async function bulkSetRegularPrice(page, newPrice) {
@@ -526,7 +593,9 @@ test.describe.serial('Variable Product Depth Tests', () => {
       await goToProductEditPage(page, productId);
       await verifyVariationInputs(page, created.variationDefinitions, { expectedPriceForAll: bulkPrice });
 
-      const syncResultAfterBulkEdit = await validateVariableProductSync(productId, created.productName);
+      const syncResultAfterBulkEdit = await validateVariableProductSync(productId, created.productName, {
+        attempts: 4,
+      });
       assertVariationAttributeMapping(syncResultAfterBulkEdit, created.expectedVariationCount);
 
       const wooPrices = (syncResultAfterBulkEdit.raw_data.woo_data || []).map(item => normalizePrice(item.price));
