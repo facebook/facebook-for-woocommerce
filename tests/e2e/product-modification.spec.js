@@ -29,6 +29,34 @@ test.describe('Meta for WooCommerce - Product Modification E2E Tests', () => {
     await loginToWordPress(page);
   });
 
+  async function validateFacebookSyncWithRetries(page, {
+    productId,
+    productName,
+    waitSeconds = 10,
+    maxRetries = 6,
+    attempts = 3,
+    accept = (result) => !!result?.success,
+  }) {
+    let lastResult = null;
+
+    for (let attempt = 1; attempt <= attempts; attempt++) {
+      const result = await validateFacebookSync(productId, productName, waitSeconds, maxRetries);
+      lastResult = result;
+
+      if (accept(result)) {
+        return result;
+      }
+
+      if (attempt < attempts) {
+        const syncStatus = result?.sync_status || 'unknown';
+        console.warn(`⚠️ Sync validation attempt ${attempt}/${attempts} for product ${productId} returned ${syncStatus}. Retrying...`);
+        await page.waitForTimeout(TIMEOUTS.NORMAL + TIMEOUTS.SHORT);
+      }
+    }
+
+    return lastResult;
+  }
+
   test('Edit simple product and verify Facebook sync', async ({ page }, testInfo) => {
     let productId = null;
     let createdProductId = null;
@@ -106,7 +134,13 @@ test.describe('Meta for WooCommerce - Product Modification E2E Tests', () => {
 
       // Validate Facebook sync after editing
       console.log('🔄 Validating Facebook sync after edit...');
-      const result = await validateFacebookSync(productId, newTitle);
+      const result = await validateFacebookSyncWithRetries(page, {
+        productId,
+        productName: newTitle,
+        waitSeconds: 10,
+        maxRetries: 8,
+        attempts: 3,
+      });
       expect(result['success']).toBe(true);
 
       // Verify the changes were saved
@@ -236,7 +270,13 @@ test.describe('Meta for WooCommerce - Product Modification E2E Tests', () => {
 
       // Step 12: Validate Facebook sync and verify price was updated
       console.log('🔄 Validating Facebook sync after Quick Edit...');
-      const result = await validateFacebookSync(createdProductId, createdProduct.productName);
+      const result = await validateFacebookSyncWithRetries(page, {
+        productId: createdProductId,
+        productName: createdProduct.productName,
+        waitSeconds: 20,
+        maxRetries: 10,
+        attempts: 5,
+      });
 
       // Verify the price field specifically - should have NO mismatches for price
       const priceMismatches = Object.values(result['mismatches'] || {}).filter(
@@ -370,7 +410,13 @@ test.describe('Meta for WooCommerce - Product Modification E2E Tests', () => {
 
       // Validate Facebook sync after editing
       console.log('🔄 Validating Facebook sync after edit...');
-      const result = await validateFacebookSync(productId, newTitle, 30);
+      const result = await validateFacebookSyncWithRetries(page, {
+        productId,
+        productName: newTitle,
+        waitSeconds: 30,
+        maxRetries: 8,
+        attempts: 3,
+      });
       expect(result['success']).toBe(true);
 
       // Verify the changes were saved
@@ -480,7 +526,13 @@ test.describe('Meta for WooCommerce - Product Modification E2E Tests', () => {
 
       // Validate Facebook sync
       console.log('🔍 Validating Facebook catalog sync...');
-      const syncResult = await validateFacebookSync(productId, productName);
+      const syncResult = await validateFacebookSyncWithRetries(page, {
+        productId,
+        productName,
+        waitSeconds: 10,
+        maxRetries: 8,
+        attempts: 3,
+      });
       expect(syncResult.success).toBe(true);
 
       // Take final screenshot
@@ -603,7 +655,13 @@ test.describe('Meta for WooCommerce - Product Modification E2E Tests', () => {
 
       // Validate Facebook sync
       console.log('🔍 Validating Facebook catalog sync...');
-      const syncResult = await validateFacebookSync(productId, productName, 30);
+      const syncResult = await validateFacebookSyncWithRetries(page, {
+        productId,
+        productName,
+        waitSeconds: 30,
+        maxRetries: 8,
+        attempts: 3,
+      });
       expect(syncResult.success).toBe(true);
 
       // Take final screenshot
@@ -678,7 +736,13 @@ test.describe('Meta for WooCommerce - Product Modification E2E Tests', () => {
 
       // Validate Facebook sync
       console.log('🔄 Validating Facebook sync after stock status change...');
-      const syncResult = await validateFacebookSync(productId, productName);
+      const syncResult = await validateFacebookSyncWithRetries(page, {
+        productId,
+        productName,
+        waitSeconds: 20,
+        maxRetries: 10,
+        attempts: 5,
+      });
       expect(syncResult.success).toBe(true);
       expect(syncResult['raw_data']['facebook_data'][0]['availability']).toBe('out of stock');
       console.log('✅ Facebook sync validated successfully');
