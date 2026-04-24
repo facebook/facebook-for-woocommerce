@@ -14,7 +14,8 @@ const {
   removePixelBlockerMuPlugin,
   installJsErrorSimulatorMuPlugin,
   removeJsErrorSimulatorMuPlugin,
-  reconnectAndVerify
+  reconnectAndVerify,
+  getVisibleSearchInput
 } = require('./helpers/js');
 
 test('PageView', async ({ page }, testInfo) => {
@@ -250,7 +251,7 @@ test('Search', async ({ page }, testInfo) => {
     await TestSetup.waitForPageReady(page);
 
     console.log(`   🔍 Typing search query in search box`);
-    const searchInput = page.locator('.search-field').first();
+    const searchInput = await getVisibleSearchInput(page);
     await searchInput.fill('test');
 
     console.log(`   🔎 Submitting search form`);
@@ -280,7 +281,7 @@ test('Search - No Results', async ({ page }, testInfo) => {
     const randomString = 'xyzabc239nfjsdn' + Date.now();
     console.log(`   🔍 Typing random search query: ${randomString}`);
 
-    const searchInput = page.locator('.search-field').first();
+    const searchInput = await getVisibleSearchInput(page);
     await searchInput.fill(randomString);
 
     console.log(`   🔎 Submitting search form (expecting no events)`);

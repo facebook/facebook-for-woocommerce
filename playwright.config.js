@@ -1,5 +1,55 @@
 import { defineConfig, devices } from '@playwright/test';
 
+const CUSTOMER_EVENTS_SPEC = '**/events-test.spec.js';
+const ADMIN_PLUGIN_LEVEL_SPEC = '**/plugin-level-tests.spec.js';
+
+// Keep full event coverage on primary Chromium.
+// Secondary browsers/mobile run a stable smoke subset.
+const EVENTS_SMOKE_GREP = /(PageView|ViewContent|AddToCart|InitiateCheckout|Purchase|Search)/;
+const EVENTS_SMOKE_GREP_INVERT = /(with fbclid|Multiple Place Order Clicks|No Results|No Consent|Isolated Execution)/;
+
+const commonTimeouts = {
+  actionTimeout: 180000,
+  navigationTimeout: 180000,
+};
+
+const adminUse = {
+  ...devices['Desktop Chrome'],
+  ...commonTimeouts,
+  storageState: './tests/e2e/.auth/admin.json',
+};
+
+const customerUse = {
+  ...devices['Desktop Chrome'],
+  ...commonTimeouts,
+  storageState: './tests/e2e/.auth/customer.json',
+};
+
+const edgeExecutablePath = process.env.EDGE_EXECUTABLE_PATH;
+const firefoxExecutablePath = process.env.FIREFOX_EXECUTABLE_PATH;
+const braveExecutablePath = process.env.BRAVE_EXECUTABLE_PATH;
+const operaExecutablePath = process.env.OPERA_EXECUTABLE_PATH;
+const requireRealEdge = process.env.REQUIRE_REAL_EDGE === '1';
+const requireRealFirefox = process.env.REQUIRE_REAL_FIREFOX === '1';
+const requireRealBrave = process.env.REQUIRE_REAL_BRAVE === '1';
+const requireRealOpera = process.env.REQUIRE_REAL_OPERA === '1';
+
+if (requireRealEdge && !edgeExecutablePath) {
+  throw new Error('REQUIRE_REAL_EDGE=1 but EDGE_EXECUTABLE_PATH is not set. Refusing channel fallback.');
+}
+
+if (requireRealFirefox && firefoxExecutablePath) {
+  throw new Error('REQUIRE_REAL_FIREFOX=1 uses Playwright Firefox channel. Do not set FIREFOX_EXECUTABLE_PATH.');
+}
+
+if (requireRealBrave && !braveExecutablePath) {
+  throw new Error('REQUIRE_REAL_BRAVE=1 but BRAVE_EXECUTABLE_PATH is not set. Refusing Chromium fallback.');
+}
+
+if (requireRealOpera && !operaExecutablePath) {
+  throw new Error('REQUIRE_REAL_OPERA=1 but OPERA_EXECUTABLE_PATH is not set. Refusing Chromium fallback.');
+}
+
 export default defineConfig({
   testDir: './tests/e2e',
   fullyParallel: true,
@@ -7,52 +57,158 @@ export default defineConfig({
   retries: process.env.CI ? 2 : 0,
   workers: process.env.CI ? 1 : 1,
   reporter: 'html',
-  // Global test timeout - increased to 5 minutes for complex WordPress operations
   timeout: 1000000,
-  // Global setup to authenticate once
   globalSetup: './tests/e2e/global-setup.js',
   use: {
     baseURL: process.env.WORDPRESS_URL,
     trace: 'on-first-retry',
     screenshot: 'only-on-failure',
     video: 'retain-on-failure',
-    // Ignore SSL errors for local development
     ignoreHTTPSErrors: true,
-    // Global timeouts for all actions - increased to 3 minutes
-    actionTimeout: 180000,
-    navigationTimeout: 180000,
+    ...commonTimeouts,
   },
 
   projects: [
+    // -------------------------
+    // Admin desktop coverage
+    // -------------------------
     {
       name: 'chromium-wp-admin',
+      testMatch: [ADMIN_PLUGIN_LEVEL_SPEC],
+      use: adminUse,
+    },
+    {
+      name: 'edge-wp-admin',
+      testMatch: [ADMIN_PLUGIN_LEVEL_SPEC],
       use: {
-        ...devices['Desktop Chrome'],
-        // Increased timeouts for WordPress admin operations
-        actionTimeout: 180000,
-        navigationTimeout: 180000,
-        storageState: './tests/e2e/.auth/admin.json'
+        ...adminUse,
+        ...(edgeExecutablePath
+          ? { launchOptions: { executablePath: edgeExecutablePath } }
+          : { channel: 'msedge' }),
       },
     },
     {
-      name: 'chromium-wp-customer',
+      name: 'firefox-wp-admin',
+      testMatch: [ADMIN_PLUGIN_LEVEL_SPEC],
       use: {
-        ...devices['Desktop Chrome'],
-        // Increased timeouts for WordPress admin operations
-        actionTimeout: 180000,
-        navigationTimeout: 180000,
-        storageState: './tests/e2e/.auth/customer.json'
+        ...devices['Desktop Firefox'],
+        ...commonTimeouts,
+        ...(requireRealFirefox
+          ? { channel: 'firefox' }
+          : (firefoxExecutablePath ? { launchOptions: { executablePath: firefoxExecutablePath } } : {})),
+        storageState: './tests/e2e/.auth/admin.json',
       },
-    }
+    },
+    {
+      name: 'brave-wp-admin',
+      testMatch: [ADMIN_PLUGIN_LEVEL_SPEC],
+      use: {
+        ...adminUse,
+        ...(braveExecutablePath
+          ? { launchOptions: { executablePath: braveExecutablePath } }
+          : { userAgent: `${devices['Desktop Chrome'].userAgent} Brave/1.0.0.0` }),
+      },
+    },
+    {
+      name: 'opera-wp-admin',
+      testMatch: [ADMIN_PLUGIN_LEVEL_SPEC],
+      use: {
+        ...adminUse,
+        ...(operaExecutablePath
+          ? { launchOptions: { executablePath: operaExecutablePath } }
+          : { userAgent: `${devices['Desktop Chrome'].userAgent} OPR/100.0.0.0` }),
+      },
+    },
+
+    // -------------------------
+    // Customer/browser + mobile events coverage
+    // -------------------------
+    {
+      name: 'chromium-wp-customer',
+      testMatch: [CUSTOMER_EVENTS_SPEC],
+      use: customerUse,
+    },
+    {
+      name: 'edge-wp-customer',
+      testMatch: [CUSTOMER_EVENTS_SPEC],
+      grep: EVENTS_SMOKE_GREP,
+      grepInvert: EVENTS_SMOKE_GREP_INVERT,
+      use: {
+        ...customerUse,
+        ...(edgeExecutablePath
+          ? { launchOptions: { executablePath: edgeExecutablePath } }
+          : { channel: 'msedge' }),
+      },
+    },
+    {
+      name: 'firefox-wp-customer',
+      testMatch: [CUSTOMER_EVENTS_SPEC],
+      grep: EVENTS_SMOKE_GREP,
+      grepInvert: EVENTS_SMOKE_GREP_INVERT,
+      use: {
+        ...devices['Desktop Firefox'],
+        ...commonTimeouts,
+        ...(requireRealFirefox
+          ? { channel: 'firefox' }
+          : (firefoxExecutablePath ? { launchOptions: { executablePath: firefoxExecutablePath } } : {})),
+        storageState: './tests/e2e/.auth/customer.json',
+      },
+    },
+    {
+      name: 'brave-wp-customer',
+      testMatch: [CUSTOMER_EVENTS_SPEC],
+      grep: EVENTS_SMOKE_GREP,
+      grepInvert: EVENTS_SMOKE_GREP_INVERT,
+      use: {
+        ...customerUse,
+        ...(braveExecutablePath
+          ? { launchOptions: { executablePath: braveExecutablePath } }
+          : { userAgent: `${devices['Desktop Chrome'].userAgent} Brave/1.0.0.0` }),
+      },
+    },
+    {
+      name: 'opera-wp-customer',
+      testMatch: [CUSTOMER_EVENTS_SPEC],
+      grep: EVENTS_SMOKE_GREP,
+      grepInvert: EVENTS_SMOKE_GREP_INVERT,
+      use: {
+        ...customerUse,
+        ...(operaExecutablePath
+          ? { launchOptions: { executablePath: operaExecutablePath } }
+          : { userAgent: `${devices['Desktop Chrome'].userAgent} OPR/100.0.0.0` }),
+      },
+    },
+    {
+      name: 'android-pixel-wp-customer',
+      testMatch: [CUSTOMER_EVENTS_SPEC],
+      grep: EVENTS_SMOKE_GREP,
+      grepInvert: EVENTS_SMOKE_GREP_INVERT,
+      use: {
+        ...devices['Pixel 5'],
+        ...commonTimeouts,
+        storageState: './tests/e2e/.auth/customer.json',
+      },
+    },
+    {
+      name: 'ios-iphone-wp-customer',
+      testMatch: [CUSTOMER_EVENTS_SPEC],
+      grep: EVENTS_SMOKE_GREP,
+      grepInvert: EVENTS_SMOKE_GREP_INVERT,
+      use: {
+        ...devices['iPhone 13'],
+        ...commonTimeouts,
+        storageState: './tests/e2e/.auth/customer.json',
+      },
+    },
   ],
 
-  // Only look for E2E test files, ignore Jest tests
   testMatch: '**/tests/e2e/**/*.spec.js',
 
-  // Only start webServer in CI, not when using external WordPress URL
-  webServer: (process.env.CI && !process.env.WORDPRESS_URL) ? {
-    command: 'php -S localhost:8080 -t /tmp/wordpress-e2e',
-    port: 8080,
-    reuseExistingServer: false,
-  } : undefined,
+  webServer: (process.env.CI && !process.env.WORDPRESS_URL)
+    ? {
+        command: 'php -S localhost:8080 -t /tmp/wordpress-e2e',
+        port: 8080,
+        reuseExistingServer: false,
+      }
+    : undefined,
 });

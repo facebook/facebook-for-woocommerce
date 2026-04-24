@@ -138,7 +138,8 @@ const {
 const {
   setProductTitle,
   setProductDescription,
-  exactSearchSelect2Container
+  exactSearchSelect2Container,
+  getVisibleSearchInput
 } = require('./utils/ui');
 
 // =============================================================================
@@ -230,7 +231,8 @@ const utils = {
   checkForJsErrors,
   setProductTitle,
   setProductDescription,
-  exactSearchSelect2Container
+  exactSearchSelect2Container,
+  getVisibleSearchInput
 };
 
 const events = {
@@ -331,6 +333,7 @@ module.exports = {
   setProductTitle,
   setProductDescription,
   exactSearchSelect2Container,
+  getVisibleSearchInput,
 
   // Events
   EventValidator,
