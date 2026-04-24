@@ -246,11 +246,21 @@ class WhatsApp_Integration_Settings {
 		// Generate a fresh nonce for this request
 		$nonce = wp_json_encode( wp_create_nonce( 'wp_rest' ) );
 
-		// Create the inline script with HEREDOC syntax for better JS readability
 		return <<<JAVASCRIPT
 			const whatsAppAPI = GeneratePluginAPIClient({$nonce});
+			const ALLOWED_ORIGINS = [
+				'https://www.commercepartnerhub.com',
+				'https://www.facebook.com',
+				'https://business.facebook.com'
+			];
 			window.addEventListener('message', function(event) {
+				if (ALLOWED_ORIGINS.indexOf(event.origin) === -1) {
+					return;
+				}
 				const message = event.data;
+				if (!message || typeof message !== 'object') {
+					return;
+				}
 				const messageEvent = message.event;
 
 				if (messageEvent === 'CommerceExtension::WA_INSTALL' && message.success) {

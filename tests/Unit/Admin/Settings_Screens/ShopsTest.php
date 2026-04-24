@@ -68,6 +68,19 @@ class ShopsTest extends AbstractWPUnitTestWithOptionIsolationAndSafeFiltering {
         // Assert fetch request setup - check for wpApiSettings.root instead of hardcoded path
         $this->assertStringContainsString('GeneratePluginAPIClient', $output);
         $this->assertStringContainsString('fbAPI.updateSettings', $output);
+
+        $this->assertStringContainsString("'https://www.commercepartnerhub.com'", $output);
+        $this->assertStringContainsString("'https://www.facebook.com'", $output);
+        $this->assertStringContainsString("'https://business.facebook.com'", $output);
+        $this->assertStringContainsString('ALLOWED_ORIGINS.indexOf(event.origin) === -1', $output);
+
+        $origin_guard_pos = strpos($output, 'ALLOWED_ORIGINS.indexOf(event.origin)');
+        $data_access_pos  = strpos($output, 'const message = event.data');
+        $this->assertNotFalse($origin_guard_pos);
+        $this->assertNotFalse($data_access_pos);
+        $this->assertLessThan($data_access_pos, $origin_guard_pos, 'Origin allowlist must be checked before event.data is read.');
+
+        $this->assertStringContainsString("typeof message !== 'object'", $output);
     }
 
     /**
