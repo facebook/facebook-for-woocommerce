@@ -415,11 +415,26 @@ class Shops extends Abstract_Settings_Screen {
 		// Generate a fresh nonce for this request
 		$nonce = wp_json_encode( wp_create_nonce( 'wp_rest' ) );
 
-		// Create the inline script with HEREDOC syntax for better JS readability
+		// Origins permitted to drive the CommerceExtension flow. Only the Commerce
+		// Partner Hub iframe (and the Facebook business surfaces it redirects through
+		// during onboarding) should be able to mutate stored integration settings;
+		// any other sender is ignored to prevent cross-origin postMessage abuse.
+		// See SEV S653961.
 		return <<<JAVASCRIPT
 			const fbAPI = GeneratePluginAPIClient({$nonce});
+			const ALLOWED_ORIGINS = [
+				'https://www.commercepartnerhub.com',
+				'https://www.facebook.com',
+				'https://business.facebook.com'
+			];
 			window.addEventListener('message', function(event) {
+				if (ALLOWED_ORIGINS.indexOf(event.origin) === -1) {
+					return;
+				}
 				const message = event.data;
+				if (!message || typeof message !== 'object') {
+					return;
+				}
 				const messageEvent = message.event;
 
 				if (messageEvent === 'CommerceExtension::INSTALL' && message.success) {

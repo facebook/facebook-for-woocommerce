@@ -192,7 +192,15 @@ wp_enqueue_script(
 
 ### 2. Set Up Event Listeners (if needed)
 
-For features like the Facebook iframe integration, set up event listeners to handle messages:
+For features like the Facebook iframe integration, set up event listeners to handle messages.
+
+**Security note:** A `message` event may be fired by *any* window that has a
+reference to this one, including any page the logged-in admin happens to have
+open. Always validate `event.origin` against an explicit allowlist of the
+origins your iframe actually loads from, and treat `event.data` as untrusted
+input (it must be a non-null object before you can dereference fields on it).
+Skipping either check means a third-party page can silently drive your REST
+endpoints against the admin's session. See SEV S653961.
 
 ```php
 /**
@@ -205,10 +213,22 @@ public function render_message_handler() {
     
     ?>
     <script type="text/javascript">
+        // Only the origins your iframe is loaded from should be trusted.
+        const ALLOWED_ORIGINS = [
+            'https://www.commercepartnerhub.com',
+            'https://www.facebook.com',
+            'https://business.facebook.com'
+        ];
         window.addEventListener('message', function(event) {
+            if (ALLOWED_ORIGINS.indexOf(event.origin) === -1) {
+                return;
+            }
             const message = event.data;
+            if (!message || typeof message !== 'object') {
+                return;
+            }
             const messageEvent = message.event;
-            
+
             // Handle specific events from external sources (like Facebook iframe)
             if (messageEvent === 'SomeEvent::ACTION') {
                 // Call your API endpoint
@@ -279,9 +299,12 @@ public function render_action_button() {
 }
 ```
 
-### 4. Real-World Example (from Connection.php)
+### 4. Real-World Example (from Shops.php)
 
-Here's how the Connection screen handles Facebook integration events:
+Here's how the Shops settings screen handles Facebook Commerce Extension events.
+Note the `ALLOWED_ORIGINS` guard and the `typeof message !== 'object'` check
+— both are required before touching `event.data`. The canonical implementation
+lives in `includes/Admin/Settings_Screens/Shops.php::generate_inline_enhanced_onboarding_script()`.
 
 ```php
 /**
@@ -291,15 +314,22 @@ public function render_message_handler() {
     if (!$this->is_current_screen_page()) {
         return;
     }
-    
-    if (!$this->use_enhanced_onboarding()) {
-        return;
-    }
-    
+
     ?>
     <script type="text/javascript">
+        const ALLOWED_ORIGINS = [
+            'https://www.commercepartnerhub.com',
+            'https://www.facebook.com',
+            'https://business.facebook.com'
+        ];
         window.addEventListener('message', function(event) {
+            if (ALLOWED_ORIGINS.indexOf(event.origin) === -1) {
+                return;
+            }
             const message = event.data;
+            if (!message || typeof message !== 'object') {
+                return;
+            }
             const messageEvent = message.event;
 
             // Handle installation event
@@ -330,7 +360,7 @@ public function render_message_handler() {
 
             // Handle iframe resize event
             if (messageEvent === 'CommerceExtension::RESIZE') {
-                const iframe = document.getElementById('facebook-commerce-iframe');
+                const iframe = document.getElementById('facebook-commerce-iframe-enhanced');
                 if (iframe && message.height) {
                     iframe.height = message.height;
                 }

@@ -68,6 +68,24 @@ class ShopsTest extends AbstractWPUnitTestWithOptionIsolationAndSafeFiltering {
         // Assert fetch request setup - check for wpApiSettings.root instead of hardcoded path
         $this->assertStringContainsString('GeneratePluginAPIClient', $output);
         $this->assertStringContainsString('fbAPI.updateSettings', $output);
+
+        // SEV S653961: postMessage handler MUST validate event.origin against an
+        // explicit allowlist before touching event.data, otherwise any page the
+        // logged-in admin visits can drive the plugin's REST endpoints.
+        $this->assertStringContainsString("'https://www.commercepartnerhub.com'", $output);
+        $this->assertStringContainsString("'https://www.facebook.com'", $output);
+        $this->assertStringContainsString("'https://business.facebook.com'", $output);
+        $this->assertStringContainsString('ALLOWED_ORIGINS.indexOf(event.origin) === -1', $output);
+        // And the guard must run *before* event.data is dereferenced: the origin
+        // check appears before the `const message = event.data;` assignment.
+        $origin_guard_pos = strpos($output, 'ALLOWED_ORIGINS.indexOf(event.origin)');
+        $data_access_pos  = strpos($output, 'const message = event.data');
+        $this->assertNotFalse($origin_guard_pos);
+        $this->assertNotFalse($data_access_pos);
+        $this->assertLessThan($data_access_pos, $origin_guard_pos, 'Origin allowlist must be checked before event.data is read.');
+        // Defense-in-depth: unrelated postMessage traffic (e.g. non-object payloads)
+        // must not throw when we try to read message.event.
+        $this->assertStringContainsString("typeof message !== 'object'", $output);
     }
 
     /**
