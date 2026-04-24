@@ -194,13 +194,7 @@ wp_enqueue_script(
 
 For features like the Facebook iframe integration, set up event listeners to handle messages.
 
-**Security note:** A `message` event may be fired by *any* window that has a
-reference to this one, including any page the logged-in admin happens to have
-open. Always validate `event.origin` against an explicit allowlist of the
-origins your iframe actually loads from, and treat `event.data` as untrusted
-input (it must be a non-null object before you can dereference fields on it).
-Skipping either check means a third-party page can silently drive your REST
-endpoints against the admin's session. See SEV S653961.
+**Security:** Always validate `event.origin` against an allowlist and verify `event.data` is a non-null object before dereferencing. Without both checks, any third-party page can drive your REST endpoints against the admin's session.
 
 ```php
 /**
@@ -213,7 +207,6 @@ public function render_message_handler() {
     
     ?>
     <script type="text/javascript">
-        // Only the origins your iframe is loaded from should be trusted.
         const ALLOWED_ORIGINS = [
             'https://www.commercepartnerhub.com',
             'https://www.facebook.com',
@@ -301,10 +294,7 @@ public function render_action_button() {
 
 ### 4. Real-World Example (from Shops.php)
 
-Here's how the Shops settings screen handles Facebook Commerce Extension events.
-Note the `ALLOWED_ORIGINS` guard and the `typeof message !== 'object'` check
-— both are required before touching `event.data`. The canonical implementation
-lives in `includes/Admin/Settings_Screens/Shops.php::generate_inline_enhanced_onboarding_script()`.
+How the Shops screen handles Commerce Extension events (see `Shops.php::generate_inline_enhanced_onboarding_script()`):
 
 ```php
 /**
