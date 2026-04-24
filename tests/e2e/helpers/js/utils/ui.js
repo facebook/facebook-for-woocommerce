@@ -144,8 +144,35 @@ async function exactSearchSelect2Container(page, locator, searchValue) {
   throw lastError;
 }
 
+/**
+ * Resolve a visible frontend search input across desktop/mobile layouts.
+ * Tries direct selectors first, then opens common mobile menu toggles.
+ * @param {import('@playwright/test').Page} page - Playwright page
+ * @returns {Promise<import('@playwright/test').Locator>}
+ */
+async function getVisibleSearchInput(page) {
+  const directSearchInput = page.locator('.search-field:visible, input[type="search"]:visible').first();
+  if (await directSearchInput.count() > 0) {
+    return directSearchInput;
+  }
+
+  const mobileMenuToggle = page.locator(
+    '.menu-toggle:visible, button.menu-toggle:visible, .wc-block-mini-cart__button:visible'
+  ).first();
+
+  if (await mobileMenuToggle.count() > 0) {
+    await mobileMenuToggle.click().catch(() => {});
+    await page.waitForTimeout(TIMEOUTS.INSTANT);
+  }
+
+  const fallbackSearchInput = page.locator('.search-field, input[type="search"]').first();
+  await fallbackSearchInput.waitFor({ state: 'visible', timeout: TIMEOUTS.LONG });
+  return fallbackSearchInput;
+}
+
 module.exports = {
   setProductTitle,
   setProductDescription,
-  exactSearchSelect2Container
+  exactSearchSelect2Container,
+  getVisibleSearchInput
 };
