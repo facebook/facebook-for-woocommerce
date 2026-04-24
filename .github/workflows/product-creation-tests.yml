@@ -606,6 +606,81 @@ jobs:
           npx playwright install chromium
           npx playwright install-deps chromium
 
+      - name: Install Edge browser
+        if: matrix.test-group == 'plugin-events'
+        run: |
+          set -e
+          sudo apt-get update
+          sudo apt-get install -y wget gpg
+          wget -qO- https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor > microsoft.gpg
+          sudo install -o root -g root -m 644 microsoft.gpg /usr/share/keyrings/microsoft.gpg
+          echo "deb [arch=amd64,arm64 signed-by=/usr/share/keyrings/microsoft.gpg] https://packages.microsoft.com/repos/edge stable main" | sudo tee /etc/apt/sources.list.d/microsoft-edge.list
+          sudo apt-get update
+          sudo apt-get install -y microsoft-edge-stable
+          echo "EDGE_EXECUTABLE_PATH=/usr/bin/microsoft-edge-stable" >> $GITHUB_ENV
+
+      - name: Verify Edge browser setup
+        if: matrix.test-group == 'plugin-events'
+        run: |
+          set -e
+          test -x /usr/bin/microsoft-edge-stable
+          /usr/bin/microsoft-edge-stable --version
+
+      - name: Install Firefox browser
+        if: matrix.test-group == 'plugin-events'
+        run: |
+          set -e
+          sudo apt-get update
+          sudo apt-get install -y firefox
+          echo "FIREFOX_EXECUTABLE_PATH=/usr/bin/firefox" >> $GITHUB_ENV
+
+      - name: Verify Firefox browser setup
+        if: matrix.test-group == 'plugin-events'
+        run: |
+          set -e
+          test -x /usr/bin/firefox
+          /usr/bin/firefox --version
+
+      - name: Install Brave browser
+        if: matrix.test-group == 'plugin-events'
+        run: |
+          set -e
+          sudo apt-get update
+          sudo apt-get install -y curl gnupg
+          sudo curl -fsSLo /usr/share/keyrings/brave-browser-archive-keyring.gpg \
+            https://brave-browser-apt-release.s3.brave.com/brave-browser-archive-keyring.gpg
+          echo "deb [signed-by=/usr/share/keyrings/brave-browser-archive-keyring.gpg] https://brave-browser-apt-release.s3.brave.com/ stable main" | \
+            sudo tee /etc/apt/sources.list.d/brave-browser-release.list
+          sudo apt-get update
+          sudo apt-get install -y brave-browser
+          echo "BRAVE_EXECUTABLE_PATH=/usr/bin/brave-browser" >> $GITHUB_ENV
+
+      - name: Verify Brave browser setup
+        if: matrix.test-group == 'plugin-events'
+        run: |
+          set -e
+          test -x /usr/bin/brave-browser
+          /usr/bin/brave-browser --version
+
+      - name: Install Opera browser
+        if: matrix.test-group == 'plugin-events'
+        run: |
+          set -e
+          sudo apt-get update
+          sudo apt-get install -y wget gnupg2
+          wget -qO- https://deb.opera.com/archive.key | sudo gpg --dearmor -o /usr/share/keyrings/opera.gpg
+          echo "deb [signed-by=/usr/share/keyrings/opera.gpg] https://deb.opera.com/opera-stable/ stable non-free" | sudo tee /etc/apt/sources.list.d/opera-stable.list
+          sudo apt-get update
+          sudo apt-get install -y opera-stable
+          echo "OPERA_EXECUTABLE_PATH=/usr/bin/opera-stable" >> $GITHUB_ENV
+
+      - name: Verify Opera browser setup
+        if: matrix.test-group == 'plugin-events'
+        run: |
+          set -e
+          test -x /usr/bin/opera-stable
+          /usr/bin/opera-stable --version
+
       - name: Setup captured-events directory
         if: matrix.test-group == 'plugin-events'
         run: |
@@ -651,10 +726,18 @@ jobs:
         if: matrix.test-group == 'plugin-events'
         env:
           IS_LATEST_WP: ${{ matrix.wp-version == 'latest' && 'true' || 'false' }}
+          REQUIRE_REAL_EDGE: '1'
+          REQUIRE_REAL_FIREFOX: '1'
+          REQUIRE_REAL_BRAVE: '1'
+          REQUIRE_REAL_OPERA: '1'
         run: |
           cd ${{ env.PLUGIN_PATH }}
           npx playwright test plugin-level-tests.spec.js --project=chromium-wp-admin --workers=1
           xvfb-run --auto-servernum npx playwright test events-test.spec.js --headed --project=chromium-wp-customer --workers=1
+          xvfb-run --auto-servernum npx playwright test events-test.spec.js --headed --project=edge-wp-customer --workers=1
+          xvfb-run --auto-servernum npx playwright test events-test.spec.js --headed --project=firefox-wp-customer --workers=1
+          xvfb-run --auto-servernum npx playwright test events-test.spec.js --headed --project=brave-wp-customer --workers=1
+          xvfb-run --auto-servernum npx playwright test events-test.spec.js --headed --project=opera-wp-customer --workers=1
 
       - name: Cleanup test product
         if: always() && matrix.test-group == 'plugin-events'
