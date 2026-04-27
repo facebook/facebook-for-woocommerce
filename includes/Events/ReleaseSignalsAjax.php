@@ -36,6 +36,12 @@ class ReleaseSignalsAjax {
 	/** @var int Maximum age of an event in seconds (30 minutes). */
 	const MAX_EVENT_AGE = 1800;
 
+	/** @var int Default rate-limit window in seconds (5 minutes). */
+	const RATE_LIMIT_WINDOW = 300;
+
+	/** @var int Default maximum accepted events per IP per window. */
+	const RATE_LIMIT_MAX_EVENTS = 80;
+
 	/** @var array Allowed event names. */
 	const ALLOWED_EVENTS = array(
 		'PageView',
@@ -71,6 +77,10 @@ class ReleaseSignalsAjax {
 		$nonce = isset( $body['security'] ) ? sanitize_text_field( $body['security'] ) : '';
 		if ( ! wp_verify_nonce( $nonce, self::NONCE_ACTION ) ) {
 			wp_send_json_error( array( 'message' => 'Invalid nonce.' ), 403 );
+		}
+
+		if ( $this->is_rate_limited() ) {
+			wp_send_json_error( array( 'message' => 'Rate limit exceeded.' ), 429 );
 		}
 
 		$events = isset( $body['events'] ) && is_array( $body['events'] ) ? $body['events'] : array();
@@ -128,6 +138,8 @@ class ReleaseSignalsAjax {
 		}
 
 		if ( ! empty( $valid_events ) ) {
+			$this->record_rate_limit_usage( count( $valid_events ) );
+
 			try {
 				$api->send_pixel_events( $pixel_id, $valid_events );
 				$sent_count = count( $valid_events );
@@ -275,5 +287,63 @@ class ReleaseSignalsAjax {
 		}
 
 		return $server_event_data;
+	}
+
+	/**
+	 * Whether the current client is over its release-events rate limit.
+	 *
+	 * Counts accepted events (not requests) per IP per window. Both the
+	 * window length and the cap are filterable.
+	 *
+	 * @since 3.6.0
+	 *
+	 * @return bool
+	 */
+	private function is_rate_limited() {
+		$max = (int) apply_filters( 'wc_facebook_release_signals_rate_limit_max', self::RATE_LIMIT_MAX_EVENTS );
+
+		if ( $max <= 0 ) {
+			return false;
+		}
+
+		$key   = $this->get_rate_limit_key();
+		$count = (int) get_transient( $key );
+
+		return $count >= $max;
+	}
+
+	/**
+	 * Records that the current client just had N events accepted, for rate-limit accounting.
+	 *
+	 * @since 3.6.0
+	 *
+	 * @param int $accepted_event_count Number of events accepted in this request.
+	 */
+	private function record_rate_limit_usage( $accepted_event_count ) {
+		if ( $accepted_event_count <= 0 ) {
+			return;
+		}
+
+		$window = (int) apply_filters( 'wc_facebook_release_signals_rate_limit_window', self::RATE_LIMIT_WINDOW );
+		if ( $window <= 0 ) {
+			return;
+		}
+
+		$key   = $this->get_rate_limit_key();
+		$count = (int) get_transient( $key );
+
+		set_transient( $key, $count + (int) $accepted_event_count, $window );
+	}
+
+	/**
+	 * Builds a transient key scoped to the requesting client IP.
+	 *
+	 * @since 3.6.0
+	 *
+	 * @return string
+	 */
+	private function get_rate_limit_key() {
+		$ip = isset( $_SERVER['REMOTE_ADDR'] ) ? sanitize_text_field( wp_unslash( $_SERVER['REMOTE_ADDR'] ) ) : '';
+		return 'wc_fb_release_signals_rl_' . md5( $ip );
 	}
 }
