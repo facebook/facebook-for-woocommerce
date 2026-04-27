@@ -143,13 +143,31 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 
 				$param_builder = self::get_param_builder();
 
-				// When signals are held, still run ParamBuilder to capture fbclid for
-				// attribution, but skip setting cookies until signals are released.
+				// When signals are held, still run ParamBuilder so it can generate
+				// attribution IDs, but do not write cookies until signals are released.
 				if ( FacebookSignalsState::is_held() ) {
+					$fbc    = $param_builder->getFbc();
+					$fbp    = $param_builder->getFbp();
 					$fbclid = isset( $_GET['fbclid'] ) ? sanitize_text_field( wp_unslash( $_GET['fbclid'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+
+					if ( ! empty( $fbc ) ) {
+						FacebookSignalsState::set_attribution_data( 'fbc', $fbc );
+					}
+					if ( ! empty( $fbp ) ) {
+						FacebookSignalsState::set_attribution_data( 'fbp', $fbp );
+					}
 					if ( ! empty( $fbclid ) ) {
 						FacebookSignalsState::set_attribution_data( 'fbclid', $fbclid );
 					}
+
+					foreach ( $param_builder->getCookiesToSet() as $cookie ) {
+						if ( '_fbp' === $cookie->name ) {
+							FacebookSignalsState::set_attribution_data( 'fbp_domain', $cookie->domain );
+						} elseif ( '_fbc' === $cookie->name ) {
+							FacebookSignalsState::set_attribution_data( 'fbc_domain', $cookie->domain );
+						}
+					}
+
 					return;
 				}
 
