@@ -363,7 +363,14 @@ class WC_Facebookcommerce_Pixel {
 					ajaxUrl: <?php echo wp_json_encode( admin_url( 'admin-ajax.php' ) ); ?>,
 					nonce: <?php echo wp_json_encode( wp_create_nonce( 'facebook_release_signals' ) ); ?>,
 					action: 'facebook_release_signals',
-					pixelId: <?php echo wp_json_encode( self::get_pixel_id() ); ?>
+					pixelId: <?php echo wp_json_encode( self::get_pixel_id() ); ?>,
+					attribution: {
+						fbp: <?php echo wp_json_encode( FacebookSignalsState::get_attribution_data( 'fbp' ) ); ?>,
+						fbc: <?php echo wp_json_encode( FacebookSignalsState::get_attribution_data( 'fbc' ) ); ?>,
+						fbclid: <?php echo wp_json_encode( FacebookSignalsState::get_attribution_data( 'fbclid' ) ); ?>,
+						fbpDomain: <?php echo wp_json_encode( FacebookSignalsState::get_attribution_data( 'fbp_domain' ) ); ?>,
+						fbcDomain: <?php echo wp_json_encode( FacebookSignalsState::get_attribution_data( 'fbc_domain' ) ); ?>
+					}
 				});
 				<?php else : ?>
 				FacebookSignals.init({ held: false });
@@ -431,6 +438,7 @@ window.FacebookSignals = window.FacebookSignals || {
 	_held: false,
 	_queue: [],
 	_config: {},
+	_attribution: {},
 	_seenEventIds: {},
 	_fbclid: (function() {
 		try {
@@ -440,8 +448,11 @@ window.FacebookSignals = window.FacebookSignals || {
 	})(),
 
 	init: function(config) {
-		this._config = config || {};
+		config = config || {};
+		this._config = config;
+		this._attribution = config.attribution || {};
 		this._held = !!config.held;
+		this._fbclid = this._fbclid || this._attribution.fbclid || null;
 
 		try {
 			var raw = window.sessionStorage.getItem('wc_facebook_signals_seen_event_ids');
@@ -496,7 +507,12 @@ window.FacebookSignals = window.FacebookSignals || {
 		var payload = JSON.stringify({
 			security: self._config.nonce,
 			events: self._queue,
-			fbclid: self._fbclid
+			fbclid: self._fbclid,
+			attribution: {
+				fbp: self._attribution.fbp || null,
+				fbc: self._attribution.fbc || null,
+				fbclid: self._fbclid || self._attribution.fbclid || null
+			}
 		});
 
 		// Pass action as a query parameter so WordPress can route the request.
@@ -525,16 +541,7 @@ window.FacebookSignals = window.FacebookSignals || {
 	},
 
 	_handleReleaseResponse: function(data) {
-		// Set attribution cookies from backend response, using the same domain
-		// that the PHP param_builder_server_setup() uses so both paths produce
-		// a single cookie with consistent scoping (e.g. '.example.com').
-		var domainAttr = data.fbp_domain ? ';domain=' + data.fbp_domain : '';
-		if (data.fbp) {
-			document.cookie = '_fbp=' + data.fbp + ';path=/;max-age=7776000' + domainAttr + ';SameSite=Lax';
-		}
-		if (data.fbc) {
-			document.cookie = '_fbc=' + data.fbc + ';path=/;max-age=7776000' + domainAttr + ';SameSite=Lax';
-		}
+		this._syncAttributionCookies(data || {});
 
 		// Re-enable the browser signal path so fbevents.js starts firing.
 		fbq('consent', 'grant');
@@ -553,6 +560,53 @@ window.FacebookSignals = window.FacebookSignals || {
 		// Clear the queue and mark signals as active again.
 		this._queue = [];
 		this._held = false;
+	},
+
+	_syncAttributionCookies: function(data) {
+		var clientParams = {};
+
+		if (typeof clientParamBuilder !== 'undefined') {
+			try {
+				// Let the client-side ParamBuilder generate/set missing attribution
+				// cookies using its normal domain-scoping logic.
+				clientParams = clientParamBuilder.processAndCollectParams(this._getAttributionUrl()) || {};
+			} catch (e) {}
+		}
+
+		var fbp = data.fbp || clientParams._fbp || (typeof clientParamBuilder !== 'undefined' ? clientParamBuilder.getFbp() : null);
+		var fbc = data.fbc || clientParams._fbc || (typeof clientParamBuilder !== 'undefined' ? clientParamBuilder.getFbc() : null);
+
+		// If the backend supplied exact values used for CAPI, write them so Pixel
+		// replay and CAPI use matching attribution.
+		if (data.fbp) {
+			this._setAttributionCookie('_fbp', fbp, data.fbp_domain || data.cookie_domain || this._attribution.fbpDomain);
+		}
+		if (data.fbc) {
+			this._setAttributionCookie('_fbc', fbc, data.fbc_domain || data.cookie_domain || this._attribution.fbcDomain || this._attribution.fbpDomain);
+		}
+	},
+
+	_setAttributionCookie: function(name, value, domain) {
+		if (!value) return;
+
+		var domainAttr = domain ? ';domain=' + domain : '';
+		document.cookie = name + '=' + encodeURIComponent(value) + ';path=/;max-age=7776000' + domainAttr + ';SameSite=Lax';
+	},
+
+	_getAttributionUrl: function() {
+		if (!this._fbclid) {
+			return window.location.href;
+		}
+
+		try {
+			var url = new URL(window.location.href);
+			if (!url.searchParams.get('fbclid')) {
+				url.searchParams.set('fbclid', this._fbclid);
+			}
+			return url.toString();
+		} catch (e) {
+			return window.location.href;
+		}
 	}
 };
 JS;
