@@ -299,13 +299,13 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 				return;
 			}
 
-				wp_enqueue_script(
-					'facebook-capi-param-builder',
-					self::CAPI_PARAM_BUILDER_JS_URL,
-					array(),
-					\WC_Facebookcommerce::PLUGIN_VERSION,
-					true
-				);
+			wp_enqueue_script(
+				'facebook-capi-param-builder',
+				self::CAPI_PARAM_BUILDER_JS_URL,
+				array(),
+				\WC_Facebookcommerce::PLUGIN_VERSION,
+				true
+			);
 			// Add inline script that executes after the external script has loaded
 			wp_add_inline_script(
 				'facebook-capi-param-builder',
