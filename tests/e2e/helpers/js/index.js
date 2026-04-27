@@ -150,6 +150,26 @@ const PixelCapture = require('./events/capture');
 const EVENT_SCHEMAS = require('./events/schemas');
 const TestSetup = require('./events/setup');
 
+const {
+  createVariableProductEventFixture,
+  createGroupedProductEventFixture,
+  selectVariationByLabel,
+  setGroupedProductQuantity
+} = require('./events/product-types');
+
+const {
+  loadCapturedEvents,
+  getLatestEvent,
+  asArray,
+  assertEventContainsRetailerId,
+  ignoreKnownPurchaseUserDataGap,
+  createTempCustomerUser,
+  deleteTempCustomerUser,
+  getCartItemsViaStoreApi,
+  clearCart,
+  completeCheckoutFromCart
+} = require('./events/runtime');
+
 // =============================================================================
 // Module Exports (Grouped)
 // =============================================================================
@@ -239,7 +259,21 @@ const events = {
   EventValidator,
   PixelCapture,
   EVENT_SCHEMAS,
-  TestSetup
+  TestSetup,
+  createVariableProductEventFixture,
+  createGroupedProductEventFixture,
+  selectVariationByLabel,
+  setGroupedProductQuantity,
+  loadCapturedEvents,
+  getLatestEvent,
+  asArray,
+  assertEventContainsRetailerId,
+  ignoreKnownPurchaseUserDataGap,
+  createTempCustomerUser,
+  deleteTempCustomerUser,
+  getCartItemsViaStoreApi,
+  clearCart,
+  completeCheckoutFromCart
 };
 
 // =============================================================================
@@ -340,6 +374,20 @@ module.exports = {
   PixelCapture,
   EVENT_SCHEMAS,
   TestSetup,
+  createVariableProductEventFixture,
+  createGroupedProductEventFixture,
+  selectVariationByLabel,
+  setGroupedProductQuantity,
+  loadCapturedEvents,
+  getLatestEvent,
+  asArray,
+  assertEventContainsRetailerId,
+  ignoreKnownPurchaseUserDataGap,
+  createTempCustomerUser,
+  deleteTempCustomerUser,
+  getCartItemsViaStoreApi,
+  clearCart,
+  completeCheckoutFromCart,
 
   // Grouped module exports (for namespace imports)
   auth,

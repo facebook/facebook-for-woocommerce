@@ -8,6 +8,7 @@ const {
   TestSetup,
   EventValidator,
   cleanupProduct,
+  cleanupProducts,
   deactivatePlugin,
   activatePlugin,
   installPixelBlockerMuPlugin,
@@ -15,8 +16,23 @@ const {
   installJsErrorSimulatorMuPlugin,
   removeJsErrorSimulatorMuPlugin,
   reconnectAndVerify,
-  getVisibleSearchInput
+  getVisibleSearchInput,
+  createVariableProductEventFixture,
+  createGroupedProductEventFixture,
+  selectVariationByLabel,
+  setGroupedProductQuantity,
+  loadCapturedEvents,
+  getLatestEvent,
+  asArray,
+  assertEventContainsRetailerId,
+  ignoreKnownPurchaseUserDataGap,
+  createTempCustomerUser,
+  deleteTempCustomerUser,
+  getCartItemsViaStoreApi,
+  clearCart,
+  completeCheckoutFromCart
 } = require('./helpers/js');
+
 
 test('PageView', async ({ page }, testInfo) => {
     const { testId, pixelCapture } = await TestSetup.init(page, 'PageView', testInfo);
@@ -93,6 +109,266 @@ test('AddToCart', async ({ page }, testInfo) => {
 
     TestSetup.logResult('AddToCart', result);
     expect(result.passed).toBe(true);
+});
+
+test('ViewContent - Variable Product', async ({ page }, testInfo) => {
+    let fixture;
+
+    try {
+      fixture = await createVariableProductEventFixture();
+      const { testId, pixelCapture } = await TestSetup.init(page, 'ViewContent', testInfo);
+
+      console.log(`   📦 Navigating to variable product page: ${fixture.parentUrl}`);
+      const eventPromise = pixelCapture.waitForEvent();
+      await page.goto(fixture.parentUrl);
+      await TestSetup.waitForPageReady(page);
+      await eventPromise;
+
+      const validator = new EventValidator(testId);
+      await validator.checkDebugLog();
+      const rawResult = await validator.validate('ViewContent', page);
+      const result = ignoreKnownPurchaseUserDataGap(rawResult);
+
+      const captured = await loadCapturedEvents(testId);
+      const pixelEvent = getLatestEvent(captured.pixel, 'ViewContent');
+      const capiEvent = getLatestEvent(captured.capi, 'ViewContent');
+
+      assertEventContainsRetailerId(pixelEvent, fixture.parentRetailerId);
+      assertEventContainsRetailerId(capiEvent, fixture.parentRetailerId);
+      expect(pixelEvent?.custom_data?.content_type).toBe('product_group');
+      expect(capiEvent?.custom_data?.content_type).toBe('product_group');
+
+      TestSetup.logResult('ViewContent (Variable Product)', result);
+      expect(result.passed).toBe(true);
+    } finally {
+      if (fixture?.cleanupProductIds?.length) {
+        await cleanupProducts(fixture.cleanupProductIds);
+      }
+    }
+});
+
+test('AddToCart - Variable Product (selected variation)', async ({ page }, testInfo) => {
+    let fixture;
+
+    try {
+      fixture = await createVariableProductEventFixture();
+      const targetVariation = fixture.variations.find(v => v.option === 'Large') || fixture.variations[0];
+      const { testId, pixelCapture } = await TestSetup.init(page, 'AddToCart', testInfo);
+
+      await page.goto(fixture.parentUrl);
+      await TestSetup.waitForPageReady(page, TIMEOUTS.INSTANT);
+
+      const selected = await selectVariationByLabel(page, {
+        attributeSlug: fixture.attributeSlug,
+        label: targetVariation.option
+      });
+      expect(selected.variationId).toBe(Number(targetVariation.id));
+
+      console.log(`   🛒 Clicking Add to Cart for variation ${targetVariation.option}`);
+      const eventPromise = pixelCapture.waitForEvent();
+      await page.click('.single_add_to_cart_button');
+      await page.waitForLoadState('networkidle');
+      await eventPromise;
+
+      const validator = new EventValidator(testId);
+      await validator.checkDebugLog();
+      const rawResult = await validator.validate('AddToCart', page);
+      const result = ignoreKnownPurchaseUserDataGap(rawResult);
+
+      const captured = await loadCapturedEvents(testId);
+      const pixelEvent = getLatestEvent(captured.pixel, 'AddToCart');
+      const capiEvent = getLatestEvent(captured.capi, 'AddToCart');
+
+      assertEventContainsRetailerId(pixelEvent, targetVariation.retailer_id);
+      assertEventContainsRetailerId(capiEvent, targetVariation.retailer_id);
+
+      // Explicit SKU assertion when retailer ID mode is configured to use SKU.
+      const isSkuMode = String(targetVariation.retailer_id) === String(targetVariation.sku);
+      if (isSkuMode) {
+        const pixelIds = [
+          ...asArray(pixelEvent?.custom_data?.content_ids).map(String),
+          ...asArray(pixelEvent?.custom_data?.contents).map(entry => String(entry?.id)).filter(Boolean)
+        ];
+        const capiIds = [
+          ...asArray(capiEvent?.custom_data?.content_ids).map(String),
+          ...asArray(capiEvent?.custom_data?.contents).map(entry => String(entry?.id)).filter(Boolean)
+        ];
+
+        expect(pixelIds).toContain(String(targetVariation.sku));
+        expect(capiIds).toContain(String(targetVariation.sku));
+      }
+
+      TestSetup.logResult('AddToCart (Variable Product)', result);
+      expect(result.passed).toBe(true);
+    } finally {
+      if (fixture?.cleanupProductIds?.length) {
+        await cleanupProducts(fixture.cleanupProductIds);
+      }
+    }
+});
+
+test('Purchase - Variable Product', async ({ browser }, testInfo) => {
+    let fixture;
+    let context;
+    let tempUser;
+
+    try {
+      fixture = await createVariableProductEventFixture();
+      tempUser = await createTempCustomerUser();
+
+      context = await browser.newContext({
+        baseURL: process.env.WORDPRESS_URL,
+        ignoreHTTPSErrors: true
+      });
+      const page = await context.newPage();
+
+      await clearCart(page, { username: tempUser.username, password: tempUser.password });
+      const targetVariation = fixture.variations.find(v => v.option === 'Large') || fixture.variations[0];
+      const { testId } = await TestSetup.init(page, 'Purchase', testInfo);
+
+      await page.goto(fixture.parentUrl);
+      await TestSetup.waitForPageReady(page, TIMEOUTS.INSTANT);
+
+      await selectVariationByLabel(page, {
+        attributeSlug: fixture.attributeSlug,
+        label: targetVariation.option
+      });
+
+      await page.click('.single_add_to_cart_button');
+      await page.waitForLoadState('networkidle');
+      await page.waitForTimeout(TIMEOUTS.SHORT);
+
+      const cartItems = await getCartItemsViaStoreApi(page);
+      expect(cartItems.length).toBe(1);
+      expect(String(cartItems[0].id)).toBe(String(targetVariation.id));
+
+      await completeCheckoutFromCart(page);
+
+      const validator = new EventValidator(testId);
+      await validator.checkDebugLog();
+      const rawResult = await validator.validate('Purchase', page);
+      const result = ignoreKnownPurchaseUserDataGap(rawResult);
+
+      const captured = await loadCapturedEvents(testId);
+      const capiPurchase = getLatestEvent(captured.capi, 'Purchase');
+      const contents = asArray(capiPurchase?.custom_data?.contents);
+
+      assertEventContainsRetailerId(capiPurchase, targetVariation.retailer_id);
+      expect(contents.some(item => String(item.id) === String(targetVariation.retailer_id) && Number(item.quantity) >= 1)).toBe(true);
+
+      TestSetup.logResult('Purchase (Variable Product)', result);
+      expect(result.passed).toBe(true);
+    } finally {
+      if (context) {
+        await context.close();
+      }
+
+      if (tempUser?.user_id) {
+        await deleteTempCustomerUser(tempUser.user_id);
+      }
+
+      if (fixture?.cleanupProductIds?.length) {
+        await cleanupProducts(fixture.cleanupProductIds);
+      }
+    }
+});
+
+test('ViewContent - Grouped Product', async ({ page }, testInfo) => {
+    let fixture;
+
+    try {
+      fixture = await createGroupedProductEventFixture();
+      const { testId, pixelCapture } = await TestSetup.init(page, 'ViewContent', testInfo);
+
+      console.log(`   📦 Navigating to grouped product page: ${fixture.groupedUrl}`);
+      const eventPromise = pixelCapture.waitForEvent();
+      await page.goto(fixture.groupedUrl);
+      await TestSetup.waitForPageReady(page);
+      await eventPromise;
+
+      const validator = new EventValidator(testId);
+      await validator.checkDebugLog();
+      const rawResult = await validator.validate('ViewContent', page);
+      const result = ignoreKnownPurchaseUserDataGap(rawResult);
+
+      const captured = await loadCapturedEvents(testId);
+      const pixelEvent = getLatestEvent(captured.pixel, 'ViewContent');
+      const capiEvent = getLatestEvent(captured.capi, 'ViewContent');
+
+      assertEventContainsRetailerId(pixelEvent, fixture.groupedRetailerId);
+      assertEventContainsRetailerId(capiEvent, fixture.groupedRetailerId);
+      expect(pixelEvent?.custom_data?.content_type).toBe('product_group');
+      expect(capiEvent?.custom_data?.content_type).toBe('product_group');
+
+      TestSetup.logResult('ViewContent (Grouped Product)', result);
+      expect(result.passed).toBe(true);
+    } finally {
+      if (fixture?.cleanupProductIds?.length) {
+        await cleanupProducts(fixture.cleanupProductIds);
+      }
+    }
+});
+
+test('Purchase - Grouped Product', async ({ browser }, testInfo) => {
+    let fixture;
+    let context;
+    let tempUser;
+
+    try {
+      fixture = await createGroupedProductEventFixture();
+      tempUser = await createTempCustomerUser();
+
+      context = await browser.newContext({
+        baseURL: process.env.WORDPRESS_URL,
+        ignoreHTTPSErrors: true
+      });
+      const page = await context.newPage();
+
+      await clearCart(page, { username: tempUser.username, password: tempUser.password });
+      const child = fixture.children[0];
+      const { testId } = await TestSetup.init(page, 'Purchase', testInfo);
+
+      await page.goto(fixture.groupedUrl);
+      await TestSetup.waitForPageReady(page, TIMEOUTS.INSTANT);
+
+      await setGroupedProductQuantity(page, child.id, 1);
+      await page.click('.single_add_to_cart_button');
+      await page.waitForLoadState('networkidle');
+      await page.waitForTimeout(TIMEOUTS.SHORT);
+
+      const cartItems = await getCartItemsViaStoreApi(page);
+      expect(cartItems.length).toBe(1);
+      expect(String(cartItems[0].id)).toBe(String(child.id));
+
+      await completeCheckoutFromCart(page);
+
+      const validator = new EventValidator(testId);
+      await validator.checkDebugLog();
+      const rawResult = await validator.validate('Purchase', page);
+      const result = ignoreKnownPurchaseUserDataGap(rawResult);
+
+      const captured = await loadCapturedEvents(testId);
+      const capiPurchase = getLatestEvent(captured.capi, 'Purchase');
+      const contents = asArray(capiPurchase?.custom_data?.contents);
+
+      assertEventContainsRetailerId(capiPurchase, child.retailer_id);
+      expect(contents.some(item => String(item.id) === String(child.retailer_id) && Number(item.quantity) >= 1)).toBe(true);
+
+      TestSetup.logResult('Purchase (Grouped Product)', result);
+      expect(result.passed).toBe(true);
+    } finally {
+      if (context) {
+        await context.close();
+      }
+
+      if (tempUser?.user_id) {
+        await deleteTempCustomerUser(tempUser.user_id);
+      }
+
+      if (fixture?.cleanupProductIds?.length) {
+        await cleanupProducts(fixture.cleanupProductIds);
+      }
+    }
 });
 
 test('ViewCategory', async ({ page }, testInfo) => {
