@@ -112,6 +112,7 @@ class ReleaseSignalsAjax {
 			$fbc = 'fb.1.' . time() . '.' . $fbclid;
 		}
 
+		$valid_events = array();
 		foreach ( $events as $event_data ) {
 			if ( ! $this->validate_event( $event_data, $now ) ) {
 				continue;
@@ -123,13 +124,15 @@ class ReleaseSignalsAjax {
 
 			$server_event_data = $this->build_server_event_data( $event_data, $user_data, $fbc, $fbp );
 
-			$event = new Event( $server_event_data );
+			$valid_events[] = new Event( $server_event_data );
+		}
 
+		if ( ! empty( $valid_events ) ) {
 			try {
-				$api->send_pixel_events( $pixel_id, array( $event ) );
-				++$sent_count;
+				$api->send_pixel_events( $pixel_id, $valid_events );
+				$sent_count = count( $valid_events );
 			} catch ( ApiException $e ) {
-				facebook_for_woocommerce()->log( 'Release signals: could not send event: ' . $e->getMessage() );
+				facebook_for_woocommerce()->log( 'Release signals: could not send events: ' . $e->getMessage() );
 			}
 		}
 
