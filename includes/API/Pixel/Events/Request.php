@@ -51,9 +51,8 @@ class Request extends API\Request {
 	public function get_data() {
 
 		$data = array(
-			'data'            => array(),
-			'partner_agent'   => Event::get_platform_identifier(),
-			'test_event_code' => 'TEST60508', // TODO: Remove before merging — temporary for testing.
+			'data'          => array(),
+			'partner_agent' => Event::get_platform_identifier(),
 		);
 
 		foreach ( $this->events as $event ) {
