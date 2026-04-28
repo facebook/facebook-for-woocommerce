@@ -87,8 +87,6 @@ class ReleaseSignalsAjax {
 
 		$events      = isset( $body['events'] ) && is_array( $body['events'] ) ? $body['events'] : array();
 		$attribution = isset( $body['attribution'] ) && is_array( $body['attribution'] ) ? $body['attribution'] : array();
-		$fbclid      = isset( $body['fbclid'] ) ? sanitize_text_field( $body['fbclid'] ) : '';
-		$fbclid      = ! empty( $fbclid ) ? $fbclid : $this->sanitize_attribution_value( $attribution, 'fbclid' );
 		$fbc         = $this->sanitize_attribution_value( $attribution, 'fbc' );
 		$fbp         = $this->sanitize_attribution_value( $attribution, 'fbp' );
 
@@ -108,12 +106,11 @@ class ReleaseSignalsAjax {
 
 		// Expose held attribution to Event::get_click_id()/get_browser_id(), so
 		// released events use the same attribution path as normal CAPI events.
-		$restore_request_fbclid = $this->temporarily_set_superglobal_value( '_REQUEST', 'fbclid', $fbclid );
-		$restore_cookie_fbc     = $this->temporarily_set_superglobal_value( '_COOKIE', '_fbc', $fbc );
-		$restore_cookie_fbp     = $this->temporarily_set_superglobal_value( '_COOKIE', '_fbp', $fbp );
+		$restore_cookie_fbc = $this->temporarily_set_superglobal_value( '_COOKIE', '_fbc', $fbc );
+		$restore_cookie_fbp = $this->temporarily_set_superglobal_value( '_COOKIE', '_fbp', $fbp );
 
-		// Resolve attribution once via Event so fbc-from-fbclid synthesis and
-		// cookie reads go through the same path as normal CAPI events.
+		// Resolve attribution once via Event so cookie reads go through the same
+		// path as normal CAPI events.
 		$this->resolve_attribution_defaults( $fbc, $fbp );
 
 		$valid_events = array();
@@ -129,7 +126,6 @@ class ReleaseSignalsAjax {
 			$valid_events[] = $this->build_server_event( $event_data, $user_data );
 		}
 
-		$this->restore_superglobal_value( '_REQUEST', 'fbclid', $restore_request_fbclid );
 		$this->restore_superglobal_value( '_COOKIE', '_fbc', $restore_cookie_fbc );
 		$this->restore_superglobal_value( '_COOKIE', '_fbp', $restore_cookie_fbp );
 
@@ -325,8 +321,7 @@ class ReleaseSignalsAjax {
 
 	/**
 	 * Resolves missing fbc/fbp values via Event so released signals share the
-	 * same attribution path (cookies + fbc-from-fbclid synthesis) as normal
-	 * CAPI events.
+	 * same attribution path (cookies) as normal CAPI events.
 	 *
 	 * @param string $fbc Attribution click ID reference.
 	 * @param string $fbp Attribution browser ID reference.

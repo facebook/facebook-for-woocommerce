@@ -367,7 +367,6 @@ class WC_Facebookcommerce_Pixel {
 					attribution: {
 						fbp: <?php echo wp_json_encode( FacebookSignalsState::get_attribution_data( 'fbp' ) ); ?>,
 						fbc: <?php echo wp_json_encode( FacebookSignalsState::get_attribution_data( 'fbc' ) ); ?>,
-						fbclid: <?php echo wp_json_encode( FacebookSignalsState::get_attribution_data( 'fbclid' ) ); ?>,
 						fbpDomain: <?php echo wp_json_encode( FacebookSignalsState::get_attribution_data( 'fbp_domain' ) ); ?>,
 						fbcDomain: <?php echo wp_json_encode( FacebookSignalsState::get_attribution_data( 'fbc_domain' ) ); ?>
 					}
@@ -452,7 +451,7 @@ window.FacebookSignals = window.FacebookSignals || {
 		this._config = config;
 		this._attribution = config.attribution || {};
 		this._held = !!config.held;
-		this._fbclid = this._fbclid || this._attribution.fbclid || null;
+		this._fbclid = this._fbclid || null;
 
 		try {
 			var raw = window.sessionStorage.getItem('wc_facebook_signals_seen_event_ids');
@@ -507,11 +506,9 @@ window.FacebookSignals = window.FacebookSignals || {
 		var payload = JSON.stringify({
 			security: self._config.nonce,
 			events: self._queue,
-			fbclid: self._fbclid,
 			attribution: {
 				fbp: self._attribution.fbp || null,
-				fbc: self._attribution.fbc || null,
-				fbclid: self._fbclid || self._attribution.fbclid || null
+				fbc: self._attribution.fbc || null
 			}
 		});
 
