@@ -677,11 +677,25 @@ class API extends Base {
 			if ( '/' !== substr( $logger_path, 0, 1 ) ) {
 				$logger_path = '/' . $logger_path;
 			}
-			$logger_file = dirname( plugin_dir_path( __FILE__ ) ) . $logger_path;
-			if ( ! file_exists( $logger_file ) ) {
+
+			$plugin_root = realpath( dirname( plugin_dir_path( __FILE__ ) ) );
+			if ( false === $plugin_root ) {
+				throw new \Exception( 'Test logging failed - Plugin root directory could not be resolved' );
+			}
+
+			$logger_file      = $plugin_root . $logger_path;
+			$real_logger_file = realpath( $logger_file );
+			if ( false === $real_logger_file ) {
 				throw new \Exception( 'Test logging failed - Logger file not found at: ' . $logger_file );
 			}
-			require_once $logger_file;
+
+			$normalized_plugin_root = trailingslashit( wp_normalize_path( $plugin_root ) );
+			$normalized_logger_file = wp_normalize_path( $real_logger_file );
+			if ( 0 !== strpos( $normalized_logger_file, $normalized_plugin_root ) ) {
+				throw new \Exception( 'Test logging failed - Logger file must be within plugin directory' );
+			}
+
+			require_once $real_logger_file;
 
 			$test_id = sanitize_text_field( wp_unslash( $_COOKIE[ $cookie_name ] ) );
 
