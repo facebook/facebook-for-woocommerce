@@ -671,11 +671,19 @@ class API extends Base {
 				return;
 			}
 
-			// Check if test cookie is present.
-			// getenv() can be empty in some local PHP-FPM setups, so keep a safe default.
+			// Check if test cookie is configured and present.
+			$is_local_debug_environment = defined( 'WP_DEBUG' )
+				&& WP_DEBUG
+				&& function_exists( 'wp_get_environment_type' )
+				&& 'production' !== wp_get_environment_type();
+
 			$cookie_name = getenv( 'FB_E2E_TEST_COOKIE_NAME' );
+			if ( empty( $cookie_name ) && $is_local_debug_environment && defined( 'FB_E2E_TEST_COOKIE_NAME' ) ) {
+				$cookie_name = FB_E2E_TEST_COOKIE_NAME;
+			}
 			if ( empty( $cookie_name ) ) {
-				$cookie_name = 'facebook_test_id';
+				// E2E logging is not configured in this environment.
+				return;
 			}
 			if ( empty( $_COOKIE[ $cookie_name ] ) ) {
 				// Test cookie is not present. Do not log events.
@@ -700,10 +708,13 @@ class API extends Base {
 			}
 
 			// Validate logger file exists.
-			// getenv() can be empty in local setups; fall back to plugin-relative default.
 			$logger_path = getenv( 'FB_E2E_LOGGER_PATH' );
+			if ( empty( $logger_path ) && $is_local_debug_environment && defined( 'FB_E2E_LOGGER_PATH' ) ) {
+				$logger_path = FB_E2E_LOGGER_PATH;
+			}
 			if ( empty( $logger_path ) ) {
-				$logger_path = '/tests/e2e/helpers/php/event-logger.php';
+				// E2E logging is not configured in this environment.
+				return;
 			}
 			if ( '/' !== substr( $logger_path, 0, 1 ) ) {
 				$logger_path = '/' . $logger_path;
