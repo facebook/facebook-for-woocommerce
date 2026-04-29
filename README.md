@@ -83,7 +83,18 @@ Optional flags:
 ```bash
 ./tests/e2e/scripts/run-local-events.sh --project chromium-wp-customer --workers 1
 ./tests/e2e/scripts/run-local-events.sh --spec tests/e2e/theme-compatibility.spec.js
-./tests/e2e/scripts/run-local-events.sh --real-edge --auto-install
+
+# Run with real browser binaries
+./tests/e2e/scripts/run-local-events.sh --project edge-wp-customer --real-edge
+./tests/e2e/scripts/run-local-events.sh --project firefox-wp-customer --real-firefox
+./tests/e2e/scripts/run-local-events.sh --project brave-wp-customer --real-brave
+./tests/e2e/scripts/run-local-events.sh --project opera-wp-customer --real-opera
+
+# Allow script-driven install when browser is missing
+./tests/e2e/scripts/run-local-events.sh --project edge-wp-customer --real-edge --auto-install
+./tests/e2e/scripts/run-local-events.sh --project firefox-wp-customer --real-firefox --auto-install
+./tests/e2e/scripts/run-local-events.sh --project brave-wp-customer --real-brave --auto-install
+./tests/e2e/scripts/run-local-events.sh --project opera-wp-customer --real-opera --auto-install
 ```
 
 > ⚠️ `--auto-install` may run `sudo`, install system packages, and add apt repositories/keyrings on Linux.

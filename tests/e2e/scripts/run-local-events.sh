@@ -171,6 +171,37 @@ if [[ "$REQUIRE_REAL_BRAVE" == "1" ]]; then
   fi
 
   if [[ -z "$BRAVE_EXECUTABLE_PATH" || ! -x "$BRAVE_EXECUTABLE_PATH" ]]; then
+    if [[ "$AUTO_INSTALL" != "1" ]]; then
+      warn_auto_install_disabled "Brave"
+    else
+      echo "⚠️  Auto-install enabled: this may run sudo and modify system package sources."
+      echo "ℹ️ Brave executable not found. Attempting local install..."
+      if [[ "$(uname -s)" == "Darwin" ]]; then
+        if command -v brew >/dev/null 2>&1; then
+          brew install --cask brave-browser
+        else
+          echo "❌ Homebrew not found; cannot auto-install Brave on macOS." >&2
+        fi
+        if [[ -x "/Applications/Brave Browser.app/Contents/MacOS/Brave Browser" ]]; then
+          BRAVE_EXECUTABLE_PATH="/Applications/Brave Browser.app/Contents/MacOS/Brave Browser"
+        fi
+      elif [[ "$(uname -s)" == "Linux" ]]; then
+        if command -v apt-get >/dev/null 2>&1; then
+          sudo apt-get update
+          sudo apt-get install -y curl ca-certificates
+          sudo curl -fsSLo /usr/share/keyrings/brave-browser-archive-keyring.gpg https://brave-browser-apt-release.s3.brave.com/brave-browser-archive-keyring.gpg
+          echo "deb [signed-by=/usr/share/keyrings/brave-browser-archive-keyring.gpg] https://brave-browser-apt-release.s3.brave.com/ stable main" | sudo tee /etc/apt/sources.list.d/brave-browser-release.list >/dev/null
+          sudo apt-get update
+          sudo apt-get install -y brave-browser
+          if command -v brave-browser >/dev/null 2>&1; then
+            BRAVE_EXECUTABLE_PATH="$(command -v brave-browser)"
+          fi
+        fi
+      fi
+    fi
+  fi
+
+  if [[ -z "$BRAVE_EXECUTABLE_PATH" || ! -x "$BRAVE_EXECUTABLE_PATH" ]]; then
     echo "❌ REQUIRE_REAL_BRAVE=1 but Brave executable not found." >&2
     echo "   Set BRAVE_EXECUTABLE_PATH or pass --brave-path <path>." >&2
     echo "   macOS default: /Applications/Brave Browser.app/Contents/MacOS/Brave Browser" >&2
