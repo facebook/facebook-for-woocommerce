@@ -42,6 +42,7 @@ REQUIRE_REAL_EDGE="${REQUIRE_REAL_EDGE:-0}"
 REQUIRE_REAL_FIREFOX="${REQUIRE_REAL_FIREFOX:-0}"
 REQUIRE_REAL_BRAVE="${REQUIRE_REAL_BRAVE:-0}"
 REQUIRE_REAL_OPERA="${REQUIRE_REAL_OPERA:-0}"
+AUTO_INSTALL="${AUTO_INSTALL:-0}"
 
 # Tiny CLI parser for convenience.
 while [[ $# -gt 0 ]]; do
@@ -63,6 +64,7 @@ while [[ $# -gt 0 ]]; do
     --real-firefox) REQUIRE_REAL_FIREFOX="1"; shift ;;
     --real-brave) REQUIRE_REAL_BRAVE="1"; shift ;;
     --real-opera) REQUIRE_REAL_OPERA="1"; shift ;;
+    --auto-install) AUTO_INSTALL="1"; shift ;;
     -h|--help)
       cat <<'USAGE'
 Usage: tests/e2e/scripts/run-local-events.sh [options]
@@ -83,6 +85,8 @@ Usage: tests/e2e/scripts/run-local-events.sh [options]
   --brave-path <p>   Explicit Brave executable path
   --real-opera       Require real Opera binary (auto-enabled for opera projects)
   --opera-path <p>   Explicit Opera executable path
+  --auto-install     Allow this script to install missing browsers/packages (may run sudo,
+                     add apt repositories/keyrings, and modify system package sources)
 
 Required environment variables:
   WORDPRESS_PATH, WORDPRESS_URL
@@ -127,6 +131,12 @@ if [[ ! -d "$WORDPRESS_PATH" ]]; then
   echo "❌ WORDPRESS_PATH does not exist: $WORDPRESS_PATH"
   exit 1
 fi
+
+warn_auto_install_disabled() {
+  local browser="$1"
+  echo "⚠️  ${browser} executable not found and auto-install is disabled." >&2
+  echo "   Re-run with --auto-install to allow package installation/repository setup." >&2
+}
 
 # If running a Brave project, force real Brave (no Chromium UA fallback).
 if [[ "$PROJECT" == edge-* ]]; then
@@ -194,29 +204,35 @@ if [[ "$REQUIRE_REAL_EDGE" == "1" ]]; then
   fi
 
   if [[ -z "$EDGE_EXECUTABLE_PATH" || ! -x "$EDGE_EXECUTABLE_PATH" ]]; then
-    echo "ℹ️ Edge executable not found. Attempting local install..."
-    if [[ "$(uname -s)" == "Darwin" ]]; then
-      if command -v brew >/dev/null 2>&1; then
-        brew install --cask microsoft-edge || true
-      else
-        echo "❌ Homebrew not found; cannot auto-install Edge on macOS." >&2
-      fi
-      if [[ -x "/Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge" ]]; then
-        EDGE_EXECUTABLE_PATH="/Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge"
-      fi
-    elif [[ "$(uname -s)" == "Linux" ]]; then
-      if command -v apt-get >/dev/null 2>&1; then
-        sudo apt-get update || true
-        sudo apt-get install -y wget gpg || true
-        wget -qO- https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor > microsoft.gpg || true
-        sudo install -o root -g root -m 644 microsoft.gpg /usr/share/keyrings/microsoft.gpg || true
-        echo "deb [arch=amd64,arm64 signed-by=/usr/share/keyrings/microsoft.gpg] https://packages.microsoft.com/repos/edge stable main" | sudo tee /etc/apt/sources.list.d/microsoft-edge.list >/dev/null || true
-        sudo apt-get update || true
-        sudo apt-get install -y microsoft-edge-stable || true
-        if command -v microsoft-edge-stable >/dev/null 2>&1; then
-          EDGE_EXECUTABLE_PATH="$(command -v microsoft-edge-stable)"
-        elif command -v microsoft-edge >/dev/null 2>&1; then
-          EDGE_EXECUTABLE_PATH="$(command -v microsoft-edge)"
+    if [[ "$AUTO_INSTALL" != "1" ]]; then
+      warn_auto_install_disabled "Edge"
+    else
+      echo "⚠️  Auto-install enabled: this may run sudo and modify system package sources."
+      echo "ℹ️ Edge executable not found. Attempting local install..."
+      if [[ "$(uname -s)" == "Darwin" ]]; then
+        if command -v brew >/dev/null 2>&1; then
+          brew install --cask microsoft-edge
+        else
+          echo "❌ Homebrew not found; cannot auto-install Edge on macOS." >&2
+        fi
+        if [[ -x "/Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge" ]]; then
+          EDGE_EXECUTABLE_PATH="/Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge"
+        fi
+      elif [[ "$(uname -s)" == "Linux" ]]; then
+        if command -v apt-get >/dev/null 2>&1; then
+          sudo apt-get update
+          sudo apt-get install -y wget gpg
+          wget -qO- https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor > microsoft.gpg
+          sudo install -o root -g root -m 644 microsoft.gpg /usr/share/keyrings/microsoft.gpg
+          rm -f microsoft.gpg
+          echo "deb [arch=amd64,arm64 signed-by=/usr/share/keyrings/microsoft.gpg] https://packages.microsoft.com/repos/edge stable main" | sudo tee /etc/apt/sources.list.d/microsoft-edge.list >/dev/null
+          sudo apt-get update
+          sudo apt-get install -y microsoft-edge-stable
+          if command -v microsoft-edge-stable >/dev/null 2>&1; then
+            EDGE_EXECUTABLE_PATH="$(command -v microsoft-edge-stable)"
+          elif command -v microsoft-edge >/dev/null 2>&1; then
+            EDGE_EXECUTABLE_PATH="$(command -v microsoft-edge)"
+          fi
         fi
       fi
     fi
@@ -253,20 +269,25 @@ if [[ "$REQUIRE_REAL_FIREFOX" == "1" ]]; then
     fi
 
     if [[ -z "$FIREFOX_EXECUTABLE_PATH" ]]; then
-      echo "ℹ️ Firefox binary not found locally. Attempting local install..."
-      if [[ "$(uname -s)" == "Darwin" ]]; then
-        if command -v brew >/dev/null 2>&1; then
-          brew install --cask firefox || true
-        fi
-        if [[ -x "/Applications/Firefox.app/Contents/MacOS/firefox" ]]; then
-          FIREFOX_EXECUTABLE_PATH="/Applications/Firefox.app/Contents/MacOS/firefox"
-        fi
-      elif [[ "$(uname -s)" == "Linux" ]]; then
-        if command -v apt-get >/dev/null 2>&1; then
-          sudo apt-get update || true
-          sudo apt-get install -y firefox || true
-          if command -v firefox >/dev/null 2>&1; then
-            FIREFOX_EXECUTABLE_PATH="$(command -v firefox)"
+      if [[ "$AUTO_INSTALL" != "1" ]]; then
+        warn_auto_install_disabled "Firefox"
+      else
+        echo "⚠️  Auto-install enabled: this may run sudo and modify system package sources."
+        echo "ℹ️ Firefox binary not found locally. Attempting local install..."
+        if [[ "$(uname -s)" == "Darwin" ]]; then
+          if command -v brew >/dev/null 2>&1; then
+            brew install --cask firefox
+          fi
+          if [[ -x "/Applications/Firefox.app/Contents/MacOS/firefox" ]]; then
+            FIREFOX_EXECUTABLE_PATH="/Applications/Firefox.app/Contents/MacOS/firefox"
+          fi
+        elif [[ "$(uname -s)" == "Linux" ]]; then
+          if command -v apt-get >/dev/null 2>&1; then
+            sudo apt-get update
+            sudo apt-get install -y firefox
+            if command -v firefox >/dev/null 2>&1; then
+              FIREFOX_EXECUTABLE_PATH="$(command -v firefox)"
+            fi
           fi
         fi
       fi
@@ -308,28 +329,33 @@ if [[ "$REQUIRE_REAL_OPERA" == "1" ]]; then
   fi
 
   if [[ -z "$OPERA_EXECUTABLE_PATH" || ! -x "$OPERA_EXECUTABLE_PATH" ]]; then
-    echo "ℹ️ Opera executable not found. Attempting local install..."
-    if [[ "$(uname -s)" == "Darwin" ]]; then
-      if command -v brew >/dev/null 2>&1; then
-        brew install --cask opera || true
-      else
-        echo "❌ Homebrew not found; cannot auto-install Opera on macOS." >&2
-      fi
-      if [[ -x "/Applications/Opera.app/Contents/MacOS/Opera" ]]; then
-        OPERA_EXECUTABLE_PATH="/Applications/Opera.app/Contents/MacOS/Opera"
-      fi
-    elif [[ "$(uname -s)" == "Linux" ]]; then
-      if command -v apt-get >/dev/null 2>&1; then
-        sudo apt-get update || true
-        sudo apt-get install -y wget gnupg2 || true
-        wget -qO- https://deb.opera.com/archive.key | sudo gpg --dearmor -o /usr/share/keyrings/opera.gpg || true
-        echo "deb [signed-by=/usr/share/keyrings/opera.gpg] https://deb.opera.com/opera-stable/ stable non-free" | sudo tee /etc/apt/sources.list.d/opera-stable.list >/dev/null || true
-        sudo apt-get update || true
-        sudo apt-get install -y opera-stable || true
-        if command -v opera-stable >/dev/null 2>&1; then
-          OPERA_EXECUTABLE_PATH="$(command -v opera-stable)"
-        elif command -v opera >/dev/null 2>&1; then
-          OPERA_EXECUTABLE_PATH="$(command -v opera)"
+    if [[ "$AUTO_INSTALL" != "1" ]]; then
+      warn_auto_install_disabled "Opera"
+    else
+      echo "⚠️  Auto-install enabled: this may run sudo and modify system package sources."
+      echo "ℹ️ Opera executable not found. Attempting local install..."
+      if [[ "$(uname -s)" == "Darwin" ]]; then
+        if command -v brew >/dev/null 2>&1; then
+          brew install --cask opera
+        else
+          echo "❌ Homebrew not found; cannot auto-install Opera on macOS." >&2
+        fi
+        if [[ -x "/Applications/Opera.app/Contents/MacOS/Opera" ]]; then
+          OPERA_EXECUTABLE_PATH="/Applications/Opera.app/Contents/MacOS/Opera"
+        fi
+      elif [[ "$(uname -s)" == "Linux" ]]; then
+        if command -v apt-get >/dev/null 2>&1; then
+          sudo apt-get update
+          sudo apt-get install -y wget gnupg2
+          wget -qO- https://deb.opera.com/archive.key | sudo gpg --dearmor -o /usr/share/keyrings/opera.gpg
+          echo "deb [signed-by=/usr/share/keyrings/opera.gpg] https://deb.opera.com/opera-stable/ stable non-free" | sudo tee /etc/apt/sources.list.d/opera-stable.list >/dev/null
+          sudo apt-get update
+          sudo apt-get install -y opera-stable
+          if command -v opera-stable >/dev/null 2>&1; then
+            OPERA_EXECUTABLE_PATH="$(command -v opera-stable)"
+          elif command -v opera >/dev/null 2>&1; then
+            OPERA_EXECUTABLE_PATH="$(command -v opera)"
+          fi
         fi
       fi
     fi
