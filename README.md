@@ -89,7 +89,11 @@ Optional flags:
 ```bash
 ./tests/e2e/scripts/run-local-events.sh --project chromium-wp-customer --workers 1
 ./tests/e2e/scripts/run-local-events.sh --spec tests/e2e/theme-compatibility.spec.js
+./tests/e2e/scripts/run-local-events.sh --real-edge --auto-install
 ```
+
+> ⚠️ `--auto-install` may run `sudo`, install system packages, and add apt repositories/keyrings on Linux.
+> It is opt-in and should only be used in trusted local dev environments.
 
 #### Production build
 
