@@ -13,6 +13,13 @@ const commonTimeouts = {
   navigationTimeout: 180000,
 };
 
+const privacySandboxArgs = [
+  '--enable-features=BrowsingTopics,InterestGroupStorage,AdInterestGroupAPI,Fledge,RunAdAuction,PrivacySandboxAdsAPIsOverride',
+  '--enable-blink-features=BrowsingTopics,InterestGroupStorage,AdInterestGroupAPI,RunAdAuction',
+  '--test-third-party-cookie-phaseout',
+  ...(process.env.WORDPRESS_URL ? [`--unsafely-treat-insecure-origin-as-secure=${process.env.WORDPRESS_URL}`] : []),
+];
+
 const adminUse = {
   ...devices['Desktop Chrome'],
   ...commonTimeouts,
@@ -127,6 +134,16 @@ export default defineConfig({
       name: 'chromium-wp-customer',
       testMatch: [CUSTOMER_EVENTS_SPEC],
       use: customerUse,
+    },
+    {
+      name: 'chromium-privacy-sandbox-wp-customer',
+      testMatch: [CUSTOMER_EVENTS_SPEC],
+      use: {
+        ...customerUse,
+        launchOptions: {
+          args: privacySandboxArgs,
+        },
+      },
     },
     {
       name: 'edge-wp-customer',
