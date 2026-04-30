@@ -13,6 +13,7 @@ namespace WooCommerce\Facebook\Admin\Settings_Screens;
 defined( 'ABSPATH' ) || exit;
 
 use WooCommerce\Facebook\Admin\Abstract_Settings_Screen;
+use WooCommerce\Facebook\Admin\Postmessage_Origin_Validation;
 use WooCommerce\Facebook\Framework\Api\Exception as ApiException;
 use WooCommerce\Facebook\RolloutSwitches;
 
@@ -415,15 +416,16 @@ class Shops extends Abstract_Settings_Screen {
 		// Generate a fresh nonce for this request
 		$nonce = wp_json_encode( wp_create_nonce( 'wp_rest' ) );
 
+		// Origin allowlist + Facebook on-demand (`www.<id>.od.<base>`) validator.
+		// See `Postmessage_Origin_Validation` for the rationale and the SEV
+		// S649287 subdomain-confusion class this is hardened against.
+		$origin_validator_js = Postmessage_Origin_Validation::generate_inline_js();
+
 		return <<<JAVASCRIPT
 			const fbAPI = GeneratePluginAPIClient({$nonce});
-			const ALLOWED_ORIGINS = [
-				'https://www.commercepartnerhub.com',
-				'https://www.facebook.com',
-				'https://business.facebook.com'
-			];
+			{$origin_validator_js}
 			window.addEventListener('message', function(event) {
-				if (ALLOWED_ORIGINS.indexOf(event.origin) === -1) {
+				if (!isAllowedOrigin(event.origin)) {
 					return;
 				}
 				const message = event.data;

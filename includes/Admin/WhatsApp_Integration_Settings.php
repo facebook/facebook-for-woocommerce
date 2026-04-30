@@ -246,15 +246,16 @@ class WhatsApp_Integration_Settings {
 		// Generate a fresh nonce for this request
 		$nonce = wp_json_encode( wp_create_nonce( 'wp_rest' ) );
 
+		// Origin allowlist + Facebook on-demand (`www.<id>.od.<base>`) validator.
+		// See `Postmessage_Origin_Validation` for the rationale and the SEV
+		// S649287 subdomain-confusion class this is hardened against.
+		$origin_validator_js = Postmessage_Origin_Validation::generate_inline_js();
+
 		return <<<JAVASCRIPT
 			const whatsAppAPI = GeneratePluginAPIClient({$nonce});
-			const ALLOWED_ORIGINS = [
-				'https://www.commercepartnerhub.com',
-				'https://www.facebook.com',
-				'https://business.facebook.com'
-			];
+			{$origin_validator_js}
 			window.addEventListener('message', function(event) {
-				if (ALLOWED_ORIGINS.indexOf(event.origin) === -1) {
+				if (!isAllowedOrigin(event.origin)) {
 					return;
 				}
 				const message = event.data;

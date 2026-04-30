@@ -69,18 +69,33 @@ class ShopsTest extends AbstractWPUnitTestWithOptionIsolationAndSafeFiltering {
         $this->assertStringContainsString('GeneratePluginAPIClient', $output);
         $this->assertStringContainsString('fbAPI.updateSettings', $output);
 
-        $this->assertStringContainsString("'https://www.commercepartnerhub.com'", $output);
-        $this->assertStringContainsString("'https://www.facebook.com'", $output);
-        $this->assertStringContainsString("'https://business.facebook.com'", $output);
-        $this->assertStringContainsString('ALLOWED_ORIGINS.indexOf(event.origin) === -1', $output);
+        $this->assertStringContainsString('"https:\/\/www.commercepartnerhub.com"', $output);
+        // `www.facebook.com` / `business.facebook.com` were trusted by PR #3913
+        // but are no longer in the defaults — they must NOT leak into the emitted JS.
+        $this->assertStringNotContainsString('"https:\/\/www.facebook.com"', $output);
+        $this->assertStringNotContainsString('"https:\/\/business.facebook.com"', $output);
+        $this->assertStringContainsString('STATIC_ALLOWED_ORIGINS', $output);
+        $this->assertStringContainsString('OD_ALLOWED_BASE_LABELS', $output);
+        $this->assertStringContainsString('function isAllowedOrigin(', $output);
+        $this->assertStringContainsString('isAllowedOrigin(event.origin)', $output);
 
-        $origin_guard_pos = strpos($output, 'ALLOWED_ORIGINS.indexOf(event.origin)');
+        $origin_guard_pos = strpos($output, 'isAllowedOrigin(event.origin)');
         $data_access_pos  = strpos($output, 'const message = event.data');
         $this->assertNotFalse($origin_guard_pos);
         $this->assertNotFalse($data_access_pos);
         $this->assertLessThan($data_access_pos, $origin_guard_pos, 'Origin allowlist must be checked before event.data is read.');
 
         $this->assertStringContainsString("typeof message !== 'object'", $output);
+
+        // SEV S649287: validator must NOT use endsWith / substring matching on
+        // the raw origin; it must parse the URL and walk hostname labels.
+        $this->assertStringNotContainsString('.endsWith(', $output);
+        $this->assertStringNotContainsString("indexOf('.commercepartnerhub", $output);
+        $this->assertStringNotContainsString("indexOf('.od.", $output);
+        $this->assertStringContainsString('new URL(origin)', $output);
+
+        // OD pattern (`www.<id>.od.commercepartnerhub.com`) must be supported.
+        $this->assertStringContainsString('[["commercepartnerhub","com"]]', $output);
     }
 
     /**

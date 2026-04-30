@@ -31,12 +31,17 @@ class WhatsApp_Integration_SettingsTest extends AbstractWPUnitTestWithOptionIsol
     public function test_render_message_handler_enforces_origin_allowlist() {
         $output = $this->build_settings()->generate_inline_enhanced_onboarding_script();
 
-        $this->assertStringContainsString( "'https://www.commercepartnerhub.com'", $output );
-        $this->assertStringContainsString( "'https://www.facebook.com'", $output );
-        $this->assertStringContainsString( "'https://business.facebook.com'", $output );
-        $this->assertStringContainsString( 'ALLOWED_ORIGINS.indexOf(event.origin) === -1', $output );
+        $this->assertStringContainsString( '"https:\/\/www.commercepartnerhub.com"', $output );
+        // `www.facebook.com` / `business.facebook.com` were trusted by PR #3913
+        // but are no longer in the defaults — they must NOT leak into the emitted JS.
+        $this->assertStringNotContainsString( '"https:\/\/www.facebook.com"', $output );
+        $this->assertStringNotContainsString( '"https:\/\/business.facebook.com"', $output );
+        $this->assertStringContainsString( 'STATIC_ALLOWED_ORIGINS', $output );
+        $this->assertStringContainsString( 'OD_ALLOWED_BASE_LABELS', $output );
+        $this->assertStringContainsString( 'function isAllowedOrigin(', $output );
+        $this->assertStringContainsString( 'isAllowedOrigin(event.origin)', $output );
 
-        $origin_guard_pos = strpos( $output, 'ALLOWED_ORIGINS.indexOf(event.origin)' );
+        $origin_guard_pos = strpos( $output, 'isAllowedOrigin(event.origin)' );
         $data_access_pos  = strpos( $output, 'const message = event.data' );
         $this->assertNotFalse( $origin_guard_pos );
         $this->assertNotFalse( $data_access_pos );
@@ -51,5 +56,28 @@ class WhatsApp_Integration_SettingsTest extends AbstractWPUnitTestWithOptionIsol
         $output = $this->build_settings()->generate_inline_enhanced_onboarding_script();
 
         $this->assertStringContainsString( "typeof message !== 'object'", $output );
+    }
+
+    /**
+     * The validator must use parsed-URL label-by-label matching, not endsWith
+     * or substring matching against the raw origin. See SEV S649287.
+     */
+    public function test_render_message_handler_avoids_endswith_origin_validation() {
+        $output = $this->build_settings()->generate_inline_enhanced_onboarding_script();
+
+        $this->assertStringNotContainsString( '.endsWith(', $output );
+        $this->assertStringNotContainsString( "indexOf('.commercepartnerhub", $output );
+        $this->assertStringNotContainsString( "indexOf('.od.", $output );
+        $this->assertStringContainsString( 'new URL(origin)', $output );
+    }
+
+    /**
+     * Facebook on-demand instances (`www.<id>.od.<base>`) must be supported
+     * out of the box for `commercepartnerhub.com`.
+     */
+    public function test_render_message_handler_supports_on_demand_origins() {
+        $output = $this->build_settings()->generate_inline_enhanced_onboarding_script();
+
+        $this->assertStringContainsString( '[["commercepartnerhub","com"]]', $output );
     }
 }

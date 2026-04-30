@@ -196,24 +196,41 @@ For features like the Facebook iframe integration, set up event listeners to han
 
 **Security:** Always validate `event.origin` against an allowlist and verify `event.data` is a non-null object before dereferencing. Without both checks, any third-party page can drive your REST endpoints against the admin's session.
 
+The plugin centralizes the validator in `WooCommerce\Facebook\Admin\Postmessage_Origin_Validation`. Use it instead of hand-rolling the check — it ships with the static allowlist plus support for Facebook on-demand (OD) instances in two label shapes (both validated label-by-label against the parsed URL):
+
+| Shape    | Example                                                    | Constraint on the dynamic label                               |
+| -------- | ---------------------------------------------------------- | ------------------------------------------------------------- |
+| Format A | `https://www.<digits>.od.commercepartnerhub.com`           | `<digits>` matches `^[0-9]+$`                                 |
+| Format B | `https://www.my-od.commercepartnerhub.com` and `https://www.my-od-<N>.commercepartnerhub.com` | Literal `my-od` prefix, optional `-<N>` where `<N>` is `^[0-9]+$` |
+
+#### What NOT to do
+
+The validator is **not** simply a string comparison. Two patterns have caused real production incidents (see Meta SEV S649287) and must be avoided when matching iframe origins:
+
+* `event.origin.endsWith('.commercepartnerhub.com')` — an attacker who registers `evilcommercepartnerhub.com` (no leading dot) trivially bypasses this with `evil.commercepartnerhub.com.attacker.com` or a subdomain like `xxx.evilcommercepartnerhub.com` once the suffix-matching is combined with any reconstruction step.
+* `event.origin.match(/^https:\/\/www\..*\.od\.commercepartnerhub\.com$/)` — `.*` greedy matching is fine for one specific origin shape but trivially broken when paired with any subsequent string slicing of the matched group; prefer label-aware checks.
+
+Use the parsed `URL` object and walk the hostname labels explicitly. The shipped helper does exactly this.
+
+#### Recommended pattern (using the shipped helper)
+
 ```php
+use WooCommerce\Facebook\Admin\Postmessage_Origin_Validation;
+
 /**
  * Renders the message handler script in the footer.
  */
 public function render_message_handler() {
-    if (!$this->is_current_screen_page()) {
+    if ( ! $this->is_current_screen_page() ) {
         return;
     }
-    
+
+    $origin_validator_js = Postmessage_Origin_Validation::generate_inline_js();
     ?>
     <script type="text/javascript">
-        const ALLOWED_ORIGINS = [
-            'https://www.commercepartnerhub.com',
-            'https://www.facebook.com',
-            'https://business.facebook.com'
-        ];
+        <?php echo $origin_validator_js; // emits `isAllowedOrigin(origin)` ?>
         window.addEventListener('message', function(event) {
-            if (ALLOWED_ORIGINS.indexOf(event.origin) === -1) {
+            if (!isAllowedOrigin(event.origin)) {
                 return;
             }
             const message = event.data;
@@ -222,15 +239,12 @@ public function render_message_handler() {
             }
             const messageEvent = message.event;
 
-            // Handle specific events from external sources (like Facebook iframe)
             if (messageEvent === 'SomeEvent::ACTION') {
-                // Call your API endpoint
                 FacebookWooCommerceAPI.yourActionName({
                     param_name: message.some_data
                 })
                 .then(function(response) {
                     if (response.success) {
-                        // Handle success
                         window.location.reload();
                     } else {
                         console.error('Error:', response);
@@ -245,6 +259,31 @@ public function render_message_handler() {
     <?php
 }
 ```
+
+#### Extending the allowlist
+
+To add additional origins (e.g. a private staging deployment) hook the
+`wc_facebook_commerce_partner_allowed_origins` filter:
+
+```php
+add_filter( 'wc_facebook_commerce_partner_allowed_origins', function ( $config ) {
+    // Add an exact-match origin.
+    $config['exact'][]    = 'https://staging.commercepartnerhub.example.com';
+
+    // Add a Format-A base (`www.<digits>.od.<base>`).
+    $config['od_bases'][] = 'commercepartnerhub-staging.example.com';
+
+    // Add a Format-B alias (`www.<prefix>[-<N>].<base>`).
+    $config['od_aliases'][] = [
+        'prefix' => 'staging-od',
+        'base'   => 'commercepartnerhub-staging.example.com',
+    ];
+
+    return $config;
+} );
+```
+
+Anything you add via this filter is subjected to the same strict validation — entries with characters outside `[a-z0-9-]` in OD base or alias labels (or whose alias prefix is not exactly one DNS label) are silently dropped to prevent a misconfigured filter from injecting JSON into the inline script.
 
 ### 3. Direct API Calls
 
@@ -294,26 +333,25 @@ public function render_action_button() {
 
 ### 4. Real-World Example (from Shops.php)
 
-How the Shops screen handles Commerce Extension events (see `Shops.php::generate_inline_enhanced_onboarding_script()`):
+How the Shops screen handles Commerce Extension events (see `Shops.php::generate_inline_enhanced_onboarding_script()`). This is the canonical implementation — note how it uses the centralized validator rather than hand-rolling an `endsWith` check.
 
 ```php
-/**
- * Renders the message handler script in the footer.
- */
-public function render_message_handler() {
-    if (!$this->is_current_screen_page()) {
-        return;
-    }
+use WooCommerce\Facebook\Admin\Postmessage_Origin_Validation;
 
-    ?>
-    <script type="text/javascript">
-        const ALLOWED_ORIGINS = [
-            'https://www.commercepartnerhub.com',
-            'https://www.facebook.com',
-            'https://business.facebook.com'
-        ];
+/**
+ * Generates the inline script for the enhanced onboarding flow.
+ *
+ * @return string
+ */
+public function generate_inline_enhanced_onboarding_script() {
+    $nonce               = wp_json_encode( wp_create_nonce( 'wp_rest' ) );
+    $origin_validator_js = Postmessage_Origin_Validation::generate_inline_js();
+
+    return <<<JAVASCRIPT
+        const fbAPI = GeneratePluginAPIClient({$nonce});
+        {$origin_validator_js}
         window.addEventListener('message', function(event) {
-            if (ALLOWED_ORIGINS.indexOf(event.origin) === -1) {
+            if (!isAllowedOrigin(event.origin)) {
                 return;
             }
             const message = event.data;
@@ -322,7 +360,6 @@ public function render_message_handler() {
             }
             const messageEvent = message.event;
 
-            // Handle installation event
             if (messageEvent === 'CommerceExtension::INSTALL' && message.success) {
                 const requestBody = {
                     access_token: message.access_token,
@@ -334,8 +371,7 @@ public function render_message_handler() {
                     // Additional parameters...
                 };
 
-                // Call the update_fb_settings API endpoint
-                FacebookWooCommerceAPI.updateSettings(requestBody)
+                fbAPI.updateSettings(requestBody)
                     .then(function(response) {
                         if (response.success) {
                             window.location.reload();
@@ -348,7 +384,6 @@ public function render_message_handler() {
                     });
             }
 
-            // Handle iframe resize event
             if (messageEvent === 'CommerceExtension::RESIZE') {
                 const iframe = document.getElementById('facebook-commerce-iframe-enhanced');
                 if (iframe && message.height) {
@@ -356,9 +391,8 @@ public function render_message_handler() {
                 }
             }
 
-            // Handle uninstall event
             if (messageEvent === 'CommerceExtension::UNINSTALL') {
-                FacebookWooCommerceAPI.uninstallSettings()
+                fbAPI.uninstallSettings()
                     .then(function(response) {
                         if (response.success) {
                             window.location.reload();
@@ -369,9 +403,8 @@ public function render_message_handler() {
                         window.location.reload();
                     });
             }
-        }, false);
-    </script>
-    <?php
+        });
+    JAVASCRIPT;
 }
 ```
 
