@@ -147,7 +147,7 @@ const {
 // =============================================================================
 const EventValidator = require('./events/validator');
 const PixelCapture = require('./events/capture');
-const EVENT_SCHEMAS = require('./events/schemas');
+const EVENT_SCHEMAS = require('./events/field-contracts');
 const TestSetup = require('./events/setup');
 
 const {
