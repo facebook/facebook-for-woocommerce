@@ -392,6 +392,9 @@ test('ViewCategory', async ({ page }, testInfo) => {
 test('InitiateCheckout', async ({ page }, testInfo) => {
     const { testId, pixelCapture } = await TestSetup.init(page, 'InitiateCheckout',  testInfo);
 
+    // Keep cart deterministic so single-item category expectations are stable.
+    await clearCart(page);
+
     await page.goto(process.env.TEST_PRODUCT_URL);
     await TestSetup.waitForPageReady(page, TIMEOUTS.INSTANT);
 
@@ -399,12 +402,16 @@ test('InitiateCheckout', async ({ page }, testInfo) => {
     await page.click('.single_add_to_cart_button');
     await page.waitForTimeout(TIMEOUTS.SHORT);
 
+    const cartItems = await getCartItemsViaStoreApi(page);
+    expect(cartItems.length).toBe(1);
+
     console.log(`   💳 Navigating to checkout`);
     // Set up listener BEFORE triggering the action (prevents race condition)
     const eventPromise = pixelCapture.waitForEvent();
     await page.goto('/checkout');
     await TestSetup.waitForPageReady(page);
     await eventPromise;
+    await page.waitForTimeout(TIMEOUTS.SHORT); // allow CAPI logger write to settle
 
     const validator = new EventValidator(testId);
     await validator.checkDebugLog();
@@ -577,52 +584,54 @@ test('Search - No Results', async ({ page }, testInfo) => {
 
 
 test('ViewContent - No Consent (pixel disabled)', async ({ page }, testInfo) => {
-    // 1. Clear any existing _fbp/_fbc cookies from previous tests
-    console.log('🍪 Clearing existing FB cookies...');
-    await page.context().clearCookies();
+    try {
+        // 1. Clear any existing _fbp/_fbc cookies from previous tests
+        console.log('🍪 Clearing existing FB cookies...');
+        await page.context().clearCookies();
 
-    // 2. Deactivate plugin
-    await deactivatePlugin();
+        // 2. Deactivate plugin
+        await deactivatePlugin();
 
-    // 3. Install mu-plugin (filter returns false)
-    await installPixelBlockerMuPlugin();
+        // 3. Install mu-plugin (filter returns false)
+        await installPixelBlockerMuPlugin();
 
-    // 4. Reactivate plugin (filter now in place before EventsTracker constructor runs)
-    await activatePlugin();
+        // 4. Reactivate plugin (filter now in place before EventsTracker constructor runs)
+        await activatePlugin();
 
-    // 5. Run test - expect NO events
-    console.log('🧪 Initializing test...');
-    const { testId, pixelCapture } = await TestSetup.init(page, 'ViewContent', testInfo, true);
+        // 5. Run test - expect NO events
+        console.log('🧪 Initializing test...');
+        const { testId, pixelCapture } = await TestSetup.init(page, 'ViewContent', testInfo, true);
 
-    console.log('📦 Navigating to product (expecting NO events)...');
-    const eventPromise = pixelCapture.waitForEvent();
-    await page.goto(process.env.TEST_PRODUCT_URL);
-    await TestSetup.waitForPageReady(page);
-    await eventPromise;
+        console.log('📦 Navigating to product (expecting NO events)...');
+        const eventPromise = pixelCapture.waitForEvent();
+        await page.goto(process.env.TEST_PRODUCT_URL);
+        await TestSetup.waitForPageReady(page);
+        await eventPromise;
 
-    console.log('🔍 Validating no events fired...');
-    const validator = new EventValidator(testId, false, true);
-    await validator.checkDebugLog();
-    const result = await validator.validate('ViewContent', page);
+        console.log('🔍 Validating no events fired...');
+        const validator = new EventValidator(testId, false, true);
+        await validator.checkDebugLog();
+        const result = await validator.validate('ViewContent', page);
 
-    TestSetup.logResult('ViewContent (No Consent)', result);
-    expect(result.passed).toBe(true);
+        TestSetup.logResult('ViewContent (No Consent)', result);
+        expect(result.passed).toBe(true);
 
-    // 6. Validate cookies - _fbp and _fbc should NOT exist after page load
-    console.log('🍪 Checking cookies were not set...');
-    const cookies = await page.context().cookies();
-    const fbp = cookies.find(c => c.name === '_fbp');
-    const fbc = cookies.find(c => c.name === '_fbc');
+        // 6. Validate cookies - _fbp and _fbc should NOT exist after page load
+        console.log('🍪 Checking cookies were not set...');
+        const cookies = await page.context().cookies();
+        const fbp = cookies.find(c => c.name === '_fbp');
+        const fbc = cookies.find(c => c.name === '_fbc');
 
-    expect(fbp).toBeUndefined();
-    expect(fbc).toBeUndefined();
-    console.log('✅ No _fbp or _fbc cookies (correct - fbevents.js did not load)');
-
-    // 7. Cleanup - remove mu-plugin and restore connection
-    console.log('🧹 Cleaning up...');
-    await removePixelBlockerMuPlugin();
-    await reconnectAndVerify({ enablePixel: 'yes', enableS2S: 'yes' });
-    console.log('✅ Consent test complete');
+        expect(fbp).toBeUndefined();
+        expect(fbc).toBeUndefined();
+        console.log('✅ No _fbp or _fbc cookies (correct - fbevents.js did not load)');
+    } finally {
+        // 7. Cleanup - always restore environment, even if assertions fail
+        console.log('🧹 Cleaning up...');
+        await removePixelBlockerMuPlugin().catch(() => {});
+        await reconnectAndVerify({ enablePixel: 'yes', enableS2S: 'yes' }).catch(() => {});
+        console.log('✅ Consent test cleanup complete');
+    }
 });
 
 // Lead event is not tested as it needs an SMTP server etc
@@ -727,6 +736,55 @@ test('AddToCart - Isolated Execution (with JS errors from other plugins)', async
         console.log('   🧹 Cleaning up JS error simulator...');
         await removeJsErrorSimulatorMuPlugin();
     }
+});
+
+test('Privacy Sandbox - Topics API available in Chromium', async ({ page }) => {
+    test.skip(!test.info().project.name.includes('privacy-sandbox'), 'Privacy Sandbox test only runs on privacy-sandbox project');
+
+    await page.goto('/');
+    await TestSetup.waitForPageReady(page);
+
+    const topicsResult = await page.evaluate(async () => {
+        const hasTopicsApi = typeof document !== 'undefined' && typeof document.browsingTopics === 'function';
+        if (!hasTopicsApi) {
+            return { hasTopicsApi, topicsCount: null, error: null };
+        }
+
+        try {
+            const topics = await document.browsingTopics();
+            return { hasTopicsApi, topicsCount: Array.isArray(topics) ? topics.length : 0, error: null };
+        } catch (error) {
+            return { hasTopicsApi, topicsCount: null, error: String(error?.message || error) };
+        }
+    });
+
+    test.skip(!topicsResult.hasTopicsApi, 'Topics API is not exposed by this Chromium runtime');
+    expect(topicsResult.error).toBeNull();
+    expect(typeof topicsResult.topicsCount).toBe('number');
+});
+
+test('Privacy Sandbox - Protected Audience API shape in Chromium', async ({ page }) => {
+    test.skip(!test.info().project.name.includes('privacy-sandbox'), 'Privacy Sandbox test only runs on privacy-sandbox project');
+
+    await page.goto('/');
+    await TestSetup.waitForPageReady(page);
+
+    const apiShape = await page.evaluate(() => {
+        return {
+            hasNavigator: typeof navigator !== 'undefined',
+            hasJoinAdInterestGroup: typeof navigator?.joinAdInterestGroup === 'function',
+            hasRunAdAuction: typeof navigator?.runAdAuction === 'function',
+            hasLeaveAdInterestGroup: typeof navigator?.leaveAdInterestGroup === 'function',
+        };
+    });
+
+    const hasAnyProtectedAudienceApi =
+      apiShape.hasJoinAdInterestGroup
+      || apiShape.hasRunAdAuction
+      || apiShape.hasLeaveAdInterestGroup;
+
+    test.skip(!hasAnyProtectedAudienceApi, 'Protected Audience APIs are not exposed by this Chromium runtime');
+    expect(apiShape.hasNavigator).toBe(true);
 });
 
 // Cleanup is handled by GitHub workflow after all tests complete

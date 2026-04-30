@@ -29,8 +29,6 @@ class PixelCapture {
         const isFacebookHost = host === 'facebook.com' || host.endsWith('.facebook.com');
         if (!isFacebookHost) return;
 
-        const isPixelPath = parsedUrl.pathname.includes('/tr') || parsedUrl.pathname.includes('/privacy_sandbox');
-        if (!isPixelPath) return;
 
         const ev = parsedUrl.searchParams.get('ev') || '(none-in-query)';
         const eid = parsedUrl.searchParams.get('eid') || '(none)';
@@ -77,8 +75,6 @@ class PixelCapture {
           const isFacebookHost = host === 'facebook.com' || host.endsWith('.facebook.com');
           if (!isFacebookHost) return;
 
-          const isPixelPath = parsedUrl.pathname.includes('/tr') || parsedUrl.pathname.includes('/privacy_sandbox');
-          if (!isPixelPath) return;
 
           queuedRequests.push(request);
         } catch (_) {
@@ -121,6 +117,15 @@ class PixelCapture {
         }
       } finally {
         context.off('request', queueListener);
+      }
+
+      if (this.expectZeroEvents) {
+        if (bestForExpectedEvent) {
+          throw new Error(`❌ Pixel event ${this.eventName} fired unexpectedly within ${timeoutMs}ms`);
+        }
+
+        console.log(`✅ No Pixel event fired (as expected for negative test)`);
+        return;
       }
 
       const chosen = bestForExpectedEvent || best;
@@ -258,7 +263,12 @@ class PixelCapture {
       }
     }
 
-    if (event_name === 'Unknown' && expectedEventName) {
+    const hasPixelSignal = !!event_id
+      || pixel_id !== 'Unknown'
+      || Object.keys(customData).length > 0
+      || Object.keys(userData).length > 0;
+
+    if (event_name === 'Unknown' && expectedEventName && hasPixelSignal) {
       event_name = expectedEventName;
     }
 

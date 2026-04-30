@@ -734,6 +734,56 @@ jobs:
           cd ${{ env.PLUGIN_PATH }}
           npx playwright test plugin-level-tests.spec.js --project=chromium-wp-admin --workers=1
           xvfb-run --auto-servernum npx playwright test events-test.spec.js --headed --project=chromium-wp-customer --workers=1
+          xvfb-run --auto-servernum npx playwright test events-test.spec.js --headed --project=chromium-privacy-sandbox-wp-customer --workers=1
+
+          # Ensure Privacy Sandbox API tests are executed (not skipped) in CI.
+          xvfb-run --auto-servernum npx playwright test events-test.spec.js \
+            --headed \
+            --project=chromium-privacy-sandbox-wp-customer \
+            --workers=1 \
+            --grep "Privacy Sandbox - (Topics API available in Chromium|Protected Audience API shape in Chromium)" \
+            --reporter=json > /tmp/privacy-sandbox-api-report.json
+
+          node - <<'NODE'
+          const fs = require('fs');
+          const report = JSON.parse(fs.readFileSync('/tmp/privacy-sandbox-api-report.json', 'utf8'));
+          const apiTitles = new Set([
+            'Privacy Sandbox - Topics API available in Chromium',
+            'Privacy Sandbox - Protected Audience API shape in Chromium'
+          ]);
+
+          const statuses = [];
+          const walkSuite = (suite) => {
+            for (const spec of suite.specs || []) {
+              for (const test of spec.tests || []) {
+                if (!apiTitles.has(test.title)) continue;
+                for (const result of test.results || []) {
+                  statuses.push(result.status);
+                }
+              }
+            }
+            for (const child of suite.suites || []) {
+              walkSuite(child);
+            }
+          };
+
+          for (const suite of report.suites || []) {
+            walkSuite(suite);
+          }
+
+          if (statuses.length < 2) {
+            console.error('Expected both Privacy Sandbox API tests to run, but did not find both in JSON report.');
+            process.exit(1);
+          }
+
+          if (statuses.includes('skipped')) {
+            console.error('Privacy Sandbox API tests were skipped in CI. This is not allowed. Statuses:', statuses);
+            process.exit(1);
+          }
+
+          console.log('Privacy Sandbox API tests executed without skips. Statuses:', statuses);
+          NODE
+
           xvfb-run --auto-servernum npx playwright test events-test.spec.js --headed --project=edge-wp-customer --workers=1
           xvfb-run --auto-servernum npx playwright test events-test.spec.js --headed --project=firefox-wp-customer --workers=1
           xvfb-run --auto-servernum npx playwright test events-test.spec.js --headed --project=brave-wp-customer --workers=1

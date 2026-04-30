@@ -142,10 +142,36 @@ async function loginWithCredentials(page, username, password) {
   }
 }
 
+async function clearServerSideCartState(username) {
+  if (!username) return;
+
+  const escapedUsername = shellEscape(username);
+  const php = [
+    `$u = get_user_by('login', ${escapedUsername});`,
+    'if ( $u ) {',
+    '  $all = get_user_meta( $u->ID );',
+    '  foreach ( array_keys( $all ) as $key ) {',
+    "    if ( strpos( $key, '_woocommerce_persistent_cart_' ) === 0 ) {",
+    '      delete_user_meta( $u->ID, $key );',
+    '    }',
+    '  }',
+    '  global $wpdb;',
+    "  $table = $wpdb->prefix . 'woocommerce_sessions';",
+    '  $wpdb->delete( $table, array( "session_key" => (string) $u->ID ) );',
+    '}',
+    "echo 'cart_server_state_cleared';"
+  ].join(' ');
+
+  await runWpCli(`eval ${shellEscape(php)} --skip-plugins --skip-themes`).catch(() => {});
+}
+
 async function clearCart(page, credentials = null) {
   const context = page.context();
 
   await context.clearCookies();
+
+  const username = credentials?.username || process.env.WP_CUSTOMER_USERNAME;
+  await clearServerSideCartState(username);
 
   if (credentials?.username && credentials?.password) {
     await loginWithCredentials(page, credentials.username, credentials.password);
@@ -159,23 +185,49 @@ async function clearCart(page, credentials = null) {
     try { window.sessionStorage.clear(); } catch (_) {}
   });
 
-  await page.goto('/cart?empty-cart=1');
-  await page.waitForLoadState('networkidle');
-  await page.waitForTimeout(TIMEOUTS.INSTANT);
+  const hardClearViaStoreApi = async () => {
+    await page.evaluate(async () => {
+      try {
+        await fetch('/wp-json/wc/store/v1/cart/items', {
+          method: 'DELETE',
+          credentials: 'include',
+          headers: { Accept: 'application/json' }
+        });
+      } catch (_) {
+        // ignore
+      }
+    });
 
-  for (let i = 0; i < 10; i++) {
-    const removeButtons = page.locator(
-      '.woocommerce a.remove, .wc-block-cart-item__remove-link, .wc-block-components-product-remove-button, [aria-label*="Remove"]'
-    );
+    await page.waitForTimeout(TIMEOUTS.SHORT);
+  };
 
-    const count = await removeButtons.count();
-    if (count === 0) {
-      break;
+  // Try multiple strategies because theme/cart implementations vary.
+  for (let attempt = 0; attempt < 3; attempt++) {
+    await page.goto('/cart?empty-cart=1');
+    await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(TIMEOUTS.INSTANT);
+
+    for (let i = 0; i < 12; i++) {
+      const removeButtons = page.locator(
+        '.woocommerce a.remove, .wc-block-cart-item__remove-link, .wc-block-components-product-remove-button, [aria-label*="Remove"]'
+      );
+
+      const count = await removeButtons.count();
+      if (count === 0) {
+        break;
+      }
+
+      await removeButtons.first().click({ force: true });
+      await page.waitForLoadState('networkidle');
+      await page.waitForTimeout(TIMEOUTS.SHORT);
     }
 
-    await removeButtons.first().click({ force: true });
-    await page.waitForLoadState('networkidle');
-    await page.waitForTimeout(TIMEOUTS.SHORT);
+    await hardClearViaStoreApi();
+
+    const storeItems = await getCartItemsViaStoreApi(page);
+    if (storeItems.length === 0) {
+      return;
+    }
   }
 
   const storeItems = await getCartItemsViaStoreApi(page);
