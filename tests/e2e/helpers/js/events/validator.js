@@ -4,7 +4,7 @@
 
 const fs = require('fs').promises;
 const path = require('path');
-const EVENT_SCHEMAS = require('./schemas');
+const EVENT_SCHEMAS = require('./field-contracts');
 
 class EventValidator {
   constructor(testId, fbc = false, expectZeroEvents = false) {
