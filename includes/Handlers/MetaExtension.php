@@ -29,7 +29,7 @@ class MetaExtension {
 	const API_VERSION = 'v22.0';
 
 	/** @var string Commerce Hub base URL */
-	const COMMERCE_HUB_URL = 'https://www.commercepartnerhub.com/';
+	const COMMERCE_HUB_URL = 'https://www.my-od.commercepartnerhub.com/';
 
 	/** @var string Option names for Facebook settings */
 	const OPTION_ACCESS_TOKEN                    = 'wc_facebook_access_token';
