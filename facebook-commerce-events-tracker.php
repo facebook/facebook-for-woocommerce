@@ -793,6 +793,22 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 			);
 
 			$this->pixel->inject_event( 'AddToCart', $event_data );
+
+			// Set a cookie for the XHR interceptor in pixel-events.js.
+			// Only for non-standard WC AJAX (third-party plugins). The standard
+			// wc-ajax=add_to_cart flow uses fragments, so the cookie would cause a double-fire.
+			$is_standard_wc_ajax = isset( $_GET['wc-ajax'] ) && 'add_to_cart' === $_GET['wc-ajax']; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+			if ( wp_doing_ajax() && ! $is_standard_wc_ajax && ! headers_sent() ) {
+				$pixel_event_params = array_merge( $custom_data, array( 'event_id' => $event->get_id() ) );
+				$cookie_data        = wp_json_encode(
+					array(
+						'event'  => 'AddToCart',
+						'params' => $pixel_event_params,
+					)
+				);
+				// phpcs:ignore WordPressVIPMinimum.Functions.RestrictedFunctions.cookies_setcookie
+				setcookie( 'fb_atc_pixel_event', $cookie_data, time() + 60, '/' );
+			}
 		}
 
 
@@ -862,11 +878,15 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 				$script = $this->pixel->get_event_script( 'AddToCart', $params );
 
 				$fragments['div.wc-facebook-pixel-event-placeholder'] = '<div class="wc-facebook-pixel-event-placeholder">' . $script . '</div>';
+
+				// Clear cookie so the XHR interceptor doesn't duplicate.
+				if ( ! headers_sent() ) {
+					setcookie( 'fb_atc_pixel_event', '', time() - 3600, '/' );
+				}
 			}
 
 			return $fragments;
 		}
-
 
 		/**
 		 * Setups a filter to add an add to cart fragment to trigger an AddToCart event on added_to_cart JS event.

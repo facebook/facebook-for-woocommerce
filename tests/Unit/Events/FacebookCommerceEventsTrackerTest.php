@@ -1161,4 +1161,127 @@ class FacebookCommerceEventsTrackerTest extends AbstractWPUnitTestWithSafeFilter
 		WC()->cart->empty_cart();
 		$product->delete( true );
 	}
+
+	/**
+	 * Test that inject_add_to_cart_event still works when standard WC AJAX query param is present.
+	 *
+	 * When $_GET['wc-ajax'] = 'add_to_cart' (standard WC AJAX), the cookie should be
+	 * skipped because the fragment path handles pixel firing. This test verifies the
+	 * detection works and the rest of the method still executes correctly.
+	 *
+	 * @covers WC_Facebookcommerce_EventsTracker::inject_add_to_cart_event
+	 */
+	public function test_inject_add_to_cart_event_with_standard_wc_ajax_query_param(): void {
+		$this->instance = $this->create_tracker_with_pixel_enabled();
+
+		$product = \WC_Helper_Product::create_simple_product();
+
+		// Simulate standard WC AJAX context
+		$_GET['wc-ajax'] = 'add_to_cart';
+
+		WC()->cart->add_to_cart( $product->get_id(), 1 );
+
+		// Event ID should still be stored in session (used by fragments for dedup)
+		$event_id = WC()->session->get( 'facebook_for_woocommerce_add_to_cart_event_id' );
+		$this->assertNotEmpty(
+			$event_id,
+			'Event ID should be stored in session even during standard WC AJAX'
+		);
+
+		// Pending Store API event should still be set
+		$reflection = new ReflectionClass( $this->instance );
+		$property   = $reflection->getProperty( 'pending_store_api_pixel_event' );
+		$property->setAccessible( true );
+		$pending_event = $property->getValue( $this->instance );
+
+		$this->assertNotEmpty( $pending_event, 'Pending Store API event should still be stored' );
+		$this->assertSame( 'AddToCart', $pending_event['event'] );
+
+		// Clean up
+		unset( $_GET['wc-ajax'] );
+		WC()->cart->empty_cart();
+		$product->delete( true );
+	}
+
+	/**
+	 * Test that add_add_to_cart_event_fragment generates pixel event placeholder for valid product.
+	 *
+	 * The fragment path is used for standard WC AJAX add-to-cart. It should inject a
+	 * pixel event script into the fragments under the placeholder div key.
+	 *
+	 * @covers WC_Facebookcommerce_EventsTracker::add_add_to_cart_event_fragment
+	 */
+	public function test_add_add_to_cart_event_fragment_generates_pixel_placeholder(): void {
+		$this->instance = $this->create_tracker_with_pixel_enabled();
+
+		$product = \WC_Helper_Product::create_simple_product();
+
+		$_POST['product_id'] = $product->get_id();
+		$_POST['quantity']   = 2;
+
+		$fragments        = array();
+		$result_fragments = $this->instance->add_add_to_cart_event_fragment( $fragments );
+
+		// Should contain the pixel event placeholder div
+		$this->assertArrayHasKey(
+			'div.wc-facebook-pixel-event-placeholder',
+			$result_fragments,
+			'Fragment should contain pixel event placeholder'
+		);
+
+		// The placeholder should contain an AddToCart script
+		$placeholder_html = $result_fragments['div.wc-facebook-pixel-event-placeholder'];
+		$this->assertStringContainsString(
+			'wc-facebook-pixel-event-placeholder',
+			$placeholder_html,
+			'Placeholder HTML should contain the expected div class'
+		);
+		$this->assertStringContainsString(
+			'AddToCart',
+			$placeholder_html,
+			'Placeholder HTML should contain AddToCart event'
+		);
+
+		// Clean up
+		unset( $_POST['product_id'], $_POST['quantity'] );
+		$product->delete( true );
+	}
+
+	/**
+	 * Test that add_add_to_cart_event_fragment includes event_id from session for deduplication.
+	 *
+	 * When a product is added to cart, the event_id is stored in session. The fragment
+	 * method should include this event_id in the pixel params so the browser-side event
+	 * can be deduplicated against the server-side CAPI event.
+	 *
+	 * @covers WC_Facebookcommerce_EventsTracker::add_add_to_cart_event_fragment
+	 */
+	public function test_add_add_to_cart_event_fragment_includes_event_id_from_session(): void {
+		$this->instance = $this->create_tracker_with_pixel_enabled();
+
+		$product = \WC_Helper_Product::create_simple_product();
+
+		// Simulate: inject_add_to_cart_event already stored the event_id in session
+		$expected_event_id = 'test-event-id-' . uniqid();
+		WC()->session->set( 'facebook_for_woocommerce_add_to_cart_event_id', $expected_event_id );
+
+		$_POST['product_id'] = $product->get_id();
+		$_POST['quantity']   = 1;
+
+		$fragments        = array();
+		$result_fragments = $this->instance->add_add_to_cart_event_fragment( $fragments );
+
+		// The generated pixel HTML should include the event_id for dedup
+		$placeholder_html = $result_fragments['div.wc-facebook-pixel-event-placeholder'];
+		$this->assertStringContainsString(
+			$expected_event_id,
+			$placeholder_html,
+			'Fragment pixel HTML should include the event_id from session for deduplication'
+		);
+
+		// Clean up
+		unset( $_POST['product_id'], $_POST['quantity'] );
+		WC()->session->set( 'facebook_for_woocommerce_add_to_cart_event_id', null );
+		$product->delete( true );
+	}
 }

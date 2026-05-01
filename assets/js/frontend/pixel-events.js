@@ -188,6 +188,89 @@
         };
     }
 
+    // =========================================================================
+    // Third-party AJAX plugins: XHR interceptor + cookie approach
+    // =========================================================================
+
+    /**
+     * Check for an AddToCart pixel event cookie set by PHP.
+     * PHP sets this cookie during inject_add_to_cart_event() for AJAX requests.
+     * This catches third-party plugins (YITH WAPO, custom handlers, etc.) that
+     * bypass both the standard WC AJAX endpoint and fragment refresh.
+     */
+    function checkAddToCartCookie() {
+        try {
+            var match = document.cookie.match(/(?:^|;\s*)fb_atc_pixel_event=([^;]+)/);
+            if (!match) {
+                return;
+            }
+
+            var eventData = JSON.parse(decodeURIComponent(match[1]));
+
+            // Clear the cookie immediately (one-time use)
+            document.cookie = 'fb_atc_pixel_event=; Max-Age=0; path=/';
+
+            if (!eventData || !eventData.event) {
+                return;
+            }
+
+            var params = eventData.params || {};
+            var eventId = params.event_id || null;
+
+            // Skip if this event was already fired by another path (e.g., fragment inline script).
+            // This prevents duplicates on standard WooCommerce sites that don't need the cookie fallback.
+            if (shouldSkipEvent(eventId)) {
+                return;
+            }
+
+            fireEvent({
+                method: 'track',
+                name: eventData.event,
+                params: params,
+                eventId: eventId
+            });
+
+        } catch (e) {
+            logWarning('AddToCart cookie parse error:', e);
+            // Clear malformed cookie
+            document.cookie = 'fb_atc_pixel_event=; Max-Age=0; path=/';
+        }
+    }
+
+    /**
+     * Set up XHR interceptor to detect add-to-cart AJAX from third-party plugins.
+     * After any successful POST XHR, checks for a cookie set by PHP containing
+     * the AddToCart pixel event data. This is the universal fallback that works
+     * regardless of which AJAX endpoint the plugin uses.
+     */
+    function setupXHRInterceptor() {
+        var OrigXHR = window.XMLHttpRequest;
+        if (!OrigXHR) {
+            return;
+        }
+
+        var origOpen = OrigXHR.prototype.open;
+        var origSend = OrigXHR.prototype.send;
+
+        OrigXHR.prototype.open = function(method) {
+            this._fbMethod = method;
+            return origOpen.apply(this, arguments);
+        };
+
+        OrigXHR.prototype.send = function() {
+            var xhr = this;
+            if (xhr._fbMethod && xhr._fbMethod.toUpperCase() === 'POST') {
+                xhr.addEventListener('load', function() {
+                    if (xhr.status >= 200 && xhr.status < 300) {
+                        // Small delay to ensure the browser has processed the Set-Cookie header
+                        setTimeout(checkAddToCartCookie, 50);
+                    }
+                });
+            }
+            return origSend.apply(this, arguments);
+        };
+    }
+
     /**
      * Initialize pixel event handling.
      *
@@ -201,6 +284,12 @@
     function init() {
         // Set up fetch interceptor for WooCommerce Blocks Store API
         setupFetchInterceptor();
+
+        // Set up XHR interceptor for third-party AJAX plugins (YITH WAPO, custom handlers, etc.)
+        setupXHRInterceptor();
+
+        // Check for any pending AddToCart cookie from a previous AJAX request
+        checkAddToCartCookie();
 
         if (typeof fbq === 'function') {
             fireQueuedEvents();
