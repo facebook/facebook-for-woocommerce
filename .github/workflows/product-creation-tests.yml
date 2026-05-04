@@ -632,7 +632,6 @@ jobs:
           set -e
           sudo apt-get update
           sudo apt-get install -y firefox
-          echo "FIREFOX_EXECUTABLE_PATH=/usr/bin/firefox" >> $GITHUB_ENV
 
       - name: Verify Firefox browser setup
         if: matrix.test-group == 'plugin-events'
@@ -746,6 +745,7 @@ jobs:
           REQUIRE_REAL_FIREFOX: '1'
           REQUIRE_REAL_BRAVE: '1'
           REQUIRE_REAL_OPERA: '1'
+          FIREFOX_EXECUTABLE_PATH: ''
         run: |
           cd ${{ env.PLUGIN_PATH }}
           npx playwright test plugin-level-tests.spec.js --project=chromium-wp-admin --workers=1
