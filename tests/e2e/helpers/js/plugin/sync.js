@@ -35,6 +35,7 @@ function buildValidatorCommand(mode, id, waitSeconds, maxRetries) {
   }
 
   const phpBin = process.env.PHP_BIN || 'php';
+  const usePhpNoIni = process.env.USE_PHP_NO_INI === '1';
   const wpCliPath = process.env.WP_CLI_PATH || execSync('command -v wp', { encoding: 'utf8' }).trim();
   const validatorFile = path.resolve(__dirname, '../../php/sync-validator.php');
 
@@ -47,7 +48,8 @@ function buildValidatorCommand(mode, id, waitSeconds, maxRetries) {
     'echo $v->getJsonResult();',
   ].join(' ');
 
-  return `${phpBin} -n ${shellEscape(wpCliPath)} eval ${shellEscape(phpSnippet)} --path=${shellEscape(wordpressPath)} --allow-root`;
+  const phpNoIniFlag = usePhpNoIni ? '-n ' : '';
+  return `${phpBin} ${phpNoIniFlag}${shellEscape(wpCliPath)} eval ${shellEscape(phpSnippet)} --path=${shellEscape(wordpressPath)} --allow-root`;
 }
 
 function varToPhpString(value) {

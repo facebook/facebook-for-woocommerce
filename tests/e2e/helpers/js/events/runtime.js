@@ -4,7 +4,7 @@
 
 const fs = require('fs').promises;
 const path = require('path');
-const { exec } = require('child_process');
+const { exec, execSync } = require('child_process');
 const { promisify } = require('util');
 const { expect } = require('@playwright/test');
 const { TIMEOUTS } = require('../constants/timeouts');
@@ -20,7 +20,12 @@ async function runWpCli(rawArgs) {
   const wpPath = process.env.WORDPRESS_PATH;
   if (!wpPath) throw new Error('WORDPRESS_PATH not set');
 
-  const command = `php -n "$(which wp)" --path=${shellEscape(wpPath)} --allow-root ${rawArgs}`;
+  const phpBin = process.env.PHP_BIN || 'php';
+  const usePhpNoIni = process.env.USE_PHP_NO_INI === '1';
+  const wpCliPath = process.env.WP_CLI_PATH || execSync('command -v wp', { encoding: 'utf8' }).trim();
+  const phpNoIniFlag = usePhpNoIni ? '-n ' : '';
+
+  const command = `${phpBin} ${phpNoIniFlag}${shellEscape(wpCliPath)} --path=${shellEscape(wpPath)} --allow-root ${rawArgs}`;
   const { stdout } = await execAsync(command, { cwd: __dirname, env: process.env });
   return stdout;
 }
