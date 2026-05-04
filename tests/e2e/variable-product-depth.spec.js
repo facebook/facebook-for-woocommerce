@@ -13,6 +13,7 @@ const {
   logTestStart,
   logTestEnd,
   validateFacebookSync,
+  processPendingSyncJobs,
   setProductTitle,
   setProductDescription,
 } = require('./helpers/js');
@@ -136,6 +137,7 @@ test.describe.serial('Variable Product Depth Tests', () => {
     );
   }
 
+
   async function saveVariationChanges(page) {
     const saveVariationsButton = page.locator('button.save-variation-changes');
     await saveVariationsButton.waitFor({ state: 'visible', timeout: TIMEOUTS.LONG });
@@ -157,13 +159,38 @@ test.describe.serial('Variable Product Depth Tests', () => {
     const addCustomAttributeButton = page.locator('button.add_custom_attribute').first();
     await addCustomAttributeButton.waitFor({ state: 'visible', timeout: TIMEOUTS.LONG });
 
+    const addAttributeRow = async (rowIndex) => {
+      const selector = `input.attribute_name[name="attribute_names[${rowIndex}]"]`;
+
+      for (let attempt = 1; attempt <= 3; attempt++) {
+        await addCustomAttributeButton.scrollIntoViewIfNeeded();
+
+        try {
+          if (attempt === 1) {
+            await addCustomAttributeButton.click();
+          } else {
+            await addCustomAttributeButton.click({ force: true });
+          }
+
+          await page.locator(selector).waitFor({ state: 'visible', timeout: TIMEOUTS.LONG });
+          return;
+        } catch (error) {
+          if (attempt === 3) {
+            throw error;
+          }
+          console.warn(`⚠️ add_custom_attribute click attempt ${attempt}/3 failed; retrying...`);
+          await page.waitForTimeout(TIMEOUTS.SHORT);
+        }
+      }
+    };
+
     for (let i = 0; i < attributeEntries.length; i++) {
       const [attributeName, values] = attributeEntries[i];
       const nameSelector = `input.attribute_name[name="attribute_names[${i}]"]`;
       const valuesSelector = `textarea[name="attribute_values[${i}]"]`;
 
       if (i > 0) {
-        await addCustomAttributeButton.click();
+        await addAttributeRow(i);
       }
 
       await page.locator(nameSelector).waitFor({ state: 'visible', timeout: TIMEOUTS.EXTRA_LONG });
@@ -288,6 +315,8 @@ test.describe.serial('Variable Product Depth Tests', () => {
     let lastResult = null;
 
     for (let attempt = 1; attempt <= attempts; attempt++) {
+      await processPendingSyncJobs().catch(() => {});
+
       const result = await validateFacebookSync(
         productId,
         productName,
@@ -463,19 +492,49 @@ test.describe.serial('Variable Product Depth Tests', () => {
     await openVariationsTab(page);
     await expandAllVariations(page);
 
-    const variationRow = page.locator('.woocommerce_variation').nth(variationIndex);
+    // Ensure variation state is saved before deleting, to avoid the
+    // "Save changes before changing page?" beforeunload dialog.
+    await saveVariationChanges(page);
+
+    const variationRowsBefore = page.locator('.woocommerce_variation');
+    const countBefore = await variationRowsBefore.count();
+    expect(countBefore).toBeGreaterThan(variationIndex);
+
+    const variationRow = variationRowsBefore.nth(variationIndex);
     await variationRow.scrollIntoViewIfNeeded();
 
     page.once('dialog', async dialog => {
-      console.log(`📢 Delete variation dialog: ${dialog.message()}`);
+      const message = dialog.message();
+      console.log(`📢 Delete variation dialog: ${message}`);
       await dialog.accept();
     });
 
     const removeVariationLink = variationRow.locator('a.remove_variation').first();
     await removeVariationLink.waitFor({ state: 'visible', timeout: TIMEOUTS.LONG });
-    await removeVariationLink.click();
+    await removeVariationLink.click({ force: true });
 
+    // Woo can keep stale row markup until save. Accept either immediate DOM removal
+    // or row marked as "to-remove", then save and assert final count.
+    await page.waitForFunction(
+      (beforeCount, index) => {
+        const rows = document.querySelectorAll('.woocommerce_variation');
+        if (rows.length < beforeCount) return true;
+        const target = rows[index];
+        if (!target) return true;
+
+        const classes = String(target.className || '');
+        return classes.includes('to-remove') || classes.includes('removed') || target.getAttribute('style')?.includes('display: none');
+      },
+      countBefore,
+      variationIndex,
+      { timeout: TIMEOUTS.EXTRA_LONG }
+    );
+
+    await saveVariationChanges(page);
     await waitForVariationCount(page, expectedCountAfterDelete);
+
+    const currentCount = await page.locator('.woocommerce_variation').count();
+    expect(currentCount).toBe(expectedCountAfterDelete);
     console.log(`✅ Deleted one variation, ${expectedCountAfterDelete} variations remain in UI`);
   }
 

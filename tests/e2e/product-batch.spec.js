@@ -11,6 +11,7 @@ const {
   logTestStart,
   logTestEnd,
   validateFacebookSync,
+  processPendingSyncJobs,
   generateProductFeedCSV,
   deleteFeedFile,
   generateUniqueSKU,
@@ -130,37 +131,42 @@ test.describe('Meta for WooCommerce - Product Batch Import E2E Tests', () => {
       // Validate Facebook sync for imported products
       console.log('🔍 Validating Facebook sync for imported products...');
 
-      // Validate sync for a sample of imported products
-      const productsToValidate = importedProductIds
+      const productsToValidate = importedProductIds;
       let syncSuccessCount = 0;
       let syncFailCount = 0;
 
-      // Run validations in parallel and process results after all have settled
-      const validationPromises = productsToValidate.map((productId) => {
-        return validateFacebookSync(productId, null, 5, 8)
-          .then((result) => ({ productId, result }))
-          .catch((err) => ({ productId, error: err }));
-      });
+      const perProductAttempts = 3;
+      for (const productId of productsToValidate) {
+        let productValidated = false;
 
-      const validationResults = await Promise.all(validationPromises);
+        for (let attempt = 1; attempt <= perProductAttempts; attempt++) {
+          await processPendingSyncJobs().catch(() => {});
 
-      for (const { productId, result, error } of validationResults) {
-        if (error) {
-          syncFailCount++;
-          console.warn(`⚠️ Product ${productId} sync validation errored: ${error?.message || error}`);
-          continue;
+          let result = null;
+          try {
+            result = await validateFacebookSync(productId, null, 5, 8);
+          } catch (err) {
+            console.warn(`⚠️ Product ${productId} sync validation errored on attempt ${attempt}/${perProductAttempts}: ${err?.message || err}`);
+          }
+
+          if (result && result.success) {
+            syncSuccessCount++;
+            productValidated = true;
+            console.log(`✅ Product ${productId} synced successfully to Facebook`);
+            expect(result.facebook_id).toBeTruthy();
+            console.log(`   Facebook Product ID: ${result.facebook_id}`);
+            break;
+          }
+
+          if (attempt < perProductAttempts) {
+            console.warn(`⚠️ Product ${productId} sync pending on attempt ${attempt}/${perProductAttempts}; retrying...`);
+            await page.waitForTimeout(TIMEOUTS.NORMAL + TIMEOUTS.SHORT);
+          }
         }
 
-        if (result && result.success) {
-          syncSuccessCount++;
-          console.log(`✅ Product ${productId} synced successfully to Facebook`);
-
-          // Verify product data matches
-          expect(result.facebook_id).toBeTruthy();
-          console.log(`   Facebook Product ID: ${result.facebook_id}`);
-        } else {
+        if (!productValidated) {
           syncFailCount++;
-          console.warn(`⚠️ Product ${productId} sync validation failed or pending`);
+          console.warn(`⚠️ Product ${productId} sync validation failed after ${perProductAttempts} attempts`);
         }
       }
 
@@ -555,31 +561,40 @@ test.describe('Meta for WooCommerce - Product Batch Import E2E Tests', () => {
       console.log(`Price updates: ${updateSuccessCount}/${originalProducts.length} successful`);
       expect(updateSuccessCount).toBe(originalProducts.length);
 
-      // Validate Facebook sync
+      // Validate Facebook sync (with queue processing + retries for CI consistency)
       let syncSuccessCount = 0;
       let syncFailCount = 0;
 
-      const validationPromises = importedProductIds.map((productId) => {
-        return validateFacebookSync(productId, null, 5, 8)
-          .then((result) => ({ productId, result }))
-          .catch((err) => ({ productId, error: err }));
-      });
+      const perProductAttempts = 3;
+      for (const productId of importedProductIds) {
+        let productValidated = false;
 
-      const validationResults = await Promise.all(validationPromises);
+        for (let attempt = 1; attempt <= perProductAttempts; attempt++) {
+          await processPendingSyncJobs().catch(() => {});
 
-      for (const { productId, result, error } of validationResults) {
-        if (error) {
-          syncFailCount++;
-          console.warn(`Product ${productId} sync error: ${error?.message || error}`);
-          continue;
+          let result = null;
+          try {
+            result = await validateFacebookSync(productId, null, 5, 8);
+          } catch (err) {
+            console.warn(`Product ${productId} sync error on attempt ${attempt}/${perProductAttempts}: ${err?.message || err}`);
+          }
+
+          if (result && result.success) {
+            syncSuccessCount++;
+            productValidated = true;
+            expect(result.facebook_id).toBeTruthy();
+            break;
+          }
+
+          if (attempt < perProductAttempts) {
+            console.warn(`Product ${productId} sync pending on attempt ${attempt}/${perProductAttempts}; retrying...`);
+            await page.waitForTimeout(TIMEOUTS.NORMAL + TIMEOUTS.SHORT);
+          }
         }
 
-        if (result && result.success) {
-          syncSuccessCount++;
-          expect(result.facebook_id).toBeTruthy();
-        } else {
+        if (!productValidated) {
           syncFailCount++;
-          console.warn(`Product ${productId} sync failed or pending`);
+          console.warn(`Product ${productId} sync failed after ${perProductAttempts} attempts`);
         }
       }
 
