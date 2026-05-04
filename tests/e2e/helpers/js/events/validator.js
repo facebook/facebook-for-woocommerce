@@ -4,7 +4,7 @@
 
 const fs = require('fs').promises;
 const path = require('path');
-const EVENT_SCHEMAS = require('./field-contracts');
+const EVENT_FIELD_CONTRACTS = require('./field-contracts');
 
 class EventValidator {
   constructor(testId, fbc = false, expectZeroEvents = false) {
@@ -60,8 +60,8 @@ class EventValidator {
 
     console.log(`\n  🔍 Validating ${eventName}...`);
 
-    const schema = EVENT_SCHEMAS[eventName];
-    if (!schema) throw new Error(`No schema for: ${eventName}`);
+    const fieldContract = EVENT_FIELD_CONTRACTS[eventName];
+    if (!fieldContract) throw new Error(`No field contract for: ${eventName}`);
 
     const pixel = this.events.pixel.filter(e => e.event_name === eventName);
     const capi = this.events.capi.filter(e => e.event_name === eventName);
@@ -77,8 +77,8 @@ class EventValidator {
 
     const p = pixel[0] || null;
     const c = capi[0] || null;
-    const hasPixel = schema.channels.includes('pixel');
-    const hasCapi = schema.channels.includes('capi');
+    const hasPixel = fieldContract.channels.includes('pixel');
+    const hasCapi = fieldContract.channels.includes('capi');
 
     if (hasPixel && p) {
       this.validateFieldsExistence(eventName, 'pixel', 'user_data', p, errors);
@@ -114,7 +114,7 @@ class EventValidator {
   }
 
   validateEventCounts(pixel, capi, eventName, errors) {
-    const schema = EVENT_SCHEMAS[eventName];
+    const fieldContract = EVENT_FIELD_CONTRACTS[eventName];
 
     if (this.expectZeroEvents) {
       if (pixel.length > 0 || capi.length > 0) {
@@ -131,10 +131,10 @@ class EventValidator {
       };
     }
 
-    if (schema.channels.includes('pixel') && pixel.length !== 1) {
+    if (fieldContract.channels.includes('pixel') && pixel.length !== 1) {
       errors.push(`Expected 1 Pixel event, found ${pixel.length}`);
     }
-    if (schema.channels.includes('capi') && capi.length !== 1) {
+    if (fieldContract.channels.includes('capi') && capi.length !== 1) {
       const uniqueEventIds = new Set(capi.map(e => e.event_id).filter(id => id));
       if (uniqueEventIds.size === 1) {
         console.log(`  ⚠️  Found ${capi.length} CAPI events but all have same event_id (likely duplicates) - passing`);
@@ -156,12 +156,12 @@ class EventValidator {
   }
 
   validateFieldsExistence(eventName, dataSource, dataType, eventData, errors) {
-    const eventSchema = EVENT_SCHEMAS[eventName];
-    if (!eventSchema || !eventSchema[dataSource] || !eventSchema[dataSource][dataType]) {
+    const eventFieldContract = EVENT_FIELD_CONTRACTS[eventName];
+    if (!eventFieldContract || !eventFieldContract[dataSource] || !eventFieldContract[dataSource][dataType]) {
       return;
     }
 
-    const expectedFields = eventSchema[dataSource][dataType];
+    const expectedFields = eventFieldContract[dataSource][dataType];
     if (expectedFields.length === 0) {
       return;
     }
@@ -293,8 +293,8 @@ class EventValidator {
   }
 
   validateDataMatch(pixel, capi, eventName, dataType, errors) {
-    const eventSchema = EVENT_SCHEMAS[eventName];
-    if (!eventSchema || !eventSchema.channels.includes('pixel') || !eventSchema.channels.includes('capi')) {
+    const eventFieldContract = EVENT_FIELD_CONTRACTS[eventName];
+    if (!eventFieldContract || !eventFieldContract.channels.includes('pixel') || !eventFieldContract.channels.includes('capi')) {
       return;
     }
 
@@ -305,7 +305,7 @@ class EventValidator {
       return;
     }
 
-    const commonFields = eventSchema.pixel[dataType].filter(f => eventSchema.capi[dataType].includes(f));
+    const commonFields = eventFieldContract.pixel[dataType].filter(f => eventFieldContract.capi[dataType].includes(f));
     if (commonFields.length === 0) {
       return;
     }
