@@ -45,9 +45,11 @@ async function runPhpInWp(phpCode) {
   }
 
   const phpBin = process.env.PHP_BIN || 'php';
+  const usePhpNoIni = process.env.USE_PHP_NO_INI === '1';
   const wpCliPath = process.env.WP_CLI_PATH || execSync('command -v wp', { encoding: 'utf8' }).trim();
 
-  const command = `${phpBin} -n ${shellEscape(wpCliPath)} eval ${shellEscape(phpCode)} --path=${shellEscape(wordpressPath)} --allow-root`;
+  const phpNoIniFlag = usePhpNoIni ? '-n ' : '';
+  const command = `${phpBin} ${phpNoIniFlag}${shellEscape(wpCliPath)} eval ${shellEscape(phpCode)} --path=${shellEscape(wordpressPath)} --allow-root`;
   const { stdout } = await execAsync(command, { cwd: __dirname, env: process.env });
 
   return parseExecWpJson(stdout);

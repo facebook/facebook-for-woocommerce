@@ -39,6 +39,7 @@ function buildProductCreatorCommand(productType, productName, price, stock, sku,
   }
 
   const phpBin = process.env.PHP_BIN || 'php';
+  const usePhpNoIni = process.env.USE_PHP_NO_INI === '1';
   const wpCliPath = process.env.WP_CLI_PATH || execSync('command -v wp', { encoding: 'utf8' }).trim();
   const creatorFile = path.resolve(__dirname, '../../php/product-creator.php');
   const categoryIdsJson = JSON.stringify(categoryIds || []);
@@ -58,7 +59,8 @@ function buildProductCreatorCommand(productType, productName, price, stock, sku,
     'echo json_encode(\$result);',
   ].join(' ');
 
-  return `${phpBin} -n ${shellEscape(wpCliPath)} eval ${shellEscape(phpSnippet)} --path=${shellEscape(wordpressPath)} --allow-root`;
+  const phpNoIniFlag = usePhpNoIni ? '-n ' : '';
+  return `${phpBin} ${phpNoIniFlag}${shellEscape(wpCliPath)} eval ${shellEscape(phpSnippet)} --path=${shellEscape(wordpressPath)} --allow-root`;
 }
 
 /**
@@ -200,6 +202,12 @@ async function createTestProduct(options = {}) {
 
   } catch (error) {
     console.log(`❌ Failed to create test product: ${error.message}`);
+    if (error?.stderr) {
+      console.log(`   STDERR: ${String(error.stderr).trim().slice(0, 2000)}`);
+    }
+    if (error?.stdout) {
+      console.log(`   STDOUT: ${String(error.stdout).trim().slice(0, 2000)}`);
+    }
     throw error;
   }
 }
