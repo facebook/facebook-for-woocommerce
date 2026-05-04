@@ -147,7 +147,8 @@ const {
 // =============================================================================
 const EventValidator = require('./events/validator');
 const PixelCapture = require('./events/capture');
-const EVENT_SCHEMAS = require('./events/field-contracts');
+const EVENT_FIELD_CONTRACTS = require('./events/field-contracts');
+const EVENT_SCHEMAS = EVENT_FIELD_CONTRACTS; // Backward-compatible alias
 const TestSetup = require('./events/setup');
 
 const {
@@ -258,6 +259,7 @@ const utils = {
 const events = {
   EventValidator,
   PixelCapture,
+  EVENT_FIELD_CONTRACTS,
   EVENT_SCHEMAS,
   TestSetup,
   createVariableProductEventFixture,
@@ -372,6 +374,7 @@ module.exports = {
   // Events
   EventValidator,
   PixelCapture,
+  EVENT_FIELD_CONTRACTS,
   EVENT_SCHEMAS,
   TestSetup,
   createVariableProductEventFixture,

@@ -175,8 +175,8 @@ function buildEventContract(eventName, overlay) {
   return contract;
 }
 
-const EVENT_SCHEMAS = Object.fromEntries(
+const EVENT_FIELD_CONTRACTS = Object.fromEntries(
   Object.entries(EVENT_OVERLAYS).map(([eventName, overlay]) => [eventName, buildEventContract(eventName, overlay)])
 );
 
-module.exports = EVENT_SCHEMAS;
+module.exports = EVENT_FIELD_CONTRACTS;
