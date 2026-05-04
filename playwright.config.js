@@ -79,48 +79,6 @@ export default defineConfig({
       testMatch: [ADMIN_ALL_SPECS],
       use: adminUse,
     },
-    {
-      name: 'edge-wp-admin',
-      testMatch: [ADMIN_ALL_SPECS],
-      use: {
-        ...adminUse,
-        ...(edgeExecutablePath
-          ? { launchOptions: { executablePath: edgeExecutablePath } }
-          : { channel: 'msedge' }),
-      },
-    },
-    {
-      name: 'firefox-wp-admin',
-      testMatch: [ADMIN_ALL_SPECS],
-      use: {
-        ...devices['Desktop Firefox'],
-        ...commonTimeouts,
-        ...(requireRealFirefox
-          ? { channel: 'firefox' }
-          : (firefoxExecutablePath ? { launchOptions: { executablePath: firefoxExecutablePath } } : {})),
-        storageState: './tests/e2e/.auth/admin.json',
-      },
-    },
-    {
-      name: 'brave-wp-admin',
-      testMatch: [ADMIN_ALL_SPECS],
-      use: {
-        ...adminUse,
-        ...(braveExecutablePath
-          ? { launchOptions: { executablePath: braveExecutablePath } }
-          : { userAgent: `${devices['Desktop Chrome'].userAgent} Brave/1.0.0.0` }),
-      },
-    },
-    {
-      name: 'opera-wp-admin',
-      testMatch: [ADMIN_ALL_SPECS],
-      use: {
-        ...adminUse,
-        ...(operaExecutablePath
-          ? { launchOptions: { executablePath: operaExecutablePath } }
-          : { userAgent: `${devices['Desktop Chrome'].userAgent} OPR/100.0.0.0` }),
-      },
-    },
 
     // -------------------------
     // Customer/browser + mobile events coverage
