@@ -1,0 +1,23 @@
+name: Validate npm lockfile
+
+on:
+  pull_request:
+
+jobs:
+  npm-ci:
+    name: npm ci
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: package.json
+          cache: npm
+          cache-dependency-path: package-lock.json
+
+      - name: Verify lockfile install
+        run: npm ci
