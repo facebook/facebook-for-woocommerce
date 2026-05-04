@@ -1,12 +1,7 @@
 import { defineConfig, devices } from '@playwright/test';
 
 const CUSTOMER_EVENTS_SPEC = '**/events-test.spec.js';
-const ADMIN_PLUGIN_LEVEL_SPEC = '**/plugin-level-tests.spec.js';
-
-// Keep full event coverage on primary Chromium.
-// Secondary browsers/mobile run a stable smoke subset.
-const EVENTS_SMOKE_GREP = /(PageView|ViewContent|AddToCart|InitiateCheckout|Purchase|Search)/;
-const EVENTS_SMOKE_GREP_INVERT = /(with fbclid|Multiple Place Order Clicks|No Results|No Consent|Isolated Execution)/;
+const ADMIN_ALL_SPECS = '**/*.spec.js';
 
 const commonTimeouts = {
   actionTimeout: 180000,
@@ -81,12 +76,12 @@ export default defineConfig({
     // -------------------------
     {
       name: 'chromium-wp-admin',
-      testMatch: [ADMIN_PLUGIN_LEVEL_SPEC],
+      testMatch: [ADMIN_ALL_SPECS],
       use: adminUse,
     },
     {
       name: 'edge-wp-admin',
-      testMatch: [ADMIN_PLUGIN_LEVEL_SPEC],
+      testMatch: [ADMIN_ALL_SPECS],
       use: {
         ...adminUse,
         ...(edgeExecutablePath
@@ -96,7 +91,7 @@ export default defineConfig({
     },
     {
       name: 'firefox-wp-admin',
-      testMatch: [ADMIN_PLUGIN_LEVEL_SPEC],
+      testMatch: [ADMIN_ALL_SPECS],
       use: {
         ...devices['Desktop Firefox'],
         ...commonTimeouts,
@@ -108,7 +103,7 @@ export default defineConfig({
     },
     {
       name: 'brave-wp-admin',
-      testMatch: [ADMIN_PLUGIN_LEVEL_SPEC],
+      testMatch: [ADMIN_ALL_SPECS],
       use: {
         ...adminUse,
         ...(braveExecutablePath
@@ -118,7 +113,7 @@ export default defineConfig({
     },
     {
       name: 'opera-wp-admin',
-      testMatch: [ADMIN_PLUGIN_LEVEL_SPEC],
+      testMatch: [ADMIN_ALL_SPECS],
       use: {
         ...adminUse,
         ...(operaExecutablePath
@@ -148,8 +143,6 @@ export default defineConfig({
     {
       name: 'edge-wp-customer',
       testMatch: [CUSTOMER_EVENTS_SPEC],
-      grep: EVENTS_SMOKE_GREP,
-      grepInvert: EVENTS_SMOKE_GREP_INVERT,
       use: {
         ...customerUse,
         ...(edgeExecutablePath
@@ -160,8 +153,6 @@ export default defineConfig({
     {
       name: 'firefox-wp-customer',
       testMatch: [CUSTOMER_EVENTS_SPEC],
-      grep: EVENTS_SMOKE_GREP,
-      grepInvert: EVENTS_SMOKE_GREP_INVERT,
       use: {
         ...devices['Desktop Firefox'],
         ...commonTimeouts,
@@ -174,8 +165,6 @@ export default defineConfig({
     {
       name: 'brave-wp-customer',
       testMatch: [CUSTOMER_EVENTS_SPEC],
-      grep: EVENTS_SMOKE_GREP,
-      grepInvert: EVENTS_SMOKE_GREP_INVERT,
       use: {
         ...customerUse,
         ...(braveExecutablePath
@@ -186,8 +175,6 @@ export default defineConfig({
     {
       name: 'opera-wp-customer',
       testMatch: [CUSTOMER_EVENTS_SPEC],
-      grep: EVENTS_SMOKE_GREP,
-      grepInvert: EVENTS_SMOKE_GREP_INVERT,
       use: {
         ...customerUse,
         ...(operaExecutablePath
@@ -198,8 +185,6 @@ export default defineConfig({
     {
       name: 'android-pixel-wp-customer',
       testMatch: [CUSTOMER_EVENTS_SPEC],
-      grep: EVENTS_SMOKE_GREP,
-      grepInvert: EVENTS_SMOKE_GREP_INVERT,
       use: {
         ...devices['Pixel 5'],
         ...commonTimeouts,
@@ -209,8 +194,6 @@ export default defineConfig({
     {
       name: 'ios-iphone-wp-customer',
       testMatch: [CUSTOMER_EVENTS_SPEC],
-      grep: EVENTS_SMOKE_GREP,
-      grepInvert: EVENTS_SMOKE_GREP_INVERT,
       use: {
         ...devices['iPhone 13'],
         ...commonTimeouts,
