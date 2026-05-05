@@ -28,10 +28,20 @@ class FacebookCommerceEventsTrackerTest extends AbstractWPUnitTestWithSafeFilter
 	private $aam_settings;
 
 	/**
+	 * @var string|null Original HTTP_USER_AGENT value to restore after each test.
+	 */
+	private $original_user_agent;
+
+	/**
 	 * Set up before each test.
 	 */
 	public function setUp(): void {
 		parent::setUp();
+
+		$this->original_user_agent = $_SERVER['HTTP_USER_AGENT'] ?? null;
+
+		// Set a default browser User-Agent so tests are not blocked by crawler detection.
+		$_SERVER['HTTP_USER_AGENT'] = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36';
 
 		$this->aam_settings = new AAMSettings( array(
 			'enableAutomaticMatching'        => true,
@@ -46,6 +56,13 @@ class FacebookCommerceEventsTrackerTest extends AbstractWPUnitTestWithSafeFilter
 	public function tearDown(): void {
 		$this->instance     = null;
 		$this->aam_settings = null;
+
+		// Restore original User-Agent.
+		if ( null === $this->original_user_agent ) {
+			unset( $_SERVER['HTTP_USER_AGENT'] );
+		} else {
+			$_SERVER['HTTP_USER_AGENT'] = $this->original_user_agent;
+		}
 
 		parent::tearDown();
 	}
@@ -1160,5 +1177,201 @@ class FacebookCommerceEventsTrackerTest extends AbstractWPUnitTestWithSafeFilter
 		// Clean up
 		WC()->cart->empty_cart();
 		$product->delete( true );
+	}
+	/**
+	 * Test that is_crawler_request detects known crawler user agents.
+	 *
+	 * @covers WC_Facebookcommerce_EventsTracker::is_crawler_request
+	 * @dataProvider crawler_user_agent_provider
+	 *
+	 * @param string $user_agent The user agent string to test.
+	 * @param bool   $expected   Whether the request should be detected as a crawler.
+	 */
+	public function test_is_crawler_request( string $user_agent, bool $expected ): void {
+		$this->instance = $this->create_tracker_with_pixel_enabled();
+
+		$_SERVER['HTTP_USER_AGENT'] = $user_agent;
+
+		$reflection = new ReflectionClass( $this->instance );
+		$method     = $reflection->getMethod( 'is_crawler_request' );
+		$method->setAccessible( true );
+
+		$result = $method->invoke( $this->instance );
+
+		$this->assertSame( $expected, $result, "User agent '{$user_agent}' should " . ( $expected ? '' : 'not ' ) . 'be detected as a crawler' );
+
+		unset( $_SERVER['HTTP_USER_AGENT'] );
+	}
+
+	/**
+	 * Data provider for crawler detection tests.
+	 *
+	 * @return array
+	 */
+	public function crawler_user_agent_provider(): array {
+		return array(
+			'meta external agent'       => array(
+				'meta-externalagent/1.1 (+https://developers.facebook.com/docs/sharing/webmasters/crawler)',
+				true,
+			),
+			'meta external ads'         => array(
+				'meta-externalads/1.1 (+https://developers.facebook.com/docs/sharing/webmasters/crawler)',
+				true,
+			),
+			'meta web indexer'          => array(
+				'meta-webindexer/1.1 (+https://developers.facebook.com/docs/sharing/webmasters/crawler)',
+				true,
+			),
+			'generic crawler in UA'     => array(
+				'SomeBot/2.0 (compatible; crawler; +http://example.com)',
+				true,
+			),
+			'empty user agent'          => array(
+				'',
+				true,
+			),
+			'chrome desktop browser'    => array(
+				'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+				false,
+			),
+			'safari desktop browser'    => array(
+				'Mozilla/5.0 (Macintosh; Intel Mac OS X 14_0) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Safari/605.1.15',
+				false,
+			),
+			'mobile safari browser'     => array(
+				'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1',
+				false,
+			),
+			'firefox browser'           => array(
+				'Mozilla/5.0 (X11; Linux x86_64; rv:120.0) Gecko/20100101 Firefox/120.0',
+				false,
+			),
+		);
+	}
+
+	/**
+	 * Test that is_crawler_request returns true when no user agent header is set.
+	 *
+	 * @covers WC_Facebookcommerce_EventsTracker::is_crawler_request
+	 */
+	public function test_is_crawler_request_returns_true_when_no_user_agent(): void {
+		$this->instance = $this->create_tracker_with_pixel_enabled();
+
+		unset( $_SERVER['HTTP_USER_AGENT'] );
+
+		$reflection = new ReflectionClass( $this->instance );
+		$method     = $reflection->getMethod( 'is_crawler_request' );
+		$method->setAccessible( true );
+
+		$this->assertTrue( $method->invoke( $this->instance ), 'Missing user agent should be detected as crawler' );
+	}
+
+	/**
+	 * Test that send_api_event skips tracking for crawler requests.
+	 *
+	 * @covers WC_Facebookcommerce_EventsTracker::send_api_event
+	 */
+	public function test_send_api_event_skips_for_crawler_request(): void {
+		$this->instance = $this->create_tracker_with_pixel_enabled();
+
+		$_SERVER['HTTP_USER_AGENT'] = 'meta-externalagent/1.1 (+https://developers.facebook.com/docs/sharing/webmasters/crawler)';
+
+		$event      = new \WooCommerce\Facebook\Events\Event( array( 'event_name' => 'PageView' ) );
+		$reflection = new ReflectionClass( $this->instance );
+		$method     = $reflection->getMethod( 'send_api_event' );
+		$method->setAccessible( true );
+		$method->invoke( $this->instance, $event, false );
+
+		$this->assertEmpty(
+			$this->instance->get_tracked_events(),
+			'Crawler requests should not add to tracked events'
+		);
+		$this->assertEmpty(
+			$this->instance->get_pending_events(),
+			'Crawler requests should not add to pending events'
+		);
+
+		unset( $_SERVER['HTTP_USER_AGENT'] );
+	}
+
+	/**
+	 * Test that send_api_event proceeds for real browser requests.
+	 *
+	 * @covers WC_Facebookcommerce_EventsTracker::send_api_event
+	 */
+	public function test_send_api_event_proceeds_for_real_browser(): void {
+		$this->instance = $this->create_tracker_with_pixel_enabled();
+
+		$_SERVER['HTTP_USER_AGENT'] = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36';
+
+		$event      = new \WooCommerce\Facebook\Events\Event( array( 'event_name' => 'PageView' ) );
+		$reflection = new ReflectionClass( $this->instance );
+		$method     = $reflection->getMethod( 'send_api_event' );
+		$method->setAccessible( true );
+		$method->invoke( $this->instance, $event, false );
+
+		$this->assertNotEmpty(
+			$this->instance->get_tracked_events(),
+			'Real browser requests should be tracked'
+		);
+		$this->assertNotEmpty(
+			$this->instance->get_pending_events(),
+			'Real browser requests with send_now=false should be pending'
+		);
+
+		unset( $_SERVER['HTTP_USER_AGENT'] );
+	}
+
+	/**
+	 * Test that the wc_facebook_crawler_user_agent_patterns filter can add custom patterns.
+	 *
+	 * @covers WC_Facebookcommerce_EventsTracker::is_crawler_request
+	 */
+	public function test_is_crawler_request_custom_pattern_filter(): void {
+		$this->instance = $this->create_tracker_with_pixel_enabled();
+
+		$_SERVER['HTTP_USER_AGENT'] = 'CustomScraper/1.0';
+
+		$filter = $this->add_filter_with_safe_teardown(
+			'wc_facebook_crawler_user_agent_patterns',
+			function ( $patterns ) {
+				$patterns[] = 'customscraper';
+				return $patterns;
+			}
+		);
+
+		$reflection = new ReflectionClass( $this->instance );
+		$method     = $reflection->getMethod( 'is_crawler_request' );
+		$method->setAccessible( true );
+
+		$this->assertTrue( $method->invoke( $this->instance ), 'Custom pattern should be detected via filter' );
+
+		unset( $_SERVER['HTTP_USER_AGENT'] );
+	}
+
+	/**
+	 * Test that the wc_facebook_is_crawler_request filter can override crawler detection.
+	 *
+	 * @covers WC_Facebookcommerce_EventsTracker::is_crawler_request
+	 */
+	public function test_is_crawler_request_override_filter(): void {
+		$this->instance = $this->create_tracker_with_pixel_enabled();
+
+		$_SERVER['HTTP_USER_AGENT'] = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/120.0.0.0';
+
+		$filter = $this->add_filter_with_safe_teardown(
+			'wc_facebook_is_crawler_request',
+			function () {
+				return true;
+			}
+		);
+
+		$reflection = new ReflectionClass( $this->instance );
+		$method     = $reflection->getMethod( 'is_crawler_request' );
+		$method->setAccessible( true );
+
+		$this->assertTrue( $method->invoke( $this->instance ), 'Override filter should force crawler detection' );
+
+		unset( $_SERVER['HTTP_USER_AGENT'] );
 	}
 }

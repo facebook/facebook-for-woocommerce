@@ -1319,6 +1319,10 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 		 * @param bool  $send_now optional, defaults to true
 		 */
 		protected function send_api_event( Event $event, bool $send_now = true ) {
+			if ( $this->is_crawler_request() ) {
+				return;
+			}
+
 			$this->tracked_events[] = $event;
 
 			// Skip CAPI sends for frontend requests while signals are held.
@@ -1337,6 +1341,61 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 			} else {
 				$this->pending_events[] = $event;
 			}
+		}
+
+
+		/**
+		 * Determines whether the current request is from a known crawler.
+		 *
+		 * Checks the User-Agent header against a list of known crawler identifiers
+		 * to prevent server-side events from firing for non-human traffic.
+		 * This helps close the gap between pixel and CAPI event counts,
+		 * since crawlers trigger CAPI events but never execute client-side JavaScript.
+		 *
+		 * @since 3.3.0
+		 *
+		 * @return bool
+		 */
+		private function is_crawler_request(): bool {
+			$user_agent = isset( $_SERVER['HTTP_USER_AGENT'] ) ? strtolower( sanitize_text_field( wp_unslash( $_SERVER['HTTP_USER_AGENT'] ) ) ) : '';
+
+			if ( '' === $user_agent ) {
+				return true;
+			}
+
+			$crawler_patterns = array(
+				// Meta crawlers.
+				'meta-externalagent',
+				'meta-externalads',
+				'meta-webindexer',
+				// Generic crawler identifier.
+				'crawler',
+			);
+
+			/**
+			 * Filters the list of crawler user-agent patterns.
+			 *
+			 * @since 3.3.0
+			 *
+			 * @param string[] $crawler_patterns Array of lowercase crawler identifier strings to match against the User-Agent.
+			 */
+			$crawler_patterns = apply_filters( 'wc_facebook_crawler_user_agent_patterns', $crawler_patterns );
+
+			foreach ( $crawler_patterns as $pattern ) {
+				if ( false !== strpos( $user_agent, $pattern ) ) {
+					return true;
+				}
+			}
+
+			/**
+			 * Filters whether the current request should be treated as a crawler request.
+			 *
+			 * @since 3.3.0
+			 *
+			 * @param bool   $is_crawler Whether the request is from a crawler. Default false after pattern checks pass.
+			 * @param string $user_agent The request User-Agent string.
+			 */
+			return (bool) apply_filters( 'wc_facebook_is_crawler_request', false, $user_agent );
 		}
 
 
