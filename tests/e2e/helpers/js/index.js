@@ -171,6 +171,10 @@ const {
   completeCheckoutFromCart
 } = require('./events/runtime');
 
+const {
+  triggerAjaxAddToCartFromShop
+} = require('./events/ajax-cart');
+
 // =============================================================================
 // Module Exports (Grouped)
 // =============================================================================
@@ -275,7 +279,8 @@ const events = {
   deleteTempCustomerUser,
   getCartItemsViaStoreApi,
   clearCart,
-  completeCheckoutFromCart
+  completeCheckoutFromCart,
+  triggerAjaxAddToCartFromShop
 };
 
 // =============================================================================
@@ -391,6 +396,7 @@ module.exports = {
   getCartItemsViaStoreApi,
   clearCart,
   completeCheckoutFromCart,
+  triggerAjaxAddToCartFromShop,
 
   // Grouped module exports (for namespace imports)
   auth,
