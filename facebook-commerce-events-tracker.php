@@ -9,6 +9,7 @@
  */
 
 use WooCommerce\Facebook\Events\Event;
+use WooCommerce\Facebook\Events\FacebookSignalsState;
 use WooCommerce\Facebook\Framework\Api\Exception as ApiException;
 use WooCommerce\Facebook\Framework\Helper;
 use WooCommerce\Facebook\Framework\Logger;
@@ -102,11 +103,12 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 		public static function get_param_builder() {
 			if ( null === self::$param_builder ) {
 				try {
-					$site_url = get_site_url();
+					$site_url            = get_site_url();
 					self::$param_builder = new \FacebookAds\ParamBuilder( array( $site_url ) );
 
 					self::$param_builder->processRequest(
 						$site_url,
+						// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Param builder intentionally inspects current request query parameters.
 						$_GET,
 						$_COOKIE,
 						isset( $_SERVER['HTTP_REFERER'] ) ?
@@ -118,9 +120,9 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 						'Error initializing CAPI Parameter Builder: ' . $exception->getMessage(),
 						array(),
 						array(
-							'should_send_log_to_meta'        => true,
+							'should_send_log_to_meta' => true,
 							'should_save_log_in_woocommerce' => true,
-							'woocommerce_log_level'          => \WC_Log_Levels::ERROR,
+							'woocommerce_log_level'   => \WC_Log_Levels::ERROR,
 						)
 					);
 				}
@@ -139,7 +141,33 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 					return;
 				}
 
-				$cookie_to_set = self::get_param_builder()->getCookiesToSet();
+				$param_builder = self::get_param_builder();
+
+				// When signals are held, still run ParamBuilder so it can generate
+				// attribution IDs, but do not write cookies until signals are released.
+				if ( FacebookSignalsState::is_held() ) {
+					$fbc = $param_builder->getFbc();
+					$fbp = $param_builder->getFbp();
+
+					if ( ! empty( $fbc ) ) {
+						FacebookSignalsState::set_attribution_data( 'fbc', $fbc );
+					}
+					if ( ! empty( $fbp ) ) {
+						FacebookSignalsState::set_attribution_data( 'fbp', $fbp );
+					}
+
+					foreach ( $param_builder->getCookiesToSet() as $cookie ) {
+						if ( '_fbp' === $cookie->name ) {
+							FacebookSignalsState::set_attribution_data( 'fbp_domain', $cookie->domain );
+						} elseif ( '_fbc' === $cookie->name ) {
+							FacebookSignalsState::set_attribution_data( 'fbc_domain', $cookie->domain );
+						}
+					}
+
+					return;
+				}
+
+				$cookie_to_set = $param_builder->getCookiesToSet();
 
 				if ( ! headers_sent() ) {
 					foreach ( $cookie_to_set as $cookie ) {
@@ -289,7 +317,7 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 				'facebook-capi-param-builder',
 				self::CAPI_PARAM_BUILDER_JS_URL,
 				array(),
-				null,
+				\WC_Facebookcommerce::PLUGIN_VERSION,
 				true
 			);
 			// Add inline script that executes after the external script has loaded
@@ -786,7 +814,7 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 
 			// Store pending pixel event for WooCommerce Blocks Store API
 			// Reuse custom_data and add event_id for deduplication
-			$pending_pixel_params = array_merge( $custom_data, array( 'event_id' => $event->get_id() ) );
+			$pending_pixel_params                = array_merge( $custom_data, array( 'event_id' => $event->get_id() ) );
 			$this->pending_store_api_pixel_event = array(
 				'event'  => 'AddToCart',
 				'params' => $pending_pixel_params,
@@ -965,7 +993,7 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 		 */
 		public function get_store_api_pixel_event_data() {
 			if ( ! empty( $this->pending_store_api_pixel_event ) ) {
-				$pending_event = $this->pending_store_api_pixel_event;
+				$pending_event                       = $this->pending_store_api_pixel_event;
 				$this->pending_store_api_pixel_event = null;
 				return $pending_event;
 			}
@@ -1071,17 +1099,12 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 		 */
 		public function inject_purchase_event( $order_id ) {
 
-			if ( \WC_Facebookcommerce_Utils::is_admin_user() ) {
+			if ( \WC_Facebookcommerce_Utils::is_admin_user() || ! $this->is_pixel_enabled() ) {
 				return;
 			}
 
-			$event_name = 'Purchase';
-
+			$event_name                  = 'Purchase';
 			$valid_purchase_order_states = array( 'processing', 'completed', 'on-hold', 'pending' );
-
-			if ( ! $this->is_pixel_enabled() ) {
-				return;
-			}
 
 			$order = wc_get_order( $order_id );
 
@@ -1103,8 +1126,6 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 
 			// Get the status of the order to ensure we track the actual purchases and not the ones that have a failed payment.
 			$order_state = $order->get_status();
-
-			// Return if this Purchase event order state is invalid.
 			if ( ! in_array( $order_state, $valid_purchase_order_states, true ) ) {
 				return;
 			}
@@ -1171,14 +1192,13 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 						$content_type = 'product_group';
 					}
 
-					$quantity = $item->get_quantity();
+					$quantity   = $item->get_quantity();
 					$products[] = array(
 						'product' => $product,
-						'qty' => $quantity,
+						'qty'     => $quantity,
 					);
 
-					$content  = new \stdClass();
-
+					$content           = new \stdClass();
 					$content->id       = \WC_Facebookcommerce_Utils::get_fb_retailer_id( $product );
 					$content->quantity = $quantity;
 
@@ -1251,24 +1271,24 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 				// TODO consider 'StartTrial' event for free trial Subscriptions, which is the same as here (minus sign_up_fee) and tracks "when a person starts a free trial of a product or service" {FN 2020-03-20}
 				$event_name = 'Subscribe';
 
-				// TODO consider including (int|float) 'predicted_ltv': "Predicted lifetime value of a subscriber as defined by the advertiser and expressed as an exact value." {FN 2020-03-20}
-				$event_data = array(
-					'event_name'  => $event_name,
-					'custom_data' => array(
-						'sign_up_fee' => $subscription->get_sign_up_fee(),
-						'value'       => $subscription->get_total(),
-						'currency'    => ( method_exists( $subscription, 'get_currency' ) ? $subscription->get_currency() : get_woocommerce_currency() ),
-					),
-					'user_data'   => $this->pixel->get_user_info(),
-				);
+					// TODO: consider adding predicted_ltv for subscription events.
+					$event_data = array(
+						'event_name'  => $event_name,
+						'custom_data' => array(
+							'sign_up_fee' => $subscription->get_sign_up_fee(),
+							'value'       => $subscription->get_total(),
+							'currency'    => ( method_exists( $subscription, 'get_currency' ) ? $subscription->get_currency() : get_woocommerce_currency() ),
+						),
+						'user_data'   => $this->pixel->get_user_info(),
+					);
 
-				$event = new Event( $event_data );
+					$event = new Event( $event_data );
 
-				$this->send_api_event( $event );
+					$this->send_api_event( $event );
 
-				$event_data['event_id'] = $event->get_id();
+					$event_data['event_id'] = $event->get_id();
 
-				$this->pixel->inject_event( $event_name, $event_data );
+					$this->pixel->inject_event( $event_name, $event_data );
 			}
 		}
 
@@ -1300,6 +1320,13 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 		 */
 		protected function send_api_event( Event $event, bool $send_now = true ) {
 			$this->tracked_events[] = $event;
+
+			// Skip CAPI sends for frontend requests while signals are held.
+			// Backend/cron events (e.g. admin order status changes) still fire.
+			if ( FacebookSignalsState::is_held() && ! is_admin() && ! wp_doing_cron() ) {
+				FacebookSignalsState::queue_event( $event );
+				return;
+			}
 
 			if ( $send_now ) {
 				try {
@@ -1459,15 +1486,15 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 		}
 
 		/**
-		 * Checks the value, if it's not null, updates the array at array_key with value
+		 * Checks the value, if it's not null, updates the target array entry.
 		 *
-		 * @param mixed  $value
-		 * @param array  $array
-		 * @param string $array_key
+		 * @param mixed  $value        Value to set when not empty.
+		 * @param array  $target_array Target array to update.
+		 * @param string $array_key    Target array key.
 		 */
-		private static function update_array_if_not_null( $value, &$array, $array_key ) {
+		private static function update_array_if_not_null( $value, &$target_array, $array_key ) {
 			if ( ! empty( $value ) ) {
-				$array[ $array_key ] = $value;
+				$target_array[ $array_key ] = $value;
 			}
 		}
 
@@ -1493,6 +1520,11 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 		 * Send pending events.
 		 */
 		public function send_pending_events() {
+
+			// Don't batch-send pending events while signals are held.
+			if ( FacebookSignalsState::is_held() && ! is_admin() && ! wp_doing_cron() ) {
+				return;
+			}
 
 			$pending_events = $this->get_pending_events();
 

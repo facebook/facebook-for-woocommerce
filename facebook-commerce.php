@@ -388,6 +388,11 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 		}
 
 		if ( $this->get_facebook_pixel_id() ) {
+			// Apply the current signal state before EventsTracker initializes.
+			if ( \WooCommerce\Facebook\Signals::should_hold_signals() ) {
+				\WooCommerce\Facebook\Events\FacebookSignalsState::hold();
+			}
+
 			$aam_settings         = $this->load_aam_settings_of_pixel();
 			$user_info            = WC_Facebookcommerce_Utils::get_user_info( $aam_settings );
 			$this->events_tracker = new WC_Facebookcommerce_EventsTracker( $user_info, $aam_settings );
@@ -649,7 +654,8 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 			do {
 				$product_item_ids += $response->get_ids();
 				// get up to two additional pages of results
-			} while ( $response = $this->facebook_for_woocommerce->get_api()->next( $response, 2 ) );
+				$response = $this->facebook_for_woocommerce->get_api()->next( $response, 2 );
+			} while ( $response );
 		} catch ( ApiException $e ) {
 			$message = sprintf( 'Meta APIs thrown APIException while fetching the Product Items in the Product Group %s: %s', $product_group_id, $e->getMessage() );
 			Logger::log(
@@ -743,7 +749,8 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 			'wc_facebook_infobanner_jsx',
 			$this->facebook_for_woocommerce->get_asset_build_dir_url() . '/admin/infobanner.js',
 			array(),
-			\WC_Facebookcommerce::PLUGIN_VERSION
+			\WC_Facebookcommerce::PLUGIN_VERSION,
+			true
 		);
 		wp_localize_script( 'wc_facebook_infobanner_jsx', 'wc_facebook_infobanner_jsx', $ajax_data );
 
@@ -1541,7 +1548,7 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 				);
 
 				// Check if currently processed variation exist in the catalog.
-				if ( ! in_array( $fb_retailer_id, $existing_catalog_variations_retailer_ids ) ) {
+				if ( ! in_array( $fb_retailer_id, $existing_catalog_variations_retailer_ids, true ) ) {
 					continue;
 				}
 
@@ -2057,18 +2064,18 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 			$woo_product  = new WC_Facebook_Product( $post_id );
 			$product_data = $woo_product->prepare_product();
 
-			$feed_item = array(
-				'title'        => strip_tags( $product_data['name'] ),
-				'availability' => $woo_product->is_in_stock() ? 'in stock' :
-					'out of stock',
-				'description'  => strip_tags( $product_data['description'] ),
-				'id'           => $product_data['retailer_id'],
-				'image_link'   => $product_data['image_url'],
-				'brand'        => Helper::str_truncate( wp_strip_all_tags( WC_Facebookcommerce_Utils::get_store_name() ), 100 ),
-				'link'         => $product_data['url'],
-				'price'        => $product_data['price'] . ' ' . get_woocommerce_currency(),
-			);
-			array_push( $items, $feed_item );
+				$feed_item = array(
+					'title'        => wp_strip_all_tags( $product_data['name'] ),
+					'availability' => $woo_product->is_in_stock() ? 'in stock' :
+						'out of stock',
+					'description'  => wp_strip_all_tags( $product_data['description'] ),
+					'id'           => $product_data['retailer_id'],
+					'image_link'   => $product_data['image_url'],
+					'brand'        => Helper::str_truncate( wp_strip_all_tags( WC_Facebookcommerce_Utils::get_store_name() ), 100 ),
+					'link'         => $product_data['url'],
+					'price'        => $product_data['price'] . ' ' . get_woocommerce_currency(),
+				);
+				array_push( $items, $feed_item );
 		}
 		// https://codex.wordpress.org/Function_Reference/wp_reset_postdata
 		wp_reset_postdata();
@@ -3177,7 +3184,9 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 			$this->update_fb_visibility( $product, $visibility );
 		}
 
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- WooCommerce bulk edit verifies the request before this hook fires.
 		if ( ! empty( $_REQUEST['post'] ) ) {
+			// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- WooCommerce bulk edit verifies the request before this hook fires.
 			$bulk_product_edit_ids = $_REQUEST['post'];
 		}
 
