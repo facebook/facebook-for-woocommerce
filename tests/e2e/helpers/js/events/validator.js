@@ -137,7 +137,10 @@ class EventValidator {
     if (fieldContract.channels.includes('capi') && capi.length !== 1) {
       const uniqueEventIds = new Set(capi.map(e => e.event_id).filter(id => id));
       if (uniqueEventIds.size === 1) {
-        console.log(`  ⚠️  Found ${capi.length} CAPI events but all have same event_id (likely duplicates) - passing`);
+        const duplicateEventId = [...uniqueEventIds][0] || 'unknown';
+        console.warn(
+          `  ⚠️  Duplicate CAPI events detected for ${eventName}: count=${capi.length}, event_id=${duplicateEventId}. Allowing pass because duplicate records share the same event_id.`
+        );
       } else {
         errors.push(`Expected 1 CAPI event, found ${capi.length}`);
       }

@@ -438,7 +438,6 @@ async function runTrackedEventTest({
   await TestSetup.login(page);
   await ensureCapiCaptureEnabled();
 
-  const testStartEpochSec = Math.floor(Date.now() / 1000);
   const { testId, pixelCapture } = await TestSetup.init(page, eventName, testInfo, expectZeroEvents);
 
   if (waitForPixel) {
@@ -470,8 +469,6 @@ async function runTrackedEventTest({
     await action({ page, pixelCapture, testId });
     await TestSetup.waitForPageReady(page);
   }
-
-  await backfillMissingCapiCaptureFromWooLogs(testId, eventName, page.url(), testStartEpochSec);
 
   const validator = new EventValidator(testId, expectFbc, expectZeroEvents);
   try {
@@ -707,77 +704,6 @@ async function collectCapiDiagnostics(page, testId, eventName) {
   }
 
   return diagnostics;
-}
-
-async function backfillMissingCapiCaptureFromWooLogs(testId, eventName, currentUrl, minEventTime = 0) {
-  const capiFile = path.join(__dirname, 'helpers/captured-events', `capi-${testId}.json`);
-  if (await fileExists(capiFile)) {
-    return;
-  }
-
-  try {
-    const logsDir = process.env.WC_LOG_PATH || path.join(process.env.WORDPRESS_PATH || '', 'wp-content/uploads/wc-logs');
-    const latestLog = execSync(`find "${logsDir}" -type f -name "facebook_for_woocommerce-*.log" | sort | tail -1`, {
-      encoding: 'utf8',
-      stdio: ['pipe', 'pipe', 'pipe'],
-    }).trim();
-
-    if (!latestLog) {
-      return;
-    }
-
-    const raw = await fs.readFile(latestLog, 'utf8');
-    const lines = raw.split('\n');
-    const events = [];
-
-    for (let i = 0; i < lines.length; i++) {
-      const line = lines[i];
-      if (!line.includes('uri: https://graph.facebook.com') || !line.includes('/events')) {
-        continue;
-      }
-
-      for (let j = i + 1; j < Math.min(i + 20, lines.length); j++) {
-        const bodyLine = lines[j];
-        if (!bodyLine.startsWith('body: ')) continue;
-
-        const json = bodyLine.replace(/^body:\s*/, '');
-        try {
-          const parsed = JSON.parse(json);
-          const arr = Array.isArray(parsed?.data) ? parsed.data : [];
-          arr.forEach((e) => events.push(e));
-        } catch (_) {
-          // ignore malformed lines
-        }
-
-        break;
-      }
-    }
-
-    const matching = events
-      .filter((e) => e?.event_name === eventName)
-      .filter((e) => (e?.event_time || 0) >= minEventTime - 5)
-      .filter((e) => {
-        // Purchase events are emitted from Store API endpoint, not order-received URL.
-        if (eventName === 'Purchase') {
-          return true;
-        }
-
-        if (!currentUrl || !e?.event_source_url) return true;
-        return e.event_source_url === currentUrl || currentUrl.startsWith(e.event_source_url) || e.event_source_url.startsWith(currentUrl);
-      })
-      .sort((a, b) => (b.event_time || 0) - (a.event_time || 0));
-
-    if (matching.length === 0) {
-      return;
-    }
-
-    const chosen = { ...matching[0], capturedAt: Date.now() };
-    await fs.mkdir(path.dirname(capiFile), { recursive: true });
-    await fs.writeFile(capiFile, JSON.stringify([chosen], null, 2));
-    console.warn(`⚠️ Backfilled missing CAPI capture from Woo log: ${capiFile}`);
-  } catch (error) {
-    console.warn(`⚠️ Could not backfill CAPI capture from Woo log: ${error.message}`);
-  }
 }
 
 async function acquireThemeLock(timeoutMs = 45000) {

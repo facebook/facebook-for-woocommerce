@@ -96,9 +96,13 @@ class PixelCapture {
 
           const request = queuedRequests.shift();
           const response = await request.response();
-          const eventData = await this.parsePixelEvent(request.url(), request, this.eventName);
+          const eventData = await this.parsePixelEvent(request.url(), request);
           eventData.api_status = response ? response.status() : 'N/A';
           eventData.api_ok = response ? response.ok() : false;
+          eventData.request_failure = request.failure() ? request.failure().errorText : null;
+          eventData.request_method = request.method();
+          eventData.request_url = request.url();
+          eventData.request_has_payload = Boolean(request.postData());
 
           const score = scoreEvent(eventData);
           if (!best || score > best.score) {
@@ -138,6 +142,18 @@ class PixelCapture {
         throw new Error(`❌ Pixel event ${this.eventName} not found within ${timeoutMs}ms (best match was ${eventData.event_name || 'unknown'})`);
       }
 
+      const userCount = Object.keys(eventData.user_data || {}).length;
+      const customCount = Object.keys(eventData.custom_data || {}).length;
+      if (!eventData.pixel_id || eventData.pixel_id === 'SB') {
+        throw new Error(`❌ Pixel event ${this.eventName} captured with invalid pixel_id=${eventData.pixel_id || 'unknown'}`);
+      }
+      if (!eventData.event_id) {
+        throw new Error(`❌ Pixel event ${this.eventName} captured without event_id`);
+      }
+      if (userCount < 2 && customCount < 2) {
+        throw new Error(`❌ Pixel event ${this.eventName} too sparse (user_data keys=${userCount}, custom_data keys=${customCount})`);
+      }
+
       console.log(`✅ Pixel event captured: ${this.eventName} (pixel_id=${eventData.pixel_id || 'unknown'}, score=${chosen.score})`);
       console.log(`   Event ID: ${eventData.event_id || 'none'}, API: ${eventData.api_status}`);
       await this.logToServer(eventData);
@@ -173,7 +189,7 @@ class PixelCapture {
   /**
    * Parse Pixel event from URL
    */
-  async parsePixelEvent(url, request = null, expectedEventName = null) {
+  async parsePixelEvent(url, request = null) {
     const urlObj = new URL(url);
 
     let event_name = urlObj.searchParams.get('ev') || 'Unknown';
@@ -263,47 +279,6 @@ class PixelCapture {
       }
     }
 
-    const hasPixelSignal = !!event_id
-      || pixel_id !== 'Unknown'
-      || Object.keys(customData).length > 0
-      || Object.keys(userData).length > 0;
-
-    if (event_name === 'Unknown' && expectedEventName && hasPixelSignal) {
-      event_name = expectedEventName;
-    }
-
-    // If event name is not explicitly present in request payload, infer it from event-specific custom_data keys.
-    // Keep this conservative: only override when inference agrees with expectedEventName.
-    if (event_name === 'PageView' && expectedEventName) {
-      let inferredEventName = null;
-
-      if (customData.search_string !== undefined) {
-        inferredEventName = 'Search';
-      } else if (customData.content_category !== undefined && customData.content_name !== undefined
-        && customData.value === undefined && customData.currency === undefined) {
-        inferredEventName = 'ViewCategory';
-      } else if (customData.content_category !== undefined && customData.content_name !== undefined
-        && customData.value !== undefined && customData.currency !== undefined) {
-        inferredEventName = 'ViewContent';
-      } else if (customData.num_items !== undefined) {
-        inferredEventName = 'InitiateCheckout';
-      }
-
-      if (inferredEventName && inferredEventName === expectedEventName) {
-        event_name = inferredEventName;
-      }
-    }
-
-    // Honor expected event when we clearly have event-specific payload but transport omitted ev.
-    if (expectedEventName && event_name !== expectedEventName) {
-      const hasViewCategoryShape = customData.content_category !== undefined && customData.content_name !== undefined
-        && customData.contents !== undefined && customData.content_ids !== undefined
-        && customData.value === undefined && customData.currency === undefined;
-
-      if (expectedEventName === 'ViewCategory' && hasViewCategoryShape) {
-        event_name = expectedEventName;
-      }
-    }
 
     const cookies = await this.getAllCookies();
 
