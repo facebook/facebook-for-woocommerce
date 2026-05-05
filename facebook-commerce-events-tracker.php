@@ -1164,15 +1164,17 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 			// Save the metadata.
 			$order->save();
 
-			Logger::log(
-				'Purchase event fired for order ' . $order_id . ' by hook ' . $hook_name . ' (context: ' . ( $is_browser ? 'browser' : 'server' ) . ').',
-				array(),
-				array(
-					'should_send_log_to_meta'        => false,
-					'should_save_log_in_woocommerce' => true,
-					'woocommerce_log_level'          => \WC_Log_Levels::INFO,
-				)
-			);
+			if ( ! FacebookSignalsState::is_held() ) {
+				Logger::log(
+					'Purchase event fired for order ' . $order_id . ' by hook ' . $hook_name . ' (context: ' . ( $is_browser ? 'browser' : 'server' ) . ').',
+					array(),
+					array(
+						'should_send_log_to_meta'        => false,
+						'should_save_log_in_woocommerce' => true,
+						'woocommerce_log_level'          => \WC_Log_Levels::INFO,
+					)
+				);
+			}
 
 			$content_type  = 'product';
 			$contents      = array();
