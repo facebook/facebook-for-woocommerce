@@ -30,7 +30,8 @@ const {
   deleteTempCustomerUser,
   getCartItemsViaStoreApi,
   clearCart,
-  completeCheckoutFromCart
+  completeCheckoutFromCart,
+  triggerAjaxAddToCartFromShop
 } = require('./helpers/js');
 
 
@@ -109,6 +110,75 @@ test('AddToCart', async ({ page }, testInfo) => {
 
     TestSetup.logResult('AddToCart', result);
     expect(result.passed).toBe(true);
+});
+
+test('AddToCart - AJAX (shop loop parity with PDP)', async ({ page }, testInfo) => {
+    await clearCart(page);
+
+    const baseline = await TestSetup.init(page, 'AddToCart', testInfo);
+    await page.goto(process.env.TEST_PRODUCT_URL);
+    await TestSetup.waitForPageReady(page, TIMEOUTS.INSTANT);
+
+    const pdpEventPromise = baseline.pixelCapture.waitForEvent();
+    await page.click('.single_add_to_cart_button');
+    await page.waitForLoadState('networkidle');
+    await pdpEventPromise;
+
+    const baselineValidator = new EventValidator(baseline.testId);
+    await baselineValidator.checkDebugLog();
+    const baselineResult = await baselineValidator.validate('AddToCart', page);
+    expect(baselineResult.passed).toBe(true);
+
+    const baselineCaptured = await loadCapturedEvents(baseline.testId);
+    const baselinePixel = getLatestEvent(baselineCaptured.pixel, 'AddToCart');
+    const baselineCapi = getLatestEvent(baselineCaptured.capi, 'AddToCart');
+
+    expect(baselinePixel).toBeTruthy();
+    expect(baselineCapi).toBeTruthy();
+
+    await clearCart(page);
+
+    const ajaxRun = await TestSetup.init(page, 'AddToCart', testInfo);
+    const ajaxEventPromise = ajaxRun.pixelCapture.waitForEvent();
+    const ajaxTrace = await triggerAjaxAddToCartFromShop(page, { productUrl: process.env.TEST_PRODUCT_URL });
+    await ajaxEventPromise;
+
+    expect(ajaxTrace.usedAjax).toBe(true);
+    expect(ajaxTrace.mainFrameNavigated).toBe(false);
+
+    const ajaxValidator = new EventValidator(ajaxRun.testId);
+    await ajaxValidator.checkDebugLog();
+    const ajaxResult = await ajaxValidator.validate('AddToCart', page);
+    expect(ajaxResult.passed).toBe(true);
+
+    const ajaxCaptured = await loadCapturedEvents(ajaxRun.testId);
+    const ajaxPixel = getLatestEvent(ajaxCaptured.pixel, 'AddToCart');
+    const ajaxCapi = getLatestEvent(ajaxCaptured.capi, 'AddToCart');
+
+    expect(ajaxPixel).toBeTruthy();
+    expect(ajaxCapi).toBeTruthy();
+
+    const pickComparable = (event) => ({
+      content_ids: asArray(event?.custom_data?.content_ids),
+      contents: asArray(event?.custom_data?.contents),
+      content_name: event?.custom_data?.content_name,
+      content_type: event?.custom_data?.content_type,
+      value: Number(event?.custom_data?.value),
+      currency: event?.custom_data?.currency
+    });
+
+    const normalizeContents = (items) => items
+      .map(item => ({ id: String(item?.id), quantity: Number(item?.quantity) }))
+      .sort((a, b) => `${a.id}:${a.quantity}`.localeCompare(`${b.id}:${b.quantity}`));
+
+    const normalizeComparable = (data) => ({
+      ...data,
+      content_ids: data.content_ids.map(String).sort(),
+      contents: normalizeContents(data.contents)
+    });
+
+    expect(normalizeComparable(pickComparable(ajaxPixel))).toEqual(normalizeComparable(pickComparable(baselinePixel)));
+    expect(normalizeComparable(pickComparable(ajaxCapi))).toEqual(normalizeComparable(pickComparable(baselineCapi)));
 });
 
 test('ViewContent - Variable Product', async ({ page }, testInfo) => {
