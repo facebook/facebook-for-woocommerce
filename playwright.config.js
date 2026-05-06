@@ -8,11 +8,21 @@ const commonTimeouts = {
   navigationTimeout: 180000,
 };
 
+const privacySandboxOrigin = process.env.WORDPRESS_URL
+  ? (() => {
+      try {
+        return new URL(process.env.WORDPRESS_URL).origin;
+      } catch {
+        return null;
+      }
+    })()
+  : null;
+
 const privacySandboxArgs = [
   '--enable-features=BrowsingTopics,InterestGroupStorage,AdInterestGroupAPI,Fledge,RunAdAuction,PrivacySandboxAdsAPIsOverride',
   '--enable-blink-features=BrowsingTopics,InterestGroupStorage,AdInterestGroupAPI,RunAdAuction',
   '--test-third-party-cookie-phaseout',
-  ...(process.env.WORDPRESS_URL ? [`--unsafely-treat-insecure-origin-as-secure=${process.env.WORDPRESS_URL}`] : []),
+  ...(privacySandboxOrigin ? [`--unsafely-treat-insecure-origin-as-secure=${privacySandboxOrigin}`] : []),
 ];
 
 const adminUse = {
@@ -93,6 +103,7 @@ export default defineConfig({
       testMatch: [CUSTOMER_EVENTS_SPEC],
       use: {
         ...customerUse,
+        channel: 'chrome',
         launchOptions: {
           args: privacySandboxArgs,
         },
