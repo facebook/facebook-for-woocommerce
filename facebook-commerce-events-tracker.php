@@ -1320,6 +1320,7 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 		 */
 		protected function send_api_event( Event $event, bool $send_now = true ) {
 			if ( $this->is_crawler_request() ) {
+				facebook_for_woocommerce()->log( 'Blocked CAPI event for crawler: ' . sanitize_text_field( wp_unslash( $_SERVER['HTTP_USER_AGENT'] ?? '' ) ) );
 				return;
 			}
 
