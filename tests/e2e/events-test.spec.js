@@ -460,10 +460,12 @@ test('ViewCategory', async ({ page }, testInfo) => {
 });
 
 test('InitiateCheckout', async ({ page }, testInfo) => {
-    const { testId, pixelCapture } = await TestSetup.init(page, 'InitiateCheckout',  testInfo);
-
     // Keep cart deterministic so single-item category expectations are stable.
     await clearCart(page);
+
+    // init() sets the test cookie used by PHP-side CAPI event logging.
+    // It must run after clearCart(), because clearCart() clears all cookies.
+    const { testId, pixelCapture } = await TestSetup.init(page, 'InitiateCheckout',  testInfo);
 
     await page.goto(process.env.TEST_PRODUCT_URL);
     await TestSetup.waitForPageReady(page, TIMEOUTS.INSTANT);
