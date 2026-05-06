@@ -762,7 +762,25 @@ jobs:
 
           node - <<'NODE'
           const fs = require('fs');
-          const report = JSON.parse(fs.readFileSync('/tmp/privacy-sandbox-api-report.json', 'utf8'));
+          const rawReport = fs.readFileSync('/tmp/privacy-sandbox-api-report.json', 'utf8');
+
+          // Some environments may prepend non-JSON stdout noise (for example from global setup logs).
+          // Extract the outermost JSON object defensively before parsing.
+          const firstBrace = rawReport.indexOf('{');
+          const lastBrace = rawReport.lastIndexOf('}');
+          if (firstBrace === -1 || lastBrace === -1 || lastBrace < firstBrace) {
+            console.error('Could not locate JSON object in privacy sandbox report output.');
+            process.exit(1);
+          }
+
+          let report;
+          try {
+            report = JSON.parse(rawReport.slice(firstBrace, lastBrace + 1));
+          } catch (err) {
+            console.error('Failed to parse privacy sandbox JSON report:', err.message);
+            process.exit(1);
+          }
+
           const apiTitles = new Set([
             'Privacy Sandbox - Topics API available in Chromium',
             'Privacy Sandbox - Protected Audience API shape in Chromium'
