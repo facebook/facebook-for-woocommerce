@@ -6,6 +6,7 @@ const fs = require('fs').promises;
 const path = require('path');
 const { exec, execSync } = require('child_process');
 const { promisify } = require('util');
+const crypto = require('crypto');
 const { expect } = require('@playwright/test');
 const { TIMEOUTS } = require('../constants/timeouts');
 const TestSetup = require('./setup');
@@ -83,7 +84,8 @@ function ignoreKnownPurchaseUserDataGap(result) {
 }
 
 async function createTempCustomerUser() {
-  const stamp = `${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
+  const randomSuffix = crypto.randomBytes(6).toString('hex');
+  const stamp = `${Date.now()}_${randomSuffix}`;
   const username = `e2e_customer_${stamp}`;
   const password = `E2Epass!${stamp}`;
   const email = `${username}@example.test`;

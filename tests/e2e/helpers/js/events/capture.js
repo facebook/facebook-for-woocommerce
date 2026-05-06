@@ -267,14 +267,57 @@ class PixelCapture {
           }
         }
 
-        // Regex fallback for odd multipart serializations.
-        const multipartRegex = /name="([^"]+)"\r?\n(?:[^\n]*\r?\n)*\r?\n([\s\S]*?)(?=\r?\n--)/g;
-        let match;
-        while ((match = multipartRegex.exec(body)) !== null) {
-          const key = match[1];
-          const value = (match[2] || '').trim();
-          if (!key || !value) continue;
-          ingestParam(key, value);
+        // Linear fallback parser for odd multipart serializations (no complex regex backtracking).
+        let cursor = 0;
+        while (cursor < body.length) {
+          const nameStart = body.indexOf('name="', cursor);
+          if (nameStart === -1) break;
+
+          const keyStart = nameStart + 6;
+          const keyEnd = body.indexOf('"', keyStart);
+          if (keyEnd === -1) break;
+
+          const key = body.slice(keyStart, keyEnd).trim();
+          if (!key) {
+            cursor = keyEnd + 1;
+            continue;
+          }
+
+          // Move to payload start: first blank line after headers.
+          const headerEndCRLF = body.indexOf('\r\n\r\n', keyEnd);
+          const headerEndLF = body.indexOf('\n\n', keyEnd);
+
+          let valueStart = -1;
+          if (headerEndCRLF !== -1 && (headerEndLF === -1 || headerEndCRLF < headerEndLF)) {
+            valueStart = headerEndCRLF + 4;
+          } else if (headerEndLF !== -1) {
+            valueStart = headerEndLF + 2;
+          }
+
+          if (valueStart === -1) {
+            cursor = keyEnd + 1;
+            continue;
+          }
+
+          const nextBoundaryCRLF = body.indexOf('\r\n--', valueStart);
+          const nextBoundaryLF = body.indexOf('\n--', valueStart);
+
+          let valueEnd = -1;
+          if (nextBoundaryCRLF !== -1 && (nextBoundaryLF === -1 || nextBoundaryCRLF < nextBoundaryLF)) {
+            valueEnd = nextBoundaryCRLF;
+          } else if (nextBoundaryLF !== -1) {
+            valueEnd = nextBoundaryLF;
+          }
+
+          if (valueEnd === -1) {
+            cursor = valueStart;
+            continue;
+          }
+
+          const value = body.slice(valueStart, valueEnd).trim();
+          if (value) ingestParam(key, value);
+
+          cursor = valueEnd + 1;
         }
       }
     }
