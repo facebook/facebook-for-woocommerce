@@ -603,8 +603,8 @@ jobs:
           # Install in the WordPress plugin directory (where we'll run tests from)
           cd ${{ env.PLUGIN_PATH }}
           npm install
-          npx playwright install chromium
-          npx playwright install-deps chromium
+          npx playwright install chromium chrome
+          npx playwright install-deps chromium chrome
 
       - name: Install Edge browser
         if: matrix.test-group == 'plugin-events'
@@ -760,6 +760,47 @@ jobs:
             --grep "Privacy Sandbox - (Topics API available in Chromium|Protected Audience API shape in Chromium)" \
             --reporter=json > /tmp/privacy-sandbox-api-report.json
 
+          # Diagnostic probe: verify APIs are exposed in the privacy-sandbox browser runtime.
+          node - <<'NODE'
+          const { chromium } = require('playwright');
+
+          (async () => {
+            const browser = await chromium.launch({
+              channel: 'chrome',
+              headless: true,
+              args: [
+                '--enable-features=BrowsingTopics,InterestGroupStorage,AdInterestGroupAPI,Fledge,RunAdAuction,PrivacySandboxAdsAPIsOverride',
+                '--enable-blink-features=BrowsingTopics,InterestGroupStorage,AdInterestGroupAPI,RunAdAuction',
+                '--test-third-party-cookie-phaseout',
+                ...(process.env.WORDPRESS_URL ? [`--unsafely-treat-insecure-origin-as-secure=${new URL(process.env.WORDPRESS_URL).origin}`] : []),
+              ],
+            });
+
+            try {
+              const context = await browser.newContext({ ignoreHTTPSErrors: true });
+              const page = await context.newPage();
+              await page.goto(process.env.WORDPRESS_URL, { waitUntil: 'domcontentloaded', timeout: 120000 });
+
+              const probe = await page.evaluate(() => ({
+                isSecureContext: typeof window !== 'undefined' ? window.isSecureContext : null,
+                hasTopicsApi: typeof document !== 'undefined' && typeof document.browsingTopics === 'function',
+                hasJoinAdInterestGroup: typeof navigator !== 'undefined' && typeof navigator.joinAdInterestGroup === 'function',
+                hasRunAdAuction: typeof navigator !== 'undefined' && typeof navigator.runAdAuction === 'function',
+                hasLeaveAdInterestGroup: typeof navigator !== 'undefined' && typeof navigator.leaveAdInterestGroup === 'function',
+                userAgent: typeof navigator !== 'undefined' ? navigator.userAgent : null,
+              }));
+
+              const browserVersion = browser.version();
+              console.log('Privacy Sandbox probe:', JSON.stringify({ browserVersion, ...probe }, null, 2));
+            } finally {
+              await browser.close();
+            }
+          })().catch((err) => {
+            console.error('Privacy Sandbox probe failed:', err?.message || err);
+            process.exit(1);
+          });
+          NODE
+
           node - <<'NODE'
           const fs = require('fs');
           const rawReport = fs.readFileSync('/tmp/privacy-sandbox-api-report.json', 'utf8');
@@ -789,8 +830,14 @@ jobs:
           const statuses = [];
           const walkSuite = (suite) => {
             for (const spec of suite.specs || []) {
+              // Playwright JSON reporter stores the human-readable test name on spec.title.
+              // Some versions do not include title on items inside spec.tests.
+              const specTitle = spec.title;
+              if (!apiTitles.has(specTitle)) {
+                continue;
+              }
+
               for (const test of spec.tests || []) {
-                if (!apiTitles.has(test.title)) continue;
                 for (const result of test.results || []) {
                   statuses.push(result.status);
                 }
