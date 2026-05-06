@@ -9,7 +9,7 @@ MySQL: 5.6 or greater
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
-Get the Official Meta for WooCommerce plugin for powerful ways to help grow your business.
+Reach more customers and drive sales on Facebook, Instagram and WhatsApp with the official Meta for WooCommerce plugin.
 
 == Description ==
 
