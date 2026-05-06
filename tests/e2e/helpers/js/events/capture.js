@@ -214,8 +214,12 @@ class PixelCapture {
           }
         }
       } else if (key.startsWith('ud[') || key.startsWith('aud[')) {
-        const normalized = key.startsWith('aud[') ? key.replace('aud[', '') : key.replace('ud[', '');
-        const udKey = normalized.replace(']', '');
+        const udMatch = key.match(/^(?:ud|aud)\[([^\]]+)\]$/);
+        if (!udMatch) {
+          return;
+        }
+
+        const udKey = udMatch[1];
         // Prefer explicit ud[*], but accept aud[*] as fallback when ud[*] isn't present.
         if (key.startsWith('ud[') || !userData[udKey]) {
           userData[udKey] = decodeURIComponent(value);
