@@ -63,34 +63,11 @@ test('PageView with fbclid', async ({ page }, testInfo) => {
     await TestSetup.waitForPageReady(page);
     await eventPromise;
 
-    const isBraveProject = testInfo.project.name.includes('brave');
-    const validator = new EventValidator(testId, !isBraveProject); // Brave may block fbc propagation
+    const validator = new EventValidator(testId, true); // expects fbc
     await validator.checkDebugLog();
     const result = await validator.validate('PageView', page);
 
     TestSetup.logResult('PageView', result);
-
-    if (isBraveProject && !result.passed) {
-      const errors = result.errors || [];
-      const onlyBraveExpectedErrors = errors.length > 0 && errors.every((error) => {
-        const text = String(error);
-        return /\bfbc\b|_fbc/i.test(text)
-          || /Expected 1 CAPI event, found 0/i.test(text);
-      });
-
-      const pixelEvents = Array.isArray(result.pixel)
-        ? result.pixel
-        : (result.pixel ? [result.pixel] : []);
-      const pixelPageViewCaptured = pixelEvents.some((event) => event?.event_name === 'PageView');
-
-      if (onlyBraveExpectedErrors && pixelPageViewCaptured) {
-        const warning = `Brave privacy protections likely altered fbclid/fbc or CAPI behavior. Soft-passing test. Errors: ${errors.join('; ')}`;
-        testInfo.annotations.push({ type: 'warning', description: warning });
-        console.warn(`⚠️ ${warning}`);
-        return;
-      }
-    }
-
     expect(result.passed).toBe(true);
 });
 
