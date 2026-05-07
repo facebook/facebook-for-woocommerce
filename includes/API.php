@@ -620,16 +620,7 @@ class API extends Base {
 	 */
 	public function log_events_for_tests( $response, $request ) {
 		try {
-			// Check if rollout switch is enabled
-			$is_capi_event_logging_enabled = $this->get_plugin()->get_rollout_switches()->is_switch_enabled(
-				RolloutSwitches::CAPI_EVENT_LOGGING_ENABLED
-			);
-
-			if ( ! $is_capi_event_logging_enabled ) {
-				return;
-			}
-
-			// Check if test cookie is configured and present.
+			// Check if test cookie/logger are configured and present.
 			$is_local_debug_environment = defined( 'WP_DEBUG' )
 				&& WP_DEBUG
 				&& function_exists( 'wp_get_environment_type' )
@@ -639,6 +630,25 @@ class API extends Base {
 			if ( empty( $cookie_name ) && $is_local_debug_environment && defined( 'FB_E2E_TEST_COOKIE_NAME' ) ) {
 				$cookie_name = FB_E2E_TEST_COOKIE_NAME;
 			}
+
+			$logger_path = getenv( 'FB_E2E_LOGGER_PATH' );
+			if ( empty( $logger_path ) && $is_local_debug_environment && defined( 'FB_E2E_LOGGER_PATH' ) ) {
+				$logger_path = FB_E2E_LOGGER_PATH;
+			}
+
+			$has_e2e_logging_config = ! empty( $cookie_name ) && ! empty( $logger_path );
+
+			// Gate by rollout switch for normal runtime, but allow explicit E2E instrumentation
+			// (cookie + logger path) to keep test logging deterministic even if remote rollout
+			// refresh temporarily disables the switch.
+			$is_capi_event_logging_enabled = $this->get_plugin()->get_rollout_switches()->is_switch_enabled(
+				RolloutSwitches::CAPI_EVENT_LOGGING_ENABLED
+			);
+
+			if ( ! $is_capi_event_logging_enabled && ! $has_e2e_logging_config ) {
+				return;
+			}
+
 			if ( empty( $cookie_name ) ) {
 				// E2E logging is not configured in this environment.
 				return;
@@ -666,10 +676,6 @@ class API extends Base {
 			}
 
 			// Validate logger file exists.
-			$logger_path = getenv( 'FB_E2E_LOGGER_PATH' );
-			if ( empty( $logger_path ) && $is_local_debug_environment && defined( 'FB_E2E_LOGGER_PATH' ) ) {
-				$logger_path = FB_E2E_LOGGER_PATH;
-			}
 			if ( empty( $logger_path ) ) {
 				// E2E logging is not configured in this environment.
 				return;
