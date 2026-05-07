@@ -1534,6 +1534,74 @@ describe('Pixel Events - WooCommerce Blocks Store API', function () {
         });
     });
 
+    describe('Batch endpoint support', function () {
+        it('should process AddToCart event from /wc/store/v1/batch response', async function () {
+            const mockResponse = {
+                ok: true,
+                clone: () => ({
+                    json: () => Promise.resolve({
+                        responses: [
+                            {
+                                body: {
+                                    extensions: {
+                                        'facebook-for-woocommerce': {
+                                            event: 'AddToCart',
+                                            params: { value: 29.99, currency: 'USD', event_id: 'batch-1' }
+                                        }
+                                    }
+                                }
+                            }
+                        ]
+                    })
+                })
+            };
+
+            const mockOriginalFetch = jest.fn().mockResolvedValue(mockResponse);
+            global.fetch = mockOriginalFetch;
+
+            require('../../assets/js/frontend/pixel-events.js');
+
+            await global.fetch('/wc/store/v1/batch', { method: 'POST' });
+            await new Promise(resolve => setTimeout(resolve, 0));
+
+            expect(mockFbq).toHaveBeenCalledWith(
+                'track',
+                'AddToCart',
+                { value: 29.99, currency: 'USD', event_id: 'batch-1' },
+                { eventID: 'batch-1' }
+            );
+        });
+
+        it('should not fire for /wc/store/v1/batch when no fb extension exists', async function () {
+            const mockResponse = {
+                ok: true,
+                clone: () => ({
+                    json: () => Promise.resolve({
+                        responses: [
+                            {
+                                body: {
+                                    extensions: {
+                                        'other-plugin': { test: true }
+                                    }
+                                }
+                            }
+                        ]
+                    })
+                })
+            };
+
+            const mockOriginalFetch = jest.fn().mockResolvedValue(mockResponse);
+            global.fetch = mockOriginalFetch;
+
+            require('../../assets/js/frontend/pixel-events.js');
+
+            await global.fetch('/wc/store/v1/batch', { method: 'POST' });
+            await new Promise(resolve => setTimeout(resolve, 0));
+
+            expect(mockFbq).not.toHaveBeenCalled();
+        });
+    });
+
     describe('URL matching', function () {
         it('should match /wc/store/v1/cart/add-item', async function () {
             const mockResponse = {
