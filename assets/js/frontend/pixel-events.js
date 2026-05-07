@@ -13,12 +13,11 @@
 (function() {
     'use strict';
 
-    // Early exit if no data from PHP
-    if (typeof wc_facebook_pixel_data === 'undefined') {
-        return;
-    }
-
-    var data = wc_facebook_pixel_data;
+    // Data from PHP (may be missing if no events were queued for initial render).
+    // Keep Store API interception active even when eventQueue is empty/undefined.
+    var data = (typeof wc_facebook_pixel_data !== 'undefined' && wc_facebook_pixel_data) ?
+        wc_facebook_pixel_data :
+        { eventQueue: [] };
     var firedEvents = {};
 
     /**
@@ -154,8 +153,79 @@
     }
 
     /**
+     * Returns the request URL from a fetch() input.
+     *
+     * @param {*} input fetch() input argument
+     * @return {string}
+     */
+    function getRequestUrl(input) {
+        if (typeof input === 'string') {
+            return input;
+        }
+
+        if (input && typeof input.url === 'string') {
+            return input.url;
+        }
+
+        return '';
+    }
+
+    /**
+     * Checks whether a URL targets the Store API add-item endpoint.
+     *
+     * @param {string} url Request URL
+     * @return {boolean}
+     */
+    function isStoreApiAddItemRequest(url) {
+        return typeof url === 'string' &&
+            (url.indexOf('/wc/store/v1/cart/add-item') !== -1 ||
+             url.indexOf('/wc/store/cart/add-item') !== -1);
+    }
+
+    /**
+     * Checks whether a URL targets the Store API batch endpoint.
+     *
+     * @param {string} url Request URL
+     * @return {boolean}
+     */
+    function isStoreApiBatchRequest(url) {
+        return typeof url === 'string' &&
+            (url.indexOf('/wc/store/v1/batch') !== -1 ||
+             url.indexOf('/wc/store/batch') !== -1);
+    }
+
+    /**
+     * Process Store API response payload and extract plugin extension data.
+     * Handles both direct cart responses and batch responses.
+     *
+     * @param {Object} responseData Parsed Store API response payload
+     */
+    function processStoreApiResponseData(responseData) {
+        if (!responseData || typeof responseData !== 'object') {
+            return;
+        }
+
+        // Direct response shape: { extensions: { 'facebook-for-woocommerce': ... } }
+        if (responseData.extensions && responseData.extensions['facebook-for-woocommerce']) {
+            processStoreApiEvent(responseData.extensions['facebook-for-woocommerce']);
+        }
+
+        // Batch response shape: { responses: [ { body: { extensions: ... } } ] }
+        if (!Array.isArray(responseData.responses)) {
+            return;
+        }
+
+        for (var i = 0; i < responseData.responses.length; i++) {
+            var item = responseData.responses[i];
+            if (item && item.body && item.body.extensions && item.body.extensions['facebook-for-woocommerce']) {
+                processStoreApiEvent(item.body.extensions['facebook-for-woocommerce']);
+            }
+        }
+    }
+
+    /**
      * Set up fetch interceptor to capture Store API responses.
-     * Only intercepts cart/add-item requests to fire AddToCart pixel events.
+     * Intercepts cart/add-item and batch requests to fire AddToCart pixel events.
      */
     function setupFetchInterceptor() {
         var originalFetch = window.fetch;
@@ -165,20 +235,16 @@
 
         window.fetch = function() {
             var args = arguments;
-            var url = args[0];
+            var url = getRequestUrl(args[0]);
 
-            // Only intercept add-item requests (not general cart requests)
-            var isAddToCartRequest = typeof url === 'string' &&
-                (url.indexOf('/wc/store/v1/cart/add-item') !== -1 ||
-                 url.indexOf('/wc/store/cart/add-item') !== -1);
+            var isAddToCartRequest = isStoreApiAddItemRequest(url);
+            var isBatchRequest = isStoreApiBatchRequest(url);
 
             return originalFetch.apply(this, args).then(function(response) {
-                if (isAddToCartRequest && response.ok) {
+                if ((isAddToCartRequest || isBatchRequest) && response.ok) {
                     // Clone response so we can read it without consuming
                     response.clone().json().then(function(responseData) {
-                        if (responseData && responseData.extensions && responseData.extensions['facebook-for-woocommerce']) {
-                            processStoreApiEvent(responseData.extensions['facebook-for-woocommerce']);
-                        }
+                        processStoreApiResponseData(responseData);
                     }).catch(function(e) {
                         logWarning('Store API JSON parse error:', e);
                     });
