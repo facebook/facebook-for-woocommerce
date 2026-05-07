@@ -63,8 +63,30 @@ class EventValidator {
     const fieldContract = EVENT_FIELD_CONTRACTS[eventName];
     if (!fieldContract) throw new Error(`No field contract for: ${eventName}`);
 
-    const pixel = this.events.pixel.filter(e => e.event_name === eventName);
-    const capi = this.events.capi.filter(e => e.event_name === eventName);
+    let pixel = this.events.pixel.filter(e => e.event_name === eventName);
+    let capi = this.events.capi.filter(e => e.event_name === eventName);
+
+    // CAPI logging can lag slightly behind Pixel capture on fast paths (especially PageView).
+    // Poll briefly for expected channels to avoid flaky false negatives.
+    if (!this.expectZeroEvents) {
+      const needsPixel = fieldContract.channels.includes('pixel');
+      const needsCapi = fieldContract.channels.includes('capi');
+      const deadline = Date.now() + 10000;
+
+      while (Date.now() < deadline) {
+        const pixelReady = !needsPixel || pixel.length >= 1;
+        const capiReady = !needsCapi || capi.length >= 1;
+
+        if (pixelReady && capiReady) {
+          break;
+        }
+
+        await new Promise(resolve => setTimeout(resolve, 250));
+        await this.load();
+        pixel = this.events.pixel.filter(e => e.event_name === eventName);
+        capi = this.events.capi.filter(e => e.event_name === eventName);
+      }
+    }
 
     console.log(`   Pixel events found: ${pixel.length}`);
     console.log(`   CAPI events found: ${capi.length}`);
