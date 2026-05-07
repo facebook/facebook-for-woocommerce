@@ -17,7 +17,8 @@ const {
   setProductTitle,
   setProductDescription,
   createTestProduct,
-  exactSearchSelect2Container
+  exactSearchSelect2Container,
+  dismissWooInterferingOverlays
 } = require('./helpers/js');
 
 test.describe.serial('Meta for WooCommerce - Performance Sync E2E Tests', () => {
@@ -287,8 +288,8 @@ test.describe.serial('Meta for WooCommerce - Performance Sync E2E Tests', () => 
     await page.selectOption('#product-type', 'variable');
     await page.locator('#_sku').fill(generateUniqueSKU(skuPrefix));
 
-    await page.click('li.attribute_tab a[href="#product_attributes"]');
-    const attributeEntries = Object.entries(attributes);
+    await dismissWooInterferingOverlays(page);
+    await page.click('li.attribute_tab a[href="#product_attributes"]');    const attributeEntries = Object.entries(attributes);
     const addCustomAttributeButton = page.locator('button.add_custom_attribute').first();
     const attributeRows = page.locator('#product_attributes .woocommerce_attribute');
 
@@ -300,6 +301,7 @@ test.describe.serial('Meta for WooCommerce - Performance Sync E2E Tests', () => 
         await addCustomAttributeButton.scrollIntoViewIfNeeded();
 
         try {
+          await dismissWooInterferingOverlays(page);
           if (attempt === 1) {
             await addCustomAttributeButton.click();
           } else {

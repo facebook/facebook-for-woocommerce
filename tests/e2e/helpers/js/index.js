@@ -139,7 +139,8 @@ const {
   setProductTitle,
   setProductDescription,
   exactSearchSelect2Container,
-  getVisibleSearchInput
+  getVisibleSearchInput,
+  dismissWooInterferingOverlays
 } = require('./utils/ui');
 
 // =============================================================================
@@ -257,7 +258,8 @@ const utils = {
   setProductTitle,
   setProductDescription,
   exactSearchSelect2Container,
-  getVisibleSearchInput
+  getVisibleSearchInput,
+  dismissWooInterferingOverlays
 };
 
 const events = {
@@ -375,6 +377,7 @@ module.exports = {
   setProductDescription,
   exactSearchSelect2Container,
   getVisibleSearchInput,
+  dismissWooInterferingOverlays,
 
   // Events
   EventValidator,

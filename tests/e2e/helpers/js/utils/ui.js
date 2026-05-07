@@ -5,6 +5,41 @@
 const { TIMEOUTS } = require('../constants/timeouts');
 
 /**
+ * Dismiss WooCommerce onboarding/tour overlays that can intercept clicks in fresh installs.
+ * Safe no-op when overlays are absent.
+ * @param {import('@playwright/test').Page} page
+ */
+async function dismissWooInterferingOverlays(page) {
+  try {
+    // Close "Start by adding attributes" / tour popovers.
+    const popoverCloseButtons = page.locator(
+      '.woocommerce-tour-kit-step-navigation__done-btn:visible, '
+      + '.components-popover button[aria-label="Close"]:visible, '
+      + '.components-popover__content button[aria-label="Close"]:visible'
+    );
+    const closeCount = await popoverCloseButtons.count();
+    for (let i = 0; i < closeCount; i++) {
+      await popoverCloseButtons.nth(i).click({ force: true }).catch(() => {});
+    }
+
+    // Close top Woo blue setup banner if present.
+    const setupBannerDismiss = page.locator(
+      '.woocommerce-layout__header-tasks-reminder button[aria-label="Dismiss"], '
+      + '.woocommerce-layout__header-tasks-reminder .components-button[aria-label="Dismiss"], '
+      + '.woocommerce-layout__header button[aria-label="Dismiss"]'
+    ).first();
+    if (await setupBannerDismiss.count()) {
+      await setupBannerDismiss.click({ force: true }).catch(() => {});
+    }
+
+    // Final escape to close any lingering popovers/modals.
+    await page.keyboard.press('Escape').catch(() => {});
+  } catch {
+    // Best-effort only.
+  }
+}
+
+/**
  * Set product title
  * @param {import('@playwright/test').Page} page - Playwright page
  * @param {string} newTitle - New title
@@ -14,6 +49,7 @@ async function setProductTitle(page, newTitle) {
   titleField.waitFor({ state: 'visible', timeout: TIMEOUTS.MEDIUM });
   await titleField.scrollIntoViewIfNeeded();
   await titleField.fill(newTitle);
+  await dismissWooInterferingOverlays(page);
   console.log(`✅ Updated title to: "${newTitle}"`);
 }
 
@@ -174,5 +210,6 @@ module.exports = {
   setProductTitle,
   setProductDescription,
   exactSearchSelect2Container,
-  getVisibleSearchInput
+  getVisibleSearchInput,
+  dismissWooInterferingOverlays
 };

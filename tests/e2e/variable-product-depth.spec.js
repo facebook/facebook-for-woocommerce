@@ -16,6 +16,7 @@ const {
   processPendingSyncJobs,
   setProductTitle,
   setProductDescription,
+  dismissWooInterferingOverlays,
 } = require('./helpers/js');
 
 test.describe.serial('Variable Product Depth Tests', () => {
@@ -153,6 +154,7 @@ test.describe.serial('Variable Product Depth Tests', () => {
   }
 
   async function setupAttributes(page, attributes) {
+    await dismissWooInterferingOverlays(page);
     await page.click('li.attribute_tab a[href="#product_attributes"]');
 
     const attributeEntries = Object.entries(attributes);
@@ -165,6 +167,7 @@ test.describe.serial('Variable Product Depth Tests', () => {
     const addAttributeRow = async (expectedCount) => {
       for (let attempt = 1; attempt <= 3; attempt++) {
         try {
+          await dismissWooInterferingOverlays(page);
           // Some Woo admin layouts render multiple add buttons; try all visible ones.
           const buttons = page.locator('button.add_custom_attribute');
           const buttonCount = await buttons.count();
