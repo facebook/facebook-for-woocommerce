@@ -606,6 +606,13 @@ jobs:
           npx playwright install chromium chrome
           npx playwright install-deps chromium chrome
 
+          # Firefox project uses Playwright's Firefox channel (not system Firefox).
+          # Ensure the bundled Firefox binary is present in CI cache.
+          if [ "${{ matrix.test-group }}" = "plugin-events" ]; then
+            npx playwright install firefox
+            npx playwright install-deps firefox
+          fi
+
       - name: Install Edge browser
         if: matrix.test-group == 'plugin-events'
         run: |
@@ -626,19 +633,6 @@ jobs:
           test -x /usr/bin/microsoft-edge-stable
           /usr/bin/microsoft-edge-stable --version
 
-      - name: Install Firefox browser
-        if: matrix.test-group == 'plugin-events'
-        run: |
-          set -e
-          sudo apt-get update
-          sudo apt-get install -y firefox
-
-      - name: Verify Firefox browser setup
-        if: matrix.test-group == 'plugin-events'
-        run: |
-          set -e
-          test -x /usr/bin/firefox
-          /usr/bin/firefox --version
 
       - name: Install Brave browser
         if: matrix.test-group == 'plugin-events'
