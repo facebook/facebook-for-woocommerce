@@ -290,22 +290,50 @@ test.describe.serial('Meta for WooCommerce - Performance Sync E2E Tests', () => 
     await page.click('li.attribute_tab a[href="#product_attributes"]');
     const attributeEntries = Object.entries(attributes);
     const addCustomAttributeButton = page.locator('button.add_custom_attribute').first();
+    const attributeRows = page.locator('#product_attributes .woocommerce_attribute');
+
     await addCustomAttributeButton.waitFor({ state: 'visible', timeout: TIMEOUTS.LONG });
+    await attributeRows.first().waitFor({ state: 'visible', timeout: TIMEOUTS.LONG });
+
+    const addAttributeRow = async (expectedCount) => {
+      for (let attempt = 1; attempt <= 3; attempt++) {
+        await addCustomAttributeButton.scrollIntoViewIfNeeded();
+
+        try {
+          if (attempt === 1) {
+            await addCustomAttributeButton.click();
+          } else {
+            await addCustomAttributeButton.click({ force: true });
+          }
+          await expect(attributeRows).toHaveCount(expectedCount, { timeout: TIMEOUTS.EXTRA_LONG });
+          return;
+        } catch (error) {
+          if (attempt === 3) {
+            throw error;
+          }
+          console.warn(`⚠️ add_custom_attribute click attempt ${attempt}/3 failed in performance test; retrying...`);
+          await page.waitForTimeout(TIMEOUTS.SHORT);
+        }
+      }
+    };
 
     for (let i = 0; i < attributeEntries.length; i++) {
       const [attributeName, values] = attributeEntries[i];
-      const nameSelector = `input.attribute_name[name="attribute_names[${i}]"]`;
-      const valuesSelector = `textarea[name="attribute_values[${i}]"]`;
 
       if (i > 0) {
-        await addCustomAttributeButton.click();
+        await addAttributeRow(i + 1);
       }
 
-      await page.locator(nameSelector).waitFor({ state: 'visible', timeout: TIMEOUTS.EXTRA_LONG });
-      await page.fill(nameSelector, attributeName);
-      await page.fill(valuesSelector, buildPipeList(values));
+      const attributeRow = attributeRows.nth(i);
+      await attributeRow.waitFor({ state: 'visible', timeout: TIMEOUTS.EXTRA_LONG });
 
-      const attributeRow = page.locator('#product_attributes .woocommerce_attribute').nth(i);
+      const nameField = attributeRow.locator('input.attribute_name').first();
+      const valuesField = attributeRow.locator('textarea[name^="attribute_values"]').first();
+
+      await nameField.waitFor({ state: 'visible', timeout: TIMEOUTS.EXTRA_LONG });
+      await nameField.fill(attributeName);
+      await valuesField.fill(buildPipeList(values));
+
       const usedForVariationsCheckbox = attributeRow
         .locator('input.woocommerce_attribute_used_for_variations, input[name^="attribute_variation["]')
         .first();
