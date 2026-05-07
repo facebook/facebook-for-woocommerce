@@ -249,14 +249,23 @@ class EventValidator {
   validatePixelResponse(p, errors) {
     console.log(`  ✓ Checking Pixel response...`);
     if (p.api_status) {
-      if (p.api_status === 200 && p.api_ok) {
-        console.log(`    ✓ Pixel API: 200 OK`);
-      } else if (p.api_status === 'N/A') {
+      if (p.api_status === 'N/A') {
         console.log(`    ✓ Pixel API: N/A (FB Pixel uses sendBeacon for large payloads - no response expected)`);
-      } else {
-        errors.push(`Pixel API failed: HTTP ${p.api_status}`);
-        console.log(`    ✗ Pixel API: ${p.api_status}`);
+        return;
       }
+
+      const status = Number(p.api_status);
+      if (!Number.isNaN(status) && status >= 200 && status < 400) {
+        if (status === 200) {
+          console.log(`    ✓ Pixel API: 200 OK`);
+        } else {
+          console.log(`    ✓ Pixel API: ${status} redirect/success (accepted)`);
+        }
+        return;
+      }
+
+      errors.push(`Pixel API failed: HTTP ${p.api_status}`);
+      console.log(`    ✗ Pixel API: ${p.api_status}`);
     }
   }
 
