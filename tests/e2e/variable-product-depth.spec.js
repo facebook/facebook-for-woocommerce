@@ -164,16 +164,45 @@ test.describe.serial('Variable Product Depth Tests', () => {
 
     const addAttributeRow = async (expectedCount) => {
       for (let attempt = 1; attempt <= 3; attempt++) {
-        await addCustomAttributeButton.scrollIntoViewIfNeeded();
-
         try {
-          if (attempt === 1) {
-            await addCustomAttributeButton.click();
-          } else {
-            await addCustomAttributeButton.click({ force: true });
+          // Some Woo admin layouts render multiple add buttons; try all visible ones.
+          const buttons = page.locator('button.add_custom_attribute');
+          const buttonCount = await buttons.count();
+
+          for (let i = 0; i < buttonCount; i++) {
+            const button = buttons.nth(i);
+            const visible = await button.isVisible().catch(() => false);
+            if (!visible) {
+              continue;
+            }
+
+            await button.scrollIntoViewIfNeeded().catch(() => {});
+            await button.click(attempt === 1 ? {} : { force: true });
+
+            const added = await page.waitForFunction(
+              (count) => document.querySelectorAll('#product_attributes .woocommerce_attribute').length >= count,
+              expectedCount,
+              { timeout: TIMEOUTS.LONG }
+            ).then(() => true).catch(() => false);
+
+            if (added) {
+              return;
+            }
           }
 
-          await expect(attributeRows).toHaveCount(expectedCount, { timeout: TIMEOUTS.EXTRA_LONG });
+          // Fallback: trigger a DOM click directly in case Playwright click misses Woo's delegated listener.
+          await page.evaluate(() => {
+            const candidates = Array.from(document.querySelectorAll('#product_attributes button.add_custom_attribute, button.add_custom_attribute'));
+            const visible = candidates.filter((el) => el.offsetParent !== null);
+            const target = visible[visible.length - 1] || candidates[candidates.length - 1];
+            if (target) {
+              target.dispatchEvent(new MouseEvent('mousedown', { bubbles: true }));
+              target.dispatchEvent(new MouseEvent('mouseup', { bubbles: true }));
+              target.click();
+            }
+          });
+
+          await expect(attributeRows).toHaveCount(expectedCount, { timeout: TIMEOUTS.LONG });
           return;
         } catch (error) {
           if (attempt === 3) {
