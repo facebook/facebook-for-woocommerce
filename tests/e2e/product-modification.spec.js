@@ -1,7 +1,6 @@
 const { test, expect } = require('@playwright/test');
 const {
   TIMEOUTS,
-  loginToWordPress,
   safeScreenshot,
   cleanupProduct,
   extractProductIdFromUrl,
@@ -26,7 +25,6 @@ test.describe('Meta for WooCommerce - Product Modification E2E Tests', () => {
 
     // Ensure browser stability
     await page.setViewportSize({ width: 1280, height: 720 });
-    await loginToWordPress(page);
   });
 
   async function validateFacebookSyncWithRetries(page, {

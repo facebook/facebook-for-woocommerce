@@ -8,6 +8,47 @@ const path = require('path');
 
 const execAsync = promisify(exec);
 
+let connectionPreflightChecked = false;
+
+async function ensureFacebookConnectionConfigured() {
+  if (connectionPreflightChecked) {
+    return;
+  }
+
+  const wordpressPath = process.env.WORDPRESS_PATH;
+  if (!wordpressPath) {
+    throw new Error('WORDPRESS_PATH is required for sync validator preflight');
+  }
+
+  const phpBin = process.env.PHP_BIN || 'php';
+  const usePhpNoIni = process.env.USE_PHP_NO_INI === '1';
+  const wpCliPath = process.env.WP_CLI_PATH || execSync('command -v wp', { encoding: 'utf8' }).trim();
+  const phpNoIniFlag = usePhpNoIni ? '-n ' : '';
+
+  const phpSnippet = [
+    '$status = [',
+    "  'connected' => facebook_for_woocommerce()->get_connection_handler()->is_connected(),",
+    "  'access_token' => (bool) get_option('wc_facebook_access_token'),",
+    "  'catalog_id' => (bool) get_option('wc_facebook_product_catalog_id'),",
+    "  'pixel_id' => (bool) get_option('wc_facebook_pixel_id'),",
+    '];',
+    'echo json_encode($status);',
+  ].join(' ');
+
+  const command = `${phpBin} ${phpNoIniFlag}${shellEscape(wpCliPath)} eval ${shellEscape(phpSnippet)} --path=${shellEscape(wordpressPath)} --allow-root`;
+  const { stdout } = await execAsync(command, { env: process.env });
+  const status = parseJsonFromOutput(stdout);
+
+  const configured = Boolean(status.connected && status.access_token && status.catalog_id && status.pixel_id);
+  if (!configured) {
+    throw new Error(
+      `Facebook integration preflight failed for sync validation (connected=${Boolean(status.connected)}, access_token=${Boolean(status.access_token)}, catalog_id=${Boolean(status.catalog_id)}, pixel_id=${Boolean(status.pixel_id)}). Reconnect plugin before running sync-dependent tests.`
+    );
+  }
+
+  connectionPreflightChecked = true;
+}
+
 function shellEscape(value) {
   return `'${String(value).replace(/'/g, `'"'"'`)}'`;
 }
@@ -74,6 +115,7 @@ async function validateFacebookSync(productId, productName, waitSeconds = 10, ma
   console.log(`🔍 Validating Facebook sync for product ${displayName}...`);
 
   try {
+    await ensureFacebookConnectionConfigured();
     const command = buildValidatorCommand('product', productId, waitSeconds, maxRetries);
     const { stdout } = await execAsync(command, {
       cwd: path.resolve(__dirname, '../../php'),
@@ -119,6 +161,7 @@ async function validateCategorySync(categoryId, categoryName = null, waitSeconds
   console.log(`🔍 Validating category sync for ${displayName}...`);
 
   try {
+    await ensureFacebookConnectionConfigured();
     const command = buildValidatorCommand('category', categoryId, waitSeconds, maxRetries);
     const { stdout } = await execAsync(command, {
       cwd: path.resolve(__dirname, '../../php'),
