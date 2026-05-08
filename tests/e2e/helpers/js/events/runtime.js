@@ -184,14 +184,16 @@ async function clearServerSideCartState(username) {
 }
 
 async function clearCart(page, credentials = null) {
-  const context = page.context();
+  // IMPORTANT: do not clear browser cookies/storage here.
+  // Some event suites run with authenticated storageState and expect that
+  // identity context to persist across clearCart().
 
-  await context.clearCookies();
-
-  // Only clear server-side user cart state when explicit customer credentials are provided.
-  // Guest flows should stay unauthenticated.
-  if (credentials?.username) {
-    await clearServerSideCartState(credentials.username);
+  // If explicit credentials are provided, clear that account's persistent cart.
+  // Otherwise, use configured customer username when available so authenticated
+  // customer runs stay deterministic without wiping auth cookies.
+  const serverCartUsername = credentials?.username || process.env.WP_CUSTOMER_USERNAME || null;
+  if (serverCartUsername) {
+    await clearServerSideCartState(serverCartUsername);
   }
 
   if (credentials?.username && credentials?.password) {
@@ -199,10 +201,6 @@ async function clearCart(page, credentials = null) {
   }
 
   await page.goto('/');
-  await page.evaluate(() => {
-    try { window.localStorage.clear(); } catch (_) {}
-    try { window.sessionStorage.clear(); } catch (_) {}
-  });
 
   const hardClearViaStoreApi = async () => {
     await page.evaluate(async () => {

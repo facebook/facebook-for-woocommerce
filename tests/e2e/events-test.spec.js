@@ -479,7 +479,6 @@ test('InitiateCheckout', async ({ page }, testInfo) => {
     await clearCart(page);
 
     // init() sets the test cookie used by PHP-side CAPI event logging.
-    // It must run after clearCart(), because clearCart() clears all cookies.
     const { testId, pixelCapture } = await TestSetup.init(page, 'InitiateCheckout',  testInfo);
 
     await page.goto(process.env.TEST_PRODUCT_URL);
