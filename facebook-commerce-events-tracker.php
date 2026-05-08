@@ -1396,7 +1396,9 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 				$( document ).on( 'wpformsAjaxSubmitSuccess', function ( event, data ) {
 					if ( data && data.data && data.data.fb_pxl_code ) {
 						try {
-							new Function( data.data.fb_pxl_code )();
+							var s = document.createElement( 'script' );
+							s.textContent = data.data.fb_pxl_code;
+							document.head.appendChild( s );
 						} catch ( e ) {
 							// no-op
 						}
