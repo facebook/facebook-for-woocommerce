@@ -660,7 +660,9 @@ jobs:
         run: |
           set -e
           sudo apt-get update
-          sudo apt-get install -y wget gnupg2
+          # gsettings-desktop-schemas is required by Opera in CI containers.
+          # dbus-x11/libglib2.0-bin help with runtime diagnostics and schema tooling.
+          sudo apt-get install -y wget gnupg2 gsettings-desktop-schemas dbus-x11 libglib2.0-bin
           wget -qO- https://deb.opera.com/archive.key | sudo gpg --dearmor -o /usr/share/keyrings/opera.gpg
           echo "deb [signed-by=/usr/share/keyrings/opera.gpg] https://deb.opera.com/opera-stable/ stable non-free" | sudo tee /etc/apt/sources.list.d/opera-stable.list
           sudo apt-get update
@@ -689,6 +691,23 @@ jobs:
             ldd "$OPERA_BIN" || true
             exit 1
           }
+
+          echo "=== Opera runtime diagnostics ==="
+          echo "OPERA_BIN=$OPERA_BIN"
+          ldd "$OPERA_BIN" || true
+          dpkg -l | grep -E 'opera|gsettings-desktop-schemas|libglib2.0|dbus' || true
+          echo "DBUS_SESSION_BUS_ADDRESS=${DBUS_SESSION_BUS_ADDRESS:-<unset>}"
+          echo "XDG_CURRENT_DESKTOP=${XDG_CURRENT_DESKTOP:-<unset>}"
+          gsettings list-schemas | grep -E '^org\.gnome\.desktop\.background$' || true
+
+          echo "=== Opera smoke launch under xvfb (for diagnostics) ==="
+          set +e
+          xvfb-run --auto-servernum bash -lc 'set -x; timeout 20s "$0" --no-sandbox --disable-gpu --user-data-dir=/tmp/opera-smoke-${RANDOM} --remote-debugging-port=0 about:blank' "$OPERA_BIN" \
+            2>&1 | tee /tmp/opera-smoke.log
+          SMOKE_EXIT=${PIPESTATUS[0]}
+          set -e
+          echo "Opera smoke exit code: $SMOKE_EXIT"
+          echo "(non-zero is tolerated here; real verdict comes from Playwright run)"
 
       - name: Setup captured-events directory
         if: matrix.test-group == 'plugin-events'
@@ -738,9 +757,7 @@ jobs:
           REQUIRE_REAL_EDGE: '1'
           REQUIRE_REAL_FIREFOX: '1'
           REQUIRE_REAL_BRAVE: '1'
-          # Opera binary is unstable in GH runner (GLib schema / remote-debugging-pipe crash).
-          # Keep opera project enabled via Chromium fallback + Opera UA unless explicitly required.
-          REQUIRE_REAL_OPERA: '0'
+          REQUIRE_REAL_OPERA: '1'
           FIREFOX_EXECUTABLE_PATH: ''
         run: |
           cd ${{ env.PLUGIN_PATH }}
@@ -864,7 +881,16 @@ jobs:
           xvfb-run --auto-servernum npx playwright test events-test.spec.js --headed --project=edge-wp-customer --workers=1
           xvfb-run --auto-servernum npx playwright test events-test.spec.js --headed --project=firefox-wp-customer --workers=1
           xvfb-run --auto-servernum npx playwright test events-test.spec.js --headed --project=brave-wp-customer --workers=1
-          xvfb-run --auto-servernum npx playwright test events-test.spec.js --headed --project=opera-wp-customer --workers=1
+          set -o pipefail
+          xvfb-run --auto-servernum npx playwright test events-test.spec.js --headed --project=opera-wp-customer --workers=1 2>&1 | tee /tmp/opera-playwright.log
+
+      - name: Dump Opera diagnostics (always)
+        if: always() && matrix.test-group == 'plugin-events'
+        run: |
+          echo "=== /tmp/opera-smoke.log (tail) ==="
+          tail -n 200 /tmp/opera-smoke.log || true
+          echo "=== /tmp/opera-playwright.log (tail) ==="
+          tail -n 400 /tmp/opera-playwright.log || true
 
       - name: Cleanup test product
         if: always() && matrix.test-group == 'plugin-events'
