@@ -272,7 +272,7 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 
 			// Lead events through Contact Form 7 / WPForms.
 			add_action( 'wp_footer', array( $this, 'inject_lead_event' ), 11 );
-			add_action( 'wpforms_process_before', array( $this, 'track_wpforms_lead_event' ), 20, 2 );
+			add_action( 'wpforms_process_complete', array( $this, 'track_wpforms_lead_event' ), 20, 4 );
 			add_filter( 'wpforms_ajax_submit_success_response', array( $this, 'inject_wpforms_lead_event_ajax' ), 20, 3 );
 			add_filter( 'wpforms_ajax_submit_redirect', array( $this, 'inject_wpforms_lead_event_ajax' ), 20, 3 );
 			add_action( 'wp_footer', array( $this, 'inject_wpforms_ajax_listener' ), 9 );
@@ -1316,14 +1316,15 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 		/**
 		 * Tracks WPForms Lead event for server-side delivery.
 		 *
-		 * - server event tracked on wpforms_process_before
-		 * - browser event injected on normal footer path
-		 * - browser event code attached to AJAX success payload
+		 * Fires only after WPForms completes a successful entry save (wpforms_process_complete),
+		 * so CAPI Lead events are not sent for invalid/rejected form submissions.
 		 *
-		 * @param array $entry WPForms entry values.
-		 * @param array $form_data WPForms form config.
+		 * @param array $fields     Sanitised field values.
+		 * @param array $entry      Raw entry values.
+		 * @param array $form_data  WPForms form config.
+		 * @param int   $entry_id   Saved entry ID.
 		 */
-		public function track_wpforms_lead_event( $entry, $form_data ) {
+		public function track_wpforms_lead_event( $fields, $entry, $form_data, $entry_id ) {
 			if ( ( is_admin() && ! wp_doing_ajax() ) || ! $this->is_pixel_enabled() ) {
 				return;
 			}
