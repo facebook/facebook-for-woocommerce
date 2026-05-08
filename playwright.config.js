@@ -1,9 +1,10 @@
 import { defineConfig, devices } from '@playwright/test';
 
 const CUSTOMER_EVENTS_SPEC = '**/events-test.spec.js';
+const THEME_COMPAT_SPEC = '**/theme-compatibility.spec.js';
 const STOREFRONT_SPECS = [
-  '**/events-test.spec.js',
-  '**/theme-compatibility.spec.js',
+  CUSTOMER_EVENTS_SPEC,
+  THEME_COMPAT_SPEC,
 ];
 const ADMIN_SPECS = [
   '**/product-creation.spec.js',
@@ -110,7 +111,7 @@ export default defineConfig({
     // -------------------------
     {
       name: 'chromium-wp-customer',
-      testMatch: [CUSTOMER_EVENTS_SPEC],
+      testMatch: [CUSTOMER_EVENTS_SPEC, THEME_COMPAT_SPEC],
       use: customerUse,
     },
     {

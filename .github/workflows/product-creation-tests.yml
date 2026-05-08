@@ -720,7 +720,8 @@ jobs:
           IS_LATEST_WP: ${{ matrix.wp-version == 'latest' && 'true' || 'false' }}
         run: |
           cd ${{ env.PLUGIN_PATH }}
-          npx playwright test theme-compatibility.spec.js --project=chromium-wp-admin --workers=1
+          # Theme compatibility suite is intentionally customer/storefront-only.
+          npx playwright test theme-compatibility.spec.js --project=chromium-wp-customer --workers=1
       - name: Create test product for CAPI Pixel E2E tests
         if: matrix.test-group == 'plugin-events'
         run: |
