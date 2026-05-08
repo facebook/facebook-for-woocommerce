@@ -2,7 +2,6 @@ const { test, expect } = require('@playwright/test');
 const {
   TIMEOUTS,
   baseURL,
-  loginToWordPress,
   safeScreenshot,
   cleanupProduct,
   generateProductName,
@@ -27,7 +26,6 @@ test.describe('Meta for WooCommerce - Product Creation E2E Tests', () => {
 
     // Ensure browser stability
     await page.setViewportSize({ width: 1280, height: 720 });
-    await loginToWordPress(page);
   });
 
 

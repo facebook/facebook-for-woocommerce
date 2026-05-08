@@ -1,7 +1,21 @@
 import { defineConfig, devices } from '@playwright/test';
 
 const CUSTOMER_EVENTS_SPEC = '**/events-test.spec.js';
-const ADMIN_ALL_SPECS = '**/*.spec.js';
+const STOREFRONT_SPECS = [
+  '**/events-test.spec.js',
+  '**/theme-compatibility.spec.js',
+];
+const ADMIN_SPECS = [
+  '**/product-creation.spec.js',
+  '**/product-deletion.spec.js',
+  '**/product-batch.spec.js',
+  '**/product-category.spec.js',
+  '**/product-modification.spec.js',
+  '**/plugin-level-tests.spec.js',
+  '**/performance-sync.spec.js',
+  '**/sync-in-progress.spec.js',
+  '**/variable-product-depth.spec.js',
+];
 
 const commonTimeouts = {
   actionTimeout: 180000,
@@ -86,7 +100,8 @@ export default defineConfig({
     // -------------------------
     {
       name: 'chromium-wp-admin',
-      testMatch: [ADMIN_ALL_SPECS],
+      testMatch: ADMIN_SPECS,
+      testIgnore: STOREFRONT_SPECS,
       use: adminUse,
     },
 
@@ -136,7 +151,7 @@ export default defineConfig({
       testMatch: [CUSTOMER_EVENTS_SPEC],
       use: {
         ...customerUse,
-        ...(braveExecutablePath
+        ...(requireRealBrave
           ? { launchOptions: { executablePath: braveExecutablePath } }
           : { userAgent: `${devices['Desktop Chrome'].userAgent} Brave/1.0.0.0` }),
       },
@@ -146,7 +161,7 @@ export default defineConfig({
       testMatch: [CUSTOMER_EVENTS_SPEC],
       use: {
         ...customerUse,
-        ...(operaExecutablePath
+        ...(requireRealOpera
           ? { launchOptions: { executablePath: operaExecutablePath } }
           : { userAgent: `${devices['Desktop Chrome'].userAgent} OPR/100.0.0.0` }),
       },

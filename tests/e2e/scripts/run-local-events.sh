@@ -411,6 +411,13 @@ rm -f "$WORDPRESS_PATH/wp-content/mu-plugins/e2e-js-error-simulator.php" || true
 rm -f "$ROOT_DIR/tests/e2e/.theme-compat.lock" || true
 rm -f "$ROOT_DIR/tests/e2e/helpers/captured-events"/*.json || true
 
+# Keep event-suite debug checks deterministic by starting with a clean debug.log.
+if [[ -n "$WP_DEBUG_LOG" ]]; then
+  mkdir -p "$(dirname "$WP_DEBUG_LOG")"
+  : > "$WP_DEBUG_LOG"
+  echo "🧹 Cleared WP_DEBUG_LOG: $WP_DEBUG_LOG"
+fi
+
 if [[ "$FRESH_AUTH" == "1" ]]; then
   echo "🔐 Rebuilding Playwright auth state (.auth)"
   rm -f "$ROOT_DIR/tests/e2e/.auth/admin.json" || true

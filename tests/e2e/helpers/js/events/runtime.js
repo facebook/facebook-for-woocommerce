@@ -83,6 +83,17 @@ function ignoreKnownPurchaseUserDataGap(result) {
   };
 }
 
+function ignoreKnownGuestCheckoutUserDataGap(result) {
+  const allowMissingGuestFields = /^(pixel|capi) user_data\.(em|external_id|ct|zp|country|cn) missing$/;
+  const filteredErrors = (result?.errors || []).filter(error => !allowMissingGuestFields.test(error));
+
+  return {
+    ...result,
+    errors: filteredErrors,
+    passed: filteredErrors.length === 0
+  };
+}
+
 async function createTempCustomerUser() {
   const randomSuffix = crypto.randomBytes(6).toString('hex');
   const stamp = `${Date.now()}_${randomSuffix}`;
@@ -177,13 +188,14 @@ async function clearCart(page, credentials = null) {
 
   await context.clearCookies();
 
-  const username = credentials?.username || process.env.WP_CUSTOMER_USERNAME;
-  await clearServerSideCartState(username);
+  // Only clear server-side user cart state when explicit customer credentials are provided.
+  // Guest flows should stay unauthenticated.
+  if (credentials?.username) {
+    await clearServerSideCartState(credentials.username);
+  }
 
   if (credentials?.username && credentials?.password) {
     await loginWithCredentials(page, credentials.username, credentials.password);
-  } else {
-    await TestSetup.login(page);
   }
 
   await page.goto('/');
@@ -247,6 +259,22 @@ async function clearCart(page, credentials = null) {
 async function completeCheckoutFromCart(page) {
   await page.goto('/checkout');
   await TestSetup.waitForPageReady(page);
+
+  const revealCheckoutAddressForms = async () => {
+    // Woo Blocks can render shipping/billing in summary mode for logged-in users.
+    // In that mode fields exist but are hidden, so click Edit to reveal inputs.
+    for (let i = 0; i < 3; i++) {
+      const editButton = page.getByRole('button', { name: /edit/i }).first();
+      const visible = await editButton.isVisible({ timeout: TIMEOUTS.SHORT }).catch(() => false);
+      if (!visible) {
+        break;
+      }
+      await editButton.click().catch(() => {});
+      await page.waitForTimeout(TIMEOUTS.INSTANT);
+    }
+  };
+
+  await revealCheckoutAddressForms();
 
   const defaults = {
     email: process.env.TEST_USER_EMAIL || `e2e+${Date.now()}@example.test`,
@@ -329,6 +357,7 @@ module.exports = {
   asArray,
   assertEventContainsRetailerId,
   ignoreKnownPurchaseUserDataGap,
+  ignoreKnownGuestCheckoutUserDataGap,
   createTempCustomerUser,
   deleteTempCustomerUser,
   getCartItemsViaStoreApi,

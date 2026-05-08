@@ -2,7 +2,6 @@ const { test, expect } = require('@playwright/test');
 const {
   TIMEOUTS,
   baseURL,
-  loginToWordPress,
   safeScreenshot,
   cleanupProduct,
   generateProductName,
@@ -25,7 +24,6 @@ test.describe.serial('Meta for WooCommerce - Performance Sync E2E Tests', () => 
   test.beforeEach(async ({ page }, testInfo) => {
     logTestStart(testInfo);
     await page.setViewportSize({ width: 1280, height: 720 });
-    await loginToWordPress(page);
   });
 
   const PERFORMANCE_CONFIG = {
@@ -87,15 +85,7 @@ test.describe.serial('Meta for WooCommerce - Performance Sync E2E Tests', () => 
         || await page.locator('#loginform').first().isVisible().catch(() => false);
 
       if (isLoginPage) {
-        console.warn(`⚠️ Landed on login page while waiting for product editor (attempt ${attempt}). URL: ${currentUrl}`);
-        await loginToWordPress(page);
-
-        if (targetUrl) {
-          await page.goto(targetUrl, {
-            waitUntil: 'domcontentloaded',
-            timeout: TIMEOUTS.MAX,
-          });
-        }
+        throw new Error(`Unexpectedly landed on login page with admin storageState (attempt ${attempt}). URL: ${currentUrl}`);
       }
 
       const editorReady = await page.waitForFunction(() => {
@@ -567,18 +557,15 @@ test.describe.serial('Meta for WooCommerce - Performance Sync E2E Tests', () => 
   });
 
   test('handles two concurrent browser sessions triggering product and checkout flows', async ({ browser }, testInfo) => {
-    const contextA = await browser.newContext();
-    const contextB = await browser.newContext();
+    const contextA = await browser.newContext({ storageState: './tests/e2e/.auth/admin.json' });
+    const contextB = await browser.newContext({ storageState: './tests/e2e/.auth/admin.json' });
     const pageA = await contextA.newPage();
     const pageB = await contextB.newPage();
 
     let productId = null;
 
     try {
-      await Promise.all([
-        loginToWordPress(pageA),
-        loginToWordPress(pageB),
-      ]);
+      // Contexts inherit the authenticated admin storageState from project config.
 
       const newProductUrl = `${baseURL}/wp-admin/post-new.php?post_type=product`;
       await pageA.goto(newProductUrl, {

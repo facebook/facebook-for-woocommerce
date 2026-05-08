@@ -2,7 +2,6 @@ const { test, expect } = require('@playwright/test');
 const {
   TIMEOUTS,
   baseURL,
-  loginToWordPress,
   safeScreenshot,
   cleanupProduct,
   generateProductName,
@@ -25,7 +24,6 @@ test.describe.serial('Variable Product Depth Tests', () => {
 
     logTestStart(testInfo);
     await page.setViewportSize({ width: 1280, height: 720 });
-    await loginToWordPress(page);
   });
 
   const VARIABLE_PRODUCT_CONFIG = {

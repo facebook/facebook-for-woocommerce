@@ -5,7 +5,6 @@ const {
   TIMEOUTS,
   baseURL,
   wpSitePath,
-  loginToWordPress,
   safeScreenshot,
   checkForPhpErrors,
   logTestStart,
@@ -34,7 +33,6 @@ test.describe('Meta for WooCommerce - Product Batch Import E2E Tests', () => {
 
     // Ensure browser stability
     await page.setViewportSize({ width: 1280, height: 720 });
-    await loginToWordPress(page);
   });
 
   test('Import products via feed file and verify Facebook sync', async ({ page }, testInfo) => {

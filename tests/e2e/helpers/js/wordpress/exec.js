@@ -13,10 +13,12 @@ const wpSitePath = process.env.WORDPRESS_PATH;
  * @param {string} phpCode - PHP code to execute
  */
 async function execWP(phpCode) {
-  return execAsync(
-    `php -r "require_once('${wpSitePath}/wp-load.php'); ${phpCode}"`,
-    { cwd: __dirname }
-  );
+  // Legacy callers often escape dollars (e.g. \$wpdb) to survive shell interpolation.
+  // With base64 eval we can normalize those sequences back to valid PHP variables.
+  const normalizedCode = String(phpCode).replace(/\\\$/g, '$');
+  const encoded = Buffer.from(normalizedCode, 'utf8').toString('base64');
+  const command = `php -r "require_once('${wpSitePath}/wp-load.php'); eval(base64_decode('${encoded}'));"`;
+  return execAsync(command, { cwd: __dirname });
 }
 
 /**

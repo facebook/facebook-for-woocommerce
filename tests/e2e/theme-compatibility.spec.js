@@ -9,6 +9,7 @@ const {
   checkForPhpErrors,
   TestSetup,
   EventValidator,
+  completeCheckoutFromCart,
 } = require('./helpers/js');
 
 const BASE_THEME_SLUG = 'storefront';
@@ -338,32 +339,7 @@ function registerThemeCompatibilitySuite(themeSlug) {
           await page.click('.single_add_to_cart_button');
           await page.waitForTimeout(TIMEOUTS.SHORT);
 
-          await page.goto(`${baseURL}/checkout`, {
-            waitUntil: 'domcontentloaded',
-            timeout: TIMEOUTS.EXTRA_LONG,
-          });
-          await TestSetup.waitForPageReady(page);
-
-          await page.evaluate(() => window.scrollBy(0, 400));
-          await page.waitForTimeout(TIMEOUTS.SHORT);
-
-          await page.waitForSelector(
-            '.wc-block-components-radio-control__option[for="radio-control-wc-payment-method-options-cod"]',
-            {
-              state: 'visible',
-              timeout: TIMEOUTS.LONG,
-            }
-          );
-          await page.click('label[for="radio-control-wc-payment-method-options-cod"]');
-          await page.waitForTimeout(TIMEOUTS.INSTANT);
-
-          await page.locator('.wc-block-components-checkout-place-order-button').scrollIntoViewIfNeeded();
-          await page.click('.wc-block-components-checkout-place-order-button');
-
-          await page.waitForURL('**/checkout/order-received/**', {
-            timeout: TIMEOUTS.EXTRA_LONG,
-          });
-          await page.waitForTimeout(TIMEOUTS.NORMAL);
+          await completeCheckoutFromCart(page);
         },
       });
     });
@@ -393,6 +369,8 @@ function registerThemeCompatibilitySuite(themeSlug) {
           });
           await TestSetup.waitForPageReady(page);
 
+          await fillGuestCheckoutFields(page);
+
           await page.evaluate(() => window.scrollBy(0, 400));
           await page.waitForTimeout(TIMEOUTS.SHORT);
 
@@ -405,6 +383,11 @@ function registerThemeCompatibilitySuite(themeSlug) {
           );
           await page.click('label[for="radio-control-wc-payment-method-options-cod"]');
           await page.waitForTimeout(TIMEOUTS.INSTANT);
+
+          const termsCheckbox = page.locator('#wc-terms-and-conditions-checkbox-text').first();
+          if (await termsCheckbox.isVisible({ timeout: TIMEOUTS.SHORT }).catch(() => false)) {
+            await termsCheckbox.click();
+          }
 
           const placeOrderButton = page.locator('.wc-block-components-checkout-place-order-button');
           await placeOrderButton.scrollIntoViewIfNeeded();
@@ -435,7 +418,6 @@ async function runTrackedEventTest({
   waitForPixel = true,
   pixelRetries = 0,
 }) {
-  await TestSetup.login(page);
   await ensureCapiCaptureEnabled();
 
   const { testId, pixelCapture } = await TestSetup.init(page, eventName, testInfo, expectZeroEvents);
@@ -767,6 +749,50 @@ async function releaseThemeLock(token) {
     }
   } catch {
     // lock already released
+  }
+}
+
+async function fillGuestCheckoutFields(page) {
+  const defaults = {
+    email: process.env.TEST_USER_EMAIL || `e2e+${Date.now()}@example.test`,
+    firstName: process.env.TEST_USER_FIRST_NAME || 'E2E',
+    lastName: process.env.TEST_USER_LAST_NAME || 'Customer',
+    address1: process.env.TEST_USER_ADDRESS_1 || '1 Test Street',
+    city: process.env.TEST_USER_CITY || 'London',
+    country: process.env.TEST_USER_COUNTRY || 'GB',
+    state: process.env.TEST_USER_STATE || 'LND',
+    postcode: process.env.TEST_USER_POSTCODE || 'EC1A1BB',
+    phone: process.env.TEST_USER_PHONE || '0123456789',
+  };
+
+  const fillIfVisible = async (selector, value) => {
+    const field = page.locator(selector).first();
+    if (await field.isVisible({ timeout: TIMEOUTS.SHORT }).catch(() => false)) {
+      await field.fill(value);
+    }
+  };
+
+  const selectIfVisible = async (selector, value) => {
+    const field = page.locator(selector).first();
+    if (await field.isVisible({ timeout: TIMEOUTS.SHORT }).catch(() => false)) {
+      await field.selectOption(value).catch(async () => {
+        await field.fill(value);
+      });
+      await page.waitForTimeout(TIMEOUTS.INSTANT);
+    }
+  };
+
+  await fillIfVisible('#email', defaults.email);
+
+  for (const prefix of ['shipping', 'billing']) {
+    await fillIfVisible(`#${prefix}-first_name`, defaults.firstName);
+    await fillIfVisible(`#${prefix}-last_name`, defaults.lastName);
+    await fillIfVisible(`#${prefix}-address_1`, defaults.address1);
+    await fillIfVisible(`#${prefix}-city`, defaults.city);
+    await selectIfVisible(`#${prefix}-country`, defaults.country);
+    await selectIfVisible(`#${prefix}-state`, defaults.state);
+    await fillIfVisible(`#${prefix}-postcode`, defaults.postcode);
+    await fillIfVisible(`#${prefix}-phone`, defaults.phone);
   }
 }
 
