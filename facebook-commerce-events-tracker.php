@@ -1427,7 +1427,7 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 							return false;
 						}
 
-						$event_name = method_exists( $event, 'get_event_name' ) ? $event->get_event_name() : ( method_exists( $event, 'get_name' ) ? $event->get_name() : '' );
+						$event_name = $event->get_name();
 						if ( 'Lead' !== $event_name ) {
 							return false;
 						}
