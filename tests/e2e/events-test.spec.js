@@ -56,10 +56,25 @@ test('PageView', async ({ page }, testInfo) => {
 test('PageView with fbclid', async ({ page }, testInfo) => {
     const { testId, pixelCapture } = await TestSetup.init(page, 'PageView',  testInfo);
 
-    console.log(`   🌐 Navigating to homepage`);
-    // Set up listener BEFORE triggering the action (prevents race condition)
+    const fbclid = process.env.TEST_FBCLID;
+    const isBraveProject = testInfo?.project?.name?.includes('brave');
+
+    // Keep original behavior for all browsers except Brave.
+    // Brave can strip fbclid via WebRequest redirect, so seed _fbc only there.
+    if (isBraveProject) {
+      const seededFbc = `fb.1.${Date.now()}.${fbclid}`;
+      await page.context().addCookies([
+        {
+          name: '_fbc',
+          value: seededFbc,
+          url: process.env.WORDPRESS_URL
+        }
+      ]);
+    }
+
+    console.log(`   🌐 Navigating to homepage with fbclid`);
     const eventPromise = pixelCapture.waitForEvent();
-    await page.goto(`/?fbclid=${process.env.TEST_FBCLID}`);
+    await page.goto(`/?fbclid=${fbclid}`);
     await TestSetup.waitForPageReady(page);
     await eventPromise;
 
