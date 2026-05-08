@@ -1192,11 +1192,12 @@ class FacebookCommerceEventsTrackerTest extends AbstractWPUnitTestWithSafeFilter
 
 		$_SERVER['HTTP_USER_AGENT'] = $user_agent;
 
+		$event      = new \WooCommerce\Facebook\Events\Event( array( 'event_name' => 'PageView' ) );
 		$reflection = new ReflectionClass( $this->instance );
 		$method     = $reflection->getMethod( 'is_crawler_request' );
 		$method->setAccessible( true );
 
-		$result = $method->invoke( $this->instance );
+		$result = $method->invoke( $this->instance, $event );
 
 		$this->assertSame( $expected, $result, "User agent '{$user_agent}' should " . ( $expected ? '' : 'not ' ) . 'be detected as a crawler' );
 
@@ -1228,7 +1229,7 @@ class FacebookCommerceEventsTrackerTest extends AbstractWPUnitTestWithSafeFilter
 			),
 			'empty user agent'          => array(
 				'',
-				true,
+				false,
 			),
 			'chrome desktop browser'    => array(
 				'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
@@ -1259,11 +1260,12 @@ class FacebookCommerceEventsTrackerTest extends AbstractWPUnitTestWithSafeFilter
 
 		unset( $_SERVER['HTTP_USER_AGENT'] );
 
+		$event      = new \WooCommerce\Facebook\Events\Event( array( 'event_name' => 'PageView' ) );
 		$reflection = new ReflectionClass( $this->instance );
 		$method     = $reflection->getMethod( 'is_crawler_request' );
 		$method->setAccessible( true );
 
-		$this->assertTrue( $method->invoke( $this->instance ), 'Missing user agent should be detected as crawler' );
+		$this->assertFalse( $method->invoke( $this->instance, $event ), 'Missing user agent should not be detected as crawler' );
 	}
 
 	/**
@@ -1340,11 +1342,12 @@ class FacebookCommerceEventsTrackerTest extends AbstractWPUnitTestWithSafeFilter
 			}
 		);
 
+		$event      = new \WooCommerce\Facebook\Events\Event( array( 'event_name' => 'PageView' ) );
 		$reflection = new ReflectionClass( $this->instance );
 		$method     = $reflection->getMethod( 'is_crawler_request' );
 		$method->setAccessible( true );
 
-		$this->assertTrue( $method->invoke( $this->instance ), 'Custom pattern should be detected via filter' );
+		$this->assertTrue( $method->invoke( $this->instance, $event ), 'Custom pattern should be detected via filter' );
 
 		unset( $_SERVER['HTTP_USER_AGENT'] );
 	}
@@ -1366,11 +1369,12 @@ class FacebookCommerceEventsTrackerTest extends AbstractWPUnitTestWithSafeFilter
 			}
 		);
 
+		$event      = new \WooCommerce\Facebook\Events\Event( array( 'event_name' => 'PageView' ) );
 		$reflection = new ReflectionClass( $this->instance );
 		$method     = $reflection->getMethod( 'is_crawler_request' );
 		$method->setAccessible( true );
 
-		$this->assertTrue( $method->invoke( $this->instance ), 'Override filter should force crawler detection' );
+		$this->assertTrue( $method->invoke( $this->instance, $event ), 'Override filter should force crawler detection' );
 
 		unset( $_SERVER['HTTP_USER_AGENT'] );
 	}

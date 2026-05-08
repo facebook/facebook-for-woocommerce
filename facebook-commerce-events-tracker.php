@@ -1319,8 +1319,8 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 		 * @param bool  $send_now optional, defaults to true
 		 */
 		protected function send_api_event( Event $event, bool $send_now = true ) {
-			if ( $this->is_crawler_request() ) {
-				facebook_for_woocommerce()->log( 'Blocked CAPI event for crawler: ' . sanitize_text_field( wp_unslash( $_SERVER['HTTP_USER_AGENT'] ?? '' ) ) );
+			if ( $this->is_crawler_request( $event ) ) {
+				facebook_for_woocommerce()->log( 'Blocked CAPI event for crawler: ' . $event->get_client_user_agent() );
 				return;
 			}
 
@@ -1355,14 +1355,11 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 		 *
 		 * @since 3.3.0
 		 *
+		 * @param Event $event Event object to read the User-Agent from.
 		 * @return bool
 		 */
-		private function is_crawler_request(): bool {
-			$user_agent = isset( $_SERVER['HTTP_USER_AGENT'] ) ? strtolower( sanitize_text_field( wp_unslash( $_SERVER['HTTP_USER_AGENT'] ) ) ) : '';
-
-			if ( '' === $user_agent ) {
-				return true;
-			}
+		private function is_crawler_request( Event $event ): bool {
+			$user_agent = strtolower( $event->get_client_user_agent() );
 
 			$crawler_patterns = array(
 				// Meta crawlers.
@@ -1398,7 +1395,6 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 			 */
 			return (bool) apply_filters( 'wc_facebook_is_crawler_request', false, $user_agent );
 		}
-
 
 		/**
 		 * Gets the cart content items count.

@@ -243,7 +243,7 @@ class Event {
 	 *
 	 * @return string
 	 */
-	protected function get_client_user_agent() {
+	public function get_client_user_agent() {
 		return ! empty( $_SERVER['HTTP_USER_AGENT'] ) ? wc_clean( wp_unslash( $_SERVER['HTTP_USER_AGENT'] ) ) : '';
 	}
 
