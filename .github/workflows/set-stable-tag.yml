@@ -175,12 +175,14 @@ jobs:
             gh pr edit "$EXISTING_PR" \
               --repo facebook/facebook-for-woocommerce \
               --title "Release $VERSION" \
-              --body-file /tmp/release-notes.md
+              --body-file /tmp/release-notes.md \
+              --add-label "changelog: none"
           else
             gh pr create \
               --repo facebook/facebook-for-woocommerce \
               --base main \
               --head "release/$VERSION" \
               --title "Release $VERSION" \
-              --body-file /tmp/release-notes.md
+              --body-file /tmp/release-notes.md \
+              --label "changelog: none"
           fi
