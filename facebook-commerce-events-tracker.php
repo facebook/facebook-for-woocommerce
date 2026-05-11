@@ -270,8 +270,12 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 			add_action( 'woocommerce_checkout_update_order_meta', array( $this, 'inject_purchase_event' ), 30 );
 			add_action( 'woocommerce_thankyou', array( $this, 'inject_purchase_event' ), 40 );
 
-			// Lead events through Contact Form 7
-			add_action( 'wpcf7_contact_form', array( $this, 'inject_lead_event_hook' ), 11 );
+			// Lead events through Contact Form 7 / WPForms.
+			add_action( 'wp_footer', array( $this, 'inject_lead_event' ), 11 );
+			add_action( 'wpforms_process_before', array( $this, 'track_wpforms_lead_event' ), 20, 2 );
+			add_filter( 'wpforms_ajax_submit_success_response', array( $this, 'inject_wpforms_lead_event_ajax' ), 20, 3 );
+			add_filter( 'wpforms_ajax_submit_redirect', array( $this, 'inject_wpforms_lead_event_ajax' ), 20, 3 );
+			add_action( 'wp_footer', array( $this, 'inject_wpforms_ajax_listener' ), 9 );
 
 			// Flush pending events on shutdown
 			add_action( 'shutdown', array( $this, 'send_pending_events' ) );
@@ -1293,20 +1297,232 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 		}
 
 
-		/** Contact Form 7 Support **/
-		public function inject_lead_event_hook() {
-			add_action( 'wp_footer', array( $this, 'inject_lead_event' ), 11 );
-		}
-
+		/** Contact Form 7 Lead Support **/
 		public function inject_lead_event() {
-			if ( ! is_admin() ) {
-				$this->pixel->inject_conditional_event(
+			if ( is_admin() ) {
+				return;
+			}
+
+			if ( wp_script_is( 'contact-form-7', 'enqueued' ) ) {
+				echo $this->pixel->inject_conditional_event(
 					'Lead',
 					array(),
 					'wpcf7submit',
 					'{ em: event.detail.inputs.filter(ele => ele.name.includes("email"))[0].value }'
 				);
 			}
+		}
+
+		/**
+		 * Tracks WPForms Lead event for server-side delivery.
+		 *
+		 * - server event tracked on wpforms_process_before
+		 * - browser event injected on normal footer path
+		 * - browser event code attached to AJAX success payload
+		 *
+		 * @param array $entry WPForms entry values.
+		 * @param array $form_data WPForms form config.
+		 */
+		public function track_wpforms_lead_event( $entry, $form_data ) {
+			if ( ( is_admin() && ! wp_doing_ajax() ) || ! $this->is_pixel_enabled() ) {
+				return;
+			}
+
+			$event_data = array(
+				'event_name'  => 'Lead',
+				'user_data'   => $this->get_wpforms_user_data( $entry, $form_data ),
+				'custom_data' => array(
+					'fb_integration_tracking' => 'wpforms-lite',
+				),
+			);
+
+			$event = new Event( $event_data );
+			$this->send_api_event( $event );
+
+			// Non-AJAX fallback: inject matching browser event in footer.
+			add_action( 'wp_footer', array( $this, 'inject_wpforms_lead_event' ), 20 );
+		}
+
+		/**
+		 * Injects browser Lead event in normal (non-AJAX) page flow.
+		 */
+		public function inject_wpforms_lead_event() {
+			if ( is_admin() ) {
+				return;
+			}
+
+			$event = $this->get_latest_tracked_wpforms_lead_event();
+			if ( ! $event ) {
+				return;
+			}
+
+			echo $this->pixel->get_event_script( 'Lead', $this->build_wpforms_lead_pixel_params( $event ) );
+		}
+
+		/**
+		 * Injects WPForms Lead pixel code into AJAX success/redirect response payload.
+		 *
+		 * @param array $response Existing WPForms response.
+		 * @return array
+		 */
+		public function inject_wpforms_lead_event_ajax( $response, $form_id = null, $extra = null ) {
+			if ( is_admin() && ! wp_doing_ajax() ) {
+				return $response;
+			}
+
+			$event = $this->get_latest_tracked_wpforms_lead_event();
+			if ( ! $event ) {
+				return $response;
+			}
+
+			$response['fb_pxl_code'] = $this->pixel->get_event_code( 'Lead', $this->build_wpforms_lead_pixel_params( $event ) );
+			return $response;
+		}
+
+		/**
+		 * Adds a front-end listener to execute fb_pxl_code returned in WPForms AJAX responses.
+		 */
+		public function inject_wpforms_ajax_listener() {
+			if ( is_admin() ) {
+				return;
+			}
+			?>
+			<script type='text/javascript'>
+			(function ( $ ) {
+				if ( ! $ || typeof document === 'undefined' ) {
+					return;
+				}
+				$( document ).on( 'wpformsAjaxSubmitSuccess', function ( event, data ) {
+					if ( data && data.data && data.data.fb_pxl_code ) {
+						try {
+							new Function( data.data.fb_pxl_code )();
+						} catch ( e ) {
+							// no-op
+						}
+					}
+				} );
+			})( window.jQuery );
+			</script>
+			<?php
+		}
+
+		/**
+		 * Gets latest tracked WPForms Lead event from current request.
+		 *
+		 * @return Event|null
+		 */
+		private function get_latest_tracked_wpforms_lead_event() {
+			if ( empty( $this->tracked_events ) ) {
+				return null;
+			}
+
+			$lead_events = array_values(
+				array_filter(
+					$this->tracked_events,
+					function( $event ) {
+						if ( ! $event instanceof Event ) {
+							return false;
+						}
+
+						$event_name = method_exists( $event, 'get_event_name' ) ? $event->get_event_name() : ( method_exists( $event, 'get_name' ) ? $event->get_name() : '' );
+						if ( 'Lead' !== $event_name ) {
+							return false;
+						}
+
+						$custom_data = $event->get_custom_data();
+						return is_array( $custom_data )
+							&& isset( $custom_data['fb_integration_tracking'] )
+							&& 'wpforms-lite' === $custom_data['fb_integration_tracking'];
+					}
+				)
+			);
+
+			if ( empty( $lead_events ) ) {
+				return null;
+			}
+
+			return end( $lead_events );
+		}
+
+		/**
+		 * Builds browser pixel params for WPForms Lead event.
+		 *
+		 * @param Event $event Lead event.
+		 * @return array
+		 */
+		private function build_wpforms_lead_pixel_params( Event $event ) {
+			$params = array(
+				'event_id' => $event->get_id(),
+			);
+
+			$user_data = $event->get_user_data();
+			if ( is_array( $user_data ) && ! empty( $user_data['em'] ) ) {
+				$params['user_data'] = array( 'em' => $user_data['em'] );
+			}
+
+			return $params;
+		}
+
+		/**
+		 * Extracts WPForms user_data payload for Lead tracking.
+		 *
+		 * @param array $entry WPForms entry values.
+		 * @param array $form_data WPForms form config.
+		 * @return array
+		 */
+		private function get_wpforms_user_data( $entry, $form_data ) {
+			$user_data = $this->pixel->get_user_info();
+			$email     = $this->get_wpforms_email( $entry, $form_data );
+			if ( ! empty( $email ) ) {
+				$user_data['em'] = $email;
+			}
+
+			return $user_data;
+		}
+
+		/**
+		 * Tries to resolve submitted WPForms email from form schema and entry values.
+		 *
+		 * @param array $entry WPForms entry values.
+		 * @param array $form_data WPForms form config.
+		 * @return string|null
+		 */
+		private function get_wpforms_email( $entry, $form_data ) {
+			if ( empty( $entry ) || empty( $form_data['fields'] ) ) {
+				return null;
+			}
+
+			foreach ( $form_data['fields'] as $field ) {
+				if ( isset( $field['type'] ) && 'email' === $field['type'] ) {
+					$field_id = isset( $field['id'] ) ? (string) $field['id'] : null;
+					if ( $field_id && isset( $entry[ $field_id ] ) ) {
+						$value = sanitize_email( (string) $entry[ $field_id ] );
+						if ( ! empty( $value ) ) {
+							return $value;
+						}
+					}
+
+					if ( $field_id && isset( $entry['fields'] ) && is_array( $entry['fields'] ) && isset( $entry['fields'][ $field_id ] ) ) {
+						$value = sanitize_email( (string) $entry['fields'][ $field_id ] );
+						if ( ! empty( $value ) ) {
+							return $value;
+						}
+					}
+				}
+			}
+
+			// Fallback for unexpected entry shapes.
+			foreach ( (array) $entry as $value ) {
+				if ( is_array( $value ) ) {
+					continue;
+				}
+				$email = sanitize_email( (string) $value );
+				if ( ! empty( $email ) && is_email( $email ) ) {
+					return $email;
+				}
+			}
+
+			return null;
 		}
 
 
