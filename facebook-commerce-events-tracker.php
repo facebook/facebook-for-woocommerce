@@ -1384,7 +1384,7 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 		 * Adds a front-end listener to execute fb_pxl_code returned in WPForms AJAX responses.
 		 */
 		public function inject_wpforms_ajax_listener() {
-			if ( is_admin() ) {
+			if ( is_admin() || ! wp_script_is( 'wpforms', 'enqueued' ) ) {
 				return;
 			}
 			?>
