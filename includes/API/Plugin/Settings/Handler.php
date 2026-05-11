@@ -195,7 +195,7 @@ class Handler extends AbstractRESTEndpoint {
 			}
 		}
 
-		$pixel_to_use = $pixel_from_features ?: ( $params['pixel_id'] ?? '' );
+		$pixel_to_use = ! empty( $pixel_from_features ) ? $pixel_from_features : ( $params['pixel_id'] ?? '' );
 
 		if ( ! empty( $pixel_to_use ) ) {
 			$options[ \WC_Facebookcommerce_Integration::SETTING_FACEBOOK_PIXEL_ID ] = $pixel_to_use;
