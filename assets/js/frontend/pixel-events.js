@@ -208,17 +208,14 @@
         // Direct response shape: { extensions: { 'facebook-for-woocommerce': ... } }
         if (responseData.extensions && responseData.extensions['facebook-for-woocommerce']) {
             processStoreApiEvent(responseData.extensions['facebook-for-woocommerce']);
-        }
-
-        // Batch response shape: { responses: [ { body: { extensions: ... } } ] }
-        if (!Array.isArray(responseData.responses)) {
-            return;
-        }
-
-        for (var i = 0; i < responseData.responses.length; i++) {
-            var item = responseData.responses[i];
-            if (item && item.body && item.body.extensions && item.body.extensions['facebook-for-woocommerce']) {
-                processStoreApiEvent(item.body.extensions['facebook-for-woocommerce']);
+        } else if (Array.isArray(responseData.responses)) {
+            // Batch response shape: { responses: [ { body: { extensions: ... } } ] }
+            for (var i = 0; i < responseData.responses.length; i++) {
+                var item = responseData.responses[i];
+                if (item && item.body && item.body.extensions && item.body.extensions['facebook-for-woocommerce'] &&
+                    item.status >= 200 && item.status < 300) {
+                    processStoreApiEvent(item.body.extensions['facebook-for-woocommerce']);
+                }
             }
         }
     }
