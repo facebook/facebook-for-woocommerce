@@ -272,7 +272,7 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 
 			// Lead events through Contact Form 7 / WPForms.
 			add_action( 'wp_footer', array( $this, 'inject_lead_event' ), 11 );
-			add_action( 'wpforms_process_complete', array( $this, 'track_wpforms_lead_event' ), 20, 4 );
+			add_action( 'wpforms_process_complete', array( $this, 'track_wpforms_lead_event' ), 20, 3 );
 			add_filter( 'wpforms_ajax_submit_success_response', array( $this, 'inject_wpforms_lead_event_ajax' ), 20, 3 );
 			add_filter( 'wpforms_ajax_submit_redirect', array( $this, 'inject_wpforms_lead_event_ajax' ), 20, 3 );
 			add_action( 'wp_footer', array( $this, 'inject_wpforms_ajax_listener' ), 9 );
@@ -1322,9 +1322,8 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 		 * @param array $fields     Sanitised field values.
 		 * @param array $entry      Raw entry values.
 		 * @param array $form_data  WPForms form config.
-		 * @param int   $entry_id   Saved entry ID.
 		 */
-		public function track_wpforms_lead_event( $fields, $entry, $form_data, $entry_id ) {
+		public function track_wpforms_lead_event( $fields, $entry, $form_data ) {
 			if ( ( is_admin() && ! wp_doing_ajax() ) || ! $this->is_pixel_enabled() ) {
 				return;
 			}
@@ -1366,7 +1365,7 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 		 * @param array $response Existing WPForms response.
 		 * @return array
 		 */
-		public function inject_wpforms_lead_event_ajax( $response, $form_id = null, $extra = null ) {
+		public function inject_wpforms_lead_event_ajax( $response ) {
 			if ( is_admin() && ! wp_doing_ajax() ) {
 				return $response;
 			}
@@ -1422,7 +1421,7 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 			$lead_events = array_values(
 				array_filter(
 					$this->tracked_events,
-					function( $event ) {
+					function ( $event ) {
 						if ( ! $event instanceof Event ) {
 							return false;
 						}
