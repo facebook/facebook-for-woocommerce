@@ -31,7 +31,8 @@ const {
   getCartItemsViaStoreApi,
   clearCart,
   completeCheckoutFromCart,
-  triggerAjaxAddToCartFromShop
+  triggerAjaxAddToCartFromShop,
+  submitSearch
 } = require('./helpers/js');
 
 
@@ -653,7 +654,7 @@ test('Search', async ({ page }, testInfo) => {
     // Set up listener BEFORE triggering the action
     const eventPromise = pixelCapture.waitForEvent();
 
-    await searchInput.press('Enter');
+    await submitSearch(page, searchInput);
     await TestSetup.waitForPageReady(page);
     await eventPromise;
 
@@ -682,7 +683,7 @@ test('Search - No Results', async ({ page }, testInfo) => {
     console.log(`   🔎 Submitting search form (expecting no events)`);
     const eventPromise = pixelCapture.waitForEvent(); // Will succeed if no event fires
 
-    await searchInput.press('Enter');
+    await submitSearch(page, searchInput);
     await TestSetup.waitForPageReady(page);
     await eventPromise;
 

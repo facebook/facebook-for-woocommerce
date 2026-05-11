@@ -187,6 +187,21 @@ async function exactSearchSelect2Container(page, locator, searchValue) {
  * @returns {Promise<import('@playwright/test').Locator>}
  */
 async function getVisibleSearchInput(page) {
+  // Prefer Woo product-search forms first (they include post_type=product and trigger Search event logic).
+  const productSearchInput = page
+    .locator('form.woocommerce-product-search input[type="search"]:visible, form.woocommerce-product-search .search-field:visible')
+    .first();
+  if (await productSearchInput.count() > 0) {
+    return productSearchInput;
+  }
+
+  const productSearchByHiddenInput = page
+    .locator('form:has(input[name="post_type"][value="product"]) input[type="search"]:visible, form:has(input[name="post_type"][value="product"]) .search-field:visible')
+    .first();
+  if (await productSearchByHiddenInput.count() > 0) {
+    return productSearchByHiddenInput;
+  }
+
   const directSearchInput = page.locator('.search-field:visible, input[type="search"]:visible').first();
   if (await directSearchInput.count() > 0) {
     return directSearchInput;
@@ -206,10 +221,79 @@ async function getVisibleSearchInput(page) {
   return fallbackSearchInput;
 }
 
+/**
+ * Submit storefront search in a cross-browser-safe way.
+ * WebKit/Safari can occasionally miss keypress-based submit handlers,
+ * so prefer form submit button click when available.
+ */
+async function submitSearch(page, searchInput) {
+  const isSearchUrl = () => /[?&]s=/.test(page.url());
+
+  // Ensure the form submits as a product search so plugin Search event hooks execute.
+  await searchInput.evaluate((input) => {
+    const form = input.closest('form');
+    if (!form) {
+      return;
+    }
+
+    let postType = form.querySelector('input[name="post_type"]');
+    if (!postType) {
+      postType = document.createElement('input');
+      postType.type = 'hidden';
+      postType.name = 'post_type';
+      form.appendChild(postType);
+    }
+    postType.value = 'product';
+  }).catch(() => {});
+
+  // First try standard Enter key flow.
+  await searchInput.press('Enter').catch(() => {});
+  if (isSearchUrl()) {
+    return;
+  }
+
+  // If URL still not a search URL, submit the nearest form in-page.
+  const submitted = await searchInput.evaluate((input) => {
+    try {
+      const form = input.closest('form');
+      if (!form) {
+        return false;
+      }
+
+      // Prefer requestSubmit/submit to avoid pointer interception issues on WebKit.
+      if (typeof form.requestSubmit === 'function') {
+        form.requestSubmit();
+        return true;
+      }
+
+      if (typeof form.submit === 'function') {
+        form.submit();
+        return true;
+      }
+
+      const evt = new Event('submit', { bubbles: true, cancelable: true });
+      form.dispatchEvent(evt);
+      return true;
+    } catch (_) {
+      return false;
+    }
+  }).catch(() => false);
+
+  if (!submitted) {
+    // Last chance: click submit control with force to bypass overlay/pointer intercept.
+    const form = searchInput.locator('xpath=ancestor::form[1]');
+    const submitButton = form.locator('button[type="submit"], input[type="submit"], .search-submit').first();
+    if (await submitButton.count().catch(() => 0)) {
+      await submitButton.click({ force: true }).catch(() => {});
+    }
+  }
+}
+
 module.exports = {
   setProductTitle,
   setProductDescription,
   exactSearchSelect2Container,
   getVisibleSearchInput,
+  submitSearch,
   dismissWooInterferingOverlays
 };

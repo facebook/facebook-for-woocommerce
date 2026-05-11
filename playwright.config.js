@@ -182,6 +182,18 @@ export default defineConfig({
       use: {
         ...devices['iPhone 13'],
         ...commonTimeouts,
+        // Chromium engine with iPhone emulation (viewport + UA)
+        storageState: './tests/e2e/.auth/customer.json',
+      },
+    },
+    {
+      name: 'safari-ios-wp-customer',
+      testMatch: [CUSTOMER_EVENTS_SPEC],
+      use: {
+        ...devices['iPhone 13'],
+        ...commonTimeouts,
+        browserName: 'webkit',
+        // Real WebKit engine for Safari-like rendering/runtime behavior.
         storageState: './tests/e2e/.auth/customer.json',
       },
     },

@@ -606,6 +606,12 @@ jobs:
           npx playwright install chromium chrome
           npx playwright install-deps chromium chrome
 
+          # Theme-compatibility includes a WebKit (Safari-like) project.
+          if [ "${{ matrix.test-group }}" = "theme-compatibility" ] || [ "${{ matrix.test-group }}" = "plugin-events" ]; then
+            npx playwright install webkit
+            npx playwright install-deps webkit
+          fi
+
           # Firefox project uses Playwright's Firefox channel (not system Firefox).
           # Ensure the bundled Firefox binary is present in CI cache.
           if [ "${{ matrix.test-group }}" = "plugin-events" ]; then
@@ -722,6 +728,7 @@ jobs:
           cd ${{ env.PLUGIN_PATH }}
           # Theme compatibility suite is intentionally customer/storefront-only.
           npx playwright test theme-compatibility.spec.js --project=chromium-wp-customer --workers=1
+          npx playwright test theme-compatibility.spec.js --project=safari-ios-wp-customer --workers=1
       - name: Create test product for storefront event suites
         if: matrix.test-group == 'plugin-events' || matrix.test-group == 'theme-compatibility'
         run: |
@@ -889,6 +896,7 @@ jobs:
           xvfb-run --auto-servernum npx playwright test events-test.spec.js --headed --project=edge-wp-customer --workers=1
           xvfb-run --auto-servernum npx playwright test events-test.spec.js --headed --project=firefox-wp-customer --workers=1
           xvfb-run --auto-servernum npx playwright test events-test.spec.js --headed --project=brave-wp-customer --workers=1
+          npx playwright test events-test.spec.js --project=safari-ios-wp-customer --workers=1
           set -o pipefail
           xvfb-run --auto-servernum npx playwright test events-test.spec.js --headed --project=opera-wp-customer --workers=1 2>&1 | tee /tmp/opera-playwright.log
 
