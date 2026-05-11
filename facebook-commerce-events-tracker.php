@@ -812,8 +812,11 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 			// store the ID in the session to be sent in AJAX JS event tracking as well
 			WC()->session->set( 'facebook_for_woocommerce_add_to_cart_event_id', $event->get_id() );
 
-			// Store pending pixel event for WooCommerce Blocks Store API
-			// Reuse custom_data and add event_id for deduplication
+			// Store pending pixel event for WooCommerce Blocks Store API.
+			// Reuse custom_data and add event_id for deduplication.
+			// NOTE: single-slot — if a batch request adds multiple products this gets
+			// overwritten for each one and get_store_api_pixel_event_data() will only
+			// return the last product's event. Fix: convert to an array and flush all.
 			$pending_pixel_params                = array_merge( $custom_data, array( 'event_id' => $event->get_id() ) );
 			$this->pending_store_api_pixel_event = array(
 				'event'  => 'AddToCart',
