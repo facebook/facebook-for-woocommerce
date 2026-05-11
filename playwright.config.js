@@ -188,7 +188,7 @@ export default defineConfig({
     },
     {
       name: 'safari-ios-wp-customer',
-      testMatch: [CUSTOMER_EVENTS_SPEC],
+      testMatch: [CUSTOMER_EVENTS_SPEC, THEME_COMPAT_SPEC],
       use: {
         ...devices['iPhone 13'],
         ...commonTimeouts,
