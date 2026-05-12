@@ -34,6 +34,7 @@ GREP="${GREP:-}"
 SPEC="${SPEC:-tests/e2e/events-test.spec.js}"
 PIXEL_DEBUG_LOGGER="${PIXEL_DEBUG_LOGGER:-true}"
 FRESH_AUTH="${FRESH_AUTH:-1}"
+SYNC_TEST_USERS="${SYNC_TEST_USERS:-auto}"
 EDGE_EXECUTABLE_PATH="${EDGE_EXECUTABLE_PATH:-}"
 FIREFOX_EXECUTABLE_PATH="${FIREFOX_EXECUTABLE_PATH:-}"
 BRAVE_EXECUTABLE_PATH="${BRAVE_EXECUTABLE_PATH:-}"
@@ -56,6 +57,8 @@ while [[ $# -gt 0 ]]; do
     --quiet-pixel) PIXEL_DEBUG_LOGGER="false"; shift ;;
     --fresh-auth) FRESH_AUTH="1"; shift ;;
     --keep-auth) FRESH_AUTH="0"; shift ;;
+    --sync-test-users) SYNC_TEST_USERS="1"; shift ;;
+    --no-sync-test-users) SYNC_TEST_USERS="0"; shift ;;
     --edge-path) EDGE_EXECUTABLE_PATH="$2"; shift 2 ;;
     --firefox-path) FIREFOX_EXECUTABLE_PATH="$2"; shift 2 ;;
     --brave-path) BRAVE_EXECUTABLE_PATH="$2"; shift 2 ;;
@@ -77,6 +80,9 @@ Usage: tests/e2e/scripts/run-local-events.sh [options]
   --quiet-pixel      Disable PIXEL_DEBUG_LOGGER
   --fresh-auth       Rebuild Playwright auth state before run (default)
   --keep-auth        Keep existing auth state
+  --sync-test-users  Force wp user password sync before run
+  --no-sync-test-users
+                     Skip wp user password sync before run
   --real-edge        Require real Edge binary (auto-enabled for edge projects)
   --edge-path <p>    Explicit Edge executable path
   --real-firefox     Require real Firefox binary (auto-enabled for firefox projects)
@@ -424,6 +430,17 @@ if [[ "$FRESH_AUTH" == "1" ]]; then
   rm -f "$ROOT_DIR/tests/e2e/.auth/customer.json" || true
 fi
 
+# Password updates invalidate WP auth cookies. Default behavior:
+# - fresh-auth run  -> sync users (safe, auth will be rebuilt)
+# - keep-auth run   -> skip sync users (preserve existing auth cookies)
+if [[ "$SYNC_TEST_USERS" == "auto" ]]; then
+  if [[ "$FRESH_AUTH" == "1" ]]; then
+    SYNC_TEST_USERS="1"
+  else
+    SYNC_TEST_USERS="0"
+  fi
+fi
+
 echo "🧪 Forcing CAPI test logger switch ON"
 "${WP_CLI[@]}" eval '$s=get_option("wc_facebook_for_woocommerce_rollout_switches", []); if(!is_array($s)) $s=[]; $s["enable_woocommerce_capi_event_logging"]="yes"; update_option("wc_facebook_for_woocommerce_rollout_switches", $s); echo "ok\n";' --skip-plugins --skip-themes
 
@@ -438,8 +455,13 @@ TRANSIENT_KEY="_wc_facebook_for_woocommerce_rollout_switch_flag_${PLUGIN_VERSION
 "${WP_CLI[@]}" eval '$aam=array("enableAutomaticMatching"=>true,"enabledAutomaticMatchingFields"=>array("em","fn","ln","external_id","ct","zp","country","st","ph"),"pixelId"=>get_option("wc_facebook_pixel_id","")); set_transient("wc_facebook_aam_settings", wp_json_encode($aam), 10 * MINUTE_IN_SECONDS); echo "aam=ok\n";' --skip-plugins --skip-themes
 
 # Ensure test users/passwords are as expected.
-"${WP_CLI[@]}" user update "$WP_USERNAME" --user_pass="$WP_PASSWORD" || true
-"${WP_CLI[@]}" user update "$WP_CUSTOMER_USERNAME" --user_pass="$WP_CUSTOMER_PASSWORD" || true
+if [[ "$SYNC_TEST_USERS" == "1" ]]; then
+  echo "👤 Syncing WP test user passwords"
+  "${WP_CLI[@]}" user update "$WP_USERNAME" --user_pass="$WP_PASSWORD" || true
+  "${WP_CLI[@]}" user update "$WP_CUSTOMER_USERNAME" --user_pass="$WP_CUSTOMER_PASSWORD" || true
+else
+  echo "👤 Skipping WP user password sync to preserve existing auth cookies (--keep-auth safe)"
+fi
 
 export WORDPRESS_PATH WORDPRESS_URL
 export WP_USERNAME WP_PASSWORD WP_CUSTOMER_USERNAME WP_CUSTOMER_PASSWORD
