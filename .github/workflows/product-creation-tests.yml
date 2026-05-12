@@ -793,6 +793,8 @@ jobs:
           cd ${{ env.PLUGIN_PATH }}
           npx playwright test plugin-level-tests.spec.js --project=chromium-wp-admin --workers=1
           xvfb-run --auto-servernum npx playwright test events-test.spec.js --headed --project=chromium-wp-customer --workers=1
+          xvfb-run --auto-servernum npx playwright test events-test.spec.js --headed --project=chromium-wp-customer-classic-theme --workers=1
+          xvfb-run --auto-servernum npx playwright test events-test.spec.js --headed --project=chromium-wp-customer-block-theme --workers=1
           xvfb-run --auto-servernum npx playwright test events-test.spec.js --headed --project=chromium-privacy-sandbox-wp-customer --workers=1
 
           # Ensure Privacy Sandbox API tests are executed (not skipped) in CI.
