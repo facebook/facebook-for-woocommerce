@@ -921,6 +921,7 @@ jobs:
           xvfb-run --auto-servernum npx playwright test events-test.spec.js --headed --project=edge-wp-customer --workers=1
           xvfb-run --auto-servernum npx playwright test events-test.spec.js --headed --project=firefox-wp-customer --workers=1
           xvfb-run --auto-servernum npx playwright test events-test.spec.js --headed --project=brave-wp-customer --workers=1
+          npx playwright test events-test.spec.js --project=android-pixel-wp-customer --workers=1
           npx playwright test events-test.spec.js --project=safari-ios-wp-customer --workers=1
           set -o pipefail
           xvfb-run --auto-servernum npx playwright test events-test.spec.js --headed --project=opera-wp-customer --workers=1 2>&1 | tee /tmp/opera-playwright.log
