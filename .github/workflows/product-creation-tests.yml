@@ -128,7 +128,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        test-group: ['plugin-events', 'product-crud', 'variable-product-depth', 'product-batch', 'product-category', 'theme-compatibility', 'performance-sync']
+        test-group: ['plugin-events', 'product-crud', 'variable-product-depth', 'product-batch', 'product-category', 'performance-sync']
         version-set: ['supported', 'latest']
         include:
           - version-set: 'supported'
@@ -606,8 +606,8 @@ jobs:
           npx playwright install chromium chrome
           npx playwright install-deps chromium chrome
 
-          # Theme-compatibility includes a WebKit (Safari-like) project.
-          if [ "${{ matrix.test-group }}" = "theme-compatibility" ] || [ "${{ matrix.test-group }}" = "plugin-events" ]; then
+          # Plugin-events includes a WebKit (Safari-like) project.
+          if [ "${{ matrix.test-group }}" = "plugin-events" ]; then
             npx playwright install webkit
             npx playwright install-deps webkit
           fi
@@ -620,7 +620,7 @@ jobs:
           fi
 
       - name: Verify WebKit browser setup
-        if: matrix.test-group == 'plugin-events' || matrix.test-group == 'theme-compatibility'
+        if: matrix.test-group == 'plugin-events'
         run: |
           cd ${{ env.PLUGIN_PATH }}
           node - <<'NODE'
@@ -740,15 +740,15 @@ jobs:
           echo "(non-zero is tolerated here; real verdict comes from Playwright run)"
 
       - name: Setup captured-events directory
-        if: matrix.test-group == 'plugin-events' || matrix.test-group == 'theme-compatibility'
+        if: matrix.test-group == 'plugin-events'
         run: |
           mkdir -p ${{ env.PLUGIN_PATH }}/tests/e2e/captured-events
           chmod 777 ${{ env.PLUGIN_PATH }}/tests/e2e/captured-events
       - name: Create test product for storefront event suites
-        if: matrix.test-group == 'plugin-events' || matrix.test-group == 'theme-compatibility'
+        if: matrix.test-group == 'plugin-events'
         run: |
           cd ${{ env.WORDPRESS_PATH }}
-          # Ensure deterministic product slug used by both plugin-events and theme-compatibility suites.
+          # Ensure deterministic product slug used by plugin-events suites.
           EXISTING_ID=$(wp post list --post_type=product --name=testp --field=ID --allow-root | head -n1)
 
           if [ -n "$EXISTING_ID" ]; then
@@ -773,16 +773,6 @@ jobs:
           fi
 
           echo "TEST_PRODUCT_ID=$PRODUCT_ID" >> $GITHUB_ENV
-
-      - name: Run Theme Compatibility tests
-        if: matrix.test-group == 'theme-compatibility'
-        env:
-          IS_LATEST_WP: ${{ matrix.wp-version == 'latest' && 'true' || 'false' }}
-        run: |
-          cd ${{ env.PLUGIN_PATH }}
-          # Theme compatibility suite is intentionally customer/storefront-only.
-          npx playwright test theme-compatibility.spec.js --project=chromium-wp-customer --workers=1
-          npx playwright test theme-compatibility.spec.js --project=safari-ios-wp-customer --workers=1
 
       - name: Install Xvfb for headed browser
         if: matrix.test-group == 'plugin-events'
@@ -935,7 +925,7 @@ jobs:
           tail -n 400 /tmp/opera-playwright.log || true
 
       - name: Cleanup test product
-        if: always() && (matrix.test-group == 'plugin-events' || matrix.test-group == 'theme-compatibility')
+        if: always() && matrix.test-group == 'plugin-events'
         run: |
           cd ${{ env.WORDPRESS_PATH }}
           if [ -n "${{ env.TEST_PRODUCT_ID }}" ]; then

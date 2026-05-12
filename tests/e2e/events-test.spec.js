@@ -32,7 +32,6 @@ const {
   clearCart,
   completeCheckoutFromCart,
   triggerAjaxAddToCartFromShop,
-  isAjaxAddToCartAvailableOnShop,
   submitSearch,
   getActiveThemeStatus,
   switchThemeBySlug,
@@ -222,11 +221,6 @@ test('AddToCart - AJAX (shop loop parity with PDP)', async ({ page }, testInfo) 
     await clearCart(page);
 
     const ajaxRun = await TestSetup.init(page, 'AddToCart', testInfo);
-    const ajaxAvailable = await isAjaxAddToCartAvailableOnShop(page, {
-      productUrl: process.env.TEST_PRODUCT_URL,
-      expectedProductId: baselineProductId || undefined
-    });
-    test.skip(!ajaxAvailable, 'Shop loop AJAX add-to-cart button is unavailable in this browser/theme fixture.');
 
     const ajaxEventPromise = ajaxRun.pixelCapture.waitForEvent();
     const ajaxTrace = await triggerAjaxAddToCartFromShop(page, {
