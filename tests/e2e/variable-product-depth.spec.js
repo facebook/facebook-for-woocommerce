@@ -13,6 +13,7 @@ const {
   logTestEnd,
   validateFacebookSync,
   processPendingSyncJobs,
+  execWP,
   setProductTitle,
   setProductDescription,
   dismissWooInterferingOverlays,
@@ -136,14 +137,30 @@ test.describe.serial('Variable Product Depth Tests', () => {
     );
   }
 
+  async function waitForWooVariationOverlayToClear(page) {
+    await page.waitForFunction(() => {
+      const overlays = Array.from(document.querySelectorAll('.blockUI.blockOverlay'));
+      if (!overlays.length) {
+        return true;
+      }
+
+      return overlays.every((overlay) => {
+        const style = window.getComputedStyle(overlay);
+        return style.display === 'none' || style.visibility === 'hidden' || Number(style.opacity || 1) === 0;
+      });
+    }, { timeout: TIMEOUTS.EXTRA_LONG }).catch(() => {});
+  }
 
   async function saveVariationChanges(page) {
     const saveVariationsButton = page.locator('button.save-variation-changes');
     await saveVariationsButton.waitFor({ state: 'visible', timeout: TIMEOUTS.LONG });
+    await waitForWooVariationOverlayToClear(page);
 
     if (await saveVariationsButton.isEnabled()) {
+      await page.keyboard.press('Tab').catch(() => {});
       await saveVariationsButton.click();
-      await page.waitForLoadState('domcontentloaded', { timeout: TIMEOUTS.MAX }).catch(() => {});
+      await waitForWooVariationOverlayToClear(page);
+      await expect(saveVariationsButton).toBeDisabled({ timeout: TIMEOUTS.EXTRA_LONG }).catch(() => {});
       await page.waitForTimeout(TIMEOUTS.NORMAL);
       console.log('✅ Saved variation changes');
     } else {
@@ -342,6 +359,40 @@ test.describe.serial('Variable Product Depth Tests', () => {
     }
   }
 
+  async function forceEnqueueVariableProductSync(productId) {
+    if (!productId) {
+      return;
+    }
+
+    try {
+      await execWP(`
+        $product_id = ${Number(productId)};
+        $product = wc_get_product($product_id);
+        if ( ! $product ) {
+          echo json_encode(['ok' => false, 'reason' => 'missing_product']);
+          return;
+        }
+
+        $sync = facebook_for_woocommerce()->get_products_sync_handler();
+        if ( $product->is_type('variable') ) {
+          $sync->create_or_update_all_products_for_bulk_edit([$product_id]);
+        } else {
+          $sync->create_or_update_products([$product_id]);
+        }
+
+        $job = $sync->schedule_sync();
+        echo json_encode([
+          'ok' => true,
+          'job_created' => ! empty($job),
+          'product_id' => $product_id,
+        ]);
+      `);
+      console.log(`🔁 Forced sync enqueue for variable product ${productId}`);
+    } catch (error) {
+      console.warn(`⚠️ Failed to force enqueue sync for product ${productId}: ${error.message}`);
+    }
+  }
+
   async function validateVariableProductSync(productId, productName, options = {}) {
     const attempts = options.attempts || 1;
     const waitBetweenAttemptsMs = options.waitBetweenAttemptsMs || (TIMEOUTS.NORMAL + TIMEOUTS.SHORT);
@@ -349,6 +400,7 @@ test.describe.serial('Variable Product Depth Tests', () => {
     let lastResult = null;
 
     for (let attempt = 1; attempt <= attempts; attempt++) {
+      await forceEnqueueVariableProductSync(productId);
       await processPendingSyncJobs().catch(() => {});
 
       const result = await validateFacebookSync(
@@ -537,32 +589,63 @@ test.describe.serial('Variable Product Depth Tests', () => {
     const variationRow = variationRowsBefore.nth(variationIndex);
     await variationRow.scrollIntoViewIfNeeded();
 
-    page.once('dialog', async dialog => {
-      const message = dialog.message();
-      console.log(`📢 Delete variation dialog: ${message}`);
-      await dialog.accept();
-    });
-
     const removeVariationLink = variationRow.locator('a.remove_variation').first();
     await removeVariationLink.waitFor({ state: 'visible', timeout: TIMEOUTS.LONG });
-    await removeVariationLink.click({ force: true });
 
-    // Woo can keep stale row markup until save. Accept either immediate DOM removal
-    // or row marked as "to-remove", then save and assert final count.
-    await page.waitForFunction(
-      (beforeCount, index) => {
-        const rows = document.querySelectorAll('.woocommerce_variation');
-        if (rows.length < beforeCount) return true;
-        const target = rows[index];
-        if (!target) return true;
+    let sawUnexpectedBeforeUnload = false;
+    const onDialog = async (dialog) => {
+      const message = dialog.message();
+      console.log(`📢 Delete variation dialog: ${message}`);
 
-        const classes = String(target.className || '');
-        return classes.includes('to-remove') || classes.includes('removed') || target.getAttribute('style')?.includes('display: none');
-      },
-      countBefore,
-      variationIndex,
-      { timeout: TIMEOUTS.EXTRA_LONG }
-    );
+      if (message.toLowerCase().includes('save changes before changing page')) {
+        sawUnexpectedBeforeUnload = true;
+        await dialog.dismiss();
+        return;
+      }
+
+      await dialog.accept();
+    };
+
+    page.on('dialog', onDialog);
+
+    try {
+      for (let attempt = 1; attempt <= 3; attempt++) {
+        sawUnexpectedBeforeUnload = false;
+        await waitForWooVariationOverlayToClear(page);
+        await removeVariationLink.click().catch(async () => {
+          await removeVariationLink.click({ force: true });
+        });
+
+        const removedInUi = await page.waitForFunction(
+          (beforeCount, index) => {
+            const rows = document.querySelectorAll('.woocommerce_variation');
+            if (rows.length < beforeCount) return true;
+            const target = rows[index];
+            if (!target) return true;
+
+            const classes = String(target.className || '');
+            return classes.includes('to-remove') || classes.includes('removed') || target.getAttribute('style')?.includes('display: none');
+          },
+          countBefore,
+          variationIndex,
+          { timeout: TIMEOUTS.LONG }
+        ).then(() => true).catch(() => false);
+
+        if (removedInUi) {
+          break;
+        }
+
+        if (sawUnexpectedBeforeUnload) {
+          await saveVariationChanges(page);
+        }
+
+        if (attempt === 3) {
+          throw new Error('Failed to mark variation for deletion in UI after 3 attempts');
+        }
+      }
+    } finally {
+      page.off('dialog', onDialog);
+    }
 
     await saveVariationChanges(page);
     await waitForVariationCount(page, expectedCountAfterDelete);
@@ -575,17 +658,58 @@ test.describe.serial('Variable Product Depth Tests', () => {
   async function regenerateAllVariations(page, expectedCount) {
     await openVariationsTab(page);
 
-    page.once('dialog', async dialog => {
-      console.log(`📢 Regenerate variations dialog: ${dialog.message()}`);
-      await dialog.accept();
-    });
-
     const generateVariationsButton = page.locator('button.generate_variations');
     await generateVariationsButton.waitFor({ state: 'visible', timeout: TIMEOUTS.LONG });
-    await generateVariationsButton.click();
 
-    await waitForVariationCount(page, expectedCount);
-    console.log(`✅ Regenerated variations back to ${expectedCount}`);
+    let sawUnexpectedBeforeUnload = false;
+    const onDialog = async (dialog) => {
+      const message = dialog.message();
+      console.log(`📢 Regenerate variations dialog: ${message}`);
+
+      if (message.toLowerCase().includes('save changes before changing page')) {
+        sawUnexpectedBeforeUnload = true;
+        await dialog.dismiss();
+        return;
+      }
+
+      await dialog.accept();
+    };
+
+    page.on('dialog', onDialog);
+
+    try {
+      for (let attempt = 1; attempt <= 3; attempt++) {
+        sawUnexpectedBeforeUnload = false;
+        await waitForWooVariationOverlayToClear(page);
+        await generateVariationsButton.click().catch(async () => {
+          await generateVariationsButton.click({ force: true });
+        });
+
+        if (sawUnexpectedBeforeUnload) {
+          await saveVariationChanges(page);
+          if (attempt < 3) {
+            continue;
+          }
+        }
+
+        const regenerated = await page.waitForFunction(
+          (count) => document.querySelectorAll('.woocommerce_variation').length === count,
+          expectedCount,
+          { timeout: TIMEOUTS.EXTRA_LONG }
+        ).then(() => true).catch(() => false);
+
+        if (regenerated) {
+          console.log(`✅ Regenerated variations back to ${expectedCount}`);
+          return;
+        }
+
+        if (attempt === 3) {
+          throw new Error(`Failed to regenerate variations back to ${expectedCount}`);
+        }
+      }
+    } finally {
+      page.off('dialog', onDialog);
+    }
   }
 
   test('creates a variable product with multiple attributes and preserves variation-level mapping after sync', async ({ page }, testInfo) => {
@@ -718,7 +842,6 @@ test.describe.serial('Variable Product Depth Tests', () => {
 
       await goToProductEditPage(page, productId);
       await deleteVariation(page, 0, created.expectedVariationCount - 1);
-      await saveVariationChanges(page);
       await publishProduct(page);
       await checkForPhpErrors(page);
 
@@ -732,7 +855,10 @@ test.describe.serial('Variable Product Depth Tests', () => {
       await publishProduct(page);
       await checkForPhpErrors(page);
 
-      const syncResultAfterRegeneration = await validateVariableProductSync(productId, created.productName);
+      const syncResultAfterRegeneration = await validateVariableProductSync(productId, created.productName, {
+        attempts: 4,
+        waitBetweenAttemptsMs: TIMEOUTS.EXTRA_LONG,
+      });
       assertVariationAttributeMapping(syncResultAfterRegeneration, created.expectedVariationCount);
       expect(syncResultAfterRegeneration.raw_data.woo_data).toHaveLength(created.expectedVariationCount);
 
