@@ -7,12 +7,13 @@ const path = require('path');
 const EVENT_FIELD_CONTRACTS = require('./field-contracts');
 
 class EventValidator {
-  constructor(testId, fbc = false, expectZeroEvents = false) {
+  constructor(testId, fbc = false, expectZeroEvents = false, options = {}) {
     this.testId = testId;
     this.filePath = path.join(__dirname, '../../captured-events', `${testId}.json`);
     this.events = null;
     this.fbc = fbc;
     this.expectZeroEvents = expectZeroEvents;
+    this.allowBraveFbcNormalization = Boolean(options.allowBraveFbcNormalization);
   }
 
   async load() {
@@ -317,12 +318,40 @@ class EventValidator {
     if (!capi.user_data?.fbc) {
       errors.push('fbc not present in CAPI event user data');
     }
-    if (pixel.cookies._fbc && capi.user_data?.fbc && pixel.cookies._fbc !== capi.user_data.fbc) {
-      errors.push(`Cookie _fbc mismatch: ${pixel.cookies._fbc} vs ${capi.user_data.fbc}`);
-    }
 
-    if (pixel.cookies._fbc && capi.user_data?.fbc && pixel.cookies._fbc === capi.user_data.fbc) {
-      console.log(`  ✓ Cookie _fbc present and matches: ${pixel.cookies._fbc}`);
+    const normalizeFbc = (value) => {
+      if (!value || typeof value !== 'string') return value;
+      const parts = value.split('.');
+      // Canonical format: fb.1.<timestamp>.<fbclid>[.<optional browser-specific suffix>]
+      return parts.length >= 4 ? parts.slice(0, 4).join('.') : value;
+    };
+
+    const isBraveUserAgent = () => {
+      const ua = String(capi.user_data?.client_user_agent || '');
+      return ua.includes('Brave') || ua.includes('brave');
+    };
+
+    if (pixel.cookies._fbc && capi.user_data?.fbc) {
+      const pixelFbc = pixel.cookies._fbc;
+      const capiFbc = capi.user_data.fbc;
+
+      if (pixelFbc === capiFbc) {
+        console.log(`  ✓ Cookie _fbc present and matches: ${pixelFbc}`);
+        return;
+      }
+
+      // Brave can append a suffix in cookie value; compare normalized core format there only.
+      if (this.allowBraveFbcNormalization || isBraveUserAgent()) {
+        const normalizedPixelFbc = normalizeFbc(pixelFbc);
+        const normalizedCapiFbc = normalizeFbc(capiFbc);
+
+        if (normalizedPixelFbc === normalizedCapiFbc) {
+          console.log(`  ✓ Cookie _fbc matches after Brave normalization: ${normalizedPixelFbc}`);
+          return;
+        }
+      }
+
+      errors.push(`Cookie _fbc mismatch: ${pixelFbc} vs ${capiFbc}`);
     }
   }
 

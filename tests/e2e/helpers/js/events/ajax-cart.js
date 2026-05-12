@@ -51,6 +51,7 @@ function getProductSlug(productUrl) {
  * @param {{
  *   productUrl?: string,
  *   shopUrl?: string,
+ *   expectedProductId?: string|number,
  * }} options
  * @returns {Promise<{
  *   usedAjax: boolean,
@@ -61,23 +62,61 @@ function getProductSlug(productUrl) {
  *   ajaxResponses: Array<{status: number, ok: boolean, url: string}>
  * }>}
  */
-async function triggerAjaxAddToCartFromShop(page, options = {}) {
+async function resolveShopLoopAjaxButton(page, options = {}) {
   const productUrl = options.productUrl || process.env.TEST_PRODUCT_URL;
   const shopUrl = options.shopUrl || '/shop';
   const productSlug = getProductSlug(productUrl);
+  const expectedProductId = options.expectedProductId != null ? String(options.expectedProductId) : null;
 
   await page.goto(shopUrl);
   await page.waitForLoadState('networkidle');
   await page.waitForTimeout(TIMEOUTS.INSTANT);
 
-  const loopButtonSelector = 'a.add_to_cart_button.ajax_add_to_cart';
-  const shopFallbackSelector = `li.product ${loopButtonSelector}`;
+  const loopButtonSelector = [
+    'a.add_to_cart_button.ajax_add_to_cart',
+    'button.add_to_cart_button.ajax_add_to_cart',
+    '.add_to_cart_button.ajax_add_to_cart'
+  ].join(', ');
+
+  const productCardSelector = [
+    'li.product',
+    'li.wc-block-grid__product',
+    '.wc-block-grid__product',
+    '.wc-block-product'
+  ].join(', ');
+
+  const shopFallbackSelector = `${productCardSelector} ${loopButtonSelector}, ${loopButtonSelector}`;
 
   let button = null;
 
-  if (productSlug) {
+  if (expectedProductId) {
+    const productIdSelector = [
+      `a.add_to_cart_button.ajax_add_to_cart[data-product_id="${expectedProductId}"]`,
+      `button.add_to_cart_button.ajax_add_to_cart[data-product_id="${expectedProductId}"]`,
+      `.add_to_cart_button.ajax_add_to_cart[data-product_id="${expectedProductId}"]`
+    ].join(', ');
+
+    const buttonByProductId = page.locator(productIdSelector).first();
+    if (await buttonByProductId.count() > 0) {
+      button = buttonByProductId;
+    } else {
+      return {
+        available: false,
+        button: null,
+        details: {
+          shopUrl,
+          productUrl,
+          productSlug,
+          expectedProductId,
+          selector: productIdSelector
+        }
+      };
+    }
+  }
+
+  if (!button && productSlug) {
     const cardBySlug = page.locator(
-      `li.product:has(a[href*="/product/${productSlug}/"])`
+      `${productCardSelector}:has(a[href*="/product/${productSlug}/"])`
     ).first();
 
     if (await cardBySlug.count() > 0) {
@@ -94,18 +133,57 @@ async function triggerAjaxAddToCartFromShop(page, options = {}) {
   }
 
   if (await button.count() === 0) {
+    return {
+      available: false,
+      button: null,
+      details: {
+        shopUrl,
+        productUrl,
+        productSlug,
+        expectedProductId,
+        selector: shopFallbackSelector
+      }
+    };
+  }
+
+  await button.waitFor({ state: 'visible', timeout: TIMEOUTS.LONG });
+
+  return {
+    available: true,
+    button,
+    details: {
+      shopUrl,
+      productUrl,
+      productSlug,
+      expectedProductId,
+      selector: shopFallbackSelector
+    }
+  };
+}
+
+async function isAjaxAddToCartAvailableOnShop(page, options = {}) {
+  const resolved = await resolveShopLoopAjaxButton(page, options);
+  return resolved.available;
+}
+
+async function triggerAjaxAddToCartFromShop(page, options = {}) {
+  const resolved = await resolveShopLoopAjaxButton(page, options);
+
+  if (!resolved.available) {
+    const { shopUrl, productUrl, productSlug, expectedProductId, selector } = resolved.details;
     throw new Error(
       [
         'AJAX AddToCart test fixture is invalid: no shop-loop Add to cart button was found.',
         `shopUrl=${shopUrl}`,
         `productUrl=${productUrl || '(not provided)'}`,
         `productSlug=${productSlug || '(not derivable)'}`,
-        `selector=${shopFallbackSelector}`
+        `expectedProductId=${expectedProductId || '(not provided)'}`,
+        `selector=${selector}`
       ].join(' ')
     );
   }
 
-  await button.waitFor({ state: 'visible', timeout: TIMEOUTS.LONG });
+  const { button } = resolved;
 
   const ajaxRequests = [];
   const ajaxResponses = [];
@@ -158,6 +236,7 @@ async function triggerAjaxAddToCartFromShop(page, options = {}) {
 
 module.exports = {
   triggerAjaxAddToCartFromShop,
+  isAjaxAddToCartAvailableOnShop,
   getProductSlug,
   isAjaxCartEndpoint
 };

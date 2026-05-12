@@ -183,7 +183,8 @@ const {
 } = require('./events/runtime');
 
 const {
-  triggerAjaxAddToCartFromShop
+  triggerAjaxAddToCartFromShop,
+  isAjaxAddToCartAvailableOnShop
 } = require('./events/ajax-cart');
 
 // =============================================================================
@@ -299,7 +300,8 @@ const events = {
   getCartItemsViaStoreApi,
   clearCart,
   completeCheckoutFromCart,
-  triggerAjaxAddToCartFromShop
+  triggerAjaxAddToCartFromShop,
+  isAjaxAddToCartAvailableOnShop
 };
 
 // =============================================================================
@@ -426,6 +428,7 @@ module.exports = {
   clearCart,
   completeCheckoutFromCart,
   triggerAjaxAddToCartFromShop,
+  isAjaxAddToCartAvailableOnShop,
 
   // Grouped module exports (for namespace imports)
   auth,

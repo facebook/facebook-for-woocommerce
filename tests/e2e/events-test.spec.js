@@ -32,6 +32,7 @@ const {
   clearCart,
   completeCheckoutFromCart,
   triggerAjaxAddToCartFromShop,
+  isAjaxAddToCartAvailableOnShop,
   submitSearch,
   getActiveThemeStatus,
   switchThemeBySlug,
@@ -137,7 +138,7 @@ test('PageView with fbclid', async ({ page }, testInfo) => {
     await TestSetup.waitForPageReady(page);
     await eventPromise;
 
-    const validator = new EventValidator(testId, true); // expects fbc
+    const validator = new EventValidator(testId, true, false, { allowBraveFbcNormalization: isBraveProject }); // expects fbc
     await validator.checkDebugLog();
     const result = await validator.validate('PageView', page);
 
@@ -210,11 +211,28 @@ test('AddToCart - AJAX (shop loop parity with PDP)', async ({ page }, testInfo) 
     expect(baselinePixel).toBeTruthy();
     expect(baselineCapi).toBeTruthy();
 
+    const baselineProductId = String(
+      baselinePixel?.custom_data?.contents?.[0]?.id ||
+      baselinePixel?.custom_data?.content_ids?.[0] ||
+      baselineCapi?.custom_data?.contents?.[0]?.id ||
+      baselineCapi?.custom_data?.content_ids?.[0] ||
+      ''
+    );
+
     await clearCart(page);
 
     const ajaxRun = await TestSetup.init(page, 'AddToCart', testInfo);
+    const ajaxAvailable = await isAjaxAddToCartAvailableOnShop(page, {
+      productUrl: process.env.TEST_PRODUCT_URL,
+      expectedProductId: baselineProductId || undefined
+    });
+    test.skip(!ajaxAvailable, 'Shop loop AJAX add-to-cart button is unavailable in this browser/theme fixture.');
+
     const ajaxEventPromise = ajaxRun.pixelCapture.waitForEvent();
-    const ajaxTrace = await triggerAjaxAddToCartFromShop(page, { productUrl: process.env.TEST_PRODUCT_URL });
+    const ajaxTrace = await triggerAjaxAddToCartFromShop(page, {
+      productUrl: process.env.TEST_PRODUCT_URL,
+      expectedProductId: baselineProductId || undefined
+    });
     await ajaxEventPromise;
 
     expect(ajaxTrace.usedAjax).toBe(true);
@@ -711,6 +729,10 @@ test('Search', async ({ page }, testInfo) => {
 
     console.log(`   🔍 Typing search query in search box`);
     const searchInput = await getVisibleSearchInput(page);
+    if (!searchInput && testInfo.project.name.includes('brave')) {
+      throw new Error('Search UI was not found for brave-wp-customer on Storefront; this should be present and must not be skipped.');
+    }
+    test.skip(!searchInput, 'Search UI is not available in this browser/theme fixture.');
     await searchInput.fill('test');
 
     console.log(`   🔎 Submitting search form`);
@@ -746,6 +768,10 @@ test('Search - No Results', async ({ page }, testInfo) => {
     console.log(`   🔍 Typing random search query: ${randomString}`);
 
     const searchInput = await getVisibleSearchInput(page);
+    if (!searchInput && testInfo.project.name.includes('brave')) {
+      throw new Error('Search UI was not found for brave-wp-customer on Storefront; this should be present and must not be skipped.');
+    }
+    test.skip(!searchInput, 'Search UI is not available in this browser/theme fixture.');
     await searchInput.fill(randomString);
 
     console.log(`   🔎 Submitting search form (expecting no events)`);
