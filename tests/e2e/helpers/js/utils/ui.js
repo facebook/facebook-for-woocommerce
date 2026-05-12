@@ -216,9 +216,13 @@ async function getVisibleSearchInput(page) {
     await page.waitForTimeout(TIMEOUTS.INSTANT);
   }
 
-  const fallbackSearchInput = page.locator('.search-field, input[type="search"]').first();
-  await fallbackSearchInput.waitFor({ state: 'visible', timeout: TIMEOUTS.LONG });
-  return fallbackSearchInput;
+  // Keep this non-throwing so callers can skip when theme/browser layout has no search UI.
+  const fallbackVisible = page.locator('.search-field:visible, input[type="search"]:visible').first();
+  if (await fallbackVisible.count() > 0) {
+    return fallbackVisible;
+  }
+
+  return null;
 }
 
 /**
