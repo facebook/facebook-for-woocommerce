@@ -32,8 +32,66 @@ const {
   clearCart,
   completeCheckoutFromCart,
   triggerAjaxAddToCartFromShop,
-  submitSearch
+  submitSearch,
+  getActiveThemeStatus,
+  switchThemeBySlug,
+  acquireThemeLock,
+  releaseThemeLock
 } = require('./helpers/js');
+
+const STOREFRONT_THEME_SLUG = 'storefront';
+const THEME_PROJECT_TO_SLUG = {
+  'chromium-wp-customer-classic-theme': 'twentytwentyone',
+  'chromium-wp-customer-block-theme': 'twentytwentyfive',
+};
+
+let themeLockToken = null;
+let originalThemeSlug = null;
+let activeThemeProjectSlug = null;
+
+function resolveThemeForProject(projectName) {
+  return THEME_PROJECT_TO_SLUG[projectName] || null;
+}
+
+test.beforeAll(async ({}, workerInfo) => {
+  const targetThemeSlug = resolveThemeForProject(workerInfo.project.name);
+  if (!targetThemeSlug) {
+    return;
+  }
+
+  themeLockToken = await acquireThemeLock();
+
+  const status = await getActiveThemeStatus();
+  originalThemeSlug = status.activeStylesheet || STOREFRONT_THEME_SLUG;
+
+  if (status.activeStylesheet !== targetThemeSlug) {
+    const switchResult = await switchThemeBySlug(targetThemeSlug);
+    if (!switchResult.success) {
+      throw new Error(`Failed to activate theme '${targetThemeSlug}' for project '${workerInfo.project.name}': ${switchResult.error || 'unknown error'}`);
+    }
+  }
+
+  activeThemeProjectSlug = targetThemeSlug;
+});
+
+test.afterAll(async () => {
+  if (!themeLockToken) {
+    return;
+  }
+
+  try {
+    const restoreTarget = originalThemeSlug || STOREFRONT_THEME_SLUG;
+    const restoreResult = await switchThemeBySlug(restoreTarget);
+    if (!restoreResult.success) {
+      throw new Error(`Failed to restore theme '${restoreTarget}' after '${activeThemeProjectSlug || 'unknown'}': ${restoreResult.error || 'unknown error'}`);
+    }
+  } finally {
+    await releaseThemeLock(themeLockToken);
+    themeLockToken = null;
+    originalThemeSlug = null;
+    activeThemeProjectSlug = null;
+  }
+});
 
 
 test('PageView', async ({ page }, testInfo) => {
@@ -640,6 +698,11 @@ test('Purchase - Multiple Place Order Clicks', async ({ page }, testInfo) => {
 });
 
 test('Search', async ({ page }, testInfo) => {
+    test.skip(
+      ['chromium-wp-customer-classic-theme', 'chromium-wp-customer-block-theme'].includes(testInfo.project.name),
+      'Search is not validated on non-Storefront theme projects because search UI is not guaranteed.'
+    );
+
     const { testId, pixelCapture } = await TestSetup.init(page, 'Search',  testInfo);
 
     console.log(`   🏠 Navigating to homepage`);
@@ -667,6 +730,11 @@ test('Search', async ({ page }, testInfo) => {
 });
 
 test('Search - No Results', async ({ page }, testInfo) => {
+    test.skip(
+      ['chromium-wp-customer-classic-theme', 'chromium-wp-customer-block-theme'].includes(testInfo.project.name),
+      'Search is not validated on non-Storefront theme projects because search UI is not guaranteed.'
+    );
+
     const { testId, pixelCapture } = await TestSetup.init(page, 'Search', testInfo, true); // expectZeroEvents=true
 
     console.log(`   🏠 Navigating to homepage`);

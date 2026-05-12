@@ -100,6 +100,14 @@ const {
   removeJsErrorSimulatorMuPlugin
 } = require('./wordpress/plugins');
 
+const {
+  runWpCli,
+  getActiveThemeStatus,
+  switchThemeBySlug,
+  acquireThemeLock,
+  releaseThemeLock
+} = require('./wordpress/themes');
+
 // =============================================================================
 // Checkout
 // =============================================================================
@@ -233,7 +241,12 @@ const wordpress = {
   installPixelBlockerMuPlugin,
   removePixelBlockerMuPlugin,
   installJsErrorSimulatorMuPlugin,
-  removeJsErrorSimulatorMuPlugin
+  removeJsErrorSimulatorMuPlugin,
+  runWpCli,
+  getActiveThemeStatus,
+  switchThemeBySlug,
+  acquireThemeLock,
+  releaseThemeLock
 };
 
 const checkout = {
@@ -353,6 +366,13 @@ module.exports = {
   removePixelBlockerMuPlugin,
   installJsErrorSimulatorMuPlugin,
   removeJsErrorSimulatorMuPlugin,
+
+  // WordPress - Themes
+  runWpCli,
+  getActiveThemeStatus,
+  switchThemeBySlug,
+  acquireThemeLock,
+  releaseThemeLock,
 
   // Checkout
   completePurchaseFlow,

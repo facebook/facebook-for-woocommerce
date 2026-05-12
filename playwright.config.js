@@ -115,6 +115,16 @@ export default defineConfig({
       use: customerUse,
     },
     {
+      name: 'chromium-wp-customer-classic-theme',
+      testMatch: [CUSTOMER_EVENTS_SPEC],
+      use: customerUse,
+    },
+    {
+      name: 'chromium-wp-customer-block-theme',
+      testMatch: [CUSTOMER_EVENTS_SPEC],
+      use: customerUse,
+    },
+    {
       name: 'chromium-privacy-sandbox-wp-customer',
       testMatch: [CUSTOMER_EVENTS_SPEC],
       use: {
