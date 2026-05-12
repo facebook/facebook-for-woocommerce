@@ -1033,7 +1033,7 @@ jobs:
         uses: actions/upload-artifact@v5
         if: always()
         with:
-          name: captured-events-${{ matrix.version-label }}
+          name: captured-events-${{ matrix.version-label }}-${{ matrix.test-group }}
           path: ${{ env.PLUGIN_PATH }}${{ env.FB_E2E_CAPTURED_EVENTS_DIR }}
           retention-days: 7
 
