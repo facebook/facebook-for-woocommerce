@@ -851,8 +851,16 @@ test('AddToCart - Isolated Execution (with JS errors from other plugins)', async
     }
 });
 
-test('Privacy Sandbox - Topics API available in Chromium', async ({ page }) => {
+function getMajorBrowserVersion(versionString) {
+    const match = String(versionString || '').match(/^(\d+)/);
+    return match ? parseInt(match[1], 10) : NaN;
+}
+
+test('Privacy Sandbox - Topics API available in Chromium', async ({ page, browser }) => {
     test.skip(!test.info().project.name.includes('privacy-sandbox'), 'Privacy Sandbox test only runs on privacy-sandbox project');
+
+    const chromiumMajor = getMajorBrowserVersion(browser.version());
+    test.skip(Number.isNaN(chromiumMajor) || chromiumMajor < 115, `Privacy Sandbox requires Chrome/Chromium >= 115 (detected ${browser.version()})`);
 
     await page.goto('/');
     await TestSetup.waitForPageReady(page);
@@ -871,13 +879,16 @@ test('Privacy Sandbox - Topics API available in Chromium', async ({ page }) => {
         }
     });
 
-    test.skip(!topicsResult.hasTopicsApi, 'Topics API is not exposed by this Chromium runtime');
+    expect(topicsResult.hasTopicsApi).toBe(true);
     expect(topicsResult.error).toBeNull();
     expect(typeof topicsResult.topicsCount).toBe('number');
 });
 
-test('Privacy Sandbox - Protected Audience API shape in Chromium', async ({ page }) => {
+test('Privacy Sandbox - Protected Audience API shape in Chromium', async ({ page, browser }) => {
     test.skip(!test.info().project.name.includes('privacy-sandbox'), 'Privacy Sandbox test only runs on privacy-sandbox project');
+
+    const chromiumMajor = getMajorBrowserVersion(browser.version());
+    test.skip(Number.isNaN(chromiumMajor) || chromiumMajor < 115, `Privacy Sandbox requires Chrome/Chromium >= 115 (detected ${browser.version()})`);
 
     await page.goto('/');
     await TestSetup.waitForPageReady(page);
@@ -896,8 +907,8 @@ test('Privacy Sandbox - Protected Audience API shape in Chromium', async ({ page
       || apiShape.hasRunAdAuction
       || apiShape.hasLeaveAdInterestGroup;
 
-    test.skip(!hasAnyProtectedAudienceApi, 'Protected Audience APIs are not exposed by this Chromium runtime');
     expect(apiShape.hasNavigator).toBe(true);
+    expect(hasAnyProtectedAudienceApi).toBe(true);
 });
 
 // Cleanup is handled by GitHub workflow after all tests complete
