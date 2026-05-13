@@ -271,7 +271,11 @@ class EventValidator {
   }
 
   validateTimestamp(pixel, capi, errors) {
-    const pixelTime = pixel.timestamp || Date.now();
+    const pixelTime = pixel.timestamp != null ? pixel.timestamp : null;
+    if (pixelTime == null) {
+      errors.push('Pixel event missing timestamp');
+      return;
+    }
     const capiTime = (capi.event_time || 0) * 1000;
     const diff = Math.abs(pixelTime - capiTime);
 
