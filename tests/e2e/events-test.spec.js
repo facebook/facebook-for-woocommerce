@@ -26,8 +26,6 @@ const {
   asArray,
   assertEventContainsRetailerId,
   ignoreKnownPurchaseUserDataGap,
-  createTempCustomerUser,
-  deleteTempCustomerUser,
   getCartItemsViaStoreApi,
   clearCart,
   completeCheckoutFromCart,
@@ -363,22 +361,13 @@ test('AddToCart - Variable Product (selected variation)', async ({ page }, testI
     }
 });
 
-test('Purchase - Variable Product', async ({ browser }, testInfo) => {
+test('Purchase - Variable Product', async ({ page }, testInfo) => {
     let fixture;
-    let context;
-    let tempUser;
 
     try {
       fixture = await createVariableProductEventFixture();
-      tempUser = await createTempCustomerUser();
 
-      context = await browser.newContext({
-        baseURL: process.env.WORDPRESS_URL,
-        ignoreHTTPSErrors: true
-      });
-      const page = await context.newPage();
-
-      await clearCart(page, { username: tempUser.username, password: tempUser.password });
+      await clearCart(page);
       const targetVariation = fixture.variations.find(v => v.option === 'Large') || fixture.variations[0];
       const { testId } = await TestSetup.init(page, 'Purchase', testInfo);
 
@@ -415,14 +404,6 @@ test('Purchase - Variable Product', async ({ browser }, testInfo) => {
       TestSetup.logResult('Purchase (Variable Product)', result);
       expect(result.passed).toBe(true);
     } finally {
-      if (context) {
-        await context.close();
-      }
-
-      if (tempUser?.user_id) {
-        await deleteTempCustomerUser(tempUser.user_id);
-      }
-
       if (fixture?.cleanupProductIds?.length) {
         await cleanupProducts(fixture.cleanupProductIds);
       }
@@ -465,22 +446,13 @@ test('ViewContent - Grouped Product', async ({ page }, testInfo) => {
     }
 });
 
-test('Purchase - Grouped Product', async ({ browser }, testInfo) => {
+test('Purchase - Grouped Product', async ({ page }, testInfo) => {
     let fixture;
-    let context;
-    let tempUser;
 
     try {
       fixture = await createGroupedProductEventFixture();
-      tempUser = await createTempCustomerUser();
 
-      context = await browser.newContext({
-        baseURL: process.env.WORDPRESS_URL,
-        ignoreHTTPSErrors: true
-      });
-      const page = await context.newPage();
-
-      await clearCart(page, { username: tempUser.username, password: tempUser.password });
+      await clearCart(page);
       const child = fixture.children[0];
       const { testId } = await TestSetup.init(page, 'Purchase', testInfo);
 
@@ -513,14 +485,6 @@ test('Purchase - Grouped Product', async ({ browser }, testInfo) => {
       TestSetup.logResult('Purchase (Grouped Product)', result);
       expect(result.passed).toBe(true);
     } finally {
-      if (context) {
-        await context.close();
-      }
-
-      if (tempUser?.user_id) {
-        await deleteTempCustomerUser(tempUser.user_id);
-      }
-
       if (fixture?.cleanupProductIds?.length) {
         await cleanupProducts(fixture.cleanupProductIds);
       }

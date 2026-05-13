@@ -299,6 +299,14 @@ async function submitSearch(page, searchInput) {
     return;
   }
 
+  // Give native submit/navigation a brief chance to settle before forcing fallback.
+  // Without this, fast/async form submissions can still be in flight and we may
+  // trigger the same search route twice, producing duplicate Search CAPI events.
+  await page.waitForURL(/\?s=.*(?:&|\?)post_type=product/, { timeout: TIMEOUTS.NORMAL }).catch(() => {});
+  if (isSearchUrl()) {
+    return;
+  }
+
   // WebKit/iOS fallback: if UI submit redirects directly to PDP or misses search route,
   // force deterministic product search URL so Search hook conditions are met.
   if (query && query.trim()) {
