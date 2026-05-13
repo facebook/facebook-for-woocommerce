@@ -82,7 +82,7 @@ class WhatsAppExtension {
 	 * @param object $plugin The plugin instance.
 	 *
 	 * @return string
-	 * @since 3.5.0
+	 * @since 3.5.0 test
 	 */
 	public static function generate_wa_iframe_management_url( $plugin ) {
 		$whatsapp_connection = $plugin->get_whatsapp_connection_handler();
