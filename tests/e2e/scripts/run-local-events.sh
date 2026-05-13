@@ -414,6 +414,7 @@ fi
 # Clean sticky artifacts from aborted previous runs.
 rm -f "$WORDPRESS_PATH/wp-content/mu-plugins/e2e-pixel-blocker.php" || true
 rm -f "$WORDPRESS_PATH/wp-content/mu-plugins/e2e-js-error-simulator.php" || true
+rm -f "$WORDPRESS_PATH/wp-content/mu-plugins/e2e-single-search-redirect-blocker.php" || true
 rm -f "$ROOT_DIR/tests/e2e/.theme-compat.lock" || true
 rm -f "$ROOT_DIR/tests/e2e/helpers/captured-events"/*.json || true
 
