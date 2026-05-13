@@ -106,14 +106,6 @@ jobs:
 
           echo "✅ Artifacts match"
 
-      - name: Validate Git tag
-        run: |
-          git fetch --tags
-          if [ ! $(git tag -l "v${{ steps.package-version.outputs.current-version}}") ]; then
-            echo "❌ Git tag does not exist" 1>&2
-            exit 1
-          fi
-
       - name: Install SVN
         run: sudo apt-get install subversion -y
 
@@ -165,6 +157,14 @@ jobs:
             --prerelease=false \
             --latest
 
+      - name: Validate Git tag
+        run: |
+          git fetch --tags
+          if [ ! $(git tag -l "v$VERSION") ]; then
+            echo "❌ Git tag does not exist after publishing release" 1>&2
+            exit 1
+          fi
+
       - name: Create or update pull request
         env:
           GH_TOKEN: ${{ github.token }}
@@ -175,12 +175,14 @@ jobs:
             gh pr edit "$EXISTING_PR" \
               --repo facebook/facebook-for-woocommerce \
               --title "Release $VERSION" \
-              --body-file /tmp/release-notes.md
+              --body-file /tmp/release-notes.md \
+              --add-label "changelog: none"
           else
             gh pr create \
               --repo facebook/facebook-for-woocommerce \
               --base main \
               --head "release/$VERSION" \
               --title "Release $VERSION" \
-              --body-file /tmp/release-notes.md
+              --body-file /tmp/release-notes.md \
+              --label "changelog: none"
           fi

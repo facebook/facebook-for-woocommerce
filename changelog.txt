@@ -1,5 +1,14 @@
 *** Meta for WooCommerce Changelog ***
 
+= 3.7.0 - 2026-05-05 =
+* Add - Add Signal state controls for Pixel and CAPI by @iodic in #3914
+* Fix - Add origin validation to postMessage handlers in onboarding scripts by @devbodaghe in #3913
+* Fix - Fixed the contributors, removed Meta and added Facebook by @vahidkay-meta in #3905
+* Dev - Upgrading the dependencies, and removing the unnecessary ones to improve the release process by @vahidkay-meta in #3891
+* Fix - Add opt-in non-blocking mode for Pixel event API requests by @vahidkay-meta in #3892
+* Tweak - Tweak - Improve Set Stable Tag by white-listing only release/*/publish branches by @vahidkay-meta in #3904
+* Fix - Bump webpack from 5.99.9 to 5.105.0 by @app/dependabot in #3849
+
 = 3.6.3 - 2026-04-10 =
 * Fix - Fix minimatch vulnerability (CVE-2026-27903) by @vahidkay-meta in #3897
 * Fix - Added checks and safeguards. by @vahidkay-meta in #3887

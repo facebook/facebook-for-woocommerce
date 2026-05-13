@@ -592,18 +592,16 @@ class FacebookCommerceEventsTrackerTest extends AbstractWPUnitTestWithSafeFilter
 	}
 
 	/**
-	 * Test that inject_lead_event_hook adds the footer action.
+	 * Test that the constructor registers inject_lead_event on wp_footer.
 	 *
-	 * @covers WC_Facebookcommerce_EventsTracker::inject_lead_event_hook
+	 * @covers WC_Facebookcommerce_EventsTracker::__construct
 	 */
-	public function test_inject_lead_event_hook_adds_footer_action(): void {
+	public function test_constructor_registers_inject_lead_event_on_footer(): void {
 		$this->instance = $this->create_tracker_with_pixel_enabled();
-
-		$this->instance->inject_lead_event_hook();
 
 		$this->assertTrue(
 			has_action( 'wp_footer', array( $this->instance, 'inject_lead_event' ) ) !== false,
-			'inject_lead_event_hook should add inject_lead_event to wp_footer'
+			'Constructor should register inject_lead_event on wp_footer'
 		);
 	}
 

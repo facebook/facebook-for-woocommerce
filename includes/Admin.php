@@ -2615,7 +2615,7 @@ class Admin {
 		return sprintf(
 			/* translators: %s: WordPress.org plugin page URL */
 			__(
-				'After April 30th, 2026, Meta for WooCommerce will no longer receive automatic updates on WordPress.com-hosted websites. <a href="%s">Download the latest version from WordPress.org</a> and install it manually via <strong>Plugins</strong> &rsaquo; <strong>Add New Plugin</strong> &rsaquo; <strong>Upload Plugin</strong> to ensure you receive future updates.',
+				'Meta for WooCommerce is expected to be removed from the WordPress.com marketplace soon. When this happens, it will no longer receive automatic updates on WordPress.com-hosted websites. <a href="%s">Download the latest version from WordPress.org</a> and install it manually via <strong>Plugins</strong> &rsaquo; <strong>Add New Plugin</strong> &rsaquo; <strong>Upload Plugin</strong> to ensure you receive future updates.',
 				'facebook-for-woocommerce'
 			),
 			esc_url( $plugin_url )
