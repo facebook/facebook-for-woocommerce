@@ -438,6 +438,7 @@ class EventValidator {
 
   async checkDebugLog() {
     const debugLogPath = process.env.WP_DEBUG_LOG;
+    if (!debugLogPath) return;
     try {
       const data = await fs.readFile(debugLogPath, 'utf8');
       const lines = data.split('\n');
