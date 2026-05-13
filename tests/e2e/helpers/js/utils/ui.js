@@ -231,7 +231,9 @@ async function getVisibleSearchInput(page) {
  * so prefer form submit button click when available.
  */
 async function submitSearch(page, searchInput) {
+  const initialUrl = page.url();
   const isSearchUrl = () => /[?&]s=/.test(page.url());
+  const hasNavigated = () => page.url() !== initialUrl;
 
   // Ensure the form submits as a product search so plugin Search event hooks execute.
   await searchInput.evaluate((input) => {
@@ -295,7 +297,7 @@ async function submitSearch(page, searchInput) {
     }
   }
 
-  if (isSearchUrl()) {
+  if (isSearchUrl() || hasNavigated()) {
     return;
   }
 
@@ -303,11 +305,11 @@ async function submitSearch(page, searchInput) {
   // Without this, fast/async form submissions can still be in flight and we may
   // trigger the same search route twice, producing duplicate Search CAPI events.
   await page.waitForURL(/\?s=.*(?:&|\?)post_type=product/, { timeout: TIMEOUTS.NORMAL }).catch(() => {});
-  if (isSearchUrl()) {
+  if (isSearchUrl() || hasNavigated()) {
     return;
   }
 
-  // WebKit/iOS fallback: if UI submit redirects directly to PDP or misses search route,
+  // WebKit/iOS fallback: if UI submit fails to navigate at all,
   // force deterministic product search URL so Search hook conditions are met.
   if (query && query.trim()) {
     await page.goto(`/?s=${encodeURIComponent(query.trim())}&post_type=product`);
