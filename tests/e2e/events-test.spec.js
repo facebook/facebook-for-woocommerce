@@ -741,6 +741,18 @@ test('Search', async ({ page }, testInfo) => {
     await validator.checkDebugLog();
     const result = await validator.validate('Search', page);
 
+    if (!result.passed) {
+      const diagnostics = {
+        project: testInfo.project.name,
+        currentUrl: page.url(),
+        testId,
+        errors: result.errors,
+        pixelCustomData: result.pixel?.custom_data,
+        capiCustomData: result.capi?.custom_data,
+      };
+      console.log(`🔎 Search validation diagnostics: ${JSON.stringify(diagnostics)}`);
+    }
+
     TestSetup.logResult('Search', result);
     expect(result.passed).toBe(true);
 });
