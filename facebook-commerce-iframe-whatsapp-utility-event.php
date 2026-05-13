@@ -63,7 +63,7 @@ class WC_Facebookcommerce_Iframe_Whatsapp_Utility_Event {
 		// Get WhatsApp Phone number from entered Billing and Shipping phone number
 		$billing_phone_number  = $order->get_billing_phone();
 		$shipping_phone_number = $order->get_shipping_phone();
-		$phone_number          = $billing_phone_number ?: $shipping_phone_number;
+		$phone_number          = ! empty( $billing_phone_number ) ? $billing_phone_number : $shipping_phone_number;
 		// Get Country Code from Billing and Shipping Country to override Country Calling Code
 		$should_use_billing_info = ! empty( $billing_phone_number );
 		$country_code            = $should_use_billing_info ? $order->get_billing_country() : $order->get_shipping_country();
