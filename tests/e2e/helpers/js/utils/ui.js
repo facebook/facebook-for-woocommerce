@@ -46,7 +46,7 @@ async function dismissWooInterferingOverlays(page) {
  */
 async function setProductTitle(page, newTitle) {
   const titleField = page.locator('#title');
-  titleField.waitFor({ state: 'visible', timeout: TIMEOUTS.MEDIUM });
+  await titleField.waitFor({ state: 'visible', timeout: TIMEOUTS.MEDIUM });
   await titleField.scrollIntoViewIfNeeded();
   await titleField.fill(newTitle);
   await dismissWooInterferingOverlays(page);
