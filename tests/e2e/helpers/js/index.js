@@ -97,7 +97,9 @@ const {
   installPixelBlockerMuPlugin,
   removePixelBlockerMuPlugin,
   installJsErrorSimulatorMuPlugin,
-  removeJsErrorSimulatorMuPlugin
+  removeJsErrorSimulatorMuPlugin,
+  installSingleSearchRedirectBlockerMuPlugin,
+  removeSingleSearchRedirectBlockerMuPlugin
 } = require('./wordpress/plugins');
 
 const {
@@ -243,6 +245,8 @@ const wordpress = {
   removePixelBlockerMuPlugin,
   installJsErrorSimulatorMuPlugin,
   removeJsErrorSimulatorMuPlugin,
+  installSingleSearchRedirectBlockerMuPlugin,
+  removeSingleSearchRedirectBlockerMuPlugin,
   runWpCli,
   getActiveThemeStatus,
   switchThemeBySlug,
@@ -368,6 +372,8 @@ module.exports = {
   removePixelBlockerMuPlugin,
   installJsErrorSimulatorMuPlugin,
   removeJsErrorSimulatorMuPlugin,
+  installSingleSearchRedirectBlockerMuPlugin,
+  removeSingleSearchRedirectBlockerMuPlugin,
 
   // WordPress - Themes
   runWpCli,

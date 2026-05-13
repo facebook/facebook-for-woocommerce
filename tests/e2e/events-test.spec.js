@@ -15,6 +15,8 @@ const {
   removePixelBlockerMuPlugin,
   installJsErrorSimulatorMuPlugin,
   removeJsErrorSimulatorMuPlugin,
+  installSingleSearchRedirectBlockerMuPlugin,
+  removeSingleSearchRedirectBlockerMuPlugin,
   reconnectAndVerify,
   getVisibleSearchInput,
   createVariableProductEventFixture,
@@ -679,46 +681,52 @@ test('Search', async ({ page }, testInfo) => {
       'Search is not validated on non-Storefront theme projects because search UI is not guaranteed.'
     );
 
-    const { testId, pixelCapture } = await TestSetup.init(page, 'Search',  testInfo);
+    await installSingleSearchRedirectBlockerMuPlugin();
 
-    console.log(`   🏠 Navigating to homepage`);
-    await page.goto('/');
-    await TestSetup.waitForPageReady(page);
+    try {
+      const { testId, pixelCapture } = await TestSetup.init(page, 'Search',  testInfo);
 
-    console.log(`   🔍 Typing search query in search box`);
-    const searchInput = await getVisibleSearchInput(page);
-    if (!searchInput && testInfo.project.name.includes('brave')) {
-      throw new Error('Search UI was not found for brave-wp-customer on Storefront; this should be present and must not be skipped.');
+      console.log(`   🏠 Navigating to homepage`);
+      await page.goto('/');
+      await TestSetup.waitForPageReady(page);
+
+      console.log(`   🔍 Typing search query in search box`);
+      const searchInput = await getVisibleSearchInput(page);
+      if (!searchInput && testInfo.project.name.includes('brave')) {
+        throw new Error('Search UI was not found for brave-wp-customer on Storefront; this should be present and must not be skipped.');
+      }
+      test.skip(!searchInput, 'Search UI is not available in this browser/theme fixture.');
+      await searchInput.fill('test');
+
+      console.log(`   🔎 Submitting search form`);
+      // Set up listener BEFORE triggering the action
+      const eventPromise = pixelCapture.waitForEvent();
+
+      await submitSearch(page, searchInput);
+      await TestSetup.waitForPageReady(page);
+      await eventPromise;
+
+      const validator = new EventValidator(testId);
+      await validator.checkDebugLog();
+      const result = await validator.validate('Search', page);
+
+      if (!result.passed) {
+        const diagnostics = {
+          project: testInfo.project.name,
+          currentUrl: page.url(),
+          testId,
+          errors: result.errors,
+          pixelCustomData: result.pixel?.custom_data,
+          capiCustomData: result.capi?.custom_data,
+        };
+        console.log(`🔎 Search validation diagnostics: ${JSON.stringify(diagnostics)}`);
+      }
+
+      TestSetup.logResult('Search', result);
+      expect(result.passed).toBe(true);
+    } finally {
+      await removeSingleSearchRedirectBlockerMuPlugin().catch(() => {});
     }
-    test.skip(!searchInput, 'Search UI is not available in this browser/theme fixture.');
-    await searchInput.fill('test');
-
-    console.log(`   🔎 Submitting search form`);
-    // Set up listener BEFORE triggering the action
-    const eventPromise = pixelCapture.waitForEvent();
-
-    await submitSearch(page, searchInput);
-    await TestSetup.waitForPageReady(page);
-    await eventPromise;
-
-    const validator = new EventValidator(testId);
-    await validator.checkDebugLog();
-    const result = await validator.validate('Search', page);
-
-    if (!result.passed) {
-      const diagnostics = {
-        project: testInfo.project.name,
-        currentUrl: page.url(),
-        testId,
-        errors: result.errors,
-        pixelCustomData: result.pixel?.custom_data,
-        capiCustomData: result.capi?.custom_data,
-      };
-      console.log(`🔎 Search validation diagnostics: ${JSON.stringify(diagnostics)}`);
-    }
-
-    TestSetup.logResult('Search', result);
-    expect(result.passed).toBe(true);
 });
 
 test('Search - No Results', async ({ page }, testInfo) => {
