@@ -250,6 +250,9 @@ async function submitSearch(page, searchInput) {
     postType.value = 'product';
   }).catch(() => {});
 
+  // Capture typed query for deterministic fallback navigation.
+  const query = await searchInput.inputValue().catch(() => '');
+
   // First try standard Enter key flow.
   await searchInput.press('Enter').catch(() => {});
   if (isSearchUrl()) {
@@ -290,6 +293,16 @@ async function submitSearch(page, searchInput) {
     if (await submitButton.count().catch(() => 0)) {
       await submitButton.click({ force: true }).catch(() => {});
     }
+  }
+
+  if (isSearchUrl()) {
+    return;
+  }
+
+  // WebKit/iOS fallback: if UI submit redirects directly to PDP or misses search route,
+  // force deterministic product search URL so Search hook conditions are met.
+  if (query && query.trim()) {
+    await page.goto(`/?s=${encodeURIComponent(query.trim())}&post_type=product`);
   }
 }
 
