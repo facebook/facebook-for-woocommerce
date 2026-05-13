@@ -9,6 +9,7 @@ function isAjaxCartEndpoint(rawUrl, method = 'GET') {
     const url = new URL(rawUrl);
     const path = url.pathname || '';
     const wcAjax = url.searchParams.get('wc-ajax') || '';
+    const restRoute = url.searchParams.get('rest_route') || '';
     const httpMethod = String(method || 'GET').toUpperCase();
 
     // Classic WooCommerce AJAX endpoint.
@@ -16,8 +17,21 @@ function isAjaxCartEndpoint(rawUrl, method = 'GET') {
       return true;
     }
 
-    // Blocks Store API AJAX add-to-cart endpoint.
-    if (path.includes('/wp-json/wc/store/v1/cart/add-item') && httpMethod === 'POST') {
+    // Blocks Store API add-to-cart (direct and query-style rest_route forms).
+    if (
+      (path.includes('/wp-json/wc/store/v1/cart/add-item') ||
+        restRoute.includes('/wc/store/v1/cart/add-item')) &&
+      httpMethod === 'POST'
+    ) {
+      return true;
+    }
+
+    // Blocks Store API batch (direct and query-style rest_route forms).
+    if (
+      (path.includes('/wp-json/wc/store/v1/batch') ||
+        restRoute.includes('/wc/store/v1/batch')) &&
+      httpMethod === 'POST'
+    ) {
       return true;
     }
 

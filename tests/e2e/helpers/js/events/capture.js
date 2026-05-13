@@ -195,9 +195,11 @@ class PixelCapture {
     let event_name = urlObj.searchParams.get('ev') || 'Unknown';
     let event_id = urlObj.searchParams.get('eid') || null;
     let pixel_id = urlObj.searchParams.get('id') || 'Unknown';
+    let documentLocation = urlObj.searchParams.get('dl') || '';
 
     const customData = {};
     const userData = {};
+    let marketingAgentParam = null;
 
     const ingestParam = (key, value) => {
       if (key.startsWith('cd[')) {
@@ -232,6 +234,10 @@ class PixelCapture {
         pixel_id = decodeURIComponent(value);
       } else if (key === 'fbp' && !userData.fbp) {
         userData.fbp = decodeURIComponent(value);
+      } else if (key === 'a' && !marketingAgentParam) {
+        marketingAgentParam = decodeURIComponent(value);
+      } else if (key === 'dl' && !documentLocation) {
+        documentLocation = decodeURIComponent(value);
       }
     };
 
@@ -326,6 +332,34 @@ class PixelCapture {
       }
     }
 
+    // AJAX AddToCart compatibility: Store API path may encode plugin metadata in `a`
+    // (e.g. a=woocommerce_0-10.6.2-3.6.3) instead of cd[source]/cd[version]/cd[pluginVersion].
+    const isAjaxAtcOnShopLoop = event_name === 'AddToCart' && /\/shop\/?($|\?|#)/.test(documentLocation || '');
+
+    if (
+      isAjaxAtcOnShopLoop &&
+      marketingAgentParam &&
+      (!customData.source || !customData.version || !customData.pluginVersion)
+    ) {
+      const lastDash = marketingAgentParam.lastIndexOf('-');
+      const secondLastDash = marketingAgentParam.lastIndexOf('-', lastDash - 1);
+
+      if (secondLastDash > 0 && lastDash > secondLastDash) {
+        const parsedSource = marketingAgentParam.slice(0, secondLastDash);
+        const parsedVersion = marketingAgentParam.slice(secondLastDash + 1, lastDash);
+        const parsedPluginVersion = marketingAgentParam.slice(lastDash + 1);
+
+        if (!customData.source) customData.source = parsedSource;
+        if (!customData.version) customData.version = parsedVersion;
+        if (!customData.pluginVersion) customData.pluginVersion = parsedPluginVersion;
+
+        console.log(
+          `ℹ️ [PixelCapture] AddToCart metadata mapping detected: used 'a' param ` +
+          `(${marketingAgentParam}) for custom_data.source/version/pluginVersion ` +
+          `because cd[source|version|pluginVersion] were missing.`
+        );
+      }
+    }
 
     const cookies = await this.getAllCookies();
 
