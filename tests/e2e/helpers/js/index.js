@@ -189,6 +189,13 @@ const {
   isAjaxAddToCartAvailableOnShop
 } = require('./events/ajax-cart');
 
+const {
+  holdSignals,
+  releaseSignals,
+  getSignalState,
+  getQueuedSignalEvents
+} = require('./events/signals');
+
 // =============================================================================
 // Module Exports (Grouped)
 // =============================================================================
@@ -305,7 +312,11 @@ const events = {
   clearCart,
   completeCheckoutFromCart,
   triggerAjaxAddToCartFromShop,
-  isAjaxAddToCartAvailableOnShop
+  isAjaxAddToCartAvailableOnShop,
+  holdSignals,
+  releaseSignals,
+  getSignalState,
+  getQueuedSignalEvents
 };
 
 // =============================================================================
@@ -435,6 +446,10 @@ module.exports = {
   completeCheckoutFromCart,
   triggerAjaxAddToCartFromShop,
   isAjaxAddToCartAvailableOnShop,
+  holdSignals,
+  releaseSignals,
+  getSignalState,
+  getQueuedSignalEvents,
 
   // Grouped module exports (for namespace imports)
   auth,

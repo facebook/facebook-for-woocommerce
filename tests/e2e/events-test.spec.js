@@ -9,15 +9,10 @@ const {
   EventValidator,
   cleanupProduct,
   cleanupProducts,
-  deactivatePlugin,
-  activatePlugin,
-  installPixelBlockerMuPlugin,
-  removePixelBlockerMuPlugin,
   installJsErrorSimulatorMuPlugin,
   removeJsErrorSimulatorMuPlugin,
   installSingleSearchRedirectBlockerMuPlugin,
   removeSingleSearchRedirectBlockerMuPlugin,
-  reconnectAndVerify,
   getVisibleSearchInput,
   createVariableProductEventFixture,
   createGroupedProductEventFixture,
@@ -32,6 +27,11 @@ const {
   clearCart,
   completeCheckoutFromCart,
   triggerAjaxAddToCartFromShop,
+  isAjaxAddToCartAvailableOnShop,
+  holdSignals,
+  releaseSignals,
+  getSignalState,
+  getQueuedSignalEvents,
   submitSearch,
   getActiveThemeStatus,
   switchThemeBySlug,
@@ -52,6 +52,119 @@ let activeThemeProjectSlug = null;
 function resolveThemeForProject(projectName) {
   return THEME_PROJECT_TO_SLUG[projectName] || null;
 }
+
+function createPixelEventRequestRecorder(page, eventName) {
+  const captured = [];
+
+  const readBodyParam = (request, key) => {
+    const body = request.postData() || '';
+    if (!body || !body.includes('=')) {
+      return null;
+    }
+
+    const form = new URLSearchParams(body);
+    return form.get(key);
+  };
+
+  const onRequest = (request) => {
+    const rawUrl = request.url();
+    if (!rawUrl.includes('facebook.com/tr')) {
+      return;
+    }
+
+    try {
+      const parsed = new URL(rawUrl);
+      const queryEventName = parsed.searchParams.get('ev');
+      const bodyEventName = readBodyParam(request, 'ev');
+      const detectedEventName = queryEventName || bodyEventName;
+
+      if (detectedEventName !== eventName) {
+        return;
+      }
+
+      const queryEventId = parsed.searchParams.get('eid');
+      const bodyEventId = readBodyParam(request, 'eid');
+
+      captured.push({
+        url: rawUrl,
+        eventName: detectedEventName,
+        eventId: queryEventId || bodyEventId || null,
+      });
+    } catch (_) {
+      // Ignore non-URL-safe payloads.
+    }
+  };
+
+  page.on('request', onRequest);
+
+  return {
+    getEvents: () => captured.slice(),
+    stop: () => page.off('request', onRequest),
+  };
+}
+
+async function waitForMinimumPixelEvents(recorder, minCount, timeoutMs = 15000) {
+  const deadline = Date.now() + timeoutMs;
+
+  while (Date.now() < deadline) {
+    const events = recorder.getEvents();
+    if (events.length >= minCount) {
+      return events;
+    }
+
+    await new Promise(resolve => setTimeout(resolve, 250));
+  }
+
+  return recorder.getEvents();
+}
+
+async function waitForMinimumCapiEvents(testId, eventName, minCount, timeoutMs = 15000) {
+  const deadline = Date.now() + timeoutMs;
+  let latestEvents = [];
+
+  while (Date.now() < deadline) {
+    const captured = await loadCapturedEvents(testId);
+    latestEvents = captured.capi.filter(event => event.event_name === eventName);
+
+    if (latestEvents.length >= minCount) {
+      return latestEvents;
+    }
+
+    await new Promise(resolve => setTimeout(resolve, 300));
+  }
+
+  return latestEvents;
+}
+
+async function getSignalRuntimeSnapshot(page) {
+  const state = await getSignalState(page).catch(() => ({ state: null, held: null }));
+
+  const runtime = await page.evaluate(() => {
+    const signal = window.FacebookSignals || null;
+    const queue = signal && Array.isArray(signal._queue) ? signal._queue : [];
+    const config = signal && signal._config ? signal._config : {};
+
+    return {
+      hasFbwcsignal: Boolean(window.fbwcsignal),
+      hasFbwcsignalHold: Boolean(window.fbwcsignal && typeof window.fbwcsignal.hold === 'function'),
+      hasFbwcsignalRelease: Boolean(window.fbwcsignal && typeof window.fbwcsignal.release === 'function'),
+      hasFacebookSignals: Boolean(signal),
+      facebookSignalsHeldFlag: signal ? Boolean(signal._held) : null,
+      queueLength: queue.length,
+      queueEventIds: queue.map(event => event?.event_id).filter(Boolean),
+      queueEventNames: queue.map(event => event?.event_name).filter(Boolean),
+      hasReleaseMethod: Boolean(signal && typeof signal.release === 'function'),
+      configAction: config.action || null,
+      configAjaxUrl: config.ajaxUrl || null,
+      configNoncePresent: Boolean(config.nonce),
+      signalCookie: document.cookie.split(';').map(v => v.trim()).find(v => v.startsWith('wc_facebook_signals_state=')) || null,
+      locationHref: window.location.href,
+    };
+  }).catch(() => ({}));
+
+  return { ...state, ...runtime };
+}
+
 
 test.beforeAll(async ({}, workerInfo) => {
   const targetThemeSlug = resolveThemeForProject(workerInfo.project.name);
@@ -768,54 +881,273 @@ test('Search - No Results', async ({ page }, testInfo) => {
 });
 
 
-test('ViewContent - No Consent (pixel disabled)', async ({ page }, testInfo) => {
+test('ViewContent - Signals held (no immediate Pixel/CAPI send)', async ({ page }, testInfo) => {
     try {
-        // 1. Clear any existing _fbp/_fbc cookies from previous tests
-        console.log('🍪 Clearing existing FB cookies...');
-        await page.context().clearCookies();
+      console.log('🍪 Clearing existing FB cookies...');
+      await page.context().clearCookies();
 
-        // 2. Deactivate plugin
-        await deactivatePlugin();
+      const { testId, pixelCapture } = await TestSetup.init(page, 'ViewContent', testInfo, true);
 
-        // 3. Install mu-plugin (filter returns false)
-        await installPixelBlockerMuPlugin();
+      await page.goto('/');
+      await TestSetup.waitForPageReady(page, TIMEOUTS.INSTANT);
 
-        // 4. Reactivate plugin (filter now in place before EventsTracker constructor runs)
-        await activatePlugin();
+      const holdResult = await holdSignals(page);
+      expect(holdResult.state).toBe('held');
 
-        // 5. Run test - expect NO events
-        console.log('🧪 Initializing test...');
-        const { testId, pixelCapture } = await TestSetup.init(page, 'ViewContent', testInfo, true);
+      const eventPromise = pixelCapture.waitForEvent();
+      await page.goto(process.env.TEST_PRODUCT_URL);
+      await TestSetup.waitForPageReady(page);
+      await eventPromise;
 
-        console.log('📦 Navigating to product (expecting NO events)...');
-        const eventPromise = pixelCapture.waitForEvent();
-        await page.goto(process.env.TEST_PRODUCT_URL);
-        await TestSetup.waitForPageReady(page);
-        await eventPromise;
+      const validator = new EventValidator(testId, false, true);
+      await validator.checkDebugLog();
+      const result = await validator.validate('ViewContent', page);
 
-        console.log('🔍 Validating no events fired...');
-        const validator = new EventValidator(testId, false, true);
-        await validator.checkDebugLog();
-        const result = await validator.validate('ViewContent', page);
+      const queuedViewContentEvents = await getQueuedSignalEvents(page, 'ViewContent');
+      expect(queuedViewContentEvents.length).toBeGreaterThanOrEqual(1);
 
-        TestSetup.logResult('ViewContent (No Consent)', result);
-        expect(result.passed).toBe(true);
-
-        // 6. Validate cookies - _fbp and _fbc should NOT exist after page load
-        console.log('🍪 Checking cookies were not set...');
-        const cookies = await page.context().cookies();
-        const fbp = cookies.find(c => c.name === '_fbp');
-        const fbc = cookies.find(c => c.name === '_fbc');
-
-        expect(fbp).toBeUndefined();
-        expect(fbc).toBeUndefined();
-        console.log('✅ No _fbp or _fbc cookies (correct - fbevents.js did not load)');
+      TestSetup.logResult('ViewContent (Signals Held)', result);
+      expect(result.passed).toBe(true);
     } finally {
-        // 7. Cleanup - always restore environment, even if assertions fail
-        console.log('🧹 Cleaning up...');
-        await removePixelBlockerMuPlugin().catch(() => {});
-        await reconnectAndVerify({ enablePixel: 'yes', enableS2S: 'yes' }).catch(() => {});
-        console.log('✅ Consent test cleanup complete');
+      // Cleanup: always restore signal state even on assertion failures.
+      await releaseSignals(page).catch(() => {});
+    }
+});
+
+test('ViewContent - Signals release flushes queued Pixel/CAPI', async ({ page }, testInfo) => {
+    console.log('🍪 Clearing existing FB cookies...');
+    await page.context().clearCookies();
+
+    const { testId, pixelCapture } = await TestSetup.init(page, 'ViewContent', testInfo);
+
+    await page.goto('/');
+    await TestSetup.waitForPageReady(page, TIMEOUTS.INSTANT);
+
+    const holdResult = await holdSignals(page);
+    expect(holdResult.state).toBe('held');
+
+    const recorder = createPixelEventRequestRecorder(page, 'ViewContent');
+
+    try {
+      await page.goto(process.env.TEST_PRODUCT_URL);
+      await TestSetup.waitForPageReady(page);
+
+      const queuedBeforeRelease = await getQueuedSignalEvents(page, 'ViewContent');
+      expect(queuedBeforeRelease.length).toBeGreaterThanOrEqual(1);
+
+      const replayPromise = pixelCapture.waitForEvent();
+      const releaseResult = await releaseSignals(page);
+      await replayPromise;
+
+      expect(releaseResult.state).toBe('active');
+
+      const releasedPixelEvents = await waitForMinimumPixelEvents(recorder, queuedBeforeRelease.length, 15000);
+      const releasedCapiEvents = await waitForMinimumCapiEvents(testId, 'ViewContent', queuedBeforeRelease.length, 15000);
+
+      expect(releasedPixelEvents.length).toBeGreaterThanOrEqual(queuedBeforeRelease.length);
+      expect(releasedCapiEvents.length).toBeGreaterThanOrEqual(queuedBeforeRelease.length);
+
+      const queuedIds = new Set(queuedBeforeRelease.map(event => event.event_id).filter(Boolean));
+      const replayedPixelIds = new Set(releasedPixelEvents.map(event => event.eventId).filter(Boolean));
+      const replayedCapiIds = new Set(releasedCapiEvents.map(event => event.event_id).filter(Boolean));
+
+      queuedIds.forEach((eventId) => {
+        expect(replayedPixelIds.has(eventId)).toBe(true);
+        expect(replayedCapiIds.has(eventId)).toBe(true);
+      });
+
+      const queuedAfterRelease = await getQueuedSignalEvents(page, 'ViewContent');
+      expect(queuedAfterRelease.length).toBe(0);
+    } finally {
+      recorder.stop();
+      // Cleanup: always restore signal state even if release-path assertions fail midway.
+      await releaseSignals(page).catch(() => {});
+    }
+});
+
+test('AddToCart - Signals hold/release with multiple shop AJAX clicks', async ({ page }, testInfo) => {
+    const ajaxAvailable = await isAjaxAddToCartAvailableOnShop(page, { productUrl: process.env.TEST_PRODUCT_URL });
+    test.skip(!ajaxAvailable, 'Shop AJAX AddToCart is not available in this browser/theme fixture.');
+
+    await clearCart(page);
+    await page.context().clearCookies();
+
+    const { testId } = await TestSetup.init(page, 'AddToCart', testInfo);
+
+    await page.goto('/shop');
+    await TestSetup.waitForPageReady(page, TIMEOUTS.INSTANT);
+
+    const holdResult = await holdSignals(page);
+    expect(holdResult.state).toBe('held');
+
+    // Important: initialize the page in held mode so FacebookSignals receives
+    // held=true + release endpoint config during page boot.
+    console.log('ℹ️ Signals set to held; reloading /shop to initialize held runtime config.');
+    await page.reload({ waitUntil: 'networkidle' });
+    await TestSetup.waitForPageReady(page, TIMEOUTS.INSTANT);
+
+    const signalRuntimeAfterHold = await getSignalRuntimeSnapshot(page);
+
+    const recorder = createPixelEventRequestRecorder(page, 'AddToCart');
+
+    const releaseAjaxRequests = [];
+    const releaseAjaxResponses = [];
+
+    const onReleaseRequest = (request) => {
+      const url = request.url();
+      if (!url.includes('admin-ajax.php') || !url.includes('action=facebook_release_signals')) {
+        return;
+      }
+
+      releaseAjaxRequests.push({
+        method: request.method(),
+        url,
+        bodyPreview: (request.postData() || '').slice(0, 500),
+      });
+    };
+
+    const onReleaseResponse = async (response) => {
+      const url = response.url();
+      if (!url.includes('admin-ajax.php') || !url.includes('action=facebook_release_signals')) {
+        return;
+      }
+
+      let text = '';
+      try {
+        text = await response.text();
+      } catch (_) {
+        text = '';
+      }
+
+      releaseAjaxResponses.push({
+        status: response.status(),
+        ok: response.ok(),
+        url,
+        bodyPreview: (text || '').slice(0, 1000),
+      });
+    };
+
+    page.on('request', onReleaseRequest);
+    page.on('response', onReleaseResponse);
+
+    try {
+      const targetClicks = 3;
+
+      const shopAjaxButtons = page.locator('a.add_to_cart_button.ajax_add_to_cart, button.add_to_cart_button.ajax_add_to_cart');
+      const totalButtons = await shopAjaxButtons.count();
+      test.skip(totalButtons < targetClicks, `Need at least ${targetClicks} AJAX add-to-cart buttons on /shop. Found ${totalButtons}.`);
+
+      for (let index = 0; index < targetClicks; index += 1) {
+        await shopAjaxButtons.nth(index).click({ force: true });
+        await page.waitForTimeout(TIMEOUTS.NORMAL);
+        await page.waitForLoadState('networkidle').catch(() => {});
+      }
+
+      const pixelWhileHeld = recorder.getEvents();
+      expect(pixelWhileHeld.length).toBe(0);
+
+      const queuedBeforeRelease = await getQueuedSignalEvents(page, 'AddToCart');
+      expect(queuedBeforeRelease.length).toBeGreaterThanOrEqual(targetClicks);
+
+      const signalRuntimeBeforeRelease = await getSignalRuntimeSnapshot(page);
+      console.log(`ℹ️ Queued AddToCart events while held: ${queuedBeforeRelease.length}`);
+
+      const queuedEventIds = queuedBeforeRelease
+        .map(event => event.event_id)
+        .filter(Boolean);
+      expect(queuedEventIds.length).toBeGreaterThanOrEqual(targetClicks);
+      expect(new Set(queuedEventIds).size).toBe(queuedEventIds.length);
+
+      const capiWhileHeld = await waitForMinimumCapiEvents(testId, 'AddToCart', 1, 2000);
+      expect(capiWhileHeld.length).toBe(0);
+
+      const releaseResult = await releaseSignals(page);
+      expect(releaseResult.state).toBe('active');
+
+      // Give release-side async actions a short window to emit network calls.
+      await page.waitForTimeout(1000);
+
+      const signalRuntimeAfterRelease = await getSignalRuntimeSnapshot(page);
+
+      const releasedPixelEvents = await waitForMinimumPixelEvents(recorder, queuedBeforeRelease.length, 20000);
+      const releasedCapiEvents = await waitForMinimumCapiEvents(testId, 'AddToCart', queuedBeforeRelease.length, 20000);
+
+      const releasedPixelIds = new Set(releasedPixelEvents.map(event => event.eventId).filter(Boolean));
+      const releasedCapiIds = new Set(releasedCapiEvents.map(event => event.event_id).filter(Boolean));
+
+      console.log(`ℹ️ Release completed: pixel replays=${releasedPixelEvents.length}, capi replays=${releasedCapiEvents.length}`);
+
+      const diagnostics = {
+        testId,
+        signalRuntimeAfterHold,
+        signalRuntimeBeforeRelease,
+        signalRuntimeAfterRelease,
+        queuedBeforeReleaseCount: queuedBeforeRelease.length,
+        queuedEventIds,
+        releaseResultState: releaseResult?.state,
+        releaseResultPayload: releaseResult?.response?.data || releaseResult?.response || null,
+        releaseAjaxRequests,
+        releaseAjaxResponses,
+        releasedPixelCount: releasedPixelEvents.length,
+        releasedPixelIds: [...releasedPixelIds],
+        releasedCapiCount: releasedCapiEvents.length,
+        releasedCapiIds: [...releasedCapiIds],
+        releasedPixelSample: releasedPixelEvents.slice(0, 3),
+        releasedCapiSample: releasedCapiEvents.slice(0, 3),
+      };
+
+      if (
+        signalRuntimeAfterHold.state !== 'held' ||
+        !signalRuntimeAfterHold.hasFacebookSignals ||
+        !signalRuntimeAfterHold.facebookSignalsHeldFlag ||
+        signalRuntimeAfterHold.configAction !== 'facebook_release_signals' ||
+        !signalRuntimeAfterHold.configAjaxUrl ||
+        !signalRuntimeAfterHold.configNoncePresent
+      ) {
+        throw new Error(`Signals runtime did not initialize in held mode after reload. Diagnostics: ${JSON.stringify(diagnostics)}`);
+      }
+
+      if (releasedCapiEvents.length === 0) {
+        throw new Error(`No released AddToCart CAPI events were captured. Diagnostics: ${JSON.stringify(diagnostics)}`);
+      }
+      releasedCapiIds.forEach((eventId) => {
+        expect(queuedEventIds.includes(eventId)).toBe(true);
+      });
+
+      expect(releasedPixelEvents.length).toBeGreaterThan(0);
+      if (releasedPixelIds.size > 0) {
+        const matchedPixelIds = [...releasedPixelIds].filter(eventId => queuedEventIds.includes(eventId));
+        expect(matchedPixelIds.length).toBeGreaterThan(0);
+      }
+
+      const groupedCapiById = releasedCapiEvents.reduce((acc, event) => {
+        const id = event.event_id || `missing-${acc.size}`;
+        acc.set(id, (acc.get(id) || 0) + 1);
+        return acc;
+      }, new Map());
+
+      groupedCapiById.forEach((count, eventId) => {
+        expect(count).toBe(1);
+        if (!String(eventId).startsWith('missing-')) {
+          const matchedQueued = queuedBeforeRelease.find(event => event.event_id === eventId);
+          expect(matchedQueued).toBeTruthy();
+        }
+      });
+
+      const queuedAfterRelease = await getQueuedSignalEvents(page, 'AddToCart');
+      expect(queuedAfterRelease.length).toBe(0);
+
+      const cookies = await page.context().cookies();
+      expect(cookies.find(c => c.name === '_fbp')).toBeDefined();
+
+      console.log(`✅ AddToCart held/release replay validated for ${queuedEventIds.length} queued events`);
+    } finally {
+      recorder.stop();
+      page.off('request', onReleaseRequest);
+      page.off('response', onReleaseResponse);
+      // Cleanup: always restore signal state and cart baseline.
+      await releaseSignals(page).catch(() => {});
+      await clearCart(page).catch(() => {});
     }
 });
 
