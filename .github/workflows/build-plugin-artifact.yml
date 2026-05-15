@@ -7,6 +7,9 @@ on:
     branches:
       - release/*
 
+permissions:
+  contents: read
+
 jobs:
   build-and-upload:
     uses: ./.github/workflows/shared-build-plugin-artifact.yml
