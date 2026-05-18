@@ -159,6 +159,8 @@ class PluginCrashHandler {
 
 		if ( $this->should_rate_limit_crash_report() ) {
 			$this->increment_rate_limited_counter();
+			$this->log_crash_observability( '[FBW_DEDUP_DEBUG] report skipped before enqueue: reason=rate_limited fingerprint=' . $fingerprint );
+			$this->release_crash_dedup_lock( $normalized_report, 'rate_limited' );
 			return;
 		}
 
@@ -166,15 +168,21 @@ class PluginCrashHandler {
 		if ( ! $this->can_queue_more_crash_reports( $queue_size ) ) {
 			if ( ! $this->maybe_trim_queue_for_prioritized_report( $report_to_queue, $queue_size ) ) {
 				$this->log_crash_observability( '[FBW_CRASH_OBS] crash report dropped: reason=queue_cap fingerprint=' . $fingerprint . ' aggregate_count=' . (int) ( $report_to_queue['extra_data']['aggregate_count'] ?? 0 ) . ' queue_size=' . (int) $queue_size . ' queue_max=' . (int) self::CRASH_MAX_QUEUED_REPORTS );
+				$this->log_crash_observability( '[FBW_DEDUP_DEBUG] report dropped before enqueue: reason=queue_cap fingerprint=' . $fingerprint );
+				$this->release_crash_dedup_lock( $normalized_report, 'queue_cap' );
 				return;
 			}
 		}
 
 		if ( $this->has_pending_crash_queue_lock( $fingerprint ) ) {
+			$this->log_crash_observability( '[FBW_DEDUP_DEBUG] report skipped before enqueue: reason=pending_queue_lock fingerprint=' . $fingerprint );
+			$this->release_crash_dedup_lock( $normalized_report, 'pending_queue_lock' );
 			return;
 		}
 
 		if ( ! $this->queue_crash_report( $report_to_queue ) ) {
+			$this->log_crash_observability( '[FBW_DEDUP_DEBUG] report dropped before enqueue: reason=enqueue_failed fingerprint=' . $fingerprint );
+			$this->release_crash_dedup_lock( $normalized_report, 'enqueue_failed' );
 			$this->log_fallback( $report_to_queue );
 			return;
 		}
@@ -675,17 +683,48 @@ class PluginCrashHandler {
 
 		// Prefer object cache lock when an external cache backend is available.
 		if ( function_exists( 'wp_using_ext_object_cache' ) && wp_using_ext_object_cache() ) {
-			return wp_cache_add( $cache_key, 1, self::CRASH_REPORT_CACHE_GROUP, HOUR_IN_SECONDS );
+			$acquired = wp_cache_add( $cache_key, 1, self::CRASH_REPORT_CACHE_GROUP, HOUR_IN_SECONDS );
+			if ( $acquired ) {
+				$this->log_crash_observability( '[FBW_DEDUP_DEBUG] dedup lock created: storage=object_cache fingerprint=' . $fingerprint );
+			} else {
+				$this->log_crash_observability( '[FBW_DEDUP_DEBUG] dedup lock blocked: storage=object_cache fingerprint=' . $fingerprint );
+			}
+			return $acquired;
 		}
 
 		// Fallback lock for non-persistent object cache environments.
 		$transient_key = 'wc_facebook_crash_lock_' . $fingerprint;
 		if ( false !== get_transient( $transient_key ) ) {
+			$this->log_crash_observability( '[FBW_DEDUP_DEBUG] dedup lock blocked: storage=transient fingerprint=' . $fingerprint );
 			return false;
 		}
 
 		set_transient( $transient_key, 1, HOUR_IN_SECONDS );
+		$this->log_crash_observability( '[FBW_DEDUP_DEBUG] dedup lock created: storage=transient fingerprint=' . $fingerprint );
 		return true;
+	}
+
+	/**
+	 * Releases dedup lock when report is skipped or dropped before enqueue.
+	 *
+	 * @since 3.6.4
+	 *
+	 * @param array $report normalized crash report payload.
+	 */
+	private function release_crash_dedup_lock( array $report, $reason = 'unknown' ) {
+		$fingerprint = $this->generate_crash_fingerprint( $report );
+		if ( '' === $fingerprint ) {
+			return;
+		}
+
+		$cache_key = 'crash_lock_' . $fingerprint;
+
+		if ( function_exists( 'wp_using_ext_object_cache' ) && wp_using_ext_object_cache() ) {
+			wp_cache_delete( $cache_key, self::CRASH_REPORT_CACHE_GROUP );
+		}
+
+		delete_transient( 'wc_facebook_crash_lock_' . $fingerprint );
+		$this->log_crash_observability( '[FBW_DEDUP_DEBUG] dedup lock released: reason=' . (string) $reason . ' fingerprint=' . $fingerprint );
 	}
 
 	/**
