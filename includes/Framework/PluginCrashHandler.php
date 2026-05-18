@@ -668,7 +668,7 @@ class PluginCrashHandler {
 			// Common secret-like key/value pairs.
 			'/(token|access_token|auth|authorization|secret|api[_-]?key|password|cookie|set-cookie|request_body|body|headers?)\s*[:=]\s*("[^"]*"|\'[^\']*\'|\{[^\}]*\}|\[[^\]]*\]|[^\s,;]+)/i',
 			// Authorization bearer values.
-			'/Bearer\s+[A-Za-z0-9\-._~+\/]+=*/i',
+			'/\bBearer\s+(?:Bearer\s+)?[A-Za-z0-9\-._~+\/]+=*/i',
 			// JWT-like strings.
 			'/\beyJ[A-Za-z0-9_-]+\.[A-Za-z0-9._-]+\.[A-Za-z0-9._-]+\b/',
 			// Redact long token-like strings (mixed letters+digits) and long hex strings.
@@ -676,12 +676,12 @@ class PluginCrashHandler {
 			'/\b[a-f0-9]{32,}\b/i',
 			// Basic PII redaction.
 			'/\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b/i',
-			'/\b(?:\+?\d[\d\s().-]{7,}\d)\b/',
+			'/(?<!\w)\+?\d[\d\s().-]{7,}\d(?!\w)/',
 		];
 
 		$replacements = [
 			'$1=[redacted]',
-			'Bearer [redacted]',
+			'Bearer [redacted_token]',
 			'[redacted_token]',
 			'[redacted_token]',
 			'[redacted_token]',
