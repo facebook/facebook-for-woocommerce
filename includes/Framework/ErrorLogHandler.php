@@ -51,6 +51,10 @@ class ErrorLogHandler extends LogHandlerBase {
 	 * @since 3.5.0
 	 */
 	public function process_error_log( $raw_context ) {
+		if ( ! self::is_meta_diagnosis_enabled_for_reporting() ) {
+			return;
+		}
+
 		$context = self::set_core_log_context( $raw_context );
 		try {
 			$response = facebook_for_woocommerce()->get_api()->log_to_meta( $context );
@@ -88,6 +92,10 @@ class ErrorLogHandler extends LogHandlerBase {
 	 * @return bool
 	 */
 	public static function enqueue_meta_log_request( array $request_data, $unique = true ) {
+		if ( ! self::is_meta_diagnosis_enabled_for_reporting() ) {
+			return false;
+		}
+
 		if ( ! function_exists( 'as_enqueue_async_action' ) ) {
 			return false;
 		}
@@ -99,6 +107,34 @@ class ErrorLogHandler extends LogHandlerBase {
 		try {
 			$action_id = as_enqueue_async_action( self::META_LOG_API, [ $request_data ], self::META_LOG_API_GROUP, $unique );
 			return ! empty( $action_id );
+		} catch ( Throwable $e ) {
+			return false;
+		}
+	}
+
+	/**
+	 * Checks whether Meta diagnosis reporting is enabled.
+	 *
+	 * Uses the existing integration opt-in and fails closed when unavailable.
+	 *
+	 * @since 3.6.4
+	 *
+	 * @return bool
+	 */
+	private static function is_meta_diagnosis_enabled_for_reporting() {
+		if ( ! function_exists( 'facebook_for_woocommerce' ) ) {
+			return false;
+		}
+
+		try {
+			$plugin = facebook_for_woocommerce();
+
+			if ( ! $plugin || ! method_exists( $plugin, 'get_integration' ) ) {
+				return false;
+			}
+
+			$integration = $plugin->get_integration();
+			return $integration && method_exists( $integration, 'is_meta_diagnosis_enabled' ) && $integration->is_meta_diagnosis_enabled();
 		} catch ( Throwable $e ) {
 			return false;
 		}
