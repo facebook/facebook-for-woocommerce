@@ -22,9 +22,9 @@ defined( 'ABSPATH' ) || exit;
 class PluginCrashHandler {
 
 	/**
-	 * Disable flag option key.
+	 * Disable flag transient key fallback.
 	 */
-	const DISABLE_FLAG_OPTION = 'wc_facebook_plugin_crash_disabled';
+	const DISABLE_FLAG_TRANSIENT = 'wc_facebook_plugin_disabled';
 
 	/**
 	 * Previously registered exception handler.
@@ -151,14 +151,89 @@ class PluginCrashHandler {
 	}
 
 	/**
-	 * Writes a minimal temporary disable flag for the first crash handling iteration.
+	 * Writes disable flag state.
 	 *
-	 * No recovery/isolation logic is implemented yet; this only stores a marker.
+	 * Primary storage is a file-based flag in uploads; if file write fails,
+	 * falls back to a transient. If both writes fail, logs to error_log.
 	 *
 	 * @since 3.6.4
 	 */
 	private function write_disable_flag() {
-		update_option( self::DISABLE_FLAG_OPTION, 'yes' );
+		if ( $this->write_disable_flag_file() ) {
+			return;
+		}
+
+		if ( $this->write_disable_flag_transient() ) {
+			return;
+		}
+
+		error_log( 'Meta for WooCommerce crash capture: failed to write disable flag file and transient fallback.' ); // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log
+	}
+
+	/**
+	 * Writes the disable flag file.
+	 *
+	 * @since 3.6.4
+	 *
+	 * @return bool
+	 */
+	private function write_disable_flag_file() {
+		$flag_file = $this->get_disable_flag_file_path();
+		$flag_dir  = dirname( $flag_file );
+
+		if ( ! is_dir( $flag_dir ) && ! wp_mkdir_p( $flag_dir ) ) {
+			return false;
+		}
+
+		$existing_payload = [];
+		if ( is_readable( $flag_file ) ) {
+			$raw_payload = @file_get_contents( $flag_file ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents
+			if ( is_string( $raw_payload ) && '' !== $raw_payload ) {
+				$decoded = json_decode( $raw_payload, true );
+				if ( is_array( $decoded ) ) {
+					$existing_payload = $decoded;
+				}
+			}
+		}
+
+		$crash_count = isset( $existing_payload['crash_count'] ) ? (int) $existing_payload['crash_count'] : 0;
+		$payload     = [
+			'timestamp'   => time(),
+			'crash_count' => $crash_count + 1,
+		];
+
+		$bytes_written = @file_put_contents( $flag_file, wp_json_encode( $payload ) ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_file_put_contents
+
+		return false !== $bytes_written;
+	}
+
+	/**
+	 * Writes the disable flag transient fallback.
+	 *
+	 * @since 3.6.4
+	 *
+	 * @return bool
+	 */
+	private function write_disable_flag_transient() {
+		$existing    = get_transient( self::DISABLE_FLAG_TRANSIENT );
+		$crash_count = is_array( $existing ) && isset( $existing['crash_count'] ) ? (int) $existing['crash_count'] : 0;
+		$payload     = [
+			'timestamp'   => time(),
+			'crash_count' => $crash_count + 1,
+		];
+
+		return (bool) set_transient( self::DISABLE_FLAG_TRANSIENT, $payload, 0 );
+	}
+
+	/**
+	 * Gets the disable flag file path.
+	 *
+	 * @since 3.6.4
+	 *
+	 * @return string
+	 */
+	private function get_disable_flag_file_path() {
+		return trailingslashit( WP_CONTENT_DIR ) . 'uploads/facebook-for-woocommerce/.disabled';
 	}
 
 	/**
