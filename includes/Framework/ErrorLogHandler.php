@@ -49,12 +49,18 @@ class ErrorLogHandler extends LogHandlerBase {
 	const PAUSED_CRASH_AGGREGATE_INDEX_KEY = 'wc_facebook_paused_crash_agg_index';
 
 	/**
+	 * Hook used to replay paused crash aggregates after backoff.
+	 */
+	const REPLAY_PAUSED_CRASH_AGGREGATES_HOOK = 'facebook_for_woocommerce_replay_paused_crash_aggregates';
+
+	/**
 	 * Constructs a new ErrorLog handler.
 	 *
 	 * @since 3.5.0
 	 */
 	public function __construct() {
 		add_action( self::META_LOG_API, array( $this, 'process_error_log' ), 10, 1 );
+		add_action( self::REPLAY_PAUSED_CRASH_AGGREGATES_HOOK, array( __CLASS__, 'maybe_replay_paused_crash_aggregates' ) );
 	}
 
 	/**
@@ -270,7 +276,23 @@ class ErrorLogHandler extends LogHandlerBase {
 	 */
 	private static function pause_crash_reporting() {
 		$backoff_seconds = 15 * MINUTE_IN_SECONDS;
-		set_transient( self::CRASH_REPORTING_PAUSE_KEY, time() + $backoff_seconds, $backoff_seconds );
+		$resume_at       = time() + $backoff_seconds;
+
+		set_transient( self::CRASH_REPORTING_PAUSE_KEY, $resume_at, $backoff_seconds );
+
+		if ( ! function_exists( 'as_schedule_single_action' ) ) {
+			return;
+		}
+
+		$hook      = self::REPLAY_PAUSED_CRASH_AGGREGATES_HOOK;
+		$group     = self::META_LOG_API_GROUP;
+		$timestamp = $resume_at + MINUTE_IN_SECONDS;
+
+		if ( function_exists( 'as_has_scheduled_action' ) && as_has_scheduled_action( $hook, [], $group ) ) {
+			return;
+		}
+
+		as_schedule_single_action( $timestamp, $hook, [], $group );
 	}
 
 	/**
