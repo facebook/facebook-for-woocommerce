@@ -29,6 +29,11 @@ class ErrorLogHandler extends LogHandlerBase {
 	const META_LOG_API = 'facebook_for_woocommerce_log_api';
 
 	/**
+	 * Action Scheduler group used for Meta log API jobs.
+	 */
+	const META_LOG_API_GROUP = 'wc_facebook_log_api';
+
+	/**
 	 * Constructs a new ErrorLog handler.
 	 *
 	 * @since 3.5.0
@@ -74,6 +79,32 @@ class ErrorLogHandler extends LogHandlerBase {
 	}
 
 	/**
+	 * Enqueues a Meta log API request through Action Scheduler.
+	 *
+	 * @since 3.6.4
+	 *
+	 * @param array $request_data normalized log payload.
+	 * @param bool  $unique whether to enforce a unique async action.
+	 * @return bool
+	 */
+	public static function enqueue_meta_log_request( array $request_data, $unique = true ) {
+		if ( ! function_exists( 'as_enqueue_async_action' ) ) {
+			return false;
+		}
+
+		if ( $unique && function_exists( 'as_has_scheduled_action' ) && as_has_scheduled_action( self::META_LOG_API, [ $request_data ], self::META_LOG_API_GROUP ) ) {
+			return true;
+		}
+
+		try {
+			$action_id = as_enqueue_async_action( self::META_LOG_API, [ $request_data ], self::META_LOG_API_GROUP, $unique );
+			return ! empty( $action_id );
+		} catch ( Throwable $e ) {
+			return false;
+		}
+	}
+
+	/**
 	 * Utility function for sending exception logs to Meta.
 	 *
 	 * @since 3.5.0
@@ -98,13 +129,9 @@ class ErrorLogHandler extends LogHandlerBase {
 			'extra_data'        => $extra_data,
 		];
 
-		// Check if Action Scheduler is available
-		if ( function_exists( 'as_enqueue_async_action' ) ) {
-			as_enqueue_async_action( 'facebook_for_woocommerce_log_api', array( $request_data ) );
-		} else {
-			// Handle the absence of the Action Scheduler
+		if ( ! self::enqueue_meta_log_request( $request_data, true ) ) {
 			Logger::log(
-				'Action Scheduler is not available.',
+				'Action Scheduler is not available or enqueue failed.',
 				[],
 				array(
 					'should_send_log_to_meta'        => false,

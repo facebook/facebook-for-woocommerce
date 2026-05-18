@@ -366,17 +366,7 @@ class PluginCrashHandler {
 	 * @return bool
 	 */
 	private function queue_crash_report( array $report ) {
-		// Guard: Action Scheduler may not be loaded in some environments.
-		if ( ! function_exists( 'as_enqueue_async_action' ) ) {
-			return false;
-		}
-
-		try {
-			$action_id = as_enqueue_async_action( ErrorLogHandler::META_LOG_API, [ $report ] );
-			return ! empty( $action_id );
-		} catch ( Throwable $e ) {
-			return false;
-		}
+		return ErrorLogHandler::enqueue_meta_log_request( $report, true );
 	}
 
 	/**
