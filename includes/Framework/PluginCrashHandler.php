@@ -91,10 +91,10 @@ class PluginCrashHandler {
 	 * @since 3.6.4
 	 */
 	public function handle_shutdown() {
-		$error = error_get_last();
+		$error = $this->normalize_captured_error( error_get_last(), 'fatal_error' );
 
 		if ( ! $this->is_supported_fatal_error( $error ) ) {
-			$error = $this->captured_throwable_error;
+			$error = $this->normalize_captured_error( $this->captured_throwable_error, 'uncaught_exception' );
 		}
 
 		if ( ! $this->is_supported_fatal_error( $error ) ) {
@@ -314,14 +314,41 @@ class PluginCrashHandler {
 	private function normalize_throwable_to_error( Throwable $throwable ) {
 		$type = $throwable instanceof \ParseError ? E_PARSE : E_ERROR;
 
+		return $this->normalize_captured_error(
+			[
+				'type'            => $type,
+				'message'         => $throwable->getMessage(),
+				'file'            => $throwable->getFile(),
+				'line'            => $throwable->getLine(),
+				'exception_class' => get_class( $throwable ),
+				'trace'           => $throwable->getTrace(),
+			],
+			'uncaught_exception'
+		);
+	}
+
+	/**
+	 * Normalizes captured error data into a stable internal shape.
+	 *
+	 * @since 3.6.4
+	 *
+	 * @param array|null $error captured error payload.
+	 * @param string     $source source type (fatal_error or uncaught_exception).
+	 * @return array|null
+	 */
+	private function normalize_captured_error( $error, $source ) {
+		if ( ! is_array( $error ) ) {
+			return null;
+		}
+
 		return [
-			'type'            => $type,
-			'message'         => $throwable->getMessage(),
-			'file'            => $throwable->getFile(),
-			'line'            => $throwable->getLine(),
-			'exception_class' => get_class( $throwable ),
-			'trace'           => $throwable->getTrace(),
-			'source'          => 'uncaught_exception',
+			'type'            => isset( $error['type'] ) ? (int) $error['type'] : 0,
+			'message'         => isset( $error['message'] ) ? (string) $error['message'] : '',
+			'file'            => isset( $error['file'] ) ? (string) $error['file'] : '',
+			'line'            => isset( $error['line'] ) ? (int) $error['line'] : 0,
+			'exception_class' => isset( $error['exception_class'] ) ? (string) $error['exception_class'] : '',
+			'trace'           => isset( $error['trace'] ) && is_array( $error['trace'] ) ? $error['trace'] : [],
+			'source'          => 'uncaught_exception' === $source ? 'uncaught_exception' : 'fatal_error',
 		];
 	}
 
