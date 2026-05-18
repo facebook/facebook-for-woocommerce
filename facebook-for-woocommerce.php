@@ -119,6 +119,7 @@ class WC_Facebook_Loader {
 		add_action( 'admin_init', array( $this, 'check_environment' ) );
 
 		add_action( 'admin_notices', array( $this, 'admin_notices' ), 15 );
+		add_action( 'admin_post_wc_facebook_clear_disable_flag', array( $this, 'handle_clear_disable_flag_action' ) );
 
 		// Flush rewrite rules if flagged (runs once after activation/upgrade).
 		// Priority 99 ensures all rewrite rules are registered before flushing.
@@ -299,6 +300,49 @@ class WC_Facebook_Loader {
 		error_log( 'Meta for WooCommerce disabled-mode crash report: ' . wp_json_encode( $context ) ); // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log
 	}
 
+
+	/**
+	 * Handles the clear-disable-flag action.
+	 *
+	 * @since 3.6.4
+	 */
+	public function handle_clear_disable_flag_action() {
+		if ( ! current_user_can( 'manage_woocommerce' ) ) {
+			wp_die( esc_html__( 'You are not allowed to perform this action.', 'facebook-for-woocommerce' ) );
+		}
+
+		check_admin_referer( 'wc_facebook_clear_disable_flag' );
+
+		$cleared  = $this->clear_disable_flag_state();
+		$redirect = wp_get_referer() ? wp_get_referer() : admin_url( 'plugins.php' );
+		$redirect = add_query_arg( 'wc_facebook_disable_flag_cleared', $cleared ? '1' : '0', $redirect );
+
+		wp_safe_redirect( $redirect );
+		exit;
+	}
+
+	/**
+	 * Clears disable-flag storage.
+	 *
+	 * Removes both the file-based disable flag and the transient fallback.
+	 *
+	 * @since 3.6.4
+	 *
+	 * @return bool
+	 */
+	private function clear_disable_flag_state() {
+		$flag_file   = trailingslashit( WP_CONTENT_DIR ) . self::DISABLE_FLAG_FILE_RELATIVE_PATH;
+		$file_cleared = true;
+
+		if ( file_exists( $flag_file ) ) {
+			$file_cleared = @unlink( $flag_file ); // phpcs:ignore WordPress.WP.AlternativeFunctions.unlink_unlink
+		}
+
+		$has_transient      = false !== get_transient( self::DISABLE_FLAG_TRANSIENT );
+		$transient_cleared  = ! $has_transient || delete_transient( self::DISABLE_FLAG_TRANSIENT );
+
+		return (bool) $file_cleared && (bool) $transient_cleared;
+	}
 
 	/**
 	 * Gets the framework version in namespace form.
