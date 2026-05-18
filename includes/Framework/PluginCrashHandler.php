@@ -37,6 +37,11 @@ class PluginCrashHandler {
 	const CRASH_RATE_LIMIT_KEY = 'wc_facebook_crash_rate_limit';
 
 	/**
+	 * Transient key prefix for per-fingerprint crash aggregates.
+	 */
+	const CRASH_AGGREGATE_KEY_PREFIX = 'wc_facebook_crash_agg_';
+
+	/**
 	 * Max number of crash reports allowed in the rate-limit window.
 	 */
 	const CRASH_RATE_LIMIT_MAX = 10;
@@ -108,6 +113,14 @@ class PluginCrashHandler {
 		$this->write_disable_flag();
 
 		$normalized_report = $this->normalize_crash_report_payload( $error );
+		$fingerprint       = $this->generate_crash_fingerprint( $normalized_report );
+		$aggregate         = $this->increment_crash_aggregate( $fingerprint, $normalized_report );
+		$report_to_queue   = $this->attach_aggregate_to_report( $normalized_report, $aggregate, $fingerprint );
+
+		if ( ErrorLogHandler::is_crash_reporting_paused() ) {
+			return;
+		}
+
 		if ( ! $this->should_queue_crash_report( $normalized_report ) ) {
 			$this->increment_duplicate_crash_counter( $normalized_report );
 			return;
@@ -118,9 +131,93 @@ class PluginCrashHandler {
 			return;
 		}
 
-		if ( ! $this->queue_crash_report( $normalized_report ) ) {
-			$this->log_fallback( $normalized_report );
+		if ( ! $this->queue_crash_report( $report_to_queue ) ) {
+			$this->log_fallback( $report_to_queue );
+			return;
 		}
+
+		$this->clear_crash_aggregate( $fingerprint );
+	}
+
+	/**
+	 * Increments local aggregate for a crash fingerprint.
+	 *
+	 * @since 3.6.4
+	 *
+	 * @param string $fingerprint crash fingerprint.
+	 * @param array  $report normalized crash report payload.
+	 * @return array
+	 */
+	private function increment_crash_aggregate( $fingerprint, array $report ) {
+		$key      = $this->get_crash_aggregate_key( $fingerprint );
+		$current  = get_transient( $key );
+		$now      = time();
+		$count    = is_array( $current ) && isset( $current['count'] ) ? (int) $current['count'] : 0;
+		$first    = is_array( $current ) && isset( $current['first_seen'] ) ? (int) $current['first_seen'] : $now;
+		$sample   = [
+			'event_type' => isset( $report['event_type'] ) ? (string) $report['event_type'] : '',
+			'message'    => isset( $report['exception_message'] ) ? (string) $report['exception_message'] : '',
+			'file'       => isset( $report['extra_data']['file'] ) ? (string) $report['extra_data']['file'] : '',
+			'line'       => isset( $report['extra_data']['line'] ) ? (int) $report['extra_data']['line'] : 0,
+		];
+
+		$aggregate = [
+			'count'       => $count + 1,
+			'first_seen'  => $first,
+			'last_seen'   => $now,
+			'last_sample' => $sample,
+		];
+
+		set_transient( $key, $aggregate, DAY_IN_SECONDS );
+
+		return $aggregate;
+	}
+
+	/**
+	 * Attaches aggregate metadata to a report payload.
+	 *
+	 * @since 3.6.4
+	 *
+	 * @param array  $report normalized report.
+	 * @param array  $aggregate aggregate payload.
+	 * @param string $fingerprint crash fingerprint.
+	 * @return array
+	 */
+	private function attach_aggregate_to_report( array $report, array $aggregate, $fingerprint ) {
+		if ( ! isset( $report['extra_data'] ) || ! is_array( $report['extra_data'] ) ) {
+			$report['extra_data'] = [];
+		}
+
+		$report['extra_data']['aggregate_count']      = isset( $aggregate['count'] ) ? (int) $aggregate['count'] : 1;
+		$report['extra_data']['aggregate_first_seen'] = isset( $aggregate['first_seen'] ) ? (int) $aggregate['first_seen'] : time();
+		$report['extra_data']['aggregate_last_seen']  = isset( $aggregate['last_seen'] ) ? (int) $aggregate['last_seen'] : time();
+		$report['extra_data']['aggregate_last_sample'] = isset( $aggregate['last_sample'] ) && is_array( $aggregate['last_sample'] ) ? $aggregate['last_sample'] : [];
+		$report['extra_data']['fingerprint']          = (string) $fingerprint;
+
+		return $report;
+	}
+
+	/**
+	 * Clears local aggregate for a crash fingerprint after successful queue.
+	 *
+	 * @since 3.6.4
+	 *
+	 * @param string $fingerprint crash fingerprint.
+	 */
+	private function clear_crash_aggregate( $fingerprint ) {
+		delete_transient( $this->get_crash_aggregate_key( $fingerprint ) );
+	}
+
+	/**
+	 * Builds aggregate transient key for a fingerprint.
+	 *
+	 * @since 3.6.4
+	 *
+	 * @param string $fingerprint crash fingerprint.
+	 * @return string
+	 */
+	private function get_crash_aggregate_key( $fingerprint ) {
+		return self::CRASH_AGGREGATE_KEY_PREFIX . ( '' !== $fingerprint ? $fingerprint : 'default' );
 	}
 
 	/**

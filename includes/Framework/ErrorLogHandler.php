@@ -34,6 +34,11 @@ class ErrorLogHandler extends LogHandlerBase {
 	const META_LOG_API_GROUP = 'wc_facebook_log_api';
 
 	/**
+	 * Transient key used to pause crash reporting after Meta rate-limit responses.
+	 */
+	const CRASH_REPORTING_PAUSE_KEY = 'wc_facebook_crash_reporting_paused_until';
+
+	/**
 	 * Constructs a new ErrorLog handler.
 	 *
 	 * @since 3.5.0
@@ -55,10 +60,22 @@ class ErrorLogHandler extends LogHandlerBase {
 			return;
 		}
 
+		if ( self::is_crash_reporting_paused() ) {
+			self::store_crash_aggregate_only( $raw_context );
+			return;
+		}
+
 		$context = self::set_core_log_context( $raw_context );
 		try {
 			$response = facebook_for_woocommerce()->get_api()->log_to_meta( $context );
 			if ( ! $response->success ) {
+				$status_code = is_object( $response ) && method_exists( $response, 'get_api_error_code' ) ? (int) $response->get_api_error_code() : 0;
+				if ( 429 === $status_code ) {
+					self::pause_crash_reporting();
+					self::store_crash_aggregate_only( $context );
+					return;
+				}
+
 				Logger::log(
 					'Bad response from log_to_meta request',
 					[],
@@ -96,6 +113,11 @@ class ErrorLogHandler extends LogHandlerBase {
 			return false;
 		}
 
+		if ( self::is_crash_reporting_paused() ) {
+			self::store_crash_aggregate_only( $request_data );
+			return true;
+		}
+
 		if ( ! function_exists( 'as_enqueue_async_action' ) ) {
 			return false;
 		}
@@ -121,6 +143,68 @@ class ErrorLogHandler extends LogHandlerBase {
 	 *
 	 * @return bool
 	 */
+	/**
+	 * Checks whether crash reporting is currently paused due to Meta rate limits.
+	 *
+	 * @since 3.6.4
+	 *
+	 * @return bool
+	 */
+	public static function is_crash_reporting_paused() {
+		$paused_until = (int) get_transient( self::CRASH_REPORTING_PAUSE_KEY );
+		if ( $paused_until <= time() ) {
+			if ( $paused_until > 0 ) {
+				delete_transient( self::CRASH_REPORTING_PAUSE_KEY );
+			}
+			return false;
+		}
+
+		return true;
+	}
+
+	/**
+	 * Pauses crash reporting for a short backoff window.
+	 *
+	 * @since 3.6.4
+	 */
+	private static function pause_crash_reporting() {
+		$backoff_seconds = 15 * MINUTE_IN_SECONDS;
+		set_transient( self::CRASH_REPORTING_PAUSE_KEY, time() + $backoff_seconds, $backoff_seconds );
+	}
+
+	/**
+	 * Stores/updates local crash aggregate while reporting is paused.
+	 *
+	 * @since 3.6.4
+	 *
+	 * @param array $context crash payload.
+	 */
+	private static function store_crash_aggregate_only( array $context ) {
+		$fingerprint = isset( $context['extra_data']['fingerprint'] ) ? (string) $context['extra_data']['fingerprint'] : 'default';
+		$key         = 'wc_facebook_paused_crash_agg_' . $fingerprint;
+		$current     = get_transient( $key );
+		$now         = time();
+
+		$count      = is_array( $current ) && isset( $current['count'] ) ? (int) $current['count'] : 0;
+		$first_seen = is_array( $current ) && isset( $current['first_seen'] ) ? (int) $current['first_seen'] : $now;
+
+		set_transient(
+			$key,
+			[
+				'count'       => $count + 1,
+				'first_seen'  => $first_seen,
+				'last_seen'   => $now,
+				'last_sample' => [
+					'event_type' => isset( $context['event_type'] ) ? (string) $context['event_type'] : '',
+					'message'    => isset( $context['exception_message'] ) ? (string) $context['exception_message'] : '',
+					'file'       => isset( $context['extra_data']['file'] ) ? (string) $context['extra_data']['file'] : '',
+					'line'       => isset( $context['extra_data']['line'] ) ? (int) $context['extra_data']['line'] : 0,
+				],
+			],
+			DAY_IN_SECONDS
+		);
+	}
+
 	private static function is_meta_diagnosis_enabled_for_reporting() {
 		if ( ! function_exists( 'facebook_for_woocommerce' ) ) {
 			return false;
