@@ -122,7 +122,7 @@ class WC_Facebook_Loader {
 		add_action( 'admin_notices', array( $this, 'admin_notices' ), 15 );
 		add_action( 'admin_notices', array( $this, 'render_disabled_plugin_notice' ), 16 );
 		add_action( 'admin_post_wc_facebook_clear_disable_flag', array( $this, 'handle_clear_disable_flag_action' ) );
-		add_action( 'plugins_loaded', array( BatchLogHandler::class, 'register_batch_sender' ), 5 );
+		add_action( 'plugins_loaded', array( BatchLogHandler::class, 'register_batch_sender' ), 50 );
 
 		// Flush rewrite rules if flagged (runs once after activation/upgrade).
 		// Priority 99 ensures all rewrite rules are registered before flushing.

@@ -66,12 +66,25 @@ class BatchLogHandler extends LogHandlerBase {
 	}
 
 	/**
+	 * Checks whether dependencies needed for batch sender scheduling are available.
+	 *
+	 * @since 3.6.4
+	 *
+	 * @return bool
+	 */
+	private static function can_schedule_batch_sender() {
+		return function_exists( 'as_schedule_recurring_action' )
+			&& function_exists( 'facebook_for_woocommerce' )
+			&& class_exists( '\\WC_Facebookcommerce' );
+	}
+
+	/**
 	 * Ensures recurring Action Scheduler job exists for batch log flushing.
 	 *
 	 * @since 3.6.4
 	 */
 	public static function ensure_batch_sender_scheduled() {
-		if ( ! function_exists( 'as_schedule_recurring_action' ) ) {
+		if ( ! self::can_schedule_batch_sender() ) {
 			return;
 		}
 
