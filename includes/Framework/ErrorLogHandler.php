@@ -11,6 +11,7 @@
 namespace WooCommerce\Facebook\Framework;
 
 use WC_Facebookcommerce_Utils;
+use WooCommerce\Facebook\API as Facebook_API;
 use Throwable;
 
 defined( 'ABSPATH' ) || exit;
@@ -95,9 +96,10 @@ class ErrorLogHandler extends LogHandlerBase {
 
 		$context = self::set_core_log_context( $raw_context );
 		try {
-			$response = facebook_for_woocommerce()->get_api()->log_to_meta( $context );
-			if ( ! $response->success ) {
-				$status_code = is_object( $response ) && method_exists( $response, 'get_api_error_code' ) ? (int) $response->get_api_error_code() : 0;
+			$response   = self::send_log_to_meta_request( $context );
+			$is_success = is_object( $response ) && isset( $response->success ) && $response->success;
+			if ( ! $is_success ) {
+				$status_code = self::extract_meta_error_status_code( $response );
 				if ( 429 === $status_code && $is_crash_event ) {
 					self::pause_crash_reporting();
 					self::store_crash_aggregate_only( $context );
@@ -105,15 +107,7 @@ class ErrorLogHandler extends LogHandlerBase {
 					return;
 				}
 
-				Logger::log(
-					'Bad response from log_to_meta request',
-					[],
-					array(
-						'should_send_log_to_meta'        => false,
-						'should_save_log_in_woocommerce' => true,
-						'woocommerce_log_level'          => \WC_Log_Levels::ERROR,
-					)
-				);
+				self::log_local_error( 'Bad response from log_to_meta request' );
 				self::release_crash_queue_lock( $raw_context );
 				return;
 			}
@@ -121,15 +115,7 @@ class ErrorLogHandler extends LogHandlerBase {
 			self::release_crash_queue_lock( $raw_context );
 		} catch ( Throwable $e ) {
 			self::release_crash_queue_lock( $raw_context );
-			Logger::log(
-				'Error persisting error logs: ' . $e->getMessage(),
-				[],
-				array(
-					'should_send_log_to_meta'        => false,
-					'should_save_log_in_woocommerce' => true,
-					'woocommerce_log_level'          => \WC_Log_Levels::ERROR,
-				)
-			);
+			self::log_local_error( 'Error persisting error logs: ' . $e->getMessage() );
 		}
 	}
 
@@ -392,31 +378,139 @@ class ErrorLogHandler extends LogHandlerBase {
 	}
 
 	/**
+	 * Sends one Meta log request, including disabled-mode fallback when plugin instance is unavailable.
+	 *
+	 * @since 3.6.4
+	 *
+	 * @param array $context normalized log payload.
+	 * @return object|null
+	 */
+	private static function send_log_to_meta_request( array $context ) {
+		if ( function_exists( 'facebook_for_woocommerce' ) ) {
+			try {
+				$plugin = facebook_for_woocommerce();
+				if ( $plugin && method_exists( $plugin, 'get_api' ) ) {
+					$api = $plugin->get_api();
+					if ( $api && method_exists( $api, 'log_to_meta' ) ) {
+						return $api->log_to_meta( $context );
+					}
+				}
+			} catch ( Throwable $e ) {
+				// Fall back to direct API client below.
+			}
+		}
+
+		$access_token = self::get_reporting_access_token();
+		if ( '' === $access_token ) {
+			return null;
+		}
+
+		try {
+			$api = new Facebook_API( $access_token );
+			return $api->log_to_meta( $context );
+		} catch ( Throwable $e ) {
+			return null;
+		}
+	}
+
+	/**
+	 * Extracts Meta API status code from a response object.
+	 *
+	 * @since 3.6.4
+	 *
+	 * @param mixed $response API response object.
+	 * @return int
+	 */
+	private static function extract_meta_error_status_code( $response ) {
+		if ( is_object( $response ) && method_exists( $response, 'get_api_error_code' ) ) {
+			return (int) $response->get_api_error_code();
+		}
+
+		return 0;
+	}
+
+	/**
+	 * Logs local diagnostics without relying on a fully initialized plugin instance.
+	 *
+	 * @since 3.6.4
+	 *
+	 * @param string $message message to log.
+	 */
+	private static function log_local_error( $message ) {
+		if ( function_exists( 'facebook_for_woocommerce' ) ) {
+			try {
+				Logger::log(
+					(string) $message,
+					[],
+					array(
+						'should_send_log_to_meta'        => false,
+						'should_save_log_in_woocommerce' => true,
+						'woocommerce_log_level'          => \WC_Log_Levels::ERROR,
+					)
+				);
+				return;
+			} catch ( Throwable $e ) {
+				// Fall back to PHP error_log.
+			}
+		}
+
+		error_log( 'Meta for WooCommerce crash reporting: ' . (string) $message ); // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log
+	}
+
+	/**
+	 * Gets access token for crash/reporting calls in disabled mode.
+	 *
+	 * @since 3.6.4
+	 *
+	 * @return string
+	 */
+	private static function get_reporting_access_token() {
+		$option_keys = [
+			'wc_facebook_access_token',
+			'wc_facebook_merchant_access_token',
+			'wc_facebook_page_access_token',
+		];
+
+		foreach ( $option_keys as $option_key ) {
+			$token = get_option( $option_key, '' );
+			if ( is_string( $token ) && '' !== trim( $token ) ) {
+				return trim( $token );
+			}
+		}
+
+		return '';
+	}
+
+	/**
 	 * Checks whether Meta diagnosis reporting is enabled.
 	 *
-	 * Uses the existing integration opt-in and fails closed when unavailable.
+	 * Uses integration opt-in when available, with option fallback for disabled mode.
 	 *
 	 * @since 3.6.4
 	 *
 	 * @return bool
 	 */
 	private static function is_meta_diagnosis_enabled_for_reporting() {
+		$option_enabled = 'yes' === get_option( Logger::SETTING_ENABLE_META_DIAGNOSIS, 'no' );
+
 		if ( ! function_exists( 'facebook_for_woocommerce' ) ) {
-			return false;
+			return $option_enabled;
 		}
 
 		try {
 			$plugin = facebook_for_woocommerce();
 
-			if ( ! $plugin || ! method_exists( $plugin, 'get_integration' ) ) {
-				return false;
+			if ( $plugin && method_exists( $plugin, 'get_integration' ) ) {
+				$integration = $plugin->get_integration();
+				if ( $integration && method_exists( $integration, 'is_meta_diagnosis_enabled' ) ) {
+					return (bool) $integration->is_meta_diagnosis_enabled();
+				}
 			}
-
-			$integration = $plugin->get_integration();
-			return $integration && method_exists( $integration, 'is_meta_diagnosis_enabled' ) && $integration->is_meta_diagnosis_enabled();
 		} catch ( Throwable $e ) {
-			return false;
+			// Use option fallback below.
 		}
+
+		return $option_enabled;
 	}
 
 	/**
