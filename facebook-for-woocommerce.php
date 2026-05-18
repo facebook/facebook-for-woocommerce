@@ -334,6 +334,7 @@ class WC_Facebook_Loader {
 		error_log( 'Meta for WooCommerce disabled-mode crash report: ' . wp_json_encode( $context ) ); // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log
 	}
 
+
 	/**
 	 * Renders an admin notice when the plugin is currently disabled by crash flag.
 	 *

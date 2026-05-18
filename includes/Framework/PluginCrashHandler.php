@@ -1092,16 +1092,19 @@ class PluginCrashHandler {
 	 * @return string
 	 */
 	private function sanitize_message( $message ) {
-		$sanitized = $this->sanitize_sensitive_values( $message );
-
-		// Strip absolute paths (Unix + Windows style).
-		$sanitized = preg_replace( '#(?:[A-Za-z]:)?(?:/|\\\\)[^\s"\']+#', '[path]', $sanitized );
-
-		if ( function_exists( 'mb_substr' ) ) {
-			return mb_substr( $sanitized, 0, 500 );
+		try {
+			$sanitized = $this->sanitize_sensitive_values_with_parser( (string) $message );
+			$sanitized = $this->sanitize_paths_with_parser( $sanitized );
+		} catch ( Throwable $e ) {
+			$sanitized = $this->sanitize_sensitive_values( (string) $message );
+			$sanitized = preg_replace( '#(?:[A-Za-z]:)?(?:/|\\\\)[^\s"\']+#', '[path]', $sanitized );
 		}
 
-		return substr( $sanitized, 0, 500 );
+		if ( function_exists( 'mb_substr' ) ) {
+			return mb_substr( (string) $sanitized, 0, 500 );
+		}
+
+		return substr( (string) $sanitized, 0, 500 );
 	}
 
 	/**
@@ -1164,7 +1167,299 @@ class PluginCrashHandler {
 			'[redacted_phone]',
 		];
 
-		return preg_replace( $patterns, $replacements, $text );
+		return preg_replace( $patterns, $replacements, (string) $text );
+	}
+
+	/**
+	 * Parser-first sanitizer for sensitive values in log messages.
+	 *
+	 * @since 3.6.4
+	 *
+	 * @param string $text input text.
+	 * @return string
+	 */
+	private function sanitize_sensitive_values_with_parser( $text ) {
+		$lines = preg_split( "/\\r\\n|\\n|\\r/", (string) $text );
+		if ( ! is_array( $lines ) ) {
+			return (string) $text;
+		}
+
+		$sensitive_keys = [
+			'token', 'access_token', 'auth', 'authorization', 'secret', 'apikey', 'api_key', 'password',
+			'cookie', 'setcookie', 'set-cookie', 'requestbody', 'request_body', 'body', 'headers', 'header',
+			'phone', 'telephone', 'mobile',
+		];
+
+		foreach ( $lines as $index => $line ) {
+			$line = (string) $line;
+			$eq   = strpos( $line, '=' );
+			$col  = strpos( $line, ':' );
+
+			$pos = false;
+			$sep = '';
+			if ( false !== $eq && false !== $col ) {
+				$pos = min( $eq, $col );
+				$sep = $eq < $col ? '=' : ':';
+			} elseif ( false !== $eq ) {
+				$pos = $eq;
+				$sep = '=';
+			} elseif ( false !== $col ) {
+				$pos = $col;
+				$sep = ':';
+			}
+
+			if ( false !== $pos ) {
+				$key      = trim( substr( $line, 0, $pos ) );
+				$key_norm = strtolower( preg_replace( '/[^a-z0-9_-]/i', '', $key ) );
+				if ( in_array( $key_norm, $sensitive_keys, true ) ) {
+					$lines[ $index ] = '=' === $sep ? $key . '=[redacted]' : $key . ': [redacted]';
+					continue;
+				}
+			}
+
+			$tokens = preg_split( '/(\s+)/', $line, -1, PREG_SPLIT_DELIM_CAPTURE );
+			if ( ! is_array( $tokens ) ) {
+				continue;
+			}
+
+			for ( $i = 0; $i < count( $tokens ); $i++ ) {
+				$token = (string) $tokens[ $i ];
+				if ( '' === trim( $token ) ) {
+					continue;
+				}
+
+				if ( 0 === strcasecmp( $token, 'Bearer' ) ) {
+					$tokens[ $i ] = 'Bearer';
+					for ( $j = $i + 1; $j < count( $tokens ); $j++ ) {
+						if ( '' === trim( (string) $tokens[ $j ] ) ) {
+							continue;
+						}
+						$tokens[ $j ] = '[redacted_token]';
+						break;
+					}
+					continue;
+				}
+
+				$tokens[ $i ] = $this->redact_sensitive_token( $token );
+			}
+
+			$lines[ $index ] = implode( '', $tokens );
+		}
+
+		return implode( "\n", $lines );
+	}
+
+	/**
+	 * Parser-based absolute path masking for message text.
+	 *
+	 * @since 3.6.4
+	 *
+	 * @param string $text input text.
+	 * @return string
+	 */
+	private function sanitize_paths_with_parser( $text ) {
+		$tokens = preg_split( '/(\s+)/', (string) $text, -1, PREG_SPLIT_DELIM_CAPTURE );
+		if ( ! is_array( $tokens ) ) {
+			return (string) $text;
+		}
+
+		foreach ( $tokens as $i => $token ) {
+			$token = (string) $token;
+			if ( '' === trim( $token ) ) {
+				continue;
+			}
+
+			$parts = $this->split_token_wrappers( $token );
+			$core  = $parts['core'];
+			if ( '' === $core ) {
+				continue;
+			}
+
+			if ( $this->looks_like_absolute_path( $core ) ) {
+				$tokens[ $i ] = $parts['prefix'] . '[path]' . $parts['suffix'];
+			}
+		}
+
+		return implode( '', $tokens );
+	}
+
+	/**
+	 * Redacts sensitive token/PII-like samples while preserving simple wrappers.
+	 *
+	 * @since 3.6.4
+	 *
+	 * @param string $token token text.
+	 * @return string
+	 */
+	private function redact_sensitive_token( $token ) {
+		$parts = $this->split_token_wrappers( (string) $token );
+		$core  = $parts['core'];
+		if ( '' === $core ) {
+			return (string) $token;
+		}
+
+		$replacement = '';
+		if ( $this->looks_like_jwt( $core ) || $this->looks_like_long_hex( $core ) || $this->looks_like_long_token( $core ) ) {
+			$replacement = '[redacted_token]';
+		} elseif ( false !== strpos( $core, '@' ) && false !== strpos( substr( $core, strpos( $core, '@' ) ), '.' ) ) {
+			$replacement = '[redacted_email]';
+		} elseif ( $this->looks_like_phone( $core ) ) {
+			$replacement = '[redacted_phone]';
+		}
+
+		if ( '' === $replacement ) {
+			return (string) $token;
+		}
+
+		return $parts['prefix'] . $replacement . $parts['suffix'];
+	}
+
+	/**
+	 * Splits a token into prefix/core/suffix wrappers.
+	 *
+	 * @since 3.6.4
+	 *
+	 * @param string $token token text.
+	 * @return array
+	 */
+	private function split_token_wrappers( $token ) {
+		$prefix_chars = "\"'([{<";
+		$suffix_chars = "\"')]}>.,;:";
+
+		$start = 0;
+		$end   = strlen( (string) $token ) - 1;
+
+		while ( $start <= $end && false !== strpos( $prefix_chars, $token[ $start ] ) ) {
+			$start++;
+		}
+
+		while ( $end >= $start && false !== strpos( $suffix_chars, $token[ $end ] ) ) {
+			$end--;
+		}
+
+		if ( $end < $start ) {
+			return [
+				'prefix' => (string) $token,
+				'core'   => '',
+				'suffix' => '',
+			];
+		}
+
+		return [
+			'prefix' => substr( $token, 0, $start ),
+			'core'   => substr( $token, $start, $end - $start + 1 ),
+			'suffix' => substr( $token, $end + 1 ),
+		];
+	}
+
+	/**
+	 * Checks whether token resembles an absolute Unix or Windows path.
+	 *
+	 * @since 3.6.4
+	 *
+	 * @param string $token token text.
+	 * @return bool
+	 */
+	private function looks_like_absolute_path( $token ) {
+		if ( '' === $token ) {
+			return false;
+		}
+
+		if ( '/' === $token[0] ) {
+			return true;
+		}
+
+		return strlen( $token ) > 2
+			&& ctype_alpha( $token[0] )
+			&& ':' === $token[1]
+			&& ( '\\' === $token[2] || '/' === $token[2] );
+	}
+
+	/**
+	 * Checks whether token resembles a JWT.
+	 *
+	 * @since 3.6.4
+	 *
+	 * @param string $token token text.
+	 * @return bool
+	 */
+	private function looks_like_jwt( $token ) {
+		if ( 0 !== strpos( $token, 'eyJ' ) ) {
+			return false;
+		}
+
+		$parts = explode( '.', $token );
+		return count( $parts ) >= 3;
+	}
+
+	/**
+	 * Checks whether token resembles a long mixed token.
+	 *
+	 * @since 3.6.4
+	 *
+	 * @param string $token token text.
+	 * @return bool
+	 */
+	private function looks_like_long_token( $token ) {
+		if ( strlen( $token ) < 24 ) {
+			return false;
+		}
+
+		$has_alpha = false;
+		$has_digit = false;
+		for ( $i = 0; $i < strlen( $token ); $i++ ) {
+			$char = $token[ $i ];
+			if ( ctype_alpha( $char ) ) {
+				$has_alpha = true;
+			}
+			if ( ctype_digit( $char ) ) {
+				$has_digit = true;
+			}
+			if ( ! ctype_alnum( $char ) && '_' !== $char && '-' !== $char ) {
+				return false;
+			}
+		}
+
+		return $has_alpha && $has_digit;
+	}
+
+	/**
+	 * Checks whether token resembles a long hex blob.
+	 *
+	 * @since 3.6.4
+	 *
+	 * @param string $token token text.
+	 * @return bool
+	 */
+	private function looks_like_long_hex( $token ) {
+		return strlen( $token ) >= 32 && ctype_xdigit( $token );
+	}
+
+	/**
+	 * Checks whether token resembles a phone number.
+	 *
+	 * @since 3.6.4
+	 *
+	 * @param string $token token text.
+	 * @return bool
+	 */
+	private function looks_like_phone( $token ) {
+		$digits = preg_replace( '/\D/', '', $token );
+		if ( ! is_string( $digits ) || strlen( $digits ) < 9 ) {
+			return false;
+		}
+
+		for ( $i = 0; $i < strlen( $token ); $i++ ) {
+			$char = $token[ $i ];
+			if ( ctype_digit( $char ) ) {
+				continue;
+			}
+			if ( false === strpos( '+-(). ', $char ) ) {
+				return false;
+			}
+		}
+
+		return true;
 	}
 
 	/**
@@ -1196,4 +1491,5 @@ class PluginCrashHandler {
 	private function log_fallback( array $report ) {
 		error_log( 'Meta for WooCommerce crash capture fallback: ' . wp_json_encode( $report ) ); // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log
 	}
+
 }
