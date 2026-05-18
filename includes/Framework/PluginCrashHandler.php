@@ -42,6 +42,31 @@ class PluginCrashHandler {
 	const CRASH_AGGREGATE_KEY_PREFIX = 'wc_facebook_crash_agg_';
 
 	/**
+	 * Transient key for aggregate fingerprint index.
+	 */
+	const CRASH_AGGREGATE_INDEX_KEY = 'wc_facebook_crash_agg_index';
+
+	/**
+	 * Max distinct crash fingerprints to retain in local aggregates.
+	 */
+	const CRASH_MAX_DISTINCT_FINGERPRINTS = 100;
+
+	/**
+	 * Soft cap for queued crash reports in Action Scheduler.
+	 */
+	const CRASH_MAX_QUEUED_REPORTS = 50;
+
+	/**
+	 * Max payload size for queued crash report data.
+	 */
+	const CRASH_MAX_PAYLOAD_BYTES = 16000;
+
+	/**
+	 * Max length of aggregate last sample message.
+	 */
+	const CRASH_MAX_SAMPLE_MESSAGE_LENGTH = 200;
+
+	/**
 	 * Max number of crash reports allowed in the rate-limit window.
 	 */
 	const CRASH_RATE_LIMIT_MAX = 10;
@@ -116,6 +141,7 @@ class PluginCrashHandler {
 		$fingerprint       = $this->generate_crash_fingerprint( $normalized_report );
 		$aggregate         = $this->increment_crash_aggregate( $fingerprint, $normalized_report );
 		$report_to_queue   = $this->attach_aggregate_to_report( $normalized_report, $aggregate, $fingerprint );
+		$report_to_queue   = $this->apply_payload_size_guard( $report_to_queue );
 
 		if ( ErrorLogHandler::is_crash_reporting_paused() ) {
 			return;
@@ -128,6 +154,10 @@ class PluginCrashHandler {
 
 		if ( $this->should_rate_limit_crash_report() ) {
 			$this->increment_rate_limited_counter();
+			return;
+		}
+
+		if ( ! $this->can_queue_more_crash_reports() ) {
 			return;
 		}
 
@@ -154,9 +184,16 @@ class PluginCrashHandler {
 		$now      = time();
 		$count    = is_array( $current ) && isset( $current['count'] ) ? (int) $current['count'] : 0;
 		$first    = is_array( $current ) && isset( $current['first_seen'] ) ? (int) $current['first_seen'] : $now;
-		$sample   = [
+		$sample_message = isset( $report['exception_message'] ) ? (string) $report['exception_message'] : '';
+		if ( function_exists( 'mb_substr' ) ) {
+			$sample_message = mb_substr( $sample_message, 0, self::CRASH_MAX_SAMPLE_MESSAGE_LENGTH );
+		} else {
+			$sample_message = substr( $sample_message, 0, self::CRASH_MAX_SAMPLE_MESSAGE_LENGTH );
+		}
+
+		$sample = [
 			'event_type' => isset( $report['event_type'] ) ? (string) $report['event_type'] : '',
-			'message'    => isset( $report['exception_message'] ) ? (string) $report['exception_message'] : '',
+			'message'    => $sample_message,
 			'file'       => isset( $report['extra_data']['file'] ) ? (string) $report['extra_data']['file'] : '',
 			'line'       => isset( $report['extra_data']['line'] ) ? (int) $report['extra_data']['line'] : 0,
 		];
@@ -169,8 +206,67 @@ class PluginCrashHandler {
 		];
 
 		set_transient( $key, $aggregate, DAY_IN_SECONDS );
+		$this->update_crash_aggregate_index( $fingerprint, (int) $aggregate['count'], (int) $aggregate['last_seen'] );
 
 		return $aggregate;
+	}
+
+	/**
+	 * Updates aggregate index and trims less frequent fingerprints when needed.
+	 *
+	 * @since 3.6.4
+	 *
+	 * @param string $fingerprint fingerprint key.
+	 * @param int    $count aggregate count.
+	 * @param int    $last_seen unix timestamp.
+	 */
+	private function update_crash_aggregate_index( $fingerprint, $count, $last_seen ) {
+		$index = get_transient( self::CRASH_AGGREGATE_INDEX_KEY );
+		if ( ! is_array( $index ) ) {
+			$index = [];
+		}
+
+		$index[ $fingerprint ] = [
+			'count'     => (int) $count,
+			'last_seen' => (int) $last_seen,
+		];
+
+		if ( count( $index ) > self::CRASH_MAX_DISTINCT_FINGERPRINTS ) {
+			uasort(
+				$index,
+				function ( $a, $b ) {
+					$count_cmp = ( $b['count'] ?? 0 ) <=> ( $a['count'] ?? 0 );
+					if ( 0 !== $count_cmp ) {
+						return $count_cmp;
+					}
+					return ( $b['last_seen'] ?? 0 ) <=> ( $a['last_seen'] ?? 0 );
+				}
+			);
+
+			$index = array_slice( $index, 0, self::CRASH_MAX_DISTINCT_FINGERPRINTS, true );
+
+			$kept = array_fill_keys( array_keys( $index ), true );
+			foreach ( $this->get_all_known_aggregate_fingerprints() as $known_fingerprint ) {
+				if ( isset( $kept[ $known_fingerprint ] ) ) {
+					continue;
+				}
+				delete_transient( $this->get_crash_aggregate_key( $known_fingerprint ) );
+			}
+		}
+
+		set_transient( self::CRASH_AGGREGATE_INDEX_KEY, $index, DAY_IN_SECONDS );
+	}
+
+	/**
+	 * Gets all fingerprints tracked in the aggregate index.
+	 *
+	 * @since 3.6.4
+	 *
+	 * @return array
+	 */
+	private function get_all_known_aggregate_fingerprints() {
+		$index = get_transient( self::CRASH_AGGREGATE_INDEX_KEY );
+		return is_array( $index ) ? array_keys( $index ) : [];
 	}
 
 	/**
@@ -206,6 +302,12 @@ class PluginCrashHandler {
 	 */
 	private function clear_crash_aggregate( $fingerprint ) {
 		delete_transient( $this->get_crash_aggregate_key( $fingerprint ) );
+
+		$index = get_transient( self::CRASH_AGGREGATE_INDEX_KEY );
+		if ( is_array( $index ) && isset( $index[ $fingerprint ] ) ) {
+			unset( $index[ $fingerprint ] );
+			set_transient( self::CRASH_AGGREGATE_INDEX_KEY, $index, DAY_IN_SECONDS );
+		}
 	}
 
 	/**
@@ -218,6 +320,68 @@ class PluginCrashHandler {
 	 */
 	private function get_crash_aggregate_key( $fingerprint ) {
 		return self::CRASH_AGGREGATE_KEY_PREFIX . ( '' !== $fingerprint ? $fingerprint : 'default' );
+	}
+
+	/**
+	 * Applies a lightweight payload-size guard before queueing.
+	 *
+	 * @since 3.6.4
+	 *
+	 * @param array $report normalized crash report payload.
+	 * @return array
+	 */
+	private function apply_payload_size_guard( array $report ) {
+		$json = wp_json_encode( $report );
+		if ( is_string( $json ) && strlen( $json ) <= self::CRASH_MAX_PAYLOAD_BYTES ) {
+			return $report;
+		}
+
+		if ( isset( $report['extra_data']['plugin_stack'] ) && is_array( $report['extra_data']['plugin_stack'] ) ) {
+			$report['extra_data']['plugin_stack'] = array_slice( $report['extra_data']['plugin_stack'], 0, 2 );
+		}
+
+		if ( isset( $report['extra_data']['aggregate_last_sample'] ) ) {
+			unset( $report['extra_data']['aggregate_last_sample'] );
+		}
+
+		if ( isset( $report['exception_message'] ) && is_string( $report['exception_message'] ) ) {
+			if ( function_exists( 'mb_substr' ) ) {
+				$report['exception_message'] = mb_substr( $report['exception_message'], 0, 250 );
+			} else {
+				$report['exception_message'] = substr( $report['exception_message'], 0, 250 );
+			}
+		}
+
+		return $report;
+	}
+
+	/**
+	 * Soft limit guard for queued crash reports.
+	 *
+	 * @since 3.6.4
+	 *
+	 * @return bool
+	 */
+	private function can_queue_more_crash_reports() {
+		if ( ! function_exists( 'as_get_scheduled_actions' ) ) {
+			return true;
+		}
+
+		$actions = as_get_scheduled_actions(
+			[
+				'hook'   => ErrorLogHandler::META_LOG_API,
+				'group'  => ErrorLogHandler::META_LOG_API_GROUP,
+				'status' => [ 'pending', 'in-progress' ],
+				'per_page' => self::CRASH_MAX_QUEUED_REPORTS + 1,
+			],
+			'ids'
+		);
+
+		if ( ! is_array( $actions ) ) {
+			return true;
+		}
+
+		return count( $actions ) <= self::CRASH_MAX_QUEUED_REPORTS;
 	}
 
 	/**

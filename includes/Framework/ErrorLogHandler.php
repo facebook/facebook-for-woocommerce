@@ -187,6 +187,12 @@ class ErrorLogHandler extends LogHandlerBase {
 
 		$count      = is_array( $current ) && isset( $current['count'] ) ? (int) $current['count'] : 0;
 		$first_seen = is_array( $current ) && isset( $current['first_seen'] ) ? (int) $current['first_seen'] : $now;
+		$message    = isset( $context['exception_message'] ) ? (string) $context['exception_message'] : '';
+		if ( function_exists( 'mb_substr' ) ) {
+			$message = mb_substr( $message, 0, 200 );
+		} else {
+			$message = substr( $message, 0, 200 );
+		}
 
 		set_transient(
 			$key,
@@ -196,7 +202,7 @@ class ErrorLogHandler extends LogHandlerBase {
 				'last_seen'   => $now,
 				'last_sample' => [
 					'event_type' => isset( $context['event_type'] ) ? (string) $context['event_type'] : '',
-					'message'    => isset( $context['exception_message'] ) ? (string) $context['exception_message'] : '',
+					'message'    => $message,
 					'file'       => isset( $context['extra_data']['file'] ) ? (string) $context['extra_data']['file'] : '',
 					'line'       => isset( $context['extra_data']['line'] ) ? (int) $context['extra_data']['line'] : 0,
 				],
