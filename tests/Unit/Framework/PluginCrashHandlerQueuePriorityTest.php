@@ -64,11 +64,11 @@ class PluginCrashHandlerQueuePriorityTest extends AbstractWPUnitTestWithOptionIs
 		];
 
 		$this->handler->set_pending_actions( $pending );
-		$before_count = count( $this->handler->get_pending_crash_queue_actions( 100 ) );
+		$before_count = count( $this->handler->exposed_get_pending_crash_queue_actions( 100 ) );
 
 		$this->assertTrue( $this->handler->exposed_trim_queue_for_prioritized_report( $this->make_report( 'incoming', 5 ), 50 ) );
 
-		$after_count = count( $this->handler->get_pending_crash_queue_actions( 100 ) );
+		$after_count = count( $this->handler->exposed_get_pending_crash_queue_actions( 100 ) );
 		$this->assertEquals( $before_count - 1, $after_count, 'One pending action should be removed before incoming enqueue.' );
 	}
 
@@ -120,6 +120,10 @@ class TestablePluginCrashHandler extends PluginCrashHandler {
 
 	public function exposed_trim_queue_for_prioritized_report( array $incoming, int $queue_size ): bool {
 		return $this->maybe_trim_queue_for_prioritized_report( $incoming, $queue_size );
+	}
+
+	public function exposed_get_pending_crash_queue_actions( int $per_page ): array {
+		return $this->get_pending_crash_queue_actions( $per_page );
 	}
 
 	protected function get_pending_crash_queue_actions( $per_page ) {

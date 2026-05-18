@@ -36,11 +36,7 @@ class ErrorLogHandlerDisabledModeFallbackTest extends AbstractWPUnitTestWithOpti
 		parent::tearDown();
 	}
 
-	public function test_meta_diagnosis_gate_uses_option_fallback_when_plugin_instance_is_unavailable(): void {
-		if ( function_exists( 'facebook_for_woocommerce' ) ) {
-			$this->markTestSkipped( 'Global plugin instance function is available in this runtime; option-only fallback path cannot be isolated.' );
-		}
-
+	public function test_meta_diagnosis_gate_reads_plugin_option_setting(): void {
 		$method = $this->reflection->getMethod( 'is_meta_diagnosis_enabled_for_reporting' );
 		$method->setAccessible( true );
 

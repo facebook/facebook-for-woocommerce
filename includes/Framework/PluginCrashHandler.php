@@ -429,6 +429,7 @@ class PluginCrashHandler {
 	 *
 	 * @since 3.6.4
 	 *
+	 * @param int $queue_size receives current queue size snapshot.
 	 * @return bool
 	 */
 	private function can_queue_more_crash_reports( &$queue_size = 0 ) {
@@ -582,6 +583,7 @@ class PluginCrashHandler {
 					return 1;
 				}
 			} catch ( Throwable $e ) {
+				unset( $e );
 				// Fall back to payload-based unschedule below.
 			}
 		}
@@ -695,7 +697,8 @@ class PluginCrashHandler {
 	 *
 	 * @since 3.6.4
 	 *
-	 * @param array $report normalized crash report payload.
+	 * @param array       $report normalized crash report payload.
+	 * @param string|null $lock_storage receives lock backend used for acquisition.
 	 * @return bool
 	 */
 	private function should_queue_crash_report( array $report, &$lock_storage = null ) {
@@ -738,7 +741,9 @@ class PluginCrashHandler {
 	 *
 	 * @since 3.6.4
 	 *
-	 * @param array $report normalized crash report payload.
+	 * @param array       $report normalized crash report payload.
+	 * @param string      $reason release reason for observability logs.
+	 * @param string|null $lock_storage lock backend used for acquisition.
 	 */
 	private function release_crash_dedup_lock( array $report, $reason = 'unknown', $lock_storage = null ) {
 		$fingerprint = $this->generate_crash_fingerprint( $report );
@@ -1262,9 +1267,25 @@ class PluginCrashHandler {
 		}
 
 		$sensitive_keys = [
-			'token', 'access_token', 'auth', 'authorization', 'secret', 'apikey', 'api_key', 'password',
-			'cookie', 'setcookie', 'set-cookie', 'requestbody', 'request_body', 'body', 'headers', 'header',
-			'phone', 'telephone', 'mobile',
+			'token',
+			'access_token',
+			'auth',
+			'authorization',
+			'secret',
+			'apikey',
+			'api_key',
+			'password',
+			'cookie',
+			'setcookie',
+			'set-cookie',
+			'requestbody',
+			'request_body',
+			'body',
+			'headers',
+			'header',
+			'phone',
+			'telephone',
+			'mobile',
 		];
 
 		foreach ( $lines as $index => $line ) {
@@ -1299,7 +1320,8 @@ class PluginCrashHandler {
 				continue;
 			}
 
-			for ( $i = 0; $i < count( $tokens ); $i++ ) {
+			$tokens_count = count( $tokens );
+			for ( $i = 0; $i < $tokens_count; $i++ ) {
 				$token = (string) $tokens[ $i ];
 				if ( '' === trim( $token ) ) {
 					continue;
@@ -1307,7 +1329,7 @@ class PluginCrashHandler {
 
 				if ( 0 === strcasecmp( $token, 'Bearer' ) ) {
 					$tokens[ $i ] = 'Bearer';
-					for ( $j = $i + 1; $j < count( $tokens ); $j++ ) {
+					for ( $j = $i + 1; $j < $tokens_count; $j++ ) {
 						if ( '' === trim( (string) $tokens[ $j ] ) ) {
 							continue;
 						}
@@ -1323,7 +1345,8 @@ class PluginCrashHandler {
 			$lines[ $index ] = implode( '', $tokens );
 		}
 
-		return implode( "\n", $lines );
+		$sanitized = implode( "\n", $lines );
+		return preg_replace( '/(?<!\w)\+?\d[\d\s().-]{7,}\d(?!\w)/', '[redacted_phone]', $sanitized );
 	}
 
 	/**
@@ -1478,13 +1501,14 @@ class PluginCrashHandler {
 	 * @return bool
 	 */
 	private function looks_like_long_token( $token ) {
-		if ( strlen( $token ) < 24 ) {
+		$token_length = strlen( $token );
+		if ( $token_length < 24 ) {
 			return false;
 		}
 
 		$has_alpha = false;
 		$has_digit = false;
-		for ( $i = 0; $i < strlen( $token ); $i++ ) {
+		for ( $i = 0; $i < $token_length; $i++ ) {
 			$char = $token[ $i ];
 			if ( ctype_alpha( $char ) ) {
 				$has_alpha = true;
@@ -1526,7 +1550,8 @@ class PluginCrashHandler {
 			return false;
 		}
 
-		for ( $i = 0; $i < strlen( $token ); $i++ ) {
+		$token_length = strlen( $token );
+		for ( $i = 0; $i < $token_length; $i++ ) {
 			$char = $token[ $i ];
 			if ( ctype_digit( $char ) ) {
 				continue;

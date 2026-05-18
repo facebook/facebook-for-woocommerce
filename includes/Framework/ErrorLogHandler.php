@@ -396,6 +396,7 @@ class ErrorLogHandler extends LogHandlerBase {
 					}
 				}
 			} catch ( Throwable $e ) {
+				unset( $e );
 				// Fall back to direct API client below.
 			}
 		}
@@ -409,6 +410,7 @@ class ErrorLogHandler extends LogHandlerBase {
 			$api = new Facebook_API( $access_token );
 			return $api->log_to_meta( $context );
 		} catch ( Throwable $e ) {
+			unset( $e );
 			return null;
 		}
 	}
@@ -450,6 +452,7 @@ class ErrorLogHandler extends LogHandlerBase {
 				);
 				return;
 			} catch ( Throwable $e ) {
+				unset( $e );
 				// Fall back to PHP error_log.
 			}
 		}
@@ -507,6 +510,7 @@ class ErrorLogHandler extends LogHandlerBase {
 				}
 			}
 		} catch ( Throwable $e ) {
+			unset( $e );
 			// Use option fallback below.
 		}
 
