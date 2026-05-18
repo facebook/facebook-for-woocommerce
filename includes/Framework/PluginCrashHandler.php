@@ -32,6 +32,21 @@ class PluginCrashHandler {
 	const CRASH_REPORT_CACHE_GROUP = 'wc_facebook_crash_reports';
 
 	/**
+	 * Transient key for crash report rate limiting.
+	 */
+	const CRASH_RATE_LIMIT_KEY = 'wc_facebook_crash_rate_limit';
+
+	/**
+	 * Max number of crash reports allowed in the rate-limit window.
+	 */
+	const CRASH_RATE_LIMIT_MAX = 10;
+
+	/**
+	 * Rate-limit window length in seconds.
+	 */
+	const CRASH_RATE_LIMIT_WINDOW = HOUR_IN_SECONDS;
+
+	/**
 	 * Previously registered exception handler.
 	 *
 	 * @var callable|null
@@ -98,9 +113,99 @@ class PluginCrashHandler {
 			return;
 		}
 
+		if ( $this->should_rate_limit_crash_report() ) {
+			$this->increment_rate_limited_counter();
+			return;
+		}
+
 		if ( ! $this->queue_crash_report( $normalized_report ) ) {
 			$this->log_fallback( $normalized_report );
 		}
+	}
+
+	/**
+	 * Checks if crash reporting is currently rate limited.
+	 *
+	 * Uses a simple rolling window counter in a dedicated transient.
+	 *
+	 * @since 3.6.4
+	 *
+	 * @return bool True when sending should be skipped.
+	 */
+	private function should_rate_limit_crash_report() {
+		$now   = time();
+		$state = get_transient( self::CRASH_RATE_LIMIT_KEY );
+
+		if ( ! is_array( $state ) ) {
+			$state = [
+				'window_started_at' => $now,
+				'count'             => 0,
+				'limited_count'     => 0,
+				'last_seen'         => 0,
+			];
+		}
+
+		$window_started_at = isset( $state['window_started_at'] ) ? (int) $state['window_started_at'] : 0;
+		$count             = isset( $state['count'] ) ? (int) $state['count'] : 0;
+		$limited_count     = isset( $state['limited_count'] ) ? (int) $state['limited_count'] : 0;
+
+		if ( $window_started_at <= 0 || ( $now - $window_started_at ) >= self::CRASH_RATE_LIMIT_WINDOW ) {
+			$window_started_at = $now;
+			$count             = 0;
+			$limited_count     = 0;
+		}
+
+		if ( $count >= self::CRASH_RATE_LIMIT_MAX ) {
+			set_transient(
+				self::CRASH_RATE_LIMIT_KEY,
+				[
+					'window_started_at' => $window_started_at,
+					'count'             => $count,
+					'limited_count'     => $limited_count,
+					'last_seen'         => $now,
+				],
+				self::CRASH_RATE_LIMIT_WINDOW
+			);
+
+			return true;
+		}
+
+		set_transient(
+			self::CRASH_RATE_LIMIT_KEY,
+			[
+				'window_started_at' => $window_started_at,
+				'count'             => $count + 1,
+				'limited_count'     => $limited_count,
+				'last_seen'         => $now,
+			],
+			self::CRASH_RATE_LIMIT_WINDOW
+		);
+
+		return false;
+	}
+
+	/**
+	 * Increments local counters for rate-limited reports.
+	 *
+	 * @since 3.6.4
+	 */
+	private function increment_rate_limited_counter() {
+		$now   = time();
+		$state = get_transient( self::CRASH_RATE_LIMIT_KEY );
+
+		if ( ! is_array( $state ) ) {
+			$state = [
+				'window_started_at' => $now,
+				'count'             => 0,
+				'limited_count'     => 0,
+				'last_seen'         => 0,
+			];
+		}
+
+		$state['limited_count'] = isset( $state['limited_count'] ) ? ( (int) $state['limited_count'] + 1 ) : 1;
+		$state['last_seen']     = $now;
+
+		set_transient( self::CRASH_RATE_LIMIT_KEY, $state, self::CRASH_RATE_LIMIT_WINDOW );
 	}
 
 	/**
