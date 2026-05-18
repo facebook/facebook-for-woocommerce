@@ -666,7 +666,9 @@ class PluginCrashHandler {
 	private function sanitize_sensitive_values( $text ) {
 		$patterns = [
 			// Common secret-like key/value pairs.
-			'/(token|access_token|auth|authorization|secret|api[_-]?key|password|cookie|set-cookie|request_body|body|headers?)\s*[:=]\s*("[^"]*"|\'[^\']*\'|\{[^\}]*\}|\[[^\]]*\]|[^\s,;]+)/i',
+			'/(token|access_token|auth|authorization|secret|api[_-]?key|password|cookie|set-cookie|request_body|body|headers?)\s*[:=]\s*("[^"]*"|\'[^\']*\'|\{[^\}]*\}|\[[^\]]*\]|[^\r\n]+)/i',
+			// Explicit request-like header/body lines.
+			'/(authorization|cookie|set-cookie|request_body|body|headers?)\s*:\s*[^\r\n]*/i',
 			// Authorization bearer values.
 			'/\bBearer\s+(?:Bearer\s+)?[A-Za-z0-9\-._~+\/]+=*/i',
 			// JWT-like strings.
@@ -681,6 +683,7 @@ class PluginCrashHandler {
 
 		$replacements = [
 			'$1=[redacted]',
+			'$1: [redacted]',
 			'Bearer [redacted_token]',
 			'[redacted_token]',
 			'[redacted_token]',
