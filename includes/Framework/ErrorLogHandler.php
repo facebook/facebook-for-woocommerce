@@ -54,6 +54,11 @@ class ErrorLogHandler extends LogHandlerBase {
 	const REPLAY_PAUSED_CRASH_AGGREGATES_HOOK = 'facebook_for_woocommerce_replay_paused_crash_aggregates';
 
 	/**
+	 * Max paused crash aggregate fingerprints to retain locally.
+	 */
+	const PAUSED_CRASH_MAX_DISTINCT_FINGERPRINTS = 100;
+
+	/**
 	 * Constructs a new ErrorLog handler.
 	 *
 	 * @since 3.5.0
@@ -354,6 +359,27 @@ class ErrorLogHandler extends LogHandlerBase {
 			'count'     => $count + 1,
 			'last_seen' => $now,
 		];
+
+		if ( count( $index ) > self::PAUSED_CRASH_MAX_DISTINCT_FINGERPRINTS ) {
+			uasort(
+				$index,
+				static function ( $a, $b ) {
+					$a_last_seen = isset( $a['last_seen'] ) ? (int) $a['last_seen'] : 0;
+					$b_last_seen = isset( $b['last_seen'] ) ? (int) $b['last_seen'] : 0;
+					if ( $a_last_seen === $b_last_seen ) {
+						return 0;
+					}
+					return ( $a_last_seen > $b_last_seen ) ? -1 : 1;
+				}
+			);
+
+			$trimmed = array_slice( $index, self::PAUSED_CRASH_MAX_DISTINCT_FINGERPRINTS, null, true );
+			$index   = array_slice( $index, 0, self::PAUSED_CRASH_MAX_DISTINCT_FINGERPRINTS, true );
+
+			foreach ( array_keys( $trimmed ) as $trimmed_fingerprint ) {
+				delete_transient( self::PAUSED_CRASH_AGGREGATE_KEY_PREFIX . (string) $trimmed_fingerprint );
+			}
+		}
 
 		set_transient( self::PAUSED_CRASH_AGGREGATE_INDEX_KEY, $index, DAY_IN_SECONDS );
 	}
