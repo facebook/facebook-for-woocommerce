@@ -26,6 +26,8 @@ require_once __DIR__ . '/vendor/autoload.php';
 
 use Automattic\WooCommerce\Grow\Tools\CompatChecker\v0_0_1\Checker;
 use Automattic\WooCommerce\Utilities\FeaturesUtil;
+use WooCommerce\Facebook\Framework\ErrorLogHandler;
+use WooCommerce\Facebook\Framework\PluginCrashHandler;
 
 defined( 'ABSPATH' ) || exit;
 
@@ -72,6 +74,16 @@ class WC_Facebook_Loader {
 	const PLUGIN_NAME = 'Meta for WooCommerce';
 
 	const PLUGIN_NAME_DNS = 'wordpress.org';
+
+	/**
+	 * Transient fallback key for plugin disable flag.
+	 */
+	const DISABLE_FLAG_TRANSIENT = 'wc_facebook_plugin_disabled';
+
+	/**
+	 * Relative path for plugin disable flag file inside wp-content.
+	 */
+	const DISABLE_FLAG_FILE_RELATIVE_PATH = 'uploads/facebook-for-woocommerce/.disabled';
 
 
 	/**
@@ -157,6 +169,12 @@ class WC_Facebook_Loader {
 			return;
 		}
 
+		if ( $this->has_valid_disable_flag() ) {
+			$this->register_disabled_mode_services();
+			error_log( 'Meta for WooCommerce is disabled via crash flag. Skipping full plugin initialization.' ); // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log
+			return;
+		}
+
 		self::set_wc_facebook_svr_flags();
 
 		require_once plugin_dir_path( __FILE__ ) . 'class-wc-facebookcommerce.php';
@@ -165,6 +183,70 @@ class WC_Facebook_Loader {
 		if ( function_exists( 'facebook_for_woocommerce' ) ) {
 			facebook_for_woocommerce();
 		}
+	}
+
+	/**
+	 * Checks whether a valid disable flag exists.
+	 *
+	 * @since 3.6.4
+	 *
+	 * @return bool
+	 */
+	private function has_valid_disable_flag() {
+		$flag_file = trailingslashit( WP_CONTENT_DIR ) . self::DISABLE_FLAG_FILE_RELATIVE_PATH;
+
+		if ( is_readable( $flag_file ) ) {
+			$raw_payload = @file_get_contents( $flag_file ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents
+			if ( is_string( $raw_payload ) && '' !== $raw_payload ) {
+				$decoded = json_decode( $raw_payload, true );
+				if ( $this->is_valid_disable_flag_payload( $decoded ) ) {
+					return true;
+				}
+			}
+		}
+
+		$transient_payload = get_transient( self::DISABLE_FLAG_TRANSIENT );
+		return $this->is_valid_disable_flag_payload( $transient_payload );
+	}
+
+	/**
+	 * Validates disable flag payload shape.
+	 *
+	 * @since 3.6.4
+	 *
+	 * @param mixed $payload decoded disable flag payload.
+	 * @return bool
+	 */
+	private function is_valid_disable_flag_payload( $payload ) {
+		return is_array( $payload )
+			&& isset( $payload['timestamp'], $payload['crash_count'] )
+			&& is_numeric( $payload['timestamp'] )
+			&& is_numeric( $payload['crash_count'] )
+			&& (int) $payload['crash_count'] > 0;
+	}
+
+	/**
+	 * Registers lightweight services when plugin is disabled.
+	 *
+	 * Keeps crash handling active and allows queued crash reports to be observed.
+	 *
+	 * @since 3.6.4
+	 */
+	private function register_disabled_mode_services() {
+		( new PluginCrashHandler() )->register();
+
+		add_action( ErrorLogHandler::META_LOG_API, array( $this, 'handle_disabled_mode_crash_report' ), 10, 1 );
+	}
+
+	/**
+	 * Lightweight crash-report handler used while plugin is disabled.
+	 *
+	 * @since 3.6.4
+	 *
+	 * @param array $context queued crash report payload.
+	 */
+	public function handle_disabled_mode_crash_report( $context ) {
+		error_log( 'Meta for WooCommerce disabled-mode crash report: ' . wp_json_encode( $context ) ); // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log
 	}
 
 
