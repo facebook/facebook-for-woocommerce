@@ -943,7 +943,9 @@ class PluginCrashHandler {
 
 		if ( is_readable( $flag_file ) ) {
 			$raw_payload = @file_get_contents( $flag_file ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents
-			if ( is_string( $raw_payload ) && '' !== $raw_payload ) {
+			if ( false === $raw_payload ) {
+				error_log( 'Meta for WooCommerce crash capture: failed to read disable flag file.' ); // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log
+			} elseif ( is_string( $raw_payload ) && '' !== $raw_payload ) {
 				$decoded = json_decode( $raw_payload, true );
 				if ( is_array( $decoded ) && isset( $decoded['crash_count'] ) ) {
 					return $decoded;
@@ -993,6 +995,9 @@ class PluginCrashHandler {
 		}
 
 		$bytes_written = @file_put_contents( $flag_file, wp_json_encode( $payload ) ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_file_put_contents
+		if ( false === $bytes_written ) {
+			error_log( 'Meta for WooCommerce crash capture: failed to write disable flag file.' ); // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log
+		}
 
 		return false !== $bytes_written;
 	}
