@@ -87,8 +87,9 @@ class PluginCrashHandler {
 
 		$this->write_disable_flag();
 
-		if ( ! $this->queue_crash_report( $error ) ) {
-			$this->log_fallback( $error );
+		$normalized_report = $this->normalize_crash_report_payload( $error );
+		if ( ! $this->queue_crash_report( $normalized_report ) ) {
+			$this->log_fallback( $normalized_report );
 		}
 	}
 
@@ -120,10 +121,13 @@ class PluginCrashHandler {
 		$type = $throwable instanceof \ParseError ? E_PARSE : E_ERROR;
 
 		return [
-			'type'    => $type,
-			'message' => $throwable->getMessage(),
-			'file'    => $throwable->getFile(),
-			'line'    => $throwable->getLine(),
+			'type'            => $type,
+			'message'         => $throwable->getMessage(),
+			'file'            => $throwable->getFile(),
+			'line'            => $throwable->getLine(),
+			'exception_class' => get_class( $throwable ),
+			'trace'           => $throwable->getTrace(),
+			'source'          => 'uncaught_exception',
 		];
 	}
 
@@ -269,27 +273,13 @@ class PluginCrashHandler {
 	 *
 	 * @since 3.6.4
 	 *
-	 * @param array $error last PHP error.
+	 * @param array $report normalized crash report payload.
 	 * @return bool
 	 */
-	private function queue_crash_report( array $error ) {
+	private function queue_crash_report( array $report ) {
 		// Guard: Action Scheduler may not be loaded in some environments.
 		if ( ! function_exists( 'as_enqueue_async_action' ) ) {
 			return false;
-		}
-
-		$report = [
-			'event'      => 'plugin_crash',
-			'event_type' => 'fatal_error',
-			'extra_data' => [
-				'error_type' => (int) $error['type'],
-				'file'       => isset( $error['file'] ) ? (string) $error['file'] : '',
-				'line'       => isset( $error['line'] ) ? (int) $error['line'] : 0,
-			],
-		];
-
-		if ( isset( $error['message'] ) && is_string( $error['message'] ) ) {
-			$report['exception_message'] = $error['message'];
 		}
 
 		try {
@@ -301,21 +291,189 @@ class PluginCrashHandler {
 	}
 
 	/**
+	 * Normalizes and sanitizes crash payload for stable reporting.
+	 *
+	 * @since 3.6.4
+	 *
+	 * @param array $error captured PHP fatal error data.
+	 * @return array
+	 */
+	private function normalize_crash_report_payload( array $error ) {
+		$message     = isset( $error['message'] ) ? (string) $error['message'] : '';
+		$event_type  = ( isset( $error['source'] ) && 'uncaught_exception' === $error['source'] ) ? 'uncaught_exception' : 'fatal_error';
+		$error_class = isset( $error['exception_class'] ) ? (string) $error['exception_class'] : '';
+
+		$payload = [
+			'event'             => 'plugin_crash',
+			'event_type'        => $event_type,
+			'exception_message' => $this->sanitize_message( $message ),
+			'extra_data'        => [
+				'error_class'      => $error_class,
+				'php_error_type'   => $this->get_php_error_type_label( isset( $error['type'] ) ? (int) $error['type'] : 0 ),
+				'error_type'       => isset( $error['type'] ) ? (int) $error['type'] : 0,
+				'file'             => $this->sanitize_file_path( isset( $error['file'] ) ? (string) $error['file'] : '' ),
+				'line'             => isset( $error['line'] ) ? (int) $error['line'] : 0,
+				'plugin_stack'     => $this->extract_plugin_stack_frames( isset( $error['trace'] ) && is_array( $error['trace'] ) ? $error['trace'] : [] ),
+				'plugin_version'   => defined( 'WC_FACEBOOK_VERSION' ) ? (string) WC_FACEBOOK_VERSION : ( defined( 'WC_Facebook_Loader::PLUGIN_VERSION' ) ? (string) WC_Facebook_Loader::PLUGIN_VERSION : '' ),
+				'php_version'      => PHP_VERSION,
+				'wp_version'       => isset( $GLOBALS['wp_version'] ) ? (string) $GLOBALS['wp_version'] : '',
+				'wc_version'       => defined( 'WC_VERSION' ) ? (string) WC_VERSION : '',
+				'request_context'  => $this->get_request_context(),
+			],
+		];
+
+		return $payload;
+	}
+
+	/**
+	 * Gets the request context for crash reporting.
+	 *
+	 * @since 3.6.4
+	 *
+	 * @return string
+	 */
+	private function get_request_context() {
+		if ( defined( 'DOING_CRON' ) && DOING_CRON ) {
+			return 'cron';
+		}
+
+		if ( function_exists( 'wp_doing_ajax' ) && wp_doing_ajax() ) {
+			return 'ajax';
+		}
+
+		if ( defined( 'REST_REQUEST' ) && REST_REQUEST ) {
+			return 'rest';
+		}
+
+		if ( is_admin() ) {
+			return 'admin';
+		}
+
+		return 'frontend';
+	}
+
+	/**
+	 * Extracts up to five plugin stack frames.
+	 *
+	 * @since 3.6.4
+	 *
+	 * @param array $trace throwable trace.
+	 * @return array
+	 */
+	private function extract_plugin_stack_frames( array $trace ) {
+		$frames = [];
+
+		foreach ( $trace as $frame ) {
+			if ( empty( $frame['file'] ) || ! is_string( $frame['file'] ) ) {
+				continue;
+			}
+
+			$sanitized_file = $this->sanitize_file_path( $frame['file'] );
+			if ( '' === $sanitized_file || 0 !== strpos( $sanitized_file, 'plugin:' ) ) {
+				continue;
+			}
+
+			$frames[] = [
+				'file'     => $sanitized_file,
+				'line'     => isset( $frame['line'] ) ? (int) $frame['line'] : 0,
+				'function' => isset( $frame['function'] ) ? (string) $frame['function'] : '',
+				'class'    => isset( $frame['class'] ) ? (string) $frame['class'] : '',
+			];
+
+			if ( count( $frames ) >= 5 ) {
+				break;
+			}
+		}
+
+		return $frames;
+	}
+
+	/**
+	 * Sanitizes a message sample and truncates to 500 characters.
+	 *
+	 * @since 3.6.4
+	 *
+	 * @param string $message message text.
+	 * @return string
+	 */
+	private function sanitize_message( $message ) {
+		$sanitized = $this->sanitize_sensitive_values( $message );
+		$sanitized = preg_replace( '#([A-Za-z]:)?[\\/][^\s"\']+#', '[path]', $sanitized );
+
+		if ( function_exists( 'mb_substr' ) ) {
+			return mb_substr( $sanitized, 0, 500 );
+		}
+
+		return substr( $sanitized, 0, 500 );
+	}
+
+	/**
+	 * Sanitizes file paths.
+	 *
+	 * @since 3.6.4
+	 *
+	 * @param string $path absolute file path.
+	 * @return string
+	 */
+	private function sanitize_file_path( $path ) {
+		if ( '' === $path ) {
+			return '';
+		}
+
+		$normalized_path = wp_normalize_path( $path );
+		$plugin_path     = defined( 'WC_FACEBOOK_PLUGIN_PATH' ) ? trailingslashit( wp_normalize_path( WC_FACEBOOK_PLUGIN_PATH ) ) : '';
+
+		if ( '' !== $plugin_path && 0 === strpos( $normalized_path, $plugin_path ) ) {
+			return 'plugin:' . ltrim( substr( $normalized_path, strlen( $plugin_path ) ), '/' );
+		}
+
+		return basename( $normalized_path );
+	}
+
+	/**
+	 * Redacts token/key-like values from text.
+	 *
+	 * @since 3.6.4
+	 *
+	 * @param string $text input text.
+	 * @return string
+	 */
+	private function sanitize_sensitive_values( $text ) {
+		$patterns = [
+			'/(token|access_token|auth|authorization|secret|api[_-]?key|password)\s*[:=]\s*[^\s,;"\']+/i',
+			'/Bearer\s+[A-Za-z0-9\-._~+\/]+=*/i',
+		];
+
+		return preg_replace( $patterns, '$1=[redacted]', $text );
+	}
+
+	/**
+	 * Gets human-readable PHP error type label.
+	 *
+	 * @since 3.6.4
+	 *
+	 * @param int $type PHP error type.
+	 * @return string
+	 */
+	private function get_php_error_type_label( $type ) {
+		$map = [
+			E_ERROR         => 'E_ERROR',
+			E_PARSE         => 'E_PARSE',
+			E_CORE_ERROR    => 'E_CORE_ERROR',
+			E_COMPILE_ERROR => 'E_COMPILE_ERROR',
+		];
+
+		return isset( $map[ $type ] ) ? $map[ $type ] : 'UNKNOWN';
+	}
+
+	/**
 	 * Logs crash report data when queueing fails.
 	 *
 	 * @since 3.6.4
 	 *
-	 * @param array $error last PHP error.
+	 * @param array $report normalized crash payload.
 	 */
-	private function log_fallback( array $error ) {
-		$payload = [
-			'event'   => 'plugin_crash_queue_failed',
-			'message' => isset( $error['message'] ) ? (string) $error['message'] : '',
-			'type'    => isset( $error['type'] ) ? (int) $error['type'] : 0,
-			'file'    => isset( $error['file'] ) ? (string) $error['file'] : '',
-			'line'    => isset( $error['line'] ) ? (int) $error['line'] : 0,
-		];
-
-		error_log( 'Meta for WooCommerce crash capture fallback: ' . wp_json_encode( $payload ) ); // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log
+	private function log_fallback( array $report ) {
+		error_log( 'Meta for WooCommerce crash capture fallback: ' . wp_json_encode( $report ) ); // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log
 	}
 }
