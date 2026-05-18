@@ -305,6 +305,7 @@ class WC_Facebook_Loader {
 	}
 
 
+
 	/**
 	 * Renders an admin notice when the plugin is currently disabled by crash flag.
 	 *

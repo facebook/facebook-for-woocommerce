@@ -164,8 +164,10 @@ class PluginCrashHandler {
 
 		$queue_size = 0;
 		if ( ! $this->can_queue_more_crash_reports( $queue_size ) ) {
-			error_log( '[FBW_CRASH_OBS] crash report dropped: reason=queue_cap fingerprint=' . $fingerprint . ' aggregate_count=' . (int) ( $report_to_queue['extra_data']['aggregate_count'] ?? 0 ) . ' queue_size=' . (int) $queue_size . ' queue_max=' . (int) self::CRASH_MAX_QUEUED_REPORTS ); // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log
-			return;
+			if ( ! $this->maybe_trim_queue_for_prioritized_report( $report_to_queue, $queue_size ) ) {
+				$this->log_crash_observability( '[FBW_CRASH_OBS] crash report dropped: reason=queue_cap fingerprint=' . $fingerprint . ' aggregate_count=' . (int) ( $report_to_queue['extra_data']['aggregate_count'] ?? 0 ) . ' queue_size=' . (int) $queue_size . ' queue_max=' . (int) self::CRASH_MAX_QUEUED_REPORTS );
+				return;
+			}
 		}
 
 		if ( $this->has_pending_crash_queue_lock( $fingerprint ) ) {
@@ -424,9 +426,9 @@ class PluginCrashHandler {
 
 		$actions = as_get_scheduled_actions(
 			[
-				'hook'   => ErrorLogHandler::META_LOG_API,
-				'group'  => ErrorLogHandler::META_LOG_API_GROUP,
-				'status' => [ 'pending', 'in-progress' ],
+				'hook'     => ErrorLogHandler::META_LOG_API,
+				'group'    => ErrorLogHandler::META_LOG_API_GROUP,
+				'status'   => [ 'pending', 'in-progress' ],
 				'per_page' => self::CRASH_MAX_QUEUED_REPORTS + 1,
 			],
 			'ids'
@@ -439,6 +441,135 @@ class PluginCrashHandler {
 		$queue_size = count( $actions );
 		return $queue_size <= self::CRASH_MAX_QUEUED_REPORTS;
 	}
+
+	/**
+	 * Trims one low-value pending queued crash report when queue is full and incoming report is higher value.
+	 *
+	 * Strategy: prefer keeping reports with higher aggregate_count; when tied, keep existing and drop incoming.
+	 *
+	 * @since 3.6.4
+	 *
+	 * @param array $incoming_report incoming normalized crash payload.
+	 * @param int   $queue_size current queue size snapshot.
+	 * @return bool true when a lower-value pending report was removed and incoming report should proceed.
+	 */
+	protected function maybe_trim_queue_for_prioritized_report( array $incoming_report, $queue_size ) {
+		$incoming_count = $this->get_report_aggregate_count( $incoming_report );
+		$incoming_fp    = isset( $incoming_report['extra_data']['fingerprint'] ) ? (string) $incoming_report['extra_data']['fingerprint'] : '';
+		$actions        = $this->get_pending_crash_queue_actions( self::CRASH_MAX_QUEUED_REPORTS + 10 );
+
+		if ( ! is_array( $actions ) || empty( $actions ) ) {
+			return false;
+		}
+
+		$best_candidate = null;
+		$best_count     = null;
+
+		foreach ( $actions as $action ) {
+			if ( ! is_object( $action ) || ! method_exists( $action, 'get_args' ) ) {
+				continue;
+			}
+
+			$args = $action->get_args();
+			if ( ! is_array( $args ) || ! isset( $args[0] ) || ! is_array( $args[0] ) ) {
+				continue;
+			}
+
+			$candidate_report = $args[0];
+			$candidate_count  = $this->get_report_aggregate_count( $candidate_report );
+
+			if ( null === $best_count || $candidate_count < $best_count ) {
+				$best_count     = $candidate_count;
+				$best_candidate = $candidate_report;
+			}
+		}
+
+		if ( ! is_array( $best_candidate ) || null === $best_count ) {
+			return false;
+		}
+
+		if ( $incoming_count <= $best_count ) {
+			$this->log_crash_observability( '[FBW_CRASH_OBS] crash report dropped: reason=queue_priority fingerprint=' . $incoming_fp . ' aggregate_count=' . (int) $incoming_count . ' queue_size=' . (int) $queue_size . ' kept_min_aggregate_count=' . (int) $best_count );
+			return false;
+		}
+
+		$removed = $this->unschedule_pending_crash_action( $best_candidate );
+		if ( empty( $removed ) ) {
+			return false;
+		}
+
+		$removed_fp = isset( $best_candidate['extra_data']['fingerprint'] ) ? (string) $best_candidate['extra_data']['fingerprint'] : '';
+		$this->log_crash_observability( '[FBW_CRASH_OBS] crash queue trimmed: reason=queue_priority_replace removed_fingerprint=' . $removed_fp . ' removed_aggregate_count=' . (int) $best_count . ' incoming_fingerprint=' . $incoming_fp . ' incoming_aggregate_count=' . (int) $incoming_count . ' queue_size=' . (int) $queue_size );
+
+		return true;
+	}
+
+	/**
+	 * Extracts aggregate count from report payload.
+	 *
+	 * @since 3.6.4
+	 *
+	 * @param array $report crash report.
+	 * @return int
+	 */
+	protected function get_report_aggregate_count( array $report ) {
+		$count = isset( $report['extra_data']['aggregate_count'] ) ? (int) $report['extra_data']['aggregate_count'] : 1;
+		return max( 1, $count );
+	}
+
+	/**
+	 * Returns pending crash actions from Action Scheduler.
+	 *
+	 * @since 3.6.4
+	 *
+	 * @param int $per_page max actions to fetch.
+	 * @return array
+	 */
+	protected function get_pending_crash_queue_actions( $per_page ) {
+		if ( ! function_exists( 'as_get_scheduled_actions' ) ) {
+			return [];
+		}
+
+		return as_get_scheduled_actions(
+			[
+				'hook'     => ErrorLogHandler::META_LOG_API,
+				'group'    => ErrorLogHandler::META_LOG_API_GROUP,
+				'status'   => 'pending',
+				'orderby'  => 'date',
+				'order'    => 'ASC',
+				'per_page' => (int) $per_page,
+			],
+			OBJECT
+		);
+	}
+
+	/**
+	 * Unschedules one pending crash action matching the provided payload.
+	 *
+	 * @since 3.6.4
+	 *
+	 * @param array $report queued crash report payload.
+	 * @return int
+	 */
+	protected function unschedule_pending_crash_action( array $report ) {
+		if ( ! function_exists( 'as_unschedule_action' ) ) {
+			return 0;
+		}
+
+		return (int) as_unschedule_action( ErrorLogHandler::META_LOG_API, [ $report ], ErrorLogHandler::META_LOG_API_GROUP );
+	}
+
+	/**
+	 * Emits crash observability log marker.
+	 *
+	 * @since 3.6.4
+	 *
+	 * @param string $message message to log.
+	 */
+	protected function log_crash_observability( $message ) {
+		error_log( (string) $message ); // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log
+	}
+
 
 	/**
 	 * Checks if crash reporting is currently rate limited.
