@@ -275,7 +275,6 @@ class PluginCrashHandler {
 			isset( $extra['line'] ) ? (string) $extra['line'] : '',
 			isset( $top_frame['file'] ) ? (string) $top_frame['file'] : '',
 			isset( $top_frame['line'] ) ? (string) $top_frame['line'] : '',
-			isset( $top_frame['function'] ) ? (string) $top_frame['function'] : '',
 			isset( $extra['plugin_version'] ) ? (string) $extra['plugin_version'] : '',
 		];
 
@@ -666,11 +665,18 @@ class PluginCrashHandler {
 	 */
 	private function sanitize_sensitive_values( $text ) {
 		$patterns = [
-			'/(token|access_token|auth|authorization|secret|api[_-]?key|password|cookie|set-cookie|request_body|body)\s*[:=]\s*[^\s,;"\']+/i',
+			// Common secret-like key/value pairs.
+			'/(token|access_token|auth|authorization|secret|api[_-]?key|password|cookie|set-cookie|request_body|body|headers?)\s*[:=]\s*("[^"]*"|\'[^\']*\'|\{[^\}]*\}|\[[^\]]*\]|[^\s,;]+)/i',
+			// Authorization bearer values.
 			'/Bearer\s+[A-Za-z0-9\-._~+\/]+=*/i',
+			// JWT-like strings.
+			'/\beyJ[A-Za-z0-9_-]+\.[A-Za-z0-9._-]+\.[A-Za-z0-9._-]+\b/',
 			// Redact long token-like strings (mixed letters+digits) and long hex strings.
 			'/\b(?=[A-Za-z0-9_\-]{24,}\b)(?=[A-Za-z0-9_\-]*[A-Za-z])(?=[A-Za-z0-9_\-]*\d)[A-Za-z0-9_\-]+\b/',
 			'/\b[a-f0-9]{32,}\b/i',
+			// Basic PII redaction.
+			'/\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b/i',
+			'/\b(?:\+?\d[\d\s().-]{7,}\d)\b/',
 		];
 
 		$replacements = [
@@ -678,6 +684,9 @@ class PluginCrashHandler {
 			'Bearer [redacted]',
 			'[redacted_token]',
 			'[redacted_token]',
+			'[redacted_token]',
+			'[redacted_email]',
+			'[redacted_phone]',
 		];
 
 		return preg_replace( $patterns, $replacements, $text );
