@@ -36,6 +36,9 @@ if ( ! defined( 'WC_FACEBOOK_PLUGIN_PATH' ) ) {
 	define( 'WC_FACEBOOK_PLUGIN_PATH', plugin_dir_path( __FILE__ ) );
 }
 
+// Register crash handling as early as possible in plugin bootstrap.
+( new PluginCrashHandler() )->register();
+
 // HPOS compatibility declaration.
 add_action(
 	'before_woocommerce_init',
