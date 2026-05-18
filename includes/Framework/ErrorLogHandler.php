@@ -105,7 +105,7 @@ class ErrorLogHandler extends LogHandlerBase {
 			}
 
 			self::release_crash_queue_lock( $raw_context );
-		} catch ( \Exception $e ) {
+		} catch ( Throwable $e ) {
 			self::release_crash_queue_lock( $raw_context );
 			Logger::log(
 				'Error persisting error logs: ' . $e->getMessage(),
