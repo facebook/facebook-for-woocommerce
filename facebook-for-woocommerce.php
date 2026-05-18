@@ -77,6 +77,11 @@ class WC_Facebook_Loader {
 	const PLUGIN_NAME_DNS = 'wordpress.org';
 
 	/**
+	 * User meta key storing dismissed disabled-notice signature.
+	 */
+	const DISABLED_NOTICE_DISMISSED_META_KEY = 'wc_facebook_disabled_notice_dismissed_signature';
+
+	/**
 	 * Transient fallback key for plugin disable flag.
 	 */
 	const DISABLE_FLAG_TRANSIENT = 'wc_facebook_plugin_disabled';
@@ -127,8 +132,10 @@ class WC_Facebook_Loader {
 		add_action( 'admin_init', array( $this, 'check_environment' ) );
 
 		add_action( 'admin_notices', array( $this, 'admin_notices' ), 15 );
-		add_action( 'admin_notices', array( $this, 'render_disabled_plugin_notice' ), 16 );
+		add_action( 'after_plugin_row_' . plugin_basename( __FILE__ ), array( $this, 'render_disabled_plugin_notice' ), 10, 2 );
+		add_action( 'admin_footer', array( $this, 'print_disabled_notice_dismiss_script' ), 999 );
 		add_action( 'admin_post_wc_facebook_clear_disable_flag', array( $this, 'handle_clear_disable_flag_action' ) );
+		add_action( 'wp_ajax_wc_facebook_dismiss_disabled_notice', array( $this, 'handle_dismiss_disabled_notice_ajax' ) );
 		add_action( 'action_scheduler_init', array( BatchLogHandler::class, 'register_batch_sender' ), 5 );
 
 		// Flush rewrite rules if flagged (runs once after activation/upgrade).
@@ -336,16 +343,34 @@ class WC_Facebook_Loader {
 
 
 	/**
-	 * Renders an admin notice when the plugin is currently disabled by crash flag.
+	 * Renders a plugins-page-only notice row when plugin is disabled by crash flag.
 	 *
 	 * @since 3.6.4
+	 *
+	 * @param string $plugin_file plugin basename.
+	 * @param array  $plugin_data plugin row data.
 	 */
-	public function render_disabled_plugin_notice() {
+	public function render_disabled_plugin_notice( $plugin_file = '', $plugin_data = [] ) {
 		if ( ! current_user_can( 'manage_woocommerce' ) ) {
 			return;
 		}
 
-		if ( ! $this->has_valid_disable_flag() ) {
+		global $pagenow;
+		if ( 'plugins.php' !== $pagenow ) {
+			return;
+		}
+
+		if ( plugin_basename( __FILE__ ) !== $plugin_file ) {
+			return;
+		}
+
+		$payload = $this->get_disable_flag_payload_for_notice();
+		if ( ! $this->is_valid_disable_flag_payload( $payload ) || ! $this->is_disable_window_active( $payload ) ) {
+			return;
+		}
+
+		$signature = $this->get_disabled_notice_signature( $payload );
+		if ( $this->is_disabled_notice_dismissed_for_current_user( $signature ) ) {
 			return;
 		}
 
@@ -354,7 +379,13 @@ class WC_Facebook_Loader {
 			'wc_facebook_clear_disable_flag'
 		);
 
-		echo '<div class="notice notice-warning"><p><strong>' . esc_html__( 'Meta for WooCommerce is currently disabled due to repeated crashes.', 'facebook-for-woocommerce' ) . '</strong></p><p>' . esc_html__( 'You can re-enable the plugin after reviewing recent crash conditions.', 'facebook-for-woocommerce' ) . '</p><p><a class="button button-primary" href="' . esc_url( $clear_url ) . '">' . esc_html__( 'Re-enable plugin', 'facebook-for-woocommerce' ) . '</a></p></div>';
+		$source         = $this->has_active_disable_flag_file_only() ? esc_html__( 'File', 'facebook-for-woocommerce' ) : esc_html__( 'Transient', 'facebook-for-woocommerce' );
+		$crash_count    = (int) $payload['crash_count'];
+		$disabled_since = date_i18n( get_option( 'date_format' ) . ' ' . get_option( 'time_format' ), (int) $payload['timestamp'] );
+		$window_seconds = $this->get_disable_window_seconds( $crash_count );
+		$window_label   = null === $window_seconds ? esc_html__( 'Permanent (3+ crashes)', 'facebook-for-woocommerce' ) : sprintf( esc_html__( '%d minutes', 'facebook-for-woocommerce' ), (int) round( $window_seconds / MINUTE_IN_SECONDS ) );
+
+		echo '<tr class="plugin-update-tr active wc-facebook-disabled-notice-row"><td colspan="4" class="plugin-update colspanchange"><div class="notice inline notice-warning notice-alt wc-facebook-disabled-notice is-dismissible" data-wc-facebook-disabled-notice="1"><p><strong>' . esc_html__( 'Meta for WooCommerce is currently disabled due to repeated crashes.', 'facebook-for-woocommerce' ) . '</strong></p><p>' . esc_html__( 'You can re-enable the plugin after reviewing recent crash conditions.', 'facebook-for-woocommerce' ) . '</p><p><strong>' . esc_html__( 'Crash count:', 'facebook-for-woocommerce' ) . '</strong> ' . esc_html( (string) $crash_count ) . ' &nbsp; <strong>' . esc_html__( 'Disabled since:', 'facebook-for-woocommerce' ) . '</strong> ' . esc_html( $disabled_since ) . ' &nbsp; <strong>' . esc_html__( 'Disable window:', 'facebook-for-woocommerce' ) . '</strong> ' . esc_html( $window_label ) . ' &nbsp; <strong>' . esc_html__( 'Source:', 'facebook-for-woocommerce' ) . '</strong> ' . esc_html( $source ) . '</p><p><a class="button button-primary" href="' . esc_url( $clear_url ) . '">' . esc_html__( 'Re-enable plugin', 'facebook-for-woocommerce' ) . '</a></p><button type="button" class="notice-dismiss"><span class="screen-reader-text">' . esc_html__( 'Dismiss this notice.', 'facebook-for-woocommerce' ) . '</span></button><input type="hidden" class="wc-facebook-disabled-notice-signature" value="' . esc_attr( $signature ) . '" /></div></td></tr>';
 	}
 
 	/**
@@ -398,6 +429,107 @@ class WC_Facebook_Loader {
 		$transient_cleared  = ! $has_transient || delete_transient( self::DISABLE_FLAG_TRANSIENT );
 
 		return (bool) $file_cleared && (bool) $transient_cleared;
+	}
+
+	/**
+	 * Gets disable flag payload for notice rendering.
+	 *
+	 * @since 3.6.4
+	 *
+	 * @return array|null
+	 */
+	private function get_disable_flag_payload_for_notice() {
+		$flag_file = trailingslashit( WP_CONTENT_DIR ) . self::DISABLE_FLAG_FILE_RELATIVE_PATH;
+
+		if ( is_readable( $flag_file ) ) {
+			$raw_payload = @file_get_contents( $flag_file ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents
+			if ( is_string( $raw_payload ) && '' !== $raw_payload ) {
+				$decoded = json_decode( $raw_payload, true );
+				if ( is_array( $decoded ) ) {
+					return $decoded;
+				}
+			}
+		}
+
+		$transient_payload = get_transient( self::DISABLE_FLAG_TRANSIENT );
+		return is_array( $transient_payload ) ? $transient_payload : null;
+	}
+
+	/**
+	 * Builds a stable notice signature from disable payload.
+	 *
+	 * @since 3.6.4
+	 *
+	 * @param array $payload disable payload.
+	 * @return string
+	 */
+	private function get_disabled_notice_signature( array $payload ) {
+		$timestamp   = isset( $payload['timestamp'] ) ? (int) $payload['timestamp'] : 0;
+		$crash_count = isset( $payload['crash_count'] ) ? (int) $payload['crash_count'] : 0;
+		return md5( $timestamp . '|' . $crash_count );
+	}
+
+	/**
+	 * Checks whether current disabled notice signature is dismissed by current user.
+	 *
+	 * @since 3.6.4
+	 *
+	 * @param string $signature notice signature.
+	 * @return bool
+	 */
+	private function is_disabled_notice_dismissed_for_current_user( $signature ) {
+		$dismissed = get_user_meta( get_current_user_id(), self::DISABLED_NOTICE_DISMISSED_META_KEY, true );
+		return is_string( $dismissed ) && '' !== $dismissed && hash_equals( $dismissed, (string) $signature );
+	}
+
+	/**
+	 * Handles notice dismissal persistence via AJAX.
+	 *
+	 * @since 3.6.4
+	 */
+	public function handle_dismiss_disabled_notice_ajax() {
+		if ( ! current_user_can( 'manage_woocommerce' ) ) {
+			wp_send_json_error( [ 'message' => __( 'Insufficient permissions.', 'facebook-for-woocommerce' ) ], 403 );
+		}
+
+		check_ajax_referer( 'wc_facebook_dismiss_disabled_notice', 'nonce' );
+
+		$signature = isset( $_POST['signature'] ) ? sanitize_text_field( wp_unslash( $_POST['signature'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Missing
+		if ( '' === $signature ) {
+			wp_send_json_error( [ 'message' => __( 'Missing signature.', 'facebook-for-woocommerce' ) ], 400 );
+		}
+
+		update_user_meta( get_current_user_id(), self::DISABLED_NOTICE_DISMISSED_META_KEY, $signature );
+		wp_send_json_success();
+	}
+
+	/**
+	 * Prints minimal inline JS for dismissing disabled notice on plugins page.
+	 *
+	 * @since 3.6.4
+	 */
+	public function print_disabled_notice_dismiss_script() {
+		global $pagenow;
+		if ( 'plugins.php' !== $pagenow || ! current_user_can( 'manage_woocommerce' ) || ! $this->has_valid_disable_flag() ) {
+			return;
+		}
+
+		$ajax_url = admin_url( 'admin-ajax.php' );
+		$nonce    = wp_create_nonce( 'wc_facebook_dismiss_disabled_notice' );
+
+		$ajax_url_js = wp_json_encode( esc_url_raw( $ajax_url ) );
+		$nonce_js    = wp_json_encode( $nonce );
+
+		echo '<style>
+.wc-facebook-disabled-notice{background:#fcf9e8!important;border-left:4px solid #dba617!important;padding:8px 12px;margin:0;}
+.wc-facebook-disabled-notice:before,.wc-facebook-disabled-notice p:before{display:none!important;content:none!important;}
+.wc-facebook-disabled-notice p{margin:0 0 6px 0;padding-left:0!important;}
+.wc-facebook-disabled-notice a.update-link,.wc-facebook-disabled-notice a.update-link:link,.wc-facebook-disabled-notice a.update-link:visited,.wc-facebook-disabled-notice a.update-link:hover,.wc-facebook-disabled-notice a.update-link:focus,.wc-facebook-disabled-notice a,.wc-facebook-disabled-notice a:hover{text-decoration:none!important;box-shadow:none!important;}
+.wc-facebook-disabled-notice .notice-dismiss{color:#787c82;}
+.wc-facebook-disabled-notice .notice-dismiss:hover,.wc-facebook-disabled-notice .notice-dismiss:focus{color:#d63638;}
+tr[data-plugin="facebook-for-woocommerce/facebook-for-woocommerce.php"] td{border-bottom:0!important;}
+</style>';
+		echo '<script>(function(){var pluginRow=document.querySelector("tr[data-plugin=\"facebook-for-woocommerce/facebook-for-woocommerce.php\"]");var noticeRow=document.querySelector(".wc-facebook-disabled-notice-row");if(pluginRow&&noticeRow){pluginRow.classList.add("update");}document.addEventListener("click",function(e){if(!e.target||!e.target.classList||!e.target.classList.contains("notice-dismiss")){return;}var notice=e.target.closest("[data-wc-facebook-disabled-notice=\"1\"]");if(!notice){return;}var sigEl=notice.querySelector(".wc-facebook-disabled-notice-signature");var sig=sigEl?sigEl.value:"";if(!sig){return;}var row=notice.closest("tr");if(row){row.style.display="none";}if(pluginRow){pluginRow.classList.remove("update");}var data=new URLSearchParams();data.append("action","wc_facebook_dismiss_disabled_notice");data.append("nonce",' . $nonce_js . ');data.append("signature",sig);window.fetch(' . $ajax_url_js . ',{method:"POST",credentials:"same-origin",headers:{"Content-Type":"application/x-www-form-urlencoded; charset=UTF-8"},body:data.toString()});});})();</script>';
 	}
 
 	/**
