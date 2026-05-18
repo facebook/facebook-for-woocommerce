@@ -27,6 +27,11 @@ class PluginCrashHandler {
 	const DISABLE_FLAG_TRANSIENT = 'wc_facebook_plugin_disabled';
 
 	/**
+	 * Cache group for crash report deduplication locks.
+	 */
+	const CRASH_REPORT_CACHE_GROUP = 'wc_facebook_crash_reports';
+
+	/**
 	 * Previously registered exception handler.
 	 *
 	 * @var callable|null
@@ -88,9 +93,93 @@ class PluginCrashHandler {
 		$this->write_disable_flag();
 
 		$normalized_report = $this->normalize_crash_report_payload( $error );
+		if ( ! $this->should_queue_crash_report( $normalized_report ) ) {
+			$this->increment_duplicate_crash_counter( $normalized_report );
+			return;
+		}
+
 		if ( ! $this->queue_crash_report( $normalized_report ) ) {
 			$this->log_fallback( $normalized_report );
 		}
+	}
+
+	/**
+	 * Determines whether a crash report should be queued based on dedup lock.
+	 *
+	 * @since 3.6.4
+	 *
+	 * @param array $report normalized crash report payload.
+	 * @return bool
+	 */
+	private function should_queue_crash_report( array $report ) {
+		$fingerprint = $this->generate_crash_fingerprint( $report );
+
+		if ( '' === $fingerprint ) {
+			return true;
+		}
+
+		$cache_key = 'crash_lock_' . $fingerprint;
+
+		return wp_cache_add( $cache_key, 1, self::CRASH_REPORT_CACHE_GROUP, HOUR_IN_SECONDS );
+	}
+
+	/**
+	 * Increments local duplicate crash counters for suppressed reports.
+	 *
+	 * @since 3.6.4
+	 *
+	 * @param array $report normalized crash report payload.
+	 */
+	private function increment_duplicate_crash_counter( array $report ) {
+		$fingerprint = $this->generate_crash_fingerprint( $report );
+
+		if ( '' === $fingerprint ) {
+			return;
+		}
+
+		$transient_key = 'wc_facebook_crash_dup_' . $fingerprint;
+		$current       = get_transient( $transient_key );
+		$count         = is_array( $current ) && isset( $current['count'] ) ? (int) $current['count'] : 0;
+
+		set_transient(
+			$transient_key,
+			[
+				'count'     => $count + 1,
+				'last_seen' => time(),
+			],
+			DAY_IN_SECONDS
+		);
+	}
+
+	/**
+	 * Generates a crash fingerprint used for deduplication.
+	 *
+	 * @since 3.6.4
+	 *
+	 * @param array $report normalized crash report payload.
+	 * @return string
+	 */
+	private function generate_crash_fingerprint( array $report ) {
+		$extra      = isset( $report['extra_data'] ) && is_array( $report['extra_data'] ) ? $report['extra_data'] : [];
+		$stack      = isset( $extra['plugin_stack'] ) && is_array( $extra['plugin_stack'] ) ? $extra['plugin_stack'] : [];
+		$top_frame  = ! empty( $stack ) && is_array( $stack[0] ) ? $stack[0] : [];
+		$components = [
+			isset( $report['event_type'] ) ? (string) $report['event_type'] : '',
+			isset( $report['exception_message'] ) ? (string) $report['exception_message'] : '',
+			isset( $extra['file'] ) ? (string) $extra['file'] : '',
+			isset( $extra['line'] ) ? (string) $extra['line'] : '',
+			isset( $top_frame['file'] ) ? (string) $top_frame['file'] : '',
+			isset( $top_frame['line'] ) ? (string) $top_frame['line'] : '',
+			isset( $top_frame['function'] ) ? (string) $top_frame['function'] : '',
+			isset( $extra['plugin_version'] ) ? (string) $extra['plugin_version'] : '',
+		];
+
+		$fingerprint_source = implode( '|', $components );
+		if ( '' === trim( $fingerprint_source ) ) {
+			return '';
+		}
+
+		return md5( $fingerprint_source );
 	}
 
 	/**
