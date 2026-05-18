@@ -119,6 +119,7 @@ class WC_Facebook_Loader {
 		add_action( 'admin_init', array( $this, 'check_environment' ) );
 
 		add_action( 'admin_notices', array( $this, 'admin_notices' ), 15 );
+		add_action( 'admin_notices', array( $this, 'render_disabled_plugin_notice' ), 16 );
 		add_action( 'admin_post_wc_facebook_clear_disable_flag', array( $this, 'handle_clear_disable_flag_action' ) );
 
 		// Flush rewrite rules if flagged (runs once after activation/upgrade).
@@ -300,6 +301,28 @@ class WC_Facebook_Loader {
 		error_log( 'Meta for WooCommerce disabled-mode crash report: ' . wp_json_encode( $context ) ); // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log
 	}
 
+
+	/**
+	 * Renders an admin notice when the plugin is currently disabled by crash flag.
+	 *
+	 * @since 3.6.4
+	 */
+	public function render_disabled_plugin_notice() {
+		if ( ! current_user_can( 'manage_woocommerce' ) ) {
+			return;
+		}
+
+		if ( ! $this->has_valid_disable_flag() ) {
+			return;
+		}
+
+		$clear_url = wp_nonce_url(
+			admin_url( 'admin-post.php?action=wc_facebook_clear_disable_flag' ),
+			'wc_facebook_clear_disable_flag'
+		);
+
+		echo '<div class="notice notice-warning"><p><strong>' . esc_html__( 'Meta for WooCommerce is currently disabled due to repeated crashes.', 'facebook-for-woocommerce' ) . '</strong></p><p>' . esc_html__( 'You can re-enable the plugin after reviewing recent crash conditions.', 'facebook-for-woocommerce' ) . '</p><p><a class="button button-primary" href="' . esc_url( $clear_url ) . '">' . esc_html__( 'Re-enable plugin', 'facebook-for-woocommerce' ) . '</a></p></div>';
+	}
 
 	/**
 	 * Handles the clear-disable-flag action.
