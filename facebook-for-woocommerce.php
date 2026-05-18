@@ -60,8 +60,19 @@ register_shutdown_function(
 			$raw = @file_get_contents( $flag_file ); // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged,WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents
 			if ( is_string( $raw ) && '' !== $raw ) {
 				$decoded = json_decode( $raw, true );
-				if ( is_array( $decoded ) && isset( $decoded['crash_count'] ) ) {
-					$current_crash_count = max( 0, (int) $decoded['crash_count'] );
+				if ( is_array( $decoded ) && isset( $decoded['crash_count'], $decoded['timestamp'] ) ) {
+					$existing_count = max( 0, (int) $decoded['crash_count'] );
+					$existing_time  = (int) $decoded['timestamp'];
+
+					$window_seconds = null;
+					if ( $existing_count <= 1 ) {
+						$window_seconds = 10 * MINUTE_IN_SECONDS;
+					} elseif ( 2 === $existing_count ) {
+						$window_seconds = HOUR_IN_SECONDS;
+					}
+
+					$is_window_active = null === $window_seconds || ( time() - $existing_time ) < $window_seconds;
+					$current_crash_count = $is_window_active ? $existing_count : 0;
 				}
 			}
 		}
