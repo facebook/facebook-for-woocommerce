@@ -39,6 +39,16 @@ class ErrorLogHandler extends LogHandlerBase {
 	const CRASH_REPORTING_PAUSE_KEY = 'wc_facebook_crash_reporting_paused_until';
 
 	/**
+	 * Transient key prefix for paused-period crash aggregates.
+	 */
+	const PAUSED_CRASH_AGGREGATE_KEY_PREFIX = 'wc_facebook_paused_crash_agg_';
+
+	/**
+	 * Transient key for paused-period aggregate fingerprint index.
+	 */
+	const PAUSED_CRASH_AGGREGATE_INDEX_KEY = 'wc_facebook_paused_crash_agg_index';
+
+	/**
 	 * Constructs a new ErrorLog handler.
 	 *
 	 * @since 3.5.0
@@ -60,6 +70,8 @@ class ErrorLogHandler extends LogHandlerBase {
 			self::release_crash_queue_lock( $raw_context );
 			return;
 		}
+
+		self::maybe_replay_paused_crash_aggregates();
 
 		if ( self::is_crash_reporting_paused() ) {
 			self::store_crash_aggregate_only( $raw_context );
@@ -121,6 +133,8 @@ class ErrorLogHandler extends LogHandlerBase {
 			return false;
 		}
 
+		self::maybe_replay_paused_crash_aggregates();
+
 		if ( self::is_crash_reporting_paused() ) {
 			self::store_crash_aggregate_only( $request_data );
 			return true;
@@ -171,6 +185,77 @@ class ErrorLogHandler extends LogHandlerBase {
 	}
 
 	/**
+	 * Replays paused crash aggregates once pause window has expired.
+	 *
+	 * @since 3.6.4
+	 */
+	public static function maybe_replay_paused_crash_aggregates() {
+		if ( self::is_crash_reporting_paused() ) {
+			return;
+		}
+
+		if ( ! function_exists( 'as_enqueue_async_action' ) ) {
+			return;
+		}
+
+		$index = get_transient( self::PAUSED_CRASH_AGGREGATE_INDEX_KEY );
+		if ( ! is_array( $index ) || empty( $index ) ) {
+			return;
+		}
+
+		foreach ( array_keys( $index ) as $fingerprint ) {
+			$fingerprint = (string) $fingerprint;
+			if ( '' === $fingerprint ) {
+				continue;
+			}
+
+			$key       = self::PAUSED_CRASH_AGGREGATE_KEY_PREFIX . $fingerprint;
+			$aggregate = get_transient( $key );
+			if ( ! is_array( $aggregate ) ) {
+				unset( $index[ $fingerprint ] );
+				continue;
+			}
+
+			$last_sample = isset( $aggregate['last_sample'] ) && is_array( $aggregate['last_sample'] ) ? $aggregate['last_sample'] : [];
+			$request_data = [
+				'event'             => 'plugin_crash',
+				'event_type'        => isset( $last_sample['event_type'] ) ? (string) $last_sample['event_type'] : 'fatal_error',
+				'exception_message' => isset( $last_sample['message'] ) ? (string) $last_sample['message'] : 'Crash replayed after pause window',
+				'extra_data'        => [
+					'fingerprint'            => $fingerprint,
+					'file'                   => isset( $last_sample['file'] ) ? (string) $last_sample['file'] : '',
+					'line'                   => isset( $last_sample['line'] ) ? (int) $last_sample['line'] : 0,
+					'aggregate_count'        => isset( $aggregate['count'] ) ? (int) $aggregate['count'] : 1,
+					'aggregate_first_seen'   => isset( $aggregate['first_seen'] ) ? (int) $aggregate['first_seen'] : time(),
+					'aggregate_last_seen'    => isset( $aggregate['last_seen'] ) ? (int) $aggregate['last_seen'] : time(),
+					'aggregate_last_sample'  => $last_sample,
+					'replayed_after_pause'   => true,
+				],
+			];
+
+			$enqueued = false;
+
+			if ( function_exists( 'as_has_scheduled_action' ) && as_has_scheduled_action( self::META_LOG_API, [ $request_data ], self::META_LOG_API_GROUP ) ) {
+				$enqueued = true;
+			} else {
+				try {
+					$action_id = as_enqueue_async_action( self::META_LOG_API, [ $request_data ], self::META_LOG_API_GROUP, true );
+					$enqueued  = ! empty( $action_id );
+				} catch ( Throwable $e ) {
+					$enqueued = false;
+				}
+			}
+
+			if ( $enqueued ) {
+				delete_transient( $key );
+				unset( $index[ $fingerprint ] );
+			}
+		}
+
+		set_transient( self::PAUSED_CRASH_AGGREGATE_INDEX_KEY, $index, DAY_IN_SECONDS );
+	}
+
+	/**
 	 * Pauses crash reporting for a short backoff window.
 	 *
 	 * @since 3.6.4
@@ -189,7 +274,7 @@ class ErrorLogHandler extends LogHandlerBase {
 	 */
 	private static function store_crash_aggregate_only( array $context ) {
 		$fingerprint = isset( $context['extra_data']['fingerprint'] ) ? (string) $context['extra_data']['fingerprint'] : 'default';
-		$key         = 'wc_facebook_paused_crash_agg_' . $fingerprint;
+		$key         = self::PAUSED_CRASH_AGGREGATE_KEY_PREFIX . $fingerprint;
 		$current     = get_transient( $key );
 		$now         = time();
 
@@ -217,6 +302,18 @@ class ErrorLogHandler extends LogHandlerBase {
 			],
 			DAY_IN_SECONDS
 		);
+
+		$index = get_transient( self::PAUSED_CRASH_AGGREGATE_INDEX_KEY );
+		if ( ! is_array( $index ) ) {
+			$index = [];
+		}
+
+		$index[ $fingerprint ] = [
+			'count'     => $count + 1,
+			'last_seen' => $now,
+		];
+
+		set_transient( self::PAUSED_CRASH_AGGREGATE_INDEX_KEY, $index, DAY_IN_SECONDS );
 	}
 
 	/**
