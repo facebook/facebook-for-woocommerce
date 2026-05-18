@@ -26,11 +26,6 @@ defined( 'ABSPATH' ) || exit;
 class PluginCrashHandler {
 
 	/**
-	 * Disable flag transient key fallback.
-	 */
-	const DISABLE_FLAG_TRANSIENT = 'wc_facebook_plugin_disabled';
-
-	/**
 	 * Cache group for crash report deduplication locks.
 	 */
 	const CRASH_REPORT_CACHE_GROUP = 'wc_facebook_crash_reports';
@@ -74,6 +69,11 @@ class PluginCrashHandler {
 	 * Max length of aggregate last sample message.
 	 */
 	const CRASH_MAX_SAMPLE_MESSAGE_LENGTH = 200;
+
+	/**
+	 * Max random delay before queued crash reports are sent.
+	 */
+	const CRASH_REPORT_MAX_JITTER_SECONDS = 3600;
 
 	/**
 	 * Max number of crash reports allowed in the rate-limit window.
@@ -158,11 +158,16 @@ class PluginCrashHandler {
 
 		$this->write_disable_flag();
 
-		$normalized_report = $this->normalize_crash_report_payload( $error );
-		$fingerprint       = $this->generate_crash_fingerprint( $normalized_report );
-		$aggregate         = $this->increment_crash_aggregate( $fingerprint, $normalized_report );
-		$report_to_queue   = $this->attach_aggregate_to_report( $normalized_report, $aggregate, $fingerprint );
-		$report_to_queue   = $this->apply_payload_size_guard( $report_to_queue );
+		try {
+			$normalized_report = $this->normalize_crash_report_payload( $error );
+			$fingerprint       = $this->generate_crash_fingerprint( $normalized_report );
+			$aggregate         = $this->increment_crash_aggregate( $fingerprint, $normalized_report );
+			$report_to_queue   = $this->attach_aggregate_to_report( $normalized_report, $aggregate, $fingerprint );
+			$report_to_queue   = $this->apply_payload_size_guard( $report_to_queue );
+		} catch ( Throwable $e ) {
+			unset( $e );
+			return;
+		}
 
 		if ( ErrorLogHandler::is_crash_reporting_paused() ) {
 			return;
@@ -220,7 +225,7 @@ class PluginCrashHandler {
 			return false;
 		}
 
-		return false !== get_transient( self::CRASH_QUEUE_LOCK_PREFIX . $fingerprint );
+		return false !== $this->safe_get_transient( self::CRASH_QUEUE_LOCK_PREFIX . $fingerprint );
 	}
 
 	/**
@@ -235,7 +240,7 @@ class PluginCrashHandler {
 			return;
 		}
 
-		set_transient( self::CRASH_QUEUE_LOCK_PREFIX . $fingerprint, 1, HOUR_IN_SECONDS );
+		$this->safe_set_transient( self::CRASH_QUEUE_LOCK_PREFIX . $fingerprint, 1, HOUR_IN_SECONDS );
 	}
 
 	/**
@@ -249,7 +254,7 @@ class PluginCrashHandler {
 	 */
 	private function increment_crash_aggregate( $fingerprint, array $report ) {
 		$key      = $this->get_crash_aggregate_key( $fingerprint );
-		$current  = get_transient( $key );
+		$current  = $this->safe_get_transient( $key );
 		$now      = time();
 		$count    = is_array( $current ) && isset( $current['count'] ) ? (int) $current['count'] : 0;
 		$first    = is_array( $current ) && isset( $current['first_seen'] ) ? (int) $current['first_seen'] : $now;
@@ -274,7 +279,7 @@ class PluginCrashHandler {
 			'last_sample' => $sample,
 		];
 
-		set_transient( $key, $aggregate, DAY_IN_SECONDS );
+		$this->safe_set_transient( $key, $aggregate, DAY_IN_SECONDS );
 		$this->update_crash_aggregate_index( $fingerprint, (int) $aggregate['count'], (int) $aggregate['last_seen'] );
 
 		return $aggregate;
@@ -290,7 +295,7 @@ class PluginCrashHandler {
 	 * @param int    $last_seen unix timestamp.
 	 */
 	private function update_crash_aggregate_index( $fingerprint, $count, $last_seen ) {
-		$index = get_transient( self::CRASH_AGGREGATE_INDEX_KEY );
+		$index = $this->safe_get_transient( self::CRASH_AGGREGATE_INDEX_KEY );
 		if ( ! is_array( $index ) ) {
 			$index = [];
 		}
@@ -319,11 +324,11 @@ class PluginCrashHandler {
 				if ( isset( $kept[ $known_fingerprint ] ) ) {
 					continue;
 				}
-				delete_transient( $this->get_crash_aggregate_key( $known_fingerprint ) );
+				$this->safe_delete_transient( $this->get_crash_aggregate_key( $known_fingerprint ) );
 			}
 		}
 
-		set_transient( self::CRASH_AGGREGATE_INDEX_KEY, $index, DAY_IN_SECONDS );
+		$this->safe_set_transient( self::CRASH_AGGREGATE_INDEX_KEY, $index, DAY_IN_SECONDS );
 	}
 
 	/**
@@ -334,7 +339,7 @@ class PluginCrashHandler {
 	 * @return array
 	 */
 	private function get_all_known_aggregate_fingerprints() {
-		$index = get_transient( self::CRASH_AGGREGATE_INDEX_KEY );
+		$index = $this->safe_get_transient( self::CRASH_AGGREGATE_INDEX_KEY );
 		return is_array( $index ) ? array_keys( $index ) : [];
 	}
 
@@ -370,12 +375,12 @@ class PluginCrashHandler {
 	 * @param string $fingerprint crash fingerprint.
 	 */
 	private function clear_crash_aggregate( $fingerprint ) {
-		delete_transient( $this->get_crash_aggregate_key( $fingerprint ) );
+		$this->safe_delete_transient( $this->get_crash_aggregate_key( $fingerprint ) );
 
-		$index = get_transient( self::CRASH_AGGREGATE_INDEX_KEY );
+		$index = $this->safe_get_transient( self::CRASH_AGGREGATE_INDEX_KEY );
 		if ( is_array( $index ) && isset( $index[ $fingerprint ] ) ) {
 			unset( $index[ $fingerprint ] );
-			set_transient( self::CRASH_AGGREGATE_INDEX_KEY, $index, DAY_IN_SECONDS );
+			$this->safe_set_transient( self::CRASH_AGGREGATE_INDEX_KEY, $index, DAY_IN_SECONDS );
 		}
 	}
 
@@ -529,7 +534,7 @@ class PluginCrashHandler {
 
 		$removed_fp = isset( $best_candidate_report['extra_data']['fingerprint'] ) ? (string) $best_candidate_report['extra_data']['fingerprint'] : '';
 		if ( '' !== $removed_fp ) {
-			delete_transient( self::CRASH_QUEUE_LOCK_PREFIX . $removed_fp );
+			$this->safe_delete_transient( self::CRASH_QUEUE_LOCK_PREFIX . $removed_fp );
 		}
 		$this->log_crash_observability( '[FBW_CRASH_OBS] crash queue trimmed: reason=queue_priority_replace removed_fingerprint=' . $removed_fp . ' removed_aggregate_count=' . (int) $best_count . ' incoming_fingerprint=' . $incoming_fp . ' incoming_aggregate_count=' . (int) $incoming_count . ' queue_size=' . (int) $queue_size );
 
@@ -630,7 +635,7 @@ class PluginCrashHandler {
 	 */
 	private function should_rate_limit_crash_report() {
 		$now   = time();
-		$state = get_transient( self::CRASH_RATE_LIMIT_KEY );
+		$state = $this->safe_get_transient( self::CRASH_RATE_LIMIT_KEY );
 
 		if ( ! is_array( $state ) ) {
 			$state = [
@@ -652,7 +657,7 @@ class PluginCrashHandler {
 		}
 
 		if ( $count >= self::CRASH_RATE_LIMIT_MAX ) {
-			set_transient(
+			$this->safe_set_transient(
 				self::CRASH_RATE_LIMIT_KEY,
 				[
 					'window_started_at' => $window_started_at,
@@ -666,7 +671,7 @@ class PluginCrashHandler {
 			return true;
 		}
 
-		set_transient(
+		$this->safe_set_transient(
 			self::CRASH_RATE_LIMIT_KEY,
 			[
 				'window_started_at' => $window_started_at,
@@ -687,7 +692,7 @@ class PluginCrashHandler {
 	 */
 	private function increment_rate_limited_counter() {
 		$now   = time();
-		$state = get_transient( self::CRASH_RATE_LIMIT_KEY );
+		$state = $this->safe_get_transient( self::CRASH_RATE_LIMIT_KEY );
 
 		if ( ! is_array( $state ) ) {
 			$state = [
@@ -701,7 +706,7 @@ class PluginCrashHandler {
 		$state['limited_count'] = isset( $state['limited_count'] ) ? ( (int) $state['limited_count'] + 1 ) : 1;
 		$state['last_seen']     = $now;
 
-		set_transient( self::CRASH_RATE_LIMIT_KEY, $state, self::CRASH_RATE_LIMIT_WINDOW );
+		$this->safe_set_transient( self::CRASH_RATE_LIMIT_KEY, $state, self::CRASH_RATE_LIMIT_WINDOW );
 	}
 
 	/**
@@ -738,12 +743,12 @@ class PluginCrashHandler {
 		// Fallback lock for non-persistent object cache environments.
 		$lock_storage  = 'transient';
 		$transient_key = 'wc_facebook_crash_lock_' . $fingerprint;
-		if ( false !== get_transient( $transient_key ) ) {
+		if ( false !== $this->safe_get_transient( $transient_key ) ) {
 			$this->log_crash_observability( '[FBW_DEDUP_DEBUG] dedup lock blocked: storage=transient fingerprint=' . $fingerprint );
 			return false;
 		}
 
-		set_transient( $transient_key, 1, HOUR_IN_SECONDS );
+		$this->safe_set_transient( $transient_key, 1, HOUR_IN_SECONDS );
 		$this->log_crash_observability( '[FBW_DEDUP_DEBUG] dedup lock created: storage=transient fingerprint=' . $fingerprint );
 		return true;
 	}
@@ -768,7 +773,7 @@ class PluginCrashHandler {
 		if ( 'object_cache' === $lock_storage ) {
 			wp_cache_delete( $cache_key, self::CRASH_REPORT_CACHE_GROUP );
 		} elseif ( 'transient' === $lock_storage ) {
-			delete_transient( 'wc_facebook_crash_lock_' . $fingerprint );
+			$this->safe_delete_transient( 'wc_facebook_crash_lock_' . $fingerprint );
 		}
 
 		$this->log_crash_observability( '[FBW_DEDUP_DEBUG] dedup lock released: reason=' . (string) $reason . ' storage=' . (string) $lock_storage . ' fingerprint=' . $fingerprint );
@@ -789,7 +794,7 @@ class PluginCrashHandler {
 		}
 
 		$transient_key = 'wc_facebook_crash_dup_' . $fingerprint;
-		$current       = get_transient( $transient_key );
+		$current       = $this->safe_get_transient( $transient_key );
 		$now           = time();
 
 		$count      = is_array( $current ) && isset( $current['count'] ) ? (int) $current['count'] : 0;
@@ -802,7 +807,7 @@ class PluginCrashHandler {
 			'line'       => isset( $report['extra_data']['line'] ) ? (int) $report['extra_data']['line'] : 0,
 		];
 
-		set_transient(
+		$this->safe_set_transient(
 			$transient_key,
 			[
 				'first_seen'  => $first_seen,
@@ -959,6 +964,59 @@ class PluginCrashHandler {
 	}
 
 	/**
+	 * Reads a transient during crash shutdown handling without letting storage errors escape.
+	 *
+	 * @since 3.6.4
+	 *
+	 * @param string $key transient key.
+	 * @return mixed
+	 */
+	private function safe_get_transient( $key ) {
+		try {
+			return get_transient( $key );
+		} catch ( Throwable $e ) {
+			unset( $e );
+			return false;
+		}
+	}
+
+	/**
+	 * Writes a transient during crash shutdown handling without letting storage errors escape.
+	 *
+	 * @since 3.6.4
+	 *
+	 * @param string $key transient key.
+	 * @param mixed  $value transient value.
+	 * @param int    $expiration expiration in seconds.
+	 * @return bool
+	 */
+	private function safe_set_transient( $key, $value, $expiration ) {
+		try {
+			return (bool) set_transient( $key, $value, $expiration );
+		} catch ( Throwable $e ) {
+			unset( $e );
+			return false;
+		}
+	}
+
+	/**
+	 * Deletes a transient during crash shutdown handling without letting storage errors escape.
+	 *
+	 * @since 3.6.4
+	 *
+	 * @param string $key transient key.
+	 * @return bool
+	 */
+	private function safe_delete_transient( $key ) {
+		try {
+			return (bool) delete_transient( $key );
+		} catch ( Throwable $e ) {
+			unset( $e );
+			return false;
+		}
+	}
+
+	/**
 	 * Gets the existing disable flag payload from file or transient fallback.
 	 *
 	 * @since 3.6.4
@@ -975,14 +1033,15 @@ class PluginCrashHandler {
 			} elseif ( is_string( $raw_payload ) && '' !== $raw_payload ) {
 				$decoded = json_decode( $raw_payload, true );
 				if ( is_array( $decoded ) && isset( $decoded['crash_count'] ) ) {
-					return $decoded;
+					return $this->is_disable_window_active( $decoded ) ? $decoded : [];
 				}
 			}
 		}
 
-		$transient_payload = get_transient( self::DISABLE_FLAG_TRANSIENT );
+		$transient_payload = $this->safe_get_transient( \WC_Facebook_Loader::DISABLE_FLAG_TRANSIENT );
+
 		if ( is_array( $transient_payload ) && isset( $transient_payload['crash_count'] ) ) {
-			return $transient_payload;
+			return $this->is_disable_window_active( $transient_payload ) ? $transient_payload : [];
 		}
 
 		return [];
@@ -997,7 +1056,7 @@ class PluginCrashHandler {
 	 * @return array
 	 */
 	private function build_next_disable_flag_payload( array $existing_payload ) {
-		$crash_count = isset( $existing_payload['crash_count'] ) ? (int) $existing_payload['crash_count'] : 0;
+		$crash_count = ( isset( $existing_payload['crash_count'] ) && $this->is_disable_window_active( $existing_payload ) ) ? (int) $existing_payload['crash_count'] : 0;
 
 		return [
 			'timestamp'   => time(),
@@ -1038,7 +1097,48 @@ class PluginCrashHandler {
 	 * @return bool
 	 */
 	private function write_disable_flag_transient( array $payload ) {
-		return (bool) set_transient( self::DISABLE_FLAG_TRANSIENT, $payload, 0 );
+		return $this->safe_set_transient( \WC_Facebook_Loader::DISABLE_FLAG_TRANSIENT, $payload, MONTH_IN_SECONDS );
+	}
+
+	/**
+	 * Checks whether the disable window is still active for a payload.
+	 *
+	 * @since 3.6.4
+	 *
+	 * @param array $payload disable flag payload.
+	 * @return bool
+	 */
+	private function is_disable_window_active( array $payload ) {
+		if ( ! isset( $payload['timestamp'], $payload['crash_count'] ) ) {
+			return false;
+		}
+
+		$window_seconds = $this->get_disable_window_seconds( (int) $payload['crash_count'] );
+		if ( null === $window_seconds ) {
+			return true;
+		}
+
+		return ( time() - (int) $payload['timestamp'] ) < $window_seconds;
+	}
+
+	/**
+	 * Returns disable window length by crash count.
+	 *
+	 * @since 3.6.4
+	 *
+	 * @param int $crash_count crash count value.
+	 * @return int|null Seconds for temporary disable, or null for permanent disable.
+	 */
+	private function get_disable_window_seconds( $crash_count ) {
+		if ( $crash_count <= 1 ) {
+			return 10 * MINUTE_IN_SECONDS;
+		}
+
+		if ( 2 === $crash_count ) {
+			return HOUR_IN_SECONDS;
+		}
+
+		return null;
 	}
 
 	/**
@@ -1063,7 +1163,19 @@ class PluginCrashHandler {
 	 * @return bool
 	 */
 	private function queue_crash_report( array $report ) {
-		return ErrorLogHandler::enqueue_meta_log_request( $report, true );
+		if ( ! function_exists( 'as_schedule_single_action' ) ) {
+			return ErrorLogHandler::enqueue_meta_log_request( $report, true );
+		}
+
+		$delay = function_exists( 'wp_rand' ) ? wp_rand( 60, self::CRASH_REPORT_MAX_JITTER_SECONDS ) : mt_rand( 60, self::CRASH_REPORT_MAX_JITTER_SECONDS );
+
+		try {
+			$action_id = as_schedule_single_action( time() + $delay, ErrorLogHandler::META_LOG_API, [ $report ], ErrorLogHandler::META_LOG_API_GROUP, true );
+			return ! empty( $action_id );
+		} catch ( Throwable $e ) {
+			unset( $e );
+			return false;
+		}
 	}
 
 	/**

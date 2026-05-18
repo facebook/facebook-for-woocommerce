@@ -30,14 +30,14 @@ class PluginCrashHandlerDisableFlagTest extends AbstractWPUnitTestWithOptionIsol
 		$this->reflection     = new ReflectionClass( PluginCrashHandler::class );
 		$this->flag_file_path = trailingslashit( WP_CONTENT_DIR ) . 'uploads/facebook-for-woocommerce/.disabled';
 
-		delete_transient( PluginCrashHandler::DISABLE_FLAG_TRANSIENT );
+		delete_transient( \WC_Facebook_Loader::DISABLE_FLAG_TRANSIENT );
 		if ( file_exists( $this->flag_file_path ) ) {
 			@unlink( $this->flag_file_path ); // phpcs:ignore WordPress.WP.AlternativeFunctions.unlink_unlink
 		}
 	}
 
 	public function tearDown(): void {
-		delete_transient( PluginCrashHandler::DISABLE_FLAG_TRANSIENT );
+		delete_transient( \WC_Facebook_Loader::DISABLE_FLAG_TRANSIENT );
 		if ( file_exists( $this->flag_file_path ) ) {
 			@unlink( $this->flag_file_path ); // phpcs:ignore WordPress.WP.AlternativeFunctions.unlink_unlink
 		}
@@ -47,7 +47,7 @@ class PluginCrashHandlerDisableFlagTest extends AbstractWPUnitTestWithOptionIsol
 	public function test_write_disable_flag_increments_count_and_sets_timestamp(): void {
 		// Seed prior crash count to verify increment behavior.
 		set_transient(
-			PluginCrashHandler::DISABLE_FLAG_TRANSIENT,
+			\WC_Facebook_Loader::DISABLE_FLAG_TRANSIENT,
 			[
 				'timestamp'   => time() - 300,
 				'crash_count' => 2,
@@ -86,7 +86,7 @@ class PluginCrashHandlerDisableFlagTest extends AbstractWPUnitTestWithOptionIsol
 			}
 		}
 
-		$fallback = get_transient( PluginCrashHandler::DISABLE_FLAG_TRANSIENT );
+		$fallback = get_transient( \WC_Facebook_Loader::DISABLE_FLAG_TRANSIENT );
 		return is_array( $fallback ) ? $fallback : null;
 	}
 }
