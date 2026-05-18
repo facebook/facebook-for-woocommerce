@@ -86,6 +86,45 @@ class PluginCrashHandlerSanitizationTest extends AbstractWPUnitTestWithOptionIso
 		$this->assertSame( 40, $frames[0]['line'] );
 	}
 
+	public function test_normalize_crash_payload_redacts_sensitive_data_and_keeps_plugin_stack_minimal(): void {
+		$normalize = $this->reflection->getMethod( 'normalize_crash_report_payload' );
+		$normalize->setAccessible( true );
+
+		$unix_path    = '/var/www/html/wp-content/plugins/facebook-for-woocommerce/includes/secret.php';
+		$windows_path = 'C:\\inetpub\\wwwroot\\wp-content\\plugins\\facebook-for-woocommerce\\includes\\secret.php';
+		$error = [
+			'type'    => E_ERROR,
+			'message' => "Authorization: Bearer top-secret-token\nrequest_body: {\"password\":\"super-secret\"}\nContact: jane.doe@example.com / +1 (555) 123-4567\nPaths: {$unix_path} and {$windows_path}",
+			'file'    => trailingslashit( wp_normalize_path( WC_FACEBOOK_PLUGIN_PATH ) ) . 'includes/Framework/PluginCrashHandler.php',
+			'line'    => 120,
+			'trace'   => [
+				[ 'file' => '/tmp/not-plugin.php', 'line' => 77, 'function' => 'outside' ],
+				[ 'file' => trailingslashit( wp_normalize_path( WC_FACEBOOK_PLUGIN_PATH ) ) . 'includes/Framework/ErrorLogHandler.php', 'line' => 200, 'function' => 'inside' ],
+			],
+			'source'  => 'fatal_error',
+		];
+
+		$payload = $normalize->invoke( $this->handler, $error );
+
+		$this->assertStringContainsString( 'Authorization: [redacted]', $payload['exception_message'] );
+		$this->assertStringContainsString( 'request_body: [redacted]', $payload['exception_message'] );
+		$this->assertStringContainsString( '[redacted_email]', $payload['exception_message'] );
+		$this->assertStringContainsString( '[redacted_phone]', $payload['exception_message'] );
+		$this->assertStringContainsString( '[path]', $payload['exception_message'] );
+		$this->assertStringNotContainsString( 'top-secret-token', $payload['exception_message'] );
+		$this->assertStringNotContainsString( 'super-secret', $payload['exception_message'] );
+		$this->assertStringNotContainsString( 'jane.doe@example.com', $payload['exception_message'] );
+		$this->assertStringNotContainsString( '+1 (555) 123-4567', $payload['exception_message'] );
+		$this->assertStringNotContainsString( $unix_path, $payload['exception_message'] );
+		$this->assertStringNotContainsString( $windows_path, $payload['exception_message'] );
+
+		$this->assertIsArray( $payload['extra_data']['plugin_stack'] );
+		$this->assertCount( 1, $payload['extra_data']['plugin_stack'] );
+		$this->assertSame( [ 'file', 'line' ], array_keys( $payload['extra_data']['plugin_stack'][0] ) );
+		$this->assertStringStartsWith( 'plugin:', $payload['extra_data']['plugin_stack'][0]['file'] );
+		$this->assertSame( 200, $payload['extra_data']['plugin_stack'][0]['line'] );
+	}
+
 	public function test_normalize_crash_report_payload_keeps_expected_shape(): void {
 		$normalize = $this->reflection->getMethod( 'normalize_crash_report_payload' );
 		$normalize->setAccessible( true );
