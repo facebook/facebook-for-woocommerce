@@ -47,14 +47,14 @@ class ErrorLogHandlerDisabledModeFallbackTest extends AbstractWPUnitTestWithOpti
 		$this->assertFalse( (bool) $method->invoke( null ) );
 	}
 
-	public function test_get_reporting_access_token_prefers_primary_then_fallback_options(): void {
+	public function test_get_reporting_access_token_prefers_primary_then_merchant_options(): void {
 		$method = $this->reflection->getMethod( 'get_reporting_access_token' );
 		$method->setAccessible( true );
 
 		$this->assertSame( '', (string) $method->invoke( null ) );
 
 		update_option( 'wc_facebook_page_access_token', 'page_token_value' );
-		$this->assertSame( 'page_token_value', (string) $method->invoke( null ) );
+		$this->assertSame( '', (string) $method->invoke( null ) );
 
 		update_option( 'wc_facebook_merchant_access_token', 'merchant_token_value' );
 		$this->assertSame( 'merchant_token_value', (string) $method->invoke( null ) );

@@ -471,7 +471,6 @@ class ErrorLogHandler extends LogHandlerBase {
 		$option_keys = [
 			'wc_facebook_access_token',
 			'wc_facebook_merchant_access_token',
-			'wc_facebook_page_access_token',
 		];
 
 		foreach ( $option_keys as $option_key ) {
