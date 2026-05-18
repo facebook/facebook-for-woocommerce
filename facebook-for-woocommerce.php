@@ -200,6 +200,7 @@ class WC_Facebook_Loader {
 
 		register_activation_hook( __FILE__, array( $this, 'activation_check' ) );
 		register_deactivation_hook( __FILE__, array( $this, 'deactivation_cleanup' ) );
+		register_uninstall_hook( __FILE__, array( __CLASS__, 'uninstall_cleanup' ) );
 
 		add_action( 'admin_init', array( $this, 'check_environment' ) );
 
@@ -221,7 +222,7 @@ class WC_Facebook_Loader {
 			add_action( 'plugins_loaded', array( $this, 'init_plugin' ) );
 		}
 
-		if ( ! self::is_wp_com() && ! $this->is_file_disabled_mode ) {
+		if ( ! self::is_wp_com() ) {
 			add_filter( 'pre_set_site_transient_update_plugins', array( $this, 'compat_capture_entry' ), 11 );
 			add_filter( 'pre_set_site_transient_update_plugins', array( $this, 'compat_verify_entry' ), PHP_INT_MAX );
 		}
@@ -674,6 +675,25 @@ tr[data-plugin="facebook-for-woocommerce/facebook-for-woocommerce.php"] td{borde
 		self::$compat_cached_entry = null;
 	}
 
+	/**
+	 * Handles plugin uninstall cleanup.
+	 *
+	 * Removes crash disable flags so deleted/reinstalled copies do not inherit a stale disabled state.
+	 *
+	 * @internal
+	 *
+	 * @since 3.6.4
+	 */
+	public static function uninstall_cleanup() {
+		$flag_file = trailingslashit( WP_CONTENT_DIR ) . self::DISABLE_FLAG_FILE_RELATIVE_PATH;
+
+		if ( file_exists( $flag_file ) ) {
+			@unlink( $flag_file ); // phpcs:ignore WordPress.WP.AlternativeFunctions.unlink_unlink,WordPress.PHP.NoSilencedErrors.Discouraged
+		}
+
+		delete_transient( self::DISABLE_FLAG_TRANSIENT );
+	}
+
 
 	/**
 	 * Flush rewrite rules if the flag is set.
@@ -686,11 +706,12 @@ tr[data-plugin="facebook-for-woocommerce/facebook-for-woocommerce.php"] td{borde
 	 * @since 3.5.0
 	 */
 	public function maybe_flush_rewrite_rules() {
-		if ( $this->is_file_disabled_mode ) {
-			return;
-		}
-
 		$stored_version = get_option( 'facebook_for_woocommerce_rewrite_version' );
+
+		if ( self::PLUGIN_VERSION !== $stored_version ) {
+			$this->clear_disable_flag_state();
+			$this->is_file_disabled_mode = false;
+		}
 
 		// Flush if activation flag is set OR if plugin version has changed (plugin upgrade).
 		$needs_flush = 'yes' === get_option( 'facebook_for_woocommerce_flush_rewrite_rules' )
