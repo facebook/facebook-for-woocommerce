@@ -162,7 +162,9 @@ class PluginCrashHandler {
 			return;
 		}
 
-		if ( ! $this->can_queue_more_crash_reports() ) {
+		$queue_size = 0;
+		if ( ! $this->can_queue_more_crash_reports( $queue_size ) ) {
+			error_log( '[FBW_CRASH_OBS] crash report dropped: reason=queue_cap fingerprint=' . $fingerprint . ' aggregate_count=' . (int) ( $report_to_queue['extra_data']['aggregate_count'] ?? 0 ) . ' queue_size=' . (int) $queue_size . ' queue_max=' . (int) self::CRASH_MAX_QUEUED_REPORTS ); // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log
 			return;
 		}
 
@@ -376,12 +378,19 @@ class PluginCrashHandler {
 			return $report;
 		}
 
+		$bytes_before   = is_string( $json ) ? strlen( $json ) : 0;
+		$trimmed_fields = [];
+		$fingerprint    = isset( $report['extra_data']['fingerprint'] ) ? (string) $report['extra_data']['fingerprint'] : '';
+		$agg_count      = isset( $report['extra_data']['aggregate_count'] ) ? (int) $report['extra_data']['aggregate_count'] : 0;
+
 		if ( isset( $report['extra_data']['plugin_stack'] ) && is_array( $report['extra_data']['plugin_stack'] ) ) {
 			$report['extra_data']['plugin_stack'] = array_slice( $report['extra_data']['plugin_stack'], 0, 2 );
+			$trimmed_fields[] = 'plugin_stack';
 		}
 
 		if ( isset( $report['extra_data']['aggregate_last_sample'] ) ) {
 			unset( $report['extra_data']['aggregate_last_sample'] );
+			$trimmed_fields[] = 'aggregate_last_sample';
 		}
 
 		if ( isset( $report['exception_message'] ) && is_string( $report['exception_message'] ) ) {
@@ -390,7 +399,12 @@ class PluginCrashHandler {
 			} else {
 				$report['exception_message'] = substr( $report['exception_message'], 0, 250 );
 			}
+			$trimmed_fields[] = 'exception_message';
 		}
+
+		$json_after   = wp_json_encode( $report );
+		$bytes_after  = is_string( $json_after ) ? strlen( $json_after ) : 0;
+		error_log( '[FBW_CRASH_OBS] crash payload trimmed: reason=payload_size fingerprint=' . $fingerprint . ' aggregate_count=' . $agg_count . ' bytes_before=' . $bytes_before . ' bytes_after=' . $bytes_after . ' trimmed_fields=' . implode( ',', $trimmed_fields ) ); // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log
 
 		return $report;
 	}
@@ -402,7 +416,8 @@ class PluginCrashHandler {
 	 *
 	 * @return bool
 	 */
-	private function can_queue_more_crash_reports() {
+	private function can_queue_more_crash_reports( &$queue_size = 0 ) {
+		$queue_size = 0;
 		if ( ! function_exists( 'as_get_scheduled_actions' ) ) {
 			return true;
 		}
@@ -421,7 +436,8 @@ class PluginCrashHandler {
 			return true;
 		}
 
-		return count( $actions ) <= self::CRASH_MAX_QUEUED_REPORTS;
+		$queue_size = count( $actions );
+		return $queue_size <= self::CRASH_MAX_QUEUED_REPORTS;
 	}
 
 	/**

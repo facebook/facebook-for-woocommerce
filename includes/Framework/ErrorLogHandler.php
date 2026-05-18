@@ -249,6 +249,8 @@ class ErrorLogHandler extends LogHandlerBase {
 			if ( $enqueued ) {
 				delete_transient( $key );
 				unset( $index[ $fingerprint ] );
+			} else {
+				error_log( '[FBW_CRASH_OBS] paused replay enqueue failed: reason=replay_enqueue_failed fingerprint=' . $fingerprint . ' aggregate_count=' . (int) ( $aggregate['count'] ?? 0 ) . ' index_size=' . (int) count( $index ) ); // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log
 			}
 		}
 
