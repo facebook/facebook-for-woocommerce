@@ -186,7 +186,7 @@ class WC_Facebook_Loader {
 	}
 
 	/**
-	 * Checks whether a valid disable flag exists.
+	 * Checks whether a valid and currently active disable flag exists.
 	 *
 	 * @since 3.6.4
 	 *
@@ -200,13 +200,17 @@ class WC_Facebook_Loader {
 			if ( is_string( $raw_payload ) && '' !== $raw_payload ) {
 				$decoded = json_decode( $raw_payload, true );
 				if ( $this->is_valid_disable_flag_payload( $decoded ) ) {
-					return true;
+					return $this->is_disable_window_active( $decoded );
 				}
 			}
 		}
 
 		$transient_payload = get_transient( self::DISABLE_FLAG_TRANSIENT );
-		return $this->is_valid_disable_flag_payload( $transient_payload );
+		if ( ! $this->is_valid_disable_flag_payload( $transient_payload ) ) {
+			return false;
+		}
+
+		return $this->is_disable_window_active( $transient_payload );
 	}
 
 	/**
@@ -223,6 +227,52 @@ class WC_Facebook_Loader {
 			&& is_numeric( $payload['timestamp'] )
 			&& is_numeric( $payload['crash_count'] )
 			&& (int) $payload['crash_count'] > 0;
+	}
+
+	/**
+	 * Checks whether the disable window is currently active.
+	 *
+	 * Crash windows:
+	 * - 1 crash: 10 minutes
+	 * - 2 crashes: 1 hour
+	 * - 3+ crashes: permanent
+	 *
+	 * @since 3.6.4
+	 *
+	 * @param array $payload disable flag payload.
+	 * @return bool
+	 */
+	private function is_disable_window_active( array $payload ) {
+		$crash_count    = (int) $payload['crash_count'];
+		$crash_time     = (int) $payload['timestamp'];
+		$window_seconds = $this->get_disable_window_seconds( $crash_count );
+
+		// Permanent disable for 3+ crashes.
+		if ( null === $window_seconds ) {
+			return true;
+		}
+
+		return ( time() - $crash_time ) < $window_seconds;
+	}
+
+	/**
+	 * Returns disable window length by crash count.
+	 *
+	 * @since 3.6.4
+	 *
+	 * @param int $crash_count crash count value.
+	 * @return int|null Seconds for temporary disable, or null for permanent disable.
+	 */
+	private function get_disable_window_seconds( $crash_count ) {
+		if ( $crash_count <= 1 ) {
+			return 10 * MINUTE_IN_SECONDS;
+		}
+
+		if ( 2 === $crash_count ) {
+			return HOUR_IN_SECONDS;
+		}
+
+		return null;
 	}
 
 	/**

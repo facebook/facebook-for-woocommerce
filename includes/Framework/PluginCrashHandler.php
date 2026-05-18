@@ -159,11 +159,14 @@ class PluginCrashHandler {
 	 * @since 3.6.4
 	 */
 	private function write_disable_flag() {
-		if ( $this->write_disable_flag_file() ) {
+		$existing_payload = $this->get_existing_disable_flag_payload();
+		$payload          = $this->build_next_disable_flag_payload( $existing_payload );
+
+		if ( $this->write_disable_flag_file( $payload ) ) {
 			return;
 		}
 
-		if ( $this->write_disable_flag_transient() ) {
+		if ( $this->write_disable_flag_transient( $payload ) ) {
 			return;
 		}
 
@@ -171,36 +174,65 @@ class PluginCrashHandler {
 	}
 
 	/**
+	 * Gets the existing disable flag payload from file or transient fallback.
+	 *
+	 * @since 3.6.4
+	 *
+	 * @return array
+	 */
+	private function get_existing_disable_flag_payload() {
+		$flag_file = $this->get_disable_flag_file_path();
+
+		if ( is_readable( $flag_file ) ) {
+			$raw_payload = @file_get_contents( $flag_file ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents
+			if ( is_string( $raw_payload ) && '' !== $raw_payload ) {
+				$decoded = json_decode( $raw_payload, true );
+				if ( is_array( $decoded ) && isset( $decoded['crash_count'] ) ) {
+					return $decoded;
+				}
+			}
+		}
+
+		$transient_payload = get_transient( self::DISABLE_FLAG_TRANSIENT );
+		if ( is_array( $transient_payload ) && isset( $transient_payload['crash_count'] ) ) {
+			return $transient_payload;
+		}
+
+		return [];
+	}
+
+	/**
+	 * Builds the next disable flag payload.
+	 *
+	 * @since 3.6.4
+	 *
+	 * @param array $existing_payload existing payload values.
+	 * @return array
+	 */
+	private function build_next_disable_flag_payload( array $existing_payload ) {
+		$crash_count = isset( $existing_payload['crash_count'] ) ? (int) $existing_payload['crash_count'] : 0;
+
+		return [
+			'timestamp'   => time(),
+			'crash_count' => $crash_count + 1,
+		];
+	}
+
+	/**
 	 * Writes the disable flag file.
 	 *
 	 * @since 3.6.4
 	 *
+	 * @param array $payload disable flag payload.
 	 * @return bool
 	 */
-	private function write_disable_flag_file() {
+	private function write_disable_flag_file( array $payload ) {
 		$flag_file = $this->get_disable_flag_file_path();
 		$flag_dir  = dirname( $flag_file );
 
 		if ( ! is_dir( $flag_dir ) && ! wp_mkdir_p( $flag_dir ) ) {
 			return false;
 		}
-
-		$existing_payload = [];
-		if ( is_readable( $flag_file ) ) {
-			$raw_payload = @file_get_contents( $flag_file ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents
-			if ( is_string( $raw_payload ) && '' !== $raw_payload ) {
-				$decoded = json_decode( $raw_payload, true );
-				if ( is_array( $decoded ) ) {
-					$existing_payload = $decoded;
-				}
-			}
-		}
-
-		$crash_count = isset( $existing_payload['crash_count'] ) ? (int) $existing_payload['crash_count'] : 0;
-		$payload     = [
-			'timestamp'   => time(),
-			'crash_count' => $crash_count + 1,
-		];
 
 		$bytes_written = @file_put_contents( $flag_file, wp_json_encode( $payload ) ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_file_put_contents
 
@@ -212,16 +244,10 @@ class PluginCrashHandler {
 	 *
 	 * @since 3.6.4
 	 *
+	 * @param array $payload disable flag payload.
 	 * @return bool
 	 */
-	private function write_disable_flag_transient() {
-		$existing    = get_transient( self::DISABLE_FLAG_TRANSIENT );
-		$crash_count = is_array( $existing ) && isset( $existing['crash_count'] ) ? (int) $existing['crash_count'] : 0;
-		$payload     = [
-			'timestamp'   => time(),
-			'crash_count' => $crash_count + 1,
-		];
-
+	private function write_disable_flag_transient( array $payload ) {
 		return (bool) set_transient( self::DISABLE_FLAG_TRANSIENT, $payload, 0 );
 	}
 
