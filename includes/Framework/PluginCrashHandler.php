@@ -556,7 +556,7 @@ class PluginCrashHandler {
 	}
 
 	/**
-	 * Unschedules one pending crash action, preferring direct Action Scheduler ID cancellation.
+	 * Unschedules one pending crash action, preferring Action Scheduler ID cancellation.
 	 *
 	 * @since 3.6.4
 	 *

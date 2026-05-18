@@ -69,11 +69,11 @@ class ErrorLogHandler extends LogHandlerBase {
 	}
 
 	/**
-	 * Function that calls log_to_meta api.
+	 * Sends one log payload to Meta.
 	 *
 	 * @internal
 	 *
-	 * @param array $raw_context log context
+	 * @param array $raw_context log context.
 	 * @since 3.5.0
 	 */
 	public function process_error_log( $raw_context ) {
@@ -173,15 +173,6 @@ class ErrorLogHandler extends LogHandlerBase {
 		}
 	}
 
-	/**
-	 * Checks whether Meta diagnosis reporting is enabled.
-	 *
-	 * Uses the existing integration opt-in and fails closed when unavailable.
-	 *
-	 * @since 3.6.4
-	 *
-	 * @return bool
-	 */
 	/**
 	 * Checks whether crash reporting is currently paused due to Meta rate limits.
 	 *
@@ -400,6 +391,15 @@ class ErrorLogHandler extends LogHandlerBase {
 		delete_transient( PluginCrashHandler::CRASH_QUEUE_LOCK_PREFIX . $fingerprint );
 	}
 
+	/**
+	 * Checks whether Meta diagnosis reporting is enabled.
+	 *
+	 * Uses the existing integration opt-in and fails closed when unavailable.
+	 *
+	 * @since 3.6.4
+	 *
+	 * @return bool
+	 */
 	private static function is_meta_diagnosis_enabled_for_reporting() {
 		if ( ! function_exists( 'facebook_for_woocommerce' ) ) {
 			return false;
@@ -420,12 +420,12 @@ class ErrorLogHandler extends LogHandlerBase {
 	}
 
 	/**
-	 * Utility function for sending exception logs to Meta.
+	 * Utility method for sending exception logs to Meta.
 	 *
 	 * @since 3.5.0
 	 *
-	 * @param Throwable $error error object
-	 * @param array     $context optional error message attributes
+	 * @param Throwable $error error object.
+	 * @param array     $context optional error message attributes.
 	 */
 	public static function log_exception_to_meta( Throwable $error, array $context = [] ) {
 		$extra_data                = WC_Facebookcommerce_Utils::get_context_data( $context, 'extra_data', [] );
