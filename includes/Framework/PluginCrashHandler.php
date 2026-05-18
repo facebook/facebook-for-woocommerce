@@ -10,6 +10,8 @@
 
 namespace WooCommerce\Facebook\Framework;
 
+use Throwable;
+
 defined( 'ABSPATH' ) || exit;
 
 /**
@@ -25,12 +27,42 @@ class PluginCrashHandler {
 	const DISABLE_FLAG_OPTION = 'wc_facebook_plugin_crash_disabled';
 
 	/**
+	 * Previously registered exception handler.
+	 *
+	 * @var callable|null
+	 */
+	private $previous_exception_handler;
+
+	/**
+	 * Last uncaught throwable normalized into an error-like payload.
+	 *
+	 * @var array|null
+	 */
+	private $captured_throwable_error;
+
+	/**
 	 * Registers crash handling hooks.
 	 *
 	 * @since 3.6.4
 	 */
 	public function register() {
+		$this->previous_exception_handler = set_exception_handler( [ $this, 'handle_uncaught_exception' ] );
 		register_shutdown_function( [ $this, 'handle_shutdown' ] );
+	}
+
+	/**
+	 * Captures uncaught throwables so shutdown handling can process them.
+	 *
+	 * @since 3.6.4
+	 *
+	 * @param Throwable $throwable uncaught throwable.
+	 */
+	public function handle_uncaught_exception( Throwable $throwable ) {
+		$this->captured_throwable_error = $this->normalize_throwable_to_error( $throwable );
+
+		if ( is_callable( $this->previous_exception_handler ) ) {
+			call_user_func( $this->previous_exception_handler, $throwable );
+		}
 	}
 
 	/**
@@ -40,6 +72,10 @@ class PluginCrashHandler {
 	 */
 	public function handle_shutdown() {
 		$error = error_get_last();
+
+		if ( ! $this->is_supported_fatal_error( $error ) ) {
+			$error = $this->captured_throwable_error;
+		}
 
 		if ( ! $this->is_supported_fatal_error( $error ) ) {
 			return;
@@ -70,6 +106,25 @@ class PluginCrashHandler {
 		}
 
 		return in_array( (int) $error['type'], [ E_ERROR, E_PARSE, E_CORE_ERROR, E_COMPILE_ERROR ], true );
+	}
+
+	/**
+	 * Normalizes an uncaught throwable to an error-like payload.
+	 *
+	 * @since 3.6.4
+	 *
+	 * @param Throwable $throwable throwable instance.
+	 * @return array
+	 */
+	private function normalize_throwable_to_error( Throwable $throwable ) {
+		$type = $throwable instanceof \ParseError ? E_PARSE : E_ERROR;
+
+		return [
+			'type'    => $type,
+			'message' => $throwable->getMessage(),
+			'file'    => $throwable->getFile(),
+			'line'    => $throwable->getLine(),
+		];
 	}
 
 	/**
@@ -139,7 +194,7 @@ class PluginCrashHandler {
 		try {
 			$action_id = as_enqueue_async_action( ErrorLogHandler::META_LOG_API, [ $report ] );
 			return ! empty( $action_id );
-		} catch ( \Throwable $e ) {
+		} catch ( Throwable $e ) {
 			return false;
 		}
 	}
