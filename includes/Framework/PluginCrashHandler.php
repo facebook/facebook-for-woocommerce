@@ -573,10 +573,8 @@ class PluginCrashHandler {
 			}
 
 			$frames[] = [
-				'file'     => $sanitized_file,
-				'line'     => isset( $frame['line'] ) ? (int) $frame['line'] : 0,
-				'function' => isset( $frame['function'] ) ? (string) $frame['function'] : '',
-				'class'    => isset( $frame['class'] ) ? (string) $frame['class'] : '',
+				'file' => $sanitized_file,
+				'line' => isset( $frame['line'] ) ? (int) $frame['line'] : 0,
 			];
 
 			if ( count( $frames ) >= 5 ) {
@@ -597,7 +595,9 @@ class PluginCrashHandler {
 	 */
 	private function sanitize_message( $message ) {
 		$sanitized = $this->sanitize_sensitive_values( $message );
-		$sanitized = preg_replace( '#([A-Za-z]:)?[\\/][^\s"\']+#', '[path]', $sanitized );
+
+		// Strip absolute paths (Unix + Windows style).
+		$sanitized = preg_replace( '#(?:[A-Za-z]:)?(?:/|\\\\)[^\s"\']+#', '[path]', $sanitized );
 
 		if ( function_exists( 'mb_substr' ) ) {
 			return mb_substr( $sanitized, 0, 500 );
@@ -639,11 +639,21 @@ class PluginCrashHandler {
 	 */
 	private function sanitize_sensitive_values( $text ) {
 		$patterns = [
-			'/(token|access_token|auth|authorization|secret|api[_-]?key|password)\s*[:=]\s*[^\s,;"\']+/i',
+			'/(token|access_token|auth|authorization|secret|api[_-]?key|password|cookie|set-cookie|request_body|body)\s*[:=]\s*[^\s,;"\']+/i',
 			'/Bearer\s+[A-Za-z0-9\-._~+\/]+=*/i',
+			// Redact long token-like strings (mixed letters+digits) and long hex strings.
+			'/\b(?=[A-Za-z0-9_\-]{24,}\b)(?=[A-Za-z0-9_\-]*[A-Za-z])(?=[A-Za-z0-9_\-]*\d)[A-Za-z0-9_\-]+\b/',
+			'/\b[a-f0-9]{32,}\b/i',
 		];
 
-		return preg_replace( $patterns, '$1=[redacted]', $text );
+		$replacements = [
+			'$1=[redacted]',
+			'Bearer [redacted]',
+			'[redacted_token]',
+			'[redacted_token]',
+		];
+
+		return preg_replace( $patterns, $replacements, $text );
 	}
 
 	/**
