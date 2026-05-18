@@ -100,13 +100,25 @@ class PluginCrashHandler {
 	private $captured_throwable_error;
 
 	/**
+	 * Whether crash hooks were already registered for this request.
+	 *
+	 * @var bool
+	 */
+	private static $is_registered = false;
+
+	/**
 	 * Registers crash handling hooks.
 	 *
 	 * @since 3.6.4
 	 */
 	public function register() {
+		if ( self::$is_registered ) {
+			return;
+		}
+
 		$this->previous_exception_handler = set_exception_handler( [ $this, 'handle_uncaught_exception' ] );
 		register_shutdown_function( [ $this, 'handle_shutdown' ] );
+		self::$is_registered = true;
 	}
 
 	/**
