@@ -19,16 +19,26 @@ class BootstrapDisableFlagTest extends AbstractWPUnitTestWithOptionIsolationAndS
 	/** @var ReflectionClass */
 	private $reflection;
 
+	/** @var string */
+	private $flag_file_path;
+
 	public function setUp(): void {
 		parent::setUp();
-		$this->loader     = \WC_Facebook_Loader::instance();
-		$this->reflection = new ReflectionClass( \WC_Facebook_Loader::class );
+		$this->loader         = \WC_Facebook_Loader::instance();
+		$this->reflection     = new ReflectionClass( \WC_Facebook_Loader::class );
+		$this->flag_file_path = trailingslashit( WP_CONTENT_DIR ) . \WC_Facebook_Loader::DISABLE_FLAG_FILE_RELATIVE_PATH;
 
 		delete_transient( \WC_Facebook_Loader::DISABLE_FLAG_TRANSIENT );
+		if ( file_exists( $this->flag_file_path ) ) {
+			@unlink( $this->flag_file_path ); // phpcs:ignore WordPress.WP.AlternativeFunctions.unlink_unlink
+		}
 	}
 
 	public function tearDown(): void {
 		delete_transient( \WC_Facebook_Loader::DISABLE_FLAG_TRANSIENT );
+		if ( file_exists( $this->flag_file_path ) ) {
+			@unlink( $this->flag_file_path ); // phpcs:ignore WordPress.WP.AlternativeFunctions.unlink_unlink
+		}
 		remove_action( ErrorLogHandler::META_LOG_API, [ $this->loader, 'handle_disabled_mode_crash_report' ], 10 );
 		parent::tearDown();
 	}
@@ -47,6 +57,40 @@ class BootstrapDisableFlagTest extends AbstractWPUnitTestWithOptionIsolationAndS
 		$has_valid_disable_flag->setAccessible( true );
 		$this->assertTrue( $has_valid_disable_flag->invoke( $this->loader ) );
 
+		$this->assert_init_skipped_when_disabled();
+	}
+
+	public function test_active_file_disable_flag_detected_and_full_init_is_skipped(): void {
+		$flag_dir = dirname( $this->flag_file_path );
+		if ( ! is_dir( $flag_dir ) ) {
+			wp_mkdir_p( $flag_dir );
+		}
+
+		file_put_contents( // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_file_put_contents
+			$this->flag_file_path,
+			wp_json_encode(
+				[
+					'timestamp'   => time(),
+					'crash_count' => 1,
+				]
+			)
+		);
+
+		$has_active_disable_flag_file_only = $this->reflection->getMethod( 'has_active_disable_flag_file_only' );
+		$has_active_disable_flag_file_only->setAccessible( true );
+		$this->assertTrue( $has_active_disable_flag_file_only->invoke( $this->loader ) );
+
+		$has_valid_disable_flag = $this->reflection->getMethod( 'has_valid_disable_flag' );
+		$has_valid_disable_flag->setAccessible( true );
+		$this->assertTrue( $has_valid_disable_flag->invoke( $this->loader ) );
+
+		$this->assert_init_skipped_when_disabled();
+	}
+
+	/**
+	 * Asserts that init_plugin follows the disabled-mode path.
+	 */
+	private function assert_init_skipped_when_disabled(): void {
 		$before_integration_hooks = $this->count_hook_callbacks_with_method( 'init', 'get_integration' );
 
 		$this->loader->init_plugin();
