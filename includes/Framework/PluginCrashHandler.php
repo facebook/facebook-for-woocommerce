@@ -1593,5 +1593,4 @@ class PluginCrashHandler {
 	private function log_fallback( array $report ) {
 		error_log( 'Meta for WooCommerce crash capture fallback: ' . wp_json_encode( $report ) ); // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log
 	}
-
 }
