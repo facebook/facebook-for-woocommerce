@@ -22,6 +22,71 @@
  * @package MetaCommerce
  */
 
+defined( 'ABSPATH' ) || exit;
+
+// Register a minimal fallback shutdown handler before main plugin initialization.
+register_shutdown_function(
+	static function () {
+		if ( defined( 'WC_FACEBOOK_MAIN_CRASH_HANDLER_REGISTERED' ) && WC_FACEBOOK_MAIN_CRASH_HANDLER_REGISTERED ) {
+			return;
+		}
+
+		$error = error_get_last();
+		if ( ! is_array( $error ) || empty( $error['type'] ) ) {
+			return;
+		}
+
+		if ( ! in_array( (int) $error['type'], [ E_ERROR, E_PARSE, E_CORE_ERROR, E_COMPILE_ERROR ], true ) ) {
+			return;
+		}
+
+		$error_file = isset( $error['file'] ) ? (string) $error['file'] : '';
+		if ( '' === $error_file ) {
+			return;
+		}
+
+		$normalized_error_file = str_replace( '\\', '/', $error_file );
+		$normalized_plugin_dir = rtrim( str_replace( '\\', '/', __DIR__ ), '/' );
+		if ( 0 !== strpos( $normalized_error_file, $normalized_plugin_dir . '/' ) ) {
+			return;
+		}
+
+		$wp_content_dir = defined( 'WP_CONTENT_DIR' ) ? WP_CONTENT_DIR : dirname( dirname( __DIR__ ) );
+		$flag_file      = rtrim( str_replace( '\\', '/', (string) $wp_content_dir ), '/' ) . '/uploads/facebook-for-woocommerce/.disabled';
+		$flag_dir       = dirname( $flag_file );
+
+		$current_crash_count = 0;
+		if ( is_readable( $flag_file ) ) {
+			$raw = @file_get_contents( $flag_file ); // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged,WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents
+			if ( is_string( $raw ) && '' !== $raw ) {
+				$decoded = json_decode( $raw, true );
+				if ( is_array( $decoded ) && isset( $decoded['crash_count'] ) ) {
+					$current_crash_count = max( 0, (int) $decoded['crash_count'] );
+				}
+			}
+		}
+
+		$payload      = [
+			'timestamp'   => time(),
+			'crash_count' => $current_crash_count + 1,
+		];
+		$payload_json = wp_json_encode( $payload );
+		if ( ! is_string( $payload_json ) || '' === $payload_json ) {
+			return;
+		}
+
+		if ( ! is_dir( $flag_dir ) ) {
+			if ( function_exists( 'wp_mkdir_p' ) ) {
+				wp_mkdir_p( $flag_dir );
+			} else {
+				@mkdir( $flag_dir, 0755, true ); // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged,WordPress.WP.AlternativeFunctions.file_system_operations_mkdir
+			}
+		}
+
+		@file_put_contents( $flag_file, $payload_json ); // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged,WordPress.WP.AlternativeFunctions.file_system_operations_file_put_contents
+	}
+);
+
 $autoload_file = __DIR__ . '/vendor/autoload.php';
 if ( ! is_readable( $autoload_file ) ) {
 	error_log( 'Meta for WooCommerce: missing required file vendor/autoload.php. Skipping plugin bootstrap.' ); // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log
@@ -35,13 +100,12 @@ use WooCommerce\Facebook\Framework\BatchLogHandler;
 use WooCommerce\Facebook\Framework\ErrorLogHandler;
 use WooCommerce\Facebook\Framework\PluginCrashHandler;
 
-defined( 'ABSPATH' ) || exit;
-
 if ( ! defined( 'WC_FACEBOOK_PLUGIN_PATH' ) ) {
 	define( 'WC_FACEBOOK_PLUGIN_PATH', plugin_dir_path( __FILE__ ) );
 }
 
 // Register crash handling as early as possible in plugin bootstrap.
+define( 'WC_FACEBOOK_MAIN_CRASH_HANDLER_REGISTERED', true );
 ( new PluginCrashHandler() )->register();
 
 // HPOS compatibility declaration.
