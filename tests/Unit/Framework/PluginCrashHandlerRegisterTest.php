@@ -34,7 +34,7 @@ class PluginCrashHandlerRegisterTest extends AbstractWPUnitTestWithOptionIsolati
 		$is_registered->setAccessible( true );
 		$is_registered->setValue( null, false );
 
-		$this->previous_exception_handler = set_exception_handler( [ $this, 'test_exception_handler' ] );
+		$this->previous_exception_handler = set_exception_handler( [ $this, 'exception_handler_sentinel' ] );
 	}
 
 	public function tearDown(): void {
@@ -56,7 +56,7 @@ class PluginCrashHandlerRegisterTest extends AbstractWPUnitTestWithOptionIsolati
 		$after_first_register = $this->get_previous_exception_handler();
 
 		$this->assertIsArray( $after_first_register );
-		$this->assertSame( 'test_exception_handler', $after_first_register[1] ?? '' );
+		$this->assertSame( 'exception_handler_sentinel', $after_first_register[1] ?? '' );
 
 		$this->handler->register();
 		$after_second_register = $this->get_previous_exception_handler();
@@ -73,7 +73,7 @@ class PluginCrashHandlerRegisterTest extends AbstractWPUnitTestWithOptionIsolati
 	 *
 	 * @param \Throwable $throwable thrown exception.
 	 */
-	public function test_exception_handler( \Throwable $throwable ): void {
+	public function exception_handler_sentinel( \Throwable $throwable ): void {
 		unset( $throwable );
 	}
 
