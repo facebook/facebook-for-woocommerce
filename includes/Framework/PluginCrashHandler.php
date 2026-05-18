@@ -515,6 +515,9 @@ class PluginCrashHandler {
 		}
 
 		$removed_fp = isset( $best_candidate_report['extra_data']['fingerprint'] ) ? (string) $best_candidate_report['extra_data']['fingerprint'] : '';
+		if ( '' !== $removed_fp ) {
+			delete_transient( self::CRASH_QUEUE_LOCK_PREFIX . $removed_fp );
+		}
 		$this->log_crash_observability( '[FBW_CRASH_OBS] crash queue trimmed: reason=queue_priority_replace removed_fingerprint=' . $removed_fp . ' removed_aggregate_count=' . (int) $best_count . ' incoming_fingerprint=' . $incoming_fp . ' incoming_aggregate_count=' . (int) $incoming_count . ' queue_size=' . (int) $queue_size );
 
 		return true;

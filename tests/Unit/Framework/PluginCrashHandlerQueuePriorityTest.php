@@ -72,6 +72,19 @@ class PluginCrashHandlerQueuePriorityTest extends AbstractWPUnitTestWithOptionIs
 		$this->assertEquals( $before_count - 1, $after_count, 'One pending action should be removed before incoming enqueue.' );
 	}
 
+	public function test_priority_replacement_clears_removed_fingerprint_queue_lock(): void {
+		$pending = [
+			new FakeQueueAction( 401, [ $this->make_report( 'low_lock_fp', 1 ) ] ),
+			new FakeQueueAction( 402, [ $this->make_report( 'mid_lock_fp', 2 ) ] ),
+		];
+
+		$this->handler->set_pending_actions( $pending );
+		set_transient( PluginCrashHandler::CRASH_QUEUE_LOCK_PREFIX . 'low_lock_fp', 1, HOUR_IN_SECONDS );
+
+		$this->assertTrue( $this->handler->exposed_trim_queue_for_prioritized_report( $this->make_report( 'incoming_lock_fp', 9 ), 50 ) );
+		$this->assertFalse( get_transient( PluginCrashHandler::CRASH_QUEUE_LOCK_PREFIX . 'low_lock_fp' ) );
+	}
+
 	private function make_report( string $fingerprint, int $aggregate_count ): array {
 		return [
 			'event'      => 'plugin_crash',
