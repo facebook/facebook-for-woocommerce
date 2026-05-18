@@ -17,6 +17,10 @@ defined( 'ABSPATH' ) || exit;
 /**
  * Handles plugin fatal crashes on PHP shutdown.
  *
+ * Known limitation: PHP memory-exhaustion fatals may leave too little memory for
+ * the shutdown handler to run. In that case disable-flag writes and crash queueing
+ * may be skipped for that request.
+ *
  * @since 3.6.4
  */
 class PluginCrashHandler {
@@ -913,6 +917,9 @@ class PluginCrashHandler {
 	 *
 	 * Primary storage is a file-based flag in uploads; if file write fails,
 	 * falls back to a transient. If both writes fail, logs to error_log.
+	 *
+	 * Known limitation: during memory-exhaustion shutdowns this method may not run
+	 * (or may fail early) due to insufficient memory in the dying process.
 	 *
 	 * @since 3.6.4
 	 */

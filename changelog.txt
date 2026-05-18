@@ -16,6 +16,7 @@
 * Dev - Bump tar-fs from 3.1.0 to 3.1.2 by @mrharel in #3896
 * Add - Add WooCommerce Blocks Store API support for AddToCart Pixel events by @cshing-meta in #3888
 * Dev - Dev/break down e2e tests and automate supported version bumpup by @vahidkay-meta in #3876
+* Dev - Document known limitation for memory-exhaustion fatals in crash shutdown handling (disable flag/reporting may be skipped for that request)
 
 = 3.6.2 - 2026-03-26 =
 * Dev - minor security fixes and updates
