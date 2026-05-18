@@ -29,6 +29,10 @@ use Automattic\WooCommerce\Utilities\FeaturesUtil;
 
 defined( 'ABSPATH' ) || exit;
 
+if ( ! defined( 'WC_FACEBOOK_PLUGIN_PATH' ) ) {
+	define( 'WC_FACEBOOK_PLUGIN_PATH', plugin_dir_path( __FILE__ ) );
+}
+
 // HPOS compatibility declaration.
 add_action(
 	'before_woocommerce_init',
