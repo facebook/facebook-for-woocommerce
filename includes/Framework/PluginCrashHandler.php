@@ -225,7 +225,19 @@ class PluginCrashHandler {
 
 		$cache_key = 'crash_lock_' . $fingerprint;
 
-		return wp_cache_add( $cache_key, 1, self::CRASH_REPORT_CACHE_GROUP, HOUR_IN_SECONDS );
+		// Prefer object cache lock when an external cache backend is available.
+		if ( function_exists( 'wp_using_ext_object_cache' ) && wp_using_ext_object_cache() ) {
+			return wp_cache_add( $cache_key, 1, self::CRASH_REPORT_CACHE_GROUP, HOUR_IN_SECONDS );
+		}
+
+		// Fallback lock for non-persistent object cache environments.
+		$transient_key = 'wc_facebook_crash_lock_' . $fingerprint;
+		if ( false !== get_transient( $transient_key ) ) {
+			return false;
+		}
+
+		set_transient( $transient_key, 1, HOUR_IN_SECONDS );
+		return true;
 	}
 
 	/**
@@ -244,13 +256,25 @@ class PluginCrashHandler {
 
 		$transient_key = 'wc_facebook_crash_dup_' . $fingerprint;
 		$current       = get_transient( $transient_key );
-		$count         = is_array( $current ) && isset( $current['count'] ) ? (int) $current['count'] : 0;
+		$now           = time();
+
+		$count      = is_array( $current ) && isset( $current['count'] ) ? (int) $current['count'] : 0;
+		$first_seen = is_array( $current ) && isset( $current['first_seen'] ) ? (int) $current['first_seen'] : $now;
+
+		$last_sample = [
+			'event_type' => isset( $report['event_type'] ) ? (string) $report['event_type'] : '',
+			'message'    => isset( $report['exception_message'] ) ? (string) $report['exception_message'] : '',
+			'file'       => isset( $report['extra_data']['file'] ) ? (string) $report['extra_data']['file'] : '',
+			'line'       => isset( $report['extra_data']['line'] ) ? (int) $report['extra_data']['line'] : 0,
+		];
 
 		set_transient(
 			$transient_key,
 			[
-				'count'     => $count + 1,
-				'last_seen' => time(),
+				'first_seen'  => $first_seen,
+				'last_seen'   => $now,
+				'count'       => $count + 1,
+				'last_sample' => $last_sample,
 			],
 			DAY_IN_SECONDS
 		);
