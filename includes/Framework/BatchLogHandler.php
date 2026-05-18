@@ -57,12 +57,7 @@ class BatchLogHandler extends LogHandlerBase {
 			self::$registered = true;
 		}
 
-		if ( did_action( 'plugins_loaded' ) ) {
-			self::ensure_batch_sender_scheduled();
-			return;
-		}
-
-		add_action( 'plugins_loaded', array( __CLASS__, 'ensure_batch_sender_scheduled' ), 5 );
+		self::ensure_batch_sender_scheduled();
 	}
 
 	/**
@@ -73,7 +68,8 @@ class BatchLogHandler extends LogHandlerBase {
 	 * @return bool
 	 */
 	private static function can_schedule_batch_sender() {
-		return function_exists( 'as_schedule_recurring_action' )
+		return did_action( 'action_scheduler_init' )
+			&& function_exists( 'as_schedule_recurring_action' )
 			&& function_exists( 'facebook_for_woocommerce' )
 			&& class_exists( '\\WC_Facebookcommerce' );
 	}
