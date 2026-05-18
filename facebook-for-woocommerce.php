@@ -106,6 +106,13 @@ class WC_Facebook_Loader {
 	 */
 	private static $compat_cached_entry = null;
 
+	/**
+	 * Whether file-based disabled mode is active for this bootstrap cycle.
+	 *
+	 * @var bool
+	 */
+	private $is_file_disabled_mode = false;
+
 
 	/**
 	 * Constructs the class.
@@ -128,12 +135,14 @@ class WC_Facebook_Loader {
 		// Priority 99 ensures all rewrite rules are registered before flushing.
 		add_action( 'init', array( $this, 'maybe_flush_rewrite_rules' ), 99 );
 
+		$this->is_file_disabled_mode = $this->has_active_disable_flag_file_only();
+
 		// If the environment check fails, initialize the plugin.
 		if ( $this->is_environment_compatible() ) {
 			add_action( 'plugins_loaded', array( $this, 'init_plugin' ) );
 		}
 
-		if ( ! self::is_wp_com() ) {
+		if ( ! self::is_wp_com() && ! $this->is_file_disabled_mode ) {
 			add_filter( 'pre_set_site_transient_update_plugins', array( $this, 'compat_capture_entry' ), 11 );
 			add_filter( 'pre_set_site_transient_update_plugins', array( $this, 'compat_verify_entry' ), PHP_INT_MAX );
 		}
@@ -173,7 +182,7 @@ class WC_Facebook_Loader {
 			return;
 		}
 
-		if ( $this->has_valid_disable_flag() ) {
+		if ( $this->is_file_disabled_mode || $this->has_valid_disable_flag() ) {
 			$this->register_disabled_mode_services();
 			error_log( 'Meta for WooCommerce is disabled via crash flag. Skipping full plugin initialization.' ); // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log
 			return;
@@ -190,6 +199,35 @@ class WC_Facebook_Loader {
 	}
 
 	/**
+	 * Checks whether file-based disable flag is currently active.
+	 *
+	 * File-only path is used during bootstrap hardening to avoid early DB access.
+	 *
+	 * @since 3.6.4
+	 *
+	 * @return bool
+	 */
+	private function has_active_disable_flag_file_only() {
+		$flag_file = trailingslashit( WP_CONTENT_DIR ) . self::DISABLE_FLAG_FILE_RELATIVE_PATH;
+
+		if ( ! is_readable( $flag_file ) ) {
+			return false;
+		}
+
+		$raw_payload = @file_get_contents( $flag_file ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents
+		if ( ! is_string( $raw_payload ) || '' === $raw_payload ) {
+			return false;
+		}
+
+		$decoded = json_decode( $raw_payload, true );
+		if ( ! $this->is_valid_disable_flag_payload( $decoded ) ) {
+			return false;
+		}
+
+		return $this->is_disable_window_active( $decoded );
+	}
+
+	/**
 	 * Checks whether a valid and currently active disable flag exists.
 	 *
 	 * @since 3.6.4
@@ -197,16 +235,8 @@ class WC_Facebook_Loader {
 	 * @return bool
 	 */
 	private function has_valid_disable_flag() {
-		$flag_file = trailingslashit( WP_CONTENT_DIR ) . self::DISABLE_FLAG_FILE_RELATIVE_PATH;
-
-		if ( is_readable( $flag_file ) ) {
-			$raw_payload = @file_get_contents( $flag_file ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents
-			if ( is_string( $raw_payload ) && '' !== $raw_payload ) {
-				$decoded = json_decode( $raw_payload, true );
-				if ( $this->is_valid_disable_flag_payload( $decoded ) ) {
-					return $this->is_disable_window_active( $decoded );
-				}
-			}
+		if ( $this->has_active_disable_flag_file_only() ) {
+			return true;
 		}
 
 		$transient_payload = get_transient( self::DISABLE_FLAG_TRANSIENT );
@@ -444,6 +474,10 @@ class WC_Facebook_Loader {
 	 * @since 3.5.0
 	 */
 	public function maybe_flush_rewrite_rules() {
+		if ( $this->is_file_disabled_mode ) {
+			return;
+		}
+
 		$stored_version = get_option( 'facebook_for_woocommerce_rewrite_version' );
 
 		// Flush if activation flag is set OR if plugin version has changed (plugin upgrade).
