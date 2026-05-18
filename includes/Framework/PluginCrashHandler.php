@@ -314,7 +314,7 @@ class PluginCrashHandler {
 				'file'             => $this->sanitize_file_path( isset( $error['file'] ) ? (string) $error['file'] : '' ),
 				'line'             => isset( $error['line'] ) ? (int) $error['line'] : 0,
 				'plugin_stack'     => $this->extract_plugin_stack_frames( isset( $error['trace'] ) && is_array( $error['trace'] ) ? $error['trace'] : [] ),
-				'plugin_version'   => defined( 'WC_FACEBOOK_VERSION' ) ? (string) WC_FACEBOOK_VERSION : ( defined( 'WC_Facebook_Loader::PLUGIN_VERSION' ) ? (string) WC_Facebook_Loader::PLUGIN_VERSION : '' ),
+				'plugin_version'   => $this->get_plugin_version(),
 				'php_version'      => PHP_VERSION,
 				'wp_version'       => isset( $GLOBALS['wp_version'] ) ? (string) $GLOBALS['wp_version'] : '',
 				'wc_version'       => defined( 'WC_VERSION' ) ? (string) WC_VERSION : '',
@@ -323,6 +323,21 @@ class PluginCrashHandler {
 		];
 
 		return $payload;
+	}
+
+	/**
+	 * Gets plugin version in a shutdown-safe way.
+	 *
+	 * @since 3.6.4
+	 *
+	 * @return string
+	 */
+	private function get_plugin_version() {
+		if ( class_exists( '\\WC_Facebook_Loader' ) && defined( '\\WC_Facebook_Loader::PLUGIN_VERSION' ) ) {
+			return (string) constant( '\\WC_Facebook_Loader::PLUGIN_VERSION' );
+		}
+
+		return '';
 	}
 
 	/**
