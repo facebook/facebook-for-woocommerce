@@ -22,7 +22,12 @@
  * @package MetaCommerce
  */
 
-require_once __DIR__ . '/vendor/autoload.php';
+$autoload_file = __DIR__ . '/vendor/autoload.php';
+if ( ! is_readable( $autoload_file ) ) {
+	error_log( 'Meta for WooCommerce: missing required file vendor/autoload.php. Skipping plugin bootstrap.' ); // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log
+	return;
+}
+require_once $autoload_file;
 
 use Automattic\WooCommerce\Grow\Tools\CompatChecker\v0_0_1\Checker;
 use Automattic\WooCommerce\Utilities\FeaturesUtil;
@@ -200,7 +205,13 @@ class WC_Facebook_Loader {
 
 		self::set_wc_facebook_svr_flags();
 
-		require_once plugin_dir_path( __FILE__ ) . 'class-wc-facebookcommerce.php';
+		$commerce_class_file = plugin_dir_path( __FILE__ ) . 'class-wc-facebookcommerce.php';
+		if ( ! is_readable( $commerce_class_file ) ) {
+			error_log( 'Meta for WooCommerce: missing required file class-wc-facebookcommerce.php. Skipping full plugin initialization.' ); // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log
+			return;
+		}
+
+		require_once $commerce_class_file;
 
 		// fire it up!
 		if ( function_exists( 'facebook_for_woocommerce' ) ) {
