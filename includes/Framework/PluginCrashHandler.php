@@ -471,8 +471,9 @@ class PluginCrashHandler {
 			return false;
 		}
 
-		$best_candidate = null;
-		$best_count     = null;
+		$best_candidate_report = null;
+		$best_candidate_id     = 0;
+		$best_count            = null;
 
 		foreach ( $actions as $action ) {
 			if ( ! is_object( $action ) || ! method_exists( $action, 'get_args' ) ) {
@@ -486,14 +487,16 @@ class PluginCrashHandler {
 
 			$candidate_report = $args[0];
 			$candidate_count  = $this->get_report_aggregate_count( $candidate_report );
+			$candidate_id     = method_exists( $action, 'get_id' ) ? (int) $action->get_id() : 0;
 
 			if ( null === $best_count || $candidate_count < $best_count ) {
-				$best_count     = $candidate_count;
-				$best_candidate = $candidate_report;
+				$best_count            = $candidate_count;
+				$best_candidate_report = $candidate_report;
+				$best_candidate_id     = $candidate_id;
 			}
 		}
 
-		if ( ! is_array( $best_candidate ) || null === $best_count ) {
+		if ( ! is_array( $best_candidate_report ) || null === $best_count ) {
 			return false;
 		}
 
@@ -502,12 +505,12 @@ class PluginCrashHandler {
 			return false;
 		}
 
-		$removed = $this->unschedule_pending_crash_action( $best_candidate );
+		$removed = $this->unschedule_pending_crash_action( $best_candidate_report, $best_candidate_id );
 		if ( empty( $removed ) ) {
 			return false;
 		}
 
-		$removed_fp = isset( $best_candidate['extra_data']['fingerprint'] ) ? (string) $best_candidate['extra_data']['fingerprint'] : '';
+		$removed_fp = isset( $best_candidate_report['extra_data']['fingerprint'] ) ? (string) $best_candidate_report['extra_data']['fingerprint'] : '';
 		$this->log_crash_observability( '[FBW_CRASH_OBS] crash queue trimmed: reason=queue_priority_replace removed_fingerprint=' . $removed_fp . ' removed_aggregate_count=' . (int) $best_count . ' incoming_fingerprint=' . $incoming_fp . ' incoming_aggregate_count=' . (int) $incoming_count . ' queue_size=' . (int) $queue_size );
 
 		return true;
@@ -553,14 +556,29 @@ class PluginCrashHandler {
 	}
 
 	/**
-	 * Unschedules one pending crash action matching the provided payload.
+	 * Unschedules one pending crash action, preferring direct Action Scheduler ID cancellation.
 	 *
 	 * @since 3.6.4
 	 *
 	 * @param array $report queued crash report payload.
+	 * @param int   $action_id queued Action Scheduler ID when available.
 	 * @return int
 	 */
-	protected function unschedule_pending_crash_action( array $report ) {
+	protected function unschedule_pending_crash_action( array $report, $action_id = 0 ) {
+		$action_id = (int) $action_id;
+
+		if ( $action_id > 0 && class_exists( 'ActionScheduler' ) && method_exists( 'ActionScheduler', 'store' ) ) {
+			try {
+				$store = \ActionScheduler::store();
+				if ( is_object( $store ) && method_exists( $store, 'cancel_action' ) ) {
+					$store->cancel_action( $action_id );
+					return 1;
+				}
+			} catch ( Throwable $e ) {
+				// Fall back to payload-based unschedule below.
+			}
+		}
+
 		if ( ! function_exists( 'as_unschedule_action' ) ) {
 			return 0;
 		}
