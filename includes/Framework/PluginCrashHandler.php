@@ -47,6 +47,11 @@ class PluginCrashHandler {
 	const CRASH_AGGREGATE_INDEX_KEY = 'wc_facebook_crash_agg_index';
 
 	/**
+	 * Transient key prefix for per-fingerprint queue locks.
+	 */
+	const CRASH_QUEUE_LOCK_PREFIX = 'wc_facebook_crash_queue_lock_';
+
+	/**
 	 * Max distinct crash fingerprints to retain in local aggregates.
 	 */
 	const CRASH_MAX_DISTINCT_FINGERPRINTS = 100;
@@ -161,12 +166,47 @@ class PluginCrashHandler {
 			return;
 		}
 
+		if ( $this->has_pending_crash_queue_lock( $fingerprint ) ) {
+			return;
+		}
+
 		if ( ! $this->queue_crash_report( $report_to_queue ) ) {
 			$this->log_fallback( $report_to_queue );
 			return;
 		}
 
-		$this->clear_crash_aggregate( $fingerprint );
+		$this->set_pending_crash_queue_lock( $fingerprint );
+	}
+
+	/**
+	 * Checks if a crash report is already queued for this fingerprint.
+	 *
+	 * @since 3.6.4
+	 *
+	 * @param string $fingerprint crash fingerprint.
+	 * @return bool
+	 */
+	private function has_pending_crash_queue_lock( $fingerprint ) {
+		if ( '' === $fingerprint ) {
+			return false;
+		}
+
+		return false !== get_transient( self::CRASH_QUEUE_LOCK_PREFIX . $fingerprint );
+	}
+
+	/**
+	 * Sets a per-fingerprint queue lock after successful enqueue.
+	 *
+	 * @since 3.6.4
+	 *
+	 * @param string $fingerprint crash fingerprint.
+	 */
+	private function set_pending_crash_queue_lock( $fingerprint ) {
+		if ( '' === $fingerprint ) {
+			return;
+		}
+
+		set_transient( self::CRASH_QUEUE_LOCK_PREFIX . $fingerprint, 1, HOUR_IN_SECONDS );
 	}
 
 	/**

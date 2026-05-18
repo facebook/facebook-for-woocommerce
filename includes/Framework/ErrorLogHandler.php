@@ -57,11 +57,13 @@ class ErrorLogHandler extends LogHandlerBase {
 	 */
 	public function process_error_log( $raw_context ) {
 		if ( ! self::is_meta_diagnosis_enabled_for_reporting() ) {
+			self::release_crash_queue_lock( $raw_context );
 			return;
 		}
 
 		if ( self::is_crash_reporting_paused() ) {
 			self::store_crash_aggregate_only( $raw_context );
+			self::release_crash_queue_lock( $raw_context );
 			return;
 		}
 
@@ -73,6 +75,7 @@ class ErrorLogHandler extends LogHandlerBase {
 				if ( 429 === $status_code ) {
 					self::pause_crash_reporting();
 					self::store_crash_aggregate_only( $context );
+					self::release_crash_queue_lock( $raw_context );
 					return;
 				}
 
@@ -85,8 +88,13 @@ class ErrorLogHandler extends LogHandlerBase {
 						'woocommerce_log_level'          => \WC_Log_Levels::ERROR,
 					)
 				);
+				self::release_crash_queue_lock( $raw_context );
+				return;
 			}
+
+			self::release_crash_queue_lock( $raw_context );
 		} catch ( \Exception $e ) {
+			self::release_crash_queue_lock( $raw_context );
 			Logger::log(
 				'Error persisting error logs: ' . $e->getMessage(),
 				[],
@@ -209,6 +217,22 @@ class ErrorLogHandler extends LogHandlerBase {
 			],
 			DAY_IN_SECONDS
 		);
+	}
+
+	/**
+	 * Releases per-fingerprint crash queue lock.
+	 *
+	 * @since 3.6.4
+	 *
+	 * @param array $context crash payload.
+	 */
+	private static function release_crash_queue_lock( array $context ) {
+		$fingerprint = isset( $context['extra_data']['fingerprint'] ) ? (string) $context['extra_data']['fingerprint'] : '';
+		if ( '' === $fingerprint ) {
+			return;
+		}
+
+		delete_transient( PluginCrashHandler::CRASH_QUEUE_LOCK_PREFIX . $fingerprint );
 	}
 
 	private static function is_meta_diagnosis_enabled_for_reporting() {
