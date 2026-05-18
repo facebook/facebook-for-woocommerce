@@ -71,12 +71,15 @@ class ErrorLogHandler extends LogHandlerBase {
 			return;
 		}
 
-		self::maybe_replay_paused_crash_aggregates();
+		$is_crash_event = self::is_plugin_crash_event( $raw_context );
+		if ( $is_crash_event ) {
+			self::maybe_replay_paused_crash_aggregates();
 
-		if ( self::is_crash_reporting_paused() ) {
-			self::store_crash_aggregate_only( $raw_context );
-			self::release_crash_queue_lock( $raw_context );
-			return;
+			if ( self::is_crash_reporting_paused() ) {
+				self::store_crash_aggregate_only( $raw_context );
+				self::release_crash_queue_lock( $raw_context );
+				return;
+			}
 		}
 
 		$context = self::set_core_log_context( $raw_context );
@@ -84,7 +87,7 @@ class ErrorLogHandler extends LogHandlerBase {
 			$response = facebook_for_woocommerce()->get_api()->log_to_meta( $context );
 			if ( ! $response->success ) {
 				$status_code = is_object( $response ) && method_exists( $response, 'get_api_error_code' ) ? (int) $response->get_api_error_code() : 0;
-				if ( 429 === $status_code ) {
+				if ( 429 === $status_code && $is_crash_event ) {
 					self::pause_crash_reporting();
 					self::store_crash_aggregate_only( $context );
 					self::release_crash_queue_lock( $raw_context );
@@ -133,11 +136,14 @@ class ErrorLogHandler extends LogHandlerBase {
 			return false;
 		}
 
-		self::maybe_replay_paused_crash_aggregates();
+		$is_crash_event = self::is_plugin_crash_event( $request_data );
+		if ( $is_crash_event ) {
+			self::maybe_replay_paused_crash_aggregates();
 
-		if ( self::is_crash_reporting_paused() ) {
-			self::store_crash_aggregate_only( $request_data );
-			return true;
+			if ( self::is_crash_reporting_paused() ) {
+				self::store_crash_aggregate_only( $request_data );
+				return true;
+			}
 		}
 
 		if ( ! function_exists( 'as_enqueue_async_action' ) ) {
@@ -265,6 +271,18 @@ class ErrorLogHandler extends LogHandlerBase {
 	private static function pause_crash_reporting() {
 		$backoff_seconds = 15 * MINUTE_IN_SECONDS;
 		set_transient( self::CRASH_REPORTING_PAUSE_KEY, time() + $backoff_seconds, $backoff_seconds );
+	}
+
+	/**
+	 * Checks whether payload is a plugin crash event.
+	 *
+	 * @since 3.6.4
+	 *
+	 * @param array $context log payload.
+	 * @return bool
+	 */
+	private static function is_plugin_crash_event( array $context ) {
+		return isset( $context['event'] ) && 'plugin_crash' === (string) $context['event'];
 	}
 
 	/**
