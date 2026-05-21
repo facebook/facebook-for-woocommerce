@@ -235,7 +235,7 @@ class fbproductTest extends \WooCommerce\Facebook\Tests\AbstractWPUnitTestWithSa
 		$sale_price,
 		$sale_price_start_date,
 		$sale_price_end_date,
-		$regular_price, 
+		$regular_price,
 		$expected_sale_price,
 		$expected_sale_price_for_batch,
 		$expected_sale_price_effective_date,
@@ -1117,6 +1117,177 @@ class fbproductTest extends \WooCommerce\Facebook\Tests\AbstractWPUnitTestWithSa
 	}
 
 	/**
+	 * Test manual sync timestamp is used when provided
+	 * @return void
+	 */
+	public function test_manual_sync_timestamp_is_used() {
+		$woo_product = WC_Helper_Product::create_simple_product();
+		$woo_product->set_date_modified(time() - 1000); // Set product modified time to 1000 seconds ago
+		$woo_product->save();
+
+		$manual_timestamp = time();
+
+		$fb_product = new \WC_Facebook_Product( $woo_product );
+		$data = $fb_product->prepare_product(null, \WC_Facebook_Product::PRODUCT_PREP_TYPE_NORMAL, $manual_timestamp);
+
+		$this->assertEquals($manual_timestamp, $data['external_update_time']);
+	}
+
+	/**
+	 * Test fallback to product modification time when manual timestamp is null
+	 * @return void
+	 */
+	public function test_fallback_to_product_modification_time() {
+		$woo_product = WC_Helper_Product::create_simple_product();
+		$expected_timestamp = time();
+		$woo_product->set_date_modified($expected_timestamp);
+		$woo_product->save();
+
+		$fb_product = new \WC_Facebook_Product( $woo_product );
+		$data = $fb_product->prepare_product(null, \WC_Facebook_Product::PRODUCT_PREP_TYPE_NORMAL, null);
+
+		$this->assertEquals($expected_timestamp, $data['external_update_time']);
+	}
+
+	/**
+	 * Test manual sync timestamp takes priority over product modification time
+	 * @return void
+	 */
+	public function test_manual_timestamp_priority_over_product_time() {
+		$woo_product = WC_Helper_Product::create_simple_product();
+		$product_modified_time = time() - 2000; // 2000 seconds ago
+		$manual_timestamp = time() - 1000; // 1000 seconds ago (newer than product time)
+
+		$woo_product->set_date_modified($product_modified_time);
+		$woo_product->save();
+
+		$fb_product = new \WC_Facebook_Product( $woo_product );
+		$data = $fb_product->prepare_product(null, \WC_Facebook_Product::PRODUCT_PREP_TYPE_NORMAL, $manual_timestamp);
+
+		// Manual timestamp should be used, not product modification time
+		$this->assertEquals($manual_timestamp, $data['external_update_time']);
+		$this->assertNotEquals($product_modified_time, $data['external_update_time']);
+	}
+
+	/**
+	 * Test manual sync timestamp with zero value
+	 * @return void
+	 */
+	public function test_manual_sync_timestamp_with_zero() {
+		$woo_product = WC_Helper_Product::create_simple_product();
+		$woo_product->set_date_modified(time());
+		$woo_product->save();
+
+		$fb_product = new \WC_Facebook_Product( $woo_product );
+		$data = $fb_product->prepare_product(null, \WC_Facebook_Product::PRODUCT_PREP_TYPE_NORMAL, 0);
+
+		// Zero timestamp should still be used if explicitly provided
+		$this->assertEquals(0, $data['external_update_time']);
+	}
+
+	/**
+	 * Test manual sync timestamp with negative value
+	 * @return void
+	 */
+	public function test_manual_sync_timestamp_with_negative() {
+		$woo_product = WC_Helper_Product::create_simple_product();
+		$woo_product->set_date_modified(time());
+		$woo_product->save();
+
+		$negative_timestamp = -100;
+
+		$fb_product = new \WC_Facebook_Product( $woo_product );
+		$data = $fb_product->prepare_product(null, \WC_Facebook_Product::PRODUCT_PREP_TYPE_NORMAL, $negative_timestamp);
+
+		// Negative timestamp should still be used if explicitly provided
+		$this->assertEquals($negative_timestamp, $data['external_update_time']);
+	}
+
+	/**
+	 * Test manual sync timestamp with future timestamp
+	 * @return void
+	 */
+	public function test_manual_sync_timestamp_with_future_timestamp() {
+		$woo_product = WC_Helper_Product::create_simple_product();
+		$woo_product->set_date_modified(time());
+		$woo_product->save();
+
+		$future_timestamp = time() + 10000; // 10000 seconds in the future
+
+		$fb_product = new \WC_Facebook_Product( $woo_product );
+		$data = $fb_product->prepare_product(null, \WC_Facebook_Product::PRODUCT_PREP_TYPE_NORMAL, $future_timestamp);
+
+		// Future timestamp should still be used if explicitly provided
+		$this->assertEquals($future_timestamp, $data['external_update_time']);
+	}
+
+	/**
+	 * Test manual sync timestamp for different preparation types
+	 * @return void
+	 */
+	public function test_manual_sync_timestamp_for_different_prep_types() {
+		$woo_product = WC_Helper_Product::create_simple_product();
+		$woo_product->set_date_modified(time() - 1000);
+		$woo_product->save();
+
+		$manual_timestamp = time();
+		$fb_product = new \WC_Facebook_Product( $woo_product );
+
+		// Test for PRODUCT_PREP_TYPE_NORMAL
+		$data_normal = $fb_product->prepare_product(null, \WC_Facebook_Product::PRODUCT_PREP_TYPE_NORMAL, $manual_timestamp);
+		$this->assertEquals($manual_timestamp, $data_normal['external_update_time']);
+
+		// Test for PRODUCT_PREP_TYPE_ITEMS_BATCH
+		$data_batch = $fb_product->prepare_product(null, \WC_Facebook_Product::PRODUCT_PREP_TYPE_ITEMS_BATCH, $manual_timestamp);
+		$this->assertEquals($manual_timestamp, $data_batch['external_update_time']);
+
+		// Test for PRODUCT_PREP_TYPE_FEED
+		$data_feed = $fb_product->prepare_product(null, \WC_Facebook_Product::PRODUCT_PREP_TYPE_FEED, $manual_timestamp);
+		$this->assertEquals($manual_timestamp, $data_feed['external_update_time']);
+	}
+
+	/**
+	 * Test manual sync timestamp with _last_change_time meta
+	 * @return void
+	 */
+	public function test_manual_sync_timestamp_priority_over_last_change_time() {
+		$woo_product = WC_Helper_Product::create_simple_product();
+		$product_modified_time = time() - 3000;
+		$last_change_time = time() - 1000; // Newer than product modified time
+		$manual_timestamp = time() - 500; // Newest of all
+
+		$woo_product->set_date_modified($product_modified_time);
+		$woo_product->update_meta_data('_last_change_time', $last_change_time);
+		$woo_product->save();
+
+		$fb_product = new \WC_Facebook_Product( $woo_product );
+		$data = $fb_product->prepare_product(null, \WC_Facebook_Product::PRODUCT_PREP_TYPE_NORMAL, $manual_timestamp);
+
+		// Manual timestamp should take priority over both product modified time and _last_change_time
+		$this->assertEquals($manual_timestamp, $data['external_update_time']);
+	}
+
+	/**
+	 * Test fallback respects _last_change_time when manual timestamp is null
+	 * @return void
+	 */
+	public function test_fallback_respects_last_change_time() {
+		$woo_product = WC_Helper_Product::create_simple_product();
+		$product_modified_time = time() - 3000;
+		$last_change_time = time() - 1000; // Newer than product modified time
+
+		$woo_product->set_date_modified($product_modified_time);
+		$woo_product->update_meta_data('_last_change_time', $last_change_time);
+		$woo_product->save();
+
+		$fb_product = new \WC_Facebook_Product( $woo_product );
+		$data = $fb_product->prepare_product(null, \WC_Facebook_Product::PRODUCT_PREP_TYPE_NORMAL, null);
+
+		// Should use _last_change_time since it's newer than product modified time
+		$this->assertEquals($last_change_time, $data['external_update_time']);
+	}
+
+	/**
 	 * Test fallback to main description when it's less than 1000 characters.
 	 */
 	public function test_get_fb_short_description_fallback_to_short_main_description() {
@@ -1490,7 +1661,7 @@ class fbproductTest extends \WooCommerce\Facebook\Tests\AbstractWPUnitTestWithSa
 			}
 
 			// Override prepare_product to ensure proper material format
-			public function prepare_product($retailer_id = null, $type_to_prepare_for = self::PRODUCT_PREP_TYPE_ITEMS_BATCH) {
+			public function prepare_product($retailer_id = null, $type_to_prepare_for = self::PRODUCT_PREP_TYPE_ITEMS_BATCH, $manual_sync_timestamp = null) {
 				// Get base product data
 				$data = [];
 				$data['id'] = $this->woo_product->get_id();
@@ -1564,7 +1735,7 @@ class fbproductTest extends \WooCommerce\Facebook\Tests\AbstractWPUnitTestWithSa
 			}
 
 			// Override prepare_product to ensure proper testing
-			public function prepare_product($retailer_id = null, $type_to_prepare_for = self::PRODUCT_PREP_TYPE_ITEMS_BATCH) {
+			public function prepare_product($retailer_id = null, $type_to_prepare_for = self::PRODUCT_PREP_TYPE_ITEMS_BATCH, $manual_sync_timestamp = null) {
 				// Basic product data
 				$data = [];
 				$data['id'] = $this->woo_product->get_id();
@@ -1610,14 +1781,14 @@ class fbproductTest extends \WooCommerce\Facebook\Tests\AbstractWPUnitTestWithSa
 		// Create a variable product with variation
 		$variable_product = \WC_Helper_Product::create_variation_product();
 		$variation = wc_get_product($variable_product->get_children()[0]);
-		
+
 		// Create Facebook product
 		$parent_fb_product = new \WC_Facebook_Product($variable_product);
 		$fb_product = new \WC_Facebook_Product($variation, $parent_fb_product);
 
 		// Set image source to multiple
 		update_post_meta($variation->get_id(), \WooCommerce\Facebook\Products::PRODUCT_IMAGE_SOURCE_META_KEY, 'multiple');
-		
+
 		// Mock attachment IDs and their URLs using WordPress functions
 		$attachment_ids = '123,456,789';
 		update_post_meta($variation->get_id(), \WC_Facebook_Product::FB_PRODUCT_IMAGES, $attachment_ids);
@@ -1648,7 +1819,7 @@ class fbproductTest extends \WooCommerce\Facebook\Tests\AbstractWPUnitTestWithSa
 		// Create a variable product with variation
 		$variable_product = \WC_Helper_Product::create_variation_product();
 		$variation = wc_get_product($variable_product->get_children()[0]);
-		
+
 		// Create Facebook product
 		$parent_fb_product = new \WC_Facebook_Product($variable_product);
 		$fb_product = new \WC_Facebook_Product($variation, $parent_fb_product);
@@ -1669,7 +1840,7 @@ class fbproductTest extends \WooCommerce\Facebook\Tests\AbstractWPUnitTestWithSa
 		// Create a variable product with variation
 		$variable_product = \WC_Helper_Product::create_variation_product();
 		$variation = wc_get_product($variable_product->get_children()[0]);
-		
+
 		// Create Facebook product
 		$parent_fb_product = new \WC_Facebook_Product($variable_product);
 		$fb_product = new \WC_Facebook_Product($variation, $parent_fb_product);
@@ -1690,14 +1861,14 @@ class fbproductTest extends \WooCommerce\Facebook\Tests\AbstractWPUnitTestWithSa
 		// Create a variable product with variation
 		$variable_product = \WC_Helper_Product::create_variation_product();
 		$variation = wc_get_product($variable_product->get_children()[0]);
-		
+
 		// Create Facebook product
 		$parent_fb_product = new \WC_Facebook_Product($variable_product);
 		$fb_product = new \WC_Facebook_Product($variation, $parent_fb_product);
 
 		// Set image source to multiple with malformed data
 		update_post_meta($variation->get_id(), \WooCommerce\Facebook\Products::PRODUCT_IMAGE_SOURCE_META_KEY, 'multiple');
-		
+
 		// Test with leading/trailing commas
 		update_post_meta($variation->get_id(), \WC_Facebook_Product::FB_PRODUCT_IMAGES, ',123,456,');
 		$meta_value = get_post_meta($variation->get_id(), \WC_Facebook_Product::FB_PRODUCT_IMAGES, true);
@@ -1728,7 +1899,7 @@ class fbproductTest extends \WooCommerce\Facebook\Tests\AbstractWPUnitTestWithSa
 		// Create a variable product with variation
 		$variable_product = \WC_Helper_Product::create_variation_product();
 		$variation = wc_get_product($variable_product->get_children()[0]);
-		
+
 		// Create Facebook product
 		$parent_fb_product = new \WC_Facebook_Product($variable_product);
 		$fb_product = new \WC_Facebook_Product($variation, $parent_fb_product);
@@ -1762,11 +1933,11 @@ class fbproductTest extends \WooCommerce\Facebook\Tests\AbstractWPUnitTestWithSa
 		// Create a variable product with variation
 		$variable_product = \WC_Helper_Product::create_variation_product();
 		$variation = wc_get_product($variable_product->get_children()[0]);
-		
+
 		// Set multiple images on parent
 		update_post_meta($variable_product->get_id(), \WC_Facebook_Product::FB_PRODUCT_IMAGES, '111,222,333');
 		update_post_meta($variable_product->get_id(), \WooCommerce\Facebook\Products::PRODUCT_IMAGE_SOURCE_META_KEY, 'multiple');
-		
+
 		// Set different images on variation
 		update_post_meta($variation->get_id(), \WC_Facebook_Product::FB_PRODUCT_IMAGES, '444,555,666');
 		update_post_meta($variation->get_id(), \WooCommerce\Facebook\Products::PRODUCT_IMAGE_SOURCE_META_KEY, 'multiple');
@@ -1833,11 +2004,11 @@ class fbproductTest extends \WooCommerce\Facebook\Tests\AbstractWPUnitTestWithSa
 
 		// Set multiple images with large dataset
 		update_post_meta($variation->get_id(), \WC_Facebook_Product::FB_PRODUCT_IMAGES, $large_dataset);
-		
+
 		// Verify large dataset is stored correctly
 		$stored_images = get_post_meta($variation->get_id(), \WC_Facebook_Product::FB_PRODUCT_IMAGES, true);
 		$this->assertEquals($large_dataset, $stored_images);
-		
+
 		// Verify we can split it back correctly
 		$stored_array = array_map('trim', explode(',', $stored_images));
 		$this->assertEquals(20, count($stored_array));

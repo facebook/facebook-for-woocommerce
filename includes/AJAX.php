@@ -117,7 +117,9 @@ class AJAX {
 		}
 
 		try {
-			facebook_for_woocommerce()->get_products_sync_handler()->create_or_update_all_products();
+			// Capture timestamp for manual sync to use as external_update_time
+			$manual_sync_timestamp = time();
+			facebook_for_woocommerce()->get_products_sync_handler()->create_or_update_all_products( $manual_sync_timestamp );
 			wp_send_json_success();
 		} catch ( \Exception $exception ) {
 			wp_send_json_error( $exception->getMessage() );
