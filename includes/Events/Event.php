@@ -265,27 +265,19 @@ class Event {
 	 * @return string
 	 */
 	protected function get_click_id() {
-		$fbc = '';
-		if ( ! empty( $_COOKIE['_fbc'] ) ) {
-			$fbc = wc_clean( wp_unslash( $_COOKIE['_fbc'] ) );
-		}
-
-		if ( empty( $fbc ) && ! empty( $_SESSION['_fbc'] ) ) {
-			$fbc = $_SESSION['_fbc']; // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
-		}
-
+		$fbc = \WC_Facebookcommerce_EventsTracker::get_fbc();
 		if ( empty( $fbc ) ) {
-			$param_builder = \WC_Facebookcommerce_EventsTracker::get_param_builder();
-			$fbc = $param_builder->getFbc();
+			if ( ! empty( $_COOKIE['_fbc'] ) ) {
+				$fbc = wc_clean( wp_unslash( $_COOKIE['_fbc'] ) );
+			} else if ( ! empty( $_SESSION['_fbc'] ) ) {
+				$fbc = $_SESSION['_fbc']; // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
+			} else if ( ! empty( $_REQUEST['fbclid'] ) ) {
+				$creation_time = time();
+				$fbclid = wc_clean( wp_unslash( $_REQUEST['fbclid'] ) ); // phpcs:ignore WordPress.Security.NonceVerification
+				$fbc = "fb.1.{$creation_time}.{$fbclid}";
+			}
 		}
-
-		if ( empty( $fbc ) && ! empty( $_REQUEST['fbclid'] ) ) {
-			$creation_time = time();
-			$fbclid = wc_clean( wp_unslash( $_REQUEST['fbclid'] ) ); // phpcs:ignore WordPress.Security.NonceVerification
-			$fbc = "fb.1.{$creation_time}.{$fbclid}";
-		}
-
-		if ( ! empty( $fbc ) ) {
+		if ( ! empty( $fbc ) && ! FacebookSignalsState::is_held() ) {
 			$_SESSION['_fbc'] = $fbc;
 		}
 		// Return null instead of empty string
@@ -307,18 +299,15 @@ class Event {
 	 * @return string
 	 */
 	protected function get_browser_id() {
-		$fbp = ! empty( $_COOKIE['_fbp'] ) ? wc_clean( wp_unslash( $_COOKIE['_fbp'] ) ) : '';
-
-		if ( empty( $fbp ) && ! empty( $_SESSION['_fbp'] ) ) {
-			$fbp = $_SESSION['_fbp']; // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
-		}
-
+		$fbp = \WC_Facebookcommerce_EventsTracker::get_fbp();
 		if ( empty( $fbp ) ) {
-			$param_builder = \WC_Facebookcommerce_EventsTracker::get_param_builder();
-			$fbp = $param_builder->getFbp();
+			if ( ! empty( $_COOKIE['_fbp'] ) ) {
+				$fbp = wc_clean( wp_unslash( $_COOKIE['_fbp'] ) );
+			} else if ( ! empty( $_SESSION['_fbp'] ) ) {
+				$fbp = $_SESSION['_fbp']; // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
+			}
 		}
-
-		if ( ! empty( $fbp ) ) {
+		if ( ! empty( $fbp ) && ! FacebookSignalsState::is_held() ) {
 			$_SESSION['_fbp'] = $fbp;
 		}
 		// Return null instead of empty string

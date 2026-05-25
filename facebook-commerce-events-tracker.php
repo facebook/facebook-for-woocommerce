@@ -69,6 +69,12 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 		 */
 		private static $param_builder = null;
 
+		/** @var string|null Cached fbc value from ParamBuilder */
+		private static $cached_fbc = null;
+
+		/** @var string|null Cached fbp value from ParamBuilder */
+		private static $cached_fbp = null;
+
 		/**
 		 * Order meta keys used by the tracker.
 		 */
@@ -131,6 +137,26 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 			return self::$param_builder;
 		}
 
+		public static function get_fbc() {
+			if ( null === self::$cached_fbc ) {
+				$param_builder = self::get_param_builder();
+				if ( $param_builder ) {
+					self::$cached_fbc = $param_builder->getFbc();
+				}
+			}
+			return self::$cached_fbc;
+		}
+
+		public static function get_fbp() {
+			if ( null === self::$cached_fbp ) {
+				$param_builder = self::get_param_builder();
+				if ( $param_builder ) {
+					self::$cached_fbp = $param_builder->getFbp();
+				}
+			}
+			return self::$cached_fbp;
+		}
+
 		/**
 		 * Initializes the CAPI server side Parameter Builder and sets cookies as needed.
 		 */
@@ -146,8 +172,8 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 				// When signals are held, still run ParamBuilder so it can generate
 				// attribution IDs, but do not write cookies until signals are released.
 				if ( FacebookSignalsState::is_held() ) {
-					$fbc = $param_builder->getFbc();
-					$fbp = $param_builder->getFbp();
+					$fbc = self::get_fbc();
+					$fbp = self::get_fbp();
 
 					if ( ! empty( $fbc ) ) {
 						FacebookSignalsState::set_attribution_data( 'fbc', $fbc );
@@ -164,22 +190,22 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 						}
 					}
 
-					return;
-				}
+				} else {
+					$cookie_to_set = $param_builder->getCookiesToSet();
 
-				$cookie_to_set = $param_builder->getCookiesToSet();
-
-				if ( ! headers_sent() ) {
-					foreach ( $cookie_to_set as $cookie ) {
-						setcookie(
-							$cookie->name,
-							$cookie->value,
-							time() + $cookie->max_age,
-							'/',
-							$cookie->domain
-						);
+					if ( ! headers_sent() ) {
+						foreach ( $cookie_to_set as $cookie ) {
+							setcookie(
+								$cookie->name,
+								$cookie->value,
+								time() + $cookie->max_age,
+								'/',
+								$cookie->domain
+							);
+						}
 					}
 				}
+
 			} catch ( \Exception $exception ) {
 				Logger::log(
 					'Error setting up server side CAPI Parameter Builder: ' . $exception->getMessage(),
