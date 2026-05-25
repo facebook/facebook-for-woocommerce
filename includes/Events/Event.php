@@ -266,20 +266,34 @@ class Event {
 	 */
 	protected function get_click_id() {
 		$fbc = \WC_Facebookcommerce_EventsTracker::get_fbc();
+
 		if ( empty( $fbc ) ) {
-			if ( ! empty( $_COOKIE['_fbc'] ) ) {
-				$fbc = wc_clean( wp_unslash( $_COOKIE['_fbc'] ) );
-			} else if ( ! empty( $_SESSION['_fbc'] ) ) {
-				$fbc = $_SESSION['_fbc']; // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
-			} else if ( ! empty( $_REQUEST['fbclid'] ) ) {
-				$creation_time = time();
-				$fbclid = wc_clean( wp_unslash( $_REQUEST['fbclid'] ) ); // phpcs:ignore WordPress.Security.NonceVerification
-				$fbc = "fb.1.{$creation_time}.{$fbclid}";
+			$cookie_fbc = ! empty( $_COOKIE['_fbc'] )
+                ? sanitize_text_field( wp_unslash( $_COOKIE['_fbc'] ) )
+                : null;
+			
+            $request_fbclid = isset( $_GET['fbclid'] ) // phpcs:ignore WordPress.Security.NonceVerification
+                ? sanitize_text_field( wp_unslash( $_GET['fbclid'] ) ) // phpcs:ignore WordPress.Security.NonceVerification
+                : null;
+			
+			if ( $request_fbclid && ( empty( $cookie_fbc ) || self::has_fbclid_changed( $cookie_fbc, $request_fbclid ) ) ) {
+				$creation_time 	= time();
+				$fbc			= "fb.1.{$creation_time}.{$request_fbclid}";
 			}
+
+			if ( empty( $fbc ) && ! empty( $cookie_fbc ) ) {
+				$fbc = $cookie_fbc;
+			}
+
+			if ( empty( $fbc ) && isset( $_SESSION['_fbc'] ) ) {
+                $fbc = sanitize_text_field( $_SESSION['_fbc'] );
+            }
 		}
+
 		if ( ! empty( $fbc ) && ! FacebookSignalsState::is_held() ) {
 			$_SESSION['_fbc'] = $fbc;
 		}
+
 		// Return null instead of empty string
 		return ! empty( $fbc ) ? $fbc : null;
 	}
@@ -303,7 +317,7 @@ class Event {
 		if ( empty( $fbp ) ) {
 			if ( ! empty( $_COOKIE['_fbp'] ) ) {
 				$fbp = wc_clean( wp_unslash( $_COOKIE['_fbp'] ) );
-			} else if ( ! empty( $_SESSION['_fbp'] ) ) {
+			} elseif ( ! empty( $_SESSION['_fbp'] ) ) {
 				$fbp = $_SESSION['_fbp']; // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
 			}
 		}
@@ -390,4 +404,29 @@ class Event {
 		}
 		return $postfix;
 	}
+
+	/**
+     * Checks whether the fbclid in the current request differs from
+     * the one stored in the existing _fbc cookie.
+     *
+     * @param string      $cookie_fbc The current _fbc cookie value
+     *                                (format: fb.{subdomain}.{timestamp}.{fbclid}).
+     * @param string|null $request_fbclid The fbclid from the current request,
+     *                                    or null if not present.
+     *
+     * @return bool True if fbclid has changed, false otherwise.
+     */
+    private static function has_fbclid_changed( $cookie_fbc, $request_fbclid ) {
+        if ( null === $request_fbclid ) {
+            return false;
+        }
+
+        $parts = explode( '.', $cookie_fbc );
+        if ( count( $parts ) < 4 ) {
+            return true;
+        }
+
+        $cookie_fbclid = implode( '.', array_slice( $parts, 3 ) );
+        return $cookie_fbclid !== $request_fbclid;
+    }
 }
