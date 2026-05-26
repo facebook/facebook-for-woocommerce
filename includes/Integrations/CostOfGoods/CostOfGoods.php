@@ -52,9 +52,9 @@ class CostOfGoods {
 			if ( ! is_array( $tuple ) || ! isset( $tuple['product'], $tuple['qty'] ) ) {
 				throw new IncorrectCogsInputStructure();
 			}
-			$product = $tuple['product'];
+			$product  = $tuple['product'];
 			$quantity = $tuple['qty'];
-			$cogs = $this->get_cogs_for_product( $product );
+			$cogs     = $this->get_cogs_for_product( $product );
 
 			// If cogs was 0 for one product, the value is invalid for the order
 			if ( ! $cogs || $cogs < 0 ) {
@@ -78,7 +78,7 @@ class CostOfGoods {
 		if ( ! $this->already_fetched ) {
 			$this->available_integrations = array();
 			foreach ( $this->supported_integrations as $integration => $class_name ) {
-				$class = 'WooCommerce\\Facebook\\Integrations\\CostOfGoods\\' . $class_name;
+				$class    = 'WooCommerce\\Facebook\\Integrations\\CostOfGoods\\' . $class_name;
 				$instance = new $class();
 				if ( $instance->is_available() ) {
 					$this->available_integrations[] = $instance;

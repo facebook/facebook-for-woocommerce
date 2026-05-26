@@ -109,6 +109,7 @@ abstract class Request {
 	 * @param mixed  $default Default value if key doesn't exist.
 	 * @return mixed The value or default if not set.
 	 */
+	// phpcs:ignore Universal.NamingConventions.NoReservedKeywordParameterNames.defaultFound
 	public function get_param( $key, $default = null ) {
 		return isset( $this->data[ $key ] ) ? $this->data[ $key ] : $default;
 	}

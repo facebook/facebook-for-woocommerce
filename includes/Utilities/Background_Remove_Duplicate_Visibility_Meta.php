@@ -79,6 +79,7 @@ class Background_Remove_Duplicate_Visibility_Meta extends BackgroundJobHandler {
 			}
 		}
 
+		// phpcs:ignore Squiz.PHP.CommentedOutCode.Found
 		// job complete! :)
 		if ( $this->count_remaining_products() === 0 ) {
 

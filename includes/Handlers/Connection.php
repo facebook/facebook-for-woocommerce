@@ -741,12 +741,12 @@ class Connection {
 			home_url( '/' )
 		);
 		// build the proxy app URL where the user will land after onboarding, to be redirected to the site URL
-		$redirect_url = add_query_arg( 'site_url', urlencode( $site_url ), $this->get_connection_authentication_url() );
+		$redirect_url = add_query_arg( 'site_url', rawurlencode( $site_url ), $this->get_connection_authentication_url() );
 		// build the final connect URL, direct to Facebook
 		$connect_url = add_query_arg(
 			array(
 				'app_id'       => $this->get_client_id(), // this endpoint calls the client ID "app ID"
-				'redirect_url' => urlencode( $redirect_url ),
+				'redirect_url' => rawurlencode( $redirect_url ),
 			),
 			'https://www.facebook.com/commerce_manager/onboarding/'
 		);

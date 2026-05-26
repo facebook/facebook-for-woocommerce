@@ -75,18 +75,20 @@ class Product_Sync extends Abstract_Settings_Screen {
 		if ( ! $this->is_current_screen_page() ) {
 			return;
 		}
-		wp_enqueue_script( 'wc-backbone-modal', null, array( 'backbone' ) );
+		wp_enqueue_script( 'wc-backbone-modal', null, array( 'backbone' ), \WC_Facebookcommerce::PLUGIN_VERSION, true );
 		wp_enqueue_script(
 			'facebook-for-woocommerce-modal',
 			facebook_for_woocommerce()->get_asset_build_dir_url() . '/admin/modal.js',
 			array( 'jquery', 'wc-backbone-modal', 'jquery-blockui' ),
-			\WC_Facebookcommerce::PLUGIN_VERSION
+			\WC_Facebookcommerce::PLUGIN_VERSION,
+			true
 		);
 		wp_enqueue_script(
 			'facebook-for-woocommerce-settings-sync',
 			facebook_for_woocommerce()->get_asset_build_dir_url() . '/admin/settings-sync.js',
 			array( 'jquery', 'wc-backbone-modal', 'jquery-blockui', 'jquery-tiptip', 'facebook-for-woocommerce-modal', 'wc-enhanced-select' ),
-			\WC_Facebookcommerce::PLUGIN_VERSION
+			\WC_Facebookcommerce::PLUGIN_VERSION,
+			true
 		);
 
 		/* translators: Placeholders: {count} number of remaining items */
@@ -272,7 +274,7 @@ class Product_Sync extends Abstract_Settings_Screen {
 			)
 		);
 		$product_tags       = $term_query->get_terms();
-		$settings = array(
+		$settings           = array(
 			array(
 				'type'  => 'product_sync_title',
 				'title' => __( 'Product sync', 'facebook-for-woocommerce' ),

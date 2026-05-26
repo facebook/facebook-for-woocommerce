@@ -38,7 +38,7 @@ class Event {
 	 * }
 	 */
 	public static function get_version_info() {
-		$source = 'woocommerce';
+		$source  = 'woocommerce';
 		$source .= self::get_agent_flags();
 		return array(
 			'source'        => $source,
@@ -269,16 +269,16 @@ class Event {
 
 		if ( empty( $fbc ) ) {
 			$cookie_fbc = ! empty( $_COOKIE['_fbc'] )
-                ? sanitize_text_field( wp_unslash( $_COOKIE['_fbc'] ) )
-                : null;
-			
-            $request_fbclid = isset( $_GET['fbclid'] ) // phpcs:ignore WordPress.Security.NonceVerification
-                ? sanitize_text_field( wp_unslash( $_GET['fbclid'] ) ) // phpcs:ignore WordPress.Security.NonceVerification
-                : null;
-			
+				? sanitize_text_field( wp_unslash( $_COOKIE['_fbc'] ) )
+				: null;
+
+			$request_fbclid = isset( $_GET['fbclid'] ) // phpcs:ignore WordPress.Security.NonceVerification
+				? sanitize_text_field( wp_unslash( $_GET['fbclid'] ) ) // phpcs:ignore WordPress.Security.NonceVerification
+				: null;
+
 			if ( $request_fbclid && ( empty( $cookie_fbc ) || self::has_fbclid_changed( $cookie_fbc, $request_fbclid ) ) ) {
-				$creation_time 	= time();
-				$fbc			= "fb.1.{$creation_time}.{$request_fbclid}";
+				$creation_time = time();
+				$fbc           = "fb.1.{$creation_time}.{$request_fbclid}";
 			}
 
 			if ( empty( $fbc ) && ! empty( $cookie_fbc ) ) {
@@ -286,8 +286,8 @@ class Event {
 			}
 
 			if ( empty( $fbc ) && isset( $_SESSION['_fbc'] ) ) {
-                $fbc = sanitize_text_field( $_SESSION['_fbc'] );
-            }
+				$fbc = sanitize_text_field( $_SESSION['_fbc'] );
+			}
 		}
 
 		if ( ! empty( $fbc ) && ! FacebookSignalsState::is_held() ) {
@@ -399,34 +399,34 @@ class Event {
 	private static function get_agent_flags() {
 		$postfix = '';
 		if ( function_exists( 'get_option' ) && false !== get_option( 'wc_facebook_svr_flags' ) ) {
-			$flags = get_option( 'wc_facebook_svr_flags' );
+			$flags   = get_option( 'wc_facebook_svr_flags' );
 			$postfix = "_{$flags}";
 		}
 		return $postfix;
 	}
 
 	/**
-     * Checks whether the fbclid in the current request differs from
-     * the one stored in the existing _fbc cookie.
-     *
-     * @param string      $cookie_fbc The current _fbc cookie value
-     *                                (format: fb.{subdomain}.{timestamp}.{fbclid}).
-     * @param string|null $request_fbclid The fbclid from the current request,
-     *                                    or null if not present.
-     *
-     * @return bool True if fbclid has changed, false otherwise.
-     */
-    private static function has_fbclid_changed( $cookie_fbc, $request_fbclid ) {
-        if ( null === $request_fbclid ) {
-            return false;
-        }
+	 * Checks whether the fbclid in the current request differs from
+	 * the one stored in the existing _fbc cookie.
+	 *
+	 * @param string      $cookie_fbc     The current _fbc cookie value
+	 *                                    (format: fb.{subdomain}.{timestamp}.{fbclid}).
+	 * @param string|null $request_fbclid The fbclid from the current request,
+	 *                                    or null if not present.
+	 *
+	 * @return bool True if fbclid has changed, false otherwise.
+	 */
+	private static function has_fbclid_changed( $cookie_fbc, $request_fbclid ) {
+		if ( null === $request_fbclid ) {
+			return false;
+		}
 
-        $parts = explode( '.', $cookie_fbc );
-        if ( count( $parts ) < 4 ) {
-            return true;
-        }
+		$parts = explode( '.', $cookie_fbc );
+		if ( count( $parts ) < 4 ) {
+			return true;
+		}
 
-        $cookie_fbclid = implode( '.', array_slice( $parts, 3 ) );
-        return $cookie_fbclid !== $request_fbclid;
-    }
+		$cookie_fbclid = implode( '.', array_slice( $parts, 3 ) );
+		return $cookie_fbclid !== $request_fbclid;
+	}
 }

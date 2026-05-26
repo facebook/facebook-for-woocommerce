@@ -51,8 +51,9 @@ class Global_Attributes_Banner {
 	 * Check for URL parameter to trigger test banner.
 	 */
 	public function maybe_trigger_test_banner() {
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
 		if ( isset( $_GET['test_fb_banner'] ) && current_user_can( 'manage_woocommerce' ) ) {
-			$attribute_name = sanitize_text_field( wp_unslash( $_GET['test_fb_banner'] ) );
+			$attribute_name = sanitize_text_field( wp_unslash( $_GET['test_fb_banner'] ) ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended
 			if ( empty( $attribute_name ) ) {
 				$attribute_name = 'escobar';
 			}

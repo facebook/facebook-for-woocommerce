@@ -27,12 +27,12 @@ if ( ! class_exists( 'WC_Facebookcommerce_Utils' ) ) :
 
 		const FB_RETAILER_ID_PREFIX = 'wc_post_id_';
 		// TODO: remove this in v2.0.0 {CW 2020-02-06}
-		const PLUGIN_VERSION     = \WC_Facebookcommerce::VERSION;
-		const FB_VARIANT_SIZE    = 'size';
-		const FB_VARIANT_COLOR   = 'color';
-		const FB_VARIANT_COLOUR  = 'colour';
-		const FB_VARIANT_PATTERN = 'pattern';
-		const FB_VARIANT_GENDER  = 'gender';
+		const PLUGIN_VERSION              = \WC_Facebookcommerce::VERSION;
+		const FB_VARIANT_SIZE             = 'size';
+		const FB_VARIANT_COLOR            = 'color';
+		const FB_VARIANT_COLOUR           = 'colour';
+		const FB_VARIANT_PATTERN          = 'pattern';
+		const FB_VARIANT_GENDER           = 'gender';
 		const WC_EXCERPT_LENGTH_THRESHOLD = 10;
 
 		// TODO: this constant is no longer used and can probably be removed {WV 2020-01-21}
@@ -567,6 +567,7 @@ if ( ! class_exists( 'WC_Facebookcommerce_Utils' ) ) :
 		) {
 			$args = array(
 				'fields'         => 'ids',
+				// phpcs:ignore WordPress.DB.SlowDBQuery
 				'meta_query'     => array(
 					( ( $product_group_id ) ?
 					array(
@@ -613,7 +614,7 @@ if ( ! class_exists( 'WC_Facebookcommerce_Utils' ) ) :
 			// Fallback to site url
 			$url = get_site_url();
 			if ( $url ) {
-				self::$store_name = parse_url( $url, PHP_URL_HOST );
+				self::$store_name = wp_parse_url( $url, PHP_URL_HOST );
 				return self::$store_name;
 			}
 

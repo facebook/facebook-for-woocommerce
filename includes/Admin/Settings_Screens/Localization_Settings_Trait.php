@@ -36,9 +36,9 @@ trait Localization_Settings_Trait {
 		}
 
 		// Get active localization integration to determine setting state
-		$integration = IntegrationRegistry::get_active_localization_integration();
+		$integration  = IntegrationRegistry::get_active_localization_integration();
 		$is_available = $integration && $integration->is_available();
-		$is_eligible = $is_available && method_exists( $integration, 'is_eligible_for_language_override_feeds' ) && $integration->is_eligible_for_language_override_feeds();
+		$is_eligible  = $is_available && method_exists( $integration, 'is_eligible_for_language_override_feeds' ) && $integration->is_eligible_for_language_override_feeds();
 
 		// Hide the entire section for ineligible sites (legacy multi-language setups)
 		if ( ! $is_eligible ) {
@@ -53,7 +53,7 @@ trait Localization_Settings_Trait {
 			// First time - set default based on whether we have an available AND eligible integration
 			// and main product sync is enabled
 			$product_sync_enabled = facebook_for_woocommerce()->get_integration()->is_product_sync_enabled();
-			$default_value = ( $is_eligible && $product_sync_enabled ) ? 'yes' : 'no';
+			$default_value        = ( $is_eligible && $product_sync_enabled ) ? 'yes' : 'no';
 			update_option( \WC_Facebookcommerce_Integration::OPTION_LANGUAGE_OVERRIDE_FEED_GENERATION_ENABLED, $default_value );
 			$current_value = $default_value;
 		}
@@ -102,7 +102,7 @@ trait Localization_Settings_Trait {
 		try {
 			// Get the active localization integration (only one detected plugin)
 			$active_integration = IntegrationRegistry::get_active_localization_integration();
-			$feed_data = new LanguageFeedData();
+			$feed_data          = new LanguageFeedData();
 		} catch ( \Exception $e ) {
 			?>
 			<tr valign="top">
@@ -116,6 +116,7 @@ trait Localization_Settings_Trait {
 				</td>
 			</tr>
 			<?php
+			// phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log
 			error_log( 'Meta for WooCommerce - Localization Integrations Error: ' . $e->getMessage() );
 			return;
 		}
@@ -126,6 +127,7 @@ trait Localization_Settings_Trait {
 			try {
 				$languages = $feed_data->get_available_languages();
 			} catch ( \Exception $e ) {
+				// phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log
 				error_log( 'Meta for WooCommerce - Error getting available languages: ' . $e->getMessage() );
 			}
 		}
@@ -155,13 +157,14 @@ trait Localization_Settings_Trait {
 						<?php else : ?>
 							<?php
 							try {
-								$status = $this->get_integration_status( $active_integration );
-								$version = $active_integration->get_plugin_version();
+								$status           = $this->get_integration_status( $active_integration );
+								$version          = $active_integration->get_plugin_version();
 								$default_language = $active_integration->get_default_language();
 							} catch ( \Exception $e ) {
-								$status = 'error';
-								$version = '';
+								$status           = 'error';
+								$version          = '';
 								$default_language = '';
+								// phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log
 								error_log( 'Meta for WooCommerce - Error getting integration data: ' . $e->getMessage() );
 							}
 							?>
@@ -279,11 +282,11 @@ trait Localization_Settings_Trait {
 	 */
 	private function render_status_badge( $status ) {
 		$labels = array(
-			'active'               => __( 'Active', 'facebook-for-woocommerce' ),
-			'active-ineligible'    => __( 'Active - Ineligible', 'facebook-for-woocommerce' ),
-			'misconfigured'        => __( 'Misconfigured', 'facebook-for-woocommerce' ),
-			'installed'            => __( 'Installed', 'facebook-for-woocommerce' ),
-			'not-available'        => __( 'Not Available', 'facebook-for-woocommerce' ),
+			'active'            => __( 'Active', 'facebook-for-woocommerce' ),
+			'active-ineligible' => __( 'Active - Ineligible', 'facebook-for-woocommerce' ),
+			'misconfigured'     => __( 'Misconfigured', 'facebook-for-woocommerce' ),
+			'installed'         => __( 'Installed', 'facebook-for-woocommerce' ),
+			'not-available'     => __( 'Not Available', 'facebook-for-woocommerce' ),
 		);
 
 		$label = isset( $labels[ $status ] ) ? $labels[ $status ] : $status;

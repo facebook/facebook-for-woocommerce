@@ -250,9 +250,12 @@ class WC_Facebook_Product_Feed {
 
 		foreach ( $files as $file ) {
 			if ( wp_mkdir_p( $file['base'] ) && ! file_exists( trailingslashit( $file['base'] ) . $file['file'] ) ) {
+				// phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged, WordPress.WP.AlternativeFunctions.file_system_operations_fopen
 				$file_handle = @fopen( trailingslashit( $file['base'] ) . $file['file'], 'w' );
 				if ( $file_handle ) {
+					// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fwrite
 					fwrite( $file_handle, $file['content'] );
+					// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fclose
 					fclose( $file_handle );
 				}
 			}
@@ -299,7 +302,7 @@ class WC_Facebook_Product_Feed {
 
 			// close the temporary file
 			if ( ! empty( $temp_feed_file ) && is_resource( $temp_feed_file ) ) {
-
+				// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fclose
 				fclose( $temp_feed_file );
 			}
 
@@ -323,9 +326,11 @@ class WC_Facebook_Product_Feed {
 	 */
 	public function prepare_temporary_feed_file() {
 		$temp_file_path = $this->get_temp_file_path();
+		// phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged, WordPress.WP.AlternativeFunctions.file_system_operations_fopen
 		$temp_feed_file = @fopen( $temp_file_path, 'w' );
 
 		// check if we can open the temporary feed file
+		// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_is_writable
 		if ( false === $temp_feed_file || ! is_writable( $temp_file_path ) ) {
 			throw new PluginException( __( 'Could not open the product catalog temporary feed file for writing', 'facebook-for-woocommerce' ), 500 );
 		}
@@ -333,10 +338,12 @@ class WC_Facebook_Product_Feed {
 		$file_path = $this->get_file_path();
 
 		// check if we will be able to write to the final feed file
+		// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_is_writable
 		if ( file_exists( $file_path ) && ! is_writable( $file_path ) ) {
 			throw new PluginException( __( 'Could not open the product catalog feed file for writing', 'facebook-for-woocommerce' ), 500 );
 		}
 
+		// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fwrite
 		fwrite( $temp_feed_file, $this->get_product_feed_header_row() );
 		return $temp_feed_file;
 	}
@@ -382,6 +389,7 @@ class WC_Facebook_Product_Feed {
 			);
 
 			if ( ! empty( $temp_feed_file ) ) {
+				// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fwrite
 				fwrite( $temp_feed_file, $product_data_as_feed_row );
 			}
 		}
@@ -389,6 +397,7 @@ class WC_Facebook_Product_Feed {
 		wp_reset_postdata();
 
 		if ( ! empty( $temp_feed_file ) ) {
+			// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fclose
 			fclose( $temp_feed_file );
 		}
 	}

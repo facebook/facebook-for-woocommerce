@@ -374,6 +374,7 @@ class AJAX {
 		$products_query_vars = array(
 			'post_type'  => 'product',
 			'fields'     => 'ids',
+			// phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_query
 			'meta_query' => $sync_enabled_meta_query,
 		);
 
@@ -399,6 +400,7 @@ class AJAX {
 				}
 			}
 
+			// phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_tax_query
 			$products_query_vars['tax_query'] = $categories_tax_query;
 		}
 
@@ -425,8 +427,10 @@ class AJAX {
 			}
 
 			if ( empty( $products_query_vars['tax_query'] ) ) {
+				// phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_tax_query
 				$products_query_vars['tax_query'] = $tags_tax_query;
 			} else {
+				// phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_tax_query
 				$products_query_vars['tax_query'] = array(
 					'relation' => 'OR',
 					$products_query_vars,

@@ -168,7 +168,7 @@ class WPML extends Abstract_Localization_Integration {
 
 		// Fallback: extract language code from locale
 		if ( ! $wpml_lang_code ) {
-			$lang_parts = explode( '_', $locale );
+			$lang_parts     = explode( '_', $locale );
 			$wpml_lang_code = $lang_parts[0];
 		}
 
@@ -269,14 +269,14 @@ class WPML extends Abstract_Localization_Integration {
 
 		// Query products
 		$args = [
-			'post_type' => 'product',
-			'post_status' => 'publish',
+			'post_type'      => 'product',
+			'post_status'    => 'publish',
 			'posts_per_page' => $batch_size,
-			'offset' => $offset,
-			'fields' => 'ids',
+			'offset'         => $offset,
+			'fields'         => 'ids',
 		];
 
-		$all_products = get_posts( $args );
+		$all_products              = get_posts( $args );
 		$default_language_products = [];
 
 		// Filter products using plugin-specific language check
@@ -309,9 +309,9 @@ class WPML extends Abstract_Localization_Integration {
 		}
 
 		$details = [
-			'product_id' => $product_id,
-			'default_language' => $this->get_default_language(),
-			'translations' => [],
+			'product_id'         => $product_id,
+			'default_language'   => $this->get_default_language(),
+			'translations'       => [],
 			'translation_status' => [],
 		];
 
@@ -324,12 +324,12 @@ class WPML extends Abstract_Localization_Integration {
 		$locale_to_code_map = [];
 		$code_to_locale_map = [];
 		foreach ( $wpml_languages as $code => $language_data ) {
-			$locale = $language_data['default_locale'] ?? $code;
+			$locale                        = $language_data['default_locale'] ?? $code;
 			$locale_to_code_map[ $locale ] = $code;
-			$code_to_locale_map[ $code ] = $locale;
+			$code_to_locale_map[ $code ]   = $locale;
 		}
 
-		$languages = $this->get_available_languages(); // This now returns full locales
+		$languages        = $this->get_available_languages(); // This now returns full locales
 		$default_language = $this->get_default_language(); // This now returns full locale
 
 		foreach ( $languages as $full_locale ) {
@@ -349,7 +349,7 @@ class WPML extends Abstract_Localization_Integration {
 				$details['translations'][ $full_locale ] = $translated_id;
 
 				/** Get translation status using WPML's API with the WPML code */
-				$translation_status = apply_filters( 'wpml_translation_status', null, $product_id, $wpml_code );
+				$translation_status                            = apply_filters( 'wpml_translation_status', null, $product_id, $wpml_code );
 				$details['translation_status'][ $full_locale ] = $translation_status;
 
 				// Get which fields are translated
@@ -371,8 +371,8 @@ class WPML extends Abstract_Localization_Integration {
 		$data = parent::get_availability_data();
 
 		if ( $this->is_plugin_active() ) {
-			$data['languages'] = $this->get_available_languages();
-			$data['default_language'] = $this->get_default_language();
+			$data['languages']                       = $this->get_available_languages();
+			$data['default_language']                = $this->get_default_language();
 			$data['has_legacy_multi_language_setup'] = $this->has_legacy_multi_language_setup();
 		}
 

@@ -38,11 +38,11 @@ class LanguageOverrideFeed {
 	private $language_feed_data = null;
 
 	/** Action constants */
-	const GENERATE_FEED_ACTION = 'wc_facebook_regenerate_feed_';
-	const REQUEST_FEED_ACTION = 'wc_facebook_get_feed_data_language_override';
+	const GENERATE_FEED_ACTION     = 'wc_facebook_regenerate_feed_';
+	const REQUEST_FEED_ACTION      = 'wc_facebook_get_feed_data_language_override';
 	const FEED_GEN_COMPLETE_ACTION = 'wc_facebook_feed_generation_completed_';
-	const LEGACY_API_PREFIX = 'woocommerce_api_';
-	const OPTION_FEED_URL_SECRET = 'wc_facebook_feed_url_secret_';
+	const LEGACY_API_PREFIX        = 'woocommerce_api_';
+	const OPTION_FEED_URL_SECRET   = 'wc_facebook_feed_url_secret_';
 
 	/**
 	 * Constructor
@@ -86,7 +86,7 @@ class LanguageOverrideFeed {
 		}
 		set_transient( $flag_name, 'yes', HOUR_IN_SECONDS );
 
-		$integration   = facebook_for_woocommerce()->get_integration();
+		$integration        = facebook_for_woocommerce()->get_integration();
 		$connection_handler = facebook_for_woocommerce()->get_connection_handler();
 		// Language feeds only require an active connection, not a Facebook Page ID
 		$is_connected = $connection_handler && $connection_handler->is_connected();
@@ -193,18 +193,18 @@ class LanguageOverrideFeed {
 		}
 
 		$successful_languages = [];
-		$failed_languages = [];
-		$language_stats = [];
+		$failed_languages     = [];
+		$language_stats       = [];
 
 		// Generate feed file for each language using the feed handler directly
 		foreach ( $languages as $language_code ) {
 			try {
 				// Generate the feed file for this language
 				$language_feed_writer = new LanguageOverrideFeedWriter( $language_code );
-				$result = $language_feed_writer->write_language_feed_file( $this->get_language_feed_data(), $language_code );
+				$result               = $language_feed_writer->write_language_feed_file( $this->get_language_feed_data(), $language_code );
 
 				if ( $result['success'] ) {
-					$successful_languages[] = $language_code;
+					$successful_languages[]           = $language_code;
 					$language_stats[ $language_code ] = [
 						'translated_products' => $result['count'],
 						'last_generated'      => time(),
@@ -215,9 +215,9 @@ class LanguageOverrideFeed {
 						sprintf( 'Failed to generate language override feed for: %s', $language_code ),
 						[ 'language_code' => $language_code ],
 						array(
-							'should_send_log_to_meta'        => true,
+							'should_send_log_to_meta' => true,
 							'should_save_log_in_woocommerce' => true,
-							'woocommerce_log_level'          => \WC_Log_Levels::ERROR,
+							'woocommerce_log_level'   => \WC_Log_Levels::ERROR,
 						)
 					);
 				}
@@ -226,7 +226,7 @@ class LanguageOverrideFeed {
 				Logger::log(
 					sprintf( 'Exception while generating language override feed for %s: %s', $language_code, $e->getMessage() ),
 					[
-						'language_code' => $language_code,
+						'language_code'     => $language_code,
 						'exception_message' => $e->getMessage(),
 					],
 					array(
@@ -250,7 +250,7 @@ class LanguageOverrideFeed {
 				),
 				[
 					'failed_languages' => $failed_languages,
-					'total_languages' => count( $languages ),
+					'total_languages'  => count( $languages ),
 				],
 				array(
 					'should_send_log_to_meta'        => false,
@@ -375,8 +375,8 @@ class LanguageOverrideFeed {
 
 		// Check connection methods
 		$has_valid_connection = ! empty( $connection_handler->get_commerce_partner_integration_id() ) ||
-							   ! empty( $connection_handler->get_commerce_merchant_settings_id() ) ||
-							   ! empty( $connection_handler->get_access_token() );
+								! empty( $connection_handler->get_commerce_merchant_settings_id() ) ||
+								! empty( $connection_handler->get_access_token() );
 
 		if ( ! $has_valid_connection ) {
 			return true;
@@ -411,7 +411,7 @@ class LanguageOverrideFeed {
 
 			// Create language-specific feed writer to get file path
 			$language_feed_writer = new LanguageOverrideFeedWriter( $language_code );
-			$file_path = $language_feed_writer->get_file_path();
+			$file_path            = $language_feed_writer->get_file_path();
 
 			// Regenerate if the file doesn't exist or if explicitly requested
 			$regenerate = Helper::get_requested_value( 'regenerate' );
@@ -436,13 +436,16 @@ class LanguageOverrideFeed {
 			header( 'Pragma: public' );
 			header( 'Content-Length:' . filesize( $file_path ) );
 
+			// phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged, WordPress.WP.AlternativeFunctions.file_system_operations_fopen
 			$file = @fopen( $file_path, 'rb' );
 			if ( ! $file ) {
 				throw new PluginException( 'Could not open language feed file', 500 );
 			}
 
 			// fpassthru might be disabled in some hosts (like Flywheel)
+			// phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged
 			if ( \WC_Facebookcommerce_Utils::is_fpassthru_disabled() || ! @fpassthru( $file ) ) {
+				// phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged
 				$contents = @stream_get_contents( $file );
 				if ( ! $contents ) {
 					throw new PluginException( 'Could not get language feed file contents', 500 );
@@ -450,6 +453,7 @@ class LanguageOverrideFeed {
 				echo $contents; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
 			}
 
+			// phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged, WordPress.WP.AlternativeFunctions.file_system_operations_fclose
 			@fclose( $file );
 
 		} catch ( \Exception $exception ) {
@@ -478,9 +482,9 @@ class LanguageOverrideFeed {
 	 */
 	public function get_language_feed_url( string $language_code ): string {
 		$query_args = array(
-			'wc-api' => static::REQUEST_FEED_ACTION,
+			'wc-api'   => static::REQUEST_FEED_ACTION,
 			'language' => $language_code,
-			'secret' => $this->get_feed_secret(),
+			'secret'   => $this->get_feed_secret(),
 		);
 
 		return add_query_arg( $query_args, home_url( '/' ) );
@@ -517,7 +521,7 @@ class LanguageOverrideFeed {
 		try {
 			// Check if feed file exists and has data before attempting upload
 			$language_feed_writer = new LanguageOverrideFeedWriter( $language_code );
-			$file_path = $language_feed_writer->get_file_path();
+			$file_path            = $language_feed_writer->get_file_path();
 
 			// Skip upload if file doesn't exist
 			if ( ! file_exists( $file_path ) ) {

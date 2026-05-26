@@ -193,7 +193,7 @@ class Tracker {
 
 		// 2. Active localization plugin + version
 		$integration = \WooCommerce\Facebook\Integrations\IntegrationRegistry::get_active_localization_integration();
-		$data['extensions']['facebook-for-woocommerce']['localization-plugin'] = $integration ? $integration->get_plugin_name() : 'none';
+		$data['extensions']['facebook-for-woocommerce']['localization-plugin']         = $integration ? $integration->get_plugin_name() : 'none';
 		$data['extensions']['facebook-for-woocommerce']['localization-plugin-version'] = $integration ? $integration->get_plugin_version() : '';
 
 		// 3. Number of available languages

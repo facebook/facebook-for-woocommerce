@@ -74,13 +74,29 @@ class EventSignalsStateTest extends AbstractWPUnitTestWithOptionIsolationAndSafe
 	// ------------------------------------------------------------------
 
 	/**
-	 * Null-out the static param-builder and cached fbc/fbp on the tracker
-	 * so that Event falls through to cookie / session / query-string paths.
+	 * Install a stub param-builder that returns null for getFbc/getFbp, and
+	 * clear the cached values so Event falls through to cookie / session /
+	 * query-string paths.  Setting param_builder to null is not enough
+	 * because get_param_builder() would recreate it from the SDK.
 	 */
 	private function clear_tracker_caches(): void {
 		$ref = new ReflectionClass( \WC_Facebookcommerce_EventsTracker::class );
 
-		foreach ( array( 'param_builder', 'cached_fbc', 'cached_fbp' ) as $prop ) {
+		// Install a stub that always returns null.
+		$stub = new class() {
+			public function getFbc() {
+				return null;
+			}
+			public function getFbp() {
+				return null;
+			}
+		};
+
+		$pb = $ref->getProperty( 'param_builder' );
+		$pb->setAccessible( true );
+		$pb->setValue( null, $stub );
+
+		foreach ( array( 'cached_fbc', 'cached_fbp' ) as $prop ) {
 			$rp = $ref->getProperty( $prop );
 			$rp->setAccessible( true );
 			$rp->setValue( null, null );

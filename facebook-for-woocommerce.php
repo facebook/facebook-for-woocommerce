@@ -282,6 +282,7 @@ class WC_Facebook_Loader {
 
 		deactivate_plugins( plugin_basename( __FILE__ ) );
 
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
 		if ( isset( $_GET['activate'] ) ) {
 			unset( $_GET['activate'] );
 		}
@@ -297,6 +298,7 @@ class WC_Facebook_Loader {
 	 * @param string $class   The css class for the notice.
 	 * @param string $message The notice message.
 	 */
+	// phpcs:ignore Universal.NamingConventions.NoReservedKeywordParameterNames.classFound
 	private function add_admin_notice( $slug, $class, $message ) {
 
 		$this->notices[ $slug ] = array(
@@ -407,8 +409,8 @@ class WC_Facebook_Loader {
 	private static function set_wc_facebook_svr_flags() {
 
 		if ( ! function_exists( 'update_option' ) ||
-			 ! function_exists( 'get_transient' ) ||
-			 ! function_exists( 'set_transient' ) ) {
+			! function_exists( 'get_transient' ) ||
+			! function_exists( 'set_transient' ) ) {
 			return;
 		}
 
@@ -565,7 +567,7 @@ class WC_Facebook_Loader {
 		$existing_version = $existing->new_version ?? '0.0.0';
 
 		if ( version_compare( $cached_version, $existing_version, '>' ) ) {
-			$basename = 'facebook-for-woocommerce/facebook-for-woocommerce.php';
+			$basename                         = 'facebook-for-woocommerce/facebook-for-woocommerce.php';
 			$transient->response[ $basename ] = self::$compat_cached_entry;
 			unset( $transient->no_update[ $basename ] );
 		}

@@ -97,6 +97,7 @@ class InitializeRestAPI {
 				}
 			} catch ( \Exception $e ) {
 				// Log error but continue with other requests
+				// phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log
 				error_log( 'Meta for WooCommerce: Error creating request class ' . $request_class . ': ' . $e->getMessage() );
 			}
 		}

@@ -24,17 +24,17 @@ class RolloutSwitches {
 	/** @var \WC_Facebookcommerce commerce handler */
 	private \WC_Facebookcommerce $plugin;
 
-	public const SWITCH_ROLLOUT_FEATURES                    = 'rollout_enabled';
-	public const SWITCH_PRODUCT_SETS_SYNC_ENABLED           = 'product_sets_sync_enabled';
-	public const SWITCH_WOO_ALL_PRODUCTS_SYNC_ENABLED       = 'woo_all_products_sync_enabled';
-	public const SWITCH_OFFER_MANAGEMENT_ENABLED            = 'offer_management_enabled';
-	public const SWITCH_MULTIPLE_IMAGES_ENABLED             = 'woo_variant_multiple_images_enabled';
-	public const SWITCH_CONTENT_ID_MIGRATION_ENABLED        = 'enable_woocommerce_content_id_migration';
-	public const SWITCH_LANGUAGE_OVERRIDE_FEED_ENABLED      = 'wooc_language_override_feed';
-	public const SWITCH_ISOLATED_PIXEL_EXECUTION_ENABLED    = 'enable_woocommerce_isolated_pixel_execution';
-	public const SWITCH_COMPAT_CHECK_ENABLED                = 'enable_woocommerce_compat_check';
-	private const SETTINGS_KEY                              = 'wc_facebook_for_woocommerce_rollout_switches';
-	public const CAPI_EVENT_LOGGING_ENABLED                 = 'enable_woocommerce_capi_event_logging';
+	public const SWITCH_ROLLOUT_FEATURES                 = 'rollout_enabled';
+	public const SWITCH_PRODUCT_SETS_SYNC_ENABLED        = 'product_sets_sync_enabled';
+	public const SWITCH_WOO_ALL_PRODUCTS_SYNC_ENABLED    = 'woo_all_products_sync_enabled';
+	public const SWITCH_OFFER_MANAGEMENT_ENABLED         = 'offer_management_enabled';
+	public const SWITCH_MULTIPLE_IMAGES_ENABLED          = 'woo_variant_multiple_images_enabled';
+	public const SWITCH_CONTENT_ID_MIGRATION_ENABLED     = 'enable_woocommerce_content_id_migration';
+	public const SWITCH_LANGUAGE_OVERRIDE_FEED_ENABLED   = 'wooc_language_override_feed';
+	public const SWITCH_ISOLATED_PIXEL_EXECUTION_ENABLED = 'enable_woocommerce_isolated_pixel_execution';
+	public const SWITCH_COMPAT_CHECK_ENABLED             = 'enable_woocommerce_compat_check';
+	private const SETTINGS_KEY                           = 'wc_facebook_for_woocommerce_rollout_switches';
+	public const CAPI_EVENT_LOGGING_ENABLED              = 'enable_woocommerce_capi_event_logging';
 
 	private const ACTIVE_SWITCHES = array(
 		self::SWITCH_ROLLOUT_FEATURES,

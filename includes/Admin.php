@@ -641,6 +641,7 @@ class Admin {
 	 * @param string $product_edit the product metadata that is being edited.
 	 */
 	public function handle_products_sync_bulk_actions( $product_edit ) {
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
 		$sync_mode = isset( $_GET['facebook_bulk_sync_options'] ) ? (string) sanitize_text_field( wp_unslash( $_GET['facebook_bulk_sync_options'] ) ) : null;
 
 		if ( $sync_mode ) {
@@ -1357,15 +1358,15 @@ class Admin {
 		}
 
 		// Get variation meta values
-		$description       = $this->get_product_variation_meta( $variation, \WC_Facebookcommerce_Integration::FB_RICH_TEXT_DESCRIPTION, $parent );
-		$price             = $this->get_product_variation_meta( $variation, \WC_Facebook_Product::FB_PRODUCT_PRICE, $parent );
-		$image_url         = $this->get_product_variation_meta( $variation, \WC_Facebook_Product::FB_PRODUCT_IMAGE, $parent );
-		$image_source      = $variation->get_meta( Products::PRODUCT_IMAGE_SOURCE_META_KEY );
-		$image_urls        = $this->get_product_variation_meta( $variation, \WC_Facebook_Product::FB_PRODUCT_IMAGES, $parent );
-		$video_source      = $variation->get_meta( Products::PRODUCT_VIDEO_SOURCE_META_KEY );
-		$video_urls        = $this->get_product_variation_meta( $variation, \WC_Facebook_Product::FB_PRODUCT_VIDEO, $parent );
-		$custom_video_url  = $variation->get_meta( \WC_Facebook_Product::FB_PRODUCT_VIDEO . '_custom_url' );
-		$fb_mpn            = $this->get_product_variation_meta( $variation, \WC_Facebook_Product::FB_MPN, $parent );
+		$description      = $this->get_product_variation_meta( $variation, \WC_Facebookcommerce_Integration::FB_RICH_TEXT_DESCRIPTION, $parent );
+		$price            = $this->get_product_variation_meta( $variation, \WC_Facebook_Product::FB_PRODUCT_PRICE, $parent );
+		$image_url        = $this->get_product_variation_meta( $variation, \WC_Facebook_Product::FB_PRODUCT_IMAGE, $parent );
+		$image_source     = $variation->get_meta( Products::PRODUCT_IMAGE_SOURCE_META_KEY );
+		$image_urls       = $this->get_product_variation_meta( $variation, \WC_Facebook_Product::FB_PRODUCT_IMAGES, $parent );
+		$video_source     = $variation->get_meta( Products::PRODUCT_VIDEO_SOURCE_META_KEY );
+		$video_urls       = $this->get_product_variation_meta( $variation, \WC_Facebook_Product::FB_PRODUCT_VIDEO, $parent );
+		$custom_video_url = $variation->get_meta( \WC_Facebook_Product::FB_PRODUCT_VIDEO . '_custom_url' );
+		$fb_mpn           = $this->get_product_variation_meta( $variation, \WC_Facebook_Product::FB_MPN, $parent );
 
 		?>
 		<div class="facebook-metabox wc-metabox closed">
@@ -1461,7 +1462,7 @@ class Admin {
 		</p>
 		<div id="fb_product_video_selected_thumbnails_<?php echo esc_attr( $index ); ?>" class="fb-product-video-thumbnails product-video-source-field <?php echo esc_attr( 'show-if-product-video-source-' . Products::PRODUCT_VIDEO_SOURCE_UPLOAD ); ?>" >
 			<?php
-				$attachment_ids = [];
+				$attachment_ids   = [];
 				$video_urls_array = ! empty( $video_urls ) && is_string( $video_urls ) ? explode( ',', $video_urls ) : ( is_array( $video_urls ) ? $video_urls : [] );
 			if ( ! empty( $video_urls_array ) && is_array( $video_urls_array ) ) {
 				foreach ( $video_urls_array as $video_url ) {
@@ -1724,7 +1725,7 @@ class Admin {
 					explode( ',', $video_ids_raw )
 				)
 			);
-			$video_urls = $video_urls_array; // Store as array like simple products do
+			$video_urls       = $video_urls_array; // Store as array like simple products do
 		} else {
 			$video_urls = array();
 		}
@@ -1746,7 +1747,7 @@ class Admin {
 		$image_ids    = isset( $_POST[ $posted_param ] ) ? sanitize_text_field( wp_unslash( $_POST[ $posted_param ] ) ) : '';
 		$posted_param = 'variable_' . \WC_Facebook_Product::FB_PRODUCT_PRICE;
 		// phpcs:ignore WordPress.Security.NonceVerification.Missing -- Nonce verification is handled in save_product_variation_edit_fields method
-		$price        = isset( $_POST[ $posted_param ][ $index ] ) ? wc_format_decimal( wc_clean( wp_unslash( $_POST[ $posted_param ][ $index ] ) ) ) : '';
+		$price = isset( $_POST[ $posted_param ][ $index ] ) ? wc_format_decimal( wc_clean( wp_unslash( $_POST[ $posted_param ][ $index ] ) ) ) : '';
 
 		return array(
 			'description_plain' => $description_plain,

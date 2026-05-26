@@ -49,7 +49,7 @@ trait LanguageFeedManagementTrait {
 	 * @since 3.6.0
 	 */
 	private function store_language_feed_id( string $language_code, string $feed_id ): void {
-		$stored_feeds = get_option( 'wc_facebook_language_feed_ids', [] );
+		$stored_feeds                   = get_option( 'wc_facebook_language_feed_ids', [] );
 		$stored_feeds[ $language_code ] = $feed_id;
 		update_option( 'wc_facebook_language_feed_ids', $stored_feeds );
 	}
@@ -113,7 +113,7 @@ trait LanguageFeedManagementTrait {
 			return '';
 		}
 
-		$fb_language_code = \WooCommerce\Facebook\Locale::convert_to_facebook_language_code( $language_code );
+		$fb_language_code   = \WooCommerce\Facebook\Locale::convert_to_facebook_language_code( $language_code );
 		$expected_feed_name = sprintf( 'WooCommerce Language Override Feed (%s)', strtoupper( $fb_language_code ) );
 
 		foreach ( $feed_nodes as $feed ) {
@@ -157,12 +157,12 @@ trait LanguageFeedManagementTrait {
 			}
 
 			$fb_language_code = \WooCommerce\Facebook\Locale::convert_to_facebook_language_code( $language_code );
-			$override_value = \WooCommerce\Facebook\Locale::convert_to_facebook_override_value( $fb_language_code );
+			$override_value   = \WooCommerce\Facebook\Locale::convert_to_facebook_override_value( $fb_language_code );
 
 			$feed_data = [
-				'name' => self::generate_language_feed_name( $language_code ),
-				'file_name' => self::generate_language_feed_filename( $language_code, true ), // For Facebook API
-				'override_type' => 'language',
+				'name'           => self::generate_language_feed_name( $language_code ),
+				'file_name'      => self::generate_language_feed_filename( $language_code, true ), // For Facebook API
+				'override_type'  => 'language',
 				'override_value' => $override_value,
 			];
 
@@ -213,11 +213,11 @@ trait LanguageFeedManagementTrait {
 	 */
 	public static function generate_language_feed_filename( string $language_code, bool $for_facebook_api = false, bool $is_temp_file = false ): string {
 		$fb_language_code = \WooCommerce\Facebook\Locale::convert_to_facebook_language_code( $language_code );
-		$feed_secret = \WooCommerce\Facebook\Products\Feed::get_feed_secret();
+		$feed_secret      = \WooCommerce\Facebook\Products\Feed::get_feed_secret();
 
 		// Use the same filename generation logic for both local and Facebook API
 		// This matches the main product feed behavior which reuses the same file
-		$prefix = $is_temp_file ? 'temp_' : '';
+		$prefix      = $is_temp_file ? 'temp_' : '';
 		$hash_suffix = wp_hash( $feed_secret );
 
 		return "facebook_language_feed_{$prefix}{$fb_language_code}_{$hash_suffix}.csv";

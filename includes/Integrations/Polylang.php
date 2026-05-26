@@ -259,6 +259,7 @@ class Polylang extends Abstract_Localization_Integration {
 	 * @param int $offset Offset for pagination
 	 * @return array Array of product IDs from the default language
 	 */
+	// phpcs:ignore Generic.CodeAnalysis.UselessOverridingMethod.Found
 	public function get_products_from_default_language( int $limit = 10, int $offset = 0 ): array {
 		// Use parent implementation with template method pattern
 		return parent::get_products_from_default_language( $limit, $offset );
@@ -279,9 +280,9 @@ class Polylang extends Abstract_Localization_Integration {
 		}
 
 		$details = [
-			'product_id' => $product_id,
-			'default_language' => $this->get_default_language(),
-			'translations' => [],
+			'product_id'         => $product_id,
+			'default_language'   => $this->get_default_language(),
+			'translations'       => [],
 			'translation_status' => [],
 		];
 
@@ -294,12 +295,12 @@ class Polylang extends Abstract_Localization_Integration {
 		$locale_to_slug_map = [];
 		$slug_to_locale_map = [];
 		foreach ( $polylang_languages as $language ) {
-			$locale = $language->locale ?? $language->slug;
-			$locale_to_slug_map[ $locale ] = $language->slug;
+			$locale                                = $language->locale ?? $language->slug;
+			$locale_to_slug_map[ $locale ]         = $language->slug;
 			$slug_to_locale_map[ $language->slug ] = $locale;
 		}
 
-		$languages = $this->get_available_languages(); // This now returns full locales
+		$languages        = $this->get_available_languages(); // This now returns full locales
 		$default_language = $this->get_default_language(); // This now returns full locale
 
 		foreach ( $languages as $full_locale ) {
@@ -397,7 +398,7 @@ class Polylang extends Abstract_Localization_Integration {
 
 			// Set languages for both products
 			$default_language = $this->get_default_language();
-			$default_slug = $this->get_polylang_slug_for_locale( $default_language );
+			$default_slug     = $this->get_polylang_slug_for_locale( $default_language );
 
 			// Set language assignments
 			if ( $default_slug ) {
@@ -408,7 +409,7 @@ class Polylang extends Abstract_Localization_Integration {
 			// Create translation relationship
 			$translations_array = [
 				$default_slug => $original_product_id,
-				$target_slug => $translated_product_id,
+				$target_slug  => $translated_product_id,
 			];
 
 			pll_save_post_translations( $translations_array );
@@ -491,7 +492,7 @@ class Polylang extends Abstract_Localization_Integration {
 				'is_pro_version' => $this->is_pro_version(),
 			];
 
-			$data['languages'] = $this->get_available_languages();
+			$data['languages']        = $this->get_available_languages();
 			$data['default_language'] = $this->get_default_language();
 		}
 

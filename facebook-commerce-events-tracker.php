@@ -189,7 +189,6 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 							FacebookSignalsState::set_attribution_data( 'fbc_domain', $cookie->domain );
 						}
 					}
-
 				} else {
 					$cookie_to_set = $param_builder->getCookiesToSet();
 
@@ -205,7 +204,6 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 						}
 					}
 				}
-
 			} catch ( \Exception $exception ) {
 				Logger::log(
 					'Error setting up server side CAPI Parameter Builder: ' . $exception->getMessage(),

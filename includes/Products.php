@@ -644,7 +644,7 @@ class Products {
 			$gender = $product->get_meta( self::GENDER_META_KEY );
 		}
 
-		if ( ! in_array( $gender, array( 'female', 'male', 'unisex' ) ) ) {
+		if ( ! in_array( $gender, array( 'female', 'male', 'unisex' ), true ) ) {
 			$gender = 'unisex';
 		}
 
@@ -725,7 +725,7 @@ class Products {
 			throw new PluginException( "The provided attribute name $attribute_name does not match any of the available attributes for the product {$product->get_name()}" );
 		}
 
-		if ( self::get_product_color_attribute( $product ) !== $attribute_name && in_array( $attribute_name, self::get_distinct_product_attributes( $product ) ) ) {
+		if ( self::get_product_color_attribute( $product ) !== $attribute_name && in_array( $attribute_name, self::get_distinct_product_attributes( $product ), true ) ) {
 			throw new PluginException( "The provided attribute $attribute_name is already used for the product {$product->get_name()}" );
 		}
 
@@ -821,7 +821,7 @@ class Products {
 			throw new PluginException( "The provided attribute name $attribute_name does not match any of the available attributes for the product {$product->get_name()}" );
 		}
 
-		if ( self::get_product_size_attribute( $product ) !== $attribute_name && in_array( $attribute_name, self::get_distinct_product_attributes( $product ) ) ) {
+		if ( self::get_product_size_attribute( $product ) !== $attribute_name && in_array( $attribute_name, self::get_distinct_product_attributes( $product ), true ) ) {
 			throw new PluginException( "The provided attribute $attribute_name is already used for the product {$product->get_name()}" );
 		}
 
@@ -915,7 +915,7 @@ class Products {
 		if ( ! empty( $attribute_name ) && ! self::product_has_attribute( $product, $attribute_name ) ) {
 			throw new PluginException( "The provided attribute name $attribute_name does not match any of the available attributes for the product {$product->get_name()}" );
 		}
-		if ( self::get_product_pattern_attribute( $product ) !== $attribute_name && in_array( $attribute_name, self::get_distinct_product_attributes( $product ) ) ) {
+		if ( self::get_product_pattern_attribute( $product ) !== $attribute_name && in_array( $attribute_name, self::get_distinct_product_attributes( $product ), true ) ) {
 			throw new PluginException( "The provided attribute $attribute_name is already used for the product {$product->get_name()}" );
 		}
 		$product->update_meta_data( self::PATTERN_ATTRIBUTE_META_KEY, $attribute_name );
@@ -1137,7 +1137,9 @@ class Products {
 		$products = wc_get_products(
 			array(
 				'limit'      => 1,
+				// phpcs:ignore WordPress.DB.SlowDBQuery
 				'meta_key'   => \WC_Facebookcommerce_Integration::FB_PRODUCT_ITEM_ID,
+				// phpcs:ignore WordPress.DB.SlowDBQuery
 				'meta_value' => $fb_product_id,
 			)
 		);
@@ -1151,7 +1153,9 @@ class Products {
 			$products = wc_get_products(
 				array(
 					'limit'      => 1,
+					// phpcs:ignore WordPress.DB.SlowDBQuery
 					'meta_key'   => \WC_Facebookcommerce_Integration::FB_PRODUCT_GROUP_ID,
+					// phpcs:ignore WordPress.DB.SlowDBQuery
 					'meta_value' => $fb_product_id,
 				)
 			);

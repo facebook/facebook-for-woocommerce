@@ -64,6 +64,7 @@ class Heartbeat {
 	 * Add hooks.
 	 */
 	public function init() {
+		// phpcs:ignore WordPress.WP.CronInterval.CronSchedulesInterval
 		add_filter( 'cron_schedules', array( $this, 'five_minutes_cron_schedules' ) );
 		add_action( 'init', array( $this, 'schedule_cron_events' ) );
 		add_action( $this->hourly_cron_name, array( $this, 'schedule_hourly_action' ) );

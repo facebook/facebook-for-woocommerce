@@ -16,6 +16,53 @@ use WP_UnitTestCase;
 class RequestTest extends WP_UnitTestCase {
 
 	/**
+	 * Clear the static caches on the tracker before each test so that
+	 * param_builder / cached_fbc / cached_fbp from a previous test
+	 * do not leak into the next one.
+	 */
+	public function setUp(): void {
+		parent::setUp();
+		$this->clear_tracker_caches();
+	}
+
+	public function tearDown(): void {
+		$this->clear_tracker_caches();
+		parent::tearDown();
+	}
+
+	private function clear_tracker_caches(): void {
+		if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) {
+			return;
+		}
+		$ref = new \ReflectionClass( 'WC_Facebookcommerce_EventsTracker' );
+
+		// Install a stub that returns null — setting param_builder to null
+		// causes get_param_builder() to recreate it from the SDK.
+		$stub = new class() {
+			public function getFbc() {
+				return null;
+			}
+			public function getFbp() {
+				return null;
+			}
+		};
+
+		if ( $ref->hasProperty( 'param_builder' ) ) {
+			$prop = $ref->getProperty( 'param_builder' );
+			$prop->setAccessible( true );
+			$prop->setValue( null, $stub );
+		}
+
+		foreach ( array( 'cached_fbc', 'cached_fbp' ) as $prop_name ) {
+			if ( $ref->hasProperty( $prop_name ) ) {
+				$prop = $ref->getProperty( $prop_name );
+				$prop->setAccessible( true );
+				$prop->setValue( null, null );
+			}
+		}
+	}
+
+	/**
 	 * Test that Request properly formats data with fbc and fbp.
 	 */
 	public function test_request_data_contains_fbc_fbp() {
@@ -357,8 +404,8 @@ class RequestTest extends WP_UnitTestCase {
 	 * Data provider for fbc/fbp from cookie and session tests.
 	 *
 	 * Tests the priority order for fbc/fbp values from multiple sources:
-	 * - For fbc: cookie > session > param_builder > request (fbclid)
-	 * - For fbp: cookie > session > param_builder
+	 * - For fbc: param_builder > fbclid (new click) > cookie > session
+	 * - For fbp: param_builder > cookie > session
 	 *
 	 * @return array Test cases with format: [field_name, cookie_value, session_value, parambuilder_value, request_value, expected_value]
 	 */
@@ -413,7 +460,7 @@ class RequestTest extends WP_UnitTestCase {
 				null,
 				'fb.1.1234567890.ParamBuilderFBP',
 			),
-			// Test priority: cookie > session
+			// Test priority: cookie > session (when no param_builder)
 			'fbc cookie takes priority over session' => array(
 				'fbc',
 				'fb.1.1234567890.CookieFBC',
@@ -430,56 +477,56 @@ class RequestTest extends WP_UnitTestCase {
 				null,
 				'fb.1.1234567890.CookieFBP',
 			),
-			// Test priority: cookie > param_builder
-			'fbc cookie takes priority over param_builder' => array(
+			// Test priority: param_builder > cookie
+			'fbc param_builder takes priority over cookie' => array(
 				'fbc',
 				'fb.1.1234567890.CookieFBC',
 				null,
 				'fb.1.1234567890.ParamBuilderFBC',
 				null,
-				'fb.1.1234567890.CookieFBC',
+				'fb.1.1234567890.ParamBuilderFBC',
 			),
-			'fbp cookie takes priority over param_builder' => array(
+			'fbp param_builder takes priority over cookie' => array(
 				'fbp',
 				'fb.1.1234567890.CookieFBP',
 				null,
 				'fb.1.1234567890.ParamBuilderFBP',
 				null,
-				'fb.1.1234567890.CookieFBP',
+				'fb.1.1234567890.ParamBuilderFBP',
 			),
-			// Test priority: session > param_builder
-			'fbc session takes priority over param_builder' => array(
+			// Test priority: param_builder > session
+			'fbc param_builder takes priority over session' => array(
 				'fbc',
 				null,
 				'fb.1.1234567890.SessionFBC',
 				'fb.1.1234567890.ParamBuilderFBC',
 				null,
-				'fb.1.1234567890.SessionFBC',
+				'fb.1.1234567890.ParamBuilderFBC',
 			),
-			'fbp session takes priority over param_builder' => array(
+			'fbp param_builder takes priority over session' => array(
 				'fbp',
 				null,
 				'fb.1.1234567890.SessionFBP',
 				'fb.1.1234567890.ParamBuilderFBP',
 				null,
-				'fb.1.1234567890.SessionFBP',
+				'fb.1.1234567890.ParamBuilderFBP',
 			),
-			// Test all sources present: cookie should win
-			'fbc cookie takes priority over all other sources' => array(
+			// Test all sources present: param_builder should win
+			'fbc param_builder takes priority over all other sources' => array(
 				'fbc',
 				'fb.1.1234567890.CookieFBC',
 				'fb.1.1234567890.SessionFBC',
 				'fb.1.1234567890.ParamBuilderFBC',
 				null,
-				'fb.1.1234567890.CookieFBC',
+				'fb.1.1234567890.ParamBuilderFBC',
 			),
-			'fbp cookie takes priority over all other sources' => array(
+			'fbp param_builder takes priority over all other sources' => array(
 				'fbp',
 				'fb.1.1234567890.CookieFBP',
 				'fb.1.1234567890.SessionFBP',
 				'fb.1.1234567890.ParamBuilderFBP',
 				null,
-				'fb.1.1234567890.CookieFBP',
+				'fb.1.1234567890.ParamBuilderFBP',
 			),
 		);
 	}
@@ -488,13 +535,16 @@ class RequestTest extends WP_UnitTestCase {
 	 * Test that fbc/fbp values from cookies, sessions, and param_builder are properly handled with correct priority.
 	 *
 	 * This test verifies the priority order for fbc/fbp values:
-	 * - For fbc: cookie > session > param_builder > request (fbclid)
-	 * - For fbp: cookie > session > param_builder
+	 * - For fbc: param_builder > fbclid (new click) > cookie > session
+	 * - For fbp: param_builder > cookie > session
 	 *
 	 * @dataProvider fbc_fbp_sources_provider
 	 */
 	public function test_fbc_fbp_from_cookie_and_session( $field_name, $cookie_value, $session_value, $parambuilder_value, $request_value, $expected_value ) {
 		$pixel_id = 'test_pixel_id_123';
+
+		// Reset caches so previous tests don't leak.
+		$this->clear_tracker_caches();
 
 		// Set up cookie value if provided
 		if ( null !== $cookie_value ) {
@@ -542,9 +592,9 @@ class RequestTest extends WP_UnitTestCase {
 
 		// Set up request value if provided (for fbc from fbclid)
 		if ( null !== $request_value && 'fbc' === $field_name ) {
-			$_REQUEST['fbclid'] = $request_value;
+			$_GET['fbclid'] = $request_value;
 		} else {
-			unset( $_REQUEST['fbclid'] );
+			unset( $_GET['fbclid'] );
 		}
 
 		$event = new Event( array( 'event_name' => 'TestEvent' ) );
@@ -560,11 +610,12 @@ class RequestTest extends WP_UnitTestCase {
 		// Clean up
 		unset( $_COOKIE[ '_' . $field_name ] );
 		unset( $_SESSION[ '_' . $field_name ] );
-		unset( $_REQUEST['fbclid'] );
+		unset( $_GET['fbclid'] );
 
 		if ( isset( $prop ) ) {
 			$prop->setValue( null, $original_param_builder );
 		}
+		$this->clear_tracker_caches();
 	}
 
 	/**
@@ -596,6 +647,8 @@ class RequestTest extends WP_UnitTestCase {
 	 */
 	public function test_param_builder_values( $field_name, $test_value, $getter_method, $additional_methods ) {
 		$pixel_id = 'test_pixel_id_123';
+
+		$this->clear_tracker_caches();
 
 		$mock_param_builder = new class( $test_value, $getter_method, $additional_methods ) {
 			private $value;
@@ -653,46 +706,28 @@ class RequestTest extends WP_UnitTestCase {
 	}
 
 	public function test_fbc_from_fbclid() {
-		$test_fbc = 'fb.1.1234567890.Test';
-		$pixel_id = 'test_pixel_id_123';
+		$test_fbclid = 'AbCdEfGhIjKlMnOp';
+		$pixel_id    = 'test_pixel_id_123';
 
-		// Case: click_id existed in request parameter
-		$_REQUEST['fbclid'] = $test_fbc;
+		$this->clear_tracker_caches();
 
-		// Ensure param_builder doesn't override the fbclid-derived fbc
-		$original_param_builder = null;
-		if ( class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) {
-			$ref = new \ReflectionClass( 'WC_Facebookcommerce_EventsTracker' );
-			if ( $ref->hasProperty( 'param_builder' ) ) {
-				$prop = $ref->getProperty( 'param_builder' );
-				$prop->setAccessible( true );
-				$original_param_builder = $prop->getValue();
-				$prop->setValue( null, null );
-			}
-		}
+		$_GET['fbclid'] = $test_fbclid;
 
-		if ( isset( $_COOKIE['_fbc'] ) ) {
-			unset( $_COOKIE['_fbc'] );
-		}
-		if ( isset( $_SESSION['_fbc'] ) ) {
-			unset( $_SESSION['_fbc'] );
-		}
+		unset( $_COOKIE['_fbc'] );
+		unset( $_SESSION['_fbc'] );
 
-		$event = new Event( array( 'event_name' => 'TestEvent' ) );
-		$request = new Request( $pixel_id, array( $event ) );
-		$data = $request->get_data();
+		$event     = new Event( array( 'event_name' => 'TestEvent' ) );
+		$request   = new Request( $pixel_id, array( $event ) );
+		$data      = $request->get_data();
 
 		$this->assertArrayHasKey( 'user_data', $data['data'][0] );
 		$this->assertArrayHasKey( 'fbc', $data['data'][0]['user_data'] );
 		$fbc_value = $data['data'][0]['user_data']['fbc'];
-		$this->assertMatchesRegularExpression('/^fb\.1\.\d+\.' . preg_quote( $test_fbc, '/' ) . '$/', $fbc_value );
+		$this->assertMatchesRegularExpression( '/^fb\.1\.\d+\.' . preg_quote( $test_fbclid, '/' ) . '$/', $fbc_value );
 		$this->assertArrayNotHasKey( 'click_id', $data['data'][0]['user_data'] );
 		$this->assertArrayNotHasKey( 'browser_id', $data['data'][0]['user_data'] );
 
-		unset( $_REQUEST['fbclid'] );
-		if ( isset( $prop ) ) {
-			$prop->setValue( null, $original_param_builder );
-		}
+		unset( $_GET['fbclid'] );
 	}
 
 }

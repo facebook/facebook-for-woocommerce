@@ -26,7 +26,7 @@ use WooCommerce\Facebook\FBSignedData\JWTCodec;
  * between signature and key due to key rotation.
  */
 class RequestVerification {
-	const KEY_NAME_FIELD                    = 'key_name';
+	const KEY_NAME_FIELD                      = 'key_name';
 	const PUBLIC_KEY_FETCH_COOLDOWN_TRANSIENT = '_wc_facebook_for_woocommerce_public_key_fetch_cooldown';
 	const PUBLIC_KEY_FETCH_COOLDOWN_SECONDS   = 30;
 

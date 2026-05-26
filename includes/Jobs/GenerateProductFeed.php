@@ -99,7 +99,7 @@ class GenerateProductFeed extends AbstractChainedJob {
 		);
 
 		// Add language parameter to prevent Polylang/WPML from filtering by current language context
-		$integration = \WooCommerce\Facebook\Integrations\IntegrationRegistry::get_active_localization_integration();
+		$integration              = \WooCommerce\Facebook\Integrations\IntegrationRegistry::get_active_localization_integration();
 		$is_language_feed_enabled = facebook_for_woocommerce()->get_integration()->is_language_override_feed_generation_enabled();
 
 		if ( $integration && $is_language_feed_enabled ) {
@@ -115,11 +115,13 @@ class GenerateProductFeed extends AbstractChainedJob {
 			$query_args['lang'] = 'all';
 		}
 
-		$products       = wc_get_products( $query_args );
-		$feed_handler   = new \WC_Facebook_Product_Feed();
+		$products     = wc_get_products( $query_args );
+		$feed_handler = new \WC_Facebook_Product_Feed();
+		// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fopen
 		$temp_feed_file = fopen( $feed_handler->get_temp_file_path(), 'a' );
 		$feed_handler->write_products_feed_to_temp_file( $products, $temp_feed_file );
 		if ( is_resource( $temp_feed_file ) ) {
+			// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fclose
 			fclose( $temp_feed_file );
 		}
 		facebook_for_woocommerce()->get_tracker()->increment_batch_generation_time( microtime( true ) - $start_time );

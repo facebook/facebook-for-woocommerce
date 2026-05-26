@@ -29,17 +29,17 @@ class LanguageFeedData {
 	 */
 	public function get_available_languages(): array {
 		$all_languages = [];
-		$integrations = IntegrationRegistry::get_all_localization_integrations();
+		$integrations  = IntegrationRegistry::get_all_localization_integrations();
 
 		foreach ( $integrations as $integration ) {
 			if ( $integration->is_plugin_active() ) {
-				$languages = $integration->get_available_languages();
+				$languages     = $integration->get_available_languages();
 				$all_languages = array_merge( $all_languages, $languages );
 			}
 		}
 
 		// Remove duplicates and default language
-		$all_languages = array_unique( $all_languages );
+		$all_languages    = array_unique( $all_languages );
 		$default_language = $this->get_default_language();
 
 		if ( $default_language ) {
@@ -88,11 +88,11 @@ class LanguageFeedData {
 
 		// Fallback: get regular products if no localization plugin is active
 		$args = [
-			'post_type' => 'product',
-			'post_status' => 'publish',
+			'post_type'      => 'product',
+			'post_status'    => 'publish',
 			'posts_per_page' => $limit,
-			'offset' => $offset,
-			'fields' => 'ids',
+			'offset'         => $offset,
+			'fields'         => 'ids',
 		];
 
 		return get_posts( $args );
@@ -115,11 +115,11 @@ class LanguageFeedData {
 
 		// Fallback: return basic structure if no localization plugin is active
 		return [
-			'product_id' => $product_id,
-			'default_language' => null,
-			'translations' => [],
+			'product_id'         => $product_id,
+			'default_language'   => null,
+			'translations'       => [],
 			'translation_status' => [],
-			'translated_fields' => [],
+			'translated_fields'  => [],
 		];
 	}
 
@@ -139,14 +139,14 @@ class LanguageFeedData {
 			return [];
 		}
 
-		$product_ids = $this->get_products_from_default_language( $limit, 0 );
+		$product_ids           = $this->get_products_from_default_language( $limit, 0 );
 		$all_translated_fields = [];
 
 		foreach ( $product_ids as $product_id ) {
 			$details = $this->get_product_translation_details( $product_id );
 
 			if ( isset( $details['translated_fields'][ $language_code ] ) ) {
-				$translated_fields = $details['translated_fields'][ $language_code ];
+				$translated_fields     = $details['translated_fields'][ $language_code ];
 				$all_translated_fields = array_merge( $all_translated_fields, $translated_fields );
 			}
 		}
@@ -163,14 +163,14 @@ class LanguageFeedData {
 	private function map_translated_fields_to_csv_columns( array $translated_fields ): array {
 		// Mapping from WPML field names to Facebook CSV column names
 		$field_mapping = [
-			'name' => 'title',
-			'description' => 'description',
-			'short_description' => 'short_description',
+			'name'                  => 'title',
+			'description'           => 'description',
+			'short_description'     => 'short_description',
 			'rich_text_description' => 'rich_text_description',
-			'image_id' => 'image_link',
-			'gallery_image_ids' => 'additional_image_link',
-			'link' => 'link',
-			'video' => 'video',
+			'image_id'              => 'image_link',
+			'gallery_image_ids'     => 'additional_image_link',
+			'link'                  => 'link',
+			'video'                 => 'video',
 		];
 
 		$csv_columns = [];
@@ -209,18 +209,18 @@ class LanguageFeedData {
 	public function get_language_csv_data( string $language_code, int $limit = 100, int $offset = 0 ): array {
 		if ( ! IntegrationRegistry::has_active_localization_plugin() ) {
 			return [
-				'data' => [],
-				'columns' => [ 'id', 'override' ],
+				'data'              => [],
+				'columns'           => [ 'id', 'override' ],
 				'translated_fields' => [],
 			];
 		}
 
 		// First, determine which fields are translated for this language
 		$translated_fields = $this->get_translated_fields_for_language( $language_code, $limit );
-		$csv_columns = $this->map_translated_fields_to_csv_columns( $translated_fields );
+		$csv_columns       = $this->map_translated_fields_to_csv_columns( $translated_fields );
 
 		$product_ids = $this->get_products_from_default_language( $limit, $offset );
-		$csv_data = [];
+		$csv_data    = [];
 
 		foreach ( $product_ids as $product_id ) {
 			// Skip products that don't pass Facebook sync validation
@@ -243,7 +243,7 @@ class LanguageFeedData {
 				continue;
 			}
 
-			$translated_id = $details['translations'][ $language_code ];
+			$translated_id             = $details['translations'][ $language_code ];
 			$product_translated_fields = $details['translated_fields'][ $language_code ] ?? [];
 
 			// Only include products that have actual translated content
@@ -261,7 +261,7 @@ class LanguageFeedData {
 				require_once WC_FACEBOOKCOMMERCE_PLUGIN_DIR . '/includes/fbproduct.php';
 			}
 
-			$original_fb_product = new \WC_Facebook_Product( $original_product );
+			$original_fb_product   = new \WC_Facebook_Product( $original_product );
 			$translated_fb_product = new \WC_Facebook_Product( $translated_product );
 
 			// Determine the ID based on product type (matching catalog backend logic):
@@ -324,7 +324,7 @@ class LanguageFeedData {
 
 				// Start with required columns
 				$csv_row = [
-					'id' => $product_id,
+					'id'       => $product_id,
 					'override' => \WooCommerce\Facebook\Locale::convert_to_facebook_language_code( $language_code ),
 				];
 
@@ -355,8 +355,8 @@ class LanguageFeedData {
 		}
 
 		return [
-			'data' => $csv_data,
-			'columns' => array_merge( [ 'id', 'override' ], $csv_columns ),
+			'data'              => $csv_data,
+			'columns'           => array_merge( [ 'id', 'override' ], $csv_columns ),
 			'translated_fields' => $translated_fields,
 		];
 	}
@@ -371,6 +371,7 @@ class LanguageFeedData {
 	 * @param string               $language_code Target language code for permalink translation
 	 * @return string Field value with proper validation and cleaning
 	 */
+	// phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter.FoundAfterLastUsed
 	private function get_translated_field_value(
 		string $column,
 		\WC_Facebook_Product $original_fb_product,
@@ -400,7 +401,7 @@ class LanguageFeedData {
 				if ( in_array( 'description', $product_translated_fields, true ) ) {
 					// Use get_fb_description() to match main feed behavior (strips HTML tags)
 					$description = $translated_fb_product->get_fb_description();
-					$value = \WooCommerce\Facebook\Framework\Helper::str_truncate(
+					$value       = \WooCommerce\Facebook\Framework\Helper::str_truncate(
 						$description,
 						\WC_Facebook_Product::MAX_DESCRIPTION_LENGTH
 					);
@@ -410,7 +411,7 @@ class LanguageFeedData {
 			case 'short_description':
 				if ( in_array( 'short_description', $product_translated_fields, true ) ) {
 					$short_description = $translated_fb_product->get_fb_short_description();
-					$value = \WooCommerce\Facebook\Framework\Helper::str_truncate(
+					$value             = \WooCommerce\Facebook\Framework\Helper::str_truncate(
 						$short_description,
 						\WC_Facebook_Product::MAX_DESCRIPTION_LENGTH
 					);
@@ -420,7 +421,7 @@ class LanguageFeedData {
 			case 'rich_text_description':
 				if ( in_array( 'rich_text_description', $product_translated_fields, true ) ) {
 					$rich_text_description = $translated_fb_product->get_rich_text_description();
-					$value = \WooCommerce\Facebook\Framework\Helper::str_truncate(
+					$value                 = \WooCommerce\Facebook\Framework\Helper::str_truncate(
 						$rich_text_description,
 						\WC_Facebook_Product::MAX_DESCRIPTION_LENGTH
 					);
@@ -430,15 +431,15 @@ class LanguageFeedData {
 			case 'image_link':
 				if ( in_array( 'image_id', $product_translated_fields, true ) ) {
 					$image_urls = $translated_fb_product->get_all_image_urls();
-					$value = $image_urls[0] ?? '';
+					$value      = $image_urls[0] ?? '';
 				}
 				break;
 
 			case 'additional_image_link':
 				if ( in_array( 'gallery_image_ids', $product_translated_fields, true ) ) {
-					$image_urls = $translated_fb_product->get_all_image_urls();
+					$image_urls        = $translated_fb_product->get_all_image_urls();
 					$additional_images = array_slice( $image_urls, 1, 5 ); // Max 5 additional images
-					$value = ! empty( $additional_images ) ? implode( ',', $additional_images ) : '';
+					$value             = ! empty( $additional_images ) ? implode( ',', $additional_images ) : '';
 				}
 				break;
 
