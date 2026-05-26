@@ -637,6 +637,10 @@ class RequestTest extends WP_UnitTestCase {
 				public function getFbp() {
 					return $this->field === 'fbp' ? $this->value : null;
 				}
+
+				public function getCookiesToSet() {
+					return array();
+				}
 			};
 
 			$ref = new \ReflectionClass( 'WC_Facebookcommerce_EventsTracker' );
@@ -717,6 +721,10 @@ class RequestTest extends WP_UnitTestCase {
 				$this->value = $value;
 				$this->getter = $getter;
 				$this->methods = $methods;
+			}
+
+			public function getCookiesToSet() {
+				return array();
 			}
 
 			public function __call( $name, $arguments ) {
