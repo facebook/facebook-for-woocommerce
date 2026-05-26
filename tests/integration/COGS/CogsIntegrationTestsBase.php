@@ -69,12 +69,20 @@ abstract class CogsIntegrationTestsBase extends IntegrationTestCase {
 			include_once ABSPATH . 'wp-admin/includes/class-wp-upgrader.php';
 			require_once ABSPATH . 'wp-admin/includes/class-plugin-upgrader.php';
 			require_once ABSPATH . 'wp-admin/includes/plugin.php';
-			
+
 			$response = wp_remote_get( $plugin_download_url );
-			$plugin_zip = wp_upload_bits( $plugin_slug . '.zip', null, wp_remote_retrieve_body( $response ) );
-			$upgrader = new \Plugin_Upgrader();
-			$result = $upgrader->install( $plugin_zip['file'] );
-			
+
+			$this->assertFalse( is_wp_error( $response ), 'Plugin download failed: ' . ( is_wp_error( $response ) ? $response->get_error_message() : '' ) );
+
+			$body = wp_remote_retrieve_body( $response );
+			$code = wp_remote_retrieve_response_code( $response );
+
+			$this->assertNotEmpty( $body, "Plugin download returned empty body (HTTP {$code}) from: {$plugin_download_url}" );
+
+			$plugin_zip = wp_upload_bits( $plugin_slug . '.zip', null, $body );
+			$upgrader   = new \Plugin_Upgrader();
+			$result     = $upgrader->install( $plugin_zip['file'] );
+
 			if ( is_wp_error( $result ) ) {
 				throw new \Exception('Cannot install/enable WPFactory plugin');
 			}
