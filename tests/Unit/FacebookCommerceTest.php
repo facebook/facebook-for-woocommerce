@@ -554,7 +554,10 @@ class FacebookCommerceTest extends \WooCommerce\Facebook\Tests\AbstractWPUnitTes
 	 */
 	public function test_wp_all_import_compat_displays_message() {
 		if ( ! class_exists( 'PMXI_Import_Record' ) ) {
-			$this->markTestSkipped( 'PMXI_Import_Record class not available' );
+			// Stub the WP All Import class so the method under test can be exercised
+			// without requiring the full plugin.
+			// phpcs:ignore
+			eval( 'class PMXI_Import_Record { public $options = array( "custom_type" => "product" ); private $id = null; public function getById( $id ) { $this->id = $id; return $this; } public function isEmpty() { return false; } }' );
 		}
 
 		$this->facebook_for_woocommerce->expects( $this->once() )

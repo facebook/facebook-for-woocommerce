@@ -612,6 +612,9 @@ class RequestTest extends WP_UnitTestCase {
 		}
 
 		// Set up session value if provided
+		if ( ! isset( $_SESSION ) ) {
+			$_SESSION = array();
+		}
 		if ( null !== $session_value ) {
 			$_SESSION[ '_' . $field_name ] = $session_value;
 		} else {
@@ -669,9 +672,11 @@ class RequestTest extends WP_UnitTestCase {
 		$this->assertArrayNotHasKey( 'click_id', $data['data'][0]['user_data'] );
 		$this->assertArrayNotHasKey( 'browser_id', $data['data'][0]['user_data'] );
 
-		// Clean up
+		// Clean up.
 		unset( $_COOKIE[ '_' . $field_name ] );
-		unset( $_SESSION[ '_' . $field_name ] );
+		if ( isset( $_SESSION ) ) {
+			unset( $_SESSION[ '_' . $field_name ] );
+		}
 		unset( $_GET['fbclid'] );
 
 		if ( isset( $prop ) ) {
