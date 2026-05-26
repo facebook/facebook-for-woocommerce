@@ -20,24 +20,32 @@ class RequestTest extends WP_UnitTestCase {
 	 * param_builder / cached_fbc / cached_fbp from a previous test
 	 * do not leak into the next one.
 	 */
+	/** @var mixed Original param_builder to restore after tests. */
+	private $original_param_builder;
+
 	public function setUp(): void {
 		parent::setUp();
-		$this->clear_tracker_caches();
+		$this->original_param_builder = $this->install_null_param_builder();
 	}
 
 	public function tearDown(): void {
-		$this->clear_tracker_caches();
+		$this->restore_tracker_state( $this->original_param_builder );
 		parent::tearDown();
 	}
 
-	private function clear_tracker_caches(): void {
+	/**
+	 * Replaces the static param_builder with a stub that returns null for
+	 * getFbc/getFbp (and getCookiesToSet) and clears cached values so Event
+	 * falls through to cookie/session/query-string paths.
+	 *
+	 * @return mixed The original param_builder value to restore later.
+	 */
+	private function install_null_param_builder() {
 		if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) {
-			return;
+			return null;
 		}
 		$ref = new \ReflectionClass( 'WC_Facebookcommerce_EventsTracker' );
 
-		// Install a stub that returns null — setting param_builder to null
-		// causes get_param_builder() to recreate it from the SDK.
 		$stub = new class() {
 			public function getFbc() {
 				return null;
@@ -45,14 +53,64 @@ class RequestTest extends WP_UnitTestCase {
 			public function getFbp() {
 				return null;
 			}
+			public function getCookiesToSet() {
+				return array();
+			}
 		};
+
+		$original = null;
+		if ( $ref->hasProperty( 'param_builder' ) ) {
+			$prop = $ref->getProperty( 'param_builder' );
+			$prop->setAccessible( true );
+			$original = $prop->getValue();
+			$prop->setValue( null, $stub );
+		}
+
+		foreach ( array( 'cached_fbc', 'cached_fbp' ) as $prop_name ) {
+			if ( $ref->hasProperty( $prop_name ) ) {
+				$prop = $ref->getProperty( $prop_name );
+				$prop->setAccessible( true );
+				$prop->setValue( null, null );
+			}
+		}
+
+		return $original;
+	}
+
+	/**
+	 * Restores the original param_builder and clears caches so subsequent
+	 * test classes are not affected by the stub.
+	 */
+	private function restore_tracker_state( $original_param_builder ): void {
+		if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) {
+			return;
+		}
+		$ref = new \ReflectionClass( 'WC_Facebookcommerce_EventsTracker' );
 
 		if ( $ref->hasProperty( 'param_builder' ) ) {
 			$prop = $ref->getProperty( 'param_builder' );
 			$prop->setAccessible( true );
-			$prop->setValue( null, $stub );
+			$prop->setValue( null, $original_param_builder );
 		}
 
+		foreach ( array( 'cached_fbc', 'cached_fbp' ) as $prop_name ) {
+			if ( $ref->hasProperty( $prop_name ) ) {
+				$prop = $ref->getProperty( $prop_name );
+				$prop->setAccessible( true );
+				$prop->setValue( null, null );
+			}
+		}
+	}
+
+	/**
+	 * Clears only cached_fbc/cached_fbp so the stub param_builder is
+	 * re-queried on the next Event construction.
+	 */
+	private function reset_cached_values(): void {
+		if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) {
+			return;
+		}
+		$ref = new \ReflectionClass( 'WC_Facebookcommerce_EventsTracker' );
 		foreach ( array( 'cached_fbc', 'cached_fbp' ) as $prop_name ) {
 			if ( $ref->hasProperty( $prop_name ) ) {
 				$prop = $ref->getProperty( $prop_name );
@@ -544,7 +602,7 @@ class RequestTest extends WP_UnitTestCase {
 		$pixel_id = 'test_pixel_id_123';
 
 		// Reset caches so previous tests don't leak.
-		$this->clear_tracker_caches();
+		$this->reset_cached_values();
 
 		// Set up cookie value if provided
 		if ( null !== $cookie_value ) {
@@ -615,7 +673,7 @@ class RequestTest extends WP_UnitTestCase {
 		if ( isset( $prop ) ) {
 			$prop->setValue( null, $original_param_builder );
 		}
-		$this->clear_tracker_caches();
+		$this->reset_cached_values();
 	}
 
 	/**
@@ -648,7 +706,7 @@ class RequestTest extends WP_UnitTestCase {
 	public function test_param_builder_values( $field_name, $test_value, $getter_method, $additional_methods ) {
 		$pixel_id = 'test_pixel_id_123';
 
-		$this->clear_tracker_caches();
+		$this->reset_cached_values();
 
 		$mock_param_builder = new class( $test_value, $getter_method, $additional_methods ) {
 			private $value;
@@ -709,7 +767,7 @@ class RequestTest extends WP_UnitTestCase {
 		$test_fbclid = 'AbCdEfGhIjKlMnOp';
 		$pixel_id    = 'test_pixel_id_123';
 
-		$this->clear_tracker_caches();
+		$this->reset_cached_values();
 
 		$_GET['fbclid'] = $test_fbclid;
 

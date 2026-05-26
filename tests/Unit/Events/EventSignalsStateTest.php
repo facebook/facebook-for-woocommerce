@@ -26,33 +26,30 @@ class EventSignalsStateTest extends AbstractWPUnitTestWithOptionIsolationAndSafe
 	/** @var string|null */
 	private $original_user_agent;
 
+	/** @var mixed Original param_builder to restore after tests. */
+	private $original_param_builder;
+
 	public function setUp(): void {
 		parent::setUp();
 
 		$this->original_user_agent = $_SERVER['HTTP_USER_AGENT'] ?? null;
 		$_SERVER['HTTP_USER_AGENT'] = 'Mozilla/5.0 (Test)';
 
-		// Ensure a session array exists.
 		if ( ! isset( $_SESSION ) ) {
 			$_SESSION = array();
 		}
 		$this->original_session = $_SESSION;
 
-		// Clear any residual superglobal state the tests touch.
 		unset( $_COOKIE['_fbc'], $_COOKIE['_fbp'] );
 		unset( $_GET['fbclid'] );
 		unset( $_SESSION['_fbc'], $_SESSION['_fbp'] );
 
-		// Reset FacebookSignalsState to a clean, released state.
 		FacebookSignalsState::release();
 
-		// Ensure the param-builder cache returns null so cookie/session/
-		// query-string paths are exercised without SDK side-effects.
-		$this->clear_tracker_caches();
+		$this->original_param_builder = $this->install_null_param_builder();
 	}
 
 	public function tearDown(): void {
-		// Restore superglobals.
 		$_SESSION = $this->original_session;
 		unset( $_COOKIE['_fbc'], $_COOKIE['_fbp'] );
 		unset( $_GET['fbclid'] );
@@ -64,7 +61,7 @@ class EventSignalsStateTest extends AbstractWPUnitTestWithOptionIsolationAndSafe
 		}
 
 		FacebookSignalsState::release();
-		$this->clear_tracker_caches();
+		$this->restore_tracker_state( $this->original_param_builder );
 
 		parent::tearDown();
 	}
@@ -74,15 +71,15 @@ class EventSignalsStateTest extends AbstractWPUnitTestWithOptionIsolationAndSafe
 	// ------------------------------------------------------------------
 
 	/**
-	 * Install a stub param-builder that returns null for getFbc/getFbp, and
-	 * clear the cached values so Event falls through to cookie / session /
-	 * query-string paths.  Setting param_builder to null is not enough
-	 * because get_param_builder() would recreate it from the SDK.
+	 * Replaces the static param_builder with a stub that returns null and
+	 * clears cached values so Event falls through to cookie/session/query-
+	 * string paths.
+	 *
+	 * @return mixed The original param_builder value to restore later.
 	 */
-	private function clear_tracker_caches(): void {
+	private function install_null_param_builder() {
 		$ref = new ReflectionClass( \WC_Facebookcommerce_EventsTracker::class );
 
-		// Install a stub that always returns null.
 		$stub = new class() {
 			public function getFbc() {
 				return null;
@@ -90,11 +87,34 @@ class EventSignalsStateTest extends AbstractWPUnitTestWithOptionIsolationAndSafe
 			public function getFbp() {
 				return null;
 			}
+			public function getCookiesToSet() {
+				return array();
+			}
 		};
 
 		$pb = $ref->getProperty( 'param_builder' );
 		$pb->setAccessible( true );
+		$original = $pb->getValue();
 		$pb->setValue( null, $stub );
+
+		foreach ( array( 'cached_fbc', 'cached_fbp' ) as $prop ) {
+			$rp = $ref->getProperty( $prop );
+			$rp->setAccessible( true );
+			$rp->setValue( null, null );
+		}
+
+		return $original;
+	}
+
+	/**
+	 * Restores the original param_builder and clears caches.
+	 */
+	private function restore_tracker_state( $original_param_builder ): void {
+		$ref = new ReflectionClass( \WC_Facebookcommerce_EventsTracker::class );
+
+		$pb = $ref->getProperty( 'param_builder' );
+		$pb->setAccessible( true );
+		$pb->setValue( null, $original_param_builder );
 
 		foreach ( array( 'cached_fbc', 'cached_fbp' ) as $prop ) {
 			$rp = $ref->getProperty( $prop );
