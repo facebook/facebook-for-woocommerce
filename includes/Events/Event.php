@@ -38,7 +38,7 @@ class Event {
 	 * }
 	 */
 	public static function get_version_info() {
-		$source = 'woocommerce';
+		$source  = 'woocommerce';
 		$source .= self::get_agent_flags();
 		return array(
 			'source'        => $source,
@@ -265,29 +265,35 @@ class Event {
 	 * @return string
 	 */
 	protected function get_click_id() {
-		$fbc = '';
-		if ( ! empty( $_COOKIE['_fbc'] ) ) {
-			$fbc = wc_clean( wp_unslash( $_COOKIE['_fbc'] ) );
-		}
-
-		if ( empty( $fbc ) && ! empty( $_SESSION['_fbc'] ) ) {
-			$fbc = $_SESSION['_fbc']; // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
-		}
+		$fbc = \WC_Facebookcommerce_EventsTracker::get_fbc();
 
 		if ( empty( $fbc ) ) {
-			$param_builder = \WC_Facebookcommerce_EventsTracker::get_param_builder();
-			$fbc = $param_builder->getFbc();
+			$cookie_fbc = ! empty( $_COOKIE['_fbc'] )
+				? sanitize_text_field( wp_unslash( $_COOKIE['_fbc'] ) )
+				: null;
+
+			$request_fbclid = isset( $_GET['fbclid'] ) // phpcs:ignore WordPress.Security.NonceVerification
+				? sanitize_text_field( wp_unslash( $_GET['fbclid'] ) ) // phpcs:ignore WordPress.Security.NonceVerification
+				: null;
+
+			if ( $request_fbclid && ( empty( $cookie_fbc ) || self::has_fbclid_changed( $cookie_fbc, $request_fbclid ) ) ) {
+				$creation_time = time();
+				$fbc           = "fb.1.{$creation_time}.{$request_fbclid}";
+			}
+
+			if ( empty( $fbc ) && ! empty( $cookie_fbc ) ) {
+				$fbc = $cookie_fbc;
+			}
+
+			if ( empty( $fbc ) && isset( $_SESSION['_fbc'] ) ) {
+				$fbc = sanitize_text_field( $_SESSION['_fbc'] );
+			}
 		}
 
-		if ( empty( $fbc ) && ! empty( $_REQUEST['fbclid'] ) ) {
-			$creation_time = time();
-			$fbclid = wc_clean( wp_unslash( $_REQUEST['fbclid'] ) ); // phpcs:ignore WordPress.Security.NonceVerification
-			$fbc = "fb.1.{$creation_time}.{$fbclid}";
-		}
-
-		if ( ! empty( $fbc ) ) {
+		if ( ! empty( $fbc ) && ! FacebookSignalsState::is_held() ) {
 			$_SESSION['_fbc'] = $fbc;
 		}
+
 		// Return null instead of empty string
 		return ! empty( $fbc ) ? $fbc : null;
 	}
@@ -307,18 +313,15 @@ class Event {
 	 * @return string
 	 */
 	protected function get_browser_id() {
-		$fbp = ! empty( $_COOKIE['_fbp'] ) ? wc_clean( wp_unslash( $_COOKIE['_fbp'] ) ) : '';
-
-		if ( empty( $fbp ) && ! empty( $_SESSION['_fbp'] ) ) {
-			$fbp = $_SESSION['_fbp']; // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
-		}
-
+		$fbp = \WC_Facebookcommerce_EventsTracker::get_fbp();
 		if ( empty( $fbp ) ) {
-			$param_builder = \WC_Facebookcommerce_EventsTracker::get_param_builder();
-			$fbp = $param_builder->getFbp();
+			if ( ! empty( $_COOKIE['_fbp'] ) ) {
+				$fbp = wc_clean( wp_unslash( $_COOKIE['_fbp'] ) );
+			} elseif ( ! empty( $_SESSION['_fbp'] ) ) {
+				$fbp = $_SESSION['_fbp']; // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
+			}
 		}
-
-		if ( ! empty( $fbp ) ) {
+		if ( ! empty( $fbp ) && ! FacebookSignalsState::is_held() ) {
 			$_SESSION['_fbp'] = $fbp;
 		}
 		// Return null instead of empty string
@@ -396,9 +399,34 @@ class Event {
 	private static function get_agent_flags() {
 		$postfix = '';
 		if ( function_exists( 'get_option' ) && false !== get_option( 'wc_facebook_svr_flags' ) ) {
-			$flags = get_option( 'wc_facebook_svr_flags' );
+			$flags   = get_option( 'wc_facebook_svr_flags' );
 			$postfix = "_{$flags}";
 		}
 		return $postfix;
+	}
+
+	/**
+	 * Checks whether the fbclid in the current request differs from
+	 * the one stored in the existing _fbc cookie.
+	 *
+	 * @param string      $cookie_fbc     The current _fbc cookie value
+	 *                                    (format: fb.{subdomain}.{timestamp}.{fbclid}).
+	 * @param string|null $request_fbclid The fbclid from the current request,
+	 *                                    or null if not present.
+	 *
+	 * @return bool True if fbclid has changed, false otherwise.
+	 */
+	private static function has_fbclid_changed( $cookie_fbc, $request_fbclid ) {
+		if ( null === $request_fbclid ) {
+			return false;
+		}
+
+		$parts = explode( '.', $cookie_fbc );
+		if ( count( $parts ) < 4 ) {
+			return true;
+		}
+
+		$cookie_fbclid = implode( '.', array_slice( $parts, 3 ) );
+		return $cookie_fbclid !== $request_fbclid;
 	}
 }

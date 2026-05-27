@@ -163,6 +163,7 @@ class Dependencies {
 	 * @since 5.2.0
 	 */
 	public function add_php_settings_notices() {
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
 		if ( isset( $_GET['page'] ) && 'wc-settings' === $_GET['page'] ) {
 			$bad_settings = $this->get_incompatible_php_settings();
 			if ( count( $bad_settings ) > 0 ) {

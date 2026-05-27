@@ -24,7 +24,7 @@ class LegacyProductSetMigration {
 		// Query legacy fb product sets
 		global $wpdb;
 		$fb_product_set_taxonomy_name = 'fb_product_set';
-		$results = $wpdb->get_results(
+		$results                      = $wpdb->get_results(
 			$wpdb->prepare(
 				'SELECT t.term_id, t.name, t.slug, tt.description
 				FROM wp_terms t
@@ -36,7 +36,7 @@ class LegacyProductSetMigration {
 
 		// Migrate legacy fb product sets to dynamic product sets filter
 		foreach ( $results as $result ) {
-			$fb_product_set_id = get_term_meta( $result->term_id, 'fb_product_set_id', true );
+			$fb_product_set_id         = get_term_meta( $result->term_id, 'fb_product_set_id', true );
 			$wc_product_categories_ids = get_term_meta( $result->term_id, '_wc_facebook_product_cats', true );
 			if ( is_array( $wc_product_categories_ids ) && ! empty( $wc_product_categories_ids ) ) {
 				$wc_categories = array();
@@ -56,7 +56,7 @@ class LegacyProductSetMigration {
 		$filters = array();
 		foreach ( $wc_categories as $wc_category ) {
 			$wc_category_name = WC_Facebookcommerce_Utils::clean_string( get_term_field( 'name', $wc_category, 'product_cat' ) );
-			$filters[] = array( 'product_type' => array( 'i_contains' => $wc_category_name ) );
+			$filters[]        = array( 'product_type' => array( 'i_contains' => $wc_category_name ) );
 		}
 		$fb_product_set_data = array(
 			'name'     => $fb_set_name,

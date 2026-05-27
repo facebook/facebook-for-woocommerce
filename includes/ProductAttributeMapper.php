@@ -846,6 +846,7 @@ class ProductAttributeMapper {
 			$result            = self::save_mapped_attributes( $product, $mapped_attributes );
 			return $result;
 		} catch ( \Exception $e ) {
+			// phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log
 			error_log( 'ProductAttributeMapper sync error: ' . $e->getMessage() );
 			return array();
 		}

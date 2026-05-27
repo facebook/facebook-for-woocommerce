@@ -122,6 +122,7 @@ class CollectionPage {
 
 			// Prevent WooCommerce core and themes from overriding the product order.
 			// Removes itself after first invocation to avoid affecting other queries in the same request.
+			// phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter.Found
 			$ordering_override = function ( $_args ) use ( &$ordering_override ) {
 				remove_filter( 'woocommerce_get_catalog_ordering_args', $ordering_override, PHP_INT_MAX );
 				return array(

@@ -399,7 +399,7 @@ class Locale {
 	public static function convert_to_facebook_language_code( string $locale_code ): string {
 		// Extract the language part (before the underscore)
 		$language_parts = explode( '_', $locale_code );
-		$language = strtolower( $language_parts[0] );
+		$language       = strtolower( $language_parts[0] );
 
 		// Special cases where WordPress/Polylang language codes don't match Facebook's expected codes
 		// These must be handled BEFORE other mappings
@@ -418,10 +418,10 @@ class Locale {
 		// This is critical because we need to distinguish zh_CN from zh_TW
 		if ( 'zh' === $language && isset( $language_parts[1] ) ) {
 			$region = strtoupper( $language_parts[1] );
-			if ( in_array( $region, [ 'TW', 'HK', 'MO' ] ) ) {
+			if ( in_array( $region, [ 'TW', 'HK', 'MO' ], true ) ) {
 				return 'zh_TW'; // Traditional Chinese
 			}
-			return 'zh_CN'; // Simplified Chinese (default)
+			return 'zh_CN'; // Simplified Chinese (default) // phpcs:ignore Squiz.PHP.CommentedOutCode.Found
 		}
 
 		// Check if this language uses the _XX format
@@ -450,16 +450,16 @@ class Locale {
 	public static function convert_to_facebook_override_value( string $language_code ): string {
 		// Extract the language part (before the underscore)
 		$language_parts = explode( '_', $language_code );
-		$language = strtolower( $language_parts[0] );
+		$language       = strtolower( $language_parts[0] );
 
 		// Handle special cases for Chinese FIRST (before generic mappings)
 		// This is critical because we need to distinguish zh_CN from zh_TW
 		if ( 'zh' === $language && isset( $language_parts[1] ) ) {
 			$region = strtoupper( $language_parts[1] );
-			if ( in_array( $region, [ 'TW', 'HK', 'MO' ] ) ) {
+			if ( in_array( $region, [ 'TW', 'HK', 'MO' ], true ) ) {
 				return 'zh_TW'; // Traditional Chinese
 			}
-			return 'zh_CN'; // Simplified Chinese (default)
+			return 'zh_CN'; // Simplified Chinese (default) // phpcs:ignore Squiz.PHP.CommentedOutCode.Found
 		}
 
 		// Check if we have a specific Facebook override value for this language

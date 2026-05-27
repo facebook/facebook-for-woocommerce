@@ -1753,6 +1753,7 @@ class WC_Facebook_Product {
 					ProductAttributeMapper::get_and_save_mapped_attributes( $product );
 				}
 			} catch ( Exception $e ) {
+				// phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log
 				error_log( 'WC_Facebook_Product::prepare_product() sync error: ' . $e->getMessage() );
 			}
 		}
@@ -1808,7 +1809,7 @@ class WC_Facebook_Product {
 		$product_data['gender']    = $this->get_fb_gender();
 		$product_data['material']  = Helper::str_truncate( $this->get_fb_material(), 100 );
 		// Generate and add collection URI
-		$collection_uri = site_url( CollectionPage::ENDPOINT_PATH );
+		$collection_uri                                     = site_url( CollectionPage::ENDPOINT_PATH );
 		$product_data[ CollectionPage::PRODUCT_FEED_FIELD ] = $collection_uri;
 		if ( $this->get_type() === 'variation' ) {
 			$parent_id      = $this->woo_product->get_parent_id();
@@ -1947,7 +1948,7 @@ class WC_Facebook_Product {
 						case 'condition':
 							// Only allow specific condition values
 							$normalized_value = strtolower( trim( $attribute_value ) );
-							if ( ! in_array( $normalized_value, array( 'new', 'used', 'refurbished' ) ) ) {
+							if ( ! in_array( $normalized_value, array( 'new', 'used', 'refurbished' ), true ) ) {
 								$normalized_value = 'new'; // Default to new if not valid
 							}
 							break;
@@ -2094,7 +2095,7 @@ class WC_Facebook_Product {
 							break;
 						case 'condition':
 							$clean_value = strtolower( trim( $value ) );
-							if ( in_array( $clean_value, array( 'new', 'used', 'refurbished' ) ) ) {
+							if ( in_array( $clean_value, array( 'new', 'used', 'refurbished' ), true ) ) {
 								$product_data[ $fb_field ] = $clean_value;
 							}
 							break;
@@ -2271,7 +2272,7 @@ class WC_Facebook_Product {
 		$date_modified = $this->woo_product->get_date_modified();
 		if ( $date_modified ) {
 			$external_update_time = (int) $date_modified->getTimestamp();
-			$last_change_time = (int) $this->woo_product->get_meta( '_last_change_time' );
+			$last_change_time     = (int) $this->woo_product->get_meta( '_last_change_time' );
 
 			// Use the newer timestamp if _last_change_time is valid, otherwise use external_update_time
 			if ( $last_change_time > 0 ) {
@@ -2399,7 +2400,7 @@ class WC_Facebook_Product {
 			$all_attributes,
 			function ( $attribute ) use ( $sanitized_keys ) {
 				if ( is_array( $attribute ) && isset( $attribute['key'] ) ) {
-					return in_array( $attribute['key'], $sanitized_keys );
+					return in_array( $attribute['key'], $sanitized_keys, true );
 				}
 				return false; // Return false if $attribute is not valid
 			}
@@ -2571,7 +2572,7 @@ class WC_Facebook_Product {
 
 					$first_option = $product->get_variation_default_attribute( $key );
 
-					$index = array_search( $first_option, $option_values, false );
+					$index = array_search( $first_option, $option_values, true );
 
 					unset( $option_values[ $index ] );
 
@@ -2818,7 +2819,7 @@ class WC_Facebook_Product {
 			// Updated to match Facebook's actual supported values
 			$valid_age_groups = array( 'newborn', 'infant', 'toddler', 'kids', 'teen', 'adult', 'all ages' );
 
-			if ( ! in_array( $age_group, $valid_age_groups ) ) {
+			if ( ! in_array( $age_group, $valid_age_groups, true ) ) {
 				// Try to map to a valid value
 				if ( 'teenager' === $age_group ) {
 					$product_data['age_group'] = 'teen'; // Map teenager to teen
@@ -2839,7 +2840,7 @@ class WC_Facebook_Product {
 			$gender        = strtolower( trim( $product_data['gender'] ) );
 			$valid_genders = array( 'male', 'female', 'unisex' );
 
-			if ( ! in_array( $gender, $valid_genders ) ) {
+			if ( ! in_array( $gender, $valid_genders, true ) ) {
 				// Map to supported values
 				if ( in_array( $gender, array( 'man', 'men', 'boys', 'boy' ), true ) ) {
 					$product_data['gender'] = 'male';
@@ -2854,7 +2855,7 @@ class WC_Facebook_Product {
 			$condition        = strtolower( trim( $product_data['condition'] ) );
 			$valid_conditions = array( 'new', 'used', 'refurbished' );
 
-			if ( ! in_array( $condition, $valid_conditions ) ) {
+			if ( ! in_array( $condition, $valid_conditions, true ) ) {
 				// Default to new for invalid conditions
 				$product_data['condition'] = 'new';
 			}

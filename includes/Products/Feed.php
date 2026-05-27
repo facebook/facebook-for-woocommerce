@@ -97,6 +97,7 @@ class Feed {
 		$file_path    = $feed_handler->get_file_path();
 
 		// regenerate if the file doesn't exist
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
 		if ( ! empty( $_GET['regenerate'] ) || ! file_exists( $file_path ) ) {
 			$feed_handler->generate_feed();
 		}
@@ -121,12 +122,14 @@ class Feed {
 			header( 'Pragma: public' );
 			header( 'Content-Length:' . filesize( $file_path ) );
 
+			// phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged, WordPress.WP.AlternativeFunctions.file_system_operations_fopen
 			$file = @fopen( $file_path, 'rb' );
 			if ( ! $file ) {
 				throw new PluginException( 'Could not open feed file.', 500 );
 			}
 
 			// fpassthru might be disabled in some hosts (like Flywheel)
+			// phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged
 			if ( $this->is_fpassthru_disabled() || ! @fpassthru( $file ) ) {
 				Logger::log(
 					'fpassthru is disabled: getting file contents',
@@ -137,6 +140,7 @@ class Feed {
 						'woocommerce_log_level'          => \WC_Log_Levels::DEBUG,
 					)
 				);
+				// phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged
 				$contents = @stream_get_contents( $file );
 				if ( ! $contents ) {
 					throw new PluginException( 'Could not get feed file contents.', 500 );
@@ -420,8 +424,9 @@ class Feed {
 	private function is_fpassthru_disabled() {
 		$disabled = false;
 		if ( function_exists( 'ini_get' ) ) {
+			// phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged
 			$disabled_functions = @ini_get( 'disable_functions' );
-			$disabled           = is_string( $disabled_functions ) && in_array( 'fpassthru', explode( ',', $disabled_functions ), false );
+			$disabled           = is_string( $disabled_functions ) && in_array( 'fpassthru', explode( ',', $disabled_functions ), true );
 		}
 		return $disabled;
 	}

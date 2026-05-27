@@ -412,7 +412,7 @@ class ProductValidator {
 	protected function validate_product_language() {
 		// Get the product to check (use parent for variations)
 		$product_to_check = $this->product_parent ? $this->product_parent : $this->product;
-		$product_id = $product_to_check->get_id();
+		$product_id       = $product_to_check->get_id();
 
 		// Only validate language if language override feed generation is enabled
 		// Use the integration method instead of get_option() to handle all necessary checks

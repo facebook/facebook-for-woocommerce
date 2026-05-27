@@ -164,7 +164,7 @@ class API extends Base {
 			 *
 			 * @link https://developers.facebook.com/docs/graph-api/using-graph-api/error-handling#errorcodes
 			 */
-			if ( ( $code >= 200 && $code < 300 ) || in_array( $code, array( 10, 102, 190 ), false ) ) {
+			if ( ( $code >= 200 && $code < 300 ) || in_array( $code, array( 10, 102, 190 ), true ) ) {
 
 				// Log a specific message for known auth subcodes so merchants/support understand what happened.
 				$auth_subcodes = array(
@@ -195,7 +195,7 @@ class API extends Base {
 				delete_transient( 'wc_facebook_connection_invalid' );
 			}
 			// if the code indicates a retry and we've not hit the retry limit, perform the request again
-			if ( in_array( $code, $request->get_retry_codes(), false ) && $request->get_retry_count() < $request->get_retry_limit() ) {
+			if ( in_array( $code, $request->get_retry_codes(), true ) && $request->get_retry_count() < $request->get_retry_limit() ) {
 				$request->mark_retry();
 				$this->response = $this->perform_request( $request );
 				return;
@@ -819,7 +819,7 @@ class API extends Base {
 		$next_response = null;
 		// get the next page if we haven't reached the limit of pages to retrieve and the endpoint for the next page is available
 		if ( ( 0 === $additional_pages || $response->get_pages_retrieved() <= $additional_pages ) && $response->get_next_page_endpoint() ) {
-			$components = parse_url( str_replace( $this->request_uri, '', $response->get_next_page_endpoint() ) );
+			$components = wp_parse_url( str_replace( $this->request_uri, '', $response->get_next_page_endpoint() ) );
 			$request    = $this->get_new_request(
 				[
 					'path'   => $components['path'] ?? '',

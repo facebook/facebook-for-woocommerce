@@ -27,7 +27,7 @@ trait Facebook_Fields_Translation_Trait {
 	 * @return array Array of field names that have different values
 	 */
 	protected function get_translated_fields( int $original_id, int $translated_id, ?string $target_language = null ): array {
-		$original_product = wc_get_product( $original_id );
+		$original_product   = wc_get_product( $original_id );
 		$translated_product = wc_get_product( $translated_id );
 
 		if ( ! $original_product || ! $translated_product ) {
@@ -41,7 +41,7 @@ trait Facebook_Fields_Translation_Trait {
 			require_once WC_FACEBOOKCOMMERCE_PLUGIN_DIR . '/includes/fbproduct.php';
 		}
 
-		$original_fb_product = new \WC_Facebook_Product( $original_product );
+		$original_fb_product   = new \WC_Facebook_Product( $original_product );
 		$translated_fb_product = new \WC_Facebook_Product( $translated_product );
 
 		// Get core Facebook fields mapping
@@ -74,7 +74,7 @@ trait Facebook_Fields_Translation_Trait {
 					}
 				} else {
 					// Convert to string for comparison
-					$original_str = (string) $original_value;
+					$original_str   = (string) $original_value;
 					$translated_str = (string) $translated_value;
 
 					// FIXED: Only require translated value to be non-empty
@@ -100,20 +100,20 @@ trait Facebook_Fields_Translation_Trait {
 	protected function get_facebook_field_mapping(): array {
 		return [
 			// Basic product information
-			'name' => 'get_name',
-			'description' => 'get_fb_description',
-			'short_description' => 'get_fb_short_description',
+			'name'                  => 'get_name',
+			'description'           => 'get_fb_description',
+			'short_description'     => 'get_fb_short_description',
 			'rich_text_description' => 'get_rich_text_description',
 
 			// Images
-			'image_id' => 'get_all_image_urls',
-			'gallery_image_ids' => 'get_all_image_urls',
+			'image_id'              => 'get_all_image_urls',
+			'gallery_image_ids'     => 'get_all_image_urls',
 
 			// Video
-			'video' => 'get_all_video_urls',
+			'video'                 => 'get_all_video_urls',
 
 			// Product link
-			'link' => 'get_permalink',
+			'link'                  => 'get_permalink',
 		];
 	}
 }

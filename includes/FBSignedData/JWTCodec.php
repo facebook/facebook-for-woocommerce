@@ -176,6 +176,7 @@ class JWTCodec {
 		if ( $remainder ) {
 			$input .= str_repeat( '=', 4 - $remainder );
 		}
+		// phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.obfuscation_base64_decode
 		return base64_decode( strtr( $input, '-_', '+/' ) );
 	}
 
@@ -186,6 +187,7 @@ class JWTCodec {
 	 * @return string The base64url encoded string.
 	 */
 	private static function urlsafe_b64_encode( string $input ): string {
+		// phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.obfuscation_base64_encode
 		return str_replace( '=', '', strtr( base64_encode( $input ), '+/', '-_' ) );
 	}
 
@@ -197,7 +199,7 @@ class JWTCodec {
 	 * @return string The DER-encoded signature.
 	 */
 	private static function signature_to_der( string $sig ): string {
-		$length = max( 1, (int) ( strlen( $sig ) / 2 ) );
+		$length        = max( 1, (int) ( strlen( $sig ) / 2 ) );
 		list( $r, $s ) = str_split( $sig, $length );
 
 		$r = ltrim( $r, "\x00" );
@@ -281,7 +283,7 @@ class JWTCodec {
 		}
 
 		if ( self::ASN1_BIT_STRING === $type ) {
-			$pos++;
+			++$pos;
 			$data = substr( $der, $pos, $len - 1 );
 			$pos += $len - 1;
 		} elseif ( ! $constructed ) {

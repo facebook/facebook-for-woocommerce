@@ -60,16 +60,16 @@ class WhatsAppExtension {
 		);
 
 		$external_client_metadata = array(
-			'client_version'                        => $plugin->get_version(),
+			'client_version' => $plugin->get_version(),
 		);
 
 		return add_query_arg(
 			array(
-				'access_client_token'   => self::CLIENT_TOKEN,
-				'app_id'                => self::APP_ID,
-				'app_owner_business_id' => self::TP_BUSINESS_ID,
-				'external_business_id'  => $external_wa_id,
-				'locale'                => get_user_locale() ?? self::DEFAULT_LANGUAGE,
+				'access_client_token'      => self::CLIENT_TOKEN,
+				'app_id'                   => self::APP_ID,
+				'app_owner_business_id'    => self::TP_BUSINESS_ID,
+				'external_business_id'     => $external_wa_id,
+				'locale'                   => get_user_locale() ?? self::DEFAULT_LANGUAGE,
 				'external_client_metadata' => rawurlencode( wp_json_encode( $external_client_metadata ) ),
 			),
 			self::COMMERCE_HUB_URL . 'whatsapp_utility_integration/splash/'
@@ -247,7 +247,6 @@ class WhatsAppExtension {
 				)
 			);
 		}
-		return;
 	}
 
 	/**
@@ -267,7 +266,7 @@ class WhatsAppExtension {
 
 		if ( ! empty( $order_metadata['items'] ) && is_array( $order_metadata['items'] ) ) {
 			foreach ( $order_metadata['items'] as $order_item ) {
-				$item_arr = array();
+				$item_arr             = array();
 				$item_arr['name']     = $order_item['name'] ?? ( $order_item['product_name'] ?? '' );
 				$item_arr['quantity'] = isset( $order_item['quantity'] ) ? intval( $order_item['quantity'] ) : null;
 
@@ -285,7 +284,7 @@ class WhatsAppExtension {
 						if ( $product ) {
 							$image_id = method_exists( $product, 'get_image_id' ) ? $product->get_image_id() : null;
 							if ( $image_id ) {
-								$img = wp_get_attachment_image_url( $image_id, 'large' );
+								$img       = wp_get_attachment_image_url( $image_id, 'large' );
 								$image_url = $img ? $img : wp_get_attachment_url( $image_id );
 								// Ensure HTTPS protocol for image URLs
 								$image_url = preg_replace( '/^http:/', 'https:', $image_url );
@@ -295,7 +294,7 @@ class WhatsAppExtension {
 						wc_get_logger()->info( 'Error fetching product image: ' . $e->getMessage() );
 					}
 				}
-				$item_arr['image_url'] = $image_url;
+				$item_arr['image_url']         = $image_url;
 				$rich_status_object['items'][] = $item_arr;
 			}
 		}

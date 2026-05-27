@@ -47,7 +47,7 @@ class LanguageOverrideFeedWriter extends AbstractFeedFileWriter {
 		$this->language_code = $language_code;
 
 		$fb_language_code = \WooCommerce\Facebook\Locale::convert_to_facebook_language_code( $language_code );
-		$feed_name = "language_override_{$fb_language_code}";
+		$feed_name        = "language_override_{$fb_language_code}";
 
 		// Use dummy header - real headers will be generated dynamically in write_language_feed_file
 		$dummy_header = 'id,override'; // Minimal required columns
@@ -106,6 +106,7 @@ class LanguageOverrideFeedWriter extends AbstractFeedFileWriter {
 	 */
 	public function write_temp_feed_file( array $data ): void {
 		$temp_file_path = $this->get_temp_file_path();
+		// phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged, WordPress.WP.AlternativeFunctions.file_system_operations_fopen
 		$temp_feed_file = @fopen( $temp_file_path, 'a' );
 
 		if ( ! $temp_feed_file ) {
@@ -119,6 +120,7 @@ class LanguageOverrideFeedWriter extends AbstractFeedFileWriter {
 				}
 			}
 		} finally {
+			// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fclose
 			fclose( $temp_feed_file );
 		}
 	}
@@ -154,7 +156,7 @@ class LanguageOverrideFeedWriter extends AbstractFeedFileWriter {
 			if ( empty( $csv_result['data'] ) ) {
 				// Still create an empty file with headers
 				$csv_result = array(
-					'data' => array(),
+					'data'    => array(),
 					'columns' => array( 'id', 'override' ),
 				);
 			}
@@ -188,9 +190,9 @@ class LanguageOverrideFeedWriter extends AbstractFeedFileWriter {
 				\WooCommerce\Facebook\Framework\Logger::log(
 					sprintf( 'Failed to write language feed file for %s: %s', $language_code, $e->getMessage() ),
 					array(
-						'language_code' => $language_code,
+						'language_code'     => $language_code,
 						'exception_message' => $e->getMessage(),
-						'exception_trace' => $e->getTraceAsString(),
+						'exception_trace'   => $e->getTraceAsString(),
 					),
 					array(
 						'should_send_log_to_meta'        => true,

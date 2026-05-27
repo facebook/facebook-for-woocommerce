@@ -25,7 +25,7 @@ class Response extends API\Response {
 		if ( ! empty( $data['installed_features'] ) && is_array( $data['installed_features'] ) ) {
 			foreach ( $data['installed_features'] as $feature ) {
 				if ( isset( $feature['feature_type'], $feature['connected_assets']['pixel_id'] ) &&
-					 'pixel' === $feature['feature_type'] ) {
+					'pixel' === $feature['feature_type'] ) {
 					return $feature['connected_assets']['pixel_id'];
 				}
 			}

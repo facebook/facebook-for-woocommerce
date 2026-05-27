@@ -121,14 +121,14 @@ abstract class Abstract_Localization_Integration {
 
 		// Query products
 		$args = [
-			'post_type' => 'product',
-			'post_status' => 'publish',
+			'post_type'      => 'product',
+			'post_status'    => 'publish',
 			'posts_per_page' => $limit,
-			'offset' => $offset,
-			'fields' => 'ids',
+			'offset'         => $offset,
+			'fields'         => 'ids',
 		];
 
-		$all_products = get_posts( $args );
+		$all_products              = get_posts( $args );
 		$default_language_products = [];
 
 		// Filter products using plugin-specific language check
@@ -175,11 +175,11 @@ abstract class Abstract_Localization_Integration {
 		// Default implementation - return basic structure
 		// Specific integrations should override this method
 		return [
-			'product_id' => $product_id,
-			'default_language' => $this->get_default_language(),
-			'translations' => [],
+			'product_id'         => $product_id,
+			'default_language'   => $this->get_default_language(),
+			'translations'       => [],
 			'translation_status' => [],
-			'translated_fields' => [],
+			'translated_fields'  => [],
 		];
 	}
 
@@ -219,10 +219,10 @@ abstract class Abstract_Localization_Integration {
 	 */
 	public function get_availability_data(): array {
 		$data = [
-			'plugin_name' => $this->get_plugin_name(),
-			'plugin_file' => $this->get_plugin_file_name(),
+			'plugin_name'  => $this->get_plugin_name(),
+			'plugin_file'  => $this->get_plugin_file_name(),
 			'is_installed' => $this->is_plugin_installed(),
-			'is_active' => $this->is_plugin_active(),
+			'is_active'    => $this->is_plugin_active(),
 		];
 
 		// Add version if available

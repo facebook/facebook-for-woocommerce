@@ -21,7 +21,7 @@ class IntegrationRegistry {
 	 */
 	private static $localization_integrations = [
 		'polylang' => Polylang::class,
-		'wpml' => WPML::class,
+		'wpml'     => WPML::class,
 	];
 
 	/**
@@ -62,7 +62,7 @@ class IntegrationRegistry {
 		}
 
 		// Create and cache the instance
-		$instance = new $class_name();
+		$instance                                        = new $class_name();
 		self::$integration_instances[ $integration_key ] = $instance;
 
 		return $instance;
@@ -210,12 +210,12 @@ class IntegrationRegistry {
 			}
 
 			$active_plugins_list = get_option( 'active_plugins', [] );
-			$all_plugins = get_plugins();
+			$all_plugins         = get_plugins();
 			$active_plugins_data = [];
 
 			foreach ( $active_plugins_list as $plugin_file ) {
 				if ( isset( $all_plugins[ $plugin_file ] ) ) {
-					$plugin_data = $all_plugins[ $plugin_file ];
+					$plugin_data               = $all_plugins[ $plugin_file ];
 						$active_plugins_data[] = $plugin_data['Name'];
 				}
 			}
