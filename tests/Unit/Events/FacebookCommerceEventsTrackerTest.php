@@ -606,6 +606,20 @@ class FacebookCommerceEventsTrackerTest extends AbstractWPUnitTestWithSafeFilter
 	}
 
 	/**
+	 * Test that the constructor registers track_cf7_lead_event on wpcf7_mail_sent.
+	 *
+	 * @covers WC_Facebookcommerce_EventsTracker::__construct
+	 */
+	public function test_constructor_registers_track_cf7_lead_event_on_wpcf7_mail_sent(): void {
+		$this->instance = $this->create_tracker_with_pixel_enabled();
+
+		$this->assertTrue(
+			has_action( 'wpcf7_mail_sent', array( $this->instance, 'track_cf7_lead_event' ) ) !== false,
+			'Constructor should register track_cf7_lead_event on wpcf7_mail_sent'
+		);
+	}
+
+	/**
 	 * Test that inject_lead_event does nothing when in admin.
 	 *
 	 * @covers WC_Facebookcommerce_EventsTracker::inject_lead_event

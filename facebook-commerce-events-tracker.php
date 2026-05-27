@@ -65,6 +65,9 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 		/** @var array|null Pending pixel event data for Store API response */
 		private $pending_store_api_pixel_event = null;
 
+		/** @var Event|null Server-side CF7 Lead event, stored so inject_lead_event() can read its event_id */
+		private $cf7_lead_event = null;
+
 		/**
 		 * @var \FacebookAds\ParamBuilder|null shared ParamBuilder instance
 		 */
@@ -296,6 +299,8 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 			add_action( 'woocommerce_thankyou', array( $this, 'inject_purchase_event' ), 40 );
 
 			// Lead events through Contact Form 7 / WPForms.
+			add_action( 'wpcf7_mail_sent', array( $this, 'track_cf7_lead_event' ), 10, 1 );
+			add_filter( 'wpcf7_feedback_response', array( $this, 'inject_cf7_lead_event_id_in_response' ), 10, 2 );
 			add_action( 'wp_footer', array( $this, 'inject_lead_event' ), 11 );
 			add_action( 'wpforms_process_complete', array( $this, 'track_wpforms_lead_event' ), 20, 3 );
 			add_filter( 'wpforms_ajax_submit_success_response', array( $this, 'inject_wpforms_lead_event_ajax' ), 20, 3 );
@@ -1326,19 +1331,104 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 
 
 		/** Contact Form 7 Lead Support **/
-		public function inject_lead_event() {
-			if ( is_admin() ) {
+
+		/**
+		 * Tracks a CF7 Lead event server-side (CAPI) when a form mail is successfully sent.
+		 *
+		 * CF7 submits via REST API (/wp-json/contact-form-7/v1/contact-forms/{id}/feedback),
+		 * so wpcf7_mail_sent fires during a separate REST request — not during the page-load
+		 * where wp_footer runs. We store the event here and then embed its event_id into
+		 * the REST response via the wpcf7_feedback_response filter so the browser JS can
+		 * read it from event.detail.apiResponse and fire fbq() with the matching eventID.
+		 *
+		 * @param \WPCF7_ContactForm $contact_form The CF7 form instance.
+		 */
+		public function track_cf7_lead_event( $contact_form ) {
+			if ( ! $this->is_pixel_enabled() ) {
 				return;
 			}
 
-			if ( wp_script_is( 'contact-form-7', 'enqueued' ) ) {
-				echo $this->pixel->inject_conditional_event(
-					'Lead',
-					array(),
-					'wpcf7submit',
-					'{ em: event.detail.inputs.filter(ele => ele.name.includes("email"))[0].value }'
-				);
+			$event_data = array(
+				'event_name'  => 'Lead',
+				'user_data'   => $this->pixel->get_user_info(),
+				'custom_data' => array(
+					'fb_integration_tracking' => 'cf7',
+				),
+			);
+
+			$event = new Event( $event_data );
+			$this->send_api_event( $event );
+
+			// Store so inject_cf7_lead_event_id_in_response() can read it.
+			$this->cf7_lead_event = $event;
+		}
+
+		/**
+		 * Injects the CAPI event_id into the CF7 REST API feedback response.
+		 *
+		 * CF7's JS reads the REST response and dispatches a wpcf7submit DOM event whose
+		 * event.detail.apiResponse contains the full server response. By embedding
+		 * fb_lead_event_id here, inject_lead_event()'s JS listener can pull it from
+		 * event.detail.apiResponse.fb_lead_event_id and pass it as eventID to fbq(),
+		 * ensuring browser and CAPI events share the same ID for deduplication.
+		 *
+		 * @param array $response The CF7 REST response array.
+		 * @param array $result   The CF7 submission result.
+		 * @return array
+		 */
+		public function inject_cf7_lead_event_id_in_response( $response, $result ) {
+			if ( $this->cf7_lead_event instanceof Event ) {
+				$response['fb_lead_event_id'] = $this->cf7_lead_event->get_id();
 			}
+			return $response;
+		}
+
+		/**
+		 * Injects the CF7 Lead browser pixel listener into the page footer.
+		 *
+		 * Listens for the wpcf7submit DOM event (fired by CF7 JS after the REST call
+		 * succeeds) and fires fbq('track', 'Lead', ...) only when the response status
+		 * is 'mail_sent'. The event_id is read from event.detail.apiResponse.fb_lead_event_id
+		 * — the value we injected server-side — so browser and CAPI events share the
+		 * same ID and Meta can deduplicate them correctly.
+		 */
+		public function inject_lead_event() {
+			if ( is_admin() || ! wp_script_is( 'contact-form-7', 'enqueued' ) ) {
+				return;
+			}
+
+			$pixel_id       = \WC_Facebookcommerce_Pixel::get_pixel_id();
+			$agent          = esc_js( Event::get_platform_identifier() );
+			$integration    = esc_js( \WC_Facebookcommerce_Utils::get_integration_name() );
+			?>
+			<!-- Facebook Pixel Event Code -->
+			<script type="text/javascript">
+			document.addEventListener( 'wpcf7submit', function( event ) {
+				if ( 'mail_sent' !== event.detail.status ) {
+					return;
+				}
+
+				var apiResponse = event.detail.apiResponse || {};
+				var eventId     = apiResponse.fb_lead_event_id || null;
+
+				var inputs = event.detail.inputs || [];
+				var emailInput = inputs.filter( function( el ) { return el.name && el.name.indexOf( 'email' ) !== -1; } )[ 0 ];
+				var email = emailInput ? emailInput.value : null;
+
+				/* <?php echo $integration; ?> Facebook Integration Event Tracking */
+				fbq( 'set', 'agent', '<?php echo $agent; ?>', '<?php echo esc_js( $pixel_id ); ?>' );
+				if ( email ) {
+					fbq( 'init', '<?php echo esc_js( $pixel_id ); ?>', { em: email } );
+				}
+				if ( eventId ) {
+					fbq( 'track', 'Lead', {}, { eventID: eventId } );
+				} else {
+					fbq( 'track', 'Lead' );
+				}
+			}, false );
+			</script>
+			<!-- End Facebook Pixel Event Code -->
+			<?php
 		}
 
 		/**
