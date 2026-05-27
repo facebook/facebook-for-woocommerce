@@ -332,6 +332,21 @@ class RolloutSwitchesTest extends \WooCommerce\Facebook\Tests\AbstractWPUnitTest
 		$this->assertFalse($switch_mock->is_switch_enabled(RolloutSwitches::SWITCH_ISOLATED_PIXEL_EXECUTION_ENABLED));
 	}
 
+	// =========================================================================
+	// Block CAPI On Invalid Token Switch Tests
+	// =========================================================================
+
+	public function test_block_capi_on_invalid_token_switch_constant_exists() {
+		$this->assertTrue( defined( 'WooCommerce\Facebook\RolloutSwitches::SWITCH_BLOCK_CAPI_ON_INVALID_TOKEN' ) );
+		$this->assertEquals( 'enable_woocommerce_block_capi_on_invalid_token', RolloutSwitches::SWITCH_BLOCK_CAPI_ON_INVALID_TOKEN );
+	}
+
+	public function test_block_capi_on_invalid_token_switch_in_active_switches() {
+		$plugin           = facebook_for_woocommerce();
+		$rollout_switches = new RolloutSwitches( $plugin );
+		$this->assertContains( RolloutSwitches::SWITCH_BLOCK_CAPI_ON_INVALID_TOKEN, $rollout_switches->get_active_switches() );
+	}
+
 	/**
 	 * Test that version updates bypass transient check and continue execution.
 	 */

@@ -53,4 +53,44 @@ class HandlerDisconnectTest extends AbstractWPUnitTestWithOptionIsolationAndSafe
 		$this->assertEquals( 200, $response->get_status() );
 		$this->assertTrue( true, 'Uninstall completed successfully' );
 	}
+
+	/**
+	 * Test that handle_update clears the wc_facebook_connection_invalid transient.
+	 */
+	public function test_handle_update_clears_connection_invalid_transient(): void {
+		// Pre-set the transient as if the connection was previously flagged invalid.
+		set_transient( 'wc_facebook_connection_invalid', time(), DAY_IN_SECONDS );
+		$this->assertNotFalse( get_transient( 'wc_facebook_connection_invalid' ) );
+
+		$handler      = new Handler();
+		$mock_request = $this->createMock( \WP_REST_Request::class );
+		$mock_request->method( 'get_params' )->willReturn( [
+			'access_token'          => 'new_valid_token',
+			'merchant_access_token' => 'new_valid_token',
+		] );
+
+		$response = $handler->handle_update( $mock_request );
+
+		$this->assertEquals( 200, $response->get_status() );
+		$this->assertFalse( get_transient( 'wc_facebook_connection_invalid' ), 'Connection invalid transient should be deleted after successful settings update.' );
+	}
+
+	/**
+	 * Test that handle_update returns success with valid params.
+	 */
+	public function test_handle_update_returns_success(): void {
+		$handler      = new Handler();
+		$mock_request = $this->createMock( \WP_REST_Request::class );
+		$mock_request->method( 'get_params' )->willReturn( [
+			'access_token'          => 'test_token',
+			'merchant_access_token' => 'test_token',
+		] );
+
+		$response = $handler->handle_update( $mock_request );
+
+		$this->assertEquals( 200, $response->get_status() );
+
+		$data = $response->get_data();
+		$this->assertTrue( $data['success'] );
+	}
 }

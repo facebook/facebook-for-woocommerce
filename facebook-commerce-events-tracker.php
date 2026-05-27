@@ -14,6 +14,7 @@ use WooCommerce\Facebook\Framework\Api\Exception as ApiException;
 use WooCommerce\Facebook\Framework\Helper;
 use WooCommerce\Facebook\Framework\Logger;
 use WooCommerce\Facebook\Integrations\CostOfGoods\CostOfGoods;
+use WooCommerce\Facebook\RolloutSwitches;
 
 if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 
@@ -1542,6 +1543,16 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 		protected function send_api_event( Event $event, bool $send_now = true ) {
 			if ( $this->is_crawler_request( $event ) ) {
 				facebook_for_woocommerce()->log( 'Blocked CAPI event for crawler: ' . $event->get_client_user_agent() );
+				return;
+			}
+
+			// Skip CAPI events when the connection is known-invalid (auth error detected),
+			// gated on the server-side rollout switch. Events resume after the merchant reconnects.
+			if ( get_transient( 'wc_facebook_connection_invalid' )
+				&& facebook_for_woocommerce()->get_rollout_switches()->is_switch_enabled(
+					RolloutSwitches::SWITCH_BLOCK_CAPI_ON_INVALID_TOKEN
+				)
+			) {
 				return;
 			}
 
