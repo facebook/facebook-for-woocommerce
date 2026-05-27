@@ -92,6 +92,10 @@ class Shops extends Abstract_Settings_Screen {
 	 * @internal
 	 */
 	public function add_notices() {
+		// Note: wc_facebook_connection_invalid notice is now handled globally
+		// in WC_Facebookcommerce::add_connection_invalid_notice() so it fires
+		// for both enhanced and non-enhanced settings paths.
+
 		if ( get_transient( 'wc_facebook_connection_failed' ) ) {
 			$message = sprintf(
 			/* translators: Placeholders: %1$s - <strong> tag, %2$s - </strong> tag, %3$s - <a> tag, %4$s - </a> tag, %5$s - <a> tag, %6$s - </a> tag */
@@ -177,12 +181,20 @@ class Shops extends Abstract_Settings_Screen {
 		$connection            = facebook_for_woocommerce()->get_connection_handler();
 		$is_connected          = $connection->is_connected();
 		$merchant_access_token = get_option( 'wc_facebook_merchant_access_token', '' );
+		$connection_invalid    = (bool) get_transient( 'wc_facebook_connection_invalid' );
 
-		if ( ! empty( $merchant_access_token ) && $is_connected ) {
+		if ( ! empty( $merchant_access_token ) && $is_connected && ! $connection_invalid ) {
 			$iframe_url = \WooCommerce\Facebook\Handlers\MetaExtension::generate_iframe_management_url(
 				$connection->get_external_business_id()
 			);
-		} else {
+		}
+
+		// Fall back to the splash/onboarding iframe if the management URL could not be loaded
+		// (e.g. due to an invalid token) or if the store was never connected.
+		if ( empty( $iframe_url ) ) {
+			// When reconnecting after an invalid token, pass is_connected=true
+			// so CPH sets repeat=true in the OAuth dialog and reconnects the
+			// existing FBE installation rather than creating a new one.
 			$iframe_url = \WooCommerce\Facebook\Handlers\MetaExtension::generate_iframe_splash_url(
 				$is_connected,
 				$connection->get_plugin(),

@@ -16,8 +16,9 @@ class Request extends API\Request {
 	 *
 	 * @param string      $external_business_id The external business ID.
 	 * @param string|null $catalog_id           Optional catalog ID.
+	 * @param string|null $pixel_id             Optional pixel ID.
 	 */
-	public function __construct( string $external_business_id, ?string $catalog_id = null ) {
+	public function __construct( string $external_business_id, ?string $catalog_id = null, ?string $pixel_id = null ) {
 		parent::__construct( '/fbe_business/fbe_rollout_switches', 'GET' );
 	}
 }

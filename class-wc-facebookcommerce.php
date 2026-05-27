@@ -273,6 +273,8 @@ class WC_Facebookcommerce extends WooCommerce\Facebook\Framework\Plugin {
 				}
 				$this->wa_admin_settings     = new WooCommerce\Facebook\Admin\WhatsApp_Integration_Settings( $this );
 				$this->plugin_render_handler = new \WooCommerce\Facebook\Handlers\PluginRender( $this );
+
+				add_action( 'admin_notices', array( $this, 'add_connection_invalid_notice' ) );
 			}
 		}
 	}
@@ -873,11 +875,52 @@ class WC_Facebookcommerce extends WooCommerce\Facebook\Framework\Plugin {
 	}
 
 	/**
-	 * Determines if the enhanced onboarding (iframe) should be used.
+	/**
+	 * Displays an admin notice when the Facebook connection is invalid.
 	 *
-	 * @return bool
+	 * Hooked on admin_notices so it fires regardless of whether the enhanced
+	 * or non-enhanced settings path is active.
 	 */
+	public function add_connection_invalid_notice() {
+		if ( ! get_transient( 'wc_facebook_connection_invalid' ) ) {
+			return;
+		}
+
+		// Only show on the Plugins page and the Facebook settings page.
+		$screen = get_current_screen();
+		$allowed_screens = array( 'plugins', 'marketing_page_wc-facebook', 'woocommerce_page_wc-facebook' );
+		if ( ! $screen || ! in_array( $screen->id, $allowed_screens, true ) ) {
+			return;
+		}
+
+		$message = sprintf(
+			/* translators: %1$s - <strong>, %2$s - </strong>, %3$s - <a> reconnect link, %4$s - </a>, %5$s - <a> support link, %6$s - </a> */
+			__( '%1$sMeta for WooCommerce connection error.%2$s Your access token is no longer valid. This may happen if the system user was unconfirmed, the password was changed, or the app was deauthorized. Please %3$sreconnect your store%4$s to restore functionality, or %5$scontact support%6$s for help.', 'facebook-for-woocommerce' ),
+			'<strong>',
+			'</strong>',
+			'<a href="' . esc_url( $this->get_settings_url() ) . '">',
+			'</a>',
+			'<a href="' . esc_url( $this->get_support_url() ) . '" target="_blank">',
+			'</a>'
+		);
+
+		$this->get_admin_notice_handler()->add_admin_notice(
+			$message,
+			'wc_facebook_connection_invalid',
+			array(
+				'notice_class' => 'error',
+				'dismissible'  => false,
+			)
+		);
+	}
+
 	public function use_enhanced_onboarding(): bool {
+		// If the connection is invalid, force enhanced onboarding so the Shops
+		// tab renders the splash iframe for reconnection.
+		if ( get_transient( 'wc_facebook_connection_invalid' ) ) {
+			return true;
+		}
+
 		$connection_handler              = $this->get_connection_handler();
 		$commerce_partner_integration_id = $connection_handler->get_commerce_partner_integration_id();
 
