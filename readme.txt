@@ -2,8 +2,8 @@
 Contributors: facebook
 Tags: meta, facebook, whatsapp, conversions api, catalog sync
 Requires at least: 5.6
-Tested up to: 6.9.4
-Stable tag: 3.6.3
+Tested up to: 7.0
+Stable tag: 3.7.0
 Requires PHP: 7.4
 MySQL: 5.6 or greater
 License: GPLv2 or later
@@ -42,13 +42,12 @@ To suggest technical improvements, you can raise an issue on our [Github reposit
 
 == Changelog ==
 
-= 3.7.0 - 2026-05-05 =
-* Add - Add Signal state controls for Pixel and CAPI by @iodic in #3914
-* Fix - Add origin validation to postMessage handlers in onboarding scripts by @devbodaghe in #3913
-* Fix - Fixed the contributors, removed Meta and added Facebook by @vahidkay-meta in #3905
-* Dev - Upgrading the dependencies, and removing the unnecessary ones to improve the release process by @vahidkay-meta in #3891
-* Fix - Add opt-in non-blocking mode for Pixel event API requests by @vahidkay-meta in #3892
-* Tweak - Tweak - Improve Set Stable Tag by white-listing only release/*/publish branches by @vahidkay-meta in #3904
-* Fix - Bump webpack from 5.99.9 to 5.105.0 by @app/dependabot in #3849
+= 3.7.1 - 2026-05-27 =
+* Fix - Fix for fbc & fbp priorities on when they are set by @vahidkay-meta in #3936
+* Add - OAuth Detection and Reconnect Prompts (#3869) by @rafael-curran in #3869
+* Fix - Fix Store API batch AddToCart Pixel tracking by @iodic in #3932
+* Fix - Raise Ajax listener priority for WPForms `assets_footer` by @iodic in #3931
+* Fix - Update facebook-commerce-iframe-whatsapp-utility-event.php by @ceciliazeng-wa in #3928
+* Add - Filter crawler traffic from CAPI events to close pixel/server event gap by @cshing-meta in #3918
 
 [See changelog for all versions](https://raw.githubusercontent.com/facebook/facebook-for-woocommerce/refs/heads/main/changelog.txt).

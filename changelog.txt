@@ -1,5 +1,13 @@
 *** Meta for WooCommerce Changelog ***
 
+= 3.7.1 - 2026-05-27 =
+* Fix - Fix for fbc & fbp priorities on when they are set by @vahidkay-meta in #3936
+* Add - OAuth Detection and Reconnect Prompts (#3869) by @rafael-curran in #3869
+* Fix - Fix Store API batch AddToCart Pixel tracking by @iodic in #3932
+* Fix - Raise Ajax listener priority for WPForms `assets_footer` by @iodic in #3931
+* Fix - Update facebook-commerce-iframe-whatsapp-utility-event.php by @ceciliazeng-wa in #3928
+* Add - Filter crawler traffic from CAPI events to close pixel/server event gap by @cshing-meta in #3918
+
 = 3.7.0 - 2026-05-05 =
 * Add - Add Signal state controls for Pixel and CAPI by @iodic in #3914
 * Fix - Add origin validation to postMessage handlers in onboarding scripts by @devbodaghe in #3913
