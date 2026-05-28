@@ -958,9 +958,15 @@ JS;
 		if ( ! empty( $event_id ) ) {
 			$event = sprintf(
 				"/* %s Facebook Integration Event Tracking */\n" .
+				"window.wcFacebookPixelFiredEvents = window.wcFacebookPixelFiredEvents || {};\n" .
+				"if (!window.wcFacebookPixelFiredEvents[%s]) {\n" .
+				"window.wcFacebookPixelFiredEvents[%s] = true;\n" .
 				"fbq('set', 'agent', '%s', '%s');\n" .
-				"fbq('%s', '%s', %s, %s);",
+				"fbq('%s', '%s', %s, %s);\n" .
+				'}',
 				WC_Facebookcommerce_Utils::get_integration_name(),
+				wp_json_encode( $event_id ),
+				wp_json_encode( $event_id ),
 				Event::get_platform_identifier(),
 				self::get_pixel_id(),
 				esc_js( $method ),
