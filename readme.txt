@@ -9,7 +9,7 @@ MySQL: 5.6 or greater
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
-Reach more customers and drive sales on Facebook, Instagram and WhatsApp with the official Meta for WooCommerce plugin.
+WhatsApp, Facebook and Instagram help you reach more customers and drive sales with the official Meta for WooCommerce plugin.
 
 == Description ==
 
