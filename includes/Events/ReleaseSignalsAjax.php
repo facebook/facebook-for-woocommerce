@@ -27,8 +27,6 @@ class ReleaseSignalsAjax {
 	/** @var string AJAX action name. */
 	const ACTION = 'facebook_release_signals';
 
-	/** @var string Nonce action. */
-	const NONCE_ACTION = 'facebook_release_signals';
 
 	/** @var int Maximum number of events per request. */
 	const MAX_EVENTS = 20;
@@ -36,11 +34,6 @@ class ReleaseSignalsAjax {
 	/** @var int Maximum age of an event in seconds (30 minutes). */
 	const MAX_EVENT_AGE = 1800;
 
-	/** @var int Default rate-limit window in seconds (5 minutes). */
-	const RATE_LIMIT_WINDOW = 300;
-
-	/** @var int Default maximum accepted events per IP per window. */
-	const RATE_LIMIT_MAX_EVENTS = 80;
 
 	/** @var array Allowed event names. */
 	const ALLOWED_EVENTS = array(
@@ -60,8 +53,6 @@ class ReleaseSignalsAjax {
 	 */
 	public function __construct() {
 		add_action( 'wp_ajax_' . self::ACTION, array( $this, 'handle' ) );
-
-		// Signal release must work for guest shoppers as well as logged-in users.
 		add_action( 'wp_ajax_nopriv_' . self::ACTION, array( $this, 'handle' ) );
 	}
 
@@ -76,19 +67,38 @@ class ReleaseSignalsAjax {
 			wp_send_json_error( array( 'message' => 'Invalid request body.' ), 400 );
 		}
 
-		$nonce = isset( $body['security'] ) ? sanitize_text_field( $body['security'] ) : '';
-		if ( ! wp_verify_nonce( $nonce, self::NONCE_ACTION ) ) {
-			wp_send_json_error( array( 'message' => 'Invalid nonce.' ), 403 );
-		}
+		// Reject requests that don't carry the signal-state cookie.
+		// Only browsers that have been through the hold/release flow will
+		// have this cookie, which filters out blind POST abuse.
+		$signal_state = isset( $_COOKIE[ FacebookSignalsState::COOKIE_NAME ] )
+			? sanitize_text_field( wp_unslash( $_COOKIE[ FacebookSignalsState::COOKIE_NAME ] ) )
+			: '';
 
-		if ( $this->is_rate_limited() ) {
-			wp_send_json_error( array( 'message' => 'Rate limit exceeded.' ), 429 );
+		if ( empty( $signal_state ) ) {
+			wp_send_json_error( array( 'message' => 'Missing signal state.' ), 403 );
 		}
 
 		$events      = isset( $body['events'] ) && is_array( $body['events'] ) ? $body['events'] : array();
 		$attribution = isset( $body['attribution'] ) && is_array( $body['attribution'] ) ? $body['attribution'] : array();
 		$fbc         = $this->sanitize_attribution_value( $attribution, 'fbc' );
 		$fbp         = $this->sanitize_attribution_value( $attribution, 'fbp' );
+
+		// If JS sent an fbclid, inject it into $_GET so ParamBuilder can
+		// generate fbc through its standard path.
+		$restore_fbclid = null;
+		if ( empty( $fbc ) && ! empty( $body['fbclid'] ) ) {
+			$fbclid         = sanitize_text_field( $body['fbclid'] );
+			$restore_fbclid = $this->temporarily_set_superglobal_value( '_GET', 'fbclid', $fbclid );
+		}
+
+		// Run ParamBuilder to generate fbc/fbp if not provided by the client.
+		if ( empty( $fbc ) || empty( $fbp ) ) {
+			$this->resolve_attribution_via_param_builder( $fbc, $fbp );
+		}
+
+		if ( null !== $restore_fbclid ) {
+			$this->restore_superglobal_value( '_GET', 'fbclid', $restore_fbclid );
+		}
 
 		$events = array_slice( $events, 0, self::MAX_EVENTS );
 
@@ -104,8 +114,6 @@ class ReleaseSignalsAjax {
 
 		$cookie_domains = $this->get_attribution_cookie_domains();
 
-		// Expose held attribution to Event::get_click_id()/get_browser_id(), so
-		// released events use the same attribution path as normal CAPI events.
 		$restore_cookie_fbc = $this->temporarily_set_superglobal_value( '_COOKIE', '_fbc', $fbc );
 		$restore_cookie_fbp = $this->temporarily_set_superglobal_value( '_COOKIE', '_fbp', $fbp );
 
@@ -130,14 +138,26 @@ class ReleaseSignalsAjax {
 		$this->restore_superglobal_value( '_COOKIE', '_fbp', $restore_cookie_fbp );
 
 		if ( ! empty( $valid_events ) ) {
-			$this->record_rate_limit_usage( count( $valid_events ) );
-
 			try {
 				$api->send_pixel_events( $pixel_id, $valid_events );
 				$sent_count = count( $valid_events );
 			} catch ( ApiException $e ) {
 				facebook_for_woocommerce()->log( 'Release signals: could not send events: ' . $e->getMessage() );
 			}
+		}
+
+		// Provide fresh user_info so JS can call fbq('init') with correct
+		// AAM data instead of potentially stale cached values.
+		$user_info = array();
+		try {
+			$integration = facebook_for_woocommerce()->get_integration();
+			if ( $integration ) {
+				$aam_settings = $integration->load_aam_settings_of_pixel();
+				$user_info    = \WC_Facebookcommerce_Utils::get_user_info( $aam_settings );
+			}
+		// phpcs:ignore Generic.CodeAnalysis.EmptyStatement.DetectedCatch
+		} catch ( \Exception $e ) {
+			// Best-effort: pixel init will use empty user_info.
 		}
 
 		wp_send_json_success(
@@ -147,6 +167,7 @@ class ReleaseSignalsAjax {
 				'fbp_domain' => $cookie_domains['fbp'],
 				'fbc_domain' => $cookie_domains['fbc'],
 				'sent_count' => $sent_count,
+				'user_info'  => $user_info,
 			)
 		);
 	}
@@ -344,6 +365,32 @@ class ReleaseSignalsAjax {
 	}
 
 	/**
+	 * Uses ParamBuilder to generate fbc/fbp from the current request context.
+	 *
+	 * @param string $fbc Attribution click ID reference (populated if empty).
+	 * @param string $fbp Attribution browser ID reference (populated if empty).
+	 */
+	private function resolve_attribution_via_param_builder( &$fbc, &$fbp ) {
+		try {
+			$param_builder = \WC_Facebookcommerce_EventsTracker::get_param_builder();
+			if ( ! $param_builder ) {
+				return;
+			}
+
+			if ( empty( $fbc ) ) {
+				$fbc = $param_builder->getFbc();
+			}
+
+			if ( empty( $fbp ) ) {
+				$fbp = $param_builder->getFbp();
+			}
+		// phpcs:ignore Generic.CodeAnalysis.EmptyStatement.DetectedCatch
+		} catch ( \Exception $e ) {
+			// ParamBuilder is best-effort.
+		}
+	}
+
+	/**
 	 * Builds a sanitized Event object for CAPI delivery.
 	 *
 	 * @param array $event_data Raw event data from the queue.
@@ -382,61 +429,4 @@ class ReleaseSignalsAjax {
 		return new Event( $server_event_data );
 	}
 
-	/**
-	 * Whether the current client is over its release-events rate limit.
-	 *
-	 * Counts accepted events (not requests) per IP per window. Both the
-	 * window length and the cap are filterable.
-	 *
-	 * @since 3.6.0
-	 *
-	 * @return bool
-	 */
-	private function is_rate_limited() {
-		$max = (int) apply_filters( 'wc_facebook_release_signals_rate_limit_max', self::RATE_LIMIT_MAX_EVENTS );
-
-		if ( $max <= 0 ) {
-			return false;
-		}
-
-		$key   = $this->get_rate_limit_key();
-		$count = (int) get_transient( $key );
-
-		return $count >= $max;
-	}
-
-	/**
-	 * Records that the current client just had N events accepted, for rate-limit accounting.
-	 *
-	 * @since 3.6.0
-	 *
-	 * @param int $accepted_event_count Number of events accepted in this request.
-	 */
-	private function record_rate_limit_usage( $accepted_event_count ) {
-		if ( $accepted_event_count <= 0 ) {
-			return;
-		}
-
-		$window = (int) apply_filters( 'wc_facebook_release_signals_rate_limit_window', self::RATE_LIMIT_WINDOW );
-		if ( $window <= 0 ) {
-			return;
-		}
-
-		$key   = $this->get_rate_limit_key();
-		$count = (int) get_transient( $key );
-
-		set_transient( $key, $count + (int) $accepted_event_count, $window );
-	}
-
-	/**
-	 * Builds a transient key scoped to the requesting client IP.
-	 *
-	 * @since 3.6.0
-	 *
-	 * @return string
-	 */
-	private function get_rate_limit_key() {
-		$ip = isset( $_SERVER['REMOTE_ADDR'] ) ? sanitize_text_field( wp_unslash( $_SERVER['REMOTE_ADDR'] ) ) : '';
-		return 'wc_fb_release_signals_rl_' . md5( $ip );
-	}
 }

@@ -81,20 +81,22 @@
             return;
         }
 
-        // Skip if fbq not available
-        if (typeof fbq !== 'function') {
-            logWarning('fbq not available, skipping event:', eventData.name);
-            return;
-        }
-
         try {
             var params = eventData.params;
 
-            // Fire the event with eventID as 4th argument for deduplication
-            if (eventData.eventId) {
-                fbq(eventData.method, eventData.name, params, {eventID: eventData.eventId});
+            if (window.FacebookSignals && typeof window.FacebookSignals.trackEvent === 'function') {
+                window.FacebookSignals.trackEvent(eventData.name, params, null, eventData.method, eventData.eventId);
             } else {
-                fbq(eventData.method, eventData.name, params);
+                if (typeof fbq !== 'function') {
+                    logWarning('fbq not available, skipping event:', eventData.name);
+                    return;
+                }
+
+                if (eventData.eventId) {
+                    fbq(eventData.method, eventData.name, params, {eventID: eventData.eventId});
+                } else {
+                    fbq(eventData.method, eventData.name, params);
+                }
             }
 
             markEventFired(eventData.eventId);
