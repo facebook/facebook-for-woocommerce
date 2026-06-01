@@ -5,6 +5,41 @@
 const { TIMEOUTS } = require('../constants/timeouts');
 
 /**
+ * Dismiss WooCommerce onboarding/tour overlays that can intercept clicks in fresh installs.
+ * Safe no-op when overlays are absent.
+ * @param {import('@playwright/test').Page} page
+ */
+async function dismissWooInterferingOverlays(page) {
+  try {
+    // Close "Start by adding attributes" / tour popovers.
+    const popoverCloseButtons = page.locator(
+      '.woocommerce-tour-kit-step-navigation__done-btn:visible, '
+      + '.components-popover button[aria-label="Close"]:visible, '
+      + '.components-popover__content button[aria-label="Close"]:visible'
+    );
+    const closeCount = await popoverCloseButtons.count();
+    for (let i = 0; i < closeCount; i++) {
+      await popoverCloseButtons.nth(i).click({ force: true }).catch(() => {});
+    }
+
+    // Close top Woo blue setup banner if present.
+    const setupBannerDismiss = page.locator(
+      '.woocommerce-layout__header-tasks-reminder button[aria-label="Dismiss"], '
+      + '.woocommerce-layout__header-tasks-reminder .components-button[aria-label="Dismiss"], '
+      + '.woocommerce-layout__header button[aria-label="Dismiss"]'
+    ).first();
+    if (await setupBannerDismiss.count()) {
+      await setupBannerDismiss.click({ force: true }).catch(() => {});
+    }
+
+    // Final escape to close any lingering popovers/modals.
+    await page.keyboard.press('Escape').catch(() => {});
+  } catch {
+    // Best-effort only.
+  }
+}
+
+/**
  * Set product title
  * @param {import('@playwright/test').Page} page - Playwright page
  * @param {string} newTitle - New title
@@ -14,6 +49,7 @@ async function setProductTitle(page, newTitle) {
   titleField.waitFor({ state: 'visible', timeout: TIMEOUTS.MEDIUM });
   await titleField.scrollIntoViewIfNeeded();
   await titleField.fill(newTitle);
+  await dismissWooInterferingOverlays(page);
   console.log(`✅ Updated title to: "${newTitle}"`);
 }
 
@@ -144,8 +180,147 @@ async function exactSearchSelect2Container(page, locator, searchValue) {
   throw lastError;
 }
 
+/**
+ * Resolve a visible frontend search input across desktop/mobile layouts.
+ * Tries direct selectors first, then opens common mobile menu toggles.
+ * @param {import('@playwright/test').Page} page - Playwright page
+ * @returns {Promise<import('@playwright/test').Locator>}
+ */
+async function getVisibleSearchInput(page) {
+  // Prefer Woo product-search forms first (they include post_type=product and trigger Search event logic).
+  const productSearchInput = page
+    .locator('form.woocommerce-product-search input[type="search"]:visible, form.woocommerce-product-search .search-field:visible')
+    .first();
+  if (await productSearchInput.count() > 0) {
+    return productSearchInput;
+  }
+
+  const productSearchByHiddenInput = page
+    .locator('form:has(input[name="post_type"][value="product"]) input[type="search"]:visible, form:has(input[name="post_type"][value="product"]) .search-field:visible')
+    .first();
+  if (await productSearchByHiddenInput.count() > 0) {
+    return productSearchByHiddenInput;
+  }
+
+  const directSearchInput = page.locator('.search-field:visible, input[type="search"]:visible').first();
+  if (await directSearchInput.count() > 0) {
+    return directSearchInput;
+  }
+
+  const mobileMenuToggle = page.locator(
+    '.menu-toggle:visible, button.menu-toggle:visible, .wc-block-mini-cart__button:visible'
+  ).first();
+
+  if (await mobileMenuToggle.count() > 0) {
+    await mobileMenuToggle.click().catch(() => {});
+    await page.waitForTimeout(TIMEOUTS.INSTANT);
+  }
+
+  // Keep this non-throwing so callers can skip when theme/browser layout has no search UI.
+  const fallbackVisible = page.locator('.search-field:visible, input[type="search"]:visible').first();
+  if (await fallbackVisible.count() > 0) {
+    return fallbackVisible;
+  }
+
+  return null;
+}
+
+/**
+ * Submit storefront search in a cross-browser-safe way.
+ * WebKit/Safari can occasionally miss keypress-based submit handlers,
+ * so prefer form submit button click when available.
+ */
+async function submitSearch(page, searchInput) {
+  const initialUrl = page.url();
+  const isSearchUrl = () => /[?&]s=/.test(page.url());
+  const hasNavigated = () => page.url() !== initialUrl;
+
+  // Ensure the form submits as a product search so plugin Search event hooks execute.
+  await searchInput.evaluate((input) => {
+    const form = input.closest('form');
+    if (!form) {
+      return;
+    }
+
+    let postType = form.querySelector('input[name="post_type"]');
+    if (!postType) {
+      postType = document.createElement('input');
+      postType.type = 'hidden';
+      postType.name = 'post_type';
+      form.appendChild(postType);
+    }
+    postType.value = 'product';
+  }).catch(() => {});
+
+  // Capture typed query for deterministic fallback navigation.
+  const query = await searchInput.inputValue().catch(() => '');
+
+  // First try standard Enter key flow.
+  await searchInput.press('Enter').catch(() => {});
+  if (isSearchUrl()) {
+    return;
+  }
+
+  // If URL still not a search URL, submit the nearest form in-page.
+  const submitted = await searchInput.evaluate((input) => {
+    try {
+      const form = input.closest('form');
+      if (!form) {
+        return false;
+      }
+
+      // Prefer requestSubmit/submit to avoid pointer interception issues on WebKit.
+      if (typeof form.requestSubmit === 'function') {
+        form.requestSubmit();
+        return true;
+      }
+
+      if (typeof form.submit === 'function') {
+        form.submit();
+        return true;
+      }
+
+      const evt = new Event('submit', { bubbles: true, cancelable: true });
+      form.dispatchEvent(evt);
+      return true;
+    } catch (_) {
+      return false;
+    }
+  }).catch(() => false);
+
+  if (!submitted) {
+    // Last chance: click submit control with force to bypass overlay/pointer intercept.
+    const form = searchInput.locator('xpath=ancestor::form[1]');
+    const submitButton = form.locator('button[type="submit"], input[type="submit"], .search-submit').first();
+    if (await submitButton.count().catch(() => 0)) {
+      await submitButton.click({ force: true }).catch(() => {});
+    }
+  }
+
+  if (isSearchUrl() || hasNavigated()) {
+    return;
+  }
+
+  // Give native submit/navigation a brief chance to settle before forcing fallback.
+  // Without this, fast/async form submissions can still be in flight and we may
+  // trigger the same search route twice, producing duplicate Search CAPI events.
+  await page.waitForURL(/\?s=.*(?:&|\?)post_type=product/, { timeout: TIMEOUTS.NORMAL }).catch(() => {});
+  if (isSearchUrl() || hasNavigated()) {
+    return;
+  }
+
+  // WebKit/iOS fallback: if UI submit fails to navigate at all,
+  // force deterministic product search URL so Search hook conditions are met.
+  if (query && query.trim()) {
+    await page.goto(`/?s=${encodeURIComponent(query.trim())}&post_type=product`);
+  }
+}
+
 module.exports = {
   setProductTitle,
   setProductDescription,
-  exactSearchSelect2Container
+  exactSearchSelect2Container,
+  getVisibleSearchInput,
+  submitSearch,
+  dismissWooInterferingOverlays
 };

@@ -2,7 +2,6 @@ const { test, expect } = require('@playwright/test');
 const {
   TIMEOUTS,
   baseURL,
-  loginToWordPress,
   logTestStart,
   logTestEnd,
   ensureDebugModeEnabled,
@@ -41,7 +40,6 @@ test.describe('WooCommerce Plugin level tests', () => {
 
     // Ensure browser stability
     await page.setViewportSize({ width: 1280, height: 720 });
-    await loginToWordPress(page);
   });
 
   test('Check WordPress and WooCommerce are up to date', async ({ page }) => {

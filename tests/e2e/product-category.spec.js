@@ -2,7 +2,6 @@ const { test, expect } = require('@playwright/test');
 const {
     TIMEOUTS,
     baseURL,
-    loginToWordPress,
     safeScreenshot,
     cleanupProduct,
     generateUniqueSKU,
@@ -24,7 +23,6 @@ test.describe('Meta for WooCommerce - Product Category E2E Tests', () => {
 
         // Ensure browser stability
         await page.setViewportSize({ width: 1280, height: 720 });
-        await loginToWordPress(page);
     });
 
     test('Create category and sync products to catalog as set', async ({ page }, testInfo) => {

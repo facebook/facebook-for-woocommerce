@@ -119,13 +119,14 @@ if ( ! defined( 'ABSPATH' ) ) {
     exit;
 }
 
-// ERROR 1: Broken JS in enqueue_inline_js (WooCommerce's shared queue)
+// ERROR 1: Broken JS in wc_queued_js via WooCommerce shared queue helper.
 // This is the MAIN scenario our isolated approach protects against.
 add_action( 'wp_footer', function() {
-    if ( ! function_exists( 'enqueue_inline_js' ) ) {
+    if ( ! class_exists( 'WC_Facebookcommerce_Utils' ) ) {
         return;
     }
-    enqueue_inline_js( '
+
+    WC_Facebookcommerce_Utils::enqueue_inline_js( '
         console.log("[E2E Test] ERROR 1: Broken JS in wc_queued_js");
         throw new Error("Simulated error in wc_queued_js - tests isolated execution");
     ' );
@@ -176,6 +177,34 @@ async function removeJsErrorSimulatorMuPlugin() {
   console.log('✅ JS error simulator mu-plugin removed');
 }
 
+/**
+ * Install mu-plugin that disables WooCommerce single-result product search redirects.
+ */
+async function installSingleSearchRedirectBlockerMuPlugin() {
+  console.log('🔧 Installing single-search redirect blocker mu-plugin...');
+  const muPluginDir = `${wpSitePath}/wp-content/mu-plugins`;
+  const muPluginFile = `${muPluginDir}/e2e-single-search-redirect-blocker.php`;
+  const code = `<?php\nadd_filter( 'woocommerce_redirect_single_search_result', '__return_false', 999 );\n`;
+
+  fs.mkdirSync(muPluginDir, { recursive: true });
+  fs.writeFileSync(muPluginFile, code);
+
+  console.log('✅ Single-search redirect blocker mu-plugin installed');
+}
+
+/**
+ * Remove the single-result search redirect blocker mu-plugin.
+ */
+async function removeSingleSearchRedirectBlockerMuPlugin() {
+  console.log('🧹 Removing single-search redirect blocker mu-plugin...');
+  const muPluginFile = `${wpSitePath}/wp-content/mu-plugins/e2e-single-search-redirect-blocker.php`;
+
+  if (fs.existsSync(muPluginFile)) {
+    fs.unlinkSync(muPluginFile);
+  }
+  console.log('✅ Single-search redirect blocker mu-plugin removed');
+}
+
 module.exports = {
   installPlugin,
   uninstallPlugin,
@@ -184,5 +213,7 @@ module.exports = {
   installPixelBlockerMuPlugin,
   removePixelBlockerMuPlugin,
   installJsErrorSimulatorMuPlugin,
-  removeJsErrorSimulatorMuPlugin
+  removeJsErrorSimulatorMuPlugin,
+  installSingleSearchRedirectBlockerMuPlugin,
+  removeSingleSearchRedirectBlockerMuPlugin
 };

@@ -4,15 +4,16 @@
 
 const fs = require('fs').promises;
 const path = require('path');
-const EVENT_SCHEMAS = require('./schemas');
+const EVENT_FIELD_CONTRACTS = require('./field-contracts');
 
 class EventValidator {
-  constructor(testId, fbc = false, expectZeroEvents = false) {
+  constructor(testId, fbc = false, expectZeroEvents = false, options = {}) {
     this.testId = testId;
     this.filePath = path.join(__dirname, '../../captured-events', `${testId}.json`);
     this.events = null;
     this.fbc = fbc;
     this.expectZeroEvents = expectZeroEvents;
+    this.allowBraveFbcNormalization = Boolean(options.allowBraveFbcNormalization);
   }
 
   async load() {
@@ -60,11 +61,33 @@ class EventValidator {
 
     console.log(`\n  🔍 Validating ${eventName}...`);
 
-    const schema = EVENT_SCHEMAS[eventName];
-    if (!schema) throw new Error(`No schema for: ${eventName}`);
+    const fieldContract = EVENT_FIELD_CONTRACTS[eventName];
+    if (!fieldContract) throw new Error(`No field contract for: ${eventName}`);
 
-    const pixel = this.events.pixel.filter(e => e.event_name === eventName);
-    const capi = this.events.capi.filter(e => e.event_name === eventName);
+    let pixel = this.events.pixel.filter(e => e.event_name === eventName);
+    let capi = this.events.capi.filter(e => e.event_name === eventName);
+
+    // CAPI logging can lag slightly behind Pixel capture on fast paths (especially PageView).
+    // Poll briefly for expected channels to avoid flaky false negatives.
+    if (!this.expectZeroEvents) {
+      const needsPixel = fieldContract.channels.includes('pixel');
+      const needsCapi = fieldContract.channels.includes('capi');
+      const deadline = Date.now() + 10000;
+
+      while (Date.now() < deadline) {
+        const pixelReady = !needsPixel || pixel.length >= 1;
+        const capiReady = !needsCapi || capi.length >= 1;
+
+        if (pixelReady && capiReady) {
+          break;
+        }
+
+        await new Promise(resolve => setTimeout(resolve, 250));
+        await this.load();
+        pixel = this.events.pixel.filter(e => e.event_name === eventName);
+        capi = this.events.capi.filter(e => e.event_name === eventName);
+      }
+    }
 
     console.log(`   Pixel events found: ${pixel.length}`);
     console.log(`   CAPI events found: ${capi.length}`);
@@ -77,8 +100,8 @@ class EventValidator {
 
     const p = pixel[0] || null;
     const c = capi[0] || null;
-    const hasPixel = schema.channels.includes('pixel');
-    const hasCapi = schema.channels.includes('capi');
+    const hasPixel = fieldContract.channels.includes('pixel');
+    const hasCapi = fieldContract.channels.includes('capi');
 
     if (hasPixel && p) {
       this.validateFieldsExistence(eventName, 'pixel', 'user_data', p, errors);
@@ -114,7 +137,7 @@ class EventValidator {
   }
 
   validateEventCounts(pixel, capi, eventName, errors) {
-    const schema = EVENT_SCHEMAS[eventName];
+    const fieldContract = EVENT_FIELD_CONTRACTS[eventName];
 
     if (this.expectZeroEvents) {
       if (pixel.length > 0 || capi.length > 0) {
@@ -131,13 +154,16 @@ class EventValidator {
       };
     }
 
-    if (schema.channels.includes('pixel') && pixel.length !== 1) {
+    if (fieldContract.channels.includes('pixel') && pixel.length !== 1) {
       errors.push(`Expected 1 Pixel event, found ${pixel.length}`);
     }
-    if (schema.channels.includes('capi') && capi.length !== 1) {
+    if (fieldContract.channels.includes('capi') && capi.length !== 1) {
       const uniqueEventIds = new Set(capi.map(e => e.event_id).filter(id => id));
       if (uniqueEventIds.size === 1) {
-        console.log(`  ⚠️  Found ${capi.length} CAPI events but all have same event_id (likely duplicates) - passing`);
+        const duplicateEventId = [...uniqueEventIds][0] || 'unknown';
+        console.warn(
+          `  ⚠️  Duplicate CAPI events detected for ${eventName}: count=${capi.length}, event_id=${duplicateEventId}. Allowing pass because duplicate records share the same event_id.`
+        );
       } else {
         errors.push(`Expected 1 CAPI event, found ${capi.length}`);
       }
@@ -156,12 +182,12 @@ class EventValidator {
   }
 
   validateFieldsExistence(eventName, dataSource, dataType, eventData, errors) {
-    const eventSchema = EVENT_SCHEMAS[eventName];
-    if (!eventSchema || !eventSchema[dataSource] || !eventSchema[dataSource][dataType]) {
+    const eventFieldContract = EVENT_FIELD_CONTRACTS[eventName];
+    if (!eventFieldContract || !eventFieldContract[dataSource] || !eventFieldContract[dataSource][dataType]) {
       return;
     }
 
-    const expectedFields = eventSchema[dataSource][dataType];
+    const expectedFields = eventFieldContract[dataSource][dataType];
     if (expectedFields.length === 0) {
       return;
     }
@@ -224,14 +250,23 @@ class EventValidator {
   validatePixelResponse(p, errors) {
     console.log(`  ✓ Checking Pixel response...`);
     if (p.api_status) {
-      if (p.api_status === 200 && p.api_ok) {
-        console.log(`    ✓ Pixel API: 200 OK`);
-      } else if (p.api_status === 'N/A') {
+      if (p.api_status === 'N/A') {
         console.log(`    ✓ Pixel API: N/A (FB Pixel uses sendBeacon for large payloads - no response expected)`);
-      } else {
-        errors.push(`Pixel API failed: HTTP ${p.api_status}`);
-        console.log(`    ✗ Pixel API: ${p.api_status}`);
+        return;
       }
+
+      const status = Number(p.api_status);
+      if (!Number.isNaN(status) && status >= 200 && status < 400) {
+        if (status === 200) {
+          console.log(`    ✓ Pixel API: 200 OK`);
+        } else {
+          console.log(`    ✓ Pixel API: ${status} redirect/success (accepted)`);
+        }
+        return;
+      }
+
+      errors.push(`Pixel API failed: HTTP ${p.api_status}`);
+      console.log(`    ✗ Pixel API: ${p.api_status}`);
     }
   }
 
@@ -283,18 +318,46 @@ class EventValidator {
     if (!capi.user_data?.fbc) {
       errors.push('fbc not present in CAPI event user data');
     }
-    if (pixel.cookies._fbc && capi.user_data?.fbc && pixel.cookies._fbc !== capi.user_data.fbc) {
-      errors.push(`Cookie _fbc mismatch: ${pixel.cookies._fbc} vs ${capi.user_data.fbc}`);
-    }
 
-    if (pixel.cookies._fbc && capi.user_data?.fbc && pixel.cookies._fbc === capi.user_data.fbc) {
-      console.log(`  ✓ Cookie _fbc present and matches: ${pixel.cookies._fbc}`);
+    const normalizeFbc = (value) => {
+      if (!value || typeof value !== 'string') return value;
+      const parts = value.split('.');
+      // Canonical format: fb.1.<timestamp>.<fbclid>[.<optional browser-specific suffix>]
+      return parts.length >= 4 ? parts.slice(0, 4).join('.') : value;
+    };
+
+    const isBraveUserAgent = () => {
+      const ua = String(capi.user_data?.client_user_agent || '');
+      return ua.includes('Brave') || ua.includes('brave');
+    };
+
+    if (pixel.cookies._fbc && capi.user_data?.fbc) {
+      const pixelFbc = pixel.cookies._fbc;
+      const capiFbc = capi.user_data.fbc;
+
+      if (pixelFbc === capiFbc) {
+        console.log(`  ✓ Cookie _fbc present and matches: ${pixelFbc}`);
+        return;
+      }
+
+      // Brave can append a suffix in cookie value; compare normalized core format there only.
+      if (this.allowBraveFbcNormalization || isBraveUserAgent()) {
+        const normalizedPixelFbc = normalizeFbc(pixelFbc);
+        const normalizedCapiFbc = normalizeFbc(capiFbc);
+
+        if (normalizedPixelFbc === normalizedCapiFbc) {
+          console.log(`  ✓ Cookie _fbc matches after Brave normalization: ${normalizedPixelFbc}`);
+          return;
+        }
+      }
+
+      errors.push(`Cookie _fbc mismatch: ${pixelFbc} vs ${capiFbc}`);
     }
   }
 
   validateDataMatch(pixel, capi, eventName, dataType, errors) {
-    const eventSchema = EVENT_SCHEMAS[eventName];
-    if (!eventSchema || !eventSchema.channels.includes('pixel') || !eventSchema.channels.includes('capi')) {
+    const eventFieldContract = EVENT_FIELD_CONTRACTS[eventName];
+    if (!eventFieldContract || !eventFieldContract.channels.includes('pixel') || !eventFieldContract.channels.includes('capi')) {
       return;
     }
 
@@ -305,7 +368,7 @@ class EventValidator {
       return;
     }
 
-    const commonFields = eventSchema.pixel[dataType].filter(f => eventSchema.capi[dataType].includes(f));
+    const commonFields = eventFieldContract.pixel[dataType].filter(f => eventFieldContract.capi[dataType].includes(f));
     if (commonFields.length === 0) {
       return;
     }

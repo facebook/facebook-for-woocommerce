@@ -662,17 +662,39 @@ class API extends Base {
 	 */
 	public function log_events_for_tests( $response, $request ) {
 		try {
-			// Check if rollout switch is enabled
+			// Check if test cookie/logger are configured and present.
+			$is_local_debug_environment = defined( 'WP_DEBUG' )
+				&& WP_DEBUG
+				&& function_exists( 'wp_get_environment_type' )
+				&& 'production' !== wp_get_environment_type();
+
+			$cookie_name = getenv( 'FB_E2E_TEST_COOKIE_NAME' );
+			if ( empty( $cookie_name ) && $is_local_debug_environment && defined( 'FB_E2E_TEST_COOKIE_NAME' ) ) {
+				$cookie_name = FB_E2E_TEST_COOKIE_NAME;
+			}
+
+			$logger_path = getenv( 'FB_E2E_LOGGER_PATH' );
+			if ( empty( $logger_path ) && $is_local_debug_environment && defined( 'FB_E2E_LOGGER_PATH' ) ) {
+				$logger_path = FB_E2E_LOGGER_PATH;
+			}
+
+			$has_e2e_logging_config = ! empty( $cookie_name ) && ! empty( $logger_path );
+
+			// Gate by rollout switch for normal runtime, but allow explicit E2E instrumentation
+			// (cookie + logger path) to keep test logging deterministic even if remote rollout
+			// refresh temporarily disables the switch.
 			$is_capi_event_logging_enabled = $this->get_plugin()->get_rollout_switches()->is_switch_enabled(
 				RolloutSwitches::CAPI_EVENT_LOGGING_ENABLED
 			);
 
-			if ( ! $is_capi_event_logging_enabled ) {
+			if ( ! $is_capi_event_logging_enabled && ! $has_e2e_logging_config ) {
 				return;
 			}
 
-			// Check if test cookie is present
-			$cookie_name = getenv( 'FB_E2E_TEST_COOKIE_NAME' );
+			if ( empty( $cookie_name ) ) {
+				// E2E logging is not configured in this environment.
+				return;
+			}
 			if ( empty( $_COOKIE[ $cookie_name ] ) ) {
 				// Test cookie is not present. Do not log events.
 				return;
@@ -695,13 +717,33 @@ class API extends Base {
 				);
 			}
 
-			// Validate logger file exists
-			$logger_path = getenv( 'FB_E2E_LOGGER_PATH' );
-			$logger_file = dirname( plugin_dir_path( __FILE__ ) ) . $logger_path;
-			if ( ! file_exists( $logger_file ) ) {
+			// Validate logger file exists.
+			if ( empty( $logger_path ) ) {
+				// E2E logging is not configured in this environment.
+				return;
+			}
+			if ( '/' !== substr( $logger_path, 0, 1 ) ) {
+				$logger_path = '/' . $logger_path;
+			}
+
+			$plugin_root = realpath( dirname( plugin_dir_path( __FILE__ ) ) );
+			if ( false === $plugin_root ) {
+				throw new \Exception( 'Test logging failed - Plugin root directory could not be resolved' );
+			}
+
+			$logger_file      = $plugin_root . $logger_path;
+			$real_logger_file = realpath( $logger_file );
+			if ( false === $real_logger_file ) {
 				throw new \Exception( 'Test logging failed - Logger file not found at: ' . $logger_file );
 			}
-			require_once $logger_file;
+
+			$normalized_plugin_root = trailingslashit( wp_normalize_path( $plugin_root ) );
+			$normalized_logger_file = wp_normalize_path( $real_logger_file );
+			if ( 0 !== strpos( $normalized_logger_file, $normalized_plugin_root ) ) {
+				throw new \Exception( 'Test logging failed - Logger file must be within plugin directory' );
+			}
+
+			require_once $real_logger_file;
 
 			$test_id = sanitize_text_field( wp_unslash( $_COOKIE[ $cookie_name ] ) );
 

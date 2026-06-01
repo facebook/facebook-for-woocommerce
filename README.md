@@ -46,6 +46,60 @@ you can enable the headers in the logs by setting `wc_facebook_request_headers_i
 	- `npm run test:php` to run PHP unit tests on all PHP files
 	- `./vendor/bin/phpunit --coverage-html=reports/coverage` to run PHP unit tests with coverage
 
+#### Running E2E tests locally (events flow)
+
+Use the helper script at `tests/e2e/scripts/run-local-events.sh`.
+
+Before running it, export all required environment variables (the script reads values directly from your process environment):
+
+```bash
+export WORDPRESS_PATH="/absolute/path/to/wordpress"
+export WORDPRESS_URL="http://your-local-site.test"
+
+export WP_USERNAME="admin"
+export WP_PASSWORD="admin"
+export WP_CUSTOMER_USERNAME="customer"
+export WP_CUSTOMER_PASSWORD="customer"
+
+export TEST_PRODUCT_URL="${WORDPRESS_URL%/}/product/beanie/"
+export TEST_CATEGORY_URL="${WORDPRESS_URL%/}/product-category/clothing/accessories/"
+export TEST_FBCLID="IwAR123TestClickId456"
+
+export FB_E2E_TEST_COOKIE_NAME="facebook_test_id"
+export FB_E2E_LOGGER_PATH="/tests/e2e/helpers/php/event-logger.php"
+
+export WP_DEBUG_LOG="${WORDPRESS_PATH}/wp-content/debug.log"
+export WC_LOG_PATH="${WORDPRESS_PATH}/wp-content/uploads/wc-logs"
+```
+
+Then run:
+
+```bash
+./tests/e2e/scripts/run-local-events.sh
+```
+
+Optional flags:
+
+```bash
+./tests/e2e/scripts/run-local-events.sh --project chromium-wp-customer --workers 1
+./tests/e2e/scripts/run-local-events.sh --spec tests/e2e/theme-compatibility.spec.js
+
+# Run with real browser binaries
+./tests/e2e/scripts/run-local-events.sh --project edge-wp-customer --real-edge
+./tests/e2e/scripts/run-local-events.sh --project firefox-wp-customer --real-firefox
+./tests/e2e/scripts/run-local-events.sh --project brave-wp-customer --real-brave
+./tests/e2e/scripts/run-local-events.sh --project opera-wp-customer --real-opera
+
+# Allow script-driven install when browser is missing
+./tests/e2e/scripts/run-local-events.sh --project edge-wp-customer --real-edge --auto-install
+./tests/e2e/scripts/run-local-events.sh --project firefox-wp-customer --real-firefox --auto-install
+./tests/e2e/scripts/run-local-events.sh --project brave-wp-customer --real-brave --auto-install
+./tests/e2e/scripts/run-local-events.sh --project opera-wp-customer --real-opera --auto-install
+```
+
+> ⚠️ `--auto-install` may run `sudo`, install system packages, and add apt repositories/keyrings on Linux.
+> It is opt-in and should only be used in trusted local dev environments.
+
 #### Production build
 
 - `npm run build` : Builds a production version.
