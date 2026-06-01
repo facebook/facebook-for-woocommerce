@@ -152,8 +152,7 @@ class ReleaseSignalsAjax {
 		try {
 			$integration = facebook_for_woocommerce()->get_integration();
 			if ( $integration ) {
-				$aam_settings = $integration->load_aam_settings_of_pixel();
-				$user_info    = \WC_Facebookcommerce_Utils::get_user_info( $aam_settings );
+				$user_info = $integration->get_pixel_user_info_for_release();
 			}
 		// phpcs:ignore Generic.CodeAnalysis.EmptyStatement.DetectedCatch
 		} catch ( \Exception $e ) {
