@@ -428,5 +428,4 @@ class ReleaseSignalsAjax {
 
 		return new Event( $server_event_data );
 	}
-
 }

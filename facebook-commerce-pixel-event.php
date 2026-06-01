@@ -706,6 +706,7 @@ JS;
 	 *
 	 * @param string $event_name The event name.
 	 * @param array  $params     Event parameters including custom_data, user_data, event_id.
+	 * @param string $method     Signals method name (e.g. track, trackCustom).
 	 * @return string JavaScript code.
 	 */
 	public function get_queued_event_code( $event_name, $params, $method = 'track' ) {
