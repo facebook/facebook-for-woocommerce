@@ -488,6 +488,21 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 	}
 
 	/**
+	 * Returns user_info for the currently installed pixel using AAM settings.
+	 *
+	 * Public wrapper for external callers (e.g. AJAX handlers) that should not
+	 * access internal AAM loading methods directly.
+	 *
+	 * @return array
+	 * @since 3.7.0
+	 */
+	public function get_pixel_user_info_for_release() {
+		$aam_settings = $this->load_aam_settings_of_pixel();
+
+		return WC_Facebookcommerce_Utils::get_user_info( $aam_settings );
+	}
+
+	/**
 	 * Returns the Automatic advanced matching of this pixel
 	 *
 	 * @return AAMSettings
