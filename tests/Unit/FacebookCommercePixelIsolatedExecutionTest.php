@@ -429,6 +429,50 @@ class FacebookCommercePixelIsolatedExecutionTest extends AbstractWPUnitTestWithO
 	// inject_event() with Rollout Switch Tests
 	// =========================================================================
 
+	public function test_build_event_adds_browser_dedup_guard_when_event_id_is_present(): void {
+		$event_id = 'add-to-cart-event-123';
+		$event    = WC_Facebookcommerce_Pixel::build_event(
+			'AddToCart',
+			array(
+				'content_ids' => array( 'PROD123' ),
+				'event_id'    => $event_id,
+			),
+			'track'
+		);
+
+		$this->assertStringContainsString(
+			'window.wcFacebookPixelFiredEvents = window.wcFacebookPixelFiredEvents || {};',
+			$event
+		);
+		$this->assertStringContainsString(
+			'if (!window.wcFacebookPixelFiredEvents["add-to-cart-event-123"]) {',
+			$event
+		);
+		$this->assertStringContainsString(
+			'window.wcFacebookPixelFiredEvents["add-to-cart-event-123"] = true;',
+			$event
+		);
+		$this->assertStringContainsString(
+			'fbq(\'track\', \'AddToCart\'',
+			$event
+		);
+		$this->assertStringContainsString(
+			'"eventID": "add-to-cart-event-123"',
+			$event
+		);
+	}
+
+	public function test_build_event_does_not_add_browser_dedup_guard_without_event_id(): void {
+		$event = WC_Facebookcommerce_Pixel::build_event(
+			'ViewContent',
+			array( 'content_ids' => array( 'PROD123' ) ),
+			'track'
+		);
+
+		$this->assertStringNotContainsString( 'window.wcFacebookPixelFiredEvents', $event );
+		$this->assertStringContainsString( 'fbq(\'track\', \'ViewContent\'', $event );
+	}
+
 	public function test_inject_event_uses_isolated_execution_when_switch_enabled(): void {
 		$this->reset_static_properties();
 		$this->enable_isolated_pixel_execution_switch();

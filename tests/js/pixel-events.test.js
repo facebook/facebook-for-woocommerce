@@ -872,6 +872,7 @@ describe('Integration: pixel-events.js IIFE', function () {
         // Clean up globals
         delete global.fbq;
         delete global.wc_facebook_pixel_data;
+        delete window.wcFacebookPixelFiredEvents;
 
         consoleWarnSpy.mockRestore();
         addEventListenerSpy.mockRestore();
@@ -992,23 +993,47 @@ describe('Integration: pixel-events.js IIFE', function () {
 
         global.wc_facebook_pixel_data = {
             eventQueue: [
-                {
-                    name: 'AddToCart',
-                    params: { content_ids: ['SKU-789'] },
-                    method: 'track',
-                    eventId: 'unique-event-id-123'
-                }
+                { name: 'AddToCart', params: { content_ids: ['123'] }, method: 'track', eventId: 'unique-event-id' }
             ]
         };
 
         require('../../assets/js/frontend/pixel-events.js');
+        jest.runAllTimers();
 
         expect(mockFbq).toHaveBeenCalledWith(
             'track',
             'AddToCart',
-            { content_ids: ['SKU-789'] },
-            { eventID: 'unique-event-id-123' }
+            { content_ids: ['123'] },
+            { eventID: 'unique-event-id' }
         );
+    });
+
+    it('should skip queued events already marked in shared browser dedup map', function () {
+        mockFbq = jest.fn();
+        global.fbq = mockFbq;
+        window.wcFacebookPixelFiredEvents = {
+            'shared-event-id': true,
+        };
+
+        global.wc_facebook_pixel_data = {
+            eventQueue: [
+                { name: 'AddToCart', params: { content_ids: ['123'] }, method: 'track', eventId: 'shared-event-id' },
+                { name: 'ViewContent', params: { content_ids: ['456'] }, method: 'track', eventId: 'new-event-id' },
+            ]
+        };
+
+        require('../../assets/js/frontend/pixel-events.js');
+        jest.runAllTimers();
+
+        expect(mockFbq).toHaveBeenCalledTimes(1);
+        expect(mockFbq).toHaveBeenCalledWith(
+            'track',
+            'ViewContent',
+            { content_ids: ['456'] },
+            { eventID: 'new-event-id' }
+        );
+        expect(window.wcFacebookPixelFiredEvents['shared-event-id']).toBe(true);
+        expect(window.wcFacebookPixelFiredEvents['new-event-id']).toBe(true);
     });
 
     it('should handle empty eventQueue without errors', function () {

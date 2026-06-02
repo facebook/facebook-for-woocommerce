@@ -18,7 +18,8 @@
     var data = (typeof wc_facebook_pixel_data !== 'undefined' && wc_facebook_pixel_data) ?
         wc_facebook_pixel_data :
         { eventQueue: [] };
-    var firedEvents = {};
+    window.wcFacebookPixelFiredEvents = window.wcFacebookPixelFiredEvents || {};
+    var firedEvents = window.wcFacebookPixelFiredEvents;
 
     /**
      * Build event data object for fbq()

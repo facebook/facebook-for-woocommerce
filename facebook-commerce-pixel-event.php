@@ -959,10 +959,16 @@ JS;
 			$event = sprintf(
 				"/* %s Facebook Integration Event Tracking */\n" .
 				"fbq('set', 'agent', '%s', '%s');\n" .
-				"fbq('%s', '%s', %s, %s);",
+				"window.wcFacebookPixelFiredEvents = window.wcFacebookPixelFiredEvents || {};\n" .
+				"if (!window.wcFacebookPixelFiredEvents[%s]) {\n" .
+				"window.wcFacebookPixelFiredEvents[%s] = true;\n" .
+				"fbq('%s', '%s', %s, %s);\n" .
+				'}',
 				WC_Facebookcommerce_Utils::get_integration_name(),
 				Event::get_platform_identifier(),
 				self::get_pixel_id(),
+				wp_json_encode( $event_id ),
+				wp_json_encode( $event_id ),
 				esc_js( $method ),
 				esc_js( $event_name ),
 				wp_json_encode( $event_params, JSON_PRETTY_PRINT | JSON_FORCE_OBJECT ),
