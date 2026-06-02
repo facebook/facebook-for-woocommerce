@@ -1517,7 +1517,7 @@ class Connection {
 		// redirect_uri if its parsed host matches a known Meta host used by this flow.
 		$host         = strtolower( (string) wp_parse_url( $redirect_uri, PHP_URL_HOST ) );
 		$scheme       = strtolower( (string) wp_parse_url( $redirect_uri, PHP_URL_SCHEME ) );
-		$host_allowed = in_array( $scheme, array( 'http', 'https' ), true ) && 1 === preg_match(
+		$host_allowed = 'https' === $scheme && 1 === preg_match(
 			'/^(?:(?:www|m|l)\.)?(?:\d{5}\.od\.)?(?:facebook|instagram|whatsapp)\.com$/',
 			$host
 		);
