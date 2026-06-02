@@ -115,6 +115,7 @@ class ConnectionFbeRedirectTest extends AbstractWPUnitTestWithOptionIsolationAnd
 			'arbitrary instagram subdomain'    => [ 'https://help.instagram.com/path' ],
 			'arbitrary whatsapp subdomain'     => [ 'https://faq.whatsapp.com/path' ],
 			'malformed od subdomain'           => [ 'https://123456.od.facebook.com/path' ],
+			'plaintext meta URL'                => [ 'http://facebook.com/path' ],
 			'non-http scheme'                  => [ 'javascript:alert(1)//facebook.com' ],
 			'empty value'                      => [ '' ],
 		];
