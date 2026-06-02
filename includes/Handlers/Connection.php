@@ -1511,12 +1511,22 @@ class Connection {
 		if ( ! current_user_can( 'manage_woocommerce' ) ) {
 			wp_die( esc_html__( 'You do not have permission to finish App Store login.', 'facebook-for-woocommerce' ) );
 		}
+
 		$redirect_uri = isset( $_REQUEST['redirect_uri'] ) ? base64_decode( wc_clean( wp_unslash( $_REQUEST['redirect_uri'] ) ) ) : ''; //phpcs:ignore
-		// To ensure that we are not sharing any user data with other parties, only redirect to the redirect_uri if it matches the regular expression
-		if ( empty( $redirect_uri ) || ! preg_match( '/https?:\/\/(www\.|m\.|l\.)?(\d{5}\.od\.)?(facebook|instagram|whatsapp)\.com(\/.*)?/', explode( '?', $redirect_uri )[0] ) ) {
+		// To ensure that we are not sharing any user data with other parties, only redirect to the
+		// redirect_uri if its parsed host matches a known Meta host used by this flow.
+		$host         = strtolower( (string) wp_parse_url( $redirect_uri, PHP_URL_HOST ) );
+		$scheme       = strtolower( (string) wp_parse_url( $redirect_uri, PHP_URL_SCHEME ) );
+		$host_allowed = in_array( $scheme, array( 'http', 'https' ), true ) && 1 === preg_match(
+			'/^(?:(?:www|m|l)\.)?(?:\d{5}\.od\.)?(?:facebook|instagram|whatsapp)\.com$/',
+			$host
+		);
+
+		if ( empty( $redirect_uri ) || ! $host_allowed ) {
 			wp_safe_redirect( site_url() );
 			exit;
 		}
+
 		if ( empty( $_REQUEST['success'] ) ) { //phpcs:ignore WordPress.Security.NonceVerification.Recommended
 			$url_params   = array(
 				'store_url'    => '',
@@ -1530,7 +1540,19 @@ class Connection {
 		} else {
 			$redirect_url = $redirect_uri . '&extras=' . rawurlencode_deep( wp_json_encode( $this->get_connect_parameters_extras() ) );
 		}
-		wp_redirect( $redirect_url ); //phpcs:ignore WordPress.Security.SafeRedirect.wp_redirect_wp_redirect
+
+		// $redirect_url now points either to a Meta domain (validated above) or to the trusted App
+		// Store login URL. Register its host so the core safe-redirect guarantee is enforced for this
+		// otherwise cross-domain redirect.
+		$redirect_host  = strtolower( (string) wp_parse_url( $redirect_url, PHP_URL_HOST ) );
+		$allow_redirect = static function ( $hosts ) use ( $redirect_host ) {
+			$hosts[] = $redirect_host;
+			return $hosts;
+		};
+
+		add_filter( 'allowed_redirect_hosts', $allow_redirect );
+		wp_safe_redirect( $redirect_url );
+		remove_filter( 'allowed_redirect_hosts', $allow_redirect );
 		exit;
 	}
 
