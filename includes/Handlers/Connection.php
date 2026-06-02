@@ -1518,7 +1518,7 @@ class Connection {
 		$host         = strtolower( (string) wp_parse_url( $redirect_uri, PHP_URL_HOST ) );
 		$scheme       = strtolower( (string) wp_parse_url( $redirect_uri, PHP_URL_SCHEME ) );
 		$host_allowed = 'https' === $scheme && 1 === preg_match(
-			'/^(?:(?:www|m|l)\.)?(?:\d{5}\.od\.)?(?:facebook|instagram|whatsapp)\.com$/',
+			'/^(?:(?:www|m|l)\.)?(?:\d{5}\.od\.)?(?:facebook|instagram|whatsapp|commercepartnerhub)\.com$/',
 			$host
 		);
 

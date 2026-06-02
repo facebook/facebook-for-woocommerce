@@ -114,6 +114,7 @@ class ConnectionFbeRedirectTest extends AbstractWPUnitTestWithOptionIsolationAnd
 			'arbitrary facebook subdomain'     => [ 'https://developers.facebook.com/path' ],
 			'arbitrary instagram subdomain'    => [ 'https://help.instagram.com/path' ],
 			'arbitrary whatsapp subdomain'     => [ 'https://faq.whatsapp.com/path' ],
+			'arbitrary commerce hub subdomain' => [ 'https://evil.commercepartnerhub.com/path' ],
 			'malformed od subdomain'           => [ 'https://123456.od.facebook.com/path' ],
 			'plaintext meta URL'                => [ 'http://facebook.com/path' ],
 			'non-http scheme'                  => [ 'javascript:alert(1)//facebook.com' ],
@@ -155,8 +156,10 @@ class ConnectionFbeRedirectTest extends AbstractWPUnitTestWithOptionIsolationAnd
 			'prefixed od host'    => [ 'https://www.12345.od.facebook.com/path' ],
 			'instagram'           => [ 'https://instagram.com/path' ],
 			'instagram mobile'    => [ 'https://m.instagram.com/path' ],
-			'whatsapp'            => [ 'https://whatsapp.com/path' ],
-			'whatsapp link shim'  => [ 'https://l.whatsapp.com/path' ],
+			'whatsapp'              => [ 'https://whatsapp.com/path' ],
+			'whatsapp link shim'    => [ 'https://l.whatsapp.com/path' ],
+			'commerce partner hub'  => [ 'https://commercepartnerhub.com/path' ],
+			'www commerce hub'      => [ 'https://www.commercepartnerhub.com/path' ],
 		];
 	}
 
