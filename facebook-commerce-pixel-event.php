@@ -290,33 +290,6 @@ class WC_Facebookcommerce_Pixel {
 	}
 
 
-		/**
-		 * Gets Facebook Pixel init code.
-		 *
-		 * Init code might contain additional information to help matching website users with facebook users.
-		 * Information is hashed in JS side using SHA256 before sending to Facebook.
-		 *
-		 * @return string
-		 */
-	private function get_pixel_init_code() {
-
-		$agent_string = Event::get_platform_identifier();
-
-		/**
-		 * Filters Facebook Pixel init code.
-		 *
-		 * @param string $js_code
-		 */
-		return apply_filters(
-			'facebook_woocommerce_pixel_init',
-			sprintf(
-				"fbq('init', '%s', {}, %s);\n",
-				esc_js( self::get_pixel_id() ),
-				wp_json_encode( array( 'agent' => $agent_string ), JSON_PRETTY_PRINT | JSON_FORCE_OBJECT )
-			)
-		);
-	}
-
 
 		/**
 		 * Gets the Facebook Pixel code scripts.
@@ -900,15 +873,14 @@ JS;
 		 *
 		 * @since 1.10.2
 		 *
-		 * @param string $event_name    The name of the event to track.
-		 * @param array  $params        Custom event parameters.
-		 * @param string $listener      Name of the JavaScript event to listen for.
-		 * @param string $jsonified_pii JavaScript code representing an object of data for Advanced Matching.
+		 * @param string $event_name The name of the event to track.
+		 * @param array  $params     Custom event parameters.
+		 * @param string $listener   Name of the JavaScript event to listen for.
 		 * @return string
 		 *
 		 * phpcs:disable WordPress.Security.EscapeOutput.OutputNotEscaped
 		 */
-	public function get_conditional_event_script( $event_name, $params, $listener, $jsonified_pii ) {
+	public function get_conditional_event_script( $event_name, $params, $listener ) {
 
 		$this->last_event = $event_name;
 
@@ -932,18 +904,6 @@ JS;
 
 		$code = self::build_event( $event_name, $params, 'track' );
 
-		/**
-		 * TODO: use the settings stored by {@see \WC_Facebookcommerce_Integration}.
-		 * The use_pii setting here is currently always disabled regardless of
-		 * the value configured in the plugin settings page {WV-2020-01-02}.
-		 */
-
-		// Prepends fbq(...) with pii information to the injected code.
-		if ( $jsonified_pii && get_option( self::SETTINGS_KEY )[ self::USE_PII_KEY ] ) {
-			$this->user_info = '%s';
-			$code            = sprintf( $this->get_pixel_init_code(), '" || ' . $jsonified_pii . ' || "' ) . $code;
-		}
-
 		ob_start();
 
 		?>
@@ -965,16 +925,15 @@ JS;
 		 *
 		 * The tracking code will be executed when the given JavaScript event is triggered.
 		 *
-		 * @param string $event_name    Name of the event.
-		 * @param array  $params        Custom event parameters.
-		 * @param string $listener      Name of the JavaScript event to listen for.
-		 * @param string $jsonified_pii JavaScript code representing an object of data for Advanced Matching.
+		 * @param string $event_name Name of the event.
+		 * @param array  $params     Custom event parameters.
+		 * @param string $listener   Name of the JavaScript event to listen for.
 		 * @return string
 		 */
-	public function inject_conditional_event( $event_name, $params, $listener, $jsonified_pii = '' ) {
+	public function inject_conditional_event( $event_name, $params, $listener ) {
 
 		// phpcs:ignore WordPress.XSS.EscapeOutput.OutputNotEscaped
-		return $this->get_conditional_event_script( $event_name, self::build_params( $params, $event_name ), $listener, $jsonified_pii );
+		return $this->get_conditional_event_script( $event_name, self::build_params( $params, $event_name ), $listener );
 	}
 
 

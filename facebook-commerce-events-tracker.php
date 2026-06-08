@@ -1335,8 +1335,7 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 				echo $this->pixel->inject_conditional_event(
 					'Lead',
 					array(),
-					'wpcf7submit',
-					'{ em: event.detail.inputs.filter(ele => ele.name.includes("email"))[0].value }'
+					'wpcf7submit'
 				);
 			}
 		}
