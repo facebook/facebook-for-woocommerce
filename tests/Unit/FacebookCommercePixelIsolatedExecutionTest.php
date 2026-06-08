@@ -429,7 +429,7 @@ class FacebookCommercePixelIsolatedExecutionTest extends AbstractWPUnitTestWithO
 	// inject_event() with Rollout Switch Tests
 	// =========================================================================
 
-	public function test_build_event_adds_browser_dedup_guard_when_event_id_is_present(): void {
+	public function test_build_event_adds_event_id_paths_when_event_id_is_present(): void {
 		$event_id = 'add-to-cart-event-123';
 		$event    = WC_Facebookcommerce_Pixel::build_event(
 			'AddToCart',
@@ -441,15 +441,11 @@ class FacebookCommercePixelIsolatedExecutionTest extends AbstractWPUnitTestWithO
 		);
 
 		$this->assertStringContainsString(
-			'window.wcFacebookPixelFiredEvents = window.wcFacebookPixelFiredEvents || {};',
+			'window.FacebookSignals.trackEvent(\'AddToCart\'',
 			$event
 		);
 		$this->assertStringContainsString(
-			'if (!window.wcFacebookPixelFiredEvents["add-to-cart-event-123"]) {',
-			$event
-		);
-		$this->assertStringContainsString(
-			'window.wcFacebookPixelFiredEvents["add-to-cart-event-123"] = true;',
+			'null, \'track\', "add-to-cart-event-123"',
 			$event
 		);
 		$this->assertStringContainsString(
@@ -457,9 +453,10 @@ class FacebookCommercePixelIsolatedExecutionTest extends AbstractWPUnitTestWithO
 			$event
 		);
 		$this->assertStringContainsString(
-			'"eventID": "add-to-cart-event-123"',
+			'{ eventID: "add-to-cart-event-123" }',
 			$event
 		);
+		$this->assertStringNotContainsString( 'window.wcFacebookPixelFiredEvents', $event );
 	}
 
 	public function test_build_event_does_not_add_browser_dedup_guard_without_event_id(): void {
