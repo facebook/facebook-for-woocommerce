@@ -91,17 +91,14 @@ class ProductFeedTest extends IntegrationTestCase {
 	}
 
 	/**
-	 * Test feed generation with category exclusions
+	 * Test feed generation with products in multiple categories.
 	 */
-	public function test_feed_generation_with_exclusions(): void {
+	public function test_feed_generation_with_multiple_categories(): void {
 		$this->enable_facebook_sync();
 
 		// Create categories
 		$allowed_category = $this->create_category( 'Electronics' );
 		$excluded_category = $this->create_category( 'Restricted' );
-
-		// Set exclusions
-		$this->set_excluded_categories( [ $excluded_category->term_id ] );
 
 		// Create products in different categories
 		$allowed_product = $this->create_simple_product([
@@ -127,9 +124,7 @@ class ProductFeedTest extends IntegrationTestCase {
 		// Generate feed
 		$feed_data = $this->generate_facebook_feed( [ $allowed_product, $excluded_product ] );
 
-		// Should only include allowed product
-		$this->assertCount( 1, $feed_data, 'Feed should exclude restricted products' );
-		$this->assertEquals( $allowed_product->get_id(), $feed_data[0]['id'], 'Feed should contain allowed product' );
+		$this->assertCount( 2, $feed_data, 'Feed should include products from both categories' );
 	}
 
 	/**

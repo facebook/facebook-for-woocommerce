@@ -175,17 +175,14 @@ class ProductDataPreparationTest extends IntegrationTestCase {
 	}
 
 	/**
-	 * Test product transformation with category exclusions
+	 * Test product transformation across multiple categories.
 	 */
-	public function test_product_transformation_with_category_exclusions(): void {
+	public function test_product_transformation_with_multiple_categories(): void {
 		$this->enable_facebook_sync();
 
 		// Create categories
 		$allowed_category = $this->create_category( 'Electronics' );
 		$excluded_category = $this->create_category( 'Restricted Items' );
-
-		// Set category exclusions
-		$this->set_excluded_categories( [ $excluded_category->term_id ] );
 
 		// Create products in different categories
 		$allowed_product = $this->create_simple_product([
@@ -208,13 +205,15 @@ class ProductDataPreparationTest extends IntegrationTestCase {
 		// Refresh the product to get updated category data
 		$excluded_product = wc_get_product( $excluded_product->get_id() );
 
-		// Test transformation pipeline respects exclusions
+		// Test transformation pipeline for products across categories
 		$this->assertProductShouldSync( $allowed_product, 'Product in allowed category should sync' );
-		$this->assertProductShouldNotSync( $excluded_product, 'Product in excluded category should not sync' );
+		$this->assertProductShouldSync( $excluded_product, 'Product in second category should sync' );
 
-		// Only allowed product should be transformable
 		$allowed_facebook_data = $this->transform_product_for_facebook( $allowed_product );
 		$this->assertNotEmpty( $allowed_facebook_data, 'Allowed product should transform successfully' );
+
+		$excluded_facebook_data = $this->transform_product_for_facebook( $excluded_product );
+		$this->assertNotEmpty( $excluded_facebook_data, 'Second-category product should transform successfully' );
 	}
 
 	/**
@@ -549,17 +548,6 @@ class ProductDataPreparationTest extends IntegrationTestCase {
 
 		if ( empty( $product->get_regular_price() ) || floatval( $product->get_regular_price() ) <= 0 ) {
 			return false;
-		}
-
-		// Check category exclusions
-		$excluded_categories = get_option( 'woocommerce_facebookcommerce_settings', [] );
-		$excluded_category_ids = $excluded_categories['excluded_product_category_ids'] ?? [];
-		
-		if ( ! empty( $excluded_category_ids ) ) {
-			$product_categories = $product->get_category_ids();
-			if ( array_intersect( $product_categories, $excluded_category_ids ) ) {
-				return false;
-			}
 		}
 
 		return true;

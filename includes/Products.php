@@ -243,8 +243,7 @@ class Products {
 	/**
 	 * Determines whether the given product should be removed from the catalog.
 	 *
-	 * A product should be removed if it is no longer in stock and the user has opted-in to hide products that are out of stock,
-	 * or belongs to an excluded category.
+	 * A product should be removed if it fails product-term sync checks.
 	 *
 	 * @since 2.0.0
 	 *

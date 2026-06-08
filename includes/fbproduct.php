@@ -2179,26 +2179,6 @@ class WC_Facebook_Product {
 			$product_data['is_woo_all_products_sync'] = 1;
 		}
 
-		/*
-		 * If a category was previously excluded that meant that it was not getting synced
-		 * 3.5.3 changes will make sure these categories are no longer kept from syncing
-		 * So we are tagging them as well since they are now synced with us
-		 */
-		$deprecated_excluded_category_ids = get_option( 'wc_facebook_excluded_product_category_ids' );
-
-		if ( $deprecated_excluded_category_ids && $category_ids && ! empty( array_intersect( $deprecated_excluded_category_ids, $category_ids ) ) ) {
-			$product_data['is_woo_all_products_sync'] = 1;
-		}
-
-		/**
-		 * Doing same tagging for proudct tags exclusion
-		*/
-		$deprecated_excluded_tag_ids = get_option( 'wc_facebook_excluded_product_tag_ids' );
-
-		if ( $deprecated_excluded_tag_ids && $tags_ids && ! empty( array_intersect( $deprecated_excluded_tag_ids, $tags_ids ) ) ) {
-			$product_data['is_woo_all_products_sync'] = 1;
-		}
-
 		if ( self::PRODUCT_PREP_TYPE_ITEMS_BATCH === $type_to_prepare_for ) {
 
 			$product_data['title']                 = Helper::str_truncate( WC_Facebookcommerce_Utils::clean_string( $this->get_title() ), self::MAX_TITLE_LENGTH );

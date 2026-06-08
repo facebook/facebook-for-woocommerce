@@ -536,8 +536,6 @@ class Admin {
 			);
 		}
 
-		// check whether the product belongs to an excluded product category or tag
-		$query_vars = $this->maybe_add_tax_query_for_excluded_taxonomies( $query_vars );
 		return $query_vars;
 	}
 
@@ -570,52 +568,6 @@ class Admin {
 		return $query_vars;
 	}
 
-
-	/**
-	 * Adds a tax query to filter in/out products in excluded product categories and product tags.
-	 *
-	 * @since 1.10.0
-	 *
-	 * @param array $query_vars product query vars for the edit screen
-	 * @param bool  $in whether we want to return products in excluded categories and tags or not
-	 * @return array
-	 */
-	private function maybe_add_tax_query_for_excluded_taxonomies( $query_vars, $in = false ) {
-		$integration = facebook_for_woocommerce()->get_integration();
-		if ( $integration ) {
-			$tax_query               = [];
-			$excluded_categories_ids = $integration->get_excluded_product_category_ids();
-			if ( $excluded_categories_ids ) {
-				$tax_query[] = array(
-					'taxonomy' => 'product_cat',
-					'terms'    => $excluded_categories_ids,
-					'field'    => 'term_id',
-					'operator' => $in ? 'IN' : 'NOT IN',
-				);
-			}
-			$excluded_tags_ids = $integration->get_excluded_product_tag_ids();
-			if ( $excluded_tags_ids ) {
-				$tax_query[] = array(
-					'taxonomy' => 'product_tag',
-					'terms'    => $excluded_tags_ids,
-					'field'    => 'term_id',
-					'operator' => $in ? 'IN' : 'NOT IN',
-				);
-			}
-
-			if ( count( $tax_query ) > 1 ) {
-				$tax_query['relation'] = $in ? 'OR' : 'AND';
-			}
-
-			if ( $tax_query && empty( $query_vars['tax_query'] ) ) {
-				$query_vars['tax_query'] = $tax_query; // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_tax_query
-			} elseif ( $tax_query && is_array( $query_vars ) ) {
-				$query_vars['tax_query'][] = $tax_query;
-			}
-		}//end if
-
-		return $query_vars;
-	}
 
 	/**
 	 * Adds bulk actions in the products edit screen.
