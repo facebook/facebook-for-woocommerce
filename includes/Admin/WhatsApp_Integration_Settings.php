@@ -42,6 +42,7 @@ class WhatsApp_Integration_Settings {
 		add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_assets' ) );
 		add_action( 'admin_menu', array( $this, 'add_menu_item' ) );
 		add_action( 'admin_footer', array( $this, 'render_message_handler' ) );
+		add_action( 'admin_head', array( $this, 'print_menu_icon_styles' ) );
 	}
 
 
@@ -78,23 +79,61 @@ class WhatsApp_Integration_Settings {
 	/**
 	 * Adds the WhatsApp menu item.
 	 *
+	 * Registers WhatsApp as its own top-level item in the WP Admin sidebar
+	 * (a standalone entry, not nested under Marketing or WooCommerce). For a
+	 * top-level menu the wc-admin screen id is 'toplevel_page_{slug}', so the
+	 * add_menu_page() slug and connect_to_enhanced_admin() screen id are a
+	 * matched pair. The position (58.9) places it just below the Marketing
+	 * menu — tune as desired.
+	 *
 	 * @since 3.5.0
 	 */
 	public function add_menu_item() {
 
-		$root_menu_item = $this->root_menu_item();
-
-		add_submenu_page(
-			$root_menu_item,
+		add_menu_page(
 			__( 'WhatsApp for WooCommerce', 'facebook-for-woocommerce' ),
 			__( 'WhatsApp', 'facebook-for-woocommerce' ),
 			'manage_woocommerce',
 			self::PAGE_ID,
 			[ $this, 'render' ],
-			5
+			facebook_for_woocommerce()->get_plugin_url() . '/assets/images/whatsapp-menu-icon.svg',
+			58.9
 		);
 
-		$this->connect_to_enhanced_admin( $this->is_marketing_enabled() ? 'marketing_page_wc-whatsapp' : 'woocommerce_page_wc-whatsapp' );
+		$this->connect_to_enhanced_admin( 'toplevel_page_wc-whatsapp' );
+	}
+
+	/**
+	 * Prints CSS so the top-level WhatsApp menu icon matches the native admin menu icons.
+	 *
+	 * WordPress only recolors Dashicon (font) menu icons per state and color
+	 * scheme; an icon passed as an image URL is merely dimmed with opacity and
+	 * looks inconsistent. Rendering the icon as a CSS mask filled with
+	 * `currentColor` makes it inherit the exact color WordPress applies to
+	 * native icons in every state (idle grey, hover blue, current white).
+	 *
+	 * @since 3.5.0
+	 */
+	public function print_menu_icon_styles() {
+		$icon_url = facebook_for_woocommerce()->get_plugin_url() . '/assets/images/whatsapp-menu-icon.svg';
+		$selector = '#adminmenu #toplevel_page_' . self::PAGE_ID . ' .wp-menu-image';
+		?>
+		<style id="wc-whatsapp-menu-icon">
+			<?php echo esc_html( $selector ); ?> img { display: none; }
+			<?php echo esc_html( $selector ); ?>::before {
+				content: "";
+				display: block;
+				width: 22px;
+				height: 22px;
+				margin: 0 auto;
+				background-color: currentColor;
+				-webkit-mask: url( "<?php echo esc_url( $icon_url ); ?>" ) no-repeat center;
+				mask: url( "<?php echo esc_url( $icon_url ); ?>" ) no-repeat center;
+				-webkit-mask-size: 22px 22px;
+				mask-size: 22px 22px;
+			}
+		</style>
+		<?php
 	}
 
 	/**
