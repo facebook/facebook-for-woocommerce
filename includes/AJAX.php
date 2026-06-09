@@ -32,9 +32,6 @@ class AJAX {
 	 * @since 1.10.0
 	 */
 	public function __construct() {
-		// maybe output a modal prompt when toggling product sync in bulk
-		add_action( 'wp_ajax_facebook_for_woocommerce_set_product_sync_bulk_action_prompt', array( $this, 'handle_set_product_sync_bulk_action_prompt' ) );
-
 		// sync all products via AJAX
 		add_action( 'wp_ajax_wc_facebook_sync_products', array( $this, 'sync_products' ) );
 
@@ -211,25 +208,5 @@ class AJAX {
 
 		wp_send_json_success( $remaining_products );
 	}
-
-
-	/**
-	 * Maybe triggers a modal warning when the merchant toggles sync enabled status in bulk.
-	 *
-	 * @internal
-	 *
-	 * @since 1.10.0
-	 */
-	public function handle_set_product_sync_bulk_action_prompt() {
-		check_ajax_referer( 'set-product-sync-bulk-action-prompt', 'security' );
-
-		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
-		$product_ids = isset( $_POST['products'] ) ? array_map( 'absint', (array) wp_unslash( $_POST['products'] ) ) : array();
-		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
-		$toggle = isset( $_POST['toggle'] ) ? (string) sanitize_text_field( wp_unslash( $_POST['toggle'] ) ) : '';
-
-		wp_send_json_success();
-	}
-
 
 }

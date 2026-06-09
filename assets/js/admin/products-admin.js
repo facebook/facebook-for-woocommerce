@@ -30,45 +30,9 @@ jQuery( document ).ready( function( $ ) {
 			let $submitButton    = $( this ),
 				chosenBulkAction = $submitButton.prev( 'select' ).val();
 
-			if ( 'facebook_include' === chosenBulkAction ) {
-
-				let products = [];
-
-				$.each( $( 'input[name="post[]"]:checked' ), function() {
-					products.push( parseInt( $( this ).val(), 10 ) );
-				} );
-
-				$.post( facebook_for_woocommerce_products_admin.ajax_url, {
-					action:   'facebook_for_woocommerce_set_product_sync_bulk_action_prompt',
-					security: facebook_for_woocommerce_products_admin.set_product_sync_bulk_action_prompt_nonce,
-					toggle:   chosenBulkAction,
-					products: products
-				}, function( response ) {
-
-					if ( response && ! response.success ) {
-
-						closeExistingModal();
-
-						// open new modal, populate template with AJAX response data
-						new $.WCBackboneModal.View( {
-							target: 'facebook-for-woocommerce-modal',
-							string: response.data
-						} );
-
-					} else {
-
-						// no modal displayed: submit form as normal
-						submitProductBulkAction = true;
-						$submitButton.trigger( 'click' );
-					}
-				} );
-
-			} else {
-
-				// no modal displayed: submit form as normal
-				submitProductBulkAction = true;
-				$submitButton.trigger( 'click' );
-			}
+			// submit form as normal
+			submitProductBulkAction = true;
+			$submitButton.trigger( 'click' );
 		} );
 	}
 

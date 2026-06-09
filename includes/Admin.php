@@ -201,7 +201,6 @@ class Admin {
 						'is_sync_enabled_for_product'     => $this->is_sync_enabled_for_current_product(),
 						'set_product_visibility_nonce'    => wp_create_nonce( 'set-products-visibility' ),
 						'set_product_sync_prompt_nonce'   => wp_create_nonce( 'set-product-sync-prompt' ),
-						'set_product_sync_bulk_action_prompt_nonce' => wp_create_nonce( 'set-product-sync-bulk-action-prompt' ),
 						'product_not_ready_modal_message' => $this->get_product_not_ready_modal_message(),
 						'product_not_ready_modal_buttons' => $this->get_product_not_ready_modal_buttons(),
 						'product_removed_from_sync_field_id' => '#' . \WC_Facebook_Product::FB_REMOVE_FROM_SYNC,
