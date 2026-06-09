@@ -1130,6 +1130,15 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 		 * @return array
 		 */
 		public function exclude_purchase_tracking_meta_from_renewal_orders( $data, $to_object, $from_object ) {
+			// Guard to only affect subscription -> renewal order copies.
+			if ( ! is_a( $to_object, 'WC_Order' ) || 'shop_order' !== $to_object->get_type() ) {
+				return $data;
+			}
+
+			if ( ! is_a( $from_object, 'WC_Order' ) || 'shop_subscription' !== $from_object->get_type() ) {
+				return $data;
+			}
+
 			unset( $data[ self::META_PURCHASE_TRACKED_SERVER ] );
 			unset( $data[ self::META_PURCHASE_TRACKED_BROWSER ] );
 			unset( $data[ self::META_EVENT_ID ] );
