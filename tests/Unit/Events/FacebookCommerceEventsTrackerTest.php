@@ -565,6 +565,72 @@ class FacebookCommerceEventsTrackerTest extends AbstractWPUnitTestWithSafeFilter
 	}
 
 	/**
+	 * Test that renewal-order meta copy excludes Purchase tracking keys.
+	 *
+	 * @covers WC_Facebookcommerce_EventsTracker::exclude_purchase_tracking_meta_from_renewal_orders
+	 */
+	public function test_exclude_purchase_tracking_meta_from_renewal_orders_removes_tracking_keys(): void {
+		$this->instance = $this->create_tracker_with_pixel_enabled();
+
+		$data = array(
+			'_meta_purchase_tracked_server'  => '1',
+			'_meta_purchase_tracked_browser' => '1',
+			'_meta_event_id'                 => 'event-id',
+			'_subscription_renewal'          => '123',
+		);
+
+		$to_order = $this->getMockBuilder( \WC_Order::class )
+			->disableOriginalConstructor()
+			->onlyMethods( array( 'get_type' ) )
+			->getMock();
+		$to_order->method( 'get_type' )->willReturn( 'shop_order' );
+
+		$from_subscription = $this->getMockBuilder( \WC_Order::class )
+			->disableOriginalConstructor()
+			->onlyMethods( array( 'get_type' ) )
+			->getMock();
+		$from_subscription->method( 'get_type' )->willReturn( 'shop_subscription' );
+
+		$result = $this->instance->exclude_purchase_tracking_meta_from_renewal_orders( $data, $to_order, $from_subscription );
+
+		$this->assertArrayNotHasKey( '_meta_purchase_tracked_server', $result );
+		$this->assertArrayNotHasKey( '_meta_purchase_tracked_browser', $result );
+		$this->assertArrayNotHasKey( '_meta_event_id', $result );
+		$this->assertArrayHasKey( '_subscription_renewal', $result );
+	}
+
+	/**
+	 * Test that renewal-order meta copy leaves data unchanged for non-subscription sources.
+	 *
+	 * @covers WC_Facebookcommerce_EventsTracker::exclude_purchase_tracking_meta_from_renewal_orders
+	 */
+	public function test_exclude_purchase_tracking_meta_from_renewal_orders_keeps_data_for_non_subscription_source(): void {
+		$this->instance = $this->create_tracker_with_pixel_enabled();
+
+		$data = array(
+			'_meta_purchase_tracked_server'  => '1',
+			'_meta_purchase_tracked_browser' => '1',
+			'_meta_event_id'                 => 'event-id',
+		);
+
+		$to_order = $this->getMockBuilder( \WC_Order::class )
+			->disableOriginalConstructor()
+			->onlyMethods( array( 'get_type' ) )
+			->getMock();
+		$to_order->method( 'get_type' )->willReturn( 'shop_order' );
+
+		$from_order = $this->getMockBuilder( \WC_Order::class )
+			->disableOriginalConstructor()
+			->onlyMethods( array( 'get_type' ) )
+			->getMock();
+		$from_order->method( 'get_type' )->willReturn( 'shop_order' );
+
+		$result = $this->instance->exclude_purchase_tracking_meta_from_renewal_orders( $data, $to_order, $from_order );
+
+		$this->assertSame( $data, $result );
+	}
+
+	/**
 	 * Test that inject_subscribe_event does nothing when function not available.
 	 *
 	 * @covers WC_Facebookcommerce_EventsTracker::inject_subscribe_event
