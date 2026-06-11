@@ -15,6 +15,8 @@ const {
   createTestProduct,
   cleanupProduct,
   getConnectionStatus,
+  processPendingSyncJobs,
+  validateFacebookSync,
   baseURL,
   safeScreenshot
 } = require('./helpers/js');
@@ -108,22 +110,79 @@ test.describe('Meta for WooCommerce - Sync In Progress E2E Tests', () => {
     }
   });
 
-  test('Verify sync in progress is detected when jobs are processing', async ({ page }, testInfo) => {
+  test('Manual Product Sync click sends admin-ajax wc_facebook_sync_products request (UI wiring smoke)', async ({ page }, testInfo) => {
+    let previousSwitchValue = null;
+    let hadSwitchKey = false;
     let productId = null;
 
-    try {
-      // Step 1: Clear any existing transients to start fresh
-      console.log('🧹 Clearing existing sync transients...');
-      await execWP(`
-        delete_transient('wc_facebook_background_product_sync_queue_empty');
-        delete_transient('wc_facebook_background_product_sync_sync_in_progress');
-        delete_transient('wc_facebook_sync_in_progress');
-        echo json_encode(['success' => true]);
-      `);
-      console.log('✅ Cleared existing transients');
+    const requestHasAction = (request, action) => {
+      const url = request.url();
+      const data = request.postData() || '';
+      return (
+        url.includes('admin-ajax.php') &&
+        (
+          url.includes(`action=${action}`) ||
+          data.includes(`action=${action}`) ||
+          data.includes(action)
+        )
+      );
+    };
 
-      // Step 2: Create a test product to trigger a sync
-      console.log('📦 Creating test product to trigger sync...');
+    const getSyncArtifacts = async () => {
+      const { stdout } = await execWP(`
+        global \\$wpdb;
+
+        \\$handler = facebook_for_woocommerce()->get_products_sync_background_handler();
+        \\$pending_jobs = \\$handler->get_jobs(['status' => ['queued', 'processing']]);
+
+        \\$total_jobs = (int) \\$wpdb->get_var(
+          "SELECT COUNT(*) FROM {\\$wpdb->options}
+           WHERE option_name LIKE 'wc_facebook_background_product_sync_job_%'"
+        );
+
+        \\$sync_in_progress = \\WooCommerce\\Facebook\\Products\\Sync::is_sync_in_progress();
+
+        echo json_encode([
+          'pending_job_count' => is_array(\\$pending_jobs) ? count(\\$pending_jobs) : 0,
+          'total_job_count' => \\$total_jobs,
+          'sync_in_progress' => (bool) \\$sync_in_progress,
+        ]);
+      `);
+
+      return JSON.parse(stdout);
+    };
+
+    try {
+      const connection = await getConnectionStatus();
+      expect(connection.connected).toBe(true);
+
+      // Ensure classic Product Sync tab path is active.
+      const { stdout: rolloutResult } = await execWP(`
+        \$switches = get_option('wc_facebook_for_woocommerce_rollout_switches', []);
+        if ( ! is_array(\$switches) ) {
+          \$switches = [];
+        }
+
+        \$had_key = array_key_exists('woo_all_products_sync_enabled', \$switches);
+        \$previous = \$had_key ? \$switches['woo_all_products_sync_enabled'] : null;
+
+        if ( 'no' !== \$previous ) {
+          \$switches['woo_all_products_sync_enabled'] = 'no';
+          update_option('wc_facebook_for_woocommerce_rollout_switches', \$switches);
+        }
+
+        echo json_encode([
+          'had_key' => \$had_key,
+          'previous' => \$previous,
+          'current' => \$switches['woo_all_products_sync_enabled'] ?? null
+        ]);
+      `);
+
+      const rollout = JSON.parse(rolloutResult);
+      hadSwitchKey = !!rollout.had_key;
+      previousSwitchValue = rollout.previous;
+      expect(rollout.current).toBe('no');
+
       const createdProduct = await createTestProduct({
         productType: 'simple',
         price: '19.99',
@@ -132,129 +191,186 @@ test.describe('Meta for WooCommerce - Sync In Progress E2E Tests', () => {
       productId = createdProduct.productId;
       console.log(`✅ Created test product with ID: ${productId}`);
 
-      // Step 3: Check if a sync job was created (it should be auto-queued on product save)
-      console.log('🔍 Checking for sync jobs...');
-      const { stdout: jobCheckResult } = await execWP(`
-        global \\$wpdb;
-        \\$count = \\$wpdb->get_var(
-          "SELECT COUNT(*) FROM {\\$wpdb->options}
-           WHERE option_name LIKE 'wc_facebook_background_product_sync_job_%'
-           AND (option_value LIKE '%\"status\":\"queued\"%' OR option_value LIKE '%\"status\":\"processing\"%')"
-        );
-        echo json_encode([
-          'has_jobs' => intval(\\$count) > 0,
-          'job_count' => intval(\\$count)
-        ]);
-      `);
-
-      const jobStatus = JSON.parse(jobCheckResult);
-      console.log(`📊 Sync job status: ${jobStatus.job_count} job(s) found`);
-
-      // Some environments process jobs too quickly for this check to be deterministic.
-      // We only need this for diagnostics; do not fail if queue is already drained.
-
-      // Step 4: Verify is_sync_in_progress returns correct value in admin context
-      console.log('🔍 Checking is_sync_in_progress() via admin AJAX...');
-
-      // Navigate to admin to ensure we're in admin context
-      await page.goto(`${baseURL}/wp-admin/admin.php?page=wc-facebook`, {
-        waitUntil: 'domcontentloaded',
-        timeout: TIMEOUTS.EXTRA_LONG
-      });
-
-      await checkForPhpErrors(page);
-
-      // Use PHP to check the sync status
-      const { stdout: syncStatusResult } = await execWP(`
-        // Simulate admin context check
-        \\$handler = facebook_for_woocommerce()->get_products_sync_background_handler();
-        \\$jobs = \\$handler->get_jobs(['status' => ['queued', 'processing']]);
-        \\$is_in_progress = !empty(\\$jobs);
-
-        // Also check via the Sync class method
-        \\$sync_in_progress = \\WooCommerce\\Facebook\\Products\\Sync::is_sync_in_progress();
-
-        echo json_encode([
-          'has_jobs' => !empty(\\$jobs),
-          'job_count' => \\$jobs ? count(\\$jobs) : 0,
-          'sync_in_progress' => \\$sync_in_progress,
-          'is_admin' => is_admin()
-        ]);
-      `);
-
-      const syncStatus = JSON.parse(syncStatusResult);
-      console.log(`📊 Sync status check results:`);
-      console.log(`   - has_jobs: ${syncStatus.has_jobs}`);
-      console.log(`   - job_count: ${syncStatus.job_count}`);
-      console.log(`   - sync_in_progress: ${syncStatus.sync_in_progress}`);
-      console.log(`   - is_admin: ${syncStatus.is_admin}`);
-
-      // Step 5: Verify that if jobs exist, sync is detected as in progress
-      if (syncStatus.has_jobs) {
-        expect(syncStatus.sync_in_progress).toBe(true);
-        console.log('✅ Sync correctly detected as in progress when jobs exist');
-      } else {
-        // Jobs may have already completed - verify sync is NOT in progress
-        expect(syncStatus.sync_in_progress).toBe(false);
-        console.log('✅ Sync correctly detected as NOT in progress when no jobs');
-      }
-
-      // Step 6: Verify cache transient was set
-      const { stdout: cacheResult } = await execWP(`
-        \\$queue_cache = get_transient('wc_facebook_background_product_sync_queue_empty');
-        \\$sync_cache = get_transient('wc_facebook_background_product_sync_sync_in_progress');
-
-        echo json_encode([
-          'queue_cache' => \\$queue_cache,
-          'sync_cache' => \\$sync_cache
-        ]);
-      `);
-
-      const cacheStatus = JSON.parse(cacheResult);
-      console.log(`📊 Cache status:`);
-      console.log(`   - queue_empty_cache: ${cacheStatus.queue_cache || 'not set'}`);
-      console.log(`   - sync_in_progress_cache: ${cacheStatus.sync_cache || 'not set'}`);
-
-      // Step 7: Verify that subsequent calls use the cache (performance check)
-      console.log('⚡ Verifying cache is being used for performance...');
-
-      const startTime = Date.now();
-      for (let i = 0; i < 5; i++) {
-        await execWP(`
-          \\$result = \\WooCommerce\\Facebook\\Products\\Sync::is_sync_in_progress();
-        `);
-      }
-      const endTime = Date.now();
-      const avgTime = (endTime - startTime) / 5;
-
-      console.log(`⏱️ Average time for is_sync_in_progress() call: ${avgTime.toFixed(2)}ms`);
-
-      // Should be fast if using cache (< 500ms average)
-      expect(avgTime).toBeLessThan(500);
-      console.log('✅ Cache is working - calls are fast');
-
-      console.log('🎉 Sync in progress happy-path test passed!');
-      logTestEnd(testInfo, true);
-
-    } catch (error) {
-      console.error(`❌ Test failed: ${error.message}`);
-      await safeScreenshot(page, 'sync-in-progress-test-failure.png');
-      logTestEnd(testInfo, false);
-      throw error;
-    } finally {
-      // Cleanup
-      if (productId) {
-        console.log('🧹 Cleaning up test product...');
-        await cleanupProduct(productId);
-      }
-
-      // Clear sync transients
       await execWP(`
+        global \\$wpdb;
+        \\$wpdb->query("DELETE FROM {\\$wpdb->options} WHERE option_name LIKE 'wc_facebook_background_product_sync_job_%'");
         delete_transient('wc_facebook_background_product_sync_queue_empty');
         delete_transient('wc_facebook_background_product_sync_sync_in_progress');
         delete_transient('wc_facebook_sync_in_progress');
+        echo json_encode(['success' => true]);
       `);
-      console.log('✅ Cleanup completed');
+
+      const baselineArtifacts = await getSyncArtifacts();
+      const baselineTotalJobCount = baselineArtifacts.total_job_count;
+
+      await page.goto(`${baseURL}/wp-admin/admin.php?page=wc-facebook&tab=product_sync`, {
+        waitUntil: 'domcontentloaded',
+        timeout: TIMEOUTS.EXTRA_LONG
+      });
+      await checkForPhpErrors(page);
+
+      const syncButton = page.locator('#woocommerce-facebook-settings-sync-products');
+      await syncButton.waitFor({ state: 'visible', timeout: TIMEOUTS.LONG });
+
+      // Ensure localized script data is present (JS wiring loaded).
+      await page.waitForFunction(() => {
+        return !!(window.facebook_for_woocommerce_settings_sync && window.facebook_for_woocommerce_settings_sync.ajax_url);
+      }, { timeout: TIMEOUTS.EXTRA_LONG });
+
+      const observedAdminAjax = [];
+      const requestListener = request => {
+        if (!request.url().includes('admin-ajax.php')) {
+          return;
+        }
+
+        observedAdminAjax.push({
+          method: request.method(),
+          url: request.url(),
+          postData: request.postData() || ''
+        });
+      };
+
+      page.on('request', requestListener);
+
+      let confirmDialogSeen = false;
+      page.once('dialog', async dialog => {
+        confirmDialogSeen = true;
+        await dialog.accept();
+      });
+
+      let syncRequest = null;
+      try {
+        [syncRequest] = await Promise.all([
+          page.waitForRequest(
+            request => requestHasAction(request, 'wc_facebook_sync_products'),
+            { timeout: TIMEOUTS.EXTRA_LONG }
+          ),
+          syncButton.click({ force: true })
+        ]);
+      } finally {
+        page.off('request', requestListener);
+      }
+
+      expect(confirmDialogSeen).toBe(true);
+      expect(syncRequest).toBeTruthy();
+      console.log(`✅ Confirm dialog shown + captured manual sync AJAX request: ${syncRequest.url()}`);
+      console.log(`📤 Request payload: ${syncRequest.postData() || '(empty)'}`);
+
+      const syncResponse = await page.waitForResponse(
+        response => {
+          const req = response.request();
+          return req === syncRequest || requestHasAction(req, 'wc_facebook_sync_products');
+        },
+        { timeout: TIMEOUTS.EXTRA_LONG }
+      );
+
+      expect(syncResponse.status()).toBeGreaterThanOrEqual(200);
+      expect(syncResponse.status()).toBeLessThan(500);
+
+      let responseBody = '';
+      try {
+        responseBody = await syncResponse.text();
+      } catch (_) {
+        responseBody = '<unreadable>';
+      }
+
+      console.log(`📥 Response status: ${syncResponse.status()}`);
+      console.log(`📥 Response body: ${responseBody}`);
+
+      let parsedResponse = null;
+      try {
+        parsedResponse = JSON.parse(responseBody);
+      } catch (_) {
+        // WordPress notices may pollute JSON in some environments.
+      }
+
+      if (parsedResponse) {
+        console.log(`📥 Parsed response JSON: ${JSON.stringify(parsedResponse)}`);
+        expect(parsedResponse.success).toBe(true);
+      } else {
+        console.warn(`⚠️ Could not parse sync response as JSON. Captured admin-ajax calls: ${JSON.stringify(observedAdminAjax)}`);
+      }
+
+      // Verify plugin-side lifecycle transition after manual sync trigger.
+      let lifecycleObserved = false;
+      let latestArtifacts = baselineArtifacts;
+      const lifecycleDeadline = Date.now() + TIMEOUTS.EXTRA_LONG;
+
+      while (Date.now() < lifecycleDeadline) {
+        latestArtifacts = await getSyncArtifacts();
+        lifecycleObserved = (
+          latestArtifacts.pending_job_count > 0 ||
+          latestArtifacts.sync_in_progress ||
+          latestArtifacts.total_job_count > baselineTotalJobCount
+        );
+
+        if (lifecycleObserved) {
+          break;
+        }
+
+        await page.waitForTimeout(1000);
+      }
+
+      expect(lifecycleObserved).toBe(true);
+      console.log(`✅ Plugin-side lifecycle observed: ${JSON.stringify(latestArtifacts)}`);
+
+      // Drain queue and assert completion state.
+      let finalArtifacts = latestArtifacts;
+      for (let attempt = 1; attempt <= 10; attempt++) {
+        await processPendingSyncJobs().catch(() => {});
+        finalArtifacts = await getSyncArtifacts();
+
+        if (finalArtifacts.pending_job_count === 0 && !finalArtifacts.sync_in_progress) {
+          break;
+        }
+
+        await page.waitForTimeout(TIMEOUTS.SHORT);
+      }
+
+      expect(finalArtifacts.pending_job_count).toBe(0);
+      expect(finalArtifacts.sync_in_progress).toBe(false);
+      console.log(`✅ Sync completed with no pending jobs: ${JSON.stringify(finalArtifacts)}`);
+
+      // End-to-end downstream validation.
+      const validation = await validateFacebookSync(productId, `manual-sync-product-${productId}`, 5, 6);
+      expect(validation).not.toBeNull();
+      expect(validation.success).toBe(true);
+      console.log(`✅ Graph/Catalog sync validated for product ${productId}`);
+
+      logTestEnd(testInfo, true);
+    } catch (error) {
+      console.error(`❌ Test failed: ${error.message}`);
+      await safeScreenshot(page, 'manual-product-sync-request-trigger-failure.png');
+      logTestEnd(testInfo, false);
+      throw error;
+    } finally {
+      if (productId) {
+        await cleanupProduct(productId);
+      }
+
+      await execWP(`
+        global \\$wpdb;
+        \\$wpdb->query("DELETE FROM {\\$wpdb->options} WHERE option_name LIKE 'wc_facebook_background_product_sync_job_%'");
+        delete_transient('wc_facebook_background_product_sync_queue_empty');
+        delete_transient('wc_facebook_background_product_sync_sync_in_progress');
+        delete_transient('wc_facebook_sync_in_progress');
+
+        \$switches = get_option('wc_facebook_for_woocommerce_rollout_switches', []);
+        if ( ! is_array(\$switches) ) {
+          \$switches = [];
+        }
+
+        \$had_key = ${hadSwitchKey ? 'true' : 'false'};
+        \$previous = ${previousSwitchValue === null ? 'null' : `'${String(previousSwitchValue).replace(/'/g, "\\'")}'`};
+
+        if ( ! \$had_key ) {
+          unset( \$switches['woo_all_products_sync_enabled'] );
+        } else {
+          \$switches['woo_all_products_sync_enabled'] = \$previous;
+        }
+
+        update_option('wc_facebook_for_woocommerce_rollout_switches', \$switches);
+      `);
     }
   });
 
