@@ -14,6 +14,7 @@ const {
   execWP,
   createTestProduct,
   cleanupProduct,
+  getConnectionStatus,
   baseURL,
   safeScreenshot
 } = require('./helpers/js');
@@ -23,6 +24,88 @@ test.describe('Meta for WooCommerce - Sync In Progress E2E Tests', () => {
   test.beforeEach(async ({ page }, testInfo) => {
     logTestStart(testInfo);
     await page.setViewportSize({ width: 1280, height: 720 });
+  });
+
+  test('Manual Product Sync button is shown when store is connected and rollout switch is off', async ({ page }, testInfo) => {
+    let previousSwitchValue = null;
+    let hadSwitchKey = false;
+
+    try {
+      const connection = await getConnectionStatus();
+      expect(connection.connected).toBe(true);
+      console.log('✅ Store is connected to Meta');
+
+      const { stdout: rolloutResult } = await execWP(`
+        \$switches = get_option('wc_facebook_for_woocommerce_rollout_switches', []);
+        if ( ! is_array(\$switches) ) {
+          \$switches = [];
+        }
+
+        \$had_key = array_key_exists('woo_all_products_sync_enabled', \$switches);
+        \$previous = \$had_key ? \$switches['woo_all_products_sync_enabled'] : null;
+        \$changed = false;
+
+        if ( 'no' !== \$previous ) {
+          \$switches['woo_all_products_sync_enabled'] = 'no';
+          update_option('wc_facebook_for_woocommerce_rollout_switches', \$switches);
+          \$changed = true;
+        }
+
+        echo json_encode([
+          'had_key' => \$had_key,
+          'previous' => \$previous,
+          'changed' => \$changed,
+          'current' => \$switches['woo_all_products_sync_enabled'] ?? null
+        ]);
+      `);
+
+      const rollout = JSON.parse(rolloutResult);
+      hadSwitchKey = !!rollout.had_key;
+      previousSwitchValue = rollout.previous;
+
+      expect(rollout.current).toBe('no');
+      if (rollout.changed) {
+        console.log(`ℹ️ rollout switch woo_all_products_sync_enabled changed from ${rollout.previous} to no`);
+      } else {
+        console.log('✅ rollout switch woo_all_products_sync_enabled already set to no');
+      }
+
+      await page.goto(`${baseURL}/wp-admin/admin.php?page=wc-facebook&tab=product_sync`, {
+        waitUntil: 'domcontentloaded',
+        timeout: TIMEOUTS.EXTRA_LONG
+      });
+      await checkForPhpErrors(page);
+
+      const syncButton = page.locator('#woocommerce-facebook-settings-sync-products');
+      await syncButton.waitFor({ state: 'visible', timeout: TIMEOUTS.LONG });
+      await expect(syncButton).toBeVisible();
+      console.log('✅ Manual Product Sync button is visible');
+
+      logTestEnd(testInfo, true);
+    } catch (error) {
+      console.error(`❌ Test failed: ${error.message}`);
+      await safeScreenshot(page, 'manual-product-sync-button-visibility-failure.png');
+      logTestEnd(testInfo, false);
+      throw error;
+    } finally {
+      await execWP(`
+        \$switches = get_option('wc_facebook_for_woocommerce_rollout_switches', []);
+        if ( ! is_array(\$switches) ) {
+          \$switches = [];
+        }
+
+        \$had_key = ${hadSwitchKey ? 'true' : 'false'};
+        \$previous = ${previousSwitchValue === null ? 'null' : `'${String(previousSwitchValue).replace(/'/g, "\\'")}'`};
+
+        if ( ! \$had_key ) {
+          unset( \$switches['woo_all_products_sync_enabled'] );
+        } else {
+          \$switches['woo_all_products_sync_enabled'] = \$previous;
+        }
+
+        update_option('wc_facebook_for_woocommerce_rollout_switches', \$switches);
+      `);
+    }
   });
 
   test('Verify sync in progress is detected when jobs are processing', async ({ page }, testInfo) => {
