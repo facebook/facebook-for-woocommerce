@@ -193,8 +193,13 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 				} else {
 					$cookie_to_set = $param_builder->getCookiesToSet();
 
-					if ( ! headers_sent() ) {
+					if ( ! headers_sent() && ! empty( $cookie_to_set ) ) {
 						foreach ( $cookie_to_set as $cookie ) {
+							// Skip if cookie already exists to avoid breaking page caching.
+							// The existing cookie value is still valid for tracking purposes.
+							if ( isset( $_COOKIE[ $cookie->name ] ) ) {
+								continue;
+							}
 							setcookie(
 								$cookie->name,
 								$cookie->value,
@@ -352,7 +357,7 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 			// Add inline script that executes after the external script has loaded
 			wp_add_inline_script(
 				'facebook-capi-param-builder',
-				'if (typeof clientParamBuilder !== "undefined") {
+				'if (typeof clientParamBuilder !== "undefined" && !/(?:^|;\s*)wc_facebook_signals_state=held(?:;|$)/.test(document.cookie)) {
 					clientParamBuilder.processAndCollectAllParams(window.location.href);
 				}'
 			);
