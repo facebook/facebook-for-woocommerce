@@ -195,8 +195,9 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 
 					if ( ! headers_sent() && ! empty( $cookie_to_set ) ) {
 						foreach ( $cookie_to_set as $cookie ) {
-							// Skip if cookie already exists with the same value to avoid breaking page caching.
-							if ( isset( $_COOKIE[ $cookie->name ] ) && $_COOKIE[ $cookie->name ] === $cookie->value ) {
+							// Skip if cookie already exists to avoid breaking page caching.
+							// The existing cookie value is still valid for tracking purposes.
+							if ( isset( $_COOKIE[ $cookie->name ] ) ) {
 								continue;
 							}
 							setcookie(
