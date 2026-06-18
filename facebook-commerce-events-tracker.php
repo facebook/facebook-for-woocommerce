@@ -1147,6 +1147,19 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 		}
 
 		/**
+		 * Determines whether a given order object should be tracked as a Purchase.
+		 *
+		 * We only track Purchases for actual WooCommerce orders (`shop_order`).
+		 * Subscription objects (`shop_subscription`) are handled via Subscribe events.
+		 *
+		 * @param WC_Order $order order object.
+		 * @return bool
+		 */
+		private function is_purchase_trackable_order( $order ) {
+			return is_a( $order, 'WC_Order' ) && 'shop_order' === $order->get_type();
+		}
+
+		/**
 		 * Triggers a Purchase event when checkout is completed.
 		 *
 		 * This may happen either when:
@@ -1174,6 +1187,11 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 			$order = wc_get_order( $order_id );
 
 			if ( ! $order ) {
+				return;
+			}
+
+			// Track Purchase only for checkout/renewal orders, not subscription posts.
+			if ( ! $this->is_purchase_trackable_order( $order ) ) {
 				return;
 			}
 

@@ -446,6 +446,34 @@ class FacebookCommerceEventsTrackerTest extends AbstractWPUnitTestWithSafeFilter
 	}
 
 	/**
+	 * Test that is_purchase_trackable_order returns true only for shop_order.
+	 *
+	 * @covers WC_Facebookcommerce_EventsTracker::is_purchase_trackable_order
+	 */
+	public function test_is_purchase_trackable_order_only_allows_shop_order(): void {
+		$this->instance = $this->create_tracker_with_pixel_enabled();
+
+		$shop_order = $this->getMockBuilder( \WC_Order::class )
+			->disableOriginalConstructor()
+			->onlyMethods( array( 'get_type' ) )
+			->getMock();
+		$shop_order->method( 'get_type' )->willReturn( 'shop_order' );
+
+		$shop_subscription = $this->getMockBuilder( \WC_Order::class )
+			->disableOriginalConstructor()
+			->onlyMethods( array( 'get_type' ) )
+			->getMock();
+		$shop_subscription->method( 'get_type' )->willReturn( 'shop_subscription' );
+
+		$reflection = new ReflectionClass( $this->instance );
+		$method     = $reflection->getMethod( 'is_purchase_trackable_order' );
+		$method->setAccessible( true );
+
+		$this->assertTrue( $method->invoke( $this->instance, $shop_order ) );
+		$this->assertFalse( $method->invoke( $this->instance, $shop_subscription ) );
+	}
+
+	/**
 	 * Test that inject_purchase_event sends CAPI event for server context.
 	 *
 	 * When triggered by a server-side hook (e.g., woocommerce_new_order),
