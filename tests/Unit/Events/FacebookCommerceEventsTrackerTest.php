@@ -1376,4 +1376,138 @@ class FacebookCommerceEventsTrackerTest extends AbstractWPUnitTestWithSafeFilter
 
 		unset( $_SERVER['HTTP_USER_AGENT'] );
 	}
+
+	/**
+	 * Invoke the private log_purchase_capi_step() helper via reflection.
+	 *
+	 * @param \WooCommerce\Facebook\Events\Event $event      the CAPI event.
+	 * @param string                             $event_key  value for the log 'event' field.
+	 * @param string                             $flow_step  the pipeline step reached.
+	 * @param string                             $message    log message.
+	 * @param string                             $log_level  a \WC_Log_Levels::* constant.
+	 * @param array                              $extra_data optional extra_data fields.
+	 * @param \Throwable|null                    $exception  optional exception to attach.
+	 */
+	private function invoke_log_purchase_capi_step(
+		\WooCommerce\Facebook\Events\Event $event,
+		string $event_key,
+		string $flow_step,
+		string $message,
+		string $log_level,
+		array $extra_data = array(),
+		?\Throwable $exception = null
+	): void {
+		$reflection = new ReflectionClass( $this->instance );
+		$method     = $reflection->getMethod( 'log_purchase_capi_step' );
+		$method->setAccessible( true );
+		$method->invoke( $this->instance, $event, $event_key, $flow_step, $message, $log_level, $extra_data, $exception );
+	}
+
+	/**
+	 * Test that log_purchase_capi_step queues a log for Meta when the event is a
+	 * Purchase and meta diagnosis is enabled.
+	 *
+	 * @covers WC_Facebookcommerce_EventsTracker::log_purchase_capi_step
+	 */
+	public function test_log_purchase_capi_step_queues_log_for_purchase_when_meta_diagnosis_enabled(): void {
+		$this->instance = $this->create_tracker_with_pixel_enabled();
+
+		update_option( 'wc_facebook_enable_meta_diagnosis', 'yes' );
+		delete_transient( 'global_logging_message_queue' );
+
+		$event = new \WooCommerce\Facebook\Events\Event(
+			array(
+				'event_name' => 'Purchase',
+				'event_id'   => 'evt_test_purchase_1',
+			)
+		);
+
+		$this->invoke_log_purchase_capi_step(
+			$event,
+			'capi_event_sent',
+			'capi_event_sent',
+			'CAPI event sent to Meta.',
+			\WC_Log_Levels::INFO
+		);
+
+		$logs = get_transient( 'global_logging_message_queue' );
+
+		$this->assertIsArray( $logs, 'A log entry should be queued for Meta.' );
+		$this->assertCount( 1, $logs, 'Exactly one log entry should be queued.' );
+
+		$entry = $logs[0];
+		$this->assertSame( 'capi_event_sent', $entry['event'] );
+		$this->assertSame( 'purchase_capi', $entry['flow_name'] );
+		$this->assertSame( 'capi_event_sent', $entry['flow_step'] );
+		$this->assertSame( 'Purchase', $entry['extra_data']['event_name'] );
+		$this->assertSame( 'evt_test_purchase_1', $entry['extra_data']['event_id'] );
+	}
+
+	/**
+	 * Test that log_purchase_capi_step does NOT queue a log for non-Purchase events,
+	 * even when meta diagnosis is enabled (Purchase-only volume guard).
+	 *
+	 * @covers WC_Facebookcommerce_EventsTracker::log_purchase_capi_step
+	 */
+	public function test_log_purchase_capi_step_skips_non_purchase_events(): void {
+		$this->instance = $this->create_tracker_with_pixel_enabled();
+
+		update_option( 'wc_facebook_enable_meta_diagnosis', 'yes' );
+		delete_transient( 'global_logging_message_queue' );
+
+		$event = new \WooCommerce\Facebook\Events\Event(
+			array(
+				'event_name' => 'AddToCart',
+				'event_id'   => 'evt_test_atc_1',
+			)
+		);
+
+		$this->invoke_log_purchase_capi_step(
+			$event,
+			'capi_event_sent',
+			'capi_event_sent',
+			'CAPI event sent to Meta.',
+			\WC_Log_Levels::INFO
+		);
+
+		$this->assertFalse(
+			get_transient( 'global_logging_message_queue' ),
+			'Non-Purchase events should not queue a Meta log.'
+		);
+	}
+
+	/**
+	 * Test that log_purchase_capi_step does NOT queue a log when meta diagnosis is
+	 * disabled, even for a Purchase event.
+	 *
+	 * @covers WC_Facebookcommerce_EventsTracker::log_purchase_capi_step
+	 */
+	public function test_log_purchase_capi_step_does_not_queue_when_meta_diagnosis_disabled(): void {
+		$this->instance = $this->create_tracker_with_pixel_enabled();
+
+		update_option( 'wc_facebook_enable_meta_diagnosis', 'no' );
+		delete_transient( 'global_logging_message_queue' );
+
+		$event = new \WooCommerce\Facebook\Events\Event(
+			array(
+				'event_name' => 'Purchase',
+				'event_id'   => 'evt_test_purchase_2',
+			)
+		);
+
+		$this->invoke_log_purchase_capi_step(
+			$event,
+			'capi_event_send_failed',
+			'capi_send_exception',
+			'CAPI event send failed.',
+			\WC_Log_Levels::ERROR,
+			array(),
+			new \Exception( 'boom' )
+		);
+
+		$this->assertFalse(
+			get_transient( 'global_logging_message_queue' ),
+			'No Meta log should be queued when meta diagnosis is disabled.'
+		);
+	}
 }
