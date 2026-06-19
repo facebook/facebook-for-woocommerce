@@ -234,8 +234,6 @@ class Product_Sync extends Abstract_Settings_Screen {
 				'desc_tip' => __( 'Enable product syncing with Facebook.', 'facebook-for-woocommerce' ),
 			),
 
-
-
 			array(
 				'id'       => Commerce::OPTION_GOOGLE_PRODUCT_CATEGORY_ID,
 				'type'     => 'product_sync_google_product_categories',

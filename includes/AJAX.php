@@ -208,5 +208,4 @@ class AJAX {
 
 		wp_send_json_success( $remaining_products );
 	}
-
 }
