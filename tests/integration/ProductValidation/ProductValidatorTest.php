@@ -372,4 +372,55 @@ class ProductValidatorTest extends IntegrationTestCase {
 		// Out of stock products should still be synced
 		$this->assertProductShouldSync( $product, 'Out of stock products should be synced' );
 	}
-} 
+
+	/**
+	 * Test orphan variation does not fatally error when checking sync field.
+	 */
+	public function test_orphan_variation_sync_field_check_does_not_fatal(): void {
+		$this->enable_facebook_sync();
+
+		$variable_product = $this->create_variable_product();
+		$variation_ids    = $variable_product->get_children();
+
+		$this->assertNotEmpty( $variation_ids, 'Variable product should have at least one variation.' );
+
+		$variation_id = (int) $variation_ids[0];
+
+		// Remove parent permanently so the variation has no resolvable WC parent object.
+		wp_delete_post( $variable_product->get_id(), true );
+
+		$orphan_variation = wc_get_product( $variation_id );
+		$this->assertInstanceOf( WC_Product::class, $orphan_variation );
+		$this->assertSame( 'variation', $orphan_variation->get_type() );
+
+		$validator = facebook_for_woocommerce()->get_product_sync_validator( $orphan_variation );
+
+		$this->assertFalse(
+			$validator->passes_product_sync_field_check(),
+			'Orphan variation should be treated as non-syncable and must not fatal.'
+		);
+	}
+
+	/**
+	 * Test orphan variation is considered not sync-enabled through Products helper.
+	 */
+	public function test_orphan_variation_is_not_sync_enabled(): void {
+		$this->enable_facebook_sync();
+
+		$variable_product = $this->create_variable_product();
+		$variation_ids    = $variable_product->get_children();
+
+		$this->assertNotEmpty( $variation_ids, 'Variable product should have at least one variation.' );
+
+		$variation_id = (int) $variation_ids[0];
+		wp_delete_post( $variable_product->get_id(), true );
+
+		$orphan_variation = wc_get_product( $variation_id );
+		$this->assertInstanceOf( WC_Product::class, $orphan_variation );
+
+		$this->assertFalse(
+			Products::is_sync_enabled_for_product( $orphan_variation ),
+			'Orphan variation should not be considered sync-enabled.'
+		);
+	}
+}
