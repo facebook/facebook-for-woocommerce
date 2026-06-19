@@ -82,6 +82,22 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 	/** @var string the "enable product sync" setting ID */
 	const SETTING_ENABLE_PRODUCT_SYNC = 'wc_facebook_enable_product_sync';
 
+	/**
+	 * Legacy excluded product category IDs setting ID.
+	 *
+	 * @deprecated 3.7.2 Category/tag exclusions were removed; kept for backward compatibility.
+	 * @var string
+	 */
+	const SETTING_EXCLUDED_PRODUCT_CATEGORY_IDS = 'wc_facebook_excluded_product_category_ids';
+
+	/**
+	 * Legacy excluded product tag IDs setting ID.
+	 *
+	 * @deprecated 3.7.2 Category/tag exclusions were removed; kept for backward compatibility.
+	 * @var string
+	 */
+	const SETTING_EXCLUDED_PRODUCT_TAG_IDS = 'wc_facebook_excluded_product_tag_ids';
+
 	/** @var string the product description mode setting ID */
 	const SETTING_PRODUCT_DESCRIPTION_MODE = 'wc_facebook_product_description_mode';
 
@@ -2601,6 +2617,58 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 		 * @since 1.10.0
 		 */
 		return (string) apply_filters( 'wc_facebook_pixel_id', get_option( self::SETTING_FACEBOOK_PIXEL_ID, '' ), $this );
+	}
+
+	/**
+	 * Gets the IDs of the categories to be excluded from sync.
+	 *
+	 * @deprecated 3.7.2 Category/tag exclusions were removed; this shim is kept for backward compatibility.
+	 *
+	 * @return int[]
+	 * @since 1.10.0
+	 */
+	public function get_excluded_product_category_ids() {
+		_deprecated_function( __METHOD__, '3.7.2' );
+
+		if ( $this->is_woo_all_products_enabled() ) {
+			return array();
+		}
+
+		/**
+		 * Filters the configured excluded product category IDs.
+		 *
+		 * @param int[] $category_ids the configured excluded product category IDs
+		 * @param \WC_Facebookcommerce_Integration $integration the integration instance
+		 *
+		 * @since 1.10.0
+		 */
+		return (array) apply_filters( 'wc_facebook_excluded_product_category_ids', get_option( self::SETTING_EXCLUDED_PRODUCT_CATEGORY_IDS, array() ), $this );
+	}
+
+	/**
+	 * Gets the IDs of the tags to be excluded from sync.
+	 *
+	 * @deprecated 3.7.2 Category/tag exclusions were removed; this shim is kept for backward compatibility.
+	 *
+	 * @return int[]
+	 * @since 1.10.0
+	 */
+	public function get_excluded_product_tag_ids() {
+		_deprecated_function( __METHOD__, '3.7.2' );
+
+		if ( $this->is_woo_all_products_enabled() ) {
+			return array();
+		}
+
+		/**
+		 * Filters the configured excluded product tag IDs.
+		 *
+		 * @param int[] $tag_ids the configured excluded product tag IDs
+		 * @param \WC_Facebookcommerce_Integration $integration the integration instance
+		 *
+		 * @since 1.10.0
+		 */
+		return (array) apply_filters( 'wc_facebook_excluded_product_tag_ids', get_option( self::SETTING_EXCLUDED_PRODUCT_TAG_IDS, array() ), $this );
 	}
 
 	/** Setter methods ************************************************************************************************/
