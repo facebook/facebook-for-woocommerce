@@ -2,8 +2,8 @@
 Contributors: facebook
 Tags: meta, facebook, whatsapp, conversions api, catalog sync
 Requires at least: 5.6
-Tested up to: 6.9.4
-Stable tag: 3.6.3
+Tested up to: 7.0
+Stable tag: 3.7.1
 Requires PHP: 7.4
 MySQL: 5.6 or greater
 License: GPLv2 or later
@@ -42,13 +42,8 @@ To suggest technical improvements, you can raise an issue on our [Github reposit
 
 == Changelog ==
 
-= 3.7.0 - 2026-05-05 =
-* Add - Add Signal state controls for Pixel and CAPI by @iodic in #3914
-* Fix - Add origin validation to postMessage handlers in onboarding scripts by @devbodaghe in #3913
-* Fix - Fixed the contributors, removed Meta and added Facebook by @vahidkay-meta in #3905
-* Dev - Upgrading the dependencies, and removing the unnecessary ones to improve the release process by @vahidkay-meta in #3891
-* Fix - Add opt-in non-blocking mode for Pixel event API requests by @vahidkay-meta in #3892
-* Tweak - Tweak - Improve Set Stable Tag by white-listing only release/*/publish branches by @vahidkay-meta in #3904
-* Fix - Bump webpack from 5.99.9 to 5.105.0 by @app/dependabot in #3849
+= 3.7.2 - 2026-06-22 =
+* Add - Move WhatsApp to a standalone top-level admin menu with a scheme-aware icon by @ceciliazeng-wa in #3947
+* Fix - Prevent duplicate AddToCart Pixel fires from repeated AJAX fragment execution by @cshing-meta in #3939
 
 [See changelog for all versions](https://raw.githubusercontent.com/facebook/facebook-for-woocommerce/refs/heads/main/changelog.txt).
