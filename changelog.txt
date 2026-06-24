@@ -1,5 +1,7 @@
 *** Meta for WooCommerce Changelog ***
 
+= 3.7.3 - 2026-06-24 =
+
 = 3.7.1 - 2026-05-27 =
 * Fix - Fix for fbc & fbp priorities on when they are set by @vahidkay-meta in #3936
 * Add - OAuth Detection and Reconnect Prompts (#3869) by @rafael-curran in #3869
