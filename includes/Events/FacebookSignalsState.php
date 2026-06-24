@@ -31,18 +31,47 @@ class FacebookSignalsState {
 	/** @var array Attribution data captured while signals are held (e.g. fbclid). */
 	private static $attribution_data = array();
 
+	/** @var string Cookie name for signal state. */
+	const COOKIE_NAME = 'wc_facebook_signals_state';
+
 	/**
-	 * Hold signals for the current request.
+	 * Hold signals for the current request and set the browser cookie
+	 * so client-side JS knows the state on cached pages.
 	 */
 	public static function hold() {
 		self::$held = true;
+		self::set_state_cookie( 'held' );
 	}
 
 	/**
-	 * Release signals for the current request.
+	 * Release signals for the current request and update the browser cookie.
 	 */
 	public static function release() {
 		self::$held = false;
+		self::set_state_cookie( 'active' );
+	}
+
+	/**
+	 * Sets the signal-state cookie in the HTTP response headers.
+	 *
+	 * @param string $state 'held' or 'active'.
+	 */
+	private static function set_state_cookie( $state ) {
+		if ( headers_sent() ) {
+			return;
+		}
+
+		setcookie(
+			self::COOKIE_NAME,
+			$state,
+			time() + YEAR_IN_SECONDS,
+			COOKIEPATH,
+			COOKIE_DOMAIN,
+			is_ssl(),
+			false
+		);
+
+		$_COOKIE[ self::COOKIE_NAME ] = $state;
 	}
 
 	/**

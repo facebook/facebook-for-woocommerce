@@ -352,7 +352,7 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 			// Add inline script that executes after the external script has loaded
 			wp_add_inline_script(
 				'facebook-capi-param-builder',
-				'if (typeof clientParamBuilder !== "undefined") {
+				'if (typeof clientParamBuilder !== "undefined" && !/(?:^|;\s*)wc_facebook_signals_state=held(?:;|$)/.test(document.cookie)) {
 					clientParamBuilder.processAndCollectAllParams(window.location.href);
 				}'
 			);

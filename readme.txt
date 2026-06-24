@@ -3,13 +3,13 @@ Contributors: facebook
 Tags: meta, facebook, whatsapp, conversions api, catalog sync
 Requires at least: 5.6
 Tested up to: 7.0
-Stable tag: 3.7.1
+Stable tag: 3.7.3
 Requires PHP: 7.4
 MySQL: 5.6 or greater
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
-Reach more customers and drive sales on Facebook, Instagram and WhatsApp with the official Meta for WooCommerce plugin.
+WhatsApp, Facebook and Instagram help you reach more customers and drive sales with the official Meta for WooCommerce plugin.
 
 == Description ==
 
@@ -42,7 +42,7 @@ To suggest technical improvements, you can raise an issue on our [Github reposit
 
 == Changelog ==
 
-= 3.7.2 - 2026-06-22 =
+= 3.7.4 - 2026-06-22 =
 * Add - Move WhatsApp to a standalone top-level admin menu with a scheme-aware icon by @ceciliazeng-wa in #3947
 * Fix - Prevent duplicate AddToCart Pixel fires from repeated AJAX fragment execution by @cshing-meta in #3939
 

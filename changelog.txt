@@ -1,6 +1,6 @@
 *** Meta for WooCommerce Changelog ***
 
-= 3.7.2 - 2026-06-22 =
+= 3.7.4 - 2026-06-22 =
 * Add - Move WhatsApp to a standalone top-level admin menu with a scheme-aware icon by @ceciliazeng-wa in #3947
 * Fix - Prevent duplicate AddToCart Pixel fires from repeated AJAX fragment execution by @cshing-meta in #3939
 
