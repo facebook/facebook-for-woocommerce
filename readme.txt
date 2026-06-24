@@ -52,4 +52,5 @@ When that happens, the site still recovers on the next request, but the disable 
 * Add - Move WhatsApp to a standalone top-level admin menu with a scheme-aware icon by @ceciliazeng-wa in #3947
 * Fix - Prevent duplicate AddToCart Pixel fires from repeated AJAX fragment execution by @cshing-meta in #3939
 
-[See changelog for all versions](https://raw.githubusercontent.com/facebook/facebook-for-woocommerce/refs/heads/main/changelog.txt).
+
+[See changelog for all versions] (https://raw.githubusercontent.com/facebook/facebook-for-woocommerce/refs/heads/main/changelog.txt).
