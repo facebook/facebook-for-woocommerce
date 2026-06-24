@@ -46,23 +46,51 @@ jobs:
           TEMP_DIR=$(mktemp -d)
           trap "rm -rf $TEMP_DIR" EXIT
 
-          echo "Comparing Meta for WooCommerce v$VERSION"
+          echo "🔍 Verifying that the WordPress.org marketplace build matches the latest changes on release/$VERSION (Meta for WooCommerce v$VERSION)"
 
-          # Download from WordPress.org
+          # Download the currently published plugin from WordPress.org
+          echo "⬇️  Downloading the published plugin from the WordPress.org marketplace..."
           curl -sL "https://downloads.wordpress.org/plugin/facebook-for-woocommerce.zip" -o "$TEMP_DIR/marketplace.zip"
 
-          # Download GitHub artifact for the LATEST commit on release/$VERSION.
-          # build-plugin-artifact.yml builds on every push to the release branch
-          # (and is dispatched by prepare-release.yml for the branch's first commit),
-          # so a build for the current HEAD always exists. Match the build by commit
-          # SHA so we compare the marketplace against the exact latest changes on
-          # release/$VERSION, never a stale or still-running build.
+          # Resolve the exact commit currently at the tip of release/$VERSION. We must
+          # compare the marketplace against a build of THIS commit so we never validate
+          # against a stale or still-running build of an older commit.
           BRANCH_SHA=$(gh api "repos/facebook/facebook-for-woocommerce/branches/release/$VERSION" --jq '.commit.sha')
-          RUN_ID=$(gh run list --repo facebook/facebook-for-woocommerce --workflow build-plugin-artifact.yml --branch "release/$VERSION" --status success --json databaseId,headSha --jq "[.[] | select(.headSha == \"$BRANCH_SHA\")][0].databaseId")
-          if [ -z "$RUN_ID" ] || [ "$RUN_ID" = "null" ]; then
-              echo "❌ No successful build found for release/$VERSION at $BRANCH_SHA (the latest build may still be running)"
+          echo "📌 Latest commit on release/$VERSION is $BRANCH_SHA"
+
+          # Locate the build artifact for that exact commit.
+          # build-plugin-artifact.yml builds on every push to the release branch (and is
+          # dispatched by prepare-release.yml for the branch's first commit), so a build
+          # for the current HEAD is always produced. It may still be in progress when this
+          # workflow runs, so poll for up to 5 minutes for a SUCCESSFUL build whose commit
+          # SHA matches release/$VERSION's HEAD before giving up.
+          echo "🔎 Looking for a successful build of release/$VERSION at commit $BRANCH_SHA..."
+          MAX_ATTEMPTS=30
+          SLEEP_SECONDS=10
+          RUN_ID=""
+          for ATTEMPT in $(seq 1 "$MAX_ATTEMPTS"); do
+              RUN_ID=$(gh run list --repo facebook/facebook-for-woocommerce --workflow build-plugin-artifact.yml --branch "release/$VERSION" --status success --limit 50 --json databaseId,headSha --jq "[.[] | select(.headSha == \"$BRANCH_SHA\")][0].databaseId")
+              if [ -n "$RUN_ID" ] && [ "$RUN_ID" != "null" ]; then
+                  echo "✅ Found successful build (run id $RUN_ID) for commit $BRANCH_SHA"
+                  break
+              fi
+              RUN_ID=""
+              echo "⏳ No successful build for commit $BRANCH_SHA yet — it may still be running. Waiting ${SLEEP_SECONDS}s (attempt ${ATTEMPT}/${MAX_ATTEMPTS})..."
+              sleep "$SLEEP_SECONDS"
+          done
+
+          if [ -z "$RUN_ID" ]; then
+              echo "❌ Could not find a successful build of release/$VERSION at commit $BRANCH_SHA after $((MAX_ATTEMPTS * SLEEP_SECONDS / 60)) minutes."
+              echo "   This usually means one of the following:"
+              echo "     • The build for this commit is still running or queued — wait for it to finish, then re-run this workflow."
+              echo "     • The build for this commit failed — check the 'Build Plugin Artifact' workflow runs for release/$VERSION and fix the build."
+              echo "     • No build was ever triggered for this commit — trigger one with:"
+              echo "         gh workflow run build-plugin-artifact.yml --ref release/$VERSION"
+              echo "       then wait for it to succeed and re-run this workflow."
               exit 1
           fi
+
+          echo "⬇️  Downloading the build artifact from run $RUN_ID..."
           gh run download "$RUN_ID" --repo facebook/facebook-for-woocommerce --dir "$TEMP_DIR/artifact"
 
           # Find and prepare GitHub zip
@@ -75,7 +103,11 @@ jobs:
                   ARTIFACT_ZIP="$TEMP_DIR/github.zip"
               fi
           fi
-          [ -z "$ARTIFACT_ZIP" ] && echo "❌ No artifact found" && exit 1
+          if [ -z "$ARTIFACT_ZIP" ]; then
+              echo "❌ The build artifact from run $RUN_ID did not contain a plugin zip or a facebook-for-woocommerce.php file."
+              echo "   The artifact may be malformed or incomplete. Inspect run $RUN_ID, then re-run this workflow."
+              exit 1
+          fi
 
           # Extract and compare
           mkdir -p "$TEMP_DIR/wp" "$TEMP_DIR/gh"
@@ -83,7 +115,7 @@ jobs:
           unzip -q "$ARTIFACT_ZIP" -d "$TEMP_DIR/gh"
 
           # Compare directories (ignore .gitignore)
-          echo "Comparing archives..."
+          echo "🔬 Comparing the marketplace plugin against the release/$VERSION build (commit $BRANCH_SHA)..."
           DIFF_OUTPUT=$(diff -rq --exclude='.gitignore' "$TEMP_DIR/wp" "$TEMP_DIR/gh" 2>&1 || true)
 
           # For .pot files, check if differences are only timestamps
@@ -105,12 +137,14 @@ jobs:
           REAL_DIFFS=$(echo -e "$REAL_DIFFS" | sed '/^$/d')
 
           if [ -n "$REAL_DIFFS" ]; then
-              echo "❌ Differences found:"
+              echo "❌ The WordPress.org marketplace build does NOT match the latest release/$VERSION build (commit $BRANCH_SHA)."
+              echo "   Refusing to set the stable tag until they match. Differing files:"
               echo "$REAL_DIFFS"
+              echo "   Resolve the discrepancy (re-deploy via the Release Plugin workflow if the marketplace is out of date), then re-run this workflow."
               exit 1
           fi
 
-          echo "✅ Artifacts match"
+          echo "✅ The marketplace build matches the latest release/$VERSION build (commit $BRANCH_SHA) — safe to set the stable tag."
 
       - name: Install SVN
         run: sudo apt-get install subversion -y
