@@ -51,10 +51,16 @@ jobs:
           # Download from WordPress.org
           curl -sL "https://downloads.wordpress.org/plugin/facebook-for-woocommerce.zip" -o "$TEMP_DIR/marketplace.zip"
 
-          # Download GitHub artifact
-          RUN_ID=$(gh run list --repo facebook/facebook-for-woocommerce --workflow prepare-release.yml --branch "release/$VERSION" --status success --json databaseId --jq '.[0].databaseId')
+          # Download GitHub artifact for the LATEST commit on release/$VERSION.
+          # build-plugin-artifact.yml builds on every push to the release branch
+          # (and is dispatched by prepare-release.yml for the branch's first commit),
+          # so a build for the current HEAD always exists. Match the build by commit
+          # SHA so we compare the marketplace against the exact latest changes on
+          # release/$VERSION, never a stale or still-running build.
+          BRANCH_SHA=$(gh api "repos/facebook/facebook-for-woocommerce/branches/release/$VERSION" --jq '.commit.sha')
+          RUN_ID=$(gh run list --repo facebook/facebook-for-woocommerce --workflow build-plugin-artifact.yml --branch "release/$VERSION" --status success --json databaseId,headSha --jq "[.[] | select(.headSha == \"$BRANCH_SHA\")][0].databaseId")
           if [ -z "$RUN_ID" ] || [ "$RUN_ID" = "null" ]; then
-              echo "❌ No successful build found for release/$VERSION"
+              echo "❌ No successful build found for release/$VERSION at $BRANCH_SHA (the latest build may still be running)"
               exit 1
           fi
           gh run download "$RUN_ID" --repo facebook/facebook-for-woocommerce --dir "$TEMP_DIR/artifact"

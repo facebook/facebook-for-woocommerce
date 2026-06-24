@@ -362,6 +362,20 @@ jobs:
           git commit -m "Updating version to $NEW_VERSION"
           git push origin HEAD
 
+      - name: Trigger build for the new release branch
+        env:
+          GH_TOKEN: ${{ github.token }}
+          NEW_VERSION: ${{ steps.set_version.outputs.new_version }}
+        run: |
+          # The branch-creation push above uses GITHUB_TOKEN, which by design does
+          # NOT trigger build-plugin-artifact.yml's push event. Dispatch it
+          # explicitly (workflow_dispatch is the exception to that rule) so a build
+          # attributed to release/$NEW_VERSION exists for Set Stable Tag to compare
+          # the marketplace against later.
+          gh workflow run build-plugin-artifact.yml \
+            --repo "${{ github.repository }}" \
+            --ref "release/$NEW_VERSION"
+
   build-and-upload:
     needs: prepare-release
     if: always() && (needs.prepare-release.result == 'success' || needs.prepare-release.result == 'skipped')
