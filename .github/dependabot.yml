@@ -1,0 +1,29 @@
+version: 2
+
+multi-ecosystem-groups:
+  all-dependencies:
+    schedule:
+      interval: weekly
+      day: monday
+      time: "03:00"
+      timezone: "UTC"
+    open-pull-requests-limit: 1
+
+updates:
+  - package-ecosystem: npm
+    directory: "/"
+    multi-ecosystem-group: all-dependencies
+    patterns:
+      - "*"
+
+  - package-ecosystem: composer
+    directory: "/"
+    multi-ecosystem-group: all-dependencies
+    patterns:
+      - "*"
+
+  - package-ecosystem: github-actions
+    directory: "/"
+    multi-ecosystem-group: all-dependencies
+    patterns:
+      - "*"
