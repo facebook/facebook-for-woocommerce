@@ -29,6 +29,12 @@ panel under the `Enable debug mode` section.
 By default plugin omits headers in the requests to make the logs more readable. If debugging with headers is necessary
 you can enable the headers in the logs by setting `wc_facebook_request_headers_in_debug_log` option to true.
 
+### Crash recovery limitation (known gap)
+
+Crash recovery uses a shutdown handler to write a disable flag and queue a sanitized crash report.
+In rare PHP memory-exhaustion fatals, the process may not have enough memory left to run the shutdown handler.
+When that happens, the site still recovers on the next request, but the disable flag and crash report may be skipped for that request.
+
 ## Development
 
 ### Developing

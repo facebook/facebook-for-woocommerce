@@ -13,6 +13,15 @@ defined( 'ABSPATH' ) || exit;
 class Request extends ApiRequest {
 
 	/**
+	 * Gets the dedicated rate limit ID for crash/log reporting.
+	 *
+	 * @return string
+	 */
+	public static function get_rate_limit_id(): string {
+		return 'meta_log_reporting';
+	}
+
+	/**
 	 * @param array $context log data
 	 */
 	public function __construct( $context ) {

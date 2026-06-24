@@ -10,9 +10,6 @@
 
 namespace WooCommerce\Facebook\Framework;
 
-use WC_Facebookcommerce_Utils;
-use WooCommerce\Facebook\Utilities\Heartbeat;
-
 defined( 'ABSPATH' ) || exit;
 
 
@@ -24,12 +21,74 @@ defined( 'ABSPATH' ) || exit;
 class BatchLogHandler extends LogHandlerBase {
 
 	/**
+	 * Action Scheduler hook for batch log flushing.
+	 */
+	const BATCH_LOG_FLUSH_HOOK = 'facebook_for_woocommerce_process_logs_batch';
+
+	/**
+	 * Action Scheduler group for batch log flushing.
+	 */
+	const BATCH_LOG_FLUSH_GROUP = 'wc_facebook_log_batch';
+
+	/**
+	 * Whether hooks have already been registered.
+	 *
+	 * @var bool
+	 */
+	private static $registered = false;
+
+	/**
 	 * Constructs a new BatchLog handler.
 	 *
 	 * @since 3.5.0
 	 */
 	public function __construct() {
-		add_action( Heartbeat::EVERY_5_MINUTES, array( $this, 'process_logs_batch' ) );
+		self::register_batch_sender();
+	}
+
+	/**
+	 * Registers the batch sender hook and recurring Action Scheduler event.
+	 *
+	 * @since 3.6.4
+	 */
+	public static function register_batch_sender() {
+		if ( ! self::$registered ) {
+			add_action( self::BATCH_LOG_FLUSH_HOOK, array( __CLASS__, 'process_logs_batch' ) );
+			self::$registered = true;
+		}
+
+		self::ensure_batch_sender_scheduled();
+	}
+
+	/**
+	 * Checks whether dependencies needed for batch sender scheduling are available.
+	 *
+	 * @since 3.6.4
+	 *
+	 * @return bool
+	 */
+	private static function can_schedule_batch_sender() {
+		return did_action( 'action_scheduler_init' )
+			&& function_exists( 'as_schedule_recurring_action' )
+			&& function_exists( 'facebook_for_woocommerce' )
+			&& class_exists( '\\WC_Facebookcommerce' );
+	}
+
+	/**
+	 * Ensures recurring Action Scheduler job exists for batch log flushing.
+	 *
+	 * @since 3.6.4
+	 */
+	public static function ensure_batch_sender_scheduled() {
+		if ( ! self::can_schedule_batch_sender() ) {
+			return;
+		}
+
+		if ( function_exists( 'as_has_scheduled_action' ) && as_has_scheduled_action( self::BATCH_LOG_FLUSH_HOOK, [], self::BATCH_LOG_FLUSH_GROUP ) ) {
+			return;
+		}
+
+		as_schedule_recurring_action( time() + ( 5 * MINUTE_IN_SECONDS ), 5 * MINUTE_IN_SECONDS, self::BATCH_LOG_FLUSH_HOOK, [], self::BATCH_LOG_FLUSH_GROUP, true );
 	}
 
 	/**
@@ -39,9 +98,18 @@ class BatchLogHandler extends LogHandlerBase {
 	 *
 	 * @since 3.5.0
 	 */
-	public function process_logs_batch() {
+	public static function process_logs_batch() {
 
-		if ( facebook_for_woocommerce()->get_integration()->is_meta_diagnosis_enabled() && get_transient( 'global_logging_message_queue' ) !== false && ! empty( get_transient( 'global_logging_message_queue' ) ) ) {
+		if ( ! function_exists( 'facebook_for_woocommerce' ) ) {
+			return;
+		}
+
+		$plugin = facebook_for_woocommerce();
+		if ( ! $plugin || ! method_exists( $plugin, 'get_integration' ) || ! $plugin->get_integration() ) {
+			return;
+		}
+
+		if ( $plugin->get_integration()->is_meta_diagnosis_enabled() && get_transient( 'global_logging_message_queue' ) !== false && ! empty( get_transient( 'global_logging_message_queue' ) ) ) {
 			$logs         = get_transient( 'global_logging_message_queue' );
 			$chunked_logs = array_chunk( $logs, 20 );
 

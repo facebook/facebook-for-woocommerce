@@ -40,6 +40,12 @@ When reporting an issue on Meta Direct Support, please give us as many details a
 
 To suggest technical improvements, you can raise an issue on our [Github repository](https://github.com/facebook/facebook-for-woocommerce/issues).
 
+== Known limitations ==
+
+Crash recovery uses a shutdown handler to write a disable flag and queue a sanitized crash report.
+In rare PHP memory-exhaustion fatals, there may be too little memory left for the shutdown handler to run.
+When that happens, the site still recovers on the next request, but the disable flag and crash report may be skipped for that request.
+
 == Changelog ==
 
 = 3.7.0 - 2026-05-05 =

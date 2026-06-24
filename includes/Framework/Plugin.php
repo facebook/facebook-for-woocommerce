@@ -71,6 +71,9 @@ abstract class Plugin {
 	/** @var ErrorLogHandler the error log handler class */
 	private $error_log_handler;
 
+	/** @var PluginCrashHandler the plugin crash handler class */
+	private $plugin_crash_handler;
+
 	/**
 	 * Initialize the plugin.
 	 *
@@ -131,6 +134,9 @@ abstract class Plugin {
 
 		// build the error log handler instance
 		$this->init_error_log_handler();
+
+		// register plugin fatal crash shutdown handler
+		$this->init_plugin_crash_handler();
 	}
 
 
@@ -205,6 +211,16 @@ abstract class Plugin {
 	 */
 	protected function init_error_log_handler() {
 		$this->error_log_handler = new ErrorLogHandler();
+	}
+
+	/**
+	 * Builds the plugin crash handler instance and registers shutdown callback.
+	 *
+	 * @since 3.6.4
+	 */
+	protected function init_plugin_crash_handler() {
+		$this->plugin_crash_handler = new PluginCrashHandler();
+		$this->plugin_crash_handler->register();
 	}
 
 	/**

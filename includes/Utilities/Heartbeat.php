@@ -69,7 +69,6 @@ class Heartbeat {
 		add_action( 'init', array( $this, 'schedule_cron_events' ) );
 		add_action( $this->hourly_cron_name, array( $this, 'schedule_hourly_action' ) );
 		add_action( $this->daily_cron_name, array( $this, 'schedule_daily_action' ) );
-		add_action( $this->every_5_minute_cron_name, array( $this, 'schedule_every_5_minute_action' ) );
 	}
 
 	/**
@@ -85,8 +84,9 @@ class Heartbeat {
 		if ( ! wp_next_scheduled( $this->daily_cron_name ) ) {
 			wp_schedule_event( time(), 'daily', $this->daily_cron_name );
 		}
-		if ( ! wp_next_scheduled( $this->every_5_minute_cron_name ) ) {
-			wp_schedule_event( time(), 'five_minutes', $this->every_5_minute_cron_name );
+		// 5-minute heartbeat has migrated to direct Action Scheduler scheduling.
+		if ( function_exists( 'wp_unschedule_hook' ) ) {
+			wp_unschedule_hook( $this->every_5_minute_cron_name );
 		}
 	}
 
