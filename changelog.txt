@@ -1,5 +1,9 @@
 *** Meta for WooCommerce Changelog ***
 
+= 3.7.2 - 2026-06-22 =
+* Add - Move WhatsApp to a standalone top-level admin menu with a scheme-aware icon by @ceciliazeng-wa in #3947
+* Fix - Prevent duplicate AddToCart Pixel fires from repeated AJAX fragment execution by @cshing-meta in #3939
+
 = 3.7.0 - 2026-05-05 =
 * Add - Add Signal state controls for Pixel and CAPI by @iodic in #3914
 * Fix - Add origin validation to postMessage handlers in onboarding scripts by @devbodaghe in #3913
