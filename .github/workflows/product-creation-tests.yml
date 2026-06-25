@@ -160,9 +160,12 @@ jobs:
         uses: actions/checkout@v5
 
       - name: Setup Node.js
+        # Pin Node 22 rather than reading engines from package.json (which allows
+        # up to 24). Playwright 1.53 hangs while extracting the browser archive on
+        # Node 24, which silently stalled the E2E jobs after the Chromium download.
         uses: actions/setup-node@v4
         with:
-          node-version-file: 'package.json'
+          node-version: '22'
           cache: 'npm'
 
       - name: Setup PHP
@@ -605,10 +608,8 @@ jobs:
         env:
           # The branded Google Chrome channel is installed through the system
           # package manager (apt). Force non-interactive mode so apt/debconf can
-          # never block on a prompt the way it did before (the install hung until
-          # the job's 6-hour timeout). Also surface install progress for triage.
+          # never block on a prompt.
           DEBIAN_FRONTEND: noninteractive
-          DEBUG: pw:install
         run: |
           # Install in the WordPress plugin directory (where we'll run tests from)
           cd ${{ env.PLUGIN_PATH }}
