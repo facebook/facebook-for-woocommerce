@@ -17,7 +17,7 @@
     "@wordpress/scripts": "^32.5.0",
     "jest": "^30.4.2",
     "jest-environment-jsdom": "^30.4.1",
-    "jquery": "^4.0.0",
+    "jquery": "^3.7.1",
     "webpack": "^5.107.2",
     "webpack-cli": "^7.0.3",
     "babel-loader": "^10.1.1",
