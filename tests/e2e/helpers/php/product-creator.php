@@ -8,26 +8,26 @@
  * Example: php helpers/php/product-creator.php simple "Test Product" 19.99 10
  */
 
-// Bootstrap WordPress
-
+// Bootstrap WordPress only when not already loaded (e.g. when included via WP-CLI eval).
 /**
  * If you are running this script from a "Local" wordpress setup, you may need to set the following environment variables:
  * MYSQL_HOME=/Users/<unixname>/Library/Application Support/Local/run/<id>/conf/mysql
  * PHPRC=/Users/<unixname>/Library/Application Support/Local/run/<id>/conf/php
  * also set $wp_path to the path of your local wp-load.php file: /Users/<unixname>/Local Sites/<sitename>/app/public/wp-load.php
  */
+if (!defined('ABSPATH')) {
+    $wp_path = getenv('WORDPRESS_PATH') . '/wp-load.php';
 
-$wp_path = getenv('WORDPRESS_PATH') . '/wp-load.php';
+    if (!file_exists($wp_path)) {
+        echo json_encode([
+            'success' => false,
+            'error' => 'WordPress not found at: ' . $wp_path
+        ]);
+        exit(1);
+    }
 
-if (!file_exists($wp_path)) {
-    echo json_encode([
-        'success' => false,
-        'error' => 'WordPress not found at: ' . $wp_path
-    ]);
-    exit(1);
+    require_once($wp_path);
 }
-
-require_once($wp_path);
 
 /**
  * Product Creator Class
@@ -182,8 +182,9 @@ class E2EProductCreator {
     }
 }
 
-// Main execution when called directly
-if (php_sapi_name() === 'cli') {
+// Main execution when called directly.
+// Skip auto-run when included from WP-CLI eval context.
+if (php_sapi_name() === 'cli' && !defined('E2E_PRODUCT_CREATOR_SKIP_MAIN')) {
     try {
         $product_type = isset($argv[1]) ? $argv[1] : 'simple';
         $name = isset($argv[2]) ? $argv[2] : 'Test Product ' . date('Y-m-d H:i:s');

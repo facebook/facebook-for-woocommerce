@@ -124,11 +124,15 @@ jobs:
     needs: [check-secrets, resolve-versions]
     if: ${{ needs.check-secrets.outputs.secrets-configured == 'true' }}
     runs-on: ubuntu-latest
+    # Fail fast instead of letting a stuck step (e.g. a hung browser install) run
+    # until GitHub's 6-hour default job timeout. The plugin-events shards run many
+    # headed browser projects sequentially, so they get a larger budget.
+    timeout-minutes: ${{ startsWith(matrix.test-group, 'plugin-events') && 75 || 45 }}
 
     strategy:
       fail-fast: false
       matrix:
-        test-group: ['plugin-events', 'product-crud', 'product-batch', 'product-category']
+        test-group: ['plugin-events-chromium', 'plugin-events-browsers', 'product-crud', 'variable-product-depth', 'product-batch', 'product-category', 'performance-sync']
         version-set: ['supported', 'latest']
         include:
           - version-set: 'supported'
@@ -157,9 +161,12 @@ jobs:
         uses: actions/checkout@v5
 
       - name: Setup Node.js
+        # Pin Node 22 rather than reading engines from package.json (which allows
+        # up to 24). Playwright 1.53 hangs while extracting the browser archive on
+        # Node 24, which silently stalled the E2E jobs after the Chromium download.
         uses: actions/setup-node@v4
         with:
-          node-version-file: 'package.json'
+          node-version: '22'
           cache: 'npm'
 
       - name: Setup PHP
@@ -279,6 +286,9 @@ jobs:
           # Install Storefront theme (official WooCommerce theme with all hooks)
           wp theme install storefront --activate --allow-root
           echo "✅ Storefront theme installed and activated"
+          # Install Twenty Twenty-Five theme (default WP theme to ensure compatibility with non-WooCommerce themes)
+          wp theme install twentytwentyfive --allow-root
+          echo "✅ Twenty Twenty-Five theme installed"
           if [ "${{ matrix.wc-version }}" = "latest" ]; then
             wp plugin install woocommerce --activate --allow-root
           else
@@ -596,59 +606,346 @@ jobs:
           fi
 
       - name: Install Playwright
+        env:
+          # The branded Google Chrome channel is installed through the system
+          # package manager (apt). Force non-interactive mode so apt/debconf can
+          # never block on a prompt.
+          DEBIAN_FRONTEND: noninteractive
         run: |
           # Install in the WordPress plugin directory (where we'll run tests from)
           cd ${{ env.PLUGIN_PATH }}
           npm install
-          npx playwright install chromium
-          npx playwright install-deps chromium
+
+          # Bundled browsers (chromium) download to the Playwright cache without
+          # root; the branded Chrome channel needs OS deps installed via apt.
+          # Use a single non-interactive `--with-deps` invocation so deps are
+          # installed in the right order, and cap it with a timeout so a stuck
+          # apt step fails fast instead of hanging the whole job.
+          timeout 15m npx playwright install --with-deps chromium chrome
+
+          # The alt-browsers shard also exercises WebKit (Safari-like) and Firefox.
+          if [ "${{ matrix.test-group }}" = "plugin-events-browsers" ]; then
+            timeout 15m npx playwright install --with-deps webkit firefox
+          fi
+
+      - name: Verify WebKit browser setup
+        if: matrix.test-group == 'plugin-events-browsers'
+        run: |
+          cd ${{ env.PLUGIN_PATH }}
+          node - <<'NODE'
+          const { webkit } = require('playwright');
+
+          (async () => {
+            const browser = await webkit.launch({ headless: true });
+            try {
+              const version = browser.version();
+              const context = await browser.newContext({ ignoreHTTPSErrors: true });
+              const page = await context.newPage();
+              await page.goto(process.env.WORDPRESS_URL, { waitUntil: 'domcontentloaded', timeout: 120000 });
+              console.log(`✅ WebKit launched successfully. Version: ${version}`);
+            } finally {
+              await browser.close();
+            }
+          })().catch((err) => {
+            console.error('❌ WebKit verification failed:', err?.message || err);
+            process.exit(1);
+          });
+          NODE
+
+      - name: Install Edge browser
+        if: matrix.test-group == 'plugin-events-browsers'
+        run: |
+          set -e
+          sudo apt-get update
+          sudo apt-get install -y wget gpg
+          wget -qO- https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor > microsoft.gpg
+          sudo install -o root -g root -m 644 microsoft.gpg /usr/share/keyrings/microsoft.gpg
+          echo "deb [arch=amd64,arm64 signed-by=/usr/share/keyrings/microsoft.gpg] https://packages.microsoft.com/repos/edge stable main" | sudo tee /etc/apt/sources.list.d/microsoft-edge.list
+          sudo apt-get update
+          sudo apt-get install -y microsoft-edge-stable
+          echo "EDGE_EXECUTABLE_PATH=/usr/bin/microsoft-edge-stable" >> $GITHUB_ENV
+
+      - name: Verify Edge browser setup
+        if: matrix.test-group == 'plugin-events-browsers'
+        run: |
+          set -e
+          test -x /usr/bin/microsoft-edge-stable
+          /usr/bin/microsoft-edge-stable --version
+
+
+      - name: Install Brave browser
+        if: matrix.test-group == 'plugin-events-browsers'
+        run: |
+          set -e
+          sudo apt-get update
+          sudo apt-get install -y curl gnupg
+          sudo curl -fsSLo /usr/share/keyrings/brave-browser-archive-keyring.gpg \
+            https://brave-browser-apt-release.s3.brave.com/brave-browser-archive-keyring.gpg
+          echo "deb [signed-by=/usr/share/keyrings/brave-browser-archive-keyring.gpg] https://brave-browser-apt-release.s3.brave.com/ stable main" | \
+            sudo tee /etc/apt/sources.list.d/brave-browser-release.list
+          sudo apt-get update
+          sudo apt-get install -y brave-browser
+          echo "BRAVE_EXECUTABLE_PATH=/usr/bin/brave-browser" >> $GITHUB_ENV
+
+      - name: Verify Brave browser setup
+        if: matrix.test-group == 'plugin-events-browsers'
+        run: |
+          set -e
+          test -x /usr/bin/brave-browser
+          /usr/bin/brave-browser --version
+
+      - name: Install Opera browser
+        if: matrix.test-group == 'plugin-events-browsers'
+        run: |
+          set -e
+          sudo apt-get update
+          # gsettings-desktop-schemas is required by Opera in CI containers.
+          # dbus-x11/libglib2.0-bin help with runtime diagnostics and schema tooling.
+          sudo apt-get install -y wget gnupg2 gsettings-desktop-schemas dbus-x11 libglib2.0-bin
+          wget -qO- https://deb.opera.com/archive.key | sudo gpg --dearmor -o /usr/share/keyrings/opera.gpg
+          echo "deb [signed-by=/usr/share/keyrings/opera.gpg] https://deb.opera.com/opera-stable/ stable non-free" | sudo tee /etc/apt/sources.list.d/opera-stable.list
+          sudo apt-get update
+          sudo apt-get install -y opera-stable
+
+          OPERA_BIN="$(command -v opera-stable || command -v opera || true)"
+          if [ -z "$OPERA_BIN" ]; then
+            echo "❌ Opera binary not found after install" >&2
+            exit 1
+          fi
+          echo "OPERA_EXECUTABLE_PATH=$OPERA_BIN" >> $GITHUB_ENV
+
+      - name: Verify Opera browser setup
+        if: matrix.test-group == 'plugin-events-browsers'
+        run: |
+          set -e
+          OPERA_BIN="${OPERA_EXECUTABLE_PATH:-$(command -v opera-stable || command -v opera || true)}"
+          if [ -z "$OPERA_BIN" ]; then
+            echo "❌ OPERA_EXECUTABLE_PATH not set and no Opera binary found" >&2
+            exit 1
+          fi
+
+          test -x "$OPERA_BIN"
+          "$OPERA_BIN" --version || {
+            echo "❌ Opera binary exists but failed to execute: $OPERA_BIN" >&2
+            ldd "$OPERA_BIN" || true
+            exit 1
+          }
+
+          echo "=== Opera runtime diagnostics ==="
+          echo "OPERA_BIN=$OPERA_BIN"
+          ldd "$OPERA_BIN" || true
+          dpkg -l | grep -E 'opera|gsettings-desktop-schemas|libglib2.0|dbus' || true
+          echo "DBUS_SESSION_BUS_ADDRESS=${DBUS_SESSION_BUS_ADDRESS:-<unset>}"
+          echo "XDG_CURRENT_DESKTOP=${XDG_CURRENT_DESKTOP:-<unset>}"
+          gsettings list-schemas | grep -E '^org\.gnome\.desktop\.background$' || true
+
+          echo "=== Opera smoke launch under xvfb (for diagnostics) ==="
+          set +e
+          xvfb-run --auto-servernum bash -lc 'set -x; timeout 20s "$0" --no-sandbox --disable-gpu --user-data-dir=/tmp/opera-smoke-${RANDOM} --remote-debugging-port=0 about:blank' "$OPERA_BIN" \
+            2>&1 | tee /tmp/opera-smoke.log
+          SMOKE_EXIT=${PIPESTATUS[0]}
+          set -e
+          echo "Opera smoke exit code: $SMOKE_EXIT"
+          echo "(non-zero is tolerated here; real verdict comes from Playwright run)"
 
       - name: Setup captured-events directory
-        if: matrix.test-group == 'plugin-events'
+        if: startsWith(matrix.test-group, 'plugin-events')
         run: |
           mkdir -p ${{ env.PLUGIN_PATH }}/tests/e2e/captured-events
           chmod 777 ${{ env.PLUGIN_PATH }}/tests/e2e/captured-events
-
-      - name: Create test product for CAPI Pixel E2E tests
-        if: matrix.test-group == 'plugin-events'
+      - name: Create test product for storefront event suites
+        if: startsWith(matrix.test-group, 'plugin-events')
         run: |
           cd ${{ env.WORDPRESS_PATH }}
-          # Create test product for ViewContent/AddToCart tests
-          PRODUCT_ID=$(wp eval "
-            \$product = new WC_Product_Simple();
-            \$product->set_name('TestP');
-            \$product->set_slug('testp');
-            \$product->set_regular_price('19.99');
-            \$product->set_description('Test product for E2E tests');
-            \$product->set_status('publish');
-            \$product->set_catalog_visibility('visible');
-            \$product->set_stock_status('instock');
-            \$product->set_manage_stock(false);
-            \$product_id = \$product->save();
-            wp_set_object_terms(\$product_id, 'uncategorized', 'product_cat');
-            echo \$product_id;
-          " --allow-root)
+          # Ensure deterministic product slug used by plugin-events suites.
+          EXISTING_ID=$(wp post list --post_type=product --name=testp --field=ID --allow-root | head -n1)
+
+          if [ -n "$EXISTING_ID" ]; then
+            PRODUCT_ID="$EXISTING_ID"
+            echo "ℹ️ Reusing existing test product. ID: $PRODUCT_ID"
+          else
+            PRODUCT_ID=$(wp eval "
+              \$product = new WC_Product_Simple();
+              \$product->set_name('TestP');
+              \$product->set_slug('testp');
+              \$product->set_regular_price('19.99');
+              \$product->set_description('Test product for E2E tests');
+              \$product->set_status('publish');
+              \$product->set_catalog_visibility('visible');
+              \$product->set_stock_status('instock');
+              \$product->set_manage_stock(false);
+              \$product_id = \$product->save();
+              wp_set_object_terms(\$product_id, 'uncategorized', 'product_cat');
+              echo \$product_id;
+            " --allow-root)
+            echo "✅ Test product created. ID: $PRODUCT_ID"
+          fi
 
           echo "TEST_PRODUCT_ID=$PRODUCT_ID" >> $GITHUB_ENV
-          echo "✅ Test product created. ID: $PRODUCT_ID"
 
       - name: Install Xvfb for headed browser
-        if: matrix.test-group == 'plugin-events'
+        if: startsWith(matrix.test-group, 'plugin-events')
         run: |
           sudo apt-get update
           sudo apt-get install -y xvfb
 
-      - name: Run Plugin & Events tests
-        if: matrix.test-group == 'plugin-events'
+      - name: Run Plugin & Events tests (Chromium)
+        if: matrix.test-group == 'plugin-events-chromium'
         env:
           IS_LATEST_WP: ${{ matrix.wp-version == 'latest' && 'true' || 'false' }}
         run: |
           cd ${{ env.PLUGIN_PATH }}
           npx playwright test plugin-level-tests.spec.js --project=chromium-wp-admin --workers=1
           xvfb-run --auto-servernum npx playwright test events-test.spec.js --headed --project=chromium-wp-customer --workers=1
+          xvfb-run --auto-servernum npx playwright test events-test.spec.js --headed --project=chromium-wp-customer-classic-theme --workers=1
+          xvfb-run --auto-servernum npx playwright test events-test.spec.js --headed --project=chromium-wp-customer-block-theme --workers=1
+          xvfb-run --auto-servernum npx playwright test events-test.spec.js --headed --project=chromium-privacy-sandbox-wp-customer --workers=1
+
+          # Ensure Privacy Sandbox API tests are executed (not skipped) in CI.
+          xvfb-run --auto-servernum npx playwright test events-test.spec.js \
+            --headed \
+            --project=chromium-privacy-sandbox-wp-customer \
+            --workers=1 \
+            --grep "Privacy Sandbox - (Topics API available in Chromium|Protected Audience API shape in Chromium)" \
+            --reporter=json > /tmp/privacy-sandbox-api-report.json
+
+          # Diagnostic probe: verify APIs are exposed in the privacy-sandbox browser runtime.
+          node - <<'NODE'
+          const { chromium } = require('playwright');
+
+          (async () => {
+            const browser = await chromium.launch({
+              channel: 'chrome',
+              headless: true,
+              args: [
+                '--enable-features=BrowsingTopics,InterestGroupStorage,AdInterestGroupAPI,Fledge,RunAdAuction,PrivacySandboxAdsAPIsOverride',
+                '--enable-blink-features=BrowsingTopics,InterestGroupStorage,AdInterestGroupAPI,RunAdAuction',
+                '--test-third-party-cookie-phaseout',
+                ...(process.env.WORDPRESS_URL ? [`--unsafely-treat-insecure-origin-as-secure=${new URL(process.env.WORDPRESS_URL).origin}`] : []),
+              ],
+            });
+
+            try {
+              const context = await browser.newContext({ ignoreHTTPSErrors: true });
+              const page = await context.newPage();
+              await page.goto(process.env.WORDPRESS_URL, { waitUntil: 'domcontentloaded', timeout: 120000 });
+
+              const probe = await page.evaluate(() => ({
+                isSecureContext: typeof window !== 'undefined' ? window.isSecureContext : null,
+                hasTopicsApi: typeof document !== 'undefined' && typeof document.browsingTopics === 'function',
+                hasJoinAdInterestGroup: typeof navigator !== 'undefined' && typeof navigator.joinAdInterestGroup === 'function',
+                hasRunAdAuction: typeof navigator !== 'undefined' && typeof navigator.runAdAuction === 'function',
+                hasLeaveAdInterestGroup: typeof navigator !== 'undefined' && typeof navigator.leaveAdInterestGroup === 'function',
+                userAgent: typeof navigator !== 'undefined' ? navigator.userAgent : null,
+              }));
+
+              const browserVersion = browser.version();
+              console.log('Privacy Sandbox probe:', JSON.stringify({ browserVersion, ...probe }, null, 2));
+            } finally {
+              await browser.close();
+            }
+          })().catch((err) => {
+            console.error('Privacy Sandbox probe failed:', err?.message || err);
+            process.exit(1);
+          });
+          NODE
+
+          node - <<'NODE'
+          const fs = require('fs');
+          const rawReport = fs.readFileSync('/tmp/privacy-sandbox-api-report.json', 'utf8');
+
+          // Some environments may prepend non-JSON stdout noise (for example from global setup logs).
+          // Extract the outermost JSON object defensively before parsing.
+          const firstBrace = rawReport.indexOf('{');
+          const lastBrace = rawReport.lastIndexOf('}');
+          if (firstBrace === -1 || lastBrace === -1 || lastBrace < firstBrace) {
+            console.error('Could not locate JSON object in privacy sandbox report output.');
+            process.exit(1);
+          }
+
+          let report;
+          try {
+            report = JSON.parse(rawReport.slice(firstBrace, lastBrace + 1));
+          } catch (err) {
+            console.error('Failed to parse privacy sandbox JSON report:', err.message);
+            process.exit(1);
+          }
+
+          const apiTitles = new Set([
+            'Privacy Sandbox - Topics API available in Chromium',
+            'Privacy Sandbox - Protected Audience API shape in Chromium'
+          ]);
+
+          const statuses = [];
+          const walkSuite = (suite) => {
+            for (const spec of suite.specs || []) {
+              // Playwright JSON reporter stores the human-readable test name on spec.title.
+              // Some versions do not include title on items inside spec.tests.
+              const specTitle = spec.title;
+              if (!apiTitles.has(specTitle)) {
+                continue;
+              }
+
+              for (const test of spec.tests || []) {
+                for (const result of test.results || []) {
+                  statuses.push(result.status);
+                }
+              }
+            }
+            for (const child of suite.suites || []) {
+              walkSuite(child);
+            }
+          };
+
+          for (const suite of report.suites || []) {
+            walkSuite(suite);
+          }
+
+          if (statuses.length < 2) {
+            console.error('Expected both Privacy Sandbox API tests to run, but did not find both in JSON report.');
+            process.exit(1);
+          }
+
+          if (statuses.includes('skipped')) {
+            console.error('Privacy Sandbox API tests were skipped in CI. This is not allowed. Statuses:', statuses);
+            process.exit(1);
+          }
+
+          console.log('Privacy Sandbox API tests executed without skips. Statuses:', statuses);
+          NODE
+
+          # Android (Pixel) emulation runs on Chromium, so it stays in this shard.
+          npx playwright test events-test.spec.js --project=android-pixel-wp-customer --workers=1
+
+      - name: Run Plugin & Events tests (Alt browsers)
+        if: matrix.test-group == 'plugin-events-browsers'
+        env:
+          IS_LATEST_WP: ${{ matrix.wp-version == 'latest' && 'true' || 'false' }}
+          REQUIRE_REAL_EDGE: '1'
+          REQUIRE_REAL_FIREFOX: '1'
+          REQUIRE_REAL_BRAVE: '1'
+          REQUIRE_REAL_OPERA: '1'
+          FIREFOX_EXECUTABLE_PATH: ''
+        run: |
+          cd ${{ env.PLUGIN_PATH }}
+          xvfb-run --auto-servernum npx playwright test events-test.spec.js --headed --project=edge-wp-customer --workers=1
+          xvfb-run --auto-servernum npx playwright test events-test.spec.js --headed --project=firefox-wp-customer --workers=1
+          xvfb-run --auto-servernum npx playwright test events-test.spec.js --headed --project=brave-wp-customer --workers=1
+          # Safari (iOS) emulation runs on WebKit.
+          npx playwright test events-test.spec.js --project=safari-ios-wp-customer --workers=1
+          set -o pipefail
+          xvfb-run --auto-servernum npx playwright test events-test.spec.js --headed --project=opera-wp-customer --workers=1 2>&1 | tee /tmp/opera-playwright.log
+
+      - name: Dump Opera diagnostics (always)
+        if: always() && matrix.test-group == 'plugin-events-browsers'
+        run: |
+          echo "=== /tmp/opera-smoke.log (tail) ==="
+          tail -n 200 /tmp/opera-smoke.log || true
+          echo "=== /tmp/opera-playwright.log (tail) ==="
+          tail -n 400 /tmp/opera-playwright.log || true
 
       - name: Cleanup test product
-        if: always() && matrix.test-group == 'plugin-events'
+        if: always() && startsWith(matrix.test-group, 'plugin-events')
         run: |
           cd ${{ env.WORDPRESS_PATH }}
           if [ -n "${{ env.TEST_PRODUCT_ID }}" ]; then
@@ -664,6 +961,12 @@ jobs:
           cd ${{ env.PLUGIN_PATH }}
           npx playwright test "product-(creation|modification|deletion).spec.js" --project=chromium-wp-admin --workers=2
 
+      - name: Run Variable Product Depth tests
+        if: matrix.test-group == 'variable-product-depth'
+        run: |
+          cd ${{ env.PLUGIN_PATH }}
+          npx playwright test variable-product-depth.spec.js --project=chromium-wp-admin --workers=1
+
       - name: Run Product Batch tests
         if: matrix.test-group == 'product-batch'
         run: |
@@ -675,6 +978,12 @@ jobs:
         run: |
           cd ${{ env.PLUGIN_PATH }}
           npx playwright test product-category.spec.js --project=chromium-wp-admin --workers=1
+
+      - name: Run Product Stress Sync tests
+        if: matrix.test-group == 'performance-sync'
+        run: |
+          cd ${{ env.PLUGIN_PATH }}
+          npx playwright test performance-sync.spec.js --project=chromium-wp-admin --workers=1
 
       - name: Disconnect from catalog
         if: always()
@@ -734,12 +1043,12 @@ jobs:
         uses: actions/upload-artifact@v5
         if: always()
         with:
-          name: captured-events-${{ matrix.version-label }}
+          name: captured-events-${{ matrix.version-label }}-${{ matrix.test-group }}
           path: ${{ env.PLUGIN_PATH }}${{ env.FB_E2E_CAPTURED_EVENTS_DIR }}
           retention-days: 7
 
       - name: Cleanup captured events directory
-        if: always() && matrix.test-group == 'plugin-events'
+        if: always() && startsWith(matrix.test-group, 'plugin-events')
         run: |
           TARGET_DIR="${{ env.PLUGIN_PATH }}${{ env.FB_E2E_CAPTURED_EVENTS_DIR }}"
           if [ -d "$TARGET_DIR" ]; then

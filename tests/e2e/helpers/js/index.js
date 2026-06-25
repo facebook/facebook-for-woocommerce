@@ -97,8 +97,18 @@ const {
   installPixelBlockerMuPlugin,
   removePixelBlockerMuPlugin,
   installJsErrorSimulatorMuPlugin,
-  removeJsErrorSimulatorMuPlugin
+  removeJsErrorSimulatorMuPlugin,
+  installSingleSearchRedirectBlockerMuPlugin,
+  removeSingleSearchRedirectBlockerMuPlugin
 } = require('./wordpress/plugins');
+
+const {
+  runWpCli,
+  getActiveThemeStatus,
+  switchThemeBySlug,
+  acquireThemeLock,
+  releaseThemeLock
+} = require('./wordpress/themes');
 
 // =============================================================================
 // Checkout
@@ -138,7 +148,10 @@ const {
 const {
   setProductTitle,
   setProductDescription,
-  exactSearchSelect2Container
+  exactSearchSelect2Container,
+  getVisibleSearchInput,
+  submitSearch,
+  dismissWooInterferingOverlays
 } = require('./utils/ui');
 
 // =============================================================================
@@ -146,8 +159,42 @@ const {
 // =============================================================================
 const EventValidator = require('./events/validator');
 const PixelCapture = require('./events/capture');
-const EVENT_SCHEMAS = require('./events/schemas');
+const EVENT_FIELD_CONTRACTS = require('./events/field-contracts');
+const EVENT_SCHEMAS = EVENT_FIELD_CONTRACTS; // Backward-compatible alias
 const TestSetup = require('./events/setup');
+
+const {
+  createVariableProductEventFixture,
+  createGroupedProductEventFixture,
+  selectVariationByLabel,
+  setGroupedProductQuantity
+} = require('./events/product-types');
+
+const {
+  loadCapturedEvents,
+  getLatestEvent,
+  asArray,
+  assertEventContainsRetailerId,
+  ignoreKnownPurchaseUserDataGap,
+  ignoreKnownGuestCheckoutUserDataGap,
+  createTempCustomerUser,
+  deleteTempCustomerUser,
+  getCartItemsViaStoreApi,
+  clearCart,
+  completeCheckoutFromCart
+} = require('./events/runtime');
+
+const {
+  triggerAjaxAddToCartFromShop,
+  isAjaxAddToCartAvailableOnShop
+} = require('./events/ajax-cart');
+
+const {
+  holdSignals,
+  releaseSignals,
+  getSignalState,
+  getQueuedSignalEvents
+} = require('./events/signals');
 
 // =============================================================================
 // Module Exports (Grouped)
@@ -204,7 +251,14 @@ const wordpress = {
   installPixelBlockerMuPlugin,
   removePixelBlockerMuPlugin,
   installJsErrorSimulatorMuPlugin,
-  removeJsErrorSimulatorMuPlugin
+  removeJsErrorSimulatorMuPlugin,
+  installSingleSearchRedirectBlockerMuPlugin,
+  removeSingleSearchRedirectBlockerMuPlugin,
+  runWpCli,
+  getActiveThemeStatus,
+  switchThemeBySlug,
+  acquireThemeLock,
+  releaseThemeLock
 };
 
 const checkout = {
@@ -230,14 +284,39 @@ const utils = {
   checkForJsErrors,
   setProductTitle,
   setProductDescription,
-  exactSearchSelect2Container
+  exactSearchSelect2Container,
+  getVisibleSearchInput,
+  submitSearch,
+  dismissWooInterferingOverlays
 };
 
 const events = {
   EventValidator,
   PixelCapture,
+  EVENT_FIELD_CONTRACTS,
   EVENT_SCHEMAS,
-  TestSetup
+  TestSetup,
+  createVariableProductEventFixture,
+  createGroupedProductEventFixture,
+  selectVariationByLabel,
+  setGroupedProductQuantity,
+  loadCapturedEvents,
+  getLatestEvent,
+  asArray,
+  assertEventContainsRetailerId,
+  ignoreKnownPurchaseUserDataGap,
+  ignoreKnownGuestCheckoutUserDataGap,
+  createTempCustomerUser,
+  deleteTempCustomerUser,
+  getCartItemsViaStoreApi,
+  clearCart,
+  completeCheckoutFromCart,
+  triggerAjaxAddToCartFromShop,
+  isAjaxAddToCartAvailableOnShop,
+  holdSignals,
+  releaseSignals,
+  getSignalState,
+  getQueuedSignalEvents
 };
 
 // =============================================================================
@@ -304,6 +383,15 @@ module.exports = {
   removePixelBlockerMuPlugin,
   installJsErrorSimulatorMuPlugin,
   removeJsErrorSimulatorMuPlugin,
+  installSingleSearchRedirectBlockerMuPlugin,
+  removeSingleSearchRedirectBlockerMuPlugin,
+
+  // WordPress - Themes
+  runWpCli,
+  getActiveThemeStatus,
+  switchThemeBySlug,
+  acquireThemeLock,
+  releaseThemeLock,
 
   // Checkout
   completePurchaseFlow,
@@ -331,12 +419,37 @@ module.exports = {
   setProductTitle,
   setProductDescription,
   exactSearchSelect2Container,
+  getVisibleSearchInput,
+  submitSearch,
+  dismissWooInterferingOverlays,
 
   // Events
   EventValidator,
   PixelCapture,
+  EVENT_FIELD_CONTRACTS,
   EVENT_SCHEMAS,
   TestSetup,
+  createVariableProductEventFixture,
+  createGroupedProductEventFixture,
+  selectVariationByLabel,
+  setGroupedProductQuantity,
+  loadCapturedEvents,
+  getLatestEvent,
+  asArray,
+  assertEventContainsRetailerId,
+  ignoreKnownPurchaseUserDataGap,
+  ignoreKnownGuestCheckoutUserDataGap,
+  createTempCustomerUser,
+  deleteTempCustomerUser,
+  getCartItemsViaStoreApi,
+  clearCart,
+  completeCheckoutFromCart,
+  triggerAjaxAddToCartFromShop,
+  isAjaxAddToCartAvailableOnShop,
+  holdSignals,
+  releaseSignals,
+  getSignalState,
+  getQueuedSignalEvents,
 
   // Grouped module exports (for namespace imports)
   auth,
