@@ -97,7 +97,7 @@ test.describe('Meta for WooCommerce - Sync In Progress E2E Tests', () => {
         }
 
         \$had_key = ${hadSwitchKey ? 'true' : 'false'};
-        \$previous = ${previousSwitchValue === null ? 'null' : `'${String(previousSwitchValue).replace(/'/g, "\\'")}'`};
+        \$previous = ${previousSwitchValue === null ? 'null' : `'${String(previousSwitchValue).replace(/\\/g, '\\\\').replace(/'/g, "\\'")}'`};
 
         if ( ! \$had_key ) {
           unset( \$switches['woo_all_products_sync_enabled'] );
@@ -361,7 +361,7 @@ test.describe('Meta for WooCommerce - Sync In Progress E2E Tests', () => {
         }
 
         \$had_key = ${hadSwitchKey ? 'true' : 'false'};
-        \$previous = ${previousSwitchValue === null ? 'null' : `'${String(previousSwitchValue).replace(/'/g, "\\'")}'`};
+        \$previous = ${previousSwitchValue === null ? 'null' : `'${String(previousSwitchValue).replace(/\\/g, '\\\\').replace(/'/g, "\\'")}'`};
 
         if ( ! \$had_key ) {
           unset( \$switches['woo_all_products_sync_enabled'] );
@@ -578,7 +578,7 @@ test.describe('Meta for WooCommerce - Sync In Progress E2E Tests', () => {
         }
 
         \\$had_key = ${hadSwitchKey ? 'true' : 'false'};
-        \\$previous = ${previousSwitchValue === null ? 'null' : `'${String(previousSwitchValue).replace(/'/g, "\\'")}'`};
+        \\$previous = ${previousSwitchValue === null ? 'null' : `'${String(previousSwitchValue).replace(/\\/g, '\\\\').replace(/'/g, "\\'")}'`};
 
         if ( ! \\$had_key ) {
           unset( \\$switches['woo_all_products_sync_enabled'] );

@@ -124,6 +124,9 @@ jobs:
     needs: [check-secrets, resolve-versions]
     if: ${{ needs.check-secrets.outputs.secrets-configured == 'true' }}
     runs-on: ubuntu-latest
+    # Fail fast instead of letting a stuck step (e.g. a hung browser install)
+    # run until GitHub's 6-hour default job timeout.
+    timeout-minutes: 45
 
     strategy:
       fail-fast: false
@@ -599,24 +602,28 @@ jobs:
           fi
 
       - name: Install Playwright
+        env:
+          # The branded Google Chrome channel is installed through the system
+          # package manager (apt). Force non-interactive mode so apt/debconf can
+          # never block on a prompt the way it did before (the install hung until
+          # the job's 6-hour timeout). Also surface install progress for triage.
+          DEBIAN_FRONTEND: noninteractive
+          DEBUG: pw:install
         run: |
           # Install in the WordPress plugin directory (where we'll run tests from)
           cd ${{ env.PLUGIN_PATH }}
           npm install
-          npx playwright install chromium chrome
-          npx playwright install-deps chromium chrome
 
-          # Plugin-events includes a WebKit (Safari-like) project.
-          if [ "${{ matrix.test-group }}" = "plugin-events" ]; then
-            npx playwright install webkit
-            npx playwright install-deps webkit
-          fi
+          # Bundled browsers (chromium) download to the Playwright cache without
+          # root; the branded Chrome channel needs OS deps installed via apt.
+          # Use a single non-interactive `--with-deps` invocation so deps are
+          # installed in the right order, and cap it with a timeout so a stuck
+          # apt step fails fast instead of hanging the whole job.
+          timeout 15m npx playwright install --with-deps chromium chrome
 
-          # Firefox project uses Playwright's Firefox channel (not system Firefox).
-          # Ensure the bundled Firefox binary is present in CI cache.
+          # Plugin-events also exercises WebKit (Safari-like) and Firefox.
           if [ "${{ matrix.test-group }}" = "plugin-events" ]; then
-            npx playwright install firefox
-            npx playwright install-deps firefox
+            timeout 15m npx playwright install --with-deps webkit firefox
           fi
 
       - name: Verify WebKit browser setup
