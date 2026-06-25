@@ -68,12 +68,27 @@ function createPixelEventRequestRecorder(page, eventName) {
 
   const onRequest = (request) => {
     const rawUrl = request.url();
-    if (!rawUrl.includes('facebook.com/tr')) {
+
+    let parsed;
+    try {
+      parsed = new URL(rawUrl);
+    } catch (_) {
+      // Not a parseable URL; ignore.
+      return;
+    }
+
+    // Only match the real Facebook Pixel endpoint. Validate the host and path
+    // separately rather than with a substring check: rawUrl.includes(
+    // 'facebook.com/tr') can be bypassed by hosts like "attackerfacebook.com/tr"
+    // or URLs that merely contain the string (e.g. "evil.com/?x=facebook.com/tr").
+    const host = parsed.hostname;
+    const isFacebookHost = host === 'facebook.com' || host.endsWith('.facebook.com');
+    const isPixelPath = parsed.pathname === '/tr' || parsed.pathname === '/tr/';
+    if (!isFacebookHost || !isPixelPath) {
       return;
     }
 
     try {
-      const parsed = new URL(rawUrl);
       const queryEventName = parsed.searchParams.get('ev');
       const bodyEventName = readBodyParam(request, 'ev');
       const detectedEventName = queryEventName || bodyEventName;
