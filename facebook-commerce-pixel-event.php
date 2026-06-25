@@ -1048,45 +1048,61 @@ JS;
 		// Reuse shared param preparation logic.
 		[ 'params' => $event_params, 'event_id' => $event_id ] = self::prepare_event_params( $params, $event_name );
 
-		$encoded_params   = wp_json_encode( $event_params, JSON_PRETTY_PRINT | JSON_FORCE_OBJECT );
-		$encoded_event_id = ! empty( $event_id ) ? wp_json_encode( $event_id ) : 'null';
+		$encoded_params = wp_json_encode( $event_params, JSON_PRETTY_PRINT | JSON_FORCE_OBJECT );
 
-		$event = sprintf(
-			"/* %s Facebook Integration Event Tracking */\n" .
-			"fbq('set', 'agent', '%s', '%s');\n" .
-			"window.wcFacebookPixelFiredEvents = window.wcFacebookPixelFiredEvents || {};\n" .
-			"if (!(%s) || !window.wcFacebookPixelFiredEvents[%s]) {\n" .
-			"\tif (%s) {\n" .
-			"\t\twindow.wcFacebookPixelFiredEvents[%s] = true;\n" .
-			"\t}\n" .
-			"\tif (window.FacebookSignals && typeof window.FacebookSignals.trackEvent === 'function') {\n" .
-			"\t\twindow.FacebookSignals.trackEvent('%s', %s, null, '%s', %s);\n" .
-			"\t} else if (%s) {\n" .
-			"\t\tfbq('%s', '%s', %s, { eventID: %s });\n" .
-			"\t} else {\n" .
-			"\t\tfbq('%s', '%s', %s);\n" .
-			"\t}\n" .
-			'}',
-			WC_Facebookcommerce_Utils::get_integration_name(),
-			Event::get_platform_identifier(),
-			self::get_pixel_id(),
-			$encoded_event_id,
-			$encoded_event_id,
-			$encoded_event_id,
-			$encoded_event_id,
-			esc_js( $event_name ),
-			$encoded_params,
-			esc_js( $method ),
-			$encoded_event_id,
-			$encoded_event_id,
-			esc_js( $method ),
-			esc_js( $event_name ),
-			$encoded_params,
-			$encoded_event_id,
-			esc_js( $method ),
-			esc_js( $event_name ),
-			$encoded_params
-		);
+		if ( ! empty( $event_id ) ) {
+			// When an event_id is present, guard against duplicate fires caused by
+			// repeated snippet execution (e.g. AJAX fragment re-execution) so each
+			// event fires once, and route through the Signals Gateway when available.
+			$encoded_event_id = wp_json_encode( $event_id );
+			$event            = sprintf(
+				"/* %s Facebook Integration Event Tracking */\n" .
+				"fbq('set', 'agent', '%s', '%s');\n" .
+				"window.wcFacebookPixelFiredEvents = window.wcFacebookPixelFiredEvents || {};\n" .
+				"if (!window.wcFacebookPixelFiredEvents[%s]) {\n" .
+				"window.wcFacebookPixelFiredEvents[%s] = true;\n" .
+				"if (window.FacebookSignals && typeof window.FacebookSignals.trackEvent === 'function') {\n" .
+				"\twindow.FacebookSignals.trackEvent('%s', %s, null, '%s', %s);\n" .
+				"} else {\n" .
+				"\tfbq('%s', '%s', %s, %s);\n" .
+				"}\n" .
+				'}',
+				WC_Facebookcommerce_Utils::get_integration_name(),
+				Event::get_platform_identifier(),
+				self::get_pixel_id(),
+				$encoded_event_id,
+				$encoded_event_id,
+				esc_js( $event_name ),
+				$encoded_params,
+				esc_js( $method ),
+				$encoded_event_id,
+				esc_js( $method ),
+				esc_js( $event_name ),
+				$encoded_params,
+				wp_json_encode( array( 'eventID' => $event_id ), JSON_PRETTY_PRINT | JSON_FORCE_OBJECT )
+			);
+		} else {
+			// No event_id to deduplicate on; route through the Signals Gateway when
+			// available, otherwise fall back to a plain fbq fire.
+			$event = sprintf(
+				"/* %s Facebook Integration Event Tracking */\n" .
+				"fbq('set', 'agent', '%s', '%s');\n" .
+				"if (window.FacebookSignals && typeof window.FacebookSignals.trackEvent === 'function') {\n" .
+				"\twindow.FacebookSignals.trackEvent('%s', %s, null, '%s', null);\n" .
+				"} else {\n" .
+				"\tfbq('%s', '%s', %s);\n" .
+				'}',
+				WC_Facebookcommerce_Utils::get_integration_name(),
+				Event::get_platform_identifier(),
+				self::get_pixel_id(),
+				esc_js( $event_name ),
+				$encoded_params,
+				esc_js( $method ),
+				esc_js( $method ),
+				esc_js( $event_name ),
+				$encoded_params
+			);
+		}
 
 		return $event;
 	}
