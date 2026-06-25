@@ -140,7 +140,26 @@ jobs:
               echo "❌ The WordPress.org marketplace build does NOT match the latest release/$VERSION build (commit $BRANCH_SHA)."
               echo "   Refusing to set the stable tag until they match. Differing files:"
               echo "$REAL_DIFFS"
-              echo "   Resolve the discrepancy (re-deploy via the Release Plugin workflow if the marketplace is out of date), then re-run this workflow."
+
+              # Determine which version WordPress.org is actually serving. If it is not
+              # $VERSION, the "Release Plugin" deploy almost certainly has not run yet,
+              # which is the most common reason this step fails — call that out explicitly
+              # instead of leaving the operator to interpret a list of differing files.
+              WP_VERSION=$(grep -oiP '^\s*\*\s*Version:\s*\K[0-9][0-9.]*' "$TEMP_DIR/wp/facebook-for-woocommerce/facebook-for-woocommerce.php" 2>/dev/null | head -1)
+              echo ""
+              if [ -n "$WP_VERSION" ] && [ "$WP_VERSION" != "$VERSION" ]; then
+                  echo "::error::WordPress.org is still serving v${WP_VERSION}, not v${VERSION} — the Release Plugin deploy for this release has not been published yet."
+                  echo "   This workflow only sets the stable tag; it does NOT deploy the plugin. The deploy is a prior step."
+                  echo "   The 'Release Plugin' deploy is most likely still pending approval on the 'Deployment' environment (or it failed)."
+                  echo "   To fix:"
+                  echo "     1. Open the 'Release Plugin' workflow run for branch release/p${VERSION}/publish and approve/complete the Deployment."
+                  echo "     2. Wait for WordPress.org to serve v${VERSION} (it updates after the deploy commits to SVN)."
+                  echo "     3. Re-run this 'Set Stable Tag' workflow."
+                  echo "   Re-running this workflow before the deploy finishes will keep failing here."
+              else
+                  echo "::error::WordPress.org is serving v${WP_VERSION:-$VERSION} but its contents differ from the release/$VERSION build (commit $BRANCH_SHA)."
+                  echo "   The deployed artifact is out of date for this commit. Re-run the 'Release Plugin' deploy for release/p${VERSION}/publish, wait for WordPress.org to update, then re-run this workflow."
+              fi
               exit 1
           fi
 
@@ -153,11 +172,16 @@ jobs:
         run: svn co https://plugins.svn.wordpress.org/facebook-for-woocommerce/ woocommerce_svn --quiet --non-interactive
 
       - name: Validate SVN tag
+        env:
+          VERSION: ${{ steps.package-version.outputs.current-version }}
         run: |
-          if [ ! -d "woocommerce_svn/tags/${{ steps.package-version.outputs.current-version}}" ]; then
-            echo "❌ SVN tag directory does not exist" 1>&2
+          if [ ! -d "woocommerce_svn/tags/$VERSION" ]; then
+            echo "::error::SVN tag tags/$VERSION does not exist on WordPress.org." 1>&2
+            echo "   The 'Release Plugin' deploy creates this tag, so this means the deploy has not run for v$VERSION." 1>&2
+            echo "   Run/approve the 'Release Plugin' workflow for branch release/p$VERSION/publish and wait for it to finish, then re-run this workflow." 1>&2
             exit 1
           fi
+          echo "✅ SVN tag tags/$VERSION exists."
 
       - name: Update readme.txt
         env:
