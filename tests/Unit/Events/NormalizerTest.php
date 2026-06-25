@@ -413,4 +413,239 @@ class NormalizerTest extends AbstractWPUnitTestWithOptionIsolationAndSafeFilteri
 		// Zip with special chars (hyphen splits the code, only first part is kept)
 		$this->assertEquals( 'ab', Normalizer::normalize( 'zp', 'A B-C' ) );
 	}
+
+	/**
+	 * Test normalize_array with empty array.
+	 */
+	public function test_normalize_array_with_empty_array() {
+		$data = array();
+		
+		$normalized = Normalizer::normalize_array( $data, true );
+		
+		$this->assertIsArray( $normalized );
+		$this->assertEmpty( $normalized );
+	}
+
+	/**
+	 * Test normalize_array with all null values.
+	 */
+	public function test_normalize_array_with_null_values() {
+		$data = array(
+			'fn' => null,
+			'ln' => null,
+			'em' => null,
+			'ph' => null,
+		);
+		
+		$normalized = Normalizer::normalize_array( $data, false );
+		
+		// Null values should be normalized to null
+		$this->assertNull( $normalized['fn'] );
+		$this->assertNull( $normalized['ln'] );
+		$this->assertNull( $normalized['em'] );
+		$this->assertNull( $normalized['ph'] );
+	}
+
+	/**
+	 * Test phone normalization with leading zero (non-international).
+	 */
+	public function test_normalize_phone_with_leading_zero() {
+		// Phone starting with 0 (non-international)
+		$this->assertEquals( '0123456789', Normalizer::normalize( 'ph', '0123456789' ) );
+		
+		// With formatting
+		$this->assertEquals( '0123456789', Normalizer::normalize( 'ph', '(012) 345-6789' ) );
+	}
+
+	/**
+	 * Test zip code with only hyphens.
+	 */
+	public function test_normalize_zip_code_only_hyphens() {
+		// Only hyphens should result in empty string
+		$this->assertEquals( '', Normalizer::normalize( 'zp', '---' ) );
+	}
+
+	/**
+	 * Test city with only numbers.
+	 */
+	public function test_normalize_city_only_numbers() {
+		// Only numbers should be removed, resulting in empty string
+		$this->assertEquals( '', Normalizer::normalize( 'ct', '12345' ) );
+	}
+
+	/**
+	 * Test state with only special characters.
+	 */
+	public function test_normalize_state_only_special_chars() {
+		// Only special characters should be removed
+		$this->assertEquals( '', Normalizer::normalize( 'st', '---' ) );
+		$this->assertEquals( '', Normalizer::normalize( 'st', '...' ) );
+		$this->assertEquals( '', Normalizer::normalize( 'st', '123' ) );
+	}
+
+	/**
+	 * Test country normalization with special characters.
+	 */
+	public function test_normalize_country_with_special_chars() {
+		// Special characters should be removed, but length must still be 2
+		$this->expectException( InvalidArgumentException::class );
+		Normalizer::normalize( 'country', 'U-S' );
+	}
+
+	/**
+	 * Test normalize with whitespace-only string.
+	 */
+	public function test_normalize_with_whitespace_only() {
+		// Whitespace-only should be treated as empty
+		$this->assertNull( Normalizer::normalize( 'em', '   ' ) );
+		$this->assertNull( Normalizer::normalize( 'ph', '   ' ) );
+		$this->assertNull( Normalizer::normalize( 'ct', '   ' ) );
+	}
+
+	/**
+	 * Test email with multiple dots in domain.
+	 */
+	public function test_normalize_email_multiple_dots_in_domain() {
+		// Multiple dots in domain should be valid
+		$this->assertEquals( 'user@mail.server.example.com', Normalizer::normalize( 'em', 'user@mail.server.example.com' ) );
+		
+		// Consecutive dots should be invalid
+		$this->expectException( InvalidArgumentException::class );
+		Normalizer::normalize( 'em', 'user@example..com' );
+	}
+
+	/**
+	 * Test phone with only special characters.
+	 */
+	public function test_normalize_phone_only_special_chars() {
+		// Only special characters should result in empty string
+		$this->assertEquals( '', Normalizer::normalize( 'ph', '---()' ) );
+	}
+
+	/**
+	 * Test normalize_array switching between pixel and CAPI.
+	 */
+	public function test_normalize_array_pixel_vs_capi_country_field() {
+		$data = array(
+			'fn' => 'John',
+			'cn' => 'US',
+			'country' => 'GB',
+		);
+		
+		// With pixel data, 'cn' should be normalized
+		$normalized_pixel = Normalizer::normalize_array( $data, true );
+		$this->assertEquals( 'us', $normalized_pixel['cn'] );
+		$this->assertEquals( 'GB', $normalized_pixel['country'] ); // Not normalized for pixel
+		
+		// With CAPI data, 'country' should be normalized
+		$normalized_capi = Normalizer::normalize_array( $data, false );
+		$this->assertEquals( 'gb', $normalized_capi['country'] );
+		$this->assertEquals( 'US', $normalized_capi['cn'] ); // Not normalized for CAPI
+	}
+
+	/**
+	 * Test UTF-8 multibyte characters in various fields.
+	 */
+	public function test_normalize_utf8_multibyte_characters() {
+		// City with UTF-8 characters
+		$this->assertEquals( 'münchen', Normalizer::normalize( 'ct', 'München' ) );
+		
+		// State with UTF-8 characters (non-ASCII letters are removed)
+		$this->assertEquals( 'bayern', Normalizer::normalize( 'st', 'Bayern' ) );
+		
+		// Zip with UTF-8 characters
+		$this->assertEquals( 'abc123', Normalizer::normalize( 'zp', 'ABC 123' ) );
+	}
+
+	/**
+	 * Test normalize with very long strings.
+	 */
+	public function test_normalize_with_very_long_strings() {
+		// Very long city name
+		$long_city = str_repeat( 'City', 100 );
+		$result = Normalizer::normalize( 'ct', $long_city );
+		$this->assertEquals( strtolower( $long_city ), $result );
+		
+		// Very long state name
+		$long_state = str_repeat( 'State', 100 );
+		$result = Normalizer::normalize( 'st', $long_state );
+		$this->assertEquals( strtolower( $long_state ), $result );
+	}
+
+	/**
+	 * Test phone normalization with various international formats.
+	 */
+	public function test_normalize_phone_various_international_formats() {
+		// With double zero prefix
+		$this->assertEquals( '00123456789', Normalizer::normalize( 'ph', '00 12 345 6789' ) );
+		
+		// With plus and parentheses
+		$this->assertEquals( '123456789', Normalizer::normalize( 'ph', '+1 (234) 567-89' ) );
+		
+		// Short international number
+		$this->assertEquals( '12345678', Normalizer::normalize( 'ph', '+1 234 5678' ) );
+	}
+
+	/**
+	 * Test zip code with complex formats.
+	 */
+	public function test_normalize_zip_code_complex_formats() {
+		// Multiple spaces
+		$this->assertEquals( 'a1b2c3', Normalizer::normalize( 'zp', 'A 1 B 2 C 3' ) );
+		
+		// Mixed case with hyphens
+		$this->assertEquals( 'abc', Normalizer::normalize( 'zp', 'ABC-DEF-GHI' ) );
+		
+		// Only first part before hyphen
+		$this->assertEquals( '12345', Normalizer::normalize( 'zp', '12345-6789-0000' ) );
+	}
+
+	/**
+	 * Test normalize_array with mixed valid and invalid emails.
+	 */
+	public function test_normalize_array_mixed_valid_invalid() {
+		$data = array(
+			'fn' => 'John',
+			'ln' => 'Doe',
+			'em' => 'invalid@',
+			'ph' => '555-123-4567',
+			'country' => 'U', // Invalid - too short
+		);
+		
+		$normalized = Normalizer::normalize_array( $data, false );
+		
+		// Valid fields should be normalized
+		$this->assertEquals( 'john', $normalized['fn'] );
+		$this->assertEquals( 'doe', $normalized['ln'] );
+		$this->assertEquals( '5551234567', $normalized['ph'] );
+		
+		// Invalid fields should be removed
+		$this->assertArrayNotHasKey( 'em', $normalized );
+		$this->assertArrayNotHasKey( 'country', $normalized );
+	}
+
+	/**
+	 * Test city normalization removes all numeric and special characters.
+	 */
+	public function test_normalize_city_removes_all_numeric_special() {
+		// Mix of letters, numbers, and special chars
+		$this->assertEquals( 'cityname', Normalizer::normalize( 'ct', 'City123-Name.456 (789)' ) );
+		
+		// Only special characters and numbers
+		$this->assertEquals( '', Normalizer::normalize( 'ct', '123-456.789 ()' ) );
+	}
+
+	/**
+	 * Test email normalization preserves valid special characters.
+	 */
+	public function test_normalize_email_preserves_valid_special_chars() {
+		// Underscore in local part
+		$this->assertEquals( 'user_name@example.com', Normalizer::normalize( 'em', 'USER_NAME@EXAMPLE.COM' ) );
+		
+		// Hyphen in domain
+		$this->assertEquals( 'user@my-domain.com', Normalizer::normalize( 'em', 'user@my-domain.com' ) );
+		
+		// Plus sign in local part
+		$this->assertEquals( 'user+tag@example.com', Normalizer::normalize( 'em', 'USER+TAG@EXAMPLE.COM' ) );
+	}
 } 
