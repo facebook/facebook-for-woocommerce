@@ -619,6 +619,8 @@ jobs:
           # package manager (apt). Force non-interactive mode so apt/debconf can
           # never block on a prompt.
           DEBIAN_FRONTEND: noninteractive
+          # Keep Playwright install logs verbose to diagnose any future hangs.
+          DEBUG: pw:install
         run: |
           # Install in the WordPress plugin directory (where we'll run tests from)
           cd ${{ env.PLUGIN_PATH }}
