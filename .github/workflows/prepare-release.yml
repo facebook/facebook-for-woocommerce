@@ -50,9 +50,21 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
+          set -euo pipefail
+
           echo "Getting the current stable version"
-          CURRENT_STABLE=$(curl -s 'https://api.wordpress.org/plugins/info/1.2/?action=plugin_information&request%5Bslug%5D=facebook-for-woocommerce' | jq -r '.version')
+          if ! API_RESPONSE=$(curl -sf 'https://api.wordpress.org/plugins/info/1.2/?action=plugin_information&request%5Bslug%5D=facebook-for-woocommerce'); then
+            echo "::error::Failed to fetch plugin information from the WordPress.org API."
+            exit 1
+          fi
+
+          CURRENT_STABLE=$(echo "$API_RESPONSE" | jq -r '.version')
           echo "Current stable version: $CURRENT_STABLE"
+
+          if [ -z "$CURRENT_STABLE" ] || [ "$CURRENT_STABLE" = "null" ]; then
+            echo "::error::Could not determine the current stable version from the WordPress.org API response."
+            exit 1
+          fi
 
           OPEN_PR=$(gh pr list \
             --repo "${{ github.repository }}" \
