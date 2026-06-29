@@ -46,6 +46,27 @@ jobs:
           fi
           echo "✅ Branch \"release/$NEW_VERSION\" does not exist."
 
+      - name: Check for open PR for current stable version
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          echo "Getting the current stable version"
+          CURRENT_STABLE=$(curl -s 'https://api.wordpress.org/plugins/info/1.2/?action=plugin_information&request%5Bslug%5D=facebook-for-woocommerce' | jq -r '.version')
+          echo "Current stable version: $CURRENT_STABLE"
+
+          OPEN_PR=$(gh pr list \
+            --repo "${{ github.repository }}" \
+            --head "release/$CURRENT_STABLE" \
+            --state open \
+            --json url \
+            --jq '.[0].url // ""')
+
+          if [ -n "$OPEN_PR" ]; then
+            echo "::error::An open PR for the current stable version \"release/$CURRENT_STABLE\" already exists: $OPEN_PR. Merge or close it before preparing a new release."
+            exit 1
+          fi
+          echo "✅ No open PR found for the current stable version \"release/$CURRENT_STABLE\"."
+
       - name: Get latest release tag
         id: get_release
         env:
