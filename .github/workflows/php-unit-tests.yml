@@ -9,7 +9,7 @@ concurrency:
 jobs:
   UnitTests:
     name: PHP unit tests - PHP ${{ matrix.php }}, WP ${{ matrix.wp-version }}, WC ${{ matrix.wc-version }}
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-slim
     env:
       WP_CORE_DIR: "/tmp/wordpress/src"
       WP_TESTS_DIR: "/tmp/wordpress/tests/phpunit"
