@@ -8,7 +8,6 @@ const baseURL = process.env.WORDPRESS_URL;
 const adminUsername = process.env.WP_USERNAME;
 const adminPassword = process.env.WP_PASSWORD;
 const customerUsername = process.env.WP_CUSTOMER_USERNAME;
-const customerPassword = process.env.WP_CUSTOMER_PASSWORD;
 
 async function loginAndSaveAuth(browser, {
   userType,
@@ -74,6 +73,59 @@ async function loginAndSaveAuth(browser, {
   await context.close();
 }
 
+/**
+ * Establish a logged-in session without a UI login by generating a real
+ * WordPress auth cookie server-side via WP-CLI and injecting it into the browser
+ * context. This avoids the flaky storefront form login (form-render races and
+ * post-submit navigation timing) entirely.
+ */
+async function saveAuthViaWpCli(browser, { userType, username, authPath }) {
+  console.log(`\n📋 Seeding ${userType} session via WP-CLI (no UI login)...`);
+
+  // Generate a 'logged_in' auth cookie for the user. This is the cookie the
+  // WordPress front-end uses to recognize a logged-in user, which is all the
+  // storefront/customer test projects need.
+  const php = `
+    $user = get_user_by('login', ${JSON.stringify(username)});
+    if (!$user) { echo 'NO_USER:' . ${JSON.stringify(username)}; return; }
+    $expiration = time() + 2 * DAY_IN_SECONDS;
+    $token = WP_Session_Tokens::get_instance($user->ID)->create($expiration);
+    echo json_encode([
+      'name' => 'wordpress_logged_in_' . COOKIEHASH,
+      'value' => wp_generate_auth_cookie($user->ID, $expiration, 'logged_in', $token),
+      'expiration' => $expiration,
+    ]);
+  `;
+
+  const { stdout } = await execWP(php);
+  const start = stdout.indexOf('{');
+  const end = stdout.lastIndexOf('}');
+  if (start === -1 || end === -1) {
+    throw new Error(`Failed to generate ${userType} auth cookie via WP-CLI. Output: ${stdout.trim()}`);
+  }
+  const { name, value, expiration } = JSON.parse(stdout.slice(start, end + 1));
+
+  const context = await browser.newContext({ ignoreHTTPSErrors: true });
+  await context.addCookies([{
+    name,
+    value,
+    domain: new URL(baseURL).hostname,
+    path: '/',
+    httpOnly: true,
+    secure: false,
+    expires: expiration,
+  }]);
+
+  // Verify the cookie is accepted before saving the state.
+  const page = await context.newPage();
+  await page.goto(`${baseURL}/`, { waitUntil: 'domcontentloaded', timeout: TIMEOUTS.MAX });
+  await page.locator('body.logged-in').waitFor({ state: 'attached', timeout: TIMEOUTS.MAX });
+
+  await context.storageState({ path: authPath });
+  console.log(`✅ ${userType} state saved to ${authPath}`);
+  await context.close();
+}
+
 async function globalSetup() {
   const adminAuthPath = './tests/e2e/.auth/admin.json';
   const customerAuthPath = './tests/e2e/.auth/customer.json';
@@ -121,18 +173,10 @@ async function globalSetup() {
     }
 
     if (!customerExists) {
-      await loginAndSaveAuth(browser, {
+      await saveAuthViaWpCli(browser, {
         userType: 'CUSTOMER',
         username: customerUsername,
-        password: customerPassword,
-        loginUrl: `${baseURL}/wp-login.php`,
         authPath: customerAuthPath,
-        postLoginCheck: async (page) => {
-          const isCustomerLoggedIn = await page.locator('#wpadminbar').count() > 0 || await page.locator('body.logged-in').count() > 0;
-          if (!isCustomerLoggedIn) {
-            throw new Error('Customer login failed: missing logged-in indicators');
-          }
-        },
       });
     }
 
