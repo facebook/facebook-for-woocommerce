@@ -27,12 +27,17 @@
      * @param {Object} event Event object from PHP
      * @return {Object} Prepared event data
      */
+    function isCachedPage() {
+        return window.__wc_fb_page_generated &&
+            (Math.floor(Date.now() / 1000) - window.__wc_fb_page_generated) > 1800;
+    }
+
     function buildEventData(event) {
         return {
             method: event.method || 'track',
             name: event.name,
             params: event.params || {},
-            eventId: event.eventId || null
+            eventId: isCachedPage() ? null : (event.eventId || null)
         };
     }
 

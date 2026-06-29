@@ -210,20 +210,20 @@ class ErrorLogHandler extends LogHandlerBase {
 				continue;
 			}
 
-			$last_sample = isset( $aggregate['last_sample'] ) && is_array( $aggregate['last_sample'] ) ? $aggregate['last_sample'] : [];
+			$last_sample  = isset( $aggregate['last_sample'] ) && is_array( $aggregate['last_sample'] ) ? $aggregate['last_sample'] : [];
 			$request_data = [
 				'event'             => 'plugin_crash',
 				'event_type'        => isset( $last_sample['event_type'] ) ? (string) $last_sample['event_type'] : 'fatal_error',
 				'exception_message' => isset( $last_sample['message'] ) ? (string) $last_sample['message'] : 'Crash replayed after pause window',
 				'extra_data'        => [
-					'fingerprint'            => $fingerprint,
-					'file'                   => isset( $last_sample['file'] ) ? (string) $last_sample['file'] : '',
-					'line'                   => isset( $last_sample['line'] ) ? (int) $last_sample['line'] : 0,
-					'aggregate_count'        => isset( $aggregate['count'] ) ? (int) $aggregate['count'] : 1,
-					'aggregate_first_seen'   => isset( $aggregate['first_seen'] ) ? (int) $aggregate['first_seen'] : time(),
-					'aggregate_last_seen'    => isset( $aggregate['last_seen'] ) ? (int) $aggregate['last_seen'] : time(),
-					'aggregate_last_sample'  => $last_sample,
-					'replayed_after_pause'   => true,
+					'fingerprint'           => $fingerprint,
+					'file'                  => isset( $last_sample['file'] ) ? (string) $last_sample['file'] : '',
+					'line'                  => isset( $last_sample['line'] ) ? (int) $last_sample['line'] : 0,
+					'aggregate_count'       => isset( $aggregate['count'] ) ? (int) $aggregate['count'] : 1,
+					'aggregate_first_seen'  => isset( $aggregate['first_seen'] ) ? (int) $aggregate['first_seen'] : time(),
+					'aggregate_last_seen'   => isset( $aggregate['last_seen'] ) ? (int) $aggregate['last_seen'] : time(),
+					'aggregate_last_sample' => $last_sample,
+					'replayed_after_pause'  => true,
 				],
 			];
 

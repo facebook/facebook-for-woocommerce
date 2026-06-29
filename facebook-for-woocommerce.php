@@ -71,7 +71,7 @@ register_shutdown_function(
 						$window_seconds = HOUR_IN_SECONDS;
 					}
 
-					$is_window_active = null === $window_seconds || ( time() - $existing_time ) < $window_seconds;
+					$is_window_active    = null === $window_seconds || ( time() - $existing_time ) < $window_seconds;
 					$current_crash_count = $is_window_active ? $existing_count : 0;
 				}
 			}
@@ -474,7 +474,7 @@ class WC_Facebook_Loader {
 		$disabled_since = date_i18n( get_option( 'date_format' ) . ' ' . get_option( 'time_format' ), (int) $payload['timestamp'] );
 		$window_seconds = $this->get_disable_window_seconds( $crash_count );
 		/* translators: %d: disable window duration in minutes. */
-		$window_label   = null === $window_seconds ? esc_html__( 'Permanent (3+ crashes)', 'facebook-for-woocommerce' ) : sprintf( esc_html__( '%d minutes', 'facebook-for-woocommerce' ), (int) round( $window_seconds / MINUTE_IN_SECONDS ) );
+		$window_label = null === $window_seconds ? esc_html__( 'Permanent (3+ crashes)', 'facebook-for-woocommerce' ) : sprintf( esc_html__( '%d minutes', 'facebook-for-woocommerce' ), (int) round( $window_seconds / MINUTE_IN_SECONDS ) );
 
 		echo '<tr class="plugin-update-tr active wc-facebook-disabled-notice-row"><td colspan="4" class="plugin-update colspanchange"><div class="notice inline notice-warning notice-alt wc-facebook-disabled-notice is-dismissible" data-wc-facebook-disabled-notice="1"><p><strong>' . esc_html__( 'Meta for WooCommerce is currently disabled due to repeated crashes.', 'facebook-for-woocommerce' ) . '</strong></p><p>' . esc_html__( 'You can re-enable the plugin after reviewing recent crash conditions.', 'facebook-for-woocommerce' ) . '</p><p><strong>' . esc_html__( 'Crash count:', 'facebook-for-woocommerce' ) . '</strong> ' . esc_html( (string) $crash_count ) . ' &nbsp; <strong>' . esc_html__( 'Disabled since:', 'facebook-for-woocommerce' ) . '</strong> ' . esc_html( $disabled_since ) . ' &nbsp; <strong>' . esc_html__( 'Disable window:', 'facebook-for-woocommerce' ) . '</strong> ' . esc_html( $window_label ) . ' &nbsp; <strong>' . esc_html__( 'Source:', 'facebook-for-woocommerce' ) . '</strong> ' . esc_html( $source ) . '</p><p><a class="button button-primary" href="' . esc_url( $clear_url ) . '">' . esc_html__( 'Re-enable plugin', 'facebook-for-woocommerce' ) . '</a></p><button type="button" class="notice-dismiss"><span class="screen-reader-text">' . esc_html__( 'Dismiss this notice.', 'facebook-for-woocommerce' ) . '</span></button><input type="hidden" class="wc-facebook-disabled-notice-signature" value="' . esc_attr( $signature ) . '" /></div></td></tr>';
 	}
@@ -509,15 +509,15 @@ class WC_Facebook_Loader {
 	 * @return bool
 	 */
 	private function clear_disable_flag_state() {
-		$flag_file   = trailingslashit( WP_CONTENT_DIR ) . self::DISABLE_FLAG_FILE_RELATIVE_PATH;
+		$flag_file    = trailingslashit( WP_CONTENT_DIR ) . self::DISABLE_FLAG_FILE_RELATIVE_PATH;
 		$file_cleared = true;
 
 		if ( file_exists( $flag_file ) ) {
 			$file_cleared = @unlink( $flag_file ); // phpcs:ignore WordPress.WP.AlternativeFunctions.unlink_unlink
 		}
 
-		$has_transient      = false !== get_transient( self::DISABLE_FLAG_TRANSIENT );
-		$transient_cleared  = ! $has_transient || delete_transient( self::DISABLE_FLAG_TRANSIENT );
+		$has_transient     = false !== get_transient( self::DISABLE_FLAG_TRANSIENT );
+		$transient_cleared = ! $has_transient || delete_transient( self::DISABLE_FLAG_TRANSIENT );
 
 		return (bool) $file_cleared && (bool) $transient_cleared;
 	}

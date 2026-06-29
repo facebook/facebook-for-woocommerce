@@ -253,11 +253,11 @@ class PluginCrashHandler {
 	 * @return array
 	 */
 	private function increment_crash_aggregate( $fingerprint, array $report ) {
-		$key      = $this->get_crash_aggregate_key( $fingerprint );
-		$current  = $this->safe_get_transient( $key );
-		$now      = time();
-		$count    = is_array( $current ) && isset( $current['count'] ) ? (int) $current['count'] : 0;
-		$first    = is_array( $current ) && isset( $current['first_seen'] ) ? (int) $current['first_seen'] : $now;
+		$key            = $this->get_crash_aggregate_key( $fingerprint );
+		$current        = $this->safe_get_transient( $key );
+		$now            = time();
+		$count          = is_array( $current ) && isset( $current['count'] ) ? (int) $current['count'] : 0;
+		$first          = is_array( $current ) && isset( $current['first_seen'] ) ? (int) $current['first_seen'] : $now;
 		$sample_message = isset( $report['exception_message'] ) ? (string) $report['exception_message'] : '';
 		if ( function_exists( 'mb_substr' ) ) {
 			$sample_message = mb_substr( $sample_message, 0, self::CRASH_MAX_SAMPLE_MESSAGE_LENGTH );
@@ -358,11 +358,11 @@ class PluginCrashHandler {
 			$report['extra_data'] = [];
 		}
 
-		$report['extra_data']['aggregate_count']      = isset( $aggregate['count'] ) ? (int) $aggregate['count'] : 1;
-		$report['extra_data']['aggregate_first_seen'] = isset( $aggregate['first_seen'] ) ? (int) $aggregate['first_seen'] : time();
-		$report['extra_data']['aggregate_last_seen']  = isset( $aggregate['last_seen'] ) ? (int) $aggregate['last_seen'] : time();
+		$report['extra_data']['aggregate_count']       = isset( $aggregate['count'] ) ? (int) $aggregate['count'] : 1;
+		$report['extra_data']['aggregate_first_seen']  = isset( $aggregate['first_seen'] ) ? (int) $aggregate['first_seen'] : time();
+		$report['extra_data']['aggregate_last_seen']   = isset( $aggregate['last_seen'] ) ? (int) $aggregate['last_seen'] : time();
 		$report['extra_data']['aggregate_last_sample'] = isset( $aggregate['last_sample'] ) && is_array( $aggregate['last_sample'] ) ? $aggregate['last_sample'] : [];
-		$report['extra_data']['fingerprint']          = (string) $fingerprint;
+		$report['extra_data']['fingerprint']           = (string) $fingerprint;
 
 		return $report;
 	}
@@ -417,7 +417,7 @@ class PluginCrashHandler {
 
 		if ( isset( $report['extra_data']['plugin_stack'] ) && is_array( $report['extra_data']['plugin_stack'] ) ) {
 			$report['extra_data']['plugin_stack'] = array_slice( $report['extra_data']['plugin_stack'], 0, 2 );
-			$trimmed_fields[] = 'plugin_stack';
+			$trimmed_fields[]                     = 'plugin_stack';
 		}
 
 		if ( isset( $report['extra_data']['aggregate_last_sample'] ) ) {
@@ -434,8 +434,8 @@ class PluginCrashHandler {
 			$trimmed_fields[] = 'exception_message';
 		}
 
-		$json_after   = wp_json_encode( $report );
-		$bytes_after  = is_string( $json_after ) ? strlen( $json_after ) : 0;
+		$json_after  = wp_json_encode( $report );
+		$bytes_after = is_string( $json_after ) ? strlen( $json_after ) : 0;
 		error_log( '[FBW_CRASH_OBS] crash payload trimmed: reason=payload_size fingerprint=' . $fingerprint . ' aggregate_count=' . $agg_count . ' bytes_before=' . $bytes_before . ' bytes_after=' . $bytes_after . ' trimmed_fields=' . implode( ',', $trimmed_fields ) ); // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log
 
 		return $report;
@@ -1196,17 +1196,17 @@ class PluginCrashHandler {
 			'event_type'        => $event_type,
 			'exception_message' => $this->sanitize_message( $message ),
 			'extra_data'        => [
-				'error_class'      => $error_class,
-				'php_error_type'   => $this->get_php_error_type_label( isset( $error['type'] ) ? (int) $error['type'] : 0 ),
-				'error_type'       => isset( $error['type'] ) ? (int) $error['type'] : 0,
-				'file'             => $this->sanitize_file_path( isset( $error['file'] ) ? (string) $error['file'] : '' ),
-				'line'             => isset( $error['line'] ) ? (int) $error['line'] : 0,
-				'plugin_stack'     => $this->extract_plugin_stack_frames( isset( $error['trace'] ) && is_array( $error['trace'] ) ? $error['trace'] : [] ),
-				'plugin_version'   => $this->get_plugin_version(),
-				'php_version'      => PHP_VERSION,
-				'wp_version'       => isset( $GLOBALS['wp_version'] ) ? (string) $GLOBALS['wp_version'] : '',
-				'wc_version'       => defined( 'WC_VERSION' ) ? (string) WC_VERSION : '',
-				'request_context'  => $this->get_request_context(),
+				'error_class'     => $error_class,
+				'php_error_type'  => $this->get_php_error_type_label( isset( $error['type'] ) ? (int) $error['type'] : 0 ),
+				'error_type'      => isset( $error['type'] ) ? (int) $error['type'] : 0,
+				'file'            => $this->sanitize_file_path( isset( $error['file'] ) ? (string) $error['file'] : '' ),
+				'line'            => isset( $error['line'] ) ? (int) $error['line'] : 0,
+				'plugin_stack'    => $this->extract_plugin_stack_frames( isset( $error['trace'] ) && is_array( $error['trace'] ) ? $error['trace'] : [] ),
+				'plugin_version'  => $this->get_plugin_version(),
+				'php_version'     => PHP_VERSION,
+				'wp_version'      => isset( $GLOBALS['wp_version'] ) ? (string) $GLOBALS['wp_version'] : '',
+				'wc_version'      => defined( 'WC_VERSION' ) ? (string) WC_VERSION : '',
+				'request_context' => $this->get_request_context(),
 			],
 		];
 
@@ -1554,11 +1554,11 @@ class PluginCrashHandler {
 		$end   = strlen( (string) $token ) - 1;
 
 		while ( $start <= $end && false !== strpos( $prefix_chars, $token[ $start ] ) ) {
-			$start++;
+			++$start;
 		}
 
 		while ( $end >= $start && false !== strpos( $suffix_chars, $token[ $end ] ) ) {
-			$end--;
+			--$end;
 		}
 
 		if ( $end < $start ) {
