@@ -300,7 +300,8 @@ class WC_Facebookcommerce_Pixel {
 		 */
 	private function get_pixel_init_code() {
 
-		$agent_string = Event::get_platform_identifier();
+		$agent_base      = Event::get_platform_identifier();
+		$cache_threshold = 1800;
 
 		/**
 		 * Filters Facebook Pixel init code.
@@ -310,9 +311,12 @@ class WC_Facebookcommerce_Pixel {
 		return apply_filters(
 			'facebook_woocommerce_pixel_init',
 			sprintf(
-				"fbq('init', '%s', {}, %s);\n",
+				"fbq('init', '%s', (function(){if(window.__wc_fb_page_generated&&(Math.floor(Date.now()/1000)-window.__wc_fb_page_generated)>%d){return {};}return %s;})(), {agent:(function(){var a='%s';if(window.__wc_fb_page_generated&&(Math.floor(Date.now()/1000)-window.__wc_fb_page_generated)>%d){a=a.replace(/(\\d+\\.\\d+\\.\\d+)/,'$1_c');}return a;})()});\n",
 				esc_js( self::get_pixel_id() ),
-				wp_json_encode( array( 'agent' => $agent_string ), JSON_PRETTY_PRINT | JSON_FORCE_OBJECT )
+				$cache_threshold,
+				wp_json_encode( $this->user_info, JSON_PRETTY_PRINT | JSON_FORCE_OBJECT ),
+				esc_js( $agent_base ),
+				$cache_threshold
 			)
 		);
 	}
@@ -340,6 +344,7 @@ class WC_Facebookcommerce_Pixel {
 
 		?>
 			<script <?php echo self::get_script_attributes(); ?>>
+				window.__wc_fb_page_generated = <?php echo (int) time(); ?>;
 				!function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?
 					n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;
 					n.push=n;n.loaded=!0;n.version='2.0';n.queue=[];t=b.createElement(e);t.async=!0;
@@ -1048,34 +1053,52 @@ JS;
 		// Reuse shared param preparation logic.
 		[ 'params' => $event_params, 'event_id' => $event_id ] = self::prepare_event_params( $params, $event_name );
 
-		$encoded_params = wp_json_encode( $event_params, JSON_PRETTY_PRINT | JSON_FORCE_OBJECT );
+		$agent_base      = Event::get_platform_identifier();
+		$pixel_id        = self::get_pixel_id();
+		$encoded_params  = wp_json_encode( $event_params, JSON_PRETTY_PRINT | JSON_FORCE_OBJECT );
+		$cache_threshold = 1800;
+
+		$agent_js = sprintf(
+			"(function(){var a='%s';if(window.__wc_fb_page_generated&&(Math.floor(Date.now()/1000)-window.__wc_fb_page_generated)>%d){a=a.replace(/(\\d+\\.\\d+\\.\\d+)/,'$1_c');}return a;})()",
+			esc_js( $agent_base ),
+			$cache_threshold
+		);
 
 		if ( ! empty( $event_id ) ) {
-			// When an event_id is present, guard against duplicate fires caused by
-			// repeated snippet execution (e.g. AJAX fragment re-execution) so each
-			// event fires once, and route through the Signals Gateway when available.
+			// Guard against duplicate fires of the same event_id within a single page
+			// load (e.g. AJAX fragment re-execution). Inside the guard, if the page is
+			// being served stale from a full-page cache the baked-in event_id is shared
+			// across visitors, so fire without the eventID to avoid corrupting
+			// server-side deduplication.
 			$encoded_event_id = wp_json_encode( $event_id );
 			$event            = sprintf(
 				"/* %s Facebook Integration Event Tracking */\n" .
-				"fbq('set', 'agent', '%s', '%s');\n" .
+				"fbq('set', 'agent', %s, '%s');\n" .
 				"window.wcFacebookPixelFiredEvents = window.wcFacebookPixelFiredEvents || {};\n" .
 				"if (!window.wcFacebookPixelFiredEvents[%s]) {\n" .
 				"window.wcFacebookPixelFiredEvents[%s] = true;\n" .
+				"var isStale = window.__wc_fb_page_generated && (Math.floor(Date.now()/1000) - window.__wc_fb_page_generated) > %d;\n" .
 				"if (window.FacebookSignals && typeof window.FacebookSignals.trackEvent === 'function') {\n" .
-				"\twindow.FacebookSignals.trackEvent('%s', %s, null, '%s', %s);\n" .
+				"\twindow.FacebookSignals.trackEvent('%s', %s, null, '%s', isStale ? null : %s);\n" .
+				"} else if (isStale) {\n" .
+				"\tfbq('%s', '%s', %s);\n" .
 				"} else {\n" .
 				"\tfbq('%s', '%s', %s, %s);\n" .
 				"}\n" .
 				'}',
 				WC_Facebookcommerce_Utils::get_integration_name(),
-				Event::get_platform_identifier(),
-				self::get_pixel_id(),
+				$agent_js,
+				esc_js( $pixel_id ),
 				$encoded_event_id,
 				$encoded_event_id,
+				$cache_threshold,
 				esc_js( $event_name ),
 				$encoded_params,
 				esc_js( $method ),
 				$encoded_event_id,
+				esc_js( $method ),
+				esc_js( $event_name ),
+				$encoded_params,
 				esc_js( $method ),
 				esc_js( $event_name ),
 				$encoded_params,
@@ -1083,18 +1106,19 @@ JS;
 			);
 		} else {
 			// No event_id to deduplicate on; route through the Signals Gateway when
-			// available, otherwise fall back to a plain fbq fire.
+			// available, otherwise fall back to a plain fbq fire. The dynamic agent
+			// still flags the fire as cache-sourced when the page is served stale.
 			$event = sprintf(
 				"/* %s Facebook Integration Event Tracking */\n" .
-				"fbq('set', 'agent', '%s', '%s');\n" .
+				"fbq('set', 'agent', %s, '%s');\n" .
 				"if (window.FacebookSignals && typeof window.FacebookSignals.trackEvent === 'function') {\n" .
 				"\twindow.FacebookSignals.trackEvent('%s', %s, null, '%s', null);\n" .
 				"} else {\n" .
 				"\tfbq('%s', '%s', %s);\n" .
 				'}',
 				WC_Facebookcommerce_Utils::get_integration_name(),
-				Event::get_platform_identifier(),
-				self::get_pixel_id(),
+				$agent_js,
+				esc_js( $pixel_id ),
 				esc_js( $event_name ),
 				$encoded_params,
 				esc_js( $method ),

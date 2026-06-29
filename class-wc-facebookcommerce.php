@@ -887,7 +887,7 @@ class WC_Facebookcommerce extends WooCommerce\Facebook\Framework\Plugin {
 		}
 
 		// Only show on the Plugins page and the Facebook settings page.
-		$screen = get_current_screen();
+		$screen          = get_current_screen();
 		$allowed_screens = array( 'plugins', 'marketing_page_wc-facebook', 'woocommerce_page_wc-facebook' );
 		if ( ! $screen || ! in_array( $screen->id, $allowed_screens, true ) ) {
 			return;
