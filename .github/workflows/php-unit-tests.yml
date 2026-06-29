@@ -22,7 +22,11 @@ jobs:
 
     steps:
       - name: Install SVN
-        run: sudo apt-get install subversion -y
+        # ubuntu-slim ships without a populated apt index, so refresh it before
+        # installing (otherwise: "E: Unable to locate package subversion").
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y subversion
 
       - name: Checkout repository
         uses: actions/checkout@v5
