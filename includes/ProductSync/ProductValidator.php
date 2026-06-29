@@ -340,10 +340,15 @@ class ProductValidator {
 			throw $invalid_exception;
 		} elseif ( $this->product->get_type() === 'variation' ) {
 			/**
-			 * This check will run for background jobs like sync all and feeds
+			 * This check will run for background jobs like sync all and feeds.
+			 * Parent product can be unavailable during trash/delete cascades
+			 * (for example when translation plugins process variations after parent removal).
 			 */
-			// Check if product_parent exists before calling get_meta() to prevent "Call to a member function get_meta() on null" error
-			$parent_sync = $this->product_parent ? $this->product_parent->get_meta( Products::get_product_sync_meta_key() ) : null;
+			if ( ! $this->product_parent instanceof WC_Product ) {
+				throw $invalid_exception;
+			}
+
+			$parent_sync = $this->product_parent->get_meta( Products::get_product_sync_meta_key() );
 
 			if ( 'yes' === $parent_sync ) {
 				return;
