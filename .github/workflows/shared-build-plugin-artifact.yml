@@ -14,7 +14,7 @@ on:
 
 jobs:
   build-and-upload:
-    runs-on: ubuntu-slim
+    runs-on: ubuntu-latest
     permissions:
       contents: read
       pull-requests: write

@@ -9,7 +9,7 @@ concurrency:
 jobs:
   UnitTests:
     name: PHP unit tests - PHP ${{ matrix.php }}, WP ${{ matrix.wp-version }}, WC ${{ matrix.wc-version }}
-    runs-on: ubuntu-slim
+    runs-on: ubuntu-latest
     env:
       WP_CORE_DIR: "/tmp/wordpress/src"
       WP_TESTS_DIR: "/tmp/wordpress/tests/phpunit"
@@ -22,11 +22,7 @@ jobs:
 
     steps:
       - name: Install SVN
-        # ubuntu-slim ships without a populated apt index, so refresh it before
-        # installing (otherwise: "E: Unable to locate package subversion").
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y subversion
+        run: sudo apt-get install subversion -y
 
       - name: Checkout repository
         uses: actions/checkout@v5

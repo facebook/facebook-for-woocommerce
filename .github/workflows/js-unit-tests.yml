@@ -9,7 +9,7 @@ concurrency:
 jobs:
   JSUnitTests:
     name: JavaScript unit tests
-    runs-on: ubuntu-slim
+    runs-on: ubuntu-latest
     env:
       NODE_ENV: test
 

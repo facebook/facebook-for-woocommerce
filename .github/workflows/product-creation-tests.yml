@@ -75,7 +75,7 @@ env:
 jobs:
   # Job to check if secrets are configured and emit warning if not
   check-secrets:
-    runs-on: ubuntu-slim
+    runs-on: ubuntu-latest
     outputs:
       secrets-configured: ${{ steps.check.outputs.configured }}
     steps:
@@ -102,7 +102,7 @@ jobs:
 
   # Job to resolve currently supported WP and WC versions from the plugin file
   resolve-versions:
-    runs-on: ubuntu-slim
+    runs-on: ubuntu-latest
     outputs:
       wp-supported: ${{ steps.versions.outputs.wp-supported }}
       wc-supported: ${{ steps.versions.outputs.wc-supported }}
@@ -123,11 +123,11 @@ jobs:
     name: E2E Tests - ${{ matrix.version-label }} - ${{ matrix.test-group }}
     needs: [check-secrets, resolve-versions]
     if: ${{ needs.check-secrets.outputs.secrets-configured == 'true' }}
-    # The chromium-only shards run on ARM runners (bundled Chromium has arm64
-    # builds) to spread load off the ubuntu-latest queue. plugin-events stays on
-    # ubuntu-latest (x86) because it uses Edge/Opera, which have no arm64 Linux
-    # builds. Browser coverage is unchanged either way.
-    runs-on: ${{ matrix.test-group == 'plugin-events' && 'ubuntu-latest' || '2-core-ubuntu-arm' }}
+    # Spread E2E shards across several x86 runner pools to relieve queueing on any
+    # single pool. All pools are x86 because the mysql:5.7 service container has no
+    # arm64 image, so every shard (including plugin-events' full browser set) works
+    # on any of them.
+    runs-on: ${{ (matrix.test-group == 'plugin-events' || matrix.test-group == 'product-crud') && '4-core-ubuntu-22.04' || (matrix.test-group == 'variable-product-depth' || matrix.test-group == 'product-batch') && '4-core-ubuntu' || 'ubuntu-latest' }}
     # Fail fast instead of letting a stuck step (e.g. a hung browser install) run
     # until GitHub's 6-hour default job timeout. plugin-events runs many browser
     # projects sequentially, so it gets a larger budget.
@@ -136,8 +136,8 @@ jobs:
     strategy:
       fail-fast: false
       # Cap how many shards run concurrently within a run. Combined with spreading
-      # shards across runner pools (ARM + ubuntu-latest), this keeps queueing and
-      # shared-test-asset contention reasonable.
+      # shards across multiple runner pools, this keeps queueing and shared-test-asset
+      # contention reasonable.
       max-parallel: 8
       matrix:
         test-group: ['plugin-events', 'product-crud', 'variable-product-depth', 'product-batch', 'product-category', 'performance-sync']
@@ -624,16 +624,16 @@ jobs:
           cd ${{ env.PLUGIN_PATH }}
           npm install
 
-          # Bundled Chromium has arm64 builds, so it installs on every runner
-          # (including the ARM shards). Cap with a timeout so a stuck apt step
-          # fails fast instead of hanging the whole job.
-          timeout 15m npx playwright install --with-deps chromium
+          # Bundled browsers (chromium) download to the Playwright cache without
+          # root; the branded Chrome channel needs OS deps installed via apt.
+          # Use a single non-interactive `--with-deps` invocation so deps are
+          # installed in the right order, and cap it with a timeout so a stuck
+          # apt step fails fast instead of hanging the whole job.
+          timeout 15m npx playwright install --with-deps chromium chrome
 
-          # The branded Google Chrome channel, WebKit and Firefox are only used by
-          # plugin-events (which runs on x86 ubuntu-latest). Chrome has no arm64
-          # Linux build, so installing it only here keeps the ARM shards working.
+          # Plugin-events also exercises WebKit (Safari-like) and Firefox.
           if [ "${{ matrix.test-group }}" = "plugin-events" ]; then
-            timeout 15m npx playwright install --with-deps chrome webkit firefox
+            timeout 15m npx playwright install --with-deps webkit firefox
           fi
 
       - name: Verify WebKit browser setup
