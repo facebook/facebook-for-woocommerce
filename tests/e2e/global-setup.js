@@ -27,22 +27,47 @@ async function loginAndSaveAuth(browser, {
   const context = await browser.newContext({ ignoreHTTPSErrors: true });
   const page = await context.newPage();
 
-  await page.goto(loginUrl, {
-    waitUntil: 'domcontentloaded',
-    timeout: TIMEOUTS.MAX,
-  });
+  // Logging in against a freshly-booted WordPress on a busy CI runner can be slow,
+  // so make this resilient instead of racing a short visibility check. Retry the
+  // whole flow, and within each attempt explicitly wait for the login form (rather
+  // than skipping login if it isn't visible within a second, which previously left
+  // us waiting 60s for an admin page that never loads).
+  const MAX_ATTEMPTS = 3;
 
-  const loginForm = page.locator('#user_login');
-  const isLoginVisible = await loginForm.isVisible({ timeout: TIMEOUTS.SHORT }).catch(() => false);
+  for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+    try {
+      await page.goto(loginUrl, {
+        waitUntil: 'domcontentloaded',
+        timeout: TIMEOUTS.MAX,
+      });
 
-  if (isLoginVisible) {
-    await loginForm.fill(username);
-    await page.locator('#user_pass').fill(password);
-    await page.locator('#wp-submit').click();
-    await page.waitForLoadState('networkidle', { timeout: TIMEOUTS.MAX });
+      // If a prior attempt already authenticated us, the login form won't render.
+      const loginForm = page.locator('#user_login');
+      const needsLogin = await loginForm
+        .isVisible({ timeout: TIMEOUTS.NORMAL })
+        .catch(() => false);
+
+      if (needsLogin) {
+        await loginForm.waitFor({ state: 'visible', timeout: TIMEOUTS.MAX });
+        await loginForm.fill(username);
+        await page.locator('#user_pass').fill(password);
+        await page.locator('#wp-submit').click();
+      }
+
+      // The real signal that login succeeded is the post-login check (e.g. the
+      // admin #wpcontent wrapper). Rely on that rather than 'networkidle', which
+      // can hang on pages that keep polling in the background.
+      await postLoginCheck(page);
+      break;
+    } catch (error) {
+      console.warn(`⚠️ ${userType} login attempt ${attempt}/${MAX_ATTEMPTS} failed: ${error.message}`);
+      if (attempt === MAX_ATTEMPTS) {
+        throw error;
+      }
+      await page.waitForTimeout(TIMEOUTS.NORMAL);
+    }
   }
 
-  await postLoginCheck(page);
   await context.storageState({ path: authPath });
   console.log(`✅ ${userType} state saved to ${authPath}`);
 

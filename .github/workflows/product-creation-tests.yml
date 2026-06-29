@@ -125,14 +125,17 @@ jobs:
     if: ${{ needs.check-secrets.outputs.secrets-configured == 'true' }}
     runs-on: ubuntu-latest
     # Fail fast instead of letting a stuck step (e.g. a hung browser install) run
-    # until GitHub's 6-hour default job timeout. The plugin-events shards run many
-    # headed browser projects sequentially, so they get a larger budget.
-    timeout-minutes: ${{ startsWith(matrix.test-group, 'plugin-events') && 75 || 45 }}
+    # until GitHub's 6-hour default job timeout. plugin-events runs many browser
+    # projects sequentially, so it gets a larger budget.
+    timeout-minutes: ${{ matrix.test-group == 'plugin-events' && 90 || 45 }}
 
     strategy:
       fail-fast: false
+      # All shards in a run use the same Facebook test asset set, so cap how many
+      # run concurrently to reduce contention on the shared catalog/pixel.
+      max-parallel: 4
       matrix:
-        test-group: ['plugin-events-chromium', 'plugin-events-browsers', 'product-crud', 'variable-product-depth', 'product-batch', 'product-category', 'performance-sync']
+        test-group: ['plugin-events', 'product-crud', 'variable-product-depth', 'product-batch', 'product-category', 'performance-sync']
         version-set: ['supported', 'latest']
         include:
           - version-set: 'supported'
@@ -623,13 +626,13 @@ jobs:
           # apt step fails fast instead of hanging the whole job.
           timeout 15m npx playwright install --with-deps chromium chrome
 
-          # The alt-browsers shard also exercises WebKit (Safari-like) and Firefox.
-          if [ "${{ matrix.test-group }}" = "plugin-events-browsers" ]; then
+          # Plugin-events also exercises WebKit (Safari-like) and Firefox.
+          if [ "${{ matrix.test-group }}" = "plugin-events" ]; then
             timeout 15m npx playwright install --with-deps webkit firefox
           fi
 
       - name: Verify WebKit browser setup
-        if: matrix.test-group == 'plugin-events-browsers'
+        if: matrix.test-group == 'plugin-events'
         run: |
           cd ${{ env.PLUGIN_PATH }}
           node - <<'NODE'
@@ -653,7 +656,7 @@ jobs:
           NODE
 
       - name: Install Edge browser
-        if: matrix.test-group == 'plugin-events-browsers'
+        if: matrix.test-group == 'plugin-events'
         run: |
           set -e
           sudo apt-get update
@@ -666,7 +669,7 @@ jobs:
           echo "EDGE_EXECUTABLE_PATH=/usr/bin/microsoft-edge-stable" >> $GITHUB_ENV
 
       - name: Verify Edge browser setup
-        if: matrix.test-group == 'plugin-events-browsers'
+        if: matrix.test-group == 'plugin-events'
         run: |
           set -e
           test -x /usr/bin/microsoft-edge-stable
@@ -674,7 +677,7 @@ jobs:
 
 
       - name: Install Brave browser
-        if: matrix.test-group == 'plugin-events-browsers'
+        if: matrix.test-group == 'plugin-events'
         run: |
           set -e
           sudo apt-get update
@@ -688,14 +691,14 @@ jobs:
           echo "BRAVE_EXECUTABLE_PATH=/usr/bin/brave-browser" >> $GITHUB_ENV
 
       - name: Verify Brave browser setup
-        if: matrix.test-group == 'plugin-events-browsers'
+        if: matrix.test-group == 'plugin-events'
         run: |
           set -e
           test -x /usr/bin/brave-browser
           /usr/bin/brave-browser --version
 
       - name: Install Opera browser
-        if: matrix.test-group == 'plugin-events-browsers'
+        if: matrix.test-group == 'plugin-events'
         run: |
           set -e
           sudo apt-get update
@@ -715,7 +718,7 @@ jobs:
           echo "OPERA_EXECUTABLE_PATH=$OPERA_BIN" >> $GITHUB_ENV
 
       - name: Verify Opera browser setup
-        if: matrix.test-group == 'plugin-events-browsers'
+        if: matrix.test-group == 'plugin-events'
         run: |
           set -e
           OPERA_BIN="${OPERA_EXECUTABLE_PATH:-$(command -v opera-stable || command -v opera || true)}"
@@ -749,12 +752,12 @@ jobs:
           echo "(non-zero is tolerated here; real verdict comes from Playwright run)"
 
       - name: Setup captured-events directory
-        if: startsWith(matrix.test-group, 'plugin-events')
+        if: matrix.test-group == 'plugin-events'
         run: |
           mkdir -p ${{ env.PLUGIN_PATH }}/tests/e2e/captured-events
           chmod 777 ${{ env.PLUGIN_PATH }}/tests/e2e/captured-events
       - name: Create test product for storefront event suites
-        if: startsWith(matrix.test-group, 'plugin-events')
+        if: matrix.test-group == 'plugin-events'
         run: |
           cd ${{ env.WORDPRESS_PATH }}
           # Ensure deterministic product slug used by plugin-events suites.
@@ -784,15 +787,20 @@ jobs:
           echo "TEST_PRODUCT_ID=$PRODUCT_ID" >> $GITHUB_ENV
 
       - name: Install Xvfb for headed browser
-        if: startsWith(matrix.test-group, 'plugin-events')
+        if: matrix.test-group == 'plugin-events'
         run: |
           sudo apt-get update
           sudo apt-get install -y xvfb
 
-      - name: Run Plugin & Events tests (Chromium)
-        if: matrix.test-group == 'plugin-events-chromium'
+      - name: Run Plugin & Events tests
+        if: matrix.test-group == 'plugin-events'
         env:
           IS_LATEST_WP: ${{ matrix.wp-version == 'latest' && 'true' || 'false' }}
+          REQUIRE_REAL_EDGE: '1'
+          REQUIRE_REAL_FIREFOX: '1'
+          REQUIRE_REAL_BRAVE: '1'
+          REQUIRE_REAL_OPERA: '1'
+          FIREFOX_EXECUTABLE_PATH: ''
         run: |
           cd ${{ env.PLUGIN_PATH }}
           npx playwright test plugin-level-tests.spec.js --project=chromium-wp-admin --workers=1
@@ -914,30 +922,16 @@ jobs:
           console.log('Privacy Sandbox API tests executed without skips. Statuses:', statuses);
           NODE
 
-          # Android (Pixel) emulation runs on Chromium, so it stays in this shard.
-          npx playwright test events-test.spec.js --project=android-pixel-wp-customer --workers=1
-
-      - name: Run Plugin & Events tests (Alt browsers)
-        if: matrix.test-group == 'plugin-events-browsers'
-        env:
-          IS_LATEST_WP: ${{ matrix.wp-version == 'latest' && 'true' || 'false' }}
-          REQUIRE_REAL_EDGE: '1'
-          REQUIRE_REAL_FIREFOX: '1'
-          REQUIRE_REAL_BRAVE: '1'
-          REQUIRE_REAL_OPERA: '1'
-          FIREFOX_EXECUTABLE_PATH: ''
-        run: |
-          cd ${{ env.PLUGIN_PATH }}
           xvfb-run --auto-servernum npx playwright test events-test.spec.js --headed --project=edge-wp-customer --workers=1
           xvfb-run --auto-servernum npx playwright test events-test.spec.js --headed --project=firefox-wp-customer --workers=1
           xvfb-run --auto-servernum npx playwright test events-test.spec.js --headed --project=brave-wp-customer --workers=1
-          # Safari (iOS) emulation runs on WebKit.
+          npx playwright test events-test.spec.js --project=android-pixel-wp-customer --workers=1
           npx playwright test events-test.spec.js --project=safari-ios-wp-customer --workers=1
           set -o pipefail
           xvfb-run --auto-servernum npx playwright test events-test.spec.js --headed --project=opera-wp-customer --workers=1 2>&1 | tee /tmp/opera-playwright.log
 
       - name: Dump Opera diagnostics (always)
-        if: always() && matrix.test-group == 'plugin-events-browsers'
+        if: always() && matrix.test-group == 'plugin-events'
         run: |
           echo "=== /tmp/opera-smoke.log (tail) ==="
           tail -n 200 /tmp/opera-smoke.log || true
@@ -945,7 +939,7 @@ jobs:
           tail -n 400 /tmp/opera-playwright.log || true
 
       - name: Cleanup test product
-        if: always() && startsWith(matrix.test-group, 'plugin-events')
+        if: always() && matrix.test-group == 'plugin-events'
         run: |
           cd ${{ env.WORDPRESS_PATH }}
           if [ -n "${{ env.TEST_PRODUCT_ID }}" ]; then
@@ -1048,7 +1042,7 @@ jobs:
           retention-days: 7
 
       - name: Cleanup captured events directory
-        if: always() && startsWith(matrix.test-group, 'plugin-events')
+        if: always() && matrix.test-group == 'plugin-events'
         run: |
           TARGET_DIR="${{ env.PLUGIN_PATH }}${{ env.FB_E2E_CAPTURED_EVENTS_DIR }}"
           if [ -d "$TARGET_DIR" ]; then
