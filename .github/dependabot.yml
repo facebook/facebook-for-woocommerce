@@ -8,6 +8,11 @@ multi-ecosystem-groups:
       time: "03:00"
       timezone: "UTC"
     open-pull-requests-limit: 1
+    # Apply a changelog label at PR creation so the grouped Dependabot PR
+    # satisfies the "Validate single changelog label" check without manual help.
+    labels:
+      - "dependencies"
+      - "changelog: dev"
 
 updates:
   - package-ecosystem: npm
