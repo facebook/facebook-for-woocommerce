@@ -178,6 +178,30 @@ class WhatsAppExtension {
 			);
 			return;
 		}
+
+		// Suppress customer_events calls for installs Meta has confirmed are not
+		// onboarded (no integration config). These calls are dropped server-side
+		// anyway, but only after they have counted against the shared per-app
+		// rate-limit quota, so suppressing them here is what actually reduces
+		// throttling. Fail open while the onboarding state is UNKNOWN so a
+		// legitimately onboarded store is never blocked; the Meta server-side
+		// validator stays as the correctness backstop. Gated by a rollout switch
+		// so Meta can pause the behavior remotely.
+		$rollout_switches = facebook_for_woocommerce()->get_rollout_switches();
+		if (
+			$rollout_switches->is_switch_enabled( RolloutSwitches::SWITCH_WA_CUSTOMER_EVENTS_GATING_ENABLED )
+			&& WhatsAppConnection::ONBOARDING_STATE_INCOMPLETE === $whatsapp_connection->get_onboarding_state()
+		) {
+			wc_get_logger()->info(
+				sprintf(
+				/* translators: %s $order_id */
+					__( 'Customer Events Post API call for Order id %1$s skipped: WhatsApp onboarding not complete.', 'facebook-for-woocommerce' ),
+					$order_id,
+				)
+			);
+			return;
+		}
+
 		$wa_installation_id = $whatsapp_connection->get_wa_installation_id();
 		$base_url           = array( self::BASE_STEFI_ENDPOINT_URL, 'whatsapp/business', $wa_installation_id, 'customer_events' );
 		$base_url           = esc_url( implode( '/', $base_url ) );
