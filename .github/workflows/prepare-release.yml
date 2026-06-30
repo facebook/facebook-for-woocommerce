@@ -46,38 +46,46 @@ jobs:
           fi
           echo "✅ Branch \"release/$NEW_VERSION\" does not exist."
 
-      - name: Check for open PR for current stable version
+      - name: Ensure previous release PR is merged
         env:
           GH_TOKEN: ${{ github.token }}
+          NEW_VERSION: ${{ steps.set_version.outputs.new_version }}
         run: |
           set -euo pipefail
 
-          echo "Getting the current stable version"
-          if ! API_RESPONSE=$(curl -sf 'https://api.wordpress.org/plugins/info/1.2/?action=plugin_information&request%5Bslug%5D=facebook-for-woocommerce'); then
-            echo "::error::Failed to fetch plugin information from the WordPress.org API."
-            exit 1
-          fi
-
-          CURRENT_STABLE=$(echo "$API_RESPONSE" | jq -r '.version')
-          echo "Current stable version: $CURRENT_STABLE"
-
-          if [ -z "$CURRENT_STABLE" ] || [ "$CURRENT_STABLE" = "null" ]; then
-            echo "::error::Could not determine the current stable version from the WordPress.org API response."
-            exit 1
-          fi
-
-          OPEN_PR=$(gh pr list \
+          # Each release opens a PR ("Release X.Y.Z", head release/X.Y.Z -> main) that
+          # is merged once the release is published. Don't start a new release while a
+          # previous release PR is still open, otherwise releases overlap and the
+          # changelog/version bookkeeping drifts. Fail fast if any unmerged release PR
+          # (other than this version's) is still open.
+          if ! OPEN_RELEASE_PRS=$(gh pr list \
             --repo "${{ github.repository }}" \
-            --head "release/$CURRENT_STABLE" \
+            --base main \
             --state open \
-            --json url \
-            --jq '.[0].url // ""')
-
-          if [ -n "$OPEN_PR" ]; then
-            echo "::error::An open PR for the current stable version \"release/$CURRENT_STABLE\" already exists: $OPEN_PR. Merge or close it before preparing a new release."
+            --json number,headRefName,title,url); then
+            echo "::error::Failed to query open PRs via the GitHub API; cannot verify previous release PRs are merged."
             exit 1
           fi
-          echo "✅ No open PR found for the current stable version \"release/$CURRENT_STABLE\"."
+
+          # An empty/non-JSON response would make the filter below silently pass and
+          # bypass the guard, so validate we got a JSON array back before relying on it.
+          if ! echo "$OPEN_RELEASE_PRS" | jq -e 'type == "array"' >/dev/null 2>&1; then
+            echo "::error::Unexpected response when listing open PRs; cannot verify previous release PRs are merged."
+            exit 1
+          fi
+
+          UNMERGED=$(echo "$OPEN_RELEASE_PRS" | jq -r --arg cur "release/$NEW_VERSION" '
+            [ .[]
+              | select(.headRefName | test("^release/[0-9]+[.][0-9]+[.][0-9]+$"))
+              | select(.headRefName != $cur) ]
+            | .[] | "  - #\(.number) \(.title) (\(.headRefName)) — \(.url)"')
+
+          if [ -n "$UNMERGED" ]; then
+            echo "::error::Cannot prepare release $NEW_VERSION — a previous release PR is still open and must be merged first:"
+            echo "$UNMERGED"
+            exit 1
+          fi
+          echo "✅ No unmerged previous release PRs found."
 
       - name: Get latest release tag
         id: get_release
