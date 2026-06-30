@@ -302,6 +302,10 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 			add_filter( 'wpforms_ajax_submit_redirect', array( $this, 'inject_wpforms_lead_event_ajax' ), 20, 3 );
 			add_action( 'wp_footer', array( $this, 'inject_wpforms_ajax_listener' ), 20 );
 
+			// Prevent stale Purchase tracking flags from being copied from subscriptions
+			// onto renewal orders (which would make inject_purchase_event() skip CAPI).
+			add_filter( 'wc_subscriptions_renewal_order_data', array( $this, 'exclude_purchase_tracking_meta_from_renewal_orders' ), 10, 3 );
+
 			// Flush pending events on shutdown
 			add_action( 'shutdown', array( $this, 'send_pending_events' ) );
 		}
@@ -1114,6 +1118,48 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 
 
 		/**
+		 * Excludes Meta Purchase tracking keys when Woo Subscriptions copies subscription meta
+		 * to renewal orders.
+		 *
+		 * Without this, renewal orders may inherit `_meta_purchase_tracked_server` and
+		 * `_meta_event_id`, causing inject_purchase_event() to treat them as already sent.
+		 *
+		 * @param array    $data copied data keyed by meta key.
+		 * @param WC_Order $to_object target order (renewal order).
+		 * @param WC_Order $from_object source object (subscription).
+		 * @return array
+		 */
+		public function exclude_purchase_tracking_meta_from_renewal_orders( $data, $to_object, $from_object ) {
+			// Guard to only affect subscription -> renewal order copies.
+			if ( ! is_a( $to_object, 'WC_Order' ) || 'shop_order' !== $to_object->get_type() ) {
+				return $data;
+			}
+
+			if ( ! is_a( $from_object, 'WC_Order' ) || 'shop_subscription' !== $from_object->get_type() ) {
+				return $data;
+			}
+
+			unset( $data[ self::META_PURCHASE_TRACKED_SERVER ] );
+			unset( $data[ self::META_PURCHASE_TRACKED_BROWSER ] );
+			unset( $data[ self::META_EVENT_ID ] );
+
+			return $data;
+		}
+
+		/**
+		 * Determines whether a given order object should be tracked as a Purchase.
+		 *
+		 * We only track Purchases for actual WooCommerce orders (`shop_order`).
+		 * Subscription objects (`shop_subscription`) are handled via Subscribe events.
+		 *
+		 * @param WC_Order $order order object.
+		 * @return bool
+		 */
+		private function is_purchase_trackable_order( $order ) {
+			return is_a( $order, 'WC_Order' ) && 'shop_order' === $order->get_type();
+		}
+
+		/**
 		 * Triggers a Purchase event when checkout is completed.
 		 *
 		 * This may happen either when:
@@ -1141,6 +1187,11 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 			$order = wc_get_order( $order_id );
 
 			if ( ! $order ) {
+				return;
+			}
+
+			// Track Purchase only for checkout/renewal orders, not subscription posts.
+			if ( ! $this->is_purchase_trackable_order( $order ) ) {
 				return;
 			}
 
