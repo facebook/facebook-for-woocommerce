@@ -235,6 +235,7 @@ class Handler extends AbstractRESTEndpoint {
 			WhatsAppConnection::OPTION_WA_WABA_ID,
 			WhatsAppConnection::OPTION_WA_PHONE_NUMBER_ID,
 			WhatsAppConnection::OPTION_WA_INTEGRATION_CONFIG_ID,
+			WhatsAppConnection::OPTION_WA_ONBOARDING_COMPLETE,
 		];
 
 		foreach ( $options as $option ) {
