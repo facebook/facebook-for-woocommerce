@@ -141,6 +141,63 @@ class RolloutSwitchesTest extends \WooCommerce\Facebook\Tests\AbstractWPUnitTest
 		$this->assertContains(RolloutSwitches::SWITCH_MULTIPLE_IMAGES_ENABLED, $active_switches);
 	}
 
+	public function test_wa_customer_events_gating_switch_constant_exists() {
+		$this->assertTrue(defined('WooCommerce\Facebook\RolloutSwitches::SWITCH_WA_CUSTOMER_EVENTS_GATING_ENABLED'));
+		$this->assertEquals('enable_woocommerce_wa_customer_events_gating', RolloutSwitches::SWITCH_WA_CUSTOMER_EVENTS_GATING_ENABLED);
+	}
+
+	public function test_wa_customer_events_gating_switch_in_active_switches() {
+		$plugin = facebook_for_woocommerce();
+		$rollout_switches = new RolloutSwitches($plugin);
+
+		// Test that the WA customer_events gating switch is in the active switches list
+		$active_switches = $rollout_switches->get_active_switches();
+		$this->assertContains(RolloutSwitches::SWITCH_WA_CUSTOMER_EVENTS_GATING_ENABLED, $active_switches);
+	}
+
+	public function test_wa_customer_events_gating_switch_behavior() {
+		// mock the active filters to test the WA customer_events gating switch behavior
+		$plugin = facebook_for_woocommerce();
+		$plugin_ref_obj = new ReflectionObject($plugin);
+
+		// setup connection handler
+		$prop_connection_handler = $plugin_ref_obj->getProperty('connection_handler');
+		$prop_connection_handler->setAccessible(true);
+		$mock_connection_handler = $this->getMockBuilder('stdClass')
+			->addMethods(array('get_external_business_id', 'is_connected', 'get_access_token'))
+			->getMock();
+		$mock_connection_handler->expects($this->any())->method('get_external_business_id')->willReturn($this->external_business_id);
+		$mock_connection_handler->expects($this->any())->method('get_access_token')->willReturn($this->access_token);
+		$mock_connection_handler->expects($this->any())->method('is_connected')->willReturn(true);
+		$prop_connection_handler->setValue($plugin, $mock_connection_handler);
+
+		// setup API to return the switch as enabled
+		$prop_api = $plugin_ref_obj->getProperty('api');
+		$prop_api->setAccessible(true);
+		$mock_api = $this->getMockBuilder(API::class)->disableOriginalConstructor()->setMethods(array('do_remote_request'))->getMock();
+		$mock_api->expects($this->any())->method('do_remote_request')->willReturn(
+			array('body' => wp_json_encode(array(
+				'data' => array(
+					array('switch' => RolloutSwitches::SWITCH_WA_CUSTOMER_EVENTS_GATING_ENABLED, 'enabled' => '1'),
+				)
+			)))
+		);
+		$prop_api->setValue($plugin, $mock_api);
+
+		$switch_mock = $this->getMockBuilder(RolloutSwitches::class)
+			->setConstructorArgs(array($plugin))
+			->onlyMethods(['is_switch_active'])
+			->getMock();
+		$switch_mock->expects($this->any())->method('is_switch_active')
+			->willReturnCallback(function($switch_name) {
+				return $switch_name === RolloutSwitches::SWITCH_WA_CUSTOMER_EVENTS_GATING_ENABLED;
+			});
+		$switch_mock->init();
+
+		// Enabled in the response -> enabled.
+		$this->assertTrue($switch_mock->is_switch_enabled(RolloutSwitches::SWITCH_WA_CUSTOMER_EVENTS_GATING_ENABLED));
+	}
+
 	public function test_multiple_images_switch_behavior() {
 		// mock the active filters to test multiple images switch behavior
 		$plugin = facebook_for_woocommerce();
