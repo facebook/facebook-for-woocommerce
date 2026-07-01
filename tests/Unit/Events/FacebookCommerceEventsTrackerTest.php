@@ -1389,6 +1389,34 @@ class FacebookCommerceEventsTrackerTest extends AbstractWPUnitTestWithSafeFilter
 	}
 
 	/**
+	 * Test that send_api_event skips CAPI events when the connection is flagged invalid.
+	 *
+	 * @covers WC_Facebookcommerce_EventsTracker::send_api_event
+	 */
+	public function test_send_api_event_skips_when_connection_invalid(): void {
+		$this->instance = $this->create_tracker_with_pixel_enabled();
+
+		set_transient( 'wc_facebook_connection_invalid', time(), DAY_IN_SECONDS );
+
+		$event      = new \WooCommerce\Facebook\Events\Event( array( 'event_name' => 'PageView' ) );
+		$reflection = new ReflectionClass( $this->instance );
+		$method     = $reflection->getMethod( 'send_api_event' );
+		$method->setAccessible( true );
+		$method->invoke( $this->instance, $event, false );
+
+		$this->assertEmpty(
+			$this->instance->get_tracked_events(),
+			'Events should not be tracked while the connection is invalid'
+		);
+		$this->assertEmpty(
+			$this->instance->get_pending_events(),
+			'Events should not be pending while the connection is invalid'
+		);
+
+		delete_transient( 'wc_facebook_connection_invalid' );
+	}
+
+	/**
 	 * Test that send_api_event proceeds for real browser requests.
 	 *
 	 * @covers WC_Facebookcommerce_EventsTracker::send_api_event

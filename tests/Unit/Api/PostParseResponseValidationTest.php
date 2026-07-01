@@ -135,17 +135,18 @@ class PostParseResponseValidationTest extends AbstractWPUnitTestWithOptionIsolat
 	}
 
 	/**
-	 * Test that error code 190 with subcode 452 does NOT set the connection invalid transient.
-	 * Subcode 452 (session mismatch) may be transient and self-resolving.
+	 * Test that error code 190 with subcode 452 sets the connection invalid transient.
+	 * Session mismatch (452) leaves the stored token unusable, so we flag it and
+	 * block CAPI until the merchant reconnects.
 	 */
-	public function test_token_error_452_does_not_set_connection_invalid_transient(): void {
+	public function test_token_error_452_sets_connection_invalid_transient(): void {
 		$api = $this->make_api_with_response(
 			$this->make_error_response( 190, 452, 'Session does not match' )
 		);
 
 		$api->call_do_post_parse_response_validation();
 
-		$this->assertFalse( get_transient( 'wc_facebook_connection_invalid' ) );
+		$this->assertNotFalse( get_transient( 'wc_facebook_connection_invalid' ) );
 	}
 
 	/**
