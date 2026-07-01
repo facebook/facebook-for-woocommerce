@@ -386,6 +386,18 @@ jobs:
           } > readme.tmp
           mv readme.tmp readme.txt
 
+      - name: Ensure readme.txt uses LF line endings
+        run: |
+          # WordPress.org's readme parser fails on CRLF-only files and reads the
+          # Stable tag as empty ("/tags// does not exist"). Normalize to LF and
+          # fail if any CR remains so a bad readme can never be released.
+          sed -i 's/\r$//' readme.txt
+          if grep -q $'\r' readme.txt; then
+            echo "::error::readme.txt still contains CRLF line endings after normalization."
+            exit 1
+          fi
+          echo "✅ readme.txt uses LF line endings."
+
       - name: Commit and Push
         env:
           NEW_VERSION: ${{ steps.set_version.outputs.new_version }}

@@ -164,7 +164,26 @@ jobs:
           NEW_VERSION: ${{ steps.package-version.outputs.current-version}}
         run: |
           cd woocommerce_svn
+          if [ -z "$NEW_VERSION" ]; then
+            echo "::error::Resolved version is empty; refusing to blank the Stable tag."
+            exit 1
+          fi
           sed -i -E "s/^(Stable tag:)[[:space:]]*[0-9.]+/\1 $NEW_VERSION/" "trunk/readme.txt"
+
+          # WordPress.org's readme parser fails on CRLF-only files and reads the
+          # Stable tag as empty ("/tags// does not exist"). Normalize to LF and
+          # verify the Stable tag resolved before committing to SVN.
+          sed -i 's/\r$//' "trunk/readme.txt"
+          if grep -q $'\r' "trunk/readme.txt"; then
+            echo "::error::trunk/readme.txt still contains CRLF line endings after normalization."
+            exit 1
+          fi
+          if ! grep -qx "Stable tag: $NEW_VERSION" "trunk/readme.txt"; then
+            echo "::error::Stable tag was not set to $NEW_VERSION in trunk/readme.txt."
+            grep -i '^stable tag:' "trunk/readme.txt" || true
+            exit 1
+          fi
+          echo "✅ trunk/readme.txt: Stable tag $NEW_VERSION, LF line endings."
 
       - name: Commit to SVN
         env:

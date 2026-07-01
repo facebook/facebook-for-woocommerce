@@ -1,3 +1,8 @@
+# WordPress.org's readme parser fails on CRLF-only files (reads Stable tag as
+# empty). Force LF so line endings can never regress via an editor or merge.
+readme.txt text eol=lf
+changelog.txt text eol=lf
+
 .dist.env export-ignore
 .gitattributes export-ignore
 .gitmodules export-ignore
