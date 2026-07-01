@@ -185,11 +185,7 @@ class API extends Base {
 					facebook_for_woocommerce()->log( $message );
 				}
 
-				// Subcode 452 (session mismatch) may be transient and self-resolving,
-				// so we don't flag the connection as invalid for that case.
-				if ( ! ( 190 === $code && 452 === $subcode ) ) {
-					set_transient( 'wc_facebook_connection_invalid', time(), DAY_IN_SECONDS );
-				}
+				set_transient( 'wc_facebook_connection_invalid', time(), DAY_IN_SECONDS );
 			} else {
 				// this was an unrelated error, so the OAuth connection may still be valid
 				delete_transient( 'wc_facebook_connection_invalid' );

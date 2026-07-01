@@ -14,7 +14,6 @@ use WooCommerce\Facebook\Framework\Api\Exception as ApiException;
 use WooCommerce\Facebook\Framework\Helper;
 use WooCommerce\Facebook\Framework\Logger;
 use WooCommerce\Facebook\Integrations\CostOfGoods\CostOfGoods;
-use WooCommerce\Facebook\RolloutSwitches;
 
 if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 
@@ -1570,13 +1569,10 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 				return;
 			}
 
-			// Skip CAPI events when the connection is known-invalid (auth error detected),
-			// gated on the server-side rollout switch. Events resume after the merchant reconnects.
-			if ( get_transient( 'wc_facebook_connection_invalid' )
-				&& facebook_for_woocommerce()->get_rollout_switches()->is_switch_enabled(
-					RolloutSwitches::SWITCH_BLOCK_CAPI_ON_INVALID_TOKEN
-				)
-			) {
+			// Skip CAPI events when the connection is known-invalid (auth error detected).
+			// Sending events with an invalid token generates Graph API errors with no chance
+			// of success, so we suppress them until the merchant reconnects.
+			if ( get_transient( 'wc_facebook_connection_invalid' ) ) {
 				return;
 			}
 
