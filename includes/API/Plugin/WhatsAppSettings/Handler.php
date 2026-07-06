@@ -14,6 +14,7 @@ use WooCommerce\Facebook\API\Plugin\AbstractRESTEndpoint;
 use WooCommerce\Facebook\API\Plugin\WhatsAppSettings\Update\Request as UpdateRequest;
 use WooCommerce\Facebook\API\Plugin\WhatsAppSettings\UpdateIntegrationConfig\Request as UpdateIntegrationConfigRequest;
 use WooCommerce\Facebook\API\Plugin\WhatsAppSettings\Uninstall\Request as UninstallRequest;
+use WooCommerce\Facebook\API\Plugin\WhatsAppSettings\OnboardingComplete\Request as OnboardingCompleteRequest;
 use WooCommerce\Facebook\Handlers\WhatsAppConnection;
 
 defined( 'ABSPATH' ) || exit;
@@ -62,6 +63,68 @@ class Handler extends AbstractRESTEndpoint {
 				'permission_callback' => [ $this, 'permission_callback' ],
 			]
 		);
+
+		register_rest_route(
+			$this->get_namespace(),
+			'whatsapp_settings/onboarding_complete',
+			[
+				'methods'             => \WP_REST_Server::CREATABLE,
+				'callback'            => [ $this, 'handle_onboarding_complete' ],
+				'permission_callback' => [ $this, 'permission_callback' ],
+			]
+		);
+	}
+
+	/**
+	 * Handle the onboarding-complete push signal (WA_CONNECT).
+	 *
+	 * Persists that WhatsApp onboarding finished so the customer_events gate
+	 * stops treating this install as pre-onboarding. Reaching this endpoint is
+	 * itself the signal, so it carries no payload.
+	 *
+	 * @since 3.7.5
+	 * @http_method POST
+	 * @description Mark WhatsApp onboarding as complete
+	 *
+	 * @param \WP_REST_Request $wp_request The WordPress request object.
+	 * @return \WP_REST_Response
+	 */
+	public function handle_onboarding_complete( \WP_REST_Request $wp_request ): \WP_REST_Response {
+		try {
+			$request           = new OnboardingCompleteRequest( $wp_request );
+			$validation_result = $request->validate();
+
+			if ( is_wp_error( $validation_result ) ) {
+				return $this->error_response(
+					$validation_result->get_error_message(),
+					400
+				);
+			}
+
+			facebook_for_woocommerce()->get_whatsapp_connection_handler()->set_onboarding_complete( true );
+
+			wc_get_logger()->info(
+				__( 'WhatsApp onboarding marked complete via WA_CONNECT push signal.', 'facebook-for-woocommerce' ),
+			);
+
+			return $this->success_response(
+				[
+					'message' => __( 'WhatsApp onboarding marked complete', 'facebook-for-woocommerce' ),
+				]
+			);
+		} catch ( \Exception $e ) {
+			wc_get_logger()->info(
+				sprintf(
+					/* translators: %s $error_message */
+					__( 'Failed to handle_onboarding_complete for WhatsApp Utility Messages Integration. Exception: %s', 'facebook-for-woocommerce' ),
+					$e->getMessage(),
+				)
+			);
+			return $this->error_response(
+				$e->getMessage(),
+				500
+			);
+		}
 	}
 
 	/**
