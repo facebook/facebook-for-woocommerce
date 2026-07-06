@@ -13,6 +13,7 @@ namespace WooCommerce\Facebook;
 defined( 'ABSPATH' ) || exit;
 
 use WooCommerce\Facebook\ProductSets\LegacyProductSetMigration;
+use WooCommerce\Facebook\Handlers\WhatsAppExtension;
 
 /**
  * The Meta for WooCommerce plugin lifecycle handler.
@@ -59,6 +60,7 @@ class Lifecycle extends Framework\Lifecycle {
 			'3.5.3',
 			'3.5.4',
 			'3.5.6',
+			'3.7.5',
 		);
 	}
 
@@ -388,5 +390,16 @@ class Lifecycle extends Framework\Lifecycle {
 	 */
 	protected function upgrade_to_3_5_6() {
 		LegacyProductSetMigration::migrate_legacy_fb_product_sets();
+	}
+
+	/**
+	 * Backfill the WhatsApp onboarding-complete flag for installs that connected
+	 * before the WA_CONNECT push signal existed (the pull path). One-time HEAD
+	 * existence check; fails open on error.
+	 *
+	 * @since 3.7.5
+	 */
+	protected function upgrade_to_3_7_5() {
+		WhatsAppExtension::maybe_backfill_onboarding_state( facebook_for_woocommerce() );
 	}
 }

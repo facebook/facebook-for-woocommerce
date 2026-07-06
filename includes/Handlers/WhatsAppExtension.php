@@ -274,6 +274,77 @@ class WhatsAppExtension {
 	}
 
 	/**
+	 * Backfills the onboarding-complete flag for installs that connected before
+	 * the WA_CONNECT push signal existed (the pull path, run from the upgrade hook).
+	 *
+	 * Asks Meta's HEAD existence endpoint whether an integration config exists
+	 * for this installation and persists the answer once:
+	 *  - 200 → onboarding complete
+	 *  - 404 → onboarding incomplete
+	 *
+	 * Skips when the state is already known (completion is monotonic, so this
+	 * never re-polls) or the store is not connected. Fails open on any
+	 * transport/HTTP error, leaving the state UNKNOWN so the customer_events
+	 * gate keeps sending and Meta's server-side validator remains the backstop.
+	 *
+	 * @since 3.7.5
+	 *
+	 * @param \WC_Facebookcommerce $plugin The plugin instance.
+	 * @return void
+	 */
+	public static function maybe_backfill_onboarding_state( $plugin ): void {
+		$whatsapp_connection = $plugin->get_whatsapp_connection_handler();
+
+		// Completion is monotonic — once known, never re-poll.
+		if ( WhatsAppConnection::ONBOARDING_STATE_UNKNOWN !== $whatsapp_connection->get_onboarding_state() ) {
+			return;
+		}
+
+		if ( ! $whatsapp_connection->is_connected() ) {
+			return;
+		}
+
+		$wa_installation_id = $whatsapp_connection->get_wa_installation_id();
+		if ( empty( $wa_installation_id ) ) {
+			return;
+		}
+
+		$url = array( self::BASE_STEFI_ENDPOINT_URL, 'whatsapp/business/message_integrations/installations', $wa_installation_id, 'integration_config' );
+		$url = esc_url_raw( implode( '/', $url ) );
+
+		$response = wp_remote_request(
+			$url,
+			array(
+				'method'  => 'HEAD',
+				'headers' => array(
+					'Authorization' => 'Bearer ' . $whatsapp_connection->get_access_token(),
+				),
+				'timeout' => 30,
+			)
+		);
+
+		if ( is_wp_error( $response ) ) {
+			// Fail open: leave state UNKNOWN so the gate keeps sending.
+			wc_get_logger()->info(
+				sprintf(
+					/* translators: %s error message */
+					__( 'WhatsApp onboarding backfill HEAD request failed: %s', 'facebook-for-woocommerce' ),
+					$response->get_error_message(),
+				)
+			);
+			return;
+		}
+
+		$status_code = wp_remote_retrieve_response_code( $response );
+		if ( 200 === $status_code ) {
+			$whatsapp_connection->set_onboarding_complete( true );
+		} elseif ( 404 === $status_code ) {
+			$whatsapp_connection->set_onboarding_complete( false );
+		}
+		// Any other status: fail open, leave UNKNOWN.
+	}
+
+	/**
 	 * Build the rich_order_status array from order metadata.
 	 *
 	 * @param array $order_metadata The order metadata containing order details.
