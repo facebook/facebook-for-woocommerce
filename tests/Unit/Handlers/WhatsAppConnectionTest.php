@@ -73,4 +73,23 @@ class WhatsAppConnectionTest extends AbstractWPUnitTestWithOptionIsolationAndSaf
 			'boolean true'  => array( true ),
 		);
 	}
+
+	public function test_set_onboarding_complete_true_marks_state_complete() {
+		$connection = $this->build_connection();
+		$connection->set_onboarding_complete( true );
+		$this->assertSame( WhatsAppConnection::ONBOARDING_STATE_COMPLETE, $connection->get_onboarding_state() );
+		$this->assertTrue( $connection->is_onboarding_complete() );
+	}
+
+	public function test_set_onboarding_complete_false_marks_state_incomplete() {
+		$connection = $this->build_connection();
+		$connection->set_onboarding_complete( false );
+		$this->assertSame( WhatsAppConnection::ONBOARDING_STATE_INCOMPLETE, $connection->get_onboarding_state() );
+		$this->assertFalse( $connection->is_onboarding_complete() );
+	}
+
+	public function test_is_onboarding_complete_is_false_when_state_unknown() {
+		// Unset option → state UNKNOWN → not complete (the gate fails open elsewhere).
+		$this->assertFalse( $this->build_connection()->is_onboarding_complete() );
+	}
 }

@@ -132,6 +132,41 @@ class WhatsAppConnection {
 	}
 
 	/**
+	 * Stores the WhatsApp onboarding completion state.
+	 *
+	 * Written by the onboarding signal handlers: the WA_CONNECT postMessage
+	 * listener (push, new connects) and the upgrade-hook HEAD backfill (pull,
+	 * existing installs). Maps the boolean to the tri-state option the
+	 * customer_events gate reads via get_onboarding_state():
+	 *  - true  → COMPLETE   ('yes')
+	 *  - false → INCOMPLETE  ('no')
+	 *
+	 * @since 3.7.5
+	 *
+	 * @param bool $complete whether Meta has confirmed onboarding is complete
+	 */
+	public function set_onboarding_complete( bool $complete ): void {
+		update_option(
+			self::OPTION_WA_ONBOARDING_COMPLETE,
+			$complete ? self::ONBOARDING_STATE_COMPLETE : self::ONBOARDING_STATE_INCOMPLETE
+		);
+	}
+
+	/**
+	 * Determines whether WhatsApp onboarding is known to be complete.
+	 *
+	 * Only COMPLETE counts as complete; UNKNOWN returns false so callers do not
+	 * treat a not-yet-determined install as onboarded.
+	 *
+	 * @since 3.7.5
+	 *
+	 * @return bool
+	 */
+	public function is_onboarding_complete(): bool {
+		return self::ONBOARDING_STATE_COMPLETE === $this->get_onboarding_state();
+	}
+
+	/**
 	 * Gets the stored whatsapp external ID.
 	 *
 	 * @since 2.0.0
