@@ -325,6 +325,18 @@ class WhatsApp_Integration_Settings {
 						});
 				}
 
+				if (messageEvent === 'CommerceExtension::WA_CONNECT' && message.success) {
+					whatsAppAPI.notifyWhatsAppOnboardingComplete()
+						.then(function(response) {
+							if (!response.success) {
+								console.error('Error marking WhatsApp onboarding complete:', response);
+							}
+						})
+						.catch(function(error) {
+							console.error('Error during onboarding-complete notify:', error);
+						});
+				}
+
 				if (messageEvent === 'CommerceExtension::WA_RESIZE') {
 					const iframe = document.getElementById('facebook-whatsapp-iframe-enhanced');
 					if ( iframe ) {

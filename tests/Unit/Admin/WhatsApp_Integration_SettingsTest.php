@@ -28,6 +28,13 @@ class WhatsApp_Integration_SettingsTest extends AbstractWPUnitTestWithOptionIsol
         $this->assertStringContainsString( 'whatsAppAPI.uninstallWhatsAppSettings', $output );
     }
 
+    public function test_render_message_handler_handles_wa_connect_onboarding_complete() {
+        $output = $this->build_settings()->generate_inline_enhanced_onboarding_script();
+
+        $this->assertStringContainsString( 'CommerceExtension::WA_CONNECT', $output );
+        $this->assertStringContainsString( 'whatsAppAPI.notifyWhatsAppOnboardingComplete', $output );
+    }
+
     public function test_render_message_handler_enforces_origin_allowlist() {
         $output = $this->build_settings()->generate_inline_enhanced_onboarding_script();
 

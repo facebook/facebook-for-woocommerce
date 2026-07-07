@@ -35,6 +35,15 @@ class WhatsAppConnection {
 	const OPTION_WA_INSTALLATION_ID = 'wc_facebook_wa_installation_id';
 	/** @var string the whatsapp integration config id option name */
 	const OPTION_WA_INTEGRATION_CONFIG_ID = 'wc_facebook_wa_integration_config_id';
+	/** @var string the whatsapp onboarding completion flag option name */
+	const OPTION_WA_ONBOARDING_COMPLETE = 'wc_facebook_wa_onboarding_complete';
+
+	/** @var string onboarding state: onboarding finished (integration config exists) */
+	const ONBOARDING_STATE_COMPLETE = 'yes';
+	/** @var string onboarding state: known not finished (no integration config) */
+	const ONBOARDING_STATE_INCOMPLETE = 'no';
+	/** @var string onboarding state: not yet determined */
+	const ONBOARDING_STATE_UNKNOWN = 'unknown';
 
 
 
@@ -94,6 +103,67 @@ class WhatsAppConnection {
 	 */
 	public function is_connected() {
 		return (bool) $this->get_access_token();
+	}
+
+	/**
+	 * Gets the stored WhatsApp onboarding completion state.
+	 *
+	 * Onboarding is "complete" once an integration config exists on the Meta
+	 * side. The state is tri-valued so the customer_events gate can fail open
+	 * while it is still unknown (see WhatsAppExtension):
+	 *  - COMPLETE   : a Meta integration config exists for this installation
+	 *  - INCOMPLETE : Meta confirmed no integration config exists
+	 *  - UNKNOWN    : not yet determined (never signalled / backfilled)
+	 *
+	 * The state is written by the onboarding signal handlers (push listener and
+	 * upgrade backfill) added in a follow-up change; until then it is UNKNOWN
+	 * for every install, so the gate fails open and behavior is unchanged.
+	 *
+	 * @since 3.7.5
+	 *
+	 * @return string one of the ONBOARDING_STATE_* constants
+	 */
+	public function get_onboarding_state(): string {
+		$state = get_option( self::OPTION_WA_ONBOARDING_COMPLETE, self::ONBOARDING_STATE_UNKNOWN );
+		if ( self::ONBOARDING_STATE_COMPLETE === $state || self::ONBOARDING_STATE_INCOMPLETE === $state ) {
+			return $state;
+		}
+		return self::ONBOARDING_STATE_UNKNOWN;
+	}
+
+	/**
+	 * Stores the WhatsApp onboarding completion state.
+	 *
+	 * Written by the onboarding signal handlers: the WA_CONNECT postMessage
+	 * listener (push, new connects) and the upgrade-hook HEAD backfill (pull,
+	 * existing installs). Maps the boolean to the tri-state option the
+	 * customer_events gate reads via get_onboarding_state():
+	 *  - true  → COMPLETE   ('yes')
+	 *  - false → INCOMPLETE  ('no')
+	 *
+	 * @since 3.7.5
+	 *
+	 * @param bool $complete whether Meta has confirmed onboarding is complete
+	 */
+	public function set_onboarding_complete( bool $complete ): void {
+		update_option(
+			self::OPTION_WA_ONBOARDING_COMPLETE,
+			$complete ? self::ONBOARDING_STATE_COMPLETE : self::ONBOARDING_STATE_INCOMPLETE
+		);
+	}
+
+	/**
+	 * Determines whether WhatsApp onboarding is known to be complete.
+	 *
+	 * Only COMPLETE counts as complete; UNKNOWN returns false so callers do not
+	 * treat a not-yet-determined install as onboarded.
+	 *
+	 * @since 3.7.5
+	 *
+	 * @return bool
+	 */
+	public function is_onboarding_complete(): bool {
+		return self::ONBOARDING_STATE_COMPLETE === $this->get_onboarding_state();
 	}
 
 	/**

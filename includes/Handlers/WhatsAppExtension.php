@@ -178,6 +178,30 @@ class WhatsAppExtension {
 			);
 			return;
 		}
+
+		// Suppress customer_events calls for installs Meta has confirmed are not
+		// onboarded (no integration config). These calls are dropped server-side
+		// anyway, but only after they have counted against the shared per-app
+		// rate-limit quota, so suppressing them here is what actually reduces
+		// throttling. Fail open while the onboarding state is UNKNOWN so a
+		// legitimately onboarded store is never blocked; the Meta server-side
+		// validator stays as the correctness backstop. Gated by a rollout switch
+		// so Meta can pause the behavior remotely.
+		$rollout_switches = facebook_for_woocommerce()->get_rollout_switches();
+		if (
+			$rollout_switches->is_switch_enabled( RolloutSwitches::SWITCH_WA_CUSTOMER_EVENTS_GATING_ENABLED )
+			&& WhatsAppConnection::ONBOARDING_STATE_INCOMPLETE === $whatsapp_connection->get_onboarding_state()
+		) {
+			wc_get_logger()->info(
+				sprintf(
+				/* translators: %s $order_id */
+					__( 'Customer Events Post API call for Order id %1$s skipped: WhatsApp onboarding not complete.', 'facebook-for-woocommerce' ),
+					$order_id,
+				)
+			);
+			return;
+		}
+
 		$wa_installation_id = $whatsapp_connection->get_wa_installation_id();
 		$base_url           = array( self::BASE_STEFI_ENDPOINT_URL, 'whatsapp/business', $wa_installation_id, 'customer_events' );
 		$base_url           = esc_url( implode( '/', $base_url ) );
@@ -247,6 +271,77 @@ class WhatsAppExtension {
 				)
 			);
 		}
+	}
+
+	/**
+	 * Backfills the onboarding-complete flag for installs that connected before
+	 * the WA_CONNECT push signal existed (the pull path, run from the upgrade hook).
+	 *
+	 * Asks Meta's HEAD existence endpoint whether an integration config exists
+	 * for this installation and persists the answer once:
+	 *  - 200 → onboarding complete
+	 *  - 404 → onboarding incomplete
+	 *
+	 * Skips when the state is already known (completion is monotonic, so this
+	 * never re-polls) or the store is not connected. Fails open on any
+	 * transport/HTTP error, leaving the state UNKNOWN so the customer_events
+	 * gate keeps sending and Meta's server-side validator remains the backstop.
+	 *
+	 * @since 3.7.5
+	 *
+	 * @param \WC_Facebookcommerce $plugin The plugin instance.
+	 * @return void
+	 */
+	public static function maybe_backfill_onboarding_state( $plugin ): void {
+		$whatsapp_connection = $plugin->get_whatsapp_connection_handler();
+
+		// Completion is monotonic — once known, never re-poll.
+		if ( WhatsAppConnection::ONBOARDING_STATE_UNKNOWN !== $whatsapp_connection->get_onboarding_state() ) {
+			return;
+		}
+
+		if ( ! $whatsapp_connection->is_connected() ) {
+			return;
+		}
+
+		$wa_installation_id = $whatsapp_connection->get_wa_installation_id();
+		if ( empty( $wa_installation_id ) ) {
+			return;
+		}
+
+		$url = array( self::BASE_STEFI_ENDPOINT_URL, 'whatsapp/business/message_integrations/installations', $wa_installation_id, 'integration_config' );
+		$url = esc_url_raw( implode( '/', $url ) );
+
+		$response = wp_remote_request(
+			$url,
+			array(
+				'method'  => 'HEAD',
+				'headers' => array(
+					'Authorization' => 'Bearer ' . $whatsapp_connection->get_access_token(),
+				),
+				'timeout' => 30,
+			)
+		);
+
+		if ( is_wp_error( $response ) ) {
+			// Fail open: leave state UNKNOWN so the gate keeps sending.
+			wc_get_logger()->info(
+				sprintf(
+					/* translators: %s error message */
+					__( 'WhatsApp onboarding backfill HEAD request failed: %s', 'facebook-for-woocommerce' ),
+					$response->get_error_message(),
+				)
+			);
+			return;
+		}
+
+		$status_code = wp_remote_retrieve_response_code( $response );
+		if ( 200 === $status_code ) {
+			$whatsapp_connection->set_onboarding_complete( true );
+		} elseif ( 404 === $status_code ) {
+			$whatsapp_connection->set_onboarding_complete( false );
+		}
+		// Any other status: fail open, leave UNKNOWN.
 	}
 
 	/**
