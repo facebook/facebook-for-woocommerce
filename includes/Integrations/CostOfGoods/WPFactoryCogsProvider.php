@@ -27,12 +27,15 @@ class WPFactoryCogsProvider extends AbstractCogsProvider {
 		if ( ! self::is_available() ) {
 			throw new IntegrationIsNotAvailableException( self::INTEGRATION_NAME );
 		}
-		// for WPFactory simple & variable product cost is retrieved by the same following method
-		return alg_wc_cog()->core->products->get_product_cost( $product->get_id() );
+		// WPFactory renamed alg_wc_cog() to wpfcogs() in v4.1.6; prefer the new accessor
+		// and fall back to the legacy one for older plugin versions. For WPFactory simple
+		// & variable products the cost is retrieved by the same following method.
+		$cogs = function_exists( 'wpfcogs' ) ? wpfcogs() : alg_wc_cog();
+		return $cogs->core->products->get_product_cost( $product->get_id() );
 	}
 
 	public function get_availability(): bool {
 
-		return function_exists( 'alg_wc_cog' );
+		return function_exists( 'wpfcogs' ) || function_exists( 'alg_wc_cog' );
 	}
 }
