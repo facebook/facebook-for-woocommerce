@@ -175,6 +175,10 @@ class Handler extends AbstractRESTEndpoint {
 			$options[ \WC_Facebookcommerce_Integration::OPTION_MERCHANT_ACCESS_TOKEN ] = $params['merchant_access_token'];
 		}
 
+		if ( ! empty( $params['page_access_token'] ) ) {
+			$options[ \WC_Facebookcommerce_Integration::OPTION_PAGE_ACCESS_TOKEN ] = $params['page_access_token'];
+		}
+
 		if ( ! empty( $params['page_id'] ) ) {
 			update_option( \WC_Facebookcommerce_Integration::SETTING_FACEBOOK_PAGE_ID, $params['page_id'] );
 		}
@@ -212,6 +216,10 @@ class Handler extends AbstractRESTEndpoint {
 
 		if ( ! empty( $params['business_manager_id'] ) ) {
 			$options[ \WC_Facebookcommerce_Integration::OPTION_BUSINESS_MANAGER_ID ] = $params['business_manager_id'];
+		}
+
+		if ( ! empty( $params['ad_account_id'] ) ) {
+			$options[ \WC_Facebookcommerce_Integration::OPTION_AD_ACCOUNT_ID ] = $params['ad_account_id'];
 		}
 
 		return $options;
@@ -276,6 +284,7 @@ class Handler extends AbstractRESTEndpoint {
 			\WC_Facebookcommerce_Integration::OPTION_HAS_CONNECTED_FBE_2,
 			\WC_Facebookcommerce_Integration::OPTION_INSTALLED_FEATURES,
 			\WC_Facebookcommerce_Integration::OPTION_MERCHANT_ACCESS_TOKEN,
+			\WC_Facebookcommerce_Integration::OPTION_PAGE_ACCESS_TOKEN,
 			\WC_Facebookcommerce_Integration::OPTION_PRODUCT_CATALOG_ID,
 			\WC_Facebookcommerce_Integration::OPTION_PROFILES,
 			\WC_Facebookcommerce_Integration::SETTING_FACEBOOK_PAGE_ID,
