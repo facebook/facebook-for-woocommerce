@@ -77,9 +77,13 @@ jobs:
             PR_NUM=$(echo "$MSG" | grep -oP '\(#\K\d+' | head -1)
             [ -z "$PR_NUM" ] && continue
 
-            LABEL=$(gh pr view "$PR_NUM" --json labels --jq '[.labels[].name | select(startswith("changelog:"))][0] // empty' | sed 's/^changelog:[[:space:]]*//')
+            PR_LABELS=$(gh pr view "$PR_NUM" --json labels --jq '.labels[].name')
+            if echo "$PR_LABELS" | grep -iqE '^changelog:[[:space:]]*none$'; then
+              continue
+            fi
+
+            LABEL=$(echo "$PR_LABELS" | grep -iE '^changelog:' | head -1 | sed 's/^changelog:[[:space:]]*//I')
             [ -z "$LABEL" ] && continue
-            [ "$(echo "$LABEL" | tr '[:upper:]' '[:lower:]')" = "none" ] && continue
 
             # Capitalize first letter
             LABEL="$(echo "${LABEL:0:1}" | tr '[:lower:]' '[:upper:]')${LABEL:1}"
