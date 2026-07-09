@@ -1210,6 +1210,23 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 			// Get the status of the order to ensure we track the actual purchases and not the ones that have a failed payment.
 			$order_state = $order->get_status();
 			if ( ! in_array( $order_state, $valid_purchase_order_states, true ) ) {
+				Logger::log(
+					'Purchase event skipped: order status not in valid purchase states.',
+					array(
+						'event'      => 'purchase_event_skipped',
+						'flow_name'  => 'purchase_capi',
+						'flow_step'  => 'invalid_order_state',
+						'extra_data' => array(
+							'order_id'    => (string) $order_id,
+							'order_state' => (string) $order_state,
+						),
+					),
+					array(
+						'should_send_log_to_meta'        => true,
+						'should_save_log_in_woocommerce' => true,
+						'woocommerce_log_level'          => \WC_Log_Levels::INFO,
+					)
+				);
 				return;
 			}
 
@@ -1249,9 +1266,20 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 
 			Logger::log(
 				'Purchase event fired for order ' . $order_id . ' by hook ' . $hook_name . ' (context: ' . ( $is_browser ? 'browser' : 'server' ) . ').',
-				array(),
 				array(
-					'should_send_log_to_meta'        => false,
+					'event'      => 'purchase_event_fired',
+					'flow_name'  => 'purchase_capi',
+					'flow_step'  => 'purchase_event_fired',
+					'extra_data' => array(
+						'order_id'          => (string) $order_id,
+						'hook'              => (string) $hook_name,
+						'context'           => $is_browser ? 'browser' : 'server',
+						'order_state'       => (string) $order_state,
+						'capi_already_sent' => $capi_already_sent ? 'true' : 'false',
+					),
+				),
+				array(
+					'should_send_log_to_meta'        => true,
 					'should_save_log_in_woocommerce' => true,
 					'woocommerce_log_level'          => \WC_Log_Levels::INFO,
 				)
@@ -1618,6 +1646,14 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 		protected function send_api_event( Event $event, bool $send_now = true ) {
 			if ( $this->is_crawler_request( $event ) ) {
 				facebook_for_woocommerce()->log( 'Blocked CAPI event for crawler: ' . $event->get_client_user_agent() );
+				$this->log_purchase_capi_step(
+					$event,
+					'capi_event_blocked',
+					'crawler_blocked',
+					'CAPI event blocked: crawler request.',
+					\WC_Log_Levels::INFO,
+					array( 'user_agent' => (string) $event->get_client_user_agent() )
+				);
 				return;
 			}
 
@@ -1628,6 +1664,13 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 					RolloutSwitches::SWITCH_BLOCK_CAPI_ON_INVALID_TOKEN
 				)
 			) {
+				$this->log_purchase_capi_step(
+					$event,
+					'capi_event_blocked',
+					'connection_invalid',
+					'CAPI event blocked: connection marked invalid (auth error).',
+					\WC_Log_Levels::WARNING
+				);
 				return;
 			}
 
@@ -1636,6 +1679,13 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 			// Skip CAPI sends for frontend requests while signals are held.
 			// Backend/cron events (e.g. admin order status changes) still fire.
 			if ( FacebookSignalsState::is_held() && ! is_admin() && ! wp_doing_cron() ) {
+				$this->log_purchase_capi_step(
+					$event,
+					'capi_event_deferred',
+					'signals_held',
+					'CAPI event deferred: signals held for frontend request.',
+					\WC_Log_Levels::INFO
+				);
 				FacebookSignalsState::queue_event( $event );
 				return;
 			}
@@ -1643,12 +1693,70 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 			if ( $send_now ) {
 				try {
 					facebook_for_woocommerce()->get_api()->send_pixel_events( facebook_for_woocommerce()->get_integration()->get_facebook_pixel_id(), array( $event ) );
+					$this->log_purchase_capi_step(
+						$event,
+						'capi_event_sent',
+						'capi_event_sent',
+						'CAPI event sent to Meta.',
+						\WC_Log_Levels::INFO
+					);
 				} catch ( ApiException $exception ) {
 					facebook_for_woocommerce()->log( 'Could not send Pixel event: ' . $exception->getMessage() );
+					$this->log_purchase_capi_step(
+						$event,
+						'capi_event_send_failed',
+						'capi_send_exception',
+						'CAPI event send failed.',
+						\WC_Log_Levels::ERROR,
+						array(),
+						$exception
+					);
 				}
 			} else {
 				$this->pending_events[] = $event;
 			}
+		}
+
+
+		/**
+		 * Sends a CAPI-pipeline diagnostic log to Meta, scoped to Purchase events.
+		 *
+		 * Centralises the per-outcome logging added to send_api_event(). The log is
+		 * only queued for Purchase events (to limit volume) and is still gated behind
+		 * the merchant's "meta diagnosis" setting inside Logger::log(). The event name
+		 * and event ID are always attached to extra_data for correlation.
+		 *
+		 * @param Event           $event      the CAPI event being processed
+		 * @param string          $event_key  value for the log 'event' field (e.g. capi_event_sent)
+		 * @param string          $flow_step  the pipeline step reached (e.g. crawler_blocked)
+		 * @param string          $message    human-readable log message
+		 * @param string          $log_level  a \WC_Log_Levels::* constant
+		 * @param array           $extra_data optional additional extra_data fields
+		 * @param \Throwable|null $exception  optional exception to attach
+		 */
+		private function log_purchase_capi_step( Event $event, string $event_key, string $flow_step, string $message, string $log_level, array $extra_data = array(), ?\Throwable $exception = null ) {
+			if ( 'Purchase' !== $event->get_name() ) {
+				return;
+			}
+
+			$extra_data['event_name'] = (string) $event->get_name();
+			$extra_data['event_id']   = (string) $event->get_id();
+
+			Logger::log(
+				$message,
+				array(
+					'event'      => $event_key,
+					'flow_name'  => 'purchase_capi',
+					'flow_step'  => $flow_step,
+					'extra_data' => $extra_data,
+				),
+				array(
+					'should_send_log_to_meta'        => true,
+					'should_save_log_in_woocommerce' => true,
+					'woocommerce_log_level'          => $log_level,
+				),
+				$exception
+			);
 		}
 
 
