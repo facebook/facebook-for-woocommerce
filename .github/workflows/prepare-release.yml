@@ -52,45 +52,44 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           TAG=$(gh release view --json tagName --jq '.tagName')
+          PUBLISHED_AT=$(gh release view --json publishedAt --jq '.publishedAt')
           echo "Latest release tag: $TAG"
+          echo "Latest release published at: $PUBLISHED_AT"
           echo "latest_tag=$TAG" >> "$GITHUB_OUTPUT"
-
-      - name: Get commits since latest release
-        id: get_commits
-        run: |
-          git fetch origin tag ${{ steps.get_release.outputs.latest_tag }}
-          echo "commits<<EOF" >> $GITHUB_OUTPUT
-          git rev-list ${{ steps.get_release.outputs.latest_tag }}..HEAD >> $GITHUB_OUTPUT
-          echo "EOF" >> $GITHUB_OUTPUT
+          echo "published_at=$PUBLISHED_AT" >> "$GITHUB_OUTPUT"
 
       - name: Build changelog from PRs
         id: changelog
         env:
           GH_TOKEN: ${{ github.token }}
-          COMMITS: ${{ steps.get_commits.outputs.commits }}
+          RELEASE_PUBLISHED_AT: ${{ steps.get_release.outputs.published_at }}
+          CHANGELOG_BASE_REF: ${{ github.ref_name }}
           NEW_VERSION: ${{ steps.set_version.outputs.new_version }}
         run: |
           CHANGELOG=""
-          while IFS= read -r SHA; do
-            [ -z "$SHA" ] && continue
-            MSG=$(gh api "repos/${{ github.repository }}/commits/$SHA" --jq '.commit.message')
-            PR_NUM=$(echo "$MSG" | grep -oP '\(#\K\d+' | head -1)
+          while IFS=$'\t' read -r DATE LABEL PR_TITLE PR_AUTHOR PR_NUM; do
             [ -z "$PR_NUM" ] && continue
-
-            PR_LABELS=$(gh pr view "$PR_NUM" --json labels --jq '.labels[].name')
-            if echo "$PR_LABELS" | grep -iqE '^changelog:[[:space:]]*none$'; then
-              continue
-            fi
-
-            LABEL=$(echo "$PR_LABELS" | grep -iE '^changelog:' | head -1 | sed 's/^changelog:[[:space:]]*//I')
-            [ -z "$LABEL" ] && continue
 
             # Capitalize first letter
             LABEL="$(echo "${LABEL:0:1}" | tr '[:lower:]' '[:upper:]')${LABEL:1}"
-            PR_TITLE=$(gh pr view "$PR_NUM" --json title --jq '.title')
-            PR_AUTHOR=$(gh pr view "$PR_NUM" --json author --jq '.author.login')
             CHANGELOG="${CHANGELOG}* ${LABEL} - ${PR_TITLE} by @${PR_AUTHOR} in #${PR_NUM}\n"
-          done <<< "$COMMITS"
+          done < <(
+            gh pr list --state closed --base "$CHANGELOG_BASE_REF" --limit 1000 --json number,title,author,labels,mergedAt,closedAt --jq '
+              .[]
+              | . as $pr
+              | ($pr.mergedAt // $pr.closedAt) as $date
+              | ([.labels[].name | ascii_downcase] | index("merged")) as $hasMergedLabel
+              | (any(.labels[].name; ascii_downcase | test("^changelog:[[:space:]]*none$"))) as $hasChangelogNone
+              | select(($pr.mergedAt != null) or $hasMergedLabel)
+              | select($hasChangelogNone | not)
+              | select($date > env.RELEASE_PUBLISHED_AT)
+              | ([.labels[].name | ascii_downcase | select(startswith("changelog:")) | sub("^changelog:[[:space:]]*"; "")][0] // "") as $label
+              | select($label != "")
+              | select((.title | test("^release\\s+[0-9]+\\.[0-9]+\\.[0-9]+"; "i")) | not)
+              | [$date, $label, .title, .author.login, (.number | tostring)]
+              | @tsv
+            ' | sort
+          )
 
           TODAY=$(date -u +%Y-%m-%d)
           OUTPUT="= ${NEW_VERSION} - ${TODAY} =\n${CHANGELOG}"
