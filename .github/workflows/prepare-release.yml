@@ -63,7 +63,6 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           RELEASE_PUBLISHED_AT: ${{ steps.get_release.outputs.published_at }}
-          CHANGELOG_BASE_REF: ${{ github.ref_name }}
           NEW_VERSION: ${{ steps.set_version.outputs.new_version }}
         run: |
           CHANGELOG=""
@@ -74,7 +73,7 @@ jobs:
             LABEL="$(echo "${LABEL:0:1}" | tr '[:lower:]' '[:upper:]')${LABEL:1}"
             CHANGELOG="${CHANGELOG}* ${LABEL} - ${PR_TITLE} by @${PR_AUTHOR} in #${PR_NUM}\n"
           done < <(
-            gh pr list --state closed --base "$CHANGELOG_BASE_REF" --limit 1000 --json number,title,author,labels,mergedAt,closedAt --jq '
+            gh pr list --state closed --base main --limit 1000 --json number,title,author,labels,mergedAt,closedAt --jq '
               .[]
               | . as $pr
               | ($pr.mergedAt // $pr.closedAt) as $date
