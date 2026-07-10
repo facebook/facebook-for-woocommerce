@@ -52,17 +52,18 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           TAG=$(gh release view --json tagName --jq '.tagName')
-          PUBLISHED_AT=$(gh release view --json publishedAt --jq '.publishedAt')
+          git fetch origin tag "$TAG"
+          TAG_COMMIT_TIMESTAMP=$(git log -1 --format=%ct "$TAG")
           echo "Latest release tag: $TAG"
-          echo "Latest release published at: $PUBLISHED_AT"
+          echo "Latest release tag commit timestamp: $TAG_COMMIT_TIMESTAMP"
           echo "latest_tag=$TAG" >> "$GITHUB_OUTPUT"
-          echo "published_at=$PUBLISHED_AT" >> "$GITHUB_OUTPUT"
+          echo "tag_commit_timestamp=$TAG_COMMIT_TIMESTAMP" >> "$GITHUB_OUTPUT"
 
       - name: Build changelog from PRs
         id: changelog
         env:
           GH_TOKEN: ${{ github.token }}
-          RELEASE_PUBLISHED_AT: ${{ steps.get_release.outputs.published_at }}
+          RELEASE_CUTOFF_TIMESTAMP: ${{ steps.get_release.outputs.tag_commit_timestamp }}
           NEW_VERSION: ${{ steps.set_version.outputs.new_version }}
         run: |
           CHANGELOG=""
@@ -81,7 +82,7 @@ jobs:
               | (any(.labels[].name; ascii_downcase | test("^changelog:[[:space:]]*none$"))) as $hasChangelogNone
               | select(($pr.mergedAt != null) or $hasMergedLabel)
               | select($hasChangelogNone | not)
-              | select($date > env.RELEASE_PUBLISHED_AT)
+              | select(($date | fromdateiso8601) > (env.RELEASE_CUTOFF_TIMESTAMP | tonumber))
               | ([.labels[].name | ascii_downcase | select(startswith("changelog:")) | sub("^changelog:[[:space:]]*"; "")][0] // "") as $label
               | select($label != "")
               | select((.title | test("^release\\s+[0-9]+\\.[0-9]+\\.[0-9]+"; "i")) | not)
