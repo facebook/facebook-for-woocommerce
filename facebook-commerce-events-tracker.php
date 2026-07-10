@@ -65,7 +65,7 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 		/** @var array|null Pending pixel event data for Store API response */
 		private $pending_store_api_pixel_event = null;
 
-		/** @var Event|null Server-side CF7 Lead event, stored so inject_lead_event() can read its event_id */
+		/** @var Event|null Server-side CF7 Lead event, stored so its browser pixel code can be injected into the CF7 REST response */
 		private $cf7_lead_event = null;
 
 		/**
@@ -300,8 +300,8 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 
 			// Lead events through Contact Form 7 / WPForms.
 			add_action( 'wpcf7_mail_sent', array( $this, 'track_cf7_lead_event' ), 10, 1 );
-			add_filter( 'wpcf7_feedback_response', array( $this, 'inject_cf7_lead_event_id_in_response' ), 10, 2 );
-			add_action( 'wp_footer', array( $this, 'inject_lead_event' ), 11 );
+			add_filter( 'wpcf7_feedback_response', array( $this, 'inject_cf7_lead_event_pixel_code' ), 10, 2 );
+			add_action( 'wp_footer', array( $this, 'inject_cf7_lead_event_listener' ), 20 );
 			add_action( 'wpforms_process_complete', array( $this, 'track_wpforms_lead_event' ), 20, 3 );
 			add_filter( 'wpforms_ajax_submit_success_response', array( $this, 'inject_wpforms_lead_event_ajax' ), 20, 3 );
 			add_filter( 'wpforms_ajax_submit_redirect', array( $this, 'inject_wpforms_lead_event_ajax' ), 20, 3 );
@@ -1388,9 +1388,9 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 		 *
 		 * CF7 submits via REST API (/wp-json/contact-form-7/v1/contact-forms/{id}/feedback),
 		 * so wpcf7_mail_sent fires during a separate REST request — not during the page-load
-		 * where wp_footer runs. We store the event here and then embed its event_id into
-		 * the REST response via the wpcf7_feedback_response filter so the browser JS can
-		 * read it from event.detail.apiResponse and fire fbq() with the matching eventID.
+		 * where wp_footer runs. We store the event here so inject_cf7_lead_event_pixel_code()
+		 * can attach the matching browser pixel code (built via the existing pixel methods)
+		 * to the REST response, keeping browser and CAPI events on the same event_id.
 		 *
 		 * @param \WPCF7_ContactForm $contact_form The CF7 form instance.
 		 */
@@ -1401,7 +1401,7 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 
 			$event_data = array(
 				'event_name'  => 'Lead',
-				'user_data'   => $this->pixel->get_user_info(),
+				'user_data'   => $this->get_cf7_user_data(),
 				'custom_data' => array(
 					'fb_integration_tracking' => 'cf7',
 				),
@@ -1410,76 +1410,148 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 			$event = new Event( $event_data );
 			$this->send_api_event( $event );
 
-			// Store so inject_cf7_lead_event_id_in_response() can read it.
+			// Store so inject_cf7_lead_event_pixel_code() can read it.
 			$this->cf7_lead_event = $event;
 		}
 
 		/**
-		 * Injects the CAPI event_id into the CF7 REST API feedback response.
+		 * Extracts Advanced Matching user_data for a CF7 submission.
 		 *
-		 * CF7's JS reads the REST response and dispatches a wpcf7submit DOM event whose
-		 * event.detail.apiResponse contains the full server response. By embedding
-		 * fb_lead_event_id here, inject_lead_event()'s JS listener can pull it from
-		 * event.detail.apiResponse.fb_lead_event_id and pass it as eventID to fbq(),
-		 * ensuring browser and CAPI events share the same ID for deduplication.
+		 * Mirrors the WPForms approach: PII (email) is resolved server-side from the
+		 * submitted form data and merged into the base user info, so it is included in
+		 * the CAPI payload without ever exposing it to client-side JavaScript.
+		 *
+		 * @return array
+		 */
+		private function get_cf7_user_data() {
+			$user_data = $this->pixel->get_user_info();
+			$email     = $this->get_cf7_email();
+			if ( ! empty( $email ) ) {
+				$user_data['em'] = $email;
+			}
+
+			return $user_data;
+		}
+
+		/**
+		 * Resolves the submitted email address from the current CF7 submission.
+		 *
+		 * @return string|null
+		 */
+		private function get_cf7_email() {
+			if ( ! class_exists( 'WPCF7_Submission' ) ) {
+				return null;
+			}
+
+			$submission = \WPCF7_Submission::get_instance();
+			if ( ! $submission ) {
+				return null;
+			}
+
+			$posted_data = $submission->get_posted_data();
+			if ( empty( $posted_data ) || ! is_array( $posted_data ) ) {
+				return null;
+			}
+
+			foreach ( $posted_data as $key => $value ) {
+				if ( false === strpos( (string) $key, 'email' ) ) {
+					continue;
+				}
+
+				$value = is_array( $value ) ? reset( $value ) : $value;
+				$email = sanitize_email( (string) $value );
+				if ( ! empty( $email ) && is_email( $email ) ) {
+					return $email;
+				}
+			}
+
+			// Fallback: scan values for the first valid email address.
+			foreach ( $posted_data as $value ) {
+				$value = is_array( $value ) ? reset( $value ) : $value;
+				$email = sanitize_email( (string) $value );
+				if ( ! empty( $email ) && is_email( $email ) ) {
+					return $email;
+				}
+			}
+
+			return null;
+		}
+
+		/**
+		 * Injects the browser Lead pixel code into the CF7 REST feedback response.
+		 *
+		 * Mirrors the WPForms AJAX approach ({@see inject_wpforms_lead_event_ajax()}):
+		 * CF7 submits over its REST API, so we generate the pixel code with the existing
+		 * {@see \WC_Facebookcommerce_Pixel::get_event_code()} method and attach it to the
+		 * response as fb_pxl_code. The footer listener executes it once CF7 dispatches the
+		 * wpcf7submit DOM event. The code carries the CAPI event_id so browser and server
+		 * events deduplicate on Meta's side.
 		 *
 		 * @param array $response The CF7 REST response array.
 		 * @param array $result   The CF7 submission result.
 		 * @return array
 		 */
-		public function inject_cf7_lead_event_id_in_response( $response, $result ) {
+		public function inject_cf7_lead_event_pixel_code( $response, $result ) {
 			if ( $this->cf7_lead_event instanceof Event ) {
-				$response['fb_lead_event_id'] = $this->cf7_lead_event->get_id();
+				$response['fb_pxl_code'] = $this->pixel->get_event_code( 'Lead', $this->build_cf7_lead_pixel_params( $this->cf7_lead_event ) );
 			}
 			return $response;
 		}
 
 		/**
-		 * Injects the CF7 Lead browser pixel listener into the page footer.
+		 * Adds a front-end listener that executes fb_pxl_code returned in the CF7 REST response.
 		 *
-		 * Listens for the wpcf7submit DOM event (fired by CF7 JS after the REST call
-		 * succeeds) and fires fbq('track', 'Lead', ...) only when the response status
-		 * is 'mail_sent'. The event_id is read from event.detail.apiResponse.fb_lead_event_id
-		 * — the value we injected server-side — so browser and CAPI events share the
-		 * same ID and Meta can deduplicate them correctly.
+		 * Mirrors {@see inject_wpforms_ajax_listener()}: a tiny bootstrap that runs the
+		 * server-generated pixel code (built via the existing pixel methods) when CF7
+		 * reports a successful submission, rather than re-implementing pixel logic in JS.
 		 */
-		public function inject_lead_event() {
+		public function inject_cf7_lead_event_listener() {
 			if ( is_admin() || ! wp_script_is( 'contact-form-7', 'enqueued' ) ) {
 				return;
 			}
-
-			$pixel_id       = \WC_Facebookcommerce_Pixel::get_pixel_id();
-			$agent          = esc_js( Event::get_platform_identifier() );
-			$integration    = esc_js( \WC_Facebookcommerce_Utils::get_integration_name() );
 			?>
-			<!-- Facebook Pixel Event Code -->
-			<script type="text/javascript">
-			document.addEventListener( 'wpcf7submit', function( event ) {
-				if ( 'mail_sent' !== event.detail.status ) {
+			<script type='text/javascript'>
+			document.addEventListener( 'wpcf7submit', function ( event ) {
+				var detail = event.detail || {};
+				if ( 'mail_sent' !== detail.status ) {
 					return;
 				}
-
-				var apiResponse = event.detail.apiResponse || {};
-				var eventId     = apiResponse.fb_lead_event_id || null;
-
-				var inputs = event.detail.inputs || [];
-				var emailInput = inputs.filter( function( el ) { return el.name && el.name.indexOf( 'email' ) !== -1; } )[ 0 ];
-				var email = emailInput ? emailInput.value : null;
-
-				/* <?php echo $integration; ?> Facebook Integration Event Tracking */
-				fbq( 'set', 'agent', '<?php echo $agent; ?>', '<?php echo esc_js( $pixel_id ); ?>' );
-				if ( email ) {
-					fbq( 'init', '<?php echo esc_js( $pixel_id ); ?>', { em: email } );
+				var apiResponse = detail.apiResponse || {};
+				if ( ! apiResponse.fb_pxl_code ) {
+					return;
 				}
-				if ( eventId ) {
-					fbq( 'track', 'Lead', {}, { eventID: eventId } );
-				} else {
-					fbq( 'track', 'Lead' );
+				try {
+					var s = document.createElement( 'script' );
+					s.textContent = apiResponse.fb_pxl_code;
+					document.head.appendChild( s );
+				} catch ( e ) {
+					// no-op
 				}
 			}, false );
 			</script>
-			<!-- End Facebook Pixel Event Code -->
 			<?php
+		}
+
+		/**
+		 * Builds browser pixel params for the CF7 Lead event.
+		 *
+		 * Mirrors {@see build_wpforms_lead_pixel_params()}: shares the CAPI event_id for
+		 * deduplication and forwards the server-resolved email for Advanced Matching.
+		 *
+		 * @param Event $event Lead event.
+		 * @return array
+		 */
+		private function build_cf7_lead_pixel_params( Event $event ) {
+			$params = array(
+				'event_id' => $event->get_id(),
+			);
+
+			$user_data = $event->get_user_data();
+			if ( is_array( $user_data ) && ! empty( $user_data['em'] ) ) {
+				$params['user_data'] = array( 'em' => $user_data['em'] );
+			}
+
+			return $params;
 		}
 
 		/**

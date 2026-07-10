@@ -686,20 +686,6 @@ class FacebookCommerceEventsTrackerTest extends AbstractWPUnitTestWithSafeFilter
 	}
 
 	/**
-	 * Test that the constructor registers inject_lead_event on wp_footer.
-	 *
-	 * @covers WC_Facebookcommerce_EventsTracker::__construct
-	 */
-	public function test_constructor_registers_inject_lead_event_on_footer(): void {
-		$this->instance = $this->create_tracker_with_pixel_enabled();
-
-		$this->assertTrue(
-			has_action( 'wp_footer', array( $this->instance, 'inject_lead_event' ) ) !== false,
-			'Constructor should register inject_lead_event on wp_footer'
-		);
-	}
-
-	/**
 	 * Test that the constructor registers track_cf7_lead_event on wpcf7_mail_sent.
 	 *
 	 * @covers WC_Facebookcommerce_EventsTracker::__construct
@@ -714,19 +700,31 @@ class FacebookCommerceEventsTrackerTest extends AbstractWPUnitTestWithSafeFilter
 	}
 
 	/**
-	 * Test that inject_lead_event does nothing when in admin.
+	 * Test that the constructor registers the CF7 browser pixel code on the REST feedback response.
 	 *
-	 * @covers WC_Facebookcommerce_EventsTracker::inject_lead_event
+	 * @covers WC_Facebookcommerce_EventsTracker::__construct
 	 */
-	public function test_inject_lead_event_does_nothing_when_admin(): void {
+	public function test_constructor_registers_cf7_lead_event_pixel_code_on_feedback_response(): void {
 		$this->instance = $this->create_tracker_with_pixel_enabled();
 
-		// Simulate admin context
-		set_current_screen( 'dashboard' );
+		$this->assertTrue(
+			has_filter( 'wpcf7_feedback_response', array( $this->instance, 'inject_cf7_lead_event_pixel_code' ) ) !== false,
+			'Constructor should register inject_cf7_lead_event_pixel_code on wpcf7_feedback_response'
+		);
+	}
 
-		$this->instance->inject_lead_event();
+	/**
+	 * Test that the constructor registers the CF7 footer listener on wp_footer.
+	 *
+	 * @covers WC_Facebookcommerce_EventsTracker::__construct
+	 */
+	public function test_constructor_registers_cf7_lead_event_listener_on_footer(): void {
+		$this->instance = $this->create_tracker_with_pixel_enabled();
 
-		$this->assertTrue( true, 'inject_lead_event should not output in admin' );
+		$this->assertTrue(
+			has_action( 'wp_footer', array( $this->instance, 'inject_cf7_lead_event_listener' ) ) !== false,
+			'Constructor should register inject_cf7_lead_event_listener on wp_footer'
+		);
 	}
 
 	/**
