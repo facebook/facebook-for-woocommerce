@@ -1,5 +1,24 @@
 *** Meta for WooCommerce Changelog ***
 
+= 3.7.5 - 2026-07-14 =
+* Fix - ci(release): grant actions:write so Prepare Release can dispatch the build by @vahidkay-meta in #3973
+* Doc - Update the contributor's guide by @iodic in #3820
+* Tweak - Remove deprecated WhatsApp consent checkbox from checkout by @ukilla in #3886
+* Add - Feature CF7 Lead server tracking by @ukilla in #3944
+* Fix - Block CAPI unconditionally on invalid token; remove rollout switch by @rafael-curran in #3966
+* Fix - Fix intermittent connection save issue in /settings/update flow for missing page/ad account IDs by @ukilla in #3903
+* Fix - Release readme/stable-tag guardrails + fix WPFactory COGS deprecation by @vahidkay-meta in #3967
+* Update - Gate WhatsApp customer_events on onboarding completion (gate + rollout switch + onboarding-complete writers) by @ceciliazeng-wa in #3969
+* Fix - Fix/subscriptions renewal purchase capi by @ukilla in #3946
+* Dev - ci(release): release-workflow guardrails — block overlapping releases + clearer Set Stable Tag errors by @vahidkay-meta in #3961
+* Add - Add cache detection flag to Pixel agent string by @vahidkay-meta in #3948
+* Fix - Prevent orphan variation sync-field fatal during trash flows by @ukilla in #3963
+* Dev - ci: fail Prepare New Release if an open PR exists for the current stable version by @vahidkay-meta in #3965
+* Dev - ci: fix flaky E2E login, spread CI runners, auto-label Dependabot PRs (+ bump capi-param-builder) by @vahidkay-meta in #3960
+* Add - E2E test expansion by @iodic in #3917
+* Add - Optimize Dependabot checks by @iodic in #3925
+* Add - Add crash recovery support by @iodic in #3941
+
 = 3.7.2 - 2026-06-22 =
 * Add - Move WhatsApp to a standalone top-level admin menu with a scheme-aware icon by @ceciliazeng-wa in #3947
 * Fix - Prevent duplicate AddToCart Pixel fires from repeated AJAX fragment execution by @cshing-meta in #3939
