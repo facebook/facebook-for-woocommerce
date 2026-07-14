@@ -16,6 +16,7 @@ permissions:
   contents: write
   pull-requests: write
   issues: write
+  actions: write # required to dispatch build-plugin-artifact.yml for the new release branch
 
 jobs:
   prepare-release:
