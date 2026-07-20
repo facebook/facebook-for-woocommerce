@@ -54,6 +54,11 @@ jobs:
         with:
           name: facebook-for-woocommerce
           path: artifact-contents
+          # Dependencies (e.g. facebook/capi-param-builder-php v1.3.1) ship dotfiles
+          # such as .babelrc/.eslintrc.json. upload-artifact excludes hidden files by
+          # default, which makes this artifact diverge from the deployed plugin and
+          # trips the Set Stable Tag comparison. Keep them so the artifact is faithful.
+          include-hidden-files: true
           
       - name: Check if build succeeded
         id: check_build
