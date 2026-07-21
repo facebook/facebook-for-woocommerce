@@ -232,6 +232,7 @@ class Enhanced_Catalog_Attribute_Fields {
 				class="<?php echo esc_attr( implode( ' ', $classes ) ); ?>">
 				<?php $this->render_label( $attr_id, $attribute ); ?>
 				<?php $this->render_field( $attr_id, $attribute ); ?>
+				<span class="woocommerce-help-tip" data-tip="<?php echo esc_attr( $attribute['description'] ); ?>"></span>
 			</p>
 			<?php
 		} else {
@@ -243,6 +244,7 @@ class Enhanced_Catalog_Attribute_Fields {
 				</th>
 				<td>
 					<?php $this->render_field( $attr_id, $attribute ); ?>
+					<span class="woocommerce-help-tip" data-tip="<?php echo esc_attr( $attribute['description'] ); ?>"></span>
 				</td>
 			</tr>
 			<?php
@@ -254,7 +256,6 @@ class Enhanced_Catalog_Attribute_Fields {
 		?>
 		<label for="<?php echo esc_attr( $attr_id ); ?>">
 			<?php echo esc_html( $label ); ?>
-			<span class="woocommerce-help-tip" data-tip="<?php echo esc_attr( $attribute['description'] ); ?>"></span>
 		</label>
 		<?php
 	}

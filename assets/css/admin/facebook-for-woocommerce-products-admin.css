@@ -308,8 +308,20 @@
 	display: block !important;
 }
 
+#woocommerce-product-data .wc-facebook-google-product-category-wrapper {
+	display: inline-block;
+	position: relative;
+	width: 100%;
+}
+
 #woocommerce-product-data #wc-facebook-google-product-category-fields {
 	width: 50%;
+	display: inline-block;
+	vertical-align: top;
+}
+
+#woocommerce-product-data .wc-facebook-google-product-category-field {
+	margin-bottom: 16px;
 }
 
 #woocommerce-product-data .wc-facebook-google-product-category-field select {
@@ -321,6 +333,33 @@
 #woocommerce-product-data #wc-facebook-google-product-category-fields .select2-container {
 	float: none;
 	width: 100% !important;
+}
+
+#woocommerce-product-data .wc-facebook-google-product-category-help-tip {
+	display: inline-block;
+	vertical-align: top;
+	margin-left: 8px;
+	line-height: 34px;
+}
+
+#woocommerce-product-data .wc-facebook-google-product-category-help-tip .woocommerce-help-tip {
+	margin: 0;
+	vertical-align: middle;
+}
+
+/* Enhanced Catalog Attributes - align input fields and help icons */
+#woocommerce-product-data .wc-facebook-enhanced-catalog-attribute-row input[type="text"],
+#woocommerce-product-data .wc-facebook-enhanced-catalog-attribute-row select {
+	width: 50%;
+	max-width: 50%;
+	display: inline-block;
+	vertical-align: middle;
+}
+
+#woocommerce-product-data .wc-facebook-enhanced-catalog-attribute-row .woocommerce-help-tip {
+	display: inline-block;
+	vertical-align: middle;
+	margin-left: 8px;
 }
 
 .notice .button.js-wc-plugin-framework-notice-dismiss {
