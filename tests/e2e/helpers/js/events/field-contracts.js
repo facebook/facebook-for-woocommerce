@@ -72,7 +72,12 @@ const EVENT_OVERLAYS = {
   PageView: {
     channels: ['pixel', 'capi'],
     custom_data: {
-      pixel: ['user_data'],
+      // PageView carries no product custom_data fields. `user_data` is a
+      // top-level sibling of `custom_data` (validated via the base user_data
+      // contract), not a key inside custom_data — listing it here made the
+      // validator look for `custom_data.user_data`, which never exists, and
+      // failed every PageView run.
+      pixel: [],
       capi: []
     }
   },

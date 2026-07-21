@@ -123,11 +123,13 @@ jobs:
     name: E2E Tests - ${{ matrix.version-label }} - ${{ matrix.test-group }}
     needs: [check-secrets, resolve-versions]
     if: ${{ needs.check-secrets.outputs.secrets-configured == 'true' }}
-    # Spread E2E shards across several x86 runner pools to relieve queueing on any
-    # single pool. All pools are x86 because the mysql:5.7 service container has no
-    # arm64 image, so every shard (including plugin-events' full browser set) works
-    # on any of them.
-    runs-on: ${{ (matrix.test-group == 'plugin-events' || matrix.test-group == 'product-crud') && '4-core-ubuntu-22.04' || (matrix.test-group == 'variable-product-depth' || matrix.test-group == 'product-batch') && '4-core-ubuntu' || 'ubuntu-latest' }}
+    # Run every shard on the standard GitHub-hosted x86 runner. We previously
+    # pinned plugin-events/product-crud to a `4-core-ubuntu-22.04` larger-runner
+    # pool, but that label isn't provisioned for this repo, so those jobs queued
+    # indefinitely and were cancelled ~24h later by the next scheduled run —
+    # never actually executing. ubuntu-latest is required anyway because the
+    # mysql:5.7 service container has no arm64 image.
+    runs-on: ubuntu-latest
     # Fail fast instead of letting a stuck step (e.g. a hung browser install) run
     # until GitHub's 6-hour default job timeout. plugin-events runs many browser
     # projects sequentially, so it gets a larger budget.
@@ -135,9 +137,8 @@ jobs:
 
     strategy:
       fail-fast: false
-      # Cap how many shards run concurrently within a run. Combined with spreading
-      # shards across multiple runner pools, this keeps queueing and shared-test-asset
-      # contention reasonable.
+      # Cap how many shards run concurrently within a run to keep shared-test-asset
+      # contention reasonable (all shards now share the ubuntu-latest pool).
       max-parallel: 8
       matrix:
         test-group: ['plugin-events', 'product-crud', 'variable-product-depth', 'product-batch', 'product-category', 'performance-sync']
@@ -625,6 +626,17 @@ jobs:
           # Install in the WordPress plugin directory (where we'll run tests from)
           cd ${{ env.PLUGIN_PATH }}
           npm install
+
+          # GitHub's runner image pre-installs Microsoft/azure-cli apt repos
+          # (packages.microsoft.com) that our tests never use. They periodically
+          # serve invalid repo metadata, which makes `apt-get update` fail with
+          # exit 100 and takes the whole `--with-deps` browser install down with
+          # it. Drop any apt source pointing at packages.microsoft.com so a broken
+          # Microsoft mirror can't fail our tests. The plugin-events group re-adds
+          # its own Edge repo later, after this step, so this is safe for all
+          # groups.
+          sudo grep -rlZ 'packages\.microsoft\.com' /etc/apt/sources.list.d/ 2>/dev/null \
+            | sudo xargs -0 -r rm -f || true
 
           # Bundled browsers (chromium) download to the Playwright cache without
           # root; the branded Chrome channel needs OS deps installed via apt.
