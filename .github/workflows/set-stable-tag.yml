@@ -233,6 +233,37 @@ jobs:
         with:
           ref: release/${{ needs.set-stable-tag.outputs.version }}
 
+      - name: Set Stable tag on the release branch
+        run: |
+          # set-stable-tag updates the Stable tag in WordPress.org SVN, but the git
+          # release branch (which merges to main) still carries the previous live
+          # version that prepare-release wrote — leaving main's readme.txt Stable tag
+          # perpetually behind. Now that the release is live on wp.org, bump the Stable
+          # tag on this existing release/$VERSION branch so the open "Release $VERSION"
+          # PR carries it to main. No new branch is created.
+          if [ -z "$VERSION" ]; then
+            echo "::error::VERSION is empty; refusing to update the Stable tag."
+            exit 1
+          fi
+          sed -i -E "s/^(Stable tag:)[[:space:]]*[0-9.]+/\1 $VERSION/" readme.txt
+          # WordPress.org's readme parser fails on CRLF; keep LF.
+          sed -i 's/\r$//' readme.txt
+          if ! grep -qx "Stable tag: $VERSION" readme.txt; then
+            echo "::error::Stable tag was not set to $VERSION in readme.txt."
+            grep -i '^stable tag:' readme.txt || true
+            exit 1
+          fi
+          if git diff --quiet -- readme.txt; then
+            echo "ℹ️ Stable tag already $VERSION on release/$VERSION; nothing to commit."
+          else
+            git config user.name "github-actions[bot]"
+            git config user.email "github-actions[bot]@users.noreply.github.com"
+            git add readme.txt
+            git commit -m "Set Stable tag to $VERSION"
+            git push origin "HEAD:release/$VERSION"
+            echo "✅ Stable tag set to $VERSION on release/$VERSION"
+          fi
+
       - name: Update GitHub release
         env:
           GH_TOKEN: ${{ github.token }}
