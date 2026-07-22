@@ -126,7 +126,7 @@ abstract class Base {
 	protected function handle_response( $response ): \WooCommerce\Facebook\API\Response {
 		// check for WP HTTP API specific errors (network timeout, etc)
 		if ( is_wp_error( $response ) ) {
-			throw new ApiException( $response->get_error_message(), (int) $response->get_error_code() );
+			throw new ApiException( esc_html( $response->get_error_message() ), (int) $response->get_error_code() );
 		}
 
 		// set response data

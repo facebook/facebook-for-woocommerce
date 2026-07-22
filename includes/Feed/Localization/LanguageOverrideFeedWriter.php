@@ -110,7 +110,7 @@ class LanguageOverrideFeedWriter extends AbstractFeedFileWriter {
 		$temp_feed_file = @fopen( $temp_file_path, 'a' );
 
 		if ( ! $temp_feed_file ) {
-			throw new \WooCommerce\Facebook\Framework\Plugin\Exception( "Could not open temp file for writing: {$temp_file_path}", 500 );
+			throw new \WooCommerce\Facebook\Framework\Plugin\Exception( esc_html( "Could not open temp file for writing: {$temp_file_path}" ), 500 );
 		}
 
 		try {

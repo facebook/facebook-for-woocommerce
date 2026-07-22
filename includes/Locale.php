@@ -469,10 +469,12 @@ class Locale {
 
 		// If no mapping found, throw an exception
 		throw new \WooCommerce\Facebook\Framework\Plugin\Exception(
-			sprintf(
-				/* translators: %s: Language code */
-				__( 'Language Feed not supported for override value: %s', 'facebook-for-woocommerce' ),
-				$language_code
+			esc_html(
+				sprintf(
+					/* translators: %s: Language code */
+					__( 'Language Feed not supported for override value: %s', 'facebook-for-woocommerce' ),
+					$language_code
+				)
 			),
 			400
 		);

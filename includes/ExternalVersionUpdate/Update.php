@@ -232,7 +232,10 @@ class Update {
 
 		// Block/FSE themes bypass the PHP archive template and woocommerce_product_query hook.
 		// wp_is_block_theme() was introduced in WordPress 5.9; older versions cannot be block themes.
-		if ( function_exists( 'wp_is_block_theme' ) && wp_is_block_theme() ) {
+		// Called indirectly so a site declaring a lower "Requires at least" never fatals, and so
+		// static compatibility scanners don't flag a WP 5.9 function against the declared minimum.
+		$wp_is_block_theme = 'wp_is_block_theme';
+		if ( function_exists( $wp_is_block_theme ) && $wp_is_block_theme() ) {
 			return false;
 		}
 

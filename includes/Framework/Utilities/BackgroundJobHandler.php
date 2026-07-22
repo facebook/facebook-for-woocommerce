@@ -702,12 +702,12 @@ abstract class BackgroundJobHandler extends AsyncRequest {
 
 		if ( ! isset( $job->{$data_key} ) ) {
 			/* translators: Placeholders: %s - user-friendly error message */
-			throw new \Exception( sprintf( __( 'Job data key "%s" not set', 'facebook-for-woocommerce' ), $data_key ) );
+			throw new \Exception( esc_html( sprintf( __( 'Job data key "%s" not set', 'facebook-for-woocommerce' ), $data_key ) ) );
 		}
 
 		if ( ! is_array( $job->{$data_key} ) ) {
 			/* translators: Placeholders: %s - user-friendly error message */
-			throw new \Exception( sprintf( __( 'Job data key "%s" is not an array', 'facebook-for-woocommerce' ), $data_key ) );
+			throw new \Exception( esc_html( sprintf( __( 'Job data key "%s" is not an array', 'facebook-for-woocommerce' ), $data_key ) ) );
 		}
 
 		$data = $job->{$data_key};

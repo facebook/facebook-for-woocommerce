@@ -116,7 +116,7 @@ class Normalizer {
 		$result = filter_var( $email, FILTER_SANITIZE_EMAIL );
 
 		if ( ! filter_var( $result, FILTER_VALIDATE_EMAIL ) ) {
-			throw new InvalidArgumentException( 'Invalid email format for the passed email: ' . $email . 'Please check the passed email format.' );
+			throw new InvalidArgumentException( esc_html( 'Invalid email format for the passed email: ' . $email . 'Please check the passed email format.' ) );
 		}
 
 		return $result;
@@ -159,7 +159,7 @@ class Normalizer {
 		$result = preg_replace( '/[^a-z]/i', '', $country );
 
 		if ( 2 !== strlen( $result ) ) {
-			throw new InvalidArgumentException( 'Invalid country format passed(' . $country . '). Country Code should be a two-letter ISO Country Code' );
+			throw new InvalidArgumentException( esc_html( 'Invalid country format passed(' . $country . '). Country Code should be a two-letter ISO Country Code' ) );
 		}
 
 		return $result;

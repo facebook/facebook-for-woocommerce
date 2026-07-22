@@ -224,7 +224,7 @@ class ProductValidator {
 		}
 
 		if ( ! $this->integration->is_product_sync_enabled() ) {
-			throw new ProductExcludedException( __( 'Product sync is globally disabled.', 'facebook-for-woocommerce' ) );
+			throw new ProductExcludedException( esc_html__( 'Product sync is globally disabled.', 'facebook-for-woocommerce' ) );
 		}
 	}
 
@@ -237,7 +237,7 @@ class ProductValidator {
 		$product = $this->product_parent ? $this->product_parent : $this->product;
 
 		if ( 'publish' !== $product->get_status() ) {
-			throw new ProductExcludedException( __( 'Product is not published.', 'facebook-for-woocommerce' ) );
+			throw new ProductExcludedException( esc_html__( 'Product is not published.', 'facebook-for-woocommerce' ) );
 		}
 	}
 
@@ -275,7 +275,7 @@ class ProductValidator {
 		 */
 
 		if ( ! $visible ) {
-			throw new ProductExcludedException( __( 'This product cannot be synced to Facebook because it is hidden from your store catalog.', 'facebook-for-woocommerce' ) );
+			throw new ProductExcludedException( esc_html__( 'This product cannot be synced to Facebook because it is hidden from your store catalog.', 'facebook-for-woocommerce' ) );
 		}
 	}
 
@@ -295,14 +295,14 @@ class ProductValidator {
 		$excluded_categories = $this->integration->get_excluded_product_category_ids();
 		if ( $excluded_categories ) {
 			if ( ! empty( array_intersect( $product->get_category_ids(), $excluded_categories ) ) ) {
-				throw new ProductExcludedException( __( 'Product excluded because of categories.', 'facebook-for-woocommerce' ) );
+				throw new ProductExcludedException( esc_html__( 'Product excluded because of categories.', 'facebook-for-woocommerce' ) );
 			}
 		}
 
 		$excluded_tags = $this->integration->get_excluded_product_tag_ids();
 		if ( $excluded_tags ) {
 			if ( ! empty( array_intersect( $product->get_tag_ids(), $excluded_tags ) ) ) {
-				throw new ProductExcludedException( __( 'Product excluded because of tags.', 'facebook-for-woocommerce' ) );
+				throw new ProductExcludedException( esc_html__( 'Product excluded because of tags.', 'facebook-for-woocommerce' ) );
 			}
 		}
 	}
@@ -323,7 +323,7 @@ class ProductValidator {
 		 * @param WC_Product $product the product object.
 		 */
 		if ( ! apply_filters( 'wc_facebook_should_sync_product', true, $this->product ) ) {
-			throw new ProductExcludedException( __( 'Product excluded by wc_facebook_should_sync_product filter.', 'facebook-for-woocommerce' ) );
+			throw new ProductExcludedException( esc_html__( 'Product excluded by wc_facebook_should_sync_product filter.', 'facebook-for-woocommerce' ) );
 		}
 		/**
 		 * The variable check will be used when we have create update of a product
@@ -404,7 +404,7 @@ class ProductValidator {
 
 		// No more than MAX_NUMBER_OF_ATTRIBUTES_IN_VARIATION ar allowed to be used.
 		if ( $used_attributes_count > self::MAX_NUMBER_OF_ATTRIBUTES_IN_VARIATION ) {
-			throw new ProductInvalidException( __( 'Too many attributes selected for product. Use 4 or less.', 'facebook-for-woocommerce' ) );
+			throw new ProductInvalidException( esc_html__( 'Too many attributes selected for product. Use 4 or less.', 'facebook-for-woocommerce' ) );
 		}
 	}
 
@@ -458,11 +458,13 @@ class ProductValidator {
 
 		if ( $product_lang_code !== $default_lang_code ) {
 			throw new ProductExcludedException(
-				sprintf(
-					/* translators: 1: product language, 2: default language */
-					__( 'Product is in language "%1$s" but only default language "%2$s" products are synced to the main catalog.', 'facebook-for-woocommerce' ),
-					$product_language,
-					$default_language
+				esc_html(
+					sprintf(
+						/* translators: 1: product language, 2: default language */
+						__( 'Product is in language "%1$s" but only default language "%2$s" products are synced to the main catalog.', 'facebook-for-woocommerce' ),
+						$product_language,
+						$default_language
+					)
 				)
 			);
 		}

@@ -145,7 +145,7 @@ class API extends Base {
 					$this->set_rate_limit_delay( $rate_limit_id, $timestamp );
 					$this->handle_throttled_request( $rate_limit_id, $timestamp );
 				} else {
-					throw new API\Exceptions\Request_Limit_Reached( $message, $code );
+					throw new API\Exceptions\Request_Limit_Reached( esc_html( $message ), (int) $code );
 				}
 			}
 
