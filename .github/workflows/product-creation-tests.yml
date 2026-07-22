@@ -181,7 +181,11 @@ jobs:
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
         with:
-          php-version: '8.1'
+          # 'latest' (not a pinned version) so E2E runs on the newest stable PHP as
+          # soon as it releases — surfacing incompatibilities with new PHP versions
+          # early. Trade-off: a new PHP release can turn E2E red until the plugin is
+          # made compatible.
+          php-version: 'latest'
           extensions: mysqli, zip, gd, curl, dom, fileinfo, mbstring
           ini-values: |
             date.timezone=UTC
