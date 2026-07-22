@@ -15,6 +15,8 @@ use WooCommerce\Facebook\Framework\Helper;
 use WooCommerce\Facebook\Framework\Logger;
 use WooCommerce\Facebook\Integrations\CostOfGoods\CostOfGoods;
 
+defined( 'ABSPATH' ) || exit;
+
 if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 
 	if ( ! class_exists( 'WC_Facebookcommerce_Utils' ) ) {

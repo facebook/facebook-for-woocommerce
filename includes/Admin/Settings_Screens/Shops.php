@@ -427,7 +427,7 @@ class Shops extends Abstract_Settings_Screen {
 		// Generate a fresh nonce for this request
 		$nonce = wp_json_encode( wp_create_nonce( 'wp_rest' ) );
 
-		return <<<JAVASCRIPT
+		return "
 			const fbAPI = GeneratePluginAPIClient({$nonce});
 			const ALLOWED_ORIGINS = [
 				'https://www.commercepartnerhub.com',
@@ -497,6 +497,6 @@ class Shops extends Abstract_Settings_Screen {
 						});
 				}
 			});
-		JAVASCRIPT;
+		";
 	}
 }

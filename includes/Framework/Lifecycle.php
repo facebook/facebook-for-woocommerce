@@ -378,6 +378,7 @@ class Lifecycle {
 		array_unshift( $history, $event );
 		// limit to the last 30 events
 		$history = array_slice( $history, 0, 29 );
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- one-off upsert of the plugin lifecycle event history option; caching not applicable
 		return $wpdb->replace(
 			$wpdb->options,
 			array(
@@ -405,6 +406,7 @@ class Lifecycle {
 	public function get_event_history() {
 		global $wpdb;
 		$history = [];
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- reads the lifecycle event history option; value is mutated within the request by store_event(), caching not applicable
 		$results = $wpdb->get_var(
 			$wpdb->prepare(
 				"

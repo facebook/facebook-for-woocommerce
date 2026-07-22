@@ -113,7 +113,7 @@ class Background_Remove_Duplicate_Visibility_Meta extends BackgroundJobHandler {
 			) AS duplicate_entries
 		";
 
-		return (int) $wpdb->get_var( $sql ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+		return (int) $wpdb->get_var( $sql ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- one-off background maintenance count over postmeta; caching not applicable
 	}
 
 
@@ -140,7 +140,7 @@ class Background_Remove_Duplicate_Visibility_Meta extends BackgroundJobHandler {
 
 			$sql = "DELETE FROM {$wpdb->postmeta} WHERE post_id = %d AND meta_key = 'fb_visibility' AND meta_id != %d";
 
-			// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+			// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- one-off background cleanup deleting duplicate postmeta; caching not applicable
 			if ( false === $wpdb->query( $wpdb->prepare( $sql, $result->post_id, $result->last_meta_id ) ) ) {
 
 				facebook_for_woocommerce()->log(
@@ -180,7 +180,7 @@ class Background_Remove_Duplicate_Visibility_Meta extends BackgroundJobHandler {
 			HAVING entries > 1
 		";
 
-		return $wpdb->get_results( $sql ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+		return $wpdb->get_results( $sql ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- one-off background maintenance query over postmeta; caching not applicable
 	}
 
 

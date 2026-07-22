@@ -396,7 +396,7 @@ class Connection {
 			}
 
 			$is_error   = ! empty( $_GET['err'] );
-			$error_code = ! empty( $_GET['err_code'] ) ? stripslashes( wc_clean( wp_unslash( $_GET['err_code'] ) ) ) : '';
+			$error_code = ! empty( $_GET['err_code'] ) ? stripslashes( sanitize_text_field( wp_unslash( $_GET['err_code'] ) ) ) : '';
 			if ( $is_error && $error_code ) {
 				throw new ConnectApiException( $error_code );
 			}

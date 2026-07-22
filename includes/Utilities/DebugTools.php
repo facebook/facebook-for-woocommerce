@@ -69,6 +69,7 @@ class DebugTools {
 		global $wpdb;
 
 		// Delete job entries (but not cache transients which use different pattern)
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- one-off maintenance cleanup of stale option rows; caching not applicable
 		$wpdb->query( "DELETE FROM {$wpdb->options} WHERE option_name LIKE 'wc_facebook_background_product_sync_job_%'" );
 
 		// Invalidate all sync-related caches since we deleted jobs directly from the database

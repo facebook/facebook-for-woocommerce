@@ -385,7 +385,7 @@ class AdminNoticeHandler {
 	public function handle_dismiss_notice() {
 		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
 		if ( isset( $_REQUEST['messageid'] ) ) {
-			$this->dismiss_notice( wc_clean( wp_unslash( $_REQUEST['messageid'] ) ) ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+			$this->dismiss_notice( sanitize_text_field( wp_unslash( $_REQUEST['messageid'] ) ) ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended
 		}
 	}
 

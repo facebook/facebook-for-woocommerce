@@ -97,7 +97,7 @@ class Event {
 		);
 
 		if ( isset( $_SERVER['HTTP_REFERER'] ) ) {
-			$this->data['referrer_url'] = wc_clean( wp_unslash( $_SERVER['HTTP_REFERER'] ) );
+			$this->data['referrer_url'] = esc_url_raw( wp_unslash( $_SERVER['HTTP_REFERER'] ) );
 		}
 
 		$this->prepare_user_data( $this->data['user_data'] );
@@ -217,7 +217,7 @@ class Event {
 			 */
 			$url = home_url();
 			if ( isset( $_SERVER['REQUEST_URI'] ) ) {
-				$url .= wc_clean( wp_unslash( $_SERVER['REQUEST_URI'] ) );
+				$url .= esc_url_raw( wp_unslash( $_SERVER['REQUEST_URI'] ) );
 			}
 		}
 		return $url;
@@ -244,7 +244,7 @@ class Event {
 	 * @return string
 	 */
 	public function get_client_user_agent() {
-		return ! empty( $_SERVER['HTTP_USER_AGENT'] ) ? wc_clean( wp_unslash( $_SERVER['HTTP_USER_AGENT'] ) ) : '';
+		return ! empty( $_SERVER['HTTP_USER_AGENT'] ) ? sanitize_text_field( wp_unslash( $_SERVER['HTTP_USER_AGENT'] ) ) : '';
 	}
 
 
@@ -316,7 +316,7 @@ class Event {
 		$fbp = \WC_Facebookcommerce_EventsTracker::get_fbp();
 		if ( empty( $fbp ) ) {
 			if ( ! empty( $_COOKIE['_fbp'] ) ) {
-				$fbp = wc_clean( wp_unslash( $_COOKIE['_fbp'] ) );
+				$fbp = sanitize_text_field( wp_unslash( $_COOKIE['_fbp'] ) );
 			} elseif ( ! empty( $_SESSION['_fbp'] ) ) {
 				$fbp = $_SESSION['_fbp']; // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
 			}

@@ -319,6 +319,7 @@ abstract class Plugin {
 
 		load_textdomain( $textdomain, WP_LANG_DIR . '/' . $textdomain . '/' . $textdomain . '-' . $locale . '.mo' );
 
+		// phpcs:ignore PluginCheck.CodeAnalysis.DiscouragedFunctions.load_plugin_textdomainFound -- Loads translations bundled in the plugin's own /i18n/languages directory; required for non-WordPress.org distributions (e.g. woocommerce.com) that don't receive automatic language packs.
 		load_plugin_textdomain( $textdomain, false, untrailingslashit( $path ) . '/i18n/languages' );
 	}
 

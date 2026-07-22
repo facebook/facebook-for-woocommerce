@@ -24,12 +24,14 @@ class LegacyProductSetMigration {
 		// Query legacy fb product sets
 		global $wpdb;
 		$fb_product_set_taxonomy_name = 'fb_product_set';
-		$results                      = $wpdb->get_results(
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- one-off migration query over legacy taxonomy terms; caching not applicable
+		$results = $wpdb->get_results(
 			$wpdb->prepare(
-				'SELECT t.term_id, t.name, t.slug, tt.description
-				FROM wp_terms t
-				INNER JOIN wp_term_taxonomy tt ON t.term_id = tt.term_id
-				WHERE tt.taxonomy = %s',
+				// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Table names come from $wpdb and are trusted; identifiers cannot be bound as placeholders.
+				"SELECT t.term_id, t.name, t.slug, tt.description
+				FROM {$wpdb->terms} t
+				INNER JOIN {$wpdb->term_taxonomy} tt ON t.term_id = tt.term_id
+				WHERE tt.taxonomy = %s",
 				$fb_product_set_taxonomy_name
 			)
 		);

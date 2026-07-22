@@ -8,6 +8,8 @@ use WC_Facebookcommerce_Integration;
 use WC_Product;
 use WooCommerce\Facebook\Products;
 
+defined( 'ABSPATH' ) || exit;
+
 if ( ! class_exists( 'WC_Facebookcommerce_Utils' ) ) {
 	include_once '../fbutils.php';
 }

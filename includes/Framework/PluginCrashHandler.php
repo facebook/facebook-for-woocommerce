@@ -1167,7 +1167,10 @@ class PluginCrashHandler {
 			return ErrorLogHandler::enqueue_meta_log_request( $report, true );
 		}
 
-		$delay = function_exists( 'wp_rand' ) ? wp_rand( 60, self::CRASH_REPORT_MAX_JITTER_SECONDS ) : mt_rand( 60, self::CRASH_REPORT_MAX_JITTER_SECONDS );
+		$delay = function_exists( 'wp_rand' )
+			? wp_rand( 60, self::CRASH_REPORT_MAX_JITTER_SECONDS )
+			// phpcs:ignore WordPress.WP.AlternativeFunctions.rand_mt_rand -- Fallback for the early crash-handler path (shutdown function) where the pluggable wp_rand() may not be loaded yet.
+			: mt_rand( 60, self::CRASH_REPORT_MAX_JITTER_SECONDS );
 
 		try {
 			$action_id = as_schedule_single_action( time() + $delay, ErrorLogHandler::META_LOG_API, [ $report ], ErrorLogHandler::META_LOG_API_GROUP, true );

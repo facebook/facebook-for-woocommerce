@@ -240,7 +240,7 @@ class Helper {
 		//phpcs:ignore WordPress.Security.NonceVerification.Missing
 		if ( isset( $_POST[ $key ] ) ) {
 			//phpcs:ignore WordPress.Security.NonceVerification.Missing
-			$sanitized_value = wc_clean( wp_unslash( $_POST[ $key ] ) );
+			$sanitized_value = map_deep( wp_unslash( $_POST[ $key ] ), 'sanitize_text_field' );
 			$value           = is_string( $sanitized_value ) ? trim( $sanitized_value ) : $sanitized_value;
 		}
 
@@ -265,7 +265,7 @@ class Helper {
 		//phpcs:ignore WordPress.Security.NonceVerification.Recommended
 		if ( isset( $_REQUEST[ $key ] ) ) {
 			//phpcs:ignore WordPress.Security.NonceVerification.Recommended
-			$sanitized_value = wc_clean( wp_unslash( $_REQUEST[ $key ] ) );
+			$sanitized_value = map_deep( wp_unslash( $_REQUEST[ $key ] ), 'sanitize_text_field' );
 			$value           = is_string( $sanitized_value ) ? trim( $sanitized_value ) : $sanitized_value;
 		}
 
@@ -400,7 +400,7 @@ class Helper {
 		}
 
 		$rest_prefix         = trailingslashit( rest_get_url_prefix() );
-		$is_rest_api_request = false !== strpos( wc_clean( wp_unslash( $_SERVER['REQUEST_URI'] ) ), $rest_prefix );
+		$is_rest_api_request = false !== strpos( esc_url_raw( wp_unslash( $_SERVER['REQUEST_URI'] ) ), $rest_prefix );
 
 		/** Applies WooCommerce core filter */
 		return (bool) apply_filters( 'woocommerce_is_rest_api_request', $is_rest_api_request );
