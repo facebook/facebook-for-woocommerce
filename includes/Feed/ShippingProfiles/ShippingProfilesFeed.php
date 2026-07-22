@@ -262,7 +262,7 @@ class ShippingProfilesFeed extends AbstractFeed {
 		$prefix_length               = strlen( $class_cost_prefix );
 
 		foreach ( $shipping_settings as $key => $value ) {
-			if ( str_starts_with( $key, $class_cost_prefix ) ) {
+			if ( 0 === strpos( $key, $class_cost_prefix ) ) {
 				$shipping_class_id                                 = substr( $key, $prefix_length );
 				$shipping_class_ids_to_costs[ $shipping_class_id ] = $value;
 			}

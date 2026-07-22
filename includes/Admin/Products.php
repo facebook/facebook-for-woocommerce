@@ -97,7 +97,7 @@ class Products {
 		<p class="form-field">
 			<label for="<?php echo esc_attr( self::FIELD_GOOGLE_PRODUCT_CATEGORY_ID ); ?>">
 				<?php esc_html_e( 'Google Product Category', 'facebook-for-woocommerce' ); ?>
-				<?php echo wc_help_tip( __( 'Choose the Google product category and (optionally) sub-categories associated with this product.', 'facebook-for-woocommerce' ) ); ?>
+				<?php echo wp_kses_post( wc_help_tip( __( 'Choose the Google product category and (optionally) sub-categories associated with this product.', 'facebook-for-woocommerce' ) ) ); ?>
 			</label>
 			<input
 				id="<?php echo esc_attr( self::FIELD_GOOGLE_PRODUCT_CATEGORY_ID ); ?>"

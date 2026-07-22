@@ -228,9 +228,9 @@ class AJAX {
 		check_ajax_referer( 'set-product-sync-bulk-action-prompt', 'security' );
 
 		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
-		$product_ids = isset( $_POST['products'] ) ? (array) wc_clean( wp_unslash( $_POST['products'] ) ) : array();
+		$product_ids = isset( $_POST['products'] ) ? array_map( 'absint', (array) wp_unslash( $_POST['products'] ) ) : array();
 		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
-		$toggle = isset( $_POST['toggle'] ) ? (string) wc_clean( wp_unslash( $_POST['toggle'] ) ) : '';
+		$toggle = isset( $_POST['toggle'] ) ? (string) sanitize_text_field( wp_unslash( $_POST['toggle'] ) ) : '';
 
 		if ( ! empty( $product_ids ) && ! empty( $toggle ) && 'facebook_include' === $toggle ) {
 

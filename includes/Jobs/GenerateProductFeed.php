@@ -52,6 +52,7 @@ class GenerateProductFeed extends AbstractChainedJob {
 	protected function get_items_for_batch( int $batch_number, array $args ): array {
 		global $wpdb;
 
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- batch job query paging product IDs for feed generation; caching not applicable
 		$product_ids = $wpdb->get_col(
 			$wpdb->prepare(
 				"SELECT post.ID

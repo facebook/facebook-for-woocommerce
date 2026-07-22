@@ -371,7 +371,7 @@ class Admin {
 		} else {
 			esc_html_e( 'Not synced', 'facebook-for-woocommerce' );
 			if ( ! empty( $no_sync_reason ) ) {
-				echo wc_help_tip( $no_sync_reason );
+				echo wp_kses_post( wc_help_tip( $no_sync_reason ) );
 			}
 		}
 	}
@@ -452,7 +452,7 @@ class Admin {
 			// store original meta query
 			$original_meta_query = ! empty( $query_vars['meta_query'] ) ? $query_vars['meta_query'] : [];
 			// phpcs:ignore WordPress.Security.NonceVerification.Recommended
-			$filter_value = wc_clean( wp_unslash( $_REQUEST['fb_sync_enabled'] ) );
+			$filter_value = sanitize_text_field( wp_unslash( $_REQUEST['fb_sync_enabled'] ) );
 			// by default use an "AND" clause if multiple conditions exist for a meta query
 			if ( ! empty( $query_vars['meta_query'] ) ) {
 				$query_vars['meta_query']['relation'] = 'AND';
@@ -480,8 +480,10 @@ class Admin {
 
 				if ( ! empty( $exclude_products ) ) {
 					if ( ! empty( $query_vars['post__not_in'] ) ) {
+						// phpcs:ignore WordPressVIPMinimum.Performance.WPQueryParams.PostNotIn_post__not_in -- Excluding products that fail sync validation from the admin product list filter; the exclusion set is bounded by the current page of results.
 						$query_vars['post__not_in'] = array_merge( $query_vars['post__not_in'], $exclude_products );
 					} else {
+						// phpcs:ignore WordPressVIPMinimum.Performance.WPQueryParams.PostNotIn_post__not_in -- Excluding products that fail sync validation from the admin product list filter; the exclusion set is bounded by the current page of results.
 						$query_vars['post__not_in'] = $exclude_products;
 					}
 				}
@@ -1646,7 +1648,7 @@ class Admin {
 	 */
 	private function determine_variation_sync_mode( $variation ) {
 		// phpcs:ignore WordPress.Security.NonceVerification.Missing -- Nonce verification is handled in save_product_variation_edit_fields method
-		$sync_mode = isset( $_POST['wc_facebook_sync_mode'] ) ? wc_clean( wp_unslash( $_POST['wc_facebook_sync_mode'] ) ) : self::SYNC_MODE_SYNC_DISABLED;
+		$sync_mode = isset( $_POST['wc_facebook_sync_mode'] ) ? sanitize_text_field( wp_unslash( $_POST['wc_facebook_sync_mode'] ) ) : self::SYNC_MODE_SYNC_DISABLED;
 
 		// phpcs:ignore WordPress.Security.NonceVerification.Missing -- Nonce verification is handled in save_product_variation_edit_fields method
 		if ( ! isset( $_POST['wc_facebook_sync_mode'] ) ) {
@@ -1747,7 +1749,7 @@ class Admin {
 		$image_ids    = isset( $_POST[ $posted_param ] ) ? sanitize_text_field( wp_unslash( $_POST[ $posted_param ] ) ) : '';
 		$posted_param = 'variable_' . \WC_Facebook_Product::FB_PRODUCT_PRICE;
 		// phpcs:ignore WordPress.Security.NonceVerification.Missing -- Nonce verification is handled in save_product_variation_edit_fields method
-		$price = isset( $_POST[ $posted_param ][ $index ] ) ? wc_format_decimal( wc_clean( wp_unslash( $_POST[ $posted_param ][ $index ] ) ) ) : '';
+		$price = isset( $_POST[ $posted_param ][ $index ] ) ? wc_format_decimal( sanitize_text_field( wp_unslash( $_POST[ $posted_param ][ $index ] ) ) ) : '';
 
 		return array(
 			'description_plain' => $description_plain,
@@ -2626,8 +2628,13 @@ class Admin {
 	/**
 	 * Displays a notice about WordPress.com automatic updates ending.
 	 *
-	 * Uses an onClick dismiss button that triggers a page reload with a GET parameter,
-	 * ensuring the dismissal is saved server-side before the notice re-renders.
+	 * The dismiss control is a plain link that triggers a page reload with a GET parameter,
+	 * ensuring the dismissal is saved server-side before the notice re-renders. It is rendered
+	 * as an anchor so the dismiss URL lives in an href attribute, which is the correct output
+	 * context for esc_url().
+	 *
+	 * The .notice-dismiss class is preserved so WordPress core does not inject a second,
+	 * client-only dismiss button onto the notice.
 	 *
 	 * @since 3.5.3
 	 *
@@ -2637,13 +2644,13 @@ class Admin {
 		printf(
 			'
 <div class="notice notice-warning is-dismissible">
-	<p>%s</p>
-	<button
-		type="button"
+	<p>%1$s</p>
+	<a
+		href="%2$s"
 		class="notice-dismiss"
-		onClick="location.href=\'%s\'">
-		<span class="screen-reader-text">%s</span>
-	</button>
+		style="text-decoration: none;">
+		<span class="screen-reader-text">%3$s</span>
+	</a>
 </div>
 			',
 			wp_kses_post( $this->get_wpcom_update_notice_message() ),

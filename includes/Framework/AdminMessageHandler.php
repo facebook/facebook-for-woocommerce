@@ -103,7 +103,7 @@ class AdminMessageHandler {
 	 */
 	public function load_messages() {
 		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
-		$message_id_get_name = isset( $_GET[ self::MESSAGE_ID_GET_NAME ] ) ? wc_clean( wp_unslash( $_GET[ self::MESSAGE_ID_GET_NAME ] ) ) : false;
+		$message_id_get_name = isset( $_GET[ self::MESSAGE_ID_GET_NAME ] ) ? sanitize_text_field( wp_unslash( $_GET[ self::MESSAGE_ID_GET_NAME ] ) ) : false;
 		if ( $message_id_get_name && $this->get_message_id() === $message_id_get_name ) {
 			$memo = get_transient( self::MESSAGE_TRANSIENT_PREFIX . $message_id_get_name );
 			if ( isset( $memo['errors'] ) ) {

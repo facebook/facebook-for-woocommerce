@@ -175,6 +175,203 @@ class AdminTest extends \WP_UnitTestCase {
     }
 
     /**
+     * Tests that the WordPress.com update notice dismiss control renders its URL in an
+     * href attribute rather than an inline JavaScript event handler.
+     *
+     * The dismiss URL is derived from the current request URI, so it must be output in a
+     * context where esc_url() is the correct escaping. An href attribute satisfies this;
+     * an inline event handler does not, because the browser HTML-decodes handler attributes
+     * before executing them.
+     */
+    public function test_wpcom_update_notice_dismiss_uses_href_not_inline_js(): void {
+        update_option( 'is_wordpress_com_hosted', 1 );
+
+        // Exercise the rendering with a request URI containing quote characters.
+        $original_request_uri   = $_SERVER['REQUEST_URI'] ?? null;
+        $_SERVER['REQUEST_URI'] = "/wp-admin/index.php/',token(),'";
+
+        $admin = $this->createAdminInstance();
+
+        ob_start();
+        $admin->wpcom_update_notice();
+        $output = ob_get_clean();
+
+        if ( null === $original_request_uri ) {
+            unset( $_SERVER['REQUEST_URI'] );
+        } else {
+            $_SERVER['REQUEST_URI'] = $original_request_uri;
+        }
+
+        // The dismiss control must not rely on an inline JS event handler.
+        $this->assertStringNotContainsStringIgnoringCase(
+            'onclick',
+            $output,
+            'Dismiss control must not use an inline onClick handler.'
+        );
+        $this->assertStringNotContainsString(
+            'location.href',
+            $output,
+            'Dismiss control must not navigate via inline JavaScript.'
+        );
+
+        // The request-derived value must not be reflected as an unescaped JS string literal.
+        $this->assertStringNotContainsString(
+            "token(),'",
+            $output,
+            'Request-derived value must not be reflected into an inline JS string.'
+        );
+
+        // The dismiss URL must be rendered in an href attribute context.
+        $this->assertStringContainsString(
+            'href=',
+            $output,
+            'Dismiss URL must be rendered in an href attribute.'
+        );
+        $this->assertStringContainsString(
+            Admin::ADMIN_DISMISS_WPCOM_UPDATE_NOTICE,
+            $output,
+            'Dismiss URL must carry the dismiss query argument.'
+        );
+    }
+
+    /**
+     * Renders the WordPress.com update notice with a given request URI and returns the markup.
+     *
+     * Restores the original REQUEST_URI afterwards so tests remain isolated.
+     *
+     * @param string $request_uri the request URI to expose while rendering.
+     * @return string the rendered notice markup.
+     */
+    private function render_wpcom_update_notice_with_request_uri( string $request_uri ): string {
+        update_option( 'is_wordpress_com_hosted', 1 );
+
+        $original_request_uri   = $_SERVER['REQUEST_URI'] ?? null;
+        $_SERVER['REQUEST_URI'] = $request_uri;
+
+        $admin = $this->createAdminInstance();
+
+        ob_start();
+        $admin->wpcom_update_notice();
+        $output = ob_get_clean();
+
+        if ( null === $original_request_uri ) {
+            unset( $_SERVER['REQUEST_URI'] );
+        } else {
+            $_SERVER['REQUEST_URI'] = $original_request_uri;
+        }
+
+        return $output;
+    }
+
+    /**
+     * Request URIs that contain characters which are significant in HTML-attribute,
+     * HTML-tag and JS-string contexts. Each must be neutralised in the rendered dismiss URL.
+     *
+     * @return array<string, array{0:string}>
+     */
+    public function provider_dismiss_control_crafted_request_uris(): array {
+        return [
+            'single quote / JS-string chars' => [ "/wp-admin/index.php/',token(),'" ],
+            'double quote + tag chars'       => [ '/wp-admin/index.php/"><span>x</span>' ],
+            'attribute-injection chars'      => [ '/wp-admin/index.php/"onmouseover="x' ],
+            'angle brackets in query'        => [ '/wp-admin/edit.php?foo=<b>bar</b>' ],
+            'script-tag chars'               => [ '/wp-admin/index.php/"><script>x=1</script>' ],
+            'backslash and quotes'           => [ '/wp-admin/index.php/\\\'"' ],
+        ];
+    }
+
+    /**
+     * Tests that a request-derived dismiss URL is always emitted in a safe output context,
+     * regardless of the characters present in the request URI.
+     *
+     * @dataProvider provider_dismiss_control_crafted_request_uris
+     *
+     * @param string $request_uri the crafted request URI.
+     */
+    public function test_wpcom_update_notice_dismiss_output_is_escaped_for_crafted_request_uris( string $request_uri ): void {
+        $output = $this->render_wpcom_update_notice_with_request_uri( $request_uri );
+
+        // No real HTML event-handler attribute may be emitted. This is a structural check:
+        // it matches an ` on...="` attribute (whitespace-delimited, opening double quote) and
+        // deliberately does NOT match an event-handler name that survives only as encoded URL
+        // text inside the href value (e.g. ".../onmouseover=%22x"), which is harmless.
+        $this->assertDoesNotMatchRegularExpression(
+            '#\son[a-z]+\s*=\s*"#i',
+            $output,
+            'No inline HTML event-handler attribute may be emitted.'
+        );
+        $this->assertStringNotContainsString( 'location.href', $output, 'No inline JS navigation may be emitted.' );
+
+        // The dismiss anchor must be well-formed: its href attribute is delimited by double
+        // quotes with no embedded double quote, which proves the attribute context was not broken.
+        $this->assertMatchesRegularExpression(
+            '#href="([^"]*)"\s+class="notice-dismiss"#',
+            $output,
+            'Dismiss control must render a well-formed, double-quoted href attribute.'
+        );
+
+        // Extract the dismiss href and assert no raw markup-significant characters leaked into it.
+        preg_match( '#href="([^"]*)"\s+class="notice-dismiss"#', $output, $matches );
+        $dismiss_href = $matches[1] ?? '';
+
+        $this->assertNotSame( '', $dismiss_href, 'Dismiss href must be present.' );
+        $this->assertStringNotContainsString( '<', $dismiss_href, 'Dismiss href must not contain a raw "<".' );
+        $this->assertStringNotContainsString( '>', $dismiss_href, 'Dismiss href must not contain a raw ">".' );
+        $this->assertStringContainsString(
+            Admin::ADMIN_DISMISS_WPCOM_UPDATE_NOTICE,
+            $dismiss_href,
+            'Dismiss href must carry the dismiss query argument.'
+        );
+
+        // No unescaped tag from the request URI may appear anywhere in the output.
+        $this->assertStringNotContainsStringIgnoringCase( '<script', $output, 'No unescaped <script> may appear.' );
+        $this->assertStringNotContainsStringIgnoringCase( '<span>x</span>', $output, 'No unescaped injected tag may appear.' );
+    }
+
+    /**
+     * Tests that the rendered dismiss href is exactly the escaped value produced by
+     * esc_url( add_query_arg( ... ) ) for the current request URI.
+     */
+    public function test_wpcom_update_notice_dismiss_href_uses_escaped_dismiss_url(): void {
+        $request_uri = "/wp-admin/index.php/',token(),'";
+
+        $original_request_uri   = $_SERVER['REQUEST_URI'] ?? null;
+        $_SERVER['REQUEST_URI'] = $request_uri;
+
+        // Compute the expected, escaped dismiss URL exactly as production code does.
+        $expected_href = esc_url( add_query_arg( Admin::ADMIN_DISMISS_WPCOM_UPDATE_NOTICE, '1' ) );
+
+        if ( null === $original_request_uri ) {
+            unset( $_SERVER['REQUEST_URI'] );
+        } else {
+            $_SERVER['REQUEST_URI'] = $original_request_uri;
+        }
+
+        $output = $this->render_wpcom_update_notice_with_request_uri( $request_uri );
+
+        preg_match( '#href="([^"]*)"\s+class="notice-dismiss"#', $output, $matches );
+        $dismiss_href = $matches[1] ?? '';
+
+        $this->assertSame(
+            $expected_href,
+            $dismiss_href,
+            'Dismiss href must equal the esc_url()-escaped dismiss URL.'
+        );
+    }
+
+    /**
+     * Tests that the notice message link (a static WordPress.org URL) is rendered alongside
+     * the dismiss control, confirming the notice body itself is output as expected.
+     */
+    public function test_wpcom_update_notice_renders_message_link(): void {
+        $output = $this->render_wpcom_update_notice_with_request_uri( '/wp-admin/index.php' );
+
+        $this->assertStringContainsString( 'notice notice-warning is-dismissible', $output );
+        $this->assertStringContainsString( 'wordpress.org/plugins/facebook-for-woocommerce/', $output );
+        $this->assertStringContainsString( 'class="notice-dismiss"', $output );
+    }
+
+    /**
      * Tests that the WordPress.com update notice is shown only for
      * WordPress.com-hosted sites when it has not been dismissed.
      */

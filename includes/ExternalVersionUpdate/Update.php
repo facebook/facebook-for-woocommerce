@@ -231,7 +231,8 @@ class Update {
 		}
 
 		// Block/FSE themes bypass the PHP archive template and woocommerce_product_query hook.
-		if ( wp_is_block_theme() ) {
+		// wp_is_block_theme() was introduced in WordPress 5.9; older versions cannot be block themes.
+		if ( function_exists( 'wp_is_block_theme' ) && wp_is_block_theme() ) {
 			return false;
 		}
 
@@ -246,8 +247,8 @@ class Update {
 			foreach ( $conditions as $template_conditions ) {
 				foreach ( (array) $template_conditions as $condition ) {
 					if ( is_string( $condition )
-						&& str_contains( $condition, 'product' )
-						&& str_contains( $condition, 'archive' ) ) {
+						&& false !== strpos( $condition, 'product' )
+						&& false !== strpos( $condition, 'archive' ) ) {
 						return false;
 					}
 				}

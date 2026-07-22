@@ -201,6 +201,7 @@ abstract class BackgroundJobHandler extends AsyncRequest {
 		$queued     = '%"status":"queued"%';
 		$processing = '%"status":"processing"%';
 
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Counts queued/processing background jobs stored as options; reflects live queue state, caching not applicable.
 		$count = $wpdb->get_var(
 			$wpdb->prepare(
 				"SELECT COUNT(*)
@@ -445,6 +446,7 @@ abstract class BackgroundJobHandler extends AsyncRequest {
 			$attrs
 		);
 
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Persists a new background job to the options table; write operation, caching not applicable.
 		$wpdb->insert(
 			$wpdb->options,
 			[
@@ -494,6 +496,7 @@ abstract class BackgroundJobHandler extends AsyncRequest {
 			$queued     = '%"status":"queued"%';
 			$processing = '%"status":"processing"%';
 
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Reads the next queued/processing background job from the options table; reflects live queue state, caching not applicable.
 			$results = $wpdb->get_var(
 				$wpdb->prepare(
 					"SELECT option_value
@@ -508,6 +511,7 @@ abstract class BackgroundJobHandler extends AsyncRequest {
 				)
 			);
 		} else {
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Reads a single background job by id from the options table; reflects live queue state, caching not applicable.
 			$results = $wpdb->get_var(
 				$wpdb->prepare(
 					"SELECT option_value
@@ -599,7 +603,7 @@ abstract class BackgroundJobHandler extends AsyncRequest {
 			$replacements
 		);
 
-		/* phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared */
+		// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter -- Query is built via $wpdb->prepare(); the interpolated ORDER BY identifiers are sanitized with sanitize_key(); reflects live queue state, caching not applicable.
 		$results = $wpdb->get_col( $query );
 
 		if ( empty( $results ) ) {
@@ -884,6 +888,7 @@ abstract class BackgroundJobHandler extends AsyncRequest {
 		if ( ! $job ) {
 			return false;
 		}
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Deletes a completed background job from the options table; write operation, caching not applicable.
 		$wpdb->delete( $wpdb->options, [ 'option_name' => "{$this->identifier}_job_{$job->id}" ] );
 
 		// Invalidate cache since a job was deleted
@@ -1032,6 +1037,7 @@ abstract class BackgroundJobHandler extends AsyncRequest {
 	private function update_job_option( $job ) {
 		global $wpdb;
 
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Updates a background job's stored state in the options table; write operation, caching not applicable.
 		return $wpdb->update(
 			$wpdb->options,
 			[ 'option_value' => wp_json_encode( $job ) ],
