@@ -2,8 +2,8 @@
 Contributors: facebook
 Tags: meta, facebook, whatsapp, conversions api, catalog sync
 Requires at least: 5.6
-Tested up to: 7.0.1
-Stable tag: 3.7.4
+Tested up to: 7.0
+Stable tag: 3.7.5
 Requires PHP: 7.4
 MySQL: 5.6 or greater
 License: GPLv2 or later
@@ -48,23 +48,11 @@ When that happens, the site still recovers on the next request, but the disable 
 
 == Changelog ==
 
-= 3.7.5 - 2026-07-14 =
-* Fix - ci(release): grant actions:write so Prepare Release can dispatch the build by @vahidkay-meta in #3973
-* Doc - Update the contributor's guide by @iodic in #3820
-* Tweak - Remove deprecated WhatsApp consent checkbox from checkout by @ukilla in #3886
-* Add - Feature CF7 Lead server tracking by @ukilla in #3944
-* Fix - Block CAPI unconditionally on invalid token; remove rollout switch by @rafael-curran in #3966
-* Fix - Fix intermittent connection save issue in /settings/update flow for missing page/ad account IDs by @ukilla in #3903
-* Fix - Release readme/stable-tag guardrails + fix WPFactory COGS deprecation by @vahidkay-meta in #3967
-* Update - Gate WhatsApp customer_events on onboarding completion (gate + rollout switch + onboarding-complete writers) by @ceciliazeng-wa in #3969
-* Fix - Fix/subscriptions renewal purchase capi by @ukilla in #3946
-* Dev - ci(release): release-workflow guardrails — block overlapping releases + clearer Set Stable Tag errors by @vahidkay-meta in #3961
-* Add - Add cache detection flag to Pixel agent string by @vahidkay-meta in #3948
-* Fix - Prevent orphan variation sync-field fatal during trash flows by @ukilla in #3963
-* Dev - ci: fail Prepare New Release if an open PR exists for the current stable version by @vahidkay-meta in #3965
-* Dev - ci: fix flaky E2E login, spread CI runners, auto-label Dependabot PRs (+ bump capi-param-builder) by @vahidkay-meta in #3960
-* Add - E2E test expansion by @iodic in #3917
-* Add - Optimize Dependabot checks by @iodic in #3925
-* Add - Add crash recovery support by @iodic in #3941
+= 3.7.6 - 2026-07-23 =
+* Fix - Fix/prepare release changelog fix by @bojanaivovic in #3972
+* Fix - ci(e2e): run all shards on ubuntu-latest instead of custom runner pools by @vahidkay-meta in #3976
+* Fix - Improve escaping and WordPress Plugin Check compliance by @vahidkay-meta in #3980
+* Fix - Clear remaining WordPress Plugin Check errors by @vahidkay-meta in #3981
+* Dev - ci(release): fix readme Tested-up-to minor version + propagate Stable tag to git by @vahidkay-meta in #3983
 
 [See changelog for all versions](https://raw.githubusercontent.com/facebook/facebook-for-woocommerce/refs/heads/main/changelog.txt).
