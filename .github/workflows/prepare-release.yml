@@ -188,18 +188,24 @@ jobs:
           LATEST_WP=$(curl -s 'https://api.wordpress.org/core/version-check/1.7/' | jq -r '.offers[0].version')
           echo "Latest WordPress version: $LATEST_WP"
 
+          # WordPress.org's readme "Tested up to" must be a major.minor version only
+          # (e.g. 7.0, not 7.0.1); the patch component trips the Plugin Check
+          # invalid_tested_upto_minor error. Truncate to major.minor.
+          LATEST_WP_MM=$(echo "$LATEST_WP" | cut -d. -f1,2)
+          echo "Latest WordPress major.minor: $LATEST_WP_MM"
+
           # Fetch latest WooCommerce version (X.Y.Z)
           LATEST_WC=$(curl -s 'https://api.wordpress.org/plugins/info/1.0/woocommerce.json' | jq -r '.version')
           echo "Latest WooCommerce version: $LATEST_WC"
 
           # Update Tested up to (WordPress) in facebook-for-woocommerce.php
-          sed -i -E "s/^ \* Tested up to:.*/ \* Tested up to: $LATEST_WP/" "facebook-for-woocommerce.php"
+          sed -i -E "s/^ \* Tested up to:.*/ \* Tested up to: $LATEST_WP_MM/" "facebook-for-woocommerce.php"
 
           # Update WC tested up to in facebook-for-woocommerce.php
           sed -i -E "s/^ \* WC tested up to:.*/ \* WC tested up to: $LATEST_WC/" "facebook-for-woocommerce.php"
 
           # Update Tested up to in readme.txt
-          sed -i -E "s/^Tested up to:.*$/Tested up to: $LATEST_WP/" "readme.txt"
+          sed -i -E "s/^Tested up to:.*$/Tested up to: $LATEST_WP_MM/" "readme.txt"
 
           git diff
 
