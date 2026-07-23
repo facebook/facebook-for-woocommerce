@@ -197,7 +197,7 @@ abstract class OfferManagementEndpointBase {
 		if ( array_key_exists( $field_name, $params ) ) {
 			return $params[ $field_name ];
 		}
-		throw new \OutOfBoundsException( sprintf( 'Field: %s does not exist in request params. Params fields: %s', $field_name, wp_json_encode( array_keys( $params ) ) ) );
+		throw new \OutOfBoundsException( esc_html( sprintf( 'Field: %s does not exist in request params. Params fields: %s', $field_name, wp_json_encode( array_keys( $params ) ) ) ) );
 	}
 
 	private function get_request_response( array $response_data, int $status_code = self::HTTP_OK ): WP_REST_Response {

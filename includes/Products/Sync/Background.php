@@ -57,12 +57,12 @@ class Background extends BackgroundJobHandler {
 
 		if ( ! isset( $job->{$data_key} ) ) {
 			/* translators: Placeholders: %s - user-friendly error message */
-			throw new \Exception( sprintf( __( 'Job data key "%s" not set', 'facebook-for-woocommerce' ), $data_key ) );
+			throw new \Exception( esc_html( sprintf( __( 'Job data key "%s" not set', 'facebook-for-woocommerce' ), $data_key ) ) );
 		}
 
 		if ( ! is_array( $job->{$data_key} ) ) {
 			/* translators: Placeholders: %s - user-friendly error message */
-			throw new \Exception( sprintf( __( 'Job data key "%s" is not an array', 'facebook-for-woocommerce' ), $data_key ) );
+			throw new \Exception( esc_html( sprintf( __( 'Job data key "%s" is not an array', 'facebook-for-woocommerce' ), $data_key ) ) );
 		}
 
 		$data = $job->{$data_key};
@@ -154,7 +154,7 @@ class Background extends BackgroundJobHandler {
 	public function process_item( $item, $job ) {
 		list( $item_id, $method ) = $item;
 		if ( ! in_array( $method, [ Sync::ACTION_UPDATE, Sync::ACTION_DELETE ], true ) ) {
-			throw new PluginException( "Invalid sync request method: {$method}." );
+			throw new PluginException( esc_html( "Invalid sync request method: {$method}." ) );
 		}
 
 		if ( Sync::ACTION_UPDATE === $method ) {
@@ -179,7 +179,7 @@ class Background extends BackgroundJobHandler {
 		$product    = wc_get_product( $product_id );
 
 		if ( ! $product instanceof \WC_Product ) {
-			throw new PluginException( "No product found with ID equal to {$product_id}." );
+			throw new PluginException( esc_html( "No product found with ID equal to {$product_id}." ) );
 		}
 
 		$request = null;

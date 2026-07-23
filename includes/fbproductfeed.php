@@ -216,7 +216,7 @@ class WC_Facebook_Product_Feed {
 	public function generate_productfeed_file() {
 
 		if ( ! wp_mkdir_p( $this->get_file_directory() ) ) {
-			throw new PluginException( __( 'Could not create product catalog feed directory', 'facebook-for-woocommerce' ), 500 );
+			throw new PluginException( esc_html__( 'Could not create product catalog feed directory', 'facebook-for-woocommerce' ), 500 );
 		}
 
 		$this->create_files_to_protect_product_feed_directory();
@@ -332,7 +332,7 @@ class WC_Facebook_Product_Feed {
 		// check if we can open the temporary feed file
 		// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_is_writable
 		if ( false === $temp_feed_file || ! is_writable( $temp_file_path ) ) {
-			throw new PluginException( __( 'Could not open the product catalog temporary feed file for writing', 'facebook-for-woocommerce' ), 500 );
+			throw new PluginException( esc_html__( 'Could not open the product catalog temporary feed file for writing', 'facebook-for-woocommerce' ), 500 );
 		}
 
 		$file_path = $this->get_file_path();
@@ -340,7 +340,7 @@ class WC_Facebook_Product_Feed {
 		// check if we will be able to write to the final feed file
 		// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_is_writable
 		if ( file_exists( $file_path ) && ! is_writable( $file_path ) ) {
-			throw new PluginException( __( 'Could not open the product catalog feed file for writing', 'facebook-for-woocommerce' ), 500 );
+			throw new PluginException( esc_html__( 'Could not open the product catalog feed file for writing', 'facebook-for-woocommerce' ), 500 );
 		}
 
 		// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fwrite
@@ -419,7 +419,7 @@ class WC_Facebook_Product_Feed {
 			$renamed = rename( $temp_file_path, $file_path );
 
 			if ( empty( $renamed ) ) {
-				throw new PluginException( __( 'Could not rename the product catalog feed file', 'facebook-for-woocommerce' ), 500 );
+				throw new PluginException( esc_html__( 'Could not rename the product catalog feed file', 'facebook-for-woocommerce' ), 500 );
 			}
 		}
 	}

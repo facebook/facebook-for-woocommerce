@@ -459,7 +459,7 @@ class WC_Facebookcommerce extends WooCommerce\Facebook\Framework\Plugin {
 		}
 		if ( ! is_object( $this->api ) ) {
 			if ( ! $access_token ) {
-				throw new ApiException( __( 'Cannot create the API instance because the access token is missing.', 'facebook-for-woocommerce' ) );
+				throw new ApiException( esc_html__( 'Cannot create the API instance because the access token is missing.', 'facebook-for-woocommerce' ) );
 			}
 			$this->api = new WooCommerce\Facebook\API( $access_token );
 		} else {

@@ -985,7 +985,7 @@ if ( ! class_exists( 'WC_Facebookcommerce_Utils' ) ) :
 			$parent_product = wc_get_product( $product->get_parent_id() );
 
 			if ( ! $parent_product instanceof \WC_Product ) {
-				throw new PluginException( "No parent product found with ID equal to {$product->get_parent_id()}." );
+				throw new PluginException( esc_html( "No parent product found with ID equal to {$product->get_parent_id()}." ) );
 			}
 
 			$fb_parent_product = new \WC_Facebook_Product( $parent_product->get_id() );

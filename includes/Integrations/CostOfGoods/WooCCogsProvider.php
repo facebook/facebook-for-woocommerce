@@ -27,7 +27,7 @@ class WooCCogsProvider extends AbstractCogsProvider {
 
 	public function get_cogs_value( $product ) {
 		if ( ! self::is_available() ) {
-			throw new IntegrationIsNotAvailableException( self::INTEGRATION_NAME );
+			throw new IntegrationIsNotAvailableException( esc_html( self::INTEGRATION_NAME ) );
 		}
 		// We must use cogs_total as that'll have the correct value for Simple & Variable products
 		return $product->get_cogs_total_value();

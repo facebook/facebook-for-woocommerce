@@ -53,7 +53,7 @@ class JWTCodec {
 	 */
 	public static function decode( string $jwt, string $public_key, string $algorithm ): array {
 		if ( ! isset( self::SUPPORTED_ALGS[ $algorithm ] ) ) {
-			throw new \UnexpectedValueException( 'Algorithm not supported: ' . $algorithm );
+			throw new \UnexpectedValueException( esc_html( 'Algorithm not supported: ' . $algorithm ) );
 		}
 
 		$parts = explode( '.', $jwt );
@@ -90,7 +90,7 @@ class JWTCodec {
 		$result = openssl_verify( $msg, $der_signature, $public_key, $digest );
 		if ( 1 !== $result ) {
 			if ( -1 === $result ) {
-				throw new \UnexpectedValueException( 'OpenSSL error: ' . openssl_error_string() );
+				throw new \UnexpectedValueException( esc_html( 'OpenSSL error: ' . openssl_error_string() ) );
 			}
 			throw new JWTSignatureInvalidException( 'Signature verification failed' );
 		}
@@ -114,7 +114,7 @@ class JWTCodec {
 	 */
 	public static function encode( array $payload, string $private_key, string $algorithm ): string {
 		if ( ! isset( self::SUPPORTED_ALGS[ $algorithm ] ) ) {
-			throw new \DomainException( 'Algorithm not supported: ' . $algorithm );
+			throw new \DomainException( esc_html( 'Algorithm not supported: ' . $algorithm ) );
 		}
 
 		$header   = [

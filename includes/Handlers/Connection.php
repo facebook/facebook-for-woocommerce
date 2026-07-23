@@ -612,10 +612,12 @@ class Connection {
 			// phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_print_r
 			facebook_for_woocommerce()->log( print_r( $body, true ) );
 			throw new ApiException(
-				sprintf(
-					/* translators: Placeholders: %s - API error message */
-					__( 'Could not retrieve page access data. %s', 'facebook-for-woocommerce' ),
-					wp_remote_retrieve_response_message( $response )
+				esc_html(
+					sprintf(
+						/* translators: Placeholders: %s - API error message */
+						__( 'Could not retrieve page access data. %s', 'facebook-for-woocommerce' ),
+						wp_remote_retrieve_response_message( $response )
+					)
 				)
 			);
 		}
@@ -623,10 +625,12 @@ class Connection {
 		// bail if the user isn't authorized to manage the page
 		if ( empty( $page_access_tokens[ $page_id ] ) ) {
 			throw new ApiException(
-				sprintf(
-				/* translators: Placeholders: %s - Facebook page ID */
-					__( 'Page %s not authorized.', 'facebook-for-woocommerce' ),
-					$page_id
+				esc_html(
+					sprintf(
+					/* translators: Placeholders: %s - Facebook page ID */
+						__( 'Page %s not authorized.', 'facebook-for-woocommerce' ),
+						$page_id
+					)
 				)
 			);
 		}

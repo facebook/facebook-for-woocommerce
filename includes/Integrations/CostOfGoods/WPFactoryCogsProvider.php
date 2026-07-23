@@ -25,7 +25,7 @@ class WPFactoryCogsProvider extends AbstractCogsProvider {
 
 	public function get_cogs_value( $product ) {
 		if ( ! self::is_available() ) {
-			throw new IntegrationIsNotAvailableException( self::INTEGRATION_NAME );
+			throw new IntegrationIsNotAvailableException( esc_html( self::INTEGRATION_NAME ) );
 		}
 		// WPFactory renamed alg_wc_cog() to wpfcogs() in v4.1.6; prefer the new accessor
 		// and fall back to the legacy one for older plugin versions. For WPFactory simple

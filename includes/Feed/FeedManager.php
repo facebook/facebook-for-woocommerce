@@ -63,7 +63,7 @@ class FeedManager {
 			case self::NAVIGATION_MENU:
 				return new NavigationMenuFeed();
 			default:
-				throw new \InvalidArgumentException( "Invalid feed type {$data_stream_name}" );
+				throw new \InvalidArgumentException( esc_html( "Invalid feed type {$data_stream_name}" ) );
 		}
 	}
 
@@ -88,7 +88,7 @@ class FeedManager {
 	 */
 	public function get_feed_instance( string $feed_type ): AbstractFeed {
 		if ( ! isset( $this->feed_instances[ $feed_type ] ) ) {
-			throw new \InvalidArgumentException( "Feed type {$feed_type} does not exist." );
+			throw new \InvalidArgumentException( esc_html( "Feed type {$feed_type} does not exist." ) );
 		}
 		return $this->feed_instances[ $feed_type ];
 	}
