@@ -909,18 +909,25 @@ test.describe('WooCommerce Plugin level tests', () => {
       const colorValue = facebookData[0]['color'];
       console.log(`📊 Facebook color field value: ${colorValue}`);
 
-      // Verify the color value matches one of our attribute options
-      const validColors = attributeOptions.map(opt => opt.toLowerCase());
-      const colorLower = colorValue ? colorValue.toLowerCase() : '';
-      const colorMatches = validColors.some(valid => colorLower.includes(valid.toLowerCase()));
+      // The mapped WooCommerce attribute value must actually propagate to Meta's
+      // "color" field. Assert this unconditionally: a missing or mismatched value
+      // is a real regression in attribute mapping, not something to warn past.
+      // (A prior version fell back to expect(colorValue).toBeTruthy(), which
+      // accepted any non-empty value — even a wrong one — masking mapping bugs.)
+      expect(
+        colorValue,
+        'Facebook "color" field should be populated from the mapped attribute'
+      ).toBeTruthy();
 
-      if (colorMatches) {
-        console.log(`✅ Color field correctly contains attribute value(s): ${colorValue}`);
-      } else {
-        console.log(`⚠️ Color field value "${colorValue}" - verifying it was set from attribute mapping`);
-        // The color might be formatted differently, just ensure it exists
-        expect(colorValue).toBeTruthy();
-      }
+      const validColors = attributeOptions.map(opt => opt.toLowerCase());
+      const colorLower = colorValue.toLowerCase();
+      const colorMatches = validColors.some(valid => colorLower.includes(valid));
+      expect(
+        colorMatches,
+        `Facebook "color" field "${colorValue}" should contain one of the mapped ` +
+        `attribute values [${attributeOptions.join(', ')}]`
+      ).toBe(true);
+      console.log(`✅ Color field correctly contains mapped attribute value(s): ${colorValue}`);
 
       console.log('✅ Attribute mapping test completed successfully');
       logTestEnd(testInfo, true);
