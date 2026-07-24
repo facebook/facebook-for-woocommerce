@@ -123,12 +123,12 @@ jobs:
     name: E2E Tests - ${{ matrix.version-label }} - ${{ matrix.test-group }}
     needs: [check-secrets, resolve-versions]
     if: ${{ needs.check-secrets.outputs.secrets-configured == 'true' }}
-    # Run every shard on the standard GitHub-hosted x86 runner. We previously
+    # Run every shard on the standard GitHub-hosted runner. We previously
     # pinned plugin-events/product-crud to a `4-core-ubuntu-22.04` larger-runner
     # pool, but that label isn't provisioned for this repo, so those jobs queued
     # indefinitely and were cancelled ~24h later by the next scheduled run —
-    # never actually executing. ubuntu-latest is required anyway because the
-    # mysql:5.7 service container has no arm64 image.
+    # never actually executing. The mysql:8.0 service container is multi-arch,
+    # so this is no longer constrained to x86-only pools.
     runs-on: ubuntu-latest
     # Fail fast instead of letting a stuck step (e.g. a hung browser install) run
     # until GitHub's 6-hour default job timeout. plugin-events runs many browser
@@ -155,7 +155,7 @@ jobs:
 
     services:
       mysql:
-        image: mysql:5.7
+        image: mysql:8.0
         env:
           MYSQL_ROOT_PASSWORD: wordpress
           MYSQL_DATABASE: wordpress
