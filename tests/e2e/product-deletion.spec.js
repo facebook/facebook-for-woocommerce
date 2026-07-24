@@ -201,7 +201,9 @@ test.describe('Meta for WooCommerce - Product Deletion E2E Tests', () => {
       } catch (e) {
         console.warn(`⚠️ Description still not updated in woo: expected "${newDescription}", got "${syncResultAfter?.raw_data?.woo_data?.[0]?.description}"`);
       }
-      expect(syncResultAfter['raw_data']['facebook_data']['found']).toBe(false);
+      // facebook_data is an array of per-item results ([{ found: bool, ... }]),
+      // mirroring woo_data above. After exclusion the item must report found=false.
+      expect(syncResultAfter['raw_data']['facebook_data'][0]['found']).toBe(false);
       console.log('✅ Product no longer exists on Facebook catalog');
       logTestEnd(testInfo, true);
     } catch (error) {
