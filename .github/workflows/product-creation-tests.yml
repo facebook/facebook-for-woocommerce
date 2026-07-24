@@ -181,7 +181,11 @@ jobs:
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
         with:
-          php-version: '8.1'
+          # 'latest' (not a pinned version) so E2E runs on the newest stable PHP as
+          # soon as it releases — surfacing incompatibilities with new PHP versions
+          # early. Trade-off: a new PHP release can turn E2E red until the plugin is
+          # made compatible.
+          php-version: 'latest'
           extensions: mysqli, zip, gd, curl, dom, fileinfo, mbstring
           ini-values: |
             date.timezone=UTC
@@ -216,27 +220,28 @@ jobs:
           sed -i "s/password_here/wordpress/" wp-config.php
           sed -i "s/localhost/127.0.0.1/" wp-config.php
 
-          # Add debug and security settings
-          cat >> wp-config.php << 'EOF'
+          # Enable debug logging by replacing wp-config-sample.php's own WP_DEBUG
+          # define IN PLACE, before wp-settings.php loads. We must not append a second
+          # define('WP_DEBUG', ...): PHP keeps the first definition (the sample's
+          # `false`) and emits "Constant WP_DEBUG already defined" — rendered as
+          # "...this will be an error in PHP 9" on PHP 8.3+, whose word "error" tripped
+          # the debug.log error scan and failed every E2E shard on newer PHP. For the
+          # same reason we no longer append duplicate salt/key defines: the sample
+          # already defines all eight, so its placeholder values remain in effect.
+          sed -i -E "s|^[[:space:]]*define. *.WP_DEBUG., *false.*|define( 'WP_DEBUG', true );\ndefine( 'WP_DEBUG_LOG', true );\ndefine( 'WP_DEBUG_DISPLAY', false );\n@ini_set( 'error_log', '${{ env.WP_DEBUG_LOG }}' );\n@ini_set( 'log_errors', 'On' );|" wp-config.php
 
-          // Debug settings
-          define('WP_DEBUG', true);
-          define('WP_DEBUG_LOG', true);
-          define('WP_DEBUG_DISPLAY', false);
-          @ini_set('error_log', '${{ env.WP_DEBUG_LOG }}');
-          @ini_set('log_errors', 'On');
-
-          // Security keys (for testing only)
-          define('AUTH_KEY',         'testing-key-1');
-          define('SECURE_AUTH_KEY',  'testing-key-2');
-          define('LOGGED_IN_KEY',    'testing-key-3');
-          define('NONCE_KEY',        'testing-key-4');
-          define('AUTH_SALT',        'testing-salt-1');
-          define('SECURE_AUTH_SALT', 'testing-salt-2');
-          define('LOGGED_IN_SALT',   'testing-salt-3');
-          define('NONCE_SALT',       'testing-salt-4');
-
-          EOF
+          # Set deterministic testing salts/keys by replacing wp-config-sample.php's
+          # placeholder defines IN PLACE (same reason as WP_DEBUG: appending duplicates
+          # them, which PHP ignores while warning "already defined"). The 'NAME', anchor
+          # keeps AUTH_KEY from also matching SECURE_AUTH_KEY.
+          sed -i -E "s|^[[:space:]]*define. *'AUTH_KEY',.*|define( 'AUTH_KEY', 'testing-key-1' );|" wp-config.php
+          sed -i -E "s|^[[:space:]]*define. *'SECURE_AUTH_KEY',.*|define( 'SECURE_AUTH_KEY', 'testing-key-2' );|" wp-config.php
+          sed -i -E "s|^[[:space:]]*define. *'LOGGED_IN_KEY',.*|define( 'LOGGED_IN_KEY', 'testing-key-3' );|" wp-config.php
+          sed -i -E "s|^[[:space:]]*define. *'NONCE_KEY',.*|define( 'NONCE_KEY', 'testing-key-4' );|" wp-config.php
+          sed -i -E "s|^[[:space:]]*define. *'AUTH_SALT',.*|define( 'AUTH_SALT', 'testing-salt-1' );|" wp-config.php
+          sed -i -E "s|^[[:space:]]*define. *'SECURE_AUTH_SALT',.*|define( 'SECURE_AUTH_SALT', 'testing-salt-2' );|" wp-config.php
+          sed -i -E "s|^[[:space:]]*define. *'LOGGED_IN_SALT',.*|define( 'LOGGED_IN_SALT', 'testing-salt-3' );|" wp-config.php
+          sed -i -E "s|^[[:space:]]*define. *'NONCE_SALT',.*|define( 'NONCE_SALT', 'testing-salt-4' );|" wp-config.php
 
       - name: Wordpress debug log file setup
         run: |
