@@ -280,31 +280,12 @@ class ProductValidator {
 	}
 
 	/**
-	 * Check whether the product's categories or tags (terms) exclude it from sync.
+	 * Check whether the product's terms exclude it from sync.
 	 *
 	 * @throws ProductExcludedException If product should not be synced.
 	 */
 	protected function validate_product_terms() {
-
-		if ( $this->integration->is_woo_all_products_enabled() ) {
-			return;
-		}
-
-		$product = $this->product_parent ? $this->product_parent : $this->product;
-
-		$excluded_categories = $this->integration->get_excluded_product_category_ids();
-		if ( $excluded_categories ) {
-			if ( ! empty( array_intersect( $product->get_category_ids(), $excluded_categories ) ) ) {
-				throw new ProductExcludedException( esc_html__( 'Product excluded because of categories.', 'facebook-for-woocommerce' ) );
-			}
-		}
-
-		$excluded_tags = $this->integration->get_excluded_product_tag_ids();
-		if ( $excluded_tags ) {
-			if ( ! empty( array_intersect( $product->get_tag_ids(), $excluded_tags ) ) ) {
-				throw new ProductExcludedException( esc_html__( 'Product excluded because of tags.', 'facebook-for-woocommerce' ) );
-			}
-		}
+		return;
 	}
 
 	/**

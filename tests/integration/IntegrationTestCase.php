@@ -63,8 +63,7 @@ abstract class IntegrationTestCase extends WP_UnitTestCase {
 		$this->integration->update_option( 'product_catalog_id', 'test_catalog_id' );
 		$this->integration->update_option( 'pixel_id', 'test_pixel_id' );
 		
-		// Disable the "woo all products sync" rollout switch to ensure 
-		// category/tag exclusions work properly in tests
+		// Disable the "woo all products sync" rollout switch for deterministic sync behavior in tests
 		$rollout_switches = get_option( 'wc_facebook_for_woocommerce_rollout_switches', [] );
 		$rollout_switches['woo_all_products_sync_enabled'] = 'no';
 		update_option( 'wc_facebook_for_woocommerce_rollout_switches', $rollout_switches );
@@ -213,25 +212,6 @@ abstract class IntegrationTestCase extends WP_UnitTestCase {
 		update_option( 'wc_facebook_enable_product_sync', 'no' );
 	}
 
-	/**
-	 * Set excluded categories
-	 */
-	protected function set_excluded_categories( array $category_ids ): void {
-		$this->integration->update_option( 'excluded_product_category_ids', $category_ids );
-		
-		// Set the specific option that the validator checks
-		update_option( 'wc_facebook_excluded_product_category_ids', $category_ids );
-	}
-
-	/**
-	 * Set excluded tags  
-	 */
-	protected function set_excluded_tags( array $tag_ids ): void {
-		$this->integration->update_option( 'excluded_product_tag_ids', $tag_ids );
-		
-		// Set the specific option that the validator checks
-		update_option( 'wc_facebook_excluded_product_tag_ids', $tag_ids );
-	}
 
 	/**
 	 * Enable product sync for a specific product

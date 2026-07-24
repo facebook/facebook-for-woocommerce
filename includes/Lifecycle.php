@@ -220,12 +220,10 @@ class Lifecycle extends Framework\Lifecycle {
 		$settings = get_option( 'woocommerce_facebookcommerce_settings' );
 		if ( is_array( $settings ) ) {
 			$settings_map = array(
-				'facebook_pixel_id'             => \WC_Facebookcommerce_Integration::SETTING_FACEBOOK_PIXEL_ID,
-				'facebook_page_id'              => \WC_Facebookcommerce_Integration::SETTING_FACEBOOK_PAGE_ID,
-				'enable_product_sync'           => \WC_Facebookcommerce_Integration::SETTING_ENABLE_PRODUCT_SYNC,
-				'excluded_product_category_ids' => \WC_Facebookcommerce_Integration::SETTING_EXCLUDED_PRODUCT_CATEGORY_IDS,
-				'excluded_product_tag_ids'      => \WC_Facebookcommerce_Integration::SETTING_EXCLUDED_PRODUCT_TAG_IDS,
-				'enable_messenger'              => self::SETTING_ENABLE_MESSENGER,
+				'facebook_pixel_id'   => \WC_Facebookcommerce_Integration::SETTING_FACEBOOK_PIXEL_ID,
+				'facebook_page_id'    => \WC_Facebookcommerce_Integration::SETTING_FACEBOOK_PAGE_ID,
+				'enable_product_sync' => \WC_Facebookcommerce_Integration::SETTING_ENABLE_PRODUCT_SYNC,
+				'enable_messenger'    => self::SETTING_ENABLE_MESSENGER,
 				'messenger_locale'              => self::SETTING_MESSENGER_LOCALE,
 				'messenger_greeting'            => self::SETTING_MESSENGER_GREETING,
 				'messenger_color_hex'           => self::SETTING_MESSENGER_COLOR_HEX,

@@ -145,67 +145,6 @@ class ProductValidatorTest extends IntegrationTestCase {
 	}
 
 	/**
-	 * Test product sync with excluded category
-	 */
-	public function test_product_sync_with_excluded_category(): void {
-		$this->enable_facebook_sync();
-
-		// Create a test category
-		$category = $this->create_category( 'Excluded Category' );
-
-		// Set the category as excluded
-		$this->set_excluded_categories( [ $category->term_id ] );
-
-		// Create a product in the excluded category
-		$product = $this->create_simple_product([
-			'name' => 'Product in Excluded Category',
-			'regular_price' => '19.99',
-			'status' => 'publish',
-			'catalog_visibility' => 'visible'
-		]);
-
-		// Assign product to excluded category
-		wp_set_object_terms( $product->get_id(), [ $category->term_id ], 'product_cat' );
-		
-		// Refresh the product to get updated category data
-		$product = wc_get_product( $product->get_id() );
-
-		// Product should not be synced due to excluded category
-		$this->assertProductShouldNotSync( $product, 'Products in excluded categories should not be synced' );
-	}
-
-	/**
-	 * Test product sync with excluded tag
-	 */
-	public function test_product_sync_with_excluded_tag(): void {
-		$this->enable_facebook_sync();
-
-		// Create a test tag
-		$tag_result = wp_insert_term( 'Excluded Tag', 'product_tag' );
-		$tag_id = $tag_result['term_id'];
-
-		// Set the tag as excluded
-		$this->set_excluded_tags( [ $tag_id ] );
-
-		// Create a product with the excluded tag
-		$product = $this->create_simple_product([
-			'name' => 'Product with Excluded Tag',
-			'regular_price' => '19.99',
-			'status' => 'publish',
-			'catalog_visibility' => 'visible'
-		]);
-
-		// Assign product to excluded tag
-		wp_set_object_terms( $product->get_id(), [ $tag_id ], 'product_tag' );
-		
-		// Refresh the product to get updated tag data
-		$product = wc_get_product( $product->get_id() );
-
-		// Product should not be synced due to excluded tag
-		$this->assertProductShouldNotSync( $product, 'Products with excluded tags should not be synced' );
-	}
-
-	/**
 	 * Test product sync explicitly disabled at product level
 	 */
 	public function test_product_sync_explicitly_disabled(): void {
@@ -296,15 +235,10 @@ class ProductValidatorTest extends IntegrationTestCase {
 			'Product should not be deleted when in allowed category' 
 		);
 
-		// Now exclude the category
-		$this->set_excluded_categories( [ $category->term_id ] );
-
-		// Product should now be deleted
-		$this->assertProductShouldBeDeleted( $product, 'Product should be deleted when category becomes excluded' );
 	}
 
 	/**
-	 * Test product sync with multiple categories (mixed excluded/included)
+	 * Test product sync with multiple categories.
 	 */
 	public function test_product_sync_with_mixed_categories(): void {
 		$this->enable_facebook_sync();
@@ -312,9 +246,6 @@ class ProductValidatorTest extends IntegrationTestCase {
 		// Create categories
 		$allowed_category = $this->create_category( 'Allowed Category' );
 		$excluded_category = $this->create_category( 'Excluded Category' );
-
-		// Set only one category as excluded
-		$this->set_excluded_categories( [ $excluded_category->term_id ] );
 
 		// Create a product in both categories
 		$product = $this->create_simple_product([
@@ -330,8 +261,7 @@ class ProductValidatorTest extends IntegrationTestCase {
 		// Refresh the product to get updated category data
 		$product = wc_get_product( $product->get_id() );
 
-		// Product should not be synced because it's in an excluded category
-		$this->assertProductShouldNotSync( $product, 'Products in any excluded category should not be synced' );
+		$this->assertProductShouldSync( $product, 'Products should sync based on category membership alone' );
 	}
 
 	/**

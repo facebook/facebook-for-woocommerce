@@ -82,10 +82,20 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 	/** @var string the "enable product sync" setting ID */
 	const SETTING_ENABLE_PRODUCT_SYNC = 'wc_facebook_enable_product_sync';
 
-	/** @var string the excluded product category IDs setting ID */
+	/**
+	 * Legacy excluded product category IDs setting ID.
+	 *
+	 * @deprecated 3.7.2 Category/tag exclusions were removed; kept for backward compatibility.
+	 * @var string
+	 */
 	const SETTING_EXCLUDED_PRODUCT_CATEGORY_IDS = 'wc_facebook_excluded_product_category_ids';
 
-	/** @var string the excluded product tag IDs setting ID */
+	/**
+	 * Legacy excluded product tag IDs setting ID.
+	 *
+	 * @deprecated 3.7.2 Category/tag exclusions were removed; kept for backward compatibility.
+	 * @var string
+	 */
 	const SETTING_EXCLUDED_PRODUCT_TAG_IDS = 'wc_facebook_excluded_product_tag_ids';
 
 	/** @var string the product description mode setting ID */
@@ -2612,14 +2622,18 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 	/**
 	 * Gets the IDs of the categories to be excluded from sync.
 	 *
+	 * @deprecated 3.7.2 Category/tag exclusions were removed; this shim is kept for backward compatibility.
+	 *
 	 * @return int[]
 	 * @since 1.10.0
 	 */
 	public function get_excluded_product_category_ids() {
+		_deprecated_function( __METHOD__, '3.7.2' );
 
 		if ( $this->is_woo_all_products_enabled() ) {
-			return (array) array();
+			return array();
 		}
+
 		/**
 		 * Filters the configured excluded product category IDs.
 		 *
@@ -2634,13 +2648,18 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 	/**
 	 * Gets the IDs of the tags to be excluded from sync.
 	 *
+	 * @deprecated 3.7.2 Category/tag exclusions were removed; this shim is kept for backward compatibility.
+	 *
 	 * @return int[]
 	 * @since 1.10.0
 	 */
 	public function get_excluded_product_tag_ids() {
+		_deprecated_function( __METHOD__, '3.7.2' );
+
 		if ( $this->is_woo_all_products_enabled() ) {
-			return (array) array();
+			return array();
 		}
+
 		/**
 		 * Filters the configured excluded product tag IDs.
 		 *
