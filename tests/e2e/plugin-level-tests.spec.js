@@ -635,23 +635,18 @@ test.describe('WooCommerce Plugin level tests', () => {
       ];
 
       for (const pageInfo of pagesToCheck) {
-        try {
-          console.log(`🔍 Checking ${pageInfo.name} page...`);
-          await page.goto(`${baseURL}${pageInfo.path}`, {
-            waitUntil: 'domcontentloaded',
-            timeout: TIMEOUTS.MAX
-          });
+        console.log(`🔍 Checking ${pageInfo.name} page...`);
+        await page.goto(`${baseURL}${pageInfo.path}`, {
+          waitUntil: 'domcontentloaded',
+          timeout: TIMEOUTS.MAX
+        });
 
-          await checkForPhpErrors(page);
+        await checkForPhpErrors(page);
 
-          // Verify admin content loaded
-          await page.locator('#wpcontent').isVisible({ timeout: TIMEOUTS.LONG });
+        // Verify admin content loaded
+        await expect(page.locator('#wpcontent')).toBeVisible({ timeout: TIMEOUTS.LONG });
 
-          console.log(`✅ ${pageInfo.name} page loaded without errors`);
-
-        } catch (error) {
-          console.log(`⚠️ ${pageInfo.name} page check failed: ${error.message}`);
-        }
+        console.log(`✅ ${pageInfo.name} page loaded without errors`);
       }
 
       logTestEnd(testInfo, true);
