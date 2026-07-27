@@ -1,5 +1,12 @@
 *** Meta for WooCommerce Changelog ***
 
+= 3.7.6 - 2026-07-23 =
+* Fix - Fix/prepare release changelog fix by @bojanaivovic in #3972
+* Fix - ci(e2e): run all shards on ubuntu-latest instead of custom runner pools by @vahidkay-meta in #3976
+* Fix - Improve escaping and WordPress Plugin Check compliance by @vahidkay-meta in #3980
+* Fix - Clear remaining WordPress Plugin Check errors by @vahidkay-meta in #3981
+* Dev - ci(release): fix readme Tested-up-to minor version + propagate Stable tag to git by @vahidkay-meta in #3983
+
 = 3.7.5 - 2026-07-14 =
 * Fix - ci(release): grant actions:write so Prepare Release can dispatch the build by @vahidkay-meta in #3973
 * Doc - Update the contributor's guide by @iodic in #3820
