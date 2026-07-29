@@ -99,7 +99,9 @@ const {
   installJsErrorSimulatorMuPlugin,
   removeJsErrorSimulatorMuPlugin,
   installSingleSearchRedirectBlockerMuPlugin,
-  removeSingleSearchRedirectBlockerMuPlugin
+  removeSingleSearchRedirectBlockerMuPlugin,
+  installBlockThemeHeaderSearchMuPlugin,
+  removeBlockThemeHeaderSearchMuPlugin
 } = require('./wordpress/plugins');
 
 const {
@@ -254,6 +256,8 @@ const wordpress = {
   removeJsErrorSimulatorMuPlugin,
   installSingleSearchRedirectBlockerMuPlugin,
   removeSingleSearchRedirectBlockerMuPlugin,
+  installBlockThemeHeaderSearchMuPlugin,
+  removeBlockThemeHeaderSearchMuPlugin,
   runWpCli,
   getActiveThemeStatus,
   switchThemeBySlug,
@@ -385,6 +389,8 @@ module.exports = {
   removeJsErrorSimulatorMuPlugin,
   installSingleSearchRedirectBlockerMuPlugin,
   removeSingleSearchRedirectBlockerMuPlugin,
+  installBlockThemeHeaderSearchMuPlugin,
+  removeBlockThemeHeaderSearchMuPlugin,
 
   // WordPress - Themes
   runWpCli,

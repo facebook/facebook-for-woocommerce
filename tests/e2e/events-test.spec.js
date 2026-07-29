@@ -13,6 +13,8 @@ const {
   removeJsErrorSimulatorMuPlugin,
   installSingleSearchRedirectBlockerMuPlugin,
   removeSingleSearchRedirectBlockerMuPlugin,
+  installBlockThemeHeaderSearchMuPlugin,
+  removeBlockThemeHeaderSearchMuPlugin,
   getVisibleSearchInput,
   createVariableProductEventFixture,
   createGroupedProductEventFixture,
@@ -40,10 +42,30 @@ const {
 } = require('./helpers/js');
 
 const STOREFRONT_THEME_SLUG = 'storefront';
+// Classic project uses Twenty Thirteen because it ships a persistent, load-visible
+// search form in its header (get_search_form() in header.php) — unlike Twenty
+// Twenty-One, which has no header search. This lets the Search event run natively on
+// the classic architecture. The block project keeps Twenty Twenty-Five (no FSE theme
+// ships a header search) and gets a search block injected via the header-search
+// mu-plugin (see PROJECTS_NEEDING_HEADER_SEARCH_INJECTION below).
 const THEME_PROJECT_TO_SLUG = {
-  'chromium-wp-customer-classic-theme': 'twentytwentyone',
+  'chromium-wp-customer-classic-theme': 'twentythirteen',
   'chromium-wp-customer-block-theme': 'twentytwentyfive',
 };
+
+// Block-theme projects that need a search block injected into the header so the
+// Search event can be exercised (no stock FSE theme ships a header search).
+const PROJECTS_NEEDING_HEADER_SEARCH_INJECTION = ['chromium-wp-customer-block-theme'];
+
+// Projects where a search UI is guaranteed and its absence is a real failure, not a
+// skippable fixture limitation: Storefront-based brave, the classic theme (native
+// header search) and the block theme (injected header search). A skip here would be
+// false coverage evidence for that configuration.
+const PROJECTS_REQUIRING_SEARCH = [
+  'brave-wp-customer',
+  'chromium-wp-customer-classic-theme',
+  'chromium-wp-customer-block-theme',
+];
 
 let themeLockToken = null;
 let originalThemeSlug = null;
@@ -199,15 +221,23 @@ test.beforeAll(async ({}, workerInfo) => {
     }
   }
 
+  if (PROJECTS_NEEDING_HEADER_SEARCH_INJECTION.includes(workerInfo.project.name)) {
+    await installBlockThemeHeaderSearchMuPlugin();
+  }
+
   activeThemeProjectSlug = targetThemeSlug;
 });
 
-test.afterAll(async () => {
+test.afterAll(async ({}, workerInfo) => {
   if (!themeLockToken) {
     return;
   }
 
   try {
+    if (PROJECTS_NEEDING_HEADER_SEARCH_INJECTION.includes(workerInfo.project.name)) {
+      await removeBlockThemeHeaderSearchMuPlugin();
+    }
+
     const restoreTarget = originalThemeSlug || STOREFRONT_THEME_SLUG;
     const restoreResult = await switchThemeBySlug(restoreTarget);
     if (!restoreResult.success) {
@@ -804,11 +834,6 @@ test('Purchase - Multiple Place Order Clicks', async ({ page }, testInfo) => {
 });
 
 test('Search', async ({ page }, testInfo) => {
-    test.skip(
-      ['chromium-wp-customer-classic-theme', 'chromium-wp-customer-block-theme'].includes(testInfo.project.name),
-      'Search is not validated on non-Storefront theme projects because search UI is not guaranteed.'
-    );
-
     await installSingleSearchRedirectBlockerMuPlugin();
 
     try {
@@ -820,8 +845,8 @@ test('Search', async ({ page }, testInfo) => {
 
       console.log(`   🔍 Typing search query in search box`);
       const searchInput = await getVisibleSearchInput(page);
-      if (!searchInput && testInfo.project.name.includes('brave')) {
-        throw new Error('Search UI was not found for brave-wp-customer on Storefront; this should be present and must not be skipped.');
+      if (!searchInput && PROJECTS_REQUIRING_SEARCH.includes(testInfo.project.name)) {
+        throw new Error(`Search UI was not found for ${testInfo.project.name}; a search UI is expected here and this must not be skipped.`);
       }
       test.skip(!searchInput, 'Search UI is not available in this browser/theme fixture.');
       await searchInput.fill('test');
@@ -858,11 +883,6 @@ test('Search', async ({ page }, testInfo) => {
 });
 
 test('Search - No Results', async ({ page }, testInfo) => {
-    test.skip(
-      ['chromium-wp-customer-classic-theme', 'chromium-wp-customer-block-theme'].includes(testInfo.project.name),
-      'Search is not validated on non-Storefront theme projects because search UI is not guaranteed.'
-    );
-
     const { testId, pixelCapture } = await TestSetup.init(page, 'Search', testInfo, true); // expectZeroEvents=true
 
     console.log(`   🏠 Navigating to homepage`);
@@ -874,8 +894,8 @@ test('Search - No Results', async ({ page }, testInfo) => {
     console.log(`   🔍 Typing random search query: ${randomString}`);
 
     const searchInput = await getVisibleSearchInput(page);
-    if (!searchInput && testInfo.project.name.includes('brave')) {
-      throw new Error('Search UI was not found for brave-wp-customer on Storefront; this should be present and must not be skipped.');
+    if (!searchInput && PROJECTS_REQUIRING_SEARCH.includes(testInfo.project.name)) {
+      throw new Error(`Search UI was not found for ${testInfo.project.name}; a search UI is expected here and this must not be skipped.`);
     }
     test.skip(!searchInput, 'Search UI is not available in this browser/theme fixture.');
     await searchInput.fill(randomString);
