@@ -1140,13 +1140,16 @@ test('AddToCart - Signals hold/release with multiple shop AJAX clicks', async ({
         releasedCapiSample: releasedCapiEvents.slice(0, 3),
       };
 
+      // Note: the facebook_release_signals endpoint is cookie-gated (it rejects
+      // requests without the wc_facebook_signals_state cookie) and uses no nonce
+      // (ReleaseSignalsAjax::handle has no check_ajax_referer), so the runtime
+      // config intentionally carries no nonce — configNoncePresent is not asserted.
       if (
         signalRuntimeAfterHold.state !== 'held' ||
         !signalRuntimeAfterHold.hasFacebookSignals ||
         !signalRuntimeAfterHold.facebookSignalsHeldFlag ||
         signalRuntimeAfterHold.configAction !== 'facebook_release_signals' ||
-        !signalRuntimeAfterHold.configAjaxUrl ||
-        !signalRuntimeAfterHold.configNoncePresent
+        !signalRuntimeAfterHold.configAjaxUrl
       ) {
         throw new Error(`Signals runtime did not initialize in held mode after reload. Diagnostics: ${JSON.stringify(diagnostics)}`);
       }
