@@ -1,5 +1,12 @@
 <?php
 /**
+ * Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
+ *
+ * This source code is licensed under the license found in the
+ * LICENSE file in the root directory of this source tree.
+ */
+
+/**
  * Plugin Name: FB E2E Batch Monitor (Test Only)
  * Description: Intercepts Meta API batch requests during E2E tests
  * Version: 1.0.0-poc

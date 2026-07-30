@@ -119,3 +119,9 @@ the [wiki for details of how to build and release the plugin](https://github.com
 
 We currently do not support PHPCS on PHP 8.1+ versions. Please run PHPCS checks on PHP 8.0 or lower versions.
 Refer [#2624 PR](https://github.com/woocommerce/facebook-for-woocommerce/pull/2624/) for additional context.
+
+## License
+
+Meta for WooCommerce is licensed under the [GNU General Public License v2.0 (or later)](https://www.gnu.org/licenses/gpl-2.0.html).
+
+See the [LICENSE](LICENSE) file for the full license text.

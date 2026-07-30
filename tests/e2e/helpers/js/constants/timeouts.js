@@ -1,4 +1,11 @@
 /**
+ * Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
+ *
+ * This source code is licensed under the license found in the
+ * LICENSE file in the root directory of this source tree.
+ */
+
+/**
  * E2E Test Timeout Constants
  *
  * Centralized timeout values for consistent E2E test behavior.

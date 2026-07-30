@@ -1,4 +1,11 @@
 /**
+ * Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
+ *
+ * This source code is licensed under the license found in the
+ * LICENSE file in the root directory of this source tree.
+ */
+
+/**
  * E2E Test Helpers - Barrel Export
  *
  * Location: tests/e2e/helpers/js/index.js

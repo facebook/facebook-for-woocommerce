@@ -56,3 +56,17 @@ When that happens, the site still recovers on the next request, but the disable 
 * Dev - ci(release): fix readme Tested-up-to minor version + propagate Stable tag to git by @vahidkay-meta in #3983
 
 [See changelog for all versions](https://raw.githubusercontent.com/facebook/facebook-for-woocommerce/refs/heads/main/changelog.txt).
+
+== Terms of Use ==
+
+Your use of this project is governed by [Meta's Terms of Use](https://opensource.fb.com/legal/terms).
+
+== Privacy Policy ==
+
+For information about how Meta collects and uses data, please review [Meta's Privacy Policy](https://opensource.fb.com/legal/privacy).
+
+== Copyright ==
+
+Copyright (c) Meta Platforms, Inc. and affiliates. All Rights Reserved.
+
+Meta for WooCommerce is distributed under the terms of the GNU General Public License v2.0 (or later). See the LICENSE file in the plugin's source repository for the full license text.
