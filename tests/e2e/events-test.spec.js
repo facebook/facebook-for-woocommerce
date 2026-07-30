@@ -52,6 +52,21 @@ const THEME_PROJECT_TO_SLUG = {
   'chromium-wp-customer-block-theme': 'twentytwentyfive',
 };
 
+// Desktop projects where the shop archive renders WooCommerce's classic AJAX
+// add-to-cart buttons and is seeded with enough simple products, so shop-AJAX
+// coverage is guaranteed and a skip would be false coverage evidence. Excludes the
+// block-theme project (block markup lacks the classic .ajax_add_to_cart button) and
+// the mobile fixtures (android/safari, where the button is behind responsive layout).
+const PROJECTS_REQUIRING_SHOP_AJAX = [
+  'chromium-wp-customer',
+  'chromium-privacy-sandbox-wp-customer',
+  'edge-wp-customer',
+  'firefox-wp-customer',
+  'brave-wp-customer',
+  'opera-wp-customer',
+  'chromium-wp-customer-classic-theme',
+];
+
 let themeLockToken = null;
 let originalThemeSlug = null;
 let activeThemeProjectSlug = null;
@@ -988,7 +1003,11 @@ test('ViewContent - Signals release flushes queued Pixel/CAPI', async ({ page },
 });
 
 test('AddToCart - Signals hold/release with multiple shop AJAX clicks', async ({ page }, testInfo) => {
+    const shopAjaxRequired = PROJECTS_REQUIRING_SHOP_AJAX.includes(testInfo.project.name);
     const ajaxAvailable = await isAjaxAddToCartAvailableOnShop(page, { productUrl: process.env.TEST_PRODUCT_URL });
+    if (!ajaxAvailable && shopAjaxRequired) {
+      throw new Error(`Shop AJAX add-to-cart was not found for ${testInfo.project.name}; it is expected on this configuration and must not be skipped.`);
+    }
     test.skip(!ajaxAvailable, 'Shop AJAX AddToCart is not available in this browser/theme fixture.');
 
     await clearCart(page);
@@ -1057,6 +1076,9 @@ test('AddToCart - Signals hold/release with multiple shop AJAX clicks', async ({
 
       const shopAjaxButtons = page.locator('a.add_to_cart_button.ajax_add_to_cart, button.add_to_cart_button.ajax_add_to_cart');
       const totalButtons = await shopAjaxButtons.count();
+      if (totalButtons < targetClicks && shopAjaxRequired) {
+        throw new Error(`Expected at least ${targetClicks} AJAX add-to-cart buttons on /shop for ${testInfo.project.name}, found ${totalButtons}. The event suite seeds enough simple products, so this indicates a real regression.`);
+      }
       test.skip(totalButtons < targetClicks, `Need at least ${targetClicks} AJAX add-to-cart buttons on /shop. Found ${totalButtons}.`);
 
       for (let index = 0; index < targetClicks; index += 1) {
