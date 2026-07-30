@@ -1035,6 +1035,17 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 	 * woocommerce_update_product / woocommerce_new_product actions, which do fire for REST API saves,
 	 * and delegates to on_product_publish(), honoring each product's existing sync settings.
 	 *
+	 * The woocommerce_update_product / woocommerce_new_product actions are low-level data-store hooks
+	 * fired by WC_Product::save() for *any* product save, including ones made in unprivileged contexts
+	 * such as a stock decrement during a Store API checkout. Two guards keep this handler scoped to a
+	 * genuine product edit made over the REST API:
+	 *
+	 * - is_rest_api_request() excludes the admin editor and other request types, which are already
+	 *   handled through their own hooks (and avoids double-processing admin saves).
+	 * - current_user_can( 'edit_product' ) mirrors the capability the WooCommerce REST products
+	 *   controller checks before a write, so guest/customer contexts (e.g. checkout stock changes over
+	 *   the Store API) do not trigger a sync.
+	 *
 	 * @since 3.7.3
 	 *
 	 * @internal
@@ -1044,6 +1055,12 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 	public function on_product_save_via_api( $product_id ) {
 		// The admin product editor and other request types are handled through their own hooks.
 		if ( ! Helper::is_rest_api_request() ) {
+			return;
+		}
+
+		// Only sync for actors allowed to edit the product; skip unprivileged contexts such as
+		// stock changes made during a Store API checkout.
+		if ( ! current_user_can( 'edit_product', $product_id ) ) {
 			return;
 		}
 

@@ -821,8 +821,9 @@ class WCFacebookCommerceIntegrationTest extends \WooCommerce\Facebook\Tests\Abst
 	 * @return void
 	 */
 	public function test_on_product_save_via_api_syncs_product_on_rest_request() {
-		// Simulate a WooCommerce REST API request.
+		// Simulate a WooCommerce REST API request made by a user allowed to edit products.
 		$this->add_filter_with_safe_teardown( 'woocommerce_is_rest_api_request', '__return_true' );
+		wp_set_current_user( self::factory()->user->create( array( 'role' => 'administrator' ) ) );
 
 		add_option( WC_Facebookcommerce_Integration::SETTING_FACEBOOK_PAGE_ID, 'facebook-page-id' );
 		add_option( WC_Facebookcommerce_Integration::OPTION_PRODUCT_CATALOG_ID, '1234567891011121314' );
@@ -870,6 +871,35 @@ class WCFacebookCommerceIntegrationTest extends \WooCommerce\Facebook\Tests\Abst
 	public function test_on_product_save_via_api_does_nothing_outside_rest_request() {
 		// Ensure the request is not treated as a REST API request.
 		$this->add_filter_with_safe_teardown( 'woocommerce_is_rest_api_request', '__return_false' );
+
+		add_option( WC_Facebookcommerce_Integration::SETTING_FACEBOOK_PAGE_ID, 'facebook-page-id' );
+		add_option( WC_Facebookcommerce_Integration::OPTION_PRODUCT_CATALOG_ID, '1234567891011121314' );
+
+		$product = WC_Helper_Product::create_simple_product();
+
+		add_post_meta( $product->get_id(), Products::SYNC_ENABLED_META_KEY, 'yes' );
+		add_post_meta( $product->get_id(), WC_Facebookcommerce_Integration::FB_PRODUCT_ITEM_ID, 'facebook-product-item-id' );
+
+		// The handler must bail before doing any sync work.
+		$this->facebook_for_woocommerce->expects( $this->never() )
+			->method( 'get_product_sync_validator' );
+		$this->api->expects( $this->never() )
+			->method( 'send_item_updates' );
+
+		$this->integration->on_product_save_via_api( $product->get_id() );
+	}
+
+	/**
+	 * A REST API save made by a user without product edit permission must not be synced. This covers
+	 * unprivileged contexts that also fire woocommerce_update_product, such as a stock decrement during
+	 * a Store API checkout.
+	 *
+	 * @return void
+	 */
+	public function test_on_product_save_via_api_does_nothing_without_edit_permission() {
+		// A REST API request, but made by a customer who cannot edit products.
+		$this->add_filter_with_safe_teardown( 'woocommerce_is_rest_api_request', '__return_true' );
+		wp_set_current_user( self::factory()->user->create( array( 'role' => 'customer' ) ) );
 
 		add_option( WC_Facebookcommerce_Integration::SETTING_FACEBOOK_PAGE_ID, 'facebook-page-id' );
 		add_option( WC_Facebookcommerce_Integration::OPTION_PRODUCT_CATALOG_ID, '1234567891011121314' );
