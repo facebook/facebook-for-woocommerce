@@ -1,3 +1,10 @@
+/**
+ * Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
+ *
+ * This source code is licensed under the license found in the
+ * LICENSE file in the root directory of this source tree.
+ */
+
 import { defineConfig, devices } from '@playwright/test';
 
 const CUSTOMER_EVENTS_SPEC = '**/events-test.spec.js';

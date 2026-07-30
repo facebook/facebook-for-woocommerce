@@ -1,4 +1,11 @@
 /**
+ * Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
+ *
+ * This source code is licensed under the license found in the
+ * LICENSE file in the root directory of this source tree.
+ */
+
+/**
  * Tests for Facebook Pixel Events Isolated Execution (pixel-events.js)
  *
  * These tests validate the isolated JavaScript execution context for pixel events,

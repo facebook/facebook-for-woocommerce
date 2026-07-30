@@ -1,4 +1,11 @@
 <?php
+/**
+ * Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
+ *
+ * This source code is licensed under the license found in the
+ * LICENSE file in the root directory of this source tree.
+ */
+
 use PHPUnit\Framework\TestCase;
 use WooCommerce\Facebook\API;
 use WooCommerce\Facebook\Framework\Api\Exception as ApiException;

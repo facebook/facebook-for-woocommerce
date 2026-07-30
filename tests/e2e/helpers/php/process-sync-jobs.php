@@ -1,5 +1,12 @@
 <?php
 /**
+ * Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
+ *
+ * This source code is licensed under the license found in the
+ * LICENSE file in the root directory of this source tree.
+ */
+
+/**
  * E2E Helper — Process pending Facebook sync background jobs directly.
  *
  * The background job handler dispatches via a loopback HTTP request to

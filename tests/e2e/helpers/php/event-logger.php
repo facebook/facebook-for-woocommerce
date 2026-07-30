@@ -1,5 +1,12 @@
 <?php
 /**
+ * Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
+ *
+ * This source code is licensed under the license found in the
+ * LICENSE file in the root directory of this source tree.
+ */
+
+/**
  * Event Logger - Event logging for CAPI E2E tests
  *
  * Location: tests/e2e/helpers/php/event-logger.php
