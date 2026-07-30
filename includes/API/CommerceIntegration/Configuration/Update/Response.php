@@ -6,7 +6,6 @@
  * LICENSE file in the root directory of this source tree.
  */
 
-
 namespace WooCommerce\Facebook\API\CommerceIntegration\Configuration\Update;
 
 use WooCommerce\Facebook\API\Response as ApiResponse;

@@ -6,7 +6,6 @@
  * LICENSE file in the root directory of this source tree.
  */
 
-
 class Test_Admin_Sync_Indicator extends WP_Ajax_UnitTestCase {
     private $admin;
     private $product;

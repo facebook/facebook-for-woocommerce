@@ -6,7 +6,6 @@
  * LICENSE file in the root directory of this source tree.
  */
 
-
 namespace WooCommerce\Facebook\Tests\Unit\Jobs;
 
 use WooCommerce\Facebook\Jobs\AbstractChainedJob;

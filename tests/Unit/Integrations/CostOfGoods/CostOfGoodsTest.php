@@ -6,7 +6,6 @@
  * LICENSE file in the root directory of this source tree.
  */
 
-
 declare(strict_types=1);
 
 namespace WooCommerce\Facebook\Tests\Unit\Integrations;
