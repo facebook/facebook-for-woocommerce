@@ -398,6 +398,12 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 			$this->events_tracker = new WC_Facebookcommerce_EventsTracker( $user_info, $aam_settings );
 		}
 
+		// Sync products created or updated outside the admin product editor, such as through the
+		// WooCommerce REST API. Those requests do not fire the admin-only woocommerce_process_product_meta
+		// hook used above, so without this the Meta catalog would miss REST API and programmatic changes.
+		add_action( 'woocommerce_update_product', array( $this, 'on_product_save_via_api' ), 40 );
+		add_action( 'woocommerce_new_product', array( $this, 'on_product_save_via_api' ), 40 );
+
 		// Update products on change of status.
 		add_action(
 			'transition_post_status',
@@ -1018,6 +1024,32 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 					break;
 			}
 		}
+	}
+
+	/**
+	 * Syncs a product to Facebook when it is created or updated through the WooCommerce REST API.
+	 *
+	 * The admin product editor schedules a sync via the woocommerce_process_product_meta hook, which
+	 * WooCommerce only fires for the admin product form. REST API (and other programmatic) saves do
+	 * not trigger that hook, so those changes never reached the Meta catalog. This handler runs on the
+	 * woocommerce_update_product / woocommerce_new_product actions, which do fire for REST API saves,
+	 * and delegates to on_product_publish(), honoring each product's existing sync settings.
+	 *
+	 * @since 3.7.3
+	 *
+	 * @internal
+	 *
+	 * @param int $product_id the product ID
+	 */
+	public function on_product_save_via_api( $product_id ) {
+		// The admin product editor and other request types are handled through their own hooks.
+		if ( ! Helper::is_rest_api_request() ) {
+			return;
+		}
+
+		// on_product_publish() bails when the plugin is not configured and only syncs products that
+		// should be synced, so there is nothing else to guard here.
+		$this->on_product_publish( (int) $product_id );
 	}
 
 	/**
