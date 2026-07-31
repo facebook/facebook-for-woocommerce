@@ -660,27 +660,6 @@ class Connection {
 
 
 	/**
-	 * Gets the merchant access token.
-	 *
-	 * @since 2.0.0
-	 *
-	 * @return string
-	 */
-	public function get_merchant_access_token() {
-		$access_token = get_option( self::OPTION_MERCHANT_ACCESS_TOKEN, '' );
-		/**
-		 * Filters the merchant access token.
-		 *
-		 * @since 2.0.0
-		 *
-		 * @param string $access_token access token
-		 * @param Connection $connection connection handler instance
-		 */
-		return apply_filters( 'wc_facebook_connection_merchant_access_token', $access_token, $this );
-	}
-
-
-	/**
 	 * Gets the page access token.
 	 *
 	 * @since 2.1.0
@@ -762,18 +741,6 @@ class Connection {
 		 * @param string $connect_url connect URL
 		 */
 		return apply_filters( 'wc_facebook_commerce_connect_url', $connect_url );
-	}
-
-
-	/**
-	 * Gets the URL for disconnecting.
-	 *
-	 * @since 2.0.0
-	 *
-	 * @return string
-	 */
-	public function get_disconnect_url() {
-		return wp_nonce_url( add_query_arg( 'action', self::ACTION_DISCONNECT, admin_url( 'admin.php' ) ), self::ACTION_DISCONNECT );
 	}
 
 
@@ -907,30 +874,6 @@ class Connection {
 	 */
 	public function get_ad_account_id() {
 		return get_option( self::OPTION_AD_ACCOUNT_ID, '' );
-	}
-
-
-	/**
-	 * Gets the System User ID value.
-	 *
-	 * @since 2.0.0
-	 *
-	 * @return string
-	 */
-	public function get_system_user_id() {
-		return get_option( self::OPTION_SYSTEM_USER_ID, '' );
-	}
-
-
-	/**
-	 * Gets the Commerce manager ID value.
-	 *
-	 * @since 2.1.0
-	 *
-	 * @return string
-	 */
-	public function get_commerce_manager_id() {
-		return get_option( self::OPTION_COMMERCE_MANAGER_ID, '' );
 	}
 
 
@@ -1182,18 +1125,6 @@ class Connection {
 
 
 	/**
-	 * Stores the given Commerce manager ID.
-	 *
-	 * @since 2.1.0
-	 *
-	 * @param string $id the ID
-	 */
-	public function update_commerce_manager_id( $id ) {
-		update_option( self::OPTION_COMMERCE_MANAGER_ID, $id );
-	}
-
-
-	/**
 	 * Stores the given Instagram Business ID.
 	 *
 	 * @since 2.3.0
@@ -1275,18 +1206,6 @@ class Connection {
 	 */
 	public function is_connected() {
 		return (bool) $this->get_access_token();
-	}
-
-
-	/**
-	 * Determines whether the site has previously connected to FBE 2.
-	 *
-	 * @since 2.0.0
-	 *
-	 * @return bool
-	 */
-	public function has_previously_connected_fbe_2() {
-		return 'yes' === get_option( 'wc_facebook_has_connected_fbe_2' );
 	}
 
 
