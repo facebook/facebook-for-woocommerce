@@ -320,22 +320,6 @@ class WC_Facebookcommerce extends WooCommerce\Facebook\Framework\Plugin {
 	}
 
 	/**
-	 * Gets deprecated and removed hooks.
-	 *
-	 * @since 2.1.0
-	 *
-	 * @return array
-	 */
-	protected function get_deprecated_hooks() {
-		return array(
-			'wc_facebook_page_access_token' => array(
-				'version'     => '2.1.0',
-				'replacement' => false,
-			),
-		);
-	}
-
-	/**
 	 * Adds the setup task to the Tasklists.
 	 *
 	 * @since 2.6.29

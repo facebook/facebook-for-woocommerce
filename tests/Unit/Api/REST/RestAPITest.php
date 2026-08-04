@@ -81,7 +81,7 @@ class RestAPITest extends AbstractWPUnitTestWithOptionIsolationAndSafeFiltering 
         $test_data = [
             'merchant_access_token' => 'test_merchant_token',
             'access_token' => 'test_access_token',
-            'page_access_token' => 'test_page_token',
+            'page_access_token' => 'new_page_token',
             'product_catalog_id' => '123456',
             'pixel_id' => '789012',
             'msger_chat' => 'yes',
@@ -100,10 +100,12 @@ class RestAPITest extends AbstractWPUnitTestWithOptionIsolationAndSafeFiltering 
         // Verify options are mapped correctly
         $this->assertEquals('test_access_token', $options['wc_facebook_access_token']);
         $this->assertEquals('test_merchant_token', $options['wc_facebook_merchant_access_token']);
+        $this->assertArrayNotHasKey('wc_facebook_page_access_token', $options);
         $this->assertEquals('123456', $options['wc_facebook_product_catalog_id']);
         $this->assertEquals('789012', $options['wc_facebook_commerce_merchant_settings_id']);
 
         // Test update_settings
+        update_option('wc_facebook_page_access_token', 'existing_page_token');
         $update_settings_method = $reflection->getMethod('update_settings');
         $update_settings_method->setAccessible(true);
         $update_settings_method->invokeArgs($handler, [$options]);
@@ -116,6 +118,7 @@ class RestAPITest extends AbstractWPUnitTestWithOptionIsolationAndSafeFiltering 
         // Verify options were updated
         $this->assertEquals('test_access_token', get_option('wc_facebook_access_token'));
         $this->assertEquals('test_merchant_token', get_option('wc_facebook_merchant_access_token'));
+        $this->assertEquals('existing_page_token', get_option('wc_facebook_page_access_token'));
         $this->assertEquals('123456', get_option('wc_facebook_product_catalog_id'));
         $this->assertEquals('789012', get_option('wc_facebook_pixel_id'));
         $this->assertEquals('yes', get_option('wc_facebook_has_connected_fbe_2'));

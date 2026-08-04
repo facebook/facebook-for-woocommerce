@@ -175,10 +175,6 @@ class Handler extends AbstractRESTEndpoint {
 			$options[ \WC_Facebookcommerce_Integration::OPTION_MERCHANT_ACCESS_TOKEN ] = $params['merchant_access_token'];
 		}
 
-		if ( ! empty( $params['page_access_token'] ) ) {
-			$options[ \WC_Facebookcommerce_Integration::OPTION_PAGE_ACCESS_TOKEN ] = $params['page_access_token'];
-		}
-
 		if ( ! empty( $params['page_id'] ) ) {
 			update_option( \WC_Facebookcommerce_Integration::SETTING_FACEBOOK_PAGE_ID, $params['page_id'] );
 		}
