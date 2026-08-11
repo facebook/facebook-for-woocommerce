@@ -10,7 +10,6 @@
 
 namespace WooCommerce\Facebook\Handlers;
 
-use WooCommerce\Facebook\API;
 use WooCommerce\Facebook\API\Exceptions\ConnectApiException;
 use WooCommerce\Facebook\Framework\Api\Exception as ApiException;
 use WooCommerce\Facebook\Framework\Helper;
@@ -77,9 +76,6 @@ class Connection {
 
 	/** @var string the merchant access token option name */
 	const OPTION_MERCHANT_ACCESS_TOKEN = 'wc_facebook_merchant_access_token';
-
-	/** @var string the page access token option name */
-	const OPTION_PAGE_ACCESS_TOKEN = 'wc_facebook_page_access_token';
 
 	/** @var string the Commerce manager ID option name */
 	const OPTION_COMMERCE_MANAGER_ID = 'wc_facebook_commerce_manager_id';
@@ -334,13 +330,7 @@ class Connection {
 		$page_id = sanitize_text_field( $response->get_page_id() );
 
 		if ( $page_id ) {
-
 			update_option( \WC_Facebookcommerce_Integration::SETTING_FACEBOOK_PAGE_ID, $page_id );
-
-			// get and store a current access token for the configured page
-			$page_access_token = $this->retrieve_page_access_token( $page_id );
-
-			$this->update_page_access_token( $page_access_token );
 		}
 
 		if ( $response->get_pixel_id() ) {
@@ -573,7 +563,6 @@ class Connection {
 	 */
 	public function disconnect() {
 		$this->update_access_token( '' );
-		$this->update_page_access_token( '' );
 		$this->update_merchant_access_token( '' );
 		$this->update_system_user_id( '' );
 		$this->update_business_manager_id( '' );
@@ -585,56 +574,12 @@ class Connection {
 		update_option( \WC_Facebookcommerce_Integration::SETTING_FACEBOOK_PAGE_ID, '' );
 		update_option( \WC_Facebookcommerce_Integration::SETTING_FACEBOOK_PIXEL_ID, '' );
 		facebook_for_woocommerce()->get_integration()->update_product_catalog_id( '' );
+		delete_option( \WC_Facebookcommerce_Integration::OPTION_PAGE_ACCESS_TOKEN );
 
 		// Clear facebook_config option to stop pixel tracking and prevent stale data
 		if ( class_exists( 'WC_Facebookcommerce_Pixel' ) ) {
 			delete_option( \WC_Facebookcommerce_Pixel::SETTINGS_KEY );
 		}
-	}
-
-
-	/**
-	 * Retrieves the configured page access token remotely.
-	 *
-	 * @since 2.1.0
-	 *
-	 * @param string $page_id desired Facebook page ID
-	 * @return string
-	 * @throws ApiException If the page access token could not be retrieved.
-	 */
-	private function retrieve_page_access_token( $page_id ) {
-		facebook_for_woocommerce()->log( 'Retrieving page access token' );
-		$api_url  = Api::GRAPH_API_URL . Api::API_VERSION;
-		$response = wp_remote_get( $api_url . '/me/accounts?access_token=' . $this->get_access_token() );
-		$body     = wp_remote_retrieve_body( $response );
-		$body     = json_decode( $body, true );
-		if ( ! is_array( $body ) || empty( $body['data'] ) || 200 !== (int) wp_remote_retrieve_response_code( $response ) ) {
-			// phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_print_r
-			facebook_for_woocommerce()->log( print_r( $body, true ) );
-			throw new ApiException(
-				esc_html(
-					sprintf(
-						/* translators: Placeholders: %s - API error message */
-						__( 'Could not retrieve page access data. %s', 'facebook-for-woocommerce' ),
-						wp_remote_retrieve_response_message( $response )
-					)
-				)
-			);
-		}
-		$page_access_tokens = wp_list_pluck( $body['data'], 'access_token', 'id' );
-		// bail if the user isn't authorized to manage the page
-		if ( empty( $page_access_tokens[ $page_id ] ) ) {
-			throw new ApiException(
-				esc_html(
-					sprintf(
-					/* translators: Placeholders: %s - Facebook page ID */
-						__( 'Page %s not authorized.', 'facebook-for-woocommerce' ),
-						$page_id
-					)
-				)
-			);
-		}
-		return $page_access_tokens[ $page_id ];
 	}
 
 
@@ -656,27 +601,6 @@ class Connection {
 		 * @param Connection $connection connection handler instance
 		 */
 		return apply_filters( 'wc_facebook_connection_access_token', $access_token, $this );
-	}
-
-
-	/**
-	 * Gets the page access token.
-	 *
-	 * @since 2.1.0
-	 *
-	 * @return string
-	 */
-	public function get_page_access_token() {
-		$access_token = get_option( self::OPTION_PAGE_ACCESS_TOKEN, '' );
-		/**
-		 * Filters the page access token.
-		 *
-		 * @since 2.1.0
-		 *
-		 * @param string $access_token page access token
-		 * @param Connection $connection connection handler instance
-		 */
-		return (string) apply_filters( 'wc_facebook_connection_page_access_token', $access_token, $this );
 	}
 
 
@@ -1173,17 +1097,6 @@ class Connection {
 
 
 	/**
-	 * Stores the given page access token.
-	 *
-	 * @since 2.1.0
-	 *
-	 * @param string $value the access token
-	 */
-	public function update_page_access_token( $value ) {
-		update_option( self::OPTION_PAGE_ACCESS_TOKEN, is_string( $value ) ? $value : '' );
-	}
-
-	/**
 	 * Stores the given external business id.
 	 *
 	 * @since 2.6.13
@@ -1359,16 +1272,8 @@ class Connection {
 
 		if ( ! empty( $values->pages ) ) {
 			$page_id = current( $values->pages );
-			try {
-				update_option( \WC_Facebookcommerce_Integration::SETTING_FACEBOOK_PAGE_ID, sanitize_text_field( $page_id ) );
-				$log_data[ \WC_Facebookcommerce_Integration::SETTING_FACEBOOK_PAGE_ID ] = sanitize_text_field( $page_id );
-				// get and store a current access token for the configured page
-				$page_access_token = $this->retrieve_page_access_token( $page_id );
-				$this->update_page_access_token( $page_access_token );
-				$log_data[ self::OPTION_PAGE_ACCESS_TOKEN ] = sanitize_text_field( $page_access_token );
-			} catch ( \Exception $e ) {
-				$this->get_plugin()->log( 'Could not request Page Token: ' . $e->getMessage() );
-			}
+			update_option( \WC_Facebookcommerce_Integration::SETTING_FACEBOOK_PAGE_ID, sanitize_text_field( $page_id ) );
+			$log_data[ \WC_Facebookcommerce_Integration::SETTING_FACEBOOK_PAGE_ID ] = sanitize_text_field( $page_id );
 		}//end if
 
 		$this->get_plugin()->log( 'WebHook User event saved data' );

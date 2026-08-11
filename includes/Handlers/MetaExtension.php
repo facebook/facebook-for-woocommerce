@@ -34,7 +34,6 @@ class MetaExtension {
 	/** @var string Option names for Facebook settings */
 	const OPTION_ACCESS_TOKEN                    = 'wc_facebook_access_token';
 	const OPTION_MERCHANT_ACCESS_TOKEN           = 'wc_facebook_merchant_access_token';
-	const OPTION_PAGE_ACCESS_TOKEN               = 'wc_facebook_page_access_token';
 	const OPTION_SYSTEM_USER_ID                  = 'wc_facebook_system_user_id';
 	const OPTION_BUSINESS_MANAGER_ID             = 'wc_facebook_business_manager_id';
 	const OPTION_AD_ACCOUNT_ID                   = 'wc_facebook_ad_account_id';

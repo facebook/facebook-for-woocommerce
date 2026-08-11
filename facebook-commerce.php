@@ -33,10 +33,12 @@ require_once 'facebook-commerce-admin-notice.php';
 class WC_Facebookcommerce_Integration extends WC_Integration {
 
 	/**
-	 * The WordPress option name where the page access token is stored.
+	 * The WordPress option name where the legacy page access token is stored.
 	 *
-	 * @var string option name.
+	 * Retained for compatibility until the stored data is removed in T283387818.
+	 *
 	 * @deprecated 2.1.0
+	 * @var string option name
 	 */
 	const OPTION_PAGE_ACCESS_TOKEN = 'wc_facebook_page_access_token';
 

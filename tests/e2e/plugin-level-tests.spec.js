@@ -498,74 +498,89 @@ test.describe('WooCommerce Plugin level tests', () => {
     console.log('🎉 Disconnect and reconnect test passed!');
   });
 
-   test('Reset connection settings via WooCommerce Status Tools', async ({ page }) => {
+  test('Reset connection settings via WooCommerce Status Tools', async ({ page }) => {
     console.log('🔄 Testing Reset connection settings...');
 
-    // Navigate to WooCommerce Status Tools
-    await page.goto(`${process.env.WORDPRESS_URL}/wp-admin/admin.php?page=wc-status&tab=tools`, {
-      waitUntil: 'domcontentloaded',
-      timeout: TIMEOUTS.EXTRA_LONG
-    });
+    const legacyPageAccessTokenOption = 'wc_facebook_page_access_token';
+    await execWP(`update_option('${legacyPageAccessTokenOption}', 'legacy_page_token');`);
 
-    // Handle confirmation dialog
-    page.once('dialog', async dialog => {
-      console.log(`✅ Confirming dialog: ${dialog.message()}`);
-      await dialog.accept();
-    });
+    let reconnectResult;
 
-    // Click Reset settings button and wait for navigation
-    console.log('🔘 Clicking Reset settings button...');
-    const resetButton = page.locator('.wc_facebook_settings_reset input[type="submit"]');
-    await resetButton.waitFor({ state: 'visible', timeout: TIMEOUTS.LONG });
+    try {
+      // Navigate to WooCommerce Status Tools
+      await page.goto(`${process.env.WORDPRESS_URL}/wp-admin/admin.php?page=wc-status&tab=tools`, {
+        waitUntil: 'domcontentloaded',
+        timeout: TIMEOUTS.EXTRA_LONG
+      });
 
-    await resetButton.click();
-    await page.waitForLoadState('domcontentloaded', { timeout: TIMEOUTS.EXTRA_LONG });
+      // Handle confirmation dialog
+      page.once('dialog', async dialog => {
+        console.log(`✅ Confirming dialog: ${dialog.message()}`);
+        await dialog.accept();
+      });
 
-    console.log('✅ Page reloaded after reset action');
+      // Click Reset settings button and wait for navigation
+      console.log('🔘 Clicking Reset settings button...');
+      const resetButton = page.locator('.wc_facebook_settings_reset input[type="submit"]');
+      await resetButton.waitFor({ state: 'visible', timeout: TIMEOUTS.LONG });
 
-    // Navigate to options page to verify reset
-    await page.goto(`${process.env.WORDPRESS_URL}/wp-admin/options.php`, {
-      waitUntil: 'domcontentloaded',
-      timeout: TIMEOUTS.EXTRA_LONG
-    });
+      await resetButton.click();
+      await page.waitForLoadState('domcontentloaded', { timeout: TIMEOUTS.EXTRA_LONG });
 
-    // List of Facebook options that should be empty
-    const fbOptions = [
-      'wc_facebook_access_token',
-      'wc_facebook_page_access_token',
-      'wc_facebook_merchant_access_token',
-      'wc_facebook_system_user_id',
-      'wc_facebook_business_manager_id',
-      'wc_facebook_ad_account_id',
-      'wc_facebook_instagram_business_id',
-      'wc_facebook_commerce_merchant_settings_id',
-      'wc_facebook_external_business_id',
-      'wc_facebook_commerce_partner_integration_id',
-      'wc_facebook_page_id',
-      'wc_facebook_pixel_id',
-      'wc_facebook_product_catalog_id'
-    ];
+      console.log('✅ Page reloaded after reset action');
 
-    // Check each option is empty
-    console.log('🔍 Verifying all Facebook options are cleared...');
-    for (const option of fbOptions) {
-      const input = page.locator(`#${option}`);
-      const value = await input.inputValue();
+      // Navigate to options page to verify reset
+      await page.goto(`${process.env.WORDPRESS_URL}/wp-admin/options.php`, {
+        waitUntil: 'domcontentloaded',
+        timeout: TIMEOUTS.EXTRA_LONG
+      });
 
-      if (value !== '') {
-        throw new Error(`❌ ${option} not cleared. Value: ${value}`);
+      // List of Facebook options that should be empty
+      const fbOptions = [
+        'wc_facebook_access_token',
+        'wc_facebook_merchant_access_token',
+        'wc_facebook_system_user_id',
+        'wc_facebook_business_manager_id',
+        'wc_facebook_ad_account_id',
+        'wc_facebook_instagram_business_id',
+        'wc_facebook_commerce_merchant_settings_id',
+        'wc_facebook_external_business_id',
+        'wc_facebook_commerce_partner_integration_id',
+        'wc_facebook_page_id',
+        'wc_facebook_pixel_id',
+        'wc_facebook_product_catalog_id'
+      ];
+
+      // Check each option is empty
+      console.log('🔍 Verifying all Facebook options are cleared...');
+      for (const option of fbOptions) {
+        const input = page.locator(`#${option}`);
+        const value = await input.inputValue();
+
+        if (value !== '') {
+          throw new Error(`❌ ${option} not cleared. Value: ${value}`);
+        }
+      }
+
+      const { stdout } = await execWP(
+        `echo wp_json_encode(get_option('${legacyPageAccessTokenOption}', false));`
+      );
+      expect(JSON.parse(stdout)).toBe(false);
+
+      console.log('✅ All Facebook connection options cleared');
+      console.log('🎉 Reset connection settings test passed!');
+    } finally {
+      try {
+        reconnectResult = await reconnectAndVerify();
+      } finally {
+        await execWP(`delete_option('${legacyPageAccessTokenOption}');`);
       }
     }
 
-    console.log('✅ All Facebook connection options cleared');
-    console.log('🎉 Reset connection settings test passed!');
-
-    const reconnectResult = await reconnectAndVerify();
     // Assertions on reconnect
     expect(reconnectResult.success).toBe(true);
     expect(reconnectResult.before.connected).toBe(false);
     expect(reconnectResult.after.connected).toBe(true);
-
   });
 
   // Plugin compatibility test
@@ -875,7 +890,9 @@ test.describe('WooCommerce Plugin level tests', () => {
 
       // Select the global attribute from the dropdown
       console.log(`🔍 Selecting global attribute "${attributeName}"...`);
-      const productAttributeContainer = page.locator('span').filter({ hasText: 'Add existing' }).first();
+      const productAttributeContainer = page
+        .getByRole('combobox', { name: /Add (?:existing|global)/i })
+        .first();
       await productAttributeContainer.waitFor({ state: 'visible', timeout: TIMEOUTS.MEDIUM });
       await exactSearchSelect2Container(page, productAttributeContainer, attributeName);
       const selectAllAttrValuesBtn = page.getByRole('button', { name: 'Select all' });

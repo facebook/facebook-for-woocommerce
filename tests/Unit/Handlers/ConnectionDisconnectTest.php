@@ -70,6 +70,21 @@ class ConnectionDisconnectTest extends AbstractWPUnitTestWithOptionIsolationAndS
 	}
 
 	/**
+	 * Test that disconnect clears the stored legacy page access token.
+	 */
+	public function test_disconnect_clears_legacy_page_access_token(): void {
+		$this->assertTrue(
+			add_option( \WC_Facebookcommerce_Integration::OPTION_PAGE_ACCESS_TOKEN, 'legacy_page_token' ),
+			'Failed to create the legacy page access token option.'
+		);
+
+		$connection = new Connection( $this->plugin_mock );
+		$connection->disconnect();
+
+		$this->assertFalse( get_option( \WC_Facebookcommerce_Integration::OPTION_PAGE_ACCESS_TOKEN, false ) );
+	}
+
+	/**
 	 * Test that disconnect works safely when facebook_config doesn't exist.
 	 */
 	public function test_disconnect_safe_when_facebook_config_missing(): void {

@@ -62,15 +62,50 @@ function resolveThemeForProject(projectName) {
 
 function createPixelEventRequestRecorder(page, eventName) {
   const captured = [];
+  const requestContext = page.context();
 
   const readBodyParam = (request, key) => {
     const body = request.postData() || '';
-    if (!body || !body.includes('=')) {
+    if (!body) {
       return null;
     }
 
-    const form = new URLSearchParams(body);
-    return form.get(key);
+    if (!body.includes('name="')) {
+      return new URLSearchParams(body).get(key);
+    }
+
+    // Firefox sends Pixel beacon payloads as multipart/form-data.
+    const nameMarker = `name="${key}"`;
+    const nameStart = body.indexOf(nameMarker);
+    if (nameStart === -1) {
+      return null;
+    }
+
+    const headerEndCRLF = body.indexOf('\r\n\r\n', nameStart);
+    const headerEndLF = body.indexOf('\n\n', nameStart);
+    let valueStart = -1;
+
+    if (headerEndCRLF !== -1 && (headerEndLF === -1 || headerEndCRLF < headerEndLF)) {
+      valueStart = headerEndCRLF + 4;
+    } else if (headerEndLF !== -1) {
+      valueStart = headerEndLF + 2;
+    }
+
+    if (valueStart === -1) {
+      return null;
+    }
+
+    const boundaryCRLF = body.indexOf('\r\n--', valueStart);
+    const boundaryLF = body.indexOf('\n--', valueStart);
+    let valueEnd = -1;
+
+    if (boundaryCRLF !== -1 && (boundaryLF === -1 || boundaryCRLF < boundaryLF)) {
+      valueEnd = boundaryCRLF;
+    } else if (boundaryLF !== -1) {
+      valueEnd = boundaryLF;
+    }
+
+    return valueEnd === -1 ? null : body.slice(valueStart, valueEnd).trim() || null;
   };
 
   const onRequest = (request) => {
@@ -117,11 +152,12 @@ function createPixelEventRequestRecorder(page, eventName) {
     }
   };
 
-  page.on('request', onRequest);
+  // Match PixelCapture's context-level request observation.
+  requestContext.on('request', onRequest);
 
   return {
     getEvents: () => captured.slice(),
-    stop: () => page.off('request', onRequest),
+    stop: () => requestContext.off('request', onRequest),
   };
 }
 

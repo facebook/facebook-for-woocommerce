@@ -75,7 +75,7 @@ class Lifecycle extends Framework\Lifecycle {
 		 * Versions prior to 1.10.0 did not set a version option, so the upgrade method needs to be called manually.
 		 * We do this by checking first if an old option exists, but a new one doesn't.
 		 */
-		if ( get_option( 'woocommerce_facebookcommerce_settings' ) && ! get_option( 'wc_facebook_page_access_token' ) ) {
+		if ( get_option( 'woocommerce_facebookcommerce_settings' ) && ! get_option( \WC_Facebookcommerce_Integration::OPTION_PAGE_ACCESS_TOKEN ) ) {
 			$this->upgrade( '1.9.15' );
 		}
 	}
@@ -107,7 +107,6 @@ class Lifecycle extends Framework\Lifecycle {
 		}
 		// migrate options from woocommerce_facebookcommerce_settings
 		$options = array(
-			'fb_api_key'                       => \WC_Facebookcommerce_Integration::OPTION_PAGE_ACCESS_TOKEN,
 			'fb_product_catalog_id'            => \WC_Facebookcommerce_Integration::OPTION_PRODUCT_CATALOG_ID,
 			'fb_external_merchant_settings_id' => \WC_Facebookcommerce_Integration::OPTION_EXTERNAL_MERCHANT_SETTINGS_ID,
 			'fb_feed_id'                       => \WC_Facebookcommerce_Integration::OPTION_FEED_ID,

@@ -452,7 +452,6 @@ class Shops extends Abstract_Settings_Screen {
 					const requestBody = {
 						access_token: message.access_token,
 						merchant_access_token: message.access_token,
-						page_access_token: message.access_token,
 						product_catalog_id: message.catalog_id,
 						pixel_id: message.pixel_id,
 						page_id: message.page_id,
