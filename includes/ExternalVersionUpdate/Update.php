@@ -68,33 +68,6 @@ class Update {
 		set_transient( $flag_name, 'yes', 3 * HOUR_IN_SECONDS );
 
 		try {
-			$excluded_product_categories = (array) apply_filters( 'wc_facebook_excluded_product_category_ids', get_option( 'wc_facebook_excluded_product_category_ids', [] ), $this );
-			if ( ! empty( $excluded_product_categories ) ) {
-				$term_query                  = new \WP_Term_Query(
-					array(
-						'taxonomy'   => 'product_cat',
-						'include'    => $excluded_product_categories,
-						'hide_empty' => true,
-						'fields'     => 'id=>name',
-					)
-				);
-				$excluded_product_categories = $term_query->get_terms();
-			}
-
-			$excluded_product_tags = (array) apply_filters( 'wc_facebook_excluded_product_tag_ids', get_option( 'wc_facebook_excluded_product_tag_ids', [] ), $this );
-			if ( ! empty( $excluded_product_tags ) ) {
-				$term_query            = new \WP_Term_Query(
-					array(
-						'taxonomy'     => 'product_tag',
-						'include'      => $excluded_product_tags,
-						'hide_empty'   => true,
-						'hierarchical' => false,
-						'fields'       => 'id=>name',
-					)
-				);
-				$excluded_product_tags = $term_query->get_terms();
-			}
-
 			$language_feed_stats = get_transient( self::TRANSIENT_LANGUAGE_FEED_STATS );
 
 			$context  = array(
@@ -103,8 +76,6 @@ class Update {
 				'extra_data' => [
 					'is_multisite'                         => is_multisite(),
 					'is_product_sync_enabled'              => facebook_for_woocommerce()->get_integration()->is_product_sync_enabled(),
-					'excluded_product_categories'          => wp_json_encode( $excluded_product_categories ),
-					'excluded_product_tags'                => wp_json_encode( $excluded_product_tags ),
 					'published_product_count'              => facebook_for_woocommerce()->get_integration()->get_product_count(),
 					'opted_out_woo_all_products'           => get_option( self::MASTER_SYNC_OPT_OUT_TIME ),
 					'active_plugins'                       => wp_json_encode( IntegrationRegistry::get_all_active_plugin_data() ),

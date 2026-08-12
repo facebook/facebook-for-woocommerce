@@ -158,7 +158,10 @@ class Products {
 	/**
 	 * Disables sync for products that belong to the given category or tag.
 	 *
+	 * Kept for backward compatibility after term-based exclusions were removed from settings.
+	 *
 	 * @since 2.0.0
+	 * @deprecated 3.7.2
 	 *
 	 * @param array $args {
 	 *     @type string|array $taxonomy product_cat or product_tag
@@ -243,8 +246,8 @@ class Products {
 	/**
 	 * Determines whether the given product should be removed from the catalog.
 	 *
-	 * A product should be removed if it is no longer in stock and the user has opted-in to hide products that are out of stock,
-	 * or belongs to an excluded category.
+	 * This currently mirrors term-based exclusion checks only.
+	 * With category/tag exclusions removed, this generally returns false.
 	 *
 	 * @since 2.0.0
 	 *
@@ -276,6 +279,8 @@ class Products {
 
 	/**
 	 * Determines whether the product's terms would make it excluded to be synced from Facebook.
+	 *
+	 * Term-based exclusions were removed, so this now generally returns false.
 	 *
 	 * @since 1.10.0
 	 *
