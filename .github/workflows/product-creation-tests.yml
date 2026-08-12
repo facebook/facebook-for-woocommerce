@@ -780,35 +780,45 @@ jobs:
         run: |
           mkdir -p ${{ env.PLUGIN_PATH }}/tests/e2e/captured-events
           chmod 777 ${{ env.PLUGIN_PATH }}/tests/e2e/captured-events
-      - name: Create test product for storefront event suites
+      - name: Create test products for storefront event suites
         if: matrix.test-group == 'plugin-events'
         run: |
           cd ${{ env.WORDPRESS_PATH }}
-          # Ensure deterministic product slug used by plugin-events suites.
-          EXISTING_ID=$(wp post list --post_type=product --name=testp --field=ID --allow-root | head -n1)
+          # Seed multiple simple products so the shop archive (/shop) has enough
+          # AJAX add-to-cart buttons for the shop-AJAX signals test (needs >= 3).
+          # The first product (slug 'testp') stays the deterministic product other
+          # event suites target via TEST_PRODUCT_URL.
+          PRIMARY_ID=""
+          for pair in "testp:TestP" "testp2:TestP 2" "testp3:TestP 3"; do
+            slug="${pair%%:*}"
+            name="${pair#*:}"
+            existing=$(wp post list --post_type=product --name="$slug" --field=ID --allow-root | head -n1)
+            if [ -n "$existing" ]; then
+              pid="$existing"
+              echo "ℹ️ Reusing existing test product '$slug'. ID: $pid"
+            else
+              pid=$(wp eval "
+                \$product = new WC_Product_Simple();
+                \$product->set_name('$name');
+                \$product->set_slug('$slug');
+                \$product->set_regular_price('19.99');
+                \$product->set_description('Test product for E2E tests');
+                \$product->set_status('publish');
+                \$product->set_catalog_visibility('visible');
+                \$product->set_stock_status('instock');
+                \$product->set_manage_stock(false);
+                \$product_id = \$product->save();
+                wp_set_object_terms(\$product_id, 'uncategorized', 'product_cat');
+                echo \$product_id;
+              " --allow-root)
+              echo "✅ Test product '$slug' created. ID: $pid"
+            fi
+            if [ -z "$PRIMARY_ID" ]; then
+              PRIMARY_ID="$pid"
+            fi
+          done
 
-          if [ -n "$EXISTING_ID" ]; then
-            PRODUCT_ID="$EXISTING_ID"
-            echo "ℹ️ Reusing existing test product. ID: $PRODUCT_ID"
-          else
-            PRODUCT_ID=$(wp eval "
-              \$product = new WC_Product_Simple();
-              \$product->set_name('TestP');
-              \$product->set_slug('testp');
-              \$product->set_regular_price('19.99');
-              \$product->set_description('Test product for E2E tests');
-              \$product->set_status('publish');
-              \$product->set_catalog_visibility('visible');
-              \$product->set_stock_status('instock');
-              \$product->set_manage_stock(false);
-              \$product_id = \$product->save();
-              wp_set_object_terms(\$product_id, 'uncategorized', 'product_cat');
-              echo \$product_id;
-            " --allow-root)
-            echo "✅ Test product created. ID: $PRODUCT_ID"
-          fi
-
-          echo "TEST_PRODUCT_ID=$PRODUCT_ID" >> $GITHUB_ENV
+          echo "TEST_PRODUCT_ID=$PRIMARY_ID" >> $GITHUB_ENV
 
       - name: Install Xvfb for headed browser
         if: matrix.test-group == 'plugin-events'
