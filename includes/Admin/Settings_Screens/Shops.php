@@ -51,7 +51,6 @@ class Shops extends Abstract_Settings_Screen {
 	public function __construct() {
 		add_action( 'init', array( $this, 'initHook' ) );
 		add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_assets' ) );
-		add_action( 'admin_notices', array( $this, 'add_notices' ) );
 		add_action( 'admin_footer', array( $this, 'render_message_handler' ) );
 		add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_admin_scripts' ) );
 		// Only register this action once across all settings screens that use the trait
@@ -82,42 +81,6 @@ class Shops extends Abstract_Settings_Screen {
 		$this->id    = self::ID;
 		$this->label = __( 'Shops', 'facebook-for-woocommerce' );
 		$this->title = __( 'Shops', 'facebook-for-woocommerce' );
-	}
-
-	/**
-	 * Adds admin notices.
-	 *
-	 * @since 3.5.0
-	 *
-	 * @internal
-	 */
-	public function add_notices() {
-		// Note: wc_facebook_connection_invalid notice is now handled globally
-		// in WC_Facebookcommerce::add_connection_invalid_notice() so it fires
-		// for both enhanced and non-enhanced settings paths.
-
-		if ( get_transient( 'wc_facebook_connection_failed' ) ) {
-			$message = sprintf(
-			/* translators: Placeholders: %1$s - <strong> tag, %2$s - </strong> tag, %3$s - <a> tag, %4$s - </a> tag, %5$s - <a> tag, %6$s - </a> tag */
-				__( '%1$sHeads up!%2$s It looks like there was a problem with reconnecting your site to Facebook. Please %3$sclick here%4$s to try again, or %5$sget in touch with our support team%6$s for assistance.', 'facebook-for-woocommerce' ),
-				'<strong>',
-				'</strong>',
-				'<a href="' . esc_url( facebook_for_woocommerce()->get_connection_handler()->get_connect_url() ) . '">',
-				'</a>',
-				'<a href="' . esc_url( facebook_for_woocommerce()->get_support_url() ) . '" target="_blank">',
-				'</a>'
-			);
-
-			facebook_for_woocommerce()->get_admin_notice_handler()->add_admin_notice(
-				$message,
-				'wc_facebook_connection_failed',
-				array(
-					'notice_class' => 'error',
-				)
-			);
-
-			delete_transient( 'wc_facebook_connection_failed' );
-		}
 	}
 
 	/**

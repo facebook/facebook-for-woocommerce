@@ -131,14 +131,16 @@ class Product_SyncTest extends AbstractWPUnitTestWithOptionIsolationAndSafeFilte
     }
 
     /**
-     * Test that get_disconnected_message returns a string containing the connect link
+     * Test that get_disconnected_message links to the current settings page.
      */
-    public function test_get_disconnected_message_contains_connect_link() {
+    public function test_get_disconnected_message_links_to_settings_page() {
         $msg = $this->product_sync->get_disconnected_message();
 
         $this->assertIsString($msg);
         $this->assertStringContainsString('connect to Facebook', $msg);
-        $this->assertStringContainsString('<a ', $msg);
+        $this->assertStringContainsString('admin.php?page=wc-facebook', $msg);
+        $this->assertStringNotContainsString('api.woocommerce.com', $msg);
+        $this->assertStringNotContainsString('facebook.com/dialog/oauth', $msg);
         $this->assertStringContainsString('</a>', $msg);
     }
 
@@ -243,4 +245,4 @@ class Product_SyncTest extends AbstractWPUnitTestWithOptionIsolationAndSafeFilte
             $this->fail('save() should not throw, got: ' . $e->getMessage());
         }
     }
-} 
+}
