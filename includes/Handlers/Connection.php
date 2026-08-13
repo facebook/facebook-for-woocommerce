@@ -29,17 +29,11 @@ class Connection {
 	/** @var string WooCommerce connection for APP Store login URL */
 	const APP_STORE_LOGIN_URL = 'https://api.woocommerce.com/integrations/app-store-login/facebook/';
 
-	/** @var string WooCommerce connection authentication URL */
-	const CONNECTION_AUTHENTICATION_URL = 'https://api.woocommerce.com/integrations/auth/facebookcommerce/';
-
 	/** @var string the action callback for the disconnection */
 	const ACTION_DISCONNECT = 'wc_facebook_disconnect';
 
 	/** @var string the action callback for FBE redirection */
 	const ACTION_FBE_REDIRECT = 'wc_fbe_redirect';
-
-	/** @var string the action callback for the connection */
-	const ACTION_CONNECT_COMMERCE = 'wc_facebook_connect_commerce';
 
 	/** @var string the WordPress option name where the external business ID is stored */
 	const OPTION_EXTERNAL_BUSINESS_ID = 'wc_facebook_external_business_id';
@@ -441,56 +435,6 @@ class Connection {
 
 
 	/**
-	 * Builds the Commerce connect URL.
-	 *
-	 * The base URL is https://www.facebook.com/commerce_manager/onboarding with two query variables:
-	 * - app_id - the developer app ID
-	 * - redirect_url - the URL where the user will land after onboarding is complete
-	 *
-	 * The redirect URL must be an approved domain, so it must be the connect.woocommerce.com proxy app. In that URL, we
-	 * include the final site URL, which is where the merchant will redirect to with the data that needs to be stored.
-	 * So the final URL looks like this without encoding:
-	 *
-	 * https://www.facebook.com/commerce_manager/onboarding/?app_id={id}&redirect_url=https://connect.woocommerce.com/auth/facebook/?site_url=https://example.com/?wc-api=wc_facebook_connect_commerce&nonce=1234
-	 *
-	 * If testing only, &is_test_mode=true can be appended to the URL using the wc_facebook_commerce_connect_url filter
-	 * to trigger the test account flow, where fake US-based business details can be used.
-	 *
-	 * @since 2.1.0
-	 *
-	 * @return string
-	 */
-	public function get_commerce_connect_url() {
-		// build the site URL to which the user will ultimately return
-		$site_url = add_query_arg(
-			array(
-				'wc-api' => self::ACTION_CONNECT_COMMERCE,
-				'nonce'  => wp_create_nonce( self::ACTION_CONNECT_COMMERCE ),
-			),
-			home_url( '/' )
-		);
-		// build the proxy app URL where the user will land after onboarding, to be redirected to the site URL
-		$redirect_url = add_query_arg( 'site_url', rawurlencode( $site_url ), $this->get_connection_authentication_url() );
-		// build the final connect URL, direct to Facebook
-		$connect_url = add_query_arg(
-			array(
-				'app_id'       => $this->get_client_id(), // this endpoint calls the client ID "app ID"
-				'redirect_url' => rawurlencode( $redirect_url ),
-			),
-			'https://www.facebook.com/commerce_manager/onboarding/'
-		);
-		/**
-		 * Filters the URL used to connect to Facebook Commerce.
-		 *
-		 * @since 2.1.0
-		 *
-		 * @param string $connect_url connect URL
-		 */
-		return apply_filters( 'wc_facebook_commerce_connect_url', $connect_url );
-	}
-
-
-	/**
 	 * Gets the stored external business ID.
 	 *
 	 * @since 2.0.0
@@ -645,24 +589,6 @@ class Connection {
 		 * @param string $app_store_login_url the connection App Store login URL
 		 */
 		return (string) apply_filters( 'wc_facebook_connection_app_store_login_url', self::APP_STORE_LOGIN_URL );
-	}
-
-	/**
-	 * Gets connect server authentication url.
-	 *
-	 * @since 2.6.8
-	 *
-	 * @return string URL
-	 */
-	public function get_connection_authentication_url() {
-		/**
-		 * Filters App Store login URL.
-		 *
-		 * @since 2.6.8
-		 *
-		 * @param string $connection_authentication_url the connection App Store login URL
-		 */
-		return (string) apply_filters( 'wc_facebook_connection_authentication_url', self::CONNECTION_AUTHENTICATION_URL );
 	}
 
 	/**
