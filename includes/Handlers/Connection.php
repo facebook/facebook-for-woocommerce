@@ -10,9 +10,7 @@
 
 namespace WooCommerce\Facebook\Handlers;
 
-use WooCommerce\Facebook\API\Exceptions\ConnectApiException;
 use WooCommerce\Facebook\Framework\Api\Exception as ApiException;
-use WooCommerce\Facebook\Framework\Helper;
 use WooCommerce\Facebook\Utilities\Heartbeat;
 
 defined( 'ABSPATH' ) || exit;
@@ -28,27 +26,11 @@ class Connection {
 	/** @var string Facebook client identifier */
 	const CLIENT_ID = '474166926521348';
 
-	/** @var string Facebook OAuth URL */
-	const OAUTH_URL = 'https://facebook.com/dialog/oauth';
-
-	/** @var string WooCommerce connection proxy URL */
-	const PROXY_URL = 'https://api.woocommerce.com/integrations/v2/auth/facebook/';
-
-	const PROXY_TOKEN_EXCHANGE_URL = 'https://api.woocommerce.com/integrations/v2/exchange/facebook/';
-
 	/** @var string WooCommerce connection for APP Store login URL */
 	const APP_STORE_LOGIN_URL = 'https://api.woocommerce.com/integrations/app-store-login/facebook/';
 
 	/** @var string WooCommerce connection authentication URL */
 	const CONNECTION_AUTHENTICATION_URL = 'https://api.woocommerce.com/integrations/auth/facebookcommerce/';
-
-	/** @var string the Standard Auth type */
-	const AUTH_TYPE_STANDARD = 'standard';
-
-	/** @var string the action callback for the connection */
-	const ACTION_CONNECT = 'wc_facebook_connect';
-
-	const ACTION_EXCHANGE = 'wc_facebook_exchange';
 
 	/** @var string the action callback for the disconnection */
 	const ACTION_DISCONNECT = 'wc_facebook_disconnect';
@@ -101,9 +83,6 @@ class Connection {
 	/** @var \WC_Facebookcommerce */
 	private $plugin;
 
-	/** @var array */
-	protected $proxy_error_messages;
-
 	/**
 	 * Constructs a new Connection.
 	 *
@@ -118,8 +97,6 @@ class Connection {
 		add_action( Heartbeat::HOURLY, array( $this, 'refresh_business_configuration' ) );
 
 		add_action( Heartbeat::DAILY, array( $this, 'refresh_installation_data' ) );
-
-		add_action( 'woocommerce_api_' . self::ACTION_CONNECT, array( $this, 'handle_connect' ) );
 
 		add_action( 'admin_action_' . self::ACTION_DISCONNECT, array( $this, 'handle_disconnect' ) );
 
@@ -366,147 +343,6 @@ class Connection {
 
 
 	/**
-	 * Processes the returned connection.
-	 *
-	 * @internal
-	 *
-	 * @since 2.0.0
-	 *
-	 * @throws ApiException If token exchange failed.
-	 * @throws ConnectApiException If the connect server returned an error.
-	 */
-	public function handle_connect() {
-		// don't handle anything unless the user can manage WooCommerce settings
-		if ( ! current_user_can( 'manage_woocommerce' ) ) {
-			return;
-		}
-		try {
-			if ( empty( $_GET['nonce'] ) || ! wp_verify_nonce( sanitize_key( wp_unslash( $_GET['nonce'] ) ), self::ACTION_CONNECT ) ) {
-				throw new ApiException( 'Invalid nonce' );
-			}
-
-			$is_error   = ! empty( $_GET['err'] );
-			$error_code = ! empty( $_GET['err_code'] ) ? stripslashes( sanitize_text_field( wp_unslash( $_GET['err_code'] ) ) ) : '';
-			if ( $is_error && $error_code ) {
-				throw new ConnectApiException( $error_code );
-			}
-
-			// phpcs:disable WordPress.Security.ValidatedSanitizedInput.MissingUnslash
-			// phpcs:disable WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
-			$facebook_auth_code = $_GET['code'] ?? '';
-			if ( empty( $facebook_auth_code ) ) {
-				throw new ApiException( 'Facebook auth code is missing.' );
-			}
-
-			$state = $_GET['state'] ?? '';
-			if ( empty( $state ) ) {
-				throw new ApiException( 'Missing state query parameter.' );
-			}
-
-			$parameters_string = '?' . http_build_query(
-				array(
-					'nonce'                => wp_create_nonce( self::ACTION_EXCHANGE ),
-					'code'                 => $facebook_auth_code,
-					'external_business_id' => $this->get_external_business_id(),
-					'type'                 => self::AUTH_TYPE_STANDARD,
-					'state'                => $state,
-				)
-			);
-
-			$request_url = self::PROXY_TOKEN_EXCHANGE_URL . $parameters_string;
-			$response    = wp_safe_remote_get(
-				$request_url,
-				array(
-					'timeout' => 60,
-				)
-			);
-
-			if ( is_wp_error( $response ) ) {
-				throw new ApiException( 'WooCommerce Connect Server token exchange has failed.' );
-			}
-
-			$token_data = json_decode( wp_remote_retrieve_body( $response ), true );
-
-			if ( isset( $token_data['status'] ) && 500 === $token_data['status'] ) {
-				throw new ApiException( 'WooCommerce Connect Server token exchange has failed.' );
-			}
-
-			// Check that request was initiated from the server.
-			if ( ! wp_verify_nonce( $token_data['nonce'] ?? '', self::ACTION_EXCHANGE ) ) {
-				throw new ApiException( 'Exchange nonce is not valid.' );
-			}
-
-			$merchant_access_token    = wc_clean( wp_unslash( $token_data['merchant_access_token'] ?? '' ) );
-			$system_user_access_token = wc_clean( wp_unslash( $token_data['system_user_access_token'] ?? '' ) );
-			$system_user_id           = wc_clean( wp_unslash( $token_data['system_user_id'] ?? '' ) );
-
-			if ( ! $merchant_access_token ) {
-				throw new ApiException( 'Access token is missing' );
-			}
-			if ( ! $system_user_access_token ) {
-				throw new ApiException( 'System User access token is missing' );
-			}
-			if ( ! $system_user_id ) {
-				throw new ApiException( 'System User ID is missing' );
-			}
-			$this->update_access_token( $system_user_access_token );
-			$this->update_merchant_access_token( $merchant_access_token );
-			$this->update_system_user_id( $system_user_id );
-			$this->update_installation_data();
-			// Allow opt-out of full batch-API sync, for example if store has a large number of products.
-			if ( facebook_for_woocommerce()->get_integration()->allow_full_batch_api_sync() ) {
-				facebook_for_woocommerce()->get_products_sync_handler()->create_or_update_all_products();
-			} else {
-				facebook_for_woocommerce()->log( 'Initial full product sync disabled by filter hook `facebook_for_woocommerce_allow_full_batch_api_sync`', 'facebook_for_woocommerce_connect' );
-			}
-			facebook_for_woocommerce()->get_product_sets_sync_handler()->sync_all_product_sets();
-			update_option( 'wc_facebook_has_connected_fbe_2', 'yes' );
-			update_option( 'wc_facebook_has_authorized_pages_read_engagement', 'yes' );
-			// redirect to the Commerce onboarding if directed to do so
-			if ( ! empty( Helper::get_requested_value( 'connect_commerce' ) ) ) {
-				wp_safe_redirect( $this->get_commerce_connect_url() );
-				exit;
-			}
-			facebook_for_woocommerce()->get_message_handler()->add_message( __( 'Connection successful!', 'facebook-for-woocommerce' ) );
-			wp_safe_redirect( facebook_for_woocommerce()->get_advertise_tab_url() );
-			exit;
-		} catch ( ApiException $exception ) {
-			facebook_for_woocommerce()->log( sprintf( 'Connection failed: %s', $exception->getMessage() ) );
-			set_transient( 'wc_facebook_connection_failed', time(), 30 );
-		} catch ( ConnectApiException $exception ) {
-			$message = $this->prepare_connect_server_message_for_user_display( $exception->getMessage() );
-			facebook_for_woocommerce()->log( sprintf( 'Failed to connect to Facebook. Reason: %s', $message ), 'facebook_for_woocommerce_connect' );
-			set_transient( 'wc_facebook_connection_failed', time(), 30 );
-		}
-
-		wp_safe_redirect( facebook_for_woocommerce()->get_settings_url() );
-		exit;
-	}
-
-	/**
-	 * Prepares the error message from the connect server for the logs.
-	 *
-	 * @since 2.6.8
-	 * @param string $message Message string that needs formatting.
-	 * @return string Formatted message string ready for logging.
-	 */
-	public function prepare_connect_server_message_for_user_display( $message ) {
-			/*
-			 * In some scenarios the connect server message is a JSON encoded object.
-			 * This happens when we have detailed information from Facebook API endpoint about the error.
-			 * We want to print it pretty for the customers.
-			 */
-			$decoded_message = json_decode( $message );
-		if ( json_last_error() === JSON_ERROR_NONE ) {
-			// If error is the first key we want to use just the body to simplify the message.
-			$decoded_message = isset( $decoded_message->error ) ? $decoded_message->error : $decoded_message;
-			$message         = wp_json_encode( $decoded_message, JSON_PRETTY_PRINT );
-		}
-			return $message;
-	}
-
-
-	/**
 	 * Disconnects the integration using the Graph API.
 	 *
 	 * @internal
@@ -605,20 +441,6 @@ class Connection {
 
 
 	/**
-	 * Gets the URL to start the connection flow.
-	 *
-	 * @since 2.0.0
-	 *
-	 * @param bool $connect_commerce whether to connect to Commerce after successful FBE connection
-	 * @return string
-	 */
-	public function get_connect_url( $connect_commerce = false ) {
-		// nosemgrep: audit.php.wp.security.xss.query-arg
-		return add_query_arg( rawurlencode_deep( $this->get_connect_parameters( $connect_commerce ) ), self::OAUTH_URL );
-	}
-
-
-	/**
 	 * Builds the Commerce connect URL.
 	 *
 	 * The base URL is https://www.facebook.com/commerce_manager/onboarding with two query variables:
@@ -665,36 +487,6 @@ class Connection {
 		 * @param string $connect_url connect URL
 		 */
 		return apply_filters( 'wc_facebook_commerce_connect_url', $connect_url );
-	}
-
-
-	/**
-	 * Gets the scopes that will be requested during the connection flow.
-	 *
-	 * @since 2.0.0
-	 *
-	 * @link https://developers.facebook.com/docs/marketing-api/access/#access_token
-	 *
-	 * @return string[]
-	 */
-	public function get_scopes() {
-		$scopes = array(
-			'manage_business_extension',
-			'catalog_management',
-			'ads_management',
-			'ads_read',
-			'pages_read_engagement', // this scope is needed to enable order management if using the Commerce feature
-			'instagram_basic',
-		);
-		/**
-		 * Filters the scopes that will be requested during the connection flow.
-		 *
-		 * @since 2.0.0
-		 *
-		 * @param string[] $scopes connection scopes
-		 * @param Connection $connection connection handler instance
-		 */
-		return (array) apply_filters( 'wc_facebook_connection_scopes', $scopes, $this );
 	}
 
 
@@ -838,25 +630,6 @@ class Connection {
 
 
 	/**
-	 * Gets the proxy URL.
-	 *
-	 * @since 2.0.0
-	 *
-	 * @return string URL
-	 */
-	public function get_proxy_url() {
-		/**
-		 * Filters the proxy URL.
-		 *
-		 * @since 2.0.0
-		 *
-		 * @param string $proxy_url the connection proxy URL
-		 */
-		return (string) apply_filters( 'wc_facebook_connection_proxy_url', self::PROXY_URL );
-	}
-
-
-	/**
 	 * Gets APP Store Login URL.
 	 *
 	 * @since 2.3.0
@@ -891,73 +664,6 @@ class Connection {
 		 */
 		return (string) apply_filters( 'wc_facebook_connection_authentication_url', self::CONNECTION_AUTHENTICATION_URL );
 	}
-
-	/**
-	 * Gets the full redirect URL where the user will return to after OAuth.
-	 *
-	 * @since 2.0.0
-	 *
-	 * @return string
-	 */
-	public function get_redirect_url() {
-		$redirect_url = add_query_arg(
-			array(
-				'wc-api'               => self::ACTION_CONNECT,
-				'external_business_id' => $this->get_external_business_id(),
-				'nonce'                => wp_create_nonce( self::ACTION_CONNECT ),
-				'type'                 => self::AUTH_TYPE_STANDARD,
-			),
-			home_url( '/' )
-		);
-		/**
-		 * Filters the redirect URL where the user will return to after OAuth.
-		 *
-		 * @since 2.0.0
-		 *
-		 * @param string $redirect_url redirect URL
-		 * @param Connection $connection connection handler instance
-		 */
-		return (string) apply_filters( 'wc_facebook_connection_redirect_url', $redirect_url, $this );
-	}
-
-
-	/**
-	 * Gets the full set of connection parameters for starting OAuth.
-	 *
-	 * @since 2.0.0
-	 *
-	 * @param bool $connect_commerce whether to connect to Commerce after successful FBE connection
-	 * @return array
-	 */
-	public function get_connect_parameters( $connect_commerce = false ) {
-		$state = $this->get_redirect_url();
-		if ( $connect_commerce ) {
-			$state = add_query_arg( 'connect_commerce', true, $state );
-		}
-
-		/**
-		 * Filters the connection parameters.
-		 *
-		 * @since 2.0.0
-		 *
-		 * @param array $parameters connection parameters
-		 *
-		 * nosemgrep: audit.php.wp.security.xss.query-arg
-		 */
-		return apply_filters(
-			'wc_facebook_connection_parameters',
-			array(
-				'client_id'     => $this->get_client_id(),
-				'redirect_uri'  => $this->get_proxy_url(),
-				'state'         => $state,
-				'display'       => 'page',
-				'response_type' => 'code',
-				'scope'         => implode( ',', $this->get_scopes() ),
-				'extras'        => wp_json_encode( $this->get_connect_parameters_extras() ),
-			)
-		);
-	}
-
 
 	/**
 	 * Gets connection parameters extras.
