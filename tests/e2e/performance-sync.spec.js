@@ -19,7 +19,6 @@ const {
   logTestStart,
   logTestEnd,
   validateFacebookSync,
-  processPendingSyncJobs,
   setProductTitle,
   setProductDescription,
   createTestProduct,
@@ -27,7 +26,7 @@ const {
   dismissWooInterferingOverlays
 } = require('./helpers/js');
 
-test.describe.serial('Meta for WooCommerce - Performance Sync E2E Tests', () => {
+test.describe('Meta for WooCommerce - Performance Sync E2E Tests', () => {
   test.beforeEach(async ({ page }, testInfo) => {
     logTestStart(testInfo);
     await page.setViewportSize({ width: 1280, height: 720 });
@@ -35,7 +34,7 @@ test.describe.serial('Meta for WooCommerce - Performance Sync E2E Tests', () => 
 
   const PERFORMANCE_CONFIG = {
     simpleBatch: {
-      count: 15,
+      count: Number.parseInt(process.env.PERFORMANCE_SIMPLE_BATCH_COUNT || '15', 10),
       descriptionRepeat: 15,
       price: '19.99',
       waitSeconds: 5,
@@ -191,9 +190,6 @@ test.describe.serial('Meta for WooCommerce - Performance Sync E2E Tests', () => 
     const validationAttempts = 3;
     let lastResult = null;
 
-    // Ensure queued jobs are processed in CI/single-threaded environments before validation.
-    await processPendingSyncJobs().catch(() => {});
-
     for (let attempt = 1; attempt <= validationAttempts; attempt++) {
       const result = maxRetries == null
         ? await validateFacebookSync(resolvedProductId, productName, waitSeconds)
@@ -208,9 +204,8 @@ test.describe.serial('Meta for WooCommerce - Performance Sync E2E Tests', () => 
       const syncStatus = result?.sync_status || 'unknown';
       if (attempt < validationAttempts) {
         console.warn(
-          `⚠️ Sync validator attempt ${attempt}/${validationAttempts} for product ${resolvedProductId} returned ${syncStatus}. Processing pending jobs and retrying...`
+          `⚠️ Sync validator attempt ${attempt}/${validationAttempts} for product ${resolvedProductId} returned ${syncStatus}. Retrying...`
         );
-        await processPendingSyncJobs().catch(() => {});
         await page.waitForTimeout(TIMEOUTS.NORMAL + TIMEOUTS.SHORT);
       }
     }
