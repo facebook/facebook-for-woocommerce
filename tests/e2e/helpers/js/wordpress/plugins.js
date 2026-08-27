@@ -212,6 +212,74 @@ async function removeSingleSearchRedirectBlockerMuPlugin() {
   console.log('✅ Single-search redirect blocker mu-plugin removed');
 }
 
+/**
+ * Install mu-plugin that injects a core/search block into block-theme header
+ * template parts.
+ *
+ * No stock or common third-party FSE (block) theme ships a search UI in its
+ * default header, so the Search event cannot be exercised on the block-theme
+ * project out of the box. This injects a visible search form into the header
+ * template part (via the get_block_template filters, which fire for both DB- and
+ * file-based parts) so Search validates on the block architecture too. The
+ * classic-theme project uses a theme with a native header search instead, so it
+ * does not need this. Harmless on classic themes — they have no block template
+ * parts for the filter to match.
+ */
+async function installBlockThemeHeaderSearchMuPlugin() {
+  console.log('🔧 Installing block-theme header search injector mu-plugin...');
+  const muPluginDir = `${wpSitePath}/wp-content/mu-plugins`;
+  const muPluginFile = `${muPluginDir}/e2e-block-theme-header-search.php`;
+  const code = `<?php
+/**
+ * Plugin Name: E2E Block Theme Header Search Injector
+ * Description: Injects a core/search block into block-theme header template parts so the
+ *   WooCommerce Search event can be exercised on FSE themes that ship no header search.
+ * Version: 1.0.0
+ */
+
+if ( ! defined( 'ABSPATH' ) ) {
+    exit;
+}
+
+$e2e_inject_header_search = function ( $block_template, $id, $template_type ) {
+    if (
+        'wp_template_part' === $template_type
+        && $block_template instanceof WP_Block_Template
+        && isset( $block_template->slug )
+        && 'header' === $block_template->slug
+        && false === strpos( (string) $block_template->content, 'e2e-injected-search' )
+    ) {
+        $block_template->content .= ' <!-- wp:search {"label":"Search","showLabel":false,"buttonText":"Search","buttonPosition":"button-outside","className":"e2e-injected-search"} /-->';
+    }
+
+    return $block_template;
+};
+
+// Register on both filters: get_block_file_template covers file-based parts (the
+// default for stock themes), get_block_template covers DB-backed/customized parts.
+add_filter( 'get_block_file_template', $e2e_inject_header_search, 10, 3 );
+add_filter( 'get_block_template', $e2e_inject_header_search, 10, 3 );
+`;
+
+  fs.mkdirSync(muPluginDir, { recursive: true });
+  fs.writeFileSync(muPluginFile, code);
+
+  console.log('✅ Block-theme header search injector mu-plugin installed');
+}
+
+/**
+ * Remove the block-theme header search injector mu-plugin.
+ */
+async function removeBlockThemeHeaderSearchMuPlugin() {
+  console.log('🧹 Removing block-theme header search injector mu-plugin...');
+  const muPluginFile = `${wpSitePath}/wp-content/mu-plugins/e2e-block-theme-header-search.php`;
+
+  if (fs.existsSync(muPluginFile)) {
+    fs.unlinkSync(muPluginFile);
+  }
+  console.log('✅ Block-theme header search injector mu-plugin removed');
+}
+
 module.exports = {
   installPlugin,
   uninstallPlugin,
@@ -222,5 +290,7 @@ module.exports = {
   installJsErrorSimulatorMuPlugin,
   removeJsErrorSimulatorMuPlugin,
   installSingleSearchRedirectBlockerMuPlugin,
-  removeSingleSearchRedirectBlockerMuPlugin
+  removeSingleSearchRedirectBlockerMuPlugin,
+  installBlockThemeHeaderSearchMuPlugin,
+  removeBlockThemeHeaderSearchMuPlugin
 };
