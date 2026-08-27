@@ -211,21 +211,33 @@ async function validateCategorySync(categoryId, categoryName = null, waitSeconds
  * the built-in dev server used in CI). This function bypasses the loopback by
  * invoking the job handler directly via CLI.
  *
+ * @param {Object} options - Processing options
+ * @param {boolean} options.waitForBatchCompletion - Wait until Meta finishes each submitted batch
  * @returns {Promise<Object>} Processing result
  */
-async function processPendingSyncJobs() {
+async function processPendingSyncJobs({ waitForBatchCompletion = false } = {}) {
   console.log('🔄 Processing pending Facebook sync background jobs...');
 
   try {
     const phpDir = path.resolve(__dirname, '../../php');
-    const { stdout, stderr } = await execAsync(
+    const { stdout } = await execAsync(
       'php process-sync-jobs.php',
-      { cwd: phpDir, timeout: 120000 }
+      {
+        cwd: phpDir,
+        timeout: waitForBatchCompletion ? 360000 : 120000,
+        env: {
+          ...process.env,
+          FB_E2E_WAIT_FOR_BATCH_COMPLETION: waitForBatchCompletion ? '1' : '0',
+        },
+      }
     );
 
     const result = JSON.parse(stdout);
     if (result.success) {
       console.log(`✅ Processed ${result.jobs_processed} sync job(s)`);
+      if (waitForBatchCompletion && result.batch_count > 0) {
+        console.log(`✅ Meta finished ${result.batch_count} submitted batch(es) without item errors`);
+      }
     } else {
       console.warn(`⚠️ Sync job processing issue: ${result.message}`);
     }

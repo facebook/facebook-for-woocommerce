@@ -130,16 +130,21 @@ jobs:
     # never actually executing. The mysql:8.0 service container is multi-arch,
     # so this is no longer constrained to x86-only pools.
     runs-on: ubuntu-latest
-    # Fail fast instead of letting a stuck step (e.g. a hung browser install) run
-    # until GitHub's 6-hour default job timeout. plugin-events runs many browser
-    # projects sequentially, so it gets a larger budget.
-    timeout-minutes: ${{ matrix.test-group == 'plugin-events' && 90 || 45 }}
+    # Use explicit per-group budgets. Browser coverage and catalog stress/depth
+    # suites legitimately exceed 45 minutes when Facebook propagation is slow.
+    timeout-minutes: ${{ matrix.job_timeout }}
+
+    # Each lane maps to one dedicated Meta business asset set. Serialize jobs
+    # using the same lane across workflow runs so two shards never mutate the
+    # same catalog concurrently.
+    concurrency:
+      group: facebook-for-woocommerce-e2e-meta-asset-${{ matrix.asset-slot }}
+      queue: max
 
     strategy:
       fail-fast: false
-      # Cap how many shards run concurrently within a run to keep shared-test-asset
-      # contention reasonable (all shards now share the ubuntu-latest pool).
-      max-parallel: 8
+      # Three Meta asset sets are configured, so run at most one shard per asset.
+      max-parallel: 3
       matrix:
         test-group: ['plugin-events', 'product-crud', 'variable-product-depth', 'product-batch', 'product-category', 'performance-sync']
         version-set: ['supported', 'latest']
@@ -152,6 +157,24 @@ jobs:
             wp-version: 'latest'
             wc-version: 'latest'
             version-label: 'Latest'
+          - test-group: 'plugin-events'
+            asset-slot: 0
+            job_timeout: 90
+          - test-group: 'product-crud'
+            asset-slot: 1
+            job_timeout: 45
+          - test-group: 'variable-product-depth'
+            asset-slot: 2
+            job_timeout: 90
+          - test-group: 'product-batch'
+            asset-slot: 0
+            job_timeout: 45
+          - test-group: 'product-category'
+            asset-slot: 1
+            job_timeout: 45
+          - test-group: 'performance-sync'
+            asset-slot: 2
+            job_timeout: 90
 
     services:
       mysql:
@@ -444,13 +467,14 @@ jobs:
           ARRAY_LENGTH=$(echo "$ASSETS" | jq 'length')
           echo "Total available business asset sets: $ARRAY_LENGTH"
 
-          # Use run_number as selector - it's sequential (1, 2, 3, ...) across all workflow runs
-          # This ensures each concurrent run gets a different business asset set
-          SELECTOR="${{ github.run_number }}"
-          echo "Using GitHub Run Number as selector: $SELECTOR"
+          # Each matrix lane requires its own catalog. Failing explicitly is
+          # safer than silently mapping multiple concurrent lanes to one asset.
+          if [ "$ARRAY_LENGTH" -lt 3 ]; then
+            echo "::error title=Insufficient Meta test assets::Expected at least 3 business asset sets, found $ARRAY_LENGTH."
+            exit 1
+          fi
 
-          # Calculate index using modulo
-          INDEX=$((SELECTOR % ARRAY_LENGTH))
+          INDEX="${{ matrix.asset-slot }}"
           echo "Selected asset set index: $INDEX"
 
           # Extract the selected asset set
