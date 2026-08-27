@@ -19,14 +19,13 @@ const {
   logTestStart,
   logTestEnd,
   validateFacebookSync,
-  processPendingSyncJobs,
   execWP,
   setProductTitle,
   setProductDescription,
   dismissWooInterferingOverlays,
 } = require('./helpers/js');
 
-test.describe.serial('Variable Product Depth Tests', () => {
+test.describe('Variable Product Depth Tests', () => {
   test.beforeEach(async ({ page }, testInfo) => {
     test.skip(testInfo.project.name !== 'chromium-wp-admin', 'Variable product depth tests require wp-admin project');
 
@@ -408,7 +407,6 @@ test.describe.serial('Variable Product Depth Tests', () => {
 
     for (let attempt = 1; attempt <= attempts; attempt++) {
       await forceEnqueueVariableProductSync(productId);
-      await processPendingSyncJobs().catch(() => {});
 
       const result = await validateFacebookSync(
         productId,
