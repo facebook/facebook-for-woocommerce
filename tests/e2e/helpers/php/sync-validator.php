@@ -310,6 +310,61 @@ class FacebookSyncValidator {
     }
 
     /**
+     * Find the product group created for a WooCommerce retailer ID.
+     *
+     * Catalog batch status can be finished while the filtered products edge
+     * still returns no item. The product-group edge becomes authoritative
+     * sooner and lets the validator read the group's products directly.
+     */
+    private function findFacebookProductGroupId($catalog_id, $retailer_id) {
+        $api = facebook_for_woocommerce()->get_api();
+        $access_token = $api ? $api->get_access_token() : '';
+
+        if (!$access_token) {
+            throw new Exception('Facebook access token is unavailable for product group lookup');
+        }
+
+        $url = add_query_arg(
+            [
+                'filter' => wp_json_encode(['retailer_id' => ['eq' => (string)$retailer_id]]),
+                'fields' => 'id,retailer_id',
+                // Meta currently returns the newest groups even when the
+                // retailer filter is not applied, so verify matches locally.
+                'limit' => 100
+            ],
+            \WooCommerce\Facebook\API::GRAPH_API_URL
+                . \WooCommerce\Facebook\API::API_VERSION
+                . "/{$catalog_id}/product_groups"
+        );
+
+        $response = wp_remote_get(
+            $url,
+            [
+                'headers' => ['Authorization' => "Bearer {$access_token}"],
+                'timeout' => 30
+            ]
+        );
+
+        if (is_wp_error($response)) {
+            throw new Exception($response->get_error_message());
+        }
+
+        $response_code = wp_remote_retrieve_response_code($response);
+        $body = json_decode(wp_remote_retrieve_body($response), true);
+        if (200 !== $response_code) {
+            throw new Exception($body['error']['message'] ?? "HTTP {$response_code}");
+        }
+
+        foreach ((array)($body['data'] ?? []) as $group) {
+            if ((string)($group['retailer_id'] ?? '') === (string)$retailer_id) {
+                return (string)($group['id'] ?? '');
+            }
+        }
+
+        return '';
+    }
+
+    /**
      * Fetch Facebook data for all retailer IDs within one shared retry window.
      */
     private function fetchFacebookData($retailer_ids, $product_group_id = '') {
@@ -323,7 +378,7 @@ class FacebookSyncValidator {
         $deadline = microtime(true) + $poll_timeout_seconds;
         $attempt = 0;
         $complete_snapshot_count = 0;
-        $required_complete_snapshots = count($unique_retailer_ids) > 1 ? 2 : 1;
+        $required_complete_snapshots = $product_group_id ? 1 : (count($unique_retailer_ids) > 1 ? 2 : 1);
         $stable_snapshot_found = false;
 
         do {
@@ -331,6 +386,24 @@ class FacebookSyncValidator {
             $current_facebook_data = [];
             $missing_retailer_ids = [];
             $has_api_error = false;
+
+            if (!$product_group_id && !empty($this->result['retailer_id'])) {
+                try {
+                    $product_group_id = $this->findFacebookProductGroupId(
+                        $catalog_id,
+                        $this->result['retailer_id']
+                    );
+
+                    if ($product_group_id) {
+                        $required_complete_snapshots = 1;
+                        $this->debug("Discovered Facebook product group {$product_group_id} from the catalog group edge");
+                    }
+                } catch (Exception $e) {
+                    // Fall back to the existing product search. Any connection
+                    // failure there remains a distinct validation error.
+                    $this->debug("Facebook product group lookup failed: " . $e->getMessage());
+                }
+            }
 
             if ($product_group_id) {
                 try {
@@ -374,6 +447,27 @@ class FacebookSyncValidator {
                         $missing_retailer_ids[] = $retailer_id;
                         $has_api_error = true;
                         $this->debug("Facebook API error for retailer_id {$retailer_id}: " . $e->getMessage());
+                    }
+                }
+
+                // A retailer-id lookup can become visible before its siblings
+                // and exposes the authoritative product group ID. Switch to the
+                // group endpoint as soon as that happens so subsequent polling
+                // reads one coherent variation snapshot instead of independent
+                // eventually-consistent search results.
+                if (!$has_api_error && count($missing_retailer_ids) > 0) {
+                    foreach ($current_facebook_data as $data) {
+                        if (!empty($data['product_group_id'])) {
+                            $product_group_id = (string)$data['product_group_id'];
+                            $required_complete_snapshots = 1;
+                            $this->debug("Discovered Facebook product group {$product_group_id}; switching to group snapshot polling");
+                            break;
+                        }
+                    }
+
+                    if ($product_group_id) {
+                        $facebook_data = $current_facebook_data;
+                        continue;
                     }
                 }
             }
@@ -437,16 +531,21 @@ class FacebookSyncValidator {
     }
 
     /**
-     * Convert the legacy retry setting into its previous total wait budget,
-     * capped so a validator cannot consume an entire Playwright test timeout.
+     * Use one bounded propagation window for every positive catalog lookup.
+     * The legacy retry argument is retained so callers can pass zero when they
+     * expect an item to be absent, but it no longer shortens positive checks.
      */
     private function getPollTimeoutSeconds() {
         if ($this->max_retries <= 1) {
             return 0;
         }
 
-        $retry_budget = pow(2, min($this->max_retries, 10)) - 2;
-        return (int) min(self::MAX_POLL_SECONDS, $retry_budget);
+        $poll_override = getenv('FB_E2E_CATALOG_POLL_SECONDS');
+        if (false !== $poll_override && is_numeric($poll_override)) {
+            return (int)min(self::MAX_POLL_SECONDS, max(0, (int)$poll_override));
+        }
+
+        return self::MAX_POLL_SECONDS;
     }
 
     /**
