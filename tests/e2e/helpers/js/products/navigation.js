@@ -127,7 +127,7 @@ async function publishProduct(page) {
     throw new Error(`Product save failed with HTTP ${saveCompletion.response.status()}`);
   }
 
-  await updateButton.waitFor({ state: 'visible', timeout: TIMEOUTS.LONG });
+  await updateButton.waitFor({ state: 'visible', timeout: TIMEOUTS.EXTRA_LONG });
   console.log('✅ Published product');
   return true;
 }
