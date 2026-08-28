@@ -179,7 +179,7 @@ jobs:
             wc-version: 'latest'
             version-label: 'Latest'
           - test-group: 'plugin-events'
-            job_timeout: 90
+            job_timeout: 120
             asset-slot: 0
           - test-group: 'product-crud'
             job_timeout: 90
@@ -336,6 +336,14 @@ jobs:
             --admin_password=admin \
             --admin_email=test@example.com \
             --allow-root
+
+          # Catalog E2E tests execute due sync events through the deterministic
+          # process-sync-jobs helper. Prevent request-triggered WP-Cron from
+          # racing that helper while unscheduling the same event. Plugin/events
+          # coverage keeps normal WP-Cron behavior.
+          if [ "${{ matrix.test-group }}" != "plugin-events" ]; then
+            wp config set DISABLE_WP_CRON true --raw --allow-root
+          fi
 
       - name: Install WooCommerce
         run: |
