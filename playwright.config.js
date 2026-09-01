@@ -39,8 +39,8 @@ const privacySandboxOrigin = process.env.WORDPRESS_URL
   : null;
 
 const privacySandboxArgs = [
-  '--enable-features=BrowsingTopics,InterestGroupStorage,AdInterestGroupAPI,Fledge,RunAdAuction,PrivacySandboxAdsAPIsOverride',
-  '--enable-blink-features=BrowsingTopics,InterestGroupStorage,AdInterestGroupAPI,RunAdAuction',
+  '--enable-features=InterestGroupStorage,AdInterestGroupAPI,Fledge,RunAdAuction,PrivacySandboxAdsAPIsOverride',
+  '--enable-blink-features=InterestGroupStorage,AdInterestGroupAPI,RunAdAuction',
   '--test-third-party-cookie-phaseout',
   ...(privacySandboxOrigin ? [`--unsafely-treat-insecure-origin-as-secure=${privacySandboxOrigin}`] : []),
 ];

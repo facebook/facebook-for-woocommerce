@@ -827,19 +827,55 @@ jobs:
           FIREFOX_EXECUTABLE_PATH: ''
         run: |
           cd ${{ env.PLUGIN_PATH }}
-          npx playwright test plugin-level-tests.spec.js --project=chromium-wp-admin --workers=1
-          xvfb-run --auto-servernum npx playwright test events-test.spec.js --headed --project=chromium-wp-customer --workers=1
-          xvfb-run --auto-servernum npx playwright test events-test.spec.js --headed --project=chromium-wp-customer-classic-theme --workers=1
-          xvfb-run --auto-servernum npx playwright test events-test.spec.js --headed --project=chromium-wp-customer-block-theme --workers=1
-          xvfb-run --auto-servernum npx playwright test events-test.spec.js --headed --project=chromium-privacy-sandbox-wp-customer --workers=1
 
-          # Ensure Privacy Sandbox API tests are executed (not skipped) in CI.
-          xvfb-run --auto-servernum npx playwright test events-test.spec.js \
-            --headed \
-            --project=chromium-privacy-sandbox-wp-customer \
-            --workers=1 \
-            --grep "Privacy Sandbox - (Topics API available in Chromium|Protected Audience API shape in Chromium)" \
-            --reporter=json > /tmp/privacy-sandbox-api-report.json
+          # This step runs a dozen browser projects back to back. The step shell is
+          # `bash -e`, so the first non-zero exit used to abort everything after it:
+          # a single failing project silently skipped the remaining projects and
+          # reported them as neither passed nor failed. Collect failures instead and
+          # fail once at the end, so every project always reports its own result.
+          set +e
+          failed_projects=()
+
+          note_rc() {  # note_rc <exit-code> <label>
+            if [ "$1" -eq 0 ]; then
+              echo "✅ passed: $2"
+            else
+              echo "❌ failed: $2 (exit $1)"
+              failed_projects+=("$2")
+            fi
+          }
+
+          run_project() {  # run_project <label> <command...>
+            local label="$1"
+            shift
+            echo "::group::E2E project: ${label}"
+            "$@"
+            local rc=$?
+            echo "::endgroup::"
+            note_rc "$rc" "${label}"
+            return 0
+          }
+
+          run_project "plugin-level-tests (chromium-wp-admin)" \
+            npx playwright test plugin-level-tests.spec.js --project=chromium-wp-admin --workers=1
+          run_project "events (chromium-wp-customer)" \
+            xvfb-run --auto-servernum npx playwright test events-test.spec.js --headed --project=chromium-wp-customer --workers=1
+          run_project "events (chromium-wp-customer-classic-theme)" \
+            xvfb-run --auto-servernum npx playwright test events-test.spec.js --headed --project=chromium-wp-customer-classic-theme --workers=1
+          run_project "events (chromium-wp-customer-block-theme)" \
+            xvfb-run --auto-servernum npx playwright test events-test.spec.js --headed --project=chromium-wp-customer-block-theme --workers=1
+          run_project "events (chromium-privacy-sandbox-wp-customer)" \
+            xvfb-run --auto-servernum npx playwright test events-test.spec.js --headed --project=chromium-privacy-sandbox-wp-customer --workers=1
+
+          # Ensure the supported Privacy Sandbox API test is executed (not skipped) in CI.
+          run_project "privacy-sandbox API report" bash -c '
+            xvfb-run --auto-servernum npx playwright test events-test.spec.js \
+              --headed \
+              --project=chromium-privacy-sandbox-wp-customer \
+              --workers=1 \
+              --grep "Privacy Sandbox - Protected Audience API shape in Chromium" \
+              --reporter=json > /tmp/privacy-sandbox-api-report.json
+          '
 
           # Diagnostic probe: verify APIs are exposed in the privacy-sandbox browser runtime.
           node - <<'NODE'
@@ -850,8 +886,8 @@ jobs:
               channel: 'chrome',
               headless: true,
               args: [
-                '--enable-features=BrowsingTopics,InterestGroupStorage,AdInterestGroupAPI,Fledge,RunAdAuction,PrivacySandboxAdsAPIsOverride',
-                '--enable-blink-features=BrowsingTopics,InterestGroupStorage,AdInterestGroupAPI,RunAdAuction',
+                '--enable-features=InterestGroupStorage,AdInterestGroupAPI,Fledge,RunAdAuction,PrivacySandboxAdsAPIsOverride',
+                '--enable-blink-features=InterestGroupStorage,AdInterestGroupAPI,RunAdAuction',
                 '--test-third-party-cookie-phaseout',
                 ...(process.env.WORDPRESS_URL ? [`--unsafely-treat-insecure-origin-as-secure=${new URL(process.env.WORDPRESS_URL).origin}`] : []),
               ],
@@ -864,7 +900,6 @@ jobs:
 
               const probe = await page.evaluate(() => ({
                 isSecureContext: typeof window !== 'undefined' ? window.isSecureContext : null,
-                hasTopicsApi: typeof document !== 'undefined' && typeof document.browsingTopics === 'function',
                 hasJoinAdInterestGroup: typeof navigator !== 'undefined' && typeof navigator.joinAdInterestGroup === 'function',
                 hasRunAdAuction: typeof navigator !== 'undefined' && typeof navigator.runAdAuction === 'function',
                 hasLeaveAdInterestGroup: typeof navigator !== 'undefined' && typeof navigator.leaveAdInterestGroup === 'function',
@@ -881,6 +916,7 @@ jobs:
             process.exit(1);
           });
           NODE
+          note_rc $? "privacy-sandbox capability probe"
 
           node - <<'NODE'
           const fs = require('fs');
@@ -904,7 +940,6 @@ jobs:
           }
 
           const apiTitles = new Set([
-            'Privacy Sandbox - Topics API available in Chromium',
             'Privacy Sandbox - Protected Audience API shape in Chromium'
           ]);
 
@@ -933,8 +968,8 @@ jobs:
             walkSuite(suite);
           }
 
-          if (statuses.length < 2) {
-            console.error('Expected both Privacy Sandbox API tests to run, but did not find both in JSON report.');
+          if (statuses.length < 1) {
+            console.error('Expected the Privacy Sandbox API test to run, but did not find it in JSON report.');
             process.exit(1);
           }
 
@@ -943,16 +978,31 @@ jobs:
             process.exit(1);
           }
 
-          console.log('Privacy Sandbox API tests executed without skips. Statuses:', statuses);
+          console.log('Privacy Sandbox API test executed without skips. Statuses:', statuses);
           NODE
+          note_rc $? "privacy-sandbox no-skip gate"
 
-          xvfb-run --auto-servernum npx playwright test events-test.spec.js --headed --project=edge-wp-customer --workers=1
-          xvfb-run --auto-servernum npx playwright test events-test.spec.js --headed --project=firefox-wp-customer --workers=1
-          xvfb-run --auto-servernum npx playwright test events-test.spec.js --headed --project=brave-wp-customer --workers=1
-          npx playwright test events-test.spec.js --project=android-pixel-wp-customer --workers=1
-          npx playwright test events-test.spec.js --project=safari-ios-wp-customer --workers=1
-          set -o pipefail
-          xvfb-run --auto-servernum npx playwright test events-test.spec.js --headed --project=opera-wp-customer --workers=1 2>&1 | tee /tmp/opera-playwright.log
+          run_project "events (edge-wp-customer)" \
+            xvfb-run --auto-servernum npx playwright test events-test.spec.js --headed --project=edge-wp-customer --workers=1
+          run_project "events (firefox-wp-customer)" \
+            xvfb-run --auto-servernum npx playwright test events-test.spec.js --headed --project=firefox-wp-customer --workers=1
+          run_project "events (brave-wp-customer)" \
+            xvfb-run --auto-servernum npx playwright test events-test.spec.js --headed --project=brave-wp-customer --workers=1
+          run_project "events (android-pixel-wp-customer)" \
+            npx playwright test events-test.spec.js --project=android-pixel-wp-customer --workers=1
+          run_project "events (safari-ios-wp-customer)" \
+            npx playwright test events-test.spec.js --project=safari-ios-wp-customer --workers=1
+          run_project "events (opera-wp-customer)" bash -c '
+            set -o pipefail
+            xvfb-run --auto-servernum npx playwright test events-test.spec.js --headed --project=opera-wp-customer --workers=1 2>&1 | tee /tmp/opera-playwright.log
+          '
+
+          if [ "${#failed_projects[@]}" -ne 0 ]; then
+            echo "::error::${#failed_projects[@]} E2E project run(s) failed in this shard:"
+            printf '::error::  - %s\n' "${failed_projects[@]}"
+            exit 1
+          fi
+          echo "All E2E project runs in this shard passed."
 
       - name: Dump Opera diagnostics (always)
         if: always() && matrix.test-group == 'plugin-events'

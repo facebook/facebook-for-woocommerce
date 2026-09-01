@@ -199,7 +199,26 @@ test.describe('Meta for WooCommerce - Product Deletion E2E Tests', () => {
       // on single-threaded PHP servers in CI).
       await processPendingSyncJobs();
 
-      const syncResultAfter = await validateFacebookSync(simpleProductId, simpleProduct.productName, 30, 0);
+      // Exclusion propagates to the Meta catalog asynchronously, so a single
+      // probe races the delete. The sync validator already polls until an item
+      // APPEARS; this is the mirror case and needs the same treatment, otherwise
+      // any propagation lag is an instant failure that no Playwright retry can
+      // recover (the retry rebuilds the product and races again).
+      //
+      // Each probe is one API call (maxRetries=0), so a still-present item
+      // returns immediately -- the loop only costs wall clock while the catalog
+      // is genuinely lagging, and stops the moment the item is gone.
+      let syncResultAfter = await validateFacebookSync(simpleProductId, simpleProduct.productName, 30, 0);
+      const catalogDeletionDeadline = Date.now() + 2 * TIMEOUTS.MAX; // 2 minutes
+      while (
+        syncResultAfter?.raw_data?.facebook_data?.[0]?.found
+        && Date.now() < catalogDeletionDeadline
+      ) {
+        console.log('⏳ Product still present in the catalog; waiting for exclusion to propagate...');
+        await page.waitForTimeout(TIMEOUTS.LONG);
+        syncResultAfter = await validateFacebookSync(simpleProductId, simpleProduct.productName, 0, 0);
+      }
+
       expect(syncResultAfter['success']).toBe(false);
       expect(syncResultAfter['raw_data']['woo_data'][0]['title']).toBe(newTitle);
       try {

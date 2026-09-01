@@ -102,8 +102,22 @@ async function checkWooCommerceLogs() {
   if (non200Lines) {
     const unexpectedErrors = [];
     // Print surrounding context (10 lines before/after) for each non-200 line
-    const lineNumbers = non200Lines.split('\n').map(l => parseInt(l.split(':')[0], 10)).filter(n => !isNaN(n));
-    for (const lineNum of lineNumbers) {
+    const entries = non200Lines
+      .split('\n')
+      .map(l => l.match(/^(\d+):code:\s*(\d+)/))
+      .filter(Boolean)
+      .map(m => ({ lineNum: Number(m[1]), code: Number(m[2]) }));
+    for (const { lineNum, code } of entries) {
+      // A 5xx is Meta's server failing, not a malformed request from the plugin
+      // (that would be a 4xx), and the API client retries it. Report it but do
+      // not fail on it: this test re-reads the same cumulative log file on every
+      // Playwright retry, so a single upstream blip would otherwise red the whole
+      // shard with no way for a retry to recover. A genuine Meta outage still
+      // surfaces through the sync assertions in the other specs.
+      if (code >= 500) {
+        console.log(`⏭️ Ignoring upstream ${code} at line ${lineNum} (Meta server error, not a plugin defect)`);
+        continue;
+      }
       const start = Math.max(1, lineNum - 5);
       const end = lineNum + 5;
       const context = execSync(

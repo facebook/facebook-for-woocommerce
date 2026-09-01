@@ -26,7 +26,15 @@ const {
   dismissWooInterferingOverlays,
 } = require('./helpers/js');
 
-test.describe.serial('Variable Product Depth Tests', () => {
+// Not `describe.serial`: this file already runs with --workers=1, so the tests
+// execute in declaration order either way. What `.serial` added was retry
+// semantics -- one failing test re-runs the WHOLE block, so each retry repeated
+// every already-passing test in the file. These tests build 8-variation products
+// and wait on catalog convergence, so a single late failure could re-run several
+// minutes of passing work twice and push the shard past its 45-minute timeout.
+// The tests share no mutable state, so retrying only the failed test is both
+// cheaper and more accurate.
+test.describe('Variable Product Depth Tests', () => {
   test.beforeEach(async ({ page }, testInfo) => {
     test.skip(testInfo.project.name !== 'chromium-wp-admin', 'Variable product depth tests require wp-admin project');
 
