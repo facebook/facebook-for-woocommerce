@@ -1099,6 +1099,102 @@ jobs:
             echo "✅ No debug log found - no PHP errors"
           fi
 
+      # Defence in depth for T286988560: a bug bounty researcher found a live system
+      # user access token in the publicly downloadable woocommerce-logs artifact.
+      # The plugin no longer logs credentials (see Framework\Api\SensitiveData), but
+      # nothing leaves this job until it has been scrubbed and independently verified
+      # clean. ::add-mask:: only hides secrets in console output, never in files.
+      - name: Scrub credentials from artifact paths
+        if: always()
+        run: |
+          set -uo pipefail
+
+          # A credential parameter followed by a secret-length value. Anchored on the
+          # parameter name so it does not fire on the base64-encoded images embedded
+          # in playwright-report/index.html. Does not match an already-masked value,
+          # because '*' is outside the value character class.
+          CREDENTIAL_PATTERN='(access_token|merchant_access_token|page_access_token|system_user_access_token|client_secret|client_token|appsecret_proof)["'"'"']?[[:space:]]*[=:][[:space:]]*["'"'"']?[A-Za-z0-9_|.-]{20,}'
+
+          # Every path that is uploaded as an artifact by the steps below.
+          ARTIFACT_PATHS=(
+            "${{ env.WORDPRESS_PATH }}/wp-content/uploads/wc-logs"
+            "${{ env.WP_DEBUG_LOG }}"
+            "${{ env.PLUGIN_PATH }}/playwright-report"
+            "${{ env.PLUGIN_PATH }}/test-results"
+            "${{ env.PLUGIN_PATH }}${{ env.FB_E2E_CAPTURED_EVENTS_DIR }}"
+          )
+
+          for target in "${ARTIFACT_PATHS[@]}"; do
+            [ -e "$target" ] || continue
+
+            # Exact secret value first — robust against any regex metacharacters.
+            if [ -n "${FB_ACCESS_TOKEN:-}" ]; then
+              # `|| true` because grep exits 1 when it finds nothing, which is the
+              # healthy case and must not fail the step under `bash -e -o pipefail`.
+              grep -rlF "$FB_ACCESS_TOKEN" "$target" 2>/dev/null | while read -r file; do
+                perl -pi -e 'BEGIN { $t = $ENV{FB_ACCESS_TOKEN} } s/\Q$t\E/***MASKED***/g' "$file"
+                echo "  scrubbed exact token from: $file"
+              done || true
+            fi
+
+            # Then any other credential-carrying parameter, in case a different
+            # secret reaches the logs. Matching on the parameter name rather than
+            # on a bare token shape avoids false positives on the base64 image
+            # data embedded in playwright-report/index.html.
+            grep -rlE "$CREDENTIAL_PATTERN" "$target" 2>/dev/null | while read -r file; do
+              perl -pi -e 's/((?:access_token|merchant_access_token|page_access_token|system_user_access_token|client_secret|client_token|appsecret_proof)["'"'"']?\s*[=:]\s*["'"'"']?)[A-Za-z0-9_|.-]{20,}/${1}***MASKED***/g' "$file"
+              echo "  scrubbed credential parameter from: $file"
+            done || true
+          done
+
+          echo "✅ Scrub pass complete"
+
+      # Fail closed: if a credential survived the scrub, destroy the artifacts and
+      # break the build rather than publish them. Only file names are printed here,
+      # never matched content.
+      - name: Verify artifact paths contain no credentials
+        if: always()
+        run: |
+          set -uo pipefail
+          leaked=0
+
+          # Keep in sync with the scrub step above.
+          CREDENTIAL_PATTERN='(access_token|merchant_access_token|page_access_token|system_user_access_token|client_secret|client_token|appsecret_proof)["'"'"']?[[:space:]]*[=:][[:space:]]*["'"'"']?[A-Za-z0-9_|.-]{20,}'
+
+          ARTIFACT_PATHS=(
+            "${{ env.WORDPRESS_PATH }}/wp-content/uploads/wc-logs"
+            "${{ env.WP_DEBUG_LOG }}"
+            "${{ env.PLUGIN_PATH }}/playwright-report"
+            "${{ env.PLUGIN_PATH }}/test-results"
+            "${{ env.PLUGIN_PATH }}${{ env.FB_E2E_CAPTURED_EVENTS_DIR }}"
+          )
+
+          for target in "${ARTIFACT_PATHS[@]}"; do
+            [ -e "$target" ] || continue
+
+            if [ -n "${FB_ACCESS_TOKEN:-}" ] && grep -rqF "$FB_ACCESS_TOKEN" "$target" 2>/dev/null; then
+              echo "::error::Live access token found under $target"
+              grep -rlF "$FB_ACCESS_TOKEN" "$target" 2>/dev/null | sed 's|^|  affected file: |'
+              leaked=1
+            fi
+
+            if grep -rqE "$CREDENTIAL_PATTERN" "$target" 2>/dev/null; then
+              echo "::error::Unmasked credential parameter found under $target"
+              grep -rlE "$CREDENTIAL_PATTERN" "$target" 2>/dev/null | sed 's|^|  affected file: |'
+              leaked=1
+            fi
+          done
+
+          if [ "$leaked" -ne 0 ]; then
+            echo "::error::Refusing to publish artifacts that contain a credential (see T286988560). Deleting them."
+            for target in "${ARTIFACT_PATHS[@]}"; do
+              rm -rf "$target"
+            done
+            exit 1
+          fi
+
+          echo "✅ No credentials found in any artifact path"
+
       - name: Upload test results
         uses: actions/upload-artifact@v5
         if: always()
@@ -1126,21 +1222,24 @@ jobs:
             echo "ℹ️ Captured events directory not found: $TARGET_DIR"
           fi
 
+      # Logs are only published when a run actually fails, and expire quickly.
+      # They are the artifacts that leaked a live token in T286988560, so their
+      # exposure window is kept as small as is still useful for debugging.
       - name: Upload PHP logs
         uses: actions/upload-artifact@v5
-        if: always()
+        if: failure()
         with:
           name: php-debug-logs-${{ matrix.version-label }}-${{ matrix.test-group }}
           path: ${{ env.WP_DEBUG_LOG }}
-          retention-days: 7
+          retention-days: 2
 
       - name: Upload WooCommerce logs
         uses: actions/upload-artifact@v5
-        if: always()
+        if: failure()
         with:
           name: woocommerce-logs-${{ matrix.version-label }}-${{ matrix.test-group }}
           path: ${{ env.WORDPRESS_PATH }}/wp-content/uploads/wc-logs/facebook_for_woocommerce-*.log
-          retention-days: 7
+          retention-days: 2
 
       - name: Upload test videos/screenshots
         uses: actions/upload-artifact@v5

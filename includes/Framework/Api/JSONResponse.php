@@ -75,7 +75,7 @@ abstract class JSONResponse implements Response, ArrayAccess {
 	 * @see   Response::to_string_safe()
 	 */
 	public function to_string_safe() {
-		return $this->to_string();
+		return SensitiveData::redact_json( $this->to_string() );
 	}
 
 	/**
