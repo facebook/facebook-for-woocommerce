@@ -206,17 +206,17 @@ class ShopsTest extends AbstractWPUnitTestWithOptionIsolationAndSafeFiltering {
     }
 
     /**
-     * Test that add_notices registers a connection invalid notice when the transient is set.
+     * Test that the global handler registers a connection invalid notice when the transient is set.
      */
-    public function test_add_notices_shows_connection_invalid_notice() {
+    public function test_global_handler_shows_connection_invalid_notice() {
         // Set up an admin user so the notice handler allows display.
         $user_id = $this->factory->user->create( array( 'role' => 'administrator' ) );
         wp_set_current_user( $user_id );
 
         set_transient( 'wc_facebook_connection_invalid', time(), DAY_IN_SECONDS );
 
-        // The connection invalid notice is now handled globally in
-        // WC_Facebookcommerce::add_connection_invalid_notice(), not in Shops::add_notices().
+        // The connection invalid notice is handled globally in
+        // WC_Facebookcommerce::add_connection_invalid_notice().
         // Simulate being on an allowed screen (plugins page).
         set_current_screen( 'plugins' );
         facebook_for_woocommerce()->add_connection_invalid_notice();
@@ -232,28 +232,6 @@ class ShopsTest extends AbstractWPUnitTestWithOptionIsolationAndSafeFiltering {
         $this->assertStringContainsString( 'access token is no longer valid', $notices['wc_facebook_connection_invalid']['message'] );
 
         delete_transient( 'wc_facebook_connection_invalid' );
-    }
-
-    /**
-     * Test that add_notices does NOT register a connection invalid notice when the transient is not set.
-     */
-    public function test_add_notices_skips_connection_invalid_when_transient_not_set() {
-        $user_id = $this->factory->user->create( array( 'role' => 'administrator' ) );
-        wp_set_current_user( $user_id );
-
-        // Ensure transient is not set.
-        delete_transient( 'wc_facebook_connection_invalid' );
-
-        $shops = new Shops();
-        $shops->add_notices();
-
-        $handler = facebook_for_woocommerce()->get_admin_notice_handler();
-        $ref     = new \ReflectionObject( $handler );
-        $prop    = $ref->getProperty( 'admin_notices' );
-        $prop->setAccessible( true );
-        $notices = $prop->getValue( $handler );
-
-        $this->assertArrayNotHasKey( 'wc_facebook_connection_invalid', $notices );
     }
 
     /**
