@@ -896,7 +896,11 @@ test.describe('WooCommerce Plugin level tests', () => {
       await productAttributeContainer.waitFor({ state: 'visible', timeout: TIMEOUTS.MEDIUM });
       await exactSearchSelect2Container(page, productAttributeContainer, attributeName);
       const selectAllAttrValuesBtn = page.getByRole('button', { name: 'Select all' });
-      await selectAllAttrValuesBtn.waitFor({ state: 'visible', timeout: TIMEOUTS.MEDIUM });
+      // EXTRA_LONG rather than the MEDIUM used by the pure-DOM waits around it:
+      // this button only renders once WooCommerce finishes an AJAX round-trip to
+      // load the global attribute's terms. Under CI contention that regularly
+      // exceeded 5s, which was the single most common flake in this shard.
+      await selectAllAttrValuesBtn.waitFor({ state: 'visible', timeout: TIMEOUTS.EXTRA_LONG });
       await selectAllAttrValuesBtn.click();
       console.log(`✅ Selected attribute: ${attributeName}`);
 

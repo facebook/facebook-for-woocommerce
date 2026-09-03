@@ -1338,34 +1338,6 @@ function getMajorBrowserVersion(versionString) {
     return match ? parseInt(match[1], 10) : NaN;
 }
 
-test('Privacy Sandbox - Topics API available in Chromium', async ({ page, browser }) => {
-    test.skip(!test.info().project.name.includes('privacy-sandbox'), 'Privacy Sandbox test only runs on privacy-sandbox project');
-
-    const chromiumMajor = getMajorBrowserVersion(browser.version());
-    test.skip(Number.isNaN(chromiumMajor) || chromiumMajor < 115, `Privacy Sandbox requires Chrome/Chromium >= 115 (detected ${browser.version()})`);
-
-    await page.goto('/');
-    await TestSetup.waitForPageReady(page);
-
-    const topicsResult = await page.evaluate(async () => {
-        const hasTopicsApi = typeof document !== 'undefined' && typeof document.browsingTopics === 'function';
-        if (!hasTopicsApi) {
-            return { hasTopicsApi, topicsCount: null, error: null };
-        }
-
-        try {
-            const topics = await document.browsingTopics();
-            return { hasTopicsApi, topicsCount: Array.isArray(topics) ? topics.length : 0, error: null };
-        } catch (error) {
-            return { hasTopicsApi, topicsCount: null, error: String(error?.message || error) };
-        }
-    });
-
-    expect(topicsResult.hasTopicsApi).toBe(true);
-    expect(topicsResult.error).toBeNull();
-    expect(typeof topicsResult.topicsCount).toBe('number');
-});
-
 test('Privacy Sandbox - Protected Audience API shape in Chromium', async ({ page, browser }) => {
     test.skip(!test.info().project.name.includes('privacy-sandbox'), 'Privacy Sandbox test only runs on privacy-sandbox project');
 

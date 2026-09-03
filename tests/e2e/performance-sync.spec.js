@@ -27,7 +27,13 @@ const {
   dismissWooInterferingOverlays
 } = require('./helpers/js');
 
-test.describe.serial('Meta for WooCommerce - Performance Sync E2E Tests', () => {
+// Not `describe.serial`: this file already runs with --workers=1, so the tests
+// execute in declaration order either way. What `.serial` added was retry
+// semantics -- one failing test re-runs the WHOLE block, so a failure in the
+// 3-minute variable-product test re-ran the 14-minute batch test on each of the
+// two retries and blew the 45-minute job timeout. The tests share no mutable
+// state, so retrying only the failed test is both cheaper and more accurate.
+test.describe('Meta for WooCommerce - Performance Sync E2E Tests', () => {
   test.beforeEach(async ({ page }, testInfo) => {
     logTestStart(testInfo);
     await page.setViewportSize({ width: 1280, height: 720 });
