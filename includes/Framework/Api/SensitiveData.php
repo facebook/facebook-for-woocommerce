@@ -84,6 +84,12 @@ class SensitiveData {
 				$params[ $key ] = self::REDACTED;
 			} elseif ( is_array( $value ) ) {
 				$params[ $key ] = self::redact_params( $value );
+			} elseif ( is_string( $value ) ) {
+				// A perfectly innocent key can still hold a credential inside a URL.
+				// Graph returns the Commerce Partner Hub link as
+				// commerce_extension.uri = "https://…/overview/?access_token=…", and
+				// "uri" is not a credential name, so key matching alone walks past it.
+				$params[ $key ] = self::redact_text( $value );
 			}
 		}
 

@@ -135,6 +135,48 @@ class SensitiveDataTest extends AbstractWPUnitTestWithSafeFiltering {
 	}
 
 	/**
+	 * A credential embedded in a URL held under a non-credential key is masked.
+	 *
+	 * Graph returns the Commerce Partner Hub link as commerce_extension.uri with
+	 * the access token in its query string. "uri" is not a credential name, so
+	 * key matching alone misses it — this was observed leaking in a real CI log.
+	 *
+	 * @see \WooCommerce\Facebook\API\FBE\Configuration\Read\Response::get_commerce_extension_uri()
+	 */
+	public function test_redact_params_masks_credential_embedded_in_a_url_value() {
+		$redacted = SensitiveData::redact_params(
+			[
+				'commerce_extension' => [
+					'uri' => 'https://www.commercepartnerhub.com/commerce_extension/overview/?access_token=' . self::TOKEN . '&app_id=123',
+				],
+				'id'                 => '45202426474228',
+			]
+		);
+
+		$this->assertStringNotContainsString( self::TOKEN, wp_json_encode( $redacted ) );
+		$this->assertStringContainsString( 'app_id=123', $redacted['commerce_extension']['uri'] );
+		$this->assertSame( '45202426474228', $redacted['id'] );
+	}
+
+	/**
+	 * Same shape, arriving as a raw JSON response body.
+	 */
+	public function test_redact_json_masks_credential_embedded_in_a_url_value() {
+		$json = wp_json_encode(
+			[
+				'commerce_extension' => [
+					'uri' => 'https://www.commercepartnerhub.com/commerce_extension/overview/?access_token=' . self::TOKEN,
+				],
+			]
+		);
+
+		$redacted = SensitiveData::redact_json( $json );
+
+		$this->assertStringNotContainsString( self::TOKEN, $redacted );
+		$this->assertStringContainsString( 'commercepartnerhub.com', $redacted );
+	}
+
+	/**
 	 * A truncated or malformed payload still gets scrubbed rather than passed
 	 * through verbatim.
 	 */
