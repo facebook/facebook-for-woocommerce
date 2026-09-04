@@ -139,4 +139,98 @@ jQuery(document).ready(function($) {
 			button.prop('disabled', false);
 		});
 	});
+
+	/**
+	 * Handle the manual config sync button click event
+	 *
+	 * @since 3.5.0
+	 *
+	 * @param {object} event
+	 */
+	$('#wc-facebook-enhanced-settings-manual-config-sync').click(function(event) {
+		event.preventDefault();
+		var button = $(this);
+		var originalText = button.html();
+
+		button.html('Syncing config...');
+		button.prop('disabled', true);
+
+		var data = {
+			action: "wc_facebook_manual_config_sync",
+			nonce: wc_facebook_enhanced_settings_sync.manual_config_sync_nonce
+		};
+
+		$.post(wc_facebook_enhanced_settings_sync.ajax_url, data, function(response) {
+			if (response.success) {
+				button.html('Config sync completed');
+				setTimeout(function() {
+					button.html(originalText);
+					button.prop('disabled', false);
+				}, 3000);
+			} else {
+				button.html('Config sync failed');
+				setTimeout(function() {
+					button.html(originalText);
+					button.prop('disabled', false);
+				}, 3000);
+			}
+		}).fail(function() {
+			button.html('Config sync failed');
+			setTimeout(function() {
+				button.html(originalText);
+				button.prop('disabled', false);
+			}, 3000);
+		});
+	});
+
+	/**
+	 * Handle the reset connection button click event
+	 *
+	 * @since 3.5.0
+	 *
+	 * @param {object} event
+	 */
+	$('#wc-facebook-enhanced-settings-reset-connection').click(function(event) {
+		event.preventDefault();
+		var button = $(this);
+		var originalText = button.html();
+
+		// Show confirmation dialog
+		if (!confirm('Are you sure you want to reset your Facebook connection? This will disconnect your site and clear all connection data. You will need to reconnect manually.')) {
+			return;
+		}
+
+		button.html('Resetting...');
+		button.prop('disabled', true);
+
+		var data = {
+			action: "wc_facebook_reset_connection",
+			nonce: wc_facebook_enhanced_settings_sync.reset_connection_nonce
+		};
+
+		$.post(wc_facebook_enhanced_settings_sync.ajax_url, data, function(response) {
+			if (response.success) {
+				button.html('Reset completed');
+				// Show success message and reload page after delay
+				alert('Connection reset successfully. The page will now reload.');
+				setTimeout(function() {
+					window.location.reload();
+				}, 1000);
+			} else {
+				button.html('Reset failed');
+				alert('Reset failed: ' + (response.data || 'Unknown error'));
+				setTimeout(function() {
+					button.html(originalText);
+					button.prop('disabled', false);
+				}, 3000);
+			}
+		}).fail(function() {
+			button.html('Reset failed');
+			alert('Reset failed due to a network error. Please try again.');
+			setTimeout(function() {
+				button.html(originalText);
+				button.prop('disabled', false);
+			}, 3000);
+		});
+	});
 });
