@@ -12,6 +12,7 @@ namespace WooCommerce\Facebook\Admin;
 
 use WooCommerce\Facebook\Framework\Logger;
 use WooCommerce\Facebook\Framework\Helper;
+use WooCommerce\Facebook\Framework\Plugin\Compatibility;
 
 defined( 'ABSPATH' ) || exit;
 
@@ -164,12 +165,7 @@ class WhatsApp_Integration_Settings {
 	 * @return bool
 	 */
 	public function is_marketing_enabled() {
-		if ( class_exists( WooAdminFeatures::class ) ) {
-			return WooAdminFeatures::is_enabled( 'marketing' );
-		}
-
-		return is_callable( '\Automattic\WooCommerce\Admin\Features\Features::is_enabled' )
-				&& \Automattic\WooCommerce\Admin\Features\Features::is_enabled( 'marketing' );
+		return Compatibility::is_marketing_enabled();
 	}
 
 	/**

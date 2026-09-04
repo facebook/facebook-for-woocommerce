@@ -10,9 +10,9 @@
 
 namespace WooCommerce\Facebook\Admin;
 
-use Automattic\WooCommerce\Admin\Features\Features as WooAdminFeatures;
 use WooCommerce\Facebook\Admin\Settings_Screens;
 use WooCommerce\Facebook\Framework\Helper;
+use WooCommerce\Facebook\Framework\Plugin\Compatibility;
 use WooCommerce\Facebook\Framework\Plugin\Exception as PluginException;
 use WooCommerce\Facebook\RolloutSwitches;
 use WooCommerce\Facebook\Framework\Logger;
@@ -146,12 +146,7 @@ class Enhanced_Settings {
 	 * @return bool
 	 */
 	public function is_marketing_enabled() {
-		if ( class_exists( WooAdminFeatures::class ) ) {
-			return WooAdminFeatures::is_enabled( 'marketing' );
-		}
-
-		return is_callable( '\Automattic\WooCommerce\Admin\Loader::is_feature_enabled' )
-				&& \Automattic\WooCommerce\Admin\Loader::is_feature_enabled( 'marketing' );
+		return Compatibility::is_marketing_enabled();
 	}
 
 	/**

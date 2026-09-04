@@ -12,7 +12,6 @@ defined( 'ABSPATH' ) || exit;
 
 require_once __DIR__ . '/includes/fbutils.php';
 
-use Automattic\WooCommerce\Admin\Features\Features as WooAdminFeatures;
 use Automattic\WooCommerce\Admin\Features\OnboardingTasks\TaskLists;
 use WooCommerce\Facebook\Admin\Tasks\Setup;
 use WooCommerce\Facebook\Admin\Notes\SettingsMoved;
@@ -306,14 +305,7 @@ class WC_Facebookcommerce extends WooCommerce\Facebook\Framework\Plugin {
 	 */
 	public function add_inbox_notes() {
 		if ( Compatibility::is_enhanced_admin_available() ) {
-			if ( class_exists( WooAdminFeatures::class ) ) {
-				$is_marketing_enabled = WooAdminFeatures::is_enabled( 'marketing' );
-			} else {
-				$is_marketing_enabled = is_callable( '\Automattic\WooCommerce\Admin\Loader::is_feature_enabled' )
-					&& \Automattic\WooCommerce\Admin\Loader::is_feature_enabled( 'marketing' );
-			}
-
-			if ( $is_marketing_enabled && class_exists( '\Automattic\WooCommerce\Admin\Notes\Note' ) ) { // Checking for Note class is for backward compatibility.
+			if ( Compatibility::is_marketing_enabled() && class_exists( '\Automattic\WooCommerce\Admin\Notes\Note' ) ) { // Checking for Note class is for backward compatibility.
 				SettingsMoved::possibly_add_or_delete_note();
 			}
 		}
