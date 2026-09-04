@@ -12,6 +12,8 @@
 
 namespace WooCommerce\Facebook\Framework\Plugin;
 
+use Automattic\WooCommerce\Admin\Features\Features as WooAdminFeatures;
+
 defined( 'ABSPATH' ) || exit;
 
 /**
@@ -112,6 +114,35 @@ class Compatibility {
 	 */
 	public static function is_enhanced_admin_available() {
 		return self::is_wc_version_gte( '4.0' ) && function_exists( 'wc_admin_url' );
+	}
+
+
+	/**
+	 * Determines whether the WooCommerce Admin "marketing" feature is enabled.
+	 *
+	 * WooCommerce 11.1.0 retired the `marketing` WC Admin feature flag, so
+	 * Features::is_enabled( 'marketing' ) now emits a deprecation notice on every
+	 * admin page load. That release added a notice-free accessor for exactly this
+	 * kind of passive lookup; it applies the same `woocommerce_admin_features`
+	 * filter, so the value is unchanged. Older WooCommerce does not warn and has
+	 * no accessor, and once the shim is removed the feature is unconditional.
+	 *
+	 * @return bool
+	 */
+	public static function is_marketing_enabled() {
+
+		if ( ! class_exists( WooAdminFeatures::class ) ) {
+			return false;
+		}
+
+		if ( method_exists( WooAdminFeatures::class, 'get_legacy_feature_compatibility_values' ) ) {
+			$values = WooAdminFeatures::get_legacy_feature_compatibility_values();
+
+			return ! empty( $values['marketing'] );
+		}
+
+		// ponytail: on 11.1.0+ a missing accessor means the shim is gone, so marketing is always on.
+		return self::is_wc_version_gte( '11.1.0' ) ? true : (bool) WooAdminFeatures::is_enabled( 'marketing' );
 	}
 
 
