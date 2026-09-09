@@ -10,6 +10,7 @@ namespace WooCommerce\Facebook\Tests\Admin\Settings_Screens;
 
 use PHPUnit\Framework\TestCase;
 use WooCommerce\Facebook\Admin\Settings_Screens\Shops;
+use WooCommerce\Facebook\Handlers\Connection;
 use WooCommerce\Facebook\Tests\AbstractWPUnitTestWithOptionIsolationAndSafeFiltering;
 
 /**
@@ -119,29 +120,177 @@ class ShopsTest extends AbstractWPUnitTestWithOptionIsolationAndSafeFiltering {
     }
 
     /**
-     * Test that the management URL is used when merchant token exists
-     */
-    public function test_renders_management_url_based_on_merchant_token() {
-        // Create a mock of the Shops class
-        $shops = $this->getMockBuilder(Shops::class)
-            ->getMock();
+	 * Test that the management URL uses the connection's Commerce Partner Integration ID.
+	 */
+	public function test_renders_management_url_using_cpi_id() {
+		$connection_cpi_id = 'connection-cpi';
+		$fallback_cpi_id   = 'fallback-cpi';
+		$expected_endpoint = 'https://api.facebook.com/commerce-partner-integrations/' . $connection_cpi_id . '/commerce-extension-token';
+		$request_count     = 0;
+		$plugin            = facebook_for_woocommerce();
+		$connection        = $this->createMock( Connection::class );
+		$connection->method( 'is_connected' )->willReturn( true );
+		$connection->method( 'get_external_business_id' )->willReturn( 'test-external-business' );
+		$connection->method( 'get_commerce_partner_integration_id' )->willReturn( $connection_cpi_id );
 
-        // Set up the merchant token
-        update_option('wc_facebook_merchant_access_token', 'test_token');
+		$plugin_proxy = new class( $plugin, $connection ) {
 
-        // Start output buffering to capture the render output
-        ob_start();
-        // Directly use Reflection to invoke the private/protected method
-        $reflection = new \ReflectionClass(get_class($shops));
-        $method = $reflection->getMethod('render_facebook_iframe');
-        $method->setAccessible(true);
-        $method->invoke($shops);
-        $output = ob_get_clean();
+			/** @var \WC_Facebookcommerce */
+			private $plugin;
 
-        // Check that the iframe is rendered
-        $this->assertStringContainsString('<iframe', $output);
-        $this->assertStringContainsString('id="facebook-commerce-iframe-enhanced"', $output);
-    }
+			/** @var Connection */
+			private $connection;
+
+			public function __construct( $plugin, $connection ) {
+				$this->plugin     = $plugin;
+				$this->connection = $connection;
+			}
+
+			public function get_connection_handler() {
+				return $this->connection;
+			}
+
+			public function __call( $method, $arguments ) {
+				return $this->plugin->{$method}( ...$arguments );
+			}
+		};
+
+		$this->mock_set_option( 'wc_facebook_access_token', 'long-lived-bisu-token' );
+		$this->mock_set_option( 'wc_facebook_merchant_access_token', 'merchant-token' );
+		$this->mock_set_option( 'wc_facebook_commerce_partner_integration_id', $fallback_cpi_id );
+		$this->add_filter_with_safe_teardown(
+			'wc_facebook_instance',
+			function () use ( $plugin_proxy ) {
+				return $plugin_proxy;
+			},
+			10,
+			1
+		);
+		$this->add_filter_with_safe_teardown(
+			'pre_http_request',
+			function ( $preempt, $request_args, $url ) use ( $expected_endpoint, &$request_count ) {
+				++$request_count;
+				$this->assertSame( $expected_endpoint, $url );
+				return array(
+					'headers'  => array(),
+					'body'     => wp_json_encode( array( 'access_token' => 'short-lived-delegate-token' ) ),
+					'response' => array(
+						'code'    => 200,
+						'message' => 'OK',
+					),
+					'cookies'  => array(),
+				);
+			},
+			10,
+			3
+		);
+
+		ob_start();
+		$this->shops->render();
+		$output = ob_get_clean();
+
+		$this->assertStringContainsString( '<iframe', $output );
+		$this->assertStringContainsString( 'id="facebook-commerce-iframe-enhanced"', $output );
+		$this->assertStringContainsString( 'commerce_extension/overview/', $output );
+		$this->assertStringContainsString( 'access_token=short-lived-delegate-token', $output );
+		$this->assertStringContainsString( 'external_business_id=test-external-business', $output );
+		$this->assertStringNotContainsString( 'commerce_extension/splash/', $output );
+		$this->assertStringNotContainsString( 'long-lived-bisu-token', $output );
+		$this->assertSame( 1, substr_count( $output, '<iframe' ) );
+		$this->assertSame( 1, $request_count );
+	}
+
+	/**
+	 * Test that a token endpoint failure falls back to the legacy management URL.
+	 */
+	public function test_token_endpoint_failure_falls_back_to_legacy_management_url() {
+		$legacy_url    = 'https://www.facebook.com/commerce/app/management/test-external-business/';
+		$request_count = 0;
+
+		$this->mock_set_option( 'wc_facebook_access_token', 'long-lived-bisu-token' );
+		$this->mock_set_option( 'wc_facebook_merchant_access_token', 'merchant-token' );
+		$this->mock_set_option( 'wc_facebook_commerce_partner_integration_id', 'test-cpi' );
+		$this->add_filter_with_safe_teardown(
+			'wc_facebook_external_business_id',
+			function () {
+				return 'test-external-business';
+			},
+			10,
+			2
+		);
+		$this->add_filter_with_safe_teardown(
+			'pre_http_request',
+			function ( $preempt, $request_args, $url ) use ( $legacy_url, &$request_count ) {
+				++$request_count;
+				if ( false !== strpos( $url, 'api.facebook.com' ) ) {
+					return new \WP_Error( 'http_request_failed', 'Test transport failure' );
+				}
+
+				return array(
+					'headers'  => array(),
+					'body'     => wp_json_encode(
+						array(
+							'commerce_extension' => array( 'uri' => $legacy_url ),
+						)
+					),
+					'response' => array(
+						'code'    => 200,
+						'message' => 'OK',
+					),
+					'cookies'  => array(),
+				);
+			},
+			10,
+			3
+		);
+
+		ob_start();
+		$this->shops->render();
+		$output = ob_get_clean();
+
+		$this->assertSame( 2, $request_count );
+		$this->assertSame( 1, substr_count( $output, '<iframe' ) );
+		$this->assertStringContainsString( $legacy_url, $output );
+		$this->assertStringNotContainsString( 'commerce_extension/splash/', $output );
+	}
+
+	/**
+	 * Test that both management URL failures fall back to the connected-store splash URL.
+	 */
+	public function test_management_url_failures_fall_back_to_installed_splash() {
+		$request_count = 0;
+
+		$this->mock_set_option( 'wc_facebook_access_token', 'long-lived-bisu-token' );
+		$this->mock_set_option( 'wc_facebook_merchant_access_token', 'merchant-token' );
+		$this->mock_set_option( 'wc_facebook_commerce_partner_integration_id', 'test-cpi' );
+		$this->add_filter_with_safe_teardown(
+			'wc_facebook_external_business_id',
+			function () {
+				return 'test-external-business';
+			},
+			10,
+			2
+		);
+		$this->add_filter_with_safe_teardown(
+			'pre_http_request',
+			function () use ( &$request_count ) {
+				++$request_count;
+				return new \WP_Error( 'http_request_failed', 'Test transport failure' );
+			},
+			10,
+			3
+		);
+
+		ob_start();
+		$this->shops->render();
+		$output = ob_get_clean();
+
+		$this->assertSame( 2, $request_count );
+		$this->assertSame( 1, substr_count( $output, '<iframe' ) );
+		$this->assertStringContainsString( 'commerce_extension/splash/', $output );
+		$this->assertStringContainsString( 'installed=1', $output );
+		$this->assertStringNotContainsString( 'commerce_extension/overview/', $output );
+	}
 
     /**
      * Test get_settings returns all expected settings and structure

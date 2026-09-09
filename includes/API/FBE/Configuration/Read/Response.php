@@ -20,6 +20,27 @@ use WooCommerce\Facebook\API;
 class Response extends API\Response {
 
 	/**
+	 * Gets a representation of the response that is safe to write to debug logs.
+	 *
+	 * @return string
+	 */
+	public function to_string_safe() {
+		$safe_response = parent::to_string_safe();
+		$response_data = json_decode( $safe_response, true );
+		if (
+			is_array( $response_data ) &&
+			isset( $response_data['commerce_extension'] ) &&
+			is_array( $response_data['commerce_extension'] ) &&
+			isset( $response_data['commerce_extension']['uri'] )
+		) {
+			$response_data['commerce_extension']['uri'] = '***';
+			return wp_json_encode( $response_data );
+		}
+
+		return $safe_response;
+	}
+
+	/**
 	 * Is Instagram Shopping enabled?
 	 *
 	 * @return boolean
