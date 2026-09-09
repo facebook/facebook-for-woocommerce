@@ -10,15 +10,20 @@ declare( strict_types=1 );
 
 namespace WooCommerce\Facebook\API\CommerceIntegration\Finalize;
 
+use WooCommerce\Facebook\API\CommerceIntegration\CommerceExtensionToken\Response as CommerceExtensionTokenResponse;
+
 defined( 'ABSPATH' ) || exit;
 
 /**
- * Client for the Commerce Partner Integration finalize-install endpoint.
+ * Client for Commerce Partner Integration endpoints.
  */
 class Client {
 
 	/** @var string Commerce Partner Integration finalize-install endpoint. */
 	const ENDPOINT = 'https://api.facebook.com/commerce-partner-integrations/finalize-install';
+
+	/** @var string Commerce Partner Integration commerce-extension-token endpoint pattern. */
+	const COMMERCE_EXTENSION_TOKEN_ENDPOINT = 'https://api.facebook.com/commerce-partner-integrations/%s/commerce-extension-token';
 
 	/**
 	 * Finalizes an installation after the durable access token has been stored.
@@ -85,6 +90,58 @@ class Client {
 		}
 
 		return $finalize_response;
+	}
+
+	/**
+	 * Requests a short-lived delegated access token for the Commerce Hub management iframe.
+	 *
+	 * @param string $access_token The durable business integration system user access token.
+	 * @param string $commerce_partner_integration_id The Commerce Partner Integration ID for this store.
+	 * @return CommerceExtensionTokenResponse
+	 * @throws Exception If the request fails or returns an invalid response.
+	 */
+	public function request_commerce_extension_token( string $access_token, string $commerce_partner_integration_id ): CommerceExtensionTokenResponse {
+		$response = wp_safe_remote_post(
+			sprintf(
+				self::COMMERCE_EXTENSION_TOKEN_ENDPOINT,
+				rawurlencode( $commerce_partner_integration_id )
+			),
+			array(
+				'headers'     => array(
+					'Accept'        => 'application/json',
+					'Authorization' => 'Bearer ' . $access_token,
+				),
+				'redirection' => 0,
+				'sslverify'   => true,
+				'timeout'     => 30,
+			)
+		);
+
+		if ( is_wp_error( $response ) ) {
+			throw new Exception(
+				esc_html( $response->get_error_message() ),
+				'transport_error'
+			);
+		}
+
+		$status_code = (int) wp_remote_retrieve_response_code( $response );
+		if ( 200 !== $status_code ) {
+			throw new Exception(
+				sprintf( 'Commerce extension token request failed with status %d.', $status_code ),
+				$this->get_http_failure_reason( $status_code ),
+				$status_code
+			);
+		}
+
+		$token_response = new CommerceExtensionTokenResponse( wp_remote_retrieve_body( $response ) );
+		if ( ! $token_response->is_successful() ) {
+			throw new Exception(
+				'Commerce extension token response was missing the delegated access token.',
+				'invalid_response'
+			);
+		}
+
+		return $token_response;
 	}
 
 	/**
