@@ -34,6 +34,26 @@ class HandlerDisconnectTest extends AbstractWPUnitTestWithOptionIsolationAndSafe
 	}
 
 	/**
+	 * Test that uninstall clears every deprecated connection option.
+	 */
+	public function test_uninstall_clears_deprecated_options(): void {
+		foreach ( \WC_Facebookcommerce_Integration::DEPRECATED_OPTIONS as $option ) {
+			$this->assertTrue( add_option( $option, 'legacy_value' ), "Failed to create {$option}." );
+		}
+
+		$handler      = new Handler();
+		$mock_request = $this->createMock( \WP_REST_Request::class );
+		$mock_request->method( 'get_params' )->willReturn( [] );
+
+		$response = $handler->handle_uninstall( $mock_request );
+
+		$this->assertEquals( 200, $response->get_status() );
+		foreach ( \WC_Facebookcommerce_Integration::DEPRECATED_OPTIONS as $option ) {
+			$this->assertFalse( get_option( $option, false ), "Failed to delete {$option}." );
+		}
+	}
+
+	/**
 	 * Test that uninstall works safely when facebook_config doesn't exist.
 	 */
 	public function test_clear_safe_when_facebook_config_missing(): void {
@@ -72,8 +92,7 @@ class HandlerDisconnectTest extends AbstractWPUnitTestWithOptionIsolationAndSafe
 		$handler      = new Handler();
 		$mock_request = $this->createMock( \WP_REST_Request::class );
 		$mock_request->method( 'get_params' )->willReturn( [
-			'access_token'          => 'new_valid_token',
-			'merchant_access_token' => 'new_valid_token',
+			'access_token' => 'new_valid_token',
 		] );
 
 		$response = $handler->handle_update( $mock_request );
@@ -89,8 +108,7 @@ class HandlerDisconnectTest extends AbstractWPUnitTestWithOptionIsolationAndSafe
 		$handler      = new Handler();
 		$mock_request = $this->createMock( \WP_REST_Request::class );
 		$mock_request->method( 'get_params' )->willReturn( [
-			'access_token'          => 'test_token',
-			'merchant_access_token' => 'test_token',
+			'access_token' => 'test_token',
 		] );
 
 		$response = $handler->handle_update( $mock_request );

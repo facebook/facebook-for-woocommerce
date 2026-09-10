@@ -44,13 +44,22 @@ class Connection {
 	/** @var string the ad account ID option name */
 	const OPTION_AD_ACCOUNT_ID = 'wc_facebook_ad_account_id';
 
-	/** @var string the system user ID option name */
+	/**
+	 * @var string the system user ID option name
+	 * @deprecated Legacy FBE 2 leftover. Internal connection flows no longer write this option,
+	 *             and nothing reads the stored ID.
+	 */
 	const OPTION_SYSTEM_USER_ID = 'wc_facebook_system_user_id';
 
 	/** @var string the system user access token option name */
 	const OPTION_ACCESS_TOKEN = 'wc_facebook_access_token';
 
-	/** @var string the merchant access token option name */
+	/**
+	 * @var string the merchant access token option name
+	 * @deprecated Legacy FBE 2 leftover. Internal connection flows no longer write this option,
+	 *             and nothing reads it to authenticate a request. Use self::OPTION_ACCESS_TOKEN
+	 *             instead.
+	 */
 	const OPTION_MERCHANT_ACCESS_TOKEN = 'wc_facebook_merchant_access_token';
 
 	/** @var string Instagram Business ID option name */
@@ -382,8 +391,6 @@ class Connection {
 	 */
 	public function disconnect() {
 		$this->update_access_token( '' );
-		$this->update_merchant_access_token( '' );
-		$this->update_system_user_id( '' );
 		$this->update_business_manager_id( '' );
 		$this->update_ad_account_id( '' );
 		$this->update_instagram_business_id( '' );
@@ -394,6 +401,12 @@ class Connection {
 		update_option( \WC_Facebookcommerce_Integration::SETTING_FACEBOOK_PIXEL_ID, '' );
 		facebook_for_woocommerce()->get_integration()->update_product_catalog_id( '' );
 		delete_option( \WC_Facebookcommerce_Integration::OPTION_PAGE_ACCESS_TOKEN );
+
+		// The plugin no longer writes these, but stores connected before they were retired still
+		// hold values — including a stale credential — so disconnecting must still clear them.
+		foreach ( \WC_Facebookcommerce_Integration::DEPRECATED_OPTIONS as $deprecated_option ) {
+			delete_option( $deprecated_option );
+		}
 
 		// Clear facebook_config option to stop pixel tracking and prevent stale data
 		if ( class_exists( 'WC_Facebookcommerce_Pixel' ) ) {
@@ -659,10 +672,13 @@ class Connection {
 	 * Stores the given system user ID.
 	 *
 	 * @since 2.0.0
+	 * @deprecated Legacy FBE 2 leftover. Internal connection flows no longer call this method.
+	 *             The write remains temporarily for backwards compatibility.
 	 *
 	 * @param string $value the ID
 	 */
 	public function update_system_user_id( $value ) {
+		wc_deprecated_function( __METHOD__, '3.7.7' );
 		update_option( self::OPTION_SYSTEM_USER_ID, $value );
 	}
 
@@ -707,10 +723,14 @@ class Connection {
 	 * Stores the given merchant access token.
 	 *
 	 * @since 2.0.0
+	 * @deprecated Legacy FBE 2 leftover. Internal connection flows no longer call this method.
+	 *             The write remains temporarily for backwards compatibility; use
+	 *             update_access_token() instead.
 	 *
 	 * @param string $value the access token
 	 */
 	public function update_merchant_access_token( $value ) {
+		wc_deprecated_function( __METHOD__, '3.7.7', 'WooCommerce\Facebook\Handlers\Connection::update_access_token()' );
 		update_option( self::OPTION_MERCHANT_ACCESS_TOKEN, $value );
 	}
 

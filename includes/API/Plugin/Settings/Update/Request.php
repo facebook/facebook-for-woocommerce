@@ -55,23 +55,19 @@ class Request extends RESTRequest {
 	 */
 	public function get_param_schema() {
 		return [
-			'merchant_access_token' => [
+			'access_token'         => [
 				'type'     => 'string',
 				'required' => true,
 			],
-			'access_token'          => [
-				'type'     => 'string',
-				'required' => true,
-			],
-			'external_business_id'  => [
+			'external_business_id' => [
 				'type'     => 'string',
 				'required' => false,
 			],
-			'catalog_id'            => [
+			'catalog_id'           => [
 				'type'     => 'string',
 				'required' => false,
 			],
-			'pixel_id'              => [
+			'pixel_id'             => [
 				'type'     => 'string',
 				'required' => false,
 			],
@@ -98,14 +94,6 @@ class Request extends RESTRequest {
 	 */
 	public function validate() {
 		// Validate required tokens
-		if ( empty( $this->get_param( 'merchant_access_token' ) ) ) {
-			return new \WP_Error(
-				'missing_merchant_token',
-				__( 'Missing merchant access token', 'facebook-for-woocommerce' ),
-				[ 'status' => 400 ]
-			);
-		}
-
 		if ( empty( $this->get_param( 'access_token' ) ) ) {
 			return new \WP_Error(
 				'missing_access_token',

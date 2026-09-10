@@ -138,7 +138,12 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 	/** @var string the WordPress option name where the access token is stored */
 	const OPTION_ACCESS_TOKEN = 'wc_facebook_access_token';
 
-	/** @var string the WordPress option name where the merchant access token is stored */
+	/**
+	 * @var string the WordPress option name where the merchant access token is stored
+	 * @deprecated Legacy FBE 2 leftover. The Commerce Extension flow issues a single system user
+	 *             access token, so internal connection flows no longer write this option and it
+	 *             was never used to authenticate a request. Use self::OPTION_ACCESS_TOKEN instead.
+	 */
 	const OPTION_MERCHANT_ACCESS_TOKEN = 'wc_facebook_merchant_access_token';
 
 	/** @var string the WordPress option name where the business manager ID is stored */
@@ -147,7 +152,11 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 	/** @var string the WordPress option name where the ad account ID is stored */
 	const OPTION_AD_ACCOUNT_ID = 'wc_facebook_ad_account_id';
 
-	/** @var string the WordPress option name where the system user ID is stored */
+	/**
+	 * @var string the WordPress option name where the system user ID is stored
+	 * @deprecated Legacy FBE 2 leftover. Internal connection flows no longer write this option,
+	 *             and nothing reads the stored ID.
+	 */
 	const OPTION_SYSTEM_USER_ID = 'wc_facebook_system_user_id';
 
 	/** @var string the WordPress option name where the commerce merchant settings ID is stored */
@@ -162,14 +171,44 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 	/** @var string the WordPress option name where the installed features are stored */
 	const OPTION_INSTALLED_FEATURES = 'wc_facebook_installed_features';
 
-	/** @var string the WordPress option name where the FBE 2 connection status is stored */
+	/**
+	 * @var string the WordPress option name where the FBE 2 connection status is stored
+	 * @deprecated Legacy FBE 2 leftover, no longer written. It was the FBE 1 vs FBE 2 discriminator
+	 *             set by the 2.0.0 upgrade; nothing ever read it. Connection state is decided by
+	 *             Connection::is_connected(), which checks the access token.
+	 */
 	const OPTION_HAS_CONNECTED_FBE_2 = 'wc_facebook_has_connected_fbe_2';
 
-	/** @var string the WordPress option name where the pages read engagement authorization status is stored */
+	/**
+	 * @var string the WordPress option name where the pages read engagement authorization status is stored
+	 * @deprecated Legacy FBE 2 leftover, no longer written. Nothing reads it.
+	 */
 	const OPTION_HAS_AUTHORIZED_PAGES_READ_ENGAGEMENT = 'wc_facebook_has_authorized_pages_read_engagement';
 
-	/** @var string the WordPress option name where the messenger chat status is stored */
+	/**
+	 * @var string the WordPress option name where the messenger chat status is stored
+	 * @deprecated Leftover from the removed Messenger chat feature, no longer written. Nothing reads it.
+	 */
 	const OPTION_ENABLE_MESSENGER = 'wc_facebook_enable_messenger';
+
+	/**
+	 * Options retired from connection state. Their names are retained so legacy callers remain
+	 * compatible and stored rows can be deleted. This is the canonical list: when one of these
+	 * is finally removed, delete its constant and its entry here together.
+	 *
+	 * Disconnecting clears them via clear_integration_options(). Rows on still-connected sites
+	 * are removed by a version-gated upgrade step in the next major release.
+	 *
+	 * @var string[]
+	 */
+	const DEPRECATED_OPTIONS = array(
+		self::OPTION_MERCHANT_ACCESS_TOKEN,
+		self::OPTION_SYSTEM_USER_ID,
+		self::OPTION_HAS_CONNECTED_FBE_2,
+		self::OPTION_HAS_AUTHORIZED_PAGES_READ_ENGAGEMENT,
+		self::OPTION_ENABLE_MESSENGER,
+		'wc_facebook_last_attribute_sync',
+	);
 
 	/** @var string default value for facebook_managed_coupons_setting */
 	const SETTING_ENABLE_FACEBOOK_MANAGED_COUPONS_DEFAULT_VALUE = 'yes';

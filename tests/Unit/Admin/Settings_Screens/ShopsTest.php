@@ -39,6 +39,23 @@ class ShopsTest extends AbstractWPUnitTestWithOptionIsolationAndSafeFiltering {
         $prop->setValue( $handler, [] );
     }
 
+    /**
+     * Tear down the test environment
+     */
+    public function tearDown(): void {
+        // Any test that reaches the management URL makes the plugin build its API client, which
+        // is then cached on the singleton for the rest of the process. get_api() only validates
+        // the token while constructing that object, so leaving it cached lets a later test issue
+        // a tokenless request instead of bailing. Drop it so each test starts clean.
+        $plugin = facebook_for_woocommerce();
+        $ref    = new \ReflectionObject( $plugin );
+        $prop   = $ref->getProperty( 'api' );
+        $prop->setAccessible( true );
+        $prop->setValue( $plugin, null );
+
+        parent::tearDown();
+    }
+
 	/**
 	 * Test that disconnected merchants see the current CPH onboarding iframe.
 	 */
@@ -125,12 +142,7 @@ class ShopsTest extends AbstractWPUnitTestWithOptionIsolationAndSafeFiltering {
 		$schema_keys = array_keys( $request->get_param_schema() );
 		$payload_keys = $key_matches[1];
 
-		$this->assertSame( array(), array_values( array_diff( $schema_keys, $payload_keys ) ) );
-		$this->assertSame(
-			array( 'merchant_access_token' ),
-			array_values( array_diff( $payload_keys, $schema_keys ) ),
-			'The duplicate merchant token is the only permitted legacy payload field until #4035 lands.'
-		);
+		$this->assertSame( $schema_keys, $payload_keys );
 	}
 
 	/**
@@ -172,15 +184,12 @@ class ShopsTest extends AbstractWPUnitTestWithOptionIsolationAndSafeFiltering {
     }
 
     /**
-     * Test that the management URL is used when merchant token exists
+     * Test that the splash iframe is rendered when the store is not connected
      */
-    public function test_renders_management_url_based_on_merchant_token() {
+    public function test_renders_splash_iframe_when_not_connected() {
         // Create a mock of the Shops class
         $shops = $this->getMockBuilder(Shops::class)
             ->getMock();
-
-        // Set up the merchant token
-        update_option('wc_facebook_merchant_access_token', 'test_token');
 
         // Start output buffering to capture the render output
         ob_start();
@@ -191,9 +200,48 @@ class ShopsTest extends AbstractWPUnitTestWithOptionIsolationAndSafeFiltering {
         $method->invoke($shops);
         $output = ob_get_clean();
 
-        // Check that the iframe is rendered
+        // Check that the onboarding iframe is rendered
         $this->assertStringContainsString('<iframe', $output);
         $this->assertStringContainsString('id="facebook-commerce-iframe-enhanced"', $output);
+        $this->assertStringContainsString('commerce_extension/splash', $output);
+    }
+
+    /**
+     * Test that a connected store with a valid token gets the management iframe.
+     *
+     * The store is connected purely by virtue of the access token, which is what
+     * is_connected() checks.
+     */
+    public function test_renders_management_iframe_when_connected() {
+        update_option( 'wc_facebook_access_token', 'test_token' );
+        update_option( 'wc_facebook_external_business_id', 'test_business_id' );
+
+        $management_url = 'https://www.facebook.com/commerce/app/management/test_business_id/';
+
+        // Stand in for the business configuration call the management URL depends on.
+        $this->add_filter_with_safe_teardown( 'pre_http_request', function ( $pre, $args, $url ) use ( $management_url ) {
+            if ( false === strpos( $url, 'graph.facebook.com' ) ) {
+                return $pre;
+            }
+
+            return [
+                'response' => [ 'code' => 200, 'message' => 'OK' ],
+                'body'     => wp_json_encode( [ 'commerce_extension' => [ 'uri' => $management_url ] ] ),
+            ];
+        }, 10, 3 );
+
+        $shops      = $this->getMockBuilder( Shops::class )->getMock();
+        $reflection = new \ReflectionClass( get_class( $shops ) );
+        $method     = $reflection->getMethod( 'render_facebook_iframe' );
+        $method->setAccessible( true );
+
+        ob_start();
+        $method->invoke( $shops );
+        $output = ob_get_clean();
+
+        // The management URL should be used, not the onboarding splash.
+        $this->assertStringContainsString( esc_url( $management_url ), $output );
+        $this->assertStringNotContainsString( 'commerce_extension/splash', $output );
     }
 
     /**
@@ -320,8 +368,6 @@ class ShopsTest extends AbstractWPUnitTestWithOptionIsolationAndSafeFiltering {
      * Test that render_facebook_iframe falls back to splash URL when connection is invalid.
      */
     public function test_render_facebook_iframe_shows_splash_when_connection_invalid() {
-        // Set merchant token so the management path would normally be taken.
-        update_option( 'wc_facebook_merchant_access_token', 'test_token' );
         // Set the connection invalid transient.
         set_transient( 'wc_facebook_connection_invalid', time(), DAY_IN_SECONDS );
 
@@ -344,7 +390,6 @@ class ShopsTest extends AbstractWPUnitTestWithOptionIsolationAndSafeFiltering {
      * Test that the splash URL has installed=false when connection is invalid.
      */
     public function test_render_facebook_iframe_shows_splash_with_installed_false() {
-        update_option( 'wc_facebook_merchant_access_token', 'test_token' );
         set_transient( 'wc_facebook_connection_invalid', time(), DAY_IN_SECONDS );
 
         $shops      = $this->getMockBuilder( Shops::class )->getMock();

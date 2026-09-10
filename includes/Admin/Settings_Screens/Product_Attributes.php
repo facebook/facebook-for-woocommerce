@@ -943,9 +943,6 @@ class Product_Attributes extends Abstract_Settings_Screen {
 			ProductAttributeMapper::set_custom_attribute_mappings( $new_mappings );
 		}
 
-		// Update last sync time
-		update_option( 'wc_facebook_last_attribute_sync', current_time( 'mysql' ) );
-
 		// Check if we need to clear the unmapped attribute banner
 		$this->clear_unmapped_attribute_banner( $new_mappings );
 

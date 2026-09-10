@@ -211,7 +211,7 @@ class Handler extends AbstractRESTEndpoint {
 		$this->update_settings( $options );
 
 		// Update connection status flags
-		$this->update_connection_status( $request_data );
+		$this->update_connection_status();
 
 		// Maybe trigger products sync and/or metadata feed uploads
 		$this->maybe_trigger_feed_uploads( $should_trigger_products_and_sets_sync, $should_trigger_metadata_feed_uploads, $request_data );
@@ -412,7 +412,7 @@ class Handler extends AbstractRESTEndpoint {
 	private function map_params_to_options( array $params, bool $prefer_explicit_pixel = false ): array {
 		$options = [];
 
-		// Map access tokens
+		// Map access token
 		if ( ! empty( $params['access_token'] ) ) {
 			$options[ \WC_Facebookcommerce_Integration::OPTION_ACCESS_TOKEN ] = $params['access_token'];
 		}
@@ -427,10 +427,6 @@ class Handler extends AbstractRESTEndpoint {
 
 		if ( ! empty( $params['installed_features'] ) ) {
 			$options[ \WC_Facebookcommerce_Integration::OPTION_INSTALLED_FEATURES ] = $params['installed_features'];
-		}
-
-		if ( ! empty( $params['merchant_access_token'] ) ) {
-			$options[ \WC_Facebookcommerce_Integration::OPTION_MERCHANT_ACCESS_TOKEN ] = $params['merchant_access_token'];
 		}
 
 		if ( ! empty( $params['page_id'] ) ) {
@@ -502,21 +498,11 @@ class Handler extends AbstractRESTEndpoint {
 	 *
 	 * @since 3.5.0
 	 *
-	 * @param array $params Request parameters.
 	 * @return void
 	 */
-	private function update_connection_status( array $params ) {
-		// Set the connection is complete
-		update_option( 'wc_facebook_has_connected_fbe_2', 'yes' );
-		update_option( 'wc_facebook_has_authorized_pages_read_engagement', 'yes' );
-
+	private function update_connection_status() {
 		// Clear any invalid connection flags since we just received fresh tokens
 		delete_transient( 'wc_facebook_connection_invalid' );
-
-		// Set the Messenger chat visibility
-		if ( ! empty( $params['msger_chat'] ) ) {
-			update_option( 'wc_facebook_enable_messenger', wc_bool_to_string( 'yes' === $params['msger_chat'] ) );
-		}
 	}
 
 	/**
@@ -531,21 +517,19 @@ class Handler extends AbstractRESTEndpoint {
 			\WC_Facebookcommerce_Integration::OPTION_ACCESS_TOKEN,
 			\WC_Facebookcommerce_Integration::OPTION_BUSINESS_MANAGER_ID,
 			\WC_Facebookcommerce_Integration::OPTION_AD_ACCOUNT_ID,
-			\WC_Facebookcommerce_Integration::OPTION_SYSTEM_USER_ID,
 			\WC_Facebookcommerce_Integration::OPTION_FEED_ID,
 			\WC_Facebookcommerce_Integration::OPTION_COMMERCE_MERCHANT_SETTINGS_ID,
 			\WC_Facebookcommerce_Integration::OPTION_COMMERCE_PARTNER_INTEGRATION_ID,
-			\WC_Facebookcommerce_Integration::OPTION_ENABLE_MESSENGER,
-			\WC_Facebookcommerce_Integration::OPTION_HAS_AUTHORIZED_PAGES_READ_ENGAGEMENT,
-			\WC_Facebookcommerce_Integration::OPTION_HAS_CONNECTED_FBE_2,
 			\WC_Facebookcommerce_Integration::OPTION_INSTALLED_FEATURES,
-			\WC_Facebookcommerce_Integration::OPTION_MERCHANT_ACCESS_TOKEN,
 			\WC_Facebookcommerce_Integration::OPTION_PAGE_ACCESS_TOKEN,
 			\WC_Facebookcommerce_Integration::OPTION_PRODUCT_CATALOG_ID,
 			\WC_Facebookcommerce_Integration::OPTION_PROFILES,
 			\WC_Facebookcommerce_Integration::SETTING_FACEBOOK_PAGE_ID,
 			\WC_Facebookcommerce_Integration::SETTING_FACEBOOK_PIXEL_ID,
 		];
+
+		// Also drop the rows for options the plugin no longer writes or reads.
+		$options = array_merge( $options, \WC_Facebookcommerce_Integration::DEPRECATED_OPTIONS );
 
 		foreach ( $options as $option ) {
 			delete_option( $option );

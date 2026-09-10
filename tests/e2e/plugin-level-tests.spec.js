@@ -502,7 +502,18 @@ test.describe('WooCommerce Plugin level tests', () => {
     console.log('🔄 Testing Reset connection settings...');
 
     const legacyPageAccessTokenOption = 'wc_facebook_page_access_token';
+    const deprecatedOptions = [
+      'wc_facebook_merchant_access_token',
+      'wc_facebook_system_user_id',
+      'wc_facebook_has_connected_fbe_2',
+      'wc_facebook_has_authorized_pages_read_engagement',
+      'wc_facebook_enable_messenger',
+      'wc_facebook_last_attribute_sync'
+    ];
     await execWP(`update_option('${legacyPageAccessTokenOption}', 'legacy_page_token');`);
+    for (const option of deprecatedOptions) {
+      await execWP(`update_option('${option}', 'legacy_value');`);
+    }
 
     let reconnectResult;
 
@@ -538,8 +549,6 @@ test.describe('WooCommerce Plugin level tests', () => {
       // List of Facebook options that should be empty
       const fbOptions = [
         'wc_facebook_access_token',
-        'wc_facebook_merchant_access_token',
-        'wc_facebook_system_user_id',
         'wc_facebook_business_manager_id',
         'wc_facebook_ad_account_id',
         'wc_facebook_instagram_business_id',
@@ -567,6 +576,13 @@ test.describe('WooCommerce Plugin level tests', () => {
       );
       expect(JSON.parse(stdout)).toBe(false);
 
+      for (const option of deprecatedOptions) {
+        const { stdout: deprecatedValue } = await execWP(
+          `echo wp_json_encode(get_option('${option}', false));`
+        );
+        expect(JSON.parse(deprecatedValue)).toBe(false);
+      }
+
       console.log('✅ All Facebook connection options cleared');
       console.log('🎉 Reset connection settings test passed!');
     } finally {
@@ -574,6 +590,9 @@ test.describe('WooCommerce Plugin level tests', () => {
         reconnectResult = await reconnectAndVerify();
       } finally {
         await execWP(`delete_option('${legacyPageAccessTokenOption}');`);
+        for (const option of deprecatedOptions) {
+          await execWP(`delete_option('${option}');`);
+        }
       }
     }
 

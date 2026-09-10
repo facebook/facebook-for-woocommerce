@@ -79,7 +79,7 @@ class RestAPITest extends AbstractWPUnitTestWithOptionIsolationAndSafeFiltering 
 
         // Create test data
         $test_data = [
-            'merchant_access_token' => 'test_merchant_token',
+            'merchant_access_token' => 'legacy_merchant_token',
             'access_token' => 'test_access_token',
             'page_access_token' => 'new_page_token',
             'product_catalog_id' => '123456',
@@ -99,7 +99,7 @@ class RestAPITest extends AbstractWPUnitTestWithOptionIsolationAndSafeFiltering 
 
         // Verify options are mapped correctly
         $this->assertEquals('test_access_token', $options['wc_facebook_access_token']);
-        $this->assertEquals('test_merchant_token', $options['wc_facebook_merchant_access_token']);
+        $this->assertArrayNotHasKey('wc_facebook_merchant_access_token', $options);
         $this->assertArrayNotHasKey('wc_facebook_page_access_token', $options);
         $this->assertEquals('123456', $options['wc_facebook_product_catalog_id']);
         $this->assertEquals('789012', $options['wc_facebook_commerce_merchant_settings_id']);
@@ -113,23 +113,24 @@ class RestAPITest extends AbstractWPUnitTestWithOptionIsolationAndSafeFiltering 
         // Test update_connection_status
         $update_connection_method = $reflection->getMethod('update_connection_status');
         $update_connection_method->setAccessible(true);
-        $update_connection_method->invokeArgs($handler, [$test_data]);
+        $update_connection_method->invoke($handler);
 
         // Verify options were updated
         $this->assertEquals('test_access_token', get_option('wc_facebook_access_token'));
-        $this->assertEquals('test_merchant_token', get_option('wc_facebook_merchant_access_token'));
+        $this->assertFalse(get_option('wc_facebook_merchant_access_token'));
         $this->assertEquals('existing_page_token', get_option('wc_facebook_page_access_token'));
         $this->assertEquals('123456', get_option('wc_facebook_product_catalog_id'));
         $this->assertEquals('789012', get_option('wc_facebook_pixel_id'));
-        $this->assertEquals('yes', get_option('wc_facebook_has_connected_fbe_2'));
-        $this->assertEquals('yes', get_option('wc_facebook_has_authorized_pages_read_engagement'));
-        $this->assertEquals('yes', get_option('wc_facebook_enable_messenger'));
+        // These legacy options are no longer written — nothing reads them.
+        $this->assertFalse(get_option('wc_facebook_has_connected_fbe_2'));
+        $this->assertFalse(get_option('wc_facebook_has_authorized_pages_read_engagement'));
+        $this->assertFalse(get_option('wc_facebook_enable_messenger'));
     }
 
     /**
-     * Test settings update with missing merchant token
+     * Test settings update with missing access token
      */
-    public function test_settings_update_fails_if_missing_merchant_token() {
+    public function test_settings_update_fails_if_missing_access_token() {
         // Skip this test if the UpdateRequest class doesn't exist
         if (!class_exists(UpdateRequest::class)) {
             $this->markTestSkipped('UpdateRequest class not found');
@@ -142,14 +143,14 @@ class RestAPITest extends AbstractWPUnitTestWithOptionIsolationAndSafeFiltering 
         // Set up the mock to return our test data
         $request->method('get_json_params')
             ->willReturn([
-                'access_token' => 'test_access_token',
-                // Missing merchant_access_token
+                'product_catalog_id' => '123456',
+                // Missing access_token
             ]);
 
         $request->method('get_params')
             ->willReturn([
-                'access_token' => 'test_access_token',
-                // Missing merchant_access_token
+                'product_catalog_id' => '123456',
+                // Missing access_token
             ]);
 
         // Create an UpdateRequest instance
@@ -160,7 +161,7 @@ class RestAPITest extends AbstractWPUnitTestWithOptionIsolationAndSafeFiltering 
 
         // Check that validation fails with the expected error
         $this->assertInstanceOf('WP_Error', $validation_result);
-        $this->assertEquals('missing_merchant_token', $validation_result->get_error_code());
+        $this->assertEquals('missing_access_token', $validation_result->get_error_code());
 
     }
 
@@ -239,10 +240,10 @@ class RestAPITest extends AbstractWPUnitTestWithOptionIsolationAndSafeFiltering 
 	 * Test that options set in a previous test are reset due to isolation.
 	 */
 	public function test_options_are_reset_after_previous_test() {
-		// These options were set in test_settings_update_succeeds_with_valid_data
+		// These options were set in, or are deliberately no longer written by,
+		// test_settings_update_succeeds_with_valid_data
 		// Due to setUp/tearDown isolation, they should now return their default value (false)
 		$this->assertFalse( get_option('wc_facebook_access_token'), 'Option wc_facebook_access_token should be reset.' );
-		$this->assertFalse( get_option('wc_facebook_merchant_access_token'), 'Option wc_facebook_merchant_access_token should be reset.' );
 		$this->assertFalse( get_option('wc_facebook_product_catalog_id'), 'Option wc_facebook_product_catalog_id should be reset.' );
 		$this->assertFalse( get_option('wc_facebook_pixel_id'), 'Option wc_facebook_pixel_id should be reset.' );
 		$this->assertFalse( get_option('wc_facebook_has_connected_fbe_2'), 'Option wc_facebook_has_connected_fbe_2 should be reset.' );
