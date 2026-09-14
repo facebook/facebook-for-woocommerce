@@ -10,9 +10,9 @@
 
 namespace WooCommerce\Facebook\Handlers;
 
-defined( 'ABSPATH' ) || exit;
+use WooCommerce\Facebook\API;
 
-use WP_Error;
+defined( 'ABSPATH' ) || exit;
 
 /**
  * Handles Meta Commerce Extension functionality and configuration.
@@ -30,6 +30,9 @@ class MetaExtension {
 
 	/** @var string Commerce Hub base URL */
 	const COMMERCE_HUB_URL = 'https://www.commercepartnerhub.com/';
+
+	/** @var string Base URL for Meta Stefi endpoints */
+	const BASE_STEFI_ENDPOINT_URL = 'https://api.facebook.com';
 
 	/** @var string Option names for Facebook settings */
 	const OPTION_ACCESS_TOKEN                    = 'wc_facebook_access_token';
@@ -96,34 +99,149 @@ class MetaExtension {
 	/**
 	 * Generates the Commerce Hub iframe management page URL.
 	 *
+	 * Uses the Commerce Extension token endpoint first, then falls back to the
+	 * legacy business configuration endpoint when the new flow is unavailable.
+	 *
 	 * @param string $external_business_id External business ID.
+	 * @param string $commerce_partner_integration_id Optional Commerce Partner Integration ID.
 	 *
 	 * @return string
-	 * @throws \Exception If the URL generation fails or if external_business_id is invalid.
 	 * @since 3.5.0
 	 */
-	public static function generate_iframe_management_url( $external_business_id ) {
+	public static function generate_iframe_management_url( $external_business_id, $commerce_partner_integration_id = '' ) {
 		$access_token = get_option( self::OPTION_ACCESS_TOKEN, '' );
 
-		if ( empty( $access_token ) || empty( $external_business_id ) ) {
+		if (
+			! is_string( $access_token ) || empty( $access_token ) ||
+			! is_string( $external_business_id ) || empty( $external_business_id )
+		) {
 			return '';
 		}
 
-		try {
-			$response = facebook_for_woocommerce()->get_api()->get_business_configuration(
-				$external_business_id,
-				$access_token,
-				[ 'commerce_extension' ]
-			);
-			$uri      = $response->get_commerce_extension_uri();
-			if ( empty( $uri ) ) {
-				throw new \Exception( 'Commerce extension URI not found' );
+		if ( empty( $commerce_partner_integration_id ) ) {
+			$commerce_partner_integration_id = get_option( self::OPTION_COMMERCE_PARTNER_INTEGRATION_ID, '' );
+		}
+
+		$new_endpoint_unauthorized = false;
+		if ( is_string( $commerce_partner_integration_id ) && ! empty( $commerce_partner_integration_id ) ) {
+			try {
+				$iframe_url = self::generate_iframe_management_url_with_commerce_extension_token(
+					$external_business_id,
+					$commerce_partner_integration_id,
+					$access_token
+				);
+				delete_transient( 'wc_facebook_connection_invalid' );
+				return $iframe_url;
+			} catch ( \Throwable $e ) {
+				$new_endpoint_unauthorized = 401 === $e->getCode();
+				facebook_for_woocommerce()->log( 'Facebook Commerce Extension token endpoint error: ' . $e->getMessage() );
 			}
-			return $response->get_commerce_extension_uri();
-		} catch ( \Exception $e ) {
-			facebook_for_woocommerce()->log( 'Facebook Commerce Extension URL Error: ' . $e->getMessage() );
+		}
+
+		try {
+			$iframe_url = self::generate_legacy_iframe_management_url( $external_business_id, $access_token );
+			delete_transient( 'wc_facebook_connection_invalid' );
+			return $iframe_url;
+		} catch ( \Throwable $e ) {
+			facebook_for_woocommerce()->log( 'Facebook Commerce Extension legacy URL error: ' . $e->getMessage() );
+		}
+
+		if ( $new_endpoint_unauthorized ) {
+			set_transient( 'wc_facebook_connection_invalid', time(), DAY_IN_SECONDS );
 		}
 
 		return '';
+	}
+
+	/**
+	 * Generates the management URL using the Commerce Extension token endpoint.
+	 *
+	 * @param string $external_business_id External business ID.
+	 * @param string $commerce_partner_integration_id Commerce Partner Integration ID.
+	 * @param string $access_token Long-lived business integration system user token.
+	 *
+	 * @return string
+	 * @throws \Exception If the endpoint request fails or does not return a delegated access token.
+	 */
+	private static function generate_iframe_management_url_with_commerce_extension_token( $external_business_id, $commerce_partner_integration_id, $access_token ) {
+		$endpoint = sprintf(
+			'%s/commerce-partner-integrations/%s/commerce-extension-token',
+			self::BASE_STEFI_ENDPOINT_URL,
+			rawurlencode( $commerce_partner_integration_id )
+		);
+
+		$response = wp_safe_remote_post(
+			$endpoint,
+			array(
+				'headers'     => array(
+					'Accept'        => 'application/json',
+					'Authorization' => 'Bearer ' . $access_token,
+				),
+				'redirection' => 0,
+				'sslverify'   => true,
+				'timeout'     => 30,
+			)
+		);
+
+		if ( is_wp_error( $response ) ) {
+			throw new \Exception( $response->get_error_message() );
+		}
+
+		$status_code   = wp_remote_retrieve_response_code( $response );
+		$response_data = json_decode( wp_remote_retrieve_body( $response ), true );
+
+		if ( 200 !== $status_code ) {
+			throw new \Exception( sprintf( 'Commerce extension token request failed with status %d', $status_code ), $status_code );
+		}
+
+		$delegate_access_token = is_array( $response_data ) ? ( $response_data['access_token'] ?? '' ) : '';
+		if ( ! is_string( $delegate_access_token ) || empty( $delegate_access_token ) ) {
+			throw new \Exception( 'Commerce extension access token not found' );
+		}
+
+		return self::build_iframe_management_url( $delegate_access_token, $external_business_id );
+	}
+
+	/**
+	 * Generates the management URL using the legacy Graph API endpoint.
+	 *
+	 * @param string $external_business_id External business ID.
+	 * @param string $access_token Long-lived business integration system user token.
+	 *
+	 * @return string
+	 * @throws \Exception If the legacy endpoint does not return a management URL.
+	 */
+	private static function generate_legacy_iframe_management_url( $external_business_id, $access_token ) {
+		$api        = new API( $access_token );
+		$response   = $api->get_business_configuration(
+			$external_business_id,
+			'',
+			array( 'commerce_extension' )
+		);
+		$iframe_url = $response->get_commerce_extension_uri();
+		if ( empty( $iframe_url ) ) {
+			throw new \Exception( 'Commerce extension URI not found' );
+		}
+
+		return $iframe_url;
+	}
+
+	/**
+	 * Builds the Commerce Hub management URL from a delegated access token.
+	 *
+	 * @param string $delegate_access_token Short-lived delegated access token.
+	 * @param string $external_business_id External business ID.
+	 *
+	 * @return string
+	 */
+	private static function build_iframe_management_url( $delegate_access_token, $external_business_id ) {
+		return add_query_arg(
+			array(
+				'access_token'         => $delegate_access_token,
+				'external_business_id' => $external_business_id,
+				'locale'               => get_user_locale(),
+			),
+			self::COMMERCE_HUB_URL . 'commerce_extension/overview/'
+		);
 	}
 }

@@ -182,6 +182,28 @@ class FBEConfigurationReadResponseTest extends AbstractWPUnitTestWithOptionIsola
 	}
 
 	/**
+	 * Test that the Commerce Extension URI is removed from debug-log output.
+	 */
+	public function test_to_string_safe_redacts_commerce_extension_uri() {
+		$secret_uri    = 'https://example.com/commerce/extension?access_token=secret';
+		$response_data = wp_json_encode(
+			array(
+				'commerce_extension' => array(
+					'uri'     => $secret_uri,
+					'version' => '1.2.3',
+				),
+			)
+		);
+		$response      = new Response( $response_data );
+		$safe_response = json_decode( $response->to_string_safe(), true );
+
+		$this->assertSame( '***', $safe_response['commerce_extension']['uri'] );
+		$this->assertSame( '1.2.3', $safe_response['commerce_extension']['version'] );
+		$this->assertStringNotContainsString( $secret_uri, $response->to_string_safe() );
+		$this->assertSame( $secret_uri, $response->get_commerce_extension_uri() );
+	}
+
+	/**
 	 * Test get_commerce_extension_uri with missing uri field.
 	 */
 	public function test_get_commerce_extension_uri_missing_uri() {
@@ -310,4 +332,4 @@ class FBEConfigurationReadResponseTest extends AbstractWPUnitTestWithOptionIsola
 		$this->assertFalse( $response->is_ig_shopping_enabled() );
 		$this->assertFalse( $response->is_ig_cta_enabled() );
 	}
-} 
+}

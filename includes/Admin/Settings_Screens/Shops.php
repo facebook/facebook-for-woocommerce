@@ -148,7 +148,8 @@ class Shops extends Abstract_Settings_Screen {
 
 		if ( ! empty( $merchant_access_token ) && $is_connected && ! $connection_invalid ) {
 			$iframe_url = \WooCommerce\Facebook\Handlers\MetaExtension::generate_iframe_management_url(
-				$connection->get_external_business_id()
+				$connection->get_external_business_id(),
+				$connection->get_commerce_partner_integration_id()
 			);
 		}
 
