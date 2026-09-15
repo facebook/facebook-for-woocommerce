@@ -8,6 +8,7 @@
 
 namespace WooCommerce\Facebook\Tests\Admin\Settings_Screens;
 
+use WooCommerce\Facebook\API\Plugin\Settings\FinalizeInstall\Request as FinalizeInstallRequest;
 use WooCommerce\Facebook\Admin\Settings_Screens\Shops;
 use WooCommerce\Facebook\Handlers\Connection;
 use WooCommerce\Facebook\Tests\AbstractWPUnitTestWithOptionIsolationAndSafeFiltering;
@@ -80,6 +81,14 @@ class ShopsTest extends AbstractWPUnitTestWithOptionIsolationAndSafeFiltering {
         // Assert fetch request setup - check for wpApiSettings.root instead of hardcoded path
         $this->assertStringContainsString('GeneratePluginAPIClient', $output);
         $this->assertStringContainsString('fbAPI.finalizeInstall', $output);
+        $this->assertStringContainsString('Object.keys(requestBody).forEach', $output);
+        $this->assertStringContainsString('requestBody[key] === undefined || requestBody[key] === null', $output);
+
+        $cleanup_pos  = strpos($output, 'Object.keys(requestBody).forEach');
+        $finalize_pos = strpos($output, 'fbAPI.finalizeInstall');
+        $this->assertNotFalse($cleanup_pos);
+        $this->assertNotFalse($finalize_pos);
+        $this->assertLessThan($finalize_pos, $cleanup_pos, 'Missing optional values must be removed before finalization.');
 
         $this->assertStringContainsString("'https://www.commercepartnerhub.com'", $output);
         $this->assertStringContainsString("'https://www.facebook.com'", $output);
@@ -94,6 +103,52 @@ class ShopsTest extends AbstractWPUnitTestWithOptionIsolationAndSafeFiltering {
 
         $this->assertStringContainsString("typeof message !== 'object'", $output);
     }
+
+	/**
+	 * Test that install payload fields match the generated request schema.
+	 */
+	public function test_finalize_install_payload_matches_request_schema(): void {
+		$output = $this->shops->generate_inline_enhanced_onboarding_script();
+
+		$this->assertSame(
+			1,
+			preg_match( '/const requestBody = \{(?P<body>.*?)\n\s*\};/s', $output, $payload_match ),
+			'Unable to find the finalize-install request body.'
+		);
+		$this->assertGreaterThan(
+			0,
+			preg_match_all( '/^\s*([a-z_]+):/m', $payload_match['body'], $key_matches ),
+			'Unable to find any finalize-install request parameters.'
+		);
+
+		$request = new FinalizeInstallRequest( new \WP_REST_Request() );
+		$schema_keys = array_keys( $request->get_param_schema() );
+		$payload_keys = $key_matches[1];
+
+		$this->assertSame( array(), array_values( array_diff( $schema_keys, $payload_keys ) ) );
+		$this->assertSame(
+			array( 'merchant_access_token' ),
+			array_values( array_diff( $payload_keys, $schema_keys ) ),
+			'The duplicate merchant token is the only permitted legacy payload field until #4035 lands.'
+		);
+	}
+
+	/**
+	 * Test that missing or malformed installed features cannot abort finalization.
+	 */
+	public function test_finalize_install_normalizes_installed_features_before_use(): void {
+		$output = $this->shops->generate_inline_enhanced_onboarding_script();
+
+		$normalization_pos = strpos( $output, 'const installed_features = Array.isArray(message.installed_features) ? message.installed_features : [];' );
+		$lookup_pos        = strpos( $output, 'installed_features.find' );
+		$payload_pos       = strpos( $output, 'installed_features: installed_features' );
+
+		$this->assertNotFalse( $normalization_pos );
+		$this->assertNotFalse( $lookup_pos );
+		$this->assertNotFalse( $payload_pos );
+		$this->assertLessThan( $lookup_pos, $normalization_pos, 'Installed features must be normalized before lookups.' );
+		$this->assertLessThan( $payload_pos, $normalization_pos, 'The normalized installed features must be sent in the request.' );
+	}
 
     /**
      * Test that render_message_handler doesn't output when not on current screen

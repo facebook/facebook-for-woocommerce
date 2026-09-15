@@ -408,12 +408,14 @@ class Shops extends Abstract_Settings_Screen {
 				const messageEvent = message.event;
 
 				if (messageEvent === 'CommerceExtension::INSTALL' && message.success) {
-					const cms_id = message.installed_features.find( ( f ) => 'fb_shop' === f.feature_type )?.connected_assets?.commerce_merchant_settings_id ||
-						message.installed_features.find( ( f ) => 'ig_shopping' === f.feature_type )?.connected_assets?.commerce_merchant_settings_id || '';
-					const ad_account_id = message.installed_features.find( ( f ) => 'ads' === f.feature_type )?.connected_assets?.ad_account_id || '';
+					const installed_features = Array.isArray(message.installed_features) ? message.installed_features : [];
+					const cms_id = installed_features.find( ( f ) => 'fb_shop' === f.feature_type )?.connected_assets?.commerce_merchant_settings_id ||
+						installed_features.find( ( f ) => 'ig_shopping' === f.feature_type )?.connected_assets?.commerce_merchant_settings_id || '';
+					const ad_account_id = installed_features.find( ( f ) => 'ads' === f.feature_type )?.connected_assets?.ad_account_id || '';
 
 					const requestBody = {
 						access_token: message.access_token,
+						// Temporary compatibility field; remove when #4035 lands.
 						merchant_access_token: message.access_token,
 						product_catalog_id: message.catalog_id,
 						pixel_id: message.pixel_id,
@@ -423,8 +425,13 @@ class Shops extends Abstract_Settings_Screen {
 						ad_account_id: ad_account_id,
 						commerce_partner_integration_id: message.commerce_partner_integration_id || '',
 						profiles: message.profiles,
-						installed_features: message.installed_features
+						installed_features: installed_features
 					};
+					Object.keys(requestBody).forEach(function(key) {
+						if (requestBody[key] === undefined || requestBody[key] === null) {
+							delete requestBody[key];
+						}
+					});
 
 					fbAPI.finalizeInstall(requestBody)
 						.then(function(response) {

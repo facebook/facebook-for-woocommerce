@@ -60,20 +60,44 @@ class Request extends RESTRequest {
 	 */
 	public function get_param_schema() {
 		return [
-			'access_token'         => [
+			'access_token'                    => [
 				'type'     => 'string',
 				'required' => true,
 			],
-			'external_business_id' => [
+			'product_catalog_id'              => [
 				'type'     => 'string',
 				'required' => false,
 			],
-			'catalog_id'           => [
+			'pixel_id'                        => [
 				'type'     => 'string',
 				'required' => false,
 			],
-			'pixel_id'             => [
+			'page_id'                         => [
 				'type'     => 'string',
+				'required' => false,
+			],
+			'business_manager_id'             => [
+				'type'     => 'string',
+				'required' => false,
+			],
+			'commerce_merchant_settings_id'   => [
+				'type'     => 'string',
+				'required' => false,
+			],
+			'ad_account_id'                   => [
+				'type'     => 'string',
+				'required' => false,
+			],
+			'commerce_partner_integration_id' => [
+				'type'     => 'string',
+				'required' => false,
+			],
+			'profiles'                        => [
+				'type'     => 'array',
+				'required' => false,
+			],
+			'installed_features'              => [
+				'type'     => 'array',
 				'required' => false,
 			],
 		];
