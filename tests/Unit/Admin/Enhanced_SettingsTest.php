@@ -11,6 +11,7 @@ declare( strict_types=1 );
 namespace WooCommerce\Facebook\Tests\Admin;
 
 use WooCommerce\Facebook\Admin\Enhanced_Settings;
+use WooCommerce\Facebook\Admin\Settings_Screens\Configuration;
 use WooCommerce\Facebook\Admin\Settings_Screens\Product_Attributes;
 use WooCommerce\Facebook\Admin\Settings_Screens\Product_Sync;
 use WooCommerce\Facebook\Admin\Settings_Screens\Shops;
@@ -49,12 +50,12 @@ class Enhanced_SettingsTest extends AbstractWPUnitTestWithOptionIsolationAndSafe
 			'all-products sync merchants see Shops and attributes' => array(
 				true,
 				true,
-				array( Shops::ID, Product_Attributes::ID ),
+				array( Shops::ID, Product_Attributes::ID, Configuration::ID ),
 			),
 			'rollout fallback retains Product Sync' => array(
 				true,
 				false,
-				array( Shops::ID, Product_Sync::ID, Product_Attributes::ID ),
+				array( Shops::ID, Product_Sync::ID, Product_Attributes::ID, Configuration::ID ),
 			),
 		);
 	}
@@ -163,7 +164,7 @@ class Enhanced_SettingsTest extends AbstractWPUnitTestWithOptionIsolationAndSafe
 
 		$screens = $this->create_settings( true, true )->get_screens();
 
-		$this->assertSame( array( Shops::ID, Product_Attributes::ID ), array_keys( $screens ) );
+		$this->assertSame( array( Shops::ID, Product_Attributes::ID, Configuration::ID ), array_keys( $screens ) );
 	}
 
 	/**
@@ -222,8 +223,11 @@ class Enhanced_SettingsTest extends AbstractWPUnitTestWithOptionIsolationAndSafe
 		$shops->initHook();
 		$shops->enqueue_assets();
 
-		$this->assertTrue( wp_script_is( 'wc-facebook-enhanced-settings-sync', 'enqueued' ) );
 		$this->assertTrue( wp_style_is( 'wc-facebook-admin-shops-settings', 'enqueued' ) );
+
+		// The sync script moved to the Configuration tab along with the sync buttons,
+		// so Shops resolving its own screen no longer implies enqueueing it.
+		$this->assertFalse( wp_script_is( 'wc-facebook-enhanced-settings-sync', 'enqueued' ) );
 	}
 
 	/**
@@ -252,7 +256,6 @@ class Enhanced_SettingsTest extends AbstractWPUnitTestWithOptionIsolationAndSafe
 		$shops->initHook();
 		$shops->enqueue_assets();
 
-		$this->assertTrue( wp_script_is( 'wc-facebook-enhanced-settings-sync', 'enqueued' ) );
 		$this->assertTrue( wp_style_is( 'wc-facebook-admin-shops-settings', 'enqueued' ) );
 
 		ob_start();

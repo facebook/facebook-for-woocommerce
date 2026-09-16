@@ -29,6 +29,12 @@ class OfflineEventsAjaxTest extends WP_Ajax_UnitTestCase {
 
 		$this->ajax = new AJAX();
 
+		// A nonce left behind by a previous test would let a case that should fail
+		// authorization quietly succeed.
+		$_POST    = array();
+		$_GET     = array();
+		$_REQUEST = array();
+
 		delete_option( \WC_Facebookcommerce_Integration::SETTING_ENABLE_OFFLINE_PURCHASE_EVENTS );
 	}
 
@@ -39,6 +45,10 @@ class OfflineEventsAjaxTest extends WP_Ajax_UnitTestCase {
 		}
 
 		delete_option( \WC_Facebookcommerce_Integration::SETTING_ENABLE_OFFLINE_PURCHASE_EVENTS );
+
+		$_POST    = array();
+		$_GET     = array();
+		$_REQUEST = array();
 
 		parent::tearDown();
 	}
@@ -71,9 +81,13 @@ class OfflineEventsAjaxTest extends WP_Ajax_UnitTestCase {
 	 * @return object
 	 */
 	private function dispatch( string $action ) {
-		$_REQUEST['action']      = $action;
-		$_REQUEST['_ajax_nonce'] = wp_create_nonce( $action );
-		$_REQUEST['nonce']       = $_REQUEST['_ajax_nonce'];
+		// _handleAjax() rebuilds $_REQUEST as array_merge( $_POST, $_GET ), so a nonce
+		// written straight to $_REQUEST is discarded before the handler runs. It has
+		// to go into $_POST to survive.
+		$_POST['action']      = $action;
+		$_POST['_ajax_nonce'] = wp_create_nonce( $action );
+		$_POST['nonce']       = $_POST['_ajax_nonce'];
+		$_REQUEST             = array_merge( $_REQUEST, $_POST );
 
 		try {
 			$this->_handleAjax( $action );
@@ -182,8 +196,11 @@ class OfflineEventsAjaxTest extends WP_Ajax_UnitTestCase {
 		wp_set_current_user( self::factory()->user->create( array( 'role' => 'administrator' ) ) );
 		$this->register_pos( true );
 
-		$_REQUEST['action'] = AJAX::ACTION_ENABLE_OFFLINE_EVENTS;
-		unset( $_REQUEST['_ajax_nonce'], $_REQUEST['nonce'], $_REQUEST['_wpnonce'] );
+		unset(
+			$_POST['_ajax_nonce'], $_POST['nonce'], $_POST['_wpnonce'],
+			$_GET['_ajax_nonce'], $_GET['nonce'], $_GET['_wpnonce'],
+			$_REQUEST['_ajax_nonce'], $_REQUEST['nonce'], $_REQUEST['_wpnonce']
+		);
 
 		// check_ajax_referer() halts with a 403 rather than returning false.
 		$this->expectException( WPAjaxDieStopException::class );
@@ -204,9 +221,9 @@ class OfflineEventsAjaxTest extends WP_Ajax_UnitTestCase {
 		wp_set_current_user( self::factory()->user->create( array( 'role' => 'administrator' ) ) );
 		$this->register_pos( true );
 
-		$_REQUEST['action']      = AJAX::ACTION_ENABLE_OFFLINE_EVENTS;
-		$_REQUEST['_ajax_nonce'] = wp_create_nonce( AJAX::ACTION_DISABLE_OFFLINE_EVENTS );
-		$_REQUEST['nonce']       = $_REQUEST['_ajax_nonce'];
+		$_POST['_ajax_nonce'] = wp_create_nonce( AJAX::ACTION_DISABLE_OFFLINE_EVENTS );
+		$_POST['nonce']       = $_POST['_ajax_nonce'];
+		$_REQUEST             = array_merge( $_REQUEST, $_POST );
 
 		$this->expectException( WPAjaxDieStopException::class );
 

@@ -51,6 +51,24 @@ class ConfigurationTest extends AbstractWPUnitTestWithSafeFiltering {
 		return null;
 	}
 
+	public function test_sync_script_is_enqueued_on_the_configuration_tab() {
+		// This assertion used to live on Shops; it moved here with the sync buttons.
+		$_GET['page'] = 'wc-facebook';
+		$_GET['tab']  = Configuration::ID;
+		$_REQUEST     = array_merge( $_REQUEST, $_GET );
+
+		$configuration = new Configuration();
+		$configuration->initHook();
+		$configuration->enqueue_assets();
+
+		$this->assertTrue( wp_script_is( 'wc-facebook-enhanced-settings-sync', 'enqueued' ) );
+		$this->assertTrue( wp_style_is( 'wc-facebook-admin-shops-settings', 'enqueued' ) );
+
+		wp_dequeue_script( 'wc-facebook-enhanced-settings-sync' );
+		wp_dequeue_style( 'wc-facebook-admin-shops-settings' );
+		unset( $_GET['page'], $_GET['tab'], $_REQUEST['page'], $_REQUEST['tab'] );
+	}
+
 	public function test_it_is_a_settings_screen() {
 		$this->assertInstanceOf( Abstract_Settings_Screen::class, new Configuration() );
 	}
