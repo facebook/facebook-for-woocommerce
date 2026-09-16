@@ -115,6 +115,31 @@ event.
 > separately. Until then, treat the pipeline as wired but not yet useful for
 > attribution.
 
+## Supported point-of-sale systems
+
+[WCPOS](https://wordpress.org/plugins/woocommerce-pos/) is the first supported
+system, not the only intended one. Support for others is being added over time.
+
+**The plugin is point-of-sale agnostic by design.** The registry and the
+`POS_Integration_Interface` contract exist so that no POS is privileged: every
+integration is detected the same way, and every order produces the same event
+regardless of which system rang it up. Being supported is not an endorsement, a
+partnership, or a statement about any vendor's merits, and the order of entries in
+`POS_Integration_Registry::INTEGRATIONS` is not a ranking — `match()` returns the
+first integration that *claims* an order, and integrations are not expected to
+overlap.
+
+Which systems are bundled next reflects practical considerations, among them the
+integration effort a given system involves and how many merchants it would reach.
+That is not a fixed formula, a commitment, or a published roadmap, and no ordering
+or preference should be inferred from it.
+
+In any case, nothing here needs to change for a system to be supported:
+`wc_facebook_pos_integrations` lets a POS vendor, an agency, or a single store
+register an integration from their own code, with exactly the same capabilities
+as the bundled one. If you maintain a point of sale and want it supported here,
+opening a pull request with an integration class is welcome.
+
 ## Adding a point-of-sale integration
 
 Implement `POS_Integration_Interface` under
