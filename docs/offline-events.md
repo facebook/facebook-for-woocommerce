@@ -13,10 +13,9 @@ for how in-store signals fit into an omni-channel setup.
 
 ## What gets sent, and how
 
-Offline events are sent as an ordinary `Purchase` event through the **Conversions
-API**, with `action_source` set to `physical_store`. The plugin does *not* use
-Meta's separate Offline Conversions API (`/{offline_event_set_id}/events`) — one
-send path serves every event the plugin emits.
+Offline Purchase events are sent as an ordinary `Purchase` event through the
+**Conversions API**, with `action_source` set to `physical_store`, so one send
+path serves every event the plugin emits.
 
 There is no browser pixel counterpart. A sale at a till has no browser session,
 so there is nothing to deduplicate against and no shared `event_id` to maintain.
@@ -95,25 +94,16 @@ AJAX call a POS terminal never makes.
 
 ## What the event contains
 
-`custom_data` is built by the same `get_custom_data()` the web Purchase path
-uses, so content IDs and totals are shaped identically:
+The event carries the order's contents and value, shaped by the same code the web
+Purchase path uses. The aim is to capture the data points Meta describes in the
+[Omni Optimal Setup Guide](https://developers.facebook.com/documentation/ads-commerce/marketing-api/best-practices/omni-optimal-setup-guide).
 
-`content_ids`, `content_name`, `contents`, `content_type`, `value`, `currency`,
-`order_id`
-
-An integration can merge additional fields by returning them from
+An integration can contribute additional fields by returning them from
 `get_event_data()`.
 
-Because the event is not a web event, these are deliberately **omitted**:
-`event_source_url`, `referrer_url`, `client_ip_address`, `client_user_agent`,
-`fbc`, `fbp`. On a POS order created over REST they would describe the cashier's
-terminal, not the customer, and Meta flags them as invalid on a `physical_store`
-event.
-
-> **Known gap.** `user_data` is currently empty, so events carry no customer
-> identifiers and will match poorly or be rejected. Populating it is tracked
-> separately. Until then, treat the pipeline as wired but not yet useful for
-> attribution.
+Signals that only make sense for a web visit are deliberately omitted. On a POS
+order created over REST they would describe the cashier's terminal rather than the
+customer, and Meta flags them as invalid on a `physical_store` event.
 
 ## Supported point-of-sale systems
 
@@ -142,9 +132,7 @@ opening a pull request with an integration class is welcome.
 
 ## Adding a point-of-sale integration
 
-Implement `POS_Integration_Interface` under
-`includes/Events/POS/` and add the class to
-`POS_Integration_Registry::INTEGRATIONS`.
+Implement `POS_Integration_Interface` under `includes/Events/POS/` and add the class to `POS_Integration_Registry::INTEGRATIONS`.
 
 ```php
 namespace WooCommerce\Facebook\Events\POS;
@@ -214,21 +202,22 @@ ends up on it.
 **Exclude training and test-mode sales.** Many POS systems have a practice mode.
 Those orders should not reach Meta; filter them out in `is_pos_order()`.
 
-**Pass through whatever customer identifiers the POS captured.** Match quality is
-almost entirely a function of `user_data`. If the terminal collected an email or
-phone for a receipt, that is the single most valuable thing an integration can
-surface once `user_data` is populated. Do not invent identifiers, and do not pass
-the cashier's details — they are not the customer.
+**Pass through whatever customer identifiers the POS captured.** Match quality
+depends on them more than on anything else an integration can do. Meta's
+[Omni Optimal Setup Guide](https://developers.facebook.com/documentation/ads-commerce/marketing-api/best-practices/omni-optimal-setup-guide)
+covers which identifiers are worth capturing and how they should be handled. Do
+not invent them, and do not pass the cashier's details — they are not the
+customer.
 
-**Report store and cashier as `custom_data`, not `user_data`.** They describe the
-transaction, not the person. WCPOS records these as `_pos_store` and `_pos_user`
-if you need them.
+**Surface store and till as attributes of the transaction, not the customer.**
+They describe where a sale happened, not who made it. WCPOS records these as
+`_pos_store` and `_pos_user` if you need them.
 
 **Treat in-store events as one input to an omni-channel setup, not a standalone
-feature.** Meta's [Omni Optimal Setup Guide](https://developers.facebook.com/documentation/ads-commerce/marketing-api/best-practices/omni-optimal-setup-guide)
-covers how offline signals combine with web events, catalog, and campaign
-configuration. Reporting in-store purchases is necessary but not sufficient — the
-value shows up once the rest of that setup is in place.
+feature.** The guide linked above also covers how offline signals combine with web
+events, catalog, and campaign configuration. Reporting in-store purchases is
+necessary but not sufficient — the value shows up once the rest of that setup is
+in place.
 
 ## Testing
 
