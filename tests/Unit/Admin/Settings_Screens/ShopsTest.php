@@ -197,65 +197,31 @@ class ShopsTest extends AbstractWPUnitTestWithOptionIsolationAndSafeFiltering {
     }
 
     /**
-     * Test get_settings returns all expected settings and structure
+     * Test get_settings is empty now that the options live on the Configuration tab.
+     *
+     * Shops renders only the Meta-hosted iframe and has no settings form, so
+     * returning fields here would let save() write inputs that were never rendered.
+     * The fields themselves are covered by ConfigurationTest.
      */
-    public function test_get_settings_returns_all_expected_settings() {
+    public function test_get_settings_is_empty() {
         $shops = new Shops();
-        $switch_key = 'offer_management_enabled';
-        $option_key = 'wc_facebook_for_woocommerce_rollout_switches';
 
-        // When offer management is disabled
-        update_option($option_key, [$switch_key => 'no']);
-        $settings = $shops->get_settings();
-        $this->assertIsArray($settings);
-        $found_meta = false;
-        $found_debug = false;
-        foreach ($settings as $setting) {
-            if (isset($setting['id']) && $setting['id'] === 'wc_facebook_enable_meta_diagnosis') {
-                $found_meta = true;
-                $this->assertEquals('checkbox', $setting['type']);
-                $this->assertEquals('yes', $setting['default']);
-            }
-            if (isset($setting['id']) && $setting['id'] === 'wc_facebook_enable_debug_mode') {
-                $found_debug = true;
-                $this->assertEquals('checkbox', $setting['type']);
-                $this->assertEquals('no', $setting['default']);
-            }
-        }
-        $this->assertTrue($found_meta);
-        $this->assertTrue($found_debug);
-        $last_setting = end($settings);
-        $this->assertEquals('sectionend', $last_setting['type']);
+        $this->assertSame([], $shops->get_settings());
+    }
 
-        // When offer management is enabled
-        update_option($option_key, [$switch_key => 'yes']);
-        $settings = $shops->get_settings();
-        $this->assertIsArray($settings);
-        $found_meta = false;
-        $found_debug = false;
-        $found_coupon = false;
-        foreach ($settings as $setting) {
-            if (isset($setting['id']) && $setting['id'] === 'wc_facebook_enable_meta_diagnosis') {
-                $found_meta = true;
-                $this->assertEquals('checkbox', $setting['type']);
-                $this->assertEquals('yes', $setting['default']);
-            }
-            if (isset($setting['id']) && $setting['id'] === 'wc_facebook_enable_debug_mode') {
-                $found_debug = true;
-                $this->assertEquals('checkbox', $setting['type']);
-                $this->assertEquals('no', $setting['default']);
-            }
-            if (isset($setting['id']) && $setting['id'] === 'wc_facebook_enable_facebook_managed_coupons') {
-                $found_coupon = true;
-                $this->assertEquals('checkbox', $setting['type']);
-                $this->assertEquals('yes', $setting['default']);
-            }
-        }
-        $this->assertTrue($found_meta);
-        $this->assertTrue($found_debug);
-        $this->assertTrue($found_coupon);
-        $last_setting = end($settings);
-        $this->assertEquals('sectionend', $last_setting['type']);
+    /**
+     * Test the Troubleshooting drawer is no longer rendered.
+     */
+    public function test_render_does_not_output_troubleshooting_drawer() {
+        $shops = new Shops();
+
+        ob_start();
+        $shops->render();
+        $output = ob_get_clean();
+
+        $this->assertStringNotContainsString('troubleshooting-drawer', $output);
+        $this->assertStringNotContainsString('Troubleshooting', $output);
+        $this->assertStringNotContainsString('wc-facebook-enhanced-settings-sync-products', $output);
     }
 
     /**

@@ -84,23 +84,52 @@ class Event {
 	 * @param array $data event data
 	 */
 	protected function prepare_data( $data ) {
-		$this->data = wp_parse_args(
-			$data,
-			array(
-				'action_source'    => 'website',
-				'event_time'       => time(),
-				'event_id'         => $this->generate_event_id(),
-				'event_source_url' => $this->get_current_url(),
-				'custom_data'      => array(),
-				'user_data'        => array(),
-			)
+		$defaults = array(
+			'action_source'    => 'website',
+			'event_time'       => time(),
+			'event_id'         => $this->generate_event_id(),
+			'event_source_url' => $this->get_current_url(),
+			'custom_data'      => array(),
+			'user_data'        => array(),
 		);
 
-		if ( isset( $_SERVER['HTTP_REFERER'] ) ) {
+		// A physical store sale did not happen on a page, so there is no source URL to report.
+		if ( $this->is_physical_store_event( $data ) ) {
+			unset( $defaults['event_source_url'] );
+		}
+
+		$this->data = wp_parse_args( $data, $defaults );
+
+		if ( isset( $_SERVER['HTTP_REFERER'] ) && ! $this->is_physical_store_event( $this->data ) ) {
 			$this->data['referrer_url'] = esc_url_raw( wp_unslash( $_SERVER['HTTP_REFERER'] ) );
 		}
 
 		$this->prepare_user_data( $this->data['user_data'] );
+	}
+
+
+	/**
+	 * Determines whether the given event data describes an in-store (offline) event.
+	 *
+	 * @since 3.7.7
+	 *
+	 * @param array $data event data
+	 * @return bool
+	 */
+	protected function is_physical_store_event( $data ) {
+		return isset( $data['action_source'] ) && 'physical_store' === $data['action_source'];
+	}
+
+
+	/**
+	 * Determines whether this event describes an in-store (offline) sale.
+	 *
+	 * @since 3.7.7
+	 *
+	 * @return bool
+	 */
+	public function is_physical_store(): bool {
+		return $this->is_physical_store_event( $this->data );
 	}
 
 
@@ -114,15 +143,18 @@ class Event {
 	 * @param array $data user data
 	 */
 	protected function prepare_user_data( $data ) {
-		$this->data['user_data'] = wp_parse_args(
-			$data,
-			array(
+		// For a physical store sale these browser signals describe the till the order
+		// was rung up on, not the customer, so reporting them would be actively wrong.
+		$defaults = $this->is_physical_store_event( $this->data )
+			? array()
+			: array(
 				'client_ip_address' => $this->get_client_ip(),
 				'client_user_agent' => $this->get_client_user_agent(),
 				'click_id'          => $this->get_click_id(),
 				'browser_id'        => $this->get_browser_id(),
-			)
-		);
+			);
+
+		$this->data['user_data'] = wp_parse_args( $data, $defaults );
 		// Country key is not the same in pixel and CAPI events, see:
 		// https://developers.facebook.com/docs/facebook-pixel/advanced/advanced-matching
 		// https://developers.facebook.com/docs/marketing-api/conversions-api/parameters
