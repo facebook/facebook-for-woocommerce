@@ -281,14 +281,17 @@ class Configuration extends Abstract_Settings_Screen {
 		} else {
 			$status = sprintf(
 				/* translators: %s comma-separated list of the point of sale plugins this feature supports. */
-				__( 'No supported POS plugin detected. Supported: %s', 'facebook-for-woocommerce' ),
+				__( 'No supported POS plugin detected. Works with: %s', 'facebook-for-woocommerce' ),
 				implode( ', ', self::get_integration_names( $registry->get_integrations() ) )
 			);
 		}
 
+		// The second sentence is what makes the POS status line below make sense:
+		// without it, the merchant has no idea why point of sale plugins are relevant
+		// to a setting whose title and first sentence never mention them.
 		$description = sprintf(
 			/* translators: %s URL to the plugin's offline events documentation. */
-			__( 'Send offline and physical store events to Meta for use in Omni-channel Ads. <a href="%s" target="_blank">Learn more</a>.', 'facebook-for-woocommerce' ),
+			__( 'Send offline and physical store events to Meta for use in Omni-channel Ads. Orders taken through a supported point of sale (POS) plugin are detected and reported automatically. <a href="%s" target="_blank">Learn more</a>.', 'facebook-for-woocommerce' ),
 			self::OFFLINE_EVENTS_DOC_URL
 		);
 

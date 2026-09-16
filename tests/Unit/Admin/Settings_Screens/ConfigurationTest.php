@@ -188,6 +188,21 @@ class ConfigurationTest extends AbstractWPUnitTestWithSafeFiltering {
 		$this->assertStringContainsString( Configuration::OFFLINE_EVENTS_DOC_URL, $setting['desc'] );
 	}
 
+	public function test_description_introduces_pos_before_the_status_line_refers_to_it() {
+		// The status line talks about "supported POS plugins", so the description
+		// above it has to establish that POS plugins are what produce these events.
+		$this->register_pos( true, 'WCPOS' );
+
+		$desc = $this->offline_events_setting()['desc'];
+
+		$pos_mention    = strpos( $desc, 'point of sale (POS)' );
+		$status_mention = strpos( $desc, 'POS plugins:' );
+
+		$this->assertNotFalse( $pos_mention, 'The description must explain that POS plugins produce these events.' );
+		$this->assertNotFalse( $status_mention );
+		$this->assertLessThan( $status_mention, $pos_mention, 'POS must be introduced before the status line refers to it.' );
+	}
+
 	public function test_learn_more_points_at_the_in_repo_documentation() {
 		$this->assertSame(
 			'https://github.com/facebook/facebook-for-woocommerce/blob/main/docs/offline-events.md',
