@@ -13,7 +13,6 @@ namespace WooCommerce\Facebook\Admin\Settings_Screens;
 defined( 'ABSPATH' ) || exit;
 
 use WooCommerce\Facebook\Admin\Abstract_Settings_Screen;
-use WooCommerce\Facebook\Framework\Api\Exception as ApiException;
 use WooCommerce\Facebook\RolloutSwitches;
 
 // Include the localization trait
