@@ -69,6 +69,12 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 		/** @var Event|null Server-side CF7 Lead event, stored so its browser pixel code can be injected into the CF7 REST response */
 		private $cf7_lead_event = null;
 
+		/** @var array|null Reportable cart items, memoized per cart state so the clamp is only evaluated (and logged) once */
+		private $reportable_cart_items = null;
+
+		/** @var string|null Cart hash the memoized reportable cart items were built from */
+		private $reportable_cart_items_hash = null;
+
 		/**
 		 * @var \FacebookAds\ParamBuilder|null shared ParamBuilder instance
 		 */
@@ -785,6 +791,186 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 
 
 		/**
+		 * Gets the highest quantity we are willing to report for a product.
+		 *
+		 * WooCommerce places no upper bound on cart quantities on the classic path: products
+		 * that do not manage stock short-circuit \WC_Product::has_enough_stock() to true, so a
+		 * request carrying an oversized quantity is accepted as-is. PHP compounds this by
+		 * saturating overflowing numeric strings at PHP_INT_MAX on cast, which is how we end
+		 * up reporting quantities of 9223372036854775807 and conversion values of ~1e21.
+		 *
+		 * This deliberately uses a fixed ceiling rather than the Store API's
+		 * QuantityLimits::get_add_to_cart_limits(), even though that would match Blocks exactly.
+		 * That limit resolves to the product's remaining stock, and remaining stock is further
+		 * reduced by ReserveStock to account for other customers' pending orders. The clamped
+		 * quantity is echoed back to the browser in the pixel script, the add-to-cart fragment
+		 * and the Store API cart response, so a stock-derived ceiling would let anyone read off
+		 * exact inventory - and in-flight order volume - for any product just by adding an
+		 * oversized quantity to their cart and reading the response. A constant reveals nothing.
+		 *
+		 * @since 3.7.7
+		 *
+		 * @param \WC_Product $product the product being reported
+		 * @return int the maximum reportable quantity
+		 */
+		private function get_max_reportable_quantity( \WC_Product $product ) {
+
+			// Matches the Store API's default ceiling, without consulting stock levels.
+			$max = 9999;
+
+			/**
+			 * Filters the maximum quantity reported to Meta for a single product.
+			 *
+			 * Whatever this returns may be sent to the browser, so it must not be derived from
+			 * information the store does not already expose publicly - stock levels in
+			 * particular.
+			 *
+			 * @since 3.7.7
+			 *
+			 * @param int         $max the maximum reportable quantity
+			 * @param \WC_Product $product the product being reported
+			 */
+			$max = (int) apply_filters( 'wc_facebook_max_reportable_quantity', $max, $product );
+
+			return $max > 0 ? $max : 9999;
+		}
+
+
+		/**
+		 * Clamps a quantity to the maximum we are willing to report for a product.
+		 *
+		 * @since 3.7.7
+		 *
+		 * @param int|float|string $quantity the quantity to clamp
+		 * @param \WC_Product      $product the product being reported
+		 * @return int|float the clamped quantity
+		 */
+		private function clamp_quantity( $quantity, \WC_Product $product ) {
+
+			$quantity = is_numeric( $quantity ) ? $quantity + 0 : 0;
+			$max      = $this->get_max_reportable_quantity( $product );
+
+			if ( $quantity <= $max ) {
+				return $quantity;
+			}
+
+			Logger::log(
+				sprintf(
+					'Clamped an out-of-range quantity before reporting to Meta: product_id=%s, quantity=%s, max=%s',
+					$product->get_id(),
+					$quantity,
+					$max
+				),
+				array(
+					'flow_name'  => 'pixel_events',
+					'flow_step'  => 'clamp_quantity',
+					'extra_data' => array(
+						'product_id' => $product->get_id(),
+						'quantity'   => (string) $quantity,
+						'max'        => $max,
+					),
+				),
+				array(
+					'should_send_log_to_meta'        => true,
+					'should_save_log_in_woocommerce' => true,
+					'woocommerce_log_level'          => \WC_Log_Levels::WARNING,
+					// A single abusive session clamps on every page view, and a bot walking the
+					// catalogue clamps across thousands of products, so both limits are needed.
+					'throttle'                       => array(
+						'key'         => 'quantity_clamp:' . $product->get_id(),
+						'interval'    => (int) apply_filters( 'wc_facebook_quantity_clamp_log_interval', HOUR_IN_SECONDS ),
+						'group'       => 'quantity_clamp',
+						'max_per_day' => (int) apply_filters( 'wc_facebook_quantity_clamp_log_daily_max', 10 ),
+					),
+				)
+			);
+
+			return $max;
+		}
+
+
+		/**
+		 * Builds the custom data shared by every AddToCart event we send.
+		 *
+		 * @since 3.7.7
+		 *
+		 * @param \WC_Product      $product the product added to the cart
+		 * @param int|float|string $quantity the added quantity, clamped before use
+		 * @return array
+		 */
+		private function build_add_to_cart_custom_data( \WC_Product $product, $quantity ) {
+
+			$quantity = $this->clamp_quantity( $quantity, $product );
+
+			return array(
+				'content_ids'  => wp_json_encode( \WC_Facebookcommerce_Utils::get_fb_content_ids( $product ) ),
+				'content_name' => \WC_Facebookcommerce_Utils::clean_string( $product->get_title() ),
+				'content_type' => 'product',
+				'contents'     => wp_json_encode(
+					array(
+						array(
+							'id'       => \WC_Facebookcommerce_Utils::get_fb_retailer_id( $product ),
+							'quantity' => $quantity,
+						),
+					)
+				),
+				'value'        => (float) $product->get_price() * $quantity,
+				'currency'     => get_woocommerce_currency(),
+			);
+		}
+
+
+		/**
+		 * Gets the cart items we are willing to report, with quantities clamped.
+		 *
+		 * Shared by the cart-derived event data so that contents, item count and total are all
+		 * built from the same clamped quantities rather than diverging.
+		 *
+		 * @since 3.7.7
+		 *
+		 * @return array[] list of arrays with 'product', 'quantity' and 'clamped' keys
+		 */
+		private function get_reportable_cart_items() {
+
+			$items = array();
+			$cart  = WC()->cart;
+
+			if ( ! $cart ) {
+				return $items;
+			}
+
+			// Memoize per cart state: a single event reads this several times, and without a
+			// cache an out-of-range quantity would be logged once per read.
+			$hash = $cart->get_cart_hash();
+
+			if ( null !== $this->reportable_cart_items && $hash === $this->reportable_cart_items_hash ) {
+				return $this->reportable_cart_items;
+			}
+
+			foreach ( $cart->get_cart() as $item ) {
+
+				if ( ! isset( $item['data'], $item['quantity'] ) || ! $item['data'] instanceof \WC_Product ) {
+					continue;
+				}
+
+				$raw      = is_numeric( $item['quantity'] ) ? $item['quantity'] + 0 : 0;
+				$quantity = $this->clamp_quantity( $raw, $item['data'] );
+
+				$items[] = array(
+					'product'  => $item['data'],
+					'quantity' => $quantity,
+					'clamped'  => $raw !== $quantity,
+				);
+			}
+
+			$this->reportable_cart_items      = $items;
+			$this->reportable_cart_items_hash = $hash;
+
+			return $items;
+		}
+
+
+		/**
 		 * Triggers an AddToCart event when a product is added to cart.
 		 *
 		 * @internal
@@ -819,21 +1005,7 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 			}
 
 			// Build custom_data once for reuse
-			$custom_data = array(
-				'content_ids'  => wp_json_encode( \WC_Facebookcommerce_Utils::get_fb_content_ids( $product ) ),
-				'content_name' => \WC_Facebookcommerce_Utils::clean_string( $product->get_title() ),
-				'content_type' => 'product',
-				'contents'     => wp_json_encode(
-					array(
-						array(
-							'id'       => \WC_Facebookcommerce_Utils::get_fb_retailer_id( $product ),
-							'quantity' => $quantity,
-						),
-					)
-				),
-				'value'        => (float) $product->get_price() * $quantity,
-				'currency'     => get_woocommerce_currency(),
-			);
+			$custom_data = $this->build_add_to_cart_custom_data( $product, $quantity );
 
 			$event_data = array(
 				'event_name'  => 'AddToCart',
@@ -897,6 +1069,10 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 		 */
 		public function add_add_to_cart_event_fragment( $fragments ) {
 
+			if ( ! $this->is_pixel_enabled() ) {
+				return $fragments;
+			}
+
 			$product_id = isset( $_POST['product_id'] ) ? (int) $_POST['product_id'] : '';
 			$quantity   = isset( $_POST['quantity'] ) ? (int) $_POST['quantity'] : '';
 			$product    = wc_get_product( $product_id );
@@ -905,34 +1081,17 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 				return $fragments;
 			}
 
-			if ( $this->is_pixel_enabled() ) {
+			$params = $this->build_add_to_cart_custom_data( $product, $quantity );
 
-				$params = array(
-					'content_ids'  => wp_json_encode( \WC_Facebookcommerce_Utils::get_fb_content_ids( $product ) ),
-					'content_name' => \WC_Facebookcommerce_Utils::clean_string( $product->get_title() ),
-					'content_type' => 'product',
-					'contents'     => wp_json_encode(
-						array(
-							array(
-								'id'       => \WC_Facebookcommerce_Utils::get_fb_retailer_id( $product ),
-								'quantity' => $quantity,
-							),
-						)
-					),
-					'value'        => (float) $product->get_price() * $quantity,
-					'currency'     => get_woocommerce_currency(),
-				);
-
-				// send the event ID to prevent duplication
-				$event_id = WC()->session->get( 'facebook_for_woocommerce_add_to_cart_event_id' );
-				if ( ! empty( $event_id ) ) {
-					$params['event_id'] = $event_id;
-				}
-
-				$script = $this->pixel->get_event_script( 'AddToCart', $params );
-
-				$fragments['div.wc-facebook-pixel-event-placeholder'] = '<div class="wc-facebook-pixel-event-placeholder">' . $script . '</div>';
+			// send the event ID to prevent duplication
+			$event_id = WC()->session->get( 'facebook_for_woocommerce_add_to_cart_event_id' );
+			if ( ! empty( $event_id ) ) {
+				$params['event_id'] = $event_id;
 			}
+
+			$script = $this->pixel->get_event_script( 'AddToCart', $params );
+
+			$fragments['div.wc-facebook-pixel-event-placeholder'] = '<div class="wc-facebook-pixel-event-placeholder">' . $script . '</div>';
 
 			return $fragments;
 		}
@@ -1872,7 +2031,13 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 		 */
 		private function get_cart_num_items() {
 
-			return WC()->cart ? WC()->cart->get_cart_contents_count() : 0;
+			$count = 0;
+
+			foreach ( $this->get_reportable_cart_items() as $item ) {
+				$count += $item['quantity'];
+			}
+
+			return $count;
 		}
 
 
@@ -1887,16 +2052,8 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 
 			$product_ids = array( array() );
 
-			$cart = WC()->cart;
-			if ( $cart ) {
-
-				foreach ( $cart->get_cart() as $item ) {
-
-					if ( isset( $item['data'] ) && $item['data'] instanceof \WC_Product ) {
-
-						$product_ids[] = \WC_Facebookcommerce_Utils::get_fb_content_ids( $item['data'] );
-					}
-				}
+			foreach ( $this->get_reportable_cart_items() as $item ) {
+				$product_ids[] = \WC_Facebookcommerce_Utils::get_fb_content_ids( $item['product'] );
 			}
 
 			return wp_json_encode( array_unique( array_merge( ...$product_ids ) ) );
@@ -1914,16 +2071,8 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 
 			$product_names = array();
 
-			$cart = WC()->cart;
-			if ( $cart ) {
-
-				foreach ( $cart->get_cart() as $item ) {
-
-					if ( isset( $item['data'] ) && $item['data'] instanceof \WC_Product ) {
-
-						$product_names[] = \WC_Facebookcommerce_Utils::clean_string( $item['data']->get_title() );
-					}
-				}
+			foreach ( $this->get_reportable_cart_items() as $item ) {
+				$product_names[] = \WC_Facebookcommerce_Utils::clean_string( $item['product']->get_title() );
 			}
 
 			return wp_json_encode( array_unique( $product_names ) );
@@ -1941,22 +2090,14 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 
 			$cart_contents = array();
 
-			$cart = WC()->cart;
-			if ( $cart ) {
+			foreach ( $this->get_reportable_cart_items() as $item ) {
 
-				foreach ( $cart->get_cart() as $item ) {
+				$content = new \stdClass();
 
-					if ( ! isset( $item['data'], $item['quantity'] ) || ! $item['data'] instanceof \WC_Product ) {
-						continue;
-					}
+				$content->id       = \WC_Facebookcommerce_Utils::get_fb_retailer_id( $item['product'] );
+				$content->quantity = $item['quantity'];
 
-					$content = new \stdClass();
-
-					$content->id       = \WC_Facebookcommerce_Utils::get_fb_retailer_id( $item['data'] );
-					$content->quantity = $item['quantity'];
-
-					$cart_contents[] = $content;
-				}
+				$cart_contents[] = $content;
 			}
 
 			return wp_json_encode( $cart_contents );
@@ -1966,11 +2107,42 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 		/**
 		 * Gets the cart total.
 		 *
+		 * Normally this is WooCommerce's own total, which accounts for tax, shipping, fees and
+		 * discounts. When a quantity has been clamped that total describes a cart we are no
+		 * longer reporting, so it is recomputed from the clamped line items instead. That loses
+		 * tax and shipping, but only for carts whose total was meaningless to begin with.
+		 *
 		 * @return float|int
 		 */
 		private function get_cart_total() {
 
-			return WC()->cart ? WC()->cart->total : 0;
+			$cart = WC()->cart;
+
+			if ( ! $cart ) {
+				return 0;
+			}
+
+			$items   = $this->get_reportable_cart_items();
+			$clamped = false;
+
+			foreach ( $items as $item ) {
+				if ( $item['clamped'] ) {
+					$clamped = true;
+					break;
+				}
+			}
+
+			if ( ! $clamped ) {
+				return $cart->total;
+			}
+
+			$total = 0;
+
+			foreach ( $items as $item ) {
+				$total += (float) $item['product']->get_price() * $item['quantity'];
+			}
+
+			return $total;
 		}
 
 		/**
