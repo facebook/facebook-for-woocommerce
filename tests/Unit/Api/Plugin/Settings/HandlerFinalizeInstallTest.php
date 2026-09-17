@@ -72,7 +72,6 @@ class HandlerFinalizeInstallTest extends AbstractWPUnitTestWithOptionIsolationAn
 			$this->create_update_request(
 				array(
 					'access_token'                           => 'fresh-suat',
-					'merchant_access_token'                  => 'merchant-token',
 					'external_business_id'                   => 'untrusted-browser-ebid',
 					'commerce_partner_integration_id'        => 'cpi-legacy',
 					'commerce_merchant_settings_id'          => 'cms-legacy',
@@ -122,7 +121,6 @@ class HandlerFinalizeInstallTest extends AbstractWPUnitTestWithOptionIsolationAn
 			$this->create_update_request(
 				array(
 					'access_token'                  => 'fresh-suat',
-					'merchant_access_token'         => 'merchant-token',
 					'commerce_merchant_settings_id' => 'cms-legacy',
 					'product_catalog_id'            => 'catalog-legacy',
 					'pixel_id'                      => 'pixel-top-level',
@@ -166,7 +164,6 @@ class HandlerFinalizeInstallTest extends AbstractWPUnitTestWithOptionIsolationAn
 			$this->create_update_request(
 				array(
 					'access_token'                           => 'fresh-suat',
-					'merchant_access_token'                  => 'fresh-suat',
 					'commerce_partner_integration_id'        => 'cpi-legacy',
 					'commerce_merchant_settings_id'          => 'cms-legacy',
 					'product_catalog_id'                     => 'catalog-legacy',
@@ -216,7 +213,6 @@ class HandlerFinalizeInstallTest extends AbstractWPUnitTestWithOptionIsolationAn
 			$this->create_update_request(
 				array(
 					'access_token'                    => 'invalid-suat',
-					'merchant_access_token'           => 'invalid-suat',
 					'commerce_partner_integration_id' => 'cpi-legacy',
 				)
 			)
@@ -255,7 +251,6 @@ class HandlerFinalizeInstallTest extends AbstractWPUnitTestWithOptionIsolationAn
 			$this->create_update_request(
 				array(
 					'access_token'                    => 'fresh-suat',
-					'merchant_access_token'           => 'merchant-token',
 					'commerce_partner_integration_id' => 'cpi-legacy',
 				)
 			)
@@ -276,7 +271,7 @@ class HandlerFinalizeInstallTest extends AbstractWPUnitTestWithOptionIsolationAn
 
 		$response = ( new Handler( $client ) )->handle_finalize_install(
 			$this->create_update_request(
-				array( 'merchant_access_token' => 'merchant-token' )
+				array()
 			)
 		);
 
@@ -309,8 +304,7 @@ class HandlerFinalizeInstallTest extends AbstractWPUnitTestWithOptionIsolationAn
 		$response = ( new Handler( $client ) )->handle_finalize_install(
 			$this->create_update_request(
 				array(
-					'access_token'          => 'fresh-suat',
-					'merchant_access_token' => 'merchant-token',
+					'access_token' => 'fresh-suat',
 				)
 			)
 		);

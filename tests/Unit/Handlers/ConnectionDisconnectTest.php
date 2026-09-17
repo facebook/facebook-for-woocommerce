@@ -85,6 +85,37 @@ class ConnectionDisconnectTest extends AbstractWPUnitTestWithOptionIsolationAndS
 	}
 
 	/**
+	 * Test that disconnect clears every deprecated connection option.
+	 */
+	public function test_disconnect_clears_deprecated_options(): void {
+		foreach ( \WC_Facebookcommerce_Integration::DEPRECATED_OPTIONS as $option ) {
+			$this->assertTrue( add_option( $option, 'legacy_value' ), "Failed to create {$option}." );
+		}
+
+		$connection = new Connection( $this->plugin_mock );
+		$connection->disconnect();
+
+		foreach ( \WC_Facebookcommerce_Integration::DEPRECATED_OPTIONS as $option ) {
+			$this->assertFalse( get_option( $option, false ), "Failed to delete {$option}." );
+		}
+	}
+
+	/**
+	 * Test that deprecated public setters retain their behavior until removal.
+	 */
+	public function test_deprecated_setters_preserve_legacy_writes(): void {
+		$this->setExpectedDeprecated( Connection::class . '::update_system_user_id' );
+		$this->setExpectedDeprecated( Connection::class . '::update_merchant_access_token' );
+
+		$connection = new Connection( $this->plugin_mock );
+		$connection->update_system_user_id( 'legacy-system-user' );
+		$connection->update_merchant_access_token( 'legacy-merchant-token' );
+
+		$this->assertSame( 'legacy-system-user', get_option( Connection::OPTION_SYSTEM_USER_ID ) );
+		$this->assertSame( 'legacy-merchant-token', get_option( Connection::OPTION_MERCHANT_ACCESS_TOKEN ) );
+	}
+
+	/**
 	 * Test that disconnect works safely when facebook_config doesn't exist.
 	 */
 	public function test_disconnect_safe_when_facebook_config_missing(): void {

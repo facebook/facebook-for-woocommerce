@@ -32,9 +32,11 @@ class MetaExtension {
 	const COMMERCE_HUB_URL = 'https://www.commercepartnerhub.com/';
 
 	/** @var string Option names for Facebook settings */
-	const OPTION_ACCESS_TOKEN                    = 'wc_facebook_access_token';
-	const OPTION_MERCHANT_ACCESS_TOKEN           = 'wc_facebook_merchant_access_token';
-	const OPTION_SYSTEM_USER_ID                  = 'wc_facebook_system_user_id';
+	const OPTION_ACCESS_TOKEN = 'wc_facebook_access_token';
+
+	/** @deprecated Legacy FBE 2 leftover, unused here. Use self::OPTION_ACCESS_TOKEN instead. */
+	const OPTION_MERCHANT_ACCESS_TOKEN = 'wc_facebook_merchant_access_token';
+
 	const OPTION_BUSINESS_MANAGER_ID             = 'wc_facebook_business_manager_id';
 	const OPTION_AD_ACCOUNT_ID                   = 'wc_facebook_ad_account_id';
 	const OPTION_INSTAGRAM_BUSINESS_ID           = 'wc_facebook_instagram_business_id';
@@ -45,8 +47,15 @@ class MetaExtension {
 	const OPTION_PIXEL_ID                        = 'wc_facebook_pixel_id';
 	const OPTION_PROFILES                        = 'wc_facebook_profiles';
 	const OPTION_INSTALLED_FEATURES              = 'wc_facebook_installed_features';
-	const OPTION_HAS_CONNECTED_FBE_2             = 'wc_facebook_has_connected_fbe_2';
-	const OPTION_HAS_AUTHORIZED_PAGES            = 'wc_facebook_has_authorized_pages_read_engagement';
+
+	/** @deprecated Legacy FBE 2 leftover, no longer written. Nothing reads the stored ID. */
+	const OPTION_SYSTEM_USER_ID = 'wc_facebook_system_user_id';
+
+	/** @deprecated Legacy FBE 2 leftover, no longer written. Use Connection::is_connected() instead. */
+	const OPTION_HAS_CONNECTED_FBE_2 = 'wc_facebook_has_connected_fbe_2';
+
+	/** @deprecated Legacy FBE 2 leftover, no longer written. Nothing reads it. */
+	const OPTION_HAS_AUTHORIZED_PAGES = 'wc_facebook_has_authorized_pages_read_engagement';
 
 	/** @var string Nonce action */
 	const NONCE_ACTION = 'wc_facebook_ajax_token_update';

@@ -24,7 +24,10 @@ use WooCommerce\Facebook\Handlers\WhatsAppExtension;
  */
 class Lifecycle extends Framework\Lifecycle {
 
-	/** @var string the "enable messenger" setting ID */
+	/**
+	 * @var string the "enable messenger" setting ID
+	 * @deprecated Leftover from the removed Messenger chat feature, no longer written. Nothing reads it.
+	 */
 	const SETTING_ENABLE_MESSENGER = 'wc_facebook_enable_messenger';
 
 	/** @var string the messenger locale setting ID */
@@ -215,7 +218,6 @@ class Lifecycle extends Framework\Lifecycle {
 			$handler->create_job( array( 'created_at' => current_time( 'mysql' ) ) );
 			$handler->dispatch();
 		}
-		update_option( 'wc_facebook_has_connected_fbe_2', 'no' );
 		$settings = get_option( 'woocommerce_facebookcommerce_settings' );
 		if ( is_array( $settings ) ) {
 			$settings_map = array(

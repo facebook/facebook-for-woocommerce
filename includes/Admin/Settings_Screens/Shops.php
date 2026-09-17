@@ -141,12 +141,11 @@ class Shops extends Abstract_Settings_Screen {
 	 * @since 3.5.0
 	 */
 	private function render_facebook_iframe() {
-		$connection            = facebook_for_woocommerce()->get_connection_handler();
-		$is_connected          = $connection->is_connected();
-		$merchant_access_token = get_option( 'wc_facebook_merchant_access_token', '' );
-		$connection_invalid    = (bool) get_transient( 'wc_facebook_connection_invalid' );
+		$connection         = facebook_for_woocommerce()->get_connection_handler();
+		$is_connected       = $connection->is_connected();
+		$connection_invalid = (bool) get_transient( 'wc_facebook_connection_invalid' );
 
-		if ( ! empty( $merchant_access_token ) && $is_connected && ! $connection_invalid ) {
+		if ( $is_connected && ! $connection_invalid ) {
 			$iframe_url = \WooCommerce\Facebook\Handlers\MetaExtension::generate_iframe_management_url(
 				$connection->get_external_business_id()
 			);
@@ -415,8 +414,6 @@ class Shops extends Abstract_Settings_Screen {
 
 					const requestBody = {
 						access_token: message.access_token,
-						// Temporary compatibility field; remove when #4035 lands.
-						merchant_access_token: message.access_token,
 						product_catalog_id: message.catalog_id,
 						pixel_id: message.pixel_id,
 						page_id: message.page_id,
