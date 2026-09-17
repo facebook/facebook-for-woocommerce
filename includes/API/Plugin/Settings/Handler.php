@@ -17,6 +17,7 @@ use WooCommerce\Facebook\API\Plugin\Settings\FinalizeInstall\Request as Finalize
 use WooCommerce\Facebook\API\Plugin\Settings\Update\Request as UpdateRequest;
 use WooCommerce\Facebook\API\Plugin\Settings\Uninstall\Request as UninstallRequest;
 use WooCommerce\Facebook\Framework\Logger;
+use WooCommerce\Facebook\Utilities\InstalledFeatures;
 
 defined( 'ABSPATH' ) || exit;
 
@@ -429,25 +430,17 @@ class Handler extends AbstractRESTEndpoint {
 			$options[ \WC_Facebookcommerce_Integration::OPTION_INSTALLED_FEATURES ] = $params['installed_features'];
 		}
 
-		if ( ! empty( $params['page_id'] ) ) {
-			update_option( \WC_Facebookcommerce_Integration::SETTING_FACEBOOK_PAGE_ID, $params['page_id'] );
+		// Prefer the page from installed_features if available. MBE reports it under
+		// connected_assets and does not always send a top-level page_id.
+		$page_from_features = InstalledFeatures::get_connected_asset( $params['installed_features'] ?? [], 'page_id' );
+		$page_to_use        = '' !== $page_from_features ? $page_from_features : ( $params['page_id'] ?? '' );
+
+		if ( ! empty( $page_to_use ) ) {
+			update_option( \WC_Facebookcommerce_Integration::SETTING_FACEBOOK_PAGE_ID, $page_to_use );
 		}
 
 		// Prefer pixel from installed_features if available
-		$pixel_from_features = '';
-
-		if ( ! empty( $params['installed_features'] ) && is_array( $params['installed_features'] ) ) {
-			foreach ( $params['installed_features'] as $feature ) {
-
-				$feature_type = $feature['feature_type'] ?? '';
-				$pixel_id     = $feature['connected_assets']['pixel_id'] ?? '';
-
-				if ( 'pixel' === $feature_type && ! empty( $pixel_id ) ) {
-					$pixel_from_features = $pixel_id;
-					break;
-				}
-			}
-		}
+		$pixel_from_features = InstalledFeatures::get_connected_asset( $params['installed_features'] ?? [], 'pixel_id', 'pixel' );
 
 		$pixel_to_use = $prefer_explicit_pixel && ! empty( $params['pixel_id'] )
 			? $params['pixel_id']

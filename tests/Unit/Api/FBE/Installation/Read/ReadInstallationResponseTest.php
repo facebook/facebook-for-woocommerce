@@ -208,6 +208,108 @@ class ReadInstallationResponseTest extends AbstractWPUnitTestWithOptionIsolation
 	}
 
 	/**
+	 * Test get_page_id reads connected_assets when no top-level pages is sent.
+	 *
+	 * This is what MBE actually returns: the page arrives under connected_assets
+	 * and there is no top-level pages key at all.
+	 */
+	public function test_get_page_id_from_installed_features() {
+		$installation_data = [
+			'installed_features' => [
+				[
+					'feature_type'     => 'external_client',
+					'connected_assets' => [ 'business_manager_id' => 'business_manager_id_123' ],
+				],
+				[
+					'feature_type'     => 'pixel',
+					'connected_assets' => [
+						'pixel_id' => 'pixel_id_123',
+						'page_id'  => 'page_id_456',
+					],
+				],
+			],
+		];
+		$data              = json_encode( [ 'data' => [ $installation_data ] ] );
+		$response          = new Response( $data );
+
+		$this->assertEquals( 'page_id_456', $response->get_page_id() );
+	}
+
+	/**
+	 * Test get_page_id prefers connected_assets over a stale top-level pages value.
+	 */
+	public function test_get_page_id_prefers_installed_features_over_top_level() {
+		$installation_data = [
+			'pages'              => [ 'stale_page_id' ],
+			'installed_features' => [
+				[
+					'feature_type'     => 'catalog',
+					'connected_assets' => [ 'page_id' => 'current_page_id' ],
+				],
+			],
+		];
+		$data              = json_encode( [ 'data' => [ $installation_data ] ] );
+		$response          = new Response( $data );
+
+		$this->assertEquals( 'current_page_id', $response->get_page_id() );
+	}
+
+	/**
+	 * Test get_page_id falls back to top-level pages when installed_features has no page.
+	 */
+	public function test_get_page_id_falls_back_when_no_page_in_installed_features() {
+		$installation_data = [
+			'pages'              => [ 'page_id_123' ],
+			'installed_features' => [
+				[
+					'feature_type'     => 'pixel',
+					'connected_assets' => [ 'pixel_id' => 'pixel_id_123' ],
+				],
+			],
+		];
+		$data              = json_encode( [ 'data' => [ $installation_data ] ] );
+		$response          = new Response( $data );
+
+		$this->assertEquals( 'page_id_123', $response->get_page_id() );
+	}
+
+	/**
+	 * Test get_page_id handles malformed installed_features gracefully.
+	 */
+	public function test_get_page_id_with_malformed_installed_features() {
+		$installation_data = [
+			'pages'              => [ 'page_id_123' ],
+			'installed_features' => [
+				'not-an-array',
+				[ 'feature_type' => 'pixel' ],
+				[ 'connected_assets' => [ 'page_id' => '' ] ],
+			],
+		];
+		$data              = json_encode( [ 'data' => [ $installation_data ] ] );
+		$response          = new Response( $data );
+
+		$this->assertEquals( 'page_id_123', $response->get_page_id() );
+	}
+
+	/**
+	 * Test get_page_id returns an empty string when neither source has a page.
+	 */
+	public function test_get_page_id_with_no_page_anywhere() {
+		$installation_data = [
+			'installed_features' => [
+				[
+					'feature_type'     => 'pixel',
+					'connected_assets' => [ 'pixel_id' => 'pixel_id_123' ],
+				],
+			],
+		];
+		$data              = json_encode( [ 'data' => [ $installation_data ] ] );
+		$response          = new Response( $data );
+
+		$this->assertEquals( '', $response->get_page_id() );
+	}
+
+	/**
 	 * Test get_instagram_business_id method with array.
 	 */
 	public function test_get_instagram_business_id_with_array() {

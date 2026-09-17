@@ -13,6 +13,7 @@ namespace WooCommerce\Facebook\API\FBE\Installation\Read;
 defined( 'ABSPATH' ) || exit;
 
 use WooCommerce\Facebook\API;
+use WooCommerce\Facebook\Utilities\InstalledFeatures;
 
 /**
  * FBE Installation API read response object.
@@ -29,13 +30,10 @@ class Response extends API\Response {
 		$data = $this->get_data();
 
 		// First, try to get pixel ID from installed_features with feature_type "pixel"
-		if ( ! empty( $data['installed_features'] ) && is_array( $data['installed_features'] ) ) {
-			foreach ( $data['installed_features'] as $feature ) {
-				if ( isset( $feature['feature_type'], $feature['connected_assets']['pixel_id'] ) &&
-					'pixel' === $feature['feature_type'] ) {
-					return $feature['connected_assets']['pixel_id'];
-				}
-			}
+		$pixel_id = InstalledFeatures::get_connected_asset( $data['installed_features'] ?? [], 'pixel_id', 'pixel' );
+
+		if ( '' !== $pixel_id ) {
+			return $pixel_id;
 		}
 
 		// Fallback to top-level pixel_id for backwards compatibility
@@ -83,8 +81,18 @@ class Response extends API\Response {
 	 * @return string
 	 */
 	public function get_page_id(): string {
-		$pages = $this->get_data()['pages'] ?? '';
-		return is_array( $pages ) ? current( $pages ) : '';
+		$data = $this->get_data();
+
+		// MBE reports the page under connected_assets rather than at the top level.
+		$page_id = InstalledFeatures::get_connected_asset( $data['installed_features'] ?? [], 'page_id' );
+
+		if ( '' !== $page_id ) {
+			return $page_id;
+		}
+
+		// Fallback to top-level pages for backwards compatibility.
+		$pages = $data['pages'] ?? '';
+		return is_array( $pages ) ? (string) current( $pages ) : '';
 	}
 
 
