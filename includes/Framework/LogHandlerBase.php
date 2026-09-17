@@ -66,7 +66,6 @@ class LogHandlerBase {
 					$integration = $plugin->get_integration();
 					if ( $integration ) {
 						$request_data['catalog_id'] = $integration->get_product_catalog_id();
-						$request_data['page_id']    = $integration->get_facebook_page_id();
 						$request_data['pixel_id']   = $integration->get_facebook_pixel_id();
 					}
 				}

@@ -508,6 +508,7 @@ test.describe('WooCommerce Plugin level tests', () => {
       'wc_facebook_has_connected_fbe_2',
       'wc_facebook_has_authorized_pages_read_engagement',
       'wc_facebook_enable_messenger',
+      'wc_facebook_page_id',
       'wc_facebook_last_attribute_sync'
     ];
     await execWP(`update_option('${legacyPageAccessTokenOption}', 'legacy_page_token');`);
@@ -555,7 +556,6 @@ test.describe('WooCommerce Plugin level tests', () => {
         'wc_facebook_commerce_merchant_settings_id',
         'wc_facebook_external_business_id',
         'wc_facebook_commerce_partner_integration_id',
-        'wc_facebook_page_id',
         'wc_facebook_pixel_id',
         'wc_facebook_product_catalog_id'
       ];

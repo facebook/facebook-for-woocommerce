@@ -1855,6 +1855,7 @@ class WCFacebookCommerceIntegrationTest extends \WooCommerce\Facebook\Tests\Abst
 	 * @return void
 	 */
 	public function test_get_facebook_page_id_no_filters() {
+		$this->setExpectedDeprecated( WC_Facebookcommerce_Integration::class . '::get_facebook_page_id' );
 		$this->teardown_callback_category_safely( 'wc_facebook_page_id' );
 		add_option( WC_Facebookcommerce_Integration::SETTING_FACEBOOK_PAGE_ID, '222333111444555666777' );
 
@@ -1869,6 +1870,7 @@ class WCFacebookCommerceIntegrationTest extends \WooCommerce\Facebook\Tests\Abst
 	 * @return void
 	 */
 	public function test_get_facebook_page_id_with_filter() {
+		$this->setExpectedDeprecated( WC_Facebookcommerce_Integration::class . '::get_facebook_page_id' );
 		$this->add_filter_with_safe_teardown(
 			'wc_facebook_page_id',
 			function ( $facebook_page_id ) {
@@ -2197,19 +2199,22 @@ class WCFacebookCommerceIntegrationTest extends \WooCommerce\Facebook\Tests\Abst
 	}
 
 	/**
-	 * Tests is configured returns false when facebook page id is missing.
+	 * A shop connected without a Facebook Page — an Instagram-only asset selection,
+	 * for example — is configured. The Page is not used to reach any Meta endpoint
+	 * and is optional during onboarding, so requiring it here disabled product sync
+	 * on otherwise healthy stores.
 	 *
 	 * @return void
 	 */
-	public function test_is_configured_returns_false_facebook_page_id_missing() {
+	public function test_is_configured_returns_true_without_a_facebook_page_id() {
 		delete_option( WC_Facebookcommerce_Integration::SETTING_FACEBOOK_PAGE_ID );
-		$this->connection_handler->expects( $this->never() )
+		$this->connection_handler->expects( $this->once() )
 			->method( 'is_connected' )
 			->willReturn( true );
 
 		$result = $this->integration->is_configured();
 
-		$this->assertFalse( $result );
+		$this->assertTrue( $result );
 	}
 
 	/**
