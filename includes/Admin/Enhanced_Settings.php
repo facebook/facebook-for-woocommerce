@@ -70,17 +70,19 @@ class Enhanced_Settings {
 		if ( $is_connected ) {
 			if ( $is_woo_all_products_sync_enabled ) {
 				$screens = array(
-					Settings_Screens\Shops::ID => new Settings_Screens\Shops(),
+					Settings_Screens\Shops::ID         => new Settings_Screens\Shops(),
 					Settings_Screens\Product_Attributes::ID => new Settings_Screens\Product_Attributes(),
+					Settings_Screens\Configuration::ID => new Settings_Screens\Configuration(),
 				);
 			} else {
 				/**
 				 * If not enabled then the product sync tab should show itself
 				 */
 				$screens = array(
-					Settings_Screens\Shops::ID        => new Settings_Screens\Shops(),
-					Settings_Screens\Product_Sync::ID => new Settings_Screens\Product_Sync(),
+					Settings_Screens\Shops::ID         => new Settings_Screens\Shops(),
+					Settings_Screens\Product_Sync::ID  => new Settings_Screens\Product_Sync(),
 					Settings_Screens\Product_Attributes::ID => new Settings_Screens\Product_Attributes(),
+					Settings_Screens\Configuration::ID => new Settings_Screens\Configuration(),
 				);
 			}
 		} else {

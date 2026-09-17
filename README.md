@@ -35,6 +35,11 @@ Crash recovery uses a shutdown handler to write a disable flag and queue a sanit
 In rare PHP memory-exhaustion fatals, the process may not have enough memory left to run the shutdown handler.
 When that happens, the site still recovers on the next request, but the disable flag and crash report may be skipped for that request.
 
+## Documentation
+
+- [Offline (physical store) events](docs/offline-events.md) — how in-store orders
+  are detected, what is sent to Meta, and how to add a point-of-sale integration.
+
 ## Development
 
 ### Developing

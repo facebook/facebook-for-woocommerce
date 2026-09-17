@@ -108,6 +108,9 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 	/** @var string enable facebook managed coupons setting ID */
 	const SETTING_ENABLE_FACEBOOK_MANAGED_COUPONS = 'wc_facebook_enable_facebook_managed_coupons';
 
+	/** @var string the "enable offline purchase events" setting ID */
+	const SETTING_ENABLE_OFFLINE_PURCHASE_EVENTS = 'wc_facebook_enable_offline_purchase_events';
+
 	/** @var string request headers in the debug log */
 	const SETTING_REQUEST_HEADERS_IN_DEBUG_MODE = 'wc_facebook_request_headers_in_debug_log';
 
@@ -2912,6 +2915,29 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 	 */
 	public function is_facebook_managed_coupons_enabled(): bool {
 		return ( 'yes' === get_option( self::SETTING_ENABLE_FACEBOOK_MANAGED_COUPONS, self::SETTING_ENABLE_FACEBOOK_MANAGED_COUPONS_DEFAULT_VALUE ) );
+	}
+
+	/**
+	 * Determines whether offline (physical store) purchase events are enabled.
+	 *
+	 * Purchase events for orders taken at a point of sale are opt-in: they are
+	 * reported to Meta with an `action_source` of `physical_store`, so a merchant
+	 * has to knowingly turn them on before anything is sent.
+	 *
+	 * @return bool
+	 */
+	public function is_offline_purchase_events_enabled(): bool {
+		/**
+		 * Filters whether offline (physical store) purchase events are enabled.
+		 *
+		 * @param bool                             $is_enabled  whether offline purchase events are enabled
+		 * @param \WC_Facebookcommerce_Integration $integration the integration instance
+		 */
+		return (bool) apply_filters(
+			'wc_facebook_is_offline_purchase_events_enabled',
+			'yes' === get_option( self::SETTING_ENABLE_OFFLINE_PURCHASE_EVENTS, 'no' ),
+			$this
+		);
 	}
 
 	/**

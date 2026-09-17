@@ -14,34 +14,20 @@ defined( 'ABSPATH' ) || exit;
 
 use WooCommerce\Facebook\Admin\Abstract_Settings_Screen;
 use WooCommerce\Facebook\Framework\Api\Exception as ApiException;
-use WooCommerce\Facebook\RolloutSwitches;
-
-// Include the localization trait
-require_once __DIR__ . '/Localization_Settings_Trait.php';
 
 /**
  * Shops settings screen object.
+ *
+ * Renders the Meta-hosted connection iframe. The manual sync controls and
+ * plugin-wide options this screen used to carry in a collapsed Troubleshooting
+ * drawer now live on the Configuration tab.
  *
  * @since 3.5.0
  */
 class Shops extends Abstract_Settings_Screen {
 
-	use Localization_Settings_Trait;
-
 	/** @var string */
 	const ID = 'shops';
-
-	/** @var string */
-	const ACTION_SYNC_PRODUCTS = 'wc_facebook_sync_products';
-
-	/** @var string */
-	const ACTION_SYNC_COUPONS = 'wc_facebook_sync_coupons';
-
-	/** @var string */
-	const ACTION_SYNC_SHIPPING_PROFILES = 'wc_facebook_sync_shipping_profiles';
-
-	/** @var string */
-	const ACTION_SYNC_NAVIGATION_MENU = 'wc_facebook_sync_navigation_menu';
 
 	/**
 	 * Shops constructor.
@@ -53,10 +39,6 @@ class Shops extends Abstract_Settings_Screen {
 		add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_assets' ) );
 		add_action( 'admin_footer', array( $this, 'render_message_handler' ) );
 		add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_admin_scripts' ) );
-		// Only register this action once across all settings screens that use the trait
-		if ( ! has_action( 'woocommerce_admin_field_localization_plugin_status' ) ) {
-			add_action( 'woocommerce_admin_field_localization_plugin_status', array( $this, 'render_localization_plugin_status' ) );
-		}
 	}
 
 	/**
@@ -97,26 +79,6 @@ class Shops extends Abstract_Settings_Screen {
 
 		wp_enqueue_style( 'wc-facebook-admin-shops-settings', facebook_for_woocommerce()->get_plugin_url() . '/assets/css/admin/facebook-for-woocommerce-shops.css', array(), \WC_Facebookcommerce::VERSION );
 
-		wp_enqueue_script(
-			'wc-facebook-enhanced-settings-sync',
-			facebook_for_woocommerce()->get_asset_build_dir_url() . '/admin/enhanced-settings-sync.js',
-			array( 'jquery' ),
-			\WC_Facebookcommerce::PLUGIN_VERSION,
-			true
-		);
-
-		wp_localize_script(
-			'wc-facebook-enhanced-settings-sync',
-			'wc_facebook_enhanced_settings_sync',
-			array(
-				'ajax_url'                     => admin_url( 'admin-ajax.php' ),
-				'sync_products_nonce'          => wp_create_nonce( self::ACTION_SYNC_PRODUCTS ),
-				'sync_coupons_nonce'           => wp_create_nonce( self::ACTION_SYNC_COUPONS ),
-				'sync_shipping_profiles_nonce' => wp_create_nonce( self::ACTION_SYNC_SHIPPING_PROFILES ),
-				'sync_navigation_menu_nonce'   => wp_create_nonce( self::ACTION_SYNC_NAVIGATION_MENU ),
-			)
-		);
-
 		wp_enqueue_style( 'wc-facebook-admin-whatsapp-banner', facebook_for_woocommerce()->get_plugin_url() . '/assets/css/admin/facebook-for-woocommerce-whatsapp-banner.css', array(), \WC_Facebookcommerce::VERSION );
 	}
 
@@ -126,13 +88,7 @@ class Shops extends Abstract_Settings_Screen {
 	 * @since 3.5.0
 	 */
 	public function render() {
-		$is_connected = facebook_for_woocommerce()->get_connection_handler()->is_connected();
-
 		$this->render_facebook_iframe();
-
-		if ( $is_connected ) {
-			$this->render_troubleshooting_button_and_drawer();
-		}
 	}
 
 	/**
@@ -178,191 +134,17 @@ class Shops extends Abstract_Settings_Screen {
 	}
 
 	/**
-	 * Renders the troubleshooting button and drawer.
-	 *
-	 * @since 3.5.0
-	 */
-	private function render_troubleshooting_button_and_drawer() {
-		?>
-	<div class="centered-container">
-		<button id="toggle-troubleshooting-drawer" class="drawer-toggle-button">
-			Troubleshooting
-			<span id="caret" class="caret"></span>
-		</button>
-	</div>
-
-	<div id="troubleshooting-drawer" class="settings-drawer" style="display: none;">
-		<div class="settings-drawer-content">
-			<table class="form-table">
-				<tbody>
-					<tr valign="top" class="wc-facebook-shops-sample">
-						<th scope="row" class="titledesc">
-							Product data sync
-						</th>
-						<td class="forminp">
-							<button
-								id="wc-facebook-enhanced-settings-sync-products"
-								class="button"
-								type="button">
-								<?php esc_html_e( 'Sync now', 'facebook-for-woocommerce' ); ?>
-							</button>
-							<p id="product-sync-description" class="sync-description">
-								Manually sync your products from WooCommerce to your shop. It may take a couple of minutes for the changes to populate.
-							</p>
-						</td>
-					</tr>
-					<tr valign="top" class="wc-facebook-shops-sample">
-						<th scope="row" class="titledesc">
-							Coupon codes sync
-						</th>
-						<td class="forminp">
-							<button
-								id="wc-facebook-enhanced-settings-sync-coupons"
-								class="button"
-								type="button">
-								<?php esc_html_e( 'Sync now', 'facebook-for-woocommerce' ); ?>
-							</button>
-							<p id="coupon-sync-description" class="sync-description">
-								Manually sync your coupons from WooCommerce to your shop. It may take a couple of minutes for the changes to populate.
-							</p>
-						</td>
-					</tr>
-					<tr valign="top" class="wc-facebook-shops-sample">
-						<th scope="row" class="titledesc">
-							Shipping profiles sync
-						</th>
-						<td class="forminp">
-							<button
-								id="wc-facebook-enhanced-settings-sync-shipping-profiles"
-								class="button"
-								type="button">
-								<?php esc_html_e( 'Sync now', 'facebook-for-woocommerce' ); ?>
-							</button>
-							<p id="shipping-profile-sync-description" class="sync-description">
-								Manually sync your shipping profiles from WooCommerce to your shop. It may take a couple of minutes for the changes to populate.
-							</p>
-						</td>
-					</tr>
-					<tr valign="top" class="wc-facebook-shops-sample">
-						<th scope="row" class="titledesc">
-							Navigation menu sync
-						</th>
-						<td class="forminp">
-							<button
-								id="wc-facebook-enhanced-settings-sync-navigation-menu"
-								class="button"
-								type="button">
-								<?php esc_html_e( 'Sync now', 'facebook-for-woocommerce' ); ?>
-							</button>
-							<p id="navigation-menu-sync-description" class="sync-description">
-								Manually sync your category navigation menu from WooCommerce to your shop. It may take a couple of minutes for the changes to populate.
-							</p>
-						</td>
-					</tr>
-				</tbody>
-			</table>
-
-			<?php parent::render(); ?>
-		</div>
-	</div>
-
-	<script>
-		document.getElementById('toggle-troubleshooting-drawer').addEventListener('click', function() {
-			var drawer = document.getElementById('troubleshooting-drawer');
-			var caret = document.getElementById('caret');
-			var button = document.getElementById('toggle-troubleshooting-drawer');
-
-			if (drawer.style.maxHeight === '0px' || drawer.style.maxHeight === '') {
-				drawer.style.display = 'block';
-				drawer.style.maxHeight = drawer.scrollHeight + 'px';
-				caret.style.transform = 'rotate(180deg)';
-				drawer.style.marginBottom = '20px';
-				button.style.marginBottom = '0';
-			} else {
-				drawer.style.maxHeight = '0';
-				setTimeout(function() {
-					drawer.style.display = 'none';
-				}, 300);
-				caret.style.transform = 'rotate(0deg)';
-				drawer.style.marginBottom = '0';
-				button.style.marginBottom = '20px';
-			}
-		});
-	</script>
-		<?php
-	}
-
-	/**
 	 * Gets the screen settings.
 	 *
+	 * Empty by design: this screen renders only the Meta-hosted iframe and has no
+	 * settings form. The options it used to carry are on the Configuration tab.
+	 * Returning them here would let Abstract_Settings_Screen::save() write fields
+	 * that were never rendered.
+	 *
 	 * @return array
-	 * @since 3.5.0
 	 */
 	public function get_settings(): array {
-		// Get the parent settings (debug mode, meta diagnosis, etc.)
-		$parent_settings = self::get_settings_with_title_static( '' );
-
-		// Get the localization settings
-		$localization_settings = $this->get_localization_settings();
-
-		// Merge both settings arrays
-		return array_merge( $parent_settings, $localization_settings );
-	}
-
-	/**
-	 * Returns the shop-wide settings array.
-	 * Reused in Connection.php.
-	 *
-	 * @param string $title A translated title.
-	 * @return array
-	 */
-	public static function get_settings_with_title_static( string $title ): array {
-		$offer_management_enabled_by_fb = facebook_for_woocommerce()->get_rollout_switches()->is_switch_enabled(
-			RolloutSwitches::SWITCH_OFFER_MANAGEMENT_ENABLED
-		);
-
-		$title_array = [
-			'title' => $title,
-			'type'  => 'title',
-		];
-
-		$settings_without_title_and_type = [
-			[
-				'id'       => \WC_Facebookcommerce_Integration::SETTING_ENABLE_META_DIAGNOSIS,
-				'title'    => __( 'Enable meta diagnosis', 'facebook-for-woocommerce' ),
-				'type'     => 'checkbox',
-				'desc'     => __( 'Upload plugin events to Meta', 'facebook-for-woocommerce' ),
-				'desc_tip' => sprintf( __( 'Allow Meta to monitor event and error logs to help fix issues.', 'facebook-for-woocommerce' ) ),
-				'default'  => 'yes',
-			],
-
-			[
-				'id'       => \WC_Facebookcommerce_Integration::SETTING_ENABLE_DEBUG_MODE,
-				'title'    => __( 'Enable debug mode', 'facebook-for-woocommerce' ),
-				'type'     => 'checkbox',
-				'desc'     => __( 'Log plugin events for debugging.', 'facebook-for-woocommerce' ),
-				/* translators: %s URL to the documentation page. */
-				'desc_tip' => sprintf( __( 'Only enable this if you are experiencing problems with the plugin. <a href="%s" target="_blank">Learn more</a>.', 'facebook-for-woocommerce' ), 'https://woocommerce.com/document/facebook-for-woocommerce/#debug-tools' ),
-				'default'  => 'no',
-			],
-		];
-		if ( $offer_management_enabled_by_fb ) {
-			$settings_without_title_and_type[] = [
-				'id'       => \WC_Facebookcommerce_Integration::SETTING_ENABLE_FACEBOOK_MANAGED_COUPONS,
-				'title'    => __( 'Enable Meta-managed coupons', 'facebook-for-woocommerce' ),
-				'type'     => 'checkbox',
-				'desc'     => __( 'Allow Meta to create and manage coupons based on your offer setup on Meta business tools', 'facebook-for-woocommerce' ),
-				'desc_tip' => sprintf( __( 'If this is disabled, some promotional features in Meta business tools may not be available.', 'facebook-for-woocommerce' ) ),
-				'default'  => \WC_Facebookcommerce_Integration::SETTING_ENABLE_FACEBOOK_MANAGED_COUPONS_DEFAULT_VALUE,
-			];
-		}
-
-		$section_end_array = [ 'type' => 'sectionend' ];
-
-		array_unshift( $settings_without_title_and_type, $title_array );
-		$settings_without_title_and_type[] = $section_end_array;
-
-		return array_merge( $title_array, $settings_without_title_and_type, $section_end_array );
+		return array();
 	}
 
 	/**
