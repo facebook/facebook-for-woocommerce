@@ -13,6 +13,7 @@
 namespace WooCommerce\Facebook\Framework;
 
 use WC_Logger;
+use WooCommerce\Facebook\Framework\Api\SensitiveData;
 use WooCommerce\Facebook\Framework\Plugin\Compatibility;
 use WooCommerce\Facebook\Framework\Plugin\Dependencies;
 
@@ -504,7 +505,11 @@ abstract class Plugin {
 			// phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_print_r
 			$messages[] = trim( sprintf( '%s: %s', $key, is_array( $value ) || ( is_object( $value ) && 'stdClass' === get_class( $value ) ) ? print_r( (array) $value, true ) : $value ) );
 		}
-		return implode( "\n", $messages ) . "\n";
+
+		// Backstop: callers are expected to hand over already-redacted data, but this is
+		// the single point every API log line passes through, so scrub it once more
+		// rather than risk a future call path writing a credential to disk.
+		return SensitiveData::redact_text( implode( "\n", $messages ) . "\n" );
 	}
 
 

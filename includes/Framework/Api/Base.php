@@ -200,18 +200,23 @@ abstract class Base {
 	protected function broadcast_request() {
 		$request_data = [
 			'method'     => $this->get_request_method(),
-			'uri'        => $this->get_request_uri(),
+			'uri'        => $this->get_sanitized_request_uri(),
 			'user-agent' => $this->get_request_user_agent(),
 			'headers'    => $this->get_sanitized_request_headers(),
 			'body'       => $this->get_sanitized_request_body(),
 			'duration'   => $this->get_request_duration() . 's', // seconds
 		];
 
+		$sanitized_response_body = $this->get_sanitized_response_body();
+
 		$response_data = [
 			'code'    => $this->get_response_code(),
 			'message' => $this->get_response_message(),
 			'headers' => $this->get_response_headers(),
-			'body'    => $this->get_sanitized_response_body() ? $this->get_sanitized_response_body() : $this->get_raw_response_body(),
+			// Response classes that don't implement to_string_safe() fall back to the raw
+			// body, which may carry credentials (e.g. /me/accounts returns page access
+			// tokens), so the fallback is scrubbed too.
+			'body'    => $sanitized_response_body ? $sanitized_response_body : SensitiveData::redact_text( $this->get_raw_response_body() ),
 		];
 
 		/**
@@ -295,6 +300,22 @@ abstract class Base {
 		 * @param Base class instance
 		 */
 		return apply_filters( 'wc_' . $this->get_api_id() . '_api_request_uri', $uri, $this );
+	}
+
+
+	/**
+	 * Gets the request URI with any credentials in the query string masked, for logging.
+	 *
+	 * Graph API calls carry the access token as a query parameter, so the raw URI is a
+	 * credential and must never be written to a log. Use this anywhere the URI is
+	 * logged, reported or displayed; use {@see self::get_request_uri()} only for the
+	 * actual request.
+	 *
+	 * @since 3.7.3
+	 * @return string
+	 */
+	protected function get_sanitized_request_uri() {
+		return SensitiveData::redact_url( $this->get_request_uri() );
 	}
 
 
