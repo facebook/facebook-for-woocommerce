@@ -425,10 +425,6 @@ class Handler extends AbstractRESTEndpoint {
 			$options[ \WC_Facebookcommerce_Integration::OPTION_COMMERCE_PARTNER_INTEGRATION_ID ] = $params['commerce_partner_integration_id'];
 		}
 
-		if ( ! empty( $params['installed_features'] ) ) {
-			$options[ \WC_Facebookcommerce_Integration::OPTION_INSTALLED_FEATURES ] = $params['installed_features'];
-		}
-
 		// Prefer pixel from installed_features if available
 		$pixel_from_features = '';
 
@@ -456,18 +452,6 @@ class Handler extends AbstractRESTEndpoint {
 
 		if ( ! empty( $params['product_catalog_id'] ) ) {
 			$options[ \WC_Facebookcommerce_Integration::OPTION_PRODUCT_CATALOG_ID ] = $params['product_catalog_id'];
-		}
-
-		if ( ! empty( $params['profiles'] ) ) {
-			$options[ \WC_Facebookcommerce_Integration::OPTION_PROFILES ] = $params['profiles'];
-		}
-
-		if ( ! empty( $params['business_manager_id'] ) ) {
-			$options[ \WC_Facebookcommerce_Integration::OPTION_BUSINESS_MANAGER_ID ] = $params['business_manager_id'];
-		}
-
-		if ( ! empty( $params['ad_account_id'] ) ) {
-			$options[ \WC_Facebookcommerce_Integration::OPTION_AD_ACCOUNT_ID ] = $params['ad_account_id'];
 		}
 
 		return $options;
@@ -511,15 +495,11 @@ class Handler extends AbstractRESTEndpoint {
 	private function clear_integration_options() {
 		$options = [
 			\WC_Facebookcommerce_Integration::OPTION_ACCESS_TOKEN,
-			\WC_Facebookcommerce_Integration::OPTION_BUSINESS_MANAGER_ID,
-			\WC_Facebookcommerce_Integration::OPTION_AD_ACCOUNT_ID,
 			\WC_Facebookcommerce_Integration::OPTION_FEED_ID,
 			\WC_Facebookcommerce_Integration::OPTION_COMMERCE_MERCHANT_SETTINGS_ID,
 			\WC_Facebookcommerce_Integration::OPTION_COMMERCE_PARTNER_INTEGRATION_ID,
-			\WC_Facebookcommerce_Integration::OPTION_INSTALLED_FEATURES,
 			\WC_Facebookcommerce_Integration::OPTION_PAGE_ACCESS_TOKEN,
 			\WC_Facebookcommerce_Integration::OPTION_PRODUCT_CATALOG_ID,
-			\WC_Facebookcommerce_Integration::OPTION_PROFILES,
 			\WC_Facebookcommerce_Integration::SETTING_FACEBOOK_PIXEL_ID,
 		];
 
