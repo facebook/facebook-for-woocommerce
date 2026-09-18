@@ -509,6 +509,11 @@ test.describe('WooCommerce Plugin level tests', () => {
       'wc_facebook_has_authorized_pages_read_engagement',
       'wc_facebook_enable_messenger',
       'wc_facebook_page_id',
+      'wc_facebook_business_manager_id',
+      'wc_facebook_ad_account_id',
+      'wc_facebook_instagram_business_id',
+      'wc_facebook_profiles',
+      'wc_facebook_installed_features',
       'wc_facebook_last_attribute_sync'
     ];
     await execWP(`update_option('${legacyPageAccessTokenOption}', 'legacy_page_token');`);
@@ -547,12 +552,11 @@ test.describe('WooCommerce Plugin level tests', () => {
         timeout: TIMEOUTS.EXTRA_LONG
       });
 
-      // List of Facebook options that should be empty
+      // Options the plugin still writes, so options.php renders an input for them.
+      // Retired options are deleted outright and checked through WordPress below,
+      // because options.php does not render a field for a row that no longer exists.
       const fbOptions = [
         'wc_facebook_access_token',
-        'wc_facebook_business_manager_id',
-        'wc_facebook_ad_account_id',
-        'wc_facebook_instagram_business_id',
         'wc_facebook_commerce_merchant_settings_id',
         'wc_facebook_external_business_id',
         'wc_facebook_commerce_partner_integration_id',

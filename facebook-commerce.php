@@ -208,6 +208,11 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 		self::OPTION_HAS_AUTHORIZED_PAGES_READ_ENGAGEMENT,
 		self::OPTION_ENABLE_MESSENGER,
 		self::SETTING_FACEBOOK_PAGE_ID,
+		self::OPTION_BUSINESS_MANAGER_ID,
+		self::OPTION_AD_ACCOUNT_ID,
+		self::OPTION_PROFILES,
+		self::OPTION_INSTALLED_FEATURES,
+		'wc_facebook_instagram_business_id',
 		'wc_facebook_last_attribute_sync',
 	);
 

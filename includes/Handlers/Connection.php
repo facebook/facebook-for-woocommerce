@@ -269,18 +269,6 @@ class Connection {
 			update_option( \WC_Facebookcommerce_Integration::OPTION_PRODUCT_CATALOG_ID, sanitize_text_field( $response->get_catalog_id() ) );
 		}
 
-		if ( $response->get_business_manager_id() ) {
-			$this->update_business_manager_id( sanitize_text_field( $response->get_business_manager_id() ) );
-		}
-
-		if ( $response->get_ad_account_id() ) {
-			$this->update_ad_account_id( sanitize_text_field( $response->get_ad_account_id() ) );
-		}
-
-		if ( $response->get_instagram_business_id() ) {
-			$this->update_instagram_business_id( sanitize_text_field( $response->get_instagram_business_id() ) );
-		}
-
 		if ( $response->get_commerce_merchant_settings_id() ) {
 			$this->update_commerce_merchant_settings_id( sanitize_text_field( $response->get_commerce_merchant_settings_id() ) );
 		}
@@ -350,9 +338,6 @@ class Connection {
 	 */
 	public function disconnect() {
 		$this->update_access_token( '' );
-		$this->update_business_manager_id( '' );
-		$this->update_ad_account_id( '' );
-		$this->update_instagram_business_id( '' );
 		$this->update_commerce_merchant_settings_id( '' );
 		$this->update_external_business_id( '' );
 		$this->update_commerce_partner_integration_id( '' );
@@ -470,8 +455,13 @@ class Connection {
 	 * @since 2.0.0
 	 *
 	 * @return string
+	 *
+	 * @deprecated Legacy FBE asset data. Internal flows no longer read or write this option,
+	 *             and the Commerce Partner Integration that replaces the legacy installation
+	 *             read does not supply it. Retained for backwards compatibility.
 	 */
 	public function get_business_manager_id() {
+		wc_deprecated_function( __METHOD__, '3.7.7' );
 		$business_manager_id = get_option( self::OPTION_BUSINESS_MANAGER_ID, '' );
 		/**
 		 * Filters the Business Manager ID.
@@ -491,8 +481,13 @@ class Connection {
 	 * @since 2.0.0
 	 *
 	 * @return string
+	 *
+	 * @deprecated Legacy FBE asset data. Internal flows no longer read or write this option,
+	 *             and the Commerce Partner Integration that replaces the legacy installation
+	 *             read does not supply it. Retained for backwards compatibility.
 	 */
 	public function get_ad_account_id() {
+		wc_deprecated_function( __METHOD__, '3.7.7' );
 		return get_option( self::OPTION_AD_ACCOUNT_ID, '' );
 	}
 
@@ -503,8 +498,13 @@ class Connection {
 	 * @since 2.3.0
 	 *
 	 * @return string
+	 *
+	 * @deprecated Legacy FBE asset data. Internal flows no longer read or write this option,
+	 *             and the Commerce Partner Integration that replaces the legacy installation
+	 *             read does not supply it. Retained for backwards compatibility.
 	 */
 	public function get_instagram_business_id() {
+		wc_deprecated_function( __METHOD__, '3.7.7' );
 		return get_option( self::OPTION_INSTAGRAM_BUSINESS_ID, '' );
 	}
 
@@ -608,8 +608,13 @@ class Connection {
 	 * @since 2.0.0
 	 *
 	 * @param string $value the business manager ID
+	 *
+	 * @deprecated Legacy FBE asset data. Internal flows no longer read or write this option,
+	 *             and the Commerce Partner Integration that replaces the legacy installation
+	 *             read does not supply it. Retained for backwards compatibility.
 	 */
 	public function update_business_manager_id( $value ) {
+		wc_deprecated_function( __METHOD__, '3.7.7' );
 		update_option( self::OPTION_BUSINESS_MANAGER_ID, $value );
 	}
 
@@ -620,8 +625,13 @@ class Connection {
 	 * @since 2.0.0
 	 *
 	 * @param string $value the ad account ID
+	 *
+	 * @deprecated Legacy FBE asset data. Internal flows no longer read or write this option,
+	 *             and the Commerce Partner Integration that replaces the legacy installation
+	 *             read does not supply it. Retained for backwards compatibility.
 	 */
 	public function update_ad_account_id( $value ) {
+		wc_deprecated_function( __METHOD__, '3.7.7' );
 		update_option( self::OPTION_AD_ACCOUNT_ID, $value );
 	}
 
@@ -647,8 +657,13 @@ class Connection {
 	 * @since 2.3.0
 	 *
 	 * @param string $id the ID
+	 *
+	 * @deprecated Legacy FBE asset data. Internal flows no longer read or write this option,
+	 *             and the Commerce Partner Integration that replaces the legacy installation
+	 *             read does not supply it. Retained for backwards compatibility.
 	 */
 	public function update_instagram_business_id( $id ) {
+		wc_deprecated_function( __METHOD__, '3.7.7' );
 		update_option( self::OPTION_INSTAGRAM_BUSINESS_ID, $id );
 	}
 
