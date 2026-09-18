@@ -10,8 +10,8 @@
 
 namespace WooCommerce\Facebook\API\Plugin\Settings;
 
-use WooCommerce\Facebook\API\CommerceIntegration\Finalize\Client as FinalizeClient;
-use WooCommerce\Facebook\API\CommerceIntegration\Finalize\Exception as FinalizeException;
+use WooCommerce\Facebook\API\CommerceIntegration\Client as FinalizeClient;
+use WooCommerce\Facebook\API\CommerceIntegration\Exception as FinalizeException;
 use WooCommerce\Facebook\API\Plugin\AbstractRESTEndpoint;
 use WooCommerce\Facebook\API\Plugin\Settings\FinalizeInstall\Request as FinalizeInstallRequest;
 use WooCommerce\Facebook\API\Plugin\Settings\Update\Request as UpdateRequest;

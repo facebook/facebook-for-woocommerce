@@ -10,6 +10,9 @@
 
 namespace WooCommerce\Facebook\Handlers;
 
+use WooCommerce\Facebook\API\CommerceIntegration\Client as CommerceIntegrationClient;
+use WooCommerce\Facebook\API\CommerceIntegration\Exception as FinalizeException;
+use WooCommerce\Facebook\API\CommerceIntegration\Read\Response as IntegrationReadResponse;
 use WooCommerce\Facebook\Framework\Api\Exception as ApiException;
 use WooCommerce\Facebook\Utilities\Heartbeat;
 
@@ -116,12 +119,12 @@ class Connection {
 		}
 		set_transient( $flag_name, 'yes', DAY_IN_SECONDS );
 
-		try {
-			$this->update_installation_data();
-			$this->repair_or_update_commerce_integration_data();
-		} catch ( ApiException $exception ) {
-			$this->get_plugin()->log( 'Could not refresh installation data. ' . $exception->getMessage(), null, 'error' );
-		}
+		// Each phase logs and absorbs its own failures: the Commerce Partner
+		// Integration path must run even when legacy FBE endpoints fail, so a
+		// failing FBE endpoint can never disable the CPI path.
+		$mapping = $this->ensure_commerce_partner_integration_id();
+		$this->push_commerce_integration_config();
+		$this->refresh_asset_mapping( $mapping );
 	}
 
 	/**
@@ -140,14 +143,15 @@ class Connection {
 
 		$this->get_plugin()->log( 'Starting forced config sync on version update' );
 
-		try {
-			// Force refresh installation data without transient check
-			$this->update_installation_data();
-			$this->repair_or_update_commerce_integration_data();
-			$this->get_plugin()->log( 'Successfully completed forced config sync on version update' );
+		// Each phase logs and absorbs its own failures: the Commerce Partner
+		// Integration path must run even when legacy FBE endpoints fail, so a
+		// failing FBE endpoint can never disable the CPI path.
+		$mapping        = $this->ensure_commerce_partner_integration_id();
+		$config_pushed  = $this->push_commerce_integration_config();
+		$mapping_synced = $this->refresh_asset_mapping( $mapping );
 
-		} catch ( ApiException $exception ) {
-			$this->get_plugin()->log( 'Failed to complete forced config sync on update: ' . $exception->getMessage(), null, 'error' );
+		if ( $config_pushed && $mapping_synced ) {
+			$this->get_plugin()->log( 'Successfully completed forced config sync on version update' );
 		}
 	}
 
@@ -155,6 +159,9 @@ class Connection {
 	 * Refreshes the client side info and configuration.
 	 *
 	 * @since 3.4.8
+	 * @deprecated The repair and update steps are decoupled; see
+	 *             ensure_commerce_partner_integration_id() and
+	 *             push_commerce_integration_config().
 	 */
 	public function repair_or_update_commerce_integration_data() {
 		// bail if not connected
@@ -162,55 +169,201 @@ class Connection {
 			return;
 		}
 
+		$this->ensure_commerce_partner_integration_id();
+		$this->push_commerce_integration_config();
+	}
+
+	/**
+	 * Ensures a Commerce Partner Integration ID is stored.
+	 *
+	 * Looks the integration up by external business ID first, which works for
+	 * both FBE and FBL onboarded instances. The FBE-dependent repair runs only
+	 * when the lookup fails; it can only recapture integrations for stores
+	 * onboarded through the legacy FBE flow.
+	 *
+	 * @return IntegrationReadResponse|null The lookup response when it supplied the ID, null otherwise.
+	 */
+	private function ensure_commerce_partner_integration_id() {
+		$commerce_integration_id = $this->get_commerce_partner_integration_id();
+		if ( ! empty( $commerce_integration_id ) ) {
+			return null;
+		}
+
 		try {
-			$commerce_integration_id = $this->get_commerce_partner_integration_id();
+			$client   = new CommerceIntegrationClient();
+			$response = $client->get_integration_by_external_business_id(
+				$this->get_access_token(),
+				$this->get_external_business_id()
+			);
 
-			// If commerce integration ID doesn't exist, call repair endpoint
-			if ( empty( $commerce_integration_id ) ) {
-				$response = $this->get_plugin()->get_api()->repair_commerce_integration(
-					$this->get_external_business_id(),
-					$this->get_shop_domain(),
-					admin_url(),
-					$this->get_plugin()->get_version()
-				);
+			$this->update_commerce_partner_integration_id( $response->get_commerce_partner_integration_id() );
+			$this->get_plugin()->log( 'Successfully resolved commerce integration by external business ID.' );
 
-				if ( ! $response->is_successful() ) {
-					$this->get_plugin()->log( 'Failed to repair commerce integration.', null, 'error' );
-					return;
-				}
+			return $response;
+		} catch ( FinalizeException $exception ) {
+			$this->get_plugin()->log( 'Could not resolve commerce integration by external business ID. ' . $exception->getMessage(), null, 'error' );
 
-				// Store the new commerce integration ID
-				$new_commerce_integration_id = $response->get_commerce_partner_integration_id();
-				if ( empty( $new_commerce_integration_id ) ) {
-					$this->get_plugin()->log( 'Failed to get commerce partner integration ID from repair response.', null, 'error' );
-					return;
-				}
+			// Only a 404 establishes that this store has no Commerce Partner Integration.
+			// Every other failure -- unauthorized, rate limited, server error, transport --
+			// leaves the remote state unknown, and repair can mint an integration. Falling
+			// through on those would let a transient failure replace a healthy stored ID.
+			if ( 'not_found' !== $exception->get_failure_reason() ) {
+				return null;
+			}
+		}
 
-				$this->update_commerce_partner_integration_id( $new_commerce_integration_id );
-				$commerce_integration_id = $new_commerce_integration_id;
-				$this->get_plugin()->log( 'Successfully repaired commerce integration. New ID: ' . $commerce_integration_id );
+		try {
+			$response = $this->get_plugin()->get_api()->repair_commerce_integration(
+				$this->get_external_business_id(),
+				$this->get_shop_domain(),
+				admin_url(),
+				$this->get_plugin()->get_version()
+			);
+
+			if ( ! $response->is_successful() ) {
+				$this->get_plugin()->log( 'Failed to repair commerce integration.', null, 'error' );
+				return null;
 			}
 
-			// If we have a commerce integration ID, update the configuration
-			if ( ! empty( $commerce_integration_id ) ) {
-				$update_response = $this->get_plugin()->get_api()->update_commerce_integration(
-					$commerce_integration_id,
-					$this->get_plugin()->get_version(),  // extension_version
-					admin_url(),                         // admin_url
-					$this->get_country_code(),           // country_code
-					$this->get_currency(),               // currency
-					$this->get_platform_store_id(),      // platform_store_id
-				);
-
-				if ( ! $update_response->is_successful() ) {
-					$this->get_plugin()->log( 'Failed to update commerce integration configuration.', null, 'error' );
-					return;
-				}
-
-				$this->get_plugin()->log( 'Successfully updated commerce integration configuration.' );
+			// Store the new commerce integration ID
+			$new_commerce_integration_id = $response->get_commerce_partner_integration_id();
+			if ( empty( $new_commerce_integration_id ) ) {
+				$this->get_plugin()->log( 'Failed to get commerce partner integration ID from repair response.', null, 'error' );
+				return null;
 			}
+
+			$this->update_commerce_partner_integration_id( $new_commerce_integration_id );
+			$this->get_plugin()->log( 'Successfully repaired commerce integration. New ID: ' . $new_commerce_integration_id );
 		} catch ( ApiException $exception ) {
-			$this->get_plugin()->log( 'Could not repair or update commerce integration data. ' . $exception->getMessage(), null, 'error' );
+			$this->get_plugin()->log( 'Could not repair commerce integration. ' . $exception->getMessage(), null, 'error' );
+		}
+
+		return null;
+	}
+
+	/**
+	 * Pushes client-side store metadata to the Commerce Partner Integration.
+	 *
+	 * @return bool Whether the configuration was updated.
+	 */
+	private function push_commerce_integration_config() {
+		$commerce_integration_id = $this->get_commerce_partner_integration_id();
+		if ( empty( $commerce_integration_id ) ) {
+			$this->get_plugin()->log( 'Skipping commerce integration configuration update: no integration ID.', null, 'error' );
+			return false;
+		}
+
+		try {
+			$update_response = $this->get_plugin()->get_api()->update_commerce_integration(
+				$commerce_integration_id,
+				$this->get_plugin()->get_version(),  // extension_version
+				admin_url(),                         // admin_url
+				$this->get_country_code(),           // country_code
+				$this->get_currency(),               // currency
+				$this->get_platform_store_id(),      // platform_store_id
+			);
+
+			if ( ! $update_response->is_successful() ) {
+				$this->get_plugin()->log( 'Failed to update commerce integration configuration.', null, 'error' );
+				return false;
+			}
+
+			$this->get_plugin()->log( 'Successfully updated commerce integration configuration.' );
+			return true;
+		} catch ( ApiException $exception ) {
+			$this->get_plugin()->log( 'Could not update commerce integration configuration. ' . $exception->getMessage(), null, 'error' );
+			return false;
+		}
+	}
+
+	/**
+	 * Refreshes the Meta-managed asset mapping with CPI preferred.
+	 *
+	 * Tries the STEFI integration read first, then the legacy Graph node, then
+	 * the legacy FBE install read. Each rung logs which source supplied the
+	 * mapping so fallback usage stays measurable while FBE is retired.
+	 *
+	 * @param IntegrationReadResponse|null $resolved_mapping Mapping already resolved while ensuring the ID.
+	 * @return bool Whether the mapping was refreshed from any source.
+	 */
+	private function refresh_asset_mapping( $resolved_mapping = null ) {
+		if ( $resolved_mapping instanceof IntegrationReadResponse ) {
+			$this->apply_asset_mapping(
+				$resolved_mapping->get_pixel_id(),
+				$resolved_mapping->get_catalog_id(),
+				$resolved_mapping->get_commerce_merchant_settings_id()
+			);
+			$this->get_plugin()->log( 'Refreshed asset mapping from the integration lookup.' );
+			return true;
+		}
+
+		$commerce_integration_id = $this->get_commerce_partner_integration_id();
+		if ( ! empty( $commerce_integration_id ) ) {
+			try {
+				$client   = new CommerceIntegrationClient();
+				$response = $client->get_integration_by_id(
+					$this->get_access_token(),
+					$commerce_integration_id
+				);
+
+				$this->apply_asset_mapping(
+					$response->get_pixel_id(),
+					$response->get_catalog_id(),
+					$response->get_commerce_merchant_settings_id()
+				);
+				$this->get_plugin()->log( 'Refreshed asset mapping from the integration read.' );
+				return true;
+			} catch ( FinalizeException $exception ) {
+				$this->get_plugin()->log( 'Could not read commerce integration. ' . $exception->getMessage(), null, 'error' );
+			}
+
+			try {
+				$node_response = $this->get_plugin()->get_api()->get_commerce_partner_integration( $commerce_integration_id );
+
+				if ( ! $node_response->is_successful() ) {
+					$this->get_plugin()->log( 'Commerce integration node read was unsuccessful.', null, 'error' );
+				} else {
+					$this->apply_asset_mapping(
+						$node_response->get_pixel_id(),
+						$node_response->get_catalog_id(),
+						$node_response->get_commerce_merchant_settings_id()
+					);
+					$this->get_plugin()->log( 'Refreshed asset mapping from the legacy integration node.' );
+					return true;
+				}
+			} catch ( ApiException $exception ) {
+				$this->get_plugin()->log( 'Could not read commerce integration node. ' . $exception->getMessage(), null, 'error' );
+			}
+		}
+
+		try {
+			$this->update_installation_data();
+			$this->get_plugin()->log( 'Refreshed asset mapping from the legacy FBE install read.' );
+			return true;
+		} catch ( ApiException $exception ) {
+			$this->get_plugin()->log( 'Could not refresh installation data. ' . $exception->getMessage(), null, 'error' );
+			return false;
+		}
+	}
+
+	/**
+	 * Persists asset IDs, never blanking a stored value.
+	 *
+	 * @param string $pixel_id Pixel ID, possibly empty.
+	 * @param string $catalog_id Catalog ID, possibly empty.
+	 * @param string $commerce_merchant_settings_id Commerce Merchant Settings ID, possibly empty.
+	 */
+	private function apply_asset_mapping( $pixel_id, $catalog_id, $commerce_merchant_settings_id ) {
+		if ( ! empty( $pixel_id ) ) {
+			update_option( \WC_Facebookcommerce_Integration::SETTING_FACEBOOK_PIXEL_ID, sanitize_text_field( $pixel_id ) );
+		}
+
+		if ( ! empty( $catalog_id ) ) {
+			update_option( \WC_Facebookcommerce_Integration::OPTION_PRODUCT_CATALOG_ID, sanitize_text_field( $catalog_id ) );
+		}
+
+		if ( ! empty( $commerce_merchant_settings_id ) ) {
+			$this->update_commerce_merchant_settings_id( sanitize_text_field( $commerce_merchant_settings_id ) );
 		}
 	}
 
@@ -253,6 +406,9 @@ class Connection {
 	/**
 	 * Retrieves and stores the connected installation data.
 	 *
+	 * Last-resort rung of the asset-mapping ladder; the STEFI integration read
+	 * and the legacy Graph node are tried first.
+	 *
 	 * @since 2.0.0
 	 *
 	 * @throws ApiException If the installation data could not be retrieved.
@@ -273,11 +429,9 @@ class Connection {
 			$this->update_commerce_merchant_settings_id( sanitize_text_field( $response->get_commerce_merchant_settings_id() ) );
 		}
 
-		if ( $response->get_commerce_partner_integration_id() ) {
-			$this->update_commerce_partner_integration_id( sanitize_text_field( $response->get_commerce_partner_integration_id() ) );
-		} else {
-			$this->update_commerce_partner_integration_id( '' );
-		}
+		// The CPI ID is owned by ensure_commerce_partner_integration_id() and is
+		// deliberately never written here, so a legacy read can neither mint nor
+		// clear it.
 	}
 
 

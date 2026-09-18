@@ -8,10 +8,10 @@
 
 declare( strict_types=1 );
 
-namespace WooCommerce\Facebook\Tests\Unit\API\CommerceIntegration\Finalize;
+namespace WooCommerce\Facebook\Tests\Unit\API\CommerceIntegration;
 
-use WooCommerce\Facebook\API\CommerceIntegration\Finalize\Client;
-use WooCommerce\Facebook\API\CommerceIntegration\Finalize\Exception;
+use WooCommerce\Facebook\API\CommerceIntegration\Client;
+use WooCommerce\Facebook\API\CommerceIntegration\Exception;
 use WooCommerce\Facebook\API\CommerceIntegration\Finalize\Response;
 use WooCommerce\Facebook\Tests\AbstractWPUnitTestWithSafeFiltering;
 
@@ -31,7 +31,7 @@ class ClientTest extends AbstractWPUnitTestWithSafeFiltering {
 		$this->add_filter_with_safe_teardown(
 			'pre_http_request',
 			function( $preempt, $request_args, $url ) use ( $access_token, $external_business_id, $extension_version ) {
-				$this->assertSame( Client::ENDPOINT, $url );
+				$this->assertSame( Client::FINALIZE_INSTALL_ENDPOINT, $url );
 				$this->assertSame( 'POST', $request_args['method'] );
 				$this->assertSame( 'Bearer ' . $access_token, $request_args['headers']['Authorization'] );
 				$this->assertSame( 'application/json', $request_args['headers']['Content-Type'] );

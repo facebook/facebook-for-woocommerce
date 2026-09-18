@@ -968,4 +968,21 @@ class API extends Base {
 		$this->set_response_handler( API\CommerceIntegration\Configuration\Update\Response::class );
 		return $this->perform_request( $request );
 	}
+
+
+	/**
+	 * Reads a Commerce Partner Integration node with its linked asset edges.
+	 *
+	 * @param string $commerce_integration_id The ID of the commerce integration to read
+	 * @return API\CommerceIntegration\Node\Response
+	 * @throws ApiException In case of a general API error or rate limit error.
+	 *
+	 * @deprecated The Graph node is superseded by the STEFI integration read. Kept
+	 *             as a transitional fallback rung while FBE endpoints are retired.
+	 */
+	public function get_commerce_partner_integration( string $commerce_integration_id ): API\CommerceIntegration\Node\Response {
+		$request = new API\CommerceIntegration\Node\Request( $commerce_integration_id );
+		$this->set_response_handler( API\CommerceIntegration\Node\Response::class );
+		return $this->perform_request( $request );
+	}
 }

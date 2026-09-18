@@ -8,22 +8,37 @@
 
 declare( strict_types=1 );
 
-namespace WooCommerce\Facebook\API\CommerceIntegration\Finalize;
+namespace WooCommerce\Facebook\API\CommerceIntegration;
 
 use WooCommerce\Facebook\API\CommerceIntegration\CommerceExtensionToken\Response as CommerceExtensionTokenResponse;
+use WooCommerce\Facebook\API\CommerceIntegration\Finalize\Response as FinalizeResponse;
+use WooCommerce\Facebook\API\CommerceIntegration\Read\Response as IntegrationReadResponse;
 
 defined( 'ABSPATH' ) || exit;
 
 /**
- * Client for Commerce Partner Integration endpoints.
+ * Client for the Commerce Partner Integration endpoint.
+ *
+ * One client per Meta endpoint: every method here is a sub-path of
+ * /commerce-partner-integrations, mirroring the server-side schema.
  */
 class Client {
 
-	/** @var string Commerce Partner Integration finalize-install endpoint. */
-	const ENDPOINT = 'https://api.facebook.com/commerce-partner-integrations/finalize-install';
+	/**
+	 * @var string The Commerce Partner Integration endpoint. Reading a collection is a
+	 *             GET against this path with a query parameter; every other operation
+	 *             is a sub-path of it, so they are derived rather than repeated.
+	 */
+	const BASE_ENDPOINT = 'https://api.facebook.com/commerce-partner-integrations';
 
-	/** @var string Commerce Partner Integration commerce-extension-token endpoint pattern. */
-	const COMMERCE_EXTENSION_TOKEN_ENDPOINT = 'https://api.facebook.com/commerce-partner-integrations/%s/commerce-extension-token';
+	/** @var string Finalize-install endpoint. */
+	const FINALIZE_INSTALL_ENDPOINT = self::BASE_ENDPOINT . '/finalize-install';
+
+	/** @var string Commerce-extension-token endpoint pattern. */
+	const COMMERCE_EXTENSION_TOKEN_ENDPOINT = self::BASE_ENDPOINT . '/%s/commerce-extension-token';
+
+	/** @var string Single integration endpoint pattern. */
+	const INTEGRATION_ENDPOINT = self::BASE_ENDPOINT . '/%s';
 
 	/**
 	 * Finalizes an installation after the durable access token has been stored.
@@ -31,10 +46,10 @@ class Client {
 	 * @param string $access_token The durable business integration system user access token.
 	 * @param string $external_business_id The stable external business ID for this store.
 	 * @param string $extension_version The installed Meta for WooCommerce version.
-	 * @return Response
+	 * @return FinalizeResponse
 	 * @throws Exception If the request fails or returns an invalid response.
 	 */
-	public function finalize_install( string $access_token, string $external_business_id, string $extension_version ): Response {
+	public function finalize_install( string $access_token, string $external_business_id, string $extension_version ): FinalizeResponse {
 		$body = array(
 			'external_business_id' => $external_business_id,
 		);
@@ -44,7 +59,7 @@ class Client {
 		}
 
 		$response = wp_safe_remote_post(
-			self::ENDPOINT,
+			self::FINALIZE_INSTALL_ENDPOINT,
 			array(
 				'headers'     => array(
 					'Accept'        => 'application/json',
@@ -74,7 +89,7 @@ class Client {
 			);
 		}
 
-		$finalize_response = new Response( wp_remote_retrieve_body( $response ) );
+		$finalize_response = new FinalizeResponse( wp_remote_retrieve_body( $response ) );
 		if ( ! $finalize_response->is_successful() ) {
 			throw new Exception(
 				'Finalize install response was missing required installation data.',
@@ -142,6 +157,91 @@ class Client {
 		}
 
 		return $token_response;
+	}
+
+	/**
+	 * Reads a Commerce Partner Integration by external business ID.
+	 *
+	 * @param string $access_token The durable business integration system user access token.
+	 * @param string $external_business_id The platform's unique seller identifier.
+	 * @return IntegrationReadResponse
+	 * @throws Exception If the request fails or returns an invalid response.
+	 */
+	public function get_integration_by_external_business_id( string $access_token, string $external_business_id ): IntegrationReadResponse {
+		return $this->get_integration(
+			$access_token,
+			add_query_arg(
+				array( 'external_business_id' => $external_business_id ),
+				self::BASE_ENDPOINT
+			)
+		);
+	}
+
+	/**
+	 * Reads a Commerce Partner Integration by entity ID.
+	 *
+	 * @param string $access_token The durable business integration system user access token.
+	 * @param string $commerce_partner_integration_id The Commerce Partner Integration entity ID.
+	 * @return IntegrationReadResponse
+	 * @throws Exception If the request fails or returns an invalid response.
+	 */
+	public function get_integration_by_id( string $access_token, string $commerce_partner_integration_id ): IntegrationReadResponse {
+		return $this->get_integration(
+			$access_token,
+			sprintf(
+				self::INTEGRATION_ENDPOINT,
+				rawurlencode( $commerce_partner_integration_id )
+			)
+		);
+	}
+
+	/**
+	 * Executes an integration read against the given endpoint URL.
+	 *
+	 * @param string $access_token The durable business integration system user access token.
+	 * @param string $endpoint The fully qualified endpoint URL.
+	 * @return IntegrationReadResponse
+	 * @throws Exception If the request fails or returns an invalid response.
+	 */
+	private function get_integration( string $access_token, string $endpoint ): IntegrationReadResponse {
+		$response = wp_safe_remote_get(
+			$endpoint,
+			array(
+				'headers'     => array(
+					'Accept'        => 'application/json',
+					'Authorization' => 'Bearer ' . $access_token,
+				),
+				'redirection' => 0,
+				'sslverify'   => true,
+				'timeout'     => 30,
+			)
+		);
+
+		if ( is_wp_error( $response ) ) {
+			throw new Exception(
+				esc_html( $response->get_error_message() ),
+				'transport_error'
+			);
+		}
+
+		$status_code = (int) wp_remote_retrieve_response_code( $response );
+		if ( 200 !== $status_code ) {
+			throw new Exception(
+				sprintf( 'Commerce integration read failed with status %d.', $status_code ),
+				$this->get_http_failure_reason( $status_code ),
+				$status_code
+			);
+		}
+
+		$read_response = new IntegrationReadResponse( wp_remote_retrieve_body( $response ) );
+		if ( ! $read_response->is_successful() ) {
+			throw new Exception(
+				'Commerce integration read response was missing the integration.',
+				'invalid_response'
+			);
+		}
+
+		return $read_response;
 	}
 
 	/**
