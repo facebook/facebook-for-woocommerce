@@ -88,8 +88,6 @@ class Connection {
 
 		$this->plugin = $plugin;
 
-		add_action( Heartbeat::HOURLY, array( $this, 'refresh_business_configuration' ) );
-
 		add_action( Heartbeat::DAILY, array( $this, 'refresh_installation_data' ) );
 
 		add_action( 'admin_action_' . self::ACTION_DISCONNECT, array( $this, 'handle_disconnect' ) );
@@ -97,39 +95,6 @@ class Connection {
 		add_action( 'woocommerce_api_' . self::ACTION_FBE_REDIRECT, array( $this, 'handle_fbe_redirect' ) );
 
 		add_action( 'rest_api_init', array( $this, 'init_extras_endpoint' ) );
-	}
-
-
-	/**
-	 * Refreshes the local business configuration data with the latest from Facebook.
-	 *
-	 * @internal
-	 *
-	 * @since 2.0.0
-	 */
-	public function refresh_business_configuration() {
-
-		// bail if not connected
-		if ( ! $this->is_connected() ) {
-			return;
-		}
-
-		$flag_name = '_wc_facebook_for_woocommerce_refresh_business_configuration';
-		if ( 'yes' === get_transient( $flag_name ) ) {
-			return;
-		}
-		set_transient( $flag_name, 'yes', HOUR_IN_SECONDS );
-
-		try {
-			$response = $this->get_plugin()->get_api()->get_business_configuration( $this->get_external_business_id() );
-			facebook_for_woocommerce()->get_tracker()->track_facebook_business_config(
-				$response->is_ig_shopping_enabled(),
-				$response->is_ig_cta_enabled()
-			);
-
-		} catch ( ApiException $exception ) {
-			$this->get_plugin()->log( 'Could not refresh business configuration. ' . $exception->getMessage() );
-		}
 	}
 
 

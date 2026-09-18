@@ -64,13 +64,6 @@ class Tracker {
 	public const TRANSIENT_WCTRACKER_FEED_REQUESTED = 'facebook_for_woocommerce_wctracker_feed_requested';
 
 	/**
-	 * Transient key name; stores various FBE business settings.
-	 *
-	 * @var string
-	 */
-	public const TRANSIENT_WCTRACKER_FBE_BUSINESS_CONFIG = 'facebook_for_woocommerce_wctracker_fbe_business_config';
-
-	/**
 	 * Transient key name; stores feed (data source) settings for catalog sync.
 	 *
 	 * @var string
@@ -158,15 +151,6 @@ class Tracker {
 		$data['extensions']['facebook-for-woocommerce']['feed-file-requested'] = wc_bool_to_string( $feed_file_requested );
 		// Manually delete the transient. This prop tracks if feed has been requested _since last snapshot_.
 		delete_transient( self::TRANSIENT_WCTRACKER_FEED_REQUESTED );
-
-		/**
-		 * Miscellaneous Facebook config settings.
-		 *
-		 * @since 2.6.0
-		 */
-		$config = get_transient( self::TRANSIENT_WCTRACKER_FBE_BUSINESS_CONFIG );
-		$data['extensions']['facebook-for-woocommerce']['instagram-shopping-enabled'] = wc_bool_to_string( $config ? $config['ig_shopping_enabled'] : false );
-		$data['extensions']['facebook-for-woocommerce']['instagram-cta-enabled']      = wc_bool_to_string( $config ? $config['ig_cta_enabled'] : false );
 
 		/**
 		 * Feed pull / upload settings configured in Facebook UI.
@@ -287,24 +271,6 @@ class Tracker {
 	 */
 	public function track_feed_file_requested() {
 		set_transient( self::TRANSIENT_WCTRACKER_FEED_REQUESTED, true, self::TRANSIENT_WCTRACKER_LIFE_TIME );
-	}
-
-	/**
-	 * Store some Facebook config settings for tracking.
-	 *
-	 * @param bool $ig_shopping_enabled True if Instagram Shopping is configured.
-	 * @param bool $ig_cta_enabled True if `ig_cta` config option is enabled.
-	 * @since 2.6.0
-	 */
-	public function track_facebook_business_config(
-		bool $ig_shopping_enabled,
-		bool $ig_cta_enabled
-	) {
-		$transient = [
-			'ig_shopping_enabled' => $ig_shopping_enabled,
-			'ig_cta_enabled'      => $ig_cta_enabled,
-		];
-		set_transient( self::TRANSIENT_WCTRACKER_FBE_BUSINESS_CONFIG, $transient, self::TRANSIENT_WCTRACKER_LIFE_TIME );
 	}
 
 	/**

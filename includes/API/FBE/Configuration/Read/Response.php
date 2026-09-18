@@ -22,6 +22,8 @@ class Response extends API\Response {
 	/**
 	 * Is Instagram Shopping enabled?
 	 *
+	 * @deprecated No longer consumed; the hourly business-configuration refresh that read this flag was removed.
+	 *
 	 * @return boolean
 	 */
 	public function is_ig_shopping_enabled(): bool {
@@ -34,6 +36,8 @@ class Response extends API\Response {
 
 	/**
 	 * Is Instagram CTA enabled?
+	 *
+	 * @deprecated No longer consumed; the hourly business-configuration refresh that read this flag was removed.
 	 *
 	 * @return boolean
 	 */

@@ -101,7 +101,6 @@ abstract class IntegrationTestCase extends WP_UnitTestCase {
 		
 		// Clear transients
 		delete_transient( 'wc_facebook_connection_invalid' );
-		delete_transient( '_wc_facebook_for_woocommerce_refresh_business_configuration' );
 	}
 
 	/**
