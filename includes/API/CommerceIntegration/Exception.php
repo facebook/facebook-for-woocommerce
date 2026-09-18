@@ -8,7 +8,7 @@
 
 declare( strict_types=1 );
 
-namespace WooCommerce\Facebook\API\CommerceIntegration\Finalize;
+namespace WooCommerce\Facebook\API\CommerceIntegration;
 
 defined( 'ABSPATH' ) || exit;
 

@@ -8,10 +8,10 @@
 
 declare( strict_types=1 );
 
-namespace WooCommerce\Facebook\Tests\Unit\API\CommerceIntegration\Finalize;
+namespace WooCommerce\Facebook\Tests\Unit\API\CommerceIntegration;
 
-use WooCommerce\Facebook\API\CommerceIntegration\Finalize\Client;
-use WooCommerce\Facebook\API\CommerceIntegration\Finalize\Exception;
+use WooCommerce\Facebook\API\CommerceIntegration\Client;
+use WooCommerce\Facebook\API\CommerceIntegration\Exception;
 use WooCommerce\Facebook\API\CommerceIntegration\Finalize\Response;
 use WooCommerce\Facebook\Tests\AbstractWPUnitTestWithSafeFiltering;
 

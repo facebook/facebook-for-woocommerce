@@ -8,14 +8,18 @@
 
 declare( strict_types=1 );
 
-namespace WooCommerce\Facebook\API\CommerceIntegration\Finalize;
+namespace WooCommerce\Facebook\API\CommerceIntegration;
 
 use WooCommerce\Facebook\API\CommerceIntegration\CommerceExtensionToken\Response as CommerceExtensionTokenResponse;
+use WooCommerce\Facebook\API\CommerceIntegration\Finalize\Response as FinalizeResponse;
 
 defined( 'ABSPATH' ) || exit;
 
 /**
- * Client for Commerce Partner Integration endpoints.
+ * Client for the Commerce Partner Integration endpoint.
+ *
+ * One client per Meta endpoint: every method here is a sub-path of
+ * /commerce-partner-integrations, mirroring the server-side schema.
  */
 class Client {
 
@@ -31,10 +35,10 @@ class Client {
 	 * @param string $access_token The durable business integration system user access token.
 	 * @param string $external_business_id The stable external business ID for this store.
 	 * @param string $extension_version The installed Meta for WooCommerce version.
-	 * @return Response
+	 * @return FinalizeResponse
 	 * @throws Exception If the request fails or returns an invalid response.
 	 */
-	public function finalize_install( string $access_token, string $external_business_id, string $extension_version ): Response {
+	public function finalize_install( string $access_token, string $external_business_id, string $extension_version ): FinalizeResponse {
 		$body = array(
 			'external_business_id' => $external_business_id,
 		);
@@ -74,7 +78,7 @@ class Client {
 			);
 		}
 
-		$finalize_response = new Response( wp_remote_retrieve_body( $response ) );
+		$finalize_response = new FinalizeResponse( wp_remote_retrieve_body( $response ) );
 		if ( ! $finalize_response->is_successful() ) {
 			throw new Exception(
 				'Finalize install response was missing required installation data.',
