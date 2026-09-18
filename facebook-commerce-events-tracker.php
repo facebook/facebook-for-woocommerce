@@ -37,7 +37,10 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 		const IS_VO_ENABLED = false;
 
 		/** @var string URL for the client-side CAPI param builder script */
-		const CAPI_PARAM_BUILDER_JS_URL = 'https://unpkg.com/meta-capi-param-builder-clientjs/dist/clientParamBuilder.bundle.js';
+		const CAPI_PARAM_BUILDER_JS_URL = 'https://cdn.jsdelivr.net/npm/meta-capi-param-builder-clientjs@1.3.2/dist/clientParamBuilder.bundle.js';
+
+		/** @var string Fallback URL for the client-side CAPI param builder script */
+		const CAPI_PARAM_BUILDER_FALLBACK_JS_URL = 'https://unpkg.com/meta-capi-param-builder-clientjs@1.3.2/dist/clientParamBuilder.bundle.js';
 
 		/** @var \WC_Facebookcommerce_Pixel instance */
 		private $pixel;
@@ -368,9 +371,21 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 			// Add inline script that executes after the external script has loaded
 			wp_add_inline_script(
 				'facebook-capi-param-builder',
-				'if (typeof clientParamBuilder !== "undefined" && !/(?:^|;\s*)wc_facebook_signals_state=held(?:;|$)/.test(document.cookie)) {
-					clientParamBuilder.processAndCollectAllParams(window.location.href);
-				}'
+				'(function() {
+					var processParams = function() {
+						if (typeof clientParamBuilder !== "undefined" && !/(?:^|;\s*)wc_facebook_signals_state=held(?:;|$)/.test(document.cookie)) {
+							clientParamBuilder.processAndCollectAllParams(window.location.href);
+						}
+					};
+					if (typeof clientParamBuilder !== "undefined") {
+						processParams();
+						return;
+					}
+					var fallbackScript = document.createElement("script");
+					fallbackScript.src = ' . wp_json_encode( self::CAPI_PARAM_BUILDER_FALLBACK_JS_URL ) . ';
+					fallbackScript.onload = processParams;
+					document.head.appendChild(fallbackScript);
+				}());'
 			);
 		}
 
