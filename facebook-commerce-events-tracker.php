@@ -33,9 +33,6 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 	 * This class is responsible for tracking events and sending them to Facebook.
 	 */
 	class WC_Facebookcommerce_EventsTracker {
-		/** @var bool disable VO while product is not GA */
-		const IS_VO_ENABLED = false;
-
 		/** @var string URL for the client-side CAPI param builder script */
 		const CAPI_PARAM_BUILDER_JS_URL = 'https://unpkg.com/meta-capi-param-builder-clientjs/dist/clientParamBuilder.bundle.js';
 
@@ -1325,6 +1322,28 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 		}
 
 		/**
+		 * Determines whether Value Optimization is enabled for this store.
+		 *
+		 * VO is gated on a rollout switch rather than shipped on, so net revenue is
+		 * only attached to Purchase events once Meta enables it for the store.
+		 *
+		 * @since 3.7.7
+		 *
+		 * @return bool
+		 */
+		private function is_value_optimization_enabled(): bool {
+			$plugin = facebook_for_woocommerce();
+
+			if ( ! $plugin || ! $plugin->get_rollout_switches() ) {
+				return false;
+			}
+
+			return (bool) $plugin->get_rollout_switches()->is_switch_enabled(
+				\WooCommerce\Facebook\RolloutSwitches::SWITCH_VALUE_OPTIMIZATION_ENABLED
+			);
+		}
+
+		/**
 		 * Triggers a Purchase event when checkout is completed.
 		 *
 		 * This may happen either when:
@@ -1470,7 +1489,7 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 				'event_id'    => $event_id,
 			);
 
-			if ( self::IS_VO_ENABLED ) {
+			if ( $this->is_value_optimization_enabled() ) {
 				$cogs = $this->cogs_provider->calculate_cogs_for_products( $products );
 
 				if ( false !== $cogs ) {
