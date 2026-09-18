@@ -429,10 +429,6 @@ class Handler extends AbstractRESTEndpoint {
 			$options[ \WC_Facebookcommerce_Integration::OPTION_INSTALLED_FEATURES ] = $params['installed_features'];
 		}
 
-		if ( ! empty( $params['page_id'] ) ) {
-			update_option( \WC_Facebookcommerce_Integration::SETTING_FACEBOOK_PAGE_ID, $params['page_id'] );
-		}
-
 		// Prefer pixel from installed_features if available
 		$pixel_from_features = '';
 
@@ -524,7 +520,6 @@ class Handler extends AbstractRESTEndpoint {
 			\WC_Facebookcommerce_Integration::OPTION_PAGE_ACCESS_TOKEN,
 			\WC_Facebookcommerce_Integration::OPTION_PRODUCT_CATALOG_ID,
 			\WC_Facebookcommerce_Integration::OPTION_PROFILES,
-			\WC_Facebookcommerce_Integration::SETTING_FACEBOOK_PAGE_ID,
 			\WC_Facebookcommerce_Integration::SETTING_FACEBOOK_PIXEL_ID,
 		];
 

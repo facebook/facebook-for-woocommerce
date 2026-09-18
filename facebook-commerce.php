@@ -207,6 +207,7 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 		self::OPTION_HAS_CONNECTED_FBE_2,
 		self::OPTION_HAS_AUTHORIZED_PAGES_READ_ENGAGEMENT,
 		self::OPTION_ENABLE_MESSENGER,
+		self::SETTING_FACEBOOK_PAGE_ID,
 		'wc_facebook_last_attribute_sync',
 	);
 
@@ -2619,8 +2620,13 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 	 *
 	 * @return string
 	 * @since 1.10.0
+	 * @deprecated The Page ID is no longer collected or used. Nothing in the plugin reads it,
+	 *             and the Commerce Partner Integration that replaces the legacy installation
+	 *             read does not supply one. The read remains temporarily for backwards
+	 *             compatibility and returns whatever a previously connected store stored.
 	 */
 	public function get_facebook_page_id() {
+		wc_deprecated_function( __METHOD__, '3.7.7' );
 		/**
 		 * Filters the configured Facebook page ID.
 		 *
@@ -2792,11 +2798,17 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 	/**
 	 * Determines whether Meta for WooCommerce is configured.
 	 *
+	 * This used to also require a Facebook Page ID. The Page is not used to reach any
+	 * Meta endpoint and is optional during onboarding, so a shop connected through an
+	 * Instagram-only asset selection had product sync silently disabled even with a
+	 * healthy connection and catalog. Callers that need a catalog check for it
+	 * alongside this method.
+	 *
 	 * @return bool
 	 * @since 1.10.0
 	 */
 	public function is_configured() {
-		return $this->get_facebook_page_id() && $this->facebook_for_woocommerce->get_connection_handler()->is_connected();
+		return $this->facebook_for_woocommerce->get_connection_handler()->is_connected();
 	}
 
 	/**

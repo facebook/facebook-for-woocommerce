@@ -296,12 +296,6 @@ class Connection {
 
 		$response = $this->get_plugin()->get_api()->get_installation_ids( $this->get_external_business_id() );
 
-		$page_id = sanitize_text_field( $response->get_page_id() );
-
-		if ( $page_id ) {
-			update_option( \WC_Facebookcommerce_Integration::SETTING_FACEBOOK_PAGE_ID, $page_id );
-		}
-
 		if ( $response->get_pixel_id() ) {
 			update_option( \WC_Facebookcommerce_Integration::SETTING_FACEBOOK_PIXEL_ID, sanitize_text_field( $response->get_pixel_id() ) );
 		}
@@ -397,7 +391,6 @@ class Connection {
 		$this->update_commerce_merchant_settings_id( '' );
 		$this->update_external_business_id( '' );
 		$this->update_commerce_partner_integration_id( '' );
-		update_option( \WC_Facebookcommerce_Integration::SETTING_FACEBOOK_PAGE_ID, '' );
 		update_option( \WC_Facebookcommerce_Integration::SETTING_FACEBOOK_PIXEL_ID, '' );
 		facebook_for_woocommerce()->get_integration()->update_product_catalog_id( '' );
 		delete_option( \WC_Facebookcommerce_Integration::OPTION_PAGE_ACCESS_TOKEN );
