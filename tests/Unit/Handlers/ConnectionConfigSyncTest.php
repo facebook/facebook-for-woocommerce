@@ -89,14 +89,26 @@ class ConnectionConfigSyncTest extends \WooCommerce\Facebook\Tests\AbstractWPUni
 		$connection_mock->method( 'is_connected' )
 			->willReturn( true );
 
+		// Fail STEFI calls without network access.
+		$this->add_filter_with_safe_teardown(
+			'pre_http_request',
+			function () {
+				return new \WP_Error( 'http_request_failed', 'STEFI unavailable in this test.' );
+			}
+		);
+
 		// Should log start message (at minimum)
 		$this->plugin_mock->expects( $this->atLeastOnce() )
 			->method( 'log' );
 
-		// This will attempt to call API methods, but we just want to verify it starts
-		// The test may fail on API calls, but that's expected in unit test environment
-		$this->expectException( \TypeError::class );
+		// A transport failure leaves the remote state unknown, so each phase logs and
+		// absorbs it: the sync reports what it could not do rather than throwing.
 		$connection_mock->force_config_sync_on_update();
+
+		$this->assertEmpty(
+			get_option( Connection::OPTION_COMMERCE_PARTNER_INTEGRATION_ID, '' ),
+			'An unreachable lookup must not mint a Commerce Partner Integration.'
+		);
 	}
 
 	/**

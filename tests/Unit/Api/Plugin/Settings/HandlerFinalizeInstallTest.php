@@ -10,8 +10,8 @@ declare( strict_types=1 );
 
 namespace WooCommerce\Facebook\Tests\Unit\API\Plugin\Settings;
 
-use WooCommerce\Facebook\API\CommerceIntegration\Finalize\Client;
-use WooCommerce\Facebook\API\CommerceIntegration\Finalize\Exception;
+use WooCommerce\Facebook\API\CommerceIntegration\Client;
+use WooCommerce\Facebook\API\CommerceIntegration\Exception;
 use WooCommerce\Facebook\API\CommerceIntegration\Finalize\Response as FinalizeResponse;
 use WooCommerce\Facebook\API\Plugin\Settings\Handler;
 use WooCommerce\Facebook\Framework\Logger;
