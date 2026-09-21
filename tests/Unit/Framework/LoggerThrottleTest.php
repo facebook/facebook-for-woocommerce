@@ -184,6 +184,107 @@ class LoggerThrottleTest extends AbstractWPUnitTestWithOptionIsolationAndSafeFil
 	}
 
 	/**
+	 * Returns the transient name backing a throttle group's window.
+	 *
+	 * @param string $group the throttle group
+	 * @return string
+	 */
+	private function group_transient( string $group ): string {
+		return Logger::THROTTLE_TRANSIENT_PREFIX . 'group_' . md5( $group );
+	}
+
+	/**
+	 * The group cap covers a fixed 24 hour window opened by its first log. Later logs increment
+	 * the count without pushing the expiry out, so a trickle of logs cannot keep the window —
+	 * and with it an exhausted budget — alive indefinitely.
+	 */
+	public function test_group_window_expiry_is_not_extended_by_later_logs(): void {
+		$this->track_throttle_transient( 'fixed_window_group', true );
+
+		$transient = $this->group_transient( 'fixed_window_group' );
+
+		// A window with an hour left and one log of its budget unspent.
+		$expires = time() + HOUR_IN_SECONDS;
+		set_transient( $transient, array( 'count' => 2, 'expires' => $expires ), HOUR_IN_SECONDS );
+
+		$this->track_throttle_transient( 'fixed:1' );
+
+		Logger::log(
+			'within window',
+			array( 'event' => 'test' ),
+			$this->log_options( array( 'key' => 'fixed:1', 'group' => 'fixed_window_group', 'max_per_day' => 3 ) )
+		);
+
+		$window = get_transient( $transient );
+
+		$this->assertSame( 3, $window['count'], 'The log should have advanced the group counter' );
+		$this->assertSame( $expires, $window['expires'], 'A later log must not push the window out' );
+
+		$this->track_throttle_transient( 'fixed:2' );
+
+		Logger::log(
+			'over budget',
+			array( 'event' => 'test' ),
+			$this->log_options( array( 'key' => 'fixed:2', 'group' => 'fixed_window_group', 'max_per_day' => 3 ) )
+		);
+
+		$this->assertSame( 1, $this->queued_log_count(), 'The exhausted window should suppress further logs' );
+	}
+
+	/**
+	 * Once the window's deadline passes the next log opens a fresh one, even if the transient
+	 * itself is still readable — a persistent object cache can outlive the nominal expiry.
+	 */
+	public function test_group_window_reopens_once_its_deadline_passes(): void {
+		$this->track_throttle_transient( 'stale_window_group', true );
+
+		$transient = $this->group_transient( 'stale_window_group' );
+
+		// An exhausted window whose deadline has passed, still held in the cache.
+		set_transient( $transient, array( 'count' => 3, 'expires' => time() - 1 ), DAY_IN_SECONDS );
+
+		$this->track_throttle_transient( 'stale:1' );
+
+		Logger::log(
+			'after window',
+			array( 'event' => 'test' ),
+			$this->log_options( array( 'key' => 'stale:1', 'group' => 'stale_window_group', 'max_per_day' => 3 ) )
+		);
+
+		$window = get_transient( $transient );
+
+		$this->assertSame( 1, $this->queued_log_count(), 'An expired window should not suppress the next log' );
+		$this->assertSame( 1, $window['count'], 'The counter should restart with the new window' );
+		$this->assertGreaterThan( time(), $window['expires'], 'A new window should carry a future deadline' );
+	}
+
+	/**
+	 * A group transient left by an older version holds a bare count rather than a window, which
+	 * must be discarded rather than read as an exhausted budget.
+	 */
+	public function test_legacy_group_counter_is_replaced_with_a_window(): void {
+		$this->track_throttle_transient( 'legacy_group', true );
+
+		$transient = $this->group_transient( 'legacy_group' );
+
+		set_transient( $transient, 3, DAY_IN_SECONDS );
+
+		$this->track_throttle_transient( 'legacy:1' );
+
+		Logger::log(
+			'after upgrade',
+			array( 'event' => 'test' ),
+			$this->log_options( array( 'key' => 'legacy:1', 'group' => 'legacy_group', 'max_per_day' => 3 ) )
+		);
+
+		$window = get_transient( $transient );
+
+		$this->assertSame( 1, $this->queued_log_count(), 'A legacy counter should not suppress the log' );
+		$this->assertIsArray( $window, 'The legacy counter should be replaced with a window' );
+		$this->assertSame( 1, $window['count'], 'The counter should restart with the new window' );
+	}
+
+	/**
 	 * A zero or missing max_per_day leaves the group uncapped.
 	 */
 	public function test_group_without_max_per_day_is_uncapped(): void {

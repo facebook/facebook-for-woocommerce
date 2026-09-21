@@ -117,6 +117,9 @@ class Logger {
 	 * related occurrences, so a caller iterating many distinct keys still cannot flood.
 	 * Omitting 'throttle', or passing an empty 'key', logs unconditionally.
 	 *
+	 * The group cap runs over a fixed 24 hour window opened by its first log, see
+	 * self::get_group_window().
+	 *
 	 * Only reached once self::log() knows a sink will actually receive the message, so the
 	 * budget tracks logs that were written rather than logs that were merely attempted.
 	 *
@@ -153,14 +156,14 @@ class Logger {
 		}
 
 		$group_transient = '';
-		$group_count     = 0;
+		$group_window    = [];
 
 		if ( '' !== (string) $throttle['group'] && (int) $throttle['max_per_day'] > 0 ) {
 
 			$group_transient = self::THROTTLE_TRANSIENT_PREFIX . 'group_' . md5( (string) $throttle['group'] );
-			$group_count     = (int) get_transient( $group_transient );
+			$group_window    = self::get_group_window( $group_transient );
 
-			if ( $group_count >= (int) $throttle['max_per_day'] ) {
+			if ( $group_window['count'] >= (int) $throttle['max_per_day'] ) {
 				return false;
 			}
 		}
@@ -168,9 +171,52 @@ class Logger {
 		set_transient( $key_transient, 1, max( 1, (int) $throttle['interval'] ) );
 
 		if ( '' !== $group_transient ) {
-			set_transient( $group_transient, $group_count + 1, DAY_IN_SECONDS );
+			// Written back with the window's remaining lifetime, never a fresh day, so the
+			// expiry stays where the first log put it.
+			set_transient(
+				$group_transient,
+				[
+					'count'   => $group_window['count'] + 1,
+					'expires' => $group_window['expires'],
+				],
+				max( 1, $group_window['expires'] - time() )
+			);
 		}
 
 		return true;
+	}
+
+	/**
+	 * Reads the current 24 hour window for a throttle group, opening a new one if none is live.
+	 *
+	 * The window is fixed rather than rolling: it runs for 24 hours from the log that opened it,
+	 * and subsequent logs increment the count without pushing the expiry out. Refreshing the
+	 * expiry on every log would turn 'max_per_day' into a cap over an indefinitely extending
+	 * window, where a steady trickle of logs spread over a week could exhaust a daily budget.
+	 *
+	 * The stored expiry is what makes that possible: WordPress offers no way to update a
+	 * transient's value while keeping its remaining lifetime, so the window carries its own
+	 * deadline and self::should_log() derives the TTL from it.
+	 *
+	 * @since 3.7.7
+	 *
+	 * @param string $group_transient the transient holding the group's window
+	 * @return array{count: int, expires: int} the logs written so far and the window's deadline
+	 */
+	private static function get_group_window( $group_transient ) {
+
+		$window = get_transient( $group_transient );
+
+		if ( is_array( $window ) && isset( $window['count'], $window['expires'] ) && (int) $window['expires'] > time() ) {
+			return [
+				'count'   => (int) $window['count'],
+				'expires' => (int) $window['expires'],
+			];
+		}
+
+		return [
+			'count'   => 0,
+			'expires' => time() + DAY_IN_SECONDS,
+		];
 	}
 }
