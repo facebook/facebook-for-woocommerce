@@ -1080,7 +1080,7 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 	 * WooCommerce only fires for the admin product form. REST API (and other programmatic) saves do
 	 * not trigger that hook, so those changes never reached the Meta catalog. This handler runs on the
 	 * woocommerce_update_product / woocommerce_new_product actions, which do fire for REST API saves,
-	 * and delegates to on_product_publish(), honoring each product's existing sync settings.
+	 * and queues the product for the background sync, honoring its existing sync settings.
 	 *
 	 * The woocommerce_update_product / woocommerce_new_product actions are low-level data-store hooks
 	 * fired by WC_Product::save() for *any* product save, including ones made in unprivileged contexts
@@ -1093,7 +1093,7 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 	 *   controller checks before a write, so guest/customer contexts (e.g. checkout stock changes over
 	 *   the Store API) do not trigger a sync.
 	 *
-	 * @since 3.7.3
+	 * @since 3.7.7
 	 *
 	 * @internal
 	 *
@@ -1111,9 +1111,41 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 			return;
 		}
 
-		// on_product_publish() bails when the plugin is not configured and only syncs products that
-		// should be synced, so there is nothing else to guard here.
-		$this->on_product_publish( (int) $product_id );
+		// bail if the plugin is not configured properly
+		if ( ! $this->is_configured() || ! $this->get_product_catalog_id() ) {
+			return;
+		}
+
+		$product = wc_get_product( $product_id );
+
+		if ( ! $product instanceof WC_Product ) {
+			return;
+		}
+
+		$product_ids = array();
+
+		if ( $product->is_type( 'variable' ) ) {
+			// Variations carry the catalog items for a variable product; the parent is represented by
+			// a product group, which the items batch derives from each variation's item_group_id.
+			foreach ( $product->get_children() as $variation_id ) {
+				$variation = wc_get_product( $variation_id );
+				if ( $variation instanceof WC_Product && $this->product_should_be_synced( $variation ) ) {
+					$product_ids[] = $variation_id;
+				}
+			}
+		} elseif ( $this->product_should_be_synced( $product ) ) {
+			$product_ids[] = $product->get_id();
+		}
+
+		if ( empty( $product_ids ) ) {
+			return;
+		}
+
+		// Queue rather than sync inline. The sync handler collects everything queued during the request
+		// and dispatches a single background job on shutdown, so a batch REST update costs one job
+		// instead of a Graph call per product inside the request — matching the admin, quick edit and
+		// stock paths.
+		$this->facebook_for_woocommerce->get_products_sync_handler()->create_or_update_products( $product_ids );
 	}
 
 	/**
