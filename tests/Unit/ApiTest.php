@@ -1098,4 +1098,37 @@ class ApiTest extends \WooCommerce\Facebook\Tests\AbstractWPUnitTestWithSafeFilt
 		$response = $this->api->create_product_feed_upload( $product_feed_id, $data );
 		$this->assertFalse( $response->has_api_error() );
 	}
+
+	/**
+	 * The API object is a singleton reused within a request, so `get_api( $token )` can swap
+	 * the token between calls. The Authorization actually sent must follow the current token,
+	 * not the one that constructed the instance.
+	 */
+	public function test_authorization_header_follows_the_current_access_token() {
+		$sent_authorizations = array();
+
+		$response = function ( $result, $parsed_args, $url ) use ( &$sent_authorizations ) {
+			$sent_authorizations[] = $parsed_args['headers']['Authorization'];
+			return [
+				'body'     => '{"name":"WooCommerce Catalog","id":"726635365295186"}',
+				'response' => [
+					'code'    => 200,
+					'message' => 'OK',
+				],
+			];
+		};
+		$this->add_filter_with_safe_teardown( 'pre_http_request', $response, 10, 3 );
+
+		$this->api->get_catalog( '726635365295186' );
+
+		$this->api->set_access_token( 'rotated-token-9911' );
+		$this->api->get_catalog( '726635365295186' );
+
+		$this->assertSame(
+			array( 'Bearer test-api-key-9678djyad552', 'Bearer rotated-token-9911' ),
+			$sent_authorizations,
+			'The Authorization sent must track the current access token across a token swap.'
+		);
+		$this->assertSame( 'rotated-token-9911', $this->api->get_access_token() );
+	}
 }

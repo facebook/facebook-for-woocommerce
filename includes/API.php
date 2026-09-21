@@ -50,10 +50,7 @@ class API extends Base {
 	 * @param string $access_token access token to use for API requests
 	 */
 	public function __construct( $access_token ) {
-		$this->access_token    = $access_token;
-		$this->request_headers = array(
-			'Authorization' => "Bearer {$access_token}",
-		);
+		$this->access_token = $access_token;
 		$this->set_request_content_type_header( 'application/json' );
 		$this->set_request_accept_header( 'application/json' );
 	}
@@ -80,6 +77,30 @@ class API extends Base {
 	 */
 	public function set_access_token( $access_token ) {
 		$this->access_token = $access_token;
+	}
+
+
+	/**
+	 * Gets the headers to send with the request.
+	 *
+	 * The Authorization header is derived here rather than cached on construction. This
+	 * object is a singleton reused within a request, so `get_api( $token )` can swap the
+	 * token mid-request; a stored copy would keep authenticating with whichever token
+	 * happened to construct the instance. Deriving it on read keeps the access token the
+	 * single source of truth, matching how the other authenticated paths in this class
+	 * already read it.
+	 *
+	 * Request-specific headers still win, as they did when the header was set on construction.
+	 *
+	 * @since 2.1.0
+	 *
+	 * @return array
+	 */
+	protected function get_request_headers() {
+		return array_merge(
+			array( 'Authorization' => "Bearer {$this->access_token}" ),
+			parent::get_request_headers()
+		);
 	}
 
 
