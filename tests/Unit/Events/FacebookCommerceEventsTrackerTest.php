@@ -1517,4 +1517,121 @@ class FacebookCommerceEventsTrackerTest extends AbstractWPUnitTestWithSafeFilter
 
 		unset( $_SERVER['HTTP_USER_AGENT'] );
 	}
+
+	/**
+	 * Builds a Purchase payload through inject_purchase_event() and returns its custom_data.
+	 *
+	 * Value Optimization is switched on, and the COGS provider is replaced with a stub so
+	 * the test does not depend on a Cost of Goods integration being installed.
+	 *
+	 * @param float      $shipping_total Shipping cost excluding tax.
+	 * @param float      $cart_tax       Tax on the items.
+	 * @param float      $shipping_tax   Tax on the shipping.
+	 * @param float|bool $cogs           Value the COGS provider should report.
+	 * @return array The event's custom_data.
+	 */
+	private function build_purchase_custom_data( float $shipping_total, float $cart_tax, float $shipping_tax, $cogs ): array {
+		update_option(
+			'wc_facebook_for_woocommerce_rollout_switches',
+			array( \WooCommerce\Facebook\RolloutSwitches::SWITCH_VALUE_OPTIMIZATION_ENABLED => 'yes' )
+		);
+
+		// Purchases are not tracked for users who can manage WooCommerce.
+		wp_set_current_user( 0 );
+
+		$this->instance = $this->create_tracker_with_pixel_enabled();
+		$this->remove_purchase_hooks();
+
+		$product = \WC_Helper_Product::create_simple_product();
+		$product->set_regular_price( 100 );
+		$product->save();
+
+		$order = new \WC_Order();
+		$order->add_product( $product, 1 );
+		$order->set_shipping_total( $shipping_total );
+		$order->set_cart_tax( $cart_tax );
+		$order->set_shipping_tax( $shipping_tax );
+		$order->set_total( 100 + $shipping_total + $cart_tax + $shipping_tax );
+		$order->set_status( 'processing' );
+		$order->save();
+
+		// Stub the COGS provider so no Cost of Goods plugin is required.
+		$stub = new class( $cogs ) {
+			/** @var float|bool */
+			private $cogs;
+
+			/**
+			 * @param float|bool $cogs Value to report.
+			 */
+			public function __construct( $cogs ) {
+				$this->cogs = $cogs;
+			}
+
+			/**
+			 * @param array $product_quantities Unused.
+			 * @return float|bool
+			 */
+			public function calculate_cogs_for_products( $product_quantities ) {
+				return $this->cogs;
+			}
+		};
+
+		$reflection = new ReflectionClass( $this->instance );
+		$property   = $reflection->getProperty( 'cogs_provider' );
+		$property->setAccessible( true );
+		$property->setValue( $this->instance, $stub );
+
+		$this->instance->inject_purchase_event( $order->get_id() );
+
+		$events = $this->instance->get_tracked_events();
+		$this->assertNotEmpty( $events, 'Expected a Purchase event to be tracked' );
+
+		$data = end( $events )->get_data();
+
+		return $data['custom_data'] ?? array();
+	}
+
+	/**
+	 * Regression: get_total_tax() already includes shipping tax, so shipping tax must not
+	 * be subtracted twice when deriving net revenue.
+	 *
+	 * Item 100 + shipping 10 + cart tax 20 + shipping tax 2 = total 132.
+	 * Net of tax and shipping: 132 - 22 - 10 = 100. With COGS 40, net revenue is 60.
+	 * The old arithmetic subtracted the 2 again and produced 58.
+	 */
+	public function test_purchase_net_revenue_does_not_subtract_shipping_tax_twice(): void {
+		$custom_data = $this->build_purchase_custom_data( 10.0, 20.0, 2.0, 40.0 );
+
+		$this->assertArrayHasKey( 'net_revenue', $custom_data );
+		$this->assertEquals( 60.0, (float) $custom_data['net_revenue'] );
+	}
+
+	/**
+	 * With no shipping tax the two formulas agree, so this pins the base case.
+	 */
+	public function test_purchase_net_revenue_without_shipping_tax(): void {
+		$custom_data = $this->build_purchase_custom_data( 10.0, 20.0, 0.0, 40.0 );
+
+		$this->assertArrayHasKey( 'net_revenue', $custom_data );
+		$this->assertEquals( 60.0, (float) $custom_data['net_revenue'] );
+	}
+
+	/**
+	 * A COGS provider that cannot price the order suppresses net revenue entirely.
+	 */
+	public function test_purchase_omits_net_revenue_when_cogs_unavailable(): void {
+		$custom_data = $this->build_purchase_custom_data( 10.0, 20.0, 2.0, false );
+
+		$this->assertArrayNotHasKey( 'net_revenue', $custom_data );
+		$this->assertArrayHasKey( 'value', $custom_data );
+	}
+
+	/**
+	 * COGS above the net order value means no positive profit, so nothing is reported.
+	 */
+	public function test_purchase_omits_net_revenue_when_profit_not_positive(): void {
+		$custom_data = $this->build_purchase_custom_data( 10.0, 20.0, 2.0, 150.0 );
+
+		$this->assertArrayNotHasKey( 'net_revenue', $custom_data );
+	}
 }
