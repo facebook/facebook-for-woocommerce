@@ -1493,10 +1493,11 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 				$cogs = $this->cogs_provider->calculate_cogs_for_products( $products );
 
 				if ( false !== $cogs ) {
+					// get_total_tax() is already cart tax + shipping tax, so shipping tax
+					// must not be subtracted a second time.
 					$order_value_excluding_tax_including_discounts = $order->get_total()
 						- $order->get_total_tax()
-						- $order->get_shipping_total()
-						- $order->get_shipping_tax();
+						- $order->get_shipping_total();
 
 					$net_profit = $order_value_excluding_tax_including_discounts - $cogs;
 					if ( $net_profit > 0 ) {

@@ -15,7 +15,6 @@ source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/lib/local-wp.sh"
 
 OPTION_KEYS=(
 	wc_facebook_access_token
-	wc_facebook_merchant_access_token
 	wc_facebook_business_manager_id
 	wc_facebook_external_business_id
 	wc_facebook_product_catalog_id
