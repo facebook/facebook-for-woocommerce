@@ -17,6 +17,7 @@ use WooCommerce\Facebook\API;
 use WooCommerce\Facebook\Framework\Api\Exception as ApiException;
 use WooCommerce\Facebook\Handlers\Connection;
 use WooCommerce\Facebook\Products;
+use WooCommerce\Facebook\ProductSync\ProductExcludedException;
 use WooCommerce\Facebook\ProductSync\ProductValidator;
 use WooCommerce\Facebook\Framework\AdminMessageHandler;
 use WooCommerce\Facebook\Handlers\PluginRender;
@@ -52,6 +53,15 @@ class WCFacebookCommerceIntegrationTest extends \WooCommerce\Facebook\Tests\Abst
 	 * @var RolloutSwitches
 	 */
 	private $rollout_switches;
+
+	/**
+	 * REQUEST_URI as it was before a test overrode it, or false when no test has. phpunit.xml.dist
+	 * sets backupGlobals="false", so anything written to $_SERVER has to be restored by hand.
+	 * A null here means REQUEST_URI was not set at all and must be unset again.
+	 *
+	 * @var string|null|false
+	 */
+	private $original_request_uri = false;
 
 	/**
 	 * Default plugin options.
@@ -95,6 +105,23 @@ class WCFacebookCommerceIntegrationTest extends \WooCommerce\Facebook\Tests\Abst
 		delete_option( WC_Facebookcommerce_Integration::SETTING_FACEBOOK_PIXEL_ID );
 		// Needed to prevent error logs in tests.
 		WC_Facebookcommerce_Utils::$ems = 'dummy_ems_id';
+	}
+
+	/**
+	 * Runs after each test is executed.
+	 */
+	public function tearDown(): void {
+		if ( false !== $this->original_request_uri ) {
+			if ( null === $this->original_request_uri ) {
+				unset( $_SERVER['REQUEST_URI'] );
+			} else {
+				$_SERVER['REQUEST_URI'] = $this->original_request_uri;
+			}
+
+			$this->original_request_uri = false;
+		}
+
+		parent::tearDown();
 	}
 
 	/**
@@ -820,6 +847,205 @@ class WCFacebookCommerceIntegrationTest extends \WooCommerce\Facebook\Tests\Abst
 			->willReturn( new API\ProductCatalog\ItemsBatch\Create\Response( '{"handles":"abcxyz"}' ) );
 
 		$this->integration->on_product_publish( $product->get_id() );
+	}
+
+	/**
+	 * Overrides REQUEST_URI for the current test, remembering the original for tearDown.
+	 *
+	 * @param string $uri the request URI to set
+	 * @return void
+	 */
+	private function set_request_uri( string $uri ) {
+		if ( false === $this->original_request_uri ) {
+			$this->original_request_uri = array_key_exists( 'REQUEST_URI', $_SERVER ) ? $_SERVER['REQUEST_URI'] : null;
+		}
+
+		$_SERVER['REQUEST_URI'] = $uri;
+	}
+
+	/**
+	 * Makes the current request look like a WooCommerce REST API request.
+	 *
+	 * WC()->is_rest_api_request() returns false on an empty REQUEST_URI *before* applying the
+	 * woocommerce_is_rest_api_request filter, so the request URI has to carry the REST prefix —
+	 * filtering alone never reaches the handler.
+	 *
+	 * @return void
+	 */
+	private function simulate_rest_api_request() {
+		$this->set_request_uri( '/' . trailingslashit( rest_get_url_prefix() ) . 'wc/v3/products/1' );
+	}
+
+	/**
+	 * Makes the current request look like an ordinary, non-REST request.
+	 *
+	 * @return void
+	 */
+	private function simulate_non_rest_request() {
+		$this->set_request_uri( '/wp-admin/post.php?post=1&action=edit' );
+	}
+
+	/**
+	 * Configures the plugin so the REST handler gets past its is_configured() guard.
+	 *
+	 * @return void
+	 */
+	private function configure_plugin_for_sync() {
+		add_option( WC_Facebookcommerce_Integration::SETTING_FACEBOOK_PAGE_ID, 'facebook-page-id' );
+		add_option( WC_Facebookcommerce_Integration::OPTION_PRODUCT_CATALOG_ID, '1234567891011121314' );
+
+		$this->connection_handler->method( 'is_connected' )->willReturn( true );
+	}
+
+	/**
+	 * A product saved through the WooCommerce REST API must be queued for sync to the Meta catalog.
+	 *
+	 * @return void
+	 */
+	public function test_on_product_save_via_api_syncs_product_on_rest_request() {
+		// Build the fixture before entering the REST context: creating a product fires
+		// woocommerce_new_product, which is the very hook this handler listens on.
+		$product = WC_Helper_Product::create_simple_product();
+
+		add_post_meta( $product->get_id(), Products::SYNC_ENABLED_META_KEY, 'yes' );
+		add_post_meta( $product->get_id(), WC_Facebookcommerce_Integration::FB_PRODUCT_ITEM_ID, 'facebook-product-item-id' );
+
+		// Simulate a WooCommerce REST API request made by a user allowed to edit products.
+		$this->simulate_rest_api_request();
+		wp_set_current_user( self::factory()->user->create( array( 'role' => 'administrator' ) ) );
+
+		$this->configure_plugin_for_sync();
+
+		$validator = $this->createMock( ProductValidator::class );
+		$validator->expects( $this->once() )
+			->method( 'validate' );
+		$this->facebook_for_woocommerce->expects( $this->once() )
+			->method( 'get_product_sync_validator' )
+			->willReturn( $validator );
+
+		// The product is queued for the background job rather than pushed inline, so a batch REST
+		// update costs one job instead of a Graph call per product.
+		$sync_handler = $this->createMock( Products\Sync::class );
+		$sync_handler->expects( $this->once() )
+			->method( 'create_or_update_products' )
+			->with( array( $product->get_id() ) );
+		$this->facebook_for_woocommerce->expects( $this->once() )
+			->method( 'get_products_sync_handler' )
+			->willReturn( $sync_handler );
+
+		$this->api->expects( $this->never() )
+			->method( 'send_item_updates' );
+
+		$this->integration->on_product_save_via_api( $product->get_id() );
+	}
+
+	/**
+	 * A variable product saved over the REST API queues its syncable variations, which carry the
+	 * catalog items; the parent's product group is derived from their item_group_id.
+	 *
+	 * @return void
+	 */
+	public function test_on_product_save_via_api_queues_variations_for_variable_product() {
+		$parent = WC_Helper_Product::create_variation_product();
+
+		$this->simulate_rest_api_request();
+		wp_set_current_user( self::factory()->user->create( array( 'role' => 'administrator' ) ) );
+
+		$this->configure_plugin_for_sync();
+
+		$validator = $this->createMock( ProductValidator::class );
+		$validator->method( 'validate' );
+		$this->facebook_for_woocommerce->method( 'get_product_sync_validator' )
+			->willReturn( $validator );
+
+		$sync_handler = $this->createMock( Products\Sync::class );
+		$sync_handler->expects( $this->once() )
+			->method( 'create_or_update_products' )
+			->with( $parent->get_children() );
+		$this->facebook_for_woocommerce->expects( $this->once() )
+			->method( 'get_products_sync_handler' )
+			->willReturn( $sync_handler );
+
+		$this->integration->on_product_save_via_api( $parent->get_id() );
+	}
+
+	/**
+	 * A product save outside of a REST API request must not be synced by this handler; those
+	 * requests (e.g. the admin product editor) are handled through their own hooks.
+	 *
+	 * @return void
+	 */
+	public function test_on_product_save_via_api_does_nothing_outside_rest_request() {
+		$product = WC_Helper_Product::create_simple_product();
+
+		add_post_meta( $product->get_id(), Products::SYNC_ENABLED_META_KEY, 'yes' );
+		add_post_meta( $product->get_id(), WC_Facebookcommerce_Integration::FB_PRODUCT_ITEM_ID, 'facebook-product-item-id' );
+
+		$this->simulate_non_rest_request();
+
+		$this->configure_plugin_for_sync();
+
+		// The handler must bail before doing any sync work.
+		$this->facebook_for_woocommerce->expects( $this->never() )
+			->method( 'get_product_sync_validator' );
+		$this->facebook_for_woocommerce->expects( $this->never() )
+			->method( 'get_products_sync_handler' );
+
+		$this->integration->on_product_save_via_api( $product->get_id() );
+	}
+
+	/**
+	 * A REST API save made by a user without product edit permission must not be synced. This covers
+	 * unprivileged contexts that also fire woocommerce_update_product, such as a stock decrement during
+	 * a Store API checkout.
+	 *
+	 * @return void
+	 */
+	public function test_on_product_save_via_api_does_nothing_without_edit_permission() {
+		$product = WC_Helper_Product::create_simple_product();
+
+		add_post_meta( $product->get_id(), Products::SYNC_ENABLED_META_KEY, 'yes' );
+		add_post_meta( $product->get_id(), WC_Facebookcommerce_Integration::FB_PRODUCT_ITEM_ID, 'facebook-product-item-id' );
+
+		// A REST API request, but made by a customer who cannot edit products.
+		$this->simulate_rest_api_request();
+		wp_set_current_user( self::factory()->user->create( array( 'role' => 'customer' ) ) );
+
+		$this->configure_plugin_for_sync();
+
+		// The handler must bail before doing any sync work.
+		$this->facebook_for_woocommerce->expects( $this->never() )
+			->method( 'get_product_sync_validator' );
+		$this->facebook_for_woocommerce->expects( $this->never() )
+			->method( 'get_products_sync_handler' );
+
+		$this->integration->on_product_save_via_api( $product->get_id() );
+	}
+
+	/**
+	 * A product excluded from sync must not be queued, even on an authorized REST API save.
+	 *
+	 * @return void
+	 */
+	public function test_on_product_save_via_api_does_nothing_for_excluded_product() {
+		$product = WC_Helper_Product::create_simple_product();
+
+		$this->simulate_rest_api_request();
+		wp_set_current_user( self::factory()->user->create( array( 'role' => 'administrator' ) ) );
+
+		$this->configure_plugin_for_sync();
+
+		$validator = $this->createMock( ProductValidator::class );
+		$validator->method( 'validate' )
+			->willThrowException( new ProductExcludedException( 'Sync disabled for this product.' ) );
+		$this->facebook_for_woocommerce->expects( $this->once() )
+			->method( 'get_product_sync_validator' )
+			->willReturn( $validator );
+
+		$this->facebook_for_woocommerce->expects( $this->never() )
+			->method( 'get_products_sync_handler' );
+
+		$this->integration->on_product_save_via_api( $product->get_id() );
 	}
 
 

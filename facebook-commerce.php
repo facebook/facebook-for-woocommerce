@@ -445,6 +445,12 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 			$this->events_tracker = new WC_Facebookcommerce_EventsTracker( $user_info, $aam_settings );
 		}
 
+		// Sync products created or updated outside the admin product editor, such as through the
+		// WooCommerce REST API. Those requests do not fire the admin-only woocommerce_process_product_meta
+		// hook used above, so without this the Meta catalog would miss REST API and programmatic changes.
+		add_action( 'woocommerce_update_product', array( $this, 'on_product_save_via_api' ), 40 );
+		add_action( 'woocommerce_new_product', array( $this, 'on_product_save_via_api' ), 40 );
+
 		// Update products on change of status.
 		add_action(
 			'transition_post_status',
@@ -1065,6 +1071,81 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 					break;
 			}
 		}
+	}
+
+	/**
+	 * Syncs a product to Facebook when it is created or updated through the WooCommerce REST API.
+	 *
+	 * The admin product editor schedules a sync via the woocommerce_process_product_meta hook, which
+	 * WooCommerce only fires for the admin product form. REST API (and other programmatic) saves do
+	 * not trigger that hook, so those changes never reached the Meta catalog. This handler runs on the
+	 * woocommerce_update_product / woocommerce_new_product actions, which do fire for REST API saves,
+	 * and queues the product for the background sync, honoring its existing sync settings.
+	 *
+	 * The woocommerce_update_product / woocommerce_new_product actions are low-level data-store hooks
+	 * fired by WC_Product::save() for *any* product save, including ones made in unprivileged contexts
+	 * such as a stock decrement during a Store API checkout. Two guards keep this handler scoped to a
+	 * genuine product edit made over the REST API:
+	 *
+	 * - is_rest_api_request() excludes the admin editor and other request types, which are already
+	 *   handled through their own hooks (and avoids double-processing admin saves).
+	 * - current_user_can( 'edit_product' ) mirrors the capability the WooCommerce REST products
+	 *   controller checks before a write, so guest/customer contexts (e.g. checkout stock changes over
+	 *   the Store API) do not trigger a sync.
+	 *
+	 * @since 3.7.7
+	 *
+	 * @internal
+	 *
+	 * @param int $product_id the product ID
+	 */
+	public function on_product_save_via_api( $product_id ) {
+		// The admin product editor and other request types are handled through their own hooks.
+		if ( ! Helper::is_rest_api_request() ) {
+			return;
+		}
+
+		// Only sync for actors allowed to edit the product; skip unprivileged contexts such as
+		// stock changes made during a Store API checkout.
+		if ( ! current_user_can( 'edit_product', $product_id ) ) {
+			return;
+		}
+
+		// bail if the plugin is not configured properly
+		if ( ! $this->is_configured() || ! $this->get_product_catalog_id() ) {
+			return;
+		}
+
+		$product = wc_get_product( $product_id );
+
+		if ( ! $product instanceof WC_Product ) {
+			return;
+		}
+
+		$product_ids = array();
+
+		if ( $product->is_type( 'variable' ) ) {
+			// Variations carry the catalog items for a variable product; the parent is represented by
+			// a product group, which the items batch derives from each variation's item_group_id.
+			foreach ( $product->get_children() as $variation_id ) {
+				$variation = wc_get_product( $variation_id );
+				if ( $variation instanceof WC_Product && $this->product_should_be_synced( $variation ) ) {
+					$product_ids[] = $variation_id;
+				}
+			}
+		} elseif ( $this->product_should_be_synced( $product ) ) {
+			$product_ids[] = $product->get_id();
+		}
+
+		if ( empty( $product_ids ) ) {
+			return;
+		}
+
+		// Queue rather than sync inline. The sync handler collects everything queued during the request
+		// and dispatches a single background job on shutdown, so a batch REST update costs one job
+		// instead of a Graph call per product inside the request — matching the admin, quick edit and
+		// stock paths.
+		$this->facebook_for_woocommerce->get_products_sync_handler()->create_or_update_products( $product_ids );
 	}
 
 	/**
