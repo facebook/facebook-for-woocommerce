@@ -903,16 +903,18 @@ class WCFacebookCommerceIntegrationTest extends \WooCommerce\Facebook\Tests\Abst
 	 * @return void
 	 */
 	public function test_on_product_save_via_api_syncs_product_on_rest_request() {
+		// Build the fixture before entering the REST context: creating a product fires
+		// woocommerce_new_product, which is the very hook this handler listens on.
+		$product = WC_Helper_Product::create_simple_product();
+
+		add_post_meta( $product->get_id(), Products::SYNC_ENABLED_META_KEY, 'yes' );
+		add_post_meta( $product->get_id(), WC_Facebookcommerce_Integration::FB_PRODUCT_ITEM_ID, 'facebook-product-item-id' );
+
 		// Simulate a WooCommerce REST API request made by a user allowed to edit products.
 		$this->simulate_rest_api_request();
 		wp_set_current_user( self::factory()->user->create( array( 'role' => 'administrator' ) ) );
 
 		$this->configure_plugin_for_sync();
-
-		$product = WC_Helper_Product::create_simple_product();
-
-		add_post_meta( $product->get_id(), Products::SYNC_ENABLED_META_KEY, 'yes' );
-		add_post_meta( $product->get_id(), WC_Facebookcommerce_Integration::FB_PRODUCT_ITEM_ID, 'facebook-product-item-id' );
 
 		$validator = $this->createMock( ProductValidator::class );
 		$validator->expects( $this->once() )
@@ -944,12 +946,12 @@ class WCFacebookCommerceIntegrationTest extends \WooCommerce\Facebook\Tests\Abst
 	 * @return void
 	 */
 	public function test_on_product_save_via_api_queues_variations_for_variable_product() {
+		$parent = WC_Helper_Product::create_variation_product();
+
 		$this->simulate_rest_api_request();
 		wp_set_current_user( self::factory()->user->create( array( 'role' => 'administrator' ) ) );
 
 		$this->configure_plugin_for_sync();
-
-		$parent = WC_Helper_Product::create_variation_product();
 
 		$validator = $this->createMock( ProductValidator::class );
 		$validator->method( 'validate' );
@@ -974,14 +976,14 @@ class WCFacebookCommerceIntegrationTest extends \WooCommerce\Facebook\Tests\Abst
 	 * @return void
 	 */
 	public function test_on_product_save_via_api_does_nothing_outside_rest_request() {
-		$this->simulate_non_rest_request();
-
-		$this->configure_plugin_for_sync();
-
 		$product = WC_Helper_Product::create_simple_product();
 
 		add_post_meta( $product->get_id(), Products::SYNC_ENABLED_META_KEY, 'yes' );
 		add_post_meta( $product->get_id(), WC_Facebookcommerce_Integration::FB_PRODUCT_ITEM_ID, 'facebook-product-item-id' );
+
+		$this->simulate_non_rest_request();
+
+		$this->configure_plugin_for_sync();
 
 		// The handler must bail before doing any sync work.
 		$this->facebook_for_woocommerce->expects( $this->never() )
@@ -1000,16 +1002,16 @@ class WCFacebookCommerceIntegrationTest extends \WooCommerce\Facebook\Tests\Abst
 	 * @return void
 	 */
 	public function test_on_product_save_via_api_does_nothing_without_edit_permission() {
+		$product = WC_Helper_Product::create_simple_product();
+
+		add_post_meta( $product->get_id(), Products::SYNC_ENABLED_META_KEY, 'yes' );
+		add_post_meta( $product->get_id(), WC_Facebookcommerce_Integration::FB_PRODUCT_ITEM_ID, 'facebook-product-item-id' );
+
 		// A REST API request, but made by a customer who cannot edit products.
 		$this->simulate_rest_api_request();
 		wp_set_current_user( self::factory()->user->create( array( 'role' => 'customer' ) ) );
 
 		$this->configure_plugin_for_sync();
-
-		$product = WC_Helper_Product::create_simple_product();
-
-		add_post_meta( $product->get_id(), Products::SYNC_ENABLED_META_KEY, 'yes' );
-		add_post_meta( $product->get_id(), WC_Facebookcommerce_Integration::FB_PRODUCT_ITEM_ID, 'facebook-product-item-id' );
 
 		// The handler must bail before doing any sync work.
 		$this->facebook_for_woocommerce->expects( $this->never() )
@@ -1026,12 +1028,12 @@ class WCFacebookCommerceIntegrationTest extends \WooCommerce\Facebook\Tests\Abst
 	 * @return void
 	 */
 	public function test_on_product_save_via_api_does_nothing_for_excluded_product() {
+		$product = WC_Helper_Product::create_simple_product();
+
 		$this->simulate_rest_api_request();
 		wp_set_current_user( self::factory()->user->create( array( 'role' => 'administrator' ) ) );
 
 		$this->configure_plugin_for_sync();
-
-		$product = WC_Helper_Product::create_simple_product();
 
 		$validator = $this->createMock( ProductValidator::class );
 		$validator->method( 'validate' )
