@@ -71,7 +71,6 @@ class PluginRender {
 			'facebook_for_woocommerce_plugin_update',
 			array(
 				'ajax_url'                        => admin_url( 'admin-ajax.php' ),
-				'set_excluded_terms_prompt_nonce' => wp_create_nonce( 'set-excluded-terms-prompt' ),
 				'opt_out_of_sync'                 => wp_create_nonce( self::ACTION_OPT_OUT_OF_SYNC ),
 				'banner_close'                    => wp_create_nonce( self::ACTION_CLOSE_BANNER ),
 				'sync_back_in'                    => wp_create_nonce( self::ACTION_SYNC_BACK_IN ),

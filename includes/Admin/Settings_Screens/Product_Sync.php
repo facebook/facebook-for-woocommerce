@@ -15,7 +15,6 @@ defined( 'ABSPATH' ) || exit;
 use WooCommerce\Facebook\Admin\Abstract_Settings_Screen;
 use WooCommerce\Facebook\Admin\Google_Product_Category_Field;
 use WooCommerce\Facebook\Commerce;
-use WooCommerce\Facebook\Products;
 use WooCommerce\Facebook\Products\Sync;
 use WooCommerce\Facebook\Framework\Api\Exception as ApiException;
 use WooCommerce\Facebook\Framework\Logger;
@@ -98,13 +97,10 @@ class Product_Sync extends Abstract_Settings_Screen {
 			'facebook-for-woocommerce-settings-sync',
 			'facebook_for_woocommerce_settings_sync',
 			array(
-				'ajax_url'                        => admin_url( 'admin-ajax.php' ),
-				'set_excluded_terms_prompt_nonce' => wp_create_nonce( 'set-excluded-terms-prompt' ),
-				'sync_products_nonce'             => wp_create_nonce( self::ACTION_SYNC_PRODUCTS ),
-				'sync_status_nonce'               => wp_create_nonce( self::ACTION_GET_SYNC_STATUS ),
-				'sync_in_progress'                => Sync::is_sync_in_progress(),
-				'excluded_category_ids'           => facebook_for_woocommerce()->get_integration()->get_excluded_product_category_ids(),
-				'excluded_tag_ids'                => facebook_for_woocommerce()->get_integration()->get_excluded_product_tag_ids(),
+				'ajax_url'             => admin_url( 'admin-ajax.php' ),
+				'sync_products_nonce'  => wp_create_nonce( self::ACTION_SYNC_PRODUCTS ),
+				'sync_status_nonce'    => wp_create_nonce( self::ACTION_GET_SYNC_STATUS ),
+				'sync_in_progress'     => Sync::is_sync_in_progress(),
 				'i18n'                            => array(
 					'confirm_resync'                => esc_html__( 'Your products will now be resynced to Facebook, this may take some time.', 'facebook-for-woocommerce' ),
 					'confirm_sync'                  => esc_html__( "Meta for WooCommerce automatically syncs your products on create/update. Are you sure you want to force product resync?\n\nThis will query all published products and may take some time. You only need to do this if your products are out of sync or some of your products did not sync.", 'facebook-for-woocommerce' ),
@@ -212,40 +208,7 @@ class Product_Sync extends Abstract_Settings_Screen {
 	 * @since 2.0.0
 	 */
 	public function save() {
-		$integration              = facebook_for_woocommerce()->get_integration();
-		$previous_product_cat_ids = $integration->get_excluded_product_category_ids();
-		$previous_product_tag_ids = $integration->get_excluded_product_tag_ids();
 		parent::save();
-		// when settings are saved, if there are new excluded categories/terms we should exclude corresponding products from sync
-		$new_product_cat_ids = array_diff( $integration->get_excluded_product_category_ids(), $previous_product_cat_ids );
-		$new_product_tag_ids = array_diff( $integration->get_excluded_product_tag_ids(), $previous_product_tag_ids );
-		$this->disable_sync_for_excluded_products( $new_product_cat_ids, $new_product_tag_ids );
-	}
-
-
-	/**
-	 * Disables sync for products that belong to any of the given categories or tags.
-	 *
-	 * @since 2.0.0
-	 *
-	 * @param array $product_cat_ids IDs of excluded categories
-	 * @param array $product_tag_ids IDs of excluded tags
-	 */
-	private function disable_sync_for_excluded_products( $product_cat_ids, $product_tag_ids ) {
-		// disable sync for all products belonging to excluded categories
-		Products::disable_sync_for_products_with_terms(
-			array(
-				'taxonomy' => 'product_cat',
-				'include'  => $product_cat_ids,
-			)
-		);
-		// disable sync for all products belonging to excluded tags
-		Products::disable_sync_for_products_with_terms(
-			array(
-				'taxonomy' => 'product_tag',
-				'include'  => $product_tag_ids,
-			)
-		);
 	}
 
 
@@ -257,24 +220,7 @@ class Product_Sync extends Abstract_Settings_Screen {
 	 * @return array
 	 */
 	public function get_settings(): array {
-		$term_query         = new \WP_Term_Query(
-			array(
-				'taxonomy'   => 'product_cat',
-				'hide_empty' => false,
-				'fields'     => 'id=>name',
-			)
-		);
-		$product_categories = $term_query->get_terms();
-		$term_query         = new \WP_Term_Query(
-			array(
-				'taxonomy'     => 'product_tag',
-				'hide_empty'   => false,
-				'hierarchical' => false,
-				'fields'       => 'id=>name',
-			)
-		);
-		$product_tags       = $term_query->get_terms();
-		$settings           = array(
+		$settings = array(
 			array(
 				'type'  => 'product_sync_title',
 				'title' => __( 'Product sync', 'facebook-for-woocommerce' ),
@@ -286,34 +232,6 @@ class Product_Sync extends Abstract_Settings_Screen {
 				'label'    => ' ',
 				'default'  => 'yes',
 				'desc_tip' => __( 'Enable product syncing with Facebook.', 'facebook-for-woocommerce' ),
-			),
-
-			array(
-				'id'                => \WC_Facebookcommerce_Integration::SETTING_EXCLUDED_PRODUCT_CATEGORY_IDS,
-				'title'             => __( 'Exclude categories from sync', 'facebook-for-woocommerce' ),
-				'type'              => 'multiselect',
-				'class'             => 'wc-enhanced-select product-sync-field',
-				'css'               => 'min-width: 300px;',
-				'desc_tip'          => __( 'Products in any of these categories will not sync to Facebook.', 'facebook-for-woocommerce' ),
-				'default'           => array(),
-				'options'           => is_array( $product_categories ) ? $product_categories : array(),
-				'custom_attributes' => array(
-					'data-placeholder' => __( 'Search for a product category&hellip;', 'facebook-for-woocommerce' ),
-				),
-			),
-
-			array(
-				'id'                => \WC_Facebookcommerce_Integration::SETTING_EXCLUDED_PRODUCT_TAG_IDS,
-				'title'             => __( 'Exclude tags from sync', 'facebook-for-woocommerce' ),
-				'type'              => 'multiselect',
-				'class'             => 'wc-enhanced-select product-sync-field',
-				'css'               => 'min-width: 300px;',
-				'desc_tip'          => __( 'Products with any of these tags will not sync to Facebook.', 'facebook-for-woocommerce' ),
-				'default'           => array(),
-				'options'           => is_array( $product_tags ) ? $product_tags : array(),
-				'custom_attributes' => array(
-					'data-placeholder' => __( 'Search for a product tag&hellip;', 'facebook-for-woocommerce' ),
-				),
 			),
 
 			array(
