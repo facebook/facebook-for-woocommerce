@@ -10,7 +10,7 @@
 
 namespace WooCommerce\Facebook\Handlers;
 
-use WooCommerce\Facebook\API\CommerceIntegration\Finalize\Client as CommerceIntegrationClient;
+use WooCommerce\Facebook\API\CommerceIntegration\Client as CommerceIntegrationClient;
 
 defined( 'ABSPATH' ) || exit;
 
