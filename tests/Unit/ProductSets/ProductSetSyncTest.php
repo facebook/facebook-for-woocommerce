@@ -22,6 +22,28 @@ class ProductSetSyncTest extends AbstractWPUnitTestWithSafeFiltering {
     const WC_CATEGORY_NAME_1 =  'Test Category 1';
     const WC_CATEGORY_NAME_2 =  'Test Category 2 (with special characters: &^%$#@!~|)';
 
+    const FB_CATALOG_ID = '7891011';
+
+    const SYNC_FLAG = '_wc_facebook_for_woocommerce_product_sets_sync_flag';
+
+    public function setUp(): void {
+        parent::setUp();
+
+        // Product sets live in a catalog, so a connected catalog is the normal state for
+        // every case here. The one test that cares about its absence clears it itself.
+        facebook_for_woocommerce()->get_integration()->update_product_catalog_id( self::FB_CATALOG_ID );
+
+        delete_transient( self::SYNC_FLAG );
+    }
+
+    public function tearDown(): void {
+        facebook_for_woocommerce()->get_integration()->update_product_catalog_id( '' );
+
+        delete_transient( self::SYNC_FLAG );
+
+        parent::tearDown();
+    }
+
 	/* ------------------ Test Methods ------------------ */
 
     public function testCreate() {
@@ -105,6 +127,55 @@ class ProductSetSyncTest extends AbstractWPUnitTestWithSafeFiltering {
         $product_set_sync->expects( $this->atLeast(2) )
             ->method( 'create_fb_product_set' );
         
+        $product_set_sync->sync_all_product_sets();
+    }
+
+    /**
+     * Regression: onboarding used to reach this with no catalog ID, and every category
+     * turned into a Graph request against /{empty}/product_sets that came back 400.
+     */
+    public function testSyncAllProductSetsDoesNothingWithoutACatalog() {
+        facebook_for_woocommerce()->get_integration()->update_product_catalog_id( '' );
+
+        $this->createWPCategory( self::WC_CATEGORY_NAME_1 );
+
+        $product_set_sync = $this->getMockBuilder( ProductSetSyncTestable::class )
+            ->setMethods(['get_fb_product_set_id','create_fb_product_set','update_fb_product_set'])
+            ->getMock();
+
+        $product_set_sync->expects( $this->never() )->method( 'get_fb_product_set_id' );
+        $product_set_sync->expects( $this->never() )->method( 'create_fb_product_set' );
+        $product_set_sync->expects( $this->never() )->method( 'update_fb_product_set' );
+
+        $product_set_sync->sync_all_product_sets();
+    }
+
+    /**
+     * The daily run is rationed by a 24 hour transient. A run that could not do anything must
+     * not spend that ration, or a catalog arriving later in the day waits until tomorrow.
+     */
+    public function testSyncAllProductSetsWithoutACatalogLeavesTheDailyRunAvailable() {
+        facebook_for_woocommerce()->get_integration()->update_product_catalog_id( '' );
+
+        $this->createWPCategory( self::WC_CATEGORY_NAME_1 );
+
+        $product_set_sync = $this->getMockBuilder( ProductSetSyncTestable::class )
+            ->setMethods(['get_fb_product_set_id','create_fb_product_set'])
+            ->getMock();
+
+        $product_set_sync->sync_all_product_sets();
+
+        $this->assertFalse( get_transient( self::SYNC_FLAG ), 'A no-op run should not consume the day.' );
+
+        // With a catalog in place the very next run goes ahead.
+        facebook_for_woocommerce()->get_integration()->update_product_catalog_id( self::FB_CATALOG_ID );
+
+        $product_set_sync->expects( $this->atLeastOnce() )
+            ->method( 'get_fb_product_set_id' )
+            ->willReturn(null);
+        $product_set_sync->expects( $this->atLeastOnce() )
+            ->method( 'create_fb_product_set' );
+
         $product_set_sync->sync_all_product_sets();
     }
 

@@ -98,6 +98,13 @@ class ProductSetSync {
 	 */
 	public function sync_all_product_sets() {
 		try {
+			// Without a catalog every category below would address /{empty}/product_sets and come
+			// back 400. Returning before the flag is set leaves the day's run available, so the
+			// next heartbeat retries once a catalog is known rather than waiting out the window.
+			if ( empty( facebook_for_woocommerce()->get_integration()->get_product_catalog_id() ) ) {
+				return;
+			}
+
 			$flag_name = '_wc_facebook_for_woocommerce_product_sets_sync_flag';
 			if ( 'yes' === get_transient( $flag_name ) ) {
 				return;
