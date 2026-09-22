@@ -384,18 +384,15 @@ class API extends Base {
 	 * Updates the plugin version configuration.
 	 *
 	 * @param string $external_business_id external business ID
-	 * @param bool   $is_opted_out The plugin version.
 	 * @param string $plugin_version The plugin version.
 	 * @return Response|API\FBE\Configuration\Update\Response
 	 * @throws ApiException In case of a general API error or rate limit error.
 	 */
-	public function update_plugin_version_configuration( string $external_business_id, bool $is_opted_out, string $plugin_version ): API\FBE\Configuration\Update\Response {
+	public function update_plugin_version_configuration( string $external_business_id, string $plugin_version ): API\FBE\Configuration\Update\Response {
 		$request = new API\FBE\Configuration\Update\Request( $external_business_id );
 		$request->set_external_client_metadata(
 			array(
-				'version_id'                    => $plugin_version,
-				'is_multisite'                  => is_multisite(),
-				'is_woo_all_products_opted_out' => $is_opted_out,
+				'version_id' => $plugin_version,
 			)
 		);
 		$this->set_response_handler( API\FBE\Configuration\Update\Response::class );

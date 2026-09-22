@@ -40,7 +40,7 @@ class Request extends Configuration\Request {
 	 *
 	 * @since 3.4.4
 	 *
-	 * @param array $metadata map of metadata to include. Example: array ('version_id' => '0.0.0', 'is_multisite' => True)
+	 * @param array $metadata map of metadata to include. Example: array( 'version_id' => '0.0.0' ).
 	 *
 	 * @return void
 	 */
@@ -48,7 +48,5 @@ class Request extends Configuration\Request {
 		$this->data['business_config'] = array(
 			'external_client' => $metadata,
 		);
-
-		is_multisite();
 	}
 }
