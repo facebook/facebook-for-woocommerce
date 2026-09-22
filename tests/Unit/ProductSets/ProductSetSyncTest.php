@@ -28,7 +28,7 @@ class ProductSetSyncTest extends AbstractWPUnitTestWithSafeFiltering {
         $wc_category = $this->createWPCategory();
 
         $product_set_sync = $this->getMockBuilder( ProductSetSyncTestable::class )
-            ->setMethods(['get_fb_product_set_id','create_fb_product_set'])
+            ->setMethods(['get_fb_product_set_id','create_fb_product_set','sync_products_in_category'])
             ->getMock();
 
         $product_set_sync->expects( $this->once() )
@@ -37,6 +37,9 @@ class ProductSetSyncTest extends AbstractWPUnitTestWithSafeFiltering {
             ->willReturn(null);
         $product_set_sync->expects( $this->once() )
             ->method( 'create_fb_product_set' );
+        $product_set_sync->expects( $this->once() )
+            ->method( 'sync_products_in_category' )
+            ->with($wc_category);
         
         $product_set_sync->on_create_or_update_product_wc_category_callback( 
             $wc_category->term_id, 
@@ -49,7 +52,7 @@ class ProductSetSyncTest extends AbstractWPUnitTestWithSafeFiltering {
         $wc_category = $this->createWPCategory();
 
         $product_set_sync = $this->getMockBuilder( ProductSetSyncTestable::class )
-            ->setMethods(['get_fb_product_set_id','update_fb_product_set'])
+            ->setMethods(['get_fb_product_set_id','update_fb_product_set','sync_products_in_category'])
             ->getMock();
 
         $product_set_sync->expects( $this->once() )
@@ -59,6 +62,9 @@ class ProductSetSyncTest extends AbstractWPUnitTestWithSafeFiltering {
         $product_set_sync->expects( $this->once() )
             ->method( 'update_fb_product_set' )
             ->with($wc_category, self::FB_PRODUCT_SET_ID);
+        $product_set_sync->expects( $this->once() )
+            ->method( 'sync_products_in_category' )
+            ->with($wc_category);
         
         $product_set_sync->on_create_or_update_product_wc_category_callback( 
             $wc_category->term_id, 
@@ -161,5 +167,9 @@ class ProductSetSyncTestable extends ProductSetSync {
 
     public function build_fb_product_set_data( $wc_category ) {
         return parent::build_fb_product_set_data( $wc_category );
+    }
+
+    public function sync_products_in_category( $wc_category ) {
+        return parent::sync_products_in_category( $wc_category );
     }
 }
