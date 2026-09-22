@@ -83,9 +83,12 @@ class Product_Attributes extends Abstract_Settings_Screen {
 
 		wp_enqueue_style( 'woocommerce_admin_styles' );
 
+		// This screen has no bundled script of its own: the behavior it needs is printed inline by
+		// render() and by the inline script below. The handle is registered without a source so it
+		// can still carry those dependencies and the inline script.
 		wp_enqueue_script(
 			'facebook-for-woocommerce-product-attributes',
-			facebook_for_woocommerce()->get_asset_build_dir_url() . '/admin/product-attributes.js',
+			false,
 			array( 'jquery', 'jquery-tiptip', 'wc-enhanced-select' ),
 			\WC_Facebookcommerce::PLUGIN_VERSION,
 			true // Load in footer
