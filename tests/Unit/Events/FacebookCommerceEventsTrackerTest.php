@@ -1528,9 +1528,10 @@ class FacebookCommerceEventsTrackerTest extends AbstractWPUnitTestWithSafeFilter
 	 * @param float      $cart_tax       Tax on the items.
 	 * @param float      $shipping_tax   Tax on the shipping.
 	 * @param float|bool $cogs           Value the COGS provider should report.
+	 * @param float      $product_price  Price of the single ordered item.
 	 * @return array The event's custom_data.
 	 */
-	private function build_purchase_custom_data( float $shipping_total, float $cart_tax, float $shipping_tax, $cogs ): array {
+	private function build_purchase_custom_data( float $shipping_total, float $cart_tax, float $shipping_tax, $cogs, float $product_price = 100.0 ): array {
 		update_option(
 			'wc_facebook_for_woocommerce_rollout_switches',
 			array( \WooCommerce\Facebook\RolloutSwitches::SWITCH_VALUE_OPTIMIZATION_ENABLED => 'yes' )
@@ -1543,7 +1544,7 @@ class FacebookCommerceEventsTrackerTest extends AbstractWPUnitTestWithSafeFilter
 		$this->remove_purchase_hooks();
 
 		$product = \WC_Helper_Product::create_simple_product();
-		$product->set_regular_price( 100 );
+		$product->set_regular_price( $product_price );
 		$product->save();
 
 		$order = new \WC_Order();
@@ -1551,7 +1552,7 @@ class FacebookCommerceEventsTrackerTest extends AbstractWPUnitTestWithSafeFilter
 		$order->set_shipping_total( $shipping_total );
 		$order->set_cart_tax( $cart_tax );
 		$order->set_shipping_tax( $shipping_tax );
-		$order->set_total( 100 + $shipping_total + $cart_tax + $shipping_tax );
+		$order->set_total( $product_price + $shipping_total + $cart_tax + $shipping_tax );
 		$order->set_status( 'processing' );
 		$order->save();
 
@@ -1633,5 +1634,17 @@ class FacebookCommerceEventsTrackerTest extends AbstractWPUnitTestWithSafeFilter
 		$custom_data = $this->build_purchase_custom_data( 10.0, 20.0, 2.0, 150.0 );
 
 		$this->assertArrayNotHasKey( 'net_revenue', $custom_data );
+	}
+
+	/**
+	 * Regression: a 9.99 item with 12.00 flat rate shipping, no tax, and a 4.00 cost of goods
+	 * nets exactly 5.99. In binary floating point 21.99 - 12.00 - 4.00 lands just under that, and
+	 * truncating the scaled value used to report 5.98.
+	 */
+	public function test_purchase_net_revenue_does_not_lose_a_cent_to_float_error(): void {
+		$custom_data = $this->build_purchase_custom_data( 12.0, 0.0, 0.0, 4.0, 9.99 );
+
+		$this->assertArrayHasKey( 'net_revenue', $custom_data );
+		$this->assertSame( 5.99, (float) $custom_data['net_revenue'] );
 	}
 }

@@ -698,6 +698,65 @@ class fbUtilsTest extends \WP_UnitTestCase {
 	}
 
 	/**
+	 * Regression: subtracting money in binary floating point leaves values a hair under the
+	 * decimal they represent, and scaling before floor() turned that hair into a lost cent.
+	 * 21.99 - 12.00 - 4.00 is 5.99, and used to be reported as 5.98.
+	 *
+	 * @dataProvider provider_truncate_float_number_representation_error
+	 *
+	 * @param float $value    Value to truncate.
+	 * @param float $expected Expected result.
+	 */
+	public function test_truncate_float_number_is_not_defeated_by_representation_error( float $value, float $expected ): void {
+		$this->assertSame( $expected, WC_Facebookcommerce_Utils::truncate_float_number( $value, 2 ) );
+	}
+
+	/**
+	 * Sums that are exact in decimal but not in binary floating point.
+	 *
+	 * @return array<string, array{float, float}>
+	 */
+	public function provider_truncate_float_number_representation_error(): array {
+		return array(
+			'reported order: 21.99 total less 12.00 shipping and 4.00 cost' => array( 21.99 - 12.00 - 4.00, 5.99 ),
+			'0.1 + 0.2'         => array( 0.1 + 0.2, 0.3 ),
+			'1.00 - 0.42'       => array( 1.00 - 0.42, 0.58 ),
+			'100.10 - 50.05'    => array( 100.10 - 50.05, 50.05 ),
+			'3 * 1.15'          => array( 3 * 1.15, 3.45 ),
+		);
+	}
+
+	/**
+	 * Digits the caller genuinely asked to drop are still dropped: the fix corrects the
+	 * scaling artifact, it does not turn truncation into rounding.
+	 *
+	 * @dataProvider provider_truncate_float_number_truncates
+	 *
+	 * @param float $value    Value to truncate.
+	 * @param int   $points   Decimal places to keep.
+	 * @param float $expected Expected result.
+	 */
+	public function test_truncate_float_number_still_truncates( float $value, int $points, float $expected ): void {
+		$this->assertSame( $expected, WC_Facebookcommerce_Utils::truncate_float_number( $value, $points ) );
+	}
+
+	/**
+	 * Values with real precision beyond the requested points.
+	 *
+	 * @return array<string, array{float, int, float}>
+	 */
+	public function provider_truncate_float_number_truncates(): array {
+		return array(
+			'halfway is not rounded up'   => array( 5.985, 2, 5.98 ),
+			'well past halfway stays put' => array( 5.999, 2, 5.99 ),
+			'exact value is untouched'    => array( 5.99, 2, 5.99 ),
+			'whole number is untouched'   => array( 100.0, 2, 100.0 ),
+			'zero points'                 => array( 5.99, 0, 5.0 ),
+			'four points'                 => array( 5.99999, 4, 5.9999 ),
+		);
+	}
+
+	/**
 	 * Helper to get pixel event queue via reflection.
 	 */
 	private function get_pixel_event_queue(): array {
