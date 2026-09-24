@@ -86,7 +86,14 @@ class Product_Attributes extends Abstract_Settings_Screen {
 		// This screen has no bundled script of its own: the behavior it needs is printed inline by
 		// render() and by the inline script below. The handle is registered without a source so it
 		// can still carry those dependencies and the inline script.
-		wp_enqueue_script(
+		wp_register_script(
+			'facebook-for-woocommerce-product-attributes',
+			false,
+			array( 'jquery', 'jquery-tiptip', 'wc-enhanced-select' ),
+			\WC_Facebookcommerce::PLUGIN_VERSION,
+			true // Load in footer
+		);
+		wp_enqueue_script( 'facebook-for-woocommerce-product-attributes' );
 			'facebook-for-woocommerce-product-attributes',
 			false,
 			array( 'jquery', 'jquery-tiptip', 'wc-enhanced-select' ),
