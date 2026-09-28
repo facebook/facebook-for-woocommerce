@@ -57,13 +57,13 @@ class ProductSetSync {
 		/**
 		 * Schedules a daily sync of all WooCommerce categories to ensure any missed real-time updates are captured.
 		 */
-		add_action( Heartbeat::DAILY, array( $this, 'sync_all_product_sets' ) );
+		add_action( Heartbeat::DAILY, array( $this, 'sync_all_product_sets' ), 10, 0 );
 
 		/**
 		 * Runs a full sync that an earlier request queued, such as the one a newly connected
 		 * catalog asks for.
 		 */
-		add_action( self::SYNC_ALL_ACTION, array( $this, 'sync_all_product_sets' ) );
+		add_action( self::SYNC_ALL_ACTION, array( $this, 'run_queued_sync_all_product_sets' ), 10, 0 );
 	}
 
 	/**
@@ -84,9 +84,22 @@ class ProductSetSync {
 			return;
 		}
 
-		// A queued sync exists because something asked for it — a catalog connecting, most often —
-		// so it does not compete with the daily heartbeat for the one run a day.
-		as_enqueue_async_action( self::SYNC_ALL_ACTION, array( true ), self::SYNC_ALL_ACTION_GROUP, true );
+		as_enqueue_async_action( self::SYNC_ALL_ACTION, array(), self::SYNC_ALL_ACTION_GROUP, true );
+	}
+
+	/**
+	 * Runs a full product set sync that an earlier request queued.
+	 *
+	 * Bound to the Action Scheduler hook. A queued sync exists because something asked for it,
+	 * a catalog connecting most often, so it does not compete with the daily heartbeat for the
+	 * one routine run a day: it goes ahead even if the heartbeat has already had its pass.
+	 *
+	 * @since 3.7.7
+	 *
+	 * @return void
+	 */
+	public function run_queued_sync_all_product_sets() {
+		$this->sync_all_product_sets( true );
 	}
 
 	/**

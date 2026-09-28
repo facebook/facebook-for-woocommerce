@@ -298,7 +298,7 @@ class ProductSetSyncTest extends AbstractWPUnitTestWithSafeFiltering {
         $product_set_sync->expects( $this->atLeastOnce() )
             ->method( 'create_fb_product_set' );
 
-        $product_set_sync->sync_all_product_sets( true );
+        $product_set_sync->run_queued_sync_all_product_sets();
     }
 
     /**
@@ -316,8 +316,17 @@ class ProductSetSyncTest extends AbstractWPUnitTestWithSafeFiltering {
         $product_set_sync->schedule_sync_all_product_sets();
 
         $this->assertNotFalse(
-            as_next_scheduled_action( ProductSetSync::SYNC_ALL_ACTION, array( true ), ProductSetSync::SYNC_ALL_ACTION_GROUP ),
+            as_next_scheduled_action( ProductSetSync::SYNC_ALL_ACTION, array(), ProductSetSync::SYNC_ALL_ACTION_GROUP ),
             'Connecting a catalog should leave a queued sync behind.'
+        );
+
+        // The queued action runs the dedicated entry point, which bypasses the daily limit; the
+        // heartbeat keeps the routine one, called with no arguments so the limit applies.
+        $this->assertNotFalse(
+            has_action( ProductSetSync::SYNC_ALL_ACTION, array( $product_set_sync, 'run_queued_sync_all_product_sets' ) )
+        );
+        $this->assertNotFalse(
+            has_action( \WooCommerce\Facebook\Utilities\Heartbeat::DAILY, array( $product_set_sync, 'sync_all_product_sets' ) )
         );
 
         // A second settings update in the same state must not stack up another pass.
