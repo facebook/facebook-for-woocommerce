@@ -90,6 +90,24 @@ class ProductSetSync {
 	}
 
 	/**
+	 * Whether the store is in a state where product sets can be synced at all.
+	 *
+	 * Every sync path needs an access token to build the API client and a catalog to address.
+	 * A store that was never connected, or has been disconnected, has neither; a store whose
+	 * install failed closed keeps a stale catalog with no token. Calling Graph in any of those
+	 * states either throws before the request is made or comes back 400, and in both cases the
+	 * only result is a misleading error in the log.
+	 *
+	 * @since 3.7.7
+	 *
+	 * @return bool
+	 */
+	private function can_sync_product_sets() {
+		return facebook_for_woocommerce()->get_connection_handler()->is_connected()
+			&& ! empty( facebook_for_woocommerce()->get_integration()->get_product_catalog_id() );
+	}
+
+	/**
 	 * @since 3.4.9
 	 *
 	 * @param int   $term_id Term ID.
@@ -98,6 +116,10 @@ class ProductSetSync {
 	 */
 	// phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter
 	public function on_create_or_update_product_wc_category_callback( $term_id, $tt_id, $args ) {
+		if ( ! $this->can_sync_product_sets() ) {
+			return;
+		}
+
 		try {
 			$wc_category       = get_term( $term_id, self::WC_PRODUCT_CATEGORY_TAXONOMY );
 			$fb_product_set_id = $this->get_fb_product_set_id( $wc_category );
@@ -121,6 +143,10 @@ class ProductSetSync {
 	 */
 	// phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter
 	public function on_delete_wc_product_category_callback( $term_id, $tt_id, $deleted_term, $object_ids ) {
+		if ( ! $this->can_sync_product_sets() ) {
+			return;
+		}
+
 		try {
 			$fb_product_set_id = $this->get_fb_product_set_id( $deleted_term );
 			if ( ! empty( $fb_product_set_id ) ) {
@@ -140,10 +166,11 @@ class ProductSetSync {
 	 */
 	public function sync_all_product_sets( $ignore_daily_limit = false ) {
 		try {
-			// Without a catalog every category below would address /{empty}/product_sets and come
-			// back 400. Returning before the flag is set leaves the day's run available, so the
-			// next heartbeat retries once a catalog is known rather than waiting out the window.
-			if ( empty( facebook_for_woocommerce()->get_integration()->get_product_catalog_id() ) ) {
+			// Without a connection and a catalog every category below would fail, see
+			// can_sync_product_sets(). Returning before the flag is set leaves the day's run
+			// available, so the next heartbeat retries once the store is ready rather than
+			// waiting out the window.
+			if ( ! $this->can_sync_product_sets() ) {
 				return;
 			}
 

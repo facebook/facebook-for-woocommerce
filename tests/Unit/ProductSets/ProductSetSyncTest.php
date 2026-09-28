@@ -29,14 +29,17 @@ class ProductSetSyncTest extends AbstractWPUnitTestWithSafeFiltering {
     public function setUp(): void {
         parent::setUp();
 
-        // Product sets live in a catalog, so a connected catalog is the normal state for
-        // every case here. The one test that cares about its absence clears it itself.
+        // Product sets live in a connected catalog, so a store with an access token and a
+        // catalog is the normal state for every case here. The tests that care about the
+        // absence of either clear it themselves.
+        update_option( \WooCommerce\Facebook\Handlers\Connection::OPTION_ACCESS_TOKEN, 'test-access-token' );
         facebook_for_woocommerce()->get_integration()->update_product_catalog_id( self::FB_CATALOG_ID );
 
         delete_transient( self::SYNC_FLAG );
     }
 
     public function tearDown(): void {
+        delete_option( \WooCommerce\Facebook\Handlers\Connection::OPTION_ACCESS_TOKEN );
         facebook_for_woocommerce()->get_integration()->update_product_catalog_id( '' );
 
         delete_transient( self::SYNC_FLAG );
@@ -182,6 +185,83 @@ class ProductSetSyncTest extends AbstractWPUnitTestWithSafeFiltering {
     /**
      * The heartbeat gets one full pass a day, and the transient is what holds it to that.
      */
+    public function testCategoryCallbacksDoNothingWithoutACatalog() {
+        facebook_for_woocommerce()->get_integration()->update_product_catalog_id( '' );
+
+        $wc_category = $this->createWPCategory();
+
+        $product_set_sync = $this->getMockBuilder( ProductSetSyncTestable::class )
+            ->setMethods(['get_fb_product_set_id','create_fb_product_set','update_fb_product_set','delete_fb_product_set'])
+            ->getMock();
+
+        $product_set_sync->expects( $this->never() )->method( 'get_fb_product_set_id' );
+        $product_set_sync->expects( $this->never() )->method( 'create_fb_product_set' );
+        $product_set_sync->expects( $this->never() )->method( 'update_fb_product_set' );
+        $product_set_sync->expects( $this->never() )->method( 'delete_fb_product_set' );
+
+        $product_set_sync->on_create_or_update_product_wc_category_callback(
+            $wc_category->term_id,
+            $wc_category->term_taxonomy_id,
+            array()
+        );
+        $product_set_sync->on_delete_wc_product_category_callback(
+            $wc_category->term_id,
+            $wc_category->term_taxonomy_id,
+            $wc_category,
+            array()
+        );
+    }
+
+    /**
+     * A store that was never connected, was disconnected, or whose install failed closed has no
+     * access token. The API client cannot be built without one, so the callbacks used to log an
+     * "access token is missing" error on every category change.
+     */
+    public function testCategoryCallbacksDoNothingWhenDisconnected() {
+        delete_option( \WooCommerce\Facebook\Handlers\Connection::OPTION_ACCESS_TOKEN );
+
+        $wc_category = $this->createWPCategory();
+
+        $product_set_sync = $this->getMockBuilder( ProductSetSyncTestable::class )
+            ->setMethods(['get_fb_product_set_id','create_fb_product_set','update_fb_product_set','delete_fb_product_set'])
+            ->getMock();
+
+        $product_set_sync->expects( $this->never() )->method( 'get_fb_product_set_id' );
+        $product_set_sync->expects( $this->never() )->method( 'create_fb_product_set' );
+        $product_set_sync->expects( $this->never() )->method( 'update_fb_product_set' );
+        $product_set_sync->expects( $this->never() )->method( 'delete_fb_product_set' );
+
+        $product_set_sync->on_create_or_update_product_wc_category_callback(
+            $wc_category->term_id,
+            $wc_category->term_taxonomy_id,
+            array()
+        );
+        $product_set_sync->on_delete_wc_product_category_callback(
+            $wc_category->term_id,
+            $wc_category->term_taxonomy_id,
+            $wc_category,
+            array()
+        );
+    }
+
+    public function testSyncAllProductSetsDoesNothingWhenDisconnected() {
+        delete_option( \WooCommerce\Facebook\Handlers\Connection::OPTION_ACCESS_TOKEN );
+
+        $this->createWPCategory( self::WC_CATEGORY_NAME_1 );
+
+        $product_set_sync = $this->getMockBuilder( ProductSetSyncTestable::class )
+            ->setMethods(['get_fb_product_set_id','create_fb_product_set','update_fb_product_set'])
+            ->getMock();
+
+        $product_set_sync->expects( $this->never() )->method( 'get_fb_product_set_id' );
+        $product_set_sync->expects( $this->never() )->method( 'create_fb_product_set' );
+        $product_set_sync->expects( $this->never() )->method( 'update_fb_product_set' );
+
+        $product_set_sync->sync_all_product_sets();
+
+        $this->assertFalse( get_transient( self::SYNC_FLAG ), 'A no-op run should not consume the day.' );
+    }
+
     public function testSyncAllProductSetsSkipsARunTheDayAlreadyHad() {
         set_transient( self::SYNC_FLAG, 'yes', DAY_IN_SECONDS - 1 );
 
