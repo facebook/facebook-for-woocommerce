@@ -121,6 +121,46 @@ class ProductSetSync {
 	}
 
 	/**
+	 * Gets every WooCommerce product category, whatever language it is in.
+	 *
+	 * Product sets mirror categories regardless of language: that is what every full sync has
+	 * done so far, because the REST, WP-CLI and WP-Cron contexts it ran in do not filter terms.
+	 * The queued sync runs in an Action Scheduler async request, which is an admin-ajax loopback,
+	 * and there Polylang and WPML narrow term queries to the request's language. On a store with
+	 * categories in several languages, or in none, that dropped most of them.
+	 *
+	 * An empty 'lang' is Polylang's documented way to lift its filter, and core ignores the
+	 * argument. WPML ignores it too, so its filter is lifted by switching to 'all' around the
+	 * query and switching back afterwards, the same hooks the WPML integration uses.
+	 *
+	 * @since 3.7.7
+	 *
+	 * @return \WP_Term[]
+	 */
+	private function get_all_wc_product_categories() {
+		$wpml_language = apply_filters( 'wpml_current_language', null );
+		if ( $wpml_language ) {
+			do_action( 'wpml_switch_language', 'all' );
+		}
+
+		$wc_product_categories = get_terms(
+			array(
+				'taxonomy'   => self::WC_PRODUCT_CATEGORY_TAXONOMY,
+				'hide_empty' => false,
+				'orderby'    => 'ID',
+				'order'      => 'ASC',
+				'lang'       => '',
+			)
+		);
+
+		if ( $wpml_language ) {
+			do_action( 'wpml_switch_language', $wpml_language );
+		}
+
+		return is_array( $wc_product_categories ) ? $wc_product_categories : array();
+	}
+
+	/**
 	 * @since 3.4.9
 	 *
 	 * @param int   $term_id Term ID.
@@ -300,14 +340,7 @@ class ProductSetSync {
 	}
 
 	private function sync_all_wc_product_categories() {
-		$wc_product_categories = get_terms(
-			array(
-				'taxonomy'   => self::WC_PRODUCT_CATEGORY_TAXONOMY,
-				'hide_empty' => false,
-				'orderby'    => 'ID',
-				'order'      => 'ASC',
-			)
-		);
+		$wc_product_categories = $this->get_all_wc_product_categories();
 
 		foreach ( $wc_product_categories as $wc_category ) {
 			try {

@@ -346,6 +346,67 @@ class ProductSetSyncTest extends AbstractWPUnitTestWithSafeFiltering {
         as_unschedule_all_actions( ProductSetSync::SYNC_ALL_ACTION );
     }
 
+    /**
+     * The queued sync runs in an admin-ajax request, where Polylang narrows term queries to the
+     * request's language. Product sets are created for every category regardless of language,
+     * so the query asks for all of them explicitly. Without WPML nothing is switched.
+     */
+    public function testSyncAllProductSetsQueriesCategoriesInEveryLanguage() {
+        $this->createWPCategory( self::WC_CATEGORY_NAME_1 );
+
+        $category_queries = array();
+        $this->add_filter_with_safe_teardown( 'get_terms_args', function( $args, $taxonomies ) use ( &$category_queries ) {
+            if ( in_array( ProductSetSync::WC_PRODUCT_CATEGORY_TAXONOMY, (array) $taxonomies, true ) && 'ID' === ( $args['orderby'] ?? '' ) ) {
+                $category_queries[] = $args;
+            }
+            return $args;
+        }, 10, 2 );
+
+        $switches = array();
+        $this->add_filter_with_safe_teardown( 'wpml_switch_language', function( $code ) use ( &$switches ) {
+            $switches[] = $code;
+            return $code;
+        } );
+
+        $product_set_sync = $this->getMockBuilder( ProductSetSyncTestable::class )
+            ->setMethods(['get_fb_product_set_id','create_fb_product_set'])
+            ->getMock();
+        $product_set_sync->method( 'get_fb_product_set_id' )->willReturn( null );
+
+        $product_set_sync->sync_all_product_sets();
+
+        $this->assertCount( 1, $category_queries, 'The sync should query the product categories once.' );
+        $this->assertSame( '', $category_queries[0]['lang'] ?? null, 'An empty lang lifts the Polylang language filter.' );
+        $this->assertSame( array(), $switches, 'Without WPML no language switch happens.' );
+    }
+
+    /**
+     * WPML ignores the lang argument, so its filter is lifted by switching to all languages for
+     * the query and back to the request language afterwards.
+     */
+    public function testSyncAllProductSetsLiftsTheWpmlLanguageFilterAroundTheQuery() {
+        $this->createWPCategory( self::WC_CATEGORY_NAME_1 );
+
+        // Stand in for WPML: report a current language and record the switches.
+        $this->add_filter_with_safe_teardown( 'wpml_current_language', function() {
+            return 'en';
+        } );
+        $switches = array();
+        $this->add_filter_with_safe_teardown( 'wpml_switch_language', function( $code ) use ( &$switches ) {
+            $switches[] = $code;
+            return $code;
+        } );
+
+        $product_set_sync = $this->getMockBuilder( ProductSetSyncTestable::class )
+            ->setMethods(['get_fb_product_set_id','create_fb_product_set'])
+            ->getMock();
+        $product_set_sync->method( 'get_fb_product_set_id' )->willReturn( null );
+
+        $product_set_sync->sync_all_product_sets();
+
+        $this->assertSame( array( 'all', 'en' ), $switches, 'The filter is lifted for the query and the request language restored afterwards.' );
+    }
+
     public function testProductSetData() {
         $wc_category = $this->createWPCategory();
 
