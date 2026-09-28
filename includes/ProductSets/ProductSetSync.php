@@ -26,6 +26,15 @@ class ProductSetSync {
 	// Product category taxonomy used by WooCommerce
 	const WC_PRODUCT_CATEGORY_TAXONOMY = 'product_cat';
 
+	/** @var string Action Scheduler hook a queued full sync runs under */
+	const SYNC_ALL_ACTION = 'facebook_for_woocommerce_sync_all_product_sets';
+
+	/** @var string Action Scheduler group the queued full sync belongs to */
+	const SYNC_ALL_ACTION_GROUP = 'facebook-for-woocommerce';
+
+	/** @var string transient that rations the full sync to one run a day */
+	const SYNC_ALL_FLAG = '_wc_facebook_for_woocommerce_product_sets_sync_flag';
+
 	/**
 	 * ProductSetSync constructor.
 	 */
@@ -49,6 +58,35 @@ class ProductSetSync {
 		 * Schedules a daily sync of all WooCommerce categories to ensure any missed real-time updates are captured.
 		 */
 		add_action( Heartbeat::DAILY, array( $this, 'sync_all_product_sets' ) );
+
+		/**
+		 * Runs a full sync that an earlier request queued, such as the one a newly connected
+		 * catalog asks for.
+		 */
+		add_action( self::SYNC_ALL_ACTION, array( $this, 'sync_all_product_sets' ) );
+	}
+
+	/**
+	 * Queues a full product set sync to run outside the current request.
+	 *
+	 * The sync makes up to two Graph calls per product category, so a store with a few hundred
+	 * categories would hold the caller open for minutes. The caller onboarding uses has already
+	 * committed the install on Meta's side by the time it gets here: a host or proxy cutting it
+	 * short would leave the store connected with the browser on an error path.
+	 *
+	 * @since 3.7.7
+	 *
+	 * @return void
+	 */
+	public function schedule_sync_all_product_sets() {
+		if ( ! function_exists( 'as_enqueue_async_action' ) ) {
+			// No Action Scheduler, so the daily heartbeat stays the only path to a full sync.
+			return;
+		}
+
+		// A queued sync exists because something asked for it — a catalog connecting, most often —
+		// so it does not compete with the daily heartbeat for the one run a day.
+		as_enqueue_async_action( self::SYNC_ALL_ACTION, array( true ), self::SYNC_ALL_ACTION_GROUP, true );
 	}
 
 	/**
@@ -95,8 +133,12 @@ class ProductSetSync {
 
 	/**
 	 * @since 3.4.9
+	 *
+	 * @param bool $ignore_daily_limit Whether to run even if the day's sync has already happened.
+	 *                                 Set for syncs something explicitly asked for, as opposed to
+	 *                                 the heartbeat's routine pass.
 	 */
-	public function sync_all_product_sets() {
+	public function sync_all_product_sets( $ignore_daily_limit = false ) {
 		try {
 			// Without a catalog every category below would address /{empty}/product_sets and come
 			// back 400. Returning before the flag is set leaves the day's run available, so the
@@ -105,11 +147,10 @@ class ProductSetSync {
 				return;
 			}
 
-			$flag_name = '_wc_facebook_for_woocommerce_product_sets_sync_flag';
-			if ( 'yes' === get_transient( $flag_name ) ) {
+			if ( ! $ignore_daily_limit && 'yes' === get_transient( self::SYNC_ALL_FLAG ) ) {
 				return;
 			}
-			set_transient( $flag_name, 'yes', DAY_IN_SECONDS - 1 );
+			set_transient( self::SYNC_ALL_FLAG, 'yes', DAY_IN_SECONDS - 1 );
 
 			$this->sync_all_wc_product_categories();
 		} catch ( \Exception $exception ) {

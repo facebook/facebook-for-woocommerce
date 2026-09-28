@@ -14,7 +14,7 @@ use WooCommerce\Facebook\API\Plugin\Settings\Handler;
 use WooCommerce\Facebook\Tests\AbstractWPUnitTestWithOptionIsolationAndSafeFiltering;
 
 /**
- * Covers the catalog ID a settings update leaves behind for the rest of the request.
+ * Covers what a settings update does with the catalog ID it is given.
  *
  * These tests use no Meta entities; all IDs are opaque local fixtures.
  */
@@ -53,15 +53,13 @@ class HandlerCatalogIdTest extends AbstractWPUnitTestWithOptionIsolationAndSafeF
 	}
 
 	/**
-	 * Regression: the integration memoizes the catalog ID on first read, and the handler reads it
-	 * to decide whether the update warrants a sync. Storing the new ID with a plain update_option()
-	 * left that memoized copy holding the old value for the rest of the request.
+	 * The handler stores the catalog ID through a plain option write, and the integration reads it
+	 * back from the same row, so the value it reports moves with the update.
 	 */
-	public function test_update_refreshes_the_catalog_id_the_integration_reports(): void {
+	public function test_update_stores_the_catalog_id_the_integration_reports(): void {
 		$integration = facebook_for_woocommerce()->get_integration();
 
-		// A first connection has no catalog yet. Reading it here is what the handler does before
-		// writing, and is what used to pin an empty string in memory.
+		// A first connection has no catalog yet.
 		$integration->update_product_catalog_id( '' );
 		$this->assertSame( '', $integration->get_product_catalog_id() );
 
@@ -74,63 +72,68 @@ class HandlerCatalogIdTest extends AbstractWPUnitTestWithOptionIsolationAndSafeF
 	}
 
 	/**
-	 * The stale copy mattered because the product set sync runs inline, in the same request, right
-	 * after the write. It has to see the catalog the merchant just connected, not the one before.
+	 * The sync makes Graph calls for every product category, and the install is already committed
+	 * on Meta's side by the time this request reaches it, so it goes to the queue rather than
+	 * holding the response open for as long as the store has categories.
 	 */
-	public function test_inline_product_set_sync_sees_the_new_catalog_id(): void {
+	public function test_new_catalog_id_queues_the_product_set_sync_instead_of_running_it(): void {
 		facebook_for_woocommerce()->get_integration()->update_product_catalog_id( '' );
 
-		$recorder = new class() {
-			/** @var string|null catalog ID visible when the sync was invoked */
-			public $catalog_id_at_sync_time = null;
-
-			/** @var bool whether the sync was invoked at all */
-			public $was_called = false;
-
-			/**
-			 * Records what the sync would have addressed instead of calling Meta.
-			 */
-			public function sync_all_product_sets() {
-				$this->was_called              = true;
-				$this->catalog_id_at_sync_time = facebook_for_woocommerce()->get_integration()->get_product_catalog_id();
-			}
-		};
-
+		$recorder = $this->create_product_sets_sync_recorder();
 		$this->set_product_sets_sync_handler( $recorder );
 
 		( new Handler() )->handle_update(
 			$this->create_update_request( array( 'product_catalog_id' => 'catalog-new' ) )
 		);
 
-		$this->assertTrue( $recorder->was_called, 'A new catalog ID should trigger the product set sync.' );
-		$this->assertSame( 'catalog-new', $recorder->catalog_id_at_sync_time );
+		$this->assertTrue( $recorder->was_scheduled, 'A new catalog ID should queue the product set sync.' );
+		$this->assertFalse( $recorder->was_run_inline, 'The product set sync should not run inside the request.' );
 	}
 
 	/**
 	 * An update that does not move the catalog leaves the sync alone.
 	 */
-	public function test_unchanged_catalog_id_does_not_trigger_the_product_set_sync(): void {
+	public function test_unchanged_catalog_id_does_not_queue_the_product_set_sync(): void {
 		facebook_for_woocommerce()->get_integration()->update_product_catalog_id( 'catalog-existing' );
 
-		$recorder = new class() {
-			/** @var bool whether the sync was invoked */
-			public $was_called = false;
-
-			/**
-			 * Records that the sync ran.
-			 */
-			public function sync_all_product_sets() {
-				$this->was_called = true;
-			}
-		};
-
+		$recorder = $this->create_product_sets_sync_recorder();
 		$this->set_product_sets_sync_handler( $recorder );
 
 		( new Handler() )->handle_update(
 			$this->create_update_request( array( 'product_catalog_id' => 'catalog-existing' ) )
 		);
 
-		$this->assertFalse( $recorder->was_called );
+		$this->assertFalse( $recorder->was_scheduled );
+		$this->assertFalse( $recorder->was_run_inline );
+	}
+
+	/**
+	 * Builds a stand-in for the product sets sync handler that records how it was asked to sync.
+	 *
+	 * @return object
+	 */
+	private function create_product_sets_sync_recorder() {
+		return new class() {
+			/** @var bool whether the sync was queued */
+			public $was_scheduled = false;
+
+			/** @var bool whether the sync was run in the current request */
+			public $was_run_inline = false;
+
+			/**
+			 * Records that the sync was queued.
+			 */
+			public function schedule_sync_all_product_sets() {
+				$this->was_scheduled = true;
+			}
+
+			/**
+			 * Records that the sync ran here instead of being queued.
+			 */
+			public function sync_all_product_sets() {
+				$this->was_run_inline = true;
+			}
+		};
 	}
 
 	/**

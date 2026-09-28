@@ -24,7 +24,7 @@ class ProductSetSyncTest extends AbstractWPUnitTestWithSafeFiltering {
 
     const FB_CATALOG_ID = '7891011';
 
-    const SYNC_FLAG = '_wc_facebook_for_woocommerce_product_sets_sync_flag';
+    const SYNC_FLAG = ProductSetSync::SYNC_ALL_FLAG;
 
     public function setUp(): void {
         parent::setUp();
@@ -177,6 +177,84 @@ class ProductSetSyncTest extends AbstractWPUnitTestWithSafeFiltering {
             ->method( 'create_fb_product_set' );
 
         $product_set_sync->sync_all_product_sets();
+    }
+
+    /**
+     * The heartbeat gets one full pass a day, and the transient is what holds it to that.
+     */
+    public function testSyncAllProductSetsSkipsARunTheDayAlreadyHad() {
+        set_transient( self::SYNC_FLAG, 'yes', DAY_IN_SECONDS - 1 );
+
+        $this->createWPCategory( self::WC_CATEGORY_NAME_1 );
+
+        $product_set_sync = $this->getMockBuilder( ProductSetSyncTestable::class )
+            ->setMethods(['get_fb_product_set_id','create_fb_product_set','update_fb_product_set'])
+            ->getMock();
+
+        $product_set_sync->expects( $this->never() )->method( 'get_fb_product_set_id' );
+        $product_set_sync->expects( $this->never() )->method( 'create_fb_product_set' );
+        $product_set_sync->expects( $this->never() )->method( 'update_fb_product_set' );
+
+        $product_set_sync->sync_all_product_sets();
+    }
+
+    /**
+     * A queued sync exists because a catalog changed, so it runs even on a day the heartbeat has
+     * already used up. Otherwise connecting a second catalog would show no product sets until
+     * tomorrow, which is the wait this whole path exists to avoid.
+     */
+    public function testQueuedSyncAllProductSetsRunsOnADayTheHeartbeatAlreadyUsed() {
+        set_transient( self::SYNC_FLAG, 'yes', DAY_IN_SECONDS - 1 );
+
+        $this->createWPCategory( self::WC_CATEGORY_NAME_1 );
+
+        $product_set_sync = $this->getMockBuilder( ProductSetSyncTestable::class )
+            ->setMethods(['get_fb_product_set_id','create_fb_product_set'])
+            ->getMock();
+
+        $product_set_sync->expects( $this->atLeastOnce() )
+            ->method( 'get_fb_product_set_id' )
+            ->willReturn(null);
+        $product_set_sync->expects( $this->atLeastOnce() )
+            ->method( 'create_fb_product_set' );
+
+        $product_set_sync->sync_all_product_sets( true );
+    }
+
+    /**
+     * Onboarding queues the sync instead of running it, so the categories are walked outside the
+     * request that connected the catalog.
+     */
+    public function testScheduleSyncAllProductSetsQueuesTheSync() {
+        if ( ! function_exists( 'as_enqueue_async_action' ) ) {
+            $this->markTestSkipped( 'Action Scheduler is not loaded.' );
+        }
+
+        as_unschedule_all_actions( ProductSetSync::SYNC_ALL_ACTION );
+
+        $product_set_sync = new ProductSetSyncTestable();
+        $product_set_sync->schedule_sync_all_product_sets();
+
+        $this->assertNotFalse(
+            as_next_scheduled_action( ProductSetSync::SYNC_ALL_ACTION, array( true ), ProductSetSync::SYNC_ALL_ACTION_GROUP ),
+            'Connecting a catalog should leave a queued sync behind.'
+        );
+
+        // A second settings update in the same state must not stack up another pass.
+        $product_set_sync->schedule_sync_all_product_sets();
+
+        $this->assertCount(
+            1,
+            as_get_scheduled_actions(
+                array(
+                    'hook'   => ProductSetSync::SYNC_ALL_ACTION,
+                    'status' => \ActionScheduler_Store::STATUS_PENDING,
+                ),
+                'ids'
+            )
+        );
+
+        as_unschedule_all_actions( ProductSetSync::SYNC_ALL_ACTION );
     }
 
     public function testProductSetData() {

@@ -467,22 +467,9 @@ class Handler extends AbstractRESTEndpoint {
 	 */
 	private function update_settings( array $settings ) {
 		foreach ( $settings as $key => $value ) {
-			if ( empty( $key ) ) {
-				continue;
+			if ( ! empty( $key ) ) {
+				update_option( $key, $value );
 			}
-
-			// The integration memoizes the catalog ID the first time it is read, and
-			// apply_installation_settings() reads it just above here to decide whether this update
-			// warrants a sync. Writing the row with a plain update_option() would leave that copy
-			// holding the previous value — an empty string on a first connection — for the rest of
-			// the request, so the inline product set sync would address /{empty}/product_sets.
-			// Going through the integration keeps the stored row and the in-memory copy together.
-			if ( \WC_Facebookcommerce_Integration::OPTION_PRODUCT_CATALOG_ID === $key ) {
-				facebook_for_woocommerce()->get_integration()->update_product_catalog_id( $value );
-				continue;
-			}
-
-			update_option( $key, $value );
 		}
 	}
 
@@ -582,11 +569,13 @@ class Handler extends AbstractRESTEndpoint {
 
 		try {
 			if ( $should_trigger_products_and_sets_sync ) {
-				facebook_for_woocommerce()->get_product_sets_sync_handler()->sync_all_product_sets();
+				// Queued rather than run here: the sync makes Graph calls for every product
+				// category, and this request has already committed the install on Meta's side.
+				facebook_for_woocommerce()->get_product_sets_sync_handler()->schedule_sync_all_product_sets();
 			}
 		} catch ( \Exception $exception ) {
 			Logger::log(
-				'Product sets sync failed.',
+				'Product sets sync scheduling failed.',
 				array(
 					'event'      => 'product_sets_sync',
 					'event_type' => 'sync_product_sets_after_settings_update',
