@@ -150,9 +150,44 @@ class ProductSetSync {
 		return $response->get_product_set_id();
 	}
 
+	/**
+	 * Reads a category field as the plain text Meta should store.
+	 *
+	 * Term fields read with get_term_field() default to the 'display' context, which runs through
+	 * wptexturize() and esc_html(). Those turn a straight apostrophe into &#8217; and a pair of
+	 * double quotes into &#8220;/&#8221;, and the entities travel to Meta verbatim, so the set for
+	 * "Men's Clothing" shows up in Commerce Manager as "Men&#8217;s Clothing". Decoding the
+	 * display value is not enough either — it would leave the curly ’ that wptexturize chose,
+	 * which is still not the name the merchant typed.
+	 *
+	 * Reading the stored value and decoding entities is what the product feed already does with
+	 * the same category name, in WC_Facebookcommerce_Utils::get_product_categories(). Matching it
+	 * also keeps the set's product_type filter equal to the product_type the feed sends, so the
+	 * set actually collects the products in the category.
+	 *
+	 * @since 3.7.7
+	 *
+	 * @param WP_Term|int $wc_category The WooCommerce category.
+	 * @param string      $field       Term field to read.
+	 * @return string
+	 */
+	private function get_plain_text_term_field( $wc_category, $field ) {
+		$value = get_term_field( $field, $wc_category, self::WC_PRODUCT_CATEGORY_TAXONOMY, 'raw' );
+
+		if ( is_wp_error( $value ) || ! is_string( $value ) ) {
+			return '';
+		}
+
+		return html_entity_decode(
+			WC_Facebookcommerce_Utils::clean_string( $value ),
+			ENT_QUOTES | ENT_HTML401,
+			'UTF-8'
+		);
+	}
+
 	protected function build_fb_product_set_data( $wc_category ) {
-		$wc_category_name          = WC_Facebookcommerce_Utils::clean_string( get_term_field( 'name', $wc_category, self::WC_PRODUCT_CATEGORY_TAXONOMY ) );
-		$wc_category_description   = WC_Facebookcommerce_Utils::clean_string( get_term_field( 'description', $wc_category, self::WC_PRODUCT_CATEGORY_TAXONOMY ) );
+		$wc_category_name          = $this->get_plain_text_term_field( $wc_category, 'name' );
+		$wc_category_description   = $this->get_plain_text_term_field( $wc_category, 'description' );
 		$wc_category_url           = get_term_link( $wc_category, self::WC_PRODUCT_CATEGORY_TAXONOMY );
 		$wc_category_thumbnail_id  = get_term_meta( $wc_category, 'thumbnail_id', true );
 		$wc_category_thumbnail_url = wp_get_attachment_image_src( $wc_category_thumbnail_id );
