@@ -10,6 +10,8 @@ declare( strict_types=1 );
 
 namespace WooCommerce\Facebook\Tests\Unit\API\Plugin\Settings;
 
+use WooCommerce\Facebook\API\CommerceIntegration\Client as FinalizeClient;
+use WooCommerce\Facebook\API\CommerceIntegration\Finalize\Response as FinalizeResponse;
 use WooCommerce\Facebook\API\Plugin\Settings\Handler;
 use WooCommerce\Facebook\Tests\AbstractWPUnitTestWithOptionIsolationAndSafeFiltering;
 
@@ -112,6 +114,97 @@ class HandlerCatalogIdTest extends AbstractWPUnitTestWithOptionIsolationAndSafeF
 	 *
 	 * @return object
 	 */
+	/**
+	 * Onboarding does not go through handle_update(): the Commerce Extension install lands on
+	 * handle_finalize_install(), which deposits the token, asks Meta for the connected assets
+	 * and only then applies them. The catalog it stores is the one the endpoint returned, so
+	 * that is the value the rest of the request, and the queued sync, must see.
+	 */
+	public function test_finalize_install_stores_the_catalog_id_the_integration_reports(): void {
+		$integration = facebook_for_woocommerce()->get_integration();
+
+		// A first connection has no catalog yet.
+		$integration->update_product_catalog_id( '' );
+		$this->assertSame( '', $integration->get_product_catalog_id() );
+
+		$response = ( new Handler( $this->create_finalize_client( 'catalog-new' ) ) )->handle_finalize_install(
+			$this->create_finalize_install_request()
+		);
+
+		$this->assertSame( 200, $response->get_status() );
+		$this->assertSame( 'catalog-new', $integration->get_product_catalog_id(), 'The catalog the endpoint returned should win over the install message.' );
+	}
+
+	public function test_finalize_install_queues_the_product_set_sync_instead_of_running_it(): void {
+		facebook_for_woocommerce()->get_integration()->update_product_catalog_id( '' );
+
+		$recorder = $this->create_product_sets_sync_recorder();
+		$this->set_product_sets_sync_handler( $recorder );
+
+		( new Handler( $this->create_finalize_client( 'catalog-new' ) ) )->handle_finalize_install(
+			$this->create_finalize_install_request()
+		);
+
+		$this->assertTrue( $recorder->was_scheduled, 'A newly connected catalog should queue the product set sync.' );
+		$this->assertFalse( $recorder->was_run_inline, 'The product set sync should not run inside the finalize-install request.' );
+	}
+
+	/**
+	 * Stubs the finalize-install endpoint with a successful response carrying the given catalog.
+	 *
+	 * The integration ID it returns matches the stored one so the update does not also trigger
+	 * the metadata feed uploads, which are not what these tests are about.
+	 *
+	 * @param string $catalog_id Catalog ID the endpoint should report.
+	 * @return FinalizeClient
+	 */
+	private function create_finalize_client( string $catalog_id ): FinalizeClient {
+		$this->add_filter_with_safe_teardown(
+			'wc_facebook_external_business_id',
+			function () {
+				return 'store-ebid-123';
+			},
+			10,
+			2
+		);
+		$this->mock_set_option( \WC_Facebookcommerce_Integration::OPTION_COMMERCE_PARTNER_INTEGRATION_ID, 'cpi-existing' );
+
+		$client = $this->createMock( FinalizeClient::class );
+		$client->method( 'finalize_install' )->willReturn(
+			new FinalizeResponse(
+				wp_json_encode(
+					array(
+						'id'                            => 'cpi-existing',
+						'external_business_id'          => 'store-ebid-123',
+						'installation_status'           => 'ACCESS_TOKEN_DEPOSITED',
+						'commerce_merchant_settings_id' => 'cms-new',
+						'catalog_id'                    => $catalog_id,
+						'pixel_id'                      => 'pixel-new',
+					)
+				)
+			)
+		);
+
+		return $client;
+	}
+
+	/**
+	 * The install message the Commerce Extension posts, carrying its own (legacy) asset IDs.
+	 *
+	 * @return \WP_REST_Request
+	 */
+	private function create_finalize_install_request(): \WP_REST_Request {
+		return $this->create_update_request(
+			array(
+				'access_token'                    => 'fresh-suat',
+				'commerce_partner_integration_id' => 'cpi-existing',
+				'product_catalog_id'              => 'catalog-legacy',
+				'pixel_id'                        => 'pixel-legacy',
+				'installed_features'              => array(),
+			)
+		);
+	}
+
 	private function create_product_sets_sync_recorder() {
 		return new class() {
 			/** @var bool whether the sync was queued */
