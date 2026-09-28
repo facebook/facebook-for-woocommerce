@@ -121,26 +121,31 @@ class ProductSetSync {
 	}
 
 	/**
-	 * Gets every WooCommerce product category, whatever language it is in.
+	 * Gets the WooCommerce product categories the sync mirrors.
 	 *
-	 * Product sets mirror categories regardless of language: that is what every full sync has
-	 * done so far, because the REST, WP-CLI and WP-Cron contexts it ran in do not filter terms.
-	 * The queued sync runs in an Action Scheduler async request, which is an admin-ajax loopback,
-	 * and there Polylang and WPML narrow term queries to the request's language. On a store with
-	 * categories in several languages, or in none, that dropped most of them.
+	 * Polylang leaves term queries alone outside a language-aware request, but the queued sync
+	 * runs in an Action Scheduler async request, an admin-ajax loopback, where it narrows them to
+	 * the request's language; on a store with categories in several languages, or in none, that
+	 * dropped most of them. An empty 'lang' is Polylang's documented way to lift its filter, and
+	 * core ignores the argument, so every category is mirrored as the daily sync always has.
 	 *
-	 * An empty 'lang' is Polylang's documented way to lift its filter, and core ignores the
-	 * argument. WPML ignores it too, so its filter is lifted by switching to 'all' around the
-	 * query and switching back afterwards, the same hooks the WPML integration uses.
+	 * WPML narrows term queries to the current language in every context. The daily sync runs in
+	 * WP-Cron, where that is the default language, so WPML stores have always mirrored the default
+	 * language's categories. The async runner inherits the cookies of the admin request that
+	 * dispatched it, so there the current language is whatever that admin had selected in WPML's
+	 * language switcher. The query is pinned to the default language so every runner mirrors the
+	 * same categories the daily sync does. Mirroring every language on WPML is a separate change.
 	 *
 	 * @since 3.7.7
 	 *
 	 * @return \WP_Term[]
 	 */
 	private function get_all_wc_product_categories() {
-		$wpml_language = apply_filters( 'wpml_current_language', null );
-		if ( $wpml_language ) {
-			do_action( 'wpml_switch_language', 'all' );
+		$wpml_language         = apply_filters( 'wpml_current_language', null );
+		$wpml_default_language = apply_filters( 'wpml_default_language', null );
+		$pin_wpml_language     = $wpml_default_language && $wpml_language !== $wpml_default_language;
+		if ( $pin_wpml_language ) {
+			do_action( 'wpml_switch_language', $wpml_default_language );
 		}
 
 		$wc_product_categories = get_terms(
@@ -153,7 +158,7 @@ class ProductSetSync {
 			)
 		);
 
-		if ( $wpml_language ) {
+		if ( $pin_wpml_language ) {
 			do_action( 'wpml_switch_language', $wpml_language );
 		}
 

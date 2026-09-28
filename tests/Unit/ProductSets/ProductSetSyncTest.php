@@ -348,8 +348,8 @@ class ProductSetSyncTest extends AbstractWPUnitTestWithSafeFiltering {
 
     /**
      * The queued sync runs in an admin-ajax request, where Polylang narrows term queries to the
-     * request's language. Product sets are created for every category regardless of language,
-     * so the query asks for all of them explicitly. Without WPML nothing is switched.
+     * request's language. Every category is mirrored regardless of language, so the query lifts
+     * that filter with an empty lang. Without WPML nothing is switched.
      */
     public function testSyncAllProductSetsQueriesCategoriesInEveryLanguage() {
         $this->createWPCategory( self::WC_CATEGORY_NAME_1 );
@@ -381,14 +381,18 @@ class ProductSetSyncTest extends AbstractWPUnitTestWithSafeFiltering {
     }
 
     /**
-     * WPML ignores the lang argument, so its filter is lifted by switching to all languages for
-     * the query and back to the request language afterwards.
+     * On WPML the sync mirrors the default language's categories, as the daily sync in WP-Cron
+     * always has. The async runner can run in another language (the dispatching admin's), so the
+     * query is pinned to the default language and the request language restored afterwards.
      */
-    public function testSyncAllProductSetsLiftsTheWpmlLanguageFilterAroundTheQuery() {
+    public function testSyncAllProductSetsPinsTheWpmlDefaultLanguageForTheQuery() {
         $this->createWPCategory( self::WC_CATEGORY_NAME_1 );
 
-        // Stand in for WPML: report a current language and record the switches.
+        // Stand in for WPML: the request runs in Croatian on a store whose default is English.
         $this->add_filter_with_safe_teardown( 'wpml_current_language', function() {
+            return 'hr';
+        } );
+        $this->add_filter_with_safe_teardown( 'wpml_default_language', function() {
             return 'en';
         } );
         $switches = array();
@@ -404,7 +408,36 @@ class ProductSetSyncTest extends AbstractWPUnitTestWithSafeFiltering {
 
         $product_set_sync->sync_all_product_sets();
 
-        $this->assertSame( array( 'all', 'en' ), $switches, 'The filter is lifted for the query and the request language restored afterwards.' );
+        $this->assertSame( array( 'en', 'hr' ), $switches, 'The query runs in the default language and the request language is restored.' );
+    }
+
+    /**
+     * When the request already runs in WPML's default language nothing is switched, so the
+     * common case (WP-Cron, WP-CLI) has no side effects.
+     */
+    public function testSyncAllProductSetsDoesNotSwitchWpmlWhenAlreadyOnTheDefaultLanguage() {
+        $this->createWPCategory( self::WC_CATEGORY_NAME_1 );
+
+        $this->add_filter_with_safe_teardown( 'wpml_current_language', function() {
+            return 'en';
+        } );
+        $this->add_filter_with_safe_teardown( 'wpml_default_language', function() {
+            return 'en';
+        } );
+        $switches = array();
+        $this->add_filter_with_safe_teardown( 'wpml_switch_language', function( $code ) use ( &$switches ) {
+            $switches[] = $code;
+            return $code;
+        } );
+
+        $product_set_sync = $this->getMockBuilder( ProductSetSyncTestable::class )
+            ->setMethods(['get_fb_product_set_id','create_fb_product_set'])
+            ->getMock();
+        $product_set_sync->method( 'get_fb_product_set_id' )->willReturn( null );
+
+        $product_set_sync->sync_all_product_sets();
+
+        $this->assertSame( array(), $switches, 'Already on the default language: no switch.' );
     }
 
     public function testProductSetData() {
