@@ -12,7 +12,6 @@ namespace WooCommerce\Facebook\ProductSets;
 
 defined( 'ABSPATH' ) || exit;
 
-use WC_Facebookcommerce_Utils;
 use WooCommerce\Facebook\Framework\Logger;
 
 /**
@@ -53,12 +52,40 @@ class LegacyProductSetMigration {
 		}
 	}
 
+	/**
+	 * Reads a category name the way the product feed reads it.
+	 *
+	 * @see \WooCommerce\Facebook\ProductSets\ProductSetSync::get_decoded_term_field()
+	 *
+	 * @since 3.7.7
+	 *
+	 * @param \WP_Term|int $wc_category The WooCommerce category.
+	 * @return string
+	 */
+	private static function get_decoded_category_name( $wc_category ) {
+		$name = get_term_field( 'name', $wc_category, ProductSetSync::WC_PRODUCT_CATEGORY_TAXONOMY, 'raw' );
+
+		if ( is_wp_error( $name ) || ! is_string( $name ) ) {
+			return '';
+		}
+
+		return html_entity_decode( $name, ENT_QUOTES | ENT_HTML401, 'UTF-8' );
+	}
+
 	private static function update_fb_product_set( $fb_set_id, $fb_set_name, $fb_set_description, $wc_categories ) {
 		// Build combined filter for multiple categories
 		$filters = array();
 		foreach ( $wc_categories as $wc_category ) {
-			$wc_category_name = WC_Facebookcommerce_Utils::clean_string( get_term_field( 'name', $wc_category, 'product_cat' ) );
-			$filters[]        = array( 'product_type' => array( 'i_contains' => $wc_category_name ) );
+			// Read the stored name and decode entities, matching the product_type the feed sends
+			// in WC_Facebookcommerce_Utils::get_product_categories(). The 'display' context
+			// get_term_field() defaults to would run wptexturize(), turning the apostrophe in
+			// "Men's Clothing" into &#8217; and leaving the filter matching nothing.
+			$wc_category_name = self::get_decoded_category_name( $wc_category );
+			if ( '' === $wc_category_name ) {
+				continue;
+			}
+
+			$filters[] = array( 'product_type' => array( 'i_contains' => $wc_category_name ) );
 		}
 		$fb_product_set_data = array(
 			'name'     => $fb_set_name,

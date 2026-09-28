@@ -148,6 +148,36 @@ class ProductSetSyncTest extends AbstractWPUnitTestWithSafeFiltering {
     }
 
     /**
+     * A set collects products by matching its filter against the product_type the feed sends.
+     * The two are built from the same category name in different files, so pin them together:
+     * if either transform drifts, the set silently stops collecting anything.
+     */
+    public function testProductSetFilterMatchesTheProductTypeTheFeedSends() {
+        $name        = 'Men\'s "Best" Shoes';
+        $wc_category = $this->createWPCategory( $name, 'filter-matches-feed' );
+
+        $product = new WC_Product_Simple();
+        $product->set_name( 'A shoe' );
+        $product->save();
+        wp_set_object_terms( $product->get_id(), array( (int) $wc_category->term_id ), 'product_cat' );
+
+        $feed_product_type = WC_Facebookcommerce_Utils::get_product_categories( $product->get_id() )['categories'];
+
+        $product_set_sync = $this->getMockBuilder( ProductSetSyncTestable::class )
+            ->setMethods(['get_fb_product_set_id','create_fb_product_set'])
+            ->getMock();
+
+        $data   = $product_set_sync->build_fb_product_set_data( $wc_category );
+        $filter = json_decode( $data['filter'], true );
+
+        $this->assertStringContainsString(
+            $filter['and'][0]['product_type']['i_contains'],
+            $feed_product_type,
+            'The set filter must be findable in the product_type the feed sends.'
+        );
+    }
+
+    /**
      * WordPress stores an ampersand in a term name as &#038;. clean_string() only rewrites the
      * named &amp;, so the numeric entity used to survive all the way to Meta.
      */
