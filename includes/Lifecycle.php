@@ -353,12 +353,15 @@ class Lifecycle extends Framework\Lifecycle {
 	}
 
 	/**
-	 * Trigger sync of all WooCommerce categories
+	 * Queue a sync of all WooCommerce categories.
+	 *
+	 * Queued rather than run here: the sync makes Graph calls for every product category, and
+	 * upgrade routines run inside an ordinary admin request.
 	 *
 	 * @since 3.4.9
 	 */
 	protected function upgrade_to_3_4_9() {
-		facebook_for_woocommerce()->get_product_sets_sync_handler()->sync_all_product_sets();
+		facebook_for_woocommerce()->get_product_sets_sync_handler()->schedule_sync_all_product_sets();
 	}
 
 	/**

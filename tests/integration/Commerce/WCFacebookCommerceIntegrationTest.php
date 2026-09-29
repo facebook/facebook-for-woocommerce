@@ -551,7 +551,7 @@ class WCFacebookCommerceIntegrationTest extends \WooCommerce\Facebook\Tests\Abst
 
 		$facebook_product                                    = new WC_Facebook_Product( $product_to_update->get_id() );
 		$facebook_product_data                               = $facebook_product->prepare_product(null, \WC_Facebook_Product::PRODUCT_PREP_TYPE_ITEMS_BATCH );
-		$this->integration->product_catalog_id               = '123123123123123123';
+		$this->integration->update_product_catalog_id( '123123123123123123' );
 		/* Data coming from _POST data. */
 		$facebook_product_data['description']				 = 'Facebook product description.';
 		$facebook_product_data['rich_text_description']		 = 'Facebook product description.';
@@ -734,7 +734,7 @@ class WCFacebookCommerceIntegrationTest extends \WooCommerce\Facebook\Tests\Abst
 		$facebook_product                      = new WC_Facebook_Product( $product );
 		$product_data                          = $facebook_product->prepare_product(null, \WC_Facebook_Product::PRODUCT_PREP_TYPE_ITEMS_BATCH );
 		$requests                              = WC_Facebookcommerce_Utils::prepare_product_requests_items_batch($product_data);
-		$this->integration->product_catalog_id = '123123123123123123';
+		$this->integration->update_product_catalog_id( '123123123123123123' );
 		if ( empty( $product_data['additional_image_urls'] ) ) {
 			$product_data['additional_image_urls'] = '';
 		}
@@ -832,7 +832,7 @@ class WCFacebookCommerceIntegrationTest extends \WooCommerce\Facebook\Tests\Abst
 			->with( $product )
 			->willReturn( $validator );
 
-		$this->integration->product_catalog_id          = '123123123123123123';
+		$this->integration->update_product_catalog_id( '123123123123123123' );
 		$facebook_product                               = new WC_Facebook_Product( $product->get_id() );
 		$facebook_product_data                          = $facebook_product->prepare_product(null, \WC_Facebook_Product::PRODUCT_PREP_TYPE_ITEMS_BATCH );
 
@@ -1187,7 +1187,7 @@ class WCFacebookCommerceIntegrationTest extends \WooCommerce\Facebook\Tests\Abst
 		update_option( 'woocommerce_hide_out_of_stock_items', 'yes' );
 		$facebook_product->woo_product->set_stock_status( 'instock' );
 
-		$this->integration->product_catalog_id          = '123123123123123123';
+		$this->integration->update_product_catalog_id( '123123123123123123' );
 		$facebook_product_data                          = $facebook_product->prepare_product(null, \WC_Facebook_Product::PRODUCT_PREP_TYPE_ITEMS_BATCH );
 
 		$requests = WC_Facebookcommerce_Utils::prepare_product_requests_items_batch($facebook_product_data);
@@ -1820,33 +1820,17 @@ class WCFacebookCommerceIntegrationTest extends \WooCommerce\Facebook\Tests\Abst
 	}
 
 	/**
-	 * Tests get_product_catalog_id returns product catalog id from object properly with no filters on it.
-	 *
-	 * @return void
-	 */
-	public function test_get_product_catalog_id_returns_product_catalog_from_initialised_property_using_no_filter() {
-		$this->integration->product_catalog_id = '123123123123123123';
-		$this->teardown_callback_category_safely( 'wc_facebook_product_catalog_id' );
-
-		$product_catalog_id = $this->integration->get_product_catalog_id();
-
-		$this->assertEquals( '123123123123123123', $product_catalog_id );
-	}
-
-	/**
 	 * Tests get_product_catalog_id returns product catalog id from options with no filters on it.
 	 *
 	 * @return void
 	 */
 	public function test_get_product_catalog_id_returns_product_catalog_from_options_using_no_filter() {
-		$this->integration->product_catalog_id = null;
 		add_option( WC_Facebookcommerce_Integration::OPTION_PRODUCT_CATALOG_ID, '321321321321321321' );
 		$this->teardown_callback_category_safely( 'wc_facebook_product_catalog_id' );
 
 		$product_catalog_id = $this->integration->get_product_catalog_id();
 
 		$this->assertEquals( '321321321321321321', $product_catalog_id );
-		$this->assertEquals( '321321321321321321', $this->integration->product_catalog_id );
 	}
 
 	/**

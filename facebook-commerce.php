@@ -219,9 +219,6 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 	/** @var string default value for facebook_managed_coupons_setting */
 	const SETTING_ENABLE_FACEBOOK_MANAGED_COUPONS_DEFAULT_VALUE = 'yes';
 
-	/** @var string|null the configured product catalog ID */
-	public $product_catalog_id;
-
 	/** @var string|null the configured external merchant settings ID */
 	public $external_merchant_settings_id;
 
@@ -2569,10 +2566,7 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 	 * @since 1.10.0
 	 */
 	public function get_product_catalog_id() {
-		if ( ! is_string( $this->product_catalog_id ) ) {
-			$value                    = get_option( self::OPTION_PRODUCT_CATALOG_ID, '' );
-			$this->product_catalog_id = is_string( $value ) ? $value : '';
-		}
+		$value = get_option( self::OPTION_PRODUCT_CATALOG_ID, '' );
 
 		/**
 		 * Filters the Facebook product catalog ID.
@@ -2582,7 +2576,7 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 		 *
 		 * @since 1.10.0
 		 */
-		return apply_filters( 'wc_facebook_product_catalog_id', $this->product_catalog_id, $this );
+		return apply_filters( 'wc_facebook_product_catalog_id', is_string( $value ) ? $value : '', $this );
 	}
 
 	/**
@@ -2796,9 +2790,7 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 	 * @since 1.10.0
 	 */
 	public function update_product_catalog_id( $value ) {
-		$this->product_catalog_id = $this->sanitize_facebook_credential( $value );
-
-		update_option( self::OPTION_PRODUCT_CATALOG_ID, $this->product_catalog_id );
+		update_option( self::OPTION_PRODUCT_CATALOG_ID, $this->sanitize_facebook_credential( $value ) );
 	}
 
 	/**

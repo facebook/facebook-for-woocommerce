@@ -569,11 +569,13 @@ class Handler extends AbstractRESTEndpoint {
 
 		try {
 			if ( $should_trigger_products_and_sets_sync ) {
-				facebook_for_woocommerce()->get_product_sets_sync_handler()->sync_all_product_sets();
+				// Queued rather than run here: the sync makes Graph calls for every product
+				// category, and this request has already committed the install on Meta's side.
+				facebook_for_woocommerce()->get_product_sets_sync_handler()->schedule_sync_all_product_sets();
 			}
 		} catch ( \Exception $exception ) {
 			Logger::log(
-				'Product sets sync failed.',
+				'Product sets sync scheduling failed.',
 				array(
 					'event'      => 'product_sets_sync',
 					'event_type' => 'sync_product_sets_after_settings_update',

@@ -26,6 +26,15 @@ class ProductSetSync {
 	// Product category taxonomy used by WooCommerce
 	const WC_PRODUCT_CATEGORY_TAXONOMY = 'product_cat';
 
+	/** @var string Action Scheduler hook a queued full sync runs under */
+	const SYNC_ALL_ACTION = 'facebook_for_woocommerce_sync_all_product_sets';
+
+	/** @var string Action Scheduler group the queued full sync belongs to */
+	const SYNC_ALL_ACTION_GROUP = 'facebook-for-woocommerce';
+
+	/** @var string transient that rations the full sync to one run a day */
+	const SYNC_ALL_FLAG = '_wc_facebook_for_woocommerce_product_sets_sync_flag';
+
 	/**
 	 * ProductSetSync constructor.
 	 */
@@ -48,7 +57,112 @@ class ProductSetSync {
 		/**
 		 * Schedules a daily sync of all WooCommerce categories to ensure any missed real-time updates are captured.
 		 */
-		add_action( Heartbeat::DAILY, array( $this, 'sync_all_product_sets' ) );
+		add_action( Heartbeat::DAILY, array( $this, 'sync_all_product_sets' ), 10, 0 );
+
+		/**
+		 * Runs a full sync that an earlier request queued, such as the one a newly connected
+		 * catalog asks for.
+		 */
+		add_action( self::SYNC_ALL_ACTION, array( $this, 'run_queued_sync_all_product_sets' ), 10, 0 );
+	}
+
+	/**
+	 * Queues a full product set sync to run outside the current request.
+	 *
+	 * The sync makes up to two Graph calls per product category, so a store with a few hundred
+	 * categories would hold the caller open for minutes. The caller onboarding uses has already
+	 * committed the install on Meta's side by the time it gets here: a host or proxy cutting it
+	 * short would leave the store connected with the browser on an error path.
+	 *
+	 * @since 3.7.7
+	 *
+	 * @return void
+	 */
+	public function schedule_sync_all_product_sets() {
+		if ( ! function_exists( 'as_enqueue_async_action' ) ) {
+			// No Action Scheduler, so the daily heartbeat stays the only path to a full sync.
+			return;
+		}
+
+		as_enqueue_async_action( self::SYNC_ALL_ACTION, array(), self::SYNC_ALL_ACTION_GROUP, true );
+	}
+
+	/**
+	 * Runs a full product set sync that an earlier request queued.
+	 *
+	 * Bound to the Action Scheduler hook. A queued sync exists because something asked for it,
+	 * a catalog connecting most often, so it does not compete with the daily heartbeat for the
+	 * one routine run a day: it goes ahead even if the heartbeat has already had its pass.
+	 *
+	 * @since 3.7.7
+	 *
+	 * @return void
+	 */
+	public function run_queued_sync_all_product_sets() {
+		$this->sync_all_product_sets( true );
+	}
+
+	/**
+	 * Whether the store is in a state where product sets can be synced at all.
+	 *
+	 * Every sync path needs an access token to build the API client and a catalog to address.
+	 * A store that was never connected, or has been disconnected, has neither; a store whose
+	 * install failed closed keeps a stale catalog with no token. Calling Graph in any of those
+	 * states either throws before the request is made or comes back 400, and in both cases the
+	 * only result is a misleading error in the log.
+	 *
+	 * @since 3.7.7
+	 *
+	 * @return bool
+	 */
+	private function can_sync_product_sets() {
+		return facebook_for_woocommerce()->get_connection_handler()->is_connected()
+			&& ! empty( facebook_for_woocommerce()->get_integration()->get_product_catalog_id() );
+	}
+
+	/**
+	 * Gets the WooCommerce product categories the sync mirrors.
+	 *
+	 * Polylang leaves term queries alone outside a language-aware request, but the queued sync
+	 * runs in an Action Scheduler async request, an admin-ajax loopback, where it narrows them to
+	 * the request's language; on a store with categories in several languages, or in none, that
+	 * dropped most of them. An empty 'lang' is Polylang's documented way to lift its filter, and
+	 * core ignores the argument, so every category is mirrored as the daily sync always has.
+	 *
+	 * WPML narrows term queries to the current language in every context. The daily sync runs in
+	 * WP-Cron, where that is the default language, so WPML stores have always mirrored the default
+	 * language's categories. The async runner inherits the cookies of the admin request that
+	 * dispatched it, so there the current language is whatever that admin had selected in WPML's
+	 * language switcher. The query is pinned to the default language so every runner mirrors the
+	 * same categories the daily sync does. Mirroring every language on WPML is a separate change.
+	 *
+	 * @since 3.7.7
+	 *
+	 * @return \WP_Term[]
+	 */
+	private function get_all_wc_product_categories() {
+		$wpml_language         = apply_filters( 'wpml_current_language', null );
+		$wpml_default_language = apply_filters( 'wpml_default_language', null );
+		$pin_wpml_language     = $wpml_default_language && $wpml_language !== $wpml_default_language;
+		if ( $pin_wpml_language ) {
+			do_action( 'wpml_switch_language', $wpml_default_language );
+		}
+
+		$wc_product_categories = get_terms(
+			array(
+				'taxonomy'   => self::WC_PRODUCT_CATEGORY_TAXONOMY,
+				'hide_empty' => false,
+				'orderby'    => 'ID',
+				'order'      => 'ASC',
+				'lang'       => '',
+			)
+		);
+
+		if ( $pin_wpml_language ) {
+			do_action( 'wpml_switch_language', $wpml_language );
+		}
+
+		return is_array( $wc_product_categories ) ? $wc_product_categories : array();
 	}
 
 	/**
@@ -60,6 +174,10 @@ class ProductSetSync {
 	 */
 	// phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter
 	public function on_create_or_update_product_wc_category_callback( $term_id, $tt_id, $args ) {
+		if ( ! $this->can_sync_product_sets() ) {
+			return;
+		}
+
 		try {
 			$wc_category       = get_term( $term_id, self::WC_PRODUCT_CATEGORY_TAXONOMY );
 			$fb_product_set_id = $this->get_fb_product_set_id( $wc_category );
@@ -83,6 +201,10 @@ class ProductSetSync {
 	 */
 	// phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter
 	public function on_delete_wc_product_category_callback( $term_id, $tt_id, $deleted_term, $object_ids ) {
+		if ( ! $this->can_sync_product_sets() ) {
+			return;
+		}
+
 		try {
 			$fb_product_set_id = $this->get_fb_product_set_id( $deleted_term );
 			if ( ! empty( $fb_product_set_id ) ) {
@@ -95,14 +217,25 @@ class ProductSetSync {
 
 	/**
 	 * @since 3.4.9
+	 *
+	 * @param bool $ignore_daily_limit Whether to run even if the day's sync has already happened.
+	 *                                 Set for syncs something explicitly asked for, as opposed to
+	 *                                 the heartbeat's routine pass.
 	 */
-	public function sync_all_product_sets() {
+	public function sync_all_product_sets( $ignore_daily_limit = false ) {
 		try {
-			$flag_name = '_wc_facebook_for_woocommerce_product_sets_sync_flag';
-			if ( 'yes' === get_transient( $flag_name ) ) {
+			// Without a connection and a catalog every category below would fail, see
+			// can_sync_product_sets(). Returning before the flag is set leaves the day's run
+			// available, so the next heartbeat retries once the store is ready rather than
+			// waiting out the window.
+			if ( ! $this->can_sync_product_sets() ) {
 				return;
 			}
-			set_transient( $flag_name, 'yes', DAY_IN_SECONDS - 1 );
+
+			if ( ! $ignore_daily_limit && 'yes' === get_transient( self::SYNC_ALL_FLAG ) ) {
+				return;
+			}
+			set_transient( self::SYNC_ALL_FLAG, 'yes', DAY_IN_SECONDS - 1 );
 
 			$this->sync_all_wc_product_categories();
 		} catch ( \Exception $exception ) {
@@ -212,14 +345,7 @@ class ProductSetSync {
 	}
 
 	private function sync_all_wc_product_categories() {
-		$wc_product_categories = get_terms(
-			array(
-				'taxonomy'   => self::WC_PRODUCT_CATEGORY_TAXONOMY,
-				'hide_empty' => false,
-				'orderby'    => 'ID',
-				'order'      => 'ASC',
-			)
-		);
+		$wc_product_categories = $this->get_all_wc_product_categories();
 
 		foreach ( $wc_product_categories as $wc_category ) {
 			try {

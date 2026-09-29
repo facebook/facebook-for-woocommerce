@@ -153,9 +153,9 @@ class LifecycleConfigSyncTest extends \WooCommerce\Facebook\Tests\AbstractWPUnit
 	public function test_upgrade_to_3_4_9_no_config_sync(): void {
 		// Mock product sets sync handler
 		$product_sets_handler_mock = $this->getMockBuilder( \stdClass::class )
-			->addMethods( [ 'sync_all_product_sets' ] )
+			->addMethods( [ 'schedule_sync_all_product_sets' ] )
 			->getMock();
-		$product_sets_handler_mock->method( 'sync_all_product_sets' )->willReturn( true );
+		$product_sets_handler_mock->method( 'schedule_sync_all_product_sets' )->willReturn( null );
 
 		$this->plugin_mock->method( 'get_product_sets_sync_handler' )
 			->willReturn( $product_sets_handler_mock );
