@@ -194,6 +194,40 @@ class ProductSetSyncTest extends AbstractWPUnitTestWithSafeFiltering {
         $this->assertEquals( $name, $data['name'] );
     }
 
+    /**
+     * wptexturize() rewrites the x in "2x4" as &#215; in the display context, and
+     * clean_string() does not decode it, so the set used to reach Meta as "2&#215;4 Lumber".
+     */
+    public function testProductSetDataKeepsTexturizedCharactersAsTyped() {
+        $name        = '2x4 Lumber';
+        $wc_category = $this->createWPCategory( $name, 'two-by-four-lumber' );
+
+        $product_set_sync = $this->getMockBuilder( ProductSetSyncTestable::class )
+            ->setMethods(['get_fb_product_set_id','create_fb_product_set'])
+            ->getMock();
+
+        $data = $product_set_sync->build_fb_product_set_data( $wc_category );
+
+        $this->assertEquals( $name, $data['name'] );
+    }
+
+    /**
+     * WordPress stores a lone < in a term name as &lt;. The display context leaves the entity in
+     * place and clean_string() only decodes &amp;, so the set used to reach Meta as "A &lt; B".
+     */
+    public function testProductSetDataDecodesAngleBracketsInTheCategoryName() {
+        $name        = 'A < B';
+        $wc_category = $this->createWPCategory( $name, 'a-less-than-b' );
+
+        $product_set_sync = $this->getMockBuilder( ProductSetSyncTestable::class )
+            ->setMethods(['get_fb_product_set_id','create_fb_product_set'])
+            ->getMock();
+
+        $data = $product_set_sync->build_fb_product_set_data( $wc_category );
+
+        $this->assertEquals( $name, $data['name'] );
+    }
+
     /* ------------------ Utils Methods ------------------ */
 
     private function createWPCategory( $name = self::WC_CATEGORY_NAME_1, $slug = 'test-category' ) {
