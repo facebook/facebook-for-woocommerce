@@ -2,8 +2,8 @@
 Contributors: facebook
 Tags: meta, facebook, whatsapp, conversions api, catalog sync
 Requires at least: 5.6
-Tested up to: 7.0
-Stable tag: 3.7.6
+Tested up to: 7.1
+Stable tag: 3.7.7
 Requires PHP: 7.4
 MySQL: 5.6 or greater
 License: GPLv2 or later
@@ -48,12 +48,33 @@ When that happens, the site still recovers on the next request, but the disable 
 
 == Changelog ==
 
-= 3.7.6 - 2026-07-23 =
-* Fix - Fix/prepare release changelog fix by @bojanaivovic in #3972
-* Fix - ci(e2e): run all shards on ubuntu-latest instead of custom runner pools by @vahidkay-meta in #3976
-* Fix - Improve escaping and WordPress Plugin Check compliance by @vahidkay-meta in #3980
-* Fix - Clear remaining WordPress Plugin Check errors by @vahidkay-meta in #3981
-* Dev - ci(release): fix readme Tested-up-to minor version + propagate Stable tag to git by @vahidkay-meta in #3983
+= 3.7.7 - 2026-09-22 =
+* Dev - ci(e2e): run E2E tests on the latest PHP by @vahidkay-meta in #3982
+* Dev - test(e2e): assert exact mapped value on Facebook color field by @vahidkay-meta in #3985
+* Dev - test(e2e): harden weak assertions and modernize CI database by @vahidkay-meta in #3984
+* Dev - Add copyright headers and surface license/legal info by @vahidkay-meta in #3996
+* Dev - Remove unused legacy connection methods by @jczhuoMeta in #4001
+* Dev - Remove legacy page access token storage by @jczhuoMeta in #4002
+* Dev - Bump postcss from 8.5.6 to 8.5.26 by @app/dependabot in #4010
+* Dev - test(e2e): cover Search event on classic + block theme projects by @vahidkay-meta in #3995
+* Dev - ci(e2e): fix every known cause of the red E2E pipeline by @jczhuoMeta in #4016
+* Fix - Fix - Stop calling the deprecated WooCommerce Admin marketing feature flag (WC 11.1.0) by @jczhuoMeta in #4026
+* Breaking - Remove the retired WooCommerce connection bridge by @jczhuoMeta in #4014
+* Add - Use finalize-install for enhanced onboarding by @jczhuoMeta in #4032
+* Tweak - Remove the retired FBE install webhook by @jczhuoMeta in #4037
+* Fix - Align finalize-install request schema with its payload by @jczhuoMeta in #4038
+* Tweak - Tweak - Stop writing redundant legacy connection options by @jczhuoMeta in #4035
+* Fix - Clamp out-of-range quantities before reporting pixel events by @vahidkay-meta in #4039
+* Fix - Redact credentials from API request logs and CI artifacts by @rafael-curran in #4029
+* Update - Use delegated access tokens for Shops management URLs by @jczhuoMeta in #4030
+* Fix - Stop requiring and collecting the Facebook Page ID by @jczhuoMeta in #4044
+* Tweak - Remove the hourly business-configuration refresh by @jczhuoMeta in #4046
+* Tweak - Retire the connection options nothing reads by @jczhuoMeta in #4045
+* Dev - Add Param Builder CDN fallback by @pinahar in #4050
+* Fix - [Easy] Derive the Authorization header from the current access token by @jczhuoMeta in #4043
+* Add - Gate Value Optimization behind a rollout switch, and fix its net revenue calculation by @vahidkay-meta in #4042
+* Fix - Sync products to Meta catalog on WooCommerce REST API saves by @vahidkay-meta in #3997
+* Fix - Make the log throttle group cap a fixed 24 hour window by @vahidkay-meta in #4053
 
 [See changelog for all versions](https://raw.githubusercontent.com/facebook/facebook-for-woocommerce/refs/heads/main/changelog.txt).
 
