@@ -454,15 +454,121 @@ class ProductSetSyncTest extends AbstractWPUnitTestWithSafeFiltering {
         $this->assertEquals( '{"description":"This is a test category","external_url":"http:\/\/example.org\/?product_cat=test-category"}', $data['metadata'] );
     }
 
+    /**
+     * T278758421: quotes in a category name reached Commerce Manager as HTML entities, so the
+     * set for "Men's Clothing" was listed as "Men&#8217;s Clothing". get_term_field() defaults
+     * to the 'display' context, where wptexturize() rewrites straight quotes as &#8217; and
+     * &#8220;/&#8221; and esc_html() leaves those entities in place.
+     */
+    public function testProductSetDataKeepsQuotesAsTheMerchantTypedThem() {
+        $name        = 'Men\'s "Best" Shoes';
+        $wc_category = $this->createWPCategory( $name, 'mens-best-shoes' );
+
+        $product_set_sync = $this->getMockBuilder( ProductSetSyncTestable::class )
+            ->setMethods(['get_fb_product_set_id','create_fb_product_set'])
+            ->getMock();
+
+        $data = $product_set_sync->build_fb_product_set_data( $wc_category );
+
+        $this->assertEquals( $name, $data['name'] );
+        $this->assertStringNotContainsString( '&#', $data['name'], 'The set name should carry no HTML entities.' );
+
+        // A set only collects products when its filter matches the product_type the feed sends,
+        // and the feed sends the same decode of the same category name.
+        $filter = json_decode( $data['filter'], true );
+        $this->assertEquals( $name, $filter['and'][0]['product_type']['i_contains'] );
+    }
+
+    /**
+     * A set collects products by matching its filter against the product_type the feed sends.
+     * The two are built from the same category name in different files, so pin them together:
+     * if either transform drifts, the set silently stops collecting anything.
+     */
+    public function testProductSetFilterMatchesTheProductTypeTheFeedSends() {
+        $name        = 'Men\'s "Best" Shoes';
+        $wc_category = $this->createWPCategory( $name, 'filter-matches-feed' );
+
+        $product = new WC_Product_Simple();
+        $product->set_name( 'A shoe' );
+        $product->save();
+        wp_set_object_terms( $product->get_id(), array( (int) $wc_category->term_id ), 'product_cat' );
+
+        $feed_product_type = WC_Facebookcommerce_Utils::get_product_categories( $product->get_id() )['categories'];
+
+        $product_set_sync = $this->getMockBuilder( ProductSetSyncTestable::class )
+            ->setMethods(['get_fb_product_set_id','create_fb_product_set'])
+            ->getMock();
+
+        $data   = $product_set_sync->build_fb_product_set_data( $wc_category );
+        $filter = json_decode( $data['filter'], true );
+
+        $this->assertStringContainsString(
+            $filter['and'][0]['product_type']['i_contains'],
+            $feed_product_type,
+            'The set filter must be findable in the product_type the feed sends.'
+        );
+    }
+
+    /**
+     * WordPress stores an ampersand in a term name as &#038;. clean_string() only rewrites the
+     * named &amp;, so the numeric entity used to survive all the way to Meta.
+     */
+    public function testProductSetDataDecodesAmpersandsInTheCategoryName() {
+        $name        = 'Tom & Jerry';
+        $wc_category = $this->createWPCategory( $name, 'tom-and-jerry' );
+
+        $product_set_sync = $this->getMockBuilder( ProductSetSyncTestable::class )
+            ->setMethods(['get_fb_product_set_id','create_fb_product_set'])
+            ->getMock();
+
+        $data = $product_set_sync->build_fb_product_set_data( $wc_category );
+
+        $this->assertEquals( $name, $data['name'] );
+    }
+
+    /**
+     * wptexturize() rewrites the x in "2x4" as &#215; in the display context, and
+     * clean_string() does not decode it, so the set used to reach Meta as "2&#215;4 Lumber".
+     */
+    public function testProductSetDataKeepsTexturizedCharactersAsTyped() {
+        $name        = '2x4 Lumber';
+        $wc_category = $this->createWPCategory( $name, 'two-by-four-lumber' );
+
+        $product_set_sync = $this->getMockBuilder( ProductSetSyncTestable::class )
+            ->setMethods(['get_fb_product_set_id','create_fb_product_set'])
+            ->getMock();
+
+        $data = $product_set_sync->build_fb_product_set_data( $wc_category );
+
+        $this->assertEquals( $name, $data['name'] );
+    }
+
+    /**
+     * WordPress stores a lone < in a term name as &lt;. The display context leaves the entity in
+     * place and clean_string() only decodes &amp;, so the set used to reach Meta as "A &lt; B".
+     */
+    public function testProductSetDataDecodesAngleBracketsInTheCategoryName() {
+        $name        = 'A < B';
+        $wc_category = $this->createWPCategory( $name, 'a-less-than-b' );
+
+        $product_set_sync = $this->getMockBuilder( ProductSetSyncTestable::class )
+            ->setMethods(['get_fb_product_set_id','create_fb_product_set'])
+            ->getMock();
+
+        $data = $product_set_sync->build_fb_product_set_data( $wc_category );
+
+        $this->assertEquals( $name, $data['name'] );
+    }
+
     /* ------------------ Utils Methods ------------------ */
 
-    private function createWPCategory( $name = self::WC_CATEGORY_NAME_1 ) {
+    private function createWPCategory( $name = self::WC_CATEGORY_NAME_1, $slug = 'test-category' ) {
         $wc_category = wp_insert_term(
             $name,
             'product_cat', // taxonomy
             array(
                 'description' => 'This is a test category',
-                'slug' => 'test-category',
+                'slug' => $slug,
             )
         );
 
