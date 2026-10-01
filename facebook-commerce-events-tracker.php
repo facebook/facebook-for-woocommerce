@@ -300,7 +300,7 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 			add_action( 'woocommerce_blocks_checkout_enqueue_data', array( $this, 'inject_initiate_checkout_event' ) );
 
 			// Purchase and Subscribe events
-			add_action( 'woocommerce_new_order', array( $this, 'inject_purchase_event' ), 10 );
+			add_action( 'woocommerce_new_order', array( $this, 'inject_purchase_event' ), 10, 2 );
 			add_action( 'woocommerce_process_shop_order_meta', array( $this, 'inject_purchase_event' ), 20 );
 			add_action( 'woocommerce_checkout_update_order_meta', array( $this, 'inject_purchase_event' ), 30 );
 			add_action( 'woocommerce_thankyou', array( $this, 'inject_purchase_event' ), 40 );
@@ -1372,9 +1372,10 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 		 *
 		 * @internal
 		 *
-		 * @param int $order_id order identifier
+		 * @param int           $order_id Order identifier.
+		 * @param WC_Order|null $order    Original order supplied by woocommerce_new_order, if available.
 		 */
-		public function inject_purchase_event( $order_id ) {
+		public function inject_purchase_event( $order_id, $order = null ) {
 
 			if ( \WC_Facebookcommerce_Utils::is_admin_user() || ! $this->is_pixel_enabled() ) {
 				return;
@@ -1383,7 +1384,11 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 			$event_name                  = 'Purchase';
 			$valid_purchase_order_states = array( 'processing', 'completed', 'on-hold', 'pending' );
 
-			$order = wc_get_order( $order_id );
+			// New-order callbacks run before save_items(). The original object already
+			// contains the items, while reloading it here can return an empty order.
+			if ( ! $order instanceof \WC_Order || $order->get_id() !== (int) $order_id ) {
+				$order = wc_get_order( $order_id );
+			}
 
 			if ( ! $order ) {
 				return;
@@ -1443,8 +1448,9 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 			// Mark the order as tracked for the context (browser or server).
 			$order->add_meta_data( $meta_flag, true, true );
 
-			// Save the metadata.
-			$order->save();
+			// Persist only tracking metadata; do not recursively save an order that
+			// WooCommerce is still creating or updating in woocommerce_new_order.
+			$order->save_meta_data();
 
 			Logger::log(
 				'Purchase event fired for order ' . $order_id . ' by hook ' . $hook_name . ' (context: ' . ( $is_browser ? 'browser' : 'server' ) . ').',
