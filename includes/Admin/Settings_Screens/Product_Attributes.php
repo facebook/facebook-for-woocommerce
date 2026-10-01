@@ -94,12 +94,6 @@ class Product_Attributes extends Abstract_Settings_Screen {
 			true // Load in footer
 		);
 		wp_enqueue_script( 'facebook-for-woocommerce-product-attributes' );
-			'facebook-for-woocommerce-product-attributes',
-			false,
-			array( 'jquery', 'jquery-tiptip', 'wc-enhanced-select' ),
-			\WC_Facebookcommerce::PLUGIN_VERSION,
-			true // Load in footer
-		);
 
 		// Add dismissible notice handlers
 		wp_add_inline_script(
