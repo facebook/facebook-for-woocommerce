@@ -534,13 +534,18 @@ if ( ! class_exists( 'WC_Facebookcommerce_Utils' ) ) :
 		/**
 		 * Truncates a float value to the number of points.
 		 *
+		 * Scaling a float is lossy, so a value that is exactly 5.99 in decimal can scale to
+		 * 598.9999999999999 and floor down to 5.98. The scaled value is rounded off well below
+		 * the point of interest first, which removes that artifact while still truncating
+		 * digits the caller genuinely asked to drop.
+		 *
 		 * @param float $value input value
 		 * @param int   $points number of floating points
 		 * @return float
 		 */
 		public static function truncate_float_number( float $value, int $points = 2 ) {
 			$zeros = pow( 10, $points );
-			return floor( $value * $zeros ) / $zeros;
+			return floor( round( $value * $zeros, 6 ) ) / $zeros;
 		}
 
 		/**
