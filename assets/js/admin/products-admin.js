@@ -560,103 +560,58 @@ jQuery( document ).ready( function( $ ) {
 	} );
 
 	// show/hide Custom Video URL setting and Choose Video button
-	$productData.on( 'change', '.js-fb-product-video-source', function() {
+	$productData.on('change', '.js-fb-product-video-source', function() {
+		updateVideoSourceUI( $( this ) );
+	});
 
-		let $container  = $( this ).closest( '.woocommerce_options_panel, .wc-metabox-content' );
-		let videoSource = $( this ).val();
+	// Update video-source UI without firing a synthetic change event
+	function updateVideoSourceUI( $select ) {
+		const $container = $select.closest( '.woocommerce_variation, .woocommerce_options_panel, .wc-metabox-content' );
+		const videoSource = $select.val();
 
-	// Hide all product-video-source-field elements and their form-field wrappers
-	$container.find( '.product-video-source-field' ).removeClass( 'show' ).closest( '.form-field' ).hide();
+		// Hide all product-video-source-field elements and their form-field wrappers
+		$container.find('.product-video-source-field').hide().removeClass('show');
 
-	// Show only the selected video source field and its form-field wrapper
-	$container.find( `.show-if-product-video-source-${videoSource}` ).addClass( 'show' ).closest( '.form-field' ).show();
-	} );
-
-	// Move Choose Video button inline with first radio option
-	function moveVideoButtonInline() {
-		// For simple products and variations
-		$('#facebook_options .fb-product-video-source-field .wc-radios li:first-child label, .woocommerce_variation .fb-product-video-source-field .wc-radios li:first-child label').each(function() {
-			let $label = $(this);
-			let $button = $label.closest('.fb-product-video-source-field').next('p.product-video-source-field').find('button');
-			
-			if ($button.length && !$label.find('button').length) {
-				$label.append(' ').append($button);
-			}
-		});
+		// Show only the selected video source field and its form-field wrapper
+		$container.find('.show-if-product-video-source-' + videoSource)
+				.show()
+				.addClass('show');
 	}
 
-	// Trigger initial show/hide on page load
-	function triggerImageSourceChange() {
-		$( '.js-fb-product-image-source:checked' ).each(function() {
-			$(this).trigger( 'change' );
-		});
-	}
+	// Update image-source UI without firing a synthetic change event
+	function updateImageSourceUI( $select ) {
+		const $container  = $select.closest( '.woocommerce_options_panel, .wc-metabox-content' );
+		const imageSource = $select.val();
 
-	// Trigger initial show/hide for video source on page load
-	function triggerVideoSourceChange() {
-		$( '.js-fb-product-video-source:checked' ).each(function() {
-			$(this).trigger( 'change' );
-		});
-	}
+		$container.find( '.product-image-source-field' ).closest( '.form-field' ).hide();
+		$container.find( `.show-if-product-image-source-${imageSource}` ).closest( '.form-field' ).show();
 
-	// Initialize image source changes when DOM is ready
-	function initializeImageSourceStates() {
-		// Wait for elements to be available in DOM
-		if ($('.js-fb-product-image-source').length === 0) {
-			// If elements aren't ready yet, wait for DOM mutations
-			const observer = new MutationObserver(function(mutations) {
-				mutations.forEach(function(mutation) {
-					if (mutation.addedNodes.length > 0) {
-						// Check if our target elements were added
-						const $addedElements = $(mutation.addedNodes).find('.js-fb-product-image-source');
-						if ($addedElements.length > 0) {
-							triggerImageSourceChange();
-							observer.disconnect(); // Stop observing once we've found our elements
-						}
-					}
-				});
-			});
+		if ( $container.hasClass( 'wc-metabox-content' ) ) {
+			$container.find( '.product-image-source-field' ).removeClass( 'show' );
+			$container.find( `.show-if-product-image-source-${imageSource}` ).addClass( 'show' );
 
-			// Start observing
-			observer.observe(document.body, {
-				childList: true,
-				subtree: true
-			});
-		} else {
-			// Elements are already available, trigger immediately
-			triggerImageSourceChange();
+			const $thumbnailsContainer = $container.find( '.fb-product-images-thumbnails' );
+			$thumbnailsContainer.toggle( imageSource === 'multiple' );
 		}
+	}
+
+	// React to user changes
+	$productData.on( 'change', '.js-fb-product-image-source', function() {
+		updateImageSourceUI( $( this ) );
+	});
+
+	// Initialize existing image-source fields on page load
+	function initializeImageSourceStates() {
+		$( '.js-fb-product-image-source' ).each(function() {
+			updateImageSourceUI( $( this ) );
+		});
 	}
 
 	// Initialize video source changes when DOM is ready
 	function initializeVideoSourceStates() {
-		// Wait for elements to be available in DOM
-		if ($('.js-fb-product-video-source').length === 0) {
-			// If elements aren't ready yet, wait for DOM mutations
-			const observer = new MutationObserver(function(mutations) {
-				mutations.forEach(function(mutation) {
-					if (mutation.addedNodes.length > 0) {
-						// Check if our target elements were added
-						const $addedElements = $(mutation.addedNodes).find('.js-fb-product-video-source');
-						if ($addedElements.length > 0) {
-							moveVideoButtonInline();
-							triggerVideoSourceChange();
-							observer.disconnect(); // Stop observing once we've found our elements
-						}
-					}
-				});
-			});
-
-			// Start observing
-			observer.observe(document.body, {
-				childList: true,
-				subtree: true
-			});
-		} else {
-			// Elements are already available, trigger immediately
-			moveVideoButtonInline();
-			triggerVideoSourceChange();
-		}
+		$( '.js-fb-product-video-source' ).each(function() {
+			updateVideoSourceUI( $( this ) );
+		});
 	}
 
 	// Initialize on DOM ready
@@ -666,9 +621,15 @@ jQuery( document ).ready( function( $ ) {
 	// Also initialize when variations are loaded
 	$productData.on( 'woocommerce_variations_loaded', function() {
 		$( '.js-variable-fb-sync-toggle:visible' ).trigger( 'change' );
-		triggerImageSourceChange(); // No timeout needed here since variations are already loaded
-		moveVideoButtonInline(); // Move buttons inline for variations
-		triggerVideoSourceChange(); // Also trigger video source changes for variations
+
+		$('.js-fb-product-image-source').each(function() {
+			updateImageSourceUI($(this));
+		});
+
+		$('.js-fb-product-video-source').each(function() {
+			updateVideoSourceUI($(this));
+		});
+
 		$( '.variable_is_virtual:visible' ).trigger( 'change' );
 	} );
 
@@ -1077,10 +1038,10 @@ jQuery( document ).ready( function( $ ) {
 		// Add new video thumbnails
 		selection.each(function (attachment) {
 			attachment = attachment.toJSON();
-			
+
 			const isAttachmentIdIncluded = newIds.includes(attachment.id);
 			const isAttachmentVideo = attachment.mime && attachment.mime.startsWith('video/');
-			
+
 			// Validate that the attachment is a video
 			if (isAttachmentIdIncluded && isAttachmentVideo) {
 				const $videoThumbnail = createVariationVideoThumbnail(attachment, variationIndex);
