@@ -170,12 +170,9 @@ jobs:
         uses: actions/checkout@v5
 
       - name: Setup Node.js
-        # Pin Node 22 rather than reading engines from package.json (which allows
-        # up to 24). Playwright 1.53 hangs while extracting the browser archive on
-        # Node 24, which silently stalled the E2E jobs after the Chromium download.
         uses: actions/setup-node@v4
         with:
-          node-version: '22'
+          node-version-file: 'package.json'
           cache: 'npm'
 
       - name: Setup PHP
