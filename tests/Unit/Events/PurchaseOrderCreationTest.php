@@ -119,6 +119,82 @@ class PurchaseOrderCreationTest extends AbstractWPUnitTestWithSafeFiltering {
 	}
 
 	/**
+	 * With HPOS, a metadata change is followed by a full save() whenever a second has
+	 * passed since the order was last modified. In a slow run that happened between
+	 * creating the order and tracking it, so saving the tracking metadata during
+	 * woocommerce_new_order saved the order and its items early, and the test above
+	 * failed now and then.
+	 *
+	 * The filter forces that condition while woocommerce_new_order runs, so it is
+	 * checked every run. It is left alone before the hook: WooCommerce saves the
+	 * order's meta itself there, while changes are still pending, and never does a
+	 * full save at that point.
+	 */
+	public function test_new_order_is_not_saved_when_hpos_would_update_the_modified_date(): void {
+		update_option( 'woocommerce_custom_orders_table_enabled', 'yes' );
+		update_option( 'woocommerce_custom_orders_table_data_sync_enabled', 'no' );
+		$this->assertTrue( \Automattic\WooCommerce\Utilities\OrderUtil::custom_orders_table_usage_is_enabled() );
+		$this->add_filter_with_safe_teardown(
+			'woocommerce_orders_table_datastore_should_save_after_meta_change',
+			static function ( $should_save ) {
+				return $should_save || doing_action( 'woocommerce_new_order' );
+			}
+		);
+		$order = $this->build_order();
+		$after = null;
+		$this->add_filter_with_safe_teardown(
+			'woocommerce_new_order',
+			function ( $id ) use ( &$after ) {
+				$after = count( wc_get_order( $id )->get_items() );
+			},
+			99
+		);
+
+		$order->save();
+
+		$this->assertSame( 0, $after, 'Tracking must not recursively save the new order and its items.' );
+		$this->assertCount( 2, wc_get_order( $order->get_id() )->get_items() );
+		$this->assertNotEmpty( wc_get_order( $order->get_id() )->get_meta( '_meta_purchase_tracked_server' ) );
+		$this->assert_complete_purchase( $order );
+	}
+
+	/**
+	 * Some plugins fire woocommerce_new_order themselves, outside a save. No save
+	 * finishes afterwards, so the tracking metadata is saved at shutdown.
+	 */
+	public function test_new_order_fired_outside_a_save_saves_tracking_metadata_at_shutdown(): void {
+		remove_action( 'woocommerce_new_order', array( $this->tracker, 'inject_purchase_event' ), 10 );
+		$order = $this->build_order();
+		$order->save();
+		add_action( 'woocommerce_new_order', array( $this->tracker, 'inject_purchase_event' ), 10, 2 );
+		// Only the callback registered by tracking should run at shutdown here.
+		remove_all_actions( 'shutdown' );
+
+		do_action( 'woocommerce_new_order', $order->get_id(), $order );
+
+		$this->assert_complete_purchase( $order );
+		$this->assertEmpty( wc_get_order( $order->get_id() )->get_meta( '_meta_purchase_tracked_server' ), 'Saved only once no save follows.' );
+
+		do_action( 'shutdown' );
+
+		$this->assertNotEmpty( wc_get_order( $order->get_id() )->get_meta( '_meta_purchase_tracked_server' ) );
+	}
+
+	public function test_after_save_callback_removes_itself(): void {
+		$count_callbacks = static function (): int {
+			$hook = $GLOBALS['wp_filter']['woocommerce_after_order_object_save'] ?? null;
+			return $hook ? array_sum( array_map( 'count', $hook->callbacks ) ) : 0;
+		};
+		$before = $count_callbacks();
+		$order  = $this->build_order();
+
+		$order->save();
+
+		$this->assertNotEmpty( wc_get_order( $order->get_id() )->get_meta( '_meta_purchase_tracked_server' ) );
+		$this->assertSame( $before, $count_callbacks() );
+	}
+
+	/**
 	 * Blocks creates a draft first and fires new_order on the pending transition.
 	 *
 	 * @dataProvider order_storage

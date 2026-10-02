@@ -283,6 +283,9 @@ class WC_Facebookcommerce extends WooCommerce\Facebook\Framework\Plugin {
 				if ( class_exists( 'WooCommerce\Facebook\Admin\Global_Attributes_Banner' ) ) {
 					new WooCommerce\Facebook\Admin\Global_Attributes_Banner();
 				}
+
+				// Introduce offline events to stores with a supported POS that have never opted in.
+				new WooCommerce\Facebook\Admin\Offline_Events_Banner();
 			},
 			0
 		);

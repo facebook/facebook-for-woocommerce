@@ -85,18 +85,23 @@ jobs:
       - name: Setup WordPress Test Environment
         if: steps.install-composer.outputs.composer_installed == 'true'
         id: setup-wp
-        continue-on-error: true
         env:
           POLYLANG_VERSION: ${{ startsWith(format('{0}', matrix.php), '7.4') && '3.7.7' || 'latest' }}
+          # WCPOS for the point-of-sale contract tests.
+          WCPOS_VERSION: latest-stable
         run: |
           # Install WordPress test suite with WooCommerce and Polylang for localization tests
           # Parameters: db-name db-user db-pass db-host wp-version wc-version polylang-version skip-db-creation
-          bash bin/install-wp-tests.sh wordpress_test wp_user wp_pass 127.0.0.1:3306 latest latest $POLYLANG_VERSION || echo "::warning::WordPress test suite installation failed"
+          # The MySQL service already creates wordpress_test.
+          bash bin/install-wp-tests.sh wordpress_test wp_user wp_pass 127.0.0.1:3306 latest latest "$POLYLANG_VERSION" true
           # Install Meta for WooCommerce plugin
           cp -r . /tmp/wordpress/wp-content/plugins/facebook-for-woocommerce
 
           # Check if setup was successful
-          if [ -d "/tmp/wordpress" ] && [ -d "/tmp/wordpress/wp-content/plugins/woocommerce" ]; then
+          if [ -f "/tmp/wordpress-tests-lib/includes/functions.php" ] &&
+             [ -f "/tmp/wordpress-tests-lib/wp-tests-config.php" ] &&
+             [ -f "/tmp/wordpress/wp-content/plugins/woocommerce/woocommerce.php" ] &&
+             [ -f "/tmp/wordpress/wp-content/plugins/woocommerce-pos/woocommerce-pos.php" ]; then
             echo "wp_setup_success=true" >> $GITHUB_OUTPUT
 
             # Check if Polylang was installed for localization tests
@@ -107,8 +112,19 @@ jobs:
               echo "Polylang not installed - localization tests will be skipped" >> $GITHUB_STEP_SUMMARY
               echo "polylang_available=false" >> $GITHUB_OUTPUT
             fi
+
+            # Check if WCPOS was installed for the point-of-sale contract tests
+            if [ -f "/tmp/wordpress/wp-content/plugins/woocommerce-pos/woocommerce-pos.php" ]; then
+              echo "WCPOS installed - point-of-sale contract tests will run" >> $GITHUB_STEP_SUMMARY
+              echo "wcpos_available=true" >> $GITHUB_OUTPUT
+            else
+              echo "WCPOS not installed - point-of-sale contract tests will be skipped" >> $GITHUB_STEP_SUMMARY
+              echo "wcpos_available=false" >> $GITHUB_OUTPUT
+            fi
           else
             echo "wp_setup_success=false" >> $GITHUB_OUTPUT
+            echo "::error::WordPress test environment is incomplete"
+            exit 1
           fi
 
       - name: Verify Test Environment
@@ -130,15 +146,17 @@ jobs:
           WP_TESTS_DIR: /tmp/wordpress-tests-lib
           WP_CORE_DIR: /tmp/wordpress
           WC_DIR: /tmp/wordpress/wp-content/plugins/woocommerce
-          FB_TEST_PLUGIN: ${{ steps.setup-wp.outputs.polylang_available == 'true' && 'polylang' || '' }}
         run: |
-          # Set environment variable for localization tests
+          # Third-party plugins to load, as a comma-separated list.
+          plugins=()
           if [[ "${{ steps.setup-wp.outputs.polylang_available }}" == "true" ]]; then
-            echo "Running integration tests with Polylang support..."
-            export FB_TEST_PLUGIN=polylang
-          else
-            echo "Running integration tests without localization plugin..."
+            plugins+=("polylang")
           fi
+          if [[ "${{ steps.setup-wp.outputs.wcpos_available }}" == "true" ]]; then
+            plugins+=("wcpos")
+          fi
+          export FB_TEST_PLUGIN=$(IFS=,; echo "${plugins[*]}")
+          echo "Running integration tests with FB_TEST_PLUGIN='${FB_TEST_PLUGIN}'"
 
           # Run integration tests with verbose output
           if ./vendor/bin/phpunit --testsuite=integration --verbose --debug; then
@@ -216,5 +234,4 @@ jobs:
           name: error-logs-php-${{ matrix.php }}
           path: |
             /tmp/wordpress/wp-content/debug.log
-            /var/log/
           retention-days: 7

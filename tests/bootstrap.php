@@ -19,6 +19,7 @@ global $fb_dir;
 global $wp_plugins_dir;
 global $wc_dir;
 global $polylang_dir;
+global $wcpos_dir;
 
 $wp_tests_dir = getenv( 'WP_TESTS_DIR' ) ?: path_join( sys_get_temp_dir(), '/wordpress-tests-lib' );
 validate_file_exits( "{$wp_tests_dir}/includes/functions.php" );
@@ -47,6 +48,9 @@ if ( ! file_exists( "{$polylang_dir}/polylang.php" ) ) {
 }
 // Don't validate Polylang existence - it's optional
 
+// WCPOS directory (optional - only installed for the point-of-sale contract tests).
+$wcpos_dir = path_join( $wp_plugins_dir, '/woocommerce-pos' );
+
 // Require the composer autoloader.
 require_once dirname( __DIR__ ) . '/vendor/autoload.php';
 
@@ -63,8 +67,7 @@ tests_add_filter( 'init', function () {
 
 tests_add_filter( 'plugins_loaded', function () {
 	// Only setup Polylang if explicitly requested
-	$test_plugin = getenv( 'FB_TEST_PLUGIN' );
-	if ( $test_plugin === 'polylang' ) {
+	if ( fb_test_plugin_requested( 'polylang' ) ) {
 		activate_polylang();
 		setup_basic_polylang_language();
 	}
@@ -126,6 +129,7 @@ function load_plugins() {
 	global $fb_dir;
 	global $wc_dir;
 	global $polylang_dir;
+	global $wcpos_dir;
 
 	require_once( $wc_dir . '/woocommerce.php' );
 	update_option( 'woocommerce_db_version', WC()->version );
@@ -139,7 +143,28 @@ function load_plugins() {
 		setup_polylang_for_tests();
 	}
 
+	// Load WCPOS only when requested. It hooks into orders, REST routes and rewrites,
+	// so loading it for every run would change the environment for unrelated tests.
+	if ( fb_test_plugin_requested( 'wcpos' ) && file_exists( "{$wcpos_dir}/woocommerce-pos.php" ) ) {
+		require_once $wcpos_dir . '/woocommerce-pos.php';
+		echo 'Loading WCPOS for point-of-sale contract tests...' . PHP_EOL;
+	}
+
 	require $fb_dir . '/facebook-for-woocommerce.php';
+}
+
+/**
+ * Determines whether a third-party plugin was requested for this test run.
+ *
+ * FB_TEST_PLUGIN holds a comma-separated list, e.g. "polylang,wcpos".
+ *
+ * @param string $slug the plugin identifier.
+ * @return bool
+ */
+function fb_test_plugin_requested( string $slug ): bool {
+	$requested = array_map( 'trim', explode( ',', (string) getenv( 'FB_TEST_PLUGIN' ) ) );
+
+	return in_array( $slug, $requested, true );
 }
 
 /**

@@ -447,4 +447,76 @@ class EventTest extends AbstractWPUnitTestWithOptionIsolationAndSafeFiltering {
 		$this->assertEquals( $custom_fbc, $data['user_data']['fbc'] );
 		$this->assertEquals( $custom_fbp, $data['user_data']['fbp'] );
 	}
+
+	/**
+	 * Test that a physical store event omits the source URL.
+	 *
+	 * An in-store sale did not happen on a page, so there is no URL to report.
+	 */
+	public function test_physical_store_event_has_no_source_url() {
+		$event = new Event(
+			array(
+				'event_name'    => 'Purchase',
+				'action_source' => 'physical_store',
+			)
+		);
+		$data  = $event->get_data();
+
+		$this->assertEquals( 'physical_store', $data['action_source'] );
+		$this->assertArrayNotHasKey( 'event_source_url', $data );
+		$this->assertArrayNotHasKey( 'referrer_url', $data );
+	}
+
+	/**
+	 * Test that a physical store event omits browser signals.
+	 *
+	 * For an in-store sale these describe the till the order was rung up on,
+	 * not the customer, so reporting them would be actively wrong.
+	 */
+	public function test_physical_store_event_has_no_browser_signals() {
+		$event = new Event(
+			array(
+				'event_name'    => 'Purchase',
+				'action_source' => 'physical_store',
+			)
+		);
+		$data  = $event->get_data();
+
+		$this->assertArrayNotHasKey( 'client_ip_address', $data['user_data'] );
+		$this->assertArrayNotHasKey( 'client_user_agent', $data['user_data'] );
+		$this->assertArrayNotHasKey( 'click_id', $data['user_data'] );
+		$this->assertArrayNotHasKey( 'browser_id', $data['user_data'] );
+	}
+
+	/**
+	 * Test that a website event still receives the browser signals.
+	 *
+	 * Guards against the physical_store carve-out leaking into the web path.
+	 */
+	public function test_website_event_still_has_browser_signals() {
+		$event = new Event( array( 'event_name' => 'Purchase' ) );
+		$data  = $event->get_data();
+
+		$this->assertEquals( 'website', $data['action_source'] );
+		$this->assertArrayHasKey( 'event_source_url', $data );
+		$this->assertArrayHasKey( 'client_ip_address', $data['user_data'] );
+		$this->assertArrayHasKey( 'client_user_agent', $data['user_data'] );
+	}
+
+	/**
+	 * Test that explicitly provided user data survives on a physical store event.
+	 */
+	public function test_physical_store_event_keeps_explicit_user_data() {
+		$event = new Event(
+			array(
+				'event_name'    => 'Purchase',
+				'action_source' => 'physical_store',
+				'user_data'     => array( 'em' => 'test@example.com' ),
+			)
+		);
+		$data  = $event->get_data();
+
+		$this->assertArrayHasKey( 'em', $data['user_data'] );
+		$this->assertEquals( hash( 'sha256', 'test@example.com', false ), $data['user_data']['em'] );
+	}
 } 

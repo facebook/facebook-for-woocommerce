@@ -108,6 +108,15 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 	/** @var string enable facebook managed coupons setting ID */
 	const SETTING_ENABLE_FACEBOOK_MANAGED_COUPONS = 'wc_facebook_enable_facebook_managed_coupons';
 
+	/** @var string the "enable offline purchase events" setting ID */
+	const SETTING_ENABLE_OFFLINE_PURCHASE_EVENTS = 'wc_facebook_enable_offline_purchase_events';
+
+	/** @var string when the merchant last opted in to offline purchase events, as a Unix timestamp */
+	const OPTION_OFFLINE_PURCHASE_EVENTS_OPTED_IN_AT = 'wc_facebook_offline_purchase_events_opted_in_at';
+
+	/** @var string whether the merchant has ever opted in to offline purchase events; kept after opting out */
+	const OPTION_OFFLINE_PURCHASE_EVENTS_EVER_OPTED_IN = 'wc_facebook_offline_purchase_events_ever_opted_in';
+
 	/** @var string request headers in the debug log */
 	const SETTING_REQUEST_HEADERS_IN_DEBUG_MODE = 'wc_facebook_request_headers_in_debug_log';
 
@@ -355,6 +364,11 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 
 		// Register the WordPress cron hook for async processing
 		add_action( 'wc_facebook_async_sync', array( $this, 'handle_async_product_save' ) );
+
+		// Record when the merchant opts in to offline purchase events, whichever way the
+		// setting is changed (settings screen, AJAX, WP-CLI).
+		add_action( 'add_option_' . self::SETTING_ENABLE_OFFLINE_PURCHASE_EVENTS, array( $this, 'handle_offline_purchase_events_option_added' ), 10, 2 );
+		add_action( 'update_option_' . self::SETTING_ENABLE_OFFLINE_PURCHASE_EVENTS, array( $this, 'handle_offline_purchase_events_option_updated' ), 10, 2 );
 
 		if ( is_admin() ) {
 
@@ -3002,6 +3016,126 @@ class WC_Facebookcommerce_Integration extends WC_Integration {
 	 */
 	public function is_facebook_managed_coupons_enabled(): bool {
 		return ( 'yes' === get_option( self::SETTING_ENABLE_FACEBOOK_MANAGED_COUPONS, self::SETTING_ENABLE_FACEBOOK_MANAGED_COUPONS_DEFAULT_VALUE ) );
+	}
+
+	/**
+	 * Determines whether offline (physical store) purchase events are enabled.
+	 *
+	 * Purchase events for orders taken at a point of sale are opt-in: they are
+	 * reported to Meta with an `action_source` of `physical_store`, so a merchant
+	 * has to knowingly turn them on before anything is sent.
+	 *
+	 * @return bool
+	 */
+	public function is_offline_purchase_events_enabled(): bool {
+		/**
+		 * Filters whether offline (physical store) purchase events are enabled.
+		 *
+		 * @param bool                             $is_enabled  whether offline purchase events are enabled
+		 * @param \WC_Facebookcommerce_Integration $integration the integration instance
+		 */
+		return (bool) apply_filters(
+			'wc_facebook_is_offline_purchase_events_enabled',
+			'yes' === get_option( self::SETTING_ENABLE_OFFLINE_PURCHASE_EVENTS, 'no' ),
+			$this
+		);
+	}
+
+	/**
+	 * Determines whether offline purchase events can be switched on right now.
+	 *
+	 * They need an active point-of-sale plugin to come from. This is the single rule
+	 * both the settings screen and the AJAX actions apply, so the two ways of
+	 * enabling the feature cannot disagree. It governs switching on only: an
+	 * existing opt-in is kept while no POS plugin is active, and switching off is
+	 * always allowed.
+	 *
+	 * @return bool
+	 */
+	public function can_enable_offline_purchase_events(): bool {
+		return ! empty( ( new \WooCommerce\Facebook\Events\POS\POS_Integration_Registry() )->get_supported_integrations() );
+	}
+
+	/**
+	 * Determines whether the merchant has ever opted in to offline purchase events.
+	 *
+	 * Stays true after opting out, so a merchant who tried the feature and switched it
+	 * off is not pitched it again as new. A store that is enabled now counts too, in
+	 * case it was enabled before this was recorded.
+	 *
+	 * @return bool
+	 */
+	public function has_ever_opted_in_to_offline_purchase_events(): bool {
+		return 'yes' === get_option( self::OPTION_OFFLINE_PURCHASE_EVENTS_EVER_OPTED_IN, 'no' )
+			|| 'yes' === get_option( self::SETTING_ENABLE_OFFLINE_PURCHASE_EVENTS, 'no' );
+	}
+
+	/**
+	 * Gets when the merchant opted in to offline purchase events.
+	 *
+	 * Sales paid before this moment are never reported, so turning the feature on
+	 * does not backfill history. The time is recorded whenever the setting is
+	 * switched on. If it is missing while the feature is enabled — for example when
+	 * the feature was enabled through the wc_facebook_is_offline_purchase_events_enabled
+	 * filter — it is recorded now, which errs towards reporting nothing old.
+	 *
+	 * @return int Unix timestamp.
+	 */
+	public function get_offline_purchase_events_opted_in_at(): int {
+		$opted_in_at = (int) get_option( self::OPTION_OFFLINE_PURCHASE_EVENTS_OPTED_IN_AT, 0 );
+
+		if ( 0 === $opted_in_at ) {
+			$opted_in_at = time();
+			update_option( self::OPTION_OFFLINE_PURCHASE_EVENTS_OPTED_IN_AT, $opted_in_at, false );
+		}
+
+		return $opted_in_at;
+	}
+
+	/**
+	 * Records the opt-in time when the offline purchase events option is first created.
+	 *
+	 * @internal
+	 *
+	 * @param string $option the option name.
+	 * @param mixed  $value  the new value.
+	 */
+	public function handle_offline_purchase_events_option_added( $option, $value ) { // phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter.FoundBeforeLastUsed -- signature fixed by the add_option_{$option} hook.
+		$this->record_offline_purchase_events_opt_in( 'no', $value );
+	}
+
+	/**
+	 * Records the opt-in time when the offline purchase events option changes.
+	 *
+	 * @internal
+	 *
+	 * @param mixed $old_value the previous value.
+	 * @param mixed $value     the new value.
+	 */
+	public function handle_offline_purchase_events_option_updated( $old_value, $value ) {
+		$this->record_offline_purchase_events_opt_in( $old_value, $value );
+	}
+
+	/**
+	 * Stamps the opt-in time on a switch to enabled, and clears it on a switch to disabled.
+	 *
+	 * Clearing it means re-enabling later starts a fresh window, so sales paid while
+	 * the feature was off are not reported after it is turned back on.
+	 *
+	 * @param mixed $old_value the previous value.
+	 * @param mixed $value     the new value.
+	 */
+	private function record_offline_purchase_events_opt_in( $old_value, $value ) {
+		$was_enabled = 'yes' === $old_value;
+		$is_enabled  = 'yes' === $value;
+
+		if ( $is_enabled && ! $was_enabled ) {
+			update_option( self::OPTION_OFFLINE_PURCHASE_EVENTS_OPTED_IN_AT, time(), false );
+			// Unlike the opt-in time, this survives opting out.
+			update_option( self::OPTION_OFFLINE_PURCHASE_EVENTS_EVER_OPTED_IN, 'yes', false );
+		} elseif ( ! $is_enabled && $was_enabled ) {
+			delete_option( self::OPTION_OFFLINE_PURCHASE_EVENTS_OPTED_IN_AT );
+		}
 	}
 
 	/**
