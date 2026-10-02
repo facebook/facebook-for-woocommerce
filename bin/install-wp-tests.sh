@@ -14,6 +14,10 @@ WC_VERSION=${6-latest}
 POLYLANG_VERSION=${7-latest}
 SKIP_DB_CREATE=${8-false}
 
+# WCPOS is only installed when requested, e.g. WCPOS_VERSION=latest-stable, for the
+# point-of-sale contract tests. It is a wordpress.org release zip version or tag.
+WCPOS_VERSION=${WCPOS_VERSION-none}
+
 TMPDIR=${TMPDIR-/tmp}
 TMPDIR=$(echo $TMPDIR | sed -e "s/\/$//")
 WP_TESTS_DIR=${WP_TESTS_DIR-$TMPDIR/wordpress-tests-lib}
@@ -25,7 +29,8 @@ WC_DIR="${PLUGINS_DIR}/woocommerce"
 
 download() {
   if [ $(which curl) ]; then
-    curl -s "$1" >"$2"
+    # WordPress.org latest-stable plugin URLs redirect to a versioned ZIP.
+    curl -fsSL "$1" -o "$2"
   elif [ $(which wget) ]; then
     wget -nv -O "$2" "$1"
   fi
@@ -290,8 +295,34 @@ install_polylang() {
   fi
 }
 
+install_wcpos() {
+  if [[ -z "$WCPOS_VERSION" || "$WCPOS_VERSION" == "none" ]]; then
+    echo "Skipping WCPOS installation (not requested)."
+    return
+  fi
+
+  WCPOS_DIR="${PLUGINS_DIR}/woocommerce-pos"
+  WCPOS_VERSION_FILE="${WCPOS_DIR}/version-${WCPOS_VERSION}"
+
+  if [ ! -f "$WCPOS_VERSION_FILE" ]; then
+    rm -rf "$WCPOS_DIR"
+    echo "Installing WCPOS ($WCPOS_VERSION)."
+
+    # The wordpress.org release zip ships built, so it needs no composer step.
+    download "https://downloads.wordpress.org/plugin/woocommerce-pos.${WCPOS_VERSION}.zip" "${TMPDIR}/woocommerce-pos.zip"
+    unzip -q -o "${TMPDIR}/woocommerce-pos.zip" -d "$PLUGINS_DIR"
+    rm -f "${TMPDIR}/woocommerce-pos.zip"
+
+    touch "$WCPOS_VERSION_FILE"
+    echo "WCPOS ($WCPOS_VERSION) installed successfully."
+  else
+    echo "WCPOS ($WCPOS_VERSION) already installed."
+  fi
+}
+
 install_wp
 install_wc
 install_polylang
+install_wcpos
 install_test_suite
 install_db

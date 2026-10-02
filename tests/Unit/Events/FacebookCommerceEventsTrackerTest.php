@@ -571,15 +571,13 @@ class FacebookCommerceEventsTrackerTest extends AbstractWPUnitTestWithSafeFilter
 		$this->instance = $this->create_tracker_with_pixel_enabled();
 		$this->remove_purchase_hooks();
 
-		// Create a valid order with processing status
-		$order = wc_create_order();
+		// Server hook first, fired by WooCommerce while it creates the order (as in a
+		// real checkout). Tracking metadata is saved once that save has finished.
+		add_action( 'woocommerce_new_order', array( $this->instance, 'inject_purchase_event' ), 10, 2 );
+		$order = new \WC_Order();
 		$order->set_status( 'processing' );
 		$order->set_total( 100 );
 		$order->save();
-
-		// Simulate server hook first (as happens in real checkout)
-		add_action( 'woocommerce_new_order', array( $this->instance, 'inject_purchase_event' ), 10 );
-		do_action( 'woocommerce_new_order', $order->get_id(), $order );
 		remove_action( 'woocommerce_new_order', array( $this->instance, 'inject_purchase_event' ), 10 );
 
 		// Simulate browser hook second (thank you page)

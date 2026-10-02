@@ -805,7 +805,7 @@ class API extends Base {
 	 * @param string  $pixel_id pixel ID
 	 * @param Event[] $events events to send
 	 * @return Response|null Response object when blocking, null when non-blocking.
-	 * @throws ApiException In case of a general API error or rate limit error (blocking mode only).
+	 * @throws ApiException In case of a transport error, or a general API or rate limit error in blocking mode.
 	 */
 	public function send_pixel_events( $pixel_id, array $events ) {
 		$request = new API\Pixel\Events\Request( $pixel_id, $events );
@@ -826,7 +826,7 @@ class API extends Base {
 
 		if ( $non_blocking ) {
 			// Non-blocking: fire-and-forget via wp_safe_remote_post().
-			wp_safe_remote_post(
+			$response = wp_safe_remote_post(
 				$this->request_uri . "/{$pixel_id}/events",
 				array(
 					'blocking'  => false,
@@ -838,6 +838,11 @@ class API extends Base {
 					'body'      => $request->to_string(),
 				)
 			);
+
+			// Non-blocking requests can still fail before they are sent.
+			if ( is_wp_error( $response ) ) {
+				throw new ApiException( esc_html( $response->get_error_message() ), (int) $response->get_error_code() );
+			}
 
 			return null;
 		}

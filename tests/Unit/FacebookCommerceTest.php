@@ -314,6 +314,56 @@ class FacebookCommerceTest extends \WooCommerce\Facebook\Tests\AbstractWPUnitTes
 	}
 
 	/**
+	 * Tests is_offline_purchase_events_enabled defaults to disabled.
+	 *
+	 * Offline events are opt-in, so an upgrading site must never start sending them.
+	 *
+	 * @return void
+	 */
+	public function test_is_offline_purchase_events_enabled_default_value() {
+		$this->teardown_callback_category_safely( 'wc_facebook_is_offline_purchase_events_enabled' );
+		delete_option( WC_Facebookcommerce_Integration::SETTING_ENABLE_OFFLINE_PURCHASE_EVENTS );
+
+		$result = $this->integration->is_offline_purchase_events_enabled();
+
+		$this->assertFalse( $result );
+	}
+
+	/**
+	 * Tests is_offline_purchase_events_enabled returns option value.
+	 *
+	 * @return void
+	 */
+	public function test_is_offline_purchase_events_enabled_option_value() {
+		$this->teardown_callback_category_safely( 'wc_facebook_is_offline_purchase_events_enabled' );
+		add_option( WC_Facebookcommerce_Integration::SETTING_ENABLE_OFFLINE_PURCHASE_EVENTS, 'yes' );
+
+		$result = $this->integration->is_offline_purchase_events_enabled();
+
+		$this->assertTrue( $result );
+	}
+
+	/**
+	 * Tests is_offline_purchase_events_enabled with filter override.
+	 *
+	 * @return void
+	 */
+	public function test_is_offline_purchase_events_enabled_with_filter() {
+		$this->add_filter_with_safe_teardown(
+			'wc_facebook_is_offline_purchase_events_enabled',
+			function ( $is_enabled ) {
+				return true;
+			}
+		);
+
+		delete_option( WC_Facebookcommerce_Integration::SETTING_ENABLE_OFFLINE_PURCHASE_EVENTS );
+
+		$result = $this->integration->is_offline_purchase_events_enabled();
+
+		$this->assertTrue( $result );
+	}
+
+	/**
 	 * Tests is_meta_diagnosis_enabled returns option value.
 	 *
 	 * @return void

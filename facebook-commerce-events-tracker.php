@@ -8,8 +8,12 @@
  * @package MetaCommerce
  */
 
+use Automattic\WooCommerce\Enums\OrderStatus;
+use Automattic\WooCommerce\Enums\ProductType;
 use WooCommerce\Facebook\Events\Event;
 use WooCommerce\Facebook\Events\FacebookSignalsState;
+use WooCommerce\Facebook\Events\POS\POS_Integration_Interface;
+use WooCommerce\Facebook\Events\POS\POS_Integration_Registry;
 use WooCommerce\Facebook\Framework\Api\Exception as ApiException;
 use WooCommerce\Facebook\Framework\Helper;
 use WooCommerce\Facebook\Framework\Logger;
@@ -63,6 +67,9 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 		/** @var CostOfGoods CostOfGoods provider instance. Used to calculate the profit margin */
 		private $cogs_provider;
 
+		/** @var POS_Integration_Registry point-of-sale integrations, used to recognise offline orders */
+		private $pos_registry;
+
 		/** @var array|null Pending pixel event data for Store API response */
 		private $pending_store_api_pixel_event = null;
 
@@ -91,6 +98,7 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 		 */
 		const META_PURCHASE_TRACKED_BROWSER = '_meta_purchase_tracked_browser';
 		const META_PURCHASE_TRACKED_SERVER  = '_meta_purchase_tracked_server';
+		const META_OFFLINE_PURCHASE_TRACKED = '_meta_offline_purchase_tracked';
 		const META_EVENT_ID                 = '_meta_event_id';
 
 		/**
@@ -115,6 +123,7 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 			$this->param_builder_server_setup();
 			$this->add_hooks();
 			$this->cogs_provider = new CostOfGoods();
+			$this->pos_registry  = new POS_Integration_Registry();
 		}
 
 		public static function get_param_builder() {
@@ -305,6 +314,9 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 			add_action( 'woocommerce_checkout_update_order_meta', array( $this, 'inject_purchase_event' ), 30 );
 			add_action( 'woocommerce_thankyou', array( $this, 'inject_purchase_event' ), 40 );
 
+			// Offline Purchase events, reported once a point-of-sale order is paid.
+			add_action( 'woocommerce_order_status_changed', array( $this, 'inject_offline_purchase_event_on_status_change' ), 10 );
+
 			// Lead events through Contact Form 7 / WPForms.
 			add_action( 'wpcf7_mail_sent', array( $this, 'track_cf7_lead_event' ), 10, 1 );
 			add_filter( 'wpcf7_feedback_response', array( $this, 'inject_cf7_lead_event_pixel_code' ), 10, 2 );
@@ -329,7 +341,7 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 		 * phpcs:disable WordPress.Security.EscapeOutput.OutputNotEscaped
 		 */
 		public function inject_base_pixel() {
-			if ( $this->is_pixel_enabled() ) {
+			if ( $this->is_pixel_enabled() && ! $this->is_pos_page_request() ) {
 				echo $this->pixel->pixel_base_code();
 				$this->inject_page_view_event();
 			}
@@ -344,9 +356,23 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 		 * phpcs:disable WordPress.Security.EscapeOutput.OutputNotEscaped
 		 */
 		public function inject_base_pixel_noscript() {
-			if ( $this->is_pixel_enabled() ) {
+			if ( $this->is_pixel_enabled() && ! $this->is_pos_page_request() ) {
 				echo $this->pixel->pixel_base_code_noscript();
 			}
+		}
+
+		/**
+		 * Determines whether the current request renders a point-of-sale page.
+		 *
+		 * Point of sale pages (the till, and checkout screens it opens) are used by
+		 * staff, not shoppers, so no storefront events are sent from them: no pixel,
+		 * no PageView, no attribution cookies, no website Purchase. Offline events
+		 * are unaffected, including one reported while such a page takes payment.
+		 *
+		 * @return bool
+		 */
+		private function is_pos_page_request() {
+			return null !== $this->pos_registry && $this->pos_registry->is_pos_page_request();
 		}
 
 		/**
@@ -355,6 +381,11 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 		public function param_builder_client_setup() {
 			// Client js setup
 			if ( ! facebook_for_woocommerce()->get_connection_handler()->is_connected() ) {
+				return;
+			}
+
+			// It would set attribution cookies on the till's browser, not a shopper's.
+			if ( $this->is_pos_page_request() ) {
 				return;
 			}
 
@@ -390,7 +421,7 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 		 * Triggers the PageView event
 		 */
 		public function inject_page_view_event() {
-			if ( ! $this->is_pixel_enabled() ) {
+			if ( ! $this->is_pixel_enabled() || $this->is_pos_page_request() ) {
 				return;
 			}
 
@@ -1359,47 +1390,463 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 		}
 
 		/**
-		 * Triggers a Purchase event when checkout is completed.
+		 * Determines whether a given order should be reported as an offline (physical store) event.
 		 *
-		 * This may happen either when:
-		 * - WooCommerce signals a payment transaction complete (most gateways)
-		 * - The order status is changed through the Woo dashboard to Processing or Completed
-		 * - The Payment Completed event is fired, which happens in case of some external payment gateways.
-		 * - Customer reaches Thank You page skipping payment (for gateways that do not require payment, e.g. Cheque, BACS, Cash on delivery...)
+		 * We check if any of the supported POS integrations can detect this order.
 		 *
-		 * The method checks if the event was not triggered already avoiding a duplicate.
-		 * Finally, if the order contains subscriptions, it will also track an associated Subscription event.
-		 *
-		 * @internal
-		 *
-		 * @param int           $order_id Order identifier.
-		 * @param WC_Order|null $order    Original order supplied by woocommerce_new_order, if available.
+		 * @param WC_Order $order order object.
+		 * @return bool
 		 */
-		public function inject_purchase_event( $order_id, $order = null ) {
+		private function is_offline_event( $order ) {
+			return null !== $this->pos_registry->match( $order );
+		}
 
-			if ( \WC_Facebookcommerce_Utils::is_admin_user() || ! $this->is_pixel_enabled() ) {
+		/**
+		 * Builds the custom data reported with a Purchase event for a given order.
+		 *
+		 * @param WC_Order $order order object.
+		 * @return array
+		 */
+		private function get_custom_data( $order ) {
+
+			// Seeded with an empty array so the array_merge() spread below still has
+			// an argument when the order resolves to no products.
+			$product_ids   = array( array() );
+			$product_names = array();
+			$contents      = array();
+			$content_type  = 'product';
+
+			foreach ( $order->get_items() as $item ) {
+
+				$product = $item->get_product();
+
+				if ( $product ) {
+					$product_ids[]   = \WC_Facebookcommerce_Utils::get_fb_content_ids( $product );
+					$product_names[] = \WC_Facebookcommerce_Utils::clean_string( $product->get_title() );
+
+					if ( 'product_group' !== $content_type && $product->is_type( 'variable' ) ) {
+						$content_type = 'product_group';
+					}
+
+					$content           = new \stdClass();
+					$content->id       = \WC_Facebookcommerce_Utils::get_fb_retailer_id( $product );
+					$content->quantity = $item->get_quantity();
+
+					$contents[] = $content;
+				}
+			}
+
+			return array(
+				'content_ids'  => wp_json_encode( array_merge( ...$product_ids ) ),
+				'content_name' => wp_json_encode( $product_names ),
+				'contents'     => wp_json_encode( $contents ),
+				'content_type' => $content_type,
+				'value'        => $order->get_total(),
+				'currency'     => ( method_exists( $order, 'get_currency' ) ? $order->get_currency() : get_woocommerce_currency() ),
+				'order_id'     => $order->get_id(),
+			);
+		}
+
+		/**
+		 * Gets the user data reported with an offline (physical store) event.
+		 *
+		 * Built from the order alone. Unlike get_user_data_from_billing_address(), it
+		 * does not start from the current user's details: on a point-of-sale request
+		 * the current user is the cashier, not the customer, so any billing field the
+		 * order left empty would otherwise be filled in with the cashier's.
+		 *
+		 * Returns nothing when the person on the order is a member of staff, since
+		 * reporting their details would attribute the sale to them.
+		 *
+		 * The pixel's automatic advanced matching settings are deliberately not
+		 * applied: they govern browser-side matching on the storefront, which an
+		 * in-store sale has no part in.
+		 *
+		 * @param WC_Order                  $order       order object.
+		 * @param POS_Integration_Interface $integration the point-of-sale integration that claimed the order.
+		 * @return array
+		 */
+		private function get_user_data_for_offline_event( $order, $integration ) {
+			if ( $this->is_staff_customer( $order, $integration ) ) {
+				return array();
+			}
+
+			$user_data = array();
+			self::update_array_if_not_null( $order->get_billing_first_name(), $user_data, 'fn' );
+			self::update_array_if_not_null( $order->get_billing_last_name(), $user_data, 'ln' );
+			self::update_array_if_not_null( $order->get_billing_email(), $user_data, 'em' );
+			self::update_array_if_not_null( $order->get_billing_postcode(), $user_data, 'zp' );
+			self::update_array_if_not_null( $order->get_billing_state(), $user_data, 'st' );
+			self::update_array_if_not_null( $order->get_billing_country(), $user_data, 'country' );
+			self::update_array_if_not_null( $order->get_billing_city(), $user_data, 'ct' );
+			self::update_array_if_not_null( $order->get_billing_phone(), $user_data, 'ph' );
+
+			// Walk-in sales with no customer account can carry "Guest" as the first
+			// name. It names nobody, so it would only add noise to matching.
+			if ( 0 === (int) $order->get_customer_id() && isset( $user_data['fn'] ) && $this->is_guest_placeholder_name( $user_data['fn'] ) ) {
+				unset( $user_data['fn'] );
+			}
+
+			// Only a real customer account is an external ID; a guest order has none.
+			if ( $order->get_customer_id() > 0 ) {
+				$user_data['external_id'] = strval( $order->get_customer_id() );
+			}
+
+			return $user_data;
+		}
+
+		/**
+		 * Determines whether a name is the "Guest" placeholder for a walk-in customer.
+		 *
+		 * WCPOS labels guest customers with __( 'Guest', 'woocommerce-pos' ), so the
+		 * site's translation is matched as well as the English word. Case and
+		 * surrounding whitespace are ignored.
+		 *
+		 * @param string $name the name to check.
+		 * @return bool
+		 */
+		private function is_guest_placeholder_name( $name ) {
+			$placeholders = array(
+				'guest',
+				// phpcs:ignore WordPress.WP.I18n.TextDomainMismatch -- matching WCPOS's own translated label.
+				wc_strtolower( __( 'Guest', 'woocommerce-pos' ) ),
+			);
+
+			return in_array( wc_strtolower( trim( $name ) ), $placeholders, true );
+		}
+
+		/**
+		 * Determines whether the customer on an offline order is actually a member of staff.
+		 *
+		 * Point of sale plugins commonly attach the operator to walk-in sales (WCPOS does
+		 * when its "default customer is cashier" setting is on). The customer counts as
+		 * staff when they are the cashier who rang up the order, or can manage the store.
+		 *
+		 * The customer is the order's customer account or, for a guest order, the
+		 * account matching its billing email, so staff details typed into a guest
+		 * order are caught too.
+		 *
+		 * @param WC_Order                  $order       order object.
+		 * @param POS_Integration_Interface $integration the point-of-sale integration that claimed the order.
+		 * @return bool
+		 */
+		private function is_staff_customer( $order, $integration ) {
+			$customer_id = (int) $order->get_customer_id();
+
+			if ( 0 === $customer_id && $order->get_billing_email() ) {
+				$user        = get_user_by( 'email', $order->get_billing_email() );
+				$customer_id = $user ? (int) $user->ID : 0;
+			}
+
+			if ( 0 === $customer_id ) {
+				return false;
+			}
+
+			$cashier_id = (int) $integration->get_cashier_id( $order );
+
+			return ( $cashier_id > 0 && $customer_id === $cashier_id ) || user_can( $customer_id, 'manage_woocommerce' );
+		}
+
+		/**
+		 * Builds the offline (physical store) Purchase event for a given order.
+		 *
+		 * @param WC_Order                  $order       order object.
+		 * @param POS_Integration_Interface $integration the point-of-sale integration that claimed the order.
+		 * @param array|null                $user_data   user data already built for the order, or null to build it.
+		 * @return Event
+		 */
+		private function get_offline_event( $order, $integration, $user_data = null ) {
+			$custom_data = array_merge(
+				$this->get_offline_custom_data( $order ),
+				$integration->get_event_data( $order )
+			);
+
+			$event_data = array(
+				'event_name'    => 'Purchase',
+				// When the sale happened, not when it was reported. Those differ
+				// whenever payment and reporting are not in the same request.
+				'event_time'    => $this->get_offline_sale_time( $order ),
+				// Offline events carry the order ID at the top level of the event.
+				'order_id'      => (string) $order->get_id(),
+				'user_data'     => $user_data ?? $this->get_user_data_for_offline_event( $order, $integration ),
+				'custom_data'   => $custom_data,
+				'action_source' => 'physical_store',
+			);
+
+			$store_data = $this->sanitize_store_data( $integration->get_store_data( $order ) );
+
+			if ( ! empty( $store_data ) ) {
+				$event_data['store_data'] = $store_data;
+			}
+
+			return new Event( $event_data );
+		}
+
+		/**
+		 * Keeps only valid store_data fields, in the types Meta expects.
+		 *
+		 * The store_page_id and brand_page_id fields are Facebook Page IDs (integers);
+		 * store_code is a string of up to 64 characters. Anything else, or a value
+		 * of the wrong shape, is dropped rather than altered: a truncated or coerced
+		 * store code would attribute the sale to the wrong store.
+		 *
+		 * @param array $store_data store data reported by the point-of-sale integration.
+		 * @return array
+		 */
+		private function sanitize_store_data( array $store_data ) {
+			$sanitized = array();
+
+			foreach ( array( 'store_page_id', 'brand_page_id' ) as $key ) {
+				if ( isset( $store_data[ $key ] ) && ctype_digit( (string) $store_data[ $key ] ) && (int) $store_data[ $key ] > 0 ) {
+					$sanitized[ $key ] = (int) $store_data[ $key ];
+				}
+			}
+
+			if ( isset( $store_data['store_code'] ) && is_scalar( $store_data['store_code'] ) ) {
+				$store_code = trim( (string) $store_data['store_code'] );
+
+				if ( '' !== $store_code && strlen( $store_code ) <= 64 ) {
+					$sanitized['store_code'] = $store_code;
+				}
+			}
+
+			return $sanitized;
+		}
+
+		/**
+		 * Builds the custom data for an offline (physical store) Purchase event.
+		 *
+		 * Unlike get_custom_data(), which the web path and the browser pixel share, the
+		 * content fields are real arrays and the value is a number, as the Conversions
+		 * API expects for offline events. The order ID is not included here; it goes at
+		 * the top level of the event.
+		 *
+		 * @param WC_Order $order order object.
+		 * @return array
+		 */
+		private function get_offline_custom_data( $order ) {
+			$content_ids  = array();
+			$contents     = array();
+			$content_type = 'product';
+
+			foreach ( $order->get_items() as $item ) {
+				$product = $item->get_product();
+
+				if ( ! $product ) {
+					continue;
+				}
+
+				$content_ids = array_merge( $content_ids, \WC_Facebookcommerce_Utils::get_fb_content_ids( $product ) );
+
+				if ( 'product_group' !== $content_type && $product->is_type( 'variable' ) ) {
+					$content_type = 'product_group';
+				}
+
+				$contents[] = array(
+					'id'       => \WC_Facebookcommerce_Utils::get_fb_retailer_id( $product ),
+					'quantity' => (int) $item->get_quantity(),
+				);
+			}
+
+			return array(
+				'content_ids'  => array_values( array_unique( $content_ids ) ),
+				'contents'     => $contents,
+				'content_type' => $content_type,
+				'value'        => (float) $order->get_total(),
+				'currency'     => $order->get_currency(),
+			);
+		}
+
+		/**
+		 * Gets when an offline (physical store) sale happened.
+		 *
+		 * The payment date where WooCommerce recorded one, otherwise the order's
+		 * creation date, otherwise now.
+		 *
+		 * @param WC_Order $order order object.
+		 * @return int Unix timestamp.
+		 */
+		private function get_offline_sale_time( $order ) {
+			$date = $order->get_date_paid() ?? $order->get_date_created();
+
+			return $date ? $date->getTimestamp() : time();
+		}
+
+		/**
+		 * Tracks a Purchase event for an order taken at a physical point of sale.
+		 *
+		 * Server-side only: a point-of-sale order has no browser session, so there is
+		 * no pixel event to deduplicate against and no shared event_id to maintain.
+		 *
+		 * The gates below, when the order is marked as reported, and what is sent are
+		 * described for merchants and integration authors in docs/offline-events.md
+		 * ("How an order is detected", "Order-level gates", "What the event contains"
+		 * and "When an event is not sent"). Keep those sections in step when changing
+		 * this flow, get_offline_event() or the offline user data.
+		 *
+		 * @param WC_Order $order order object.
+		 */
+		private function track_offline_purchase_event( $order ) {
+
+			$integration = $this->pos_registry->match( $order );
+
+			if ( ! $integration ) {
 				return;
 			}
+
+			$order_id = $order->get_id();
+
+			// Only report once payment has been taken. By then the order carries its
+			// final customer, billing details and totals, so the event goes out with
+			// everything available. Open, partially paid, pending and on-hold orders
+			// are picked up later, when they become paid (see
+			// inject_offline_purchase_event_on_status_change()). is_paid() also honours
+			// the woocommerce_order_is_paid_statuses filter.
+			if ( ! $order->is_paid() ) {
+				return;
+			}
+
+			// Never report sales paid before the merchant opted in. Status changes on
+			// older orders (processing to completed, say) would otherwise report them.
+			if ( $this->get_offline_sale_time( $order ) < facebook_for_woocommerce()->get_integration()->get_offline_purchase_events_opted_in_at() ) {
+				return;
+			}
+
+			// Return if this offline Purchase event has already been tracked for this order.
+			if ( $order->meta_exists( self::META_OFFLINE_PURCHASE_TRACKED ) ) {
+				return;
+			}
+
+			// Use a session flag to ensure this Purchase event is not tracked multiple times along multiple processes.
+			$purchase_tracked_flag = '_wc_' . facebook_for_woocommerce()->get_id() . '_purchase_tracked_' . $order_id . '_offline';
+
+			if ( 'yes' === get_transient( $purchase_tracked_flag ) ) {
+				return;
+			}
+
+			// Meta rejects an event it has no way to match to a person (error subcode
+			// 2804050), so don't send one yet. This runs before the order is marked as
+			// tracked, so a later status change reports it once a customer is attached.
+			$user_data = $this->get_user_data_for_offline_event( $order, $integration );
+
+			if ( ! $this->has_matchable_customer_identifier( $user_data ) ) {
+				Logger::log(
+					'Offline Purchase event not sent for order ' . $order_id . ': it has no email, phone or customer account to match (POS: ' . $integration->get_slug() . '). It will be retried on the order\'s next status change.',
+					array(),
+					array(
+						'should_send_log_to_meta'        => false,
+						'should_save_log_in_woocommerce' => true,
+						'woocommerce_log_level'          => \WC_Log_Levels::INFO,
+					)
+				);
+				return;
+			}
+
+			// Claim the order while sending, so a concurrent request does not send it too.
+			set_transient( $purchase_tracked_flag, 'yes', 45 * MINUTE_IN_SECONDS );
+
+			$sent = $this->send_api_event( $this->get_offline_event( $order, $integration, $user_data ) );
+
+			// Only a delivered event marks the order. If the request failed or Meta
+			// rejected it, release the claim and leave the order unmarked, so the next
+			// status change tries again rather than the sale being lost for good.
+			if ( ! $sent ) {
+				delete_transient( $purchase_tracked_flag );
+
+				Logger::log(
+					'Offline Purchase event for order ' . $order_id . ' was not delivered: the request failed or Meta rejected it (POS: ' . $integration->get_slug() . '). It will be retried on the order\'s next status change.',
+					array(),
+					array(
+						'should_send_log_to_meta'        => false,
+						'should_save_log_in_woocommerce' => true,
+						'woocommerce_log_level'          => \WC_Log_Levels::WARNING,
+					)
+				);
+				return;
+			}
+
+			// Prevent double-tracking of the event. A paid point-of-sale order can be
+			// reported from woocommerce_new_order, while WooCommerce is still creating it.
+			$order->add_meta_data( self::META_OFFLINE_PURCHASE_TRACKED, true, true );
+			$this->save_tracking_meta_data( $order );
+
+			Logger::log(
+				'Offline Purchase event sent for order ' . $order_id . ' by hook ' . current_action() . ' (POS: ' . $integration->get_slug() . ').',
+				array(),
+				array(
+					'should_send_log_to_meta'        => false,
+					'should_save_log_in_woocommerce' => true,
+					'woocommerce_log_level'          => \WC_Log_Levels::INFO,
+				)
+			);
+		}
+
+		/**
+		 * Determines whether offline event user data can be matched to a person.
+		 *
+		 * Location fields alone (country, state, city, postcode) are too broad for
+		 * Meta to accept; an email, a phone number or a customer account is needed.
+		 *
+		 * @param array $user_data user data, before hashing.
+		 * @return bool
+		 */
+		private function has_matchable_customer_identifier( array $user_data ) {
+			foreach ( array( 'em', 'ph', 'external_id' ) as $key ) {
+				if ( ! empty( $user_data[ $key ] ) ) {
+					return true;
+				}
+			}
+
+			return false;
+		}
+
+		/**
+		 * Saves the tracking metadata added to an order.
+		 *
+		 * WooCommerce fires woocommerce_new_order partway through saving an order: when
+		 * creating it, after inserting it and before saving its items (or, for a
+		 * checkout draft, from the update). Saving anything on the order there is a
+		 * recursive save, and save_meta_data() is no exception: with HPOS, a metadata
+		 * change can turn into a full save() to update the modified date.
+		 *
+		 * So during woocommerce_new_order the metadata stays on the order object and is
+		 * saved once WooCommerce has finished, on woocommerce_after_order_object_save.
+		 * Until then the in-flight transient guards against duplicates. If the hook was
+		 * fired directly rather than from a save, as some plugins do, no save follows,
+		 * so the metadata is saved at shutdown instead.
+		 *
+		 * Anywhere else the metadata is saved straight away.
+		 *
+		 * @param \WC_Order $order order object.
+		 */
+		private function save_tracking_meta_data( \WC_Order $order ) {
+			if ( ! doing_action( 'woocommerce_new_order' ) ) {
+				$order->save_meta_data();
+				return;
+			}
+
+			$save = static function () use ( $order ) {
+				$order->save_meta_data();
+			};
+
+			$save_once_order_saved = static function ( $saved_order ) use ( $order, $save, &$save_once_order_saved ) {
+				if ( $saved_order === $order ) {
+					remove_action( 'woocommerce_after_order_object_save', $save_once_order_saved, 1 );
+					remove_action( 'shutdown', $save );
+					$save();
+				}
+			};
+
+			add_action( 'woocommerce_after_order_object_save', $save_once_order_saved, 1 );
+			add_action( 'shutdown', $save );
+		}
+
+		private function track_web_purchase_event( \WC_Order $order ) {
 
 			$event_name                  = 'Purchase';
 			$valid_purchase_order_states = array( 'processing', 'completed', 'on-hold', 'pending' );
+			$order_id                    = $order->get_id();
 
-			// New-order callbacks run before save_items(). The original object already
-			// contains the items, while reloading it here can return an empty order.
-			if ( ! $order instanceof \WC_Order || $order->get_id() !== (int) $order_id ) {
-				$order = wc_get_order( $order_id );
-			}
-
-			if ( ! $order ) {
-				return;
-			}
-
-			// Track Purchase only for checkout/renewal orders, not subscription posts.
-			if ( ! $this->is_purchase_trackable_order( $order ) ) {
-				return;
-			}
-
-			// Log which hook triggered this purchase event.
 			$hook_name = current_action();
 
 			// Determine if this is a browser or server event.
@@ -1450,7 +1897,7 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 
 			// Persist only tracking metadata; do not recursively save an order that
 			// WooCommerce is still creating or updating in woocommerce_new_order.
-			$order->save_meta_data();
+			$this->save_tracking_meta_data( $order );
 
 			Logger::log(
 				'Purchase event fired for order ' . $order_id . ' by hook ' . $hook_name . ' (context: ' . ( $is_browser ? 'browser' : 'server' ) . ').',
@@ -1462,55 +1909,26 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 				)
 			);
 
-			$content_type  = 'product';
-			$contents      = array();
-			$product_ids   = array( array() );
-			$product_names = array();
-			$products      = array();
-
-			foreach ( $order->get_items() as $item ) {
-
-				$product = $item->get_product();
-
-				if ( $product ) {
-					$product_ids[]   = \WC_Facebookcommerce_Utils::get_fb_content_ids( $product );
-					$product_names[] = \WC_Facebookcommerce_Utils::clean_string( $product->get_title() );
-
-					if ( 'product_group' !== $content_type && $product->is_type( 'variable' ) ) {
-						$content_type = 'product_group';
-					}
-
-					$quantity   = $item->get_quantity();
-					$products[] = array(
-						'product' => $product,
-						'qty'     => $quantity,
-					);
-
-					$content           = new \stdClass();
-					$content->id       = \WC_Facebookcommerce_Utils::get_fb_retailer_id( $product );
-					$content->quantity = $quantity;
-
-					$contents[] = $content;
-				}
-			}
-
 			// Advanced matching information is extracted from the order
 			$event_data = array(
 				'event_name'  => $event_name,
-				'custom_data' => array(
-					'content_ids'  => wp_json_encode( array_merge( ...$product_ids ) ),
-					'content_name' => wp_json_encode( $product_names ),
-					'contents'     => wp_json_encode( $contents ),
-					'content_type' => $content_type,
-					'value'        => $order->get_total(),
-					'currency'     => ( method_exists( $order, 'get_currency' ) ? $order->get_currency() : get_woocommerce_currency() ),
-					'order_id'     => $order_id,
-				),
+				'custom_data' => $this->get_custom_data( $order ),
 				'user_data'   => $this->get_user_data_from_billing_address( $order ),
 				'event_id'    => $event_id,
 			);
 
 			if ( $this->is_value_optimization_enabled() ) {
+				$products = array();
+				foreach ( $order->get_items() as $item ) {
+					$product = $item->get_product();
+
+					if ( $product ) {
+						$products[] = array(
+							'product' => $product,
+							'qty'     => $item->get_quantity(),
+						);
+					}
+				}
 				$cogs = $this->cogs_provider->calculate_cogs_for_products( $products );
 
 				if ( false !== $cogs ) {
@@ -1537,6 +1955,106 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 			$this->pixel->inject_event( $event_name, $event_data );
 
 			$this->inject_subscribe_event( $order_id );
+		}
+
+		/**
+		 * Triggers a Purchase event when checkout is completed.
+		 *
+		 * This may happen either when:
+		 * - WooCommerce signals a payment transaction complete (most gateways)
+		 * - The order status is changed through the Woo dashboard to Processing or Completed
+		 * - The Payment Completed event is fired, which happens in case of some external payment gateways.
+		 * - Customer reaches Thank You page skipping payment (for gateways that do not require payment, e.g. Cheque, BACS, Cash on delivery...)
+		 *
+		 * The method checks if the event was not triggered already avoiding a duplicate.
+		 * Finally, if the order contains subscriptions, it will also track an associated Subscription event.
+		 *
+		 * @internal
+		 *
+		 * @param int           $order_id Order identifier.
+		 * @param WC_Order|null $order    Original order supplied by woocommerce_new_order, if available.
+		 */
+		public function inject_purchase_event( $order_id, $order = null ) {
+
+			if ( ! $this->is_pixel_enabled() ) {
+				return;
+			}
+
+			// New-order callbacks run before save_items(). The original object already
+			// contains the items, while reloading it here can return an empty order.
+			if ( ! $order instanceof \WC_Order || $order->get_id() !== (int) $order_id ) {
+				$order = wc_get_order( $order_id );
+			}
+
+			if ( ! $order ) {
+				return;
+			}
+
+			// Track Purchase only for checkout/renewal orders, not subscription posts.
+			if ( ! $this->is_purchase_trackable_order( $order ) ) {
+				return;
+			}
+
+			// A point-of-sale sale is never a website event, whether or not the merchant
+			// has opted in to offline events. With the opt-in it is reported as an
+			// offline event; without it, it is not reported at all. Before, an opted-out
+			// store reported till sales as website Purchases, sent from the till's
+			// browser and IP.
+			//
+			// The admin-user gate only applies to the web path: it exists to keep staff
+			// browsing the storefront out of the pixel data, which has no bearing on a
+			// server-side sale rung up at a cash registry.
+			if ( $this->is_offline_event( $order ) ) {
+				if ( facebook_for_woocommerce()->get_integration()->is_offline_purchase_events_enabled() ) {
+					$this->track_offline_purchase_event( $order );
+				}
+				return;
+			}
+
+			// A point-of-sale page (e.g. its order-received screen) is not a storefront
+			// visit, so it never reports a website Purchase either.
+			if ( ! \WC_Facebookcommerce_Utils::is_admin_user() && ! $this->is_pos_page_request() ) {
+				$this->track_web_purchase_event( $order );
+			}
+		}
+
+		/**
+		 * Reports an offline (physical store) Purchase when a point-of-sale order changes status.
+		 *
+		 * Point-of-sale orders are usually created before payment is taken — WCPOS opens
+		 * them as `pos-open` — so woocommerce_new_order fires while the order is still
+		 * unpaid, and none of the other purchase hooks run once payment completes.
+		 * Listening to status changes catches payment_complete(), gateways that set the
+		 * status directly, and staff marking an order paid in wp-admin.
+		 *
+		 * track_offline_purchase_event() only reports paid orders, and only once, so this
+		 * can fire on every status change without duplicating the event. The web path is
+		 * deliberately not run from here.
+		 *
+		 * @internal
+		 *
+		 * @param int $order_id order identifier.
+		 */
+		public function inject_offline_purchase_event_on_status_change( $order_id ) {
+
+			if ( ! $this->is_pixel_enabled() ) {
+				return;
+			}
+
+			// is_offline_event() does not check the opt-in, so it has to be checked here.
+			if ( ! facebook_for_woocommerce()->get_integration()->is_offline_purchase_events_enabled() ) {
+				return;
+			}
+
+			$order = wc_get_order( $order_id );
+
+			if ( ! $order || ! $this->is_purchase_trackable_order( $order ) ) {
+				return;
+			}
+
+			if ( $this->is_offline_event( $order ) ) {
+				$this->track_offline_purchase_event( $order );
+			}
 		}
 
 
@@ -1973,42 +2491,65 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 		/**
 		 * Sends an API event.
 		 *
+		 * Returns whether the event can be considered delivered. That is false when it
+		 * was not sent (a crawler, a known-invalid connection, signals held), when the
+		 * request failed, or when Meta returned an error. It is true when Meta accepted
+		 * it, and also when the outcome cannot be known: a deferred send, or
+		 * non-blocking sending, which does not wait for the response.
+		 *
 		 * @since 2.0.0
 		 *
 		 * @param Event $event event object
 		 * @param bool  $send_now optional, defaults to true
+		 * @return bool
 		 */
 		protected function send_api_event( Event $event, bool $send_now = true ) {
 			if ( $this->is_crawler_request( $event ) ) {
 				facebook_for_woocommerce()->log( 'Blocked CAPI event for crawler: ' . $event->get_client_user_agent() );
-				return;
+				return false;
 			}
 
 			// Skip CAPI events when the connection is known-invalid (auth error detected).
 			// Sending events with an invalid token generates Graph API errors with no chance
 			// of success, so we suppress them until the merchant reconnects.
 			if ( get_transient( 'wc_facebook_connection_invalid' ) ) {
-				return;
+				return false;
 			}
 
 			$this->tracked_events[] = $event;
 
 			// Skip CAPI sends for frontend requests while signals are held.
-			// Backend/cron events (e.g. admin order status changes) still fire.
-			if ( FacebookSignalsState::is_held() && ! is_admin() && ! wp_doing_cron() ) {
+			// Backend/cron events (e.g. admin order status changes) still fire, and so
+			// do in-store sales: the hold tracks a web visitor's consent state, but a
+			// sale rung up at a till has no browser session that consent could describe.
+			// Holding one would also strand it, since the queue is released by a
+			// storefront AJAX call a point-of-sale terminal never makes.
+			if ( FacebookSignalsState::is_held() && ! is_admin() && ! wp_doing_cron() && ! $event->is_physical_store() ) {
 				FacebookSignalsState::queue_event( $event );
-				return;
+				return false;
 			}
 
-			if ( $send_now ) {
-				try {
-					facebook_for_woocommerce()->get_api()->send_pixel_events( facebook_for_woocommerce()->get_integration()->get_facebook_pixel_id(), array( $event ) );
-				} catch ( ApiException $exception ) {
-					facebook_for_woocommerce()->log( 'Could not send Pixel event: ' . $exception->getMessage() );
-				}
-			} else {
+			if ( ! $send_now ) {
 				$this->pending_events[] = $event;
+				return true;
 			}
+
+			try {
+				$response = facebook_for_woocommerce()->get_api()->send_pixel_events( facebook_for_woocommerce()->get_integration()->get_facebook_pixel_id(), array( $event ) );
+			} catch ( ApiException $exception ) {
+				facebook_for_woocommerce()->log( 'Could not send Pixel event: ' . $exception->getMessage() );
+				return false;
+			}
+
+			// No response means non-blocking sending is on: the request was fired without
+			// waiting for the answer, so there is nothing to check.
+			if ( null === $response ) {
+				return true;
+			}
+
+			// Graph API errors other than rate limits come back as an error response
+			// rather than an exception, so the response itself has to be checked.
+			return ! $response->has_api_error();
 		}
 
 
