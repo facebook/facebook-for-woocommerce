@@ -60,7 +60,6 @@ class Lifecycle extends Framework\Lifecycle {
 			'2.5.0',
 			'3.2.0',
 			'3.4.9',
-			'3.5.3',
 			'3.5.4',
 			'3.5.6',
 			'3.7.5',
@@ -362,16 +361,6 @@ class Lifecycle extends Framework\Lifecycle {
 	 */
 	protected function upgrade_to_3_4_9() {
 		facebook_for_woocommerce()->get_product_sets_sync_handler()->schedule_sync_all_product_sets();
-	}
-
-	/**
-	 * Trigger flush of rewrite rules to update with checkout URL
-	 *
-	 * @since 3.5.3
-	 */
-	protected function upgrade_to_3_5_3() {
-		add_rewrite_rule( '^fb-checkout/?$', 'index.php?fb_checkout=1', 'top' );
-		flush_rewrite_rules();
 	}
 
 	/**
