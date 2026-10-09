@@ -2634,7 +2634,7 @@ class WC_Facebook_Product {
 	}
 
 	/**
-	 * Some products cannot be directly used in the fb-checkout endpoint. This field is used to exclude those
+	 * Some products cannot be directly used in a checkout link. This field is used to exclude those
 	 * from being shown on Facebook Shops.
 	 *
 	 * @return array<string> list of disabled capabilities
