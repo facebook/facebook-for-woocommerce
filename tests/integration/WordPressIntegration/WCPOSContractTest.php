@@ -73,9 +73,14 @@ class WCPOSContractTest extends IntegrationTestCase {
 	public function test_a_checkout_screen_is_a_pos_page() {
 		$this->route_pos_requests();
 
-		$this->go_to( wcpos_checkout_url( 'order-pay/123' ) );
+		// WCPOS 1.11.1 and later answer 404 for an order-pay screen whose order does not load.
+		$order = wc_create_order();
+
+		$this->go_to( wcpos_checkout_url( 'order-pay/' . $order->get_id() ) );
 
 		$this->assertTrue( ( new WCPOS_Integration() )->is_pos_page_request() );
+
+		$order->delete( true );
 	}
 
 	public function test_a_storefront_page_is_not_a_pos_page() {
