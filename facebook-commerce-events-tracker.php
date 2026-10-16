@@ -2524,7 +2524,7 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 			// sale rung up at a till has no browser session that consent could describe.
 			// Holding one would also strand it, since the queue is released by a
 			// storefront AJAX call a point-of-sale terminal never makes.
-			if ( FacebookSignalsState::is_held() && ! is_admin() && ! wp_doing_cron() && ! $event->is_physical_store() ) {
+			if ( FacebookSignalsState::should_suppress_frontend_send() && ! $event->is_physical_store() ) {
 				FacebookSignalsState::queue_event( $event );
 				return false;
 			}
@@ -2799,7 +2799,7 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 		public function send_pending_events() {
 
 			// Don't batch-send pending events while signals are held.
-			if ( FacebookSignalsState::is_held() && ! is_admin() && ! wp_doing_cron() ) {
+			if ( FacebookSignalsState::should_suppress_frontend_send() ) {
 				return;
 			}
 
