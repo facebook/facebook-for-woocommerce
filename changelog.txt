@@ -1,5 +1,17 @@
 *** Meta for WooCommerce Changelog ***
 
+= 3.7.8 - 2026-10-05 =
+* Tweak - Prefer CPI sources for install sync with FBE fallback ladder by @jczhuoMeta in #4048
+* Fix - Create product sets during onboarding instead of waiting for the heartbeat by @vahidkay-meta in #4056
+* Fix - Send product set names to Meta as the merchant typed them by @vahidkay-meta in #4063
+* Fix - Fix variations bulk edit by @ukilla in #4066
+* Dev - Consolidate Dependabot dependency updates by @vahidkay-meta in #4067
+* Fix - Stop net revenue losing a cent to floating point truncation by @vahidkay-meta in #4055
+* Fix - Fix missing Purchase contents during order creation by @ukilla in #4076
+* Add - Add Signal hold/release integration guides by @iodic in #4041
+* Fix - Stop the Attribute Mapping tab requesting a script that is never built by @vahidkay-meta in #4054
+* Add - Report physical store purchases as offline events, behind an opt-in by @vahidkay-meta in #4040
+
 = 3.7.7 - 2026-09-22 =
 * Dev - ci(e2e): run E2E tests on the latest PHP by @vahidkay-meta in #3982
 * Dev - test(e2e): assert exact mapped value on Facebook color field by @vahidkay-meta in #3985
