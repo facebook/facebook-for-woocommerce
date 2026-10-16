@@ -38,10 +38,10 @@ if ( ! class_exists( 'WC_Facebookcommerce_EventsTracker' ) ) :
 	 */
 	class WC_Facebookcommerce_EventsTracker {
 		/** @var string URL for the client-side CAPI param builder script */
-		const CAPI_PARAM_BUILDER_JS_URL = 'https://cdn.jsdelivr.net/npm/meta-capi-param-builder-clientjs@1.3.2/dist/clientParamBuilder.bundle.js';
+		const CAPI_PARAM_BUILDER_JS_URL = 'https://cdn.jsdelivr.net/npm/meta-capi-param-builder-clientjs/dist/clientParamBuilder.bundle.js';
 
 		/** @var string Fallback URL for the client-side CAPI param builder script */
-		const CAPI_PARAM_BUILDER_FALLBACK_JS_URL = 'https://unpkg.com/meta-capi-param-builder-clientjs@1.3.2/dist/clientParamBuilder.bundle.js';
+		const CAPI_PARAM_BUILDER_FALLBACK_JS_URL = 'https://unpkg.com/meta-capi-param-builder-clientjs/dist/clientParamBuilder.bundle.js';
 
 		/** @var \WC_Facebookcommerce_Pixel instance */
 		private $pixel;
