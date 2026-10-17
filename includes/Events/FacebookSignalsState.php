@@ -117,6 +117,24 @@ class FacebookSignalsState {
 	}
 
 	/**
+	 * Whether a held request should suppress CAPI sending.
+	 *
+	 * Visitor-facing admin AJAX requests must respect the same hold as regular
+	 * frontend requests. Actual admin screens and cron jobs remain exempt.
+	 *
+	 * @return bool
+	 */
+	public static function should_suppress_frontend_send() {
+		$is_admin_request = function_exists( 'is_admin' ) ? is_admin() : false;
+		$is_ajax_request  = function_exists( 'wp_doing_ajax' ) ? wp_doing_ajax() : false;
+		$is_cron_request  = function_exists( 'wp_doing_cron' ) ? wp_doing_cron() : false;
+
+		return self::is_held()
+			&& ( ! $is_admin_request || $is_ajax_request )
+			&& ! $is_cron_request;
+	}
+
+	/**
 	 * Store attribution data captured while signals are held.
 	 *
 	 * @param string $key   Data key (e.g. 'fbclid').
