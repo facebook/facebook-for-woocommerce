@@ -67,6 +67,7 @@ class OfflineEventSignalsHoldTest extends AbstractWPUnitTestWithSafeFiltering {
 	public function tearDown(): void {
 		FacebookSignalsState::release();
 		$this->reset_queued_events();
+		set_current_screen( 'front' );
 
 		$this->instance = null;
 
@@ -147,6 +148,25 @@ class OfflineEventSignalsHoldTest extends AbstractWPUnitTestWithSafeFiltering {
 			1,
 			$this->get_queued_events(),
 			'A website event must still be held while signals are held.'
+		);
+	}
+
+	public function test_given_signals_held_when_admin_ajax_web_event_sent_then_it_is_queued() {
+		set_current_screen( 'edit-post' );
+		$this->add_filter_with_safe_teardown(
+			'wp_doing_ajax',
+			static function () {
+				return true;
+			}
+		);
+		FacebookSignalsState::hold();
+
+		$this->send( new Event( array( 'event_name' => 'Purchase' ) ) );
+
+		$this->assertCount(
+			1,
+			$this->get_queued_events(),
+			'An admin AJAX website event must respect the visitor hold.'
 		);
 	}
 
